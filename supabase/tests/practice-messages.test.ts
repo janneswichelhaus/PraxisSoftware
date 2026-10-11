@@ -125,10 +125,12 @@ async function gleichzeitig(
       await new Promise((r) => setTimeout(r, 25));
     }
     await a.query('commit');
-    const fehler = (await versuch) as (Error & { code?: string }) | null;
+    const fehler = await versuch;
     if (fehler === null) await b.query('commit');
     else await b.query('rollback');
-    return fehler === null ? null : { code: fehler.code, message: fehler.message };
+    if (fehler === null) return null;
+    const { code } = fehler as { code?: string };
+    return { code, message: fehler.message };
   } finally {
     await a.end();
     await b.end();
