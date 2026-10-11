@@ -103,4 +103,5 @@ Annahmen“ vom 06.10.2026 hin entfallen (ANN-260).
 
 **Entschieden (Jannes, 2026-10-10): alle drei fallen weg**, umgesetzt als BEF-140. „Telefon
 (geschäftlich)“ verschwindet nur aus dem Formular, die Spalte `phone_work` bleibt. „Andere Ziel-App
-prüfen“ fällt erst nach der Sichtung Kartendienst (Gerätebewertung) weg.
+prüfen“ fällt erst nach der Sichtung Kartendienst (Gerätebewertung) weg. Umgesetzt am 2026-10-11: Aufklapper und Formularfeld (das Feld bleibt nur an einer Akte, die
+schon eine Nummer trägt, ANN-340).

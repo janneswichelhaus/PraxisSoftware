@@ -623,12 +623,14 @@ eingeklappt.
 | Datum   | 2026-10-10 |
 | Bereich | Übersicht, Stammdaten, Tour |
 | Quelle  | Jannes, Entscheidung zu den Löschkandidaten in `docs/design/leitfaden-schlank.md` (2026-10-10) |
-| Status  | offen |
+| Status  | teilweise erledigt (1 und 2 am 2026-10-11), offen: 3 |
 | Berührt | Übersicht (`src/features/today/MyDayPage.tsx`), Formular der Person (`phone_work`), `src/features/tours/Tourenliste.tsx` |
 
 **Entscheidung (Jannes, 2026-10-10).** (1) Der Aufklapper „Organisatorisches und Kommunikation“ am Ende der Übersicht fällt weg; „Panne melden“ bleibt im Fuhrpark erreichbar. (2) „Telefon (geschäftlich)“ verschwindet aus dem Formular; die Spalte `phone_work` bleibt, damit Auskunft, Zusammenführen und Bestand unberührt sind. (3) „Andere Ziel-App prüfen (für die Gerätebewertung)“ unter der Tourliste fällt weg, sobald die Sichtung Kartendienst die Gerätebewertung abgeschlossen hat.
 
 **Erwartet.** (1) und (2) in einem Loop, nur Oberfläche: Komponenten und Tests anpassen, Sichtprüfung bei 375 und 1280 px. Ob ein vorhandener Wert in `phone_work` noch lesend erscheint, entscheidet der Loop als Annahme. (3) nach der Sichtung Kartendienst, mit der Sichtungsdatei.
+
+**Umsetzung (1) und (2), 2026-10-11.** Der Aufklapper samt seiner Vorschaukarten ist aus `MyDayPage.tsx` entfernt. „Telefon (geschäftlich)“ erscheint im Formular nur noch, wenn die Akte beim Öffnen schon eine Nummer trägt – dann berichtigbar und leerbar; in den Stammdaten bleibt sie lesend (ANN-340). Sichtung: [UX-Review](../sichtung/ux-review.md) Schritt 10. Offen bleibt (3).
 
 ### BEF-142 — Der Einwilligungstext der Plattform verspricht beim Widerruf „alle Fotos“
 

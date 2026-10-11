@@ -647,6 +647,15 @@
           "vermerk": "ohne Oberfläche; Sichtung Pläne Schritt 12 angepasst"
         },
         {
+          "id": "bef-140",
+          "name": "BEF-140 Zwei Löschkandidaten aus dem Leitfaden (Übersicht, Telefon geschäftlich)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-11",
+          "nachweis": "ANN-340; MyDayPage.test.tsx, EditPatientPage.test.tsx, NewPatientPage.test.tsx, uebersicht.spec.ts; Sichtung UX-Review Schritt 10",
+          "vermerk": "nur Oberfläche; „Andere Ziel-App prüfen“ folgt nach der Sichtung Kartendienst"
+        },
+        {
           "id": "bef-141",
           "name": "BEF-141 Listen zeigen den Empfänger ausgestellter Rechnungen aus dem Snapshot",
           "gewicht": 1,
