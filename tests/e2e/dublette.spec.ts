@@ -60,4 +60,20 @@ test.describe('Dublette übernehmen', () => {
     await expect(page.getByText(/Rechnungsentwurf für denselben Monat/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Zusammenführen' })).toHaveCount(0);
   });
+
+  for (const breite of [375, 1280]) {
+    test(`der Plattformzugang der Dublette sperrt, bei ${breite} px ohne Überlauf (BEF-132)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?sperre=plattform`);
+      await waehleDublette(page);
+      await expect(
+        page.getByText(/Zugang in der Dublette unter „Plattform“ entziehen/),
+      ).toBeVisible();
+      await expect(page.getByText(/2 Rückfragen, 1 Terminwunsch/)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Zusammenführen' })).toHaveCount(0);
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+  }
 });

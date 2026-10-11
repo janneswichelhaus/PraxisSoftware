@@ -1,11 +1,15 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { Client } from 'pg';
 import {
   SEED,
+  abgefangen,
   asPostgres,
   asUser,
   asUserCommitted,
   fremdeOrganisation,
+  jwtClaims,
   resetDatabase,
+  testDatabaseUrl,
 } from './helpers/db';
 
 /**
@@ -82,6 +86,53 @@ async function gesundheitImTraining() {
      values ($1, $2, 'consent_granted', 'training_health_data', current_date, $3)`,
     [organizationId, trainingRelationships.tina, users.trainer],
   );
+}
+
+/**
+ * Zwei Vorgänge wirklich gleichzeitig (BEF-132, H5): `erledigen` läuft auf
+ * einer eigenen Verbindung und hält seine Transaktion offen; `schreiben`
+ * startet auf einer zweiten, und erst wenn diese nachweislich auf die Sperre
+ * der Zeile wartet, wird das Erledigen bestätigt. Liefert den Fehler des
+ * Schreibens oder null.
+ */
+async function gleichzeitig(
+  erledigen: { konto: string; sql: string; params: unknown[] },
+  schreiben: { konto: string; sql: string; params: unknown[] },
+): Promise<{ code?: string; message: string } | null> {
+  const a = new Client({ connectionString: testDatabaseUrl() });
+  const b = new Client({ connectionString: testDatabaseUrl() });
+  await a.connect();
+  await b.connect();
+  try {
+    for (const [c, konto] of [
+      [a, erledigen.konto],
+      [b, schreiben.konto],
+    ] as const) {
+      await c.query('begin');
+      await c.query("select set_config('role', 'authenticated', true)");
+      await c.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(konto)]);
+    }
+    const { rows } = await b.query<{ pid: number }>('select pg_backend_pid() as pid');
+    await a.query(erledigen.sql, erledigen.params);
+    const versuch = abgefangen(b.query(schreiben.sql, schreiben.params));
+    for (let i = 0; ; i++) {
+      const warte = await asPostgres<{ w: string | null }>(
+        'select wait_event_type as w from pg_stat_activity where pid = $1',
+        [rows[0]!.pid],
+      );
+      if (warte.rows[0]?.w === 'Lock') break;
+      if (i > 200) throw new Error('das Schreiben wartet nicht auf die Sperre');
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    await a.query('commit');
+    const fehler = (await versuch) as (Error & { code?: string }) | null;
+    if (fehler === null) await b.query('commit');
+    else await b.query('rollback');
+    return fehler === null ? null : { code: fehler.code, message: fehler.message };
+  } finally {
+    await a.end();
+    await b.end();
+  }
 }
 
 describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
@@ -172,6 +223,46 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     expect(zeile!.status).toBe('closed');
     expect(await fehler(asUser(users.office, ANTWORTEN, [id, 'Noch was']))).toBe('22023');
     expect(await fehler(asUser(users.office, ERLEDIGEN, [id]))).toBe('22023');
+  });
+
+  it('erledigt die Praxis, während die Person nachträgt: „erledigt“ steht (BEF-132, H5)', async () => {
+    const id = await fragen(erika, 'organisational');
+    const fehlerBeimNachtrag = await gleichzeitig(
+      { konto: users.office, sql: ERLEDIGEN, params: [id] },
+      {
+        konto: erika.konto,
+        sql: 'select public.add_platform_message_entry($1::uuid, $2::uuid, $3)',
+        params: [erika.zugang, id, 'Noch eine Frage'],
+      },
+    );
+    expect(fehlerBeimNachtrag).toMatchObject({ code: '22023', message: 'message is closed' });
+    const { rows } = await asPostgres<{ status: string; n: number }>(
+      `select m.status, (select count(*)::int from public.platform_message_entries e
+                          where e.message_id = m.id) as n
+         from public.platform_messages m where m.id = $1`,
+      [id],
+    );
+    expect(rows).toEqual([{ status: 'closed', n: 1 }]);
+  });
+
+  it('erledigt die Person, während die Praxis antwortet: „erledigt“ steht (BEF-132, H5)', async () => {
+    const id = await fragen(erika, 'organisational');
+    const fehlerBeiDerAntwort = await gleichzeitig(
+      {
+        konto: erika.konto,
+        sql: 'select public.close_platform_message($1::uuid, $2::uuid)',
+        params: [erika.zugang, id],
+      },
+      { konto: users.office, sql: ANTWORTEN, params: [id, 'Freitag geht.'] },
+    );
+    expect(fehlerBeiDerAntwort).toMatchObject({ code: '22023', message: 'message is closed' });
+    const { rows } = await asPostgres<{ status: string; n: number }>(
+      `select m.status, (select count(*)::int from public.platform_message_entries e
+                          where e.message_id = m.id) as n
+         from public.platform_messages m where m.id = $1`,
+      [id],
+    );
+    expect(rows).toEqual([{ status: 'closed', n: 1 }]);
   });
 
   it('überfällig, wenn die Frist vorbei ist (ANN-309)', async () => {

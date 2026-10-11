@@ -37,6 +37,8 @@ export const ZAEHLER = [
   'course_events',
   'therapy_reports',
   'tasks',
+  'platform_messages',
+  'platform_appointment_requests',
   'waitlist_entries',
   'legal_holds',
 ] as const;
@@ -73,6 +75,8 @@ const BEREICHE: Record<Zaehler, [string, string]> = {
   course_events: ['Verlaufsereignis', 'Verlaufsereignisse'],
   therapy_reports: ['Therapiebericht', 'Therapieberichte'],
   tasks: ['Aufgabe', 'Aufgaben'],
+  platform_messages: ['Rückfrage', 'Rückfragen'],
+  platform_appointment_requests: ['Terminwunsch', 'Terminwünsche'],
   waitlist_entries: ['Wartelisteneintrag', 'Wartelisteneinträge'],
   legal_holds: ['Löschsperre', 'Löschsperren'],
 };
@@ -114,6 +118,9 @@ export function feldLabel(feld: string): string {
 const SPERREN: Record<string, string> = {
   source_has_account:
     'An der Person der Dublette hängt ein Zugang zur Anwendung. Er verlöre seine Akte – bitte die Dublette öffnen und diese Akte von dort aus übernehmen.',
+  // BEF-132: Der Zugang endete mit der Dublette; ihre Rückfragen ziehen um.
+  source_has_platform_access:
+    'Die Dublette hat einen Zugang zur Plattform (auch eine offene Einladung zählt). Er würde mit ihr enden, und die Person sähe die Antworten auf ihre Rückfragen nicht mehr – bitte den Zugang in der Dublette unter „Plattform“ entziehen und danach an der bleibenden Akte einladen.',
   draft_invoice_overlap:
     'Beide Akten haben einen Rechnungsentwurf für denselben Monat. Bitte einen der beiden Entwürfe verwerfen.',
   fee_agreement_overlap:

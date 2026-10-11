@@ -152,6 +152,23 @@ describe('ZusammenfuehrenPage (PRX-018)', () => {
     expect(await screen.findByText('Welche Akte ist die Dublette?')).toBeInTheDocument();
   });
 
+  it('nennt den Plattformzugang der Dublette und zählt Rückfragen und Terminwünsche (BEF-132)', async () => {
+    previewPatientMerge.mockResolvedValue(
+      plan({
+        counts: { appointments: 1, platform_messages: 2, platform_appointment_requests: 1 },
+        blockers: ['source_has_platform_access'],
+      }),
+    );
+    renderWithProviders(<ZusammenfuehrenPage />, PFAD);
+    await waehleDublette();
+
+    expect(
+      await screen.findByText(/Zugang in der Dublette unter „Plattform“ entziehen/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('1 Termin, 2 Rückfragen, 1 Terminwunsch')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zusammenführen' })).not.toBeInTheDocument();
+  });
+
   it('meldet einen gescheiterten Vorgang, ohne Erfolg zu behaupten', async () => {
     mergePatients.mockRejectedValue(new Error('x'));
     renderWithProviders(<ZusammenfuehrenPage />, PFAD);

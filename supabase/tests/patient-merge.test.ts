@@ -679,7 +679,8 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         VORSCHAU,
         [patients.max, patients.petra],
       );
-      expect(rows[0]!.plan.blockers).toEqual(['source_has_account']);
+      // Max trägt im Seed zudem die Begleitung durch Paula (BEF-132).
+      expect(rows[0]!.plan.blockers).toEqual(['source_has_account', 'source_has_platform_access']);
       await expect(
         asUser(users.ownerTherapist, ZUSAMMENFUEHREN, [patients.max, patients.petra]),
       ).rejects.toThrow(/blocked: source_has_account/);
@@ -988,6 +989,106 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       expect(plattform.map((w) => w.id)).toEqual([...mitgezogen, unberuehrt[0]].sort());
       const { rows: dublette } = await asUser(users.plattformErika, LISTE, [quelleZugang, alle]);
       expect(dublette).toEqual([]);
+    });
+  });
+
+  describe('Plattformzugang an der Dublette (BEF-132)', () => {
+    /** Ein Zugang der Dublette im genannten Zustand; die Kennung zurück. */
+    async function zugang(patient: string, zustand: 'invited' | 'locked'): Promise<string> {
+      const { rows } = await asPostgres<{ id: string }>(
+        `insert into public.platform_accesses
+           (organization_id, relationship_kind, relationship_id, patient_id, status,
+            account_user_id, activated_at, locked_at, locked_by, created_by)
+         values ($1, 'treatment', $2, $2, $3,
+                 case when $3 = 'locked' then extensions.gen_random_uuid() end,
+                 case when $3 = 'locked' then now() end,
+                 case when $3 = 'locked' then now() end,
+                 case when $3 = 'locked' then $4::uuid end, $4)
+         returning id`,
+        [ORG, patient, zustand, users.office],
+      );
+      return rows[0]!.id;
+    }
+
+    async function sperren(quelle: string): Promise<string[]> {
+      const { rows } = await asUser<{ plan: { blockers: string[] } }>(
+        users.ownerTherapist,
+        VORSCHAU,
+        [quelle, patients.erika],
+      );
+      return rows[0]!.plan.blockers;
+    }
+
+    it('sperrt, solange ein Zugang der Dublette nicht entzogen ist; entzogen gibt den Weg frei', async () => {
+      // Die bleibende Akte (Erika) hat selbst einen aktiven Zugang - der sperrt nicht.
+      const quelle = await legeAkteAn({ vorname: 'Erika', nachname: 'Beispiel-Zugang' });
+      const eingeladen = await zugang(quelle.patient, 'invited');
+      expect(await sperren(quelle.patient)).toEqual(['source_has_platform_access']);
+      await expect(
+        asUser(users.ownerTherapist, ZUSAMMENFUEHREN, [quelle.patient, patients.erika]),
+      ).rejects.toThrow(/blocked: source_has_platform_access/);
+
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.revoke_platform_access($1::uuid)',
+        [eingeladen],
+      );
+      const gesperrt = await zugang(quelle.patient, 'locked');
+      expect(await sperren(quelle.patient)).toEqual(['source_has_platform_access']);
+
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.revoke_platform_access($1::uuid)',
+        [gesperrt],
+      );
+      expect(await sperren(quelle.patient)).toEqual([]);
+    });
+
+    it('zählt Rückfragen und Terminwünsche der Dublette, auch im Vermerk', async () => {
+      const quelle = await legeAkteAn({ vorname: 'Erika', nachname: 'Beispiel-Zähler' });
+      await asPostgres(
+        `insert into public.platform_messages
+           (organization_id, relationship_kind, relationship_id, patient_id, topic, status,
+            due_on, created_by)
+         values ($1, 'treatment', $2, $2, 'organisational', 'open', current_date + 2, $3)`,
+        [ORG, quelle.patient, users.office],
+      );
+      // Der Wunsch trägt seinen Zugang; der ist entzogen und sperrt nicht.
+      await asPostgres(
+        `with zugang as (
+           insert into public.platform_accesses
+             (organization_id, relationship_kind, relationship_id, patient_id, status,
+              created_by, revoked_at, revoked_by, revoked_reason)
+           values ($1, 'treatment', $2, $2, 'revoked', $3, now(), $3, 'practice')
+           returning id
+         )
+         insert into public.platform_appointment_requests
+           (organization_id, relationship_kind, relationship_id, patient_id, kind,
+            preferred_days, preferred_times, status, created_by_access_id, created_by)
+         select $1, 'treatment', $2, $2, 'new', array[current_date + 3], array['morning'],
+                'open', zugang.id, $4
+         from zugang`,
+        [ORG, quelle.patient, users.office, users.plattformErika],
+      );
+      const { rows } = await asUser<{ plan: { counts: Record<string, number> } }>(
+        users.ownerTherapist,
+        VORSCHAU,
+        [quelle.patient, patients.erika],
+      );
+      expect(rows[0]!.plan.counts).toMatchObject({
+        platform_messages: 1,
+        platform_appointment_requests: 1,
+      });
+
+      await zusammenfuehren(quelle.patient, patients.erika);
+      const vermerk = await asPostgres<{ counts: Record<string, number> }>(
+        'select counts from public.patient_merge_records where source_patient_id = $1',
+        [quelle.patient],
+      );
+      expect(vermerk.rows[0]!.counts).toMatchObject({
+        platform_messages: 1,
+        platform_appointment_requests: 1,
+      });
     });
   });
 

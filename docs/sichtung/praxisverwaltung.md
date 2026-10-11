@@ -33,7 +33,7 @@ Stand 2026-09-30 · Schritt 9 seit UX-EPIC-005 (Schritte 8 und 9 von UX-EPIC-004
 - **Zähler und Abrechnungslage** (Position wie die Deckung, „offen“ wie die offenen Posten, Zahlungsangaben nur owner/office): `supabase/tests/appointment-billing-context.test.ts`.
 - **Heilmittel am Termin** (nur am eigenen Termin, Kopplung an die Dokumentation, Kontingent, Zurücknehmen nur im Büro): `supabase/tests/record-at-appointment.test.ts`; 375 px auf der Prüfseite `tests/e2e/fixtures/termin.html`.
 - **Offene Punkte** (Rollen, Mandantengrenze, Audit ohne Titel, Fristen im Löschlauf, Auskunft): `supabase/tests/prescription-scans.test.ts`, `tasks.test.ts`, `intake-checklist.test.ts`, `call-list.test.ts`, `duplicate-check.test.ts`, `reminders.test.ts`; Office schreibt Grundlagen: `treatment-bases-write.test.ts`; 375 px auf der Prüfseite `tests/e2e/fixtures/offen.html`.
-- **Zusammenführen** (nur owner, Mandantengrenze, jede Tabelle wandert, Unveränderliches bleibt bitgleich, Sperren, Legal Hold, Fotos, Nachweis): `supabase/tests/patient-merge.test.ts`; 375 px auf der Prüfseite `tests/e2e/fixtures/dublette.html`.
+- **Zusammenführen** (nur owner, Mandantengrenze, jede Tabelle wandert, Unveränderliches bleibt bitgleich, Sperren samt Plattformzugang der Dublette (BEF-132), Legal Hold, Fotos, Nachweis): `supabase/tests/patient-merge.test.ts`; 375 px auf der Prüfseite `tests/e2e/fixtures/dublette.html`, die Sperre mit `?sperre=plattform`.
 - **Nachrücken** in einer Transaktion, auch gleichzeitig: `supabase/tests/waitlist-matches.test.ts`; 375 px auf der Prüfseite `tests/e2e/fixtures/warteliste.html`.
 
 ## Ergebnis

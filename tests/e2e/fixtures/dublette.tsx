@@ -10,12 +10,15 @@ import '@/index.css';
 /**
  * Einstieg der Prüfseite aus `dublette.html` (PRX-EPIC-003b).
  *
- * `?sperre=1` zeigt die Vorschau mit einem Sperrgrund, sonst eine, die
- * zusammenführen lässt. Die Dublette wählt der Test mit einem Klick aus. Die
+ * `?sperre=1` zeigt die Vorschau mit einem Sperrgrund, `?sperre=plattform` mit
+ * dem Plattformzugang der Dublette und ihren Rückfragen (BEF-132), sonst eine,
+ * die zusammenführen lässt. Die Dublette wählt der Test mit einem Klick aus. Die
  * Daten liegen vorab im Cache; gesprochen wird mit keinem Server. Alles ist
  * synthetisch.
  */
-const gesperrt = new URLSearchParams(window.location.search).get('sperre') === '1';
+const sperre = new URLSearchParams(window.location.search).get('sperre');
+const gesperrt = sperre === '1';
+const plattform = sperre === 'plattform';
 
 const PETRA = '66666666-6666-4666-8666-000000000003';
 const DUBLETTE = '66666666-6666-4666-8666-0000000000d3';
@@ -81,10 +84,11 @@ const plan: Zusammenfuehrungsplan = {
     patient_files: 2,
     privacy_records: 2,
     tasks: 1,
+    ...(plattform ? { platform_messages: 2, platform_appointment_requests: 1 } : {}),
   },
   conflicts: ['phone', 'address'],
   appended: ['special_note'],
-  blockers: gesperrt ? ['draft_invoice_overlap'] : [],
+  blockers: gesperrt ? ['draft_invoice_overlap'] : plattform ? ['source_has_platform_access'] : [],
 };
 
 const client = new QueryClient({
