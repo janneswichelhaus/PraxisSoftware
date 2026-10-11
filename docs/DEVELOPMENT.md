@@ -252,10 +252,10 @@ Das Kennwort ist nur der erste Einstieg über den Testzugang (ADR-025 Punkt 15);
 danach in „Mein Konto“ Passkey und PIN einrichten und wie im Betrieb benutzen.
 
 **Passkeys (SEC-EPIC-002).** Der Workflow baut mit `VITE_APP_ENVIRONMENT=test`
-(ANN-326). Passkeys gehen erst, wenn sie im Dashboard von `praxis-test` unter
-Authentication eingeschaltet sind, mit Relying Party Name „Praxis“, Domain
-`prtest.uber.space` und Ursprung `https://prtest.uber.space` (Jannes; die
-Werte in `supabase/config.toml` gelten nur lokal).
+(ANN-326). Passkeys sind im Dashboard von `praxis-test` unter Authentication
+eingeschaltet (Jannes, 2026-10-11), mit Relying Party Name „Praxis“, Domain
+`prtest.uber.space` und Ursprung `https://prtest.uber.space`; die Werte in
+`supabase/config.toml` gelten nur lokal.
 
 **Kartendienst (optional, 2026-10-04).** Mit dem Secret
 `TESTENV_SUPABASE_ACCESS_TOKEN` liefert der Lauf die Edge Function
