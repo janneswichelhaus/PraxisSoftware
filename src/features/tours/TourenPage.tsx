@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Select } from '@/components/ui/Select';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate } from '@/lib/datum';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
@@ -49,7 +50,7 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
  */
 
 /** Der nächste Schritt nach einem Ladefehler (WRT-01) - ohne Ratefrage. */
-const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
+const NACH_LADEFEHLER = VERBINDUNG_PRUEFEN;
 
 function alsOrtswahl(wert: string): Ortswahl {
   return wert === 'garage' || wert === 'besuch' ? wert : 'standort';
@@ -140,10 +141,14 @@ export function TourenPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title="Tour"
         actions={
+          // Die Tour ist nach Runde 3 abgenommen (KUT-004/005) und behält ihre
+          // 48 px, bis die Sichtung sie auf die kompakte Kopfgröße setzt
+          // (ANN-403).
           <span className="flex gap-2 print:hidden">
             <Button
               type="button"
               variant="secondary"
+              groesse="normal"
               className="max-sm:hidden"
               onClick={() => window.print()}
             >
@@ -156,6 +161,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
                 ...(person ? { person } : {}),
               }).toString()}`}
               variant="secondary"
+              groesse="normal"
             >
               Zum Kalender
             </ButtonLink>

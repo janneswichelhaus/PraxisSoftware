@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { useContext, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { knopfKlassen, type Groesse, type Variant } from './buttonStile';
+import { KnopfGroesseKontext } from './knopfGroesse';
 
 /**
  * Ein Link, der aussieht wie eine Schaltfläche (UI-000).
@@ -13,13 +14,14 @@ import { knopfKlassen, type Groesse, type Variant } from './buttonStile';
  *
  * Die Klassen kommen aus `Button`, damit beide nicht auseinanderlaufen.
  * `className` ergänzt sie (Abstände, Breite), `groesse` wirkt wie beim
- * Button, und `replace` ersetzt den Verlaufseintrag, statt einen neuen
- * anzulegen - für Wege, zu denen „Zurück" nicht wieder führen soll (UIK-13).
+ * Button (ohne Angabe die Größe der Umgebung, im Kopf kompakt), und
+ * `replace` ersetzt den Verlaufseintrag, statt einen neuen anzulegen - für
+ * Wege, zu denen „Zurück" nicht wieder führen soll (UIK-13).
  */
 export function ButtonLink({
   to,
   variant = 'primary',
-  groesse = 'normal',
+  groesse,
   className = '',
   replace,
   'aria-label': beschriftung,
@@ -34,10 +36,11 @@ export function ButtonLink({
   'aria-label'?: string;
   children: ReactNode;
 }) {
+  const umgebung = useContext(KnopfGroesseKontext);
   return (
     <Link
       to={to}
-      className={knopfKlassen(variant, groesse, className)}
+      className={knopfKlassen(variant, groesse ?? umgebung ?? 'normal', className)}
       {...(replace === undefined ? {} : { replace })}
       {...(beschriftung === undefined ? {} : { 'aria-label': beschriftung })}
     >

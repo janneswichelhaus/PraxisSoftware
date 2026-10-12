@@ -1,4 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
+import { KnopfGroesse } from './knopfGroesse';
 
 /**
  * Kopf einer Seite: Titel, erklärender Satz, Aktionen.
@@ -28,6 +29,12 @@ export function PageHeader({
    * dort Datum, Zeit und die Zeichen des Termins (UX-005a), keinen Fließtext.
    */
   description?: ReactNode;
+  /**
+   * Aktionen rechts neben dem Titel, höchstens eine primär. Knöpfe und
+   * Knopf-Links darin sind ohne eigene Angabe **kompakt** (44 px, ANN-403):
+   * In voller Größe brach „Anlegen“ am Telefon unter den Titel und schob die
+   * Liste nach unten (DESIGN.md, Regel „Kopf“).
+   */
   actions?: ReactNode;
   /**
    * Eine Zeile über dem Titel, die sagt, was für ein Gegenstand die Seite ist
@@ -89,7 +96,7 @@ export function PageHeader({
           </div>
         ) : null}
       </div>
-      {actions}
+      {actions ? <KnopfGroesse value="kompakt">{actions}</KnopfGroesse> : null}
     </header>
   );
 }
