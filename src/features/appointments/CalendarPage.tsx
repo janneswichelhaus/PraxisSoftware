@@ -61,7 +61,7 @@ import {
 } from './CalendarGrid';
 import { TerminPanel } from './TerminPanel';
 import { TerminAktionenDialog } from './TerminAktionen';
-import { Rueckmeldung } from './Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { leseMeldung } from './terminformular';
 import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
 import { SpannenBild } from './Laengenzeichen';

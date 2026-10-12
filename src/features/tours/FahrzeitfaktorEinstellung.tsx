@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Listenfehler } from '@/features/appointments/Rueckmeldungen';
+import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import {
   FAHRZEITFAKTOR_SCHLUESSEL,
   FAHRZEITFAKTOR_VOREINSTELLUNG,

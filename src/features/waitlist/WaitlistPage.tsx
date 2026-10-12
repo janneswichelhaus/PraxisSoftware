@@ -9,7 +9,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { kalenderZumTermin, todayInTimeZone } from '@/features/appointments/api';
-import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import type { CurrentUser } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';

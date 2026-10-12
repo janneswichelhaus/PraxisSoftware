@@ -13,7 +13,7 @@ import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {

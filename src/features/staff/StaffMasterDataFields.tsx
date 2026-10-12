@@ -1,7 +1,7 @@
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import type { Location } from '@/features/appointments/api';
-import { Listenfehler } from '@/features/appointments/Rueckmeldungen';
+import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import type { StaffFeld } from './api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';

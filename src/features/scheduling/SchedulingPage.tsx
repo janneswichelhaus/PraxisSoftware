@@ -15,11 +15,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
-import {
-  Listenfehler,
-  NachladeHinweis,
-  Rueckmeldung,
-} from '@/features/appointments/Rueckmeldungen';
+import { Listenfehler, NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
   EINGABETEXTE,
   useTextverlustschutz,

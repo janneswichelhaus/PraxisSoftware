@@ -21,7 +21,7 @@ import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/li
 import { ArbeitszeitRueckfrage, UebernommeneAdresse } from './AppointmentFormFields';
 import { TerritoryHint } from '@/features/territories/TerritoryHint';
 import { Deckungszeichen } from './Deckungszeichen';
-import { Listenfehler, NachladeHinweis } from './Rueckmeldungen';
+import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
   appointmentTypeLabels,
   checkAppointmentSlots,

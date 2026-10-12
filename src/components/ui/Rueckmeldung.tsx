@@ -1,10 +1,13 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Button } from './Button';
+import { Statusmeldung } from './Statusmeldung';
+import { STAND_VERALTET } from './abfrageTexte';
 
 /**
  * Die Bestätigung eines Vorgangs, dort, wo man danach hinsieht (ZST-16,
- * TER-04, TER-17, DOK-15).
+ * TER-04, TER-17, DOK-15). Bis zum Design-Fundament lag sie unter
+ * `features/appointments/` und wurde von dort aus der halben Anwendung
+ * geholt; jetzt ist sie ein Baustein (DESIGN.md, Lücke 9.14).
  *
  * Nach „Ja, Termin absagen", einem Abschluss oder dem Anlegen eines
  * Folgetermins verschwand bisher der Knopf, der den Fokus hatte - der Fokus
@@ -76,9 +79,7 @@ export function NachladeHinweis({
 }) {
   return (
     <div className={`flex flex-wrap items-center gap-3 ${className}`}>
-      <Statusmeldung ton="warnung">
-        Der angezeigte Stand konnte nicht aktualisiert werden. Bitte die Verbindung prüfen.
-      </Statusmeldung>
+      <Statusmeldung ton="warnung">{STAND_VERALTET}</Statusmeldung>
       <Button
         type="button"
         variant="secondary"

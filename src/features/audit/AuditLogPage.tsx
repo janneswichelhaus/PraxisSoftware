@@ -10,7 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeldungen';
+import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import { SicherheitReiter } from './SicherheitReiter';
 import {
   AUDIT_ACTION_GROUPS,
