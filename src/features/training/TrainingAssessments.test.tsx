@@ -114,7 +114,7 @@ describe('Assessments (OUT-002)', () => {
     // Die zweite Messung ohne Wert: Die Anwendung sagt, was fehlt.
     await nutzer.click(within(formular).getByRole('button', { name: 'Festhalten' }));
     expect(
-      await within(formular).findByText('Messung 2: Bitte eine Zahl eintragen.'),
+      await within(formular).findByText(/Messung 2: Bitte eine Zahl eintragen/),
     ).toBeInTheDocument();
     const zweite = within(formular).getByRole('group', { name: 'Messung 2' });
     await nutzer.type(within(zweite).getByLabelText(/^Wert/), '19');

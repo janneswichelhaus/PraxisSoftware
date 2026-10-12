@@ -251,6 +251,13 @@ describe('Ereignisse im Verlauf des Trainings (OUT-001)', () => {
     expect(await fehler(asUser(users.trainer, ENTFERNEN, [fremd[0]!.id]))).toBe('P0002');
   });
 
+  it('Tinas Ereignisse stehen nicht bei Erika (fremde Person)', async () => {
+    await einwilligen(trainingRelationships.tina);
+    await vermerken(users.trainer, trainingRelationships.tina, await praxistag(-1));
+    const erika = await lesen(users.trainer, 'training', trainingRelationships.erika);
+    expect(erika!.events).toEqual([]);
+  });
+
   it('kein Tabellenrecht (ADR-004)', async () => {
     for (const konto of [users.trainer, users.ownerTherapist, users.plattformTina]) {
       expect(await fehler(asUser(konto, 'select * from public.training_course_events', []))).toBe(
@@ -312,7 +319,10 @@ describe('Planwechsel, Termine und Ereignisse der Akte im Verlaufsbild (OUT-001)
     expect(daten!.plan_events.map((e) => e.title)).not.toContain('Nur ein Entwurf');
     // Der Behandlungsplan der Akte steht nicht im Training (ADR-021 Punkt 6).
     await zugewiesenerPlan('therapy', patients.erika, 'Knie zu Hause');
+    daten = await lesen(users.trainer, 'training', trainingRelationships.tina);
     expect(daten!.plan_events.map((e) => e.title)).not.toContain('Knie zu Hause');
+    const erikaTraining = await lesen(users.trainer, 'training', trainingRelationships.erika);
+    expect(erikaTraining!.plan_events.map((e) => e.title)).not.toContain('Knie zu Hause');
 
     await asUserCommitted(users.trainer, 'select public.end_exercise_plan($1::uuid)', [plan]);
     daten = await lesen(users.trainer, 'training', trainingRelationships.tina);
@@ -331,6 +341,16 @@ describe('Planwechsel, Termine und Ereignisse der Akte im Verlaufsbild (OUT-001)
     const daten = await lesen(users.trainer, 'training', trainingRelationships.tina);
     // Seed: eine durchgeführte Stunde vorgestern, zwei bestätigte heute und morgen.
     expect(daten!.appointment_days).toEqual([await praxistag(-2)]);
+    // Behandlung: Erikas Hausbesuch heute ist abgeschlossen (Seed), Terminart therapy.
+    const akte = await lesen(users.therapist, 'treatment', patients.erika);
+    expect(akte!.appointment_days).toContain(await praxistag(0));
+    expect(akte!.appointment_days).not.toContain(await praxistag(-2));
+    // Anderer Bereich (ADR-021 Punkt 6): Erikas Behandlungstermin steht nicht
+    // in ihrem Training, Tinas Trainingsstunde in keiner Akte.
+    const erikaTraining = await lesen(users.trainer, 'training', trainingRelationships.erika);
+    expect(erikaTraining!.appointment_days).toEqual([]);
+    const max = await lesen(users.therapist, 'treatment', patients.max);
+    expect(max!.appointment_days).not.toContain(await praxistag(-2));
   });
 
   it('zeigt in der Behandlung die Ereignisse der Akte , protokolliert als Öffnen der Akte', async () => {
@@ -373,6 +393,12 @@ describe('Planwechsel, Termine und Ereignisse der Akte im Verlaufsbild (OUT-001)
     expect(protokoll).toHaveLength(4);
     expect(new Set(protokoll.map((z) => z.action))).toEqual(new Set(['patient_record.viewed']));
     expect(JSON.stringify(protokoll)).not.toContain('Ibuprofen');
+    // Ein Ereignis einer anderen Organisation erscheint nicht.
+    await asPostgres('update public.patient_course_events set organization_id = $1 where id = $2', [
+      FREMDE_ORGANISATION.organizationId,
+      rows[0]!.id,
+    ]);
+    expect((await lesen(users.therapist, 'treatment', patients.erika))!.events).toEqual([]);
     // Ereignisse der Akte erreichen das Training nicht (ADR-021 Punkt 6).
     const training = await lesen(users.trainer, 'training', trainingRelationships.erika);
     expect(training!.events).toEqual([]);

@@ -115,13 +115,15 @@ export async function assessmentEntfernen(id: string): Promise<void> {
 /**
  * Seitenvergleich (IDEA-OUT-007, ANN-365): die kleinere Seite in Prozent der
  * größeren, ganzzahlig gerundet – eine Division, offen gerechnet. Ohne
- * größere Seite (beide 0) gibt es keine Zahl. Welche Seite betroffen ist und
+ * größere Seite (beide 0) oder mit negativem Wert gibt es keine Zahl. Welche Seite betroffen ist und
  * ab wann etwas genügt, sagt die Anwendung nicht.
  */
 export function seitenProzent(links: number, rechts: number): number | null {
-  const groesser = Math.max(Math.abs(links), Math.abs(rechts));
+  // Mit Vorzeichen (etwa ein Winkel unter null) ist ein Verhältnis irreführend.
+  if (links < 0 || rechts < 0) return null;
+  const groesser = Math.max(links, rechts);
   if (groesser === 0) return null;
-  return Math.round((Math.min(Math.abs(links), Math.abs(rechts)) / groesser) * 100);
+  return Math.round((Math.min(links, rechts) / groesser) * 100);
 }
 
 const zahl = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
@@ -146,12 +148,21 @@ export function seitenText(e: Messergebnis): string | null {
   return prozent === null ? null : `kleinere Seite ${prozent} % der größeren`;
 }
 
-/** „12,5“ und „12.5“ → 12.5; leer oder keine Zahl → `null`. */
+/** Die Datenbank speichert `numeric(9, 2)`: unter 10 Millionen, zwei Nachkommastellen. */
+export const WERT_GRENZE = 10_000_000;
+
+/**
+ * „12,5“ und „12.5“ → 12.5; leer, keine Zahl, mehr als zwei Nachkommastellen
+ * oder zu groß → `null`. „1.200“ wird abgewiesen statt still zu 1,2
+ * (Zweitreview): Die Person tippt die Zahl dann ohne Tausenderpunkt.
+ */
 export function zahlAusEingabe(text: string): number | null {
   const t = text.trim().replace(',', '.');
   if (t === '' || /[^\d.-]/.test(t)) return null;
+  const nachkomma = t.includes('.') ? t.length - t.indexOf('.') - 1 : 0;
+  if (nachkomma > 2) return null;
   const wert = Number(t);
-  return Number.isFinite(wert) ? wert : null;
+  return Number.isFinite(wert) && Math.abs(wert) < WERT_GRENZE ? wert : null;
 }
 
 /** Je Titel die Assessments, jüngstes zuerst; die Titel nach dem jüngsten. */

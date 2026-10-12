@@ -241,7 +241,7 @@ as $$
     where a.organization_id = p_org
       and a.status in ('completed', 'documented', 'invoiced')
       and (
-        (p_kind = 'treatment' and a.kind = 'treatment' and a.patient_id = p_relationship_id)
+        (p_kind = 'treatment' and a.kind = 'therapy' and a.patient_id = p_relationship_id)
         or (p_kind = 'training' and a.kind = 'training'
             and a.training_relationship_id = p_relationship_id)
       )

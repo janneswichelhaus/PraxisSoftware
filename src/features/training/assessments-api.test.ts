@@ -29,6 +29,7 @@ describe('Seitenvergleich (ANN-365)', () => {
     expect(seitenProzent(40, 40)).toBe(100);
     expect(seitenProzent(0, 0)).toBeNull();
     expect(seitenProzent(0, 12)).toBe(0);
+    expect(seitenProzent(-5, 10)).toBeNull();
   });
 
   it('nennt Werte und Verhältnis ohne Einordnung', () => {
@@ -51,6 +52,11 @@ describe('Eingabe und Wiedervorlage', () => {
     expect(zahlAusEingabe('')).toBeNull();
     expect(zahlAusEingabe('12 cm')).toBeNull();
     expect(zahlAusEingabe('1,2,3')).toBeNull();
+    // Kein stilles Umdeuten (Zweitreview): Tausenderpunkt und dritte Nachkommastelle.
+    expect(zahlAusEingabe('1.200')).toBeNull();
+    expect(zahlAusEingabe('12,345')).toBeNull();
+    expect(zahlAusEingabe('1200')).toBe(1200);
+    expect(zahlAusEingabe('10000000')).toBeNull();
   });
 
   it('gruppiert nach Test und nimmt die Wiederholung des jüngsten', () => {

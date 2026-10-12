@@ -357,11 +357,16 @@ function Festhalten({
         const left = zahlAusEingabe(z.links);
         const right = zahlAusEingabe(z.rechts);
         if (left === null || right === null)
-          return setPruefung(`Messung ${nummer}: Bitte links und rechts eine Zahl eintragen.`);
+          return setPruefung(
+            `Messung ${nummer}: Bitte links und rechts eine Zahl eintragen, ohne Tausenderpunkt, höchstens zwei Nachkommastellen.`,
+          );
         messungen.push({ label: z.label.trim(), unit, left, right });
       } else {
         const value = zahlAusEingabe(z.wert);
-        if (value === null) return setPruefung(`Messung ${nummer}: Bitte eine Zahl eintragen.`);
+        if (value === null)
+          return setPruefung(
+            `Messung ${nummer}: Bitte eine Zahl eintragen, ohne Tausenderpunkt, höchstens zwei Nachkommastellen.`,
+          );
         messungen.push({ label: z.label.trim(), unit, value });
       }
     }
