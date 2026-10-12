@@ -72,6 +72,7 @@ import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import { AbstecherAbmeldewache } from '@/app/AbstecherAbmeldewache';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { PraxisAblage } from '@/features/offline-documentation/PraxisAblage';
+import { AufDemGeraetPage } from '@/features/offline-documentation/AufDemGeraetPage';
 import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
@@ -401,6 +402,10 @@ export function AuthenticatedRoutes({
               {showDocumentation ? (
                 <>
                   {/* Behandlung abschliessen in einem Schritt (UX-007). */}
+                  {/* OFF-002: Tagesplan und Entwürfe des Diensttelefons. */}
+                  {ABLAGE_FUER_PRAXISKONTEN ? (
+                    <Route path="/auf-dem-geraet" element={<AufDemGeraetPage user={user} />} />
+                  ) : null}
                   <Route
                     path="/termine/:appointmentId/abschluss"
                     element={<CompleteTreatmentPage user={user} />}

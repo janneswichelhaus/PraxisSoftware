@@ -298,7 +298,7 @@ export function TreatmentNoteSection({
   if (!darfLesen) return null;
 
   const zone = appointment.organization_time_zone;
-  const frist = fristDatum(appointment.starts_at, zone, fristTage);
+  const frist = fristDatum(appointment.starts_at, zone, fristTage, data?.primary?.created_at);
   const eintrag = data?.primary ?? null;
   // Ohne Eintrag sagt der Abschnitt nur etwas, wenn eine Doku fällig ist: am
   // abgeschlossenen oder vorbeigegangenen Termin (Abschnitt 6). Zu einem

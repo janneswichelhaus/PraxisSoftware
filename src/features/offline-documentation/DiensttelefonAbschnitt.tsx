@@ -5,6 +5,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { GERAETEVORGABE, ausschalten, einrichten, useEinrichtung } from './servicePhone';
+import { useEntwuerfe } from './entwuerfe';
 
 /**
  * „Dokumentieren ohne Empfang" unter „Mein Konto" (OFF-001, ADR-024 Punkt 6).
@@ -16,13 +17,17 @@ import { GERAETEVORGABE, ausschalten, einrichten, useEinrichtung } from './servi
  */
 export function DiensttelefonAbschnitt({
   besitzer,
-  wartend = 0,
+  wartend: vorgegeben,
 }: {
   besitzer: string;
-  /** Entwürfe, die noch auf dem Gerät liegen - dann lässt sich nicht ausschalten. */
+  /** Nur für Tests: Entwürfe, die noch auf dem Gerät liegen. */
   wartend?: number;
 }) {
   const einrichtung = useEinrichtung(besitzer);
+  // Jeder Entwurf auf dem Gerät, gleich in welchem Zustand: Er fällt nie mit
+  // dem Ausschalten (§13).
+  const liegen = useEntwuerfe(besitzer);
+  const wartend = vorgegeben ?? liegen?.length ?? 0;
   const [bestaetigt, setBestaetigt] = useState<boolean[]>(GERAETEVORGABE.map(() => false));
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
