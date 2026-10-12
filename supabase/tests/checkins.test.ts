@@ -8,6 +8,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { zugewiesenerPlan } from './helpers/plaene';
 
 /**
  * Check-in mit einstellbarem Takt, Praxisseite (TRK-002, IDEA-TRK-004,
@@ -229,18 +230,41 @@ describe('Check-in, Takt und Lesen in der Praxis (TRK-002)', () => {
       [7, ['pain_rest', 'pain_rest']],
       [7, ['session_pain']],
       [7, ['unbekannt']],
+      // Der Zusammenhang allein ist kein Check-in (TRK-005, ANN-355).
+      [7, ['painkiller_24h', 'pain_side']],
+      [7, ['pain_rest', 'painkiller_24h', 'painkiller_24h']],
+      [
+        7,
+        [
+          'pain_rest',
+          'pain_load',
+          'pain_night',
+          'daily_impairment',
+          'sleep_quality',
+          'stress',
+          'painkiller_24h',
+        ],
+      ],
     ];
     for (const [tage, fragen] of versuche) {
       expect(
         await fehler(asUser(users.therapist, SETZEN, ['treatment', patients.erika, tage, fragen])),
       ).toBe('22023');
     }
-    // Fünf sind erlaubt.
+    // Fünf sind erlaubt, der Zusammenhang zählt nicht mit (ANN-355).
     await asUserCommitted(users.therapist, SETZEN, [
       'treatment',
       patients.erika,
       28,
-      ['pain_rest', 'pain_load', 'daily_impairment', 'sleep_quality', 'stress'],
+      [
+        'pain_rest',
+        'pain_load',
+        'daily_impairment',
+        'sleep_quality',
+        'stress',
+        'painkiller_24h',
+        'pain_side',
+      ],
     ]);
   });
 
@@ -568,6 +592,109 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
       'select count(*)::int as n from public.checkins',
     );
     expect(rows[0]!.n).toBe(0);
+  });
+
+  it('nimmt Schmerzart, Dauer und Bewegungssicherheit an, unverändert (TRK-004)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, [
+      'treatment',
+      patients.erika,
+      7,
+      ['pain_after_load', 'pain_recovery_hours', 'pain_quality', 'movement_confidence'],
+    ]);
+    for (const werte of [{ pain_quality: 0 }, { pain_quality: 6 }, { pain_recovery_hours: 73 }]) {
+      expect(
+        await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, JSON.stringify(werte)])),
+      ).toBe('22023');
+    }
+    await asUserCommitted(erika.konto, ANTWORTEN, [
+      erika.zugang,
+      JSON.stringify({ pain_recovery_hours: 6, pain_quality: 2, movement_confidence: 3 }),
+    ]);
+    const praxis = await lesen(users.therapist, 'treatment', patients.erika);
+    expect(praxis!.checkins[0]!.values).toEqual({
+      pain_recovery_hours: 6,
+      pain_quality: 2,
+      movement_confidence: 3,
+    });
+  });
+
+  it('nimmt den Zusammenhang mit einer Frage, nie allein (TRK-005, ANN-355)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, [
+      'treatment',
+      patients.erika,
+      7,
+      ['pain_load', 'painkiller_24h', 'pain_side'],
+    ]);
+    for (const werte of [
+      { painkiller_24h: 1 },
+      { painkiller_24h: 1, pain_side: 2 },
+      { pain_load: 3, painkiller_24h: 2 },
+      { pain_load: 3, pain_side: 0 },
+    ]) {
+      expect(
+        await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, JSON.stringify(werte)])),
+      ).toBe('22023');
+    }
+    await asUserCommitted(erika.konto, ANTWORTEN, [
+      erika.zugang,
+      JSON.stringify({ pain_load: 3, painkiller_24h: 0, pain_side: 1 }),
+    ]);
+    const praxis = await lesen(users.therapist, 'treatment', patients.erika);
+    expect(praxis!.checkins[0]!.values).toEqual({ pain_load: 3, painkiller_24h: 0, pain_side: 1 });
+  });
+
+  it('zeigt der Praxis daneben die Angaben nach den Einheiten, mit Zeitzone (TRK-006)', async () => {
+    const plan = await zugewiesenerPlan('therapy', patients.erika, 'Heimprogramm Knie');
+    const beginnen = async (konto: string, zugang: string, p: string) => {
+      const { rows } = await asUserCommitted<{ id: string }>(
+        konto,
+        'select public.start_platform_exercise_session($1::uuid, $2::uuid) as id',
+        [zugang, p],
+      );
+      return rows[0]!.id;
+    };
+    const beenden = async (konto: string, zugang: string, p: string, werte: object) =>
+      asUserCommitted(
+        konto,
+        'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3, $4::jsonb)',
+        [zugang, await beginnen(konto, zugang, p), '', JSON.stringify(werte)],
+      );
+    // Eine Einheit ohne Angaben steht nicht in der Zeitreihe.
+    await beenden(erika.konto, erika.zugang, plan, {});
+    await beenden(erika.konto, erika.zugang, plan, { session_pain: 3, session_confidence: 6 });
+    // Eine Einheit im Training mit Angaben gehört nicht in die Akte (ADR-021
+    // Punkt 6) – aber zum Trainingsverhältnis (Zweitreview).
+    const trainingsplan = await zugewiesenerPlan('training');
+    await asPostgres(
+      `insert into public.training_consent_records
+         (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by)
+       values ($1, $2, 'consent_granted', 'training_health_data', current_date, $3)`,
+      [organizationId, trainingRelationships.tina, users.trainer],
+    );
+    await beenden(users.plattformTina, platformAccesses.tinaTraining, trainingsplan, {
+      session_confidence: 5,
+    });
+
+    const praxis = (await lesen(users.therapist, 'treatment', patients.erika)) as unknown as {
+      time_zone: string;
+      sessions: { plan_title: string; recorded_by_kind: string; values: object }[];
+    };
+    expect(praxis.time_zone).toBe('Europe/Berlin');
+    expect(praxis.sessions).toHaveLength(1);
+    expect(praxis.sessions[0]).toMatchObject({
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_pain: 3, session_confidence: 6 },
+    });
+    const training = (await lesen(
+      users.trainer,
+      'training',
+      trainingRelationships.tina,
+    )) as unknown as {
+      sessions: { values: object }[];
+    };
+    expect(training.sessions).toHaveLength(1);
+    expect(training.sessions[0]!.values).toEqual({ session_confidence: 5 });
   });
 
   it('ohne Takt kein Check-in; vor dem nächsten Tag nicht fällig', async () => {

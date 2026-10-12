@@ -7,13 +7,14 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Verlaufstabelle } from '@/components/ui/Verlaufstabelle';
 import { formatDate } from '@/lib/datum';
 import {
   CHECKIN_HOECHSTENS,
   CHECKIN_VOREINSTELLUNG,
-  angabenZeile,
   erfassungsgroesse,
   groessenImTakt,
+  nurFragen,
 } from '@/lib/erfassungsgroessen';
 import {
   TAKTE,
@@ -22,6 +23,7 @@ import {
   fetchCheckins,
   saveCheckinTakt,
   taktText,
+  uhrzeit,
   type CheckinDaten,
   type Verhaeltnisart,
 } from './api';
@@ -29,7 +31,7 @@ import {
 /**
  * „Zwischen den Terminen" an Akte und Trainingsverhältnis (TRK-002, DSN-001
  * Abschnitt 6): der Takt des Check-ins mit „ändern" und die Angaben der
- * Person mit Datum, als Liste.
+ * Person je Größe über die Zeit (TRK-006).
  *
  * Die Angaben stehen unverändert da, mit Wert und Quelle – keine Farbe, keine
  * Tendenz, kein Satz über ihre Bedeutung (ADR-006 Punkt 11). Es gibt keinen
@@ -115,8 +117,17 @@ function Takt({
                 : `nächster ab ${formatDate(takt.due_on)}`}
           </p>
           <p className="text-ink-muted text-sm">
-            Fragen: {takt.parameter_keys.map((k) => erfassungsgroesse(k)?.kurz ?? k).join(', ')}
+            Fragen: {nurFragen(takt.parameter_keys).map(kurzname).join(', ')}
           </p>
+          {takt.parameter_keys.length > nurFragen(takt.parameter_keys).length ? (
+            <p className="text-ink-muted text-sm">
+              Zum Zusammenhang:{' '}
+              {takt.parameter_keys
+                .filter((k) => !nurFragen([k]).length)
+                .map(kurzname)
+                .join(', ')}
+            </p>
+          ) : null}
           {takt.updated_by_name ? (
             <p className="text-ink-muted text-sm">
               Eingestellt von {takt.updated_by_name} am {formatDate(takt.updated_at.slice(0, 10))}
@@ -192,7 +203,8 @@ function TaktFormular({
   const takte = TAKTE.includes(tageVorher as (typeof TAKTE)[number])
     ? [...TAKTE]
     : [...TAKTE, tageVorher].sort((a, b) => a - b);
-  const voll = fragen.length >= CHECKIN_HOECHSTENS;
+  // Der Zusammenhang zählt nicht zu den fünf (ANN-355).
+  const voll = nurFragen(fragen).length >= CHECKIN_HOECHSTENS;
 
   return (
     <form
@@ -200,7 +212,7 @@ function TaktFormular({
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (fragen.length === 0) {
+        if (nurFragen(fragen).length === 0) {
           setHinweis('Bitte mindestens eine Frage wählen.');
           return;
         }
@@ -219,23 +231,52 @@ function TaktFormular({
         <legend className="text-ink mb-1 text-sm font-medium">
           Welche Fragen? (eine bis {CHECKIN_HOECHSTENS})
         </legend>
-        {groessenImTakt('checkin').map((g) => {
-          const gewaehlt = fragen.includes(g.key);
-          return (
+        {/* TRK-004: nach Gruppen, damit zwölf Fragen überschaubar bleiben. */}
+        {FRAGENGRUPPEN.map((gruppe) => (
+          <div key={gruppe} className="flex flex-col gap-2">
+            <p className="text-ink-muted mt-2 text-sm font-semibold">{gruppe}</p>
+            {groessenImTakt('checkin')
+              .filter((g) => g.gruppe === gruppe)
+              .map((g) => {
+                const gewaehlt = fragen.includes(g.key);
+                return (
+                  <Checkbox
+                    key={g.key}
+                    label={g.kurz}
+                    hint={g.frage}
+                    checked={gewaehlt}
+                    disabled={!gewaehlt && voll}
+                    onChange={(e) =>
+                      setFragen((bisher) =>
+                        e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
+                      )
+                    }
+                  />
+                );
+              })}
+          </div>
+        ))}
+      </fieldset>
+      {/* TRK-005: Bedingungen, unter denen die Angaben entstehen (IDEA-TRK-006). */}
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-ink mb-1 text-sm font-medium">
+          Zum Zusammenhang (zählt nicht zu den {CHECKIN_HOECHSTENS} Fragen)
+        </legend>
+        {groessenImTakt('checkin')
+          .filter((g) => g.rolle === 'kontext')
+          .map((g) => (
             <Checkbox
               key={g.key}
               label={g.kurz}
               hint={g.frage}
-              checked={gewaehlt}
-              disabled={!gewaehlt && voll}
+              checked={fragen.includes(g.key)}
               onChange={(e) =>
                 setFragen((bisher) =>
                   e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
                 )
               }
             />
-          );
-        })}
+          ))}
       </fieldset>
       {hinweis ? <Statusmeldung ton="fehler">{hinweis}</Statusmeldung> : null}
       {speichern.isError ? (
@@ -253,21 +294,54 @@ function TaktFormular({
   );
 }
 
+const FRAGENGRUPPEN = ['Schmerz', 'Bewegung und Alltag'] as const;
+
+function kurzname(key: string): string {
+  return erfassungsgroesse(key)?.kurz ?? key;
+}
+
+/**
+ * Die Angaben je Größe über die Zeit (TRK-006, ANN-356): die Check-ins und
+ * daneben, was die Person nach den Einheiten angegeben hat. Wert, Datum,
+ * Uhrzeit und Quelle – keine Tendenz, keine Farbe (ADR-006 Punkt 11).
+ */
 function Angaben({ daten }: { daten: CheckinDaten }) {
-  if (daten.checkins.length === 0) {
-    return <p className="text-ink-muted mt-4 text-sm">Noch kein Check-in beantwortet.</p>;
-  }
+  const vermerk = (art: string) => (art === 'legal_representative' ? 'Vertretung' : null);
   return (
-    <ul className="mt-4 flex flex-col gap-2" aria-label="Beantwortete Check-ins">
-      {daten.checkins.map((c) => (
-        <li key={c.recorded_at} className="rounded-card border-line bg-surface border p-3 text-sm">
-          <p className="font-semibold">
-            {formatDate(c.answered_on)}
-            {c.recorded_by_kind === 'legal_representative' ? ' · von der Vertretung' : ''}
-          </p>
-          <p className="mt-1">{angabenZeile(c.values) || 'ohne Angaben'}</p>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-4 flex flex-col gap-4">
+      {daten.checkins.length === 0 ? (
+        <p className="text-ink-muted text-sm">Noch kein Check-in beantwortet.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-ink text-base font-semibold">Check-ins</h3>
+          <Verlaufstabelle
+            titel="Angaben aus den Check-ins"
+            spalten={daten.checkins.map((c) => ({
+              id: c.recorded_at,
+              datum: c.answered_on,
+              zeit: uhrzeit(c.recorded_at, daten.time_zone),
+              vermerk: vermerk(c.recorded_by_kind),
+              werte: c.values,
+            }))}
+          />
+        </div>
+      )}
+      {daten.sessions.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-ink text-base font-semibold">Nach den Einheiten</h3>
+          <Verlaufstabelle
+            titel="Angaben nach den Einheiten"
+            spalten={daten.sessions.map((e) => ({
+              id: e.finished_at,
+              datum: e.performed_on,
+              zeit: uhrzeit(e.finished_at, daten.time_zone),
+              // Plan und, wenn sie beendet hat, die Vertretung (Zweitreview).
+              vermerk: [e.plan_title, vermerk(e.recorded_by_kind)].filter(Boolean).join(' · '),
+              werte: e.values,
+            }))}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

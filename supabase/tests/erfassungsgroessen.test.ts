@@ -19,8 +19,9 @@ describe('Erfassungsgrößen (TRK-001)', () => {
       cadence: string;
       min_value: number;
       max_value: number;
+      role: string;
     }>(
-      `select parameter_key, cadence, min_value, max_value
+      `select parameter_key, cadence, min_value, max_value, role
        from app.tracking_parameters() order by cadence desc, sort_order`,
     );
     expect(rows).toEqual(
@@ -29,6 +30,7 @@ describe('Erfassungsgrößen (TRK-001)', () => {
         cadence: g.takt,
         min_value: g.min,
         max_value: g.max,
+        role: g.rolle === 'kontext' ? 'context' : 'question',
       })),
     );
   });
@@ -49,5 +51,28 @@ describe('Erfassungsgrößen (TRK-001)', () => {
     expect(await pruefe('session_pain', 'checkin', 3)).toBe(false);
     expect(await pruefe('morning_stiffness_minutes', 'checkin', 240)).toBe(true);
     expect(await pruefe('unbekannt', 'checkin', 1)).toBe(false);
+  });
+
+  it('kennt Bewegungssicherheit und den differenzierten Schmerz (TRK-004, ANN-353, ANN-354)', async () => {
+    const pruefe = async (key: string, takt: string, wert: number) => {
+      const { rows } = await asPostgres<{ ok: boolean }>(
+        'select app.tracking_value_valid($1, $2, $3) as ok',
+        [key, takt, wert],
+      );
+      return rows[0]!.ok;
+    };
+    expect(await pruefe('session_confidence', 'session', 10)).toBe(true);
+    expect(await pruefe('movement_confidence', 'checkin', 0)).toBe(true);
+    for (const key of ['pain_after_load', 'pain_night', 'pain_morning']) {
+      expect(await pruefe(key, 'checkin', 10)).toBe(true);
+      expect(await pruefe(key, 'checkin', 11)).toBe(false);
+    }
+    expect(await pruefe('pain_recovery_hours', 'checkin', 72)).toBe(true);
+    expect(await pruefe('pain_recovery_hours', 'checkin', 73)).toBe(false);
+    // Eine Auswahl: 1 bis 5, nicht 0 (ANN-354).
+    expect(await pruefe('pain_quality', 'checkin', 1)).toBe(true);
+    expect(await pruefe('pain_quality', 'checkin', 5)).toBe(true);
+    expect(await pruefe('pain_quality', 'checkin', 0)).toBe(false);
+    expect(await pruefe('pain_quality', 'checkin', 6)).toBe(false);
   });
 });

@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import { Verlaufstabelle } from '@/components/ui/Verlaufstabelle';
 import { formatDate } from '@/lib/datum';
-import { angabeGueltig, angabenZeile, erfassungsgroesse } from '@/lib/erfassungsgroessen';
+import { angabeGueltig, erfassungsgroesse, nurFragen } from '@/lib/erfassungsgroessen';
 import {
   checkinAbsenden,
   checkinsSchluessel,
@@ -89,6 +90,17 @@ function Formular({
     .map((k) => erfassungsgroesse(k))
     .filter((g) => g !== undefined);
   const [werte, setWerte] = useState<Record<string, number | null>>({});
+  const hauptfragen = fragen.filter((g) => g.rolle === 'frage');
+  const zusammenhang = fragen.filter((g) => g.rolle === 'kontext');
+  const feld = (g: (typeof fragen)[number]) => (
+    <Angabefeld
+      key={g.key}
+      groesse={g}
+      wert={werte[g.key] ?? null}
+      zuletzt={daten.last_values[g.key]}
+      onChange={(w) => setWerte((bisher) => ({ ...bisher, [g.key]: w }))}
+    />
+  );
   const [hinweis, setHinweis] = useState<string | undefined>(undefined);
   const absenden = useMutation({
     mutationFn: (angaben: Record<string, number>) => checkinAbsenden(zugang.access_id, angaben),
@@ -116,7 +128,8 @@ function Formular({
           );
           return;
         }
-        if (Object.keys(angaben).length === 0) {
+        // Der Zusammenhang allein ist kein Check-in (ANN-355).
+        if (nurFragen(Object.keys(angaben)).length === 0) {
           setHinweis('Bitte beantworten Sie mindestens eine Frage.');
           return;
         }
@@ -125,18 +138,17 @@ function Formular({
       }}
     >
       <p className="text-ink max-w-prose text-base leading-relaxed">
-        {fragen.length === 1 ? 'Eine kurze Frage' : `${fragen.length} kurze Fragen`}. Jede ist
-        freiwillig – lassen Sie offen, was Sie nicht sicher wissen.
+        {hauptfragen.length === 1 ? 'Eine kurze Frage' : `${hauptfragen.length} kurze Fragen`}. Jede
+        ist freiwillig – lassen Sie offen, was Sie nicht sicher wissen.
       </p>
-      {fragen.map((g) => (
-        <Angabefeld
-          key={g.key}
-          groesse={g}
-          wert={werte[g.key] ?? null}
-          zuletzt={daten.last_values[g.key]}
-          onChange={(w) => setWerte((bisher) => ({ ...bisher, [g.key]: w }))}
-        />
-      ))}
+      {hauptfragen.map(feld)}
+      {/* TRK-005: Angaben zum Zusammenhang (IDEA-TRK-006, ANN-355). */}
+      {zusammenhang.length > 0 ? (
+        <div className="flex flex-col gap-6">
+          <h2 className="text-ink text-base font-semibold">Zum Zusammenhang</h2>
+          {zusammenhang.map(feld)}
+        </div>
+      ) : null}
       <p className="text-ink-muted max-w-prose text-sm">
         {leserIn(zugang)} sieht Ihre Angaben beim nächsten Termin; sie werden nicht laufend gelesen.{' '}
         <strong>{NICHT_AKUT}</strong> {NOTFALL}
@@ -158,9 +170,9 @@ function Formular({
 }
 
 /**
- * „Meine Angaben" (DSN-001 4.1): die eigenen Check-ins als Liste mit Datum,
- * unverändert. Ohne Kurve und ohne Deutung – die Kurve kommt mit dem Verlauf
- * (TRK-EPIC-002, OUT-EPIC-001).
+ * „Meine Angaben" (DSN-001 4.1): die eigenen Check-ins je Größe über die Zeit
+ * (TRK-006, ANN-356), unverändert. Ohne Kurve und ohne Deutung – die Kurve
+ * kommt mit dem Verlauf (OUT-EPIC-001).
  */
 export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
   const [suche] = useSearchParams();
@@ -173,7 +185,7 @@ export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
     <>
       <h1 className="text-accent text-h3 font-bold">Meine Angaben</h1>
       <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
-        Ihre Antworten aus dem Check-in, die jüngste zuerst.
+        Ihre Antworten aus dem Check-in, die jüngste zuerst. Ein Strich heißt: nicht angegeben.
       </p>
       {isPending ? (
         <LoadingState label="Ihre Angaben werden geladen …" />
@@ -188,20 +200,17 @@ export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
       ) : !data || data.history.length === 0 ? (
         <p className="text-ink mt-6 text-base">Noch keine Angaben.</p>
       ) : (
-        <ul className="mt-6 flex flex-col gap-3">
-          {data.history.map((c, i) => (
-            <li
-              key={`${c.answered_on}-${i}`}
-              className="rounded-card border-line bg-surface border p-4 text-base"
-            >
-              <p className="font-semibold">
-                {formatDate(c.answered_on)}
-                {c.recorded_by_kind === 'legal_representative' ? ' · von der Vertretung' : ''}
-              </p>
-              <p className="mt-1">{angabenZeile(c.values)}</p>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-6">
+          <Verlaufstabelle
+            titel="Meine Angaben aus dem Check-in"
+            spalten={data.history.map((c, i) => ({
+              id: `${c.answered_on}-${i}`,
+              datum: c.answered_on,
+              vermerk: c.recorded_by_kind === 'legal_representative' ? 'Vertretung' : null,
+              werte: c.values,
+            }))}
+          />
+        </div>
       )}
       <div className="mt-6">
         <Textlink alleinstehend to={`${PLATTFORM_PFAD}/ich${bereich ? `?${bereich}` : ''}`}>

@@ -35,6 +35,18 @@ const datenSchema = z.object({
     })
     .nullable(),
   checkins: z.array(checkinSchema),
+  /** Zeitzone der Praxis für die Uhrzeit (TRK-006). */
+  time_zone: z.string(),
+  /** Angaben nach den Einheiten aller Pläne des Verhältnisses (TRK-006). */
+  sessions: z.array(
+    z.object({
+      performed_on: z.string(),
+      finished_at: z.string(),
+      plan_title: z.string(),
+      recorded_by_kind: z.enum(['self', 'legal_representative']),
+      values: z.record(z.string(), z.number()),
+    }),
+  ),
 });
 
 export type CheckinDaten = z.infer<typeof datenSchema>;
@@ -91,6 +103,15 @@ export async function endCheckinTakt(art: Verhaeltnisart, verhaeltnisId: string)
     p_relationship_id: verhaeltnisId,
   })) as { error: { message?: string } | null };
   if (error) throw new Error(schreibfehler(error.message));
+}
+
+/** „18:40" in der Zeitzone der Praxis (TRK-006, IDEA-TRK-006). */
+export function uhrzeit(zeitpunkt: string, zeitzone: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: zeitzone,
+  }).format(new Date(zeitpunkt));
 }
 
 /** „alle 7 Tage", „täglich" (ANN-350). */

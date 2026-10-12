@@ -396,6 +396,23 @@ describe('Einheiten am Plan (UEB-010)', () => {
     });
   });
 
+  it('nimmt die Bewegungssicherheit nach der Einheit an (TRK-004, IDEA-TRK-003)', async () => {
+    const plan = await zugewiesenerPlan();
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    await asUserCommitted(erika.konto, BEENDEN_MIT, [
+      erika.zugang,
+      einheit,
+      '',
+      JSON.stringify({ session_pain: 2, session_confidence: 4 }),
+    ]);
+    const { rows } = await asUser<{ plan: { sessions: { values: Record<string, number> }[] } }>(
+      users.office,
+      PLAN,
+      [plan],
+    );
+    expect(rows[0]!.plan.sessions[0]!.values).toEqual({ session_pain: 2, session_confidence: 4 });
+  });
+
   it('ohne Angabe bleibt sie leer; null heißt nicht beantwortet (IDEA-TRK-002)', async () => {
     const plan = await zugewiesenerPlan();
     const einheit = await beginnen(erika.konto, erika.zugang, plan);
