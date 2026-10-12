@@ -288,6 +288,38 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     expect((await praxis(users.office, vorgang)).attachments).toHaveLength(1);
   });
 
+  it('Schalter „Anhänge von außen aus“: kein Angebot, keine Vorbereitung, Vorhandenes bleibt (KOM-012, ANN-371)', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    const vorher = await anhaengen(tina, vorgang);
+    await abo();
+    const frage = await fragen(erika);
+    await einwilligen(erika);
+    await asPostgres(
+      'update public.organizations set external_attachments_enabled = false where id = $1',
+      [organizationId],
+    );
+    // Training und Nachsorge-Abo: beide aus, gleich welche Stufe.
+    expect((await ansicht(tina)).can_attach).toBe(false);
+    expect((await ansicht(erika)).can_attach).toBe(false);
+    expect(await meldung(vorbereiten(tina, vorgang))).toContain('not offered');
+    expect(await code(vorbereiten(erika, frage))).toBe('42501');
+    // Was schon da ist, bleibt bis zu seiner Frist sichtbar.
+    expect((await ansicht(tina)).messages[0]!.attachments[0]!.id).toBe(vorher.attachment_id);
+    // Eine neue Organisation hat ihn von selbst aus; niemand ändert ihn über die Anwendung.
+    const fremd = await fremdeOrganisation();
+    const { rows } = await asPostgres<{ an: boolean; aendern: boolean; lesen: boolean }>(
+      `select o.external_attachments_enabled as an,
+              has_column_privilege('authenticated', 'public.organizations',
+                                   'external_attachments_enabled', 'UPDATE') as aendern,
+              has_function_privilege('authenticated', 'app.external_attachments_enabled(uuid)',
+                                     'EXECUTE') as lesen
+       from public.organizations o where o.id = $1`,
+      [fremd.organizationId],
+    );
+    expect(rows).toEqual([{ an: false, aendern: false, lesen: false }]);
+  });
+
   it('die Begleitung hängt nichts an und sieht nichts davon (Punkt 67)', async () => {
     const vorgang = await fragen(paula);
     const daten = await ansicht(paula);
