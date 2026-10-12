@@ -20,7 +20,7 @@ import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
 import { PlattformAblage } from '@/features/platform/PlattformAblage';
-import { plattformOhneNetz } from '@/features/platform/ohneNetz';
+import { ohneNetzFuer } from './ohneNetz';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -293,10 +293,10 @@ function OeffentlicheRouten() {
 function Gate() {
   const { session, initialising } = useSession();
   const { pathname } = useLocation();
-  // TRK-009: Ohne Netz öffnet der Passkey nur die Ablage auf dem Gerät. Einmal
+  // TRK-009, OFF-003: Ohne Netz öffnet der Passkey nur die Ablage auf dem Gerät. Einmal
   // je Konto - die Sperre prüft sonst bei jedem Zeichnen neu.
   const kennung = session?.user.id;
-  const ohneNetz = useMemo(() => (kennung ? plattformOhneNetz(kennung) : undefined), [kennung]);
+  const ohneNetz = useMemo(() => (kennung ? ohneNetzFuer(kennung) : undefined), [kennung]);
   if (initialising) {
     return (
       <Vollseite>

@@ -112,9 +112,12 @@ describe('Tagesplan auf dem Gerät (OFF-001)', () => {
       ).given_name,
     ).toBe('Tom');
     expect(alsTagesplanTermin(eintrag({ kind: 'therapy', title: 'X' })).title).toBeNull();
-    expect(alsTagesplanTermin(eintrag({ kind: 'internal', title: 'Teamrunde' })).title).toBe(
-      'Teamrunde',
-    );
+    expect(alsTagesplanTermin(eintrag({ kind: 'internal', title: 'Teamrunde' }))).toMatchObject({
+      title: 'Teamrunde',
+      given_name: null,
+      visit_street: null,
+      phone: null,
+    });
   });
 
   it('legt nur den Plan von heute ab', async () => {

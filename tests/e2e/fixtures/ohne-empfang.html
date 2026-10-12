@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="data:," />
+    <title>Prüfseite ohne Empfang</title>
+  </head>
+  <body class="bg-canvas">
+    <!-- Prüfseite für tests/e2e/ohne-empfang.spec.ts, kein Teil der Anwendung.
+         Dokumentieren ohne Empfang (OFF-EPIC-001, ADR-024 Punkte 6 bis 9,
+         ADR-025 Punkt 16). ?seite=sperre|geraet|einrichtung, ?schluessel=1 legt mit dem
+         Authenticator des Browsers einen Passkey an, ?entwurf=1 einen Entwurf. -->
+    <div id="wurzel"></div>
+    <script type="module" src="./ohne-empfang.tsx"></script>
+  </body>
+</html>

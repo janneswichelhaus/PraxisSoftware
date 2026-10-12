@@ -73,6 +73,8 @@ type Phase =
  * Frage und die Ansicht; was abgelegt ist, weiß das Modul, das ablegt.
  */
 export interface OhneNetz {
+  /** OFF-003: Was die Sperrseite ohne Netz verspricht; ohne Angabe die Übungen. */
+  einleitung?: string | undefined;
   /** Liegt für dieses Konto etwas auf dem Gerät, das ohne Netz zu öffnen lohnt? */
   hatAblage: () => Promise<boolean>;
   /** Die lokale Ansicht; `sperren` schließt sie wieder. */
@@ -413,6 +415,7 @@ export function Sitzungssperre({
       {phase === 'ohneNetz' ? (
         <SperreOhneNetz
           besitzer={besitzer}
+          einleitung={ohneNetz?.einleitung}
           onFreigegeben={() => {
             phaseRef.current = 'lokal';
             setPhase('lokal');

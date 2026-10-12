@@ -10,7 +10,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { SubNav } from '@/components/ui/SubNav';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
-import { type CurrentUser } from '@/features/session/types';
+import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import { Funktionssuche } from './Funktionssuche';
 import { useAbmeldeanfrage, useAbmeldung } from './abmeldeschutz';
 import {
@@ -24,6 +24,8 @@ import {
 import { useSeitenwechsel } from './seitenwechsel';
 import { Profilhinweis } from './Profilhinweis';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
+import { Geraetehinweis } from '@/features/offline-documentation/Geraetehinweis';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 
 /**
  * Rahmen der angemeldeten Anwendung.
@@ -301,6 +303,10 @@ export function AppShell({
           {/* Gescheitertes Nachladen des Profils (BEF-046): dieselbe Stelle,
               damit der Hinweis mit der Kopfzeile klebt. */}
           <Profilhinweis />
+          {/* OFF-003: „Noch nicht übertragen" auf dem Diensttelefon. */}
+          {ABLAGE_FUER_PRAXISKONTEN && canWriteTreatmentNote(user.roles) ? (
+            <Geraetehinweis besitzer={user.profile.id} />
+          ) : null}
 
           <header className="nicht-drucken border-line bg-surface border-b">
             {/* Ab sm eine Zeile, auf dem Telefon zwei — durch Umbruch, nicht

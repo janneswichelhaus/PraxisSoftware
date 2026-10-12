@@ -69,7 +69,9 @@ function tagUndUhrzeit(zeitpunkt: string, zeitzone: string): string {
 }
 
 function nameVon(t: TagesplanTermin): string {
-  return [t.given_name, t.family_name].filter(Boolean).join(' ') || (t.title ?? 'Termin');
+  // Ein Ereignis des Praxisbetriebs hat keine Person, nur seinen Titel.
+  if (t.kind === 'internal') return t.title ?? 'Termin';
+  return [t.given_name, t.family_name].filter(Boolean).join(' ') || 'Termin';
 }
 
 function terminartVon(art: string): string {

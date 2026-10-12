@@ -73,6 +73,7 @@ import { AbstecherAbmeldewache } from '@/app/AbstecherAbmeldewache';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { PraxisAblage } from '@/features/offline-documentation/PraxisAblage';
 import { AufDemGeraetPage } from '@/features/offline-documentation/AufDemGeraetPage';
+import { EntwurfAbmeldewache } from '@/features/offline-documentation/EntwurfAbmeldewache';
 import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
@@ -193,11 +194,15 @@ export function AuthenticatedRoutes({
         <AbstecherAbmeldewache userId={user.profile.id} />
         {/* OFF-EPIC-001: Tagesplan und Entwürfe auf dem Diensttelefon (ADR-024 Punkt 6). */}
         {ABLAGE_FUER_PRAXISKONTEN && canWriteTreatmentNote(user.roles) ? (
-          <PraxisAblage
-            besitzer={user.profile.id}
-            staffMemberId={user.staffMemberId}
-            zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'}
-          />
+          <>
+            <PraxisAblage
+              besitzer={user.profile.id}
+              staffMemberId={user.staffMemberId}
+              zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'}
+            />
+            {/* Abmelden mit Entwürfen auf dem Gerät: Zahl und Wahl (ADR-024 Punkt 6). */}
+            <EntwurfAbmeldewache besitzer={user.profile.id} />
+          </>
         ) : null}
         <AppShell user={user} onSignOut={onSignOut}>
           {gesperrt ? (

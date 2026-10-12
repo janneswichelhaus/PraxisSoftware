@@ -60,6 +60,26 @@ export type Tagesplan = z.infer<typeof tagesplanSchema>;
 /** Aus einer Zeile von `list_day_plan` genau die Felder der Liste. */
 export function alsTagesplanTermin(e: DayPlanEntry): TagesplanTermin {
   const training = e.kind === 'training';
+  // Ein Ereignis des Praxisbetriebs trägt keine Person (CAL-016).
+  if (e.kind === 'internal') {
+    return {
+      id: e.id,
+      kind: e.kind,
+      appointment_type: e.appointment_type,
+      status: e.status,
+      starts_at: e.starts_at,
+      ends_at: e.ends_at,
+      title: e.title,
+      given_name: null,
+      family_name: null,
+      visit_street: null,
+      visit_house_number: null,
+      visit_postal_code: null,
+      visit_city: null,
+      phone: null,
+      phone_mobile: null,
+    };
+  }
   return {
     id: e.id,
     kind: e.kind,
@@ -67,7 +87,7 @@ export function alsTagesplanTermin(e: DayPlanEntry): TagesplanTermin {
     status: e.status,
     starts_at: e.starts_at,
     ends_at: e.ends_at,
-    title: e.kind === 'internal' ? e.title : null,
+    title: null,
     given_name: (training ? e.training_given_name : e.patient_given_name) ?? null,
     family_name: (training ? e.training_family_name : e.patient_family_name) ?? null,
     visit_street: e.visit_street,
