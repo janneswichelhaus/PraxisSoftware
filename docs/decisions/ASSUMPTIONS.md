@@ -4367,3 +4367,27 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: OPS-001 (Passkeys
 
 **Änderungspfad.** Schlüssel vom Anmeldedienst lesen, sobald er ihn herausgibt: `own_offline_passkeys` aus `auth.webauthn_credentials` statt aus der Freigabe · Aufwand `mittel`; andere Relying Party: eine Konstante in `freigebenOhneNetz` · Aufwand `klein`; Freigabe ohne Netz abschalten: `ohneNetz` in `src/app/App.tsx` nicht setzen · Aufwand `klein`.
 
+
+### ANN-360 — Das Diensttelefon wird je Konto und Gerät eingerichtet; Einrichtung und Offline-Entwürfe liegen in einer Dauerablage, die weder mit dem Abmelden noch mit der Frist fällt
+
+Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Datenschutzprüfung (B2, DSFA, ADR-024 Konsequenzen); Jannes in der Sichtung Befund (OFF-EPIC-001)
+
+**Annahme.** „Dokumentieren ohne Empfang“ schaltet ein Konto mit Dokumentationsrecht und eigenem Tagesplan unter „Mein Konto“ für **dieses Gerät** ein, indem es jede der fünf Zeilen der Gerätevorgabe (Gerätesperre, Geräteverschlüsselung, aktuelles Betriebssystem, Diensttelefon statt Privatgerät, kein geteiltes Gerätekonto) einzeln bestätigt. Die Einrichtung steht nur auf dem Gerät, nicht beim Server, und gilt nur für das Konto, das sie vorgenommen hat. Sie liegt mit den Offline-Entwürfen in einer **Dauerablage je Konto** (eigener IndexedDB-Datensatz `dauer:<Konto>`). Diese fällt weder beim Abmelden noch beim Kontowechsel noch nach den sieben Tagen der übrigen Ablage, sondern nur auf ausdrücklichen Wunsch: beim Ausschalten (die Einrichtung, nur ohne wartende Entwürfe), bei der Übertragung oder beim ausdrücklichen Verwerfen (ein Entwurf). Ein anderes Konto liest sie nie.
+
+**Begründung.** ADR-024 Punkt 6: „Ein Entwurf fällt nie von selbst“ (§13) und „Ein anderes Konto auf demselben Gerät sieht sie nie“. Wäre die Einrichtung an die übrige Ablage gebunden, fiele sie mit jedem Abmelden, und die Gerätevorgabe würde jeden Morgen weggeklickt statt bedacht. Beim Server steht sie nicht, weil die Anwendung die Vorgabe ohnehin nicht prüfen kann (Punkt 6) und eine Liste eingerichteter Geräte ein Merkmal über die Person wäre, das die Praxis für die Arbeit nicht braucht (§20). Die Gerätevorgabe ist eine organisatorische Maßnahme der Praxis; die Betriebsdokumentation (BETRIEB-001, ADR-012) soll denselben Wortlaut übernehmen. Unsicher: ob die Datenschutzprüfung für nicht übertragene Entwürfe eine Höchstdauer verlangt; ADR-024 nimmt das Restrisiko des verlorenen Geräts ausdrücklich in Kauf.
+
+**Anker.** `dauerfachLesen`, `dauerfachAendern` in `src/lib/geraeteablage.ts`; `ABLAGE_FUER_PRAXISKONTEN`, `GERAETEVORGABE`, `einrichten`, `ausschalten` in `src/features/offline-documentation/servicePhone.ts`; `DiensttelefonAbschnitt.tsx`; Bedingung `ohneEmpfang` in `src/features/account/MeinKontoPage.tsx`. Geprüft in `src/lib/geraeteablage.test.ts` („Dauerablage je Konto“), `tagesplan.test.ts`, `DiensttelefonAbschnitt.test.tsx`.
+
+**Änderungspfad.** W1 nach (a) zurücknehmen: `ABLAGE_FUER_PRAXISKONTEN = false`, Entwürfe vorher übertragen · Aufwand `klein`. Einrichtung zusätzlich beim Server vermerken (etwa für eine Geräteliste der Praxis): eigene Tabelle mit Datenklasse · Aufwand `mittel`. Höchstdauer für Entwürfe: eine Konstante und ein Hinweis vor dem Fallen in `entwuerfe.ts` · Aufwand `klein`.
+
+### ANN-361 — Der Tagesplan auf dem Gerät hat eine feste Feldliste ohne Zugangshinweis und gilt nur für heute
+
+Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes nach dem ersten Hausbesuchstag ohne Empfang; Datenschutzprüfung (B2)
+
+**Annahme.** Auf einem eingerichteten Diensttelefon legt die Anwendung jede in offener Sitzung geladene **eigene** Tagesliste von **heute** ab (Zeitzone der Praxis), mit genau diesen Feldern je Termin: Kennung, Art, Terminart, Zustand, Beginn, Ende, Titel nur an einem Ereignis des Praxisbetriebs, Vor- und Nachname (am Training aus dem Trainingsverhältnis), Straße, Hausnummer, Postleitzahl, Ort, Telefon und Mobiltelefon. **Nicht** abgelegt werden der Zugangshinweis zum Hausbesuch, die Besonderheit, der Dokumentationsstand, die Liege, das Mitzunehmende, die Kartenposition und die Kennung der Person. Der Plan fällt beim ersten Lesen nach dem Ende des Tages, beim Abmelden, beim Kontowechsel, beim Ausschalten und wenn das Konto gesperrt ist. Den nächsten Morgen enthält er nicht (Folgefrage aus ADR-024).
+
+**Begründung.** ADR-024 Punkt 6 nennt „Uhrzeit, Terminart, Name, Hausbesuchsadresse und Telefon“ und verlangt die Liste an genau einer Stelle (ADR-001: „sonst wächst sie zur Vollakte“). Kennung und Zustand braucht die Ansicht, um einen Entwurf dem Termin zuzuordnen und eine Absage zu zeigen. Zugangshinweis und Besonderheit sind Freitext und tragen erfahrungsgemäß Gesundheitsangaben („Rollator im Flur“, „Diabetes“); sie stehen nicht in der Liste des ADR. Der nächste Morgen nicht, weil der Start vor acht Uhr im Funkloch selten ist und ein zweiter Tag die Menge verdoppelt; wer ihn braucht, öffnet die Übersicht am Vorabend nicht neu, sondern morgens mit Verbindung.
+
+**Anker.** `tagesplanTerminSchema`, `alsTagesplanTermin`, `tagesplanAblegen`, `tagesplanLesen`, `useTagesplanAblegen` in `src/features/offline-documentation/tagesplan.ts`; `PraxisAblage.tsx`; `AblageRaeumen` in `src/app/App.tsx`. Geprüft in `src/features/offline-documentation/tagesplan.test.ts`.
+
+**Änderungspfad.** Zugangshinweis aufnehmen: ein Feld im Schema und in `alsTagesplanTermin`, mit Review · Aufwand `klein`. Den nächsten Morgen dazunehmen: zweiter Tag in `tagesplanAblegen` und `tagesplanLesen` · Aufwand `klein`.

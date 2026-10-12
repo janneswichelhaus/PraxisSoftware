@@ -1,4 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ablageLeeren } from '@/lib/geraeteablage';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
@@ -122,6 +123,9 @@ function AngemeldeterInhalt() {
   if (error instanceof ZugangGesperrtError) {
     return (
       <Vollseite titel="Zugang gesperrt">
+        {/* OFF-001: Der Tagesplan fällt, sobald das Konto gesperrt ist
+            (ADR-024 Punkt 6); Entwürfe in der Dauerablage bleiben (§13). */}
+        <AblageRaeumen />
         <ErrorState
           title="Dieser Zugang ist gesperrt."
           description="Bitte wenden Sie sich an die Praxisinhaber:in. Ihre bisherige Arbeit bleibt unverändert erhalten."
@@ -173,6 +177,14 @@ function AngemeldeterInhalt() {
       <AuthenticatedRoutes user={user} onSignOut={() => void abmelden()} />
     </NachladefehlerContext.Provider>
   );
+}
+
+/** Leert die Ablage auf dem Gerät, sobald sie gezeigt wird (gesperrter Zugang). */
+function AblageRaeumen() {
+  useEffect(() => {
+    void ablageLeeren();
+  }, []);
+  return null;
 }
 
 /** Die Zeile über der Anwendung nach einem gescheiterten Nachladen (BEF-046). */

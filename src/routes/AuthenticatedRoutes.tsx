@@ -71,6 +71,8 @@ import { TreatmentNoteHistoryPage } from '@/features/documentation/TreatmentNote
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import { AbstecherAbmeldewache } from '@/app/AbstecherAbmeldewache';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
+import { PraxisAblage } from '@/features/offline-documentation/PraxisAblage';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
 import { BikeEditPage } from '@/features/fleet/BikeEditPage';
@@ -188,6 +190,14 @@ export function AuthenticatedRoutes({
         {/* Ein Abstecher-Entwurf geht beim Abmelden nur nach Rückfrage
             verloren (ABN-019, BEF-110). */}
         <AbstecherAbmeldewache userId={user.profile.id} />
+        {/* OFF-EPIC-001: Tagesplan und Entwürfe auf dem Diensttelefon (ADR-024 Punkt 6). */}
+        {ABLAGE_FUER_PRAXISKONTEN && canWriteTreatmentNote(user.roles) ? (
+          <PraxisAblage
+            besitzer={user.profile.id}
+            staffMemberId={user.staffMemberId}
+            zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'}
+          />
+        ) : null}
         <AppShell user={user} onSignOut={onSignOut}>
           {gesperrt ? (
             <MdrSperre eintrag={gesperrt} />

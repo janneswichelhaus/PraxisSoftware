@@ -9,7 +9,9 @@ import { RoleBadge } from '@/components/ui/RoleBadge';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { isOwner, type CurrentUser } from '@/features/session/types';
+import { canWriteTreatmentNote, isOwner, type CurrentUser } from '@/features/session/types';
+import { DiensttelefonAbschnitt } from '@/features/offline-documentation/DiensttelefonAbschnitt';
+import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import {
   beendeAlleSitzungen,
   bestaetigeZweitenFaktor,
@@ -297,6 +299,13 @@ function Sitzungen() {
  * Zeile. Jetzt gilt die Formularbreite des Systems (`max-w-xl`) für alles.
  */
 export function MeinKontoPage({ user }: { user: CurrentUser }) {
+  const besitzer = user.profile.id;
+  // OFF-001: nur, wer am Termin dokumentiert und einen eigenen Tagesplan hat.
+  const ohneEmpfang =
+    ABLAGE_FUER_PRAXISKONTEN &&
+    Boolean(besitzer) &&
+    Boolean(user.staffMemberId) &&
+    canWriteTreatmentNote(user.roles);
   return (
     <>
       <PageHeader
@@ -323,6 +332,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <PasskeyAbschnitt bestaetigeZweitenFaktor={bestaetigeZweitenFaktor} />
         <PinAbschnitt />
         <ZweiterFaktor user={user} />
+        {ohneEmpfang && besitzer ? <DiensttelefonAbschnitt besitzer={besitzer} /> : null}
         <Sitzungen />
 
         <Kleingedrucktes className="mt-10">
