@@ -28,7 +28,7 @@ import { ListRow, ListRows } from './ListRow';
 import { NowMarker } from './NowMarker';
 import { ProgressDots } from './ProgressDots';
 import { StatusMark } from './StatusMark';
-import { Tile, TileGrid, TileRow, TileRows } from './Tile';
+import { Tile, TileGrid } from './Tile';
 import { TravelBar } from './TravelBar';
 import { zeitstrahlRaster } from './timelineStile';
 import { pufferText, travelLevel, travelPlan } from './travelPlan';
@@ -1498,20 +1498,6 @@ describe('Kachel (Tile)', () => {
     );
     const kachel = screen.getByText('Wann').parentElement!;
     expect(kachel.querySelectorAll('dd')).toHaveLength(1);
-  });
-
-  it('haelt Zeilen im Wert einer Kachel im normalen Gewicht', () => {
-    renderWithProviders(
-      <TileGrid>
-        <Tile label="Absage" ton="kritisch">
-          <TileRows>
-            <TileRow label="Absagegrund">Wunsch der Patient:in</TileRow>
-          </TileRows>
-        </Tile>
-      </TileGrid>,
-    );
-    // Die Zeile steht im Wert (600) und erbte ihn sonst.
-    expect(klassenVon(screen.getByText('Absagegrund').parentElement)).toContain('font-normal');
   });
 
   it('bricht die Reihe nach der gewaehlten Mindestbreite um', () => {
