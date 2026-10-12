@@ -234,7 +234,8 @@ test('Filterleiste: am Telefon weitere Filter hinter „Filter (n)“, am Rechne
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto(PRUEFSEITE);
   const breit = page.getByRole('search', { name: 'Übungen filtern' });
-  await expect(breit.getByRole('button', { name: /^Filter( \(\d+\))?$/ })).toBeHidden();
+  // Knie ist vorgewählt: Der Schalter hieße „Filter (1)“ - am Rechner gibt es ihn nicht.
+  await expect(breit.getByRole('button', { name: 'Filter (1)', exact: true })).toBeHidden();
   const auswahl = (await breit.getByRole('combobox', { name: 'Ausrüstung' }).boundingBox())!;
   expect(auswahl.width).toBeLessThanOrEqual(320.5);
   // Die Beschriftungen der Filter stehen auf einer Linie.

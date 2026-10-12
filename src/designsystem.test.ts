@@ -578,9 +578,14 @@ function verzeichnisVon(pfad: string): string {
 
 /** Der Ist-Stand: je Muster und Verzeichnis die Zahl der Vorkommen. */
 function zaehleMuster(): Record<Muster, Record<string, number>> {
-  const stand = Object.fromEntries(
-    Object.keys(ZAEHLER).map((muster) => [muster, {} as Record<string, number>]),
-  ) as Record<Muster, Record<string, number>>;
+  const stand: Record<Muster, Record<string, number>> = {
+    breiten: {},
+    details: {},
+    divideY: {},
+    knoepfe: {},
+    tabellen: {},
+    ueberschriften: {},
+  };
   for (const datei of quelldateien(join(stamm, 'src'))) {
     if (!/\.tsx?$/.test(datei)) continue;
     const imBaustein = relative(stamm, datei).startsWith('src/components/ui/');
