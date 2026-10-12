@@ -57,6 +57,12 @@ const treatmentNoteSchema = z.object({
   author_name: z.string().nullable(),
   last_editor_name: z.string().nullable(),
   finalized_by_name: z.string().nullable(),
+  /**
+   * OFF-002 (ADR-024 Punkt 8): Uhr des Geräts bei einem ohne Verbindung
+   * geschriebenen Entwurf - eine Angabe, keine geprüfte Zeit. Optional, damit
+   * ein älterer Stand ohne die Spalte weiter gelesen wird.
+   */
+  reported_written_at: z.string().nullable().optional(),
 });
 
 export type TreatmentNote = z.infer<typeof treatmentNoteSchema>;

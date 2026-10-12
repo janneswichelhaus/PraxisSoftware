@@ -19,10 +19,13 @@ import { usePasskeyVonSelbst } from '../passkeyVonSelbst';
  */
 export function SperreOhneNetz({
   besitzer,
+  einleitung = 'Ohne Verbindung öffnet Ihr Passkey nur, was auf diesem Gerät liegt: Ihre Übungen zum Abhaken. Alles andere kommt mit der Verbindung zurück.',
   onFreigegeben,
   onErneut,
 }: {
   besitzer: string;
+  /** OFF-003: Was auf diesem Gerät liegt, je Kontoart. */
+  einleitung?: string | undefined;
   onFreigegeben: () => void;
   /** Mit Verbindung erneut prüfen. */
   onErneut: () => void;
@@ -54,7 +57,7 @@ export function SperreOhneNetz({
     <Vollseite
       mittig
       titel="Gesperrt – ohne Verbindung"
-      einleitung="Ohne Verbindung öffnet Ihr Passkey nur, was auf diesem Gerät liegt: Ihre Übungen zum Abhaken. Alles andere kommt mit der Verbindung zurück."
+      einleitung={einleitung}
       kleingedrucktes="Übertragen wird erst, wenn Verbindung besteht und Sie die Anwendung wie gewohnt entsperrt haben. Bis dahin bleibt alles auf dem Gerät."
     >
       {fehler ? (

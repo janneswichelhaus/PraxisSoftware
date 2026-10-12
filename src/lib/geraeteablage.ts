@@ -17,6 +17,14 @@
  * Abgelegt wird in IndexedDB, ein Datensatz für alles. Ohne IndexedDB (jsdom,
  * privates Fenster mancher Browser) liegt die Ablage nur im Speicher der
  * Seite und geht mit ihr.
+ *
+ * **Die Dauerablage** (OFF-001, ADR-024 Punkt 6, ANN-360) ist ein zweiter
+ * Datensatz je Konto, für das, was nie von selbst fallen darf: die
+ * Offline-Entwürfe der Dokumentation (§13) und die Einrichtung des
+ * Diensttelefons. Sie fällt weder beim Kontowechsel noch nach sieben Tagen
+ * noch beim Abmelden (`ablageLeeren`), sondern nur, wenn ihr Modul es
+ * ausdrücklich sagt. Ein anderes Konto liest sie nie: Der Schlüssel ist das
+ * Konto selbst.
  */
 
 /** ADR-024 Punkt 5: die eine Frist; `app.offline_transfer_days()` hält dieselbe (ANN-357). */
@@ -36,11 +44,28 @@ export interface Ablagespeicher {
   holen(): Promise<Ablagestand | undefined>;
   legen(stand: Ablagestand): Promise<void>;
   leeren(): Promise<void>;
+  /** Die Dauerablage eines Kontos (ANN-360). */
+  dauerHolen(besitzer: string): Promise<Record<string, unknown> | undefined>;
+  dauerLegen(besitzer: string, faecher: Record<string, unknown>): Promise<void>;
+  dauerLeeren(besitzer: string): Promise<void>;
 }
 
 export function speicherImSpeicher(): Ablagespeicher {
   let stand: Ablagestand | undefined;
+  const dauer = new Map<string, Record<string, unknown>>();
   return {
+    dauerHolen: (besitzer) => {
+      const d = dauer.get(besitzer);
+      return Promise.resolve(d === undefined ? undefined : structuredClone(d));
+    },
+    dauerLegen: (besitzer, faecher) => {
+      dauer.set(besitzer, structuredClone(faecher));
+      return Promise.resolve();
+    },
+    dauerLeeren: (besitzer) => {
+      dauer.delete(besitzer);
+      return Promise.resolve();
+    },
     holen: () => Promise.resolve(stand === undefined ? undefined : structuredClone(stand)),
     legen: (neu) => {
       stand = structuredClone(neu);
@@ -88,6 +113,15 @@ export function speicherInIndexedDb(): Ablagespeicher {
     },
     leeren: async () => {
       await anfrage((await tabelle('readwrite')).delete(SCHLUESSEL));
+    },
+    dauerHolen: async (besitzer) =>
+      (await anfrage((await tabelle('readonly')).get(`dauer:${besitzer}`))) as
+        Record<string, unknown> | undefined,
+    dauerLegen: async (besitzer, faecher) => {
+      await anfrage((await tabelle('readwrite')).put(faecher, `dauer:${besitzer}`));
+    },
+    dauerLeeren: async (besitzer) => {
+      await anfrage((await tabelle('readwrite')).delete(`dauer:${besitzer}`));
     },
   };
 }
@@ -161,4 +195,33 @@ export function fachAendern<T>(
  */
 export function ablageLeeren(): Promise<void> {
   return nacheinander(() => speicher.leeren()).catch(() => undefined);
+}
+
+// -----------------------------------------------------------------------------
+// Die Dauerablage je Konto (OFF-001, ANN-360)
+// -----------------------------------------------------------------------------
+
+/** Ein Fach der Dauerablage lesen; `undefined`, wenn es fehlt. */
+export function dauerfachLesen(besitzer: string, fach: string): Promise<unknown> {
+  return nacheinander(async () => (await speicher.dauerHolen(besitzer))?.[fach]);
+}
+
+/**
+ * Ein Fach der Dauerablage ändern. Gibt `ändern` `undefined` zurück, fällt
+ * das Fach; ist danach keins mehr da, fällt der Datensatz des Kontos.
+ */
+export function dauerfachAendern<T>(
+  besitzer: string,
+  fach: string,
+  aendern: (alt: unknown) => T | undefined,
+): Promise<T | undefined> {
+  return nacheinander(async () => {
+    const faecher = (await speicher.dauerHolen(besitzer)) ?? {};
+    const neu = aendern(faecher[fach]);
+    if (neu === undefined) delete faecher[fach];
+    else faecher[fach] = neu;
+    if (Object.keys(faecher).length === 0) await speicher.dauerLeeren(besitzer);
+    else await speicher.dauerLegen(besitzer, faecher);
+    return neu;
+  });
 }

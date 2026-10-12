@@ -947,7 +947,10 @@
           "id": "off-epic-001",
           "name": "OFF-EPIC-001 Dokumentation ohne Empfang",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-12",
+          "nachweis": "OFF-001 bis OFF-003, Zweitreview",
+          "vermerk": "Sichtung: Verlauf Schritte 10 bis 12"
         },
         {
           "id": "out-epic-001",

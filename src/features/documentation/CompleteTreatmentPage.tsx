@@ -13,6 +13,7 @@ import { VORSCHLAG_OFFEN } from '@/features/assessments/dokumentationstext';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import { formatLocalTimeRange, patientName, type Appointment } from '@/features/appointments/api';
 import { BisherigeEintraege } from './BisherigeEintraege';
+import { AufGeraetSichern } from '@/features/offline-documentation/AufGeraetSichern';
 import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';
@@ -51,6 +52,7 @@ import {
  */
 
 function Abschluss({
+  besitzer,
   appointment,
   note,
   ohneBehandlung,
@@ -58,6 +60,8 @@ function Abschluss({
   eingehend,
   inzwischen,
 }: {
+  /** Das eigene Konto - für die Ablage auf dem Diensttelefon (OFF-003). */
+  besitzer: string;
   appointment: Appointment;
   note: TreatmentNote | null;
   /** Hausbesuch-Szenario 1: Tür geöffnet, Behandlung nicht durchgeführt. */
@@ -391,6 +395,27 @@ function Abschluss({
             </div>
           ) : null}
 
+          {/* OFF-003: ohne Verbindung auf dem Diensttelefon sichern (ADR-024
+              Punkt 6). Nicht am Vermerk: Er entsteht ohne Netz nicht (ANN-362). */}
+          {!ohneBehandlung && textGeaendert ? (
+            <AufGeraetSichern
+              besitzer={besitzer}
+              terminId={appointment.id}
+              kopf={{
+                beginn: appointment.starts_at,
+                ende: appointment.ends_at,
+                zeitzone: zone,
+                name: patientName(appointment),
+                terminart: appointment.appointment_type,
+              }}
+              text={wert}
+              onGesichert={() => {
+                freigeben();
+                void navigate('/auf-dem-geraet');
+              }}
+            />
+          ) : null}
+
           {/* Der Fehler steht über dem Feld, nicht darunter (Abschnitt 6a). */}
           {fehler ? (
             <p
@@ -571,6 +596,7 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
         if (abschluss) {
           return (
             <Abschluss
+              besitzer={user.profile.id}
               key={appointment.id}
               appointment={appointment}
               note={dokumentation.primary}

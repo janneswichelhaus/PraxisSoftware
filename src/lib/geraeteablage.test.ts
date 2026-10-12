@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   OFFLINE_FRIST_TAGE,
   ablageLeeren,
+  dauerfachAendern,
+  dauerfachLesen,
   fachAendern,
   fachLesen,
   speicherImSpeicher,
@@ -77,5 +79,30 @@ describe('Ablage auf dem Gerät (TRK-008)', () => {
       ),
     );
     expect(await fachLesen(ANNA, 'zaehler')).toBe(20);
+  });
+});
+
+describe('Dauerablage je Konto (OFF-001, ANN-360)', () => {
+  it('fällt weder beim Abmelden noch nach der Frist noch beim Kontowechsel', async () => {
+    vi.useFakeTimers({ now: new Date('2026-10-12T08:00:00Z') });
+    await dauerfachAendern(ANNA, 'entwuerfe', () => ['text']);
+    await fachAendern(BEN, 'fach', () => ({ wert: 1 }), true);
+    await ablageLeeren();
+    vi.setSystemTime(new Date('2026-11-30T08:00:00Z'));
+    expect(await dauerfachLesen(ANNA, 'entwuerfe')).toEqual(['text']);
+  });
+
+  it('ein anderes Konto liest sie nie', async () => {
+    await dauerfachAendern(ANNA, 'entwuerfe', () => ['text']);
+    expect(await dauerfachLesen(BEN, 'entwuerfe')).toBeUndefined();
+    expect(await dauerfachLesen(ANNA, 'entwuerfe')).toEqual(['text']);
+  });
+
+  it('ein Fach fällt nur, wenn sein Modul es sagt', async () => {
+    await dauerfachAendern(ANNA, 'a', () => 1);
+    await dauerfachAendern(ANNA, 'b', () => 2);
+    await dauerfachAendern(ANNA, 'a', () => undefined);
+    expect(await dauerfachLesen(ANNA, 'a')).toBeUndefined();
+    expect(await dauerfachLesen(ANNA, 'b')).toBe(2);
   });
 });

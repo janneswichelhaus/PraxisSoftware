@@ -290,7 +290,12 @@ function AkteEintrag({
   /** „Dieser Termin" trägt seinen eigenen Knopf zum Weiterschreiben. */
   ohneWeiterschreiben?: boolean;
 }) {
-  const frist = fristDatum(termin.starts_at, termin.organization_time_zone, fristTage);
+  const frist = fristDatum(
+    termin.starts_at,
+    termin.organization_time_zone,
+    fristTage,
+    note.created_at,
+  );
   const istNachtrag = note.addendum_to_note_id !== null;
   const final = note.status === 'final';
 

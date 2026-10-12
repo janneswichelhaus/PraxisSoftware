@@ -67,16 +67,26 @@ export function herkunft(note: TreatmentNote, zone: string): string {
   // Die automatische Finalisierung hat keine handelnde Person; das steht so
   // da, statt eine zu erfinden (DOK-004, ADR-016 Punkt 7).
   if (note.status === 'final' && note.finalized_at && note.finalisation_kind === 'automatic') {
-    return `${verfasst}Automatisch finalisiert am ${zeitpunkt(note.finalized_at, zone)} nach Ablauf der Frist.`;
+    return `${verfasst}Automatisch finalisiert am ${zeitpunkt(note.finalized_at, zone)} nach Ablauf der Frist.${ohneVerbindung(note, zone)}`;
   }
 
   if (note.status === 'final' && note.finalized_at) {
     const wer = note.finalized_by_name ? ` von ${note.finalized_by_name}` : '';
-    return `${verfasst}Finalisiert am ${zeitpunkt(note.finalized_at, zone)}${wer}.`;
+    return `${verfasst}Finalisiert am ${zeitpunkt(note.finalized_at, zone)}${wer}.${ohneVerbindung(note, zone)}`;
   }
 
   const wer = note.last_editor_name ? ` von ${note.last_editor_name}` : '';
-  return `${verfasst}Zuletzt geändert am ${zeitpunkt(note.updated_at, zone)}${wer}.`;
+  return `${verfasst}Zuletzt geändert am ${zeitpunkt(note.updated_at, zone)}${wer}.${ohneVerbindung(note, zone)}`;
+}
+
+/**
+ * Ohne Verbindung geschrieben (OFF-002, ADR-024 Punkt 8): die Uhr des Geräts
+ * als Angabe, daneben der Eingang - so bleibt „zeitnah" nachvollziehbar
+ * (§ 630f BGB), ohne dass die Angabe als geprüfte Zeit erscheint.
+ */
+function ohneVerbindung(note: TreatmentNote, zone: string): string {
+  if (!note.reported_written_at) return '';
+  return ` Ohne Verbindung geschrieben, laut Gerät am ${zeitpunkt(note.reported_written_at, zone)}; übertragen am ${zeitpunkt(note.created_at, zone)}.`;
 }
 
 /**
@@ -89,9 +99,19 @@ export function fristDatum(
   startsAt: string,
   zone: string,
   tage: number | undefined,
+  /**
+   * Anlage des Entwurfs: Liegt sie später als die Behandlung, zählt sie
+   * (ANN-008) - so beim übertragenen Offline-Entwurf, dessen Frist mit dem
+   * Eingang beginnt (OFF-002, ADR-024 Punkt 6).
+   */
+  angelegtAm?: string,
 ): string | null {
   if (tage === undefined) return null;
-  const tag = new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(startsAt));
+  const tagVon = (wert: string) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(wert));
+  const behandelt = tagVon(startsAt);
+  const angelegt = angelegtAm ? tagVon(angelegtAm) : behandelt;
+  const tag = angelegt > behandelt ? angelegt : behandelt;
   const [, monat, datum] = tagePlus(tag, tage).split('-');
   return `${datum}.${monat}.`;
 }
