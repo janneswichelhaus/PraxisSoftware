@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Angabefeld } from '@/components/ui/Angabefeld';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -8,6 +9,7 @@ import { HakenSymbol } from '@/components/ui/HakenSymbol';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { dosierungAlltag } from '@/features/exercise-plans/dosierung';
+import { angabeGueltig, groessenImTakt } from '@/lib/erfassungsgroessen';
 import {
   EinheitNichtOffen,
   durchgangSetzen,
@@ -301,10 +303,25 @@ function Abschluss({
   onBeendet: () => Promise<void>;
 }) {
   const [notiz, setNotiz] = useState('');
+  // TRK-001: Anstrengung und Schmerz, freiwillig, nichts vorausgewählt.
+  const [werte, setWerte] = useState<Record<string, number | null>>({});
+  const groessen = groessenImTakt('session');
+  const ungueltig = groessen.find((g) => {
+    const w = werte[g.key];
+    return w !== null && w !== undefined && !angabeGueltig(g, w);
+  });
   const beenden = useMutation({
     mutationFn: async () => {
       const id = await einheitHolen();
-      await einheitBeenden(zugang.access_id, id, plan.note_allowed ? notiz : '');
+      const angaben = Object.fromEntries(
+        Object.entries(werte).filter((e): e is [string, number] => e[1] !== null),
+      );
+      await einheitBeenden(
+        zugang.access_id,
+        id,
+        plan.note_allowed ? notiz : '',
+        plan.note_allowed ? angaben : {},
+      );
     },
     onSuccess: onBeendet,
   });
@@ -317,9 +334,21 @@ function Abschluss({
         className="mt-6 flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          beenden.mutate();
+          if (!ungueltig) beenden.mutate();
         }}
       >
+        {/* TRK-001: Angaben zur Einheit - im Training nur mit Einwilligung
+            (ADR-021 Punkt 4), dieselbe Bedingung wie der Satz darunter. */}
+        {plan.note_allowed && abgehakt > 0
+          ? groessen.map((g) => (
+              <Angabefeld
+                key={g.key}
+                groesse={g}
+                wert={werte[g.key] ?? null}
+                onChange={(w) => setWerte((bisher) => ({ ...bisher, [g.key]: w }))}
+              />
+            ))
+          : null}
         {plan.note_allowed && abgehakt > 0 ? (
           <TextArea
             label="Das war schwierig, weil … (freiwillig)"
@@ -334,6 +363,11 @@ function Abschluss({
         ) : null}
         {beenden.isError ? (
           <Statusmeldung ton="fehler">{beenden.error.message}</Statusmeldung>
+        ) : null}
+        {ungueltig ? (
+          <Statusmeldung ton="fehler">
+            {`„${ungueltig.kurz}“: bitte eine ganze Zahl von ${ungueltig.min} bis ${ungueltig.max}.`}
+          </Statusmeldung>
         ) : null}
         {abgehakt > 0 ? (
           <Button type="submit" disabled={beenden.isPending}>

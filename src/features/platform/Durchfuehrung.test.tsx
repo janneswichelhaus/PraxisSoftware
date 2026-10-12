@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { EigenePlaene, Plattformzugang } from './api';
@@ -156,9 +156,44 @@ describe('Durchführungsansicht (UEB-010)', () => {
         ZUGANG.access_id,
         'cccccccc-0000-4000-8000-000000000001',
         'Knie zieht',
+        {},
       ),
     );
     expect(screen.queryByText(/Super|Toll|Prima|Punkte/)).not.toBeInTheDocument();
+  });
+
+  it('nimmt Anstrengung und Schmerz freiwillig mit, nichts vorausgewählt (TRK-001)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Durchfuehrung zugang={ZUGANG} />, PFAD);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Fertig' }));
+    const anstrengung = screen.getByRole('group', { name: 'Wie anstrengend war die Einheit?' });
+    const schmerz = screen.getByRole('group', {
+      name: 'Wie stark waren Schmerzen während der Einheit?',
+    });
+    for (const gruppe of [anstrengung, schmerz]) {
+      expect(
+        within(gruppe)
+          .getAllByRole('radio')
+          .some((r) => (r as HTMLInputElement).checked),
+      ).toBe(false);
+    }
+    await user.click(within(anstrengung).getByLabelText('6'));
+    // Gewählt und wieder entfernt heißt: keine Angabe.
+    await user.click(within(schmerz).getByLabelText('2'));
+    await user.click(within(schmerz).getByRole('button', { name: /Angabe entfernen/ }));
+    await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
+    await waitFor(() =>
+      expect(einheitBeenden).toHaveBeenCalledWith(
+        ZUGANG.access_id,
+        'cccccccc-0000-4000-8000-000000000001',
+        '',
+        { session_exertion: 6 },
+      ),
+    );
+    // Keine Einordnung des Werts (ADR-006 Punkt 11).
+    expect(screen.queryByText(/hoch|zu viel|Warnung|reduzieren/i)).not.toBeInTheDocument();
   });
 
   it('fragt im Training ohne Einwilligung nicht nach dem Befinden (ADR-021 Punkt 4)', async () => {
@@ -175,12 +210,14 @@ describe('Durchführungsansicht (UEB-010)', () => {
     await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
     await user.click(screen.getByRole('button', { name: 'Fertig' }));
     expect(screen.queryByLabelText(/schwierig/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /anstrengend/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
     await waitFor(() =>
       expect(einheitBeenden).toHaveBeenCalledWith(
         ZUGANG.access_id,
         'cccccccc-0000-4000-8000-000000000001',
         '',
+        {},
       ),
     );
   });

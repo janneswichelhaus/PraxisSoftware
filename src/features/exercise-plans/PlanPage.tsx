@@ -32,6 +32,7 @@ import { dosierungAlltag, dosierungFachlich, unterschiede } from './dosierung';
 import { ACHSE_LABEL } from '@/features/exercises/types';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE, tagPlus } from './laufzeit';
+import { angabenZeile } from '@/lib/erfassungsgroessen';
 import { formatDate } from '@/lib/datum';
 import { verhaeltnisPfad } from './api';
 import { PositionFormular } from './PositionFormular';
@@ -757,6 +758,11 @@ function EinheitZeile({ einheit }: { einheit: Einheit }) {
           ? ' · erfasst von der Vertretung'
           : ''}
       </p>
+      {/* TRK-001: die Angaben der Person mit ihrem Wert, ohne Einordnung
+          (ADR-006 Punkt 11). */}
+      {Object.keys(einheit.values).length > 0 ? (
+        <p className="mt-1">Angaben: {angabenZeile(einheit.values)}</p>
+      ) : null}
       {einheit.difficulty_note ? (
         <p className="mt-1">Schwierig, weil: {einheit.difficulty_note}</p>
       ) : null}

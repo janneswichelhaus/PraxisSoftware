@@ -1176,11 +1176,14 @@ export async function einheitBeenden(
   zugangId: string,
   einheitId: string,
   notiz: string,
+  /** TRK-001: Angaben zur Einheit, nur beantwortete (ANN-348). */
+  werte: Record<string, number> = {},
 ): Promise<void> {
   const { error } = await getSupabase().rpc('finish_platform_exercise_session', {
     p_access_id: zugangId,
     p_session_id: einheitId,
     p_note: notiz,
+    p_values: werte,
   });
   if (error)
     throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');

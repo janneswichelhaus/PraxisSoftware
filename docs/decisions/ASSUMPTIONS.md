@@ -4216,3 +4216,27 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: Prüfung aus ADR-
 **Anker.** `app.push_endpoint_allowed` und `register_platform_push_subscription` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Test „nimmt nur Push-Dienste der Browserhersteller und höchstens fünf Geräte“ in `supabase/tests/benachrichtigungen.test.ts`.
 
 **Änderungspfad.** Den Ausdruck in `app.push_endpoint_allowed` bzw. `devices_per_access` in `app.notification_rule` ändern · Aufwand `klein`.
+
+### ANN-348 — Erfassungsgrößen als Katalog nach Takt; nach einer Einheit Anstrengung und Schmerz, je 0 bis 10, freiwillig
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Pläne (TRK-EPIC-001)
+
+**Annahme.** Was erfasst werden kann, steht in einem Katalog mit Takt (`session` nach einer Einheit, `checkin` in der wiederkehrenden Selbstauskunft) und Wertebereich. Nach einer Einheit fragt die Plattform zwei Größen: **Anstrengung** und **Schmerz während der Einheit**, je 0 bis 10, beide freiwillig, nichts vorausgewählt; im Training nur mit Einwilligung zu Gesundheitsangaben. Eine neue Größe ist eine Zeile im Katalog, kein neues Datenmodell.
+
+**Begründung.** IDEA-TRK-001 ordnet die Größen nach Takt, IDEA-TRK-002 liest „alle denkbaren Parameter“ als Anforderung an das Datenmodell, nicht an die Erfassung, und nennt Schmerz und Anstrengung als Kern des Minimalsatzes; Bewegungssicherheit gehört nach der Roadmap zu TRK-EPIC-002. Zwei Fragen nach einer Einheit bleiben unter dem „in Sekunden“ aus IDEA-TRK-001. 0 bis 10 entspricht der NRS, die die Praxis im Befund schon nutzt (ANN-118); keine Größe hat eine Schwelle oder Farbe (ADR-006 Punkt 11). Unsicher: ob „Schmerz während“ oder „Schmerz nachher“ für Jannes die nützlichere Frage ist.
+
+**Anker.** `app.tracking_parameters()` in `supabase/migrations/20261105100000_trk_001_session_values.sql` und `ERFASSUNGSGROESSEN` in `src/lib/erfassungsgroessen.ts`; Tests `supabase/tests/erfassungsgroessen.test.ts` und „nimmt Angaben zur Einheit an …“ in `supabase/tests/platform-exercise-sessions.test.ts`.
+
+**Änderungspfad.** Eine Zeile in beiden Katalogen ändern, hinzufügen oder (ohne erfasste Werte) streichen · Aufwand `klein`.
+
+### ANN-349 — Check-in: voreingestellt drei Fragen, höchstens fünf; der letzte Wert steht als Hinweis daneben, nicht vorausgewählt
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Pläne (TRK-EPIC-001)
+
+**Annahme.** Ein neuer Check-in fragt voreingestellt **Schmerz in Ruhe**, **Schmerz bei Belastung** und **Einschränkung im Alltag**; die Praxis wählt aus sechs Größen des Katalogs eine bis höchstens fünf. Jede Frage ist freiwillig, mindestens eine muss beantwortet sein. Die letzte Angabe steht als Hinweis „Ihre letzte Angabe: 4“ neben der Frage, sie ist **nicht** vorausgewählt.
+
+**Begründung.** IDEA-TRK-002 verlangt drei bis fünf Größen und warnt, dass durchgeklickte Werte „falsch statt fehlend“ sind. IDEA-TRK-004 wünscht „vorausgefüllt“ für unter 30 Sekunden; ein vorausgewählter Wert lässt sich aber ungelesen absenden. Der Hinweis gibt den Bezug ohne diese Gefahr, und eine Stufe zu tippen dauert so lange wie das Bestätigen. Unsicher: ob Jannes für bestimmte Personen mehr als fünf Fragen will.
+
+**Anker.** `CHECKIN_VOREINSTELLUNG` und `CHECKIN_HOECHSTENS` in `src/lib/erfassungsgroessen.ts`; die Grenze 1 bis 5 in `app.checkin_keys_valid` (`supabase/migrations/20261105110000_trk_002_checkin_schedules.sql`); `Angabefeld` in `src/components/ui/Angabefeld.tsx`.
+
+**Änderungspfad.** Konstanten und die Grenze in `app.checkin_keys_valid` ändern; für Vorauswahl `wert` mit `zuletzt` belegen · Aufwand `klein`.
