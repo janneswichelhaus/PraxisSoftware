@@ -9,6 +9,7 @@ import {
   entwuerfeUebertragen,
   entwuerfeZuruecksetzen,
   entwurfSchreiben,
+  type EntwurfSender,
 } from './entwuerfe';
 import { einrichten } from './servicePhone';
 import { tagesplanAblegen } from './tagesplan';
@@ -55,6 +56,11 @@ function eintrag(teil: Partial<DayPlanEntry>): DayPlanEntry {
   };
 }
 
+/** Übertragen in einer Sitzung dieses Kontos (Zweitreview B2). */
+function uebertragenAls(senden: EntwurfSender) {
+  return entwuerfeUebertragen(ANNA, senden, () => Promise.resolve(ANNA));
+}
+
 beforeEach(async () => {
   speicherSetzen(speicherImSpeicher());
   entwuerfeZuruecksetzen();
@@ -96,6 +102,7 @@ describe('AufDemGeraet', () => {
       zurDokumentation: (t) => `/termine/${t}/dokumentation`,
       alsNachtrag: vi.fn(),
       inKorrektur: vi.fn(),
+      fassungLesen: vi.fn(),
     };
     renderWithProviders(<AufDemGeraet besitzer={ANNA} ohneVerbindung={false} serverwege={wege} />);
     expect(await screen.findByRole('link', { name: 'Zur Dokumentation' })).toHaveAttribute(
@@ -108,7 +115,7 @@ describe('AufDemGeraet', () => {
   it('Konflikt an finalisierter Dokumentation: Nachtrag übernimmt und lässt den Entwurf fallen', async () => {
     const user = userEvent.setup();
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: offline.');
-    await entwuerfeUebertragen(ANNA, () =>
+    await uebertragenAls(() =>
       Promise.resolve({ status: 'conflict', note_id: 'n1', note_status: 'final' }),
     );
     const alsNachtrag = vi.fn(() => Promise.resolve());
@@ -117,11 +124,19 @@ describe('AufDemGeraet', () => {
       <AufDemGeraet
         besitzer={ANNA}
         ohneVerbindung={false}
-        serverwege={{ zurDokumentation: (t) => `/x/${t}`, alsNachtrag, inKorrektur }}
+        serverwege={{
+          zurDokumentation: (t) => `/x/${t}`,
+          alsNachtrag,
+          inKorrektur,
+          fassungLesen: () => Promise.resolve('Synthetisch: Fassung der Praxis.'),
+        }}
       />,
     );
     const karte = (await screen.findByText(/finalisierte Dokumentation/)).closest('article')!;
     expect(within(karte).getByText('Synthetisch: offline.')).toBeInTheDocument();
+    // Beide Fassungen (ADR-024 Punkt 7): die der Praxis erst auf Tipp.
+    await user.click(within(karte).getByRole('button', { name: 'Fassung der Praxis zeigen' }));
+    expect(await within(karte).findByText('Synthetisch: Fassung der Praxis.')).toBeInTheDocument();
     await user.click(within(karte).getByRole('button', { name: 'In Korrektur übernehmen' }));
     expect(inKorrektur).toHaveBeenCalledWith('t1', 'n1', 'Synthetisch: offline.');
     // Die Korrektur nimmt ihn nicht vom Gerät - erst ausdrücklich oder per Nachtrag.
@@ -135,9 +150,7 @@ describe('AufDemGeraet', () => {
     const user = userEvent.setup();
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: abgesagt.');
     const { EntwurfAbgewiesen, ENTWURF_ABWEISUNG } = await import('./api');
-    await entwuerfeUebertragen(ANNA, () =>
-      Promise.reject(new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.abgesagt)),
-    );
+    await uebertragenAls(() => Promise.reject(new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.abgesagt)));
     renderWithProviders(<AufDemGeraet besitzer={ANNA} ohneVerbindung />);
     expect(await screen.findByText(/Der Termin wurde abgesagt/)).toBeInTheDocument();
     expect(screen.getByText('Synthetisch: abgesagt.')).toBeInTheDocument();

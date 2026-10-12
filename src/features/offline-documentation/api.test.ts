@@ -6,7 +6,8 @@ vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ rpc }),
 }));
 
-const { ENTWURF_ABWEISUNG, EntwurfAbgewiesen, entwurfUebertragen } = await import('./api');
+const { ENTWURF_ABWEISUNG, EntwurfAbgewiesen, EntwurfNichtAngekommen, entwurfUebertragen } =
+  await import('./api');
 
 /** OFF-002: Was der Server sagt, wird ein Urteil - oder bleibt keins (ADR-024 Punkt 8). */
 
@@ -32,8 +33,11 @@ describe('entwurfUebertragen', () => {
   });
 
   it.each([
-    [{ code: '42501' }, ENTWURF_ABWEISUNG.recht],
-    [{ code: 'P0002' }, ENTWURF_ABWEISUNG.termin],
+    [
+      { code: '42501', message: 'not allowed to write treatment documentation' },
+      ENTWURF_ABWEISUNG.recht,
+    ],
+    [{ code: 'P0002', message: 'appointment not found' }, ENTWURF_ABWEISUNG.termin],
     [
       { code: '22023', message: 'cancelled appointment cannot be documented' },
       ENTWURF_ABWEISUNG.abgesagt,
@@ -57,5 +61,25 @@ describe('entwurfUebertragen', () => {
     rpc.mockResolvedValue({ data: null, error: { code: 'PGRST000', message: 'fetch failed' } });
     const funkloch = await entwurfUebertragen(ENTWURF).catch((e: unknown) => e);
     expect(funkloch).not.toBeInstanceOf(EntwurfAbgewiesen);
+  });
+
+  it('ohne Sitzung (anon: permission denied) ist kein Urteil (Zweitreview B2)', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: '42501',
+        message: 'permission denied for function sync_offline_treatment_note',
+      },
+    });
+    const fehler = await entwurfUebertragen(ENTWURF).catch((e: unknown) => e);
+    expect(fehler).not.toBeInstanceOf(EntwurfAbgewiesen);
+    expect(fehler).not.toBeInstanceOf(EntwurfNichtAngekommen);
+  });
+
+  it('ein unbekannter Code betrifft nur diesen Entwurf (Zweitreview S5)', async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: 'P0001', message: 'trigger' } });
+    expect(await entwurfUebertragen(ENTWURF).catch((e: unknown) => e)).toBeInstanceOf(
+      EntwurfNichtAngekommen,
+    );
   });
 });

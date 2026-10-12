@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { SperreOhneNetz } from '@/features/auth/sitzungssperre/SperreOhneNetz';
 import { AufDemGeraet } from '@/features/offline-documentation/AufDemGeraet';
 import { DiensttelefonAbschnitt } from '@/features/offline-documentation/DiensttelefonAbschnitt';
@@ -47,10 +47,12 @@ function Sperre({ besitzer }: { besitzer: string }) {
 }
 
 function Geraet({ besitzer, zone }: { besitzer: string; zone: string }) {
+  // Die Prüfseite hat keine Sitzung; sie gilt als die des Kontos.
+  const konto = useCallback(() => Promise.resolve(besitzer), [besitzer]);
   return (
     <>
       <Geraetehinweis besitzer={besitzer} />
-      <PraxisAblage besitzer={besitzer} staffMemberId={null} zeitzone={zone} />
+      <PraxisAblage besitzer={besitzer} staffMemberId={null} zeitzone={zone} konto={konto} />
       <main className="mx-auto max-w-xl px-4 py-6">
         <h1 className="text-ink mb-4 text-2xl font-semibold">Auf dem Gerät</h1>
         <AufDemGeraet
@@ -60,6 +62,7 @@ function Geraet({ besitzer, zone }: { besitzer: string; zone: string }) {
             zurDokumentation: (t) => `/termine/${t}/dokumentation`,
             alsNachtrag: () => Promise.resolve(),
             inKorrektur: () => undefined,
+            fassungLesen: () => Promise.resolve('Synthetisch: Fassung der Praxis, finalisiert.'),
           }}
         />
       </main>

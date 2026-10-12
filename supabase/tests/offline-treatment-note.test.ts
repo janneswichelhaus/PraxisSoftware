@@ -31,7 +31,9 @@ import {
  * Alle Inhalte sind erkennbar synthetisch (PROJECT_PRINCIPLES.md 3.1).
  */
 
-const { users, patients } = SEED;
+const { users, patients, organizationId, trainingRelationships } = SEED;
+const TOM = '55555555-5555-4555-8555-000000000006';
+const STANDORT = '33333333-3333-4333-8333-000000000001';
 const ANNA = '55555555-5555-4555-8555-000000000002';
 
 const TERMIN_ANLEGEN =
@@ -141,11 +143,45 @@ describe('OFF-002: Offline-Entwurf übertragen', () => {
     const id = randomUUID();
     const erst = await senden(users.therapist, id, t);
     await absagen(t);
-    const zweit = await senden(users.therapist, id, t, 'anderer Text');
+    const zweit = await senden(users.therapist, id, t);
     expect(zweit).toEqual({ status: 'known', note_id: erst.note_id });
     const zeilen = await zeilenAmTermin(t);
     expect(zeilen).toHaveLength(1);
     expect(zeilen[0]!.content).toBe(TEXT);
+  });
+
+  it('dieselbe Kennung mit neuerem Text ist kein Wiedererkennen: conflict, nichts geändert (Zweitreview B1)', async () => {
+    const t = await termin();
+    const id = randomUUID();
+    const erst = await senden(users.therapist, id, t, 'Synthetisch: erste Fassung.');
+    // Die Antwort ging verloren, danach wurde weitergeschrieben.
+    const zweit = await senden(users.therapist, id, t, 'Synthetisch: erste Fassung, ergänzt.');
+    expect(zweit).toEqual({ status: 'conflict', note_id: erst.note_id, note_status: 'draft' });
+    const zeilen = await zeilenAmTermin(t);
+    expect(zeilen).toHaveLength(1);
+    expect(zeilen[0]!.content).toBe('Synthetisch: erste Fassung.');
+    // Derselbe Text bleibt ein Wiedererkennen, auch mit Leerzeichen am Rand.
+    expect((await senden(users.therapist, id, t, ' Synthetisch: erste Fassung.\n')).status).toBe(
+      'known',
+    );
+  });
+
+  it('an einem Trainingstermin entsteht keine Behandlungsdokumentation (anderer Leistungsbereich)', async () => {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, training_relationship_id, staff_member_id, location_id,
+         appointment_type, kind, status, starts_at, ends_at
+       ) values ($1, $2, $3, $4, 'practice', 'training', 'confirmed',
+         ($5::date + time '09:00') at time zone 'Europe/Berlin',
+         ($5::date + time '10:00') at time zone 'Europe/Berlin')
+       returning id`,
+      [organizationId, trainingRelationships.tina, TOM, STANDORT, tagInTagen(90)],
+    );
+    const t = rows[0]!.id;
+    for (const konto of [users.therapist, users.trainer]) {
+      expect(await fehlercode(senden(konto, randomUUID(), t))).toMatch(/^(42501|P0002|22023)$/);
+    }
+    expect(await zeilenAmTermin(t)).toHaveLength(0);
   });
 
   it('mischt nichts ein: Entwurf einer Kollegin am Termin heißt conflict, nichts geändert', async () => {

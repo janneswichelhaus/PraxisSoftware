@@ -645,3 +645,17 @@ eingeklappt.
 **Beobachtung.** DSN-001 nennt „Check-in ausgeblieben“ als organisatorischen Punkt in der Übersicht der zuständigen Person („seit 10 Tagen kein Check-in“). TRK-EPIC-001 zeigt Fälligkeit und „fällig seit …“ nur im Abschnitt „Zwischen den Terminen“ an Akte und Trainingsverhältnis; eine Liste über alle Personen gibt es nicht.
 
 **Erwartet.** Entscheiden, ob der Punkt gebraucht wird; wenn ja, Einzel-Story-Loop: Zahl der Verhältnisse, deren Check-in seit mindestens einem Takt fällig ist, je Bereich in Offene Punkte – organisatorisch, ohne Wert und ohne Bewertung (ADR-006 Punkt 11).
+
+### BEF-150 — Ränder der Entwürfe auf dem Diensttelefon
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Dokumentation ohne Empfang: „Auf dem Gerät“ (OFF-EPIC-001) |
+| Quelle  | Zweitreview OFF-EPIC-001 (Hinweise H1, H4, H6, H7) |
+| Status  | offen |
+| Berührt | `src/features/offline-documentation/entwuerfe.ts`, `AufDemGeraet.tsx`, `EntwurfAbmeldewache.tsx`, `PraxisAblage.tsx` |
+
+**Beobachtung.** (1) Ein abgewiesener Entwurf lässt sich nur kopieren oder verwerfen, nicht erneut senden – auch wenn das Recht inzwischen wieder besteht. (2) Einträge, die eine spätere Fassung der Anwendung nicht lesen kann (`unlesbar`), bleiben liegen, zählen aber weder im Hinweis noch beim Abmelden mit; „Verwerfen und abmelden“ nimmt sie ungenannt mit. (3) „Verwerfen und abmelden“ ist ein Tipp ohne zweite Bestätigung. (4) Fällt nur das Dokumentationsrecht weg (Zugang bleibt aktiv), bleibt der Tagesplan bis Tagesende oder Abmelden auf dem Gerät. Daneben: Bei zwei Tabs kann eine Änderung der Dauerablage die andere überholen (Lesen und Schreiben in getrennten Transaktionen); im Zustand „halten“ der Sperre kann ein Wieder-online übertragen, bevor die Oberfläche entsperrt ist (der Server weist mit 28000 ab).
+
+**Erwartet.** Einzel-Story-Loop vor dem Scharfschalten mit echten Daten: „Erneut senden“ an der Abweisung, `unlesbar` mitzählen, Rückfrage vor dem Verwerfen beim Abmelden, Tagesplan auch bei Rollenwegfall räumen.

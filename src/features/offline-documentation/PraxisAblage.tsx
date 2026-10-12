@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { schluesselAblegen } from '@/features/auth/freigabeOhneNetz';
 import { useEinrichtung } from './servicePhone';
 import { useTagesplanAblegen } from './tagesplan';
-import { entwuerfeUebertragen, uebertragungAnmelden } from './entwuerfe';
+import { entwuerfeUebertragen, uebertragungAnmelden, type Kontofrage } from './entwuerfe';
+import { entwurfUebertragen, sitzungskonto } from './api';
 
 /**
  * Die Ablage auf dem Diensttelefon in offener Sitzung (OFF-EPIC-001, ADR-024
@@ -23,10 +24,13 @@ export function PraxisAblage({
   besitzer,
   staffMemberId,
   zeitzone,
+  konto = sitzungskonto,
 }: {
   besitzer: string;
   staffMemberId: string | null;
   zeitzone: string;
+  /** Nur Prüfseiten setzen eine eigene; sonst das Konto der Sitzung (Zweitreview B2). */
+  konto?: Kontofrage;
 }) {
   const eingerichtet = Boolean(useEinrichtung(besitzer));
   useTagesplanAblegen(besitzer, eingerichtet ? staffMemberId : null, zeitzone);
@@ -38,7 +42,7 @@ export function PraxisAblage({
   useEffect(() => {
     const los = () => {
       if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
-      void entwuerfeUebertragen(besitzer).catch(() => undefined);
+      void entwuerfeUebertragen(besitzer, entwurfUebertragen, konto).catch(() => undefined);
     };
     const abmelden = uebertragungAnmelden(los);
     los();
@@ -47,7 +51,7 @@ export function PraxisAblage({
       abmelden();
       window.removeEventListener('online', los);
     };
-  }, [besitzer]);
+  }, [besitzer, konto]);
 
   return null;
 }

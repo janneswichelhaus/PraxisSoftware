@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { useIstVerbunden } from '@/app/verbindung';
-import { entwurfSchreiben, type Entwurfskopf } from './entwuerfe';
+import { entwurfAmTermin, entwurfSchreiben, type Entwurfskopf } from './entwuerfe';
 import { ABLAGE_FUER_PRAXISKONTEN, useEinrichtung } from './servicePhone';
 
 /**
@@ -43,9 +43,19 @@ export function AufGeraetSichern({
         className="mt-2"
         onClick={() => {
           setFehler(false);
-          void entwurfSchreiben(besitzer, terminId, kopf, text).then(onGesichert, () =>
-            setFehler(true),
-          );
+          void (async () => {
+            // Liegt am Termin schon ein anderer Text auf dem Gerät, bleibt er
+            // stehen; dieser kommt als eigener Entwurf daneben (Zweitreview S1).
+            const da = await entwurfAmTermin(besitzer, terminId);
+            await entwurfSchreiben(
+              besitzer,
+              terminId,
+              kopf,
+              text,
+              new Date(),
+              da !== undefined && da.text !== text,
+            );
+          })().then(onGesichert, () => setFehler(true));
         }}
       >
         Auf dem Gerät sichern

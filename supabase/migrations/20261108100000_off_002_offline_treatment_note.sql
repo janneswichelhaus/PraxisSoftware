@@ -58,9 +58,10 @@ comment on column public.treatment_notes.reported_written_at is
 --
 -- Ergebnis:
 --   { "status": "created",  "note_id": uuid }   angelegt als Entwurf
---   { "status": "known",    "note_id": uuid }   kam schon an - nichts geaendert
+--   { "status": "known",    "note_id": uuid }   kam schon an, derselbe Text - nichts geaendert
 --   { "status": "conflict", "note_id": uuid, "note_status": "draft" | "final" }
---       am Termin gibt es schon eine Dokumentation - nichts angelegt
+--       am Termin gibt es schon eine Dokumentation, oder derselbe Entwurf kam
+--       schon mit anderem Text an - nichts angelegt, nichts geaendert
 -- Fehler: 28000 die Sitzung ist gesperrt - kein Urteil ueber den Entwurf, das
 -- Geraet behaelt ihn (wie TRK-007); sonst wie create_treatment_note: 42501
 -- Rolle/Organisation, P0002 Termin nicht (mehr) da oder nicht zugaenglich,
@@ -129,7 +130,7 @@ begin
   -- Wiedererkennen vor jeder weiteren Pruefung: Kam der Entwurf schon an und
   -- ging nur die Antwort verloren, ist das ein Erfolg - auch wenn der Termin
   -- inzwischen abgesagt ist.
-  select t.id, t.appointment_id
+  select t.id, t.appointment_id, t.content, t.status
     into v_da
   from public.treatment_notes t
   where t.created_by = v_actor
@@ -139,6 +140,15 @@ begin
   if found then
     if v_da.appointment_id <> p_appointment_id then
       raise exception 'invalid offline draft' using errcode = '22023';
+    end if;
+    -- Ging die Antwort verloren und wurde danach weitergeschrieben, traegt
+    -- dieselbe Kennung einen neueren Text: Der ist kein Wiedererkennen,
+    -- sonst fiele er still vom Geraet (Zweitreview B1). Er bleibt dort als
+    -- Konflikt neben dem angekommenen Entwurf.
+    if v_da.content <> v_inhalt then
+      return jsonb_build_object(
+        'status', 'conflict', 'note_id', v_da.id, 'note_status', v_da.status
+      );
     end if;
     return jsonb_build_object('status', 'known', 'note_id', v_da.id);
   end if;
@@ -180,11 +190,16 @@ begin
     when unique_violation then
       -- Gleichzeitig angekommen: derselbe Entwurf zweimal oder ein anderer
       -- Eintrag am Termin.
-      select t.id into v_note
+      select t.id, t.content, t.status into v_da
       from public.treatment_notes t
       where t.created_by = v_actor and t.offline_id = p_offline_id;
       if found then
-        return jsonb_build_object('status', 'known', 'note_id', v_note);
+        if v_da.content <> v_inhalt then
+          return jsonb_build_object(
+            'status', 'conflict', 'note_id', v_da.id, 'note_status', v_da.status
+          );
+        end if;
+        return jsonb_build_object('status', 'known', 'note_id', v_da.id);
       end if;
       select t.id, t.status into v_da
       from public.treatment_notes t
@@ -207,7 +222,7 @@ grant execute on function public.sync_offline_treatment_note(uuid, uuid, text, t
 -- -----------------------------------------------------------------------------
 -- 3. Lesen: die Zeit des Geraets an der Dokumentation (ADR-024 Punkt 8)
 --
--- Aus 20260923100000_abgewiesene_klinische_lesezugriffe.sql; neu ist allein
+-- Aus 20261006100100_log_001a_lesepfade.sql; neu ist allein
 -- die Spalte reported_written_at am Ende.
 -- -----------------------------------------------------------------------------
 drop function public.get_treatment_note(uuid);

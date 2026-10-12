@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ablageLeeren, speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
-import { EntwurfAbgewiesen, ENTWURF_ABWEISUNG, type EntwurfAntwort } from './api';
+import {
+  EntwurfAbgewiesen,
+  EntwurfNichtAngekommen,
+  ENTWURF_ABWEISUNG,
+  type EntwurfAntwort,
+} from './api';
 import {
   entwuerfeLesen,
   entwuerfeUebertragen,
@@ -28,6 +33,11 @@ function sender(antworten: (e: Entwurf) => Promise<EntwurfAntwort>): EntwurfSend
 } {
   const mock = vi.fn(antworten);
   return Object.assign((e: Entwurf) => mock(e), { mock }) as never;
+}
+
+/** Übertragen in einer Sitzung dieses Kontos (Zweitreview B2). */
+function uebertragenAls(senden: EntwurfSender) {
+  return entwuerfeUebertragen(ANNA, senden, () => Promise.resolve(ANNA));
 }
 
 beforeEach(() => {
@@ -62,13 +72,50 @@ describe('Entwürfe auf dem Gerät (OFF-002)', () => {
 });
 
 describe('Übertragung (OFF-002)', () => {
+  it('ohne Sitzung oder mit einem anderen Konto geht nichts hinaus (Zweitreview B2)', async () => {
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: eins.');
+    const s = sender(() => Promise.resolve({ status: 'created', note_id: 'n' }));
+    expect(await entwuerfeUebertragen(ANNA, s, () => Promise.resolve(null))).toEqual({
+      angekommen: 0,
+      unterbrochen: true,
+    });
+    expect(await entwuerfeUebertragen(ANNA, s, () => Promise.resolve('konto-ben'))).toMatchObject({
+      unterbrochen: true,
+    });
+    expect(s.mock).not.toHaveBeenCalled();
+    expect((await entwuerfeLesen(ANNA))[0]!.zustand).toBe('wartet');
+  });
+
+  it('ein Fehler an einem Entwurf hält die übrigen nicht auf (Zweitreview S5)', async () => {
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: eins.');
+    await entwurfSchreiben(ANNA, 't2', KOPF, 'Synthetisch: zwei.');
+    const s = sender((e) =>
+      e.terminId === 't1'
+        ? Promise.reject(new EntwurfNichtAngekommen())
+        : Promise.resolve({ status: 'created', note_id: 'n' }),
+    );
+    expect(await uebertragenAls(s)).toEqual({ angekommen: 1, unterbrochen: false });
+    expect((await entwuerfeLesen(ANNA)).map((e) => [e.terminId, e.zustand])).toEqual([
+      ['t1', 'wartet'],
+    ]);
+  });
+
+  it('„Auf dem Gerät sichern" legt neben einem wartenden Entwurf einen eigenen an (Zweitreview S1)', async () => {
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: A.');
+    await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: B.', new Date(), true);
+    expect((await entwuerfeLesen(ANNA)).map((e) => e.text)).toEqual([
+      'Synthetisch: A.',
+      'Synthetisch: B.',
+    ]);
+  });
+
   it('angenommen (created oder known) fällt der Entwurf vom Gerät', async () => {
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: eins.');
     await entwurfSchreiben(ANNA, 't2', KOPF, 'Synthetisch: zwei.');
     const s = sender((e) =>
       Promise.resolve({ status: e.terminId === 't1' ? 'created' : 'known', note_id: 'n' }),
     );
-    expect(await entwuerfeUebertragen(ANNA, s)).toEqual({ angekommen: 2, unterbrochen: false });
+    expect(await uebertragenAls(s)).toEqual({ angekommen: 2, unterbrochen: false });
     expect(await entwuerfeLesen(ANNA)).toEqual([]);
     expect(s.mock.mock.calls[0]![0]).toMatchObject({ terminId: 't1', text: 'Synthetisch: eins.' });
   });
@@ -78,7 +125,7 @@ describe('Übertragung (OFF-002)', () => {
     const s = sender(() =>
       Promise.resolve({ status: 'conflict', note_id: 'n-final', note_status: 'final' }),
     );
-    await entwuerfeUebertragen(ANNA, s);
+    await uebertragenAls(s);
     const [e] = await entwuerfeLesen(ANNA);
     expect(e).toMatchObject({
       zustand: 'konflikt',
@@ -87,14 +134,14 @@ describe('Übertragung (OFF-002)', () => {
     });
     // Nicht mehr wartend: kein zweites Senden, kein Weiterschreiben.
     expect(await entwurfAmTermin(ANNA, 't1')).toBeUndefined();
-    await entwuerfeUebertragen(ANNA, s);
+    await uebertragenAls(s);
     expect(s.mock).toHaveBeenCalledTimes(1);
   });
 
   it('abgewiesen: der Text bleibt mit dem Grund stehen, bis die Person ihn verwirft', async () => {
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: abgesagt.');
     const s = sender(() => Promise.reject(new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.abgesagt)));
-    await entwuerfeUebertragen(ANNA, s);
+    await uebertragenAls(s);
     const [e] = await entwuerfeLesen(ANNA);
     expect(e).toMatchObject({ zustand: 'abgewiesen', grund: ENTWURF_ABWEISUNG.abgesagt });
     expect(e!.text).toBe('Synthetisch: abgesagt.');
@@ -104,7 +151,7 @@ describe('Übertragung (OFF-002)', () => {
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: eins.');
     await entwurfSchreiben(ANNA, 't2', KOPF, 'Synthetisch: zwei.');
     const s = sender(() => Promise.reject(new Error('Netz')));
-    expect(await entwuerfeUebertragen(ANNA, s)).toEqual({ angekommen: 0, unterbrochen: true });
+    expect(await uebertragenAls(s)).toEqual({ angekommen: 0, unterbrochen: true });
     expect(s.mock).toHaveBeenCalledTimes(1);
     expect((await entwuerfeLesen(ANNA)).every((e) => e.zustand === 'wartet')).toBe(true);
   });
@@ -115,7 +162,7 @@ describe('Übertragung (OFF-002)', () => {
       await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch: alt, neu.');
       return { status: 'created', note_id: 'n-1' };
     });
-    await entwuerfeUebertragen(ANNA, s);
+    await uebertragenAls(s);
     const [e] = await entwuerfeLesen(ANNA);
     expect(e).toMatchObject({
       zustand: 'konflikt',
@@ -133,9 +180,9 @@ describe('Übertragung (OFF-002)', () => {
           freigeben = () => fertig({ status: 'created', note_id: 'n' });
         }),
     );
-    const erste = entwuerfeUebertragen(ANNA, s);
+    const erste = uebertragenAls(s);
     await vi.waitFor(() => expect(s.mock).toHaveBeenCalledTimes(1));
-    const zweite = entwuerfeUebertragen(ANNA, s);
+    const zweite = uebertragenAls(s);
     expect(zweite).toBe(erste);
     freigeben();
     await erste;

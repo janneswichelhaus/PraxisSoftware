@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useIstVerbunden } from '@/app/verbindung';
-import { createTreatmentNoteAddendum } from '@/features/documentation/api';
+import {
+  createTreatmentNoteAddendum,
+  fetchTreatmentDocumentation,
+} from '@/features/documentation/api';
 import { textUebergeben } from '@/features/documentation/uebernahme';
 import type { CurrentUser } from '@/features/session/types';
 import { AufDemGeraet, type Serverwege } from './AufDemGeraet';
@@ -26,6 +29,8 @@ export function AufDemGeraetPage({ user }: { user: CurrentUser }) {
           state: { meldung: 'Ihr Text ist als Nachtrag-Entwurf gesichert.' },
         });
       },
+      fassungLesen: async (terminId) =>
+        (await fetchTreatmentDocumentation(terminId)).primary?.content ?? null,
       inKorrektur: (terminId, noteId, text) => {
         textUebergeben(noteId, text);
         void navigate(`/termine/${terminId}/dokumentation/${noteId}/korrektur`);

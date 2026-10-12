@@ -18,6 +18,28 @@ export class EntwurfAbgewiesen extends Error {
   }
 }
 
+/**
+ * Ein Fehler an diesem einen Entwurf, der kein Urteil ist und kein Funkloch:
+ * etwa ein unbekannter Code des Servers. Der Entwurf bleibt wartend, die
+ * übrigen gehen trotzdem hinaus (Zweitreview S5).
+ */
+export class EntwurfNichtAngekommen extends Error {
+  constructor() {
+    super('Nicht übertragen.');
+    this.name = 'EntwurfNichtAngekommen';
+  }
+}
+
+/** Das Konto der laufenden Sitzung - `null` ohne Sitzung (Zweitreview B2). */
+export async function sitzungskonto(): Promise<string | null> {
+  try {
+    const { data } = await getSupabase().auth.getSession();
+    return data.session?.user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const ENTWURF_ABWEISUNG = {
   recht: 'Nicht übertragen: Sie dürfen an diesem Termin nicht mehr dokumentieren.',
   termin: 'Nicht übertragen: Den Termin gibt es nicht mehr, oder er ist Ihnen nicht zugänglich.',
@@ -48,17 +70,35 @@ export async function entwurfUebertragen(entwurf: {
   })) as { data: unknown; error: { code?: string; message?: string } | null };
   const code = error?.code;
   const meldung = error?.message ?? '';
-  if (code === '42501') throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.recht);
-  if (code === 'P0002') throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.termin);
-  if (code === '22023' || code === '22P02') {
+  // Ein Urteil nur mit dem Satz der Funktion selbst: „permission denied for
+  // function“ (ohne Sitzung, als anon) ist keins (Zweitreview B2).
+  if (code === '42501' && meldung.includes('not allowed to write treatment documentation')) {
+    throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.recht);
+  }
+  if (code === 'P0002' && meldung.includes('appointment not found')) {
+    throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.termin);
+  }
+  if (code === '22023') {
     if (meldung.includes('cancelled')) throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.abgesagt);
     if (meldung.includes('no-show'))
       throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.nichtAngetroffen);
     if (meldung.includes('event')) throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.ereignis);
-    throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.form);
+    if (
+      meldung.includes('invalid offline draft') ||
+      meldung.includes('must not be empty') ||
+      meldung.includes('too long')
+    ) {
+      throw new EntwurfAbgewiesen(ENTWURF_ABWEISUNG.form);
+    }
   }
-  // 28000 (gesperrt) und alles Übrige: kein Urteil über den Entwurf.
-  if (error) throw new Error('Nicht übertragen. Bitte die Verbindung prüfen.');
+  // 28000 (gesperrt), ohne Code (Funkloch) und PGRST (Dienst): kein Urteil,
+  // die Runde endet; jeder andere Code betrifft nur diesen Entwurf.
+  if (error) {
+    if (!code || code === '28000' || code.startsWith('PGRST') || code === '42501') {
+      throw new Error('Nicht übertragen. Bitte die Verbindung prüfen.');
+    }
+    throw new EntwurfNichtAngekommen();
+  }
   const g = antwortSchema.safeParse(data);
   if (!g.success) throw new Error('Nicht übertragen. Bitte die Verbindung prüfen.');
   return g.data;

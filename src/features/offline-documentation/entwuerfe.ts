@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { dauerfachAendern, dauerfachLesen } from '@/lib/geraeteablage';
 import { MAX_ZEICHEN, wieGespeichert } from '@/features/documentation/api';
-import { EntwurfAbgewiesen, entwurfUebertragen } from './api';
+import {
+  EntwurfAbgewiesen,
+  EntwurfNichtAngekommen,
+  entwurfUebertragen,
+  sitzungskonto,
+} from './api';
 
 /**
  * Die Offline-Entwürfe der Dokumentation (OFF-002, ADR-024 Punkte 6 bis 8,
@@ -110,13 +115,23 @@ export async function entwurfSchreiben(
   kopf: Entwurfskopf,
   text: string,
   jetzt = new Date(),
+  /**
+   * Nie in einen vorhandenen Entwurf schreiben, sondern einen eigenen
+   * anlegen - für die Schreibseite, die den Entwurf auf dem Gerät nicht
+   * kennt (Zweitreview S1).
+   */
+  immerNeu = false,
 ): Promise<Entwurf | undefined> {
   if (text.length > MAX_ZEICHEN) throw new Error('zu lang');
+  let neueId: string | null = null;
   const leer = wieGespeichert(text) === '';
   const ergebnis = await dauerfachAendern(besitzer, FACH, (alt) => {
     const f = fach(alt);
-    const da = f.entwuerfe.find((e) => e.terminId === terminId && e.zustand === 'wartet');
+    const da = immerNeu
+      ? undefined
+      : f.entwuerfe.find((e) => e.terminId === terminId && e.zustand === 'wartet');
     if (leer) {
+      if (immerNeu) return oderNichts(f);
       f.entwuerfe = f.entwuerfe.filter((e) => e !== da);
       return oderNichts(f);
     }
@@ -124,8 +139,9 @@ export async function entwurfSchreiben(
       da.text = text;
       da.geschriebenAm = jetzt.toISOString();
     } else {
+      neueId = crypto.randomUUID();
       f.entwuerfe.push({
-        id: crypto.randomUUID(),
+        id: neueId,
         terminId,
         kopf,
         text,
@@ -139,7 +155,9 @@ export async function entwurfSchreiben(
     return f;
   });
   melden();
-  return ergebnis?.entwuerfe.find((e) => e.terminId === terminId && e.zustand === 'wartet');
+  return ergebnis?.entwuerfe.find((e) =>
+    neueId ? e.id === neueId : e.terminId === terminId && e.zustand === 'wartet',
+  );
 }
 
 /** Ausdrücklich verwerfen - der einzige Weg, auf dem ein Entwurf ohne Server fällt. */
@@ -217,14 +235,28 @@ export function uebertragungAnstossen(): void {
   anstosser?.();
 }
 
-let laeuft: Promise<Uebertragungsstand> | null = null;
-let nochmal = false;
+/** Je Konto eine Übertragung zur Zeit (Zweitreview B2). */
+const laufend = new Map<string, Promise<Uebertragungsstand>>();
+const nochmal = new Set<string>();
 
-async function einmal(besitzer: string, senden: EntwurfSender): Promise<Uebertragungsstand> {
+export type Kontofrage = () => Promise<string | null>;
+
+async function einmal(
+  besitzer: string,
+  senden: EntwurfSender,
+  konto: Kontofrage,
+): Promise<Uebertragungsstand> {
   const stand: Uebertragungsstand = { angekommen: 0, unterbrochen: false };
   for (const e of await entwuerfeLesen(besitzer)) {
     if (e.zustand !== 'wartet' || wieGespeichert(e.text) === '') continue;
     if (inBearbeitung.has(e.terminId)) continue;
+    // Vor jedem Senden: Gehört die Sitzung noch diesem Konto? Abgemeldet
+    // oder ein anderes Konto angemeldet - dann endet die Runde, und nichts
+    // geht unter fremdem Namen hinaus (Zweitreview B2).
+    if ((await konto().catch(() => null)) !== besitzer) {
+      stand.unterbrochen = true;
+      break;
+    }
     try {
       const antwort = await senden(e);
       if (antwort.status === 'conflict') {
@@ -246,6 +278,9 @@ async function einmal(besitzer: string, senden: EntwurfSender): Promise<Uebertra
         stand.angekommen += 1;
       }
     } catch (fehler) {
+      // Nur an diesem Entwurf: er wartet weiter, die übrigen gehen hinaus
+      // (Zweitreview S5).
+      if (fehler instanceof EntwurfNichtAngekommen) continue;
       if (!(fehler instanceof EntwurfAbgewiesen)) {
         stand.unterbrochen = true;
         break;
@@ -270,28 +305,32 @@ async function einmal(besitzer: string, senden: EntwurfSender): Promise<Uebertra
 export function entwuerfeUebertragen(
   besitzer: string,
   senden: EntwurfSender = entwurfUebertragen,
+  konto: Kontofrage = sitzungskonto,
 ): Promise<Uebertragungsstand> {
-  if (laeuft) {
-    nochmal = true;
-    return laeuft;
+  const da = laufend.get(besitzer);
+  if (da) {
+    nochmal.add(besitzer);
+    return da;
   }
-  laeuft = (async () => {
+  const neu = (async () => {
     let stand: Uebertragungsstand;
     do {
-      nochmal = false;
-      stand = await einmal(besitzer, senden);
-    } while (nochmal && !stand.unterbrochen);
+      nochmal.delete(besitzer);
+      stand = await einmal(besitzer, senden, konto);
+    } while (nochmal.has(besitzer) && !stand.unterbrochen);
     return stand;
   })().finally(() => {
-    laeuft = null;
+    laufend.delete(besitzer);
+    nochmal.delete(besitzer);
   });
-  return laeuft;
+  laufend.set(besitzer, neu);
+  return neu;
 }
 
 /** Nur für Tests. */
 export function entwuerfeZuruecksetzen(): void {
-  laeuft = null;
-  nochmal = false;
+  laufend.clear();
+  nochmal.clear();
   inBearbeitung.clear();
   anstosser = null;
 }

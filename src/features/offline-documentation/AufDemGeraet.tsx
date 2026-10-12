@@ -44,6 +44,11 @@ export interface Serverwege {
   alsNachtrag: (terminId: string, noteId: string, text: string) => Promise<void>;
   /** Den Text in die Korrektur der finalisierten Dokumentation (ANN-320). */
   inKorrektur: (terminId: string, noteId: string, text: string) => void;
+  /**
+   * Die Fassung, die am Termin schon steht - beide Fassungen zeigen (ADR-024
+   * Punkt 7). Nur auf Tipp: Lesen ist „Akte geöffnet“ (ADR-010).
+   */
+  fassungLesen: (terminId: string) => Promise<string | null>;
 }
 
 /** Wie lange nach dem letzten Tastendruck der Text auf das Gerät geht. */
@@ -261,6 +266,7 @@ function Entwurfskarte({
   onWeiter: () => void;
 }) {
   const [kopiert, setKopiert] = useState(false);
+  const [praxisFassung, setPraxisFassung] = useState<string | null | undefined>(undefined);
   const [fehler, setFehler] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
 
@@ -284,6 +290,16 @@ function Entwurfskarte({
       setFehler(grund instanceof Error ? grund.message : 'Nicht übernommen.');
     } finally {
       setLaeuft(false);
+    }
+  }
+
+  async function fassungZeigen() {
+    if (!serverwege) return;
+    setFehler(null);
+    try {
+      setPraxisFassung(await serverwege.fassungLesen(e.terminId));
+    } catch {
+      setFehler('Die Fassung der Praxis ließ sich nicht laden. Bitte die Verbindung prüfen.');
     }
   }
 
@@ -314,9 +330,20 @@ function Entwurfskarte({
         </Statusmeldung>
       ) : null}
 
-      <p className="text-ink bg-surface-sunken rounded-field mt-3 p-3 text-sm whitespace-pre-wrap select-text">
+      {e.zustand === 'konflikt' ? (
+        <p className="text-ink-muted mt-3 text-sm font-medium">Ihr Text auf diesem Gerät</p>
+      ) : null}
+      <p className="text-ink bg-surface-sunken rounded-field mt-1 p-3 text-sm whitespace-pre-wrap select-text">
         {e.text}
       </p>
+      {praxisFassung !== undefined ? (
+        <>
+          <p className="text-ink-muted mt-3 text-sm font-medium">Fassung der Praxis am Termin</p>
+          <p className="text-ink border-line rounded-field mt-1 border p-3 text-sm whitespace-pre-wrap">
+            {praxisFassung ?? 'Am Termin steht inzwischen keine Dokumentation mehr.'}
+          </p>
+        </>
+      ) : null}
 
       {fehler ? (
         <Statusmeldung ton="fehler" className="mt-2">
@@ -345,6 +372,11 @@ function Entwurfskarte({
                   In Korrektur übernehmen
                 </Button>
               </>
+            ) : null}
+            {praxisFassung === undefined ? (
+              <Button variant="secondary" onClick={() => void fassungZeigen()}>
+                Fassung der Praxis zeigen
+              </Button>
             ) : null}
             <ButtonLink variant="secondary" to={serverwege.zurDokumentation(e.terminId)}>
               Zur Dokumentation des Termins
@@ -392,8 +424,6 @@ function Entwurfsfeld({
   const offen = useRef<string | null>(null);
   const uhr = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => bearbeitungBeginnen(terminId), [terminId]);
-
   useEffect(() => {
     let aktiv = true;
     void entwurfAmTermin(besitzer, terminId).then((e) => {
@@ -421,14 +451,17 @@ function Entwurfsfeld({
   }
 
   useSperrsicherung(ablegen);
-  useEffect(
-    () => () => {
-      void ablegen();
-    },
-    // Beim Verlassen: was noch offen ist, aufs Gerät.
-
-    [],
-  );
+  const ablegenRef = useRef(ablegen);
+  ablegenRef.current = ablegen;
+  // Solange das Feld offen ist, überträgt niemand diesen Termin. Beim
+  // Verlassen erst den letzten Stand aufs Gerät, dann freigeben - sonst
+  // ginge der ältere Text hinaus (Zweitreview S2).
+  useEffect(() => {
+    const freigeben = bearbeitungBeginnen(terminId);
+    return () => {
+      void ablegenRef.current().finally(freigeben);
+    };
+  }, [terminId]);
 
   if (text === null) return <LoadingState label="Wird vom Gerät gelesen …" />;
 
