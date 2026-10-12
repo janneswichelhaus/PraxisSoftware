@@ -276,7 +276,10 @@ export interface Uebertragungsergebnis {
 let laeuft: Promise<Uebertragungsergebnis> | null = null;
 let nochmal = false;
 
-async function einmalUebertragen(besitzer: string): Promise<Uebertragungsergebnis> {
+/** Der Weg zum Server; die Prüfseiten setzen einen eigenen ein. */
+export type Sender = typeof einheitUebertragen;
+
+async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebertragungsergebnis> {
   const ergebnis: Uebertragungsergebnis = { angekommen: [], angabenVerworfen: [], ohneNetz: false };
   for (const einheit of await wartendeEinheiten(besitzer)) {
     if (einheit.ereignisse.length === 0) continue;
@@ -284,7 +287,7 @@ async function einmalUebertragen(besitzer: string): Promise<Uebertragungsergebni
     let fallen = false;
     let angenommen = false;
     try {
-      const antwort = await einheitUebertragen(einheit.zugangId, einheit);
+      const antwort = await senden(einheit.zugangId, einheit);
       if (antwort.status === 'finished' && !einheit.ereignisse.some((e) => e.kind === 'finish')) {
         // Anderswo beendet (zweites Gerät, Vertretung): Die Haken gehören in
         // eine neue Einheit, statt still zu fallen - einmal (Zweitreview
@@ -334,7 +337,10 @@ async function einmalUebertragen(besitzer: string): Promise<Uebertragungsergebni
  * offener Sitzung mit Verbindung aufrufen (ADR-025 Punkt 16): Die lokale
  * Ansicht nach der Freigabe ohne Netz überträgt nie.
  */
-export function uebertragen(besitzer: string): Promise<Uebertragungsergebnis> {
+export function uebertragen(
+  besitzer: string,
+  senden: Sender = einheitUebertragen,
+): Promise<Uebertragungsergebnis> {
   if (laeuft) {
     nochmal = true;
     return laeuft;
@@ -343,7 +349,7 @@ export function uebertragen(besitzer: string): Promise<Uebertragungsergebnis> {
     let ergebnis: Uebertragungsergebnis;
     do {
       nochmal = false;
-      ergebnis = await einmalUebertragen(besitzer);
+      ergebnis = await einmalUebertragen(besitzer, senden);
     } while (nochmal && !ergebnis.ohneNetz);
     return ergebnis;
   })().finally(() => {

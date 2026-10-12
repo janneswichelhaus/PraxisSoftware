@@ -6,6 +6,7 @@ import {
   type Durchfuehrungstraeger,
 } from './ablage';
 import type { Plattformzugang } from './api';
+import { schluesselAblegen } from '@/features/auth/freigabeOhneNetz';
 
 /**
  * Die Ablage auf dem Gerät in offener Sitzung (TRK-008, ADR-024 Punkte 5
@@ -18,7 +19,9 @@ import type { Plattformzugang } from './api';
  *   * legt jede geladene Antwort „Ihre Übungen" ab und lässt Pläne nicht mehr
  *     lesbarer Zugänge fallen;
  *   * überträgt, was wartet: beim Öffnen, bei jedem Wieder-online und nach
- *     jedem Haken („bei jeder Verbindung sofort", ADR-024 Konsequenzen).
+ *     jedem Haken („bei jeder Verbindung sofort", ADR-024 Konsequenzen);
+ *   * legt die Schlüssel der eigenen Passkeys für die Freigabe ohne Netz ab
+ *     (TRK-009, ADR-025 Punkt 16: „bei der letzten Freigabe mit Netz").
  */
 export function PlattformAblage({
   besitzer,
@@ -31,6 +34,10 @@ export function PlattformAblage({
 }) {
   const lesbar = useMemo(() => zugaenge.filter((z) => z.readable), [zugaenge]);
   usePlaeneAblegen(besitzer, lesbar);
+
+  useEffect(() => {
+    void schluesselAblegen(besitzer);
+  }, [besitzer]);
 
   useEffect(() => {
     const los = () => void uebertragen(besitzer).catch(() => undefined);

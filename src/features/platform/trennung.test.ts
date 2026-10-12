@@ -44,6 +44,9 @@ const ERLAUBT: readonly RegExp[] = [
   // KOM-007: der Videodialog schließt vor der Sitzungssperre wie der
   // Kameradialog - die Sperre gilt für alle Konten gleich (ADR-025).
   /^@\/features\/auth\/sitzungssperre\/sperrsicherung$/,
+  // TRK-009: die Freigabe ohne Netz per Passkey und was die Sperre ohne Netz
+  // öffnet - die Sperre gilt für alle Konten gleich (ADR-025 Punkt 16).
+  /^@\/features\/auth\/(freigabeOhneNetz|sitzungssperre\/Sitzungssperre)$/,
   // UEB-009: das Planblatt und die Dosierung in Worten - Darstellung ohne
   // Datenzugriff (ANN-303); die Pläne kommen über die Plattformprojektion.
   /^@\/features\/exercise-plans\/(Planblatt|dosierung)$/,

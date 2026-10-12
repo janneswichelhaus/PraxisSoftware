@@ -37,11 +37,19 @@ interface Ergebnis {
   note_dropped: boolean;
 }
 
+interface Haken {
+  id: string;
+  kind: 'set';
+  at: string;
+  item_id: string;
+  set_number: number;
+  done: boolean;
+}
 type Ereignis =
-  | { id: string; kind: 'set'; at: string; item_id: string; set_number: number; done: boolean }
+  | Haken
   | { id: string; kind: 'finish'; at: string; note?: string; values?: Record<string, number> };
 
-function haken(item: string, satz: number, done = true, at = '2026-10-12T06:00:00Z'): Ereignis {
+function haken(item: string, satz: number, done = true, at = '2026-10-12T06:00:00Z'): Haken {
   return { id: randomUUID(), kind: 'set', at, item_id: item, set_number: satz, done };
 }
 
