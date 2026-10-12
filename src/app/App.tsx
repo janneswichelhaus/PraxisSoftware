@@ -18,6 +18,7 @@ import { EinladungPage } from '@/features/platform/EinladungPage';
 import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
+import { PlattformAblage } from '@/features/platform/PlattformAblage';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -196,6 +197,7 @@ function OhneProfil({
   onEingerichtet: () => void;
   onAbmelden: () => void;
 }) {
+  const besitzer = useSession().session?.user.id ?? '';
   // Immer frisch beim Öffnen: Eine Sperre soll bei der nächsten Anfrage
   // wirken (ADR-023 Punkt 18), nicht nach Ablauf eines Zwischenspeichers.
   const { data, isPending, isError, refetch } = useQuery({
@@ -233,7 +235,9 @@ function OhneProfil({
       <NachladefehlerContext.Provider
         value={isError ? { satz: ZUGANG_NICHT_AKTUALISIERT, erneut: refetch } : null}
       >
-        <PlattformApp zugaenge={data} email={email} onAbmelden={onAbmelden} />
+        <PlattformAblage besitzer={besitzer} zugaenge={data}>
+          <PlattformApp zugaenge={data} email={email} onAbmelden={onAbmelden} />
+        </PlattformAblage>
       </NachladefehlerContext.Provider>
     );
   }

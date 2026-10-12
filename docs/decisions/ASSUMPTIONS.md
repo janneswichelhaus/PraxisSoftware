@@ -4340,3 +4340,18 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sic
 **Anker.** `public.sync_platform_exercise_session` und `app.offline_transfer_days` in `supabase/migrations/20261107100000_trk_007_offline_transfer.sql`; `OFFLINE_FRIST_TAGE` in `src/lib/geraeteablage.ts`; Tests in `supabase/tests/platform-exercise-sync.test.ts`.
 
 **Änderungspfad.** Andere Frist: beide Konstanten · Aufwand `klein`; Tag des Eingangs statt des Geräts: `p_performed_on` durch `app.training_today` ersetzen · Aufwand `klein`; Einwilligung fehlt: ganze Übertragung abweisen statt Angaben fallen lassen · Aufwand `klein`.
+
+### ANN-358 — Jeder Haken geht über die Warteschlange auf dem Gerät; die Ablage hält nur Pläne zum Üben und fällt mit Abmelden, Kontowechsel und nach sieben Tagen
+
+Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Datenschutzprüfung (B2, DSFA, mit ADR-024 Punkt 5); Jannes in der Sichtung Plattform (TRK-EPIC-003)
+
+**Ablösung.** ersetzt ANN-305 im Verhalten ohne Verbindung
+
+**Annahme.** Die Durchführung schreibt jeden Haken und das Ende **immer** zuerst in die Warteschlange auf dem Gerät (IndexedDB, ohne eigene Verschlüsselung) und überträgt dann sofort, wenn die Sitzung offen ist und Verbindung besteht – beim Öffnen der Plattform, bei jedem Wieder-online und nach jedem Haken. Auf dem Gerät liegen dazu die Pläne, an denen der Zugang beim letzten Laden üben durfte, nur mit den Feldern der Durchführungsansicht (Titel, Bereich, Übungen mit Dosierung und Hinweis, die heute offene Einheit). Alles fällt beim Abmelden, beim Kontowechsel und sieben Tage nach dem letzten Laden mit Verbindung; Pläne fallen, sobald der Server sie nicht mehr nennt; eine Einheit fällt, sobald der Server sie angenommen oder abgewiesen hat – eine Abweisung zeigt die Ansicht mit Grund. Ohne Verbindung zeigt „Übungen“ die abgelegten Pläne zum Üben, sonst nichts.
+
+**Begründung.** ADR-024 Punkte 4, 5, 7, 8 (W2 a): der Plan der Einheit und die Warteschlange, nur der zugewiesene, laufende Plan, Löschung bei Abmelden, Kontowechsel, Übertragung, Wegfall beim Server und nach sieben Tagen. Ein Weg für online und offline statt zweier: Ein Haken, der online direkt zum Server ginge, wäre beim Funkloch mitten in der Einheit ein anderer Fall mit anderem Verhalten. Die Feldliste an einer Stelle folgt dem Gedanken von ADR-001 („sonst wächst sie zur Vollakte“). Unsicher: ob die Datenschutzprüfung die unverschlüsselte Ablage auf dem privaten Telefon der Person trägt (ADR-024, Folgefragen) – der Plan liegt ihr ohnehin als PDF vor.
+
+**Anker.** `OFFLINE_FRIST_TAGE`, `fachAendern`, `ablageLeeren` in `src/lib/geraeteablage.ts`; `ablageplanSchema`, `plaeneAblegen`, `ereignisAblegen`, `uebertragen` in `src/features/platform/ablage.ts`; `PlattformAblage` in `src/features/platform/PlattformAblage.tsx`; Räumung in `src/features/auth/SessionProvider.tsx`. Tests in `src/lib/geraeteablage.test.ts`, `src/features/platform/ablage.test.ts`, `src/features/platform/Durchfuehrung.test.tsx`.
+
+**Änderungspfad.** Verschlüsseln (W2 c): eine Hülle um `speicherInIndexedDb` · Aufwand `klein`; nur im Speicher der Seite (W2 b): `speicherImSpeicher` überall · Aufwand `klein`; andere Feldliste: `ablageplanSchema` · Aufwand `klein`.
+

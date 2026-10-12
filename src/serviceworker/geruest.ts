@@ -4,7 +4,7 @@
  * Genau das Anwendungsgerüst: die Dateien des Builds, deren Liste beim Build
  * entsteht (`scripts/vite-serviceworker.ts`). Alles andere geht unverändert
  * ins Netz - keine Anfrage an Datenbank, Anmeldedienst oder Dateiablage, kein
- * fremder Ursprung, keine Adresse mit Abfrage. Eine Seitenanfrage (Navigation)
+ * fremder Ursprung, keine Datei mit Abfrage. Eine Seitenanfrage (Navigation)
  * geht zuerst ins Netz; nur wenn das scheitert, kommt die Einstiegsseite aus
  * dem Speicher, damit die Anwendung sagt, was ohne Netz geht, statt der
  * Fehlerseite des Browsers. Zur Laufzeit wird nie etwas abgelegt.
@@ -41,8 +41,12 @@ export function antwortweg(
   } catch {
     return null;
   }
-  if (url.origin !== herkunft || url.search !== '') return null;
+  if (url.origin !== herkunft) return null;
+  // Eine Seitenanfrage darf eine Abfrage tragen (`?bereich=training`): Ohne
+  // Netz kommt trotzdem nur das Gerüst, ohne Daten (TRK-008 - sonst zeigt das
+  // Neuladen der Durchführung im Keller die Fehlerseite des Browsers).
   if (anfrage.mode === 'navigate') return liste.has(EINSTIEG) ? { art: 'einstieg' } : null;
+  if (url.search !== '') return null;
   return liste.has(url.pathname) ? { art: 'speicher', pfad: url.pathname } : null;
 }
 

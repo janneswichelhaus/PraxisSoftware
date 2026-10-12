@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -18,6 +18,12 @@ import {
   type PlanPosition,
   type Plattformzugang,
 } from './api';
+import {
+  DurchfuehrungKontext,
+  abgelegteZugaenge,
+  abweisungGelesen,
+  useWarteschlange,
+} from './ablage';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { WOCHENTAGE, tageText } from './uebungstage';
 
@@ -49,14 +55,21 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
         <Statusmeldung ton="erfolg" className="mt-4">
           Ihre Einheit ist gespeichert.
         </Statusmeldung>
+      ) : suche.get('gespeichert') === 'geraet' ? (
+        // TRK-008: ehrlich, wo sie liegt (ADR-024 Punkt 8).
+        <Statusmeldung ton="warnung" className="mt-4">
+          Ihre Einheit liegt auf diesem Gerät und ist noch nicht bei der Praxis. Sie wird
+          übertragen, sobald Verbindung besteht.
+        </Statusmeldung>
       ) : null}
+      <Wartehinweis zugangId={zugang.access_id} />
       {plaene.isPending ? (
         <LoadingState label="Ihre Übungen werden geladen …" />
       ) : plaene.data === undefined ? (
-        <ErrorState
-          title="Ihre Übungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => plaene.refetch()}
+        <OhneVerbindung
+          zugangId={zugang.access_id}
+          bereich={bereich}
+          onErneut={() => void plaene.refetch()}
         />
       ) : plaene.data.plans.length === 0 ? (
         <EmptyState
@@ -78,6 +91,98 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
           />
         ))
       )}
+    </>
+  );
+}
+
+/**
+ * TRK-008 (ADR-024 Punkt 8): Was noch auf dem Gerät wartet und was der Server
+ * abgewiesen hat - bis nichts mehr wartet. Ohne Ablage (Tests des Gerüsts)
+ * steht hier nichts.
+ */
+function Wartehinweis({ zugangId }: { zugangId: string }) {
+  const traeger = useContext(DurchfuehrungKontext);
+  if (!traeger) return null;
+  return <Wartestand besitzer={traeger.besitzer} zugangId={zugangId} />;
+}
+
+function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string }) {
+  const stand = useWarteschlange(besitzer);
+  const wartend = stand.einheiten.filter((e) => e.zugangId === zugangId).length;
+  return (
+    <>
+      {wartend > 0 ? (
+        <p className="text-ink-muted mt-4" data-testid="wartehinweis">
+          {wartend === 1
+            ? 'Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'
+            : `${wartend} Einheiten liegen noch auf diesem Gerät und sind noch nicht übertragen.`}
+        </p>
+      ) : null}
+      {stand.abgewiesen.map((a) => (
+        <Statusmeldung key={a.einheitId} ton="fehler" className="mt-4">
+          {`Eine Einheit wurde nicht übertragen: ${a.satz}`}{' '}
+          <button type="button" className="underline" onClick={() => abweisungGelesen(a.einheitId)}>
+            Ausblenden
+          </button>
+        </Statusmeldung>
+      ))}
+    </>
+  );
+}
+
+/**
+ * TRK-008: Ohne Verbindung die Pläne vom letzten Laden zum Üben (ADR-024
+ * Punkt 5) - nur die Durchführung, sonst nichts.
+ */
+function OhneVerbindung({
+  zugangId,
+  bereich,
+  onErneut,
+}: {
+  zugangId: string;
+  bereich: string;
+  onErneut: () => void;
+}) {
+  const traeger = useContext(DurchfuehrungKontext);
+  const abgelegt = useQuery({
+    queryKey: ['abgelegte-plaene', traeger?.besitzer, zugangId],
+    queryFn: async () =>
+      traeger
+        ? ((await abgelegteZugaenge(traeger.besitzer)).find((z) => z.zugangId === zugangId)
+            ?.plaene ?? [])
+        : [],
+    gcTime: 0,
+  });
+  const fehler = (
+    <ErrorState
+      title="Ihre Übungen konnten nicht geladen werden."
+      description="Bitte die Verbindung prüfen und erneut versuchen."
+      onErneut={onErneut}
+    />
+  );
+  if (!abgelegt.data || abgelegt.data.length === 0) return fehler;
+  return (
+    <>
+      <Statusmeldung ton="neutral" className="mt-4">
+        Ohne Verbindung. Üben können Sie trotzdem – mit Ihrem Plan vom letzten Laden. Die Haken
+        bleiben auf dem Gerät, bis Verbindung besteht.
+      </Statusmeldung>
+      {abgelegt.data.map((plan) => (
+        <section key={plan.id} className="mt-6" aria-label={plan.title}>
+          <h2 className="text-h4 font-semibold">{plan.title}</h2>
+          <div className="mt-4">
+            <ButtonLink
+              className="w-full"
+              to={`${PLATTFORM_PFAD}/uebungen/einheit/${plan.id}${bereich ? `?${bereich}` : ''}`}
+            >
+              Jetzt üben
+            </ButtonLink>
+          </div>
+        </section>
+      ))}
+      <Button variant="secondary" className="mt-6 w-full" onClick={onErneut}>
+        Erneut laden
+      </Button>
     </>
   );
 }
