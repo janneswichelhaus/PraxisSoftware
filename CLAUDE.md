@@ -68,6 +68,7 @@ verankert sein — sonst wird aus schnellem Bauen späterer Umbau.
 | 023 | Plattformzugang: Konten, Einladung, Identität, Vertretung, Sitzung, RLS     |
 | 024 | Service Worker, Offline-Erfassung, Benachrichtigungen, Push, Mailversand    |
 | 025 | Sitzungssperre: Frist, Inaktivität, erneute Freigabe, Passkey, Entwürfe     |
+| 026 | Virenprüfung von Uploads von außen, Prüfdienst, Ausfallverhalten            |
 
 ## Repository
 
@@ -100,8 +101,7 @@ im Alltag `pnpm install`, `pnpm dev`, `pnpm build`.
 ## Harte Regeln
 
 - **Keine echten Patientendaten** — nirgends, auch nicht auf Bildschirmfotos fremder Software.
-- **Keine Produktionscredentials** für Coding- oder KI-Werkzeuge.
-- **Keine Secrets im Repository.** `.env*` außer `.env.example` bleibt ungetrackt.
+- **Keine Produktionscredentials** für Coding- oder KI-Werkzeuge. **Keine Secrets im Repository.** `.env*` außer `.env.example` bleibt ungetrackt.
 - **Autorisierung niemals nur über die UI.** Ausgeblendete Elemente sind keine Zugriffskontrolle.
   RLS bleibt Defense-in-Depth (ADR-004).
 - **Security-, RLS- und Datenschutztests werden niemals entfernt, deaktiviert oder abgeschwächt, um

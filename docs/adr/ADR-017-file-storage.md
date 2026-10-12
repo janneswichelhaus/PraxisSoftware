@@ -1014,6 +1014,8 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     Anwendung (Punkt 62), Signatur und Container am Server (Punkt 63),
     Anzeige nur im Medienelement des Browsers aus einer Objekt-URL, nie ein
     Download.
+    *Vermerk 2026-10-12: Den Prüfer schlägt [ADR-026](ADR-026-malware-scanning.md) vor
+    (vorgeschlagen, W1 bis W4 offen).*
 70. **Scharf erst nach** B2 (Einwilligung, Frist, Einordnung des Videos als
     besonders identifizierend), der DSFA mit dieser Verarbeitung (G14),
     OPS-001 (Edge Runtime für Punkt 49), OPS-003 (Sicherung des Buckets,
