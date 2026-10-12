@@ -14,12 +14,18 @@ import type { CheckinDaten } from './api';
 const fetchCheckins = vi.fn();
 const saveCheckinTakt = vi.fn();
 const endCheckinTakt = vi.fn();
+const trainingsereignisVermerken = vi.fn();
+const trainingsereignisEntfernen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof CheckinApi>()),
   fetchCheckins: (...a: unknown[]) => fetchCheckins(...a) as Promise<CheckinDaten | null>,
   saveCheckinTakt: (...a: unknown[]) => saveCheckinTakt(...a) as Promise<void>,
   endCheckinTakt: (...a: unknown[]) => endCheckinTakt(...a) as Promise<void>,
+  trainingsereignisVermerken: (...a: unknown[]) =>
+    trainingsereignisVermerken(...a) as Promise<void>,
+  trainingsereignisEntfernen: (...a: unknown[]) =>
+    trainingsereignisEntfernen(...a) as Promise<void>,
 }));
 
 const { ZwischenDenTerminen } = await import('./ZwischenDenTerminen');
@@ -55,6 +61,11 @@ function daten(teil: Partial<CheckinDaten> = {}): CheckinDaten {
     ],
     time_zone: 'Europe/Berlin',
     sessions: [],
+    events: [],
+    plan_events: [],
+    appointment_days: [],
+    events_writable: false,
+    health_consent: null,
     ...teil,
   };
 }
@@ -263,5 +274,133 @@ describe('Zwischen den Terminen (TRK-002)', () => {
     );
     renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
     expect(await screen.findByText(/fällig seit 02\.10\.2026/)).toBeInTheDocument();
+  });
+});
+
+describe('Verlaufsbild mit Ereignissen (OUT-001)', () => {
+  const EREIGNIS = {
+    id: 'dededede-dede-4ede-8ede-000000000001',
+    occurred_on: '2026-10-05',
+    kind: 'erkrankung' as const,
+    note: 'zwei Wochen Grippe',
+    created_at: '2026-10-05T08:00:00Z',
+    author_name: 'Tom Trainingsbetreuung',
+  };
+
+  it('zeichnet je Skala ein Bild mit nummerierten Ereignissen und Planwechseln, ohne Wertung', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({
+        events: [EREIGNIS],
+        plan_events: [
+          { occurred_on: '2026-10-02', kind: 'plan_assigned', title: 'Kraft Grundlagen' },
+        ],
+        appointment_days: ['2026-10-03'],
+      }),
+    );
+    const { container } = renderWithProviders(
+      <ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />,
+    );
+    // Schmerz in Ruhe, bei Belastung und Morgensteifigkeit: drei Bilder.
+    const bilder = await screen.findAllByRole('figure');
+    expect(bilder).toHaveLength(3);
+    expect(bilder[0]).toHaveTextContent('Schmerz in Ruhe');
+    expect(bilder[0]).toHaveTextContent('Werte: 08.10.2026: 8');
+    // Punkte ohne Linie (ADR-006 Punkt 11).
+    expect(container.querySelectorAll('figure svg circle').length).toBe(3);
+    expect(container.querySelector('figure svg polyline, figure svg path')).toBeNull();
+    // Nach Tag nummeriert: erst der Plan (02.10.), dann die Grippe (05.10.).
+    expect(bilder[0]).toHaveTextContent('Ereignisse: 1 Plan zugewiesen · 2 Erkrankung');
+    const liste = screen.getByRole('list', { name: '' });
+    expect(
+      within(liste)
+        .getAllByRole('listitem')
+        .map((z) => z.textContent),
+    ).toEqual([
+      '102.10.2026Plan zugewiesen · Kraft Grundlagen',
+      '205.10.2026Erkrankung · zwei Wochen Grippe',
+    ]);
+    expect(
+      screen.getByText('Striche an der Zeitachse: durchgeführte Termine.'),
+    ).toBeInTheDocument();
+    // In der Behandlung wird im Befund vermerkt, nicht hier.
+    expect(screen.queryByRole('form', { name: 'Ereignis vermerken' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /entfernen/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Verschlechter|erklärt|Trend|besser|schlechter/i),
+    ).not.toBeInTheDocument();
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('zeichnet keine Auswahl und keinen Zusammenhang als Höhe', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({
+        checkins: [
+          {
+            answered_on: '2026-10-08',
+            recorded_at: '2026-10-08T07:00:00Z',
+            recorded_by_kind: 'self',
+            values: { pain_quality: 2, painkiller_24h: 1 },
+          },
+        ],
+      }),
+    );
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    await screen.findByRole('table', { name: /Angaben aus den Check-ins/ });
+    expect(screen.queryByRole('figure')).not.toBeInTheDocument();
+  });
+
+  it('im Training vermerkt die Betreuung ein Ereignis, ohne Vorauswahl der Art', async () => {
+    fetchCheckins.mockResolvedValue(daten({ events_writable: true, health_consent: true }));
+    trainingsereignisVermerken.mockResolvedValue(undefined);
+    const nutzer = userEvent.setup();
+    renderWithProviders(<ZwischenDenTerminen art="training" verhaeltnisId={AKTE} />);
+    const formular = await screen.findByRole('form', { name: 'Ereignis vermerken' });
+    expect(within(formular).getByLabelText(/Tag/)).toHaveValue('2026-10-12');
+    await nutzer.click(within(formular).getByRole('button', { name: 'Vermerken' }));
+    expect(await within(formular).findByText('Bitte die Art wählen.')).toBeInTheDocument();
+    expect(trainingsereignisVermerken).not.toHaveBeenCalled();
+    await nutzer.selectOptions(within(formular).getByLabelText(/Art/), 'urlaub');
+    await nutzer.type(within(formular).getByLabelText(/Notiz/), 'zwei Wochen weg');
+    await nutzer.click(within(formular).getByRole('button', { name: 'Vermerken' }));
+    await waitFor(() =>
+      expect(trainingsereignisVermerken).toHaveBeenCalledWith({
+        verhaeltnisId: AKTE,
+        datum: '2026-10-12',
+        art: 'urlaub',
+        notiz: 'zwei Wochen weg',
+      }),
+    );
+  });
+
+  it('ohne Einwilligung kein Formular, sondern der Grund', async () => {
+    fetchCheckins.mockResolvedValue(daten({ events_writable: false, health_consent: false }));
+    renderWithProviders(<ZwischenDenTerminen art="training" verhaeltnisId={AKTE} />);
+    expect(
+      await screen.findByText(/erst\s+mit der Einwilligung zu Gesundheitsangaben im Training/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('form', { name: 'Ereignis vermerken' })).not.toBeInTheDocument();
+  });
+
+  it('entfernt ein Ereignis im Training erst nach Rückfrage; Planwechsel nicht', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({
+        events: [EREIGNIS],
+        plan_events: [{ occurred_on: '2026-10-02', kind: 'plan_ended', title: 'Alt' }],
+        events_writable: true,
+        health_consent: true,
+      }),
+    );
+    trainingsereignisEntfernen.mockResolvedValue(undefined);
+    const nutzer = userEvent.setup();
+    renderWithProviders(<ZwischenDenTerminen art="training" verhaeltnisId={AKTE} />);
+    // Nur das vermerkte Ereignis (Nummer 2) hat den Knopf, der Planwechsel nicht.
+    const knoepfe = await screen.findAllByRole('button', { name: 'Entfernen' });
+    expect(knoepfe).toHaveLength(1);
+    await nutzer.click(knoepfe[0]!);
+    const kasten = screen.getByRole('group', { name: 'Ereignis 2 entfernen' });
+    expect(kasten).toHaveTextContent('„Erkrankung“ vom 05.10.2026 wird aus dem Verlauf genommen.');
+    expect(trainingsereignisEntfernen).not.toHaveBeenCalled();
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, Ereignis entfernen' }));
+    await waitFor(() => expect(trainingsereignisEntfernen).toHaveBeenCalledWith(EREIGNIS.id));
   });
 });

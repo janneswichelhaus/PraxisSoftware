@@ -67,7 +67,15 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=angaben`);
       await expect(page.getByRole('heading', { name: 'Meine Angaben' })).toBeVisible();
+      // OUT-004: je Frage ein Punktbild in den Worten der Frage, Punkte ohne Linie.
+      const ruhe = page.getByRole('figure').filter({ hasText: 'Schmerzen in Ruhe' });
+      await expect(ruhe).toBeVisible();
+      expect(await ruhe.locator('circle').count()).toBeGreaterThan(1);
+      await expect(ruhe.locator('polyline, path')).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Nach den Übungen' })).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
       // TRK-006: je Größe eine Zeile; die Tabelle scrollt in sich, nicht die Seite.
+      await page.getByText('Alle Antworten als Tabelle').first().click();
       const tabelle = page.getByRole('table', { name: /Meine Angaben aus dem Check-in/ });
       await expect(tabelle.getByRole('row', { name: /Schmerzart/ })).toContainText('stechend');
       expect(await ueberlaeuft(page)).toBe(false);
@@ -85,6 +93,11 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       ).toContainText('nein');
       const einheiten = page.getByRole('table', { name: /Angaben nach den Einheiten/ });
       await expect(einheiten.getByRole('row', { name: /Bewegungssicherheit/ })).toContainText('7');
+      // OUT-001: Punktbilder mit nummerierten Ereignissen und Planwechseln.
+      const bild = page.getByRole('figure').filter({ hasText: 'Schmerz in Ruhe' }).first();
+      await expect(bild).toContainText('Ereignisse: 1 Plan zugewiesen · 2 Erkrankung');
+      await expect(bild.locator('polyline, path')).toHaveCount(0);
+      await expect(page.getByText('Erkrankung · Erkältung')).toBeVisible();
       // Ein hoher Wert sieht aus wie ein niedriger: keine Farbe als Bewertung.
       const farben = await checkins
         .getByRole('cell')
@@ -93,6 +106,32 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       expect(await ueberlaeuft(page)).toBe(false);
       await page.getByRole('button', { name: 'Check-in ändern' }).click();
       await expect(page.getByLabel('Wie oft?')).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+      expect(await axeVerstoesse(page)).toEqual([]);
+    });
+  }
+});
+
+test.describe('Assessments im Training (OUT-EPIC-001)', () => {
+  for (const breite of [375, 1280]) {
+    test(`Messungen, Seitenvergleich und Wiederholung bei ${breite} px`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?seite=assessments`);
+      const tabelle = page.getByRole('table', { name: /Messungen Sprungtests Knie/ });
+      await expect(tabelle.getByRole('row', { name: /Einbeinsprung/ })).toContainText(
+        'kleinere Seite 86 % der größeren',
+      );
+      await expect(page.getByText(/Sprungtests Knie · geplant am/)).toBeVisible();
+      // Die Tabelle scrollt in sich, nicht die Seite.
+      expect(await ueberlaeuft(page)).toBe(false);
+      await page.getByRole('button', { name: /Wiederholen wie am/ }).click();
+      const formular = page.getByRole('form', { name: 'Assessment festhalten' });
+      await expect(formular.getByLabel('Test', { exact: false }).first()).toHaveValue(
+        'Sprungtests Knie',
+      );
+      for (const knopf of await formular.getByRole('button').all()) {
+        expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      }
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
     });

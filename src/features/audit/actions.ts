@@ -142,6 +142,8 @@ export const auditOperationLabels: Record<string, string> = {
   'appointment.created': 'Termin angelegt',
   'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
   'appointments.read': 'Termine gelesen',
+  // OUT-002: Assessments eines Trainingsverhältnisses (keine neue Aktion, ADR-010).
+  'assessments.read': 'Assessments im Training gelesen',
   'audit_log.read': 'Protokoll gelesen',
   'billable_services.read': 'Leistungen gelesen',
   // TRK-002: Check-ins einer Akte oder Trainingskund:in (ANN-351).

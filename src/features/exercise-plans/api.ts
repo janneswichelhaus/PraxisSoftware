@@ -98,6 +98,8 @@ const planSchema = z.object({
       finished_at: z.string().nullable(),
       sets_done: z.coerce.number(),
       sets_total: z.coerce.number(),
+      /** OUT-003: abgehakte Sätze je Position; eine ausgelassene fehlt (ANN-366). */
+      sets_by_item: z.record(z.string(), z.coerce.number()).default({}),
       difficulty_note: z.string().nullable(),
       /** TRK-001: Angaben der Person zur Einheit, unverändert (ANN-348). */
       values: z.record(z.string(), z.number()).default({}),

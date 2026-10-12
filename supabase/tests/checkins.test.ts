@@ -695,6 +695,30 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
     };
     expect(training.sessions).toHaveLength(1);
     expect(training.sessions[0]!.values).toEqual({ session_confidence: 5 });
+
+    // OUT-004 (ANN-367): die Person liest ihre eigenen Angaben nach den
+    // Einheiten, mit fester Schlüsselliste, nur im eigenen Verhältnis.
+    type Eigene = { session_history: Record<string, unknown>[] };
+    const eigene = (await portal(erika.konto, erika.zugang)) as unknown as Eigene;
+    expect(eigene.session_history).toEqual([
+      {
+        performed_on: expect.any(String) as string,
+        plan_title: 'Heimprogramm Knie',
+        recorded_by_kind: 'self',
+        values: { session_pain: 3, session_confidence: 6 },
+      },
+    ]);
+    const tina = (await portal(
+      users.plattformTina,
+      platformAccesses.tinaTraining,
+    )) as unknown as Eigene;
+    expect(tina.session_history.map((e) => e['values'])).toEqual([{ session_confidence: 5 }]);
+    // Erikas Training-Zugang sieht die Einheiten der Behandlung nicht (ADR-021 Punkt 6).
+    const erikaTraining = (await portal(
+      erika.konto,
+      platformAccesses.erikaTraining,
+    )) as unknown as Eigene;
+    expect(erikaTraining.session_history).toEqual([]);
   });
 
   it('ohne Takt kein Check-in; vor dem nächsten Tag nicht fällig', async () => {

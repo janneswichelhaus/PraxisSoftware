@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { EREIGNISARTEN, type Ereignisart } from '@/lib/verlaufsereignisse';
 
 /**
  * Check-in mit Takt, Praxisseite (TRK-002, DSN-001 Abschnitt 6).
@@ -47,9 +48,38 @@ const datenSchema = z.object({
       values: z.record(z.string(), z.number()),
     }),
   ),
+  /**
+   * OUT-001: vermerkte Ereignisse – in der Behandlung die der Akte (gesetzt
+   * im Befund), im Training die des Verhältnisses (ANN-364).
+   */
+  events: z.array(
+    z.object({
+      id: z.string(),
+      occurred_on: z.string(),
+      kind: z.enum(EREIGNISARTEN),
+      note: z.string().nullable(),
+      created_at: z.string(),
+      author_name: z.string().nullable(),
+    }),
+  ),
+  /** OUT-001: Planwechsel – zugewiesen, neue Fassung, beendet. */
+  plan_events: z.array(
+    z.object({
+      occurred_on: z.string(),
+      kind: z.enum(['plan_assigned', 'plan_version', 'plan_ended']),
+      title: z.string(),
+    }),
+  ),
+  /** OUT-001: Tage durchgeführter Termine, höchstens die letzten 100. */
+  appointment_days: z.array(z.string()),
+  /** Im Training vermerkt die Betreuung hier, mit Einwilligung (ANN-364). */
+  events_writable: z.boolean(),
+  /** Im Training: Einwilligung zu Gesundheitsangaben; in der Behandlung `null`. */
+  health_consent: z.boolean().nullable(),
 });
 
 export type CheckinDaten = z.infer<typeof datenSchema>;
+export type Trainingsereignis = CheckinDaten['events'][number];
 export type Checkin = z.infer<typeof checkinSchema>;
 
 export function checkinsKey(art: Verhaeltnisart, verhaeltnisId: string) {
@@ -121,3 +151,38 @@ export function taktText(tage: number): string {
 
 /** Die Takte zur Auswahl; die Datenbank nimmt 1 bis 28 (ANN-350). */
 export const TAKTE = [1, 2, 3, 7, 14, 28] as const;
+
+function ereignisfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('consent'))
+    return 'Ohne Einwilligung zu Gesundheitsangaben lässt sich kein Ereignis vermerken.';
+  if (m.includes('has ended'))
+    return 'Das Verhältnis ist beendet. Es lässt sich nichts mehr vermerken.';
+  if (m.includes('not found')) return 'Das Ereignis wurde nicht gefunden.';
+  if (m.includes('not allowed')) return 'Ereignisse vermerken Inhaber:in und Trainingsbetreuung.';
+  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+}
+
+/** OUT-001: ein Ereignis im Verlauf des Trainings vermerken (ANN-364). */
+export async function trainingsereignisVermerken(eingabe: {
+  verhaeltnisId: string;
+  datum: string;
+  art: Ereignisart;
+  notiz: string;
+}): Promise<void> {
+  const { error } = (await getSupabase().rpc('add_training_course_event', {
+    p_relationship_id: eingabe.verhaeltnisId,
+    p_occurred_on: eingabe.datum,
+    p_kind: eingabe.art,
+    p_note: eingabe.notiz.trim() === '' ? null : eingabe.notiz.trim(),
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(ereignisfehler(error.message));
+}
+
+/** OUT-001: nimmt ein Ereignis aus dem Verlauf; es bleibt am Datensatz. */
+export async function trainingsereignisEntfernen(ereignisId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('remove_training_course_event', {
+    p_event_id: ereignisId,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(ereignisfehler(error.message));
+}

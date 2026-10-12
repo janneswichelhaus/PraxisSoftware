@@ -682,6 +682,7 @@ describe('Durchgeführt (UEB-010)', () => {
             finished_at: '2026-10-08T07:20:00Z',
             sets_done: 3,
             sets_total: 3,
+            sets_by_item: { i1: 3 },
             difficulty_note: 'Knie zieht',
             values: { session_exertion: 6, session_pain: 2 },
             recorded_by_kind: 'self',
@@ -694,6 +695,7 @@ describe('Durchgeführt (UEB-010)', () => {
             finished_at: null,
             sets_done: 1,
             sets_total: 3,
+            sets_by_item: { i1: 1 },
             difficulty_note: null,
             values: {},
             recorded_by_kind: 'legal_representative',
@@ -713,6 +715,16 @@ describe('Durchgeführt (UEB-010)', () => {
     expect(abschnitt).toHaveTextContent(
       '07.10.2026 · 1 von 3 Durchgängen · nicht beendet · erfasst von der Vertretung',
     );
+    // OUT-003: je Übung gezählt, nur beendete Einheiten, ohne Deutung.
+    const jeUebung = within(abschnitt).getByRole('table', { name: /Je Übung/ });
+    const zeile = within(jeUebung).getAllByRole('row')[1]!;
+    expect(
+      within(zeile)
+        .getAllByRole('cell')
+        .map((z) => z.textContent),
+    ).toEqual(['1', '0', '0', '08.10.2026 alle Sätze']);
+    expect(abschnitt).toHaveTextContent('In einer beendeten Einheit abgehakt.');
+    expect(abschnitt).not.toHaveTextContent(/zu schwer|ersetzen|Quote|%/);
   });
 
   it('zeigt im Entwurf keinen Abschnitt', async () => {

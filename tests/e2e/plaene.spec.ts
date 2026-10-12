@@ -65,6 +65,10 @@ test.describe('Übungspläne', () => {
       }
       await page.getByRole('button', { name: 'In Alltagssprache' }).click();
       await expect(page.getByText('Sie brauchen: Theraband gelb')).toBeVisible();
+      // OUT-003: je Übung gezählt; die Tabelle scrollt in sich, nicht die Seite.
+      const jeUebung = page.getByRole('table', { name: /Je Übung/ });
+      await expect(jeUebung.getByRole('row')).toHaveCount(3);
+      await expect(jeUebung).toContainText('ein Teil');
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
     });

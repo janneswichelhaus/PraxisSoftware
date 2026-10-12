@@ -41,6 +41,8 @@ import {
 import { EinladungPage } from '@/features/platform/EinladungPage';
 import { checkinsKey, type CheckinDaten } from '@/features/checkins/api';
 import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
+import { TrainingAssessments } from '@/features/training/TrainingAssessments';
+import { assessmentsKey, type Assessmentsicht } from '@/features/training/assessments-api';
 import {
   PASSKEYS_SCHLUESSEL,
   PIN_SCHLUESSEL,
@@ -70,7 +72,9 @@ import '@/index.css';
  * und `einstieg` die Benachrichtigungen. Seit TRK-EPIC-001 `checkin` (die
  * Fragen), `checkin-uebersicht` (Kachel), `checkin-danke` (Satz nach dem
  * Absenden), `angaben` („Meine Angaben") und `zwischen` (Abschnitt der
- * Praxis). Die Daten liegen vorab im Cache;
+ * Praxis). Seit OUT-EPIC-001 trägt `zwischen` das Verlaufsbild mit
+ * Ereignissen und `angaben` die Punktbilder; `assessments` zeigt die
+ * Assessments der Trainingsseite. Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -713,6 +717,21 @@ client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   consent_needed: false,
   last_values: { pain_rest: 3, pain_load: 6, daily_impairment: 4 },
   history: checkinVerlauf,
+  // OUT-004: die eigenen Angaben nach den Übungen.
+  session_history: [
+    {
+      performed_on: inTagen(-2, 0).slice(0, 10),
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_exertion: 6, session_pain: 2, session_confidence: 7 },
+    },
+    {
+      performed_on: inTagen(-5, 0).slice(0, 10),
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_exertion: 5, session_confidence: 5 },
+    },
+  ],
 } satisfies EigeneCheckins);
 client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
 client.setQueryData(checkinsKey('treatment', MAX), {
@@ -745,7 +764,60 @@ client.setQueryData(checkinsKey('treatment', MAX), {
       values: { session_exertion: 5, session_confidence: 5 },
     },
   ],
+  // OUT-001: ein Ereignis der Akte, ein Planwechsel, zwei Termine.
+  events: [
+    {
+      id: 'dededede-dede-4ede-8ede-000000000001',
+      occurred_on: inTagen(-4, 0).slice(0, 10),
+      kind: 'erkrankung',
+      note: 'Erkältung',
+      created_at: inTagen(-4, 9),
+      author_name: 'Anna Beispiel',
+    },
+  ],
+  plan_events: [
+    { occurred_on: inTagen(-9, 0).slice(0, 10), kind: 'plan_assigned', title: 'Heimprogramm Knie' },
+  ],
+  appointment_days: [inTagen(-8, 0).slice(0, 10), inTagen(-1, 0).slice(0, 10)],
+  events_writable: false,
+  health_consent: null,
 } satisfies CheckinDaten);
+
+// OUT-002: zwei Assessments derselben Testbatterie, eine Wiederholung geplant.
+const TINA_TRAINING = 'eeeeeeee-eeee-4eee-8eee-000000000001';
+client.setQueryData(assessmentsKey(TINA_TRAINING), {
+  today: inTagen(0, 0).slice(0, 10),
+  can_write: true,
+  relationship_open: true,
+  health_consent: true,
+  assessments: [
+    {
+      id: 'abababab-abab-4bab-8bab-000000000002',
+      title: 'Sprungtests Knie',
+      performed_on: inTagen(0, 0).slice(0, 10),
+      conditions: 'Halle, barfuß, 10 Minuten Rad zum Aufwärmen',
+      next_due_on: inTagen(42, 0).slice(0, 10),
+      created_by_name: 'Tom Trainingsbetreuung',
+      results: [
+        { label: 'Einbeinsprung weit', unit: 'cm', value: null, left: 120, right: 140 },
+        { label: 'Dreifachsprung weit', unit: 'cm', value: null, left: 380, right: 425.5 },
+        { label: 'Kniebeugen in 30 Sekunden', unit: null, value: 18, left: null, right: null },
+      ],
+    },
+    {
+      id: 'abababab-abab-4bab-8bab-000000000001',
+      title: 'Sprungtests Knie',
+      performed_on: inTagen(-42, 0).slice(0, 10),
+      conditions: 'Halle, Schuhe, 10 Minuten Rad zum Aufwärmen',
+      next_due_on: inTagen(0, 0).slice(0, 10),
+      created_by_name: 'Tom Trainingsbetreuung',
+      results: [
+        { label: 'Einbeinsprung weit', unit: 'cm', value: null, left: 98, right: 141 },
+        { label: 'Kniebeugen in 30 Sekunden', unit: null, value: 14, left: null, right: null },
+      ],
+    },
+  ],
+} satisfies Assessmentsicht);
 
 const sitzung = {
   session: null,
@@ -795,6 +867,11 @@ function inhalt(): { pfad: string; element: ReactNode } {
       return {
         pfad: '/',
         element: praxisrahmen(<ZwischenDenTerminen art="treatment" verhaeltnisId={MAX} />),
+      };
+    case 'assessments':
+      return {
+        pfad: '/',
+        element: praxisrahmen(<TrainingAssessments verhaeltnisId={TINA_TRAINING} />),
       };
     case 'ich':
       return {
