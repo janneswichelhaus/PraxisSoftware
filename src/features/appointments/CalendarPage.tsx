@@ -62,6 +62,7 @@ import {
 import { TerminPanel } from './TerminPanel';
 import { TerminAktionenDialog } from './TerminAktionen';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Segment } from '@/components/ui/Segment';
 import { leseMeldung } from './terminformular';
 import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
 import { SpannenBild } from './Laengenzeichen';
@@ -1360,47 +1361,24 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           einer Spalte je Person. Dieselben Ansichten wie bisher - der Weg
           dorthin steht jetzt sichtbar statt hinter „Ansicht und Filter". */}
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="Ansicht" className="flex">
-          {(
-            [
-              {
-                wert: 'woche',
-                text: 'Woche',
-                klasse: 'rounded-l-button max-sm:hidden',
-                aktiv: p.ansicht === 'woche',
-                ziel: { ansicht: 'woche' as const, person: user.staffMemberId ?? p.person },
-              },
-              {
-                wert: 'tag-eigen',
-                text: 'Tag',
-                klasse: 'rounded-l-button sm:hidden',
-                aktiv: p.ansicht === 'tag' && p.person !== null,
-                ziel: { ansicht: 'tag' as const, person: user.staffMemberId ?? null },
-              },
-              {
-                wert: 'team',
-                text: 'Team',
-                klasse: 'rounded-r-button',
-                aktiv: p.ansicht === 'tag' && p.person === null,
-                ziel: { ansicht: 'tag' as const, person: null },
-              },
-            ] as const
-          ).map((wahl) => (
-            <button
-              key={wahl.wert}
-              type="button"
-              aria-pressed={wahl.aktiv}
-              onClick={() => setze(wahl.ziel)}
-              className={`border-line-strong inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors [&+&]:-ml-px ${
-                wahl.aktiv
-                  ? 'bg-accent text-surface border-accent'
-                  : 'text-accent hover:bg-accent-soft'
-              } ${wahl.klasse}`}
-            >
-              {wahl.text}
-            </button>
-          ))}
-        </div>
+        <Segment
+          beschriftung="Ansicht"
+          wahlen={[
+            { wert: 'woche', text: 'Woche', nur: 'ab-sm' },
+            { wert: 'tag-eigen', text: 'Tag', nur: 'telefon' },
+            { wert: 'team', text: 'Team' },
+          ]}
+          gewaehlt={p.ansicht === 'woche' ? 'woche' : p.person !== null ? 'tag-eigen' : 'team'}
+          onWaehlen={(wert) =>
+            setze(
+              wert === 'woche'
+                ? { ansicht: 'woche', person: user.staffMemberId ?? p.person }
+                : wert === 'tag-eigen'
+                  ? { ansicht: 'tag', person: user.staffMemberId ?? null }
+                  : { ansicht: 'tag', person: null },
+            )
+          }
+        />
         {/* Die Tour neben „Tag | Team" bzw. „Woche | Team", auf jeder Breite
             (Runde 3, Handoff Kalender und Tour 2026-10-06; ANN-113 Fassung 2).
             Bis dahin stand sie im Feld „Ansicht und Filter" - ein Tipp mehr

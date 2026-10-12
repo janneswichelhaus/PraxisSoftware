@@ -94,14 +94,18 @@ export function DataList({ children }: { children: ReactNode }) {
  * `group`; bei reduzierter Bewegung springt sie ohne Übergang.
  *
  * Seiten mit eigenem `<details>` setzen es in ihren `<summary>` (Klassen dort:
- * `aufklappKopfKlassen`), statt ein eigenes Zeichen zu bauen.
+ * `aufklappKopfKlassen`), statt ein eigenes Zeichen zu bauen. Ein Knopf mit
+ * `aria-expanded` statt `<details>` übergibt seinen Zustand als `offen`.
  */
-export function Aufklappzeichen() {
+export function Aufklappzeichen({ offen }: { offen?: boolean }) {
+  // Ohne `offen` folgt die Drehung dem `<details>` darum; ein Knopf mit
+  // `aria-expanded` (die `Filterleiste`) sagt seinen Zustand selbst.
+  const drehung = offen === undefined ? 'group-open:rotate-90' : offen ? 'rotate-90' : '';
   return (
     <span
       aria-hidden="true"
       data-aufklappzeichen=""
-      className="inline-flex size-4 shrink-0 items-center justify-center transition-transform group-open:rotate-90 motion-reduce:transition-none"
+      className={`inline-flex size-4 shrink-0 items-center justify-center transition-transform ${drehung} motion-reduce:transition-none`}
     >
       <span className="size-2 -translate-x-px rotate-45 border-t-2 border-r-2 border-current" />
     </span>

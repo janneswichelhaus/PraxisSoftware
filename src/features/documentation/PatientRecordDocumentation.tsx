@@ -3,6 +3,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
@@ -493,13 +494,9 @@ function Behandlungsdokumentation({
             className="bg-canvas sticky top-14 z-10 -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 py-2 sm:flex-wrap"
           >
             {monate.map((monat) => (
-              <a
-                key={monat.schluessel}
-                href={`#monat-${monat.schluessel}`}
-                className="border-line-strong text-ink hover:bg-accent-soft rounded-pill inline-flex min-h-11 shrink-0 items-center border px-4 text-sm font-semibold whitespace-nowrap transition-colors"
-              >
+              <Chip key={monat.schluessel} href={`#monat-${monat.schluessel}`}>
                 {monat.titel}
-              </a>
+              </Chip>
             ))}
           </nav>
         ) : null}
