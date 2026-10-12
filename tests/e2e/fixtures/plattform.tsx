@@ -713,6 +713,21 @@ client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   consent_needed: false,
   last_values: { pain_rest: 3, pain_load: 6, daily_impairment: 4 },
   history: checkinVerlauf,
+  // OUT-004: die eigenen Angaben nach den Übungen.
+  session_history: [
+    {
+      performed_on: inTagen(-2, 0).slice(0, 10),
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_exertion: 6, session_pain: 2, session_confidence: 7 },
+    },
+    {
+      performed_on: inTagen(-5, 0).slice(0, 10),
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_exertion: 5, session_confidence: 5 },
+    },
+  ],
 } satisfies EigeneCheckins);
 client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
 client.setQueryData(checkinsKey('treatment', MAX), {

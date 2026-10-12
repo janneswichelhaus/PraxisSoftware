@@ -1620,6 +1620,17 @@ const eigeneCheckinsSchema = z.object({
   /** Die letzte Angabe je Frage - nur als Hinweis (ANN-349). */
   last_values: z.record(z.string(), z.number()),
   history: z.array(checkinVerlaufSchema),
+  /** OUT-004: die eigenen Angaben nach den Einheiten, jüngste zuerst (ANN-367). */
+  session_history: z
+    .array(
+      z.object({
+        performed_on: z.string(),
+        plan_title: z.string(),
+        recorded_by_kind: z.enum(['self', 'legal_representative']),
+        values: z.record(z.string(), z.number()),
+      }),
+    )
+    .default([]),
 });
 
 export type EigeneCheckins = z.infer<typeof eigeneCheckinsSchema>;
