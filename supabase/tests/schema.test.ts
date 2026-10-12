@@ -151,6 +151,10 @@ describe('Schema-Invarianten', () => {
       'exercise_plan_session_sets',
       // TRK-001: Angaben zur Einheit.
       'exercise_plan_session_values',
+      // TRK-002: Check-in mit Takt.
+      'checkin_schedules',
+      'checkins',
+      'checkin_values',
       // UEB-011: die Übungstage, die die Person wählt.
       'exercise_plan_days',
       // KOM-001: Rückfragen über die Plattform und ihre Einträge.

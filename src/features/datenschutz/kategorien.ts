@@ -151,7 +151,15 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
   exercise_plans: {
     label: 'Übungspläne',
     beschreibung:
-      'Die zusammengestellten und zugewiesenen Übungspläne mit Übungen, Dosierung und Laufzeit.',
+      'Die zusammengestellten und zugewiesenen Übungspläne mit Übungen, Dosierung und Laufzeit, dazu die durchgeführten Einheiten mit den Angaben der Person.',
+  },
+  checkin_schedules: {
+    label: 'Check-in: Takt und Fragen',
+    beschreibung: 'Wie oft und mit welchen Fragen die Praxis um einen Check-in bittet.',
+  },
+  checkins: {
+    label: 'Check-ins',
+    beschreibung: 'Die beantworteten Check-ins mit Tag, wer geantwortet hat, und den Angaben.',
   },
   platform_messages: {
     label: 'Nachrichten über die Plattform',

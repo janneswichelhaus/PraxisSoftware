@@ -171,6 +171,8 @@ const zugewiesen = plan({
       sets_done: 5,
       sets_total: 6,
       difficulty_note: 'Beim Aufstehen aus der Hocke zieht es im rechten Knie.',
+      // TRK-001: Angaben der Person zur Einheit.
+      values: { session_exertion: 6, session_pain: 3 },
       recorded_by_kind: 'self',
       finished_by_kind: 'self',
     },

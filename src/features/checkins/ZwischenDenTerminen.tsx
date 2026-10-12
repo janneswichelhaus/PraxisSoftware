@@ -1,0 +1,262 @@
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Section } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { formatDate } from '@/lib/datum';
+import {
+  CHECKIN_HOECHSTENS,
+  CHECKIN_VOREINSTELLUNG,
+  angabenZeile,
+  erfassungsgroesse,
+  groessenImTakt,
+} from '@/lib/erfassungsgroessen';
+import {
+  TAKTE,
+  checkinsKey,
+  endCheckinTakt,
+  fetchCheckins,
+  saveCheckinTakt,
+  taktText,
+  type CheckinDaten,
+  type Verhaeltnisart,
+} from './api';
+
+/**
+ * „Zwischen den Terminen" an Akte und Trainingsverhältnis (TRK-002, DSN-001
+ * Abschnitt 6): der Takt des Check-ins mit „ändern" und die Angaben der
+ * Person mit Datum, als Liste.
+ *
+ * Die Angaben stehen unverändert da, mit Wert und Quelle – keine Farbe, keine
+ * Tendenz, kein Satz über ihre Bedeutung (ADR-006 Punkt 11). Es gibt keinen
+ * Alarm je Check-in (DSN-001 D5). Ob der Abschnitt erscheint, wer einstellt
+ * und was gelesen wird, entscheidet der Server (ANN-351); ohne Recht liefert er
+ * nichts und der Abschnitt bleibt weg.
+ */
+export function ZwischenDenTerminen({
+  art,
+  verhaeltnisId,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+}) {
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: checkinsKey(art, verhaeltnisId),
+    queryFn: () => fetchCheckins(art, verhaeltnisId),
+  });
+  if (data === null) return null;
+  return (
+    <Section
+      titel="Zwischen den Terminen"
+      hinweis="Check-ins der Person über die Plattform. Gelesen wird beim nächsten Termin – es gibt keinen Alarm."
+      rahmen
+    >
+      {isPending ? (
+        <LoadingState label="Check-ins werden geladen …" />
+      ) : isError ? (
+        <ErrorState
+          title="Die Check-ins konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => refetch()}
+        />
+      ) : (
+        <>
+          <Takt art={art} verhaeltnisId={verhaeltnisId} daten={data} />
+          <Angaben daten={data} />
+        </>
+      )}
+    </Section>
+  );
+}
+
+function Takt({
+  art,
+  verhaeltnisId,
+  daten,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  daten: CheckinDaten;
+}) {
+  const [bearbeiten, setBearbeiten] = useState(false);
+  const queryClient = useQueryClient();
+  const takt = daten.schedule;
+
+  if (bearbeiten) {
+    return (
+      <TaktFormular
+        art={art}
+        verhaeltnisId={verhaeltnisId}
+        tage={takt?.interval_days ?? 7}
+        fragen={takt?.parameter_keys ?? [...CHECKIN_VOREINSTELLUNG]}
+        onFertig={() => setBearbeiten(false)}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {takt ? (
+        <div className="text-ink flex flex-col gap-1">
+          <p>
+            <span className="font-semibold">Check-in: {taktText(takt.interval_days)}</span>
+            {' · '}
+            {takt.due_on <= daten.today
+              ? takt.due_on === daten.today
+                ? 'heute fällig'
+                : `fällig seit ${formatDate(takt.due_on)}`
+              : `nächster ab ${formatDate(takt.due_on)}`}
+          </p>
+          <p className="text-ink-muted text-sm">
+            Fragen: {takt.parameter_keys.map((k) => erfassungsgroesse(k)?.kurz ?? k).join(', ')}
+          </p>
+          {takt.updated_by_name ? (
+            <p className="text-ink-muted text-sm">
+              Eingestellt von {takt.updated_by_name} am {formatDate(takt.updated_at.slice(0, 10))}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-ink">Kein Check-in eingestellt.</p>
+      )}
+      {daten.can_write ? (
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button variant="secondary" onClick={() => setBearbeiten(true)}>
+            {takt ? 'Check-in ändern' : 'Check-in einstellen'}
+          </Button>
+          {takt ? (
+            <Rueckfrage
+              ausloeser="Check-in beenden"
+              ausloeserVariante="quiet"
+              bestaetigen="Check-in beenden"
+              bestaetigenLaeuft="Wird beendet …"
+              onBestaetigen={async () => {
+                await endCheckinTakt(art, verhaeltnisId);
+                await queryClient.invalidateQueries({
+                  queryKey: checkinsKey(art, verhaeltnisId),
+                });
+              }}
+            >
+              <p>
+                Die Person wird nicht mehr um einen Check-in gebeten. Was sie schon angegeben hat,
+                bleibt hier stehen.
+              </p>
+            </Rueckfrage>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function TaktFormular({
+  art,
+  verhaeltnisId,
+  tage: tageVorher,
+  fragen: fragenVorher,
+  onFertig,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  tage: number;
+  fragen: string[];
+  onFertig: () => void;
+}) {
+  const [tage, setTage] = useState(tageVorher);
+  const [fragen, setFragen] = useState<string[]>(fragenVorher);
+  const [hinweis, setHinweis] = useState<string | undefined>(undefined);
+  const queryClient = useQueryClient();
+  const speichern = useMutation({
+    mutationFn: () => saveCheckinTakt(art, verhaeltnisId, tage, fragen),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: checkinsKey(art, verhaeltnisId) });
+      onFertig();
+    },
+  });
+  // Ein Takt außerhalb der Auswahl bleibt wählbar, wenn er schon gilt.
+  const takte = TAKTE.includes(tageVorher as (typeof TAKTE)[number])
+    ? [...TAKTE]
+    : [...TAKTE, tageVorher].sort((a, b) => a - b);
+  const voll = fragen.length >= CHECKIN_HOECHSTENS;
+
+  return (
+    <form
+      noValidate
+      className="flex flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (fragen.length === 0) {
+          setHinweis('Bitte mindestens eine Frage wählen.');
+          return;
+        }
+        setHinweis(undefined);
+        speichern.mutate();
+      }}
+    >
+      <Select label="Wie oft?" value={tage} onChange={(e) => setTage(Number(e.target.value))}>
+        {takte.map((t) => (
+          <option key={t} value={t}>
+            {taktText(t)}
+          </option>
+        ))}
+      </Select>
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-ink mb-1 text-sm font-medium">
+          Welche Fragen? (eine bis {CHECKIN_HOECHSTENS})
+        </legend>
+        {groessenImTakt('checkin').map((g) => {
+          const gewaehlt = fragen.includes(g.key);
+          return (
+            <Checkbox
+              key={g.key}
+              label={g.kurz}
+              hint={g.frage}
+              checked={gewaehlt}
+              disabled={!gewaehlt && voll}
+              onChange={(e) =>
+                setFragen((bisher) =>
+                  e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
+                )
+              }
+            />
+          );
+        })}
+      </fieldset>
+      {hinweis ? <Statusmeldung ton="fehler">{hinweis}</Statusmeldung> : null}
+      {speichern.isError ? (
+        <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
+      ) : null}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Button type="submit" disabled={speichern.isPending}>
+          {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onFertig}>
+          Abbrechen
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function Angaben({ daten }: { daten: CheckinDaten }) {
+  if (daten.checkins.length === 0) {
+    return <p className="text-ink-muted mt-4 text-sm">Noch kein Check-in beantwortet.</p>;
+  }
+  return (
+    <ul className="mt-4 flex flex-col gap-2" aria-label="Beantwortete Check-ins">
+      {daten.checkins.map((c) => (
+        <li key={c.recorded_at} className="rounded-card border-line bg-surface border p-3 text-sm">
+          <p className="font-semibold">
+            {formatDate(c.answered_on)}
+            {c.recorded_by_kind === 'legal_representative' ? ' · von der Vertretung' : ''}
+          </p>
+          <p className="mt-1">{angabenZeile(c.values) || 'ohne Angaben'}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}

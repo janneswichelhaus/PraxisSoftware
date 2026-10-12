@@ -1159,3 +1159,78 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
     });
   });
 });
+
+describe('Check-ins beim Zusammenführen (TRK-002)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  async function takt(patient: string, tage: number, fragen: string[]) {
+    await asPostgres(
+      `insert into public.checkin_schedules
+         (organization_id, relationship_kind, relationship_id, patient_id, interval_days,
+          parameter_keys, starts_on, created_by, updated_by)
+       values ($1, 'treatment', $2, $2, $3, $4::text[], current_date, $5, $5)`,
+      [ORG, patient, tage, fragen, users.therapist],
+    );
+  }
+
+  async function checkin(patient: string): Promise<string> {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.checkins
+         (organization_id, relationship_kind, relationship_id, patient_id, answered_on,
+          platform_access_id, platform_access_kind, recorded_by)
+       values ($1, 'treatment', $2, $2, current_date, extensions.gen_random_uuid(), 'self', $3)
+       returning id`,
+      [ORG, patient, users.plattformErika],
+    );
+    await asPostgres(
+      `insert into public.checkin_values (organization_id, checkin_id, parameter_key, value)
+       values ($1, $2, 'pain_rest', 4)`,
+      [ORG, rows[0]!.id],
+    );
+    return rows[0]!.id;
+  }
+
+  it('Check-ins ziehen mit; den Takt behält die bleibende Akte, sonst zieht er mit (ANN-350)', async () => {
+    const ziel = await legeAkteAn({ vorname: 'Clara', nachname: 'Checkin' });
+    const quelle = await legeAkteAn({ vorname: 'Clara', nachname: 'Checkin' });
+    await takt(quelle.patient, 3, ['stress']);
+    // Am selben Tag beantwortet: beide bleiben, keiner fällt.
+    const alt = await checkin(quelle.patient);
+    const neu = await checkin(ziel.patient);
+    await zusammenfuehren(quelle.patient, ziel.patient);
+
+    const { rows } = await asPostgres<{ id: string; patient_id: string; relationship_id: string }>(
+      `select id, patient_id, relationship_id from public.checkins where id = any($1::uuid[])
+       order by id`,
+      [[alt, neu]],
+    );
+    expect(rows).toHaveLength(2);
+    for (const zeile of rows) {
+      expect(zeile.patient_id).toBe(ziel.patient);
+      expect(zeile.relationship_id).toBe(ziel.patient);
+    }
+    const werte = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.checkin_values where checkin_id = $1',
+      [alt],
+    );
+    expect(werte.rows[0]!.n).toBe(1);
+    const zielTakt = await asPostgres<{ interval_days: number }>(
+      'select interval_days from public.checkin_schedules where patient_id = $1',
+      [ziel.patient],
+    );
+    expect(zielTakt.rows).toEqual([{ interval_days: 3 }]);
+
+    // Hat die bleibende Akte einen Takt, bleibt ihrer; der der Dublette fällt.
+    const dritte = await legeAkteAn({ vorname: 'Clara', nachname: 'Checkin' });
+    await takt(dritte.patient, 14, ['pain_load']);
+    await zusammenfuehren(dritte.patient, ziel.patient);
+    const danach = await asPostgres<{ interval_days: number }>(
+      `select interval_days from public.checkin_schedules
+       where patient_id = $1 or patient_id = $2`,
+      [ziel.patient, dritte.patient],
+    );
+    expect(danach.rows).toEqual([{ interval_days: 3 }]);
+  });
+});
