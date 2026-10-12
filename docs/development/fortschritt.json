@@ -929,7 +929,10 @@
           "id": "trk-epic-002",
           "name": "TRK-EPIC-002 Schmerz, Sicherheit, Kontext",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-12",
+          "nachweis": "TRK-004 bis TRK-006, Zweitreview",
+          "vermerk": "Sichtung: Verlauf Schritte 4 bis 6"
         },
         {
           "id": "trk-epic-003",
