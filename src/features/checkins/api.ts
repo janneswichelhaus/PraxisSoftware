@@ -22,12 +22,14 @@ const checkinSchema = z.object({
 const datenSchema = z.object({
   today: z.string(),
   can_write: z.boolean(),
+  /** Nach Abschluss bzw. Vertragsende ist kein Check-in mehr fällig. */
+  relationship_open: z.boolean(),
   schedule: z
     .object({
       interval_days: z.number(),
       parameter_keys: z.array(z.string()),
       starts_on: z.string(),
-      due_on: z.string(),
+      due_on: z.string().nullable(),
       updated_at: z.string(),
       updated_by_name: z.string().nullable(),
     })

@@ -711,6 +711,7 @@ client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
 client.setQueryData(checkinsKey('treatment', MAX), {
   today: inTagen(0, 0).slice(0, 10),
   can_write: true,
+  relationship_open: true,
   schedule: {
     interval_days: 7,
     parameter_keys: ['pain_rest', 'pain_load', 'daily_impairment'],

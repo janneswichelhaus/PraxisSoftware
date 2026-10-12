@@ -30,6 +30,7 @@ function daten(teil: Partial<CheckinDaten> = {}): CheckinDaten {
   return {
     today: '2026-10-12',
     can_write: true,
+    relationship_open: true,
     schedule: {
       interval_days: 7,
       parameter_keys: ['pain_rest', 'pain_load', 'daily_impairment'],
@@ -148,6 +149,32 @@ describe('Zwischen den Terminen (TRK-002)', () => {
     await waitFor(() =>
       expect(screen.queryByText('Zwischen den Terminen')).not.toBeInTheDocument(),
     );
+  });
+
+  it('nach dem Ende des Verhältnisses nichts fällig, nur beenden (Zweitreview S5)', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({ relationship_open: false, schedule: { ...daten().schedule!, due_on: null } }),
+    );
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    expect(
+      await screen.findByText(/beendet – die Person antwortet nicht mehr/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Check-in ändern' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Check-in beenden' })).toBeInTheDocument();
+  });
+
+  it('zeigt den Grund, wenn das Beenden scheitert', async () => {
+    endCheckinTakt.mockRejectedValue(
+      new Error('Den Check-in stellen die Rollen ein, die Übungspläne schreiben.'),
+    );
+    const nutzer = userEvent.setup();
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Check-in beenden' }));
+    const knoepfe = screen.getAllByRole('button', { name: 'Check-in beenden' });
+    await nutzer.click(knoepfe[knoepfe.length - 1]!);
+    expect(
+      await screen.findByText('Den Check-in stellen die Rollen ein, die Übungspläne schreiben.'),
+    ).toBeInTheDocument();
   });
 
   it('nennt einen fälligen Check-in ohne Wertung', async () => {

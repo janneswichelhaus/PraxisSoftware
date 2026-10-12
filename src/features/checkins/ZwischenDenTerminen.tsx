@@ -83,6 +83,7 @@ function Takt({
   daten: CheckinDaten;
 }) {
   const [bearbeiten, setBearbeiten] = useState(false);
+  const [beendenFehler, setBeendenFehler] = useState<string | undefined>(undefined);
   const queryClient = useQueryClient();
   const takt = daten.schedule;
 
@@ -105,11 +106,13 @@ function Takt({
           <p>
             <span className="font-semibold">Check-in: {taktText(takt.interval_days)}</span>
             {' · '}
-            {takt.due_on <= daten.today
-              ? takt.due_on === daten.today
-                ? 'heute fällig'
-                : `fällig seit ${formatDate(takt.due_on)}`
-              : `nächster ab ${formatDate(takt.due_on)}`}
+            {takt.due_on === null
+              ? 'beendet – die Person antwortet nicht mehr'
+              : takt.due_on <= daten.today
+                ? takt.due_on === daten.today
+                  ? 'heute fällig'
+                  : `fällig seit ${formatDate(takt.due_on)}`
+                : `nächster ab ${formatDate(takt.due_on)}`}
           </p>
           <p className="text-ink-muted text-sm">
             Fragen: {takt.parameter_keys.map((k) => erfassungsgroesse(k)?.kurz ?? k).join(', ')}
@@ -123,19 +126,27 @@ function Takt({
       ) : (
         <p className="text-ink">Kein Check-in eingestellt.</p>
       )}
-      {daten.can_write ? (
+      {daten.can_write && (takt || daten.relationship_open) ? (
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button variant="secondary" onClick={() => setBearbeiten(true)}>
-            {takt ? 'Check-in ändern' : 'Check-in einstellen'}
-          </Button>
+          {/* Nach dem Ende des Verhältnisses nur noch beenden (Zweitreview S5). */}
+          {daten.relationship_open ? (
+            <Button variant="secondary" onClick={() => setBearbeiten(true)}>
+              {takt ? 'Check-in ändern' : 'Check-in einstellen'}
+            </Button>
+          ) : null}
           {takt ? (
             <Rueckfrage
               ausloeser="Check-in beenden"
               ausloeserVariante="quiet"
               bestaetigen="Check-in beenden"
               bestaetigenLaeuft="Wird beendet …"
+              fehler={beendenFehler}
               onBestaetigen={async () => {
-                await endCheckinTakt(art, verhaeltnisId);
+                setBeendenFehler(undefined);
+                await endCheckinTakt(art, verhaeltnisId).catch((grund: Error) => {
+                  setBeendenFehler(grund.message);
+                  throw grund;
+                });
                 await queryClient.invalidateQueries({
                   queryKey: checkinsKey(art, verhaeltnisId),
                 });

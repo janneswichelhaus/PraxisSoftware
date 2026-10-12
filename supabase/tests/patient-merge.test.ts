@@ -1199,7 +1199,9 @@ describe('Check-ins beim Zusammenführen (TRK-002)', () => {
     // Am selben Tag beantwortet: beide bleiben, keiner fällt.
     const alt = await checkin(quelle.patient);
     const neu = await checkin(ziel.patient);
-    await zusammenfuehren(quelle.patient, ziel.patient);
+    const ergebnis = await zusammenfuehren(quelle.patient, ziel.patient);
+    // Im Nachweis steht, was mitzog (Zweitreview S1).
+    expect(ergebnis['moved']).toMatchObject({ checkins: 1, checkin_schedules: 1 });
 
     const { rows } = await asPostgres<{ id: string; patient_id: string; relationship_id: string }>(
       `select id, patient_id, relationship_id from public.checkins where id = any($1::uuid[])

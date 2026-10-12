@@ -4237,7 +4237,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** IDEA-TRK-002 verlangt drei bis fünf Größen und warnt, dass durchgeklickte Werte „falsch statt fehlend“ sind. IDEA-TRK-004 wünscht „vorausgefüllt“ für unter 30 Sekunden; ein vorausgewählter Wert lässt sich aber ungelesen absenden. Der Hinweis gibt den Bezug ohne diese Gefahr, und eine Stufe zu tippen dauert so lange wie das Bestätigen. Unsicher: ob Jannes für bestimmte Personen mehr als fünf Fragen will.
 
-**Anker.** `CHECKIN_VOREINSTELLUNG` und `CHECKIN_HOECHSTENS` in `src/lib/erfassungsgroessen.ts`; die Grenze 1 bis 5 in `app.checkin_keys_valid` (`supabase/migrations/20261105110000_trk_002_checkin_schedules.sql`); `Angabefeld` in `src/components/ui/Angabefeld.tsx`.
+**Anker.** `CHECKIN_VOREINSTELLUNG` und `CHECKIN_HOECHSTENS` in `src/lib/erfassungsgroessen.ts`; die Grenze 1 bis 5 in `app.checkin_keys_valid` (`supabase/migrations/20261105110000_trk_002_checkins.sql`); `Angabefeld` in `src/components/ui/Angabefeld.tsx`.
 
 **Änderungspfad.** Konstanten und die Grenze in `app.checkin_keys_valid` ändern; für Vorauswahl `wert` mit `zuletzt` belegen · Aufwand `klein`.
 
@@ -4245,7 +4245,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Pläne (TRK-EPIC-001)
 
-**Annahme.** Die Praxis stellt je Verhältnis einen Takt von 1 bis 28 Tagen ein (Auswahl täglich, alle 2, 3, 7, 14, 28 Tage). Der erste Check-in ist am Tag der Einstellung fällig, jeder weitere den Takt nach dem letzten beantworteten. Verpasste Check-ins werden weder nachgeholt noch angemahnt; fällig ist immer höchstens einer, und die Person beantwortet höchstens einen am Tag. Ändern lässt den Anfang stehen; Beenden lässt die Angaben stehen. Beim Zusammenführen zweier Akten ziehen die Check-ins mit, den Takt behält die bleibende Akte. „Vor jeder Einheit“ gibt es nicht.
+**Annahme.** Die Praxis stellt je Verhältnis einen Takt von 1 bis 28 Tagen ein (Auswahl täglich, alle 2, 3, 7, 14, 28 Tage). Der erste Check-in ist am Tag der Einstellung fällig, jeder weitere den Takt nach dem letzten beantworteten. Verpasste Check-ins werden weder nachgeholt noch angemahnt; fällig ist immer höchstens einer, und die Person beantwortet höchstens einen am Tag. Ändern lässt den Anfang stehen; Beenden lässt die Angaben stehen; wer beendet und neu einstellt, beginnt neu, der Check-in ist dann sofort fällig. Nach Abschluss der Behandlung bzw. Vertragsende ist nichts mehr fällig, der Takt lässt sich nur noch beenden. Beim Zusammenführen zweier Akten ziehen die Check-ins mit, den Takt behält die bleibende Akte; Vorschau und Vermerk zählen beides. „Vor jeder Einheit“ gibt es nicht.
 
 **Begründung.** IDEA-TRK-004 nennt „täglich, wöchentlich, vor jeder Einheit“ und verlangt, Verpasstes nicht nachzuholen und nicht anzumahnen. Ein Takt in Tagen deckt täglich und wöchentlich mit einer Zahl; „vor jeder Einheit“ hinge an den Übungstagen und brächte eine zweite Regel, die Angaben nach einer Einheit (ANN-348) decken den Fall schon. 28 Tage als Grenze: länger ist kein Check-in, sondern ein Assessment (OUT-EPIC-001). Unsicher: ob die Praxis einen festen Wochentag statt „vom letzten an“ will.
 

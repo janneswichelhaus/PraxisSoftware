@@ -26,7 +26,7 @@
 -- Takt `session`: direkt nach einer Einheit. Takt `checkin`: in der
 -- wiederkehrenden Selbstauskunft (TRK-003). Eine neue Groesse ist eine Zeile
 -- mehr in dieser Funktion und in src/lib/erfassungsgroessen.ts; der Test
--- tracking-parameters.test.ts haelt beide deckungsgleich. Bewegungssicherheit
+-- erfassungsgroessen.test.ts haelt beide deckungsgleich. Bewegungssicherheit
 -- und differenzierter Schmerz kommen mit TRK-EPIC-002.
 -- -----------------------------------------------------------------------------
 create function app.tracking_parameters()
@@ -81,6 +81,7 @@ as $$
 declare
   v_key  text;
   v_wert jsonb;
+  v_zahl numeric;
 begin
   if p_values is null or p_values = 'null'::jsonb then
     return;
@@ -91,13 +92,21 @@ begin
   for v_key, v_wert in select * from jsonb_each(p_values) loop
     -- null heisst: nicht beantwortet (IDEA-TRK-002, fehlend ist ehrlich).
     continue when jsonb_typeof(v_wert) = 'null';
-    if jsonb_typeof(v_wert) <> 'number'
-       or (v_wert #>> '{}')::numeric <> trunc((v_wert #>> '{}')::numeric)
-       or not app.tracking_value_valid(v_key, p_cadence, (v_wert #>> '{}')::numeric::integer) then
+    -- Schritt fuer Schritt, weil SQL ein OR nicht der Reihe nach auswertet:
+    -- Eine riesige Zahl ist ein falscher Wert (22023), kein Ueberlauf
+    -- (Zweitreview H1).
+    if jsonb_typeof(v_wert) <> 'number' then
+      raise exception 'invalid value for %', v_key using errcode = '22023';
+    end if;
+    v_zahl := (v_wert #>> '{}')::numeric;
+    if v_zahl <> trunc(v_zahl) or v_zahl not between -32768 and 32767 then
+      raise exception 'invalid value for %', v_key using errcode = '22023';
+    end if;
+    if not app.tracking_value_valid(v_key, p_cadence, v_zahl::integer) then
       raise exception 'invalid value for %', v_key using errcode = '22023';
     end if;
     parameter_key := v_key;
-    value := (v_wert #>> '{}')::numeric::smallint;
+    value := v_zahl::smallint;
     return next;
   end loop;
 end;

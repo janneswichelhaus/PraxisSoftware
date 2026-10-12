@@ -278,11 +278,73 @@ describe('Check-in, Takt und Lesen in der Praxis (TRK-002)', () => {
     expect(
       await fehler(asUser(users.therapist, SETZEN, ['training', patients.erika, 7, ['stress']])),
     ).toBe('P0002');
+    // Andere Organisation: owner darf dort Training schreiben, findet Tina aber nicht.
     const fremd = await fremdeOrganisation();
     expect(
-      await fehler(asUser(fremd.owner, SETZEN, ['treatment', patients.erika, 7, ['stress']])),
-    ).not.toBe('kein Fehler');
+      await fehler(
+        asUser(fremd.owner, SETZEN, ['training', trainingRelationships.tina, 7, ['stress']]),
+      ),
+    ).toBe('P0002');
+    expect(
+      await fehler(asUser(fremd.owner, BEENDEN, ['training', trainingRelationships.tina])),
+    ).toBe('P0002');
     expect(await lesen(fremd.owner, 'treatment', patients.erika)).toBeNull();
+  });
+
+  it('Einstellen und Beenden: Büro, Plattformkonto und ohne Anmeldung abgewiesen (ANN-351)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, ['treatment', patients.erika, 7, ['stress']]);
+    for (const konto of [users.office, users.plattformErika, null]) {
+      expect(
+        await fehler(asUser(konto, SETZEN, ['treatment', patients.erika, 7, ['stress']])),
+      ).toBe('42501');
+      expect(await fehler(asUser(konto, BEENDEN, ['treatment', patients.erika]))).toBe('42501');
+    }
+    // owner ohne Therapeutenrolle schreibt in der Behandlung nicht, wie beim Plan.
+    await asPostgres(
+      `delete from public.user_roles where user_id = $1 and role_key = 'therapist'`,
+      [users.ownerTherapist],
+    );
+    try {
+      expect(
+        await fehler(asUser(users.ownerTherapist, BEENDEN, ['treatment', patients.erika])),
+      ).toBe('42501');
+      expect(
+        await fehler(
+          asUser(users.ownerTherapist, SETZEN, ['treatment', patients.erika, 7, ['stress']]),
+        ),
+      ).toBe('42501');
+    } finally {
+      await asPostgres(
+        `insert into public.user_roles (user_id, organization_id, role_key)
+         values ($1, $2, 'therapist')`,
+        [users.ownerTherapist, organizationId],
+      );
+    }
+    expect((await lesen(users.therapist, 'treatment', patients.erika))!.schedule).not.toBeNull();
+  });
+
+  it('nach dem Ende des Verhältnisses kein fälliger Tag, Beenden geht (Zweitreview S5)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, ['treatment', patients.erika, 7, ['stress']]);
+    try {
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = current_date - 1, care_concluded_at = now(),
+                care_concluded_by = $2::uuid
+          where id = $1`,
+        [patients.erika, users.therapist],
+      );
+      const daten = await lesen(users.therapist, 'treatment', patients.erika);
+      expect(daten).toMatchObject({ relationship_open: false, schedule: { due_on: null } });
+      await asUserCommitted(users.therapist, BEENDEN, ['treatment', patients.erika]);
+      expect((await lesen(users.therapist, 'treatment', patients.erika))!.schedule).toBeNull();
+    } finally {
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = null, care_concluded_at = null, care_concluded_by = null
+          where id = $1`,
+        [patients.erika],
+      );
+    }
   });
 
   it('kein Durchgriff zwischen den Bereichen (ADR-021 Punkt 6, ANN-351)', async () => {
@@ -494,6 +556,7 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
       { pain_rest: 11 },
       { morning_stiffness_minutes: 241 },
       { pain_rest: 2.5 },
+      { pain_rest: 1e12 },
       { session_pain: 2 },
       [1],
     ]) {
@@ -619,13 +682,18 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
           await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}'])),
         ).toBe('42501');
       }
-      const { rows } = await asPostgres<{ id: string }>(
-        `insert into public.platform_accesses
-           (organization_id, relationship_kind, relationship_id, patient_id, status, created_by)
-         values ($1, 'treatment', $2, $2, 'invited', $3) returning id`,
-        [organizationId, patients.max, users.office],
+      // Erikas eigener Zugang, noch eingeladen.
+      await asPostgres(
+        `update public.platform_accesses
+            set status = 'invited', revoked_at = null, revoked_reason = null, activated_at = null,
+                account_user_id = null
+          where id = $1`,
+        [erika.zugang],
       );
-      expect(await portal(erika.konto, rows[0]!.id)).toBeNull();
+      expect(await portal(erika.konto, erika.zugang)).toBeNull();
+      expect(await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}']))).toBe(
+        '42501',
+      );
     } finally {
       await resetDatabase();
       await fremdeOrganisation();
