@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { schriftInEinheiten } from './messreihenSchrift';
+import { schriftInEinheiten } from './bildSchrift';
 
 /**
  * Die Schrift der Messreihe fällt am Schirm nie unter 12 px (Runde 2,

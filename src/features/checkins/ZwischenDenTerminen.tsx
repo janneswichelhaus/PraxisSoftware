@@ -27,6 +27,8 @@ import {
   type CheckinDaten,
   type Verhaeltnisart,
 } from './api';
+import { verlaufsmarkierungen } from './markierungen';
+import { Verlaufsbilder, Verlaufsereignisse } from './Verlauf';
 
 /**
  * „Zwischen den Terminen" an Akte und Trainingsverhältnis (TRK-002, DSN-001
@@ -68,7 +70,7 @@ export function ZwischenDenTerminen({
       ) : (
         <>
           <Takt art={art} verhaeltnisId={verhaeltnisId} daten={data} />
-          <Angaben daten={data} />
+          <Angaben art={art} verhaeltnisId={verhaeltnisId} daten={data} />
         </>
       )}
     </Section>
@@ -302,11 +304,22 @@ function kurzname(key: string): string {
 
 /**
  * Die Angaben je Größe über die Zeit (TRK-006, ANN-356): die Check-ins und
- * daneben, was die Person nach den Einheiten angegeben hat. Wert, Datum,
- * Uhrzeit und Quelle – keine Tendenz, keine Farbe (ADR-006 Punkt 11).
+ * daneben, was die Person nach den Einheiten angegeben hat. Seit OUT-001 je
+ * Größe als Punktbild mit Ereignissen, Planwechseln und Terminen
+ * (IDEA-OUT-005), darunter unverändert die Tabelle mit allen Angaben. Wert,
+ * Datum, Uhrzeit und Quelle – keine Tendenz, keine Farbe (ADR-006 Punkt 11).
  */
-function Angaben({ daten }: { daten: CheckinDaten }) {
+function Angaben({
+  art,
+  verhaeltnisId,
+  daten,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  daten: CheckinDaten;
+}) {
   const vermerk = (art: string) => (art === 'legal_representative' ? 'Vertretung' : null);
+  const markierungen = verlaufsmarkierungen(daten);
   return (
     <div className="mt-4 flex flex-col gap-4">
       {daten.checkins.length === 0 ? (
@@ -314,6 +327,11 @@ function Angaben({ daten }: { daten: CheckinDaten }) {
       ) : (
         <div className="flex flex-col gap-2">
           <h3 className="text-ink text-base font-semibold">Check-ins</h3>
+          <Verlaufsbilder
+            erfassungen={daten.checkins.map((c) => ({ datum: c.answered_on, werte: c.values }))}
+            markierungen={markierungen}
+            termine={daten.appointment_days}
+          />
           <Verlaufstabelle
             titel="Angaben aus den Check-ins"
             spalten={daten.checkins.map((c) => ({
@@ -329,6 +347,11 @@ function Angaben({ daten }: { daten: CheckinDaten }) {
       {daten.sessions.length > 0 ? (
         <div className="flex flex-col gap-2">
           <h3 className="text-ink text-base font-semibold">Nach den Einheiten</h3>
+          <Verlaufsbilder
+            erfassungen={daten.sessions.map((e) => ({ datum: e.performed_on, werte: e.values }))}
+            markierungen={markierungen}
+            termine={daten.appointment_days}
+          />
           <Verlaufstabelle
             titel="Angaben nach den Einheiten"
             spalten={daten.sessions.map((e) => ({
@@ -342,6 +365,12 @@ function Angaben({ daten }: { daten: CheckinDaten }) {
           />
         </div>
       ) : null}
+      <Verlaufsereignisse
+        art={art}
+        verhaeltnisId={verhaeltnisId}
+        daten={daten}
+        markierungen={markierungen}
+      />
     </div>
   );
 }

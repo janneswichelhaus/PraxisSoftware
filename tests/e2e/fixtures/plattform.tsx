@@ -745,6 +745,23 @@ client.setQueryData(checkinsKey('treatment', MAX), {
       values: { session_exertion: 5, session_confidence: 5 },
     },
   ],
+  // OUT-001: ein Ereignis der Akte, ein Planwechsel, zwei Termine.
+  events: [
+    {
+      id: 'dededede-dede-4ede-8ede-000000000001',
+      occurred_on: inTagen(-4, 0).slice(0, 10),
+      kind: 'erkrankung',
+      note: 'Erkältung',
+      created_at: inTagen(-4, 9),
+      author_name: 'Anna Beispiel',
+    },
+  ],
+  plan_events: [
+    { occurred_on: inTagen(-9, 0).slice(0, 10), kind: 'plan_assigned', title: 'Heimprogramm Knie' },
+  ],
+  appointment_days: [inTagen(-8, 0).slice(0, 10), inTagen(-1, 0).slice(0, 10)],
+  events_writable: false,
+  health_consent: null,
 } satisfies CheckinDaten);
 
 const sitzung = {
