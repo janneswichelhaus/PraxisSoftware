@@ -219,23 +219,31 @@ function TaktFormular({
         <legend className="text-ink mb-1 text-sm font-medium">
           Welche Fragen? (eine bis {CHECKIN_HOECHSTENS})
         </legend>
-        {groessenImTakt('checkin').map((g) => {
-          const gewaehlt = fragen.includes(g.key);
-          return (
-            <Checkbox
-              key={g.key}
-              label={g.kurz}
-              hint={g.frage}
-              checked={gewaehlt}
-              disabled={!gewaehlt && voll}
-              onChange={(e) =>
-                setFragen((bisher) =>
-                  e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
-                )
-              }
-            />
-          );
-        })}
+        {/* TRK-004: nach Gruppen, damit zwölf Fragen überschaubar bleiben. */}
+        {FRAGENGRUPPEN.map((gruppe) => (
+          <div key={gruppe} className="flex flex-col gap-2">
+            <p className="text-ink-muted mt-2 text-sm font-semibold">{gruppe}</p>
+            {groessenImTakt('checkin')
+              .filter((g) => g.gruppe === gruppe)
+              .map((g) => {
+                const gewaehlt = fragen.includes(g.key);
+                return (
+                  <Checkbox
+                    key={g.key}
+                    label={g.kurz}
+                    hint={g.frage}
+                    checked={gewaehlt}
+                    disabled={!gewaehlt && voll}
+                    onChange={(e) =>
+                      setFragen((bisher) =>
+                        e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
+                      )
+                    }
+                  />
+                );
+              })}
+          </div>
+        ))}
       </fieldset>
       {hinweis ? <Statusmeldung ton="fehler">{hinweis}</Statusmeldung> : null}
       {speichern.isError ? (
@@ -252,6 +260,8 @@ function TaktFormular({
     </form>
   );
 }
+
+const FRAGENGRUPPEN = ['Schmerz', 'Bewegung und Alltag'] as const;
 
 function Angaben({ daten }: { daten: CheckinDaten }) {
   if (daten.checkins.length === 0) {

@@ -570,6 +570,30 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
     expect(rows[0]!.n).toBe(0);
   });
 
+  it('nimmt Schmerzart, Dauer und Bewegungssicherheit an, unverändert (TRK-004)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, [
+      'treatment',
+      patients.erika,
+      7,
+      ['pain_after_load', 'pain_recovery_hours', 'pain_quality', 'movement_confidence'],
+    ]);
+    for (const werte of [{ pain_quality: 0 }, { pain_quality: 6 }, { pain_recovery_hours: 73 }]) {
+      expect(
+        await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, JSON.stringify(werte)])),
+      ).toBe('22023');
+    }
+    await asUserCommitted(erika.konto, ANTWORTEN, [
+      erika.zugang,
+      JSON.stringify({ pain_recovery_hours: 6, pain_quality: 2, movement_confidence: 3 }),
+    ]);
+    const praxis = await lesen(users.therapist, 'treatment', patients.erika);
+    expect(praxis!.checkins[0]!.values).toEqual({
+      pain_recovery_hours: 6,
+      pain_quality: 2,
+      movement_confidence: 3,
+    });
+  });
+
   it('ohne Takt kein Check-in; vor dem nächsten Tag nicht fällig', async () => {
     await asUserCommitted(users.therapist, BEENDEN, ['treatment', patients.erika]);
     expect((await portal(erika.konto, erika.zugang))!.schedule).toBeNull();

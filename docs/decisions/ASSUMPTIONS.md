@@ -4276,3 +4276,27 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 **Anker.** Recht `checkin` in `app.platform_access_allows`, `submit_platform_checkin` in `supabase/migrations/20261105120000_trk_003_platform_checkins.sql`; `nachDemCheckin` in `src/features/platform/checkintexte.ts`; Tests „Begleitung liest …“ und „im Training nur mit Einwilligung …“ in `supabase/tests/checkins.test.ts`.
 
 **Änderungspfad.** `'checkin'` in `app.platform_access_allows` in die Zeile der Rechte für alle Zugänge verschieben · Aufwand `klein`.
+
+### ANN-353 — Schmerz differenziert und Bewegungssicherheit als Fragen des Katalogs; nach der Einheit drei Fragen
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Verlauf (TRK-EPIC-002)
+
+**Annahme.** Der Check-in kennt neben Schmerz in Ruhe und bei Belastung auch **Schmerz nach Belastung**, **nachts** und **morgens** (je 0 bis 10), die **Dauer, bis der Schmerz wieder wie vorher ist** (0 bis 72 Stunden), die **Schmerzart** (ANN-354) und die **Bewegungssicherheit im Alltag** (0 = gar nicht sicher, 10 = völlig sicher). Nach einer Einheit fragt die Plattform als dritte freiwillige Frage, **wie sicher sich die Übungen angefühlt haben** (0 bis 10). Die Lokalisation auf einer Körperkarte und ihre Verschiebung über die Zeit entstehen nicht.
+
+**Begründung.** IDEA-TRK-005 nennt „wann“, „wie lange“, „wo“, „Qualität“ und „Verschiebung“; IDEA-TRK-003 die Bewegungssicherheit je Übung und je Alltag, als rohe Selbsteinschätzung ohne eigenen Score (ADR-006 Punkt 4, Punkt 11). Die Dauer bis zum Ausgangsniveau ist nach IDEA-TRN-003 die aussagekräftigste Größe; 72 Stunden decken den Folgetag-Bezug des Belastungsmodells und mehr. Alles bleibt eine Wahl der Praxis unter höchstens fünf Fragen (ANN-349). Eine Körperkarte ist eine eigene Oberfläche mit eigenem Datenmodell und wäre ein eigener Loop. Unsicher: ob Jannes die Bewegungssicherheit lieber je Alltagsaktivität („einkaufen gehen“) mit von der Praxis benannter Tätigkeit will.
+
+**Anker.** `app.tracking_parameters()` in `supabase/migrations/20261106100000_trk_004_pain_and_confidence.sql` und `ERFASSUNGSGROESSEN` in `src/lib/erfassungsgroessen.ts`; Tests „kennt Bewegungssicherheit …“ in `supabase/tests/erfassungsgroessen.test.ts`, „nimmt Schmerzart, Dauer …“ in `supabase/tests/checkins.test.ts`, „nimmt die Bewegungssicherheit nach der Einheit an“ in `supabase/tests/platform-exercise-sessions.test.ts`.
+
+**Änderungspfad.** Eine Zeile in beiden Katalogen ändern, hinzufügen oder (ohne erfasste Werte) streichen · Aufwand `klein`.
+
+### ANN-354 — Eine Auswahl wird als ganze Zahl gespeichert; Schmerzart mit fünf Wörtern, eine Wahl
+
+Technik · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Verlauf (TRK-EPIC-002)
+
+**Annahme.** Eine Frage mit Wörtern statt Zahlen speichert die Stelle des Worts als ganze Zahl wie jede andere Angabe; welche Zahl welches Wort ist, steht nur in `src/lib/erfassungsgroessen.ts`. Die Schmerzart fragt „vor allem“ eines von **dumpf, stechend, brennend, elektrisierend, ziehend** (1 bis 5), nicht mehrere.
+
+**Begründung.** So bleibt es bei einer Tabelle und einer Prüfung für alle Angaben (ANN-348); die Datenbank prüft den Bereich, die Oberfläche zeigt das Wort. IDEA-TRK-005 nennt die vier ersten Wörter als Beispiele für die Unterscheidung nozizeptiv/neuropathisch; „ziehend“ ist im Praxisalltag häufig. Eine Mehrfachwahl bräuchte mehrere Zeilen je Größe oder eine Bitmaske und macht die Zeitreihe schwerer lesbar. Die Software ordnet die Art nicht ein (ADR-006 Punkt 11). Unsicher: Die Auskunft (Art. 15) und der eigene Export zeigen die Zahl unter ihrem Schlüssel – lesbar erst mit der Beschriftung; die Wörter dürfen deshalb nie umsortiert, nur angehängt werden.
+
+**Anker.** `optionen` und `wertText` in `src/lib/erfassungsgroessen.ts`; die Zeile `pain_quality` in `app.tracking_parameters()`; Test „jede Auswahl hat so viele Wörter wie Werte …“ in `src/lib/erfassungsgroessen.test.ts`, `src/components/ui/Angabefeld.test.tsx`.
+
+**Änderungspfad.** Mehrfachwahl: je Wort eine eigene Ja/Nein-Größe im Katalog · Aufwand `klein`; Wörter in der Auskunft: Beschriftung in den Export schreiben · Aufwand `mittel`.

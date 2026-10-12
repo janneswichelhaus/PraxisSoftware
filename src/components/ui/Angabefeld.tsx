@@ -1,13 +1,13 @@
 import { useId, useRef, type CSSProperties } from 'react';
 import { Button } from '@/components/ui/Button';
-import type { Erfassungsgroesse } from '@/lib/erfassungsgroessen';
+import { wertText, type Erfassungsgroesse } from '@/lib/erfassungsgroessen';
 
 /**
  * Eine freiwillige Angabe zu einer Erfassungsgröße (TRK-EPIC-001).
  *
  * Eine Skala (0 bis 10) in Stufen wie im Befundbogen – am Handy zwei Reihen,
  * jede Stufe mindestens 44 × 44 px (BEF-057, ANN-258) – oder eine Zahl mit
- * Einheit. Nichts ist vorausgewählt: Der letzte Wert steht als Hinweis
+ * Einheit oder eine Auswahl in Wörtern (TRK-004, ANN-354). Nichts ist vorausgewählt: Der letzte Wert steht als Hinweis
  * daneben, damit niemand durchklickt (IDEA-TRK-002, ANN-349). „Angabe
  * entfernen" nimmt eine Wahl zurück; ohne Angabe bleibt der Wert leer.
  *
@@ -30,9 +30,7 @@ export function Angabefeld({
   const hinweisId = useId();
   const feldsatz = useRef<HTMLFieldSetElement>(null);
   const hinweis =
-    zuletzt !== undefined
-      ? `Ihre letzte Angabe: ${zuletzt}${groesse.einheit ? ` ${groesse.einheit}` : ''}`
-      : null;
+    zuletzt !== undefined ? `Ihre letzte Angabe: ${wertText(groesse, zuletzt)}` : null;
 
   function entfernen() {
     onChange(null);
@@ -76,6 +74,7 @@ export function Angabefeld({
 
   const stufen = Array.from({ length: groesse.max - groesse.min + 1 }, (_, i) => groesse.min + i);
   const spaltenAmHandy = stufen.length > 6 ? Math.ceil(stufen.length / 2) : stufen.length;
+  const auswahl = groesse.optionen !== undefined;
 
   return (
     <fieldset
@@ -108,14 +107,21 @@ export function Angabefeld({
       ) : null}
       <div
         // `skala`: Haken für die Plattform, die bei sehr wenig Breite weniger
-        // Stufen je Reihe setzt (POR-020).
-        className="skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5"
-        style={{ '--skala-spalten': spaltenAmHandy } as CSSProperties}
+        // Stufen je Reihe setzt (POR-020). Eine Auswahl in Wörtern bricht
+        // einfach um.
+        className={
+          auswahl
+            ? 'flex flex-wrap gap-2'
+            : 'skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5'
+        }
+        style={auswahl ? undefined : ({ '--skala-spalten': spaltenAmHandy } as CSSProperties)}
       >
         {stufen.map((stufe) => (
           <label
             key={stufe}
-            className="has-[:checked]:bg-accent has-[:checked]:border-accent has-[:checked]:text-surface border-line-strong text-ink rounded-field has-[:focus-visible]:outline-accent flex min-h-11 cursor-pointer items-center justify-center border text-sm tabular-nums has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 sm:min-w-11"
+            className={`has-[:checked]:bg-accent has-[:checked]:border-accent has-[:checked]:text-surface border-line-strong text-ink rounded-field has-[:focus-visible]:outline-accent flex min-h-11 cursor-pointer items-center justify-center border text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+              auswahl ? 'px-4' : 'tabular-nums sm:min-w-11'
+            }`}
           >
             <input
               type="radio"
@@ -124,7 +130,7 @@ export function Angabefeld({
               checked={wert === stufe}
               onChange={() => onChange(stufe)}
             />
-            {stufe}
+            {wertText(groesse, stufe)}
           </label>
         ))}
       </div>
@@ -139,7 +145,7 @@ export function Angabefeld({
         </div>
       ) : null}
       <p aria-live="polite" className="text-ink-muted text-sm tabular-nums">
-        {wert === null ? '' : `gewählt: ${wert}`}
+        {wert === null ? '' : `gewählt: ${wertText(groesse, wert)}`}
       </p>
     </fieldset>
   );
