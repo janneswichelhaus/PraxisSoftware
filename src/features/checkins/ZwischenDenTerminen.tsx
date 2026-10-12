@@ -14,6 +14,7 @@ import {
   angabenZeile,
   erfassungsgroesse,
   groessenImTakt,
+  nurFragen,
 } from '@/lib/erfassungsgroessen';
 import {
   TAKTE,
@@ -115,8 +116,17 @@ function Takt({
                 : `nächster ab ${formatDate(takt.due_on)}`}
           </p>
           <p className="text-ink-muted text-sm">
-            Fragen: {takt.parameter_keys.map((k) => erfassungsgroesse(k)?.kurz ?? k).join(', ')}
+            Fragen: {nurFragen(takt.parameter_keys).map(kurzname).join(', ')}
           </p>
+          {takt.parameter_keys.length > nurFragen(takt.parameter_keys).length ? (
+            <p className="text-ink-muted text-sm">
+              Zum Zusammenhang:{' '}
+              {takt.parameter_keys
+                .filter((k) => !nurFragen([k]).length)
+                .map(kurzname)
+                .join(', ')}
+            </p>
+          ) : null}
           {takt.updated_by_name ? (
             <p className="text-ink-muted text-sm">
               Eingestellt von {takt.updated_by_name} am {formatDate(takt.updated_at.slice(0, 10))}
@@ -192,7 +202,8 @@ function TaktFormular({
   const takte = TAKTE.includes(tageVorher as (typeof TAKTE)[number])
     ? [...TAKTE]
     : [...TAKTE, tageVorher].sort((a, b) => a - b);
-  const voll = fragen.length >= CHECKIN_HOECHSTENS;
+  // Der Zusammenhang zählt nicht zu den fünf (ANN-355).
+  const voll = nurFragen(fragen).length >= CHECKIN_HOECHSTENS;
 
   return (
     <form
@@ -200,7 +211,7 @@ function TaktFormular({
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (fragen.length === 0) {
+        if (nurFragen(fragen).length === 0) {
           setHinweis('Bitte mindestens eine Frage wählen.');
           return;
         }
@@ -245,6 +256,27 @@ function TaktFormular({
           </div>
         ))}
       </fieldset>
+      {/* TRK-005: Bedingungen, unter denen die Angaben entstehen (IDEA-TRK-006). */}
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-ink mb-1 text-sm font-medium">
+          Zum Zusammenhang (zählt nicht zu den {CHECKIN_HOECHSTENS} Fragen)
+        </legend>
+        {groessenImTakt('checkin')
+          .filter((g) => g.rolle === 'kontext')
+          .map((g) => (
+            <Checkbox
+              key={g.key}
+              label={g.kurz}
+              hint={g.frage}
+              checked={fragen.includes(g.key)}
+              onChange={(e) =>
+                setFragen((bisher) =>
+                  e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
+                )
+              }
+            />
+          ))}
+      </fieldset>
       {hinweis ? <Statusmeldung ton="fehler">{hinweis}</Statusmeldung> : null}
       {speichern.isError ? (
         <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
@@ -262,6 +294,10 @@ function TaktFormular({
 }
 
 const FRAGENGRUPPEN = ['Schmerz', 'Bewegung und Alltag'] as const;
+
+function kurzname(key: string): string {
+  return erfassungsgroesse(key)?.kurz ?? key;
+}
 
 function Angaben({ daten }: { daten: CheckinDaten }) {
   if (daten.checkins.length === 0) {

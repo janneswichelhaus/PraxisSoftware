@@ -104,6 +104,36 @@ describe('Check-in (TRK-003)', () => {
     expect(checkinAbsenden).not.toHaveBeenCalled();
   });
 
+  it('fragt den Zusammenhang getrennt; er allein reicht nicht (TRK-005, ANN-355)', async () => {
+    ladeCheckins.mockResolvedValue(
+      daten({
+        schedule: { interval_days: 7, parameter_keys: ['pain_quality', 'painkiller_24h'] },
+        last_values: { pain_quality: 2 },
+      }),
+    );
+    const nutzer = userEvent.setup();
+    const { container } = renderWithProviders(<Checkin zugang={ZUGANG} />, '/p/checkin');
+    expect(await screen.findByText('Eine kurze Frage', { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Zum Zusammenhang' })).toBeInTheDocument();
+    expect(screen.getByText('Ihre letzte Angabe: stechend')).toBeInTheDocument();
+    await pruefeBarrierefreiheit(container);
+    const mittel = screen.getByRole('group', {
+      name: 'Haben Sie in den letzten 24 Stunden Schmerzmittel genommen?',
+    });
+    await nutzer.click(within(mittel).getByLabelText('ja'));
+    await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
+    expect(screen.getByText('Bitte beantworten Sie mindestens eine Frage.')).toBeInTheDocument();
+    expect(checkinAbsenden).not.toHaveBeenCalled();
+    await nutzer.click(screen.getByLabelText('dumpf'));
+    await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
+    await waitFor(() =>
+      expect(checkinAbsenden).toHaveBeenCalledWith(ZUGANG.access_id, {
+        painkiller_24h: 1,
+        pain_quality: 1,
+      }),
+    );
+  });
+
   it('sagt ohne Fälligkeit, wann der nächste dran ist, ohne Formular', async () => {
     ladeCheckins.mockResolvedValue(daten({ due: false, can_answer: false, due_on: '2026-10-19' }));
     renderWithProviders(<Checkin zugang={ZUGANG} />, '/p/checkin');

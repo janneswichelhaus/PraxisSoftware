@@ -19,8 +19,9 @@ describe('Erfassungsgrößen (TRK-001)', () => {
       cadence: string;
       min_value: number;
       max_value: number;
+      role: string;
     }>(
-      `select parameter_key, cadence, min_value, max_value
+      `select parameter_key, cadence, min_value, max_value, role
        from app.tracking_parameters() order by cadence desc, sort_order`,
     );
     expect(rows).toEqual(
@@ -29,6 +30,7 @@ describe('Erfassungsgrößen (TRK-001)', () => {
         cadence: g.takt,
         min_value: g.min,
         max_value: g.max,
+        role: g.rolle === 'kontext' ? 'context' : 'question',
       })),
     );
   });

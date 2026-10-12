@@ -4300,3 +4300,15 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sic
 **Anker.** `optionen` und `wertText` in `src/lib/erfassungsgroessen.ts`; die Zeile `pain_quality` in `app.tracking_parameters()`; Test „jede Auswahl hat so viele Wörter wie Werte …“ in `src/lib/erfassungsgroessen.test.ts`, `src/components/ui/Angabefeld.test.tsx`.
 
 **Änderungspfad.** Mehrfachwahl: je Wort eine eigene Ja/Nein-Größe im Katalog · Aufwand `klein`; Wörter in der Auskunft: Beschriftung in den Export schreiben · Aufwand `mittel`.
+
+### ANN-355 — Kontext zum Check-in: Uhrzeit von selbst, Schmerzmittel und Seite als zuschaltbare Angaben neben den fünf Fragen
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Verlauf (TRK-EPIC-002)
+
+**Annahme.** Jeder Check-in trägt seine **Uhrzeit** von selbst (Zeitpunkt des Absendens), jede Einheit Beginn und Ende. Dazu kann die Praxis zwei Angaben **zum Zusammenhang** einschalten: „Schmerzmittel in den letzten 24 Stunden“ (nein/ja) und „Seite“ (links, rechts, beidseits, in der Mitte). Sie zählen nicht zu den fünf Fragen, sind freiwillig und allein kein Check-in. Gerät, Aufwärmen und Position gehören zu Messungen und entstehen hier nicht.
+
+**Begründung.** IDEA-TRK-006 nennt Uhrzeit, Seite, Messmittel, Aufwärmen, Schmerzmittel und Position als Bedingungen, ohne die eine Kurve Rauschen ist. Für Selbstauskünfte wirken davon Uhrzeit, Schmerzmittel und Seite; Messmittel, Aufwärmen und Position betreffen Kraft- und Bewegungsmessungen, die erst mit den Assessments (OUT-EPIC-001) entstehen. Der Zusammenhang ist keine Größe der Zeitreihe, sondern ihre Lesart – deshalb neben den fünf (ANN-349), aber nur auf Wahl der Praxis (Datenminimierung, IDEA-TRK-002). Die Bedarfsmedikation als eigene Verlaufsgröße bleibt bei ALT-EPIC-001. Unsicher: ob „24 Stunden“ oder „seit dem letzten Check-in“ für Jannes der nützlichere Bezug ist.
+
+**Anker.** Spalte `role` in `app.tracking_parameters()`, `app.checkin_keys_valid` und `submit_platform_checkin` in `supabase/migrations/20261106110000_trk_005_context.sql`; `rolle` und `nurFragen` in `src/lib/erfassungsgroessen.ts`; Tests „nimmt den Zusammenhang mit einer Frage …“ in `supabase/tests/checkins.test.ts`, „nimmt den Zusammenhang dazu …“ in `src/features/checkins/ZwischenDenTerminen.test.tsx`.
+
+**Änderungspfad.** Eine Angabe zum Zusammenhang ist eine Zeile mit `role = 'context'` in beiden Katalogen · Aufwand `klein`; zur Frage machen: `role` auf `question` · Aufwand `klein`.

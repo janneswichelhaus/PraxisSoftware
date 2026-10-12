@@ -33,7 +33,13 @@ export interface Erfassungsgroesse {
    */
   optionen?: readonly string[];
   /** Überschrift, unter der die Praxis die Frage beim Einstellen findet. */
-  gruppe: 'Schmerz' | 'Bewegung und Alltag' | 'Einheit';
+  gruppe: 'Schmerz' | 'Bewegung und Alltag' | 'Einheit' | 'Zusammenhang';
+  /**
+   * `frage` ist eine Größe der Zeitreihe; `kontext` sagt, unter welchen
+   * Bedingungen sie entstand, und zählt nicht zu den fünf Fragen (TRK-005,
+   * IDEA-TRK-006, ANN-355).
+   */
+  rolle: 'frage' | 'kontext';
 }
 
 export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
@@ -46,6 +52,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie anstrengend war die Einheit?',
     enden: ['gar nicht', 'maximal'],
     gruppe: 'Einheit',
+    rolle: 'frage',
   },
   {
     key: 'session_pain',
@@ -56,6 +63,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie stark waren Schmerzen während der Einheit?',
     enden: ['keine', 'stärkste vorstellbare'],
     gruppe: 'Einheit',
+    rolle: 'frage',
   },
   {
     key: 'session_confidence',
@@ -66,6 +74,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie sicher haben Sie sich bei den Übungen gefühlt?',
     enden: ['gar nicht sicher', 'völlig sicher'],
     gruppe: 'Einheit',
+    rolle: 'frage',
   },
   {
     key: 'pain_rest',
@@ -76,6 +85,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie stark sind Ihre Schmerzen in Ruhe?',
     enden: ['keine', 'stärkste vorstellbare'],
     gruppe: 'Schmerz',
+    rolle: 'frage',
   },
   {
     key: 'pain_load',
@@ -86,6 +96,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie stark sind Ihre Schmerzen bei Belastung?',
     enden: ['keine', 'stärkste vorstellbare'],
     gruppe: 'Schmerz',
+    rolle: 'frage',
   },
   {
     key: 'pain_after_load',
@@ -96,6 +107,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie stark sind Ihre Schmerzen nach einer Belastung?',
     enden: ['keine', 'stärkste vorstellbare'],
     gruppe: 'Schmerz',
+    rolle: 'frage',
   },
   {
     key: 'pain_night',
@@ -106,6 +118,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie stark waren Ihre Schmerzen in der letzten Nacht?',
     enden: ['keine', 'stärkste vorstellbare'],
     gruppe: 'Schmerz',
+    rolle: 'frage',
   },
   {
     key: 'pain_morning',
@@ -116,6 +129,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie stark sind Ihre Schmerzen morgens nach dem Aufstehen?',
     enden: ['keine', 'stärkste vorstellbare'],
     gruppe: 'Schmerz',
+    rolle: 'frage',
   },
   {
     key: 'pain_recovery_hours',
@@ -127,6 +141,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
       'Nach Ihrer letzten Belastung: Wie viele Stunden hat es gedauert, bis die Schmerzen wieder so waren wie vorher?',
     einheit: 'Stunden',
     gruppe: 'Schmerz',
+    rolle: 'frage',
   },
   {
     key: 'pain_quality',
@@ -137,6 +152,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie fühlt sich der Schmerz vor allem an?',
     optionen: ['dumpf', 'stechend', 'brennend', 'elektrisierend', 'ziehend'],
     gruppe: 'Schmerz',
+    rolle: 'frage',
   },
   {
     key: 'movement_confidence',
@@ -147,6 +163,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie sicher fühlen Sie sich, sich im Alltag zu bewegen?',
     enden: ['gar nicht sicher', 'völlig sicher'],
     gruppe: 'Bewegung und Alltag',
+    rolle: 'frage',
   },
   {
     key: 'daily_impairment',
@@ -157,6 +174,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie stark schränken Ihre Beschwerden Sie im Alltag ein?',
     enden: ['gar nicht', 'vollständig'],
     gruppe: 'Bewegung und Alltag',
+    rolle: 'frage',
   },
   {
     key: 'sleep_quality',
@@ -167,6 +185,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie gut haben Sie zuletzt geschlafen?',
     enden: ['sehr schlecht', 'sehr gut'],
     gruppe: 'Bewegung und Alltag',
+    rolle: 'frage',
   },
   {
     key: 'stress',
@@ -177,6 +196,7 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie angespannt oder gestresst fühlen Sie sich?',
     enden: ['gar nicht', 'sehr'],
     gruppe: 'Bewegung und Alltag',
+    rolle: 'frage',
   },
   {
     key: 'morning_stiffness_minutes',
@@ -187,6 +207,29 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Wie viele Minuten waren Sie heute Morgen steif?',
     einheit: 'Minuten',
     gruppe: 'Bewegung und Alltag',
+    rolle: 'frage',
+  },
+  {
+    key: 'painkiller_24h',
+    takt: 'checkin',
+    min: 0,
+    max: 1,
+    kurz: 'Schmerzmittel in 24 Stunden',
+    frage: 'Haben Sie in den letzten 24 Stunden Schmerzmittel genommen?',
+    optionen: ['nein', 'ja'],
+    gruppe: 'Zusammenhang',
+    rolle: 'kontext',
+  },
+  {
+    key: 'pain_side',
+    takt: 'checkin',
+    min: 1,
+    max: 4,
+    kurz: 'Seite',
+    frage: 'Auf welcher Seite spüren Sie die Beschwerden vor allem?',
+    optionen: ['links', 'rechts', 'beidseits', 'in der Mitte'],
+    gruppe: 'Zusammenhang',
+    rolle: 'kontext',
   },
 ];
 
@@ -197,11 +240,19 @@ export const CHECKIN_VOREINSTELLUNG: readonly string[] = [
   'daily_impairment',
 ];
 
-/** Höchstens so viele Fragen je Check-in (IDEA-TRK-002, ANN-349). */
+/**
+ * Höchstens so viele Fragen je Check-in (IDEA-TRK-002, ANN-349); Angaben zum
+ * Zusammenhang zählen nicht mit (ANN-355).
+ */
 export const CHECKIN_HOECHSTENS = 5;
 
 export function groessenImTakt(takt: Erfassungstakt): Erfassungsgroesse[] {
   return ERFASSUNGSGROESSEN.filter((g) => g.takt === takt);
+}
+
+/** Nur die Fragen einer Liste von Schlüsseln, ohne den Zusammenhang (ANN-355). */
+export function nurFragen(keys: readonly string[]): string[] {
+  return keys.filter((k) => erfassungsgroesse(k)?.rolle !== 'kontext');
 }
 
 export function erfassungsgroesse(key: string): Erfassungsgroesse | undefined {

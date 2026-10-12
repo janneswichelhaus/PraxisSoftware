@@ -229,18 +229,29 @@ describe('Check-in, Takt und Lesen in der Praxis (TRK-002)', () => {
       [7, ['pain_rest', 'pain_rest']],
       [7, ['session_pain']],
       [7, ['unbekannt']],
+      // Der Zusammenhang allein ist kein Check-in (TRK-005, ANN-355).
+      [7, ['painkiller_24h', 'pain_side']],
+      [7, ['pain_rest', 'painkiller_24h', 'painkiller_24h']],
     ];
     for (const [tage, fragen] of versuche) {
       expect(
         await fehler(asUser(users.therapist, SETZEN, ['treatment', patients.erika, tage, fragen])),
       ).toBe('22023');
     }
-    // Fünf sind erlaubt.
+    // Fünf sind erlaubt, der Zusammenhang zählt nicht mit (ANN-355).
     await asUserCommitted(users.therapist, SETZEN, [
       'treatment',
       patients.erika,
       28,
-      ['pain_rest', 'pain_load', 'daily_impairment', 'sleep_quality', 'stress'],
+      [
+        'pain_rest',
+        'pain_load',
+        'daily_impairment',
+        'sleep_quality',
+        'stress',
+        'painkiller_24h',
+        'pain_side',
+      ],
     ]);
   });
 
@@ -592,6 +603,31 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
       pain_quality: 2,
       movement_confidence: 3,
     });
+  });
+
+  it('nimmt den Zusammenhang mit einer Frage, nie allein (TRK-005, ANN-355)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, [
+      'treatment',
+      patients.erika,
+      7,
+      ['pain_load', 'painkiller_24h', 'pain_side'],
+    ]);
+    for (const werte of [
+      { painkiller_24h: 1 },
+      { painkiller_24h: 1, pain_side: 2 },
+      { pain_load: 3, painkiller_24h: 2 },
+      { pain_load: 3, pain_side: 0 },
+    ]) {
+      expect(
+        await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, JSON.stringify(werte)])),
+      ).toBe('22023');
+    }
+    await asUserCommitted(erika.konto, ANTWORTEN, [
+      erika.zugang,
+      JSON.stringify({ pain_load: 3, painkiller_24h: 0, pain_side: 1 }),
+    ]);
+    const praxis = await lesen(users.therapist, 'treatment', patients.erika);
+    expect(praxis!.checkins[0]!.values).toEqual({ pain_load: 3, painkiller_24h: 0, pain_side: 1 });
   });
 
   it('ohne Takt kein Check-in; vor dem nächsten Tag nicht fällig', async () => {

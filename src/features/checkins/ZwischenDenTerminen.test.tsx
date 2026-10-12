@@ -112,6 +112,46 @@ describe('Zwischen den Terminen (TRK-002)', () => {
     );
   });
 
+  it('nimmt den Zusammenhang dazu, ohne dass er zu den fünf zählt (TRK-005, ANN-355)', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Check-in ändern' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: /Bewegungssicherheit/ }));
+    await nutzer.click(screen.getByRole('checkbox', { name: /Schmerzart/ }));
+    // Fünf Fragen: weitere Fragen gesperrt, der Zusammenhang nicht.
+    expect(screen.getByRole('checkbox', { name: /Schmerz nachts/ })).toBeDisabled();
+    const mittel = screen.getByRole('checkbox', { name: /Schmerzmittel in 24 Stunden/ });
+    expect(mittel).toBeEnabled();
+    await nutzer.click(mittel);
+    await nutzer.click(screen.getByRole('button', { name: 'Speichern' }));
+    await waitFor(() =>
+      expect(saveCheckinTakt).toHaveBeenCalledWith('treatment', AKTE, 7, [
+        'pain_rest',
+        'pain_load',
+        'daily_impairment',
+        'movement_confidence',
+        'pain_quality',
+        'painkiller_24h',
+      ]),
+    );
+  });
+
+  it('nennt den Zusammenhang getrennt von den Fragen', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({
+        schedule: {
+          ...daten().schedule!,
+          parameter_keys: ['pain_load', 'painkiller_24h', 'pain_side'],
+        },
+      }),
+    );
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    expect(await screen.findByText('Fragen: Schmerz bei Belastung')).toBeInTheDocument();
+    expect(
+      screen.getByText('Zum Zusammenhang: Schmerzmittel in 24 Stunden, Seite'),
+    ).toBeInTheDocument();
+  });
+
   it('verlangt mindestens eine Frage', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);

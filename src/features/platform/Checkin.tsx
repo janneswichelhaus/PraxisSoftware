@@ -7,7 +7,12 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
-import { angabeGueltig, angabenZeile, erfassungsgroesse } from '@/lib/erfassungsgroessen';
+import {
+  angabeGueltig,
+  angabenZeile,
+  erfassungsgroesse,
+  nurFragen,
+} from '@/lib/erfassungsgroessen';
 import {
   checkinAbsenden,
   checkinsSchluessel,
@@ -89,6 +94,17 @@ function Formular({
     .map((k) => erfassungsgroesse(k))
     .filter((g) => g !== undefined);
   const [werte, setWerte] = useState<Record<string, number | null>>({});
+  const hauptfragen = fragen.filter((g) => g.rolle === 'frage');
+  const zusammenhang = fragen.filter((g) => g.rolle === 'kontext');
+  const feld = (g: (typeof fragen)[number]) => (
+    <Angabefeld
+      key={g.key}
+      groesse={g}
+      wert={werte[g.key] ?? null}
+      zuletzt={daten.last_values[g.key]}
+      onChange={(w) => setWerte((bisher) => ({ ...bisher, [g.key]: w }))}
+    />
+  );
   const [hinweis, setHinweis] = useState<string | undefined>(undefined);
   const absenden = useMutation({
     mutationFn: (angaben: Record<string, number>) => checkinAbsenden(zugang.access_id, angaben),
@@ -116,7 +132,8 @@ function Formular({
           );
           return;
         }
-        if (Object.keys(angaben).length === 0) {
+        // Der Zusammenhang allein ist kein Check-in (ANN-355).
+        if (nurFragen(Object.keys(angaben)).length === 0) {
           setHinweis('Bitte beantworten Sie mindestens eine Frage.');
           return;
         }
@@ -125,18 +142,17 @@ function Formular({
       }}
     >
       <p className="text-ink max-w-prose text-base leading-relaxed">
-        {fragen.length === 1 ? 'Eine kurze Frage' : `${fragen.length} kurze Fragen`}. Jede ist
-        freiwillig – lassen Sie offen, was Sie nicht sicher wissen.
+        {hauptfragen.length === 1 ? 'Eine kurze Frage' : `${hauptfragen.length} kurze Fragen`}. Jede
+        ist freiwillig – lassen Sie offen, was Sie nicht sicher wissen.
       </p>
-      {fragen.map((g) => (
-        <Angabefeld
-          key={g.key}
-          groesse={g}
-          wert={werte[g.key] ?? null}
-          zuletzt={daten.last_values[g.key]}
-          onChange={(w) => setWerte((bisher) => ({ ...bisher, [g.key]: w }))}
-        />
-      ))}
+      {hauptfragen.map(feld)}
+      {/* TRK-005: Angaben zum Zusammenhang (IDEA-TRK-006, ANN-355). */}
+      {zusammenhang.length > 0 ? (
+        <div className="flex flex-col gap-6">
+          <h2 className="text-ink text-base font-semibold">Zum Zusammenhang</h2>
+          {zusammenhang.map(feld)}
+        </div>
+      ) : null}
       <p className="text-ink-muted max-w-prose text-sm">
         {leserIn(zugang)} sieht Ihre Angaben beim nächsten Termin; sie werden nicht laufend gelesen.{' '}
         <strong>{NICHT_AKUT}</strong> {NOTFALL}
