@@ -28,25 +28,13 @@
 // -----------------------------------------------------------------------------
 import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
+// Konten, Kennwort und Anmeldung teilt dieses Skript mit der Bildstrecke
+// (scripts/bildstrecke.mjs): synthetische Seed-Konten, kein Secret im Sinne
+// von PROJECT_PRINCIPLES.md 3.3.
+import { ANMELDUNG_VORAUSSETZUNG, KONTEN, anmelden, startbildAbwarten } from './testkonten.mjs';
 
 const ZIEL = '.tmp/screenshots';
 const BASIS = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
-
-/**
- * Synthetische Seed-Konten und ihr Kennwort - dieselben wie in
- * tests/e2e/authenticated/helpers.ts (KONTEN, TESTKENNWORT). Kein Secret im
- * Sinne von PROJECT_PRINCIPLES.md 3.3: es oeffnet ausschliesslich
- * synthetische Konten in einer Datenbank ohne reale Daten.
- */
-// Map statt Objekt: ein Zugriff mit einem beliebigen CLI-Argument als
-// Schluessel waere sonst ein von eslint-plugin-security zu Recht gemeldeter
-// Object-Injection-Sink.
-const KONTEN = new Map([
-  ['owner', 'jannes.test@praxis.invalid'],
-  ['office', 'olivia.office@praxis.invalid'],
-  ['therapist', 'anna.beispiel@praxis.invalid'],
-]);
-const TESTKENNWORT = 'LokalerTestzugang!2026';
 
 const argumente = process.argv.slice(2);
 const breite = Number(
@@ -57,7 +45,7 @@ const pfade = argumente.filter((a) => !a.startsWith('--'));
 
 if (pfade.length === 0) {
   console.error(
-    'Aufruf: pnpm screenshots [--breite=375] [--konto=owner|office|therapist] /pfad [/weiterer-pfad …]',
+    `Aufruf: pnpm screenshots [--breite=375] [--konto=${[...KONTEN.keys()].join('|')}] /pfad [/weiterer-pfad …]`,
   );
   console.error('Voraussetzung: die Anwendung laeuft unter ' + BASIS + ' (pnpm dev).');
   console.error(
@@ -97,25 +85,11 @@ let befunde = 0;
 if (anmeldeAdresse) {
   const anmeldeSeite = await context.newPage();
   try {
-    await anmeldeSeite.goto(BASIS + '/', { waitUntil: 'networkidle', timeout: 20_000 });
-    // Der Kennwortweg liegt zugeklappt hinter „Testkonten" (ADR-025 Punkt 15),
-    // wie in tests/e2e/authenticated/helpers.ts.
-    await anmeldeSeite.getByText('Testkonten', { exact: true }).click();
-    await anmeldeSeite.getByLabel('E-Mail-Adresse').fill(anmeldeAdresse);
-    // exact grenzt das Feld gegen den Sichtbar-Schalter ab.
-    await anmeldeSeite.getByLabel('Kennwort', { exact: true }).fill(TESTKENNWORT);
-    await anmeldeSeite.getByRole('button', { name: 'Anmelden', exact: true }).click();
-    // `exact` wie in den E2E-Tests: eine offene Rueckfrage traegt sonst
-    // ebenfalls „abmelden" im Namen (FIX-014).
-    await anmeldeSeite
-      .getByRole('button', { name: 'Abmelden', exact: true })
-      .waitFor({ state: 'visible', timeout: 10_000 });
+    await anmelden(anmeldeSeite, BASIS, kontoName);
     console.log(`Angemeldet als ${kontoName} (${anmeldeAdresse}).\n`);
   } catch (fehler) {
     console.error(`Anmeldung als ${kontoName} fehlgeschlagen: ${String(fehler).split('\n')[0]}`);
-    console.error(
-      'Laeuft ein Supabase-Stack (pnpm dlx supabase@2.116.0 start oder ./scripts/cloud-stack.sh start) und die Anwendung (pnpm dev)?',
-    );
+    console.error(ANMELDUNG_VORAUSSETZUNG);
     await browser.close();
     process.exit(1);
   } finally {
@@ -148,11 +122,8 @@ for (const pfad of pfade) {
     await seite.goto(BASIS + pfad, { waitUntil: 'networkidle', timeout: 20_000 });
     // Das Startbild (RAH-009) liegt in jedem neuen Tab knapp zwei Sekunden
     // ueber der Seite - ohne dieses Warten zeigte das Bild die Marke statt der
-    // Seite. Ohne Startbild kehrt waitFor sofort zurueck.
-    await seite
-      .locator('[data-startbild]')
-      .waitFor({ state: 'detached', timeout: 6_000 })
-      .catch(() => undefined);
+    // Seite. Ohne Startbild kehrt das Warten sofort zurueck.
+    await startbildAbwarten(seite);
     await seite.waitForTimeout(400);
 
     // Mit --konto ist eine angemeldete Seite erwartet - zeigt sie stattdessen
