@@ -1,6 +1,7 @@
 /**
  * Erfassungsgrößen nach Takt (TRK-EPIC-001, IDEA-TRK-001, ANN-348;
- * TRK-EPIC-002: Schmerz differenziert, Bewegungssicherheit, ANN-353, ANN-354).
+ * TRK-EPIC-002: Schmerz differenziert, Bewegungssicherheit, ANN-353, ANN-354;
+ * ALT-EPIC-001: Schlafdauer, Bedarfsmedikation, Aktivität, ANN-368, ANN-369).
  *
  * Schlüssel, Takt und Wertebereich legt die Datenbank fest
  * (`app.tracking_parameters()`); hier stehen Frage, Kurzname und die Enden
@@ -154,6 +155,18 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     gruppe: 'Schmerz',
     rolle: 'frage',
   },
+  // ALT-001: Häufigkeit, kein Medikationsplan (IDEA-ALT-004, ANN-368).
+  {
+    key: 'painkiller_days_7d',
+    takt: 'checkin',
+    min: 0,
+    max: 7,
+    kurz: 'Schmerzmittel bei Bedarf',
+    frage: 'An wie vielen der letzten 7 Tage haben Sie Schmerzmittel bei Bedarf genommen?',
+    einheit: 'von 7 Tagen',
+    gruppe: 'Schmerz',
+    rolle: 'frage',
+  },
   {
     key: 'movement_confidence',
     takt: 'checkin',
@@ -184,6 +197,18 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     kurz: 'Schlaf',
     frage: 'Wie gut haben Sie zuletzt geschlafen?',
     enden: ['sehr schlecht', 'sehr gut'],
+    gruppe: 'Bewegung und Alltag',
+    rolle: 'frage',
+  },
+  // ALT-001: Schlafdauer in ganzen Stunden (IDEA-ALT-003, ANN-368).
+  {
+    key: 'sleep_hours',
+    takt: 'checkin',
+    min: 0,
+    max: 16,
+    kurz: 'Schlafdauer',
+    frage: 'Wie viele Stunden haben Sie letzte Nacht ungefähr geschlafen?',
+    einheit: 'Stunden',
     gruppe: 'Bewegung und Alltag',
     rolle: 'frage',
   },

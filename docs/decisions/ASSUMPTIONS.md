@@ -4463,3 +4463,15 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `session_history` in `public.platform_checkins` (`supabase/migrations/20261109130000_out_004_own_progress.sql`); `MeineAngaben`, `EigeneBilder` in `src/features/platform/Checkin.tsx`. Geprüft in `supabase/tests/checkins.test.ts` („zeigt der Praxis daneben …“), `src/features/platform/Checkin.test.tsx`.
 
 **Änderungspfad.** Ereignisse auch der Person zeigen: `events` in `platform_checkins` und Markierungen in `EigeneBilder` · Aufwand `mittel`. Eigene Assessments zeigen: Plattformprojektion und Abschnitt · Aufwand `mittel`. Die Tabelle offen statt zugeklappt: `offen` an `Disclosure` · Aufwand `klein`.
+
+### ANN-368 — Schlafdauer in ganzen Stunden und Bedarfsmedikation als „an wie vielen der letzten 7 Tage“ sind zwei weitere Fragen des Check-ins
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Verlauf (ALT-EPIC-001)
+
+**Annahme.** Der Check-in kennt zwei Fragen mehr, die die Praxis wie jede andere wählt (zählen zu den fünf, ANN-349): **Schlafdauer** – „Wie viele Stunden haben Sie letzte Nacht ungefähr geschlafen?“, ganze Stunden von 0 bis 16 – und **Schmerzmittel bei Bedarf** – „An wie vielen der letzten 7 Tage haben Sie Schmerzmittel bei Bedarf genommen?“, 0 bis 7 Tage. Beide sind Größen der Zeitreihe und erscheinen als Punktbild. Schlafqualität und Stress fragt der Check-in schon (TRK-002); der Zusammenhang „Schmerzmittel in den letzten 24 Stunden“ (ANN-355) bleibt. Kein Wirkstoff, keine Dosis, kein Medikationsplan.
+
+**Begründung.** IDEA-ALT-003 nennt Schlafdauer, Schlafqualität und Belastungsempfinden; zwei davon gab es, die Dauer fehlte. IDEA-ALT-004 will die Häufigkeit, ausdrücklich keine Medikationsverwaltung („eigenes Feature mit eigener regulatorischer Bewertung“). Tage statt Einnahmen, weil Tage über eine Woche zuverlässiger erinnert werden als einzelne Einnahmen und die Frage bei jedem Takt (täglich bis vierwöchentlich) dieselbe bleibt; „sieben Tage“ statt „seit dem letzten Check-in“, damit Werte bei geändertem Takt vergleichbar bleiben. Ganze Stunden, weil die Angabe ungefähr ist (IDEA-ALT-001: ohne Genauigkeitsanspruch) und alle Angaben ganze Zahlen sind (ANN-348). Kein „zu wenig“ und keine Verbindung zum Schmerz (ADR-006 Punkt 11, IDEA-ALT-003 „Vorsicht“).
+
+**Anker.** `app.tracking_parameters()` in `supabase/migrations/20261110100000_alt_001_sleep_and_painkillers.sql`; `sleep_hours`, `painkiller_days_7d` in `src/lib/erfassungsgroessen.ts`. Geprüft in `supabase/tests/erfassungsgroessen.test.ts`, `src/lib/erfassungsgroessen.test.ts`.
+
+**Änderungspfad.** Einnahmen statt Tage oder ein anderer Zeitraum: eine Zeile im Katalog und die Frage · Aufwand `klein` (bestehende Werte behielten ihre alte Bedeutung, deshalb besser ein neuer Schlüssel). Schlaf in halben Stunden: Minuten als Einheit wie bei der Morgensteifigkeit · Aufwand `klein`.

@@ -145,9 +145,9 @@ describe('Zwischen den Terminen (TRK-002)', () => {
     expect(screen.getByText('Noch kein Check-in beantwortet.')).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Check-in einstellen' }));
     expect(screen.getByRole('checkbox', { name: /Schmerz in Ruhe/ })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: /Schlaf/ })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /^Schlaf$/ })).not.toBeChecked();
     await nutzer.selectOptions(screen.getByLabelText('Wie oft?'), 'alle 3 Tage');
-    await nutzer.click(screen.getByRole('checkbox', { name: /Schlaf/ }));
+    await nutzer.click(screen.getByRole('checkbox', { name: /^Schlaf$/ }));
     await nutzer.click(screen.getByRole('checkbox', { name: /Stress/ }));
     // Fünf gewählt: die sechste ist gesperrt.
     expect(screen.getByRole('checkbox', { name: /Morgensteifigkeit/ })).toBeDisabled();
