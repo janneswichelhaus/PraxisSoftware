@@ -1,23 +1,17 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Link,
-  Navigate,
-  NavLink,
-  Outlet,
-  useLocation,
-  useParams,
-  useSearchParams,
-} from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
+import { Objektkopf, Warnzeile } from '@/components/ui/Objektkopf';
+import { Reiterleiste } from '@/components/ui/Reiterleiste';
 import { AnmeldebogenFoto } from '@/features/datenschutz/Anmeldebogen';
 import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
 import {
   useAktuelleGrundlage,
   versicherungsart,
 } from '@/features/treatment-bases/useAktuelleGrundlage';
-import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -77,33 +71,10 @@ import { ageInYears, fetchPatient, fullName, logPatientRecordView, type Patient 
  */
 
 /**
- * Wie weit der Nachbar des aktiven Bereichs noch ins Bild ragt, wenn die
- * Leiste ihn heranrollt: ein angeschnittenes Wort sagt „hier geht es weiter".
- * Derselbe Wert wie in der `SubNav`.
+ * Die Bereiche der Akte als Reiter (Design-Fundament: `Reiterleiste`). Der
+ * Rückweg der Akte reist in jedem Ziel mit, damit er beim Bereichswechsel
+ * nicht verloren geht.
  */
-const NACHBAR_PX = 24;
-
-/**
- * Rollt die Leiste waagerecht, bis `eintrag` ganz zu sehen ist (PAT-01,
- * RSP-04) - nach dem Muster der `SubNav`: über `scrollLeft` der Liste und nicht
- * über `scrollIntoView`, das auch die Seite senkrecht rollte (UIK-10).
- *
- * Nur, wo die Leiste überhaupt scrollt: ab 640 px bricht sie um, dann ist
- * ohnehin alles zu sehen.
- */
-function rolleInsBild(liste: HTMLElement, eintrag: HTMLElement): void {
-  if (liste.scrollWidth <= liste.clientWidth) return;
-  const rahmen = liste.getBoundingClientRect();
-  const ziel = eintrag.getBoundingClientRect();
-  const links = ziel.left - rahmen.left + liste.scrollLeft;
-  const rechts = links + ziel.width;
-  if (links - NACHBAR_PX < liste.scrollLeft) {
-    liste.scrollLeft = Math.max(0, links - NACHBAR_PX);
-  } else if (rechts + NACHBAR_PX > liste.scrollLeft + liste.clientWidth) {
-    liste.scrollLeft = rechts + NACHBAR_PX - liste.clientWidth;
-  }
-}
-
 function Aktenavigation({
   patient,
   user,
@@ -111,50 +82,17 @@ function Aktenavigation({
 }: {
   patient: Patient;
   user: CurrentUser;
-  /** Der Rückweg der Akte, damit er beim Bereichswechsel nicht verloren geht. */
   anhang: string;
 }) {
-  const bereiche = aktenBereiche(patient.id, user);
-  const { pathname } = useLocation();
-  const liste = useRef<HTMLUListElement>(null);
-
-  // Der offene Bereich steht im Bild (PAT-01, RSP-04). Bis dahin stand die
-  // Leiste am Telefon immer am Anfang: Auf „Stammdaten" - dem letzten der
-  // Bereiche - war der markierte Eintrag nicht zu sehen, auch nicht
-  // nach dem Speichern der Stammdaten. Vor dem Zeichnen, damit die Leiste
-  // nicht erst am Anfang steht und dann springt.
-  useLayoutEffect(() => {
-    const aktiv = liste.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (liste.current && aktiv) rolleInsBild(liste.current, aktiv);
-  }, [pathname]);
-
   return (
-    // Eigene Form statt der SubNav des Arbeitsbereichs: Die Leiste des Gerüsts
-    // sagt, wo in der Anwendung man ist; diese sagt, welcher Teil der Akte
-    // offen ist. Zwei gleich aussehende Reihen übereinander wären ein Rätsel.
-    //
-    // Schmal scrollt die Reihe waagerecht, statt in zwei Zeilen umzubrechen -
-    // die vier Bereiche sind am Telefon breiter als der Bildschirm. Ab 640 px
-    // bricht sie wie die SubNav um (PAT-01): Mit der Maus gibt es keine
-    // Wischgeste.
-    <nav aria-label="Bereiche der Akte" className="border-line border-t">
-      <ul
-        ref={liste}
-        className="flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3"
-      >
-        {bereiche.map((bereich) => (
-          <li key={bereich.to} className="shrink-0">
-            <NavLink
-              to={`${bereich.to}${anhang}`}
-              end={bereich.end ?? false}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-semibold"
-            >
-              {bereich.label}
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <Reiterleiste
+      label="Bereiche der Akte"
+      reiter={aktenBereiche(patient.id, user).map((bereich) => ({
+        to: `${bereich.to}${anhang}`,
+        label: bereich.label,
+        end: bereich.end ?? false,
+      }))}
+    />
   );
 }
 
@@ -173,13 +111,11 @@ function AnmeldebogenHinweis({ patient, user }: { patient: Patient; user: Curren
   // ANN-227: Ein Tipp öffnet die Kamera, das Foto erledigt den Anmeldebogen -
   // ohne Umweg über die Stammdaten.
   return (
-    <div className="bg-warnung-soft text-warnung rounded-card flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 text-sm font-semibold">
-      <p>
-        <span aria-hidden="true">! </span>
-        {BEGRIFFE.anmeldebogen} fehlt
-      </p>
-      <AnmeldebogenFoto patientId={patient.id} ausloeser="link" knopf="Fotografieren" />
-    </div>
+    <Warnzeile
+      aktion={<AnmeldebogenFoto patientId={patient.id} ausloeser="link" knopf="Fotografieren" />}
+    >
+      {BEGRIFFE.anmeldebogen} fehlt
+    </Warnzeile>
   );
 }
 
@@ -238,16 +174,6 @@ function HinweiseImKopf({ patient }: { patient: Patient }) {
   );
 }
 
-/** Hinweiszeile und Hinweise unter den Knöpfen; ohne beides kein Abstand. */
-function KopfHinweise({ patient, user }: { patient: Patient; user: CurrentUser }) {
-  return (
-    <div className="flex flex-col gap-3 px-4 pb-3 empty:hidden sm:px-5 sm:pb-4">
-      <AnmeldebogenHinweis patient={patient} user={user} />
-      <HinweiseImKopf patient={patient} />
-    </div>
-  );
-}
-
 /**
  * Die Praxisrollen in der Reihenfolge, in der der Satz sie nennt. Wer davon
  * den Versorgungsstatus wechseln darf, sagt `canChangePatientStatus` - so
@@ -278,18 +204,26 @@ function OhneNeueTermine({ user }: { user: CurrentUser }) {
 
   // UX-005e: Der Grund steht schon im Etikett daneben; der Satz nennt nur
   // noch die Folge und den Weg zurück.
-  return <p className="text-ink-muted w-full text-sm">Keine neuen Termine. {weg}</p>;
+  return <>Keine neuen Termine. {weg}</>;
 }
 
 /**
  * Kopf der Akte: wer die Person ist - und die beiden Wege, die täglich
- * gebraucht werden.
+ * gebraucht werden (`Objektkopf`, Design-Fundament).
  *
  * Mehr steht hier nicht. Anschrift, Telefonnummern und Versorgungsdaten haben
  * ihren Platz in den Stammdaten; im Kopf wären sie vier Zeilen, die man bei
  * jedem Bereichswechsel erneut überspringt.
  */
-function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser }) {
+function PatientKopf({
+  patient,
+  user,
+  anhang,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  anhang: string;
+}) {
   const alter = ageInYears(patient.date_of_birth);
   const darfTerminePlanen = canManageAppointments(user.roles);
   const darfVerordnen = canWriteTreatmentBases(user.roles);
@@ -309,115 +243,82 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
   // Patient:innen" über der Kopfkarte kostete am Telefon eine Zeile, bevor
   // der Name kam. Dasselbe Ziel wie die Zeile - der Rückweg aus der
   // Adresszeile gewinnt (UX-012) -, derselbe Wortlaut als Name und Tooltip.
-  // 40 px in einer Karte mit 12 px Innenabstand: das Tippziel zählt mit dem
-  // Rand (Handoff 2026-10-01, Abschnitt 9). Ab 640 px bleibt die Zeile, der
-  // Pfeil geht.
+  // Ab 640 px bleibt die Zeile, der Pfeil geht.
   const [suche] = useSearchParams();
   const rueckwegZiel = leseRueckweg(suche, '/patienten');
-  const rueckwegText = rueckwegBeschriftung(rueckwegZiel);
-
-  // Ein Knopf allein nutzt am Telefon die ganze Breite, zwei teilen sie sich;
-  // ein zweizeiliger Text steht mittig (PAT-18, RSP-18).
-  const knopf = 'flex-1 text-center sm:flex-none';
 
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-5 sm:py-4">
-      <div className="min-w-0">
-        {/* Die Namenszeile beginnt am Telefon 10 px vom Rand (Pfeil), alles
-            darunter bleibt auf den 16 der Karte. */}
-        <div className="-ml-1.5 flex items-center gap-1 sm:ml-0 sm:block">
-          <Link
-            to={rueckwegZiel}
-            aria-label={rueckwegText}
-            title={rueckwegText}
-            className="text-accent hover:bg-surface-sunken rounded-button inline-flex size-10 shrink-0 items-center justify-center transition-colors sm:hidden"
-          >
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              className="size-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m12.5 4.5-5.5 5.5 5.5 5.5" />
-            </svg>
-          </Link>
-          {/* Der Name als Seitentitel: 26 px am Telefon, 32 ab 640 px, in 800
-              (Design-Handoff 2026-10-01, Abschnitt 7). */}
-          <h1 className="text-accent text-h2-mobil sm:text-h2 tracking-display min-w-0 font-extrabold">
-            {fullName(patient)}
-          </h1>
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <p className="text-ink-muted text-sm">
-            {patient.date_of_birth
-              ? `geb. ${formatDate(patient.date_of_birth)}${alter !== null ? ` · ${alter} Jahre` : ''}`
-              : 'Geburtsdatum nicht hinterlegt'}
-            {/* Der Ort sagt im Kopf, wohin es geht - die Anschrift steht im
-                Kontakt (Design-Handoff 2026-10-01). */}
-            {patient.city ? ` · ${patient.city}` : ''}
-          </p>
-          {/* UX-005e: Der Regelfall trägt kein Etikett - „In Versorgung" stand
-              an jeder Akte und sagte nichts. Nur die Ausnahme ist markiert. */}
-          {/* Der Abschluss ist etwas anderes als der Status und gehört in den
-              Kopf: Er sagt, dass die Behandlung beendet ist und die
-              Aufbewahrung läuft (LOE-001b, ADR-008). Ist er gesetzt, steht
-              nur er da - zwei Wörter für dieselbe Lage verwirrten (BEF-067). */}
-          {patient.care_concluded_on ? (
-            <Badge>Versorgung abgeschlossen am {formatDate(patient.care_concluded_on)}</Badge>
-          ) : !aktiv ? (
-            <Badge ton="warnung">Nicht in Versorgung</Badge>
-          ) : null}
-        </div>
-        {/* AKTE-007: Abrechnungsart und Liege als Abzeichen - die Liege steht
-            vor der Tür mit auf dem Zettel (UX-003a), gesetzt wird sie in den
-            Stammdaten (ANN-116). */}
-        {aktuell || patient.treatment_table_required === true ? (
-          <div className="mt-2 flex flex-wrap gap-2">
+    <Objektkopf
+      titel={fullName(patient)}
+      rueckweg={{ to: rueckwegZiel, beschriftung: rueckwegBeschriftung(rueckwegZiel) }}
+      meta={
+        <>
+          {patient.date_of_birth
+            ? `geb. ${formatDate(patient.date_of_birth)}${alter !== null ? ` · ${alter} Jahre` : ''}`
+            : 'Geburtsdatum nicht hinterlegt'}
+          {/* Der Ort sagt im Kopf, wohin es geht - die Anschrift steht im
+              Kontakt (Design-Handoff 2026-10-01). */}
+          {patient.city ? ` · ${patient.city}` : ''}
+        </>
+      }
+      // UX-005e: Der Regelfall trägt kein Etikett - „In Versorgung" stand an
+      // jeder Akte und sagte nichts. Nur die Ausnahme ist markiert. Der
+      // Abschluss ist etwas anderes als der Status und gehört in den Kopf: Er
+      // sagt, dass die Behandlung beendet ist und die Aufbewahrung läuft
+      // (LOE-001b, ADR-008). Ist er gesetzt, steht nur er da - zwei Wörter für
+      // dieselbe Lage verwirrten (BEF-067).
+      status={
+        patient.care_concluded_on ? (
+          <Badge>Versorgung abgeschlossen am {formatDate(patient.care_concluded_on)}</Badge>
+        ) : !aktiv ? (
+          <Badge ton="warnung">Nicht in Versorgung</Badge>
+        ) : null
+      }
+      // AKTE-007: Abrechnungsart und Liege als Abzeichen - die Liege steht vor
+      // der Tür mit auf dem Zettel (UX-003a), gesetzt wird sie in den
+      // Stammdaten (ANN-116).
+      abzeichen={
+        aktuell || patient.treatment_table_required === true ? (
+          <>
             {aktuell ? (
               <Badge>{versicherungsart(aktuell.grundlage.treatment_basis_kind)}</Badge>
             ) : null}
             {patient.treatment_table_required === true ? (
               <Badge ton="akzent">Liege mitnehmen</Badge>
             ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      {/* Die beiden Vorgänge, die im Alltag aus der Akte heraus entstehen. Alles
-          Weitere steht in dem Bereich, zu dem es gehört.
-
-          In der kompakten Größe (44 px, 14 px Schrift): In voller Größe standen
-          die beiden bei 375 px untereinander und kosteten den Kopf über hundert
-          Pixel Höhe - genau das, was dieser Umbau abstellen soll. Das Tippziel
-          bleibt bei 44 px (Oberflächen-Checkliste Punkt 1). Ohne Knopf entfällt
-          der Behälter samt seinem Abstand. */}
-      {zeigtTermin || darfVerordnen ? (
-        <div className="flex w-full gap-2 sm:w-auto">
-          {zeigtTermin ? (
-            <Link
-              to={mitRueckweg(`/patienten/${patient.id}/termine/neu`, hier)}
-              className={kartenAktionKlassen('primary', knopf)}
-            >
-              Termin anlegen
-            </Link>
-          ) : null}
-          {darfVerordnen ? (
-            <Link
-              to={mitRueckweg(`/patienten/${patient.id}/verordnungen/neu`, hier)}
-              className={kartenAktionKlassen('secondary', knopf)}
-            >
-              Grundlage erfassen
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
-
-      {darfTerminePlanen && !aktiv ? <OhneNeueTermine user={user} /> : null}
-    </div>
+          </>
+        ) : null
+      }
+      // Die beiden Vorgänge, die im Alltag aus der Akte heraus entstehen.
+      // Alles Weitere steht in dem Bereich, zu dem es gehört.
+      aktionen={
+        zeigtTermin || darfVerordnen ? (
+          <>
+            {zeigtTermin ? (
+              <ButtonLink to={mitRueckweg(`/patienten/${patient.id}/termine/neu`, hier)}>
+                Termin anlegen
+              </ButtonLink>
+            ) : null}
+            {darfVerordnen ? (
+              <ButtonLink
+                to={mitRueckweg(`/patienten/${patient.id}/verordnungen/neu`, hier)}
+                variant="secondary"
+              >
+                Grundlage erfassen
+              </ButtonLink>
+            ) : null}
+          </>
+        ) : null
+      }
+      fuss={darfTerminePlanen && !aktiv ? <OhneNeueTermine user={user} /> : null}
+      hinweise={
+        <>
+          <AnmeldebogenHinweis patient={patient} user={user} />
+          <HinweiseImKopf patient={patient} />
+        </>
+      }
+      reiter={<Aktenavigation patient={patient} user={user} anhang={anhang} />}
+    />
   );
 }
 
@@ -468,11 +369,7 @@ function Akte({ patient, user, anhang }: { patient: Patient; user: CurrentUser; 
   // den Stammdaten, die Grundlage hat ihren eigenen Bereich.
   return (
     <>
-      <header className="border-line bg-surface rounded-card overflow-hidden border">
-        <PatientKopf patient={patient} user={user} />
-        <KopfHinweise patient={patient} user={user} />
-        <Aktenavigation patient={patient} user={user} anhang={anhang} />
-      </header>
+      <PatientKopf patient={patient} user={user} anhang={anhang} />
 
       <div className="mt-6 min-w-0">
         <Outlet context={{ patient, user } satisfies PatientRecordContext} />

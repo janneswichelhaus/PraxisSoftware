@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { symbolknopfKlassen } from '@/components/ui/buttonStile';
 import { EmptyState } from '@/components/ui/Feedback';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
@@ -466,55 +467,59 @@ function Abschluss({
           {/* Fußleiste: bleibt beim Scrollen stehen, am Telefon über der
               Tableiste. Fehler und Rückfrage des Schutzes stehen als Zeile
               darüber (ANN-046). */}
-          <div className="bg-surface sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-10 shrink-0 sm:bottom-0">
-            {sicherungsstand}
-            {schutz}
-            <div className="border-line flex items-center gap-2 border-t px-3 py-2">
-              <Button
-                type="button"
-                variant="secondary"
-                groesse="kompakt"
-                aria-expanded={verlaufOffen}
-                aria-controls="bisherige-eintraege-blatt"
-                onClick={() => setVerlaufOffen((offen) => !offen)}
-              >
-                Verlauf{verlaufAnzahl !== null ? ` (${verlaufAnzahl})` : ''}
-                <span aria-hidden="true">{verlaufOffen ? '▾' : '▴'}</span>
-              </Button>
-              <Button
-                type="button"
-                variant="quiet"
-                groesse="kompakt"
-                className="ml-auto"
-                disabled={laeuft || !geaendert}
-                onClick={() => {
-                  // Ein nicht übernommener Vorschlag hält den Entwurf nicht an:
-                  // Er geht nicht in den Text, seine Angaben werden daneben
-                  // gesichert (ABN-015).
-                  if (textGeaendert) {
-                    const meldung = inhaltFehler(wert);
-                    setFehler(meldung);
-                    if (meldung) return;
-                  }
-                  const meldung = entwurfMeldung(textGeaendert, bausteine.text !== '');
-                  void schreiben({
-                    ausfuehren: entwurfSichern,
-                    fehlertitel: 'Nicht gespeichert',
-                    danach: () => weiterZumTermin(meldung),
-                  });
-                }}
-              >
-                {laeuft && !schreibtAbschluss ? 'Wird gespeichert …' : 'Entwurf'}
-              </Button>
-              <Button type="submit" groesse="kompakt" disabled={laeuft} aria-describedby={folgeId}>
-                {schreibtAbschluss
-                  ? 'Wird festgeschrieben …'
-                  : ohneBehandlung
-                    ? 'Mit Vermerk festschreiben'
-                    : 'Festschreiben'}
-              </Button>
-            </div>
-          </div>
+          <Aktionsleiste
+            einbettung="flaeche"
+            oben={
+              <>
+                {sicherungsstand}
+                {schutz}
+              </>
+            }
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              groesse="kompakt"
+              aria-expanded={verlaufOffen}
+              aria-controls="bisherige-eintraege-blatt"
+              onClick={() => setVerlaufOffen((offen) => !offen)}
+            >
+              Verlauf{verlaufAnzahl !== null ? ` (${verlaufAnzahl})` : ''}
+              <span aria-hidden="true">{verlaufOffen ? '▾' : '▴'}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              groesse="kompakt"
+              className="ml-auto"
+              disabled={laeuft || !geaendert}
+              onClick={() => {
+                // Ein nicht übernommener Vorschlag hält den Entwurf nicht an:
+                // Er geht nicht in den Text, seine Angaben werden daneben
+                // gesichert (ABN-015).
+                if (textGeaendert) {
+                  const meldung = inhaltFehler(wert);
+                  setFehler(meldung);
+                  if (meldung) return;
+                }
+                const meldung = entwurfMeldung(textGeaendert, bausteine.text !== '');
+                void schreiben({
+                  ausfuehren: entwurfSichern,
+                  fehlertitel: 'Nicht gespeichert',
+                  danach: () => weiterZumTermin(meldung),
+                });
+              }}
+            >
+              {laeuft && !schreibtAbschluss ? 'Wird gespeichert …' : 'Entwurf'}
+            </Button>
+            <Button type="submit" groesse="kompakt" disabled={laeuft} aria-describedby={folgeId}>
+              {schreibtAbschluss
+                ? 'Wird festgeschrieben …'
+                : ohneBehandlung
+                  ? 'Mit Vermerk festschreiben'
+                  : 'Festschreiben'}
+            </Button>
+          </Aktionsleiste>
         </form>
 
         {/* Bisherige Einträge: am Telefon ein Blatt von unten über der

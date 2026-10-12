@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
-import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeldungen';
+import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import { fullName } from '@/features/patients/api';
 import {
   canManageAppointments,

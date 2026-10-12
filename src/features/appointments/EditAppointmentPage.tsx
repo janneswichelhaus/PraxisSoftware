@@ -23,7 +23,7 @@ import {
   UebernommeneAdresse,
 } from './AppointmentFormFields';
 import { TerritoryHint } from '@/features/territories/TerritoryHint';
-import { NachladeHinweis } from './Rueckmeldungen';
+import { NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
   appointmentFormSchema,
   appointmentToFormValues,

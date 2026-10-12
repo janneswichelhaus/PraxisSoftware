@@ -13,7 +13,8 @@ import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Zweispalter } from '@/components/ui/Zweispalter';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
@@ -863,84 +864,78 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   ) : null;
 
   return (
-    // Zwei Spalten ab 900 px **Inhaltsbreite** (`--container-zweispaltig`):
-    // Gemessen wird der Inhalt, nicht das Fenster - die Seitenleiste ist je
-    // nach Breite 72 oder 248 px. Darunter rückt die Kontextspalte unter den
-    // eigenen Tag. Wer keinen eigenen Tag hat (das Büro), bleibt einspaltig:
-    // Für ihn ist der Plan des Teams die Hauptsache, keine Randspalte.
-    <div className="@container">
-      <div
-        className={
-          (zweispaltig
-            ? '@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] @zweispaltig:gap-x-8 grid items-start gap-6'
-            : 'lg:max-w-3xl') + (eigeneTagesliste && tagesliste.data ? ' print:hidden' : '')
+    <div>
+      {/* Zwei Spalten ab 900 px **Inhaltsbreite** (`Zweispalter`): Darunter
+          rückt die Kontextspalte unter den eigenen Tag. Wer keinen eigenen
+          Tag hat (das Büro), bleibt einspaltig: Für ihn ist der Plan des
+          Teams die Hauptsache, keine Randspalte. */}
+      <Zweispalter
+        kontext={
+          zweispaltig ? (
+            <>
+              {teamplan}
+              {tagesroute}
+            </>
+          ) : null
         }
+        className={eigeneTagesliste && tagesliste.data ? 'print:hidden' : ''}
       >
-        <div className="min-w-0">
-          <PageHeader
-            title={`${greeting()}, ${firstName(user.profile.display_name)}`}
-            description={langesDatum(tag)}
-            actions={
-              // Tagesfortschritt im Kopf: ein Punkt je Behandlungsbesuch.
-              // Fehlzeiten und Training zählen nicht (ANN-117).
-              fortschritt.gesamt > 0 ? (
-                <ProgressDots punkte={fortschritt.punkte}>
-                  {fortschrittText(fortschritt)}
-                </ProgressDots>
-              ) : undefined
-            }
+        <PageHeader
+          title={`${greeting()}, ${firstName(user.profile.display_name)}`}
+          description={langesDatum(tag)}
+          actions={
+            // Tagesfortschritt im Kopf: ein Punkt je Behandlungsbesuch.
+            // Fehlzeiten und Training zählen nicht (ANN-117).
+            fortschritt.gesamt > 0 ? (
+              <ProgressDots punkte={fortschritt.punkte}>
+                {fortschrittText(fortschritt)}
+              </ProgressDots>
+            ) : undefined
+          }
+        />
+
+        {eigeneTagesliste ? (
+          <Wochenleiste tag={tag} heute={heute} anzahl={anzahlAm} />
+        ) : darfTermine ? (
+          <Wochenleiste tag={tag} heute={heute} anzahl={() => undefined} />
+        ) : null}
+
+        {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}
+
+        {eigeneTagesliste && user.staffMemberId ? (
+          <MeinTag
+            abfrage={tagesliste}
+            sortiert={sortiert}
+            fokus={fokus}
+            fortschritt={fortschritt}
+            datum={tag}
+            morgen={morgen}
+            staffMemberId={user.staffMemberId}
+            darfDokumentieren={darfDokumentieren}
+            darfDokuLesen={canReadTreatmentNote(user.roles)}
+            darfTermine={darfTermine}
+            mitBehandlung={isTherapyStaff(user.roles)}
+            zeitzone={zeitzone}
+            jetzt={jetzt}
+            heute={heute}
           />
+        ) : null}
 
-          {eigeneTagesliste ? (
-            <Wochenleiste tag={tag} heute={heute} anzahl={anzahlAm} />
-          ) : darfTermine ? (
-            <Wochenleiste tag={tag} heute={heute} anzahl={() => undefined} />
-          ) : null}
-
-          {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}
-
-          {eigeneTagesliste && user.staffMemberId ? (
-            <MeinTag
-              abfrage={tagesliste}
-              sortiert={sortiert}
-              fokus={fokus}
-              fortschritt={fortschritt}
-              datum={tag}
-              morgen={morgen}
-              staffMemberId={user.staffMemberId}
-              darfDokumentieren={darfDokumentieren}
-              darfDokuLesen={canReadTreatmentNote(user.roles)}
-              darfTermine={darfTermine}
-              mitBehandlung={isTherapyStaff(user.roles)}
-              zeitzone={zeitzone}
-              jetzt={jetzt}
-              heute={heute}
-            />
-          ) : null}
-
-          {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
+        {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
               etwas fällig ist. Wer selbst unterwegs ist, sieht sie unter dem
               eigenen Tag: Liege und nächster Weg bleiben auf dem ersten
               Bildschirm (UX-EPIC-003). */}
-          <OpenPointsSummary user={user} today={heute} />
+        <OpenPointsSummary user={user} today={heute} />
 
-          {teamplanZuerst && tagesroute ? <div className="mt-6">{tagesroute}</div> : null}
+        {teamplanZuerst && tagesroute ? <div className="mt-6">{tagesroute}</div> : null}
 
-          {eigeneTagesliste ? null : <div className="mt-6">{teamplan}</div>}
-        </div>
-
-        {zweispaltig ? (
-          <aside className="flex min-w-0 flex-col gap-4">
-            {teamplan}
-            {tagesroute}
-          </aside>
-        ) : null}
-      </div>
+        {eigeneTagesliste ? null : <div className="mt-6">{teamplan}</div>}
+      </Zweispalter>
 
       {/* PRX-EPIC-003: der ruhige Weg zur Büroliste, auch wenn nichts fällig
           ist - die Zeile oben erscheint nur mit Fälligem. */}
       {canReadPatientDirectory(user.roles) ? (
-        <p className="border-line nicht-drucken mt-8 border-t pt-3 lg:max-w-3xl">
+        <p className="border-line nicht-drucken lg:max-w-spalte mt-8 border-t pt-3">
           <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
             Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
             <Pfeil />
@@ -952,7 +947,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           sehen - für die Trainingsbetreuung der einzige Arbeitsbereich neben
           dieser Übersicht. */}
       {canReadTrainingClients(user.roles) ? (
-        <p className="border-line nicht-drucken mt-8 border-t pt-3 lg:max-w-3xl">
+        <p className="border-line nicht-drucken lg:max-w-spalte mt-8 border-t pt-3">
           <Textlink alleinstehend to="/training" className="text-liste gap-1 font-medium">
             {BEGRIFFE.trainingskundInnen}
             <Pfeil />

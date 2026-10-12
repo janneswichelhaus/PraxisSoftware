@@ -16,7 +16,7 @@ import {
   type AssignableTherapist,
   type Location,
 } from './api';
-import { Listenfehler } from './Rueckmeldungen';
+import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { DAUER_AUSWAHL_ID, TERMINFELD_IDS } from './terminformular';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 

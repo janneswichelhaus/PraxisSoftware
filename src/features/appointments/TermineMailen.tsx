@@ -7,7 +7,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { fullName, type Patient } from '@/features/patients/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { addAppointmentNotification, type AppointmentSlipEntry } from './api';
-import { Rueckmeldung } from './Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { mailOeffnen, terminmailEntwurf, type Terminmail } from './terminmail';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 

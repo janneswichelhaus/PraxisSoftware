@@ -45,7 +45,7 @@ import {
   type TerminCursor,
 } from './api';
 import { schreibeParameter, ZOOM_STANDARD } from './calendar';
-import { NachladeHinweis, Rueckmeldung } from './Rueckmeldungen';
+import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { leseAngelegtenTermin, leseMeldung } from './terminformular';
 
 /**

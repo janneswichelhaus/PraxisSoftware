@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Link, matchPath, useLocation } from 'react-router-dom';
+import { rolleInsBild } from './waagerechtRollen';
 
 export interface SubNavEintrag {
   to: string;
@@ -26,12 +27,6 @@ export interface SubNavEintrag {
 const eintragKlassen =
   'text-ink-muted hover:text-ink -mb-px flex min-h-11 items-center gap-1.5 border-b-2 border-transparent px-3 text-liste whitespace-nowrap transition-colors';
 
-/**
- * Wie weit der Nachbar des aktiven Eintrags noch ins Bild ragt, wenn die
- * Leiste ihn heranrollt: ein angeschnittenes Wort sagt „hier geht es weiter".
- */
-const NACHBAR_PX = 24;
-
 /** Liegt `pathname` auf `pfad` oder darunter? */
 function liegtUnter(pfad: string, pathname: string): boolean {
   return matchPath({ path: pfad, end: false }, pathname) !== null;
@@ -40,28 +35,6 @@ function liegtUnter(pfad: string, pathname: string): boolean {
 function istAktiv(eintrag: SubNavEintrag, pathname: string): boolean {
   if (matchPath({ path: eintrag.to, end: eintrag.end ?? true }, pathname)) return true;
   return (eintrag.pfade ?? []).some((pfad) => liegtUnter(pfad, pathname));
-}
-
-/**
- * Rollt die Leiste waagerecht, bis `eintrag` ganz zu sehen ist - über
- * `scrollLeft` der Liste und nicht über `scrollIntoView`: Das rollte auch die
- * Seite senkrecht, und wer mitten auf einer langen Seite den Bereich wechselt,
- * stünde plötzlich woanders (UIK-10).
- *
- * Nur, wo die Leiste überhaupt scrollt: ab 640 px bricht sie um, dann ist
- * ohnehin alles zu sehen.
- */
-function rolleInsBild(liste: HTMLElement, eintrag: HTMLElement): void {
-  if (liste.scrollWidth <= liste.clientWidth) return;
-  const rahmen = liste.getBoundingClientRect();
-  const ziel = eintrag.getBoundingClientRect();
-  const links = ziel.left - rahmen.left + liste.scrollLeft;
-  const rechts = links + ziel.width;
-  if (links - NACHBAR_PX < liste.scrollLeft) {
-    liste.scrollLeft = Math.max(0, links - NACHBAR_PX);
-  } else if (rechts + NACHBAR_PX > liste.scrollLeft + liste.clientWidth) {
-    liste.scrollLeft = rechts + NACHBAR_PX - liste.clientWidth;
-  }
 }
 
 /**

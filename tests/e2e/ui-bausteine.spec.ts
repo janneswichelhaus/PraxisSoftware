@@ -134,3 +134,229 @@ test('setzt die Jetzt-Marke auf die Schiene des Zeitstrahls', async ({ page }) =
   expect(Math.abs(mitten.jetzt - mitten.schiene)).toBeLessThan(1);
   expect(Math.abs(mitten.termin - mitten.schiene)).toBeLessThan(1);
 });
+
+/*
+ * Die Bausteine des Design-Fundaments (docs/design/DESIGN.md) im echten
+ * Browser: was jsdom nicht misst - Breiten, Lage, Höhe der Tippziele, was am
+ * Telefon zu und am Rechner offen steht.
+ */
+
+test('Objektkopf: am Telefon Pfeil vor dem Namen, Aktionen teilen sich die Breite', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const kopf = page.locator('header', { hasText: 'Karla Vorlage' });
+  const pfeil = kopf.getByRole('link', { name: 'Zurück zur Liste' });
+  const name = kopf.getByRole('heading', { level: 1, name: 'Karla Vorlage' });
+  await expect(pfeil).toBeVisible();
+  const p = (await pfeil.boundingBox())!;
+  const n = (await name.boundingBox())!;
+  // Pfeil und Name in einer Zeile, der Pfeil davor.
+  expect(p.x + p.width).toBeLessThanOrEqual(n.x + 1);
+  expect(Math.abs(p.y + p.height / 2 - (n.y + n.height / 2))).toBeLessThan(6);
+
+  const planen = (await kopf.getByRole('link', { name: 'Einheit planen' }).boundingBox())!;
+  const plan = (await kopf.getByRole('link', { name: 'Plan erstellen' }).boundingBox())!;
+  expect(Math.abs(planen.y - plan.y)).toBeLessThan(1);
+  expect(Math.abs(planen.width - plan.width)).toBeLessThan(2);
+  expect(planen.height).toBeGreaterThanOrEqual(44);
+  expect(planen.height).toBeLessThan(48);
+
+  // Der offene Reiter ist markiert und ein Tippziel von 44 px.
+  const offen = kopf.getByRole('link', { name: 'Einheiten' });
+  await expect(offen).toHaveAttribute('aria-current', 'page');
+  expect((await offen.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+});
+
+test('Objektkopf: am Rechner ohne Pfeil, Aktionen rechts neben dem Namen', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const kopf = page.locator('header', { hasText: 'Karla Vorlage' });
+  await expect(kopf.getByRole('link', { name: 'Zurück zur Liste' })).toBeHidden();
+  const name = (await kopf.getByRole('heading', { level: 1 }).boundingBox())!;
+  const planen = (await kopf.getByRole('link', { name: 'Einheit planen' }).boundingBox())!;
+  expect(planen.x).toBeGreaterThan(name.x + name.width);
+  expect(Math.abs(planen.y - name.y)).toBeLessThan(20);
+});
+
+test('Kopfaktionen sind kompakt: 44 px statt 48', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const anlegen = (await page.getByRole('link', { name: 'Anlegen', exact: true }).boundingBox())!;
+  expect(anlegen.height).toBeGreaterThanOrEqual(44);
+  expect(anlegen.height).toBeLessThan(48);
+});
+
+test('Segment: Wahlen 44 px hoch, ohne Lücke aneinander, der Tipp wechselt die Wahl', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const gruppe = page.getByRole('group', { name: 'Ansicht der Schau' });
+  const woche = gruppe.getByRole('button', { name: 'Woche' });
+  const team = gruppe.getByRole('button', { name: 'Team' });
+  const w = (await woche.boundingBox())!;
+  const t = (await team.boundingBox())!;
+  expect(w.height).toBeGreaterThanOrEqual(44);
+  // Aneinandergesetzt: Der Rand teilt sich (-1 px), keine Lücke dazwischen.
+  expect(Math.abs(w.x + w.width - 1 - t.x)).toBeLessThan(1.5);
+  await team.click();
+  await expect(team).toHaveAttribute('aria-pressed', 'true');
+  await expect(woche).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('Filterleiste: am Telefon weitere Filter hinter „Filter (n)“, am Rechner offen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const leiste = page.getByRole('search', { name: 'Übungen filtern' });
+  const suche = leiste.getByRole('searchbox', { name: 'Übungen durchsuchen' });
+  await expect(suche).toBeVisible();
+  // Die Suche reicht über die ganze Breite des Inhalts (375 - 2 × 16).
+  expect((await suche.boundingBox())!.width).toBeGreaterThan(340);
+  // Ein Filter ist gesetzt (Knie): die Leiste steht offen.
+  await expect(leiste.getByRole('button', { name: 'Filter (1)' })).toHaveAttribute(
+    'aria-expanded',
+    'true',
+  );
+  await leiste.getByRole('button', { name: 'Filter zurücksetzen' }).click();
+  const schalter = leiste.getByRole('button', { name: 'Filter', exact: true });
+  await schalter.click();
+  await expect(leiste.getByRole('combobox', { name: 'Ausrüstung' })).toBeHidden();
+  await schalter.click();
+  await expect(leiste.getByRole('combobox', { name: 'Ausrüstung' })).toBeVisible();
+  expect(
+    (await leiste.getByRole('button', { name: 'Hüfte' }).boundingBox())!.height,
+  ).toBeGreaterThanOrEqual(44);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const breit = page.getByRole('search', { name: 'Übungen filtern' });
+  // Knie ist vorgewählt: Der Schalter hieße „Filter (1)“ - am Rechner gibt es ihn nicht.
+  await expect(breit.getByRole('button', { name: 'Filter (1)', exact: true })).toBeHidden();
+  const auswahl = (await breit.getByRole('combobox', { name: 'Ausrüstung' }).boundingBox())!;
+  expect(auswahl.width).toBeLessThanOrEqual(320.5);
+  // Die Beschriftungen der Filter stehen auf einer Linie.
+  const a = (await breit.getByText('Ausrüstung', { exact: true }).boundingBox())!;
+  const k = (await breit.getByText('Körperregion', { exact: true }).boundingBox())!;
+  expect(Math.abs(a.y - k.y)).toBeLessThan(1);
+});
+
+test('Zeile mit Aktion: das Ziel endet vor dem Knopf, beide sind Tippziele', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const ziel = (await page.getByRole('link', { name: /Jonas Test/ }).boundingBox())!;
+  const haken = (await page
+    .getByRole('button', { name: 'Termin von Jonas Test abschließen' })
+    .boundingBox())!;
+  const doku = (await page.getByRole('button', { name: 'Doku', exact: true }).boundingBox())!;
+  expect(ziel.height).toBeGreaterThanOrEqual(56);
+  expect(ziel.x + ziel.width).toBeLessThanOrEqual(doku.x + 0.5);
+  expect(haken.width).toBeGreaterThanOrEqual(44);
+  expect(haken.height).toBeGreaterThanOrEqual(44);
+  expect(doku.height).toBeGreaterThanOrEqual(44);
+
+  // Das Vorschaubild steht vorn in 56 × 56 px.
+  const rahmen = (await page
+    .getByRole('link', { name: /Wandsitz/ })
+    .locator('.size-14')
+    .first()
+    .boundingBox())!;
+  expect(Math.round(rahmen.width)).toBe(56);
+  expect(Math.round(rahmen.height)).toBe(56);
+});
+
+test('Datenliste: am Telefon Zeilen ohne Kopf, am Rechner Spalten mit bündigen Beträgen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const liste = page.getByRole('list', { name: 'Rechnungen der Schau' });
+  await expect(liste.locator('xpath=preceding-sibling::div[1]')).toBeHidden();
+  const betrag = (await liste.getByText('126,40 €').boundingBox())!;
+  const nummer = (await liste.getByRole('link', { name: '2026-014' }).boundingBox())!;
+  // Der Betrag steht oben rechts neben der Nummer.
+  expect(Math.abs(betrag.y - nummer.y)).toBeLessThan(6);
+  expect(betrag.x).toBeGreaterThan(nummer.x + nummer.width);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const breit = page.getByRole('list', { name: 'Rechnungen der Schau' });
+  await expect(breit.locator('xpath=preceding-sibling::div[1]')).toBeVisible();
+  const rechts = await Promise.all(
+    ['126,40 €', '84,00 €', '1.204,00 €'].map(async (wert) => {
+      const kasten = (await breit.getByText(wert).boundingBox())!;
+      return kasten.x + kasten.width;
+    }),
+  );
+  expect(Math.max(...rechts) - Math.min(...rechts)).toBeLessThan(1);
+});
+
+test('Medienbild hält 4:3 und zeigt ohne Bild den Platzhalter', async ({ page }) => {
+  for (const breite of [375, 1280]) {
+    await page.setViewportSize({ width: breite, height: 800 });
+    await page.goto(PRUEFSEITE);
+    const figur = page.getByRole('img', { name: /Wandsitz: Rücken an der Wand/ });
+    const kasten = (await figur.locator('..').boundingBox())!;
+    expect(Math.abs(kasten.width / kasten.height - 4 / 3)).toBeLessThan(0.02);
+    await expect(
+      page.getByRole('img', { name: 'Seitstütz - Noch kein Bild' }).last(),
+    ).toBeVisible();
+  }
+});
+
+test('Formularfuß: am Telefon volle Breite untereinander, am Rechner nebeneinander', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  let speichern = (await page
+    .getByRole('button', { name: 'Speichern', exact: true })
+    .boundingBox())!;
+  let abbrechen = (await page.getByRole('link', { name: 'Abbrechen', exact: true }).boundingBox())!;
+  expect(speichern.width).toBeGreaterThan(340);
+  expect(speichern.height).toBeGreaterThanOrEqual(48);
+  expect(abbrechen.y).toBeGreaterThan(speichern.y + speichern.height - 1);
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(PRUEFSEITE);
+  speichern = (await page.getByRole('button', { name: 'Speichern', exact: true }).boundingBox())!;
+  abbrechen = (await page.getByRole('link', { name: 'Abbrechen', exact: true }).boundingBox())!;
+  expect(speichern.width).toBeLessThan(200);
+  expect(Math.abs(abbrechen.y - speichern.y)).toBeLessThan(1);
+  expect(abbrechen.x).toBeGreaterThan(speichern.x + speichern.width);
+});
+
+test('Aktionsleiste klebt am Telefon über der Tableiste', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const knopf = page.getByRole('button', { name: 'Festschreiben' });
+  const leiste = knopf.locator('xpath=../..');
+  expect(await leiste.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
+  // Der Abschnitt oben im Bild: Ohne Kleben stünde die Leiste unter dem Rand.
+  await page
+    .getByRole('heading', { name: 'Aktionsleiste', exact: true })
+    .evaluate((element) => element.scrollIntoView({ block: 'start' }));
+  // 56 px Tableiste und ihre Linie Abstand zum Fensterrand.
+  const kasten = (await leiste.boundingBox())!;
+  expect(Math.round(800 - (kasten.y + kasten.height))).toBe(57);
+  expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+});
+
+test('Zweispalter: ab 900 px Inhaltsbreite die Kontextspalte rechts, schmal darunter', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const haupt = (await page.getByText('Ab 900 px Inhaltsbreite').boundingBox())!;
+  const kontext = (await page.getByText('Selbstzahler · 10er-Karte').boundingBox())!;
+  expect(kontext.x).toBeGreaterThan(haupt.x + haupt.width);
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  const hauptSchmal = (await page.getByText('Ab 900 px Inhaltsbreite').boundingBox())!;
+  const kontextSchmal = (await page.getByText('Selbstzahler · 10er-Karte').boundingBox())!;
+  expect(kontextSchmal.y).toBeGreaterThan(hauptSchmal.y);
+});

@@ -143,7 +143,11 @@ describe('Radflotte', () => {
       expect(link).toHaveClass('min-h-11', 'font-bold', 'text-accent');
       expect(link).not.toHaveClass('text-danger');
     }
-    expect(screen.getByRole('link', { name: 'Rad hinzufügen' })).toHaveClass('bg-accent', 'h-12');
+    // Im Seitenkopf kompakt (44 px) seit dem Design-Fundament (ANN-403) - ein
+    // Hauptknopf des Systems bleibt es.
+    const hinzufuegen = screen.getByRole('link', { name: 'Rad hinzufügen' });
+    expect(hinzufuegen).toHaveClass('bg-accent', 'min-h-11', 'font-bold');
+    expect(hinzufuegen).not.toHaveClass('h-12');
   });
 
   it('gibt den Kartenaktionen 44 px Hoehe (VOR-11)', () => {

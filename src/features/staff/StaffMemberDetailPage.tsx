@@ -18,7 +18,7 @@ import {
   formatLocalTimeRange,
   todayInTimeZone,
 } from '@/features/appointments/api';
-import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { telHref } from '@/lib/telefon';

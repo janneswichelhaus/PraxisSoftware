@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { GRENZEN } from './designsystem.grenzen';
 
 /**
  * Zusicherungen des Design Systems, die kein einzelner Baustein halten kann
@@ -500,5 +501,183 @@ describe('Globale Regeln (UXR-001)', () => {
 
     const geruest = readFileSync(join(stamm, 'src/app/AppShell.tsx'), 'utf8');
     expect(geruest).toMatch(/<header className="[^"]*\bnicht-drucken\b[^"]*"/);
+  });
+});
+
+/*
+ * Ratsche: alte Seitenmuster nehmen nur ab (Design-Fundament, ANN-400).
+ *
+ * Die Wächter darüber verbieten Werte (Schatten, Radien, Größen). Die
+ * Ratsche zählt Muster, die `docs/design/DESIGN.md` durch Bausteine ersetzt
+ * - handgebaute Listen, eigene Überschriften, eigene Aufklapper, rohe Knöpfe,
+ * freie Inhaltsbreiten, Tabellen - je Verzeichnis gegen eine Obergrenze in
+ * `src/designsystem.grenzen.ts`. Sie schlägt in **beide** Richtungen an:
+ * darüber, weil eine Seite nach altem Muster entstand; darunter, weil ein
+ * Umbau die Grenze nicht mitgesenkt hat. So hält jeder Fortschritt, ohne
+ * dass alles auf einmal umgebaut sein muss.
+ */
+
+/** Ohne Kommentare: Ein Satz über `<details>` ist kein Aufklapper. */
+function ohneKommentare(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1');
+}
+
+/**
+ * Öffnende Tags, deren Name `muster` trifft, samt Attributen - über Zeilen
+ * hinweg. Ein `>` in geschweiften Klammern (`onClick={() => …}`) beendet den
+ * Tag nicht.
+ */
+function oeffnendeTags(text: string, muster: RegExp): string[] {
+  const tags: string[] = [];
+  for (const fund of text.matchAll(muster)) {
+    let tiefe = 0;
+    let ende = fund.index + fund[0].length;
+    for (; ende < text.length; ende += 1) {
+      const zeichen = text[ende];
+      if (zeichen === '{') tiefe += 1;
+      else if (zeichen === '}') tiefe -= 1;
+      else if (zeichen === '>' && tiefe === 0) break;
+    }
+    tags.push(text.slice(fund.index, ende + 1));
+  }
+  return tags;
+}
+
+type Muster = keyof typeof GRENZEN;
+
+/** Wie oft ein Muster in einem Quelltext vorkommt (ohne Kommentare). */
+const ZAEHLER: Record<Muster, (text: string) => number> = {
+  breiten: (text) => Array.from(text.matchAll(/(?<![\w-])max-w-(?:xl|2xl|3xl)(?![\w-])/g)).length,
+  details: (text) => oeffnendeTags(text, /<details(?![\w-])/g).length,
+  divideY: (text) => Array.from(text.matchAll(/(?<![\w-])divide-y\b/g)).length,
+  knoepfe: (text) =>
+    oeffnendeTags(text, /<button(?![\w-])/g).filter((tag) => tag.includes('className=')).length,
+  tabellen: (text) => oeffnendeTags(text, /<table(?![\w-])/g).length,
+  ueberschriften: (text) =>
+    oeffnendeTags(text, /<h[1-4](?![\w-])/g).filter((tag) => tag.includes('className=')).length,
+};
+
+/** Was die Meldung sagt, wenn ein Verzeichnis über der Grenze liegt. */
+const ERSATZ: Record<Muster, string> = {
+  breiten: 'max-w-xl/2xl/3xl statt max-w-formular oder max-w-spalte',
+  details: 'eigenes <details> statt Disclosure',
+  divideY: 'divide-y-Liste statt ListRows, Listenabschnitt oder Datenliste',
+  knoepfe: 'rohes <button className> statt Button, Symbolknopf, Chip oder Segment',
+  tabellen: '<table> statt Datenliste',
+  ueberschriften: 'eigene Überschrift statt PageHeader, Objektkopf, Section oder Zwischentitel',
+};
+
+/** Druckblätter folgen ihrem eigenen Profil (DESIGN.md, „Druckblatt“). */
+const DRUCKBLATT = /Druck|Print|blatt|Briefkopf/;
+
+/** `features/patients`, `app`, `lib` … - das Verzeichnis, nach dem gezählt wird. */
+function verzeichnisVon(pfad: string): string {
+  const teile = relative(join(stamm, 'src'), pfad).split('/');
+  return teile[0] === 'features' ? `features/${teile[1]}` : (teile[0] ?? '');
+}
+
+/** Der Ist-Stand: je Muster und Verzeichnis die Zahl der Vorkommen. */
+function zaehleMuster(): Record<Muster, Record<string, number>> {
+  const stand: Record<Muster, Record<string, number>> = {
+    breiten: {},
+    details: {},
+    divideY: {},
+    knoepfe: {},
+    tabellen: {},
+    ueberschriften: {},
+  };
+  for (const datei of quelldateien(join(stamm, 'src'))) {
+    if (!/\.tsx?$/.test(datei)) continue;
+    const imBaustein = relative(stamm, datei).startsWith('src/components/ui/');
+    const druck = DRUCKBLATT.test(basename(datei));
+    const text = ohneKommentare(readFileSync(datei, 'utf8'));
+    const verzeichnis = verzeichnisVon(datei);
+    for (const muster of Object.keys(ZAEHLER) as Muster[]) {
+      if (muster !== 'breiten' && imBaustein) continue;
+      if ((muster === 'ueberschriften' || muster === 'tabellen') && druck) continue;
+      const anzahl = ZAEHLER[muster](text);
+      if (anzahl > 0) stand[muster][verzeichnis] = (stand[muster][verzeichnis] ?? 0) + anzahl;
+    }
+  }
+  return stand;
+}
+
+describe('Ratsche: alte Seitenmuster nehmen nur ab (Design-Fundament, ANN-400)', () => {
+  const stand = zaehleMuster();
+
+  for (const muster of Object.keys(GRENZEN) as Muster[]) {
+    it(`${muster}: kein Verzeichnis liegt über seiner Grenze`, () => {
+      const darueber = Object.entries(stand[muster])
+        .filter(([verzeichnis, anzahl]) => anzahl > (GRENZEN[muster][verzeichnis] ?? 0))
+        .map(
+          ([verzeichnis, anzahl]) =>
+            `${verzeichnis}: ${anzahl} × ${ERSATZ[muster]}, erlaubt ${
+              GRENZEN[muster][verzeichnis] ?? 0
+            } - Seite nach docs/design/DESIGN.md bauen`,
+        );
+      expect(darueber).toEqual([]);
+    });
+
+    it(`${muster}: keine Grenze liegt über dem Stand (sonst senken)`, () => {
+      const zuHoch = Object.entries(GRENZEN[muster])
+        .filter(([verzeichnis, grenze]) => (stand[muster][verzeichnis] ?? 0) < grenze)
+        .map(([verzeichnis]) => {
+          const anzahl = stand[muster][verzeichnis] ?? 0;
+          return anzahl === 0
+            ? `${verzeichnis}: kein ${muster} mehr - Zeile in src/designsystem.grenzen.ts löschen`
+            : `${verzeichnis}: ${muster} nur noch ${anzahl} - Grenze in src/designsystem.grenzen.ts auf ${anzahl} senken`;
+        });
+      expect(zuHoch).toEqual([]);
+    });
+  }
+
+  it('führt die Grenzen alphabetisch, ohne Nullen', () => {
+    for (const muster of Object.keys(GRENZEN) as Muster[]) {
+      const schluessel = Object.keys(GRENZEN[muster]);
+      expect(schluessel, muster).toEqual([...schluessel].sort());
+      expect(
+        Object.values(GRENZEN[muster]).every((grenze) => grenze > 0),
+        muster,
+      ).toBe(true);
+    }
+  });
+
+  /** Gegenprobe: ein Zähler, der nie etwas findet, sähe aus wie ein sauberer Stand. */
+  it('erkennt jedes Muster und lässt Bausteine, Prosa und Kommentare durch (Gegenprobe)', () => {
+    const zaehle = (muster: Muster, text: string) => ZAEHLER[muster](ohneKommentare(text));
+
+    expect(zaehle('divideY', '<ul className="divide-line divide-y border">')).toBe(1);
+    expect(zaehle('divideY', '<ul className="sm:divide-y-2">')).toBe(1);
+    expect(zaehle('divideY', '<ul className="divide-x">')).toBe(0);
+    expect(zaehle('divideY', '// eine Liste ohne divide-y')).toBe(0);
+
+    expect(zaehle('ueberschriften', '<h2 className="text-base font-semibold">Titel</h2>')).toBe(1);
+    expect(zaehle('ueberschriften', '<h3\n  id={id}\n  className="text-lg"\n>')).toBe(1);
+    expect(zaehle('ueberschriften', '<h2>Tagesplan des Teams</h2>')).toBe(0);
+    expect(zaehle('ueberschriften', '<header className="flex">')).toBe(0);
+
+    expect(zaehle('details', '<details className="group">')).toBe(1);
+    expect(zaehle('details', '/* statt eigenem <details> */ <Disclosure>')).toBe(0);
+
+    expect(
+      zaehle('knoepfe', '<button\n  type="button"\n  onClick={() => x > 1}\n  className="px-2"\n>'),
+    ).toBe(1);
+    expect(zaehle('knoepfe', '<button type="button" onClick={() => setOffen(true)}>')).toBe(0);
+    expect(zaehle('knoepfe', '<Button className="mt-3">')).toBe(0);
+
+    expect(zaehle('breiten', 'className="max-w-xl"')).toBe(1);
+    expect(zaehle('breiten', 'className="lg:max-w-3xl max-w-2xl"')).toBe(2);
+    expect(zaehle('breiten', 'className="max-w-formular max-w-spalte max-w-xs max-w-xl2"')).toBe(0);
+
+    expect(zaehle('tabellen', '<table className="w-full">')).toBe(1);
+    expect(zaehle('tabellen', '<tableau>')).toBe(0);
+
+    expect(DRUCKBLATT.test('InvoicePrintPage.tsx')).toBe(true);
+    expect(DRUCKBLATT.test('Planblatt.tsx')).toBe(true);
+    expect(DRUCKBLATT.test('PlanPage.tsx')).toBe(false);
+    expect(verzeichnisVon(join(stamm, 'src/features/patients/PatientsListPage.tsx'))).toBe(
+      'features/patients',
+    );
+    expect(verzeichnisVon(join(stamm, 'src/app/AppShell.tsx'))).toBe('app');
   });
 });

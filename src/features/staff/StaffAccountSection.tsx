@@ -12,7 +12,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { roleLabel } from '@/components/ui/roleLabels';
-import { NachladeHinweis, Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import type { RoleKey } from '@/features/session/types';
 import {
   EinladungsError,

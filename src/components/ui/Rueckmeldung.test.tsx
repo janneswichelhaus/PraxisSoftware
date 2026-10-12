@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils';
-import { Rueckmeldung } from './Rueckmeldungen';
+import { Rueckmeldung } from './Rueckmeldung';
 
 describe('Rueckmeldung (Design-Handoff 2026-10-01, Abschnitt 3)', () => {
   it('steht auf der Akzentfläche mit Häkchen und nimmt den Fokus', () => {

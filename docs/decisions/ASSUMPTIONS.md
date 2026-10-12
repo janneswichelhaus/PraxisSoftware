@@ -4511,3 +4511,99 @@ Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Go-liv
 **Anker.** Spalte `external_attachments_enabled`, `app.external_attachments_enabled`, `app.message_attachments_offered` in `supabase/migrations/20261110130000_kom_012_external_attachments_switch.sql`; Testpraxis in `supabase/seed.sql`. Geprüft in `supabase/tests/message-attachments.test.ts` („Schalter ‚Anhänge von außen aus‘ …“).
 
 **Änderungspfad.** Mit Virenprüfung einschalten: ADR-026 annehmen, Prüfer bauen, dann die Spalte der Organisation im Go-live-Gate setzen · Aufwand `klein` im Code. Einschalten über die Oberfläche (Inhaber:in): eine Funktion mit Rolle `owner`, die nur bei `app.message_attachment_scan_required()` einschaltet · Aufwand `mittel`. Global statt je Organisation: die Funktion liest eine Konstante · Aufwand `klein`.
+
+### ANN-400 — DESIGN.md ist die einzige Seitenrezeptur; eine Ratsche hält je Verzeichnis den Stand alter Muster
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Neue und umgebaute Seiten folgen `docs/design/DESIGN.md`; die Handoffs sind Historie. Sechs alte Muster (divide-y-Listen, eigene Überschriften, `<details>`, rohe Knöpfe, `max-w-xl/2xl/3xl`, `<table>`) dürfen je Verzeichnis nur abnehmen.
+
+**Begründung.** Auftrag Jannes 12.10.: Design der ganzen App nach den optimierten Stellen. Die Analyse fand die Muster verstreut und die Schuld wachsend; eine Ratsche verhindert Rückfall ohne Umbau auf einmal.
+
+**Anker.** `GRENZEN` in `src/designsystem.grenzen.ts`; geprüft in `src/designsystem.test.ts`.
+
+**Änderungspfad.** Ein Muster mehr oder weniger: Zähler und Schlüssel · Aufwand `klein`.
+
+### ANN-401 — Kein Dunkelmodus
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die App kennt nur das helle Schema; bei Bedarf käme „hoher Kontrast“, nicht dunkel.
+
+**Begründung.** Gearbeitet wird draußen am Lenker und in der Sonne; Weiß mit hohem Kontrast trägt dort (Grundton B, L5). Ein zweites Schema verdoppelt jede Kontrastprüfung.
+
+**Anker.** `color-scheme: light` in `src/index.css`.
+
+**Änderungspfad.** Dunkle Tokens unter `prefers-color-scheme` und Kontrastpaare · Aufwand `mittel`.
+
+### ANN-402 — Zwei Inhaltsbreiten: Formular 36rem, Spalte 48rem
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Formulare stehen in `max-w-formular` (36rem), eine einzelne Arbeitsspalte in `max-w-spalte` (48rem), Lesetext in `max-w-prose`; Listen und Objektseiten nutzen die volle Breite bis 1200 px.
+
+**Begründung.** Bisher drei freie Stufen (xl 64×, 2xl 21×, 3xl 17×) für dieselbe Art Seite. Die Werte sind die häufigsten im Bestand; die Übersicht bleibt pixelgleich.
+
+**Anker.** `--container-formular`, `--container-spalte` in `src/index.css`.
+
+**Änderungspfad.** Anderer Wert: das Token · Aufwand `klein`.
+
+### ANN-403 — Aktionen im Seiten- und Objektkopf sind ohne Angabe kompakt; die Tour behält 48 px
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout, Tour)
+
+**Annahme.** `Button` und `ButtonLink` im `PageHeader`, `Objektkopf`, in der `Aktionsleiste` und in der Zeilenaktion sind 44 statt 48 px hoch, außer die Seite setzt `groesse`. Die Tour setzt `normal`, bis die Sichtung entscheidet.
+
+**Begründung.** Analyse A2: Anlegen-Knöpfe in voller Größe brachen am Telefon unter den Titel; die Akte zeigte schon die kompakte Form. Die Tour ist abgenommen und soll sich nicht ungefragt ändern.
+
+**Anker.** `KnopfGroesse` in `src/components/ui/knopfGroesse.ts`; `groesse="normal"` in `src/features/tours/TourenPage.tsx`.
+
+**Änderungspfad.** Wieder 48 px: Provider in `PageHeader` entfernen · Aufwand `klein`.
+
+### ANN-404 — Medienbild: 4:3, ganz statt beschnitten, Vorschau 56 px mit Radius 10
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Übungsbibliothek)
+
+**Annahme.** Bilder und Übungszeichnungen stehen 4:3 (oder 1:1) auf Weiß mit Linie und Radius 16, ganz sichtbar; ohne Bild ein Platzhalter mit Wort. In Zeilen 56 × 56 px mit Radius 10. Zeichnungen: Tinte, die bewegte Partie in der Hauptfarbe, Strich 2.
+
+**Begründung.** Eine beschnittene Übungszeichnung zeigt die Übung falsch; 16 px Radius wirkt an 56 px zu rund.
+
+**Anker.** `Medienbild` in `src/components/ui/Medienbild.tsx`.
+
+**Änderungspfad.** Anderes Verhältnis oder Beschnitt: Vorgaben im Baustein · Aufwand `klein`.
+
+### ANN-405 — Filter am Telefon hinter „Filter (n)“, ab 640 px offen
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Über einer Liste steht die Suche immer offen und voll breit; weitere Filter klappen am Telefon hinter „Filter (n)“ ein, gesetzte Filter halten sie offen; ab 640 px stehen sie nebeneinander, je höchstens 20rem.
+
+**Begründung.** Drei offene Felder schoben die Liste am Telefon unter den Falz (Rechnungen, Patient:innen); die Übungsbibliothek klappte schon so ein.
+
+**Anker.** `Filterleiste` in `src/components/ui/Filterleiste.tsx`.
+
+**Änderungspfad.** Immer offen: Schalter entfernen · Aufwand `klein`.
+
+### ANN-406 — Ein Satz für den Ladefehler, ein Baustein für alle Abfragezustände
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Ein Ladefehler sagt „Bitte die Verbindung prüfen und erneut versuchen.“ mit „Erneut versuchen“; scheitert nur das Nachladen, bleibt der Stand mit Hinweis stehen. Neue und umgebaute Seiten nutzen `Abfragezustand`.
+
+**Begründung.** Der Satz stand rund 200-mal in fünf Abwandlungen im Code; die Weiche Laden/Fehler/Leer schrieb jede Seite selbst.
+
+**Anker.** `VERBINDUNG_PRUEFEN`, `STAND_VERALTET` in `src/components/ui/abfrageTexte.ts`; `Abfragezustand` in `src/components/ui/Abfragezustand.tsx`.
+
+**Änderungspfad.** Anderer Wortlaut: die Konstante · Aufwand `klein`.
+
+### ANN-407 — Vier Umschalter mit vier Rollen
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** `SubNav` (Unterstrich) wechselt den Bereich, `Reiterleiste` (Pille) den Teil eines Objekts, `Segment` (gefüllt) zwischen zwei bis vier Ansichten, `Filterchips` (Häkchen) wählen Filterwerte.
+
+**Begründung.** Drei Stile für dasselbe Bedürfnis (Kalender, Warteliste, Planseite); gefüllt heißt im System schon „gewählt“.
+
+**Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
+
+**Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.

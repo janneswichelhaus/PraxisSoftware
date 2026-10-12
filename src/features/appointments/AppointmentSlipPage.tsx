@@ -6,7 +6,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatient, fullName } from '@/features/patients/api';
-import { Rueckmeldung } from './Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { TermineMailen } from './TermineMailen';
 import {
   addAppointmentNotification,

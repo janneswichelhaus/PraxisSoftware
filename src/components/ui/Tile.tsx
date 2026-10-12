@@ -129,24 +129,3 @@ export function TileGrid({
 }) {
   return <dl className={`grid ${reihen[spalte]}`}>{children}</dl>;
 }
-
-/**
- * Beschriftete Zeilen innerhalb einer Kachel - Absagegrund, Eingang,
- * Ausfallhonorar in der Kachel „Absage". Ein eigenes `dl`, damit jede Zeile
- * für sich adressierbar bleibt.
- */
-export function TileRows({ children }: { children: ReactNode }) {
-  return <dl className="flex flex-col gap-2">{children}</dl>;
-}
-
-export function TileRow({ label, children }: { label: string; children: ReactNode }) {
-  // `font-normal` und die eigene Zeilenhöhe: Die Zeilen stehen im Wert der
-  // Kachel und erbten sonst dessen 600 - sie sind aber Auskunft in mehreren
-  // Zeilen, kein einzelner Wert.
-  return (
-    <div className="leading-normal font-normal">
-      <dt className="text-ink-muted text-sm">{label}</dt>
-      <dd className="text-ink text-liste min-w-0 wrap-anywhere">{children}</dd>
-    </div>
-  );
-}
