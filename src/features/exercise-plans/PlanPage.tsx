@@ -36,6 +36,7 @@ import { angabenZeile } from '@/lib/erfassungsgroessen';
 import { formatDate } from '@/lib/datum';
 import { verhaeltnisPfad } from './api';
 import { PositionFormular } from './PositionFormular';
+import { AUSFUEHRUNG_TEXT, uebungsanalyse } from './uebungsanalyse';
 
 /**
  * Ein Übungsplan (UEB-EPIC-002) - an der Akte unter
@@ -733,15 +734,88 @@ function Durchgefuehrt({ plan }: { plan: Plan }) {
       {plan.sessions.length === 0 ? (
         <p className="text-ink-muted text-sm">Noch keine Einheit erfasst.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {plan.sessions.map((einheit) => (
-            <li key={einheit.id} className="rounded-card border-line bg-surface border p-3 text-sm">
-              <EinheitZeile einheit={einheit} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <JeUebung plan={plan} />
+          <h3 className="text-ink mt-4 mb-2 text-base font-semibold">Je Einheit</h3>
+          <ul className="flex flex-col gap-2">
+            {plan.sessions.map((einheit) => (
+              <li
+                key={einheit.id}
+                className="rounded-card border-line bg-surface border p-3 text-sm"
+              >
+                <EinheitZeile einheit={einheit} />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </Section>
+  );
+}
+
+/**
+ * Anzeigende Übungsanalyse (OUT-003, IDEA-OUT-006, ANN-366): je Übung, in wie
+ * vielen beendeten Einheiten alle Sätze, ein Teil oder keiner abgehakt wurde,
+ * und die letzten fünf nacheinander. Gezählt, nicht gedeutet: keine Ursache,
+ * kein Austauschvorschlag, keine Farbe (ADR-006 Punkte 10, 11, 13).
+ */
+function JeUebung({ plan }: { plan: Plan }) {
+  const zeilen = uebungsanalyse(plan);
+  const beendet = plan.sessions.filter((s) => s.finished_at !== null).length;
+  if (beendet === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <h3 className="text-ink text-base font-semibold">Je Übung</h3>
+      <p className="text-ink-muted text-sm">
+        In {beendet === 1 ? 'einer beendeten Einheit' : `${beendet} beendeten Einheiten`} abgehakt.
+        Last und Wiederholungen erfasst die Plattform nicht; die Dosis ist die des Plans.
+      </p>
+      <div role="region" aria-label="Je Übung" tabIndex={0} className="overflow-x-auto">
+        <table className="text-sm">
+          <caption className="sr-only">Je Übung: alle Sätze, ein Teil, ausgelassen</caption>
+          <thead>
+            <tr className="text-ink-muted text-left">
+              <th scope="col" className="pr-4 font-medium">
+                Übung
+              </th>
+              <th scope="col" className="pr-4 font-medium">
+                Alle Sätze
+              </th>
+              <th scope="col" className="pr-4 font-medium">
+                Ein Teil
+              </th>
+              <th scope="col" className="pr-4 font-medium">
+                Ausgelassen
+              </th>
+              <th scope="col" className="pr-4 font-medium">
+                Zuletzt, jüngste zuerst
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {plan.items.map((item, i) => {
+              const zeile = zeilen[i]!;
+              return (
+                <tr key={item.id} className="border-line border-t align-top">
+                  <th scope="row" className="text-ink py-1 pr-4 text-left font-normal">
+                    {item.exercise_name} · {item.variant_name}
+                    <span className="text-ink-muted block text-xs">{dosierungFachlich(item)}</span>
+                  </th>
+                  <td className="text-ink py-1 pr-4 tabular-nums">{zeile.ganz}</td>
+                  <td className="text-ink py-1 pr-4 tabular-nums">{zeile.teilweise}</td>
+                  <td className="text-ink py-1 pr-4 tabular-nums">{zeile.ausgelassen}</td>
+                  <td className="text-ink-muted py-1 pr-4">
+                    {zeile.zuletzt
+                      .map((e) => `${formatDate(e.tag)} ${AUSFUEHRUNG_TEXT[e.ausfuehrung]}`)
+                      .join(' · ')}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

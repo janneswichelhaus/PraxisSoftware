@@ -170,6 +170,8 @@ const zugewiesen = plan({
       finished_at: '2026-10-06T07:20:00Z',
       sets_done: 5,
       sets_total: 6,
+      // OUT-003: Kniebeuge ganz, Rudern zu zwei Dritteln.
+      sets_by_item: { i1: 3, i2: 2 },
       difficulty_note: 'Beim Aufstehen aus der Hocke zieht es im rechten Knie.',
       // TRK-001: Angaben der Person zur Einheit.
       values: { session_exertion: 6, session_pain: 3 },

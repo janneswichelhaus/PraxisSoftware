@@ -217,6 +217,27 @@ describe('Einheiten am Plan (UEB-010)', () => {
     await asUserCommitted(tina.konto, BEENDEN, [tina.zugang, zweite, 'Rücken']);
   });
 
+  it('nennt der Praxis die abgehakten Sätze je Übung; eine ausgelassene fehlt (OUT-003)', async () => {
+    const plan = await zugewiesenerPlan('therapy', patients.erika, 'Knie', [
+      KNIEBEUGE_GELAENDER,
+      RUDERN_GELB,
+    ]);
+    const [erste, zweite] = await positionen(plan);
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    for (const satz of [1, 2, 3]) {
+      await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, erste, satz, true]);
+    }
+    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, null]);
+    const { rows } = await asUser<{
+      plan: { sessions: { sets_done: number; sets_by_item: Record<string, number> }[] };
+    }>(users.therapist, PLAN, [plan]);
+    expect(rows[0]!.plan.sessions[0]).toMatchObject({
+      sets_done: 3,
+      sets_by_item: { [erste!]: 3 },
+    });
+    expect(rows[0]!.plan.sessions[0]!.sets_by_item).not.toHaveProperty(zweite!);
+  });
+
   it('die Praxis liest die Einheiten mit dem Plan, dieselben Rollen (ANN-298)', async () => {
     const plan = await zugewiesenerPlan();
     const [position] = await positionen(plan);
