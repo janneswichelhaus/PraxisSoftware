@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase';
 import { ANMELDESAETZE, anmeldesatz } from './anmeldefehler';
+import { offlineschluesselAus, type Offlineschluessel } from './freigabeOhneNetz';
 
 /**
  * Der Passkey (SEC-EPIC-002, ADR-025 Fassung 2, Punkt 10).
@@ -85,7 +86,11 @@ type Zeremonie = CredentialsContainer['get'];
  * den Besitz zu zeigen. Durchsetzen kann es der Server heute nicht - das ist
  * die Restlücke für OPS-001.
  */
-async function mitPruefungAmGeraet<T>(ablauf: () => Promise<T>): Promise<T> {
+async function mitPruefungAmGeraet<T>(
+  ablauf: () => Promise<T>,
+  /** TRK-009: Wer den angelegten Passkey sehen will (öffentlicher Schlüssel). */
+  beimAnlegen?: (angelegt: Credential | null) => void,
+): Promise<T> {
   const container = typeof navigator === 'undefined' ? undefined : navigator.credentials;
   if (!container) return ablauf();
   const holen = container.get.bind(container);
@@ -97,8 +102,8 @@ async function mitPruefungAmGeraet<T>(ablauf: () => Promise<T>): Promise<T> {
         ? { ...optionen, publicKey: { ...optionen.publicKey, userVerification: 'required' } }
         : optionen,
     );
-  eigen.create = (optionen?: CredentialCreationOptions) =>
-    anlegen(
+  eigen.create = async (optionen?: CredentialCreationOptions) => {
+    const angelegt = await anlegen(
       optionen?.publicKey
         ? {
             ...optionen,
@@ -112,6 +117,9 @@ async function mitPruefungAmGeraet<T>(ablauf: () => Promise<T>): Promise<T> {
           }
         : optionen,
     );
+    beimAnlegen?.(angelegt);
+    return angelegt;
+  };
   try {
     return await ablauf();
   } finally {
@@ -143,20 +151,39 @@ export async function anmeldenMitPasskey(): Promise<void> {
 export async function passkeyEinrichten(): Promise<void> {
   if (!passkeyMoeglich()) throw new PasskeyFehler(PASSKEY_SAETZE.nichtUnterstuetzt);
   let ergebnis: Awaited<ReturnType<ReturnType<typeof getSupabase>['auth']['registerPasskey']>>;
+  // TRK-009 (ANN-359): Den öffentlichen Schlüssel nennt nur der Browser, beim Anlegen.
+  let schluessel: Offlineschluessel | null = null;
   try {
-    ergebnis = await mitPruefungAmGeraet(() => getSupabase().auth.registerPasskey());
+    ergebnis = await mitPruefungAmGeraet(
+      () => getSupabase().auth.registerPasskey(),
+      (angelegt) => {
+        schluessel = offlineschluesselAus(angelegt);
+      },
+    );
   } catch {
     throw new PasskeyFehler(ANMELDESAETZE.keineVerbindung);
   }
   if (ergebnis.error) throw alsPasskeyFehler(ergebnis.error);
-  await gibPasskeyFrei(ergebnis.data.id);
+  await gibPasskeyFrei(ergebnis.data.id, schluessel);
 }
 
-/** Freigabe in der Datenbank; ein Funkloch bekommt einen zweiten Versuch. */
-async function gibPasskeyFrei(id: string): Promise<void> {
+/**
+ * Freigabe in der Datenbank, wahlweise mit dem Schlüssel für die Freigabe
+ * ohne Netz; ein Funkloch bekommt einen zweiten Versuch.
+ */
+async function gibPasskeyFrei(id: string, schluessel: Offlineschluessel | null): Promise<void> {
   for (let versuch = 0; versuch < 2; versuch += 1) {
     try {
-      const { error } = await getSupabase().rpc('approve_own_passkey', { p_credential_id: id });
+      const { error } = await getSupabase().rpc('approve_own_passkey', {
+        p_credential_id: id,
+        ...(schluessel
+          ? {
+              p_webauthn_id: schluessel.webauthn_id,
+              p_public_key: schluessel.public_key,
+              p_public_key_alg: schluessel.public_key_alg,
+            }
+          : {}),
+      });
       if (!error) return;
       break;
     } catch {

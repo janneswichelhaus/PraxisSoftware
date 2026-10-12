@@ -9,6 +9,7 @@ import { geraetBeimAbmeldenLoesen } from '@/lib/push';
 import { SessionContext, type SessionState } from './sessionContext';
 import { SitzungsendeContext } from './sitzungsende';
 import { uebergabenLeeren } from '@/features/documentation/uebernahme';
+import { ablageLeeren } from '@/lib/geraeteablage';
 
 /**
  * Sitzungszustand und die Grenze zwischen zwei Konten (UX-011, ANN-021).
@@ -80,6 +81,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // Anmeldung in diesem Tab beginnt wieder mit dem Intro - auch die eines
     // anderen Kontos.
     startbildZuruecksetzen();
+    // TRK-008 (ADR-024 Punkt 5): Die Ablage auf dem Gerät fällt beim
+    // Abmelden und beim Kontowechsel - Plan, Warteschlange, Schlüssel.
+    void ablageLeeren();
     // Abstecher-Entwürfe bleiben (ABN-019, BEF-110, ANN-019 Fassung 2): Sie
     // sind an das Konto gebunden, das sie begonnen hat, und kein anderes
     // findet sie. Eine automatische Abmeldung verwirft sie nicht still; beim

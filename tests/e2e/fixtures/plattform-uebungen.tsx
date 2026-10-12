@@ -13,6 +13,7 @@ import {
   type Termin,
 } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
+import { DurchfuehrungKontext, uebertragen } from '@/features/platform/ablage';
 import { kalendertag } from '@/features/platform/zeit';
 import { isoWochentag } from '@/features/platform/uebungstage';
 import type { CurrentUser } from '@/features/session/types';
@@ -54,6 +55,7 @@ const zugaenge: Plattformzugang[] = [
 ];
 
 const PLAN_ID = 'aaaaaaaa-0000-4000-8000-000000000001';
+const BESITZER = 'eeeeeeee-0000-4000-8000-000000000001';
 
 function position(
   nummer: number,
@@ -229,11 +231,18 @@ const element =
       <PlanblattSeite user={praxiskonto} />
     </div>
   ) : (
-    <PlattformApp
-      zugaenge={zugaenge}
-      email="erika.plattform@patient.invalid"
-      onAbmelden={() => undefined}
-    />
+    // TRK-008: Die Durchführung legt jeden Haken zuerst auf dem Gerät ab und
+    // überträgt ihn dann - die Prüfung fängt den Aufruf ab (oder nicht: dann
+    // bleibt er „auf dem Gerät").
+    <DurchfuehrungKontext.Provider
+      value={{ besitzer: BESITZER, anstossen: () => uebertragen(BESITZER) }}
+    >
+      <PlattformApp
+        zugaenge={zugaenge}
+        email="erika.plattform@patient.invalid"
+        onAbmelden={() => undefined}
+      />
+    </DurchfuehrungKontext.Provider>
   );
 
 // Die Seite der Praxis liest die Kennung des Plans aus dem Pfad.

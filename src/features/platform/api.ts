@@ -1126,67 +1126,75 @@ export async function ladePlaene(zugangId: string): Promise<EigenePlaene> {
   return antwort(eigenePlaeneSchema, ergebnis.data ?? { today: '', plans: [] }, satz);
 }
 
-/**
- * UEB-010: eine Einheit beginnen oder die heute begonnene fortsetzen
- * (ANN-305). Liefert ihre Kennung.
- */
-export async function einheitBeginnen(zugangId: string, planId: string): Promise<string> {
-  const { data, error } = (await getSupabase().rpc('start_platform_exercise_session', {
-    p_access_id: zugangId,
-    p_plan_id: planId,
-  })) as { data: unknown; error: unknown };
-  if (error || typeof data !== 'string') {
-    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
-  }
-  return data;
-}
+/** TRK-007: ein Ereignis einer Einheit, wie das Gerät es erfasst hat (ADR-024 Punkt 7). */
+export type Einheitsereignis =
+  | {
+      id: string;
+      kind: 'set';
+      /** Uhr des Geräts - eine Angabe der Person (Punkt 8). */
+      at: string;
+      item_id: string;
+      set_number: number;
+      done: boolean;
+    }
+  | { id: string; kind: 'finish'; at: string; note: string; values: Record<string, number> };
+
+const uebertragungSchema = z.object({
+  session_id: z.string().uuid(),
+  status: z.enum(['ok', 'finished', 'closed', 'empty']),
+  note_dropped: z.boolean(),
+});
+export type Uebertragung = z.infer<typeof uebertragungSchema>;
 
 /**
- * Die Einheit ist nicht mehr offen - anderswo beendet (zweites Gerät,
- * Vertretung) oder von gestern. Die Ansicht beginnt dann eine neue, statt
- * „Verbindung prüfen" zu sagen (Zweitreview).
+ * Der Server hat die Einheit beim Eingang abgewiesen (ADR-024 Punkt 8). Die
+ * Ansicht sagt den Grund und verwirft sie danach; ein Funkloch ist das nicht.
  */
-export class EinheitNichtOffen extends Error {
-  constructor() {
-    super('Diese Einheit ist nicht mehr offen.');
+export class UebertragungAbgewiesen extends Error {
+  constructor(satz: string) {
+    super(satz);
+    this.name = 'UebertragungAbgewiesen';
   }
 }
 
-/** Einen Durchgang abhaken oder den Haken zurücknehmen - sofort gespeichert. */
-export async function durchgangSetzen(
-  zugangId: string,
-  einheitId: string,
-  positionId: string,
-  durchgang: number,
-  erledigt: boolean,
-): Promise<void> {
-  const { error } = await getSupabase().rpc('mark_platform_exercise_set', {
-    p_access_id: zugangId,
-    p_session_id: einheitId,
-    p_item_id: positionId,
-    p_set_number: durchgang,
-    p_done: erledigt,
-  });
-  if ((error as { code?: string } | null)?.code === 'P0002') throw new EinheitNichtOffen();
-  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
-}
+export const ABWEISUNGSSAETZE = {
+  zugang: 'Sie können mit diesem Zugang gerade nicht mehr üben.',
+  plan: 'Der Plan gilt nicht mehr.',
+  form: 'Die Einheit ließ sich nicht übertragen.',
+} as const;
 
-/** Die Einheit beenden, wahlweise mit „Das war schwierig, weil …". */
-export async function einheitBeenden(
+/**
+ * TRK-007: eine Einheit übertragen - zweimal gesendet ist einmal gespeichert
+ * (ANN-357). Wirft `UebertragungAbgewiesen` mit dem Grund, sonst bei
+ * Funkloch einen gewöhnlichen Fehler.
+ */
+export async function einheitUebertragen(
   zugangId: string,
-  einheitId: string,
-  notiz: string,
-  /** TRK-001: Angaben zur Einheit, nur beantwortete (ANN-348). */
-  werte: Record<string, number> = {},
-): Promise<void> {
-  const { error } = await getSupabase().rpc('finish_platform_exercise_session', {
+  einheit: {
+    id: string;
+    planId: string;
+    tag: string;
+    begonnenAm: string;
+    ereignisse: Einheitsereignis[];
+  },
+): Promise<Uebertragung> {
+  const satz = 'Nicht übertragen. Bitte die Verbindung prüfen.';
+  const { data, error } = (await getSupabase().rpc('sync_platform_exercise_session', {
     p_access_id: zugangId,
-    p_session_id: einheitId,
-    p_note: notiz,
-    p_values: werte,
-  });
-  if (error)
-    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+    p_plan_id: einheit.planId,
+    p_session_id: einheit.id,
+    p_performed_on: einheit.tag,
+    p_started_at: einheit.begonnenAm,
+    p_events: einheit.ereignisse,
+  })) as { data: unknown; error: { code?: string } | null };
+  const code = error?.code;
+  // 28000: Die Sitzung ist gesperrt - kein Urteil über die Daten. Sie bleiben
+  // auf dem Gerät bis nach dem Entsperren (Zweitreview B1).
+  if (code === '42501') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.zugang);
+  if (code === 'P0002') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.plan);
+  if (code === '22023' || code === '22P02') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.form);
+  if (error) throw new Error(satz);
+  return antwort(uebertragungSchema, data, satz);
 }
 
 /** UEB-011: die eigenen Übungstage eines Plans wählen (ANN-307). */

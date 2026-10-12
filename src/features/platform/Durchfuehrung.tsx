@@ -11,16 +11,17 @@ import { TextArea } from '@/components/ui/TextArea';
 import { dosierungAlltag } from '@/features/exercise-plans/dosierung';
 import { angabeGueltig, groessenImTakt } from '@/lib/erfassungsgroessen';
 import {
-  EinheitNichtOffen,
-  durchgangSetzen,
-  einheitBeenden,
-  einheitBeginnen,
-  ladePlaene,
-  plaeneSchluessel,
-  type EigenerPlan,
-  type PlanPosition,
-  type Plattformzugang,
-} from './api';
+  abgelegterPlan,
+  abweisungGelesen,
+  ereignisAblegen,
+  geraetetag,
+  useDurchfuehrungstraeger,
+  useWarteschlange,
+  wartendeEinheiten,
+  type Ablageplan,
+  type WartendeEinheit,
+} from './ablage';
+import { ladePlaene, plaeneSchluessel, type PlanPosition, type Plattformzugang } from './api';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 
 /**
@@ -28,11 +29,14 @@ import { PLATTFORM_PFAD, bereichParameter } from './pfade';
  * Küche und mache meine Übungen."
  *
  * Übung für Übung, große Ziele für einen Finger, Durchgang abhaken, die
- * Pause der Fachperson als Uhr. **Jeder Haken geht sofort an den Server**
- * (ANN-305): Wer abbricht oder das Telefon weglegt, verliert nichts, und auf
- * dem Gerät liegt nichts (ADR-001, ADR-015 Punkt 16). Ohne Verbindung sagt
- * die Ansicht „nicht gespeichert" und nimmt den Haken zurück - niemand soll
- * glauben, etwas sei gespeichert, das es nicht ist (ADR-001, Konsequenzen).
+ * Pause der Fachperson als Uhr. **Jeder Haken liegt zuerst auf dem Gerät und
+ * geht dann an den Server** (TRK-008, ADR-024 Punkt 5, ANN-358): Wer im
+ * Keller ohne Empfang übt, verliert nichts, und wer abbricht oder das Telefon
+ * weglegt, auch nicht. Ohne Verbindung übt die Person am Plan vom letzten
+ * Laden. Die Ansicht sagt, ob noch etwas auf dem Gerät wartet oder alles
+ * übertragen ist - niemand soll glauben, etwas sei bei der Praxis, das nur
+ * auf dem Telefon liegt (ADR-001, ADR-024 Punkt 8). Löst ANN-305 im
+ * Verhalten ohne Verbindung ab.
  *
  * Keine Punktzahl, keine Serie, kein Lob aus der Software (DSN-001 4.1).
  * Während der Einheit bittet die Ansicht das Gerät, den Bildschirm wach zu
@@ -40,7 +44,13 @@ import { PLATTFORM_PFAD, bereichParameter } from './pfade';
  */
 export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   const { pathname } = useLocation();
+  const [suche] = useSearchParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { besitzer } = useDurchfuehrungstraeger();
   const planId = pathname.slice(pathname.lastIndexOf('/') + 1);
+  const bereich = bereichParameter(suche);
+  const zurueck = `${PLATTFORM_PFAD}/uebungen${bereich ? `?${bereich}` : ''}`;
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
     queryFn: () => ladePlaene(zugang.access_id),
@@ -48,10 +58,32 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
     // mit dem Stand vom Öffnen überschreiben.
     refetchOnWindowFocus: false,
   });
+  // Ohne Verbindung: der Plan vom letzten Laden (ADR-024 Punkt 5).
+  const abgelegt = useQuery({
+    queryKey: ['abgelegter-plan', besitzer, zugang.access_id, planId],
+    queryFn: async () => (await abgelegterPlan(besitzer, zugang.access_id, planId)) ?? null,
+    enabled: plaene.isError,
+    gcTime: 0,
+  });
   const plan = plaene.data?.plans.find((p) => p.id === planId);
 
-  if (plaene.isPending) return <LoadingState label="Ihre Übungen werden geladen …" />;
+  if (plaene.isPending || (plaene.isError && abgelegt.isPending)) {
+    return <LoadingState label="Ihre Übungen werden geladen …" />;
+  }
   if (plaene.data === undefined) {
+    if (abgelegt.data) {
+      return (
+        <EinheitMitWarteschlange
+          zugangId={zugang.access_id}
+          plan={abgelegt.data}
+          ohneVerbindung
+          zurueckPfad={zurueck}
+          onBeendet={(ziel) =>
+            void navigate(`${zurueck}${zurueck.includes('?') ? '&' : '?'}${ziel}`)
+          }
+        />
+      );
+    }
     return (
       <ErrorState
         title="Ihre Übungen konnten nicht geladen werden."
@@ -63,93 +95,168 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   if (!plan || !plan.can_exercise || plan.items.length === 0) {
     return <EmptyState title="Mit diesem Plan können Sie hier gerade nicht üben." />;
   }
-  return <Einheit zugang={zugang} plan={plan} />;
+  return (
+    <EinheitMitWarteschlange
+      zugangId={zugang.access_id}
+      plan={plan}
+      zurueckPfad={zurueck}
+      onBeendet={async (ziel) => {
+        await queryClient.invalidateQueries({ queryKey: plaeneSchluessel(zugang.access_id) });
+        void navigate(`${zurueck}${zurueck.includes('?') ? '&' : '?'}${ziel}`);
+      }}
+    />
+  );
+}
+
+/** Wohin nach dem Beenden: übertragen oder noch auf dem Gerät. */
+export type Beendetziel = 'gespeichert=1' | 'gespeichert=geraet';
+
+interface EinheitProps {
+  zugangId: string;
+  plan: Ablageplan;
+  /** Der Plan kommt aus der Ablage, nicht vom Server. */
+  ohneVerbindung?: boolean;
+  /** Zurück zur Übersicht: als Link in der Plattform, sonst als Knopf. */
+  zurueckPfad?: string;
+  onZurueck?: () => void;
+  onBeendet: (ziel: Beendetziel) => void | Promise<void>;
+}
+
+/**
+ * Die Einheit, sobald klar ist, was schon auf dem Gerät wartet: Eine heute
+ * ohne Verbindung begonnene Einheit geht weiter, mit ihren Haken.
+ */
+export function EinheitMitWarteschlange(props: EinheitProps) {
+  const { besitzer } = useDurchfuehrungstraeger();
+  const wartend = useQuery({
+    queryKey: ['wartende-einheiten', besitzer],
+    queryFn: () => wartendeEinheiten(besitzer),
+    gcTime: 0,
+    staleTime: Infinity,
+  });
+  if (wartend.isPending) return <LoadingState label="Ihre Übungen werden geladen …" />;
+  return <Einheit {...props} wartend={wartend.data ?? []} />;
 }
 
 function schluessel(positionId: string, durchgang: number): string {
   return `${positionId}:${durchgang}`;
 }
 
-function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan }) {
-  const [suche] = useSearchParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const bereich = bereichParameter(suche);
-  const zurueck = `${PLATTFORM_PFAD}/uebungen${bereich ? `?${bereich}` : ''}`;
+/** Die Einheit am Gerät: welche, seit wann, für welchen Tag (ANN-357). */
+interface Einheitskopf {
+  id: string;
+  begonnenAm: string;
+  tag: string;
+}
+
+function Einheit({
+  zugangId,
+  plan,
+  ohneVerbindung = false,
+  zurueckPfad,
+  onZurueck,
+  onBeendet,
+  wartend,
+}: EinheitProps & { wartend: WartendeEinheit[] }) {
+  const { besitzer, anstossen } = useDurchfuehrungstraeger();
+  const warteschlange = useWarteschlange(besitzer);
+
+  // Weiter mit der heute auf dem Gerät begonnenen Einheit, sonst mit der heute
+  // beim Server offenen; eine neue entsteht mit dem ersten Haken.
+  const [start] = useState(() => {
+    const tag = geraetetag();
+    const lokal = wartend.find(
+      (e) =>
+        e.zugangId === zugangId &&
+        e.planId === plan.id &&
+        e.tag === tag &&
+        !e.ereignisse.some((x) => x.kind === 'finish'),
+    );
+    const haken = new Set(
+      (plan.open_session?.sets ?? []).map((x) => schluessel(x.item_id, x.set_number)),
+    );
+    for (const x of lokal?.ereignisse ?? []) {
+      if (x.kind === 'set') {
+        if (x.done) haken.add(schluessel(x.item_id, x.set_number));
+        else haken.delete(schluessel(x.item_id, x.set_number));
+      }
+    }
+    const id = lokal?.id ?? plan.open_session?.id ?? null;
+    const kopf: Einheitskopf | null = id
+      ? { id, begonnenAm: lokal?.begonnenAm ?? new Date().toISOString(), tag }
+      : null;
+    return { kopf, haken };
+  });
+  const einheit = useRef<Einheitskopf | null>(start.kopf);
 
   const [index, setIndex] = useState(0);
   const [fertig, setFertig] = useState(false);
-  const [haken, setHaken] = useState<ReadonlySet<string>>(
-    () => new Set((plan.open_session?.sets ?? []).map((s) => schluessel(s.item_id, s.set_number))),
-  );
+  const [haken, setHaken] = useState<ReadonlySet<string>>(start.haken);
   const [fehler, setFehler] = useState<string | null>(null);
   // Die laufende Pause; `nummer` startet die Uhr auch bei gleicher Dauer neu.
   const [pause, setPause] = useState<{ sekunden: number; nummer: number } | null>(null);
-  // Eine Einheit entsteht mit dem ersten Haken; parallele Haken warten auf
-  // dieselbe (der Server lässt ohnehin nur eine offene je Tag zu).
-  const einheit = useRef<Promise<string> | null>(
-    plan.open_session ? Promise.resolve(plan.open_session.id) : null,
-  );
-  const einheitHolen = () => {
-    einheit.current ??= einheitBeginnen(zugang.access_id, plan.id).catch((e: unknown) => {
-      einheit.current = null;
-      throw e;
-    });
-    return einheit.current;
-  };
 
   useBildschirmWach();
 
-  const setzen = useMutation({
-    // Haken laufen der Reihe nach zum Server: An und Aus desselben Durchgangs
-    // kommen in der Reihenfolge an, in der getippt wurde (Zweitreview).
-    scope: { id: `einheit-${plan.id}` },
-    mutationFn: async (v: { position: PlanPosition; durchgang: number; erledigt: boolean }) => {
-      const senden = async () =>
-        durchgangSetzen(
-          zugang.access_id,
-          await einheitHolen(),
-          v.position.id,
-          v.durchgang,
-          v.erledigt,
-        );
-      try {
-        await senden();
-      } catch (e) {
-        if (!(e instanceof EinheitNichtOffen)) throw e;
-        // Anderswo beendet oder von gestern: eine neue beginnen, einmal.
-        einheit.current = null;
-        await senden();
-      }
-    },
-    onMutate: (v) => {
-      setFehler(null);
-      setHaken((alt) => umschalten(alt, schluessel(v.position.id, v.durchgang), v.erledigt));
-    },
-    onError: (e, v) => {
-      // Zurücknehmen, was nicht gespeichert ist (ADR-001).
-      setHaken((alt) => umschalten(alt, schluessel(v.position.id, v.durchgang), !v.erledigt));
-      setFehler(e instanceof Error ? e.message : 'Nicht gespeichert.');
+  function einheitskopf(): Einheitskopf {
+    einheit.current ??= {
+      id: crypto.randomUUID(),
+      begonnenAm: new Date().toISOString(),
+      tag: geraetetag(),
+    };
+    return einheit.current;
+  }
+
+  async function setzen(
+    position: PlanPosition | Ablageplan['items'][number],
+    durchgang: number,
+    erledigt: boolean,
+  ) {
+    setFehler(null);
+    setHaken((alt) => umschalten(alt, schluessel(position.id, durchgang), erledigt));
+    const kopf = einheitskopf();
+    try {
+      // Erst auf das Gerät (ADR-024 Punkt 5), dann zum Server.
+      await ereignisAblegen(
+        besitzer,
+        { ...kopf, zugangId, planId: plan.id },
+        {
+          id: crypto.randomUUID(),
+          kind: 'set',
+          at: new Date().toISOString(),
+          item_id: position.id,
+          set_number: durchgang,
+          done: erledigt,
+        },
+      );
+    } catch {
+      // Nicht einmal auf dem Gerät: zurücknehmen, was nicht gespeichert ist (ADR-001).
+      setHaken((alt) => umschalten(alt, schluessel(position.id, durchgang), !erledigt));
+      setFehler('Nicht gespeichert. Bitte erneut tippen.');
       setPause(null);
-    },
-  });
+      return;
+    }
+    void anstossen?.();
+  }
 
   const position = plan.items[index]!;
   const letzte = index === plan.items.length - 1;
+  const wartet =
+    einheit.current !== null &&
+    warteschlange.einheiten.some((e) => e.id === einheit.current?.id && e.ereignisse.length > 0);
+  const abgewiesen = warteschlange.abgewiesen.filter((a) => a.planId === plan.id);
 
   if (fertig) {
     return (
       <Abschluss
-        zugang={zugang}
+        zugangId={zugangId}
         plan={plan}
-        einheitHolen={einheitHolen}
+        einheitskopf={einheitskopf}
         abgehakt={haken.size}
-        zurueck={zurueck}
+        zurueckPfad={zurueckPfad}
+        onAbbrechen={onZurueck}
         onZurueck={() => setFertig(false)}
-        onBeendet={async () => {
-          await queryClient.invalidateQueries({ queryKey: plaeneSchluessel(zugang.access_id) });
-          void navigate(`${zurueck}${zurueck.includes('?') ? '&' : '?'}gespeichert=1`);
-        }}
+        onBeendet={onBeendet}
       />
     );
   }
@@ -160,10 +267,24 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
         <p className="text-ink-muted">
           Übung {index + 1} von {plan.items.length}
         </p>
-        <ButtonLink variant="quiet" to={zurueck}>
+        <Zurueck pfad={zurueckPfad} onZurueck={onZurueck}>
           Abbrechen
-        </ButtonLink>
+        </Zurueck>
       </div>
+      {ohneVerbindung ? (
+        <p className="text-ink-muted mt-2 text-sm">
+          Ohne Verbindung: Ihr Plan vom letzten Laden. Die Haken bleiben auf dem Gerät, bis
+          Verbindung besteht.
+        </p>
+      ) : null}
+      {abgewiesen.map((a) => (
+        <Statusmeldung key={a.einheitId} ton="fehler" className="mt-3">
+          {`Nicht übertragen: ${a.satz}`}{' '}
+          <button type="button" className="underline" onClick={() => abweisungGelesen(a.einheitId)}>
+            Ausblenden
+          </button>
+        </Statusmeldung>
+      ))}
       <h1 className="text-accent text-h3 mt-2 font-bold">{position.variant_lay_name}</h1>
       <p className="mt-3 text-lg">{dosierungAlltag(position)}</p>
       {position.instruction ? <p className="mt-2">{position.instruction}</p> : null}
@@ -186,7 +307,7 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
                 type="button"
                 aria-pressed={erledigt}
                 onClick={() => {
-                  setzen.mutate({ position, durchgang, erledigt: !erledigt });
+                  void setzen(position, durchgang, !erledigt);
                   if (!erledigt && position.rest_seconds && durchgang < position.sets) {
                     const sekunden = position.rest_seconds;
                     setPause((alt) => ({ sekunden, nummer: (alt?.nummer ?? 0) + 1 }));
@@ -245,8 +366,14 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
           {letzte ? 'Fertig' : 'Nächste Übung'}
         </Button>
       </div>
-      <p className="text-ink-muted mt-4 text-sm">
-        Jeder Haken wird sofort gespeichert. Sie können jederzeit abbrechen.
+      <p className="text-ink-muted mt-4 text-sm" data-testid="uebertragungsstand">
+        {wartet
+          ? anstossen
+            ? 'Auf dem Gerät gespeichert, noch nicht übertragen. Übertragen wird, sobald Verbindung besteht.'
+            : 'Auf dem Gerät gespeichert, noch nicht übertragen. Übertragen wird, sobald Verbindung besteht und Sie die Anwendung entsperrt haben.'
+          : einheit.current && haken.size > 0
+            ? 'Alles übertragen. Sie können jederzeit abbrechen.'
+            : 'Jeder Haken wird gespeichert – auch ohne Verbindung. Sie können jederzeit abbrechen.'}
       </p>
     </>
   );
@@ -285,23 +412,26 @@ function Pause({ sekunden, onEnde }: { sekunden: number; onEnde: () => void }) {
 }
 
 function Abschluss({
-  zugang,
+  zugangId,
   plan,
-  einheitHolen,
+  einheitskopf,
   abgehakt,
-  zurueck,
+  zurueckPfad,
+  onAbbrechen,
   onZurueck,
   onBeendet,
 }: {
-  zugang: Plattformzugang;
-  plan: EigenerPlan;
-  einheitHolen: () => Promise<string>;
+  zugangId: string;
+  plan: Ablageplan;
+  einheitskopf: () => Einheitskopf;
   /** Ohne einen Haken gibt es nichts zu beenden - „geübt" hieße sonst nichts. */
   abgehakt: number;
-  zurueck: string;
+  zurueckPfad: string | undefined;
+  onAbbrechen: (() => void) | undefined;
   onZurueck: () => void;
-  onBeendet: () => Promise<void>;
+  onBeendet: (ziel: Beendetziel) => void | Promise<void>;
 }) {
+  const { besitzer, anstossen } = useDurchfuehrungstraeger();
   const [notiz, setNotiz] = useState('');
   // TRK-001: Anstrengung und Schmerz, freiwillig, nichts vorausgewählt.
   const [werte, setWerte] = useState<Record<string, number | null>>({});
@@ -311,17 +441,30 @@ function Abschluss({
     return w !== null && w !== undefined && !angabeGueltig(g, w);
   });
   const beenden = useMutation({
-    mutationFn: async () => {
-      const id = await einheitHolen();
+    mutationFn: async (): Promise<Beendetziel> => {
+      const kopf = einheitskopf();
       const angaben = Object.fromEntries(
         Object.entries(werte).filter((e): e is [string, number] => e[1] !== null),
       );
-      await einheitBeenden(
-        zugang.access_id,
-        id,
-        plan.note_allowed ? notiz : '',
-        plan.note_allowed ? angaben : {},
-      );
+      // Auch das Ende liegt zuerst auf dem Gerät (ADR-024 Punkt 5).
+      try {
+        await ereignisAblegen(
+          besitzer,
+          { ...kopf, zugangId, planId: plan.id },
+          {
+            id: crypto.randomUUID(),
+            kind: 'finish',
+            at: new Date().toISOString(),
+            note: plan.note_allowed ? notiz : '',
+            values: plan.note_allowed ? angaben : {},
+          },
+        );
+      } catch {
+        throw new Error('Nicht gespeichert. Bitte erneut versuchen.');
+      }
+      if (!anstossen) return 'gespeichert=geraet';
+      const ergebnis = await anstossen().catch(() => null);
+      return ergebnis?.angekommen.includes(kopf.id) ? 'gespeichert=1' : 'gespeichert=geraet';
     },
     onSuccess: onBeendet,
   });
@@ -381,11 +524,35 @@ function Abschluss({
         <Button type="button" variant="secondary" onClick={onZurueck}>
           Zurück zu den Übungen
         </Button>
-        <ButtonLink variant="quiet" to={zurueck}>
+        <Zurueck pfad={zurueckPfad} onZurueck={onAbbrechen}>
           Abbrechen
-        </ButtonLink>
+        </Zurueck>
       </form>
     </>
+  );
+}
+
+/** „Abbrechen": in der Plattform ein Link, in der lokalen Ansicht ein Knopf. */
+function Zurueck({
+  pfad,
+  onZurueck,
+  children,
+}: {
+  pfad: string | undefined;
+  onZurueck: (() => void) | undefined;
+  children: string;
+}) {
+  if (pfad) {
+    return (
+      <ButtonLink variant="quiet" to={pfad}>
+        {children}
+      </ButtonLink>
+    );
+  }
+  return (
+    <Button variant="quiet" onClick={onZurueck}>
+      {children}
+    </Button>
   );
 }
 

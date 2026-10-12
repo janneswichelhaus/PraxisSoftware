@@ -7,6 +7,7 @@ import { PortalZielKontext } from '@/components/ui/portalZiel';
 import { useSession } from '../sessionContext';
 import {
   BEDIENUNG_MELDEN_ALLE_MS,
+  SPERRFRISTEN,
   SICHERUNG_HOECHSTENS_MS,
   VORLAUF_MS,
   ersteFrist,
@@ -17,6 +18,8 @@ import {
 } from './sperrstand';
 import { SperrsicherungKontext, type Sicherung, type Sperrsicherung } from './sperrsicherung';
 import { Sperrseite } from './Sperrseite';
+import { SperreOhneNetz } from './SperreOhneNetz';
+import { freigabeOhneNetzMoeglich } from '../freigabeOhneNetz';
 
 /**
  * Die Sitzungssperre der Oberfläche (SEC-EPIC-001, ADR-025).
@@ -56,7 +59,25 @@ type Phase =
   /** Gesperrt, aber eine Seite mit ungesichertem Text steht verborgen (Punkt 4). */
   | 'halten'
   /** Die erste Prüfung scheiterte - nichts zeigen, erneut anbieten. */
-  | 'fehler';
+  | 'fehler'
+  /**
+   * TRK-009: gesperrt oder ungeprüft ohne Verbindung, und das Gerät hat etwas
+   * abgelegt: Freigabe per Passkey für die Ablage anbieten (ADR-025 Punkt 16).
+   */
+  | 'ohneNetz'
+  /** TRK-009: ohne Netz freigegeben - nur die Ablage auf dem Gerät ist zu sehen. */
+  | 'lokal';
+
+/**
+ * Was die Anwendung ohne Netz öffnen kann (TRK-009). Die Sperre kennt nur die
+ * Frage und die Ansicht; was abgelegt ist, weiß das Modul, das ablegt.
+ */
+export interface OhneNetz {
+  /** Liegt für dieses Konto etwas auf dem Gerät, das ohne Netz zu öffnen lohnt? */
+  hatAblage: () => Promise<boolean>;
+  /** Die lokale Ansicht; `sperren` schließt sie wieder. */
+  ansicht: (sperren: () => void) => ReactNode;
+}
 
 /** Wartet höchstens `ms` auf eine Sicherung; zu spät oder gescheitert heißt „nicht gesichert“. */
 function mitFrist(sicherung: Sicherung, ms: number): Promise<boolean> {
@@ -75,8 +96,15 @@ function mitFrist(sicherung: Sicherung, ms: number): Promise<boolean> {
   });
 }
 
-export function Sitzungssperre({ children }: { children: ReactNode }) {
-  const { signOut } = useSession();
+export function Sitzungssperre({
+  children,
+  ohneNetz,
+}: {
+  children: ReactNode;
+  ohneNetz?: OhneNetz | undefined;
+}) {
+  const { signOut, session } = useSession();
+  const besitzer = session?.user.id ?? '';
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>('start');
   const [grund, setGrund] = useState<Sperrgrund>('inaktiv');
@@ -121,6 +149,19 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
+  /**
+   * TRK-009: Bietet dieses Gerät die Freigabe ohne Netz an? Nur mit einem
+   * abgelegten Schlüssel (Punkt 16) und mit etwas in der Ablage.
+   */
+  const ohneNetzGeht = useCallback(async (): Promise<boolean> => {
+    if (!ohneNetz || !besitzer) return false;
+    try {
+      return (await freigabeOhneNetzMoeglich(besitzer)) && (await ohneNetz.hatAblage());
+    } catch {
+      return false;
+    }
+  }, [ohneNetz, besitzer]);
+
   const uebernehmen = useCallback(
     (stand: Sperrstand, antwortAm: number) => {
       if (stand.gesperrt) {
@@ -161,9 +202,16 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
     } catch {
       const jetzt = phaseRef.current;
       if (jetzt === 'start') {
-        setPhase('fehler');
+        // Ohne Antwort ist nichts geprüft (Punkt 5). Liegt etwas auf dem
+        // Gerät, öffnet es der Passkey (TRK-009), sonst bleibt der Fehler.
+        const naechste: Phase = (await ohneNetzGeht()) ? 'ohneNetz' : 'fehler';
+        if (phaseRef.current === 'start') {
+          phaseRef.current = naechste;
+          setPhase(naechste);
+        }
         return;
       }
+      if (jetzt === 'ohneNetz' || jetzt === 'lokal') return;
       // Ohne Antwort zählt die eigene Uhr: Ist die Frist um, wird gesperrt.
       if (sperrAm.current !== null && Date.now() >= sperrAm.current) {
         void sperren(sperrGrund.current);
@@ -172,7 +220,7 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
         setPhase('offen');
       }
     }
-  }, [uebernehmen, sperren]);
+  }, [uebernehmen, sperren, ohneNetzGeht]);
 
   // Punkt 5: Vor dem ersten Bild fragt die Anwendung den Server.
   useEffect(() => {
@@ -251,6 +299,80 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
     };
   }, [pruefen]);
 
+  // TRK-009: Gesperrt und ohne Verbindung - der Passkey öffnet die Ablage.
+  // Mit Verbindung zurück: wie beim Öffnen erst prüfen; übertragen wird nur
+  // in einer Sitzung, die der Server offen nennt (Punkt 16).
+  useEffect(() => {
+    async function getrennt() {
+      if (phaseRef.current !== 'gesperrt') return;
+      if (!(await ohneNetzGeht()) || phaseRef.current !== 'gesperrt') return;
+      phaseRef.current = 'ohneNetz';
+      setPhase('ohneNetz');
+    }
+    function verbunden() {
+      const jetzt = phaseRef.current;
+      if (jetzt !== 'ohneNetz' && jetzt !== 'lokal') return;
+      queryClient.clear();
+      phaseRef.current = 'start';
+      setPhase('start');
+      void pruefen();
+    }
+    if (phase === 'gesperrt' && typeof navigator !== 'undefined' && !navigator.onLine) {
+      void getrennt();
+    }
+    const offline = () => void getrennt();
+    window.addEventListener('offline', offline);
+    window.addEventListener('online', verbunden);
+    return () => {
+      window.removeEventListener('offline', offline);
+      window.removeEventListener('online', verbunden);
+    };
+  }, [phase, ohneNetzGeht, pruefen, queryClient]);
+
+  // TRK-009: Die Fristen gelten auch für die lokale Ansicht (ADR-024 Punkt 9),
+  // gerechnet ab der Freigabe ohne Netz mit der Uhr des Geräts.
+  useEffect(() => {
+    if (phase !== 'lokal') return;
+    const geoeffnet = Date.now();
+    let bedient = geoeffnet;
+    const zurueck = () => {
+      queryClient.clear();
+      phaseRef.current = 'ohneNetz';
+      setPhase('ohneNetz');
+    };
+    const pruefenLokal = () => {
+      const jetzt = Date.now();
+      if (
+        jetzt - geoeffnet >= SPERRFRISTEN.hoechstMinuten * 60_000 ||
+        jetzt - bedient >= SPERRFRISTEN.inaktivMinuten * 60_000
+      ) {
+        zurueck();
+      }
+    };
+    const uhr = window.setInterval(pruefenLokal, 15_000);
+    // Punkt 5: bei der Rückkehr sofort, nicht erst beim nächsten Takt
+    // (Zweitreview H4).
+    const rueckkehr = () => {
+      if (document.visibilityState !== 'hidden') pruefenLokal();
+    };
+    const bedienung = () => {
+      bedient = Date.now();
+    };
+    document.addEventListener('visibilitychange', rueckkehr);
+    window.addEventListener('focus', rueckkehr);
+    window.addEventListener('pageshow', rueckkehr);
+    document.addEventListener('pointerdown', bedienung, true);
+    document.addEventListener('keydown', bedienung, true);
+    return () => {
+      window.clearInterval(uhr);
+      document.removeEventListener('visibilitychange', rueckkehr);
+      window.removeEventListener('focus', rueckkehr);
+      window.removeEventListener('pageshow', rueckkehr);
+      document.removeEventListener('pointerdown', bedienung, true);
+      document.removeEventListener('keydown', bedienung, true);
+    };
+  }, [phase, queryClient]);
+
   const sicherung = useMemo<Sperrsicherung>(
     () => ({
       meldeAn: (s) => {
@@ -288,6 +410,27 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
           </Button>
         </Vollseite>
       ) : null}
+      {phase === 'ohneNetz' ? (
+        <SperreOhneNetz
+          besitzer={besitzer}
+          onFreigegeben={() => {
+            phaseRef.current = 'lokal';
+            setPhase('lokal');
+          }}
+          onErneut={() => {
+            phaseRef.current = 'start';
+            setPhase('start');
+            void pruefen();
+          }}
+        />
+      ) : null}
+      {phase === 'lokal' && ohneNetz
+        ? ohneNetz.ansicht(() => {
+            queryClient.clear();
+            phaseRef.current = 'ohneNetz';
+            setPhase('ohneNetz');
+          })
+        : null}
       {phase === 'gesperrt' || phase === 'halten' ? (
         <Sperrseite
           grund={grund}

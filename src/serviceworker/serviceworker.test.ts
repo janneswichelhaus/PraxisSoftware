@@ -42,6 +42,14 @@ describe('Gerüst (Punkt 1)', () => {
     expect(antwortweg(get(`${HERKUNFT}/plattform/ich`, 'navigate'), HERKUNFT, LISTE)).toEqual({
       art: 'einstieg',
     });
+    // TRK-008: auch mit Abfrage - das Gerüst trägt keine Daten.
+    expect(
+      antwortweg(
+        get(`${HERKUNFT}/p/uebungen/einheit/x?bereich=training`, 'navigate'),
+        HERKUNFT,
+        LISTE,
+      ),
+    ).toEqual({ art: 'einstieg' });
     expect(antwortweg(get('https://fremd.invalid/', 'navigate'), HERKUNFT, LISTE)).toBeNull();
     expect(antwortweg(get(`${HERKUNFT}/`, 'navigate'), HERKUNFT, new Set())).toBeNull();
   });
