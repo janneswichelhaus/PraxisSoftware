@@ -135,6 +135,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_invoice',
       'rpc:platform_invoices',
       'rpc:platform_messages',
+      // KOM-011: Benachrichtigungen des eigenen Zugangs und Push auf dem Gerät.
+      'rpc:platform_notification_settings',
       'rpc:platform_onboarding',
       'rpc:platform_questionnaire',
       'rpc:platform_representatives',
@@ -146,12 +148,15 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_training_packages',
       'rpc:prepare_message_attachment_upload',
       'rpc:record_platform_consent',
+      'rpc:register_platform_push_subscription',
+      'rpc:remove_platform_push_subscription',
       'rpc:request_platform_appointment',
       // POR-010: Termin ändern oder absagen als Wunsch.
       'rpc:request_platform_appointment_change',
       'rpc:save_platform_questionnaire_response',
       // UEB-011: die eigenen Übungstage.
       'rpc:set_platform_exercise_days',
+      'rpc:set_platform_notification_settings',
       'rpc:start_platform_exercise_session',
       'rpc:start_platform_message',
       'rpc:withdraw_platform_appointment_request',

@@ -16,6 +16,17 @@ const ladeEinstieg = vi.fn();
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeEinstieg: (...args: unknown[]) => ladeEinstieg(...args) as Promise<Einstiegsstand | null>,
+  // KOM-011: der Abschnitt Benachrichtigungen, eigene Tests in Benachrichtigungen.test.tsx.
+  ladeBenachrichtigungen: () =>
+    Promise.resolve({
+      email_kinds: [],
+      push_kinds: [],
+      quiet_from: 20,
+      quiet_until: 8,
+      chosen_at: null,
+      disabled_kinds: [],
+      device_registered: false,
+    }),
 }));
 
 const { Einstellungen } = await import('./Einstellungen');

@@ -3,27 +3,30 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEREICHSNAME, einstiegBeenden, einstiegSchluessel, type Plattformzugang } from './api';
+import { Benachrichtigungen } from './Benachrichtigungen';
 import { Einwilligungen } from './Einwilligungen';
 
 /**
  * Der Einstieg nach der ersten Anmeldung (POR-019, DSN-001 4.3,
- * IDEA-LZK-005): Willkommen, Einwilligungen, fertig. Drei kurze Schritte,
+ * IDEA-LZK-005): Willkommen, Einwilligungen, Benachrichtigungen, fertig. Kurze Schritte,
  * jeder mit einem Hauptknopf; „Später" ist immer sichtbar und beendet den
  * Einstieg ebenso (DSN-001 Abschnitt 7 Punkt 7). Keine Einwilligung ist
  * nötig, um weiterzukommen - der Schritt zeigt sie nur.
  *
  * Die Praxis kann den Einstieg für die Person überspringen; dann erscheint
- * er nicht. Benachrichtigungen kommen mit ADR-024 hinzu.
+ * er nicht. Benachrichtigungen schaltet die Person hier oder später unter
+ * „Ich" ein (KOM-011, ADR-024 Punkt 15) - auch eine Begleitung, für ihren
+ * eigenen Zugang.
  */
-type Schritt = 'willkommen' | 'einwilligungen' | 'fertig';
+type Schritt = 'willkommen' | 'einwilligungen' | 'benachrichtigungen' | 'fertig';
 
 export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: string }) {
   const queryClient = useQueryClient();
   // Eine Begleitung entscheidet keine Einwilligungen (ADR-023 Punkt 13).
   const schritte: Schritt[] =
     zugang.access_kind === 'companion'
-      ? ['willkommen', 'fertig']
-      : ['willkommen', 'einwilligungen', 'fertig'];
+      ? ['willkommen', 'benachrichtigungen', 'fertig']
+      : ['willkommen', 'einwilligungen', 'benachrichtigungen', 'fertig'];
   const [nummer, setNummer] = useState(0);
   const schritt = schritte[nummer] ?? 'fertig';
   const letzter = nummer === schritte.length - 1;
@@ -62,6 +65,16 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
             Sie müssen hier nichts entscheiden. Unter „Ich“ geht es auch später.
           </p>
           <Einwilligungen zugang={zugang} einstieg />
+        </>
+      ) : null}
+      {schritt === 'benachrichtigungen' ? (
+        <>
+          <h1 className="text-accent text-h3 mt-2 font-bold">Benachrichtigungen</h1>
+          <p className="text-ink mt-3 max-w-prose text-base leading-relaxed">
+            Sie müssen hier nichts einschalten. Alles, was zu tun ist, steht auch in Ihrer
+            Übersicht. Unter „Ich“ → „Einstellungen“ geht es auch später.
+          </p>
+          <Benachrichtigungen zugaenge={[zugang]} einstieg />
         </>
       ) : null}
       {schritt === 'fertig' ? (

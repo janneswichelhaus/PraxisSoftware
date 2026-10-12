@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
+import { istBenachrichtigungsart, type Benachrichtigungsart } from '@/lib/begriffe';
+import type { PushRegistrierung } from '@/lib/push';
 import { getSupabase } from '@/lib/supabase';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
@@ -1507,4 +1509,80 @@ export async function anhangLoeschen(zugangId: string, anhangId: string): Promis
     p_attachment_id: anhangId,
   })) as { error: unknown };
   if (error) throw new Error('Die Aufnahme konnte nicht gelöscht werden. Bitte erneut versuchen.');
+}
+
+// -----------------------------------------------------------------------------
+// Benachrichtigungen (KOM-011, ADR-024 Punkt 15)
+// -----------------------------------------------------------------------------
+
+const artSchema = z.string().refine(istBenachrichtigungsart);
+
+const benachrichtigungSchema = z.object({
+  email_kinds: z.array(artSchema),
+  push_kinds: z.array(artSchema),
+  quiet_from: z.number().int().min(0).max(23),
+  quiet_until: z.number().int().min(0).max(23),
+  chosen_at: z.string().nullable(),
+  disabled_kinds: z.array(z.string()),
+  device_registered: z.boolean(),
+});
+export type Benachrichtigungswahl = Omit<
+  z.infer<typeof benachrichtigungSchema>,
+  'email_kinds' | 'push_kinds'
+> & { email_kinds: Benachrichtigungsart[]; push_kinds: Benachrichtigungsart[] };
+
+export function benachrichtigungSchluessel(zugangId: string, endpunkt: string | null) {
+  return ['platform-notifications', zugangId, endpunkt] as const;
+}
+
+export async function ladeBenachrichtigungen(
+  zugangId: string,
+  endpunkt: string | null,
+): Promise<Benachrichtigungswahl | null> {
+  const satz = 'Ihre Benachrichtigungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_notification_settings', {
+    p_access_id: zugangId,
+    p_endpoint: endpunkt,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const zeile = antwort(z.array(benachrichtigungSchema), ergebnis.data ?? [], satz)[0];
+  return (zeile as Benachrichtigungswahl | undefined) ?? null;
+}
+
+export async function speichereBenachrichtigungen(
+  zugangId: string,
+  wahl: Pick<Benachrichtigungswahl, 'email_kinds' | 'push_kinds' | 'quiet_from' | 'quiet_until'>,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_platform_notification_settings', {
+    p_access_id: zugangId,
+    p_email_kinds: wahl.email_kinds,
+    p_push_kinds: wahl.push_kinds,
+    p_quiet_from: wahl.quiet_from,
+    p_quiet_until: wahl.quiet_until,
+  })) as { error: unknown };
+  if (error) throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+}
+
+/** Dieses Gerät für Push an den eigenen Zugängen registrieren. */
+export async function registriereGeraet(
+  zugangIds: readonly string[],
+  geraet: PushRegistrierung,
+): Promise<void> {
+  for (const zugangId of zugangIds) {
+    const { error } = (await getSupabase().rpc('register_platform_push_subscription', {
+      p_access_id: zugangId,
+      p_endpoint: geraet.endpoint,
+      p_p256dh: geraet.p256dh,
+      p_auth: geraet.auth,
+    })) as { error: unknown };
+    if (error) throw new Error('Dieses Gerät konnte nicht eingetragen werden.');
+  }
+}
+
+/** Push auf diesem Gerät ausschalten - an allen eigenen Zugängen. */
+export async function entferneGeraet(endpunkt: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('remove_platform_push_subscription', {
+    p_endpoint: endpunkt,
+  })) as { error: unknown };
+  if (error) throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
 }

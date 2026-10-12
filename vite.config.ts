@@ -2,9 +2,11 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { serviceWorker } from './scripts/vite-serviceworker';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  // Der Service Worker nur im Build (KOM-011, ADR-024 Abschnitt A).
+  plugins: [react(), tailwindcss(), serviceWorker()],
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

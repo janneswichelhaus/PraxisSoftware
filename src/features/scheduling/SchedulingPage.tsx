@@ -34,6 +34,7 @@ import {
   saveDocumentationDeadline,
 } from '@/features/documentation/api';
 import { FahrzeitfaktorEinstellung } from '@/features/tours/FahrzeitfaktorEinstellung';
+import { BenachrichtigungsSchalter } from '@/features/platform-access/BenachrichtigungsSchalter';
 import { GarageEinstellung, StartortEinstellung } from '@/features/tours/StartortEinstellung';
 import {
   RASTER_WERTE,
@@ -1348,7 +1349,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
               <>
                 Praxiseinstellungen
                 <span className="text-ink-muted ml-auto text-sm font-normal tracking-normal normal-case">
-                  Raster · Frist · Startort
+                  Raster · Frist · Startort · Benachrichtigungen
                 </span>
               </>
             }
@@ -1361,6 +1362,8 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
               <GarageEinstellung />
               {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
               <FahrzeitfaktorEinstellung />
+              {/* KOM-011: Arten der Benachrichtigung für alle abschalten (ADR-024 Punkt 15). */}
+              <BenachrichtigungsSchalter />
             </div>
           </Disclosure>
         </div>

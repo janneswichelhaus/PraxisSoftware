@@ -239,3 +239,130 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     nurIn: ['src/features/patients/', 'src/app/Funktionssuche.tsx'],
   },
 ];
+
+/**
+ * Der Katalog der Benachrichtigungen (KOM-009, ADR-024 Punkte 13 und 14).
+ *
+ * Geschlossen und an einer Stelle: Jede Art hat einen festen Text, die
+ * erlaubten Wege und die Angabe, ob die Ruhezeit gilt. Die Schlüssel stehen
+ * genauso in `app.notification_kinds()`; `benachrichtigungen.test.ts` unter
+ * `supabase/tests/` hält beide Listen gleich. Gelesen wird der Katalog von
+ * der Oberfläche (Einstellungen), vom Versand (`supabase/functions/
+ * notifications`) und vom Service Worker, der den Text einer Push-Nachricht
+ * selbst setzt.
+ *
+ * Ein Text nennt die Art und höchstens Datum und Uhrzeit — nie den
+ * Leistungsbereich, keine behandelnde Person, keinen Ort, keine Übung, keinen
+ * Inhalt einer Nachricht, keinen Betrag (Punkt 14). Keine Werbung. Eine neue
+ * Art ist eine Änderung dieses Katalogs und der Datenbank mit Review.
+ */
+export const BENACHRICHTIGUNGEN = {
+  appointment_reminder: {
+    name: 'Erinnerung an einen Termin',
+    hinweis: 'Am Vortag ab 17 Uhr, für Montag am Freitag.',
+    titel: 'Terminerinnerung',
+    text: 'Erinnerung: Ihr Termin am {datum} um {uhrzeit}.',
+    zeitangabe: true,
+    ruhezeit: true,
+    wege: ['email', 'push'],
+  },
+  appointment_changed: {
+    name: 'Termin von der Praxis verschoben',
+    hinweis: 'Wenn die Praxis einen Termin auf eine andere Zeit legt.',
+    titel: 'Termin verschoben',
+    text: 'Ihr Termin wurde verschoben. Neu: am {datum} um {uhrzeit}.',
+    zeitangabe: true,
+    ruhezeit: true,
+    wege: ['email', 'push'],
+  },
+  appointment_cancelled: {
+    name: 'Termin von der Praxis abgesagt',
+    hinweis: 'Wenn die Praxis einen Termin absagt.',
+    titel: 'Termin abgesagt',
+    text: 'Ihr Termin am {datum} um {uhrzeit} wurde abgesagt.',
+    zeitangabe: true,
+    ruhezeit: true,
+    wege: ['email', 'push'],
+  },
+  message_answered: {
+    name: 'Antwort auf eine Rückfrage',
+    hinweis: 'Wenn die Praxis auf Ihre Rückfrage geantwortet hat.',
+    titel: 'Antwort da',
+    text: 'Auf Ihre Rückfrage ist eine Antwort da.',
+    zeitangabe: false,
+    ruhezeit: true,
+    wege: ['email', 'push'],
+  },
+  request_answered: {
+    name: 'Terminwunsch beantwortet',
+    hinweis: 'Wenn die Praxis auf Ihren Terminwunsch geantwortet hat.',
+    titel: 'Terminwunsch beantwortet',
+    text: 'Die Praxis hat auf Ihren Terminwunsch geantwortet.',
+    zeitangabe: false,
+    ruhezeit: true,
+    wege: ['email', 'push'],
+  },
+  plan_assigned: {
+    name: 'Neuer Übungsplan',
+    hinweis: 'Wenn die Praxis Ihnen einen Plan zuweist.',
+    titel: 'Neuer Übungsplan',
+    text: 'Für Sie liegt ein neuer Übungsplan bereit.',
+    zeitangabe: false,
+    ruhezeit: true,
+    wege: ['email', 'push'],
+  },
+} as const satisfies Record<
+  string,
+  {
+    name: string;
+    hinweis: string;
+    titel: string;
+    text: string;
+    zeitangabe: boolean;
+    ruhezeit: boolean;
+    wege: readonly ('email' | 'push')[];
+  }
+>;
+
+export type Benachrichtigungsart = keyof typeof BENACHRICHTIGUNGEN;
+export type Benachrichtigungsweg = 'email' | 'push';
+
+export const BENACHRICHTIGUNGSARTEN = Object.keys(BENACHRICHTIGUNGEN) as Benachrichtigungsart[];
+
+export function istBenachrichtigungsart(wert: unknown): wert is Benachrichtigungsart {
+  return typeof wert === 'string' && Object.hasOwn(BENACHRICHTIGUNGEN, wert);
+}
+
+/**
+ * Der fertige Text einer Benachrichtigung. Datum und Uhrzeit in der Zeitzone
+ * der Praxis; eine Art ohne Zeitangabe ignoriert sie. Ohne Zeitpunkt, wo
+ * einer gehört, fällt der Text auf den Titel zurück, statt eine Lücke zu
+ * zeigen.
+ */
+export function benachrichtigungstext(
+  art: Benachrichtigungsart,
+  zeitpunkt: string | null,
+  zeitzone = 'Europe/Berlin',
+): { titel: string; text: string } {
+  const eintrag = BENACHRICHTIGUNGEN[art];
+  if (!eintrag.zeitangabe) return { titel: eintrag.titel, text: eintrag.text };
+  const wann = zeitpunkt === null ? null : new Date(zeitpunkt);
+  if (wann === null || Number.isNaN(wann.getTime())) {
+    return { titel: eintrag.titel, text: `${eintrag.titel}.` };
+  }
+  const datum = wann.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: zeitzone,
+  });
+  const uhrzeit = wann.toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: zeitzone,
+  });
+  return {
+    titel: eintrag.titel,
+    text: eintrag.text.replace('{datum}', datum).replace('{uhrzeit}', uhrzeit),
+  };
+}

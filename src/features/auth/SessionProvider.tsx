@@ -5,6 +5,7 @@ import { protokolliereFehler } from '@/lib/protokoll';
 import { startbildZuruecksetzen } from '@/lib/startbildMerker';
 import { getSupabase } from '@/lib/supabase';
 import { istEigeneAbmeldung, meldeSelbstAb } from './eigeneAbmeldung';
+import { geraetBeimAbmeldenLoesen } from '@/lib/push';
 import { SessionContext, type SessionState } from './sessionContext';
 import { SitzungsendeContext } from './sitzungsende';
 import { uebergabenLeeren } from '@/features/documentation/uebernahme';
@@ -141,6 +142,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // angemeldet" auf „Mein Konto" falsch und „Alle Sitzungen beenden"
         // ohne eigenen Zweck. Wer am Praxisrechner Feierabend macht, meldet
         // nicht sein Diensttelefon mit ab.
+        // KOM-011 (ADR-024 Punkt 17): Push-Registrierung dieses Geräts fällt
+        // beim Abmelden - vorher, solange die Sitzung den Server noch erreicht.
+        await geraetBeimAbmeldenLoesen(async (endpunkt) => {
+          await getSupabase().rpc('remove_platform_push_subscription', { p_endpoint: endpunkt });
+        });
         const { error } = await meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'local' }));
         if (error) {
           raeumen();
