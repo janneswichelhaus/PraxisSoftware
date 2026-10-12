@@ -7,6 +7,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
+import { nurFragen } from '@/lib/erfassungsgroessen';
 import {
   BEREICHSNAME,
   aboSchluessel,
@@ -274,9 +275,10 @@ export function Uebersicht({
                 </Textlink>
               }
             >
-              {checkin.data.schedule.parameter_keys.length === 1
+              {/* Der Zusammenhang zählt nicht als Frage (ANN-355, ANN-369). */}
+              {nurFragen(checkin.data.schedule.parameter_keys).length === 1
                 ? 'Eine kurze Frage'
-                : `${checkin.data.schedule.parameter_keys.length} kurze Fragen`}
+                : `${nurFragen(checkin.data.schedule.parameter_keys).length} kurze Fragen`}
             </Tile>
           ) : checkinBrauchtEinwilligung ? (
             <Tile

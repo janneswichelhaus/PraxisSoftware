@@ -99,4 +99,21 @@ describe('Erfassungsgrößen (TRK-001)', () => {
       { parameter_key: 'sleep_hours', role: 'question' },
     ]);
   });
+
+  it('kennt die Belastung außerhalb der Übungen als Zusammenhang (ALT-002, ANN-369)', async () => {
+    const { rows } = await asPostgres<{
+      parameter_key: string;
+      min_value: number;
+      max_value: number;
+      role: string;
+    }>(
+      `select parameter_key, min_value, max_value, role from app.tracking_parameters()
+       where parameter_key like 'activity_%' order by sort_order`,
+    );
+    expect(rows).toEqual([
+      { parameter_key: 'activity_kind', min_value: 1, max_value: 7, role: 'context' },
+      { parameter_key: 'activity_minutes', min_value: 0, max_value: 600, role: 'context' },
+      { parameter_key: 'activity_intensity', min_value: 1, max_value: 3, role: 'context' },
+    ]);
+  });
 });

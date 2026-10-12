@@ -34,7 +34,7 @@ export interface Erfassungsgroesse {
    */
   optionen?: readonly string[];
   /** Überschrift, unter der die Praxis die Frage beim Einstellen findet. */
-  gruppe: 'Schmerz' | 'Bewegung und Alltag' | 'Einheit' | 'Zusammenhang';
+  gruppe: 'Schmerz' | 'Bewegung und Alltag' | 'Einheit' | 'Zusammenhang' | 'Aktivität';
   /**
    * `frage` ist eine Größe der Zeitreihe; `kontext` sagt, unter welchen
    * Bedingungen sie entstand, und zählt nicht zu den fünf Fragen (TRK-005,
@@ -254,6 +254,50 @@ export const ERFASSUNGSGROESSEN: readonly Erfassungsgroesse[] = [
     frage: 'Auf welcher Seite spüren Sie die Beschwerden vor allem?',
     optionen: ['links', 'rechts', 'beidseits', 'in der Mitte'],
     gruppe: 'Zusammenhang',
+    rolle: 'kontext',
+  },
+  // ALT-002: die größte Belastung außerhalb der Übungen, grob und ohne
+  // Genauigkeitsanspruch (IDEA-ALT-001, ANN-369). Kein Ziel, keine Summe.
+  {
+    key: 'activity_kind',
+    takt: 'checkin',
+    min: 1,
+    max: 7,
+    kurz: 'Belastung außerhalb der Übungen',
+    frage:
+      'Was war seit dem letzten Check-in Ihre größte körperliche Belastung außerhalb der Übungen?',
+    optionen: [
+      'nichts Besonderes',
+      'Gehen oder Wandern',
+      'Radfahren',
+      'Garten oder Haushalt',
+      'Sport',
+      'schwere körperliche Arbeit (etwa Umzug, Heben)',
+      'Sonstiges',
+    ],
+    gruppe: 'Aktivität',
+    rolle: 'kontext',
+  },
+  {
+    key: 'activity_minutes',
+    takt: 'checkin',
+    min: 0,
+    max: 600,
+    kurz: 'Dauer der Belastung',
+    frage: 'Wie lange hat diese Belastung ungefähr gedauert?',
+    einheit: 'Minuten',
+    gruppe: 'Aktivität',
+    rolle: 'kontext',
+  },
+  {
+    key: 'activity_intensity',
+    takt: 'checkin',
+    min: 1,
+    max: 3,
+    kurz: 'Anstrengung der Belastung',
+    frage: 'Wie anstrengend war sie ungefähr?',
+    optionen: ['leicht', 'mittel', 'anstrengend'],
+    gruppe: 'Aktivität',
     rolle: 'kontext',
   },
 ];

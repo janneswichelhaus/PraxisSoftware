@@ -4475,3 +4475,15 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `app.tracking_parameters()` in `supabase/migrations/20261110100000_alt_001_sleep_and_painkillers.sql`; `sleep_hours`, `painkiller_days_7d` in `src/lib/erfassungsgroessen.ts`. Geprüft in `supabase/tests/erfassungsgroessen.test.ts`, `src/lib/erfassungsgroessen.test.ts`.
 
 **Änderungspfad.** Einnahmen statt Tage oder ein anderer Zeitraum: eine Zeile im Katalog und die Frage · Aufwand `klein` (bestehende Werte behielten ihre alte Bedeutung, deshalb besser ein neuer Schlüssel). Schlaf in halben Stunden: Minuten als Einheit wie bei der Morgensteifigkeit · Aufwand `klein`.
+
+### ANN-369 — Aktivität außerhalb der Übungen ist die größte Belastung seit dem letzten Check-in, als drei grobe Angaben zum Zusammenhang
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Verlauf (ALT-EPIC-001)
+
+**Annahme.** Die Alltagsaktivität wird im Check-in erfragt, nicht als eigenes Tagebuch: „Was war seit dem letzten Check-in Ihre größte körperliche Belastung außerhalb der Übungen?“ mit sieben Wörtern (nichts Besonderes, Gehen oder Wandern, Radfahren, Garten oder Haushalt, Sport, schwere körperliche Arbeit, Sonstiges), dazu ungefähre Dauer (0 bis 600 Minuten) und Anstrengung (leicht, mittel, anstrengend). Alle drei sind Angaben zum Zusammenhang wie Schmerzmittel und Seite (ANN-355): von der Praxis einzeln wählbar, freiwillig, nicht unter den fünf Fragen, nicht allein absendbar, nur in der Tabelle, nicht im Punktbild. Kein Freitext, kein Ziel, keine Summe über Tage, kein Schrittzähler, kein Vergleich mit anderen. Die Kachel der Übersicht zählt seither nur die Fragen.
+
+**Begründung.** IDEA-ALT-001 will Art, ungefähre Dauer und Intensität „grob und ohne Genauigkeitsanspruch“, damit eine Trainingsreaktion deutbar wird – das ist die Lesart einer Zeitreihe, also Zusammenhang (IDEA-TRK-006). Die größte Belastung reicht für den Zweck (der Umzug am Samstag) und ist mit einem Tipp beantwortet; ein eigenes Aktivitätstagebuch wäre eine zweite Erfassung mit eigener Tabelle, Frist und Oberfläche, ohne dass der Zweck mehr verlangt (Art. 5 Abs. 1 lit. c DSGVO, ADR-014). Kein Freitext, weil er Dritte und Diagnosen aufnimmt. Keine Summe und keine Rangliste, weil die Anzeige sonst bei Schmerzpatient:innen zur Selbstbewertung wird (IDEA-ALT-001 „Vorsicht“, IDEA-ALT-007; ADR-006 Punkt 11). „Nichts Besonderes“ unterscheidet „keine Belastung“ von „nicht beantwortet“.
+
+**Anker.** `app.tracking_parameters()` in `supabase/migrations/20261110110000_alt_002_activity_context.sql`; `activity_kind`, `activity_minutes`, `activity_intensity` in `src/lib/erfassungsgroessen.ts`; `KONTEXTGRUPPEN` in `src/features/checkins/ZwischenDenTerminen.tsx`, `aktivitaet` in `src/features/platform/Checkin.tsx`. Geprüft in `supabase/tests/checkins.test.ts`, `supabase/tests/erfassungsgroessen.test.ts`, `src/features/platform/Checkin.test.tsx`.
+
+**Änderungspfad.** Mehrere Aktivitäten oder ein Tagebuch je Tag: eigene Tabelle und Plattformseite wie die Gewohnheiten · Aufwand `mittel`. Weitere Arten: ein Wort in `optionen` und die Obergrenze im Katalog · Aufwand `klein`.

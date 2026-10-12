@@ -643,6 +643,46 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
     expect(praxis!.checkins[0]!.values).toEqual({ pain_load: 3, painkiller_24h: 0, pain_side: 1 });
   });
 
+  it('nimmt die Belastung außerhalb der Übungen als Zusammenhang, grob und begrenzt (ALT-002, ANN-369)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, [
+      'treatment',
+      patients.erika,
+      7,
+      ['pain_load', 'sleep_hours', 'activity_kind', 'activity_minutes', 'activity_intensity'],
+    ]);
+    for (const werte of [
+      // Der Zusammenhang allein ist kein Check-in (ANN-355).
+      { activity_kind: 6, activity_minutes: 360 },
+      { pain_load: 3, activity_kind: 0 },
+      { pain_load: 3, activity_kind: 8 },
+      { pain_load: 3, activity_minutes: 601 },
+      { pain_load: 3, activity_intensity: 4 },
+      { pain_load: 3, sleep_hours: 17 },
+    ]) {
+      expect(
+        await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, JSON.stringify(werte)])),
+      ).toBe('22023');
+    }
+    await asUserCommitted(erika.konto, ANTWORTEN, [
+      erika.zugang,
+      JSON.stringify({
+        pain_load: 5,
+        sleep_hours: 6,
+        activity_kind: 6,
+        activity_minutes: 360,
+        activity_intensity: 3,
+      }),
+    ]);
+    const praxis = await lesen(users.therapist, 'treatment', patients.erika);
+    expect(praxis!.checkins[0]!.values).toEqual({
+      pain_load: 5,
+      sleep_hours: 6,
+      activity_kind: 6,
+      activity_minutes: 360,
+      activity_intensity: 3,
+    });
+  });
+
   it('zeigt der Praxis daneben die Angaben nach den Einheiten, mit Zeitzone (TRK-006)', async () => {
     const plan = await zugewiesenerPlan('therapy', patients.erika, 'Heimprogramm Knie');
     const beginnen = async (konto: string, zugang: string, p: string) => {
