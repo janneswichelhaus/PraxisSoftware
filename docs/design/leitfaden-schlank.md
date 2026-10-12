@@ -81,6 +81,18 @@ Tiefgrün der Seitenleiste) und Bedeutung (Warnung, Fehler, erledigt).
 
 **Umgesetzt:** SLK-004 — Grundton B (Wahl Jannes 2026-10-06, Leinwand Reihe 7): Fläche Weiß, Vertiefung #f4f5f7, Tinte, Leise und Linien neutral, Manifest und Startbild auf Weiß (ANN-253). Gruppen durch Linien statt Kästen werden Bereich für Bereich nach L2 umgebaut.
 
+## L6 · Eine Seite folgt DESIGN.md
+
+**Beispiel (Jannes, 12.10.2026):** Übersicht, Akte, Termin, Schreibseite, Kalender und Tour sind
+gelungen; der Rest der Anwendung sieht anders aus. Auftrag: das Design der ganzen App, Maßstab die
+bereits optimierten Stellen.
+
+**Regel:** Jede neue oder umgebaute Seite wählt einen Seitentyp aus [DESIGN.md](DESIGN.md) und baut
+sich aus dessen Bausteinen. Fehlt ein Baustein, entsteht er in `src/components/ui`, nicht in der
+Seite. Die Ratsche in `src/designsystem.test.ts` hält den erreichten Stand je Verzeichnis.
+
+**Umgesetzt:** Design-Fundament (2026-10-12): DESIGN.md, Bausteine, Ratsche (ANN-400).
+
 ## Vorgehen
 
 1. Je Beispiel eine Regel hier.
