@@ -57,7 +57,6 @@ export function LokaleUebungen({
               <EinheitMitWarteschlange
                 zugangId={gewaehlt.zugangId}
                 plan={gewaehlt.plan}
-                ohneVerbindung
                 onZurueck={() => setGewaehlt(null)}
                 onBeendet={() => {
                   setGewaehlt(null);
