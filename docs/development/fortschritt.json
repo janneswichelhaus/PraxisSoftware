@@ -1357,6 +1357,15 @@
           "vermerk": "angenommen 2026-10-11: W1 (c) mit Freigabe ohne Netz per Passkey, W2 bis W5 wie empfohlen; Prinzipien 0.26, ADR-025 Fassung 4"
         },
         {
+          "id": "adr-026",
+          "name": "ADR-026 Virenprüfung der Anhänge",
+          "gewicht": 1,
+          "status": "entwurf",
+          "fertig_am": "2026-10-12",
+          "nachweis": "docs/adr/ADR-026-malware-scanning.md",
+          "vermerk": "vorgeschlagen; W1 bis W4 warten auf Jannes"
+        },
+        {
           "id": "b5-identitaet",
           "name": "B5 Identität und Vertretung",
           "gewicht": 1,
