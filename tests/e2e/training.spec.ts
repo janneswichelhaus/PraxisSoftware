@@ -63,7 +63,7 @@ test.describe('Training', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=detail`);
       await expect(page.getByRole('heading', { name: 'Vereinbarungen' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Termine' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Termine', exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Vereinbarung anlegen' }).click();
       await expect(page.getByLabel('Vereinbarte Einheiten')).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
