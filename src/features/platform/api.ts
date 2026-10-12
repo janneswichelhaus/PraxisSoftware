@@ -1141,7 +1141,7 @@ export type Einheitsereignis =
 
 const uebertragungSchema = z.object({
   session_id: z.string().uuid(),
-  status: z.enum(['ok', 'finished', 'empty']),
+  status: z.enum(['ok', 'finished', 'closed', 'empty']),
   note_dropped: z.boolean(),
 });
 export type Uebertragung = z.infer<typeof uebertragungSchema>;
@@ -1188,6 +1188,8 @@ export async function einheitUebertragen(
     p_events: einheit.ereignisse,
   })) as { data: unknown; error: { code?: string } | null };
   const code = error?.code;
+  // 28000: Die Sitzung ist gesperrt - kein Urteil über die Daten. Sie bleiben
+  // auf dem Gerät bis nach dem Entsperren (Zweitreview B1).
   if (code === '42501') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.zugang);
   if (code === 'P0002') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.plan);
   if (code === '22023' || code === '22P02') throw new UebertragungAbgewiesen(ABWEISUNGSSAETZE.form);

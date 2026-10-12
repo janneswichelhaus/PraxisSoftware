@@ -7,9 +7,12 @@ import {
   asUser,
   asUserCommitted,
   fremdeOrganisation,
+  jwtClaims,
   planeEntfernen,
   resetDatabase,
+  testDatabaseUrl,
 } from './helpers/db';
+import { Client } from 'pg';
 import { KNIEBEUGE_GELAENDER, RUDERN_GELB, positionen, zugewiesenerPlan } from './helpers/plaene';
 
 /**
@@ -281,14 +284,22 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
     await senden(erika.konto, erika.zugang, plan, randomUUID(), await tagVor(OFFLINE_FRIST_TAGE), [
       haken(position!, 1),
     ]);
-    // Nicht in der Zukunft.
+    // Nicht in der Zukunft - ein Tag voraus ist Zeitzone oder Uhr und zählt
+    // als heute (Zweitreview S3).
     expect(
       await fehler(
-        senden(erika.konto, erika.zugang, plan, randomUUID(), await tagVor(-1), [
+        senden(erika.konto, erika.zugang, plan, randomUUID(), await tagVor(-2), [
           haken(position!, 1),
         ]),
       ),
     ).toBe('22023');
+    const morgen = randomUUID();
+    await senden(erika.konto, erika.zugang, plan, morgen, await tagVor(-1), [haken(position!, 2)]);
+    const tag = await asPostgres<{ performed_on: string }>(
+      'select performed_on::text from public.exercise_plan_sessions where id = $1',
+      [morgen],
+    );
+    expect(tag.rows[0]!.performed_on).toBe(await heute());
   });
 
   it('die Frist des Servers ist die der Ablage auf dem Gerät (ADR-024 Punkt 5)', async () => {
@@ -438,7 +449,8 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
     expect(await fehler(asUser(users.therapist, SYNC, args(erika.zugang)))).toBe('42501');
     const fremd = await fremdeOrganisation();
     expect(await fehler(asUser(fremd.owner, SYNC, args(erika.zugang)))).toBe('42501');
-    expect(await fehler(asUser(null, SYNC, args(erika.zugang)))).toBe('42501');
+    // Ohne Anmeldung: wie eine gesperrte Sitzung - das Gerät behält die Daten.
+    expect(await fehler(asUser(null, SYNC, args(erika.zugang)))).toBe('28000');
   });
 
   it('prüft die Form: Satz, Art, Ende zuletzt, ein Ereignis ohne Kennung', async () => {
@@ -461,6 +473,8 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
     expect(await versuch([{ ...haken(position!, 1), kind: 'skip' }])).toBe('22023');
     expect(await versuch([ende(), haken(position!, 1)])).toBe('22023');
     expect(await versuch([{ ...haken(position!, 1), id: undefined }])).toBe('22023');
+    // Ohne „done" kein stilles Zurücknehmen (Zweitreview H1).
+    expect(await versuch([{ ...haken(position!, 1), done: undefined }])).toBe('22023');
     expect(await versuch([haken(position!, 1), ende('x'.repeat(501))])).toBe('22023');
     expect(await versuch([haken(position!, 1), ende('', { session_exertion: 11 })])).toBe('22023');
     expect(
@@ -500,6 +514,78 @@ describe('Einheit ohne Netz übertragen (TRK-007)', () => {
       [einheit],
     );
     expect(werte.rows[0]!.n).toBe(0);
+  });
+
+  it('gesperrte Sitzung: eigener Code, kein Urteil über die Daten (Zweitreview B1)', async () => {
+    const plan = await zugewiesenerPlan();
+    const [position] = await positionen(plan);
+    // Angemeldet vor 61 Minuten: Höchstdauer um (ADR-025 Punkt 1).
+    const claims = jwtClaims(erika.konto, {
+      amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - 61 * 60 }],
+      session_id: 'bcbcbcbc-bcbc-4cbc-8cbc-000000000031',
+    });
+    const client = new Client({ connectionString: testDatabaseUrl() });
+    await client.connect();
+    let code = 'kein Fehler';
+    try {
+      await client.query('begin');
+      await client.query("select set_config('role', 'authenticated', true)");
+      await client.query("select set_config('request.jwt.claims', $1, true)", [claims]);
+      await client.query(SYNC, [
+        erika.zugang,
+        plan,
+        randomUUID(),
+        await heute(),
+        null,
+        JSON.stringify([haken(position!, 1)]),
+      ]);
+    } catch (e) {
+      code = String((e as { code?: string }).code);
+    } finally {
+      await client.query('rollback').catch(() => undefined);
+      await client.end();
+    }
+    expect(code).toBe('28000');
+  });
+
+  it('eine offene Einheit eines anderen Tages nimmt nichts an (ANN-305, Zweitreview S1)', async () => {
+    const plan = await zugewiesenerPlan();
+    const [position] = await positionen(plan);
+    const { rows } = await asUserCommitted<{ id: string }>(erika.konto, BEGINNEN, [
+      erika.zugang,
+      plan,
+    ]);
+    const gestern = rows[0]!.id;
+    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, gestern, position, 1, true]);
+    await asPostgres(
+      'update public.exercise_plan_sessions set performed_on = performed_on - 1 where id = $1',
+      [gestern],
+    );
+    expect(
+      await senden(erika.konto, erika.zugang, plan, gestern, await heute(), [haken(position!, 2)]),
+    ).toMatchObject({ status: 'closed' });
+    expect((await saetze(gestern)).map((s) => s.set_number)).toEqual([1]);
+  });
+
+  it('anderswo beendet: „closed"; dasselbe Ende noch einmal: „finished" (Zweitreview S5)', async () => {
+    const plan = await zugewiesenerPlan();
+    const [position] = await positionen(plan);
+    const einheit = randomUUID();
+    const tag = await heute();
+    const eins = haken(position!, 1);
+    const schluss = ende('Knie');
+    await senden(erika.konto, erika.zugang, plan, einheit, tag, [eins, schluss]);
+    expect(
+      await senden(erika.konto, erika.zugang, plan, einheit, tag, [eins, schluss]),
+    ).toMatchObject({ status: 'finished' });
+    // Ein anderes Ende (etwa ein zweites Gerät) trifft eine beendete Einheit.
+    expect(
+      await senden(erika.konto, erika.zugang, plan, einheit, tag, [haken(position!, 2), ende()]),
+    ).toMatchObject({ status: 'closed' });
+    expect(
+      await senden(erika.konto, erika.zugang, plan, einheit, tag, [haken(position!, 2)]),
+    ).toMatchObject({ status: 'closed' });
+    expect((await saetze(einheit)).map((s) => s.set_number)).toEqual([1]);
   });
 
   it('kein neues Auditereignis; die Vertretung wie beim Beginnen (ADR-024 Punkt 6)', async () => {

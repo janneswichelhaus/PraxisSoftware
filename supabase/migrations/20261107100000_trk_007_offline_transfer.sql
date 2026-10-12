@@ -31,17 +31,22 @@
 -- -----------------------------------------------------------------------------
 alter table public.exercise_plan_sessions
   add column reported_started_at  timestamptz,
-  add column reported_finished_at timestamptz;
+  add column reported_finished_at timestamptz,
+  -- Die Kennung des Endes vom Geraet: Ein zweites Senden desselben Endes ist
+  -- ein Wiedererkennen, ein fremdes Ende nicht (Zweitreview S5).
+  add column finish_event_id      uuid;
 
 alter table public.exercise_plan_session_sets
   add column reported_done_at timestamptz;
 
 comment on column public.exercise_plan_sessions.reported_started_at is
-  'TRK-007 (ADR-024 Punkt 8): Beginn nach der Uhr des Geraets, wenn die Einheit ohne Netz erfasst und spaeter uebertragen wurde - eine Angabe der Person, keine gepruefte Zeit. started_at ist der Eingang am Server.';
+  'TRK-007 (ADR-024 Punkt 8): Beginn nach der Uhr des Geraets, wenn die Einheit ohne Netz erfasst und spaeter uebertragen wurde - eine Angabe der Person, keine gepruefte Zeit. started_at ist der Eingang am Server. Datenklasse und Frist wie die Einheit (Patientenakte bzw. Trainingsverhaeltnis, ANN-306).';
+comment on column public.exercise_plan_sessions.finish_event_id is
+  'TRK-007 (ANN-357): Kennung des Endes, die das Geraet vergeben hat - damit ein zweites Senden desselben Endes nichts aendert. Datenklasse wie die Einheit.';
 comment on column public.exercise_plan_sessions.reported_finished_at is
-  'TRK-007 (ADR-024 Punkt 8): Ende nach der Uhr des Geraets bei einer uebertragenen Einheit. finished_at ist der Eingang am Server.';
+  'TRK-007 (ADR-024 Punkt 8): Ende nach der Uhr des Geraets bei einer uebertragenen Einheit. finished_at ist der Eingang am Server. Datenklasse und Frist wie die Einheit.';
 comment on column public.exercise_plan_session_sets.reported_done_at is
-  'TRK-007 (ADR-024 Punkt 8): Zeitpunkt des Hakens nach der Uhr des Geraets bei einer uebertragenen Einheit. done_at ist der Eingang am Server.';
+  'TRK-007 (ADR-024 Punkt 8): Zeitpunkt des Hakens nach der Uhr des Geraets bei einer uebertragenen Einheit. done_at ist der Eingang am Server. Datenklasse und Frist wie die Einheit.';
 
 -- -----------------------------------------------------------------------------
 -- 2. Wie weit zurueck eine Einheit noch angenommen wird (ANN-357)
@@ -74,12 +79,18 @@ comment on function app.offline_transfer_days() is
 --   { "id": uuid, "kind": "finish", "at": ts, "note": text, "values": { ... } }
 --
 -- "finish" steht hoechstens einmal und zuletzt. Ergebnis:
---   { "session_id": uuid, "status": "ok" | "finished" | "empty", "note_dropped": bool }
---   finished: die Einheit war schon beendet - nichts geaendert (zweites Senden)
+--   { "session_id": uuid, "status": "ok" | "finished" | "closed" | "empty", "note_dropped": bool }
+--   finished: dieses Ende kam schon an - nichts geaendert (zweites Senden)
+--   closed:   die Einheit nimmt nichts mehr an (anderswo beendet, oder von
+--             einem anderen Tag) - nichts geaendert; das Geraet sendet die
+--             Ereignisse unter einer neuen Kennung noch einmal (Zweitreview
+--             S1, S5)
 --   empty:    nichts angekommen, was eine Einheit traegt (alle Haken schon da
 --             oder zurueckgenommen) - nichts angelegt
--- Fehler wie online: 42501 Zugang/Faehigkeit/Lesefrist, P0002 Plan oder
--- Einheit nicht (mehr) da bzw. zu alt, 22023 Form.
+-- Fehler: 28000 die Sitzung ist gesperrt - kein Urteil ueber die Daten, das
+-- Geraet behaelt sie (Zweitreview B1, ADR-025 Punkt 16); wie online 42501
+-- Zugang/Faehigkeit/Lesefrist, P0002 Plan nicht (mehr) da bzw. zu alt, 22023
+-- Form.
 -- -----------------------------------------------------------------------------
 create function public.sync_platform_exercise_session(
   p_access_id    uuid,
@@ -112,7 +123,13 @@ declare
   v_keys       text[];
   v_werte      smallint[];
   v_erlaubt    boolean;
+  v_tag        date;
 begin
+  -- Gesperrt ist nicht entzogen: eigener Code, damit das Geraet nichts
+  -- verwirft (Zweitreview B1).
+  if auth.uid() is null or not app.session_open() then
+    raise exception 'session locked' using errcode = '28000';
+  end if;
   v_zugang := app.assert_platform_exercise(p_access_id);
   v_plan := app.platform_exercise_plan(p_access_id, p_plan_id);
   if v_plan.id is null then
@@ -130,12 +147,15 @@ begin
     raise exception 'too many events' using errcode = '22023';
   end if;
   -- Der Tag der Einheit ist die Angabe des Geraets - aber nicht in der
-  -- Zukunft, nicht vor dem Planbeginn und nicht aelter als die Ablage.
-  if p_performed_on > v_heute then
+  -- Zukunft, nicht vor dem Planbeginn und nicht aelter als die Ablage. Ein
+  -- Tag voraus ist Zeitzone oder Uhr des Geraets und zaehlt als heute
+  -- (Zweitreview S3).
+  if p_performed_on > v_heute + 1 then
     raise exception 'session in the future' using errcode = '22023';
   end if;
-  if p_performed_on < v_heute - app.offline_transfer_days()
-     or p_performed_on < v_plan.runs_from then
+  v_tag := least(p_performed_on, v_heute);
+  if v_tag < v_heute - app.offline_transfer_days()
+     or v_tag < v_plan.runs_from then
     raise exception 'session too old' using errcode = 'P0002';
   end if;
 
@@ -148,7 +168,20 @@ begin
       raise exception 'exercise session not found' using errcode = 'P0002';
     end if;
     if v_einheit.finished_at is not null then
-      return jsonb_build_object('session_id', v_einheit.id, 'status', 'finished',
+      -- Dasselbe Ende noch einmal: angekommen. Sonst nimmt sie nichts mehr an.
+      if v_einheit.finish_event_id is not null
+         and exists (select 1 from jsonb_array_elements(p_events) e
+                     where e ->> 'kind' = 'finish'
+                       and e ->> 'id' = v_einheit.finish_event_id::text) then
+        return jsonb_build_object('session_id', v_einheit.id, 'status', 'finished',
+                                  'note_dropped', false);
+      end if;
+      return jsonb_build_object('session_id', v_einheit.id, 'status', 'closed',
+                                'note_dropped', false);
+    end if;
+    -- Eine offene Einheit eines anderen Tages bleibt stehen (ANN-305).
+    if v_einheit.performed_on <> v_tag then
+      return jsonb_build_object('session_id', v_einheit.id, 'status', 'closed',
                                 'note_dropped', false);
     end if;
   else
@@ -159,7 +192,7 @@ begin
       recorded_by, reported_started_at
     )
     values (
-      p_session_id, v_plan.organization_id, v_plan.id, p_performed_on, v_zugang.id,
+      p_session_id, v_plan.organization_id, v_plan.id, v_tag, v_zugang.id,
       v_zugang.access_kind, auth.uid(), p_started_at
     )
     on conflict (plan_id, performed_on) where finished_at is null do nothing
@@ -167,7 +200,7 @@ begin
     if v_einheit.id is null then
       select * into v_einheit
       from public.exercise_plan_sessions s
-      where s.plan_id = v_plan.id and s.performed_on = p_performed_on and s.finished_at is null;
+      where s.plan_id = v_plan.id and s.performed_on = v_tag and s.finished_at is null;
     else
       v_neu := true;
     end if;
@@ -203,7 +236,7 @@ begin
       if v_satz is null or v_satz < 1 or v_satz > v_saetze then
         raise exception 'set out of range' using errcode = '22023';
       end if;
-      if jsonb_typeof(v_ereignis -> 'done') <> 'boolean' then
+      if jsonb_typeof(v_ereignis -> 'done') is distinct from 'boolean' then
         raise exception 'invalid set' using errcode = '22023';
       end if;
       if (v_ereignis ->> 'done')::boolean then
@@ -225,7 +258,7 @@ begin
       end if;
 
     elsif v_art = 'finish' then
-      if v_nummer <> v_anzahl then
+      if v_nummer <> v_anzahl or v_ereignis ->> 'id' is null then
         raise exception 'finish must be last' using errcode = '22023';
       end if;
       v_notiz := nullif(btrim(coalesce(v_ereignis ->> 'note', ''), E' \t\r\n'), '');
@@ -254,7 +287,8 @@ begin
       update public.exercise_plan_sessions
          set finished_at = now(), difficulty_note = v_notiz, updated_at = now(),
              finished_access_id = v_zugang.id, finished_access_kind = v_zugang.access_kind,
-             finished_by = auth.uid(), reported_finished_at = v_zeit
+             finished_by = auth.uid(), reported_finished_at = v_zeit,
+             finish_event_id = (v_ereignis ->> 'id')::uuid
        where id = v_einheit.id;
       insert into public.exercise_plan_session_values (organization_id, session_id, parameter_key, value)
       select v_einheit.organization_id, v_einheit.id, w.key, w.value

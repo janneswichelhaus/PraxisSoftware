@@ -171,6 +171,20 @@ describe('Sperre ohne Verbindung (TRK-009)', () => {
     expect(screen.queryByText('Lokale Übungen')).toBeNull();
   });
 
+  it('bei der Rückkehr nach Ablauf sofort gesperrt, nicht erst beim nächsten Takt (Punkt 5)', async () => {
+    freigebenOhneNetz.mockResolvedValueOnce(undefined);
+    zeichne();
+    await warte();
+    expect(screen.getByText('Lokale Übungen')).toBeInTheDocument();
+    // Das Gerät schlief: Die Uhr springt, ohne dass ein Takt lief.
+    vi.setSystemTime(Date.now() + 31 * 60_000);
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+    });
+    expect(screen.queryByText('Lokale Übungen')).toBeNull();
+  });
+
   it('„Sperren" schließt die lokale Ansicht', async () => {
     freigebenOhneNetz.mockResolvedValueOnce(undefined);
     zeichne();

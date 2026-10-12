@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type * as PlattformApi from './api';
 import type { Uebertragung } from './api';
-import { fachLesen, speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
+import { fachAendern, fachLesen, speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
 import { eigenerPlan } from './testdaten';
 
 /**
@@ -166,5 +166,55 @@ describe('Warteschlange (ADR-024 Punkte 7 und 8)', () => {
     });
     await ereignisAblegen(KONTO, kopf(), haken('h1'));
     expect((await uebertragen(KONTO)).angabenVerworfen).toEqual(['einheit-1']);
+  });
+});
+
+describe('Befunde aus dem Zweitreview', () => {
+  it('„closed": die Ereignisse gehen unter neuer Kennung noch einmal, auch das Ende (S1, S5)', async () => {
+    einheitUebertragen.mockImplementationOnce((_z: string, e: { id: string }) =>
+      Promise.resolve({ session_id: e.id, status: 'closed', note_dropped: false }),
+    );
+    const schluss = {
+      id: 'e1',
+      kind: 'finish' as const,
+      at: '2026-10-12T06:10:00.000Z',
+      note: '',
+      values: {},
+    };
+    await ereignisAblegen(KONTO, kopf(), haken('h1'));
+    await ereignisAblegen(KONTO, kopf(), schluss);
+    await uebertragen(KONTO);
+    expect(einheitUebertragen).toHaveBeenCalledTimes(2);
+    const [erste, zweite] = einheitUebertragen.mock.calls.map(
+      (c) => c[1] as { id: string; ereignisse: unknown[] },
+    );
+    expect(zweite!.id).not.toBe(erste!.id);
+    expect(zweite!.ereignisse).toEqual([haken('h1'), schluss]);
+    expect(await wartendeEinheiten(KONTO)).toEqual([]);
+  });
+
+  it('eine unlesbare Einheit fällt nicht still, wenn daneben geschrieben wird (S2)', async () => {
+    await fachAendern(KONTO, 'plattform', () => ({
+      zugaenge: { kaputt: { plaene: 'kein Plan' } },
+      einheiten: [{ id: 'alt', ereignisse: 'aus einer anderen Fassung' }],
+    }));
+    await ereignisAblegen(KONTO, kopf(), haken('h1'));
+    const roh = (await fachLesen(KONTO, 'plattform')) as {
+      einheiten: unknown[];
+      unlesbar: unknown[];
+    };
+    expect(roh.einheiten).toHaveLength(1);
+    expect(roh.unlesbar).toEqual([{ id: 'alt', ereignisse: 'aus einer anderen Fassung' }]);
+    // Der unpassende Plan fällt; er kommt beim nächsten Laden wieder.
+    expect(await abgelegteZugaenge(KONTO)).toEqual([]);
+  });
+
+  it('die lokale Liste zeigt die offene Einheit eines früheren Tages nicht (S1)', async () => {
+    await plaeneAblegen(KONTO, ZUGANG, null, {
+      today: '2020-01-01',
+      plans: [{ ...PLAN, open_session: { id: 'gestern', sets: [] } }],
+    });
+    const [z] = await abgelegteZugaenge(KONTO);
+    expect(z!.plaene[0]!.open_session).toBeNull();
   });
 });

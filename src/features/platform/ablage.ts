@@ -97,32 +97,57 @@ const einheitSchema = z.object({
 });
 export type WartendeEinheit = z.infer<typeof einheitSchema>;
 
-const fachSchema = z.object({
-  /** Je Zugang die Pläne, an denen er beim letzten Laden üben durfte. */
-  zugaenge: z.record(
-    z.string(),
-    z.object({
-      /** Für die lokale Ansicht: „für Erika Muster" bei einer Vertretung. */
-      vertreten: z.string().nullable(),
-      /** Der Tag der Praxis beim Laden: `open_session` gilt nur an diesem Tag. */
-      tag: z.string(),
-      plaene: z.array(ablageplanSchema),
-    }),
-  ),
-  einheiten: z.array(einheitSchema),
+const zugangsablageSchema = z.object({
+  /** Für die lokale Ansicht: „für Erika Muster" bei einer Vertretung (ANN-358). */
+  vertreten: z.string().nullable(),
+  /** Der Tag der Praxis beim Laden: `open_session` gilt nur an diesem Tag. */
+  tag: z.string(),
+  plaene: z.array(ablageplanSchema),
 });
-type Fach = z.infer<typeof fachSchema>;
+type Zugangsablage = z.infer<typeof zugangsablageSchema>;
 
-const LEER: Fach = { zugaenge: {}, einheiten: [] };
+interface Fach {
+  /** Je Zugang die Pläne, an denen er beim letzten Laden üben durfte. */
+  zugaenge: Record<string, Zugangsablage>;
+  einheiten: WartendeEinheit[];
+  /**
+   * Einheiten, die diese Fassung der Anwendung nicht lesen kann (etwa nach
+   * einem Update). Sie bleiben liegen, statt still zu fallen (Zweitreview S2),
+   * und gehen mit der Frist der Ablage.
+   */
+  unlesbar: unknown[];
+}
 
+const LEER: Fach = { zugaenge: {}, einheiten: [], unlesbar: [] };
+
+/**
+ * Das Fach lesen - Eintrag für Eintrag: Ein Plan, der nicht passt, fällt (er
+ * kommt beim nächsten Laden wieder); eine Einheit nie (Zweitreview S2).
+ */
 function fach(roh: unknown): Fach {
-  const geprueft = fachSchema.safeParse(roh);
-  return geprueft.success ? geprueft.data : { zugaenge: {}, einheiten: [] };
+  const f: Fach = { zugaenge: {}, einheiten: [], unlesbar: [] };
+  if (roh === null || typeof roh !== 'object') return f;
+  const r = roh as { zugaenge?: unknown; einheiten?: unknown; unlesbar?: unknown };
+  if (r.zugaenge !== null && typeof r.zugaenge === 'object') {
+    for (const [id, z] of Object.entries(r.zugaenge as Record<string, unknown>)) {
+      const g = zugangsablageSchema.safeParse(z);
+      if (g.success) f.zugaenge[id] = g.data;
+    }
+  }
+  for (const e of Array.isArray(r.einheiten) ? (r.einheiten as unknown[]) : []) {
+    const g = einheitSchema.safeParse(e);
+    if (g.success) f.einheiten.push(g.data);
+    else f.unlesbar.push(e);
+  }
+  if (Array.isArray(r.unlesbar)) f.unlesbar.push(...(r.unlesbar as unknown[]));
+  return f;
 }
 
 /** Ein leeres Fach fällt ganz (`fachAendern` mit `undefined`). */
 function oderNichts(f: Fach): Fach | undefined {
-  return Object.keys(f.zugaenge).length === 0 && f.einheiten.length === 0 ? undefined : f;
+  return Object.keys(f.zugaenge).length === 0 && f.einheiten.length === 0 && f.unlesbar.length === 0
+    ? undefined
+    : f;
 }
 
 // -----------------------------------------------------------------------------
@@ -207,9 +232,19 @@ export interface AbgelegterZugang {
   plaene: Ablageplan[];
 }
 
+/**
+ * Die abgelegten Zugänge mit ihren Plänen. Die heute begonnene Einheit gilt
+ * nur, wenn am selben Tag geladen wurde; sonst gehört sie zu einem früheren
+ * Tag und bleibt stehen (ANN-305, Zweitreview S1).
+ */
 export async function abgelegteZugaenge(besitzer: string): Promise<AbgelegterZugang[]> {
   const f = fach(await fachLesen(besitzer, FACH));
-  return Object.entries(f.zugaenge).map(([zugangId, z]) => ({ zugangId, ...z }));
+  const heute = geraetetag();
+  return Object.entries(f.zugaenge).map(([zugangId, z]) => ({
+    zugangId,
+    ...z,
+    plaene: z.tag === heute ? z.plaene : z.plaene.map((p) => ({ ...p, open_session: null })),
+  }));
 }
 
 /**
@@ -222,10 +257,9 @@ export async function abgelegterPlan(
   zugangId: string,
   planId: string,
 ): Promise<Ablageplan | undefined> {
-  const z = fach(await fachLesen(besitzer, FACH)).zugaenge[zugangId];
-  const plan = z?.plaene.find((p) => p.id === planId);
-  if (!z || !plan) return undefined;
-  return z.tag === geraetetag() ? plan : { ...plan, open_session: null };
+  return (await abgelegteZugaenge(besitzer))
+    .find((z) => z.zugangId === zugangId)
+    ?.plaene.find((p) => p.id === planId);
 }
 
 // -----------------------------------------------------------------------------
@@ -288,10 +322,11 @@ async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebe
     let angenommen = false;
     try {
       const antwort = await senden(einheit.zugangId, einheit);
-      if (antwort.status === 'finished' && !einheit.ereignisse.some((e) => e.kind === 'finish')) {
-        // Anderswo beendet (zweites Gerät, Vertretung): Die Haken gehören in
-        // eine neue Einheit, statt still zu fallen - einmal (Zweitreview
-        // UEB-EPIC-003). Ist am Tag schon eine offen, kommen sie dorthin.
+      if (antwort.status === 'closed') {
+        // Die Einheit nimmt nichts mehr an - anderswo beendet (zweites Gerät,
+        // Vertretung) oder von einem anderen Tag: Die Ereignisse gehören in
+        // eine neue Einheit, statt still zu fallen (Zweitreview UEB-EPIC-003,
+        // S1, S5). Ist am Tag schon eine offen, kommen sie dorthin.
         const neueId = crypto.randomUUID();
         await fachAendern(besitzer, FACH, (alt) => {
           const f = fach(alt ?? LEER);
@@ -302,7 +337,7 @@ async function einmalUebertragen(besitzer: string, senden: Sender): Promise<Uebe
         continue;
       }
       if (antwort.note_dropped) ergebnis.angabenVerworfen.push(einheit.id);
-      // Beendet - hier oder anderswo: An dieser Einheit ändert sich nichts mehr.
+      // Beendet - jetzt oder beim ersten Senden: An dieser Einheit ändert sich nichts mehr.
       fallen = antwort.status === 'finished' || einheit.ereignisse.some((e) => e.kind === 'finish');
       angenommen = true;
     } catch (fehler) {

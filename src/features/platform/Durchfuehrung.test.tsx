@@ -370,7 +370,7 @@ describe('Durchführung nach dem Zweitreview', () => {
       plans: [{ ...ZWEI, open_session: { id: 'cccccccc-0000-4000-8000-000000000009', sets: [] } }],
     });
     einheitUebertragen.mockImplementationOnce((_z: string, e: Sendung) =>
-      Promise.resolve({ session_id: e.id, status: 'finished', note_dropped: false }),
+      Promise.resolve({ session_id: e.id, status: 'closed', note_dropped: false }),
     );
     const user = userEvent.setup();
     zeige(<Durchfuehrung zugang={ZUGANG} />);

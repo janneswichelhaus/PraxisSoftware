@@ -340,7 +340,7 @@ export function Sitzungssperre({
       phaseRef.current = 'ohneNetz';
       setPhase('ohneNetz');
     };
-    const uhr = window.setInterval(() => {
+    const pruefenLokal = () => {
       const jetzt = Date.now();
       if (
         jetzt - geoeffnet >= SPERRFRISTEN.hoechstMinuten * 60_000 ||
@@ -348,14 +348,26 @@ export function Sitzungssperre({
       ) {
         zurueck();
       }
-    }, 15_000);
+    };
+    const uhr = window.setInterval(pruefenLokal, 15_000);
+    // Punkt 5: bei der Rückkehr sofort, nicht erst beim nächsten Takt
+    // (Zweitreview H4).
+    const rueckkehr = () => {
+      if (document.visibilityState !== 'hidden') pruefenLokal();
+    };
     const bedienung = () => {
       bedient = Date.now();
     };
+    document.addEventListener('visibilitychange', rueckkehr);
+    window.addEventListener('focus', rueckkehr);
+    window.addEventListener('pageshow', rueckkehr);
     document.addEventListener('pointerdown', bedienung, true);
     document.addEventListener('keydown', bedienung, true);
     return () => {
       window.clearInterval(uhr);
+      document.removeEventListener('visibilitychange', rueckkehr);
+      window.removeEventListener('focus', rueckkehr);
+      window.removeEventListener('pageshow', rueckkehr);
       document.removeEventListener('pointerdown', bedienung, true);
       document.removeEventListener('keydown', bedienung, true);
     };
