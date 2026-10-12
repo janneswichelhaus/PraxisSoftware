@@ -177,5 +177,15 @@ verify_jwt = false
 [functions.patient-file-verify]
 verify_jwt = true
 
+# Der Versand der Benachrichtigungen (KOM-010, ADR-024 Punkt 16). Aufgerufen
+# nur vom Zeitplan des Betriebs mit dem Dienstschluessel, nie vom Browser;
+# `verify_jwt` ist an und die Function vergleicht den Schluessel zusaetzlich
+# selbst mit dem eigens zu setzenden Secret NOTIFICATIONS_SERVICE_KEY. Ohne
+# ihn, ohne Weg (MAIL_PROVIDER, PUSH_PROVIDER) oder ohne APP_URL antwortet
+# sie "nicht eingerichtet". Scharf erst nach OPS-001, Mails mit B13, Push nach
+# der Pruefung aus ADR-024 Punkt 18.
+[functions.notifications]
+verify_jwt = true
+
 [analytics]
 enabled = false

@@ -29,8 +29,7 @@ const ALLE = BENACHRICHTIGUNGSARTEN as string[];
 const WAEHLEN =
   'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)';
 const LESEN = 'select * from public.platform_notification_settings($1::uuid, $2)';
-const REGISTRIEREN =
-  'select public.register_platform_push_subscription($1::uuid, $2, $3, $4)';
+const REGISTRIEREN = 'select public.register_platform_push_subscription($1::uuid, $2, $3, $4)';
 const ABHOLEN = 'select * from public.claim_notification_deliveries(50)';
 const MELDEN = 'select public.finish_notification_delivery($1::uuid, $2, $3::text[])';
 const SCHALTEN = 'select public.set_notification_kind_enabled($1, $2)';
@@ -203,9 +202,9 @@ describe('Die Wahl der Person (Punkt 15)', () => {
     expect(
       await fehlercode(asUser(erika.konto, WAEHLEN, [erika.zugang, ['werbung'], [], 20, 8])),
     ).toBe('22023');
-    expect(
-      await fehlercode(asUser(erika.konto, WAEHLEN, [erika.zugang, [], [], 24, 8])),
-    ).toBe('22023');
+    expect(await fehlercode(asUser(erika.konto, WAEHLEN, [erika.zugang, [], [], 24, 8]))).toBe(
+      '22023',
+    );
   });
 
   it('gilt je Zugang: fremder Zugang, Praxis und Anonym bekommen nichts', async () => {
@@ -214,15 +213,11 @@ describe('Die Wahl der Person (Punkt 15)', () => {
         asUser(erika.konto, WAEHLEN, [platformAccesses.tinaTraining, ALLE, [], 20, 8]),
       ),
     ).toBe('42501');
-    expect(
-      (await asUser(users.ownerTherapist, LESEN, [erika.zugang, null])).rows,
-    ).toEqual([]);
+    expect((await asUser(users.ownerTherapist, LESEN, [erika.zugang, null])).rows).toEqual([]);
     expect(
       await fehlercode(asUser(users.ownerTherapist, WAEHLEN, [erika.zugang, ALLE, [], 20, 8])),
     ).toBe('42501');
-    expect(await fehlercode(asUser(null, WAEHLEN, [erika.zugang, ALLE, [], 20, 8]))).toBe(
-      '42501',
-    );
+    expect(await fehlercode(asUser(null, WAEHLEN, [erika.zugang, ALLE, [], 20, 8]))).toBe('42501');
   });
 
   it('gibt den Tabellen kein direktes Recht', async () => {
@@ -447,7 +442,9 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
       ),
     ).toBe('42501');
     expect(
-      await fehlercode(asUser(users.ownerTherapist, 'select public.enqueue_appointment_reminders()')),
+      await fehlercode(
+        asUser(users.ownerTherapist, 'select public.enqueue_appointment_reminders()'),
+      ),
     ).toBe('42501');
   });
 
@@ -561,9 +558,7 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
     expect(await auftraege()).toEqual([
       expect.objectContaining({ state: 'dropped', drop_reason: 'no_device' }),
     ]);
-    expect(
-      (await asPostgres('select * from public.platform_push_subscriptions')).rows,
-    ).toEqual([]);
+    expect((await asPostgres('select * from public.platform_push_subscriptions')).rows).toEqual([]);
 
     await asPostgres('delete from public.notification_deliveries');
     await waehlen(['plan_assigned']);
@@ -572,15 +567,17 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
       [organizationId, patients.erika],
     );
     for (let versuch = 1; versuch <= 3; versuch++) {
-      await asPostgres(`update public.notification_deliveries set due_at = now() - interval '1 minute'`);
+      await asPostgres(
+        `update public.notification_deliveries set due_at = now() - interval '1 minute'`,
+      );
       const [a] = (await asServiceRole<{ id: string }>(ABHOLEN)).rows;
       expect(a, `Versuch ${versuch}`).toBeDefined();
       await asServiceRole(MELDEN, [a!.id, 'failed', []]);
     }
     expect(await auftraege()).toEqual([expect.objectContaining({ state: 'failed', attempts: 3 })]);
-    expect(
-      await fehlercode(asServiceRole(MELDEN, [(await auftraege())[0]!.id, 'sent', []])),
-    ).toBe('P0002');
+    expect(await fehlercode(asServiceRole(MELDEN, [(await auftraege())[0]!.id, 'sent', []]))).toBe(
+      'P0002',
+    );
   });
 
   it('löscht abgeschlossene Aufträge nach 30 Tagen', async () => {
@@ -640,9 +637,7 @@ describe('Push-Registrierung (Punkt 17)', () => {
         where id = $1`,
       [erika.zugang, users.ownerTherapist],
     );
-    expect((await asPostgres('select * from public.platform_push_subscriptions')).rows).toEqual(
-      [],
-    );
+    expect((await asPostgres('select * from public.platform_push_subscriptions')).rows).toEqual([]);
   });
 });
 
@@ -654,11 +649,13 @@ describe('Schalter der Praxis (Punkt 15)', () => {
   it('nur owner schaltet ab und wieder frei', async () => {
     await asUserCommitted(users.ownerTherapist, SCHALTEN, ['plan_assigned', false]);
     expect(
-      (await asUser(users.ownerTherapist, 'select * from public.notification_kind_switches()')).rows,
+      (await asUser(users.ownerTherapist, 'select * from public.notification_kind_switches()'))
+        .rows,
     ).toEqual([expect.objectContaining({ kind: 'plan_assigned' })]);
     await asUserCommitted(users.ownerTherapist, SCHALTEN, ['plan_assigned', true]);
     expect(
-      (await asUser(users.ownerTherapist, 'select * from public.notification_kind_switches()')).rows,
+      (await asUser(users.ownerTherapist, 'select * from public.notification_kind_switches()'))
+        .rows,
     ).toEqual([]);
 
     for (const konto of [users.therapist, users.office, users.teamLead, erika.konto]) {
@@ -666,8 +663,8 @@ describe('Schalter der Praxis (Punkt 15)', () => {
         '42501',
       );
     }
-    expect(
-      await fehlercode(asUser(users.ownerTherapist, SCHALTEN, ['werbung', false])),
-    ).toBe('22023');
+    expect(await fehlercode(asUser(users.ownerTherapist, SCHALTEN, ['werbung', false]))).toBe(
+      '22023',
+    );
   });
 });
