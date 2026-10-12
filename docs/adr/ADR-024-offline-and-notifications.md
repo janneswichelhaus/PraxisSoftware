@@ -1,18 +1,21 @@
-# ADR-024: Offline-Erfassung und Benachrichtigungen — schmaler Service Worker, Erfassung nur auf dem eigenen Gerät, Mitteilungen ohne Inhalt
+# ADR-024: Offline-Erfassung und Benachrichtigungen — schmaler Service Worker, Dokumentation und Durchführung ohne Netz, Mitteilungen ohne Inhalt
 
 ## Status
 
-**Vorgeschlagen** (2026-10-11). Die Punkte folgen aus §2.2, §3.4, §3.5, §10, §13, §18, §20 und den
-ADRs 001, 002, 008, 010, 011, 015, 023 und 025. Wo es eine echte Wahl gibt, steht sie am Ende
-(**W1 bis W5**, je mit Empfehlung). Angenommen ist der ADR mit Jannes' Bestätigung der Wahlpunkte;
-vorher beginnt KOM-EPIC-003 nicht (Roadmap Block 6), TRK-EPIC-003 ebenso nicht (Block 7).
+**Angenommen** (2026-10-11, Jannes). **W1 anders als empfohlen: (c)** — „Bei Konkurrenten wie
+iPrax ist eine Dokumentation ohne Empfang möglich. Ich möchte diese Funktion auch haben.“ Dazu die
+Freigabe ohne Netz per Passkey (Punkt 9), auf Rückfrage gewählt. **W2 bis W5 wie empfohlen.** Die
+Punkte folgen aus §2.2, §3.4, §3.5, §10, §13, §18, §20 und den ADRs 001, 002, 008, 010, 011, 015,
+016, 023 und 025. Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.26, §3.4 (zweite Ausnahme). KOM-EPIC-003
+kann beginnen (Roadmap Block 6), TRK-EPIC-003 und OFF-EPIC-001 folgen in Block 7.
 
-**Löst [ADR-015](ADR-015-initial-technical-stack.md) Punkt 16 ab**, sobald er angenommen ist: Ein
-Service Worker ist erlaubt, aber nur der aus Abschnitt A. Ein generisches Offline-Caching von
-Anwendungs- oder Patientendaten bleibt ausgeschlossen. Die übrigen Punkte von ADR-015 bleiben.
-Beantwortet die Frage aus [ADR-001](ADR-001-online-first-limited-offline.md) Punkt 3, ob die
-begrenzte Offline-Fähigkeit für Therapeut:innen in V1 kommt (Punkt 6, **W1**), und den Verweis aus
-[ADR-023](ADR-023-platform-access.md) Punkt 18 und DSN-001 Abschnitt 10.
+**Löst [ADR-015](ADR-015-initial-technical-stack.md) Punkt 16 ab:** Ein Service Worker ist erlaubt,
+aber nur der aus Abschnitt A. Ein generisches Offline-Caching von Anwendungs- oder Patientendaten
+bleibt ausgeschlossen. Die übrigen Punkte von ADR-015 bleiben. Beantwortet
+[ADR-001](ADR-001-online-first-limited-offline.md) Punkt 6 (Mechanismus) und dessen Folgefragen, den
+Verweis aus [ADR-023](ADR-023-platform-access.md) Punkt 18 und DSN-001
+Abschnitt 10. **Ergänzt [ADR-025](ADR-025-session-lock.md)** um die Freigabe ohne Netz (dort
+Fassung 4, Punkt 16).
 
 ## Datum
 
@@ -86,16 +89,22 @@ Abschnitt B.
 
 ### B. Offline-Erfassung
 
-**4. Offline erfasst wird in V1 nur die Durchführung, und nur auf dem Gerät der Person.** Das
-heißt: Durchgänge eines zugewiesenen Plans abhaken, die Einheit beenden und, sobald TRK-EPIC-001
-sie bringt, die Angaben je Durchgang. Das gilt für den Heimübungsplan in der Behandlung wie für
-den Plan im Training, weil Ansicht und Risiko dieselben sind (ADR-021: dieselbe Mechanik, getrennte
-Verhältnisse). **Nur online** bleiben alles, was eine Antwort, eine Frist oder eine Erklärung
-auslöst: Rückfrage, Nachricht, Terminwunsch, Check-in, Einwilligung, Widerruf, Kündigung, Export.
-Bei diesen zählt der Eingang, und ein spät übertragener Widerruf wäre ein falsches Versprechen.
+**4. Ohne Netz geht in V1 genau zweierlei** (**W1**):
 
-**5. Was auf dem Gerät liegt** (**W2**). Für die Durchführung legt die Anwendung auf dem Gerät
-der Person zwei Dinge ab:
+- **Plattformkonten:** die **Durchführung** eines zugewiesenen Plans — Durchgänge abhaken, die
+  Einheit beenden und, sobald TRK-EPIC-001 sie bringt, die Angaben je Durchgang. Für den
+  Heimübungsplan in der Behandlung wie für den Plan im Training, weil Ansicht und Risiko dieselben
+  sind (ADR-021: dieselbe Mechanik, getrennte Verhältnisse). Punkt 5.
+- **Praxiskonten:** den eigenen **Tagesplan lesen** und am Termin die **Behandlungsdokumentation
+  als Entwurf schreiben**. Punkt 6.
+
+**Nur online** bleibt alles andere, insbesondere was eine Antwort, eine Frist oder eine Erklärung
+auslöst: Rückfrage, Nachricht, Terminwunsch, Check-in, Einwilligung, Widerruf, Kündigung, Export;
+in der Praxis Akte, Kalender ändern, Finalisieren, Abrechnung. Bei Erklärungen zählt der Eingang,
+und ein spät übertragener Widerruf wäre ein falsches Versprechen.
+
+**5. Was auf dem Gerät der Person liegt** (**W2**). Für die Durchführung legt die Anwendung zwei
+Dinge ab:
 
 - **den Plan der Einheit** mit genau den Feldern der Durchführungsansicht, so wie er beim letzten
   Laden mit Verbindung war;
@@ -103,8 +112,6 @@ der Person zwei Dinge ab:
 
 Die Grenzen:
 
-- Nur für **Plattformkonten**. Ein Praxiskonto legt nichts ab; das Modul, das ablegt, prüft die
-  Kontoart an einer Stelle, und ein Test hält es fest.
 - Nur der **zugewiesene, laufende Plan** des eigenen Zugangs, keine Nachrichten, keine Termine,
   keine Rechnungen, nichts aus der Akte.
 - **Gelöscht** wird beim Abmelden, beim Kontowechsel, nach erfolgreicher Übertragung (die
@@ -116,34 +123,74 @@ Die Grenzen:
   Geräteverschlüsselung des eigenen Telefons. Der Plan liegt der Person ohnehin als PDF vor
   (UEB-EPIC-003); was die Anwendung ablegt, ist nicht mehr als das.
 
-**6. Für Praxiskonten gibt es in V1 keine Offline-Daten** (**W1**). Ohne Netz startet das Gerüst
-(Punkt 1) und sagt, dass Akte und Tagesplan eine Verbindung brauchen. Ein offener Text bleibt im
-Speicher der Seite und sichert sich mit der zurückkehrenden Verbindung (ANN-319, ADR-025 Punkt 4).
-Für den Tag ohne Netz gibt es den Tagesplan auf Papier (Druckansicht, B14). Die begrenzte
-Offline-Fähigkeit aus ADR-001 Punkt 3 bleibt architektonisch möglich: Der Service Worker steht,
-und Punkt 7 gilt dann ebenso. Gebaut wird sie nicht vor der Probewoche (Roadmap Block 10), und nur
-mit einer Gerätevorgabe und einer Antwort auf die Sperre ohne Netz (Punkt 9).
+**6. Was auf dem Praxisgerät liegt** (**W1 c**). Damit am Hausbesuch ohne Empfang dokumentiert
+werden kann, legt die Anwendung für ein Praxiskonto zwei Dinge ab:
 
-**7. Übertragen wird additiv und wiederholbar.** Jeder Haken und jede Einheit trägt eine Kennung,
-die das Gerät beim Erfassen vergibt (UUID, ADR-014). Der Server legt die Zeile an oder erkennt
-sie wieder; zweimal gesendet ist einmal gespeichert. Nichts wird überschrieben, es gibt kein
-Last-Write-Wins (ADR-001 Punkt 5). Eine Kennung des Geräts gewährt nichts (ADR-023 Punkt 19):
-Trifft sie eine fremde Zeile, antwortet der Server wie bei einer unbekannten, ohne zu verraten,
-dass es sie gibt. Das ist ein Negativfall jeder Projektion, die Offline-Haken annimmt.
+- **den eigenen Tagesplan von heute**: je Termin Uhrzeit, Terminart, Name, Hausbesuchsadresse und
+  Telefon, so wie er beim letzten Laden mit Verbindung war. Kein Befund, keine Diagnose, keine
+  frühere Dokumentation, keine Verordnung, nichts aus der Akte darüber hinaus. Die Feldliste legt
+  der SPEC an genau einer Stelle fest (ADR-001: „sonst wächst sie zur Vollakte"); eine neue Spalte
+  ist eine Änderung mit Review.
+- **eigene Dokumentationsentwürfe**, die ohne Netz am Termin dieses Plans geschrieben wurden, bis
+  sie übertragen sind.
+
+Die Grenzen:
+
+- **Nur auf einem eingerichteten Diensttelefon.** Die Ablage ist je Gerät aus. Eingeschaltet wird
+  sie unter „Mein Konto" mit der Bestätigung der Gerätevorgabe: Gerätesperre mit Code oder
+  Biometrie, Geräteverschlüsselung, aktuelles Betriebssystem, kein Privatgerät, kein geteiltes
+  Gerätekonto. Die Anwendung kann das nicht prüfen; die Vorgabe steht in der
+  Betriebsdokumentation (ADR-012), und die Praxis verantwortet sie. Ohne Einrichtung gilt für das
+  Gerät dasselbe wie bisher: Text im Speicher der Seite (ANN-319), sonst nichts.
+- **Der Tagesplan fällt am Ende des Tages**, beim Abmelden, beim Kontowechsel und sobald das
+  Konto gesperrt ist (nächster Start mit Verbindung).
+- **Ein Entwurf fällt nie von selbst** (§13: Dokumentation darf nicht verloren gehen). Er fällt
+  erst, wenn der Server ihn angenommen hat. Wer sich mit nicht übertragenen Entwürfen abmelden
+  will, bekommt die Zahl und die Wahl, erst zu übertragen; verwirft er sie, ist das ausdrücklich.
+  Ein anderes Konto auf demselben Gerät sieht sie nie.
+- **Keine eigene Verschlüsselung**, aus demselben Grund wie in Punkt 5. Der Schutz sind
+  Gerätevorgabe und die Sperre aus Punkt 9.
+- **Finalisiert wird erst nach der Übertragung** (ADR-001 Punkt 4), auf dem Server, auf dem Weg
+  aus ADR-016. Die Frist der automatischen Finalisierung (ADR-016 Punkt 7) beginnt mit dem
+  Eingang. Solange Entwürfe nur auf dem Gerät liegen, zeigt die Anwendung oben „Noch nicht
+  übertragen" mit der Zahl, auch an den folgenden Tagen (§ 630f BGB: zeitnah).
+- **Kein neues Auditereignis.** Der Tagesplan ist auch online kein Aktenzugriff im Sinne von
+  ADR-010; sein Lesen ohne Netz schreibt nichts. Der übertragene Entwurf steht im Datenmodell wie
+  jeder andere (ADR-010: das Datenmodell ist der Nachweis). ADR-010 bleibt unverändert.
+
+**7. Übertragen wird additiv und wiederholbar.** Jeder Haken, jede Einheit und jeder
+Offline-Entwurf trägt eine Kennung, die das Gerät beim Erfassen vergibt (UUID, ADR-014). Der Server
+legt die Zeile an oder erkennt sie wieder; zweimal gesendet ist einmal gespeichert. Nichts wird
+überschrieben, es gibt kein Last-Write-Wins (ADR-001 Punkt 5). Gibt es am Termin schon einen
+Entwurf auf dem Server oder ist die Dokumentation dort inzwischen finalisiert, wird der
+Offline-Entwurf nicht eingemischt: Die Anwendung zeigt beide Fassungen und bietet die Wege aus
+ANN-320 an (Nachtrag-Entwurf, Korrektur, Übernehmen von Hand). Eine Kennung des Geräts gewährt
+nichts (ADR-023 Punkt 19, ADR-004): Trifft sie eine fremde Zeile, antwortet der Server wie bei
+einer unbekannten, ohne zu verraten, dass es sie gibt. Das ist ein Negativfall jedes Weges, der
+Offline-Daten annimmt.
 
 **8. Der Server urteilt beim Eingang.** Die Zeile trägt den Zeitpunkt des Geräts als Angabe der
-Person und den Eingang am Server. Ob der Zugang aktiv, der Plan zugewiesen und die Lesefrist noch
-nicht erreicht ist (ANN-305), entscheidet der Server zum Zeitpunkt des Eingangs, nicht nach der
-Uhr des Geräts. Weist er einen Haken ab, zeigt die Ansicht das mit dem Grund
-(„Nicht übertragen: Der Plan gilt nicht mehr") und verwirft ihn danach. Niemand glaubt
-gespeichert zu haben, was nur lokal liegt (ADR-001): Die Ansicht zeigt je Einheit „auf dem Gerät"
-oder „übertragen", bis die Warteschlange leer ist.
+Person und den Eingang am Server. Ob Zugang, Plan, Termin und Rolle noch gelten und die Lesefrist
+noch nicht erreicht ist (ANN-305), entscheidet der Server zum Zeitpunkt des Eingangs mit denselben
+Prüfungen wie online, nicht nach der Uhr des Geräts. Weist er einen Haken ab, zeigt die Ansicht das
+mit dem Grund („Nicht übertragen: Der Plan gilt nicht mehr") und verwirft ihn danach. Weist er
+einen Entwurf ab (Termin abgesagt, Zugriff entzogen), bleibt der Text auf dem Gerät stehen, bis die
+Person ihn ausdrücklich verwirft oder kopiert; still verschwindet keine Dokumentation (§13).
+Niemand glaubt gespeichert zu haben, was nur lokal liegt (ADR-001): Die Ansicht zeigt „auf dem
+Gerät" oder „übertragen", bis nichts mehr wartet.
 
-**9. Die Sitzungssperre gilt auch ohne Netz.** Läuft eine Frist aus ADR-025 ab, sperrt die
-Anwendung wie sonst; Plan und Warteschlange werden nicht gezeigt, aber auch nicht gelöscht. Weil
-Passkey und PIN nur der Server prüft, gibt es ohne Netz keine Freigabe. Die Sperrseite sagt das
-und dass die Haken gesichert sind. Mit Verbindung und Freigabe geht die Übertragung weiter. Eine
-Freigabe ohne Netz würde eine Prüfung auf dem Gerät verlangen, die ADR-025 Punkt 11 ausschließt.
+**9. Die Sitzungssperre gilt auch ohne Netz, die Freigabe geht dann per Passkey am Gerät.** Läuft
+eine Frist aus ADR-025 ab, sperrt die Anwendung wie sonst und zeigt nichts. Ohne Netz bietet die
+Sperrseite die **Freigabe per Passkey** an (ADR-025 Punkt 16, §3.4 zweite Ausnahme):
+
+- Die Zeremonie führt der Browser mit `userVerification: required` und einem Passkey des
+  eigenen Kontos. Die Anwendung prüft die Signatur mit Web Crypto gegen den öffentlichen
+  Schlüssel, den sie bei der letzten Freigabe mit Netz abgelegt hat.
+- Sie gibt **nur die Daten auf dem Gerät** frei (Punkte 5 und 6), **nie eine Sitzung beim
+  Server**. Übertragen wird erst nach einer Freigabe mit Netz nach ADR-025 Punkt 7.
+- Die **App-PIN gibt ohne Netz nie frei** (ADR-025 Punkt 11 bleibt). Wer keinen Passkey am Gerät
+  hat, sieht ohne Netz nichts; die Entwürfe bleiben gesichert.
+- Die Fristen aus ADR-025 Punkte 1 und 2 gelten auch für diese Freigabe.
 
 ### C. Benachrichtigungen
 
@@ -236,39 +283,43 @@ Push gebaut und mit `mock` getestet, aber nicht scharf (§15.2).
 
 ## Konsequenzen
 
-- **Zwei Loops werden frei, keiner wird größer als geplant.** KOM-EPIC-003 baut Katalog,
+- **Zwei Loops werden frei.** KOM-EPIC-003 baut Katalog,
   Einstellungen, Auftragsbuch, Adapter und, nach W3, den Push-Weg. TRK-EPIC-003 baut Ablage,
-  Warteschlange und Übertragung nach Abschnitt B. Den Service Worker baut der Loop, der ihn als
+  Warteschlange und Übertragung nach Punkt 5, dazu die Freigabe ohne Netz (Punkt 9). Den Service Worker baut der Loop, der ihn als
   Erster braucht. Beide sind kritische Änderungen nach ADR-013 Punkt 9 (externer Datenfluss,
   neue Datenklasse, Migration) und bekommen ein Zweitreview.
 - **ANN-305 wird mit TRK-EPIC-003 abgelöst:** Ohne Verbindung bleibt der Haken stehen und kommt in
-  die Warteschlange, statt zurückgenommen zu werden. Der Satz „auf dem Gerät liegt nichts" gilt
-  dann nur noch für Praxiskonten.
+  die Warteschlange, statt zurückgenommen zu werden. Für Praxiskonten gilt
+  dasselbe am Termin mit OFF-EPIC-001; ANN-319 und ANN-320 bleiben für Geräte ohne Einrichtung.
 - **Push unter iOS braucht `standalone`.** Mit `minimal-ui` (ANN-110) öffnet iOS die Anwendung im
   Browser, und dort gibt es kein Web-Push. Wer Push für iPhones will, nimmt den Änderungspfad
   aus ANN-110 (volle Höhe, eigene Zurück-Wege, Aufwand `mittel`). Ohne das bleibt Push auf
   iPhones aus, Mail geht.
 - **Ältere Menschen erreicht die Mail eher als Push.** Deshalb ist Mail der Regelweg und Push eine
   Wahl, nicht umgekehrt. Bis B13 geprüft ist, kommt außerhalb des Tests keine Benachrichtigung an.
+- **Ein neuer Loop: OFF-EPIC-001** „Dokumentieren geht auch ohne Empfang" (Roadmap Block 7, nach
+  TRK-EPIC-003, das Ablage, Warteschlange und die Freigabe per Passkey zuerst baut). Kritische
+  Änderung nach ADR-013 Punkt 9 (Sitzungen, neue Datenklasse auf dem Gerät), mit Zweitreview.
+- **Gesundheitsdaten liegen auf dem Diensttelefon.** Tagesplan mit Namen und Adressen und nicht
+  übertragene Dokumentation. Das ist der Preis von W1 (c). Schutz sind Gerätevorgabe,
+  Gerätesperre und die Sperre aus Punkt 9; eine Fernlöschung gibt es nicht. Geht ein Gerät mit
+  nicht übertragenen Entwürfen verloren, sind diese Entwürfe verloren — die Anwendung überträgt
+  deshalb bei jeder Verbindung sofort. **Mit echten Daten erst nach der DSFA** (ADR-007).
+- **Die Freigabe ohne Netz ist so stark wie das Gerät.** Wer das Telefon entsperrt und Werkzeuge
+  am Browser hat, käme an die Ablage auch ohne die Anwendung. Die Freigabe per Passkey schützt vor
+  dem, der das liegen gelassene Telefon in der Hand hat, und gibt nie Daten des Servers frei.
 - **Offline-Daten lassen sich nicht aus der Ferne löschen.** „Alle Sitzungen beenden" nimmt einem
-  verlorenen Gerät die Sitzung, nicht den abgelegten Plan. Der fällt spätestens nach sieben Tagen
-  oder beim nächsten Start ohne gültige Sitzung. Das betrifft nur den Plan der Person auf ihrem
-  eigenen Gerät (Punkt 5).
-- **Eine lange Einheit ohne Netz kann in die Sperre laufen** (Punkt 9). Die Haken gehen nicht
-  verloren, aber die Person sieht ihren Plan erst nach der Freigabe mit Verbindung wieder. Wenn das
-  in der Sichtung stört, ist die Antwort eine längere Frist für die Durchführung in ADR-025, keine
-  Freigabe ohne Netz.
-- **Therapeut:innen bekommen im Funkloch keinen Tagesplan.** Das ist die bewusste Folge von W1: Der
-  Schutz für den Text steht, der Plan liegt auf Papier. Ob das am Hausbesuch trägt, zeigt die
-  Probewoche; die Antwort wäre dann ein eigener ADR für die Praxisgeräte.
-- **Die Datenschutzprüfung bekommt drei Fragen** (B2): Genügt die Wahl der Person (Punkt 15) für
+  verlorenen Gerät die Sitzung beim Server, nicht die Ablage. Der Tagesplan fällt am Tagesende,
+  der Plan der Person nach sieben Tagen, Entwürfe erst mit der Übertragung.
+- **Die Datenschutzprüfung bekommt vier Fragen** (B2, DSFA): Sind Tagesplan und nicht übertragene
+  Dokumentation auf dem Diensttelefon mit der Gerätevorgabe aus Punkt 6 vertretbar? Genügt die Wahl der Person (Punkt 15) für
   Terminerinnerungen per Mail, oder braucht es eine Einwilligung nach Art. 9 Abs. 2 lit. a? Genügt
   Transportverschlüsselung für eine Mail ohne Gesundheitsdatum (Punkt 14, vgl. ANN-041)? Ist Web-Push
   mit den Metadaten aus Punkt 18 zulässig? Bis dahin gelten die Punkte als vorläufige Festlegung;
   jeder wird an einer Stelle verankert, die der Loop benennt.
-- **Mit der Annahme** bekommen ADR-015 Punkt 16 den Vermerk „abgelöst durch ADR-024", ADR-001 bei
-  den Folgefragen nach dem Mechanismus und der Offline-Dauer den Erledigungsvermerk und ADR-023
-  Punkt 18 den Verweis auf diesen ADR.
+- **Vermerke** an ADR-015 Punkt 16 („abgelöst durch ADR-024"), an ADR-001 (Punkt 6 und
+  Folgefragen) und an ADR-023 Punkt 18 sind mit der Annahme gesetzt. ANN-015 bleibt: Die
+  Verbindungsanzeige fragt weiter nur `navigator.onLine`.
 - **Verworfen: ein generischer Service Worker** mit Laufzeit-Caching (Workbox-Standard). Er legt
   jede Antwort ab, auch die mit Patientendaten — genau das, was ADR-015 verhindern wollte.
 - **Verworfen: Benachrichtigung über einen Dienst mit Inhalt** (etwa ein Messaging-Anbieter, der
@@ -284,8 +335,10 @@ Push gebaut und mit `mock` getestet, aber nicht scharf (§15.2).
 - **Die Wahl des SMTP-Anbieters**: B13, Block 11, eigener ADR nach ADR-002.
 - **Das Schema**: Tabellen, Spalten, Funktionsnamen, Katalogschlüssel, Wortlaut der Texte. Das
   entscheidet der SPEC (ADR-014), die Texte stehen in `src/lib/begriffe.ts`.
-- **Offline für Praxisgeräte** über Punkt 6 hinaus, mit Gerätevorgabe, Feldliste und
-  Konfliktauflösung nach ADR-001: ein eigener ADR, frühestens nach der Probewoche.
+- **Mehr Offline für Praxisgeräte** als Punkt 6 (Akte, frühere Dokumentation, Kalender ändern):
+  ein eigener ADR.
+- **Mobile-Device-Management und Fernlöschung**: erst, wenn die Praxis mehr Diensttelefone hat, als
+  sie von Hand einrichtet.
 - **Interne Teamkommunikation** (§10 „Intern") und ihre Benachrichtigungen.
 - **SMS** und jeder andere Weg außer Mail und Push.
 
@@ -296,12 +349,13 @@ Push gebaut und mit `mock` getestet, aber nicht scharf (§15.2).
 - Soll die Praxis sehen, ob eine Person Benachrichtigungen eingeschaltet hat (etwa um bei der
   Einladung zu helfen)? Vorschlag: nein in V1. Das wäre eine Auskunft über das Verhalten der
   Person, die die Praxis für ihre Arbeit nicht braucht.
-- Braucht die Durchführung eine längere Sitzungsfrist als 60 Minuten (Punkt 9)? Erst nach der
-  Sichtung von TRK-EPIC-003.
+- Soll der Tagesplan auch den nächsten Morgen enthalten, für den Start im Funkloch vor 8 Uhr?
+  Vorschlag: nein in V1; der SPEC von OFF-EPIC-001 kann es begründen.
 
-## Wahlpunkte
+## Wahlpunkte — entschieden
 
-Jede Wahl ist nach §15.1 reversibel gedacht; die Rücknahme ist je Punkt genannt.
+**Jannes, 2026-10-11:** W1 (c) mit Freigabe ohne Netz per Passkey, W2 bis W5 wie empfohlen. Die
+verworfenen Optionen bleiben als Rückweg stehen; die Rücknahme ist je Punkt genannt.
 
 **W1 — Offline für Therapeut:innen in V1** (ADR-001 Punkt 3). (a) Nein: Gerüst offline, Text im
 Speicher der Seite, Tagesplan auf Papier (Punkt 6). (b) Der Tagesplan des Tages lesend auf dem
@@ -313,6 +367,11 @@ Minuten, und ohne Netz gibt es keine Freigabe: Ein offline gehaltener Tagesplan 
 nach der ersten Stunde ohnehin nicht zu sehen, außer man prüft die PIN auf dem Gerät und weicht
 damit ADR-025 Punkt 11 auf. Rücknahme nach (b) `mittel`: Ablage nach Punkt 5 auch für Praxiskonten
 plus Gerätevorgabe, eigener ADR.
+*Entschieden (c), Jannes 2026-10-11: „Bei Konkurrenten wie iPrax ist eine Dokumentation ohne Empfang
+möglich. Ich möchte diese Funktion auch haben.“ Auf die Rückfrage zur Sperre gewählt: Freigabe ohne
+Netz per Passkey, nur für die Daten auf dem Gerät (Punkt 9; verworfen: Schreiben ohne Sehen auf der
+Sperrseite, Sperre unverändert). Rücknahme nach (a) `mittel`: die Ablage für Praxiskonten
+abschalten (ein Schalter im Ablagemodul), Entwürfe vorher übertragen.*
 
 **W2 — Wo die Durchführung ohne Netz liegt.** (a) Plan der Einheit und Warteschlange auf dem
 eigenen Gerät (IndexedDB), ohne eigene Verschlüsselung, sieben Tage höchstens (Punkt 5). (b) Nur
@@ -321,7 +380,7 @@ Web Crypto verschlüsselt, Schlüssel im Browser.
 **Empfehlung (a).** (b) trägt im Keller nicht: Telefone beenden Anwendungen im Hintergrund, und
 dann ist die Einheit verloren (§13). (c) kostet Code und hält den Schlüssel neben den Daten; sie
 schützt nur vor dem, der die Dateien ohne entsperrtes Gerät liest, und davor schützt schon die
-Geräteverschlüsselung. Rücknahme nach (c) `klein`: eine Hülle um das Ablagemodul.
+Geräteverschlüsselung. Rücknahme nach (c) `klein`: eine Hülle um das Ablagemodul. *Entschieden (a).*
 
 **W3 — Push in V1.** (a) Ja, als zusätzliche Wahl neben der Mail, Inhalt nach Punkt 14, scharf
 nach der Prüfung aus Punkt 18. (b) Nein, nur Mail und Übersicht.
@@ -329,13 +388,14 @@ nach der Prüfung aus Punkt 18. (b) Nein, nur Mail und Übersicht.
 für Trainingskund:innen ist „Antwort da" auf dem Telefon das, was sie von einer App erwarten. Weil
 Push abschaltbar bleibt und vor der Prüfung nur `mock` läuft, entsteht kein Datenweg, bevor er
 bewertet ist. Rücknahme `klein`: den Weg aus dem Adapter nehmen, Registrierungen löschen.
+*Entschieden (a).*
 
 **W4 — Benachrichtigungen an Mitarbeitende.** (a) Nur in der Anwendung, in den Offenen Punkten
 (Punkt 12). (b) Zusätzlich Push auf das Diensttelefon.
 **Empfehlung (a).** Die Offenen Punkte zeigen schon, was fällig ist, auch die überschrittene
 Antwortzeit. Push auf ein Diensttelefon macht Erreichbarkeit nach Feierabend zur stillen
 Erwartung, und jede Reaktionszeit wäre eine Leistungsangabe (§20). Rücknahme `klein`: derselbe
-Weg wie für Plattformkonten, mit Ruhezeiten nach Arbeitszeit.
+Weg wie für Plattformkonten, mit Ruhezeiten nach Arbeitszeit. *Entschieden (a).*
 
 **W5 — Wie der Service Worker entsteht.** (a) Eine eigene Datei mit beiden Aufgaben, die Liste der
 Dateien aus dem Build-Manifest von Vite, keine neue Abhängigkeit. (b) `vite-plugin-pwa` mit
@@ -344,3 +404,4 @@ Workbox, im Modus `injectManifest`.
 sieht. Die Dateinamen tragen schon eine Prüfsumme; damit bleibt für das Vorhalten wenig zu tun.
 (b) bringt eine wesentliche Abhängigkeit mit Voreinstellungen, die genau das generische Caching
 sind, das Punkt 1 ausschließt. Rücknahme `klein`: Das Plugin kann die eigene Datei übernehmen.
+*Entschieden (a).*

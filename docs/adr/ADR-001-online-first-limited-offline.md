@@ -4,6 +4,8 @@
 
 Angenommen
 
+*Vermerk 2026-10-11: Mechanismus (Punkt 6) und Folgefragen beantwortet mit [ADR-024](ADR-024-offline-and-notifications.md) (angenommen 2026-10-11): Tagesplan und Dokumentationsentwürfe ohne Empfang auf einem eingerichteten Diensttelefon, Durchführung auf dem Gerät der Person, Freigabe ohne Netz per Passkey.*
+
 ## Datum
 
 2026-08-28
@@ -88,16 +90,22 @@ als P0 offen.
 
 ## Offene Folgefragen
 
-- Welche Felder gehören zu den „minimal notwendigen Hausbesuchsdaten"?
+- Welche Felder gehören zu den „minimal notwendigen Hausbesuchsdaten"? *Beantwortet mit ADR-024
+  Punkt 6: Uhrzeit, Terminart, Name, Hausbesuchsadresse, Telefon; Liste im SPEC an einer Stelle.*
 - Wie lange darf ein lokaler Entwurf unsynchronisiert bestehen bleiben, und
-  was passiert danach?
+  was passiert danach? *Beantwortet mit ADR-024 Punkt 6: bis zur Übertragung, er fällt nie von
+  selbst; die Anwendung zeigt „Noch nicht übertragen“.*
 - Wie sieht die Konfliktauflösung konkret aus: wer löst auf, in welcher
-  Oberfläche, und wie bleiben beide Fassungen nach §5 nachvollziehbar?
+  Oberfläche, und wie bleiben beide Fassungen nach §5 nachvollziehbar? *Beantwortet mit ADR-024 Punkt 7: kein
+  Einmischen; beide Fassungen sichtbar, Wege aus ANN-320.*
 - Welche Geräteanforderungen werden verpflichtend, und wie werden sie
-  durchgesetzt?
+  durchgesetzt? *Beantwortet mit ADR-024 Punkt 6: Gerätevorgabe bei der Einrichtung je Gerät,
+  organisatorisch in der Betriebsdokumentation; technisch nicht prüfbar.*
 - Wie wird verhindert, dass ein nicht synchronisierter Entwurf bei
-  Geräteverlust ersatzlos verloren geht (§13 „Dokumentation verlieren")?
+  Geräteverlust ersatzlos verloren geht (§13 „Dokumentation verlieren")? *ADR-024: Übertragung bei
+  jeder Verbindung sofort; ein Rest bleibt als Risiko benannt (Konsequenzen).*
 - Wie verhält sich eine verzögerte Synchronisation zur Anforderung zeitnaher
-  Dokumentation nach §630f BGB?
+  Dokumentation nach §630f BGB? *Beantwortet mit ADR-024 Punkt 6: Hinweis bis zur Übertragung, Frist der
+  Finalisierung ab Eingang.*
 - Sind offline gelesene Daten auditpflichtig, und wie wird ein Offline-Zugriff
-  im Audit-Log nachgeführt (Bezug ADR-004)?
+  im Audit-Log nachgeführt (Bezug ADR-004)? *Beantwortet mit ADR-024 Punkt 6: nein, kein neues Ereignis.*

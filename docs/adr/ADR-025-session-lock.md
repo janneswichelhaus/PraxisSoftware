@@ -28,9 +28,15 @@ PIN-Eingabe steht dahinter bereit statt erst auf „Passkey klappt nicht“. Die
 Passkey-Fenster ebenso von selbst; eine PIN steht dort nicht, weil sie nie anmeldet. Sicherheitlich
 ändert sich nichts: Die PIN war schon vorher einen Tipp entfernt.
 
+**Fassung 4 (2026-10-11, Jannes): Freigabe ohne Netz per Passkey.** Neu ist **Punkt 16**, mit
+[ADR-024](ADR-024-offline-and-notifications.md) (W1 c: Dokumentation ohne Empfang). Ohne Netz gibt
+ein Passkey am Gerät nur die Daten frei, die auf dem Gerät liegen, nie eine Sitzung beim Server.
+Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.26, §3.4 (zweite Ausnahme). Die Punkte 1 bis 15 bleiben;
+insbesondere prüft die App-PIN weiter nur der Server.
+
 ## Datum
 
-2026-10-02 · Fassung 2: 2026-10-10 · Fassung 3: 2026-10-11
+2026-10-02 · Fassung 2: 2026-10-10 · Fassung 3: 2026-10-11 · Fassung 4: 2026-10-11
 
 ## Kontext
 
@@ -165,6 +171,19 @@ bietet diesen Weg nur, wenn `APP_ENVIRONMENT` nicht `production` ist, und nie au
 Produktion gibt es ihn nicht; ein Test prüft das. Auf der Test-Umgebung werden nach dem ersten
 Einstieg Passkey und PIN eingerichtet und wie im Betrieb benutzt.
 
+### Freigabe ohne Netz (Fassung 4)
+
+**16. Ohne Netz gibt der Passkey am Gerät frei, aber nur, was auf dem Gerät liegt.** Ist die
+Anwendung gesperrt und das Gerät ohne Verbindung, bietet die Sperrseite die Freigabe per Passkey
+an. Der Browser führt die Zeremonie mit `userVerification: required`; die Anwendung prüft die
+Signatur mit Web Crypto gegen den öffentlichen Schlüssel eines Passkeys des eigenen Kontos, den sie
+bei der letzten Freigabe mit Netz abgelegt hat. Die Freigabe öffnet nur die Ablage nach ADR-024
+Punkte 5 und 6 (Plan der Durchführung, Tagesplan, eigene Offline-Entwürfe). Sie erneuert keine
+Sitzung beim Server, setzt keinen Freigabevermerk und startet die Uhr aus Punkt 1 nur für die
+lokale Ansicht neu. Mit Verbindung verlangt die Anwendung vor jeder Übertragung die Freigabe nach
+Punkt 7. Die App-PIN gibt ohne Netz nie frei (Punkt 11). Ein Gerät ohne abgelegten Schlüssel
+bietet die Freigabe ohne Netz nicht an.
+
 ## Konsequenzen
 
 - **Ein eigenes Arbeitspaket vor dem Produktivstart:** SEC-EPIC-001 (Roadmap G20, Kriterium von M3).
@@ -212,6 +231,15 @@ Einstieg Passkey und PIN eingerichtet und wie im Betrieb benutzt.
 - **Für die Datenschutzprüfung.** Biometrische Merkmale verlassen das Gerät nicht. Der Anmeldedienst
   speichert nur den öffentlichen Schlüssel. Der PIN-Hash ist ein neues Datum am Konto und fällt mit
   ihm.
+
+**Aus Fassung 4:**
+
+- **Eine zweite Prüfung auf dem Gerät.** Selbst gebaut ist nur die Entscheidung, die lokale Ansicht
+  zu öffnen; Zeremonie und Signaturprüfung kommen aus Browser und Web Crypto (§3.4, zweite
+  Ausnahme). Kritische Änderung nach ADR-013 Punkt 9, mit Zweitreview, gebaut in TRK-EPIC-003.
+- **So stark wie das Gerät.** Wer das Telefon entsperrt und Werkzeuge am Browser hat, umgeht die
+  lokale Prüfung und liest die Ablage auch so. Geschützt ist der Fall des liegen gelassenen
+  Telefons; Daten des Servers gibt die Freigabe ohne Netz nie heraus.
 
 ## Wahlpunkte — entschieden
 

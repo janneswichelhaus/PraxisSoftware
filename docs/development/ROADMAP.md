@@ -148,8 +148,8 @@ in den Etappen darunter.
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
 | 4 | **Plattformzugang** | ~~POR-EPIC-001~~ (gebaut 2026-09-30) → ~~-001b~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001b**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001c**~~ (gebaut 2026-10-02) → ~~**ABR-EPIC-007**~~ (gebaut 2026-10-05) → ~~POR-EPIC-002~~ (gebaut 2026-10-06) → ~~-003~~ (gebaut 2026-10-07) | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ~~ADR-023 bestätigen~~ (2026-09-30: wie empfohlen) |
 | 5 | **Angebote** | ~~ANG-EPIC-001~~ (gebaut 2026-10-07) → ~~ANG-EPIC-002~~ (gebaut 2026-10-07) → ~~KND-EPIC-001~~ (gebaut 2026-10-07) | — | Abo- und Paketpreise (bis dahin synthetisch) |
-| 6 | **Pläne und Rückfragen** | ~~UEB-EPIC-001~~ (gebaut 2026-10-07) → ~~-002~~ (gebaut 2026-10-07) → ~~-003~~ (gebaut 2026-10-08) → ~~KOM-EPIC-001~~ (gebaut 2026-10-09) → -002 → -003 | **ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003) | ADR-024 bestätigen |
-| 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OUT-EPIC-001 → ALT-EPIC-001 → ALT-EPIC-002 → ORG-EPIC-001 | — | Sichtung |
+| 6 | **Pläne und Rückfragen** | ~~UEB-EPIC-001~~ (gebaut 2026-10-07) → ~~-002~~ (gebaut 2026-10-07) → ~~-003~~ (gebaut 2026-10-08) → ~~KOM-EPIC-001~~ (gebaut 2026-10-09) → -002 → -003 | ~~**ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003)~~ (angenommen 2026-10-11) | ~~ADR-024 bestätigen~~ (2026-10-11: W1 c, sonst wie empfohlen) |
+| 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OFF-EPIC-001 → OUT-EPIC-001 → ALT-EPIC-001 → ALT-EPIC-002 → ORG-EPIC-001 | — | Sichtung |
 | 8 | **Praxisbetrieb** | FLT-EPIC-001 → TEAM-001 → URL-001 → ZK-001 → ERS-001 | — | Tübinger Standortvorlage (Depot, Werkstatt) |
 | 9 | **Assistenz und Komfort** | KI-EPIC-001 → KI-EPIC-002 → MAP-007 → PRX-EPIC-004 → UI-003 | — | Sichtung |
 | 10 | **Feature-Freeze** | nur Befunde | Betriebsdokumentation | Probewoche 1 · Kollegin-Test · **M2** |
@@ -437,7 +437,8 @@ aus POR-EPIC-003, als Rechtsfrage bei B2.
 | --- | --- | --- | --- |
 | **TRK-EPIC-001** | Kund:innen protokollieren Einheiten und beantworten Check-ins | Einheit protokollieren, Check-in mit einstellbarem Takt, wenige Fragen, Parameter nach Erfassungstakt | `IDEA-TRK-001`, `-002`, `-004` |
 | **TRK-EPIC-002** | Was erfasst wird, ist als Zeitreihe lesbar | Schmerz differenziert, Bewegungssicherheit neben Schmerz, Kontext mit erfasst | `IDEA-TRK-003`, `-005`, `-006` |
-| **TRK-EPIC-003** | Erfassen geht auch ohne Netz | Offline-Erfassung im Training nach ADR-024 | `IDEA-TRK-008` |
+| **TRK-EPIC-003** | Erfassen geht auch ohne Netz | Durchführung ohne Netz nach ADR-024 Punkte 4, 5, 7 bis 9, mit dem Service Worker (Abschnitt A) und der Freigabe ohne Netz per Passkey (ADR-025 Punkt 16) | `IDEA-TRK-008` |
+| **OFF-EPIC-001** | Dokumentieren geht auch ohne Empfang | Tagesplan und Dokumentationsentwürfe auf dem eingerichteten Diensttelefon nach ADR-024 Punkt 6, Übertragung additiv, Finalisieren erst danach; echte Daten erst nach der DSFA | ADR-024 W1 (c), Jannes 2026-10-11 |
 | **OUT-EPIC-001** | Fortschritt ist sichtbar, ohne bewertet zu werden | Verlaufsgrafiken mit Ereignissen, Assessments mit Protokoll und Wiedervorlage auf der Trainingsseite, anzeigende Übungsanalyse, Fortschritt in zwei Sprachen | `IDEA-OUT-005` bis `-008` |
 | **ALT-EPIC-001** | Alltag steht als Kontext daneben | Aktivitäten ohne Wettbewerb, Gewohnheiten mit sehr kleinen Zielen, Schlaf und Stress, Bedarfsmedikation als Verlaufsgröße, kein Vergleich zwischen Personen | `IDEA-ALT-001` bis `-004`, `-007` |
 | **ALT-EPIC-002** | Ernährung als Protokoll und Zielwert | Tagesprotokoll, Zielwert von der Betreuung gesetzt, **kein** Urteil; je Person ab- und zuschaltbar, weil Kalorienzählen nicht für alle harmlos ist | `IDEA-ALT-005`, `-006` |
@@ -831,7 +832,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | E | B3 Validierung der Fristen (ANN-001) | vorlaeufig | — | — | — | — |
 | E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
 | E | ADR-023 Plattformzugang | gesichtet | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen); Fassung 2 am selben Tag |
-| E | ADR-024 Offline und Benachrichtigungen | entwurf | 2026-10-11 | docs/adr/ADR-024-offline-and-notifications.md | — | vorgeschlagen; W1 bis W5 warten auf Jannes |
+| E | ADR-024 Offline und Benachrichtigungen | gesichtet | 2026-10-11 | docs/adr/ADR-024-offline-and-notifications.md | — | angenommen 2026-10-11: W1 (c) mit Freigabe ohne Netz per Passkey, W2 bis W5 wie empfohlen; Prinzipien 0.26, ADR-025 Fassung 4 |
 | E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->

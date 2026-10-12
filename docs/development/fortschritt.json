@@ -932,6 +932,12 @@
           "status": "offen"
         },
         {
+          "id": "off-epic-001",
+          "name": "OFF-EPIC-001 Dokumentation ohne Empfang",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
           "id": "out-epic-001",
           "name": "OUT-EPIC-001 Fortschritt ohne Bewertung",
           "gewicht": 2,
@@ -1342,10 +1348,10 @@
           "id": "adr-024",
           "name": "ADR-024 Offline und Benachrichtigungen",
           "gewicht": 1,
-          "status": "entwurf",
+          "status": "gesichtet",
           "fertig_am": "2026-10-11",
           "nachweis": "docs/adr/ADR-024-offline-and-notifications.md",
-          "vermerk": "vorgeschlagen; W1 bis W5 warten auf Jannes"
+          "vermerk": "angenommen 2026-10-11: W1 (c) mit Freigabe ohne Netz per Passkey, W2 bis W5 wie empfohlen; Prinzipien 0.26, ADR-025 Fassung 4"
         },
         {
           "id": "b5-identitaet",

@@ -6,6 +6,17 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.26
+
+Entscheidung des Projektinhabers vom **2026-10-11**: Dokumentation ohne Empfang wie bei anderen
+Praxisprogrammen, und dafür eine Freigabe der gesperrten Anwendung ohne Netz per Passkey. **§3.4** —
+eine zweite benannte Ausnahme: Die Freigabe ohne Netz öffnet nur, was auf dem Gerät liegt
+(Tagesplan, eigene Offline-Entwürfe, Plan der Durchführung), nie eine Sitzung beim Server; die
+Zeremonie führt der Browser, die Signatur prüft Web Crypto, die App-PIN gibt ohne Netz nie frei.
+§2.2 bleibt unverändert: Die Offline-Fähigkeit bleibt begrenzt, Finalisierung erst nach der
+Übertragung. Rang 2 dazu: ADR-024 (Punkte 6 und 9, W1 c), ADR-025 Fassung 4 (Punkt 16). Empfohlen
+war, Therapeut:innen in V1 offline nichts vorzuhalten (W1 a); Jannes hat das verworfen.
+
 ### Änderungsvermerk 0.25
 
 Entscheidung des Projektinhabers vom **2026-10-10**: im Alltag Passkey, als Rückweg eine eigene
