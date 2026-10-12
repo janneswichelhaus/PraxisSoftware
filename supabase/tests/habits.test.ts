@@ -39,6 +39,8 @@ interface Gewohnheit {
   paused: boolean;
   ended_at: string | null;
   marks: string[];
+  marks_by_representative: string[];
+  paused_by_kind: string | null;
 }
 
 async function fehler(versuch: Promise<unknown>): Promise<string> {
@@ -289,8 +291,10 @@ describe('Gewohnheiten in der Praxis (ALT-003)', () => {
         'ended_at',
         'id',
         'marks',
+        'marks_by_representative',
         'paused',
         'paused_at',
+        'paused_by_kind',
         'place',
         'starts_on',
       ].sort(),
@@ -315,7 +319,18 @@ describe('Gewohnheiten auf der Plattform (ALT-003)', () => {
     const daten = await portal(erika.konto, erika.zugang);
     expect(daten).toMatchObject({ mark_days: 7, can_mark: true, consent_needed: false });
     expect(Object.keys(daten!.habits[0]!).sort()).toEqual(
-      ['action', 'cue', 'ended_at', 'id', 'marks', 'paused', 'place', 'starts_on'].sort(),
+      [
+        'action',
+        'cue',
+        'ended_at',
+        'id',
+        'marks',
+        'marks_by_representative',
+        'paused',
+        'paused_by_kind',
+        'place',
+        'starts_on',
+      ].sort(),
     );
     // Max sieht nichts von Erika.
     expect(
@@ -390,11 +405,23 @@ describe('Gewohnheiten auf der Plattform (ALT-003)', () => {
     expect(
       await fehler(asUser(erika.konto, VERMERKEN, [erika.zugang, max, await tag(0), true])),
     ).toBe('P0002');
+    // Erikas Training mit Einwilligung: Die Gewohnheit der Behandlung ist dort
+    // unbekannt, nicht nur abgewiesen (Zweitreview S2).
+    await asPostgres(
+      `insert into public.training_consent_records
+         (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by)
+       values ($1, $2, 'consent_granted', 'training_health_data', current_date, $3)`,
+      [organizationId, trainingRelationships.erika, users.trainer],
+    );
     expect(
       await fehler(
         asUser(erika.konto, VERMERKEN, [platformAccesses.erikaTraining, g, await tag(0), true]),
       ),
-    ).not.toBe('kein Fehler');
+    ).toBe('P0002');
+    expect(
+      await fehler(asUser(erika.konto, PAUSIEREN, [platformAccesses.erikaTraining, g, true])),
+    ).toBe('P0002');
+    expect((await portal(erika.konto, platformAccesses.erikaTraining))!.habits).toEqual([]);
     expect(await portal(users.plattformTina, erika.zugang)).toBeNull();
     expect(
       await fehler(asUser(users.plattformTina, VERMERKEN, [erika.zugang, g, await tag(0), true])),
@@ -481,6 +508,13 @@ describe('Gewohnheiten auf der Plattform (ALT-003)', () => {
         [g],
       );
       expect(tage.rows).toEqual([{ platform_access_kind: 'legal_representative' }]);
+      // In Praxis und Auskunft sichtbar, ohne Kennung (Zweitreview S1).
+      await asUserCommitted(KONTO, PAUSIEREN, [BERND, g, true]);
+      const praxisSicht = await praxis(users.therapist, 'treatment', patients.erika);
+      expect(praxisSicht!.habits[0]).toMatchObject({
+        marks_by_representative: [await tag(0)],
+        paused_by_kind: 'legal_representative',
+      });
       const { rows } = await asPostgres<{ actor_kind: string; view: string }>(
         `select actor_kind, context ->> 'view' as view from public.audit_log
          where actor_user_id = $1 and action = 'platform_representation.read'`,

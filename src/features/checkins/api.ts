@@ -89,6 +89,9 @@ const datenSchema = z.object({
       paused_at: z.string().nullable(),
       ended_at: z.string().nullable(),
       marks: z.array(z.string()),
+      /** Tage, die eine rechtliche Vertretung vermerkt hat (Zweitreview S1). */
+      marks_by_representative: z.array(z.string()),
+      paused_by_kind: z.enum(['self', 'legal_representative']).nullable(),
     }),
   ),
   /** Höchstens so viele laufende Gewohnheiten (ANN-370). */
@@ -209,7 +212,7 @@ export async function trainingsereignisEntfernen(ereignisId: string): Promise<vo
 function gewohnheitsfehler(meldung: string | undefined): string {
   const m = meldung ?? '';
   if (m.includes('too many'))
-    return 'Es laufen schon drei Gewohnheiten. Bitte erst eine beenden – wenige, sehr kleine wirken besser.';
+    return 'Es laufen schon so viele Gewohnheiten, wie möglich sind. Bitte erst eine beenden – wenige, sehr kleine wirken besser.';
   if (m.includes('consent'))
     return 'Ohne Einwilligung zu Gesundheitsangaben lässt sich keine Gewohnheit eintragen.';
   if (m.includes('has ended'))

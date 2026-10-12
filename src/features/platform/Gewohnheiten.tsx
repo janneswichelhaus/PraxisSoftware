@@ -141,7 +141,7 @@ function Eintrag({
                 aria-pressed={t.vermerkt}
                 disabled={!daten.can_mark || beschaeftigt}
                 onClick={() => vermerken.mutate({ tag: t.datum, gemacht: !t.vermerkt })}
-                className={`min-h-11 min-w-16 rounded-md border px-2 py-1 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed ${
+                className={`rounded-button min-h-11 min-w-16 border px-2 py-1 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed ${
                   t.vermerkt
                     ? 'border-ink bg-ink text-surface'
                     : 'border-ink-muted text-ink bg-transparent'

@@ -1717,7 +1717,7 @@ function gewohnheitsfehler(meldung: string | undefined): Error {
   if (m.includes('paused'))
     return new Error('Die Gewohnheit ist pausiert. Setzen Sie sie fort, um Tage zu vermerken.');
   if (m.includes('day not open'))
-    return new Error('Diesen Tag können Sie nicht mehr vermerken – nur die letzten sieben Tage.');
+    return new Error('Diesen Tag können Sie nicht mehr vermerken – nur die angezeigten Tage.');
   if (m.includes('not found')) return new Error('Ihre Praxis hat die Gewohnheit beendet.');
   if (m.includes('consent') || m.includes('not allowed'))
     return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');

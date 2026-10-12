@@ -807,10 +807,11 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | KOM-EPIC-002 Foto und Video | fertig | 2026-10-11 | KOM-005 bis KOM-008, Zweitreview | — | Sichtung: Pläne Schritte 13 bis 15 |
 | B | KOM-EPIC-003 Benachrichtigungen und Terminerinnerung | fertig | 2026-10-12 | KOM-009 bis KOM-011, Zweitreview | — | Sichtung: Pläne Schritte 14 und 15 |
 | B | TRK-EPIC-001 Einheiten und Check-ins | fertig | 2026-10-12 | TRK-001 bis TRK-003, Zweitreview | — | Sichtung: Verlauf Schritte 1 bis 3 |
-| B | TRK-EPIC-002 Schmerz, Sicherheit, Kontext | fertig | 2026-10-12 | TRK-004 bis TRK-006, Zweitreview | — | Sichtung: Verlauf Schritte 4 bis 6 |
-| B | TRK-EPIC-003 Offline-Erfassung | fertig | 2026-10-12 | TRK-007 bis TRK-009, Zweitreview | — | Sichtung: Verlauf Schritte 7 bis 9 |
-| B | OFF-EPIC-001 Dokumentation ohne Empfang | fertig | 2026-10-12 | OFF-001 bis OFF-003, Zweitreview | — | Sichtung: Verlauf Schritte 10 bis 12 |
-| B | OUT-EPIC-001 Fortschritt ohne Bewertung | fertig | 2026-10-12 | OUT-001 bis OUT-004, Zweitreview | — | Sichtung: Verlauf Schritte 13 bis 15 |
+| B | TRK-EPIC-002 Schmerz, Sicherheit, Kontext | fertig | 2026-10-12 | TRK-004 bis TRK-006, Zweitreview | — | Sichtung: Verlauf Schritte 1 bis 3 |
+| B | TRK-EPIC-003 Offline-Erfassung | fertig | 2026-10-12 | TRK-007 bis TRK-009, Zweitreview | — | Sichtung: Verlauf Schritte 4 bis 6 |
+| B | OFF-EPIC-001 Dokumentation ohne Empfang | fertig | 2026-10-12 | OFF-001 bis OFF-003, Zweitreview | — | Sichtung: Verlauf Schritte 7 bis 9 |
+| B | OUT-EPIC-001 Fortschritt ohne Bewertung | fertig | 2026-10-12 | OUT-001 bis OUT-004, Zweitreview | — | Sichtung: Verlauf Schritte 10 bis 12 |
+| B | ALT-EPIC-001 Aktivitäten und Gewohnheiten | fertig | 2026-10-12 | ALT-001 bis ALT-003, Zweitreview | — | Sichtung: Verlauf Schritte 13 bis 15 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |

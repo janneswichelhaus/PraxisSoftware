@@ -932,7 +932,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-12",
           "nachweis": "TRK-004 bis TRK-006, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 4 bis 6"
+          "vermerk": "Sichtung: Verlauf Schritte 1 bis 3"
         },
         {
           "id": "trk-epic-003",
@@ -941,7 +941,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-12",
           "nachweis": "TRK-007 bis TRK-009, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 7 bis 9"
+          "vermerk": "Sichtung: Verlauf Schritte 4 bis 6"
         },
         {
           "id": "off-epic-001",
@@ -950,7 +950,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-12",
           "nachweis": "OFF-001 bis OFF-003, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 10 bis 12"
+          "vermerk": "Sichtung: Verlauf Schritte 7 bis 9"
         },
         {
           "id": "out-epic-001",
@@ -959,13 +959,16 @@
           "status": "fertig",
           "fertig_am": "2026-10-12",
           "nachweis": "OUT-001 bis OUT-004, Zweitreview",
-          "vermerk": "Sichtung: Verlauf Schritte 13 bis 15"
+          "vermerk": "Sichtung: Verlauf Schritte 10 bis 12"
         },
         {
           "id": "alt-epic-001",
           "name": "ALT-EPIC-001 Aktivitäten und Gewohnheiten",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-12",
+          "nachweis": "ALT-001 bis ALT-003, Zweitreview",
+          "vermerk": "Sichtung: Verlauf Schritte 13 bis 15"
         },
         {
           "id": "alt-epic-002",

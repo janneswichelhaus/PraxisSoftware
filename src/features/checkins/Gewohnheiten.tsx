@@ -72,7 +72,9 @@ export function Gewohnheiten({
       ) : null}
       {beendet.length > 0 ? (
         <details className="text-sm">
-          <summary className="text-ink cursor-pointer py-2">Beendet ({beendet.length})</summary>
+          <summary className="text-ink flex min-h-11 cursor-pointer items-center">
+            Beendet ({beendet.length})
+          </summary>
           <ul className="mt-2 flex flex-col gap-1">
             {beendet.map((g) => (
               <li key={g.id} className="text-ink-muted">
@@ -102,6 +104,8 @@ function Eintrag({
 }) {
   const queryClient = useQueryClient();
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+  // Wie recorded_by_kind am Check-in (Zweitreview S1).
+  const vertretung = new Set(gewohnheit.marks_by_representative);
   // Vor dem Eintragen gibt es nichts zu vermerken - diese Tage fehlen.
   const reihe = tagesreihe(
     heute,
@@ -118,7 +122,9 @@ function Eintrag({
       <p className="text-ink-muted text-sm">
         Seit {formatDate(gewohnheit.starts_on)}
         {gewohnheit.paused && gewohnheit.paused_at
-          ? ` · pausiert seit ${formatDate(gewohnheit.paused_at.slice(0, 10))}`
+          ? ` · pausiert seit ${formatDate(gewohnheit.paused_at.slice(0, 10))}${
+              gewohnheit.paused_by_kind === 'legal_representative' ? ' (Vertretung)' : ''
+            }`
           : ''}
       </p>
       {/* ANN-370: Punkte je Tag, kein Zählwerk, keine Serie. */}
@@ -132,18 +138,24 @@ function Eintrag({
             title={formatDate(t.datum)}
             className={
               t.vermerkt
-                ? 'bg-ink h-3 w-3 rounded-full'
-                : 'border-ink-muted h-3 w-3 rounded-full border'
+                ? 'bg-ink rounded-pill h-3 w-3'
+                : 'border-ink-muted rounded-pill h-3 w-3 border'
             }
           >
             <span className="sr-only">
-              {formatDate(t.datum)}: {t.vermerkt ? 'vermerkt' : 'nicht vermerkt'}
+              {formatDate(t.datum)}:{' '}
+              {t.vermerkt
+                ? vertretung.has(t.datum)
+                  ? 'vermerkt von der Vertretung'
+                  : 'vermerkt'
+                : 'nicht vermerkt'}
             </span>
           </li>
         ))}
       </ol>
       <p className="text-ink-muted text-xs">
         Ein Punkt je Tag, heute rechts · gefüllt: vermerkt · leer: nicht vermerkt
+        {gewohnheit.marks_by_representative.length > 0 ? ' · teils von der Vertretung' : ''}
       </p>
       {beendbar ? (
         <div>

@@ -423,6 +423,8 @@ const GEWOHNHEIT: CheckinDaten['habits'][number] = {
   paused_at: null,
   ended_at: null,
   marks: ['2026-10-12', '2026-10-10'],
+  marks_by_representative: [],
+  paused_by_kind: null,
 };
 
 describe('Gewohnheiten (ALT-003, ANN-370)', () => {
@@ -440,6 +442,8 @@ describe('Gewohnheiten (ALT-003, ANN-370)', () => {
             paused: true,
             paused_at: '2026-10-11T18:00:00Z',
             marks: [],
+            marks_by_representative: [],
+            paused_by_kind: null,
           },
         ],
       }),

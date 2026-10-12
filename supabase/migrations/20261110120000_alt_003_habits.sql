@@ -61,12 +61,18 @@ create table public.habits (
   -- Pausiert die Person (krank, verreist); wer, steht am Zugang.
   paused_at                timestamptz,
   paused_by_access_id      uuid,
+  -- Wer pausiert hat, ohne Kennung (Zweitreview S1): die Person selbst oder
+  -- ihre rechtliche Vertretung - steht in Praxis und Auskunft.
+  paused_by_kind           text check (paused_by_kind in ('self', 'legal_representative')),
   -- Beendet die Praxis; die Tage bleiben stehen.
   ended_at                 timestamptz,
   ended_by                 uuid,
 
   constraint habits_id_organization unique (id, organization_id),
-  constraint habits_paused_pair check ((paused_at is null) = (paused_by_access_id is null)),
+  constraint habits_paused_pair check (
+    (paused_at is null) = (paused_by_access_id is null)
+    and (paused_at is null) = (paused_by_kind is null)
+  ),
   constraint habits_ended_pair check ((ended_at is null) = (ended_by is null)),
   constraint habits_relationship_matches check (
     (relationship_kind = 'treatment' and training_relationship_id is null
@@ -190,10 +196,18 @@ as $$
     'created_at', h.created_at,
     'paused', h.paused_at is not null,
     'paused_at', h.paused_at,
+    'paused_by_kind', h.paused_by_kind,
     'ended_at', h.ended_at,
     'marks', coalesce((
       select jsonb_agg(m.done_on order by m.done_on desc)
       from public.habit_marks m where m.habit_id = h.id
+    ), '[]'::jsonb),
+    -- Zweitreview S1: die Tage, die eine rechtliche Vertretung vermerkt hat,
+    -- wie recorded_by_kind am Check-in.
+    'marks_by_representative', coalesce((
+      select jsonb_agg(m.done_on order by m.done_on desc)
+      from public.habit_marks m
+      where m.habit_id = h.id and m.platform_access_kind = 'legal_representative'
     ), '[]'::jsonb)
   ) order by h.ended_at is not null, h.created_at), '[]'::jsonb)
   from public.habits h
@@ -346,7 +360,8 @@ begin
                 and app.platform_access_writable(p_access_id)
                 and v_einwilligung,
     'consent_needed', not v_einwilligung,
-    -- Feste Schluesselliste (ADR-023 Punkt 22): ohne Zeitpunkte der Praxis.
+    -- Feste Schluesselliste (ADR-023 Punkt 22): ohne Eintrage- und
+    -- Pausenzeitpunkt; ended_at bleibt fuer den eigenen Export.
     'habits', (
       select coalesce(jsonb_agg(
         h - 'created_at' - 'paused_at'
@@ -468,11 +483,13 @@ begin
   end if;
   if p_paused and v_habit.paused_at is null then
     update public.habits
-       set paused_at = now(), paused_by_access_id = p_access_id
+       set paused_at = now(), paused_by_access_id = p_access_id,
+           paused_by_kind = (select a.access_kind from public.platform_accesses a
+                             where a.id = p_access_id)
      where id = v_habit.id;
   elsif not p_paused and v_habit.paused_at is not null then
     update public.habits
-       set paused_at = null, paused_by_access_id = null
+       set paused_at = null, paused_by_access_id = null, paused_by_kind = null
      where id = v_habit.id;
   end if;
   perform app.log_platform_representation(

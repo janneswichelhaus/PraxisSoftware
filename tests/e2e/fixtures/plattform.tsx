@@ -845,6 +845,8 @@ client.setQueryData(checkinsKey('treatment', MAX), {
       paused_at: null,
       ended_at: null,
       marks: [0, -1, -2, -4, -5, -8, -9, -10, -13].map((t) => inTagen(t, 0).slice(0, 10)),
+      marks_by_representative: [],
+      paused_by_kind: null,
     },
     {
       id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000002',
@@ -857,6 +859,8 @@ client.setQueryData(checkinsKey('treatment', MAX), {
       paused_at: inTagen(-3, 18),
       ended_at: null,
       marks: [-6, -7, -11].map((t) => inTagen(t, 0).slice(0, 10)),
+      marks_by_representative: [inTagen(-7, 0).slice(0, 10)],
+      paused_by_kind: 'self',
     },
     {
       id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000003',
@@ -869,6 +873,8 @@ client.setQueryData(checkinsKey('treatment', MAX), {
       paused_at: null,
       ended_at: inTagen(-30, 10),
       marks: [],
+      marks_by_representative: [],
+      paused_by_kind: null,
     },
   ],
   habits_max: 3,
