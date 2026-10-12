@@ -41,6 +41,8 @@ import {
 import { EinladungPage } from '@/features/platform/EinladungPage';
 import { checkinsKey, type CheckinDaten } from '@/features/checkins/api';
 import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
+import { TrainingAssessments } from '@/features/training/TrainingAssessments';
+import { assessmentsKey, type Assessmentsicht } from '@/features/training/assessments-api';
 import {
   PASSKEYS_SCHLUESSEL,
   PIN_SCHLUESSEL,
@@ -70,7 +72,9 @@ import '@/index.css';
  * und `einstieg` die Benachrichtigungen. Seit TRK-EPIC-001 `checkin` (die
  * Fragen), `checkin-uebersicht` (Kachel), `checkin-danke` (Satz nach dem
  * Absenden), `angaben` („Meine Angaben") und `zwischen` (Abschnitt der
- * Praxis). Die Daten liegen vorab im Cache;
+ * Praxis). Seit OUT-EPIC-001 trägt `zwischen` das Verlaufsbild mit
+ * Ereignissen und `angaben` die Punktbilder; `assessments` zeigt die
+ * Assessments der Trainingsseite. Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -779,6 +783,42 @@ client.setQueryData(checkinsKey('treatment', MAX), {
   health_consent: null,
 } satisfies CheckinDaten);
 
+// OUT-002: zwei Assessments derselben Testbatterie, eine Wiederholung geplant.
+const TINA_TRAINING = 'eeeeeeee-eeee-4eee-8eee-000000000001';
+client.setQueryData(assessmentsKey(TINA_TRAINING), {
+  today: inTagen(0, 0).slice(0, 10),
+  can_write: true,
+  relationship_open: true,
+  health_consent: true,
+  assessments: [
+    {
+      id: 'abababab-abab-4bab-8bab-000000000002',
+      title: 'Sprungtests Knie',
+      performed_on: inTagen(0, 0).slice(0, 10),
+      conditions: 'Halle, barfuß, 10 Minuten Rad zum Aufwärmen',
+      next_due_on: inTagen(42, 0).slice(0, 10),
+      created_by_name: 'Tom Trainingsbetreuung',
+      results: [
+        { label: 'Einbeinsprung weit', unit: 'cm', value: null, left: 120, right: 140 },
+        { label: 'Dreifachsprung weit', unit: 'cm', value: null, left: 380, right: 425.5 },
+        { label: 'Kniebeugen in 30 Sekunden', unit: null, value: 18, left: null, right: null },
+      ],
+    },
+    {
+      id: 'abababab-abab-4bab-8bab-000000000001',
+      title: 'Sprungtests Knie',
+      performed_on: inTagen(-42, 0).slice(0, 10),
+      conditions: 'Halle, Schuhe, 10 Minuten Rad zum Aufwärmen',
+      next_due_on: inTagen(0, 0).slice(0, 10),
+      created_by_name: 'Tom Trainingsbetreuung',
+      results: [
+        { label: 'Einbeinsprung weit', unit: 'cm', value: null, left: 98, right: 141 },
+        { label: 'Kniebeugen in 30 Sekunden', unit: null, value: 14, left: null, right: null },
+      ],
+    },
+  ],
+} satisfies Assessmentsicht);
+
 const sitzung = {
   session: null,
   initialising: false,
@@ -827,6 +867,11 @@ function inhalt(): { pfad: string; element: ReactNode } {
       return {
         pfad: '/',
         element: praxisrahmen(<ZwischenDenTerminen art="treatment" verhaeltnisId={MAX} />),
+      };
+    case 'assessments':
+      return {
+        pfad: '/',
+        element: praxisrahmen(<TrainingAssessments verhaeltnisId={TINA_TRAINING} />),
       };
     case 'ich':
       return {

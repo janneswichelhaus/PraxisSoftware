@@ -797,14 +797,13 @@ function JeUebung({ plan }: { plan: Plan }) {
               const zeile = zeilen[i]!;
               return (
                 <tr key={item.id} className="border-line border-t align-top">
-                  <th scope="row" className="text-ink py-1 pr-4 text-left font-normal">
-                    {item.exercise_name} · {item.variant_name}
-                    <span className="text-ink-muted block text-xs">{dosierungFachlich(item)}</span>
+                  <th scope="row" className="text-ink min-w-40 py-1 pr-4 text-left font-normal">
+                    {item.position}. {item.variant_name}
                   </th>
                   <td className="text-ink py-1 pr-4 tabular-nums">{zeile.ganz}</td>
                   <td className="text-ink py-1 pr-4 tabular-nums">{zeile.teilweise}</td>
                   <td className="text-ink py-1 pr-4 tabular-nums">{zeile.ausgelassen}</td>
-                  <td className="text-ink-muted py-1 pr-4">
+                  <td className="text-ink-muted min-w-56 py-1 pr-4">
                     {zeile.zuletzt
                       .map((e) => `${formatDate(e.tag)} ${AUSFUEHRUNG_TEXT[e.ausfuehrung]}`)
                       .join(' · ')}

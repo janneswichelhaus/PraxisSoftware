@@ -187,7 +187,10 @@ function Batterie({
                   const e = a.results.find((r) => r.label === label);
                   const seiten = e ? seitenText(e) : null;
                   return (
-                    <td key={a.id} className="text-ink py-1 pr-4 align-top tabular-nums">
+                    <td
+                      key={a.id}
+                      className="text-ink py-1 pr-4 align-top whitespace-nowrap tabular-nums"
+                    >
                       {e ? ergebnisText(e) : <span aria-label="nicht gemessen">–</span>}
                       {seiten ? (
                         <span className="text-ink-muted block text-xs">{seiten}</span>
@@ -206,11 +209,9 @@ function Batterie({
           const anders = vorige !== undefined && (vorige.conditions ?? '') !== (a.conditions ?? '');
           return (
             <li key={a.id} className="flex flex-wrap items-center gap-x-3">
-              <span className="text-ink-muted w-24 shrink-0 tabular-nums">
-                {formatDate(a.performed_on)}
-              </span>
               <span className="text-ink min-w-0 flex-1">
-                Bedingungen: {a.conditions ?? 'nicht festgehalten'}
+                <span className="font-semibold tabular-nums">{formatDate(a.performed_on)}</span>
+                {' · '}Bedingungen: {a.conditions ?? 'nicht festgehalten'}
                 {anders ? ` (andere als am ${formatDate(vorige.performed_on)})` : ''}
                 {a.created_by_name ? ` · ${a.created_by_name}` : ''}
                 {a.next_due_on ? ` · Wiederholung ${formatDate(a.next_due_on)}` : ''}
