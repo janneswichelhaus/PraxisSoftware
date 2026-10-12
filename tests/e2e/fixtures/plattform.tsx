@@ -13,6 +13,7 @@ import {
   angeboteSchluessel,
   benachrichtigungSchluessel,
   befundbogenSchluessel,
+  checkinsSchluessel,
   dokumenteSchluessel,
   einstiegSchluessel,
   einwilligungenSchluessel,
@@ -24,6 +25,7 @@ import {
   vertragSchluessel,
   wuenscheSchluessel,
   type Dokument,
+  type EigeneCheckins,
   type Einwilligung,
   type MeinPaket,
   type Nachsorgeabo,
@@ -37,6 +39,8 @@ import {
   type Trainingsvertrag,
 } from '@/features/platform/api';
 import { EinladungPage } from '@/features/platform/EinladungPage';
+import { checkinsKey, type CheckinDaten } from '@/features/checkins/api';
+import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
 import {
   PASSKEYS_SCHLUESSEL,
   PIN_SCHLUESSEL,
@@ -63,7 +67,10 @@ import '@/index.css';
  * Widerrufsfrist), `angebot-wartet` (Behandlung läuft noch),
  * `angebot-uebersicht` (Kachel auf der Übersicht) und `vertrag` (eigener
  * Vertrag mit Widerrufsknopf). Seit KOM-EPIC-003 tragen `einstellungen`
- * und `einstieg` die Benachrichtigungen. Die Daten liegen vorab im Cache;
+ * und `einstieg` die Benachrichtigungen. Seit TRK-EPIC-001 `checkin` (die
+ * Fragen), `checkin-uebersicht` (Kachel), `checkin-danke` (Satz nach dem
+ * Absenden), `angaben` („Meine Angaben") und `zwischen` (Abschnitt der
+ * Praxis). Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -676,6 +683,45 @@ client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
 client.setQueryData(befundbogenSchluessel(begleitung.access_id), []);
 
+// TRK-EPIC-001: Check-in der Behandlung, im Training keiner eingestellt.
+const checkinVerlauf: EigeneCheckins['history'] = [
+  {
+    answered_on: inTagen(-7, 0).slice(0, 10),
+    recorded_by_kind: 'self',
+    values: { pain_rest: 3, pain_load: 6, daily_impairment: 4 },
+  },
+  {
+    answered_on: inTagen(-14, 0).slice(0, 10),
+    recorded_by_kind: 'legal_representative',
+    values: { pain_rest: 5, daily_impairment: 6 },
+  },
+];
+const checkinFaellig = seite === 'checkin' || seite === 'checkin-uebersicht';
+client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
+  today: inTagen(0, 0).slice(0, 10),
+  schedule: { interval_days: 7, parameter_keys: ['pain_rest', 'pain_load', 'daily_impairment'] },
+  due_on: checkinFaellig ? inTagen(0, 0).slice(0, 10) : inTagen(3, 0).slice(0, 10),
+  due: checkinFaellig,
+  can_answer: checkinFaellig,
+  consent_needed: false,
+  last_values: { pain_rest: 3, pain_load: 6, daily_impairment: 4 },
+  history: checkinVerlauf,
+} satisfies EigeneCheckins);
+client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
+client.setQueryData(checkinsKey('treatment', MAX), {
+  today: inTagen(0, 0).slice(0, 10),
+  can_write: true,
+  schedule: {
+    interval_days: 7,
+    parameter_keys: ['pain_rest', 'pain_load', 'daily_impairment'],
+    starts_on: inTagen(-21, 0).slice(0, 10),
+    due_on: inTagen(3, 0).slice(0, 10),
+    updated_at: inTagen(-21, 9),
+    updated_by_name: 'Anna Beispiel',
+  },
+  checkins: checkinVerlauf.map((c) => ({ ...c, recorded_at: `${c.answered_on}T07:00:00Z` })),
+} satisfies CheckinDaten);
+
 const sitzung = {
   session: null,
   initialising: false,
@@ -720,6 +766,11 @@ function inhalt(): { pfad: string; element: ReactNode } {
       };
     case 'einladung':
       return { pfad: '/einladung', element: <EinladungPage /> };
+    case 'zwischen':
+      return {
+        pfad: '/',
+        element: praxisrahmen(<ZwischenDenTerminen art="treatment" verhaeltnisId={MAX} />),
+      };
     case 'ich':
       return {
         pfad: '/p/ich',
@@ -760,6 +811,10 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'angebot-frueh':
     case 'angebot-wartet':
     case 'angebot-uebersicht':
+    case 'checkin':
+    case 'checkin-uebersicht':
+    case 'checkin-danke':
+    case 'angaben':
     case 'vertrag': {
       const pfade: Record<string, string> = {
         angebot: '/p/angebot?bereich=treatment',
@@ -781,6 +836,10 @@ function inhalt(): { pfad: string; element: ReactNode } {
         daten: '/p/daten?bereich=treatment',
         einstellungen: '/p/einstellungen',
         einstieg: '/p?bereich=treatment',
+        checkin: '/p/checkin?bereich=treatment',
+        'checkin-uebersicht': '/p?bereich=treatment',
+        'checkin-danke': '/p?bereich=treatment&checkin=1',
+        angaben: '/p/angaben?bereich=treatment',
       };
       return {
         pfad: pfade[seite]!,
