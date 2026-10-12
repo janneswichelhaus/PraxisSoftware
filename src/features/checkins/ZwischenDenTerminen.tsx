@@ -27,6 +27,7 @@ import {
   type CheckinDaten,
   type Verhaeltnisart,
 } from './api';
+import { Gewohnheiten } from './Gewohnheiten';
 import { verlaufsmarkierungen } from './markierungen';
 import { Verlaufsbilder, Verlaufsereignisse } from './Verlauf';
 
@@ -71,6 +72,8 @@ export function ZwischenDenTerminen({
         <>
           <Takt art={art} verhaeltnisId={verhaeltnisId} daten={data} />
           <Angaben art={art} verhaeltnisId={verhaeltnisId} daten={data} />
+          {/* ALT-003: Gewohnheiten der Person (IDEA-ALT-002, ANN-370). */}
+          <Gewohnheiten art={art} verhaeltnisId={verhaeltnisId} daten={data} />
         </>
       )}
     </Section>

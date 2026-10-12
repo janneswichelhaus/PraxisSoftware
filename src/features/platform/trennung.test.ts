@@ -118,6 +118,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-014: freigegebene Dokumente und ihr Verweis.
       'rpc:issue_platform_file_link',
       'rpc:issue_platform_message_attachment_link',
+      // ALT-003: die eigenen Gewohnheiten, Tage vermerken, pausieren.
+      'rpc:mark_platform_habit',
+      'rpc:pause_platform_habit',
       // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
       // ANG-003: das eigene Nachsorge-Abo.
       'rpc:platform_aftercare',
@@ -134,6 +137,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-018: die eigenen Daten herunterladen.
       'rpc:platform_export',
       'rpc:platform_files',
+      'rpc:platform_habits',
       // POR-013: eigene Rechnungen.
       'rpc:platform_invoice',
       'rpc:platform_invoices',

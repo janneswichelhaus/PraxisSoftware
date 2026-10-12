@@ -41,6 +41,7 @@ export const ZAEHLER = [
   'platform_appointment_requests',
   'checkins',
   'checkin_schedules',
+  'habits',
   'waitlist_entries',
   'legal_holds',
 ] as const;
@@ -82,6 +83,8 @@ const BEREICHE: Record<Zaehler, [string, string]> = {
   checkins: ['Check-in', 'Check-ins'],
   // Weicht dem Takt der bleibenden Akte, wenn sie einen hat (ANN-350).
   checkin_schedules: ['Check-in-Takt', 'Check-in-Takte'],
+  // ALT-003: ziehen mit ihren Tagen mit.
+  habits: ['Gewohnheit', 'Gewohnheiten'],
   waitlist_entries: ['Wartelisteneintrag', 'Wartelisteneinträge'],
   legal_holds: ['Löschsperre', 'Löschsperren'],
 };

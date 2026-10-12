@@ -92,6 +92,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
         'messages',
         // TRK-003: die eigenen Check-ins mit Takt und Angaben.
         'checkins',
+        // ALT-003: die eigenen Gewohnheiten mit vermerkten Tagen.
+        'habits',
       ].sort(),
     );
     expect(Object.keys(daten.person as object).sort()).toEqual(

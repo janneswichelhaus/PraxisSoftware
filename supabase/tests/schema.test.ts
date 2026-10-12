@@ -173,6 +173,9 @@ describe('Schema-Invarianten', () => {
       // OUT-002: Assessments im Training und ihre Ergebnisse.
       'training_assessments',
       'training_assessment_results',
+      // ALT-003: Gewohnheiten und ihre vermerkten Tage.
+      'habits',
+      'habit_marks',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

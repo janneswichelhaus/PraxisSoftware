@@ -16,6 +16,7 @@ const ladeBefundbogen = vi.fn();
 const ladeAbo = vi.fn();
 const ladeTrainingsangebot = vi.fn();
 const ladeCheckins = vi.fn();
+const ladeGewohnheiten = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -26,6 +27,7 @@ vi.mock('./api', async (importOriginal) => ({
   ladeAbo: (...args: unknown[]) => ladeAbo(...args) as Promise<unknown>,
   ladeTrainingsangebot: (...args: unknown[]) => ladeTrainingsangebot(...args) as Promise<unknown>,
   ladeCheckins: (...args: unknown[]) => ladeCheckins(...args) as Promise<unknown>,
+  ladeGewohnheiten: (...args: unknown[]) => ladeGewohnheiten(...args) as Promise<unknown>,
 }));
 
 const { Uebersicht } = await import('./Uebersicht');
@@ -80,6 +82,7 @@ beforeEach(() => {
   ladeAbo.mockResolvedValue(null);
   ladeTrainingsangebot.mockResolvedValue(null);
   ladeCheckins.mockResolvedValue(null);
+  ladeGewohnheiten.mockResolvedValue(null);
 });
 
 function checkin(teil: Record<string, unknown> = {}) {
@@ -247,6 +250,34 @@ describe('Uebersicht (POR-015)', () => {
     expect(await screen.findByText('Ihre Praxis bittet um einen Check-in')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zu den Einwilligungen →' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Jetzt beantworten →' })).not.toBeInTheDocument();
+  });
+
+  it('zeigt laufende Gewohnheiten als Kachel, pausierte nicht, ohne Zählwerk (ALT-003)', async () => {
+    const gewohnheit = {
+      id: 'g1',
+      action: 'zwei Minuten Mobilität',
+      cue: 'Nach dem Zähneputzen',
+      place: null,
+      starts_on: '2026-10-01',
+      paused: false,
+      ended_at: null,
+      marks: [],
+    };
+    ladeGewohnheiten.mockResolvedValue({
+      today: '2026-10-12',
+      mark_days: 7,
+      can_mark: true,
+      consent_needed: false,
+      habits: [gewohnheit, { ...gewohnheit, id: 'g2', action: 'Treppe', paused: true }],
+    });
+    zeige();
+    expect(await screen.findByText('Eine kleine Gewohnheit')).toBeInTheDocument();
+    expect(screen.getByText('zwei Minuten Mobilität')).toBeInTheDocument();
+    expect(screen.queryByText(/Treppe/)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Tage antippen →' })).toHaveAttribute(
+      'href',
+      '/p/gewohnheiten?bereich=treatment',
+    );
   });
 
   it('sagt nach dem Absenden, was mit den Angaben geschieht (D5)', async () => {

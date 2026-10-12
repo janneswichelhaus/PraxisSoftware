@@ -62,6 +62,10 @@ const BEWUSST_AUSSEN = new Map<string, string>([
     'Die Angaben eines Check-ins stehen als `values` an ihm in `checkins` (TRK-002).',
   ],
   [
+    'habit_marks',
+    'Die vermerkten Tage einer Gewohnheit stehen als `marks` an ihr in `habits` (ALT-003).',
+  ],
+  [
     'platform_message_entries',
     'Die Eintraege einer Rueckfrage stehen als `entries` an ihrem Vorgang in `platform_messages` (KOM-004).',
   ],

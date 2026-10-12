@@ -16,6 +16,8 @@ const saveCheckinTakt = vi.fn();
 const endCheckinTakt = vi.fn();
 const trainingsereignisVermerken = vi.fn();
 const trainingsereignisEntfernen = vi.fn();
+const gewohnheitEintragen = vi.fn();
+const gewohnheitBeenden = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof CheckinApi>()),
@@ -26,6 +28,8 @@ vi.mock('./api', async (importOriginal) => ({
     trainingsereignisVermerken(...a) as Promise<void>,
   trainingsereignisEntfernen: (...a: unknown[]) =>
     trainingsereignisEntfernen(...a) as Promise<void>,
+  gewohnheitEintragen: (...a: unknown[]) => gewohnheitEintragen(...a) as Promise<void>,
+  gewohnheitBeenden: (...a: unknown[]) => gewohnheitBeenden(...a) as Promise<void>,
 }));
 
 const { ZwischenDenTerminen } = await import('./ZwischenDenTerminen');
@@ -66,6 +70,9 @@ function daten(teil: Partial<CheckinDaten> = {}): CheckinDaten {
     appointment_days: [],
     events_writable: false,
     health_consent: null,
+    habits: [],
+    habits_max: 3,
+    habits_writable: true,
     ...teil,
   };
 }
@@ -402,5 +409,112 @@ describe('Verlaufsbild mit Ereignissen (OUT-001)', () => {
     expect(trainingsereignisEntfernen).not.toHaveBeenCalled();
     await nutzer.click(screen.getByRole('button', { name: 'Ja, Ereignis entfernen' }));
     await waitFor(() => expect(trainingsereignisEntfernen).toHaveBeenCalledWith(EREIGNIS.id));
+  });
+});
+
+const GEWOHNHEIT: CheckinDaten['habits'][number] = {
+  id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000001',
+  action: 'zwei Minuten Mobilität',
+  cue: 'Nach dem Zähneputzen',
+  place: 'im Bad',
+  starts_on: '2026-10-09',
+  created_at: '2026-10-09T08:00:00Z',
+  paused: false,
+  paused_at: null,
+  ended_at: null,
+  marks: ['2026-10-12', '2026-10-10'],
+};
+
+describe('Gewohnheiten (ALT-003, ANN-370)', () => {
+  it('zeigt Auslöser, Was und die Tage als Punkte – ohne Serie, ohne Quote', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({
+        habits: [
+          GEWOHNHEIT,
+          {
+            ...GEWOHNHEIT,
+            id: 'x2',
+            action: 'Treppe',
+            cue: 'Im Büro',
+            place: null,
+            paused: true,
+            paused_at: '2026-10-11T18:00:00Z',
+            marks: [],
+          },
+        ],
+      }),
+    );
+    const { container } = renderWithProviders(
+      <ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />,
+    );
+    const abschnitt = await screen.findByRole('region', { name: 'Gewohnheiten' });
+    expect(within(abschnitt).getByText('Nach dem Zähneputzen:')).toBeInTheDocument();
+    expect(
+      within(abschnitt).getByText('pausiert seit 11.10.2026', { exact: false }),
+    ).toBeInTheDocument();
+    const tage = within(abschnitt).getAllByRole('list', {
+      name: 'Tage bis heute, höchstens 28',
+    })[0]!;
+    // Seit dem 09.10.: vier Tage, nichts davor.
+    expect(within(tage).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(tage).getByText('12.10.2026: vermerkt')).toBeInTheDocument();
+    expect(within(tage).getByText('11.10.2026: nicht vermerkt')).toBeInTheDocument();
+    expect(within(tage).queryByText(/08\.10\.2026/)).not.toBeInTheDocument();
+    // Kein Zählwerk: keine Serie, keine Quote, kein „geschafft“.
+    expect(abschnitt).not.toHaveTextContent(/Serie in Folge|%|geschafft|Tage am Stück/);
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('trägt mit Auslöser ein; ohne Auslöser nicht', async () => {
+    gewohnheitEintragen.mockResolvedValue(undefined);
+    const nutzer = userEvent.setup();
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Gewohnheit eintragen' }));
+    await nutzer.type(screen.getByLabelText(/^Was – sehr klein/), 'eine Treppe statt Aufzug');
+    await nutzer.click(screen.getByRole('button', { name: 'Eintragen' }));
+    expect(screen.getByText('Bitte den Auslöser angeben.')).toBeInTheDocument();
+    expect(gewohnheitEintragen).not.toHaveBeenCalled();
+    await nutzer.type(screen.getByLabelText(/^Wann – nach welcher Handlung/), 'Im Büro');
+    await nutzer.click(screen.getByRole('button', { name: 'Eintragen' }));
+    await waitFor(() =>
+      expect(gewohnheitEintragen).toHaveBeenCalledWith({
+        art: 'treatment',
+        verhaeltnisId: AKTE,
+        was: 'eine Treppe statt Aufzug',
+        ausloeser: 'Im Büro',
+        wo: '',
+      }),
+    );
+  });
+
+  it('bei drei laufenden kein Eintragen; ohne Schreibrecht weder eintragen noch beenden', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({ habits: [GEWOHNHEIT, { ...GEWOHNHEIT, id: 'b' }, { ...GEWOHNHEIT, id: 'c' }] }),
+    );
+    const { unmount } = renderWithProviders(
+      <ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />,
+    );
+    expect(await screen.findByText(/Es laufen 3 Gewohnheiten/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gewohnheit eintragen' })).not.toBeInTheDocument();
+    unmount();
+    fetchCheckins.mockResolvedValue(
+      daten({ can_write: false, habits_writable: false, habits: [GEWOHNHEIT] }),
+    );
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    expect(await screen.findByText('Nach dem Zähneputzen:')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gewohnheit eintragen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Beenden' })).not.toBeInTheDocument();
+  });
+
+  it('beendet erst nach Rückfrage; die Tage bleiben', async () => {
+    fetchCheckins.mockResolvedValue(daten({ habits: [GEWOHNHEIT] }));
+    gewohnheitBeenden.mockResolvedValue(undefined);
+    const nutzer = userEvent.setup();
+    renderWithProviders(<ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Beenden' }));
+    expect(screen.getByText(/Die vermerkten Tage bleiben hier stehen/)).toBeInTheDocument();
+    expect(gewohnheitBeenden).not.toHaveBeenCalled();
+    await nutzer.click(screen.getByRole('button', { name: 'Gewohnheit beenden' }));
+    await waitFor(() => expect(gewohnheitBeenden).toHaveBeenCalledWith(GEWOHNHEIT.id));
   });
 });

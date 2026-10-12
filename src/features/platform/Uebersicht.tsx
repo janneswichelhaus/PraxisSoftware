@@ -13,9 +13,11 @@ import {
   aboSchluessel,
   befundbogenSchluessel,
   checkinsSchluessel,
+  gewohnheitenSchluessel,
   ladeAbo,
   ladeBefundbogen,
   ladeCheckins,
+  ladeGewohnheiten,
   ladeRechnungen,
   ladeTermine,
   ladeNachrichten,
@@ -109,6 +111,14 @@ export function Uebersicht({
     queryFn: () => ladeCheckins(zugang.access_id),
   });
   const checkinOffen = Boolean(checkin.data?.can_answer);
+  // ALT-003: laufende Gewohnheiten zum Antippen - ohne Zählwerk, ohne Mahnung.
+  const gewohnheiten = useQuery({
+    queryKey: gewohnheitenSchluessel(zugang.access_id),
+    queryFn: () => ladeGewohnheiten(zugang.access_id),
+  });
+  const laufendeGewohnheiten = (gewohnheiten.data?.habits ?? []).filter(
+    (g) => g.ended_at === null && !g.paused,
+  );
   // Im Training ohne Einwilligung: der Weg dorthin, nicht der Check-in.
   const checkinBrauchtEinwilligung =
     !checkinOffen &&
@@ -152,6 +162,7 @@ export function Uebersicht({
     Boolean(naechster),
     checkinOffen,
     checkinBrauchtEinwilligung,
+    laufendeGewohnheiten.length > 0,
     Boolean(antwort),
     Boolean(offenerWunsch),
     Boolean(offeneRechnung),
@@ -291,6 +302,21 @@ export function Uebersicht({
               }
             >
               Ihre Praxis bittet um einen Check-in
+            </Tile>
+          ) : null}
+          {laufendeGewohnheiten.length > 0 ? (
+            <Tile
+              label="Gewohnheiten"
+              zusatz={laufendeGewohnheiten.map((g) => g.action).join(' · ')}
+              aktion={
+                <Textlink alleinstehend to={mit('/gewohnheiten')}>
+                  {gewohnheiten.data?.can_mark ? 'Tage antippen →' : 'Ansehen →'}
+                </Textlink>
+              }
+            >
+              {laufendeGewohnheiten.length === 1
+                ? 'Eine kleine Gewohnheit'
+                : `${laufendeGewohnheiten.length} kleine Gewohnheiten`}
             </Tile>
           ) : null}
           {antwort ? (
