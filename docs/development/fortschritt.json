@@ -956,7 +956,10 @@
           "id": "out-epic-001",
           "name": "OUT-EPIC-001 Fortschritt ohne Bewertung",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-12",
+          "nachweis": "OUT-001 bis OUT-004, Zweitreview",
+          "vermerk": "Sichtung: Verlauf Schritte 13 bis 15"
         },
         {
           "id": "alt-epic-001",
