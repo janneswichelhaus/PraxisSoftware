@@ -67,6 +67,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Fotos und Videos, die Patient:innen und Kund:innen über die Plattform an ihre Frage hängen. 30 Tage nach der Aufnahme gelöscht, früher mit der Frage und sofort beim Widerruf der Einwilligung. Sie gehen nicht in die Akte.',
   },
+  benachrichtigung: {
+    label: 'Benachrichtigungen',
+    beschreibung:
+      'Zustellaufträge für Erinnerungen und Hinweise an Patient:innen und Kund:innen, ohne Text und ohne Adresse. 30 Tage nach dem Versand gelöscht.',
+  },
   terminwunsch: {
     label: 'Terminwünsche',
     beschreibung:

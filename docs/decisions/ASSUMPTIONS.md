@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-11.
+Zuletzt aktualisiert: 2026-10-12.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -4156,3 +4156,51 @@ Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (BEF-145; ADR-007 Pu
 **Anker.** Abschnitt `platform_accesses` in `supabase/migrations/20261103100000_bef_145_plattformzugang_in_der_auskunft.sql`; Beschriftung in `src/features/datenschutz/kategorien.ts`; Tests „enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“, „nennt die Zugaenge zur Plattform …“ und „nennt eine rechtliche Vertretung mit … Zweifelvermerk und Ende“ in `supabase/tests/betroffenenrechte.test.ts`.
 
 **Änderungspfad.** Den Vermerk zur Einwilligungsfähigkeit nur auf Verlangen herausgeben: die zwei Felder streichen und einen Hinweis in `nicht_enthalten` ergänzen · Aufwand `klein`.
+
+### ANN-343 — Benachrichtigungen: Erinnerung am Vortag ab 17 Uhr, Ruhezeit 20 bis 8 Uhr für alle Arten, zehn je Woche und Weg
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform (KOM-EPIC-003)
+
+**Annahme.** Die Terminerinnerung entsteht stündlich ab 17 Uhr in der Zeitzone der Praxis für bestätigte Termine des nächsten Tages, freitags für Samstag bis Montag, am Wochenende nicht. Die Ruhezeit (Vorgabe 20 bis 8 Uhr, je Zugang änderbar, gleiche Stunden heißen „keine“) gilt für alle sechs Arten; was hineinfiele, geht zu ihrem Ende, und Erinnerung und Verschiebung entfallen, wenn der Termin vorher beginnt. Obergrenzen gelten je Weg: eine je Art und Tag, zehn je Woche; fehlgeschlagene Zustellungen werden höchstens dreimal versucht, ein Auftrag mehr als 24 Stunden nach Fälligkeit entfällt.
+
+**Begründung.** Die Werte sind die Vorschläge aus ADR-024 Punkt 15 und Folgefrage 1. Je Weg statt über beide gezählt, damit dieselbe Mitteilung auf Mail und Telefon nicht als zwei zählt und keine der beiden sich gegenseitig verdrängt. 17 Uhr liegt vor der Ruhezeit, die Erinnerung trifft also am Vortag ein. Unsicher: ob Termine nach einem Freitagabend-Eintrag für Montag eine Erinnerung brauchen (heute nicht).
+
+**Anker.** `app.notification_rule` und `app.notification_reminder_days` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Tests „Ruhezeit und Erinnerungstage“ und „schickt höchstens …“ in `supabase/tests/benachrichtigungen.test.ts`.
+
+**Änderungspfad.** Werte in `app.notification_rule` ändern; über beide Wege zählen: die Bedingung `x.channel = d.channel` in `app.notification_drop_reason` streichen · Aufwand `klein`.
+
+### ANN-344 — Die Praxis sieht nicht, wer Benachrichtigungen eingeschaltet hat; die Wahl ist ohne Auditereignis
+
+Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)
+
+**Annahme.** Die Wahl der Person steht mit Zeitpunkt und Konto am Zugang (`platform_notification_settings`) und ist nur über die eigene Plattformsicht lesbar; owner sieht allein, welche Arten die Praxis für alle abgeschaltet hat. Wählen, Abschalten und Registrieren eines Geräts schreiben nichts ins Auditlog. Bis zur Datenschutzprüfung gilt die Wahl der Person als ausreichende Grundlage für Erinnerungen per Mail und Push (ADR-024, Konsequenzen: vier Fragen).
+
+**Begründung.** ADR-024 Folgefrage 2 schlägt „nein in V1“ vor: Ob jemand Benachrichtigungen will, ist eine Auskunft über das Verhalten der Person, die die Praxis für ihre Arbeit nicht braucht (§20, Datenminimierung). Punkt 17 schließt Auditereignisse aus; das Datenmodell ist der Nachweis (ADR-010). Unsicher: ob die Prüfung für Erinnerungen eine Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO verlangt – dann würde die Wahl um Textfassung und Einwilligungsnachweis ergänzt.
+
+**Anker.** `public.platform_notification_settings`, `public.notification_kind_switches()` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Test „gilt je Zugang: fremder Zugang, Praxis und Anonym bekommen nichts“ in `supabase/tests/benachrichtigungen.test.ts`.
+
+**Änderungspfad.** Einwilligung: Spalte für die Textfassung und Pflichtbestätigung in `set_platform_notification_settings` · Aufwand `mittel`.
+
+### ANN-345 — Ein Zustellauftrag trägt die Kennung seines Anlasses und fällt 30 Tage nach dem Abschluss
+
+Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
+
+**Annahme.** `notification_deliveries` trägt neben Zugang, Art, Weg, Zeitpunkten und Zustand die Kennung des Anlasses (Termin, Rückfrage, Wunsch, Plan) und Datum und Uhrzeit, die der Text nennen darf – nie Text, Mailadresse oder Endpunkt. Abgeschlossene Aufträge löscht der tägliche Lauf `purge_notification_deliveries` 30 Tage nach Versand, Abbruch oder Aufgabe (Datenklasse `benachrichtigung`), ohne Löschjournal.
+
+**Begründung.** Der Versand muss beim Abholen prüfen, ob eine Erinnerung noch Sinn hat (Termin abgesagt oder verschoben); ohne Kennung ginge das nicht, und eine Kopie von Termindaten wäre mehr. 30 Tage ist der Vorschlag aus ADR-024 Punkt 17 und reicht, um eine Beschwerde („keine Erinnerung bekommen“) nachzuvollziehen. Ein Journal ist entbehrlich, weil die Frist am Auftrag selbst hängt: Nach einem Restore fällt er im nächsten Lauf erneut.
+
+**Anker.** Tabelle `notification_deliveries`, Datenklasse `benachrichtigung` und `public.purge_notification_deliveries` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Tests „legt im Auftrag weder Text noch Adresse …“ und „löscht abgeschlossene Aufträge nach 30 Tagen“.
+
+**Änderungspfad.** Frist in `retention_classes` ändern; Kennung streichen und die Prüfung „noch sinnvoll“ aufgeben · Aufwand `klein`.
+
+### ANN-346 — Ändert die Praxis einen Termin mit offenem Wunsch der Person, meldet nur die Antwort auf den Wunsch
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform (KOM-EPIC-003)
+
+**Annahme.** Verschiebt oder sagt die Praxis einen Termin ab, an dem ein offener Änderungs- oder Absagewunsch der Person liegt, entsteht keine Benachrichtigung „Termin verschoben/abgesagt“; die Person erfährt es als „Terminwunsch beantwortet“, sobald die Praxis den Wunsch erledigt. Sonst gilt jede Änderung von Zeit oder Zustand eines bestätigten künftigen Termins als Änderung durch die Praxis – Termine ändert nur die Praxis.
+
+**Begründung.** Zwei Mitteilungen zu einem Vorgang wären Rauschen (ADR-024 Punkt 15: so wenig wie möglich); die Antwort auf den Wunsch ist das, worauf die Person wartet. Unsicher: Vergisst die Praxis, den Wunsch zu erledigen, erfährt die Person die Änderung nur aus der Übersicht.
+
+**Anker.** `app.notify_appointment_update` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Test „meldet eine Verschiebung mit der neuen Zeit, nicht bei offenem Wunsch der Person“.
+
+**Änderungspfad.** Die Bedingung mit `platform_appointment_requests` im Trigger streichen · Aufwand `klein`.

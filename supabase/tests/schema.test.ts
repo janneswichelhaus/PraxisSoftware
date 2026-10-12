@@ -157,6 +157,11 @@ describe('Schema-Invarianten', () => {
       // KOM-005: Foto und Video an der Rückfrage, einmalige Lesefreigaben.
       'platform_message_attachments',
       'message_attachment_access_grants',
+      // KOM-009: Benachrichtigungen - Wahl, Schalter der Praxis, Geräte, Aufträge.
+      'platform_notification_settings',
+      'notification_kind_switches',
+      'platform_push_subscriptions',
+      'notification_deliveries',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
