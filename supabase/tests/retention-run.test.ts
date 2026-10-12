@@ -647,6 +647,9 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // Tests in apply_retention bzw. audit-fristen.test.ts.
       'auditlog_lesen_sicherheit',
       'aufgabe',
+      // KOM-009: Regel in public.purge_notification_deliveries (eigener
+      // Zeitplan), Tests in benachrichtigungen.test.ts.
+      'benachrichtigung',
       'loeschauftrag',
       'loeschjournal',
       'patientenakte',

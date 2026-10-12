@@ -64,10 +64,29 @@ as $$
     when 'weekly_cap' then 10        -- hoechstens zehn je Woche und Weg
     when 'max_attempts' then 3       -- dann aufgegeben (Punkt 16)
     when 'stale_hours' then 24       -- spaeter als einen Tag nach Faelligkeit: entfaellt
+    when 'devices_per_access' then 5 -- hoechstens fuenf Geraete je Zugang (Zweitreview S2)
   end
 $$;
 
 revoke all on function app.notification_rule(text) from public, anon, authenticated;
+
+-- Push geht nur an die Push-Dienste der Browserhersteller (ADR-024 Punkt 18):
+-- Google (Chrome, Android), Mozilla (Firefox), Apple (Safari, iOS), Microsoft
+-- (Edge). Eine frei gewaehlte Adresse liesse den Versand von innen an jeden
+-- Dienst schicken (Zweitreview S2, ANN-347). Eine Liste an einer Stelle.
+create function app.push_endpoint_allowed(p_endpoint text)
+returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(
+    length(p_endpoint) <= 2048
+    and p_endpoint ~ '^https://(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+(\.[a-z0-9-]+)*\.push\.apple\.com|[a-z0-9-]+(\.[a-z0-9-]+)*\.notify\.windows\.com)/[^[:space:]]*$',
+    false)
+$$;
+
+revoke all on function app.push_endpoint_allowed(text) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 2. Die Wahl der Person (Punkt 15)
@@ -121,7 +140,7 @@ create table public.platform_push_subscriptions (
   access_id       uuid not null references public.platform_accesses (id) on delete cascade,
   -- Der Endpunkt des Push-Dienstes des Browsers und seine Schluessel
   -- (RFC 8291): p256dh 65 Byte, auth 16 Byte, base64url ohne Fuellzeichen.
-  endpoint        text not null check (endpoint ~ '^https://[^\s]+$' and length(endpoint) <= 2048),
+  endpoint        text not null check (app.push_endpoint_allowed(endpoint)),
   p256dh          text not null check (p256dh ~ '^[A-Za-z0-9_-]{87}$'),
   auth_secret     text not null check (auth_secret ~ '^[A-Za-z0-9_-]{22}$'),
   created_at      timestamptz not null default now(),
@@ -686,7 +705,10 @@ begin
     where d.state = 'pending'
       and d.due_at <= now()
       and (d.claimed_at is null or d.claimed_at < now() - interval '15 minutes')
-    order by d.due_at, d.id
+    -- Der naechste Termin zuerst: Greift die Tagesgrenze je Art, geht die
+    -- Erinnerung an den naechsten Termin, nicht an einen zufaelligen
+    -- (Zweitreview S1).
+    order by d.due_at, d.subject_at nulls last, d.id
     limit greatest(least(coalesce(p_limit, 50), 200), 1)
     for update of d skip locked
   loop
@@ -950,6 +972,15 @@ begin
     raise exception 'platform access denied' using errcode = '42501';
   end if;
   select * into v_zugang from public.platform_accesses a where a.id = p_access_id;
+  if not app.push_endpoint_allowed(p_endpoint) then
+    raise exception 'invalid push subscription' using errcode = '22023';
+  end if;
+  if (
+    select count(*) from public.platform_push_subscriptions p
+    where p.access_id = p_access_id and p.endpoint <> p_endpoint
+  ) >= app.notification_rule('devices_per_access') then
+    raise exception 'too many devices' using errcode = '22023';
+  end if;
   begin
     insert into public.platform_push_subscriptions
       (organization_id, access_id, endpoint, p256dh, auth_secret)

@@ -7,6 +7,8 @@ import {
   asServiceRole,
   asUser,
   asUserCommitted,
+  FREMDE_ORGANISATION,
+  fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
 
@@ -34,7 +36,7 @@ const ABHOLEN = 'select * from public.claim_notification_deliveries(50)';
 const MELDEN = 'select public.finish_notification_delivery($1::uuid, $2, $3::text[])';
 const SCHALTEN = 'select public.set_notification_kind_enabled($1, $2)';
 
-const ENDPUNKT = 'https://push.example.invalid/geraet/eins';
+const ENDPUNKT = 'https://fcm.googleapis.com/fcm/send/geraet-eins';
 const P256DH = 'B'.padEnd(87, 'A');
 const AUTH = 'A'.repeat(22);
 
@@ -148,6 +150,13 @@ describe('Ruhezeit und Erinnerungstage (Punkt 15, ANN-343)', () => {
     expect(await faellig('2026-10-14 12:00 Europe/Berlin', 20, 8)).toBe('2026-10-14 12:00');
     expect(await faellig('2026-10-14 13:00 Europe/Berlin', 12, 14)).toBe('2026-10-14 14:00');
     expect(await faellig('2026-10-14 23:00 Europe/Berlin', 0, 0)).toBe('2026-10-14 23:00');
+  });
+
+  it('rechnet über die Umstellung der Uhr in Ortszeit (Zweitreview H7)', async () => {
+    // Nacht auf den 25.10.2026: 3 Uhr Sommerzeit wird 2 Uhr Winterzeit.
+    expect(await faellig('2026-10-24 22:00 Europe/Berlin', 20, 8)).toBe('2026-10-25 08:00');
+    // Nacht auf den 29.03.2026: 2 Uhr wird 3 Uhr.
+    expect(await faellig('2026-03-28 22:00 Europe/Berlin', 20, 8)).toBe('2026-03-29 08:00');
   });
 
   it('erinnert ab 17 Uhr an den nächsten Tag, freitags bis Montag, am Wochenende nicht', async () => {
@@ -391,6 +400,45 @@ describe('Ereignisse legen Aufträge an (Punkt 16)', () => {
     expect(trainingRelationships.tina).toBeDefined();
   });
 
+  it('benachrichtigt nicht über den anderen Leistungsbereich derselben Person', async () => {
+    // Erika wählt alles für ihr Training; abgesagt wird ein Termin der Behandlung.
+    await waehlen(ALLE, [], [0, 0], erika.konto, platformAccesses.erikaTraining);
+    await absagen();
+    expect(await auftraege()).toEqual([]);
+  });
+
+  it('benachrichtigt eine Begleitung nach ihrer eigenen Wahl, nur für ihr Verhältnis', async () => {
+    await waehlen(
+      ['plan_assigned'],
+      [],
+      [0, 0],
+      users.plattformPaula,
+      platformAccesses.paulaBegleitungMax,
+    );
+    await asPostgres(
+      `select app.enqueue_notification($1, 'treatment', $2, 'plan_assigned', null, null)`,
+      [organizationId, patients.erika],
+    );
+    expect(await auftraege()).toEqual([]);
+    await asPostgres(
+      `select app.enqueue_notification($1, 'treatment', $2, 'plan_assigned', null, null)`,
+      [organizationId, patients.max],
+    );
+    expect((await auftraege()).map((a) => a.access_id)).toEqual([
+      platformAccesses.paulaBegleitungMax,
+    ]);
+  });
+
+  it('legt in einer anderen Organisation nichts für diese an', async () => {
+    const fremd = await fremdeOrganisation();
+    await waehlen(ALLE);
+    await asPostgres(
+      `select app.enqueue_notification($1, 'treatment', $2, 'plan_assigned', null, null)`,
+      [fremd.organizationId, patients.erika],
+    );
+    expect(await auftraege()).toEqual([]);
+  });
+
   it('erinnert einmal je Termin, auch wenn der Lauf zweimal kommt', async () => {
     await waehlen(['appointment_reminder']);
     const anlegen = () =>
@@ -507,6 +555,40 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
     );
   });
 
+  it('erinnert bei zwei Terminen gleicher Fälligkeit an den früheren (Zweitreview S1)', async () => {
+    await waehlen(['appointment_reminder']);
+    // Ein zweiter Termin einen Tag später; beide Erinnerungen werden zugleich
+    // fällig, die Tagesgrenze lässt nur eine durch - die an den früheren.
+    const SPAETER = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000009f2';
+    await asPostgres(
+      `insert into public.appointments
+         (id, organization_id, kind, patient_id, staff_member_id, location_id,
+          appointment_type, status, starts_at, ends_at, created_by)
+       select $1, organization_id, kind, patient_id, staff_member_id, location_id,
+              appointment_type, status, starts_at + interval '1 day', ends_at + interval '1 day',
+              created_by
+         from public.appointments where id = $2`,
+      [SPAETER, TERMIN],
+    );
+    for (let runde = 0; runde < 5; runde++) {
+      await asPostgres('delete from public.notification_deliveries');
+      // Kennungen absichtlich so, dass die spätere bei Sortierung nach id vorn läge.
+      await asPostgres(
+        `insert into public.notification_deliveries
+           (id, organization_id, access_id, kind, channel, subject_id, subject_at, due_at)
+         select case when a.id = $3 then '00000000-0000-4000-8000-00000000000' || $4::text
+                                    else 'ffffffff-ffff-4fff-8fff-ffffffffff0' || $4::text end::uuid,
+                $1, $2, 'appointment_reminder', 'email', a.id, a.starts_at,
+                date_trunc('minute', now()) - interval '1 minute'
+           from public.appointments a where a.id in ($3, $5)`,
+        [organizationId, erika.zugang, SPAETER, String(runde), TERMIN],
+      );
+      const abgeholt = (await asServiceRole<{ id: string }>(ABHOLEN)).rows;
+      expect(abgeholt).toHaveLength(1);
+      expect(abgeholt[0]!.id.startsWith('ffffffff')).toBe(true);
+    }
+  });
+
   it('schickt höchstens zehn je Woche und Weg', async () => {
     await waehlen(['plan_assigned']);
     await asPostgres(
@@ -612,6 +694,44 @@ describe('Push-Registrierung (Punkt 17)', () => {
     ).toBe('42501');
   });
 
+  it('nimmt nur Push-Dienste der Browserhersteller und höchstens fünf Geräte (Zweitreview S2)', async () => {
+    for (const fremd of [
+      'https://intern.praxis.invalid/push',
+      'https://fcm.googleapis.com.boese.invalid/x',
+      'https://127.0.0.1/x',
+      'https://evilpush.apple.com.invalid/x',
+    ]) {
+      expect(
+        await fehlercode(asUser(erika.konto, REGISTRIEREN, [erika.zugang, fremd, P256DH, AUTH])),
+        fremd,
+      ).toBe('22023');
+    }
+    for (const gut of [
+      'https://updates.push.services.mozilla.com/wpush/v2/abc',
+      'https://web.push.apple.com/QK1',
+      'https://wns2-par02p.notify.windows.com/w/?token=x',
+      `${ENDPUNKT}-4`,
+      `${ENDPUNKT}-5`,
+    ]) {
+      await asUserCommitted(erika.konto, REGISTRIEREN, [erika.zugang, gut, P256DH, AUTH]);
+    }
+    expect(
+      await fehlercode(
+        asUser(erika.konto, REGISTRIEREN, [erika.zugang, `${ENDPUNKT}-6`, P256DH, AUTH]),
+      ),
+    ).toBe('22023');
+    // Ein schon eingetragenes Gerät darf seine Schlüssel erneuern.
+    await asUserCommitted(erika.konto, REGISTRIEREN, [erika.zugang, `${ENDPUNKT}-5`, P256DH, AUTH]);
+  });
+
+  it('lässt anonym nichts löschen', async () => {
+    expect(
+      await fehlercode(
+        asUser(null, 'select public.remove_platform_push_subscription($1)', [ENDPUNKT]),
+      ),
+    ).toBe('42501');
+  });
+
   it('fällt beim Abmelden nur an den eigenen Zugängen', async () => {
     await asUserCommitted(erika.konto, REGISTRIEREN, [erika.zugang, ENDPUNKT, P256DH, AUTH]);
     await asUserCommitted(users.plattformTina, REGISTRIEREN, [
@@ -666,5 +786,31 @@ describe('Schalter der Praxis (Punkt 15)', () => {
     expect(await fehlercode(asUser(users.ownerTherapist, SCHALTEN, ['werbung', false]))).toBe(
       '22023',
     );
+    for (const konto of [users.therapist, users.office, erika.konto]) {
+      expect(
+        await fehlercode(asUser(konto, 'select * from public.notification_kind_switches()')),
+        konto,
+      ).toBe('42501');
+    }
+  });
+
+  it('trennt die Schalter je Organisation', async () => {
+    await fremdeOrganisation();
+    await asUserCommitted(FREMDE_ORGANISATION.owner, SCHALTEN, ['plan_assigned', false]);
+    expect(
+      (await asUser(users.ownerTherapist, 'select * from public.notification_kind_switches()'))
+        .rows,
+    ).toEqual([]);
+    expect(
+      (await asUser(FREMDE_ORGANISATION.owner, 'select * from public.notification_kind_switches()'))
+        .rows,
+    ).toEqual([expect.objectContaining({ kind: 'plan_assigned' }) as unknown]);
+    // Der Schalter der fremden Praxis hält hier nichts zurück.
+    await waehlen(['plan_assigned']);
+    await asPostgres(
+      `select app.enqueue_notification($1, 'treatment', $2, 'plan_assigned', null, null)`,
+      [organizationId, patients.erika],
+    );
+    expect(await auftraege()).toHaveLength(1);
   });
 });

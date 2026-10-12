@@ -20,7 +20,8 @@ export function mitteilungAusPush(daten: unknown): Mitteilung | null {
   const d = daten as Record<string, unknown>;
   if (!istBenachrichtigungsart(d['k'])) return null;
   const zeitpunkt = typeof d['t'] === 'string' ? d['t'] : null;
-  const zone = typeof d['z'] === 'string' && /^[A-Za-z_/]{1,64}$/.test(d['z']) ? d['z'] : undefined;
+  const zone =
+    typeof d['z'] === 'string' && /^[A-Za-z0-9_+\-/]{1,64}$/.test(d['z']) ? d['z'] : undefined;
   try {
     const { titel, text } = benachrichtigungstext(d['k'], zeitpunkt, zone);
     return { titel, text, tag: d['k'] };

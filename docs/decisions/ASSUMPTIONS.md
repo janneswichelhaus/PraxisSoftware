@@ -4163,7 +4163,7 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 
 **Annahme.** Die Terminerinnerung entsteht stündlich ab 17 Uhr in der Zeitzone der Praxis für bestätigte Termine des nächsten Tages, freitags für Samstag bis Montag, am Wochenende nicht. Die Ruhezeit (Vorgabe 20 bis 8 Uhr, je Zugang änderbar, gleiche Stunden heißen „keine“) gilt für alle sechs Arten; was hineinfiele, geht zu ihrem Ende, und Erinnerung und Verschiebung entfallen, wenn der Termin vorher beginnt. Obergrenzen gelten je Weg: eine je Art und Tag, zehn je Woche; fehlgeschlagene Zustellungen werden höchstens dreimal versucht, ein Auftrag mehr als 24 Stunden nach Fälligkeit entfällt.
 
-**Begründung.** Die Werte sind die Vorschläge aus ADR-024 Punkt 15 und Folgefrage 1. Je Weg statt über beide gezählt, damit dieselbe Mitteilung auf Mail und Telefon nicht als zwei zählt und keine der beiden sich gegenseitig verdrängt. 17 Uhr liegt vor der Ruhezeit, die Erinnerung trifft also am Vortag ein. Unsicher: ob Termine nach einem Freitagabend-Eintrag für Montag eine Erinnerung brauchen (heute nicht).
+**Begründung.** Die Werte sind die Vorschläge aus ADR-024 Punkt 15 und Folgefrage 1. Je Weg statt über beide gezählt, damit dieselbe Mitteilung auf Mail und Telefon nicht als zwei zählt und keine der beiden sich gegenseitig verdrängt. 17 Uhr liegt vor der Ruhezeit, die Erinnerung trifft also am Vortag ein. Unsicher: ob Termine nach einem Freitagabend-Eintrag für Montag eine Erinnerung brauchen (heute nicht). Greift die Tagesgrenze, geht die Mitteilung zum frühesten Termin; weitere Termine desselben Tages stehen nur in der Übersicht.
 
 **Anker.** `app.notification_rule` und `app.notification_reminder_days` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Tests „Ruhezeit und Erinnerungstage“ und „schickt höchstens …“ in `supabase/tests/benachrichtigungen.test.ts`.
 
@@ -4204,3 +4204,15 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `app.notify_appointment_update` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Test „meldet eine Verschiebung mit der neuen Zeit, nicht bei offenem Wunsch der Person“.
 
 **Änderungspfad.** Die Bedingung mit `platform_appointment_requests` im Trigger streichen · Aufwand `klein`.
+
+### ANN-347 — Push nur an die Push-Dienste der Browserhersteller, höchstens fünf Geräte je Zugang
+
+Technik · offen · 2026-10-12 · — · — · Wiedervorlage: Prüfung aus ADR-024 Punkt 18 vor dem Scharfschalten
+
+**Annahme.** Eine Push-Registrierung nimmt der Server nur an, wenn der Endpunkt bei einem der vier Push-Dienste liegt: `fcm.googleapis.com` (Google), `updates.push.services.mozilla.com` (Mozilla), `*.push.apple.com` (Apple), `*.notify.windows.com` (Microsoft). Je Zugang höchstens fünf Geräte; ein schon eingetragenes Gerät darf seine Schlüssel erneuern.
+
+**Begründung.** Ohne Liste schickte der Versand von innen POSTs an jede Adresse, die ein Konto einträgt (blinde Anfragefälschung), und tausend langsame Endpunkte legten den Lauf lahm (Zweitreview S2). Die vier Dienste sind die, die ADR-024 Punkt 18 nennt. Unsicher: Ein Hersteller kann seine Adresse ändern; dann fällt Push für dessen Browser aus, bis die Liste nachgezogen ist – Mail bleibt.
+
+**Anker.** `app.push_endpoint_allowed` und `register_platform_push_subscription` in `supabase/migrations/20261104100000_kom_009_benachrichtigungen.sql`; Test „nimmt nur Push-Dienste der Browserhersteller und höchstens fünf Geräte“ in `supabase/tests/benachrichtigungen.test.ts`.
+
+**Änderungspfad.** Den Ausdruck in `app.push_endpoint_allowed` bzw. `devices_per_access` in `app.notification_rule` ändern · Aufwand `klein`.

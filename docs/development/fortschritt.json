@@ -911,7 +911,10 @@
           "id": "kom-epic-003",
           "name": "KOM-EPIC-003 Benachrichtigungen und Terminerinnerung",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-12",
+          "nachweis": "KOM-009 bis KOM-011, Zweitreview",
+          "vermerk": "Sichtung: Pläne Schritte 14 und 15"
         },
         {
           "id": "trk-epic-001",
