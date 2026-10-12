@@ -4,8 +4,10 @@
  * Sechs Zusicherungen, die sich objektiv pruefen lassen; die ersten drei wurden
  * in der Runde R2 teuer erkauft, vier und fuenf mit G19, sechs mit Umbau U3:
  *
- *   1. **Obergrenzen.** Drei Steuerungsdokumente wachsen nicht wieder zu, und
- *      im Annahmenregister kein Eintrag.
+ *   1. **Obergrenzen.** Was jede Session ganz liest (CLAUDE.md, STATUS, jeder
+ *      Skill, ARBEITSBEREICHE, DESIGN.md), hat eine Grenze in Bytes; im
+ *      Annahmenregister kein Eintrag ueber 14 Zeilen. Werte und Begruendung
+ *      in `docs-check-regeln.mjs` (Regel E).
  *      Eine Obergrenze ist keine Schoenheitsregel: Ein Dokument, das niemand
  *      mehr ganz liest, wird zur Dopplungsquelle (PROJECT_PRINCIPLES.md 16).
  *   2. **Register-Anker.** Jede Annahme im Register greift an genau einer
@@ -29,29 +31,29 @@
  *
  * Aufruf: `pnpm docs:check`. Exit 1 mit einer Liste der Verstoesse.
  */
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, normalize } from 'node:path';
 import { tabelleAktuell } from './fortschritt-tabelle.mjs';
 import {
+  OBERGRENZEN,
+  SKILL_GRENZE_BYTES,
   aktuelleFassungen,
   prinzipienAbschnitte,
   prinzipienVersionen,
   pruefeEindeutigkeit,
+  pruefeObergrenzen,
   pruefeVerweise,
 } from './docs-check-regeln.mjs';
 
-/**
- * Obergrenzen in Zeilen, `wc -l`-Semantik (Zeilenumbrueche, nicht Zeilen).
- *
- * Die drei Grenzen hier schuetzen die Lesbarkeit von Dokumenten, die ganz
- * gelesen werden.
- */
-const OBERGRENZEN = {
-  'CLAUDE.md': 150,
-  'docs/STATUS.md': 60,
-  'docs/decisions/OPEN_DECISIONS.md': 400,
-};
+/** Jeder Skill unter `.claude/skills/<name>/SKILL.md` bekommt dieselbe Grenze. */
+const SKILLS = '.claude/skills';
+const skillGrenzen = existsSync(SKILLS)
+  ? readdirSync(SKILLS, { withFileTypes: true })
+      .filter((eintrag) => eintrag.isDirectory())
+      .map((eintrag) => ({ pfad: `${SKILLS}/${eintrag.name}/SKILL.md`, bytes: SKILL_GRENZE_BYTES }))
+  : [];
+const grenzen = [...OBERGRENZEN, ...skillGrenzen];
 
 /**
  * Das Annahmenregister waechst nach 15.1 mit jeder getroffenen Annahme und
@@ -89,18 +91,12 @@ const dateien = getrackteDateien();
 // -----------------------------------------------------------------------------
 // 1. Obergrenzen
 // -----------------------------------------------------------------------------
-for (const [pfad, grenze] of Object.entries(OBERGRENZEN)) {
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfad aus OBERGRENZEN, fest im Quelltext.
-  if (!existsSync(pfad)) {
-    verstoesse.push(`${pfad}: fehlt, wird aber von docs:check erwartet.`);
-    continue;
-  }
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfad aus OBERGRENZEN, fest im Quelltext.
-  const zeilen = readFileSync(pfad, 'utf8').split('\n').length - 1;
-  if (zeilen > grenze) {
-    verstoesse.push(`${pfad}: ${zeilen} Zeilen, erlaubt sind ${grenze}.`);
-  }
-}
+verstoesse.push(
+  ...pruefeObergrenzen(grenzen, (pfad) =>
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade aus OBERGRENZEN (fest im Quelltext) und den Verzeichnissen unter .claude/skills.
+    existsSync(pfad) ? readFileSync(pfad, 'utf8') : null,
+  ),
+);
 
 if (existsSync(REGISTER)) {
   const zeilen = readFileSync(REGISTER, 'utf8').split('\n');
@@ -208,7 +204,7 @@ if (verstoesse.length > 0) {
 
 console.log(
   'Dokumentationsgate gruen: %d Obergrenzen, %d Register-Eintraege mit Anker und Laengengrenze, Links und Querverweise in %d Markdown-Dateien, Fortschrittstabelle aktuell.',
-  Object.keys(OBERGRENZEN).length,
+  grenzen.length,
   (readFileSync(REGISTER, 'utf8').match(/^### ANN-\d{3}\b/gm) ?? []).length,
   dateien.filter((p) => p.endsWith('.md')).length,
 );
