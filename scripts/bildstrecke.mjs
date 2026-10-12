@@ -32,6 +32,7 @@ import {
   KONTEN,
   STARTBILD_MERKER,
   anmelden,
+  browserOptionen,
   startbildAbwarten,
   startbildUeberspringen,
 } from './testkonten.mjs';
@@ -204,11 +205,7 @@ console.log(
 console.log(`Ziel: ${ZIEL}\n`);
 
 // --- Aufnahme ----------------------------------------------------------------
-const browser = await chromium.launch(
-  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
-    ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
-    : {},
-);
+const browser = await chromium.launch(browserOptionen());
 const ergebnisse = [];
 let erledigt = 0;
 const beginn = Date.now();

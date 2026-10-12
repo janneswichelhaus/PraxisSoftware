@@ -86,6 +86,22 @@ export async function anmelden(seite, basis, kontoName) {
   return adresse;
 }
 
+/**
+ * Startoptionen fuer Chromium: der Browser aus PLAYWRIGHT_CHROMIUM_EXECUTABLE
+ * (Cloud-Umgebung) und deutsche Sprache. Die eingebauten Felder fuer Datum und
+ * Uhrzeit folgen der Sprache des Browserprozesses, nicht `locale` des
+ * Kontexts - ohne sie stuende in den Bildern „08:00 AM" und „mm/dd/yyyy".
+ */
+export function browserOptionen() {
+  return {
+    args: ['--lang=de-DE'],
+    env: { ...process.env, LANG: 'de_DE.UTF-8', LANGUAGE: 'de' },
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
+      : {}),
+  };
+}
+
 /** Der Hinweis, wenn eine Anmeldung scheitert. */
 export const ANMELDUNG_VORAUSSETZUNG =
   'Laeuft ein Supabase-Stack (pnpm dlx supabase@2.116.0 start oder ./scripts/cloud-stack.sh start) und die Anwendung (pnpm dev)?';

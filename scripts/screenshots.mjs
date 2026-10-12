@@ -31,7 +31,13 @@ import { chromium } from '@playwright/test';
 // Konten, Kennwort und Anmeldung teilt dieses Skript mit der Bildstrecke
 // (scripts/bildstrecke.mjs): synthetische Seed-Konten, kein Secret im Sinne
 // von PROJECT_PRINCIPLES.md 3.3.
-import { ANMELDUNG_VORAUSSETZUNG, KONTEN, anmelden, startbildAbwarten } from './testkonten.mjs';
+import {
+  ANMELDUNG_VORAUSSETZUNG,
+  KONTEN,
+  anmelden,
+  browserOptionen,
+  startbildAbwarten,
+} from './testkonten.mjs';
 
 const ZIEL = '.tmp/screenshots';
 const BASIS = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
@@ -70,11 +76,7 @@ if (kontoName) {
 
 await mkdir(ZIEL, { recursive: true });
 
-const browser = await chromium.launch(
-  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
-    ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
-    : {},
-);
+const browser = await chromium.launch(browserOptionen());
 // Ein gemeinsamer Kontext fuer alle Seiten dieses Laufs: die Anmeldung setzt
 // eine Sitzung, die dann fuer jeden weiteren Pfad gilt - genau wie im echten
 // Browser ein Tab nach dem anderen in derselben Sitzung.
