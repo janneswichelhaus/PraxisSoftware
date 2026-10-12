@@ -92,6 +92,40 @@ Sie werden bei jedem Neuaufsetzen neu erzeugt, sind kein Secret im Sinne von
 `PROJECT_PRINCIPLES.md` §3.3 — und gehören trotzdem **nicht ins Repository**:
 der anon key ist ein JWT und wird vom Secret-Scan zu Recht als Fund gemeldet.
 
+## Supabase-Stack ohne Docker
+
+In der Cloud-Umgebung scheitert `supabase start`. `scripts/cloud-stack.sh` baut denselben Pfad aus
+Release-Binaries nach — alles unter `.tmp/`, nur `127.0.0.1`, nur synthetische Daten:
+
+```bash
+./scripts/cloud-stack.sh start          # ~20 s beim ersten Mal; schreibt .env.development.local
+./scripts/cloud-stack.sh reset          # Datenbank neu: alle Migrationen + seed.sql
+./scripts/cloud-stack.sh reset --reich  # dazu testpatienten.sql und praxiswoche.sql
+./scripts/cloud-stack.sh status         # oder stop
+pnpm dev                                # danach; pnpm screenshots --konto=owner /kalender
+set -a; . ./.env.development.local; set +a; pnpm test:e2e --project authenticated
+```
+
+PostgreSQL 16 läuft als eigener Cluster auf **54339** (`.tmp/stack-pgdata`), GoTrue mit seinen
+eigenen Migrationen für `auth`, PostgREST und die Edge Functions in Deno intern auf 54336 bis 54338.
+Ein Gateway in Node übernimmt Kongs Rolle auf **54321** (CORS, `apikey` als Bearer, `verify_jwt` aus
+`supabase/config.toml`). GoTrue und PostgREST in den Versionen von `supabase@2.116.0`, mit Prüfsumme
+im Skript; das JWT-Secret entsteht beim ersten Start zufällig in `.tmp/stack/`. Stand 2026-10-12:
+145 von 145 Tests hinter der Anmeldung grün (einer erst im zweiten Lauf).
+
+Grenzen:
+
+- **Storage ist nachgebildet** (`scripts/cloud-stack/storage.mjs`): hochladen, signieren, laden,
+  auflisten, kopieren, verschieben, löschen — mit Rolle, Claims und `storage.operation` wie die
+  echte API, RLS entscheidet. Keine Bildtransformation, kein TUS/S3, keine Bucket-Verwaltung.
+- **Kein Mailversand:** GoTrue ohne SMTP meldet Erfolg, die Mail verfällt. Kein Realtime, kein
+  Studio, kein `pg_cron`; PostgreSQL 16 statt 17 wie im Docker-Stack. Edge Functions ohne `supabase/functions/.env.local` nur mit dem
+  Kartendienst als Nachbildung.
+- Vor E2E-Läufen `reset` ohne `--reich`: Die Tests zählen auf den schlanken Seed. Port 54329 bleibt
+  `pnpm test:db`; `TEST_DATABASE_URL` nie auf 54339 richten. Die Werte stehen in
+  `.env.development.local`, nicht in `.env.local`: Die liest auch Vitest, und mit echten Werten
+  scheitern `App.nachladen.test.tsx` und `SchedulingPage.test.tsx`.
+
 ## Lokale Sichtung unter Windows (Git Bash)
 
 Ablauf, um einen Stand lokal anzusehen — für eine Sichtung oder einen Feature-Branch. Alle Befehle laufen im
@@ -488,13 +522,12 @@ deckungsgleich.
 
 ## Bekannte Einschränkungen
 
-1. **Die E2E-Abläufe hinter der Anmeldung laufen nur mit Docker.** Sie brauchen
-   den lokalen Supabase-Stack und werden über `E2E_SUPABASE_URL` /
-   `E2E_SUPABASE_ANON_KEY` freigeschaltet (siehe „Lokale Sichtung"). In CI
-   startet der Job „End-to-End hinter der Anmeldung" (`e2e-supabase`) den
-   Stack selbst. In Umgebungen ohne Docker
-   — etwa der Cloud-Entwicklungsumgebung — läuft weiterhin ausschließlich die
-   Abdeckung des nicht angemeldeten Zustands.
+1. **Die E2E-Abläufe hinter der Anmeldung brauchen einen Supabase-Stack.** Sie
+   werden über `E2E_SUPABASE_URL` / `E2E_SUPABASE_ANON_KEY` freigeschaltet
+   (siehe „Lokale Sichtung"). In CI startet der Job „End-to-End hinter der
+   Anmeldung" (`e2e-supabase`) den Docker-Stack selbst; ohne Docker — etwa in
+   der Cloud-Entwicklungsumgebung — trägt `scripts/cloud-stack.sh` sie
+   („Supabase-Stack ohne Docker"), mit nachgebildeter Storage-API.
 2. **Hinter der Anmeldung** laufen 21 Spezifikationen im Playwright-Projekt
    `authenticated`; die Breite der Prüfung liegt bei `pnpm test:db`.
 3. **Der Secret-Scan prüft nur den aktuellen Stand**, nicht die Git-Historie.

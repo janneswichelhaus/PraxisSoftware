@@ -23,8 +23,8 @@
 // muss uebergeben werden - das Skript startet mit jedem Lauf einen frischen,
 // nicht angemeldeten Browserkontext und meldet sich ohne `--konto` bei
 // keiner Seite an. In der Cloud-Entwicklungsumgebung ist `supabase start`
-// nicht moeglich (docs/DEVELOPMENT.md) - dort taugt das Skript nur fuer die
-// Anmeldemaske und fuer Vorschauseiten ohne Anmeldung.
+// nicht moeglich; dort traegt `./scripts/cloud-stack.sh start` denselben
+// Stack ohne Docker (docs/DEVELOPMENT.md, "Supabase-Stack ohne Docker").
 // -----------------------------------------------------------------------------
 import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
@@ -61,7 +61,7 @@ if (pfade.length === 0) {
   );
   console.error('Voraussetzung: die Anwendung laeuft unter ' + BASIS + ' (pnpm dev).');
   console.error(
-    'Fuer Seiten hinter der Anmeldung zusaetzlich ein laufender Supabase-Stack (pnpm dlx supabase@2.116.0 start) und --konto.',
+    'Fuer Seiten hinter der Anmeldung zusaetzlich ein laufender Supabase-Stack (pnpm dlx supabase@2.116.0 start oder ./scripts/cloud-stack.sh start) und --konto.',
   );
   process.exit(1);
 }
@@ -98,18 +98,23 @@ if (anmeldeAdresse) {
   const anmeldeSeite = await context.newPage();
   try {
     await anmeldeSeite.goto(BASIS + '/', { waitUntil: 'networkidle', timeout: 20_000 });
+    // Der Kennwortweg liegt zugeklappt hinter „Testkonten" (ADR-025 Punkt 15),
+    // wie in tests/e2e/authenticated/helpers.ts.
+    await anmeldeSeite.getByText('Testkonten', { exact: true }).click();
     await anmeldeSeite.getByLabel('E-Mail-Adresse').fill(anmeldeAdresse);
     // exact grenzt das Feld gegen den Sichtbar-Schalter ab.
     await anmeldeSeite.getByLabel('Kennwort', { exact: true }).fill(TESTKENNWORT);
     await anmeldeSeite.getByRole('button', { name: 'Anmelden', exact: true }).click();
+    // `exact` wie in den E2E-Tests: eine offene Rueckfrage traegt sonst
+    // ebenfalls „abmelden" im Namen (FIX-014).
     await anmeldeSeite
-      .getByRole('button', { name: 'Abmelden' })
+      .getByRole('button', { name: 'Abmelden', exact: true })
       .waitFor({ state: 'visible', timeout: 10_000 });
     console.log(`Angemeldet als ${kontoName} (${anmeldeAdresse}).\n`);
   } catch (fehler) {
     console.error(`Anmeldung als ${kontoName} fehlgeschlagen: ${String(fehler).split('\n')[0]}`);
     console.error(
-      'Laeuft ein Supabase-Stack (pnpm dlx supabase@2.116.0 start) und die Anwendung (pnpm dev)?',
+      'Laeuft ein Supabase-Stack (pnpm dlx supabase@2.116.0 start oder ./scripts/cloud-stack.sh start) und die Anwendung (pnpm dev)?',
     );
     await browser.close();
     process.exit(1);
@@ -141,6 +146,13 @@ for (const pfad of pfade) {
 
   try {
     await seite.goto(BASIS + pfad, { waitUntil: 'networkidle', timeout: 20_000 });
+    // Das Startbild (RAH-009) liegt in jedem neuen Tab knapp zwei Sekunden
+    // ueber der Seite - ohne dieses Warten zeigte das Bild die Marke statt der
+    // Seite. Ohne Startbild kehrt waitFor sofort zurueck.
+    await seite
+      .locator('[data-startbild]')
+      .waitFor({ state: 'detached', timeout: 6_000 })
+      .catch(() => undefined);
     await seite.waitForTimeout(400);
 
     // Mit --konto ist eine angemeldete Seite erwartet - zeigt sie stattdessen
