@@ -233,6 +233,18 @@ describe('Check-in, Takt und Lesen in der Praxis (TRK-002)', () => {
       // Der Zusammenhang allein ist kein Check-in (TRK-005, ANN-355).
       [7, ['painkiller_24h', 'pain_side']],
       [7, ['pain_rest', 'painkiller_24h', 'painkiller_24h']],
+      [
+        7,
+        [
+          'pain_rest',
+          'pain_load',
+          'pain_night',
+          'daily_impairment',
+          'sleep_quality',
+          'stress',
+          'painkiller_24h',
+        ],
+      ],
     ];
     for (const [tage, fragen] of versuche) {
       expect(
@@ -633,25 +645,35 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
 
   it('zeigt der Praxis daneben die Angaben nach den Einheiten, mit Zeitzone (TRK-006)', async () => {
     const plan = await zugewiesenerPlan('therapy', patients.erika, 'Heimprogramm Knie');
-    const beginnen = async () => {
+    const beginnen = async (konto: string, zugang: string, p: string) => {
       const { rows } = await asUserCommitted<{ id: string }>(
-        erika.konto,
+        konto,
         'select public.start_platform_exercise_session($1::uuid, $2::uuid) as id',
-        [erika.zugang, plan],
+        [zugang, p],
       );
       return rows[0]!.id;
     };
-    const beenden = (einheit: string, werte: object) =>
+    const beenden = async (konto: string, zugang: string, p: string, werte: object) =>
       asUserCommitted(
-        erika.konto,
+        konto,
         'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3, $4::jsonb)',
-        [erika.zugang, einheit, '', JSON.stringify(werte)],
+        [zugang, await beginnen(konto, zugang, p), '', JSON.stringify(werte)],
       );
     // Eine Einheit ohne Angaben steht nicht in der Zeitreihe.
-    await beenden(await beginnen(), {});
-    await beenden(await beginnen(), { session_pain: 3, session_confidence: 6 });
-    // Ein Plan im Training gehört nicht in die Akte (ADR-021 Punkt 6).
-    await zugewiesenerPlan('training');
+    await beenden(erika.konto, erika.zugang, plan, {});
+    await beenden(erika.konto, erika.zugang, plan, { session_pain: 3, session_confidence: 6 });
+    // Eine Einheit im Training mit Angaben gehört nicht in die Akte (ADR-021
+    // Punkt 6) – aber zum Trainingsverhältnis (Zweitreview).
+    const trainingsplan = await zugewiesenerPlan('training');
+    await asPostgres(
+      `insert into public.training_consent_records
+         (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by)
+       values ($1, $2, 'consent_granted', 'training_health_data', current_date, $3)`,
+      [organizationId, trainingRelationships.tina, users.trainer],
+    );
+    await beenden(users.plattformTina, platformAccesses.tinaTraining, trainingsplan, {
+      session_confidence: 5,
+    });
 
     const praxis = (await lesen(users.therapist, 'treatment', patients.erika)) as unknown as {
       time_zone: string;
@@ -669,9 +691,10 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
       'training',
       trainingRelationships.tina,
     )) as unknown as {
-      sessions: unknown[];
+      sessions: { values: object }[];
     };
-    expect(training.sessions).toEqual([]);
+    expect(training.sessions).toHaveLength(1);
+    expect(training.sessions[0]!.values).toEqual({ session_confidence: 5 });
   });
 
   it('ohne Takt kein Check-in; vor dem nächsten Tag nicht fällig', async () => {

@@ -335,7 +335,8 @@ function Angaben({ daten }: { daten: CheckinDaten }) {
               id: e.finished_at,
               datum: e.performed_on,
               zeit: uhrzeit(e.finished_at, daten.time_zone),
-              vermerk: vermerk(e.recorded_by_kind) ?? e.plan_title,
+              // Plan und, wenn sie beendet hat, die Vertretung (Zweitreview).
+              vermerk: [e.plan_title, vermerk(e.recorded_by_kind)].filter(Boolean).join(' · '),
               werte: e.values,
             }))}
           />
