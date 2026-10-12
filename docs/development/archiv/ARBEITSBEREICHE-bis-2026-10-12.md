@@ -1,10 +1,14 @@
 # Arbeitsbereiche: was funktioniert, was Vorschau ist, was offen ist
 
+> **Archiviert am 2026-10-12** (Prozess verschlanken). Inhalt unverändert, nur die relativen
+> Verweise zeigen vom neuen Ort aus auf dieselben Dateien. Es gilt, was in den lebenden
+> Dokumenten steht ([`CLAUDE.md`](../../../CLAUDE.md), Archiv-Index [`README.md`](README.md)).
+
 Stand: 26.09.2026
 
 Diese Liste ist die Antwort auf eine einzige Frage: **Worauf kann ich mich in
 der laufenden Anwendung verlassen?** Sie ergänzt
-[`../PRODUCT_VISION.md`](../PRODUCT_VISION.md) §6a um den Umsetzungsstand und
+[`../PRODUCT_VISION.md`](../../PRODUCT_VISION.md) §6a um den Umsetzungsstand und
 ersetzt keine Feature-Spezifikation.
 
 **Vier Arbeitsbereiche heißen seit dem 12.09.2026 anders** (Vorgabe von
@@ -61,7 +65,7 @@ Beschriftung geändert, nicht das Verhalten.
 | Termine mitteilen (Zettel und E-Mail)   | `/patienten/:id/terminzettel` (aus dem Terminbereich der Akte) | Datum, Zeit, Ort und behandelnde Person der nächsten bestätigten Termine; kein Status, keine Verordnung, keine Adresse. **Druck** über die Druck-Basis (CAL-011, ANN-039) und **E-Mail als Handoff**: Die Anwendung baut den Entwurf und übergibt ihn dem Mailprogramm der Praxis, gesendet wird dort von Hand — kein Dienstleister, kein automatischer Versand (CAL-013, ANN-041, B15-Nachtrag). Beide Wege **bereiten nur vor**: Der Mitteilungsvermerk entsteht seit UX-012c erst auf die ausdrückliche Bestätigung „ausgehändigt" bzw. „gesendet" (ANN-039 und ANN-041 in Fassung 2) — vorher behauptete er eine Übergabe, die niemand gesehen hat. Der Aufruf wird als Aktenzugriff protokolliert |
 | Termin anlegen aus dem Kalender          | Auswahl auf freier Zeit in `/kalender`, `/termine/neu`  | Zeit und Person aus der Spalte, Patient:in über die Suche (UX-005). Seit **CAL-019** wird auf der freien Fläche eine **Spanne aufgezogen** (`useSpanneAufziehen`, dieselbe Pointer-Mechanik und derselbe lange Druck wie beim Verschieben — keine zweite Zieh-Geste); ein Tap ohne Ziehen wählt einen Rasterpunkt. Danach steht an der Auswahl das **Anlegen-Menü** (`AnlegenMenue`) mit vier Einträgen: Neuer Termin, Dauertermin, Fehlzeit, Dauerfehlzeit. Es steht im Gitter, ist tastaturbedienbar und schließt mit Escape (ANN-058). Wohin die Einträge führen, weiß allein `CalendarPage`; das Gitter zeichnet nur. Der **Dauertermin** ist die Terminserie aus der Verordnung (CAL-007) und deshalb nur wählbar, wenn der Kalender auf eine Patient:in gefiltert ist — sonst nennt der Eintrag, was fehlt. Aus einer aufgezogenen Spanne kommt die Länge mit; aus einem Rasterpunkt das 60-Minuten-Fenster (Termin) beziehungsweise gar keine (Ereignis). Das Fenster ist seit CAL-010a serverseitig durchgesetzt, die freie Länge seit CAL-020 zulässig |
 | Fehlzeit und Dauerfehlzeit               | `/termine/ereignis`, `/termine/dauerfehlzeit` (aus dem Kalendermenü oder der Kopfleiste) | Eine **Fehlzeit ist ein Ereignis** — dieselbe Tabelle, derselbe Zustandsautomat, dieselben Regeln (CAL-021, §8.1, §19). Es gibt deshalb **kein** eigenes Fehlzeit-Formular: „Fehlzeit" führt in die Ereignisanlage. Neu ist die **Dauerfehlzeit** (`NewEventSeriesPage`): dasselbe Formular plus Rhythmus und Anzahl aus der Terminserie (`serie.ts`, CAL-007), mit den Tagen als Vorschau vor dem Eintragen. Serverseitig `create_event_series` — je Vorkommen ein `create_appointment_event`, alles oder nichts, Überschneidung nennt ihren Tag. Die Vorkommen verbindet `event_series_id` **neben** der Gruppenkennung aus CAL-017 (ANN-059): Die Gruppe ist ein Vorkommen mit allen Beteiligten, die Serie sind alle. Ändern und Absagen stehen deshalb ausdrücklich beschriftet zur Wahl — „Nur diese Fehlzeit" gegen „Die ganze Serie" (`update_event_series`, `cancel_event_series`); serienweit wirken sie auf die noch nicht begonnenen Vorkommen. Die Bezeichnung ist organisatorisch und sagt das am Feld (ANN-060). Wer grundsätzlich nicht arbeitet, steht weiter in den Arbeitszeiten (`/praxis/planung`), ein genehmigter Urlaub im Urlaubsbereich |
-| Navigation starten (Google Maps, Fahrrad) | Tagesliste `/`, `/termine/:id`                         | Übergibt nur die Anschrift ohne Namen, erst beim Tippen (ADR-019 Punkt 20, ANN-018). Ziel-App ist hier **Google Maps**; Apple Maps und `geo:` kennt `buildNavigationUrl` seit MAP-005, zur Auswahl in der Tagesliste kommen sie erst nach der Gerätebewertung ([Sichtung Kartendienst](../sichtung/kartendienst.md)) |
+| Navigation starten (Google Maps, Fahrrad) | Tagesliste `/`, `/termine/:id`                         | Übergibt nur die Anschrift ohne Namen, erst beim Tippen (ADR-019 Punkt 20, ANN-018). Ziel-App ist hier **Google Maps**; Apple Maps und `geo:` kennt `buildNavigationUrl` seit MAP-005, zur Auswahl in der Tagesliste kommen sie erst nach der Gerätebewertung ([Sichtung Kartendienst](../../sichtung/kartendienst.md)) |
 | Patientensuche von jeder Seite          | Kopfleiste, überall                                     | serverseitig ab drei Zeichen, umlautunempfindlich, höchstens 25 Treffer (UX-004). Ein **Fehler** der Abfrage ist seit UX-012a von „Kein Treffer" unterscheidbar; der Treffer merkt sich den Rückweg |
 | Rückwege und Abstecher zwischen den Bereichen | überall, Parameter `?zurueck=` | Seit UX-012b trägt ein Weg seinen Rückweg mit: Der Kalender gibt Ansicht, Datum, Person und Filter mit, die Patientensuche ihren Stand. Nur **interne** Pfade werden angenommen (`src/lib/rueckweg.ts`, keine Schemata, kein `//`) und **nie ein Name** in der Adresszeile (ADR-011). Abstecher — „Patient:in anlegen" aus der Terminanlage, „Adresse ergänzen" aus dem Terminformular — legen den Formularstand im Arbeitsspeicher ab und kehren mit ihm zurück (`src/lib/abstecher.ts`, ANN-019: kein `localStorage` für klinischen Freitext) |
 | Formularfehler                          | alle langen Formulare                                   | Seit UX-012f steht über den Feldern eine Zusammenfassung mit `role="alert"`, die beim Erscheinen den Fokus aufnimmt (WCAG 3.3.1); jeder Eintrag führt mit Klick, Tap oder Eingabetaste ins Feld. Die Meldung am Feld bleibt daneben stehen. Die Mitarbeiterstammdaten nennen ohne Privatzugriff nur die Felder, die auf der Seite auch stehen (ANN-024) |
@@ -165,7 +169,7 @@ aber auch nicht erweitert, bis ihr Loop sie ersetzt.
 Für die **Radflotte** liegt der Entwurf ihres Ersatzes schon vor: Stellen am
 3D-Rad in Check-Up und Pannenmeldung, die Seite „Stellen am Rad“ und die PDF
 für die Werkstatt, eingespielt mit FLT-EPIC-001 (Jannes, 2026-10-08;
-[Handoff Lastenrad 3D](../design/handoff-2026-10-08-lastenrad-3d.md)). In der
+[Handoff Lastenrad 3D](../../design/handoff-2026-10-08-lastenrad-3d.md)). In der
 Vorschau wird davon nichts vorgebaut.
 
 ### Entfallen: Teamverzeichnis und Personalakte
@@ -206,7 +210,7 @@ benennen die offene Frage, statt sie zu verstecken.
 
 | Offener Punkt                                             | Wo sichtbar             | Quelle                           |
 | --------------------------------------------------------- | ----------------------- | -------------------------------- |
-| Kartendienst: seit MAP-006 echt angebunden (synthetische Adressen); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate — technisch verriegelt durch `LOCATION_DATA_GATE` (ANN-094) | Touren                  | §3.5, §9, ADR-019, [`kartendienst.md`](../datenschutz/kartendienst.md) |
+| Kartendienst: seit MAP-006 echt angebunden (synthetische Adressen); offen bleibt die produktive Freigabe am Vertrags-/§203-/DSFA-Gate — technisch verriegelt durch `LOCATION_DATA_GATE` (ANN-094) | Touren                  | §3.5, §9, ADR-019, [`kartendienst.md`](../../datenschutz/kartendienst.md) |
 | Aggregierte Auswertungen über Beschäftigte                | Zeitkonto               | §20, `OPEN_DECISIONS.md` B6      |
 | Speicherfrist des Teamchats, Anhänge, klinische Zuordnung | Kommunikation           | §10, §18                         |
 | Aufbewahrung und Löschung von Beschäftigtendaten          | nicht mehr sichtbar — die Vorschau-Personalakte ist entfallen; der Punkt bleibt offen (`IDEA-QSN-010`) | ADR-008                          |
@@ -235,16 +239,16 @@ nicht, dass ihre gekennzeichneten Ansichten schon stehen.
 
 - Kein Routingdienst, kein KI-Planer, keine automatische Tourenoptimierung.
 - Keine neue Abhängigkeit, kein neues Designsystem, kein Service Worker
-  ([ADR-015](../adr/ADR-015-initial-technical-stack.md)).
+  ([ADR-015](../../adr/ADR-015-initial-technical-stack.md)).
 - Keine Datenbankmigration. Die Vorschaubereiche legen bewusst noch keine
-  Tabellen und keine Schnittstellen fest ([ADR-014](../adr/ADR-014-foundational-data-model.md)).
+  Tabellen und keine Schnittstellen fest ([ADR-014](../../adr/ADR-014-foundational-data-model.md)).
 - Keine Änderung an RLS, Audit oder Rollen.
 - Die Go-live-Blocker aus `docs/DEVELOPMENT.md` bestehen unverändert fort.
 
 ## 6. Reihenfolge
 
 Was als Nächstes gebaut wird, steht ausschließlich in
-[`ROADMAP.md`](ROADMAP.md) — diese Liste führt keine zweite Reihenfolge. Die
+[`ROADMAP.md`](../ROADMAP.md) — diese Liste führt keine zweite Reihenfolge. Die
 beiden Voraussetzungen aus der früheren Liste an dieser Stelle sind erledigt:
 der Mitarbeiterstamm ist echt angebunden (STAFF-001), die
 Dokumentationsentscheidung ist getroffen und umgesetzt (ADR-016, DOK-001 bis
@@ -278,4 +282,4 @@ Erlaubnis abgelöst.
 
 Den Stand der Ablaufrunden führt [`OPTIMIERUNG.md`](OPTIMIERUNG.md); Befunde
 an der laufenden Anwendung sammelt
-[`BEFUNDE.md`](BEFUNDE.md). Die Reihenfolge bleibt allein Sache der Roadmap.
+[`BEFUNDE.md`](../BEFUNDE.md). Die Reihenfolge bleibt allein Sache der Roadmap.

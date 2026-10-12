@@ -1,5 +1,9 @@
 # Graph-Engineering-Workflow
 
+> **Archiviert am 2026-10-12** (Prozess verschlanken). Inhalt unverändert, nur die relativen
+> Verweise zeigen vom neuen Ort aus auf dieselben Dateien. Es gilt, was in den lebenden
+> Dokumenten steht ([`CLAUDE.md`](../../../CLAUDE.md), Archiv-Index [`README.md`](README.md)).
+
 Stand 2026-09-23 · Version 1.2 · **in Kraft** seit der Freigabe durch Jannes
 am 2026-09-13 · gilt für jede Session, die Code oder Steuerungsdokumente
 dieses Repositories ändert
@@ -18,7 +22,7 @@ greifen und wer welches Steuerungsdokument ändert.
 Es hat **keinen Rang** in der Dokumentenhierarchie und entscheidet nichts
 Fachliches. Die Auslöser für Pfad A und die zehn Punkte der Review-Checkliste
 stehen **einmal**, in ADR-013 (Punkt 9). Die Reihenfolge der Loops
-steht allein in [`ROADMAP.md`](ROADMAP.md).
+steht allein in [`ROADMAP.md`](../ROADMAP.md).
 
 **Wortwahl.** Die Roadmap kennt „Spuren" (A1 bis A3 zum Bauen, B zum
 Entscheiden). Die Wege dieses Graphen heißen deshalb **Pfade** — Pfad A und
@@ -91,7 +95,7 @@ Prototyp entscheidet nichts; S1 nennt die Zurückstellung.
 Empfehlung und Konsequenzen stellen und alles bauen, was nicht davon abhängt.
 Docs-Sessions sind Aufgaben wie jede andere und laufen ohne eigenen Pfad.
 
-Ein **Befund** aus [`BEFUNDE.md`](BEFUNDE.md) läuft als Einzel-Story-Loop
+Ein **Befund** aus [`BEFUNDE.md`](../BEFUNDE.md) läuft als Einzel-Story-Loop
 durch K1 wie jeder Auftrag. Ein Auftrag, der Pfad A und Pfad S mischen
 würde, ist Pfad A — die Oberfläche entsteht dort im vertikalen Schnitt.
 
@@ -169,14 +173,14 @@ Schritt 6).
 | Datei | Was dort steht |
 | --- | --- |
 | `CLAUDE.md`, „Arbeitsweise" | K1 vor jedem Auftrag; beide Aufrufe |
-| [`../STATUS.md`](../STATUS.md) | Livestand: welche Aufgabe jetzt läuft, welche danach, welcher Blocker bei Jannes liegt |
-| [`SESSION-START.md`](SESSION-START.md) | Die drei Startbefehle `/weiter`, `/idee`, `/sichtung`; die `xhigh`-Regel für Migration, RLS, Policy und Zweitreview |
+| [`../STATUS.md`](STATUS-bis-2026-10-12.md) | Livestand: welche Aufgabe jetzt läuft, welche danach, welcher Blocker bei Jannes liegt |
+| [`SESSION-START.md`](../SESSION-START.md) | Die drei Startbefehle `/weiter`, `/idee`, `/sichtung`; die `xhigh`-Regel für Migration, RLS, Policy und Zweitreview |
 | `.claude/skills/weiter/SKILL.md` | Aufgabe aus STATUS, die eine Leseregel, Weg in K1 und Abschluss |
 | `.claude/skills/idee/SKILL.md`, `.claude/skills/sichtung/SKILL.md` | Idee nur in den Ideenspeicher; Sichtung mit Befunden und Ergebnis |
 | `.claude/settings.json` | Modell projektweit (`opus`); ein Aufwand je Aufgabe steht dort nicht und gehört in SESSION-START |
 | `.claude/skills/feature-loop/SKILL.md` | Pfad A: Zuschnitt eines Loops; Schritt F arbeitet die Review-Checkliste ab (A4) und führt den Zweitreview (A5) |
 | `.claude/skills/sandbox/SKILL.md` | Pfad S, Schritte S1 bis S6 samt Regeln |
-| [`docs/adr/ADR-013-ci-cd-and-release-governance.md`](../adr/ADR-013-ci-cd-and-release-governance.md), Punkt 9 | Auslöser für „kritische Änderung" und die zehn Punkte der Review-Checkliste |
+| [`docs/adr/ADR-013-ci-cd-and-release-governance.md`](../../adr/ADR-013-ci-cd-and-release-governance.md), Punkt 9 | Auslöser für „kritische Änderung" und die zehn Punkte der Review-Checkliste |
 | `src/features/preview/trennung.test.ts` | Quelltext-Gate der Sandbox, einschließlich der Import-Regel für echte API-Module |
 | `ARBEITSBEREICHE.md` §2 und §6 | Sandbox-Prototypen mit Ablauf; Vorschau-Regeln |
 | `ROADMAP.md`, „Sessions starten", „Definition of Done", Credit-Regeln 4, 8 und 12, „Wochenupdate" | Zeilen „Sandbox" und „Zweitreview"; Merge; Review-Subagent als zweite Ausnahme; Schritt 6 meldet abgelaufene Prototypen |

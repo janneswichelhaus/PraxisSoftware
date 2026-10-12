@@ -1,7 +1,11 @@
 # Offene Befunde: Lösungsanalyse
 
+> **Archiviert am 2026-10-12** (Prozess verschlanken). Inhalt unverändert, nur die relativen
+> Verweise zeigen vom neuen Ort aus auf dieselben Dateien. Es gilt, was in den lebenden
+> Dokumenten steht ([`CLAUDE.md`](../../../CLAUDE.md), Archiv-Index [`README.md`](README.md)).
+
 Stand: 2026-10-02 · Codestand `main` 32745fa (nach PR #165) · 59 offene Befunde aus
-[`BEFUNDE.md`](BEFUNDE.md)
+[`BEFUNDE.md`](../BEFUNDE.md)
 
 ## Zweck und Lesart
 

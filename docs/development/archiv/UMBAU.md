@@ -1,5 +1,9 @@
 # Umbau der Dokumentation und des Ablaufs
 
+> **Archiviert am 2026-10-12** (Prozess verschlanken). Inhalt unverändert, nur die relativen
+> Verweise zeigen vom neuen Ort aus auf dieselben Dateien. Es gilt, was in den lebenden
+> Dokumenten steht ([`CLAUDE.md`](../../../CLAUDE.md), Archiv-Index [`README.md`](README.md)).
+
 Stand 2026-09-23 · Arbeitsplan ohne Rang (wie alles unter `docs/development/`). Er hält fest, was
 Jannes am 2026-09-23 entschieden und beschrieben hat, und in welchen Schritten das in die
 verbindlichen Dokumente kommt. **Er ist erledigt** und wandert ins Archiv.
@@ -269,7 +273,7 @@ Auftrag war:
 
 ### U5 — Test-Umgebung · erledigt 2026-09-23
 
-Ergebnis: [`../decisions/hosting-optionen.md`](../decisions/hosting-optionen.md) mit vier Optionen
+Ergebnis: [`../decisions/hosting-optionen.md`](../../decisions/hosting-optionen.md) mit vier Optionen
 (Uberspace, Hetzner Webhosting, Bunny.net, Cloudflare Pages mit Access) und der Empfehlung Uberspace; als B16 in
 `OPEN_DECISIONS.md`. Belegtiefe nur Suchauszüge — die Anbieterseiten sind aus der Cloud gesperrt.
 **Jannes hat Uberspace gewählt** (2026-09-23); er legt Supabase-Testprojekt, Uberspace und die GitHub-Secrets nach der Anleitung dort an. Die
