@@ -1,3 +1,5 @@
 # Sessionstart
 
-Eine Session beginnt mit genau einem von drei Befehlen — `/weiter` (die erste offene Aufgabe aus [`../STATUS.md`](../STATUS.md), gelesen und gebaut nach [`.claude/skills/weiter/SKILL.md`](../../.claude/skills/weiter/SKILL.md)), `/idee <Text>` (nur in den Ideenspeicher) oder `/sichtung` (Jannes geht eine Sichtung aus [`../sichtung/`](../sichtung/README.md) durch) —, bei Migration, RLS, Policy oder Zweitreview vorher `/effort xhigh`.
+Startbefehle und Arbeitsweise stehen seit 2026-10-12 in [`CLAUDE.md`](../../CLAUDE.md). Für Modell
+und Aufwand (ADR-013 Punkt 9 Nr. 8): Das Modell setzt `.claude/settings.json`; bei Migration, RLS,
+Policy oder Zweitreview startet die Session mit `/effort xhigh`.

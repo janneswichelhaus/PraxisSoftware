@@ -27,7 +27,7 @@ Punkt 7 — MUSS) und das Vorliegen der sieben Dokumente aus ADR-007 Punkt 5.
 
 **Kennungen:** `E12`, `E13` … (ohne Bindestrich) sind offene Punkte dieses
 Dokuments, `E-20` und `E-21` (mit Bindestrich) Rückfragen des Roadmap-Reviews vom
-2026-09-06 — beantwortet. `E-1` bis `E-7` in `../development/UMBAU.md` sind
+2026-09-06 — beantwortet. `E-1` bis `E-7` in `../development/archiv/UMBAU.md` sind
 Jannes' Entscheidungen vom 2026-09-23, eine eigene Reihe. Erledigte Punkte behalten
 Überschrift und Verweis (Volltext: Git-Historie bis `7160fd5`). Dringlichkeit:
 **P1** vor dem ersten fachlichen Datenmodell des Bereichs, **P2** vor dem
@@ -219,7 +219,7 @@ Richtung entschieden · 2026-10-10 · Jannes · eigener SMTP-Anbieter; welcher, 
 Am 2026-09-06 entschieden war Option a: nur die Auth-Mails des Providers, kein
 zweiter Dienst. Das trägt nicht mehr: Die Providerprüfung (OPS-001) zeigt, dass
 der eingebaute Versand nur an Adressen des Projektteams zustellt, und die
-Plattform (E-4 in `../development/UMBAU.md`) braucht Mails an Patient:innen —
+Plattform (E-4 in `../development/archiv/UMBAU.md`) braucht Mails an Patient:innen —
 Einladung, Anmeldung, Hinweise. Zur Wahl standen ein eigener
 SMTP-Anbieter (gewählt; neuer Dienstleister, Prüfung nach ADR-002 in Block
 11) und kein Mailversand. Gebaut wird bis dahin hinter einem Adapter mit
