@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import type * as PlattformApi from './api';
 import type { Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
@@ -15,6 +15,7 @@ const ladeRechnungen = vi.fn();
 const ladeBefundbogen = vi.fn();
 const ladeAbo = vi.fn();
 const ladeTrainingsangebot = vi.fn();
+const ladeCheckins = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -24,6 +25,7 @@ vi.mock('./api', async (importOriginal) => ({
   ladeBefundbogen: (...args: unknown[]) => ladeBefundbogen(...args) as Promise<unknown[]>,
   ladeAbo: (...args: unknown[]) => ladeAbo(...args) as Promise<unknown>,
   ladeTrainingsangebot: (...args: unknown[]) => ladeTrainingsangebot(...args) as Promise<unknown>,
+  ladeCheckins: (...args: unknown[]) => ladeCheckins(...args) as Promise<unknown>,
 }));
 
 const { Uebersicht } = await import('./Uebersicht');
@@ -77,7 +79,22 @@ beforeEach(() => {
   ladeBefundbogen.mockResolvedValue([]);
   ladeAbo.mockResolvedValue(null);
   ladeTrainingsangebot.mockResolvedValue(null);
+  ladeCheckins.mockResolvedValue(null);
 });
+
+function checkin(teil: Record<string, unknown> = {}) {
+  return {
+    today: '2026-10-12',
+    schedule: { interval_days: 7, parameter_keys: ['pain_rest', 'pain_load', 'daily_impairment'] },
+    due_on: '2026-10-12',
+    due: true,
+    can_answer: true,
+    consent_needed: false,
+    last_values: {},
+    history: [],
+    ...teil,
+  };
+}
 
 describe('Uebersicht (POR-015)', () => {
   // KND-003: das Angebot aus dem Abschlussgespräch als eigene Kachel.
@@ -200,6 +217,45 @@ describe('Uebersicht (POR-015)', () => {
     expect(screen.getByText('Diese Woche ist voll.')).toBeInTheDocument();
     expect(screen.queryByText('Befundbogen ausfüllen')).not.toBeInTheDocument();
     expect(ladeBefundbogen).not.toHaveBeenCalled();
+  });
+
+  it('zeigt den fälligen Check-in als Kachel (TRK-003, DSN-001 4.1 Punkt 3)', async () => {
+    ladeCheckins.mockResolvedValue(checkin());
+    zeige();
+    expect(await screen.findByText('3 kurze Fragen')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Jetzt beantworten →' })).toHaveAttribute(
+      'href',
+      '/p/checkin?bereich=treatment',
+    );
+    expect(screen.queryByText(/Gerade ist nichts zu tun/)).not.toBeInTheDocument();
+  });
+
+  it('zeigt keinen Check-in, wenn er nicht fällig ist, und mahnt nicht (IDEA-TRK-004)', async () => {
+    ladeCheckins.mockResolvedValue(
+      checkin({ due: false, can_answer: false, due_on: '2026-10-19' }),
+    );
+    zeige();
+    expect(await screen.findByText('Befundbogen ausfüllen')).toBeInTheDocument();
+    await waitFor(() => expect(ladeCheckins).toHaveBeenCalled());
+    expect(screen.queryByText('Check-in')).not.toBeInTheDocument();
+    expect(screen.queryByText(/verpasst|überfällig|vergessen/i)).not.toBeInTheDocument();
+  });
+
+  it('führt im Training ohne Einwilligung zu den Einwilligungen, nicht zum Check-in', async () => {
+    ladeCheckins.mockResolvedValue(checkin({ can_answer: false, consent_needed: true }));
+    zeige({ ...ZUGANG, relationship_kind: 'training' }, '/p?bereich=training');
+    expect(await screen.findByText('Ihre Praxis bittet um einen Check-in')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zu den Einwilligungen →' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Jetzt beantworten →' })).not.toBeInTheDocument();
+  });
+
+  it('sagt nach dem Absenden, was mit den Angaben geschieht (D5)', async () => {
+    zeige(ZUGANG, '/p?bereich=treatment&checkin=1');
+    expect(
+      await screen.findByText(
+        'Danke. Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin. Bei akuten Beschwerden: 112 oder 116117.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('bestaetigt den abgeschickten Befundbogen', async () => {

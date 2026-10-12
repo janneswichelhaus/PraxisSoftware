@@ -4264,3 +4264,15 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `public.get_checkins`, `set_checkin_schedule`, `end_checkin_schedule` in `supabase/migrations/20261105110000_trk_002_checkins.sql`; Test „kein Durchgriff zwischen den Bereichen …“ in `supabase/tests/checkins.test.ts`.
 
 **Änderungspfad.** Eigene Regel `app.can_write_checkins` an die drei Funktionen hängen · Aufwand `klein`.
+
+### ANN-352 — Den Check-in beantworten die Person und ihre rechtliche Vertretung, nicht die Begleitung; ohne Benachrichtigung der Praxis
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Pläne (TRK-EPIC-001)
+
+**Annahme.** Den fälligen Check-in beantworten die Person selbst und ihre rechtliche Vertretung, nicht die Begleitung; die Begleitung liest „Meine Angaben“ mit. Im Training geht er nur mit Einwilligung zu Gesundheitsangaben; ohne sie zeigt die Übersicht den Weg zu den Einwilligungen. Nach dem Absenden steht der feste Satz „… sieht Ihre Angaben beim nächsten Termin. Bei akuten Beschwerden: 112 oder 116117.“; die Praxis bekommt keine Benachrichtigung je Check-in.
+
+**Begründung.** Wie beim Befundbogen (ANN-248) und der Einheit (ANN-306) ist eine Angabe zur Gesundheit eine Aussage der Person, die eine Begleitung nicht für sie macht (ADR-023 Punkt 13). DSN-001 D5 (bestätigt) schließt Alarm und Benachrichtigung je Check-in aus; ein Alarm auf einen Wert wäre Verbot 2 (ADR-006 Punkt 11). Unsicher: ob „Check-in ausgeblieben“ als organisatorischer Punkt in der Übersicht der Praxis (D5) gebraucht wird – er ist nicht gebaut (Vorschlag im Bericht).
+
+**Anker.** Recht `checkin` in `app.platform_access_allows`, `submit_platform_checkin` in `supabase/migrations/20261105120000_trk_003_platform_checkins.sql`; `nachDemCheckin` in `src/features/platform/checkintexte.ts`; Tests „Begleitung liest …“ und „im Training nur mit Einwilligung …“ in `supabase/tests/checkins.test.ts`.
+
+**Änderungspfad.** `'checkin'` in `app.platform_access_allows` in die Zeile der Rechte für alle Zugänge verschieben · Aufwand `klein`.

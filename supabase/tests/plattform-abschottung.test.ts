@@ -104,6 +104,10 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Satz abhaken (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
   'public.set_platform_exercise_days':
     'Eigene Übungstage wählen (UEB-011); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-days.test.ts',
+  'public.platform_checkins':
+    'Eigener Check-in: fällig, Fragen, Verlauf (TRK-003); Negativfälle in checkins.test.ts',
+  'public.submit_platform_checkin':
+    'Fälligen Check-in beantworten (TRK-003); ohne Recht checkin abgewiesen (42501), Negativfälle in checkins.test.ts',
   'public.finish_platform_exercise_session':
     'Einheit beenden (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.

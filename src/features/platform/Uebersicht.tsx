@@ -11,8 +11,10 @@ import {
   BEREICHSNAME,
   aboSchluessel,
   befundbogenSchluessel,
+  checkinsSchluessel,
   ladeAbo,
   ladeBefundbogen,
+  ladeCheckins,
   ladeRechnungen,
   ladeTermine,
   ladeNachrichten,
@@ -25,6 +27,7 @@ import {
   wuenscheSchluessel,
   type Plattformzugang,
 } from './api';
+import { nachDemCheckin } from './checkintexte';
 import { fuerDiePlattform } from './instrumentwahl';
 import { NICHT_AKUT, NOTFALL, THEMA_NAME } from './nachrichtentexte';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
@@ -36,8 +39,7 @@ import { datum, kuenftig, tagLang, zeitraum } from './zeit';
  *
  * Eine kurze Liste dessen, was zu tun ist, keine Kennzahlen (IDEA-ORG-001),
  * in der Reihenfolge aus DSN-001: Befundbogen ausfüllen, nächster Termin,
- * Antwort der Praxis auf einen Wunsch, offene Rechnung. Check-in und Übungen
- * kommen mit ihren Loops (TRK-, UEB-EPIC). Leer heißt: „Gerade ist nichts zu
+ * Check-in (TRK-003), Antwort der Praxis auf einen Wunsch, offene Rechnung. Leer heißt: „Gerade ist nichts zu
  * tun" mit dem nächsten Termin, nie eine leere Fläche (Abschnitt 7).
  *
  * Jede Kachel kommt aus der Projektion ihres Bereichs; was eine Rolle nicht
@@ -99,6 +101,19 @@ export function Uebersicht({
     enabled: behandlung && zugang.access_kind !== 'companion',
   });
 
+  // TRK-003: der Check-in, wenn er fällig ist (DSN-001 4.1 Punkt 3). Ohne
+  // Mahnung: Verpasstes zählt nicht (IDEA-TRK-004).
+  const checkin = useQuery({
+    queryKey: checkinsSchluessel(zugang.access_id),
+    queryFn: () => ladeCheckins(zugang.access_id),
+  });
+  const checkinOffen = Boolean(checkin.data?.can_answer);
+  // Im Training ohne Einwilligung: der Weg dorthin, nicht der Check-in.
+  const checkinBrauchtEinwilligung =
+    !checkinOffen &&
+    zugang.access_kind !== 'companion' &&
+    Boolean(checkin.data?.due && checkin.data.consent_needed);
+
   const jetzt = new Date();
   // Ein laufender Termin ist noch „nächster“ - wie unter Termine „kommend“.
   const naechster = (termine.data ?? []).find(
@@ -134,6 +149,8 @@ export function Uebersicht({
     bogenOffen,
     Boolean(angebot.data),
     Boolean(naechster),
+    checkinOffen,
+    checkinBrauchtEinwilligung,
     Boolean(antwort),
     Boolean(offenerWunsch),
     Boolean(offeneRechnung),
@@ -166,6 +183,11 @@ export function Uebersicht({
             : aboEndet?.ends_on
               ? `Ihr Nachsorge-Abo ${aboEndet.state === 'ending' ? 'endet' : 'endete'} am ${datum(aboEndet.ends_on)}. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`
               : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`}
+        </Statusmeldung>
+      ) : null}
+      {suche.get('checkin') === '1' ? (
+        <Statusmeldung className="mt-4" ton="erfolg">
+          {nachDemCheckin(zugang)}
         </Statusmeldung>
       ) : null}
       {suche.get('bogen') === '1' ? (
@@ -239,6 +261,34 @@ export function Uebersicht({
               <span className="text-ink-muted block text-sm font-normal">
                 {terminBeschreibung(naechster).titel}
               </span>
+            </Tile>
+          ) : null}
+          {checkinOffen && checkin.data?.schedule ? (
+            <Tile
+              label="Check-in"
+              ton="akzent"
+              zusatz="Freiwillig · etwa 1 Minute"
+              aktion={
+                <Textlink alleinstehend to={mit('/checkin')}>
+                  Jetzt beantworten →
+                </Textlink>
+              }
+            >
+              {checkin.data.schedule.parameter_keys.length === 1
+                ? 'Eine kurze Frage'
+                : `${checkin.data.schedule.parameter_keys.length} kurze Fragen`}
+            </Tile>
+          ) : checkinBrauchtEinwilligung ? (
+            <Tile
+              label="Check-in"
+              zusatz="Der Check-in fragt nach Ihrer Gesundheit. Dafür braucht es Ihre Einwilligung."
+              aktion={
+                <Textlink alleinstehend to={mit('/einwilligungen')}>
+                  Zu den Einwilligungen →
+                </Textlink>
+              }
+            >
+              Ihre Praxis bittet um einen Check-in
             </Tile>
           ) : null}
           {antwort ? (

@@ -1589,3 +1589,64 @@ export async function entferneGeraet(endpunkt: string): Promise<void> {
   })) as { error: unknown };
   if (error) throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
 }
+
+// -----------------------------------------------------------------------------
+// TRK-003: Check-in (DSN-001 4.1 und 5)
+// -----------------------------------------------------------------------------
+
+const checkinVerlaufSchema = z.object({
+  answered_on: z.string(),
+  recorded_by_kind: z.enum(['self', 'legal_representative']),
+  values: z.record(z.string(), z.number()),
+});
+
+const eigeneCheckinsSchema = z.object({
+  today: z.string(),
+  schedule: z.object({ interval_days: z.number(), parameter_keys: z.array(z.string()) }).nullable(),
+  due_on: z.string().nullable(),
+  due: z.boolean(),
+  /** Darf dieser Zugang jetzt antworten? Recht, Lesefrist, Einwilligung. */
+  can_answer: z.boolean(),
+  /** Im Training fehlt die Einwilligung zu Gesundheitsangaben. */
+  consent_needed: z.boolean(),
+  /** Die letzte Angabe je Frage - nur als Hinweis (ANN-349). */
+  last_values: z.record(z.string(), z.number()),
+  history: z.array(checkinVerlaufSchema),
+});
+
+export type EigeneCheckins = z.infer<typeof eigeneCheckinsSchema>;
+
+export function checkinsSchluessel(zugangId: string) {
+  return ['platform-checkins', zugangId] as const;
+}
+
+/** Ob ein Check-in fällig ist, die Fragen und „Meine Angaben" (TRK-003). */
+export async function ladeCheckins(zugangId: string): Promise<EigeneCheckins | null> {
+  const satz = 'Ihr Check-in konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_checkins', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  if (ergebnis.data === null) return null;
+  return antwort(eigeneCheckinsSchema, ergebnis.data, satz);
+}
+
+/** Einen fälligen Check-in beantworten; nur die beantworteten Fragen. */
+export async function checkinAbsenden(
+  zugangId: string,
+  werte: Record<string, number>,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('submit_platform_checkin', {
+    p_access_id: zugangId,
+    p_values: werte,
+  })) as { error: { message?: string } | null };
+  if (!error) return;
+  const m = error.message ?? '';
+  if (m.includes('not due')) throw new Error('Diesen Check-in haben Sie schon beantwortet. Danke.');
+  if (m.includes('no answer')) throw new Error('Bitte beantworten Sie mindestens eine Frage.');
+  if (m.includes('no checkin schedule'))
+    throw new Error('Ihre Praxis hat den Check-in gerade beendet.');
+  if (m.includes('consent') || m.includes('not allowed'))
+    throw new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
+  throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}

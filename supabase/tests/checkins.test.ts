@@ -404,3 +404,304 @@ describe('Check-in, Takt und Lesen in der Praxis (TRK-002)', () => {
     }
   });
 });
+
+const PORTAL = 'select public.platform_checkins($1::uuid) as daten';
+const ANTWORTEN = 'select public.submit_platform_checkin($1::uuid, $2::jsonb) as id';
+
+interface Portal {
+  today: string;
+  schedule: { interval_days: number; parameter_keys: string[] } | null;
+  due_on: string | null;
+  due: boolean;
+  can_answer: boolean;
+  consent_needed: boolean;
+  last_values: Record<string, number>;
+  history: { answered_on: string; recorded_by_kind: string; values: Record<string, number> }[];
+}
+
+async function portal(konto: string, zugang: string): Promise<Portal | null> {
+  const { rows } = await asUser<{ daten: Portal | null }>(konto, PORTAL, [zugang]);
+  return rows[0]!.daten;
+}
+
+const erika = { konto: users.plattformErika, zugang: platformAccesses.erikaBehandlung };
+
+describe('Check-in auf der Plattform (TRK-003)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    await fremdeOrganisation();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await asPostgres('delete from public.checkins');
+    await asPostgres('delete from public.checkin_schedules');
+    await asPostgres('delete from public.audit_log');
+    await asUserCommitted(users.therapist, SETZEN, [
+      'treatment',
+      patients.erika,
+      7,
+      ['pain_rest', 'pain_load', 'morning_stiffness_minutes'],
+    ]);
+  });
+
+  it('zeigt den fälligen Check-in, nimmt die Antwort und ist danach nicht mehr fällig', async () => {
+    const vorher = await portal(erika.konto, erika.zugang);
+    expect(vorher).toMatchObject({
+      schedule: {
+        interval_days: 7,
+        parameter_keys: ['pain_rest', 'pain_load', 'morning_stiffness_minutes'],
+      },
+      due: true,
+      can_answer: true,
+      consent_needed: false,
+      last_values: {},
+      history: [],
+    });
+    await asUserCommitted(erika.konto, ANTWORTEN, [
+      erika.zugang,
+      JSON.stringify({ pain_rest: 3, pain_load: null, morning_stiffness_minutes: 20 }),
+    ]);
+    const danach = await portal(erika.konto, erika.zugang);
+    expect(danach!.due).toBe(false);
+    expect(danach!.can_answer).toBe(false);
+    expect(danach!.last_values).toEqual({ pain_rest: 3, morning_stiffness_minutes: 20 });
+    expect(danach!.history).toEqual([
+      {
+        answered_on: danach!.today,
+        recorded_by_kind: 'self',
+        values: { pain_rest: 3, morning_stiffness_minutes: 20 },
+      },
+    ]);
+    // Höchstens einer am Tag (ANN-350).
+    expect(await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}']))).toBe(
+      '22023',
+    );
+    // Die Praxis liest ihn in „Zwischen den Terminen“.
+    const praxis = await lesen(users.therapist, 'treatment', patients.erika);
+    expect(praxis!.checkins[0]!.values).toEqual({ pain_rest: 3, morning_stiffness_minutes: 20 });
+    // Kein Alarm, keine Benachrichtigung an die Praxis (DSN-001 D5).
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.notification_deliveries',
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it('prüft die Angaben: nur gestellte Fragen, im Bereich, mindestens eine (ANN-349)', async () => {
+    for (const werte of [
+      {},
+      { pain_rest: null },
+      { stress: 3 },
+      { pain_rest: 11 },
+      { morning_stiffness_minutes: 241 },
+      { pain_rest: 2.5 },
+      { session_pain: 2 },
+      [1],
+    ]) {
+      expect(
+        await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, JSON.stringify(werte)])),
+      ).toBe('22023');
+    }
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.checkins',
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it('ohne Takt kein Check-in; vor dem nächsten Tag nicht fällig', async () => {
+    await asUserCommitted(users.therapist, BEENDEN, ['treatment', patients.erika]);
+    expect((await portal(erika.konto, erika.zugang))!.schedule).toBeNull();
+    expect(await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}']))).toBe(
+      'P0002',
+    );
+
+    await asUserCommitted(users.therapist, SETZEN, ['treatment', patients.erika, 7, ['pain_rest']]);
+    await asPostgres(
+      `update public.checkin_schedules set starts_on = app.training_today($1) - 10`,
+      [organizationId],
+    );
+    await checkinEintragen('treatment', patients.erika, 3, { pain_rest: 4 });
+    const p = await portal(erika.konto, erika.zugang);
+    expect(p!.due).toBe(false);
+    expect(p!.last_values).toEqual({ pain_rest: 4 });
+    expect(await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}']))).toBe(
+      '22023',
+    );
+  });
+
+  it('Begleitung liest „Meine Angaben“, antwortet aber nicht (ANN-352)', async () => {
+    await asUserCommitted(users.therapist, SETZEN, ['treatment', patients.max, 7, ['pain_rest']]);
+    const p = await portal(users.plattformPaula, platformAccesses.paulaBegleitungMax);
+    expect(p!.due).toBe(true);
+    expect(p!.can_answer).toBe(false);
+    expect(
+      await fehler(
+        asUser(users.plattformPaula, ANTWORTEN, [
+          platformAccesses.paulaBegleitungMax,
+          '{"pain_rest": 1}',
+        ]),
+      ),
+    ).toBe('42501');
+  });
+
+  it('nur das eigene Verhältnis: anderer Bereich, fremde Person, Praxiskonto, andere Organisation', async () => {
+    // Erikas Training hat keinen Takt; die Behandlung bleibt getrennt (4.8).
+    const training = await portal(erika.konto, platformAccesses.erikaTraining);
+    expect(training!.schedule).toBeNull();
+    expect(training!.history).toEqual([]);
+    expect(
+      await fehler(
+        asUser(erika.konto, ANTWORTEN, [platformAccesses.erikaTraining, '{"pain_rest": 1}']),
+      ),
+    ).not.toBe('kein Fehler');
+    // Fremdes Konto mit Erikas Zugang.
+    expect(await portal(users.plattformTina, erika.zugang)).toBeNull();
+    expect(
+      await fehler(asUser(users.plattformTina, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}'])),
+    ).toBe('42501');
+    // Praxiskonto, andere Organisation, ohne Anmeldung.
+    expect(await portal(users.therapist, erika.zugang)).toBeNull();
+    expect(
+      await fehler(asUser(users.therapist, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}'])),
+    ).toBe('42501');
+    const fremd = await fremdeOrganisation();
+    expect(await portal(fremd.owner, erika.zugang)).toBeNull();
+    expect(await fehler(asUser(fremd.owner, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}']))).toBe(
+      '42501',
+    );
+    expect(await fehler(asUser(null, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}']))).toBe('42501');
+  });
+
+  it('im Training nur mit Einwilligung zu Gesundheitsangaben (ADR-021 Punkt 4)', async () => {
+    const tina = { konto: users.plattformTina, zugang: platformAccesses.tinaTraining };
+    await asUserCommitted(users.trainer, SETZEN, [
+      'training',
+      trainingRelationships.tina,
+      7,
+      ['stress'],
+    ]);
+    await asPostgres(
+      'delete from public.training_consent_records where training_relationship_id = $1',
+      [trainingRelationships.tina],
+    );
+    try {
+      const ohne = await portal(tina.konto, tina.zugang);
+      expect(ohne).toMatchObject({ due: true, can_answer: false, consent_needed: true });
+      expect(await fehler(asUser(tina.konto, ANTWORTEN, [tina.zugang, '{"stress": 4}']))).toBe(
+        '42501',
+      );
+      await asPostgres(
+        `insert into public.training_consent_records
+           (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by)
+         values ($1, $2, 'consent_granted', 'training_health_data', current_date, $3)`,
+        [organizationId, trainingRelationships.tina, users.trainer],
+      );
+      expect((await portal(tina.konto, tina.zugang))!.can_answer).toBe(true);
+      await asUserCommitted(tina.konto, ANTWORTEN, [tina.zugang, '{"stress": 4}']);
+      const praxis = await lesen(users.trainer, 'training', trainingRelationships.tina);
+      expect(praxis!.checkins[0]!.values).toEqual({ stress: 4 });
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('gesperrt, entzogen oder eingeladen: keine Antwort, kein Lesen (Punkt 18, 23)', async () => {
+    try {
+      for (const zustand of [
+        `status = 'locked', locked_at = now()`,
+        `status = 'revoked', locked_at = null, revoked_at = now(), revoked_reason = 'practice'`,
+      ]) {
+        await asPostgres(`update public.platform_accesses set ${zustand} where id = $1`, [
+          erika.zugang,
+        ]);
+        expect(await portal(erika.konto, erika.zugang)).toBeNull();
+        expect(
+          await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}'])),
+        ).toBe('42501');
+      }
+      const { rows } = await asPostgres<{ id: string }>(
+        `insert into public.platform_accesses
+           (organization_id, relationship_kind, relationship_id, patient_id, status, created_by)
+         values ($1, 'treatment', $2, $2, 'invited', $3) returning id`,
+        [organizationId, patients.max, users.office],
+      );
+      expect(await portal(erika.konto, rows[0]!.id)).toBeNull();
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('in der Lesefrist wird nicht mehr geantwortet, gelesen schon (ANN-305)', async () => {
+    await checkinEintragen('treatment', patients.erika, 10, { pain_rest: 2 });
+    try {
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = current_date - 2, care_concluded_at = now(),
+                care_concluded_by = $2::uuid
+          where id = $1`,
+        [patients.erika, users.therapist],
+      );
+      const p = await portal(erika.konto, erika.zugang);
+      expect(p!.can_answer).toBe(false);
+      expect(p!.history).toHaveLength(1);
+      expect(await fehler(asUser(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 1}']))).toBe(
+        '42501',
+      );
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('eine rechtliche Vertretung antwortet; das steht am Check-in und im Protokoll (Punkt 24)', async () => {
+    try {
+      // Bernd ist rechtliche Vertretung von Erika (Betreuung).
+      const BERND = 'cafecafe-cafe-4afe-8afe-0000000000c1';
+      const KONTO = '99999999-9999-4999-8999-0000000000c1';
+      await asPostgres(
+        `insert into auth.users (id, aud, role, email)
+         values ($1, 'authenticated', 'authenticated', 'bernd.checkin@patient.invalid')`,
+        [KONTO],
+      );
+      await asPostgres(
+        `insert into public.platform_accesses
+           (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+            status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+            health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+         values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+                 'guardianship', 'Bernd Betreuer',
+                 array['identity_document', 'guardianship_certificate'],
+                 true, false, $5, now(), $5)`,
+        [BERND, organizationId, patients.erika, KONTO, users.office],
+      );
+      await asUserCommitted(KONTO, ANTWORTEN, [BERND, '{"pain_rest": 6}']);
+      const praxis = await lesen(users.therapist, 'treatment', patients.erika);
+      expect(praxis!.checkins[0]).toMatchObject({
+        recorded_by_kind: 'legal_representative',
+        values: { pain_rest: 6 },
+      });
+      const { rows } = await asPostgres<{ actor_kind: string; view: string }>(
+        `select actor_kind, context ->> 'view' as view from public.audit_log
+         where actor_user_id = $1 and action = 'platform_representation.read'`,
+        [KONTO],
+      );
+      expect(rows).toContainEqual({ actor_kind: 'representative', view: 'checkin' });
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('steht im eigenen Export (POR-018), ohne Kennung des Zugangs', async () => {
+    await asUserCommitted(erika.konto, ANTWORTEN, [erika.zugang, '{"pain_rest": 5}']);
+    const { rows } = await asUser<{
+      daten: { checkins: { schedule: unknown; history: Record<string, unknown>[] } };
+    }>(erika.konto, 'select public.platform_export($1::uuid) as daten', [erika.zugang]);
+    expect(rows[0]!.daten.checkins.schedule).toMatchObject({ interval_days: 7 });
+    expect(rows[0]!.daten.checkins.history).toEqual([
+      expect.objectContaining({ values: { pain_rest: 5 } }),
+    ]);
+    expect(JSON.stringify(rows[0]!.daten.checkins)).not.toContain(erika.zugang);
+  });
+});

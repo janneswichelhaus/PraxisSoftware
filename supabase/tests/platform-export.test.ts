@@ -90,6 +90,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
         'exercise_plans',
         // KOM-004: die eigenen Nachrichten, wie die Plattform sie zeigt.
         'messages',
+        // TRK-003: die eigenen Check-ins mit Takt und Angaben.
+        'checkins',
       ].sort(),
     );
     expect(Object.keys(daten.person as object).sort()).toEqual(
