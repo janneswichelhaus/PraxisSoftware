@@ -28,6 +28,7 @@
     "audit:katalog": "node scripts/audit-aktionen-check.mjs",
     "scan:secrets": "./scripts/scan-secrets.sh",
     "screenshots": "node scripts/screenshots.mjs",
+    "bildstrecke": "node scripts/bildstrecke.mjs",
     "fortschritt": "node scripts/fortschritt.mjs",
     "definitionen:sql": "node scripts/definitionen-sql.mjs"
   },

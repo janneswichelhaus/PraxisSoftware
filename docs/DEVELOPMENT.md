@@ -126,6 +126,19 @@ Grenzen:
   `.env.development.local`, nicht in `.env.local`: Die liest auch Vitest, und mit echten Werten
   scheitern `App.nachladen.test.tsx` und `SchedulingPage.test.tsx`.
 
+## Bildstrecke: die ganze App als Bilder
+
+`pnpm bildstrecke` nimmt jede Route aus `scripts/bildstrecke/routen.mjs` je Konto bei 375 × 812
+(Touch) und 1280 × 800 als Vollseite auf — Praxis, Patientenplattform und Anmeldung. Voraussetzung:
+Stack mit `reset --reich` und `pnpm dev`; Adresse über `E2E_BASE_URL`. Ergebnis in
+`.tmp/bildstrecke/<Zeit>/` (`--ziel=`): PNGs, `index.html` (Kontaktbogen nach Bereich, Befunde rot)
+und `ergebnis.json`. Geprüft: Querscrollen, Konsolenfehler, Anfragen mit 4xx/5xx, Zielseite
+erreicht, Fehler- oder Ladezustand, leere Seite. Schreibende Anfragen hält ein Lesewächter an und
+meldet sie — die Bildstrecke verändert keine Daten. Teilmengen: `--nur=abrechnung,/training`,
+`--konten=therapist`, `--breiten=375`; `--vergleich=<vorher>` schreibt `vergleich.html`
+(`--nur-bogen` erzeugt nur die Bögen neu). Eine neue Route ohne Eintrag in `routen.mjs` macht
+`pnpm test` rot (`scripts/bildstrecke/bildstrecke.test.mjs`).
+
 ## Lokale Sichtung unter Windows (Git Bash)
 
 Ablauf, um einen Stand lokal anzusehen — für eine Sichtung oder einen Feature-Branch. Alle Befehle laufen im
