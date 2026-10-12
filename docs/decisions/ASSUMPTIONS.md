@@ -3696,6 +3696,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: ADR-024 (Offline-Erfassung); Jannes (Sichtung Plattform)
 
+**Ablösung.** abgelöst durch ANN-357 und ANN-358 im Verhalten ohne Verbindung (TRK-EPIC-003, ADR-024 Punkt 5): Der Haken bleibt stehen und kommt in die Warteschlange auf dem Gerät. Die übrigen Sätze gelten weiter.
+
 **Annahme.** Die Durchführungsansicht speichert jeden abgehakten Durchgang sofort als Zeile am Server; eine Einheit entsteht mit dem ersten Haken, höchstens eine offene je Plan und Tag, und wer abbricht und wieder anfängt, setzt sie fort. Ohne Verbindung nimmt die Ansicht den Haken zurück und sagt „Nicht gespeichert“ – auf dem Gerät liegt nichts. Eine nicht beendete Einheit eines früheren Tages bleibt so stehen („nicht beendet“) und nimmt keinen Haken mehr an. Beenden geht erst nach mindestens einem Haken; an der Einheit steht, wer begonnen und wer beendet hat. Erfasst wird nur am zugewiesenen Plan ab seinem Beginn und nicht in der Lesefrist nach dem Ende des Verhältnisses bzw. des Nachsorge-Abos (DSN-001 4.3: „alle Knöpfe, die schreiben, fallen weg“). Erfasst werden Durchgänge, keine Ist-Werte (Last, Wiederholungen).
 
 **Begründung.** IDEA-ORG-003 verlangt „Abbrechen ohne Datenverlust“ und nennt „keine Verbindung“ als Lage. ADR-015 Punkt 16 schließt einen Service Worker aus, ADR-024 steht aus; Gesundheitsdaten im Browser abzulegen wäre eine Offline-Erfassung, die ADR-001 erst mit Geräteregeln zulässt. ADR-001 verlangt, dass niemand glaubt, gespeichert zu haben, was nur lokal liegt. Ist-Werte gehören zu Verlauf und Tracking (Block 7, §17 Verbot 2).
@@ -4324,3 +4326,17 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `src/components/ui/Verlaufstabelle.tsx`; `app.checkin_sessions_json` und `get_checkins` in `supabase/migrations/20261106120000_trk_006_time_series.sql`; Tests „zeigt der Praxis daneben die Angaben nach den Einheiten …“ in `supabase/tests/checkins.test.ts`, `src/features/checkins/ZwischenDenTerminen.test.tsx`, `tests/e2e/checkin.spec.ts`.
 
 **Änderungspfad.** Reihenfolge der Spalten in `Verlaufstabelle` umdrehen · Aufwand `klein`; Einheiten weglassen: `sessions` aus `get_checkins` nehmen · Aufwand `klein`.
+
+### ANN-357 — Eine Einheit wird als Ganzes übertragen; ihr Tag ist die Angabe des Geräts, höchstens sieben Tage zurück
+
+Technik · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform (TRK-EPIC-003)
+
+**Ablösung.** ersetzt ANN-305 im Verhalten ohne Verbindung
+
+**Annahme.** Das Gerät überträgt eine Einheit mit allen noch nicht übertragenen Haken und wahlweise ihrem Ende in **einem** Aufruf, in der Reihenfolge, in der getippt wurde; Einheit und Haken tragen Kennungen des Geräts. Der **Tag der Einheit** ist der Tag des Geräts, nicht in der Zukunft, nicht vor dem Planbeginn und höchstens **sieben Tage** zurück (dieselbe Frist wie die Ablage). Die Uhr des Geräts steht als Angabe der Person an Einheit und Haken (`reported_*`), daneben der Eingang am Server. Ist die Einheit schon beendet, ändert ein zweites Senden nichts; ist an diesem Tag schon eine andere offen (zweites Gerät), kommen die Haken dazu; kommt kein Haken an, entsteht keine Einheit. Ist im Training die Einwilligung beim Eingang widerrufen, wird die Einheit beendet, „schwierig, weil …“ und die Angaben fallen weg, und die Ansicht sagt es.
+
+**Begründung.** ADR-024 Punkte 7 und 8: additiv, wiederholbar, kein Last-Write-Wins, der Server urteilt beim Eingang mit denselben Prüfungen wie online. Ein Aufruf je Einheit hält die Reihenfolge von An und Aus desselben Durchgangs und macht das zweite Senden zu einem Wiedererkennen statt einer Folge einzelner Aufrufe. Der Tag des Geräts, weil die Person an diesem Tag geübt hat; sieben Tage, weil älteres auf keinem Gerät mehr liegt (Punkt 5). Bei widerrufener Einwilligung darf die Angabe zur Gesundheit nicht gespeichert werden (ADR-021 Punkt 4), die Durchgänge selbst sind keine solche Angabe (ANN-306). Unsicher: ob eine Einheit, die ein zweites Gerät am selben Tag schon beendet hat, die Haken des ersten nicht doch als eigene Einheit bekommen sollte.
+
+**Anker.** `public.sync_platform_exercise_session` und `app.offline_transfer_days` in `supabase/migrations/20261107100000_trk_007_offline_transfer.sql`; `OFFLINE_FRIST_TAGE` in `src/lib/geraeteablage.ts`; Tests in `supabase/tests/platform-exercise-sync.test.ts`.
+
+**Änderungspfad.** Andere Frist: beide Konstanten · Aufwand `klein`; Tag des Eingangs statt des Geräts: `p_performed_on` durch `app.training_today` ersetzen · Aufwand `klein`; Einwilligung fehlt: ganze Übertragung abweisen statt Angaben fallen lassen · Aufwand `klein`.
