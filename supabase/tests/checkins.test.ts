@@ -8,6 +8,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { zugewiesenerPlan } from './helpers/plaene';
 
 /**
  * Check-in mit einstellbarem Takt, Praxisseite (TRK-002, IDEA-TRK-004,
@@ -628,6 +629,49 @@ describe('Check-in auf der Plattform (TRK-003)', () => {
     ]);
     const praxis = await lesen(users.therapist, 'treatment', patients.erika);
     expect(praxis!.checkins[0]!.values).toEqual({ pain_load: 3, painkiller_24h: 0, pain_side: 1 });
+  });
+
+  it('zeigt der Praxis daneben die Angaben nach den Einheiten, mit Zeitzone (TRK-006)', async () => {
+    const plan = await zugewiesenerPlan('therapy', patients.erika, 'Heimprogramm Knie');
+    const beginnen = async () => {
+      const { rows } = await asUserCommitted<{ id: string }>(
+        erika.konto,
+        'select public.start_platform_exercise_session($1::uuid, $2::uuid) as id',
+        [erika.zugang, plan],
+      );
+      return rows[0]!.id;
+    };
+    const beenden = (einheit: string, werte: object) =>
+      asUserCommitted(
+        erika.konto,
+        'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3, $4::jsonb)',
+        [erika.zugang, einheit, '', JSON.stringify(werte)],
+      );
+    // Eine Einheit ohne Angaben steht nicht in der Zeitreihe.
+    await beenden(await beginnen(), {});
+    await beenden(await beginnen(), { session_pain: 3, session_confidence: 6 });
+    // Ein Plan im Training gehört nicht in die Akte (ADR-021 Punkt 6).
+    await zugewiesenerPlan('training');
+
+    const praxis = (await lesen(users.therapist, 'treatment', patients.erika)) as unknown as {
+      time_zone: string;
+      sessions: { plan_title: string; recorded_by_kind: string; values: object }[];
+    };
+    expect(praxis.time_zone).toBe('Europe/Berlin');
+    expect(praxis.sessions).toHaveLength(1);
+    expect(praxis.sessions[0]).toMatchObject({
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_pain: 3, session_confidence: 6 },
+    });
+    const training = (await lesen(
+      users.trainer,
+      'training',
+      trainingRelationships.tina,
+    )) as unknown as {
+      sessions: unknown[];
+    };
+    expect(training.sessions).toEqual([]);
   });
 
   it('ohne Takt kein Check-in; vor dem nächsten Tag nicht fällig', async () => {

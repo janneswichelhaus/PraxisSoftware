@@ -7,11 +7,11 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Verlaufstabelle } from '@/components/ui/Verlaufstabelle';
 import { formatDate } from '@/lib/datum';
 import {
   CHECKIN_HOECHSTENS,
   CHECKIN_VOREINSTELLUNG,
-  angabenZeile,
   erfassungsgroesse,
   groessenImTakt,
   nurFragen,
@@ -23,6 +23,7 @@ import {
   fetchCheckins,
   saveCheckinTakt,
   taktText,
+  uhrzeit,
   type CheckinDaten,
   type Verhaeltnisart,
 } from './api';
@@ -30,7 +31,7 @@ import {
 /**
  * „Zwischen den Terminen" an Akte und Trainingsverhältnis (TRK-002, DSN-001
  * Abschnitt 6): der Takt des Check-ins mit „ändern" und die Angaben der
- * Person mit Datum, als Liste.
+ * Person je Größe über die Zeit (TRK-006).
  *
  * Die Angaben stehen unverändert da, mit Wert und Quelle – keine Farbe, keine
  * Tendenz, kein Satz über ihre Bedeutung (ADR-006 Punkt 11). Es gibt keinen
@@ -299,21 +300,47 @@ function kurzname(key: string): string {
   return erfassungsgroesse(key)?.kurz ?? key;
 }
 
+/**
+ * Die Angaben je Größe über die Zeit (TRK-006, ANN-356): die Check-ins und
+ * daneben, was die Person nach den Einheiten angegeben hat. Wert, Datum,
+ * Uhrzeit und Quelle – keine Tendenz, keine Farbe (ADR-006 Punkt 11).
+ */
 function Angaben({ daten }: { daten: CheckinDaten }) {
-  if (daten.checkins.length === 0) {
-    return <p className="text-ink-muted mt-4 text-sm">Noch kein Check-in beantwortet.</p>;
-  }
+  const vermerk = (art: string) => (art === 'legal_representative' ? 'Vertretung' : null);
   return (
-    <ul className="mt-4 flex flex-col gap-2" aria-label="Beantwortete Check-ins">
-      {daten.checkins.map((c) => (
-        <li key={c.recorded_at} className="rounded-card border-line bg-surface border p-3 text-sm">
-          <p className="font-semibold">
-            {formatDate(c.answered_on)}
-            {c.recorded_by_kind === 'legal_representative' ? ' · von der Vertretung' : ''}
-          </p>
-          <p className="mt-1">{angabenZeile(c.values) || 'ohne Angaben'}</p>
-        </li>
-      ))}
-    </ul>
+    <div className="mt-4 flex flex-col gap-4">
+      {daten.checkins.length === 0 ? (
+        <p className="text-ink-muted text-sm">Noch kein Check-in beantwortet.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-ink text-base font-semibold">Check-ins</h3>
+          <Verlaufstabelle
+            titel="Angaben aus den Check-ins"
+            spalten={daten.checkins.map((c) => ({
+              id: c.recorded_at,
+              datum: c.answered_on,
+              zeit: uhrzeit(c.recorded_at, daten.time_zone),
+              vermerk: vermerk(c.recorded_by_kind),
+              werte: c.values,
+            }))}
+          />
+        </div>
+      )}
+      {daten.sessions.length > 0 ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="text-ink text-base font-semibold">Nach den Einheiten</h3>
+          <Verlaufstabelle
+            titel="Angaben nach den Einheiten"
+            spalten={daten.sessions.map((e) => ({
+              id: e.finished_at,
+              datum: e.performed_on,
+              zeit: uhrzeit(e.finished_at, daten.time_zone),
+              vermerk: vermerk(e.recorded_by_kind) ?? e.plan_title,
+              werte: e.values,
+            }))}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }

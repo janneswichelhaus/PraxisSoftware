@@ -688,12 +688,19 @@ const checkinVerlauf: EigeneCheckins['history'] = [
   {
     answered_on: inTagen(-7, 0).slice(0, 10),
     recorded_by_kind: 'self',
-    values: { pain_rest: 3, pain_load: 6, daily_impairment: 4 },
+    values: {
+      pain_rest: 3,
+      pain_load: 6,
+      daily_impairment: 4,
+      pain_quality: 2,
+      movement_confidence: 5,
+      painkiller_24h: 0,
+    },
   },
   {
     answered_on: inTagen(-14, 0).slice(0, 10),
     recorded_by_kind: 'legal_representative',
-    values: { pain_rest: 5, daily_impairment: 6 },
+    values: { pain_rest: 5, daily_impairment: 6, pain_recovery_hours: 24, painkiller_24h: 1 },
   },
 ];
 const checkinFaellig = seite === 'checkin' || seite === 'checkin-uebersicht';
@@ -721,6 +728,23 @@ client.setQueryData(checkinsKey('treatment', MAX), {
     updated_by_name: 'Anna Beispiel',
   },
   checkins: checkinVerlauf.map((c) => ({ ...c, recorded_at: `${c.answered_on}T07:00:00Z` })),
+  time_zone: 'Europe/Berlin',
+  sessions: [
+    {
+      performed_on: inTagen(-2, 0).slice(0, 10),
+      finished_at: inTagen(-2, 18),
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_exertion: 6, session_pain: 2, session_confidence: 7 },
+    },
+    {
+      performed_on: inTagen(-5, 0).slice(0, 10),
+      finished_at: inTagen(-5, 18),
+      plan_title: 'Heimprogramm Knie',
+      recorded_by_kind: 'self',
+      values: { session_exertion: 5, session_confidence: 5 },
+    },
+  ],
 } satisfies CheckinDaten);
 
 const sitzung = {

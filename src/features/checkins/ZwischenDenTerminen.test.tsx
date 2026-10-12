@@ -53,6 +53,8 @@ function daten(teil: Partial<CheckinDaten> = {}): CheckinDaten {
         values: { morning_stiffness_minutes: 30 },
       },
     ],
+    time_zone: 'Europe/Berlin',
+    sessions: [],
     ...teil,
   };
 }
@@ -74,15 +76,53 @@ describe('Zwischen den Terminen (TRK-002)', () => {
     expect(
       screen.getByText('Fragen: Schmerz in Ruhe, Schmerz bei Belastung, Einschränkung im Alltag'),
     ).toBeInTheDocument();
-    const liste = screen.getByRole('list', { name: 'Beantwortete Check-ins' });
-    const zeilen = within(liste).getAllByRole('listitem');
-    expect(zeilen[0]).toHaveTextContent('08.10.2026');
-    expect(zeilen[0]).toHaveTextContent('Schmerz in Ruhe 8 · Schmerz bei Belastung 9');
-    expect(zeilen[1]).toHaveTextContent('01.10.2026 · von der Vertretung');
-    expect(zeilen[1]).toHaveTextContent('Morgensteifigkeit 30 Minuten');
+    // Je Größe eine Zeile, je Check-in eine Spalte, jüngste links (TRK-006).
+    const tabelle = screen.getByRole('table', { name: /Angaben aus den Check-ins/ });
+    const kopf = within(tabelle).getAllByRole('columnheader');
+    expect(kopf[1]).toHaveTextContent('08.10.2026');
+    expect(kopf[1]).toHaveTextContent('09:00 Uhr');
+    expect(kopf[2]).toHaveTextContent('01.10.2026');
+    expect(kopf[2]).toHaveTextContent('Vertretung');
+    const ruhe = within(tabelle).getByRole('row', { name: /Schmerz in Ruhe/ });
+    expect(
+      within(ruhe)
+        .getAllByRole('cell')
+        .map((z) => z.textContent),
+    ).toEqual(['8', '–nicht angegeben']);
+    const steif = within(tabelle).getByRole('row', { name: /Morgensteifigkeit \(Minuten\)/ });
+    expect(within(steif).getAllByRole('cell')[1]).toHaveTextContent('30');
+    expect(screen.queryByRole('table', { name: /nach den Einheiten/ })).not.toBeInTheDocument();
     // Hohe Werte bekommen weder Wort noch Farbe (ADR-006 Punkt 11).
     expect(screen.queryByText(/hoch|Verschlechter|auffällig|Warnung/i)).not.toBeInTheDocument();
     expect(container.querySelector('[class*="danger"], [class*="warn"]')).toBeNull();
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('zeigt daneben die Angaben nach den Einheiten, mit Plan und Uhrzeit (TRK-006)', async () => {
+    fetchCheckins.mockResolvedValue(
+      daten({
+        sessions: [
+          {
+            performed_on: '2026-10-10',
+            finished_at: '2026-10-10T16:30:00Z',
+            plan_title: 'Heimprogramm Knie',
+            recorded_by_kind: 'self',
+            values: { session_pain: 2, session_confidence: 7 },
+          },
+        ],
+      }),
+    );
+    const { container } = renderWithProviders(
+      <ZwischenDenTerminen art="treatment" verhaeltnisId={AKTE} />,
+    );
+    const tabelle = await screen.findByRole('table', { name: /Angaben nach den Einheiten/ });
+    expect(within(tabelle).getAllByRole('columnheader')[1]).toHaveTextContent(
+      '10.10.202618:30 UhrHeimprogramm Knie',
+    );
+    const sicher = within(tabelle).getByRole('row', { name: /Bewegungssicherheit/ });
+    expect(within(sicher).getByRole('cell')).toHaveTextContent('7');
+    // Keine Spalte und kein Wort für eine Veränderung (ADR-006 Punkt 11).
+    expect(screen.queryByText(/Veränderung|Tendenz|besser|schlechter/i)).not.toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });
 

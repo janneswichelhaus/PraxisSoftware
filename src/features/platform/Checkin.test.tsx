@@ -159,12 +159,18 @@ describe('Check-in (TRK-003)', () => {
     expect(await screen.findByText(/braucht es Ihre Einwilligung/)).toBeInTheDocument();
   });
 
-  it('„Meine Angaben" zeigt die Antworten mit Datum, ohne Deutung', async () => {
+  it('„Meine Angaben" zeigt die Antworten je Größe mit Datum, ohne Deutung (TRK-006)', async () => {
     const { container } = renderWithProviders(<MeineAngaben zugang={ZUGANG} />, '/p/angaben');
-    expect(await screen.findByText('05.10.2026')).toBeInTheDocument();
+    const tabelle = await screen.findByRole('table', { name: /Meine Angaben aus dem Check-in/ });
+    expect(within(tabelle).getByRole('columnheader', { name: '05.10.2026' })).toBeInTheDocument();
     expect(
-      screen.getByText('Schmerz in Ruhe 4 · Morgensteifigkeit 15 Minuten'),
-    ).toBeInTheDocument();
+      within(within(tabelle).getByRole('row', { name: /Schmerz in Ruhe/ })).getByRole('cell'),
+    ).toHaveTextContent('4');
+    expect(
+      within(within(tabelle).getByRole('row', { name: /Morgensteifigkeit \(Minuten\)/ })).getByRole(
+        'cell',
+      ),
+    ).toHaveTextContent('15');
     expect(screen.queryByText(/besser|schlechter|Trend/i)).not.toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });

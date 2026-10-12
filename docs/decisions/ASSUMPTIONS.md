@@ -4312,3 +4312,15 @@ Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in d
 **Anker.** Spalte `role` in `app.tracking_parameters()`, `app.checkin_keys_valid` und `submit_platform_checkin` in `supabase/migrations/20261106110000_trk_005_context.sql`; `rolle` und `nurFragen` in `src/lib/erfassungsgroessen.ts`; Tests „nimmt den Zusammenhang mit einer Frage …“ in `supabase/tests/checkins.test.ts`, „nimmt den Zusammenhang dazu …“ in `src/features/checkins/ZwischenDenTerminen.test.tsx`.
 
 **Änderungspfad.** Eine Angabe zum Zusammenhang ist eine Zeile mit `role = 'context'` in beiden Katalogen · Aufwand `klein`; zur Frage machen: `role` auf `question` · Aufwand `klein`.
+
+### ANN-356 — Die Zeitreihe ist eine Tabelle je Größe, jüngste links; die Angaben nach den Einheiten stehen daneben
+
+Praxisprozess · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes in der Sichtung Verlauf (TRK-EPIC-002)
+
+**Annahme.** „Zwischen den Terminen“ zeigt die Angaben als Tabelle: je Größe eine Zeile, je Check-in eine Spalte mit Datum, Uhrzeit und „Vertretung“, die jüngste links; darunter dieselbe Tabelle für die Angaben nach den Einheiten aller Pläne des Verhältnisses, mit dem Plan als Vermerk. „Meine Angaben“ auf der Plattform zeigt die eigenen Check-ins in derselben Tabelle, ohne Uhrzeit. Ein Strich heißt „nicht angegeben“. Keine Kurve, keine Tendenz, keine Farbe.
+
+**Begründung.** Die Roadmap verlangt für TRK-EPIC-002 „als Zeitreihe lesbar“; ADR-006 Punkt 11 erlaubt Anzeigen und Verlauf, verbietet jede abgeleitete Bewertung. Eine Tabelle zeigt den Wert, wie er angegeben wurde, und macht Lücken sichtbar (IDEA-TRK-002, IDEA-TRK-004: Verpasstes ist selbst eine Information); die Verlaufsgrafik mit Ereignissen ist OUT-EPIC-001. Die Angaben nach den Einheiten lesen dieselben Rollen wie die Pläne (ANN-298, ANN-351); neben den Check-ins zeigen sie Bewegungssicherheit und Schmerz zwischen den Terminen an einer Stelle. Jüngste links, weil beim nächsten Termin die letzte Angabe zählt. Unsicher: ob Jannes die Spalten lieber in Zeitrichtung (älteste links) liest.
+
+**Anker.** `src/components/ui/Verlaufstabelle.tsx`; `app.checkin_sessions_json` und `get_checkins` in `supabase/migrations/20261106120000_trk_006_time_series.sql`; Tests „zeigt der Praxis daneben die Angaben nach den Einheiten …“ in `supabase/tests/checkins.test.ts`, `src/features/checkins/ZwischenDenTerminen.test.tsx`, `tests/e2e/checkin.spec.ts`.
+
+**Änderungspfad.** Reihenfolge der Spalten in `Verlaufstabelle` umdrehen · Aufwand `klein`; Einheiten weglassen: `sessions` aus `get_checkins` nehmen · Aufwand `klein`.

@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type AxeCore from 'axe-core';
 
 /**
- * Check-in und Angaben im echten Browser (TRK-EPIC-001).
+ * Check-in und Angaben im echten Browser (TRK-EPIC-001, TRK-EPIC-002).
  *
  * Komponententests prüfen Inhalt und Wege, `pnpm test:db` die Regeln am
  * Server. Hier: kein waagerechtes Scrollen bei 375 px, Stufen der Skala
@@ -67,9 +67,9 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=angaben`);
       await expect(page.getByRole('heading', { name: 'Meine Angaben' })).toBeVisible();
-      await expect(
-        page.getByText('Schmerz in Ruhe 3 · Schmerz bei Belastung 6 · Einschränkung im Alltag 4'),
-      ).toBeVisible();
+      // TRK-006: je Größe eine Zeile; die Tabelle scrollt in sich, nicht die Seite.
+      const tabelle = page.getByRole('table', { name: /Meine Angaben aus dem Check-in/ });
+      await expect(tabelle.getByRole('row', { name: /Schmerzart/ })).toContainText('stechend');
       expect(await ueberlaeuft(page)).toBe(false);
       expect(await axeVerstoesse(page)).toEqual([]);
     });
@@ -78,13 +78,19 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=zwischen`);
       await expect(page.getByText('Check-in: alle 7 Tage')).toBeVisible();
-      const liste = page.getByRole('list', { name: 'Beantwortete Check-ins' });
-      await expect(liste.getByRole('listitem')).toHaveCount(2);
+      // TRK-006: Check-ins und Einheiten je Größe über die Zeit.
+      const checkins = page.getByRole('table', { name: /Angaben aus den Check-ins/ });
+      await expect(
+        checkins.getByRole('row', { name: /Schmerzmittel in 24 Stunden/ }),
+      ).toContainText('nein');
+      const einheiten = page.getByRole('table', { name: /Angaben nach den Einheiten/ });
+      await expect(einheiten.getByRole('row', { name: /Bewegungssicherheit/ })).toContainText('7');
       // Ein hoher Wert sieht aus wie ein niedriger: keine Farbe als Bewertung.
-      const farben = await liste
-        .getByRole('listitem')
-        .evaluateAll((zeilen) => zeilen.map((z) => getComputedStyle(z).backgroundColor));
+      const farben = await checkins
+        .getByRole('cell')
+        .evaluateAll((zellen) => zellen.map((z) => getComputedStyle(z).backgroundColor));
       expect(new Set(farben).size).toBe(1);
+      expect(await ueberlaeuft(page)).toBe(false);
       await page.getByRole('button', { name: 'Check-in ändern' }).click();
       await expect(page.getByLabel('Wie oft?')).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
