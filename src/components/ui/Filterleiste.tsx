@@ -65,7 +65,7 @@ export function Filterleiste({
           </button>
           <div
             id={bereich}
-            className={`${offen ? 'flex' : 'hidden'} flex-col gap-4 sm:flex sm:flex-row sm:flex-wrap sm:items-end sm:*:w-80 sm:*:max-w-full`}
+            className={`${offen ? 'flex' : 'hidden'} flex-col gap-4 sm:flex sm:flex-row sm:flex-wrap sm:items-start sm:*:w-80 sm:*:max-w-full`}
           >
             {children}
           </div>

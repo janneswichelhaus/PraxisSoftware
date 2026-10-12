@@ -11,8 +11,8 @@ import type { ReactNode } from 'react';
  * einen Aufklapper (`Disclosure offenAb="lg"`).
  *
  * Die Kontextspalte ist 300 bis 380 px breit (`breit`, Übersicht) oder 280
- * bis 340 px (`schmal`, Termin und Objektseiten); ihre Karten stehen mit
- * 16 px Abstand untereinander.
+ * bis 340 px (`schmal`, Termin und Objektseiten); ihre Karten - meist
+ * `Section rahmen` - stehen mit 16 px Abstand untereinander.
  *
  * **Ohne Kontext** bleibt eine einzelne Spalte, ab 1024 px höchstens
  * `--container-spalte` (48rem) breit: Eine Arbeitsliste über 1200 px liest
@@ -45,7 +45,11 @@ export function Zweispalter({
         } ${className}`.trim()}
       >
         <div className="min-w-0">{children}</div>
-        {zweispaltig ? <aside className="flex min-w-0 flex-col gap-4">{kontext}</aside> : null}
+        {zweispaltig ? (
+          // Den Abstand der Karten regelt die Spalte: Ein `Section` brächte
+          // sonst seine 32 px über dem Abschnitt zusätzlich mit.
+          <aside className="flex min-w-0 flex-col gap-4 [&>section]:mt-0">{kontext}</aside>
+        ) : null}
       </div>
     </div>
   );
