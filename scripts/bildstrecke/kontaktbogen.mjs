@@ -212,7 +212,17 @@ export function vergleichHtml(vorher, nachher, vorherOrdner) {
   const schluessel = (b) => `${b.muster}|${b.konto}|${b.breite}`;
   const alt = new Map(vorher.bilder.map((b) => [schluessel(b), b]));
   const neu = new Map(nachher.bilder.map((b) => [schluessel(b), b]));
-  const alle = [...nachher.bilder, ...vorher.bilder.filter((b) => !neu.has(schluessel(b)))];
+  // Ein Teillauf (--nur, --konten, --breiten) vergleicht nur, was er aufgenommen
+  // hat; ein voller Lauf zeigt auch, was es nachher nicht mehr gibt.
+  const auswahl = nachher.auswahl ?? {};
+  const teillauf =
+    (auswahl.nur?.length ?? 0) > 0 ||
+    (auswahl.konten?.length ?? 0) > 0 ||
+    (auswahl.breiten?.length ?? 0) > 0;
+  const alle = [
+    ...nachher.bilder,
+    ...(teillauf ? [] : vorher.bilder.filter((b) => !neu.has(schluessel(b)))),
+  ];
   const gruppen = gruppieren(alle);
   const breiten = nachher.breiten ?? [375, 1280];
   let neueBefunde = 0;
@@ -228,8 +238,9 @@ export function vergleichHtml(vorher, nachher, vorherOrdner) {
               const s = `${z.muster}|${z.konto}|${breite}`;
               const a = alt.get(s);
               const n = neu.get(s);
-              if (!a && !n) return '';
-              const v = befundVergleich(a, n);
+              if (!n && (teillauf || !a)) return '';
+              // Ohne Nachher-Bild ist nichts behoben - es fehlt nur.
+              const v = n ? befundVergleich(a, n) : { neu: [], behoben: [], geblieben: [] };
               neueBefunde += v.neu.length;
               behobeneBefunde += v.behoben.length;
               if (v.neu.length > 0 || v.geblieben.length > 0) befund = true;

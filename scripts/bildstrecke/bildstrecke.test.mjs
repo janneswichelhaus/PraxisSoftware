@@ -245,4 +245,14 @@ describe('Kontaktbogen', () => {
     expect(html).toContain('1 neue Befunde · 1 behoben');
     expect(html).toContain('class="behoben"');
   });
+
+  it('ein Teillauf vergleicht nur, was er aufgenommen hat', () => {
+    const anderes = bild({ muster: '/', pfad: '/', bereich: 'Übersicht und Rahmen', etikett: 'X' });
+    const vorher = { bilder: [bild({}), { ...anderes, befunde: [{ art: 'leer', text: '0' }] }] };
+    const voll = { breiten: [375], bilder: [bild({})] };
+    const teil = { ...voll, auswahl: { nur: ['abrechnung'], konten: [], breiten: [] } };
+    expect(vergleichHtml(vorher, voll, 'v')).toContain('nachher nicht aufgenommen');
+    expect(vergleichHtml(vorher, voll, 'v')).toContain('0 neue Befunde · 0 behoben');
+    expect(vergleichHtml(vorher, teil, 'v')).not.toContain('nachher nicht aufgenommen');
+  });
 });

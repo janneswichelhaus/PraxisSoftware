@@ -536,7 +536,7 @@ const ergebnis = {
   branch: gitAngabe('rev-parse', '--abbrev-ref', 'HEAD'),
   dauerSekunden: Math.round((Date.now() - beginn) / 1000),
   breiten,
-  auswahl: { nur: NUR, konten: NUR_KONTEN },
+  auswahl: { nur: NUR, konten: NUR_KONTEN, breiten: NUR_BREITEN },
   zusammenfassung: {
     bilder: ergebnisse.length,
     mitBefund: mitBefund.length,
