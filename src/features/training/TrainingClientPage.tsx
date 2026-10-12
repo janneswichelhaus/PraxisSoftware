@@ -52,6 +52,7 @@ import { TrainingProfil } from './TrainingProfil';
 import { TrainingVertraege } from './TrainingVertraege';
 import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
 import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
+import { TrainingAssessments } from './TrainingAssessments';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -249,6 +250,11 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               dieselben Rollen wie die Pläne, verbindlich prüft der Server. */}
           {canReadExercisePlans(user.roles, 'training') ? (
             <ZwischenDenTerminen art="training" verhaeltnisId={kundin.id} />
+          ) : null}
+          {/* OUT-002: Assessments mit Bedingungen und Wiederholung (IDEA-OUT-007);
+              dieselben Rollen wie die Pläne, verbindlich prüft der Server. */}
+          {canReadExercisePlans(user.roles, 'training') ? (
+            <TrainingAssessments verhaeltnisId={kundin.id} />
           ) : null}
           {/* TRN-009: die protokollierten Einheiten - nur owner und
               Trainingsbetreuung (ANN-184). */}

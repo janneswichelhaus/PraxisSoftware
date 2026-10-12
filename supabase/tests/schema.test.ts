@@ -170,6 +170,9 @@ describe('Schema-Invarianten', () => {
       'notification_deliveries',
       // OUT-001: Ereignisse im Verlauf des Trainings.
       'training_course_events',
+      // OUT-002: Assessments im Training und ihre Ergebnisse.
+      'training_assessments',
+      'training_assessment_results',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

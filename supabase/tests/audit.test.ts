@@ -254,6 +254,8 @@ describe('Audit-Lesepfad', () => {
       'get_practice_targets',
       'get_therapy_report',
       'get_training_appointment',
+      // OUT-002: die Assessments eines Trainingsverhaeltnisses.
+      'get_training_assessments',
       'get_training_client',
       // ANG-006: die Trainingspakete eines Verhaeltnisses (owner, office).
       'get_training_packages',
