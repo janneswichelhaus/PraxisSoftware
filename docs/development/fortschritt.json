@@ -920,7 +920,10 @@
           "id": "trk-epic-001",
           "name": "TRK-EPIC-001 Einheiten und Check-ins",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-12",
+          "nachweis": "TRK-001 bis TRK-003, Zweitreview",
+          "vermerk": "Sichtung: Verlauf Schritte 1 bis 3"
         },
         {
           "id": "trk-epic-002",

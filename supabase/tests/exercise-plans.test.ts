@@ -603,6 +603,9 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
         { table_name: 'exercise_plan_items', class_key: 'trainingsverhaeltnis' },
         { table_name: 'exercise_plan_session_sets', class_key: 'patientenakte' },
         { table_name: 'exercise_plan_session_sets', class_key: 'trainingsverhaeltnis' },
+        // TRK-001: Angaben zur Einheit folgen ihr.
+        { table_name: 'exercise_plan_session_values', class_key: 'patientenakte' },
+        { table_name: 'exercise_plan_session_values', class_key: 'trainingsverhaeltnis' },
         { table_name: 'exercise_plan_sessions', class_key: 'patientenakte' },
         { table_name: 'exercise_plan_sessions', class_key: 'trainingsverhaeltnis' },
         { table_name: 'exercise_plans', class_key: 'patientenakte' },

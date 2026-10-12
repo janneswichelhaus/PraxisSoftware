@@ -683,6 +683,7 @@ describe('Durchgeführt (UEB-010)', () => {
             sets_done: 3,
             sets_total: 3,
             difficulty_note: 'Knie zieht',
+            values: { session_exertion: 6, session_pain: 2 },
             recorded_by_kind: 'self',
             finished_by_kind: 'self',
           },
@@ -694,6 +695,7 @@ describe('Durchgeführt (UEB-010)', () => {
             sets_done: 1,
             sets_total: 3,
             difficulty_note: null,
+            values: {},
             recorded_by_kind: 'legal_representative',
             finished_by_kind: null,
           },
@@ -706,6 +708,8 @@ describe('Durchgeführt (UEB-010)', () => {
     )!;
     expect(abschnitt).toHaveTextContent('08.10.2026 · 3 von 3 Durchgängen');
     expect(abschnitt).toHaveTextContent('Schwierig, weil: Knie zieht');
+    // TRK-001: die Angaben mit ihrem Wert, ohne Einordnung.
+    expect(abschnitt).toHaveTextContent('Angaben: Anstrengung 6 · Schmerz 2');
     expect(abschnitt).toHaveTextContent(
       '07.10.2026 · 1 von 3 Durchgängen · nicht beendet · erfasst von der Vertretung',
     );

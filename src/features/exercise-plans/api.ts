@@ -99,6 +99,8 @@ const planSchema = z.object({
       sets_done: z.coerce.number(),
       sets_total: z.coerce.number(),
       difficulty_note: z.string().nullable(),
+      /** TRK-001: Angaben der Person zur Einheit, unverändert (ANN-348). */
+      values: z.record(z.string(), z.number()).default({}),
       recorded_by_kind: z.enum(['self', 'legal_representative']),
       /** Wer beendet und damit „schwierig, weil …" geschrieben hat. */
       finished_by_kind: z.enum(['self', 'legal_representative']).nullable(),

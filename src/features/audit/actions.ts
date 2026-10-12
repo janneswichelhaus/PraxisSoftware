@@ -144,6 +144,8 @@ export const auditOperationLabels: Record<string, string> = {
   'appointments.read': 'Termine gelesen',
   'audit_log.read': 'Protokoll gelesen',
   'billable_services.read': 'Leistungen gelesen',
+  // TRK-002: Check-ins einer Akte oder Trainingskund:in (ANN-351).
+  'checkins.read': 'Check-ins gelesen',
   'deletion_runs.read': 'Löschläufe gelesen',
   // UEB-EPIC-002: Übungspläne einer Akte oder Trainingskund:in (ANN-298).
   'exercise_plans.read': 'Übungspläne gelesen',

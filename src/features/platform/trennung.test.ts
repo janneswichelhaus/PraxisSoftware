@@ -123,6 +123,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_appointment_requests',
       // POR-008: die eigenen Termine.
       'rpc:platform_appointments',
+      // TRK-003: der eigene Check-in und „Meine Angaben".
+      'rpc:platform_checkins',
       // POR-016: Einwilligungen lesen und schreiben.
       'rpc:platform_consents',
       'rpc:platform_context',
@@ -159,6 +161,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:set_platform_notification_settings',
       'rpc:start_platform_exercise_session',
       'rpc:start_platform_message',
+      'rpc:submit_platform_checkin',
       'rpc:withdraw_platform_appointment_request',
       // KND-004: den Trainingsvertrag widerrufen (§ 356a BGB).
       'rpc:withdraw_platform_training_contract',

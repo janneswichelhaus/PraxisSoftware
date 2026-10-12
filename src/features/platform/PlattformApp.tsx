@@ -30,6 +30,7 @@ import { Angebot } from './Angebot';
 import { Vertrag } from './Vertrag';
 import { Paket } from './Paket';
 import { Befundbogen } from './Befundbogen';
+import { Checkin, MeineAngaben } from './Checkin';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
 import { Einstieg } from './Einstieg';
@@ -217,6 +218,27 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <PlanblattPlattform zugang={z} praxis={praxis} />}
+              />
+            }
+          />
+          {/* TRK-003: Check-in und „Meine Angaben" (DSN-001 4.1). */}
+          <Route
+            path={`${PLATTFORM_PFAD}/checkin`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Checkin zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/angaben`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <MeineAngaben zugang={z} />}
               />
             }
           />
@@ -604,6 +626,24 @@ function Ich({
                     {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
                   </Textlink>
                 ) : null}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+      {/* TRK-003: die eigenen Check-ins je Bereich (DSN-001 4.1 „Meine Angaben"). */}
+      {zugaenge.length > 0 ? (
+        <Section titel="Meine Angaben" rahmen>
+          <ul className="flex flex-col gap-2">
+            {zugaenge.map((z) => (
+              <li key={z.access_id}>
+                <Textlink
+                  alleinstehend
+                  to={`${PLATTFORM_PFAD}/angaben?${wahlAdresse(z).split('?')[1] ?? ''}`}
+                >
+                  Antworten aus dem Check-in
+                  {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
+                </Textlink>
               </li>
             ))}
           </ul>

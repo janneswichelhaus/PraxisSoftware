@@ -27,6 +27,8 @@ const { users, platformAccesses, patients, trainingRelationships, organizationId
 const BEGINNEN = 'select public.start_platform_exercise_session($1::uuid, $2::uuid) as id';
 const HAKEN = 'select public.mark_platform_exercise_set($1::uuid, $2::uuid, $3::uuid, $4, $5)';
 const BEENDEN = 'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3)';
+const BEENDEN_MIT =
+  'select public.finish_platform_exercise_session($1::uuid, $2::uuid, $3, $4::jsonb)';
 const PLAENE = 'select public.platform_exercise_plans($1::uuid) as daten';
 const PLAN = 'select public.get_exercise_plan($1::uuid) as plan';
 
@@ -364,6 +366,108 @@ describe('Einheiten am Plan (UEB-010)', () => {
       await resetDatabase();
       await fremdeOrganisation();
     }
+  });
+
+  it('nimmt Angaben zur Einheit an und zeigt sie der Praxis unverändert (TRK-001)', async () => {
+    const plan = await zugewiesenerPlan();
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    await asUserCommitted(erika.konto, BEENDEN_MIT, [
+      erika.zugang,
+      einheit,
+      '',
+      JSON.stringify({ session_exertion: 7, session_pain: 0 }),
+    ]);
+    const { rows } = await asUser<{ plan: { sessions: { values: Record<string, number> }[] } }>(
+      users.office,
+      PLAN,
+      [plan],
+    );
+    expect(rows[0]!.plan.sessions[0]!.values).toEqual({ session_exertion: 7, session_pain: 0 });
+
+    // In der Auskunft stehen sie an der Einheit (Art. 15).
+    const auskunft = await asUser<{
+      daten: { tabellen: { exercise_plans: { sessions: { values: unknown }[] }[] } };
+    }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
+      patients.erika,
+    ]);
+    expect(auskunft.rows[0]!.daten.tabellen.exercise_plans[0]!.sessions[0]!.values).toEqual({
+      session_exertion: 7,
+      session_pain: 0,
+    });
+  });
+
+  it('ohne Angabe bleibt sie leer; null heißt nicht beantwortet (IDEA-TRK-002)', async () => {
+    const plan = await zugewiesenerPlan();
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    await asUserCommitted(erika.konto, BEENDEN_MIT, [
+      erika.zugang,
+      einheit,
+      '',
+      JSON.stringify({ session_exertion: null, session_pain: 4 }),
+    ]);
+    const { rows } = await asPostgres<{ parameter_key: string; value: number }>(
+      'select parameter_key, value from public.exercise_plan_session_values where session_id = $1',
+      [einheit],
+    );
+    expect(rows).toEqual([{ parameter_key: 'session_pain', value: 4 }]);
+  });
+
+  it('ein falscher Wert beendet nichts (22023)', async () => {
+    const plan = await zugewiesenerPlan();
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    for (const werte of [
+      { session_pain: 11 },
+      { session_pain: -1 },
+      { session_pain: 2.5 },
+      { session_pain: '3' },
+      { pain_rest: 3 },
+      { unbekannt: 1 },
+      [3],
+    ]) {
+      expect(
+        await fehler(
+          asUser(erika.konto, BEENDEN_MIT, [erika.zugang, einheit, '', JSON.stringify(werte)]),
+        ),
+      ).toBe('22023');
+    }
+    const { rows } = await asPostgres<{ offen: boolean }>(
+      'select finished_at is null as offen from public.exercise_plan_sessions where id = $1',
+      [einheit],
+    );
+    expect(rows[0]!.offen).toBe(true);
+  });
+
+  it('im Training Angaben zur Einheit nur mit Einwilligung (ADR-021 Punkt 4)', async () => {
+    const plan = await zugewiesenerPlan('training', trainingRelationships.tina, 'Tina');
+    const tina = { konto: users.plattformTina, zugang: platformAccesses.tinaTraining };
+    await asPostgres(
+      'delete from public.training_consent_records where training_relationship_id = $1',
+      [trainingRelationships.tina],
+    );
+    try {
+      const einheit = await beginnen(tina.konto, tina.zugang, plan);
+      expect(
+        await fehler(
+          asUser(tina.konto, BEENDEN_MIT, [
+            tina.zugang,
+            einheit,
+            '',
+            JSON.stringify({ session_exertion: 5 }),
+          ]),
+        ),
+      ).toBe('42501');
+      // Ohne Angaben geht das Beenden.
+      await asUserCommitted(tina.konto, BEENDEN_MIT, [tina.zugang, einheit, '', '{}']);
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('kein Tabellenrecht auf die Angaben (ADR-004)', async () => {
+    expect(
+      await fehler(asUser(users.therapist, 'select * from public.exercise_plan_session_values')),
+    ).toBe('42501');
   });
 
   it('in der Lesefrist wird nicht mehr erfasst (ANN-305), gelesen schon', async () => {

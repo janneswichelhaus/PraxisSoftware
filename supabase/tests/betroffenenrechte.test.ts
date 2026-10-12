@@ -54,6 +54,14 @@ const BEWUSST_AUSSEN = new Map<string, string>([
     'Die abgehakten Saetze stehen als `sets_done` an ihrer Einheit in `exercise_plans` (UEB-010).',
   ],
   [
+    'exercise_plan_session_values',
+    'Die Angaben zur Einheit stehen als `values` an ihrer Einheit in `exercise_plans` (TRK-001).',
+  ],
+  [
+    'checkin_values',
+    'Die Angaben eines Check-ins stehen als `values` an ihm in `checkins` (TRK-002).',
+  ],
+  [
     'platform_message_entries',
     'Die Eintraege einer Rueckfrage stehen als `entries` an ihrem Vorgang in `platform_messages` (KOM-004).',
   ],

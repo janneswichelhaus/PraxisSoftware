@@ -51,6 +51,7 @@ import { TrainingEinwilligung } from './TrainingEinwilligung';
 import { TrainingProfil } from './TrainingProfil';
 import { TrainingVertraege } from './TrainingVertraege';
 import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
+import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -243,6 +244,11 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               verhaeltnisId={kundin.id}
               rueckweg={`/training/${kundin.id}`}
             />
+          ) : null}
+          {/* TRK-002: Check-in mit Takt und die Angaben (DSN-001 Abschnitt 6);
+              dieselben Rollen wie die Pläne, verbindlich prüft der Server. */}
+          {canReadExercisePlans(user.roles, 'training') ? (
+            <ZwischenDenTerminen art="training" verhaeltnisId={kundin.id} />
           ) : null}
           {/* TRN-009: die protokollierten Einheiten - nur owner und
               Trainingsbetreuung (ANN-184). */}

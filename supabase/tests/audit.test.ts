@@ -237,6 +237,8 @@ describe('Audit-Lesepfad', () => {
       'get_appointment_brief',
       'get_appointment_services',
       'get_billable_service_draft',
+      // TRK-002: Check-ins eines Verhältnisses (Rollen der Pläne, ANN-351).
+      'get_checkins',
       // UEB-004: ein Übungsplan (Rollen je Bereich, ANN-298).
       'get_exercise_plan',
       'get_intake_checklist',

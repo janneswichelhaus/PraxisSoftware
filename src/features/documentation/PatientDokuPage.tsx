@@ -4,6 +4,7 @@ import { Patientenfotos } from '@/features/files/FotosImVerlauf';
 import { usePatientRecord } from '@/features/patients/akte';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
+import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
 import { canReadExercisePlans } from '@/features/session/types';
 import { DieserTermin, PatientRecordDocumentation } from './PatientRecordDocumentation';
 import { NachrichtenInDerAkte } from '@/features/messages/InDieAkte';
@@ -51,12 +52,15 @@ export function PatientDokuPage() {
           </div>
           {/* UEB-EPIC-002: die Übungspläne der Akte (ANN-297). */}
           {canReadExercisePlans(user.roles, 'therapy') ? (
-            <div className="@zweispaltig:col-start-2 @zweispaltig:row-start-2 min-w-0">
+            <div className="@zweispaltig:col-start-2 @zweispaltig:row-start-2 flex min-w-0 flex-col gap-6">
               <PlanAbschnitt
                 bereich="therapy"
                 verhaeltnisId={patient.id}
                 rueckweg={`${ort.pathname}${ort.search}`}
               />
+              {/* TRK-002: Check-in mit Takt und die Angaben der Person
+                  (DSN-001 Abschnitt 6) - dieselben Rollen wie die Pläne. */}
+              <ZwischenDenTerminen art="treatment" verhaeltnisId={patient.id} />
             </div>
           ) : null}
           <div className="@zweispaltig:col-start-2 @zweispaltig:row-start-3 min-w-0">
