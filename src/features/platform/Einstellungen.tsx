@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Section } from '@/components/ui/Section';
 import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
+import { Benachrichtigungen } from './Benachrichtigungen';
 import { BEREICHSNAME, einstiegSchluessel, ladeEinstieg, type Plattformzugang } from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import {
@@ -20,9 +21,9 @@ import { datum } from './zeit';
  * Zwei Dinge: die Schriftgröße auf diesem Gerät (ANN-267) und - die
  * sichtbare Coach-Kontrolle - was die Praxis für die Person eingestellt hat.
  * Heute ist das der Einstieg (POR-019); wer übersprungen hat, steht dort
- * ohne Namen (ADR-023 Punkt 22). Weitere Einstellungen kommen mit den Loops,
- * die sie brauchen (Benachrichtigungen ADR-024, Check-in TRK-EPIC-001,
- * Anrede D6).
+ * ohne Namen (ADR-023 Punkt 22). Seit KOM-011 dazu die Benachrichtigungen
+ * (ADR-024 Punkt 15). Weitere Einstellungen kommen mit den Loops, die sie
+ * brauchen (Check-in TRK-EPIC-001, Anrede D6).
  */
 export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const [groesse, setzen] = useSchriftgroesse();
@@ -41,6 +42,7 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
           Gilt nur auf diesem Gerät. Auf einem anderen Gerät stellen Sie sie dort ein.
         </p>
       </Section>
+      <Benachrichtigungen zugaenge={zugaenge} />
       {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12). */}
       <PasskeyAbschnitt rahmen />
       <PinAbschnitt rahmen />

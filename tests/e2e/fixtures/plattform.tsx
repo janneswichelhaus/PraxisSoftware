@@ -11,6 +11,7 @@ import { EinladungVorOrt, PlattformAbschnitt } from '@/features/platform-access/
 import {
   aboSchluessel,
   angeboteSchluessel,
+  benachrichtigungSchluessel,
   befundbogenSchluessel,
   dokumenteSchluessel,
   einstiegSchluessel,
@@ -61,7 +62,8 @@ import '@/index.css';
  * (Angebot der Praxis zum Buchen), `angebot-frueh` (Beginn in der
  * Widerrufsfrist), `angebot-wartet` (Behandlung läuft noch),
  * `angebot-uebersicht` (Kachel auf der Übersicht) und `vertrag` (eigener
- * Vertrag mit Widerrufsknopf). Die Daten liegen vorab im Cache;
+ * Vertrag mit Widerrufsknopf). Seit KOM-EPIC-003 tragen `einstellungen`
+ * und `einstieg` die Benachrichtigungen. Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -515,6 +517,23 @@ client.setQueryData(einstiegSchluessel(begleitung.access_id), {
   finished_at: inTagen(-4, 9),
   skipped_at: null,
 });
+// KOM-011: Benachrichtigungen unter „Ich → Einstellungen" und im Einstieg.
+// `einstellungen`: Behandlung mit Mail für Termine, Training aus, die Praxis
+// hat „Neuer Übungsplan" abgeschaltet. Kein Gerät eingetragen (kein Push im
+// Prüfbrowser ohne VAPID-Schlüssel).
+client.setQueryData(['push-endpoint'], null);
+for (const z of [...zugaenge, begleitung]) {
+  const behandlung = z.access_id === zugaenge[0]!.access_id;
+  client.setQueryData(benachrichtigungSchluessel(z.access_id, null), {
+    email_kinds: behandlung ? ['appointment_reminder', 'appointment_cancelled'] : [],
+    push_kinds: [],
+    quiet_from: 20,
+    quiet_until: 8,
+    chosen_at: behandlung ? inTagen(-2, 9) : null,
+    disabled_kinds: ['plan_assigned'],
+    device_registered: false,
+  });
+}
 client.setQueryData(['platform-access-onboarding', aktiv.id], {
   finished_at: null,
   skipped_at: inTagen(-5, 9),

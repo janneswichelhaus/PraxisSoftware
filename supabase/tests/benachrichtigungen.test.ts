@@ -53,8 +53,8 @@ async function waehlen(
   email: string[],
   push: string[] = [],
   ruhe: [number, number] = [0, 0],
-  konto = erika.konto,
-  zugang = erika.zugang,
+  konto: string = erika.konto,
+  zugang: string = erika.zugang,
 ) {
   await asUserCommitted(konto, WAEHLEN, [zugang, email, push, ruhe[0], ruhe[1]]);
 }
@@ -193,7 +193,7 @@ describe('Die Wahl der Person (Punkt 15)', () => {
         email_kinds: ['message_answered'],
         quiet_from: 21,
         quiet_until: 7,
-        chosen_at: expect.any(Date),
+        chosen_at: expect.any(Date) as unknown,
       }),
     );
   });
@@ -260,7 +260,7 @@ describe('Ereignisse legen Aufträge an (Punkt 16)', () => {
         kind: 'appointment_cancelled',
         channel: 'email',
         state: 'pending',
-        subject_at: expect.any(Date),
+        subject_at: expect.any(Date) as unknown,
       }),
     ]);
   });
@@ -417,12 +417,12 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
     const { rows } = await asServiceRole<Record<string, unknown>>(ABHOLEN);
     expect(rows).toEqual([
       {
-        id: expect.any(String),
+        id: expect.any(String) as unknown,
         kind: 'appointment_cancelled',
         channel: 'email',
-        subject_at: expect.any(Date),
+        subject_at: expect.any(Date) as unknown,
         time_zone: 'Europe/Berlin',
-        email: expect.stringContaining('@'),
+        email: expect.stringContaining('@') as unknown,
         push_targets: null,
       },
     ]);

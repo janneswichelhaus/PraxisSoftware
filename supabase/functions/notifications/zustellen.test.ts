@@ -24,14 +24,14 @@ function buchMit(faellig: Faellig[]) {
   const meldungen: [string, string, readonly string[]][] = [];
   let gegeben = false;
   const buch: Auftragsbuch = {
-    abholen: vi.fn(async () => {
-      if (gegeben) return [];
+    abholen: vi.fn((_anzahl: number) => {
+      if (gegeben) return Promise.resolve([]);
       gegeben = true;
-      return faellig;
+      return Promise.resolve(faellig);
     }),
-    melden: vi.fn(async (id, ausgang, weg) => {
+    melden: vi.fn((id: string, ausgang: string, weg: readonly string[]) => {
       meldungen.push([id, ausgang, weg]);
-      return true;
+      return Promise.resolve(true);
     }),
   };
   return { buch, meldungen };
@@ -42,9 +42,9 @@ function mailweg() {
   const wege: Wege = {
     mail: {
       id: 'mock',
-      sende: async (m) => {
+      sende: (m) => {
         gesendet.push(m);
-        return 'sent';
+        return Promise.resolve('sent' as const);
       },
     },
     push: null,
@@ -123,7 +123,7 @@ describe('zustellen', () => {
       { endpoint: 'https://push.invalid/weg', p256dh: 'x', auth: 'y' },
       { endpoint: 'https://push.invalid/da', p256dh: 'x', auth: 'y' },
     ];
-    const liste = vi.fn(async () => new Response(null, { status: 201 }));
+    const liste = vi.fn(() => Promise.resolve(new Response(null, { status: 201 })));
     const wege: Wege = {
       mail: null,
       push: erstellePushNachbildung('https://liste.invalid', liste),
@@ -139,7 +139,10 @@ describe('zustellen', () => {
   });
 
   it('gibt null zurück, wenn das Auftragsbuch nicht antwortet', async () => {
-    const buch: Auftragsbuch = { abholen: async () => null, melden: async () => true };
+    const buch: Auftragsbuch = {
+      abholen: () => Promise.resolve(null),
+      melden: () => Promise.resolve(true),
+    };
     expect(await zustellen(buch, mailweg().wege, 'https://a.invalid')).toBeNull();
   });
 });

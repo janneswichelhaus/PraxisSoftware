@@ -2,6 +2,8 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
+import { BenachrichtigungsSchalter } from '@/features/platform-access/BenachrichtigungsSchalter';
+import { SCHALTER_SCHLUESSEL } from '@/features/platform-access/benachrichtigungen-api';
 import { StaffListPage } from '@/features/staff/StaffListPage';
 import type { StaffMember } from '@/features/staff/api';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
@@ -13,8 +15,12 @@ import '@/index.css';
  * „Organisatorisches → Mitarbeitende" mit Rahmen, Untermenü und Tableiste —
  * mit erfundenen Personen, ohne Server. `?rolle=trainer` zeigt den Rahmen, wie
  * trainer ihn sieht - seit TRN-003 ohne Organisatorisches (BEF-034).
+ * `?seite=benachrichtigungen` zeigt den Schalter der Praxis für
+ * Benachrichtigungen aus den Praxiseinstellungen (KOM-011), eine Art aus.
  */
-const rolle = (new URLSearchParams(window.location.search).get('rolle') ?? 'owner') as RoleKey;
+const parameter = new URLSearchParams(window.location.search);
+const rolle = (parameter.get('rolle') ?? 'owner') as RoleKey;
+const seite = parameter.get('seite') ?? 'team';
 
 const nutzer: CurrentUser = {
   profile: {
@@ -66,11 +72,19 @@ client.setQueryData(
   [{ staff_member_id: '55555555-5555-4555-8555-000000000002', display_name: 'Anna Beispiel' }],
 );
 
+client.setQueryData(SCHALTER_SCHLUESSEL, ['plan_assigned']);
+
 createRoot(document.getElementById('wurzel')!).render(
   <QueryClientProvider client={client}>
-    <MemoryRouter initialEntries={['/praxis/team']}>
+    <MemoryRouter
+      initialEntries={[seite === 'benachrichtigungen' ? '/praxis/planung' : '/praxis/team']}
+    >
       <AppShell user={nutzer} onSignOut={() => undefined}>
-        <StaffListPage user={nutzer} />
+        {seite === 'benachrichtigungen' ? (
+          <BenachrichtigungsSchalter />
+        ) : (
+          <StaffListPage user={nutzer} />
+        )}
       </AppShell>
     </MemoryRouter>
   </QueryClientProvider>,

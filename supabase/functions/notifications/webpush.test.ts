@@ -32,11 +32,11 @@ const RFC = {
 
 async function neuesPaar(zweck: 'ECDH' | 'ECDSA') {
   const algo = { name: zweck, namedCurve: 'P-256' };
-  const paar = (await crypto.subtle.generateKey(
+  const paar = await crypto.subtle.generateKey(
     algo,
     true,
     zweck === 'ECDH' ? ['deriveBits'] : ['sign', 'verify'],
-  )) as CryptoKeyPair;
+  );
   const roh = new Uint8Array(await crypto.subtle.exportKey('raw', paar.publicKey));
   const jwk = await crypto.subtle.exportKey('jwk', paar.privateKey);
   return { paar, oeffentlich: base64url(roh), privat: jwk.d! };
@@ -171,7 +171,7 @@ describe('sendePush', () => {
   };
 
   it('sendet verschlüsselt mit 24 Stunden Gültigkeit', async () => {
-    const abrufen = vi.fn(async () => new Response(null, { status: 201 }));
+    const abrufen = vi.fn(() => Promise.resolve(new Response(null, { status: 201 })));
     expect(await sendePush(await ziel(), new Uint8Array([1]), await schluessel(), abrufen)).toBe(
       'sent',
     );
@@ -190,19 +190,17 @@ describe('sendePush', () => {
       [429, 'failed'],
       [500, 'failed'],
     ] as const) {
-      const abrufen = vi.fn(async () => new Response(null, { status }));
+      const abrufen = vi.fn(() => Promise.resolve(new Response(null, { status })));
       expect(await sendePush(await ziel(), new Uint8Array([1]), s, abrufen), String(status)).toBe(
         erwartet,
       );
     }
-    const kaputt = vi.fn(async () => {
-      throw new Error('netz');
-    });
+    const kaputt = vi.fn(() => Promise.reject(new Error('netz')));
     expect(await sendePush(await ziel(), new Uint8Array([1]), s, kaputt)).toBe('failed');
   });
 
   it('schickt nie an einen Endpunkt ohne https', async () => {
-    const abrufen = vi.fn(async () => new Response(null, { status: 201 }));
+    const abrufen = vi.fn(() => Promise.resolve(new Response(null, { status: 201 })));
     const z = { ...(await ziel()), endpoint: 'http://push.example.invalid/x' };
     expect(await sendePush(z, new Uint8Array([1]), await schluessel(), abrufen)).toBe('gone');
     expect(abrufen).not.toHaveBeenCalled();

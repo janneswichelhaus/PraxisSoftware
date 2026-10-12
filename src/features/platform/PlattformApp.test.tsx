@@ -26,6 +26,7 @@ const ladeBefundbogen = vi.fn();
 const ladeEinstieg = vi.fn();
 const einstiegBeenden = vi.fn();
 const ladeEinwilligungen = vi.fn();
+const ladeBenachrichtigungen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -39,6 +40,8 @@ vi.mock('./api', async (importOriginal) => ({
   ladeEinstieg: (...args: unknown[]) => ladeEinstieg(...args) as Promise<unknown>,
   einstiegBeenden: (...args: unknown[]) => einstiegBeenden(...args) as Promise<void>,
   ladeEinwilligungen: (...args: unknown[]) => ladeEinwilligungen(...args) as Promise<unknown[]>,
+  ladeBenachrichtigungen: (...args: unknown[]) =>
+    ladeBenachrichtigungen(...args) as Promise<unknown>,
 }));
 
 const { PlattformApp } = await import('./PlattformApp');
@@ -84,6 +87,15 @@ beforeEach(() => {
   ladeEinstieg.mockResolvedValue({ pending: false, finished_at: '2026-10-01', skipped_at: null });
   einstiegBeenden.mockResolvedValue(undefined);
   ladeEinwilligungen.mockResolvedValue([]);
+  ladeBenachrichtigungen.mockResolvedValue({
+    email_kinds: [],
+    push_kinds: [],
+    quiet_from: 20,
+    quiet_until: 8,
+    chosen_at: null,
+    disabled_kinds: [],
+    device_registered: false,
+  });
 });
 
 describe('PlattformApp', () => {
@@ -310,7 +322,10 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     const nutzer = userEvent.setup();
     ladeEinstieg.mockResolvedValue({ pending: true, finished_at: null, skipped_at: null });
     zeige([{ ...BEHANDLUNG, access_kind: 'companion', represented_name: 'Max Mustermann' }]);
-    expect(await screen.findByText('Schritt 1 von 2')).toBeInTheDocument();
+    expect(await screen.findByText('Schritt 1 von 3')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    // KOM-011: auch die Begleitung wählt Benachrichtigungen für ihren Zugang.
+    expect(screen.getByRole('heading', { name: 'Benachrichtigungen' })).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(screen.getByRole('heading', { name: 'Fertig' })).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Zur Übersicht' }));

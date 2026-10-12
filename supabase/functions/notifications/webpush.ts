@@ -126,9 +126,9 @@ export interface Absenderschluessel {
 }
 
 async function neuerAbsenderschluessel(): Promise<Absenderschluessel> {
-  const paar = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
+  const paar = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, [
     'deriveBits',
-  ])) as CryptoKeyPair;
+  ]);
   const roh = new Uint8Array(await crypto.subtle.exportKey('raw', paar.publicKey));
   return { oeffentlich: roh, privat: paar.privateKey };
 }
