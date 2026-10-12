@@ -24,12 +24,10 @@ bis §3.3 und ADR-013 regeln. Was das bräuchte, ist keine Annahme, sondern eine
 | `verworfen` | die Annahme wurde aufgegeben; der Eintrag nennt, was stattdessen gilt |
 | `in ADR überführt` | bestätigt und als ADR festgehalten; Verweis auf die ADR-Nummer |
 
-Die Trennung von `entschieden (Jannes)` und `bestätigt (Prüfung)` ist nötig,
-weil §15.1 Punkt 5 für `Datenschutz` und `Recht` den Datenschutzprozess nach
-§3.7 verlangt: Jannes' Festlegung zählt fürs Bauen, nicht für die Freigabe. Kein
-Eintrag verschwindet — Kopf, Statuszeile und Anker bleiben auch dann stehen,
-wenn eine Annahme verworfen oder in einen ADR überführt wurde; ihr Wortlaut
-steht dann in der Git-Historie.
+Die Trennung von `entschieden (Jannes)` und `bestätigt (Prüfung)` ist nötig, weil §15.1 Punkt 5
+für `Datenschutz` und `Recht` den Datenschutzprozess nach §3.7 verlangt: Jannes' Festlegung zählt
+fürs Bauen, nicht für die Freigabe. Kein Eintrag verschwindet — Kopf, Statuszeile und Anker
+bleiben auch dann stehen, wenn eine Annahme verworfen oder in einen ADR überführt wurde.
 
 ## Aufbau eines Eintrags
 
@@ -42,6 +40,11 @@ Migration, Test) und **Änderungspfad** (was zu tun ist, wenn sie nicht hält, m
 Aufwand `klein` = eine Stelle, `mittel` = ein Modul oder eine Migration ohne
 Datenumzug, `groß` = mehrere Module oder Datenumzug). Optional **Ablösung**
 („ersetzt ANN-…" / „abgelöst durch ANN-…"; beide Einträge tragen sie).
+**Seit 2026-10-12:** Ein neuer Eintrag hat höchstens 1 KB (je Absatz ein bis zwei Sätze,
+Quellen nur bei `Datenschutz` und `Recht`). Jannes bestätigt nur noch Annahmen mit teurer
+Rücknahme — Änderungspfad `groß` oder ein Praxisprozess nach §2.3 (Rollen, wer behandelt, wie
+abgerechnet wird); die PR nennt sie unter ihren Fragen. `Datenschutz` und `Recht` bleiben im
+Prüfpaket; alle übrigen bleiben `offen` ohne Wiedervorlage und tragen das Bauen.
 Kategorien sind `Datenschutz`, `Recht`, `Praxisprozess` und `Technik`; der
 Zusatz der Statuszeile ist `Prüfpaket` (siehe unten), `erledigt` (jeder andere
 Status als `offen`) oder `—` (`offen`). Die Instanz ist, wer entschieden oder
