@@ -1381,7 +1381,7 @@
           "status": "entwurf",
           "fertig_am": "2026-10-12",
           "nachweis": "docs/adr/ADR-026-malware-scanning.md",
-          "vermerk": "vorgeschlagen; W1 bis W4 warten auf Jannes"
+          "vermerk": "zurückgestellt 2026-10-12 (Jannes): vorerst keine Virenprüfung; mit echten Daten keine Anhänge von außen (ADR-017 Punkte 29, 69)"
         },
         {
           "id": "b5-identitaet",
