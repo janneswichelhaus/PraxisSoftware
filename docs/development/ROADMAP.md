@@ -807,10 +807,11 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | KOM-EPIC-002 Foto und Video | fertig | 2026-10-11 | KOM-005 bis KOM-008, Zweitreview | — | Sichtung: Pläne Schritte 13 bis 15 |
 | B | KOM-EPIC-003 Benachrichtigungen und Terminerinnerung | fertig | 2026-10-12 | KOM-009 bis KOM-011, Zweitreview | — | Sichtung: Pläne Schritte 14 und 15 |
 | B | TRK-EPIC-001 Einheiten und Check-ins | fertig | 2026-10-12 | TRK-001 bis TRK-003, Zweitreview | — | Sichtung: Verlauf Schritte 1 bis 3 |
-| B | TRK-EPIC-002 Schmerz, Sicherheit, Kontext | fertig | 2026-10-12 | TRK-004 bis TRK-006, Zweitreview | — | Sichtung: Verlauf Schritte 4 bis 6 |
-| B | TRK-EPIC-003 Offline-Erfassung | fertig | 2026-10-12 | TRK-007 bis TRK-009, Zweitreview | — | Sichtung: Verlauf Schritte 7 bis 9 |
-| B | OFF-EPIC-001 Dokumentation ohne Empfang | fertig | 2026-10-12 | OFF-001 bis OFF-003, Zweitreview | — | Sichtung: Verlauf Schritte 10 bis 12 |
-| B | OUT-EPIC-001 Fortschritt ohne Bewertung | fertig | 2026-10-12 | OUT-001 bis OUT-004, Zweitreview | — | Sichtung: Verlauf Schritte 13 bis 15 |
+| B | TRK-EPIC-002 Schmerz, Sicherheit, Kontext | fertig | 2026-10-12 | TRK-004 bis TRK-006, Zweitreview | — | Sichtung: Verlauf Schritte 1 bis 3 |
+| B | TRK-EPIC-003 Offline-Erfassung | fertig | 2026-10-12 | TRK-007 bis TRK-009, Zweitreview | — | Sichtung: Verlauf Schritte 4 bis 6 |
+| B | OFF-EPIC-001 Dokumentation ohne Empfang | fertig | 2026-10-12 | OFF-001 bis OFF-003, Zweitreview | — | Sichtung: Verlauf Schritte 7 bis 9 |
+| B | OUT-EPIC-001 Fortschritt ohne Bewertung | fertig | 2026-10-12 | OUT-001 bis OUT-004, Zweitreview | — | Sichtung: Verlauf Schritte 10 bis 12 |
+| B | ALT-EPIC-001 Aktivitäten und Gewohnheiten | fertig | 2026-10-12 | ALT-001 bis ALT-003, Zweitreview | — | Sichtung: Verlauf Schritte 13 bis 15 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
@@ -839,7 +840,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
 | E | ADR-023 Plattformzugang | gesichtet | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen); Fassung 2 am selben Tag |
 | E | ADR-024 Offline und Benachrichtigungen | gesichtet | 2026-10-11 | docs/adr/ADR-024-offline-and-notifications.md | — | angenommen 2026-10-11: W1 (c) mit Freigabe ohne Netz per Passkey, W2 bis W5 wie empfohlen; Prinzipien 0.26, ADR-025 Fassung 4 |
-| E | ADR-026 Virenprüfung der Anhänge | entwurf | 2026-10-12 | docs/adr/ADR-026-malware-scanning.md | — | vorgeschlagen; W1 bis W4 warten auf Jannes |
+| E | ADR-026 Virenprüfung der Anhänge | entwurf | 2026-10-12 | docs/adr/ADR-026-malware-scanning.md | — | zurückgestellt 2026-10-12 (Jannes): vorerst keine Virenprüfung; mit echten Daten keine Anhänge von außen (ADR-017 Punkte 29, 69) |
 | E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->

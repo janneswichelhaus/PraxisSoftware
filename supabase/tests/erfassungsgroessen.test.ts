@@ -75,4 +75,45 @@ describe('Erfassungsgrößen (TRK-001)', () => {
     expect(await pruefe('pain_quality', 'checkin', 0)).toBe(false);
     expect(await pruefe('pain_quality', 'checkin', 6)).toBe(false);
   });
+
+  it('kennt Schlafdauer und Bedarfsmedikation als Fragen (ALT-001, ANN-368)', async () => {
+    const pruefe = async (key: string, wert: number) => {
+      const { rows } = await asPostgres<{ ok: boolean }>(
+        "select app.tracking_value_valid($1, 'checkin', $2) as ok",
+        [key, wert],
+      );
+      return rows[0]!.ok;
+    };
+    expect(await pruefe('sleep_hours', 0)).toBe(true);
+    expect(await pruefe('sleep_hours', 16)).toBe(true);
+    expect(await pruefe('sleep_hours', 17)).toBe(false);
+    expect(await pruefe('painkiller_days_7d', 7)).toBe(true);
+    expect(await pruefe('painkiller_days_7d', 8)).toBe(false);
+    expect(await pruefe('painkiller_days_7d', -1)).toBe(false);
+    const { rows } = await asPostgres<{ parameter_key: string; role: string }>(
+      `select parameter_key, role from app.tracking_parameters()
+       where parameter_key in ('sleep_hours', 'painkiller_days_7d') order by parameter_key`,
+    );
+    expect(rows).toEqual([
+      { parameter_key: 'painkiller_days_7d', role: 'question' },
+      { parameter_key: 'sleep_hours', role: 'question' },
+    ]);
+  });
+
+  it('kennt die Belastung außerhalb der Übungen als Zusammenhang (ALT-002, ANN-369)', async () => {
+    const { rows } = await asPostgres<{
+      parameter_key: string;
+      min_value: number;
+      max_value: number;
+      role: string;
+    }>(
+      `select parameter_key, min_value, max_value, role from app.tracking_parameters()
+       where parameter_key like 'activity_%' order by sort_order`,
+    );
+    expect(rows).toEqual([
+      { parameter_key: 'activity_kind', min_value: 1, max_value: 7, role: 'context' },
+      { parameter_key: 'activity_minutes', min_value: 0, max_value: 600, role: 'context' },
+      { parameter_key: 'activity_intensity', min_value: 1, max_value: 3, role: 'context' },
+    ]);
+  });
 });

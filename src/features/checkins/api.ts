@@ -76,11 +76,33 @@ const datenSchema = z.object({
   events_writable: z.boolean(),
   /** Im Training: Einwilligung zu Gesundheitsangaben; in der Behandlung `null`. */
   health_consent: z.boolean().nullable(),
+  /** ALT-003: Gewohnheiten mit den vermerkten Tagen, laufende zuerst (ANN-370). */
+  habits: z.array(
+    z.object({
+      id: z.string(),
+      action: z.string(),
+      cue: z.string(),
+      place: z.string().nullable(),
+      starts_on: z.string(),
+      created_at: z.string(),
+      paused: z.boolean(),
+      paused_at: z.string().nullable(),
+      ended_at: z.string().nullable(),
+      marks: z.array(z.string()),
+      /** Tage, die eine rechtliche Vertretung vermerkt hat (Zweitreview S1). */
+      marks_by_representative: z.array(z.string()),
+      paused_by_kind: z.enum(['self', 'legal_representative']).nullable(),
+    }),
+  ),
+  /** Höchstens so viele laufende Gewohnheiten (ANN-370). */
+  habits_max: z.number(),
+  habits_writable: z.boolean(),
 });
 
 export type CheckinDaten = z.infer<typeof datenSchema>;
 export type Trainingsereignis = CheckinDaten['events'][number];
 export type Checkin = z.infer<typeof checkinSchema>;
+export type PraxisGewohnheit = CheckinDaten['habits'][number];
 
 export function checkinsKey(art: Verhaeltnisart, verhaeltnisId: string) {
   return ['checkins', art, verhaeltnisId] as const;
@@ -185,4 +207,46 @@ export async function trainingsereignisEntfernen(ereignisId: string): Promise<vo
     p_event_id: ereignisId,
   })) as { error: { message?: string } | null };
   if (error) throw new Error(ereignisfehler(error.message));
+}
+
+function gewohnheitsfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('too many'))
+    return 'Es laufen schon so viele Gewohnheiten, wie möglich sind. Bitte erst eine beenden – wenige, sehr kleine wirken besser.';
+  if (m.includes('consent'))
+    return 'Ohne Einwilligung zu Gesundheitsangaben lässt sich keine Gewohnheit eintragen.';
+  if (m.includes('has ended'))
+    return 'Das Verhältnis ist beendet. Eine neue Gewohnheit lässt sich nicht mehr eintragen.';
+  if (m.includes('check constraint') || m.includes('violates'))
+    return 'Bitte Was und Auslöser angeben, je höchstens 120 Zeichen.';
+  if (m.includes('not found')) return 'Die Gewohnheit wurde nicht gefunden.';
+  if (m.includes('not allowed'))
+    return 'Gewohnheiten tragen die Rollen ein, die Übungspläne schreiben.';
+  return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
+}
+
+/** ALT-003: eine Gewohnheit eintragen – Was, Auslöser, Wo (ANN-370). */
+export async function gewohnheitEintragen(eingabe: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  was: string;
+  ausloeser: string;
+  wo: string;
+}): Promise<void> {
+  const { error } = (await getSupabase().rpc('add_habit', {
+    p_kind: eingabe.art,
+    p_relationship_id: eingabe.verhaeltnisId,
+    p_action: eingabe.was.trim(),
+    p_cue: eingabe.ausloeser.trim(),
+    p_place: eingabe.wo.trim() === '' ? null : eingabe.wo.trim(),
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(gewohnheitsfehler(error.message));
+}
+
+/** ALT-003: eine Gewohnheit beenden; die vermerkten Tage bleiben. */
+export async function gewohnheitBeenden(gewohnheitId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('end_habit', {
+    p_habit_id: gewohnheitId,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(gewohnheitsfehler(error.message));
 }

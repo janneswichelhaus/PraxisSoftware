@@ -94,7 +94,9 @@ function Formular({
     .filter((g) => g !== undefined);
   const [werte, setWerte] = useState<Record<string, number | null>>({});
   const hauptfragen = fragen.filter((g) => g.rolle === 'frage');
-  const zusammenhang = fragen.filter((g) => g.rolle === 'kontext');
+  const zusammenhang = fragen.filter((g) => g.rolle === 'kontext' && g.gruppe !== 'Aktivität');
+  // ALT-002: die Belastung außerhalb der Übungen unter eigener Überschrift (ANN-369).
+  const aktivitaet = fragen.filter((g) => g.rolle === 'kontext' && g.gruppe === 'Aktivität');
   const feld = (g: (typeof fragen)[number]) => (
     <Angabefeld
       key={g.key}
@@ -150,6 +152,16 @@ function Formular({
         <div className="flex flex-col gap-6">
           <h2 className="text-ink text-base font-semibold">Zum Zusammenhang</h2>
           {zusammenhang.map(feld)}
+        </div>
+      ) : null}
+      {aktivitaet.length > 0 ? (
+        <div className="flex flex-col gap-6">
+          <h2 className="text-ink text-base font-semibold">Außerhalb der Übungen</h2>
+          <p className="text-ink-muted -mt-4 max-w-prose text-sm">
+            Grob genügt. Es geht nicht um mehr oder weniger, sondern darum, Ihre anderen Angaben
+            richtig zu lesen.
+          </p>
+          {aktivitaet.map(feld)}
         </div>
       ) : null}
       <p className="text-ink-muted max-w-prose text-sm">

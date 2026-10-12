@@ -31,6 +31,7 @@ import { Vertrag } from './Vertrag';
 import { Paket } from './Paket';
 import { Befundbogen } from './Befundbogen';
 import { Checkin, MeineAngaben } from './Checkin';
+import { Gewohnheiten } from './Gewohnheiten';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
 import { Einstieg } from './Einstieg';
@@ -229,6 +230,17 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Checkin zugang={z} />}
+              />
+            }
+          />
+          {/* ALT-003: Gewohnheiten mit den letzten sieben Tagen (ANN-370). */}
+          <Route
+            path={`${PLATTFORM_PFAD}/gewohnheiten`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Gewohnheiten zugang={z} />}
               />
             }
           />
@@ -642,6 +654,18 @@ function Ich({
                   to={`${PLATTFORM_PFAD}/angaben?${wahlAdresse(z).split('?')[1] ?? ''}`}
                 >
                   Antworten aus dem Check-in
+                  {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
+                </Textlink>
+              </li>
+            ))}
+            {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. */}
+            {zugaenge.map((z) => (
+              <li key={`gewohnheiten-${z.access_id}`}>
+                <Textlink
+                  alleinstehend
+                  to={`${PLATTFORM_PFAD}/gewohnheiten?${wahlAdresse(z).split('?')[1] ?? ''}`}
+                >
+                  Gewohnheiten
                   {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
                 </Textlink>
               </li>

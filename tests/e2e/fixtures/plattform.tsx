@@ -14,6 +14,7 @@ import {
   benachrichtigungSchluessel,
   befundbogenSchluessel,
   checkinsSchluessel,
+  gewohnheitenSchluessel,
   dokumenteSchluessel,
   einstiegSchluessel,
   einwilligungenSchluessel,
@@ -26,6 +27,7 @@ import {
   wuenscheSchluessel,
   type Dokument,
   type EigeneCheckins,
+  type EigeneGewohnheiten,
   type Einwilligung,
   type MeinPaket,
   type Nachsorgeabo,
@@ -74,7 +76,10 @@ import '@/index.css';
  * Absenden), `angaben` („Meine Angaben") und `zwischen` (Abschnitt der
  * Praxis). Seit OUT-EPIC-001 trägt `zwischen` das Verlaufsbild mit
  * Ereignissen und `angaben` die Punktbilder; `assessments` zeigt die
- * Assessments der Trainingsseite. Die Daten liegen vorab im Cache;
+ * Assessments der Trainingsseite. Seit ALT-EPIC-001 `checkin-alltag`
+ * (Schlafdauer, Schmerzmittel bei Bedarf, Belastung außerhalb der Übungen),
+ * `gewohnheiten` (die Seite der Person) und in `zwischen` die Gewohnheiten
+ * der Praxisseite. Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -707,10 +712,26 @@ const checkinVerlauf: EigeneCheckins['history'] = [
     values: { pain_rest: 5, daily_impairment: 6, pain_recovery_hours: 24, painkiller_24h: 1 },
   },
 ];
-const checkinFaellig = seite === 'checkin' || seite === 'checkin-uebersicht';
+const checkinFaellig =
+  seite === 'checkin' || seite === 'checkin-uebersicht' || seite === 'checkin-alltag';
 client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   today: inTagen(0, 0).slice(0, 10),
-  schedule: { interval_days: 7, parameter_keys: ['pain_rest', 'pain_load', 'daily_impairment'] },
+  // ALT-001, ALT-002: Schlafdauer, Schmerzmittel bei Bedarf und die Belastung
+  // außerhalb der Übungen (ANN-368, ANN-369).
+  schedule:
+    seite === 'checkin-alltag'
+      ? {
+          interval_days: 7,
+          parameter_keys: [
+            'pain_rest',
+            'sleep_hours',
+            'painkiller_days_7d',
+            'activity_kind',
+            'activity_minutes',
+            'activity_intensity',
+          ],
+        }
+      : { interval_days: 7, parameter_keys: ['pain_rest', 'pain_load', 'daily_impairment'] },
   due_on: checkinFaellig ? inTagen(0, 0).slice(0, 10) : inTagen(3, 0).slice(0, 10),
   due: checkinFaellig,
   can_answer: checkinFaellig,
@@ -734,6 +755,36 @@ client.setQueryData(checkinsSchluessel(zugaenge[0]!.access_id), {
   ],
 } satisfies EigeneCheckins);
 client.setQueryData(checkinsSchluessel(zugaenge[1]!.access_id), null);
+// ALT-003: eine laufende Gewohnheit mit Tagen, eine pausierte.
+client.setQueryData(gewohnheitenSchluessel(zugaenge[0]!.access_id), {
+  today: inTagen(0, 0).slice(0, 10),
+  mark_days: 7,
+  can_mark: true,
+  consent_needed: false,
+  habits: [
+    {
+      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000001',
+      action: 'zwei Minuten Mobilität',
+      cue: 'Nach dem Zähneputzen',
+      place: 'im Bad',
+      starts_on: inTagen(-20, 0).slice(0, 10),
+      paused: false,
+      ended_at: null,
+      marks: [0, -1, -2, -4, -5].map((t) => inTagen(t, 0).slice(0, 10)),
+    },
+    {
+      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000002',
+      action: 'eine Treppe statt Aufzug',
+      cue: 'Im Büro',
+      place: null,
+      starts_on: inTagen(-12, 0).slice(0, 10),
+      paused: true,
+      ended_at: null,
+      marks: [],
+    },
+  ],
+} satisfies EigeneGewohnheiten);
+client.setQueryData(gewohnheitenSchluessel(zugaenge[1]!.access_id), null);
 client.setQueryData(checkinsKey('treatment', MAX), {
   today: inTagen(0, 0).slice(0, 10),
   can_write: true,
@@ -781,6 +832,53 @@ client.setQueryData(checkinsKey('treatment', MAX), {
   appointment_days: [inTagen(-8, 0).slice(0, 10), inTagen(-1, 0).slice(0, 10)],
   events_writable: false,
   health_consent: null,
+  // ALT-003: eine laufende, eine pausierte, eine beendete Gewohnheit.
+  habits: [
+    {
+      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000001',
+      action: 'zwei Minuten Mobilität',
+      cue: 'Nach dem Zähneputzen',
+      place: 'im Bad',
+      starts_on: inTagen(-20, 0).slice(0, 10),
+      created_at: inTagen(-20, 9),
+      paused: false,
+      paused_at: null,
+      ended_at: null,
+      marks: [0, -1, -2, -4, -5, -8, -9, -10, -13].map((t) => inTagen(t, 0).slice(0, 10)),
+      marks_by_representative: [],
+      paused_by_kind: null,
+    },
+    {
+      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000002',
+      action: 'eine Treppe statt Aufzug',
+      cue: 'Im Büro',
+      place: null,
+      starts_on: inTagen(-12, 0).slice(0, 10),
+      created_at: inTagen(-12, 9),
+      paused: true,
+      paused_at: inTagen(-3, 18),
+      ended_at: null,
+      marks: [-6, -7, -11].map((t) => inTagen(t, 0).slice(0, 10)),
+      marks_by_representative: [inTagen(-7, 0).slice(0, 10)],
+      paused_by_kind: 'self',
+    },
+    {
+      id: 'b1b1b1b1-b1b1-4b1b-8b1b-000000000003',
+      action: 'Wasserflasche auf den Schreibtisch',
+      cue: 'Morgens im Büro',
+      place: null,
+      starts_on: inTagen(-60, 0).slice(0, 10),
+      created_at: inTagen(-60, 9),
+      paused: false,
+      paused_at: null,
+      ended_at: inTagen(-30, 10),
+      marks: [],
+      marks_by_representative: [],
+      paused_by_kind: null,
+    },
+  ],
+  habits_max: 3,
+  habits_writable: true,
 } satisfies CheckinDaten);
 
 // OUT-002: zwei Assessments derselben Testbatterie, eine Wiederholung geplant.
@@ -916,6 +1014,8 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'checkin':
     case 'checkin-uebersicht':
     case 'checkin-danke':
+    case 'checkin-alltag':
+    case 'gewohnheiten':
     case 'angaben':
     case 'vertrag': {
       const pfade: Record<string, string> = {
@@ -942,6 +1042,8 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'checkin-uebersicht': '/p?bereich=treatment',
         'checkin-danke': '/p?bereich=treatment&checkin=1',
         angaben: '/p/angaben?bereich=treatment',
+        'checkin-alltag': '/p/checkin?bereich=treatment',
+        gewohnheiten: '/p/gewohnheiten?bereich=treatment',
       };
       return {
         pfad: pfade[seite]!,

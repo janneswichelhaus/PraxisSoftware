@@ -135,6 +135,34 @@ describe('Check-in (TRK-003)', () => {
     );
   });
 
+  it('fragt die Belastung außerhalb der Übungen unter eigener Überschrift (ALT-002, ANN-369)', async () => {
+    ladeCheckins.mockResolvedValue(
+      daten({
+        schedule: {
+          interval_days: 7,
+          parameter_keys: ['pain_load', 'activity_kind', 'activity_minutes', 'activity_intensity'],
+        },
+      }),
+    );
+    const nutzer = userEvent.setup();
+    const { container } = renderWithProviders(<Checkin zugang={ZUGANG} />, '/p/checkin');
+    expect(
+      await screen.findByRole('heading', { name: 'Außerhalb der Übungen' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Zum Zusammenhang' })).not.toBeInTheDocument();
+    expect(screen.getByText('Eine kurze Frage', { exact: false })).toBeInTheDocument();
+    await pruefeBarrierefreiheit(container);
+    await nutzer.click(screen.getByLabelText('schwere körperliche Arbeit (etwa Umzug, Heben)'));
+    await nutzer.type(
+      screen.getByLabelText('Wie lange hat diese Belastung ungefähr gedauert?'),
+      '360',
+    );
+    await nutzer.click(screen.getByLabelText('anstrengend'));
+    await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
+    expect(screen.getByText('Bitte beantworten Sie mindestens eine Frage.')).toBeInTheDocument();
+    expect(checkinAbsenden).not.toHaveBeenCalled();
+  });
+
   it('sagt ohne Fälligkeit, wann der nächste dran ist, ohne Formular', async () => {
     ladeCheckins.mockResolvedValue(daten({ due: false, can_answer: false, due_on: '2026-10-19' }));
     renderWithProviders(<Checkin zugang={ZUGANG} />, '/p/checkin');

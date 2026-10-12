@@ -1236,3 +1236,41 @@ describe('Check-ins beim Zusammenführen (TRK-002)', () => {
     expect(danach.rows).toEqual([{ interval_days: 3 }]);
   });
 });
+
+describe('Gewohnheiten beim Zusammenführen (ALT-003)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('Gewohnheiten ziehen mit ihren Tagen mit und stehen im Nachweis (ANN-370)', async () => {
+    const ziel = await legeAkteAn({ vorname: 'Greta', nachname: 'Gewohnheit' });
+    const quelle = await legeAkteAn({ vorname: 'Greta', nachname: 'Gewohnheit' });
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.habits
+         (organization_id, relationship_kind, relationship_id, patient_id, action, cue,
+          starts_on, created_by)
+       values ($1, 'treatment', $2, $2, 'Zwei Minuten Mobilität', 'Nach dem Zähneputzen',
+               current_date - 3, $3)
+       returning id`,
+      [ORG, quelle.patient, users.therapist],
+    );
+    const gewohnheit = rows[0]!.id;
+    await asPostgres(
+      `insert into public.habit_marks
+         (organization_id, habit_id, done_on, platform_access_id, platform_access_kind, recorded_by)
+       values ($1, $2, current_date - 1, extensions.gen_random_uuid(), 'self', $3)`,
+      [ORG, gewohnheit, users.plattformErika],
+    );
+    const ergebnis = await zusammenfuehren(quelle.patient, ziel.patient);
+    expect(ergebnis['moved']).toMatchObject({ habits: 1 });
+    const danach = await asPostgres<{ patient_id: string; relationship_id: string; tage: number }>(
+      `select h.patient_id, h.relationship_id,
+              (select count(*)::int from public.habit_marks m where m.habit_id = h.id) as tage
+       from public.habits h where h.id = $1`,
+      [gewohnheit],
+    );
+    expect(danach.rows).toEqual([
+      { patient_id: ziel.patient, relationship_id: ziel.patient, tage: 1 },
+    ]);
+  });
+});

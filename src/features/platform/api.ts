@@ -1669,3 +1669,87 @@ export async function checkinAbsenden(
     throw new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
   throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
 }
+
+// -----------------------------------------------------------------------------
+// ALT-003: Gewohnheiten (IDEA-ALT-002, ANN-370)
+// -----------------------------------------------------------------------------
+
+const eigeneGewohnheitenSchema = z.object({
+  today: z.string(),
+  /** So viele Tage zurück vermerkt die Person, heute eingeschlossen. */
+  mark_days: z.number(),
+  /** Darf dieser Zugang vermerken? Recht, Lesefrist, Einwilligung. */
+  can_mark: z.boolean(),
+  consent_needed: z.boolean(),
+  habits: z.array(
+    z.object({
+      id: z.string(),
+      action: z.string(),
+      cue: z.string(),
+      place: z.string().nullable(),
+      starts_on: z.string(),
+      paused: z.boolean(),
+      ended_at: z.string().nullable(),
+      marks: z.array(z.string()),
+    }),
+  ),
+});
+
+export type EigeneGewohnheiten = z.infer<typeof eigeneGewohnheitenSchema>;
+export type EigeneGewohnheit = EigeneGewohnheiten['habits'][number];
+
+export function gewohnheitenSchluessel(zugangId: string) {
+  return ['platform-habits', zugangId] as const;
+}
+
+export async function ladeGewohnheiten(zugangId: string): Promise<EigeneGewohnheiten | null> {
+  const satz = 'Ihre Gewohnheiten konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_habits', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  if (ergebnis.data === null) return null;
+  return antwort(eigeneGewohnheitenSchema, ergebnis.data, satz);
+}
+
+function gewohnheitsfehler(meldung: string | undefined): Error {
+  const m = meldung ?? '';
+  if (m.includes('paused'))
+    return new Error('Die Gewohnheit ist pausiert. Setzen Sie sie fort, um Tage zu vermerken.');
+  if (m.includes('day not open'))
+    return new Error('Diesen Tag können Sie nicht mehr vermerken – nur die angezeigten Tage.');
+  if (m.includes('not found')) return new Error('Ihre Praxis hat die Gewohnheit beendet.');
+  if (m.includes('consent') || m.includes('not allowed'))
+    return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
+  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+/** Einen Tag vermerken oder den Vermerk zurücknehmen (ANN-370). */
+export async function gewohnheitVermerken(
+  zugangId: string,
+  gewohnheitId: string,
+  tag: string,
+  gemacht: boolean,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('mark_platform_habit', {
+    p_access_id: zugangId,
+    p_habit_id: gewohnheitId,
+    p_done_on: tag,
+    p_done: gemacht,
+  })) as { error: { message?: string } | null };
+  if (error) throw gewohnheitsfehler(error.message);
+}
+
+/** Pausieren, etwa bei Krankheit, und fortsetzen – nichts bricht ab. */
+export async function gewohnheitPausieren(
+  zugangId: string,
+  gewohnheitId: string,
+  pausiert: boolean,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('pause_platform_habit', {
+    p_access_id: zugangId,
+    p_habit_id: gewohnheitId,
+    p_paused: pausiert,
+  })) as { error: { message?: string } | null };
+  if (error) throw gewohnheitsfehler(error.message);
+}

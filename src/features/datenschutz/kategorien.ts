@@ -161,6 +161,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Check-ins',
     beschreibung: 'Die beantworteten Check-ins mit Tag, wer geantwortet hat, und den Angaben.',
   },
+  habits: {
+    label: 'Gewohnheiten',
+    beschreibung:
+      'Die mit der Praxis vereinbarten Gewohnheiten mit Auslöser und Ort, ob pausiert oder beendet, und die Tage, an denen die Person sie vermerkt hat.',
+  },
   platform_messages: {
     label: 'Nachrichten über die Plattform',
     beschreibung:

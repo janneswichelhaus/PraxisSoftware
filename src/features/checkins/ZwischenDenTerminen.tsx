@@ -27,6 +27,7 @@ import {
   type CheckinDaten,
   type Verhaeltnisart,
 } from './api';
+import { Gewohnheiten } from './Gewohnheiten';
 import { verlaufsmarkierungen } from './markierungen';
 import { Verlaufsbilder, Verlaufsereignisse } from './Verlauf';
 
@@ -71,6 +72,8 @@ export function ZwischenDenTerminen({
         <>
           <Takt art={art} verhaeltnisId={verhaeltnisId} daten={data} />
           <Angaben art={art} verhaeltnisId={verhaeltnisId} daten={data} />
+          {/* ALT-003: Gewohnheiten der Person (IDEA-ALT-002, ANN-370). */}
+          <Gewohnheiten art={art} verhaeltnisId={verhaeltnisId} daten={data} />
         </>
       )}
     </Section>
@@ -264,21 +267,27 @@ function TaktFormular({
         <legend className="text-ink mb-1 text-sm font-medium">
           Zum Zusammenhang (zählt nicht zu den {CHECKIN_HOECHSTENS} Fragen)
         </legend>
-        {groessenImTakt('checkin')
-          .filter((g) => g.rolle === 'kontext')
-          .map((g) => (
-            <Checkbox
-              key={g.key}
-              label={g.kurz}
-              hint={g.frage}
-              checked={fragen.includes(g.key)}
-              onChange={(e) =>
-                setFragen((bisher) =>
-                  e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
-                )
-              }
-            />
-          ))}
+        {/* ALT-002: die Aktivität außerhalb der Übungen als eigene Gruppe (ANN-369). */}
+        {KONTEXTGRUPPEN.map((gruppe) => (
+          <div key={gruppe.gruppe} className="flex flex-col gap-2">
+            <p className="text-ink-muted mt-2 text-sm font-semibold">{gruppe.titel}</p>
+            {groessenImTakt('checkin')
+              .filter((g) => g.rolle === 'kontext' && g.gruppe === gruppe.gruppe)
+              .map((g) => (
+                <Checkbox
+                  key={g.key}
+                  label={g.kurz}
+                  hint={g.frage}
+                  checked={fragen.includes(g.key)}
+                  onChange={(e) =>
+                    setFragen((bisher) =>
+                      e.target.checked ? [...bisher, g.key] : bisher.filter((k) => k !== g.key),
+                    )
+                  }
+                />
+              ))}
+          </div>
+        ))}
       </fieldset>
       {hinweis ? <Statusmeldung ton="fehler">{hinweis}</Statusmeldung> : null}
       {speichern.isError ? (
@@ -297,6 +306,11 @@ function TaktFormular({
 }
 
 const FRAGENGRUPPEN = ['Schmerz', 'Bewegung und Alltag'] as const;
+
+const KONTEXTGRUPPEN = [
+  { gruppe: 'Zusammenhang', titel: 'Schmerzmittel und Seite' },
+  { gruppe: 'Aktivität', titel: 'Aktivität außerhalb der Übungen' },
+] as const;
 
 function kurzname(key: string): string {
   return erfassungsgroesse(key)?.kurz ?? key;

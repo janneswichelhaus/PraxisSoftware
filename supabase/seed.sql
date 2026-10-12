@@ -109,8 +109,10 @@ values
 -- -----------------------------------------------------------------------------
 -- time_zone ist verpflichtend und hat bewusst keinen Datenbank-Default:
 -- jede Organisation legt ihre Zeitzone ausdruecklich fest (CAL-001).
-insert into public.organizations (id, name, time_zone) values
-  ('22222222-2222-4222-8222-000000000001', 'Test Praxis Tuebingen', 'Europe/Berlin');
+-- KOM-012 (ANN-371): Fotos und Videos an Rueckfragen nur in dieser
+-- synthetischen Testpraxis; jede neue Organisation hat den Schalter aus.
+insert into public.organizations (id, name, time_zone, external_attachments_enabled) values
+  ('22222222-2222-4222-8222-000000000001', 'Test Praxis Tuebingen', 'Europe/Berlin', true);
 
 -- Startort der Tagesroute (MAP-006a): synthetische Anschrift und erfundene
 -- Koordinate im Stadtgebiet von Tuebingen, keine echte Adresse.

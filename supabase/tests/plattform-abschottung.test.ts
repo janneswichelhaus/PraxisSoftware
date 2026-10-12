@@ -108,6 +108,12 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Eigener Check-in: fällig, Fragen, Verlauf (TRK-003); Negativfälle in checkins.test.ts',
   'public.submit_platform_checkin':
     'Fälligen Check-in beantworten (TRK-003); ohne Recht checkin abgewiesen (42501), Negativfälle in checkins.test.ts',
+  'public.platform_habits':
+    'Eigene Gewohnheiten mit vermerkten Tagen (ALT-003); Negativfälle in habits.test.ts',
+  'public.mark_platform_habit':
+    'Tag einer eigenen Gewohnheit vermerken (ALT-003); ohne Recht checkin abgewiesen (42501), Negativfälle in habits.test.ts',
+  'public.pause_platform_habit':
+    'Eigene Gewohnheit pausieren (ALT-003); ohne Recht checkin abgewiesen (42501), Negativfälle in habits.test.ts',
   'public.finish_platform_exercise_session':
     'Einheit beenden (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.
