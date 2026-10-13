@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -66,24 +67,23 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
     </>
   );
 
-  if (bericht.isPending) {
-    return zustand(<LoadingState label="Bericht wird geladen …" />);
-  }
-  if (bericht.isError && !bericht.data) {
-    return zustand(
-      <ErrorState
-        title="Der Bericht konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => bericht.refetch()}
-      />,
-    );
-  }
+  // Laden und Ladefehler über den Baustein (Regel 8; Nachprüfung neu5); ein
+  // Bericht, den es nicht (mehr) gibt, ist kein Ladefehler und bietet keinen
+  // neuen Versuch an.
   if (!bericht.data) {
     return zustand(
-      <ErrorState
-        title="Bericht nicht gefunden"
-        description="Vielleicht wurde der Entwurf inzwischen verworfen."
-      />,
+      <Abfragezustand
+        abfrage={bericht}
+        laden="Bericht wird geladen …"
+        fehler="Der Bericht konnte nicht geladen werden."
+      >
+        {() => (
+          <ErrorState
+            title="Bericht nicht gefunden"
+            description="Vielleicht wurde der Entwurf inzwischen verworfen."
+          />
+        )}
+      </Abfragezustand>,
     );
   }
 

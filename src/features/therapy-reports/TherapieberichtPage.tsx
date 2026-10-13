@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -160,58 +161,39 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
   );
 
   if (!formularOffen) {
-    if (bericht.isPending) {
-      return (
-        <>
-          {zustandKopf}
-          <LoadingState label="Bericht wird geladen …" />
-        </>
-      );
-    }
-    // Ersetzt wird nur, wenn es nichts zu zeigen gibt (ZST-03).
-    if (bericht.isError && !bericht.data) {
-      return (
-        <>
-          {zustandKopf}
-          <ErrorState
-            title="Der Bericht konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => bericht.refetch()}
-          />
-        </>
-      );
-    }
-    if (!bericht.data) {
-      return (
-        <>
-          {zustandKopf}
-          <ErrorState
-            title="Bericht nicht gefunden"
-            description="Vielleicht wurde der Entwurf inzwischen verworfen."
-          />
-        </>
-      );
-    }
-    if (bericht.data.status === 'abgeschlossen') {
+    if (bericht.data?.status === 'abgeschlossen') {
       return <Navigate to={`/patienten/${patientId}/berichte/${berichtId}/druck`} replace />;
     }
-    if (quellen.isPending) {
+    // Laden und Ladefehler von Bericht und Einträgen über den Baustein (Regel
+    // 8; Nachprüfung neu5). Ersetzt wird nur, wenn es nichts zu zeigen gibt
+    // (ZST-03): Der Baustein zeigt erst ohne Stand einen Fehler. Ein Bericht,
+    // den es nicht (mehr) gibt, ist kein Ladefehler.
+    if (!bericht.data || !quellen.data) {
       return (
         <>
           {zustandKopf}
-          <LoadingState label="Einträge der Akte werden geladen …" />
-        </>
-      );
-    }
-    if (quellen.isError && !quellen.data) {
-      return (
-        <>
-          {zustandKopf}
-          <ErrorState
-            title="Die Einträge der Akte konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => quellen.refetch()}
-          />
+          <Abfragezustand
+            abfrage={bericht}
+            laden="Bericht wird geladen …"
+            fehler="Der Bericht konnte nicht geladen werden."
+          >
+            {(daten) =>
+              daten === null ? (
+                <ErrorState
+                  title="Bericht nicht gefunden"
+                  description="Vielleicht wurde der Entwurf inzwischen verworfen."
+                />
+              ) : (
+                <Abfragezustand
+                  abfrage={quellen}
+                  laden="Einträge der Akte werden geladen …"
+                  fehler="Die Einträge der Akte konnten nicht geladen werden."
+                >
+                  {() => null}
+                </Abfragezustand>
+              )
+            }
+          </Abfragezustand>
         </>
       );
     }
