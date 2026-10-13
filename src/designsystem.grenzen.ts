@@ -41,8 +41,6 @@ export const GRENZEN: Record<
 
     'features/billing': 7,
 
-    'features/checkins': 2,
-
     'features/documentation': 8,
 
     'features/exercise-plans': 4,
@@ -58,8 +56,6 @@ export const GRENZEN: Record<
     'features/therapy-reports': 5,
 
     'features/tours': 3,
-
-    'features/training': 3,
   },
   details: {
     'features/appointments': 4,
@@ -69,8 +65,6 @@ export const GRENZEN: Record<
     'features/auth': 1,
 
     'features/billing': 1,
-
-    'features/checkins': 1,
 
     'features/datenschutz': 1,
 
@@ -104,10 +98,6 @@ export const GRENZEN: Record<
     'features/platform': 2,
 
     'features/platform-access': 1,
-
-    'features/training': 6,
-
-    'features/training-offers': 1,
   },
   knoepfe: {
     app: 2,
@@ -152,8 +142,6 @@ export const GRENZEN: Record<
 
     'features/assessments': 2,
 
-    'features/checkins': 5,
-
     'features/documentation': 4,
 
     'features/exercise-plans': 4,
@@ -171,8 +159,6 @@ export const GRENZEN: Record<
     'features/statistics': 2,
 
     'features/today': 4,
-
-    'features/training': 4,
 
     'features/treatment-bases': 1,
   },

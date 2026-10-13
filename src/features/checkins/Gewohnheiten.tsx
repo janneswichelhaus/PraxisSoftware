@@ -1,9 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatDate } from '@/lib/datum';
 import { GEWOHNHEIT_TEXT_MAX, gewohnheitSatz, tagesreihe } from '@/lib/gewohnheiten';
 import {
@@ -39,14 +43,13 @@ export function Gewohnheiten({
   const laufend = daten.habits.filter((g) => g.ended_at === null);
   const beendet = daten.habits.filter((g) => g.ended_at !== null);
   return (
-    <section aria-labelledby="gewohnheiten" className="mt-6 flex flex-col gap-3">
-      <h3 id="gewohnheiten" className="text-ink text-base font-semibold">
-        Gewohnheiten
-      </h3>
-      <p className="text-ink-muted max-w-prose text-sm">
-        Wenige, sehr kleine Gewohnheiten, an eine bestehende Handlung gekoppelt. Die Person vermerkt
-        die Tage selbst; es gibt keine Serie und keine Erinnerung.
-      </p>
+    // Eine Gruppe in der Karte „Zwischen den Terminen“, durch eine Linie
+    // abgesetzt - kein eigener Kasten (Leitfaden L2).
+    <section
+      aria-labelledby="gewohnheiten"
+      className="border-line mt-6 flex flex-col gap-3 border-t pt-4"
+    >
+      <Zwischentitel id="gewohnheiten">Gewohnheiten</Zwischentitel>
       {laufend.length === 0 ? (
         <p className="text-ink-muted text-sm">Keine Gewohnheit vereinbart.</p>
       ) : (
@@ -71,11 +74,8 @@ export function Gewohnheiten({
         </p>
       ) : null}
       {beendet.length > 0 ? (
-        <details className="text-sm">
-          <summary className="text-ink flex min-h-11 cursor-pointer items-center">
-            Beendet ({beendet.length})
-          </summary>
-          <ul className="mt-2 flex flex-col gap-1">
+        <Disclosure summary="Beendet" anzahl={beendet.length}>
+          <ul className="flex flex-col gap-1 text-sm">
             {beendet.map((g) => (
               <li key={g.id} className="text-ink-muted">
                 {gewohnheitSatz(g)} · {formatDate(g.starts_on)} bis{' '}
@@ -83,8 +83,14 @@ export function Gewohnheiten({
               </li>
             ))}
           </ul>
-        </details>
+        </Disclosure>
       ) : null}
+      {/* Was die Person sieht und was nicht geschieht - als Kleingedrucktes
+          statt als Erklärsatz unter dem Titel (DESIGN.md Regel 6). */}
+      <Kleingedrucktes>
+        Wenige, sehr kleine Gewohnheiten, an eine bestehende Handlung gekoppelt. Die Person vermerkt
+        die Tage selbst; es gibt keine Serie und keine Erinnerung.
+      </Kleingedrucktes>
     </section>
   );
 }
@@ -162,6 +168,7 @@ function Eintrag({
           <Rueckfrage
             ausloeser="Beenden"
             ausloeserVariante="quiet"
+            ausloeserGroesse="kompakt"
             bezeichnung={`Gewohnheit „${gewohnheit.action}“ beenden`}
             bestaetigen="Gewohnheit beenden"
             bestaetigenLaeuft="Wird beendet …"
@@ -208,7 +215,7 @@ function Eintragen({ art, verhaeltnisId }: { art: Verhaeltnisart; verhaeltnisId:
   if (!offen) {
     return (
       <div>
-        <Button variant="secondary" onClick={() => setOffen(true)}>
+        <Button variant="secondary" groesse="kompakt" onClick={() => setOffen(true)}>
           Gewohnheit eintragen
         </Button>
       </div>
@@ -232,7 +239,7 @@ function Eintragen({ art, verhaeltnisId }: { art: Verhaeltnisart; verhaeltnisId:
       onSubmit={absenden}
       noValidate
       aria-label="Gewohnheit eintragen"
-      className="flex max-w-xl flex-col gap-3"
+      className="max-w-formular flex flex-col gap-3"
     >
       <Field
         label="Wann – nach welcher Handlung?"
@@ -267,14 +274,14 @@ function Eintragen({ art, verhaeltnisId }: { art: Verhaeltnisart; verhaeltnisId:
       {eintragen.isError ? (
         <Statusmeldung ton="fehler">{eintragen.error.message}</Statusmeldung>
       ) : null}
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <Formularfuss>
         <Button type="submit" disabled={eintragen.isPending}>
           {eintragen.isPending ? 'Wird gespeichert …' : 'Eintragen'}
         </Button>
         <Button type="button" variant="quiet" onClick={() => setOffen(false)}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }

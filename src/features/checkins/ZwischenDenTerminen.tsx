@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Verlaufstabelle } from '@/components/ui/Verlaufstabelle';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatDate } from '@/lib/datum';
 import {
   CHECKIN_HOECHSTENS,
@@ -49,33 +53,41 @@ export function ZwischenDenTerminen({
   art: Verhaeltnisart;
   verhaeltnisId: string;
 }) {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: checkinsKey(art, verhaeltnisId),
     queryFn: () => fetchCheckins(art, verhaeltnisId),
   });
+  const { data } = abfrage;
   if (data === null) return null;
   return (
-    <Section
-      titel="Zwischen den Terminen"
-      hinweis="Check-ins der Person über die Plattform. Gelesen wird beim nächsten Termin – es gibt keinen Alarm."
-      rahmen
-    >
-      {isPending ? (
-        <LoadingState label="Check-ins werden geladen …" />
-      ) : isError ? (
-        <ErrorState
-          title="Die Check-ins konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => refetch()}
-        />
-      ) : (
-        <>
-          <Takt art={art} verhaeltnisId={verhaeltnisId} daten={data} />
-          <Angaben art={art} verhaeltnisId={verhaeltnisId} daten={data} />
-          {/* ALT-003: Gewohnheiten der Person (IDEA-ALT-002, ANN-370). */}
-          <Gewohnheiten art={art} verhaeltnisId={verhaeltnisId} daten={data} />
-        </>
-      )}
+    // Kein Erklärsatz unter dem Titel (DESIGN.md Regel 6). Dass gelesen wird,
+    // wenn die nächste Begegnung ansteht, und es keinen Alarm gibt, sagt das
+    // Kleingedruckte am Ende (DSN-001 D5).
+    <Section titel="Zwischen den Terminen">
+      <Inhaltsflaeche>
+        <Abfragezustand
+          abfrage={abfrage}
+          laden="Check-ins werden geladen …"
+          fehler="Die Check-ins konnten nicht geladen werden."
+        >
+          {(daten) =>
+            daten ? (
+              <>
+                <Takt art={art} verhaeltnisId={verhaeltnisId} daten={daten} />
+                <Angaben art={art} verhaeltnisId={verhaeltnisId} daten={daten} />
+                {/* ALT-003: Gewohnheiten der Person (IDEA-ALT-002, ANN-370). */}
+                <Gewohnheiten art={art} verhaeltnisId={verhaeltnisId} daten={daten} />
+              </>
+            ) : null
+          }
+        </Abfragezustand>
+      </Inhaltsflaeche>
+      {/* Unter der Karte, nicht in ihr: ein Satz über den Abschnitt, kein
+          Teil seines Inhalts. */}
+      <Kleingedrucktes className="mt-2">
+        Check-ins der Person über die Plattform. Gelesen wird beim nächsten Termin – es gibt keinen
+        Alarm.
+      </Kleingedrucktes>
     </Section>
   );
 }
@@ -143,10 +155,10 @@ function Takt({
         <p className="text-ink">Kein Check-in eingestellt.</p>
       )}
       {daten.can_write && (takt || daten.relationship_open) ? (
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-wrap items-start gap-2">
           {/* Nach dem Ende des Verhältnisses nur noch beenden (Zweitreview S5). */}
           {daten.relationship_open ? (
-            <Button variant="secondary" onClick={() => setBearbeiten(true)}>
+            <Button variant="secondary" groesse="kompakt" onClick={() => setBearbeiten(true)}>
               {takt ? 'Check-in ändern' : 'Check-in einstellen'}
             </Button>
           ) : null}
@@ -154,6 +166,7 @@ function Takt({
             <Rueckfrage
               ausloeser="Check-in beenden"
               ausloeserVariante="quiet"
+              ausloeserGroesse="kompakt"
               bestaetigen="Check-in beenden"
               bestaetigenLaeuft="Wird beendet …"
               fehler={beendenFehler}
@@ -214,7 +227,7 @@ function TaktFormular({
   return (
     <form
       noValidate
-      className="flex flex-col gap-4"
+      className="max-w-formular flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         if (nurFragen(fragen).length === 0) {
@@ -293,14 +306,14 @@ function TaktFormular({
       {speichern.isError ? (
         <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
       ) : null}
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
-        <Button type="button" variant="secondary" onClick={onFertig}>
+        <Button type="button" variant="quiet" onClick={onFertig}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }
@@ -340,7 +353,7 @@ function Angaben({
         <p className="text-ink-muted text-sm">Noch kein Check-in beantwortet.</p>
       ) : (
         <div className="flex flex-col gap-2">
-          <h3 className="text-ink text-base font-semibold">Check-ins</h3>
+          <Zwischentitel>Check-ins</Zwischentitel>
           <Verlaufsbilder
             erfassungen={daten.checkins.map((c) => ({ datum: c.answered_on, werte: c.values }))}
             markierungen={markierungen}
@@ -360,7 +373,7 @@ function Angaben({
       )}
       {daten.sessions.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <h3 className="text-ink text-base font-semibold">Nach den Einheiten</h3>
+          <Zwischentitel>Nach den Einheiten</Zwischentitel>
           <Verlaufsbilder
             erfassungen={daten.sessions.map((e) => ({ datum: e.performed_on, werte: e.values }))}
             markierungen={markierungen}

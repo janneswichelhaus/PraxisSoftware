@@ -6,6 +6,7 @@ import { Punktbild } from '@/components/ui/Punktbild';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
@@ -103,7 +104,7 @@ export function Verlaufsereignisse({
   const entfernbar = art === 'training' && daten.can_write;
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-ink text-base font-semibold">Ereignisse im Verlauf</h3>
+      <Zwischentitel>Ereignisse im Verlauf</Zwischentitel>
       {markierungen.length === 0 ? (
         <p className="text-ink-muted text-sm">Noch kein Ereignis, kein Planwechsel.</p>
       ) : (
@@ -177,6 +178,7 @@ function Markierungszeile({
           <Rueckfrage
             ausloeser="Entfernen"
             ausloeserVariante="quiet"
+            ausloeserGroesse="kompakt"
             bezeichnung={`Ereignis ${nummer} entfernen`}
             bestaetigen="Ja, Ereignis entfernen"
             bestaetigenLaeuft="Wird entfernt …"
@@ -238,9 +240,9 @@ function EreignisVermerken({ verhaeltnisId, heute }: { verhaeltnisId: string; he
       onSubmit={absenden}
       noValidate
       aria-label="Ereignis vermerken"
-      className="mt-2 flex max-w-xl flex-col gap-3"
+      className="max-w-formular mt-2 flex flex-col gap-3"
     >
-      <h4 className="text-ink text-sm font-semibold">Ereignis vermerken</h4>
+      <Zwischentitel ebene={4}>Ereignis vermerken</Zwischentitel>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Tag"
@@ -283,7 +285,7 @@ function EreignisVermerken({ verhaeltnisId, heute }: { verhaeltnisId: string; he
       ) : null}
       {schutz}
       <div>
-        <Button type="submit" variant="secondary" disabled={vermerken.isPending}>
+        <Button type="submit" variant="secondary" groesse="kompakt" disabled={vermerken.isPending}>
           {vermerken.isPending ? 'Wird vermerkt …' : 'Vermerken'}
         </Button>
       </div>
