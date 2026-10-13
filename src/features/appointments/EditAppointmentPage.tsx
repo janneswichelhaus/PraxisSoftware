@@ -7,7 +7,9 @@ import type { Formularfehler } from '@/lib/formularfehler';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -359,31 +361,24 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
   // Ersetzt wird das Formular nur, solange es keinen Termin gibt: Ein
   // gescheitertes Nachladen nimmt eine angefangene Änderung nicht mehr mit
-  // (ZST-03). Ein Ladefehler ist kein „Nicht gefunden" (TER-11).
+  // (ZST-03). Ein Ladefehler ist kein „Nicht gefunden" (TER-11). Laden und
+  // Fehler über den Baustein (DESIGN.md Regel 8).
   if (!termin.data) {
-    if (termin.isPending) {
-      return (
-        <>
-          {kopf}
-          <LoadingState label="Termin wird geladen …" />
-        </>
-      );
-    }
     return (
       <>
         {kopf}
-        {termin.isError ? (
-          <ErrorState
-            title="Der Termin konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => void termin.refetch()}
-          />
-        ) : (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Dieser Termin existiert nicht oder ist für Ihren Zugang nicht freigegeben."
-          />
-        )}
+        <Abfragezustand
+          abfrage={termin}
+          laden="Termin wird geladen …"
+          fehler="Der Termin konnte nicht geladen werden."
+        >
+          {() => (
+            <ErrorState
+              title="Nicht gefunden"
+              description="Dieser Termin existiert nicht oder ist für Ihren Zugang nicht freigegeben."
+            />
+          )}
+        </Abfragezustand>
       </>
     );
   }
@@ -444,7 +439,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       {/* Was an einer Fehlzeit für alle gilt, steht hier als Auskunft - samt
           dem Weg, wo es sich ändern lässt (TER-01, TER-15). */}
       {istEreignis ? (
-        <div className="mb-8 max-w-xl">
+        <div className="max-w-formular mb-8">
           <Section titel="Fehlzeit" rahmen>
             {/* Ohne Bezeichnung keine Zeile, und keine eigene Zeile „Art":
                 „Videotermin" steht im Ort, wo es zutrifft; der Satz, dass das
@@ -470,7 +465,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         </div>
       ) : null}
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         {/* Sind alle Angaben berichtigt, verschwindet der Kasten (UIK-02). */}
         <Fehlerzusammenfassung
           key={pruefung.nummer}
@@ -600,15 +595,16 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             über den Knöpfen (TER-05). */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        {/* Am Telefon untereinander in voller Breite (DESIGN.md „Formular“). */}
+        <Formularfuss>
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Wird gespeichert …' : 'Änderungen speichern'}
           </Button>
           {/* Ein Seitenwechsel und damit ein Link (UIK-13). */}
-          <ButtonLink to={zumTermin} variant="secondary">
+          <ButtonLink to={zumTermin} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
     </>
   );

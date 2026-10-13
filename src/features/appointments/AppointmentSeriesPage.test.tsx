@@ -84,6 +84,17 @@ async function vorschlagen(user: ReturnType<typeof userEvent.setup>, anzahl?: nu
   await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
 }
 
+/**
+ * Öffnet das Fenster „Termin n ändern“ über die Zeile des Vorschlags
+ * (Design-Rollout B2): Datum und Beginn stehen seitdem dort, nicht mehr als
+ * Felder in jeder Zeile.
+ */
+async function zeileOeffnen(user: ReturnType<typeof userEvent.setup>, nummer: number) {
+  const zeile = (name: string) => name.includes(`Termin ${nummer}: `);
+  await user.click(screen.getByRole('button', { name: zeile }));
+  return screen.getByRole('dialog', { name: `Termin ${nummer} ändern` });
+}
+
 describe('AppointmentSeriesPage', () => {
   beforeEach(() => {
     fetchPatient.mockReset();
@@ -140,9 +151,17 @@ describe('AppointmentSeriesPage', () => {
     await vorschlagen(user);
 
     expect(await screen.findByText('Vorgeschlagene Termine (3)')).toBeInTheDocument();
-    expect(screen.getByLabelText('Datum 1')).toHaveValue('2027-05-12');
-    expect(screen.getByLabelText('Datum 2')).toHaveValue('2027-05-19');
-    expect(screen.getByLabelText('Datum 3')).toHaveValue('2027-05-26');
+    // Jede Zeile nennt Nummer, Wochentag und Datum; der Beginn steht vorn.
+    expect(screen.getByRole('button', { name: /Termin 1: Mi, 12\.05\.2027/ })).toHaveTextContent(
+      '09:00',
+    );
+    expect(screen.getByRole('button', { name: /Termin 2: Mi, 19\.05\.2027/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Termin 3: Mi, 26\.05\.2027/ })).toBeInTheDocument();
+    // Das Fenster einer Zeile trägt ihre Felder.
+    const fenster = await zeileOeffnen(user, 2);
+    expect(within(fenster).getByLabelText('Datum 2')).toHaveValue('2027-05-19');
+    await user.click(within(fenster).getByRole('button', { name: 'Fertig' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
     await waitFor(() =>
       expect(checkAppointmentSlots).toHaveBeenCalledWith(STAFF_ANNA, [
@@ -176,8 +195,10 @@ describe('AppointmentSeriesPage', () => {
     await vorschlagen(user);
 
     // Waehrend die Pruefung laeuft, wandert der zweite Termin.
+    await zeileOeffnen(user, 2);
     await user.clear(screen.getByLabelText('Datum 2'));
     await user.type(screen.getByLabelText('Datum 2'), '2027-05-20');
+    await user.click(screen.getByRole('button', { name: 'Fertig' }));
 
     // Jetzt erst antwortet der Server - auf den alten Vorschlag.
     antworten([null, null, null]);
@@ -294,9 +315,15 @@ describe('AppointmentSeriesPage', () => {
     await formularAbwarten();
     await vorschlagen(user);
     await screen.findByText('Zeitraum ist bereits belegt');
+    // Der Befund steht an seiner Zeile, als Zeichen und Wort.
+    expect(screen.getByRole('button', { name: /Termin 2: / })).toHaveTextContent(
+      'Zeitraum ist bereits belegt',
+    );
 
+    await zeileOeffnen(user, 2);
     await user.clear(screen.getByLabelText('Datum 2'));
     await user.type(screen.getByLabelText('Datum 2'), '2027-05-20');
+    await user.click(screen.getByRole('button', { name: 'Fertig' }));
 
     expect(
       await screen.findByText('Die Liste wurde geändert und ist noch nicht geprüft.'),
@@ -323,11 +350,13 @@ describe('AppointmentSeriesPage', () => {
     await vorschlagen(user);
     await screen.findByText('Alle 3 Termine sind planbar.');
 
-    const zweite = screen.getByLabelText('Datum 2').closest('li');
-    await user.click(within(zweite!).getByRole('button', { name: 'Entfernen' }));
+    const fenster = await zeileOeffnen(user, 2);
+    await user.click(within(fenster).getByRole('button', { name: 'Aus der Serie entfernen' }));
 
     expect(await screen.findByText('Vorgeschlagene Termine (2)')).toBeInTheDocument();
-    expect(screen.getByLabelText('Datum 2')).toHaveValue('2027-05-26');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // Die bisherige dritte Zeile rückt nach.
+    expect(screen.getByRole('button', { name: /Termin 2: Mi, 26\.05\.2027/ })).toBeInTheDocument();
   });
 
   it('fragt bei Randzeiten nach, statt still anzulegen (CAL-005)', async () => {

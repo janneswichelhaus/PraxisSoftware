@@ -2,9 +2,14 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -143,7 +148,9 @@ function Wechselrueckfrage({
       ref={kasten}
       role="group"
       aria-label={SCHUTZTEXTE.bezeichnung}
-      className="border-line-strong bg-surface-sunken rounded-card border p-4"
+      // Eine vertiefte Fläche mit Linie links wie jede Rückfrage (DESIGN.md
+      // Regel 2), keine Karte.
+      className="border-line-strong bg-surface-sunken border-l-4 py-3 pr-4 pl-4"
     >
       <p className="text-ink text-sm leading-relaxed">{children}</p>
       <div className="mt-3 flex flex-wrap gap-3">
@@ -183,11 +190,10 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
   });
 
   return (
-    <Section
-      titel="Praxisraster"
-      hinweis="Auf welchen Minutenschritten ein Termin beginnen darf. Gilt für die gesamte Praxis. Die Dauer bleibt frei, und bestehende Termine außerhalb des Rasters bleiben erhalten."
-    >
-      <div className="max-w-xs">
+    // Kein Erklärsatz unter dem Titel (DESIGN.md Regel 6); was eine Änderung
+    // bewirkt, steht knapp als Kleingedrucktes am Feld.
+    <Section titel="Praxisraster">
+      <div className="max-w-formular">
         <Select
           label="Minutenraster"
           value={String(wert)}
@@ -203,6 +209,9 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
             </option>
           ))}
         </Select>
+        <Kleingedrucktes className="mt-2">
+          Gilt für die ganze Praxis. Bestehende Termine außerhalb des Rasters bleiben erhalten.
+        </Kleingedrucktes>
       </div>
 
       {mutation.isError ? (
@@ -216,11 +225,11 @@ function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-4">
+      <Formularfuss>
         <Button type="button" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
           {mutation.isPending ? 'Wird gespeichert …' : 'Raster speichern'}
         </Button>
-      </div>
+      </Formularfuss>
     </Section>
   );
 }
@@ -271,11 +280,11 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
     : [...FRIST_WERTE, wert].sort((a, b) => a - b);
 
   return (
-    <Section
-      titel="Automatische Finalisierung"
-      hinweis="Ein Entwurf der Behandlungsdokumentation wird nach Ablauf dieser Frist automatisch finalisiert und ist ab dann Bestandteil der Akte. Die Frist zählt in Kalendertagen der Praxiszeitzone ab dem Behandlungstag; später angelegte Einträge und Nachträge bekommen sie ab ihrer Anlage."
-    >
-      <div className="max-w-xs">
+    // Was die Frist bewirkt, trägt Rechtsfunktion (ADR-016: Finalisierung
+    // macht den Entwurf zum Bestandteil der Akte) - deshalb bleibt der Satz,
+    // als Kleingedrucktes am Feld statt als Erklärsatz unter dem Titel.
+    <Section titel="Automatische Finalisierung">
+      <div className="max-w-formular">
         <Select
           label="Frist"
           value={String(wert)}
@@ -297,6 +306,12 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
             <option value={wert}>{frist.isError ? 'Nicht geladen' : 'Wird geladen …'}</option>
           )}
         </Select>
+        <Kleingedrucktes className="mt-2">
+          Ein Entwurf der Behandlungsdokumentation wird nach Ablauf dieser Frist automatisch
+          finalisiert und ist ab dann Bestandteil der Akte. Die Frist zählt in Kalendertagen der
+          Praxiszeitzone ab dem Behandlungstag; später angelegte Einträge und Nachträge bekommen sie
+          ab ihrer Anlage.
+        </Kleingedrucktes>
       </div>
 
       {frist.isError && !geladen ? (
@@ -319,7 +334,7 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-4">
+      <Formularfuss>
         <Button
           type="button"
           disabled={mutation.isPending || !geladen}
@@ -327,7 +342,7 @@ function FristEinstellung({ organizationId }: { organizationId: string }) {
         >
           {mutation.isPending ? 'Wird gespeichert …' : 'Frist speichern'}
         </Button>
-      </div>
+      </Formularfuss>
     </Section>
   );
 }
@@ -381,47 +396,51 @@ function BlockFelder({
           const nummer = `${blockLabel} ${index + 1}`;
           const entfernbar = bloecke.length > 1 || block.von !== '' || block.bis !== '';
           return (
-            <div key={index}>
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label={`${nummer} von`}
-                  feldId={`${idPraefix}-${index}-von`}
-                  type="time"
-                  value={block.von}
-                  error={fehler?.[index]?.von}
-                  disabled={gesperrt}
-                  onChange={(e) => setzen(index, 'von', e.target.value)}
-                />
-                <Field
-                  label={`${nummer} bis`}
-                  feldId={`${idPraefix}-${index}-bis`}
-                  type="time"
-                  value={block.bis}
-                  error={fehler?.[index]?.bis}
-                  disabled={gesperrt}
-                  onChange={(e) => setzen(index, 'bis', e.target.value)}
-                />
+            // Von, bis und Entfernen in einer Zeile (Design-Rollout B2): vorher
+            // stand unter jedem Block ein eigener Knopf „Block n entfernen“.
+            <div
+              key={index}
+              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-3"
+            >
+              <Field
+                label={`${nummer} von`}
+                feldId={`${idPraefix}-${index}-von`}
+                type="time"
+                value={block.von}
+                error={fehler?.[index]?.von}
+                disabled={gesperrt}
+                onChange={(e) => setzen(index, 'von', e.target.value)}
+              />
+              <Field
+                label={`${nummer} bis`}
+                feldId={`${idPraefix}-${index}-bis`}
+                type="time"
+                value={block.bis}
+                error={fehler?.[index]?.bis}
+                disabled={gesperrt}
+                onChange={(e) => setzen(index, 'bis', e.target.value)}
+              />
+              {/* Die Spalte bleibt, auch ohne Knopf: So fluchten die Felder. */}
+              <div className="mb-0.5 size-11">
+                {entfernbar ? (
+                  <Symbolknopf
+                    beschriftung={`${nummer} entfernen`}
+                    disabled={gesperrt}
+                    onClick={() => entfernen(index)}
+                  >
+                    <span className="text-xl leading-none">×</span>
+                  </Symbolknopf>
+                ) : null}
               </div>
-              {entfernbar ? (
-                <Button
-                  type="button"
-                  variant="quiet"
-                  groesse="kompakt"
-                  className="mt-1"
-                  disabled={gesperrt}
-                  onClick={() => entfernen(index)}
-                >
-                  {nummer} entfernen
-                </Button>
-              ) : null}
             </div>
           );
         })}
       </div>
-      <div className="mt-3">
+      <div className="mt-2">
         <Button
           type="button"
           variant="quiet"
+          groesse="kompakt"
           disabled={gesperrt}
           onClick={() => onChange([...bloecke, { ...LEERER_BLOCK }])}
         >
@@ -598,17 +617,16 @@ function Wochenplan({
     return (
       <ErrorState
         title="Die Arbeitszeiten konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und später erneut versuchen."
+        description={VERBINDUNG_PRUEFEN}
         onErneut={() => void zeiten.refetch()}
       />
     );
   }
 
   return (
-    <Section
-      titel="Wochenplan"
-      hinweis="Der Normalfall dieser Person. Zeiten gelten in der Zeitzone der Praxis."
-    >
+    // Ohne Erklärsatz (DESIGN.md Regel 6): Die Zeitzone nennt das
+    // Kleingedruckte am Seitenende.
+    <Section titel="Wochenplan">
       {zeiten.isError ? (
         <NachladeHinweis
           className="mb-4"
@@ -620,53 +638,42 @@ function Wochenplan({
       {/* Übersicht links, Bearbeitung rechts, sobald Platz ist (ORG-29): Bis
           UXR-011 lagen Tag und Uhrzeit bei 1440 px rund 900 px auseinander. */}
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <Inhaltsflaeche>
-          <ul className="divide-line divide-y">
-            {WOCHENTAGE.map((w) => {
-              const offen = darfPflegen && w === tag;
-              return (
-                <li
-                  key={w}
-                  aria-current={offen ? 'true' : undefined}
-                  className="flex min-h-11 items-center gap-3 py-1.5 text-sm"
-                >
-                  <span className="flex min-w-0 flex-1 flex-wrap gap-x-4">
-                    <span
-                      className={`w-24 shrink-0 ${offen ? 'text-ink font-medium' : 'text-ink-muted'}`}
+        {/* Die Wochentage als Zeilen des Systems (DESIGN.md Regel 3): Tag und
+            Zeiten, daneben der Weg in den Tag (ORG-05). */}
+        <ListRows>
+          {WOCHENTAGE.map((w) => {
+            const offen = darfPflegen && w === tag;
+            return (
+              <ListRow
+                key={w}
+                titel={<span aria-current={offen ? 'true' : undefined}>{wochentagLabels[w]}</span>}
+                meta={bloeckeText(w === tag ? referenz : wochenBloecke(daten, staffMemberId, w))}
+                status={
+                  offen ? (
+                    <span className="text-accent text-sm font-semibold">Wird bearbeitet</span>
+                  ) : undefined
+                }
+                gedaempft={!offen && darfPflegen}
+                aktion={
+                  darfPflegen && !offen ? (
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      aria-label={`${wochentagLabels[w]} bearbeiten`}
+                      disabled={mutation.isPending}
+                      onClick={() => {
+                        tagWaehlen(w);
+                        if (!ungespeichert) fokussieren('wochenplan-tag');
+                      }}
                     >
-                      {wochentagLabels[w]}
-                    </span>
-                    <span className={`text-ink ${offen ? 'font-medium' : ''}`}>
-                      {bloeckeText(w === tag ? referenz : wochenBloecke(daten, staffMemberId, w))}
-                    </span>
-                  </span>
-                  {/* Jede Zeile führt in ihren Tag (ORG-05) - bis UXR-011
-                      ging das nur über die Auswahl darunter. */}
-                  {darfPflegen ? (
-                    offen ? (
-                      <span className="text-accent shrink-0 px-4 font-medium">Wird bearbeitet</span>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="quiet"
-                        groesse="kompakt"
-                        className="shrink-0"
-                        aria-label={`${wochentagLabels[w]} bearbeiten`}
-                        disabled={mutation.isPending}
-                        onClick={() => {
-                          tagWaehlen(w);
-                          if (!ungespeichert) fokussieren('wochenplan-tag');
-                        }}
-                      >
-                        Bearbeiten
-                      </Button>
-                    )
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </Inhaltsflaeche>
+                      Bearbeiten
+                    </Button>
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </ListRows>
 
         {darfPflegen ? (
           <div className="flex flex-col gap-4">
@@ -726,7 +733,11 @@ function Wochenplan({
               <Rueckmeldung key={stand.meldung.nr}>{stand.meldung.text}</Rueckmeldung>
             ) : null}
 
-            <div className="flex flex-wrap gap-3">
+            {/* Ein Speichern für das Formular des Tages (ANN-435, Design-Rollout B2): Den
+                Tag leert man, indem man seine Blöcke entfernt - ein zweiter
+                Knopf „Blöcke leeren“ daneben entfällt. Was ein leerer Tag
+                bedeutet, sagt die Rückfrage beim Speichern. */}
+            <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
               {leertTag ? (
                 <Rueckfrage
                   ausloeser={`${label} speichern`}
@@ -748,21 +759,7 @@ function Wochenplan({
                   {mutation.isPending ? 'Wird gespeichert …' : `${label} speichern`}
                 </Button>
               )}
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={mutation.isPending}
-                onClick={() =>
-                  aendern(() => ({ bearbeitung: [{ ...LEERER_BLOCK }], fehler: null }))
-                }
-              >
-                Blöcke leeren
-              </Button>
             </div>
-            <p className="text-ink-muted text-sm">
-              Speichern ersetzt den gewählten Wochentag vollständig. Leere Blöcke bedeuten: an
-              diesem Wochentag keine Termine.
-            </p>
           </div>
         ) : (
           <p className="text-ink-muted text-sm">
@@ -838,6 +835,8 @@ function Abweichungen({
   const [fehler, setFehler] = useState<Blockfehler[] | null>(null);
   const [meldung, setMeldung] = useState<Abweichungsmeldung | null>(null);
   const [ladenFrage, setLadenFrage] = useState<Abweichungsform | null>(null);
+  /** Das Datum, dessen Abweichung nach Rückfrage entfernt werden soll. */
+  const [entfernenFrage, setEntfernenFrage] = useState<string | null>(null);
   const formular = useRef<HTMLDivElement>(null);
 
   // Ein knappes Fenster nach vorn: die Pflege betrifft die kommende Planung,
@@ -939,7 +938,7 @@ function Abweichungen({
       return (
         <ErrorState
           title="Die Abweichungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void ausnahmen.refetch()}
         />
       );
@@ -954,34 +953,32 @@ function Abweichungen({
             onErneut={() => void ausnahmen.refetch()}
           />
         ) : null}
-        {meldung?.ort === 'liste' ? (
+        {/* Erst nach dem Schließen des Fensters: Dann nimmt die Bestätigung
+            den Fokus, nicht der Knopf, der das Fenster geöffnet hatte. */}
+        {meldung?.ort === 'liste' && entfernenFrage === null ? (
           <Rueckmeldung key={meldung.nr} className="mb-3">
             {meldung.text}
           </Rueckmeldung>
         ) : null}
         {tage.length > 0 ? (
-          <Inhaltsflaeche>
-            <ul className="divide-line divide-y">
-              {tage.map((t) => {
-                const datum = formatDate(t.datum);
-                return (
-                  <li
-                    key={t.datum}
-                    className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-1.5 text-sm"
-                  >
-                    {/* Datum und Zeit stehen beieinander (ORG-29), mehrere
-                        Blöcke eines Tages in einer Zeile (ORG-05). */}
-                    <span className="flex min-w-0 flex-wrap gap-x-4">
-                      <span className="text-ink-muted w-24 shrink-0 tabular-nums">{datum}</span>
-                      <span className="text-ink">
-                        {t.frei ? 'Keine Termine' : bloeckeText(t.bloecke)}
-                      </span>
-                    </span>
-                    {darfPflegen ? (
+          // Datum und Zeit als Zeile des Systems (ORG-29, DESIGN.md Regel 3),
+          // mehrere Blöcke eines Tages in einer Zeile (ORG-05). Die Arbeit
+          // steht daneben; das Entfernen fragt in einem Fenster nach, weil
+          // die Zeile für eine Rückfrage an Ort und Stelle zu schmal ist.
+          <ListRows>
+            {tage.map((t) => {
+              const datum = formatDate(t.datum);
+              return (
+                <ListRow
+                  key={t.datum}
+                  titel={<span className="tabular-nums">{datum}</span>}
+                  meta={t.frei ? 'Keine Termine' : bloeckeText(t.bloecke)}
+                  aktion={
+                    darfPflegen ? (
                       <span
                         role="group"
                         aria-label={`Abweichung am ${datum}`}
-                        className="flex flex-wrap gap-2"
+                        className="flex items-center gap-1"
                       >
                         <Button
                           type="button"
@@ -995,41 +992,53 @@ function Abweichungen({
                         >
                           Ändern
                         </Button>
-                        <Rueckfrage
-                          ausloeser="Entfernen"
-                          ausloeserVariante="quiet"
-                          bezeichnung={`Abweichung am ${datum} entfernen`}
-                          bestaetigen="Abweichung entfernen"
-                          bestaetigenLaeuft="Wird entfernt …"
-                          onBestaetigen={() =>
-                            mutation.mutateAsync({
-                              datum: t.datum,
-                              abwesend: false,
-                              bloecke: [],
-                              art: 'entfernen',
-                              ort: 'liste',
-                              quelle: null,
-                            })
-                          }
-                          onAbbrechen={() => mutation.reset()}
+                        <Button
+                          type="button"
+                          variant="quiet"
+                          disabled={mutation.isPending}
+                          onClick={() => {
+                            mutation.reset();
+                            setEntfernenFrage(t.datum);
+                          }}
                         >
-                          <p>
-                            Abweichung am {datum} entfernen? Danach gilt für diesen Tag wieder der
-                            Wochenplan.
-                          </p>
-                        </Rueckfrage>
+                          Entfernen
+                        </Button>
                       </span>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          </Inhaltsflaeche>
+                    ) : undefined
+                  }
+                />
+              );
+            })}
+          </ListRows>
         ) : (
-          <p className="text-ink-muted text-sm">
-            Für das kommende Jahr ist keine Abweichung hinterlegt.
-          </p>
+          // Der Leerzustand in der Karte (DESIGN.md Regel 8).
+          <EmptyState inKarte title="Für das kommende Jahr ist keine Abweichung hinterlegt." />
         )}
+
+        {entfernenFrage !== null ? (
+          <EntfernenFenster
+            datum={formatDate(entfernenFrage)}
+            fehler={
+              mutation.isError && mutation.variables?.ort === 'liste'
+                ? mutation.error.message
+                : undefined
+            }
+            onBestaetigen={() =>
+              mutation.mutateAsync({
+                datum: entfernenFrage,
+                abwesend: false,
+                bloecke: [],
+                art: 'entfernen',
+                ort: 'liste',
+                quelle: null,
+              })
+            }
+            onSchliessen={() => {
+              setEntfernenFrage(null);
+              mutation.reset();
+            }}
+          />
+        ) : null}
       </>
     );
   }
@@ -1037,10 +1046,9 @@ function Abweichungen({
   const formularFehler = mutation.isError && mutation.variables?.ort === 'formular';
 
   return (
-    <Section
-      titel="Abweichungen an einzelnen Tagen"
-      hinweis="Eine Abweichung ersetzt den Wochenplan für dieses Datum vollständig – entweder als ganzer Tag ohne Termine oder als abweichende Zeitblöcke."
-    >
+    // Ohne Erklärsatz (DESIGN.md Regel 6): Was eine Abweichung bewirkt, sagen
+    // die Rückfragen dort, wo es ansteht.
+    <Section titel="Abweichungen an einzelnen Tagen">
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <div>{liste()}</div>
 
@@ -1110,7 +1118,7 @@ function Abweichungen({
               </p>
             ) : null}
 
-            <div>
+            <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
               {form.datum !== '' && leer && bestehend ? (
                 <Rueckfrage
                   ausloeser="Abweichung speichern"
@@ -1146,14 +1154,71 @@ function Abweichungen({
                 </Button>
               )}
             </div>
-            <p className="text-ink-muted text-sm">
-              Ohne Häkchen und ohne Blöcke wird eine bestehende Abweichung entfernt; danach gilt für
-              diesen Tag wieder der Wochenplan.
-            </p>
           </div>
         ) : null}
       </div>
     </Section>
+  );
+}
+
+/**
+ * Rückfrage vor dem Entfernen einer Abweichung aus der Liste (ORG-05), als
+ * Fenster: In der Zeile neben Datum und Zeit ist für die Frage kein Platz
+ * (Design-Rollout B2). Der Knopf wartet auf den Server; scheitert er, bleibt
+ * das Fenster offen und nennt den Fehler (ZST-06).
+ */
+function EntfernenFenster({
+  datum,
+  fehler,
+  onBestaetigen,
+  onSchliessen,
+}: {
+  datum: string;
+  fehler: string | undefined;
+  onBestaetigen: () => Promise<unknown>;
+  onSchliessen: () => void;
+}) {
+  const [laeuft, setLaeuft] = useState(false);
+  const [gescheitert, setGescheitert] = useState(false);
+
+  async function bestaetigen() {
+    if (laeuft) return;
+    setLaeuft(true);
+    setGescheitert(false);
+    try {
+      await onBestaetigen();
+      onSchliessen();
+    } catch {
+      setGescheitert(true);
+    } finally {
+      setLaeuft(false);
+    }
+  }
+
+  return (
+    <Dialogfenster titel={`Abweichung am ${datum} entfernen`} onSchliessen={onSchliessen}>
+      <p className="text-ink mt-2 text-sm">Danach gilt für diesen Tag wieder der Wochenplan.</p>
+      {gescheitert ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {fehler ?? 'Das hat nicht geklappt.'} {ERNEUT_SPEICHERN}
+        </Statusmeldung>
+      ) : null}
+      <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
+        <Button
+          type="button"
+          data-autofocus
+          disabled={laeuft}
+          onClick={() => {
+            void bestaetigen();
+          }}
+        >
+          {laeuft ? 'Wird entfernt …' : 'Abweichung entfernen'}
+        </Button>
+        <Button type="button" variant="quiet" disabled={laeuft} onClick={onSchliessen}>
+          Abbrechen
+        </Button>
+      </div>
+    </Dialogfenster>
   );
 }
 
@@ -1232,20 +1297,18 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
+      {/* Eine Zeile (DESIGN.md Regel 6); die Praxiseinstellungen nennt ihr
+          Aufklapper selbst. */}
       <PageHeader
         title={BEGRIFFE.arbeitszeiten}
-        description={
-          darfRaster
-            ? 'Arbeitszeiten der behandelnden Personen, dazu Praxisraster, Dokumentationsfrist, Startort der Touren und Fahrzeitfaktor. Grundlage für Terminvergabe und Akte.'
-            : 'Wochenplan und Abweichungen der behandelnden Personen. Grundlage für die Terminvergabe.'
-        }
+        description="Wochenplan und Abweichungen je Person."
       />
 
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError && !therapeuten.data ? (
         <ErrorState
           title="Die behandelnden Personen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void therapeuten.refetch()}
         />
       ) : null}
@@ -1267,7 +1330,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
       {therapeuten.data && therapeuten.data.length > 0 ? (
         <>
-          <div className="mt-8 mb-6 flex max-w-md flex-col gap-4">
+          <div className="max-w-formular mb-8 flex flex-col gap-4">
             <Select
               label="Behandelnde Person"
               feldId="planung-person"
@@ -1344,7 +1407,9 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
             summary={
               <>
                 Praxiseinstellungen
-                <span className="text-ink-muted ml-auto text-sm font-normal tracking-normal normal-case">
+                {/* Am Telefon brach die Aufzählung neben dem Titel in drei Zeilen
+                    um; dort genügt der Titel (Design-Rollout B2). */}
+                <span className="text-ink-muted ml-auto hidden text-sm font-normal tracking-normal normal-case sm:inline">
                   Raster · Frist · Startort · Benachrichtigungen
                 </span>
               </>

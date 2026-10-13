@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import {
   KONTEN,
   PATIENTEN,
@@ -56,6 +56,16 @@ function werktagVersatz(ab: number): number {
 }
 
 const zeit = (minutenAbAcht = 0) => zeitImLauf(LAUF, minutenAbAcht, 10);
+
+/**
+ * Die Zeile eines Vorschlags (Design-Rollout B2): Nummer und Datum stehen im
+ * Namen der Zeile, „Termin 2: Mi, 19.05.2027"; ein Tipp öffnet ihr Fenster.
+ */
+function vorschlagszeile(page: Page, nummer: number, tag: string): Locator {
+  return page
+    .getByRole('button', { name: `Termin ${nummer}:` })
+    .filter({ hasText: tag.split('-').reverse().join('.') });
+}
 
 test.describe('CAL-010a: Terminfenster', () => {
   test('leitet das Ende aus dem Beginn ab und legt 60 Minuten an', async ({ page }) => {
@@ -120,8 +130,8 @@ test.describe('CAL-007: Terminserie', () => {
     await page.getByRole('button', { name: 'Termine vorschlagen' }).click();
 
     await expect(page.getByRole('heading', { name: 'Vorgeschlagene Termine (3)' })).toBeVisible();
-    await expect(page.getByLabel('Datum 1')).toHaveValue(start);
-    await expect(page.getByLabel('Datum 3')).toHaveValue(laufTag(15));
+    await expect(vorschlagszeile(page, 1, start)).toBeVisible();
+    await expect(vorschlagszeile(page, 3, laufTag(15))).toBeVisible();
 
     await page.getByRole('button', { name: '3 Termine anlegen' }).click();
     await arbeitszeitBestaetigen(
@@ -177,8 +187,11 @@ test.describe('CAL-007: Terminserie', () => {
     await expect(page.getByText(/1 von 2 Terminen ist so nicht planbar/)).toBeVisible();
     await expect(page.getByRole('button', { name: '2 Termine anlegen' })).toBeDisabled();
 
-    // Einzelabweichung: die belegte Zeile auf einen freien Werktag ziehen.
+    // Einzelabweichung: die belegte Zeile auf einen freien Werktag ziehen -
+    // im Fenster der Zeile.
+    await page.getByRole('button', { name: 'Termin 2:' }).click();
     await page.getByLabel('Datum 2').fill(ausweichtag);
+    await page.getByRole('button', { name: 'Fertig' }).click();
     await expect(
       page.getByText('Die Liste wurde geändert und ist noch nicht geprüft.'),
     ).toBeVisible();

@@ -374,7 +374,10 @@ describe('SchedulingPage', () => {
       rendern();
       await wochenplanAbwarten();
 
-      await user.click(screen.getByRole('button', { name: 'Blöcke leeren' }));
+      // Geleert wird ein Tag, indem man seine Bloecke entfernt (seit dem
+      // Design-Rollout B2 ohne eigenen Knopf „Blöcke leeren“).
+      await user.click(screen.getByRole('button', { name: 'Block 2 entfernen' }));
+      await user.click(screen.getByRole('button', { name: 'Block 1 entfernen' }));
       await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
 
       // Der Montag hatte Bloecke - geleert wird er nicht mit einem Tipp.
@@ -597,7 +600,10 @@ describe('SchedulingPage', () => {
 
       expect(screen.getByLabelText('Wochentag')).toHaveValue('5');
       expect(within(tageszeile('Freitag')).getByText('Wird bearbeitet')).toBeInTheDocument();
-      expect(tageszeile('Freitag')).toHaveAttribute('aria-current', 'true');
+      expect(within(tageszeile('Freitag')).getByText('Freitag')).toHaveAttribute(
+        'aria-current',
+        'true',
+      );
       expect(screen.getByRole('button', { name: 'Freitag speichern' })).toBeInTheDocument();
     });
 
@@ -883,15 +889,18 @@ describe('SchedulingPage', () => {
 
       await user.click(within(gruppe).getByRole('button', { name: 'Entfernen' }));
       expect(saveWorkingHourException).not.toHaveBeenCalled();
-      await user.click(screen.getByRole('button', { name: 'Abweichung entfernen' }));
+      // Die Rückfrage steht in einem Fenster - die Zeile ist zu schmal dafür.
+      const fenster = screen.getByRole('dialog', { name: 'Abweichung am 01.06.2027 entfernen' });
+      await user.click(within(fenster).getByRole('button', { name: 'Abweichung entfernen' }));
 
       // Dieselbe Serverfunktion, leere Bloecke.
       await waitFor(() =>
         expect(saveWorkingHourException).toHaveBeenCalledWith(ANNA, '2027-06-01', false, []),
       );
-      expect(
-        await screen.findByText('Die Abweichung am 01.06.2027 ist entfernt.'),
-      ).toBeInTheDocument();
+      const bestaetigung = await screen.findByText('Die Abweichung am 01.06.2027 ist entfernt.');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      // Die Bestätigung nimmt den Fokus, nicht der Knopf hinter dem Fenster.
+      await waitFor(() => expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus());
     });
 
     it('zeigt nur die Abweichungen der gewaehlten Person', async () => {

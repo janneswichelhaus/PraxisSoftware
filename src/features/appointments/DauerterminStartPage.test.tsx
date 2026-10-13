@@ -165,8 +165,9 @@ describe('DauerterminStartPage', () => {
     ]);
     rendern(MIT_PERSON);
 
-    const offen = await screen.findByRole('list', { name: 'Offene Grundlagen' });
-    const links = within(offen).getAllByRole('link');
+    // Die offenen stehen als erste Liste offen da; die übrigen im Aufklapper.
+    const [offen] = await screen.findAllByRole('list');
+    const links = within(offen!).getAllByRole('link');
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute('href', SERIE(G1));
     // Das Kontingent zählt Termine (VER-08, ANN-064).
@@ -256,7 +257,9 @@ describe('DauerterminStartPage', () => {
       kontingent(G2, 6, 1),
     ]);
     await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await screen.findByRole('list', { name: 'Offene Grundlagen' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: /noch 8 Termine zu planen/ }),
+    ).toBeInTheDocument();
   });
 
   it('ignoriert eine verstellte Kennung und fragt nach der Person', () => {

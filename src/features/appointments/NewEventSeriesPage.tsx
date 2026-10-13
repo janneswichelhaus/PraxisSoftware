@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Field } from '@/components/ui/Field';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
@@ -284,7 +286,7 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
         description={`Dieselbe Fehlzeit über mehrere Wochen – ${FEHLZEIT_BEISPIELE}.`}
       />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         {/* Was noch fehlt - und wo (KAL-17). */}
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(FEHLERFELDER, FEHLERBESCHRIFTUNGEN, fehler, (feld) =>
@@ -307,7 +309,7 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
             standorte.isError ? (
               <ErrorState
                 title="Die Standorte konnten nicht geladen werden."
-                description="Bitte die Verbindung prüfen und erneut versuchen."
+                description={VERBINDUNG_PRUEFEN}
                 onErneut={() => standorte.refetch()}
               />
             ) : null
@@ -320,12 +322,14 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
                 <div className="mt-3">
                   <ErrorState
                     title="Die Personen konnten nicht geladen werden."
-                    description="Bitte die Verbindung prüfen und erneut versuchen."
+                    description={VERBINDUNG_PRUEFEN}
                     onErneut={() => personen.refetch()}
                   />
                 </div>
               ) : (
-                <div className="mt-3 flex flex-col gap-2">
+                // Ab 640 px zwei Spalten: Die Namen sind kurz, die Liste wird
+                // nur halb so lang (DESIGN.md Regel 10).
+                <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
                   {aktive.map((person, i) => (
                     <Checkbox
                       key={person.id}
@@ -399,14 +403,16 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
               Woche drei „Meldung lesen und raten" (wie bei CAL-007). Jeder Tag
               mit Wochentag (KAL-B03). */}
           {tage.length > 0 ? (
-            <div className="mt-5">
+            <div className="mt-6">
               <p className="text-ink text-sm font-medium">
                 {fehlzeitenWort(tage.length)}
                 {werte.start_time && werte.end_time
                   ? `, jeweils ${wochentageDerSerie(tage)} ${werte.start_time}–${werte.end_time} Uhr`
                   : `, ${wochentageDerSerie(tage)}`}
               </p>
-              <ul className="text-ink-muted mt-2 flex flex-col gap-1 text-sm">
+              {/* Im Fluss statt untereinander: Dreißig Tage stehen am Telefon
+                  in zwölf Zeilen statt in dreißig (Design-Rollout B2). */}
+              <ul className="text-ink-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
                 {tage.map((tag) => (
                   <li key={tag}>{tagMitWochentag(tag)}</li>
                 ))}
@@ -429,7 +435,7 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
         ) : null}
 
         {mutation.isError && !ausserhalb ? (
-          <Statusmeldung ton="fehler" className="mt-5">
+          <Statusmeldung ton="fehler" className="mt-6">
             {mutation.error.message}
           </Statusmeldung>
         ) : null}
@@ -437,7 +443,8 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        {/* Am Telefon untereinander in voller Breite (DESIGN.md „Formular“). */}
+        <Formularfuss>
           <Button type="submit" disabled={mutation.isPending || listeFehlt}>
             {mutation.isPending
               ? 'Wird eingetragen …'
@@ -447,10 +454,10 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
           </Button>
           {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
               dieselbe Rückfrage wie jeder andere Weg hinaus. */}
-          <ButtonLink to={zurueck} variant="secondary">
+          <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
     </>
   );

@@ -37,8 +37,6 @@ export const GRENZEN: Record<
   Readonly<Record<string, number>>
 > = {
   breiten: {
-    'features/appointments': 8,
-
     'features/assessments': 3,
 
     'features/billing': 7,
@@ -99,7 +97,7 @@ export const GRENZEN: Record<
   divideY: {
     app: 1,
 
-    'features/appointments': 3,
+    'features/appointments': 1,
 
     'features/auth': 1,
 
@@ -117,8 +115,6 @@ export const GRENZEN: Record<
 
     'features/platform-access': 1,
 
-    'features/scheduling': 2,
-
     'features/teamchat': 1,
 
     'features/training': 6,
@@ -128,7 +124,7 @@ export const GRENZEN: Record<
   knoepfe: {
     app: 2,
 
-    'features/appointments': 10,
+    'features/appointments': 9,
 
     'features/billing': 1,
 
@@ -168,7 +164,7 @@ export const GRENZEN: Record<
   ueberschriften: {
     app: 1,
 
-    'features/appointments': 5,
+    'features/appointments': 4,
 
     'features/assessments': 2,
 

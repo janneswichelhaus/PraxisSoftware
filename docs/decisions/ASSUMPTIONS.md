@@ -4620,6 +4620,18 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** `Patientensuche` wieder über die Liste setzen · Aufwand `klein`.
 
+### ANN-435 — Arbeitszeiten: ein Speichern je Wochentag, kein Wochenformular
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** „Ein Speichern je Formular“ heißt: Der gewählte Wochentag ist ein Formular mit genau einem Speichern; „Blöcke leeren“ entfällt (Blöcke einzeln entfernen, Rückfrage beim Speichern bleibt).
+
+**Begründung.** Eine ganze Woche mit einem Knopf hieße sieben Aufrufe ohne gemeinsame Transaktion – ein halb gespeicherter Plan. Dafür bräuchte es eine neue Serverfunktion (alles oder nichts).
+
+**Anker.** Kommentar `ANN-435` an `Wochenplan` in `src/features/scheduling/SchedulingPage.tsx`.
+
+**Änderungspfad.** Wochenformular: RPC für die ganze Woche, Formular über alle Zeilen · Aufwand `mittel`.
+
 ### ANN-460 — Reiter und Detail ohne eigene Route stehen im Suchparameter
 
 Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
