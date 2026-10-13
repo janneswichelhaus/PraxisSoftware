@@ -83,10 +83,13 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
     await expect(zeile).toContainText('Annahme – Prüfung offen');
 
     // Das Kürzel steht im Detail der Klasse (`?klasse=`) neben dem Abzeichen
-    // im Kopf; die Zuordnung wird deshalb über genau dieses Elternelement der
-    // Überschrift geprüft.
+    // im Kopf; die Zuordnung wird deshalb über genau den Seitenkopf dieser
+    // Überschrift geprüft (seit Design-Runde 2 steht die Beschreibung unter
+    // dem Titelblock, nicht mehr in ihm).
     await zeile.click();
-    const kopf = page.getByRole('heading', { name: 'Beschäftigtendaten' }).locator('..');
+    const kopf = page
+      .getByRole('heading', { name: 'Beschäftigtendaten' })
+      .locator('xpath=ancestor::header[1]');
     await expect(kopf).toContainText('ANN-030');
     await expect(kopf).toContainText('Annahme – Prüfung offen');
     await expect(detailWert(page, 'Frist')).toHaveText('Keine automatische Löschung');

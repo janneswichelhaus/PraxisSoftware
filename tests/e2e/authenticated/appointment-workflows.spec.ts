@@ -75,7 +75,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     // Arbeitsbereich-Unternavigation "Patient:innen" ab (nav aria-label,
     // sichtbar sobald die Verordnerkartei einen zweiten Unterpunkt liefert):
     // ohne exact matcht getByLabel sie als Teilstring.
-    await expect(page.getByText('Für Max Mustermann.', { exact: true })).toBeVisible();
+    await expect(page.getByText('Für Max Mustermann', { exact: true })).toBeVisible();
     await expect(page.getByLabel('Patient:in', { exact: true })).toHaveCount(0);
 
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
