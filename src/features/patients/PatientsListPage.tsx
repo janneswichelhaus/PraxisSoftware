@@ -206,8 +206,11 @@ export function PatientsListPage() {
                     }`}
                     // Das Etikett des Systems, groß geschrieben wie der Filter
                     // (PAT-14, UIK-18, WRT-16); der Regelfall trägt keins.
+                    // Zeichen und Wort wie im Kopf der Akte (Regel 5, A6).
                     status={
-                      patient.status === 'inactive' ? <Badge>Nicht in Versorgung</Badge> : undefined
+                      patient.status === 'inactive' ? (
+                        <Badge ton="warnung">Nicht in Versorgung</Badge>
+                      ) : undefined
                     }
                   />
                 );

@@ -58,6 +58,10 @@ describe('PatientsListPage', () => {
     // Das Etikett des Systems, groß geschrieben wie der Filter (PAT-14, WRT-16).
     const erika = screen.getByRole('link', { name: /Beispiel, Erika/ });
     expect(within(erika).getByText('Nicht in Versorgung')).toBeInTheDocument();
+    // Zeichen und Wort wie im Kopf der Akte (Regel 5; Sichtung A6).
+    expect(within(erika).getByText('Nicht in Versorgung')).toHaveTextContent(
+      '!Nicht in Versorgung',
+    );
   });
 
   it('bietet das Anlegen unter demselben Namen wie die Kopfsuche an (PAT-21)', async () => {

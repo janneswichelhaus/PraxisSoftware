@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
@@ -96,7 +96,8 @@ function TravelBadge({
   if (rating.status === 'tight') {
     return <Badge ton="warnung">Fahrweg knapp: {rating.shortfall_minutes} Min. zu wenig</Badge>;
   }
-  return <Badge>Fahrweg nicht geprüft</Badge>;
+  // Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6, ANN-485).
+  return <Badge eigenesZeichen={STATUSZEICHEN.unbekannt}>Fahrweg nicht geprüft</Badge>;
 }
 
 /** Im Gebietstag ist der Normalfall und trägt kein Kennzeichen (UX-005g). */
