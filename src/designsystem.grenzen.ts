@@ -133,7 +133,7 @@ export const GRENZEN: Record<
 
     'features/auth': 1,
 
-    'features/billing': 10,
+    'features/billing': 8,
 
     'features/datenschutz': 1,
 

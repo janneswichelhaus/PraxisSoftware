@@ -32,6 +32,18 @@ vi.mock('./api', async (importOriginal) => {
 
 const { CatalogPage } = await import('./CatalogPage');
 
+/**
+ * Seit dem Design-Rollout B6 steht jede Position des Entwurfs als Zeile; ein
+ * Tipp auf die Zeile öffnet ihr Formular (Liste mit Bearbeiten auf Abruf).
+ */
+async function bearbeite(nutzer: ReturnType<typeof userEvent.setup>, nummer = 1) {
+  const liste = await screen.findByRole('list', { name: /^Positionen/ });
+  const zeile = within(liste).getAllByRole('listitem')[nummer - 1]!;
+  const knopf = within(zeile).getAllByRole('button')[0]!;
+  expect(knopf).toHaveAttribute('aria-expanded', 'false');
+  await nutzer.click(knopf);
+}
+
 function version(
   id: string,
   rest: Partial<BillingApi.KatalogVersion> = {},
@@ -87,8 +99,9 @@ describe('CatalogPage', () => {
 
     expect(await screen.findByText('45,00 €')).toBeInTheDocument();
     expect(screen.getByText(/Heilbehandlung, umsatzsteuerfrei/)).toBeInTheDocument();
-    // Seit ABR-008 steht der Leistungsbereich an der Position (ADR-009 Punkt 16).
-    expect(screen.getByText(/^Behandlung ·/)).toBeInTheDocument();
+    // Seit ABR-008 steht der Leistungsbereich an der Position (ADR-009 Punkt 16);
+    // seit dem Design-Rollout B6 hinter dem Kürzel in der Nebenzeile.
+    expect(screen.getByText(/^KG · Behandlung ·/)).toBeInTheDocument();
   });
 
   it('zeigt eine in Kraft gesetzte Preisliste ohne jede Schaltflaeche zum Aendern', async () => {
@@ -129,7 +142,8 @@ describe('CatalogPage', () => {
 
     renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-    const preis = await screen.findByLabelText(/Preis/);
+    await bearbeite(nutzer);
+    const preis = await screen.findByRole('textbox', { name: 'Preis' });
     await nutzer.clear(preis);
     await nutzer.type(preis, '99,00');
 
@@ -146,7 +160,8 @@ describe('CatalogPage', () => {
 
     renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-    const preis = await screen.findByLabelText(/Preis/);
+    await bearbeite(nutzer);
+    const preis = await screen.findByRole('textbox', { name: 'Preis' });
     await nutzer.clear(preis);
     await nutzer.type(preis, '99,00');
 
@@ -166,6 +181,7 @@ describe('CatalogPage', () => {
 
     renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
+    await bearbeite(nutzer);
     await nutzer.selectOptions(await screen.findByLabelText(/Bereich/), 'training');
     // Training ist keine Heilbehandlung (ADR-021); die Zeile sagt es, bevor
     // der Server sie abweist.
@@ -187,6 +203,7 @@ describe('CatalogPage', () => {
     renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
     // Die Art setzt Bereich und Steuer (ANN-275); die Laufzeit fehlt noch.
+    await bearbeite(nutzer);
     await nutzer.selectOptions(await screen.findByLabelText(/Art/), 'training_package');
     expect(screen.getByLabelText(/Bereich/)).toHaveValue('training');
     expect(screen.getByLabelText(/Steuer/)).toHaveValue('taxable');
@@ -238,7 +255,8 @@ describe('CatalogPage', () => {
 
     renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-    const preis = await screen.findByLabelText(/Preis/);
+    await bearbeite(nutzer);
+    const preis = await screen.findByRole('textbox', { name: 'Preis' });
     await nutzer.clear(preis);
     await nutzer.type(preis, 'viel');
 
@@ -319,9 +337,10 @@ describe('CatalogPage', () => {
 
     renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-    const liste = await screen.findByRole('list');
-    expect(within(liste).getByText('Entwurf')).toBeInTheDocument();
-    expect(within(liste).getByText('In Kraft')).toBeInTheDocument();
+    // Die Preislisten als Chips; der Stand steht an jedem (ABR-13).
+    const wahl = await screen.findByRole('group', { name: 'Preisliste wählen' });
+    expect(within(wahl).getByText('· Entwurf')).toBeInTheDocument();
+    expect(within(wahl).getByText('· In Kraft')).toBeInTheDocument();
   });
 
   describe('UXR-010', () => {
@@ -336,7 +355,8 @@ describe('CatalogPage', () => {
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-      const preis = await screen.findByLabelText(/Preis/);
+      await bearbeite(nutzer);
+      const preis = await screen.findByRole('textbox', { name: 'Preis' });
       await nutzer.clear(preis);
       await nutzer.type(preis, '50');
       expect(screen.getByText(/ungespeicherte Änderungen/)).toBeInTheDocument();
@@ -359,7 +379,8 @@ describe('CatalogPage', () => {
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-      const preis = await screen.findByLabelText(/Preis/);
+      await bearbeite(nutzer);
+      const preis = await screen.findByRole('textbox', { name: 'Preis' });
       await nutzer.clear(preis);
       await nutzer.type(preis, '45');
 
@@ -379,6 +400,7 @@ describe('CatalogPage', () => {
       // Erfolg trägt sein Zeichen (UIK-21).
       expect(meldung).toHaveTextContent('✓');
 
+      await bearbeite(nutzer);
       await nutzer.type(screen.getByLabelText('Bezeichnung'), ' neu');
       expect(screen.queryByText('Entwurf gespeichert.')).toBeNull();
     });
@@ -469,7 +491,8 @@ describe('CatalogPage', () => {
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
-      const preis = await screen.findByLabelText(/Preis/);
+      await bearbeite(nutzer);
+      const preis = await screen.findByRole('textbox', { name: 'Preis' });
       await nutzer.clear(preis);
       await nutzer.type(preis, '49,00');
       await nutzer.click(screen.getByRole('button', { name: /Preisliste 2026/ }));
@@ -480,13 +503,13 @@ describe('CatalogPage', () => {
 
       // Hier bleiben: Der Entwurf steht mit der Eingabe da.
       await nutzer.click(within(frage).getByRole('button', { name: 'Hier bleiben' }));
-      expect(screen.getByLabelText(/Preis/)).toHaveValue('49,00');
+      expect(screen.getByRole('textbox', { name: 'Preis' })).toHaveValue('49,00');
 
       // Verwerfen und wechseln: die geltende Liste, ohne Formular.
       await nutzer.click(screen.getByRole('button', { name: /Preisliste 2026/ }));
       await nutzer.click(screen.getByRole('button', { name: 'Verwerfen und wechseln' }));
       expect(await screen.findByText('45,00 €')).toBeInTheDocument();
-      expect(screen.queryByLabelText(/Preis/)).toBeNull();
+      expect(screen.queryByRole('textbox', { name: 'Preis' })).toBeNull();
     });
 
     it('hält das Verlassen der Seite an, solange etwas ungespeichert ist (ABR-14, NAV-01)', async () => {
@@ -509,7 +532,8 @@ describe('CatalogPage', () => {
         '/abrechnung/katalog',
       );
 
-      const preis = await screen.findByLabelText(/Preis/);
+      await bearbeite(nutzer);
+      const preis = await screen.findByRole('textbox', { name: 'Preis' });
       await nutzer.clear(preis);
       await nutzer.type(preis, '49,00');
       await nutzer.click(screen.getByRole('link', { name: 'Rechnungen' }));
@@ -533,15 +557,17 @@ describe('CatalogPage', () => {
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
+      // Seit dem Design-Rollout B6 ein Chip: gewählt mit Fläche und ✓.
       const kuenftig = await screen.findByRole('button', { name: /Preisliste 2099/ });
-      expect(kuenftig).toHaveAttribute('aria-current', 'true');
-      expect(kuenftig.closest('li')).toHaveClass('bg-accent-soft');
+      expect(kuenftig).toHaveAttribute('aria-pressed', 'true');
+      expect(kuenftig).toHaveClass('bg-accent-soft');
       expect(kuenftig).toHaveTextContent('✓');
-      expect(screen.getByText('Gilt ab 01.01.2099')).toBeInTheDocument();
+      expect(within(kuenftig).getByText('· Gilt ab 01.01.2099')).toBeInTheDocument();
       // Die heute geltende heißt weiter „In Kraft" und ist nicht gewählt.
       const geltend = screen.getByRole('button', { name: /Preisliste 2026/ });
-      expect(geltend.closest('li')).not.toHaveClass('bg-accent-soft');
-      expect(within(geltend.closest('li')!).getByText('In Kraft')).toBeInTheDocument();
+      expect(geltend).toHaveAttribute('aria-pressed', 'false');
+      expect(geltend).not.toHaveClass('bg-accent-soft');
+      expect(within(geltend).getByText('· In Kraft')).toBeInTheDocument();
     });
 
     it('sagt in der Rückfrage, ab wann die Liste gilt (ABR-13)', async () => {
@@ -593,9 +619,11 @@ describe('CatalogPage', () => {
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
       expect(
-        await screen.findByText('Behandlung · Heilbehandlung, umsatzsteuerfrei'),
+        await screen.findByText('KG · Behandlung · Heilbehandlung, umsatzsteuerfrei'),
       ).toBeInTheDocument();
-      expect(screen.getByText('Behandlung · Ausfallhonorar · Nicht steuerbar')).toBeInTheDocument();
+      expect(
+        screen.getByText('AUS · Behandlung · Ausfallhonorar · Nicht steuerbar'),
+      ).toBeInTheDocument();
       expect(screen.queryByText(/Behandlung · Behandlung/)).toBeNull();
     });
 
@@ -613,16 +641,19 @@ describe('CatalogPage', () => {
       expect(hauptknopf('Entwurf speichern')).toBe(false);
       expect(hauptknopf('In Kraft setzen')).toBe(true);
 
+      await bearbeite(nutzer);
       await nutzer.type(screen.getByLabelText('Bezeichnung'), ' neu');
       expect(hauptknopf('Entwurf speichern')).toBe(true);
       expect(hauptknopf('In Kraft setzen')).toBe(false);
     });
 
     it('lässt die Steuer umbrechen statt schrumpfen und nennt „Kein Heilmittel" (ABR-12, WRT-14)', async () => {
+      const nutzer = userEvent.setup();
       fetchKatalogVersionen.mockResolvedValue([entwurf()]);
 
       renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
 
+      await bearbeite(nutzer);
       const steuer = await screen.findByLabelText('Steuer');
       expect(steuer.closest('.sm\\:basis-64')).toHaveClass('sm:grow', 'min-w-0');
       expect(screen.getByRole('option', { name: 'Kein Heilmittel' })).toBeInTheDocument();

@@ -54,7 +54,12 @@ test.describe('Trainingspaket', () => {
       ).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
 
+      // Seit dem Design-Rollout B6 eine Zeile je Position; ein Tipp auf die
+      // Zeile öffnet ihr Formular, und die Zeile nennt die Laufzeit schon vorher.
       await page.goto(`${PRUEFSEITE}?seite=preisliste`);
+      await expect(page.getByText(/Trainingspaket, 3 Monate/)).toBeVisible();
+      await mindestens44(page, 'TP3');
+      await page.getByRole('button', { name: /TP3/ }).click();
       await expect(page.getByLabel('Laufzeit')).toHaveValue('3');
       expect(await ueberlaeuft(page)).toBe(false);
     });
