@@ -251,7 +251,11 @@ export function TreatmentNoteRevisionPage({ user }: { user: CurrentUser }) {
 
         if (!eintrag) {
           return (
-            <ZustandMitRueckweg appointmentId={appointment.id}>
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Korrektur', appointment)}
+            >
               <ErrorState
                 title="Nicht gefunden"
                 description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
@@ -263,7 +267,11 @@ export function TreatmentNoteRevisionPage({ user }: { user: CurrentUser }) {
         // Ein erwartbarer Zustand mit dem nächsten Schritt, kein Alarm (DOK-12).
         if (eintrag.status !== 'final') {
           return (
-            <ZustandMitRueckweg appointmentId={appointment.id}>
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Korrektur', appointment)}
+            >
               <NochEinEntwurf
                 appointmentId={appointment.id}
                 eintrag={eintrag}

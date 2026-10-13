@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { symbolknopfKlassen } from '@/components/ui/buttonStile';
 import { Disclosure } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { kalenderZumTermin } from '@/features/appointments/api';
 import { rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -172,17 +173,28 @@ export function Ursprungseintrag({ inhalt }: { inhalt: string }) {
  * Nachtrag zum Nachtrag: mit dem Rückweg darüber, den der Rahmen bei einer
  * Seite mit eigenem Kopf nicht setzt (DOK-12). Ohne mitgereisten Rückweg
  * führt er zum Termin im Kalender, wie im Rahmen.
+ *
+ * Darunter der Kopf der Seite (Sichtung 13.10.2026, A7): derselbe Name und
+ * dieselbe Zeile wie auf der Schreibfläche, damit auch ein Zustand sagt, wo
+ * man ist - bis dahin stand die Meldung ohne Überschrift da.
  */
 export function ZustandMitRueckweg({
   appointmentId,
+  titel,
+  beschreibung,
   children,
 }: {
   appointmentId: string;
+  /** Der Name der Patient:in, wie auf der Schreibfläche. */
+  titel: string;
+  /** Die Zeile darunter: was, Tag, Uhrzeit (`kopfzeileFuer`). */
+  beschreibung: string;
   children: ReactNode;
 }) {
   return (
     <>
       <Rueckweg standard={kalenderZumTermin(appointmentId)} />
+      <PageHeader title={titel} description={beschreibung} />
       {children}
     </>
   );

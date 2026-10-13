@@ -476,7 +476,14 @@ export function TreatmentNotePage({ user }: { user: CurrentUser }) {
         }
 
         return (
-          <ZustandMitRueckweg appointmentId={appointment.id}>
+          <ZustandMitRueckweg
+            appointmentId={appointment.id}
+            titel={patientName(appointment)}
+            beschreibung={kopfzeileFuer(
+              eintrag?.addendum_to_note_id ? 'Nachtrag' : 'Dokumentation',
+              appointment,
+            )}
+          >
             <Zustand
               zustand={zustand}
               appointment={appointment}

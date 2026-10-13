@@ -258,6 +258,9 @@ describe('TreatmentNoteRevisionPage', () => {
     rendern();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    // Auch der Zustand hat einen Seitenkopf (Sichtung 13.10.2026, A7).
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByText(/^Korrektur · /)).toBeInTheDocument();
   });
 
   it('zeigt einem office-Zugang nichts und fragt nichts ab (4.3)', async () => {

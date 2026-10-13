@@ -147,7 +147,11 @@ export function TreatmentNoteHistoryPage({ user }: { user: CurrentUser }) {
 
         if (!eintrag) {
           return (
-            <ZustandMitRueckweg appointmentId={appointment.id}>
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Änderungsverlauf', appointment)}
+            >
               <ErrorState
                 title="Nicht gefunden"
                 description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
