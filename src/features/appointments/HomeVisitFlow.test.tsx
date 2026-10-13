@@ -40,7 +40,7 @@ describe('HomeVisitFlow an der Karte der Übersicht (Auftrag C1)', () => {
     vi.useRealTimers();
   });
 
-  it('zeigt die 15-Minuten-Uhr ab dem Tipp und hakt „gewartet" nach Ablauf vor (ANN-479)', async () => {
+  it('zeigt die 15-Minuten-Uhr ab dem Tipp und lässt „gewartet" von Hand bestätigen (ANN-479)', async () => {
     renderWithProviders(
       <HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} mitUhr inKarte />,
     );
@@ -58,7 +58,10 @@ describe('HomeVisitFlow an der Karte der Übersicht (Auftrag C1)', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
     });
-    expect(screen.getByRole('timer')).toHaveTextContent('15 Minuten gewartet');
+    expect(screen.getByRole('timer')).toHaveTextContent('15 Minuten um – bitte bestätigen');
+    // Die Uhr hakt nicht selbst: Aus dem Haken entsteht eine Forderung (ADR-018 Punkt 9).
+    expect(gewartet).not.toBeChecked();
+    fireEvent.click(gewartet);
     expect(gewartet).toBeChecked();
     // Klingeln und Anrufen bestätigt weiter die Person selbst - ohne sie kein Vermerk.
     fireEvent.click(screen.getByRole('button', { name: /nicht angetroffen/ }));

@@ -22,7 +22,7 @@ Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag �
 | K5 | Besuch nachbereiten: dokumentieren, Heilmittel bestätigen, Folgetermin | Therapie, täglich | ≤ 6 Tipps + Text, 2 Wechsel | 4 + Text, 1 Wechsel; bis zur Navigation zum nächsten Besuch 6 Tipps, 2 Wechsel (gemessen, `tests/e2e/besuch.spec.ts`; vorher ≈ 12 + Text, 8 Wechsel) | T6; Jane ≈ 4 |
 | K6 | Verlaufseintrag: letzten Eintrag als Entwurf übernehmen | Therapie, täglich | ≤ 3 Tipps + Text | fehlt | Jane, Cliniko |
 | K7 | Folgetermin für die gerade behandelte Person | Therapie, täglich | ≤ 3 Tipps, keine Tastatur | 1 nach dem Festschreiben (Vorschlag „gleiche Zeit“) – C1 | Scorecard; Jane |
-| K8 | Niemand öffnet bis zum Anlass fürs Ausfallhonorar (Protokoll nach ADR-018 bleibt) | Therapie, wöchentlich | ≤ 5 Tipps | 4 an der Karte („gewartet“ hakt die Uhr vor) – C1 | Jane No-show |
+| K8 | Niemand öffnet bis zum Anlass fürs Ausfallhonorar (Protokoll nach ADR-018 bleibt) | Therapie, wöchentlich | ≤ 5 Tipps | 5 an der Karte (die Uhr zeigt die 15 Minuten, alle drei Haken von Hand) – C1 | Jane No-show |
 | K9 | Absage am Telefon annehmen (Grund, Eingang) | Büro, wöchentlich | ≤ 4 Tipps | 7 | iPrax, Jane |
 | K10 | Erstaufnahme vor Ort, geführt: Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege | Therapie, wöchentlich | ≤ 15 Tipps + Felder, nichts vergessen | ≥ 25, ≥ 10 Wechsel, ohne Führung | T7, T8 |
 | K11 | Neuaufnahme am Telefon (Stammdaten, Anschrift für Hausbesuch) | Büro, wöchentlich | ≤ 8 Tipps + Felder, ≤ 90 s | ≈ 12 + 9 Felder | Scorecard |

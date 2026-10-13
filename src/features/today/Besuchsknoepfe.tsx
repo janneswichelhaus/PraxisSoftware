@@ -113,7 +113,7 @@ export function SpaeterDa({ termin, praxis }: { termin: DayPlanEntry; praxis: st
  * (`reopen_appointment`) - keine neue Serverfunktion; der Server erlaubt ihn
  * denselben Rollen wie den Haken und nur, solange der Termin abgeschlossen
  * ist (ANN-483). Den Bearbeitungsstand liest er unmittelbar vorher, wie der
- * Haken.
+ * Haken, und öffnet nur, was noch abgeschlossen ist.
  */
 export function HakenRueckgaengig({
   appointmentId,
@@ -131,6 +131,12 @@ export function HakenRueckgaengig({
     mutationFn: async () => {
       const termin = await fetchAppointment(appointmentId);
       if (!termin) throw new Error('Der Termin wurde nicht gefunden.');
+      // Nur den eigenen Haken zurücknehmen: Steht der Termin inzwischen anders
+      // (etwa „nicht angetroffen“), hat ihn jemand geändert - dann nicht
+      // wieder öffnen, sondern im Kalender ansehen (Zweitreview, Befund 3).
+      if (termin.status !== 'completed') {
+        throw new Error('Der Termin wurde inzwischen geändert. Bitte im Kalender ansehen.');
+      }
       await reopenAppointment(termin.id, termin.updated_at);
     },
     onSuccess: () => {

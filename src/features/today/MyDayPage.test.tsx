@@ -506,8 +506,8 @@ describe('Übersicht', () => {
 
   it('nimmt den Haken mit „Rückgängig" zurück - über „Termin wieder öffnen" (R2, P1)', async () => {
     fetchAppointment
-      .mockResolvedValueOnce({ id: 't1', updated_at: '2026-10-01T06:00:00Z' })
-      .mockResolvedValueOnce({ id: 't1', updated_at: '2026-10-01T06:05:00Z' });
+      .mockResolvedValueOnce({ id: 't1', status: 'confirmed', updated_at: '2026-10-01T06:00:00Z' })
+      .mockResolvedValueOnce({ id: 't1', status: 'completed', updated_at: '2026-10-01T06:05:00Z' });
     completeAppointment.mockResolvedValue(undefined);
     reopenAppointment.mockReset();
     reopenAppointment.mockResolvedValue(undefined);
@@ -531,8 +531,30 @@ describe('Übersicht', () => {
     expect(screen.queryByRole('button', { name: /^Rückgängig/ })).toBeNull();
   });
 
+  it('öffnet nicht wieder, was inzwischen anders steht (Zweitreview, Befund 3)', async () => {
+    fetchAppointment
+      .mockResolvedValueOnce({ id: 't1', status: 'confirmed', updated_at: '2026-10-01T06:00:00Z' })
+      .mockResolvedValueOnce({ id: 't1', status: 'no_show', updated_at: '2026-10-01T06:07:00Z' });
+    completeAppointment.mockResolvedValue(undefined);
+    reopenAppointment.mockReset();
+    const user = userEvent.setup();
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    const karte = await findeKarte();
+
+    await user.click(within(karte).getByRole('button', { name: 'Behandlung abschließen' }));
+    await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
+    expect(
+      await screen.findByText('Der Termin wurde inzwischen geändert. Bitte im Kalender ansehen.'),
+    ).toBeInTheDocument();
+    expect(reopenAppointment).not.toHaveBeenCalled();
+  });
+
   it('sagt, wenn „Rückgängig" abgewiesen wird', async () => {
-    fetchAppointment.mockResolvedValue({ id: 't1', updated_at: '2026-10-01T06:00:00Z' });
+    fetchAppointment.mockResolvedValue({
+      id: 't1',
+      status: 'completed',
+      updated_at: '2026-10-01T06:00:00Z',
+    });
     completeAppointment.mockResolvedValue(undefined);
     reopenAppointment.mockReset();
     reopenAppointment.mockRejectedValue(

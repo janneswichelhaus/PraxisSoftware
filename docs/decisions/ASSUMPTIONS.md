@@ -4948,11 +4948,11 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-476 — „Später da?“ als SMS aus der SMS-App des Diensttelefons
 
-Datenschutz · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung vor Produktivstart (ADR-007)
+Datenschutz · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung vor Produktivstart (ADR-007), mit B2 und PAT-006 (Kontaktwunsch je Person, wie ANN-041)
 
 **Annahme.** „Später da?“ übergibt Mobilnummer und Vorlagentext („Guten Tag, hier ‹Praxis›. Ich bin etwa 10/15/20 Minuten später da als vereinbart.“) per `sms:` an die SMS-App; gesendet wird von Hand. Kein Dienstleister, keine Speicherung, kein Protokoll. Der Anrufknopf (`tel:`) zeigt keine Nummer im Bild.
 
-**Begründung.** Wie Anruf und Terminmail aus dem eigenen Postfach (CAL-013); B15 (automatische Nachrichten) bleibt unberührt. Der Text nennt weder Namen noch Gesundheitsangaben (Art. 5 Abs. 1 lit. c DSGVO).
+**Begründung.** Wie Anruf und Terminmail aus dem eigenen Postfach (CAL-013); B15 (automatische Nachrichten) bleibt unberührt. Der Text nennt weder Namen noch Gesundheitsangaben (Art. 5 Abs. 1 lit. c DSGVO); Praxisname und Nummer zeigen dem Netzbetreiber trotzdem die Beziehung (Zweitreview, §203).
 
 **Anker.** `verspaetungsText`/`smsHref` in `src/features/today/besuchswege.ts`.
 
@@ -4982,17 +4982,17 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Heilmittel früherer Tage: schlanke Lesefunktion (Rang 5, Lösung M) · Aufwand `mittel`.
 
-### ANN-479 — „Niemand öffnet?“: Die 15-Minuten-Uhr hakt „gewartet“ vor
+### ANN-479 — „Niemand öffnet?“: Eine 15-Minuten-Uhr zeigt die Wartezeit; angehakt wird von Hand
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
 
-**Annahme.** An der Karte der Übersicht läuft ab dem Tipp auf „Niemand öffnet?“ eine sichtbare Uhr bis 15:00; danach ist „15 Minuten vor Ort gewartet“ einmal vorgehakt. Klingeln und Anrufen hakt die Person selbst, der Vermerk braucht weiter alle drei Haken und den Knopf (ADR-018 Punkt 9). Im Terminfenster bleibt der Ablauf ohne Uhr.
+**Annahme.** An der Karte der Übersicht läuft ab dem Tipp auf „Niemand öffnet?“ eine sichtbare Uhr bis 15:00, danach steht dort „bitte bestätigen“. Alle drei Schritte hakt die Person selbst; die Uhr startet erst mit dem Tipp und hakt deshalb nichts vor (Zweitreview: aus dem Haken entsteht eine Forderung, ADR-018 Punkt 9). Im Terminfenster bleibt der Ablauf ohne Uhr.
 
 **Begründung.** Analyse Rang 9: Die Uhr misst, was das Kästchen bisher nur behauptete; sie läuft nur im Speicher der Seite.
 
 **Anker.** `Wartezeit` in `src/features/appointments/HomeVisitFlow.tsx`.
 
-**Änderungspfad.** Nicht vorhaken: `onAbgelaufen` weglassen · Aufwand `klein`.
+**Änderungspfad.** Vorhaken nach Ablauf, wenn Jannes es will: ein Rückruf beim Ablauf der Uhr · Aufwand `klein`.
 
 ### ANN-480 — Ein Übungsbild mit gleichem Start und Ende und ohne Bewegung zeigt die Ausgangsstellung
 

@@ -29,11 +29,13 @@ function minutenSekunden(ms: number): string {
 
 /**
  * Die sichtbare 15-Minuten-Uhr an der Tür (Auftrag C1, Analyse „Alltag
- * unterwegs“ Rang 9). Sie läuft ab dem Tipp auf „Niemand öffnet?“ und hakt
- * „gewartet“ nach Ablauf einmal vor (ANN-479); bestätigt wird der Vermerk
- * weiter mit allen drei Haken und dem Knopf darunter.
+ * unterwegs“ Rang 9). Sie läuft ab dem Tipp auf „Niemand öffnet?“ und sagt
+ * nach Ablauf „bitte bestätigen“ (ANN-479). Angehakt wird von Hand: Die Uhr
+ * startet erst mit dem Tipp, nicht bei der Ankunft, und aus dem Haken
+ * entsteht eine Forderung gegen die Patientin (ADR-018 Punkt 9,
+ * Zweitreview).
  */
-function Wartezeit({ seit, onAbgelaufen }: { seit: number; onAbgelaufen: () => void }) {
+function Wartezeit({ seit }: { seit: number }) {
   const [jetzt, setJetzt] = useState(() => Date.now());
   useEffect(() => {
     const takt = window.setInterval(() => setJetzt(Date.now()), 1000);
@@ -41,14 +43,12 @@ function Wartezeit({ seit, onAbgelaufen }: { seit: number; onAbgelaufen: () => v
   }, []);
   const vergangen = Math.min(WARTEZEIT_MS, Math.max(0, jetzt - seit));
   const abgelaufen = vergangen >= WARTEZEIT_MS;
-  useEffect(() => {
-    if (abgelaufen) onAbgelaufen();
-    // Einmal beim Ablauf; ein späteres Abwählen bleibt stehen.
-  }, [abgelaufen]);
   return (
     <div className="mb-2 ml-8">
       <p role="timer" className="text-ink text-sm font-semibold tabular-nums">
-        {abgelaufen ? '15 Minuten gewartet' : `Gewartet ${minutenSekunden(vergangen)} von 15:00`}
+        {abgelaufen
+          ? '15 Minuten um – bitte bestätigen'
+          : `Gewartet ${minutenSekunden(vergangen)} von 15:00`}
       </p>
       <ProgressBar wert={vergangen} von={WARTEZEIT_MS} />
     </div>
@@ -251,10 +251,7 @@ export function HomeVisitFlow({
                     }}
                   />
                   {schritt.id === 'gewartet' && mitUhr && seit !== null ? (
-                    <Wartezeit
-                      seit={seit}
-                      onAbgelaufen={() => setSchritte((bisher) => ({ ...bisher, gewartet: true }))}
-                    />
+                    <Wartezeit seit={seit} />
                   ) : null}
                   {schritt.id === 'angerufen' ? (
                     <div className="mb-2 ml-8">
