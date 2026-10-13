@@ -278,11 +278,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               {/* Routensumme und ihre Meldungen gehören zur Bedienung, nicht
                 aufs Papier (TER-12). */}
               <div className="mb-4 space-y-3 print:hidden">
-                <Routenzusammenfassung
-                  laedt={fahrten.route.isFetching}
-                  ergebnis={fahrten.route.data}
-                  erneutVersuchen={() => void fahrten.route.refetch()}
-                />
+                <Routenzusammenfassung abfrage={fahrten.route} noetig={fahrten.routeNoetig} />
                 {fahrten.pruefungFehler ? (
                   <Statusmeldung ton="warnung" className="mt-2">
                     Der Fahrpuffer ließ sich gerade nicht prüfen.
