@@ -9,14 +9,15 @@ import type { Katalogeintrag } from '../typen';
  * Hüftendoprothese je nach Zugang stehen als Satz unter `hinweise_praxis`,
  * zum Nachlesen für die Fachperson - nie als Filter oder Abgleich.
  *
- * Ohne Bild (lieber kein Bild als ein falsches): HU-02 (der Fuß bleibt
- * liegen, während das Knie aufgeht - die Frontansicht bewegt das ganze
- * Bein), HU-03 (das obere Bein steht vor dem Körper und zeigt zum
- * Betrachter), HU-08 (Knie öffnen bei stehenden Füßen), HU-14 (das Bein
- * hängt über die Bettkante, der Zeichner legt das Bett unter die ganze
- * Figur), HU-16 und HU-17 (das überschlagene Bein und der Zug zur
- * Gegenschulter liegen quer zur Blickrichtung; im Bild sähe HU-17 aus wie
- * LW-03).
+ * Nur die Ausgangsstellung (ANN-480) zeigen HU-02 (der Fuß bleibt liegen,
+ * während das Knie aufgeht - die Frontansicht bewegt das ganze Bein; die
+ * gebeugten Beine erscheinen verkürzt), HU-08 (Knie öffnen bei stehenden
+ * Füßen), HU-16 (das überschlagene Bein liegt quer zur Blickrichtung; im
+ * Bild hängt der Unterschenkel über dem anderen Knie, das Vorneigen steht im
+ * Text) und HU-17 (der Zug zur Gegenschulter liegt quer). HU-03 zeigt das
+ * Heben des unteren Beins von vorn, das obere steht verkürzt davor. HU-14
+ * legt die Person mit dem Becken an das Ende des Betts, damit das Bein
+ * herabhängen kann; die Bettkante der Anleitung liegt an der Längsseite.
  */
 
 /** Was nach Hüftendoprothese für alle Hüftübungen gilt - der erste Satz jedes Hinweises. */
@@ -82,6 +83,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Knie fällt schnell zurück.',
     ],
     hinweise_praxis: `${TEP} Mit Band über den Knien steigern; die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“.`,
+    bild: {
+      v: 1,
+      basis: 'seitlage_front',
+      unterlage: 'matte',
+      start: { huefte: [45, 45], knie: [90, 90] },
+      ende: { huefte: [45, 45], knie: [90, 90] },
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'HU-03',
@@ -103,6 +112,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     fehler: ['Das Becken kippt nach hinten.', 'Das Bein wird mit Schwung gehoben.'],
     hinweise_praxis: `${TEP} Hier: Das vor dem Körper aufgestellte obere Bein ist gebeugt und adduziert; ist es nach hinterem Zugang das operierte, die Übung erst nach Freigabe.`,
+    bild: {
+      v: 1,
+      basis: 'seitlage_front',
+      unterlage: 'matte',
+      start: { huefte: [60, 0], knie: [90, 0], bein: [-25, 0] },
+      ende: { huefte: [60, 0], knie: [90, 0], bein: [-25, -15] },
+      bewegung: ['knoechel_fern'],
+    },
   },
   {
     schluessel: 'HU-04',
@@ -276,6 +293,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie fallen schnell zurück.',
     ],
     hinweise_praxis: `${TEP} Hier vor allem der seitliche Zugang. Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“.`,
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'band', von: 'knie_nah', nach: 'knie_fern' }],
+    },
   },
   {
     schluessel: 'HU-09',
@@ -460,6 +484,28 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das hängende Bein wird aktiv nach unten gedrückt.',
     ],
     hinweise_praxis: `${TEP} Hier: Das zur Brust gezogene Bein ist über 90° gebeugt (hinterer Zugang), das hängende in Streckung (vorderer Zugang); nach Hüftendoprothese erst nach Freigabe. Nur auf einem festen Bett; das Zurückholen des Beins vorher gemeinsam üben.`,
+    bild: {
+      v: 1,
+      basis: 'rueckenlage',
+      start: {
+        sitz: 'bett',
+        huefte: [0, 120],
+        knie: [80, 120],
+        schulter: [11, 11],
+        ellbogen: [91, 91],
+        haende: [null, 'knie'],
+      },
+      ende: {
+        sitz: 'bett',
+        huefte: [-15, 120],
+        knie: [36, 120],
+        fuss_flach: [true, false],
+        schulter: [11, 11],
+        ellbogen: [91, 91],
+        haende: [null, 'knie'],
+      },
+      bewegung: ['knie_nah'],
+    },
   },
   {
     schluessel: 'HU-15',
@@ -530,6 +576,24 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das obere Knie wird mit der Hand nach unten gedrückt.',
     ],
     hinweise_praxis: `${TEP} Hier: Nach Hüftendoprothese erst nach ärztlicher Freigabe, denn das Vorneigen beugt die Hüfte über 90°.`,
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: {
+        rumpf: 0,
+        huefte: [110, 87],
+        knie: [115, 87],
+        sprung: [20, 0],
+        fuss_flach: [false, true],
+      },
+      ende: {
+        rumpf: 0,
+        huefte: [110, 87],
+        knie: [115, 87],
+        sprung: [20, 0],
+        fuss_flach: [false, true],
+      },
+    },
   },
   {
     schluessel: 'HU-17',
@@ -555,6 +619,25 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Kopf hebt ab.',
     ],
     hinweise_praxis: `${TEP} Hier: Nach Hüftendoprothese erst nach ärztlicher Freigabe, denn Knie zur Gegenschulter verbindet Beugung über 90° mit Adduktion - beim hinteren Zugang die typische Luxationsstellung.`,
+    bild: {
+      v: 1,
+      basis: 'rueckenlage_angestellt',
+      unterlage: 'matte',
+      start: {
+        huefte: [95, 45],
+        knie: [100, 90],
+        fuss_flach: [false, true],
+        schulter: [41, 41],
+        ellbogen: [12, 12],
+      },
+      ende: {
+        huefte: [95, 45],
+        knie: [100, 90],
+        fuss_flach: [false, true],
+        schulter: [41, 41],
+        ellbogen: [12, 12],
+      },
+    },
   },
   {
     schluessel: 'HU-18',

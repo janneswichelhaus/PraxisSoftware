@@ -9,7 +9,10 @@ import type { Katalogeintrag } from '../typen';
  *
  * Bilder wie in `gg.ts`: Die Arbeitsplatte steht vor der Person oder - beim
  * Gehen und in der Vorderansicht - hinter ihr. Greifen mit Gegenständen,
- * Fingerarbeit und Drehungen um die eigene Achse bleiben ohne Bild.
+ * Fingerarbeit und Drehungen um die eigene Achse zeigen nur die
+ * Ausgangsstellung (ANN-480): NE-05 und NE-06 mit den Händen auf der Platte
+ * (Becher, Münzen und Knöpfe kennt der Zeichner nicht), NE-11 im Schritt mit
+ * dem Stuhl in Reichweite hinter der Person.
  *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
  * (ANN-386).
@@ -175,6 +178,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Steigerung über den Abstand, über Wasser im Becher oder über kleinere Gegenstände.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { haende: ['tisch', 'oberschenkel'] },
+      ende: { haende: ['tisch', 'oberschenkel'] },
+      hilfsmittel: [{ art: 'tisch', x: 48 }],
+    },
   },
   {
     schluessel: 'NE-06',
@@ -200,6 +210,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Kleine Gegenstände nur, wenn kein Risiko besteht, dass sie in den Mund genommen werden; sonst größere wie Wäscheklammern wählen.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { haende: ['tisch', 'tisch'] },
+      ende: { haende: ['tisch', 'tisch'] },
+      hilfsmittel: [{ art: 'tisch', x: 48 }],
+    },
   },
   {
     schluessel: 'NE-07',
@@ -377,6 +394,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Füße bleiben am Boden haften.',
     ],
     hinweise_praxis: 'Bei Sturzgefahr zuerst mit Begleitung üben.',
+    bild: {
+      v: 1,
+      basis: 'stand',
+      anker: 'becken',
+      start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
+      ende: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
+      hilfsmittel: [{ art: 'stuhl', x: -50 }],
+    },
   },
   {
     schluessel: 'NE-12',

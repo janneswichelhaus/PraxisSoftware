@@ -8,7 +8,8 @@ import type { Katalogeintrag } from '../typen';
  * eine Vorsicht gilt. Inhalt KI-erstellt und bis zur Durchsicht durch die
  * Praxis ungeprüft (ANN-386). Keine Diagnose als Auswahlkriterium
  * (ADR-006 Punkt 10) - eine Vorsicht steht als Satz unter
- * `hinweise_praxis`.
+ * `hinweise_praxis`. KN-05 zeigt nur die Ausgangsstellung (ANN-480): Die
+ * Figur hat keine Finger, und liegend erreichen die Hände das Knie nicht.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -153,6 +154,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es wird auf die Kniescheibe gedrückt, statt sie zu schieben.',
     ],
     hinweise_praxis: 'Erst nach abgeschlossener Wundheilung, nicht über der Narbe.',
+    bild: {
+      v: 1,
+      basis: 'rueckenlage',
+      unterlage: 'bett',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'KN-06',
