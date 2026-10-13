@@ -96,14 +96,17 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       v: 1,
       basis: 'rueckenlage',
       unterlage: 'bett',
+      // Die Fußspitze des nahen Beins ist zu sich gezogen.
       start: {
         huefte: [12, 0],
         knie: [22, 0],
+        sprung: [-15, 12],
         loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
       },
       ende: {
         huefte: [12, 0],
         knie: [22, 0],
+        sprung: [-15, 12],
         loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
       },
       hilfsmittel: [
