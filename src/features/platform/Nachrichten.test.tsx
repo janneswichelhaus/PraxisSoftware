@@ -345,6 +345,10 @@ describe('Eine Nachricht (KOM-001)', () => {
     zeige(OFFEN.id);
     await screen.findByLabelText('Noch etwas ergänzen');
     hinweisPruefen(document.body);
+    // Zustand und Frist als eine Zeile unter dem Titel, nicht als Abzeichen (L9).
+    const zustand = screen.getByText('bei der Praxis').parentElement!;
+    expect(zustand).toHaveTextContent('… bei der Praxis · Antwort bis 13.10.2026');
+    expect(zustand.className).not.toContain('rounded-pill');
     await nutzer.type(screen.getByLabelText('Noch etwas ergänzen'), 'Oder Montag?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await waitFor(() =>

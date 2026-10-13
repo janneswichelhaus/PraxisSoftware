@@ -171,10 +171,12 @@ export function Notfallhinweis({
 
 // Jeder Zustand mit Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6):
 // „neutral“ und „akzent“ tragen kein eigenes, deshalb `zeichen` (ANN-485).
-const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen?: string }> = {
+// „erledigt“ nennt das Zeichen seines Tons noch einmal - für die Zeile im
+// Kopf einer Nachricht, die ohne `Badge` auskommt (L9).
+const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen: string }> = {
   open: { wort: 'bei der Praxis', ton: 'neutral', zeichen: STATUSZEICHEN.wartet },
   answered: { wort: 'beantwortet', ton: 'akzent', zeichen: STATUSZEICHEN.antwort },
-  closed: { wort: 'erledigt', ton: 'positiv' },
+  closed: { wort: 'erledigt', ton: 'positiv', zeichen: '✓' },
 };
 
 function Nachrichtzeile({
@@ -488,13 +490,15 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
             {nachricht.reference_label ? (
               <span className="text-ink block">Zu: {nachricht.reference_label}</span>
             ) : null}
-            <span className="mt-2 block">
-              <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
-                {zustand.wort}
-                {nachricht.status === 'open' && nachricht.due_on
-                  ? ` · Antwort bis ${datum(nachricht.due_on)}`
-                  : ''}
-              </Badge>
+            {/* Der Zustand als Zeile mit Zeichen und Wort, nicht als
+                Abzeichen: Mit der Frist bräche die Pille bei 18 px auf zwei
+                Zeilen (Sichtung 13.10.2026, L9). */}
+            <span className="text-ink mt-1 block">
+              <span aria-hidden="true">{zustand.zeichen} </span>
+              <span className="font-semibold">{zustand.wort}</span>
+              {nachricht.status === 'open' && nachricht.due_on
+                ? ` · Antwort bis ${datum(nachricht.due_on)}`
+                : ''}
             </span>
           </>
         }
