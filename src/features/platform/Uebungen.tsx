@@ -34,7 +34,7 @@ import {
 } from './ablage';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { WOCHENTAGE, tageText } from './uebungstage';
-import { Uebungsinhalt } from './Uebungsinhalt';
+import { Uebungsinhalt, type DosisZumAblesen } from './Uebungsinhalt';
 
 /**
  * Reiter „Übungen" bzw. „Training" (UEB-009, DSN-001 4.1 und 5): „Was mache
@@ -296,15 +296,19 @@ function laufzeitText(plan: EigenerPlan, heute: string): string {
   return `Bis ${formatDate(plan.runs_until)}`;
 }
 
-/** „3 Durchgänge · je 10 bis 12 Wiederholungen" - die Zeile unter dem Namen. */
-function dosierungKurz(p: PlanPosition): string {
+/**
+ * „3 Durchgänge · je 10 bis 12 Wiederholungen" - die Zeile unter dem Namen;
+ * mit „je Seite“, sobald die Fachperson es einträgt (UEB-012, `DosisZumAblesen`).
+ */
+function dosierungKurz(p: PlanPosition & Pick<DosisZumAblesen, 'per_side'>): string {
   const durchgaenge = `${p.sets} ${p.sets === 1 ? 'Durchgang' : 'Durchgänge'}`;
+  const seite = p.per_side ? ' · je Seite' : '';
   if (p.reps_min !== null && p.reps_max !== null) {
     const wdh = p.reps_min === p.reps_max ? `${p.reps_min}` : `${p.reps_min} bis ${p.reps_max}`;
-    return `${durchgaenge} · je ${wdh} Wiederholungen`;
+    return `${durchgaenge} · je ${wdh} Wiederholungen${seite}`;
   }
   const s = p.duration_seconds ?? 0;
-  return `${durchgaenge} · je ${s} ${s === 1 ? 'Sekunde' : 'Sekunden'}`;
+  return `${durchgaenge} · je ${s} ${s === 1 ? 'Sekunde' : 'Sekunden'}${seite}`;
 }
 
 /**

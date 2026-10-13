@@ -48,6 +48,20 @@ export function Uebungsinhalt({ position }: { position: Ablageplan['items'][numb
  * Darstellung dessen, was die Fachperson eingetragen hat. Nichts hier rechnet
  * eine Steigerung aus oder schlägt eine vor (ADR-006 Punkt 10).
  */
+
+/**
+ * Halten, je Seite und wie oft am Tag (UEB-012, ANN-384): Diese Felder kommen
+ * mit der Übungsbibliothek als optionale Felder von `Dosis` hinzu. Bis dahin
+ * fehlen sie hier und es wird nichts gezeigt; danach erscheinen sie ohne
+ * Änderung an dieser Stelle - keine Angabe der Fachperson geht beim Ablesen
+ * verloren.
+ */
+export type DosisZumAblesen = Dosis & {
+  hold_seconds?: number | null;
+  per_side?: boolean;
+  times_per_day?: number | null;
+};
+
 /**
  * Mit weichem Trennstrich: In einer Kachel von 150 px passt das Wort in
  * Versalien bei 18 px nicht in eine Zeile, und ohne Trennstelle bräche es
@@ -55,7 +69,7 @@ export function Uebungsinhalt({ position }: { position: Ablageplan['items'][numb
  */
 const WIEDERHOLUNGEN = 'Wieder­holungen';
 
-export function Dosierungskacheln({ dosis: d }: { dosis: Dosis }) {
+export function Dosierungskacheln({ dosis: d }: { dosis: DosisZumAblesen }) {
   const wiederholungen =
     d.reps_min === null || d.reps_max === null
       ? null
@@ -71,11 +85,13 @@ export function Dosierungskacheln({ dosis: d }: { dosis: Dosis }) {
         {wiederholungen ? (
           <Tile label={WIEDERHOLUNGEN}>
             <Zahl>{wiederholungen}</Zahl>
+            {d.per_side ? <span className="block font-normal">je Seite</span> : null}
             <span className="sr-only"> je Durchgang</span>
           </Tile>
         ) : (
           <Tile label="Dauer">
             <Zahl einheit={sekunden(d.duration_seconds ?? 0)}>{d.duration_seconds ?? 0}</Zahl>
+            {d.per_side ? <span className="block font-normal">je Seite</span> : null}
             <span className="sr-only"> je Durchgang</span>
           </Tile>
         )}
@@ -86,6 +102,16 @@ export function Dosierungskacheln({ dosis: d }: { dosis: Dosis }) {
         ) : null}
         {d.load ? <Tile label="Mit">{d.load}</Tile> : null}
       </TileGrid>
+      {wiederholungen && d.hold_seconds ? (
+        <p className="text-ink mt-3">
+          Jede Wiederholung {d.hold_seconds} {sekunden(d.hold_seconds)} halten.
+        </p>
+      ) : null}
+      {d.times_per_day ? (
+        <p className="text-ink mt-3">
+          {d.times_per_day === 1 ? 'Einmal am Tag.' : `${d.times_per_day}-mal am Tag.`}
+        </p>
+      ) : null}
       {d.tempo ? <p className="text-ink mt-3">Tempo: {d.tempo}</p> : null}
       {d.double_progression && d.reps_min !== null && d.reps_max !== null ? (
         // Die Regel stammt von der Fachperson; die Steigerung der Last
