@@ -385,6 +385,58 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
     });
   });
 
+  describe('weist den Prüfvermerk jeder anderen Rolle ab - setzen wie nehmen (ANN-386)', () => {
+    const VERMERK = 'select public.set_exercise_variant_reviewed($1::uuid, $2::boolean)';
+
+    /** Übernimmt KN-01 und setzt den Vermerk als owner; liefert die Variante. */
+    async function geprueft(): Promise<string> {
+      await importiere(users.ownerTherapist, [KN01]);
+      const id = (await katalogvarianten())[0]!.id;
+      await asUserCommitted(users.ownerTherapist, VERMERK, [id, true]);
+      return id;
+    }
+
+    async function vermerk(id: string) {
+      const { rows } = await asPostgres<{ reviewed_at: Date | null; reviewed_by: string | null }>(
+        'select reviewed_at, reviewed_by from public.exercise_variants where id = $1',
+        [id],
+      );
+      return rows[0]!;
+    }
+
+    it.each([
+      ['Therapeut:in', users.therapist],
+      ['Büro', users.office],
+      ['Trainingsbetreuung', users.trainer],
+      ['Teamleitung', users.teamLead],
+      ['Profil ohne Praxisrolle', users.patientMax],
+      ['Plattformkonto', users.plattformErika],
+      ['Begleitung', users.plattformPaula],
+    ])('weist %s ab (42501) und lässt den Vermerk, wie er ist', async (_wer, konto) => {
+      const id = await geprueft();
+      const vorher = await vermerk(id);
+      expect(vorher.reviewed_by).toBe(users.ownerTherapist);
+      for (const wert of [false, true]) {
+        await expect(asUserCommitted(konto, VERMERK, [id, wert])).rejects.toMatchObject({
+          code: '42501',
+        });
+      }
+      expect(await vermerk(id)).toEqual(vorher);
+    });
+
+    it('weist anon und eine Sitzung ohne Konto ab', async () => {
+      const id = await geprueft();
+      const vorher = await vermerk(id);
+      for (const wert of [false, true]) {
+        await expect(asAnon(VERMERK, [id, wert])).rejects.toMatchObject({ code: '42501' });
+        await expect(asUser(null, VERMERK, [id, wert])).rejects.toMatchObject({
+          code: '42501',
+        });
+      }
+      expect(await vermerk(id)).toEqual(vorher);
+    });
+  });
+
   it('nimmt den Prüfvermerk, sobald sich der Inhalt ändert - Speichern ohne Änderung lässt ihn stehen (ANN-386)', async () => {
     await importiere(users.ownerTherapist, [KN01]);
     const VERMERK = 'select public.set_exercise_variant_reviewed($1::uuid, true)';
