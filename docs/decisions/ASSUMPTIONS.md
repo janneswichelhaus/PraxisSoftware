@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-12.
+Zuletzt aktualisiert: 2026-10-13.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -3534,7 +3534,6 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Änderungspfad.** Zugang zum Training nur per Einladung: im Aufruf einen Zugang `invited` mit Einladung vor Ort anlegen statt `active` · Aufwand `klein`. Mit Folgen für ADR-023: neue Fassung, die diesen Weg aufnimmt · Aufwand `klein`.
 
-
 ### ANN-292 — Eine Übungsbibliothek für Behandlung und Training
 
 Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
@@ -4029,7 +4028,6 @@ Datenschutz · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, Zweit
 
 **Änderungspfad.** Eigenes Merkmal statt Auditlog: Spalte am Profil, von `request_staff_password_reset` gesetzt · Aufwand `klein`. Ganz ohne Mail-Anmeldung: STAFF-005 mit Einladungscode wie bei der Plattform · Aufwand `mittel`.
 
-
 ### ANN-332 — Anhänge an Rückfragen: Stufe 2 heißt laufendes Nachsorge-Abo, Frist 30 Tage
 
 Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkte 59 und 65) · Prüfpaket · Wiedervorlage: B2, DSFA (G14)
@@ -4370,7 +4368,6 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: OPS-001 (Passkeys
 
 **Änderungspfad.** Schlüssel vom Anmeldedienst lesen, sobald er ihn herausgibt: `own_offline_passkeys` aus `auth.webauthn_credentials` statt aus der Freigabe · Aufwand `mittel`; andere Relying Party: eine Konstante in `freigebenOhneNetz` · Aufwand `klein`; Freigabe ohne Netz abschalten: `ohneNetz` in `src/app/App.tsx` nicht setzen · Aufwand `klein`.
 
-
 ### ANN-360 — Das Diensttelefon wird je Konto und Gerät eingerichtet; Einrichtung und Offline-Entwürfe liegen in einer Dauerablage, die weder mit dem Abmelden noch mit der Frist fällt
 
 Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Datenschutzprüfung (B2, DSFA, ADR-024 Konsequenzen); Jannes in der Sichtung Befund (OFF-EPIC-001)
@@ -4611,6 +4608,18 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
 
+### ANN-430 — Patientenliste: ein Suchfeld statt Namenssuche und Listenfilter
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Patientenliste hat ein Suchfeld: Es filtert die geladene Liste nach Name (beide Schreibrichtungen, Umlaute eingeebnet wie `app.suchform`), Ort, PLZ, Telefon und E-Mail; die Eingabetaste öffnet die Akte, wenn genau eine übrig ist. Die serverseitige Namenssuche bleibt in der Kopfleiste und in den Vorgängen.
+
+**Begründung.** Zwei Felder für denselben Bestand (gleiches Leserecht, ADR-004) verlangten eine Wahl vor dem Tippen; Auftrag Design-Rollout B1.
+
+**Anker.** `matches` und `absenden` in `src/features/patients/PatientsListPage.tsx`.
+
+**Änderungspfad.** `Patientensuche` wieder über die Liste setzen · Aufwand `klein`.
+
 ### ANN-460 — Reiter und Detail ohne eigene Route stehen im Suchparameter
 
 Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
@@ -4634,3 +4643,4 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `StaffEinsatz` in `src/features/staff/StaffEinsatz.tsx`.
 
 **Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.
+

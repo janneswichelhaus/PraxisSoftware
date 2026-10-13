@@ -32,10 +32,25 @@ describe('TerritoriesPage (PRX-002)', () => {
   it('zeigt Gebiet, Tage und Postleitzahlen; Therapeut:innen lesen nur', async () => {
     fetchTerritories.mockResolvedValue([NORD]);
     renderWithProviders(<TerritoriesPage user={testUser(['therapist'])} />);
-    expect(await screen.findByRole('heading', { name: 'Nord' })).toBeInTheDocument();
+    // Jedes Gebiet ist eine Zeile der Liste (Design-Rollout B1), keine Karte
+    // mit eigener Überschrift.
+    expect(await screen.findByText('Nord')).toBeInTheDocument();
     expect(screen.getByText('Mo vormittags')).toBeInTheDocument();
     expect(screen.getByText('72070, 72072')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Bearbeiten' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Bearbeiten/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Gebiet anlegen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /entfernen/ })).not.toBeInTheDocument();
+  });
+
+  it('bearbeitet ein Gebiet an seiner Stelle; Entfernen steht leise am Ende', async () => {
+    fetchTerritories.mockResolvedValue([NORD]);
+    const user = userEvent.setup();
+    renderWithProviders(<TerritoriesPage user={testUser(['office'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten: Nord' }));
+    expect(screen.getByLabelText('Name des Gebiets')).toHaveValue('Nord');
+    expect(screen.getByRole('button', { name: 'Gebiet entfernen' })).toBeInTheDocument();
+    // Während bearbeitet wird, gibt es kein zweites Formular.
     expect(screen.queryByRole('button', { name: 'Gebiet anlegen' })).not.toBeInTheDocument();
   });
 

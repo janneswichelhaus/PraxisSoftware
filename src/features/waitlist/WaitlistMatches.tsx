@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { appointmentTypeHint, schreibeTerminVorbelegung } from '@/features/appointments/api';
 import { DAUER_PARAM } from '@/features/appointments/terminformular';
 import { formatDate } from '@/lib/datum';
@@ -16,6 +18,7 @@ import {
   type FreeSlot,
   type WaitlistMatch,
 } from './api';
+import { Arbeitszeile } from './Arbeitszeile';
 
 function takeOverLink(match: WaitlistMatch, slot: FreeSlot, back: string): string {
   const params = new URLSearchParams(
@@ -61,59 +64,53 @@ export function WaitlistMatches({ slot, back }: { slot: FreeSlot; back: string }
   return (
     <Section
       titel={`Passt von der Warteliste (${data.length})`}
-      hinweis="Wer auf diesen Platz passt. Anrufen, dann übernehmen – der Eintrag wird mit dem Termin geschlossen."
-      rahmen
+      // Die Folge des Übernehmens - der Eintrag schließt mit dem Termin -
+      // ist eine Aussage über den Datenfluss und bleibt (PRX-004).
+      hinweis="Anrufen, dann übernehmen – der Eintrag wird mit dem Termin geschlossen."
     >
-      <ul className="divide-line divide-y">
+      <ListRows>
         {data.map((match) => {
           const numbers = [match.phone, match.phone_mobile].filter((n): n is string => Boolean(n));
           return (
-            <li key={match.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-ink text-liste font-medium">
-                  {match.patient_family_name}, {match.patient_given_name}
-                </span>
-                <Badge>{reasonLabels[match.priority_reason]}</Badge>
-                {match.territory_status === 'match' ? (
-                  <Badge ton="positiv">Im Gebietstag</Badge>
-                ) : null}
-                {match.territory_status === 'outside' ? (
-                  <Badge ton="warnung">Außerhalb des Gebietstags</Badge>
-                ) : null}
-              </div>
-              <p className="text-ink-muted text-sm">
-                {[
-                  // Nur eine abweichende Terminart steht dran (ANN-192).
-                  appointmentTypeHint(match.appointment_type),
-                  `${match.duration_minutes} Min.`,
-                  windowsText(match.time_windows),
-                  match.needed_by ? `bis spätestens ${formatDate(match.needed_by)}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                {numbers.map((number) => (
-                  <a
-                    key={number}
-                    href={telHref(number)}
-                    className="text-accent inline-flex min-h-11 items-center text-sm underline underline-offset-2"
-                  >
-                    Anrufen: {number}
-                  </a>
-                ))}
-                <ButtonLink
-                  to={takeOverLink(match, slot, back)}
-                  variant="secondary"
-                  groesse="kompakt"
-                >
-                  Übernehmen
-                </ButtonLink>
-              </div>
-            </li>
+            <Arbeitszeile
+              key={match.id}
+              titel={`${match.patient_family_name}, ${match.patient_given_name}`}
+              status={
+                <>
+                  <Badge>{reasonLabels[match.priority_reason]}</Badge>
+                  {match.territory_status === 'match' ? (
+                    <Badge ton="positiv">Im Gebietstag</Badge>
+                  ) : null}
+                  {match.territory_status === 'outside' ? (
+                    <Badge ton="warnung">Außerhalb des Gebietstags</Badge>
+                  ) : null}
+                </>
+              }
+              meta={[
+                // Nur eine abweichende Terminart steht dran (ANN-192).
+                appointmentTypeHint(match.appointment_type),
+                `${match.duration_minutes} Min.`,
+                windowsText(match.time_windows),
+                match.needed_by ? `bis spätestens ${formatDate(match.needed_by)}` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+              aktionen={
+                <>
+                  {numbers.map((number) => (
+                    <Textlink key={number} href={telHref(number)} alleinstehend className="text-sm">
+                      Anrufen: {number}
+                    </Textlink>
+                  ))}
+                  <ButtonLink to={takeOverLink(match, slot, back)} variant="secondary">
+                    Übernehmen
+                  </ButtonLink>
+                </>
+              }
+            />
           );
         })}
-      </ul>
+      </ListRows>
     </Section>
   );
 }

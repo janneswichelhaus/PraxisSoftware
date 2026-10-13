@@ -51,33 +51,21 @@ export const GRENZEN: Record<
 
     'features/exercises': 5,
 
-    'features/files': 4,
-
     'features/messages': 4,
 
     'features/offline-documentation': 2,
 
     'features/open-points': 2,
 
-    'features/patients': 2,
-
     'features/platform': 9,
 
     'features/reimbursements': 1,
-
-    'features/slot-search': 1,
-
-    'features/territories': 1,
 
     'features/therapy-reports': 5,
 
     'features/tours': 3,
 
     'features/training': 3,
-
-    'features/treatment-bases': 3,
-
-    'features/waitlist': 1,
   },
   details: {
     'features/appointments': 4,
@@ -125,25 +113,17 @@ export const GRENZEN: Record<
 
     'features/open-points': 13,
 
-    'features/patients': 1,
-
     'features/platform': 2,
 
     'features/platform-access': 1,
 
     'features/scheduling': 2,
 
-    'features/slot-search': 1,
-
     'features/teamchat': 1,
 
     'features/training': 6,
 
     'features/training-offers': 1,
-
-    'features/treatment-bases': 1,
-
-    'features/waitlist': 2,
   },
   knoepfe: {
     app: 2,
@@ -171,8 +151,6 @@ export const GRENZEN: Record<
     'features/tours': 2,
 
     'features/treatment-bases': 4,
-
-    'features/waitlist': 1,
   },
   tabellen: {
     'features/exercise-plans': 1,
@@ -202,15 +180,13 @@ export const GRENZEN: Record<
 
     'features/exercises': 3,
 
-    'features/files': 1,
-
     'features/messages': 1,
 
     'features/offline-documentation': 2,
 
     'features/open-points': 2,
 
-    'features/patients': 2,
+    'features/patients': 1,
 
     'features/platform': 48,
 
@@ -219,8 +195,6 @@ export const GRENZEN: Record<
     'features/statistics': 2,
 
     'features/teamchat': 2,
-
-    'features/territories': 1,
 
     'features/today': 4,
 
