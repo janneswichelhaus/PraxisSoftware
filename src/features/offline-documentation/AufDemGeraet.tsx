@@ -188,11 +188,13 @@ export function AufDemGeraet({
           </ListRows>
         )}
         {/* Der Stand des Plans gehört zu seinem Inhalt: Was die Praxis seitdem
-            geändert hat, fehlt hier. */}
-        <Kleingedrucktes className="mt-2">
-          So, wie er zuletzt mit Verbindung geladen wurde. Änderungen der Praxis seitdem fehlen
-          hier.
-        </Kleingedrucktes>
+            geändert hat, fehlt hier. Ohne Plan gibt es keinen Stand. */}
+        {tagesplan !== null && tagesplan.termine.length > 0 ? (
+          <Kleingedrucktes className="mt-2">
+            So, wie er zuletzt mit Verbindung geladen wurde. Änderungen der Praxis seitdem fehlen
+            hier.
+          </Kleingedrucktes>
+        ) : null}
       </Section>
     </div>
   );
