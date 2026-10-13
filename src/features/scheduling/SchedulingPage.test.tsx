@@ -379,8 +379,22 @@ describe('SchedulingPage', () => {
       expect(sichtbar).toHaveTextContent(/^von$/);
       expect(beginn).toHaveAccessibleName('Block 1 von');
       expect(screen.getByLabelText('Block 1 bis')).toHaveAccessibleName('Block 1 bis');
-      // Von, bis und Entfernen bleiben eine Zeile - auch unter 640 px.
-      expect(beginn.closest('.grid')).toHaveClass('grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]');
+      // Nebeneinander erst ab 640 px (DESIGN.md, Formular): am Telefon „bis“
+      // unter „von“, das Entfernen neben „von“; ab `sm:` eine Zeile.
+      const block = beginn.closest('[data-testid="zeitblock"]');
+      expect(block).toHaveClass(
+        'grid-cols-[minmax(0,1fr)_auto]',
+        'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]',
+      );
+      expect(screen.getByLabelText('Block 1 bis').closest('.row-start-2')).toHaveClass(
+        'col-start-1',
+        'sm:col-start-2',
+        'sm:row-start-1',
+      );
+      expect(
+        within(block as HTMLElement).getByRole('button', { name: 'Block 1 entfernen' })
+          .parentElement,
+      ).toHaveClass('col-start-2', 'row-start-1', 'sm:col-start-3');
     });
 
     it('speichert einen geleerten Wochentag erst nach der Rueckfrage als "keine Termine" (ORG-02)', async () => {

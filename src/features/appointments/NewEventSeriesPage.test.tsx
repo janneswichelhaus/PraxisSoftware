@@ -284,7 +284,8 @@ describe('NewEventSeriesPage', () => {
   it('nennt die Beispiele wie Anlegen-Leiste und Fehlzeit (KAL-27)', async () => {
     rendern();
     await formularAbwarten();
-    // Eine Zeile, ohne Schlusspunkt (Design-Review T8) - die Beispiele bleiben.
-    expect(screen.getByText('Über mehrere Wochen: Meeting, Puffer, Pause')).toBeInTheDocument();
+    // Eine Zeile, mit Schlusspunkt wie „Fehlzeit eintragen“ (Design-Review
+    // R2, zu T8) - die Beispiele bleiben.
+    expect(screen.getByText('Über mehrere Wochen: Meeting, Puffer, Pause.')).toBeInTheDocument();
   });
 });
