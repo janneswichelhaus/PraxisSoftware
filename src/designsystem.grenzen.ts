@@ -59,8 +59,6 @@ export const GRENZEN: Record<
 
     'features/fleet': 3,
 
-    'features/messages': 4,
-
     'features/offline-documentation': 2,
 
     'features/patients': 2,
@@ -137,8 +135,6 @@ export const GRENZEN: Record<
 
     'features/fleet': 1,
 
-    'features/messages': 1,
-
     'features/offline-documentation': 1,
 
     'features/patients': 1,
@@ -181,8 +177,6 @@ export const GRENZEN: Record<
     'features/exercise-plans': 1,
 
     'features/files': 1,
-
-    'features/messages': 1,
 
     'features/platform': 5,
 
@@ -229,8 +223,6 @@ export const GRENZEN: Record<
     'features/files': 1,
 
     'features/fleet': 1,
-
-    'features/messages': 1,
 
     'features/offline-documentation': 2,
 
