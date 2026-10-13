@@ -1,5 +1,9 @@
 import { dosierungAlltag, dosierungFachlich } from '@/features/exercise-plans/dosierung';
-import { GRUNDSTELLUNGEN, type Uebungsbild as Bild } from '@/features/exercises/bild/schema';
+import {
+  GRUNDSTELLUNGEN,
+  istAusgangsstellung,
+  type Uebungsbild as Bild,
+} from '@/features/exercises/bild/schema';
 import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
 import { KATALOG } from '@/features/exercises/katalog';
 import { alsDosis } from '@/features/exercises/katalog/dosierung';
@@ -16,6 +20,8 @@ import { KOERPERREGION_LABEL } from '@/features/exercises/types';
  * Einstieg der Prüfseite aus `uebungsbilder.html` (ANN-382): der Kontaktbogen
  * des Übungskatalogs. Je Eintrag Start und Ende, das Bewegungsbild, die
  * Vorschau in Listengröße (56 px), Dosierung, Anleitung, Fehler und Hinweise.
+ * Ein Bild der Ausgangsstellung (ANN-480) steht in beiden Darstellungen als
+ * eine Figur; `data-art` am Eintrag sagt, welche Art es ist.
  *
  * `?gruppe=kn` zeigt nur eine Gruppe. Gedacht zum Durchsehen am Telefon:
  * Stimmt die Stellung, liegt die Figur auf, greift die Hand, zeigt der Pfeil
@@ -30,6 +36,7 @@ export function Eintrag({ e }: { e: Katalogeintrag }) {
   return (
     <article
       data-eintrag={e.schluessel}
+      data-art={e.bild ? (istAusgangsstellung(e.bild) ? 'ausgangsstellung' : 'bewegung') : 'ohne'}
       className="border-line rounded-card bg-surface border p-4"
       aria-labelledby={`titel-${e.schluessel}`}
     >
@@ -234,6 +241,7 @@ function Muster() {
 
 export function Pruefseite() {
   const mitBild = eintraege.filter((e) => e.bild).length;
+  const stellungen = eintraege.filter((e) => e.bild && istAusgangsstellung(e.bild)).length;
   const ansicht = new URLSearchParams(window.location.search).get('ansicht');
   if (ansicht === 'bogen') return <Bogen />;
   if (ansicht === 'muster') return <Muster />;
@@ -241,8 +249,9 @@ export function Pruefseite() {
     <main className="mx-auto max-w-5xl p-4">
       <h1 className="text-accent text-h2-mobil font-extrabold">Übungsbilder</h1>
       <p className="text-ink-muted mt-1 text-sm" role="status">
-        {eintraege.length} Einträge{gruppe ? ` der Gruppe ${gruppe}` : ''}, {mitBild} mit Bild.
-        KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft.
+        {eintraege.length} Einträge{gruppe ? ` der Gruppe ${gruppe}` : ''}, {mitBild} mit Bild,
+        davon {stellungen} nur mit der Ausgangsstellung. KI-erstellt und bis zur Durchsicht durch
+        die Praxis ungeprüft.
       </p>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {eintraege.map((e) => (

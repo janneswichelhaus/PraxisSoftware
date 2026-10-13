@@ -37,6 +37,7 @@ import {
   type Uebung,
   type Variante,
 } from './api';
+import { istAusgangsstellung } from './bild/schema';
 import { Uebungsbild } from './bild/Uebungsbild';
 import { UebungFormular, VarianteFormular } from './Formulare';
 import { AUSGANGSSTELLUNG_LABEL, NIVEAU_LABEL, ZIEL_LABEL } from './katalog/typen';
@@ -126,10 +127,14 @@ function ordnungen(variante: Variante): string | null {
   return teile.length > 0 ? teile.join(' · ') : null;
 }
 
-/** Das Bild oben: Bewegung im Rahmen, abspielen auf Tippen, darunter Start und Ende. */
+/**
+ * Das Bild oben: Bewegung im Rahmen, abspielen auf Tippen, darunter Start und
+ * Ende. Ein Bild der Ausgangsstellung steht nur einmal (ANN-480).
+ */
 function Bild({ variante }: { variante: Variante }) {
   if (!variante.illustration) return null;
   const name = variante.lay_name;
+  const nurStellung = istAusgangsstellung(variante.illustration);
   return (
     <div className="max-w-formular flex flex-col gap-3">
       <Uebungsbild
@@ -139,12 +144,20 @@ function Bild({ variante }: { variante: Variante }) {
         animierbar
         dekorativ
         einfassen={(zeichnung) => (
-          <Medienbild alt={`${name}: Bewegung von der Ausgangs- zur Endstellung`}>
+          <Medienbild
+            alt={
+              nurStellung
+                ? `${name}: Ausgangsstellung`
+                : `${name}: Bewegung von der Ausgangs- zur Endstellung`
+            }
+          >
             {zeichnung}
           </Medienbild>
         )}
       />
-      <Uebungsbild bild={variante.illustration} name={name} darstellung="start-ende" />
+      {nurStellung ? null : (
+        <Uebungsbild bild={variante.illustration} name={name} darstellung="start-ende" />
+      )}
     </div>
   );
 }
