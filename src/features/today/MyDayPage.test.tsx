@@ -1909,6 +1909,11 @@ describe('Übersicht', () => {
         (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
       expect(folgt(leer, heuteTitel)).toBe(true);
       expect(folgt(heuteTitel, morgenTitel)).toBe(true);
+      // Der Leerzustand von morgen ist gebaut wie der von heute (R3, U4).
+      const morgenLeer = within(morgenTitel.closest('section')!).getByText(
+        'Morgen sind Ihnen keine Termine zugeordnet',
+      );
+      expect(morgenLeer.parentElement).toHaveClass('rounded-card', 'border', 'bg-surface');
       expect(
         within(heuteTitel.closest('section')!).getByText('Teambesprechung'),
       ).toBeInTheDocument();
