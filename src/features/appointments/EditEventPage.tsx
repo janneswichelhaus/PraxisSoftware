@@ -7,9 +7,11 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Badge } from '@/components/ui/Badge';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Textlink } from '@/components/ui/Textlink';
 import { roleLabels } from '@/components/ui/roleLabels';
 import {
   EINGABETEXTE,
@@ -220,7 +222,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         <Rueckweg standard="/kalender" />
         <ErrorState
           title="Die Fehlzeit konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => termin.refetch()}
         />
       </>
@@ -299,19 +301,15 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         ← Zurück zur Fehlzeit
       </Link>
 
-      <PageHeader
-        title="Fehlzeit bearbeiten"
-        description={
-          serieId
-            ? 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Diese Fehlzeit gehört zu einer Dauerfehlzeit – zuerst steht zur Wahl, was sich ändert.'
-            : 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Mit * markierte Felder sind erforderlich.'
-        }
-      />
+      {/* Eine Zeile (DESIGN.md Regel 6): Was für alle gilt, sagt sie; dass
+          die Fehlzeit zu einer Dauerfehlzeit gehört, sagt die Wahl des
+          Umfangs darunter selbst. */}
+      <PageHeader title="Fehlzeit bearbeiten" description="Gilt für alle Beteiligten." />
 
       {werte ? (
         <form
           noValidate
-          className="max-w-xl"
+          className="max-w-formular"
           onSubmit={(event) => {
             event.preventDefault();
             if (mutation.isPending) return;
@@ -336,14 +334,16 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
               ändern". Vorbelegt ist das Vorkommen. Vor den Feldern, weil die
               Wahl bestimmt, was sie bedeuten (TER-14). */}
           {serieId && serienVorkommen.length > 0 ? (
-            <fieldset className="border-line bg-surface-sunken rounded-card mb-6 border p-4">
-              <legend className="text-ink px-1 text-sm font-medium">Umfang der Änderung</legend>
-              <div className="mt-2 flex flex-col gap-3">
-                <label className="text-liste flex min-h-11 cursor-pointer gap-3">
+            // Ohne Kasten (DESIGN.md Regel 2): eine Wahl wie jedes andere Feld,
+            // nur vor den übrigen, weil sie ihre Bedeutung bestimmt.
+            <fieldset className="mb-8">
+              <legend className="text-ink text-sm font-medium">Umfang der Änderung</legend>
+              <div className="mt-2 flex flex-col gap-2">
+                <label className="text-liste flex min-h-11 cursor-pointer gap-3 py-1">
                   <input
                     type="radio"
                     name="umfang"
-                    className="mt-1"
+                    className="mt-1 size-5 shrink-0"
                     checked={umfang === 'vorkommen'}
                     onChange={() => setUmfang('vorkommen')}
                   />
@@ -355,11 +355,11 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     </span>
                   </span>
                 </label>
-                <label className="text-liste flex min-h-11 cursor-pointer gap-3">
+                <label className="text-liste flex min-h-11 cursor-pointer gap-3 py-1">
                   <input
                     type="radio"
                     name="umfang"
-                    className="mt-1"
+                    className="mt-1 size-5 shrink-0"
                     checked={umfang === 'serie'}
                     onChange={() => setUmfang('serie')}
                   />
@@ -389,45 +389,45 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
               standorte.isError ? (
                 <ErrorState
                   title="Die Standorte konnten nicht geladen werden."
-                  description="Bitte die Verbindung prüfen und erneut versuchen."
+                  description={VERBINDUNG_PRUEFEN}
                   onErneut={() => standorte.refetch()}
                 />
               ) : null
             }
             beteiligte={
-              <div className="border-line bg-surface-sunken rounded-card border p-4">
-                <p className="text-ink-muted text-sm">Beteiligte</p>
-                {beteiligte.isPending ? (
-                  <LoadingState label="Beteiligte werden geladen …" />
-                ) : beteiligte.isError ? (
-                  <div className="mt-2">
+              // Die Beteiligten als Zeilen der Liste (DESIGN.md Regel 3): Jede
+              // Zeile führt zu ihrer Teilnahme, dem Weg zum Austauschen oder
+              // Absagen (TER-15). Kein Kasten mehr um Name und Satz.
+              <div>
+                <p className="text-ink text-sm font-medium">Beteiligte</p>
+                <div className="mt-2">
+                  {beteiligte.isPending ? (
+                    <LoadingState label="Beteiligte werden geladen …" inKarte />
+                  ) : beteiligte.isError ? (
                     <ErrorState
                       title="Die Beteiligten konnten nicht geladen werden."
-                      description="Bitte die Verbindung prüfen und erneut versuchen."
+                      description={VERBINDUNG_PRUEFEN}
                       onErneut={() => beteiligte.refetch()}
                     />
-                  </div>
-                ) : (
-                  <ul className="mt-2 flex flex-col gap-1">
-                    {(beteiligte.data ?? []).map((person) => (
-                      <li
-                        key={person.appointment_id}
-                        className="text-ink text-liste flex flex-wrap items-center gap-2"
-                      >
-                        {/* Die Teilnahme ist der Weg zum Austauschen oder
-                            Absagen (TER-15) - mit Rückweg hierher. */}
-                        <Textlink alleinstehend to={kalenderZumTermin(person.appointment_id)}>
-                          {person.display_name}
-                        </Textlink>
-                        {person.status === 'confirmed' ? null : (
-                          <Badge ton="kritisch">{appointmentStatusLabels[person.status]}</Badge>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                  ) : (
+                    <ListRows>
+                      {(beteiligte.data ?? []).map((person) => (
+                        <ListRow
+                          key={person.appointment_id}
+                          to={kalenderZumTermin(person.appointment_id)}
+                          titel={person.display_name}
+                          status={
+                            person.status === 'confirmed' ? undefined : (
+                              <Badge ton="kritisch">{appointmentStatusLabels[person.status]}</Badge>
+                            )
+                          }
+                        />
+                      ))}
+                    </ListRows>
+                  )}
+                </div>
                 {/* Ein Satz statt dreier: Der Weg steht an jedem Namen (UX-005g). */}
-                <Kleingedrucktes className="mt-3">
+                <Kleingedrucktes className="mt-2">
                   Teilnahme am jeweiligen Termin ändern.
                 </Kleingedrucktes>
               </div>
@@ -449,7 +449,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
           ) : null}
 
           {mutation.isError && !ausserhalb ? (
-            <Statusmeldung ton="fehler" className="mt-5">
+            <Statusmeldung ton="fehler" className="mt-6">
               {mutation.error.message}
             </Statusmeldung>
           ) : null}
@@ -457,7 +457,8 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
           {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
           {schutz}
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          {/* Am Telefon untereinander in voller Breite (DESIGN.md „Formular“). */}
+          <Formularfuss>
             <Button type="submit" disabled={mutation.isPending || listeFehlt}>
               {/* Dasselbe Verb wie beim Termin (WRT-10, TER-22). */}
               {mutation.isPending
@@ -468,10 +469,10 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
             </Button>
             {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
                 dieselbe Rückfrage wie jeder andere Weg hinaus. */}
-            <ButtonLink to={zurueck} variant="secondary">
+            <ButtonLink to={zurueck} variant="quiet">
               Abbrechen
             </ButtonLink>
-          </div>
+          </Formularfuss>
         </form>
       ) : null}
     </>

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
-import { Feldgruppe } from '@/components/ui/Section';
+import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EREIGNIS_FELD_IDS } from './calendar';
@@ -68,98 +68,118 @@ export function EreignisFormFields({
   standorteFehler?: ReactNode;
 }) {
   return (
-    <Feldgruppe>
-      <Field
-        label="Bezeichnung *"
-        feldId={EREIGNIS_FELD_IDS.title}
-        value={werte.title}
-        error={fehler.title}
-        maxLength={120}
-        // ANN-060: Die Bezeichnung ist organisatorisch - sie steht als Aufschrift
-        // im Kalender und ist damit für alle sichtbar, die den Kalender sehen.
-        // Klinisches gehört in die Dokumentation der Akte, nicht hierher.
-        hint="Steht als Aufschrift im Kalender. Organisatorisch benennen – kein Patientenname, keine Diagnose, kein klinischer Inhalt."
-        onChange={(e) => onChange('title', e.target.value)}
-      />
+    // Drei Gruppen statt sieben Felder untereinander (Design-Rollout B2,
+    // DESIGN.md „Formular“): was und wer, wo, wann. Die Reihenfolge bleibt die
+    // der Fehlerzusammenfassung (KAL-17).
+    <>
+      <Section titel="Fehlzeit">
+        <Feldgruppe>
+          <Field
+            label="Bezeichnung *"
+            feldId={EREIGNIS_FELD_IDS.title}
+            value={werte.title}
+            error={fehler.title}
+            maxLength={120}
+            // ANN-060: Die Bezeichnung ist organisatorisch - sie steht als Aufschrift
+            // im Kalender und ist damit für alle sichtbar, die den Kalender sehen.
+            // Klinisches gehört in die Dokumentation der Akte, nicht hierher.
+            hint="Steht als Aufschrift im Kalender. Organisatorisch benennen – kein Patientenname, keine Diagnose, kein klinischer Inhalt."
+            onChange={(e) => onChange('title', e.target.value)}
+          />
 
-      {beteiligte}
+          {beteiligte}
+        </Feldgruppe>
+      </Section>
 
-      <Select
-        label="Ort *"
-        value={werte.appointment_type}
-        onChange={(e) =>
-          onChange('appointment_type', e.target.value === 'video' ? 'video' : 'practice')
-        }
-      >
-        <option value="practice">In der Praxis</option>
-        <option value="video">Video</option>
-      </Select>
-
-      {werte.appointment_type === 'practice' ? (
-        standorteFehler ? (
-          standorteFehler
-        ) : (
+      <Section titel="Ort">
+        {/* Ort und Standort gehören zusammen und stehen ab 640 px
+            nebeneinander (DESIGN.md „Formular“). */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
           <Select
-            label="Standort *"
-            feldId={EREIGNIS_FELD_IDS.location_id}
-            value={werte.location_id}
-            error={fehler.location_id}
-            onChange={(e) => onChange('location_id', e.target.value)}
+            label="Ort *"
+            value={werte.appointment_type}
+            onChange={(e) =>
+              onChange('appointment_type', e.target.value === 'video' ? 'video' : 'practice')
+            }
           >
-            <option value="">Bitte wählen …</option>
-            {standorte.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
+            <option value="practice">In der Praxis</option>
+            <option value="video">Video</option>
           </Select>
-        )
-      ) : null}
 
-      {datumFest ? (
-        <div>
-          <p className="text-ink text-sm font-medium">{datumBeschriftung.replace(/\s*\*$/, '')}</p>
-          <p className="text-ink-muted mt-1 text-sm">{datumFest}</p>
+          {werte.appointment_type === 'practice' ? (
+            standorteFehler ? (
+              // Die Fehlermeldung braucht die ganze Breite.
+              <div className="sm:col-span-2">{standorteFehler}</div>
+            ) : (
+              <Select
+                label="Standort *"
+                feldId={EREIGNIS_FELD_IDS.location_id}
+                value={werte.location_id}
+                error={fehler.location_id}
+                onChange={(e) => onChange('location_id', e.target.value)}
+              >
+                <option value="">Bitte wählen …</option>
+                {standorte.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </Select>
+            )
+          ) : null}
         </div>
-      ) : (
-        <Field
-          label={datumBeschriftung}
-          type="date"
-          feldId={EREIGNIS_FELD_IDS.date}
-          value={werte.date}
-          error={fehler.date}
-          hint={datumHinweis}
-          min={zeitzone ? todayInTimeZone(zeitzone) : undefined}
-          onChange={(e) => onChange('date', e.target.value)}
-        />
-      )}
+      </Section>
 
-      {/* Beide Enden im Raster: Anders als beim Behandlungstermin ist die
-          Länge hier frei (§8.1) - gebunden bleibt sie ans Praxisraster,
-          und das prüft der Server an beiden Enden. Die stehenden Hinweise zum
-          Raster sind fort - sie erklärten das System, nicht die Eingabe; die
-          Fehlermeldung des Servers bleibt (UX-005g). */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field
-          label="Beginn *"
-          type="time"
-          feldId={EREIGNIS_FELD_IDS.start_time}
-          value={werte.start_time}
-          error={fehler.start_time}
-          step={rasterMinuten ? rasterMinuten * 60 : undefined}
-          onChange={(e) => onChange('start_time', e.target.value)}
-        />
-        <Field
-          label="Ende *"
-          type="time"
-          feldId={EREIGNIS_FELD_IDS.end_time}
-          value={werte.end_time}
-          error={fehler.end_time}
-          step={rasterMinuten ? rasterMinuten * 60 : undefined}
-          onChange={(e) => onChange('end_time', e.target.value)}
-        />
-      </div>
-    </Feldgruppe>
+      <Section titel="Zeit">
+        <Feldgruppe>
+          {datumFest ? (
+            <div>
+              <p className="text-ink text-sm font-medium">
+                {datumBeschriftung.replace(/\s*\*$/, '')}
+              </p>
+              <p className="text-ink-muted mt-1 text-sm">{datumFest}</p>
+            </div>
+          ) : (
+            <Field
+              label={datumBeschriftung}
+              type="date"
+              feldId={EREIGNIS_FELD_IDS.date}
+              value={werte.date}
+              error={fehler.date}
+              hint={datumHinweis}
+              min={zeitzone ? todayInTimeZone(zeitzone) : undefined}
+              onChange={(e) => onChange('date', e.target.value)}
+            />
+          )}
+
+          {/* Beide Enden im Raster: Anders als beim Behandlungstermin ist die
+              Länge hier frei (§8.1) - gebunden bleibt sie ans Praxisraster,
+              und das prüft der Server an beiden Enden. Die stehenden Hinweise zum
+              Raster sind fort - sie erklärten das System, nicht die Eingabe; die
+              Fehlermeldung des Servers bleibt (UX-005g). */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field
+              label="Beginn *"
+              type="time"
+              feldId={EREIGNIS_FELD_IDS.start_time}
+              value={werte.start_time}
+              error={fehler.start_time}
+              step={rasterMinuten ? rasterMinuten * 60 : undefined}
+              onChange={(e) => onChange('start_time', e.target.value)}
+            />
+            <Field
+              label="Ende *"
+              type="time"
+              feldId={EREIGNIS_FELD_IDS.end_time}
+              value={werte.end_time}
+              error={fehler.end_time}
+              step={rasterMinuten ? rasterMinuten * 60 : undefined}
+              onChange={(e) => onChange('end_time', e.target.value)}
+            />
+          </div>
+        </Feldgruppe>
+      </Section>
+    </>
   );
 }
 

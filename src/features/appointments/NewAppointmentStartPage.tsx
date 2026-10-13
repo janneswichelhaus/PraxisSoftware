@@ -131,7 +131,7 @@ export function NewAppointmentStartPage() {
       ) : null}
 
       <Section titel="Patient:in">
-        <div className="max-w-md">
+        <div className="max-w-formular">
           <Patientensuche
             label="Patient:in suchen"
             labelSichtbar

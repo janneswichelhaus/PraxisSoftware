@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
-import { Feldgruppe } from '@/components/ui/Section';
+import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
@@ -159,118 +159,136 @@ export function AppointmentFormFields({
 
   if (nurPerson) return <Feldgruppe>{personenAuswahl}</Feldgruppe>;
 
-  return (
-    // Feldabstand wie in jedem anderen Formular (TOK-15): 16 px über die
-    // Feldgruppe statt eigener 20 px.
-    <Feldgruppe>
-      {personenAuswahl}
-
-      <Select
-        label="Terminart *"
-        feldId={TERMINFELD_IDS.appointment_type}
-        value={werte.appointment_type}
-        error={fehler.appointment_type}
-        onChange={(e) => onChange('appointment_type', e.target.value)}
-      >
-        {(arten ?? (Object.keys(appointmentTypeLabels) as AppointmentType[])).map((typ) => (
-          <option key={typ} value={typ}>
-            {appointmentTypeLabels[typ]}
-          </option>
-        ))}
-      </Select>
-
-      <Field
-        label="Datum *"
-        type="date"
-        feldId={TERMINFELD_IDS.date}
-        value={werte.date}
-        error={fehler.date}
-        min={minDatum}
-        onChange={(e) => onChange('date', e.target.value)}
-      />
-
-      {/* items-start: Die Dauerwahl kann ein zweites Feld aufklappen (CAL-020);
-          am oberen Rand ausgerichtet bleibt der Beginn stehen, wo er war. */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
-        <Field
-          label="Beginn *"
-          type="time"
-          feldId={TERMINFELD_IDS.start_time}
-          value={werte.start_time}
-          error={fehler.start_time}
-          // step rechnet in Sekunden ab 00:00 - also genau in Minuten seit
-          // Mitternacht, wie das Praxisraster. Nur der Beginn ist gebunden;
-          // verbindlich prueft der Server (CAL-005). Kein Hinweis „Praxisraster:
-          // N Minuten" mehr: Er erklärte das System, nicht die Eingabe; die
-          // Fehlermeldung bei einem Beginn außerhalb des Rasters bleibt (UX-005g).
-          step={rasterMinuten ? rasterMinuten * 60 : undefined}
-          onChange={(e) => onChange('start_time', e.target.value)}
-        />
-        {/* Das Ende bleibt eine Ableitung, kein Feld (CAL-010a) - gewählt wird
-            die Länge, nicht der Zeitpunkt. Ohne Beginn gibt es kein Ende und
-            damit auch keinen Hinweis darauf (TER-06). */}
-        <div>
-          {onFensterMinuten ? (
-            <Dauerwahl
-              minuten={fensterMinuten}
-              rasterMinuten={rasterMinuten}
-              endeHinweis={werte.end_time ? `Ende: ${werte.end_time} Uhr` : undefined}
-              fehler={fehler.end_time}
-              onMinuten={onFensterMinuten}
-            />
-          ) : (
-            <>
-              <p className="text-ink-muted text-sm">Ende</p>
-              <p className="text-ink text-liste mt-1 font-medium">
-                {werte.end_time ? `${werte.end_time} Uhr` : '—'}
-              </p>
-              <Kleingedrucktes className="mt-1">
-                {laengeHinweis ?? `Dauer: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
-              </Kleingedrucktes>
-              {/* Ein Fehler hier hat kein Feld, an dem er stehen könnte: als
-                  Meldung mit Rolle, in der Größe der Feldfehler (UIK-02). */}
-              {fehler.end_time ? (
-                <Statusmeldung ton="fehler" className="mt-1">
-                  {fehler.end_time}
-                </Statusmeldung>
-              ) : null}
-            </>
-          )}
-        </div>
+  // Der Ort folgt der Art: am Standort die Auswahl, beim Hausbesuch die
+  // Anschrift, beim Videotermin der Satz, dass noch kein Link entsteht.
+  const ort =
+    art === 'practice' ? (
+      <div className="flex flex-col gap-2">
+        <Select
+          label="Standort *"
+          feldId={TERMINFELD_IDS.location_id}
+          value={werte.location_id}
+          error={fehler.location_id}
+          onChange={(e) => onChange('location_id', e.target.value)}
+        >
+          <option value="">{standortListe?.laedt ? 'Wird geladen …' : 'Bitte wählen …'}</option>
+          {standorte.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </Select>
+        {standortListe?.fehlgeschlagen ? (
+          <Listenfehler
+            text="Die Standorte konnten nicht geladen werden."
+            onErneut={standortListe.erneut}
+          />
+        ) : null}
       </div>
+    ) : art === 'home_visit' ? (
+      hausbesuch
+    ) : art === 'video' ? (
+      // Ein Satz, kein Kasten (Leitfaden L2).
+      <p className="text-ink-muted text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
+    ) : null;
 
-      {art === 'practice' ? (
-        <div className="flex flex-col gap-2">
+  return (
+    // Drei Gruppen statt sieben Felder untereinander (Design-Rollout B2,
+    // DESIGN.md „Formular“): wer und was, wann, wo. Die Reihenfolge der Felder
+    // bleibt die der Fehlerzusammenfassung (UIK-02); der Feldabstand ist der
+    // jeder Feldgruppe (TOK-15).
+    <>
+      <Section titel="Person und Art">
+        <Feldgruppe>
+          {personenAuswahl}
+
           <Select
-            label="Standort *"
-            feldId={TERMINFELD_IDS.location_id}
-            value={werte.location_id}
-            error={fehler.location_id}
-            onChange={(e) => onChange('location_id', e.target.value)}
+            label="Terminart *"
+            feldId={TERMINFELD_IDS.appointment_type}
+            value={werte.appointment_type}
+            error={fehler.appointment_type}
+            onChange={(e) => onChange('appointment_type', e.target.value)}
           >
-            <option value="">{standortListe?.laedt ? 'Wird geladen …' : 'Bitte wählen …'}</option>
-            {standorte.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
+            {(arten ?? (Object.keys(appointmentTypeLabels) as AppointmentType[])).map((typ) => (
+              <option key={typ} value={typ}>
+                {appointmentTypeLabels[typ]}
               </option>
             ))}
           </Select>
-          {standortListe?.fehlgeschlagen ? (
-            <Listenfehler
-              text="Die Standorte konnten nicht geladen werden."
-              onErneut={standortListe.erneut}
+        </Feldgruppe>
+      </Section>
+
+      <Section titel="Zeit">
+        <Feldgruppe>
+          <Field
+            label="Datum *"
+            type="date"
+            feldId={TERMINFELD_IDS.date}
+            value={werte.date}
+            error={fehler.date}
+            min={minDatum}
+            onChange={(e) => onChange('date', e.target.value)}
+          />
+
+          {/* items-start: Die Dauerwahl kann ein zweites Feld aufklappen (CAL-020);
+              am oberen Rand ausgerichtet bleibt der Beginn stehen, wo er war. */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+            <Field
+              label="Beginn *"
+              type="time"
+              feldId={TERMINFELD_IDS.start_time}
+              value={werte.start_time}
+              error={fehler.start_time}
+              // step rechnet in Sekunden ab 00:00 - also genau in Minuten seit
+              // Mitternacht, wie das Praxisraster. Nur der Beginn ist gebunden;
+              // verbindlich prueft der Server (CAL-005). Kein Hinweis „Praxisraster:
+              // N Minuten" mehr: Er erklärte das System, nicht die Eingabe; die
+              // Fehlermeldung bei einem Beginn außerhalb des Rasters bleibt (UX-005g).
+              step={rasterMinuten ? rasterMinuten * 60 : undefined}
+              onChange={(e) => onChange('start_time', e.target.value)}
             />
-          ) : null}
-        </div>
-      ) : null}
+            {/* Das Ende bleibt eine Ableitung, kein Feld (CAL-010a) - gewählt wird
+                die Länge, nicht der Zeitpunkt. Ohne Beginn gibt es kein Ende und
+                damit auch keinen Hinweis darauf (TER-06). */}
+            <div>
+              {onFensterMinuten ? (
+                <Dauerwahl
+                  minuten={fensterMinuten}
+                  rasterMinuten={rasterMinuten}
+                  endeHinweis={werte.end_time ? `Ende: ${werte.end_time} Uhr` : undefined}
+                  fehler={fehler.end_time}
+                  onMinuten={onFensterMinuten}
+                />
+              ) : (
+                <>
+                  <p className="text-ink-muted text-sm">Ende</p>
+                  <p className="text-ink text-liste mt-1 font-medium">
+                    {werte.end_time ? `${werte.end_time} Uhr` : '—'}
+                  </p>
+                  <Kleingedrucktes className="mt-1">
+                    {laengeHinweis ??
+                      `Dauer: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
+                  </Kleingedrucktes>
+                  {/* Ein Fehler hier hat kein Feld, an dem er stehen könnte: als
+                      Meldung mit Rolle, in der Größe der Feldfehler (UIK-02). */}
+                  {fehler.end_time ? (
+                    <Statusmeldung ton="fehler" className="mt-1">
+                      {fehler.end_time}
+                    </Statusmeldung>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
+        </Feldgruppe>
+      </Section>
 
-      {art === 'home_visit' ? hausbesuch : null}
-
-      {art === 'video' ? (
-        // Ein Satz, kein Kasten (Leitfaden L2).
-        <p className="text-ink-muted text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
+      {ort ? (
+        <Section titel="Ort">
+          <Feldgruppe>{ort}</Feldgruppe>
+        </Section>
       ) : null}
-    </Feldgruppe>
+    </>
   );
 }
 
@@ -324,33 +342,50 @@ function Dauerwahl({
     eingabeFehler = `Bitte ein Vielfaches von ${rasterMinuten} Minuten wählen (Praxisraster).`;
   }
 
+  // Das abgeleitete Ende steht unter der Auswahl, nicht zwischen Beschriftung
+  // und Feld: So stehen Beginn und Dauer ab 640 px auf einer Linie
+  // (Design-Rollout B2). Vorgelesen wird es weiter mit der Auswahl.
+  const endeId = `${DAUER_AUSWAHL_ID}-ende`;
+  const auswahlFehler = frei ? undefined : fehler;
+  const beschreibung =
+    [endeHinweis ? endeId : null, auswahlFehler ? `${DAUER_AUSWAHL_ID}-error` : null]
+      .filter(Boolean)
+      .join(' ') || undefined;
+
   return (
     <div className="flex flex-col gap-3">
-      <Select
-        label="Dauer"
-        feldId={DAUER_AUSWAHL_ID}
-        value={frei ? FREIE_LAENGE : String(minuten)}
-        hint={endeHinweis}
-        // Nur, falls ein Fehler ohne offenes Minutenfeld ankommt - sonst
-        // stünde er an einer richtig gewählten Regellänge.
-        error={frei ? undefined : fehler}
-        onChange={(e) => {
-          setEingabe(null);
-          if (e.target.value === FREIE_LAENGE) {
-            setFreiGewaehlt(true);
-            return;
-          }
-          setFreiGewaehlt(false);
-          onMinuten(Number(e.target.value));
-        }}
-      >
-        {TERMINFENSTER_OPTIONEN.map((option) => (
-          <option key={option} value={String(option)}>
-            {option} Minuten
-          </option>
-        ))}
-        <option value={FREIE_LAENGE}>Andere Dauer …</option>
-      </Select>
+      <div className="flex flex-col gap-1.5">
+        <Select
+          label="Dauer"
+          feldId={DAUER_AUSWAHL_ID}
+          value={frei ? FREIE_LAENGE : String(minuten)}
+          aria-describedby={beschreibung}
+          // Nur, falls ein Fehler ohne offenes Minutenfeld ankommt - sonst
+          // stünde er an einer richtig gewählten Regellänge.
+          error={auswahlFehler}
+          onChange={(e) => {
+            setEingabe(null);
+            if (e.target.value === FREIE_LAENGE) {
+              setFreiGewaehlt(true);
+              return;
+            }
+            setFreiGewaehlt(false);
+            onMinuten(Number(e.target.value));
+          }}
+        >
+          {TERMINFENSTER_OPTIONEN.map((option) => (
+            <option key={option} value={String(option)}>
+              {option} Minuten
+            </option>
+          ))}
+          <option value={FREIE_LAENGE}>Andere Dauer …</option>
+        </Select>
+        {endeHinweis ? (
+          <p id={endeId} className="text-ink-muted text-sm">
+            {endeHinweis}
+          </p>
+        ) : null}
+      </div>
 
       {frei ? (
         <Field
@@ -422,7 +457,9 @@ export function UebernommeneAdresse({
   const vollstaendig = Boolean(street && houseNumber && postalCode && city);
 
   return (
-    <div className="border-line bg-surface-sunken rounded-card border p-4">
+    // Eine Auskunft, kein Feld: vertiefte Fläche ohne Rahmen (DESIGN.md
+    // Regel 2) - der Rahmen gehört den Feldern, die man ausfüllt.
+    <div className="bg-surface-sunken rounded-card px-4 py-3">
       <p className="text-ink-muted text-sm">{ueberschrift}</p>
       {vollstaendig ? (
         // Nur die Adresse - der Satz, dass sie aus den Stammdaten kommt und am

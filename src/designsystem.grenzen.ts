@@ -39,7 +39,7 @@ export const GRENZEN: Record<
   breiten: {
     'features/account': 1,
 
-    'features/appointments': 8,
+    'features/appointments': 1,
 
     'features/assessments': 3,
 
@@ -129,7 +129,7 @@ export const GRENZEN: Record<
   divideY: {
     app: 1,
 
-    'features/appointments': 3,
+    'features/appointments': 2,
 
     'features/audit': 1,
 
@@ -176,7 +176,7 @@ export const GRENZEN: Record<
   knoepfe: {
     app: 2,
 
-    'features/appointments': 10,
+    'features/appointments': 9,
 
     'features/billing': 1,
 
