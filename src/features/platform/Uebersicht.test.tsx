@@ -100,16 +100,16 @@ function checkin(teil: Record<string, unknown> = {}) {
 }
 
 describe('Uebersicht (POR-015)', () => {
-  // KND-003: das Angebot aus dem Abschlussgespräch als eigene Kachel.
+  // KND-003: das Angebot aus dem Abschlussgespräch als eigene Zeile.
   it('zeigt das Trainingsangebot der Praxis mit dem Weg dorthin', async () => {
     ladeTrainingsangebot.mockResolvedValue({
       label: 'Trainingspaket 3 Monate',
       valid_until: '2026-10-21',
     });
     zeige();
-    expect(await screen.findByText('Trainingspaket 3 Monate')).toBeInTheDocument();
+    expect(await screen.findByText(/Trainingspaket 3 Monate/)).toBeInTheDocument();
     expect(screen.getByText(/gilt bis 21.10.2026/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Angebot ansehen →' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^Training nach der Behandlung/ })).toHaveAttribute(
       'href',
       '/p/angebot?bereich=treatment',
     );
@@ -145,16 +145,24 @@ describe('Uebersicht (POR-015)', () => {
     ]);
     zeige();
     expect(await screen.findByText('Befundbogen ausfüllen')).toBeInTheDocument();
-    const beschriftungen = screen.getAllByRole('term').map((t) => t.textContent?.trim());
-    expect(beschriftungen).toEqual(['Befundbogen ausfüllen', 'Nächster Termin', 'Offene Rechnung']);
-    expect(screen.getByRole('link', { name: 'Jetzt ausfüllen →' })).toHaveAttribute(
+    // Was zu tun ist, in der Reihenfolge aus DSN-001; der Termin darunter.
+    const ziele = screen
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'))
+      .filter((href) => /befundbogen|rechnungen|termine/.test(href ?? ''));
+    expect(ziele).toEqual([
+      '/p/befundbogen?bereich=treatment',
+      '/p/rechnungen/ffffffff-ffff-4fff-8fff-000000000001?bereich=treatment',
+      '/p/termine?bereich=treatment',
+    ]);
+    expect(screen.getByRole('link', { name: /^Befundbogen ausfüllen/ })).toHaveAttribute(
       'href',
       '/p/befundbogen?bereich=treatment',
     );
+    expect(screen.getByRole('heading', { name: 'Nächster Termin' })).toBeInTheDocument();
     expect(screen.getByText('Hausbesuch · Anna Beispiel kommt zu Ihnen')).toBeInTheDocument();
     expect(screen.getByText('Testweg 7, 72072 Tuebingen')).toBeInTheDocument();
-    expect(screen.getByText('140,00 €')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zur Rechnung →' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^Offene Rechnung: 140,00\s€/ })).toHaveAttribute(
       'href',
       '/p/rechnungen/ffffffff-ffff-4fff-8fff-000000000001?bereich=treatment',
     );
@@ -216,17 +224,19 @@ describe('Uebersicht (POR-015)', () => {
       },
     ]);
     zeige({ ...ZUGANG, relationship_kind: 'training' }, '/p?bereich=training');
-    expect(await screen.findByText('Antwort der Praxis')).toBeInTheDocument();
-    expect(screen.getByText('Diese Woche ist voll.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Ihr Terminwunsch war leider nicht möglich.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Antwort der Praxis: Diese Woche ist voll.')).toBeInTheDocument();
     expect(screen.queryByText('Befundbogen ausfüllen')).not.toBeInTheDocument();
     expect(ladeBefundbogen).not.toHaveBeenCalled();
   });
 
-  it('zeigt den fälligen Check-in als Kachel (TRK-003, DSN-001 4.1 Punkt 3)', async () => {
+  it('zeigt den fälligen Check-in als Zeile (TRK-003, DSN-001 4.1 Punkt 3)', async () => {
     ladeCheckins.mockResolvedValue(checkin());
     zeige();
-    expect(await screen.findByText('3 kurze Fragen')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Jetzt beantworten →' })).toHaveAttribute(
+    expect(await screen.findByText(/^3 kurze Fragen · freiwillig/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Check-in beantworten/ })).toHaveAttribute(
       'href',
       '/p/checkin?bereich=treatment',
     );
@@ -240,7 +250,7 @@ describe('Uebersicht (POR-015)', () => {
     zeige();
     expect(await screen.findByText('Befundbogen ausfüllen')).toBeInTheDocument();
     await waitFor(() => expect(ladeCheckins).toHaveBeenCalled());
-    expect(screen.queryByText('Check-in')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Check-in/)).not.toBeInTheDocument();
     expect(screen.queryByText(/verpasst|überfällig|vergessen/i)).not.toBeInTheDocument();
   });
 
@@ -248,11 +258,13 @@ describe('Uebersicht (POR-015)', () => {
     ladeCheckins.mockResolvedValue(checkin({ can_answer: false, consent_needed: true }));
     zeige({ ...ZUGANG, relationship_kind: 'training' }, '/p?bereich=training');
     expect(await screen.findByText('Ihre Praxis bittet um einen Check-in')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zu den Einwilligungen →' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Jetzt beantworten →' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /^Ihre Praxis bittet um einen Check-in/ }),
+    ).toHaveAttribute('href', '/p/einwilligungen?bereich=training');
+    expect(screen.queryByRole('link', { name: /Check-in beantworten/ })).not.toBeInTheDocument();
   });
 
-  it('zeigt laufende Gewohnheiten als Kachel, pausierte nicht, ohne Zählwerk (ALT-003)', async () => {
+  it('zeigt laufende Gewohnheiten als Zeile, pausierte nicht, ohne Zählwerk (ALT-003)', async () => {
     const gewohnheit = {
       id: 'g1',
       action: 'zwei Minuten Mobilität',
@@ -274,7 +286,7 @@ describe('Uebersicht (POR-015)', () => {
     expect(await screen.findByText('Eine kleine Gewohnheit')).toBeInTheDocument();
     expect(screen.getByText('zwei Minuten Mobilität')).toBeInTheDocument();
     expect(screen.queryByText(/Treppe/)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Tage antippen →' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^Eine kleine Gewohnheit/ })).toHaveAttribute(
       'href',
       '/p/gewohnheiten?bereich=treatment',
     );
