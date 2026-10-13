@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
@@ -38,8 +39,9 @@ import { verordnerAuswahlname } from './verordnerfelder';
  *
  * **Seit UXR-007 steht die Frequenz bei Heilmitteln und Anzahl** (VER-21): Alle
  * drei schreibt die Praxis vom Rezept ab, und der Blick soll dabei nicht
- * zwischen Rezeptblock und Formularanfang springen. Jeder Hinweis ist ein
- * kurzer Satz.
+ * zwischen Rezeptblock und Formularanfang springen. Ein Hinweis steht nur, wo
+ * er die Eingabe ändert oder sagt, wer die Angabe sieht (DESIGN.md Regel 6,
+ * Design-Rollout B1).
  *
  * Was ein Bestandsdatensatz mitbringt, verschwindet dadurch nicht: Ein
  * Heilmittel außerhalb des Katalogs steht als eigenes, angehaktes Kästchen
@@ -88,7 +90,6 @@ export function TreatmentBasisFormFields({
             name="treatment_basis_kind"
             feldId={grundlageFeldId('treatment_basis_kind')}
             required
-            hint="Eine Verordnung liegt als Rezept vor; bei Selbstzahler vereinbart die Person die Behandlungen mit der Praxis."
             value={werte.treatment_basis_kind}
             error={fehler.treatment_basis_kind}
             onChange={(event) => onChange('treatment_basis_kind', event.target.value)}
@@ -156,14 +157,7 @@ export function TreatmentBasisFormFields({
           sind das, was die Praxis vom Rezept abschreibt. Heilmittel und Zahl
           beantworten verschiedene Fragen - was wird behandelt, und wie oft
           (ANN-064). */}
-      <Section
-        titel="Heilmittel und Termine"
-        hinweis={
-          verordnung
-            ? 'Anhaken, was auf dem Rezept steht – auch mehrere zugleich.'
-            : 'Anhaken, was vereinbart ist – auch mehrere zugleich.'
-        }
-      >
+      <Section titel="Heilmittel und Termine">
         <Feldgruppe>
           {/* Der Fehler der Auswahl ist mit Gruppe und erstem Kästchen
               verbunden (VER-16): Die Fehlerzusammenfassung springt auf das
@@ -224,11 +218,9 @@ export function TreatmentBasisFormFields({
             feldId={grundlageFeldId('appointment_count')}
             inputMode="numeric"
             required
-            hint={
-              verordnung
-                ? 'Wie viele Termine das Rezept hergibt – mehrere Heilmittel ergeben nicht mehr Termine.'
-                : 'Wie viele Termine vereinbart sind – mehrere Heilmittel ergeben nicht mehr Termine.'
-            }
+            // Der Satz ändert die Eingabe: Wer KG und MT ankreuzt, zählt die
+            // Termine nicht doppelt (ANN-064).
+            hint="Mehrere Heilmittel ergeben nicht mehr Termine."
             value={werte.appointment_count}
             error={fehler.appointment_count}
             onChange={(event) => onChange('appointment_count', event.target.value)}
@@ -239,11 +231,7 @@ export function TreatmentBasisFormFields({
             name="frequency_note"
             feldId={grundlageFeldId('frequency_note')}
             autoComplete="off"
-            hint={
-              verordnung
-                ? 'So, wie sie auf dem Rezept steht – etwa „2x pro Woche“.'
-                : 'Wie vereinbart – etwa „1x pro Woche“.'
-            }
+            hint={verordnung ? 'Wie auf dem Rezept, etwa „2x pro Woche“.' : 'Etwa „1x pro Woche“.'}
             value={werte.frequency_note}
             error={fehler.frequency_note}
             onChange={(event) => onChange('frequency_note', event.target.value)}
@@ -282,10 +270,11 @@ export function TreatmentBasisFormFields({
             name="note"
             feldId={grundlageFeldId('note')}
             rows={3}
+            // Wer die Anmerkung sieht, steht am Feld (ADR-004).
             hint={
               verordnung
-                ? 'Alles Weitere zur Verordnung, etwa „Rezept liegt im Ordner“ – sichtbar für alle Praxisrollen.'
-                : 'Alles Weitere zur Vereinbarung – sichtbar für alle Praxisrollen.'
+                ? 'Etwa „Rezept liegt im Ordner“ – sichtbar für alle Praxisrollen.'
+                : 'Sichtbar für alle Praxisrollen.'
             }
             value={werte.note}
             error={fehler.note}
@@ -301,17 +290,16 @@ export function TreatmentBasisFormFields({
           <Section
             titel="Aus dem Bestand"
             ebene={3}
-            hinweis="Diese Angaben stammen aus einer früheren Fassung des Formulars. Sie werden nicht mehr erfasst und bleiben beim Speichern unverändert stehen."
+            hinweis="Aus einer früheren Fassung des Formulars; bleibt beim Speichern unverändert."
             rahmen
           >
-            <dl className="flex flex-col gap-2">
+            <DetailList>
               {bestandstexte.map((eintrag) => (
-                <div key={eintrag.feld}>
-                  <dt className="text-ink-muted text-sm">{eintrag.feld}</dt>
-                  <dd className="text-ink text-sm whitespace-pre-line">{eintrag.text}</dd>
-                </div>
+                <DetailRow key={eintrag.feld} label={eintrag.feld}>
+                  {eintrag.text}
+                </DetailRow>
               ))}
-            </dl>
+            </DetailList>
           </Section>
         ) : null}
       </Section>

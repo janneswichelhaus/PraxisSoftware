@@ -83,8 +83,6 @@ export const GRENZEN: Record<
 
     'features/training': 3,
 
-    'features/treatment-bases': 3,
-
     'features/vacation': 2,
 
     'features/waitlist': 1,
@@ -164,8 +162,6 @@ export const GRENZEN: Record<
     'features/training': 6,
 
     'features/training-offers': 1,
-
-    'features/treatment-bases': 1,
 
     'features/waitlist': 2,
   },

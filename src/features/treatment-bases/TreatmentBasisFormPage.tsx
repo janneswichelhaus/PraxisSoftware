@@ -6,8 +6,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { neueVorgangskennung } from '@/lib/abstecher';
 import { alsFormularfehler } from '@/lib/formularfehler';
@@ -375,13 +377,11 @@ function GrundlagenFormular({
     <>
       <Rueckweg standard={standardZiel} beschriftung={RUECKWEG_TEXT} />
 
+      {/* Der Name ist der Schutz gegen die falsche Akte (UX-012); einen
+          Erklärsatz zum Sternchen braucht es nicht (DESIGN.md Regel 6). */}
       <PageHeader
         title={bestand ? 'Grundlage bearbeiten' : 'Grundlage erfassen'}
-        description={
-          patient.data
-            ? `Für ${fullName(patient.data)}. Mit * markierte Felder sind erforderlich.`
-            : 'Mit * markierte Felder sind erforderlich.'
-        }
+        description={patient.data ? `Für ${fullName(patient.data)}` : undefined}
       />
 
       {scanFehler ? (
@@ -403,7 +403,7 @@ function GrundlagenFormular({
             <ScanBesideForm fileId={scanId} />
           </div>
         ) : null}
-        <form onSubmit={absenden} noValidate className="max-w-xl lg:order-1">
+        <form onSubmit={absenden} noValidate className="max-w-formular lg:order-1">
           {personFehlt ? (
             <Statusmeldung ton="warnung" className="mb-6">
               Für wen diese Grundlage ist, ließ sich nicht laden. Bitte aus der Akte neu öffnen.
@@ -458,7 +458,7 @@ function GrundlagenFormular({
           {/* Rückfrage und Hinweise des Schutzes, dort, wo gearbeitet wird. */}
           {schutz}
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <Formularfuss>
             <Button type="submit" disabled={speichern.isPending || !patient.data}>
               {speichern.isPending
                 ? 'Wird gespeichert …'
@@ -468,10 +468,10 @@ function GrundlagenFormular({
             </Button>
             {/* Ein Seitenwechsel und deshalb ein Link (UIK-13) - der Schutz
               fragt bei ungespeicherten Eingaben wie bei jedem anderen Weg. */}
-            <ButtonLink to={zurueck} variant="secondary">
+            <ButtonLink to={zurueck} variant="quiet">
               Abbrechen
             </ButtonLink>
-          </div>
+          </Formularfuss>
         </form>
       </div>
 
@@ -480,10 +480,12 @@ function GrundlagenFormular({
           Formulars, damit kein versehentliches Absenden sie auslöst. Scheitert
           es, steht der Grund aus api.ts da - etwa ein Therapiebericht an der
           Grundlage, samt Ausweg (ZST-13, VER-15). */}
+      {/* Zerstörendes leise am Ende (DESIGN.md, Regel „Objekt“). */}
       {bestand ? (
-        <div className="border-line mt-10 flex border-t pt-6">
+        <div className="border-line mt-8 flex border-t pt-6">
           <Rueckfrage
             ausloeser="Grundlage löschen"
+            ausloeserVariante="quiet"
             bezeichnung="Grundlage endgültig löschen"
             bestaetigen="Ja, Grundlage löschen"
             bestaetigenLaeuft="Wird gelöscht …"
@@ -538,7 +540,7 @@ export function EditTreatmentBasisPage() {
   }>();
   const darfSchreiben = useDarfGrundlagenSchreiben();
 
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['treatment-basis', grundlageId],
     queryFn: () => fetchTreatmentBasis(grundlageId!),
     // Ohne Schreibrecht wird nicht geladen: Der Aufruf legt klinischen Inhalt
@@ -552,26 +554,25 @@ export function EditTreatmentBasisPage() {
   if (darfSchreiben === false) {
     return <OhneSchreibrecht patientId={patientId} titel="Grundlage bearbeiten" />;
   }
-  if (isPending) return <LoadingState label="Behandlungsgrundlage wird geladen …" />;
-  if (data) return <GrundlagenFormular patientId={patientId} bestand={data} />;
+  if (abfrage.data) return <GrundlagenFormular patientId={patientId} bestand={abfrage.data} />;
 
   // Ohne Formular bleibt der Weg zurück - und ein Satz, was zu tun ist (VER-15).
   return (
     <>
       <Rueckweg standard={grundlagenbereich(patientId)} beschriftung={RUECKWEG_TEXT} />
       <PageHeader title="Grundlage bearbeiten" />
-      {isError ? (
-        <ErrorState
-          title="Die Behandlungsgrundlage konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void refetch()}
-        />
-      ) : (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Diese Grundlage gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben. Bitte aus den Behandlungsgrundlagen der Akte neu öffnen."
-        />
-      )}
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Behandlungsgrundlage wird geladen …"
+        fehler="Die Behandlungsgrundlage konnte nicht geladen werden."
+      >
+        {() => (
+          <ErrorState
+            title="Nicht gefunden"
+            description="Diese Grundlage gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben. Bitte aus den Behandlungsgrundlagen der Akte neu öffnen."
+          />
+        )}
+      </Abfragezustand>
     </>
   );
 }

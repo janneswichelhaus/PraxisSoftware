@@ -5,8 +5,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { vorgangAusPfad } from '@/lib/abstecher';
 import { alsFormularfehler } from '@/lib/formularfehler';
@@ -192,16 +194,14 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
     <>
       <Rueckwegzeile zurueck={zurueck} />
 
+      {/* Ohne Erklärsatz (DESIGN.md Regel 6): Das Sternchen sagt am Feld, was
+          erforderlich ist; beim Bearbeiten nennt die Zeile, wen es betrifft. */}
       <PageHeader
         title={bestand ? 'Verordner:in bearbeiten' : 'Verordner:in anlegen'}
-        description={
-          bestand
-            ? `${prescriberName(bestand)} · Mit * markierte Felder sind erforderlich.`
-            : 'Nur der Nachname ist erforderlich; alles Weitere hilft bei der Folgeverordnung.'
-        }
+        description={bestand ? prescriberName(bestand) : undefined}
       />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         {/* Ein Speicherfehler als Fenster über dem Formular (VER-02, ZST-10,
             ANN-058): Wer am Seitenende auf „Speichern" tippt, sieht einen
             Kasten am Formularanfang nicht. Die Dublette ist kein solcher
@@ -229,7 +229,7 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
         {/* Rückfrage und Hinweise des Schutzes, dort, wo gearbeitet wird. */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <Formularfuss>
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending
               ? 'Wird gespeichert …'
@@ -239,13 +239,15 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
           </Button>
           {/* Ein Seitenwechsel und deshalb ein Link (UIK-13) - der Schutz
               fragt bei ungespeicherten Eingaben wie bei jedem anderen Weg. */}
-          <ButtonLink to={zurueck} variant="secondary">
+          <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
 
-      <Kleingedrucktes className="mt-10">
+      {/* Was gespeichert wird - und was nicht (ADR-009): als Kleingedrucktes
+          am Seitenende. */}
+      <Kleingedrucktes className="mt-8">
         Erfasst werden ausschließlich berufliche Kontaktdaten. Kassenmerkmale wie die Arztnummer
         werden nicht gespeichert.
       </Kleingedrucktes>
@@ -263,33 +265,32 @@ export function EditPrescriberPage() {
   const { prescriberId } = useParams<{ prescriberId: string }>();
   const zurueck = useRueckweg();
 
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['prescriber', prescriberId],
     queryFn: () => fetchPrescriber(prescriberId!),
     enabled: Boolean(prescriberId),
     retry: false,
   });
 
-  if (isPending) return <LoadingState label="Verordner:in wird geladen …" />;
-  if (data) return <VerordnerFormular bestand={data} zurueck={zurueck} />;
+  if (abfrage.data) return <VerordnerFormular bestand={abfrage.data} zurueck={zurueck} />;
 
   // Ohne Formular bleibt der Weg zurück - und ein Satz, was zu tun ist (VER-15).
   return (
     <>
       <Rueckwegzeile zurueck={zurueck} />
       <PageHeader title="Verordner:in bearbeiten" />
-      {isError ? (
-        <ErrorState
-          title="Die Verordner:in konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void refetch()}
-        />
-      ) : (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Diese Verordner:in gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben. Bitte in der Liste der Verordner:innen neu wählen."
-        />
-      )}
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Verordner:in wird geladen …"
+        fehler="Die Verordner:in konnte nicht geladen werden."
+      >
+        {() => (
+          <ErrorState
+            title="Nicht gefunden"
+            description="Diese Verordner:in gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben. Bitte in der Liste der Verordner:innen neu wählen."
+          />
+        )}
+      </Abfragezustand>
     </>
   );
 }

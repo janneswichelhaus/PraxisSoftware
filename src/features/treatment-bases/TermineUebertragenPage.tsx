@@ -1,11 +1,13 @@
 import { useId, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Disclosure } from '@/components/ui/Card';
+import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
@@ -263,6 +265,31 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
     );
   }
 
+  /**
+   * Die drei Abfragen als eine (Design-Rollout B1): Das Formular steht erst,
+   * wenn alle da sind; scheitert eine, gibt es einen Fehler mit einem Weg
+   * hinaus.
+   */
+  const alleGeladen =
+    !isPending &&
+    !termine.isPending &&
+    !vergangene.isPending &&
+    !isError &&
+    !termine.isError &&
+    !vergangene.isError;
+  const abfrage = {
+    data: alleGeladen ? true : undefined,
+    isPending: isPending || termine.isPending || vergangene.isPending,
+    isError: isError || termine.isError || vergangene.isError,
+    isFetching: false,
+    refetch: () =>
+      Promise.all([
+        erneutLaden(),
+        termine.isError ? termine.refetch() : null,
+        vergangene.isError ? vergangene.refetch() : null,
+      ]),
+  };
+
   // Ein gesperrter Knopf sagt, warum (VER-13).
   const sperrgrund = !ziel
     ? 'Zuerst die Grundlage wählen.'
@@ -274,123 +301,125 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
     <>
       <Rueckweg standard={akte} beschriftung="Zurück zu den Behandlungsgrundlagen" />
 
+      {/* Der Name gegen die falsche Akte; was „alles oder nichts“ heißt,
+          steht über dem Knopf, der es auslöst. */}
       <PageHeader
         title="Termine übertragen"
-        description={
-          patient.data
-            ? `Für ${fullName(patient.data)}. Alles oder nichts – entweder wandern alle gewählten Termine, oder keiner.`
-            : 'Alles oder nichts – entweder wandern alle gewählten Termine, oder keiner.'
-        }
+        description={patient.data ? `Für ${fullName(patient.data)}` : undefined}
       />
 
-      {isPending || termine.isPending || vergangene.isPending ? (
-        <LoadingState label="Wird geladen …" />
-      ) : null}
-      {isError || termine.isError || vergangene.isError ? (
-        <ErrorState
-          title="Termine oder Grundlagen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() =>
-            Promise.all([
-              erneutLaden(),
-              termine.isError ? termine.refetch() : null,
-              vergangene.isError ? vergangene.refetch() : null,
-            ])
-          }
-        />
-      ) : null}
-
-      {!isPending &&
-      !termine.isPending &&
-      !vergangene.isPending &&
-      !isError &&
-      !termine.isError &&
-      !vergangene.isError ? (
-        <form onSubmit={absenden} noValidate className="max-w-xl">
-          {/* Zwei Abschnitte direkt unter der Seitenüberschrift: Ebene 2
-              (VER-16). */}
-          <Section titel="Ziel">
-            <Select
-              label="Auf welche Behandlungsgrundlage? *"
-              value={ziel}
-              onChange={(e) => setZiel(e.target.value)}
-              hint="Nur Grundlagen dieser Patient:in."
-            >
-              <option value="">Bitte wählen …</option>
-              {eintraege.map((eintrag) => (
-                <option
-                  key={eintrag.verordnung.id}
-                  value={eintrag.verordnung.id}
-                  disabled={gibtAb(eintrag)}
-                >
-                  {zielBeschriftung(eintrag)}
-                </option>
-              ))}
-            </Select>
-          </Section>
-
-          <Section
-            titel="Diese Termine"
-            hinweis="Vorgeschlagen sind die ungedeckten künftigen Termine. Einzeln abwählbar."
-          >
-            {angebot.length === 0 ? (
-              <EmptyState
-                title="Kein ungedeckter Termin"
-                description="Jeder künftige Termin dieser Person wird von seiner Behandlungsgrundlage getragen. Es gibt nichts zu übertragen."
-              />
-            ) : (
-              <ul>
-                {angebot.map((termin) => (
-                  <Terminzeile
-                    key={termin.id}
-                    termin={termin}
-                    gewaehlt={!abgewaehlt.has(termin.id)}
-                    umschalten={umschalten}
-                  />
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Wird geladen …"
+        fehler="Termine oder Grundlagen konnten nicht geladen werden."
+      >
+        {() => (
+          <form onSubmit={absenden} noValidate className="max-w-formular">
+            {/* Zwei Abschnitte direkt unter der Seitenüberschrift: Ebene 2
+                (VER-16). */}
+            <Section titel="Ziel">
+              <Select
+                label="Auf welche Behandlungsgrundlage? *"
+                value={ziel}
+                onChange={(e) => setZiel(e.target.value)}
+                hint="Nur Grundlagen dieser Patient:in."
+              >
+                <option value="">Bitte wählen …</option>
+                {eintraege.map((eintrag) => (
+                  <option
+                    key={eintrag.verordnung.id}
+                    value={eintrag.verordnung.id}
+                    disabled={gibtAb(eintrag)}
+                  >
+                    {zielBeschriftung(eintrag)}
+                  </option>
                 ))}
-              </ul>
-            )}
+              </Select>
+            </Section>
 
-            {termine.data?.length === HOECHSTZAHL ? (
-              <Statusmeldung className="mt-3">
-                Geprüft wurden die nächsten {HOECHSTZAHL} Termine. Sind es mehr, bleibt der Rest
-                stehen und lässt sich danach in einem zweiten Vorgang übertragen.
+            <Section
+              titel="Diese Termine"
+              hinweis={
+                angebot.length > 0
+                  ? 'Vorgeschlagen sind die ungedeckten künftigen Termine.'
+                  : undefined
+              }
+            >
+              {angebot.length === 0 ? (
+                <EmptyState
+                  inKarte
+                  title="Kein ungedeckter Termin"
+                  description="Jeder künftige Termin dieser Person ist von seiner Behandlungsgrundlage gedeckt."
+                />
+              ) : (
+                <Inhaltsflaeche>
+                  <ul>
+                    {angebot.map((termin) => (
+                      <Terminzeile
+                        key={termin.id}
+                        termin={termin}
+                        gewaehlt={!abgewaehlt.has(termin.id)}
+                        umschalten={umschalten}
+                      />
+                    ))}
+                  </ul>
+                </Inhaltsflaeche>
+              )}
+
+              {termine.data?.length === HOECHSTZAHL ? (
+                <Statusmeldung className="mt-3">
+                  Geprüft wurden die nächsten {HOECHSTZAHL} Termine. Sind es mehr, bleibt der Rest
+                  stehen und lässt sich danach in einem zweiten Vorgang übertragen.
+                </Statusmeldung>
+              ) : null}
+
+              {vergangenesAngebot.length > 0 ? (
+                <Disclosure summary="Vergangene Termine" anzahl={vergangenesAngebot.length}>
+                  {/* Was mitzieht, ist eine Folge des Vorgangs - auf Abruf,
+                      bei den Terminen, die sie betrifft. */}
+                  <p className="text-ink-muted mb-2 text-sm">
+                    Durchgeführte Termine einer anderen Grundlage, zur Korrektur der Zuordnung.
+                    Erfasste, noch nicht abgerechnete Leistungen ziehen mit; die Zielgrundlage
+                    braucht dafür dasselbe Heilmittel.
+                  </p>
+                  <ul>
+                    {vergangenesAngebot.map((termin) => (
+                      <Terminzeile
+                        key={termin.id}
+                        termin={termin}
+                        gewaehlt={vergangenGewaehlt.has(termin.id)}
+                        umschalten={vergangenUmschalten}
+                      />
+                    ))}
+                  </ul>
+                </Disclosure>
+              ) : null}
+            </Section>
+
+            {uebertragen.isError ? (
+              <Statusmeldung ton="fehler" className="mt-4">
+                {uebertragen.error.message} Ein abgesagter oder bereits abgerechneter Termin wird
+                nicht übertragen – dann bleibt alles, wie es war, auch an den Leistungen.
               </Statusmeldung>
             ) : null}
 
-            {vergangenesAngebot.length > 0 ? (
-              <Disclosure summary="Vergangene Termine" anzahl={vergangenesAngebot.length}>
-                <p className="text-ink-muted mb-2 text-sm">
-                  Durchgeführte Termine einer anderen Grundlage, zur Korrektur der Zuordnung.
-                  Erfasste, noch nicht abgerechnete Leistungen ziehen mit; die Zielgrundlage braucht
-                  dafür dasselbe Heilmittel.
-                </p>
-                <ul>
-                  {vergangenesAngebot.map((termin) => (
-                    <Terminzeile
-                      key={termin.id}
-                      termin={termin}
-                      gewaehlt={vergangenGewaehlt.has(termin.id)}
-                      umschalten={vergangenUmschalten}
-                    />
-                  ))}
-                </ul>
-              </Disclosure>
-            ) : null}
-          </Section>
-
-          {uebertragen.isError ? (
-            <Statusmeldung ton="fehler" className="mt-4">
-              {uebertragen.error.message} Ein abgesagter oder bereits abgerechneter Termin wird
-              nicht übertragen – dann bleibt alles, wie es war, auch an den Leistungen.
-            </Statusmeldung>
-          ) : null}
-
-          {/* Ohne Angebot kein Knopf über null Termine (VER-13): Der
-              Leerzustand sagt es, der Rückweg steht oben. */}
-          {angebot.length > 0 || vergangenesAngebot.length > 0 ? (
-            <>
-              <div className="mt-6 flex flex-wrap gap-3">
+            {/* Ohne Angebot kein Knopf über null Termine (VER-13): Der
+                Leerzustand sagt es, der Rückweg steht oben. */}
+            {angebot.length > 0 || vergangenesAngebot.length > 0 ? (
+              // Der Grund für einen gesperrten Knopf steht über ihm, wo der
+              // Blick vor dem Tippen hinfällt (VER-13).
+              <Formularfuss
+                zusatz={
+                  <>
+                    <p>Alles oder nichts – entweder wandern alle gewählten Termine, oder keiner.</p>
+                    {sperrgrund ? (
+                      <p id={sperrgrundId} className="text-ink mt-1">
+                        {sperrgrund}
+                      </p>
+                    ) : null}
+                  </>
+                }
+              >
                 <Button
                   type="submit"
                   disabled={sperrgrund !== null || uebertragen.isPending}
@@ -403,19 +432,14 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
                       : `${gewaehlt.length} Termine übertragen`}
                 </Button>
                 {/* Ein Seitenwechsel und deshalb ein Link (UIK-13). */}
-                <ButtonLink to={akte} variant="secondary">
+                <ButtonLink to={akte} variant="quiet">
                   Abbrechen
                 </ButtonLink>
-              </div>
-              {sperrgrund ? (
-                <p id={sperrgrundId} className="text-ink-muted mt-2 text-sm">
-                  {sperrgrund}
-                </p>
-              ) : null}
-            </>
-          ) : null}
-        </form>
-      ) : null}
+              </Formularfuss>
+            ) : null}
+          </form>
+        )}
+      </Abfragezustand>
     </>
   );
 }
