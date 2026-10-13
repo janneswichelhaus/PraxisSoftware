@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, DataList, DataRow, Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -258,7 +258,7 @@ function LoeschverlangenAbschnitt({ patient }: { patient: Patient }) {
 
 export function BetroffenenrechtePage() {
   const { patientId = '' } = useParams();
-  const { data, isPending, isError, refetch } = useQuery({
+  const akte = useQuery({
     queryKey: ['patient', patientId],
     queryFn: () => fetchPatient(patientId),
     enabled: Boolean(patientId),
@@ -277,46 +277,57 @@ export function BetroffenenrechtePage() {
           sind (WRT-12), steht im Kleingedruckten am Ende. */}
       <PageHeader
         title="Auskunft und Löschverlangen"
-        description={data ? fullName(data) : undefined}
+        description={akte.data ? fullName(akte.data) : undefined}
       />
 
       {/* Ein Ladefehler ist etwas anderes als eine Akte, die es nicht gibt
-          (ZST-08): Der eine bietet einen neuen Versuch an, die andere nicht. */}
-      {isPending ? <LoadingState label="Akte wird geladen …" inKarte /> : null}
-      {isError ? (
-        <ErrorState
-          title="Die Akte konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => void refetch()}
-        />
-      ) : null}
-      {data === null ? (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-        />
-      ) : null}
+          (ZST-08): Der eine bietet einen neuen Versuch an, die andere nicht.
+          Laden und Ladefehler über den Baustein (Regel 8). */}
+      <Abfragezustand
+        abfrage={akte}
+        laden="Akte wird geladen …"
+        fehler="Die Akte konnte nicht geladen werden."
+        inKarte
+      >
+        {(data) =>
+          data === null ? (
+            <ErrorState
+              title="Nicht gefunden"
+              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+            />
+          ) : (
+            <>
+              <AuskunftAbschnitt patient={data} />
+              {/* DOK-006d: Der Inhalt der Fotos kommt nicht mit der Auskunft,
+                  sondern je Foto getrennt (ADR-017 Punkt 40). */}
+              <FotoHerausgabe patientId={data.id} />
+              <LoeschverlangenAbschnitt patient={data} />
 
-      {data ? (
-        <>
-          <AuskunftAbschnitt patient={data} />
-          {/* DOK-006d: Der Inhalt der Fotos kommt nicht mit der Auskunft,
-              sondern je Foto getrennt (ADR-017 Punkt 40). */}
-          <FotoHerausgabe patientId={data.id} />
-          <LoeschverlangenAbschnitt patient={data} />
-
-          {/* Rechts- und Datenflusssätze am Seitenende (Regel 6): wem die
-              Vorgänge vorbehalten sind (WRT-12), dass jede Auskunft
-              protokolliert wird (ADR-010 Punkt 2) und dass nichts verschickt
-              wird. */}
-          <Kleingedrucktes className="mt-10">
-            Vorgänge nach dem Verfahren für Betroffenenrechte, vorbehalten der Rolle „
-            {roleLabel('owner')}“. Jede Auskunft erstellt eine Kopie aller Daten dieser Akte und
-            wird protokolliert. Briefkopf, Datum und Unterschrift der Antwort kommen aus der Praxis
-            – die Anwendung verschickt nichts.
-          </Kleingedrucktes>
-        </>
-      ) : null}
+              {/* Rechts- und Datenflusssätze in einem Block am Seitenende
+                  (Regel 6; Nachprüfung neu4: der Satz zu den Fotos stand
+                  mitten auf der Seite): wem die Vorgänge vorbehalten sind
+                  (WRT-12), dass jede Auskunft und jede Fotokopie protokolliert
+                  wird (ADR-010 Punkt 2, ANN-128), dass Fotos nur hier die
+                  Anwendung verlassen (ADR-017 Punkt 40) und dass nichts
+                  verschickt wird. */}
+              <div className="mt-8 flex flex-col gap-2">
+                <Kleingedrucktes>
+                  Vorgänge nach dem Verfahren für Betroffenenrechte, vorbehalten der Rolle „
+                  {roleLabel('owner')}“. Jede Auskunft erstellt eine Kopie aller Daten dieser Akte
+                  und wird protokolliert. Briefkopf, Datum und Unterschrift der Antwort kommen aus
+                  der Praxis – die Anwendung verschickt nichts.
+                </Kleingedrucktes>
+                <Kleingedrucktes>
+                  Zur vollständigen Kopie gehören die Fotos selbst, auch gesperrte. Unter „Fotos
+                  herausgeben“ entsteht je Foto eine Kopie für die Person (Art. 15 Abs. 3 und Art.
+                  20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie
+                  wird protokolliert.
+                </Kleingedrucktes>
+              </div>
+            </>
+          )
+        }
+      </Abfragezustand>
     </>
   );
 }
