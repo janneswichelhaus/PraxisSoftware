@@ -194,8 +194,10 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
  */
 function kopfzustand(ansicht: Rechnungsansicht): { etiketten: ReactNode; satz: string | null } {
   if (ansicht.status === 'draft') {
+    // Kein Abzeichen: Der Titel sagt schon „Entwurf“ (DESIGN.md, Abzeichen
+    // nur für Ausnahmen).
     return {
-      etiketten: <Badge ton="neutral">Entwurf</Badge>,
+      etiketten: null,
       satz: 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.',
     };
   }
