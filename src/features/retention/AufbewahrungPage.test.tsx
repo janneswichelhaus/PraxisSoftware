@@ -39,6 +39,11 @@ vi.mock('@/features/files/api', async (importOriginal) => {
 
 const { AufbewahrungPage } = await import('./AufbewahrungPage');
 
+/** Eine Datenklasse im Detail (Welle B, B7: Liste und Detail auf derselben Route). */
+function klassenPfad(key: string): string {
+  return `/praxis/sicherheit/aufbewahrung?klasse=${key}`;
+}
+
 function auftrag(rest: Partial<FilesApi.Loeschauftrag> = {}): FilesApi.Loeschauftrag {
   return {
     id: 'o1',
@@ -114,22 +119,42 @@ describe('AufbewahrungPage', () => {
     merkeVerwaisteZurLoeschungVor.mockResolvedValue(1);
   });
 
-  it('nennt Frist, Anker und gesetzliche Grundlage je Datenklasse', async () => {
+  it('nennt Frist und Anker in der Liste, die Grundlage in der Datenklasse', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     expect(await screen.findByText('Klinische Patientenakte')).toBeInTheDocument();
     expect(screen.getByText('10 Jahre')).toBeInTheDocument();
     expect(screen.getByText('ab Abschluss der Versorgung')).toBeInTheDocument();
+
+    // Die Zeile öffnet die Datenklasse auf derselben Route.
+    const zeile = screen.getByRole('link', { name: /Klinische Patientenakte/ });
+    expect(zeile).toHaveAttribute('href', klassenPfad('patientenakte'));
+    await user.click(zeile);
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Klinische Patientenakte' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('10 Jahre')).toBeInTheDocument();
     // Die Datenbank traegt `Par.`, die Seite das Zeichen (BEF-033).
     expect(screen.getByText('§ 630f Abs. 3 BGB')).toBeInTheDocument();
     expect(screen.queryByText(/Par\./)).toBeNull();
+    expect(screen.getByRole('link', { name: '← Zurück zum Aufbewahrungsplan' })).toHaveAttribute(
+      'href',
+      '/praxis/sicherheit/aufbewahrung',
+    );
   });
 
   it('nennt bei Patientenfotos die Obergrenze neben der Frist (ADR-017 Punkt 38)', async () => {
     fetchRetentionSchedule.mockResolvedValue([akte, fotos, beschaeftigte]);
-    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+    renderWithProviders(
+      <AufbewahrungPage user={testUser(['owner'])} />,
+      klassenPfad('patientenfoto'),
+    );
 
-    expect(await screen.findByText('Foto-Arbeitshilfen')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Foto-Arbeitshilfen' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('1 Jahr')).toBeInTheDocument();
     expect(screen.getByText('ab dem Ereignis')).toBeInTheDocument();
     expect(
@@ -150,14 +175,43 @@ describe('AufbewahrungPage', () => {
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     // Die Datenschutzprüfung muss am Bildschirm erkennen, welche Frist noch
-    // niemand bestätigt hat. Seit BEF-065 in Praxissprache, die Kennung daneben.
+    // niemand bestätigt hat. Seit BEF-065 in Praxissprache - in der Liste an
+    // der Zeile, in der Datenklasse mit der Kennung daneben.
+    await screen.findByText('Beschäftigtendaten');
+    expect(screen.getAllByText('Annahme – Prüfung offen')).toHaveLength(1);
+    expect(
+      within(screen.getByRole('link', { name: /Beschäftigtendaten/ })).getByText(
+        'Annahme – Prüfung offen',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('nennt in der Datenklasse die Kennung der Annahme neben dem Wort', async () => {
+    renderWithProviders(
+      <AufbewahrungPage user={testUser(['owner'])} />,
+      klassenPfad('beschaeftigtendaten'),
+    );
     expect(await screen.findByText('ANN-030')).toBeInTheDocument();
     expect(screen.getAllByText('Annahme – Prüfung offen')).toHaveLength(1);
+    expect(screen.getByText('Keine automatische Löschung')).toBeInTheDocument();
+  });
+
+  it('meldet eine unbekannte Datenklasse mit Rückweg', async () => {
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />, klassenPfad('gibtsnicht'));
+    expect(
+      await screen.findByText('Diese Datenklasse gibt es im Aufbewahrungsplan nicht.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '← Zurück zum Aufbewahrungsplan' }),
+    ).toBeInTheDocument();
   });
 
   it('zeigt die betroffenen Tabellen erst auf Wunsch', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+    renderWithProviders(
+      <AufbewahrungPage user={testUser(['owner'])} />,
+      klassenPfad('patientenakte'),
+    );
 
     const aufklappen = await screen.findByText('Betroffene Tabellen (2)');
     // Der Inhalt eines geschlossenen <details> steht im Dokument, ist aber
@@ -376,15 +430,17 @@ describe('AufbewahrungPage', () => {
     });
   });
 
-  it('legt um die Karten von Plan und Sperren keinen zweiten Rahmen (RSP-16)', async () => {
+  it('legt um Plan und Sperren keinen zweiten Rahmen (RSP-16, Leitfaden L2)', async () => {
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
     await screen.findByText('Klinische Patientenakte');
+    await screen.findByText('Keine laufende Löschsperre');
 
     for (const titel of ['Aufbewahrungsplan', 'Löschsperren']) {
       const abschnitt = screen.getByRole('heading', { name: titel }).closest('section')!;
-      // Inhaltsflaeche ist der Rahmen um Auskunft; eine Kartenliste traegt
-      // ihre Rahmen selbst.
-      expect(abschnitt.querySelector('.rounded-card.px-4')).toBeNull();
+      // Seit Welle B eine Zeilenliste bzw. ein Leerzustand in genau einer
+      // Karte: kein Kasten im Kasten.
+      expect(abschnitt.querySelectorAll('.rounded-card')).toHaveLength(1);
+      expect(abschnitt.querySelector('.rounded-card .rounded-card')).toBeNull();
     }
   });
 
