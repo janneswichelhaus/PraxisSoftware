@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { offeneFragen, ohneAbsenden } from './darstellung';
+import { laengstesWort, offeneFragen, ohneAbsenden } from './darstellung';
 import { instrumentFuer } from './instrumente';
 
 /** Hilfen der Erhebungsseite und der Leseansicht (FRB-002b, UXR-009). */
@@ -44,5 +44,28 @@ describe('Enter in einem einzeiligen Feld (BEF-09)', () => {
     ohneAbsenden(buchstabe);
     expect(enter.preventDefault).toHaveBeenCalledTimes(1);
     expect(buchstabe.preventDefault).not.toHaveBeenCalled();
+  });
+});
+
+describe('Spaltenbreite der Kästchen (ANN-497)', () => {
+  const optionen = (...labels: string[]) => labels.map((label) => ({ label }));
+
+  it('misst das längste Wort, nicht die längste Option', () => {
+    expect(laengstesWort(optionen('Ruheschmerzen', 'Nachtschmerzen', 'nein'))).toBe(14);
+    expect(laengstesWort(optionen('Gefühl einer schmerzhaften Kälte'))).toBe(13);
+  });
+
+  it('trennt nach einem Bindestrich vor einem Buchstaben, nie vor einem Schrägstrich', () => {
+    expect(laengstesWort(optionen('Hals-Nasen-Ohren'))).toBe(6);
+    expect(laengstesWort(optionen('Treppe hoch-/runtergehen'))).toBe(17);
+    expect(laengstesWort(optionen('Verdauungsbeschwerden/Sodbrennen'))).toBe(32);
+  });
+
+  it('kennt die Optionen der Anamnese ohne Wort über 32 Zeichen', () => {
+    for (const item of anamnese.items) {
+      if (item.typ !== 'mehrfachauswahl') continue;
+      expect(laengstesWort(item.optionen ?? [])).toBeGreaterThan(0);
+      expect(laengstesWort(item.optionen ?? [])).toBeLessThanOrEqual(32);
+    }
   });
 });
