@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -60,7 +60,14 @@ export function TrainingEinwilligung({
 }
 
 function standZeichen(stand: TrainingConsentRecord | null) {
-  if (!stand) return <Badge ton="neutral">Nicht erteilt</Badge>;
+  // Zeichen und Wort wie „Nicht erteilt“ in der Akte (Regel 5, ANN-485).
+  if (!stand) {
+    return (
+      <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.fehlt}>
+        Nicht erteilt
+      </Badge>
+    );
+  }
   const plattform = stand.source === 'platform' ? ' (Plattform)' : '';
   return stand.record_kind === 'consent_granted' ? (
     <Badge ton="positiv">

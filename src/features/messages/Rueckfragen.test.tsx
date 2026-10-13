@@ -42,6 +42,7 @@ vi.mock('./api', async (importOriginal) => ({
 
 const { RueckfragenPage, RueckfragePage } = await import('./RueckfragenPage');
 const { OffeneRueckfragen } = await import('./RueckfragenAbschnitt');
+const { RueckfragenListe } = await import('./RueckfragenListe');
 
 const ZEILE: Rueckfragezeile = {
   id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
@@ -142,6 +143,25 @@ describe('Rückfragen (KOM-002)', () => {
     );
     expect((await screen.findByText('beantwortet')).textContent).toBe('✓beantwortet');
     expect(screen.getByText('überfällig').textContent).toBe('!überfällig');
+  });
+
+  it('an der Akte: Thema als Titel, Einträge in Einzahl und Mehrzahl', async () => {
+    fetchRueckfragen.mockResolvedValue([
+      ZEILE,
+      { ...ZEILE, id: 'dddddddd-dddd-4ddd-8ddd-000000000004', entry_count: 2, overdue: false },
+    ]);
+    renderWithProviders(
+      <RueckfragenListe
+        art="treatment"
+        verhaeltnisId={ZEILE.patient_id}
+        mitName={false}
+        mitErledigten
+        leer=""
+      />,
+    );
+    expect(await screen.findByText(/^1 Eintrag · /)).toBeInTheDocument();
+    expect(screen.getByText(/^2 Einträge/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 Einträge/)).not.toBeInTheDocument();
   });
 
   it('owner ändert die Antwortfrist (ANN-309)', async () => {
