@@ -422,9 +422,10 @@ test('nimmt einen Fehltipp auf den Haken mit „Rückgängig" zurück (R2, P1)',
 });
 
 // Praxis-Review R2, P2: Im Funkloch nach dem Besuch scheitert die Suche nach
-// freien Zeiten. „Erneut suchen" fragt noch einmal - die Seite bleibt stehen,
-// nichts wird neu geladen.
-test('sucht den Folgetermin nach einem Funkloch mit „Erneut suchen" noch einmal (R2, P2)', async ({
+// freien Zeiten. „Erneut versuchen" fragt noch einmal - die Seite bleibt
+// stehen, nichts wird neu geladen. Der Fehler steht wie auf jeder Seite
+// (Design-Review R2, P2: `ErrorState`, nicht von Hand).
+test('sucht den Folgetermin nach einem Funkloch mit „Erneut versuchen" noch einmal (R2, P2)', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 667 });
@@ -447,7 +448,9 @@ test('sucht den Folgetermin nach einem Funkloch mit „Erneut suchen" noch einma
 
   const fehler = page.getByText('Die freien Zeiten konnten nicht gesucht werden.');
   await expect(fehler).toBeVisible();
-  const erneut = page.getByRole('button', { name: 'Erneut suchen' });
+  const meldung = page.getByRole('alert').filter({ has: fehler });
+  await expect(meldung).toContainText('Bitte die Verbindung prüfen und erneut versuchen.');
+  const erneut = meldung.getByRole('button', { name: 'Erneut versuchen' });
   expect((await erneut.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   const wegeVorher = await page.evaluate(
     () => (window as unknown as { __wege: string[] }).__wege.length,

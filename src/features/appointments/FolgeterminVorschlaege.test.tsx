@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as SlotApi from '@/features/slot-search/api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { tagePlus } from './calendar';
 import { FolgeterminVorschlaege } from './FolgeterminVorschlaege';
 
@@ -159,16 +160,18 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477)', () => {
     expect(screen.queryByText(/Folgetermin angelegt/)).toBeNull();
   });
 
-  it('sucht im Funkloch mit „Erneut suchen" noch einmal (Praxis-Review R2, P2)', async () => {
+  it('sucht im Funkloch mit „Erneut versuchen" noch einmal (Praxis-Review R2, P2)', async () => {
     findFreeSlots.mockRejectedValueOnce(new Error('Failed to fetch'));
     findFreeSlots.mockRejectedValueOnce(new Error('Failed to fetch'));
     const user = userEvent.setup();
     rendern();
-    expect(
-      await screen.findByText('Die freien Zeiten konnten nicht gesucht werden.'),
-    ).toBeInTheDocument();
+    // Der Fehler steht wie auf jeder Seite (Design-Review R2, P2): Titel, der
+    // eine Satz zur Verbindung und „Erneut versuchen" in einer Meldung.
+    const meldung = await screen.findByRole('alert');
+    expect(meldung).toHaveTextContent('Die freien Zeiten konnten nicht gesucht werden.');
+    expect(meldung).toHaveTextContent(VERBINDUNG_PRUEFEN);
     const aufrufe = findFreeSlots.mock.calls.length;
-    await user.click(screen.getByRole('button', { name: 'Erneut suchen' }));
+    await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
     // Danach stehen die Vorschläge da - ohne die Seite neu zu laden.
     expect(await screen.findByRole('button', { name: /gleiche Zeit/ })).toBeInTheDocument();
     expect(findFreeSlots.mock.calls.length).toBeGreaterThan(aufrufe);

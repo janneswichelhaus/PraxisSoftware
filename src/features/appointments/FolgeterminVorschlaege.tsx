@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/Button';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Chip } from '@/components/ui/Chip';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
@@ -233,29 +234,23 @@ export function FolgeterminVorschlaege({
     );
   } else if (kommende.isError || frei.isError) {
     // Im Funkloch nach dem Besuch (Praxis-Review R2, P2): Die Suche läuft
-    // ohne Wiederholung (`retry: false`) - „Erneut suchen" fragt nur nach,
-    // was gescheitert ist; die Seite und der Rest von „Danach" bleiben stehen.
-    const sucht = kommende.isFetching || frei.isFetching || amTag.isFetching;
+    // ohne Wiederholung (`retry: false`). Der Fehler steht wie überall
+    // (DESIGN.md Regel 8; Design-Review R2, P2): „Erneut versuchen" fragt
+    // nur nach, was gescheitert ist, und wartet auf alle diese Abfragen; die
+    // Seite und der Rest von „Danach" bleiben stehen.
     inhalt = (
       <>
-        <div className="flex flex-wrap items-center gap-3">
-          <Statusmeldung ton="fehler">
-            Die freien Zeiten konnten nicht gesucht werden.
-          </Statusmeldung>
-          <Button
-            type="button"
-            variant="secondary"
-            groesse="kompakt"
-            disabled={sucht}
-            onClick={() => {
-              for (const abfrage of [kommende, frei, amTag]) {
-                if (abfrage.isError) void abfrage.refetch();
-              }
-            }}
-          >
-            {sucht ? 'Wird gesucht …' : 'Erneut suchen'}
-          </Button>
-        </div>
+        <ErrorState
+          title="Die freien Zeiten konnten nicht gesucht werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() =>
+            Promise.all(
+              [kommende, frei, amTag]
+                .filter((abfrage) => abfrage.isError)
+                .map((abfrage) => abfrage.refetch()),
+            )
+          }
+        />
         {andereZeit}
       </>
     );
