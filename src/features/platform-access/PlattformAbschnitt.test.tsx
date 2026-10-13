@@ -53,7 +53,7 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-const { PlattformAbschnitt } = await import('./PlattformAbschnitt');
+const { PlattformAbschnitt, PlattformzugangBeenden } = await import('./PlattformAbschnitt');
 
 const LEER: Plattformzugang = {
   id: null,
@@ -250,5 +250,79 @@ describe('Abschnitt Plattform', () => {
     zeige();
     expect(await screen.findByText(/übersprungen am .* \(Olivia Office\)/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Einstieg überspringen' })).toBeNull();
+  });
+
+  // Sichtung 13.10.2026, A5: An der Akte stehen Sperren und Entziehen leise am
+  // Ende des Reiters; Entsperren nimmt etwas zurück und bleibt im Abschnitt.
+  describe('Beenden am Ende der Seite', () => {
+    function zeigeMitEnde() {
+      return renderWithProviders(
+        <>
+          <PlattformAbschnitt
+            art="treatment"
+            verhaeltnisId={MAX}
+            darfVerwalten
+            zeitzone="Europe/Berlin"
+            praxis="Test Praxis Tuebingen"
+            beendenAmEnde
+          />
+          <div data-testid="ende">
+            <PlattformzugangBeenden art="treatment" verhaeltnisId={MAX} />
+          </div>
+        </>,
+      );
+    }
+
+    it('nimmt Sperren und Entziehen aus dem Abschnitt und stellt sie leise ans Ende', async () => {
+      getPlatformAccess.mockResolvedValue(AKTIV);
+      const nutzer = userEvent.setup();
+      zeigeMitEnde();
+      expect(await screen.findByText('Aktiv')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Sperren' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Entziehen' })).toBeNull();
+      // Das neue Kennwort bleibt im Abschnitt.
+      expect(screen.getByRole('button', { name: 'Neues Kennwort (vor Ort)' })).toBeInTheDocument();
+
+      const ende = screen.getByTestId('ende');
+      const sperren = within(ende).getByRole('button', { name: 'Plattformzugang sperren' });
+      const entziehen = within(ende).getByRole('button', { name: 'Plattformzugang entziehen' });
+      for (const knopf of [sperren, entziehen]) {
+        expect(knopf).not.toHaveClass('bg-accent');
+        expect(knopf).not.toHaveClass('border-line-strong');
+      }
+
+      // Weiterhin erst nach der Rückfrage.
+      await nutzer.click(sperren);
+      expect(setPlatformAccessLocked).not.toHaveBeenCalled();
+      await nutzer.click(within(ende).getByRole('button', { name: 'Sperren' }));
+      await waitFor(() => expect(setPlatformAccessLocked).toHaveBeenCalledWith(ZUGANG, true));
+
+      await nutzer.click(within(ende).getByRole('button', { name: 'Plattformzugang entziehen' }));
+      expect(revokePlatformAccess).not.toHaveBeenCalled();
+      await nutzer.click(within(ende).getByRole('button', { name: 'Zugang entziehen' }));
+      await waitFor(() => expect(revokePlatformAccess).toHaveBeenCalledWith(ZUGANG));
+    });
+
+    it('lässt Entsperren im Abschnitt und bietet am Ende nur das Entziehen an', async () => {
+      getPlatformAccess.mockResolvedValue({
+        ...AKTIV,
+        status: 'locked',
+        locked_at: '2026-10-03T08:00:00+00:00',
+      });
+      zeigeMitEnde();
+      expect(await screen.findByRole('button', { name: 'Entsperren' })).toBeInTheDocument();
+      const ende = screen.getByTestId('ende');
+      expect(within(ende).queryByRole('button', { name: 'Plattformzugang sperren' })).toBeNull();
+      expect(
+        within(ende).getByRole('button', { name: 'Plattformzugang entziehen' }),
+      ).toBeInTheDocument();
+    });
+
+    it('zeigt am Ende nichts, solange es keinen Zugang gibt', async () => {
+      getPlatformAccess.mockResolvedValue(LEER);
+      zeigeMitEnde();
+      expect(await screen.findByText('Kein Zugang')).toBeInTheDocument();
+      expect(screen.getByTestId('ende')).toBeEmptyDOMElement();
+    });
   });
 });
