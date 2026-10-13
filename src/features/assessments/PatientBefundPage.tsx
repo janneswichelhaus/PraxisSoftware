@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Card, Disclosure } from '@/components/ui/Card';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Disclosure } from '@/components/ui/Card';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
@@ -98,6 +98,7 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
             aktion={
               darfErheben ? (
                 <ButtonLink
+                  groesse="kompakt"
                   to={erhebenPfad(patient.id, instrument.meta.id, {
                     ...(offenerEntwurf ? { entwurf: offenerEntwurf.id } : {}),
                   })}
@@ -109,13 +110,16 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
             }
           >
             {eigene.length === 0 ? (
-              <p className="text-ink-muted text-sm">
-                Noch nicht erhoben.
-                {/* BEF-064: Wer nur liest, erfährt, wer erhebt. */}
-                {darfErheben ? '' : ' Erhoben wird von den behandelnden Rollen.'}
-              </p>
+              <EmptyState
+                inKarte
+                title="Noch nicht erhoben."
+                // BEF-064: Wer nur liest, erfährt, wer erhebt.
+                description={darfErheben ? undefined : 'Erhoben wird von den behandelnden Rollen.'}
+              />
             ) : (
-              <ul className="flex flex-col gap-3">
+              // Die Erhebungen eines Bogens in einer Karte, getrennt durch
+              // Linien - keine Karte je Erhebung (DESIGN.md Regel 3, L2).
+              <ul className="border-line bg-surface rounded-card border px-4">
                 {eigene.map((erhebung) => (
                   <ErhebungKarte
                     key={erhebung.id}
@@ -227,6 +231,7 @@ function EntwurfVerwerfen({ erhebung, patientId }: { erhebung: Erhebung; patient
     <Rueckfrage
       ausloeser="Entwurf verwerfen"
       ausloeserVariante="quiet"
+      ausloeserGroesse="kompakt"
       bezeichnung={`Entwurf vom ${formatDate(erhebung.recorded_on)} verwerfen`}
       bestaetigen="Ja, Entwurf verwerfen"
       bestaetigenLaeuft="Wird verworfen …"
@@ -264,44 +269,43 @@ function ErhebungKarte({
   const herkunft = herkunftszeile(erhebung, definition, fassung);
 
   return (
-    <li>
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-ink font-medium">Erhoben am {formatDate(erhebung.recorded_on)}</p>
-          <Zustand erhebung={erhebung} alle={alle} />
-        </div>
-        {herkunft ? <p className="text-ink-muted mt-1 text-sm">{herkunft}</p> : null}
-        {erhebung.change_reason ? (
-          <p className="text-ink mt-1 text-sm">
-            Korrektur vom {korrekturtag(erhebung, zeitzone)}: {erhebung.change_reason}
-          </p>
-        ) : null}
-        {/* Hervorgehoben wird am geltenden, abgeschlossenen Bogen; ein Entwurf ist
+    <li className="border-line border-t py-4 first:border-t-0">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-ink font-medium">Erhoben am {formatDate(erhebung.recorded_on)}</p>
+        <Zustand erhebung={erhebung} alle={alle} />
+      </div>
+      {herkunft ? <p className="text-ink-muted mt-1 text-sm">{herkunft}</p> : null}
+      {erhebung.change_reason ? (
+        <p className="text-ink mt-1 text-sm">
+          Korrektur vom {korrekturtag(erhebung, zeitzone)}: {erhebung.change_reason}
+        </p>
+      ) : null}
+      {/* Hervorgehoben wird am geltenden, abgeschlossenen Bogen; ein Entwurf ist
             noch keine Angabe, ein ersetzter steht nicht neben seiner Korrektur. */}
-        {erhebung.status === 'abgeschlossen' && !ersetzt ? (
-          <Hervorhebungen
-            definition={fassung}
-            antworten={erhebung.answers}
-            datum={erhebung.recorded_on}
-          />
-        ) : null}
-        <Disclosure summary="Antworten">
-          <ErhebungAnsicht definition={fassung} antworten={erhebung.answers} />
-        </Disclosure>
-        {korrigierbar || verwerfbar ? (
-          <div className="mt-3 flex flex-wrap gap-3">
-            {korrigierbar ? (
-              <ButtonLink
-                to={erhebenPfad(patientId, definition.meta.id, { korrigiert: erhebung.id })}
-                variant="secondary"
-              >
-                Korrigieren
-              </ButtonLink>
-            ) : null}
-            {verwerfbar ? <EntwurfVerwerfen erhebung={erhebung} patientId={patientId} /> : null}
-          </div>
-        ) : null}
-      </Card>
+      {erhebung.status === 'abgeschlossen' && !ersetzt ? (
+        <Hervorhebungen
+          definition={fassung}
+          antworten={erhebung.answers}
+          datum={erhebung.recorded_on}
+        />
+      ) : null}
+      <Disclosure summary="Antworten">
+        <ErhebungAnsicht definition={fassung} antworten={erhebung.answers} />
+      </Disclosure>
+      {korrigierbar || verwerfbar ? (
+        <div className="mt-3 flex flex-wrap gap-3">
+          {korrigierbar ? (
+            <ButtonLink
+              to={erhebenPfad(patientId, definition.meta.id, { korrigiert: erhebung.id })}
+              variant="secondary"
+              groesse="kompakt"
+            >
+              Korrigieren
+            </ButtonLink>
+          ) : null}
+          {verwerfbar ? <EntwurfVerwerfen erhebung={erhebung} patientId={patientId} /> : null}
+        </div>
+      ) : null}
     </li>
   );
 }
@@ -324,26 +328,24 @@ function FremdeInstrumente({
 
   return (
     <Section titel="Weitere Erhebungen">
-      <ul className="flex flex-col gap-3">
+      <ul className="border-line bg-surface rounded-card border px-4">
         {uebrige.map((erhebung) => {
           const aktuell = instrumentFuer(erhebung.instrument_id, scores);
           const definition = aktuell ? angezeigteFassung(erhebung, aktuell) : undefined;
           return (
-            <li key={erhebung.id}>
-              <Card>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-ink font-medium">
-                    {definition?.meta.name_de ?? erhebung.instrument_id} ·{' '}
-                    {formatDate(erhebung.recorded_on)}
-                  </p>
-                  <Zustand erhebung={erhebung} alle={erhebungen} />
-                </div>
-                {definition ? (
-                  <Disclosure summary="Antworten">
-                    <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />
-                  </Disclosure>
-                ) : null}
-              </Card>
+            <li key={erhebung.id} className="border-line border-t py-4 first:border-t-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-ink font-medium">
+                  {definition?.meta.name_de ?? erhebung.instrument_id} ·{' '}
+                  {formatDate(erhebung.recorded_on)}
+                </p>
+                <Zustand erhebung={erhebung} alle={erhebungen} />
+              </div>
+              {definition ? (
+                <Disclosure summary="Antworten">
+                  <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />
+                </Disclosure>
+              ) : null}
             </li>
           );
         })}
@@ -363,7 +365,11 @@ export function PatientBefundSeite() {
       <Textlink alleinstehend to={`/patienten/${patient.id}/doku`} className="mb-4 gap-1">
         <span aria-hidden="true">←</span> Zur Doku
       </Textlink>
-      <Befund patient={patient} user={user} />
+      {/* Eigener Block: Der erste Abschnitt steht dann ohne den Abstand über
+          einem Abschnitt direkt unter dem Rückweg. */}
+      <div>
+        <Befund patient={patient} user={user} />
+      </div>
     </>
   );
 }

@@ -41,8 +41,6 @@ export const GRENZEN: Record<
 
     'features/appointments': 8,
 
-    'features/assessments': 2,
-
     'features/billing': 7,
 
     'features/checkins': 2,
@@ -207,8 +205,6 @@ export const GRENZEN: Record<
     app: 1,
 
     'features/appointments': 5,
-
-    'features/assessments': 1,
 
     'features/checkins': 5,
 

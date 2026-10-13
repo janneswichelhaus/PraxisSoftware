@@ -171,7 +171,7 @@ export function KoerperschemaBild({
   return (
     <div
       className={`bg-surface rounded-image border p-2 ${
-        onAntippen ? 'border-line-strong max-w-md sm:max-w-xl' : 'border-line max-w-md'
+        onAntippen ? 'border-line-strong sm:max-w-formular max-w-md' : 'border-line max-w-md'
       }`}
       aria-hidden="true"
     >
