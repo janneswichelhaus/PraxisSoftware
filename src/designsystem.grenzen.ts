@@ -51,8 +51,6 @@ export const GRENZEN: Record<
 
     'features/offline-documentation': 2,
 
-    'features/platform': 9,
-
     'features/reimbursements': 1,
 
     'features/therapy-reports': 5,
@@ -66,8 +64,6 @@ export const GRENZEN: Record<
 
     'features/assessments': 2,
 
-    'features/auth': 1,
-
     'features/billing': 1,
 
     'features/checkins': 1,
@@ -77,8 +73,6 @@ export const GRENZEN: Record<
     'features/documentation': 2,
 
     'features/files': 1,
-
-    'features/platform': 2,
 
     'features/statistics': 3,
 
@@ -93,17 +87,11 @@ export const GRENZEN: Record<
 
     'features/appointments': 1,
 
-    'features/auth': 1,
-
     'features/billing': 13,
 
     'features/datenschutz': 1,
 
     'features/offline-documentation': 1,
-
-    'features/platform': 2,
-
-    'features/platform-access': 1,
 
     'features/training': 6,
 
@@ -124,7 +112,7 @@ export const GRENZEN: Record<
 
     'features/files': 1,
 
-    'features/platform': 5,
+    'features/platform': 1,
 
     'features/today': 1,
 
@@ -136,8 +124,6 @@ export const GRENZEN: Record<
     'features/exercise-plans': 1,
 
     'features/fleet': 1,
-
-    'features/platform': 1,
 
     'features/statistics': 1,
 
@@ -163,10 +149,6 @@ export const GRENZEN: Record<
     'features/offline-documentation': 2,
 
     'features/patients': 1,
-
-    'features/platform': 48,
-
-    'features/platform-access': 1,
 
     'features/statistics': 2,
 
