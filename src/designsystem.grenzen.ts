@@ -43,7 +43,7 @@ export const GRENZEN: Record<
 
     'features/assessments': 3,
 
-    'features/billing': 7,
+    'features/billing': 3,
 
     'features/checkins': 2,
 
@@ -100,8 +100,6 @@ export const GRENZEN: Record<
 
     'features/auth': 1,
 
-    'features/billing': 1,
-
     'features/checkins': 1,
 
     'features/datenschutz': 1,
@@ -135,7 +133,7 @@ export const GRENZEN: Record<
 
     'features/auth': 1,
 
-    'features/billing': 13,
+    'features/billing': 10,
 
     'features/datenschutz': 1,
 
