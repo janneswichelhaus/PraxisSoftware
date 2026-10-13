@@ -164,7 +164,7 @@ describe('RevenuePage', () => {
       renderWithProviders(<RevenuePage />, '/abrechnung/auswertung');
 
       expect(await screen.findByRole('heading', { name: 'Auswertung' })).toBeInTheDocument();
-      expect(screen.getByText(/^Einnahmen je Leistungsart:/)).toBeInTheDocument();
+      expect(screen.getByText('Einnahmen je Leistungsart und Steuersatz.')).toBeInTheDocument();
       // WRT-07: der Gedankenstrich der Schreibregel.
       expect(screen.getByText(/Steuerberatung – diese Auswertung/)).toBeInTheDocument();
     });

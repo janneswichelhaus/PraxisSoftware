@@ -70,7 +70,7 @@ export function RevenuePage() {
         // Der Titel heißt wie der Menüpunkt; was ausgewertet wird, sagt die
         // Zeile darunter (ABR-26).
         title="Auswertung"
-        description="Einnahmen nach Steuerkennzeichen und Satz."
+        description="Einnahmen je Leistungsart und Steuersatz."
       />
 
       {/* Die beiden Angaben, ohne die keine Zahl zu lesen ist - nebeneinander
