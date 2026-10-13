@@ -201,7 +201,7 @@ function Kennzahlkarte({
 
   return (
     <section aria-labelledby={titelId}>
-      <Inhaltsflaeche className="flex h-full flex-col gap-3">
+      <Inhaltsflaeche className="flex h-full flex-col gap-2">
         {/* Der Zielstand als Zeichen und Wort neben dem Titel (DESIGN.md
             Regel 5); ohne Ziel kein Abzeichen. */}
         <Zwischentitel
@@ -217,7 +217,7 @@ function Kennzahlkarte({
           {kennzahl.titel}
         </Zwischentitel>
 
-        <p className="text-ink -mt-3 text-2xl font-semibold tabular-nums">
+        <p className="text-ink -mt-2 text-2xl font-semibold tabular-nums">
           {formatiere(wert, kennzahl.einheit)}
         </p>
 

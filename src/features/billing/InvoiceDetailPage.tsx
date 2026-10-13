@@ -118,7 +118,8 @@ function beschreibung(ansicht: Rechnungsansicht): string {
     .join(' · ');
 }
 
-/** Die Teile einer ausgestellten Rechnung: zuerst die Arbeit, dann das Dokument. */
+// ANN-455: Die Teile einer ausgestellten Rechnung - zuerst die Arbeit, dann
+// das Dokument; der offene Teil steht im Suchteil der Adresse.
 type Rechnungsteil = 'zahlungen' | 'positionen';
 const TEILE: readonly Teil<Rechnungsteil>[] = [
   { wert: 'zahlungen', label: 'Zahlungen' },
