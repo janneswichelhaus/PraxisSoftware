@@ -4994,3 +4994,15 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Nicht vorhaken: `onAbgelaufen` weglassen · Aufwand `klein`.
 
+### ANN-480 — Ein Übungsbild mit gleichem Start und Ende und ohne Bewegung zeigt die Ausgangsstellung
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+
+**Annahme.** Was eine Seiten- oder Frontansicht nicht zeigen kann (Drehung aus der Bildebene, Hand und Finger, Atmung, Halten), bekommt statt eines falschen Bewegungsbilds die Ausgangsstellung: richtige Grundstellung und Hilfsmittel, `start` gleich `ende`, keine `bewegung`. `Uebungsbild` zeigt sie in „Start und Ende“ und „Bewegung“ als eine Figur mit der Unterschrift „Ausgangsstellung“, ohne Knopf; die Vorschau bleibt.
+
+**Begründung.** Jede Übung bekommt ein ehrliches Bild ohne Schemaänderung; Fassung 1 bleibt pfadgleich (ANN-381), die Bewegung beschreibt der Text.
+
+**Anker.** `istAusgangsstellung` in `src/features/exercises/bild/schema.ts`.
+
+**Änderungspfad.** Eigene Zeichnung für Drehung oder Hand: neue Fassung `v: 2` · Aufwand `mittel`.
+
