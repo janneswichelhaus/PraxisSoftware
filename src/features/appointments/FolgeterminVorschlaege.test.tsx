@@ -159,6 +159,22 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477)', () => {
     expect(screen.queryByText(/Folgetermin angelegt/)).toBeNull();
   });
 
+  it('sucht im Funkloch mit „Erneut suchen" noch einmal (Praxis-Review R2, P2)', async () => {
+    findFreeSlots.mockRejectedValueOnce(new Error('Failed to fetch'));
+    findFreeSlots.mockRejectedValueOnce(new Error('Failed to fetch'));
+    const user = userEvent.setup();
+    rendern();
+    expect(
+      await screen.findByText('Die freien Zeiten konnten nicht gesucht werden.'),
+    ).toBeInTheDocument();
+    const aufrufe = findFreeSlots.mock.calls.length;
+    await user.click(screen.getByRole('button', { name: 'Erneut suchen' }));
+    // Danach stehen die Vorschläge da - ohne die Seite neu zu laden.
+    expect(await screen.findByRole('button', { name: /gleiche Zeit/ })).toBeInTheDocument();
+    expect(findFreeSlots.mock.calls.length).toBeGreaterThan(aufrufe);
+    expect(screen.queryByText('Die freien Zeiten konnten nicht gesucht werden.')).toBeNull();
+  });
+
   it('erscheint nur für Rollen, die Termine verwalten', () => {
     const { container } = rendern(['patient']);
     expect(container).toBeEmptyDOMElement();

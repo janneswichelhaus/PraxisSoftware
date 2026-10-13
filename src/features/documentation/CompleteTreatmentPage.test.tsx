@@ -429,6 +429,19 @@ describe('CompleteTreatmentPage', () => {
       );
     });
 
+    it('führt mit „Plan mitgeben" gleich zu den Übungsplänen der Akte (Praxis-Review R2, P5)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      const link = await screen.findByRole('link', { name: 'Plan mitgeben' });
+      // Die Sprungmarke steht hinter dem Rückweg - sonst wäre sie Teil von ihm.
+      expect(link).toHaveAttribute(
+        'href',
+        expect.stringMatching(/^\/patienten\/[^/?#]+\/doku\?zurueck=[^#]+#uebungsplaene$/),
+      );
+    });
+
     it('zeigt am bereits festgeschriebenen Termin „Danach" unter „Bereits finalisiert"', async () => {
       fetchAppointment.mockResolvedValue(dokumentiert);
       fetchTreatmentDocumentation.mockResolvedValue({

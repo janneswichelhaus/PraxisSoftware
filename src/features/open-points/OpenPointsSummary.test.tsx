@@ -84,6 +84,36 @@ describe('OpenPointsSummary', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('zeigt ohne Fälliges den ruhigen Weg statt der Karte - nie beide (Design-Review R2, U6)', async () => {
+    fetchTasks.mockResolvedValue([aufgabe('2026-10-10')]);
+    fetchOffeneScans.mockResolvedValue([]);
+    renderWithProviders(
+      <OpenPointsSummary
+        user={testUser(['office'])}
+        today={HEUTE}
+        sonst={<a href="/offen">Zur Büroliste</a>}
+      />,
+    );
+    expect(await screen.findByRole('link', { name: 'Zur Büroliste' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Offene Punkte/ })).toBeNull();
+  });
+
+  it('zeigt mit Fälligem nur die Karte, nicht auch den ruhigen Weg (R2, U6)', async () => {
+    fetchTasks.mockResolvedValue([aufgabe('2026-09-20')]);
+    fetchOffeneScans.mockResolvedValue([]);
+    renderWithProviders(
+      <OpenPointsSummary
+        user={testUser(['office'])}
+        today={HEUTE}
+        sonst={<a href="/offen">Zur Büroliste</a>}
+      />,
+    );
+    expect(
+      await screen.findByRole('link', { name: /^Offene Punkte: 1 überfällige Aufgabe/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Zur Büroliste' })).toBeNull();
+  });
+
   it('fragt fuer die Trainingsbetreuung nichts ab', () => {
     renderWithProviders(<OpenPointsSummary user={testUser(['trainer'])} today={HEUTE} />);
     expect(fetchTasks).not.toHaveBeenCalled();

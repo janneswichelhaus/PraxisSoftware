@@ -45,6 +45,16 @@ for (const breite of [375, 1280]) {
   }) => {
     await oeffne(page, '08:05', breite);
 
+    // Datum und Tagesfortschritt stehen auch am Telefon da (Design-Review R2,
+    // U1, U3): kurz am Telefon, lang ab 640 px.
+    const kopf = page.locator('header').filter({ has: page.getByRole('heading', { level: 1 }) });
+    await expect(
+      kopf.getByText(breite < 640 ? /^\S+, \d{1,2}\. \S+$/ : /^\S+, \d{1,2}\. \S+ \d{4}$/),
+    ).toBeVisible();
+    await expect(
+      kopf.getByText(breite < 640 ? '0 von 3' : '0 von 3 Besuchen erledigt', { exact: true }),
+    ).toBeVisible();
+
     const liege = page.getByText('Liege heute', { exact: true }).locator('..');
     await expect(liege).toContainText('Ja');
     await expect(liege).toContainText('ab 2. Besuch, 10:00');
@@ -288,7 +298,8 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
   const karte = page.getByRole('article');
 
   await expect(karte.getByRole('heading', { name: 'Jetzt · bis 09:30' })).toBeVisible();
-  // Haken 48 und „Doku" teilen sich den Hauptknopf, in einer Reihe (Handoff 6a).
+  // „Doku" ist der eine gefüllte Hauptknopf, der Haken 48 mit Rahmen in
+  // derselben Reihe (Design-Review R2, U2).
   const haken = (await karte.getByRole('button', { name: /^Termin abschließen/ }).boundingBox())!;
   const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
   expect(haken.height).toBe(48);
@@ -296,6 +307,13 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
   expect(doku.height).toBe(48);
   expect(Math.abs(doku.y - haken.y)).toBeLessThanOrEqual(1);
   await expect(page.getByRole('button', { name: 'Navigation starten' })).toHaveCount(0);
+  // Genau ein gefüllter Knopf in der Karte (DESIGN.md Regel 4).
+  const gefuellt = await karte.evaluate((el) =>
+    [...el.querySelectorAll('a, button')]
+      .filter((ziel) => ziel.classList.contains('bg-accent'))
+      .map((ziel) => ziel.textContent?.trim()),
+  );
+  expect(gefuellt).toEqual(['Doku zu diesem Termin']);
 
   const abfahrt = page.getByText('Abfahrt danach', { exact: true }).locator('..');
   await expect(abfahrt).toContainText('spätestens 09:51');
@@ -473,7 +491,7 @@ for (const breite of [375, 1280]) {
   });
 }
 
-test('oeffnet mit einem Tipp auf die Karte den Termin, das „i" steht neben dem Namen (UBK-004)', async ({
+test('oeffnet den Termin ueber „Termin →" in der Kopfzeile, nicht ueber die ganze Karte (R2, P1)', async ({
   page,
 }) => {
   await oeffne(page, '08:05', 375);
@@ -482,18 +500,27 @@ test('oeffnet mit einem Tipp auf die Karte den Termin, das „i" steht neben dem
   const info = karte.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
   const n = (await name.boundingBox())!;
   const i = (await info.boundingBox())!;
-  // Auf einer Höhe: Die Mitten liegen höchstens 6 px auseinander.
+  // Auf einer Höhe: Die Mitten liegen höchstens 6 px auseinander (UBK-004).
   expect(Math.abs(n.y + n.height / 2 - (i.y + i.height / 2))).toBeLessThanOrEqual(6);
-  // Keine Fußzeile mehr; „Termin öffnen" steht nur für Vorlesesoftware da.
+  // Keine Fußzeile.
   await expect(karte.locator('.border-t')).toHaveCount(0);
-  await expect(karte.getByText('Termin öffnen', { exact: true })).toHaveClass(/sr-only/);
+
+  // „Termin →" steht sichtbar in der Zeile des Kickers, 44 px zum Tippen.
+  const termin = karte.getByRole('link', { name: 'Termin öffnen' });
+  await expect(termin).toBeVisible();
+  await expect(termin).toHaveAttribute('href', /^\/kalender\?termin=/);
+  const t = (await termin.boundingBox())!;
+  expect(t.height).toBeGreaterThanOrEqual(44);
+  const kicker = (await karte.getByRole('heading', { name: /^Erster Weg/ }).boundingBox())!;
+  expect(Math.abs(t.y + t.height / 2 - (kicker.y + kicker.height / 2))).toBeLessThanOrEqual(6);
 
   // Das „i" klappt auf und öffnet nicht den Termin.
   await info.click();
   await expect(karte.getByText('Zugangshinweis')).toBeVisible();
-  // Ein Tipp auf die Anschrift trifft den Link des Termins, einer auf den
-  // Namen den der Akte. Die Prüfseite hat keine Routen - gemessen wird, was
-  // unter dem Finger liegt.
+  // Ein Tipp auf die Anschrift trifft nichts mehr - bis R2 war die ganze
+  // Karte der Link des Termins, und ein Fehltipp neben „Doku" oder dem Haken
+  // landete im Kalender. Einer auf den Namen trifft die Akte. Die Prüfseite
+  // hat keine Routen - gemessen wird, was unter dem Finger liegt.
   const ziel = async (text: string) => {
     const kasten = (await karte.getByText(text, { exact: true }).boundingBox())!;
     return page.evaluate(
@@ -501,8 +528,17 @@ test('oeffnet mit einem Tipp auf die Karte den Termin, das „i" steht neben dem
       [kasten.x + kasten.width / 2, kasten.y + kasten.height / 2],
     );
   };
-  expect(await ziel('Testweg 7, 72072 Tuebingen')).toMatch(/^\/kalender\?termin=/);
+  expect(await ziel('Testweg 7, 72072 Tuebingen')).toBeNull();
   expect(await ziel('Erika Beispiel')).toMatch(/^\/patienten\//);
+
+  // Zwischen „Doku", Anruf und Haken 12 px (P1).
+  const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
+  const anruf = (await karte.getByRole('link', { name: /^Anrufen/ }).boundingBox())!;
+  const haken = (await karte
+    .getByRole('button', { name: 'Behandlung abschließen' })
+    .boundingBox())!;
+  expect(anruf.x - (doku.x + doku.width)).toBeGreaterThanOrEqual(12);
+  expect(haken.x - (anruf.x + anruf.width)).toBeGreaterThanOrEqual(12);
 });
 
 for (const breite of [375, 1280]) {

@@ -5006,3 +5006,51 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Eigene Zeichnung für Drehung oder Hand: neue Fassung `v: 2` · Aufwand `mittel`.
 
+### ANN-481 — An der Karte des Besuchs ist „Doku“ der eine Hauptknopf, der Haken steht mit Rahmen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Ab dem Beginn eines Besuchs (und ohne Navigationsziel) ist „Doku“ gefüllt und breit; der Haken steht 48 px mit Rahmen am Ende der Reihe, gefüllt nur ohne „Doku“. Vorher stand der Haken gefüllt neben einem gefüllten „Doku“.
+
+**Begründung.** DESIGN.md Regel 4 (ein Hauptknopf je Ansicht, Design-Review R2 U2); „Doku“ führt auf die Schreibseite, deren Festschreiben auch abschließt – der Haken ist der Sonderweg ohne Doku.
+
+**Anker.** `karte()` in `src/features/today/MyDayPage.tsx`.
+
+**Änderungspfad.** Haken als Hauptknopf: Variante in `karte()` tauschen · Aufwand `klein`.
+
+### ANN-482 — Ohne eigenen Besuch steht heute vor morgen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Hat die Person heute keinen Besuch, stehen Leerzustand (in einer Karte) und der heutige Strahl vor der Vorschau auf morgen. Sind alle Besuche erledigt, bleibt morgen über dem erledigten Tag (Jannes, 2026-10-11).
+
+**Begründung.** Design-Review R2 U4: Beim Büro stand „Morgen“ vor „Heute · Dienstag“; ein erledigter Tag hat dagegen nichts mehr zu tun.
+
+**Anker.** `ohneBesuch` in `src/features/today/MyDayPage.tsx`.
+
+**Änderungspfad.** Andere Reihenfolge: die beiden Stellen von `strahl` in `MeinTag` · Aufwand `klein`.
+
+### ANN-483 — „Rückgängig“ nach dem Haken öffnet den Termin wieder, solange er abgeschlossen ist
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Nach dem Haken steht neben der Meldung „Rückgängig“; es ruft `reopen_appointment` wie „Termin wieder öffnen“ im Terminfenster, ohne Zeitgrenze, solange die Tagesliste den Termin nicht weiter als „abgeschlossen“ führt. Eine Rückfrage vor dem Haken gibt es nicht.
+
+**Begründung.** Praxis-Review R2 P1: ein Fehltipp kostete den Weg über den Kalender. Rollen und Zustände prüft der Server (`app.can_reopen_appointment`), dieselben wie beim Haken.
+
+**Anker.** `HakenRueckgaengig` in `src/features/today/Besuchsknoepfe.tsx`.
+
+**Änderungspfad.** Stattdessen Rückfrage: `Rueckfrage` um den Haken legen · Aufwand `klein`.
+
+### ANN-484 — Am Telefon weicht die Fahrzeit im Kicker, wenn die Kachel „Abfahrt“ sie nennt
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Unter 640 px zeigt die Karte des nächsten Wegs „Nächster Weg“ ohne „≈ n min“, wenn die Kachel „Abfahrt“ darüber denselben Weg nennt; die Wochenleiste rückt 12 px an den Kopf. So passen „Termin →“ und das Datum, und der Hauptknopf bleibt bei 375 × 667 über der Tableiste.
+
+**Begründung.** R2 P1 und U3 bringen eine Zeile mehr; `uebersicht.spec.ts` hält den Hauptknopf über der Tableiste.
+
+**Anker.** `wegTitel` in `src/features/today/MyDayPage.tsx`.
+
+**Änderungspfad.** Fahrzeit immer zeigen: `max-sm:hidden` streichen, Platz anderswo sparen · Aufwand `klein`.
+

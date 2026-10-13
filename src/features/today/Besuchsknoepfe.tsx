@@ -1,7 +1,9 @@
 import { useId, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { symbolknopfKlassen, type SymbolGroesse } from '@/components/ui/buttonStile';
+import { fetchAppointment, reopenAppointment } from '@/features/appointments/api';
 import type { DayPlanEntry } from './api';
 import {
   VERSPAETUNG_MINUTEN,
@@ -101,5 +103,65 @@ export function SpaeterDa({ termin, praxis }: { termin: DayPlanEntry; praxis: st
         </div>
       ) : null}
     </>
+  );
+}
+
+/**
+ * „Rückgängig“ nach dem Haken (Praxis-Review R2, P1): Ein Fehltipp auf den
+ * Haken schloss den Besuch ab, und zurück ging es nur über Kalender → Termin
+ * → „Termin wieder öffnen“. Der Knopf nimmt genau diesen Weg
+ * (`reopen_appointment`) - keine neue Serverfunktion; der Server erlaubt ihn
+ * denselben Rollen wie den Haken und nur, solange der Termin abgeschlossen
+ * ist (ANN-483). Den Bearbeitungsstand liest er unmittelbar vorher, wie der
+ * Haken.
+ */
+export function HakenRueckgaengig({
+  appointmentId,
+  name,
+  onWiederOffen,
+  onFehler,
+}: {
+  appointmentId: string;
+  name: string;
+  onWiederOffen: () => void;
+  onFehler: (meldung: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const termin = await fetchAppointment(appointmentId);
+      if (!termin) throw new Error('Der Termin wurde nicht gefunden.');
+      await reopenAppointment(termin.id, termin.updated_at);
+    },
+    onSuccess: () => {
+      for (const queryKey of [['appointment', appointmentId], ['appointments'], ['day-plan']]) {
+        void queryClient.invalidateQueries({ queryKey });
+      }
+      onWiederOffen();
+    },
+    onError: (fehler) => {
+      onFehler(
+        fehler instanceof Error
+          ? fehler.message
+          : 'Der Termin konnte nicht wieder geöffnet werden.',
+      );
+    },
+  });
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      groesse="kompakt"
+      className="shrink-0"
+      disabled={mutation.isPending}
+      aria-busy={mutation.isPending || undefined}
+      onClick={() => {
+        if (mutation.isPending) return;
+        mutation.mutate();
+      }}
+    >
+      {mutation.isPending ? 'Wird geöffnet …' : 'Rückgängig'}
+      <span className="sr-only">: {name} wieder öffnen</span>
+    </Button>
   );
 }

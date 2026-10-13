@@ -32,7 +32,10 @@ export function Wochenleiste({
     'text-ink-muted hover:text-accent flex min-h-12 w-7 shrink-0 items-center justify-center text-xl sm:min-h-16';
 
   return (
-    <nav aria-label="Tag wählen" className="mb-3 flex items-stretch gap-1 sm:mb-5">
+    // Am Telefon rückt die Leiste an das Datum im Kopf heran (Design-Review
+    // R2, U3): Kopf und Leiste nennen zusammen den Tag, und der Hauptknopf
+    // des nächsten Besuchs bleibt bei 375 × 667 über der Tableiste (ANN-484).
+    <nav aria-label="Tag wählen" className="mb-2 flex items-stretch gap-1 max-sm:-mt-3 sm:mb-5">
       <Link to={tagesPfad(tagePlus(anfang, -7), heute)} className={pfeil} aria-label="Vorige Woche">
         <span aria-hidden="true">‹</span>
       </Link>

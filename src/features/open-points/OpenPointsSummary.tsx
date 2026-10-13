@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { fetchOffeneScans } from '@/features/files/api';
@@ -32,8 +33,22 @@ function anzahl(n: number, eins: string, mehr: string): string {
  * hoch: der Titel, darunter was fällig ist, rechts die Summe und der Pfeil.
  * Die ganze Zeile ist der Weg (UX-005h); die Summe ist nur Bild - was sie
  * zählt, steht daneben als Text.
+ *
+ * `sonst` steht an ihrer Stelle, wenn nichts fällig ist - der ruhige Weg
+ * zur Liste. Bis Design-Review R2 (U6) stand er immer darunter, und mit
+ * Fälligem führten Karte und Link doppelt zum selben Ziel. Solange die
+ * Abfragen laden, steht keins von beiden: sonst spränge der Link gleich
+ * wieder in die Karte um.
  */
-export function OpenPointsSummary({ user, today }: { user: CurrentUser; today: string }) {
+export function OpenPointsSummary({
+  user,
+  today,
+  sonst = null,
+}: {
+  user: CurrentUser;
+  today: string;
+  sonst?: ReactNode;
+}) {
   const aufgaben = useQuery({
     queryKey: [...TASKS_KEY, 'open'],
     queryFn: () => fetchTasks('open'),
@@ -85,7 +100,10 @@ export function OpenPointsSummary({ user, today }: { user: CurrentUser; today: s
       : null,
   ].filter((teil): teil is string => teil !== null);
 
-  if (teile.length === 0) return null;
+  if (teile.length === 0) {
+    const laedt = [aufgaben, scans, wuensche, rueckfragen].some((abfrage) => abfrage.isLoading);
+    return laedt ? null : sonst;
+  }
 
   return (
     // Die Zeile ist selbst der Weg: ein zweiter Link „Zu den offenen Punkten"

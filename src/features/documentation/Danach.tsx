@@ -14,6 +14,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { PLAENE_ANKER } from './sprungmarke';
 import { Schreibflaeche } from './Schreibflaeche';
 
 /** Ein Teil des Blocks „Danach“: über eine Linie vom vorigen getrennt (kein Kasten im Kasten). */
@@ -60,10 +61,13 @@ export function DanachTeile({
         <section className={TEIL} aria-labelledby={`plan-${appointment.id}`}>
           <Zwischentitel id={`plan-${appointment.id}`}>Übungsplan</Zwischentitel>
           {/* Die Pläne stehen im Reiter „Doku“ der Akte (UEB-EPIC-002); von
-              dort führt das Planblatt zu Druck und QR-Code. */}
+              dort führt das Planblatt zu Druck und QR-Code. Die Sprungmarke
+              rollt gleich zu ihnen - am Telefon stehen sie weit unten
+              (Praxis-Review R2, P5). Eine eigene Adresse zum Anlegen gibt es
+              nicht: Ein Plan entsteht dort mit einem Tipp. */}
           <Textlink
             alleinstehend
-            to={mitRueckweg(`/patienten/${appointment.patient_id}/doku`, hierher)}
+            to={mitRueckweg(`/patienten/${appointment.patient_id}/doku#${PLAENE_ANKER}`, hierher)}
             className="gap-1 text-sm font-semibold"
           >
             Plan mitgeben <span aria-hidden="true">→</span>

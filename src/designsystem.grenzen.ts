@@ -50,7 +50,7 @@ export const GRENZEN: Record<
 
     'features/files': 1,
 
-    'features/tours': 2,
+    'features/tours': 1,
 
     'features/treatment-bases': 1,
   },

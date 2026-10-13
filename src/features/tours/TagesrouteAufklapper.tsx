@@ -1,9 +1,8 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Aufklappzeichen } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import type { DayPlanEntry } from '@/features/today/api';
 import { fetchStandorte, startpunkt } from './startort';
 import { fetchDayRoute, stoppsDesTages } from './tagesroute';
@@ -23,9 +22,10 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
  * mit denselben Schlüsseln: Wer die Karte aufklappt, löst keinen zweiten
  * Aufruf aus. MapLibre und die Kacheln bleiben beim Aufklappen.
  *
- * Der Kopf trägt das Aufklappzeichen wie jeder Aufklapper der Übersicht
- * (UEB-03, UIK-07): Ohne es sah „Tagesroute auf der Karte" aus wie eine
- * graue Textzeile.
+ * Derselbe Aufklapper wie „Nachzuholen" und „Tagesplan des Teams" (`Disclosure`
+ * als Karte, Titel in 600; Design-Review R2, U5): Bis dahin stand er als
+ * eigenes `<details>` ohne Karte mit grauem Kopf da - drei Stile auf einer
+ * Seite.
  */
 export function TagesrouteAufklapper({
   datum,
@@ -39,16 +39,16 @@ export function TagesrouteAufklapper({
   const [offen, setOffen] = useState(false);
 
   return (
-    <details
-      className="group border-line mt-6 border-t pt-3 print:hidden"
-      onToggle={(ereignis) => setOffen(ereignis.currentTarget.open)}
-    >
-      <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
-        <Aufklappzeichen />
-        Tagesroute auf der Karte
-      </summary>
-      {offen ? <Inhalt datum={datum} staffMemberId={staffMemberId} plan={plan} /> : null}
-    </details>
+    <section className="mt-6 print:hidden">
+      <Disclosure
+        inKarte
+        kopf="betont"
+        summary={<h2>Tagesroute auf der Karte</h2>}
+        onUmschalten={setOffen}
+      >
+        {offen ? <Inhalt datum={datum} staffMemberId={staffMemberId} plan={plan} /> : null}
+      </Disclosure>
+    </section>
   );
 }
 
@@ -85,11 +85,11 @@ function Inhalt({
     );
   }
   if (stopps.length === 0) {
-    return <p className="text-ink-muted mt-2 text-sm">Heute gibt es keinen Besuch mit Ort.</p>;
+    return <p className="text-ink-muted text-sm">Heute gibt es keinen Besuch mit Ort.</p>;
   }
 
   return (
-    <div className="mt-3">
+    <div>
       <Suspense fallback={<LoadingState label="Karte wird geladen …" />}>
         <TagesrouteKarte start={startpunkt(standorte.data?.[0])} stopps={stopps} />
       </Suspense>

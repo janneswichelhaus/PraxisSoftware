@@ -388,7 +388,7 @@ describe('Tageskarte', () => {
     );
   });
 
-  it('oeffnet mit der ganzen Karte den Termin - ohne Fusszeile (UBK-004)', () => {
+  it('oeffnet den Termin ueber „Termin →" in der Kopfzeile, nicht ueber die ganze Karte (R2, P1)', () => {
     const { container } = renderWithProviders(
       <Tageskarte termin={eintrag()} kicker="Erster Weg" />,
     );
@@ -398,18 +398,33 @@ describe('Tageskarte', () => {
       'href',
       `/kalender?termin=t1&zurueck=${encodeURIComponent('/')}`,
     );
-    // Die Fläche des Links spannt sich über die Karte, die selbst der Bezug ist.
-    expect(termin).toHaveClass('after:absolute', 'after:inset-0');
-    expect(container.querySelector('article')).toHaveClass('relative');
-    // Kein sichtbarer „Termin öffnen →" mehr.
-    expect(screen.queryByText('→')).toBeNull();
-    expect(container.querySelector('.border-t')).toBeNull();
-    // Die eigenen Ziele liegen darüber, sonst träfe jeder Tipp den Termin.
-    expect(screen.getByRole('link', { name: 'Max Mustermann' })).toHaveClass('relative', 'z-10');
-    expect(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' })).toHaveClass(
-      'relative',
-      'z-10',
+    // Ein sichtbarer, unterstrichener Link mit 44 px Tippziel in der Zeile des
+    // Kickers - kein Link mehr, dessen Fläche die ganze Karte deckt: Ein
+    // Fehltipp neben „Doku" oder dem Haken landete sonst im Kalender.
+    expect(termin).toHaveTextContent(/^Termin öffnen→$/);
+    expect(termin).toHaveClass('underline', 'min-h-11');
+    expect(termin).not.toHaveClass('after:inset-0');
+    expect(container.querySelector('[class*="after:inset-0"]')).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Erster Weg' }).parentElement).toContainElement(
+      termin,
     );
+    // Keine Fußzeile.
+    expect(container.querySelector('.border-t')).toBeNull();
+  });
+
+  it('stellt die Knoepfe der Karte 12 px auseinander (R2, P1)', () => {
+    const { container } = renderWithProviders(
+      <Tageskarte
+        termin={eintrag()}
+        kicker="Erster Weg"
+        hauptaktion={<button type="button">Navigation starten</button>}
+        aktionen={<button type="button">Später da?</button>}
+      />,
+    );
+    const knoepfe = screen.getByRole('button', { name: 'Navigation starten' }).parentElement!;
+    expect(knoepfe).toHaveClass('gap-3');
+    expect(screen.getByRole('button', { name: 'Später da?' }).parentElement).toHaveClass('gap-3');
+    expect(container.querySelector('.gap-2 > button')).toBeNull();
   });
 
   it('nennt eine Fehlzeit als Fehlzeit', () => {
