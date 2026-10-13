@@ -15,15 +15,22 @@ import {
 import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
 import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
+import { VorlagenKontext } from '@/features/exercise-plans/vorlagen';
+import { katalogeintrag } from '@/features/exercises/katalog';
+import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
 import '@/index.css';
 
 /**
- * Einstieg der Prüfseite aus `plaene.html` (UEB-EPIC-002).
+ * Einstieg der Prüfseite aus `plaene.html` (UEB-EPIC-002, Welle B).
  *
  * `?seite=entwurf` (Standard), `zugewiesen` (läuft aus), `fassung` (neue
  * Fassung mit Schritten), `akte` (Abschnitt in der Akte) oder `offen`
- * (Wiedervorlage). Die Daten liegen vorab im Cache; gesprochen wird mit keinem
- * Server. Alles ist synthetisch.
+ * (Wiedervorlage): Die Daten liegen vorab im Cache; gesprochen wird mit keinem
+ * Server.
+ *
+ * `?seite=planbau` (Ablauftests): leerer Cache, Start im Abschnitt der Akte;
+ * die Aufrufe beantwortet ein Nachbau im Test (`page.route`, plaene.spec.ts).
+ * Die Vorlagen sind synthetisch und nach Thema benannt. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'entwurf';
 const HEUTE = '2026-10-07';
@@ -42,6 +49,31 @@ function variante(id: string, name: string, laie: string, ausruestung: string[] 
   };
 }
 
+/** UEB-012: eine übernommene Katalogübung mit Bild und Standarddosierung. */
+const KN01 = katalogeintrag('KN-01')!;
+
+/** Synthetische Vorlagen für „Aus Vorlage“ - nach Thema benannt, ohne Person. */
+const PRUEFVORLAGEN: Katalogvorlage[] = [
+  {
+    schluessel: 'V91',
+    name: 'Knie im Sitz (Prüfvorlage)',
+    ziel: 'Kraft und Beweglichkeit im Sitz',
+    uebungen: [
+      { schluessel: 'KN-01' },
+      { schluessel: 'KN-02' },
+      { schluessel: 'KN-03' },
+      { schluessel: 'KN-05' },
+      { schluessel: 'KN-06' },
+    ],
+  },
+  {
+    schluessel: 'V90',
+    name: 'Arme und Rumpf (Prüfvorlage)',
+    ziel: 'Kraft der Arme',
+    uebungen: [{ schluessel: 'KN-01' }],
+  },
+];
+
 const bibliothek: Bibliothek = {
   can_manage: false,
   exercises: [
@@ -56,6 +88,33 @@ const bibliothek: Bibliothek = {
           'Geländer',
         ]),
         variante('v2', 'Kniebeuge freistehend, halbe Tiefe', 'Frei halb in die Hocke'),
+      ],
+    },
+    {
+      id: 'u3',
+      name: KN01.name,
+      lay_name: KN01.alltagsname,
+      body_region: 'knie',
+      archived: false,
+      variants: [
+        {
+          ...variante('v5', KN01.name, KN01.alltagsname, ['Stuhl']),
+          catalog_key: 'KN-01',
+          catalog_version: KN01.version,
+          goal: KN01.ziel,
+          starting_position: KN01.ausgangsstellung,
+          level: KN01.niveau,
+          default_dosage: {
+            sets: 3,
+            reps_min: 10,
+            reps_max: 10,
+            duration_seconds: null,
+            hold_seconds: 3,
+            per_side: true,
+            times_per_day: 1,
+          },
+          illustration: KN01.bild ?? null,
+        },
       ],
     },
     {
@@ -224,86 +283,89 @@ const fassung = plan({
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
-client.setQueryData(BIBLIOTHEK_SCHLUESSEL, bibliothek);
-client.setQueryData(planSchluessel('p1'), seite === 'entwurf' ? plan({}) : zugewiesen);
-client.setQueryData(planSchluessel('p2'), fassung);
-client.setQueryData(planlisteSchluessel('therapy', 'pat1'), {
-  can_write: true,
-  today: HEUTE,
-  plans: [
-    {
-      id: 'p2',
-      title: zugewiesen.title,
-      status: 'draft',
-      sessions_per_week: 3,
-      previous_plan_id: 'p1',
-      assigned_at: null,
-      runs_from: null,
-      runs_until: null,
-      ended_at: null,
-      created_at: '2026-10-07T08:00:00Z',
-      item_count: 2,
-      review_due: false,
-    },
-    {
-      id: 'p1',
-      title: zugewiesen.title,
-      status: 'assigned',
-      sessions_per_week: 3,
-      previous_plan_id: null,
-      assigned_at: '2026-08-31T08:00:00Z',
-      runs_from: '2026-08-31',
-      runs_until: '2026-10-12',
-      ended_at: null,
-      created_at: '2026-08-30T08:00:00Z',
-      item_count: 2,
-      review_due: true,
-    },
-    {
-      id: 'p0',
-      title: 'Erste Woche nach der Operation',
-      status: 'superseded',
-      sessions_per_week: 5,
-      previous_plan_id: null,
-      assigned_at: '2026-08-10T08:00:00Z',
-      runs_from: '2026-08-10',
-      runs_until: '2026-08-31',
-      ended_at: '2026-08-31T08:00:00Z',
-      created_at: '2026-08-10T08:00:00Z',
-      item_count: 4,
-      review_due: false,
-    },
-  ],
-});
-client.setQueryData(FAELLIG_SCHLUESSEL, {
-  today: HEUTE,
-  plans: [
-    {
-      id: 'p1',
-      service_area: 'therapy',
-      relationship_id: 'pat1',
-      given_name: 'Erika',
-      family_name: 'Beispiel-Musterfrau',
-      title: zugewiesen.title,
-      runs_until: '2026-10-12',
-      follow_up_draft: true,
-    },
-    {
-      id: 'p9',
-      service_area: 'training',
-      relationship_id: 't1',
-      given_name: 'Tina',
-      family_name: 'Training',
-      title: 'Kraft Grundlagen',
-      runs_until: '2026-10-01',
-      follow_up_draft: false,
-    },
-  ],
-});
+if (seite !== 'planbau') {
+  client.setQueryData(BIBLIOTHEK_SCHLUESSEL, bibliothek);
+  client.setQueryData(planSchluessel('p1'), seite === 'entwurf' ? plan({}) : zugewiesen);
+  client.setQueryData(planSchluessel('p2'), fassung);
+  client.setQueryData(planlisteSchluessel('therapy', 'pat1'), {
+    can_write: true,
+    today: HEUTE,
+    plans: [
+      {
+        id: 'p2',
+        title: zugewiesen.title,
+        status: 'draft',
+        sessions_per_week: 3,
+        previous_plan_id: 'p1',
+        assigned_at: null,
+        runs_from: null,
+        runs_until: null,
+        ended_at: null,
+        created_at: '2026-10-07T08:00:00Z',
+        item_count: 2,
+        review_due: false,
+      },
+      {
+        id: 'p1',
+        title: zugewiesen.title,
+        status: 'assigned',
+        sessions_per_week: 3,
+        previous_plan_id: null,
+        assigned_at: '2026-08-31T08:00:00Z',
+        runs_from: '2026-08-31',
+        runs_until: '2026-10-12',
+        ended_at: null,
+        created_at: '2026-08-30T08:00:00Z',
+        item_count: 2,
+        review_due: true,
+      },
+      {
+        id: 'p0',
+        title: 'Erste Woche nach der Operation',
+        status: 'superseded',
+        sessions_per_week: 5,
+        previous_plan_id: null,
+        assigned_at: '2026-08-10T08:00:00Z',
+        runs_from: '2026-08-10',
+        runs_until: '2026-08-31',
+        ended_at: '2026-08-31T08:00:00Z',
+        created_at: '2026-08-10T08:00:00Z',
+        item_count: 4,
+        review_due: false,
+      },
+    ],
+  });
+  client.setQueryData(FAELLIG_SCHLUESSEL, {
+    today: HEUTE,
+    plans: [
+      {
+        id: 'p1',
+        service_area: 'therapy',
+        relationship_id: 'pat1',
+        given_name: 'Erika',
+        family_name: 'Beispiel-Musterfrau',
+        title: zugewiesen.title,
+        runs_until: '2026-10-12',
+        follow_up_draft: true,
+      },
+      {
+        id: 'p9',
+        service_area: 'training',
+        relationship_id: 't1',
+        given_name: 'Tina',
+        family_name: 'Training',
+        title: 'Kraft Grundlagen',
+        runs_until: '2026-10-01',
+        follow_up_draft: false,
+      },
+    ],
+  });
+}
 
 const rahmen = (kind: ReactNode) => <main className="mx-auto max-w-5xl px-4 py-6">{kind}</main>;
 
 const start: Record<string, string> = {
+  planbau: '/planbau',
   entwurf: '/patienten/pat1/plaene/p1',
   zugewiesen: '/patienten/pat1/plaene/p1',
   fassung: '/patienten/pat1/plaene/p2',
@@ -319,6 +381,11 @@ const router = createMemoryRouter(
       element: rahmen(<PlanAbschnitt bereich="therapy" verhaeltnisId="pat1" rueckweg="/akte" />),
     },
     {
+      // Ablauftests: eine Akte ohne Plan, der Rest kommt vom Nachbau im Test.
+      path: '/planbau',
+      element: rahmen(<PlanAbschnitt bereich="therapy" verhaeltnisId="pat9" rueckweg="/planbau" />),
+    },
+    {
       path: '/offen',
       element: rahmen(<PlanWiedervorlage bereiche={['therapy', 'training']} rueckweg="/offen" />),
     },
@@ -329,6 +396,8 @@ const router = createMemoryRouter(
 
 createRoot(document.getElementById('wurzel')!).render(
   <QueryClientProvider client={client}>
-    <RouterProvider router={router} />
+    <VorlagenKontext.Provider value={PRUEFVORLAGEN}>
+      <RouterProvider router={router} />
+    </VorlagenKontext.Provider>
   </QueryClientProvider>,
 );

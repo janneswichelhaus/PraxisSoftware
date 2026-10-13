@@ -39,10 +39,6 @@ export const GRENZEN: Record<
   breiten: {
     'features/billing': 1,
 
-    'features/exercise-plans': 4,
-
-    'features/exercises': 5,
-
     'features/platform': 9,
 
     'features/tours': 3,
@@ -90,8 +86,6 @@ export const GRENZEN: Record<
 
     'features/documentation': 1,
 
-    'features/exercise-plans': 1,
-
     'features/files': 1,
 
     'features/platform': 5,
@@ -103,8 +97,6 @@ export const GRENZEN: Record<
     'features/treatment-bases': 4,
   },
   tabellen: {
-    'features/exercise-plans': 1,
-
     'features/fleet': 1,
 
     'features/platform': 1,
@@ -121,10 +113,6 @@ export const GRENZEN: Record<
     'features/appointments': 4,
 
     'features/documentation': 4,
-
-    'features/exercise-plans': 4,
-
-    'features/exercises': 3,
 
     'features/patients': 1,
 

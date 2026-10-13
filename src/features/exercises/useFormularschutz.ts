@@ -20,6 +20,8 @@ const TEXTE: Verlustschutztexte = {
 export function useFormularschutz(): {
   melden: (formularId: string, ungespeichert: boolean) => void;
   schutzFuer: (formularId: string) => ReactNode;
+  /** Den nächsten Seitenwechsel einmal freigeben - nach erfolgreichem Speichern. */
+  freigeben: () => void;
 } {
   const [offen, setOffen] = useState<Readonly<Record<string, boolean>>>({});
   const melden = useCallback((formularId: string, ungespeichert: boolean) => {
@@ -30,12 +32,13 @@ export function useFormularschutz(): {
     );
   }, []);
   const betroffen = Object.keys(offen).find((formularId) => offen[formularId]);
-  const { schutz } = useTextverlustschutz({
+  const { schutz, freigeben } = useTextverlustschutz({
     ungespeichert: betroffen !== undefined,
     texte: TEXTE,
   });
   return {
     melden,
     schutzFuer: (formularId: string) => (formularId === betroffen ? schutz : null),
+    freigeben,
   };
 }

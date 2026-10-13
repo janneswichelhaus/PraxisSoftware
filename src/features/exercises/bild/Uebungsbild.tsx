@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { zwischen, umgebung } from './loeser';
 import type { Uebungsbild as Bild } from './schema';
@@ -18,6 +18,11 @@ import { szene, type Darstellung, type Farbe, type Strich, type Szene } from './
  *
  * Das Bild ergänzt den Text und ersetzt ihn nie. Gezeichnet wird mit Pfaden
  * aus Zahlen (`szene.ts`), ohne Zeichenkette aus den Daten im SVG.
+ *
+ * `einfassen` (Welle B) legt einen Rahmen um die Zeichnung einer Einzelansicht -
+ * etwa ein `Medienbild`, das die Bildbeschreibung trägt -, **ohne** den
+ * Knopf: Ein Knopf in einem Bild (`role="img"`) wäre für Vorlesesoftware
+ * unerreichbar, und der Rahmen schnitte ihn ab.
  */
 
 const FARBE: Readonly<Record<Farbe, { linie: string; flaeche: string }>> = {
@@ -90,6 +95,7 @@ export function Uebungsbild({
   darstellung = 'bewegung',
   animierbar = false,
   dekorativ = false,
+  einfassen,
   className = '',
 }: {
   bild: Bild;
@@ -99,6 +105,8 @@ export function Uebungsbild({
   animierbar?: boolean;
   /** Steht der Name schon daneben (Liste), liest Vorlesesoftware das Bild nicht vor. */
   dekorativ?: boolean;
+  /** Rahmen um die Zeichnung einer Einzelansicht, ohne den Knopf (etwa `Medienbild`). */
+  einfassen?: (zeichnung: ReactNode) => ReactNode;
   className?: string;
 }) {
   const [abspielen, setAbspielen] = useState(false);
@@ -200,22 +208,25 @@ export function Uebungsbild({
 
   const zeigen = bewegt ?? ('einzeln' in statisch ? statisch.einzeln : null);
   if (!zeigen) return null;
+  const zeichnung = (
+    <Zeichnung
+      s={zeigen}
+      beschriftung={
+        darstellung === 'vorschau'
+          ? `Bild: ${name}`
+          : `${name}: Bewegung von der Ausgangs- zur Endstellung`
+      }
+      dekorativ={dekorativ}
+      className={
+        darstellung === 'vorschau'
+          ? 'bg-surface-sunken rounded-button'
+          : 'bg-surface-sunken rounded-image'
+      }
+    />
+  );
   return (
     <div className={className}>
-      <Zeichnung
-        s={zeigen}
-        beschriftung={
-          darstellung === 'vorschau'
-            ? `Bild: ${name}`
-            : `${name}: Bewegung von der Ausgangs- zur Endstellung`
-        }
-        dekorativ={dekorativ}
-        className={
-          darstellung === 'vorschau'
-            ? 'bg-surface-sunken rounded-button'
-            : 'bg-surface-sunken rounded-image'
-        }
-      />
+      {einfassen ? einfassen(zeichnung) : zeichnung}
       {knopf}
     </div>
   );

@@ -1,3 +1,5 @@
+import type { Uebungsbild as Bild } from '@/features/exercises/bild/schema';
+import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
 import { formatDate } from '@/lib/datum';
 import { dosierungAlltag, haeufigkeit, type Dosis } from './dosierung';
 
@@ -13,6 +15,12 @@ import { dosierungAlltag, haeufigkeit, type Dosis } from './dosierung';
  * (ANN-300, IDEA-QSN-002) - nie die fachlichen Bezeichnungen, nie die
  * Bibliothek von heute. Kein Kopf in einem `header`: Er soll gedruckt werden
  * (`src/index.css`, UXR-001).
+ *
+ * Welle B (Profil „Druckblatt“): je Übung das eingefrorene Bild - Start und
+ * Ende -, der Name, die Dosierung und die Anleitung in nummerierten
+ * Schritten. Groß gesetzt (18 px, Überschriften 20 bis 24 px): Für ältere
+ * Patient:innen im Hausbesuch ist das Papier oft das Hauptmedium. Eine Übung
+ * bricht nicht über zwei Seiten.
  */
 
 export interface BlattPosition extends Dosis {
@@ -21,6 +29,8 @@ export interface BlattPosition extends Dosis {
   instruction: string | null;
   equipment: string[];
   note: string | null;
+  /** UEB-012: das beim Zuweisen eingefrorene Bild (ANN-381); ohne Bild nur Text. */
+  illustration?: Bild | null;
 }
 
 export interface BlattPlan {
@@ -30,6 +40,14 @@ export interface BlattPlan {
   runs_from: string | null;
   runs_until: string | null;
   items: BlattPosition[];
+}
+
+/** Die Anleitung in Schritten - je Zeile einer (Katalog), sonst ein Absatz. */
+function schritte(text: string | null): string[] {
+  return (text ?? '')
+    .split('\n')
+    .map((zeile) => zeile.trim())
+    .filter(Boolean);
 }
 
 export function Planblatt({
@@ -43,42 +61,63 @@ export function Planblatt({
   fuer?: string;
 }) {
   return (
-    <article aria-label="Planblatt" className="max-w-[210mm]">
+    <article aria-label="Planblatt" className="text-ink max-w-[210mm] text-lg">
       <div className="border-line border-b pb-3">
-        {praxis ? <p className="text-ink-muted print:text-ink text-sm">{praxis}</p> : null}
-        <p className="text-ink-muted print:text-ink mt-1 text-sm">
+        {praxis ? <p className="text-ink-muted print:text-ink text-base">{praxis}</p> : null}
+        <p className="text-ink-muted print:text-ink mt-1 text-base">
           {plan.service_area === 'therapy' ? 'Ihr Übungsplan' : 'Ihr Trainingsplan'}
           {fuer ? ` für ${fuer}` : ''}
         </p>
-        <h2 className="mt-1 text-xl font-semibold">{plan.title}</h2>
-        <p className="mt-1 text-sm">{zeitraum(plan)}</p>
+        <h2 className="text-h3 mt-1 font-bold">{plan.title}</h2>
+        <p className="mt-1">{zeitraum(plan)}</p>
         {plan.sessions_per_week ? (
-          <p className="mt-1 text-sm">{haeufigkeit(plan.sessions_per_week)}</p>
+          <p className="mt-1">{haeufigkeit(plan.sessions_per_week)}</p>
         ) : null}
       </div>
-      <ol className="mt-4 flex flex-col gap-4">
-        {plan.items.map((p) => (
-          <li key={p.position} className="border-line border-b pb-4 last:border-b-0">
-            <h3 className="font-semibold">
-              {p.position}. {p.variant_lay_name}
-            </h3>
-            <p className="mt-1">{dosierungAlltag(p)}</p>
-            {p.instruction ? <p className="mt-1">{p.instruction}</p> : null}
-            {p.equipment.length > 0 ? (
-              <p className="text-ink-muted print:text-ink mt-1 text-sm">
-                Sie brauchen: {p.equipment.join(', ')}
-              </p>
-            ) : null}
-            {p.note ? (
-              <p className="mt-1">
-                <span className="font-semibold">Hinweis: </span>
-                {p.note}
-              </p>
-            ) : null}
-          </li>
-        ))}
+      <ol className="mt-4 flex flex-col gap-5">
+        {plan.items.map((p) => {
+          const anleitung = schritte(p.instruction);
+          return (
+            <li
+              key={p.position}
+              className="border-line break-inside-avoid border-b pb-5 last:border-b-0"
+            >
+              <h3 className="text-h4 font-bold">
+                {p.position}. {p.variant_lay_name}
+              </h3>
+              {p.illustration ? (
+                <div className="mt-2 max-w-[120mm]">
+                  <Uebungsbild
+                    bild={p.illustration}
+                    name={p.variant_lay_name}
+                    darstellung="start-ende"
+                  />
+                </div>
+              ) : null}
+              <p className="mt-2 font-semibold">{dosierungAlltag(p)}</p>
+              {anleitung.length > 1 ? (
+                <ol className="mt-2 flex list-decimal flex-col gap-1 pl-6">
+                  {anleitung.map((schritt, index) => (
+                    <li key={index}>{schritt}</li>
+                  ))}
+                </ol>
+              ) : anleitung.length === 1 ? (
+                <p className="mt-2">{anleitung[0]}</p>
+              ) : null}
+              {p.equipment.length > 0 ? (
+                <p className="mt-2">Sie brauchen: {p.equipment.join(', ')}</p>
+              ) : null}
+              {p.note ? (
+                <p className="mt-2">
+                  <span className="font-semibold">Hinweis: </span>
+                  {p.note}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
       </ol>
-      <p className="text-ink-muted print:text-ink mt-6 text-sm">
+      <p className="text-ink-muted print:text-ink mt-6 text-base">
         Fragen zu den Übungen? Sprechen Sie uns beim nächsten Termin an.
       </p>
     </article>
