@@ -104,7 +104,6 @@ export function ersetze(seed, neu) {
 }
 
 export async function pruefen() {
-  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfad unter dem Repository, fest im Quelltext.
   const seed = await readFile(SEED, 'utf8');
   const neu = ersetze(seed, abschnitt(await sammleKatalog()));
   return { aktuell: neu === seed, neu };
@@ -115,7 +114,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (aktuell) {
     console.log('Der Übungskatalog im Seed ist aktuell.');
   } else if (process.argv.includes('--schreiben')) {
-    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfad unter dem Repository, fest im Quelltext.
     await writeFile(SEED, neu);
     console.log('supabase/seed.sql: Übungskatalog neu geschrieben.');
   } else {

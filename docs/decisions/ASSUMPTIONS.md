@@ -4534,7 +4534,7 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
 **Anker.** `app.exercise_illustration_valid` in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
 
-**Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: ADR-017 Fassung 6 · Aufwand `groß`.
+**Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: neue Fassung von ADR-017 · Aufwand `groß`.
 
 ### ANN-382 — Der Übungskatalog ist Produktinhalt im Release; die Praxis übernimmt ihn als Kopie mit Herkunft, ein späterer Import überschreibt nichts
 
