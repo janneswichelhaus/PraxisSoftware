@@ -4607,3 +4607,15 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
 
 **Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
+
+### ANN-435 — Arbeitszeiten: ein Speichern je Wochentag, kein Wochenformular
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** „Ein Speichern je Formular“ heißt: Der gewählte Wochentag ist ein Formular mit genau einem Speichern; „Blöcke leeren“ entfällt (Blöcke einzeln entfernen, Rückfrage beim Speichern bleibt).
+
+**Begründung.** Eine ganze Woche mit einem Knopf hieße sieben Aufrufe ohne gemeinsame Transaktion – ein halb gespeicherter Plan. Dafür bräuchte es eine neue Serverfunktion (alles oder nichts).
+
+**Anker.** Kommentar `ANN-435` an `Wochenplan` in `src/features/scheduling/SchedulingPage.tsx`.
+
+**Änderungspfad.** Wochenformular: RPC für die ganze Woche, Formular über alle Zeilen · Aufwand `mittel`.

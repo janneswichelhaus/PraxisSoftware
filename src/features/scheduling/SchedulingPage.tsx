@@ -733,7 +733,7 @@ function Wochenplan({
               <Rueckmeldung key={stand.meldung.nr}>{stand.meldung.text}</Rueckmeldung>
             ) : null}
 
-            {/* Ein Speichern für das Formular des Tages (Design-Rollout B2): Den
+            {/* Ein Speichern für das Formular des Tages (ANN-435, Design-Rollout B2): Den
                 Tag leert man, indem man seine Blöcke entfernt - ein zweiter
                 Knopf „Blöcke leeren“ daneben entfällt. Was ein leerer Tag
                 bedeutet, sagt die Rückfrage beim Speichern. */}
