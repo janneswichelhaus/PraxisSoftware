@@ -5058,13 +5058,37 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Akte)
 
-**Annahme.** Ein Zustand im Ton `neutral` oder `akzent` trägt ein eigenes Zeichen: – nicht gegeben („Nicht erteilt“), … liegt bei der Praxis („bei der Praxis“), × bewusst nicht („Abgelehnt am …“, wie „× Abgesagt“), ? nicht geprüft („Fahrweg nicht geprüft“), ↩ Antwort liegt vor („beantwortet“). „Nicht in Versorgung“ in der Liste trägt wie im Kopf der Akte `warnung` (!).
+**Annahme.** Ein Zustand im Ton `neutral` oder `akzent` trägt ein eigenes Zeichen: – nicht gegeben („Nicht erteilt“), … liegt bei der Praxis („bei der Praxis“), × bewusst nicht („Abgelehnt am …“, wie „× Abgesagt“), ? nicht geprüft („Fahrweg nicht geprüft“), ↩ Antwort liegt vor („beantwortet“ auf der Plattform; in der Praxis ✓ wie „erledigt“, R2-O4). „Nicht in Versorgung“ in der Liste trägt wie im Kopf der Akte `warnung` (!).
 
 **Begründung.** DESIGN.md Regel 5 „Status = Zeichen + Wort“; der Badge setzt nur für positiv, warnung, kritisch ein Zeichen. Text-Zeichen statt Symbolen (9.15).
 
 **Anker.** `STATUSZEICHEN` in `src/components/ui/Badge.tsx`.
 
 **Änderungspfad.** Andere Zeichen dort eintragen oder `eigenesZeichen` weglassen · Aufwand `klein`.
+
+### ANN-486 — Die Kachelleiste der Behandlungsgrundlagen bleibt bis zur Sichtung
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Akte)
+
+**Annahme.** Die Kachelleiste über den Karten bleibt. Sie ist der einzige Einstieg in „Daten übertragen“ (Foto und Verordnung). Leere Werte stehen nicht darin (kein „ICD –“); liegen Kacheln außer Sicht, zeigt ein Randverlauf mit „‹“/„›“ das an, auf jeder Breite.
+
+**Begründung.** Sie doppelt die Karten zum Teil (Nachprüfung A9). Weg kann sie erst, wenn „Daten übertragen“ an Karte und Foto steht. Das ist ein Umbau von Jannes’ Entwurf „Akte entschlacken“ (03.10.).
+
+**Anker.** Kommentar `ANN-486` in `src/features/treatment-bases/GrundlagenKacheln.tsx`.
+
+**Änderungspfad.** Leiste streichen und „Daten übertragen“ an `Verordnungskopf` und `OffeneVerordnungsfotos` hängen · Aufwand `mittel`.
+
+### ANN-487 — „Kein Alarm je Check-in“ bleibt als Kleingedrucktes
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Akte)
+
+**Annahme.** Unter „Zwischen den Terminen“ steht nur noch „Kein Alarm je Check-in – gelesen wird beim nächsten Termin.“ als Kleingedrucktes. Die Gewohnheiten erklärt ein „So geht’s“ auf Abruf.
+
+**Begründung.** Der Satz zieht die Grenze aus ADR-006 Punkt 11 und DSN-001 D5: Die Anwendung wertet nicht aus und alarmiert nicht. Damit ist er ein MDR-Satz nach DESIGN.md Regel 6 und keine Erklärung (Nachprüfung A10).
+
+**Anker.** Kommentar `ANN-487` in `src/features/checkins/ZwischenDenTerminen.tsx`.
+
+**Änderungspfad.** Satz streichen oder in ein „So geht’s“ legen · Aufwand `klein`.
 
 ### ANN-489 — Eine Zeitspanne (von/bis) steht auch am Telefon in einer Zeile
 
