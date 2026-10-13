@@ -63,8 +63,6 @@ export const GRENZEN: Record<
 
     'features/offline-documentation': 2,
 
-    'features/open-points': 2,
-
     'features/patients': 2,
 
     'features/platform': 9,
@@ -110,8 +108,6 @@ export const GRENZEN: Record<
 
     'features/files': 1,
 
-    'features/open-points': 2,
-
     'features/platform': 2,
 
     'features/preview': 1,
@@ -144,8 +140,6 @@ export const GRENZEN: Record<
     'features/messages': 1,
 
     'features/offline-documentation': 1,
-
-    'features/open-points': 13,
 
     'features/patients': 1,
 
@@ -239,8 +233,6 @@ export const GRENZEN: Record<
     'features/messages': 1,
 
     'features/offline-documentation': 2,
-
-    'features/open-points': 2,
 
     'features/patients': 2,
 

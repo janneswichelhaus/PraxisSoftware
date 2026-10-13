@@ -4607,3 +4607,15 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
 
 **Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
+
+### ANN-450 — Offene Punkte sind ein Eingang: nur Gruppen mit Einträgen, das Dringlichste zuerst
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Eine Gruppe steht nur da, wenn sie etwas enthält; ist alles leer, sagt die Seite einmal „Nichts offen“ (nie bei einem Ladefehler). Reihenfolge: Rückfragen, Terminwünsche, Aufgaben, Anrufe für morgen, Widerrufe und Kündigungen, Verordnungen zu erfassen, Erstaufnahme, Verordnung endet, Pläne, Warteliste, Versorgung abschließen.
+
+**Begründung.** 13 Listen untereinander, am Telefon sieben von zehn nur „Kein …“; zuerst, was eine Person oder Frist warten lässt.
+
+**Anker.** `useEingang` in `src/features/open-points/eingang.ts`; Reihenfolge in `OpenPointsPage.tsx`.
+
+**Änderungspfad.** Reihenfolge oder leere Gruppen zeigen: die Seite · Aufwand `klein`.

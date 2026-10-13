@@ -72,9 +72,10 @@ describe('WaitlistReview', () => {
     );
   });
 
-  it('sagt in einem Satz, wenn nichts zu prüfen ist', async () => {
+  it('zeigt keine Gruppe, wenn nichts zu prüfen ist', async () => {
     fetchWaitlist.mockResolvedValue([eintrag({ review_due: false })]);
-    renderWithProviders(<WaitlistReview timeZone="Europe/Berlin" />);
-    expect(await screen.findByText('Kein Eintrag wartet auf eine Prüfung.')).toBeInTheDocument();
+    const { container } = renderWithProviders(<WaitlistReview timeZone="Europe/Berlin" />);
+    await waitFor(() => expect(fetchWaitlist).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
   });
 });

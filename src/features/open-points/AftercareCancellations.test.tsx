@@ -30,7 +30,7 @@ describe('Kündigungen des Nachsorge-Abos in Offene Punkte (ANG-003)', () => {
       },
     ]);
     renderWithProviders(<AftercareCancellations />);
-    expect(await screen.findByRole('link', { name: 'Beispiel, Erika' })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /^Beispiel, Erika/ })).toBeInTheDocument();
     expect(
       screen.getByText(
         /Gekündigt am 07.10.2026, von Bernd Betreuer \(rechtliche Vertretung\) – endet am 31.10.2026/,

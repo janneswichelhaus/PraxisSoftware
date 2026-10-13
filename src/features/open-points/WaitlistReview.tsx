@@ -1,53 +1,46 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { confirmWaitlistEntry, fetchWaitlist, type WaitlistEntry } from '@/features/waitlist/api';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import type { WaitlistEntry } from '@/features/waitlist/api';
+import { confirmWaitlistEntry } from '@/features/waitlist/api';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { WAITLIST_REVIEW_KEY, abfragen } from './eingang';
 import { formatDay } from './format';
-
-export const WAITLIST_REVIEW_KEY = ['open-points', 'waitlist-review'] as const;
 
 /**
  * „Warteliste prüfen" (ABN-018, BEF-108): offene Einträge, die seit acht
  * Wochen niemand angefasst hat (ANN-220). Ob sie noch gelten, weiß nur, wer
- * nachfragt - die Liste sagt nur, dass es Zeit dafür ist. „Noch aktuell"
- * lässt den Eintrag, wie er ist, und beginnt die Frist von vorn; was sich
- * geändert hat, geht über „Bearbeiten".
+ * nachfragt - die Liste sagt nur, dass es Zeit dafür ist. Die Zeile führt in
+ * den Eintrag (was sich geändert hat); „Noch aktuell" daneben lässt ihn, wie
+ * er ist, und beginnt die Frist von vorn. Ohne fälligen Eintrag keine Gruppe.
  */
 export function WaitlistReview({ timeZone }: { timeZone: string }) {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: WAITLIST_REVIEW_KEY,
-    queryFn: () => fetchWaitlist('open'),
-    retry: false,
-    select: (eintraege) => eintraege.filter((e) => e.review_due),
-  });
+  const { data, isError, refetch } = useQuery(abfragen.warteliste());
 
-  return (
-    <Section
-      titel={data && data.length > 0 ? `Warteliste prüfen (${data.length})` : 'Warteliste prüfen'}
-    >
-      {isPending ? <LoadingState label="Warteliste wird geladen …" /> : null}
-      {isError ? (
+  if (isError && !data) {
+    return (
+      <Section titel="Warteliste prüfen">
         <ErrorState
           title="Die Warteliste konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
-      ) : null}
-      {data && data.length === 0 ? (
-        <p className="text-ink-muted text-sm">Kein Eintrag wartet auf eine Prüfung.</p>
-      ) : null}
-      {data && data.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {data.map((eintrag) => (
-            <Zeile key={eintrag.id} eintrag={eintrag} timeZone={timeZone} />
-          ))}
-        </ul>
-      ) : null}
-    </Section>
+      </Section>
+    );
+  }
+  if (!data || data.length === 0) return null;
+
+  return (
+    <Listenabschnitt titel="Warteliste prüfen" anzahl={data.length}>
+      {data.map((eintrag) => (
+        <Zeile key={eintrag.id} eintrag={eintrag} timeZone={timeZone} />
+      ))}
+    </Listenabschnitt>
   );
 }
 
@@ -60,40 +53,30 @@ function Zeile({ eintrag, timeZone }: { eintrag: WaitlistEntry; timeZone: string
   const name = `${eintrag.patient_given_name} ${eintrag.patient_family_name}`;
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 py-3">
-      <div className="min-w-0 wrap-anywhere">
-        <p className="text-ink text-liste font-medium">
-          {eintrag.patient_family_name}, {eintrag.patient_given_name}
-        </p>
-        <p className="text-ink-muted text-sm">
+    <ListRow
+      titel={`${eintrag.patient_family_name}, ${eintrag.patient_given_name}`}
+      meta={
+        <>
           Unverändert seit {formatDay(eintrag.updated_at, timeZone)}
-        </p>
-        {bestaetigen.isError ? (
-          <Statusmeldung ton="fehler" className="mt-1">
-            {bestaetigen.error.message}
-          </Statusmeldung>
-        ) : null}
-      </div>
-      <div className="flex flex-wrap gap-2">
+          {bestaetigen.isError ? (
+            <Statusmeldung ton="fehler" className="mt-1">
+              {bestaetigen.error.message}
+            </Statusmeldung>
+          ) : null}
+        </>
+      }
+      to={mitRueckweg(`/warteliste/${eintrag.id}/bearbeiten`, '/offen')}
+      aktion={
         <Button
           type="button"
           variant="secondary"
-          groesse="kompakt"
           disabled={bestaetigen.isPending}
           onClick={() => bestaetigen.mutate()}
         >
           {bestaetigen.isPending ? 'Wird bestätigt …' : 'Noch aktuell'}
           <span className="sr-only">: {name}</span>
         </Button>
-        <ButtonLink
-          to={mitRueckweg(`/warteliste/${eintrag.id}/bearbeiten`, '/offen')}
-          variant="quiet"
-          groesse="kompakt"
-        >
-          Bearbeiten
-          <span className="sr-only">: {name}</span>
-        </ButtonLink>
-      </div>
-    </li>
+      }
+    />
   );
 }
