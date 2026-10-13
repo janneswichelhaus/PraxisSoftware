@@ -9,8 +9,13 @@ import type { Katalogeintrag } from '../typen';
  *
  * Nur die Ausgangsstellung (ANN-480), weil die Figur die Bewegung nicht
  * richtig zeigen kann (lieber die Stellung als ein falsches Bewegungsbild):
- * BW-02 (Schulterblätter hat die Figur nicht), BW-04 und BW-06 (Drehung des
- * Rumpfs), BW-09 (Arme quer vor dem Körper).
+ * BW-02 (Schulterblätter hat die Figur nicht), BW-04 (Drehung des Rumpfs),
+ * BW-09 (Arme quer vor dem Körper).
+ *
+ * Ohne Bild (lieber kein Bild als ein falsches): BW-06. Die Frontansicht
+ * verkürzt die rechtwinklig gebeugten Hüften und Knie zu gestreckt wirkenden
+ * Beinen; die aufeinanderliegenden Knie, die das Becken halten, wären nicht
+ * zu erkennen.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -57,7 +62,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     niveau: 1,
     dosierung: { saetze: 2, wiederholungen: 10, halten_s: 3, taeglich: 1 },
     anleitung: [
-      'Setzen Sie sich aufrecht auf einen Stuhl, die Arme hängen locker.',
+      'Setzen Sie sich aufrecht auf einen Stuhl, die Hände liegen locker auf den Oberschenkeln.',
       'Ziehen Sie beide Schulterblätter sanft nach hinten und unten, als wollten Sie sie in die hinteren Hosentaschen stecken.',
       'Halten Sie die Spannung und atmen Sie dabei ruhig weiter.',
       'Lassen Sie die Schultern langsam wieder locker.',
@@ -70,8 +75,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz',
-      start: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
-      ende: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+      start: { rumpf: 0 },
+      ende: { rumpf: 0 },
     },
   },
   {
@@ -137,8 +142,10 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz_front',
-      start: { haende: ['brust', 'brust'] },
-      ende: { haende: ['brust', 'brust'] },
+      // Die Unterarme steigen zur Brustmitte; ganz gekreuzt bis zur
+      // Gegenschulter lässt die Frontansicht nicht zu.
+      start: { arm: [15, 15], ellbogen: [-144, -144] },
+      ende: { arm: [15, 15], ellbogen: [-144, -144] },
     },
   },
   {
@@ -203,14 +210,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Den Arm nur so weit öffnen, wie es ohne Schmerz in der Schulter geht; er muss den Boden nicht erreichen.',
-    bild: {
-      v: 1,
-      basis: 'seitlage_front',
-      unterlage: 'matte',
-      start: { huefte: [75, 75], knie: [90, 90], haende: ['boden', 'boden'] },
-      ende: { huefte: [75, 75], knie: [90, 90], haende: ['boden', 'boden'] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'BW-07',
@@ -306,9 +305,10 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'stand',
+      // Das Band läge in der Seitenansicht als Punkt an der Hand; es steht unter
+      // den Hilfsmitteln.
       start: { schulter: [90, 90], ellbogen: [0, 0] },
       ende: { schulter: [90, 90], ellbogen: [0, 0] },
-      hilfsmittel: [{ art: 'band', von: 'hand_fern', nach: 'hand_nah' }],
     },
   },
   {
