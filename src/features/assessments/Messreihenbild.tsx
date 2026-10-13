@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { EmptyState } from '@/components/ui/Feedback';
 import { Punktbild } from '@/components/ui/Punktbild';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate } from '@/lib/datum';
@@ -58,7 +59,9 @@ export function Ereignisliste({
   onEntfernen?: ((ereignis: Verlaufsereignis) => void | Promise<unknown>) | undefined;
 }) {
   if (ereignisse.length === 0) {
-    return <p className="text-ink-muted text-sm">Noch kein Ereignis vermerkt.</p>;
+    // Derselbe Leerzustand in der Karte wie bei den Bögen und dem Messverlauf
+    // darüber (Regel 8; Sichtung 13.10.2026, A4).
+    return <EmptyState inKarte title="Noch kein Ereignis vermerkt." />;
   }
   return (
     <ol className="flex flex-col gap-1 text-sm">

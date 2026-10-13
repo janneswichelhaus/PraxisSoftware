@@ -98,6 +98,8 @@ describe('Befund der Akte', () => {
       'href',
       `/patienten/${PATIENT_ID}/befund/erheben?instrument=anamnese_v8`,
     );
+    // Zweitrangig: Der Hauptknopf der Akte ist „Termin anlegen“ im Kopf (A4).
+    expect(screen.getByRole('link', { name: 'Bogen erheben' })).not.toHaveClass('bg-accent');
   });
 
   it('führt zu einem offenen Entwurf statt zu einem zweiten Bogen', async () => {

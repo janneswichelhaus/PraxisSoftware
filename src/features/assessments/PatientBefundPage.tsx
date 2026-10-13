@@ -4,8 +4,8 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
 import { formatDate } from '@/lib/datum';
 import { todayInTimeZone } from '@/features/appointments/api';
@@ -97,12 +97,14 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
             titel={instrument.meta.name_de}
             aktion={
               darfErheben ? (
+                // Zweitrangig: Der eine Hauptknopf der Akte ist „Termin
+                // anlegen“ im Kopf (Regel 4; Sichtung 13.10.2026, A4).
                 <ButtonLink
                   groesse="kompakt"
                   to={erhebenPfad(patient.id, instrument.meta.id, {
                     ...(offenerEntwurf ? { entwurf: offenerEntwurf.id } : {}),
                   })}
-                  variant={offenerEntwurf ? 'secondary' : 'primary'}
+                  variant="secondary"
                 >
                   {offenerEntwurf ? 'Entwurf weiter ausfüllen' : 'Bogen erheben'}
                 </ButtonLink>
@@ -362,9 +364,9 @@ export function PatientBefundSeite() {
   const { patient, user } = usePatientRecord();
   return (
     <>
-      <Textlink alleinstehend to={`/patienten/${patient.id}/doku`} className="mb-4 gap-1">
-        <span aria-hidden="true">←</span> Zur Doku
-      </Textlink>
+      {/* Der Rückweg-Baustein (A4): „← Zurück zur Doku“, wie auf jeder
+          Unterseite; ein mitgereister Rückweg gewinnt (UX-012). */}
+      <Rueckweg standard={`/patienten/${patient.id}/doku`} />
       {/* Eigener Block: Der erste Abschnitt steht dann ohne den Abstand über
           einem Abschnitt direkt unter dem Rückweg. */}
       <div>
