@@ -151,8 +151,6 @@ export const GRENZEN: Record<
 
     'features/staff': 2,
 
-    'features/teamchat': 1,
-
     'features/timeaccount': 1,
 
     'features/training': 6,
@@ -179,8 +177,6 @@ export const GRENZEN: Record<
     'features/files': 1,
 
     'features/platform': 5,
-
-    'features/teamchat': 1,
 
     'features/today': 1,
 
@@ -237,8 +233,6 @@ export const GRENZEN: Record<
     'features/retention': 2,
 
     'features/statistics': 2,
-
-    'features/teamchat': 2,
 
     'features/territories': 1,
 
