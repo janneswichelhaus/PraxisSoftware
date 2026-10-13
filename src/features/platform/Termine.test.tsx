@@ -103,7 +103,10 @@ describe('Termine (POR-008)', () => {
     expect(screen.getAllByText('Testweg 7, 72072 Tuebingen')).toHaveLength(2);
     expect(screen.getByText('abgesagt')).toBeInTheDocument();
 
-    expect(screen.getByRole('heading', { name: 'Vergangene Termine' })).toBeInTheDocument();
+    // Vergangenes steht auf Abruf, mit der Zahl im Kopf (DESIGN.md, Regel 6).
+    expect(screen.getByText('Vergangene Termine').closest('summary')).toHaveTextContent(
+      'Vergangene Termine (1)',
+    );
     expect(screen.getByText('In der Praxis bei Anna Beispiel')).toBeInTheDocument();
     expect(screen.getByText('Hauptstandort Tuebingen')).toBeInTheDocument();
     expect(screen.getByText('durchgeführt')).toBeInTheDocument();

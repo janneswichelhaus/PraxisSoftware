@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { terminWuenschen, wuenscheSchluessel, type Plattformzugang, type Tageszeit } from './api';
@@ -54,38 +57,33 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={zurueck}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu den Terminen
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Termin wünschen</h1>
-      <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+      <Rueckweg standard={zurueck} beschriftung="Zu den Terminen" />
+      <PageHeader title="Termin wünschen" />
+      {/* §8: Ein Wunsch ist kein Termin - das steht vor dem Formular. */}
+      <p className="text-ink max-w-prose text-base leading-relaxed">
         Sagen Sie uns, wann es Ihnen passt. Die Praxis sucht einen Termin und meldet sich bei Ihnen.
         Ein vereinbarter Termin ist das noch nicht.
       </p>
-      <form onSubmit={absenden} noValidate className="mt-6 flex flex-col gap-8">
-        <Wunschfelder tage={tage} zeiten={zeiten} onTage={setTage} onZeiten={setZeiten} />
-
-        <TextArea
-          label="Was sollen wir noch wissen? (freiwillig)"
-          hint={`${notiz.trim().length} von ${NOTIZ_MAX} Zeichen`}
-          rows={3}
-          value={notiz}
-          onChange={(e) => setNotiz(e.target.value)}
-        />
-
-        {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-
-        <div className="flex flex-col gap-3 sm:flex-row">
+      <form onSubmit={absenden} noValidate className="mt-8">
+        <div className="flex flex-col gap-8">
+          <Wunschfelder tage={tage} zeiten={zeiten} onTage={setTage} onZeiten={setZeiten} />
+          <TextArea
+            label="Was sollen wir noch wissen? (freiwillig)"
+            hint={`${notiz.trim().length} von ${NOTIZ_MAX} Zeichen`}
+            rows={3}
+            value={notiz}
+            onChange={(e) => setNotiz(e.target.value)}
+          />
+          {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
+        </div>
+        <Formularfuss>
           <Button type="submit" disabled={senden.isPending}>
             {senden.isPending ? 'Wird gesendet …' : 'Wunsch senden'}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
+          <Button type="button" variant="quiet" onClick={() => void navigate(zurueck)}>
             Abbrechen
           </Button>
-        </div>
+        </Formularfuss>
       </form>
     </>
   );
