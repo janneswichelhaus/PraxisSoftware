@@ -395,7 +395,7 @@ describe('MeinKontoPage — UXR-002', () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
     await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.');
 
-    const breite = screen.getByRole('heading', { name: 'Zugang' }).closest('.max-w-xl');
+    const breite = screen.getByRole('heading', { name: 'Passkeys' }).closest('.max-w-formular');
     expect(breite).not.toBeNull();
     for (const titel of ['Passkeys', 'PIN', 'Zweiter Faktor', 'Sitzungen']) {
       expect(breite).toContainElement(screen.getByRole('heading', { name: titel }));
