@@ -648,6 +648,7 @@ function MeinTag({
   const besuche = besucheDesTages(sortiert);
   const hausbesuche = hausbesucheDesTages(sortiert);
   const stehtBesuchAus = fokus?.art === 'besuch';
+  const ohneBesuch = besuche.length === 0 && !stehtBesuchAus;
   // Der Wegbalken rechnet von jetzt (ANN-196) - an einem anderen Tag gibt es
   // kein Jetzt, nur die Anfahrten am Zeitstrahl (ANN-234).
   const weg = istHeute ? naechsterWeg(sortiert, fokus, fahrzeiten.anfahrten, jetzt) : null;
@@ -758,6 +759,38 @@ function MeinTag({
     );
   }
 
+  const strahl =
+    sortiert.length > 0 ? (
+      <Zeitstrahl
+        {...(istHeute && !stehtBesuchAus
+          ? { titel: `Heute · ${kopfDatum(heute)}`, titelSichtbar: true }
+          : {})}
+        erstaufnahmeOffen={(termin) =>
+          termin.patient_id !== null &&
+          (erstaufnahmen ?? []).some((eintrag) => eintrag.patient_id === termin.patient_id)
+        }
+        plan={sortiert}
+        // Steht kein Besuch mehr aus, sagt „noch offen“ darüber, was fehlt;
+        // der Strahl zeigt dann nur noch den Tag.
+        fokusId={stehtBesuchAus ? (fokus?.termin.id ?? null) : null}
+        fruehereZusammenfassen={istHeute && stehtBesuchAus}
+        jetzt={jetzt}
+        jetztMarke={istHeute}
+        zeitzone={zeitzone}
+        anfahrten={fahrzeiten.anfahrten}
+        veraltet={fahrzeiten.veraltet}
+        karte={karte()}
+        aktionen={zeilenAktionen}
+        aufklappen={{
+          offenId: offeneZeile,
+          aufklappbar: (termin) =>
+            termin.kind === 'therapy' ? termin.patient_id !== null : termin.kind === 'training',
+          umschalten,
+          karte: zeilenKarte,
+        }}
+      />
+    ) : null;
+
   return (
     <>
       {meldung?.ton === 'ok' ? (
@@ -795,11 +828,15 @@ function MeinTag({
         </div>
       ) : null}
 
-      {besuche.length === 0 && !stehtBesuchAus ? (
+      {ohneBesuch ? (
         // Der Titel sagt, was der Fall ist (UEB-11): An einem Tag ohne Besuch
         // ist nichts „erledigt". Eine Fehlzeit steht darunter im Zeitstrahl.
-        // Ohne Karte drumherum: ein Satz ist kein Kasten (Leitfaden L2).
-        <EmptyState title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`} />
+        // In der Karte, wie jeder Leerzustand zwischen Karten (DESIGN.md
+        // Regel 8; Design-Review R2, U4).
+        <EmptyState
+          inKarte
+          title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`}
+        />
       ) : stehtBesuchAus ? (
         <div className="flex flex-col gap-2">
           {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
@@ -822,12 +859,15 @@ function MeinTag({
       ) : (
         <Tagesabschluss
           fortschritt={fortschritt}
-
           tagWort={TagesWort(datum, heute)}
           istHeute={istHeute}
           datum={datum}
         />
       )}
+
+      {/* Ohne eigenen Besuch steht der heutige Strahl (Fehlzeiten) gleich unter
+          dem Leerzustand - heute vor morgen (Design-Review R2, U4; ANN-482). */}
+      {ohneBesuch ? strahl : null}
 
       {/* Am Tagesende erst, was heute noch offen ist - Doku und Heilmittel -,
           dann was liegen geblieben ist, dann morgen (Auftrag C1, Analyse
@@ -858,36 +898,7 @@ function MeinTag({
         />
       ) : null}
 
-      {sortiert.length > 0 ? (
-        <Zeitstrahl
-          {...(istHeute && !stehtBesuchAus
-            ? { titel: `Heute · ${kopfDatum(heute)}`, titelSichtbar: true }
-            : {})}
-          erstaufnahmeOffen={(termin) =>
-            termin.patient_id !== null &&
-            (erstaufnahmen ?? []).some((eintrag) => eintrag.patient_id === termin.patient_id)
-          }
-          plan={sortiert}
-          // Steht kein Besuch mehr aus, sagt „noch offen“ darüber, was fehlt;
-          // der Strahl zeigt dann nur noch den Tag.
-          fokusId={stehtBesuchAus ? (fokus?.termin.id ?? null) : null}
-          fruehereZusammenfassen={istHeute && stehtBesuchAus}
-          jetzt={jetzt}
-          jetztMarke={istHeute}
-          zeitzone={zeitzone}
-          anfahrten={fahrzeiten.anfahrten}
-          veraltet={fahrzeiten.veraltet}
-          karte={karte()}
-          aktionen={zeilenAktionen}
-          aufklappen={{
-            offenId: offeneZeile,
-            aufklappbar: (termin) =>
-              termin.kind === 'therapy' ? termin.patient_id !== null : termin.kind === 'training',
-            umschalten,
-            karte: zeilenKarte,
-          }}
-        />
-      ) : null}
+      {ohneBesuch ? null : strahl}
 
       {/* Liegengebliebenes der letzten Tage, unter dem eigenen Tag: Der
           nächste Weg bleibt auf dem ersten Bildschirm (Auftrag C1). */}

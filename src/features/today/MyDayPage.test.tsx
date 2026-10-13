@@ -1802,6 +1802,38 @@ describe('Übersicht', () => {
       expect(within(vorschau).queryByRole('button')).toBeNull();
     });
 
+    it('stellt ohne eigenen Besuch heute vor morgen, den Leerzustand in einer Karte (R2, U4)', async () => {
+      // Das Büro: heute nur eine Fehlzeit, morgen nichts.
+      fetchDayPlan.mockImplementation((datum: string) =>
+        Promise.resolve(
+          datum === heute()
+            ? [
+                tagesEintrag({
+                  id: 'f1',
+                  kind: 'internal',
+                  patient_id: null,
+                  title: 'Teambesprechung',
+                  documentation_status: null,
+                }),
+              ]
+            : [],
+        ),
+      );
+      renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
+
+      const leer = await screen.findByText('Heute sind Ihnen keine Besuche zugeordnet');
+      expect(leer.parentElement).toHaveClass('rounded-card', 'border', 'bg-surface');
+      const heuteTitel = await screen.findByRole('heading', { name: /^Heute · / });
+      const morgenTitel = await screen.findByRole('heading', { name: /^Morgen · / });
+      const folgt = (a: Node, b: Node) =>
+        (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+      expect(folgt(leer, heuteTitel)).toBe(true);
+      expect(folgt(heuteTitel, morgenTitel)).toBe(true);
+      expect(
+        within(heuteTitel.closest('section')!).getByText('Teambesprechung'),
+      ).toBeInTheDocument();
+    });
+
     it('zeigt keine Morgen-Vorschau, solange heute ein Weg aussteht', async () => {
       // Morgens, damit der Besuch noch aussteht (BEF-120).
       vi.useFakeTimers({ toFake: ['Date'] });

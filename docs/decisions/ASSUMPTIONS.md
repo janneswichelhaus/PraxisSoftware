@@ -4994,3 +4994,14 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Nicht vorhaken: `onAbgelaufen` weglassen · Aufwand `klein`.
 
+### ANN-482 — Ohne eigenen Besuch steht heute vor morgen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Hat die Person heute keinen Besuch, stehen Leerzustand (in einer Karte) und der heutige Strahl vor der Vorschau auf morgen. Sind alle Besuche erledigt, bleibt morgen über dem erledigten Tag (Jannes, 2026-10-11).
+
+**Begründung.** Design-Review R2 U4: Beim Büro stand „Morgen“ vor „Heute · Dienstag“; ein erledigter Tag hat dagegen nichts mehr zu tun.
+
+**Anker.** `ohneBesuch` in `src/features/today/MyDayPage.tsx`.
+
+**Änderungspfad.** Andere Reihenfolge: die beiden Stellen von `strahl` in `MeinTag` · Aufwand `klein`.
