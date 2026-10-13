@@ -14,7 +14,12 @@ import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Tex
 import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/session/types';
 import { createStaffMember, leereStammdaten, staffMasterDataSchema, type StaffFeld } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
-import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
+import {
+  STAFF_BESCHRIFTUNG,
+  sichtbarkeitDerAngaben,
+  staffFeldId,
+  staffReihenfolge,
+} from './mitarbeiterfelder';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 
@@ -172,9 +177,10 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       <Kleingedrucktes className="max-w-formular mt-8">
-        Es entstehen die Stammdaten, aber noch kein Zugang zur Anwendung. Für eigene Termine als
-        behandelnde Person ist zusätzlich ein Zugang mit der Rolle Therapeut:in oder Teamleitung
-        nötig – ihn lädt die Praxisinhaber:in anschließend bei der Person unter „Zugang“ ein.
+        {sichtbarkeitDerAngaben(privat)} Es entstehen die Stammdaten, aber noch kein Zugang zur
+        Anwendung. Für eigene Termine als behandelnde Person ist zusätzlich ein Zugang mit der Rolle
+        Therapeut:in oder Teamleitung nötig – ihn lädt die Praxisinhaber:in anschließend bei der
+        Person unter „Zugang“ ein.
       </Kleingedrucktes>
     </>
   );

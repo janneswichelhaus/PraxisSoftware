@@ -5,7 +5,6 @@ import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import type { StaffFeld } from './api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Stand der Standortliste für die Auswahl des Hauptstandorts (ORG-14). */
 export type StandorteStand = 'laedt' | 'fehler' | 'bereit';
@@ -212,17 +211,6 @@ export function StaffMasterDataFields({
           </Feldgruppe>
         </Section>
       ) : null}
-
-      {/* Wer was sieht, als Kleingedrucktes am Ende der Felder statt als
-          Satz unter jeder Überschrift (Regel 6): Sichtbarkeit und
-          Freiwilligkeit der Beschäftigtendaten sind Aussagen zum Datenfluss
-          und bleiben vollständig. */}
-      <Kleingedrucktes className="mt-6">
-        Dienstliche Angaben sehen alle Praxisrollen – für Vertretung, Rückfragen und Einsatzplanung.{' '}
-        {privat
-          ? 'Privatangaben sind Beschäftigtendaten: nur für die Praxisinhaber:in und die betroffene Person sichtbar, alle Angaben freiwillig.'
-          : 'Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt ausschließlich die Praxisinhaber:in. Sie bleiben beim Speichern unverändert.'}
-      </Kleingedrucktes>
     </>
   );
 }

@@ -24,7 +24,12 @@ import {
   type StaffMember,
 } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
-import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
+import {
+  STAFF_BESCHRIFTUNG,
+  sichtbarkeitDerAngaben,
+  staffFeldId,
+  staffReihenfolge,
+} from './mitarbeiterfelder';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 
@@ -167,7 +172,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
       ) : null}
 
       <Kleingedrucktes className="max-w-formular mt-8">
-        Der Beschäftigungsstatus wird hier nicht verändert.
+        {sichtbarkeitDerAngaben(privat)} Der Beschäftigungsstatus wird hier nicht verändert.
       </Kleingedrucktes>
     </>
   );
