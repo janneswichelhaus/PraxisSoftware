@@ -15,6 +15,7 @@
 --                              Schnappschuss
 --   app.exercise_goals, app.exercise_starting_positions,
 --   app.exercise_equipment_labels      feste Listen (ANN-383)
+--   app.exercise_illustration_bases    Grundstellungen des Bildes (ANN-381)
 --   app.exercise_illustration_valid    Pruefung des Bildes (ANN-381)
 --   app.exercise_dosage_valid          Pruefung der Standarddosierung
 --   app.exercise_catalog_entry         Pruefung eines Katalogeintrags
@@ -142,10 +143,31 @@ $$;
 
 revoke all on function app.exercise_json_int(jsonb) from public, anon, authenticated;
 
--- Das Bild (ANN-381): ein Objekt der Fassung 1 mit Start und Ende, hoechstens
--- 4096 Byte in der Textform von jsonb. Was darin steht, prueft der Client mit
--- zod und zeichnet nur Zahlen und feste Werte - ein ungueltiges Bild wird dort
--- zu "kein Bild".
+-- Die Grundstellungen des Bildes der Fassung 1 (ANN-381) - nicht dieselbe
+-- Liste wie die Ausgangsstellungen des Katalogs: Sie unterscheidet etwa Seiten-
+-- und Frontansicht. Sie gehoert zur Fassung und aendert sich nur mit v: 2.
+create function app.exercise_illustration_bases()
+returns text[]
+language sql
+immutable
+set search_path = ''
+as $$
+  select array[
+    'stand', 'sitz', 'langsitz', 'rueckenlage', 'rueckenlage_angestellt',
+    'bauchlage', 'vierfuessler', 'kniestand', 'stand_front', 'sitz_front',
+    'seitlage_front'
+  ]::text[]
+$$;
+
+revoke all on function app.exercise_illustration_bases() from public, anon, authenticated;
+
+comment on function app.exercise_illustration_bases() is
+  'UEB-012 (ANN-381): Grundstellungen eines Uebungsbilds der Fassung 1. Gegenstueck GRUNDSTELLUNGEN in src/features/exercises/bild/schema.ts.';
+
+-- Das Bild (ANN-381): ein Objekt der Fassung 1 mit bekannter Grundstellung,
+-- Start und Ende, hoechstens 4096 Byte in der Textform von jsonb. Was sonst
+-- darin steht, prueft der Client mit zod und zeichnet nur Zahlen und feste
+-- Werte - ein ungueltiges Bild wird dort zu "kein Bild".
 create function app.exercise_illustration_valid(p jsonb)
 returns boolean
 language sql
@@ -159,6 +181,7 @@ as $$
     and octet_length(p::text) <= 4096
     and p -> 'v' = '1'::jsonb
     and jsonb_typeof(p -> 'basis') = 'string'
+    and (p ->> 'basis') = any (app.exercise_illustration_bases())
     and jsonb_typeof(p -> 'start') = 'object'
     and jsonb_typeof(p -> 'ende') = 'object',
     false
@@ -168,7 +191,7 @@ $$;
 revoke all on function app.exercise_illustration_valid(jsonb) from public, anon, authenticated;
 
 comment on function app.exercise_illustration_valid(jsonb) is
-  'UEB-012 (ANN-381): Ein Uebungsbild ist ein jsonb-Objekt der Fassung 1 mit start und ende, hoechstens 4096 Byte. Die eine Stelle fuer die Grenze.';
+  'UEB-012 (ANN-381): Ein Uebungsbild ist ein jsonb-Objekt der Fassung 1 mit einer Grundstellung aus app.exercise_illustration_bases(), start und ende, hoechstens 4096 Byte. Die eine Stelle fuer die Grenze.';
 
 -- Die Standarddosierung (ANN-384) in der Form der Planposition: Saetze,
 -- Wiederholungen ODER Dauer, Halten nur mit Wiederholungen, je Seite,

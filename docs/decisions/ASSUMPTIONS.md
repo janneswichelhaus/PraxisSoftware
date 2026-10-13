@@ -4532,7 +4532,7 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
 **Begründung.** Einheitlich, offline im Build (ADR-024 Punkt 1), testbar, ohne Anbieter; eingefroren wie Name und Anleitung (ANN-300).
 
-**Anker.** `app.exercise_illustration_valid` in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
+**Anker.** `app.exercise_illustration_valid` (Grundstellungen: `app.exercise_illustration_bases`) in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
 
 **Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: neue Fassung von ADR-017 · Aufwand `groß`.
 

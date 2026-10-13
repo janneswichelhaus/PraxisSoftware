@@ -12,6 +12,7 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { praxistag } from './helpers/plaene';
+import { GRUNDSTELLUNGEN } from '@/features/exercises/bild/schema';
 import { KATALOG, katalogeintrag } from '@/features/exercises/katalog';
 import { ausruestungVon } from '@/features/exercises/katalog/schema';
 import {
@@ -138,18 +139,21 @@ describe('Übungskatalog im Seed (UEB-012)', () => {
     );
   });
 
-  it('hält die festen Listen in Datenbank und Oberfläche gleich (ANN-383)', async () => {
+  it('hält die festen Listen in Datenbank und Oberfläche gleich (ANN-381, ANN-383)', async () => {
     const { rows } = await asPostgres<{
       ziele: string[];
       stellungen: string[];
       hilfsmittel: object;
+      grundstellungen: string[];
     }>(
       `select app.exercise_goals() as ziele, app.exercise_starting_positions() as stellungen,
-              app.exercise_equipment_labels() as hilfsmittel`,
+              app.exercise_equipment_labels() as hilfsmittel,
+              app.exercise_illustration_bases() as grundstellungen`,
     );
     expect(rows[0]!.ziele).toEqual([...ZIELE]);
     expect(rows[0]!.stellungen).toEqual([...AUSGANGSSTELLUNGEN]);
     expect(rows[0]!.hilfsmittel).toEqual(HILFSMITTEL_LABEL);
+    expect(rows[0]!.grundstellungen).toEqual([...GRUNDSTELLUNGEN]);
   });
 });
 
@@ -313,6 +317,10 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
       ['ein Bild als Zeichenkette', [mit(KN01, { bild: '<svg onload="x()"/>' })]],
       ['ein Bild einer späteren Fassung', [mit(KN01, { bild: { ...KN01.bild, v: 2 } })]],
       ['ein Bild ohne Start', [mit(KN01, { bild: { v: 1, basis: 'stand', ende: {} } })]],
+      [
+        'ein Bild mit unbekannter Grundstellung',
+        [mit(KN01, { bild: { ...KN01.bild, basis: 'kopfstand' } })],
+      ],
       ['ein unbekanntes Hilfsmittel', [mit(KN01, { hilfsmittel: ['hantelbank'] })]],
       ['ein doppeltes Hilfsmittel', [mit(KN01, { hilfsmittel: ['stuhl', 'stuhl'] })]],
       ['eine unbekannte Körperregion', [mit(KN01, { region: 'zeh' })]],
@@ -350,6 +358,7 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
         ['illustration', '"bild"'],
         // Fehlt ein Teil, ist die Prüfung nicht "unbekannt", sondern falsch.
         ['illustration', '{"v": 1, "basis": "stand", "ende": {}}'],
+        ['illustration', '{"v": 1, "basis": "kopfstand", "start": {}, "ende": {}}'],
         ['default_dosage', '{"reps_min": 10, "reps_max": 10}'],
         ['default_dosage', '{"sets": 3, "reps_min": 10, "reps_max": 10, "duration_seconds": 30}'],
         ['default_dosage', '{"sets": 3, "duration_seconds": 30, "hold_seconds": 5}'],
