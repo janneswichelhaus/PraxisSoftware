@@ -203,10 +203,11 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
                         {/* Am Telefon steht das Etikett unter der Standortzeile
                             (ORG-11): Neben dem Namen ließ es ihm bei 390 px
                             rund 115 px, und ausgerechnet der Name wurde
-                            gekürzt. Inaktiv steht rechts als Status. */}
+                            gekürzt. Inaktiv steht rechts als Status. Eine
+                            Ausnahme mit Zeichen und Wort (R2-O4). */}
                         {nichtZuordenbar ? (
                           <span className="mt-1.5 block">
-                            <Badge>Nicht für Termine zuordenbar</Badge>
+                            <Badge ton="warnung">Nicht für Termine zuordenbar</Badge>
                           </span>
                         ) : null}
                       </>

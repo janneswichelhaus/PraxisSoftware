@@ -103,6 +103,14 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
   );
 }
 
+/**
+ * Zustand einer Rückfrage als Zeichen und Wort (DESIGN.md Regel 5, R2-O4).
+ *
+ * „Offen“ ist der Regelfall der Liste und trägt kein Abzeichen - die Frist
+ * steht in der Nebenzeile, im Kopf der Rückfrage als Wort. Überfällig ist
+ * „! überfällig“, beantwortet und erledigt sind „✓“. Bis dahin standen
+ * „offen“ und „beantwortet“ als Pillen ohne Zeichen.
+ */
 export function Zustand({
   zeile,
   kurz = false,
@@ -112,14 +120,8 @@ export function Zustand({
   kurz?: boolean;
 }) {
   if (zeile.status === 'closed') return <Badge ton="positiv">erledigt</Badge>;
-  if (zeile.status === 'answered') return <Badge ton="neutral">beantwortet</Badge>;
-  if (kurz) {
-    return zeile.overdue ? (
-      <Badge ton="warnung">überfällig</Badge>
-    ) : (
-      <Badge ton="akzent">offen</Badge>
-    );
-  }
+  if (zeile.status === 'answered') return <Badge ton="positiv">beantwortet</Badge>;
+  if (kurz) return zeile.overdue ? <Badge ton="warnung">überfällig</Badge> : null;
   if (zeile.overdue) {
     return (
       <Badge ton="warnung">
@@ -127,9 +129,5 @@ export function Zustand({
       </Badge>
     );
   }
-  return (
-    <Badge ton="akzent">
-      offen{zeile.due_on ? ` · Antwort bis ${formatDate(zeile.due_on)}` : ''}
-    </Badge>
-  );
+  return zeile.due_on ? <span>Antwort bis {formatDate(zeile.due_on)}</span> : null;
 }

@@ -116,7 +116,9 @@ describe('Rückfragen (KOM-002)', () => {
     expect(await screen.findByText('Erika Beispiel')).toBeInTheDocument();
     expect(screen.getByText('überfällig')).toBeInTheDocument();
     expect(screen.getByText(/fällig war 07\.10\.2026/)).toBeInTheDocument();
-    expect(screen.getByText('offen')).toBeInTheDocument();
+    // „Offen“ ist der Regelfall und trägt kein Abzeichen; die Frist steht in
+    // der Nebenzeile (R2-O4).
+    expect(screen.queryByText('offen')).not.toBeInTheDocument();
     expect(screen.getByText(/Antwort bis 13\.10\.2026/)).toBeInTheDocument();
     expect(screen.getByText(/über Begleitung Paula Mustermann/)).toBeInTheDocument();
     expect(screen.queryByText(/Knie schmerzt/)).not.toBeInTheDocument();
@@ -127,6 +129,19 @@ describe('Rückfragen (KOM-002)', () => {
     expect(screen.getByText(/innerhalb von 2 Werktagen/)).toBeInTheDocument();
     expect(screen.queryByText('Antwortfrist ändern')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Antwortfrist')).not.toBeInTheDocument();
+  });
+
+  it('zeigt Zustände mit Zeichen und Wort (R2-O4)', async () => {
+    fetchRueckfragen.mockResolvedValue([
+      ZEILE,
+      { ...ZEILE, id: 'dddddddd-dddd-4ddd-8ddd-000000000003', status: 'answered', overdue: false },
+    ]);
+    renderWithProviders(
+      <RueckfragenPage user={testUser(['office'], 'Olivia Office')} />,
+      '/rueckfragen',
+    );
+    expect((await screen.findByText('beantwortet')).textContent).toBe('✓beantwortet');
+    expect(screen.getByText('überfällig').textContent).toBe('!überfällig');
   });
 
   it('owner ändert die Antwortfrist (ANN-309)', async () => {
