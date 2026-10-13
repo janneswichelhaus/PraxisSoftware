@@ -11,7 +11,7 @@ export interface Reiter {
 }
 
 const verlaufKlassen =
-  'from-surface text-line-strong pointer-events-none absolute inset-y-0 flex w-10 items-center to-transparent text-xl sm:hidden';
+  'from-surface text-line-strong pointer-events-none absolute inset-y-0 flex w-10 items-center to-transparent text-xl';
 
 /**
  * Der Hinweis, dass in einer waagerecht rollenden Reiterreihe links oder
@@ -24,16 +24,27 @@ const verlaufKlassen =
  * misst `useRandVerlauf`. Rein dekorativ und nicht klickbar: Was dahinter
  * liegt, erreicht man durch Wischen, Vorlesesoftware liest die ganze Liste.
  * Von Weiß (`surface`), weil die Reihe in der Karte des `Objektkopf`s steht;
- * nur unter 640 px, darüber bricht die Reihe um.
+ * nur unter 640 px, darüber bricht die Reihe um. `immer` zeigt ihn auf jeder
+ * Breite - für eine Leiste, die auch am Rechner rollt, etwa die Kacheln der
+ * Behandlungsgrundlagen (Nachprüfung A9).
  */
-export function Randverlauf({ links, rechts }: { links: boolean; rechts: boolean }) {
+export function Randverlauf({
+  links,
+  rechts,
+  immer = false,
+}: {
+  links: boolean;
+  rechts: boolean;
+  immer?: boolean;
+}) {
+  const klassen = immer ? verlaufKlassen : `${verlaufKlassen} sm:hidden`;
   return (
     <>
       {links ? (
         <span
           aria-hidden="true"
           data-verlauf="links"
-          className={`${verlaufKlassen} left-0 justify-start bg-linear-to-r pl-1`}
+          className={`${klassen} left-0 justify-start bg-linear-to-r pl-1`}
         >
           ‹
         </span>
@@ -42,7 +53,7 @@ export function Randverlauf({ links, rechts }: { links: boolean; rechts: boolean
         <span
           aria-hidden="true"
           data-verlauf="rechts"
-          className={`${verlaufKlassen} right-0 justify-end bg-linear-to-l pr-1`}
+          className={`${klassen} right-0 justify-end bg-linear-to-l pr-1`}
         >
           ›
         </span>
