@@ -6,7 +6,7 @@ import { Badge } from './Badge';
 import { Button } from './Button';
 import { ButtonLink } from './ButtonLink';
 import { Objektkopf, Warnzeile } from './Objektkopf';
-import { Reiterleiste } from './Reiterleiste';
+import { Reiterleiste, Suchreiterleiste } from './Reiterleiste';
 
 /** Die Klassen eines Elements als Liste - für Zusicherungen ohne Teiltreffer. */
 function klassenVon(element: Element | null | undefined): string[] {
@@ -246,5 +246,50 @@ describe('Reiterleiste (Design-Fundament)', () => {
       '/rad/1/checkup',
     );
     expect(screen.getByRole('link', { name: 'Rad' })).not.toHaveAttribute('aria-current');
+  });
+});
+
+describe('Suchreiterleiste (R2-neu6, ANN-460)', () => {
+  const BEREICHE = [
+    { wert: 'einsatz', label: 'Einsatz' },
+    { wert: 'zugang', label: 'Zugang' },
+  ] as const;
+
+  it('nennt jeden Reiter im Suchteil, auch den ersten, und nimmt die übrigen Parameter mit', () => {
+    renderWithProviders(
+      <Suchreiterleiste label="Bereiche" param="bereich" reiter={BEREICHE} />,
+      '/praxis/team/1?zurueck=%2Fpraxis%2Fteam',
+    );
+    const einsatz = screen.getByRole('link', { name: 'Einsatz' });
+    // Ohne Parameter gilt der erste.
+    expect(einsatz).toHaveAttribute('aria-current', 'page');
+    expect(einsatz).toHaveAttribute(
+      'href',
+      '/praxis/team/1?zurueck=%2Fpraxis%2Fteam&bereich=einsatz',
+    );
+    expect(screen.getByRole('link', { name: 'Zugang' })).toHaveAttribute(
+      'href',
+      '/praxis/team/1?zurueck=%2Fpraxis%2Fteam&bereich=zugang',
+    );
+    // Dieselbe Pille wie die Reiterleiste.
+    expect(klassenVon(einsatz)).toEqual(
+      expect.arrayContaining(['rounded-pill', 'min-h-11', 'aria-[current=page]:bg-accent-soft']),
+    );
+  });
+
+  it('öffnet den Reiter aus der Adresse; ein unbekannter Wert öffnet den ersten', () => {
+    const { unmount } = renderWithProviders(
+      <Suchreiterleiste label="Bereiche" param="bereich" reiter={BEREICHE} />,
+      '/praxis/team/1?bereich=zugang',
+    );
+    expect(screen.getByRole('link', { name: 'Zugang' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Einsatz' })).not.toHaveAttribute('aria-current');
+    unmount();
+
+    renderWithProviders(
+      <Suchreiterleiste label="Bereiche" param="bereich" reiter={BEREICHE} />,
+      '/praxis/team/1?bereich=unbekannt',
+    );
+    expect(screen.getByRole('link', { name: 'Einsatz' })).toHaveAttribute('aria-current', 'page');
   });
 });

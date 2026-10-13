@@ -59,8 +59,6 @@ export const GRENZEN: Record<
 
     'features/appointments': 1,
 
-    'features/billing': 1,
-
     'features/datenschutz': 1,
   },
   knoepfe: {

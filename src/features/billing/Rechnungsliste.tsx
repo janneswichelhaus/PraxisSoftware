@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { Field } from '@/components/ui/Field';
 import { Filterleiste } from '@/components/ui/Filterleiste';
 import { SearchField } from '@/components/ui/SearchField';
@@ -144,25 +145,17 @@ export function Rechnungsliste() {
         }}
       >
         {() => (
-          <>
-            {/* Spaltenköpfe nur am Rechner; am Handy sagt jede Zeile alles. */}
-            <div
-              aria-hidden="true"
-              className="text-ink-muted tracking-label border-line hidden border-b pb-2 text-xs font-semibold uppercase lg:grid lg:grid-cols-[10rem_minmax(0,1fr)_12rem_8rem] lg:gap-4"
-            >
-              <span>Nummer</span>
-              <span>Person und Empfänger:in</span>
-              <span>Zustand</span>
-              <span className="text-right">Betrag</span>
-            </div>
-            <ul className="divide-line divide-y">
-              {zeilen.map((rechnung) => (
-                <li key={rechnung.id} className="py-3">
-                  <Rechnungszeile rechnung={rechnung} />
-                </li>
-              ))}
-            </ul>
-          </>
+          // Als Datenliste (DESIGN.md Regel 3, R2-neu5): ab 1024 px Spalten
+          // mit Kopfzeile, darunter jede Rechnung als Zeile, die alles selbst
+          // sagt - Nummer oben links, Betrag oben rechts, darunter Person und
+          // Zustand. In der Karte des Abschnitts ohne eigenen Rahmen.
+          <Datenliste
+            beschriftung="Rechnungen"
+            rahmen={false}
+            zeilen={zeilen}
+            schluessel={(rechnung) => rechnung.id}
+            spalten={RECHNUNGSSPALTEN}
+          />
         )}
       </Abfragezustand>
 
@@ -182,14 +175,15 @@ export function Rechnungsliste() {
 }
 
 /**
- * Eine Rechnung: am Handy drei Zeilen untereinander, ab 1024 px vier Spalten.
- * Die Nummer ist der Weg zur Rechnung; ein eigener Knopf je Zeile entfällt
- * (UX-005i).
+ * Die Spalten einer Rechnung: am Handy drei Zeilen untereinander, ab 1024 px
+ * vier Spalten. Die Nummer ist der Weg zur Rechnung; ein eigener Knopf je
+ * Zeile entfällt (UX-005i).
  */
-function Rechnungszeile({ rechnung }: { rechnung: Rechnung }) {
-  const offen = rechnung.status === 'issued' && !rechnung.cancelled;
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 lg:grid lg:grid-cols-[10rem_minmax(0,1fr)_12rem_8rem] lg:gap-4">
+const RECHNUNGSSPALTEN: readonly Datenspalte<Rechnung>[] = [
+  {
+    titel: 'Nummer',
+    breite: '10rem',
+    inhalt: (rechnung) => (
       <div className="flex flex-wrap items-baseline gap-2">
         <Textlink
           to={`/abrechnung/rechnungen/${rechnung.id}`}
@@ -209,8 +203,12 @@ function Rechnungszeile({ rechnung }: { rechnung: Rechnung }) {
         {rechnung.status === 'draft' ? <Badge ton="neutral">Entwurf</Badge> : null}
         {rechnung.cancelled ? <Badge ton="neutral">Storniert</Badge> : null}
       </div>
-
-      <div className="order-last w-full min-w-0 lg:order-none lg:w-auto">
+    ),
+  },
+  {
+    titel: 'Person und Empfänger:in',
+    inhalt: (rechnung) => (
+      <>
         <p className="text-ink text-sm">
           {rechnung.patient_name}
           <span className="text-ink-muted">
@@ -230,34 +228,44 @@ function Rechnungszeile({ rechnung }: { rechnung: Rechnung }) {
             ? ` · zahlbar bis ${formatDate(rechnung.due_on)}`
             : null}
         </p>
-      </div>
+      </>
+    ),
+  },
+  {
+    titel: 'Zustand',
+    breite: '12rem',
+    inhalt: (rechnung) => <Zahlungszustand rechnung={rechnung} />,
+  },
+  {
+    titel: 'Betrag',
+    breite: '8rem',
+    rechts: true,
+    telefon: 'ende',
+    inhalt: (rechnung) => formatEuro(rechnung.total_cents, rechnung.currency),
+  },
+];
 
-      <div className="order-last flex w-full flex-wrap items-center gap-2 text-sm lg:order-none lg:w-auto">
-        {offen ? (
-          <>
-            <Badge ton={zahlungsTon[rechnung.payment_state]}>
-              {zahlungsstandLabels[rechnung.payment_state]}
-            </Badge>
-            {rechnung.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
-            {/* An einer bezahlten Rechnung sagt „Bezahlt" alles (UX-005i). */}
-            {rechnung.payment_state === 'paid' ? null : (
-              <span className="text-ink-muted tabular-nums">
-                {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
-                {rechnung.outstanding_cents > 0
-                  ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
-                  : ''}
-                {rechnung.outstanding_cents < 0
-                  ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
-                  : ''}
-              </span>
-            )}
-          </>
-        ) : null}
-      </div>
-
-      <span className="text-ink text-liste ml-auto font-medium tabular-nums lg:ml-0 lg:text-right">
-        {formatEuro(rechnung.total_cents, rechnung.currency)}
-      </span>
+/** Zahlungsstand einer offenen Rechnung; an Entwurf und Storno nichts. */
+function Zahlungszustand({ rechnung }: { rechnung: Rechnung }) {
+  if (rechnung.status !== 'issued' || rechnung.cancelled) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge ton={zahlungsTon[rechnung.payment_state]}>
+        {zahlungsstandLabels[rechnung.payment_state]}
+      </Badge>
+      {rechnung.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
+      {/* An einer bezahlten Rechnung sagt „Bezahlt" alles (UX-005i). */}
+      {rechnung.payment_state === 'paid' ? null : (
+        <span className="text-ink-muted tabular-nums">
+          {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
+          {rechnung.outstanding_cents > 0
+            ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
+            : ''}
+          {rechnung.outstanding_cents < 0
+            ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
+            : ''}
+        </span>
+      )}
     </div>
   );
 }

@@ -34,8 +34,8 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { Trainingspaket } from '@/features/billing/Trainingspaket';
-import { Suchreiterleiste } from '@/features/staff/Suchreiter';
-import { useOffenerReiter, type Suchreiter } from '@/features/staff/offenerReiter';
+import { Suchreiterleiste } from '@/components/ui/Reiterleiste';
+import { useOffenerReiter, type Suchreiter } from '@/components/ui/offenerReiter';
 import {
   TRAINING_BESCHRIFTUNG,
   TRAINING_FELDER,

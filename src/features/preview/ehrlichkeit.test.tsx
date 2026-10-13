@@ -189,7 +189,7 @@ describe('Teamkommunikation', () => {
     const nutzer = userEvent.setup();
     renderMitVorschau(<TeamChatPage user={testUser([...nutzerRolle])} />, '/team');
 
-    await nutzer.type(screen.getByRole('textbox', { name: 'Neue Nachricht' }), 'Kurze Frage');
+    await nutzer.type(screen.getByRole('textbox', { name: /^Neue Nachricht/ }), 'Kurze Frage');
     await nutzer.click(screen.getByRole('button', { name: 'In die Vorschau schreiben' }));
 
     const meldung = screen.getByRole('status');

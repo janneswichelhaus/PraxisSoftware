@@ -51,8 +51,14 @@ export function DetailRow({ label, children }: { label: string; children: ReactN
           Dateiname ohne Leerzeichen ragte bei 1024 px 55-72 px ueber Karte
           und Fenster. `anywhere` statt `break-word`, weil es auch die
           Mindestbreite senkt: Ein Link mit `inline-flex` im Wert bricht
-          sonst nicht um. */}
-      <dd className="text-ink text-liste min-w-0 wrap-anywhere whitespace-pre-line">{children}</dd>
+          sonst nicht um.
+
+          sm:flex-1: Der Wert nimmt den Rest der Zeile. Für Text ändert das
+          nichts; ein Wert aus Blöcken (die Kennzahlen der Statistik, ANN-494)
+          stünde sonst je Zeile so breit wie sein Inhalt. */}
+      <dd className="text-ink text-liste min-w-0 wrap-anywhere whitespace-pre-line sm:flex-1">
+        {children}
+      </dd>
     </div>
   );
 }

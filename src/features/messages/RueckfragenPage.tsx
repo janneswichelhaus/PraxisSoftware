@@ -61,9 +61,9 @@ export function RueckfragenPage({ user }: { user: CurrentUser }) {
         title="Rückfragen"
         description={
           fristBekannt
-            ? `Zusage: Antwort in der Regel innerhalb von ${frist} ${
-                frist === 1 ? 'Werktag' : 'Werktagen'
-              } (Montag bis Freitag).`
+            ? // Eine Zeile (DESIGN.md Regel 6, R2-neu2); Werktage sind Montag
+              // bis Freitag (ANN-309).
+              `Zusage: Antwort in ${frist} ${frist === 1 ? 'Werktag' : 'Werktagen'} (Mo–Fr).`
             : undefined
         }
       />
