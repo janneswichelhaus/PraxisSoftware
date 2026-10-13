@@ -4588,11 +4588,11 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Ü
 
 Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Go-live; Jannes' Durchsicht je Gruppe
 
-**Annahme.** Ohne Prüfvermerk (`reviewed_at`/`reviewed_by`, nur owner) ist eine übernommene Variante ungeprüft und wird so angezeigt. Vor dem Einsatz bei echten Patient:innen sieht Jannes jede Übung durch, die in einem Plan steht (§15.2, § 630c Abs. 2 BGB).
+**Annahme.** Ohne Prüfvermerk (`reviewed_at`/`reviewed_by`, nur owner) ist eine übernommene Variante ungeprüft und wird so angezeigt. Vor dem Einsatz bei echten Patient:innen sieht Jannes jede Übung durch, die in einem Plan steht (§15.2, § 630c Abs. 2 BGB). Ändert die Praxis danach Bezeichnung, Alltagsname, Anleitung, Ausrüstung, typische Fehler oder Hinweise, fällt der Vermerk (`save_exercise_variant`); Speichern ohne Änderung lässt ihn stehen.
 
 **Begründung.** Fehlerhafte Anleitung wäre ein Behandlungsfehler; Bauen mit synthetischen Daten wartet nicht darauf.
 
-**Anker.** `set_exercise_variant_reviewed` in der Migration UEB-012; Hinweis in `src/features/exercises/UebungPage.tsx`.
+**Anker.** `set_exercise_variant_reviewed` und `save_exercise_variant` in der Migration UEB-012; Hinweis in `src/features/exercises/UebungPage.tsx`.
 
 **Änderungspfad.** Zuweisen nur geprüfter Varianten: Prüfung in `assign_exercise_plan` · Aufwand `klein`.
 

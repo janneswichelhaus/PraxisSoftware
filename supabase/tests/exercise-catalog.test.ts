@@ -377,6 +377,56 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
       reviewed_by_name: null,
     });
   });
+
+  it('nimmt den Prüfvermerk, sobald sich der Inhalt ändert - Speichern ohne Änderung lässt ihn stehen (ANN-386)', async () => {
+    await importiere(users.ownerTherapist, [KN01]);
+    const VERMERK = 'select public.set_exercise_variant_reviewed($1::uuid, true)';
+    const SPEICHERN = `select public.save_exercise_variant($1::uuid, null, $2, $3, $4, $5::text[], $6, $7)`;
+    type Inhalt = [string, string, string | null, string[], string | null, string | null];
+    const inhalt = (v: Variante): Inhalt => [
+      v.name,
+      v.lay_name,
+      v.instruction,
+      v.equipment,
+      v.common_faults,
+      v.practice_notes,
+    ];
+    const variante = async () => (await katalogvarianten())[0]!;
+
+    // Speichern ohne Änderung - auch mit Leerraum, den der Server ohnehin abschneidet.
+    const vorher = await variante();
+    await asUserCommitted(users.ownerTherapist, VERMERK, [vorher.id]);
+    const geprueft = await variante();
+    expect(geprueft.reviewed_at).not.toBeNull();
+    const [name, ...rest] = inhalt(geprueft);
+    await asUserCommitted(users.ownerTherapist, SPEICHERN, [geprueft.id, ` ${name} `, ...rest]);
+    expect(await variante()).toMatchObject({
+      reviewed_at: geprueft.reviewed_at,
+      reviewed_by_name: 'Jannes Test',
+    });
+
+    // Jedes Inhaltsfeld für sich nimmt den Vermerk.
+    const aenderungen: [string, (i: Inhalt) => Inhalt][] = [
+      ['Bezeichnung', (i) => ['Kniestreckung, eigene Fassung', i[1], i[2], i[3], i[4], i[5]]],
+      ['Alltagsname', (i) => [i[0], 'Knie strecken', i[2], i[3], i[4], i[5]]],
+      ['Anleitung', (i) => [i[0], i[1], 'Eigene Anleitung.', i[3], i[4], i[5]]],
+      ['Ausrüstung', (i) => [i[0], i[1], i[2], [...i[3], 'Eigenes Hilfsmittel'], i[4], i[5]]],
+      ['typische Fehler', (i) => [i[0], i[1], i[2], i[3], null, i[5]]],
+      ['Hinweise', (i) => [i[0], i[1], i[2], i[3], i[4], 'Eigener Hinweis.']],
+    ];
+    for (const [feld, aendere] of aenderungen) {
+      const v = await variante();
+      await asUserCommitted(users.ownerTherapist, VERMERK, [v.id]);
+      expect((await variante()).reviewed_at, feld).not.toBeNull();
+      await asUserCommitted(users.ownerTherapist, SPEICHERN, [v.id, ...aendere(inhalt(v))]);
+      expect(await variante(), feld).toMatchObject({ reviewed_at: null, reviewed_by_name: null });
+    }
+    const { rows } = await asPostgres<{ reviewed_by: string | null }>(
+      'select reviewed_by from public.exercise_variants where id = $1',
+      [vorher.id],
+    );
+    expect(rows).toEqual([{ reviewed_by: null }]);
+  });
 });
 
 describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {

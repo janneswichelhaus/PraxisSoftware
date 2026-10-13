@@ -21,6 +21,8 @@
 --   app.import_exercise_catalog_for    Uebernahme fuer Seed und Import
 --   public.import_exercise_catalog     Uebernahme durch owner (ANN-385)
 --   public.set_exercise_variant_reviewed  Pruefvermerk (ANN-386)
+--   public.save_exercise_variant       geaenderter Inhalt nimmt den
+--                                      Pruefvermerk (ANN-386)
 --   public.save_exercise_plan_item     + Halten, je Seite, am Tag (ANN-384)
 --   public.assign_exercise_plan        friert das Bild mit ein (ANN-300)
 --   public.list_exercise_library, app.exercise_plan_item_json,
@@ -319,6 +321,129 @@ grant execute on function public.set_exercise_variant_reviewed(uuid, boolean) to
 
 comment on function public.set_exercise_variant_reviewed(uuid, boolean) is
   'UEB-012 (ANN-386): setzt oder nimmt den Pruefvermerk einer Variante - die Praxis hat sie fachlich durchgesehen. Nur nach app.can_manage_exercise_library(); Person und Zeit stehen an der Zeile.';
+
+-- Durchgesehen ist, was durchgesehen wurde: Aendert sich der Inhalt einer
+-- Variante - Bezeichnung, Alltagsname, Anleitung, Ausruestung, typische
+-- Fehler, Hinweise -, faellt der Pruefvermerk (ANN-386). Speichern ohne
+-- Aenderung laesst ihn stehen.
+--
+-- Aus 20261017100000_ueb_001_exercise_library.sql; gleiche Argumente, gleiche
+-- Rechte. Neu ist allein der Vergleich mit der gespeicherten Fassung.
+-- Standarddosierung und Bild aendert dieser Weg nicht: Geschrieben werden sie
+-- nur beim Uebernehmen, und das ueberschreibt nie. Ein kuenftiger Schreibweg
+-- fuer sie nimmt den Vermerk ebenso.
+create or replace function public.save_exercise_variant(
+  p_variant_id     uuid,
+  p_exercise_id    uuid,
+  p_name           text,
+  p_lay_name       text,
+  p_instruction    text,
+  p_equipment      text[],
+  p_common_faults  text,
+  p_practice_notes text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor          uuid := auth.uid();
+  v_org            uuid;
+  v_name           text;
+  v_lay_name       text;
+  v_instruction    text;
+  v_equipment      text[];
+  v_common_faults  text;
+  v_practice_notes text;
+  v_alt            public.exercise_variants%rowtype;
+  v_geaendert      boolean;
+  v_id             uuid;
+begin
+  v_org := app.exercise_library_writer();
+  v_name := app.exercise_required_name(p_name, 'name');
+  v_lay_name := app.exercise_required_name(p_lay_name, 'lay name');
+
+  -- Schlagworte getrimmt, ohne leere und ohne doppelte (gross/klein egal), in
+  -- der Reihenfolge der Eingabe; von doppelten bleibt die erste Schreibweise.
+  select coalesce(array_agg(eintrag order by erste), '{}'::text[])
+    into v_equipment
+  from (
+    select (array_agg(btrim(e, E' \t\r\n') order by nr))[1] as eintrag, min(nr) as erste
+    from unnest(coalesce(p_equipment, '{}'::text[])) with ordinality as t(e, nr)
+    where btrim(coalesce(e, ''), E' \t\r\n') <> ''
+    group by lower(btrim(e, E' \t\r\n'))
+  ) s;
+  if cardinality(v_equipment) > 8 then
+    raise exception 'too many equipment tags' using errcode = '22023';
+  end if;
+  if exists (select 1 from unnest(v_equipment) e where length(e) > 40) then
+    raise exception 'equipment tag is too long' using errcode = '22023';
+  end if;
+  v_instruction := app.exercise_optional_text(p_instruction, 'instruction');
+  v_common_faults := app.exercise_optional_text(p_common_faults, 'common faults');
+  v_practice_notes := app.exercise_optional_text(p_practice_notes, 'practice notes');
+
+  if p_variant_id is null then
+    if not exists (
+      select 1 from public.exercises e where e.id = p_exercise_id and e.organization_id = v_org
+    ) then
+      raise exception 'exercise not found' using errcode = 'P0002';
+    end if;
+
+    insert into public.exercise_variants (
+      organization_id, exercise_id, name, lay_name, instruction, equipment,
+      common_faults, practice_notes, created_by, updated_by
+    )
+    values (
+      v_org, p_exercise_id, v_name, v_lay_name, v_instruction, v_equipment,
+      v_common_faults, v_practice_notes, v_actor, v_actor
+    )
+    returning id into v_id;
+    return v_id;
+  end if;
+
+  select v.* into v_alt
+  from public.exercise_variants v
+  where v.id = p_variant_id and v.organization_id = v_org
+  for update;
+  if not found then
+    raise exception 'exercise variant not found' using errcode = 'P0002';
+  end if;
+
+  -- ANN-386: Jede tatsaechliche Aenderung am Inhalt nimmt den Pruefvermerk.
+  v_geaendert := (v_alt.name, v_alt.lay_name, v_alt.instruction, v_alt.equipment,
+                  v_alt.common_faults, v_alt.practice_notes)
+                 is distinct from
+                 (v_name, v_lay_name, v_instruction, v_equipment,
+                  v_common_faults, v_practice_notes);
+
+  update public.exercise_variants
+     set name = v_name,
+         lay_name = v_lay_name,
+         instruction = v_instruction,
+         equipment = v_equipment,
+         common_faults = v_common_faults,
+         practice_notes = v_practice_notes,
+         reviewed_at = case when v_geaendert then null else reviewed_at end,
+         reviewed_by = case when v_geaendert then null else reviewed_by end,
+         updated_at = now(),
+         updated_by = v_actor
+   where id = v_alt.id
+  returning id into v_id;
+
+  return v_id;
+exception
+  when unique_violation then
+    raise exception 'a variant with this name already exists' using errcode = '23505';
+end;
+$$;
+
+revoke all on function public.save_exercise_variant(uuid, uuid, text, text, text, text[], text, text) from public, anon;
+grant execute on function public.save_exercise_variant(uuid, uuid, text, text, text, text[], text, text) to authenticated;
+
+comment on function public.save_exercise_variant(uuid, uuid, text, text, text, text[], text, text) is
+  'UEB-001/UEB-012: legt eine Variante an einer Uebung an (ohne Kennung) oder aendert sie; die Uebung bleibt dieselbe. Aendert sich der Inhalt tatsaechlich, faellt der Pruefvermerk (ANN-386). Nur nach app.can_manage_exercise_library() (ANN-293).';
 
 -- -----------------------------------------------------------------------------
 -- 6. Ein Katalogeintrag (ANN-382): vollstaendig geprueft, in der Form der
