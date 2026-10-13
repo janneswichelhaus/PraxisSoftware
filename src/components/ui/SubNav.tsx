@@ -25,12 +25,52 @@ export interface SubNavEintrag {
 }
 
 /**
- * Breite des Verlaufs an den Rändern der rollenden Leiste (`w-18`, 72 px,
+ * Größte Breite des Verlaufs an den Rändern der rollenden Leiste (72 px,
  * RAH-005) - und zugleich, wie weit der Nachbar des aktiven Eintrags beim
  * Heranrollen ins Bild ragt: Er liegt dann ganz unter dem Verlauf, der aktive
  * Eintrag nie (Design-Review T2).
  */
 const VERLAUF_PX = 72;
+
+/**
+ * Vom Rand eines Eintrags bis zum Wort des nächsten: `gap-1` der Liste und
+ * `px-3` des Eintrags, 4 + 12 px. So breit ist der Verlauf mindestens - Platz
+ * für „‹" oder „›" -, und so weit reicht er über ein angeschnittenes Stück
+ * hinaus, ohne das nächste Wort zu berühren.
+ */
+const FREIRAUM_PX = 16;
+
+/**
+ * Wie breit der Verlauf an einem Rand ist: das angeschnittene Stück des
+ * Eintrags dort und `FREIRAUM_PX` dazu, höchstens `VERLAUF_PX` - und 0, wenn
+ * dort nichts außer Sicht liegt.
+ *
+ * Design-Review R2 (neu3): Mit festen 72 px lag der Verlauf auch über einem
+ * ganz sichtbaren Nachbarn - stand die Leiste am Ende, war „Zeitkonto“ neben
+ * „‹“ blass, ein antippbares Ziel, im Sonnenlicht schlecht zu lesen. Jetzt
+ * blendet er nur aus, was ohnehin abgeschnitten ist; endet die Leiste
+ * zwischen zwei Einträgen, steht nur der Pfeil da.
+ */
+function verlaufBreiten(liste: HTMLElement): { links: number; rechts: number } {
+  const weiterLinks = liste.scrollLeft > 1;
+  const weiterRechts = liste.scrollWidth - liste.clientWidth - liste.scrollLeft > 1;
+  if (!weiterLinks && !weiterRechts) return { links: 0, rechts: 0 };
+  const rahmen = liste.getBoundingClientRect();
+  let restLinks = 0;
+  let restRechts = 0;
+  for (const eintrag of Array.from(liste.children)) {
+    const r = eintrag.getBoundingClientRect();
+    if (r.left < rahmen.left - 1 && r.right > rahmen.left + 1) restLinks = r.right - rahmen.left;
+    if (r.left < rahmen.right - 1 && r.right > rahmen.right + 1) {
+      restRechts = rahmen.right - r.left;
+    }
+  }
+  const breite = (rest: number) => Math.round(Math.min(VERLAUF_PX, rest + FREIRAUM_PX));
+  return {
+    links: weiterLinks ? breite(restLinks) : 0,
+    rechts: weiterRechts ? breite(restRechts) : 0,
+  };
+}
 
 const eintragKlassen =
   'text-ink-muted hover:text-ink -mb-px flex min-h-11 items-center gap-1.5 border-b-2 border-transparent px-3 text-liste whitespace-nowrap transition-colors';
@@ -85,20 +125,19 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
    * Gemessen nach dem Rollen zum aktiven Eintrag, bei jedem Rollen und wenn
    * sich die Breite ändert; mit aufgeklappter Vorschau neu, weil dann mehr
    * Einträge in der Zeile stehen.
-   */
-  const [weiterRechts, setWeiterRechts] = useState(false);
-  /**
+   *
    * Und links? Dann derselbe Verlauf am linken Rand (Design-Review T2): Bis
    * dahin schnitt die Leiste dort hart ab, und am Telefon standen Wortreste
-   * wie „itarbeitende“ oder „rbeitszeiten“ da.
+   * wie „itarbeitende“ oder „rbeitszeiten“ da. Wie breit, sagt
+   * `verlaufBreiten` (0: kein Verlauf).
    */
-  const [weiterLinks, setWeiterLinks] = useState(false);
+  const [verlauf, setVerlauf] = useState({ links: 0, rechts: 0 });
   useLayoutEffect(() => {
     const element = liste.current;
     if (!element) return;
     const messen = () => {
-      setWeiterRechts(element.scrollWidth - element.clientWidth - element.scrollLeft > 1);
-      setWeiterLinks(element.scrollLeft > 1);
+      const neu = verlaufBreiten(element);
+      setVerlauf((alt) => (alt.links === neu.links && alt.rechts === neu.rechts ? alt : neu));
     };
     messen();
     element.addEventListener('scroll', messen, { passive: true });
@@ -167,29 +206,36 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
           </li>
         ) : null}
       </ul>
-      {/* Der Verlauf: 72 px von der Fläche der Seite nach durchsichtig, mit
-          „›" in `line-strong`, nur solange rechts noch etwas liegt und nur,
-          wo die Leiste rollt (unter 640 px); gespiegelt mit „‹" links, sobald
-          dort etwas außer Sicht liegt (Design-Review T2). Rein dekorativ - was dahinter
-          liegt, erreicht man durch Rollen, und Vorlesesoftware liest die
-          ganze Liste. Am rechten Rand der Leiste, also im Innenabstand des
-          `nav`, und nicht klickbar, damit der letzte sichtbare Eintrag
-          darunter weiter zu treffen ist. Von der Fläche (`canvas`), nicht
-          von Weiß: Darauf steht die Leiste. */}
-      {weiterLinks ? (
+      {/* Der Verlauf: von der Fläche der Seite nach durchsichtig, mit „›"
+          in `line-strong`, nur solange rechts noch etwas liegt und nur, wo
+          die Leiste rollt (unter 640 px); gespiegelt mit „‹" links, sobald
+          dort etwas außer Sicht liegt (Design-Review T2). So breit wie das
+          angeschnittene Stück und der Freiraum dahinter, höchstens 72 px
+          (`verlaufBreiten`, R2 neu3) - die Breite ist gemessen, kein
+          Gestaltungswert. Das erste Drittel deckt ganz (`from-30%`): Ein
+          Buchstabenrest neben dem Pfeil sah sonst aus wie ein verdrucktes
+          Zeichen. Rein dekorativ - was
+          dahinter liegt, erreicht man durch Rollen, und Vorlesesoftware liest
+          die ganze Liste. Am Rand der Leiste, also im Innenabstand des `nav`,
+          und nicht klickbar, damit der letzte sichtbare Eintrag darunter
+          weiter zu treffen ist. Von der Fläche (`canvas`), nicht von Weiß:
+          Darauf steht die Leiste. */}
+      {verlauf.links > 0 ? (
         <span
           aria-hidden="true"
           data-verlauf="links"
-          className="from-canvas text-line-strong pointer-events-none absolute inset-y-0 left-4 flex w-18 items-center justify-start bg-linear-to-r to-transparent pl-1 text-xl sm:hidden"
+          className="from-canvas text-line-strong pointer-events-none absolute inset-y-0 left-4 flex items-center justify-start bg-linear-to-r from-30% to-transparent pl-1 text-xl sm:hidden"
+          style={{ width: `${verlauf.links}px` }}
         >
           ‹
         </span>
       ) : null}
-      {weiterRechts ? (
+      {verlauf.rechts > 0 ? (
         <span
           aria-hidden="true"
           data-verlauf="rechts"
-          className="from-canvas text-line-strong pointer-events-none absolute inset-y-0 right-4 flex w-18 items-center justify-end bg-linear-to-l to-transparent pr-1 text-xl sm:hidden"
+          className="from-canvas text-line-strong pointer-events-none absolute inset-y-0 right-4 flex items-center justify-end bg-linear-to-l from-30% to-transparent pr-1 text-xl sm:hidden"
+          style={{ width: `${verlauf.rechts}px` }}
         >
           ›
         </span>

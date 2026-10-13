@@ -917,9 +917,11 @@ describe('SubNav', () => {
     // klickbar - der letzte sichtbare Eintrag bleibt darunter zu treffen.
     expect(verlauf).toHaveAttribute('aria-hidden', 'true');
     expect(verlauf).toHaveTextContent('›');
+    // Das angeschnittene Stück und 16 px Freiraum, höchstens 72 px (R2 neu3):
+    // „Katalog" liegt bei 240-360, 60 px davon im Bild.
+    expect((verlauf as HTMLElement).style.width).toBe('72px');
     expect(verlauf.className.split(/\s+/)).toEqual(
       expect.arrayContaining([
-        'w-18',
         'from-canvas',
         'to-transparent',
         'sm:hidden',
@@ -937,9 +939,10 @@ describe('SubNav', () => {
     expect(links).not.toBeNull();
     expect(links).toHaveAttribute('aria-hidden', 'true');
     expect(links).toHaveTextContent('‹');
+    // „Praxisstammdaten" (360-480) ragt mit 60 px ins Bild: 60 + 16, höchstens 72.
+    expect((links as HTMLElement).style.width).toBe('72px');
     expect(links.className.split(/\s+/)).toEqual(
       expect.arrayContaining([
-        'w-18',
         'left-4',
         'bg-linear-to-r',
         'from-canvas',
@@ -954,6 +957,35 @@ describe('SubNav', () => {
     fireEvent.scroll(liste);
     expect(document.querySelector('[data-verlauf="rechts"]')).not.toBeNull();
     expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
+  });
+
+  it('legt den Verlauf nie über einen ganz sichtbaren Eintrag (Design-Review R2 neu3)', () => {
+    geometrie();
+    renderWithProviders(
+      <SubNav eintraege={abrechnung} label="Bereich Abrechnung" />,
+      '/abrechnung',
+    );
+    const liste = screen.getByRole('list');
+    const breite = (seite: string) =>
+      document.querySelector<HTMLElement>(`[data-verlauf="${seite}"]`)!.style.width;
+    // Die Leiste endet links genau zwischen zwei Einträgen: „Praxisstammdaten"
+    // steht ganz im Bild. Links steht nur der Pfeil im Freiraum vor seinem
+    // Wort, 16 px, ohne es auszublenden.
+    liste.scrollLeft = 360;
+    fireEvent.scroll(liste);
+    expect(document.querySelector('[data-verlauf="links"]')).toHaveTextContent('‹');
+    expect(breite('links')).toBe('16px');
+    // Ein kleines Stück im Bild: „Katalog" ragt 10 px herein, der Verlauf
+    // deckt es und den Freiraum dahinter (26 px), nicht mehr; rechts ragt
+    // „Auswertung" 50 px herein (66 px).
+    liste.scrollLeft = 350;
+    fireEvent.scroll(liste);
+    expect(breite('links')).toBe('26px');
+    expect(breite('rechts')).toBe('66px');
+    // Ein großes Stück im Bild: höchstens 72 px, wie bisher.
+    liste.scrollLeft = 250;
+    fireEvent.scroll(liste);
+    expect(breite('links')).toBe('72px');
   });
 });
 
