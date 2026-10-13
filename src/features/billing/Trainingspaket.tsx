@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
@@ -21,6 +22,7 @@ import {
   type Paketsicht,
   type Trainingspaket as Paket,
 } from './trainingspaket-api';
+import { Eintraege, Eintrag } from './Eintraege';
 
 /**
  * Das Trainingspaket am Trainingsverhältnis (ANG-EPIC-002, PROJECT_PRINCIPLES.md
@@ -44,7 +46,7 @@ export function Trainingspaket({ verhaeltnisId }: { verhaeltnisId: string }) {
     return (
       <ErrorState
         title="Die Trainingspakete konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
+        description={VERBINDUNG_PRUEFEN}
         onErneut={() => sicht.refetch()}
       />
     );
@@ -56,11 +58,11 @@ export function Trainingspaket({ verhaeltnisId }: { verhaeltnisId: string }) {
       {sicht.data.packages.length === 0 ? (
         <p className="text-ink-muted text-sm">Kein Paket.</p>
       ) : (
-        <ul className="divide-line divide-y">
+        <Eintraege beschriftung="Trainingspakete" rahmen={false}>
           {sicht.data.packages.map((paket) => (
             <PaketZeile key={paket.id} paket={paket} verhaeltnisId={verhaeltnisId} />
           ))}
-        </ul>
+        </Eintraege>
       )}
       <Anlegen verhaeltnisId={verhaeltnisId} sicht={sicht.data} />
     </Section>
@@ -73,18 +75,22 @@ const STAND: Record<Paket['state'], string> = {
   ended: 'Beendet',
 };
 
+/**
+ * Ein Paket als Zeile der Liste (Design-Rollout B6): Bezeichnung und Stand,
+ * Zeitraum, Laufzeit und Preis darunter; ob es abgerechnet ist und der Weg,
+ * eine Fehlanlage zu entfernen, unter der Zeile.
+ */
 function PaketZeile({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: string }) {
   return (
-    <li className="flex flex-col gap-1 py-2">
-      <p className="text-ink text-liste flex flex-wrap items-center gap-2">
-        <span>{paket.label}</span>
-        {paket.state === 'ended' ? null : <Badge>{STAND[paket.state]}</Badge>}
-      </p>
-      <p className="text-ink-muted text-sm">
-        {formatDate(paket.starts_on)} bis {formatDate(paket.ends_on)} ·{' '}
-        {monateText(paket.package_months)} · {formatEuro(paket.price_cents, paket.currency)}
-        {paket.created_by_name ? ` · angelegt von ${paket.created_by_name}` : ''}
-      </p>
+    <Eintrag
+      titel={paket.label}
+      meta={`${formatDate(paket.starts_on)} bis ${formatDate(paket.ends_on)} · ${monateText(
+        paket.package_months,
+      )} · ${formatEuro(paket.price_cents, paket.currency)}${
+        paket.created_by_name ? ` · angelegt von ${paket.created_by_name}` : ''
+      }`}
+      status={paket.state === 'ended' ? undefined : <Badge>{STAND[paket.state]}</Badge>}
+    >
       <p className="text-ink-muted text-sm">
         {paket.invoiced
           ? 'Steht auf einer Rechnung.'
@@ -96,7 +102,7 @@ function PaketZeile({ paket, verhaeltnisId }: { paket: Paket; verhaeltnisId: str
           <Entfernen paket={paket} verhaeltnisId={verhaeltnisId} />
         </div>
       )}
-    </li>
+    </Eintrag>
   );
 }
 

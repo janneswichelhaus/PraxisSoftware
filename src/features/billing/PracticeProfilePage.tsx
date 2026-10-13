@@ -8,6 +8,8 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { canManageBillingProfile, type CurrentUser } from '@/features/session/types';
@@ -172,7 +174,7 @@ export function PracticeProfilePage({ user }: { user: CurrentUser }) {
       {stammdaten.isError ? (
         <ErrorState
           title="Die Praxisstammdaten konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => stammdaten.refetch()}
         />
       ) : null}
@@ -299,9 +301,9 @@ function Formular({
   }
 
   return (
-    // Formularbreite statt Seitenbreite (ABR-23): Bei 1440 px waren Praxis und
-    // IBAN rund 1100 px breit.
-    <form onSubmit={absenden} className="max-w-xl">
+    // Formularbreite statt Seitenbreite (ABR-23, DESIGN.md „Formular“): Bei
+    // 1440 px waren Praxis und IBAN rund 1100 px breit.
+    <form onSubmit={absenden} className="max-w-formular">
       <p className="text-ink-muted mb-6 text-sm">Mit * markierte Felder sind erforderlich.</p>
 
       <Fehlerzusammenfassung fehler={zusammenfassung} />
@@ -315,46 +317,40 @@ function Formular({
             value={eingabe.legal_name}
             onChange={(e) => setzen('legal_name', e.target.value)}
           />
-          <div className="flex gap-4">
-            <span className="flex-1">
-              <Field
-                label="Straße *"
-                feldId={feldId('street')}
-                error={fehler.street}
-                value={eingabe.street}
-                onChange={(e) => setzen('street', e.target.value)}
-              />
-            </span>
-            <span className="w-24">
-              <Field
-                label="Nr."
-                value={text('house_number')}
-                onChange={(e) => setzen('house_number', e.target.value || null)}
-              />
-            </span>
+          {/* Nebeneinander erst ab 640 px und nur, was zusammengehört
+              (DESIGN.md „Formular“). */}
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_6rem]">
+            <Field
+              label="Straße *"
+              feldId={feldId('street')}
+              error={fehler.street}
+              value={eingabe.street}
+              onChange={(e) => setzen('street', e.target.value)}
+            />
+            <Field
+              label="Nr."
+              value={text('house_number')}
+              onChange={(e) => setzen('house_number', e.target.value || null)}
+            />
           </div>
-          <div className="flex gap-4">
-            <span className="w-28">
-              {/* Ziffernfeld am Handy und die Postleitzahl als Vorschlag (RSP-12). */}
-              <Field
-                label="PLZ *"
-                feldId={feldId('postal_code')}
-                error={fehler.postal_code}
-                inputMode="numeric"
-                autoComplete="postal-code"
-                value={eingabe.postal_code}
-                onChange={(e) => setzen('postal_code', e.target.value)}
-              />
-            </span>
-            <span className="flex-1">
-              <Field
-                label="Ort *"
-                feldId={feldId('city')}
-                error={fehler.city}
-                value={eingabe.city}
-                onChange={(e) => setzen('city', e.target.value)}
-              />
-            </span>
+          <div className="grid gap-4 sm:grid-cols-[7rem_minmax(0,1fr)]">
+            {/* Ziffernfeld am Handy und die Postleitzahl als Vorschlag (RSP-12). */}
+            <Field
+              label="PLZ *"
+              feldId={feldId('postal_code')}
+              error={fehler.postal_code}
+              inputMode="numeric"
+              autoComplete="postal-code"
+              value={eingabe.postal_code}
+              onChange={(e) => setzen('postal_code', e.target.value)}
+            />
+            <Field
+              label="Ort *"
+              feldId={feldId('city')}
+              error={fehler.city}
+              value={eingabe.city}
+              onChange={(e) => setzen('city', e.target.value)}
+            />
           </div>
           <Field
             label="Telefon"
@@ -449,7 +445,7 @@ function Formular({
             label="Kürzel der Rechnungsnummer (Training)"
             feldId={feldId('training_invoice_number_prefix')}
             error={fehler.training_invoice_number_prefix}
-            hint="Jeder Bereich führt seinen eigenen, lückenlosen Kreis. Die beiden Kürzel müssen sich unterscheiden – sonst gäbe es dieselbe Nummer zweimal."
+            hint="Jeder Bereich führt einen eigenen, lückenlosen Kreis; die beiden Kürzel müssen sich unterscheiden."
             value={eingabe.training_invoice_number_prefix}
             onChange={(e) => setzen('training_invoice_number_prefix', e.target.value.toUpperCase())}
           />
@@ -479,11 +475,11 @@ function Formular({
 
       {schutz.schutz}
 
-      <div className="mt-4">
+      <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }

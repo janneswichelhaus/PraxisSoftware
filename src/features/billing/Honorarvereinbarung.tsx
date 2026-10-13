@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
@@ -14,6 +15,7 @@ import {
   VereinbarungAmSelbenTag,
   type Honorarstand,
 } from './api';
+import { Eintraege, Eintrag } from './Eintraege';
 
 /**
  * Das Terminhonorar einer Person in der Akte (ABR-030, ADR-009 Punkte 5 und
@@ -47,7 +49,7 @@ export function Honorarvereinbarung({
     return (
       <ErrorState
         title="Das Honorar konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
+        description={VERBINDUNG_PRUEFEN}
         onErneut={() => stand.refetch()}
       />
     );
@@ -87,20 +89,22 @@ function Geltend({ stand }: { stand: Honorarstand }) {
 function Vereinbarungen({ stand, darfEntfernen }: { stand: Honorarstand; darfEntfernen: boolean }) {
   if (stand.agreements.length === 0) return null;
   return (
-    <ul className="divide-line mt-2 divide-y" aria-label="Honorarvereinbarungen">
-      {stand.agreements.map((v) => (
-        <li key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-          <span className="text-ink min-w-0 flex-1 text-sm">
-            ab {formatDate(v.valid_from)}:{' '}
-            <span className="tabular-nums">{formatEuro(v.session_fee_cents)}</span>
-            {v.created_by_name ? (
-              <span className="text-ink-muted"> · festgelegt von {v.created_by_name}</span>
-            ) : null}
-          </span>
-          {darfEntfernen ? <Entfernen id={v.id} gueltigAb={v.valid_from} /> : null}
-        </li>
-      ))}
-    </ul>
+    // Eine Zeile je Vereinbarung (Design-Rollout B6): ab wann, wie viel, wer
+    // sie festgelegt hat - und der Weg, sie zu entfernen, darunter.
+    <div className="mt-2">
+      <Eintraege beschriftung="Honorarvereinbarungen" rahmen={false}>
+        {stand.agreements.map((v) => (
+          <Eintrag
+            key={v.id}
+            titel={`ab ${formatDate(v.valid_from)}`}
+            meta={v.created_by_name ? `festgelegt von ${v.created_by_name}` : undefined}
+            betrag={formatEuro(v.session_fee_cents)}
+          >
+            {darfEntfernen ? <Entfernen id={v.id} gueltigAb={v.valid_from} /> : null}
+          </Eintrag>
+        ))}
+      </Eintraege>
+    </div>
   );
 }
 

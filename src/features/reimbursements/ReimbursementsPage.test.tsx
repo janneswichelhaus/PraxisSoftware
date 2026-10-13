@@ -249,9 +249,10 @@ describe('Erstattungen', () => {
     expect(filter).toHaveClass('h-12');
 
     await nutzer.selectOptions(filter, 'abgelehnt');
-    // Namen der Karten; die Historie darunter nennt weiter alle.
-    const karte = { selector: 'p.font-semibold' };
-    expect(screen.queryByText('Tobias Krenz', karte)).toBeNull();
-    expect(screen.getByText('Aylin Özdemir', karte)).toBeInTheDocument();
+    // Namen in der Liste der Anträge (seit dem Design-Rollout B6 Zeilen statt
+    // Karten); die Historie darunter nennt weiter alle.
+    const liste = screen.getByRole('list', { name: 'Erstattungen' });
+    expect(within(liste).queryByText('Tobias Krenz')).toBeNull();
+    expect(within(liste).getByText('Aylin Özdemir')).toBeInTheDocument();
   });
 });

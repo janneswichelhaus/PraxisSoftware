@@ -6,9 +6,13 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Select } from '@/components/ui/Select';
-import { Section } from '@/components/ui/Section';
+import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import { Chip } from '@/components/ui/Chip';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate } from '@/lib/datum';
@@ -34,6 +38,7 @@ import {
   type KatalogVersion,
   type PositionsEingabe,
 } from './api';
+import { Eintraege, Eintrag } from './Eintraege';
 
 /**
  * Der Leistungskatalog (ABR-001).
@@ -237,6 +242,7 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
   // ganzen Seite je Tastendruck braucht es dafür nicht.
   const ungespeichertRef = useRef(false);
   const [wechselZiel, setWechselZiel] = useState<string | null>(null);
+  const [neuOffen, setNeuOffen] = useState(false);
   const heute = user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : null;
 
   const meldeUngespeichert = useCallback((wert: boolean) => {
@@ -278,97 +284,74 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title="Leistungskatalog"
         description="Preislisten mit Einzelpreis und Steuerkennzeichen je Position."
+        // Kompakt im Kopf (DESIGN.md „Liste“) und sekundär: Der Hauptknopf
+        // gehört der Aktion, die der Entwurf darunter gerade erwartet (ABR-24).
+        actions={
+          darfPflegen && !neuOffen ? (
+            <Button type="button" variant="secondary" onClick={() => setNeuOffen(true)}>
+              Neue Preisliste
+            </Button>
+          ) : undefined
+        }
       />
 
-      {versionen.isPending ? <LoadingState label="Preislisten werden geladen …" /> : null}
-      {versionen.isError ? (
-        <ErrorState
-          title="Die Preislisten konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => versionen.refetch()}
-        />
-      ) : null}
-
-      {versionen.data && versionen.data.length === 0 ? (
-        <EmptyState
-          title="Noch keine Preisliste"
-          description={
-            darfPflegen
-              ? 'Ohne eine in Kraft gesetzte Preisliste lässt sich keine Leistung erfassen.'
-              : 'Ohne eine in Kraft gesetzte Preisliste lässt sich keine Leistung erfassen. Preislisten legt die Praxisinhaber:in an.'
-          }
-        />
-      ) : null}
-
-      {versionen.data && versionen.data.length > 0 ? (
-        <Section titel="Preislisten" rahmen>
-          <ul className="divide-line divide-y">
-            {versionen.data.map((version) => {
-              const istGewaehlt = aktuelle?.id === version.id;
-              // Bei einer künftigen Liste sagt das Abzeichen „Gilt ab …" den
-              // Beginn; die Zeile darunter wiederholte ihn (UX-005i).
-              const kuenftig =
-                version.published_at !== null && heute !== null && version.valid_from > heute;
-              return (
-                <li
-                  key={version.id}
-                  // Die gewählte Liste ist sichtbar gewählt, nicht nur für
-                  // Vorlesesoftware (ABR-13): Fläche der aktiven Option und ✓.
-                  className={`-mx-4 flex flex-wrap items-center gap-3 px-4 py-3 sm:-mx-5 sm:px-5 ${
-                    istGewaehlt ? 'bg-accent-soft' : ''
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => wechseln(version.id)}
-                    aria-current={istGewaehlt}
-                    className="min-h-11 min-w-0 flex-1 text-left"
-                  >
-                    <span className="text-ink text-liste block truncate font-medium">
-                      {istGewaehlt ? (
-                        <span aria-hidden="true" className="text-accent mr-1.5">
-                          ✓
-                        </span>
-                      ) : null}
-                      {version.label}
-                    </span>
-                    {kuenftig ? null : (
-                      <span className="text-ink-muted mt-0.5 block text-sm">
-                        gültig ab {formatDate(version.valid_from)}
-                      </span>
-                    )}
-                  </button>
-                  <Listenstand version={version} heute={heute} />
-                </li>
-              );
-            })}
-          </ul>
-
-          {wechselZiel && aktuelle ? (
-            <Wechselrueckfrage
-              bisher={aktuelle.label}
-              ziel={zielLabel ?? 'die andere Preisliste'}
-              onVerwerfen={() => {
-                meldeUngespeichert(false);
-                setGewaehlt(wechselZiel);
-                setWechselZiel(null);
-              }}
-              onBleiben={() => setWechselZiel(null)}
-            />
-          ) : null}
-        </Section>
-      ) : null}
-
-      {darfPflegen ? (
+      {darfPflegen && neuOffen ? (
         <NeuePreisliste
           vorlage={versionen.data?.find((version) => version.published_at) ?? null}
           zeitzone={user.organizationTimeZone}
+          onSchliessen={() => setNeuOffen(false)}
           onAngelegt={async (id) => {
+            setNeuOffen(false);
             await queryClient.invalidateQueries({ queryKey: ['katalog-versionen'] });
             wechseln(id);
           }}
         />
       ) : null}
+
+      <Abfragezustand
+        abfrage={versionen}
+        laden="Preislisten werden geladen …"
+        fehler="Die Preislisten konnten nicht geladen werden."
+        leer={{
+          wenn: (liste) => liste.length === 0,
+          titel: 'Noch keine Preisliste',
+          beschreibung: darfPflegen
+            ? 'Ohne eine in Kraft gesetzte Preisliste lässt sich keine Leistung erfassen.'
+            : 'Ohne eine in Kraft gesetzte Preisliste lässt sich keine Leistung erfassen. Preislisten legt die Praxisinhaber:in an.',
+        }}
+      >
+        {(liste) => (
+          <Section titel="Preislisten">
+            {/* Welche Liste unten steht: genau eine ist gewählt, sichtbar mit
+                Fläche und ✓ (ABR-13) - als Chips, die am Telefon umbrechen. */}
+            <div role="group" aria-label="Preisliste wählen" className="flex flex-wrap gap-2">
+              {liste.map((version) => (
+                <Chip
+                  key={version.id}
+                  gewaehlt={aktuelle?.id === version.id}
+                  onClick={() => wechseln(version.id)}
+                >
+                  {version.label}
+                  <Listenstand version={version} heute={heute} />
+                </Chip>
+              ))}
+            </div>
+
+            {wechselZiel && aktuelle ? (
+              <Wechselrueckfrage
+                bisher={aktuelle.label}
+                ziel={zielLabel ?? 'die andere Preisliste'}
+                onVerwerfen={() => {
+                  meldeUngespeichert(false);
+                  setGewaehlt(wechselZiel);
+                  setWechselZiel(null);
+                }}
+                onBleiben={() => setWechselZiel(null)}
+              />
+            ) : null}
+          </Section>
+        )}
+      </Abfragezustand>
 
       {aktuelle ? (
         <Preisliste
@@ -385,23 +368,26 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
 
 /**
  * Der Stand einer Preisliste (ABR-13): Entwurf, in Kraft - oder in Kraft
- * gesetzt mit einem Beginn nach dem heutigen Praxistag, dann „Gilt ab …".
+ * gesetzt mit einem Beginn nach dem heutigen Praxistag, dann „gilt ab …".
  * Welche Liste eine neuere abgelöst hat, sagt die Seite nicht: Das wäre eine
- * zweite Ableitung neben der des Servers.
+ * zweite Ableitung neben der des Servers. Im Chip als leiser Zusatz.
  */
 function Listenstand({ version, heute }: { version: KatalogVersion; heute: string | null }) {
-  if (version.published_at === null) return <Badge ton="neutral">Entwurf</Badge>;
-  if (heute !== null && version.valid_from > heute) {
-    return <Badge ton="neutral">Gilt ab {formatDate(version.valid_from)}</Badge>;
-  }
-  return <Badge ton="positiv">In Kraft</Badge>;
+  const text =
+    version.published_at === null
+      ? 'Entwurf'
+      : heute !== null && version.valid_from > heute
+        ? `Gilt ab ${formatDate(version.valid_from)}`
+        : 'In Kraft';
+  return <span className="text-ink-muted font-medium">· {text}</span>;
 }
 
 /**
  * Die Rückfrage vor dem Wechsel zu einer anderen Liste, solange im Entwurf
  * ungespeicherte Zeilen stehen (ABR-14). Dieselbe Form und dieselben Wege wie
  * der Verlustschutz beim Verlassen der Seite, nur ohne Speichern: Speichern
- * ist der Knopf am Entwurf.
+ * ist der Knopf am Entwurf. Eine Zeile mit Linie links wie die `Rueckfrage`,
+ * kein eigener Kasten (L2).
  */
 function Wechselrueckfrage({
   bisher,
@@ -426,17 +412,17 @@ function Wechselrueckfrage({
       ref={kasten}
       role="group"
       aria-label="Ungespeicherte Preisliste"
-      className="border-line-strong bg-surface-sunken rounded-card mt-3 border p-4"
+      className="border-line-strong bg-surface-sunken mt-3 border-l-4 py-3 pr-4 pl-4"
     >
       <p className="text-ink text-sm">
         Die Änderungen an „{bisher}“ sind noch nicht gespeichert. Beim Wechsel zu „{ziel}“ gehen sie
         verloren.
       </p>
       <div className="mt-3 flex flex-wrap gap-3">
-        <Button type="button" variant="secondary" onClick={onVerwerfen}>
+        <Button type="button" variant="secondary" groesse="kompakt" onClick={onVerwerfen}>
           Verwerfen und wechseln
         </Button>
-        <Button type="button" variant="quiet" onClick={onBleiben}>
+        <Button type="button" variant="quiet" groesse="kompakt" onClick={onBleiben}>
           Hier bleiben
         </Button>
       </div>
@@ -447,13 +433,14 @@ function Wechselrueckfrage({
 function NeuePreisliste({
   vorlage,
   zeitzone,
+  onSchliessen,
   onAngelegt,
 }: {
   vorlage: KatalogVersion | null;
   zeitzone: string | null;
+  onSchliessen: () => void;
   onAngelegt: (id: string) => void | Promise<void>;
 }) {
-  const [offen, setOffen] = useState(false);
   const [label, setLabel] = useState('');
   // Der Praxistag, nicht der UTC-Tag: Zwischen Mitternacht und 01:00/02:00
   // Ortszeit wäre das sonst der Vortag — und genau so gespeichert (R3-006).
@@ -464,49 +451,43 @@ function NeuePreisliste({
     mutationFn: () =>
       createKatalogVersion(label, gueltigAb, kopieren && vorlage ? vorlage.id : null),
     onSuccess: async (id) => {
-      setOffen(false);
       setLabel('');
       await onAngelegt(id);
     },
   });
 
-  if (!offen) {
-    return (
-      <div className="mt-5">
-        {/* Sekundär: Der Hauptknopf gehört der Aktion, die der Entwurf
-            darunter gerade erwartet (ABR-24). */}
-        <Button type="button" variant="secondary" onClick={() => setOffen(true)}>
-          Neue Preisliste
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <Section titel="Neue Preisliste" ebene={2}>
-      <div className="flex flex-col gap-4 sm:max-w-md">
-        <Field
-          label="Bezeichnung"
-          value={label}
-          onChange={(event) => setLabel(event.target.value)}
-          hint="Zum Wiederfinden, etwa „Preisliste 2027“."
-        />
-        <Field
-          label="Gültig ab"
-          type="date"
-          value={gueltigAb}
-          onChange={(event) => setGueltigAb(event.target.value)}
-          hint="Maßgeblich ist der Leistungstag, nicht der Tag der Erfassung."
-        />
-        {vorlage ? (
-          <Checkbox
-            label={`Positionen aus „${vorlage.label}“ übernehmen`}
-            hint="Eine Preisrunde ändert meist zwei Zeilen und lässt zwanzig stehen."
-            checked={kopieren}
-            onChange={(event) => setKopieren(event.target.checked)}
+      <div className="max-w-formular">
+        <Feldgruppe>
+          <Field
+            label="Bezeichnung"
+            value={label}
+            onChange={(event) => setLabel(event.target.value)}
+            hint="Zum Wiederfinden, etwa „Preisliste 2027“."
           />
-        ) : null}
-        <div className="flex flex-wrap gap-3">
+          <Field
+            label="Gültig ab"
+            type="date"
+            value={gueltigAb}
+            onChange={(event) => setGueltigAb(event.target.value)}
+            hint="Maßgeblich ist der Leistungstag, nicht der Tag der Erfassung."
+          />
+          {vorlage ? (
+            <Checkbox
+              label={`Positionen aus „${vorlage.label}“ übernehmen`}
+              hint="Eine Preisrunde ändert meist zwei Zeilen und lässt zwanzig stehen."
+              checked={kopieren}
+              onChange={(event) => setKopieren(event.target.checked)}
+            />
+          ) : null}
+          {anlegen.isError ? (
+            <Statusmeldung ton="fehler">
+              {anlegen.error.message} {VERBINDUNG_PRUEFEN}
+            </Statusmeldung>
+          ) : null}
+        </Feldgruppe>
+        <Formularfuss>
           <Button
             type="button"
             onClick={() => anlegen.mutate()}
@@ -514,15 +495,10 @@ function NeuePreisliste({
           >
             {anlegen.isPending ? 'Wird angelegt …' : 'Entwurf anlegen'}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => setOffen(false)}>
+          <Button type="button" variant="quiet" onClick={onSchliessen}>
             Abbrechen
           </Button>
-        </div>
-        {anlegen.isError ? (
-          <Statusmeldung ton="fehler">
-            {anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
-          </Statusmeldung>
-        ) : null}
+        </Formularfuss>
       </div>
     </Section>
   );
@@ -556,6 +532,8 @@ function Preisliste({
   const [beruehrt, setBeruehrt] = useState<ReadonlySet<string>>(new Set());
   const [pruefungBis, setPruefungBis] = useState(0);
   const [zusammenfassung, setZusammenfassung] = useState<Formularfehler[]>([]);
+  // Welche Positionen als Formular offen stehen (Bearbeiten auf Abruf).
+  const [offen, setOffen] = useState<ReadonlySet<number>>(new Set());
 
   // Der Entwurf wird bearbeitbar, sobald seine Positionen da sind. Ein
   // Formular, das vor den Daten steht, überschriebe sie beim ersten Speichern.
@@ -644,7 +622,7 @@ function Preisliste({
     return (
       <ErrorState
         title="Die Positionen konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
+        description={VERBINDUNG_PRUEFEN}
         onErneut={() => positionen.refetch()}
       />
     );
@@ -686,6 +664,24 @@ function Preisliste({
     speichern.mutate();
   }
 
+  /**
+   * Ist die Position als Formular offen? Auf Abruf („Bearbeiten“), eine neue
+   * sofort - und jede, an der eine Meldung steht: Die Zusammenfassung über der
+   * Liste führt zu ihren Feldern, und ein zugeklapptes Feld fände sie nicht.
+   */
+  function istOffen(index: number, zeile: PositionsEingabe): boolean {
+    return offen.has(index) || Object.keys(sichtbareFehler(index, zeile)).length > 0;
+  }
+
+  function umschalten(index: number) {
+    setOffen((alt) => {
+      const neu = new Set(alt);
+      if (neu.has(index)) neu.delete(index);
+      else neu.add(index);
+      return neu;
+    });
+  }
+
   return (
     <Section
       titel={version.label}
@@ -700,72 +696,106 @@ function Preisliste({
             ? 'Entwurf. Änderbar, solange die Liste nicht in Kraft ist.'
             : undefined
       }
-      rahmen={!bearbeitbar}
     >
       <Tarif version={version} bearbeitbar={bearbeitbar} />
       {!bearbeitbar ? (
-        <ul className="divide-line divide-y">
-          {positionen.data.length === 0 ? (
-            <li className="text-ink-muted py-3 text-sm">Noch keine Position.</li>
-          ) : null}
-          {positionen.data.map((position) => (
-            <li key={position.id} className="flex flex-wrap items-center gap-3 py-3">
-              <span className="text-ink w-16 shrink-0 text-sm font-medium tabular-nums">
-                {position.code}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="text-ink text-liste block">{position.label}</span>
-                <span className="text-ink-muted mt-0.5 block text-sm">
-                  {bereichLabels[position.service_area]}
-                  {/* Die Art nur, wo sie etwas unterscheidet (ABR-B06): Sonst
-                      stand da „Behandlung · Behandlung". */}
-                  {position.item_kind === 'absence_fee' ? ` · ${artLabels.absence_fee}` : ''}
-                  {position.item_kind === 'training_package'
-                    ? ` · ${artLabels.training_package}, ${monateText(position.package_months ?? 0)}`
-                    : ''}{' '}
-                  · {steuerLabels[position.tax_treatment]}
-                  {position.tax_treatment === 'taxable'
-                    ? ` (${position.tax_rate_permille / 10} %)`
-                    : ''}
-                </span>
-              </span>
-              <span className="text-ink text-liste shrink-0 font-medium tabular-nums">
-                {formatEuro(position.unit_price_cents, position.currency)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        // Die Liste der Positionen - Kürzel, Bezeichnung, Bereich und Steuer,
+        // Preis (DESIGN.md „Liste“); nichts zum Ändern (ADR-009 Punkt 5).
+        positionen.data.length === 0 ? (
+          <EmptyState inKarte title="Noch keine Position" />
+        ) : (
+          <Eintraege beschriftung={`Positionen der ${version.label}`}>
+            {positionen.data.map((position) => (
+              <Eintrag
+                key={position.id}
+                titel={position.label}
+                meta={`${position.code} · ${positionsMeta(position)}`}
+                betrag={formatEuro(position.unit_price_cents, position.currency)}
+              />
+            ))}
+          </Eintraege>
+        )
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
           <Fehlerzusammenfassung fehler={zusammenfassung} />
 
-          {(zeilen ?? []).map((zeile, index) => (
-            <Positionszeile
-              // Die Reihenfolge IST die Kennung: Eine Zeile im Entwurf hat
-              // noch keine eigene, und die Liste wird vollständig ersetzt.
-              key={index}
-              index={index}
-              zeile={zeile}
-              fehler={sichtbareFehler(index, zeile)}
-              onChange={(neu) =>
-                aendern((zeilen ?? []).map((wert, i) => (i === index ? neu : wert)))
-              }
-              onVerlassen={(feld) => beruehren(index, feld)}
-              onEntfernen={() => {
-                aendern((zeilen ?? []).filter((_, i) => i !== index));
-                // Die Kennungen folgen der Reihenfolge; was „verlassen" war,
-                // gilt nach dem Entfernen nicht mehr für dieselbe Zeile.
-                setBeruehrt(new Set());
-                setPruefungBis((bis) => (index < bis ? bis - 1 : bis));
-              }}
-            />
-          ))}
+          {/* Jede Position als Zeile; ihr Formular auf Abruf (DESIGN.md
+              „Liste → Detail“). Bis dahin stand jede als offenes Formular mit
+              sieben Feldern da - 5.588 px am Telefon. */}
+          {(zeilen ?? []).length > 0 ? (
+            <Eintraege beschriftung={`Positionen der ${version.label}`}>
+              {(zeilen ?? []).map((zeile, index) => {
+                const auf = istOffen(index, zeile);
+                const fehler = sichtbareFehler(index, zeile);
+                const cent = parseEuroZuCent(zeile.preis);
+                return (
+                  <Eintrag
+                    // Die Reihenfolge IST die Kennung: Eine Zeile im Entwurf hat
+                    // noch keine eigene, und die Liste wird vollständig ersetzt.
+                    key={index}
+                    titel={zeile.label.trim() || `Position ${index + 1}`}
+                    meta={`${zeile.code.trim() || 'ohne Kürzel'} · ${positionsMeta({
+                      ...zeile,
+                      package_months: laufzeitMonate(zeile.laufzeit),
+                    })}`}
+                    betrag={cent === null ? zeile.preis || '–' : formatEuro(cent)}
+                    status={
+                      Object.keys(fehler).length > 0 ? (
+                        <Badge ton="warnung">Unvollständig</Badge>
+                      ) : undefined
+                    }
+                    // Die ganze Zeile öffnet ihr Formular; mit Meldungen bleibt
+                    // es offen, bis die Angaben stimmen.
+                    aufklappen={{
+                      offen: auf,
+                      onUmschalten: () => umschalten(index),
+                      gesperrt: auf && Object.keys(fehler).length > 0,
+                    }}
+                  >
+                    {auf ? (
+                      <Positionsformular
+                        index={index}
+                        zeile={zeile}
+                        fehler={fehler}
+                        onChange={(neu) =>
+                          aendern((zeilen ?? []).map((wert, i) => (i === index ? neu : wert)))
+                        }
+                        onVerlassen={(feld) => beruehren(index, feld)}
+                        onEntfernen={() => {
+                          aendern((zeilen ?? []).filter((_, i) => i !== index));
+                          // Die Kennungen folgen der Reihenfolge; was „verlassen"
+                          // war oder offen stand, gilt nach dem Entfernen nicht
+                          // mehr für dieselbe Zeile.
+                          setBeruehrt(new Set());
+                          setOffen(
+                            (alt) =>
+                              new Set(
+                                [...alt]
+                                  .filter((i) => i !== index)
+                                  .map((i) => (i > index ? i - 1 : i)),
+                              ),
+                          );
+                          setPruefungBis((bis) => (index < bis ? bis - 1 : bis));
+                        }}
+                      />
+                    ) : null}
+                  </Eintrag>
+                );
+              })}
+            </Eintraege>
+          ) : null}
 
           <div className="flex flex-wrap gap-3">
             <Button
               type="button"
               variant="secondary"
-              onClick={() => aendern([...(zeilen ?? []), leereZeile()])}
+              groesse="kompakt"
+              onClick={() => {
+                const neu = (zeilen ?? []).length;
+                aendern([...(zeilen ?? []), leereZeile()]);
+                // Eine neue Position steht gleich offen - sie ist noch leer.
+                setOffen((alt) => new Set(alt).add(neu));
+              }}
             >
               Position hinzufügen
             </Button>
@@ -775,6 +805,7 @@ function Preisliste({
             <Button
               type="button"
               variant={ungespeichert ? 'primary' : 'secondary'}
+              groesse="kompakt"
               onClick={speichernVersuchen}
               disabled={speichern.isPending || (zeilen ?? []).length === 0}
             >
@@ -801,67 +832,96 @@ function Preisliste({
 
           {schutz.schutz}
 
-          <div className="border-line flex flex-wrap gap-3 border-t pt-4">
-            {ungespeichert || ohnePosition ? (
-              // Gesperrt statt Rückfrage: Die Rückfrage erklärt, was
-              // unumkehrbar wird — sie ist nicht der Ort, an dem man erfährt,
-              // dass die eigene Änderung gar nicht mitginge (R3-007), oder
-              // dass der Server eine leere Liste abweist (ABR-03). Der Grund
-              // steht jeweils daneben.
-              <Button type="button" variant="secondary" disabled>
-                In Kraft setzen
-              </Button>
-            ) : (
-              <Rueckfrage
-                ausloeser="In Kraft setzen"
-                ausloeserVariante="primary"
-                bestaetigen="In Kraft setzen"
-                bestaetigenLaeuft="Wird in Kraft gesetzt …"
-                laeuft={inKraft.isPending}
-                fehler={
-                  inKraft.isError
-                    ? `${inKraft.error.message} Bitte die Verbindung prüfen und erneut versuchen.`
-                    : undefined
-                }
-                // Mit Versprechen: Der Kasten bleibt offen, bis der Server
-                // geantwortet hat, und zeigt einen Fehlschlag (ABR-03).
-                onBestaetigen={() => inKraft.mutateAsync()}
-                onAbbrechen={() => inKraft.reset()}
-              >
-                <p>
-                  Mit dem Inkraftsetzen wird „{version.label}“ <strong>unveränderlich</strong>; sie
-                  gilt für Leistungen ab {formatDate(version.valid_from)}. Eine spätere
-                  Preisänderung ist eine neue Preisliste.
-                </p>
-              </Rueckfrage>
-            )}
-            <Rueckfrage
-              ausloeser="Entwurf verwerfen"
-              bestaetigen="Ja, Entwurf verwerfen"
-              bestaetigenLaeuft="Wird verworfen …"
-              laeuft={verwerfen.isPending}
-              fehler={
-                verwerfen.isError
-                  ? `${verwerfen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`
-                  : undefined
-              }
-              onBestaetigen={() => verwerfen.mutateAsync()}
-              onAbbrechen={() => verwerfen.reset()}
-            >
-              <p>Der Entwurf „{version.label}“ wird samt seinen Positionen gelöscht.</p>
-            </Rueckfrage>
-          </div>
+          <div className="border-line mt-4 flex flex-col gap-3 border-t pt-4">
+            <div>
+              {ungespeichert || ohnePosition ? (
+                // Gesperrt statt Rückfrage: Die Rückfrage erklärt, was
+                // unumkehrbar wird — sie ist nicht der Ort, an dem man erfährt,
+                // dass die eigene Änderung gar nicht mitginge (R3-007), oder
+                // dass der Server eine leere Liste abweist (ABR-03). Der Grund
+                // steht jeweils daneben.
+                <Button type="button" variant="secondary" disabled>
+                  In Kraft setzen
+                </Button>
+              ) : (
+                <Rueckfrage
+                  ausloeser="In Kraft setzen"
+                  ausloeserVariante="primary"
+                  bestaetigen="In Kraft setzen"
+                  bestaetigenLaeuft="Wird in Kraft gesetzt …"
+                  laeuft={inKraft.isPending}
+                  fehler={
+                    inKraft.isError ? `${inKraft.error.message} ${VERBINDUNG_PRUEFEN}` : undefined
+                  }
+                  // Mit Versprechen: Der Kasten bleibt offen, bis der Server
+                  // geantwortet hat, und zeigt einen Fehlschlag (ABR-03).
+                  onBestaetigen={() => inKraft.mutateAsync()}
+                  onAbbrechen={() => inKraft.reset()}
+                >
+                  <p>
+                    Mit dem Inkraftsetzen wird „{version.label}“ <strong>unveränderlich</strong>;
+                    sie gilt für Leistungen ab {formatDate(version.valid_from)}. Eine spätere
+                    Preisänderung ist eine neue Preisliste.
+                  </p>
+                </Rueckfrage>
+              )}
+            </div>
 
-          {ohnePosition ? (
-            <Statusmeldung ton="warnung">
-              Eine Preisliste ohne Position lässt sich nicht in Kraft setzen – sie wäre ab ihrem
-              Beginn die geltende und ließe keine Leistung mehr erfassen.
-            </Statusmeldung>
-          ) : null}
+            {ohnePosition ? (
+              <Statusmeldung ton="warnung">
+                Eine Preisliste ohne Position lässt sich nicht in Kraft setzen – sie wäre ab ihrem
+                Beginn die geltende und ließe keine Leistung mehr erfassen.
+              </Statusmeldung>
+            ) : null}
+
+            {/* Zerstörendes leise am Ende (DESIGN.md, Lücke 9.16). */}
+            <div>
+              <Rueckfrage
+                ausloeser="Entwurf verwerfen"
+                ausloeserVariante="quiet"
+                bestaetigen="Ja, Entwurf verwerfen"
+                bestaetigenLaeuft="Wird verworfen …"
+                laeuft={verwerfen.isPending}
+                fehler={
+                  verwerfen.isError ? `${verwerfen.error.message} ${VERBINDUNG_PRUEFEN}` : undefined
+                }
+                onBestaetigen={() => verwerfen.mutateAsync()}
+                onAbbrechen={() => verwerfen.reset()}
+              >
+                <p>Der Entwurf „{version.label}“ wird samt seinen Positionen gelöscht.</p>
+              </Rueckfrage>
+            </div>
+          </div>
         </div>
       )}
     </Section>
   );
+}
+
+/**
+ * Die Nebenzeile einer Position: Bereich, Art (nur wo sie etwas
+ * unterscheidet, ABR-B06 - sonst stand da „Behandlung · Behandlung“) und
+ * Steuer. Dieselbe Zeile für die geltende Liste und den Entwurf.
+ */
+function positionsMeta(position: {
+  service_area: KatalogPosition['service_area'];
+  item_kind: KatalogPosition['item_kind'];
+  package_months: number | null;
+  tax_treatment: KatalogPosition['tax_treatment'];
+  tax_rate_permille: number;
+}): string {
+  return [
+    bereichLabels[position.service_area],
+    position.item_kind === 'absence_fee' ? artLabels.absence_fee : null,
+    position.item_kind === 'training_package'
+      ? `${artLabels.training_package}, ${monateText(position.package_months ?? 0)}`
+      : null,
+    `${steuerLabels[position.tax_treatment]}${
+      position.tax_treatment === 'taxable' ? ` (${position.tax_rate_permille / 10} %)` : ''
+    }`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /**
@@ -924,12 +984,12 @@ function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar:
       }}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="sm:w-56">
+        <div className="sm:w-80">
           <Field
             label="Terminhonorar je Behandlungstermin"
             inputMode="decimal"
             value={wert}
-            hint="in Euro, einschließlich Dokumentation und Hausbesuch"
+            hint="in Euro, einmal je Termin, einschließlich Dokumentation und Hausbesuch"
             error={fehler}
             onChange={(event) => setEingabe(event.target.value)}
           />
@@ -944,13 +1004,9 @@ function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar:
           </Button>
         </div>
       </div>
-      <p className="text-ink-muted text-sm">
-        Gilt einmal je Termin, egal welche Heilmittel bestätigt werden. Die Preise der Heilmittel
-        teilen es auf der Rechnung auf.
-      </p>
       {speichern.isError ? (
         <Statusmeldung ton="fehler">
-          {speichern.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+          {speichern.error.message} {VERBINDUNG_PRUEFEN}
         </Statusmeldung>
       ) : null}
     </form>
@@ -958,14 +1014,16 @@ function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar:
 }
 
 /**
- * Eine Position im Entwurf.
+ * Das Formular einer Position im Entwurf, unter ihrer Zeile (Bearbeiten auf
+ * Abruf, Design-Rollout B6).
  *
  * Eine Gruppe mit Namen statt eines eigenen Kastens (ABR-33): Die Felder
  * stehen ohne Rahmen wie in jedem Formular, und „Position 3" sagt auch der
- * Vorlesesoftware, zu welcher Zeile ein „Preis" gehört. Meldungen stehen am
- * Feld, nicht als Alarm an der Karte (ABR-21).
+ * Vorlesesoftware, zu welcher Zeile ein „Preis" gehört - sichtbar steht der
+ * Name schon in der Zeile darüber. Meldungen stehen am Feld, nicht als Alarm
+ * an der Karte (ABR-21).
  */
-function Positionszeile({
+function Positionsformular({
   index,
   zeile,
   fehler,
@@ -981,9 +1039,9 @@ function Positionszeile({
   onEntfernen: () => void;
 }) {
   return (
-    <div className="border-line border-t pt-4">
+    <div className="max-w-formular pt-2">
       <fieldset className="min-w-0">
-        <legend className="text-ink mb-3 text-sm font-medium">Position {index + 1}</legend>
+        <legend className="sr-only">Position {index + 1}</legend>
 
         <div className="flex flex-col gap-4">
           {/* `sm:items-end`: Ein Hinweis unter einer Beschriftung verschiebt
@@ -1144,8 +1202,9 @@ function Positionszeile({
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <Button type="button" variant="secondary" onClick={onEntfernen}>
+          {/* Zerstörendes leise am Ende (DESIGN.md, Lücke 9.16). */}
+          <div>
+            <Button type="button" variant="quiet" groesse="kompakt" onClick={onEntfernen}>
               Position entfernen
             </Button>
           </div>

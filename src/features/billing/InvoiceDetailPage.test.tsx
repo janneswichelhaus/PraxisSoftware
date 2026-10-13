@@ -878,9 +878,10 @@ describe('InvoiceDetailPage', () => {
     it('nennt im Kopf Nummer, Person, Monat, Betrag und Zahlungsstand (ABR-05)', async () => {
       fetchRechnung.mockResolvedValue(ausgestellt({ overdue: true }));
 
+      // Der Empfänger steht seit dem Design-Rollout B6 im Reiter „Positionen“.
       renderWithProviders(
         <InvoiceDetailPage user={testUser(['office'])} />,
-        '/abrechnung/rechnungen/r1',
+        '/abrechnung/rechnungen/r1?teil=positionen',
       );
 
       expect(await screen.findByText('August 2026 · 45,00 €')).toBeInTheDocument();
@@ -935,7 +936,7 @@ describe('InvoiceDetailPage', () => {
 
       renderWithProviders(
         <InvoiceDetailPage user={testUser(['office'])} />,
-        '/abrechnung/rechnungen/r1',
+        '/abrechnung/rechnungen/r1?teil=positionen',
       );
 
       expect(await screen.findByText(/IBAN DE02 1203 0000 0000 2020 51/)).toBeInTheDocument();
@@ -1359,7 +1360,7 @@ describe('InvoiceDetailPage', () => {
 
       renderWithProviders(
         <InvoiceDetailPage user={testUser(['office'])} />,
-        '/abrechnung/rechnungen/r1',
+        '/abrechnung/rechnungen/r1?teil=positionen',
       );
 
       await screen.findByText(/1 × Krankengymnastik/);
@@ -1374,13 +1375,48 @@ describe('InvoiceDetailPage', () => {
 
       renderWithProviders(
         <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1?teil=positionen',
+      );
+
+      // Seit dem Design-Rollout B6 eine `Datenliste`: unter 1024 px Datum und
+      // Betrag oben, die Leistung darunter in voller Breite; darüber Spalten.
+      const text = await screen.findByText(/1 × Krankengymnastik \(KG\)/);
+      expect(text.closest('li')).toHaveClass('flex', 'flex-wrap', 'lg:grid');
+      expect(text.parentElement).toHaveClass('order-last', 'w-full', 'lg:order-none');
+    });
+
+    it('trennt die ausgestellte Rechnung in Zahlungen und Positionen (Design-Rollout B6)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
         '/abrechnung/rechnungen/r1',
       );
 
-      const text = await screen.findByText(/1 × Krankengymnastik \(KG\)/);
-      expect(text.closest('li')).toHaveClass('grid', 'grid-cols-[1fr_auto]');
-      // Unter 640 px volle Breite in der zweiten Zeile, darüber die Mittelspalte.
-      expect(text.parentElement).toHaveClass('col-span-2', 'row-start-2', 'sm:col-span-1');
+      // Zuerst die Arbeit: Zahlungen; das Dokument steht im zweiten Reiter.
+      const reiter = await screen.findByRole('navigation', { name: 'Teile der Rechnung' });
+      expect(within(reiter).getByRole('link', { name: 'Zahlungen' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(within(reiter).getByRole('link', { name: 'Positionen' })).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r1?teil=positionen',
+      );
+      expect(await screen.findByText('Noch offen')).toBeInTheDocument();
+      expect(screen.queryByText(/1 × Krankengymnastik/)).toBeNull();
+    });
+
+    it('zeigt am Entwurf keine Reiter (Design-Rollout B6)', async () => {
+      fetchRechnung.mockResolvedValue(ansicht());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText(/1 × Krankengymnastik/)).toBeInTheDocument();
+      expect(screen.queryByRole('navigation', { name: 'Teile der Rechnung' })).toBeNull();
     });
 
     it('kennzeichnet das Ausfallhonorar ohne Warnzeichen (ABR-16)', async () => {

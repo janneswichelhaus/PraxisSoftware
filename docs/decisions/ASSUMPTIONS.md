@@ -4668,6 +4668,18 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Reihenfolge oder leere Gruppen zeigen: die Seite · Aufwand `klein`.
 
+### ANN-455 — Die ausgestellte Rechnung hat zwei Reiter, „Zahlungen“ zuerst, im Suchteil der Adresse
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die ausgestellte Rechnung zeigt „Zahlungen“ (Eingänge, Erinnerung, Storno leise am Ende) vor „Positionen“ (das unveränderliche Dokument); der Entwurf hat keine Reiter. Der offene Reiter steht als `?teil=positionen` in der Adresse, die Routen bleiben.
+
+**Begründung.** DESIGN.md ordnet Reiter „Arbeit → Verlauf → Grundlagen“; an einer ausgestellten Rechnung ist die Arbeit das Buchen. Eigene Routen hätten `AuthenticatedRoutes.tsx` geändert.
+
+**Anker.** `TEILE` in `src/features/billing/InvoiceDetailPage.tsx`; `Teilreiter` in `src/features/billing/Teilreiter.tsx`.
+
+**Änderungspfad.** Andere Reihenfolge: `TEILE` · eigene Routen: `Reiterleiste` statt `Teilreiter` · Aufwand `klein`.
+
 ### ANN-460 — Reiter und Detail ohne eigene Route stehen im Suchparameter
 
 Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)

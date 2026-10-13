@@ -1,14 +1,16 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Aufklappzeichen, Inhaltsflaeche } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Objektkopf } from '@/components/ui/Objektkopf';
 import { Select } from '@/components/ui/Select';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -16,8 +18,10 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
+import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
 import { todayInTimeZone } from '@/features/appointments/api';
 import {
   canManageBillingProfile,
@@ -60,6 +64,8 @@ import {
 } from './anzeige';
 import { Zahlungsformular } from './Zahlungsformular';
 import { Zahlungsstorno } from './Zahlungsstorno';
+import { Teilreiter } from './Teilreiter';
+import { offenerTeil, type Teil } from './teil';
 
 /**
  * Eine Rechnung (ABR-003).
@@ -80,6 +86,14 @@ import { Zahlungsstorno } from './Zahlungsstorno';
  * Server - dieselben Werte wie in der Liste. Solange nichts geladen ist,
  * heißt die Seite nur „Rechnung": Vorher stand dort der Entwurfstext, auch
  * beim Laden einer ausgestellten Rechnung (ZST-09).
+ *
+ * **Seit dem Design-Rollout B6 ist sie eine Objektseite** (DESIGN.md
+ * „Objekt“): `Objektkopf` mit Betrag, Zustand und - wenn die Rechnung nicht
+ * an die Person selbst geht - dem Empfänger; die ausgestellte Rechnung hat
+ * zwei Reiter. Zuerst die Arbeit („Zahlungen“: Eingänge, Erinnerung, Storno
+ * leise am Ende), dann das unveränderliche Dokument („Positionen“: Empfänger,
+ * Leistungen, Grundlage, Absender). Der Entwurf hat nur einen Teil und keine
+ * Reiter: prüfen und ausstellen.
  */
 
 /** „RG-2026-0001 · Max Mustermann" oder „Entwurf · Erika Beispiel". */
@@ -104,6 +118,16 @@ function beschreibung(ansicht: Rechnungsansicht): string {
     .join(' · ');
 }
 
+// ANN-455: Die Teile einer ausgestellten Rechnung - zuerst die Arbeit, dann
+// das Dokument; der offene Teil steht im Suchteil der Adresse.
+type Rechnungsteil = 'zahlungen' | 'positionen';
+const TEILE: readonly Teil<Rechnungsteil>[] = [
+  { wert: 'zahlungen', label: 'Zahlungen' },
+  { wert: 'positionen', label: 'Positionen' },
+];
+
+const RECHNUNGEN = '/abrechnung';
+
 export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
   const { invoiceId = '' } = useParams();
   const darfAusstellen = canManageInvoicing(user.roles);
@@ -118,21 +142,22 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <Rueckweg standard="/abrechnung" beschriftung="Zurück zu den Rechnungen" />
-      <PageHeader
-        title={ansicht ? titel(ansicht) : 'Rechnung'}
-        description={ansicht ? beschreibung(ansicht) : undefined}
-        actions={
-          ansicht ? (
-            <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/druck`} variant="secondary">
-              Rechnungsblatt öffnen
-            </ButtonLink>
-          ) : undefined
-        }
+      {/* Ab 640 px als Zeile über dem Kopf, darunter als Pfeil im Kopf
+          (Handoff Rahmen 2026-10-05, Variante 4b). Ohne Kopf - beim Laden
+          und im Fehler - steht die Zeile auf jeder Breite. */}
+      <Rueckweg
+        standard={RECHNUNGEN}
+        beschriftung="Zurück zu den Rechnungen"
+        className={ansicht ? 'mb-3 max-sm:hidden' : ''}
       />
-      {ansicht ? <Zustandszeile ansicht={ansicht} /> : null}
 
-      {rechnung.isPending ? <LoadingState label="Rechnung wird geladen …" /> : null}
+      {/* Solange der Kopf mit der Nummer fehlt, heißt die Seite nach ihrer
+          Gattung - im Laden wie im Fehler (ZST-09). */}
+      {ansicht ? null : <PageHeader title="Rechnung" />}
+
+      {rechnung.isPending ? (
+        <LoadingState label="Rechnung wird geladen …" inKarte kacheln={2} />
+      ) : null}
 
       {rechnung.error instanceof KeineStammdaten ? (
         <StammdatenFehlen
@@ -142,13 +167,13 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
       ) : rechnung.isError ? (
         <ErrorState
           title="Die Rechnung konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => rechnung.refetch()}
         />
       ) : null}
 
       {ansicht ? (
-        <Rechnungsbild
+        <Rechnung
           // Eine Meldung wie „Rechnung … ausgestellt." gehört zu genau dieser
           // Rechnung und reist nicht zur nächsten mit.
           key={ansicht.id}
@@ -163,42 +188,89 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
 }
 
 /**
- * Der Zustand unter dem Kopf: dieselben Etiketten wie in der Liste, aus
- * denselben Serverwerten (ABR-05). Bei 390 px stand der Zahlungsstand vorher
- * erst nach gut zwei Bildschirmhöhen.
+ * Der Zustand im Kopf: dieselben Etiketten wie in der Liste, aus denselben
+ * Serverwerten (ABR-05), und ein Satz dazu. Bei 390 px stand der
+ * Zahlungsstand vorher erst nach gut zwei Bildschirmhöhen.
  */
-function Zustandszeile({ ansicht }: { ansicht: Rechnungsansicht }) {
-  let etiketten: ReactNode;
-  let satz: string;
-
+function kopfzustand(ansicht: Rechnungsansicht): { etiketten: ReactNode; satz: string | null } {
   if (ansicht.status === 'draft') {
-    etiketten = <Badge ton="neutral">Entwurf</Badge>;
-    satz = 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.';
-  } else if (ansicht.cancellation) {
-    // Storniert ist keine Forderung mehr: kein Zahlungsstand daneben.
-    etiketten = <Badge ton="neutral">Storniert</Badge>;
-    satz = 'Das Stornodokument steht unten; die Rechnung selbst bleibt unverändert.';
-  } else {
-    etiketten = (
+    // Kein Abzeichen: Der Titel sagt schon „Entwurf“ (DESIGN.md, Abzeichen
+    // nur für Ausnahmen).
+    return {
+      etiketten: null,
+      satz: 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.',
+    };
+  }
+  if (ansicht.cancellation) {
+    // Storniert ist keine Forderung mehr: kein Zahlungsstand daneben. Was das
+    // Storno bedeutet, sagt sein Abschnitt unter „Zahlungen“.
+    return { etiketten: <Badge ton="neutral">Storniert</Badge>, satz: null };
+  }
+  return {
+    etiketten: (
       <>
         <Badge ton={zahlungsTon[ansicht.payment_state]}>
           {zahlungsstandLabels[ansicht.payment_state]}
         </Badge>
         {ansicht.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
       </>
-    );
+    ),
     // Die Frist steht hier statt im Absenderblock; dass die Rechnung fest
     // ist, sagt der Storno-Abschnitt, wo es zählt (UX-005i).
-    satz = ansicht.due_on
+    satz: ansicht.due_on
       ? `Zahlbar bis ${formatDate(ansicht.due_on)} (${ansicht.document.issuer.payment_term_days} Tage).`
-      : `Zahlungsziel ${ansicht.document.issuer.payment_term_days} Tage ab Ausstellung.`;
-  }
+      : `Zahlungsziel ${ansicht.document.issuer.payment_term_days} Tage ab Ausstellung.`,
+  };
+}
+
+/**
+ * Der Kopf der Rechnung (`Objektkopf`): Nummer und Person, Zeitraum, Bereich
+ * und Betrag, der Zustand - und der Empfänger nur, wenn er nicht die Person
+ * selbst ist (Leitfaden L2: eine Angabe, die meistens gleich ist, steht nur
+ * bei Abweichung). Die eine Aktion ist das Blatt zum Verschicken (ABR-05).
+ */
+function Rechnungskopf({ ansicht, reiter }: { ansicht: Rechnungsansicht; reiter?: ReactNode }) {
+  const [suche] = useSearchParams();
+  const ziel = leseRueckweg(suche, RECHNUNGEN);
+  const { etiketten, satz } = kopfzustand(ansicht);
+  const empfaenger = ansicht.document.recipient;
 
   return (
-    <div className="-mt-3 mb-6">
-      <div className="flex flex-wrap items-center gap-2">{etiketten}</div>
-      <p className="text-ink-muted mt-2 max-w-prose text-sm">{satz}</p>
-    </div>
+    <Objektkopf
+      titel={titel(ansicht)}
+      rueckweg={{
+        to: ziel,
+        beschriftung: ziel === RECHNUNGEN ? 'Zurück zu den Rechnungen' : rueckwegBeschriftung(ziel),
+      }}
+      meta={
+        <>
+          <span>{beschreibung(ansicht)}</span>
+          {empfaenger.kind === 'self' ? null : <span> · an {empfaenger.name}</span>}
+        </>
+      }
+      status={etiketten}
+      aktionen={
+        <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/druck`} variant="secondary">
+          Rechnungsblatt öffnen
+        </ButtonLink>
+      }
+      fuss={satz}
+      hinweise={
+        // Die Kette rückwärts (ABR-003c): Wer diese Rechnung ansieht, soll
+        // sehen, dass sie eine andere ersetzt — und dorthin kommen. Der Link
+        // sieht aus wie einer (TOK-12).
+        ansicht.replaces_invoice_id ? (
+          <Statusmeldung>
+            Korrekturrechnung zur stornierten Rechnung{' '}
+            <Textlink to={`/abrechnung/rechnungen/${ansicht.replaces_invoice_id}`}>
+              {ansicht.replaces_invoice_number ?? 'ohne Nummer'}
+            </Textlink>
+            .
+          </Statusmeldung>
+        ) : null
+      }
+      reiter={reiter}
+    />
   );
 }
 
@@ -234,37 +306,15 @@ function StammdatenFehlen({
 }
 
 /**
- * Eine Zeile mit Datum, Text und Betrag (ABR-B08).
+ * Die Rechnung unter dem Kopf.
  *
- * Am Handy stehen Datum und Betrag oben nebeneinander und der Text darunter
- * in voller Breite. Vorher blieben dem Text in der Mitte rund 120 px, und
- * „1 × Krankengymnastik (KG)" brach dreizeilig. Ab 640 px drei Spalten wie
- * bisher. Die Reihenfolge im Quelltext bleibt Datum, Text, Betrag - so liest
- * sie auch die Vorlesesoftware.
+ * Der Entwurf zeigt sein Dokument und darunter das Ausstellen. Die
+ * ausgestellte Rechnung teilt sich in zwei Reiter (`Teilreiter`, der offene
+ * Teil steht im Suchteil der Adresse): „Zahlungen“ - Eingänge, Erinnerung
+ * und, leise am Ende, das Storno - und „Positionen“, das unveränderliche
+ * Dokument.
  */
-function Listenzeile({
-  datum,
-  betrag,
-  children,
-}: {
-  datum: string;
-  betrag?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <li className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 py-2 sm:grid-cols-[6rem_1fr_auto]">
-      <span className="text-ink-muted col-start-1 row-start-1 text-sm tabular-nums">{datum}</span>
-      <div className="col-span-2 col-start-1 row-start-2 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1">
-        {children}
-      </div>
-      {betrag === undefined ? null : (
-        <span className="col-start-2 row-start-1 text-right sm:col-start-3">{betrag}</span>
-      )}
-    </li>
-  );
-}
-
-function Rechnungsbild({
+function Rechnung({
   ansicht,
   darfAusstellen,
   darfStammdaten,
@@ -275,27 +325,85 @@ function Rechnungsbild({
   darfStammdaten: boolean;
   zeitzone: string | null;
 }) {
-  const dokument = ansicht.document;
   const entwurf = ansicht.status === 'draft';
   // Die Nummer der eben ausgestellten Rechnung (ABR-10). Sie kommt aus dem
   // Aufruf, der sie vergeben hat - die Seite rät keine.
   const [ausgestellt, setAusgestellt] = useState<string | null>(null);
+  const [suche] = useSearchParams();
+  const teil = offenerTeil(suche, TEILE);
 
   return (
     <>
-      {/* Die Kette rückwärts (ABR-003c): Wer diese Rechnung ansieht, soll
-          sehen, dass sie eine andere ersetzt — und dorthin kommen. Der Link
-          sieht aus wie einer (TOK-12). */}
-      {ansicht.replaces_invoice_id ? (
-        <Statusmeldung className="mb-4">
-          Korrekturrechnung zur stornierten Rechnung{' '}
-          <Textlink to={`/abrechnung/rechnungen/${ansicht.replaces_invoice_id}`}>
-            {ansicht.replaces_invoice_number ?? 'ohne Nummer'}
-          </Textlink>
-          .
-        </Statusmeldung>
-      ) : null}
+      <Rechnungskopf
+        ansicht={ansicht}
+        reiter={entwurf ? undefined : <Teilreiter label="Teile der Rechnung" teile={TEILE} />}
+      />
 
+      {/* Das Blatt zum Verschicken öffnet der Kopf der Seite (ABR-05). Nach
+          dem Ausstellen steht es hier noch einmal - als nächster Schritt, mit
+          dem Fokus darauf (ABR-10). */}
+      {ausgestellt ? <Ausstellmeldung nummer={ausgestellt} invoiceId={ansicht.id} /> : null}
+
+      <div className="mt-8">
+        {entwurf ? (
+          <>
+            <Dokument ansicht={ansicht} darfAusstellen={darfAusstellen} />
+            {darfAusstellen && !ausgestellt ? (
+              <Entwurfsaktionen
+                ansicht={ansicht}
+                darfStammdaten={darfStammdaten}
+                onAusgestellt={setAusgestellt}
+              />
+            ) : null}
+          </>
+        ) : teil === 'positionen' ? (
+          <Dokument ansicht={ansicht} darfAusstellen={darfAusstellen} />
+        ) : (
+          <>
+            {/* Storniert: Das Storno und der Weg zur Korrektur zuerst - sie
+                sind jetzt die Arbeit an dieser Rechnung. */}
+            {ansicht.cancellation ? (
+              <Stornokette ansicht={ansicht} darfStornieren={darfAusstellen} />
+            ) : null}
+            <Zahlungen
+              ansicht={ansicht}
+              darfBuchen={darfAusstellen}
+              zeitzone={zeitzone}
+              waehrung={ansicht.document.currency}
+            />
+            <Zahlungserinnerungen
+              ansicht={ansicht}
+              darfErinnern={darfAusstellen}
+              zeitzone={zeitzone}
+            />
+            {/* Zerstörendes leise am Ende des Reiters (DESIGN.md „Objekt“). */}
+            {ansicht.cancellation ? null : (
+              <Stornokette ansicht={ansicht} darfStornieren={darfAusstellen} />
+            )}
+          </>
+        )}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Das Dokument: an wen, welche Leistungen, auf welcher Grundlage, von wem.
+ * Am Entwurf mit der Empfängerwahl; an der ausgestellten Rechnung der
+ * Snapshot, ohne etwas zum Ändern (ADR-009 Punkt 10).
+ */
+function Dokument({
+  ansicht,
+  darfAusstellen,
+}: {
+  ansicht: Rechnungsansicht;
+  darfAusstellen: boolean;
+}) {
+  const dokument = ansicht.document;
+  const entwurf = ansicht.status === 'draft';
+
+  return (
+    <>
       {/* Auskunft im Rahmen, die Empfängerwahl darunter und ohne Rahmen:
           Ein Formular steht nicht in einem Auskunftskasten (UI-002c, ABR-33). */}
       <Section titel="Empfänger">
@@ -345,36 +453,17 @@ function Rechnungsbild({
       </Section>
 
       <Section titel="Leistungen" rahmen>
-        <ul className="divide-line divide-y">
-          {dokument.items.map((zeile, index) => (
-            <Listenzeile
-              key={`${zeile.performed_on}-${zeile.code}-${index}`}
-              datum={
-                // ANG-002: Ein Abo-Monat nennt seinen Zeitraum.
-                zeile.period_until
-                  ? `${formatDate(zeile.performed_on)} bis ${formatDate(zeile.period_until)}`
-                  : formatDate(zeile.performed_on)
-              }
-              betrag={
-                <span className="text-ink text-liste tabular-nums">
-                  {formatEuro(zeile.line_total_cents, zeile.currency)}
-                </span>
-              }
-            >
-              <span className="text-ink text-liste">
-                {zeile.quantity} × {zeile.label} ({zeile.code})
-                {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
-                {zeile.item_kind === 'absence_fee' ? (
-                  <span className="ml-2">
-                    <Badge ton="neutral">Ausfallhonorar</Badge>
-                  </span>
-                ) : null}
-              </span>
-            </Listenzeile>
-          ))}
-        </ul>
+        {/* ABR-B08: Am Telefon stehen Datum und Betrag oben, die Leistung
+            darunter in voller Breite; ab 1024 px drei Spalten. */}
+        <Datenliste
+          beschriftung="Leistungen der Rechnung"
+          rahmen={false}
+          spalten={LEISTUNGSSPALTEN}
+          zeilen={dokument.items.map((zeile, index) => ({ zeile, index }))}
+          schluessel={({ zeile, index }) => `${zeile.performed_on}-${zeile.code}-${index}`}
+        />
 
-        <div className="border-line mt-3 flex justify-between border-t pt-3">
+        <div className="border-line mt-1 flex justify-between border-t pt-3">
           <span className="text-ink text-liste font-semibold">Gesamtbetrag</span>
           <span className="text-ink text-liste font-semibold tabular-nums">
             {formatEuro(dokument.totals.total_cents, dokument.currency)}
@@ -426,13 +515,9 @@ function Rechnungsbild({
       ) : null}
 
       {/* Der Absender ist auf jeder Rechnung derselbe und steht zugeklappt;
-          die Zahlungsfrist steht oben in der Zustandszeile (UX-005i). */}
-      <details className="group border-line bg-surface rounded-card mt-8 border px-4 sm:px-5">
-        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
-          <Aufklappzeichen />
-          Absender und Bankverbindung
-        </summary>
-        <div className="pb-3">
+          die Zahlungsfrist steht oben im Kopf (UX-005i). */}
+      <div className="mt-8">
+        <Disclosure summary="Absender und Bankverbindung" inKarte>
           <p className="text-ink text-liste">{dokument.issuer.legal_name}</p>
           <p className="text-ink-muted text-sm">
             {`${dokument.issuer.street} ${dokument.issuer.house_number ?? ''}`.trim()},{' '}
@@ -450,41 +535,51 @@ function Rechnungsbild({
             {ibanInGruppen(dokument.issuer.iban)}
             {dokument.issuer.bic ? ` · BIC ${dokument.issuer.bic}` : ''}
           </p>
-        </div>
-      </details>
-
-      {/* Das Blatt zum Verschicken öffnet der Kopf der Seite (ABR-05). Nach
-          dem Ausstellen steht es hier noch einmal - als nächster Schritt, mit
-          dem Fokus darauf (ABR-10). */}
-      {ausgestellt ? (
-        <Ausstellmeldung nummer={ausgestellt} invoiceId={ansicht.id} />
-      ) : entwurf && darfAusstellen ? (
-        <Entwurfsaktionen
-          ansicht={ansicht}
-          darfStammdaten={darfStammdaten}
-          onAusgestellt={setAusgestellt}
-        />
-      ) : null}
-
-      {!entwurf ? (
-        <>
-          <Zahlungen
-            ansicht={ansicht}
-            darfBuchen={darfAusstellen}
-            zeitzone={zeitzone}
-            waehrung={dokument.currency}
-          />
-          <Zahlungserinnerungen
-            ansicht={ansicht}
-            darfErinnern={darfAusstellen}
-            zeitzone={zeitzone}
-          />
-          <Stornokette ansicht={ansicht} darfStornieren={darfAusstellen} />
-        </>
-      ) : null}
+        </Disclosure>
+      </div>
     </>
   );
 }
+
+type Leistungszeile = { zeile: Rechnungsansicht['document']['items'][number]; index: number };
+
+/** Die Leistungen des Dokuments: Datum, Leistung, Betrag. */
+const LEISTUNGSSPALTEN: readonly Datenspalte<Leistungszeile>[] = [
+  {
+    titel: 'Datum',
+    breite: '12rem',
+    telefon: 'kopf',
+    inhalt: ({ zeile }) => (
+      <span className="text-ink-muted tabular-nums">
+        {/* ANG-002: Ein Abo-Monat nennt seinen Zeitraum. */}
+        {zeile.period_until
+          ? `${formatDate(zeile.performed_on)} bis ${formatDate(zeile.period_until)}`
+          : formatDate(zeile.performed_on)}
+      </span>
+    ),
+  },
+  {
+    titel: 'Leistung',
+    inhalt: ({ zeile }) => (
+      <span className="text-ink text-liste">
+        {zeile.quantity} × {zeile.label} ({zeile.code})
+        {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
+        {zeile.item_kind === 'absence_fee' ? (
+          <span className="ml-2">
+            <Badge ton="neutral">Ausfallhonorar</Badge>
+          </span>
+        ) : null}
+      </span>
+    ),
+  },
+  {
+    titel: 'Betrag',
+    breite: '8rem',
+    rechts: true,
+    telefon: 'ende',
+    inhalt: ({ zeile }) => formatEuro(zeile.line_total_cents, zeile.currency),
+  },
+];
 
 /**
  * Die Rückmeldung nach dem Ausstellen, an der Stelle des Entwurfsabschnitts
@@ -500,9 +595,9 @@ function Ausstellmeldung({ nummer, invoiceId }: { nummer: string; invoiceId: str
   }, []);
 
   return (
-    <div ref={kasten} className="mt-8">
+    <div ref={kasten} className="mt-6 flex flex-col gap-3">
       <Statusmeldung ton="erfolg">Rechnung {nummer} ausgestellt.</Statusmeldung>
-      <div className="mt-3">
+      <div>
         <ButtonLink to={`/abrechnung/rechnungen/${invoiceId}/druck`}>
           Rechnungsblatt öffnen
         </ButtonLink>
@@ -558,7 +653,7 @@ function Zahlungen({
         {zahlungen.isError ? (
           <ErrorState
             title="Die Zahlungen konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
             onErneut={() => zahlungen.refetch()}
           />
         ) : null}
@@ -567,53 +662,75 @@ function Zahlungen({
           <p className="text-ink-muted text-sm">Noch keine Zahlung erfasst.</p>
         ) : null}
 
-        <ul className="divide-line divide-y">
-          {(zahlungen.data ?? []).map((zahlung) => (
-            <Listenzeile
-              key={zahlung.id}
-              datum={formatDate(zahlung.paid_on)}
-              betrag={
-                <span
-                  className={`text-liste tabular-nums ${
-                    zahlung.voided_at !== null ? 'text-ink-muted line-through' : 'text-ink'
-                  }`}
-                >
-                  {zahlung.direction === 'refund' ? '−' : ''}
-                  {formatEuro(zahlung.amount_cents, zahlung.currency)}
-                </span>
-              }
-            >
-              <span className="text-ink text-liste">
-                {richtungLabels[zahlung.direction]} ·{' '}
-                {zahlungswegAnzeige[zahlung.method] ?? zahlung.method}
-              </span>
-              {zahlung.voided_at !== null ? (
-                <span className="ml-2">
-                  <Badge ton="neutral">Storniert</Badge>
-                </span>
-              ) : null}
-              {zahlung.note ? (
-                <span className="text-ink-muted block text-sm">{zahlung.note}</span>
-              ) : null}
-              {zahlung.void_reason ? (
-                <span className="text-ink-muted block text-sm">
-                  Storniert: {zahlung.void_reason}
-                </span>
-              ) : null}
-              {/* ABR-07: Das Storno der Zahlung steht dort, wo sie steht - nicht
-                  nur unter „Zahlungen". Derselbe Knopf, derselbe Aufruf. */}
-              {darfBuchen && zahlung.voided_at === null ? (
-                <div className="mt-1">
-                  <Zahlungsstorno
-                    zahlungId={zahlung.id}
-                    invoiceId={ansicht.id}
-                    ausloeser="Zahlung stornieren"
-                  />
-                </div>
-              ) : null}
-            </Listenzeile>
-          ))}
-        </ul>
+        {zahlungen.data && zahlungen.data.length > 0 ? (
+          <Datenliste
+            beschriftung="Zahlungen der Rechnung"
+            rahmen={false}
+            zeilen={zahlungen.data}
+            schluessel={(zahlung) => zahlung.id}
+            spalten={[
+              {
+                titel: 'Datum',
+                breite: '8rem',
+                telefon: 'kopf',
+                inhalt: (zahlung) => (
+                  <span className="text-ink-muted tabular-nums">{formatDate(zahlung.paid_on)}</span>
+                ),
+              },
+              {
+                titel: 'Zahlung',
+                inhalt: (zahlung) => (
+                  <>
+                    <span className="text-ink text-liste">
+                      {richtungLabels[zahlung.direction]} ·{' '}
+                      {zahlungswegAnzeige[zahlung.method] ?? zahlung.method}
+                    </span>
+                    {zahlung.voided_at !== null ? (
+                      <span className="ml-2">
+                        <Badge ton="neutral">Storniert</Badge>
+                      </span>
+                    ) : null}
+                    {zahlung.note ? (
+                      <span className="text-ink-muted block text-sm">{zahlung.note}</span>
+                    ) : null}
+                    {zahlung.void_reason ? (
+                      <span className="text-ink-muted block text-sm">
+                        Storniert: {zahlung.void_reason}
+                      </span>
+                    ) : null}
+                    {/* ABR-07: Das Storno der Zahlung steht dort, wo sie steht - nicht
+                        nur unter „Zahlungen". Derselbe Knopf, derselbe Aufruf. */}
+                    {darfBuchen && zahlung.voided_at === null ? (
+                      <div className="mt-1">
+                        <Zahlungsstorno
+                          zahlungId={zahlung.id}
+                          invoiceId={ansicht.id}
+                          ausloeser="Zahlung stornieren"
+                        />
+                      </div>
+                    ) : null}
+                  </>
+                ),
+              },
+              {
+                titel: 'Betrag',
+                breite: '8rem',
+                rechts: true,
+                telefon: 'ende',
+                inhalt: (zahlung) => (
+                  <span
+                    className={
+                      zahlung.voided_at !== null ? 'text-ink-muted line-through' : undefined
+                    }
+                  >
+                    {zahlung.direction === 'refund' ? '−' : ''}
+                    {formatEuro(zahlung.amount_cents, zahlung.currency)}
+                  </span>
+                ),
+              },
+            ]}
+          />
+        ) : null}
 
         <div className="border-line mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
           {storniert ? (
@@ -724,6 +841,7 @@ function Guthaben({
         {korrektur ? (
           <Rueckfrage
             ausloeser={`Mit Korrekturrechnung ${ansicht.correction_invoice_number ?? ''} verrechnen`}
+            ausloeserGroesse="kompakt"
             bestaetigen="Verrechnung buchen"
             bestaetigenLaeuft="Wird gebucht …"
             laeuft={verrechnen.isPending}
@@ -737,7 +855,12 @@ function Guthaben({
           </Rueckfrage>
         ) : null}
         {weg === 'keiner' ? (
-          <Button type="button" variant="secondary" onClick={() => setWeg('rueckzahlung')}>
+          <Button
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            onClick={() => setWeg('rueckzahlung')}
+          >
             Rückzahlung buchen
           </Button>
         ) : null}
@@ -814,46 +937,71 @@ function Zahlungserinnerungen({
   const eintraege = erinnerungen.data ?? [];
   const heute = zeitzone === null ? null : todayInTimeZone(zeitzone);
   const heuteSchon = heute !== null && eintraege.some((eintrag) => eintrag.reminder_on === heute);
+  const darfAusstellen = darfErinnern && !bezahlt;
+
+  // Ein leerer Abschnitt steht nicht da (DESIGN.md): ohne Erinnerung und
+  // ohne den Weg zu einer gibt es hier nichts zu sehen.
+  if (erinnerungen.isSuccess && eintraege.length === 0 && !darfAusstellen) return null;
 
   return (
-    <Section titel="Zahlungserinnerung" rahmen>
-      {erinnerungen.isPending ? <LoadingState label="Erinnerungen werden geladen …" /> : null}
+    <Section titel="Zahlungserinnerung">
+      {erinnerungen.isPending ? (
+        <LoadingState label="Erinnerungen werden geladen …" inKarte />
+      ) : null}
       {erinnerungen.isError ? (
         <ErrorState
           title="Die Zahlungserinnerungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => erinnerungen.refetch()}
         />
       ) : null}
 
-      {erinnerungen.isSuccess && eintraege.length === 0 ? (
-        <p className="text-ink-muted text-sm">Noch keine Erinnerung ausgestellt.</p>
-      ) : null}
-
       {eintraege.length > 0 ? (
-        <ul className="divide-line divide-y">
-          {eintraege.map((eintrag) => (
-            <Listenzeile key={eintrag.id} datum={formatDate(eintrag.reminder_on)}>
-              <span className="text-ink text-liste block">
-                Frist bis {formatDate(eintrag.due_on)} ·{' '}
-                {formatEuro(eintrag.outstanding_cents, eintrag.currency)} offen
-              </span>
-              {/* Ein Link, der wie einer aussieht, 44 px hoch, und der sagt,
-                  welches Blatt er öffnet (ABR-25). */}
-              <Textlink
-                to={`/abrechnung/erinnerungen/${eintrag.id}`}
-                alleinstehend
-                className="text-sm"
-              >
-                Erinnerung vom {formatDate(eintrag.reminder_on)} öffnen
-              </Textlink>
-            </Listenzeile>
-          ))}
-        </ul>
+        <Datenliste
+          beschriftung="Ausgestellte Zahlungserinnerungen"
+          zeilen={eintraege}
+          schluessel={(eintrag) => eintrag.id}
+          spalten={[
+            {
+              titel: 'Ausgestellt',
+              breite: '8rem',
+              telefon: 'kopf',
+              inhalt: (eintrag) => (
+                <span className="text-ink-muted tabular-nums">
+                  {formatDate(eintrag.reminder_on)}
+                </span>
+              ),
+            },
+            {
+              titel: 'Frist und offener Betrag',
+              inhalt: (eintrag) => (
+                <span className="text-ink text-liste">
+                  Frist bis {formatDate(eintrag.due_on)} ·{' '}
+                  {formatEuro(eintrag.outstanding_cents, eintrag.currency)} offen
+                </span>
+              ),
+            },
+            {
+              titel: 'Blatt',
+              breite: 'auto',
+              inhalt: (eintrag) => (
+                // Ein Link, der wie einer aussieht, 44 px hoch, und der sagt,
+                // welches Blatt er öffnet (ABR-25).
+                <Textlink
+                  to={`/abrechnung/erinnerungen/${eintrag.id}`}
+                  alleinstehend
+                  className="text-sm"
+                >
+                  Erinnerung vom {formatDate(eintrag.reminder_on)} öffnen
+                </Textlink>
+              ),
+            },
+          ]}
+        />
       ) : null}
 
-      {darfErinnern && !bezahlt && erinnerungen.isSuccess ? (
-        <div className="mt-3">
+      {darfAusstellen && erinnerungen.isSuccess ? (
+        <div className={eintraege.length > 0 ? 'mt-3' : undefined}>
           <Button
             type="button"
             variant="secondary"
@@ -862,12 +1010,13 @@ function Zahlungserinnerungen({
           >
             {erstellen.isPending ? 'Wird ausgestellt …' : 'Zahlungserinnerung ausstellen'}
           </Button>
+          {/* Der Satz sagt, warum der Knopf gesperrt ist - oder was das
+              Blatt festsetzt (UX-005i). */}
           <p className="text-ink-muted mt-2 max-w-prose text-sm">
             {heuteSchon
               ? 'Heute ist bereits eine Erinnerung ausgestellt.'
               : ansicht.overdue
-                ? // Kurz: Was das Blatt nicht ist, muss hier nicht stehen (UX-005i).
-                  'Neue Frist 14 Tage, ohne Gebühr.'
+                ? 'Neue Frist 14 Tage, ohne Gebühr.'
                 : `Die Rechnung ist noch nicht fällig${
                     ansicht.due_on ? ` – sie läuft bis zum ${formatDate(ansicht.due_on)}` : ''
                   }. Vorher gibt es nichts zu erinnern.`}
@@ -950,8 +1099,7 @@ function Stornokette({
         </p>
         <p className="text-ink-muted mt-1 text-sm">Grund: {storno.reason}</p>
         <p className="text-ink-muted mt-2 text-sm">
-          Die Rechnung bleibt unverändert stehen – sie ist ausgestellt gewesen, und das lässt sich
-          nicht zurücknehmen. Sie steht in keinem offenen Posten mehr
+          Die Rechnung selbst bleibt unverändert und steht in keinem offenen Posten mehr
           {ansicht.correction_invoice_id || ansicht.correction_pending
             ? ', und ihre Leistungen sind wieder abzurechnen.'
             : '.'}
@@ -966,7 +1114,11 @@ function Stornokette({
         ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2">
-          <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/storno`} variant="secondary">
+          <ButtonLink
+            to={`/abrechnung/rechnungen/${ansicht.id}/storno`}
+            variant="secondary"
+            groesse="kompakt"
+          >
             Stornodokument öffnen
           </ButtonLink>
 
@@ -974,6 +1126,7 @@ function Stornokette({
             <ButtonLink
               to={`/abrechnung/rechnungen/${ansicht.correction_invoice_id}`}
               variant="secondary"
+              groesse="kompakt"
             >
               {ansicht.correction_invoice_number
                 ? `Korrekturrechnung ${ansicht.correction_invoice_number} öffnen`
@@ -983,6 +1136,7 @@ function Stornokette({
             <Button
               type="button"
               variant="secondary"
+              groesse="kompakt"
               disabled={korrigieren.isPending}
               onClick={() => korrigieren.mutate()}
             >
@@ -1003,53 +1157,53 @@ function Stornokette({
   if (!darfStornieren) return null;
 
   return (
-    <Section titel="Storno" ebene={2}>
-      {/* Was das Storno bedeutet, steht in der Rückfrage - dort, wo
-          entschieden wird, nicht als Vorrede (UX-005i). */}
-      <div>
-        {
-          <Rueckfrage
-            ausloeser="Rechnung stornieren"
-            bestaetigen="Storno ausstellen"
-            bestaetigenLaeuft="Wird storniert …"
-            laeuft={stornieren.isPending}
-            fehler={fehler ?? (stornieren.isError ? stornieren.error.message : undefined)}
-            onBestaetigen={() => {
-              if (grund.trim().length < 3) {
-                setFehler('Bitte einen Grund angeben – er steht auf dem Stornodokument.');
-                // Abgewiesen, nicht ausgeführt: Der Kasten bleibt offen, damit
-                // der Hinweis am Feld steht, in dem er gilt.
-                return Promise.reject(new Error('Grund fehlt'));
-              }
-              setFehler(undefined);
-              return stornieren.mutateAsync();
-            }}
-            onAbbrechen={() => {
-              setGrund('');
-              setFehler(undefined);
-              stornieren.reset();
-            }}
-          >
-            <p className="text-ink-muted text-sm">
-              Die Rechnung bleibt, wie sie ist; das Storno ist ein eigenes Dokument mit eigener
-              Nummer und lässt sich nicht zurücknehmen. Danach sind die Leistungen wieder
-              abzurechnen, und eine Korrekturrechnung lässt sich aus ihnen erstellen.
+    // Zerstörendes leise am Ende des Reiters, abgesetzt durch eine Linie
+    // (DESIGN.md „Objekt“). Was das Storno bedeutet, steht in der Rückfrage -
+    // dort, wo entschieden wird, nicht als Vorrede (UX-005i).
+    <div className="border-line mt-8 border-t pt-4">
+      {
+        <Rueckfrage
+          ausloeser="Rechnung stornieren"
+          ausloeserVariante="quiet"
+          bestaetigen="Storno ausstellen"
+          bestaetigenLaeuft="Wird storniert …"
+          laeuft={stornieren.isPending}
+          fehler={fehler ?? (stornieren.isError ? stornieren.error.message : undefined)}
+          onBestaetigen={() => {
+            if (grund.trim().length < 3) {
+              setFehler('Bitte einen Grund angeben – er steht auf dem Stornodokument.');
+              // Abgewiesen, nicht ausgeführt: Der Kasten bleibt offen, damit
+              // der Hinweis am Feld steht, in dem er gilt.
+              return Promise.reject(new Error('Grund fehlt'));
+            }
+            setFehler(undefined);
+            return stornieren.mutateAsync();
+          }}
+          onAbbrechen={() => {
+            setGrund('');
+            setFehler(undefined);
+            stornieren.reset();
+          }}
+        >
+          <p className="text-ink-muted text-sm">
+            Die Rechnung bleibt, wie sie ist; das Storno ist ein eigenes Dokument mit eigener Nummer
+            und lässt sich nicht zurücknehmen. Danach sind die Leistungen wieder abzurechnen, und
+            eine Korrekturrechnung lässt sich aus ihnen erstellen.
+          </p>
+          {eingegangen ? (
+            <p className="text-ink-muted mt-2 text-sm">
+              Auf diese Rechnung sind {formatEuro(ansicht.paid_cents, ansicht.document.currency)}{' '}
+              eingegangen. Der Betrag bleibt nach dem Storno stehen und wird zurückgezahlt oder mit
+              der Korrekturrechnung verrechnet.
             </p>
-            {eingegangen ? (
-              <p className="text-ink-muted mt-2 text-sm">
-                Auf diese Rechnung sind {formatEuro(ansicht.paid_cents, ansicht.document.currency)}{' '}
-                eingegangen. Der Betrag bleibt nach dem Storno stehen und wird zurückgezahlt oder
-                mit der Korrekturrechnung verrechnet.
-              </p>
-            ) : null}
-            {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
-            <div className="mt-2 max-w-xl">
-              <Field label="Grund" value={grund} onChange={(e) => setGrund(e.target.value)} />
-            </div>
-          </Rueckfrage>
-        }
-      </div>
-    </Section>
+          ) : null}
+          {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
+          <div className="max-w-formular mt-2">
+            <Field label="Grund" value={grund} onChange={(e) => setGrund(e.target.value)} />
+          </div>
+        </Rueckfrage>
+      }
+    </div>
   );
 }
 
@@ -1097,7 +1251,7 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
       <div className="mt-4">
         <ErrorState
           title="Die hinterlegten Empfänger konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => empfaenger.refetch()}
         />
       </div>
@@ -1127,7 +1281,7 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
   }
 
   return (
-    <div className="mt-4 max-w-xl">
+    <div className="max-w-formular mt-4">
       <Select
         label="Rechnung geht an"
         hint="Ohne hinterlegten Empfänger geht sie an die Patient:in selbst."
@@ -1286,7 +1440,7 @@ function Empfaengerformular({
   }
 
   return (
-    <div className="mt-4 flex max-w-xl flex-col gap-4">
+    <div className="max-w-formular mt-4 flex flex-col gap-4">
       {/* Ausgestellte Rechnungen lesen den Empfänger aus dem Snapshot – das
           Blatt ebenso wie Rechnungsliste, offene Posten und Zahlungen (BEF-141). */}
       {bestehend ? (
@@ -1322,38 +1476,32 @@ function Empfaengerformular({
           setNamensfehler(undefined);
         }}
       />
-      <div className="flex gap-4">
-        <span className="flex-1">
-          <Field
-            label="Straße"
-            value={eingabe.street}
-            onChange={(e) => setEingabe((alt) => ({ ...alt, street: e.target.value }))}
-          />
-        </span>
-        <span className="w-24">
-          <Field
-            label="Nr."
-            value={eingabe.house_number}
-            onChange={(e) => setEingabe((alt) => ({ ...alt, house_number: e.target.value }))}
-          />
-        </span>
+      {/* Nebeneinander erst ab 640 px und nur, was zusammengehört (DESIGN.md
+          „Formular“). */}
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_6rem]">
+        <Field
+          label="Straße"
+          value={eingabe.street}
+          onChange={(e) => setEingabe((alt) => ({ ...alt, street: e.target.value }))}
+        />
+        <Field
+          label="Nr."
+          value={eingabe.house_number}
+          onChange={(e) => setEingabe((alt) => ({ ...alt, house_number: e.target.value }))}
+        />
       </div>
-      <div className="flex gap-4">
-        <span className="w-28">
-          <Field
-            label="PLZ"
-            inputMode="numeric"
-            value={eingabe.postal_code}
-            onChange={(e) => setEingabe((alt) => ({ ...alt, postal_code: e.target.value }))}
-          />
-        </span>
-        <span className="flex-1">
-          <Field
-            label="Ort"
-            value={eingabe.city}
-            onChange={(e) => setEingabe((alt) => ({ ...alt, city: e.target.value }))}
-          />
-        </span>
+      <div className="grid gap-4 sm:grid-cols-[7rem_minmax(0,1fr)]">
+        <Field
+          label="PLZ"
+          inputMode="numeric"
+          value={eingabe.postal_code}
+          onChange={(e) => setEingabe((alt) => ({ ...alt, postal_code: e.target.value }))}
+        />
+        <Field
+          label="Ort"
+          value={eingabe.city}
+          onChange={(e) => setEingabe((alt) => ({ ...alt, city: e.target.value }))}
+        />
       </div>
       <Field
         label="Aktenzeichen oder Versichertennummer"
@@ -1373,9 +1521,9 @@ function Empfaengerformular({
         </Statusmeldung>
       ) : null}
 
-      {/* Umbrechend: Bei 390 px brach „Empfänger speichern" sonst zweizeilig
-          im 48-px-Knopf um (BEF-062). */}
-      <div className="flex flex-wrap gap-2">
+      {/* Am Telefon untereinander in voller Breite: Bei 390 px brach
+          „Empfänger speichern" sonst zweizeilig im Knopf um (BEF-062). */}
+      <Formularfuss>
         <Button type="button" onClick={absenden} disabled={speichern.isPending}>
           {speichern.isPending
             ? 'Wird gespeichert …'
@@ -1386,7 +1534,7 @@ function Empfaengerformular({
         <Button type="button" variant="quiet" onClick={onAbbrechen}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </div>
   );
 }

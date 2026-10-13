@@ -5,8 +5,13 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Badge, type Ton } from '@/components/ui/Badge';
-import { Card, CardGrid, DataList, DataRow } from '@/components/ui/Card';
+import { DataList, DataRow, Disclosure } from '@/components/ui/Card';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { EmptyState } from '@/components/ui/Feedback';
+import { Filterleiste } from '@/components/ui/Filterleiste';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { roleLabels } from '@/components/ui/roleLabels';
 import type { CurrentUser } from '@/features/session/types';
 import {
@@ -17,7 +22,7 @@ import {
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { darfEntscheiden, vorschauidentitaet } from '@/features/preview/identitaet';
 import { SignaturFeld } from '@/features/preview/SignaturFeld';
-import { Klappbereich, SimulationsMeldung } from '@/features/preview/ui';
+import { SimulationsMeldung } from '@/features/preview/ui';
 import { formatDatum, formatEuro, formatMonat, parseEuroZuCent } from '@/features/preview/format';
 import {
   erstattungsstandLabels,
@@ -161,128 +166,180 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
         </p>
       ) : null}
 
-      {/* Die Auswahl des Systems (TOK-13, UIK-19): 48 px, Beschriftung und
-          Fehler verbunden. */}
-      <div className="mb-5 flex flex-wrap items-end gap-4">
-        <div className="w-full sm:w-56">
-          <Select
-            label="Bearbeitungsstand"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value as 'alle' | Erstattungsstand)}
-          >
-            <option value="alle">Alle</option>
-            {(Object.keys(erstattungsstandLabels) as Erstattungsstand[]).map((stand) => (
-              <option key={stand} value={stand}>
-                {erstattungsstandLabels[stand]}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <p className="text-ink-muted pb-3 text-sm">
-          Offene Erstattungen: <strong className="text-ink">{formatEuro(offenCent)}</strong>
-        </p>
-      </div>
-
-      {sichtbar.length === 0 ? <EmptyState title="Keine Einträge" /> : null}
-
-      <CardGrid>
-        {sichtbar.map((erstattung) => (
-          <Erstattungskarte
-            key={erstattung.id}
-            erstattung={erstattung}
-            eigene={identitaet?.person.id === erstattung.mitarbeiterId}
-            entscheidungsrecht={entscheidungsrecht}
-            onEntscheiden={entscheiden}
-          />
-        ))}
-      </CardGrid>
-
-      <Historie />
-
-      <Klappbereich
-        titel="Berechnung der Stromerstattung"
-        beschreibung="Wie aus Arbeitstagen ein Betrag wird."
+      {/* Der Filter am Telefon hinter „Filter“, die offene Summe als Zeile
+          über der Liste (DESIGN.md „Liste“, ANN-405). */}
+      <Filterleiste
+        beschriftung="Erstattungen filtern"
+        gesetzt={filter === 'alle' ? 0 : 1}
+        onZuruecksetzen={() => setFilter('alle')}
+        ergebnis={
+          <>
+            Offene Erstattungen: <strong className="text-ink">{formatEuro(offenCent)}</strong>
+          </>
+        }
       >
-        <DataList>
-          <DataRow label="Ladung je Arbeitstag">{KWH_PRO_ARBEITSTAG} kWh</DataRow>
-          <DataRow label="Satz je kWh">{formatEuro(zustand.stromsatzCent)}</DataRow>
-          <DataRow label="Formel">Arbeitstage × 0,5 kWh × Satz</DataRow>
-        </DataList>
-        <p className="text-ink-muted mt-3 text-sm">
-          Die Pauschale stammt aus der Vorlage und ist eine betriebliche Regel, kein allgemein
-          gültiger Verbrauchswert und keine rechtliche Vorgabe. Sie muss für diesen Betrieb
-          gesondert entschieden werden.
-        </p>
-      </Klappbereich>
+        <Select
+          label="Bearbeitungsstand"
+          value={filter}
+          onChange={(event) => setFilter(event.target.value as 'alle' | Erstattungsstand)}
+        >
+          <option value="alle">Alle</option>
+          {(Object.keys(erstattungsstandLabels) as Erstattungsstand[]).map((stand) => (
+            <option key={stand} value={stand}>
+              {erstattungsstandLabels[stand]}
+            </option>
+          ))}
+        </Select>
+      </Filterleiste>
+
+      {sichtbar.length === 0 ? (
+        <EmptyState inKarte title="Keine Einträge" />
+      ) : (
+        // Die Anträge als Datenliste (DESIGN.md „Datenliste“, vorher eine
+        // Karte je Antrag): ab 1024 px Spalten, darunter je Antrag eine Zeile
+        // mit Betrag oben rechts.
+        <Datenliste
+          beschriftung="Erstattungen"
+          zeilen={sichtbar}
+          schluessel={(erstattung) => erstattung.id}
+          spalten={erstattungsspalten({
+            eigene: identitaet?.person.id ?? null,
+            entscheidungsrecht,
+            onEntscheiden: entscheiden,
+          })}
+        />
+      )}
+
+      <div className="mt-8 flex flex-col gap-3">
+        <Historie />
+
+        <Disclosure summary="Berechnung der Stromerstattung" inKarte>
+          <DataList>
+            <DataRow label="Ladung je Arbeitstag">{KWH_PRO_ARBEITSTAG} kWh</DataRow>
+            <DataRow label="Satz je kWh">{formatEuro(zustand.stromsatzCent)}</DataRow>
+            <DataRow label="Formel">Arbeitstage × 0,5 kWh × Satz</DataRow>
+          </DataList>
+          {/* Ehrlich über die Herkunft der Zahl (Vorschau): keine Vorgabe. */}
+          <Kleingedrucktes className="mt-3">
+            Die Pauschale stammt aus der Vorlage und ist eine betriebliche Regel, kein allgemein
+            gültiger Verbrauchswert und keine rechtliche Vorgabe. Sie muss für diesen Betrieb
+            gesondert entschieden werden.
+          </Kleingedrucktes>
+        </Disclosure>
+      </div>
     </>
   );
 }
 
-function Erstattungskarte({
+interface Zeilenkontext {
+  /** Die Demoperson des angemeldeten Kontos, markiert mit „(Sie)". */
+  eigene: string | null;
+  entscheidungsrecht: boolean;
+  onEntscheiden: (erstattung: Erstattung, stand: Erstattungsstand, grund?: string) => void;
+}
+
+/**
+ * Die Spalten eines Antrags: wer und was, der Stand als Zeichen und Wort, die
+ * Einzelheiten samt Entscheidung an Ort und Stelle (Leitfaden L3), der
+ * Betrag.
+ */
+function erstattungsspalten(kontext: Zeilenkontext): Datenspalte<Erstattung>[] {
+  return [
+    {
+      titel: 'Antrag',
+      breite: '14rem',
+      telefon: 'kopf',
+      inhalt: (erstattung) => <Antragskopf erstattung={erstattung} eigene={kontext.eigene} />,
+    },
+    {
+      titel: 'Stand',
+      breite: '9rem',
+      inhalt: (erstattung) => (
+        <Badge ton={standTon[erstattung.stand]}>{erstattungsstandLabels[erstattung.stand]}</Badge>
+      ),
+    },
+    {
+      titel: 'Einzelheiten',
+      inhalt: (erstattung) => (
+        <Einzelheiten
+          erstattung={erstattung}
+          entscheidungsrecht={kontext.entscheidungsrecht}
+          onEntscheiden={kontext.onEntscheiden}
+        />
+      ),
+    },
+    {
+      titel: 'Betrag',
+      breite: '7rem',
+      rechts: true,
+      telefon: 'ende',
+      inhalt: (erstattung) => <Antragsbetrag erstattung={erstattung} />,
+    },
+  ];
+}
+
+function Antragskopf({ erstattung, eigene }: { erstattung: Erstattung; eigene: string | null }) {
+  const { zustand } = useVorschau();
+  return (
+    <span className="block">
+      <span className="text-ink text-liste block font-semibold">
+        {mitarbeiterName(zustand, erstattung.mitarbeiterId)}
+        {eigene === erstattung.mitarbeiterId ? ' (Sie)' : ''}
+      </span>
+      <span className="text-ink-muted block text-sm">
+        {erstattung.art === 'strom' ? 'Stromkosten' : 'Einkauf'} ·{' '}
+        {formatDatum(erstattung.eingereichtAm)}
+      </span>
+    </span>
+  );
+}
+
+function Antragsbetrag({ erstattung }: { erstattung: Erstattung }) {
+  const { zustand } = useVorschau();
+  return formatEuro(betragCent(erstattung, zustand.stromsatzCent));
+}
+
+/**
+ * Was den Antrag ausmacht, was mit ihm geschehen ist - und die Entscheidung.
+ * Die Aktionen nur, wo es etwas zu entscheiden gibt (VOR-24).
+ */
+function Einzelheiten({
   erstattung,
-  eigene,
   entscheidungsrecht,
   onEntscheiden,
 }: {
   erstattung: Erstattung;
-  eigene: boolean;
   entscheidungsrecht: boolean;
   onEntscheiden: (erstattung: Erstattung, stand: Erstattungsstand, grund?: string) => void;
 }) {
-  const { zustand } = useVorschau();
   const [ablehnung, setAblehnung] = useState('');
   const [ablehnenOffen, setAblehnenOffen] = useState(false);
-  const betrag = betragCent(erstattung, zustand.stromsatzCent);
-  // Die Aktionszone nur, wenn sie eine Aktion trägt (VOR-24): An ausgezahlten
-  // und abgelehnten Anträgen stand sonst eine leere Trennlinie.
   const hatAktion =
     entscheidungsrecht && (erstattung.stand === 'eingereicht' || erstattung.stand === 'genehmigt');
 
-  return (
-    <Card>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-ink text-liste truncate font-semibold">
-            {mitarbeiterName(zustand, erstattung.mitarbeiterId)}
-            {eigene ? ' (Sie)' : ''}
-          </p>
-          <p className="text-ink-muted mt-0.5 text-sm">
-            {erstattung.art === 'strom' ? 'Stromkosten' : 'Einkauf'} ·{' '}
-            {formatDatum(erstattung.eingereichtAm)}
-          </p>
-        </div>
-        <Badge ton={standTon[erstattung.stand]}>{erstattungsstandLabels[erstattung.stand]}</Badge>
-      </div>
+  // In einer Zeile: der Zeitraum ausgeschrieben statt als Wert des
+  // Eingabefelds („2026-08", VOR-24), keine Zeile „Positionen: N" - die
+  // Positionen stehen darunter (UX-005i).
+  const angaben = [
+    erstattung.art === 'strom'
+      ? `${formatMonat(erstattung.zeitraumVon)}${
+          erstattung.zeitraumBis && erstattung.zeitraumBis !== erstattung.zeitraumVon
+            ? ` – ${formatMonat(erstattung.zeitraumBis)}`
+            : ''
+        }`
+      : null,
+    erstattung.art === 'strom' ? `${erstattung.arbeitstage} Arbeitstage` : null,
+    erstattung.belege > 0
+      ? `${erstattung.belege} ${erstattung.belege === 1 ? 'Beleg' : 'Belege'}`
+      : null,
+  ].filter(Boolean);
 
-      <DataList>
-        <DataRow label="Betrag">{formatEuro(betrag)}</DataRow>
-        {erstattung.art === 'strom' ? (
-          <>
-            {/* Der Monat ausgeschrieben statt als Wert des Eingabefelds
-                („2026-08", VOR-24). */}
-            <DataRow label="Zeitraum">
-              {formatMonat(erstattung.zeitraumVon)}
-              {erstattung.zeitraumBis && erstattung.zeitraumBis !== erstattung.zeitraumVon
-                ? ` – ${formatMonat(erstattung.zeitraumBis)}`
-                : ''}
-            </DataRow>
-            <DataRow label="Arbeitstage">{erstattung.arbeitstage}</DataRow>
-          </>
-        ) : // Keine Zeile „Positionen: N" - die Positionen stehen darunter (UX-005i).
-        null}
-        {/* Die IBAN nur, wenn sie gebraucht wird: zur Auszahlung eines
-            genehmigten Antrags (UX-005i). Bricht sie um, dann in zwei gleich
-            lange Hälften statt vor der letzten Zweiergruppe (VOR-24). */}
-        {erstattung.stand === 'genehmigt' ? (
-          <DataRow label="IBAN">
-            <span className="inline-block text-balance tabular-nums">{erstattung.iban}</span>
-          </DataRow>
-        ) : null}
-        {erstattung.belege > 0 ? <DataRow label="Belege">{erstattung.belege}</DataRow> : null}
-      </DataList>
+  return (
+    <div className="flex flex-col gap-1">
+      {angaben.length > 0 ? <p className="text-ink-muted">{angaben.join(' · ')}</p> : null}
 
       {erstattung.positionen.length > 0 ? (
-        <ul className="text-ink-muted mt-2 space-y-0.5 text-sm">
+        <ul className="text-ink-muted space-y-0.5">
           {erstattung.positionen.map((position) => (
             <li key={position.id} className="flex justify-between gap-3">
               <span className="min-w-0 truncate">{position.bezeichnung}</span>
@@ -292,42 +349,63 @@ function Erstattungskarte({
         </ul>
       ) : null}
 
-      {erstattung.notiz ? <p className="text-ink-muted mt-2 text-sm">{erstattung.notiz}</p> : null}
+      {/* Die IBAN nur, wenn sie gebraucht wird: zur Auszahlung eines
+            genehmigten Antrags (UX-005i). */}
+      {erstattung.stand === 'genehmigt' ? (
+        <p className="text-ink-muted">
+          IBAN <span className="text-ink tabular-nums">{erstattung.iban}</span>
+        </p>
+      ) : null}
+
+      {erstattung.notiz ? <p className="text-ink-muted">{erstattung.notiz}</p> : null}
 
       {erstattung.stand === 'abgelehnt' && erstattung.ablehnungsgrund ? (
-        <p className="text-danger mt-2 text-sm">Ablehnung: {erstattung.ablehnungsgrund}</p>
+        <p className="text-danger">Ablehnung: {erstattung.ablehnungsgrund}</p>
       ) : null}
+      {/* „Genehmigt" heißt nicht „ausgezahlt" - der Satz sagt es an jedem
+            genehmigten Antrag (Abweichung von der Vorlage, siehe oben). */}
       {erstattung.stand === 'genehmigt' ? (
-        <p className="text-ink-muted mt-2 text-sm">
+        <p className="text-ink-muted">
           Genehmigt von {erstattung.entschiedenVon} am {formatDatum(erstattung.entschiedenAm)}. Noch
           nicht ausgezahlt.
         </p>
       ) : null}
       {erstattung.stand === 'ausgezahlt' ? (
-        <p className="text-ink-muted mt-2 text-sm">
-          Ausgezahlt am {formatDatum(erstattung.ausgezahltAm)}.
-        </p>
+        <p className="text-ink-muted">Ausgezahlt am {formatDatum(erstattung.ausgezahltAm)}.</p>
       ) : null}
 
       {hatAktion ? (
-        <div className="border-line mt-3 border-t pt-3">
+        <div className="mt-1">
           {erstattung.stand === 'eingereicht' ? (
-            <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" onClick={() => onEntscheiden(erstattung, 'genehmigt')}>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                groesse="kompakt"
+                onClick={() => onEntscheiden(erstattung, 'genehmigt')}
+              >
                 Genehmigen
               </Button>
-              <Button variant="quiet" onClick={() => setAblehnenOffen((offen) => !offen)}>
+              <Button
+                variant="quiet"
+                groesse="kompakt"
+                aria-expanded={ablehnenOffen}
+                onClick={() => setAblehnenOffen((offen) => !offen)}
+              >
                 Ablehnen
               </Button>
             </div>
           ) : null}
           {erstattung.stand === 'genehmigt' ? (
-            <Button variant="secondary" onClick={() => onEntscheiden(erstattung, 'ausgezahlt')}>
+            <Button
+              variant="secondary"
+              groesse="kompakt"
+              onClick={() => onEntscheiden(erstattung, 'ausgezahlt')}
+            >
               Auszahlung vermerken
             </Button>
           ) : null}
           {ablehnenOffen ? (
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="max-w-formular mt-3 flex flex-col gap-2">
               <TextArea
                 rows={3}
                 label="Grund der Ablehnung"
@@ -337,6 +415,7 @@ function Erstattungskarte({
               <div>
                 <Button
                   variant="secondary"
+                  groesse="kompakt"
                   disabled={ablehnung.trim() === ''}
                   onClick={() => {
                     onEntscheiden(erstattung, 'abgelehnt', ablehnung.trim());
@@ -351,7 +430,7 @@ function Erstattungskarte({
           ) : null}
         </div>
       ) : null}
-    </Card>
+    </div>
   );
 }
 
@@ -360,10 +439,7 @@ function Historie() {
   const { zustand } = useVorschau();
 
   return (
-    <Klappbereich
-      titel="Historie je Person"
-      beschreibung="Zeigt bisherige Einreichungen, um Doppelungen zu erkennen."
-    >
+    <Disclosure summary="Historie je Person" inKarte>
       {zustand.mitarbeitende.map((person) => {
         const eintraege = zustand.erstattungen.filter(
           (erstattung) => erstattung.mitarbeiterId === person.id,
@@ -372,7 +448,7 @@ function Historie() {
         return (
           <div key={person.id} className="border-line border-t py-2 first:border-t-0">
             <p className="text-ink text-sm font-medium">{person.name}</p>
-            <ul className="text-ink-muted mt-1 space-y-0.5 text-sm">
+            <ul className="text-ink-muted space-y-0.5 text-sm">
               {eintraege.map((erstattung) => (
                 <li key={erstattung.id} className="flex flex-wrap items-center gap-2">
                   <span>
@@ -389,7 +465,7 @@ function Historie() {
           </div>
         );
       })}
-    </Klappbereich>
+    </Disclosure>
   );
 }
 
@@ -512,7 +588,7 @@ function Erstattungsformular({
   return (
     <>
       <PageHeader title="Erstattung einreichen" />
-      <div className="flex max-w-xl flex-col gap-4">
+      <div className="max-w-formular flex flex-col gap-4">
         <div>
           <p className="text-ink mb-2 text-sm font-medium">Art der Erstattung</p>
           <div role="radiogroup" aria-label="Art der Erstattung" className="flex flex-wrap gap-2">
@@ -609,15 +685,22 @@ function Erstattungsformular({
           </>
         ) : (
           <>
-            <fieldset className="border-line rounded-card border p-4">
-              <legend className="text-ink px-1 text-sm font-medium">Positionen</legend>
+            {/* Eine Gruppe mit Namen statt eines Kastens (L2); die Felder
+                einer Position stehen am Telefon untereinander, ab 640 px in
+                einer Reihe (DESIGN.md „Formular“). */}
+            <fieldset className="min-w-0">
+              <legend className="sr-only">Positionen</legend>
+              <Zwischentitel>Positionen</Zwischentitel>
               {positionen.length === 0 ? (
                 <p className="text-ink-muted text-sm">Noch keine Position erfasst.</p>
               ) : (
-                <ul className="flex flex-col gap-3">
+                <ul className="flex flex-col gap-4">
                   {positionen.map((position, index) => (
-                    <li key={position.id} className="flex flex-wrap items-end gap-3">
-                      <div className="min-w-40 flex-1">
+                    <li
+                      key={position.id}
+                      className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto]"
+                    >
+                      <div className="min-w-0">
                         <Field
                           label={`Position ${index + 1}`}
                           placeholder="Was wurde gekauft?"
@@ -633,7 +716,7 @@ function Erstattungsformular({
                           }
                         />
                       </div>
-                      <div className="w-32">
+                      <div>
                         <Field
                           label="Betrag in €"
                           inputMode="decimal"
@@ -650,16 +733,19 @@ function Erstattungsformular({
                           }
                         />
                       </div>
-                      <Button
-                        variant="quiet"
-                        onClick={() =>
-                          setPositionen((aktuell) =>
-                            aktuell.filter((eintrag) => eintrag.id !== position.id),
-                          )
-                        }
-                      >
-                        Entfernen
-                      </Button>
+                      <div>
+                        <Button
+                          variant="quiet"
+                          groesse="kompakt"
+                          onClick={() =>
+                            setPositionen((aktuell) =>
+                              aktuell.filter((eintrag) => eintrag.id !== position.id),
+                            )
+                          }
+                        >
+                          Entfernen
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -667,6 +753,7 @@ function Erstattungsformular({
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <Button
                   variant="secondary"
+                  groesse="kompakt"
                   onClick={() =>
                     setPositionen((aktuell) => [
                       ...aktuell,
@@ -711,14 +798,14 @@ function Erstattungsformular({
           onChange={(event) => setNotiz(event.target.value)}
         />
 
-        <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">
+        <Formularfuss trenner>
           <Button onClick={absenden} disabled={!gueltig}>
             Einreichen (Vorschau)
           </Button>
           <Button variant="quiet" onClick={onAbbrechen}>
             Abbrechen
           </Button>
-        </div>
+        </Formularfuss>
       </div>
     </>
   );

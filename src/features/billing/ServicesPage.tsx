@@ -1,15 +1,18 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Card, Disclosure } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Datenliste } from '@/components/ui/Datenliste';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
@@ -33,6 +36,7 @@ import {
   type Vorschlag,
 } from './api';
 import { AbomonatZuruecknehmen, FaelligeAbomonate } from './Abomonate';
+import { Eintraege, Eintrag } from './Eintraege';
 
 /**
  * Leistungen (ABR-002).
@@ -86,32 +90,35 @@ export function ServicesPage() {
     <>
       <PageHeader
         title="Leistungen"
-        description="Erbrachte Leistungen aus durchgeführten Terminen, Ausfallhonorare und Abo-Monate."
+        description="Aus durchgeführten Terminen, Ausfallhonoraren und Abo-Monaten."
       />
 
-      <Section titel="Zu erfassen">
-        {offene.isPending ? <LoadingState label="Termine werden geladen …" /> : null}
-        {offene.isError ? (
-          <ErrorState
-            title="Die offenen Termine konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => offene.refetch()}
-          />
-        ) : null}
-        {offene.data && offene.data.length === 0 ? (
-          <EmptyState
-            title="Nichts offen"
-            description="Zu jedem abrechenbaren Termin sind Leistungen erfasst."
-          />
-        ) : null}
-
-        <ul className="flex flex-col gap-3">
-          {(offene.data ?? []).map((termin) => (
-            <li key={termin.appointment_id}>
-              <OffenerTerminKarte termin={termin} />
-            </li>
-          ))}
-        </ul>
+      <Section
+        titel={
+          offene.data && offene.data.length > 0
+            ? `Zu erfassen (${offene.data.length})`
+            : 'Zu erfassen'
+        }
+      >
+        <Abfragezustand
+          abfrage={offene}
+          laden="Termine werden geladen …"
+          fehler="Die offenen Termine konnten nicht geladen werden."
+          inKarte
+          leer={{
+            wenn: (termine) => termine.length === 0,
+            titel: 'Nichts offen',
+            beschreibung: 'Zu jedem abrechenbaren Termin sind Leistungen erfasst.',
+          }}
+        >
+          {(termine) => (
+            <Eintraege beschriftung="Termine ohne erfasste Leistung">
+              {termine.map((termin) => (
+                <OffenerTerminZeile key={termin.appointment_id} termin={termin} />
+              ))}
+            </Eintraege>
+          )}
+        </Abfragezustand>
 
         {/* Die Regel, welche Termine hier stehen, erklärt das System - sie
             steht zugeklappt unter der Liste (UX-005i). */}
@@ -132,30 +139,111 @@ export function ServicesPage() {
       <FaelligeAbomonate />
 
       {/* Ein Satz: Was Zurücknehmen verhindert, sagt die Abweisung (UX-005i). */}
-      <Section titel="Erfasst" hinweis="Noch nicht abgerechnet." rahmen>
-        {leistungen.isPending ? <LoadingState label="Leistungen werden geladen …" /> : null}
-        {leistungen.isError ? (
-          <ErrorState
-            title="Die Leistungen konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => leistungen.refetch()}
-          />
-        ) : null}
-        {leistungen.data && gruppen.length === 0 ? (
-          <EmptyState title="Noch keine Leistung erfasst" />
-        ) : null}
-        {leistungen.data && gruppen.length > 0 && offen.length === 0 ? (
-          <EmptyState
-            title="Alles abgerechnet"
-            description="Jede erfasste Leistung steht auf einer ausgestellten Rechnung."
-          />
-        ) : null}
+      <Section titel="Erfasst" hinweis="Noch nicht abgerechnet.">
+        <Abfragezustand
+          abfrage={leistungen}
+          laden="Leistungen werden geladen …"
+          fehler="Die Leistungen konnten nicht geladen werden."
+          inKarte
+          leer={{
+            wenn: () => gruppen.length === 0,
+            titel: 'Noch keine Leistung erfasst',
+          }}
+        >
+          {() =>
+            offen.length === 0 ? (
+              <EmptyState
+                inKarte
+                title="Alles abgerechnet"
+                description="Jede erfasste Leistung steht auf einer ausgestellten Rechnung."
+              />
+            ) : (
+              <Leistungsliste gruppen={offen} zuruecknehmen />
+            )
+          }
+        </Abfragezustand>
 
-        {offen.length > 0 ? (
-          <ul className="divide-line divide-y">
-            {offen.map((gruppe) => (
-              <Leistungsgruppe key={gruppe.schluessel} gruppe={gruppe}>
-                <div className="mt-2">
+        {abgerechnet.length > 0 ? (
+          <Disclosure
+            summary={`Abgerechnet (${abgerechnet.length} ${
+              abgerechnet.length === 1 ? 'Termin' : 'Termine'
+            })`}
+          >
+            <p className="text-ink-muted mb-2 text-sm">
+              Bereits abgerechnet. Eine Korrektur läuft über Storno und Neuausstellung.
+            </p>
+            <Leistungsliste gruppen={abgerechnet} />
+          </Disclosure>
+        ) : null}
+      </Section>
+    </>
+  );
+}
+
+/**
+ * Die erfassten Leistungen je Termin (DESIGN.md „Datenliste“): ab 1024 px
+ * Termin, Leistungen und Summe in Spalten, darunter je Termin eine Zeile mit
+ * der Summe oben rechts. Noch nicht Abgerechnetes trägt den Weg zurück.
+ */
+function Leistungsliste({
+  gruppen,
+  zuruecknehmen = false,
+}: {
+  gruppen: readonly Terminleistungen[];
+  zuruecknehmen?: boolean;
+}) {
+  return (
+    <Datenliste
+      beschriftung={zuruecknehmen ? 'Erfasste Leistungen' : 'Abgerechnete Leistungen'}
+      zeilen={gruppen}
+      schluessel={(gruppe) => gruppe.schluessel}
+      spalten={[
+        {
+          titel: 'Termin',
+          breite: '14rem',
+          telefon: 'kopf',
+          inhalt: (gruppe) => (
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-ink text-liste font-medium">{gruppe.patientName}</span>
+              <span className="text-ink-muted text-sm tabular-nums">
+                {formatDate(gruppe.performedOn)}
+              </span>
+              {/* Der Bereich, nicht eine Warnung (TRN-007): Die Rechnung dazu
+                  läuft im eigenen Nummernkreis. */}
+              {gruppe.bereich === 'training' ? (
+                <Badge ton="neutral">{bereichLabels.training}</Badge>
+              ) : null}
+            </span>
+          ),
+        },
+        {
+          titel: 'Leistungen',
+          inhalt: (gruppe) => (
+            <>
+              <ul className="flex flex-col gap-1">
+                {gruppe.zeilen.map((zeile) => (
+                  // Im Fluss statt in Spalten: Am Telefon bricht die Zeile an
+                  // den Wörtern um, nicht vor jedem Punkt.
+                  <li key={zeile.id} className="text-ink-muted text-sm">
+                    <span className="tabular-nums">{zeile.quantity} ×</span>{' '}
+                    <span className="text-ink">{zeile.label}</span> <span>({zeile.code})</span>
+                    {' · '}
+                    <span className="tabular-nums">
+                      {formatEuro(zeile.unit_price_cents, zeile.currency)}
+                    </span>
+                    {zeile.session_fee ? <span> · Anteil am Terminhonorar</span> : null}
+                    <span> · {steuerLabels[zeile.tax_treatment]}</span>
+                    {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
+                    {zeile.item_kind === 'absence_fee' ? (
+                      <span className="ml-2">
+                        <Badge ton="neutral">{artLabels.absence_fee}</Badge>
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+              {zuruecknehmen ? (
+                <div className="mt-1">
                   {gruppe.appointmentId ? (
                     <Zuruecknehmen appointmentId={gruppe.appointmentId} bereich={gruppe.bereich} />
                   ) : gruppe.zeilen[0]?.item_kind === 'training_package' ? (
@@ -170,75 +258,21 @@ export function ServicesPage() {
                     <AbomonatZuruecknehmen leistungId={gruppe.zeilen[0]?.id ?? ''} />
                   )}
                 </div>
-              </Leistungsgruppe>
-            ))}
-          </ul>
-        ) : null}
-
-        {abgerechnet.length > 0 ? (
-          <Disclosure
-            summary={`Abgerechnet (${abgerechnet.length} ${
-              abgerechnet.length === 1 ? 'Termin' : 'Termine'
-            })`}
-          >
-            <p className="text-ink-muted text-sm">
-              Bereits abgerechnet. Eine Korrektur läuft über Storno und Neuausstellung.
-            </p>
-            <ul className="divide-line divide-y">
-              {abgerechnet.map((gruppe) => (
-                <Leistungsgruppe key={gruppe.schluessel} gruppe={gruppe} />
-              ))}
-            </ul>
-          </Disclosure>
-        ) : null}
-      </Section>
-    </>
+              ) : null}
+            </>
+          ),
+        },
+        {
+          titel: 'Summe',
+          breite: '7rem',
+          rechts: true,
+          telefon: 'ende',
+          inhalt: (gruppe) => formatEuro(gruppe.summeCent),
+        },
+      ]}
+    />
   );
 }
-
-/** Die Leistungen eines Termins mit ihrer Summe. */
-function Leistungsgruppe({ gruppe, children }: { gruppe: Terminleistungen; children?: ReactNode }) {
-  return (
-    <li className="py-3">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-ink text-liste font-medium">{gruppe.patientName}</span>
-        <span className="text-ink-muted text-sm tabular-nums">
-          {formatDate(gruppe.performedOn)}
-        </span>
-        {/* Der Bereich, nicht eine Warnung (TRN-007): Die Rechnung dazu läuft im
-            eigenen Nummernkreis. */}
-        {gruppe.bereich === 'training' ? (
-          <Badge ton="neutral">{bereichLabels.training}</Badge>
-        ) : null}
-        <span className="text-ink text-liste ml-auto font-medium tabular-nums">
-          {formatEuro(gruppe.summeCent)}
-        </span>
-      </div>
-
-      <ul className="mt-2 flex flex-col gap-1">
-        {gruppe.zeilen.map((zeile) => (
-          <li key={zeile.id} className="text-ink-muted flex flex-wrap gap-x-2 text-sm">
-            <span className="tabular-nums">{zeile.quantity} ×</span>
-            <span>{zeile.label}</span>
-            <span>({zeile.code})</span>
-            <span className="tabular-nums">
-              {formatEuro(zeile.unit_price_cents, zeile.currency)}
-            </span>
-            {zeile.session_fee ? <span>· Anteil am Terminhonorar</span> : null}
-            <span>· {steuerLabels[zeile.tax_treatment]}</span>
-            {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
-            {zeile.item_kind === 'absence_fee' ? (
-              <Badge ton="neutral">{artLabels.absence_fee}</Badge>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-
-      {children}
-    </li>
-  );
-}
-
 /**
  * Eine Erfassung zurücknehmen.
  *
@@ -270,6 +304,8 @@ function Zuruecknehmen({
   return (
     <Rueckfrage
       ausloeser="Erfassung zurücknehmen"
+      ausloeserVariante="quiet"
+      ausloeserGroesse="kompakt"
       bestaetigen="Zurücknehmen"
       bestaetigenLaeuft="Wird zurückgenommen …"
       laeuft={entfernen.isPending}
@@ -293,47 +329,56 @@ function Zuruecknehmen({
 }
 
 /**
- * Ein Termin, zu dem Leistungen zu erfassen sind - eine Karte wie jede andere
- * in einer Liste (ABR-33). „Leistungen erfassen" ist eine Kartenaktion und
- * kein Hauptknopf: Bei zehn offenen Terminen stünden sonst zehn gefüllte
- * Knöpfe untereinander (ABR-24).
+ * Ein Termin, zu dem Leistungen zu erfassen sind - eine Zeile der Liste
+ * (Design-Rollout B6, vorher eine Karte je Termin). „Leistungen erfassen" ist
+ * die Aktion der Zeile und kein Hauptknopf: Bei zehn offenen Terminen stünden
+ * sonst zehn gefüllte Knöpfe untereinander (ABR-24). Das Formular öffnet sich
+ * unter der Zeile.
  */
-function OffenerTerminKarte({ termin }: { termin: OffenerTermin }) {
+function OffenerTerminZeile({ termin }: { termin: OffenerTermin }) {
   const [offen, setOffen] = useState(false);
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-ink text-liste font-medium">{termin.patient_name}</span>
-        <span className="text-ink-muted text-sm tabular-nums">
-          {formatDate(termin.performed_on)}
-        </span>
-        {termin.service_area === 'training' ? (
-          <>
-            <Badge ton="neutral">{bereichLabels.training}</Badge>
-            <Badge ton="neutral">Durchgeführt</Badge>
-          </>
-        ) : termin.fee_basis ? (
-          <Badge ton="neutral">{anlassLabels[termin.fee_basis] ?? 'Ausfallhonorar'}</Badge>
-        ) : // „Dokumentiert" ist der Regelfall unter „Zu erfassen" und trägt
-        // kein Abzeichen (UX-005i).
-        null}
-        {!offen ? (
-          <span className="ml-auto">
-            <Button
-              type="button"
-              variant="secondary"
-              groesse="kompakt"
-              onClick={() => setOffen(true)}
-            >
-              Leistungen erfassen
-            </Button>
-          </span>
-        ) : null}
-      </div>
-
+    <Eintrag
+      titel={termin.patient_name}
+      meta={
+        <>
+          <span className="tabular-nums">{formatDate(termin.performed_on)}</span>
+          {termin.service_area === 'training' ? (
+            <>
+              {' · '}
+              <span>{bereichLabels.training}</span>
+              {' · '}
+              <span>Durchgeführt</span>
+            </>
+          ) : termin.fee_basis ? (
+            // TER-10: derselbe Anlass wie am Termin; ABR-16: eine Art, kein „!".
+            <>
+              {' · '}
+              <span>{anlassLabels[termin.fee_basis] ?? 'Ausfallhonorar'}</span>
+            </>
+          ) : // „Dokumentiert" ist der Regelfall unter „Zu erfassen" und trägt
+          // kein Kennzeichen (UX-005i).
+          null}
+        </>
+      }
+      aktion={
+        offen ? undefined : (
+          // Kurz sichtbar, ganz vorgelesen: Neben dem Namen bleibt am Telefon
+          // so Platz für den Namen (Leitfaden L3).
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label="Leistungen erfassen"
+            onClick={() => setOffen(true)}
+          >
+            Erfassen
+          </Button>
+        )
+      }
+    >
       {offen ? <Erfassungsformular termin={termin} onFertig={() => setOffen(false)} /> : null}
-    </Card>
+    </Eintrag>
   );
 }
 
@@ -391,7 +436,7 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
 
   if (vorschlag.error instanceof KeinKatalog) {
     return (
-      <div className="mt-3">
+      <div>
         <Statusmeldung ton="warnung">
           Für den {formatDate(termin.performed_on)} ist keine Preisliste in Kraft. Ohne sie steht
           kein Preis fest. Preislisten legt die Praxisinhaber:in an und setzt sie in Kraft – mit
@@ -406,8 +451,8 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
 
   if (vorschlag.isError) {
     return (
-      <Statusmeldung ton="fehler" className="mt-3">
-        {vorschlag.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+      <Statusmeldung ton="fehler">
+        {vorschlag.error.message} {VERBINDUNG_PRUEFEN}
       </Statusmeldung>
     );
   }
@@ -453,10 +498,10 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
   }
 
   return (
-    <div className="mt-3 flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {/* Die Menge steht neben ihrer Position, nicht 1000 px entfernt am
           rechten Rand (ABR-23). */}
-      <ul className="flex max-w-xl flex-col gap-2">
+      <ul className="max-w-formular flex flex-col gap-2">
         {vorschlag.data.map((zeile) => (
           <li key={zeile.catalog_item_id} className="grid grid-cols-[1fr_6rem] items-end gap-3">
             <div className="min-w-0">
@@ -494,6 +539,7 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
       <div className="flex flex-wrap gap-3">
         <Button
           type="button"
+          groesse="kompakt"
           onClick={absenden}
           disabled={anzahlGewaehlt === 0 || erfassen.isPending}
         >
@@ -503,7 +549,7 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
               ? 'Eine Leistung erfassen'
               : `${anzahlGewaehlt} Leistungen erfassen`}
         </Button>
-        <Button type="button" variant="secondary" onClick={onFertig}>
+        <Button type="button" variant="quiet" groesse="kompakt" onClick={onFertig}>
           Abbrechen
         </Button>
       </div>
@@ -538,7 +584,7 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
       !(erfassen.error instanceof KontingentAusgeschoepft) &&
       !(erfassen.error instanceof KeinTerminhonorar) ? (
         <Statusmeldung ton="fehler">
-          {erfassen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+          {erfassen.error.message} {VERBINDUNG_PRUEFEN}
         </Statusmeldung>
       ) : null}
     </div>
