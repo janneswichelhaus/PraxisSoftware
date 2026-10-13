@@ -4,13 +4,14 @@ import type { Katalogeintrag } from '../typen';
  * Gruppe AF: Alltagsfunktionen und Transfers.
  *
  * Aufstehen, Hinsetzen, Treppe, Heben und Tragen - so, wie es im Alltag
- * vorkommt. Ohne Bild bleiben AF-06 (bis zum Boden reicht die Hand nur aus
- * der tiefen Hocke, und dann stieße der Kopf an jede Arbeitsplatte, die im
- * Stand erreichbar ist) und AF-09 (der Stuhl steht im Zeichner immer mit der
- * Lehne zur Person; das Abstützen auf die Sitzfläche von vorn lässt sich
- * nicht zeigen). Der Gegenstand bei AF-07 erscheint als Ball, die Taschen
- * bei AF-08 als Hanteln. Inhalt KI-erstellt und bis zur Durchsicht durch die
- * Praxis ungeprüft (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
+ * vorkommt. AF-06 zeigt nur die Ausgangsstellung (ANN-480): Bis zum Boden
+ * reicht die Hand nur aus der tiefen Hocke, und dann stieße der Kopf an jede
+ * Arbeitsplatte, die im Stand erreichbar ist. Bei AF-09 steht statt des
+ * Stuhls ein Hocker: Der Stuhl steht im Zeichner immer mit der Lehne zur
+ * Person, die Hände sollen aber von vorn auf die Sitzfläche. Der Gegenstand
+ * bei AF-07 erscheint als Ball, die Taschen bei AF-08 als Hanteln. Inhalt
+ * KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft (ANN-386);
+ * Vorsicht steht nur unter `hinweise_praxis`.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -216,6 +217,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Gegenstand liegt zu weit vom Körper entfernt.',
       'Die Person kommt mit Schwung hoch.',
     ],
+    bild: {
+      v: 1,
+      basis: 'stand',
+      start: { haende: [null, 'tisch'] },
+      ende: { haende: [null, 'tisch'] },
+      hilfsmittel: [{ art: 'tisch', x: 22 }],
+    },
   },
   {
     schluessel: 'AF-07',
@@ -317,5 +325,21 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zuerst gemeinsam im Hausbesuch üben. Den Ablauf für Stürze besprechen (Hausnotruf, Telefon in Reichweite). Ein Kissen unter den Knien schont die Kniescheiben.',
+    bild: {
+      v: 1,
+      basis: 'kniestand',
+      anker: 'knie_fern',
+      start: { rumpf: 35, huefte: [35, 35], schulter: [61, 61], ellbogen: [32, 32] },
+      ende: {
+        rumpf: 35,
+        huefte: [125, 35],
+        schulter: [61, 61],
+        ellbogen: [32, 32],
+        fuss_flach: [true, false],
+        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'knie_fern'] },
+      },
+      hilfsmittel: [{ art: 'hocker', x: 75 }],
+      bewegung: ['knie_nah'],
+    },
   },
 ];

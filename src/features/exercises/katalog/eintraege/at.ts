@@ -4,15 +4,17 @@ import type { Katalogeintrag } from '../typen';
  * Gruppe AT: Atmung.
  *
  * Atemtechniken und atemerleichternde Stellungen. Die Atmung selbst - Bauch,
- * Flanken, Lippen, Luftstrom - kann die Figur nicht zeigen. Ein Bild haben
- * deshalb nur die Übungen, deren Stellung oder Armbewegung das Wesentliche
- * ist: AT-01 (Lage und Hände), AT-03 und AT-04 (Kutschersitz,
+ * Flanken, Lippen, Luftstrom - kann die Figur nicht zeigen. Eine Bewegung
+ * haben deshalb nur die Übungen, deren Stellung oder Armbewegung das
+ * Wesentliche ist: AT-01 (Lage und Hände), AT-03 und AT-04 (Kutschersitz,
  * Torwartstellung), AT-06 (Armheben) und AT-07 (Seitneigung von vorn).
- * Ohne Bild bleiben AT-02, AT-05, AT-08, AT-09, AT-10 und AT-11 (die Drehung
- * um die Längsachse zeigt weder die Seiten- noch die Vorderansicht). Ein
- * Atemzug zählt als Wiederholung. Inhalt KI-erstellt und bis zur Durchsicht
- * durch die Praxis ungeprüft (ANN-386); Vorsicht steht nur unter
- * `hinweise_praxis`.
+ * AT-02, AT-05, AT-08, AT-09, AT-10 und AT-11 zeigen nur die
+ * Ausgangsstellung (ANN-480): aufrecht im Sitz, bei AT-05 die Hände an den
+ * Flanken, bei AT-11 vor der Brust (die Drehung um die Längsachse zeigt
+ * weder die Seiten- noch die Vorderansicht; den Strohhalm kennt der Zeichner
+ * nicht). Ein Atemzug zählt als Wiederholung. Inhalt KI-erstellt und bis
+ * zur Durchsicht durch die Praxis ungeprüft (ANN-386); Vorsicht steht nur
+ * unter `hinweise_praxis`.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -72,6 +74,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei Bedarf einsetzen, etwa bei Atemnot beim Treppensteigen oder nach Anstrengung; gut kombinierbar mit Kutschersitz und Torwartstellung.',
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-03',
@@ -170,6 +173,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Ein leichter Druck der Hände zu Beginn der Einatmung gibt eine Rückmeldung; die Fachperson kann die Hände am Anfang selbst anlegen.',
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      start: { arm: [55, 55], ellbogen: [-118, -118] },
+      ende: { arm: [55, 55], ellbogen: [-118, -118] },
+    },
   },
   {
     schluessel: 'AT-06',
@@ -267,6 +276,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Ein Zyklus ist ruhiges Atmen, einige tiefere Atemzüge und ein bis zwei Huffs. Bei Blut im Auswurf, Fieber oder zunehmender Atemnot ärztlich abklären lassen.',
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-09',
@@ -291,6 +301,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Wird der Person schwindelig, die Übung unterbrechen und normal weiteratmen lassen.',
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-10',
@@ -316,6 +327,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Eigenen Strohhalm verwenden, nicht teilen. Ein dünnerer Strohhalm gibt mehr Widerstand.',
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-11',
@@ -339,5 +351,11 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Drehung kommt nur aus dem Kopf.',
       'Die Luft wird angehalten.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      start: { haende: ['brust', 'brust'] },
+      ende: { haende: ['brust', 'brust'] },
+    },
   },
 ];

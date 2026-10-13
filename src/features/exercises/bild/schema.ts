@@ -269,3 +269,29 @@ export function bildOderNichts(roh: unknown): Uebungsbild | null {
 
 /** Für Antworten des Servers: ein ungültiges Bild bricht die Antwort nicht. */
 export const bildFeld = z.unknown().transform((roh) => bildOderNichts(roh));
+
+/** Gleich im Wert: Schlüssel in beliebiger Reihenfolge, ein `undefined` zählt wie ein fehlender. */
+function gleich(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((wert, i) => gleich(wert, b.at(i)));
+  }
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  const felder = (o: object) => new Map(Object.entries(o).filter(([, wert]) => wert !== undefined));
+  const fa = felder(a);
+  const fb = felder(b);
+  return fa.size === fb.size && [...fa].every(([k, wert]) => fb.has(k) && gleich(wert, fb.get(k)));
+}
+
+/**
+ * Ein Bild der Ausgangsstellung (ANN-480): Start und Ende sind gleich, und
+ * kein Pfeil zeigt eine Bewegung. So stehen Übungen, deren Bewegung eine
+ * Seiten- oder Frontansicht nicht zeigen kann - Drehung aus der Bildebene,
+ * Hand und Finger, Atmung, Halten ohne Bewegung: Die Figur steht richtig, mit
+ * ihren Hilfsmitteln. Kein neues Feld, Fassung 1 bleibt pfadgleich;
+ * `Uebungsbild` zeigt es als eine Figur mit der Unterschrift „Ausgangsstellung".
+ */
+export function istAusgangsstellung(bild: Uebungsbild): boolean {
+  return (bild.bewegung?.length ?? 0) === 0 && gleich(bild.start, bild.ende);
+}

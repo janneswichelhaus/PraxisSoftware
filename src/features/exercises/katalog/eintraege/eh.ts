@@ -7,10 +7,13 @@ import type { Katalogeintrag } from '../typen';
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
  * Vorsicht steht als Satz unter `hinweise_praxis`.
  *
- * Ohne Bild, weil die Figur keine Hand, kein Handgelenk und keine Finger hat
- * und den Unterarm nicht drehen kann (lieber kein Bild als ein falsches):
- * EH-02 und EH-05 bis EH-12. Bilder haben nur die Übungen, die sich im
- * Ellbogen und in der Schulter zeigen (EH-01, EH-03, EH-04).
+ * Eine Bewegung zeigen nur die Übungen, die sich im Ellbogen und in der
+ * Schulter abspielen (EH-01, EH-03, EH-04). Die Figur hat keine Hand, kein
+ * Handgelenk und keine Finger und kann den Unterarm nicht drehen: EH-02 und
+ * EH-05 bis EH-12 zeigen deshalb die Ausgangsstellung (ANN-480). Den Tisch
+ * lassen sie weg - er ist eine Arbeitsplatte (90 cm) und stünde im Sitz auf
+ * Brusthöhe; der Unterarm liegt auf dem Oberschenkel. Das Handtuch bei EH-11
+ * halten beide Hände vor dem Bauch (Vorderansicht).
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -66,6 +69,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Ellbogen wandert vom Körper weg, die Schulter dreht mit.',
       'Die Drehung kommt aus dem Handgelenk statt aus dem Unterarm.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { schulter: [2, 14], ellbogen: [88, 62], haende: [null, 'oberschenkel'] },
+      ende: { schulter: [2, 14], ellbogen: [88, 62], haende: [null, 'oberschenkel'] },
+    },
   },
   {
     schluessel: 'EH-03',
@@ -174,6 +183,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Dosierung gilt für einen Arm; für beide Seiten im Plan „je Seite“ setzen. Ein leichter Belastungsschmerz während der Übung ist häufig, er sollte bis zum nächsten Tag abklingen. Gewicht als Last eintragen.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'hantel', an: 'hand_nah' }],
+    },
   },
   {
     schluessel: 'EH-06',
@@ -199,6 +215,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Dosierung gilt für einen Arm; für beide Seiten im Plan „je Seite“ setzen. Kribbeln in den Fingern ist kein Dehngefühl.',
+    bild: {
+      v: 1,
+      basis: 'stand',
+      start: { schulter: [90, 70], ellbogen: [0, 35] },
+      ende: { schulter: [90, 70], ellbogen: [0, 35] },
+    },
   },
   {
     schluessel: 'EH-07',
@@ -222,6 +244,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Finger werden zur festen Faust geschlossen.',
       'Die Bewegung geht mit Schwung.',
     ],
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'EH-08',
@@ -245,6 +268,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Finger werden beim Öffnen nicht ganz gestreckt.',
     ],
     hinweise_praxis: 'Bei geschwollener Hand die Übung mit hochgelagertem Arm ausführen lassen.',
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'EH-09',
@@ -271,6 +295,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Dosierung gilt je Stellung. Die fünf Stellungen einmal gemeinsam einüben; nach Operation an Sehnen der Hand gilt das Schema der Handchirurgie.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { schulter: [30, 14], ellbogen: [140, 62], haende: [null, 'oberschenkel'] },
+      ende: { schulter: [30, 14], ellbogen: [140, 62], haende: [null, 'oberschenkel'] },
+    },
   },
   {
     schluessel: 'EH-10',
@@ -296,6 +326,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Ein Schaumstoffball oder eine zusammengerollte Socke genügt; die Härte des Balls als Last eintragen.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'ball', an: 'hand_nah' }],
+    },
   },
   {
     schluessel: 'EH-11',
@@ -321,6 +358,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Belastet Handgelenk und Daumensattelgelenk deutlich; erst üben, wenn diese Belastung erlaubt ist.',
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      start: { arm: [45, 45], ellbogen: [-116, -116] },
+      ende: { arm: [45, 45], ellbogen: [-116, -116] },
+      hilfsmittel: [{ art: 'handtuch', von: 'hand_nah', nach: 'hand_fern' }],
+    },
   },
   {
     schluessel: 'EH-12',
@@ -343,5 +387,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Daumen berührt die Finger seitlich statt mit der Kuppe.',
       'Die Bewegung wird hastig statt genau ausgeführt.',
     ],
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
 ];

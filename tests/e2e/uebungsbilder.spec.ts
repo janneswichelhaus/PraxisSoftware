@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { expect, test, type Page } from '@playwright/test';
 import type AxeCore from 'axe-core';
+import { istAusgangsstellung } from '../../src/features/exercises/bild/schema';
 import { KATALOG } from '../../src/features/exercises/katalog';
 
 /**
@@ -8,8 +9,9 @@ import { KATALOG } from '../../src/features/exercises/katalog';
  *
  * Die Geometrie prüft `src/features/exercises/bild/bild.test.ts`, die Inhalte
  * `katalog.test.ts`. Hier: Jeder Eintrag erscheint, jeder mit Bild zeichnet
- * Start, Ende und Bewegung, nichts scrollt bei 375 px quer, axe findet nichts,
- * und abgespielt wird nur auf Tippen.
+ * Start, Ende und Bewegung - ein Bild der Ausgangsstellung (ANN-480) je
+ * Darstellung eine Figur ohne Knopf -, nichts scrollt bei 375 px quer, axe
+ * findet nichts, und abgespielt wird nur auf Tippen.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/uebungsbilder.html';
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
@@ -34,6 +36,7 @@ async function axeVerstoesse(page: Page): Promise<string[]> {
 }
 
 const KNIE = KATALOG.filter((e) => e.schluessel.startsWith('KN-'));
+const STELLUNGEN = KATALOG.filter((e) => e.bild && istAusgangsstellung(e.bild));
 
 test.describe('Übungsbilder', () => {
   test('zeigt jeden Eintrag des Katalogs, jeden mit Bild in allen Darstellungen', async ({
@@ -45,8 +48,17 @@ test.describe('Übungsbilder', () => {
     await expect(page.locator('article[data-eintrag]')).toHaveCount(KATALOG.length);
     for (const e of KATALOG) {
       const eintrag = page.locator(`article[data-eintrag="${e.schluessel}"]`);
-      if (e.bild) {
+      if (e.bild && istAusgangsstellung(e.bild)) {
+        // Je Darstellung eine Figur der Ausgangsstellung; die Vorschau ist stumm.
+        await expect(eintrag).toHaveAttribute('data-art', 'ausgangsstellung');
+        await expect(eintrag.locator('svg[role="img"]')).toHaveCount(2);
+        await expect(
+          eintrag.getByRole('img', { name: `${e.alltagsname}: Ausgangsstellung` }),
+        ).toHaveCount(2);
+        await expect(eintrag.locator('svg[aria-hidden="true"]').first()).toBeAttached();
+      } else if (e.bild) {
         // Start, Ende, Bewegung - beschrieben; die Vorschau ist stumm.
+        await expect(eintrag).toHaveAttribute('data-art', 'bewegung');
         await expect(eintrag.locator('svg[role="img"]')).toHaveCount(3);
         await expect(eintrag.locator('svg[aria-hidden="true"]').first()).toBeAttached();
       } else {
@@ -87,6 +99,26 @@ test.describe('Übungsbilder', () => {
       'true',
     );
     await expect(eintrag.getByRole('img', { name: /Bewegung von der Ausgangs/ })).toHaveCount(2);
+  });
+
+  test('zeigt die Ausgangsstellung als eine Figur, ohne Pfeil und ohne Knopf', async ({ page }) => {
+    const e = STELLUNGEN[0];
+    expect(e, 'Der Katalog hat ein Bild der Ausgangsstellung').toBeDefined();
+    if (!e) return;
+    await page.setViewportSize({ width: 375, height: 900 });
+    await page.goto(`${PRUEFSEITE}?gruppe=${e.schluessel.slice(0, 2).toLowerCase()}`);
+    const eintrag = page.locator(`article[data-eintrag="${e.schluessel}"]`);
+    await expect(eintrag.getByText('Ausgangsstellung', { exact: true })).toHaveCount(2);
+    await expect(eintrag.getByText('1 · Start')).toHaveCount(0);
+    await expect(eintrag.getByRole('img', { name: /Endstellung|Bewegung von/ })).toHaveCount(0);
+    await expect(eintrag.getByRole('button')).toHaveCount(0);
+    await expect(eintrag.locator('svg[role="img"] path.stroke-figur-bewegung')).toHaveCount(0);
+    for (const svg of await eintrag.locator('svg[role="img"]').all()) {
+      const box = await svg.boundingBox();
+      expect(box?.width ?? 0).toBeGreaterThan(100);
+      expect(await svg.locator('path').count()).toBeGreaterThan(10);
+    }
+    expect(await ueberlaeuft(page)).toBe(false);
   });
 
   test('zeigt den Kontaktbogen dicht und ohne Querscrollen', async ({ page }) => {
