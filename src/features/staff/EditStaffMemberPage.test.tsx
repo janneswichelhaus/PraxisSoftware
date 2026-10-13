@@ -206,8 +206,10 @@ describe('EditStaffMemberPage fuer office (E10, ANN-024)', { timeout: 20_000 }, 
     expect(await screen.findByLabelText('Diensttelefon')).toBeInTheDocument();
     expect(screen.queryByLabelText('Private E-Mail')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Geburtsdatum')).not.toBeInTheDocument();
+    // Seit R2-O7 kürzer, Aussage gleich: Privates pflegt nur owner, und es
+    // bleibt beim Speichern stehen.
     expect(
-      screen.getByText(/Privatangaben .* pflegt\s*ausschließlich die Praxisinhaber:in/s),
+      screen.getByText(/Privates pflegt nur die Praxisinhaber:in; es bleibt beim Speichern/),
     ).toBeInTheDocument();
   });
 

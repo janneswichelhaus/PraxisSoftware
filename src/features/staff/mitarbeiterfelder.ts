@@ -57,10 +57,11 @@ export function staffReihenfolge(privat: boolean): StaffFeld[] {
  * Beschäftigtendaten sind Aussagen zum Datenfluss und bleiben vollständig.
  */
 export function sichtbarkeitDerAngaben(privat: boolean): string {
+  // Seit R2-O7 in zwei kurzen Sätzen statt vier Zeilen Begründung.
   return (
-    'Dienstliche Angaben sehen alle Praxisrollen – für Vertretung, Rückfragen und Einsatzplanung. ' +
+    'Dienstliches sehen alle Praxisrollen. ' +
     (privat
-      ? 'Privatangaben sind Beschäftigtendaten: nur für die Praxisinhaber:in und die betroffene Person sichtbar, alle Angaben freiwillig.'
-      : 'Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt ausschließlich die Praxisinhaber:in. Sie bleiben beim Speichern unverändert.')
+      ? 'Privates ist freiwillig und nur für die Praxisinhaber:in und die Person selbst sichtbar.'
+      : 'Privates pflegt nur die Praxisinhaber:in; es bleibt beim Speichern unverändert.')
   );
 }

@@ -181,7 +181,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
       ) : null}
 
       <Kleingedrucktes className="max-w-formular mt-8">
-        {sichtbarkeitDerAngaben(privat)} Der Beschäftigungsstatus wird hier nicht verändert.
+        {sichtbarkeitDerAngaben(privat)}
       </Kleingedrucktes>
     </>
   );
