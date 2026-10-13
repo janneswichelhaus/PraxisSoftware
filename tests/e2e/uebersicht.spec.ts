@@ -288,8 +288,11 @@ test('haelt Etage, Zugang und Kontakt hinter dem Info-Knopf', async ({ page }) =
   expect(doku.y).toBeGreaterThan(navi.y + navi.height - 1);
   expect(haken.x).toBeGreaterThan(doku.x + doku.width);
 
-  // Die offene Erstaufnahme führt in die Akte.
-  await expect(karte.getByRole('link', { name: /Erstaufnahme offen/ })).toBeVisible();
+  // Die offene Erstaufnahme führt in die Akte - eine Pille von 36 px, ein
+  // Ziel von 44 px (Design-Review R2, H1).
+  const erstaufnahme = karte.getByRole('link', { name: /Erstaufnahme offen/ });
+  await expect(erstaufnahme).toBeVisible();
+  expect((await erstaufnahme.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await ohneUeberlauf(page);
 });
 
@@ -513,6 +516,23 @@ test('oeffnet den Termin ueber „Termin →" in der Kopfzeile, nicht ueber die 
   expect(t.height).toBeGreaterThanOrEqual(44);
   const kicker = (await karte.getByRole('heading', { name: /^Erster Weg/ }).boundingBox())!;
   expect(Math.abs(t.y + t.height / 2 - (kicker.y + kicker.height / 2))).toBeLessThanOrEqual(6);
+  // Die Ziele überlappen nicht (Design-Review R2, neu1): Bis dahin reichte
+  // „Termin →" 10 px in die Zeile des Namens, und ein Tipp auf seinen
+  // unteren Rand traf das „i". Die Zeile des Namens beginnt jetzt, wo es endet.
+  expect(t.y + t.height).toBeLessThanOrEqual(i.y + 0.5);
+  expect(t.y + t.height).toBeLessThanOrEqual(n.y + 0.5);
+  expect(n.height).toBeGreaterThanOrEqual(44);
+  // Unter dem unteren Rand von Name und „i" liegt die Zeile mit der Uhrzeit;
+  // der Tipp geht trotzdem an sie.
+  const unterDemFinger = (x: number, y: number) =>
+    page.evaluate(
+      ([px, py]) => document.elementFromPoint(px!, py!)?.closest('a,button')?.textContent ?? null,
+      [x, y],
+    );
+  expect(await unterDemFinger(t.x + t.width / 2, t.y + t.height - 1)).toContain('Termin');
+  expect(await unterDemFinger(i.x + i.width / 2, i.y + 1)).toBe('i');
+  expect(await unterDemFinger(i.x + i.width / 2, i.y + i.height - 1)).toBe('i');
+  expect(await unterDemFinger(n.x + 4, n.y + n.height - 1)).toBe('Erika Beispiel');
 
   // Das „i" klappt auf und öffnet nicht den Termin.
   await info.click();

@@ -299,7 +299,9 @@ describe('Tageskarte', () => {
         name: 'Erstaufnahme offen: Verordnungsfoto · Anmeldebogen',
       });
       expect(pille).toHaveAttribute('href', `/patienten/p1?zurueck=${encodeURIComponent('/')}`);
-      expect(pille).toHaveClass('bg-warnung-soft', 'text-warnung', 'min-h-9');
+      // 36 px im Bild, 44 px zum Tippen (Design-Review R2, H1).
+      expect(pille).toHaveClass('min-h-11', '-my-1');
+      expect(pille.firstElementChild).toHaveClass('bg-warnung-soft', 'text-warnung', 'min-h-9');
       // Zeichen und Pfeil sind Bild; was fehlt, steht nur für Vorlesesoftware.
       expect(pille.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
       expect(pille.querySelector('.sr-only')).toHaveTextContent(': Verordnungsfoto · Anmeldebogen');
@@ -311,7 +313,8 @@ describe('Tageskarte', () => {
         name: 'Abschlussgespräch: Wie geht es nach der Behandlung weiter?',
       });
       expect(pille).toHaveAttribute('href', `/patienten/p1?zurueck=${encodeURIComponent('/')}`);
-      expect(pille).toHaveClass('bg-accent-soft', 'text-accent', 'min-h-9');
+      expect(pille).toHaveClass('min-h-11', '-my-1');
+      expect(pille.firstElementChild).toHaveClass('bg-accent-soft', 'text-accent', 'min-h-9');
     });
 
     it('erinnert an einem Trainingstermin nie an das Abschlussgespräch', () => {
