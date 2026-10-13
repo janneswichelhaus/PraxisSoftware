@@ -4668,3 +4668,51 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.
 
+
+### ANN-465 — Plattform-Übersicht: „Jetzt dran“ als Liste, nicht als Kacheln
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Übersicht der Plattform zeigt, was zu tun ist, als Zeilen unter „Jetzt dran“ (Befundbogen, Angebot, Check-in, Gewohnheiten, Antworten, offene Rechnung), jede Zeile ganz das Ziel; darunter der nächste Termin als Zeile wie unter „Termine“.
+
+**Begründung.** DESIGN.md: höchstens vier Kacheln; bisher bis zu zehn Kacheln mit kleinem Link am Fuß. Eine Zeile ist für Menschen bis 78 ein größeres Ziel. Reihenfolge aus DSN-001 4.1.
+
+**Anker.** `Uebersicht` in `src/features/platform/Uebersicht.tsx`.
+
+**Änderungspfad.** Wieder `TileGrid` mit `Tile` je Punkt · Aufwand `klein`.
+
+### ANN-466 — Übung auf der Plattform: fester Bildplatz, Dosierung als Kacheln
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Jede Übung hat einen festen Bildplatz: in der Liste `Medienbild vorschau` (56 px), in Übung und Durchführung `Medienbild` 4:3, solange ohne Bild mit Platzhalter. Die Dosierung steht als höchstens vier Kacheln (Durchgänge, Wiederholungen oder Dauer, Pause, womit), Tempo und Steigerungsregel als Zeilen. Die Liste öffnet die Übung im Fenster.
+
+**Begründung.** DESIGN.md Lücke 9.10; die Figuren der Übungsbibliothek kommen ohne Umbau in das `Medienbild`.
+
+**Anker.** `Uebungsinhalt` und `Dosierungskacheln` in `src/features/platform/Uebungsinhalt.tsx`.
+
+**Änderungspfad.** Dosierung wieder als Satz (`dosierungAlltag`) · Aufwand `klein`.
+
+### ANN-467 — Befundbogen auf der Plattform in Schritten zu höchstens acht Fragen
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Der Bogen steht in Schritten zu höchstens acht Fragen mit Schrittzeile und Fortschrittsbalken; Fragen mit gleicher Nummer oder gleichem Hinweis bleiben zusammen. „Weiter“ prüft den Schritt, „Absenden“ den ganzen Bogen; Zwischenspeichern geht in jedem Schritt. Fragen und gespeicherte Antworten bleiben gleich.
+
+**Begründung.** 46 Fragen waren am Telefon über 11.000 px lang; die Regel liest nur die Definition, keinen Bogen beim Namen.
+
+**Anker.** `FRAGEN_JE_SCHRITT` und `bogenschritte` in `src/features/platform/bogenschritte.ts`.
+
+**Änderungspfad.** Zahl ändern oder einen Schritt je Bogen · Aufwand `klein`.
+
+### ANN-468 — Plattform-Einstellungen: Benachrichtigungen je Zugang und Passkey/PIN auf Abruf
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Unter „Ich → Einstellungen“ steht die Wahl der Benachrichtigungen je Zugang und die Verwaltung von Passkey und PIN eingeklappt (`Disclosure`); Schriftgröße, Gerät und was die Praxis eingestellt hat stehen offen. Im Einstieg bleibt die Wahl offen.
+
+**Begründung.** Die Seite war bei zwei Zugängen 5.122 px lang; beides wird selten geändert, und die Einrichtungspflicht sorgt für Passkey und PIN. Routen bleiben unverändert.
+
+**Anker.** `Benachrichtigungen` in `src/features/platform/Benachrichtigungen.tsx`, `Einstellungen` in `src/features/platform/Einstellungen.tsx`.
+
+**Änderungspfad.** Disclosure entfernen oder eigene Unterseiten · Aufwand `klein`.
