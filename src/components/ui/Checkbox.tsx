@@ -43,7 +43,10 @@ export function Checkbox({
           className="border-line-strong text-accent focus-visible:outline-accent size-5 shrink-0 rounded-[6px] border"
           {...props}
         />
-        <span className="text-ink text-sm">{label}</span>
+        {/* min-w-0: Ein langes Wort („Dauerschmerzen") darf erst brechen,
+            wenn es neben dem Kästchen nicht mehr passt - bei 200 %
+            Vergrößerung, nicht bei 375 px (ANN-497, POR-020). */}
+        <span className="text-ink min-w-0 text-sm">{label}</span>
       </label>
       {hint ? (
         <p id={hintId} className="text-ink-muted ml-8 text-sm">

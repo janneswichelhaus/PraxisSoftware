@@ -39,24 +39,24 @@ describe('Verordnung endet (PRX-016)', () => {
     ]);
     renderWithProviders(<EndingPrescriptions timeZone="Europe/Berlin" />);
 
-    expect(await screen.findByRole('link', { name: 'Mustermann, Max' })).toHaveAttribute(
+    // Die ganze Zeile ist der Weg zu den Verordnungen (Design-Rollout B5).
+    expect(await screen.findByRole('link', { name: /^Mustermann, Max/ })).toHaveAttribute(
       'href',
       `/patienten/${PATIENT}/verordnungen?zurueck=%2Foffen`,
     );
     expect(screen.getByText('Keine Empfehlung')).toBeInTheDocument();
     expect(screen.getByText(/10 von 10 Terminen · letzter am 06\.10\.2026/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '+49 7071 1234' })).toHaveAttribute(
-      'href',
-      expect.stringMatching(/^tel:/),
-    );
+    // Der Anruf bei der Verordner:in steht als `tel:` neben der Zeile.
+    expect(
+      screen.getByRole('link', { name: 'Dr. med. Petra Probst anrufen, +49 7071 1234' }),
+    ).toHaveAttribute('href', expect.stringMatching(/^tel:/));
   });
 
-  it('sagt in einem Satz, wenn nichts endet', async () => {
+  it('zeigt keine Gruppe, wenn nichts endet', async () => {
     fetchEndingPrescriptions.mockResolvedValue([]);
-    renderWithProviders(<EndingPrescriptions timeZone="Europe/Berlin" />);
-    expect(
-      await screen.findByText('Keine Verordnung endet in den nächsten zwei Wochen.'),
-    ).toBeInTheDocument();
+    const { container } = renderWithProviders(<EndingPrescriptions timeZone="Europe/Berlin" />);
+    await vi.waitFor(() => expect(fetchEndingPrescriptions).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
   });
 });
 
@@ -72,10 +72,12 @@ describe('Versorgung abschliessen? (PRX-016)', () => {
       },
     ]);
     renderWithProviders(<CareWithoutConclusionList timeZone="Europe/Berlin" />);
-    expect(await screen.findByRole('link', { name: 'Mustermann, Max' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: /^Mustermann, Max/ })).toHaveAttribute(
       'href',
       `/patienten/${PATIENT}/stammdaten?zurueck=%2Foffen`,
     );
+    // Die Frist hängt am Abschluss (ADR-008) - der Satz bleibt als Kleingedrucktes.
+    expect(screen.getByText(/erst mit ihm läuft die Aufbewahrungsfrist/)).toBeInTheDocument();
     expect(screen.getByText('Letzter Termin am 01.02.2026')).toBeInTheDocument();
   });
 });

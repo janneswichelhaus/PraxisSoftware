@@ -94,14 +94,18 @@ export function DataList({ children }: { children: ReactNode }) {
  * `group`; bei reduzierter Bewegung springt sie ohne Übergang.
  *
  * Seiten mit eigenem `<details>` setzen es in ihren `<summary>` (Klassen dort:
- * `aufklappKopfKlassen`), statt ein eigenes Zeichen zu bauen.
+ * `aufklappKopfKlassen`), statt ein eigenes Zeichen zu bauen. Ein Knopf mit
+ * `aria-expanded` statt `<details>` übergibt seinen Zustand als `offen`.
  */
-export function Aufklappzeichen() {
+export function Aufklappzeichen({ offen }: { offen?: boolean }) {
+  // Ohne `offen` folgt die Drehung dem `<details>` darum; ein Knopf mit
+  // `aria-expanded` (die `Filterleiste`) sagt seinen Zustand selbst.
+  const drehung = offen === undefined ? 'group-open:rotate-90' : offen ? 'rotate-90' : '';
   return (
     <span
       aria-hidden="true"
       data-aufklappzeichen=""
-      className="inline-flex size-4 shrink-0 items-center justify-center transition-transform group-open:rotate-90 motion-reduce:transition-none"
+      className={`inline-flex size-4 shrink-0 items-center justify-center transition-transform ${drehung} motion-reduce:transition-none`}
     >
       <span className="size-2 -translate-x-px rotate-45 border-t-2 border-r-2 border-current" />
     </span>
@@ -129,6 +133,10 @@ export function Aufklappzeichen() {
  *   * `offenAb="lg"` öffnet ihn beim ersten Zeichnen ab 1024 px - für das,
  *     was am Rechner Platz hat und am Telefon nur auf Wunsch steht.
  *
+ * `mittig` setzt Zeichen und Titel in die Mitte der Linie - für eine Seite,
+ * die selbst mittig steht (`Vollseite mittig`, die Anmeldung; Sichtung
+ * 13.10.2026, L8). Der Inhalt folgt der Ausrichtung der Seite.
+ *
  * `onUmschalten` meldet jedes Auf- und Zuklappen - für Inhalt, der erst beim
  * Öffnen geladen werden soll, weil schon das Lesen protokolliert wird.
  */
@@ -139,6 +147,7 @@ export function Disclosure({
   offen = false,
   offenAb,
   inKarte = false,
+  mittig = false,
   onUmschalten,
   children,
 }: {
@@ -148,12 +157,14 @@ export function Disclosure({
   offen?: boolean;
   offenAb?: 'lg';
   inKarte?: boolean;
+  mittig?: boolean;
   onUmschalten?: (offen: boolean) => void;
   children: ReactNode;
 }) {
   // Einmal beim ersten Zeichnen gelesen; danach entscheidet die Person. Wer
   // das Fenster später breiter zieht, bekommt nichts ungefragt aufgeklappt.
   const [anfangsOffen] = useState(() => offen || (offenAb === 'lg' && abBreite(BREITE_LG)));
+  const kopfKlassen = mittig ? `${aufklappKopfKlassen} justify-center` : aufklappKopfKlassen;
   return (
     <details
       open={anfangsOffen}
@@ -166,7 +177,7 @@ export function Disclosure({
           : 'group border-line mt-2 border-t pt-2'
       }
     >
-      <summary className={`${aufklappKopfKlassen} ${aufklappKoepfe[kopf]}`}>
+      <summary className={`${kopfKlassen} ${aufklappKoepfe[kopf]}`}>
         <Aufklappzeichen />
         {summary}
         {/* Der Zähler ist ein eigenes Element neben dem Titel: Der Titel darf

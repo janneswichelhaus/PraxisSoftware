@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRows } from '@/components/ui/ListRow';
+import { Rueckfrage as Nachfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Arbeitszeile } from '@/features/open-points/Arbeitszeile';
 import {
   RUECKFRAGEN_KEY,
   deleteRueckfrageAnhang,
@@ -23,6 +27,9 @@ import { zeitmarke } from './zeitmarke';
  * Ein Anhang geht nie in die Akte (Punkt 66): Was er zeigt, gehört in Worten
  * in den Eintrag. Keine Zeichnung, kein Einzelbild, keine Gegenüberstellung
  * (Punkt 68).
+ *
+ * Je Anhang eine Zeile; darunter „Ansehen" und - leise, mit Rückfrage -
+ * „Löschen", geöffnet die Aufnahme selbst.
  */
 
 export interface Ansicht {
@@ -60,80 +67,75 @@ export function RueckfrageAnhaenge({
 
   return (
     <Section titel="Fotos und Videos">
-      <ul className="border-line divide-line rounded-card divide-y border">
-        {anhaenge.map((a) => (
-          <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
-            <div className="min-w-0">
-              <p className="text-ink font-medium">{beschreibung(a)}</p>
-              <p className="text-ink-muted text-sm">
-                {a.author_kind === 'self'
-                  ? name
-                  : `${a.author_label ?? 'Vertretung'} (rechtliche Vertretung)`}{' '}
-                · {kurzesDatum(a.created_at, zeitzone)} · wird am{' '}
-                {kurzesDatum(`${a.delete_on}T12:00:00Z`, zeitzone)} gelöscht
-                {a.server_verified ? '' : ' · nicht serverseitig geprüft'}
-              </p>
-              {a.object_missing ? (
-                <Statusmeldung ton="fehler" className="mt-1">
-                  Die Aufnahme fehlt in der Ablage.
-                </Statusmeldung>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={a.object_missing}
-                onClick={() =>
-                  setAnsicht(ansicht?.anhangId === a.id ? null : { anhangId: a.id, ab: 0 })
-                }
-              >
-                {ansicht?.anhangId === a.id ? 'Schließen' : 'Ansehen'}
-              </Button>
-              {vorgang.can_answer ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={loeschen.isPending}
-                  onClick={() => loeschen.mutate(a.id)}
-                >
-                  Löschen
-                </Button>
-              ) : null}
-            </div>
-            {ansicht?.anhangId === a.id ? (
-              <Aufnahme anhang={a} ab={ansicht.ab} onSchliessen={() => setAnsicht(null)} />
-            ) : null}
-          </li>
-        ))}
-      </ul>
+      <ListRows>
+        {anhaenge.map((a) => {
+          const offen = ansicht?.anhangId === a.id;
+          return (
+            <Arbeitszeile
+              key={a.id}
+              titel={beschreibung(a)}
+              meta={
+                <>
+                  {a.author_kind === 'self'
+                    ? name
+                    : `${a.author_label ?? 'Vertretung'} (rechtliche Vertretung)`}{' '}
+                  · {kurzesDatum(a.created_at, zeitzone)} · wird am{' '}
+                  {kurzesDatum(`${a.delete_on}T12:00:00Z`, zeitzone)} gelöscht
+                  {a.server_verified ? '' : ' · nicht serverseitig geprüft'}
+                </>
+              }
+              unten={
+                <>
+                  {a.object_missing ? (
+                    <Statusmeldung ton="fehler">Die Aufnahme fehlt in der Ablage.</Statusmeldung>
+                  ) : null}
+                  {offen ? <Aufnahme anhang={a} ab={ansicht.ab} /> : null}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      groesse="kompakt"
+                      disabled={a.object_missing}
+                      onClick={() => setAnsicht(offen ? null : { anhangId: a.id, ab: 0 })}
+                    >
+                      {offen ? 'Schließen' : 'Ansehen'}
+                    </Button>
+                    {vorgang.can_answer ? (
+                      <Nachfrage
+                        ausloeser="Löschen"
+                        ausloeserVariante="quiet"
+                        ausloeserGroesse="kompakt"
+                        bezeichnung={`${beschreibung(a)} löschen`}
+                        bestaetigen="Ja, löschen"
+                        bestaetigenLaeuft="Wird gelöscht …"
+                        fehler={loeschen.isError ? loeschen.error.message : undefined}
+                        onBestaetigen={() => loeschen.mutateAsync(a.id)}
+                      >
+                        <p>Die Aufnahme wird gelöscht. Das lässt sich nicht rückgängig machen.</p>
+                      </Nachfrage>
+                    ) : null}
+                  </div>
+                </>
+              }
+            />
+          );
+        })}
+      </ListRows>
       {anhaenge.some((a) => !a.malware_scanned) ? (
-        <p className="text-ink-muted mt-2 text-sm">
+        <Kleingedrucktes className="mt-3">
           Testbetrieb: Aufnahmen von außen werden noch nicht auf Schadsoftware geprüft (ADR-017
           Punkt 69).
-        </p>
+        </Kleingedrucktes>
       ) : null}
-      <p className="text-ink-muted mt-1 text-sm">
+      <Kleingedrucktes className="mt-1">
         Aufnahmen gehen nicht in die Akte. Was sie zeigen, gehört in Worten in die Dokumentation.
-      </p>
-      {loeschen.isError ? (
-        <Statusmeldung ton="fehler" className="mt-2">
-          {loeschen.error.message}
-        </Statusmeldung>
-      ) : null}
+      </Kleingedrucktes>
     </Section>
   );
 }
 
-function Aufnahme({
-  anhang,
-  ab,
-  onSchliessen,
-}: {
-  anhang: Rueckfrageanhang;
-  ab: number;
-  onSchliessen: () => void;
-}) {
+/** Die geöffnete Aufnahme; geschlossen wird mit „Schließen" darunter. */
+function Aufnahme({ anhang, ab }: { anhang: Rueckfrageanhang; ab: number }) {
   const geladen = useQuery({
     queryKey: [...RUECKFRAGEN_KEY, 'attachment', anhang.id],
     queryFn: () => ladeRueckfrageAnhang(anhang.id),
@@ -163,7 +165,7 @@ function Aufnahme({
   }, [adresse, ab]);
 
   return (
-    <div className="mt-2 w-full">
+    <div className="w-full">
       {geladen.isPending ? (
         <Statusmeldung>Die Aufnahme wird geladen …</Statusmeldung>
       ) : geladen.isError ? (
@@ -172,7 +174,7 @@ function Aufnahme({
         <img
           src={adresse}
           alt="Foto der Person"
-          className="bg-ink rounded-image block max-h-[70vh] w-full max-w-2xl object-contain"
+          className="bg-ink rounded-image block max-h-[70vh] w-full object-contain"
         />
       ) : adresse ? (
         <video
@@ -184,14 +186,9 @@ function Aufnahme({
           controlsList="nodownload noremoteplayback"
           disablePictureInPicture
           aria-label="Video der Person"
-          className="bg-ink rounded-image block max-h-[70vh] w-full max-w-2xl object-contain"
+          className="bg-ink rounded-image block max-h-[70vh] w-full object-contain"
         />
       ) : null}
-      <div className="mt-2">
-        <Button type="button" variant="secondary" onClick={onSchliessen}>
-          Schließen
-        </Button>
-      </div>
     </div>
   );
 }

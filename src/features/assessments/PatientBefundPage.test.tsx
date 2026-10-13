@@ -86,9 +86,9 @@ describe('Befund der Akte', () => {
 
   it('sagt einer Leserolle, wer erhebt (BEF-064)', async () => {
     seite([], ['office']);
-    expect(
-      await screen.findByText('Noch nicht erhoben. Erhoben wird von den behandelnden Rollen.'),
-    ).toBeInTheDocument();
+    // Leerzustand in der Karte: der Zustand als Titel, wer erhebt darunter.
+    expect(await screen.findByText('Noch nicht erhoben.')).toBeInTheDocument();
+    expect(screen.getByText('Erhoben wird von den behandelnden Rollen.')).toBeInTheDocument();
   });
 
   it('bietet das Erheben an, solange nichts erhoben ist', async () => {
@@ -98,6 +98,8 @@ describe('Befund der Akte', () => {
       'href',
       `/patienten/${PATIENT_ID}/befund/erheben?instrument=anamnese_v8`,
     );
+    // Zweitrangig: Der Hauptknopf der Akte ist „Termin anlegen“ im Kopf (A4).
+    expect(screen.getByRole('link', { name: 'Bogen erheben' })).not.toHaveClass('bg-accent');
   });
 
   it('führt zu einem offenen Entwurf statt zu einem zweiten Bogen', async () => {

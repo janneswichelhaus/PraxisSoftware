@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BEGRIFFE } from '@/lib/begriffe';
@@ -13,8 +13,10 @@ import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Zweispalter } from '@/components/ui/Zweispalter';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
+import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
@@ -27,6 +29,7 @@ import {
   staffName,
   todayInTimeZone,
   type CalendarEntry,
+  kalenderZumTermin,
   terminPfad,
 } from '@/features/appointments/api';
 import {
@@ -37,6 +40,7 @@ import {
   isTherapyStaff,
   canReadTreatmentNote,
   canWriteTreatmentNote,
+  canRecordAtAppointment,
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
@@ -45,6 +49,9 @@ import { fetchAbrechnungslage, positionText } from '@/features/appointments/abre
 import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
 import { Tageskarte } from './Tagesliste';
+import { AnrufKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
+import { dokuZiel } from './besuchswege';
+import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
 import { Zeitstrahl } from './Zeitstrahl';
 import { Wochenleiste } from './Wochenleiste';
@@ -65,6 +72,8 @@ import {
   fortschrittText,
   liegeHeute,
   naechsterWeg,
+  nichtAbgeschlossen,
+  stehtAus,
   tagesfortschritt,
   terminName,
   VERALTET_TEXT,
@@ -142,6 +151,29 @@ function langesDatum(tag: string): string {
   return formatLocalDate(`${tag}T12:00:00Z`, 'UTC');
 }
 
+const KURZES_DATUM = new Intl.DateTimeFormat('de-DE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
+});
+
+/** „Dienstag, 13. Okt." - das Datum im Kopf am Telefon (Design-Review R2, U3). */
+function kurzesDatum(tag: string): string {
+  return KURZES_DATUM.format(new Date(`${tag}T12:00:00Z`));
+}
+
+const MONAT_UND_JAHR = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** „Oktober 2026" - über der Wochenleiste, die Wochentag und Tag schon nennt. */
+function monatUndJahr(tag: string): string {
+  return MONAT_UND_JAHR.format(new Date(`${tag}T12:00:00Z`));
+}
+
 /** Richtungszeichen hinter einem Link, nicht Teil seines Namens (WRT-08). */
 function Pfeil() {
   return <span aria-hidden="true">→</span>;
@@ -196,9 +228,11 @@ function Teamplan({
 
   return (
     <section>
+      {/* Derselbe Aufklapper wie „Nachzuholen" und „Tagesroute" (Design-
+          Review R2, U5): Karte, Titel in 600 mit Zähler. */}
       <Disclosure
         inKarte
-        kopf="label"
+        kopf="betont"
         offen={offen}
         {...(offenAbLg ? { offenAb: 'lg' as const } : {})}
         {...(data ? { anzahl: alleHeute.length } : {})}
@@ -364,6 +398,8 @@ function MeinTag({
   zeitzone,
   jetzt,
   heute,
+  praxis,
+  darfHeilmittel,
 }: {
   abfrage: UseQueryResult<DayPlanEntry[]>;
   /** Die Tagesliste nach Uhrzeit; leer, solange nichts geladen ist. */
@@ -383,14 +419,42 @@ function MeinTag({
   jetzt: number;
   /** Der heutige Tag der Praxis - `datum` kann davon abweichen (ANN-234). */
   heute: string;
+  /** Der Name der Praxis für die Nachricht „Später da?“ (ANN-476). */
+  praxis: string;
+  /** Darf die Person an einem Termin dieser Behandelnden Heilmittel bestätigen (ANN-140)? */
+  darfHeilmittel: (staffMemberId: string) => boolean;
 }) {
   const { data: termine, isPending, isError, isFetching, dataUpdatedAt, refetch } = abfrage;
+
+  // Eine spätere Zeile klappt in der Übersicht auf, statt in den Kalender zu
+  // springen (Auftrag C1). Eine zur Zeit; der Fokus folgt dem Knopf, der an
+  // die Stelle des getippten tritt.
+  const [offeneZeile, setOffeneZeile] = useState<string | null>(null);
+  const fokusNach = useRef<string | null>(null);
+  useEffect(() => {
+    const ziel = fokusNach.current;
+    if (!ziel) return;
+    fokusNach.current = null;
+    document.querySelector<HTMLElement>(ziel)?.focus();
+  }, [offeneZeile]);
+  function umschalten(id: string) {
+    const zu = offeneZeile === id;
+    fokusNach.current = `[data-termin="${id}"] ${zu ? '[data-zeile]' : '[data-zuklappen]'}`;
+    setOffeneZeile(zu ? null : id);
+  }
   const istHeute = datum === heute;
   const tagWort = tagesWort(datum, heute);
 
   // Was der Haken bewirkt hat - oder warum nicht (Design-Handoff 2026-10-01,
-  // Abschnitt 5a Punkt 4). Steht oben, nimmt den Fokus.
-  const [meldung, setMeldung] = useState<{ ton: 'ok' | 'fehler'; text: string } | null>(null);
+  // Abschnitt 5a Punkt 4). Steht oben, nimmt den Fokus. Nach dem Haken trägt
+  // sie „Rückgängig" (Praxis-Review R2, P1): Ein Fehltipp ließ sich bis dahin
+  // nur über Kalender → Termin → „Termin wieder öffnen" zurücknehmen.
+  const [meldung, setMeldung] = useState<{
+    ton: 'ok' | 'fehler';
+    text: string;
+    /** Der eben abgehakte Termin - für „Rückgängig". */
+    abgehakt?: { id: string; name: string };
+  } | null>(null);
 
   /**
    * Der Haken an einem bestätigten Behandlungstermin (Abschnitt 6a): schließt
@@ -400,6 +464,7 @@ function MeinTag({
     termin: DayPlanEntry,
     groesse: 'normal' | 'gross' = 'normal',
     beschriftung?: string,
+    variante: 'primary' | 'secondary' = 'secondary',
   ): ReactNode {
     if (!darfTermine || termin.kind !== 'therapy' || termin.status !== 'confirmed') return null;
     // Ein künftiger Tag wird nicht abgehakt (ANN-234): Der Besuch war noch nicht.
@@ -410,7 +475,7 @@ function MeinTag({
         appointmentId={termin.id}
         name={name}
         {...(beschriftung ? { beschriftung } : {})}
-        variant={groesse === 'gross' ? 'primary' : 'secondary'}
+        variant={variante}
         groesse={groesse}
         onAbgeschlossen={() =>
           setMeldung({
@@ -418,6 +483,7 @@ function MeinTag({
             text: darfDokumentieren
               ? `${name} abgeschlossen. Doku offen.`
               : `${name} abgeschlossen.`,
+            abgehakt: { id: termin.id, name },
           })
         }
         onFehler={(text) => setMeldung({ ton: 'fehler', text })}
@@ -426,41 +492,132 @@ function MeinTag({
   }
 
   /**
-   * „Doku" an jeder Zeile des Zeitstrahls (Leitfaden schlank und klar, L3;
-   * Jannes 2026-10-06): an jedem Behandlungstermin des Tages, auch nach dem
-   * Abschließen und nach dem Festschreiben - erledigt heißt nicht
-   * unerreichbar. Das Ziel ist dasselbe wie an der Karte, der Reiter „Doku"
-   * der Akte mit diesem Termin oben (AKTE-008, ANN-225); er zeigt je nach
-   * Stand Schreibseite, Entwurf oder den festgeschriebenen Eintrag mit dem Weg
-   * zum Nachtrag (ADR-016). Abgesagt und nicht angetroffen bekommen keinen
-   * Knopf: Zu ihnen entsteht keine Dokumentation (ADR-018).
+   * Wohin „Doku" an Karte und Zeile führt - nach der Phase des Besuchs
+   * (`dokuZiel`, Auftrag C1): vor dem Besuch in die Akte, ab dem Beginn und bei
+   * offener Doku auf die Schreibseite, festgeschrieben zum Eintrag. Abgesagt
+   * und nicht angetroffen bekommen keinen Knopf: Zu ihnen entsteht keine
+   * Dokumentation (ADR-018).
    */
-  function zeilenAktionen(termin: DayPlanEntry): ReactNode {
+  function dokuFuer(termin: DayPlanEntry): string | null {
     const mitDoku =
       termin.kind === 'therapy' &&
       termin.patient_id !== null &&
       (darfDokuLesen || darfDokumentieren) &&
       termin.status !== 'cancelled' &&
       termin.status !== 'no_show';
-    const knopf = haken(termin);
-    if (!mitDoku && !knopf) return null;
+    return mitDoku ? dokuZiel(termin, jetzt, darfDokumentieren) : null;
+  }
+
+  /**
+   * Die Knöpfe einer Zeile (Leitfaden L3, Jannes 2026-10-06): „Doku" an jedem
+   * Behandlungstermin, auch nach dem Abschließen und Festschreiben - erledigt
+   * heißt nicht unerreichbar. Daneben der Haken, solange ein vorbeigegangener
+   * Besuch nicht abgehakt ist; sonst der Anruf (Auftrag C1). Einen späteren
+   * Besuch hakt niemand vorab ab - an seiner Zeile steht deshalb das Telefon.
+   */
+  function zeilenAktionen(termin: DayPlanEntry): ReactNode {
+    const doku = dokuFuer(termin);
+    const zweites = nichtAbgeschlossen(termin, jetzt) ? (
+      haken(termin)
+    ) : termin.kind === 'internal' ? null : (
+      <AnrufKnopf termin={termin} />
+    );
+    if (!doku && !zweites) return null;
     return (
       <>
-        {mitDoku ? (
-          <ButtonLink
-            to={mitRueckweg(`/patienten/${termin.patient_id}/doku?termin=${termin.id}`, '/')}
-            variant="secondary"
-            groesse="kompakt"
-            className="shrink-0"
-          >
+        {doku ? (
+          <ButtonLink to={doku} variant="secondary" groesse="kompakt" className="shrink-0">
             Doku{' '}
             <span className="sr-only">
               zum Termin um {formatLocalTime(termin.starts_at, zeitzone)} Uhr
             </span>
           </ButtonLink>
         ) : null}
-        {knopf}
+        {zweites}
       </>
+    );
+  }
+
+  /**
+   * „Doku" als Knopf - der zugängliche Name beginnt mit dem sichtbaren Wort,
+   * damit auch die Sprachsteuerung „Doku" trifft (UEB-10, WCAG 2.5.3).
+   */
+  function dokuKnopf(
+    termin: DayPlanEntry,
+    variante: 'primary' | 'secondary',
+    klassen: string,
+  ): ReactNode {
+    const ziel = dokuFuer(termin);
+    return ziel ? (
+      <ButtonLink
+        to={ziel}
+        variant={variante}
+        groesse={variante === 'secondary' ? 'kompakt' : 'normal'}
+        className={klassen}
+      >
+        Doku <span className="sr-only">zu diesem Termin</span>
+      </ButtonLink>
+    ) : null;
+  }
+
+  /**
+   * Eine Reihe: „Doku" so breit wie möglich, daneben Symbolknöpfe - 12 px
+   * auseinander, der Haken zuletzt (Praxis-Review R2, P1).
+   */
+  function knopfreihe(doku: ReactNode, symbole: ReactNode[]): ReactNode {
+    const da = symbole.filter(Boolean);
+    if (!doku && da.length === 0) return null;
+    return (
+      <div className="flex items-center gap-3">
+        {doku}
+        {da}
+      </div>
+    );
+  }
+
+  /**
+   * Eine aufgeklappte Zeile (Auftrag C1, Analyse „Alltag unterwegs“ Rang 8):
+   * dieselbe Karte wie die des nächsten Wegs, mit Navigation, Anruf und Doku,
+   * ohne Hauptfarbe - der eine Hauptknopf bleibt an der Karte des nächsten
+   * Wegs. Die Fläche der Karte öffnet weiter den Termin im Kalender.
+   */
+  function zeilenKarte(termin: DayPlanEntry): ReactNode {
+    const zone = termin.organization_time_zone;
+    const kommt = stehtAus(termin, jetzt);
+    const liegt = nichtAbgeschlossen(termin, jetzt);
+    const anfahrt = fahrzeiten.anfahrten.get(termin.id);
+    const kicker = kommt
+      ? `Später${anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''}`
+      : liegt
+        ? `Seit ${formatLocalTime(termin.ends_at, zone)} offen`
+        : 'Vorbei';
+    const reihe = knopfreihe(dokuKnopf(termin, 'secondary', 'min-w-0 flex-1'), [
+      <AnrufKnopf key="anruf" termin={termin} />,
+      liegt ? (
+        <Fragment key="haken">{haken(termin, 'normal', 'Behandlung abschließen')}</Fragment>
+      ) : null,
+    ]);
+    return (
+      <Tageskarte
+        termin={termin}
+        kicker={kicker}
+        erstaufnahme={
+          erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
+        }
+        hauptaktion={
+          kommt && navigationsZiel(termin) !== null ? (
+            <>
+              <NavigationZumTermin termin={termin} breit />
+              {reihe}
+            </>
+          ) : (
+            reihe
+          )
+        }
+        aktionen={kommt && istHeute ? <SpaeterDa termin={termin} praxis={praxis} /> : null}
+        hinweis={kommt && fahrzeiten.veraltet.has(termin.id) ? VERALTET_TEXT : null}
+        onZuklappen={() => umschalten(termin.id)}
+      />
     );
   }
 
@@ -514,6 +671,7 @@ function MeinTag({
   const besuche = besucheDesTages(sortiert);
   const hausbesuche = hausbesucheDesTages(sortiert);
   const stehtBesuchAus = fokus?.art === 'besuch';
+  const ohneBesuch = besuche.length === 0 && !stehtBesuchAus;
   // Der Wegbalken rechnet von jetzt (ANN-196) - an einem anderen Tag gibt es
   // kein Jetzt, nur die Anfahrten am Zeitstrahl (ANN-234).
   const weg = istHeute ? naechsterWeg(sortiert, fokus, fahrzeiten.anfahrten, jetzt) : null;
@@ -533,73 +691,91 @@ function MeinTag({
 
     // ANN-117 Fassung 2: Ein vorbeigegangener, nicht abgehakter Besuch hält
     // die Karte nur, wenn kein Weg mehr aussteht - dann zum Abschließen.
-    const kicker =
-      fokus.art === 'dokumentation'
-        ? termin.status === 'confirmed'
-          ? `Seit ${ende} offen`
-          : 'Doku offen'
-        : phase === 'laeuft'
-          ? `Jetzt · bis ${ende}`
-          : phase === 'ueberfaellig'
-            ? `Seit ${ende} offen`
-            : `${wege.erster?.id === termin.id && wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg'}${
-                anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''
-              }`;
+    // Die Fahrzeit im Kicker weicht am Telefon, wenn die Kachel „Abfahrt"
+    // darüber denselben Weg nennt (`weg`, ANN-484): So passt „Termin →" in
+    // dieselbe Zeile (Praxis-Review R2, P1), und der Hauptknopf bleibt über
+    // der Tableiste.
+    const wegTitel =
+      wege.erster?.id === termin.id && wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg';
+    const kicker: ReactNode =
+      fokus.art === 'dokumentation' ? (
+        termin.status === 'confirmed' ? (
+          `Seit ${ende} offen`
+        ) : (
+          'Doku offen'
+        )
+      ) : phase === 'laeuft' ? (
+        `Jetzt · bis ${ende}`
+      ) : phase === 'ueberfaellig' ? (
+        `Seit ${ende} offen`
+      ) : anfahrt ? (
+        <>
+          {wegTitel}{' '}
+          <span className={weg ? 'max-sm:hidden' : ''}>{`· ≈ ${anfahrt.minuten} min`}</span>
+        </>
+      ) : (
+        wegTitel
+      );
 
-    // Ein Ziel für die Doku (Jannes 2026-10-03): der Reiter „Doku" der Akte
-    // mit diesem Termin oben (AKTE-008, ANN-225). Er ersetzt „Bisherige Doku" und den
-    // direkten Weg auf die Schreibseite - geschrieben wird von dort aus.
-    const doku = termin.patient_id
-      ? mitRueckweg(`/patienten/${termin.patient_id}/doku?termin=${termin.id}`, '/')
-      : null;
-    const zeigtDoku = behandlung && doku !== null && (darfDokuLesen || darfDokumentieren);
-    // Der zugängliche Name beginnt mit dem sichtbaren Wort, damit auch die
-    // Sprachsteuerung „Doku" trifft (UEB-10, WCAG 2.5.3).
-    const dokuKnopf = (variante: 'primary' | 'secondary', klassen: string) =>
-      zeigtDoku && doku ? (
-        <ButtonLink
-          to={doku}
-          variant={variante}
-          groesse={variante === 'secondary' ? 'kompakt' : 'normal'}
-          className={klassen}
-        >
-          Doku <span className="sr-only">zu diesem Termin</span>
-        </ButtonLink>
-      ) : null;
-
-    // Ein Hauptknopf je Ansicht (UX-EPIC-002): die Navigation, solange der
-    // Besuch wartet; darunter „Doku" und der Haken in einer Reihe. Ab dem
-    // Beginn - und davor, wenn es kein Ziel für die Navigation gibt (Praxis,
-    // Video) - ist der Haken der Hauptknopf (Design-Handoff 2026-10-01,
-    // Abschnitt 6a): Der Haken schließt ab, „Doku" führt zur Doku.
+    // Ein Hauptknopf je Ansicht (UX-EPIC-002, DESIGN.md Regel 4): die
+    // Navigation, solange der Besuch wartet; darunter „Doku", Anruf und der
+    // Haken in einer Reihe. Ab dem Beginn - und davor, wenn es kein Ziel für
+    // die Navigation gibt (Praxis, Video) - ist „Doku" der eine gefüllte
+    // Knopf (Design-Review R2, U2; ANN-481): Er führt ab dem Beginn direkt auf
+    // die Schreibseite (Auftrag C1). Der Haken steht 48 px groß mit Rahmen am
+    // Ende der Reihe; gefüllt nur, wo es kein „Doku" gibt. Der Anruf steht an
+    // jeder Karte (Auftrag C1).
+    const zeigtDoku = behandlung;
     let hauptaktion: ReactNode = null;
     if (!arbeitet && hatNavigation) {
-      const kleinerHaken = haken(termin, 'normal', 'Behandlung abschließen');
-      const reihe =
-        zeigtDoku && kleinerHaken ? (
-          <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
-            {dokuKnopf('secondary', '')}
-            {kleinerHaken}
-          </div>
-        ) : (
-          (dokuKnopf('secondary', 'w-full') ?? kleinerHaken)
-        );
       hauptaktion = (
         <>
           <NavigationZumTermin termin={termin} hauptknopf breit />
-          {reihe}
+          {knopfreihe(zeigtDoku ? dokuKnopf(termin, 'secondary', 'min-w-0 flex-1') : null, [
+            <AnrufKnopf key="anruf" termin={termin} />,
+            <Fragment key="haken">{haken(termin, 'normal', 'Behandlung abschließen')}</Fragment>,
+          ])}
         </>
       );
     } else {
-      const grosserHaken = haken(termin, 'gross');
+      const doku = zeigtDoku ? dokuKnopf(termin, 'primary', 'min-w-0 flex-1') : null;
+      const grosserHaken = haken(termin, 'gross', undefined, doku ? 'secondary' : 'primary');
       hauptaktion =
-        grosserHaken || zeigtDoku ? (
-          <div className="flex w-full items-center gap-2">
+        grosserHaken || doku ? (
+          <div className="flex w-full items-center gap-3">
+            {doku}
+            <AnrufKnopf termin={termin} groesse="gross" />
             {grosserHaken}
-            {dokuKnopf('primary', 'flex-1')}
           </div>
         ) : null;
     }
+
+    // Unter den Knöpfen, was je nach Phase dazukommt: „Später da?“ auf dem
+    // Weg, „Niemand öffnet?“ an der Tür ab dem Beginn (Auftrag C1, Analyse
+    // Rang 9) - derselbe Ablauf wie im Terminfenster, mit der Uhr.
+    const anDerTuer =
+      fokus.art === 'besuch' &&
+      phase !== 'wartet' &&
+      darfTermine &&
+      termin.kind === 'therapy' &&
+      termin.status === 'confirmed' &&
+      termin.appointment_type === 'home_visit';
+    // Eine Verspätung gibt es nur heute; an einem künftigen Tag wartet alles.
+    const nebenaktionen =
+      fokus.art !== 'besuch' || !istHeute ? null : phase === 'wartet' ? (
+        <SpaeterDa termin={termin} praxis={praxis} />
+      ) : anDerTuer ? (
+        <HomeVisitFlow
+          appointment={termin}
+          mitUhr
+          inKarte
+          wege={{
+            ohneBehandlung: mitRueckweg(`/termine/${termin.id}/abschluss?ohne-behandlung=1`, '/'),
+            absagen: mitRueckweg(kalenderZumTermin(termin.id), '/'),
+          }}
+          melden={(text) => setMeldung({ ton: 'ok', text })}
+        />
+      ) : null;
 
     return (
       <Tageskarte
@@ -612,6 +788,7 @@ function MeinTag({
           erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
         }
         hauptaktion={hauptaktion}
+        aktionen={nebenaktionen}
         hinweis={
           fokus.art === 'besuch' && fahrzeiten.veraltet.has(termin.id) ? VERALTET_TEXT : null
         }
@@ -619,12 +796,62 @@ function MeinTag({
     );
   }
 
+  const strahl =
+    sortiert.length > 0 ? (
+      <Zeitstrahl
+        {...(istHeute && !stehtBesuchAus
+          ? { titel: `Heute · ${kopfDatum(heute)}`, titelSichtbar: true }
+          : {})}
+        erstaufnahmeOffen={(termin) =>
+          termin.patient_id !== null &&
+          (erstaufnahmen ?? []).some((eintrag) => eintrag.patient_id === termin.patient_id)
+        }
+        plan={sortiert}
+        // Steht kein Besuch mehr aus, sagt „noch offen“ darüber, was fehlt;
+        // der Strahl zeigt dann nur noch den Tag.
+        fokusId={stehtBesuchAus ? (fokus?.termin.id ?? null) : null}
+        fruehereZusammenfassen={istHeute && stehtBesuchAus}
+        jetzt={jetzt}
+        jetztMarke={istHeute}
+        zeitzone={zeitzone}
+        anfahrten={fahrzeiten.anfahrten}
+        veraltet={fahrzeiten.veraltet}
+        karte={karte()}
+        aktionen={zeilenAktionen}
+        aufklappen={{
+          offenId: offeneZeile,
+          aufklappbar: (termin) =>
+            termin.kind === 'therapy' ? termin.patient_id !== null : termin.kind === 'training',
+          umschalten,
+          karte: zeilenKarte,
+        }}
+      />
+    ) : null;
+
+  // „Rückgängig" nur, solange der Termin nach der Liste noch abgeschlossen (oder
+  // noch nicht nachgeladen) ist: Nach dem Festschreiben gibt es den Rückweg
+  // nicht mehr (ADR-018 Punkt 2).
+  const abgehakt = meldung?.ton === 'ok' ? meldung.abgehakt : undefined;
+  const abgehaktJetzt = abgehakt ? sortiert.find((t) => t.id === abgehakt.id) : undefined;
+  const rueckgaengig =
+    abgehakt && (abgehaktJetzt?.status === 'completed' || abgehaktJetzt?.status === 'confirmed') ? (
+      <HakenRueckgaengig
+        appointmentId={abgehakt.id}
+        name={abgehakt.name}
+        onWiederOffen={() => setMeldung({ ton: 'ok', text: `${abgehakt.name} wieder offen.` })}
+        onFehler={(text) => setMeldung({ ton: 'fehler', text })}
+      />
+    ) : null;
+
   return (
     <>
       {meldung?.ton === 'ok' ? (
-        <Rueckmeldung key={meldung.text} className="mb-4">
-          {meldung.text}
-        </Rueckmeldung>
+        <div className="mb-4 flex items-center gap-3">
+          <Rueckmeldung key={meldung.text} className="min-w-0 flex-1">
+            {meldung.text}
+          </Rueckmeldung>
+          {rueckgaengig}
+        </div>
       ) : meldung ? (
         <Statusmeldung ton="fehler" className="mb-4">
           {meldung.text}
@@ -656,11 +883,15 @@ function MeinTag({
         </div>
       ) : null}
 
-      {besuche.length === 0 && !stehtBesuchAus ? (
+      {ohneBesuch ? (
         // Der Titel sagt, was der Fall ist (UEB-11): An einem Tag ohne Besuch
         // ist nichts „erledigt". Eine Fehlzeit steht darunter im Zeitstrahl.
-        // Ohne Karte drumherum: ein Satz ist kein Kasten (Leitfaden L2).
-        <EmptyState title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`} />
+        // In der Karte, wie jeder Leerzustand zwischen Karten (DESIGN.md
+        // Regel 8; Design-Review R2, U4).
+        <EmptyState
+          inKarte
+          title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`}
+        />
       ) : stehtBesuchAus ? (
         <div className="flex flex-col gap-2">
           {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
@@ -683,12 +914,32 @@ function MeinTag({
       ) : (
         <Tagesabschluss
           fortschritt={fortschritt}
-
           tagWort={TagesWort(datum, heute)}
           istHeute={istHeute}
           datum={datum}
         />
       )}
+
+      {/* Ohne eigenen Besuch steht der heutige Strahl (Fehlzeiten) gleich unter
+          dem Leerzustand - heute vor morgen (Design-Review R2, U4; ANN-482). */}
+      {ohneBesuch ? strahl : null}
+
+      {/* Am Tagesende erst, was heute noch offen ist - Doku und Heilmittel -,
+          dann was liegen geblieben ist, dann morgen (Auftrag C1, Analyse
+          Rang 13). */}
+      {!stehtBesuchAus ? (
+        <NochOffen
+          plan={sortiert}
+          tagWort={TagesWort(datum, heute)}
+          darfDokumentieren={darfDokumentieren}
+          darfHeilmittel={darfHeilmittel}
+          jetzt={jetzt}
+          zeitzone={zeitzone}
+        />
+      ) : null}
+      {istHeute && !stehtBesuchAus && darfDokumentieren ? (
+        <Nachzuholen heute={heute} staffMemberId={staffMemberId} zeitzone={zeitzone} />
+      ) : null}
 
       {/* Steht heute kein Weg mehr aus, ist morgen das Nächste (Jannes,
           2026-10-11). */}
@@ -702,25 +953,12 @@ function MeinTag({
         />
       ) : null}
 
-      {sortiert.length > 0 ? (
-        <Zeitstrahl
-          {...(istHeute && !stehtBesuchAus
-            ? { titel: `Heute · ${kopfDatum(heute)}`, titelSichtbar: true }
-            : {})}
-          erstaufnahmeOffen={(termin) =>
-            termin.patient_id !== null &&
-            (erstaufnahmen ?? []).some((eintrag) => eintrag.patient_id === termin.patient_id)
-          }
-          plan={sortiert}
-          fokusId={fokus?.termin.id ?? null}
-          jetzt={jetzt}
-          jetztMarke={istHeute}
-          zeitzone={zeitzone}
-          anfahrten={fahrzeiten.anfahrten}
-          veraltet={fahrzeiten.veraltet}
-          karte={karte()}
-          aktionen={zeilenAktionen}
-        />
+      {ohneBesuch ? null : strahl}
+
+      {/* Liegengebliebenes der letzten Tage, unter dem eigenen Tag: Der
+          nächste Weg bleibt auf dem ersten Bildschirm (Auftrag C1). */}
+      {istHeute && stehtBesuchAus && darfDokumentieren ? (
+        <Nachzuholen heute={heute} staffMemberId={staffMemberId} zeitzone={zeitzone} />
       ) : null}
     </>
   );
@@ -863,96 +1101,119 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   ) : null;
 
   return (
-    // Zwei Spalten ab 900 px **Inhaltsbreite** (`--container-zweispaltig`):
-    // Gemessen wird der Inhalt, nicht das Fenster - die Seitenleiste ist je
-    // nach Breite 72 oder 248 px. Darunter rückt die Kontextspalte unter den
-    // eigenen Tag. Wer keinen eigenen Tag hat (das Büro), bleibt einspaltig:
-    // Für ihn ist der Plan des Teams die Hauptsache, keine Randspalte.
-    <div className="@container">
-      <div
-        className={
-          (zweispaltig
-            ? '@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] @zweispaltig:gap-x-8 grid items-start gap-6'
-            : 'lg:max-w-3xl') + (eigeneTagesliste && tagesliste.data ? ' print:hidden' : '')
+    <div>
+      {/* Zwei Spalten ab 900 px **Inhaltsbreite** (`Zweispalter`): Darunter
+          rückt die Kontextspalte unter den eigenen Tag. Wer keinen eigenen
+          Tag hat (das Büro), bleibt einspaltig: Für ihn ist der Plan des
+          Teams die Hauptsache, keine Randspalte. */}
+      <Zweispalter
+        kontext={
+          zweispaltig ? (
+            <>
+              {teamplan}
+              {tagesroute}
+            </>
+          ) : null
         }
+        className={eigeneTagesliste && tagesliste.data ? 'print:hidden' : ''}
       >
-        <div className="min-w-0">
-          <PageHeader
-            title={`${greeting()}, ${firstName(user.profile.display_name)}`}
-            description={langesDatum(tag)}
-            actions={
-              // Tagesfortschritt im Kopf: ein Punkt je Behandlungsbesuch.
-              // Fehlzeiten und Training zählen nicht (ANN-117).
-              fortschritt.gesamt > 0 ? (
-                <ProgressDots punkte={fortschritt.punkte}>
-                  {fortschrittText(fortschritt)}
-                </ProgressDots>
-              ) : undefined
+        {/* Am Telefon ein kompakter Kopf (Auftrag C1): Gruß in h4, darunter
+            das kurze Datum, rechts Punkte und Kurzform. So liegt der
+            Hauptknopf des nächsten Besuchs auch bei 375 × 667 über der
+            Tableiste. Ab 640 px das lange Datum und der ganze Satz. */}
+        <PageHeader
+          title={
+            <span className="max-sm:text-h4">{`${greeting()}, ${firstName(user.profile.display_name)}`}</span>
+          }
+          // Das Datum steht auch am Telefon (Design-Review R2, U3). Mit der
+          // Wochenleiste nur Monat und Jahr: Wochentag und Tag stehen dort
+          // schon („DI 13"), doppelt sah es aus wie ein Fehler (Jannes,
+          // 13.10.2026). Ohne Leiste, etwa beim Trainer, das kurze Datum.
+          description={
+            <>
+              <span className="sm:hidden">
+                {eigeneTagesliste || darfTermine ? monatUndJahr(tag) : kurzesDatum(tag)}
+              </span>
+              <span className="max-sm:hidden">{langesDatum(tag)}</span>
+            </>
+          }
+          actions={
+            // Tagesfortschritt im Kopf: ein Punkt je Behandlungsbesuch.
+            // Fehlzeiten und Training zählen nicht (ANN-117). Status = Zeichen
+            // + Wort (Design-Review R2, U1): am Telefon „2 von 6" neben den
+            // Punkten, der ganze Satz für Vorlesesoftware und ab 640 px.
+            fortschritt.gesamt > 0 ? (
+              <ProgressDots punkte={fortschritt.punkte}>
+                <span aria-hidden="true" className="tabular-nums sm:hidden">
+                  {`${fortschritt.erledigt} von ${fortschritt.gesamt}`}
+                </span>
+                <span className="max-sm:sr-only">{fortschrittText(fortschritt)}</span>
+              </ProgressDots>
+            ) : undefined
+          }
+        />
+
+        {eigeneTagesliste ? (
+          <Wochenleiste tag={tag} heute={heute} anzahl={anzahlAm} />
+        ) : darfTermine ? (
+          <Wochenleiste tag={tag} heute={heute} anzahl={() => undefined} />
+        ) : null}
+
+        {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}
+
+        {eigeneTagesliste && user.staffMemberId ? (
+          <MeinTag
+            abfrage={tagesliste}
+            sortiert={sortiert}
+            fokus={fokus}
+            fortschritt={fortschritt}
+            datum={tag}
+            morgen={morgen}
+            staffMemberId={user.staffMemberId}
+            darfDokumentieren={darfDokumentieren}
+            darfDokuLesen={canReadTreatmentNote(user.roles)}
+            darfTermine={darfTermine}
+            mitBehandlung={isTherapyStaff(user.roles)}
+            zeitzone={zeitzone}
+            jetzt={jetzt}
+            heute={heute}
+            praxis={user.organizationName ?? 'Ihrer Praxis'}
+            darfHeilmittel={(person) =>
+              canRecordAtAppointment(user.roles, person, user.staffMemberId)
             }
           />
+        ) : null}
 
-          {eigeneTagesliste ? (
-            <Wochenleiste tag={tag} heute={heute} anzahl={anzahlAm} />
-          ) : darfTermine ? (
-            <Wochenleiste tag={tag} heute={heute} anzahl={() => undefined} />
-          ) : null}
-
-          {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}
-
-          {eigeneTagesliste && user.staffMemberId ? (
-            <MeinTag
-              abfrage={tagesliste}
-              sortiert={sortiert}
-              fokus={fokus}
-              fortschritt={fortschritt}
-              datum={tag}
-              morgen={morgen}
-              staffMemberId={user.staffMemberId}
-              darfDokumentieren={darfDokumentieren}
-              darfDokuLesen={canReadTreatmentNote(user.roles)}
-              darfTermine={darfTermine}
-              mitBehandlung={isTherapyStaff(user.roles)}
-              zeitzone={zeitzone}
-              jetzt={jetzt}
-              heute={heute}
-            />
-          ) : null}
-
-          {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
+        {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
               etwas fällig ist. Wer selbst unterwegs ist, sieht sie unter dem
               eigenen Tag: Liege und nächster Weg bleiben auf dem ersten
-              Bildschirm (UX-EPIC-003). */}
-          <OpenPointsSummary user={user} today={heute} />
+              Bildschirm (UX-EPIC-003). Ohne Fälliges steht an ihrer Stelle
+              der ruhige Weg zur Büroliste - nie beide (Design-Review R2, U6). */}
+        <OpenPointsSummary
+          user={user}
+          today={heute}
+          sonst={
+            canReadPatientDirectory(user.roles) ? (
+              <p className="border-line nicht-drucken mt-8 border-t pt-3">
+                <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
+                  Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
+                  <Pfeil />
+                </Textlink>
+              </p>
+            ) : null
+          }
+        />
 
-          {teamplanZuerst && tagesroute ? <div className="mt-6">{tagesroute}</div> : null}
+        {teamplanZuerst && tagesroute ? <div className="mt-6">{tagesroute}</div> : null}
 
-          {eigeneTagesliste ? null : <div className="mt-6">{teamplan}</div>}
-        </div>
-
-        {zweispaltig ? (
-          <aside className="flex min-w-0 flex-col gap-4">
-            {teamplan}
-            {tagesroute}
-          </aside>
-        ) : null}
-      </div>
-
-      {/* PRX-EPIC-003: der ruhige Weg zur Büroliste, auch wenn nichts fällig
-          ist - die Zeile oben erscheint nur mit Fälligem. */}
-      {canReadPatientDirectory(user.roles) ? (
-        <p className="border-line nicht-drucken mt-8 border-t pt-3 lg:max-w-3xl">
-          <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
-            Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
-            <Pfeil />
-          </Textlink>
-        </p>
-      ) : null}
+        {eigeneTagesliste ? null : <div className="mt-6">{teamplan}</div>}
+      </Zweispalter>
 
       {/* TRN-EPIC-001: der Weg in den Bereich Training für die Rollen, die ihn
           sehen - für die Trainingsbetreuung der einzige Arbeitsbereich neben
           dieser Übersicht. */}
       {canReadTrainingClients(user.roles) ? (
-        <p className="border-line nicht-drucken mt-8 border-t pt-3 lg:max-w-3xl">
+        <p className="border-line nicht-drucken lg:max-w-spalte mt-8 border-t pt-3">
           <Textlink alleinstehend to="/training" className="text-liste gap-1 font-medium">
             {BEGRIFFE.trainingskundInnen}
             <Pfeil />

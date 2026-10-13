@@ -604,6 +604,38 @@ export function CalendarGrid({
     kasten.scrollLeft = spalte.getBoundingClientRect().left - erste.getBoundingClientRect().left;
   });
 
+  // Die Spalte des gewählten Termins steht im Bild (Design-Review T5): Öffnete
+  // ein Link den Termin im Team-Tag, blieb der waagerechte Bildlauf der
+  // Woche stehen, und die Spalte der Behandelnden lag links außer Sicht -
+  // daneben das Termin-Fenster zu einem Termin, den man nicht sah. Einmal je
+  // Wahl; liegt die Spalte schon ganz im Bild, bleibt alles, wo es ist.
+  const gerollteWahl = useRef<string | null>(null);
+  useEffect(() => {
+    if (!gewaehlt) {
+      gerollteWahl.current = null;
+      return;
+    }
+    if (gerollteWahl.current === gewaehlt) return;
+    const kasten = gitterRef.current;
+    const kachel = kachelRefs.current.get(gewaehlt);
+    const erste = spaltenModell[0] ? spaltenRefs.current.get(spaltenModell[0].id) : undefined;
+    if (!kasten || !kachel || !erste) return;
+    const spalte = [...spaltenRefs.current.values()].find((element) => element.contains(kachel));
+    if (!spalte) return;
+    gerollteWahl.current = gewaehlt;
+    const rahmen = kasten.getBoundingClientRect();
+    const ziel = spalte.getBoundingClientRect();
+    const anfang = erste.getBoundingClientRect();
+    // Sichtbar ist, was rechts der stehenden Zeitachse liegt: Sie ist so
+    // breit, wie die erste Spalte ohne Bildlauf vom Rand entfernt beginnt.
+    const zeitachse = anfang.left - rahmen.left + kasten.scrollLeft;
+    const imBild =
+      ziel.left >= rahmen.left + zeitachse - 1 &&
+      ziel.right <= rahmen.left + kasten.clientWidth + 1;
+    if (imBild) return;
+    kasten.scrollLeft = ziel.left - anfang.left;
+  });
+
   // Der Fokus nach einem geschlossenen Kasten (KAL-21). Ohne Ziel - die
   // Kachel ist nach dem Blättern fort - der Knopf in der Ecke.
   useEffect(() => {
@@ -1014,10 +1046,33 @@ export function CalendarGrid({
                   const inhalt = (
                     <>
                       {/* Die Zahl nur, wo sie hineinpasst; vorgelesen wird sie immer. */}
-                      <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
-                        {w.veraltet
-                          ? '! Adresse veraltet'
-                          : `${w.rueckweg ? 'Rückweg' : 'Weg'} ≈ ${w.minuten} min`}
+                      {/* Das Wort davor nur, wo es ganz danebenpasst (Design-
+                          Review T5): In der Woche am Telefon stand „Rückweg
+                          ≈ 11“ und die Einheit fiel ab. Schmal steht „≈ 11
+                          min“ ganz da; was es ist, sagt die Lage. Ohne
+                          Schwellwert (R2, neu2: Breiten nur aus Tokens): Die
+                          Zeilen laufen von unten nach oben (`wrap-reverse`),
+                          gezeigt wird die oberste (`content-end`, `h-4`).
+                          Passen Wort und Zahl nicht in eine Zeile, rutscht
+                          die Zahl hinauf ins Bild und das Wort darunter
+                          hinaus. */}
+                      <span
+                        aria-hidden="true"
+                        data-testid="fahrweg-text"
+                        className={
+                          hoehe >= 16
+                            ? 'flex h-4 flex-wrap-reverse content-end gap-x-1 overflow-hidden'
+                            : 'hidden'
+                        }
+                      >
+                        {w.veraltet ? (
+                          '! Adresse veraltet'
+                        ) : (
+                          <>
+                            <span>{w.rueckweg ? 'Rückweg ' : 'Weg '}</span>
+                            <span>{`≈ ${w.minuten} min`}</span>
+                          </>
+                        )}
                       </span>
                       <span className="sr-only">
                         {w.veraltet
@@ -1034,7 +1089,7 @@ export function CalendarGrid({
                       ? 'border-accent bg-accent-soft text-accent border-2 border-solid'
                       : 'border-accent/40 bg-accent-soft text-accent border border-dashed';
                   const lage =
-                    'rounded-button absolute inset-x-1 overflow-hidden px-1.5 text-left text-xs leading-4 font-semibold';
+                    'rounded-button absolute inset-x-1 overflow-hidden px-1.5 text-left text-xs leading-4 font-semibold whitespace-nowrap';
                   if (!w.auskunft || w.veraltet) {
                     return (
                       <div
@@ -1060,6 +1115,10 @@ export function CalendarGrid({
                         type="button"
                         data-testid="fahrweg"
                         aria-expanded={gewaehlt}
+                        // Unter 16 px trägt der Block keine Zahl (neu5): Mit
+                        // der Maus steht sie im Tooltip, wie an der Kachel;
+                        // ein Tipp öffnet die Auskunft.
+                        title={`${w.rueckweg ? 'Rückweg' : 'Weg'} ≈ ${w.minuten} min, ${minuteZuZeit(w.vonMinute)}–${minuteZuZeit(w.bisMinute)}`}
                         className={`${flaeche} ${lage} cursor-pointer`}
                         style={{ top: `${oben}px`, height: `${Math.max(hoehe, 1)}px` }}
                         onClick={() => setGewaehlterWeg(gewaehlt ? null : schluessel)}
@@ -1435,43 +1494,77 @@ function Kachel({
     zIndex: stapel,
   };
 
+  // Der Titel eines Ereignisses steht dort, wo sonst der Name steht - und
+  // ein Zeichen davor sagt, dass es keine Behandlung ist (CAL-015b).
+  // Vorgelesen wird das Wort, nicht das Zeichen (KAL-16). Er steht immer da:
+  // Hat die Kachel nur eine Zeile, trägt sie zuerst den Titel (Design-Review
+  // T5) - eine 25-Minuten-Fehlzeit zeigte bis dahin nur „08:00–08:25“ und
+  // nicht, was sie ist.
+  const titelZeile = (
+    <span
+      className={`block max-w-full min-w-0 truncate text-[0.8125rem] leading-4 font-semibold ${
+        eintrag.status === 'documented' || eintrag.status === 'invoiced'
+          ? 'text-ink-muted'
+          : 'text-ink'
+      }`}
+    >
+      {eintrag.kind === 'internal' ? (
+        <>
+          <span aria-hidden="true">▪ </span>
+          <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
+        </>
+      ) : null}
+      {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
+            als Wort (TRN-006, ADR-021 Punkt 9). */}
+      {eintrag.kind === 'training' ? (
+        <>
+          <span aria-hidden="true">◆ </span>
+          <span className="sr-only">Training: </span>
+        </>
+      ) : null}
+      {terminBezeichnung(eintrag)}
+    </span>
+  );
+  const zeit = (
+    <>
+      {bisher ? <span>Bisher · </span> : null}
+      {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
+      <Laengenzeichen termin={eintrag} knapp />
+    </>
+  );
+
   const inhalt = (
     <>
       {zeilen >= 2 ? (
-        // Der Titel eines Ereignisses steht dort, wo sonst der Name steht -
-        // und ein Zeichen davor sagt, dass es keine Behandlung ist (CAL-015b).
-        // Vorgelesen wird das Wort, nicht das Zeichen (KAL-16).
-        <span
-          className={`block truncate text-[0.8125rem] leading-4 font-semibold ${
-            eintrag.status === 'documented' || eintrag.status === 'invoiced'
-              ? 'text-ink-muted'
-              : 'text-ink'
-          }`}
-        >
-          {eintrag.kind === 'internal' ? (
-            <>
-              <span aria-hidden="true">▪ </span>
-              <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
-            </>
-          ) : null}
-          {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
-              als Wort (TRN-006, ADR-021 Punkt 9). */}
-          {eintrag.kind === 'training' ? (
-            <>
-              <span aria-hidden="true">◆ </span>
-              <span className="sr-only">Training: </span>
-            </>
-          ) : null}
-          {terminBezeichnung(eintrag)}
-        </span>
+        <>
+          {titelZeile}
+          {/* Die Uhrzeit über dem Titel, wo zwei Zeilen Platz haben. */}
+          <span
+            data-testid="kachel-zeit"
+            className="text-ink-muted order-first block truncate text-xs leading-4 tabular-nums"
+          >
+            {zeit}
+          </span>
+        </>
       ) : (
-        <span className="sr-only">{terminBezeichnung(eintrag)}</span>
+        // Eine Zeile: der Titel, die Uhrzeit dahinter - aber nur, wenn
+        // beide ganz hineinpassen (Design-Review R2, neu1: bis dahin stand
+        // sie auch bei 1280 px nur im Tooltip). Passt sie nicht, bricht
+        // sie in die zweite Zeile um, die `h-4` abschneidet; der Titel
+        // kürzt sich dabei nie für sie. Vorgelesen wird sie immer.
+        <span
+          data-testid="kachel-einzeiler"
+          className="flex h-4 flex-wrap items-baseline gap-x-2 overflow-hidden"
+        >
+          {titelZeile}
+          <span
+            data-testid="kachel-zeit"
+            className="text-ink-muted shrink-0 text-xs leading-4 whitespace-nowrap tabular-nums"
+          >
+            {zeit}
+          </span>
+        </span>
       )}
-      <span className="text-ink-muted order-first block truncate text-xs leading-4 tabular-nums">
-        {bisher ? <span>Bisher · </span> : null}
-        {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
-        <Laengenzeichen termin={eintrag} knapp />
-      </span>
       {zeile3 && zeilen >= 3 ? (
         <span
           className={`block truncate text-xs leading-4 font-medium ${zeile3.farbe}`}

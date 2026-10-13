@@ -108,6 +108,9 @@ function besuch(
 /** Der Stand des Tages je Ansicht: morgens offen, abends erledigt. */
 function stand(nummer: number): Partial<DayPlanEntry> {
   if (ansicht === 'abend') return { status: 'documented', documentation_status: 'final' };
+  // Auftrag C1: der zweite oder dritte Besuch des Tages, die davor dokumentiert.
+  const davor = ansicht === 'zweiter' ? 2 : ansicht === 'dritter' ? 3 : 0;
+  if (nummer < davor) return { status: 'documented', documentation_status: 'final' };
   if (ansicht === 'doku') {
     return nummer === 3
       ? { status: 'completed', documentation_status: 'draft' }
@@ -308,6 +311,45 @@ client.setQueryData(
     },
   ],
 );
+// Auftrag C1: am ersten und dritten Besuch sind die Heilmittel bestätigt, am
+// zweiten noch nicht - am Tagesende steht er unter „Heute noch offen".
+for (const [index, bestaetigt] of [
+  [0, true],
+  [1, false],
+  [2, true],
+] as const) {
+  client.setQueryData(['appointment', tag[index]!.id, 'leistungen'], {
+    appointment_id: tag[index]!.id,
+    can_record: true,
+    services: bestaetigt
+      ? [{ code: 'KG', label: 'Krankengymnastik', quantity: 1, status: 'billable' }]
+      : [],
+    recorded_at: null,
+    recorded_by_name: null,
+    basis_items: null,
+    session_fee_cents: null,
+  });
+}
+// „Nachzuholen" (ANN-478): gestern eine Doku offen, die Tage davor leer.
+for (let abstand = 1; abstand <= 7; abstand++) {
+  const t = tagePlus(heute, -abstand);
+  const versatz = abstand * 86_400_000;
+  client.setQueryData(
+    ['day-plan', t, STAFF],
+    abstand === 1
+      ? [
+          {
+            ...tag[1]!,
+            id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000009',
+            status: 'completed' as const,
+            documentation_status: 'none' as const,
+            starts_at: new Date(Date.parse(tag[1]!.starts_at) - versatz).toISOString(),
+            ends_at: new Date(Date.parse(tag[1]!.ends_at) - versatz).toISOString(),
+          },
+        ]
+      : [],
+  );
+}
 // POR-002: der Abschnitt „Plattform" in den Stammdaten - ohne Zugang.
 client.setQueryData(['platform-access', 'treatment', '66666666-6666-4666-8666-000000000002'], null);
 client.setQueryData(['appointments', heute, tagePlus(heute, 1), null, null, 'active'], team);

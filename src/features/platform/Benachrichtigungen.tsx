@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   BENACHRICHTIGUNGEN,
   BENACHRICHTIGUNGSARTEN,
@@ -55,31 +58,45 @@ export function Benachrichtigungen({
   });
   const lesbar = zugaenge.filter((z) => z.readable);
   if (lesbar.length === 0) return null;
-  const inhalt = (
-    <>
-      <GeraetAbschnitt stand={stand} endpunkt={endpunkt} zugaenge={lesbar} />
-      {isPending ? null : (
-        <div className="mt-6 flex flex-col gap-8">
-          {lesbar.map((z) => (
-            <WahlFuerZugang
-              key={z.access_id}
-              zugang={z}
-              ueberschrift={lesbar.length > 1 ? zugangsname(z) : null}
-              endpunkt={endpunkt}
-            />
-          ))}
-        </div>
-      )}
-    </>
-  );
-  if (einstieg) return <div className="mt-4">{inhalt}</div>;
+  if (einstieg) {
+    return (
+      <div className="mt-6">
+        <GeraetAbschnitt stand={stand} endpunkt={endpunkt} zugaenge={lesbar} />
+        {isPending ? null : (
+          <div className="mt-6 flex flex-col gap-8">
+            {lesbar.map((z) => (
+              <WahlFuerZugang key={z.access_id} zugang={z} endpunkt={endpunkt} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+  // Unter „Einstellungen“ die Wahl je Zugang auf Abruf (ANN-468): Sechs
+  // Arten mit Ruhezeit sind je Zugang eine Bildschirmlänge; offen standen
+  // sie bei zwei Zugängen über 3.000 px untereinander.
   return (
     <Section
       titel="Benachrichtigungen"
-      rahmen
       hinweis="Von Anfang an aus. Alles, was zu tun ist, sehen Sie auch ohne Benachrichtigung in Ihrer Übersicht."
     >
-      {inhalt}
+      <div className="flex flex-col gap-3">
+        <div className="border-line bg-surface rounded-card border px-4 py-3">
+          <GeraetAbschnitt stand={stand} endpunkt={endpunkt} zugaenge={lesbar} />
+        </div>
+        {isPending
+          ? null
+          : lesbar.map((z) => (
+              <Disclosure
+                key={z.access_id}
+                inKarte
+                kopf="betont"
+                summary={lesbar.length > 1 ? zugangsname(z) : 'Benachrichtigungen wählen'}
+              >
+                <WahlFuerZugang zugang={z} endpunkt={endpunkt} />
+              </Disclosure>
+            ))}
+      </div>
     </Section>
   );
 }
@@ -124,8 +141,8 @@ function GeraetAbschnitt({
   });
 
   return (
-    <div className="border-line rounded-card border p-4">
-      <h3 className="text-ink text-base font-semibold">Mitteilungen auf diesem Gerät</h3>
+    <div>
+      <Zwischentitel>Mitteilungen auf diesem Gerät</Zwischentitel>
       {endpunkt !== null ? (
         <>
           <p className="text-ink mt-1 text-base">
@@ -178,11 +195,9 @@ function GeraetAbschnitt({
 
 function WahlFuerZugang({
   zugang,
-  ueberschrift,
   endpunkt,
 }: {
   zugang: Plattformzugang;
-  ueberschrift: string | null;
   endpunkt: string | null;
 }) {
   const schluessel = benachrichtigungSchluessel(zugang.access_id, endpunkt);
@@ -195,7 +210,7 @@ function WahlFuerZugang({
   if (isError || !data) {
     return <ErrorState title="Ihre Benachrichtigungen konnten nicht geladen werden." />;
   }
-  return <Wahlformular zugang={zugang} ueberschrift={ueberschrift} gespeichert={data} />;
+  return <Wahlformular zugang={zugang} gespeichert={data} />;
 }
 
 function umschalten(liste: Benachrichtigungsart[], art: Benachrichtigungsart) {
@@ -204,11 +219,9 @@ function umschalten(liste: Benachrichtigungsart[], art: Benachrichtigungsart) {
 
 function Wahlformular({
   zugang,
-  ueberschrift,
   gespeichert,
 }: {
   zugang: Plattformzugang;
-  ueberschrift: string | null;
   gespeichert: Benachrichtigungswahl;
 }) {
   const queryClient = useQueryClient();
@@ -236,7 +249,6 @@ function Wahlformular({
       }}
       className="flex flex-col gap-4"
     >
-      {ueberschrift ? <h3 className="text-ink text-base font-semibold">{ueberschrift}</h3> : null}
       <ul className="flex flex-col gap-4">
         {BENACHRICHTIGUNGSARTEN.map((art) => {
           const eintrag = BENACHRICHTIGUNGEN[art];
@@ -294,10 +306,10 @@ function Wahlformular({
           </Select>
         </div>
       </fieldset>
-      <p className="text-ink-muted text-sm">
+      <Kleingedrucktes>
         Höchstens eine Benachrichtigung je Art und Tag, höchstens zehn in der Woche. Bleibt eine
         Reaktion aus, kommt keine Erinnerung daran.
-      </p>
+      </Kleingedrucktes>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={speichern.isPending}>
           Speichern

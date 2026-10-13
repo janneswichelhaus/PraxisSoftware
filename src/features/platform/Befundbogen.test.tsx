@@ -24,6 +24,7 @@ vi.mock('./api', async (importOriginal) => ({
 
 const { Befundbogen } = await import('./Befundbogen');
 const { fuerDiePlattform } = await import('./instrumentwahl');
+const { FRAGEN_JE_SCHRITT, bogenschritte } = await import('./bogenschritte');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -60,6 +61,12 @@ describe('Befundbogen (POR-012)', () => {
         await screen.findByRole('heading', { name: 'Anamnesebogen Version 8 (DIGOTOR)' }),
       ).toBeInTheDocument();
       await nutzer.type(screen.getByLabelText(/^Beruf/), 'Lehrerin');
+      // In Schritten bis zum letzten; erst dort steht „Absenden“ (ANN-467).
+      expect(screen.queryByRole('button', { name: 'Absenden' })).not.toBeInTheDocument();
+      while (screen.queryByRole('button', { name: 'Absenden' }) === null) {
+        await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+      }
+      expect(screen.queryByLabelText(/^Beruf/)).not.toBeInTheDocument();
       await nutzer.click(screen.getByRole('button', { name: 'Absenden' }));
       await waitFor(() =>
         expect(befundbogenSpeichern).toHaveBeenCalledWith(
@@ -80,6 +87,41 @@ describe('Befundbogen (POR-012)', () => {
       );
     },
   );
+
+  it(
+    'zeigt den Bogen in Schritten mit Fortschritt und behaelt die Antworten (ANN-467)',
+    { timeout: 20_000 },
+    async () => {
+      const nutzer = userEvent.setup();
+      ladeBefundbogen.mockResolvedValue([]);
+      renderWithProviders(<Befundbogen zugang={ZUGANG} />, '/p/befundbogen?bereich=treatment');
+      const schritte = bogenschritte(fuerDiePlattform()[0]!.items);
+      expect(schritte.length).toBeGreaterThan(1);
+      expect(await screen.findByText(`Schritt 1 von ${schritte.length}`)).toBeInTheDocument();
+      await nutzer.type(screen.getByLabelText(/^Beruf/), 'Lehrerin');
+      await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+      expect(screen.getByText(`Schritt 2 von ${schritte.length}`)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/^Beruf/)).not.toBeInTheDocument();
+      await nutzer.click(screen.getByRole('button', { name: 'Zurück' }));
+      expect(screen.getByLabelText(/^Beruf/)).toHaveValue('Lehrerin');
+    },
+  );
+
+  it('schneidet nach Nummer und Hinweis, nie mitten in einer Gruppe (ANN-467)', () => {
+    const items = fuerDiePlattform()[0]!.items;
+    const schritte = bogenschritte(items);
+    // Nichts geht verloren, nichts doppelt, die Reihenfolge bleibt.
+    expect(schritte.flat().map((i) => i.id)).toEqual(items.map((i) => i.id));
+    for (const [index, schritt] of schritte.entries()) {
+      const naechster = schritte[index + 1]?.[0];
+      const letzte = schritt.at(-1)!;
+      if (!naechster) continue;
+      if (letzte.nummer !== undefined) expect(naechster.nummer).not.toBe(letzte.nummer);
+      if (letzte.hinweis !== undefined) expect(naechster.hinweis).not.toBe(letzte.hinweis);
+    }
+    // Höchstens acht Fragen je Schritt, außer eine Gruppe ist selbst länger.
+    expect(schritte.every((s) => s.length <= FRAGEN_JE_SCHRITT)).toBe(true);
+  });
 
   it(
     'speichert zwischen, ohne abzusenden, und nimmt einen Entwurf wieder auf',

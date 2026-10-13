@@ -57,7 +57,7 @@ test.describe('Übergang ins Training', () => {
       await mindestens44(page, 'Widerruf bestätigen');
       expect(await ueberlaeuft(page)).toBe(false);
 
-      await page.goto('/tests/e2e/fixtures/training.html?seite=detail');
+      await page.goto('/tests/e2e/fixtures/training.html?seite=detail&bereich=stammdaten');
       await expect(page.getByText('Aus der Behandlung übernommen')).toBeVisible();
       await page
         .getByRole('region', { name: /Voraussetzungen/ })

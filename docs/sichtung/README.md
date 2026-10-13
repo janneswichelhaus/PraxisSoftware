@@ -1,28 +1,60 @@
 # Sichtung
 
-Jannes sieht sich an, was gebaut ist — **gesammelt je Block, am eigenen Handy**,
-nicht als Abnahme je Epic (Entscheidung E-6 vom 2026-09-23, Roadmap,
-„Abweichungsregeln" Regel 1). Eine Sichtung ist eine Datei mit **höchstens 15
-Schritten**; Einzelheiten decken die Tests ab. Aufruf: `/sichtung <Datei>`.
+Jannes sichtet **Bilder, keine Klickanleitungen** (seit 2026-10-12): Jede PR mit Oberfläche bringt
+eine **Bildstrecke** vorher/nachher bei 375 und 1280 px, erzeugt mit dem Cloud-Stack und
+`pnpm bildstrecke` und von Claude selbst gegen `docs/design/DESIGN.md` geprüft. Jannes wischt sie in
+etwa 10 Minuten durch, beantwortet höchstens 20 Punkte („ok“ oder „Befund: …“) und mergt. Aufruf:
+`/sichtung`. Grundlage bleibt E-6 (Roadmap, Abweichungsregel 1): gesammelt statt Abnahme je Epic.
 
-## Wann ein Loop fertig ist
+## Wann ein Loop gesichtet ist
 
-- **Ohne Oberfläche:** grüne CI, `pnpm test:db` und Zweitreview — dann ist er
-  gesichtet, ohne dass Jannes etwas klickt.
-- **Mit Oberfläche:** die Pull Request bringt Bildschirmfotos bei Desktop und
-  375 px (`pnpm screenshots`, Punkt 1 unten); der Loop ergänzt die Sichtung
-  seines Blocks um höchstens drei Schritte, ohne die Grenze von 15 zu
-  überschreiten — sonst werden vorhandene Schritte zusammengelegt.
+- **Ohne Oberfläche:** grüne CI, `pnpm test:db` und, wo ADR-013 Punkt 9 Nr. 8 es verlangt,
+  Zweitreview — ohne dass Jannes etwas ansieht.
+- **Mit Oberfläche:** Bildstrecke in der PR, Design- und Praxis-Review (`.claude/agents/`) ohne
+  Blocker, Jannes' Bildsichtung. Am Gerät nur, was ein Bild nicht zeigen kann (Sichtliste unten).
 
-## Wo
+## Prüfliste je Seite
 
-Auf der Test-Umgebung (`https://prtest.uber.space`, seit 2026-09-25;
-[`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Test-Umgebung"); für einen Stand,
-der noch nicht auf `main` liegt, lokal im WLAN („Handytest im WLAN"). Die Abläufe hinter der
-Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
-`pnpm test:db` und die Komponententests.
+Die Oberflächen-Checkliste ist die **Prüfliste je Seite in `docs/design/DESIGN.md`** (Seitentyp,
+375 px ohne Querrollen, Ziele ≥ 44 px, ein Hauptknopf, Bausteine, Zustände, Status als Zeichen und
+Wort, Tokens). Was DESIGN.md nicht abdeckt, gilt weiter je Story:
 
-## Dateien
+1. Jedes Feld hat Label und Fehlertext (`aria-describedby`); `src/barrierefreiheit.test.tsx`
+   prüft den maschinellen Teil mit axe.
+2. Formulare mit mehr als einem Feld schützen ungespeicherte Eingaben — auch bei Zurück, Neuladen
+   und Sitzungsverlust.
+3. Fehlermeldungen sagen, was zu tun ist, ohne interne Details; keine Erfolgsmeldung, die nicht
+   stattfand.
+4. Tastatur: alles erreichbar, sinnvolle Reihenfolge, Fokus nach Dialog und Aktion gesetzt.
+5. Wörter aus `src/lib/begriffe.ts`, ohne Fachjargon-Falle und Coaching-Begriffe; abgelöste Wörter
+   hält `begriffe.test.ts` fern.
+6. Kontakt ist Aktion: `tel:`, `mailto:`, Adresse kopierbar.
+7. Je Kernablauf ein Test bei 375 px; das Budget steht in `docs/product/kernablaeufe.md`.
+
+Die Review-Checkliste für kritische Änderungen ist etwas anderes: ADR-013 Punkt 9.
+
+## Sichtliste am Gerät
+
+Höchstens 20 Punkte, nur was eine Hand am Gerät braucht: Kamera, Passkey, Flugmodus, Sonne,
+Halterung am Rad, echter Kartendienst. Gesichtet auf der Test-Umgebung (`https://prtest.uber.space`)
+oder lokal im WLAN ([`../DEVELOPMENT.md`](../DEVELOPMENT.md)). Jede PR nennt höchstens fünf neue
+Punkte; was durch Bild oder Test belegt ist, kommt nicht auf die Liste.
+
+## Alte Sichtungsdateien und ihre Triage
+
+Bis 2026-10-12 entstand je Block eine Datei mit Klickschritten; rund 170 Schritte sind offen. Sie
+werden **nicht einzeln durchgeklickt**, sondern mit `/sichtung triage <Datei>` eingeordnet, je
+Schritt genau eins:
+
+- **durch Bild belegt** — die Route steht in einer aktuellen Bildstrecke, das Bild zeigt das
+  Erwartete (Bildpfad nennen);
+- **durch Test belegt** — ein E2E- oder Komponententest prüft genau das (Datei und Testname);
+- **Gerät** — kommt auf die Sichtliste oben;
+- **Bildstrecke** — noch nicht abgebildet: geht in die Bildstrecke der nächsten Überholung des
+  Bereichs.
+
+Eine Datei ist erledigt, wenn jeder Schritt eingeordnet ist; das Ergebnis steht am Ende der Datei,
+der Stand hier. Neue Klickschritt-Dateien entstehen nicht mehr.
 
 | Datei                                        | Etappe                              | Stand                                                                                                          |
 | -------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
@@ -41,79 +73,8 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 | [rahmen.md](rahmen.md)                       | Design-Runde 1 — Rahmen             | offen; 1 bis 3 RAH-EPIC-001, 4 bis 6 SLK-EPIC-001, 7 SKN-EPIC-001, 8 bis 10 KUT-EPIC-001, 11 DOK-EPIC-001      |
 | [ux-review.md](ux-review.md)                 | UX-Review — UX-EPIC-007 bis -009    | offen; 1 bis 3 UX-EPIC-007                                                                                     |
 
-Die früheren Einzelschritte je Loop liegen unverändert in
-[`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum
-Nachschlagen, nicht zum Durchgehen. Eine neue Datei entsteht mit dem ersten
-Oberflächen-Loop eines Blocks und wird oben eingetragen.
-
-Ein Schritt beschreibt, **was zu tippen und was zu erwarten ist** — nicht, was
-der Code tut. Er ersetzt keinen Test (`PROJECT_PRINCIPLES.md` §12); er ist die
-zusätzliche Prüfung durch einen Menschen. Das Ergebnis — Datum, Gerät,
-Befunde — steht am Ende der Datei; Befunde gehen nach
-[`../development/BEFUNDE.md`](../development/BEFUNDE.md) und werden die erste
-Story des nächsten Loops derselben Etappe.
-
-## Oberflächen-Checkliste je Story
-
-Für jede Story mit Oberflächenanteil, abgehakt in Schritt F des Loops.
-Abweichungen werden im Bericht begründet und in
-[`docs/development/BEFUNDE.md`](../development/BEFUNDE.md) als Befund
-geführt (die Ablaufrunden nach `OPTIMIERUNG.md` ruhen bis Probewoche 1).
-Diese Liste ist die Oberflächen-Checkliste — nicht die Review-Checkliste für
-kritische Änderungen nach ADR-013 Punkt 8; die steht in ADR-013
-Punkt 9, und gehört zum Compliance-Gate A4 des
-[Graph-Engineering-Workflows](../development/GRAPH-ENGINEERING-WORKFLOW.md).
-Ein Sandbox-Prototyp (Pfad S) hakt diese Oberflächen-Checkliste ebenfalls ab.
-
-1. Bei 375 px vollständig bedienbar: kein horizontales Scrollen, Tippziele
-   mindestens 44 px, Primäraktion einhändig erreichbar. Für das Scrollen und
-   für Konsolenfehler gibt es seit UI-000 ein Werkzeug — es ersetzt den Blick
-   nicht, aber es findet, was man beim Hinsehen übersieht:
-
-   ```bash
-   pnpm dev                                              # in einem zweiten Terminal
-   pnpm screenshots --konto=therapist /patienten /kalender  # Bilder in .tmp/screenshots/
-   pnpm screenshots --breite=1024 --konto=therapist /patienten
-   ```
-
-   `--konto` (`owner`, `office` oder `therapist`) meldet sich über die echte
-   Anmeldemaske am synthetischen Stack an; ohne den Parameter zeigen Seiten
-   hinter der Anmeldung nur die Anmeldemaske. Das Werkzeug meldet eine
-   fehlgeschlagene Anmeldung, eine unerwartete Zielseite, waagerechtes
-   Scrollen und Konsolenfehler.
-
-2. Nur Bausteine aus `src/components/ui` und Tokens aus `src/index.css`;
-   fehlt ein Baustein, entsteht er dort — nur für Module, die der Auftrag
-   berührt. Vorhanden sind: `Button`, `ButtonLink`, `Field`, `Select`,
-   `TextArea`, `SearchField`, `SearchCombobox`, `Section`/`Feldgruppe`,
-   `DetailList`/`DetailRow`,
-   `Card`/`CardGrid`/`DataRow`/`DataList`/`Disclosure`, `Badge`, `RoleBadge`,
-   `PageHeader`, `SubNav`, `Rueckfrage`, `Statusmeldung` und die Zustände aus
-   `Feedback.tsx`. Für mehrere Aktionen nebeneinander in einer Karte gibt es
-   `kartenAktionKlassen` aus `buttonStile.ts` — kleiner in Schrift und
-   Polsterung, unverändert 44 px hoch. `SearchField` filtert eine Liste, die
-   schon auf der Seite steht; `SearchCombobox` holt Treffer und führt woanders
-   hin (Tastatur, `aria-activedescendant`, Zustand als Text). Die
-   Kontrastwerte der Tokens hält `src/lib/kontrast.test.ts` auf WCAG AA fest.
-3. Jedes Feld hat Label und Fehlertext, verbunden über `aria-describedby`;
-   Laden, Leer und Fehler laufen über `Feedback.tsx`, kurze Meldungen daneben
-   über `Statusmeldung`. Den maschinell prüfbaren Teil davon deckt seit UI-000
-   `src/barrierefreiheit.test.tsx` mit `axe-core` ab; er läuft in `pnpm test`.
-   Tastaturreihenfolge, Fokusführung und Sprache prüft er **nicht** — dafür
-   sind die Punkte 7 und 9 da.
-4. Farbe ist nie allein Bedeutungsträger; der Zustand steht als Text.
-5. Formulare mit mehr als einem Feld schützen ungespeicherte Eingaben — auch
-   bei Zurück, Neuladen und Sitzungsverlust.
-6. Die Fehlermeldung sagt, was zu tun ist, ohne interne Details; keine
-   Erfolgsmeldung, die nicht stattfand.
-7. Tastatur: alles erreichbar, sinnvolle Reihenfolge, Fokus nach Dialog und
-   Aktion gesetzt.
-8. Kontakt ist Aktion, nicht Text: `tel:`, `mailto:`, Adresse kopierbar.
-9. Wörter ohne Fachjargon-Falle und ohne Coaching-Begriffe (`IDEA-QSN-007`);
-   gleiche Sache, gleiches Wort.
-10. Je Kernpfad ein Test bei 375 px; ergänzt der Loop die Sichtung, ist der
-    Schritt am Handy und nennt den Zielwert der Story als Zahl.
-11. Bedienprinzipien (UX-EPIC-002): ein Hauptknopf je Ansicht; was nicht
-    gebraucht wird, ist eingeklappt (Vorschauen, Filter, seltene Vorgänge);
-    Handy zuerst. Beschriftungen kommen aus `src/lib/begriffe.ts`, abgelöste
-    Wörter hält `begriffe.test.ts` fern (ANN-111).
+Die Abnahmeschritte vor dem 2026-09-23 liegen unverändert in
+[`../development/archiv/abnahme/`](../development/archiv/abnahme/). Befunde aus jeder Sichtung gehen
+nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md) und werden die erste Story der
+nächsten Überholung desselben Bereichs. Eine Sichtung ersetzt keinen Test
+(`PROJECT_PRINCIPLES.md` §12).

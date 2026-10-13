@@ -59,11 +59,25 @@ describe('Kommunikation', () => {
     expect(screen.queryByText(/^Antwort auf:/)).toBeNull();
   });
 
-  it('sagt, unter welchem Namen die eigene Nachricht erscheint (VOR-07)', () => {
+  it('sagt, unter welchem Namen die eigene Nachricht erscheint (VOR-07)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    // In der Beschriftung des Felds statt in einem eigenen Satz (R2-neu7).
+    expect(
+      screen.getByRole('textbox', { name: 'Neue Nachricht als Lena Hartmann' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Sie schreiben in der Vorschau/)).toBeNull();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Antworten' }));
+    expect(screen.getByRole('textbox', { name: 'Antwort als Lena Hartmann' })).toBeInTheDocument();
+  });
+
+  it('nennt die Regel zu klinischen Inhalten einmal, am Feld (R2-neu7)', () => {
     oeffne();
     expect(
-      screen.getByText('Sie schreiben in der Vorschau als Lena Hartmann (Demoperson zur Rolle).'),
+      screen.getByText('Keine Diagnosen und keine klinischen Freitexte im Teamkanal.'),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/Keine klinischen Inhalte/)).toBeNull();
   });
 
   it('stellt eine neue Nachricht hinter die aelteren von heute (VOR-06)', async () => {
@@ -74,7 +88,10 @@ describe('Kommunikation', () => {
     oeffne();
 
     await nutzer.click(screen.getByRole('button', { name: /Vertretungen/ }));
-    await nutzer.type(screen.getByRole('textbox', { name: 'Neue Nachricht' }), 'Übernehme ich');
+    await nutzer.type(
+      screen.getByRole('textbox', { name: 'Neue Nachricht als Lena Hartmann' }),
+      'Übernehme ich',
+    );
     await nutzer.click(screen.getByRole('button', { name: 'In die Vorschau schreiben' }));
 
     const texte = screen
@@ -99,10 +116,15 @@ describe('Kommunikation', () => {
     expect(treffer.textContent).not.toMatch(/PROJECT_PRINCIPLES/);
   });
 
+  it('heißt wie sein Reiter (R2-O9)', () => {
+    oeffne();
+    expect(screen.getByRole('heading', { level: 1, name: 'Teamchat' })).toBeInTheDocument();
+  });
+
   it('spricht von Antworten statt von Threads (VOR-25)', () => {
     oeffne();
     expect(
-      screen.getByText('Kanäle, Direktnachrichten und Antworten für organisatorische Abstimmung.'),
+      screen.getByText('Kanäle, Direktnachrichten und Antworten im Team.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Threads/)).toBeNull();
   });

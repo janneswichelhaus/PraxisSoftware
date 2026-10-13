@@ -2,11 +2,15 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
-import { DetailList, DetailRow } from '@/components/ui/DetailList';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
-import { Hinweisfenster } from '@/components/ui/Dialogfenster';
+import { Dialogfenster, Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -21,7 +25,7 @@ import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/li
 import { ArbeitszeitRueckfrage, UebernommeneAdresse } from './AppointmentFormFields';
 import { TerritoryHint } from '@/features/territories/TerritoryHint';
 import { Deckungszeichen } from './Deckungszeichen';
-import { Listenfehler, NachladeHinweis } from './Rueckmeldungen';
+import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
   appointmentTypeLabels,
   checkAppointmentSlots,
@@ -50,6 +54,8 @@ import {
   type Serientermin,
 } from './serie';
 import { speicherfehlerText } from './terminformular';
+import { istIsoDatum } from './calendar';
+import { formatDate } from '@/lib/datum';
 
 /**
  * „1 Termin" gegen „3 Termine" — an einer Stelle statt in jeder Meldung.
@@ -164,6 +170,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
   /** Die Liste, sobald ein Vorschlag steht. `null` heißt „noch keiner". */
   const [liste, setListe] = useState<Serientermin[] | null>(null);
+  /** Die Zeile im Fenster „Termin n ändern“ (Design-Rollout B2). */
+  const [bearbeitet, setBearbeitet] = useState<number | null>(null);
   /**
    * Befunde **samt dem Vorschlag, zu dem sie gehören**. `null` heißt „noch
    * nicht geprüft".
@@ -424,6 +432,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
   // Der Rückweg steht in jedem Zustand der Seite (ZST-08). Er folgt dem
   // mitgereisten Weg - aus dem Kalender zurück in den Kalender (TER-03).
   const kopf = <Rueckweg standard={akte} beschriftung="Zurück zur Akte" />;
+  const abbrechenZiel = leseRueckweg(suche, akte);
 
   // Ersetzt wird die Seite nur, solange es keine Daten gibt: Ein
   // gescheitertes Nachladen nimmt Vorschlag und Liste nicht mehr mit
@@ -443,7 +452,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
         {patient.isError && !patient.data ? (
           <ErrorState
             title="Die Patientendaten konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
             onErneut={() => void patient.refetch()}
           />
         ) : !patient.data ? (
@@ -456,7 +465,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           // eine fehlende von einer nicht ladbaren Grundlage nicht.
           <ErrorState
             title="Die Zahlen der Grundlage konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
             onErneut={() => void kontingent.refetch()}
           />
         )}
@@ -474,6 +483,9 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
   const hindernisse = werte.filter(istHinderlich).length;
   const randzeiten = werte.filter((b) => b === 'outside_working_hours').length;
   const geplant = gueltigeAnzahl(anzahl);
+  // Die Zeile, deren Datum oder Beginn gerade im Fenster geändert wird. Eine
+  // entfernte Zeile schließt das Fenster von selbst.
+  const offeneZeile = liste && bearbeitet !== null ? (liste[bearbeitet] ?? null) : null;
 
   return (
     <>
@@ -481,7 +493,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
       {/* Nur der Name; „alles oder nichts" sagt die Prüfmeldung dort, wo es
           zählt (UX-005g). */}
-      <PageHeader title="Dauertermin anlegen" description={`Für ${fullName(patientDaten)}.`} />
+      {/* Eine Angabe, kein Satz: ohne Punkt wie überall (Design-Review T8). */}
+      <PageHeader title="Dauertermin anlegen" description={`Für ${fullName(patientDaten)}`} />
 
       {patient.isError || kontingent.isError ? (
         <NachladeHinweis
@@ -496,48 +509,55 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
       {/* Dieselben Wörter wie an der Grundlagenkarte der Akte (TER-09,
           ANN-064): „Mögliche Termine" statt „Verordnet" - beim Selbstzahler
-          ist nichts verordnet -, „Noch planbar" statt „Offen". */}
+          ist nichts verordnet -, „Noch planbar" statt „Offen". Als Kacheln,
+          höchstens vier (DESIGN.md „Welcher Baustein wann“): am Telefon zwei
+          nebeneinander statt fünf Zeilen untereinander. */}
       <Section titel="Termine der Grundlage">
-        <DetailList>
-          <DetailRow label="Mögliche Termine">
+        <TileGrid spalte="kachel">
+          <Tile label="Mögliche Termine">
             {zahlen.prescribed}
             {/* „Genutzt" nur, wo tatsächlich etwas verbraucht ist (ANN-064). */}
             {zahlen.used > 0 ? ` · ${zahlen.used} genutzt` : ''}
-          </DetailRow>
-          <DetailRow label="Zugeordnet">
-            {zahlen.planned === 0 ? 'Noch kein Termin zugeordnet' : zahlen.planned}
-          </DetailRow>
+          </Tile>
           {/* CAL-022: Was schon jetzt über die Grundlage hinausgeht, steht
               hier - sonst plant jemand weiter, ohne es zu wissen. */}
-          {zahlen.uncovered > 0 ? (
-            <DetailRow label="Deckung">
-              <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span>
-                  {`${zahlen.covered} von ${zahlen.planned} zugeordneten Terminen gedeckt · ${zahlen.uncovered} ohne Deckung`}
+          <Tile
+            label="Zugeordnet"
+            ton={zahlen.uncovered > 0 ? 'warnung' : 'neutral'}
+            zusatz={
+              zahlen.uncovered > 0 ? (
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span>
+                    {`${zahlen.covered} von ${zahlen.planned} gedeckt · ${zahlen.uncovered} ohne Deckung`}
+                  </span>
+                  <Deckungszeichen gedeckt={false} />
                 </span>
-                <Deckungszeichen gedeckt={false} />
-              </span>
-            </DetailRow>
-          ) : null}
-          <DetailRow label="Noch planbar">
+              ) : undefined
+            }
+          >
+            {zahlen.planned === 0 ? 'Noch keiner' : zahlen.planned}
+          </Tile>
+          <Tile label="Noch planbar">
             {zahlen.remaining === 0
               ? 'Nichts mehr – jeder mögliche Termin ist genutzt oder verplant'
               : `${zahlen.remaining} ${zahlen.remaining === 1 ? 'Behandlung' : 'Behandlungen'}`}
-          </DetailRow>
+          </Tile>
           {zahlen.frequency_note ? (
-            <DetailRow label="Frequenz laut Grundlage">{zahlen.frequency_note}</DetailRow>
+            <Tile label="Frequenz laut Grundlage">{zahlen.frequency_note}</Tile>
           ) : null}
-        </DetailList>
+        </TileGrid>
       </Section>
 
-      <form onSubmit={vorschlagen} noValidate className="mt-8 max-w-xl">
-        <Section titel="Rhythmus" ebene={3}>
-          {/* Sind alle Angaben berichtigt, verschwindet der Kasten (TER-06). */}
-          <Fehlerzusammenfassung
-            key={pruefungsstand.nummer}
-            fehler={Object.values(fehler).some(Boolean) ? pruefungsstand.fehler : []}
-          />
+      {/* Erster Schritt: der Vorschlag aus Person, Ort und Rhythmus - als
+          Formularvorlage in Gruppen (DESIGN.md „Formular“). */}
+      <form onSubmit={vorschlagen} noValidate className="max-w-formular mt-8">
+        {/* Sind alle Angaben berichtigt, verschwindet der Kasten (TER-06). */}
+        <Fehlerzusammenfassung
+          key={pruefungsstand.nummer}
+          fehler={Object.values(fehler).some(Boolean) ? pruefungsstand.fehler : []}
+        />
 
+        <Section titel="Person und Ort">
           {/* Feldabstand wie in jedem anderen Formular (TOK-15). */}
           <Feldgruppe>
             <div className="flex flex-col gap-2">
@@ -609,9 +629,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                   />
                 ) : null}
               </div>
-            ) : null}
-
-            {art === 'home_visit' ? (
+            ) : art === 'home_visit' ? (
               <UebernommeneAdresse
                 street={patientDaten.street}
                 houseNumber={patientDaten.house_number}
@@ -622,7 +640,11 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 ergaenzenZiel={mitRueckweg(`${akte}/bearbeiten`, rueckkehrAdresse())}
               />
             ) : null}
+          </Feldgruppe>
+        </Section>
 
+        <Section titel="Rhythmus">
+          <Feldgruppe>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-end">
               <Field
                 label="Erster Termin am *"
@@ -643,13 +665,10 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 value={beginn}
                 error={fehler.beginn}
                 step={user.appointmentGridMinutes ? user.appointmentGridMinutes * 60 : undefined}
-                // Ohne „Fenster: 60 Minuten": Die Regellänge ist der
-                // Normalzustand und trägt kein Wort (UX-005g).
-                hint={
-                  user.appointmentGridMinutes
-                    ? `Praxisraster: ${user.appointmentGridMinutes} Minuten`
-                    : undefined
-                }
+                // Ohne „Praxisraster: N Minuten" und ohne „Fenster: 60 Minuten":
+                // Beides erklärte das System, nicht die Eingabe; der Fehler bei
+                // einem Beginn außerhalb des Rasters bleibt (UX-005g, wie im
+                // Terminformular).
                 onChange={(e) => {
                   setBeginn(e.target.value);
                   feldGeaendert('beginn');
@@ -678,7 +697,9 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 max={SERIE_HOECHSTZAHL}
                 value={anzahl}
                 error={fehler.anzahl}
-                hint={`Vorgeschlagen: noch planbare Termine. Höchstens ${SERIE_HOECHSTZAHL} je Vorgang.`}
+                // Die Grenze ändert die Eingabe; der Satz zur Vorbelegung
+                // erklärte nur, woher die Zahl kommt (DESIGN.md Regel 6).
+                hint={`Höchstens ${SERIE_HOECHSTZAHL} je Vorgang.`}
                 onChange={(e) => {
                   setAnzahl(e.target.value);
                   feldGeaendert('anzahl');
@@ -693,159 +714,213 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 Grundlage deckt dann nicht alle Termine ab.
               </Statusmeldung>
             ) : null}
-
-            {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird
-                (TER-05). */}
-            {schutz}
-
-            <div>
-              <Button type="submit" variant="secondary" disabled={pruefung.isPending}>
-                {pruefung.isPending ? 'Wird geprüft …' : 'Termine vorschlagen'}
-              </Button>
-            </div>
           </Feldgruppe>
         </Section>
+
+        {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird
+            (TER-05). */}
+        {schutz}
+
+        {/* Ein Hauptknopf je Ansicht (DESIGN.md Regel 4): Vor dem Vorschlag ist
+            das Vorschlagen die Haupthandlung, danach das Anlegen. */}
+        <Formularfuss>
+          <Button
+            type="submit"
+            variant={liste ? 'secondary' : 'primary'}
+            disabled={pruefung.isPending}
+          >
+            {pruefung.isPending ? 'Wird geprüft …' : 'Termine vorschlagen'}
+          </Button>
+          {/* „Abbrechen“ leise am Ende des Fusses (DESIGN.md „Formular“,
+              Design-Review T8) - dorthin, wohin auch der Rückweg führt. Mit
+              einer Liste steht es im Fuss darunter. */}
+          {liste && liste.length > 0 ? null : (
+            <ButtonLink to={abbrechenZiel} variant="quiet">
+              Abbrechen
+            </ButtonLink>
+          )}
+        </Formularfuss>
       </form>
 
       {liste ? (
-        <Section titel={`Vorgeschlagene Termine (${liste.length})`} ebene={3}>
-          {pruefung.isError ? (
-            <div className="mb-4">
-              <ErrorState
-                title="Die Termine konnten nicht geprüft werden."
-                description="Bitte die Verbindung prüfen und die Liste mit „Erneut prüfen“ noch einmal prüfen lassen."
+        <div className="max-w-formular mt-8">
+          {/* Zweiter Schritt: die Vorschläge als Zeilen (DESIGN.md Regel 3).
+              Ein Tipp auf die Zeile öffnet Datum und Beginn dieses einen
+              Termins; der Befund des Servers steht als Zeichen und Wort an der
+              Zeile (Regel 5). */}
+          <Section titel={`Vorgeschlagene Termine (${liste.length})`}>
+            {pruefung.isError ? (
+              <div className="mb-4">
+                <ErrorState
+                  title="Die Termine konnten nicht geprüft werden."
+                  description="Bitte die Verbindung prüfen und die Liste mit „Erneut prüfen“ noch einmal prüfen lassen."
+                />
+              </div>
+            ) : null}
+
+            {liste.length === 0 ? (
+              <EmptyState
+                inKarte
+                title="Es ist kein Termin mehr übrig."
+                description="Bitte oben einen neuen Vorschlag erzeugen."
               />
-            </div>
-          ) : null}
+            ) : (
+              <ListRows>
+                {liste.map((termin, index) => {
+                  const befund = werte[index] ?? null;
+                  return (
+                    <ListRow
+                      key={index}
+                      zeit={termin.beginn || '–'}
+                      titel={
+                        <>
+                          {/* Die Nummer für Vorlesesoftware und das Fenster
+                              „Termin 2 ändern“; sichtbar trägt die Zeile das
+                              Datum. */}
+                          <span className="sr-only">Termin {index + 1}:</span>{' '}
+                          {istIsoDatum(termin.datum) ? tagMitWochentag(termin.datum) : 'Ohne Datum'}
+                        </>
+                      }
+                      // Kein „bis HH:MM Uhr" je Zeile: Das Ende folgt aus dem
+                      // Fenster und ist für alle gleich (UX-005g).
+                      meta={
+                        befund ? (
+                          <span className="mt-1 inline-flex">
+                            <Badge ton={istHinderlich(befund) ? 'kritisch' : 'warnung'}>
+                              {slotConflictLabels[befund]}
+                            </Badge>
+                          </span>
+                        ) : undefined
+                      }
+                      onClick={() => setBearbeitet(index)}
+                    />
+                  );
+                })}
+              </ListRows>
+            )}
 
-          {liste.length === 0 ? (
-            <Statusmeldung>
-              Es ist kein Termin mehr übrig. Bitte oben einen neuen Vorschlag erzeugen.
-            </Statusmeldung>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {liste.map((termin, index) => {
-                const befund = werte[index] ?? null;
-                return (
-                  <li
-                    key={`${index}-${termin.datum}`}
-                    className="border-line bg-surface rounded-card border p-4"
-                  >
-                    <div className="flex flex-wrap items-end gap-3">
-                      <p className="text-ink-muted min-w-8 pb-2 text-sm">{index + 1}.</p>
-                      <div className="min-w-40 flex-1">
-                        <Field
-                          label={`Datum ${index + 1}`}
-                          type="date"
-                          value={termin.datum}
-                          min={heute || undefined}
-                          onChange={(e) => zeileSetzen(index, 'datum', e.target.value)}
-                        />
-                      </div>
-                      <div className="min-w-28 flex-1">
-                        <Field
-                          label={`Beginn ${index + 1}`}
-                          type="time"
-                          step={
-                            user.appointmentGridMinutes
-                              ? user.appointmentGridMinutes * 60
-                              : undefined
-                          }
-                          value={termin.beginn}
-                          onChange={(e) => zeileSetzen(index, 'beginn', e.target.value)}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        groesse="kompakt"
-                        onClick={() => zeileEntfernen(index)}
-                      >
-                        Entfernen
-                      </Button>
-                    </div>
-                    {/* Kein „bis HH:MM Uhr" je Zeile: Das Ende folgt aus dem
-                        Fenster und ist für alle gleich (UX-005g). */}
-                    {befund ? (
-                      <div className="mt-2">
-                        <Badge ton={istHinderlich(befund) ? 'kritisch' : 'warnung'}>
-                          {slotConflictLabels[befund]}
-                        </Badge>
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+            {/* Gebietstag der Adresse (PRX-002): warnt, sperrt nichts. */}
+            {art === 'home_visit' && liste.length > 0 ? (
+              <TerritoryHint postalCode={patientDaten.postal_code} slots={liste} />
+            ) : null}
 
-          {/* Gebietstag der Adresse (PRX-002): warnt, sperrt nichts. */}
-          {art === 'home_visit' && liste.length > 0 ? (
-            <TerritoryHint postalCode={patientDaten.postal_code} slots={liste} />
+            {liste.length > 0 ? (
+              <div className="mt-4">
+                {!geprueft ? (
+                  <Statusmeldung ton="warnung">
+                    Die Liste wurde geändert und ist noch nicht geprüft.
+                  </Statusmeldung>
+                ) : hindernisse > 0 ? (
+                  <Statusmeldung ton="fehler">
+                    {hindernisse} von {liste.length} Terminen {hindernisse === 1 ? 'ist' : 'sind'}{' '}
+                    so nicht planbar. Weil die Serie alles oder nichts ist, muss jeder davon erst
+                    geändert oder entfernt werden.
+                  </Statusmeldung>
+                ) : randzeiten > 0 ? (
+                  <Statusmeldung ton="warnung">
+                    {termineWort(randzeiten)} {randzeiten === 1 ? 'liegt' : 'liegen'} außerhalb der
+                    hinterlegten Arbeitszeit. Das Anlegen fragt dann noch einmal nach.
+                  </Statusmeldung>
+                ) : (
+                  <Statusmeldung ton="erfolg">
+                    {liste.length === 1
+                      ? 'Der Termin ist planbar.'
+                      : `Alle ${liste.length} Termine sind planbar.`}
+                  </Statusmeldung>
+                )}
+              </div>
+            ) : null}
+          </Section>
+
+          {/* Rückfrage und Fehler als Fenster (FIX-016). */}
+          {istAusserhalbArbeitszeit(anlegen.error) ? (
+            <ArbeitszeitRueckfrage
+              onBestaetigen={() => absenden(true)}
+              onAbbrechen={() => anlegen.reset()}
+              laeuft={anlegen.isPending}
+              beschriftung="Serie trotzdem anlegen"
+            />
+          ) : anlegen.isError ? (
+            <Hinweisfenster titel={SPEICHERFEHLER_TITEL} onSchliessen={() => anlegen.reset()}>
+              {speicherfehlerText(anlegen.error.message, SPEICHERFEHLER_TITEL)}
+            </Hinweisfenster>
           ) : null}
 
           {liste.length > 0 ? (
-            <div className="mt-6 flex flex-col gap-3">
-              {!geprueft ? (
-                <Statusmeldung ton="warnung">
-                  Die Liste wurde geändert und ist noch nicht geprüft.
-                </Statusmeldung>
-              ) : hindernisse > 0 ? (
-                <Statusmeldung ton="fehler">
-                  {hindernisse} von {liste.length} Terminen {hindernisse === 1 ? 'ist' : 'sind'} so
-                  nicht planbar. Weil die Serie alles oder nichts ist, muss jeder davon erst
-                  geändert oder entfernt werden.
-                </Statusmeldung>
-              ) : randzeiten > 0 ? (
-                <Statusmeldung ton="warnung">
-                  {termineWort(randzeiten)} {randzeiten === 1 ? 'liegt' : 'liegen'} außerhalb der
-                  hinterlegten Arbeitszeit. Das Anlegen fragt dann noch einmal nach.
-                </Statusmeldung>
-              ) : (
-                <Statusmeldung ton="erfolg">
-                  {liste.length === 1
-                    ? 'Der Termin ist planbar.'
-                    : `Alle ${liste.length} Termine sind planbar.`}
-                </Statusmeldung>
-              )}
+            <Formularfuss>
+              <Button
+                type="button"
+                onClick={() => absenden(false)}
+                disabled={anlegen.isPending || !geprueft || hindernisse > 0}
+              >
+                {anlegen.isPending ? 'Wird angelegt …' : `${termineWort(liste.length)} anlegen`}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pruefung.isPending}
+                onClick={() => pruefen(liste)}
+              >
+                Erneut prüfen
+              </Button>
+              <ButtonLink to={abbrechenZiel} variant="quiet">
+                Abbrechen
+              </ButtonLink>
+            </Formularfuss>
+          ) : null}
 
-              {/* Rückfrage und Fehler als Fenster (FIX-016). */}
-              {istAusserhalbArbeitszeit(anlegen.error) ? (
-                <ArbeitszeitRueckfrage
-                  onBestaetigen={() => absenden(true)}
-                  onAbbrechen={() => anlegen.reset()}
-                  laeuft={anlegen.isPending}
-                  beschriftung="Serie trotzdem anlegen"
+          {offeneZeile && bearbeitet !== null ? (
+            <Dialogfenster
+              titel={`Termin ${bearbeitet + 1} ändern`}
+              onSchliessen={() => setBearbeitet(null)}
+            >
+              {/* Jede Änderung gilt sofort für die Liste und verlangt eine neue
+                  Prüfung - wie vorher an der Zeile selbst. */}
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field
+                  label={`Datum ${bearbeitet + 1}`}
+                  type="date"
+                  value={offeneZeile.datum}
+                  min={heute || undefined}
+                  onChange={(e) => zeileSetzen(bearbeitet, 'datum', e.target.value)}
                 />
-              ) : anlegen.isError ? (
-                <Hinweisfenster titel={SPEICHERFEHLER_TITEL} onSchliessen={() => anlegen.reset()}>
-                  {speicherfehlerText(anlegen.error.message, SPEICHERFEHLER_TITEL)}
-                </Hinweisfenster>
-              ) : null}
-
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  onClick={() => absenden(false)}
-                  disabled={anlegen.isPending || !geprueft || hindernisse > 0}
-                >
-                  {anlegen.isPending ? 'Wird angelegt …' : `${termineWort(liste.length)} anlegen`}
+                <Field
+                  label={`Beginn ${bearbeitet + 1}`}
+                  type="time"
+                  step={user.appointmentGridMinutes ? user.appointmentGridMinutes * 60 : undefined}
+                  value={offeneZeile.beginn}
+                  onChange={(e) => zeileSetzen(bearbeitet, 'beginn', e.target.value)}
+                />
+              </div>
+              <div className="mt-6 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
+                <Button type="button" data-autofocus onClick={() => setBearbeitet(null)}>
+                  Fertig
                 </Button>
                 <Button
                   type="button"
-                  variant="secondary"
-                  disabled={pruefung.isPending}
-                  onClick={() => pruefen(liste)}
+                  variant="quiet"
+                  onClick={() => {
+                    zeileEntfernen(bearbeitet);
+                    setBearbeitet(null);
+                  }}
                 >
-                  Erneut prüfen
+                  Aus der Serie entfernen
                 </Button>
               </div>
-            </div>
+            </Dialogfenster>
           ) : null}
-        </Section>
+        </div>
       ) : null}
       {/* Keine Fußnote zu Einzelterminen und organisatorischen Angaben mehr:
           Sie erklärte das System, nicht die Serie (UX-005g). */}
     </>
   );
+}
+
+/** Wochentag und Datum eines Kalendertags: „Mi, 12.05.2027“ (wie KAL-B03). */
+function tagMitWochentag(tag: string): string {
+  const wochentag = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' }).format(
+    new Date(`${tag}T00:00:00Z`),
+  );
+  return `${wochentag}, ${formatDate(tag)}`;
 }

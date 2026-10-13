@@ -6,7 +6,7 @@
  *
  * Geprueft wird nur, was sich **maschinell** entscheiden laesst. Ob eine
  * Aussage inhaltlich noch stimmt, entscheidet die Durchsicht vor dem B2-Paket,
- * nicht dieses Gate. Vier Regeln:
+ * nicht dieses Gate. Fuenf Regeln:
  *
  *   A. **Es gibt, was genannt wird.** `ADR-NNN Fassung N` nennt einen ADR aus
  *      dem Index und hoechstens dessen aktuelle Fassung; eine Version von
@@ -25,6 +25,10 @@
  *      damalige Fassung die richtige Angabe.
  *   D. **Eine Nummer wird einmal vergeben.** Jede `ANN-`, `BEF-` und
  *      `IDEA-`-Kennung steht hoechstens einmal als Ueberschrift.
+ *   E. **Pflichtlektuere bleibt klein** (Prozess verschlanken, 2026-10-12).
+ *      Was jede Session ganz liest, hat eine Obergrenze in **Bytes**. Eine
+ *      Zeilengrenze liess sich mit einer einzigen Zeile von 26.879 Zeichen
+ *      umgehen (STATUS, Stand 2026-10-12: 47 KB in 60 Zeilen).
  */
 
 // Leerraum schliesst den Zeilenumbruch ein: Markdown bricht Absaetze um.
@@ -199,6 +203,55 @@ export function pruefeEindeutigkeit(dateien) {
   const verstoesse = [];
   for (const [kennung, orte] of fundorte) {
     if (orte.length > 1) verstoesse.push(`${kennung} ist mehrfach vergeben: ${orte.join(', ')}.`);
+  }
+  return verstoesse;
+}
+
+/**
+ * Regel E: Obergrenzen der Dokumente, die ganz gelesen werden.
+ *
+ * In **Bytes** (UTF-8, ein Umlaut zaehlt zwei), weil sich eine Zeilengrenze
+ * mit langen Zeilen umgehen laesst. `OPEN_DECISIONS.md` behaelt seine
+ * Zeilengrenze: Es wird nicht ganz gelesen, die Grenze bremst dort nur das
+ * Wachstum. `optional` heisst: Fehlt die Datei, ist das kein Verstoss
+ * (`DESIGN.md` entsteht parallel; liegt sie auf `main`, entfaellt das).
+ *
+ * Eine Grenze wird gesenkt, nie gehoben - `docs-check.test.mjs` haelt die
+ * Werte fest.
+ */
+export const OBERGRENZEN = [
+  { pfad: 'CLAUDE.md', bytes: 8 * 1024 },
+  { pfad: 'docs/STATUS.md', bytes: 4 * 1024 },
+  { pfad: 'docs/development/ARBEITSBEREICHE.md', bytes: 8 * 1024 },
+  { pfad: 'docs/design/DESIGN.md', bytes: 12 * 1024, optional: true },
+  { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 400 },
+];
+
+/** Grenze je Skill (`.claude/skills/<name>/SKILL.md`): Ein Skill laedt beim Aufruf ganz. */
+export const SKILL_GRENZE_BYTES = 8 * 1024;
+
+const bytesVon = (text) => new TextEncoder().encode(text).length;
+
+/**
+ * Regel E fuer eine Liste von Grenzen. `inhaltVon(pfad)` liefert den Text
+ * oder `null`, wenn die Datei fehlt. Zeilen nach `wc -l` (Zeilenumbrueche).
+ */
+export function pruefeObergrenzen(grenzen, inhaltVon) {
+  const verstoesse = [];
+  for (const { pfad, bytes, zeilen, optional } of grenzen) {
+    const text = inhaltVon(pfad);
+    if (text === null) {
+      if (!optional) verstoesse.push(`${pfad}: fehlt, wird aber von docs:check erwartet.`);
+      continue;
+    }
+    const groesse = bytesVon(text);
+    if (bytes !== undefined && groesse > bytes) {
+      verstoesse.push(`${pfad}: ${groesse} Bytes, erlaubt sind ${bytes}.`);
+    }
+    const umbrueche = text.split('\n').length - 1;
+    if (zeilen !== undefined && umbrueche > zeilen) {
+      verstoesse.push(`${pfad}: ${umbrueche} Zeilen, erlaubt sind ${zeilen}.`);
+    }
   }
   return verstoesse;
 }

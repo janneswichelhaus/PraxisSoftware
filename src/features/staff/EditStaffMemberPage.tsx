@@ -24,10 +24,25 @@ import {
   type StaffMember,
 } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
-import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
+import {
+  STAFF_BESCHRIFTUNG,
+  sichtbarkeitDerAngaben,
+  staffFeldId,
+  staffReihenfolge,
+} from './mitarbeiterfelder';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 
 const TITEL = 'Stammdaten bearbeiten';
+
+/**
+ * Der Reiter, der die Stammdaten zeigt (R2-O6): Seit „Einsatz“ der erste
+ * Reiter ist, führt der Weg aus der Bearbeitung dorthin, wo das Gespeicherte
+ * steht.
+ */
+function stammdatenPfad(id: string): string {
+  return `/praxis/team/${id}?bereich=kontakt`;
+}
 
 /**
  * Formular für die Änderung der Mitarbeiterstammdaten.
@@ -57,7 +72,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
 
   // Zurück in den Datensatz - oder dorthin, woher die Bearbeitung kam (ORG-24).
-  const zurueck = leseRueckweg(suche, `/praxis/team/${staff.id}`);
+  const zurueck = leseRueckweg(suche, stammdatenPfad(staff.id));
 
   const ungespeichert = staffReihenfolge(privat).some((feld) => werte[feld] !== ausgang[feld]);
   const { freigeben, schutz } = useTextverlustschutz({ ungespeichert, texte: EINGABETEXTE });
@@ -112,7 +127,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
         description={`${fullName(staff)} · Mit * markierte Felder sind erforderlich.`}
       />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             staffReihenfolge(privat),
@@ -137,16 +152,17 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
             über den Knöpfen. */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <Formularfuss>
           <Button ref={speichernRef} type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Wird gespeichert …' : 'Änderungen speichern'}
           </Button>
           {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
-              dieselbe Rückfrage wie jeder andere Weg hinaus. */}
-          <ButtonLink to={zurueck} variant="secondary">
+              dieselbe Rückfrage wie jeder andere Weg hinaus. Leise (DESIGN.md
+              „Formular“). */}
+          <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
 
       {/* Ein Fehlschlag kann nicht neben dem Knopf stehen, der ihn auslöst:
@@ -164,8 +180,8 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
         </Hinweisfenster>
       ) : null}
 
-      <Kleingedrucktes className="mt-10">
-        Der Beschäftigungsstatus wird hier nicht verändert.
+      <Kleingedrucktes className="max-w-formular mt-8">
+        {sichtbarkeitDerAngaben(privat)}
       </Kleingedrucktes>
     </>
   );
@@ -186,7 +202,7 @@ export function EditStaffMemberPage({ user }: { user: CurrentUser }) {
       {/* Der Rückweg steht vor jedem Zustand - auch im Fehlerfall gibt es
           einen Weg hinaus (ORG-24, ZST-08). */}
       <Rueckweg
-        standard={`/praxis/team/${staffMemberId}`}
+        standard={stammdatenPfad(staffMemberId)}
         beschriftung={data ? `Zurück zu ${fullName(data)}` : 'Zurück zu den Stammdaten'}
       />
 

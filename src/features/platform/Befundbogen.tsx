@@ -1,15 +1,21 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { FragebogenFelder } from '@/features/assessments/FragebogenFelder';
 import { antwortFehler, type Antwort, type Antworten } from '@/features/assessments/antworten';
 import { beschriftung, frageFeldId } from '@/features/assessments/darstellung';
-import type { ScoreDefinition } from '@/features/assessments/schema';
+import type { ScoreDefinition, ScoreItem } from '@/features/assessments/schema';
 import type { Formularfehler } from '@/lib/formularfehler';
 import {
   befundbogenAbsenden,
@@ -20,6 +26,7 @@ import {
   type Bogenstand,
   type Plattformzugang,
 } from './api';
+import { bogenschritte, schrittTitel } from './bogenschritte';
 import { fuerDiePlattform } from './instrumentwahl';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum } from './zeit';
@@ -52,24 +59,19 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={zurueck}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zur Übersicht
-      </Link>
+      <Rueckweg standard={zurueck} beschriftung="Zur Übersicht" />
       {stand.isPending ? (
-        <LoadingState label="Ihr Befundbogen wird geladen …" />
+        <LoadingState label="Ihr Befundbogen wird geladen …" inKarte />
       ) : stand.data === undefined ? (
         <ErrorState
           title="Ihr Befundbogen konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => stand.refetch()}
         />
       ) : !instrument || zugang.relationship_kind !== 'treatment' ? (
         <>
-          <h1 className="text-accent text-h3 font-bold">Befundbogen</h1>
-          <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+          <PageHeader title="Befundbogen" />
+          <p className="text-ink max-w-prose text-base leading-relaxed">
             Hier gibt es zurzeit nichts auszufüllen.
           </p>
         </>
@@ -77,8 +79,8 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
         // ANN-248: Angaben zur eigenen Gesundheit macht die Person selbst; der
         // Server weist eine Begleitung ab, hier steht der Grund als Satz.
         <>
-          <h1 className="text-accent text-h3 font-bold">{instrument.meta.name_de}</h1>
-          <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+          <PageHeader title={instrument.meta.name_de} />
+          <p className="text-ink max-w-prose text-base leading-relaxed">
             Den Befundbogen füllt {zugang.represented_name ?? 'die Person'} selbst aus. Als
             Begleitung lesen Sie mit, machen aber keine Angaben zur Gesundheit.
           </p>
@@ -111,8 +113,8 @@ function Bogen({
   if (abgeschlossen) {
     return (
       <>
-        <h1 className="text-accent text-h3 font-bold">{definition.meta.name_de}</h1>
-        <Statusmeldung ton="erfolg" className="mt-4">
+        <PageHeader title={definition.meta.name_de} />
+        <Statusmeldung ton="erfolg">
           Ihr Befundbogen liegt der Praxis vor
           {abgeschlossen.completed_at ? ` (seit ${datum(abgeschlossen.completed_at)})` : ''}. Danke!
           Ihre Therapeut:in sieht Ihre Angaben beim nächsten Termin.
@@ -134,6 +136,13 @@ function Bogen({
   );
 }
 
+/**
+ * Der Bogen zum Ausfüllen, in Schritten mit sichtbarem Fortschritt
+ * (`bogenschritte`, ANN-467). Geprüft wird beim „Weiter“ der Schritt, beim
+ * „Absenden“ der ganze Bogen - mit denselben Regeln wie in der Praxis.
+ * Zwischenspeichern geht in jedem Schritt; die Antworten sind dieselben wie
+ * vorher, nur die Anzeige ist geteilt.
+ */
 function Formular({
   zugang,
   definition,
@@ -155,6 +164,23 @@ function Formular({
   const [entwurfId, setEntwurfId] = useState<string | null>(entwurf?.id ?? null);
   const [meldung, setMeldung] = useState<string | null>(null);
   const [vorgang, setVorgang] = useState<'absenden' | 'speichern' | null>(null);
+  const schritte = useMemo(() => bogenschritte(definition.items), [definition]);
+  const [schritt, setSchritt] = useState(0);
+  const anfang = useRef<HTMLDivElement>(null);
+  const ersterWechsel = useRef(true);
+  const fragen = schritte[schritt] ?? [];
+  const letzter = schritt === schritte.length - 1;
+
+  // Nach jedem Wechsel des Schritts steht dessen Anfang im Bild und hat den
+  // Fokus - sonst ginge es am Telefon unten weiter, wo der Knopf war.
+  useEffect(() => {
+    if (ersterWechsel.current) {
+      ersterWechsel.current = false;
+      return;
+    }
+    anfang.current?.scrollIntoView?.({ block: 'start' });
+    anfang.current?.focus();
+  }, [schritt]);
 
   const setzen = useCallback((itemId: string, antwort: Antwort | undefined) => {
     setAntworten((bisher) => {
@@ -165,9 +191,12 @@ function Formular({
     });
   }, []);
 
-  function pruefen(): Formularfehler[] {
+  /** Prüft den Bogen; ohne `nur` den ganzen, sonst die Fragen eines Schritts. */
+  function pruefen(nur?: readonly ScoreItem[]): Formularfehler[] {
     const jeFrage = Object.fromEntries(
-      antwortFehler(definition, antworten).map((f) => [f.itemId, f.meldung]),
+      antwortFehler(definition, antworten)
+        .filter((f) => !nur || nur.some((item) => item.id === f.itemId))
+        .map((f) => [f.itemId, f.meldung]),
     );
     const liste = definition.items
       .filter((item) => jeFrage[item.id] !== undefined)
@@ -179,6 +208,16 @@ function Formular({
     setFehlerJeFrage(jeFrage);
     setZusammenfassung(liste);
     return liste;
+  }
+
+  function wechseln(neu: number) {
+    setMeldung(null);
+    setSchritt(neu);
+  }
+
+  function weiter() {
+    if (pruefen(fragen).length > 0) return;
+    wechseln(schritt + 1);
   }
 
   const neuLaden = () =>
@@ -214,65 +253,115 @@ function Formular({
 
   function los(absenden: boolean) {
     setMeldung(null);
-    if (absenden && pruefen().length > 0) return;
+    if (absenden) {
+      const fehler = pruefen();
+      if (fehler.length > 0) {
+        // Der erste Schritt mit einem Fehler kommt nach vorn, die Liste zeigt
+        // nur, was dort zu sehen ist.
+        const ziel = schritte.findIndex((s) =>
+          s.some((item) => fehler.some((f) => f.feldId === frageFeldId(item.id))),
+        );
+        if (ziel >= 0 && ziel !== schritt) {
+          pruefen(schritte[ziel]);
+          setSchritt(ziel);
+        }
+        return;
+      }
+    }
     setVorgang(absenden ? 'absenden' : 'speichern');
     speichern.mutate(absenden, { onSettled: () => setVorgang(null) });
   }
 
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">{definition.meta.name_de}</h1>
-      <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
-        Bitte beantworten Sie die Fragen so, wie es Ihnen heute geht. Jede Frage darf offen bleiben.
-        Ihre Therapeut:in geht den Bogen mit Ihnen beim ersten Termin durch.
-      </p>
-      <form onSubmit={(e) => e.preventDefault()} noValidate className="mt-6 max-w-2xl">
-        <FragebogenFelder
-          definition={definition}
-          antworten={antworten}
-          onChange={setzen}
-          fehler={fehlerJeFrage}
-        />
-        <div className="border-line mt-8 flex flex-col gap-4 border-t pt-6">
+      <PageHeader
+        kicker={`Schritt ${schritt + 1} von ${schritte.length}`}
+        title={definition.meta.name_de}
+      />
+      <div className="-mt-4 mb-6">
+        <ProgressBar wert={schritt + 1} von={schritte.length} />
+      </div>
+      {schritt === 0 ? (
+        <p className="text-ink mb-6 max-w-prose text-base leading-relaxed">
+          Bitte beantworten Sie die Fragen so, wie es Ihnen heute geht. Jede Frage darf offen
+          bleiben. Ihre Therapeut:in geht den Bogen mit Ihnen beim ersten Termin durch.
+        </p>
+      ) : null}
+      <form onSubmit={(e) => e.preventDefault()} noValidate>
+        <div ref={anfang} tabIndex={-1} className="outline-none">
           <Fehlerzusammenfassung fehler={zusammenfassung} />
-          {speichern.isError ? (
-            <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
-          ) : null}
-          {meldung ? <Statusmeldung ton="erfolg">{meldung}</Statusmeldung> : null}
-          <p className="text-ink-muted max-w-prose text-sm">
-            Mit „Absenden“ geht der Bogen an die Praxis und lässt sich hier nicht mehr ändern.
-            Zwischenspeichern können Sie jederzeit.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Section titel={schrittTitel(fragen)}>
+            <FragebogenFelder
+              definition={{ ...definition, items: fragen }}
+              antworten={antworten}
+              onChange={setzen}
+              fehler={fehlerJeFrage}
+            />
+          </Section>
+        </div>
+        {speichern.isError ? (
+          <Statusmeldung ton="fehler" className="mt-6">
+            {speichern.error.message}
+          </Statusmeldung>
+        ) : null}
+        {meldung ? (
+          <Statusmeldung ton="erfolg" className="mt-6">
+            {meldung}
+          </Statusmeldung>
+        ) : null}
+        <Formularfuss
+          trenner
+          {...(letzter
+            ? {
+                zusatz:
+                  'Mit „Absenden“ geht der Bogen an die Praxis und lässt sich hier nicht mehr ändern. Zwischenspeichern können Sie jederzeit.',
+              }
+            : {})}
+        >
+          {letzter ? (
             <Button type="button" onClick={() => los(true)} disabled={speichern.isPending}>
               {vorgang === 'absenden' ? 'Wird gesendet …' : 'Absenden'}
             </Button>
+          ) : (
+            <Button type="button" onClick={weiter} disabled={speichern.isPending}>
+              Weiter
+            </Button>
+          )}
+          {schritt > 0 ? (
             <Button
               type="button"
               variant="secondary"
-              onClick={() => los(false)}
+              onClick={() => wechseln(schritt - 1)}
               disabled={speichern.isPending}
             >
-              {vorgang === 'speichern' ? 'Wird gespeichert …' : 'Zwischenspeichern'}
+              Zurück
             </Button>
-            {entwurfId ? (
-              <Rueckfrage
-                ausloeser="Entwurf verwerfen"
-                ausloeserVariante="quiet"
-                bestaetigen="Ja, verwerfen"
-                bestaetigenLaeuft="Wird verworfen …"
-                fehler={verwerfen.error?.message}
-                onBestaetigen={() => verwerfen.mutateAsync()}
-              >
-                <p>Ihre gespeicherten Antworten werden gelöscht.</p>
-              </Rueckfrage>
-            ) : (
-              <Button type="button" variant="quiet" onClick={() => void navigate(zurueck)}>
-                Abbrechen
-              </Button>
-            )}
-          </div>
-        </div>
+          ) : null}
+          <Button
+            type="button"
+            variant="quiet"
+            onClick={() => los(false)}
+            disabled={speichern.isPending}
+          >
+            {vorgang === 'speichern' ? 'Wird gespeichert …' : 'Zwischenspeichern'}
+          </Button>
+          {entwurfId ? (
+            <Rueckfrage
+              ausloeser="Entwurf verwerfen"
+              ausloeserVariante="quiet"
+              bestaetigen="Ja, verwerfen"
+              bestaetigenLaeuft="Wird verworfen …"
+              fehler={verwerfen.error?.message}
+              onBestaetigen={() => verwerfen.mutateAsync()}
+            >
+              <p>Ihre gespeicherten Antworten werden gelöscht.</p>
+            </Rueckfrage>
+          ) : (
+            <Button type="button" variant="quiet" onClick={() => void navigate(zurueck)}>
+              Abbrechen
+            </Button>
+          )}
+        </Formularfuss>
       </form>
     </>
   );

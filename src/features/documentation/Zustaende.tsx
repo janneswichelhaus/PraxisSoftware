@@ -31,37 +31,55 @@ export function BereitsFinalisiert({
   appointmentId,
   eintrag,
   eingehend,
+  kompakt = false,
 }: {
   appointmentId: string;
   eintrag: TreatmentNote;
   eingehend: string;
+  /**
+   * Linksbündig über „Danach“ auf der Schreibseite (Auftrag C1) statt als
+   * Leerzustand in der Mitte. Wörter und Wege bleiben dieselben (DOK-08).
+   */
+  kompakt?: boolean;
 }) {
   const weg = eintragsweg(appointmentId, eintrag);
   const istNachtrag = eintrag.addendum_to_note_id !== null;
-
-  return (
-    <EmptyState
-      title="Bereits finalisiert"
-      description={
-        istNachtrag
-          ? 'Dieser Nachtrag ist Bestandteil der Akte. Eine Änderung ist nur als Korrektur mit Begründung möglich.'
-          : 'Dieser Eintrag ist Bestandteil der Akte. Eine Ergänzung ist als Nachtrag möglich, eine Änderung nur als Korrektur mit Begründung.'
-      }
-      aktion={
-        <>
-          {/* Zu einem Nachtrag gibt es keinen weiteren (ADR-016 Punkt 6). */}
-          {istNachtrag ? null : (
-            <ButtonLink to={mitRueckweg(`${weg}/nachtrag`, eingehend)} variant="secondary">
-              Nachtrag hinzufügen
-            </ButtonLink>
-          )}
-          <ButtonLink to={mitRueckweg(`${weg}/korrektur`, eingehend)} variant="quiet">
-            Korrigieren
-          </ButtonLink>
-        </>
-      }
-    />
+  const beschreibung = istNachtrag
+    ? 'Dieser Nachtrag ist Bestandteil der Akte. Eine Änderung ist nur als Korrektur mit Begründung möglich.'
+    : 'Dieser Eintrag ist Bestandteil der Akte. Eine Ergänzung ist als Nachtrag möglich, eine Änderung nur als Korrektur mit Begründung.';
+  const wege = (
+    <>
+      {/* Zu einem Nachtrag gibt es keinen weiteren (ADR-016 Punkt 6). */}
+      {istNachtrag ? null : (
+        <ButtonLink
+          to={mitRueckweg(`${weg}/nachtrag`, eingehend)}
+          variant="secondary"
+          {...(kompakt ? { groesse: 'kompakt' as const } : {})}
+        >
+          Nachtrag hinzufügen
+        </ButtonLink>
+      )}
+      <ButtonLink
+        to={mitRueckweg(`${weg}/korrektur`, eingehend)}
+        variant="quiet"
+        {...(kompakt ? { groesse: 'kompakt' as const } : {})}
+      >
+        Korrigieren
+      </ButtonLink>
+    </>
   );
+
+  if (kompakt) {
+    return (
+      <div>
+        <p className="text-ink text-liste font-semibold">Bereits finalisiert</p>
+        <p className="text-ink-muted mt-1 max-w-prose text-sm">{beschreibung}</p>
+        <div className="mt-3 flex flex-wrap gap-2">{wege}</div>
+      </div>
+    );
+  }
+
+  return <EmptyState title="Bereits finalisiert" description={beschreibung} aktion={wege} />;
 }
 
 /** Der Eintrag ist noch ein Entwurf: Er wird schlicht bearbeitet. */

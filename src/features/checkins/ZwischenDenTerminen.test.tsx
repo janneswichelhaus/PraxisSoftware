@@ -329,8 +329,13 @@ describe('Verlaufsbild mit Ereignissen (OUT-001)', () => {
     expect(
       screen.getByText('Striche an der Zeitachse: durchgeführte Termine.'),
     ).toBeInTheDocument();
-    // In der Behandlung wird im Befund vermerkt, nicht hier.
+    // In der Behandlung wird im Befund vermerkt, nicht hier - ein Weg dorthin
+    // statt eines Erklärsatzes (Sichtung 13.10.2026, A10).
     expect(screen.queryByRole('form', { name: 'Ereignis vermerken' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ereignis im Befund vermerken' })).toHaveAttribute(
+      'href',
+      `/patienten/${AKTE}/doku/befund`,
+    );
     expect(screen.queryByRole('button', { name: /entfernen/ })).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Verschlechter|erklärt|Trend|besser|schlechter/i),

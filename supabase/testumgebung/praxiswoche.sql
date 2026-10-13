@@ -51,7 +51,11 @@ plan (nummer, patient_id, staff_member_id, user_id, location_id, appointment_typ
 ),
 termine as (
   select
-    md5('praxiswoche-' || woche.tag || '-' || plan.nummer)::uuid as id,
+    -- Versions- und Variantenbits wie bei einer RFC-4122-UUID der Version 4:
+    -- Ein reiner md5-Wert ist keine gueltige UUID, und die Plattform verwirft
+    -- dann die ganze Terminliste (zod, src/features/platform/api.ts).
+    overlay(overlay(md5('praxiswoche-' || woche.tag || '-' || plan.nummer)
+      placing '4' from 13) placing '8' from 17)::uuid as id,
     plan.*,
     (woche.tag + plan.von) at time zone 'Europe/Berlin' as starts_at,
     (woche.tag + plan.bis) at time zone 'Europe/Berlin' as ends_at,

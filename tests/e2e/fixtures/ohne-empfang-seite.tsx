@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { SperreOhneNetz } from '@/features/auth/sitzungssperre/SperreOhneNetz';
 import { AufDemGeraet } from '@/features/offline-documentation/AufDemGeraet';
 import { DiensttelefonAbschnitt } from '@/features/offline-documentation/DiensttelefonAbschnitt';
@@ -53,18 +54,21 @@ function Geraet({ besitzer, zone }: { besitzer: string; zone: string }) {
     <>
       <Geraetehinweis besitzer={besitzer} />
       <PraxisAblage besitzer={besitzer} staffMemberId={null} zeitzone={zone} konto={konto} />
-      <main className="mx-auto max-w-xl px-4 py-6">
-        <h1 className="text-ink mb-4 text-2xl font-semibold">Auf dem Gerät</h1>
-        <AufDemGeraet
-          besitzer={besitzer}
-          ohneVerbindung={!navigator.onLine}
-          serverwege={{
-            zurDokumentation: (t) => `/termine/${t}/dokumentation`,
-            alsNachtrag: () => Promise.resolve(),
-            inKorrektur: () => undefined,
-            fassungLesen: () => Promise.resolve('Synthetisch: Fassung der Praxis, finalisiert.'),
-          }}
-        />
+      {/* Derselbe Inhaltsbereich und Kopf wie in der Anwendung (AufDemGeraetPage). */}
+      <main className="max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12">
+        <PageHeader title="Auf dem Gerät" />
+        <div className="max-w-spalte">
+          <AufDemGeraet
+            besitzer={besitzer}
+            ohneVerbindung={!navigator.onLine}
+            serverwege={{
+              zurDokumentation: (t) => `/termine/${t}/dokumentation`,
+              alsNachtrag: () => Promise.resolve(),
+              inKorrektur: () => undefined,
+              fassungLesen: () => Promise.resolve('Synthetisch: Fassung der Praxis, finalisiert.'),
+            }}
+          />
+        </div>
       </main>
     </>
   );

@@ -50,6 +50,9 @@ const ERLAUBT: readonly RegExp[] = [
   // UEB-009: das Planblatt und die Dosierung in Worten - Darstellung ohne
   // Datenzugriff (ANN-303); die Pläne kommen über die Plattformprojektion.
   /^@\/features\/exercise-plans\/(Planblatt|dosierung)$/,
+  // UEB-012: das Übungsbild - Posenformat und Zeichner ohne Datenzugriff
+  // (ANN-381); das Bild selbst kommt eingefroren über die Plattformprojektion.
+  /^@\/features\/exercises\/bild\/(schema|Uebungsbild)$/,
   /^\.\//,
 ];
 

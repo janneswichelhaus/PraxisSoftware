@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { textlinkKlassen } from '@/components/ui/buttonStile';
 import type { CurrentUser } from '@/features/session/types';
@@ -41,14 +42,16 @@ export function BereichePage({ user }: { user: CurrentUser }) {
           Untermenüs, und die Kommunikation ist als Ganzes eine. Der Weg zum
           Protokoll steht jeder Rolle offen - die Tableiste nennt „Mehr" auch
           dort, wo der eigene Bereich darin liegt. */}
-      <p className="text-ink-muted mt-8 max-w-prose text-sm">
-        Vorschauen — im Untermenü so bezeichnet — und die Kommunikation speichern nichts; was dort
-        simuliert wurde, steht im{' '}
+      {/* Als Kleingedrucktes und kurz (Design-Review T7): Die Kommunikation
+          ist seit KOM-002 echt, Vorschau ist nur noch, was im Untermenü so
+          heißt. */}
+      <Kleingedrucktes className="mt-8">
+        Vorschauen speichern nichts; was dort simuliert wurde, steht im{' '}
         <Link to="/vorschau/protokoll" className={textlinkKlassen()}>
           Vorschau-Protokoll
         </Link>
         .
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

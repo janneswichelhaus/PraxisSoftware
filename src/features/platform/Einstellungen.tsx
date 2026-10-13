@@ -1,6 +1,9 @@
 import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Disclosure } from '@/components/ui/Card';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
 import { Benachrichtigungen } from './Benachrichtigungen';
@@ -29,38 +32,40 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const [groesse, setzen] = useSchriftgroesse();
   return (
     <>
-      <Link
-        to={`${PLATTFORM_PFAD}/ich`}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu „Ich“
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Einstellungen</h1>
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <PageHeader title="Einstellungen" />
       <Section titel="Schriftgröße" rahmen>
         <Schriftwahl groesse={groesse} onWahl={setzen} />
-        <p className="text-ink-muted mt-3 max-w-prose text-sm">
-          Gilt nur auf diesem Gerät. Auf einem anderen Gerät stellen Sie sie dort ein.
-        </p>
+        <p className="text-ink-muted mt-2 max-w-prose text-sm">Gilt nur auf diesem Gerät.</p>
       </Section>
       <Benachrichtigungen zugaenge={zugaenge} />
-      {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12). */}
-      <PasskeyAbschnitt rahmen />
-      <PinAbschnitt rahmen />
       <Section titel="Was die Praxis für Sie eingestellt hat" rahmen>
-        <ul className="flex flex-col gap-4">
-          <li>
-            <p className="text-ink text-base font-medium">Anrede</p>
-            <p className="text-ink text-base">Die Praxis spricht Sie mit „Sie“ an.</p>
-          </li>
+        <DetailList>
+          <DetailRow label="Anrede">Die Praxis spricht Sie mit „Sie“ an.</DetailRow>
           {zugaenge.map((z) => (
             <EinstiegStand key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
           ))}
-        </ul>
+        </DetailList>
       </Section>
+      {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12) - selten
+          gebraucht, deshalb auf Abruf (ANN-468). Die Einrichtungspflicht sorgt
+          dafür, dass beides im Betrieb schon da ist. */}
+      <div className="mt-8">
+        <Disclosure inKarte kopf="betont" summary="Passkey und PIN">
+          <PasskeyAbschnitt />
+          <PinAbschnitt />
+        </Disclosure>
+      </div>
     </>
   );
 }
 
+/**
+ * Drei Größen als Auswahlknöpfe ohne eigenen Rahmen: Sie stehen schon in der
+ * Karte des Abschnitts (DESIGN.md, Regel 2 - kein Kasten im Kasten). Kein
+ * `Segment`: Drei Knöpfe nebeneinander passen bei „Sehr groß" und 200 %
+ * Vergrößerung nicht in 188 px; untereinander bricht nichts.
+ */
 function Schriftwahl({
   groesse,
   onWahl,
@@ -72,22 +77,18 @@ function Schriftwahl({
   return (
     <fieldset>
       <legend className="sr-only">Schriftgröße</legend>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col">
         {SCHRIFTGROESSEN.map((s) => (
-          <label
-            key={s}
-            className="border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft rounded-button flex min-h-12 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 border px-4 py-2"
-          >
+          <label key={s} className="flex min-h-12 cursor-pointer items-center gap-3">
             <input
               type="radio"
               name={name}
               value={s}
               checked={groesse === s}
               onChange={() => onWahl(s)}
-              className="size-5 shrink-0"
+              className="border-line-strong text-accent focus-visible:outline-accent size-5 shrink-0"
             />
             <span className="text-ink text-base">{SCHRIFTGROESSE_NAME[s]}</span>
-            {groesse === s ? <span className="text-ink-muted ml-auto text-sm">gewählt</span> : null}
           </label>
         ))}
       </div>
@@ -107,13 +108,10 @@ function EinstiegStand({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: 
     ? ` – ${zugang.access_kind === 'self' ? BEREICHSNAME[zugang.relationship_kind] : `für ${zugang.represented_name ?? 'eine andere Person'}`}`
     : '';
   return (
-    <li>
-      <p className="text-ink text-base font-medium">Einstieg{bereich}</p>
-      <p className="text-ink text-base">
-        {data.skipped_at
-          ? `Die Praxis hat den Einstieg am ${datum(data.skipped_at)} für Sie übersprungen. Ihre Einwilligungen hat sie dabei nicht berührt.`
-          : `Sie haben den Einstieg am ${datum(data.finished_at!)} beendet.`}
-      </p>
-    </li>
+    <DetailRow label={`Einstieg${bereich}`}>
+      {data.skipped_at
+        ? `Die Praxis hat den Einstieg am ${datum(data.skipped_at)} für Sie übersprungen. Ihre Einwilligungen hat sie dabei nicht berührt.`
+        : `Sie haben den Einstieg am ${datum(data.finished_at!)} beendet.`}
+    </DetailRow>
   );
 }

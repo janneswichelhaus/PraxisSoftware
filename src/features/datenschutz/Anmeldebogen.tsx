@@ -1,7 +1,7 @@
 import { einwilligungAngeboten } from '@/lib/einwilligung';
 import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -182,7 +182,13 @@ function Einwilligungszeichen({ stand }: { stand: Einwilligungsstand }) {
         {plattform}
       </Badge>
     );
-  if (stand.abgelehnt) return <Badge ton="neutral">Abgelehnt am {formatDate(stand.seit)}</Badge>;
+  // Zeichen und Wort auch ohne eigenen Ton (Regel 5; Sichtung 13.10.2026, A6).
+  if (stand.abgelehnt)
+    return (
+      <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.abgelehnt}>
+        Abgelehnt am {formatDate(stand.seit)}
+      </Badge>
+    );
   if (stand.seit)
     return (
       <Badge ton="warnung">
@@ -190,7 +196,11 @@ function Einwilligungszeichen({ stand }: { stand: Einwilligungsstand }) {
         {plattform}
       </Badge>
     );
-  return <Badge ton="neutral">Nicht erteilt</Badge>;
+  return (
+    <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.fehlt}>
+      Nicht erteilt
+    </Badge>
+  );
 }
 
 type Vorgang = 'consent_granted' | 'consent_withdrawn' | 'consent_refused';

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders, testUser } from '@/test-utils';
-import type { Kennzahlen, Ziele } from './kennzahlen';
+import { KENNZAHLEN, type Kennzahlen, type Ziele } from './kennzahlen';
 import {
   beispielJePerson,
   beispielKennzahlen,
@@ -61,7 +61,7 @@ describe('StatisticsPage (STA-003)', () => {
     fetchUmsatzJePerson.mockReset().mockResolvedValue(beispielJePerson());
   });
 
-  it('zeigt fuenf Karten mit Wert und je einer Handlung', async () => {
+  it('zeigt fuenf Kennzahlen mit Wert und je einer Handlung', async () => {
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
 
     expect(screen.getByRole('heading', { name: 'Statistiken', level: 1 })).toBeInTheDocument();
@@ -93,6 +93,34 @@ describe('StatisticsPage (STA-003)', () => {
     ).toHaveAttribute('href', '/warteliste');
   });
 
+  it('stellt die fuenf Kennzahlen als beschriftete Liste in einer Karte, ohne Kacheln (R2-O8)', async () => {
+    renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
+    await screen.findByRole('region', { name: (name) => name === 'Umsatz' });
+
+    // Eine Liste mit dem Namen jeder Kennzahl als Beschriftung, in der
+    // Reihenfolge der Kennzahlen.
+    const liste = karte('Umsatz').closest('dl')!;
+    expect(liste).not.toBeNull();
+    const titel = KENNZAHLEN.map((kennzahl) => kennzahl.titel);
+    expect(Array.from(liste.querySelectorAll('dt'), (dt) => dt.textContent)).toEqual(titel);
+
+    // Eine Karte um alle fünf (DESIGN.md Regel 2) - keine Karte je Kennzahl.
+    expect(liste.parentElement).toHaveClass('rounded-card');
+    for (const name of titel) {
+      const kennzahl = karte(name);
+      expect(liste.contains(kennzahl)).toBe(true);
+      expect(kennzahl.querySelector('.rounded-card')).toBeNull();
+      // Jede trägt Ziel und nächsten Schritt.
+      expect(within(kennzahl).getByText(/Ziel:/)).toBeInTheDocument();
+      expect(within(kennzahl).getAllByRole('link')).toHaveLength(1);
+    }
+    expect(
+      within(karte('Verordnungen ohne Anschluss')).getByRole('link', {
+        name: 'Verordner:innen anfragen',
+      }),
+    ).toBeInTheDocument();
+  });
+
   it('haelt Umsatz und Zahlungseingang in getrennten Zahlen', async () => {
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
     const umsatz = await screen.findByRole('region', { name: (name) => name === 'Umsatz' });
@@ -111,7 +139,7 @@ describe('StatisticsPage (STA-003)', () => {
     expect(within(karte('Auslastung')).getByText('Ziel: nicht gesetzt')).toBeInTheDocument();
   });
 
-  it('setzt ein Ziel ueber das Formular der Karte', async () => {
+  it('setzt ein Ziel ueber das Formular der Kennzahl', async () => {
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
     const auslastung = await screen.findByRole('region', { name: (name) => name === 'Auslastung' });
 

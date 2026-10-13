@@ -5,7 +5,10 @@ import { Profilhinweis } from '@/app/Profilhinweis';
 import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
-import { Textlink } from '@/components/ui/Textlink';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
@@ -107,7 +110,7 @@ export function PlattformApp({
       <main
         id="inhalt"
         tabIndex={-1}
-        className="mx-auto w-full max-w-xl flex-1 px-5 pt-5 pb-28 focus:outline-none"
+        className="max-w-formular mx-auto w-full flex-1 px-5 pt-5 pb-28 focus:outline-none"
       >
         <Routes>
           <Route
@@ -467,7 +470,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
   const gewaehlt = useWahl(bereiche);
   return (
     <header className="nicht-drucken border-line bg-surface border-b">
-      <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-5 py-2">
+      <div className="max-w-formular mx-auto flex items-center justify-between gap-3 px-5 py-2">
         <Link
           to={PLATTFORM_PFAD}
           className="rounded-button inline-flex min-h-11 items-center"
@@ -501,7 +504,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
       {/* D6: der Schalter nur bei zwei lesbaren Zugängen - eigene Bereiche
           und Vertretungen (POR-006). */}
       {bereiche.length > 1 && MIT_SCHALTER.has(pathname) ? (
-        <nav aria-label="Bereich" className="mx-auto max-w-xl px-5 pb-3">
+        <nav aria-label="Bereich" className="max-w-formular mx-auto px-5 pb-3">
           <ul className="bg-surface-sunken rounded-button flex flex-wrap gap-1 p-1">
             {bereiche.map((z) => (
               // POR-020: Bei 200 % am Telefon stehen die Bereiche untereinander,
@@ -537,7 +540,7 @@ function HandelnFuer({ bereiche }: { bereiche: Plattformzugang[] }) {
   }
   return (
     <div role="status" className="bg-accent text-surface">
-      <p className="mx-auto max-w-xl px-5 py-2 text-base">
+      <p className="max-w-formular mx-auto px-5 py-2 text-base">
         Sie handeln für <strong>{gewaehlt.represented_name ?? 'eine andere Person'}</strong>
         <span className="opacity-90"> · {VERTRETUNGSART[gewaehlt.access_kind]}</span>
       </p>
@@ -550,10 +553,8 @@ function OhneLesbarenZugang({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const gesperrt = zugaenge.some((z) => z.status === 'locked');
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">
-        {gesperrt ? 'Ihr Zugang ist gesperrt' : 'Ihr Zugang ist beendet'}
-      </h1>
-      <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+      <PageHeader title={gesperrt ? 'Ihr Zugang ist gesperrt' : 'Ihr Zugang ist beendet'} />
+      <p className="text-ink max-w-prose text-base leading-relaxed">
         {gesperrt
           ? 'Hier ist gerade nichts zu sehen. Bitte wenden Sie sich an die Praxis.'
           : 'Die Zeit, in der Sie hier noch lesen konnten, ist abgelaufen. Unter „Ich" können Sie Einwilligungen widerrufen und sich abmelden.'}
@@ -563,9 +564,14 @@ function OhneLesbarenZugang({ zugaenge }: { zugaenge: Plattformzugang[] }) {
 }
 
 /**
- * „Ich" (DSN-001 Abschnitt 3): das Konto, die Abmeldung und - seit POR-007 -
- * wer für die Person Zugang hat (ADR-023 Punkt 14). Rechnungen, Dokumente,
- * Einwilligungen und Einstellungen kommen mit POR-EPIC-002 und -003.
+ * „Ich" (DSN-001 Abschnitt 3): je Bereich die Unterlagen, Verträge,
+ * Einwilligungen und Daten, wer für die Person Zugang hat (ADR-023 Punkt
+ * 14), am Ende das Konto mit Einstellungen und Abmelden.
+ *
+ * Seit Welle B (DESIGN.md, Seitentyp „Plattform“) ist jede Unterlage eine
+ * Zeile, die ganz das Ziel ist (`ListRow`) - statt sieben Abschnitten mit
+ * Textlinks. Der Bereich steht einmal als Abschnittstitel, nicht hinter
+ * jedem Link.
  */
 function Ich({
   email,
@@ -584,19 +590,49 @@ function Ich({
   // Die Person selbst und eine rechtliche Vertretung sehen, wer Zugang hat;
   // eine Begleitung nicht. Verbindlich ist der Server (manage_companions).
   const mitVertretungen = zugaenge.filter((z) => z.access_kind !== 'companion');
+  // Ein Bereich steht hier, wenn er lesbar ist oder über ihn entschieden
+  // wird: Nach der Lesefrist bleibt der Person das Widerrufen (D2).
+  const bereiche = [
+    ...zugaenge,
+    ...entscheidend.filter((e) => !zugaenge.some((z) => z.access_id === e.access_id)),
+  ];
   const [fehler, setFehler] = useState<string | undefined>(undefined);
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">Ich</h1>
-      <Section titel="Konto" rahmen>
-        <p className="text-ink text-base">
-          Angemeldet als <span className="font-medium wrap-anywhere">{email ?? 'Ihr Konto'}</span>
-        </p>
-        {praxis ? <p className="text-ink-muted mt-1 text-sm">Zugang von {praxis}</p> : null}
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+      <PageHeader
+        title="Ich"
+        description={
+          <>
+            Angemeldet als <span className="font-medium wrap-anywhere">{email ?? 'Ihr Konto'}</span>
+            {praxis ? ` · Zugang von ${praxis}` : null}
+          </>
+        }
+      />
+      {bereiche.map((z) => (
+        <IchBereich
+          key={z.access_id}
+          zugang={z}
+          lesbar={zugaenge.some((x) => x.access_id === z.access_id)}
+          entscheidet={entscheidend.some((x) => x.access_id === z.access_id)}
+        />
+      ))}
+      {mitVertretungen.map((z) => (
+        <WerZugangHat key={z.access_id} zugang={z} mehrere={mitVertretungen.length > 1} />
+      ))}
+      <Section titel="Konto">
+        {/* POR-020: Schriftgröße und was die Praxis eingestellt hat. */}
+        <ListRows>
+          <ListRow
+            to={`${PLATTFORM_PFAD}/einstellungen`}
+            titel="Einstellungen"
+            meta="Schrift, Benachrichtigungen, Passkey und PIN"
+          />
+        </ListRows>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Button onClick={onAbmelden}>Abmelden</Button>
           <Rueckfrage
             ausloeser="Überall abmelden"
+            ausloeserVariante="quiet"
             bestaetigen="Überall abmelden"
             bestaetigenLaeuft="Wird abgemeldet …"
             fehler={fehler}
@@ -614,170 +650,90 @@ function Ich({
           </Rueckfrage>
         </div>
       </Section>
-      {/* POR-013/014: Rechnungen und Dokumente je Bereich. Ob
-          eine Begleitung Rechnungen sieht, entscheidet der Server (billing). */}
-      {zugaenge.length > 0 ? (
-        <Section titel="Unterlagen" rahmen>
-          <ul className="flex flex-col gap-2">
-            {zugaenge.map((z) => (
-              <li key={z.access_id} className="flex flex-col gap-2">
-                <Textlink
-                  alleinstehend
-                  to={`${PLATTFORM_PFAD}/rechnungen?${wahlAdresse(z).split('?')[1] ?? ''}`}
-                >
-                  Rechnungen
-                  {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
-                </Textlink>
-                {/* POR-014: Dokumente gibt es nur in der Behandlung. */}
-                {z.relationship_kind === 'treatment' ? (
-                  <Textlink
-                    alleinstehend
-                    to={`${PLATTFORM_PFAD}/dokumente?${wahlAdresse(z).split('?')[1] ?? ''}`}
-                  >
-                    Dokumente
-                    {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
-                  </Textlink>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : null}
-      {/* TRK-003: die eigenen Check-ins je Bereich (DSN-001 4.1 „Meine Angaben"). */}
-      {zugaenge.length > 0 ? (
-        <Section titel="Meine Angaben" rahmen>
-          <ul className="flex flex-col gap-2">
-            {zugaenge.map((z) => (
-              <li key={z.access_id}>
-                <Textlink
-                  alleinstehend
-                  to={`${PLATTFORM_PFAD}/angaben?${wahlAdresse(z).split('?')[1] ?? ''}`}
-                >
-                  Antworten aus dem Check-in
-                  {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
-                </Textlink>
-              </li>
-            ))}
-            {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. */}
-            {zugaenge.map((z) => (
-              <li key={`gewohnheiten-${z.access_id}`}>
-                <Textlink
-                  alleinstehend
-                  to={`${PLATTFORM_PFAD}/gewohnheiten?${wahlAdresse(z).split('?')[1] ?? ''}`}
-                >
-                  Gewohnheiten
-                  {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
-                </Textlink>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : null}
-      {/* ANG-003: das Nachsorge-Abo je Behandlungszugang; ohne Abo steht nichts. */}
-      {zugaenge
-        .filter((z) => z.relationship_kind === 'treatment')
-        .map((z) => (
-          <AboKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
-        ))}
-      {/* ANG-008: Paket und Preise je Trainingszugang (IDEA-ANG-004). */}
-      {zugaenge
-        .filter((z) => z.relationship_kind === 'training')
-        .map((z) => (
-          <PaketKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
-        ))}
-      {/* KND-003: der im Konto geschlossene Trainingsvertrag; ohne ihn nichts. */}
-      {zugaenge
-        .filter((z) => z.relationship_kind === 'training')
-        .map((z) => (
-          <VertragKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
-        ))}
-      {/* POR-016: Einwilligungen je Zugang - die eigenen und die einer
-          rechtlichen Vertretung, nie die einer Begleitung. */}
-      {entscheidend.length > 0 ? (
-        <Section titel="Einwilligungen und Daten" rahmen>
-          <ul className="flex flex-col gap-2">
-            {entscheidend.map((z) => (
-              <li key={z.access_id} className="flex flex-col gap-2">
-                <Textlink
-                  alleinstehend
-                  to={`${PLATTFORM_PFAD}/einwilligungen?${wahlAdresse(z).split('?')[1] ?? ''}`}
-                >
-                  Einwilligungen
-                  {entscheidend.length > 1 ? ` – ${wahlName(z)}` : ''}
-                </Textlink>
-                {/* POR-018 (ANN-261): der Export nur in der Lesezeit. */}
-                {z.readable ? (
-                  <Textlink
-                    alleinstehend
-                    to={`${PLATTFORM_PFAD}/daten?${wahlAdresse(z).split('?')[1] ?? ''}`}
-                  >
-                    Meine Daten herunterladen
-                    {entscheidend.length > 1 ? ` – ${wahlName(z)}` : ''}
-                  </Textlink>
-                ) : (
-                  <p className="text-ink-muted text-sm">
-                    Ihre Daten{entscheidend.length > 1 ? ` (${wahlName(z)})` : ''} bekommen Sie
-                    jetzt bei der Praxis.
-                  </p>
-                )}
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : null}
-      {/* POR-020: Schriftgröße und was die Praxis eingestellt hat. */}
-      <Section titel="Einstellungen" rahmen>
-        <Textlink alleinstehend to={`${PLATTFORM_PFAD}/einstellungen`}>
-          Schriftgröße und Einstellungen
-        </Textlink>
-      </Section>
-      {mitVertretungen.map((z) => (
-        <WerZugangHat key={z.access_id} zugang={z} mehrere={mitVertretungen.length > 1} />
-      ))}
-      <Section titel="Gut zu wissen">
-        <p className="text-ink-muted max-w-prose text-sm leading-relaxed">
-          Ihr Zugang gehört nur Ihnen. Bitte geben Sie Adresse und Kennwort nicht weiter.
-          Angehörige, die Ihnen helfen, bekommen von der Praxis einen eigenen Zugang.
-        </p>
-      </Section>
+      <Kleingedrucktes className="mt-8">
+        Ihr Zugang gehört nur Ihnen. Bitte geben Sie Adresse und Kennwort nicht weiter. Angehörige,
+        die Ihnen helfen, bekommen von der Praxis einen eigenen Zugang.
+      </Kleingedrucktes>
     </>
   );
 }
 
+/** Der Suchteil eines Zugangs für Links auf seine Seiten (D6). */
+function wahlSuche(z: Plattformzugang): string {
+  return wahlAdresse(z).split('?')[1] ?? '';
+}
+
 /**
- * Der Abo-Stand unter „Ich" (ANG-003, DSN-001 4.2): seit wann, bis wann, und
- * der Weg zum Kündigen. Ohne Abo – oder ohne Recht, es zu sehen – bleibt der
- * Abschnitt weg.
+ * Die Zeilen eines Bereichs unter „Ich“: Rechnungen und Dokumente (POR-013,
+ * POR-014), Meine Angaben (TRK-003) und Gewohnheiten (ALT-003), Abo
+ * (ANG-003), Paket (ANG-008) und Vertrag (KND-003), Einwilligungen (POR-016)
+ * und Export (POR-018, ANN-261). Was eine Rolle davon sieht, sagt der
+ * Server; eine Begleitung entscheidet keine Einwilligungen.
  */
-function AboKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+function IchBereich({
+  zugang: z,
+  lesbar,
+  entscheidet,
+}: {
+  zugang: Plattformzugang;
+  lesbar: boolean;
+  entscheidet: boolean;
+}) {
+  const ziel = (pfad: string) => `${PLATTFORM_PFAD}/${pfad}?${wahlSuche(z)}`;
+  return (
+    <Listenabschnitt titel={wahlName(z)}>
+      {lesbar ? <ListRow to={ziel('rechnungen')} titel="Rechnungen" /> : null}
+      {/* POR-014: Dokumente gibt es nur in der Behandlung. */}
+      {lesbar && z.relationship_kind === 'treatment' ? (
+        <ListRow to={ziel('dokumente')} titel="Dokumente" />
+      ) : null}
+      {lesbar ? <ListRow to={ziel('angaben')} titel="Antworten aus dem Check-in" /> : null}
+      {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. */}
+      {lesbar ? <ListRow to={ziel('gewohnheiten')} titel="Gewohnheiten" /> : null}
+      {lesbar && z.relationship_kind === 'treatment' ? <AboZeile zugang={z} /> : null}
+      {lesbar && z.relationship_kind === 'training' ? <PaketZeile zugang={z} /> : null}
+      {lesbar && z.relationship_kind === 'training' ? <VertragZeile zugang={z} /> : null}
+      {entscheidet ? <ListRow to={ziel('einwilligungen')} titel="Einwilligungen" /> : null}
+      {/* POR-018 (ANN-261): der Export nur in der Lesezeit. */}
+      {entscheidet && z.readable ? (
+        <ListRow to={ziel('daten')} titel="Meine Daten herunterladen" />
+      ) : null}
+      {entscheidet && !z.readable ? (
+        <ListRow titel="Meine Daten" meta="Ihre Daten bekommen Sie jetzt bei der Praxis." />
+      ) : null}
+    </Listenabschnitt>
+  );
+}
+
+/**
+ * Das Nachsorge-Abo unter „Ich" (ANG-003, DSN-001 4.2): seit wann, bis wann,
+ * und der Weg zum Kündigen. Ohne Abo – oder ohne Recht, es zu sehen – keine
+ * Zeile.
+ */
+function AboZeile({ zugang }: { zugang: Plattformzugang }) {
   const { data } = useQuery({
     queryKey: aboSchluessel(zugang.access_id),
     queryFn: () => ladeAbo(zugang.access_id),
   });
   if (!data) return null;
-  const titel = `Nachsorge-Abo${mehrere ? ` – ${wahlName(zugang)}` : ''}`;
   return (
-    <Section titel={titel} rahmen>
-      <p className="text-ink text-base">
-        {data.state === 'running'
+    <ListRow
+      to={`${PLATTFORM_PFAD}/abo?${wahlSuche(zugang)}`}
+      titel={
+        data.state === 'running' && data.can_cancel
+          ? 'Nachsorge-Abo ansehen oder kündigen'
+          : 'Nachsorge-Abo'
+      }
+      meta={
+        data.state === 'running'
           ? data.starts_on > kalendertag(new Date())
             ? `Beginnt am ${datum(data.starts_on)}.`
             : `Läuft seit ${datum(data.starts_on)}.`
           : data.state === 'ending'
             ? `Gekündigt, endet am ${datum(data.ends_on ?? '')}.`
-            : `Beendet am ${datum(data.ends_on ?? '')}.`}
-      </p>
-      <div className="mt-2">
-        <Textlink
-          alleinstehend
-          to={`${PLATTFORM_PFAD}/abo?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
-        >
-          {data.state === 'running' && data.can_cancel
-            ? 'Abo ansehen oder kündigen'
-            : 'Abo ansehen'}
-        </Textlink>
-      </div>
-    </Section>
+            : `Beendet am ${datum(data.ends_on ?? '')}.`
+      }
+    />
   );
 }
 
@@ -787,67 +743,51 @@ function AboKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolea
  * die Preise stehen da, bevor jemand fragt (IDEA-ANG-004). Den eigenen Stand
  * sieht nur, wer Rechnungen sieht; das sagt der Server.
  */
-function PaketKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+function PaketZeile({ zugang }: { zugang: Plattformzugang }) {
   const { data } = useQuery({
     queryKey: paketeSchluessel(zugang.access_id),
     queryFn: () => ladeMeinePakete(zugang.access_id),
   });
   const aktuell = data?.find((k) => k.state !== 'ended');
-  const titel = `Trainingspaket${mehrere ? ` – ${wahlName(zugang)}` : ''}`;
   return (
-    <Section titel={titel} rahmen>
-      {aktuell ? (
-        <p className="text-ink text-base">
-          {aktuell.state === 'planned'
-            ? `Beginnt am ${datum(aktuell.starts_on)}.`
-            : `Läuft bis ${datum(aktuell.ends_on)}.`}
-        </p>
-      ) : null}
-      <div className={aktuell ? 'mt-2' : undefined}>
-        <Textlink
-          alleinstehend
-          to={`${PLATTFORM_PFAD}/paket?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
-        >
-          {aktuell ? 'Paket und Preise ansehen' : 'Pakete und Preise ansehen'}
-        </Textlink>
-      </div>
-    </Section>
+    <ListRow
+      to={`${PLATTFORM_PFAD}/paket?${wahlSuche(zugang)}`}
+      titel={aktuell ? 'Trainingspaket und Preise' : 'Pakete und Preise'}
+      {...(aktuell
+        ? {
+            meta:
+              aktuell.state === 'planned'
+                ? `Beginnt am ${datum(aktuell.starts_on)}.`
+                : `Läuft bis ${datum(aktuell.ends_on)}.`,
+          }
+        : {})}
+    />
   );
 }
 
 /**
  * Der Trainingsvertrag unter „Ich" (KND-003): gebucht am, und der Weg zur
  * Bestätigung - solange die Frist läuft, auch zum Widerruf (KND-004). Ohne
- * Vertrag im Konto bleibt der Abschnitt weg.
+ * Vertrag im Konto keine Zeile.
  */
-function VertragKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+function VertragZeile({ zugang }: { zugang: Plattformzugang }) {
   const { data } = useQuery({
     queryKey: vertragSchluessel(zugang.access_id),
     queryFn: () => ladeVertrag(zugang.access_id),
   });
   if (!data) return null;
-  const titel = `Trainingsvertrag${mehrere ? ` – ${wahlName(zugang)}` : ''}`;
   return (
-    <Section titel={titel} rahmen>
-      <p className="text-ink text-base">
-        Gebucht am {datum(data.concluded_at)}.
-        {data.withdrawn_at
+    <ListRow
+      to={`${PLATTFORM_PFAD}/vertrag?${wahlSuche(zugang)}`}
+      titel={data.can_withdraw ? 'Trainingsvertrag ansehen oder widerrufen' : 'Trainingsvertrag'}
+      meta={`Gebucht am ${datum(data.concluded_at)}.${
+        data.withdrawn_at
           ? ` Widerrufen am ${datum(data.withdrawn_at)}.`
           : data.can_withdraw
             ? ` Widerruf möglich bis ${datum(data.withdrawal_ends_on)}.`
-            : ''}
-      </p>
-      <div className="mt-2">
-        <Textlink
-          alleinstehend
-          to={`${PLATTFORM_PFAD}/vertrag?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
-        >
-          {data.can_withdraw
-            ? 'Vertrag ansehen oder widerrufen'
-            : 'Vertrag und Bestätigung ansehen'}
-        </Textlink>
-      </div>
-    </Section>
+            : ''
+      }`}
+    />
   );
 }
 
@@ -868,12 +808,12 @@ function WerZugangHat({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: b
       ? `Wer für Sie Zugang hat${mehrere ? ` – ${BEREICHSNAME[zugang.relationship_kind]}` : ''}`
       : `Wer für ${zugang.represented_name ?? 'die Person'} Zugang hat`;
   return (
-    <Section titel={titel} rahmen>
-      <ul className="flex flex-col gap-4">
+    <Section titel={titel}>
+      <ListRows>
         {data.map((v) => (
           <VertretungZeile key={v.access_id} zugangId={zugang.access_id} vertretung={v} />
         ))}
-      </ul>
+      </ListRows>
     </Section>
   );
 }
@@ -895,8 +835,11 @@ function VertretungZeile({
       ? `${VERTRETUNGSART.legal_representative} (${RECHTSGRUNDLAGE[v.legal_basis]})`
       : VERTRETUNGSART[v.access_kind];
   return (
-    <li>
-      <p className="text-ink text-base font-medium">{v.representative_name}</p>
+    // Eine Zeile wie `ListRow`, die Rückfrage darunter: Sie öffnet sich an
+    // Ort und Stelle und braucht die volle Breite - neben dem Namen wäre sie
+    // am Telefon zu schmal.
+    <li className="border-line border-t py-3 first:border-t-0">
+      <p className="text-ink text-base font-semibold">{v.representative_name}</p>
       <p className="text-ink-muted text-sm">
         {art}
         {v.status === 'invited' ? ' · eingeladen' : v.status === 'locked' ? ' · gesperrt' : ''}
@@ -905,6 +848,7 @@ function VertretungZeile({
         <div className="mt-2">
           <Rueckfrage
             ausloeser="Begleitung beenden"
+            ausloeserVariante="quiet"
             bestaetigen="Begleitung beenden"
             bestaetigenLaeuft="Wird beendet …"
             fehler={beenden.error?.message}
@@ -943,7 +887,7 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
       aria-label="Plattform"
       className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
-      <ul className="mx-auto flex max-w-xl">
+      <ul className="max-w-formular mx-auto flex">
         <li className="flex-1">
           <Link
             to={`${PLATTFORM_PFAD}${search}`}

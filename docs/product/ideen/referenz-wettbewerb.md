@@ -1,9 +1,12 @@
 # Referenz: Funktionen vergleichbarer Praxisprogramme
 
 > Nicht normativ. Siehe [../IDEENSPEICHER.md](../IDEENSPEICHER.md). Rang 6 —
-> diese Datei begründet **keinen** Scope. Sie beantwortet je Bruchstelle „wie
-> lösen es andere", nie „was fehlt uns" (`docs/development/OPTIMIERUNG.md`,
-> Abschnitt 13).
+> diese Datei begründet **für sich keinen** Scope. Sie beantwortet „wie lösen es
+> andere“. **Auf Jannes' Auftrag** (`/bereich`, Auftrag vom 2026-10-12) dienen die
+> Abläufe und Schrittzahlen hier als **Spezifikationsquelle**: Was die
+> Arbeitsablauf-Spec des Auftrags daraus übernimmt, gilt dort als Rang 3
+> (`CLAUDE.md`, „Arbeitsweise“). Übernommen werden Abläufe und Schrittzahlen, nie
+> Texte, Bilder, Symbole oder Benennungen der Hersteller.
 
 Stand der Recherche: 2026-09-05/06. Auftrag von Jannes: Welche Funktionen
 haben iPrax, THEORG, thevea und vergleichbare Terminierungsprogramme — so

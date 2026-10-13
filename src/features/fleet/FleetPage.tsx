@@ -3,11 +3,13 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
-import { Card, CardGrid, DataList, DataRow, Disclosure } from '@/components/ui/Card';
+import { DataList, DataRow } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
+import { Filterleiste } from '@/components/ui/Filterleiste';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { SearchField } from '@/components/ui/SearchField';
 import { isOwner, type CurrentUser } from '@/features/session/types';
 import { aktiveStandortvorlage } from '@/features/preview/standortvorlage';
 import { montagDerWoche, plusTage } from '@/features/preview/demodaten';
@@ -201,9 +203,10 @@ export function FleetPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
+      {/* Ohne Satz unter dem Titel (Regel 6); „Rad hinzufügen“ kompakt im
+          Kopf (ANN-403). */}
       <PageHeader
         title="Radflotte"
-        description="Lastenräder für Hausbesuche: Zuordnung, Verfügbarkeit, Schlüssel und Wartung."
         actions={<ButtonLink to="/betrieb/flotte/rad/neu">Rad hinzufügen</ButtonLink>}
       />
 
@@ -214,7 +217,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
           keine Sonderfarbe mehr - ihr Rand lag bei 2,1:1. Kompakt, 44 px wie
           bisher: In voller Größe bräuchten die drei am Telefon eine Zeile
           mehr vor dem ersten Rad. */}
-      <div className="mb-5 flex flex-wrap gap-3">
+      <div className="mb-6 flex flex-wrap gap-2">
         <ButtonLink to="/betrieb/flotte/panne" variant="secondary" groesse="kompakt">
           Panne melden
         </ButtonLink>
@@ -226,50 +229,45 @@ export function FleetPage({ user }: { user: CurrentUser }) {
         </ButtonLink>
       </div>
 
-      {/* Filter über die Bausteine (TOK-13, UIK-19): 48 px wie das Suchfeld.
-          Am Telefon stehen die zwei Auswahlen nebeneinander unter der Suche. */}
-      <div className="mb-5 flex flex-wrap items-end gap-4">
-        <div className="max-w-sm min-w-0 flex-1 basis-56">
-          <Field
-            label="Suche"
-            type="search"
+      {/* Suche offen, Status und freier Tag am Telefon hinter „Filter“
+          (Filterleiste, ANN-405); die Bausteine mit 48 px (TOK-13, UIK-19).
+          Darunter der Bestand als Ergebniszeile. */}
+      <Filterleiste
+        suche={
+          <SearchField
             placeholder="Rad, Stammnutzer:in, Notiz"
             value={suche}
-            onChange={(event) => setzeParameter({ q: event.target.value })}
+            onChange={(wert) => setzeParameter({ q: wert })}
           />
-        </div>
-        <div className="min-w-0 flex-1 basis-36 sm:w-40 sm:flex-none">
-          <Select
-            label="Status"
-            value={status}
-            onChange={(event) => setzeParameter({ status: event.target.value as Statusfilter })}
-          >
-            <option value="alle">Alle Status</option>
-            <option value="verfuegbar">Verfügbar</option>
-            <option value="einsatz">Im Einsatz</option>
-            <option value="reparatur">In Reparatur</option>
-          </Select>
-        </div>
-        <div className="min-w-0 flex-1 basis-36 sm:w-40 sm:flex-none">
-          <Select
-            label="Freier Tag"
-            value={tag}
-            onChange={(event) => setzeParameter({ tag: event.target.value as Tagesfilter })}
-          >
-            <option value="">Alle Tage</option>
-            {wochentage.map((wochentag) => (
-              <option key={wochentag} value={wochentag}>
-                Nur frei: {wochentagLabels[wochentag]}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </div>
-
-      <p className="text-ink-muted mb-4 text-sm">
-        {zaehler.verfuegbar} verfügbar · {zaehler.einsatz} im Einsatz · {zaehler.reparatur} in
-        Reparatur · {zustand.raeder.length} Räder insgesamt
-      </p>
+        }
+        gesetzt={(status === 'alle' ? 0 : 1) + (tag ? 1 : 0)}
+        onZuruecksetzen={() => setzeParameter({ status: 'alle', tag: '' })}
+        beschriftung="Radflotte filtern"
+        ergebnis={`${zaehler.verfuegbar} verfügbar · ${zaehler.einsatz} im Einsatz · ${zaehler.reparatur} in Reparatur · ${zustand.raeder.length} Räder insgesamt`}
+      >
+        <Select
+          label="Status"
+          value={status}
+          onChange={(event) => setzeParameter({ status: event.target.value as Statusfilter })}
+        >
+          <option value="alle">Alle Status</option>
+          <option value="verfuegbar">Verfügbar</option>
+          <option value="einsatz">Im Einsatz</option>
+          <option value="reparatur">In Reparatur</option>
+        </Select>
+        <Select
+          label="Freier Tag"
+          value={tag}
+          onChange={(event) => setzeParameter({ tag: event.target.value as Tagesfilter })}
+        >
+          <option value="">Alle Tage</option>
+          {wochentage.map((wochentag) => (
+            <option key={wochentag} value={wochentag}>
+              Nur frei: {wochentagLabels[wochentag]}
+            </option>
+          ))}
+        </Select>
+      </Filterleiste>
 
       <Wochenuebersicht />
 
@@ -284,9 +282,9 @@ export function FleetPage({ user }: { user: CurrentUser }) {
             titel={depot.name}
             beschreibung={`${depot.hinweis} · ${raederImDepot.length} ${raederImDepot.length === 1 ? 'Rad' : 'Räder'}`}
           >
-            <CardGrid>
+            <ListRows>
               {raederImDepot.map((rad) => (
-                <Radkarte
+                <Radzeile
                   key={rad.id}
                   rad={rad}
                   abschnitt={depot.name}
@@ -296,23 +294,35 @@ export function FleetPage({ user }: { user: CurrentUser }) {
                   onFreigeben={() => freigeben(rad)}
                 />
               ))}
-            </CardGrid>
+            </ListRows>
           </Abschnitt>
         );
       })}
 
       {sichtbar.length === 0 ? (
-        <EmptyState title="Keine Treffer" description="Suche oder Filter anpassen." />
+        <div className="mt-8">
+          <EmptyState inKarte title="Keine Treffer" description="Suche oder Filter anpassen." />
+        </div>
       ) : null}
     </>
   );
 }
 
 // -----------------------------------------------------------------------------
-// Radkarte
+// Radzeile
 // -----------------------------------------------------------------------------
 
-function Radkarte({
+/**
+ * Ein Rad als Zeile der Liste (Welle B, B7): Name, Stammnutzer:in,
+ * Schlüsselstand, Akku und - für die Praxisinhaber:in - der Schlüsselcode;
+ * rechts die Arbeit an der Zeile (Leitfaden L3): Schlüssel zurücklegen oder
+ * entnehmen, ein Rad in Reparatur freigeben. Die Zeile selbst öffnet das Rad
+ * mit Verläufen, Panne und Check-Up.
+ *
+ * Bis dahin stand jedes Rad als Karte mit vier Knöpfen und drei Aufklappern
+ * da, die Flotte am Telefon über 4 000 px. Fachlich ändert sich nichts.
+ */
+function Radzeile({
   rad,
   abschnitt,
   zeitzone,
@@ -321,7 +331,7 @@ function Radkarte({
   onFreigeben,
 }: {
   rad: Rad;
-  /** Die Überschrift des Abschnitts, in dem die Karte steht. */
+  /** Die Überschrift des Abschnitts, in dem die Zeile steht. */
   abschnitt: string;
   zeitzone: string | null;
   darfSchluesselcode: boolean;
@@ -338,175 +348,97 @@ function Radkarte({
     ? mitarbeiterName(zustand, rad.aktuellerNutzerId)
     : '';
   const vertretung = Boolean(aktuellerNutzer && stammnutzer && aktuellerNutzer !== stammnutzer);
+  const ausstattung = [
+    rad.akku || null,
+    darfSchluesselcode && rad.schluesselcode ? 'code' : null,
+  ].filter(Boolean);
 
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-ink text-liste truncate font-semibold">{rad.name}</p>
-          {depot !== abschnitt ? (
-            <p className="text-ink-muted mt-0.5 truncate text-sm">{depot}</p>
-          ) : null}
-        </div>
-        {/* Nur die Abweichung trägt ein Abzeichen: Verfügbar und im Einsatz
-            sind Normalbetrieb (VOR-13, UX-005i). */}
-        {rad.status === 'reparatur' ? (
-          <Badge ton="kritisch">{radstatusLabels[rad.status]}</Badge>
-        ) : null}
-      </div>
-
-      {falschesDepot ? (
-        <p className="border-warnung bg-warnung-soft text-warnung mt-2 border-l-4 py-2 pr-3 pl-3 text-sm">
-          Steht nicht im Stammdepot. Gehört zu {depotName(zustand, rad, 'stamm')}.
-        </p>
-      ) : null}
-
-      <DataList>
-        <DataRow label="Stammnutzer:in">{rad.ersatzrad ? 'Ersatzrad' : stammnutzer || '–'}</DataRow>
-        {vertretung || (rad.ersatzrad && aktuellerNutzer) ? (
-          <DataRow label="Aktuell gefahren von">{aktuellerNutzer}</DataRow>
-        ) : null}
-        {/* Ohne Angabe keine Zeile (UX-005i). */}
-        {rad.akku ? <DataRow label="Akku">{rad.akku}</DataRow> : null}
-        {darfSchluesselcode && rad.schluesselcode ? (
-          <DataRow label="Schlüsselcode">{rad.schluesselcode}</DataRow>
-        ) : null}
-      </DataList>
-
-      {rad.notiz ? <p className="text-ink-muted mt-2 text-sm">{rad.notiz}</p> : null}
-
-      {/* Schlüsselstand neutral (VOR-13): Ein ausgegebener Schlüssel ist Alltag,
-          keine Warnung. Knopf und Link darin gleich groß (VOR-12). */}
-      {/* Eine Zeile mit Linie darüber statt eines Feldes in der Karte (Leitfaden L2). */}
-      <div className="border-line text-ink mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
-        <span>
-          {rad.schluesselInhaber ? `Schlüssel bei ${rad.schluesselInhaber}` : 'Schlüssel im Tresor'}
-          {rad.schluesselSeit ? (
-            <span className="text-ink-muted block text-xs">
-              seit {formatZeitpunkt(rad.schluesselSeit, zeitzone)}
+    <ListRow
+      to={`/betrieb/flotte/rad/${rad.id}`}
+      titel={rad.name}
+      meta={
+        <>
+          {/* Nur die Abweichung trägt ein Abzeichen: Verfügbar und im Einsatz
+              sind Normalbetrieb (VOR-13, UX-005i). Unter dem Namen statt
+              rechts daneben - dort steht die Arbeit an der Zeile. */}
+          {rad.status === 'reparatur' ? (
+            <span className="my-1 block">
+              <Badge ton="kritisch">{radstatusLabels[rad.status]}</Badge>
             </span>
           ) : null}
-        </span>
-        {rad.schluesselInhaber ? (
-          <Button variant="secondary" groesse="kompakt" onClick={onSchluesselZurueck}>
-            Schlüssel zurücklegen
-          </Button>
-        ) : (
-          <ButtonLink
-            to={`/betrieb/flotte/schluessel?rad=${rad.id}`}
-            variant="secondary"
-            groesse="kompakt"
-          >
-            Entnehmen
-          </ButtonLink>
-        )}
-      </div>
-
-      {/* Kein Wochenraster je Karte: Die Wochenübersicht oben zeigt dieselbe
-          Belegung für alle Räder (UX-005i). */}
-
-      {rad.schluesselverlauf.length > 0 ? (
-        <Disclosure summary={`Schlüsselverlauf (${rad.schluesselverlauf.length})`}>
-          <ul className="text-ink-muted space-y-1 text-sm">
-            {rad.schluesselverlauf
-              .slice(-3)
-              .reverse()
-              .map((vorgang) => (
-                <li key={vorgang.id}>
-                  {vorgang.inhaber} – {formatZeitpunkt(vorgang.entnommen, zeitzone)}
-                  {vorgang.zurueckgelegt
-                    ? ` bis ${formatZeitpunkt(vorgang.zurueckgelegt, zeitzone)}`
-                    : ' (noch entnommen)'}
-                </li>
-              ))}
-          </ul>
-        </Disclosure>
-      ) : null}
-
-      {rad.pannenverlauf.length > 0 ? (
-        <Disclosure summary={`Pannenverlauf (${rad.pannenverlauf.length})`}>
-          <ul className="text-ink-muted space-y-2 text-sm">
-            {rad.pannenverlauf
-              .slice(-3)
-              .reverse()
-              .map((meldung) => (
-                <li key={meldung.id}>
-                  <span className="text-ink-muted block text-xs">
-                    {formatZeitpunkt(meldung.zeitpunkt, zeitzone)}
-                    {meldung.gesperrt ? ' · Rad gesperrt' : ' · ohne Sperre'}
-                  </span>
-                  {meldung.text}
-                </li>
-              ))}
-          </ul>
-        </Disclosure>
-      ) : null}
-
-      {rad.checkups.length > 0 ? (
-        <Disclosure summary={`Check-Up-Verlauf (${rad.checkups.length})`}>
-          <ul className="space-y-2 text-sm">
-            {rad.checkups
-              .slice(-3)
-              .reverse()
-              .map((checkup) => {
-                const probleme = checkup.befunde.filter((befund) => befund.bewertung === 'problem');
-                const beobachten = checkup.befunde.filter(
-                  (befund) => befund.bewertung === 'beobachten',
-                );
-                return (
-                  <li key={checkup.id}>
-                    <span className="text-ink-muted block text-xs">
-                      {formatZeitpunkt(checkup.zeitpunkt, zeitzone)} · {checkup.geprueftVon}
-                    </span>
-                    {probleme.length > 0 ? (
-                      <span className="text-danger block">
-                        Problem: {probleme.map((befund) => befund.frage).join(', ')}
-                      </span>
-                    ) : null}
-                    {beobachten.length > 0 ? (
-                      <span className="text-warnung block">
-                        Beobachten: {beobachten.map((befund) => befund.frage).join(', ')}
-                      </span>
-                    ) : null}
-                    {probleme.length === 0 && beobachten.length === 0 ? (
-                      <span className="text-positiv block">Alles in Ordnung</span>
-                    ) : null}
-                    {checkup.notiz ? (
-                      <span className="text-ink-muted block">Notiz: {checkup.notiz}</span>
-                    ) : null}
-                    {checkup.fotos > 0 ? (
-                      <span className="text-ink-muted block text-xs">
-                        {checkup.fotos} Foto{checkup.fotos === 1 ? '' : 's'} angehängt (bleibt in
-                        dieser Sitzung)
-                      </span>
-                    ) : null}
-                  </li>
-                );
-              })}
-          </ul>
-        </Disclosure>
-      ) : null}
-
-      {/* Kartenaktionen mit 44 px (VOR-11, RSP-14): bis dahin 36 px hohe
-          Textlinks, „Panne" nur 38 px breit. Freigeben ändert den Status und
-          steht deshalb mit Rahmen neben den ruhigen Links. */}
-      <div className="border-line mt-3 flex flex-wrap gap-2 border-t pt-3">
-        {rad.status === 'reparatur' ? (
-          <Button variant="secondary" groesse="kompakt" onClick={onFreigeben}>
-            Freigeben
-          </Button>
-        ) : null}
-        <ButtonLink to={`/betrieb/flotte/rad/${rad.id}`} variant="quiet" groesse="kompakt">
-          Bearbeiten
-        </ButtonLink>
-        <ButtonLink to={`/betrieb/flotte/panne?rad=${rad.id}`} variant="quiet" groesse="kompakt">
-          Panne
-        </ButtonLink>
-        <ButtonLink to={`/betrieb/flotte/checkup?rad=${rad.id}`} variant="quiet" groesse="kompakt">
-          Check-Up
-        </ButtonLink>
-      </div>
-    </Card>
+          {depot !== abschnitt ? <span className="block">{depot}</span> : null}
+          <span className="block">
+            {rad.ersatzrad ? (
+              <span>Ersatzrad</span>
+            ) : (
+              <>
+                <span>Stammnutzer:in</span> {stammnutzer || '–'}
+              </>
+            )}
+            {vertretung || (rad.ersatzrad && aktuellerNutzer)
+              ? ` · gefahren von ${aktuellerNutzer}`
+              : ''}
+          </span>
+          {/* Schlüsselstand neutral (VOR-13): Ein ausgegebener Schlüssel ist
+              Alltag, keine Warnung. */}
+          <span className="block">
+            {rad.schluesselInhaber
+              ? `Schlüssel bei ${rad.schluesselInhaber}`
+              : 'Schlüssel im Tresor'}
+            {rad.schluesselSeit ? (
+              <>
+                {' · '}
+                <span>seit {formatZeitpunkt(rad.schluesselSeit, zeitzone)}</span>
+              </>
+            ) : null}
+          </span>
+          {/* Ohne Angabe keine Zeile (UX-005i). */}
+          {ausstattung.length > 0 ? (
+            <span className="block">
+              {rad.akku}
+              {rad.akku && darfSchluesselcode && rad.schluesselcode ? ' · ' : ''}
+              {darfSchluesselcode && rad.schluesselcode ? (
+                <>
+                  Schlüsselcode <span>{rad.schluesselcode}</span>
+                </>
+              ) : null}
+            </span>
+          ) : null}
+          {rad.notiz ? <span className="block">{rad.notiz}</span> : null}
+          {falschesDepot ? (
+            <span className="text-warnung block font-medium">
+              <span aria-hidden="true">! </span>
+              Steht nicht im Stammdepot. Gehört zu {depotName(zustand, rad, 'stamm')}.
+            </span>
+          ) : null}
+        </>
+      }
+      aktion={
+        <>
+          {rad.status === 'reparatur' ? (
+            <Button variant="secondary" onClick={onFreigeben}>
+              Freigeben
+            </Button>
+          ) : null}
+          {rad.schluesselInhaber ? (
+            // Sichtbar „Zurücklegen“, damit dem Namen am Telefon Platz bleibt;
+            // der Name des Knopfs sagt, was zurückgelegt wird.
+            <Button
+              variant="secondary"
+              aria-label="Schlüssel zurücklegen"
+              onClick={onSchluesselZurueck}
+            >
+              Zurücklegen
+            </Button>
+          ) : rad.status === 'reparatur' ? null : (
+            <ButtonLink to={`/betrieb/flotte/schluessel?rad=${rad.id}`} variant="secondary">
+              Entnehmen
+            </ButtonLink>
+          )}
+        </>
+      }
+    />
   );
 }
 

@@ -1,19 +1,13 @@
 import { useEffect, useId, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
 import { TextArea } from '@/components/ui/TextArea';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import {
-  formatLocalDate,
-  formatLocalTimeRange,
-  patientName,
-  type Appointment,
-} from '@/features/appointments/api';
+import { patientName, type Appointment } from '@/features/appointments/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
 import {
@@ -21,6 +15,8 @@ import {
   useTextverlustschutz,
   type Verlustschutztexte,
 } from './Textverlustschutz';
+import { Schreibfeld, Schreibflaeche, ZustandMitRueckweg } from './Schreibflaeche';
+import { kopfzeileFuer } from './format';
 import { NochEinEntwurf } from './Zustaende';
 import { uebergabeErledigt, uebergebenerText } from './uebernahme';
 import {
@@ -75,7 +71,7 @@ function Formular({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const zone = appointment.organization_time_zone;
+  const feldId = useId();
   const folgeId = useId();
 
   // Aus dem Konfliktfall übernommener Text (BEF-056): Er steht im Feld statt
@@ -153,57 +149,54 @@ function Formular({
   }
 
   return (
-    <>
-      <PageHeader
-        title="Dokumentation korrigieren"
-        description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
-        kompakt
-      />
-
-      {/* Ein Hinweis, kein Bedienelement (DOK-19): Text mit Linie links,
-          ohne Kasten (Leitfaden L2) - die Rückfrage des Schutzes ist vertieft
-          und bleibt so unterscheidbar. */}
-      <div className="border-line-strong mb-6 max-w-2xl border-l-2 py-0.5 pl-4">
-        <p className="text-ink text-sm leading-relaxed">
-          Der bisherige Wortlaut bleibt als eigene Version erhalten und abrufbar. Eine Korrektur ist
-          für echte Fehler gedacht – wer nachträglich etwas ergänzen möchte, legt stattdessen einen{' '}
-          <Textlink
-            to={mitRueckweg(
-              `/termine/${appointment.id}/dokumentation/${note.id}/nachtrag`,
-              eingehend,
-            )}
-          >
-            Nachtrag
-          </Textlink>{' '}
-          an.
-        </p>
-      </div>
+    <Schreibflaeche
+      zurueck={eingehend || zumTermin}
+      titel={patientName(appointment)}
+      kopfzeile={kopfzeileFuer('Korrektur', appointment)}
+    >
+      {/* Ein Hinweis, kein Bedienelement (DOK-19): eine leise Zeile unter dem
+          Kopf. Wer nur ergänzen will, findet hier den Nachtrag (ADR-016
+          Punkt 6); der alte Wortlaut bleibt abrufbar (Punkt 5). */}
+      <p className="border-line text-ink-muted shrink-0 border-b px-4 py-2 text-sm">
+        Für echte Fehler. Ergänzen geht als{' '}
+        <Textlink
+          to={mitRueckweg(
+            `/termine/${appointment.id}/dokumentation/${note.id}/nachtrag`,
+            eingehend,
+          )}
+        >
+          Nachtrag
+        </Textlink>
+        . Der bisherige Wortlaut bleibt als eigene Version erhalten und abrufbar.
+      </p>
 
       {uebernommen !== undefined ? (
-        <Statusmeldung className="mb-4 max-w-2xl">
+        <Statusmeldung className="shrink-0 px-4 py-2">
           Ihr Text aus dem Entwurf steht im Feld. Mit Begründung festschreiben – oder abbrechen,
           dann geht er verloren.
         </Statusmeldung>
       ) : null}
 
-      <form onSubmit={absenden} noValidate className="max-w-2xl">
-        <TextArea
+      <form onSubmit={absenden} noValidate className="flex min-w-0 flex-1 flex-col">
+        <Schreibfeld
+          feldId={feldId}
           label="Korrigierter Eintrag"
-          rows={14}
-          value={inhalt}
-          error={inhaltsfehler}
+          wert={inhalt}
+          fehler={inhaltsfehler}
           readOnly={laeuft}
-          onChange={(event) => {
-            setInhalt(event.target.value);
+          onAendern={(wert) => {
+            setInhalt(wert);
             if (inhaltsfehler) setInhaltsfehler(undefined);
           }}
         />
 
-        <div className="mt-5">
+        {/* Die Begründung gehört zur Korrektur und steht deshalb in der
+            Fläche, unter einer Linie - ohne eigenen Kasten. */}
+        <div className="border-line shrink-0 border-t px-4 pt-3 pb-2">
           <TextArea
             label="Begründung der Korrektur"
-            hint={`Kurz und sachlich, für die Nachvollziehbarkeit der Akte. Höchstens ${MAX_BEGRUENDUNG.toLocaleString('de-DE')} Zeichen.`}
-            rows={3}
+            hint={`Kurz und sachlich, höchstens ${MAX_BEGRUENDUNG.toLocaleString('de-DE')} Zeichen.`}
+            rows={2}
             value={begruendung}
             error={grundfehler}
             readOnly={laeuft}
@@ -214,29 +207,32 @@ function Formular({
           />
         </div>
 
-        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer
-            Stelle. */}
-        {schutz}
+        <Kleingedrucktes id={folgeId} className="shrink-0 px-4 pb-3">
+          Jede Korrektur wird als neue Version festgeschrieben und protokolliert. Frühere Versionen
+          werden nicht überschrieben.
+        </Kleingedrucktes>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
+        {/* Die Rückfrage des Schutzes steht ausführlich, nicht als Zeile: Sie
+            sagt, warum es hier kein Speichern gibt (DOK-05). */}
+        <div className="shrink-0 px-4 empty:hidden [&>*:first-child]:mt-0">{schutz}</div>
+
+        <Aktionsleiste einbettung="flaeche">
           {/* „Festschreiben“, nicht „Speichern“: Speichern heißt in der
               Dokumentation Entwurf (ANN-046), eine Korrektur ist sofort eine
-              neue Version der Akte (DOK-08). Die Folge steht unten und ist mit
-              dem Knopf verbunden (DOK-20). */}
-          <Button type="submit" disabled={laeuft || !geaendert} aria-describedby={folgeId}>
+              neue Version der Akte (DOK-08). Die Folge steht darüber und ist
+              mit dem Knopf verbunden (DOK-20). */}
+          <Button
+            type="submit"
+            groesse="kompakt"
+            className="ml-auto"
+            disabled={laeuft || !geaendert}
+            aria-describedby={folgeId}
+          >
             {laeuft ? 'Wird festgeschrieben …' : 'Korrektur festschreiben'}
           </Button>
-          <ButtonLink to={zumTermin} variant="quiet">
-            Abbrechen
-          </ButtonLink>
-        </div>
+        </Aktionsleiste>
       </form>
-
-      <Kleingedrucktes id={folgeId} className="mt-10">
-        Jede Korrektur wird als neue Version festgeschrieben und protokolliert. Frühere Versionen
-        werden nicht überschrieben.
-      </Kleingedrucktes>
-    </>
+    </Schreibflaeche>
   );
 }
 
@@ -248,28 +244,41 @@ export function TreatmentNoteRevisionPage({ user }: { user: CurrentUser }) {
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
       verweigert="Behandlungsdokumentation ändern dürfen Therapeut:innen und Teamleitung."
+      eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
         const eintrag = findeEintrag(dokumentation, noteId);
 
         if (!eintrag) {
           return (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
-            />
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Korrektur', appointment)}
+            >
+              <ErrorState
+                title="Nicht gefunden"
+                description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
+              />
+            </ZustandMitRueckweg>
           );
         }
 
         // Ein erwartbarer Zustand mit dem nächsten Schritt, kein Alarm (DOK-12).
         if (eintrag.status !== 'final') {
           return (
-            <NochEinEntwurf
+            <ZustandMitRueckweg
               appointmentId={appointment.id}
-              eintrag={eintrag}
-              eingehend={eingehend}
-              beschreibung="Ein Entwurf wird schlicht bearbeitet. Eine Korrektur mit Begründung gibt es erst nach der Finalisierung."
-            />
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Korrektur', appointment)}
+            >
+              <NochEinEntwurf
+                appointmentId={appointment.id}
+                eintrag={eintrag}
+                eingehend={eingehend}
+                beschreibung="Ein Entwurf wird schlicht bearbeitet. Eine Korrektur mit Begründung gibt es erst nach der Finalisierung."
+              />
+            </ZustandMitRueckweg>
           );
         }
 

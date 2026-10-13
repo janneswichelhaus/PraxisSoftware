@@ -4,7 +4,10 @@ import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Card, DataList, DataRow, Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { roleLabel } from '@/components/ui/roleLabels';
@@ -59,7 +62,7 @@ function AuskunftErgebnis({ auskunft }: { auskunft: Auskunft }) {
     <div className="mt-6">
       {/* Kartenbreite wie ein Formular (PAT-16): Über die volle Breite lagen
           Bezeichnung und Anzahl am Desktop rund 1000 px auseinander. */}
-      <Card className="max-w-xl">
+      <Card className="max-w-formular">
         <DataList>
           {abschnitte.map((key) => (
             <DataRow key={key} label={kategorieLabel(key)}>
@@ -112,10 +115,9 @@ function AuskunftAbschnitt({ patient }: { patient: Patient }) {
   const erstellt = mutation.data !== undefined;
 
   return (
-    <Section
-      titel="Auskunft nach Art. 15 DSGVO"
-      hinweis="Erstellt eine Kopie aller Daten dieser Akte. Jede Auskunft wird protokolliert."
-    >
+    // Der Satz zur Protokollierung steht im Kleingedruckten am Seitenende
+    // (Regel 6); was der Knopf tut, sagt seine Beschriftung.
+    <Section titel="Auskunft nach Art. 15 DSGVO">
       {/* Nach dem Erstellen tritt der Knopf zurück (PAT-23): Jeder weitere Tipp
           ist ein neuer, protokollierter Export, und zwei gleich starke Knöpfe
           ließen offen, was als Nächstes zu tun ist. */}
@@ -132,7 +134,7 @@ function AuskunftAbschnitt({ patient }: { patient: Patient }) {
         <div className="mt-4">
           <ErrorState
             title="Die Auskunft konnte nicht erstellt werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
           />
         </div>
       ) : null}
@@ -186,7 +188,6 @@ function AntwortEntwurf({ text }: { text: string }) {
       <Section
         titel="Entwurf der Antwort"
         ebene={3}
-        hinweis="Briefkopf, Datum und Unterschrift kommen aus der Praxis – die Anwendung verschickt nichts."
         aktion={
           <Button
             type="button"
@@ -216,54 +217,48 @@ function AntwortEntwurf({ text }: { text: string }) {
 }
 
 function LoeschverlangenAbschnitt({ patient }: { patient: Patient }) {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['datenschutz', 'aufbewahrung', patient.id],
     queryFn: () => fetchAufbewahrungsstand(patient.id),
   });
 
   return (
-    <Section
-      titel="Löschverlangen nach Art. 17 DSGVO"
-      hinweis="Welche Fristen der Löschung entgegenstehen – und ein Entwurf der Antwort."
-    >
-      {isPending ? <LoadingState label="Aufbewahrungsstand wird geladen …" /> : null}
-      {isError ? (
-        <ErrorState
-          title="Der Aufbewahrungsstand konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
-          onErneut={() => void refetch()}
-        />
-      ) : null}
-
-      {data ? (
-        <>
-          {/* Bezeichnung und Frist untereinander bzw. in fester Spalte statt
+    <Section titel="Löschverlangen nach Art. 17 DSGVO">
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Aufbewahrungsstand wird geladen …"
+        fehler="Der Aufbewahrungsstand konnte nicht geladen werden."
+      >
+        {(data) => (
+          <>
+            {/* Bezeichnung und Frist untereinander bzw. in fester Spalte statt
               rechtsbündig über die ganze Breite (PAT-16). */}
-          <Inhaltsflaeche className="max-w-xl">
-            <DetailList>
-              {data.klassen.map((klasse) => (
-                <DetailRow key={klasse.key} label={fristBezeichnung(klasse)}>
-                  {klasse.frist_ende
-                    ? `aufzubewahren bis ${formatDate(klasse.frist_ende)}`
-                    : 'Frist läuft noch nicht'}
-                </DetailRow>
-              ))}
-              {data.loeschsperre ? (
-                <DetailRow label="Löschsperre">{data.loeschsperre.grund}</DetailRow>
-              ) : null}
-            </DetailList>
-          </Inhaltsflaeche>
+            <Inhaltsflaeche className="max-w-formular">
+              <DetailList>
+                {data.klassen.map((klasse) => (
+                  <DetailRow key={klasse.key} label={fristBezeichnung(klasse)}>
+                    {klasse.frist_ende
+                      ? `aufzubewahren bis ${formatDate(klasse.frist_ende)}`
+                      : 'Frist läuft noch nicht'}
+                  </DetailRow>
+                ))}
+                {data.loeschsperre ? (
+                  <DetailRow label="Löschsperre">{data.loeschsperre.grund}</DetailRow>
+                ) : null}
+              </DetailList>
+            </Inhaltsflaeche>
 
-          <AntwortEntwurf text={ablehnungstext(fullName(patient), data)} />
-        </>
-      ) : null}
+            <AntwortEntwurf text={ablehnungstext(fullName(patient), data)} />
+          </>
+        )}
+      </Abfragezustand>
     </Section>
   );
 }
 
 export function BetroffenenrechtePage() {
   const { patientId = '' } = useParams();
-  const { data, isPending, isError, refetch } = useQuery({
+  const akte = useQuery({
     queryKey: ['patient', patientId],
     queryFn: () => fetchPatient(patientId),
     enabled: Boolean(patientId),
@@ -278,41 +273,61 @@ export function BetroffenenrechtePage() {
         beschriftung="Zurück zu den Stammdaten"
       />
 
+      {/* Unter dem Titel nur, für wen (Regel 6); wem die Vorgänge vorbehalten
+          sind (WRT-12), steht im Kleingedruckten am Ende. */}
       <PageHeader
         title="Auskunft und Löschverlangen"
-        description={
-          data
-            ? `${fullName(data)} · Vorgänge nach dem Verfahren für Betroffenenrechte, vorbehalten der Rolle „${roleLabel('owner')}“.`
-            : undefined
-        }
+        description={akte.data ? fullName(akte.data) : undefined}
       />
 
       {/* Ein Ladefehler ist etwas anderes als eine Akte, die es nicht gibt
-          (ZST-08): Der eine bietet einen neuen Versuch an, die andere nicht. */}
-      {isPending ? <LoadingState label="Akte wird geladen …" /> : null}
-      {isError ? (
-        <ErrorState
-          title="Die Akte konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
-          onErneut={() => void refetch()}
-        />
-      ) : null}
-      {data === null ? (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-        />
-      ) : null}
+          (ZST-08): Der eine bietet einen neuen Versuch an, die andere nicht.
+          Laden und Ladefehler über den Baustein (Regel 8). */}
+      <Abfragezustand
+        abfrage={akte}
+        laden="Akte wird geladen …"
+        fehler="Die Akte konnte nicht geladen werden."
+        inKarte
+      >
+        {(data) =>
+          data === null ? (
+            <ErrorState
+              title="Nicht gefunden"
+              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+            />
+          ) : (
+            <>
+              <AuskunftAbschnitt patient={data} />
+              {/* DOK-006d: Der Inhalt der Fotos kommt nicht mit der Auskunft,
+                  sondern je Foto getrennt (ADR-017 Punkt 40). */}
+              <FotoHerausgabe patientId={data.id} />
+              <LoeschverlangenAbschnitt patient={data} />
 
-      {data ? (
-        <>
-          <AuskunftAbschnitt patient={data} />
-          {/* DOK-006d: Der Inhalt der Fotos kommt nicht mit der Auskunft,
-              sondern je Foto getrennt (ADR-017 Punkt 40). */}
-          <FotoHerausgabe patientId={data.id} />
-          <LoeschverlangenAbschnitt patient={data} />
-        </>
-      ) : null}
+              {/* Rechts- und Datenflusssätze in einem Block am Seitenende
+                  (Regel 6; Nachprüfung neu4: der Satz zu den Fotos stand
+                  mitten auf der Seite): wem die Vorgänge vorbehalten sind
+                  (WRT-12), dass jede Auskunft und jede Fotokopie protokolliert
+                  wird (ADR-010 Punkt 2, ANN-128), dass Fotos nur hier die
+                  Anwendung verlassen (ADR-017 Punkt 40) und dass nichts
+                  verschickt wird. */}
+              <div className="mt-8 flex flex-col gap-2">
+                <Kleingedrucktes>
+                  Vorgänge nach dem Verfahren für Betroffenenrechte, vorbehalten der Rolle „
+                  {roleLabel('owner')}“. Jede Auskunft erstellt eine Kopie aller Daten dieser Akte
+                  und wird protokolliert. Briefkopf, Datum und Unterschrift der Antwort kommen aus
+                  der Praxis – die Anwendung verschickt nichts.
+                </Kleingedrucktes>
+                <Kleingedrucktes>
+                  Zur vollständigen Kopie gehören die Fotos selbst, auch gesperrte. Unter „Fotos
+                  herausgeben“ entsteht je Foto eine Kopie für die Person (Art. 15 Abs. 3 und Art.
+                  20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie
+                  wird protokolliert.
+                </Kleingedrucktes>
+              </div>
+            </>
+          )
+        }
+      </Abfragezustand>
     </>
   );
 }

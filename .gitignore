@@ -43,3 +43,6 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Arbeitskopien paralleler Agenten (Claude Code Worktrees)
+.claude/worktrees/

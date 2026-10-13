@@ -171,10 +171,14 @@ describe('TreatmentNoteHistoryPage', () => {
   it('nennt im knappen Kopf Eintrag, Datum und Uhrzeit (DOK-18)', async () => {
     rendern();
 
+    // Der Kopf der Schreibfläche: der Name als Überschrift, darunter was,
+    // Tag (mit Jahr) und Uhrzeit.
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Änderungsverlauf · Eintrag' }),
+      await screen.findByRole('heading', { level: 1, name: 'Berta Bestand' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Mittwoch, 12\. Mai 2027, 09:00–10:00 Uhr/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Änderungsverlauf · Eintrag · Mi 12.05.2027 · 09:00–10:00 Uhr'),
+    ).toBeInTheDocument();
   });
 
   it('nennt einen Nachtrag als Nachtrag (DOK-18)', async () => {
@@ -184,9 +188,7 @@ describe('TreatmentNoteHistoryPage', () => {
     });
     rendern();
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Änderungsverlauf · Nachtrag' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/^Änderungsverlauf · Nachtrag · /)).toBeInTheDocument();
   });
 
   it('kennzeichnet die jüngste Version als geltende Fassung (DOK-18)', async () => {

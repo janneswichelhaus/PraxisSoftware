@@ -1,23 +1,21 @@
 import { useId, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { Aufklappzeichen } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { TextArea } from '@/components/ui/TextArea';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import {
-  formatLocalDate,
-  formatLocalTimeRange,
-  patientName,
-  type Appointment,
-} from '@/features/appointments/api';
+import { patientName, type Appointment } from '@/features/appointments/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
-import { FREITEXT } from './format';
+import {
+  Schreibfeld,
+  Schreibflaeche,
+  Ursprungseintrag,
+  ZustandMitRueckweg,
+} from './Schreibflaeche';
+import { kopfzeileFuer } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { NochEinEntwurf } from './Zustaende';
 import { Einfuegemeldung } from './Einfuegemeldung';
@@ -54,20 +52,23 @@ function Formular({
   appointment,
   parent,
   dokumentation,
+  eingehend,
   zumTermin,
 }: {
   appointment: Appointment;
   parent: TreatmentNote;
   /** Der aktuelle Stand des Termins - daraus der schon gesicherte Nachtrag. */
   dokumentation: TreatmentDocumentation;
+  /** Der mitgereiste Rückweg: Ziel des Pfeils oben (DOK-01). */
+  eingehend: string;
   /** Ziel für „Abbrechen“ und nach dem Speichern: der Termin samt Rückweg (DOK-01). */
   zumTermin: string;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const zone = appointment.organization_time_zone;
   const feldId = useId();
   const folgeId = useId();
+  const fristId = useId();
 
   const [inhalt, setInhalt] = useState('');
   const [fehler, setFehler] = useState<string | undefined>(undefined);
@@ -129,6 +130,8 @@ function Formular({
   const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert,
     speichern: entwurfSichern,
+    // Als Zeile über der Aktionsleiste, wie auf der Schreibseite.
+    kompakt: true,
     selbst: {
       stand: inhalt,
       aussetzenBei: istDauerhafterSchreibfehler,
@@ -183,101 +186,97 @@ function Formular({
   }
 
   return (
-    <>
-      <PageHeader
-        title="Nachtrag zur Behandlungsdokumentation"
-        description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
-        kompakt
-      />
-
-      {/* Der Ursprungseintrag zugeklappt mit seiner ersten Zeile (BEF-057
-          Option 2): Ausgeklappt stand er ganz vor dem Feld, und am Handy
-          begann der Nachtrag unter dem Falz. Ein Tipp zeigt ihn vollständig;
-          er bleibt Akteninhalt, kein Hinweis (UI-002c, DOK-19). */}
-      <details className="group border-line mb-6 max-w-2xl border-y">
-        <summary className={`${aufklappKopfKlassen} text-ink min-h-12 text-sm`}>
-          <Aufklappzeichen />
-          <span className="tracking-label text-ink-muted shrink-0 text-xs font-semibold uppercase">
-            Ursprünglicher Eintrag
-          </span>
-          <span aria-hidden="true" className="text-ink-muted min-w-0 truncate group-open:hidden">
-            {parent.content}
-          </span>
-        </summary>
-        <p
-          data-testid="ursprung"
-          className={`text-ink text-liste max-w-prose pb-4 leading-relaxed ${FREITEXT}`}
-        >
-          {parent.content}
-        </p>
-      </details>
-
-      <form onSubmit={absenden} noValidate className="max-w-2xl">
-        {/* Dieselbe Leiste wie beim Haupteintrag (BEF-056). */}
+    <Schreibflaeche
+      zurueck={eingehend || zumTermin}
+      titel={patientName(appointment)}
+      kopfzeile={kopfzeileFuer('Nachtrag', appointment)}
+      leiste={
+        // Dieselbe Leiste wie beim Haupteintrag (BEF-056).
         <TextbausteinLeiste
+          alsChips
           onEinfuegen={(text, titel) => {
             if (!schreibtFest) einfuegen(titel, inhalt, text);
           }}
         />
+      }
+    >
+      <Ursprungseintrag inhalt={parent.content} />
 
-        <TextArea
-          label="Nachtrag"
-          // Auch der Nachtrag wird mit der Frist der Praxis von selbst Version 1
-          // (ADR-016 Punkt 7, DOK-02).
-          hint="Ergänzt den Eintrag, ohne ihn zu ändern. Bleibt Entwurf bis zur Finalisierung – spätestens mit Ablauf der Dokumentationsfrist."
-          rows={12}
+      <form onSubmit={absenden} noValidate className="flex min-w-0 flex-1 flex-col">
+        <Schreibfeld
           feldId={feldId}
-          value={inhalt}
-          error={fehler}
+          label="Nachtrag"
+          wert={inhalt}
+          fehler={fehler}
+          beschreibungId={fristId}
           readOnly={schreibtFest}
-          onChange={(event) => {
-            setInhalt(event.target.value);
+          onAendern={(wert) => {
+            setInhalt(wert);
             vergessen();
             if (fehler) setFehler(undefined);
           }}
         />
 
-        <Einfuegemeldung
-          einfuegung={letzte && letzte.nachher === inhalt ? letzte : null}
-          gesperrt={laeuft}
-          onRueckgaengig={rueckgaengig}
-        />
+        <div className="shrink-0 px-4 empty:hidden">
+          <Einfuegemeldung
+            einfuegung={letzte && letzte.nachher === inhalt ? letzte : null}
+            gesperrt={laeuft}
+            onRueckgaengig={rueckgaengig}
+          />
+        </div>
 
-        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer
-            Stelle: Alle Schreibwege dieser Seite laufen durch denselben
-            Vorgang. */}
-        {sicherungsstand}
-        {schutz}
+        {/* Auch der Nachtrag wird mit der Frist der Praxis von selbst Version 1
+            (ADR-016 Punkt 7, DOK-02); wo er liegt und was protokolliert wird,
+            steht als Kleingedrucktes darunter. */}
+        <Kleingedrucktes className="shrink-0 px-4 pt-2 pb-3">
+          <span id={fristId}>
+            Bleibt Entwurf bis zur Finalisierung – spätestens mit Ablauf der Dokumentationsfrist.
+          </span>{' '}
+          Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
+          wird protokolliert.
+        </Kleingedrucktes>
 
-        {/* Die Folge steht über dem Knopf (ADR-016 Punkt 4, BEF-056). */}
-        <p id={folgeId} className="text-ink-muted mt-5 text-sm">
-          „Nachtrag festschreiben“ macht ihn als Version 1 zum Teil der Akte. Danach ist er nur noch
+        {/* Die Folge des Festschreibens für Vorlesesoftware, wie auf der
+            Schreibseite: Der Knopf heißt nach dem, was er tut (ADR-016
+            Punkt 4, BEF-056, DOK-20). */}
+        <p id={folgeId} className="sr-only">
+          Festschreiben macht den Nachtrag als Version 1 zum Teil der Akte. Danach ist er nur noch
           mit Begründung änderbar.
         </p>
 
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        {/* Fehler, Stand der Sicherung und Rückfrage stehen als Zeile über
+            der Leiste: Alle Schreibwege laufen durch denselben Vorgang
+            (FIX-014, ANN-046). */}
+        <Aktionsleiste
+          einbettung="flaeche"
+          oben={
+            <>
+              {sicherungsstand}
+              {schutz}
+            </>
+          }
+        >
+          <Button
+            type="submit"
+            variant="quiet"
+            groesse="kompakt"
+            className="ml-auto"
+            disabled={laeuft || !ungespeichert}
+          >
+            {laeuft && !schreibtFest ? 'Wird gespeichert …' : 'Entwurf'}
+          </Button>
           <Button
             type="button"
+            groesse="kompakt"
             disabled={laeuft || inhalt.trim().length === 0}
             aria-describedby={folgeId}
             onClick={festschreiben}
           >
-            {schreibtFest ? 'Wird festgeschrieben …' : 'Nachtrag festschreiben'}
+            {schreibtFest ? 'Wird festgeschrieben …' : 'Festschreiben'}
           </Button>
-          <Button type="submit" variant="secondary" disabled={laeuft || !ungespeichert}>
-            {laeuft && !schreibtFest ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
-          </Button>
-          <ButtonLink to={zumTermin} variant="quiet">
-            Abbrechen
-          </ButtonLink>
-        </div>
+        </Aktionsleiste>
       </form>
-
-      <Kleingedrucktes className="mt-10">
-        Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
-        wird protokolliert.
-      </Kleingedrucktes>
-    </>
+    </Schreibflaeche>
   );
 }
 
@@ -289,48 +288,67 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
       verweigert="Behandlungsdokumentation schreiben dürfen Therapeut:innen und Teamleitung."
+      eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
         const eintrag = findeEintrag(dokumentation, noteId);
 
         if (!eintrag) {
           return (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
-            />
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Nachtrag', appointment)}
+            >
+              <ErrorState
+                title="Nicht gefunden"
+                description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
+              />
+            </ZustandMitRueckweg>
           );
         }
 
         // Erwartbare Zustände mit dem nächsten Schritt, kein Alarm (DOK-12).
         if (eintrag.addendum_to_note_id !== null) {
           return (
-            <EmptyState
-              title="Kein Nachtrag zum Nachtrag"
-              description="Ein Nachtrag ergänzt immer den ursprünglichen Eintrag. Bitte diesen ergänzen."
-              aktion={
-                <ButtonLink
-                  to={mitRueckweg(
-                    `/termine/${appointment.id}/dokumentation/${eintrag.addendum_to_note_id}/nachtrag`,
-                    eingehend,
-                  )}
-                  variant="secondary"
-                >
-                  Zum ursprünglichen Eintrag
-                </ButtonLink>
-              }
-            />
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Nachtrag', appointment)}
+            >
+              <EmptyState
+                title="Kein Nachtrag zum Nachtrag"
+                description="Ein Nachtrag ergänzt immer den ursprünglichen Eintrag. Bitte diesen ergänzen."
+                aktion={
+                  <ButtonLink
+                    to={mitRueckweg(
+                      `/termine/${appointment.id}/dokumentation/${eintrag.addendum_to_note_id}/nachtrag`,
+                      eingehend,
+                    )}
+                    variant="secondary"
+                  >
+                    Zum ursprünglichen Eintrag
+                  </ButtonLink>
+                }
+              />
+            </ZustandMitRueckweg>
           );
         }
 
         if (eintrag.status !== 'final') {
           return (
-            <NochEinEntwurf
+            <ZustandMitRueckweg
               appointmentId={appointment.id}
-              eintrag={eintrag}
-              eingehend={eingehend}
-              beschreibung="Solange der Eintrag ein Entwurf ist, wird er schlicht bearbeitet. Einen Nachtrag gibt es erst nach der Finalisierung."
-            />
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Nachtrag', appointment)}
+            >
+              <NochEinEntwurf
+                appointmentId={appointment.id}
+                eintrag={eintrag}
+                eingehend={eingehend}
+                beschreibung="Solange der Eintrag ein Entwurf ist, wird er schlicht bearbeitet. Einen Nachtrag gibt es erst nach der Finalisierung."
+              />
+            </ZustandMitRueckweg>
           );
         }
 
@@ -339,6 +357,7 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
             appointment={appointment}
             parent={eintrag}
             dokumentation={dokumentation}
+            eingehend={eingehend}
             zumTermin={zumTermin}
           />
         );

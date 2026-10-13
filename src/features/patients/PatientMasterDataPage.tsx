@@ -14,7 +14,11 @@ import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
 import { todayInTimeZone } from '@/features/appointments/api';
-import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
+import {
+  PlattformAbschnitt,
+  PlattformzugangBeenden,
+} from '@/features/platform-access/PlattformAbschnitt';
+import { usePlattformzugang, zugangBeendbar } from '@/features/platform-access/zustand';
 import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
 import {
   canChangePatientStatus,
@@ -102,7 +106,14 @@ const KONTAKT_IN_DER_ZEILE = 'sm:-my-2.5 sm:py-2.5';
  * (PROJECT_PRINCIPLES.md 13). Die Rückfrage ist Bedienkomfort - verbindlich
  * prüft `set_patient_status` die Berechtigung erneut.
  */
-function StatusAktion({ patient }: { patient: Patient }) {
+function StatusAktion({
+  patient,
+  variante = 'secondary',
+}: {
+  patient: Patient;
+  /** Leise am Ende des Reiters (A5); „Wieder in Versorgung führen“ bleibt sekundär. */
+  variante?: 'secondary' | 'quiet';
+}) {
   const queryClient = useQueryClient();
   const zielStatus: Patient['status'] = patient.status === 'active' ? 'inactive' : 'active';
 
@@ -120,6 +131,7 @@ function StatusAktion({ patient }: { patient: Patient }) {
   return (
     <Rueckfrage
       ausloeser={beschriftung}
+      ausloeserVariante={variante}
       bestaetigen={beschriftung}
       bestaetigenLaeuft="Wird geändert …"
       fehler={mutation.isError ? 'Der Versorgungsstatus konnte nicht geändert werden.' : undefined}
@@ -190,8 +202,11 @@ function VersorgungAbschliessen({
   }
 
   return (
+    // Leise am Ende des Reiters (Sichtung 13.10.2026, A5): Der Abschluss
+    // startet die Aufbewahrung, das Zurücknehmen darüber bleibt sekundär.
     <Rueckfrage
       ausloeser="Versorgung abschließen"
+      ausloeserVariante="quiet"
       bestaetigen="Versorgung abschließen"
       // Dasselbe Verb wie auf dem Knopf (WRT-10).
       bestaetigenLaeuft="Wird abgeschlossen …"
@@ -229,7 +244,9 @@ function VersorgungAbschliessen({
 
 /**
  * Eine Karte der Stammdaten (Akte entschlacken, 2026-10-03): Label in
- * Versalien, rechts ein leises „Bearbeiten" mit 44 px Tippziel ins Formular.
+ * Versalien, rechts „Bearbeiten" ins Formular - als unterstrichener
+ * `Textlink` mit 44 px Tippziel, wie im Kopf jeder Behandlungsgrundlage
+ * (Regel 9; Nachprüfung neu3: bis dahin ein leiser Knopf ohne Linie).
  */
 function Karte({
   titel,
@@ -247,14 +264,14 @@ function Karte({
       rahmen
       aktion={
         bearbeiten ? (
-          <ButtonLink
+          <Textlink
             to={bearbeiten}
-            variant="quiet"
-            groesse="kompakt"
+            alleinstehend
+            className="text-sm"
             aria-label={`${titel} bearbeiten`}
           >
             Bearbeiten
-          </ButtonLink>
+          </Textlink>
         ) : null
       }
     >
@@ -386,6 +403,21 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // Zusammenführen ist ein Vorgang der Praxisleitung (PRX-018,
   // app.can_merge_patients).
   const darfZusammenfuehren = isOwner(user.roles);
+  // Zurücknehmen steht in der Verwaltung, Beenden am Ende des Reiters (A5).
+  const inVersorgung = patient.status === 'active';
+  const abgeschlossen = patient.care_concluded_on !== null;
+  const zuruecknehmenStatus = darfStatusWechseln && !inVersorgung;
+  const zuruecknehmenAbschluss = darfAbschliessen && abgeschlossen;
+  const beendenStatus = darfStatusWechseln && inVersorgung;
+  const beendenAbschluss = darfAbschliessen && !abgeschlossen;
+  // Derselbe Zugang wie im Abschnitt „Plattform“ (ein Abfrageschlüssel).
+  const plattformzugang = usePlattformzugang(
+    'treatment',
+    patient.id,
+    darfVerorten && Boolean(user.organizationTimeZone),
+  );
+  const beendenZugang =
+    darfVerorten && Boolean(user.organizationTimeZone) && zugangBeendbar(plattformzugang);
   const hatVersorgungsangaben = Boolean(patient.remark || patient.primary_therapist_name);
   // UX-005e: Die Kartenposition ist eine Zeile, solange sie fehlt; verortet
   // steht sie nicht als Dauerzeile da (ANN-016).
@@ -548,10 +580,12 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
               </DetailRow>
             ) : null}
           </DetailList>
-          {darfStatusWechseln || darfAbschliessen ? (
+          {/* Hier steht nur, was etwas zurücknimmt; was eine Akte aus dem
+              Betrieb nimmt, steht leise am Ende des Reiters (A5). */}
+          {zuruecknehmenStatus || zuruecknehmenAbschluss ? (
             <div className="border-line mt-3 flex flex-wrap items-start gap-3 border-t pt-3">
-              {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
-              {darfAbschliessen ? (
+              {zuruecknehmenStatus ? <StatusAktion patient={patient} /> : null}
+              {zuruecknehmenAbschluss ? (
                 <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
               ) : null}
             </div>
@@ -593,6 +627,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           darfVerwalten={darfVerorten}
           zeitzone={user.organizationTimeZone}
           praxis={user.organizationName ?? 'der Praxis'}
+          beendenAmEnde
         />
       ) : null}
 
@@ -631,6 +666,26 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           >
             Auskunft und Löschverlangen
           </ButtonLink>
+        </Section>
+      ) : null}
+
+      {/* Zerstörendes leise am Ende des Reiters, jedes mit Rückfrage
+          (DESIGN.md, Objekt-Rezeptur und 9.16; Sichtung 13.10.2026, A5). Bis
+          dahin standen diese Auslöser mitten im Reiter, vor Rückfragen,
+          Dublette und Betroffenenrechten. */}
+      {beendenStatus || beendenAbschluss || beendenZugang ? (
+        <Section titel="Beenden">
+          {/* 12 px zwischen den Auslösern: Mit Handschuhen liegt „sperren“
+              sonst zu dicht an „entziehen“ (Grundsatz 3; Nachprüfung neu1). */}
+          <div className="flex flex-col items-start gap-3">
+            {beendenStatus ? <StatusAktion patient={patient} variante="quiet" /> : null}
+            {beendenAbschluss ? (
+              <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
+            ) : null}
+            {beendenZugang ? (
+              <PlattformzugangBeenden art="treatment" verhaeltnisId={patient.id} />
+            ) : null}
+          </div>
         </Section>
       ) : null}
     </>

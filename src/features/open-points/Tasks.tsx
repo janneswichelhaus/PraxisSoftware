@@ -1,22 +1,27 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Aufklappzeichen } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { HakenSymbol } from '@/components/ui/HakenSymbol';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
+import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { Patientensuche } from '@/features/patients/Patientensuche';
 import { fetchStaffMembers } from '@/features/staff/api';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { abfragen } from './eingang';
+import { StiftSymbol } from './Symbole';
 import {
   TASKS_KEY,
   createTask,
@@ -225,7 +230,41 @@ function TaskForm({
   );
 }
 
-/** Eine Zeile: was, bis wann, für wen, zu wem - und „Erledigt". */
+/** Fällig, für wen, zu wem - die Nebenzeile einer Aufgabe. */
+function Nebenzeile({ task, today }: { task: Task; today: string }) {
+  const teile = [
+    task.due_on
+      ? task.due_on === today
+        ? 'Heute fällig'
+        : `Fällig ${formatDate(task.due_on)}`
+      : null,
+    // „Für alle im Team" ist der Regelfall und steht nicht an jeder Zeile;
+    // nur eine Zuweisung wird genannt (UX-005h).
+    task.assigned_name ? `Für ${task.assigned_name}` : null,
+    task.patient_id && task.patient_family_name
+      ? `${task.patient_given_name ?? ''} ${task.patient_family_name}`.trim()
+      : null,
+    task.status !== 'open' && task.done_by_name ? `erledigt von ${task.done_by_name}` : null,
+  ].filter((teil): teil is string => teil !== null);
+  return (
+    <>
+      {isOverdue(task, today) ? (
+        <>
+          <StatusMark ton="warnung">Überfällig</StatusMark>
+          {teile.length > 0 ? ' · ' : null}
+        </>
+      ) : null}
+      {teile.join(' · ')}
+      {task.note ? <span className="mt-0.5 block wrap-anywhere">{task.note}</span> : null}
+    </>
+  );
+}
+
+/**
+ * Eine Aufgabe als Zeile: Mit einer Person ist die ganze Zeile der Weg in
+ * ihre Akte; daneben die Arbeit - der Haken für „Erledigt" und „Ändern"
+ * (Leitfaden L3).
+ */
 function TaskRow({
   task,
   today,
@@ -234,7 +273,7 @@ function TaskRow({
 }: {
   task: Task;
   today: string;
-  onEdit: () => void;
+  onEdit?: () => void;
   onMessage: (message: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -245,211 +284,169 @@ function TaskRow({
       onMessage(done ? `„${task.title}“ erledigt.` : `„${task.title}“ wieder offen.`);
     },
   });
-  const ueberfaellig = isOverdue(task, today);
   const offen = task.status === 'open';
+  const person =
+    task.patient_id && task.patient_family_name
+      ? mitRueckweg(`/patienten/${task.patient_id}`, '/offen')
+      : undefined;
 
   return (
-    <li className="flex flex-wrap items-start justify-between gap-3 py-3">
-      <div className="min-w-0 wrap-anywhere">
-        <p className="text-ink text-liste font-medium">{task.title}</p>
-        <p className="text-ink-muted mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-          {task.due_on ? (
-            <span>
-              {task.due_on === today ? 'Heute fällig' : `Fällig ${formatDate(task.due_on)}`}
-            </span>
+    <ListRow
+      titel={<span className="wrap-anywhere">{task.title}</span>}
+      meta={
+        <>
+          <Nebenzeile task={task} today={today} />
+          {erledigen.isError ? (
+            <Statusmeldung ton="fehler" className="mt-1">
+              {erledigen.error.message}
+            </Statusmeldung>
           ) : null}
-          {ueberfaellig ? <Badge ton="warnung">Überfällig</Badge> : null}
-          {/* „Für alle im Team" ist der Regelfall und steht nicht an jeder
-              Zeile; nur eine Zuweisung wird genannt (UX-005h). */}
-          {task.assigned_name ? <span>{`Für ${task.assigned_name}`}</span> : null}
-          {task.patient_id && task.patient_family_name ? (
-            <Link
-              to={mitRueckweg(`/patienten/${task.patient_id}`, '/offen')}
-              className="text-accent hover:underline"
-            >
-              {task.patient_given_name} {task.patient_family_name}
-            </Link>
-          ) : null}
-          {!offen && task.done_by_name ? <span>erledigt von {task.done_by_name}</span> : null}
-        </p>
-        {task.note ? <p className="text-ink-muted mt-1 max-w-prose text-sm">{task.note}</p> : null}
-        {erledigen.isError ? (
-          <Statusmeldung ton="fehler" className="mt-2">
-            {erledigen.error.message}
-          </Statusmeldung>
-        ) : null}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {offen ? (
+        </>
+      }
+      gedaempft={!offen}
+      {...(person ? { to: person } : {})}
+      aktion={
+        offen ? (
           <>
-            <Button
-              type="button"
+            {/* Als Symbole, damit der Aufgabe am Telefon die Breite bleibt;
+                der Haken außen, wie am Termin der Übersicht. */}
+            {onEdit ? (
+              <Symbolknopf beschriftung={`Ändern: ${task.title}`} onClick={onEdit}>
+                <StiftSymbol />
+              </Symbolknopf>
+            ) : null}
+            <Symbolknopf
+              beschriftung={`Erledigt: ${task.title}`}
               variant="secondary"
-              groesse="kompakt"
               disabled={erledigen.isPending}
               onClick={() => erledigen.mutate(true)}
             >
-              Erledigt<span className="sr-only">: {task.title}</span>
-            </Button>
-            <Button type="button" variant="quiet" groesse="kompakt" onClick={onEdit}>
-              Ändern<span className="sr-only">: {task.title}</span>
-            </Button>
+              <HakenSymbol />
+            </Symbolknopf>
           </>
         ) : (
           <Button
             type="button"
             variant="quiet"
-            groesse="kompakt"
             disabled={erledigen.isPending}
             onClick={() => erledigen.mutate(false)}
           >
             Wieder öffnen<span className="sr-only">: {task.title}</span>
           </Button>
-        )}
-      </div>
-    </li>
+        )
+      }
+    />
   );
 }
 
 /**
- * Aufgaben und Wiedervorlagen (PRX-012): offen nach Fälligkeit, überfällige
- * als Wort gekennzeichnet (Farbe ist nie allein Bedeutungsträger), die
- * erledigten zugeklappt darunter.
- *
- * `openForm` öffnet das Formular sofort, `patientId` belegt die Person vor -
- * etwa aus der Akte.
+ * Eine neue Aufgabe (PRX-012). `patientId` belegt die Person vor - etwa aus
+ * der Akte über `?aufgabe=neu&patient=…`.
+ */
+export function AufgabeAnlegen({
+  patientId,
+  onFertig,
+}: {
+  patientId: string | null;
+  onFertig: (meldung: string) => void;
+}) {
+  return <TaskForm initial={{ ...EMPTY, patientId }} task={null} onDone={onFertig} />;
+}
+
+/**
+ * Aufgaben und Wiedervorlagen (PRX-012) im Eingang: offen nach Fälligkeit,
+ * überfällige mit Zeichen und Wort (Farbe ist nie allein Bedeutungsträger).
+ * Ohne offene Aufgabe keine Gruppe - „Aufgabe anlegen" steht im Kopf der
+ * Seite, die erledigten am Ende unter „Zuletzt erledigt".
  */
 export function Tasks({
   today,
-  openForm = false,
-  patientId = null,
+  onMeldung,
 }: {
   today: string;
-  openForm?: boolean;
-  patientId?: string | null;
+  onMeldung: (meldung: string) => void;
 }) {
-  // 'neu' oder die Kennung der Aufgabe, die gerade geändert wird.
-  const [formular, setFormular] = useState<string | null>(openForm ? 'neu' : null);
-  const [meldung, setMeldung] = useState('');
+  // Die Kennung der Aufgabe, die gerade geändert wird.
+  const [bearbeitet, setBearbeitet] = useState<string | null>(null);
+  const offen = useQuery(abfragen.aufgaben());
 
-  const offen = useQuery({
-    queryKey: [...TASKS_KEY, 'open'],
-    queryFn: () => fetchTasks('open'),
-    retry: false,
-  });
-  const [erledigteOffen, setErledigteOffen] = useState(false);
+  if (offen.isError && !offen.data) {
+    return (
+      <Section titel="Aufgaben">
+        <ErrorState
+          title="Die Aufgaben konnten nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => offen.refetch()}
+        />
+      </Section>
+    );
+  }
+  const liste = offen.data ?? [];
+  if (liste.length === 0) return null;
+
+  return (
+    <Listenabschnitt titel="Aufgaben" anzahl={liste.length}>
+      {liste.map((task) =>
+        bearbeitet === task.id ? (
+          <li key={task.id} className="border-line border-t py-4 first:border-t-0">
+            <TaskForm
+              initial={toInput(task)}
+              task={task}
+              onDone={(meldung) => {
+                setBearbeitet(null);
+                if (meldung) onMeldung(meldung);
+              }}
+            />
+          </li>
+        ) : (
+          <TaskRow
+            key={task.id}
+            task={task}
+            today={today}
+            onEdit={() => setBearbeitet(task.id)}
+            onMessage={onMeldung}
+          />
+        ),
+      )}
+    </Listenabschnitt>
+  );
+}
+
+/**
+ * „Zuletzt erledigt" am Ende des Eingangs: ein Rückblick, kein
+ * Arbeitsvorrat - geladen wird erst beim Aufklappen.
+ */
+export function ErledigteAufgaben({
+  today,
+  onMeldung,
+}: {
+  today: string;
+  onMeldung: (meldung: string) => void;
+}) {
+  const [aufgeklappt, setAufgeklappt] = useState(false);
   const erledigt = useQuery({
     queryKey: [...TASKS_KEY, 'done'],
     queryFn: () => fetchTasks('done'),
-    enabled: erledigteOffen,
+    enabled: aufgeklappt,
     retry: false,
   });
 
-  function fertig(nachricht: string) {
-    setFormular(null);
-    setMeldung(nachricht);
-  }
-
-  const liste = offen.data ?? [];
-  const bearbeitet = typeof formular === 'string' && formular !== 'neu' ? formular : null;
-
   return (
-    <Section
-      titel={liste.length > 0 ? `Aufgaben (${liste.length})` : 'Aufgaben'}
-      aktion={
-        formular === 'neu' ? null : (
-          <Button
-            type="button"
-            variant="secondary"
-            groesse="kompakt"
-            onClick={() => {
-              setMeldung('');
-              setFormular('neu');
-            }}
-          >
-            Aufgabe anlegen
-          </Button>
-        )
-      }
-    >
-      {meldung ? (
-        <Statusmeldung ton="erfolg" className="mb-3">
-          {meldung}
-        </Statusmeldung>
+    <Disclosure summary="Zuletzt erledigt" onUmschalten={setAufgeklappt}>
+      {erledigt.isPending && aufgeklappt ? <LoadingState label="Wird geladen …" /> : null}
+      {erledigt.isError ? (
+        <Statusmeldung ton="fehler">{erledigt.error.message}</Statusmeldung>
       ) : null}
-      {formular === 'neu' ? (
-        <div className="mb-4">
-          <TaskForm initial={{ ...EMPTY, patientId }} task={null} onDone={fertig} />
-        </div>
+      {erledigt.data && erledigt.data.length === 0 ? (
+        <p className="text-ink-muted text-sm">Noch nichts erledigt.</p>
       ) : null}
-
-      {offen.isPending ? <LoadingState label="Aufgaben werden geladen …" /> : null}
-      {offen.isError ? (
-        <ErrorState
-          title="Die Aufgaben konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => offen.refetch()}
-        />
+      {erledigt.data && erledigt.data.length > 0 ? (
+        <ListRows>
+          {erledigt.data.map((task) => (
+            <TaskRow key={task.id} task={task} today={today} onMessage={onMeldung} />
+          ))}
+        </ListRows>
       ) : null}
-      {offen.data && liste.length === 0 ? (
-        <p className="text-ink-muted text-sm">Keine offene Aufgabe.</p>
-      ) : null}
-      {liste.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {liste.map((task) =>
-            bearbeitet === task.id ? (
-              <li key={task.id} className="py-3">
-                <TaskForm initial={toInput(task)} task={task} onDone={fertig} />
-              </li>
-            ) : (
-              <TaskRow
-                key={task.id}
-                task={task}
-                today={today}
-                onEdit={() => {
-                  setMeldung('');
-                  setFormular(task.id);
-                }}
-                onMessage={setMeldung}
-              />
-            ),
-          )}
-        </ul>
-      ) : null}
-
-      {/* Die erledigten erst beim Aufklappen laden: ein Rückblick, kein
-          Arbeitsvorrat. */}
-      <details
-        className="group border-line mt-3 border-t pt-2"
-        onToggle={(event) => setErledigteOffen(event.currentTarget.open)}
-      >
-        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
-          <Aufklappzeichen />
-          Zuletzt erledigt
-        </summary>
-        <div className="mt-2">
-          {erledigt.isPending && erledigteOffen ? <LoadingState label="Wird geladen …" /> : null}
-          {erledigt.isError ? (
-            <Statusmeldung ton="fehler">{erledigt.error.message}</Statusmeldung>
-          ) : null}
-          {erledigt.data && erledigt.data.length === 0 ? (
-            <p className="text-ink-muted text-sm">Noch nichts erledigt.</p>
-          ) : null}
-          {erledigt.data && erledigt.data.length > 0 ? (
-            <ul className="divide-line divide-y">
-              {erledigt.data.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  today={today}
-                  onEdit={() => undefined}
-                  onMessage={setMeldung}
-                />
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      </details>
-    </Section>
+    </Disclosure>
   );
 }

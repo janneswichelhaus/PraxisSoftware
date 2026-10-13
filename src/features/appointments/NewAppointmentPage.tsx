@@ -4,7 +4,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -21,7 +23,7 @@ import {
   UebernommeneAdresse,
 } from './AppointmentFormFields';
 import { TerritoryHint } from '@/features/territories/TerritoryHint';
-import { NachladeHinweis } from './Rueckmeldungen';
+import { NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import {
   appointmentFormSchema,
   createAppointment,
@@ -411,31 +413,24 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
 
   // Ersetzt wird das Formular nur, solange es keine Daten gibt: Ein
   // gescheitertes Nachladen nimmt eine angefangene Eingabe nicht mehr mit
-  // (ZST-03).
+  // (ZST-03). Laden und Fehler über den Baustein (DESIGN.md Regel 8); eine
+  // Akte, die es nicht gibt, ist kein Ladefehler.
   if (!patient.data) {
-    if (patient.isPending) {
-      return (
-        <>
-          {kopf}
-          <LoadingState label="Patientendaten werden geladen …" />
-        </>
-      );
-    }
     return (
       <>
         {kopf}
-        {patient.isError ? (
-          <ErrorState
-            title="Die Patientendaten konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => void patient.refetch()}
-          />
-        ) : (
-          <ErrorState
-            title="Nicht gefunden"
-            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-          />
-        )}
+        <Abfragezustand
+          abfrage={patient}
+          laden="Patientendaten werden geladen …"
+          fehler="Die Patientendaten konnten nicht geladen werden."
+        >
+          {() => (
+            <ErrorState
+              title="Nicht gefunden"
+              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+            />
+          )}
+        </Abfragezustand>
       </>
     );
   }
@@ -450,7 +445,8 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
 
       {/* Nur der Name; der Satz zu den Sternchen erklärte das Formular, nicht
           den Termin (UX-005g). */}
-      <PageHeader title="Termin anlegen" description={`Für ${fullName(patientDaten)}.`} />
+      {/* Eine Angabe, kein Satz: ohne Punkt wie überall (Design-Review T8). */}
+      <PageHeader title="Termin anlegen" description={`Für ${fullName(patientDaten)}`} />
 
       {patient.isError ? (
         <NachladeHinweis
@@ -460,7 +456,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         />
       ) : null}
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         {/* Sind alle Angaben berichtigt, verschwindet der Kasten; bis dahin
             bleibt er, wie ihn die Prüfung aufgestellt hat. */}
         <Fehlerzusammenfassung
@@ -583,16 +579,18 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
             über den Knöpfen (TER-05). */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        {/* Am Telefon untereinander in voller Breite, der Hauptknopf zuerst
+            (DESIGN.md „Formular“). */}
+        <Formularfuss>
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Wird angelegt …' : 'Termin anlegen'}
           </Button>
           {/* Ein Seitenwechsel und damit ein Link (UIK-13); dasselbe Ziel wie
               der Rückweg oben (TER-03). */}
-          <ButtonLink to={leseRueckweg(suche, akte)} variant="secondary">
+          <ButtonLink to={leseRueckweg(suche, akte)} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
       {/* Keine Fußnote mehr zu organisatorischen Angaben: Sie erklärte das
           System, nicht den Termin (UX-005g). */}

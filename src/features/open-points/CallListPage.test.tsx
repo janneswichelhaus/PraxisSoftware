@@ -61,10 +61,21 @@ describe('Anrufliste (PRX-014)', () => {
       '/offen/anrufe?datum=2031-03-11',
     );
 
-    const anrufen = await screen.findByRole('heading', { name: 'Anzurufen (1)' });
+    // Der erste Test der Datei lädt die Seite kalt - unter Last dauert das.
+    const anrufen = await screen.findByRole(
+      'heading',
+      { name: 'Anzurufen (1)' },
+      { timeout: 5000 },
+    );
     const liste = anrufen.closest('section')!;
-    expect(within(liste).getByRole('link', { name: 'Max Mustermann' })).toBeInTheDocument();
-    expect(within(liste).getByRole('link', { name: /Tel\./ })).toHaveAttribute(
+    // Die Zeile führt in die Akte; der Anruf steht daneben (Design-Rollout B5).
+    expect(
+      within(liste).getByRole('link', { name: /^09:00\s*bis\s*09:45\s*Max Mustermann/ }),
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining('/patienten/66666666-6666-4666-8666-000000000001'),
+    );
+    expect(within(liste).getByRole('link', { name: /anrufen, Tel\./ })).toHaveAttribute(
       'href',
       expect.stringMatching(/^tel:/),
     );
@@ -83,6 +94,13 @@ describe('Anrufliste (PRX-014)', () => {
       '/offen/anrufe?datum=2031-03-11',
     );
 
+    // Die Ausgänge stehen unter der Zeile, an der gerade telefoniert wird;
+    // der Knopf dazu steht mit Wort sichtbar da (R2-O5).
+    const vermerken = await screen.findByRole('button', {
+      name: 'Anruf vermerken: Max Mustermann',
+    });
+    expect(vermerken).toHaveTextContent('Anruf vermerken');
+    await user.click(vermerken);
     const gruppe = await screen.findByRole('group', { name: 'Anruf bei Max Mustermann' });
     await user.click(within(gruppe).getByRole('button', { name: 'Nicht erreicht' }));
     await waitFor(() => expect(recordCallOutcome).toHaveBeenCalledWith('a1', 'not_reached'));
@@ -98,12 +116,15 @@ describe('Anrufliste (PRX-014)', () => {
         call_recorded_by_name: 'Olivia Office',
       }),
     ]);
+    const user = userEvent.setup();
     renderWithProviders(
       <CallListPage user={testUser(['office'])} />,
       '/offen/anrufe?datum=2031-03-11',
     );
     expect(await screen.findByText('Nachricht hinterlassen (2×)')).toBeInTheDocument();
     expect(screen.getByText(/zuletzt angerufen von Olivia Office/)).toBeInTheDocument();
+    // Wer über den Hörer anruft, bekommt die Ausgänge gleich darunter.
+    await user.click(screen.getByRole('link', { name: /Max Mustermann anrufen/ }));
     expect(screen.getByRole('button', { name: 'Zurücksetzen' })).toBeInTheDocument();
   });
 
@@ -115,8 +136,12 @@ describe('Anrufliste (PRX-014)', () => {
       '/offen/anrufe?datum=2031-03-11',
     );
     await screen.findByText('An diesem Tag stehen keine Behandlungstermine.');
-    await user.click(screen.getByRole('button', { name: 'Nächster Tag' }));
+    await user.click(screen.getByRole('button', { name: 'Folgetag' }));
     await waitFor(() => expect(fetchCallList).toHaveBeenCalledWith('2031-03-12'));
+    // Beschriftet statt nackter Pfeile (R2-O5).
+    await user.click(screen.getByRole('button', { name: 'Vortag' }));
+    await user.click(screen.getByRole('button', { name: 'Vortag' }));
+    await waitFor(() => expect(fetchCallList).toHaveBeenCalledWith('2031-03-10'));
   });
 });
 
@@ -131,7 +156,7 @@ describe('CallsSummary', () => {
     renderWithProviders(<CallsSummary today="2031-03-10" />);
     expect(await screen.findByText('1 von 2 Terminen noch nicht mitgeteilt.')).toBeInTheDocument();
     expect(fetchCallList).toHaveBeenCalledWith('2031-03-11');
-    expect(screen.getByRole('link', { name: 'Anrufliste öffnen' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^Anrufliste für morgen/ })).toHaveAttribute(
       'href',
       '/offen/anrufe?datum=2031-03-11',
     );

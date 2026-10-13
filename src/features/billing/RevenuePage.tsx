@@ -3,7 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Tile, TileGrid } from '@/components/ui/Tile';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   bereichLabels,
@@ -17,6 +21,7 @@ import {
   type Einnahmengrundlage,
   type Einnahmenzeile,
 } from './api';
+import { Eintraege, Eintrag } from './Eintraege';
 
 /**
  * Einnahmen je Leistungsart (ABR-011, ADR-009 Punkt 19).
@@ -59,48 +64,41 @@ export function RevenuePage() {
     retry: false,
   });
 
-  const bereiche = einnahmen.data ? nachBereichen(einnahmen.data) : [];
-
   return (
     <>
       <PageHeader
         // Der Titel heißt wie der Menüpunkt; was ausgewertet wird, sagt die
         // Zeile darunter (ABR-26).
         title="Auswertung"
-        description="Einnahmen je Leistungsart: Erlöse getrennt nach Leistungsbereich, innerhalb des Bereichs nach Steuerkennzeichen und Satz. Eine Summe, keine Bewertung."
+        description="Einnahmen je Leistungsart und Steuersatz."
       />
 
-      <Section
-        titel="Grundlage und Zeitraum"
-        hinweis="Zufluss und Rechnungsstellung ergeben verschiedene Zahlen. Welche Ihre Gewinnermittlung verlangt, sagt Ihnen Ihre Steuerberatung – diese Auswertung wählt sie nicht für Sie."
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="sm:w-72">
-            <Select
-              label="Grundlage"
-              value={grundlage}
-              onChange={(e) => setGrundlage(e.target.value as Einnahmengrundlage | '')}
-            >
-              <option value="">Bitte wählen …</option>
-              <option value="cash">{grundlageLabels.cash}</option>
-              <option value="accrual">{grundlageLabels.accrual}</option>
-            </Select>
-          </div>
-          <div className="sm:w-48">
-            <Select
-              label="Jahr"
-              value={gewaehltesJahr ?? ''}
-              disabled={(jahre.data ?? []).length === 0}
-              onChange={(e) => setJahr(Number(e.target.value))}
-            >
-              {(jahre.data ?? []).length === 0 ? <option value="">—</option> : null}
-              {(jahre.data ?? []).map((wert) => (
-                <option key={wert} value={wert}>
-                  {wert}
-                </option>
-              ))}
-            </Select>
-          </div>
+      {/* Die beiden Angaben, ohne die keine Zahl zu lesen ist - nebeneinander
+          ab 640 px (DESIGN.md Regel 10). */}
+      <Section titel="Grundlage und Zeitraum">
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,18rem)_minmax(0,12rem)]">
+          <Select
+            label="Grundlage"
+            value={grundlage}
+            onChange={(e) => setGrundlage(e.target.value as Einnahmengrundlage | '')}
+          >
+            <option value="">Bitte wählen …</option>
+            <option value="cash">{grundlageLabels.cash}</option>
+            <option value="accrual">{grundlageLabels.accrual}</option>
+          </Select>
+          <Select
+            label="Jahr"
+            value={gewaehltesJahr ?? ''}
+            disabled={(jahre.data ?? []).length === 0}
+            onChange={(e) => setJahr(Number(e.target.value))}
+          >
+            {(jahre.data ?? []).length === 0 ? <option value="">—</option> : null}
+            {(jahre.data ?? []).map((wert) => (
+              <option key={wert} value={wert}>
+                {wert}
+              </option>
+            ))}
+          </Select>
         </div>
 
         {grundlage !== '' ? (
@@ -108,95 +106,103 @@ export function RevenuePage() {
             {grundlageErklaerung[grundlage]}
           </p>
         ) : null}
-      </Section>
 
-      {jahre.isError ? (
-        <ErrorState
-          title="Die Auswertung konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => jahre.refetch()}
-        />
-      ) : null}
+        {jahre.isError ? (
+          <div className="mt-4">
+            <ErrorState
+              title="Die Auswertung konnte nicht geladen werden."
+              description={VERBINDUNG_PRUEFEN}
+              onErneut={() => jahre.refetch()}
+            />
+          </div>
+        ) : null}
+      </Section>
 
       {grundlage === '' ? (
         <Section titel="Ergebnis">
           <EmptyState
+            inKarte
             title="Noch keine Grundlage gewählt"
-            description="Wählen Sie oben Zufluss oder Rechnungsstellung. Ohne Grundlage ist eine Zahl nicht zu lesen – deshalb steht hier keine."
+            description="Wählen Sie oben Zufluss oder Rechnungsstellung."
           />
         </Section>
       ) : (
-        <Section
-          titel={`Ergebnis · ${grundlageLabels[grundlage]} · ${gewaehltesJahr ?? ''}`}
-          hinweis="Ausschließlich aus ausgestellten Rechnungen, Stornodokumenten und gebuchten Zahlungen."
-        >
-          {einnahmen.isPending ? <LoadingState label="Die Auswertung wird geladen …" /> : null}
-          {einnahmen.isError ? (
-            <ErrorState
-              title="Die Auswertung konnte nicht geladen werden."
-              description="Bitte die Verbindung prüfen und erneut versuchen."
-              onErneut={() => einnahmen.refetch()}
-            />
-          ) : null}
-          {einnahmen.data && bereiche.length === 0 ? (
-            <EmptyState
-              title="Keine Zahlen in diesem Jahr"
-              description="Für den gewählten Zeitraum liegt auf dieser Grundlage kein Dokument und keine Zahlung vor."
-            />
-          ) : null}
-
-          <div className="flex flex-col gap-6">
-            {bereiche.map((bereich) => (
-              <Bereichsblock key={bereich.bereich} bereich={bereich} grundlage={grundlage} />
-            ))}
-          </div>
+        <Section titel={`Ergebnis · ${grundlageLabels[grundlage]} · ${gewaehltesJahr ?? ''}`}>
+          <Abfragezustand
+            abfrage={einnahmen}
+            laden="Die Auswertung wird geladen …"
+            fehler="Die Auswertung konnte nicht geladen werden."
+            inKarte
+            kacheln={2}
+            leer={{
+              wenn: (zeilen) => nachBereichen(zeilen).length === 0,
+              titel: 'Keine Zahlen in diesem Jahr',
+              beschreibung:
+                'Für den gewählten Zeitraum liegt auf dieser Grundlage kein Dokument und keine Zahlung vor.',
+            }}
+          >
+            {(zeilen) => <Ergebnis bereiche={nachBereichen(zeilen)} grundlage={grundlage} />}
+          </Abfragezustand>
         </Section>
       )}
 
-      <p className="text-ink-muted mt-8 max-w-prose text-sm">
-        Kein steuerlicher Abschluss: Die Auswertung fasst zusammen, was in ausgestellten Dokumenten
-        und gebuchten Zahlungen steht. Sie bewertet nichts und ersetzt keine Gewinnermittlung.
-      </p>
+      {/* Zwei Sätze mit Rechtsfunktion (B9, ADR-009 Punkt 19): Die Wahl der
+          Grundlage trifft die Steuerberatung, und die Seite ist kein
+          Abschluss. Am Seitenende als Kleingedrucktes (DESIGN.md Regel 6), seit R2-O7
+          auf drei Zeilen gekürzt. */}
+      <Kleingedrucktes className="mt-8">
+        Welche Grundlage Ihre Gewinnermittlung verlangt, sagt Ihre Steuerberatung – diese Auswertung
+        wählt sie nicht. Kein steuerlicher Abschluss: eine Summe, keine Bewertung; sie ersetzt keine
+        Gewinnermittlung.
+      </Kleingedrucktes>
     </>
   );
 }
 
-function Bereichsblock({
-  bereich,
+/**
+ * Das Ergebnis: oben je Bereich eine Kachel mit seiner Summe, darunter je
+ * Bereich die Aufschlüsselung nach Steuerkennzeichen und Satz.
+ *
+ * Jede Summe steht für genau einen Bereich und nie darüber: Eine Zahl über
+ * beide Bereiche wäre genau die gemischte Größe, die ADR-009 Punkt 19
+ * verhindert — und auf der die getrennte Gewinnermittlung scheitern würde.
+ * Gerechnet wird ausschließlich aus ausgestellten Rechnungen,
+ * Stornodokumenten und gebuchten Zahlungen.
+ */
+function Ergebnis({
+  bereiche,
   grundlage,
 }: {
-  bereich: Bereichssumme;
+  bereiche: Bereichssumme[];
   grundlage: Einnahmengrundlage;
 }) {
   return (
-    <Section titel={bereichLabels[bereich.bereich]} ebene={3} rahmen>
-      <ul className="divide-line divide-y">
-        {bereich.zeilen.map((zeile) => (
-          <li key={`${zeile.tax_treatment}-${zeile.tax_rate_permille}-${zeile.currency}`}>
-            <Einnahmenposten zeile={zeile} />
-          </li>
+    <>
+      <TileGrid>
+        {bereiche.map((bereich) => (
+          <Tile
+            key={bereich.bereich}
+            label={`Summe ${bereichLabels[bereich.bereich]} · ${grundlageLabels[grundlage]}`}
+            zusatz={`darin enthaltene Umsatzsteuer ${formatEuro(bereich.steuerCent, bereich.currency)} · netto ${formatEuro(bereich.nettoCent, bereich.currency)}`}
+          >
+            <span className="tabular-nums">{formatEuro(bereich.bruttoCent, bereich.currency)}</span>
+          </Tile>
         ))}
-      </ul>
+      </TileGrid>
 
-      {/*
-        Die Summe steht innerhalb des Bereichs und nie darüber: Eine Zahl über
-        beide Bereiche wäre genau die gemischte Größe, die ADR-009 Punkt 19
-        verhindert — und auf der die getrennte Gewinnermittlung scheitern
-        würde.
-      */}
-      <div className="border-line mt-3 flex items-baseline justify-between gap-x-3 border-t pt-3">
-        <span className="text-ink text-liste font-semibold">
-          Summe {bereichLabels[bereich.bereich]} · {grundlageLabels[grundlage]}
-        </span>
-        <span className="text-ink text-liste shrink-0 font-semibold tabular-nums">
-          {formatEuro(bereich.bruttoCent, bereich.currency)}
-        </span>
-      </div>
-      <p className="text-ink-muted mt-1 text-sm">
-        darin enthaltene Umsatzsteuer {formatEuro(bereich.steuerCent, bereich.currency)} · netto{' '}
-        {formatEuro(bereich.nettoCent, bereich.currency)}
-      </p>
-    </Section>
+      {bereiche.map((bereich) => (
+        <Section key={bereich.bereich} titel={bereichLabels[bereich.bereich]} ebene={3}>
+          <Eintraege beschriftung={`Einnahmen ${bereichLabels[bereich.bereich]}`}>
+            {bereich.zeilen.map((zeile) => (
+              <Einnahmenposten
+                key={`${zeile.tax_treatment}-${zeile.tax_rate_permille}-${zeile.currency}`}
+                zeile={zeile}
+              />
+            ))}
+          </Eintraege>
+        </Section>
+      ))}
+    </>
   );
 }
 
@@ -204,21 +210,13 @@ function Einnahmenposten({ zeile }: { zeile: Einnahmenzeile }) {
   const satz = zeile.tax_rate_permille > 0 ? ` · ${zeile.tax_rate_permille / 10} %` : '';
 
   return (
-    <div className="py-3">
-      <div className="flex items-baseline gap-x-3">
-        <span className="text-ink text-liste font-medium">
-          {steuerLabels[zeile.tax_treatment]}
-          {satz}
-        </span>
-        <span className="text-ink text-liste ml-auto shrink-0 font-medium tabular-nums">
-          {formatEuro(zeile.gross_cents, zeile.currency)}
-        </span>
-      </div>
-      <p className="text-ink-muted mt-1 text-sm">
-        enthaltene Umsatzsteuer {formatEuro(zeile.tax_cents, zeile.currency)} · netto{' '}
-        {formatEuro(zeile.net_cents, zeile.currency)} · {zeile.document_count}{' '}
-        {zeile.document_count === 1 ? 'Dokument' : 'Dokumente'}
-      </p>
-    </div>
+    <Eintrag
+      titel={`${steuerLabels[zeile.tax_treatment]}${satz}`}
+      meta={`enthaltene Umsatzsteuer ${formatEuro(zeile.tax_cents, zeile.currency)} · netto ${formatEuro(
+        zeile.net_cents,
+        zeile.currency,
+      )} · ${zeile.document_count} ${zeile.document_count === 1 ? 'Dokument' : 'Dokumente'}`}
+      betrag={formatEuro(zeile.gross_cents, zeile.currency)}
+    />
   );
 }

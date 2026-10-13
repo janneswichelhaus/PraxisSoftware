@@ -1,10 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { ErrorState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
+import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { Tile, TileGrid } from '@/components/ui/Tile';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { nurFragen } from '@/lib/erfassungsgroessen';
@@ -32,10 +37,11 @@ import {
 } from './api';
 import { nachDemCheckin } from './checkintexte';
 import { fuerDiePlattform } from './instrumentwahl';
-import { NICHT_AKUT, NOTFALL, THEMA_NAME } from './nachrichtentexte';
+import { NICHT_AKUT, THEMA_NAME } from './nachrichtentexte';
+import { Notfallsatz } from './Notfallsatz';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { terminBeschreibung } from './terminbeschreibung';
-import { datum, kuenftig, tagLang, zeitraum } from './zeit';
+import { datum, kuenftig, tagKurz, tagLang, zeitraum } from './zeit';
 
 /**
  * Die Übersicht - „Was ist jetzt dran?" (POR-015, DSN-001 4.1).
@@ -45,7 +51,11 @@ import { datum, kuenftig, tagLang, zeitraum } from './zeit';
  * Check-in (TRK-003), Antwort der Praxis auf einen Wunsch, offene Rechnung. Leer heißt: „Gerade ist nichts zu
  * tun" mit dem nächsten Termin, nie eine leere Fläche (Abschnitt 7).
  *
- * Jede Kachel kommt aus der Projektion ihres Bereichs; was eine Rolle nicht
+ * Seit Welle B (ANN-465): „Jetzt dran" als Liste, darunter der nächste Termin
+ * als Zeile wie unter „Termine" - jede Zeile ist ganz das Ziel, statt bis zu
+ * zehn Kacheln mit einem Link am Fuß (DESIGN.md: höchstens vier Kacheln).
+ *
+ * Jede Zeile kommt aus der Projektion ihres Bereichs; was eine Rolle nicht
  * sehen darf, liefert der Server nicht (eine Begleitung ohne Einwilligung
  * sieht keine Rechnung).
  */
@@ -168,28 +178,44 @@ export function Uebersicht({
     Boolean(offeneRechnung),
     beantwortet.length > 0,
   ].filter(Boolean).length;
+  const zuTun = kacheln - (naechster ? 1 : 0);
   const abfragen = [termine, wuensche, rechnungen, bogen];
   const gescheitert = abfragen.some((a) => a.isError);
   const geladen = termine.data !== undefined && !gescheitert;
 
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">Guten Tag</h1>
-      {eigen ? (
-        <p className="text-ink mt-2 text-base leading-relaxed">
-          Sie sind bei {praxis || 'Ihrer Praxis'} angemeldet
-          {eigeneBereiche > 1 ? ` – Bereich ${BEREICHSNAME[zugang.relationship_kind]}` : ''}.
-        </p>
-      ) : (
-        <p className="text-ink mt-2 text-base leading-relaxed">
+      <PageHeader
+        title="Guten Tag"
+        {...(eigen
+          ? {
+              description: `Sie sind bei ${praxis || 'Ihrer Praxis'} angemeldet${
+                eigeneBereiche > 1 ? ` – Bereich ${BEREICHSNAME[zugang.relationship_kind]}` : ''
+              }.`,
+            }
+          : {})}
+      />
+      {eigen ? null : (
+        // Was eine Vertretung hier darf, ist eine Auskunft über Rechte
+        // (ADR-023 Punkt 13) - sie steht ganz da, nicht eingeklappt.
+        <p className="text-ink mb-6 max-w-prose text-base leading-relaxed">
           Sie sehen hier, was {praxis || 'die Praxis'} für {name} bereitstellt.{' '}
           {zugang.access_kind === 'companion'
             ? `Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben. Einwilligungen gibt nur ${name} selbst.`
             : `Als rechtliche Vertretung handeln Sie in allem, was ${name} hier tun kann.`}
         </p>
       )}
+      {suche.get('checkin') === '1' ? (
+        <Rueckmeldung className="mb-4">{nachDemCheckin(zugang)}</Rueckmeldung>
+      ) : null}
+      {suche.get('bogen') === '1' ? (
+        <Rueckmeldung className="mb-4">
+          Danke. Ihr Befundbogen ist bei der Praxis. Ihre Therapeut:in sieht Ihre Angaben beim
+          nächsten Termin.
+        </Rueckmeldung>
+      ) : null}
       {zugang.read_until ? (
-        <Statusmeldung className="mt-4" ton="warnung">
+        <Statusmeldung className="mb-4" ton="warnung">
           {!eigen
             ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
             : aboEndet?.ends_on
@@ -197,202 +223,159 @@ export function Uebersicht({
               : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`}
         </Statusmeldung>
       ) : null}
-      {suche.get('checkin') === '1' ? (
-        <Statusmeldung className="mt-4" ton="erfolg">
-          {nachDemCheckin(zugang)}
-        </Statusmeldung>
-      ) : null}
-      {suche.get('bogen') === '1' ? (
-        <Statusmeldung className="mt-4" ton="erfolg">
-          Danke. Ihr Befundbogen ist bei der Praxis. Ihre Therapeut:in sieht Ihre Angaben beim
-          nächsten Termin.
-        </Statusmeldung>
-      ) : null}
 
       {gescheitert ? (
-        <div className="mt-6">
-          <ErrorState
-            title="Ihre Übersicht konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => void Promise.all(abfragen.map((a) => a.refetch()))}
-          />
-        </div>
+        <ErrorState
+          title="Ihre Übersicht konnte nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => void Promise.all(abfragen.map((a) => a.refetch()))}
+        />
+      ) : termine.isPending ? (
+        <LoadingState label="Ihre Übersicht wird geladen …" inKarte />
       ) : null}
 
       {geladen && kacheln === 0 ? (
-        <p className="text-ink mt-6 max-w-prose text-base leading-relaxed">
-          Gerade ist nichts zu tun. Zurzeit ist kein Termin vereinbart.
-        </p>
+        <EmptyState
+          inKarte
+          title="Gerade ist nichts zu tun."
+          description="Zurzeit ist kein Termin vereinbart."
+        />
       ) : null}
 
-      <div className="mt-6">
-        <TileGrid spalte="breit">
+      {/* DSN-001 4.1: was jetzt dran ist, in der Reihenfolge Befundbogen,
+          Angebot, Check-in, Gewohnheiten, Antworten, offene Rechnung. Jede
+          Zeile ist ganz das Ziel (DESIGN.md, Seitentyp „Plattform“). */}
+      {zuTun > 0 ? (
+        <Listenabschnitt titel="Jetzt dran">
           {bogenOffen ? (
-            <Tile
-              label="Befundbogen ausfüllen"
-              ton="akzent"
-              zusatz={
+            <ListRow
+              to={mit('/befundbogen')}
+              titel={bogenEntwurf ? 'Befundbogen weiter ausfüllen' : 'Befundbogen ausfüllen'}
+              meta={[
+                instrument?.meta.name_de ?? 'Befundbogen',
                 naechster
-                  ? `Vor Ihrem ersten Termin am ${tagLang(naechster.starts_at)} · etwa 10 Minuten`
-                  : 'Vor Ihrem ersten Termin · etwa 10 Minuten'
-              }
-              aktion={
-                <Textlink alleinstehend to={mit('/befundbogen')}>
-                  {bogenEntwurf ? 'Weiter ausfüllen →' : 'Jetzt ausfüllen →'}
-                </Textlink>
-              }
-            >
-              {instrument?.meta.name_de ?? 'Befundbogen'}
-            </Tile>
+                  ? `vor Ihrem ersten Termin am ${tagLang(naechster.starts_at)}`
+                  : 'vor Ihrem ersten Termin',
+                'etwa 10 Minuten',
+              ].join(' · ')}
+            />
           ) : null}
           {angebot.data ? (
-            <Tile
-              label="Training nach der Behandlung"
-              ton="akzent"
-              zusatz={`Angebot der Praxis, gilt bis ${datum(angebot.data.valid_until)}`}
-              aktion={
-                <Textlink alleinstehend to={mit('/angebot')}>
-                  Angebot ansehen →
-                </Textlink>
-              }
-            >
-              {angebot.data.label}
-            </Tile>
-          ) : null}
-          {naechster ? (
-            <Tile
-              label="Nächster Termin"
-              zusatz={terminBeschreibung(naechster).ort ?? undefined}
-              aktion={
-                <Textlink alleinstehend to={mit('/termine')}>
-                  Alle Termine →
-                </Textlink>
-              }
-            >
-              {tagLang(naechster.starts_at)}, {zeitraum(naechster.starts_at, naechster.ends_at)}
-              <span className="text-ink-muted block text-sm font-normal">
-                {terminBeschreibung(naechster).titel}
-              </span>
-            </Tile>
+            <ListRow
+              to={mit('/angebot')}
+              titel="Training nach der Behandlung"
+              meta={`${angebot.data.label} · Angebot der Praxis, gilt bis ${datum(angebot.data.valid_until)}`}
+            />
           ) : null}
           {checkinOffen && checkin.data?.schedule ? (
-            <Tile
-              label="Check-in"
-              ton="akzent"
-              zusatz="Freiwillig · etwa 1 Minute"
-              aktion={
-                <Textlink alleinstehend to={mit('/checkin')}>
-                  Jetzt beantworten →
-                </Textlink>
-              }
-            >
-              {/* Der Zusammenhang zählt nicht als Frage (ANN-355, ANN-369). */}
-              {nurFragen(checkin.data.schedule.parameter_keys).length === 1
-                ? 'Eine kurze Frage'
-                : `${nurFragen(checkin.data.schedule.parameter_keys).length} kurze Fragen`}
-            </Tile>
+            <ListRow
+              to={mit('/checkin')}
+              titel="Check-in beantworten"
+              meta={`${
+                // Der Zusammenhang zählt nicht als Frage (ANN-355, ANN-369).
+                nurFragen(checkin.data.schedule.parameter_keys).length === 1
+                  ? 'Eine kurze Frage'
+                  : `${nurFragen(checkin.data.schedule.parameter_keys).length} kurze Fragen`
+              } · freiwillig · etwa 1 Minute`}
+            />
           ) : checkinBrauchtEinwilligung ? (
-            <Tile
-              label="Check-in"
-              zusatz="Der Check-in fragt nach Ihrer Gesundheit. Dafür braucht es Ihre Einwilligung."
-              aktion={
-                <Textlink alleinstehend to={mit('/einwilligungen')}>
-                  Zu den Einwilligungen →
-                </Textlink>
-              }
-            >
-              Ihre Praxis bittet um einen Check-in
-            </Tile>
+            <ListRow
+              to={mit('/einwilligungen')}
+              titel="Ihre Praxis bittet um einen Check-in"
+              meta="Der Check-in fragt nach Ihrer Gesundheit. Dafür braucht es Ihre Einwilligung."
+            />
           ) : null}
           {laufendeGewohnheiten.length > 0 ? (
-            <Tile
-              label="Gewohnheiten"
-              zusatz={laufendeGewohnheiten.map((g) => g.action).join(' · ')}
-              aktion={
-                <Textlink alleinstehend to={mit('/gewohnheiten')}>
-                  {gewohnheiten.data?.can_mark ? 'Tage antippen →' : 'Ansehen →'}
-                </Textlink>
+            <ListRow
+              to={mit('/gewohnheiten')}
+              titel={
+                laufendeGewohnheiten.length === 1
+                  ? 'Eine kleine Gewohnheit'
+                  : `${laufendeGewohnheiten.length} kleine Gewohnheiten`
               }
-            >
-              {laufendeGewohnheiten.length === 1
-                ? 'Eine kleine Gewohnheit'
-                : `${laufendeGewohnheiten.length} kleine Gewohnheiten`}
-            </Tile>
+              meta={laufendeGewohnheiten.map((g) => g.action).join(' · ')}
+            />
           ) : null}
           {antwort ? (
-            <Tile
-              label="Antwort der Praxis"
-              ton={antwort.status === 'done' ? 'akzent' : 'warnung'}
-              zusatz={antwort.answer ?? undefined}
-              aktion={
-                <Textlink alleinstehend to={mit('/termine')}>
-                  Zu den Terminen →
-                </Textlink>
+            <ListRow
+              to={mit('/termine')}
+              titel={
+                antwort.status === 'done'
+                  ? 'Ihr Terminwunsch ist erledigt.'
+                  : 'Ihr Terminwunsch war leider nicht möglich.'
               }
-            >
-              {antwort.status === 'done'
-                ? 'Ihr Terminwunsch ist erledigt.'
-                : 'Ihr Terminwunsch war leider nicht möglich.'}
-            </Tile>
+              meta={antwort.answer ? `Antwort der Praxis: ${antwort.answer}` : 'Antwort der Praxis'}
+            />
           ) : offenerWunsch ? (
-            <Tile
-              label="Terminwunsch"
-              zusatz="Die Praxis meldet sich bei Ihnen."
-              aktion={
-                <Textlink alleinstehend to={mit('/termine')}>
-                  Zu den Terminen →
-                </Textlink>
-              }
-            >
-              Angefragt am {formatDate(offenerWunsch.created_at.slice(0, 10))}
-            </Tile>
+            <ListRow
+              to={mit('/termine')}
+              titel="Terminwunsch angefragt"
+              meta={`Am ${formatDate(offenerWunsch.created_at.slice(0, 10))} · Die Praxis meldet sich bei Ihnen.`}
+            />
           ) : null}
           {beantwortet.length > 0 ? (
-            <Tile
-              label="Antwort der Praxis"
-              ton="akzent"
-              zusatz={beantwortet.map((m) => THEMA_NAME[m.topic]).join(' · ')}
-              aktion={
-                <Textlink
-                  alleinstehend
-                  to={mit(
-                    beantwortet.length === 1
-                      ? `/nachrichten/${beantwortet[0]!.id}`
-                      : '/nachrichten',
-                  )}
-                >
-                  {beantwortet.length === 1 ? 'Antwort lesen →' : 'Zu den Nachrichten →'}
-                </Textlink>
+            <ListRow
+              to={mit(
+                beantwortet.length === 1 ? `/nachrichten/${beantwortet[0]!.id}` : '/nachrichten',
+              )}
+              titel={
+                beantwortet.length === 1
+                  ? 'Die Praxis hat auf Ihre Nachricht geantwortet.'
+                  : `Die Praxis hat auf ${beantwortet.length} Nachrichten geantwortet.`
               }
-            >
-              {beantwortet.length === 1
-                ? 'Die Praxis hat auf Ihre Nachricht geantwortet.'
-                : `Die Praxis hat auf ${beantwortet.length} Nachrichten geantwortet.`}
-            </Tile>
+              meta={beantwortet.map((m) => THEMA_NAME[m.topic]).join(' · ')}
+            />
           ) : null}
           {offeneRechnung ? (
-            <Tile
-              label="Offene Rechnung"
-              ton={offeneRechnung.overdue ? 'warnung' : 'neutral'}
-              zusatz={`Rechnung ${offeneRechnung.invoice_number} · fällig am ${formatDate(offeneRechnung.due_on)}`}
-              aktion={
-                <Textlink alleinstehend to={mit(`/rechnungen/${offeneRechnung.id}`)}>
-                  Zur Rechnung →
-                </Textlink>
+            <ListRow
+              to={mit(`/rechnungen/${offeneRechnung.id}`)}
+              titel={`Offene Rechnung: ${formatEuro(offeneRechnung.outstanding_cents, offeneRechnung.currency)}`}
+              meta={
+                <>
+                  {offeneRechnung.overdue ? (
+                    <>
+                      <StatusMark ton="warnung">überfällig</StatusMark>
+                      {' · '}
+                    </>
+                  ) : null}
+                  {`Rechnung ${offeneRechnung.invoice_number} · fällig am ${formatDate(offeneRechnung.due_on)}`}
+                </>
               }
-            >
-              {formatEuro(offeneRechnung.outstanding_cents, offeneRechnung.currency)}
-            </Tile>
+            />
           ) : null}
-        </TileGrid>
-      </div>
+        </Listenabschnitt>
+      ) : null}
+
+      {naechster ? (
+        <Section titel="Nächster Termin">
+          <ListRows>
+            <ListRow
+              to={mit('/termine')}
+              zeit={
+                <span className="flex flex-col leading-tight">
+                  <span>{tagKurz(naechster.starts_at)}</span>
+                  <span className="text-sm font-medium">
+                    {zeitraum(naechster.starts_at, naechster.ends_at)}
+                  </span>
+                </span>
+              }
+              titel={terminBeschreibung(naechster).titel}
+              meta={terminBeschreibung(naechster).ort ?? undefined}
+            />
+          </ListRows>
+        </Section>
+      ) : null}
 
       <Section titel="Fragen an die Praxis">
         <p className="text-ink max-w-prose text-base leading-relaxed">
-          <strong>{NICHT_AKUT}</strong> {NOTFALL}
+          <strong>{NICHT_AKUT}</strong> <Notfallsatz />
         </p>
-        {/* Ein eigenes Ziel mit 44 px, kein Link im Fließtext (DSN-001 Abschnitt 7). */}
-        <Textlink alleinstehend to={mit('/nachrichten')}>
+        {/* Ein eigenes Ziel mit 44 px, kein Link im Fließtext (DSN-001 Abschnitt 7).
+            16 px Luft darüber: Die Tippfläche einer Notrufnummer ragt 10 px
+            unter die letzte Zeile des Satzes (`Notrufnummer`); ohne den
+            Abstand lägen beide Ziele übereinander, sobald die Nummer am
+            Zeilenanfang steht (Sichtung 13.10.2026, neu4). */}
+        <Textlink alleinstehend to={mit('/nachrichten')} className="mt-4">
           Der Praxis schreiben →
         </Textlink>
       </Section>

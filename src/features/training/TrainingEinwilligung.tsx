@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Badge } from '@/components/ui/Badge';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
@@ -41,28 +41,33 @@ export function TrainingEinwilligung({
 
   return (
     <Section titel="Einwilligung" rahmen>
-      {vermerke.isPending ? (
-        <LoadingState label="Einwilligung wird geladen …" />
-      ) : vermerke.isError ? (
-        <ErrorState
-          title="Die Einwilligung konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void vermerke.refetch()}
-        />
-      ) : (
-        <Inhalt
-          relationshipId={relationshipId}
-          stand={trainingConsentState(vermerke.data)}
-          darfSchreiben={darfSchreiben}
-          zeitzone={zeitzone}
-        />
-      )}
+      <Abfragezustand
+        abfrage={vermerke}
+        laden="Einwilligung wird geladen …"
+        fehler="Die Einwilligung konnte nicht geladen werden."
+      >
+        {(daten) => (
+          <Inhalt
+            relationshipId={relationshipId}
+            stand={trainingConsentState(daten)}
+            darfSchreiben={darfSchreiben}
+            zeitzone={zeitzone}
+          />
+        )}
+      </Abfragezustand>
     </Section>
   );
 }
 
 function standZeichen(stand: TrainingConsentRecord | null) {
-  if (!stand) return <Badge ton="neutral">Nicht erteilt</Badge>;
+  // Zeichen und Wort wie „Nicht erteilt“ in der Akte (Regel 5, ANN-485).
+  if (!stand) {
+    return (
+      <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.fehlt}>
+        Nicht erteilt
+      </Badge>
+    );
+  }
   const plattform = stand.source === 'platform' ? ' (Plattform)' : '';
   return stand.record_kind === 'consent_granted' ? (
     <Badge ton="positiv">
@@ -107,8 +112,8 @@ function Inhalt({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-ink text-liste font-medium">Angaben zur Gesundheit</span>
+      <div className="flex min-h-11 flex-wrap items-center justify-between gap-2">
+        <span className="text-ink text-base font-semibold">Angaben zur Gesundheit</span>
         {standZeichen(stand)}
       </div>
       {von ? <p className="text-ink-muted mt-1 text-sm">{von}</p> : null}
@@ -122,6 +127,7 @@ function Inhalt({
         <div className="mt-3">
           <Rueckfrage
             ausloeser={erteilt ? 'Widerruf vermerken' : 'Einwilligung vermerken'}
+            ausloeserGroesse="kompakt"
             bestaetigen={erteilt ? 'Widerruf vermerken' : 'Einwilligung vermerken'}
             bestaetigenLaeuft="Wird vermerkt …"
             fehler={vermerken.error?.message}

@@ -1,0 +1,185 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import type { OffenerScan } from '@/features/files/api';
+import type { Rueckfragezeile } from '@/features/messages/api';
+import type { CareWithoutConclusion } from './reminders-api';
+import { renderWithProviders, testUser } from '@/test-utils';
+
+/**
+ * Offene Punkte als **ein** Eingang (Design-Rollout B5, ANN-450): eine Gruppe
+ * nur, wenn sie etwas enthält, das Dringlichste zuerst, und ist alles leer,
+ * einmal „Nichts offen" - aber nie, wenn eine Liste nicht geladen werden
+ * konnte. Alle Listen sind hier leer gestellt; jeder Test füllt, was er
+ * braucht.
+ */
+
+const leer = () => Promise.resolve([]);
+const fetchRueckfragen = vi.fn<() => Promise<Rueckfragezeile[]>>();
+const fetchOffeneScans = vi.fn<() => Promise<OffenerScan[]>>();
+const fetchOpenIntakes = vi.fn<() => Promise<unknown[]>>();
+const fetchCareWithoutConclusion = vi.fn<() => Promise<CareWithoutConclusion[]>>();
+const fetchConsentWithdrawals = vi.fn<() => Promise<unknown[]>>();
+
+vi.mock('@/features/messages/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchRueckfragen: () => fetchRueckfragen(),
+}));
+vi.mock('@/features/files/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchOffeneScans: () => fetchOffeneScans(),
+}));
+vi.mock('./intake-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchOpenIntakes: () => fetchOpenIntakes(),
+}));
+vi.mock('./reminders-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchEndingPrescriptions: leer,
+  fetchCareWithoutConclusion: () => fetchCareWithoutConclusion(),
+}));
+vi.mock('./consent-withdrawals-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchConsentWithdrawals: () => fetchConsentWithdrawals(),
+}));
+vi.mock('./platform-requests-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchPlatformRequests: leer,
+}));
+vi.mock('./tasks-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchTasks: leer,
+}));
+vi.mock('./call-list-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchCallList: leer,
+}));
+vi.mock('./training-withdrawals-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchTrainingswiderrufe: leer,
+}));
+vi.mock('./aftercare-cancellations-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchAboKuendigungen: leer,
+}));
+vi.mock('@/features/exercise-plans/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchFaellige: () => Promise.resolve({ today: '2026-10-12', plans: [] }),
+}));
+vi.mock('@/features/waitlist/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchWaitlist: leer,
+}));
+
+const { OpenPointsPage } = await import('./OpenPointsPage');
+
+const ERIKA = '66666666-6666-4666-8666-000000000002';
+
+const RUECKFRAGE: Rueckfragezeile = {
+  id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
+  relationship_kind: 'treatment',
+  relationship_id: ERIKA,
+  patient_id: ERIKA,
+  training_relationship_id: null,
+  given_name: 'Erika',
+  family_name: 'Beispiel',
+  topic: 'complaint',
+  reference_label: null,
+  status: 'open',
+  due_on: '2026-10-07',
+  overdue: true,
+  created_at: '2026-10-05T08:00:00Z',
+  last_entry_at: '2026-10-05T08:00:00Z',
+  closed_at: null,
+  closed_by_side: null,
+  entry_count: 1,
+  asked_by: 'self',
+  representative_name: null,
+  can_answer: true,
+  record_assigned_at: null,
+};
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  fetchRueckfragen.mockResolvedValue([]);
+  fetchOffeneScans.mockResolvedValue([]);
+  fetchOpenIntakes.mockResolvedValue([]);
+  fetchCareWithoutConclusion.mockResolvedValue([]);
+  fetchConsentWithdrawals.mockResolvedValue([]);
+});
+
+/** Die Überschriften der sichtbaren Gruppen, in ihrer Reihenfolge. */
+function gruppen(): string[] {
+  return screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent ?? '');
+}
+
+describe('Offene Punkte als ein Eingang (ANN-450)', () => {
+  it('sagt einmal „Nichts offen", wenn alles leer ist - ohne leere Abschnitte', async () => {
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    expect(await screen.findByText('Nichts offen')).toBeInTheDocument();
+    expect(screen.queryAllByRole('heading', { level: 2 })).toEqual([]);
+    expect(screen.queryByText(/^Kein /)).toBeNull();
+    // Leise am Ende: der Rückblick und der Weg zur Anrufliste.
+    expect(screen.getByText('Zuletzt erledigt')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Anrufliste' })).toHaveAttribute(
+      'href',
+      '/offen/anrufe',
+    );
+  });
+
+  it('zeigt nur Gruppen mit Einträgen, das Dringlichste zuerst', async () => {
+    fetchRueckfragen.mockResolvedValue([RUECKFRAGE]);
+    fetchOffeneScans.mockResolvedValue([
+      {
+        file_id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+        patient_id: ERIKA,
+        patient_given_name: 'Erika',
+        patient_family_name: 'Beispiel',
+        uploaded_at: '2026-10-10T08:00:00.000Z',
+        uploaded_by_name: null,
+      },
+    ]);
+    fetchCareWithoutConclusion.mockResolvedValue([
+      {
+        patient_id: ERIKA,
+        patient_given_name: 'Erika',
+        patient_family_name: 'Beispiel',
+        last_appointment_at: '2026-02-01T08:00:00.000Z',
+        patient_created_at: '2025-11-01T08:00:00.000Z',
+      },
+    ]);
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+
+    await screen.findByRole('heading', { name: 'Rückfragen von der Plattform (1)' });
+    expect(gruppen()).toEqual([
+      'Rückfragen von der Plattform (1)',
+      'Verordnungen zu erfassen (1)',
+      'Versorgung abschließen? (1)',
+    ]);
+    expect(screen.queryByText('Nichts offen')).toBeNull();
+  });
+
+  it('ein Ladefehler ist nie „nichts offen" - die Gruppe sagt es', async () => {
+    fetchOpenIntakes.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    expect(
+      await screen.findByText('Die offenen Erstaufnahmen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+    expect(screen.queryByText('Nichts offen')).toBeNull();
+  });
+
+  it('eine stille Liste bleibt bei einem Fehler still, wie bisher', async () => {
+    fetchConsentWithdrawals.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    expect(await screen.findByText('Nichts offen')).toBeInTheDocument();
+    await waitFor(() => expect(fetchConsentWithdrawals).toHaveBeenCalledTimes(1));
+  });
+
+  it('lädt jede Liste nur einmal, obwohl Seite und Gruppe sie lesen', async () => {
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    await screen.findByText('Nichts offen');
+    expect(fetchOffeneScans).toHaveBeenCalledTimes(1);
+    expect(fetchRueckfragen).toHaveBeenCalledTimes(1);
+    expect(fetchOpenIntakes).toHaveBeenCalledTimes(1);
+  });
+});

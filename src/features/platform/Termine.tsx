@@ -2,11 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Badge, type Ton } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
+
 import {
   ladePlaene,
   ladeTermine,
@@ -22,7 +26,7 @@ import {
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung, wunschText } from './terminbeschreibung';
-import { datum, kalendertag, kuenftig, tagKurz, wochentagMitDatum, zeitraum } from './zeit';
+import { datum, kalendertag, kuenftig, tagKurz, zeitraum } from './zeit';
 import { tageAb, uebungstageAm } from './uebungstage';
 
 /**
@@ -60,35 +64,45 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     Object.fromEntries([...suche.entries()].filter(([k]) => k === 'bereich' || k === 'zugang')),
   ).toString();
   const wunschPfad = `${PLATTFORM_PFAD}/termine/wunsch${bereich ? `?${bereich}` : ''}`;
+  // Die eine Aufgabe der Seite als Hauptknopf unter den kommenden Terminen,
+  // am Telefon in voller Breite und mit dem Daumen erreichbar (DESIGN.md,
+  // Seitentyp „Plattform“) - nicht klein oben rechts im Kopf.
+  const wunschKnopf = (
+    <div className="mt-6">
+      <ButtonLink to={wunschPfad} groesse="normal" className="w-full sm:w-auto">
+        Termin wünschen
+      </ButtonLink>
+    </div>
+  );
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-accent text-h3 font-bold">Termine</h1>
-        <ButtonLink to={wunschPfad}>Termin wünschen</ButtonLink>
-      </div>
+      <PageHeader title="Termine" />
       {suche.get('gesendet') === '1' ? (
-        <Statusmeldung ton="erfolg" className="mt-4">
+        <Rueckmeldung className="mb-6">
           Ihr Wunsch ist bei der Praxis angekommen. Sie meldet sich bei Ihnen.
-        </Statusmeldung>
+        </Rueckmeldung>
       ) : null}
-      {wuensche.data && wuensche.data.length > 0 ? (
-        <Wuensche zugang={zugang} wuensche={wuensche.data} />
-      ) : null}
-      {termine.data && plaene.data ? (
-        <DieseWoche termine={termine.data} plaene={plaene.data} />
-      ) : null}
-      {termine.isPending ? (
-        <LoadingState label="Ihre Termine werden geladen …" />
-      ) : termine.data === undefined ? (
-        <ErrorState
-          title="Ihre Termine konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => termine.refetch()}
-        />
-      ) : (
-        <Terminlisten termine={termine.data} bereich={bereich} />
-      )}
+      <Abfragezustand
+        abfrage={termine}
+        laden="Ihre Termine werden geladen …"
+        fehler="Ihre Termine konnten nicht geladen werden."
+        inKarte
+      >
+        {(liste) => (
+          <>
+            <Kommende termine={liste} bereich={bereich} />
+            {wunschKnopf}
+            {wuensche.data && wuensche.data.length > 0 ? (
+              <Wuensche zugang={zugang} wuensche={wuensche.data} />
+            ) : null}
+            {plaene.data ? <DieseWoche termine={liste} plaene={plaene.data} /> : null}
+            <Vergangene termine={liste} />
+          </>
+        )}
+      </Abfragezustand>
+      {/* Ohne geladene Termine bleibt der Wunsch trotzdem möglich. */}
+      {termine.data === undefined ? wunschKnopf : null}
     </>
   );
 }
@@ -107,51 +121,57 @@ function DieseWoche({ termine, plaene }: { termine: Termin[]; plaene: EigenePlae
   if (!hatUebungstage) return null;
   return (
     <Section titel="Diese Woche">
-      <ul aria-label="Die nächsten sieben Tage" className="flex flex-col gap-2">
+      {/* Die Klassen von `ListRows`; die Liste trägt hier einen Namen. */}
+      <ul
+        aria-label="Die nächsten sieben Tage"
+        className="rounded-card border-line bg-surface overflow-hidden border px-4"
+      >
         {tage.map((tag) => {
           const amTag = termine.filter(
             (t) => t.status !== 'cancelled' && kalendertag(new Date(t.starts_at)) === tag,
           );
           const uebungen = uebungstageAm(plaene.plans, tag);
+          const leer = amTag.length === 0 && uebungen.length === 0;
           return (
-            <li key={tag} className="rounded-card border-line bg-surface border p-3">
-              <p className="font-semibold">
-                {tag === heute ? 'Heute, ' : ''}
-                {wochentagMitDatum(tag)}
-              </p>
-              {amTag.length === 0 && uebungen.length === 0 ? (
-                <p className="text-ink-muted mt-1">Nichts geplant.</p>
-              ) : (
-                <ul className="mt-1 flex flex-col gap-1">
-                  {amTag.map((t) => (
-                    <li key={t.id} className="flex items-start gap-2">
-                      <span className="shrink-0">
-                        <Badge ton="akzent">Termin</Badge>
-                      </span>
-                      <span>
-                        {zeitraum(t.starts_at, t.ends_at)} · {terminBeschreibung(t).titel}
-                      </span>
-                    </li>
-                  ))}
-                  {uebungen.map((p) => {
-                    const geuebt = p.recent_sessions.some(
-                      (s) => s.performed_on === tag && s.finished,
-                    );
-                    return (
-                      <li key={p.id} className="flex items-start gap-2">
-                        <span className="shrink-0">
-                          <Badge ton="neutral">Übungstag</Badge>
+            <ListRow
+              key={tag}
+              zeit={tag === heute ? 'Heute' : tagKurz(`${tag}T12:00:00`)}
+              gedaempft={leer}
+              titel={
+                leer ? (
+                  'Nichts geplant.'
+                ) : (
+                  <span className="flex flex-col gap-2 font-normal">
+                    {amTag.map((t) => (
+                      <span key={t.id} className="flex flex-col items-start gap-0.5">
+                        <span>
+                          <Badge ton="akzent">Termin</Badge>
                         </span>
                         <span>
-                          {p.title}
-                          {geuebt ? ' · geübt' : ''}
+                          {zeitraum(t.starts_at, t.ends_at)} · {terminBeschreibung(t).titel}
                         </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </li>
+                      </span>
+                    ))}
+                    {uebungen.map((p) => {
+                      const geuebt = p.recent_sessions.some(
+                        (s) => s.performed_on === tag && s.finished,
+                      );
+                      return (
+                        <span key={p.id} className="flex flex-col items-start gap-0.5">
+                          <span>
+                            <Badge ton="neutral">Übungstag</Badge>
+                          </span>
+                          <span>
+                            {p.title}
+                            {geuebt ? ' · geübt' : ''}
+                          </span>
+                        </span>
+                      );
+                    })}
+                  </span>
+                )
+              }
+            />
           );
         })}
       </ul>
@@ -159,39 +179,41 @@ function DieseWoche({ termine, plaene }: { termine: Termin[]; plaene: EigenePlae
   );
 }
 
-function Terminlisten({ termine, bereich }: { termine: Termin[]; bereich: string }) {
+function Kommende({ termine, bereich }: { termine: Termin[]; bereich: string }) {
   const jetzt = new Date();
   const kommende = termine.filter((t) => kuenftig(t.ends_at, jetzt));
-  const vergangene = termine.filter((t) => !kuenftig(t.ends_at, jetzt)).reverse();
   return (
-    <>
-      <Section titel="Kommende Termine">
-        {kommende.length === 0 ? (
-          <p className="text-ink max-w-prose text-base leading-relaxed">
-            Zurzeit ist kein Termin vereinbart. Über „Termin wünschen“ sagen Sie der Praxis, wann es
-            Ihnen passt.
-          </p>
-        ) : (
-          <ListRows>
-            {kommende.map((t) => (
-              <Terminzeile key={t.id} termin={t} bereich={bereich} />
-            ))}
-          </ListRows>
-        )}
-      </Section>
-      {vergangene.length > 0 ? (
-        <Section titel="Vergangene Termine">
-          <ListRows>
-            {vergangene.map((t) => (
-              <Terminzeile key={t.id} termin={t} gedaempft />
-            ))}
-          </ListRows>
-        </Section>
-      ) : null}
-    </>
+    <Listenabschnitt
+      titel="Kommende Termine"
+      leer={{
+        titel: 'Zurzeit ist kein Termin vereinbart.',
+        beschreibung: 'Über „Termin wünschen“ sagen Sie der Praxis, wann es Ihnen passt.',
+      }}
+    >
+      {kommende.map((t) => (
+        <Terminzeile key={t.id} termin={t} bereich={bereich} />
+      ))}
+    </Listenabschnitt>
   );
 }
 
+/** Vergangenes auf Abruf: Es wird mit jeder Behandlung länger (DESIGN.md, Regel 6). */
+function Vergangene({ termine }: { termine: Termin[] }) {
+  const jetzt = new Date();
+  const vergangene = termine.filter((t) => !kuenftig(t.ends_at, jetzt)).reverse();
+  if (vergangene.length === 0) return null;
+  return (
+    <div className="mt-8">
+      <Disclosure summary="Vergangene Termine" anzahl={vergangene.length} kopf="betont">
+        <ListRows>
+          {vergangene.map((t) => (
+            <Terminzeile key={t.id} termin={t} gedaempft />
+          ))}
+        </ListRows>
+      </Disclosure>
+    </div>
+  );
+}
 const ZUSTAND: Record<Termin['status'], { wort: string; ton: Ton } | null> = {
   confirmed: null,
   cancelled: { wort: 'abgesagt', ton: 'kritisch' },
@@ -272,16 +294,20 @@ function Wuensche({ zugang, wuensche }: { zugang: Plattformzugang; wuensche: Ter
   if (sichtbar.length === 0) return null;
   return (
     <Section titel="Ihre Wünsche">
-      <ul className="flex flex-col gap-3">
+      <ListRows>
         {sichtbar.map((w) => (
-          <Wunschkarte key={w.id} zugang={zugang} wunsch={w} />
+          <Wunschzeile key={w.id} zugang={zugang} wunsch={w} />
         ))}
-      </ul>
+      </ListRows>
     </Section>
   );
 }
 
-function Wunschkarte({ zugang, wunsch: w }: { zugang: Plattformzugang; wunsch: Terminwunsch }) {
+/**
+ * Ein Wunsch als Zeile der Liste, mit der Rückfrage darunter: Sie öffnet
+ * sich an Ort und Stelle und braucht die volle Breite.
+ */
+function Wunschzeile({ zugang, wunsch: w }: { zugang: Plattformzugang; wunsch: Terminwunsch }) {
   const queryClient = useQueryClient();
   const zurueckziehen = useMutation({
     mutationFn: () => wunschZurueckziehen(zugang.access_id, w.id),
@@ -291,8 +317,8 @@ function Wunschkarte({ zugang, wunsch: w }: { zugang: Plattformzugang; wunsch: T
   const zustand = WUNSCHZUSTAND[w.status];
   const text = wunschText(w);
   return (
-    <li className="border-line bg-surface rounded-card border px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <li className="border-line border-t py-3 first:border-t-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <p className="text-ink text-base font-semibold">
           {WUNSCHART[w.kind]} vom {datum(w.created_at)}
         </p>
@@ -300,18 +326,19 @@ function Wunschkarte({ zugang, wunsch: w }: { zugang: Plattformzugang; wunsch: T
       </div>
       {text ? <p className="text-ink mt-1 text-sm">{text}</p> : null}
       {w.note ? <p className="text-ink-muted mt-1 text-sm">„{w.note}“</p> : null}
+      {/* §8: Ein Wunsch sieht nie aus wie ein Termin. */}
       {w.status === 'open' ? (
-        <p className="text-ink-muted mt-2 text-sm">
+        <p className="text-ink-muted mt-1 text-sm">
           Die Praxis meldet sich bei Ihnen. Ein vereinbarter Termin ist das noch nicht.
         </p>
       ) : null}
       {w.answer ? (
-        <p className="text-ink mt-2 text-sm">
+        <p className="text-ink mt-1 text-sm">
           <span className="font-semibold">Antwort der Praxis:</span> {w.answer}
         </p>
       ) : null}
       {w.status === 'open' ? (
-        <div className="mt-3">
+        <div className="mt-2">
           <Rueckfrage
             ausloeser="Wunsch zurückziehen"
             ausloeserVariante="quiet"

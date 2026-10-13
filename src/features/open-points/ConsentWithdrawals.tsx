@@ -1,14 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Section } from '@/components/ui/Section';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
-import {
-  CONSENT_WITHDRAWALS_KEY,
-  fetchConsentWithdrawals,
-  purposeLabel,
-  type ConsentWithdrawal,
-} from './consent-withdrawals-api';
+import { purposeLabel, type ConsentWithdrawal } from './consent-withdrawals-api';
+import { abfragen } from './eingang';
 
 /**
  * „Widerrufen über die Plattform" in Offene Punkte (POR-016, ANN-263): ein
@@ -17,23 +14,22 @@ import {
  * Liste ist keine Aufgabe, die man abhaken müsste.
  */
 export function ConsentWithdrawals() {
-  const { data } = useQuery({
-    queryKey: CONSENT_WITHDRAWALS_KEY,
-    queryFn: fetchConsentWithdrawals,
-    retry: false,
-  });
+  const { data } = useQuery(abfragen.widerrufe());
   if (!data || data.length === 0) return null;
   return (
-    <Section
-      titel={`Widerrufen über die Plattform (${data.length})`}
-      hinweis="Ab dem Widerruf gilt die Einwilligung nicht mehr. Die Liste zeigt die letzten 14 Tage."
+    <Listenabschnitt
+      titel="Widerrufen über die Plattform"
+      anzahl={data.length}
+      mehr={
+        <Kleingedrucktes>
+          Ab dem Widerruf gilt die Einwilligung nicht mehr. Die Liste zeigt die letzten 14 Tage.
+        </Kleingedrucktes>
+      }
     >
-      <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-        {data.map((w) => (
-          <Zeile key={w.id} widerruf={w} />
-        ))}
-      </ul>
-    </Section>
+      {data.map((w) => (
+        <Zeile key={w.id} widerruf={w} />
+      ))}
+    </Listenabschnitt>
   );
 }
 
@@ -52,22 +48,10 @@ function Zeile({ widerruf: w }: { widerruf: ConsentWithdrawal }) {
       ? `von ${w.representative_name} (rechtliche Vertretung)`
       : 'von der Person selbst';
   return (
-    <li className="py-3">
-      <p className="text-ink text-liste font-medium">
-        {pfad ? (
-          <Link
-            to={mitRueckweg(pfad, '/offen')}
-            className="hover:text-accent underline-offset-2 hover:underline"
-          >
-            {name}
-          </Link>
-        ) : (
-          name
-        )}
-      </p>
-      <p className="text-ink-muted text-sm">
-        {purposeLabel(w.purpose)} widerrufen am {formatDate(w.occurred_on)}, {von}
-      </p>
-    </li>
+    <ListRow
+      titel={name}
+      meta={`${purposeLabel(w.purpose)} widerrufen am ${formatDate(w.occurred_on)}, ${von}`}
+      {...(pfad ? { to: mitRueckweg(pfad, '/offen') } : {})}
+    />
   );
 }

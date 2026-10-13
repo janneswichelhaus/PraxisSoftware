@@ -1,12 +1,18 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Section } from '@/components/ui/Section';
 import { Badge } from '@/components/ui/Badge';
-import { Card, CardGrid, DataList, DataRow, Disclosure } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Textlink } from '@/components/ui/Textlink';
 import { paragraf } from '@/lib/begriffe';
 import {
@@ -23,6 +29,7 @@ import {
   fetchRetentionSchedule,
   formatZeitpunkt,
   type Datenklasse,
+  type Loeschlauf,
 } from './api';
 import {
   useDateiabgleich,
@@ -57,10 +64,22 @@ import type { CurrentUser } from '@/features/session/types';
  * leer ist, eine Zeile. Danach Löschsperren, Plan und Journal. Eine Frist auf
  * Annahme heißt „Annahme – Prüfung offen“, die Kennung steht daneben; die
  * Verweise auf ADRs liegen in der aufklappbaren Zeile „Grundlagen“ am Ende.
+ *
+ * **Liste und Detail (Welle B, B7).** Der Plan stand als 26 Karten
+ * untereinander, am Telefon rund 10 000 px. Jetzt ist er eine Zeilenliste -
+ * Datenklasse, Frist, ab wann - und eine Zeile öffnet die Klasse
+ * (`?klasse=…`, dieselbe Route) mit Umfang, Grundlage, Obergrenze und den
+ * betroffenen Tabellen. Inhalt und Wortlaut der Regeln sind unverändert;
+ * die erklärenden Sätze unter den Abschnitten stehen jetzt unter
+ * „Grundlagen“.
  */
 
 /** Der nächste Schritt nach einem Ladefehler (WRT-01). */
 const ERNEUT_LADEN = 'Bitte die Verbindung prüfen und später erneut versuchen.';
+
+/** Die Adresse der Seite; eine Datenklasse öffnet sich mit `?klasse=…`. */
+const SEITE = '/praxis/sicherheit/aufbewahrung';
+const KLASSE_PARAM = 'klasse';
 
 /**
  * So viele Einträge holt `fetchDeletionRuns` (`p_limit` in `api.ts`). Die
@@ -73,193 +92,280 @@ function klasseTexte(key: string) {
   return DATENKLASSEN[key] ?? { label: key, beschreibung: '' };
 }
 
+/** Frist und Anker als eine Zeile: „10 Jahre · ab Abschluss der Versorgung“. */
+function Fristzeile({ klasse }: { klasse: Datenklasse }) {
+  if (klasse.retention_interval === null) return <span>Keine automatische Löschung</span>;
+  return (
+    <>
+      <span>{fristText(klasse.retention_interval)}</span>
+      {' · '}
+      <span>{ANKER_TEXTE[klasse.anchor] ?? klasse.anchor}</span>
+    </>
+  );
+}
+
+/** Das Abzeichen einer Frist auf Annahme (BEF-065): das Wort für die Praxisleitung. */
+function Annahme() {
+  return <Badge ton="warnung">Annahme – Prüfung offen</Badge>;
+}
+
 function Aufbewahrungsplan() {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['retention', 'schedule'],
     queryFn: fetchRetentionSchedule,
   });
 
-  if (isPending) return <LoadingState label="Aufbewahrungsplan wird geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Der Aufbewahrungsplan konnte nicht geladen werden."
-        description={ERNEUT_LADEN}
-        onErneut={() => void refetch()}
-      />
-    );
-  }
-
   return (
-    <CardGrid>
-      {data.map((klasse: Datenklasse) => {
-        const texte = klasseTexte(klasse.key);
-        const ohneFrist = klasse.retention_interval === null;
-
-        return (
-          <Card key={klasse.key}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-ink text-base font-semibold">{texte.label}</h3>
-              {klasse.assumption_key ? (
-                // BEF-065: das Wort für die Praxisleitung, die Kennung für die
-                // Prüfung daneben.
-                <span className="flex flex-wrap items-center gap-1.5">
-                  <Badge ton="warnung">Annahme – Prüfung offen</Badge>
-                  <span className="text-ink-muted text-sm">{klasse.assumption_key}</span>
-                </span>
-              ) : null}
-            </div>
-            <p className="text-ink-muted mt-1 text-sm">{texte.beschreibung}</p>
-
-            <DataList>
-              <DataRow label="Frist">
-                {ohneFrist ? 'Keine automatische Löschung' : fristText(klasse.retention_interval)}
-              </DataRow>
-              <DataRow label="Gerechnet">{ANKER_TEXTE[klasse.anchor] ?? klasse.anchor}</DataRow>
-              {klasse.upper_bound_anchor && klasse.upper_bound_interval ? (
-                <DataRow label="Spätestens">
-                  {fristText(klasse.upper_bound_interval)}{' '}
-                  {OBERGRENZE_TEXTE[klasse.upper_bound_anchor] ?? klasse.upper_bound_anchor}
-                </DataRow>
-              ) : null}
-              <DataRow label="Grundlage">
-                {paragraf(klasse.legal_reference) || GRUNDLAGE_TEXTE[klasse.basis] || klasse.basis}
-              </DataRow>
-            </DataList>
-
-            {/* Für die Datenschutzprüfung: welche Tabellen diese Klasse trägt.
-                Tabellennamen sind technische Bezeichner und stehen deshalb
-                unübersetzt — übersetzt wäre die Zuordnung nicht mehr
-                nachprüfbar. */}
-            <Disclosure summary={`Betroffene Tabellen (${klasse.tabellen.length})`}>
-              <ul className="text-ink-muted space-y-1 text-sm">
-                {klasse.tabellen.map((tabelle) => (
-                  <li key={tabelle.name}>
-                    <code className="text-ink text-[0.8125rem]">{tabelle.name}</code>
-                    {' – '}
-                    {LOESCHWEG_TEXTE[tabelle.modus] ?? tabelle.modus}
-                  </li>
-                ))}
-              </ul>
-            </Disclosure>
-          </Card>
-        );
-      })}
-    </CardGrid>
-  );
-}
-
-function Loeschsperren() {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ['retention', 'legal-holds'],
-    queryFn: fetchLegalHolds,
-  });
-
-  if (isPending) return <LoadingState label="Löschsperren werden geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Die Löschsperren konnten nicht geladen werden."
-        description={ERNEUT_LADEN}
-        onErneut={() => void refetch()}
-      />
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <EmptyState
-        title="Keine laufende Löschsperre"
-        description="Eine Sperre hält eine Akte von der automatischen Löschung zurück, solange ein rechtlicher Vorgang läuft."
-      />
-    );
-  }
-
-  return (
-    <CardGrid>
-      {data.map((sperre) => (
-        <Card key={sperre.id}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-ink text-base font-semibold">{sperre.subject_name ?? 'Akte'}</h3>
-            <Badge ton="warnung">Gesperrt</Badge>
-          </div>
-          <p className="text-ink-muted mt-1 text-sm">{sperre.reason}</p>
-          <DataList>
-            <DataRow label="Seit">{formatZeitpunkt(sperre.placed_at)}</DataRow>
-            <DataRow label="Gesetzt von">{sperre.placed_by_name ?? 'Unbekannt'}</DataRow>
-          </DataList>
-        </Card>
-      ))}
-    </CardGrid>
+    <Section titel="Aufbewahrungsplan">
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Aufbewahrungsplan wird geladen …"
+        fehler="Der Aufbewahrungsplan konnte nicht geladen werden."
+        inKarte
+      >
+        {(daten) => (
+          // Eine Zeile je Art von Daten; die Zeile öffnet die Klasse.
+          <ListRows>
+            {daten.map((klasse) => (
+              <ListRow
+                key={klasse.key}
+                to={`${SEITE}?${KLASSE_PARAM}=${encodeURIComponent(klasse.key)}`}
+                titel={klasseTexte(klasse.key).label}
+                // Das Abzeichen unter der Frist statt rechts daneben: rechts
+                // ließ es dem Namen am Telefon ein Drittel der Zeile.
+                meta={
+                  <>
+                    <Fristzeile klasse={klasse} />
+                    {klasse.assumption_key ? (
+                      <span className="mt-1.5 block">
+                        <Annahme />
+                      </span>
+                    ) : null}
+                  </>
+                }
+              />
+            ))}
+          </ListRows>
+        )}
+      </Abfragezustand>
+    </Section>
   );
 }
 
 /**
- * Das Löschjournal.
- *
- * Spalten erst ab 1024 px (ORG-12), darunter untereinander wie am Telefon;
- * jede Angabe trägt ihre Bezeichnung für Vorlesesoftware (UIK-24).
+ * Eine Datenklasse im Detail: Umfang, Frist, Obergrenze, Grundlage und die
+ * Tabellen, die sie trägt (Welle B, B7). Dieselben Angaben, die bis dahin
+ * auf der Karte im Plan standen.
  */
+function Klassendetail({ schluessel }: { schluessel: string }) {
+  const abfrage = useQuery({
+    queryKey: ['retention', 'schedule'],
+    queryFn: fetchRetentionSchedule,
+  });
+  const klasse = abfrage.data?.find((eintrag) => eintrag.key === schluessel);
+  const texte = klasseTexte(schluessel);
+
+  return (
+    <>
+      <Rueckweg standard={SEITE} beschriftung="Zurück zum Aufbewahrungsplan" />
+      <PageHeader
+        kicker="Datenklasse"
+        title={klasse ? texte.label : 'Datenklasse'}
+        description={
+          klasse?.assumption_key ? (
+            // BEF-065: das Wort für die Praxisleitung, die Kennung für die
+            // Prüfung daneben.
+            <span className="flex flex-wrap items-center gap-1.5">
+              <Annahme />
+              <span>{klasse.assumption_key}</span>
+            </span>
+          ) : undefined
+        }
+      />
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Aufbewahrungsplan wird geladen …"
+        fehler="Der Aufbewahrungsplan konnte nicht geladen werden."
+        inKarte
+      >
+        {() =>
+          klasse ? (
+            <div className="lg:max-w-spalte">
+              <Section titel="Frist" rahmen>
+                <DetailList>
+                  {texte.beschreibung ? (
+                    <DetailRow label="Umfasst">{texte.beschreibung}</DetailRow>
+                  ) : null}
+                  <DetailRow label="Frist">
+                    {klasse.retention_interval === null
+                      ? 'Keine automatische Löschung'
+                      : fristText(klasse.retention_interval)}
+                  </DetailRow>
+                  <DetailRow label="Gerechnet">
+                    {ANKER_TEXTE[klasse.anchor] ?? klasse.anchor}
+                  </DetailRow>
+                  {klasse.upper_bound_anchor && klasse.upper_bound_interval ? (
+                    <DetailRow label="Spätestens">
+                      {fristText(klasse.upper_bound_interval)}{' '}
+                      {OBERGRENZE_TEXTE[klasse.upper_bound_anchor] ?? klasse.upper_bound_anchor}
+                    </DetailRow>
+                  ) : null}
+                  <DetailRow label="Grundlage">
+                    {paragraf(klasse.legal_reference) ||
+                      GRUNDLAGE_TEXTE[klasse.basis] ||
+                      klasse.basis}
+                  </DetailRow>
+                </DetailList>
+              </Section>
+
+              {/* Für die Datenschutzprüfung: welche Tabellen diese Klasse
+                  trägt. Tabellennamen sind technische Bezeichner und stehen
+                  deshalb unübersetzt - übersetzt wäre die Zuordnung nicht mehr
+                  nachprüfbar. Seltenes, deshalb zugeklappt. */}
+              <div className="mt-8">
+                <Disclosure summary={`Betroffene Tabellen (${klasse.tabellen.length})`}>
+                  <ul className="text-ink-muted space-y-1 text-sm">
+                    {klasse.tabellen.map((tabelle) => (
+                      <li key={tabelle.name}>
+                        <code className="text-ink text-[0.8125rem]">{tabelle.name}</code>
+                        {' – '}
+                        {LOESCHWEG_TEXTE[tabelle.modus] ?? tabelle.modus}
+                      </li>
+                    ))}
+                  </ul>
+                </Disclosure>
+              </div>
+            </div>
+          ) : (
+            <ErrorState
+              title="Diese Datenklasse gibt es im Aufbewahrungsplan nicht."
+              description="Bitte im Aufbewahrungsplan neu wählen."
+            />
+          )
+        }
+      </Abfragezustand>
+    </>
+  );
+}
+
+function Loeschsperren() {
+  const abfrage = useQuery({
+    queryKey: ['retention', 'legal-holds'],
+    queryFn: fetchLegalHolds,
+  });
+
+  return (
+    <Section titel="Löschsperren">
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Löschsperren werden geladen …"
+        fehler="Die Löschsperren konnten nicht geladen werden."
+        inKarte
+        // Ein Leerzustand in der Karte, ohne Erklärsatz - was eine Sperre
+        // bewirkt, steht unter „Grundlagen“.
+        leer={{ wenn: (daten) => daten.length === 0, titel: 'Keine laufende Löschsperre' }}
+      >
+        {(daten) => (
+          <ListRows>
+            {daten.map((sperre) => (
+              <ListRow
+                key={sperre.id}
+                titel={sperre.subject_name ?? 'Akte'}
+                meta={
+                  <>
+                    <span className="block">{sperre.reason}</span>
+                    <span className="block">
+                      Seit {formatZeitpunkt(sperre.placed_at)} · gesetzt von{' '}
+                      <span>{sperre.placed_by_name ?? 'Unbekannt'}</span>
+                    </span>
+                  </>
+                }
+                status={<Badge ton="warnung">Gesperrt</Badge>}
+              />
+            ))}
+          </ListRows>
+        )}
+      </Abfragezustand>
+    </Section>
+  );
+}
+
+/**
+ * Die Spalten des Löschjournals als `Datenliste` (Welle B): Spalten erst ab
+ * 1024 px (ORG-12), darunter Zeilen; jede Angabe trägt ihre Bezeichnung für
+ * Vorlesesoftware (UIK-24), der Zeitpunkt als Kopf der Zeile bringt sie
+ * selbst mit.
+ */
+const JOURNALSPALTEN: readonly Datenspalte<Loeschlauf>[] = [
+  {
+    titel: 'Zeitpunkt',
+    breite: '11rem',
+    telefon: 'kopf',
+    inhalt: (lauf) => (
+      <span className="text-ink-muted tabular-nums">
+        <span className="sr-only">Zeitpunkt: </span>
+        {formatZeitpunkt(lauf.deleted_at)}
+      </span>
+    ),
+  },
+  {
+    titel: 'Datenklasse',
+    inhalt: (lauf) => (
+      <span className="text-liste block min-w-0 wrap-anywhere">
+        {klasseTexte(lauf.retention_class).label}
+        <span className="text-ink-muted">
+          {' · '}
+          <code className="text-[0.8125rem]">{lauf.target_table}</code>
+        </span>
+      </span>
+    ),
+  },
+  {
+    titel: 'Anzahl',
+    breite: '8rem',
+    telefon: 'ende',
+    rechts: true,
+    inhalt: (lauf) => (
+      <span className="text-ink-muted text-sm font-normal">
+        {lauf.record_count} {lauf.record_count === 1 ? 'Datensatz' : 'Datensätze'}
+      </span>
+    ),
+  },
+];
+
 function Loeschjournal() {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['retention', 'runs'],
     queryFn: fetchDeletionRuns,
   });
 
-  if (isPending) return <LoadingState label="Löschjournal wird geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Das Löschjournal konnte nicht geladen werden."
-        description={ERNEUT_LADEN}
-        onErneut={() => void refetch()}
-      />
-    );
-  }
-
-  if (data.length === 0) {
-    return (
-      <EmptyState
-        title="Es wurde noch nichts gelöscht"
-        description="Sobald eine Frist abläuft, hält der tägliche Löschlauf hier fest, was er gelöscht hat."
-      />
-    );
-  }
-
   return (
-    <>
-      <ul className="divide-line divide-y">
-        {data.map((lauf) => (
-          <li
-            key={`${lauf.run_id}-${lauf.retention_class}-${lauf.target_table}`}
-            className="py-3 lg:grid lg:grid-cols-[11rem_minmax(0,1fr)_7rem] lg:items-baseline lg:gap-4 lg:py-2.5"
-          >
-            <span className="text-ink-muted block text-sm tabular-nums">
-              <span className="sr-only">Zeitpunkt: </span>
-              {formatZeitpunkt(lauf.deleted_at)}
-            </span>
-            <span className="text-ink text-liste mt-0.5 block min-w-0 wrap-anywhere lg:mt-0">
-              <span className="sr-only">Datenklasse: </span>
-              {klasseTexte(lauf.retention_class).label}
-              <span className="text-ink-muted">
-                {' · '}
-                <code className="text-[0.8125rem]">{lauf.target_table}</code>
-              </span>
-            </span>
-            <span className="text-ink-muted mt-0.5 block text-sm tabular-nums lg:mt-0 lg:text-right">
-              <span className="sr-only">Anzahl: </span>
-              {lauf.record_count} {lauf.record_count === 1 ? 'Datensatz' : 'Datensätze'}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {data.length >= JOURNAL_EINTRAEGE ? (
-        <Statusmeldung className="mt-3">
-          Angezeigt werden die letzten {JOURNAL_EINTRAEGE} Einträge; ältere bleiben im Journal
-          erhalten.
-        </Statusmeldung>
-      ) : null}
-    </>
+    <Section titel="Löschjournal">
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Löschjournal wird geladen …"
+        fehler="Das Löschjournal konnte nicht geladen werden."
+        inKarte
+        leer={{ wenn: (daten) => daten.length === 0, titel: 'Es wurde noch nichts gelöscht' }}
+      >
+        {(daten) => (
+          <>
+            <Datenliste
+              spalten={JOURNALSPALTEN}
+              zeilen={daten}
+              schluessel={(lauf) => `${lauf.run_id}-${lauf.retention_class}-${lauf.target_table}`}
+              beschriftung="Löschjournal"
+            />
+            {daten.length >= JOURNAL_EINTRAEGE ? (
+              <Statusmeldung className="mt-3">
+                Angezeigt werden die letzten {JOURNAL_EINTRAEGE} Einträge; ältere bleiben im Journal
+                erhalten.
+              </Statusmeldung>
+            ) : null}
+          </>
+        )}
+      </Abfragezustand>
+    </Section>
   );
 }
 
@@ -328,21 +434,22 @@ function Loeschauftraege({
         Erst das Ausführen schließt die Löschung ab.
       </Statusmeldung>
 
-      <ul className="mt-3">
+      <ListRows rahmen={false} className="mt-2">
         {auftraege.map((auftrag) => (
-          <li key={auftrag.id} className="border-line border-t py-2.5 first:border-t-0">
-            <span className="text-ink text-liste">
-              Ablage „{auftrag.bucket_id}“
-              <span className="text-ink-muted mt-0.5 block text-sm">
+          <ListRow
+            key={auftrag.id}
+            titel={`Ablage „${auftrag.bucket_id}“`}
+            meta={
+              <>
                 Beauftragt {formatZeitpunkt(auftrag.ordered_at)} ·{' '}
                 {auftrag.object_present
                   ? 'Datei liegt noch in der Ablage'
                   : 'Datei ist bereits weg, nur die Quittung fehlt'}
-              </span>
-            </span>
-          </li>
+              </>
+            }
+          />
         ))}
-      </ul>
+      </ListRows>
 
       <div className="mt-4">
         <Rueckfrage
@@ -452,28 +559,31 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
             Das ist ein Verlust und kein Aufräumfall – bitte prüfen, ob eine Wiederherstellung nötig
             ist.
           </Statusmeldung>
-          <ul className="mt-3">
+          <ListRows rahmen={false} className="mt-2">
             {fehlende.map((datei) => (
-              <li key={datei.file_id} className="border-line border-t py-2.5 first:border-t-0">
-                <span className="text-ink text-liste">
-                  {datei.display_name}
-                  <span className="text-ink-muted mt-0.5 block text-sm">
+              <ListRow
+                key={datei.file_id}
+                titel={datei.display_name}
+                meta={
+                  <>
                     {datei.patient_name}
                     {datei.uploaded_at
                       ? ` · hinzugefügt ${formatZeitpunkt(datei.uploaded_at)}`
                       : ''}
-                  </span>
-                </span>
-                <Textlink
-                  to={aktenortDerDatei(datei.patient_id, datei.document_type)}
-                  alleinstehend
-                  className="text-sm"
-                >
-                  Akte öffnen
-                </Textlink>
-              </li>
+                  </>
+                }
+                aktion={
+                  <Textlink
+                    to={aktenortDerDatei(datei.patient_id, datei.document_type)}
+                    alleinstehend
+                    className="text-sm"
+                  >
+                    Akte öffnen
+                  </Textlink>
+                }
+              />
             ))}
-          </ul>
+          </ListRows>
         </>
       ) : null}
 
@@ -548,19 +658,14 @@ function ZuTun({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <Section
-        titel="Offene Löschaufträge"
-        hinweis="Dateien, die aus einer Akte entfernt sind, aber noch in der Ablage liegen. Gelöscht sind sie erst mit der Quittung."
-        rahmen
-      >
+      {/* Ohne Satz unter der Überschrift (Regel 6): Was offen ist und was
+          das Ausführen bewirkt, sagt die Meldung im Abschnitt; der Rest steht
+          unter „Grundlagen“. */}
+      <Section titel="Offene Löschaufträge" rahmen>
         <Loeschauftraege user={user} ausfuehren={ausfuehren} />
       </Section>
 
-      <Section
-        titel="Abgleich der Dateiablage"
-        hinweis="Akten und Dateiablage können auseinanderlaufen. Hier steht, ob sie es tun – gerechnet beim Öffnen dieser Seite."
-        rahmen
-      >
+      <Section titel="Abgleich der Dateiablage" rahmen>
         <Dateiabgleich user={user} />
       </Section>
     </>
@@ -574,18 +679,31 @@ function ZuTun({ user }: { user: CurrentUser }) {
  */
 function Grundlagen() {
   return (
-    <section className="mt-8">
+    <div className="mt-8 max-w-prose">
       <Disclosure summary="Grundlagen">
         <ul className="text-ink-muted list-inside list-disc space-y-1 text-sm">
           <li>Datenklassen, Fristen und Löschsperren: ADR-008 (Aufbewahrung und Löschung).</li>
           <li>
-            Fristen auf Annahme: Annahmenregister (Kennung ANN-NNN), bestätigt erst durch die
-            Datenschutzprüfung (ADR-007).
+            Eine Löschsperre hält eine Akte von der automatischen Löschung zurück, solange ein
+            rechtlicher Vorgang läuft. Eine gesperrte Akte wird nicht gelöscht, bleibt aber
+            vollständig benutzbar.
           </li>
-          <li>Löschaufträge und Abgleich der Dateiablage: ADR-017 Punkte 25 und 27.</li>
+          <li>
+            Fristen auf Annahme: Annahmenregister (Kennung ANN-NNN), bestätigt erst durch die
+            Datenschutzprüfung (ADR-007). „Annahme – Prüfung offen“ heißt: Die Frist ist begründet
+            festgelegt und wartet auf die Datenschutzprüfung.
+          </li>
+          <li>
+            Löschaufträge und Abgleich der Dateiablage: ADR-017 Punkte 25 und 27. Eine Datei, die
+            aus einer Akte entfernt ist, ist erst mit der Quittung gelöscht. Akten und Dateiablage
+            können auseinanderlaufen; der Abgleich wird beim Öffnen dieser Seite gerechnet.
+          </li>
           <li>
             Löschjournal und Wiederherstellung: ADR-008 Punkt 8, ADR-012 Punkt 12 (Backups 30 Tage,
-            Journal 60 Tage).
+            Journal 60 Tage). Das Journal ist der Nachweis der ausgeführten Löschungen, angezeigt
+            die letzten {JOURNAL_EINTRAEGE} Einträge. Es überlebt eine Wiederherstellung und wird
+            danach erneut angewendet; sobald eine Frist abläuft, hält der tägliche Löschlauf dort
+            fest, was er gelöscht hat.
           </li>
           <li>
             Eine Frist ändert sich nur über eine Programmänderung, nicht auf dieser Seite – so
@@ -593,47 +711,28 @@ function Grundlagen() {
           </li>
         </ul>
       </Disclosure>
-    </section>
+    </div>
   );
 }
 
 export function AufbewahrungPage({ user }: { user: CurrentUser }) {
+  const [suche] = useSearchParams();
+  const klasse = suche.get(KLASSE_PARAM);
+  // Liste und Detail auf derselben Route (Welle B): Eine Zeile des Plans
+  // öffnet die Datenklasse, der Rückweg führt in die Liste.
+  if (klasse) return <Klassendetail key={klasse} schluessel={klasse} />;
+
   return (
     <>
-      {/* Zweiter Reiter unter „Sicherheit und Aufbewahrung" (RAH-005). */}
+      {/* Zweiter Reiter unter „Sicherheit und Aufbewahrung" (RAH-005). Ohne
+          Satz unter dem Titel: Die Abschnitte sagen selbst, was sie sind. */}
       <SicherheitReiter />
-      <PageHeader
-        title="Aufbewahrung und Löschung"
-        description="Was zu tun ist, was gerade zurückgehalten wird, was wie lange bleibt und was gelöscht wurde."
-      />
+      <PageHeader title="Aufbewahrung und Löschung" />
 
       <ZuTun user={user} />
-
-      {/* Plan und Sperren sind Kartenlisten; die Karten sind die Rahmen.
-          Bis UXR-011 lag um die Karten ein zweiter Rahmen - bei 390 px blieben
-          dem Inhalt rund 270 von 350 px (RSP-16, ORG-16). */}
-      <Section
-        titel="Löschsperren"
-        hinweis="Eine gesperrte Akte wird nicht gelöscht, bleibt aber vollständig benutzbar."
-      >
-        <Loeschsperren />
-      </Section>
-
-      <Section
-        titel="Aufbewahrungsplan"
-        hinweis="Eine Karte je Art von Daten. „Annahme – Prüfung offen“ heißt: Die Frist ist begründet festgelegt und wartet auf die Datenschutzprüfung."
-      >
-        <Aufbewahrungsplan />
-      </Section>
-
-      <Section
-        titel="Löschjournal"
-        hinweis={`Der Nachweis der ausgeführten Löschungen, die letzten ${JOURNAL_EINTRAEGE} Einträge. Er überlebt eine Wiederherstellung und wird danach erneut angewendet.`}
-        rahmen
-      >
-        <Loeschjournal />
-      </Section>
-
+      <Loeschsperren />
+      <Aufbewahrungsplan />
+      <Loeschjournal />
       <Grundlagen />
     </>
   );

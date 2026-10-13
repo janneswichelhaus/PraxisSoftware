@@ -3,12 +3,21 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Chip } from '@/components/ui/Chip';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Medienbild } from '@/components/ui/Medienbild';
+import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Planblatt } from '@/features/exercise-plans/Planblatt';
-import { dosierungAlltag, haeufigkeit } from '@/features/exercise-plans/dosierung';
+import { haeufigkeit } from '@/features/exercise-plans/dosierung';
 import { formatDate } from '@/lib/datum';
 import {
   ladePlaene,
@@ -26,6 +35,7 @@ import {
 } from './ablage';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { WOCHENTAGE, tageText } from './uebungstage';
+import { Uebungsinhalt, type DosisZumAblesen } from './Uebungsinhalt';
 
 /**
  * Reiter „Übungen" bzw. „Training" (UEB-009, DSN-001 4.1 und 5): „Was mache
@@ -34,8 +44,9 @@ import { WOCHENTAGE, tageText } from './uebungstage';
  * Der Heimübungsplan gehört zur Behandlung und kostet nichts extra (§4.6);
  * im Training gehört der Plan zum Paket (§4.10). Gezeigt wird, was der Server
  * über den Zugang liefert: die zugewiesenen Pläne, sonst der zuletzt beendete
- * nur zum Lesen und Mitnehmen (ANN-304). Je Übung Name, Dosierung in Worten,
- * Anleitung und Hinweis - keine Punktzahl, keine Serie, kein Lob aus der
+ * nur zum Lesen und Mitnehmen (ANN-304). Je Übung Bildplatz, Name und Dosierung,
+ * auf Tipp Bild, Dosierung als Kacheln, Anleitung und Hinweis (ANN-466) -
+ * keine Punktzahl, keine Serie, kein Lob aus der
  * Software (DSN-001 4.1).
  */
 export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
@@ -49,22 +60,20 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">{training ? 'Training' : 'Übungen'}</h1>
+      <PageHeader title={training ? 'Training' : 'Übungen'} />
       {suche.get('gespeichert') === '1' ? (
         // Eine Bestätigung, kein Lob (DSN-001 4.1).
-        <Statusmeldung ton="erfolg" className="mt-4">
-          Ihre Einheit ist gespeichert.
-        </Statusmeldung>
+        <Rueckmeldung className="mb-4">Ihre Einheit ist gespeichert.</Rueckmeldung>
       ) : suche.get('gespeichert') === 'geraet' ? (
         // TRK-008: ehrlich, wo sie liegt (ADR-024 Punkt 8).
-        <Statusmeldung ton="warnung" className="mt-4">
+        <Statusmeldung ton="warnung" className="mb-4">
           Ihre Einheit liegt auf diesem Gerät und ist noch nicht bei der Praxis. Sie wird
           übertragen, sobald Verbindung besteht.
         </Statusmeldung>
       ) : null}
       <Wartehinweis zugangId={zugang.access_id} />
       {plaene.isPending ? (
-        <LoadingState label="Ihre Übungen werden geladen …" />
+        <LoadingState label="Ihre Übungen werden geladen …" inKarte />
       ) : plaene.data === undefined ? (
         <OhneVerbindung
           zugangId={zugang.access_id}
@@ -73,6 +82,7 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
         />
       ) : plaene.data.plans.length === 0 ? (
         <EmptyState
+          inKarte
           title="Noch kein Plan"
           description={
             training
@@ -82,7 +92,7 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
         />
       ) : (
         plaene.data.plans.map((plan) => (
-          <PlanKarte
+          <PlanAbschnitt
             key={plan.id}
             zugang={zugang}
             plan={plan}
@@ -112,19 +122,24 @@ function Wartestand({ besitzer, zugangId }: { besitzer: string; zugangId: string
   return (
     <>
       {wartend > 0 ? (
-        <p className="text-ink-muted mt-4" data-testid="wartehinweis">
+        <p className="text-ink-muted mb-4" data-testid="wartehinweis">
           {wartend === 1
             ? 'Eine Einheit liegt noch auf diesem Gerät und ist noch nicht übertragen.'
             : `${wartend} Einheiten liegen noch auf diesem Gerät und sind noch nicht übertragen.`}
         </p>
       ) : null}
       {stand.abgewiesen.map((a) => (
-        <Statusmeldung key={a.einheitId} ton="fehler" className="mt-4">
-          {`Eine Einheit wurde nicht übertragen: ${a.satz}`}{' '}
-          <button type="button" className="underline" onClick={() => abweisungGelesen(a.einheitId)}>
+        <div key={a.einheitId} className="mb-4 flex flex-wrap items-center gap-x-3">
+          <Statusmeldung ton="fehler">{`Eine Einheit wurde nicht übertragen: ${a.satz}`}</Statusmeldung>
+          <Button
+            type="button"
+            variant="quiet"
+            groesse="kompakt"
+            onClick={() => abweisungGelesen(a.einheitId)}
+          >
             Ausblenden
-          </button>
-        </Statusmeldung>
+          </Button>
+        </div>
       ))}
     </>
   );
@@ -156,38 +171,40 @@ function OhneVerbindung({
   const fehler = (
     <ErrorState
       title="Ihre Übungen konnten nicht geladen werden."
-      description="Bitte die Verbindung prüfen und erneut versuchen."
+      description={VERBINDUNG_PRUEFEN}
       onErneut={onErneut}
     />
   );
   if (!abgelegt.data || abgelegt.data.length === 0) return fehler;
   return (
     <>
-      <Statusmeldung ton="neutral" className="mt-4">
+      <Statusmeldung ton="neutral">
         Ohne Verbindung. Üben können Sie trotzdem – mit Ihrem Plan vom letzten Laden. Die Haken
         bleiben auf dem Gerät, bis Verbindung besteht.
       </Statusmeldung>
       {abgelegt.data.map((plan) => (
-        <section key={plan.id} className="mt-6" aria-label={plan.title}>
-          <h2 className="text-h4 font-semibold">{plan.title}</h2>
-          <div className="mt-4">
-            <ButtonLink
-              className="w-full"
-              to={`${PLATTFORM_PFAD}/uebungen/einheit/${plan.id}${bereich ? `?${bereich}` : ''}`}
-            >
-              Jetzt üben
-            </ButtonLink>
-          </div>
-        </section>
+        <Section key={plan.id} titel={plan.title}>
+          <ButtonLink
+            className="w-full"
+            to={`${PLATTFORM_PFAD}/uebungen/einheit/${plan.id}${bereich ? `?${bereich}` : ''}`}
+          >
+            Jetzt üben
+          </ButtonLink>
+        </Section>
       ))}
-      <Button variant="secondary" className="mt-6 w-full" onClick={onErneut}>
+      <Button variant="secondary" className="mt-8 w-full" onClick={onErneut}>
         Erneut laden
       </Button>
     </>
   );
 }
 
-function PlanKarte({
+/**
+ * Ein Plan: Laufzeit, Übungstage, „Jetzt üben“ als der eine Hauptknopf, dann
+ * die Übungen als Zeilen mit festem Bildplatz (`Medienbild vorschau`, ANN-466).
+ * Eine Zeile öffnet die Übung mit Bild, Dosierung und Anleitung.
+ */
+function PlanAbschnitt({
   zugang,
   plan,
   heute,
@@ -198,26 +215,23 @@ function PlanKarte({
   heute: string;
   bereich: string;
 }) {
-  const ueberschrift = `plan-${plan.id}`;
+  const [offen, setOffen] = useState<PlanPosition | null>(null);
   const zuletzt = plan.recent_sessions[0]?.performed_on;
   return (
-    <section aria-labelledby={ueberschrift} className="mt-6">
-      <h2 id={ueberschrift} className="text-h4 font-semibold">
-        {plan.title}
-      </h2>
-      <p className="text-ink-muted mt-1">
+    <Section titel={plan.title}>
+      <p className="text-ink-muted">
         {laufzeitText(plan, heute)}
         {plan.sessions_per_week ? ` · ${haeufigkeit(plan.sessions_per_week)}` : ''}
       </p>
       {zuletzt ? (
-        <p className="text-ink-muted mt-1">
+        <p className="text-ink-muted">
           Zuletzt geübt: {zuletzt === heute ? 'heute' : formatDate(zuletzt)}
         </p>
       ) : null}
       {plan.can_choose_days ? (
         <Uebungstage zugang={zugang} plan={plan} />
       ) : plan.weekdays.length > 0 ? (
-        <p className="text-ink-muted mt-1">Meine Übungstage: {tageText(plan.weekdays)}</p>
+        <p className="text-ink-muted">Meine Übungstage: {tageText(plan.weekdays)}</p>
       ) : null}
       {plan.can_exercise && plan.items.length > 0 ? (
         // UEB-010: die Durchführungsansicht (IDEA-ORG-003).
@@ -235,14 +249,35 @@ function PlanKarte({
           Dieser Plan ist beendet. Sie können ihn hier noch lesen und als PDF mitnehmen.
         </Statusmeldung>
       ) : null}
-      <ol className="mt-4 flex flex-col gap-3">
+      <ListRows className="mt-4">
         {plan.items.map((p) => (
-          <li key={p.id}>
-            <Uebungskarte position={p} />
-          </li>
+          <ListRow
+            key={p.id}
+            onClick={() => setOffen(p)}
+            // Das Bild steht neben dem Namen; für Vorlesesoftware sagt der
+            // Name, welche Übung es ist.
+            bild={
+              <span aria-hidden="true">
+                <Medienbild vorschau alt="">
+                  {p.illustration ? (
+                    <Uebungsbild
+                      bild={p.illustration}
+                      name={p.variant_lay_name}
+                      darstellung="vorschau"
+                      dekorativ
+                      className="size-full"
+                    />
+                  ) : null}
+                </Medienbild>
+              </span>
+            }
+            titel={`${p.position}. ${p.variant_lay_name}`}
+            meta={dosierungKurz(p)}
+          />
         ))}
-      </ol>
-      <div className="mt-4 flex flex-col items-start gap-3">
+      </ListRows>
+      {offen ? <Uebungsfenster position={offen} onSchliessen={() => setOffen(null)} /> : null}
+      <div className="mt-4 flex flex-col items-start gap-2">
         <ButtonLink
           variant="secondary"
           to={`${PLATTFORM_PFAD}/uebungen/blatt/${plan.id}${bereich ? `?${bereich}` : ''}`}
@@ -262,7 +297,7 @@ function PlanKarte({
           </Textlink>
         ) : null}
       </div>
-    </section>
+    </Section>
   );
 }
 
@@ -272,24 +307,49 @@ function laufzeitText(plan: EigenerPlan, heute: string): string {
   return `Bis ${formatDate(plan.runs_until)}`;
 }
 
-export function Uebungskarte({ position }: { position: PlanPosition }) {
+/**
+ * „3 Durchgänge · je 10 bis 12 Wiederholungen" - die Zeile unter dem Namen;
+ * mit „je Seite“, sobald die Fachperson es einträgt (UEB-012, `DosisZumAblesen`).
+ */
+function dosierungKurz(p: PlanPosition & Pick<DosisZumAblesen, 'per_side'>): string {
+  const durchgaenge = `${p.sets} ${p.sets === 1 ? 'Durchgang' : 'Durchgänge'}`;
+  const seite = p.per_side ? ' · je Seite' : '';
+  if (p.reps_min !== null && p.reps_max !== null) {
+    const wdh = p.reps_min === p.reps_max ? `${p.reps_min}` : `${p.reps_min} bis ${p.reps_max}`;
+    return `${durchgaenge} · je ${wdh} Wiederholungen${seite}`;
+  }
+  const s = p.duration_seconds ?? 0;
+  return `${durchgaenge} · je ${s} ${s === 1 ? 'Sekunde' : 'Sekunden'}${seite}`;
+}
+
+/**
+ * Eine Übung zum Nachlesen (DESIGN.md Lücke 9.10): Bild oben, die Dosierung
+ * als Kacheln, dann Anleitung, Hilfsmittel und Hinweis. Das Bild hat seinen
+ * festen Platz, auch solange es noch keins gibt (ANN-466). Die Schrift der
+ * Plattform gilt auch im Fenster, das außerhalb des Gerüsts gezeichnet wird.
+ */
+function Uebungsfenster({
+  position,
+  onSchliessen,
+}: {
+  position: PlanPosition;
+  onSchliessen: () => void;
+}) {
   return (
-    <article className="rounded-card border-line bg-surface border p-4">
-      <h3 className="font-semibold">
-        {position.position}. {position.variant_lay_name}
-      </h3>
-      <p className="mt-2">{dosierungAlltag(position)}</p>
-      {position.instruction ? <p className="mt-2">{position.instruction}</p> : null}
-      {position.equipment.length > 0 ? (
-        <p className="text-ink-muted mt-2">Sie brauchen: {position.equipment.join(', ')}</p>
-      ) : null}
-      {position.note ? (
-        <p className="mt-2">
-          <span className="font-semibold">Hinweis: </span>
-          {position.note}
-        </p>
-      ) : null}
-    </article>
+    <Dialogfenster titel={position.variant_lay_name} onSchliessen={onSchliessen}>
+      {/* Der Fokus steht am Anfang der Übung, nicht auf „Schließen“ am Ende:
+          Sonst öffnete das Fenster am Telefon unten, und Name und Bild lägen
+          außerhalb des Blicks. */}
+      <div className="plattform-schrift">
+        <span data-autofocus tabIndex={-1} className="block outline-none" />
+        <Uebungsinhalt position={position} />
+        <div className="mt-6">
+          <Button type="button" variant="secondary" className="w-full" onClick={onSchliessen}>
+            Schließen
+          </Button>
+        </div>
+      </div>
+    </Dialogfenster>
   );
 }
 
@@ -396,11 +456,12 @@ function Uebungstage({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerP
         {WOCHENTAGE.map((w) => {
           const an = tage.includes(w.nummer);
           return (
-            <button
+            // Ein Schalter je Tag (`Chip` mit `gewaehlt`, DESIGN.md „Umschalter“):
+            // gewählt mit Haken auf der Akzentfläche, der volle Name für
+            // Vorlesesoftware.
+            <Chip
               key={w.nummer}
-              type="button"
-              aria-pressed={an}
-              aria-label={w.lang}
+              gewaehlt={an}
               onClick={() =>
                 speichern.mutate(
                   an
@@ -408,10 +469,10 @@ function Uebungstage({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerP
                     : [...tage, w.nummer].sort((a, b) => a - b),
                 )
               }
-              className="rounded-button border-line bg-surface aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-surface min-h-12 min-w-12 border-2 px-2 text-base font-semibold"
             >
-              {w.kurz}
-            </button>
+              <span aria-hidden="true">{w.kurz}</span>
+              <span className="sr-only">{w.lang}</span>
+            </Chip>
           );
         })}
       </div>

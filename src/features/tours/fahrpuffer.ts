@@ -81,6 +81,16 @@ export function useTagesstopps(tag: string, person: string, stand = '') {
 }
 
 /**
+ * Fahrzeit und Strecke zwischen zwei Punkten der Route - am selben Punkt 0,
+ * auch ohne Route (Design-Review T4). Liegen alle Stopps am Startort, gibt es
+ * keine zwei Punkte und damit keine Route; „Fahrzeit nicht verfügbar“ war
+ * dort falsch, denn gefahren wird nicht.
+ */
+function ohneFahrt(von: number | null, nach: number | null): boolean {
+  return von !== null && von === nach;
+}
+
+/**
  * Die Route über die Stopps und die Prüfung jedes aufeinanderfolgenden Paares.
  *
  * `zwischen[i]` gehört zum Übergang von Stopp i zu Stopp i+1: die Fahrzeit
@@ -105,12 +115,16 @@ export function useFahrten(
 
   const fahrzeiten = useMemo(
     () =>
-      stopps.slice(1).map((stopp, i) => ({
-        from: stopps[i]!.termin.id,
-        to: stopp.termin.id,
-        sekunden: fahrzeitZwischen(plan.index[i] ?? null, plan.index[i + 1] ?? null, abschnitte),
-        meter: streckeZwischen(plan.index[i] ?? null, plan.index[i + 1] ?? null, abschnitte),
-      })),
+      stopps.slice(1).map((stopp, i) => {
+        const von = plan.index[i] ?? null;
+        const nach = plan.index[i + 1] ?? null;
+        return {
+          from: stopps[i]!.termin.id,
+          to: stopp.termin.id,
+          sekunden: ohneFahrt(von, nach) ? 0 : fahrzeitZwischen(von, nach, abschnitte),
+          meter: ohneFahrt(von, nach) ? 0 : streckeZwischen(von, nach, abschnitte),
+        };
+      }),
     [stopps, plan.index, abschnitte],
   );
 
@@ -134,24 +148,24 @@ export function useFahrten(
   }));
 
   const letzter = stopps.length - 1;
+  const zumEnde = { von: plan.index[letzter] ?? null, nach: plan.index[letzter + 1] ?? null };
   const rueckweg =
     ende && letzter >= 0
-      ? {
-          sekunden: fahrzeitZwischen(
-            plan.index[letzter] ?? null,
-            plan.index[letzter + 1] ?? null,
-            abschnitte,
-          ),
-          meter: streckeZwischen(
-            plan.index[letzter] ?? null,
-            plan.index[letzter + 1] ?? null,
-            abschnitte,
-          ),
-        }
+      ? ohneFahrt(zumEnde.von, zumEnde.nach)
+        ? { sekunden: 0, meter: 0 }
+        : {
+            sekunden: fahrzeitZwischen(zumEnde.von, zumEnde.nach, abschnitte),
+            meter: streckeZwischen(zumEnde.von, zumEnde.nach, abschnitte),
+          }
       : null;
 
   return {
     route,
+    /**
+     * Gibt es eine Route zu berechnen - mindestens zwei verschiedene Punkte?
+     * Sonst läuft die Abfrage nie los und bleibt „ausstehend“ (T4).
+     */
+    routeNoetig: plan.punkte.length >= 2,
     zwischen,
     rueckweg,
     pruefungLaedt: paare.length > 0 && pruefung.isPending,

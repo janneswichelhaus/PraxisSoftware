@@ -29,7 +29,7 @@ describe('Widerrufe in Offene Punkte (KND-004)', () => {
     ]);
     renderWithProviders(<TrainingWithdrawals />);
     expect(await screen.findByText('Trainingsvertrag widerrufen (1)')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Beispiel, Erika' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^Beispiel, Erika/ })).toHaveAttribute(
       'href',
       `/training/t1?zurueck=${encodeURIComponent('/offen')}`,
     );

@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -93,7 +96,7 @@ export function DauerterminStartPage({ user }: { user: CurrentUser }) {
 
       {patientId === null ? (
         <Section titel="Patient:in">
-          <div className="max-w-md">
+          <div className="max-w-formular">
             <Patientensuche label="Patient:in suchen" labelSichtbar onAuswahl={waehlePatient} />
           </div>
         </Section>
@@ -168,19 +171,16 @@ function Grundlagenwahl({
     <Section
       titel={patient.data ? `Grundlage für ${fullName(patient.data)}` : 'Grundlage'}
       aktion={
-        <button
-          type="button"
-          onClick={zurueck}
-          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
-        >
+        // Ein leiser Knopf des Systems statt eines eigenen (DESIGN.md Regel 4).
+        <Button type="button" variant="quiet" groesse="kompakt" onClick={zurueck}>
           Andere Patient:in
-        </button>
+        </Button>
       }
     >
       {isError ? (
         <ErrorState
           title="Die Behandlungsgrundlagen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={erneutLaden}
         />
       ) : isPending || !zahlenGeladen || eindeutig ? (
@@ -211,12 +211,15 @@ function Grundlagenwahl({
       ) : (
         <>
           {offen.length > 0 ? (
-            <Grundlagenliste eintraege={offen} ziel={serie} label="Offene Grundlagen" />
+            <Grundlagenliste eintraege={offen} ziel={serie} />
           ) : (
-            <p className="text-ink-muted max-w-prose text-sm">
-              Keine Grundlage hat noch etwas zu planen. Eine Serie darüber hinaus ist möglich; die
-              nächste Seite zeigt, was ungedeckt bleibt.
-            </p>
+            // Der Leerzustand in der Karte (DESIGN.md Regel 8), mit dem, was
+            // trotzdem geht: Die Serienseite zeigt, was ungedeckt bliebe.
+            <EmptyState
+              inKarte
+              title="Keine Grundlage hat noch etwas zu planen."
+              description="Eine Serie darüber hinaus ist möglich."
+            />
           )}
           {weitere.length > 0 ? (
             // Was selten gebraucht wird, steht eingeklappt (Bedienprinzipien,
@@ -228,11 +231,7 @@ function Grundlagenwahl({
                 summary={`Verplante und ausgeschöpfte (${weitere.length})`}
                 offen={offen.length === 0}
               >
-                <Grundlagenliste
-                  eintraege={weitere}
-                  ziel={serie}
-                  label="Verplante und ausgeschöpfte Grundlagen"
-                />
+                <Grundlagenliste eintraege={weitere} ziel={serie} />
               </Disclosure>
             </div>
           ) : null}
@@ -245,41 +244,34 @@ function Grundlagenwahl({
 function Grundlagenliste({
   eintraege,
   ziel,
-  label,
 }: {
   eintraege: readonly VerordnungMitZahlen[];
   ziel: (grundlageId: string) => string;
-  label: string;
 }) {
+  // Zeilen des Systems (DESIGN.md Regel 3): Die ganze Zeile führt auf die
+  // Serienseite der Grundlage.
   return (
-    <ul aria-label={label} className="divide-line border-line max-w-xl divide-y border-y">
+    <ListRows>
       {eintraege.map(({ verordnung, kontingent, zustand }) => {
         const { bauart, praeposition } = grundlageBezeichnung(verordnung);
         const rest = kontingent?.remaining ?? 0;
         return (
-          <li key={verordnung.id}>
-            <Link
-              to={ziel(verordnung.id)}
-              className="hover:bg-surface-sunken flex min-h-11 flex-col justify-center px-1 py-2.5"
-            >
-              <span className="text-ink text-liste">
-                {bauart} {praeposition} {formatDate(verordnung.issued_on)}
-              </span>
-              <span className="text-ink-muted text-sm">
-                {[
-                  verordnung.prescriber_name,
-                  // Das Kontingent zählt Termine (ANN-064, VER-08).
-                  zustand === 'offen'
-                    ? `noch ${rest} ${rest === 1 ? 'Termin' : 'Termine'} zu planen`
-                    : zustandLabels[zustand],
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </span>
-            </Link>
-          </li>
+          <ListRow
+            key={verordnung.id}
+            to={ziel(verordnung.id)}
+            titel={`${bauart} ${praeposition} ${formatDate(verordnung.issued_on)}`}
+            meta={[
+              verordnung.prescriber_name,
+              // Das Kontingent zählt Termine (ANN-064, VER-08).
+              zustand === 'offen'
+                ? `noch ${rest} ${rest === 1 ? 'Termin' : 'Termine'} zu planen`
+                : zustandLabels[zustand],
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          />
         );
       })}
-    </ul>
+    </ListRows>
   );
 }

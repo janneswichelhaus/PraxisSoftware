@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -9,10 +9,16 @@ import { TextArea } from '@/components/ui/TextArea';
 import { Section, Feldgruppe } from '@/components/ui/Section';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { canWriteTreatmentNote, isOwner, type CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { FREITEXT } from './format';
@@ -131,7 +137,7 @@ function BausteinFormular({
         if (Object.keys(gefunden).length > 0) return;
         speichern.mutate({ titel, text, praxisweit });
       }}
-      className="max-w-xl"
+      className="max-w-formular"
     >
       <Feldgruppe>
         <Field
@@ -179,7 +185,7 @@ function BausteinFormular({
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-3">
+      <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird gespeichert …' : baustein ? 'Speichern' : 'Baustein anlegen'}
         </Button>
@@ -188,18 +194,32 @@ function BausteinFormular({
             Abbrechen
           </Button>
         ) : null}
-      </div>
+      </Formularfuss>
     </form>
   );
 }
 
-function BausteinKarte({
+/** Die Adresse eines Bausteins: dieselbe Seite mit `?baustein=` (Liste → Einzelnes). */
+const PARAMETER = 'baustein';
+
+/**
+ * Ein Baustein im Einzelnen (Design-Rollout B4: Liste → Detail statt einer
+ * Karte je Baustein mit Text und Knöpfen): Kopf mit Titel und Geltungsbereich,
+ * der Text im Rahmen, „Bearbeiten“ im Kopf und „Löschen“ leise am Ende, nach
+ * einer Rückfrage.
+ */
+function BausteinDetail({
   baustein,
+  zurListe,
   onUngespeichert,
+  onGeloescht,
   schutz,
 }: {
   baustein: TextSnippet;
+  /** Die Liste, samt mitgereistem Rückweg. */
+  zurListe: string;
   onUngespeichert: (formularId: string, ungespeichert: boolean) => void;
+  onGeloescht: (titel: string) => void;
   schutz: ReactNode;
 }) {
   const queryClient = useQueryClient();
@@ -207,75 +227,97 @@ function BausteinKarte({
 
   const loeschen = useMutation({
     mutationFn: () => deleteTextSnippet(baustein.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['text-snippets'] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['text-snippets'] });
+      onGeloescht(baustein.title);
+    },
   });
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-ink text-liste font-medium">{baustein.title}</p>
+    <>
+      <Textlink alleinstehend to={zurListe} className="mb-4 gap-1">
+        <span aria-hidden="true">←</span> Alle Textbausteine
+      </Textlink>
+      <PageHeader
+        title={baustein.title}
+        description={
+          baustein.shared
+            ? 'Für alle dokumentierenden Personen. Anlegen und ändern darf sie die Praxisinhaber:in.'
+            : 'Sieht außer Ihnen niemand.'
+        }
+        actions={
+          baustein.editable && !bearbeiten ? (
+            <Button type="button" variant="secondary" onClick={() => setBearbeiten(true)}>
+              Bearbeiten
+            </Button>
+          ) : null
+        }
+      />
+
+      <div className="max-w-formular">
         <Badge ton={baustein.shared ? 'akzent' : 'neutral'}>
           {baustein.shared ? 'Praxis' : 'Nur ich'}
         </Badge>
-      </div>
 
-      {bearbeiten ? (
-        <div className="mt-3">
-          <BausteinFormular
-            formularId={baustein.id}
-            baustein={baustein}
-            darfPraxisweit={false}
-            onFertig={() => setBearbeiten(false)}
-            onAbbrechen={() => setBearbeiten(false)}
-            onUngespeichert={onUngespeichert}
-            schutz={schutz}
-          />
-        </div>
-      ) : (
-        <>
-          {/* Lesebreite statt voller Kartenbreite (DOK-22); lange Ketten
-              brechen um (DOK-23). */}
-          <p className={`text-ink-muted mt-2 max-w-prose text-sm leading-relaxed ${FREITEXT}`}>
-            {baustein.body}
-          </p>
-          {baustein.editable ? (
-            <div className="mt-3 flex flex-wrap items-start gap-3">
-              <Button type="button" variant="secondary" onClick={() => setBearbeiten(true)}>
-                Bearbeiten
-              </Button>
-              <Rueckfrage
-                ausloeser="Löschen"
-                bezeichnung={`Baustein „${baustein.title}“ löschen`}
-                bestaetigen="Ja, Baustein löschen"
-                bestaetigenLaeuft="Wird gelöscht …"
-                fehler={loeschen.isError ? loeschen.error.message : undefined}
-                laeuft={loeschen.isPending}
-                onBestaetigen={() => loeschen.mutateAsync()}
-              >
-                Der Baustein wird gelöscht. Bereits geschriebene Dokumentation bleibt davon
-                unberührt – ein Baustein ist eine Vorlage, kein Bestandteil der Akte.
-              </Rueckfrage>
-            </div>
-          ) : (
-            <p className="text-ink-muted mt-3 text-xs">
-              Bausteine der Praxis pflegt die Praxisinhaber:in.
-            </p>
-          )}
-        </>
-      )}
-    </Card>
+        {bearbeiten ? (
+          <div className="mt-6">
+            <BausteinFormular
+              formularId={baustein.id}
+              baustein={baustein}
+              darfPraxisweit={false}
+              onFertig={() => setBearbeiten(false)}
+              onAbbrechen={() => setBearbeiten(false)}
+              onUngespeichert={onUngespeichert}
+              schutz={schutz}
+            />
+          </div>
+        ) : (
+          <>
+            <Section titel="Text" rahmen>
+              {/* Lesebreite (DOK-22); lange Ketten brechen um (DOK-23). */}
+              <p className={`text-ink text-liste max-w-prose leading-relaxed ${FREITEXT}`}>
+                {baustein.body}
+              </p>
+            </Section>
+
+            {baustein.editable ? (
+              // Zerstörendes leise am Ende, mit Rückfrage (DESIGN.md Regel 10).
+              <div className="mt-8">
+                <Rueckfrage
+                  ausloeser="Löschen"
+                  ausloeserVariante="quiet"
+                  bezeichnung={`Baustein „${baustein.title}“ löschen`}
+                  bestaetigen="Ja, Baustein löschen"
+                  bestaetigenLaeuft="Wird gelöscht …"
+                  fehler={loeschen.isError ? loeschen.error.message : undefined}
+                  laeuft={loeschen.isPending}
+                  onBestaetigen={() => loeschen.mutateAsync()}
+                >
+                  Der Baustein wird gelöscht. Bereits geschriebene Dokumentation bleibt davon
+                  unberührt – ein Baustein ist eine Vorlage, kein Bestandteil der Akte.
+                </Rueckfrage>
+              </div>
+            ) : (
+              <Kleingedrucktes className="mt-6">
+                Bausteine der Praxis pflegt die Praxisinhaber:in.
+              </Kleingedrucktes>
+            )}
+          </>
+        )}
+      </div>
+    </>
   );
 }
 
 export function TextbausteinePage({ user }: { user: CurrentUser }) {
   const darf = canWriteTreatmentNote(user.roles);
   const darfPraxisweit = isOwner(user.roles);
-  const [suche] = useSearchParams();
+  const [suche, setSuche] = useSearchParams();
   const herkunft = leseRueckweg(suche, '');
   const [anlegen, setAnlegen] = useState(false);
-  // Der Titel des zuletzt angelegten Bausteins - für die Bestätigung (DOK-15).
-  const [angelegt, setAngelegt] = useState<string | null>(null);
-  const bestaetigung = useRef<HTMLDivElement>(null);
+  // Was zuletzt geschehen ist - für die Bestätigung über der Liste (DOK-15).
+  // Ein neuer Schlüssel je Meldung: Auch eine zweite nimmt den Fokus.
+  const [meldung, setMeldung] = useState<{ text: string; schluessel: number } | null>(null);
 
   // Welche offenen Formulare Ungespeichertes tragen. Ein Schutz für die ganze
   // Seite: Der Router hält nur eine Sperre.
@@ -295,19 +337,21 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
   // Die Rückfrage erscheint in dem Formular, in dem gearbeitet wird.
   const schutzFuer = (formularId: string) => (formularId === betroffen ? schutz : null);
 
-  // Das Formular klappt nach dem Anlegen zu, und die neue Karte kann unter dem
-  // sichtbaren Bereich liegen. Die Bestätigung steht über der Liste und
-  // bekommt den Fokus, der sonst an den Seitenanfang fiele (DOK-15).
-  useEffect(() => {
-    if (angelegt) bestaetigung.current?.focus();
-  }, [angelegt]);
-
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['text-snippets'],
     queryFn: fetchTextSnippets,
     enabled: darf,
     retry: false,
   });
+
+  /** Dieselbe Seite mit einem anderen Baustein (oder keinem), samt Rückweg. */
+  function adresse(bausteinId: string | null): string {
+    const neu = new URLSearchParams(suche);
+    if (bausteinId) neu.set(PARAMETER, bausteinId);
+    else neu.delete(PARAMETER);
+    const text = neu.toString();
+    return text ? `?${text}` : '?';
+  }
 
   if (!darf) {
     return (
@@ -318,8 +362,39 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
     );
   }
 
-  const praxis = (data ?? []).filter((baustein) => baustein.shared);
-  const eigene = (data ?? []).filter((baustein) => !baustein.shared);
+  const gewaehlt = abfrage.data?.find((baustein) => baustein.id === suche.get(PARAMETER));
+  if (gewaehlt) {
+    return (
+      <BausteinDetail
+        key={gewaehlt.id}
+        baustein={gewaehlt}
+        zurListe={adresse(null)}
+        onUngespeichert={melden}
+        onGeloescht={(titel) => {
+          setMeldung({ text: `Baustein „${titel}“ gelöscht.`, schluessel: Date.now() });
+          // Zurück in die Liste, ohne den Baustein im Verlauf stehen zu lassen.
+          setSuche(
+            (bisher) => {
+              const neu = new URLSearchParams(bisher);
+              neu.delete(PARAMETER);
+              return neu;
+            },
+            { replace: true },
+          );
+        }}
+        schutz={schutzFuer(gewaehlt.id)}
+      />
+    );
+  }
+
+  const zeile = (baustein: TextSnippet) => (
+    <ListRow
+      key={baustein.id}
+      to={adresse(baustein.id)}
+      titel={baustein.title}
+      meta={<span className="line-clamp-1">{baustein.body}</span>}
+    />
+  );
 
   return (
     <>
@@ -327,13 +402,13 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
 
       <PageHeader
         title="Textbausteine"
-        description="Vorbereitete Formulierungen für die Behandlungsdokumentation. Sie werden unverändert eingefügt – ohne Platzhalter und ohne Angaben aus einer Akte."
+        description="Formulierungen für die Dokumentation."
         actions={
           anlegen ? null : (
             <Button
               type="button"
               onClick={() => {
-                setAngelegt(null);
+                setMeldung(null);
                 setAnlegen(true);
               }}
             >
@@ -350,7 +425,7 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
             darfPraxisweit={darfPraxisweit}
             onFertig={(titel) => {
               setAnlegen(false);
-              setAngelegt(titel);
+              setMeldung({ text: `Baustein „${titel}“ angelegt.`, schluessel: Date.now() });
             }}
             onAbbrechen={() => setAnlegen(false)}
             onUngespeichert={melden}
@@ -359,61 +434,41 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
         </Section>
       ) : null}
 
-      {angelegt ? (
-        <div ref={bestaetigung} tabIndex={-1} className="mb-2">
-          <Statusmeldung ton="erfolg">Baustein „{angelegt}“ angelegt.</Statusmeldung>
-        </div>
+      {/* Das Formular klappt nach dem Anlegen zu, und die neue Zeile kann
+          unter dem sichtbaren Bereich liegen: Die Bestätigung steht über der
+          Liste und nimmt den Fokus (DOK-15). */}
+      {meldung ? (
+        <Rueckmeldung key={meldung.schluessel} className="mb-6">
+          {meldung.text}
+        </Rueckmeldung>
       ) : null}
 
-      {isPending ? <LoadingState label="Bausteine werden geladen …" /> : null}
-      {isError ? (
-        <ErrorState
-          title="Die Textbausteine konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => refetch()}
-        />
-      ) : null}
-
-      {data ? (
-        <>
-          <Section
-            titel="Bausteine der Praxis"
-            hinweis="Für alle dokumentierenden Personen. Anlegen und ändern darf sie die Praxisinhaber:in."
-          >
-            {praxis.length === 0 ? (
-              <p className="text-ink-muted text-liste">Noch keine Bausteine der Praxis.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {praxis.map((baustein) => (
-                  <BausteinKarte
-                    key={baustein.id}
-                    baustein={baustein}
-                    onUngespeichert={melden}
-                    schutz={schutzFuer(baustein.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </Section>
-
-          <Section titel="Meine Bausteine" hinweis="Sieht außer Ihnen niemand.">
-            {eigene.length === 0 ? (
-              <p className="text-ink-muted text-liste">Noch keine eigenen Bausteine.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {eigene.map((baustein) => (
-                  <BausteinKarte
-                    key={baustein.id}
-                    baustein={baustein}
-                    onUngespeichert={melden}
-                    schutz={schutzFuer(baustein.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </Section>
-        </>
-      ) : null}
+      <div className={anlegen ? 'mt-8' : undefined}>
+        <Abfragezustand
+          abfrage={abfrage}
+          laden="Bausteine werden geladen …"
+          fehler="Die Textbausteine konnten nicht geladen werden."
+        >
+          {(daten) => (
+            <>
+              <Listenabschnitt
+                titel="Bausteine der Praxis"
+                anzahl={daten.filter((baustein) => baustein.shared).length}
+                leer={{ titel: 'Noch keine Bausteine der Praxis.' }}
+              >
+                {daten.filter((baustein) => baustein.shared).map(zeile)}
+              </Listenabschnitt>
+              <Listenabschnitt
+                titel="Meine Bausteine"
+                anzahl={daten.filter((baustein) => !baustein.shared).length}
+                leer={{ titel: 'Noch keine eigenen Bausteine.' }}
+              >
+                {daten.filter((baustein) => !baustein.shared).map(zeile)}
+              </Listenabschnitt>
+            </>
+          )}
+        </Abfragezustand>
+      </div>
     </>
   );
 }

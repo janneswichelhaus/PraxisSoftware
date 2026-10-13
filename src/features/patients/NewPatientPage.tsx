@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Textlink } from '@/components/ui/Textlink';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -172,7 +174,7 @@ export function NewPatientPage() {
           das Sternchen erklärt sich am Feld. */}
       <PageHeader title="Patient:in anlegen" />
 
-      <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-xl">
+      <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             STAMMDATEN_REIHENFOLGE,
@@ -196,40 +198,43 @@ export function NewPatientPage() {
             über den Knöpfen (PAT-02). */}
         {schutz}
 
+        {/* Eine Meldung ist eine Zeile mit Linie links, kein Kasten mit
+            eigener Überschrift (DESIGN.md Regel 2) - sie steht direkt über dem
+            Knopf, der sie auslöste. */}
         {dubletten && dubletten.length > 0 ? (
-          <section
+          <div
             aria-labelledby="dubletten-titel"
             role="alert"
-            className="border-warnung bg-surface rounded-card mt-8 border p-4"
+            className="border-warnung bg-warnung-soft mt-8 border-l-4 py-3 pr-4 pl-4"
           >
-            <h2 id="dubletten-titel" className="text-ink text-liste font-semibold">
+            <p id="dubletten-titel" className="text-ink text-liste font-semibold">
               Vielleicht schon in der Kartei
-            </h2>
+            </p>
             <p className="text-ink-muted mt-1 text-sm">
               Gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname. Ist es dieselbe
               Person, bitte die vorhandene Akte öffnen statt eine zweite anzulegen.
             </p>
-            <ul className="mt-3 flex flex-col gap-1">
+            <ul className="mt-1 flex flex-col">
               {dubletten.map((treffer) => (
                 <li key={treffer.id}>
-                  <Link
+                  <Textlink
+                    alleinstehend
                     to={mitRueckweg(`/patienten/${treffer.id}`, '/patienten')}
-                    className="text-accent inline-flex min-h-11 items-center font-medium hover:underline"
                   >
                     {treffer.given_name} {treffer.family_name}
                     {treffer.date_of_birth ? `, geb. ${formatDate(treffer.date_of_birth)}` : ''}
                     {treffer.status === 'inactive' ? ' (nicht in Versorgung)' : ''}
-                  </Link>
+                  </Textlink>
                 </li>
               ))}
             </ul>
-            <p className="text-ink mt-2 text-sm">
+            <p className="text-ink mt-1 text-sm">
               Eine andere Person mit ähnlichen Angaben? Dann „{ANLEGEN}“ noch einmal tippen.
             </p>
-          </section>
+          </div>
         ) : null}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <Formularfuss>
           <Button
             ref={absendenRef}
             type="submit"
@@ -242,11 +247,12 @@ export function NewPatientPage() {
                 : ANLEGEN}
           </Button>
           {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
-              dieselbe Rückfrage wie jeder andere Weg hinaus. */}
-          <ButtonLink to={zurueck} variant="secondary">
+              dieselbe Rückfrage wie jeder andere Weg hinaus. Leise, wie jedes
+              Abbrechen am Formularende (DESIGN.md, Formular). */}
+          <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
 
       {/* Ein Fehlschlag kann nicht neben dem Knopf stehen, der ihn auslöst: Am

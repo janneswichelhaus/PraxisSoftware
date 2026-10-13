@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { katalogeintrag } from '@/features/exercises/katalog';
+import { OHNE_KATALOG } from '@/features/exercises/testdaten';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -16,10 +18,11 @@ import '@/index.css';
 /**
  * Einstieg der Prüfseite aus `uebungen.html` (UEB-EPIC-001).
  *
- * `?seite=liste` (Standard) oder `?seite=uebung` (Kniebeuge mit Varianten und
- * Verbindungen); `?rolle=owner` zeigt die Pflege, sonst liest eine
- * Therapeut:in. Die Daten liegen vorab im Cache; gesprochen wird mit keinem
- * Server. Alles ist synthetisch.
+ * `?seite=liste` (Standard), `?seite=uebung` (Kniebeuge mit Varianten und
+ * Verbindungen) oder `?seite=katalog` (eine übernommene Katalogübung mit Bild,
+ * Standarddosierung und Anleitung in Schritten, Welle B); `?rolle=owner` zeigt
+ * die Pflege, sonst liest eine Therapeut:in. Die Daten liegen vorab im Cache;
+ * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const suche = new URLSearchParams(window.location.search);
 const seite = suche.get('seite') ?? 'liste';
@@ -42,6 +45,7 @@ function variante(
     common_faults: null,
     practice_notes: null,
     archived: false,
+    ...OHNE_KATALOG,
     ...zusatz,
   };
 }
@@ -62,6 +66,8 @@ const KNIEBEUGE: Uebung = {
       {
         common_faults: 'Knie fallen nach innen; Fersen heben ab.',
         practice_notes: 'Höhe des Griffs vor Ort zeigen.',
+        // UEB-012: ein Bild aus dem Katalog - Vorschau in der Liste, Start und Ende in der Übung.
+        illustration: katalogeintrag('KN-07')?.bild ?? null,
       },
     ),
     variante(
@@ -85,6 +91,44 @@ const KNIEBEUGE: Uebung = {
       null,
       ['Wackelbrett'],
       { archived: true },
+    ),
+  ],
+};
+
+/** UEB-012: eine übernommene Katalogübung (ANN-382), ungeprüft (ANN-386). */
+const KN01 = katalogeintrag('KN-01')!;
+const STRECKUNG: Uebung = {
+  id: 'u-kn01',
+  name: KN01.name,
+  lay_name: KN01.alltagsname,
+  body_region: 'knie',
+  archived: false,
+  variants: [
+    variante(
+      'v-kn01',
+      KN01.name,
+      KN01.alltagsname,
+      KN01.anleitung.join('\n'),
+      ['Stuhl', 'Gewichtsmanschette (nach Bedarf)'],
+      {
+        common_faults: KN01.fehler.join('\n'),
+        practice_notes: KN01.hinweise_praxis ?? null,
+        catalog_key: 'KN-01',
+        catalog_version: KN01.version,
+        goal: KN01.ziel,
+        starting_position: KN01.ausgangsstellung,
+        level: KN01.niveau,
+        default_dosage: {
+          sets: 3,
+          reps_min: 10,
+          reps_max: 10,
+          duration_seconds: null,
+          hold_seconds: 3,
+          per_side: true,
+          times_per_day: 1,
+        },
+        illustration: KN01.bild ?? null,
+      },
     ),
   ],
 };
@@ -143,6 +187,7 @@ const uebungen: Uebung[] = [
     ],
   },
   KNIEBEUGE,
+  STRECKUNG,
   {
     id: 'u-rudern',
     name: 'Rudern mit Band',
@@ -206,7 +251,15 @@ const router = createMemoryRouter(
     { path: '/uebungen/:uebungId', element: rahmen(<UebungPage user={user} />) },
     { path: '*', element: rahmen(<p>Ende der Prüfseite.</p>) },
   ],
-  { initialEntries: [seite === 'uebung' ? `/uebungen/${KNIEBEUGE.id}` : '/uebungen'] },
+  {
+    initialEntries: [
+      seite === 'uebung'
+        ? `/uebungen/${KNIEBEUGE.id}`
+        : seite === 'katalog'
+          ? `/uebungen/${STRECKUNG.id}`
+          : '/uebungen',
+    ],
+  },
 );
 
 createRoot(document.getElementById('wurzel')!).render(

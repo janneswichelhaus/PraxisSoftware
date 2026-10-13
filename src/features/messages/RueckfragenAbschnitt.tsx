@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { fetchRueckfragen, rueckfragenKey, type Verhaeltnisart } from './api';
 import { RueckfragenListe } from './RueckfragenListe';
 
@@ -34,55 +37,62 @@ export function RueckfragenAbschnitt({
   );
 }
 
+/** Der Bereich als Wort und das Ziel seiner Liste. */
+const BEREICH: Record<Verhaeltnisart, { wort: string; ziel: string }> = {
+  treatment: { wort: 'Behandlung', ziel: '/rueckfragen' },
+  // Im Training stehen sie bei den Trainingskund:innen (DSN-001 D1).
+  training: { wort: 'Training', ziel: '/training' },
+};
+
 /**
- * „Rückfragen" in Offene Punkte (KOM-002, ANN-309): wie viele offen sind und
- * wie viele davon überfällig - die Zusage an die Patient:innen wird hier
- * überwacht, nicht durch eine Benachrichtigung. Je Bereich, den die Rolle
- * liest; verbindlich zählt der Server.
+ * „Rückfragen von der Plattform" in Offene Punkte (KOM-002, ANN-309): wie
+ * viele offen sind und wie viele davon überfällig - die Zusage an die
+ * Patient:innen wird hier überwacht, nicht durch eine Benachrichtigung. Je
+ * Bereich, den die Rolle liest, eine Zeile, die zur Liste führt; ohne offene
+ * Rückfrage keine Gruppe. Verbindlich zählt der Server. Die Zeilen nennen
+ * keinen Namen und keinen Text - gelesen wird erst beim Öffnen (ADR-010).
  */
 export function OffeneRueckfragen({ bereiche }: { bereiche: Verhaeltnisart[] }) {
-  const { data, isPending, isError, refetch } = useQuery({
+  const { data, isError, refetch } = useQuery({
     queryKey: rueckfragenKey(null, null, false),
     queryFn: () => fetchRueckfragen(null),
     retry: false,
   });
-  return (
-    <Section titel="Rückfragen von der Plattform">
-      {isPending ? <LoadingState label="Rückfragen werden gezählt …" /> : null}
-      {isError ? (
+  if (isError && !data) {
+    return (
+      <Section titel="Rückfragen von der Plattform">
         <ErrorState
           title="Die Rückfragen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
-      ) : null}
-      {data ? (
-        <ul className="flex flex-col gap-2">
-          {bereiche.map((art) => {
-            const offen = data.filter((z) => z.relationship_kind === art && z.status === 'open');
-            const ueberfaellig = offen.filter((z) => z.overdue).length;
-            const ziel = art === 'treatment' ? '/rueckfragen' : '/training';
-            return (
-              <li key={art} className="text-ink">
-                {bereiche.length > 1 ? (
-                  <span className="font-semibold">
-                    {art === 'treatment' ? 'Behandlung: ' : 'Training: '}
-                  </span>
-                ) : null}
-                {offen.length === 0
-                  ? 'Keine offene Rückfrage.'
-                  : `${offen.length} offen${ueberfaellig > 0 ? `, davon ${ueberfaellig} überfällig` : ''}.`}{' '}
-                {offen.length > 0 ? (
-                  <Link to={ziel} className="text-accent underline">
-                    Zu den Rückfragen
-                  </Link>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      ) : null}
-    </Section>
+      </Section>
+    );
+  }
+  if (!data) return null;
+  const zeilen = bereiche
+    .map((art) => {
+      const offen = data.filter((z) => z.relationship_kind === art && z.status === 'open');
+      return { art, offen: offen.length, ueberfaellig: offen.filter((z) => z.overdue).length };
+    })
+    .filter((zeile) => zeile.offen > 0);
+  if (zeilen.length === 0) return null;
+
+  return (
+    <Listenabschnitt
+      titel="Rückfragen von der Plattform"
+      anzahl={zeilen.reduce((summe, zeile) => summe + zeile.offen, 0)}
+    >
+      {zeilen.map(({ art, offen, ueberfaellig }) => (
+        <ListRow
+          key={art}
+          titel={BEREICH[art].wort}
+          meta={`${offen} offen${ueberfaellig > 0 ? `, davon ${ueberfaellig} überfällig` : ''}.`}
+          status={ueberfaellig > 0 ? <Badge ton="warnung">überfällig</Badge> : undefined}
+          to={BEREICH[art].ziel}
+        />
+      ))}
+    </Listenabschnitt>
   );
 }
 
@@ -102,8 +112,9 @@ export function TrainingRueckfragen() {
   if (!data || data.length === 0) return null;
   return (
     <div className="mb-6">
-      <h2 className="text-h4 mb-2 font-semibold">Rückfragen von der Plattform ({data.length})</h2>
-      <RueckfragenListe art="training" leer="" nurWennVorhanden />
+      <Section titel={`Rückfragen von der Plattform (${data.length})`}>
+        <RueckfragenListe art="training" leer="" nurWennVorhanden />
+      </Section>
     </div>
   );
 }

@@ -103,7 +103,10 @@ describe('Termine (POR-008)', () => {
     expect(screen.getAllByText('Testweg 7, 72072 Tuebingen')).toHaveLength(2);
     expect(screen.getByText('abgesagt')).toBeInTheDocument();
 
-    expect(screen.getByRole('heading', { name: 'Vergangene Termine' })).toBeInTheDocument();
+    // Vergangenes steht auf Abruf, mit der Zahl im Kopf (DESIGN.md, Regel 6).
+    expect(screen.getByText('Vergangene Termine').closest('summary')).toHaveTextContent(
+      'Vergangene Termine (1)',
+    );
     expect(screen.getByText('In der Praxis bei Anna Beispiel')).toBeInTheDocument();
     expect(screen.getByText('Hauptstandort Tuebingen')).toBeInTheDocument();
     expect(screen.getByText('durchgeführt')).toBeInTheDocument();
@@ -150,10 +153,13 @@ describe('Termine (POR-008)', () => {
     renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine?bereich=treatment');
 
     expect(await screen.findByText('angefragt')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Termin wünschen' })).toHaveAttribute(
-      'href',
-      '/p/termine/wunsch?bereich=treatment',
-    );
+    const wunsch = screen.getByRole('link', { name: 'Termin wünschen' });
+    expect(wunsch).toHaveAttribute('href', '/p/termine/wunsch?bereich=treatment');
+    // Die eine Aufgabe der Seite unter der Liste, nicht im Kopf (L7).
+    const kommende = screen.getByRole('heading', { name: 'Kommende Termine' });
+    expect(
+      kommende.compareDocumentPosition(wunsch) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(
       screen.getByText(/Dienstag, 20\.10\., Donnerstag, 22\.10\. · Vormittag/),
     ).toBeInTheDocument();

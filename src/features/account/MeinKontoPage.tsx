@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -23,9 +22,10 @@ import {
 } from './api';
 import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 
 /** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
-const ERNEUT = 'Bitte die Verbindung prüfen und erneut versuchen.';
+const ERNEUT = VERBINDUNG_PRUEFEN;
 
 /**
  * Zweiter Faktor (STAFF-004b).
@@ -84,17 +84,16 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
   });
 
   return (
-    // Ein Satz als Hinweis; was es nicht gibt, steht nicht dran (UX-005i).
-    <Section
-      titel="Zweiter Faktor"
-      hinweis="Ein Einmalkennwort aus einer App auf dem Telefon, zusätzlich zum Passkey."
-    >
+    // Ohne Satz unter der Überschrift (Regel 6, Welle B): Was ein zweiter
+    // Faktor ist, sagt die Einrichtung selbst; was er heute bewirkt, die
+    // Zeile darunter.
+    <Section titel="Zweiter Faktor">
       {/* UI-002d, ANN-028: Die Auskunft steht ganz oben und unabhängig davon,
           ob schon ein Faktor eingerichtet ist - sie gilt in beiden Fällen. */}
+      {/* Kurz (Design-Review T7, Runde 2): was er heute bewirkt, nicht,
+          warum. „Ändern“ heißt Einrichten und Entfernen eines Passkeys. */}
       <Statusmeldung ton="warnung">
-        Die Anmeldung fragt den zweiten Faktor <strong>derzeit nicht ab</strong>; der Passkey prüft
-        schon Gerät und Person. Ist er eingerichtet, verlangt der Anmeldedienst ihn beim Einrichten
-        und Entfernen eines Passkeys.
+        Die Anmeldung fragt ihn <strong>derzeit nicht ab</strong>, nur das Ändern von Passkeys.
       </Statusmeldung>
 
       {faktoren.isPending ? <LoadingState label="Stand wird geladen …" /> : null}
@@ -143,9 +142,10 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
       {faktoren.data && bestaetigt.length === 0 ? (
         <div>
           {isOwner(user.roles) ? (
+            // Deutlicher als bei anderen Rollen, aber in einer Zeile (T7):
+            // Wer Zugänge, Rollen und das Protokoll verwaltet, liest es hier.
             <Statusmeldung className="mt-4">
-              Dieses Konto darf Zugänge, Rollen und das Protokoll verwalten und hat noch keinen
-              zweiten Faktor. Für diese Rechte ist er vorgesehen, sobald die Anmeldung ihn abfragt.
+              Verwaltungsrechte, aber noch kein zweiter Faktor.
             </Statusmeldung>
           ) : (
             <Statusmeldung className="mt-4">
@@ -254,10 +254,9 @@ function Sitzungen() {
   const mutation = useMutation({ mutationFn: beendeAlleSitzungen });
 
   return (
-    <Section
-      titel="Sitzungen"
-      hinweis="Meldet dieses Konto auf allen Geräten ab und nimmt ihnen die Möglichkeit, sich zu verlängern."
-    >
+    // Was der Vorgang leistet und wo er aufhört, sagt die Rückfrage - an der
+    // Stelle der Entscheidung (ANN-044); der Satz darüber wiederholte es.
+    <Section titel="Sitzungen">
       <Rueckfrage
         ausloeser="Alle Sitzungen beenden"
         bestaetigen="Überall abmelden"
@@ -296,7 +295,8 @@ function Sitzungen() {
  * der Zugang über die volle Fläche, das Kennwort schmal, der zweite Faktor
  * etwas breiter, die Sitzungen ohne Grenze - und die aufgeklappte Rückfrage
  * mit dem wichtigsten Warntext lief bei 1440 px über rund 150 Zeichen je
- * Zeile. Jetzt gilt die Formularbreite des Systems (`max-w-xl`) für alles.
+ * Zeile. Jetzt gilt die Formularbreite des Systems (`max-w-formular`) für
+ * alles.
  */
 export function MeinKontoPage({ user }: { user: CurrentUser }) {
   const besitzer = user.profile.id;
@@ -308,27 +308,22 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
     canWriteTreatmentNote(user.roles);
   return (
     <>
+      {/* Die Rollen als Zeile unter dem Titel statt eines eigenen Abschnitts
+          „Zugang“ (Welle B): Name und Praxis stehen in der Kopfzeile der
+          Anwendung; hier nur, was die Seite sonst nirgends sagt (UX-005i). */}
       <PageHeader
         title="Mein Konto"
-        description="Anmeldung und Sicherheit dieses Kontos. Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement."
+        description={
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="sr-only">Rollen: </span>
+            {user.roles.map((rolle) => (
+              <RoleBadge key={rolle} role={rolle} />
+            ))}
+          </span>
+        }
       />
 
-      <div className="mt-8 max-w-xl">
-        {/* Eine Zeile braucht keinen Rahmen (Leitfaden L2). */}
-        <Section titel="Zugang">
-          {/* Name und Praxis stehen in der Kopfzeile der Anwendung; hier nur,
-              was die Seite sonst nirgends sagt - die Rollen (UX-005i). */}
-          <DetailList>
-            <DetailRow label="Rollen">
-              <span className="flex flex-wrap gap-1.5">
-                {user.roles.map((rolle) => (
-                  <RoleBadge key={rolle} role={rolle} />
-                ))}
-              </span>
-            </DetailRow>
-          </DetailList>
-        </Section>
-
+      <div className="max-w-formular">
         <PasskeyAbschnitt bestaetigeZweitenFaktor={bestaetigeZweitenFaktor} />
         <PinAbschnitt />
         <ZweiterFaktor user={user} />
@@ -336,10 +331,12 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <Sitzungen />
 
         <Kleingedrucktes className="mt-10">
-          {/* Wer Rollen ändert, sagt der Kopf der Seite (UX-005i). */}
-          Zweiter Faktor und das Beenden der Sitzungen werden protokolliert – ohne Einmalkennwort
-          und ohne Gerätekennung. Einrichten und Entfernen eines Passkeys hält der Anmeldedienst in
-          seinem eigenen Protokoll fest. Die PIN und ihre Verwendung werden nicht protokolliert.
+          {/* Wer Stammdaten und Rollen pflegt (WRT-12, ORG-27) - seit Welle B
+              hier statt unter dem Titel. */}
+          {/* Gekürzt, Inhalt gleich (Design-Review T7). */}
+          Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement. Zweiter Faktor und
+          Sitzungsende werden protokolliert, ohne Einmalkennwort und Gerätekennung; Passkeys nur im
+          Protokoll des Anmeldedienstes, die PIN gar nicht.
         </Kleingedrucktes>
       </div>
     </>

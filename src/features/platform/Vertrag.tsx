@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   ladeVertrag,
@@ -40,28 +42,28 @@ export function Vertrag({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={`${PLATTFORM_PFAD}/ich`}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm print:hidden"
-      >
-        ← Zu „Ich“
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Trainingsvertrag</h1>
-      {vertrag.isPending ? <LoadingState label="Ihr Vertrag wird geladen …" /> : null}
+      <Rueckweg
+        standard={`${PLATTFORM_PFAD}/ich`}
+        beschriftung="Zu „Ich“"
+        className="print:hidden"
+      />
+      <PageHeader title="Trainingsvertrag" />
+      {vertrag.isPending ? <LoadingState label="Ihr Vertrag wird geladen …" inKarte /> : null}
       {vertrag.isError ? (
-        <div className="mt-4">
+        <div>
           <ErrorState
             title="Ihr Vertrag konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
             onErneut={() => vertrag.refetch()}
           />
         </div>
       ) : null}
       {vertrag.data === null ? (
-        <p className="text-ink mt-4 text-base leading-relaxed">
-          Hier steht kein Vertrag, den Sie in Ihrem Konto geschlossen haben. Einen Vertrag aus der
-          Praxis bekommen Sie dort.
-        </p>
+        <EmptyState
+          inKarte
+          title="Hier steht kein Vertrag, den Sie in Ihrem Konto geschlossen haben."
+          description="Einen Vertrag aus der Praxis bekommen Sie dort."
+        />
       ) : null}
       {vertrag.data ? (
         <>

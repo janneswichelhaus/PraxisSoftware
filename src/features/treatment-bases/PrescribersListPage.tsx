@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
+import { EmptyState } from '@/components/ui/Feedback';
+import { Filterleiste } from '@/components/ui/Filterleiste';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchField } from '@/components/ui/SearchField';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Textlink } from '@/components/ui/Textlink';
 import { fetchPrescribers, prescriberName, type Prescriber } from './api';
 import { Kontaktwege } from './Kontaktwege';
 
@@ -23,7 +26,44 @@ function trifft(prescriber: Prescriber, suche: string): boolean {
 }
 
 /**
- * Kartei der Verordner:innen (VER-001).
+ * Die Spalten der Kartei (Design-Rollout B1): ab 1024 px nebeneinander,
+ * darunter jede Verordner:in als Zeile - Name oben, Praxis und Kontaktwege
+ * darunter.
+ */
+const SPALTEN: readonly Datenspalte<Prescriber>[] = [
+  {
+    titel: 'Verordner:in',
+    breite: 'minmax(0,1.2fr)',
+    // Der Name führt zum Bearbeiten. Umbrechen statt abschneiden (VER-09):
+    // Gekürzt fiel am Ende genau der Nachname weg - das unterscheidende
+    // Merkmal.
+    inhalt: (prescriber) => (
+      <Textlink
+        to={`/verordner/${prescriber.id}/bearbeiten`}
+        className="text-liste font-semibold break-words"
+      >
+        {prescriberName(prescriber)}
+      </Textlink>
+    ),
+  },
+  {
+    titel: 'Praxis',
+    breite: 'minmax(0,1.4fr)',
+    inhalt: (prescriber) =>
+      [prescriber.practice_name, prescriber.speciality, prescriber.city]
+        .filter(Boolean)
+        .join(' · ') || null,
+  },
+  {
+    // Telefon und E-Mail als Wege, das Fax als Text (BEF-060).
+    titel: 'Kontakt',
+    breite: 'minmax(0,1.4fr)',
+    inhalt: (prescriber) => <Kontaktwege verordner={prescriber} />,
+  },
+];
+
+/**
+ * Kartei der Verordner:innen (VER-001), Seitentyp „Liste“ (DESIGN.md).
  *
  * Sie enthält keine Patientendaten; die Suche läuft deshalb im Browser über
  * die bereits geladene Liste. Für eine Praxis mit einigen Dutzend Ärzt:innen
@@ -32,82 +72,65 @@ function trifft(prescriber: Prescriber, suche: string): boolean {
 export function PrescribersListPage() {
   const [suche, setSuche] = useState('');
 
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['prescribers'],
     queryFn: fetchPrescribers,
     retry: false,
   });
 
-  const sichtbar = useMemo(() => (data ?? []).filter((p) => trifft(p, suche)), [data, suche]);
+  const sichtbar = useMemo(
+    () => (abfrage.data ?? []).filter((p) => trifft(p, suche)),
+    [abfrage.data, suche],
+  );
 
   return (
     <>
+      {/* „Anlegen“ steht am Telefon neben dem Titel statt darunter; der
+          zugängliche Name sagt, was angelegt wird. */}
       <PageHeader
         title="Verordner:innen"
-        description="Ärzt:innen und Praxen, die Verordnungen ausstellen."
-        actions={<ButtonLink to="/verordner/neu">Verordner:in anlegen</ButtonLink>}
+        actions={
+          <ButtonLink to="/verordner/neu" aria-label="Verordner:in anlegen">
+            Anlegen
+          </ButtonLink>
+        }
       />
 
-      <div className="mb-5 max-w-sm">
-        <SearchField
-          placeholder="Name, Praxis, Fachrichtung, Ort"
-          value={suche}
-          onChange={setSuche}
-        />
-      </div>
+      <Filterleiste
+        beschriftung="Verordner:innen durchsuchen"
+        suche={
+          <SearchField
+            placeholder="Name, Praxis, Fachrichtung, Ort"
+            value={suche}
+            onChange={setSuche}
+          />
+        }
+      />
 
-      {isPending ? <LoadingState label="Verordner:innen werden geladen …" /> : null}
-      {isError ? (
-        <ErrorState
-          title="Die Verordner:innen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void refetch()}
-        />
-      ) : null}
-
-      {data && sichtbar.length === 0 ? (
-        <EmptyState
-          title={data.length === 0 ? 'Noch keine Verordner:innen' : 'Keine Treffer'}
-          description={
-            data.length === 0
-              ? 'Die erste Verordner:in entsteht beim Erfassen einer Verordnung oder hier.'
-              : 'Suche anpassen.'
-          }
-        />
-      ) : null}
-
-      {sichtbar.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {sichtbar.map((prescriber) => (
-            <li
-              key={prescriber.id}
-              className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-1"
-            >
-              {/* Die Zeile führt weiter zum Bearbeiten; die Kontaktwege stehen
-                  daneben als eigene Links (BEF-060). */}
-              <Link
-                to={`/verordner/${prescriber.id}/bearbeiten`}
-                className="hover:bg-surface-sunken flex min-h-16 min-w-0 flex-1 basis-60 items-center justify-between gap-4 py-2 transition-colors"
-              >
-                <span className="min-w-0">
-                  {/* Umbrechen statt abschneiden (VER-09): Gekürzt fiel am
-                      Ende genau der Nachname weg - das unterscheidende
-                      Merkmal. */}
-                  <span className="text-ink text-liste block font-medium break-words">
-                    {prescriberName(prescriber)}
-                  </span>
-                  <span className="text-ink-muted mt-0.5 block text-sm">
-                    {[prescriber.practice_name, prescriber.speciality, prescriber.city]
-                      .filter(Boolean)
-                      .join(' · ') || 'Ohne weitere Angaben'}
-                  </span>
-                </span>
-              </Link>
-              <Kontaktwege verordner={prescriber} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Verordner:innen werden geladen …"
+        fehler="Die Verordner:innen konnten nicht geladen werden."
+        inKarte
+        leer={{
+          wenn: (liste) => liste.length === 0,
+          titel: 'Noch keine Verordner:innen',
+          beschreibung: 'Die erste Verordner:in entsteht beim Erfassen einer Verordnung oder hier.',
+        }}
+      >
+        {() =>
+          sichtbar.length === 0 ? (
+            <EmptyState inKarte title="Keine Treffer" description="Suche anpassen." />
+          ) : (
+            <Datenliste
+              beschriftung="Verordner:innen"
+              spalten={SPALTEN}
+              zeilen={sichtbar}
+              schluessel={(prescriber) => prescriber.id}
+            />
+          )
+        }
+      </Abfragezustand>
     </>
   );
 }

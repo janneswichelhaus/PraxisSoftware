@@ -9,6 +9,7 @@ import {
   planeEntfernen,
   resetDatabase,
 } from './helpers/db';
+import { KATALOG } from '@/features/exercises/katalog';
 import { ACHSEN } from '@/features/exercises/types';
 
 /**
@@ -251,12 +252,20 @@ describe('Übungsbibliothek im Seed (UEB-003)', () => {
   it('bringt Übungen, Varianten und Ketten mit, eine Kette über zwei Übungen', async () => {
     const { rows } = await asUser<{
       bibliothek: {
-        exercises: Array<{ name: string; archived: boolean; variants: Array<{ id: string }> }>;
+        exercises: Array<{
+          name: string;
+          archived: boolean;
+          variants: Array<{ id: string; catalog_key: string | null }>;
+        }>;
         links: Verbindung[];
       };
     }>(users.trainer, LISTE);
     const b = rows[0]!.bibliothek;
-    expect(b.exercises).toHaveLength(9);
+    // Seit UEB-012 bringt der Seed dazu den ganzen Katalog mit (ANN-382);
+    // die eigenen Übungen der Praxis sind die ohne Herkunft.
+    const eigene = b.exercises.filter((u) => u.variants.every((v) => v.catalog_key === null));
+    expect(eigene).toHaveLength(9);
+    expect(b.exercises.length - eigene.length).toBe(KATALOG.length);
     expect(b.exercises.filter((u) => u.archived).map((u) => u.name)).toEqual(['Beinpresse']);
     expect(b.links).toHaveLength(8);
 

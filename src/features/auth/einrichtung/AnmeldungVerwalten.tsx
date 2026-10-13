@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -122,7 +123,8 @@ export function PasskeyAbschnitt({
     <Section
       titel="Passkeys"
       rahmen={rahmen}
-      hinweis="Damit melden Sie sich an und entsperren die Anwendung – mit Gesicht, Finger oder der Sperre des Geräts."
+      // Eine Zeile am Telefon (Design-Review T7, DESIGN.md Regel 6).
+      hinweis="Anmelden mit Gesicht, Finger oder Gerätesperre."
     >
       {passkeys.isPending ? <LoadingState label="Passkeys werden geladen …" /> : null}
       {passkeys.isError ? (
@@ -142,9 +144,14 @@ export function PasskeyAbschnitt({
       ) : null}
 
       {liste.length > 0 ? (
-        <ul className="divide-line mt-3 divide-y">
+        // Zeilen mit Linie dazwischen (DESIGN.md, Regel 3): ohne eigene Karte,
+        // weil der Abschnitt schon in einer steht (Mein Konto, Plattform).
+        <ul className="mt-3">
           {liste.map((passkey) => (
-            <li key={passkey.id} className="flex flex-col gap-2 py-3">
+            <li
+              key={passkey.id}
+              className="border-line flex flex-col gap-2 border-t py-3 first:border-t-0"
+            >
               <div>
                 <p className="text-ink font-medium">{passkey.name ?? 'Passkey'}</p>
                 <p className="text-ink-muted text-sm">
@@ -236,7 +243,7 @@ export function PinAbschnitt({ rahmen = false }: { rahmen?: boolean } = {}) {
     <Section
       titel="PIN"
       rahmen={rahmen}
-      hinweis="Der Rückweg, wenn der Passkey einmal nicht klappt. Sie entsperrt nur eine laufende Sitzung auf diesem Gerät und meldet nie neu an."
+      hinweis="Der Rückweg, wenn der Passkey einmal nicht klappt."
     >
       {pin.isPending ? <LoadingState label="Stand wird geladen …" /> : null}
       {pin.isError ? (
@@ -260,6 +267,10 @@ export function PinAbschnitt({ rahmen = false }: { rahmen?: boolean } = {}) {
           void queryClient.invalidateQueries({ queryKey: EINRICHTUNG_SCHLUESSEL });
         }}
       />
+      {/* Die Sicherheitsaussage bleibt, als Kleingedrucktes (ADR-025 Punkt 11). */}
+      <Kleingedrucktes className="mt-4">
+        Die PIN entsperrt nur eine laufende Sitzung auf diesem Gerät und meldet nie neu an.
+      </Kleingedrucktes>
     </Section>
   );
 }

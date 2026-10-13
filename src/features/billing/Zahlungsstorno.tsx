@@ -77,7 +77,7 @@ export function Zahlungsstorno({
         Zahlung nie.
       </p>
       {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
-      <div className="mt-2 max-w-xl">
+      <div className="max-w-formular mt-2">
         <Field label="Grund" value={grund} onChange={(e) => setGrund(e.target.value)} />
       </div>
     </Rueckfrage>

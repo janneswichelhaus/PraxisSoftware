@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { ListRow } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
@@ -16,7 +17,7 @@ import { FAELLIG_SCHLUESSEL, fetchFaellige, planPfad, type Bereich } from './api
  * Nur das Datum zählt; die Liste sagt „läuft aus", nie „anpassen" (ADR-006
  * Punkt 11). Sie erscheint unter „Offene Punkte" und - für die
  * Trainingsbetreuung, die „Offene Punkte" nicht öffnet - über der Liste der
- * Trainingskund:innen.
+ * Trainingskund:innen. Welle B: ein `Listenabschnitt`.
  */
 export function PlanWiedervorlage({
   bereiche,
@@ -29,57 +30,60 @@ export function PlanWiedervorlage({
   /** Ohne Eintrag nichts anzeigen - für Seiten, auf denen die Liste Gast ist. */
   nurWennVorhanden?: boolean;
 }) {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: FAELLIG_SCHLUESSEL,
     queryFn: fetchFaellige,
     retry: false,
   });
+  const { data, isError } = abfrage;
   const plaene = (data?.plans ?? []).filter((p) => bereiche.includes(p.service_area));
 
   if (nurWennVorhanden && plaene.length === 0 && !isError) return null;
 
+  if (!data) {
+    return (
+      <Section titel="Pläne laufen aus">
+        {isError && nurWennVorhanden ? (
+          // Als Gast eine Zeile, kein zweiter „Erneut versuchen“: Den Weg
+          // hinaus bietet die Seite, auf der die Liste steht.
+          <Statusmeldung ton="fehler">
+            Die auslaufenden Pläne konnten nicht geladen werden.
+          </Statusmeldung>
+        ) : (
+          <Abfragezustand
+            abfrage={abfrage}
+            laden="Pläne werden geladen …"
+            fehler="Die auslaufenden Pläne konnten nicht geladen werden."
+            inKarte
+          >
+            {() => null}
+          </Abfragezustand>
+        )}
+      </Section>
+    );
+  }
+
   return (
-    <Section
-      titel={plaene.length > 0 ? `Pläne laufen aus (${plaene.length})` : 'Pläne laufen aus'}
-      hinweis="Verlängern, als neue Fassung ändern oder beenden – der Plan bleibt hier, bis entschieden ist."
+    <Listenabschnitt
+      titel="Pläne laufen aus"
+      {...(plaene.length > 0 ? { anzahl: plaene.length } : {})}
+      leer={{ titel: 'Kein Plan läuft in Kürze aus' }}
     >
-      {isPending ? <LoadingState label="Pläne werden geladen …" /> : null}
-      {isError && nurWennVorhanden ? (
-        // Als Gast eine Zeile, kein zweiter „Erneut versuchen“: Den Weg hinaus
-        // bietet die Seite, auf der die Liste steht.
-        <Statusmeldung ton="fehler">
-          Die auslaufenden Pläne konnten nicht geladen werden.
-        </Statusmeldung>
-      ) : null}
-      {isError && !nurWennVorhanden ? (
-        <ErrorState
-          title="Die auslaufenden Pläne konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => refetch()}
+      {plaene.map((plan) => (
+        <ListRow
+          key={plan.id}
+          titel={`${plan.family_name}, ${plan.given_name}`}
+          meta={`${plan.title} · ${plan.service_area === 'therapy' ? 'Behandlung' : 'Training'} · bis ${formatDate(plan.runs_until)}${plan.follow_up_draft ? ' · neue Fassung im Entwurf' : ''}`}
+          status={
+            plan.runs_until < data.today ? (
+              <Badge ton="warnung">abgelaufen</Badge>
+            ) : (
+              <Badge ton="warnung">läuft aus</Badge>
+            )
+          }
+          to={mitRueckweg(planPfad(plan.service_area, plan.relationship_id, plan.id), rueckweg)}
         />
-      ) : null}
-      {data && plaene.length === 0 ? (
-        <p className="text-ink-muted text-sm">Kein Plan läuft in Kürze aus.</p>
-      ) : null}
-      {plaene.length > 0 ? (
-        <ListRows>
-          {plaene.map((plan) => (
-            <ListRow
-              key={plan.id}
-              titel={`${plan.family_name}, ${plan.given_name}`}
-              meta={`${plan.title} · ${plan.service_area === 'therapy' ? 'Behandlung' : 'Training'} · bis ${formatDate(plan.runs_until)}${plan.follow_up_draft ? ' · neue Fassung im Entwurf' : ''}`}
-              status={
-                data && plan.runs_until < data.today ? (
-                  <Badge ton="warnung">abgelaufen</Badge>
-                ) : (
-                  <Badge ton="warnung">läuft aus</Badge>
-                )
-              }
-              to={mitRueckweg(planPfad(plan.service_area, plan.relationship_id, plan.id), rueckweg)}
-            />
-          ))}
-        </ListRows>
-      ) : null}
-    </Section>
+      ))}
+    </Listenabschnitt>
   );
 }

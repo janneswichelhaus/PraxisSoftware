@@ -1,12 +1,15 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
@@ -129,12 +132,15 @@ export function NewTrainingClientPage() {
     <>
       <Rueckweg standard="/training" />
 
+      {/* Der Satz zu den Sternchen erklärte das Formular (UX-005g); „ohne
+          Patientenakte" bleibt - er sagt, was hier nicht entsteht (ADR-021
+          Punkt 2). */}
       <PageHeader
         title={`${BEGRIFFE.trainingskundIn} anlegen`}
-        description="Für das Personal Training – ohne Patientenakte. Mit * markierte Felder sind erforderlich."
+        description="Für das Personal Training – ohne Patientenakte."
       />
 
-      <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-xl">
+      <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(TRAINING_FELDER, TRAINING_BESCHRIFTUNG, fehler, trainingFeldId)}
         />
@@ -144,48 +150,41 @@ export function NewTrainingClientPage() {
         {schutz}
 
         {dubletten && dubletten.length > 0 ? (
-          <section
-            aria-labelledby="training-dubletten-titel"
-            role="alert"
-            className="border-warnung bg-surface rounded-card mt-8 border p-4"
-          >
-            <h2 id="training-dubletten-titel" className="text-ink text-liste font-semibold">
-              Vielleicht schon bekannt
-            </h2>
-            <p className="text-ink-muted mt-1 text-sm">
-              Gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname.
-            </p>
-
-            {trainingTreffer.length > 0 ? (
-              <ul className="mt-3 flex flex-col gap-1">
-                {trainingTreffer.map((treffer) => (
-                  <li key={treffer.person_id}>
-                    <Link
-                      to={`/training/${treffer.training_relationship_id ?? ''}`}
-                      className="text-accent inline-flex min-h-11 items-center font-medium hover:underline"
-                    >
-                      {treffer.given_name} {treffer.family_name}
-                      {geboren(treffer)} – schon im Training
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-
-            {aktenTreffer.length > 0 ? (
-              <>
-                <p className="text-ink mt-3 text-sm">
-                  In der Behandlung bekannt. Ist es dieselbe Person, bekommt sie ihr Training ohne
-                  zweiten Eintrag – mit Kontakt und Vertragsbeginn aus diesem Formular; aus der Akte
-                  wird nichts übernommen.
+          // Ein Abschnitt wie die übrigen; die Warnung trägt die Linie links
+          // in der Farbe der Warnung (Leitfaden L2: Meldung als Zeile).
+          <div role="alert" className="mt-8">
+            <Section titel="Vielleicht schon bekannt">
+              <div className="border-warnung bg-warnung-soft border-l-4 px-4 py-3">
+                <p className="text-ink text-sm">
+                  Gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname.
                 </p>
-                <ul className="mt-2 flex flex-col gap-2">
+                {aktenTreffer.length > 0 ? (
+                  <p className="text-ink mt-2 text-sm">
+                    In der Behandlung bekannt. Ist es dieselbe Person, bekommt sie ihr Training ohne
+                    zweiten Eintrag – mit Kontakt und Vertragsbeginn aus diesem Formular; aus der
+                    Akte wird nichts übernommen.
+                  </p>
+                ) : null}
+              </div>
+
+              {trainingTreffer.length > 0 || aktenTreffer.length > 0 ? (
+                <ListRows className="mt-3">
+                  {trainingTreffer.map((treffer) => (
+                    <ListRow
+                      key={treffer.person_id}
+                      to={`/training/${treffer.training_relationship_id ?? ''}`}
+                      titel={`${treffer.given_name} ${treffer.family_name}${geboren(treffer)} – schon im Training`}
+                    />
+                  ))}
+                  {/* Eine eigene Zeile statt des `aktion`-Platzes der
+                      ListRow: Der lange Knopf rückt am Telefon unter den
+                      Namen, statt ihn auf wenige Zeichen zu drücken. */}
                   {aktenTreffer.map((treffer) => (
                     <li
                       key={treffer.person_id}
-                      className="flex flex-wrap items-center justify-between gap-3"
+                      className="border-line flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t py-2 first:border-t-0"
                     >
-                      <span className="text-ink text-liste">
+                      <span className="text-ink text-base font-semibold">
                         {treffer.given_name} {treffer.family_name}
                         {geboren(treffer)}
                       </span>
@@ -200,18 +199,18 @@ export function NewTrainingClientPage() {
                       </Button>
                     </li>
                   ))}
-                </ul>
-              </>
-            ) : null}
+                </ListRows>
+              ) : null}
 
-            <p className="text-ink mt-3 text-sm">
-              Eine andere Person mit ähnlichen Angaben? Dann „{TRAINING_ANLEGEN}“ noch einmal
-              tippen.
-            </p>
-          </section>
+              <p className="text-ink mt-3 text-sm">
+                Eine andere Person mit ähnlichen Angaben? Dann „{TRAINING_ANLEGEN}“ noch einmal
+                tippen.
+              </p>
+            </Section>
+          </div>
         ) : null}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <Formularfuss>
           <Button type="submit" disabled={beschaeftigt}>
             {anlegen.isPending
               ? 'Wird angelegt …'
@@ -219,10 +218,10 @@ export function NewTrainingClientPage() {
                 ? 'Wird geprüft …'
                 : TRAINING_ANLEGEN}
           </Button>
-          <ButtonLink to="/training" variant="secondary">
+          <ButtonLink to="/training" variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
 
       {anlegen.isError || anbinden.isError ? (
@@ -241,7 +240,7 @@ export function NewTrainingClientPage() {
         </Hinweisfenster>
       ) : null}
 
-      <Kleingedrucktes className="mt-10">
+      <Kleingedrucktes className="mt-8">
         Erfasst werden Name, Kontakt und Vertrag. Angaben zur Gesundheit gehören nicht hierher – sie
         brauchen eine eigene Einwilligung und kommen später.
       </Kleingedrucktes>

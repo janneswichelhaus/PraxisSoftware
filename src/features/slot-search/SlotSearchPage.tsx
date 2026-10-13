@@ -1,12 +1,14 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
@@ -55,6 +57,28 @@ function dayLabel(iso: string): string {
 }
 
 /**
+ * Die laufende Suche in einer Zeile, über den Vorschlägen: Was gesucht wird,
+ * steht da, auch wenn „Suche anpassen“ am Telefon zu ist.
+ */
+function suchzeile(
+  params: SearchParams,
+  therapists: readonly { staff_member_id: string; display_name: string }[],
+): string {
+  const person = params.staffMemberId
+    ? therapists.find((t) => t.staff_member_id === params.staffMemberId)?.display_name
+    : null;
+  return [
+    appointmentTypeLabels[params.type],
+    `${params.duration} Min.`,
+    person ?? null,
+    `${formatDate(params.from)} bis ${formatDate(params.to)}`,
+    params.windows.length > 0 ? 'in den Wunschzeiten' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/**
  * Nur Abweichungen tragen ein Kennzeichen (UX-005g): Ein passender Fahrweg
  * ist der Normalfall und bekommt kein Wort; knapp und ungeprüft schon.
  */
@@ -72,7 +96,8 @@ function TravelBadge({
   if (rating.status === 'tight') {
     return <Badge ton="warnung">Fahrweg knapp: {rating.shortfall_minutes} Min. zu wenig</Badge>;
   }
-  return <Badge>Fahrweg nicht geprüft</Badge>;
+  // Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6, ANN-485).
+  return <Badge eigenesZeichen={STATUSZEICHEN.unbekannt}>Fahrweg nicht geprüft</Badge>;
 }
 
 /** Im Gebietstag ist der Normalfall und trägt kein Kennzeichen (UX-005g). */
@@ -266,8 +291,11 @@ function SearchForm({
 
   return (
     <>
-      <Section titel="Suche">
-        <form onSubmit={submit} noValidate className="grid max-w-3xl gap-4 sm:grid-cols-2">
+      {/* Die Suche läuft mit den Wünschen des Eintrags von selbst; sie
+          anzupassen ist der seltenere Weg. Am Telefon deshalb eingeklappt,
+          damit die Vorschläge oben stehen - ab 1024 px offen. */}
+      <Disclosure summary="Suche anpassen" kopf="betont" offenAb="lg">
+        <form onSubmit={submit} noValidate className="max-w-spalte grid gap-4 sm:grid-cols-2">
           <Select
             label="Terminart"
             value={type}
@@ -333,12 +361,16 @@ function SearchForm({
             </Button>
           </div>
         </form>
-      </Section>
+      </Disclosure>
 
       {/* Ohne Hinweis zur Sortierung: Die Reihenfolge zeigt sich selbst, und
-          Abweichungen tragen ihr Kennzeichen (UX-005g). */}
-      <Section titel="Vorschläge">
-        {result.isPending ? <LoadingState label="Freie Plätze werden gesucht …" /> : null}
+          Abweichungen tragen ihr Kennzeichen (UX-005g). Die Zeile darunter
+          sagt nur, wonach gesucht wurde. */}
+      <Section titel="Vorschläge" hinweis={suchzeile(params, therapists)}>
+        {result.isPending ? <LoadingState label="Freie Plätze werden gesucht …" inKarte /> : null}
+        {/* Der Fehler nennt seinen Grund („Diese Dauer passt nicht ins
+            Praxisraster.“) - deshalb kein Abfragezustand mit dem Satz zur
+            Verbindung. */}
         {result.isError ? (
           <ErrorState
             title="Die freien Plätze konnten nicht gesucht werden."
@@ -348,39 +380,44 @@ function SearchForm({
         ) : null}
         {result.data && slots.length === 0 ? (
           <EmptyState
+            inKarte
             title="Kein freier Platz"
             description="Zeitraum verlängern, eine andere Therapeut:in wählen oder die Wunschzeiten weglassen."
           />
         ) : null}
         {slots.length > 0 ? (
-          <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
+          <ListRows>
             {ordered.map(({ slot, index }) => (
-              <li
+              <ListRow
                 key={`${slot.staff_member_id}-${slot.slot_date}-${slot.start_time}`}
-                className="flex flex-wrap items-center justify-between gap-3 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="text-ink text-liste font-medium">
-                    {dayLabel(slot.slot_date)} · {slot.start_time}–{slot.end_time} Uhr
-                  </p>
-                  <p className="text-ink-muted text-sm">{slot.staff_name ?? 'Therapeut:in'}</p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    <TerritoryBadge status={slot.territory_status} />
-                    {params.type === 'home_visit' && index < travel.checkedCount ? (
-                      <TravelBadge rating={travel.byIndex.get(index)} checking={travel.checking} />
-                    ) : null}
-                  </div>
-                </div>
-                <ButtonLink
-                  to={link(slot, params.type, params.duration)}
-                  variant="secondary"
-                  groesse="kompakt"
-                >
-                  Übernehmen
-                </ButtonLink>
-              </li>
+                // Der Tag als Titel, die Zeit gleich darunter in Tinte: Am
+                // Telefon brach „10:00–11:00 Uhr“ sonst mitten im Titel um.
+                titel={dayLabel(slot.slot_date)}
+                meta={
+                  <>
+                    <span className="text-ink">
+                      {slot.start_time}–{slot.end_time} Uhr
+                    </span>
+                    {` · ${slot.staff_name ?? 'Therapeut:in'}`}
+                    <span className="mt-1 flex flex-wrap gap-2 empty:hidden">
+                      <TerritoryBadge status={slot.territory_status} />
+                      {params.type === 'home_visit' && index < travel.checkedCount ? (
+                        <TravelBadge
+                          rating={travel.byIndex.get(index)}
+                          checking={travel.checking}
+                        />
+                      ) : null}
+                    </span>
+                  </>
+                }
+                aktion={
+                  <ButtonLink to={link(slot, params.type, params.duration)} variant="secondary">
+                    Übernehmen
+                  </ButtonLink>
+                }
+              />
             ))}
-          </ul>
+          </ListRows>
         ) : null}
       </Section>
     </>

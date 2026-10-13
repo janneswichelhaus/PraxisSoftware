@@ -40,7 +40,9 @@ export function ReminderPrintPage() {
 
   return (
     <>
-      <div className="nicht-drucken">
+      {/* Bedienung in der Flucht des Blatts (Druckblatt-Profil, DESIGN.md): am
+          Rechner über dem Blatt statt am linken Rand. */}
+      <div className="nicht-drucken mx-auto max-w-[210mm]">
         <Rueckweg
           standard={rechnung ? `/abrechnung/rechnungen/${rechnung}` : '/abrechnung'}
           beschriftung={rechnung ? 'Zurück zur Rechnung' : 'Zurück zu den Rechnungen'}
@@ -128,7 +130,7 @@ function Erinnerungsblatt({ erinnerung }: { erinnerung: Erinnerungsdokument }) {
         </section>
       </article>
 
-      <div className="nicht-drucken mt-10 flex max-w-[210mm] flex-col gap-3">
+      <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
         <div>
           <Button type="button" onClick={() => window.print()}>
             Zahlungserinnerung drucken

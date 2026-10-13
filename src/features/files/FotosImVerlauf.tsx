@@ -6,9 +6,11 @@ import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   canReadClinicalPatientFiles,
   canWriteClinicalPatientFiles,
@@ -172,11 +174,10 @@ function Aufnahme({
       {foto && vorschau ? (
         <div>
           {/* Eine Überschrift, keine fette Zeile: in der Gliederung auffindbar
-              (DAT-20). Kein gestrichelter Kasten - Ablegen per Ziehen gibt es
-              nicht (DAT-21). */}
-          <h3 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-            Neues Foto · {fotoartLabels.dokumentationsfoto}
-          </h3>
+              (DAT-20). In der Karte „Fotos und Dateien“ trennt sie als
+              Zwischentitel (DESIGN.md Regel 2). Kein gestrichelter Kasten -
+              Ablegen per Ziehen gibt es nicht (DAT-21). */}
+          <Zwischentitel>Neues Foto · {fotoartLabels.dokumentationsfoto}</Zwischentitel>
           <img
             src={vorschau}
             alt="Neues Foto, noch nicht gespeichert"
@@ -670,9 +671,9 @@ export function Patientenfotos({
               />
             ) : null}
             {/* Das Kleingedruckte gilt den Fotos und steht bei ihnen (BEF-058). */}
-            <p className="text-ink-muted mt-3 max-w-prose text-sm leading-relaxed">
+            <Kleingedrucktes className="mt-3">
               Fotos lassen sich hier weder herunterladen noch teilen.
-            </p>
+            </Kleingedrucktes>
           </details>
         ) : null}
       </div>

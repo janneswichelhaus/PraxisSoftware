@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Section } from '@/components/ui/Section';
-import { Select } from '@/components/ui/Select';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { Card, CardGrid } from '@/components/ui/Card';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/today/api';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
@@ -25,6 +27,7 @@ import {
   cancelStaffDay,
   fetchAssignableTherapists,
   formatLocalDate,
+  formatLocalTime,
   formatLocalTimeRange,
   type CancellationReason,
 } from './api';
@@ -106,7 +109,12 @@ function istAnzurufen(termin: DayPlanEntry): boolean {
   return termin.status === 'cancelled' && termin.kind === 'therapy';
 }
 
-function Anrufkarte({
+/**
+ * Eine Zeile der Anrufliste (Design-Rollout B2): Beginn vorn, der Name als
+ * Weg in die Akte, die Rufnummern als Wählziele darunter, der Haken
+ * „Angerufen" neben der Zeile (Leitfaden L3). Vorher eine Karte je Anruf.
+ */
+function Anrufzeile({
   termin,
   erledigt,
   onErledigt,
@@ -122,50 +130,44 @@ function Anrufkarte({
   const nummern = rufnummern(termin);
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-ink text-liste flex flex-wrap items-center gap-x-2 font-semibold tabular-nums">
-          {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
+    <ListRow
+      gedaempft={erledigt}
+      zeit={
+        <span className="inline-flex flex-col items-start gap-1">
+          {formatLocalTime(termin.starts_at, zone)}
           {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
-          <Laengenzeichen termin={termin} />
-        </p>
-        {/* Kein Zustand je Karte: In der Anrufliste steht nur Abgesagtes (UX-005g). */}
-      </div>
-
-      {/* Der Name ist ein Weg in die Akte - sichtbar als Link, nicht erst
-          beim Überfahren (RSP-06, UIK-15), und mit Rückweg hierher. */}
-      <p className="text-ink mt-1 text-[1.0625rem] font-medium">
-        <Textlink alleinstehend to={mitRueckweg(`/patienten/${termin.patient_id}`, rueckweg)}>
+          <Laengenzeichen termin={termin} knapp />
+        </span>
+      }
+      titel={
+        // Der Name ist ein Weg in die Akte - sichtbar als Link, nicht erst
+        // beim Überfahren (RSP-06, UIK-15), und mit Rückweg hierher.
+        <Textlink to={mitRueckweg(`/patienten/${termin.patient_id}`, rueckweg)}>
           {termin.patient_given_name} {termin.patient_family_name}
         </Textlink>
-      </p>
-
-      {nummern.length > 0 ? (
-        <ul className="mt-2 flex flex-col gap-1">
-          {nummern.map((nummer) => (
-            <li key={nummer.href}>
-              <a
-                href={nummer.href}
-                className="text-accent text-liste inline-flex min-h-11 items-center hover:underline"
-              >
+      }
+      meta={
+        nummern.length > 0 ? (
+          <span className="flex flex-col">
+            {nummern.map((nummer) => (
+              <Textlink key={nummer.href} alleinstehend href={nummer.href}>
                 {nummer.label}: {nummer.anzeige}
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-ink-muted mt-2 text-sm">Keine Rufnummer hinterlegt.</p>
-      )}
-
-      {/* Das Kästchen des Systems statt eines eigenen (KAL-24). */}
-      <div className="mt-3">
+              </Textlink>
+            ))}
+          </span>
+        ) : (
+          'Keine Rufnummer hinterlegt.'
+        )
+      }
+      // Das Kästchen des Systems statt eines eigenen (KAL-24).
+      aktion={
         <Checkbox
           label="Angerufen"
           checked={erledigt}
           onChange={(e) => onErledigt(e.target.checked)}
         />
-      </div>
-    </Card>
+      }
+    />
   );
 }
 
@@ -244,6 +246,11 @@ function Umplanung({
   const tagText = zone ? formatLocalDate(`${datum}T12:00:00Z`, zone) : datum;
   const zumKalender = leseRueckweg(suche, '/kalender');
 
+  // Ein Formular (DESIGN.md „Formular“, Design-Review T3): oben die Liste,
+  // darunter der Absagegrund und der Formularfuss - am Telefon in voller
+  // Breite im Daumenbereich, mit „Abbrechen“ zurück in den Kalender. Bis dahin
+  // stand der Knopf kompakt rechts in der Aktionsleiste einer Arbeitsseite.
+  // Nach der Absage ist der Fuss der Weg zurück in den Kalender.
   return (
     <>
       <Rueckweg standard="/kalender" />
@@ -253,70 +260,53 @@ function Umplanung({
         description={person ? `${person.display_name} · ${tagText}` : tagText}
       />
 
-      {tag.isPending ? <LoadingState label="Der Tag wird geladen …" /> : null}
-      {tag.isError && !tag.data ? (
-        <ErrorState
-          title="Der Tag konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => tag.refetch()}
-        />
-      ) : null}
+      {/* Laden, Fehler und ein gescheitertes Nachladen über den Baustein
+          (DESIGN.md Regel 8): Scheitert nur das Nachladen, bleibt der
+          geladene Stand stehen - samt Anrufliste und Haken (ZST-03). */}
+      {/* Eine Arbeitsspalte (DESIGN.md „Inhaltsbreiten“): Zeit, Name und der
+          Knopf der Leiste stehen am Rechner beieinander. */}
+      <div className="max-w-spalte">
+        <Abfragezustand
+          abfrage={tag}
+          laden="Der Tag wird geladen …"
+          fehler="Der Tag konnte nicht geladen werden."
+        >
+          {() =>
+            abgesagt === null ? (
+              <>
+                <Listenabschnitt
+                  titel="Diese Termine werden abgesagt"
+                  anzahl={betroffen.length}
+                  leer={{
+                    titel: 'Hier ist nichts umzuplanen.',
+                    beschreibung:
+                      'An diesem Tag steht für diese Person kein bestätigter Termin. Abgeschlossene und bereits abgesagte Termine bleiben unberührt.',
+                  }}
+                >
+                  {betroffen.map((termin) => (
+                    <ListRow
+                      key={termin.id}
+                      zeit={formatLocalTimeRange(
+                        termin.starts_at,
+                        termin.ends_at,
+                        termin.organization_time_zone,
+                      )}
+                      titel={`${termin.patient_given_name} ${termin.patient_family_name}`}
+                      // Nur eine abweichende Terminart steht dran (ANN-192).
+                      meta={appointmentTypeHint(termin.appointment_type) || undefined}
+                      status={<Laengenzeichen termin={termin} />}
+                    />
+                  ))}
+                </Listenabschnitt>
 
-      {/* Scheitert nur das Nachladen, bleibt der geladene Stand stehen -
-          samt Anrufliste und Haken (ZST-03). */}
-      {tag.isError && tag.data ? (
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Statusmeldung ton="warnung">Der Stand konnte nicht aktualisiert werden.</Statusmeldung>
-          <Button
-            type="button"
-            variant="secondary"
-            groesse="kompakt"
-            onClick={() => void tag.refetch()}
-          >
-            Erneut versuchen
-          </Button>
-        </div>
-      ) : null}
-
-      {tag.data ? (
-        <>
-          {abgesagt === null ? (
-            <Section titel={`Diese Termine werden abgesagt (${betroffen.length})`}>
-              {betroffen.length === 0 ? (
-                <EmptyState
-                  title="Hier ist nichts umzuplanen."
-                  description="An diesem Tag steht für diese Person kein bestätigter Termin. Abgeschlossene und bereits abgesagte Termine bleiben unberührt."
-                />
-              ) : (
-                <>
-                  <ul className="flex flex-col gap-1">
-                    {betroffen.map((termin) => (
-                      <li key={termin.id} className="text-ink text-liste">
-                        <span className="tabular-nums">
-                          {formatLocalTimeRange(
-                            termin.starts_at,
-                            termin.ends_at,
-                            termin.organization_time_zone,
-                          )}
-                        </span>
-                        {` · ${termin.patient_given_name} ${termin.patient_family_name}`}
-                        {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
-                        {appointmentTypeHint(termin.appointment_type)
-                          ? ` · ${appointmentTypeHint(termin.appointment_type)}`
-                          : ''}{' '}
-                        <Laengenzeichen termin={termin} />
-                      </li>
-                    ))}
-                  </ul>
-
-                  {darfUmplanen ? (
-                    <div className="mt-5">
-                      <div className="mb-3 max-w-xs">
+                {betroffen.length > 0 ? (
+                  darfUmplanen ? (
+                    <>
+                      <div className="max-w-formular mt-6">
                         <Select
                           label="Absagegrund"
                           value={grund}
                           error={grundFehler}
-                          hint="Gilt für alle Termine dieses Tages."
                           onChange={(e) => {
                             setGrund(e.target.value);
                             setGrundFehler(undefined);
@@ -324,12 +314,12 @@ function Umplanung({
                         >
                           <option value="">Bitte wählen …</option>
                           {/* „Patient:in hat abgesagt" steht hier nicht: Der
-                              Tag wird umgeplant, weil die behandelnde Person
-                              ausfällt, und das ist praxisbedingt. Der Grund
-                              hätte für jede Patient:in des Tages innerhalb der
-                              Frist eine Ausfallgebühr vorgemerkt; seit CAL-016
-                              weist ihn auch der Server ab (ADR-018 Fassung 2
-                              Punkt 8.4). */}
+                            Tag wird umgeplant, weil die behandelnde Person
+                            ausfällt, und das ist praxisbedingt. Der Grund
+                            hätte für jede Patient:in des Tages innerhalb der
+                            Frist eine Ausfallgebühr vorgemerkt; seit CAL-016
+                            weist ihn auch der Server ab (ADR-018 Fassung 2
+                            Punkt 8.4). */}
                           {waehlbareAbsagegruende(true).map(([wert, beschriftung]) => (
                             <option key={wert} value={wert}>
                               {beschriftung}
@@ -338,69 +328,81 @@ function Umplanung({
                         </Select>
                       </div>
 
-                      <Rueckfrage
-                        ausloeser={`${betroffen.length} ${terminWort(betroffen.length)} absagen`}
-                        bezeichnung="Tag umplanen"
-                        bestaetigen="Ja, alle absagen"
-                        bestaetigenLaeuft="Wird abgesagt …"
-                        fehler={mutation.isError ? mutation.error.message : undefined}
-                        laeuft={mutation.isPending}
-                        onAbbrechen={() => setGrundFehler(undefined)}
-                        onBestaetigen={umplanen}
-                      >
-                        Alle {betroffen.length} bestätigten {terminWort(betroffen.length)} dieses
-                        Tages werden als abgesagt geführt. Sie bleiben vollständig erhalten und
-                        geben ihre Zeiträume wieder frei. Eine Absage lässt sich nicht zurücknehmen
-                        – danach steht die Anrufliste hier.
-                      </Rueckfrage>
-                    </div>
+                      <div className="max-w-formular">
+                        <Formularfuss>
+                          <Rueckfrage
+                            ausloeser={`${betroffen.length} ${terminWort(betroffen.length)} absagen`}
+                            ausloeserVariante="primary"
+                            bezeichnung="Tag umplanen"
+                            bestaetigen="Ja, alle absagen"
+                            bestaetigenLaeuft="Wird abgesagt …"
+                            // Daneben steht „Abbrechen“ für die ganze Seite;
+                            // die Frage schließt mit eigenem Wort.
+                            abbrechen="Nicht absagen"
+                            fehler={mutation.isError ? mutation.error.message : undefined}
+                            laeuft={mutation.isPending}
+                            onAbbrechen={() => setGrundFehler(undefined)}
+                            onBestaetigen={umplanen}
+                          >
+                            Alle {betroffen.length} bestätigten {terminWort(betroffen.length)}{' '}
+                            dieses Tages werden als abgesagt geführt. Sie bleiben vollständig
+                            erhalten und geben ihre Zeiträume wieder frei. Eine Absage lässt sich
+                            nicht zurücknehmen – danach steht die Anrufliste hier.
+                          </Rueckfrage>
+                          <ButtonLink to={zumKalender} variant="quiet">
+                            Abbrechen
+                          </ButtonLink>
+                        </Formularfuss>
+                      </div>
+                    </>
                   ) : (
                     <Statusmeldung className="mt-4">
                       Für das Absagen fehlt Ihrem Zugang die Berechtigung.
                     </Statusmeldung>
-                  )}
-                </>
-              )}
-            </Section>
-          ) : (
-            <Section titel={`Anrufliste (${anzurufen.length})`}>
-              <Statusmeldung ton="erfolg" className="mb-4">
-                {abgesagt.length === 1
-                  ? 'Ein Termin ist abgesagt.'
-                  : `${abgesagt.length} Termine sind abgesagt.`}{' '}
-                Jetzt anrufen.
-              </Statusmeldung>
+                  )
+                ) : null}
+              </>
+            ) : (
+              <>
+                {/* Die Bestätigung des Vorgangs mit dem Fokus (DESIGN.md
+                  „Rückmeldung“): Der Knopf, der ihn hatte, ist fort. */}
+                <Rueckmeldung className="mb-6">
+                  {abgesagt.length === 1
+                    ? 'Ein Termin ist abgesagt.'
+                    : `${abgesagt.length} Termine sind abgesagt.`}{' '}
+                  Jetzt anrufen.
+                </Rueckmeldung>
 
-              <CardGrid>
-                {anzurufen.map((termin) => (
-                  <Anrufkarte
-                    key={termin.id}
-                    termin={termin}
-                    rueckweg={`${ort.pathname}${ort.search}`}
-                    erledigt={erledigt.includes(termin.id)}
-                    onErledigt={(wert) =>
-                      setErledigt((bisher) =>
-                        wert ? [...bisher, termin.id] : bisher.filter((id) => id !== termin.id),
-                      )
-                    }
-                  />
-                ))}
-              </CardGrid>
+                <Listenabschnitt titel="Anrufliste" anzahl={anzurufen.length}>
+                  {anzurufen.map((termin) => (
+                    <Anrufzeile
+                      key={termin.id}
+                      termin={termin}
+                      rueckweg={`${ort.pathname}${ort.search}`}
+                      erledigt={erledigt.includes(termin.id)}
+                      onErledigt={(wert) =>
+                        setErledigt((bisher) =>
+                          wert ? [...bisher, termin.id] : bisher.filter((id) => id !== termin.id),
+                        )
+                      }
+                    />
+                  ))}
+                </Listenabschnitt>
 
-              <Kleingedrucktes className="mt-4">
-                Die Haken gelten nur, solange diese Seite offen ist – sie werden nicht gespeichert.
-              </Kleingedrucktes>
+                <Kleingedrucktes className="mt-4">
+                  Die Haken gelten nur, solange diese Seite offen ist – sie werden nicht
+                  gespeichert.
+                </Kleingedrucktes>
 
-              {/* Nach dem letzten Anruf der Weg zum freien Tag (KAL-19). */}
-              <div className="mt-4">
-                <ButtonLink to={zumKalender} variant="secondary">
-                  Zum Kalender
-                </ButtonLink>
-              </div>
-            </Section>
-          )}
-        </>
-      ) : null}
+                {/* Nach dem letzten Anruf der Weg zum freien Tag (KAL-19). */}
+                <Formularfuss>
+                  <ButtonLink to={zumKalender}>Zum Kalender</ButtonLink>
+                </Formularfuss>
+              </>
+            )
+          }
+        </Abfragezustand>
+      </div>
     </>
   );
 }

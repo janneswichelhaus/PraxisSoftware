@@ -28,7 +28,7 @@ import { ListRow, ListRows } from './ListRow';
 import { NowMarker } from './NowMarker';
 import { ProgressDots } from './ProgressDots';
 import { StatusMark } from './StatusMark';
-import { Tile, TileGrid, TileRow, TileRows } from './Tile';
+import { Tile, TileGrid } from './Tile';
 import { TravelBar } from './TravelBar';
 import { zeitstrahlRaster } from './timelineStile';
 import { pufferText, travelLevel, travelPlan } from './travelPlan';
@@ -151,9 +151,52 @@ describe('PageHeader', () => {
     // auf jeder Breite.
     expect(klassen).not.toContain('text-h2');
     expect(klassen).toEqual(expect.arrayContaining(['font-extrabold', 'tracking-display']));
-    // Beschreibung: 14 px, leise, 4 px unter dem Titel.
-    const beschreibung = screen.getByText('12 Personen').className.split(/\s+/);
-    expect(beschreibung).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'mt-1']));
+    // Beschreibung: 14 px, leise, 4 px unter dem Titel, eine Zeile.
+    const beschreibung = screen.getByText('12 Personen');
+    expect(beschreibung.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['text-ink-muted', 'text-sm', 'line-clamp-1']),
+    );
+    expect(beschreibung.parentElement).toHaveClass('mt-1');
+    // Kurz und (in jsdom ungemessen) nicht abgeschnitten: kein „Mehr“.
+    expect(screen.queryByRole('button', { name: 'Mehr' })).toBeNull();
+  });
+
+  it('stellt die Aktion in die Zeile des Titels, die Beschreibung darunter (Design-Review T1)', () => {
+    renderWithProviders(
+      <PageHeader
+        title="Erstattungen"
+        description="Stromkosten für das Laden der Diensträder und ausgelegte Einkäufe."
+        actions={<Button type="button">Erstattung einreichen</Button>}
+      />,
+    );
+    const titel = screen.getByRole('heading', { level: 1 });
+    const knopf = screen.getByRole('button', { name: 'Erstattung einreichen' });
+    const beschreibung = screen.getByText(/Stromkosten/);
+    // Titel und Aktion teilen sich eine Zeile ...
+    const zeile = knopf.closest('header > div')!;
+    expect(zeile).toContainElement(titel);
+    // ... die Beschreibung steht nicht darin, sondern darunter auf ganzer Breite.
+    expect(zeile).not.toContainElement(beschreibung);
+    expect(
+      zeile.compareDocumentPosition(beschreibung) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('klappt eine lange Beschreibung hinter „Mehr“ ein und auf', async () => {
+    const user = userEvent.setup();
+    const lang =
+      'Ein Satz, der deutlich länger ist als eine Zeile am Telefon und deshalb hinter dem Aufklapper steht.';
+    renderWithProviders(<PageHeader title="Seite" description={lang} />);
+    const satz = screen.getByText(lang);
+    expect(satz).toHaveClass('line-clamp-1');
+    const mehr = screen.getByRole('button', { name: 'Mehr' });
+    expect(mehr).toHaveAttribute('aria-expanded', 'false');
+    await user.click(mehr);
+    expect(satz).not.toHaveClass('line-clamp-1');
+    expect(screen.getByRole('button', { name: 'Weniger' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 });
 
@@ -471,6 +514,22 @@ describe('Disclosure', () => {
       expect.arrayContaining(['border-t', 'border-line', 'mt-2', 'pt-2']),
     );
     expect(klassenVon(kopf.closest('details'))).not.toContain('rounded-card');
+    expect(klassenVon(kopf)).not.toContain('justify-center');
+  });
+
+  it('setzt mit mittig Zeichen und Titel in die Mitte, der Inhalt bleibt, wie er ist (L8)', () => {
+    renderWithProviders(
+      <Disclosure mittig summary="Am Rechner anmelden">
+        <p>Im Passkey-Fenster</p>
+      </Disclosure>,
+    );
+    const kopf = screen.getByText('Am Rechner anmelden');
+    expect(kopf.tagName).toBe('SUMMARY');
+    expect(klassenVon(kopf)).toEqual(
+      expect.arrayContaining(['flex', 'min-h-11', 'items-center', 'justify-center']),
+    );
+    // Nur der Kopf: Wie der Inhalt steht, sagt die Seite darum.
+    expect(klassenVon(screen.getByText('Im Passkey-Fenster').parentElement)).toEqual(['mt-2']);
   });
 
   it('setzt den Zaehler in Klammern hinter den Titel', () => {
@@ -779,6 +838,36 @@ describe('SubNav', () => {
     });
   }
 
+  it('klappt eine einzelne Vorschau nicht ein, erst ab zwei (ANN-493)', () => {
+    const { unmount } = renderWithProviders(
+      <SubNav
+        eintraege={[
+          { to: '/rueckfragen', label: 'Rückfragen', end: false },
+          { to: '/team', label: 'Teamchat', vorschau: true },
+        ]}
+        label="Bereich Kommunikation"
+      />,
+      '/rueckfragen',
+    );
+    expect(screen.getByRole('link', { name: /^Teamchat/ })).toHaveTextContent('TeamchatVorschau');
+    expect(screen.queryByRole('button', { name: /^Vorschau/ })).toBeNull();
+    unmount();
+
+    renderWithProviders(
+      <SubNav
+        eintraege={[
+          { to: '/praxis/team', label: 'Mitarbeitende' },
+          { to: '/betrieb/urlaub', label: 'Urlaub', vorschau: true },
+          { to: '/betrieb/zeitkonto', label: 'Zeitkonto', vorschau: true },
+        ]}
+        label="Bereich Organisatorisches"
+      />,
+      '/praxis/team',
+    );
+    expect(screen.getByRole('button', { name: 'Vorschau (2)' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Urlaub/ })).toBeNull();
+  });
+
   it('rollt den aktiven Eintrag waagerecht ins Bild, ohne die Seite zu rollen (UIK-10)', () => {
     geometrie();
     const seiteRollen = vi.spyOn(Element.prototype, 'scrollIntoView');
@@ -788,8 +877,9 @@ describe('SubNav', () => {
     );
 
     // „Zahlungen" liegt bei 480-600 px, sichtbar sind 300: Die Liste rollt so
-    // weit, dass der Eintrag ganz und 24 px vom Nachbarn zu sehen sind.
-    expect(screen.getByRole('list').scrollLeft).toBe(600 + 24 - 300);
+    // weit, dass der Eintrag ganz und 72 px vom Nachbarn zu sehen sind - so
+    // breit wie der Verlauf am Rand, der den Nachbarn ausblendet (T2).
+    expect(screen.getByRole('list').scrollLeft).toBe(600 + 72 - 300);
     expect(seiteRollen).not.toHaveBeenCalled();
   });
 
@@ -808,7 +898,7 @@ describe('SubNav', () => {
     expect(liste.scrollLeft).toBe(0);
 
     await user.click(screen.getByRole('link', { name: 'Auswertung' }));
-    expect(liste.scrollLeft).toBe(720 + 24 - 300);
+    expect(liste.scrollLeft).toBe(720 + 72 - 300);
 
     await user.click(screen.getByRole('link', { name: 'Rechnungen' }));
     expect(liste.scrollLeft).toBe(0);
@@ -823,7 +913,7 @@ describe('SubNav', () => {
       '/abrechnung/auswertung',
     );
     expect(screen.getByRole('list').scrollLeft).toBe(0);
-    // Nichts liegt rechts außer Sicht: kein Verlauf.
+    // Nichts liegt außer Sicht: kein Verlauf, weder rechts noch links.
     expect(document.querySelector('[data-verlauf]')).toBeNull();
   });
 
@@ -835,15 +925,19 @@ describe('SubNav', () => {
     );
     const liste = screen.getByRole('list');
     // Sechs Einträge à 120 px, 300 sichtbar, Anfang: rechts liegt noch etwas.
-    const verlauf = document.querySelector('[data-verlauf]')!;
+    const verlauf = document.querySelector('[data-verlauf="rechts"]')!;
     expect(verlauf).not.toBeNull();
+    // Am Anfang liegt links nichts: kein Verlauf dort.
+    expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
     // Dekorativ, von der Fläche nach durchsichtig, nur unter 640 px, nicht
     // klickbar - der letzte sichtbare Eintrag bleibt darunter zu treffen.
     expect(verlauf).toHaveAttribute('aria-hidden', 'true');
     expect(verlauf).toHaveTextContent('›');
+    // Das angeschnittene Stück und 16 px Freiraum, höchstens 72 px (R2 neu3):
+    // „Katalog" liegt bei 240-360, 60 px davon im Bild.
+    expect((verlauf as HTMLElement).style.width).toBe('72px');
     expect(verlauf.className.split(/\s+/)).toEqual(
       expect.arrayContaining([
-        'w-18',
         'from-canvas',
         'to-transparent',
         'sm:hidden',
@@ -852,15 +946,62 @@ describe('SubNav', () => {
       ]),
     );
 
-    // Ans Ende gerollt: nichts mehr rechts, der Verlauf geht.
+    // Ans Ende gerollt: nichts mehr rechts, der Verlauf geht - und links
+    // steht seither einer, statt eines hart abgeschnittenen Worts (T2).
     liste.scrollLeft = 720 - 300;
     fireEvent.scroll(liste);
-    expect(document.querySelector('[data-verlauf]')).toBeNull();
+    expect(document.querySelector('[data-verlauf="rechts"]')).toBeNull();
+    const links = document.querySelector('[data-verlauf="links"]')!;
+    expect(links).not.toBeNull();
+    expect(links).toHaveAttribute('aria-hidden', 'true');
+    expect(links).toHaveTextContent('‹');
+    // „Praxisstammdaten" (360-480) ragt mit 60 px ins Bild: 60 + 16, höchstens 72.
+    expect((links as HTMLElement).style.width).toBe('72px');
+    expect(links.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        'left-4',
+        'bg-linear-to-r',
+        'from-canvas',
+        'to-transparent',
+        'sm:hidden',
+        'pointer-events-none',
+      ]),
+    );
 
-    // Wieder zurück: er kommt wieder.
+    // Wieder zurück: rechts kommt er wieder, links geht er.
     liste.scrollLeft = 0;
     fireEvent.scroll(liste);
-    expect(document.querySelector('[data-verlauf]')).not.toBeNull();
+    expect(document.querySelector('[data-verlauf="rechts"]')).not.toBeNull();
+    expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
+  });
+
+  it('legt den Verlauf nie über einen ganz sichtbaren Eintrag (Design-Review R2 neu3)', () => {
+    geometrie();
+    renderWithProviders(
+      <SubNav eintraege={abrechnung} label="Bereich Abrechnung" />,
+      '/abrechnung',
+    );
+    const liste = screen.getByRole('list');
+    const breite = (seite: string) =>
+      document.querySelector<HTMLElement>(`[data-verlauf="${seite}"]`)!.style.width;
+    // Die Leiste endet links genau zwischen zwei Einträgen: „Praxisstammdaten"
+    // steht ganz im Bild. Links steht nur der Pfeil im Freiraum vor seinem
+    // Wort, 16 px, ohne es auszublenden.
+    liste.scrollLeft = 360;
+    fireEvent.scroll(liste);
+    expect(document.querySelector('[data-verlauf="links"]')).toHaveTextContent('‹');
+    expect(breite('links')).toBe('16px');
+    // Ein kleines Stück im Bild: „Katalog" ragt 10 px herein, der Verlauf
+    // deckt es und den Freiraum dahinter (26 px), nicht mehr; rechts ragt
+    // „Auswertung" 50 px herein (66 px).
+    liste.scrollLeft = 350;
+    fireEvent.scroll(liste);
+    expect(breite('links')).toBe('26px');
+    expect(breite('rechts')).toBe('66px');
+    // Ein großes Stück im Bild: höchstens 72 px, wie bisher.
+    liste.scrollLeft = 250;
+    fireEvent.scroll(liste);
+    expect(breite('links')).toBe('72px');
   });
 });
 
@@ -1500,20 +1641,6 @@ describe('Kachel (Tile)', () => {
     expect(kachel.querySelectorAll('dd')).toHaveLength(1);
   });
 
-  it('haelt Zeilen im Wert einer Kachel im normalen Gewicht', () => {
-    renderWithProviders(
-      <TileGrid>
-        <Tile label="Absage" ton="kritisch">
-          <TileRows>
-            <TileRow label="Absagegrund">Wunsch der Patient:in</TileRow>
-          </TileRows>
-        </Tile>
-      </TileGrid>,
-    );
-    // Die Zeile steht im Wert (600) und erbte ihn sonst.
-    expect(klassenVon(screen.getByText('Absagegrund').parentElement)).toContain('font-normal');
-  });
-
   it('bricht die Reihe nach der gewaehlten Mindestbreite um', () => {
     const reihe = (spalte?: 'breit' | 'kachel' | 'akte') => {
       const { container, unmount } = renderWithProviders(
@@ -1718,6 +1845,11 @@ describe('Fortschrittspunkte (ProgressDots)', () => {
     expect(offen).toEqual(expect.arrayContaining(['bg-surface-sunken', 'border-line-strong']));
     expect(abgesagt).toEqual(expect.arrayContaining(['bg-danger', 'border-danger']));
     expect(nichtAngetroffen).toEqual(expect.arrayContaining(['bg-warnung', 'border-warnung']));
+    // Status = Zeichen + Wort (DESIGN.md Regel 5; Design-Review R2, U1): Ein
+    // gefüllter Punkt trägt das Zeichen seines Abzeichens, nicht nur die Farbe.
+    expect(punkte.map((punkt) => punkt.querySelector('svg')?.getAttribute('data-zeichen'))).toEqual(
+      ['haken', 'ausrufezeichen', undefined, undefined, 'kreuz'],
+    );
     // 12 px, rund, Farbwechsel in 200 ms.
     for (const klassen of [erledigt, naechster, offen]) {
       expect(klassen).toEqual(

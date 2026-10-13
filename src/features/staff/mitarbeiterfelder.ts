@@ -49,3 +49,19 @@ const PRIVAT: StaffFeld[] = [
 export function staffReihenfolge(privat: boolean): StaffFeld[] {
   return privat ? [...DIENSTLICH, ...PRIVAT] : DIENSTLICH;
 }
+
+/**
+ * Wer welche Angaben sieht (Welle B, B7): bis dahin je ein Satz unter den
+ * Überschriften „Dienstlich“ und „Privat“, jetzt im Kleingedruckten am Ende
+ * des Formulars (DESIGN.md, Regel 6). Sichtbarkeit und Freiwilligkeit der
+ * Beschäftigtendaten sind Aussagen zum Datenfluss und bleiben vollständig.
+ */
+export function sichtbarkeitDerAngaben(privat: boolean): string {
+  // Seit R2-O7 in zwei kurzen Sätzen statt vier Zeilen Begründung.
+  return (
+    'Dienstliches sehen alle Praxisrollen. ' +
+    (privat
+      ? 'Privates ist freiwillig und nur für die Praxisinhaber:in und die Person selbst sichtbar.'
+      : 'Privates pflegt nur die Praxisinhaber:in; es bleibt beim Speichern unverändert.')
+  );
+}

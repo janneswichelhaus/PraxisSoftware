@@ -79,11 +79,17 @@ export function Tile({
   const bild = zeichen[ton];
   return (
     <div
-      className={`rounded-card px-kachel-x py-kachel-y min-h-18 min-w-0 border ${flaechen[ton]} ${className}`}
+      className={`rounded-card px-kachel-x py-kachel-y min-h-18 min-w-0 border [.plattform-schrift_&]:px-3 ${flaechen[ton]} ${className}`}
     >
       {/* Beschriftung als `--type-label`: 12 px in 600, Versalien mit 0.14em
-          Laufweite - dieselbe Rolle wie ein Abschnittstitel. */}
-      <dt className={`tracking-label text-xs font-semibold uppercase ${beschriftungen[ton]}`}>
+          Laufweite - dieselbe Rolle wie ein Abschnittstitel. Auf der
+          Plattform (18 px) in gewöhnlicher Schreibung und 500, die Kachel
+          innen 12 px: In Versalien passt „Wiederholungen" nicht in eine
+          Kachel von 160 px und bräche mitten im Wort (Sichtung 13.10.2026,
+          L6, ANN-499); so passt es bei 375 px in eine Zeile. */}
+      <dt
+        className={`tracking-label text-xs font-semibold uppercase [.plattform-schrift_&]:font-medium [.plattform-schrift_&]:tracking-normal [.plattform-schrift_&]:normal-case ${beschriftungen[ton]}`}
+      >
         {bild ? <span aria-hidden="true">{bild} </span> : null}
         {label}
       </dt>
@@ -128,25 +134,4 @@ export function TileGrid({
   spalte?: keyof typeof reihen;
 }) {
   return <dl className={`grid ${reihen[spalte]}`}>{children}</dl>;
-}
-
-/**
- * Beschriftete Zeilen innerhalb einer Kachel - Absagegrund, Eingang,
- * Ausfallhonorar in der Kachel „Absage". Ein eigenes `dl`, damit jede Zeile
- * für sich adressierbar bleibt.
- */
-export function TileRows({ children }: { children: ReactNode }) {
-  return <dl className="flex flex-col gap-2">{children}</dl>;
-}
-
-export function TileRow({ label, children }: { label: string; children: ReactNode }) {
-  // `font-normal` und die eigene Zeilenhöhe: Die Zeilen stehen im Wert der
-  // Kachel und erbten sonst dessen 600 - sie sind aber Auskunft in mehreren
-  // Zeilen, kein einzelner Wert.
-  return (
-    <div className="leading-normal font-normal">
-      <dt className="text-ink-muted text-sm">{label}</dt>
-      <dd className="text-ink text-liste min-w-0 wrap-anywhere">{children}</dd>
-    </div>
-  );
 }

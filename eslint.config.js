@@ -8,7 +8,15 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'coverage', 'playwright-report', 'test-results', '.tmp', 'node_modules'],
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      '.tmp',
+      'node_modules',
+      '.claude/worktrees',
+    ],
   },
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,

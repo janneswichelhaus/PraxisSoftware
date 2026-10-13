@@ -1,4 +1,9 @@
-import { formatLocalDate, formatLocalTime } from '@/features/appointments/api';
+import {
+  formatLocalDate,
+  formatLocalTime,
+  formatLocalTimeRange,
+  type Appointment,
+} from '@/features/appointments/api';
 import type { TreatmentNote } from './api';
 import { tagePlus } from '@/features/appointments/calendar';
 
@@ -114,4 +119,32 @@ export function fristDatum(
   const tag = angelegt > behandelt ? angelegt : behandelt;
   const [, monat, datum] = tagePlus(tag, tage).split('-');
   return `${datum}.${monat}.`;
+}
+
+/** „Mi 12.05.2027“ - Wochentag kurz, Datum mit Jahr, in der Zeit der Praxis. */
+function kurzesDatum(iso: string, zone: string): string {
+  const teile = new Intl.DateTimeFormat('de-DE', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: zone,
+  }).formatToParts(new Date(iso));
+  const wert = (art: Intl.DateTimeFormatPartTypes) =>
+    teile.find((teil) => teil.type === art)?.value ?? '';
+  return `${wert('weekday').replace('.', '')} ${wert('day')}.${wert('month')}.${wert('year')}`;
+}
+
+/**
+ * Die Zeile unter dem Namen: „Nachtrag · Mi 12.05.2027 · 09:00–10:00“. Mit
+ * Jahr, anders als auf der Schreibseite: Nachtrag, Korrektur und Verlauf
+ * gelten oft einem Termin von früher.
+ */
+export function kopfzeileFuer(was: string, appointment: Appointment): string {
+  const zone = appointment.organization_time_zone;
+  return [
+    was,
+    kurzesDatum(appointment.starts_at, zone),
+    formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone),
+  ].join(' · ');
 }

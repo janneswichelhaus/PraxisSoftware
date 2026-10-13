@@ -56,6 +56,19 @@ function inaktivHinweis(page: Page): Locator {
   return page.getByText('Inaktiv – wird nicht mehr für neue Termine angeboten.');
 }
 
+/**
+ * Öffnet den Reiter „Einsatz" der Mitarbeiter:in (Welle B, B7: Objektkopf und
+ * Reiter statt Abschnitten untereinander). Dort steht seitdem der Wechsel des
+ * Beschäftigungsstatus, leise am Ende des Reiters (`?bereich=einsatz`).
+ */
+async function einsatzOeffnen(page: Page): Promise<void> {
+  await page
+    .getByRole('navigation', { name: 'Bereiche der Mitarbeiter:in' })
+    .getByRole('link', { name: 'Einsatz' })
+    .click();
+  await expect(page).toHaveURL(/[?&]bereich=einsatz(&|$)/);
+}
+
 /** Stellt sicher, dass die geseedete Therapeutin am Ende wieder aktiv ist. */
 async function annaReaktivieren(request: APIRequestContext): Promise<void> {
   const token = await zugriffstoken(request, KONTEN.owner);
@@ -103,7 +116,9 @@ test.describe('STAFF-001: Anlegen und Bearbeiten', () => {
     await page.getByLabel('Diensttelefon').fill('+49 7071 4711');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
 
-    await expect(page).toHaveURL(/\/praxis\/team\/[0-9a-f-]{36}$/);
+    // Zurück in den Reiter „Kontakt“, der die Stammdaten zeigt - seit R2-O6
+    // ist „Einsatz“ der erste Reiter.
+    await expect(page).toHaveURL(/\/praxis\/team\/[0-9a-f-]{36}\?bereich=kontakt$/);
     await expect(detailWert(page, 'Diensttelefon')).toHaveText('+49 7071 4711');
   });
 });
@@ -113,6 +128,7 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
     const vorname = name('Status');
     await anmelden(page, KONTEN.owner);
     await anlegenUeberOberflaeche(page, vorname);
+    await einsatzOeffnen(page);
 
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
@@ -143,6 +159,7 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
 
     await anmelden(page, KONTEN.owner);
     await page.goto(`/praxis/team/${MITARBEITENDE.anna}`);
+    await einsatzOeffnen(page);
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
 
@@ -231,8 +248,21 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
     await expect(page.getByRole('heading', { name: `${vorname} Testperson` })).toBeVisible();
 
     // Die anderen beiden Bereiche bleiben zu - schon in der Oberflaeche.
-    await expect(page.getByRole('button', { name: 'Als inaktiv führen' })).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Zugang' })).toHaveCount(0);
+    // Seit Welle B (B7) stehen sie als Reiter „Einsatz" und „Zugang" am
+    // Objektkopf; fuer office gibt es keinen der beiden und damit gar keine
+    // Reiterleiste. Auch der direkte Aufruf ueber die Adresse oeffnet sie
+    // nicht - er faellt auf den ersten Reiter „Kontakt" zurueck.
+    await expect(page.getByRole('navigation', { name: 'Bereiche der Mitarbeiter:in' })).toHaveCount(
+      0,
+    );
+    await expect(page.getByRole('link', { name: 'Einsatz', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Zugang', exact: true })).toHaveCount(0);
+    for (const bereich of ['einsatz', 'zugang']) {
+      await page.goto(`/praxis/team/${staffId}?bereich=${bereich}`);
+      await expect(page.getByRole('heading', { name: `${vorname} Testperson` })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Als inaktiv führen' })).toHaveCount(0);
+      await expect(page.getByRole('heading', { name: 'Zugang' })).toHaveCount(0);
+    }
 
     // Und dann an der Oberfläche vorbei: die ausgeblendete Schaltfläche ist
     // keine Zugriffskontrolle (ADR-004, PROJECT_PRINCIPLES.md 4.7).

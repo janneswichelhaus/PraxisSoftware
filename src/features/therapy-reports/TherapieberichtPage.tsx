@@ -1,16 +1,17 @@
 import { useId, useRef, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Aufklappzeichen } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { bereicheText } from '@/features/assessments/koerperschema';
@@ -146,62 +147,53 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
       beschriftung="Zurück zur Verordnung"
     />
   ) : (
-    <Rueckweg standard={verordnungen} beschriftung="Zurück zu den Verordnungen" />
+    // Ohne Bericht keine Verordnung: zurück in den Reiter, beschriftet wie er
+    // heißt - „Zurück zu den Behandlungsgrundlagen“ (Sichtung 13.10.2026, A8).
+    <Rueckweg standard={verordnungen} />
+  );
+  // Laden und Fehler mit dem Kopf der Seite, wie die Warteliste (A7): Bis
+  // dahin stand die Meldung ohne Überschrift da.
+  const zustandKopf = (
+    <>
+      {rueckweg}
+      <PageHeader title="Therapiebericht" />
+    </>
   );
 
   if (!formularOffen) {
-    if (bericht.isPending) {
-      return (
-        <>
-          {rueckweg}
-          <LoadingState label="Bericht wird geladen …" />
-        </>
-      );
-    }
-    // Ersetzt wird nur, wenn es nichts zu zeigen gibt (ZST-03).
-    if (bericht.isError && !bericht.data) {
-      return (
-        <>
-          {rueckweg}
-          <ErrorState
-            title="Der Bericht konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => bericht.refetch()}
-          />
-        </>
-      );
-    }
-    if (!bericht.data) {
-      return (
-        <>
-          {rueckweg}
-          <ErrorState
-            title="Bericht nicht gefunden"
-            description="Vielleicht wurde der Entwurf inzwischen verworfen."
-          />
-        </>
-      );
-    }
-    if (bericht.data.status === 'abgeschlossen') {
+    if (bericht.data?.status === 'abgeschlossen') {
       return <Navigate to={`/patienten/${patientId}/berichte/${berichtId}/druck`} replace />;
     }
-    if (quellen.isPending) {
+    // Laden und Ladefehler von Bericht und Einträgen über den Baustein (Regel
+    // 8; Nachprüfung neu5). Ersetzt wird nur, wenn es nichts zu zeigen gibt
+    // (ZST-03): Der Baustein zeigt erst ohne Stand einen Fehler. Ein Bericht,
+    // den es nicht (mehr) gibt, ist kein Ladefehler.
+    if (!bericht.data || !quellen.data) {
       return (
         <>
-          {rueckweg}
-          <LoadingState label="Einträge der Akte werden geladen …" />
-        </>
-      );
-    }
-    if (quellen.isError && !quellen.data) {
-      return (
-        <>
-          {rueckweg}
-          <ErrorState
-            title="Die Einträge der Akte konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => quellen.refetch()}
-          />
+          {zustandKopf}
+          <Abfragezustand
+            abfrage={bericht}
+            laden="Bericht wird geladen …"
+            fehler="Der Bericht konnte nicht geladen werden."
+          >
+            {(daten) =>
+              daten === null ? (
+                <ErrorState
+                  title="Bericht nicht gefunden"
+                  description="Vielleicht wurde der Entwurf inzwischen verworfen."
+                />
+              ) : (
+                <Abfragezustand
+                  abfrage={quellen}
+                  laden="Einträge der Akte werden geladen …"
+                  fehler="Die Einträge der Akte konnten nicht geladen werden."
+                >
+                  {() => null}
+                </Abfragezustand>
+              )
+            }
+          </Abfragezustand>
         </>
       );
     }
@@ -261,6 +253,7 @@ function Berichtsformular({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const zuVieleId = useId();
+  const formularId = useId();
 
   // Der erwartete Stand für die Konflikterkennung. Eine Referenz, weil ein
   // Schreibvorgang ihn setzt und der nächste ihn sofort braucht.
@@ -403,217 +396,234 @@ function Berichtsformular({
         )} · Entwurf`}
       />
 
-      {bericht.document.korrektur ? (
-        <p className="text-ink mb-6 max-w-2xl text-sm">
-          Korrektur des Berichts vom{' '}
-          {formatDate(bericht.document.korrektur.ersetzt_abgeschlossen_am)}. Grund:{' '}
-          {bericht.document.korrektur.grund}
-        </p>
-      ) : null}
+      <div className="max-w-spalte">
+        {bericht.document.korrektur ? (
+          <p className="text-ink mb-6 text-sm">
+            Korrektur des Berichts vom{' '}
+            {formatDate(bericht.document.korrektur.ersetzt_abgeschlossen_am)}. Grund:{' '}
+            {bericht.document.korrektur.grund}
+          </p>
+        ) : null}
 
-      {wechsel ? (
-        <Statusmeldung ton="warnung" className="mb-6 max-w-2xl">
-          {ungespeichert
-            ? `${BERICHTSWECHSEL[wechsel]} – Ihre Änderungen stehen noch im Formular und sind nicht gespeichert.`
-            : `${BERICHTSWECHSEL[wechsel]}.`}
-        </Statusmeldung>
-      ) : null}
-
-      {nichtAktualisiert ? (
-        <div className="mb-6 flex max-w-2xl flex-wrap items-center gap-x-3">
-          <Statusmeldung ton="warnung">
-            Der Stand konnte nicht aktualisiert werden. Ihre Eingaben stehen weiter im Formular.
+        {wechsel ? (
+          <Statusmeldung ton="warnung" className="mb-6">
+            {ungespeichert
+              ? `${BERICHTSWECHSEL[wechsel]} – Ihre Änderungen stehen noch im Formular und sind nicht gespeichert.`
+              : `${BERICHTSWECHSEL[wechsel]}.`}
           </Statusmeldung>
-          <Button type="button" variant="quiet" groesse="kompakt" onClick={() => void onErneut()}>
-            Erneut versuchen
-          </Button>
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Freitextformulare sind so breit wie die Dokumentation (max-w-2xl,
-          DOK-19) - vorher stand der Bericht als einziges bei max-w-3xl. */}
-      <form
-        className="flex max-w-2xl flex-col gap-8"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (zuViele) return;
-          setGespeichert(false);
-          void schreiben({
-            ausfuehren: entwurfSichern,
-            fehlertitel: 'Nicht gespeichert',
-            danach: () => setGespeichert(true),
-          });
-        }}
-      >
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-            Einträge aus der Dokumentation
-          </legend>
-          <p className="text-ink-muted text-sm">
-            Angekreuzte Einträge stehen wörtlich im Bericht, mit Tag und Verfasser:in. Nur
-            finalisierte Einträge lassen sich übernehmen; vorausgewählt ist nichts.
-          </p>
-          {/* Die Grenze ist beim Auswählen sichtbar, nicht erst beim Speichern
-              (ABN-016, BEF-104). */}
-          <p className="text-ink text-sm tabular-nums" aria-live="polite">
-            {eingabe.eintraege.length} von {EINTRAEGE_MAX} Einträgen gewählt
-            {eingabe.eintraege.length >= EINTRAEGE_MAX
-              ? ' – mehr passen nicht in einen Bericht.'
-              : ''}
-          </p>
-          {eintraege.length === 0 ? (
-            <Statusmeldung>Die Akte hat noch keinen finalisierten Eintrag.</Statusmeldung>
-          ) : null}
-          {dieserVerordnung.length > 0 ? (
-            <Eintragsliste
-              titel="Zu dieser Verordnung"
-              eintraege={dieserVerordnung}
-              gewaehlt={eingabe.eintraege}
-              onUmschalten={umschalten}
-            />
-          ) : null}
-          {weitere.length > 0 ? (
-            <details className="group" open={weitereOffen}>
-              <summary className={`${aufklappKopfKlassen} text-accent text-sm`}>
-                <Aufklappzeichen />
-                Weitere Einträge der Akte ({weitere.length})
-              </summary>
+        {nichtAktualisiert ? (
+          <div className="mb-6 flex flex-wrap items-center gap-x-3">
+            <Statusmeldung ton="warnung">
+              Der Stand konnte nicht aktualisiert werden. Ihre Eingaben stehen weiter im Formular.
+            </Statusmeldung>
+            <Button type="button" variant="quiet" groesse="kompakt" onClick={() => void onErneut()}>
+              Erneut versuchen
+            </Button>
+          </div>
+        ) : null}
+
+        {/* Eine Arbeitsseite (DESIGN.md): die vier Teile des Berichts
+            untereinander, die Knöpfe in der Aktionsleiste unten. */}
+        <form
+          id={formularId}
+          className="flex flex-col gap-8"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (zuViele) return;
+            setGespeichert(false);
+            void schreiben({
+              ausfuehren: entwurfSichern,
+              fehlertitel: 'Nicht gespeichert',
+              danach: () => setGespeichert(true),
+            });
+          }}
+        >
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-ink-muted tracking-label text-xs font-semibold uppercase">
+              Einträge aus der Dokumentation
+            </legend>
+            {/* Was in den Bericht geht und was nicht (ANN-122): wörtlich, nur
+                Finalisiertes, nichts vorausgewählt. */}
+            <Kleingedrucktes className="mt-1">
+              Angekreuzte Einträge stehen wörtlich im Bericht, mit Tag und Verfasser:in. Nur
+              finalisierte Einträge lassen sich übernehmen; vorausgewählt ist nichts.
+            </Kleingedrucktes>
+            {/* Die Grenze ist beim Auswählen sichtbar, nicht erst beim Speichern
+                (ABN-016, BEF-104). */}
+            <p className="text-ink text-sm tabular-nums" aria-live="polite">
+              {eingabe.eintraege.length} von {EINTRAEGE_MAX} Einträgen gewählt
+              {eingabe.eintraege.length >= EINTRAEGE_MAX
+                ? ' – mehr passen nicht in einen Bericht.'
+                : ''}
+            </p>
+            {eintraege.length === 0 ? (
+              <Statusmeldung>Die Akte hat noch keinen finalisierten Eintrag.</Statusmeldung>
+            ) : null}
+            {dieserVerordnung.length > 0 ? (
               <Eintragsliste
-                eintraege={weitere}
+                titel="Zu dieser Verordnung"
+                eintraege={dieserVerordnung}
                 gewaehlt={eingabe.eintraege}
                 onUmschalten={umschalten}
               />
-            </details>
-          ) : null}
-          {zuViele ? (
-            <div id={zuVieleId}>
-              <Statusmeldung ton="fehler">
-                Höchstens {EINTRAEGE_MAX} Einträge – ein Bericht ist keine Kopie der Akte.
-              </Statusmeldung>
-            </div>
-          ) : null}
-        </fieldset>
-
-        {koerperschemata.length > 0 ? (
-          <fieldset className="flex flex-col gap-1">
-            <legend className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-              Körperschema
-            </legend>
-            <p className="text-ink-muted mb-1 text-sm">
-              Die Kreise aus einem abgeschlossenen Anamnesebogen, als Bild im Bericht.
-            </p>
-            <Auswahlknopf
-              name="koerperschema"
-              label="Kein Körperschema"
-              checked={eingabe.koerperschema === null}
-              onWaehlen={() => aendern({ koerperschema: null })}
-            />
-            {koerperschemata.map((k) => (
-              <Auswahlknopf
-                key={k.id}
-                name="koerperschema"
-                label={`Angabe vom ${formatDate(k.occurred_on)}: ${bereicheText(
-                  (k.body_chart ?? []).map((m) => m.bereich),
-                )}`}
-                checked={eingabe.koerperschema === k.id}
-                onWaehlen={() => aendern({ koerperschema: k.id })}
-              />
-            ))}
+            ) : null}
+            {weitere.length > 0 ? (
+              // Offen beim ersten Zeichnen, wenn dort schon etwas angekreuzt
+              // ist; danach entscheidet die Person (DOK-21).
+              <Disclosure
+                kopf="betont"
+                offen={weitereOffen}
+                summary={`Weitere Einträge der Akte (${weitere.length})`}
+              >
+                <Eintragsliste
+                  eintraege={weitere}
+                  gewaehlt={eingabe.eintraege}
+                  onUmschalten={umschalten}
+                />
+              </Disclosure>
+            ) : null}
+            {zuViele ? (
+              <div id={zuVieleId}>
+                <Statusmeldung ton="fehler">
+                  Höchstens {EINTRAEGE_MAX} Einträge – ein Bericht ist keine Kopie der Akte.
+                </Statusmeldung>
+              </div>
+            ) : null}
           </fieldset>
-        ) : null}
 
-        <TextArea
-          label="Bericht der Therapeut:in"
-          hint="Ihr eigener Text an die Verordner:in. Er steht mit Ihrem Namen und dem Tag im Bericht."
-          rows={6}
-          maxLength={TEXT_MAX}
-          value={eingabe.text}
-          onChange={(e) => aendern({ text: e.target.value })}
-        />
-
-        <TextArea
-          label="Empfehlung der Therapeut:in zum Verordnungsende"
-          hint="Von Ihnen formuliert und verantwortet – die Anwendung schlägt nichts vor. Sie steht danach auch an der Verordnung."
-          rows={3}
-          maxLength={EMPFEHLUNG_MAX}
-          value={eingabe.empfehlung}
-          onChange={(e) => aendern({ empfehlung: e.target.value })}
-        />
-
-        <div className="flex flex-col gap-3">
-          {/* Hinweise, Fehler und die Rückfrage vor dem Verlassen stehen über
-              den Knöpfen - „Druckansicht“ ist ein Seitenwechsel und läuft
-              damit durch dieselbe Rückfrage wie Rückweg und Tableiste. */}
-          {sicherungsstand}
-          {schutz}
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="submit" disabled={laeuft || zuViele}>
-              {laeuft ? 'Wird gespeichert …' : 'Entwurf speichern'}
-            </Button>
-            <ButtonLink to={druckziel} variant="quiet">
-              Druckansicht
-            </ButtonLink>
-          </div>
-          {gespeichert && !ungespeichert ? (
-            <Statusmeldung ton="erfolg">Entwurf gespeichert.</Statusmeldung>
+          {koerperschemata.length > 0 ? (
+            <fieldset className="flex flex-col gap-1">
+              <legend className="text-ink-muted tracking-label text-xs font-semibold uppercase">
+                Körperschema
+              </legend>
+              <Kleingedrucktes className="mt-1 mb-1">
+                Die Kreise aus einem abgeschlossenen Anamnesebogen, als Bild im Bericht.
+              </Kleingedrucktes>
+              <Auswahlknopf
+                name="koerperschema"
+                label="Kein Körperschema"
+                checked={eingabe.koerperschema === null}
+                onWaehlen={() => aendern({ koerperschema: null })}
+              />
+              {koerperschemata.map((k) => (
+                <Auswahlknopf
+                  key={k.id}
+                  name="koerperschema"
+                  label={`Angabe vom ${formatDate(k.occurred_on)}: ${bereicheText(
+                    (k.body_chart ?? []).map((m) => m.bereich),
+                  )}`}
+                  checked={eingabe.koerperschema === k.id}
+                  onWaehlen={() => aendern({ koerperschema: k.id })}
+                />
+              ))}
+            </fieldset>
           ) : null}
+
+          <TextArea
+            label="Bericht der Therapeut:in"
+            hint="Ihr eigener Text an die Verordner:in. Er steht mit Ihrem Namen und dem Tag im Bericht."
+            rows={6}
+            maxLength={TEXT_MAX}
+            value={eingabe.text}
+            onChange={(e) => aendern({ text: e.target.value })}
+          />
+
+          <TextArea
+            label="Empfehlung der Therapeut:in zum Verordnungsende"
+            hint="Von Ihnen formuliert und verantwortet – die Anwendung schlägt nichts vor. Sie steht danach auch an der Verordnung."
+            rows={3}
+            maxLength={EMPFEHLUNG_MAX}
+            value={eingabe.empfehlung}
+            onChange={(e) => aendern({ empfehlung: e.target.value })}
+          />
+        </form>
+
+        {/* Abschließen friert den Bericht ein, Verwerfen löscht den Entwurf -
+            beides nach einer Rückfrage, am Ende der Seite (DESIGN.md Regel 10).
+            Nebeneinander statt gestreckt (DOK-21): Die Auslöser sind so breit
+            wie ihr Text; eine geöffnete Rückfrage nimmt die ganze Zeile. */}
+        <div className="border-line mt-8 border-t pt-6">
+          <div className="flex flex-wrap items-start gap-3">
+            {zuViele ? (
+              // Mit zu vielen Einträgen lehnt der Server den Abschluss ab - bis
+              // UXR-008 mit einer Meldung ohne Grund (DOK-21). Der Grund steht
+              // über dem Knopf und ist mit ihm verbunden.
+              <Button type="button" variant="secondary" disabled aria-describedby={zuVieleId}>
+                Bericht abschließen
+              </Button>
+            ) : (
+              <Rueckfrage
+                ausloeser="Bericht abschließen"
+                bestaetigen="Ja, Bericht abschließen"
+                bestaetigenLaeuft="Wird abgeschlossen …"
+                laeuft={abschliessen.isPending}
+                fehler={abschliessen.isError ? abschliessen.error.message : undefined}
+                onBestaetigen={() => abschliessen.mutateAsync()}
+                onAbbrechen={() => abschliessen.reset()}
+              >
+                Der Bericht wird so eingefroren, wie er jetzt im Formular steht – spätere Änderungen
+                in der Akte erreichen ihn nicht mehr. Eine Korrektur ist danach ein neuer Bericht
+                mit Verweis und Grund.
+              </Rueckfrage>
+            )}
+            <Rueckfrage
+              ausloeser="Entwurf verwerfen"
+              ausloeserVariante="quiet"
+              bestaetigen="Ja, Entwurf verwerfen"
+              bestaetigenLaeuft="Wird verworfen …"
+              laeuft={verwerfen.isPending}
+              fehler={verwerfen.isError ? verwerfen.error.message : undefined}
+              onBestaetigen={() => verwerfen.mutateAsync()}
+              onAbbrechen={() => verwerfen.reset()}
+            >
+              Der Entwurf wird gelöscht. Die Einträge der Akte bleiben unberührt.
+            </Rueckfrage>
+          </div>
         </div>
-      </form>
 
-      {/* Nebeneinander statt gestreckt (DOK-21): Die Auslöser sind so breit
-          wie ihr Text; eine geöffnete Rückfrage nimmt die ganze Zeile. */}
-      <div className="mt-8 flex max-w-2xl flex-wrap items-start gap-3">
-        {zuViele ? (
-          // Mit zu vielen Einträgen lehnt der Server den Abschluss ab - bis
-          // UXR-008 mit einer Meldung ohne Grund (DOK-21). Der Grund steht
-          // über dem Knopf und ist mit ihm verbunden.
-          <Button type="button" variant="secondary" disabled aria-describedby={zuVieleId}>
-            Bericht abschließen
-          </Button>
-        ) : (
-          <Rueckfrage
-            ausloeser="Bericht abschließen"
-            bestaetigen="Ja, Bericht abschließen"
-            bestaetigenLaeuft="Wird abgeschlossen …"
-            laeuft={abschliessen.isPending}
-            fehler={abschliessen.isError ? abschliessen.error.message : undefined}
-            onBestaetigen={() => abschliessen.mutateAsync()}
-            onAbbrechen={() => abschliessen.reset()}
-          >
-            Der Bericht wird so eingefroren, wie er jetzt im Formular steht – spätere Änderungen in
-            der Akte erreichen ihn nicht mehr. Eine Korrektur ist danach ein neuer Bericht mit
-            Verweis und Grund.
-          </Rueckfrage>
-        )}
-        <Rueckfrage
-          ausloeser="Entwurf verwerfen"
-          ausloeserVariante="quiet"
-          bestaetigen="Ja, Entwurf verwerfen"
-          bestaetigenLaeuft="Wird verworfen …"
-          laeuft={verwerfen.isPending}
-          fehler={verwerfen.isError ? verwerfen.error.message : undefined}
-          onBestaetigen={() => verwerfen.mutateAsync()}
-          onAbbrechen={() => verwerfen.reset()}
-        >
-          Der Entwurf wird gelöscht. Die Einträge der Akte bleiben unberührt.
-        </Rueckfrage>
+        {/* Die Vorschau zeigt den Server, nicht das Formular (DOK-03). Am
+            Rechner offen, am Telefon auf Abruf: Das Blatt ist lang. */}
+        <div className="mt-8">
+          <Disclosure kopf="label" offenAb="lg" summary="Vorschau des gespeicherten Stands">
+            {ungespeichert ? (
+              <Statusmeldung className="mb-3">
+                Ihre letzten Änderungen sind noch nicht gespeichert und fehlen in der Vorschau.
+              </Statusmeldung>
+            ) : null}
+            <div className="border-line rounded-card bg-surface border p-4 sm:p-8">
+              <Berichtsblatt dokument={bericht.document} entwurf eingebettet />
+            </div>
+          </Disclosure>
+        </div>
       </div>
 
-      <div className="mt-10">
-        <Section titel="Vorschau" hinweis="Der zuletzt gespeicherte Stand, wie er gedruckt würde.">
-          {/* Die Vorschau zeigt den Server, nicht das Formular (DOK-03). Wer
-              darin nachsieht, soll nicht glauben, die neuen Änderungen seien
-              schon drin. */}
-          {ungespeichert ? (
-            <Statusmeldung className="mb-3">
-              Ihre letzten Änderungen sind noch nicht gespeichert und fehlen in der Vorschau.
-            </Statusmeldung>
-          ) : null}
-          <div className="border-line rounded-card bg-surface border p-4 sm:p-8">
-            <Berichtsblatt dokument={bericht.document} entwurf eingebettet />
+      {/* Die Knöpfe bleiben beim Rollen stehen, am Telefon über der
+          Tableiste (DESIGN.md Seitentyp „Arbeitsseite“). Hinweise, Fehler und
+          die Rückfrage vor dem Verlassen stehen darüber - „Druckansicht“ ist
+          ein Seitenwechsel und läuft durch dieselbe Rückfrage wie Rückweg und
+          Tableiste. */}
+      <Aktionsleiste
+        oben={
+          <div className="px-4 pb-2 empty:hidden sm:px-6 lg:px-8">
+            {sicherungsstand}
+            {schutz}
+            {gespeichert && !ungespeichert ? (
+              <Statusmeldung ton="erfolg" className="mt-2">
+                Entwurf gespeichert.
+              </Statusmeldung>
+            ) : null}
           </div>
-        </Section>
-      </div>
+        }
+      >
+        <ButtonLink to={druckziel} variant="quiet">
+          Druckansicht
+        </ButtonLink>
+        <Button type="submit" form={formularId} className="ml-auto" disabled={laeuft || zuViele}>
+          {laeuft ? 'Wird gespeichert …' : 'Entwurf speichern'}
+        </Button>
+      </Aktionsleiste>
     </>
   );
 }

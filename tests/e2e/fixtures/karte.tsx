@@ -178,15 +178,20 @@ createRoot(wurzel).render(
     {parameter.has('fahrten') ? (
       <>
         <Routenzusammenfassung
-          laedt={false}
-          ergebnis={{
-            ok: true,
-            value: {
-              quelle: 'nachbildung',
-              route: { distanceMeters: 12_449, durationSeconds: 2988, legs: [], geometry: [] },
+          noetig
+          abfrage={{
+            data: {
+              ok: true,
+              value: {
+                quelle: 'nachbildung',
+                route: { distanceMeters: 12_449, durationSeconds: 2988, legs: [], geometry: [] },
+              },
             },
+            isPending: false,
+            isError: false,
+            isFetching: false,
+            refetch: () => undefined,
           }}
-          erneutVersuchen={() => {}}
         />
         <Tourenliste
           stopps={STOPPS}

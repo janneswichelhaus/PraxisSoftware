@@ -23,30 +23,24 @@
 // muss uebergeben werden - das Skript startet mit jedem Lauf einen frischen,
 // nicht angemeldeten Browserkontext und meldet sich ohne `--konto` bei
 // keiner Seite an. In der Cloud-Entwicklungsumgebung ist `supabase start`
-// nicht moeglich (docs/DEVELOPMENT.md) - dort taugt das Skript nur fuer die
-// Anmeldemaske und fuer Vorschauseiten ohne Anmeldung.
+// nicht moeglich; dort traegt `./scripts/cloud-stack.sh start` denselben
+// Stack ohne Docker (docs/DEVELOPMENT.md, "Supabase-Stack ohne Docker").
 // -----------------------------------------------------------------------------
 import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
+// Konten, Kennwort und Anmeldung teilt dieses Skript mit der Bildstrecke
+// (scripts/bildstrecke.mjs): synthetische Seed-Konten, kein Secret im Sinne
+// von PROJECT_PRINCIPLES.md 3.3.
+import {
+  ANMELDUNG_VORAUSSETZUNG,
+  KONTEN,
+  anmelden,
+  browserOptionen,
+  startbildAbwarten,
+} from './testkonten.mjs';
 
 const ZIEL = '.tmp/screenshots';
 const BASIS = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
-
-/**
- * Synthetische Seed-Konten und ihr Kennwort - dieselben wie in
- * tests/e2e/authenticated/helpers.ts (KONTEN, TESTKENNWORT). Kein Secret im
- * Sinne von PROJECT_PRINCIPLES.md 3.3: es oeffnet ausschliesslich
- * synthetische Konten in einer Datenbank ohne reale Daten.
- */
-// Map statt Objekt: ein Zugriff mit einem beliebigen CLI-Argument als
-// Schluessel waere sonst ein von eslint-plugin-security zu Recht gemeldeter
-// Object-Injection-Sink.
-const KONTEN = new Map([
-  ['owner', 'jannes.test@praxis.invalid'],
-  ['office', 'olivia.office@praxis.invalid'],
-  ['therapist', 'anna.beispiel@praxis.invalid'],
-]);
-const TESTKENNWORT = 'LokalerTestzugang!2026';
 
 const argumente = process.argv.slice(2);
 const breite = Number(
@@ -57,11 +51,11 @@ const pfade = argumente.filter((a) => !a.startsWith('--'));
 
 if (pfade.length === 0) {
   console.error(
-    'Aufruf: pnpm screenshots [--breite=375] [--konto=owner|office|therapist] /pfad [/weiterer-pfad …]',
+    `Aufruf: pnpm screenshots [--breite=375] [--konto=${[...KONTEN.keys()].join('|')}] /pfad [/weiterer-pfad …]`,
   );
   console.error('Voraussetzung: die Anwendung laeuft unter ' + BASIS + ' (pnpm dev).');
   console.error(
-    'Fuer Seiten hinter der Anmeldung zusaetzlich ein laufender Supabase-Stack (pnpm dlx supabase@2.116.0 start) und --konto.',
+    'Fuer Seiten hinter der Anmeldung zusaetzlich ein laufender Supabase-Stack (pnpm dlx supabase@2.116.0 start oder ./scripts/cloud-stack.sh start) und --konto.',
   );
   process.exit(1);
 }
@@ -82,11 +76,7 @@ if (kontoName) {
 
 await mkdir(ZIEL, { recursive: true });
 
-const browser = await chromium.launch(
-  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
-    ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
-    : {},
-);
+const browser = await chromium.launch(browserOptionen());
 // Ein gemeinsamer Kontext fuer alle Seiten dieses Laufs: die Anmeldung setzt
 // eine Sitzung, die dann fuer jeden weiteren Pfad gilt - genau wie im echten
 // Browser ein Tab nach dem anderen in derselben Sitzung.
@@ -97,20 +87,11 @@ let befunde = 0;
 if (anmeldeAdresse) {
   const anmeldeSeite = await context.newPage();
   try {
-    await anmeldeSeite.goto(BASIS + '/', { waitUntil: 'networkidle', timeout: 20_000 });
-    await anmeldeSeite.getByLabel('E-Mail-Adresse').fill(anmeldeAdresse);
-    // exact grenzt das Feld gegen den Sichtbar-Schalter ab.
-    await anmeldeSeite.getByLabel('Kennwort', { exact: true }).fill(TESTKENNWORT);
-    await anmeldeSeite.getByRole('button', { name: 'Anmelden', exact: true }).click();
-    await anmeldeSeite
-      .getByRole('button', { name: 'Abmelden' })
-      .waitFor({ state: 'visible', timeout: 10_000 });
+    await anmelden(anmeldeSeite, BASIS, kontoName);
     console.log(`Angemeldet als ${kontoName} (${anmeldeAdresse}).\n`);
   } catch (fehler) {
     console.error(`Anmeldung als ${kontoName} fehlgeschlagen: ${String(fehler).split('\n')[0]}`);
-    console.error(
-      'Laeuft ein Supabase-Stack (pnpm dlx supabase@2.116.0 start) und die Anwendung (pnpm dev)?',
-    );
+    console.error(ANMELDUNG_VORAUSSETZUNG);
     await browser.close();
     process.exit(1);
   } finally {
@@ -141,6 +122,10 @@ for (const pfad of pfade) {
 
   try {
     await seite.goto(BASIS + pfad, { waitUntil: 'networkidle', timeout: 20_000 });
+    // Das Startbild (RAH-009) liegt in jedem neuen Tab knapp zwei Sekunden
+    // ueber der Seite - ohne dieses Warten zeigte das Bild die Marke statt der
+    // Seite. Ohne Startbild kehrt das Warten sofort zurueck.
+    await startbildAbwarten(seite);
     await seite.waitForTimeout(400);
 
     // Mit --konto ist eine angemeldete Seite erwartet - zeigt sie stattdessen

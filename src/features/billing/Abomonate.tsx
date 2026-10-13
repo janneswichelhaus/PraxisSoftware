@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -17,6 +17,7 @@ import {
   recordMonat,
   type FaelligerMonat,
 } from './nachsorge-api';
+import { Eintraege, Eintrag } from './Eintraege';
 
 /**
  * Fällige Abo-Monate des Nachsorge-Abos (ANG-002, ADR-009 Punkt 21).
@@ -41,7 +42,7 @@ export function FaelligeAbomonate() {
       <Section titel="Nachsorge-Abo">
         <ErrorState
           title="Die Abo-Monate konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => monate.refetch()}
         />
       </Section>
@@ -50,19 +51,22 @@ export function FaelligeAbomonate() {
   if (monate.data.length === 0) return null;
 
   return (
-    <Section titel="Nachsorge-Abo" hinweis="Jeder Abo-Monat wird zu seinem Beginn erfasst.">
-      <ul className="flex flex-col gap-3">
+    <Section titel={`Nachsorge-Abo (${monate.data.length})`}>
+      <Eintraege beschriftung="Fällige Abo-Monate">
         {monate.data.map((monat) => (
-          <li key={`${monat.subscription_id}-${monat.month_start}`}>
-            <MonatKarte monat={monat} />
-          </li>
+          <MonatZeile key={`${monat.subscription_id}-${monat.month_start}`} monat={monat} />
         ))}
-      </ul>
+      </Eintraege>
     </Section>
   );
 }
 
-function MonatKarte({ monat }: { monat: FaelligerMonat }) {
+/**
+ * Ein fälliger Abo-Monat als Zeile (Design-Rollout B6, vorher eine Karte je
+ * Monat): Person, Zeitraum und Preis, „Abo-Monat erfassen“ an der Zeile;
+ * ein Monat, der nicht geht, nennt seinen Grund darunter.
+ */
+function MonatZeile({ monat }: { monat: FaelligerMonat }) {
   const queryClient = useQueryClient();
   const erfassen = useMutation({
     mutationFn: () => recordMonat(monat.subscription_id, monat.month_start),
@@ -73,45 +77,59 @@ function MonatKarte({ monat }: { monat: FaelligerMonat }) {
   });
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Link
+    <Eintrag
+      // Der Name führt in die Akte, wo das Abo steht - und wieder hierher
+      // zurück; ein Link, der aussieht wie einer (TOK-12).
+      titel={
+        <Textlink
           to={mitRueckweg(`/patienten/${monat.patient_id}/stammdaten`, '/abrechnung/leistungen')}
-          className="text-ink text-liste hover:text-accent font-medium underline-offset-2 hover:underline"
         >
           {monat.patient_name}
-        </Link>
-        <span className="text-ink-muted text-sm tabular-nums">
-          {formatDate(monat.month_start)} bis {formatDate(monat.month_end)}
-        </span>
-        {monat.unit_price_cents !== null ? (
-          <span className="text-ink text-sm tabular-nums">
-            {formatEuro(monat.unit_price_cents, monat.currency ?? 'EUR')}
+        </Textlink>
+      }
+      // Der Preis in der Nebenzeile: Neben der Aktion bliebe dem Namen am
+      // Telefon sonst kaum Platz.
+      meta={
+        <>
+          <span className="tabular-nums">
+            {formatDate(monat.month_start)} bis {formatDate(monat.month_end)}
           </span>
-        ) : null}
-        {monat.blocker === null ? (
-          <span className="ml-auto">
-            <Button
-              type="button"
-              variant="secondary"
-              groesse="kompakt"
-              disabled={erfassen.isPending}
-              onClick={() => erfassen.mutate()}
-            >
-              {erfassen.isPending ? 'Wird erfasst …' : 'Abo-Monat erfassen'}
-            </Button>
-          </span>
-        ) : null}
-      </div>
-      {monat.blocker !== null ? (
-        <p className="text-ink-muted mt-1 text-sm">{MONATSHINDERNIS[monat.blocker]}</p>
+          {monat.unit_price_cents !== null ? (
+            <>
+              {' · '}
+              <span className="tabular-nums">
+                {formatEuro(monat.unit_price_cents, monat.currency ?? 'EUR')}
+              </span>
+            </>
+          ) : null}
+        </>
+      }
+      aktion={
+        monat.blocker === null ? (
+          <Button
+            type="button"
+            variant="secondary"
+            // Kurz sichtbar, ganz vorgelesen.
+            aria-label={erfassen.isPending ? undefined : 'Abo-Monat erfassen'}
+            disabled={erfassen.isPending}
+            onClick={() => erfassen.mutate()}
+          >
+            {erfassen.isPending ? 'Wird erfasst …' : 'Erfassen'}
+          </Button>
+        ) : undefined
+      }
+    >
+      {monat.blocker !== null || erfassen.isError ? (
+        <>
+          {monat.blocker !== null ? (
+            <p className="text-ink-muted text-sm">{MONATSHINDERNIS[monat.blocker]}</p>
+          ) : null}
+          {erfassen.isError ? (
+            <Statusmeldung ton="fehler">{erfassen.error.message}</Statusmeldung>
+          ) : null}
+        </>
       ) : null}
-      {erfassen.isError ? (
-        <Statusmeldung className="mt-2" ton="fehler">
-          {erfassen.error.message}
-        </Statusmeldung>
-      ) : null}
-    </Card>
+    </Eintrag>
   );
 }
 
@@ -129,6 +147,8 @@ export function AbomonatZuruecknehmen({ leistungId }: { leistungId: string }) {
   return (
     <Rueckfrage
       ausloeser="Erfassung zurücknehmen"
+      ausloeserVariante="quiet"
+      ausloeserGroesse="kompakt"
       bestaetigen="Zurücknehmen"
       bestaetigenLaeuft="Wird zurückgenommen …"
       laeuft={entfernen.isPending}

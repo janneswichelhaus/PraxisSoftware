@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Feldgruppe } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -17,6 +19,7 @@ import {
 } from './api';
 import type { Ort } from './orte';
 import { ACHSEN, ACHSE_LABEL } from './types';
+import { Vorschaubild } from './Vorschaubild';
 
 /**
  * Leichter und schwerer (UEB-002, IDEA-TRN-004, IDEA-TRN-005).
@@ -26,104 +29,40 @@ import { ACHSEN, ACHSE_LABEL } from './types';
  * Schritt vor (ADR-006 Punkt 10): Die Auswahl trifft, wer anleitet.
  */
 
-function Nachbar({
-  verbindung,
-  ort,
-  eigeneUebungId,
-  darfPflegen,
-}: {
+interface Nachbar {
   verbindung: Verbindung;
   ort: Ort;
-  eigeneUebungId: string;
-  darfPflegen: boolean;
-}) {
-  const queryClient = useQueryClient();
-  const loesen = useMutation({
-    mutationFn: () => loeseVerbindung(verbindung.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL }),
-  });
-  const name =
-    ort.uebung.id === eigeneUebungId
-      ? ort.variante.name
-      : `${ort.uebung.name}: ${ort.variante.name}`;
-
-  return (
-    <li className="flex flex-wrap items-center justify-between gap-x-3 py-1">
-      {/* Name als Ziel, die Achse darunter: Am Telefon bricht eine
-          gemeinsame Zeile sonst mitten im „Achse: …“ um. Die Rückfrage zum
-          Lösen öffnet in voller Breite darunter. */}
-      <span className="min-w-0 flex-1">
-        <Link
-          to={`/uebungen/${ort.uebung.id}#variante-${ort.variante.id}`}
-          className="text-accent inline-flex min-h-11 items-center font-medium break-words underline underline-offset-2"
-        >
-          {name}
-        </Link>
-        <span className="text-ink-muted block text-sm">
-          Achse: {ACHSE_LABEL[verbindung.axis]}
-          {ort.variante.archived ? ' · archiviert' : ''}
-        </span>
-      </span>
-      {darfPflegen ? (
-        <Rueckfrage
-          ausloeser="Lösen"
-          ausloeserVariante="quiet"
-          ausloeserGroesse="kompakt"
-          bezeichnung={`Verbindung zu „${name}“ lösen`}
-          bestaetigen="Ja, Verbindung lösen"
-          bestaetigenLaeuft="Wird gelöst …"
-          fehler={loesen.isError ? loesen.error.message : undefined}
-          laeuft={loesen.isPending}
-          onBestaetigen={() => loesen.mutateAsync()}
-          onAbbrechen={() => loesen.reset()}
-        >
-          Die Verbindung zu „{name}“ wird gelöst. Beide Varianten bleiben in der Bibliothek.
-        </Rueckfrage>
-      ) : null}
-    </li>
-  );
+  richtung: 'Leichter' | 'Schwerer';
 }
 
-function Liste({
-  titel,
-  eintraege,
-  orte,
-  eigeneUebungId,
-  darfPflegen,
-  partner,
-}: {
-  titel: string;
-  eintraege: Verbindung[];
-  orte: Map<string, Ort>;
-  eigeneUebungId: string;
-  darfPflegen: boolean;
-  partner: (verbindung: Verbindung) => string;
-}) {
-  return (
-    <div>
-      <h4 className="text-ink-muted text-sm">{titel}</h4>
-      {eintraege.length === 0 ? (
-        <p className="text-ink-muted text-sm">Keine Verbindung.</p>
-      ) : (
-        <ul>
-          {eintraege.map((verbindung) => {
-            const ort = orte.get(partner(verbindung));
-            return ort ? (
-              <Nachbar
-                key={verbindung.id}
-                verbindung={verbindung}
-                ort={ort}
-                eigeneUebungId={eigeneUebungId}
-                darfPflegen={darfPflegen}
-              />
-            ) : null;
-          })}
-        </ul>
-      )}
-    </div>
-  );
+function nachbarName(ort: Ort, eigeneUebungId: string): string {
+  return ort.uebung.id === eigeneUebungId
+    ? ort.variante.name
+    : `${ort.uebung.name}: ${ort.variante.name}`;
 }
 
+/** Die leichteren und schwereren Nachbarn einer Variante - leichtere zuerst. */
+function nachbarn(variante: Variante, bibliothek: Bibliothek, orte: Map<string, Ort>): Nachbar[] {
+  const liste: Nachbar[] = [];
+  for (const verbindung of bibliothek.links) {
+    if (verbindung.harder_variant_id === variante.id) {
+      const ort = orte.get(verbindung.easier_variant_id);
+      if (ort) liste.push({ verbindung, ort, richtung: 'Leichter' });
+    }
+  }
+  for (const verbindung of bibliothek.links) {
+    if (verbindung.easier_variant_id === variante.id) {
+      const ort = orte.get(verbindung.harder_variant_id);
+      if (ort) liste.push({ verbindung, ort, richtung: 'Schwerer' });
+    }
+  }
+  return liste;
+}
+
+/**
+ * Die Nachbarn als Zeilen: Bild, Name, „Leichter · Achse: Hebel“ und der Weg
+ * zur Variante. Owner löst eine Verbindung nach Rückfrage im Fenster.
+ */
 export function VerbindungenAnzeige({
   variante,
   uebungId,
@@ -135,29 +74,90 @@ export function VerbindungenAnzeige({
   bibliothek: Bibliothek;
   orte: Map<string, Ort>;
 }) {
-  const leichter = bibliothek.links.filter((l) => l.harder_variant_id === variante.id);
-  const schwerer = bibliothek.links.filter((l) => l.easier_variant_id === variante.id);
-  if (leichter.length === 0 && schwerer.length === 0 && !bibliothek.can_manage) return null;
+  const queryClient = useQueryClient();
+  const [loesen, setLoesen] = useState<Nachbar | null>(null);
+  const loeseMutation = useMutation({
+    mutationFn: (verbindungId: string) => loeseVerbindung(verbindungId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL });
+      setLoesen(null);
+    },
+  });
+  const liste = nachbarn(variante, bibliothek, orte);
+  if (liste.length === 0) return null;
 
   return (
-    <div className="border-line mt-4 grid gap-3 border-t pt-3 sm:grid-cols-2">
-      <Liste
-        titel="Leichter"
-        eintraege={leichter}
-        orte={orte}
-        eigeneUebungId={uebungId}
-        darfPflegen={bibliothek.can_manage}
-        partner={(l) => l.easier_variant_id}
-      />
-      <Liste
-        titel="Schwerer"
-        eintraege={schwerer}
-        orte={orte}
-        eigeneUebungId={uebungId}
-        darfPflegen={bibliothek.can_manage}
-        partner={(l) => l.harder_variant_id}
-      />
-    </div>
+    <>
+      <Listenabschnitt titel="Leichter und schwerer">
+        {liste.map((nachbar) => {
+          const name = nachbarName(nachbar.ort, uebungId);
+          return (
+            <ListRow
+              key={nachbar.verbindung.id}
+              bild={
+                <Vorschaubild
+                  bild={nachbar.ort.variante.illustration}
+                  name={nachbar.ort.variante.lay_name}
+                />
+              }
+              titel={name}
+              meta={`${nachbar.richtung} · Achse: ${ACHSE_LABEL[nachbar.verbindung.axis]}${
+                nachbar.ort.variante.archived ? ' · archiviert' : ''
+              }`}
+              to={`/uebungen/${nachbar.ort.uebung.id}#variante-${nachbar.ort.variante.id}`}
+              {...(bibliothek.can_manage
+                ? {
+                    aktion: (
+                      <Button
+                        type="button"
+                        variant="quiet"
+                        aria-label={`Verbindung zu „${name}“ lösen`}
+                        onClick={() => {
+                          loeseMutation.reset();
+                          setLoesen(nachbar);
+                        }}
+                      >
+                        Lösen
+                      </Button>
+                    ),
+                  }
+                : {})}
+            />
+          );
+        })}
+      </Listenabschnitt>
+      {loesen ? (
+        <Dialogfenster
+          titel={`Verbindung zu „${nachbarName(loesen.ort, uebungId)}“ lösen`}
+          onSchliessen={() => setLoesen(null)}
+        >
+          <p className="text-ink text-sm">Beide Varianten bleiben in der Bibliothek.</p>
+          {loeseMutation.isError ? (
+            <Statusmeldung ton="fehler" className="mt-3">
+              {loeseMutation.error.message}
+            </Statusmeldung>
+          ) : null}
+          <Formularfuss>
+            <Button
+              type="button"
+              data-autofocus
+              disabled={loeseMutation.isPending}
+              onClick={() => loeseMutation.mutate(loesen.verbindung.id)}
+            >
+              {loeseMutation.isPending ? 'Wird gelöst …' : 'Ja, Verbindung lösen'}
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              disabled={loeseMutation.isPending}
+              onClick={() => setLoesen(null)}
+            >
+              Abbrechen
+            </Button>
+          </Formularfuss>
+        </Dialogfenster>
+      ) : null}
+    </>
   );
 }
 
@@ -235,7 +235,8 @@ export function VerbindungFormular({
   return (
     <form
       noValidate
-      className="mt-3 max-w-xl"
+      className="max-w-formular mt-3"
+      aria-label={`${BEGRIFFE.variante} verbinden`}
       onSubmit={(event) => {
         event.preventDefault();
         if (speichern.isPending) return;
@@ -297,14 +298,14 @@ export function VerbindungFormular({
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-3">
+      <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird verbunden …' : 'Verbinden'}
         </Button>
         <Button type="button" variant="quiet" onClick={onFertig}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }

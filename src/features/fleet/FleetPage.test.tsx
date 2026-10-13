@@ -143,20 +143,26 @@ describe('Radflotte', () => {
       expect(link).toHaveClass('min-h-11', 'font-bold', 'text-accent');
       expect(link).not.toHaveClass('text-danger');
     }
-    expect(screen.getByRole('link', { name: 'Rad hinzufügen' })).toHaveClass('bg-accent', 'h-12');
+    // Im Seitenkopf kompakt (44 px) seit dem Design-Fundament (ANN-403) - ein
+    // Hauptknopf des Systems bleibt es.
+    const hinzufuegen = screen.getByRole('link', { name: 'Rad hinzufügen' });
+    expect(hinzufuegen).toHaveClass('bg-accent', 'min-h-11', 'font-bold');
+    expect(hinzufuegen).not.toHaveClass('h-12');
   });
 
-  it('gibt den Kartenaktionen 44 px Hoehe (VOR-11)', () => {
+  it('gibt den Aktionen an der Zeile 44 px Hoehe (VOR-11)', () => {
     oeffne();
+    // Seit Welle B eine Zeile je Rad: Die Zeile öffnet das Rad (Bearbeiten,
+    // Verläufe, Panne, Check-Up), daneben die Arbeit an der Zeile.
     const aktionen = [
       screen.getByRole('button', { name: 'Freigeben' }),
-      ...screen.getAllByRole('link', { name: 'Bearbeiten' }),
-      ...screen.getAllByRole('link', { name: 'Panne' }),
-      ...screen.getAllByRole('link', { name: 'Check-Up' }),
       ...screen.getAllByRole('button', { name: 'Schlüssel zurücklegen' }),
       ...screen.getAllByRole('link', { name: 'Entnehmen' }),
     ];
     for (const aktion of aktionen) expect(aktion).toHaveClass('min-h-11');
+    const rad = screen.getByRole('link', { name: /^Lastenrad 1/ });
+    expect(rad).toHaveAttribute('href', '/betrieb/flotte/rad/r1');
+    expect(rad).toHaveClass('min-h-14');
   });
 
   it('zeigt den Normalbetrieb ohne Abzeichen, die Reparatur mit (VOR-13, UX-005i)', () => {

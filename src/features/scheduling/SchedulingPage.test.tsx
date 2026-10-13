@@ -369,12 +369,43 @@ describe('SchedulingPage', () => {
       expect(screen.getByText('Der Montag ist gespeichert.')).toBeInTheDocument();
     });
 
+    it('beschriftet von und bis kurz und liest Block und Nummer vor (ANN-489, Design-Review T6)', async () => {
+      rendern();
+      await wochenplanAbwarten();
+
+      const beginn = screen.getByLabelText('Block 1 von');
+      // Sichtbar steht nur „von“ - die lange Beschriftung brach am Telefon um.
+      const sichtbar = document.querySelector(`label[for="${beginn.id}"]`);
+      expect(sichtbar).toHaveTextContent(/^von$/);
+      expect(beginn).toHaveAccessibleName('Block 1 von');
+      expect(screen.getByLabelText('Block 1 bis')).toHaveAccessibleName('Block 1 bis');
+      // Nebeneinander erst ab 640 px (DESIGN.md, Formular): am Telefon „bis“
+      // unter „von“, das Entfernen neben „von“; ab `sm:` eine Zeile.
+      const block = beginn.closest('[data-testid="zeitblock"]');
+      expect(block).toHaveClass(
+        'grid-cols-[minmax(0,1fr)_auto]',
+        'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]',
+      );
+      expect(screen.getByLabelText('Block 1 bis').closest('.row-start-2')).toHaveClass(
+        'col-start-1',
+        'sm:col-start-2',
+        'sm:row-start-1',
+      );
+      expect(
+        within(block as HTMLElement).getByRole('button', { name: 'Block 1 entfernen' })
+          .parentElement,
+      ).toHaveClass('col-start-2', 'row-start-1', 'sm:col-start-3');
+    });
+
     it('speichert einen geleerten Wochentag erst nach der Rueckfrage als "keine Termine" (ORG-02)', async () => {
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
 
-      await user.click(screen.getByRole('button', { name: 'Blöcke leeren' }));
+      // Geleert wird ein Tag, indem man seine Bloecke entfernt (seit dem
+      // Design-Rollout B2 ohne eigenen Knopf „Blöcke leeren“).
+      await user.click(screen.getByRole('button', { name: 'Block 2 entfernen' }));
+      await user.click(screen.getByRole('button', { name: 'Block 1 entfernen' }));
       await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
 
       // Der Montag hatte Bloecke - geleert wird er nicht mit einem Tipp.
@@ -597,7 +628,10 @@ describe('SchedulingPage', () => {
 
       expect(screen.getByLabelText('Wochentag')).toHaveValue('5');
       expect(within(tageszeile('Freitag')).getByText('Wird bearbeitet')).toBeInTheDocument();
-      expect(tageszeile('Freitag')).toHaveAttribute('aria-current', 'true');
+      expect(within(tageszeile('Freitag')).getByText('Freitag')).toHaveAttribute(
+        'aria-current',
+        'true',
+      );
       expect(screen.getByRole('button', { name: 'Freitag speichern' })).toBeInTheDocument();
     });
 
@@ -883,15 +917,18 @@ describe('SchedulingPage', () => {
 
       await user.click(within(gruppe).getByRole('button', { name: 'Entfernen' }));
       expect(saveWorkingHourException).not.toHaveBeenCalled();
-      await user.click(screen.getByRole('button', { name: 'Abweichung entfernen' }));
+      // Die Rückfrage steht in einem Fenster - die Zeile ist zu schmal dafür.
+      const fenster = screen.getByRole('dialog', { name: 'Abweichung am 01.06.2027 entfernen' });
+      await user.click(within(fenster).getByRole('button', { name: 'Abweichung entfernen' }));
 
       // Dieselbe Serverfunktion, leere Bloecke.
       await waitFor(() =>
         expect(saveWorkingHourException).toHaveBeenCalledWith(ANNA, '2027-06-01', false, []),
       );
-      expect(
-        await screen.findByText('Die Abweichung am 01.06.2027 ist entfernt.'),
-      ).toBeInTheDocument();
+      const bestaetigung = await screen.findByText('Die Abweichung am 01.06.2027 ist entfernt.');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      // Die Bestätigung nimmt den Fokus, nicht der Knopf hinter dem Fenster.
+      await waitFor(() => expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus());
     });
 
     it('zeigt nur die Abweichungen der gewaehlten Person', async () => {

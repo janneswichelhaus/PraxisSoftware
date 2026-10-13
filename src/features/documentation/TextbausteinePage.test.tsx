@@ -59,30 +59,84 @@ describe('TextbausteinePage', () => {
   it('trennt Bausteine der Praxis von den eigenen', async () => {
     renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
 
-    const praxis = (await screen.findByRole('heading', { name: 'Bausteine der Praxis' })).closest(
+    const praxis = (await screen.findByRole('heading', { name: /^Bausteine der Praxis/ })).closest(
       'section',
     )!;
-    const eigene = screen.getByRole('heading', { name: 'Meine Bausteine' }).closest('section')!;
+    const eigene = screen.getByRole('heading', { name: /^Meine Bausteine/ }).closest('section')!;
 
     expect(within(praxis).getByText('Hausbesuch durchgefuehrt')).toBeInTheDocument();
     expect(within(eigene).getByText('Manuelle Therapie')).toBeInTheDocument();
   });
 
+  it('führt aus der Liste in den einzelnen Baustein, mit dem mitgereisten Rückweg', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?zurueck=%2Ftermine%2Ft1%2Fabschluss',
+    );
+
+    const zeile = await screen.findByRole('link', { name: /Manuelle Therapie/ });
+    expect(zeile).toHaveAttribute(
+      'href',
+      '/praxis/textbausteine?zurueck=%2Ftermine%2Ft1%2Fabschluss&baustein=b2',
+    );
+    await user.click(zeile);
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Manuelle Therapie' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(EIGEN.body)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Alle Textbausteine/ })).toHaveAttribute(
+      'href',
+      '/praxis/textbausteine?zurueck=%2Ftermine%2Ft1%2Fabschluss',
+    );
+  });
+
   it('kennzeichnet den Geltungsbereich als Text, nicht als Farbe', async () => {
-    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+    const praxis = renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?baustein=b1',
+    );
     expect(await screen.findByText('Praxis')).toBeInTheDocument();
-    expect(screen.getByText('Nur ich')).toBeInTheDocument();
+    praxis.unmount();
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?baustein=b2',
+    );
+    expect(await screen.findByText('Nur ich')).toBeInTheDocument();
   });
 
   it('bietet einem therapist keine Aenderung am Baustein der Praxis an', async () => {
-    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?baustein=b1',
+    );
 
-    const praxis = (await screen.findByRole('heading', { name: 'Bausteine der Praxis' })).closest(
-      'section',
-    )!;
-    expect(within(praxis).queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
+    await screen.findByRole('heading', { level: 1, name: PRAXIS.title });
+    expect(screen.queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Löschen' })).toBeNull();
     // Die Rolle heißt, wie sie heißt (WRT-12).
-    expect(within(praxis).getByText(/pflegt die Praxisinhaber:in/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/^Bausteine der Praxis pflegt die Praxisinhaber:in/),
+    ).toBeInTheDocument();
+  });
+
+  it('bearbeitet den eigenen Baustein im Einzelnen', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?baustein=b2',
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Bearbeiten' }));
+    await user.type(screen.getByLabelText('Text *'), ' Ergänzt.');
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+    await waitFor(() =>
+      expect(updateTextSnippet).toHaveBeenCalledWith(
+        EIGEN.id,
+        EIGEN.title,
+        `${EIGEN.body} Ergänzt.`,
+      ),
+    );
   });
 
   it('bietet dem owner die Wahl des Geltungsbereichs beim Anlegen', async () => {
@@ -129,9 +183,12 @@ describe('TextbausteinePage', () => {
     expect(createTextSnippet).not.toHaveBeenCalled();
   });
 
-  it('fragt vor dem Loeschen nach', async () => {
+  it('fragt vor dem Loeschen nach und meldet es danach über der Liste', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?baustein=b2',
+    );
 
     await user.click(await screen.findByRole('button', { name: 'Löschen' }));
     expect(
@@ -139,13 +196,19 @@ describe('TextbausteinePage', () => {
     ).toBeInTheDocument();
     expect(deleteTextSnippet).not.toHaveBeenCalled();
 
+    fetchTextSnippets.mockResolvedValue([PRAXIS]);
     await user.click(screen.getByRole('button', { name: 'Ja, Baustein löschen' }));
     await waitFor(() => expect(deleteTextSnippet).toHaveBeenCalledWith(EIGEN.id));
+    expect(await screen.findByText(/Baustein „Manuelle Therapie“ gelöscht\./)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Textbausteine' })).toBeInTheDocument();
   });
 
   it('sagt beim Loeschen, dass geschriebene Dokumentation unberuehrt bleibt', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?baustein=b2',
+    );
 
     await user.click(await screen.findByRole('button', { name: 'Löschen' }));
     expect(await screen.findByText(/bleibt davon unberührt/)).toBeInTheDocument();
@@ -186,7 +249,10 @@ describe('TextbausteinePage', () => {
 
   it('sagt beim Löschen, was geschieht, mit schließendem Anführungszeichen (WRT-06, WRT-21)', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['therapist'])} />,
+      '/praxis/textbausteine?baustein=b2',
+    );
 
     await user.click(await screen.findByRole('button', { name: 'Löschen' }));
     const kasten = await screen.findByRole('group', {
@@ -214,7 +280,7 @@ describe('TextbausteinePage', () => {
         '/praxis/textbausteine',
       );
 
-      await screen.findByRole('heading', { name: 'Bausteine der Praxis' });
+      await screen.findByRole('heading', { name: /^Bausteine der Praxis/ });
       expect(screen.queryByRole('link', { name: /Zurück/ })).toBeNull();
     });
 

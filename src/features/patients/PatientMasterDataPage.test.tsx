@@ -494,6 +494,51 @@ describe('Stammdaten der Akte', () => {
     });
   });
 
+  // Sichtung 13.10.2026, A5: Zerstörendes leise am Ende des Reiters, hinter
+  // Rückfragen, Dublette und Betroffenenrechten (DESIGN.md 9.16).
+  describe('Beenden am Ende des Reiters', () => {
+    it('stellt Status und Abschluss leise ans Ende, nach den Betroffenenrechten', () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />);
+
+      const beenden = screen.getByRole('heading', { name: 'Beenden' }).closest('section')!;
+      const status = within(beenden).getByRole('button', {
+        name: 'Nicht mehr in Versorgung führen',
+      });
+      const abschluss = within(beenden).getByRole('button', { name: 'Versorgung abschließen' });
+      // Leise: kein gefüllter und kein umrandeter Knopf.
+      for (const knopf of [status, abschluss]) {
+        expect(knopf).not.toHaveClass('bg-accent');
+        expect(knopf).not.toHaveClass('border-line-strong');
+      }
+      // Nicht mehr in der Verwaltung, und nach allem anderen im Reiter.
+      const verwaltung = screen.getByRole('heading', { name: 'Verwaltung' }).closest('section')!;
+      expect(within(verwaltung).queryByRole('button', { name: /Versorgung/ })).toBeNull();
+      const rechte = screen.getByRole('heading', { name: 'Betroffenenrechte' });
+      expect(
+        rechte.compareDocumentPosition(beenden) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(beenden.nextElementSibling).toBeNull();
+    });
+
+    it('lässt das Zurücknehmen in der Verwaltung', () => {
+      renderWithProviders(
+        <Stammdaten
+          patient={{ ...aktiv, status: 'inactive', care_concluded_on: '2026-03-12' }}
+          user={testUser(['owner'])}
+        />,
+      );
+      const verwaltung = screen.getByRole('heading', { name: 'Verwaltung' }).closest('section')!;
+      expect(
+        within(verwaltung).getByRole('button', { name: 'Wieder in Versorgung führen' }),
+      ).toBeInTheDocument();
+      expect(
+        within(verwaltung).getByRole('button', { name: 'Abschluss zurücknehmen' }),
+      ).toBeInTheDocument();
+      // Nichts zu beenden: kein leerer Abschnitt am Ende.
+      expect(screen.queryByRole('heading', { name: 'Beenden' })).toBeNull();
+    });
+  });
+
   describe('Versorgungsstatus', () => {
     it.each([['owner'], ['team_lead'], ['office']] as const)('zeigt %s die Aktion', (role) => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);

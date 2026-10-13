@@ -1,8 +1,12 @@
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
-import { Card, Disclosure } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { EmptyState } from '@/components/ui/Feedback';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
 import { bibliothek } from './bibliothek';
 import { optionKennung, type Lizenzstatus, type ScoreDefinition, type ScoreItem } from './schema';
 
@@ -110,82 +114,99 @@ function Antwortform({ item }: { item: ScoreItem }) {
   );
 }
 
-/** Der Stand als Etikett, groß geschrieben wie die übrigen Etiketten (WRT-16). */
-function Zustand({ score }: { score: ScoreDefinition }) {
+/**
+ * Der Stand als Etikett, groß geschrieben wie die übrigen Etiketten (WRT-16).
+ * `kurz` in der Zeile der Liste: nur „Inaktiv“, den Grund nennt das Einzelne.
+ */
+function Zustand({ score, kurz = false }: { score: ScoreDefinition; kurz?: boolean }) {
   if (score.meta.aktiv) return <Badge ton="positiv">Aktiv</Badge>;
   if (score.meta.quelle.datei === undefined) {
-    return <Badge ton="warnung">Inaktiv · Wortlaut vorläufig</Badge>;
+    return <Badge ton="warnung">{kurz ? 'Inaktiv' : 'Inaktiv · Wortlaut vorläufig'}</Badge>;
   }
   return <Badge>Inaktiv</Badge>;
 }
 
+/** Die Adresse eines Instruments in der Liste: dieselbe Seite, mit `?instrument=`. */
+const PARAMETER = 'instrument';
+
+/**
+ * Ein Instrument im Einzelnen (Design-Rollout B4: Liste → Detail statt alle
+ * Karten offen, 3.300 px am Telefon). Kopf mit Name und Konstrukt, darunter
+ * der Stand, die Angaben in einem Rahmen und Rechenvorschrift und Wortlaut
+ * auf Abruf.
+ */
 function Instrument({ score }: { score: ScoreDefinition }) {
   const { meta, scoring, items } = score;
+  const { pathname } = useLocation();
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 className="text-ink text-h4 font-bold">{meta.name_de}</h2>
+    <>
+      <Rueckweg standard={pathname} beschriftung="Zurück zu den Instrumenten" />
+      <PageHeader title={meta.name_de} description={meta.konstrukt} />
+      <div className="max-w-spalte">
         <Zustand score={score} />
-      </div>
-      <p className="text-ink-muted mt-1 text-sm">{meta.konstrukt}</p>
 
-      {/* Bezeichnung und Wert untereinander am Telefon, ab 640 px mit einer
-          Beschriftungsspalte und linksbündig (BEF-22): Die kompakte
-          Kartenzeile stellte Literaturangaben von 190 Zeichen rechtsbündig
-          und trennte am Bildschirm Bezeichnung und Wert um 1 000 px. */}
-      <DetailList>
-        <DetailRow label="Fassung">
-          {meta.version}
-          {/* BEF-101 Punkt 4: ob frühere Werte vergleichbar sind, steht an der
-              Definition, nicht in der Nummer. */}
-          {meta.vergleichbar_mit?.length
-            ? ` · Werte vergleichbar mit ${meta.vergleichbar_mit.join(', ')}`
-            : ''}
-        </DetailRow>
-        {scoring.leseart ? <DetailRow label="Lesart des Werts">{scoring.leseart}</DetailRow> : null}
-        <DetailRow label="Ausgefüllt von">{AUSGEFUELLT_VON[meta.ausgefuellt_von]}</DetailRow>
-        <DetailRow label="Lizenz">
-          {LIZENZ_TEXT[meta.lizenzstatus.status]}, Stand {datum(meta.lizenzstatus.stand)}
-        </DetailRow>
-        <DetailRow label="Quelle">
-          <span className="block max-w-prose">{quelle(score)}</span>
-        </DetailRow>
-        <DetailRow label="Fragen">{fragenText(items)}</DetailRow>
-      </DetailList>
+        {/* Bezeichnung und Wert untereinander am Telefon, ab 640 px mit einer
+            Beschriftungsspalte und linksbündig (BEF-22): Die kompakte
+            Kartenzeile stellte Literaturangaben von 190 Zeichen rechtsbündig
+            und trennte am Bildschirm Bezeichnung und Wert um 1 000 px. */}
+        <Section titel="Angaben" rahmen>
+          <DetailList>
+            <DetailRow label="Fassung">
+              {meta.version}
+              {/* BEF-101 Punkt 4: ob frühere Werte vergleichbar sind, steht an der
+                  Definition, nicht in der Nummer. */}
+              {meta.vergleichbar_mit?.length
+                ? ` · Werte vergleichbar mit ${meta.vergleichbar_mit.join(', ')}`
+                : ''}
+            </DetailRow>
+            {scoring.leseart ? (
+              <DetailRow label="Lesart des Werts">{scoring.leseart}</DetailRow>
+            ) : null}
+            <DetailRow label="Ausgefüllt von">{AUSGEFUELLT_VON[meta.ausgefuellt_von]}</DetailRow>
+            <DetailRow label="Lizenz">
+              {LIZENZ_TEXT[meta.lizenzstatus.status]}, Stand {datum(meta.lizenzstatus.stand)}
+            </DetailRow>
+            <DetailRow label="Quelle">
+              <span className="block max-w-prose">{quelle(score)}</span>
+            </DetailRow>
+            <DetailRow label="Fragen">{fragenText(items)}</DetailRow>
+          </DetailList>
+        </Section>
 
-      {meta.quelle.datei === undefined ? (
-        <p className="text-ink-muted mt-3 max-w-prose text-sm">
-          Für dieses Instrument liegt noch kein Bogen als Vorlage vor. Bis dahin ist der Wortlaut
-          vorläufig, und das Instrument wird nicht eingesetzt.
-        </p>
-      ) : null}
+        <div className="mt-8 flex flex-col gap-3">
+          <Disclosure inKarte kopf="betont" summary="Rechenvorschrift">
+            <div className="max-w-prose">
+              <p className="text-ink text-sm">Laut Inventar: „{scoring.regel_wortlaut}“</p>
+              {scoring.gesamt ? (
+                <p className="text-ink-muted mt-1 text-sm">
+                  Wertebereich {scoring.gesamt.wertebereich.min} bis{' '}
+                  {scoring.gesamt.wertebereich.max}
+                </p>
+              ) : null}
+              <p className="text-ink-muted mt-1 text-sm">
+                Fehlende Antworten, laut Inventar: „{scoring.missing_value_regel}“
+              </p>
+            </div>
+          </Disclosure>
 
-      <Disclosure summary="Rechenvorschrift">
-        <div className="max-w-prose">
-          <p className="text-ink text-sm">Laut Inventar: „{scoring.regel_wortlaut}“</p>
-          {scoring.gesamt ? (
-            <p className="text-ink-muted mt-1 text-sm">
-              Wertebereich {scoring.gesamt.wertebereich.min} bis {scoring.gesamt.wertebereich.max}
-            </p>
-          ) : null}
-          <p className="text-ink-muted mt-1 text-sm">
-            Fehlende Antworten, laut Inventar: „{scoring.missing_value_regel}“
-          </p>
+          <Disclosure
+            inKarte
+            kopf="betont"
+            summary={`Wortlaut (${items.length} ${items.length === 1 ? 'Frage' : 'Fragen'})`}
+          >
+            <ol className="flex max-w-prose flex-col gap-3">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <p className="text-ink text-sm">{item.text}</p>
+                  <Antwortform item={item} />
+                </li>
+              ))}
+            </ol>
+          </Disclosure>
         </div>
-      </Disclosure>
-
-      <Disclosure summary={`Wortlaut (${items.length} ${items.length === 1 ? 'Frage' : 'Fragen'})`}>
-        <ol className="flex max-w-prose flex-col gap-3">
-          {items.map((item) => (
-            <li key={item.id}>
-              <p className="text-ink text-sm">{item.text}</p>
-              <Antwortform item={item} />
-            </li>
-          ))}
-        </ol>
-      </Disclosure>
-    </Card>
+      </div>
+    </>
   );
 }
 
@@ -195,22 +216,30 @@ export function InstrumentePage({
   /** Nur für Tests; die Anwendung zeigt immer die Bibliothek des Releases. */
   scores?: ScoreDefinition[];
 }) {
+  const [suche] = useSearchParams();
   const sortiert = [...scores].sort((a, b) => a.meta.name_de.localeCompare(b.meta.name_de, 'de'));
+  const gewaehlt = sortiert.find((score) => score.meta.id === suche.get(PARAMETER));
+
+  if (gewaehlt) return <Instrument score={gewaehlt} />;
 
   return (
     <>
-      <PageHeader
-        title="Instrumente"
-        description="Die Fragebögen und Skalen der Praxis, je mit Fassung, Lizenz und Quelle. Erhoben wird in der Akte unter „Befund“."
-      />
+      <PageHeader title="Instrumente" description="Erhoben wird in der Akte unter „Befund“." />
       {sortiert.length === 0 ? (
-        <EmptyState title="Noch liegt kein Instrument vor." />
+        <EmptyState inKarte title="Noch liegt kein Instrument vor." />
       ) : (
-        <div className="flex flex-col gap-3">
+        <ListRows>
           {sortiert.map((score) => (
-            <Instrument key={score.meta.id} score={score} />
+            <ListRow
+              key={score.meta.id}
+              to={`?${PARAMETER}=${encodeURIComponent(score.meta.id)}`}
+              titel={score.meta.name_de}
+              meta={score.meta.konstrukt}
+              // Der Regelfall - aktiv - trägt kein Abzeichen (DESIGN.md Regel 5).
+              status={score.meta.aktiv ? undefined : <Zustand score={score} kurz />}
+            />
           ))}
-        </div>
+        </ListRows>
       )}
     </>
   );

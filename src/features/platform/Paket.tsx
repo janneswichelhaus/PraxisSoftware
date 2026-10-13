@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ListRows } from '@/components/ui/ListRow';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   angeboteSchluessel,
@@ -37,21 +40,16 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={`${PLATTFORM_PFAD}/ich`}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu „Ich“
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Trainingspaket</h1>
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <PageHeader title="Trainingspaket" />
       {pakete.isPending || angebote.isPending ? (
-        <LoadingState label="Ihr Paket und die Preise werden geladen …" />
+        <LoadingState label="Ihr Paket und die Preise werden geladen …" inKarte />
       ) : null}
       {pakete.isError || angebote.isError ? (
-        <div className="mt-4">
+        <div>
           <ErrorState
             title="Ihr Paket und die Preise konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
             onErneut={() => {
               void pakete.refetch();
               void angebote.refetch();
@@ -62,9 +60,7 @@ export function Paket({ zugang }: { zugang: Plattformzugang }) {
       {pakete.data ? <MeinePakete pakete={pakete.data} /> : null}
       {angebote.data ? <Angebote angebote={angebote.data} /> : null}
       {angebote.data === null ? (
-        <p className="text-ink mt-4 text-base leading-relaxed">
-          Für diesen Bereich gibt es keine Pakete.
-        </p>
+        <EmptyState inKarte title="Für diesen Bereich gibt es keine Pakete." />
       ) : null}
     </>
   );
@@ -79,6 +75,15 @@ const STAND: Record<MeinPaket['state'], (paket: MeinPaket) => string> = {
 function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
   const aktuell = pakete.filter((k) => k.state !== 'ended');
   const frueher = pakete.filter((k) => k.state === 'ended');
+  // Ohne jedes Paket der Leerzustand des Systems, mittig in der Karte wie
+  // „Pakete und Preise“ darunter (DESIGN.md 9.17).
+  if (aktuell.length === 0 && frueher.length === 0) {
+    return (
+      <Section titel="Ihr Paket">
+        <EmptyState inKarte title="Sie haben zurzeit kein Paket." />
+      </Section>
+    );
+  }
   return (
     <Section titel="Ihr Paket" rahmen>
       {aktuell.length === 0 ? (
@@ -115,13 +120,16 @@ function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
 function Angebote({ angebote }: { angebote: Paketangebote }) {
   return (
     <>
-      <Section titel="Pakete und Preise" rahmen>
+      <Section titel="Pakete und Preise">
         {angebote.offers.length === 0 ? (
-          <p className="text-ink text-base">Die Praxis bietet zurzeit keine Pakete an.</p>
+          <EmptyState inKarte title="Die Praxis bietet zurzeit keine Pakete an." />
         ) : (
-          <ul className="divide-line flex flex-col divide-y">
+          <ListRows>
             {angebote.offers.map((a) => (
-              <li key={a.code} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
+              <li
+                key={a.code}
+                className="border-line flex flex-col gap-1 border-t py-3 first:border-t-0"
+              >
                 <p className="text-ink text-base font-medium">{a.label}</p>
                 <p className="text-ink text-base">
                   <span className="font-medium tabular-nums">
@@ -134,7 +142,7 @@ function Angebote({ angebote }: { angebote: Paketangebote }) {
                 </p>
               </li>
             ))}
-          </ul>
+          </ListRows>
         )}
       </Section>
       <Section titel="Bedingungen" rahmen>

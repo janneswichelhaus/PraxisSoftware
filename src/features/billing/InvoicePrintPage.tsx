@@ -61,7 +61,9 @@ export function InvoicePrintPage() {
 
   return (
     <>
-      <div className="nicht-drucken">
+      {/* Bedienung in der Flucht des Blatts (Druckblatt-Profil, DESIGN.md): am
+          Rechner über dem Blatt statt am linken Rand. */}
+      <div className="nicht-drucken mx-auto max-w-[210mm]">
         <Rueckweg
           standard={`/abrechnung/rechnungen/${invoiceId}`}
           beschriftung="Zurück zur Rechnung"
@@ -413,7 +415,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         </section>
       </article>
 
-      <div className="nicht-drucken mt-10 flex max-w-[210mm] flex-col gap-3">
+      <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
         <div>
           {/* Am Entwurf heißt der Knopf, was er druckt (ABR-26). */}
           <Button type="button" onClick={() => window.print()}>

@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Objektkopf, Warnzeile } from '@/components/ui/Objektkopf';
+import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
@@ -11,7 +17,13 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { roleLabels } from '@/components/ui/roleLabels';
 import { isOwner, type CurrentUser } from '@/features/session/types';
-import { meldungImVerlauf, useVorschau } from '@/features/preview/vorschauContext';
+import {
+  depotName,
+  meldungImVerlauf,
+  mitarbeiterName,
+  useVorschau,
+} from '@/features/preview/vorschauContext';
+import { formatZeitpunkt } from '@/features/preview/format';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import {
   radstatusLabels,
@@ -34,6 +46,12 @@ import {
  * Nach dem Speichern und nach dem Entfernen geht es zurück in die Radflotte,
  * und die Zustandsmeldung reist mit (VOR-01): Bis dahin stand dort keine, und
  * ein geändertes oder verschwundenes Rad sah aus wie ein echter Vorgang.
+ *
+ * **Seit Welle B (B7) die Seite des Rads** (DESIGN.md „Objekt“): Objektkopf
+ * mit Panne und Check-Up, die Angaben als Formular mit Formularfuss, darunter
+ * die Verläufe, die bis dahin auf der Karte in der Liste standen, und leise
+ * am Ende „Rad entfernen“. Fachlich ändert sich nichts; die Verläufe zeigen
+ * den gespeicherten Stand.
  */
 
 const AKKUTYPEN = ['Akku Typ A', 'Akku Typ B'];
@@ -147,190 +165,360 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <Rueckweg standard={ZUR_FLOTTE} beschriftung="Zurück zur Radflotte" />
-      <PageHeader
-        title={neuAnlegen ? 'Rad hinzufügen' : 'Rad bearbeiten'}
-        description={neuAnlegen ? undefined : entwurf.name}
-      />
-
-      <div className="flex max-w-xl flex-col gap-4">
-        <Field
-          label="Name / Kennzeichnung"
-          placeholder="z. B. Lastenrad 9"
-          value={entwurf.name}
-          onChange={(event) => aendere('name', event.target.value)}
-        />
-
-        <Select
-          label="Stammdepot"
-          hint="Wo das Rad eigentlich hingehört."
-          value={entwurf.stammdepotId}
-          onChange={(event) => aendere('stammdepotId', event.target.value)}
-        >
-          {zustand.depots.map((depot) => (
-            <option key={depot.id} value={depot.id}>
-              {depot.name}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Aktueller Standort"
-          hint="Wo das Rad gerade wirklich steht."
-          value={entwurf.depotId}
-          onChange={(event) => aendere('depotId', event.target.value)}
-        >
-          {zustand.depots.map((depot) => (
-            <option key={depot.id} value={depot.id}>
-              {depot.name}
-            </option>
-          ))}
-        </Select>
-
-        {sonderstandort ? (
-          <Field
-            label="Bezeichnung des Sonderstandorts"
-            placeholder="z. B. Privatgarage Teamleitung"
-            value={entwurf.sonderstandort}
-            onChange={(event) => aendere('sonderstandort', event.target.value)}
+      {vorhanden && !neuAnlegen ? (
+        <>
+          {/* Ab 640 px als Zeile über dem Kopf, darunter als Pfeil vor dem
+              Namen (Objektkopf, RAH-007). */}
+          <Rueckweg
+            standard={ZUR_FLOTTE}
+            beschriftung="Zurück zur Radflotte"
+            className="mb-3 max-sm:hidden"
           />
-        ) : null}
+          <Radkopf rad={vorhanden} />
+        </>
+      ) : (
+        <>
+          <Rueckweg standard={ZUR_FLOTTE} beschriftung="Zurück zur Radflotte" />
+          <PageHeader title="Rad hinzufügen" />
+        </>
+      )}
 
-        {/* Das Kästchen des Systems (VOR-12, wo die Bedienung leidet): Das
+      <div className={`max-w-formular ${neuAnlegen ? '' : 'mt-6'}`.trim()}>
+        <Section titel="Angaben">
+          {/* Hinweise nur, wo sie die Eingabe ändern (DESIGN.md Regel 6,
+              R2-neu8): wer den Schlüsselcode sieht und was „Frei“ heißt.
+              Stammdepot und Standort sagen ihre Namen; dass das Feld
+              „Aktuell gefahren von“ leer bleibt, sagt seine erste Wahl. */}
+          <Feldgruppe>
+            <Field
+              label="Name / Kennzeichnung"
+              placeholder="z. B. Lastenrad 9"
+              value={entwurf.name}
+              onChange={(event) => aendere('name', event.target.value)}
+            />
+
+            <Select
+              label="Stammdepot"
+              value={entwurf.stammdepotId}
+              onChange={(event) => aendere('stammdepotId', event.target.value)}
+            >
+              {zustand.depots.map((depot) => (
+                <option key={depot.id} value={depot.id}>
+                  {depot.name}
+                </option>
+              ))}
+            </Select>
+
+            <Select
+              label="Aktueller Standort"
+              value={entwurf.depotId}
+              onChange={(event) => aendere('depotId', event.target.value)}
+            >
+              {zustand.depots.map((depot) => (
+                <option key={depot.id} value={depot.id}>
+                  {depot.name}
+                </option>
+              ))}
+            </Select>
+
+            {sonderstandort ? (
+              <Field
+                label="Bezeichnung des Sonderstandorts"
+                placeholder="z. B. Privatgarage Teamleitung"
+                value={entwurf.sonderstandort}
+                onChange={(event) => aendere('sonderstandort', event.target.value)}
+              />
+            ) : null}
+
+            {/* Das Kästchen des Systems (VOR-12, wo die Bedienung leidet): Das
             eigene maß samt Beschriftung 23 px Höhe. */}
-        <Checkbox
-          label="Dies ist das Ersatzrad (keine feste Stammnutzer:in)"
-          checked={entwurf.ersatzrad}
-          onChange={(event) => aendere('ersatzrad', event.target.checked)}
-        />
+            <Checkbox
+              label="Dies ist das Ersatzrad (keine feste Stammnutzer:in)"
+              checked={entwurf.ersatzrad}
+              onChange={(event) => aendere('ersatzrad', event.target.checked)}
+            />
 
-        {!entwurf.ersatzrad ? (
-          <Select
-            label="Stammnutzer:in"
-            hint="Aus dem gemeinsamen Mitarbeiterstamm – keine zweite Personenliste."
-            value={entwurf.stammnutzerId ?? ''}
-            onChange={(event) => aendere('stammnutzerId', event.target.value || null)}
-          >
-            <option value="">– keine Stammnutzer:in –</option>
-            {zustand.mitarbeitende.map((person) => (
-              <option key={person.id} value={person.id}>
-                {person.name}
-              </option>
-            ))}
-          </Select>
-        ) : null}
-
-        <Select
-          label="Status"
-          value={entwurf.status}
-          onChange={(event) => aendere('status', event.target.value as Radstatus)}
-        >
-          {(Object.keys(radstatusLabels) as Radstatus[]).map((status) => (
-            <option key={status} value={status}>
-              {radstatusLabels[status]}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Aktuell gefahren von"
-          hint="Nur ausfüllen, wenn jemand anderes als die Stammnutzer:in fährt."
-          value={entwurf.aktuellerNutzerId ?? ''}
-          onChange={(event) => aendere('aktuellerNutzerId', event.target.value || null)}
-        >
-          <option value="">– Stammnutzer:in fährt –</option>
-          {zustand.mitarbeitende.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Akku-Typ"
-          value={entwurf.akku}
-          onChange={(event) => aendere('akku', event.target.value)}
-        >
-          <option value="">– auswählen –</option>
-          {AKKUTYPEN.map((typ) => (
-            <option key={typ} value={typ}>
-              {typ}
-            </option>
-          ))}
-        </Select>
-
-        {isOwner(user.roles) ? (
-          <Field
-            label="Schlüsselcode"
-            hint={`Für die Nachbestellung eines Ersatzschlüssels. Nur für ${roleLabels.owner} sichtbar.`}
-            value={entwurf.schluesselcode}
-            onChange={(event) => aendere('schluesselcode', event.target.value)}
-          />
-        ) : null}
-
-        <fieldset className="border-line rounded-card border p-4">
-          <legend className="text-ink px-1 text-sm font-medium">Wochenplan</legend>
-          <p className="text-ink-muted mb-3 text-sm">
-            Wer nutzt das Rad an welchem Tag. „Frei“ heißt: für andere planbar.
-          </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {wochentage.map((tag) => (
+            {!entwurf.ersatzrad ? (
               <Select
-                key={tag}
-                label={wochentagLabels[tag]}
-                value={entwurf.wochenplan[tag]}
-                onChange={(event) =>
-                  aendere('wochenplan', {
-                    ...entwurf.wochenplan,
-                    [tag]: event.target.value as Belegung,
-                  })
-                }
+                label="Stammnutzer:in"
+                value={entwurf.stammnutzerId ?? ''}
+                onChange={(event) => aendere('stammnutzerId', event.target.value || null)}
               >
-                <option value="frei">Frei</option>
-                <option value="belegt">Belegt</option>
+                <option value="">– keine Stammnutzer:in –</option>
+                {zustand.mitarbeitende.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
               </Select>
-            ))}
-          </div>
-        </fieldset>
+            ) : null}
 
-        <TextArea
-          rows={3}
-          label="Notiz"
-          placeholder="z. B. Reparaturdetails, Ort des Schlüssels"
-          value={entwurf.notiz}
-          onChange={(event) => aendere('notiz', event.target.value)}
-        />
+            <Select
+              label="Status"
+              value={entwurf.status}
+              onChange={(event) => aendere('status', event.target.value as Radstatus)}
+            >
+              {(Object.keys(radstatusLabels) as Radstatus[]).map((status) => (
+                <option key={status} value={status}>
+                  {radstatusLabels[status]}
+                </option>
+              ))}
+            </Select>
 
-        <div className="border-line mt-2 flex flex-wrap items-center justify-end gap-3 border-t pt-4">
-          <Link
-            to={ZUR_FLOTTE}
-            className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
-          >
-            Abbrechen
-          </Link>
+            <Select
+              label="Aktuell gefahren von"
+              value={entwurf.aktuellerNutzerId ?? ''}
+              onChange={(event) => aendere('aktuellerNutzerId', event.target.value || null)}
+            >
+              <option value="">– Stammnutzer:in fährt –</option>
+              {zustand.mitarbeitende.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name}
+                </option>
+              ))}
+            </Select>
+
+            <Select
+              label="Akku-Typ"
+              value={entwurf.akku}
+              onChange={(event) => aendere('akku', event.target.value)}
+            >
+              <option value="">– auswählen –</option>
+              {AKKUTYPEN.map((typ) => (
+                <option key={typ} value={typ}>
+                  {typ}
+                </option>
+              ))}
+            </Select>
+
+            {isOwner(user.roles) ? (
+              <Field
+                label="Schlüsselcode"
+                hint={`Nur für ${roleLabels.owner} sichtbar.`}
+                value={entwurf.schluesselcode}
+                onChange={(event) => aendere('schluesselcode', event.target.value)}
+              />
+            ) : null}
+
+            {/* Ohne Rahmen um die Gruppe (Formular, Leitfaden L2); der Satz bleibt,
+            weil er sagt, was „Frei“ bei der Eingabe bedeutet. */}
+            <fieldset>
+              <legend className="text-ink mb-1 text-sm font-medium">Wochenplan</legend>
+              <p className="text-ink-muted mb-3 text-sm">„Frei“ heißt: für andere planbar.</p>
+              {/* Am Telefon untereinander, erst ab 640 px vier nebeneinander
+                  (DESIGN.md Formular; R2-O3: bei 375 px standen zwei halbe
+                  Auswahlfelder je Zeile). */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+                {wochentage.map((tag) => (
+                  <Select
+                    key={tag}
+                    label={wochentagLabels[tag]}
+                    value={entwurf.wochenplan[tag]}
+                    onChange={(event) =>
+                      aendere('wochenplan', {
+                        ...entwurf.wochenplan,
+                        [tag]: event.target.value as Belegung,
+                      })
+                    }
+                  >
+                    <option value="frei">Frei</option>
+                    <option value="belegt">Belegt</option>
+                  </Select>
+                ))}
+              </div>
+            </fieldset>
+
+            <TextArea
+              rows={3}
+              label="Notiz"
+              placeholder="z. B. Reparaturdetails, Ort des Schlüssels"
+              value={entwurf.notiz}
+              onChange={(event) => aendere('notiz', event.target.value)}
+            />
+          </Feldgruppe>
+        </Section>
+
+        {/* Hauptknopf zuerst, Abbrechen leise (Formularfuss). */}
+        <Formularfuss>
           <Button onClick={speichern} disabled={entwurf.name.trim() === ''}>
             In die Vorschau übernehmen
           </Button>
-        </div>
-
-        {/* Entfernen mit Abstand unter der Knopfzeile und nur nach Rückfrage
-            (VOR-10): Bei 390 px stand es 12 px über „In die Vorschau
-            übernehmen" und wirkte mit einem Tipp. */}
-        {!neuAnlegen ? (
-          <div className="mt-6">
-            <Rueckfrage
-              ausloeser="Rad entfernen"
-              bestaetigen="Ja, Rad entfernen"
-              onBestaetigen={loeschen}
-            >
-              <p>
-                {entwurf.name || 'Das Rad'} verschwindet aus der Radflotte dieser Vorschau. Gelöscht
-                wird nichts – ein Neuladen stellt das Rad wieder her.
-              </p>
-            </Rueckfrage>
-          </div>
-        ) : null}
+          <ButtonLink to={ZUR_FLOTTE} variant="quiet">
+            Abbrechen
+          </ButtonLink>
+        </Formularfuss>
       </div>
+
+      {vorhanden && !neuAnlegen ? (
+        <Verlaeufe rad={vorhanden} zeitzone={user.organizationTimeZone} />
+      ) : null}
+
+      {/* Entfernen leise am Ende und nur nach Rückfrage (VOR-10; DESIGN.md
+          Zerstörendes): Bei 390 px stand es 12 px über „In die Vorschau
+          übernehmen" und wirkte mit einem Tipp. */}
+      {!neuAnlegen ? (
+        <div className="border-line max-w-formular mt-8 border-t pt-6">
+          <Rueckfrage
+            ausloeser="Rad entfernen"
+            ausloeserVariante="quiet"
+            bestaetigen="Ja, Rad entfernen"
+            onBestaetigen={loeschen}
+          >
+            <p>
+              {entwurf.name || 'Das Rad'} verschwindet aus der Radflotte dieser Vorschau. Gelöscht
+              wird nichts – ein Neuladen stellt das Rad wieder her.
+            </p>
+          </Rueckfrage>
+        </div>
+      ) : null}
     </>
+  );
+}
+
+/**
+ * Der Kopf des Rads: Name, Standort und Stammnutzer:in, „In Reparatur“ als
+ * Ausnahme, Panne und Check-Up für genau dieses Rad (bis Welle B Knöpfe auf
+ * der Karte in der Liste) und die Warnung, wenn es nicht im Stammdepot steht.
+ * Zeigt den gespeicherten Stand, nicht den Entwurf.
+ */
+function Radkopf({ rad }: { rad: Rad }) {
+  const { zustand } = useVorschau();
+  const stammnutzer = rad.ersatzrad
+    ? 'Ersatzrad'
+    : rad.stammnutzerId
+      ? mitarbeiterName(zustand, rad.stammnutzerId)
+      : '';
+  return (
+    <Objektkopf
+      titel={rad.name}
+      rueckweg={{ to: ZUR_FLOTTE, beschriftung: 'Zurück zur Radflotte' }}
+      meta={[depotName(zustand, rad, 'aktuell'), stammnutzer].filter(Boolean).join(' · ')}
+      status={
+        rad.status === 'reparatur' ? (
+          <Badge ton="kritisch">{radstatusLabels[rad.status]}</Badge>
+        ) : null
+      }
+      aktionen={
+        <>
+          <ButtonLink to={`/betrieb/flotte/panne?rad=${rad.id}`} variant="secondary">
+            Panne melden
+          </ButtonLink>
+          <ButtonLink to={`/betrieb/flotte/checkup?rad=${rad.id}`} variant="secondary">
+            Check-Up
+          </ButtonLink>
+        </>
+      }
+      hinweise={
+        rad.depotId !== rad.stammdepotId ? (
+          <Warnzeile>
+            Steht nicht im Stammdepot. Gehört zu {depotName(zustand, rad, 'stamm')}.
+          </Warnzeile>
+        ) : null
+      }
+    />
+  );
+}
+
+/**
+ * Schlüssel-, Pannen- und Check-Up-Verlauf des Rads, je die letzten drei,
+ * zugeklappt (bis Welle B auf der Karte in der Liste). Ohne Verlauf kein
+ * Abschnitt.
+ */
+function Verlaeufe({ rad, zeitzone }: { rad: Rad; zeitzone: string | null }) {
+  if (
+    rad.schluesselverlauf.length === 0 &&
+    rad.pannenverlauf.length === 0 &&
+    rad.checkups.length === 0
+  ) {
+    return null;
+  }
+  return (
+    <div className="max-w-formular mt-8">
+      <Section titel="Verlauf">
+        {rad.schluesselverlauf.length > 0 ? (
+          <Disclosure summary={`Schlüsselverlauf (${rad.schluesselverlauf.length})`}>
+            <ul className="text-ink-muted space-y-1 text-sm">
+              {rad.schluesselverlauf
+                .slice(-3)
+                .reverse()
+                .map((vorgang) => (
+                  <li key={vorgang.id}>
+                    {vorgang.inhaber} – {formatZeitpunkt(vorgang.entnommen, zeitzone)}
+                    {vorgang.zurueckgelegt
+                      ? ` bis ${formatZeitpunkt(vorgang.zurueckgelegt, zeitzone)}`
+                      : ' (noch entnommen)'}
+                  </li>
+                ))}
+            </ul>
+          </Disclosure>
+        ) : null}
+
+        {rad.pannenverlauf.length > 0 ? (
+          <Disclosure summary={`Pannenverlauf (${rad.pannenverlauf.length})`}>
+            <ul className="text-ink-muted space-y-2 text-sm">
+              {rad.pannenverlauf
+                .slice(-3)
+                .reverse()
+                .map((meldung) => (
+                  <li key={meldung.id}>
+                    <span className="text-ink-muted block text-xs">
+                      {formatZeitpunkt(meldung.zeitpunkt, zeitzone)}
+                      {meldung.gesperrt ? ' · Rad gesperrt' : ' · ohne Sperre'}
+                    </span>
+                    {meldung.text}
+                  </li>
+                ))}
+            </ul>
+          </Disclosure>
+        ) : null}
+
+        {rad.checkups.length > 0 ? (
+          <Disclosure summary={`Check-Up-Verlauf (${rad.checkups.length})`}>
+            <ul className="space-y-2 text-sm">
+              {rad.checkups
+                .slice(-3)
+                .reverse()
+                .map((checkup) => {
+                  const probleme = checkup.befunde.filter(
+                    (befund) => befund.bewertung === 'problem',
+                  );
+                  const beobachten = checkup.befunde.filter(
+                    (befund) => befund.bewertung === 'beobachten',
+                  );
+                  return (
+                    <li key={checkup.id}>
+                      <span className="text-ink-muted block text-xs">
+                        {formatZeitpunkt(checkup.zeitpunkt, zeitzone)} · {checkup.geprueftVon}
+                      </span>
+                      {probleme.length > 0 ? (
+                        <span className="text-danger block">
+                          Problem: {probleme.map((befund) => befund.frage).join(', ')}
+                        </span>
+                      ) : null}
+                      {beobachten.length > 0 ? (
+                        <span className="text-warnung block">
+                          Beobachten: {beobachten.map((befund) => befund.frage).join(', ')}
+                        </span>
+                      ) : null}
+                      {probleme.length === 0 && beobachten.length === 0 ? (
+                        <span className="text-positiv block">Alles in Ordnung</span>
+                      ) : null}
+                      {checkup.notiz ? (
+                        <span className="text-ink-muted block">Notiz: {checkup.notiz}</span>
+                      ) : null}
+                      {checkup.fotos > 0 ? (
+                        <span className="text-ink-muted block text-xs">
+                          {checkup.fotos} Foto{checkup.fotos === 1 ? '' : 's'} angehängt (bleibt in
+                          dieser Sitzung)
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
+            </ul>
+          </Disclosure>
+        ) : null}
+      </Section>
+    </div>
   );
 }

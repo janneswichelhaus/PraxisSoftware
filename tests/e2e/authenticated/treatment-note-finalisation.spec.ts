@@ -161,7 +161,7 @@ test.describe('DOK-002: Nachtragen', () => {
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
     await page.getByLabel('Nachtrag').fill(NACHTRAG);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
@@ -184,14 +184,14 @@ test.describe('DOK-002: Nachtragen', () => {
 
     await page.getByRole('link', { name: 'Nachtrag hinzufügen' }).click();
     await page.getByLabel('Nachtrag').fill(NACHTRAG);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
 
     await page.getByRole('link', { name: 'Nachtrag bearbeiten' }).click();
     await expect(page.getByLabel('Nachtrag')).toHaveValue(NACHTRAG);
     await page.getByLabel('Nachtrag').fill(`${NACHTRAG} Ergaenzt.`);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);

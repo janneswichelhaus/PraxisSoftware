@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { DetailList, DetailRow } from '@/components/ui/DetailList';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { DataList, DataRow } from '@/components/ui/Card';
+import { KnopfGroesse } from '@/components/ui/knopfGroesse';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { BEGRIFFE } from '@/lib/begriffe';
+import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -55,41 +56,37 @@ import { tageslageNeuLaden } from '@/features/appointments/tageslage';
  */
 export function TrainingAppointmentPage({ user }: { user: CurrentUser }) {
   const { appointmentId = '' } = useParams();
+  const [suche] = useSearchParams();
   const termin = useQuery({
     queryKey: ['training-appointment', appointmentId],
     queryFn: () => getTrainingAppointment(appointmentId),
     retry: false,
   });
 
-  if (termin.isPending) return <LoadingState />;
   // Ein gescheitertes Nachladen nach einem Vorgang ersetzt die Seite nicht:
   // Im Protokoll darunter kann ungespeicherter Text stehen (Zweitreview 4).
-  if (termin.isError && termin.data === undefined) {
-    return (
-      <>
-        <Rueckweg standard="/kalender" />
-        <ErrorState
-          title="Der Trainingstermin konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => termin.refetch()}
-        />
-      </>
-    );
-  }
-  if (!termin.data) {
-    return (
-      <>
-        <Rueckweg standard="/kalender" />
-        <EmptyState title="Trainingstermin nicht gefunden" />
-      </>
-    );
-  }
-  return <Ansicht termin={termin.data} user={user} />;
+  if (termin.data) return <Ansicht termin={termin.data} user={user} />;
+  return (
+    <>
+      <Rueckweg standard={leseRueckweg(suche, '/kalender')} />
+      <PageHeader title="Trainingstermin" />
+      <Abfragezustand
+        abfrage={termin}
+        laden="Trainingstermin wird geladen …"
+        fehler="Der Trainingstermin konnte nicht geladen werden."
+        inKarte
+        leer={{ wenn: (wert) => wert === null, titel: 'Trainingstermin nicht gefunden' }}
+      >
+        {() => null}
+      </Abfragezustand>
+    </>
+  );
 }
 
 function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentUser }) {
   const [suche] = useSearchParams();
-  const [meldung, setMeldung] = useState<string | null>(null);
+  // Jede Meldung ist eine neue Zeile und nimmt den Fokus erneut (`Rueckmeldung`).
+  const [meldung, setMeldung] = useState<{ text: string; nummer: number } | null>(null);
   const zone = termin.organization_time_zone;
   const name = `${termin.client_given_name} ${termin.client_family_name}`;
   const darfSchreiben = canWriteTrainingClients(user.roles);
@@ -123,11 +120,23 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
             .filter(Boolean)
             .join(', ');
 
+  function gemeldet(text: string) {
+    setMeldung((bisher) => ({ text, nummer: (bisher?.nummer ?? 0) + 1 }));
+  }
+
   return (
     <>
       <Rueckweg standard={leseRueckweg(suche, '/kalender')} />
+      {/* Kopf wie das Termin-Fenster (Referenz, DESIGN.md): die Gattung als
+          Zeile darüber, der Name als Weg zur Trainingskund:in (UX-012), Tag
+          und Zeit darunter. */}
       <PageHeader
-        title="Trainingstermin"
+        kicker="Trainingstermin"
+        title={
+          <Textlink to={mitRueckweg(`/training/${termin.training_relationship_id}`, hier)}>
+            {name}
+          </Textlink>
+        }
         description={`${formatLocalDate(termin.starts_at, zone)}, ${formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}`}
         actions={
           // „Bestätigt" ist der Regelfall und trägt kein Abzeichen (UX-005i).
@@ -139,62 +148,73 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
         }
       />
 
-      {angelegt ? <Statusmeldung ton="erfolg">Trainingstermin angelegt.</Statusmeldung> : null}
-      {meldung ? <Statusmeldung ton="erfolg">{meldung}</Statusmeldung> : null}
+      {/* Die Bestätigung steht unter dem Kopf und nimmt den Fokus (TER-04). */}
+      {meldung ? (
+        <Rueckmeldung key={meldung.nummer} className="mb-6">
+          {meldung.text}
+        </Rueckmeldung>
+      ) : angelegt ? (
+        <Rueckmeldung className="mb-6">Trainingstermin angelegt.</Rueckmeldung>
+      ) : null}
 
+      {/* Die Angaben als kurze Zeilen statt als Liste untereinander: Am
+          Telefon steht das Protokoll so früher im Bild. */}
       <Section titel="Termin" rahmen>
-        <DetailList>
-          <DetailRow label={BEGRIFFE.trainingskundIn}>
-            <Link
-              className="text-accent hover:underline"
-              to={mitRueckweg(`/training/${termin.training_relationship_id}`, hier)}
-            >
-              {name}
-            </Link>
-          </DetailRow>
-          <DetailRow label="Betreuende Person">
+        <DataList>
+          <DataRow label="Betreuende Person">
             {`${termin.staff_given_name} ${termin.staff_family_name}`}
-          </DetailRow>
+          </DataRow>
           {/* Keine Zeile „Art": Der Ort sagt schon, ob Praxis, Video oder
               Anschrift (UX-005i). */}
-          <DetailRow label="Ort">{ort || '—'}</DetailRow>
-          <DetailRow label="Vereinbarung">
+          <DataRow label="Ort">{ort || '—'}</DataRow>
+          <DataRow label="Vereinbarung">
             {termin.training_basis_id === null
               ? 'Einzelstunde ohne Vereinbarung'
               : vereinbarung
                 ? `Seit ${formatDate(vereinbarung.started_on)} · ${vereinbarungText(vereinbarung)}`
                 : 'Vereinbarung'}
-          </DetailRow>
+          </DataRow>
           {termin.status === 'cancelled' && termin.cancellation_reason ? (
-            <DetailRow label="Absagegrund">
+            <DataRow label="Absagegrund">
               {trainingAbsageLabels[termin.cancellation_reason as CancellationReason] ?? '—'}
-            </DetailRow>
+            </DataRow>
           ) : null}
-        </DetailList>
+        </DataList>
+
+        {/* Die Vorgänge am Termin stehen in seiner Karte, kompakt wie an
+            einer Karte üblich (DESIGN.md Regel 4). Der Hauptknopf der Seite
+            ist der Abschluss des Protokolls in der Leiste darunter. */}
+        {darfAendern || darfAbschliessen ? (
+          <div className="border-line mt-3 flex flex-wrap items-start gap-2 border-t pt-3">
+            <KnopfGroesse value="kompakt">
+              {darfAbschliessen ? <TerminAbschluss termin={termin} onGeaendert={gemeldet} /> : null}
+              {darfAendern ? (
+                <ButtonLink to={mitRueckweg(`${hier}/bearbeiten`, hier)} variant="secondary">
+                  Verschieben
+                </ButtonLink>
+              ) : null}
+            </KnopfGroesse>
+          </div>
+        ) : null}
       </Section>
 
-      {darfAendern || darfAbschliessen ? (
-        <div className="mt-6 flex flex-wrap items-start gap-3">
-          {darfAbschliessen ? <TerminAbschluss termin={termin} onGeaendert={setMeldung} /> : null}
-          {darfAendern ? (
-            <>
-              <ButtonLink to={mitRueckweg(`${hier}/bearbeiten`, hier)} variant="secondary">
-                Verschieben
-              </ButtonLink>
-              <Absagen
-                termin={termin}
-                name={name}
-                liestProtokoll={liestProtokoll}
-                onAbgesagt={() => setMeldung('Termin abgesagt.')}
-              />
-            </>
-          ) : null}
-        </div>
+      {/* Das Protokoll ist das letzte Glied der Seite: Seine Leiste klebt
+          über der Tableiste (DESIGN.md „Arbeitsseite“). */}
+      {darfProtokoll || zeigtProtokoll ? (
+        <TrainingProtokoll termin={termin} darfSchreiben={darfProtokoll} />
       ) : null}
 
-      {darfProtokoll || zeigtProtokoll ? (
-        <div className="mt-6">
-          <TrainingProtokoll termin={termin} darfSchreiben={darfProtokoll} />
+      {/* Das Absagen leise am Ende der Seite, mit Rückfrage (DESIGN.md,
+          Zerstörendes; R2-O10) - bis dahin stand es mitten in der
+          Terminkarte neben „Verschieben“. */}
+      {darfAendern ? (
+        <div className="border-line max-w-formular mt-8 border-t pt-6">
+          <Absagen
+            termin={termin}
+            name={name}
+            liestProtokoll={liestProtokoll}
+            onAbgesagt={() => gemeldet('Termin abgesagt.')}
+          />
         </div>
       ) : null}
     </>
@@ -257,6 +277,7 @@ function Absagen({
   return (
     <Rueckfrage
       ausloeser="Termin absagen"
+      ausloeserVariante="quiet"
       bestaetigen="Ja, Termin absagen"
       bestaetigenLaeuft="Wird abgesagt …"
       fehler={mutation.isError ? mutation.error.message : undefined}

@@ -93,7 +93,16 @@ test.describe('AKTE-003: Termine mit Historie', () => {
     // Die Zeile ist seit 2026-10-03 kein Link mehr; sie traegt ihre Kennung.
     const eintrag = page.locator(`li[data-termin="${terminId}"]`);
     const weitere = page.getByRole('button', { name: 'Weitere Termine anzeigen' });
+    const laedtNach = page.getByRole('button', { name: 'Wird geladen …', exact: true });
     const alleTermine = page.locator('li[data-termin]');
+
+    // Erst blaettern, wenn beide Listen ihre erste Seite haben. Die
+    // Ueberschriften stehen schon vor den Daten da; wer vorher nach dem Knopf
+    // fragt, findet keinen, hoert auf zu blaettern und sucht den Termin nur
+    // auf Seite 1 (in vollen Laeufen mit mehr als 20 kommenden Terminen von
+    // Max zweimal so gescheitert).
+    await expect(page.getByText('Termine werden geladen …', { exact: true })).toHaveCount(0);
+
     for (let versuch = 0; versuch < 5; versuch += 1) {
       if ((await eintrag.count()) > 0) break;
       if ((await weitere.count()) === 0) break;
@@ -102,11 +111,16 @@ test.describe('AKTE-003: Termine mit Historie', () => {
       // verschwunden ist, weil nichts mehr nachkommt (`hasNextPage`). Auf
       // „wieder bedienbar" zu warten ging nicht: Nach der letzten Seite wird
       // der Knopf ausgehaengt, und eine Zusicherung auf ein entferntes
-      // Element scheitert.
+      // Element scheitert. Waehrend des Nachladens heisst der Knopf „Wird
+      // geladen …" - das ist noch nicht „nichts mehr nachgekommen".
       const vorher = await alleTermine.count();
       await weitere.click();
       await expect
-        .poll(async () => (await alleTermine.count()) > vorher || (await weitere.count()) === 0)
+        .poll(
+          async () =>
+            (await alleTermine.count()) > vorher ||
+            ((await weitere.count()) === 0 && (await laedtNach.count()) === 0),
+        )
         .toBe(true);
     }
     await expect(eintrag.first()).toBeVisible();

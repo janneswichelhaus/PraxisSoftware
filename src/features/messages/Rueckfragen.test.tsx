@@ -42,6 +42,7 @@ vi.mock('./api', async (importOriginal) => ({
 
 const { RueckfragenPage, RueckfragePage } = await import('./RueckfragenPage');
 const { OffeneRueckfragen } = await import('./RueckfragenAbschnitt');
+const { RueckfragenListe } = await import('./RueckfragenListe');
 
 const ZEILE: Rueckfragezeile = {
   id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
@@ -116,7 +117,9 @@ describe('Rückfragen (KOM-002)', () => {
     expect(await screen.findByText('Erika Beispiel')).toBeInTheDocument();
     expect(screen.getByText('überfällig')).toBeInTheDocument();
     expect(screen.getByText(/fällig war 07\.10\.2026/)).toBeInTheDocument();
-    expect(screen.getByText('offen')).toBeInTheDocument();
+    // „Offen“ ist der Regelfall und trägt kein Abzeichen; die Frist steht in
+    // der Nebenzeile (R2-O4).
+    expect(screen.queryByText('offen')).not.toBeInTheDocument();
     expect(screen.getByText(/Antwort bis 13\.10\.2026/)).toBeInTheDocument();
     expect(screen.getByText(/über Begleitung Paula Mustermann/)).toBeInTheDocument();
     expect(screen.queryByText(/Knie schmerzt/)).not.toBeInTheDocument();
@@ -124,8 +127,41 @@ describe('Rückfragen (KOM-002)', () => {
       'href',
       `/rueckfragen/${ZEILE.id}`,
     );
-    expect(screen.getByText(/innerhalb von 2 Werktagen/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ändern' })).not.toBeInTheDocument();
+    expect(screen.getByText('Zusage: Antwort in 2 Werktagen (Mo–Fr).')).toBeInTheDocument();
+    expect(screen.queryByText('Antwortfrist ändern')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Antwortfrist')).not.toBeInTheDocument();
+  });
+
+  it('zeigt Zustände mit Zeichen und Wort (R2-O4)', async () => {
+    fetchRueckfragen.mockResolvedValue([
+      ZEILE,
+      { ...ZEILE, id: 'dddddddd-dddd-4ddd-8ddd-000000000003', status: 'answered', overdue: false },
+    ]);
+    renderWithProviders(
+      <RueckfragenPage user={testUser(['office'], 'Olivia Office')} />,
+      '/rueckfragen',
+    );
+    expect((await screen.findByText('beantwortet')).textContent).toBe('✓beantwortet');
+    expect(screen.getByText('überfällig').textContent).toBe('!überfällig');
+  });
+
+  it('an der Akte: Thema als Titel, Einträge in Einzahl und Mehrzahl', async () => {
+    fetchRueckfragen.mockResolvedValue([
+      ZEILE,
+      { ...ZEILE, id: 'dddddddd-dddd-4ddd-8ddd-000000000004', entry_count: 2, overdue: false },
+    ]);
+    renderWithProviders(
+      <RueckfragenListe
+        art="treatment"
+        verhaeltnisId={ZEILE.patient_id}
+        mitName={false}
+        mitErledigten
+        leer=""
+      />,
+    );
+    expect(await screen.findByText(/^1 Eintrag · /)).toBeInTheDocument();
+    expect(screen.getByText(/^2 Einträge/)).toBeInTheDocument();
+    expect(screen.queryByText(/1 Einträge/)).not.toBeInTheDocument();
   });
 
   it('owner ändert die Antwortfrist (ANN-309)', async () => {
@@ -134,7 +170,8 @@ describe('Rückfragen (KOM-002)', () => {
       <RueckfragenPage user={testUser(['owner'], 'Jannes Test')} />,
       '/rueckfragen',
     );
-    await nutzer.click(await screen.findByRole('button', { name: 'Ändern' }));
+    // Selten und nur owner: leise am Ende der Seite, aufgeklappt.
+    await nutzer.click(await screen.findByText('Antwortfrist ändern'));
     await nutzer.selectOptions(screen.getByLabelText('Antwortfrist'), '3');
     await nutzer.click(screen.getByRole('button', { name: 'Speichern' }));
     await waitFor(() => expect(saveAntwortfrist).toHaveBeenCalledWith(3));
@@ -201,10 +238,22 @@ describe('Rückfragen (KOM-002)', () => {
   it('Offene Punkte: offen und überfällig je Bereich', async () => {
     renderWithProviders(<OffeneRueckfragen bereiche={['treatment']} />, '/offen');
     expect(await screen.findByText(/2 offen, davon 1 überfällig\./)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zu den Rückfragen' })).toHaveAttribute(
+    // Die Zeile des Bereichs ist der Weg zur Liste, überfällig mit Wort.
+    expect(screen.getByRole('link', { name: /^Behandlung.*überfällig/ })).toHaveAttribute(
       'href',
       '/rueckfragen',
     );
+    expect(screen.getByRole('heading', { name: 'Rückfragen von der Plattform (2)' })).toBeVisible();
+  });
+
+  it('Offene Punkte: ohne offene Rückfrage keine Gruppe', async () => {
+    fetchRueckfragen.mockResolvedValue([{ ...ZEILE, status: 'answered', overdue: false }]);
+    const { container } = renderWithProviders(
+      <OffeneRueckfragen bereiche={['treatment']} />,
+      '/offen',
+    );
+    await waitFor(() => expect(fetchRueckfragen).toHaveBeenCalled());
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 });
 
@@ -369,7 +418,10 @@ describe('Fotos und Videos an der Rückfrage (KOM-008, ADR-017 Punkte 65 bis 68)
     await nutzer.click(within(abschnitt).getByRole('button', { name: 'Ansehen' }));
     expect(await screen.findByLabelText('Video der Person')).toBeInTheDocument();
     expect(ladeRueckfrageAnhang).toHaveBeenCalledWith(VIDEO.id);
+    // Löschen leise und mit Rückfrage (DESIGN.md Regel 10): erst die Bestätigung löscht.
     await nutzer.click(within(abschnitt).getByRole('button', { name: 'Löschen' }));
+    expect(deleteRueckfrageAnhang).not.toHaveBeenCalled();
+    await nutzer.click(within(abschnitt).getByRole('button', { name: 'Ja, löschen' }));
     await waitFor(() => expect(deleteRueckfrageAnhang).toHaveBeenCalledWith(VIDEO.id));
   });
 

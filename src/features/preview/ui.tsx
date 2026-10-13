@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Aufklappzeichen } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Disclosure } from '@/components/ui/Card';
+import { Section } from '@/components/ui/Section';
 import type { Protokolleintrag } from './vorschauContext';
 
 /**
@@ -68,7 +68,15 @@ export function SimulationsMeldung({ eintrag }: { eintrag: Protokolleintrag | nu
   );
 }
 
-/** Abschnittsüberschrift innerhalb einer Seite. */
+/**
+ * Abschnitt innerhalb einer Vorschauseite.
+ *
+ * Seit Welle B (B7) der `Section` des Systems - Abschnittstitel als Label
+ * (12 px Versalien), ein Satz darunter, eine Aktion rechts. Bis dahin stand
+ * hier eine eigene Überschrift in 17 px, die es sonst nirgends gab
+ * (DESIGN.md, Regel 1). Die Schnittstelle bleibt, damit Flotte, Urlaub,
+ * Zeitkonto und Erstattungen unverändert aufrufen.
+ */
 export function Abschnitt({
   titel,
   beschreibung,
@@ -81,26 +89,22 @@ export function Abschnitt({
   children: ReactNode;
 }) {
   return (
-    <section className="mt-8 first:mt-0">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="text-ink text-[1.0625rem] font-semibold">{titel}</h2>
-          {beschreibung ? <p className="text-ink-muted mt-0.5 text-sm">{beschreibung}</p> : null}
-        </div>
-        {aktionen}
-      </div>
+    <Section
+      titel={titel}
+      {...(beschreibung ? { hinweis: beschreibung } : {})}
+      {...(aktionen ? { aktion: aktionen } : {})}
+    >
       {children}
-    </section>
+    </Section>
   );
 }
 
 /**
  * Aufklappbarer Bereich mit eigener Überschrift, etwa für Übersichten.
  *
- * Der Kopf trägt das `Aufklappzeichen` des Systems (UEB-03, RSP-07, VOR-20):
- * Mit `display: flex` zeichnet der Browser sein Dreieck nicht, und
- * „Wochenübersicht – wer nutzt wann welches Rad" sah aus wie eine weiße Leiste
- * ohne Inhalt.
+ * Seit Welle B (B7) der `Disclosure` des Systems als Karte (`inKarte`): Kopf
+ * 52 px mit dem `Aufklappzeichen` (UEB-03, RSP-07, VOR-20), der Inhalt mit
+ * einer Linie darüber. Die Schnittstelle bleibt.
  */
 export function Klappbereich({
   titel,
@@ -114,15 +118,11 @@ export function Klappbereich({
   children: ReactNode;
 }) {
   return (
-    <details open={offen} className="group rounded-card border-line bg-surface mt-4 border px-4">
-      <summary className={`${aufklappKopfKlassen} text-ink text-liste py-1 font-medium`}>
-        <Aufklappzeichen />
-        {titel}
-      </summary>
-      <div className="pb-4">
+    <div className="mt-4">
+      <Disclosure summary={titel} kopf="betont" offen={offen} inKarte>
         {beschreibung ? <p className="text-ink-muted mb-3 text-sm">{beschreibung}</p> : null}
         {children}
-      </div>
-    </details>
+      </Disclosure>
+    </div>
   );
 }

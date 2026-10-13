@@ -4,6 +4,8 @@ playwright-report
 test-results
 pnpm-lock.yaml
 .tmp
+# Arbeitskopien paralleler Agenten (Claude Code Worktrees), nie versioniert.
+.claude/worktrees/
 
 # Der Design-Kanvas ist ein Ausgabeformat des Entwurfswerkzeugs, kein
 # Quelltext: eine einzelne gebundelte Datei, die niemand von Hand liest oder

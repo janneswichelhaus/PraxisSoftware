@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
@@ -107,31 +107,29 @@ export function FotoHerausgabe({ patientId }: { patientId: string }) {
     retry: false,
   });
 
+  // Eine Liste wie die übrigen der Seite, also im Rahmen (DAT-21). Der
+  // Rechtssatz dazu steht im Kleingedruckten am Ende der Seite, mit den
+  // übrigen (Regel 6; Nachprüfung neu4) - nicht mitten zwischen den Karten.
   return (
-    // Eine Liste wie die übrigen der Seite, also im Rahmen (DAT-21).
-    <Section
-      titel="Fotos herausgeben"
-      rahmen
-      hinweis="Zur vollständigen Kopie gehören die Fotos selbst, auch gesperrte. Hier entsteht je Foto eine Kopie für die Person (Art. 15 Abs. 3 und Art. 20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie wird protokolliert."
-    >
-      {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
-      {fotos.isError ? (
-        <ErrorState
-          title="Die Fotos konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => fotos.refetch()}
-        />
-      ) : null}
-      {fotos.data && fotos.data.length === 0 ? (
-        <EmptyState title="Keine Fotos" description="Für diese Person liegt kein Foto vor." />
-      ) : null}
-      {fotos.data && fotos.data.length > 0 ? (
-        <ul className="flex flex-col">
-          {fotos.data.map((foto) => (
-            <Zeile key={foto.id} foto={foto} />
-          ))}
-        </ul>
-      ) : null}
+    <Section titel="Fotos herausgeben" rahmen>
+      <Abfragezustand
+        abfrage={fotos}
+        laden="Fotos werden geladen …"
+        fehler="Die Fotos konnten nicht geladen werden."
+        leer={{
+          wenn: (liste) => liste.length === 0,
+          titel: 'Keine Fotos',
+          beschreibung: 'Für diese Person liegt kein Foto vor.',
+        }}
+      >
+        {(liste) => (
+          <ul className="flex flex-col">
+            {liste.map((foto) => (
+              <Zeile key={foto.id} foto={foto} />
+            ))}
+          </ul>
+        )}
+      </Abfragezustand>
     </Section>
   );
 }

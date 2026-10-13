@@ -33,7 +33,7 @@ import { PrescriptionPhoto } from '@/features/files/PrescriptionPhoto';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { Rueckmeldung } from './Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
   appointmentStatusLabels,
   appointmentToFormValues,

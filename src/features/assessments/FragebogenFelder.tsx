@@ -5,7 +5,7 @@ import { Field } from '@/components/ui/Field';
 import { TextArea } from '@/components/ui/TextArea';
 import { FREITEXT_MAX, gewaehlteKennungen, type Antwort, type Antworten } from './antworten';
 import { KoerperschemaFeld } from './KoerperschemaFeld';
-import { beschriftung, frageFeldId, ohneAbsenden } from './darstellung';
+import { beschriftung, frageFeldId, laengstesWort, ohneAbsenden } from './darstellung';
 import { optionKennung, type ScoreDefinition, type ScoreItem } from './schema';
 
 /**
@@ -293,15 +293,21 @@ function Auswahl({
       kopf={kopf}
     >
       {/* Mehrfachauswahl auch am Telefon in Spalten (BEF-08): 109 Kästchen
-          einspaltig machten den Bogen bei 390 px über 11 000 px lang. Lange
-          Optionen brechen um - „Gleichgewichtsstörungen" mit Trennstrich, wo
-          der Browser trennen kann, sonst an der Spaltenkante -, die
-          Trefferfläche bleibt 44 px hoch. */}
+          einspaltig machten den Bogen bei 390 px über 11 000 px lang. Eine
+          Spalte ist mindestens so breit wie das längste Wort der Frage plus
+          Kästchen (ANN-497): Kein Wort bricht mitten durch („Nachtschmerze/n"
+          bei 18 px auf der Plattform), und wo es nicht passt, steht die Frage
+          einspaltig. Die Trefferfläche bleibt 44 px hoch. */}
       <div
         className={
           mehrfach
-            ? 'grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,9.5rem),1fr))] gap-x-4'
+            ? 'grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,max(9.5rem,calc(var(--wortbreite)_+_2rem))),1fr))] gap-x-4 text-sm'
             : 'flex flex-wrap gap-x-6'
+        }
+        style={
+          mehrfach
+            ? ({ '--wortbreite': `${laengstesWort(optionen)}ch` } as CSSProperties)
+            : undefined
         }
       >
         {optionen.map((option) => {
@@ -309,7 +315,7 @@ function Auswahl({
           return mehrfach ? (
             <Checkbox
               key={kennung}
-              label={<span className="wrap-anywhere hyphens-auto">{option.label}</span>}
+              label={<span className="wrap-break-word hyphens-manual">{option.label}</span>}
               checked={gewaehlt.includes(kennung)}
               onChange={() => umschalten(kennung, option.exklusiv === true)}
             />

@@ -139,8 +139,9 @@ describe('Rad speichern und entfernen', () => {
     oeffneRad('r1');
 
     await nutzer.click(screen.getByText('Rad entfernen'));
-    // Noch auf der Seite: Der Knopf allein entfernt nichts (VOR-10).
-    expect(screen.getByText('Rad bearbeiten', { selector: 'h1' })).toBeInTheDocument();
+    // Noch auf der Seite: Der Knopf allein entfernt nichts (VOR-10). Seit
+    // Welle B trägt die Seite des Rads seinen Namen als Titel (Objektkopf).
+    expect(screen.getByText('Lastenrad 1', { selector: 'h1' })).toBeInTheDocument();
 
     await nutzer.click(screen.getByText('Ja, Rad entfernen'));
 
@@ -188,7 +189,7 @@ describe('Teamkommunikation', () => {
     const nutzer = userEvent.setup();
     renderMitVorschau(<TeamChatPage user={testUser([...nutzerRolle])} />, '/team');
 
-    await nutzer.type(screen.getByRole('textbox', { name: 'Neue Nachricht' }), 'Kurze Frage');
+    await nutzer.type(screen.getByRole('textbox', { name: /^Neue Nachricht/ }), 'Kurze Frage');
     await nutzer.click(screen.getByRole('button', { name: 'In die Vorschau schreiben' }));
 
     const meldung = screen.getByRole('status');

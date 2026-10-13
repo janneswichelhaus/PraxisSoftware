@@ -18,6 +18,11 @@ import {
  *
  * Jedes Feld trägt eine feste Kennung, auf die die Fehlerzusammenfassung
  * springt, und seine Höchstlänge (UIK-02, VER-15; `verordnerfelder.ts`).
+ *
+ * Ohne Hinweissätze an Praxis und Fax (DESIGN.md Regel 6, Design-Rollout
+ * B1): Sie erklärten, wozu die Angabe dient, änderten aber nichts an der
+ * Eingabe. Gibt es die Verordner:in schon, sagt die Meldung am Nachnamen,
+ * dass die Praxis sie unterscheidet.
  */
 export function PrescriberFormFields({
   werte,
@@ -54,11 +59,7 @@ export function PrescriberFormFields({
             required
             {...feld('family_name')}
           />
-          <Field
-            label={VERORDNER_BESCHRIFTUNG.practice_name}
-            hint="Unterscheidet zwei gleichnamige Ärzt:innen in der Auswahlliste."
-            {...feld('practice_name')}
-          />
+          <Field label={VERORDNER_BESCHRIFTUNG.practice_name} {...feld('practice_name')} />
           <Field label={VERORDNER_BESCHRIFTUNG.speciality} {...feld('speciality')} />
         </Feldgruppe>
       </Section>
@@ -83,12 +84,7 @@ export function PrescriberFormFields({
       <Section titel="Kontakt">
         <Feldgruppe>
           <Field label={VERORDNER_BESCHRIFTUNG.phone} type="tel" {...feld('phone')} />
-          <Field
-            label={VERORDNER_BESCHRIFTUNG.fax}
-            type="tel"
-            hint="Viele Praxen nehmen die Anforderung einer Folgeverordnung per Fax entgegen."
-            {...feld('fax')}
-          />
+          <Field label={VERORDNER_BESCHRIFTUNG.fax} type="tel" {...feld('fax')} />
           <Field label={VERORDNER_BESCHRIFTUNG.email} type="email" {...feld('email')} />
         </Feldgruppe>
       </Section>

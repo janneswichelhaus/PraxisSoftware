@@ -235,7 +235,7 @@ describe('MeinKontoPage', () => {
   it('warnt owner deutlicher als andere Rollen, wenn der zweite Faktor fehlt', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
     expect(
-      await screen.findByText(/darf Zugänge, Rollen und das Protokoll verwalten/),
+      await screen.findByText(/Verwaltungsrechte, aber noch kein zweiter Faktor/),
     ).toBeInTheDocument();
   });
 
@@ -244,7 +244,7 @@ describe('MeinKontoPage', () => {
     expect(
       await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.'),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/darf Zugänge, Rollen/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Verwaltungsrechte/)).not.toBeInTheDocument();
   });
 
   it('zeigt den QR-Code des Anmeldedienstes und die Angabe zum Abtippen', async () => {
@@ -327,7 +327,7 @@ describe('MeinKontoPage', () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
     expect(
-      await screen.findByText(/darf Zugänge, Rollen und das Protokoll verwalten/),
+      await screen.findByText(/Verwaltungsrechte, aber noch kein zweiter Faktor/),
     ).toBeInTheDocument();
   });
 
@@ -395,7 +395,7 @@ describe('MeinKontoPage — UXR-002', () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
     await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.');
 
-    const breite = screen.getByRole('heading', { name: 'Zugang' }).closest('.max-w-xl');
+    const breite = screen.getByRole('heading', { name: 'Passkeys' }).closest('.max-w-formular');
     expect(breite).not.toBeNull();
     for (const titel of ['Passkeys', 'PIN', 'Zweiter Faktor', 'Sitzungen']) {
       expect(breite).toContainElement(screen.getByRole('heading', { name: titel }));

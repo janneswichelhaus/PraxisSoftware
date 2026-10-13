@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import type { Routenergebnis } from '@/lib/location/route';
 import { Fahrtabschnitt, Routenzusammenfassung } from './Fahrten';
 
 /** MAP-006c: Anzeige von Fahrzeit und Fahrpuffer — gerechnet wird nichts hier. */
@@ -101,12 +102,29 @@ describe('Fahrtabschnitt', () => {
 describe('Routenzusammenfassung', () => {
   const ROUTE = { distanceMeters: 3150, durationSeconds: 762, legs: [], geometry: [] };
 
+  /** Eine Abfrage wie aus `useQuery`, mit festem Stand. */
+  function abfrage(
+    data: Routenergebnis | undefined,
+    stand: { isPending?: boolean; isFetching?: boolean } = {},
+  ) {
+    return {
+      data,
+      isPending: stand.isPending ?? data === undefined,
+      isError: false,
+      isFetching: stand.isFetching ?? false,
+      refetch: () => undefined,
+    };
+  }
+  const NICHT_EINGERICHTET: Routenergebnis = {
+    ok: false,
+    error: { code: 'not_configured', message: 'x' },
+  };
+
   it('kennzeichnet die Nachbildung', () => {
     render(
       <Routenzusammenfassung
-        laedt={false}
-        ergebnis={{ ok: true, value: { route: ROUTE, quelle: 'nachbildung' } }}
-        erneutVersuchen={() => {}}
+        noetig
+        abfrage={abfrage({ ok: true, value: { route: ROUTE, quelle: 'nachbildung' } })}
       />,
     );
     expect(screen.getByRole('status')).toHaveTextContent(/Nachbildung ohne Kartendienst/);
@@ -114,29 +132,39 @@ describe('Routenzusammenfassung', () => {
   });
 
   it('sagt bei einem Fehler, dass der Fahrpuffer nicht geprueft ist', () => {
-    render(
-      <Routenzusammenfassung
-        laedt={false}
-        ergebnis={{ ok: false, error: { code: 'not_configured', message: 'x' } }}
-        erneutVersuchen={() => {}}
-      />,
-    );
+    render(<Routenzusammenfassung noetig abfrage={abfrage(NICHT_EINGERICHTET)} />);
     expect(screen.getByRole('status')).toHaveTextContent(/Fahrpuffer nicht geprüft/);
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
   it('sagt ohne Einrichtung, was trotzdem geht - ohne Secrets (TER-07, ANN-090)', () => {
-    render(
-      <Routenzusammenfassung
-        laedt={false}
-        ergebnis={{ ok: false, error: { code: 'not_configured', message: 'x' } }}
-        erneutVersuchen={() => {}}
-      />,
-    );
+    render(<Routenzusammenfassung noetig abfrage={abfrage(NICHT_EINGERICHTET)} />);
     const meldung = screen.getByRole('status');
     expect(meldung).toHaveTextContent(
       'Fahrzeiten sind hier noch nicht eingerichtet. Liste und Navigation funktionieren trotzdem.',
     );
     expect(meldung).not.toHaveTextContent(/Secret|LOCATION_|PTV_API_KEY|Repository/);
+  });
+
+  it('sagt beim Laden, dass gerechnet wird', () => {
+    render(<Routenzusammenfassung noetig abfrage={abfrage(undefined, { isFetching: true })} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Route und Fahrzeiten werden berechnet …');
+  });
+
+  it('sagt nichts von Berechnung, wenn es keine Fahrt gibt (Design-Review T4)', () => {
+    // Alle Stopps am Startort: Die Abfrage läuft nie los und bliebe
+    // „ausstehend“ - bis dahin stand der Satz dann für immer da.
+    const { container } = render(
+      <Routenzusammenfassung noetig={false} abfrage={abfrage(undefined)} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText(/werden berechnet/)).toBeNull();
+  });
+
+  it('sperrt „Erneut versuchen“, solange der neue Versuch läuft', () => {
+    render(
+      <Routenzusammenfassung noetig abfrage={abfrage(NICHT_EINGERICHTET, { isFetching: true })} />,
+    );
+    expect(screen.getByRole('button', { name: 'Wird berechnet …' })).toBeDisabled();
   });
 });

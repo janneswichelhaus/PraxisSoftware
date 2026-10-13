@@ -1,6 +1,8 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
+import { Textlink } from '@/components/ui/Textlink';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { formatLocalTimeRange, kalenderZumTermin } from '@/features/appointments/api';
@@ -20,17 +22,25 @@ import { einordnung, terminName } from './tagesstart';
 const pille =
   'rounded-pill inline-flex min-h-9 items-center gap-1 px-3 text-sm font-semibold whitespace-nowrap';
 
-/** Der Name als Link: 20 px in 700, Unterstrich 2 px mit 4 px Abstand, Tippziel 44 px. */
-const namenslink =
-  'text-accent hover:text-accent-hover relative z-10 inline-flex min-h-11 items-center underline ' +
-  'decoration-2 underline-offset-4 transition-colors';
+/**
+ * Eine Pille, die ein Link ist: 36 px im Bild, 44 px zum Tippen (DESIGN.md
+ * Grundsatz 3; Design-Review R2, H1). Das Ziel ragt 4 px über und unter die
+ * Pille, ohne die Zeile höher zu machen.
+ */
+const pillenlink = 'group rounded-pill -my-1 inline-flex min-h-11 items-center';
 
 /**
- * Was über der Fläche der Karte liegt und selbst ein Ziel ist (UBK-004): Es
- * hebt sich über den Link der ganzen Karte, sonst fiele jeder Tipp darauf
- * auf den Termin.
+ * Der Name als Link: 20 px in 700, Unterstrich 2 px mit 4 px Abstand.
+ *
+ * Das Tippziel ist 44 px hoch, reicht aber vom Namen **nach unten** über die
+ * Zeile mit der Uhrzeit (Text, kein Ziel) statt 10 px nach oben: Darüber
+ * liegt das Ziel von „Termin →". Mittig ausgerichtet überlappten beide bei
+ * 375 px um 10 px, und ein Tipp auf den unteren Rand von „Termin →" traf das
+ * „i" (Design-Review R2, neu1). Der Rand unten nimmt die 19 px aus dem Fluss.
  */
-const darueber = 'relative z-10';
+const namenslink =
+  'text-accent hover:text-accent-hover inline-flex min-h-11 items-start pb-[19px] -mb-[19px] ' +
+  'underline decoration-2 underline-offset-4 transition-colors';
 
 /**
  * Der eine ausgeklappte Termin im Zeitstrahl, so wie man ihn an der
@@ -39,20 +49,20 @@ const darueber = 'relative z-10';
  * Bewusst eine Karte statt einer Zeile: Anschrift, Zugang und Rufnummer
  * müssen bei 375 px ohne einen Seitenwechsel erreichbar sein.
  *
- * **Die ganze Karte öffnet den Termin** (UBK-004, Auftrag Jannes 2026-10-05):
- * Bis dahin stand dafür eine Fußzeile „Termin öffnen →“. Jetzt spannt ein
- * Link seine Fläche über die Karte (`after:inset-0`); die eigenständigen
- * Ziele - Akte, Info, Erstaufnahme, Anruf, Navigation, Doku, Haken - liegen
- * darüber (`darueber`). Verschachtelt sind die Ziele nicht: Im Dokument ist
- * der Termin ein Link neben den anderen, mit eigenem Namen für Tastatur und
- * Vorlesesoftware.
+ * **Der Termin ist ein kleiner Link „Termin →“ in der Kopfzeile** (Praxis-
+ * Review R2, P1). Von UBK-004 bis dahin spannte ein Link seine Fläche über
+ * die ganze Karte (`after:inset-0`): Ein Fehltipp neben Doku, Hörer oder
+ * Haken landete im Kalender - unterwegs, mit einer Hand. Jetzt ist nur, was
+ * wie ein Ziel aussieht, auch eines; die Knöpfe stehen 12 px auseinander.
  *
  * Die Uhrzeit des Beginns steht am Zeitstrahl daneben; die Karte nennt die
  * ganze Spanne in der Nebenzeile, weil das Ende am Strahl nicht steht.
  *
  * **Pillen statt Textblock:** Liege und offene Erstaufnahme stehen als Pillen
- * unter der Anschrift. Etage, Zugangshinweis, Besonderheit und Rufnummern
- * liegen hinter dem Info-Knopf „i“ - seit UBK-004 in der Namenszeile, bis
+ * unter den Knöpfen (seit Auftrag C1; bis dahin unter der Anschrift, wo sie
+ * den Hauptknopf am Telefon unter die Tableiste schoben). Etage,
+ * Zugangshinweis, Besonderheit und Rufnummern liegen hinter dem Info-Knopf
+ * „i“ - seit UBK-004 in der Namenszeile, bis
  * dahin am Ende der Adresszeile (Jannes 2026-10-03, AKTE-008; 2026-10-05):
  * Sie sind wichtig, wenn man vor der Tür steht, und sonst Text,
  * den Umstehende mitlesen. Ohne eine dieser Angaben gibt es keinen Knopf.
@@ -73,10 +83,14 @@ export function Tageskarte({
   aktionen,
   hinweis,
   abschlussgespraech,
+  onZuklappen,
 }: {
   termin: DayPlanEntry;
-  /** Die Zeile über dem Namen: „Erster Weg · ≈ 12 min", „Jetzt · bis 10:10". */
-  kicker: string;
+  /**
+   * Die Zeile über dem Namen: „Erster Weg · ≈ 12 min", „Jetzt · bis 10:10".
+   * Ein Element, wenn ein Teil davon am Telefon weichen darf.
+   */
+  kicker: ReactNode;
   /** Rechts neben dem Kicker, solange kein Zustand dort steht: „in 25 Minuten". */
   relativ?: string | null;
   /** „Termin 2 von 6", wenn die Grundlage es hergibt (PRX-008). */
@@ -91,6 +105,11 @@ export function Tageskarte({
   hinweis?: string | null;
   /** KND-001: einer der letzten Termine - Zeit für das Abschlussgespräch (ANN-286). */
   abschlussgespraech?: boolean;
+  /**
+   * Eine aufgeklappte Zeile des Zeitstrahls (Auftrag C1) klappt hier wieder
+   * zu - rechts in der Kopfzeile, neben einem Abzeichen.
+   */
+  onZuklappen?: () => void;
 }) {
   const [infoOffen, setInfoOffen] = useState(false);
   const infoId = useId();
@@ -121,36 +140,53 @@ export function Tageskarte({
   };
 
   return (
-    <article className="rounded-card border-line bg-surface hover:border-line-strong relative border px-4 py-3.5 transition-colors duration-120">
-      {/* Der Termin als Fläche der ganzen Karte (UBK-004). Sein Name steht
-          nur für Vorlesesoftware da; das Auge sieht die Karte, die Tastatur
-          einen Rahmen um sie. */}
-      <Link
-        to={terminZiel}
-        className="after:rounded-card focus-visible:after:outline-accent after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2"
-      >
-        <span className="sr-only">
-          {termin.kind === 'internal' ? 'Fehlzeit öffnen' : 'Termin öffnen'}
-        </span>
-      </Link>
+    <article className="rounded-card border-line bg-surface border px-4 py-3.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="text-accent tracking-label text-xs font-semibold uppercase">{kicker}</h3>
         {/* „Steht aus" ist der Regelfall und sagt nichts; nur ein abweichender
-            Zustand trägt ein Abzeichen (UX-005h). */}
-        {termin.status !== 'confirmed' ? (
-          <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
-        ) : relativ ? (
-          // Am Telefon ist die Karte zu schmal dafür: Die Angabe bräche in eine
-          // eigene Zeile um und schöbe den Hauptknopf vom ersten Bildschirm.
-          // Dort sagen es Jetzt-Marke und Wegbalken.
-          <p className="text-ink-muted text-sm max-sm:hidden">{relativ}</p>
-        ) : null}
+            Zustand trägt ein Abzeichen (UX-005h). Bricht die Zeile um, bleibt
+            dieser Teil rechts - das Zuklappen steht immer am selben Ort. */}
+        <span className="ml-auto flex items-center gap-3 empty:hidden">
+          {termin.status !== 'confirmed' ? (
+            <Badge ton={dayPlanStatusTon[termin.status]}>
+              {dayPlanStatusLabels[termin.status]}
+            </Badge>
+          ) : relativ ? (
+            // Am Telefon ist die Karte zu schmal dafür: Die Angabe bräche in eine
+            // eigene Zeile um und schöbe den Hauptknopf vom ersten Bildschirm.
+            // Dort sagen es Jetzt-Marke und Wegbalken.
+            <p className="text-ink-muted text-sm max-sm:hidden">{relativ}</p>
+          ) : null}
+          {/* Der Weg in den Termin (Absage, Verlegen, wieder öffnen) - klein,
+              aber 44 px hoch; der Name der Karte führt in die Akte. Das
+              Tippziel ragt 14 px über und unter die Zeile, ohne sie höher zu
+              machen: Am Telefon bleibt der Hauptknopf über der Tableiste.
+              Unten endet es, wo die Zeile des Namens beginnt. */}
+          <Textlink alleinstehend to={terminZiel} className="-my-3.5 gap-1 text-sm font-semibold">
+            {termin.kind === 'internal' ? 'Fehlzeit' : 'Termin'}{' '}
+            <span className="sr-only">öffnen</span>
+            <span aria-hidden="true">→</span>
+          </Textlink>
+          {onZuklappen ? (
+            <Symbolknopf
+              beschriftung={`Zuklappen: ${terminName(termin)}`}
+              data-zuklappen=""
+              aria-expanded
+              onClick={onZuklappen}
+              className="-my-2.5 -mr-2"
+            >
+              <span className="size-2 translate-y-0.5 rotate-45 border-t-2 border-l-2 border-current" />
+            </Symbolknopf>
+          ) : null}
+        </span>
       </div>
 
       {/* Der Name führt in die Akte, und zwar mit dem Weg zurück in den Tag
           wie jedes andere Ziel der Karte (UEB-13). Er ist als Link zu
-          erkennen, auch ohne Maus, und 44 px hoch (RSP-06, UIK-15). */}
-      <div className="mt-1 flex items-center gap-1.5">
+          erkennen, auch ohne Maus, und 44 px hoch (RSP-06, UIK-15). Die
+          Zeile beginnt erst, wo das Ziel von „Termin →" endet (14 px unter
+          dem Kicker); Name und „i" ragen dafür nach unten (R2, neu1). */}
+      <div className="mt-3.5 flex items-center gap-1.5">
         <p className="text-ink text-h4 min-w-0 font-bold wrap-anywhere">
           {termin.kind === 'training' ? (
             // TRN-006: der Name aus dem Training; er führt zur Kund:in.
@@ -173,27 +209,29 @@ export function Tageskarte({
           )}
         </p>
         {hatInfo ? (
-          // 22 px im Bild, 44 px zum Tippen: Der Knopf ragt über seine Zeile
-          // hinaus, ohne sie höher zu machen.
-          <button
-            type="button"
-            aria-label="Etage, Zugang und Kontakt"
+          // 22 px im Bild, 44 px zum Tippen: Der Knopf ragt wie der Name nach
+          // unten über seine Zeile hinaus, ohne sie höher zu machen; das
+          // Zeichen rückt um dieselben 10 px hoch auf die Mitte des Namens.
+          <Symbolknopf
+            beschriftung="Etage, Zugang und Kontakt"
             {...info}
-            className="text-accent hover:bg-accent-soft rounded-button relative z-10 -my-2.5 inline-flex size-11 shrink-0 items-center justify-center transition-colors duration-120"
+            className="-mb-[19px] shrink-0"
           >
             <span
-              aria-hidden="true"
-              className={`rounded-pill border-accent inline-flex size-[22px] items-center justify-center border-[1.5px] text-xs leading-none font-bold ${
+              className={`rounded-pill border-accent inline-flex size-[22px] -translate-y-2.5 items-center justify-center border-[1.5px] text-xs leading-none font-bold ${
                 infoOffen ? 'bg-accent-soft' : ''
               }`}
             >
               i
             </span>
-          </button>
+          </Symbolknopf>
         ) : null}
       </div>
 
-      <p className="text-ink-muted flex flex-wrap items-center gap-x-2 gap-y-1 text-sm tabular-nums">
+      {/* Über dieser Zeile liegen die unteren 11 px der Ziele von Name und
+          „i". Sie ist nur Text und lässt den Tipp zu ihnen durch, bleibt
+          aber über ihnen gezeichnet (kein Überdecken beim Überfahren). */}
+      <p className="text-ink-muted pointer-events-none mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm tabular-nums">
         <span>
           {[art, formatLocalTimeRange(termin.starts_at, termin.ends_at, zone), position]
             .filter(Boolean)
@@ -216,50 +254,12 @@ export function Tageskarte({
         </address>
       ) : null}
 
-      {liege || fehlt.length > 0 || abschluss ? (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {/* UX-003a: Die Liege gehört zur Person, nicht zum Termin (ANN-116). */}
-          {liege ? (
-            <span className={`${pille} bg-accent-soft text-accent`}>
-              <span aria-hidden="true">✓</span>
-              Liege
-            </span>
-          ) : null}
-          {/* PRX-013: Die Pille sagt, dass etwas fehlt; was fehlt, steht in der
-              Akte - und für Vorlesesoftware gleich dabei. */}
-          {fehlt.length > 0 && termin.patient_id ? (
-            <Link
-              to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
-              className={`${pille} ${darueber} bg-warnung-soft text-warnung hover:border-warnung border border-transparent transition-colors duration-120`}
-            >
-              <span aria-hidden="true">!</span>
-              Erstaufnahme offen
-              <span className="sr-only">: {openItemsText(fehlt)}</span>
-              <span aria-hidden="true">→</span>
-            </Link>
-          ) : null}
-          {/* KND-001: In den letzten Terminen erinnert die Karte an das
-              Abschlussgespräch (4.10, ANN-286). Angeboten wird mündlich; das
-              Angebot hält die Akte fest. */}
-          {abschluss && termin.patient_id ? (
-            <Link
-              to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
-              className={`${pille} ${darueber} bg-accent-soft text-accent hover:border-accent border border-transparent transition-colors duration-120`}
-            >
-              Abschlussgespräch
-              <span className="sr-only">: Wie geht es nach der Behandlung weiter?</span>
-              <span aria-hidden="true">→</span>
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
-
       {/* „Zugangshinweis" wie im Feld der Stammdaten (WRT-17): „Zugang"
           allein ist in dieser Anwendung die Berechtigung zum Anmelden. */}
       {hatInfo && infoOffen ? (
         <dl
           id={infoId}
-          className="bg-canvas rounded-button text-ink relative z-10 mt-2.5 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
+          className="bg-canvas rounded-button text-ink mt-2.5 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
         >
           {stockwerk ? (
             <>
@@ -298,10 +298,55 @@ export function Tageskarte({
         </dl>
       ) : null}
 
+      {/* 12 px zwischen den Knöpfen (P1): Mit 8 px traf ein Daumen am
+          Lastenrad den Nachbarn - und der Haken schließt ab. */}
       {hauptaktion || aktionen ? (
-        <div className={`${darueber} mt-3.5 flex flex-col gap-2`}>
+        <div className="mt-3.5 flex flex-col gap-3">
           {hauptaktion}
-          {aktionen ? <div className="flex flex-wrap gap-2">{aktionen}</div> : null}
+          {aktionen ? <div className="flex flex-wrap gap-3">{aktionen}</div> : null}
+        </div>
+      ) : null}
+      {/* Unter den Knöpfen (Auftrag C1): Der Hauptknopf bleibt am Telefon
+          über der Tableiste, die Pillen stehen gleich darunter. */}
+      {liege || fehlt.length > 0 || abschluss ? (
+        // 8 px zwischen umgebrochenen Pillen: Die Ziele der Links ragen je
+        // 4 px darüber hinaus und stoßen dann aneinander, ohne zu überlappen.
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-1.5 gap-y-2">
+          {/* UX-003a: Die Liege gehört zur Person, nicht zum Termin (ANN-116). */}
+          {liege ? (
+            <span className={`${pille} bg-accent-soft text-accent`}>
+              <span aria-hidden="true">✓</span>
+              Liege
+            </span>
+          ) : null}
+          {/* PRX-013: Die Pille sagt, dass etwas fehlt; was fehlt, steht in der
+              Akte - und für Vorlesesoftware gleich dabei. */}
+          {fehlt.length > 0 && termin.patient_id ? (
+            <Link to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')} className={pillenlink}>
+              <span
+                className={`${pille} bg-warnung-soft text-warnung group-hover:border-warnung border border-transparent transition-colors duration-120`}
+              >
+                <span aria-hidden="true">!</span>
+                Erstaufnahme offen
+                <span className="sr-only">: {openItemsText(fehlt)}</span>
+                <span aria-hidden="true">→</span>
+              </span>
+            </Link>
+          ) : null}
+          {/* KND-001: In den letzten Terminen erinnert die Karte an das
+              Abschlussgespräch (4.10, ANN-286). Angeboten wird mündlich; das
+              Angebot hält die Akte fest. */}
+          {abschluss && termin.patient_id ? (
+            <Link to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')} className={pillenlink}>
+              <span
+                className={`${pille} bg-accent-soft text-accent group-hover:border-accent border border-transparent transition-colors duration-120`}
+              >
+                Abschlussgespräch
+                <span className="sr-only">: Wie geht es nach der Behandlung weiter?</span>
+                <span aria-hidden="true">→</span>
+              </span>
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </article>

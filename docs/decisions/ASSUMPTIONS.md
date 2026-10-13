@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-12.
+Zuletzt aktualisiert: 2026-10-13.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -24,12 +24,10 @@ bis §3.3 und ADR-013 regeln. Was das bräuchte, ist keine Annahme, sondern eine
 | `verworfen` | die Annahme wurde aufgegeben; der Eintrag nennt, was stattdessen gilt |
 | `in ADR überführt` | bestätigt und als ADR festgehalten; Verweis auf die ADR-Nummer |
 
-Die Trennung von `entschieden (Jannes)` und `bestätigt (Prüfung)` ist nötig,
-weil §15.1 Punkt 5 für `Datenschutz` und `Recht` den Datenschutzprozess nach
-§3.7 verlangt: Jannes' Festlegung zählt fürs Bauen, nicht für die Freigabe. Kein
-Eintrag verschwindet — Kopf, Statuszeile und Anker bleiben auch dann stehen,
-wenn eine Annahme verworfen oder in einen ADR überführt wurde; ihr Wortlaut
-steht dann in der Git-Historie.
+Die Trennung von `entschieden (Jannes)` und `bestätigt (Prüfung)` ist nötig, weil §15.1 Punkt 5
+für `Datenschutz` und `Recht` den Datenschutzprozess nach §3.7 verlangt: Jannes' Festlegung zählt
+fürs Bauen, nicht für die Freigabe. Kein Eintrag verschwindet — Kopf, Statuszeile und Anker
+bleiben auch dann stehen, wenn eine Annahme verworfen oder in einen ADR überführt wurde.
 
 ## Aufbau eines Eintrags
 
@@ -42,6 +40,11 @@ Migration, Test) und **Änderungspfad** (was zu tun ist, wenn sie nicht hält, m
 Aufwand `klein` = eine Stelle, `mittel` = ein Modul oder eine Migration ohne
 Datenumzug, `groß` = mehrere Module oder Datenumzug). Optional **Ablösung**
 („ersetzt ANN-…" / „abgelöst durch ANN-…"; beide Einträge tragen sie).
+**Seit 2026-10-12:** Ein neuer Eintrag hat höchstens 1 KB (je Absatz ein bis zwei Sätze,
+Quellen nur bei `Datenschutz` und `Recht`). Jannes bestätigt nur noch Annahmen mit teurer
+Rücknahme — Änderungspfad `groß` oder ein Praxisprozess nach §2.3 (Rollen, wer behandelt, wie
+abgerechnet wird); die PR nennt sie unter ihren Fragen. `Datenschutz` und `Recht` bleiben im
+Prüfpaket; alle übrigen bleiben `offen` ohne Wiedervorlage und tragen das Bauen.
 Kategorien sind `Datenschutz`, `Recht`, `Praxisprozess` und `Technik`; der
 Zusatz der Statuszeile ist `Prüfpaket` (siehe unten), `erledigt` (jeder andere
 Status als `offen`) oder `—` (`offen`). Die Instanz ist, wer entschieden oder
@@ -1833,7 +1836,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 6) · erledigt · Wiedervorlage: —
 
-**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“
+**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“; die Rückfrage gilt auf der Schreibseite nach dem Festschreiben nicht mehr (ANN-475, offen)
 
 **Annahme.** Am dokumentierten Termin bestätigt die behandelnde Person, welche Heilmittel sie geleistet hat — vorbelegt aus der Grundlage, mit einer Rückfrage, geschrieben über dieselbe `record_billable_services` wie im Büro. `therapist` und `team_lead` dürfen das **nur an ihrem eigenen Termin** (ihre Beschäftigtenkennung steht am Termin); `owner` und `office` weiter an jedem. **Zurücknehmen** und das **Ausfallhonorar** (eine Forderung gegen die Patient:in) bleiben bei `owner` und `office`. Ist das Kontingent danach erreicht, sagt die Seite es; eine Rechnung entsteht dabei nie — sie bleibt im Büro (ANN-077). Das Protokoll trägt, ob am Termin oder im Büro erfasst wurde.
 
@@ -2047,7 +2050,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) ·
 
 **Begründung.** Die Sicht auf den eigenen Umsatz soll an einer vereinbarten Tatsache hängen, nicht an einer Rolle; eine fehlende Angabe darf niemandem Zahlen zeigen. Sätze und Abrechnung der Beteiligung sind ein eigenes Epic.
 
-**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffCompensationSection.tsx`.
+**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffEinsatz.tsx`.
 
 **Änderungspfad.** Weitere Modelle: Wert in der Check-Constraint und in der Auswahl · Aufwand `klein`. Die Person wählt selbst in der Anwendung: eigener Schreibweg mit Bestätigung durch owner · Aufwand `mittel`.
 
@@ -2737,7 +2740,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Kalender ohne Zug
 
 **Begründung.** Jannes (2026-10-03): Neu angelegte Therapeut:innen sollen sofort im Kalender stehen, ohne ihren Zugang selbst zu aktivieren. Ein Zugang, den owner samt Kennwort anlegt, bräuchte einen Admin-Schlüssel am Server und weichte die Bestätigung der E-Mail-Adresse auf – das hat Jannes verworfen. Der zweite Weg ergänzt den ersten, statt ihn zu ersetzen; bestehende Konten und Tests bleiben unberührt. Unsicher: ob ein Zugang mit Behandlungsrolle die Person künftig auch automatisch in den Kalender nehmen soll, ohne dass owner das Merkmal setzt – heute tut er das über den bisherigen Weg ohnehin.
 
-**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; `StaffCalendarSection` in `src/features/staff/StaffCalendarSection.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
+**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; Abschnitt „Kalender“ in `src/features/staff/StaffEinsatz.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
 
 **Änderungspfad.** Kalender nur noch über das Merkmal (der Zugang reicht nicht mehr): den zweiten Zweig in beiden Prädikaten streichen und das Merkmal aus den bestehenden Konten befüllen · Aufwand `mittel`. Auch office darf das Merkmal setzen: `app.can_manage_staff_master_data` statt `app.can_manage_staff_accounts` · Aufwand `klein`.
 
@@ -3531,7 +3534,6 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Änderungspfad.** Zugang zum Training nur per Einladung: im Aufruf einen Zugang `invited` mit Einladung vor Ort anlegen statt `active` · Aufwand `klein`. Mit Folgen für ADR-023: neue Fassung, die diesen Weg aufnimmt · Aufwand `klein`.
 
-
 ### ANN-292 — Eine Übungsbibliothek für Behandlung und Training
 
 Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
@@ -4026,7 +4028,6 @@ Datenschutz · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, Zweit
 
 **Änderungspfad.** Eigenes Merkmal statt Auditlog: Spalte am Profil, von `request_staff_password_reset` gesetzt · Aufwand `klein`. Ganz ohne Mail-Anmeldung: STAFF-005 mit Einladungscode wie bei der Plattform · Aufwand `mittel`.
 
-
 ### ANN-332 — Anhänge an Rückfragen: Stufe 2 heißt laufendes Nachsorge-Abo, Frist 30 Tage
 
 Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkte 59 und 65) · Prüfpaket · Wiedervorlage: B2, DSFA (G14)
@@ -4367,7 +4368,6 @@ Technik · offen · 2026-10-12 · — · — · Wiedervorlage: OPS-001 (Passkeys
 
 **Änderungspfad.** Schlüssel vom Anmeldedienst lesen, sobald er ihn herausgibt: `own_offline_passkeys` aus `auth.webauthn_credentials` statt aus der Freigabe · Aufwand `mittel`; andere Relying Party: eine Konstante in `freigebenOhneNetz` · Aufwand `klein`; Freigabe ohne Netz abschalten: `ohneNetz` in `src/app/App.tsx` nicht setzen · Aufwand `klein`.
 
-
 ### ANN-360 — Das Diensttelefon wird je Konto und Gerät eingerichtet; Einrichtung und Offline-Entwürfe liegen in einer Dauerablage, die weder mit dem Abmelden noch mit der Frist fällt
 
 Datenschutz · offen · 2026-10-12 · — · — · Wiedervorlage: Datenschutzprüfung (B2, DSFA, ADR-024 Konsequenzen); Jannes in der Sichtung Befund (OFF-EPIC-001)
@@ -4511,3 +4511,654 @@ Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Go-liv
 **Anker.** Spalte `external_attachments_enabled`, `app.external_attachments_enabled`, `app.message_attachments_offered` in `supabase/migrations/20261110130000_kom_012_external_attachments_switch.sql`; Testpraxis in `supabase/seed.sql`. Geprüft in `supabase/tests/message-attachments.test.ts` („Schalter ‚Anhänge von außen aus‘ …“).
 
 **Änderungspfad.** Mit Virenprüfung einschalten: ADR-026 annehmen, Prüfer bauen, dann die Spalte der Organisation im Go-live-Gate setzen · Aufwand `klein` im Code. Einschalten über die Oberfläche (Inhaber:in): eine Funktion mit Rolle `owner`, die nur bei `app.message_attachment_scan_required()` einschaltet · Aufwand `mittel`. Global statt je Organisation: die Funktion liest eine Konstante · Aufwand `klein`.
+
+### ANN-380 — Der Seed übernimmt den ganzen Übungskatalog mit festen Kennungen; ein Namenskonflikt bricht den Seed ab
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** `supabase/seed.sql` ruft `app.import_exercise_catalog_for` mit dem ganzen Katalog auf (erzeugt von `pnpm katalog:sql`), Kennungen aus md5(Organisation, Schlüssel). Die neun Seed-Übungen bleiben mit ihren Kennungen.
+
+**Begründung.** Lokal, CI und Test-Umgebung (`neu-aufsetzen.psql` spielt den Seed ein) zeigen denselben Bestand; derselbe Prüfweg wie der Knopf.
+
+**Anker.** `p_feste_kennungen` in `supabase/migrations/20261111100000_ueb_012_exercise_catalog.sql`.
+
+**Änderungspfad.** Seed ohne Katalog: den Abschnitt leeren · Aufwand `klein`.
+
+### ANN-381 — Ein Übungsbild ist eine Posen-Beschreibung (jsonb, Fassung 1, höchstens 4 KB), die der Code zeichnet; sie wird beim Zuweisen eingefroren
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Keine Datei und keine Ablage (ADR-017 Punkt 4): Grundstellung plus Winkel; der Zeichner rechnet Bodenkontakt, Griffe und Ausschnitt. Maße und Grundstellungen gehören zur Fassung und ändern sich nur mit `v: 2`. Ungültig wird zu „kein Bild".
+
+**Begründung.** Einheitlich, offline im Build (ADR-024 Punkt 1), testbar, ohne Anbieter; eingefroren wie Name und Anleitung (ANN-300).
+
+**Anker.** `app.exercise_illustration_valid` (Grundstellungen: `app.exercise_illustration_bases`) in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
+
+**Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: neue Fassung von ADR-017 · Aufwand `groß`.
+
+### ANN-382 — Der Übungskatalog ist Produktinhalt im Release; die Praxis übernimmt ihn als Kopie mit Herkunft, ein späterer Import überschreibt nichts
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Ohne `organization_id` wie die Instrumente (ANN-083); je Eintrag eine Übung mit einer Variante, Herkunft `catalog_key`/`catalog_version`, je Praxis einmal. Vorhandene Schlüssel werden übersprungen, gleiche Bezeichnungen gemeldet; erst alles prüfen, dann schreiben.
+
+**Begründung.** Fremdschlüssel, RLS und Schnappschuss der Bibliothek bleiben; die Praxis passt ihre Kopie frei an (Analyse 12.10., Variante a).
+
+**Anker.** `app.import_exercise_catalog_for` in der Migration UEB-012; `src/features/exercises/katalog/index.ts`.
+
+**Änderungspfad.** Neue Fassung übernehmen anbieten: Vergleich `catalog_version` · Aufwand `mittel`.
+
+### ANN-383 — Ziel, Ausgangsstellung, Niveau 1–3 und Hilfsmittel sind feste Listen des Katalogs; kein Feld „Krankheitsbild"
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Acht Ziele, acht Ausgangsstellungen, 17 Hilfsmittel (Hausrat zuerst); eigene Übungen behalten freie Schlagworte (ANN-295). Keine Diagnose und keine Kontraindikation als Feld (ADR-006 Punkt 10).
+
+**Begründung.** Ordnungen zum Suchen, die der ADR ausdrücklich zulässt; ein Krankheitsbild lüde zum Abgleich mit der Akte ein.
+
+**Anker.** `app.exercise_goals`, `app.exercise_starting_positions`, `app.exercise_equipment_labels` in der Migration UEB-012; `src/features/exercises/katalog/typen.ts`.
+
+**Änderungspfad.** Ein Wert mehr: Liste an beiden Stellen · Aufwand `klein`.
+
+### ANN-384 — Die Standarddosierung kommt aus dem Katalog; Positionen kennen Halten, je Seite und Häufigkeit am Tag
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Die Standarddosierung ist für alle gleich und nie aus Angaben einer Person abgeleitet (ADR-006 Punkt 10). Halten nur mit Wiederholungen („10-mal 5 Sekunden"); Wiederholungen oder Dauer bleibt (ANN-299).
+
+**Begründung.** 115 von 196 Standarddosierungen brauchen eines der drei Felder (Analyse 12.10.).
+
+**Anker.** `app.exercise_dosage_valid` und `save_exercise_plan_item` in der Migration UEB-012; `src/features/exercises/katalog/dosierung.ts`.
+
+**Änderungspfad.** Häufigkeit je Woche an der Position: eine Spalte · Aufwand `mittel`.
+
+### ANN-385 — Den Katalog übernehmen darf owner, wie die Bibliothek pflegen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** `import_exercise_catalog` prüft wie jeder Schreibweg der Bibliothek (`app.exercise_library_writer`, ANN-293); die interne Fassung ist für keine Anwendungsrolle ausführbar. Keine neue Auditaktion: `created_by` steht an der Zeile (ADR-010 Fassung 3).
+
+**Begründung.** Wer übernimmt, ändert, was alle Pläne anbieten – dieselbe Überlegung wie bei der Pflege.
+
+**Anker.** `public.import_exercise_catalog` in der Migration UEB-012.
+
+**Änderungspfad.** Weitere Rollen: `app.can_manage_exercise_library` · Aufwand `klein`.
+
+### ANN-386 — KI-erstellte Katalogtexte und -bilder gelten bis zur Durchsicht durch die Praxis als ungeprüft; das blockiert nur das Scharfschalten
+
+Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Go-live; Jannes' Durchsicht je Gruppe
+
+**Annahme.** Ohne Prüfvermerk (`reviewed_at`/`reviewed_by`, nur owner) ist eine übernommene Variante ungeprüft und wird so angezeigt. Vor dem Einsatz bei echten Patient:innen sieht Jannes jede Übung durch, die in einem Plan steht (§15.2, § 630c Abs. 2 BGB). Ändert die Praxis danach Bezeichnung, Alltagsname, Anleitung, Ausrüstung, typische Fehler oder Hinweise, fällt der Vermerk (`save_exercise_variant`); Speichern ohne Änderung lässt ihn stehen.
+
+**Begründung.** Fehlerhafte Anleitung wäre ein Behandlungsfehler; Bauen mit synthetischen Daten wartet nicht darauf.
+
+**Anker.** `set_exercise_variant_reviewed` und `save_exercise_variant` in der Migration UEB-012; Hinweis in `src/features/exercises/UebungPage.tsx`.
+
+**Änderungspfad.** Zuweisen nur geprüfter Varianten: Prüfung in `assign_exercise_plan` · Aufwand `klein`.
+
+### ANN-387 — Halten gehört zur Achse Wiederholungen; je Seite und Häufigkeit am Tag sind keine Achse
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Pläne
+
+**Annahme.** In einer neuen Fassung (ANN-301) ist längeres oder neues Halten ein Schritt „schwerer" auf der Achse Wiederholungen; je Seite und Häufigkeit am Tag ändern sich frei wie der Hinweis. Ändern sich Wiederholungen und Halten zugleich, gehen beide in die Richtung des Schritts.
+
+**Begründung.** Halten ist eine Dauer wie `duration_seconds`; die Frequenz liegt am Plan (UEB-006).
+
+**Anker.** `app.exercise_plan_step_check` in der Migration UEB-012.
+
+**Änderungspfad.** Halten als Achse Tempo: eine Zeile im Schritt · Aufwand `klein`.
+
+### ANN-388 — Die computererzeugten Linienfiguren brauchen keine Kennzeichnung nach Art. 50 KI-VO; die Oberfläche sagt freiwillig „KI-erstellt"
+
+Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datenschutz- und Rechtsprüfung (B2)
+
+**Annahme.** Eine aus eigenem Code gezeichnete Piktogrammfigur ist kein Deepfake, die Praxis kein Anbieter eines generativen Systems; der Hinweis nach der Übernahme nennt Text und Bild „KI-erstellt".
+
+**Begründung.** Art. 50 KI-VO zielt auf Deepfakes und Anbieter generativer Systeme; Wortlaut nicht selbst geprüft, deshalb Prüfpaket.
+
+**Anker.** Meldung in `KatalogUebernehmen`, `src/features/exercises/UebungenPage.tsx`.
+
+**Änderungspfad.** Pflichthinweis am Bild: ein Satz in `Uebungsbild` · Aufwand `klein`.
+
+### ANN-400 — DESIGN.md ist die einzige Seitenrezeptur; eine Ratsche hält je Verzeichnis den Stand alter Muster
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Neue und umgebaute Seiten folgen `docs/design/DESIGN.md`; die Handoffs sind Historie. Sechs alte Muster (divide-y-Listen, eigene Überschriften, `<details>`, rohe Knöpfe, `max-w-xl/2xl/3xl`, `<table>`) dürfen je Verzeichnis nur abnehmen.
+
+**Begründung.** Auftrag Jannes 12.10.: Design der ganzen App nach den optimierten Stellen. Die Analyse fand die Muster verstreut und die Schuld wachsend; eine Ratsche verhindert Rückfall ohne Umbau auf einmal.
+
+**Anker.** `GRENZEN` in `src/designsystem.grenzen.ts`; geprüft in `src/designsystem.test.ts`.
+
+**Änderungspfad.** Ein Muster mehr oder weniger: Zähler und Schlüssel · Aufwand `klein`.
+
+### ANN-401 — Kein Dunkelmodus
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die App kennt nur das helle Schema; bei Bedarf käme „hoher Kontrast“, nicht dunkel.
+
+**Begründung.** Gearbeitet wird draußen am Lenker und in der Sonne; Weiß mit hohem Kontrast trägt dort (Grundton B, L5). Ein zweites Schema verdoppelt jede Kontrastprüfung.
+
+**Anker.** `color-scheme: light` in `src/index.css`.
+
+**Änderungspfad.** Dunkle Tokens unter `prefers-color-scheme` und Kontrastpaare · Aufwand `mittel`.
+
+### ANN-402 — Zwei Inhaltsbreiten: Formular 36rem, Spalte 48rem
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Formulare stehen in `max-w-formular` (36rem), eine einzelne Arbeitsspalte in `max-w-spalte` (48rem), Lesetext in `max-w-prose`; Listen und Objektseiten nutzen die volle Breite bis 1200 px.
+
+**Begründung.** Bisher drei freie Stufen (xl 64×, 2xl 21×, 3xl 17×) für dieselbe Art Seite. Die Werte sind die häufigsten im Bestand; die Übersicht bleibt pixelgleich.
+
+**Anker.** `--container-formular`, `--container-spalte` in `src/index.css`.
+
+**Änderungspfad.** Anderer Wert: das Token · Aufwand `klein`.
+
+### ANN-403 — Aktionen im Seiten- und Objektkopf sind ohne Angabe kompakt; die Tour behält 48 px
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout, Tour)
+
+**Annahme.** `Button` und `ButtonLink` im `PageHeader`, `Objektkopf`, in der `Aktionsleiste` und in der Zeilenaktion sind 44 statt 48 px hoch, außer die Seite setzt `groesse`. Die Tour setzt `normal`, bis die Sichtung entscheidet.
+
+**Begründung.** Analyse A2: Anlegen-Knöpfe in voller Größe brachen am Telefon unter den Titel; die Akte zeigte schon die kompakte Form. Die Tour ist abgenommen und soll sich nicht ungefragt ändern.
+
+**Anker.** `KnopfGroesse` in `src/components/ui/knopfGroesse.ts`; `groesse="normal"` in `src/features/tours/TourenPage.tsx`.
+
+**Änderungspfad.** Wieder 48 px: Provider in `PageHeader` entfernen · Aufwand `klein`.
+
+### ANN-404 — Medienbild: 4:3, ganz statt beschnitten, Vorschau 56 px mit Radius 10
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Übungsbibliothek)
+
+**Annahme.** Bilder und Übungszeichnungen stehen 4:3 (oder 1:1) auf Weiß mit Linie und Radius 16, ganz sichtbar; ohne Bild ein Platzhalter mit Wort. In Zeilen 56 × 56 px mit Radius 10. Zeichnungen: Tinte, die bewegte Partie in der Hauptfarbe, Strich 2.
+
+**Begründung.** Eine beschnittene Übungszeichnung zeigt die Übung falsch; 16 px Radius wirkt an 56 px zu rund.
+
+**Anker.** `Medienbild` in `src/components/ui/Medienbild.tsx`.
+
+**Änderungspfad.** Anderes Verhältnis oder Beschnitt: Vorgaben im Baustein · Aufwand `klein`.
+
+### ANN-405 — Filter am Telefon hinter „Filter (n)“, ab 640 px offen
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Über einer Liste steht die Suche immer offen und voll breit; weitere Filter klappen am Telefon hinter „Filter (n)“ ein, gesetzte Filter halten sie offen; ab 640 px stehen sie nebeneinander, je höchstens 20rem.
+
+**Begründung.** Drei offene Felder schoben die Liste am Telefon unter den Falz (Rechnungen, Patient:innen); die Übungsbibliothek klappte schon so ein.
+
+**Anker.** `Filterleiste` in `src/components/ui/Filterleiste.tsx`.
+
+**Änderungspfad.** Immer offen: Schalter entfernen · Aufwand `klein`.
+
+### ANN-406 — Ein Satz für den Ladefehler, ein Baustein für alle Abfragezustände
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Ein Ladefehler sagt „Bitte die Verbindung prüfen und erneut versuchen.“ mit „Erneut versuchen“; scheitert nur das Nachladen, bleibt der Stand mit Hinweis stehen. Neue und umgebaute Seiten nutzen `Abfragezustand`.
+
+**Begründung.** Der Satz stand rund 200-mal in fünf Abwandlungen im Code; die Weiche Laden/Fehler/Leer schrieb jede Seite selbst.
+
+**Anker.** `VERBINDUNG_PRUEFEN`, `STAND_VERALTET` in `src/components/ui/abfrageTexte.ts`; `Abfragezustand` in `src/components/ui/Abfragezustand.tsx`.
+
+**Änderungspfad.** Anderer Wortlaut: die Konstante · Aufwand `klein`.
+
+### ANN-407 — Vier Umschalter mit vier Rollen
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** `SubNav` (Unterstrich) wechselt den Bereich, `Reiterleiste` (Pille) den Teil eines Objekts, `Segment` (gefüllt) zwischen zwei bis vier Ansichten, `Filterchips` (Häkchen) wählen Filterwerte.
+
+**Begründung.** Drei Stile für dasselbe Bedürfnis (Kalender, Warteliste, Planseite); gefüllt heißt im System schon „gewählt“.
+
+**Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
+
+**Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
+
+### ANN-430 — Patientenliste: ein Suchfeld statt Namenssuche und Listenfilter
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Patientenliste hat ein Suchfeld: Es filtert die geladene Liste nach Name (beide Schreibrichtungen, Umlaute eingeebnet wie `app.suchform`), Ort, PLZ, Telefon und E-Mail; die Eingabetaste öffnet die Akte, wenn genau eine übrig ist. Die serverseitige Namenssuche bleibt in der Kopfleiste und in den Vorgängen.
+
+**Begründung.** Zwei Felder für denselben Bestand (gleiches Leserecht, ADR-004) verlangten eine Wahl vor dem Tippen; Auftrag Design-Rollout B1.
+
+**Anker.** `matches` und `absenden` in `src/features/patients/PatientsListPage.tsx`.
+
+**Änderungspfad.** `Patientensuche` wieder über die Liste setzen · Aufwand `klein`.
+
+### ANN-435 — Arbeitszeiten: ein Speichern je Wochentag, kein Wochenformular
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** „Ein Speichern je Formular“ heißt: Der gewählte Wochentag ist ein Formular mit genau einem Speichern; „Blöcke leeren“ entfällt (Blöcke einzeln entfernen, Rückfrage beim Speichern bleibt).
+
+**Begründung.** Eine ganze Woche mit einem Knopf hieße sieben Aufrufe ohne gemeinsame Transaktion – ein halb gespeicherter Plan. Dafür bräuchte es eine neue Serverfunktion (alles oder nichts).
+
+**Anker.** Kommentar `ANN-435` an `Wochenplan` in `src/features/scheduling/SchedulingPage.tsx`.
+
+**Änderungspfad.** Wochenformular: RPC für die ganze Woche, Formular über alle Zeilen · Aufwand `mittel`.
+
+### ANN-440 — Trainingskund:in mit vier Reitern; ein Reiter lädt erst, wenn er offen ist
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Trainingskund:in ist eine Objektseite wie die Akte: Termine (mit Plänen und Einheiten), Verlauf (Check-ins, Assessments), Verträge (Vereinbarungen, Paket, Einwilligung, Vertragsende leise am Ende), Stammdaten (Kontakt, Voraussetzungen, Plattform, Rückfragen). Was ein Reiter zeigt, wird erst beim Öffnen geladen – protokollierte Lesezugriffe entstehen dann erst.
+
+**Begründung.** Auftrag Welle B (B3a): vierzehn Abschnitte, 3.838 px am Telefon; Reiterfolge nach DESIGN.md „Objekt“.
+
+**Anker.** `bereiche` in `Ansicht`, `src/features/training/TrainingClientPage.tsx`.
+
+**Änderungspfad.** Abschnitte zwischen Reitern verschieben oder vorab laden · Aufwand `klein`.
+
+### ANN-443 — „Übungen hinzufügen“ fügt mehrere in einem Zug hinzu, jede mit ihrer Standarddosierung
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Im Auswahlblatt des Planeditors werden mehrere Varianten mit Haken gewählt; „n hinzufügen“ legt sie in der Reihenfolge der Wahl an, je mit der Standarddosierung des Katalogs (ANN-384), eigene Übungen ohne sie mit der bisherigen Vorbelegung 3 × 10–12. Ein Aufruf je Position, nacheinander; scheitert einer, bleibt es bei den angekommenen, und die Meldung sagt, wie viele es sind. Nichts ist vorausgewählt.
+
+**Begründung.** Analyse Training 12.10., Abschnitt 5: rund 35 Tipps für fünf Übungen. Eine Serverfunktion für viele Positionen bräuchte eine Migration.
+
+**Anker.** `fuegeHinzu` und `standardDosis` in `src/features/exercise-plans/hinzufuegen.ts`.
+
+**Änderungspfad.** Ein Aufruf für alle: RPC mit Liste, eine Transaktion · Aufwand `mittel`.
+
+### ANN-444 — „Aus Vorlage“ findet die Übungen über den Katalogschlüssel; die Liste kennt nur die Vorlagen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Eine Vorlage fügt ihre Übungen über `catalog_key` zur nicht archivierten Variante der Praxis hinzu, mit der Dosierung der Vorlage, sonst der Standarddosierung. Was fehlt oder archiviert ist, nennt die Meldung; owner übernimmt Fehlendes aus dem Katalog und fügt es an. Ein leerer Entwurf mit Standardtitel heißt danach wie die Vorlage. Die Liste ist nach Name geordnet und bekommt nur die Vorlagen (ADR-006 Punkt 10).
+
+**Begründung.** Referenzanalyse Training, Abschnitt 9, Weg A; Zuweisen in fünf Tipps (K12).
+
+**Anker.** `ausVorlage` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
+
+**Änderungspfad.** Vorlagen der Praxis: eigene Tabelle und Migration · Aufwand `mittel`.
+
+### ANN-445 — Nachtrag, Korrektur und Verlauf in der Hülle der Schreibseite, ohne eigenes „Abbrechen“
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Nachtrag, Nachtrag bearbeiten, Korrektur und Änderungsverlauf stehen wie die Schreibseite als Fläche mit Kopfzeile (Pfeil, Name, Art, Tag mit Jahr, Uhrzeit) und Aktionsleiste („Entwurf“ · „Festschreiben“). Der Pfeil ist der Weg hinaus; ein zweites „Abbrechen“ entfällt. Die Folge des Festschreibens hängt am Knopf für Vorlesesoftware, Frist und Protokollierung stehen als Kleingedrucktes.
+
+**Begründung.** DESIGN.md Seitentyp „Arbeitsseite“; die Schreibseite (Handoff 2026-10-01, 6a) ist so abgenommen.
+
+**Anker.** `Schreibflaeche` in `src/features/documentation/Schreibflaeche.tsx`.
+
+**Änderungspfad.** „Abbrechen“ zurück: je Seite ein `ButtonLink` in die Aktionsleiste · Aufwand `klein`.
+
+### ANN-446 — Die Erhebung zeigt den Bogen in Abschnitten von etwa acht Fragen
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Erhebungsseite teilt den Bogen nur in der Darstellung: gleiche Nummer und gemeinsamer Hinweis bleiben zusammen, sonst endet ein Abschnitt nach etwa acht Fragen; der erste ist offen, „Weiter“ öffnet den nächsten, beanstandete klappen bei der Prüfung auf. Fragen, Wortlaut und Antworten bleiben unverändert; die Plattform zeigt den Bogen weiter ganz.
+
+**Begründung.** 46 Fragen untereinander waren bei 375 px 9.751 px lang.
+
+**Anker.** `ABSCHNITT_GROESSE` in `src/features/assessments/abschnitte.ts`.
+
+**Änderungspfad.** Andere Größe: die Konstante; ohne Abschnitte: `teile.length === 1` in `ErhebungPage` · Aufwand `klein`.
+
+### ANN-450 — Offene Punkte sind ein Eingang: nur Gruppen mit Einträgen, das Dringlichste zuerst
+
+Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Eine Gruppe steht nur da, wenn sie etwas enthält; ist alles leer, sagt die Seite einmal „Nichts offen“ (nie bei einem Ladefehler). Reihenfolge: Rückfragen, Terminwünsche, Aufgaben, Anrufe für morgen, Widerrufe und Kündigungen, Verordnungen zu erfassen, Erstaufnahme, Verordnung endet, Pläne, Warteliste, Versorgung abschließen.
+
+**Begründung.** 13 Listen untereinander, am Telefon sieben von zehn nur „Kein …“; zuerst, was eine Person oder Frist warten lässt.
+
+**Anker.** `useEingang` in `src/features/open-points/eingang.ts`; Reihenfolge in `OpenPointsPage.tsx`.
+
+**Änderungspfad.** Reihenfolge oder leere Gruppen zeigen: die Seite · Aufwand `klein`.
+
+### ANN-455 — Die ausgestellte Rechnung hat zwei Reiter, „Zahlungen“ zuerst, im Suchteil der Adresse
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die ausgestellte Rechnung zeigt „Zahlungen“ (Eingänge, Erinnerung, Storno leise am Ende) vor „Positionen“ (das unveränderliche Dokument); der Entwurf hat keine Reiter. Der offene Reiter steht als `?teil=positionen` in der Adresse, die Routen bleiben.
+
+**Begründung.** DESIGN.md ordnet Reiter „Arbeit → Verlauf → Grundlagen“; an einer ausgestellten Rechnung ist die Arbeit das Buchen. Eigene Routen hätten `AuthenticatedRoutes.tsx` geändert.
+
+**Anker.** `TEILE` in `src/features/billing/InvoiceDetailPage.tsx`; `Teilreiter` in `src/features/billing/Teilreiter.tsx`.
+
+**Änderungspfad.** Andere Reihenfolge: `TEILE` · eigene Routen: `Reiterleiste` statt `Teilreiter` · Aufwand `klein`.
+
+### ANN-460 — Reiter und Detail ohne eigene Route stehen im Suchparameter
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Wo eine Seite im Design-Rollout Reiter oder Liste → Detail bekommt, aber keine Unterroute hat, steht der offene Teil im Suchparameter derselben Route: Mitarbeiter:in `?bereich=`, Datenklasse `?klasse=`, Zeitkonto `?person=`. Unbekannte Werte öffnen den ersten Reiter bzw. eine Meldung mit Rückweg.
+
+**Begründung.** Der Rollout ändert keine Routen; der Suchparameter hält „Zurück“ im Browser und Lesezeichen.
+
+**Anker.** `useOffenerReiter` in `src/components/ui/offenerReiter.ts`.
+
+**Änderungspfad.** Unterrouten anlegen und `Reiterleiste` nutzen · Aufwand `klein`.
+
+### ANN-461 — Ein Speichern für Kalender und Vergütung der Mitarbeiter:in
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Im Reiter „Einsatz“ speichert ein Knopf Kalender und Vergütungsmodell. Nur Geändertes geht an den Server, der Kalender zuerst; scheitert ein Teil, nennt die Meldung ihn, der andere bleibt gespeichert. Ohne Änderung: „Nichts geändert.“
+
+**Begründung.** Auftrag Welle B: ein Speichern je Formular statt gestrichelter Knöpfe je Abschnitt; beide Serverfunktionen bleiben getrennt.
+
+**Anker.** `StaffEinsatz` in `src/features/staff/StaffEinsatz.tsx`.
+
+**Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.
+
+### ANN-465 — Plattform-Übersicht: „Jetzt dran“ als Liste, nicht als Kacheln
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Übersicht der Plattform zeigt, was zu tun ist, als Zeilen unter „Jetzt dran“ (Befundbogen, Angebot, Check-in, Gewohnheiten, Antworten, offene Rechnung), jede Zeile ganz das Ziel; darunter der nächste Termin als Zeile wie unter „Termine“.
+
+**Begründung.** DESIGN.md: höchstens vier Kacheln; bisher bis zu zehn Kacheln mit kleinem Link am Fuß. Eine Zeile ist für Menschen bis 78 ein größeres Ziel. Reihenfolge aus DSN-001 4.1.
+
+**Anker.** `Uebersicht` in `src/features/platform/Uebersicht.tsx`.
+
+**Änderungspfad.** Wieder `TileGrid` mit `Tile` je Punkt · Aufwand `klein`.
+
+### ANN-466 — Übung auf der Plattform: fester Bildplatz, Dosierung als Kacheln
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Jede Übung hat einen festen Bildplatz: in der Liste `Medienbild vorschau` (56 px), in Übung und Durchführung `Medienbild` 4:3, solange ohne Bild mit Platzhalter. Die Dosierung steht als höchstens vier Kacheln (Durchgänge, Wiederholungen oder Dauer, Pause, womit), Tempo und Steigerungsregel als Zeilen. Die Liste öffnet die Übung im Fenster.
+
+**Begründung.** DESIGN.md Lücke 9.10; die Figuren der Übungsbibliothek kommen ohne Umbau in das `Medienbild`.
+
+**Anker.** `Uebungsinhalt` und `Dosierungskacheln` in `src/features/platform/Uebungsinhalt.tsx`.
+
+**Änderungspfad.** Dosierung wieder als Satz (`dosierungAlltag`) · Aufwand `klein`.
+
+### ANN-467 — Befundbogen auf der Plattform in Schritten zu höchstens acht Fragen
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Der Bogen steht in Schritten zu höchstens acht Fragen mit Schrittzeile und Fortschrittsbalken; Fragen mit gleicher Nummer oder gleichem Hinweis bleiben zusammen. „Weiter“ prüft den Schritt, „Absenden“ den ganzen Bogen; Zwischenspeichern geht in jedem Schritt. Fragen und gespeicherte Antworten bleiben gleich.
+
+**Begründung.** 46 Fragen waren am Telefon über 11.000 px lang; die Regel liest nur die Definition, keinen Bogen beim Namen.
+
+**Anker.** `FRAGEN_JE_SCHRITT` und `bogenschritte` in `src/features/platform/bogenschritte.ts`.
+
+**Änderungspfad.** Zahl ändern oder einen Schritt je Bogen · Aufwand `klein`.
+
+### ANN-468 — Plattform-Einstellungen: Benachrichtigungen je Zugang und Passkey/PIN auf Abruf
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Unter „Ich → Einstellungen“ steht die Wahl der Benachrichtigungen je Zugang und die Verwaltung von Passkey und PIN eingeklappt (`Disclosure`); Schriftgröße, Gerät und was die Praxis eingestellt hat stehen offen. Im Einstieg bleibt die Wahl offen.
+
+**Begründung.** Die Seite war bei zwei Zugängen 5.122 px lang; beides wird selten geändert, und die Einrichtungspflicht sorgt für Passkey und PIN. Routen bleiben unverändert.
+
+**Anker.** `Benachrichtigungen` in `src/features/platform/Benachrichtigungen.tsx`, `Einstellungen` in `src/features/platform/Einstellungen.tsx`.
+
+**Änderungspfad.** Disclosure entfernen oder eigene Unterseiten · Aufwand `klein`.
+
+### ANN-470 — Eine neue Übung entsteht mit ihrer ersten Variante in einem Formular
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+
+**Annahme.** „Übung anlegen“ fragt Bezeichnungen, Region, Anleitung und Ausrüstung in einem Formular ab und legt Übung und erste Variante mit denselben Bezeichnungen an (`save_exercise`, dann `save_exercise_variant`). Scheitert die Variante, sagt das Formular, dass die Übung schon besteht, und ein zweiter Versuch legt nur die Variante an. Owner legt so auch im Auswahlblatt des Plans an; die neue Variante ist danach gewählt.
+
+**Begründung.** Analyse Training 12.10., Abschnitt 1.2: zwei Formulare und ein Seitenwechsel je fehlender Übung.
+
+**Anker.** `NeueUebungFormular` in `src/features/exercises/Formulare.tsx`.
+
+**Änderungspfad.** Beides in einer Transaktion: RPC `save_exercise_with_variant` · Aufwand `mittel`.
+
+### ANN-471 — Die Dosierung einer Position ändert man mit Zahlschritten; eine Übung tauscht man durch Entfernen und Hinzufügen
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Ein Tipp auf die Zeile öffnet ein Fenster mit Plus und Minus für Sätze, Wiederholungen oder Dauer, Halten und „am Tag“ (0 heißt ohne) und dem Schalter „je Seite“; Last, Tempo, Pause, Bereich, doppelte Progression und Hinweis stehen unter „Mehr“, dazu Reihenfolge und Entfernen. Einen Wechsel der Übung an einer Position gibt es nur noch als Schritt einer neuen Fassung (ANN-301).
+
+**Begründung.** Zehn Felder untereinander am Telefon (Analyse 12.10., Abschnitt 1.1); der Tausch ohne Fassung war selten.
+
+**Anker.** `PositionFormular` in `src/features/exercise-plans/PositionFormular.tsx`.
+
+**Änderungspfad.** Tausch zurück: Auswahlblatt mit Einzelwahl im Fenster · Aufwand `klein`.
+
+### ANN-472 — Filter der Bibliothek: ein Wert je Filter genügt, alle Filter zugleich; „nach Bedarf“ zählt mit
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+
+**Annahme.** Region, Ziel, Ausgangsstellung, Hilfsmittel und Niveau sind Chips; innerhalb eines Filters reicht ein gewählter Wert, zwischen den Filtern gilt jeder. Ein Hilfsmittel „nach Bedarf“ zählt als dieses Hilfsmittel. Chips gibt es nur für Werte, die vorkommen. Die Suche ebnet Umlaute ein wie die Patientensuche. „Ungeprüft“ (ANN-386) steht leise in der Zeile, nicht als Abzeichen.
+
+**Begründung.** Ordnungen nach ADR-006 Punkt 10, von Hand gesetzt; ein Abzeichen an fast jeder Zeile wäre kein Ausnahmezeichen.
+
+**Anker.** `filtere` und `facetten` in `src/features/exercises/suche.ts`.
+
+**Änderungspfad.** „Nur mit diesen Hilfsmitteln“ (Teilmenge): eine Zeile in `passtHilfsmittel` · Aufwand `klein`.
+
+### ANN-475 — Heilmittel nach dem Festschreiben: ein Tipp statt Rückfrage
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
+
+**Ablösung.** ändert ANN-140 nur in der Bedienung auf der Schreibseite („mit einer Rückfrage“); im Terminfenster bleibt die Rückfrage.
+
+**Annahme.** Nach dem Festschreiben bestätigt „Heilmittel bestätigen“ die vorbelegten, sichtbar angehakten Heilmittel mit einem Tipp; die Folge („zählt weiter, korrigieren nur im Büro“) steht am Knopf. Weg, Rollen und Schutz vor Doppelerfassung bleiben beim Server (`record_billable_services`).
+
+**Begründung.** Kernablauf K5 (≤ 6 Tipps); dasselbe Muster wie beim Festschreiben (UX-007, ADR-016 Punkt 4): ausdrücklich durch Beschriftung und sichtbare Folge.
+
+**Anker.** `einTipp` in `Auswahl`, `src/features/appointments/HeilmittelBestaetigen.tsx`.
+
+**Änderungspfad.** Rückfrage auch hier: `einTipp` in `HeilmittelAmAbschluss` weglassen · Aufwand `klein`.
+
+### ANN-476 — „Später da?“ als SMS aus der SMS-App des Diensttelefons
+
+Datenschutz · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung vor Produktivstart (ADR-007), mit B2 und PAT-006 (Kontaktwunsch je Person, wie ANN-041)
+
+**Annahme.** „Später da?“ übergibt Mobilnummer und Vorlagentext („Guten Tag, hier ‹Praxis›. Ich bin etwa 10/15/20 Minuten später da als vereinbart.“) per `sms:` an die SMS-App; gesendet wird von Hand. Kein Dienstleister, keine Speicherung, kein Protokoll. Der Anrufknopf (`tel:`) zeigt keine Nummer im Bild.
+
+**Begründung.** Wie Anruf und Terminmail aus dem eigenen Postfach (CAL-013); B15 (automatische Nachrichten) bleibt unberührt. Der Text nennt weder Namen noch Gesundheitsangaben (Art. 5 Abs. 1 lit. c DSGVO); Praxisname und Nummer zeigen dem Netzbetreiber trotzdem die Beziehung (Zweitreview, §203).
+
+**Anker.** `verspaetungsText`/`smsHref` in `src/features/today/besuchswege.ts`.
+
+**Änderungspfad.** Abschalten: `SpaeterDa` nicht mehr einsetzen · Aufwand `klein`.
+
+### ANN-477 — Folgetermin aus Vorschlägen mit einem Tipp, ohne Grundlage
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
+
+**Annahme.** Nach dem Festschreiben stehen bis zu drei Plätze: nächste Woche zur gleichen Zeit, dann je Tag der nächste freie der nächsten 14 Tage (`find_free_slots`: gleiche Person, Art, Dauer, Gebietstag zuerst; Hausbesuch mit `rate_slot_travel`). Ein Tipp legt über `create_appointment` an – ohne Behandlungsgrundlage, wie „Folgetermin anlegen“ im Terminfenster. Steht schon ein künftiger Termin, gilt der Teil als erledigt.
+
+**Begründung.** Muster U2, Kernablauf K7; der Server prüft Arbeitszeit, Raster und Überschneidung, reserviert wird nichts (§8).
+
+**Anker.** `FolgeterminVorschlaege` in `src/features/appointments/FolgeterminVorschlaege.tsx`.
+
+**Änderungspfad.** Grundlage mitgeben: `treatment_basis_id` der Abrechnungslage an `createAppointment` · Aufwand `klein`.
+
+### ANN-478 — „Nachzuholen“: sieben Tage zurück über die Tagesliste
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Übersicht zeigt heute für Schreibende Besuche der letzten 7 Tage ohne Haken oder mit offener Doku, gelesen über `list_day_plan` je Tag (keine neue Serverfunktion, kein Protokoll). Unbestätigte Heilmittel früherer Tage stehen dort nicht – die Tagesliste kennt sie nicht.
+
+**Begründung.** Analyse „Alltag unterwegs“ Rang 5, Lösung S; Entwürfe werden nach einem Tag festgeschrieben (ADR-016 Punkt 7), eine Woche reicht für Liegengebliebenes.
+
+**Anker.** `NACHZUHOLEN_TAGE` in `src/features/today/NochOffen.tsx`.
+
+**Änderungspfad.** Heilmittel früherer Tage: schlanke Lesefunktion (Rang 5, Lösung M) · Aufwand `mittel`.
+
+### ANN-479 — „Niemand öffnet?“: Eine 15-Minuten-Uhr zeigt die Wartezeit; angehakt wird von Hand
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
+
+**Annahme.** An der Karte der Übersicht läuft ab dem Tipp auf „Niemand öffnet?“ eine sichtbare Uhr bis 15:00, danach steht dort „bitte bestätigen“. Alle drei Schritte hakt die Person selbst; die Uhr startet erst mit dem Tipp und hakt deshalb nichts vor (Zweitreview: aus dem Haken entsteht eine Forderung, ADR-018 Punkt 9). Im Terminfenster bleibt der Ablauf ohne Uhr.
+
+**Begründung.** Analyse Rang 9: Die Uhr misst, was das Kästchen bisher nur behauptete; sie läuft nur im Speicher der Seite.
+
+**Anker.** `Wartezeit` in `src/features/appointments/HomeVisitFlow.tsx`.
+
+**Änderungspfad.** Vorhaken nach Ablauf, wenn Jannes es will: ein Rückruf beim Ablauf der Uhr · Aufwand `klein`.
+
+### ANN-480 — Ein Übungsbild mit gleichem Start und Ende und ohne Bewegung zeigt die Ausgangsstellung
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+
+**Annahme.** Was eine Seiten- oder Frontansicht nicht zeigen kann (Drehung aus der Bildebene, Hand und Finger, Atmung, Halten), bekommt statt eines falschen Bewegungsbilds die Ausgangsstellung: richtige Grundstellung und Hilfsmittel, `start` gleich `ende`, keine `bewegung`. `Uebungsbild` zeigt sie in „Start und Ende“ und „Bewegung“ als eine Figur mit der Unterschrift „Ausgangsstellung“, ohne Knopf; die Vorschau bleibt.
+
+**Begründung.** Jede Übung bekommt ein ehrliches Bild ohne Schemaänderung; Fassung 1 bleibt pfadgleich (ANN-381), die Bewegung beschreibt der Text.
+
+**Anker.** `istAusgangsstellung` in `src/features/exercises/bild/schema.ts`.
+
+**Änderungspfad.** Eigene Zeichnung für Drehung oder Hand: neue Fassung `v: 2` · Aufwand `mittel`.
+
+### ANN-481 — An der Karte des Besuchs ist „Doku“ der eine Hauptknopf, der Haken steht mit Rahmen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Ab dem Beginn eines Besuchs (und ohne Navigationsziel) ist „Doku“ gefüllt und breit; der Haken steht 48 px mit Rahmen am Ende der Reihe, gefüllt nur ohne „Doku“. Vorher stand der Haken gefüllt neben einem gefüllten „Doku“.
+
+**Begründung.** DESIGN.md Regel 4 (ein Hauptknopf je Ansicht, Design-Review R2 U2); „Doku“ führt auf die Schreibseite, deren Festschreiben auch abschließt – der Haken ist der Sonderweg ohne Doku.
+
+**Anker.** `karte()` in `src/features/today/MyDayPage.tsx`.
+
+**Änderungspfad.** Haken als Hauptknopf: Variante in `karte()` tauschen · Aufwand `klein`.
+
+### ANN-482 — Ohne eigenen Besuch steht heute vor morgen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Hat die Person heute keinen Besuch, stehen Leerzustand (in einer Karte) und der heutige Strahl vor der Vorschau auf morgen. Sind alle Besuche erledigt, bleibt morgen über dem erledigten Tag (Jannes, 2026-10-11).
+
+**Begründung.** Design-Review R2 U4: Beim Büro stand „Morgen“ vor „Heute · Dienstag“; ein erledigter Tag hat dagegen nichts mehr zu tun.
+
+**Anker.** `ohneBesuch` in `src/features/today/MyDayPage.tsx`.
+
+**Änderungspfad.** Andere Reihenfolge: die beiden Stellen von `strahl` in `MeinTag` · Aufwand `klein`.
+
+### ANN-483 — „Rückgängig“ nach dem Haken öffnet den Termin wieder, solange er abgeschlossen ist
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Nach dem Haken steht neben der Meldung „Rückgängig“; es ruft `reopen_appointment` wie „Termin wieder öffnen“ im Terminfenster, ohne Zeitgrenze, solange die Tagesliste den Termin nicht weiter als „abgeschlossen“ führt. Eine Rückfrage vor dem Haken gibt es nicht.
+
+**Begründung.** Praxis-Review R2 P1: ein Fehltipp kostete den Weg über den Kalender. Rollen und Zustände prüft der Server (`app.can_reopen_appointment`), dieselben wie beim Haken.
+
+**Anker.** `HakenRueckgaengig` in `src/features/today/Besuchsknoepfe.tsx`.
+
+**Änderungspfad.** Stattdessen Rückfrage: `Rueckfrage` um den Haken legen · Aufwand `klein`.
+
+### ANN-484 — Am Telefon weicht die Fahrzeit im Kicker, wenn die Kachel „Abfahrt“ sie nennt
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Unter 640 px zeigt die Karte des nächsten Wegs „Nächster Weg“ ohne „≈ n min“, wenn die Kachel „Abfahrt“ darüber denselben Weg nennt; die Wochenleiste rückt 12 px an den Kopf (Kopf zu Inhalt 12 statt 24 px). So passen „Termin →“ und das Datum, und der Hauptknopf bleibt bei 375 × 667 über der Tableiste.
+
+**Begründung.** R2 P1 und U3 bringen eine Zeile mehr; `uebersicht.spec.ts` hält den Hauptknopf über der Tableiste, beim dritten Besuch mit 3 px Reserve.
+
+**Anker.** `wegTitel` in `src/features/today/MyDayPage.tsx`.
+
+**Änderungspfad.** Fahrzeit immer zeigen: `max-sm:hidden` streichen, Platz anderswo sparen · Aufwand `klein`.
+
+### ANN-485 — Zeichen für Zustände ohne eigenen Ton
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Akte)
+
+**Annahme.** Ein Zustand im Ton `neutral` oder `akzent` trägt ein eigenes Zeichen: – nicht gegeben („Nicht erteilt“), … liegt bei der Praxis („bei der Praxis“), × bewusst nicht („Abgelehnt am …“, wie „× Abgesagt“), ? nicht geprüft („Fahrweg nicht geprüft“), ↩ Antwort liegt vor („beantwortet“ auf der Plattform; in der Praxis ✓ wie „erledigt“, R2-O4). „Nicht in Versorgung“ in der Liste trägt wie im Kopf der Akte `warnung` (!).
+
+**Begründung.** DESIGN.md Regel 5 „Status = Zeichen + Wort“; der Badge setzt nur für positiv, warnung, kritisch ein Zeichen. Text-Zeichen statt Symbolen (9.15).
+
+**Anker.** `STATUSZEICHEN` in `src/components/ui/Badge.tsx`.
+
+**Änderungspfad.** Andere Zeichen dort eintragen oder `eigenesZeichen` weglassen · Aufwand `klein`.
+
+### ANN-486 — Die Kachelleiste der Behandlungsgrundlagen bleibt bis zur Sichtung
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Akte)
+
+**Annahme.** Die Kachelleiste über den Karten bleibt. Sie ist der einzige Einstieg in „Daten übertragen“ (Foto und Verordnung). Leere Werte stehen nicht darin (kein „ICD –“); liegen Kacheln außer Sicht, zeigt ein Randverlauf mit „‹“/„›“ das an, auf jeder Breite.
+
+**Begründung.** Sie doppelt die Karten zum Teil (Nachprüfung A9). Weg kann sie erst, wenn „Daten übertragen“ an Karte und Foto steht. Das ist ein Umbau von Jannes’ Entwurf „Akte entschlacken“ (03.10.).
+
+**Anker.** Kommentar `ANN-486` in `src/features/treatment-bases/GrundlagenKacheln.tsx`.
+
+**Änderungspfad.** Leiste streichen und „Daten übertragen“ an `Verordnungskopf` und `OffeneVerordnungsfotos` hängen · Aufwand `mittel`.
+
+### ANN-487 — „Kein Alarm je Check-in“ bleibt als Kleingedrucktes
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Akte)
+
+**Annahme.** Unter „Zwischen den Terminen“ steht nur noch „Kein Alarm je Check-in – gelesen wird beim nächsten Termin.“ als Kleingedrucktes. Die Gewohnheiten erklärt ein „So geht’s“ auf Abruf.
+
+**Begründung.** Der Satz zieht die Grenze aus ADR-006 Punkt 11 und DSN-001 D5: Die Anwendung wertet nicht aus und alarmiert nicht. Damit ist er ein MDR-Satz nach DESIGN.md Regel 6 und keine Erklärung (Nachprüfung A10).
+
+**Anker.** Kommentar `ANN-487` in `src/features/checkins/ZwischenDenTerminen.tsx`.
+
+**Änderungspfad.** Satz streichen oder in ein „So geht’s“ legen · Aufwand `klein`.
+
+### ANN-489 — Eine Zeitspanne (von/bis) steht auch am Telefon in einer Zeile
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Zeitspanne als Paar in DESIGN.md?)
+
+**Annahme.** Ein Zeitblock der Arbeitszeiten steht am Telefon untereinander: „von“ mit dem Entfernen daneben, „bis“ darunter; 24 px trennen die Blöcke, 12 px die Felder. Ab 640 px stehen von, bis und × in einer Zeile. Sichtbar steht nur „von“/„bis“; vorgelesen wird „Abweichender Block 1 von“.
+
+**Begründung.** DESIGN.md (Formular) erlaubt zwei Felder nebeneinander erst ab 640 px; Beginn und Ende einer Fehlzeit stehen am Telefon ebenso untereinander (Design-Review R2 T6).
+
+**Anker.** Kommentar `ANN-489` an `BlockFelder` in `src/features/scheduling/SchedulingPage.tsx`.
+
+**Änderungspfad.** Nimmt Jannes die Zeitspanne als Paar in DESIGN.md auf: `grid-cols` ohne `sm:` · Aufwand `klein`.
+
+### ANN-493 — Unternavigation: eine einzelne Vorschau steht offen, erst ab zwei eingeklappt
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die `SubNav` klappt Vorschauen erst ab zwei hinter „Vorschau (n)“ ein. Eine einzelne Vorschau (Teamchat unter Kommunikation) steht mit ihrer Marke „Vorschau“ in der Leiste, auf jeder Seite des Bereichs gleich.
+
+**Begründung.** „Vorschau (1)“ ersetzte einen Eintrag durch einen und versteckte nur den Namen; die Leiste hieß je nach Seite „Rückfragen · Vorschau (1)“ oder „Rückfragen · Teamchat“ (Review R2-O9). Die Kennzeichnung nach ANN-112 bleibt.
+
+**Anker.** `einklappbar` in `src/components/ui/SubNav.tsx`.
+
+**Änderungspfad.** Wieder ab einer Vorschau einklappen: `vorschauen.length > 0` · Aufwand `klein`.
+
+### ANN-494 — Statistik: fünf Kennzahlen als beschriftete Liste in einer Karte, keine Kacheln
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die fünf Kennzahlen stehen als `DetailList` in einer Karte: der Name links, am Telefon darüber; daneben Wert, Zielstand, Einzelheiten, Ziel und der nächste Schritt; Linien trennen sie. Reihenfolge, CSV und alle Handlungen bleiben.
+
+**Begründung.** Fünf gleichrangige Zahlen sind mehr als die vier Kacheln einer Seite (DESIGN.md Prüfliste 5); die fünfte als Zeile unter vier Kacheln sah am Telefon aus wie eine fünfte Kachel (Review R2-O8, neu1). Gruppen in einer Karte trennt eine Linie (Regel 2).
+
+**Anker.** `Kennzahlliste` in `src/features/statistics/StatisticsPage.tsx`.
+
+**Änderungspfad.** Vier als `TileGrid`, die fünfte anderswo: `Kennzahlliste` ersetzen · Aufwand `mittel`.
+
+### ANN-497 — Kästchenspalten so breit wie das längste Wort der Frage
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Befundbogen)
+
+**Annahme.** Eine Mehrfachauswahl setzt Spalten von mindestens 9,5rem und mindestens dem längsten Wort ihrer Optionen in `ch` plus Kästchen; wo das nicht zweimal passt, steht sie einspaltig. Kein Wort bricht mitten durch, auch nicht mit Trennstrich.
+
+**Begründung.** Sichtung L1: „Nachtschmerze/n“ bei 18 px auf der Plattform. `ch` misst in Hanken Grotesk bei den Wörtern des Bogens 4 bis 37 % mehr als gesetzt, die Schätzung liegt so auf der sicheren Seite. Am Telefon wird der Bogen der Plattform dadurch länger.
+
+**Anker.** `laengstesWort` in `src/features/assessments/darstellung.ts`.
+
+**Änderungspfad.** Nur lange Optionen über die volle Breite statt der ganzen Frage einspaltig · Aufwand `klein`.
+
+### ANN-498 — Seiten des Körperschemas als Schrift über der Zeichnung
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** R und L stehen als Text über den Ecken der Zeichnung statt im Bild, in Tinte, 600 und der Schrift der Seite (Plattform 18 px); „Vorderansicht“ und „Rückansicht“ ebenso in Tinte.
+
+**Begründung.** Sichtung L1: Im Bild schrumpften sie mit der Zeichnung auf rund 12 px Grau. Die Lage folgt den bisherigen Bildkoordinaten (x 40, 400, 440, 790 von 820).
+
+**Anker.** `KoerperschemaBild` in `src/features/assessments/KoerperschemaFeld.tsx`.
+
+**Änderungspfad.** Zurück in das SVG mit größerer Schrift · Aufwand `klein`.
+
+### ANN-499 — Kachelbeschriftung auf der Plattform ohne Versalien
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)
+
+**Annahme.** Auf der Plattform steht die Beschriftung einer `Tile` in gewöhnlicher Schreibung, 500 statt 600 und ohne Laufweite; die Kachel ist innen 12 statt 14 px breit. „Wiederholungen“ passt so bei 375 px in eine Zeile.
+
+**Begründung.** Sichtung L6: In Versalien bei 18 px brach das Wort in einer Kachel von rund 160 px. Unter 375 px greift der weiche Trennstrich der Seite.
+
+**Anker.** `Tile` in `src/components/ui/Tile.tsx`.
+
+**Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
+

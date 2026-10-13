@@ -5,7 +5,7 @@ import { Aufklappzeichen } from '@/components/ui/Card';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Rueckmeldung } from './Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
   notificationChannelLabels,
   notificationChannelOrder,

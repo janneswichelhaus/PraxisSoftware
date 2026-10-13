@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Textlink } from '@/components/ui/Textlink';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { telHref } from '@/lib/telefon';
 import { appointmentTypeLabels } from '@/features/appointments/api';
 import { MAX_ZEICHEN } from '@/features/documentation/api';
@@ -162,34 +168,33 @@ export function AufDemGeraet({
         </Section>
       ) : null}
 
-      <Section
-        titel="Tagesplan von heute"
-        hinweis="So, wie er zuletzt mit Verbindung geladen wurde. Änderungen der Praxis seitdem fehlen hier."
-      >
+      <Section titel="Tagesplan von heute">
         {tagesplan === null || tagesplan.termine.length === 0 ? (
-          <EmptyState title="Auf diesem Gerät liegt kein Tagesplan von heute." />
+          <EmptyState inKarte title="Auf diesem Gerät liegt kein Tagesplan von heute." />
         ) : (
-          <ul className="divide-line flex flex-col divide-y">
-            {tagesplan.termine.map((t) => {
-              const entwurf = entwuerfe.find((e) => e.terminId === t.id && e.zustand === 'wartet');
-              return (
-                <li key={t.id} className="py-3">
-                  <Terminzeile
-                    termin={t}
-                    zeitzone={tagesplan.zeitzone}
-                    entwurf={entwurf}
-                    online={
-                      !ohneVerbindung && serverwege ? serverwege.zurDokumentation(t.id) : null
-                    }
-                    onSchreiben={() =>
-                      setOffen({ terminId: t.id, kopf: kopfVon(t, tagesplan.zeitzone) })
-                    }
-                  />
-                </li>
-              );
-            })}
-          </ul>
+          <ListRows>
+            {tagesplan.termine.map((t) => (
+              <Terminzeile
+                key={t.id}
+                termin={t}
+                zeitzone={tagesplan.zeitzone}
+                entwurf={entwuerfe.find((e) => e.terminId === t.id && e.zustand === 'wartet')}
+                online={!ohneVerbindung && serverwege ? serverwege.zurDokumentation(t.id) : null}
+                onSchreiben={() =>
+                  setOffen({ terminId: t.id, kopf: kopfVon(t, tagesplan.zeitzone) })
+                }
+              />
+            ))}
+          </ListRows>
         )}
+        {/* Der Stand des Plans gehört zu seinem Inhalt: Was die Praxis seitdem
+            geändert hat, fehlt hier. Ohne Plan gibt es keinen Stand. */}
+        {tagesplan !== null && tagesplan.termine.length > 0 ? (
+          <Kleingedrucktes className="mt-2">
+            So, wie er zuletzt mit Verbindung geladen wurde. Änderungen der Praxis seitdem fehlen
+            hier.
+          </Kleingedrucktes>
+        ) : null}
       </Section>
     </div>
   );
@@ -216,41 +221,51 @@ function Terminzeile({
     .filter(Boolean)
     .join(', ');
   const abgesagt = t.status === 'cancelled';
+  const nummern = [t.phone, t.phone_mobile].filter((nummer): nummer is string => Boolean(nummer));
+  const schreiben = dokumentierbar(t) && (!online || entwurf);
+  const zurDoku = dokumentierbar(t) && online && !entwurf;
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-ink font-medium">
-        <span className="tabular-nums">
-          {uhrzeit(t.starts_at, zeitzone)}–{uhrzeit(t.ends_at, zeitzone)}
-        </span>{' '}
-        · {nameVon(t)}
-        {t.kind === 'therapy' ? (
-          <span className="text-ink-muted font-normal"> · {terminartVon(t.appointment_type)}</span>
-        ) : null}
-        {abgesagt ? <span className="text-ink-muted font-normal"> · abgesagt</span> : null}
-      </p>
-      {adresse ? <p className="text-ink-muted text-sm">{adresse}</p> : null}
-      <div className="mt-1 flex flex-wrap gap-2">
-        {[t.phone, t.phone_mobile].filter(Boolean).map((nummer) => (
-          <a
-            key={nummer}
-            href={telHref(nummer!)}
-            className="text-accent inline-flex min-h-11 items-center text-sm underline"
-          >
-            {nummer}
-          </a>
-        ))}
-        {dokumentierbar(t) && online && !entwurf ? (
-          <ButtonLink variant="secondary" to={online}>
-            Zur Dokumentation
-          </ButtonLink>
-        ) : null}
-        {dokumentierbar(t) && (!online || entwurf) ? (
-          <Button variant={entwurf ? 'primary' : 'secondary'} onClick={onSchreiben}>
-            {entwurf ? 'Weiterschreiben' : 'Ohne Verbindung schreiben'}
-          </Button>
-        ) : null}
-      </div>
-    </div>
+    // Eine Zeile je Termin (DESIGN.md Regel 3); Telefon und der Weg zur
+    // Dokumentation stehen in ihr, weil die Knöpfe am Telefon neben dem Namen
+    // keinen Platz hätten.
+    <ListRow
+      titel={
+        <>
+          <span className="tabular-nums">
+            {uhrzeit(t.starts_at, zeitzone)}–{uhrzeit(t.ends_at, zeitzone)}
+          </span>{' '}
+          · {nameVon(t)}
+        </>
+      }
+      gedaempft={abgesagt}
+      status={abgesagt ? <Badge eigenesZeichen="×">Abgesagt</Badge> : undefined}
+      meta={
+        <>
+          {[t.kind === 'therapy' ? terminartVon(t.appointment_type) : null, adresse || null]
+            .filter(Boolean)
+            .join(' · ')}
+          {nummern.length > 0 || schreiben || zurDoku ? (
+            <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {nummern.map((nummer) => (
+                <Textlink key={nummer} href={telHref(nummer)} alleinstehend>
+                  {nummer}
+                </Textlink>
+              ))}
+              {zurDoku && online ? (
+                <ButtonLink variant="secondary" groesse="kompakt" to={online}>
+                  Zur Dokumentation
+                </ButtonLink>
+              ) : null}
+              {schreiben ? (
+                <Button variant="secondary" groesse="kompakt" onClick={onSchreiben}>
+                  {entwurf ? 'Weiterschreiben' : 'Ohne Verbindung schreiben'}
+                </Button>
+              ) : null}
+            </span>
+          ) : null}
+        </>
+      }
+    />
   );
 }
 
@@ -304,11 +319,12 @@ function Entwurfskarte({
   }
 
   return (
+    // Eine Karte je Entwurf: Jeder ist eine Aufgabe mit eigenen Wegen (L2).
     <article className="border-line rounded-card bg-surface border p-4">
-      <h3 className="text-ink font-medium">
+      <Zwischentitel>
         {tagUndUhrzeit(e.kopf.beginn, e.kopf.zeitzone)} · {e.kopf.name}
-      </h3>
-      <p className="text-ink-muted text-sm">
+      </Zwischentitel>
+      <p className="text-ink-muted -mt-2 text-sm">
         Auf dem Gerät geschrieben, zuletzt {tagUndUhrzeit(e.geschriebenAm, e.kopf.zeitzone)}
       </p>
 
@@ -466,47 +482,48 @@ function Entwurfsfeld({
   if (text === null) return <LoadingState label="Wird vom Gerät gelesen …" />;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div>
-        <h2 className="text-ink text-lg font-semibold">
-          {kopf.name} · {uhrzeit(kopf.beginn, kopf.zeitzone)}
-        </h2>
-        <p className="text-ink-muted text-sm">
+    <Section titel={`Dokumentation · ${kopf.name} · ${uhrzeit(kopf.beginn, kopf.zeitzone)}`}>
+      <div className="flex flex-col gap-3">
+        <Kleingedrucktes>
           Dokumentation als Entwurf, auf diesem Gerät. Finalisiert wird erst nach der Übertragung.
-        </p>
+        </Kleingedrucktes>
+        <TextArea
+          label="Behandlungsdokumentation"
+          rows={10}
+          maxLength={MAX_ZEICHEN}
+          value={text}
+          onChange={(ereignis) => {
+            const neu = ereignis.target.value;
+            setText(neu);
+            offen.current = neu;
+            setStand('schreibt');
+            if (uhr.current) clearTimeout(uhr.current);
+            uhr.current = setTimeout(() => void ablegen(), SCHREIBEN_NACH_MS);
+          }}
+        />
+        <Statusmeldung ton={stand === 'fehler' ? 'fehler' : 'warnung'}>
+          {stand === 'fehler'
+            ? 'Das Gerät hat den Text nicht gespeichert. Bitte nicht schließen und erneut tippen.'
+            : stand === 'schreibt'
+              ? 'Wird auf dem Gerät gespeichert …'
+              : ohneVerbindung
+                ? 'Auf dem Gerät gespeichert, noch nicht übertragen.'
+                : 'Auf dem Gerät gespeichert. Übertragen wird, sobald Sie auf „Fertig“ tippen.'}
+        </Statusmeldung>
       </div>
-      <TextArea
-        label="Behandlungsdokumentation"
-        rows={10}
-        maxLength={MAX_ZEICHEN}
-        value={text}
-        onChange={(ereignis) => {
-          const neu = ereignis.target.value;
-          setText(neu);
-          offen.current = neu;
-          setStand('schreibt');
-          if (uhr.current) clearTimeout(uhr.current);
-          uhr.current = setTimeout(() => void ablegen(), SCHREIBEN_NACH_MS);
-        }}
-      />
-      <Statusmeldung ton={stand === 'fehler' ? 'fehler' : 'warnung'}>
-        {stand === 'fehler'
-          ? 'Das Gerät hat den Text nicht gespeichert. Bitte nicht schließen und erneut tippen.'
-          : stand === 'schreibt'
-            ? 'Wird auf dem Gerät gespeichert …'
-            : ohneVerbindung
-              ? 'Auf dem Gerät gespeichert, noch nicht übertragen.'
-              : 'Auf dem Gerät gespeichert. Übertragen wird, sobald Sie auf „Fertig“ tippen.'}
-      </Statusmeldung>
-      <Button
-        onClick={() => {
-          void ablegen().then((ok) => {
-            if (ok) onFertig();
-          });
-        }}
-      >
-        Fertig
-      </Button>
-    </div>
+      {/* Kein klebender Knopf: Die Ansicht steht auch ohne Tableiste (lokale
+          Ansicht nach der Freigabe ohne Netz). */}
+      <Formularfuss>
+        <Button
+          onClick={() => {
+            void ablegen().then((ok) => {
+              if (ok) onFertig();
+            });
+          }}
+        >
+          Fertig
+        </Button>
+      </Formularfuss>
+    </Section>
   );
 }

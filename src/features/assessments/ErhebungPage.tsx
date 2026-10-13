@@ -1,11 +1,15 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useId, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Field } from '@/components/ui/Field';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { TextArea } from '@/components/ui/TextArea';
@@ -18,6 +22,7 @@ import {
   type Verlustschutztexte,
 } from '@/features/documentation/Textverlustschutz';
 import { canWriteQuestionnaire, type CurrentUser } from '@/features/session/types';
+import { abschnitte } from './abschnitte';
 import { antwortFehler, type Antwort, type Antworten } from './antworten';
 import {
   erhebungAbschliessen,
@@ -312,6 +317,27 @@ function Formular({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const zurueck = `/patienten/${patient.id}/doku/befund`;
+  const folgeId = useId();
+  const formular = useRef<HTMLFormElement>(null);
+
+  /** Die Abschnitte als `<details>` - auf- und zugeklappt wird am Element. */
+  function abschnittsKlapper(index: number): HTMLDetailsElement | null {
+    return (
+      formular.current?.querySelector<HTMLDetailsElement>(`[data-abschnitt="${index}"] details`) ??
+      null
+    );
+  }
+
+  /** „Weiter“: diesen Abschnitt zuklappen, den nächsten auf und ins Bild. */
+  function weiter(index: number) {
+    const dieser = abschnittsKlapper(index);
+    const naechster = abschnittsKlapper(index + 1);
+    if (!naechster) return;
+    if (dieser) dieser.open = false;
+    naechster.open = true;
+    naechster.parentElement?.scrollIntoView({ block: 'start' });
+    naechster.querySelector('summary')?.focus();
+  }
 
   const [antworten, setAntworten] = useState<Antworten>(
     () => entwurf?.answers ?? korrigiert?.answers ?? {},
@@ -381,6 +407,13 @@ function Formular({
         feld: 'Begründung der Korrektur',
         meldung: begruendungMeldung,
       });
+    }
+
+    // Ein beanstandeter Abschnitt klappt auf: Der Sprung aus der
+    // Fehlerzusammenfassung muss die Frage erreichen (BEF-03).
+    for (const fehler of liste) {
+      const abschnitt = document.getElementById(fehler.feldId)?.closest('details');
+      if (abschnitt) abschnitt.open = true;
     }
 
     setFehlerJeFrage(jeFrage);
@@ -476,6 +509,10 @@ function Formular({
   const festeBegruendung =
     entwurf?.change_reason ?? (entwurfId && korrigiert ? begruendung.trim() : null);
 
+  // Die Abschnitte des Bogens - nur Darstellung, die Fragen bleiben dieselben.
+  const teile = abschnitte(definition.items);
+  const beantwortet = definition.items.filter((item) => antworten[item.id] !== undefined).length;
+
   return (
     <>
       <Rueckweg standard={zurueck} beschriftung="Zurück zum Befund" />
@@ -495,24 +532,74 @@ function Formular({
       {/* Keine Schaltfläche schickt dieses Formular ab: Enter in einem
           einzeiligen Feld soll den Bogen nicht sichern und verlassen (BEF-09).
           Gespeichert wird allein über die Schaltflächen unten. */}
-      <form onSubmit={(event) => event.preventDefault()} noValidate className="max-w-2xl">
-        <FragebogenFelder
-          definition={definition}
-          antworten={antworten}
-          onChange={setzen}
-          fehler={fehlerJeFrage}
-        />
-
-        {/* Der Stand der Sicherung bleibt beim Scrollen am unteren Rand
-            stehen (BEF-056): Der Bogen ist lang, die Knöpfe stehen erst nach
-            der letzten Frage. Am Telefon über der Tableiste. */}
-        {sicherungsstand ? (
-          <div className="bg-canvas sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-10 py-1 sm:bottom-0">
-            {sicherungsstand}
+      <form
+        ref={formular}
+        onSubmit={(event) => event.preventDefault()}
+        noValidate
+        className="max-w-spalte"
+      >
+        {teile.length === 1 ? (
+          <FragebogenFelder
+            definition={definition}
+            antworten={antworten}
+            onChange={setzen}
+            fehler={fehlerJeFrage}
+          />
+        ) : (
+          // Der Bogen in Abschnitten, zugeklappt bis auf den ersten (Design-
+          // Rollout B4): 46 Fragen untereinander waren am Telefon fast
+          // 10 000 px lang. Jeder Abschnitt sagt, wie viel beantwortet ist;
+          // „Weiter“ klappt den nächsten auf.
+          <div className="flex flex-col gap-3">
+            {teile.map((teil, index) => {
+              const naechster = teile[index + 1];
+              const erledigt = teil.items.filter((item) => antworten[item.id] !== undefined).length;
+              return (
+                <div key={teil.items[0]!.id} data-abschnitt={index} className="scroll-mt-20">
+                  <Disclosure
+                    inKarte
+                    kopf="betont"
+                    offen={index === 0}
+                    summary={
+                      <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                        <span className="text-ink min-w-0">{teil.titel}</span>
+                        <span className="shrink-0 font-normal tabular-nums">
+                          {erledigt === teil.items.length ? (
+                            <span aria-hidden="true" className="text-positiv mr-1">
+                              ✓
+                            </span>
+                          ) : null}
+                          {erledigt} von {teil.items.length}
+                        </span>
+                      </span>
+                    }
+                  >
+                    <FragebogenFelder
+                      definition={{ ...definition, items: teil.items }}
+                      antworten={antworten}
+                      onChange={setzen}
+                      fehler={fehlerJeFrage}
+                    />
+                    {naechster ? (
+                      <div className="mt-6">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          groesse="kompakt"
+                          onClick={() => weiter(index)}
+                        >
+                          Weiter: {naechster.titel}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </Disclosure>
+                </div>
+              );
+            })}
           </div>
-        ) : null}
+        )}
 
-        <div className="border-line mt-8 flex flex-col gap-4 border-t pt-6">
+        <div className="mt-8 flex flex-col gap-4">
           {korrektur ? (
             // Eine Korrektur bleibt am Erhebungstag des korrigierten Bogens;
             // wann korrigiert wurde, hält der Server getrennt fest (ABN-014,
@@ -550,29 +637,19 @@ function Formular({
           <Fehlerzusammenfassung fehler={zusammenfassung} />
           {schutz}
 
-          <p className="text-ink-muted text-sm">
+          <Kleingedrucktes id={folgeId}>
             Abgeschlossen lässt sich der Bogen nicht mehr ändern, nur noch korrigieren.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button type="button" onClick={() => absenden(true)} disabled={laeuft}>
-              {laeuft && vorgang === 'abschliessen' ? 'Wird abgeschlossen …' : 'Abschließen'}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => absenden(false)}
-              disabled={laeuft}
-            >
-              {laeuft && vorgang === 'entwurf' ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
-            </Button>
-            {entwurfId ? (
-              laeuft ? (
+          </Kleingedrucktes>
+
+          {/* Verwerfen löscht den Entwurf auf dem Server - leise am Ende und
+              erst nach einer Rückfrage (BEF-01), wie beim Bericht. */}
+          {entwurfId ? (
+            <div>
+              {laeuft ? (
                 <Button type="button" variant="quiet" disabled>
                   Entwurf verwerfen
                 </Button>
               ) : (
-                // Verwerfen löscht den Entwurf auf dem Server - erst nach
-                // einer Rückfrage (BEF-01), wie beim Bericht.
                 <Rueckfrage
                   ausloeser="Entwurf verwerfen"
                   ausloeserVariante="quiet"
@@ -584,11 +661,44 @@ function Formular({
                 >
                   Die gespeicherten Antworten werden gelöscht.
                 </Rueckfrage>
-              )
-            ) : null}
-          </div>
+              )}
+            </div>
+          ) : null}
         </div>
       </form>
+
+      {/* Die Knöpfe bleiben beim Rollen stehen, am Telefon über der
+            Tableiste (DESIGN.md Seitentyp „Arbeitsseite“); darüber der
+            Fortschritt und der Stand der Sicherung (BEF-056). */}
+      <Aktionsleiste
+        oben={
+          <div className="px-4 pt-2 sm:px-6 lg:px-8">
+            <p className="text-ink-muted text-sm tabular-nums">
+              {beantwortet} von {definition.items.length} Fragen beantwortet
+            </p>
+            <ProgressBar wert={beantwortet} von={definition.items.length} />
+            {sicherungsstand}
+          </div>
+        }
+      >
+        <Button
+          type="button"
+          variant="quiet"
+          className="ml-auto"
+          onClick={() => absenden(false)}
+          disabled={laeuft}
+        >
+          {laeuft && vorgang === 'entwurf' ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
+        </Button>
+        <Button
+          type="button"
+          onClick={() => absenden(true)}
+          disabled={laeuft}
+          aria-describedby={folgeId}
+        >
+          {laeuft && vorgang === 'abschliessen' ? 'Wird abgeschlossen …' : 'Abschließen'}
+        </Button>
+      </Aktionsleiste>
     </>
   );
 }

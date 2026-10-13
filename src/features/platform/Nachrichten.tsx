@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Badge, type Ton } from '@/components/ui/Badge';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Disclosure } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { Section } from '@/components/ui/Section';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
@@ -24,7 +30,6 @@ import {
 } from './api';
 import {
   NICHT_AKUT,
-  NOTFALL,
   OHNE_EINWILLIGUNG,
   THEMA_NAME,
   THEMEN,
@@ -32,6 +37,7 @@ import {
   type Thema,
 } from './nachrichtentexte';
 import { AnhaengeAbschnitt } from './Anhaenge';
+import { Notfallsatz } from './Notfallsatz';
 import { zeitmarke, type Ansicht } from './anhangtexte';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { datum, tagKurz, uhrzeit } from './zeit';
@@ -56,14 +62,20 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
     queryFn: () => ladeNachrichten(zugang.access_id),
   });
 
-  if (daten.isPending) return <LoadingState label="Ihre Nachrichten werden geladen …" />;
+  const kopf = <PageHeader title="Nachrichten" />;
   if (daten.data === undefined) {
     return (
-      <ErrorState
-        title="Ihre Nachrichten konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => daten.refetch()}
-      />
+      <>
+        {kopf}
+        <Abfragezustand
+          abfrage={daten}
+          laden="Ihre Nachrichten werden geladen …"
+          fehler="Ihre Nachrichten konnten nicht geladen werden."
+          inKarte
+        >
+          {() => null}
+        </Abfragezustand>
+      </>
     );
   }
   const { messages, can_write, response_workdays } = daten.data;
@@ -72,16 +84,11 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-accent text-h3 font-bold">Nachrichten</h1>
-        {can_write ? <ButtonLink to={mit('/nachrichten/neu')}>Neue Nachricht</ButtonLink> : null}
-      </div>
+      {kopf}
       {suche.get('gesendet') === '1' ? (
-        <Statusmeldung ton="erfolg" className="mt-4">
-          Ihre Nachricht ist bei der Praxis angekommen.
-        </Statusmeldung>
+        <Rueckmeldung className="mb-4">Ihre Nachricht ist bei der Praxis angekommen.</Rueckmeldung>
       ) : null}
-      <Notfallhinweis werktage={response_workdays} className="mt-4" />
+      <Notfallhinweis werktage={response_workdays} />
       {!can_write ? (
         <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
           Sie können Ihre Nachrichten hier noch lesen. Neue Fragen stellen Sie bitte direkt bei der
@@ -89,29 +96,47 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
         </p>
       ) : null}
 
-      <Section titel="Ihre Nachrichten">
-        {laufend.length === 0 ? (
-          <p className="text-ink max-w-prose text-base leading-relaxed">
-            {can_write
-              ? 'Zurzeit ist keine Frage offen. Über „Neue Nachricht“ schreiben Sie der Praxis.'
-              : 'Zurzeit ist keine Frage offen.'}
-          </p>
-        ) : (
-          <ListRows>
-            {laufend.map((m) => (
-              <Nachrichtzeile key={m.id} nachricht={m} to={mit(`/nachrichten/${m.id}`)} />
-            ))}
-          </ListRows>
-        )}
-      </Section>
+      <div className="mt-8">
+        <Listenabschnitt
+          titel="Ihre Nachrichten"
+          leer={{
+            titel: 'Zurzeit ist keine Frage offen.',
+            ...(can_write
+              ? { beschreibung: 'Über „Neue Nachricht“ schreiben Sie der Praxis.' }
+              : {}),
+          }}
+        >
+          {laufend.map((m) => (
+            <Nachrichtzeile key={m.id} nachricht={m} to={mit(`/nachrichten/${m.id}`)} />
+          ))}
+        </Listenabschnitt>
+      </div>
+      {/* Die eine Aufgabe der Seite als Hauptknopf unter der Liste, am Telefon
+          in voller Breite (DESIGN.md, Seitentyp „Plattform“) - nicht klein
+          oben rechts im Kopf. */}
+      {can_write ? (
+        <div className="mt-6">
+          <ButtonLink to={mit('/nachrichten/neu')} groesse="normal" className="w-full sm:w-auto">
+            Neue Nachricht
+          </ButtonLink>
+        </div>
+      ) : null}
+      {/* Erledigtes auf Abruf: Es wird mit jeder Frage länger (DESIGN.md, Regel 6). */}
       {erledigt.length > 0 ? (
-        <Section titel="Erledigt">
-          <ListRows>
-            {erledigt.map((m) => (
-              <Nachrichtzeile key={m.id} nachricht={m} to={mit(`/nachrichten/${m.id}`)} gedaempft />
-            ))}
-          </ListRows>
-        </Section>
+        <div className="mt-8">
+          <Disclosure summary="Erledigt" anzahl={erledigt.length} kopf="betont">
+            <ListRows>
+              {erledigt.map((m) => (
+                <Nachrichtzeile
+                  key={m.id}
+                  nachricht={m}
+                  to={mit(`/nachrichten/${m.id}`)}
+                  gedaempft
+                />
+              ))}
+            </ListRows>
+          </Disclosure>
+        </div>
       ) : null}
     </>
   );
@@ -119,7 +144,9 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
 
 /**
  * Zusage und Notfallhinweis (IDEA-KOM-002, DSN-001 4.1): an jedem
- * Eingabefeld, dauerhaft, ohne Schließen-Knopf.
+ * Eingabefeld, dauerhaft, ohne Schließen-Knopf. Eine Zeile mit Linie links
+ * statt eines Kastens (DESIGN.md, Regel 2) - dieselbe Form wie die
+ * Meldungen des Systems.
  */
 export function Notfallhinweis({
   werktage,
@@ -132,20 +159,24 @@ export function Notfallhinweis({
     <div
       role="note"
       aria-label="Hinweis zu Antwortzeit und Notfällen"
-      className={`border-line bg-surface rounded-card border p-4 text-base leading-relaxed ${className}`.trim()}
+      className={`border-line-strong bg-surface-sunken border-l-4 py-3 pr-4 pl-4 text-base leading-relaxed ${className}`.trim()}
     >
       <p className="text-ink">{zusage(werktage)}</p>
       <p className="text-ink mt-1">
-        <strong>{NICHT_AKUT}</strong> {NOTFALL}
+        <strong>{NICHT_AKUT}</strong> <Notfallsatz />
       </p>
     </div>
   );
 }
 
-const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton }> = {
-  open: { wort: 'bei der Praxis', ton: 'neutral' },
-  answered: { wort: 'beantwortet', ton: 'akzent' },
-  closed: { wort: 'erledigt', ton: 'positiv' },
+// Jeder Zustand mit Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6):
+// „neutral“ und „akzent“ tragen kein eigenes, deshalb `zeichen` (ANN-485).
+// „erledigt“ nennt das Zeichen seines Tons noch einmal - für die Zeile im
+// Kopf einer Nachricht, die ohne `Badge` auskommt (L9).
+const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen: string }> = {
+  open: { wort: 'bei der Praxis', ton: 'neutral', zeichen: STATUSZEICHEN.wartet },
+  answered: { wort: 'beantwortet', ton: 'akzent', zeichen: STATUSZEICHEN.antwort },
+  closed: { wort: 'erledigt', ton: 'positiv', zeichen: '✓' },
 };
 
 function Nachrichtzeile({
@@ -172,7 +203,11 @@ function Nachrichtzeile({
         (nachricht.reference_label ? ` · ${nachricht.reference_label}` : '')
       }
       meta={`${frist}${erste ? kuerzen(erste.body, 80) : ''}`}
-      status={<Badge ton={zustand.ton}>{zustand.wort}</Badge>}
+      status={
+        <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
+          {zustand.wort}
+        </Badge>
+      }
       to={to}
       gedaempft={gedaempft}
     />
@@ -226,14 +261,16 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
     },
   });
 
-  if (daten.isPending) return <LoadingState label="Wird geladen …" />;
   if (daten.data === undefined) {
     return (
-      <ErrorState
-        title="Das Formular konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => daten.refetch()}
-      />
+      <Abfragezustand
+        abfrage={daten}
+        laden="Wird geladen …"
+        fehler="Das Formular konnte nicht geladen werden."
+        inKarte
+      >
+        {() => null}
+      </Abfragezustand>
     );
   }
   const { health_topics, response_workdays, can_write } = daten.data;
@@ -265,19 +302,14 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={zurueck}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu den Nachrichten
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Neue Nachricht</h1>
+      <Rueckweg standard={zurueck} beschriftung="Zu den Nachrichten" />
+      <PageHeader title="Neue Nachricht" />
       {!can_write ? (
-        <Statusmeldung ton="warnung" className="mt-4">
+        <Statusmeldung ton="warnung">
           Neue Fragen stellen Sie bitte direkt bei der Praxis.
         </Statusmeldung>
       ) : (
-        <form onSubmit={absenden} noValidate className="mt-6 flex flex-col gap-8">
+        <form onSubmit={absenden} noValidate className="flex flex-col gap-8">
           <fieldset>
             <legend className="text-ink mb-2 text-base font-semibold">1. Worum geht es?</legend>
             <div className="flex flex-col gap-2">
@@ -351,14 +383,14 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
 
           {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <Formularfuss>
             <Button type="submit" disabled={senden.isPending}>
               {senden.isPending ? 'Wird gesendet …' : 'Nachricht senden'}
             </Button>
-            <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
+            <Button type="button" variant="quiet" onClick={() => void navigate(zurueck)}>
               Abbrechen
             </Button>
-          </div>
+          </Formularfuss>
         </form>
       )}
     </>
@@ -398,23 +430,21 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
     onSuccess: neuLaden,
   });
 
-  const zurueckLink = (
-    <Link
-      to={zurueck}
-      className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-    >
-      ← Zu den Nachrichten
-    </Link>
-  );
+  const zurueckLink = <Rueckweg standard={zurueck} beschriftung="Zu den Nachrichten" />;
 
-  if (daten.isPending) return <LoadingState label="Ihre Nachricht wird geladen …" />;
   if (daten.data === undefined) {
     return (
-      <ErrorState
-        title="Ihre Nachricht konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => daten.refetch()}
-      />
+      <>
+        {zurueckLink}
+        <Abfragezustand
+          abfrage={daten}
+          laden="Ihre Nachricht wird geladen …"
+          fehler="Ihre Nachricht konnte nicht geladen werden."
+          inKarte
+        >
+          {() => null}
+        </Abfragezustand>
+      </>
     );
   }
   const nachricht = daten.data.messages.find((m) => m.id === nachrichtId);
@@ -422,7 +452,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
     return (
       <>
         {zurueckLink}
-        <p className="text-ink text-base">Diese Nachricht gibt es hier nicht.</p>
+        <EmptyState inKarte title="Diese Nachricht gibt es hier nicht." />
       </>
     );
   }
@@ -453,20 +483,28 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       {zurueckLink}
-      <h1 className="text-accent text-h3 font-bold">{THEMA_NAME[nachricht.topic]}</h1>
-      {nachricht.reference_label ? (
-        <p className="text-ink mt-1 text-base">Zu: {nachricht.reference_label}</p>
-      ) : null}
-      <p className="mt-2">
-        <Badge ton={zustand.ton}>
-          {zustand.wort}
-          {nachricht.status === 'open' && nachricht.due_on
-            ? ` · Antwort bis ${datum(nachricht.due_on)}`
-            : ''}
-        </Badge>
-      </p>
+      <PageHeader
+        title={THEMA_NAME[nachricht.topic]}
+        description={
+          <>
+            {nachricht.reference_label ? (
+              <span className="text-ink block">Zu: {nachricht.reference_label}</span>
+            ) : null}
+            {/* Der Zustand als Zeile mit Zeichen und Wort, nicht als
+                Abzeichen: Mit der Frist bräche die Pille bei 18 px auf zwei
+                Zeilen (Sichtung 13.10.2026, L9). */}
+            <span className="text-ink mt-1 block">
+              <span aria-hidden="true">{zustand.zeichen} </span>
+              <span className="font-semibold">{zustand.wort}</span>
+              {nachricht.status === 'open' && nachricht.due_on
+                ? ` · Antwort bis ${datum(nachricht.due_on)}`
+                : ''}
+            </span>
+          </>
+        }
+      />
 
-      <ol aria-label="Verlauf" className="mt-6 flex flex-col gap-3">
+      <ol aria-label="Verlauf" className="flex flex-col gap-3">
         {nachricht.entries.map((e) => (
           <li
             key={e.id}
@@ -532,7 +570,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
             onChange={(ev) => setText(ev.target.value)}
           />
           {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <Formularfuss>
             <Button type="submit" disabled={nachtragen.isPending}>
               {nachtragen.isPending ? 'Wird gesendet …' : 'Senden'}
             </Button>
@@ -544,7 +582,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
             >
               Hat sich erledigt
             </Button>
-          </div>
+          </Formularfuss>
         </form>
       ) : null}
     </>

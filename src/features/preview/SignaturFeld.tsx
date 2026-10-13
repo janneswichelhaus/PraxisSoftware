@@ -101,12 +101,14 @@ export function SignaturFeld({
   }
 
   return (
-    <fieldset className="border-line rounded-card mt-2 border p-4">
-      <legend className="text-ink px-1 text-sm font-medium">{beschriftung}</legend>
+    // Ohne Rahmen um die Gruppe (Welle B; Formulare tragen keinen Kasten,
+    // Leitfaden L2): Die Beschriftung steht wie an jedem Feld, die
+    // Bestätigung als Zeile auf vertiefter Fläche, das Unterschriftsfeld mit
+    // seiner Linie.
+    <fieldset className="mt-2">
+      <legend className="text-ink mb-1 text-sm font-medium">{beschriftung}</legend>
       {erklaerung ? (
-        <p className="text-ink-muted bg-surface-sunken rounded-card px-3 py-2 text-sm">
-          {erklaerung}
-        </p>
+        <p className="text-ink bg-surface-sunken rounded-card px-4 py-3 text-sm">{erklaerung}</p>
       ) : null}
 
       <canvas

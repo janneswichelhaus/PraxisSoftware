@@ -144,12 +144,13 @@ describe('TreatmentNoteRevisionPage', () => {
     expect(uebergebenerText(DOKU_ID)).toBeUndefined();
   });
 
-  it('behält den mitgereisten Rückweg für „Abbrechen“, Nachtrag und den Weg danach (DOK-01)', async () => {
+  it('behält den mitgereisten Rückweg für den Pfeil im Kopf, Nachtrag und den Weg danach (DOK-01)', async () => {
     const user = userEvent.setup();
     rendern(['therapist'], '?zurueck=%2F');
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
-    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/');
+    // Der Pfeil im Kopf der Schreibfläche ist der Weg hinaus.
+    expect(screen.getByRole('link', { name: /Zurück zur Übersicht/ })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Nachtrag' })).toHaveAttribute(
       'href',
       `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag?zurueck=%2F`,
@@ -180,7 +181,7 @@ describe('TreatmentNoteRevisionPage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
     await user.type(feld(), ' Korrigiert.');
-    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('link', { name: /Zurück zum Kalender/ }));
 
     const kasten = await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' });
     expect(kasten).toHaveTextContent(
@@ -257,6 +258,9 @@ describe('TreatmentNoteRevisionPage', () => {
     rendern();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    // Auch der Zustand hat einen Seitenkopf (Sichtung 13.10.2026, A7).
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByText(/^Korrektur · /)).toBeInTheDocument();
   });
 
   it('zeigt einem office-Zugang nichts und fragt nichts ab (4.3)', async () => {

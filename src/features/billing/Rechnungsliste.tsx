@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { Field } from '@/components/ui/Field';
+import { Filterleiste } from '@/components/ui/Filterleiste';
 import { SearchField } from '@/components/ui/SearchField';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Textlink } from '@/components/ui/Textlink';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -88,14 +90,11 @@ export function Rechnungsliste() {
           : undefined
       }
     >
-      {/* Suche und Filter in einer Zeile ab 640 px; am Handy die Suche über
-          Zustand und Monat. */}
-      <div
-        role="search"
-        aria-label="Rechnungen suchen"
-        className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_11rem_11rem]"
-      >
-        <div className="col-span-2 sm:col-span-1">
+      {/* Die Suche offen, Zustand und Monat am Telefon hinter „Filter (n)“
+          (Filterleiste, R2-O2); ab 640 px stehen sie offen daneben. */}
+      <Filterleiste
+        beschriftung="Rechnungen suchen"
+        suche={
           <SearchField
             label="Suche"
             placeholder="Nummer oder Name"
@@ -103,7 +102,13 @@ export function Rechnungsliste() {
             maxLength={SUCHE_HOECHSTENS}
             onChange={setSuche}
           />
-        </div>
+        }
+        gesetzt={(filter === '' ? 0 : 1) + (monat === '' ? 0 : 1)}
+        onZuruecksetzen={() => {
+          setFilter('');
+          setMonat('');
+        }}
+      >
         <Select
           label="Zustand"
           value={filter}
@@ -122,48 +127,37 @@ export function Rechnungsliste() {
           value={monat}
           onChange={(e) => setMonat(e.target.value)}
         />
-      </div>
+      </Filterleiste>
 
-      {rechnungen.isPending ? <LoadingState label="Rechnungen werden geladen …" /> : null}
-      {rechnungen.isError ? (
-        <ErrorState
-          title="Die Rechnungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => rechnungen.refetch()}
-        />
-      ) : null}
-      {rechnungen.data && zeilen.length === 0 ? (
-        eingeschraenkt ? (
-          <EmptyState
-            title="Keine passende Rechnung"
-            description="Suche oder Filter ändern - gesucht wird in Nummer, Name und Empfänger:in."
+      <Abfragezustand
+        abfrage={rechnungen}
+        laden="Rechnungen werden geladen …"
+        fehler="Die Rechnungen konnten nicht geladen werden."
+        leer={{
+          wenn: (daten) => daten.pages.every((seite) => seite.length === 0),
+          ...(eingeschraenkt
+            ? {
+                titel: 'Keine passende Rechnung',
+                beschreibung:
+                  'Suche oder Filter ändern - gesucht wird in Nummer, Name und Empfänger:in.',
+              }
+            : { titel: 'Noch keine Rechnung' }),
+        }}
+      >
+        {() => (
+          // Als Datenliste (DESIGN.md Regel 3, R2-neu5): ab 1024 px Spalten
+          // mit Kopfzeile, darunter jede Rechnung als Zeile, die alles selbst
+          // sagt - Nummer oben links, Betrag oben rechts, darunter Person und
+          // Zustand. In der Karte des Abschnitts ohne eigenen Rahmen.
+          <Datenliste
+            beschriftung="Rechnungen"
+            rahmen={false}
+            zeilen={zeilen}
+            schluessel={(rechnung) => rechnung.id}
+            spalten={RECHNUNGSSPALTEN}
           />
-        ) : (
-          <EmptyState title="Noch keine Rechnung" />
-        )
-      ) : null}
-
-      {zeilen.length > 0 ? (
-        <>
-          {/* Spaltenköpfe nur am Rechner; am Handy sagt jede Zeile alles. */}
-          <div
-            aria-hidden="true"
-            className="text-ink-muted tracking-label border-line hidden border-b pb-2 text-xs font-semibold uppercase lg:grid lg:grid-cols-[10rem_minmax(0,1fr)_12rem_8rem] lg:gap-4"
-          >
-            <span>Nummer</span>
-            <span>Person und Empfänger:in</span>
-            <span>Zustand</span>
-            <span className="text-right">Betrag</span>
-          </div>
-          <ul className="divide-line divide-y">
-            {zeilen.map((rechnung) => (
-              <li key={rechnung.id} className="py-3">
-                <Rechnungszeile rechnung={rechnung} />
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
+        )}
+      </Abfragezustand>
 
       {rechnungen.hasNextPage ? (
         <Button
@@ -181,14 +175,15 @@ export function Rechnungsliste() {
 }
 
 /**
- * Eine Rechnung: am Handy drei Zeilen untereinander, ab 1024 px vier Spalten.
- * Die Nummer ist der Weg zur Rechnung; ein eigener Knopf je Zeile entfällt
- * (UX-005i).
+ * Die Spalten einer Rechnung: am Handy drei Zeilen untereinander, ab 1024 px
+ * vier Spalten. Die Nummer ist der Weg zur Rechnung; ein eigener Knopf je
+ * Zeile entfällt (UX-005i).
  */
-function Rechnungszeile({ rechnung }: { rechnung: Rechnung }) {
-  const offen = rechnung.status === 'issued' && !rechnung.cancelled;
-  return (
-    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 lg:grid lg:grid-cols-[10rem_minmax(0,1fr)_12rem_8rem] lg:gap-4">
+const RECHNUNGSSPALTEN: readonly Datenspalte<Rechnung>[] = [
+  {
+    titel: 'Nummer',
+    breite: '10rem',
+    inhalt: (rechnung) => (
       <div className="flex flex-wrap items-baseline gap-2">
         <Textlink
           to={`/abrechnung/rechnungen/${rechnung.id}`}
@@ -208,8 +203,12 @@ function Rechnungszeile({ rechnung }: { rechnung: Rechnung }) {
         {rechnung.status === 'draft' ? <Badge ton="neutral">Entwurf</Badge> : null}
         {rechnung.cancelled ? <Badge ton="neutral">Storniert</Badge> : null}
       </div>
-
-      <div className="order-last w-full min-w-0 lg:order-none lg:w-auto">
+    ),
+  },
+  {
+    titel: 'Person und Empfänger:in',
+    inhalt: (rechnung) => (
+      <>
         <p className="text-ink text-sm">
           {rechnung.patient_name}
           <span className="text-ink-muted">
@@ -229,34 +228,44 @@ function Rechnungszeile({ rechnung }: { rechnung: Rechnung }) {
             ? ` · zahlbar bis ${formatDate(rechnung.due_on)}`
             : null}
         </p>
-      </div>
+      </>
+    ),
+  },
+  {
+    titel: 'Zustand',
+    breite: '12rem',
+    inhalt: (rechnung) => <Zahlungszustand rechnung={rechnung} />,
+  },
+  {
+    titel: 'Betrag',
+    breite: '8rem',
+    rechts: true,
+    telefon: 'ende',
+    inhalt: (rechnung) => formatEuro(rechnung.total_cents, rechnung.currency),
+  },
+];
 
-      <div className="order-last flex w-full flex-wrap items-center gap-2 text-sm lg:order-none lg:w-auto">
-        {offen ? (
-          <>
-            <Badge ton={zahlungsTon[rechnung.payment_state]}>
-              {zahlungsstandLabels[rechnung.payment_state]}
-            </Badge>
-            {rechnung.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
-            {/* An einer bezahlten Rechnung sagt „Bezahlt" alles (UX-005i). */}
-            {rechnung.payment_state === 'paid' ? null : (
-              <span className="text-ink-muted tabular-nums">
-                {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
-                {rechnung.outstanding_cents > 0
-                  ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
-                  : ''}
-                {rechnung.outstanding_cents < 0
-                  ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
-                  : ''}
-              </span>
-            )}
-          </>
-        ) : null}
-      </div>
-
-      <span className="text-ink text-liste ml-auto font-medium tabular-nums lg:ml-0 lg:text-right">
-        {formatEuro(rechnung.total_cents, rechnung.currency)}
-      </span>
+/** Zahlungsstand einer offenen Rechnung; an Entwurf und Storno nichts. */
+function Zahlungszustand({ rechnung }: { rechnung: Rechnung }) {
+  if (rechnung.status !== 'issued' || rechnung.cancelled) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge ton={zahlungsTon[rechnung.payment_state]}>
+        {zahlungsstandLabels[rechnung.payment_state]}
+      </Badge>
+      {rechnung.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
+      {/* An einer bezahlten Rechnung sagt „Bezahlt" alles (UX-005i). */}
+      {rechnung.payment_state === 'paid' ? null : (
+        <span className="text-ink-muted tabular-nums">
+          {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
+          {rechnung.outstanding_cents > 0
+            ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
+            : ''}
+          {rechnung.outstanding_cents < 0
+            ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
+            : ''}
+        </span>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
@@ -16,6 +17,7 @@ import {
   type Nachsorgeabo as Abo,
   type Nachsorgesicht,
 } from './nachsorge-api';
+import { Eintraege, Eintrag } from './Eintraege';
 
 /**
  * Das Nachsorge-Abo in der Akte (ANG-EPIC-001, PROJECT_PRINCIPLES.md 4.6 und
@@ -39,7 +41,7 @@ export function Nachsorgeabo({ patientId }: { patientId: string }) {
     return (
       <ErrorState
         title="Das Nachsorge-Abo konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
+        description={VERBINDUNG_PRUEFEN}
         onErneut={() => sicht.refetch()}
       />
     );
@@ -47,17 +49,24 @@ export function Nachsorgeabo({ patientId }: { patientId: string }) {
   if (!sicht.data) return null;
 
   const laufend = sicht.data.subscriptions.find((abo) => abo.ends_on === null);
+  // ANN-268: vor dem Abschluss der Versorgung gibt es kein Abo. Das sagt der
+  // Stand in einer Zeile, statt eines Satzes, der auf einen Knopf weit unten
+  // zeigt (Regel 6; Nachprüfung neu2) - und statt eines Knopfes, der
+  // abgewiesen würde.
+  const vorDemAbschluss = !sicht.data.earliest_start;
   return (
     <div className="border-line mt-3 border-t pt-3" aria-label="Nachsorge-Abo" role="group">
       <p className="text-ink text-liste font-medium">Nachsorge-Abo</p>
       {sicht.data.subscriptions.length === 0 ? (
-        <p className="text-ink-muted text-sm">Kein Abo.</p>
+        <p className="text-ink-muted text-sm">
+          {vorDemAbschluss ? 'Kein Abo · möglich ab dem Abschluss der Versorgung' : 'Kein Abo.'}
+        </p>
       ) : (
-        <ul className="divide-line mt-1 divide-y">
+        <Eintraege beschriftung="Abos" rahmen={false}>
           {sicht.data.subscriptions.map((abo) => (
             <AboZeile key={abo.id} abo={abo} patientId={patientId} />
           ))}
-        </ul>
+        </Eintraege>
       )}
       {laufend ? null : <Anlegen patientId={patientId} sicht={sicht.data} />}
     </div>
@@ -72,47 +81,53 @@ function kuendigungVon(abo: Abo): string {
   return 'über die Plattform von der Person selbst';
 }
 
+/**
+ * Ein Abo als Zeile der Liste (Design-Rollout B6): der Stand als Titel, wer
+ * es angelegt hat darunter; der nächste Monat, die Kündigung und die Wege
+ * stehen unter der Zeile.
+ */
 function AboZeile({ abo, patientId }: { abo: Abo; patientId: string }) {
   return (
-    <li className="flex flex-col gap-1 py-2">
-      <p className="text-ink text-sm">
-        {abo.ends_on === null
+    <Eintrag
+      titel={
+        abo.ends_on === null
           ? abo.next_month_start === abo.starts_on
             ? `Beginnt am ${formatDate(abo.starts_on)}`
             : `Läuft seit ${formatDate(abo.starts_on)}`
           : abo.ends_on < abo.starts_on
             ? `Vor dem Beginn am ${formatDate(abo.starts_on)} gekündigt`
-            : `${formatDate(abo.starts_on)} bis ${formatDate(abo.ends_on)}`}
-        {abo.created_by_name ? (
-          <span className="text-ink-muted"> · angelegt von {abo.created_by_name}</span>
+            : `${formatDate(abo.starts_on)} bis ${formatDate(abo.ends_on)}`
+      }
+      meta={abo.created_by_name ? `angelegt von ${abo.created_by_name}` : undefined}
+    >
+      <div className="flex flex-col gap-1">
+        {abo.ends_on === null && abo.next_month_start ? (
+          <p className="text-ink-muted text-sm">
+            Nächster Abo-Monat ab {formatDate(abo.next_month_start)}
+            {abo.next_month_price_cents !== null
+              ? `, ${formatEuro(abo.next_month_price_cents)}`
+              : ' – die Preisliste nennt dafür keinen Preis'}
+          </p>
         ) : null}
-      </p>
-      {abo.ends_on === null && abo.next_month_start ? (
-        <p className="text-ink-muted text-sm">
-          Nächster Abo-Monat ab {formatDate(abo.next_month_start)}
-          {abo.next_month_price_cents !== null
-            ? `, ${formatEuro(abo.next_month_price_cents)}`
-            : ' – die Preisliste nennt dafür keinen Preis'}
-        </p>
-      ) : null}
-      {abo.cancelled_on ? (
-        <p className="text-ink-muted text-sm">
-          Gekündigt am {formatDate(abo.cancelled_on)}, {kuendigungVon(abo)}
-        </p>
-      ) : null}
-      {/* Eine Fehlanlage geht nur ohne erfassten Monat; danach endet das
+        {abo.cancelled_on ? (
+          <p className="text-ink-muted text-sm">
+            Gekündigt am {formatDate(abo.cancelled_on)}, {kuendigungVon(abo)}
+          </p>
+        ) : null}
+        {/* Eine Fehlanlage geht nur ohne erfassten Monat; danach endet das
           Abo nur durch Kündigung (ANG-002). */}
-      {abo.ends_on === null ? (
-        <div className="mt-1 flex flex-wrap gap-2">
-          {abo.current_month_end ? (
-            <Kuendigen id={abo.id} patientId={patientId} ende={abo.current_month_end} />
-          ) : null}
-          {abo.recorded_months === 0 ? (
-            <Entfernen id={abo.id} patientId={patientId} beginn={abo.starts_on} />
-          ) : null}
-        </div>
-      ) : null}
-    </li>
+        {abo.ends_on === null ? (
+          <div className="mt-1 flex flex-wrap gap-2">
+            {abo.current_month_end ? (
+              <Kuendigen id={abo.id} patientId={patientId} ende={abo.current_month_end} />
+            ) : null}
+            {abo.recorded_months === 0 ? (
+              <Entfernen id={abo.id} patientId={patientId} beginn={abo.starts_on} />
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </Eintrag>
   );
 }
 
@@ -187,13 +202,11 @@ function Anlegen({ patientId, sicht }: { patientId: string; sicht: Nachsorgesich
     },
   });
 
-  // ANN-268: vor dem Abschluss der Versorgung gibt es kein Abo. Der Satz sagt,
-  // was zu tun ist, statt einen Knopf anzubieten, der abgewiesen würde.
+  // ANN-268: vor dem Abschluss der Versorgung kein Knopf. Ohne frühere Abos
+  // sagt das schon die Zeile „Kein Abo · …“ darüber.
   if (!sicht.earliest_start) {
-    return (
-      <p className="text-ink-muted mt-1 text-sm">
-        Ein Abo beginnt nach der Behandlung – erst die Versorgung abschließen.
-      </p>
+    return sicht.subscriptions.length === 0 ? null : (
+      <p className="text-ink-muted mt-1 text-sm">Neues Abo erst ab dem Abschluss der Versorgung</p>
     );
   }
 

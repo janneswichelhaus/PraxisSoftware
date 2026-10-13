@@ -1,11 +1,10 @@
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import type { Location } from '@/features/appointments/api';
-import { Listenfehler } from '@/features/appointments/Rueckmeldungen';
+import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import type { StaffFeld } from './api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Stand der Standortliste für die Auswahl des Hauptstandorts (ORG-14). */
 export type StandorteStand = 'laedt' | 'fehler' | 'bereit';
@@ -83,10 +82,7 @@ export function StaffMasterDataFields({
         </Feldgruppe>
       </Section>
 
-      <Section
-        titel="Dienstlich"
-        hinweis="Für alle Praxisrollen sichtbar – für Vertretung, Rückfragen und Einsatzplanung."
-      >
+      <Section titel="Dienstlich">
         <Feldgruppe>
           <Field
             label="Dienstliche E-Mail"
@@ -150,18 +146,8 @@ export function StaffMasterDataFields({
         </Feldgruppe>
       </Section>
 
-      {!privat ? (
-        <Kleingedrucktes className="mt-6">
-          Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt
-          ausschließlich die Praxisinhaber:in. Sie bleiben beim Speichern unverändert.
-        </Kleingedrucktes>
-      ) : null}
-
       {privat ? (
-        <Section
-          titel="Privat"
-          hinweis="Beschäftigtendaten. Nur für die Praxisinhaber:in und die betroffene Person sichtbar; alle Angaben sind freiwillig."
-        >
+        <Section titel="Privat">
           <Feldgruppe>
             <Field
               label="Geburtsdatum"

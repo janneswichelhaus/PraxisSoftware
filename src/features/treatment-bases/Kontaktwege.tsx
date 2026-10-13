@@ -1,3 +1,4 @@
+import { Textlink } from '@/components/ui/Textlink';
 import type { Prescriber } from './api';
 
 /**
@@ -22,26 +23,22 @@ export function Kontaktwege({
   const { phone, fax, email } = verordner;
   if (!phone && !fax && !email) return null;
 
+  // Als `Textlink`: unterstrichen, 44 px Tippziel (Regel 9; Sichtung
+  // 13.10.2026, A2 - dieselbe Karte).
   return (
     <p className={`flex flex-wrap items-center gap-x-4 text-sm ${className}`}>
       {phone ? (
-        <a
-          href={`tel:${telefonziel(phone)}`}
-          className="text-accent inline-flex min-h-11 items-center hover:underline"
-        >
+        <Textlink href={`tel:${telefonziel(phone)}`} alleinstehend>
           Tel. {phone}
-        </a>
+        </Textlink>
       ) : null}
       {fax ? (
         <span className="text-ink-muted inline-flex min-h-11 items-center">Fax {fax}</span>
       ) : null}
       {email ? (
-        <a
-          href={`mailto:${email}`}
-          className="text-accent inline-flex min-h-11 items-center wrap-anywhere hover:underline"
-        >
+        <Textlink href={`mailto:${email}`} alleinstehend className="wrap-anywhere">
           {email}
-        </a>
+        </Textlink>
       ) : null}
     </p>
   );

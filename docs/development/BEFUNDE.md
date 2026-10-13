@@ -15,16 +15,15 @@ Spur", `ROADMAP.md`, Risiken). Sie hat **keinen Rang** in der
 Dokumentenhierarchie, ist **kein Auftrag** und führt **keine zweite
 Reihenfolge**: Was wann gebaut wird, steht ausschließlich in `ROADMAP.md`.
 Ein Befund wird verbindlich erst im SPEC-Schritt des Loops, der ihn aufnimmt.
-Zu jedem offenen Befund steht in [`BEFUNDE-LOESUNGEN.md`](BEFUNDE-LOESUNGEN.md)
-(Stand 2026-10-02) der heutige Codestand, die empfohlene Lösung und der
-Umsetzungspfad; auch diese Analyse hat keinen Rang.
+Die Lösungsanalyse zu den Befunden bis 2026-10-02 liegt in
+[`archiv/BEFUNDE-LOESUNGEN.md`](archiv/BEFUNDE-LOESUNGEN.md); auch sie hat keinen Rang.
 
-**Ablaufrunden ruhen.** Die Ablaufrunden nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md)
-sind bis Probewoche 1 (Roadmap H1, Feb 2027) eingefroren — Entscheidung von
-Jannes vom 2026-09-13. Bis dahin werden Befunde nicht in Ablaufkarten
-gemessen, sondern **hier gesammelt** und über R6 in die Loops gegeben. Was
-eine Ablaufrunde später messen soll, bleibt hier als Befund stehen, bis die
-Runden wieder aufgenommen werden.
+**Befunde gehen in Bereichsüberholungen** (seit 2026-10-12): Die offenen
+Befunde eines Bereichs werden die ersten Stories seiner nächsten Überholung
+(`/bereich`); andere werden gebündelt in einem Auftrag erledigt, nicht als
+eigener Einzel-Story-Loop. Abläufe misst nicht mehr eine Ablaufrunde
+([`archiv/OPTIMIERUNG.md`](archiv/OPTIMIERUNG.md)), sondern die Tipp-Budgets in
+[`../product/kernablaeufe.md`](../product/kernablaeufe.md).
 
 ## Form
 
@@ -43,8 +42,9 @@ Ein erledigter Befund zieht mit dem Loop, der ihn geschlossen hat, nach
 Kennung und Wortlaut bleiben. Hier stehen nur offene, eingeplante und teilweise
 erledigte Befunde. Die nächste Kennung ist die höchste aus beiden Dateien plus
 eins; `pnpm docs:check` meldet eine doppelt vergebene.
-Messwerte (Pixel, Taps, Sekunden) sind Beobachtungen von Jannes selbst oder
-aus dem Code — nie aus Telemetrie und nie an Mitarbeitenden (§20).
+Messwerte (Pixel, Taps, Sekunden) sind Beobachtungen von Jannes selbst, aus dem
+Code oder per Playwright auf Seed-Daten — nie aus Telemetrie und nie an
+Mitarbeitenden (§20).
 
 ---
 

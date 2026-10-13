@@ -20,7 +20,8 @@ describe('Pannenassistent', () => {
 
   it('kennzeichnet die Kölner Herkunft der Standortangaben', () => {
     oeffne();
-    expect(screen.getByText(/für Tübingen noch zu prüfen/)).toBeInTheDocument();
+    expect(screen.getByText('Köln-Vorlage')).toBeInTheDocument();
+    expect(screen.getByText(/Für Tübingen noch zu prüfen/)).toBeInTheDocument();
   });
 
   it('beginnt mit der Radauswahl, wenn kein Rad vorgegeben ist', () => {
@@ -154,7 +155,7 @@ describe('Pannenassistent', () => {
   it('nennt im Kopf kein Rad, solange es gewaehlt wird (VOR-18)', () => {
     oeffne('/betrieb/flotte/panne');
     // Die Auswahl ist vorbelegt, gewählt ist damit aber noch nichts.
-    expect(screen.getByText('Rad noch nicht ausgewählt')).toBeInTheDocument();
+    expect(screen.getByText(/Rad noch nicht ausgewählt/)).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Rad' })).toHaveDisplayValue(
       'Lastenrad 1 · Raddepot Nord',
     );

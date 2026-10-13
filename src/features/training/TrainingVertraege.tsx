@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/Badge';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
@@ -18,12 +20,12 @@ export function TrainingVertraege({ relationshipId }: { relationshipId: string }
   });
   if (!data || data.length === 0) return null;
   return (
-    <Section titel="Im Konto geschlossen" rahmen>
-      <ul className="divide-line divide-y">
+    <Section titel="Im Konto geschlossen">
+      <ListRows>
         {data.map((v) => (
           <Zeile key={v.id} vertrag={v} />
         ))}
-      </ul>
+      </ListRows>
     </Section>
   );
 }
@@ -34,25 +36,29 @@ function Zeile({ vertrag: v }: { vertrag: Kontovertrag }) {
       ? ` von ${v.withdrawn_representative_name} (rechtliche Vertretung)`
       : '';
   return (
-    <li className="flex flex-col gap-1 py-2 first:pt-0 last:pb-0">
-      <p className="text-ink text-sm">
-        {v.package_label}, {formatDate(v.starts_on)} bis {formatDate(v.ends_on)},{' '}
-        {formatEuro(v.price_cents, v.currency)}
-      </p>
-      <p className="text-ink-muted text-sm">
-        Gebucht am {formatDate(v.concluded_on)} · Belehrung Fassung {v.wording_version}
-        {v.early_start_requested ? ' · früher Beginn verlangt' : ''}
-      </p>
-      {v.withdrawn_on ? (
-        <p className="text-warnung text-sm font-medium">
-          Widerrufen am {formatDate(v.withdrawn_on)}
-          {von}. Bitte Paket und Zahlung abwickeln.
-        </p>
-      ) : (
-        <p className="text-ink-muted text-sm">
-          Widerruf möglich bis {formatDate(v.withdrawal_ends_on)}
-        </p>
-      )}
-    </li>
+    // Eine Zeile der Liste (`ListRow`): das Paket als Titel, darunter Buchung
+    // und Frist. Ein Widerruf steht als Zeichen und Wort (DESIGN.md Regel 5).
+    <ListRow
+      titel={v.package_label}
+      meta={
+        <>
+          {formatDate(v.starts_on)} bis {formatDate(v.ends_on)},{' '}
+          {formatEuro(v.price_cents, v.currency)}
+          <span className="block">
+            Gebucht am {formatDate(v.concluded_on)} · Belehrung Fassung {v.wording_version}
+            {v.early_start_requested ? ' · früher Beginn verlangt' : ''}
+          </span>
+          {v.withdrawn_on ? (
+            <span className="text-warnung block font-medium">
+              Widerrufen am {formatDate(v.withdrawn_on)}
+              {von}. Bitte Paket und Zahlung abwickeln.
+            </span>
+          ) : (
+            <span className="block">Widerruf möglich bis {formatDate(v.withdrawal_ends_on)}</span>
+          )}
+        </>
+      }
+      status={v.withdrawn_on ? <Badge ton="warnung">Widerrufen</Badge> : undefined}
+    />
   );
 }

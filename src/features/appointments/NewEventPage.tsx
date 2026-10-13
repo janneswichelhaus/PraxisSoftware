@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -205,7 +207,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           Fehlzeit nicht ist (UX-005g). */}
       <PageHeader title="Fehlzeit eintragen" description={`${FEHLZEIT_BEISPIELE} oder anderes.`} />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         {/* Was noch fehlt - und wo (KAL-17): Auf dem Telefon steht der
             Absendeknopf einen Bildschirm unter der Bezeichnung. */}
         <Fehlerzusammenfassung
@@ -228,7 +230,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
             standorte.isError ? (
               <ErrorState
                 title="Die Standorte konnten nicht geladen werden."
-                description="Bitte die Verbindung prüfen und erneut versuchen."
+                description={VERBINDUNG_PRUEFEN}
                 onErneut={() => standorte.refetch()}
               />
             ) : null
@@ -241,12 +243,14 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
                 <div className="mt-3">
                   <ErrorState
                     title="Die Personen konnten nicht geladen werden."
-                    description="Bitte die Verbindung prüfen und erneut versuchen."
+                    description={VERBINDUNG_PRUEFEN}
                     onErneut={() => personen.refetch()}
                   />
                 </div>
               ) : (
-                <div className="mt-3 flex flex-col gap-2">
+                // Ab 640 px zwei Spalten: Die Namen sind kurz, die Liste wird
+                // nur halb so lang (DESIGN.md Regel 10).
+                <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
                   {aktive.map((person, i) => (
                     <Checkbox
                       key={person.id}
@@ -291,7 +295,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
         ) : null}
 
         {mutation.isError && !ausserhalb ? (
-          <Statusmeldung ton="fehler" className="mt-5">
+          <Statusmeldung ton="fehler" className="mt-6">
             {mutation.error.message}
           </Statusmeldung>
         ) : null}
@@ -299,16 +303,17 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        {/* Am Telefon untereinander in voller Breite (DESIGN.md „Formular“). */}
+        <Formularfuss>
           <Button type="submit" disabled={mutation.isPending || listeFehlt}>
             {mutation.isPending ? 'Wird eingetragen …' : 'Fehlzeit eintragen'}
           </Button>
           {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
               dieselbe Rückfrage wie jeder andere Weg hinaus. */}
-          <ButtonLink to={zurueck} variant="secondary">
+          <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
     </>
   );

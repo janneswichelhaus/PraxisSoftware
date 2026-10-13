@@ -170,6 +170,19 @@
   --color-reihe-5: oklch(64% 0.11 150);
   --color-reihe-6: oklch(50% 0.105 320);
 
+  /* --- Übungsbild (ANN-381) -------------------------------------------------
+     Die Linienfigur der Übungsbibliothek: die nahe Körperseite in der
+     Hauptfarbe (`accent`), die ferne in Figur fern, Hilfsmittel in
+     `line-strong` auf der Vertiefung. Alle drei neuen Farben sind nur Linie
+     und Fläche, nie Text, und halten als grafisches Element 3:1 auf Weiß
+     (WCAG 1.4.11, `src/lib/kontrast.test.ts`). */
+  /* Salbeigrün, heller als die Hauptfarbe: die abgewandte Körperseite. */
+  --color-figur-fern: oklch(62% 0.06 158);
+  /* Ocker: der Pfeil, der die Bewegung zeigt. */
+  --color-figur-bewegung: oklch(58% 0.12 68);
+  /* Terrakotta: das Übungsband. */
+  --color-figur-band: oklch(57% 0.13 30);
+
   /* --- Schrift und Maße ----------------------------------------------------- */
 
   --font-sans:
@@ -271,6 +284,18 @@
      Container-Schwelle (`@zweispaltig:` unter einem `@container`) und kein
      Fenster-Breakpoint. */
   --container-zweispaltig: 900px;
+
+  /* Inhaltsbreiten unterhalb der 1200 (DESIGN.md, „Inhaltsbreiten“; ANN-402).
+     Bis dahin stand die Breite einer Seite als freie Tailwind-Stufe da -
+     `max-w-xl` 64-mal, `max-w-2xl` 21-mal, `max-w-3xl` 17-mal -, und dieselbe
+     Art Seite war hier 576, dort 672 px breit. Zwei Rollen statt drei
+     Stufen: `formular` (36rem, das bisherige `max-w-xl`) für Felder
+     untereinander, `spalte` (48rem, das bisherige `max-w-3xl`) für eine
+     einzelne Arbeits- oder Lesespalte, etwa die Übersicht ohne
+     Kontextspalte. Listen und Objektseiten nutzen die volle Breite,
+     Fließtext `max-w-prose`. */
+  --container-formular: 36rem;
+  --container-spalte: 48rem;
 }
 
 /* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,
@@ -377,7 +402,9 @@ html[data-schrift='sehr-gross'] {
      sobald das System dunkel eingestellt ist: mitten in der hellen
      Anwendung, mit Symbolen, die auf weißem Feld verschwinden. Einen
      Dunkelmodus kennt das System nicht; er wäre eine Idee, kein Fehler.
-     `index.html` meldet dasselbe, damit schon die erste Zeichnung hell ist. */
+     `index.html` meldet dasselbe, damit schon die erste Zeichnung hell ist.
+     Bewusst so (ANN-401): Gearbeitet wird draußen, am Lenker, in der Sonne -
+     dort trägt Weiß mit hohem Kontrast, ein dunkles Schema nicht. */
   :root {
     color-scheme: light;
   }

@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { fullName, type Patient } from '@/features/patients/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { addAppointmentNotification, type AppointmentSlipEntry } from './api';
-import { Rueckmeldung } from './Rueckmeldungen';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { mailOeffnen, terminmailEntwurf, type Terminmail } from './terminmail';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
@@ -120,33 +122,35 @@ function Mailentwurf({
     <div className="flex flex-col gap-3">
       {entwurf === null ? (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col *:w-full sm:flex-row sm:*:w-auto">
             <Button type="button" variant="secondary" onClick={entwerfen}>
               Termine per E-Mail senden
             </Button>
-            {/* Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist
-                mit der Frage verschwunden (UIK-21, ZST-16). */}
-            {vermerken.isSuccess ? (
-              <Rueckmeldung>
-                Die Termine sind als „Per E-Mail mitgeteilt“ vermerkt. Am Termin lässt sich der
-                Vermerk zurücknehmen.
-              </Rueckmeldung>
-            ) : null}
           </div>
+
+          {/* Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist
+              mit der Frage verschwunden (UIK-21, ZST-16). */}
+          {vermerken.isSuccess ? (
+            <Rueckmeldung>
+              Die Termine sind als „Per E-Mail mitgeteilt“ vermerkt. Am Termin lässt sich der
+              Vermerk zurücknehmen.
+            </Rueckmeldung>
+          ) : null}
 
           {/* Der zweite Schritt: Die Anwendung sieht die Übergabe, nicht den
               Versand - also fragt sie (ANN-041 Fassung 2). Die Frage bleibt
-              stehen, bis sie beantwortet ist. */}
+              stehen, bis sie beantwortet ist. Eine Zeile mit Linie links wie
+              jede Rückfrage (DESIGN.md Regel 2), keine Karte. */}
           {uebergeben ? (
             <div
               role="status"
-              className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-3 border px-4 py-3"
+              className="border-line-strong bg-surface-sunken flex flex-col gap-3 border-l-4 py-3 pr-4 pl-4"
             >
               <p className="text-ink text-liste">
                 Die E-Mail ist im Mailprogramm geöffnet. Wurde sie gesendet? Nur dann gelten die
                 Termine als mitgeteilt.
               </p>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
                 <Button
                   type="button"
                   disabled={vermerken.isPending}
@@ -154,63 +158,60 @@ function Mailentwurf({
                 >
                   {vermerken.isPending ? 'Wird vermerkt …' : 'Ja, als mitgeteilt vermerken'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setUebergeben(null)}>
+                <Button type="button" variant="quiet" onClick={() => setUebergeben(null)}>
                   Nein, nichts vermerken
                 </Button>
-                {vermerken.isError ? (
-                  <Statusmeldung ton="fehler">
-                    {vermerken.error.message} Es wurde nichts vermerkt.
-                  </Statusmeldung>
-                ) : null}
               </div>
+              {vermerken.isError ? (
+                <Statusmeldung ton="fehler">
+                  {vermerken.error.message} Es wurde nichts vermerkt.
+                </Statusmeldung>
+              ) : null}
             </div>
           ) : null}
         </div>
       ) : (
-        <div className="border-line bg-surface-sunken rounded-card max-w-prose border p-4">
-          {/* Die Überschrift als Abschnittstitel des Systems statt einer
-              eigenen Form (TER-16). */}
-          <Section titel="E-Mail an die Patient:in">
-            <dl className="text-sm">
-              {/* min-w-0 und Umbruch an jeder Stelle: Eine E-Mail-Adresse hat
-                  keine Trennstelle und ragte bei 390 px sonst über Kasten und
-                  Bildrand - genau dort, wo sie geprüft werden soll (TER-20). */}
-              <div className="flex gap-2">
-                <dt className="text-ink-muted">An</dt>
-                <dd className="text-ink min-w-0 wrap-anywhere">{adresse}</dd>
-              </div>
-              <div className="mt-1 flex gap-2">
-                <dt className="text-ink-muted">Betreff</dt>
-                <dd className="text-ink min-w-0 wrap-anywhere">{entwurf.betreff}</dd>
-              </div>
-            </dl>
+        // Die Vorschau als Auskunft auf Papier (`Section rahmen`): An, Betreff,
+        // Text - kein Kasten im Kasten (DESIGN.md Regel 2).
+        <div className="max-w-prose">
+          <Section titel="E-Mail an die Patient:in" rahmen>
+            {/* Umbruch an jeder Stelle: Eine E-Mail-Adresse hat keine
+                Trennstelle und ragte bei 390 px sonst über Kasten und Bildrand
+                - genau dort, wo sie geprüft werden soll (TER-20). Die Zeile
+                des Systems bricht so (`DetailRow`). */}
+            <DetailList schmal>
+              <DetailRow label="An">{adresse}</DetailRow>
+              <DetailRow label="Betreff">{entwurf.betreff}</DetailRow>
+            </DetailList>
 
-            <p className="text-ink border-line text-liste mt-3 border-t pt-3 whitespace-pre-line">
+            <p className="text-ink border-line text-liste border-t py-3 whitespace-pre-line">
               {entwurf.text}
             </p>
-
-            {entwurf.ausgelassen > 0 ? (
-              <Statusmeldung ton="warnung" className="mt-3">
-                {`Es passen nur die nächsten ${entwurf.enthalten.length} Termine in eine E-Mail. Die übrigen ${entwurf.ausgelassen} stehen auf dem Ausdruck und gelten danach als nicht mitgeteilt.`}
-              </Statusmeldung>
-            ) : null}
-
-            <Kleingedrucktes className="mt-3">
-              Eine E-Mail ist unterwegs nicht verschlüsselt. Senden Sie die Termine nur, wenn die
-              Patient:in das ausdrücklich wünscht und weiß, dass die Nachricht unverschlüsselt geht.
-              Die Anwendung verschickt nichts selbst: Sie öffnet die Nachricht in Ihrem
-              Mailprogramm, gesendet wird sie dort von Ihnen.
-            </Kleingedrucktes>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <Button type="button" onClick={() => uebergabeStarten(entwurf)}>
-                E-Mail öffnen
-              </Button>
-              <Button type="button" variant="secondary" onClick={() => setEntwurf(null)}>
-                Abbrechen
-              </Button>
-            </div>
           </Section>
+
+          {entwurf.ausgelassen > 0 ? (
+            <Statusmeldung ton="warnung" className="mt-3">
+              {`Es passen nur die nächsten ${entwurf.enthalten.length} Termine in eine E-Mail. Die übrigen ${entwurf.ausgelassen} stehen auf dem Ausdruck und gelten danach als nicht mitgeteilt.`}
+            </Statusmeldung>
+          ) : null}
+
+          {/* Das Risiko an der Stelle der Entscheidung (ANN-041) - ein
+              Rechtssatz, deshalb Kleingedrucktes (DESIGN.md Regel 6). */}
+          <Kleingedrucktes className="mt-3">
+            Eine E-Mail ist unterwegs nicht verschlüsselt. Senden Sie die Termine nur, wenn die
+            Patient:in das ausdrücklich wünscht und weiß, dass die Nachricht unverschlüsselt geht.
+            Die Anwendung verschickt nichts selbst: Sie öffnet die Nachricht in Ihrem Mailprogramm,
+            gesendet wird sie dort von Ihnen.
+          </Kleingedrucktes>
+
+          <Formularfuss>
+            <Button type="button" onClick={() => uebergabeStarten(entwurf)}>
+              E-Mail öffnen
+            </Button>
+            <Button type="button" variant="quiet" onClick={() => setEntwurf(null)}>
+              Abbrechen
+            </Button>
+          </Formularfuss>
         </div>
       )}
     </div>

@@ -1,10 +1,13 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
@@ -109,6 +112,13 @@ function invalidiereTermin(
  * Das Protokoll am Termin. Lesen dürfen seit ABN-022 auch das Büro
  * (`darfSchreiben` false: nur der Text, kein Feld); schreiben, abschließen und
  * Nachträge anhängen owner und Trainingsbetreuung (BEF-113).
+ *
+ * Seit dem Design-Rollout (Welle B3a) ist der Entwurf eine Arbeitsseite
+ * (DESIGN.md „Arbeitsseite“): das lange Feld im Abschnitt, „Entwurf
+ * speichern“ und „Protokoll abschließen“ in der klebenden `Aktionsleiste`
+ * über der Tableiste, der Hauptknopf rechts. Die Leiste steht deshalb neben
+ * dem Abschnitt, nicht in ihm - die Seite setzt diese Komponente als letztes
+ * Glied, damit die Leiste über die ganze Seite klebt.
  */
 export function TrainingProtokoll({
   termin,
@@ -123,45 +133,72 @@ export function TrainingProtokoll({
     retry: false,
   });
 
-  return (
-    <Section titel="Trainingsprotokoll" rahmen>
-      {/* Ein gescheitertes Nachladen ersetzt vorhandene Daten nicht - sonst
-          nähme es den Text im Feld mit (Zweitreview 4). */}
-      {protokoll.data === undefined ? (
-        protokoll.isError ? (
-          <ErrorState
-            title="Das Trainingsprotokoll konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => protokoll.refetch()}
-          />
-        ) : (
-          <LoadingState label="Trainingsprotokoll wird geladen …" />
-        )
-      ) : protokoll.data?.status === 'final' ? (
+  if (protokoll.data === undefined) {
+    return (
+      <Section titel="Trainingsprotokoll">
+        <Abfragezustand
+          abfrage={protokoll}
+          laden="Trainingsprotokoll wird geladen …"
+          fehler="Das Trainingsprotokoll konnte nicht geladen werden."
+          inKarte
+        >
+          {() => null}
+        </Abfragezustand>
+      </Section>
+    );
+  }
+
+  // Ein gescheitertes Nachladen ersetzt vorhandene Daten nicht - sonst nähme
+  // es den Text im Feld mit (Zweitreview 4). Der Stand bleibt, mit Hinweis.
+  const veraltet = protokoll.isError ? (
+    <NachladeHinweis
+      className="mb-3"
+      laeuft={protokoll.isFetching}
+      onErneut={() => void protokoll.refetch()}
+    />
+  ) : null;
+
+  if (protokoll.data?.status === 'final') {
+    return (
+      <Section titel="Trainingsprotokoll" rahmen>
+        {veraltet}
         <Abgeschlossen
           protokoll={protokoll.data}
           zone={termin.organization_time_zone}
           termin={termin}
           darfNachtragen={darfSchreiben}
         />
-      ) : !darfSchreiben ? (
-        // Das Büro liest den Entwurf, schreibt aber nicht (ANN-184 Fassung 2).
-        protokoll.data ? (
+      </Section>
+    );
+  }
+  if (!darfSchreiben) {
+    // Das Büro liest den Entwurf, schreibt aber nicht (ANN-184 Fassung 2).
+    return (
+      <Section titel="Trainingsprotokoll" rahmen>
+        {veraltet}
+        {protokoll.data ? (
           <div className="flex flex-col gap-2">
-            <Badge>Entwurf</Badge>
+            <div>
+              <Badge>Entwurf</Badge>
+            </div>
             <p className="text-ink leading-relaxed whitespace-pre-wrap">{protokoll.data.content}</p>
           </div>
         ) : (
           <p className="text-ink-muted text-sm">Noch kein Protokoll.</p>
-        )
-      ) : termin.status === 'confirmed' || termin.status === 'completed' ? (
-        <Entwurf termin={termin} protokoll={protokoll.data} />
-      ) : (
-        // Ein dokumentierter Termin ohne Protokoll: Der Löschlauf hat es nach
-        // Ablauf der Frist genommen (ANN-183). Einen neuen Entwurf gibt es
-        // hier nicht (Zweitreview 2).
-        <p className="text-ink-muted text-sm">Zu diesem Termin gibt es kein Trainingsprotokoll.</p>
-      )}
+        )}
+      </Section>
+    );
+  }
+  if (termin.status === 'confirmed' || termin.status === 'completed') {
+    return <Entwurf termin={termin} protokoll={protokoll.data} veraltet={veraltet} />;
+  }
+  // Ein dokumentierter Termin ohne Protokoll: Der Löschlauf hat es nach Ablauf
+  // der Frist genommen (ANN-183). Einen neuen Entwurf gibt es hier nicht
+  // (Zweitreview 2).
+  return (
+    <Section titel="Trainingsprotokoll" rahmen>
+      {veraltet}
+      <p className="text-ink-muted text-sm">Zu diesem Termin gibt es kein Trainingsprotokoll.</p>
     </Section>
   );
 }
@@ -187,7 +224,8 @@ function Abgeschlossen({
             beim Abschließen; hier steht nur der Stand (UX-005i). */}
         {protokoll.finalized_by_name ? ` von ${protokoll.finalized_by_name}` : ''}.
       </p>
-      {/* Nachträge unter dem Text, wie in der Behandlung (ABN-022, BEF-113). */}
+      {/* Nachträge unter dem Text, wie in der Behandlung (ABN-022, BEF-113):
+          als Zeile mit Linie links, kein Kasten im Kasten (L2). */}
       {protokoll.addenda.map((n) => (
         <div key={n.id} className="border-line border-l-2 pl-3">
           <p className="text-ink-muted text-sm">
@@ -221,8 +259,8 @@ function Nachtrag({ termin }: { termin: TrainingAppointment }) {
 
   if (!offen) {
     return (
-      <div>
-        <Button type="button" variant="secondary" onClick={() => setOffen(true)}>
+      <div className="border-line border-t pt-3">
+        <Button type="button" variant="secondary" groesse="kompakt" onClick={() => setOffen(true)}>
           Nachtrag schreiben
         </Button>
       </div>
@@ -231,7 +269,8 @@ function Nachtrag({ termin }: { termin: TrainingAppointment }) {
   return (
     <form
       noValidate
-      className="flex flex-col gap-3"
+      aria-label="Nachtrag schreiben"
+      className="border-line flex flex-col gap-4 border-t pt-4"
       onSubmit={(e) => {
         e.preventDefault();
         if (inhalt.trim() === '' || grund.trim().length < 3) {
@@ -260,14 +299,14 @@ function Nachtrag({ termin }: { termin: TrainingAppointment }) {
       {nachtragen.isError ? (
         <Statusmeldung ton="fehler">{nachtragen.error.message}</Statusmeldung>
       ) : null}
-      <div className="flex flex-wrap gap-3">
+      <Formularfuss>
         <Button type="submit" disabled={nachtragen.isPending}>
           {nachtragen.isPending ? 'Wird gespeichert …' : 'Nachtrag speichern'}
         </Button>
         <Button type="button" variant="quiet" onClick={() => setOffen(false)}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }
@@ -275,9 +314,11 @@ function Nachtrag({ termin }: { termin: TrainingAppointment }) {
 function Entwurf({
   termin,
   protokoll,
+  veraltet,
 }: {
   termin: TrainingAppointment;
   protokoll: TrainingProtocol | null;
+  veraltet: ReactNode;
 }) {
   const queryClient = useQueryClient();
   const [text, setText] = useState(protokoll?.content ?? '');
@@ -285,6 +326,7 @@ function Entwurf({
   const [stand, setStand] = useState<string | null>(protokoll?.updated_at ?? null);
   const [meldung, setMeldung] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+  const [abschliessen, setAbschliessen] = useState(false);
   const textRef = useRef(text);
   textRef.current = text;
 
@@ -301,16 +343,20 @@ function Entwurf({
     return textRef.current === inhalt;
   }
 
+  // Als Zeile über der Leiste statt als Kasten (Design-Handoff 2026-10-01,
+  // Abschnitt 6a) - dieselben drei Wege wie auf der Schreibseite (ANN-046).
   const { schreiben, laeuft, schutz } = useTextverlustschutz({
     ungespeichert,
     speichern,
     texte: PROTOKOLLTEXTE,
+    kompakt: true,
   });
 
   const abschluss = useMutation({
     mutationFn: () => finalizeTrainingProtocol(termin.id, textRef.current, stand),
     onSuccess: () => {
       setGespeichert(textRef.current);
+      setAbschliessen(false);
       invalidiereTermin(queryClient, termin, true);
     },
   });
@@ -325,29 +371,44 @@ function Entwurf({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {meldung ? <Statusmeldung ton="erfolg">{meldung}</Statusmeldung> : null}
-      {/* Was Entwurf und Abschluss bedeuten, sagen Knopf und Rückfrage (UX-005i). */}
-      <TextArea
-        label="Was in der Einheit gemacht wurde"
-        hint="Übungen, Umfang, Absprachen – in eigenen Worten."
-        rows={6}
-        maxLength={20000}
-        value={text}
-        error={fehler}
-        onChange={(e) => {
-          setText(e.target.value);
-          setMeldung(null);
-          if (fehler) setFehler(undefined);
-        }}
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        {/* Das Abzeichen steht in der Knopfzeile statt in einem eigenen
-            Absatz (UX-005i). */}
+    <>
+      <Section titel="Trainingsprotokoll" rahmen>
+        {veraltet}
+        {/* Was Entwurf und Abschluss bedeuten, sagen Knopf und Rückfrage (UX-005i). */}
+        <TextArea
+          label="Was in der Einheit gemacht wurde"
+          hint="Übungen, Umfang, Absprachen – in eigenen Worten."
+          rows={8}
+          maxLength={20000}
+          value={text}
+          error={fehler}
+          onChange={(e) => {
+            setText(e.target.value);
+            setMeldung(null);
+            if (fehler) setFehler(undefined);
+          }}
+        />
+      </Section>
+
+      <Aktionsleiste
+        oben={
+          <>
+            {meldung ? (
+              <Statusmeldung ton="erfolg" className="px-4 py-1">
+                {meldung}
+              </Statusmeldung>
+            ) : null}
+            {schutz}
+          </>
+        }
+      >
+        {/* Das Abzeichen steht in der Leiste statt in einem eigenen Absatz
+            (UX-005i). */}
         {protokoll || stand ? <Badge>Entwurf</Badge> : null}
         <Button
           type="button"
-          variant="secondary"
+          variant="quiet"
+          className="ml-auto"
           disabled={laeuft || abschluss.isPending || !ungespeichert}
           onClick={() => {
             if (!pruefen()) return;
@@ -360,26 +421,64 @@ function Entwurf({
         >
           {laeuft ? 'Wird gespeichert …' : 'Entwurf speichern'}
         </Button>
-        <Rueckfrage
-          ausloeser="Protokoll abschließen"
-          ausloeserVariante="primary"
-          bestaetigen="Ja, abschließen"
-          bestaetigenLaeuft="Wird abgeschlossen …"
-          fehler={abschluss.isError ? abschluss.error.message : undefined}
-          laeuft={laeuft || abschluss.isPending}
-          onBestaetigen={async () => {
-            if (!pruefen()) throw new Error('Bitte festhalten, was in der Einheit gemacht wurde.');
-            await abschluss.mutateAsync();
+        <Button
+          type="button"
+          disabled={laeuft || abschluss.isPending}
+          onClick={() => {
+            abschluss.reset();
+            setAbschliessen(true);
           }}
         >
-          <p>
+          Protokoll abschließen
+        </Button>
+      </Aktionsleiste>
+
+      {/* Die Rückfrage als Fenster über dem Inhalt: Sie entsteht in der
+          Leiste am unteren Rand, wo ein aufgehender Kasten keinen Platz hat
+          (FIX-016, ANN-058). Der Text ist derselbe wie bisher. */}
+      {abschliessen ? (
+        <Dialogfenster
+          titel="Protokoll abschließen?"
+          onSchliessen={() => {
+            if (!abschluss.isPending) setAbschliessen(false);
+          }}
+        >
+          <p className="text-ink text-sm">
             Das Protokoll wird mit dem Text im Feld abgeschlossen und lässt sich danach nicht mehr
             ändern. Der Termin gilt dann als dokumentiert.
           </p>
-        </Rueckfrage>
-      </div>
-      {schutz}
-    </div>
+          {abschluss.isError ? (
+            <Statusmeldung ton="fehler" className="mt-3">
+              {abschluss.error.message}
+            </Statusmeldung>
+          ) : null}
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
+              data-autofocus
+              disabled={laeuft || abschluss.isPending}
+              onClick={() => {
+                if (!pruefen()) {
+                  setAbschliessen(false);
+                  return;
+                }
+                abschluss.mutate();
+              }}
+            >
+              {abschluss.isPending ? 'Wird abgeschlossen …' : 'Ja, abschließen'}
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              disabled={abschluss.isPending}
+              onClick={() => setAbschliessen(false)}
+            >
+              Abbrechen
+            </Button>
+          </div>
+        </Dialogfenster>
+      ) : null}
+    </>
   );
 }
 
@@ -426,9 +525,7 @@ export function TerminAbschluss({
           {abschliessen.isPending ? 'Wird vermerkt …' : 'Als durchgeführt vermerken'}
         </Button>
         {abschliessen.isError ? (
-          <p role="alert" className="text-danger text-sm">
-            {abschliessen.error.message}
-          </p>
+          <Statusmeldung ton="fehler">{abschliessen.error.message}</Statusmeldung>
         ) : null}
       </div>
     );
@@ -445,9 +542,7 @@ export function TerminAbschluss({
           {oeffnen.isPending ? 'Wird geöffnet …' : 'Wieder öffnen'}
         </Button>
         {oeffnen.isError ? (
-          <p role="alert" className="text-danger text-sm">
-            {oeffnen.error.message}
-          </p>
+          <Statusmeldung ton="fehler">{oeffnen.error.message}</Statusmeldung>
         ) : null}
       </div>
     );
@@ -460,6 +555,10 @@ export function TerminAbschluss({
  * „Sessions" der Referenz (ROADMAP Block 3, Punkt 3): protokollierte
  * Einheiten, neueste zuerst. Kein Zähler, keine Kurve, keine Bewertung
  * (ADR-006 Punkt 11); jedes gezeigte Protokoll protokolliert der Server.
+ *
+ * Seit Welle B3a eine Zeilenliste: Datum, Art und Person, darunter der Anfang
+ * des Textes in zwei Zeilen; das Ganze steht am Trainingstermin, zu dem die
+ * Zeile führt (Liste → Detail).
  */
 export function TrainingEinheiten({ kundin }: { kundin: TrainingClient }) {
   const hier = `/training/${kundin.id}`;
@@ -470,45 +569,46 @@ export function TrainingEinheiten({ kundin }: { kundin: TrainingClient }) {
   });
 
   return (
-    <Section titel="Einheiten" rahmen>
-      {einheiten.isPending ? (
-        <LoadingState label="Einheiten werden geladen …" />
-      ) : einheiten.isError ? (
-        <ErrorState
-          title="Die Einheiten konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => einheiten.refetch()}
-        />
-      ) : einheiten.data.length === 0 ? (
-        <p className="text-ink-muted text-sm">
-          Noch kein Trainingsprotokoll. Es entsteht am Trainingstermin.
-        </p>
-      ) : (
-        <ul className="divide-line flex flex-col divide-y">
-          {einheiten.data.map((e) => (
-            <li key={e.id} className="flex flex-col gap-1.5 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Link
-                  className="text-accent hover:underline"
-                  to={mitRueckweg(`/training/termine/${e.appointment_id}`, hier)}
-                >
-                  {kurzesDatum(e.starts_at, e.organization_time_zone)},{' '}
-                  {formatLocalTimeRange(e.starts_at, e.ends_at, e.organization_time_zone)}
-                </Link>
-                <span className="text-ink-muted flex items-center gap-2 text-sm">
-                  {/* Nur eine abweichende Terminart steht dran (ANN-192, UX-005i). */}
-                  {appointmentTypeHint(e.appointment_type)
-                    ? `${appointmentTypeHint(e.appointment_type)} · `
-                    : ''}
-                  {e.staff_given_name}
-                  {e.status === 'draft' ? <Badge>Entwurf</Badge> : null}
-                </span>
-              </div>
-              <p className="text-ink text-sm leading-relaxed whitespace-pre-wrap">{e.content}</p>
-            </li>
-          ))}
-        </ul>
-      )}
+    <Section titel="Einheiten">
+      <Abfragezustand
+        abfrage={einheiten}
+        laden="Einheiten werden geladen …"
+        fehler="Die Einheiten konnten nicht geladen werden."
+        inKarte
+        leer={{
+          wenn: (liste) => liste.length === 0,
+          titel: 'Noch kein Trainingsprotokoll.',
+          beschreibung: 'Es entsteht am Trainingstermin.',
+        }}
+      >
+        {(liste) => (
+          <ListRows>
+            {liste.map((e) => (
+              <ListRow
+                key={e.id}
+                to={mitRueckweg(`/training/termine/${e.appointment_id}`, hier)}
+                titel={`${kurzesDatum(e.starts_at, e.organization_time_zone)}, ${formatLocalTimeRange(
+                  e.starts_at,
+                  e.ends_at,
+                  e.organization_time_zone,
+                )}`}
+                meta={
+                  <>
+                    {/* Nur eine abweichende Terminart steht dran (ANN-192, UX-005i). */}
+                    {[appointmentTypeHint(e.appointment_type), e.staff_given_name]
+                      .filter(Boolean)
+                      .join(' · ')}
+                    <span className="text-ink mt-0.5 line-clamp-2 block whitespace-pre-wrap">
+                      {e.content}
+                    </span>
+                  </>
+                }
+                status={e.status === 'draft' ? <Badge>Entwurf</Badge> : undefined}
+              />
+            ))}
+          </ListRows>
+        )}
+      </Abfragezustand>
     </Section>
   );
 }

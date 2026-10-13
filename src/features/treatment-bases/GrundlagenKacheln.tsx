@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Randverlauf } from '@/components/ui/Reiterleiste';
+import { useRandVerlauf } from '@/components/ui/waagerechtRollen';
 import type { PatientFile } from '@/features/files/api';
 import { useDateien } from '@/features/files/dateien';
 import { dateibereich } from '@/features/files/dokumentarten';
@@ -63,6 +65,13 @@ export function GrundlagenKacheln({
 
   const fotos = dateien.filter(offenesFoto);
   const anzahl = aktuell.length + abgeschlossen.length;
+  // ANN-486: Die Leiste bleibt bis zur Sichtung - sie ist der einzige Weg zu
+  // „Daten übertragen“. Liegen links oder rechts Kacheln außer Sicht, sagt
+  // das ein Verlauf mit „‹“/„›“ am Rand wie bei den Reitern (Nachprüfung A9:
+  // bei 375 px stand die dritte Kachel angeschnitten ohne Hinweis da). Die
+  // Leiste rollt auch am Rechner, sobald mehr Kacheln da sind, als passen.
+  const leiste = useRef<HTMLUListElement>(null);
+  const rand = useRandVerlauf(leiste, fotos.length + anzahl);
   if (fotos.length === 0 && anzahl === 0) return null;
 
   function antippen(eintrag: VerordnungMitZahlen) {
@@ -82,45 +91,51 @@ export function GrundlagenKacheln({
           · {anzahl === 1 ? '1 Grundlage' : `${anzahl} Grundlagen`}
         </span>
       </h2>
-      <ul className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-        {fotos.map((datei) => {
-          const tag = fotoTag(datei.uploaded_at, zeitzone);
-          return (
-            <li key={datei.id} className="flex">
-              <button
-                type="button"
-                disabled={!darfSchreiben}
-                aria-label={`Verordnungsfoto${tag ? ` vom ${tag}` : ''}: Daten übertragen`}
-                className={`${kachelKlassen} border-warnung bg-surface disabled:cursor-default`}
-                onClick={() => setOffen({ art: 'foto', fileId: datei.id, fotoVom: tag })}
-              >
-                <span
-                  aria-hidden="true"
-                  className="bg-surface-sunken flex flex-1 items-start [background-image:repeating-linear-gradient(135deg,transparent_0_10px,var(--color-line)_10px_11px)] p-3"
+      {/* `scroll-px-4`: Die Kacheln rasten 16 px vom Rand ein, in der Flucht
+          der Seite. Ohne rollte das Einrasten die Leiste beim Laden um 16 px,
+          die erste Kachel stand angeschnitten unter dem linken Verlauf. */}
+      <div className="relative -mx-4">
+        <ul ref={leiste} className="flex snap-x scroll-px-4 gap-3 overflow-x-auto px-4 pb-2">
+          {fotos.map((datei) => {
+            const tag = fotoTag(datei.uploaded_at, zeitzone);
+            return (
+              <li key={datei.id} className="flex">
+                <button
+                  type="button"
+                  disabled={!darfSchreiben}
+                  aria-label={`Verordnungsfoto${tag ? ` vom ${tag}` : ''}: Daten übertragen`}
+                  className={`${kachelKlassen} border-warnung bg-surface disabled:cursor-default`}
+                  onClick={() => setOffen({ art: 'foto', fileId: datei.id, fotoVom: tag })}
                 >
-                  <Badge ton="warnung">Daten fehlen</Badge>
-                </span>
-                <span className="border-line px-kachel-x py-kachel-y flex flex-col border-t">
-                  <span className="text-accent text-sm font-bold">
-                    {darfSchreiben ? 'Daten übertragen' : 'Daten fehlen'}
+                  <span
+                    aria-hidden="true"
+                    className="bg-surface-sunken flex flex-1 items-start [background-image:repeating-linear-gradient(135deg,transparent_0_10px,var(--color-line)_10px_11px)] p-3"
+                  >
+                    <Badge ton="warnung">Daten fehlen</Badge>
                   </span>
-                  {tag ? <span className="text-ink-muted text-sm">Foto {tag}</span> : null}
-                </span>
-              </button>
+                  <span className="border-line px-kachel-x py-kachel-y flex flex-col border-t">
+                    <span className="text-accent text-sm font-bold">
+                      {darfSchreiben ? 'Daten übertragen' : 'Daten fehlen'}
+                    </span>
+                    {tag ? <span className="text-ink-muted text-sm">Foto {tag}</span> : null}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+          {aktuell.map((eintrag) => (
+            <li key={eintrag.verordnung.id} className="flex">
+              <Datenkachel eintrag={eintrag} onTippen={() => antippen(eintrag)} />
             </li>
-          );
-        })}
-        {aktuell.map((eintrag) => (
-          <li key={eintrag.verordnung.id} className="flex">
-            <Datenkachel eintrag={eintrag} onTippen={() => antippen(eintrag)} />
-          </li>
-        ))}
-        {abgeschlossen.map((eintrag) => (
-          <li key={eintrag.verordnung.id} className="flex">
-            <Datenkachel eintrag={eintrag} abgeschlossen onTippen={() => antippen(eintrag)} />
-          </li>
-        ))}
-      </ul>
+          ))}
+          {abgeschlossen.map((eintrag) => (
+            <li key={eintrag.verordnung.id} className="flex">
+              <Datenkachel eintrag={eintrag} abgeschlossen onTippen={() => antippen(eintrag)} />
+            </li>
+          ))}
+        </ul>
+        <Randverlauf {...rand} immer />
+      </div>
       {offen ? (
         <DatenUebertragenFenster
           patientId={patientId}
@@ -182,9 +197,13 @@ function Datenkachel({
           </span>
         ))}
       </span>
-      <span className="text-ink-muted text-sm font-semibold">
-        {verordnet ? (icd ? `ICD ${icd}` : 'ICD –') : 'Vereinbarung'}
-      </span>
+      {/* Ohne ICD-10-Code keine Zeile - ein leerer Wert bekommt keine
+          (UX-005e; Nachprüfung A9: bis dahin stand „ICD –“ da). */}
+      {verordnet && !icd ? null : (
+        <span className="text-ink-muted text-sm font-semibold">
+          {verordnet ? `ICD ${icd}` : 'Vereinbarung'}
+        </span>
+      )}
     </button>
   );
 }

@@ -1,4 +1,5 @@
 import { Disclosure } from '@/components/ui/Card';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatDate } from '@/lib/datum';
 import type { Antworten } from './antworten';
 import { hervorhebungen } from './hervorhebung';
@@ -41,18 +42,16 @@ export function Hervorhebungen({
     // steht in der Karte der Erhebung. Die Überschrift steht eine Ebene unter
     // dem Abschnitt des Bogens (h3).
     <div className="border-line-strong mt-3 border-l-2 py-1 pl-4">
-      <h3 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-        Hervorgehobene Angaben
-      </h3>
+      <Zwischentitel>Hervorgehobene Angaben</Zwischentitel>
       {treffer.length === 0 ? (
         // Eine Feststellung über das Angekreuzte, keine Entwarnung - und was
         // offen blieb, steht dabei (Zweitreview FRB-EPIC-002, Befund 2).
-        <p className="text-ink-muted mt-1 text-sm">
+        <p className="text-ink-muted text-sm">
           Nach den Regeln unten ist nichts angekreuzt.
           {offen.length > 0 ? ` Nicht beantwortet: Frage ${offen.join(', ')}.` : ''}
         </p>
       ) : (
-        <ul className="mt-2 flex flex-col gap-2">
+        <ul className="flex flex-col gap-2">
           {treffer.map(({ regel, item, angaben }) => (
             <li key={regel.id}>
               <p className="text-ink text-liste">

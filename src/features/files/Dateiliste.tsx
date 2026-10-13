@@ -274,7 +274,7 @@ function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps
           <p className="text-ink text-sm">Foto aus der Kamera – noch nicht hinzugefügt</p>
         </div>
       ) : (
-        <div className="max-w-xl">
+        <div className="max-w-formular">
           <Field
             key={durchgang}
             feldId={dateifeldId}
@@ -312,7 +312,7 @@ function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps
         </div>
       )}
 
-      <div className="grid max-w-3xl gap-3 lg:grid-cols-2">
+      <div className="max-w-spalte grid gap-3 lg:grid-cols-2">
         {arten.length > 1 ? (
           <Dokumentartauswahl wert={art} onChange={setArt} arten={arten} disabled={laeuft} />
         ) : (

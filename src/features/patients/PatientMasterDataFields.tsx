@@ -1,4 +1,5 @@
 import { Field } from '@/components/ui/Field';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import type { AssignableTherapist } from '@/features/appointments/api';
@@ -23,6 +24,10 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
  *
  * Die Reihenfolge der Kontaktfelder ist die der Anzeige - Mobil zuerst, weil
  * dort eine Verspätung angekündigt wird (PAT-07).
+ *
+ * Ein Hinweis am Feld steht nur, wo er die Eingabe ändert oder sagt, wer die
+ * Angabe sieht (DESIGN.md Regel 6, Design-Rollout B1): Was „Mobil“ ist, sagt
+ * das Wort selbst.
  */
 
 /**
@@ -95,36 +100,42 @@ export function PatientMasterDataFields({
       ? bisherigeTherapeutin
         ? 'Die Liste der Therapeut:innen ließ sich nicht laden – die bisherige Zuordnung bleibt erhalten.'
         : 'Die Liste der Therapeut:innen ließ sich nicht laden. Eine Zuordnung lässt sich später nachtragen.'
-      : 'Vorbelegung für die Terminplanung. Sie schränkt den Zugriff auf die Akte nicht ein.';
+      : // Gekürzt (Sichtung 13.10.2026, A10); dass die Zuordnung kein Recht
+        // ist, ändert, was man wählt - das bleibt.
+        'Vorbelegung für die Terminplanung, kein Zugriffsrecht.';
 
   return (
     <>
       <Section titel="Person">
         <Feldgruppe>
-          <Field
-            label="Vorname *"
-            name="given_name"
-            feldId={stammdatenFeldId('given_name')}
-            autoComplete="off"
-            {...OHNE_AUTOKORREKTUR}
-            maxLength={100}
-            required
-            value={werte.given_name}
-            error={fehler.given_name}
-            onChange={(event) => onChange('given_name', event.target.value)}
-          />
-          <Field
-            label="Nachname *"
-            name="family_name"
-            feldId={stammdatenFeldId('family_name')}
-            autoComplete="off"
-            {...OHNE_AUTOKORREKTUR}
-            maxLength={100}
-            required
-            value={werte.family_name}
-            error={fehler.family_name}
-            onChange={(event) => onChange('family_name', event.target.value)}
-          />
+          {/* Vor- und Nachname gehören zusammen und stehen ab 640 px
+              nebeneinander (DESIGN.md, Formular); am Telefon untereinander. */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              label="Vorname *"
+              name="given_name"
+              feldId={stammdatenFeldId('given_name')}
+              autoComplete="off"
+              {...OHNE_AUTOKORREKTUR}
+              maxLength={100}
+              required
+              value={werte.given_name}
+              error={fehler.given_name}
+              onChange={(event) => onChange('given_name', event.target.value)}
+            />
+            <Field
+              label="Nachname *"
+              name="family_name"
+              feldId={stammdatenFeldId('family_name')}
+              autoComplete="off"
+              {...OHNE_AUTOKORREKTUR}
+              maxLength={100}
+              required
+              value={werte.family_name}
+              error={fehler.family_name}
+              onChange={(event) => onChange('family_name', event.target.value)}
+            />
+          </div>
           {/* Grenzen für den Wähler am Telefon (PAT-12): Er beginnt sonst beim
               heutigen Monat und bietet Tage in der Zukunft an, die erst beim
               Absenden scheitern. */}
@@ -151,7 +162,6 @@ export function PatientMasterDataFields({
             feldId={stammdatenFeldId('phone_mobile')}
             type="tel"
             autoComplete="off"
-            hint="Die Nummer, unter der eine Verspätung angekündigt wird."
             value={werte.phone_mobile}
             error={fehler.phone_mobile}
             onChange={(event) => onChange('phone_mobile', event.target.value)}
@@ -199,7 +209,7 @@ export function PatientMasterDataFields({
             feldId={stammdatenFeldId('institution')}
             autoComplete="off"
             maxLength={200}
-            hint="Pflegeheim, betreutes Wohnen oder Pflegedienst, falls vorhanden."
+            hint="Pflegeheim, betreutes Wohnen oder Pflegedienst."
             value={werte.institution}
             error={fehler.institution}
             onChange={(event) => onChange('institution', event.target.value)}
@@ -251,8 +261,10 @@ export function PatientMasterDataFields({
       </Section>
 
       {/* UX-005e: Auf das Wesentliche gekürzt - geblieben ist, was die
-          Eingabe betrifft: wer die Angaben sieht (ANN-010, ADR-004). */}
-      <Section titel="Hausbesuch und Praxisangaben" hinweis="Für Patientenzugänge nicht sichtbar.">
+          Eingabe betrifft: wer die Angaben sieht (ANN-010, ADR-004). Seit
+          der Sichtung vom 13.10.2026 (A10) als Kleingedrucktes am Ende des
+          Abschnitts statt als Satz unter dem Titel (Regel 6). */}
+      <Section titel="Hausbesuch und Praxisangaben">
         <Feldgruppe>
           <Select
             label="Feste Therapeut:in"
@@ -315,6 +327,9 @@ export function PatientMasterDataFields({
             onChange={(event) => onChange('remark', event.target.value)}
           />
         </Feldgruppe>
+        <Kleingedrucktes className="mt-3">
+          Hausbesuch und Praxisangaben sind für Patientenzugänge nicht sichtbar.
+        </Kleingedrucktes>
       </Section>
     </>
   );

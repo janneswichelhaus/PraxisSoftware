@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { formatDate } from '@/lib/datum';
 import {
@@ -26,6 +26,7 @@ export function RueckfragenListe({
   mitName = true,
   leer,
   nurWennVorhanden = false,
+  leerInKarte = false,
 }: {
   art: Verhaeltnisart | null;
   verhaeltnisId?: string | null;
@@ -34,33 +35,47 @@ export function RueckfragenListe({
   leer: string;
   /** Ohne Rückfrage gar nichts zeigen - für Seiten, auf denen sie nur dazukommen. */
   nurWennVorhanden?: boolean;
+  /**
+   * Laden und Leer in einer Karte (DESIGN.md Regel 8) - für die Liste als
+   * eigene Seite. Als Abschnitt an Akte und Trainingsverhältnis steht „leer"
+   * als ein Satz, wie bisher.
+   */
+  leerInKarte?: boolean;
 }) {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: rueckfragenKey(art, verhaeltnisId, mitErledigten),
     queryFn: () => fetchRueckfragen(art, verhaeltnisId, mitErledigten),
     retry: false,
   });
-  if (isPending)
-    return nurWennVorhanden ? null : <LoadingState label="Rückfragen werden geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Die Rückfragen konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => refetch()}
-      />
-    );
-  }
-  if (data.length === 0) {
-    return nurWennVorhanden ? null : <p className="text-ink-muted text-sm">{leer}</p>;
-  }
+  if (nurWennVorhanden && !abfrage.isError && (abfrage.data?.length ?? 0) === 0) return null;
   return (
-    <ListRows>
-      {data.map((z) => (
-        <Rueckfragezeile key={z.id} zeile={z} mitName={mitName} />
-      ))}
-    </ListRows>
+    <Abfragezustand
+      abfrage={abfrage}
+      laden="Rückfragen werden geladen …"
+      fehler="Die Rückfragen konnten nicht geladen werden."
+      inKarte={leerInKarte}
+      {...(leerInKarte
+        ? { leer: { wenn: (d: Rueckfragezeile[]) => d.length === 0, titel: leer } }
+        : {})}
+    >
+      {(data) =>
+        data.length === 0 ? (
+          <p className="text-ink-muted text-sm">{leer}</p>
+        ) : (
+          <ListRows>
+            {data.map((z) => (
+              <Rueckfragezeile key={z.id} zeile={z} mitName={mitName} />
+            ))}
+          </ListRows>
+        )
+      }
+    </Abfragezustand>
   );
+}
+
+/** Einzahl und Mehrzahl - an der Akte stand „1 Einträge“ (Sichtung Akte). */
+function eintraege(anzahl: number): string {
+  return anzahl === 1 ? '1 Eintrag' : `${anzahl} Einträge`;
 }
 
 function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: boolean }) {
@@ -83,7 +98,7 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
     <ListRow
       zeit={formatDate(zeile.last_entry_at.slice(0, 10)).slice(0, 6)}
       titel={mitName ? name : thema}
-      meta={`${mitName ? thema : `${zeile.entry_count} Einträge`}${frist}${von}${
+      meta={`${mitName ? thema : eintraege(zeile.entry_count)}${frist}${von}${
         zeile.record_assigned_at ? ' · in der Akte' : ''
       }`}
       status={<Zustand zeile={zeile} kurz />}
@@ -93,6 +108,14 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
   );
 }
 
+/**
+ * Zustand einer Rückfrage als Zeichen und Wort (DESIGN.md Regel 5, R2-O4).
+ *
+ * „Offen“ ist der Regelfall der Liste und trägt kein Abzeichen - die Frist
+ * steht in der Nebenzeile, im Kopf der Rückfrage als Wort. Überfällig ist
+ * „! überfällig“, beantwortet und erledigt sind „✓“. Bis dahin standen
+ * „offen“ und „beantwortet“ als Pillen ohne Zeichen.
+ */
 export function Zustand({
   zeile,
   kurz = false,
@@ -102,14 +125,8 @@ export function Zustand({
   kurz?: boolean;
 }) {
   if (zeile.status === 'closed') return <Badge ton="positiv">erledigt</Badge>;
-  if (zeile.status === 'answered') return <Badge ton="neutral">beantwortet</Badge>;
-  if (kurz) {
-    return zeile.overdue ? (
-      <Badge ton="warnung">überfällig</Badge>
-    ) : (
-      <Badge ton="akzent">offen</Badge>
-    );
-  }
+  if (zeile.status === 'answered') return <Badge ton="positiv">beantwortet</Badge>;
+  if (kurz) return zeile.overdue ? <Badge ton="warnung">überfällig</Badge> : null;
   if (zeile.overdue) {
     return (
       <Badge ton="warnung">
@@ -117,9 +134,5 @@ export function Zustand({
       </Badge>
     );
   }
-  return (
-    <Badge ton="akzent">
-      offen{zeile.due_on ? ` · Antwort bis ${formatDate(zeile.due_on)}` : ''}
-    </Badge>
-  );
+  return zeile.due_on ? <span>Antwort bis {formatDate(zeile.due_on)}</span> : null;
 }

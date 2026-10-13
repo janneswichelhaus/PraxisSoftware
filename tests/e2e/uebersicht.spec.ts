@@ -26,8 +26,8 @@ function heuteUm(uhrzeit: string): Date {
   return new Date(utc - versatz);
 }
 
-async function oeffne(page: Page, uhrzeit: string, breite: number, abfrage = '') {
-  await page.setViewportSize({ width: breite, height: 740 });
+async function oeffne(page: Page, uhrzeit: string, breite: number, abfrage = '', hoehe = 740) {
+  await page.setViewportSize({ width: breite, height: hoehe });
   await page.clock.setFixedTime(heuteUm(uhrzeit));
   await page.goto(PRUEFSEITE + abfrage);
 }
@@ -44,6 +44,17 @@ for (const breite of [375, 1280]) {
     page,
   }) => {
     await oeffne(page, '08:05', breite);
+
+    // Datum und Tagesfortschritt stehen auch am Telefon da (Design-Review R2,
+    // U1, U3): am Telefon Monat und Jahr über der Wochenleiste, die Wochentag
+    // und Tag nennt (Jannes, 13.10.2026), lang ab 640 px.
+    const kopf = page.locator('header').filter({ has: page.getByRole('heading', { level: 1 }) });
+    await expect(
+      kopf.getByText(breite < 640 ? /^\S+ \d{4}$/ : /^\S+, \d{1,2}\. \S+ \d{4}$/),
+    ).toBeVisible();
+    await expect(
+      kopf.getByText(breite < 640 ? '0 von 3' : '0 von 3 Besuchen erledigt', { exact: true }),
+    ).toBeVisible();
 
     const liege = page.getByText('Liege heute', { exact: true }).locator('..');
     await expect(liege).toContainText('Ja');
@@ -63,7 +74,7 @@ for (const breite of [375, 1280]) {
 
     // Die Karte beginnt auf dem ersten Bildschirm - über der Tableiste.
     const karte = page.getByRole('article');
-    const name = karte.getByRole('link', { name: 'Erika Beispiel' });
+    const name = karte.getByRole('link', { name: 'Erika Beispiel', exact: true });
     await expect(name).toBeVisible();
     const namensKasten = (await name.boundingBox())!;
     expect(namensKasten.y + namensKasten.height).toBeLessThanOrEqual(740 - 57);
@@ -80,6 +91,96 @@ for (const breite of [375, 1280]) {
   });
 }
 
+// Auftrag C1: Der Hauptknopf des nächsten oder laufenden Besuchs liegt
+// vollständig über der Tableiste, auch am kleinen Telefon (iPhone SE) und auch
+// am zweiten und dritten Besuch des Tages - der Test prüfte bis dahin nur den
+// Anfang der Karte.
+for (const [abfrage, uhrzeit, knopf] of [
+  ['', '08:05', 'Navigation starten'],
+  ['', '08:40', /^Termin abschließen/],
+  ['?ansicht=zweiter', '09:45', 'Navigation starten'],
+  ['?ansicht=zweiter', '10:05', /^Termin abschließen/],
+  ['?ansicht=dritter', '11:05', 'Navigation starten'],
+  ['?ansicht=dritter', '11:40', /^Termin abschließen/],
+] as const) {
+  test(`hält den Hauptknopf bei 375 × 667 über der Tableiste (${abfrage || 'erster'} ${uhrzeit})`, async ({
+    page,
+  }) => {
+    await oeffne(page, uhrzeit, 375, abfrage, 667);
+    const karte = page.getByRole('article');
+    const haupt = karte.getByRole('button', { name: knopf });
+    await expect(haupt).toBeVisible();
+    const kasten = (await haupt.boundingBox())!;
+    expect(kasten.height).toBeGreaterThanOrEqual(48);
+    expect(kasten.y + kasten.height).toBeLessThanOrEqual(667 - 57);
+    // Ab dem Beginn steht „Doku" neben dem Haken - ebenfalls im Bild.
+    if (typeof knopf !== 'string') {
+      const doku = (await karte
+        .getByRole('link', { name: 'Doku zu diesem Termin' })
+        .boundingBox())!;
+      expect(doku.y + doku.height).toBeLessThanOrEqual(667 - 57);
+    }
+    await ohneUeberlauf(page);
+  });
+}
+
+test('fasst am Telefon das Erledigte vor dem nächsten Besuch in einer Zeile zusammen', async ({
+  page,
+}) => {
+  await oeffne(page, '11:05', 375, '?ansicht=dritter', 667);
+  const strahl = page.getByRole('heading', { name: 'Tagesablauf' }).locator('..');
+  const zusammen = strahl.getByRole('button', { name: /^Erledigt \(2\)/ });
+  await expect(zusammen).toBeVisible();
+  await expect(strahl.getByText('Erika Beispiel')).toBeHidden();
+  await zusammen.click();
+  await expect(strahl.getByText('Erika Beispiel')).toBeVisible();
+  // Ab 640 px stehen sie immer da.
+  await oeffne(page, '11:05', 1280, '?ansicht=dritter');
+  await expect(strahl.getByRole('button', { name: /^Erledigt/ })).toBeHidden();
+  await expect(strahl.getByText('Erika Beispiel')).toBeVisible();
+});
+
+test('klappt eine spätere Zeile mit Navigation, Anruf und Doku auf (Auftrag C1)', async ({
+  page,
+}) => {
+  await oeffne(page, '08:05', 375);
+  const zeile = page.locator('[data-termin] [data-zeile]', { hasText: 'Max Mustermann' });
+  await zeile.click();
+  const karten = page.getByRole('article');
+  await expect(karten).toHaveCount(2);
+  const karte = karten.nth(1);
+  await expect(karte.getByRole('heading', { name: /^Später/ })).toBeVisible();
+  for (const ziel of [
+    karte.getByRole('button', { name: 'Navigation starten' }),
+    karte.getByRole('link', { name: 'Doku zu diesem Termin' }),
+    karte.getByRole('link', { name: 'Anrufen: Max Mustermann' }),
+    karte.getByRole('button', { name: 'Zuklappen: Max Mustermann' }),
+    karte.getByRole('button', { name: 'Später da?' }),
+  ]) {
+    await expect(ziel).toBeVisible();
+    expect((await ziel.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  // Keine Nummer im Bild, bevor jemand das „i" öffnet.
+  await expect(karte.getByText('+49 160 0000005')).toHaveCount(0);
+  await ohneUeberlauf(page);
+  await karte.getByRole('button', { name: 'Zuklappen: Max Mustermann' }).click();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await expect(zeile).toBeFocused();
+});
+
+test('zeigt „Niemand öffnet?" an der laufenden Karte mit der 15-Minuten-Uhr (Auftrag C1)', async ({
+  page,
+}) => {
+  await oeffne(page, '08:40', 375);
+  const karte = page.getByRole('article');
+  await karte.getByRole('button', { name: 'Niemand öffnet?' }).click();
+  await expect(karte.getByRole('timer')).toHaveText(/^Gewartet \d+:\d\d von 15:00$/);
+  const vermerken = karte.getByRole('button', { name: /nicht angetroffen/ });
+  expect((await vermerken.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+  await expect(karte.getByRole('link', { name: 'Ohne Behandlung festhalten' })).toBeVisible();
+  await ohneUeberlauf(page);
+});
+
 test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergaengen', async ({
   page,
 }) => {
@@ -95,7 +196,7 @@ test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergae
   // Die späteren Besuche: eine Zeile mit Ort, Liege und Anfahrt, darüber der
   // Übergang.
   const zweite = eintraege.nth(2);
-  await expect(zweite.getByRole('link', { name: /Mustermann/ })).toContainText(
+  await expect(zweite.locator('[data-zeile]')).toContainText(
     'Beispielstrasse 12 · ✓ Liege · Anfahrt ≈ 9 min',
   );
   // Daneben ein eigener Knopf „Doku" mit 44 px Tippziel (Leitfaden L3).
@@ -110,12 +211,19 @@ test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergae
   await expect(eintraege.nth(4)).toContainText('Fehlzeit · Video');
   await expect(eintraege.nth(4)).not.toContainText('min Rad');
 
-  // Jede Zeile ist ein Tippziel von 44 px.
-  for (const zeile of await strahl
-    .getByRole('link', { name: /Mustermann|Platzhalter|Teambesprechung/ })
-    .all()) {
+  // Jede Zeile ist ein Tippziel von 44 px - die Besuche klappen auf, die
+  // Fehlzeit führt in den Kalender (Auftrag C1).
+  for (const zeile of [
+    ...(await strahl.locator('[data-zeile]').all()),
+    strahl.getByRole('link', { name: /Teambesprechung/ }),
+  ]) {
     expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
+  // Am späteren Besuch steht statt des Hakens das Telefon (Auftrag C1).
+  const anruf = zweite.getByRole('link', { name: 'Anrufen: Max Mustermann' });
+  await expect(anruf).toHaveAttribute('href', 'tel:+491600000005');
+  expect((await anruf.boundingBox())!.width).toBeGreaterThanOrEqual(44);
+  await expect(zweite.getByRole('button', { name: /^Termin abschließen/ })).toHaveCount(0);
 
   // Punkt der Marke und Punkte der Termine liegen auf einer Achse.
   const mitten = await page.evaluate(() => {
@@ -144,7 +252,13 @@ test('haelt Etage, Zugang und Kontakt hinter dem Info-Knopf', async ({ page }) =
   await expect(karte.getByText('Erdgeschoss', { exact: true })).toHaveCount(0);
   const info = karte.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
   await expect(karte.getByText('Schlüssel bei der Nachbarin.', { exact: false })).toHaveCount(0);
-  await expect(karte.locator('a[href^="tel:"]')).toHaveCount(0);
+  // Die Nummer steht nicht im Bild: Der Anrufknopf (Auftrag C1) ist ein
+  // Symbol, die Nummern selbst liegen hinter dem „i".
+  await expect(karte.getByText('+49 160 0000006')).toHaveCount(0);
+  const anruf = karte.locator('a[href^="tel:"]');
+  await expect(anruf).toHaveCount(1);
+  await expect(anruf).toHaveAccessibleName('Anrufen: Erika Beispiel');
+  await expect(anruf).toHaveText('');
 
   // Der Info-Knopf: 22 px im Bild, 44 px zum Tippen.
   const kasten = (await info.boundingBox())!;
@@ -156,12 +270,12 @@ test('haelt Etage, Zugang und Kontakt hinter dem Info-Knopf', async ({ page }) =
   await expect(karte.getByText('Erdgeschoss', { exact: true })).toBeVisible();
   await expect(karte.getByText('Zugangshinweis', { exact: true })).toBeVisible();
   await expect(karte.getByText('Klingel "Beispiel". Schlüssel bei der Nachbarin.')).toBeVisible();
-  const nummer = karte.locator('a[href^="tel:"]').first();
+  const nummer = karte.getByRole('link', { name: '+49 160 0000006' });
   expect((await nummer.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await info.click();
   await expect(karte.getByText('Zugangshinweis', { exact: true })).toHaveCount(0);
 
-  // Unter der Navigation: „Doku" und der Haken in einer Reihe, 44 px hoch.
+  // Unter der Navigation: „Doku", Anruf und der Haken in einer Reihe, 44 px hoch.
   await expect(karte.getByRole('link', { name: /^Doku/ })).toHaveCount(1);
   const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
   const haken = (await karte
@@ -175,8 +289,11 @@ test('haelt Etage, Zugang und Kontakt hinter dem Info-Knopf', async ({ page }) =
   expect(doku.y).toBeGreaterThan(navi.y + navi.height - 1);
   expect(haken.x).toBeGreaterThan(doku.x + doku.width);
 
-  // Die offene Erstaufnahme führt in die Akte.
-  await expect(karte.getByRole('link', { name: /Erstaufnahme offen/ })).toBeVisible();
+  // Die offene Erstaufnahme führt in die Akte - eine Pille von 36 px, ein
+  // Ziel von 44 px (Design-Review R2, H1).
+  const erstaufnahme = karte.getByRole('link', { name: /Erstaufnahme offen/ });
+  await expect(erstaufnahme).toBeVisible();
+  expect((await erstaufnahme.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await ohneUeberlauf(page);
 });
 
@@ -185,7 +302,8 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
   const karte = page.getByRole('article');
 
   await expect(karte.getByRole('heading', { name: 'Jetzt · bis 09:30' })).toBeVisible();
-  // Haken 48 und „Doku" teilen sich den Hauptknopf, in einer Reihe (Handoff 6a).
+  // „Doku" ist der eine gefüllte Hauptknopf, der Haken 48 mit Rahmen in
+  // derselben Reihe (Design-Review R2, U2).
   const haken = (await karte.getByRole('button', { name: /^Termin abschließen/ }).boundingBox())!;
   const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
   expect(haken.height).toBe(48);
@@ -193,6 +311,13 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
   expect(doku.height).toBe(48);
   expect(Math.abs(doku.y - haken.y)).toBeLessThanOrEqual(1);
   await expect(page.getByRole('button', { name: 'Navigation starten' })).toHaveCount(0);
+  // Genau ein gefüllter Knopf in der Karte (DESIGN.md Regel 4).
+  const gefuellt = await karte.evaluate((el) =>
+    [...el.querySelectorAll('a, button')]
+      .filter((ziel) => ziel.classList.contains('bg-accent'))
+      .map((ziel) => ziel.textContent?.trim()),
+  );
+  expect(gefuellt).toEqual(['Doku zu diesem Termin']);
 
   const abfahrt = page.getByText('Abfahrt danach', { exact: true }).locator('..');
   await expect(abfahrt).toContainText('spätestens 09:51');
@@ -248,15 +373,25 @@ for (const breite of [375, 1280]) {
   });
 }
 
-test('klappt am Tagesende die offene Dokumentation aus', async ({ page }) => {
+test('listet am Tagesende erst, was heute offen ist, dann morgen (Auftrag C1)', async ({
+  page,
+}) => {
   await oeffne(page, '17:00', 375, '?ansicht=doku');
   await expect(page.getByRole('heading', { name: 'Alle Besuche erledigt' })).toBeVisible();
-  const karte = page.getByRole('article');
-  await expect(karte.getByRole('heading', { name: 'Doku offen' })).toBeVisible();
-  await expect(karte.getByText('Doku im Entwurf')).toBeVisible();
-  await expect(karte.getByRole('link', { name: 'Doku zu diesem Termin' })).toBeVisible();
-  // Abgeschlossen: kein Haken mehr.
-  await expect(karte.getByRole('button', { name: /^Termin abschließen/ })).toHaveCount(0);
+  const offen = page.getByRole('heading', { name: 'Heute noch offen (2)' }).locator('../..');
+  await expect(offen).toBeVisible();
+  const zeilen = offen.getByRole('listitem');
+  await expect(zeilen.filter({ hasText: 'Max Mustermann' })).toContainText('Heilmittel offen');
+  await expect(zeilen.filter({ hasText: 'Petra Platzhalter' })).toContainText('Doku im Entwurf');
+  for (const knopf of await offen.getByRole('link').all()) {
+    expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  // Vor der Vorschau auf morgen - und ohne zweite Karte dafür.
+  const morgen = page.getByRole('heading', { name: /^Morgen · / });
+  expect((await offen.boundingBox())!.y).toBeLessThan((await morgen.boundingBox())!.y);
+  await expect(page.getByRole('article')).toHaveCount(0);
+  // Darunter „Nachzuholen" aus den Tagen davor, zugeklappt.
+  await expect(page.getByText('Nachzuholen', { exact: true })).toBeVisible();
   await ohneUeberlauf(page);
 });
 
@@ -360,27 +495,53 @@ for (const breite of [375, 1280]) {
   });
 }
 
-test('oeffnet mit einem Tipp auf die Karte den Termin, das „i" steht neben dem Namen (UBK-004)', async ({
+test('oeffnet den Termin ueber „Termin →" in der Kopfzeile, nicht ueber die ganze Karte (R2, P1)', async ({
   page,
 }) => {
   await oeffne(page, '08:05', 375);
   const karte = page.getByRole('article');
-  const name = karte.getByRole('link', { name: 'Erika Beispiel' });
+  const name = karte.getByRole('link', { name: 'Erika Beispiel', exact: true });
   const info = karte.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
   const n = (await name.boundingBox())!;
   const i = (await info.boundingBox())!;
-  // Auf einer Höhe: Die Mitten liegen höchstens 6 px auseinander.
+  // Auf einer Höhe: Die Mitten liegen höchstens 6 px auseinander (UBK-004).
   expect(Math.abs(n.y + n.height / 2 - (i.y + i.height / 2))).toBeLessThanOrEqual(6);
-  // Keine Fußzeile mehr; „Termin öffnen" steht nur für Vorlesesoftware da.
+  // Keine Fußzeile.
   await expect(karte.locator('.border-t')).toHaveCount(0);
-  await expect(karte.getByText('Termin öffnen', { exact: true })).toHaveClass(/sr-only/);
+
+  // „Termin →" steht sichtbar in der Zeile des Kickers, 44 px zum Tippen.
+  const termin = karte.getByRole('link', { name: 'Termin öffnen' });
+  await expect(termin).toBeVisible();
+  await expect(termin).toHaveAttribute('href', /^\/kalender\?termin=/);
+  const t = (await termin.boundingBox())!;
+  expect(t.height).toBeGreaterThanOrEqual(44);
+  const kicker = (await karte.getByRole('heading', { name: /^Erster Weg/ }).boundingBox())!;
+  expect(Math.abs(t.y + t.height / 2 - (kicker.y + kicker.height / 2))).toBeLessThanOrEqual(6);
+  // Die Ziele überlappen nicht (Design-Review R2, neu1): Bis dahin reichte
+  // „Termin →" 10 px in die Zeile des Namens, und ein Tipp auf seinen
+  // unteren Rand traf das „i". Die Zeile des Namens beginnt jetzt, wo es endet.
+  expect(t.y + t.height).toBeLessThanOrEqual(i.y + 0.5);
+  expect(t.y + t.height).toBeLessThanOrEqual(n.y + 0.5);
+  expect(n.height).toBeGreaterThanOrEqual(44);
+  // Unter dem unteren Rand von Name und „i" liegt die Zeile mit der Uhrzeit;
+  // der Tipp geht trotzdem an sie.
+  const unterDemFinger = (x: number, y: number) =>
+    page.evaluate(
+      ([px, py]) => document.elementFromPoint(px!, py!)?.closest('a,button')?.textContent ?? null,
+      [x, y],
+    );
+  expect(await unterDemFinger(t.x + t.width / 2, t.y + t.height - 1)).toContain('Termin');
+  expect(await unterDemFinger(i.x + i.width / 2, i.y + 1)).toBe('i');
+  expect(await unterDemFinger(i.x + i.width / 2, i.y + i.height - 1)).toBe('i');
+  expect(await unterDemFinger(n.x + 4, n.y + n.height - 1)).toBe('Erika Beispiel');
 
   // Das „i" klappt auf und öffnet nicht den Termin.
   await info.click();
   await expect(karte.getByText('Zugangshinweis')).toBeVisible();
-  // Ein Tipp auf die Anschrift trifft den Link des Termins, einer auf den
-  // Namen den der Akte. Die Prüfseite hat keine Routen - gemessen wird, was
-  // unter dem Finger liegt.
+  // Ein Tipp auf die Anschrift trifft nichts mehr - bis R2 war die ganze
+  // Karte der Link des Termins, und ein Fehltipp neben „Doku" oder dem Haken
+  // landete im Kalender. Einer auf den Namen trifft die Akte. Die Prüfseite
+  // hat keine Routen - gemessen wird, was unter dem Finger liegt.
   const ziel = async (text: string) => {
     const kasten = (await karte.getByText(text, { exact: true }).boundingBox())!;
     return page.evaluate(
@@ -388,8 +549,17 @@ test('oeffnet mit einem Tipp auf die Karte den Termin, das „i" steht neben dem
       [kasten.x + kasten.width / 2, kasten.y + kasten.height / 2],
     );
   };
-  expect(await ziel('Testweg 7, 72072 Tuebingen')).toMatch(/^\/kalender\?termin=/);
+  expect(await ziel('Testweg 7, 72072 Tuebingen')).toBeNull();
   expect(await ziel('Erika Beispiel')).toMatch(/^\/patienten\//);
+
+  // Zwischen „Doku", Anruf und Haken 12 px (P1).
+  const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
+  const anruf = (await karte.getByRole('link', { name: /^Anrufen/ }).boundingBox())!;
+  const haken = (await karte
+    .getByRole('button', { name: 'Behandlung abschließen' })
+    .boundingBox())!;
+  expect(anruf.x - (doku.x + doku.width)).toBeGreaterThanOrEqual(12);
+  expect(haken.x - (anruf.x + anruf.width)).toBeGreaterThanOrEqual(12);
 });
 
 for (const breite of [375, 1280]) {

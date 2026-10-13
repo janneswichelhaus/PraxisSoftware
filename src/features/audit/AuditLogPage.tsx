@@ -4,13 +4,15 @@ import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Aufklappzeichen, Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Disclosure } from '@/components/ui/Card';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Filterleiste } from '@/components/ui/Filterleiste';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeldungen';
+import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
 import { SicherheitReiter } from './SicherheitReiter';
 import {
   AUDIT_ACTION_GROUPS,
@@ -49,36 +51,42 @@ function akteur(event: AuditEvent): string {
 }
 
 /**
- * Eine Zeile des Auditlogs.
+ * Die Spalten des Protokolls als `Datenliste` (Welle B, B7; DESIGN.md
+ * „Tabellen“).
  *
- * **Spalten erst ab 1024 px (ORG-12).** Ab 640 px galten bis UXR-011 vier
- * feste Spalten mit 528 px samt Lücken; bei 700 bis 820 px blieben der
- * eigentlichen Aussage - was geschah - rund 150 px, „Behandlungsdokumentation"
- * passte nicht hinein, und die Seite scrollte quer. Darunter stehen die
- * Angaben jetzt untereinander wie am Telefon, und die Vorgangsspalte darf
- * schmaler werden als ihr längstes Wort.
+ * **Spalten erst ab 1024 px (ORG-12).** Darunter steht jeder Eintrag als
+ * Zeile: oben links der Zeitpunkt, oben rechts das Ergebnis, darunter Person
+ * und Vorgang - drei Zeilen statt vier. Die Vorgangsspalte darf schmaler
+ * werden als ihr längstes Wort.
  *
- * **Spaltenköpfe für Vorlesesoftware (UIK-24).** Die Zeile ist eine Liste,
- * keine Tabelle; welche Angabe was ist, erschloss sich bisher nur aus dem
- * Inhalt. Jede Angabe trägt deshalb ihre Bezeichnung, sichtbar nur für
- * Vorlesesoftware.
+ * **Spaltenköpfe für Vorlesesoftware (UIK-24).** Jede Angabe trägt ihre
+ * Bezeichnung, sichtbar nur für Vorlesesoftware; die `Datenliste` setzt sie
+ * vor jeden Wert außer dem Kopf, der Zeitpunkt bringt sie selbst mit.
  *
  * Nur Darstellung: Gelesen wird unverändert über `list_audit_events`
  * (ADR-010), und was eine Zeile zeigt, bleibt Metadatum.
  */
-function EventRow({ event }: { event: AuditEvent }) {
-  return (
-    <li className="py-3 lg:grid lg:grid-cols-[10rem_12rem_minmax(0,1fr)_7rem] lg:items-baseline lg:gap-4 lg:py-2.5">
-      <span className="text-ink-muted block text-sm tabular-nums">
+const SPALTEN: readonly Datenspalte<AuditEvent>[] = [
+  {
+    titel: 'Zeitpunkt',
+    breite: '10rem',
+    telefon: 'kopf',
+    inhalt: (event) => (
+      <span className="text-ink-muted tabular-nums">
         <span className="sr-only">Zeitpunkt: </span>
         {formatTimestamp(event.occurred_at)}
       </span>
-      <span className="text-ink text-liste mt-0.5 block truncate lg:mt-0">
-        <span className="sr-only">Person: </span>
-        {akteur(event)}
-      </span>
-      <span className="text-ink text-liste mt-0.5 block min-w-0 wrap-anywhere lg:mt-0">
-        <span className="sr-only">Vorgang: </span>
+    ),
+  },
+  {
+    titel: 'Person',
+    breite: '12rem',
+    inhalt: (event) => <span className="text-liste block truncate">{akteur(event)}</span>,
+  },
+  {
+    titel: 'Vorgang',
+    inhalt: (event) => (
+      <span className="text-liste block min-w-0 wrap-anywhere">
         {label(auditActionLabels, event.action)}
         {event.denied_operation ? (
           <span className="text-ink-muted">
@@ -95,20 +103,25 @@ function EventRow({ event }: { event: AuditEvent }) {
           </span>
         </span>
       </span>
-      {/* BEF-065: Eine Abweisung ist das, wonach man sucht - sie steht als
-          kritisches Abzeichen da, nicht in derselben grauen Zeile wie
-          „Erfolgreich". */}
-      <span className="text-ink-muted mt-0.5 block text-sm lg:mt-0 lg:text-right">
-        <span className="sr-only">Ergebnis: </span>
-        {event.outcome === 'denied' ? (
-          <Badge ton="kritisch">{label(auditOutcomeLabels, event.outcome)}</Badge>
-        ) : (
-          label(auditOutcomeLabels, event.outcome)
-        )}
-      </span>
-    </li>
-  );
-}
+    ),
+  },
+  {
+    titel: 'Ergebnis',
+    breite: '7rem',
+    telefon: 'ende',
+    // BEF-065: Eine Abweisung ist das, wonach man sucht - sie steht als
+    // kritisches Abzeichen da, nicht in derselben grauen Zeile wie
+    // „Erfolgreich".
+    inhalt: (event) =>
+      event.outcome === 'denied' ? (
+        <Badge ton="kritisch">{label(auditOutcomeLabels, event.outcome)}</Badge>
+      ) : (
+        <span className="text-ink-muted lg:block lg:text-right">
+          {label(auditOutcomeLabels, event.outcome)}
+        </span>
+      ),
+  },
+];
 
 /** Uhrzeit für „Stand 14:03" in der Zeitzone des Geräts - der Stand ist ein Augenblick der Seite. */
 function standText(zeitpunkt: number): string {
@@ -212,6 +225,11 @@ export function AuditLogPage() {
   const hasNext = last < total;
   const aktiveFilter = [from, to, actorUserId, action].filter(Boolean).length;
 
+  function filterZuruecksetzen() {
+    setActorUserId('');
+    setze({ von: null, bis: null, aktion: null, seite: null, stand: null });
+  }
+
   /** Setzt einen Parameter der Adresse; leer heißt: weg. */
   function setze(werte: Record<string, string | null>) {
     setSuche(
@@ -269,85 +287,74 @@ export function AuditLogPage() {
         description="Protokollierte Zugriffe und sicherheitsrelevante Vorgänge dieser Praxis."
       />
 
-      {/* Die Filter sind die Bausteine `Field` und `Select` (RSP-01, UIK-19,
-          TOK-13): 48 px hoch wie jedes Feld und immer so breit wie ihre
-          Spalte. Bis UXR-011 waren es rohe Felder ohne volle Breite - das
-          längste Wort der Aktionsliste setzte die Breite der Spalte, und die
-          Seite lief bei 390 px 36 px über den Rand. Unter 640 px steht eine
-          Spalte ausdrücklich da. Nur die Darstellung ist neu; welche Werte an
-          den Server gehen, bleibt gleich. */}
-      {/* BEF-065: Am Telefon standen alle vier Filter offen über der Liste
-          (rund 330 px). Jetzt zugeklappt, ab 1024 px offen; mit einem
-          gesetzten Filter offen, damit er nicht unsichtbar wirkt. */}
-      <div className="mb-6">
-        <Disclosure
-          summary={aktiveFilter > 0 ? `Filter (${aktiveFilter} gesetzt)` : 'Filter'}
-          offen={aktiveFilter > 0}
-          offenAb="lg"
-        >
-          <form
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-            onSubmit={(event) => event.preventDefault()}
+      {/* Die Filter in der Filterleiste (Welle B, ANN-405): am Telefon
+          zugeklappt hinter „Filter“, ab 640 px offen nebeneinander; mit einem
+          gesetzten Filter offen, damit er nicht unsichtbar wirkt (BEF-065).
+          Die Bausteine `Field` und `Select` sind 48 px hoch und so breit wie
+          ihre Spalte (RSP-01, UIK-19, TOK-13). Nur die Darstellung ist neu;
+          welche Werte an den Server gehen, bleibt gleich. */}
+      <Filterleiste
+        gesetzt={aktiveFilter}
+        onZuruecksetzen={filterZuruecksetzen}
+        beschriftung="Protokoll filtern"
+      >
+        <Field
+          label="Von"
+          feldId="audit-from"
+          type="date"
+          value={from}
+          onChange={(event) => filtere('von')(event.target.value)}
+        />
+        <Field
+          label="Bis"
+          feldId="audit-to"
+          type="date"
+          value={to}
+          onChange={(event) => filtere('bis')(event.target.value)}
+        />
+        <div className="flex min-w-0 flex-col gap-2">
+          <Select
+            label="Person"
+            feldId="audit-user"
+            value={actorUserId}
+            onChange={(event) => filterePerson(event.target.value)}
           >
-            <Field
-              label="Von"
-              feldId="audit-from"
-              type="date"
-              value={from}
-              onChange={(event) => filtere('von')(event.target.value)}
-            />
-            <Field
-              label="Bis"
-              feldId="audit-to"
-              type="date"
-              value={to}
-              onChange={(event) => filtere('bis')(event.target.value)}
-            />
-            <div className="flex min-w-0 flex-col gap-2">
-              <Select
-                label="Person"
-                feldId="audit-user"
-                value={actorUserId}
-                onChange={(event) => filterePerson(event.target.value)}
-              >
-                <option value="">Alle</option>
-                {(members.data ?? []).map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.display_name}
-                  </option>
-                ))}
-              </Select>
-              {/* Ohne Liste steht nur „Alle" zur Wahl - das sagt die Seite, statt
+            <option value="">Alle</option>
+            {(members.data ?? []).map((member) => (
+              <option key={member.id} value={member.id}>
+                {member.display_name}
+              </option>
+            ))}
+          </Select>
+          {/* Ohne Liste steht nur „Alle" zur Wahl - das sagt die Seite, statt
               es als vollständige Auswahl auszugeben (ORG-14). */}
-              {members.isError ? (
-                <Listenfehler
-                  text="Die Liste der Personen konnte nicht geladen werden."
-                  onErneut={() => void members.refetch()}
-                />
-              ) : null}
-            </div>
-            <Select
-              label="Aktion"
-              feldId="audit-action"
-              value={action}
-              onChange={(event) => filtere('aktion')(event.target.value)}
-            >
-              <option value="">Alle</option>
-              {AUDIT_ACTION_GROUPS.map((gruppe) => (
-                <optgroup key={gruppe.titel} label={gruppe.titel}>
-                  {gruppe.aktionen.map((key) => (
-                    <option key={key} value={key}>
-                      {auditActionLabels[key]}
-                    </option>
-                  ))}
-                </optgroup>
+          {members.isError ? (
+            <Listenfehler
+              text="Die Liste der Personen konnte nicht geladen werden."
+              onErneut={() => void members.refetch()}
+            />
+          ) : null}
+        </div>
+        <Select
+          label="Aktion"
+          feldId="audit-action"
+          value={action}
+          onChange={(event) => filtere('aktion')(event.target.value)}
+        >
+          <option value="">Alle</option>
+          {AUDIT_ACTION_GROUPS.map((gruppe) => (
+            <optgroup key={gruppe.titel} label={gruppe.titel}>
+              {gruppe.aktionen.map((key) => (
+                <option key={key} value={key}>
+                  {auditActionLabels[key]}
+                </option>
               ))}
-            </Select>
-          </form>
-        </Disclosure>
-      </div>
+            </optgroup>
+          ))}
+        </Select>
+      </Filterleiste>
 
-      {isPending ? <LoadingState label="Auditeinträge werden geladen …" /> : null}
+      {isPending ? <LoadingState label="Auditeinträge werden geladen …" inKarte /> : null}
       {/* Wer diese Seite sieht, ist berechtigt: Die Route steht nur der
           Praxisinhaber:in offen. Ein Ladefehler ist deshalb ein Verbindungs-
           und kein Rechteproblem - bis UXR-011 las die Praxisinhaber:in hier,
@@ -356,7 +363,7 @@ export function AuditLogPage() {
       {isError && !data ? (
         <ErrorState
           title="Die Auditeinträge konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void refetch()}
         />
       ) : null}
@@ -366,6 +373,7 @@ export function AuditLogPage() {
 
       {data && data.events.length === 0 ? (
         <EmptyState
+          inKarte
           title="Keine Einträge im gewählten Zeitraum"
           description="Filter anpassen oder Zeitraum erweitern."
         />
@@ -374,17 +382,19 @@ export function AuditLogPage() {
       {data && data.events.length > 0 ? (
         <>
           {/* Die Liste ist Auskunft und steht deshalb auf Papier wie jede
-              andere Liste der Anwendung (ORG-16). */}
-          <Inhaltsflaeche>
-            <ul
-              className={`divide-line divide-y transition-opacity ${isPlaceholderData ? 'opacity-60' : ''}`}
-              aria-busy={isPlaceholderData}
-            >
-              {data.events.map((event) => (
-                <EventRow key={event.id} event={event} />
-              ))}
-            </ul>
-          </Inhaltsflaeche>
+              andere Liste der Anwendung (ORG-16) - als `Datenliste`. Beim
+              Blättern bleibt die alte Seite blass stehen, bis die neue da ist. */}
+          <div
+            className={`transition-opacity ${isPlaceholderData ? 'opacity-60' : ''}`}
+            aria-busy={isPlaceholderData}
+          >
+            <Datenliste
+              spalten={SPALTEN}
+              zeilen={data.events}
+              schluessel={(event) => event.id}
+              beschriftung="Protokolleinträge"
+            />
+          </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -417,19 +427,17 @@ export function AuditLogPage() {
       ) : null}
 
       {/* Die Fußnote erklärt das System, nicht die Einträge - zugeklappt (UX-005i). */}
-      <details className="group border-line mt-10 max-w-prose border-t pt-2">
-        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
-          <Aufklappzeichen />
-          Was wird protokolliert?
-        </summary>
-        <Kleingedrucktes className="mt-2">
-          Protokolliert wird nur, was die Daten selbst nicht zeigen: das Öffnen einer Akte (einmal
-          am Tag je Person), Herunterladen und Herausgeben, Zugänge und abgewiesene Zugriffe.
-          Angezeigt werden ausschließlich Metadaten; Inhalte der Patientenakte sind nicht
-          Bestandteil des Protokolls. Das Protokoll dient Datenschutz und Sicherheit, nie der
-          Kontrolle von Mitarbeitenden.
-        </Kleingedrucktes>
-      </details>
+      <div className="mt-10 max-w-prose">
+        <Disclosure summary="Was wird protokolliert?">
+          <Kleingedrucktes>
+            Protokolliert wird nur, was die Daten selbst nicht zeigen: das Öffnen einer Akte (einmal
+            am Tag je Person), Herunterladen und Herausgeben, Zugänge und abgewiesene Zugriffe.
+            Angezeigt werden ausschließlich Metadaten; Inhalte der Patientenakte sind nicht
+            Bestandteil des Protokolls. Das Protokoll dient Datenschutz und Sicherheit, nie der
+            Kontrolle von Mitarbeitenden.
+          </Kleingedrucktes>
+        </Disclosure>
+      </div>
     </>
   );
 }

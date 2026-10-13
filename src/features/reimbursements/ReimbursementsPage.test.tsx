@@ -215,13 +215,12 @@ describe('Erstattungen', () => {
 
   it('verspricht keine Markierung, wenn die Demoperson nichts eingereicht hat', () => {
     // Das Konto der Praxisinhaberin gehört in der Vorschau zu Miriam Falk -
-    // ohne eigene Erstattung.
+    // ohne eigene Erstattung. Dann steht kein Satz über „(Sie)“ da, und
+    // keine Zeile trägt die Markierung (R2-neu3).
     oeffne(['owner']);
-    expect(
-      screen.getByText(
-        'Ihre Erstattungen in der Vorschau sind die von Miriam Falk (Demoperson zur Rolle); bisher liegt keine vor.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Erstattungen' })).toBeInTheDocument();
+    expect(screen.queryByText(/Ihre Erstattungen in der Vorschau/)).toBeNull();
+    expect(screen.queryByText(/markiert mit/)).toBeNull();
     expect(screen.queryByText(/\(Sie\)$/)).toBeNull();
   });
 
@@ -249,9 +248,10 @@ describe('Erstattungen', () => {
     expect(filter).toHaveClass('h-12');
 
     await nutzer.selectOptions(filter, 'abgelehnt');
-    // Namen der Karten; die Historie darunter nennt weiter alle.
-    const karte = { selector: 'p.font-semibold' };
-    expect(screen.queryByText('Tobias Krenz', karte)).toBeNull();
-    expect(screen.getByText('Aylin Özdemir', karte)).toBeInTheDocument();
+    // Namen in der Liste der Anträge (seit dem Design-Rollout B6 Zeilen statt
+    // Karten); die Historie darunter nennt weiter alle.
+    const liste = screen.getByRole('list', { name: 'Erstattungen' });
+    expect(within(liste).queryByText('Tobias Krenz')).toBeNull();
+    expect(within(liste).getByText('Aylin Özdemir')).toBeInTheDocument();
   });
 });

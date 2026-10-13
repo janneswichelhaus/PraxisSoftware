@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   aboKuendigen,
@@ -37,26 +39,23 @@ export function Abo({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={`${PLATTFORM_PFAD}/ich`}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm print:hidden"
-      >
-        ← Zu „Ich“
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Nachsorge-Abo</h1>
-      {abo.isPending ? <LoadingState label="Ihr Abo wird geladen …" /> : null}
+      <Rueckweg
+        standard={`${PLATTFORM_PFAD}/ich`}
+        beschriftung="Zu „Ich“"
+        className="print:hidden"
+      />
+      <PageHeader title="Nachsorge-Abo" />
+      {abo.isPending ? <LoadingState label="Ihr Abo wird geladen …" inKarte /> : null}
       {abo.isError ? (
-        <div className="mt-4">
+        <div>
           <ErrorState
             title="Ihr Abo konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
             onErneut={() => abo.refetch()}
           />
         </div>
       ) : null}
-      {abo.data === null ? (
-        <p className="text-ink mt-4 text-base leading-relaxed">Sie haben kein Nachsorge-Abo.</p>
-      ) : null}
+      {abo.data === null ? <EmptyState inKarte title="Sie haben kein Nachsorge-Abo." /> : null}
       {abo.data ? <Stand zugang={zugang} abo={abo.data} /> : null}
     </>
   );

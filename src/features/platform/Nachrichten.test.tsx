@@ -154,6 +154,10 @@ beforeEach(() => {
             reps_min: 10,
             reps_max: 12,
             duration_seconds: null,
+            illustration: null,
+            hold_seconds: null,
+            per_side: false,
+            times_per_day: null,
             load: null,
             tempo: null,
             rest_seconds: 30,
@@ -177,22 +181,36 @@ function hinweisPruefen(container: HTMLElement) {
   expect(hinweis).toHaveTextContent('Nicht für akute Beschwerden.');
   expect(hinweis).toHaveTextContent('112');
   expect(hinweis).toHaveTextContent('116117');
+  // Die Nummern zum Antippen, fest - nie aus dem Inhalt einer Nachricht (L2).
+  expect(within(hinweis).getByRole('link', { name: '112 anrufen' })).toHaveAttribute(
+    'href',
+    'tel:112',
+  );
+  expect(within(hinweis).getByRole('link', { name: '116117 anrufen' })).toHaveAttribute(
+    'href',
+    'tel:116117',
+  );
 }
 
 describe('Nachrichten (KOM-001)', () => {
   it('zeigt Zusage und Notfallhinweis, laufende und erledigte Nachrichten', async () => {
     renderWithProviders(<Nachrichten zugang={ZUGANG} />, '/p/nachrichten');
     expect(await screen.findByRole('heading', { name: 'Nachrichten' })).toBeInTheDocument();
-    hinweisPruefen(document.body);
-    expect(screen.getByRole('link', { name: 'Neue Nachricht' })).toHaveAttribute(
+    // Der Titel steht schon beim Laden; Hinweis und Knopf kommen mit den Daten.
+    expect(await screen.findByRole('link', { name: 'Neue Nachricht' })).toHaveAttribute(
       'href',
       '/p/nachrichten/neu',
     );
+    hinweisPruefen(document.body);
     expect(screen.getByText('bei der Praxis')).toBeInTheDocument();
     expect(screen.getByText(/^Antwort bis 13\.10\.2026\./)).toBeInTheDocument();
     expect(screen.getByText('Übung · Kniebeuge am Geländer')).toBeInTheDocument();
     expect(screen.getByText('beantwortet')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Erledigt' })).toBeInTheDocument();
+    // Jeder Zustand mit Zeichen und Wort (Regel 5, ANN-485).
+    expect(screen.getByText('beantwortet')).toHaveTextContent('↩beantwortet');
+    expect(screen.getByText('bei der Praxis')).toHaveTextContent('…bei der Praxis');
+    // Erledigtes steht auf Abruf, mit der Zahl im Kopf (DESIGN.md, Regel 6).
+    expect(screen.getByText('Erledigt').closest('summary')).toHaveTextContent('Erledigt (1)');
   });
 
   it('die Frist kommt aus den Praxisstammdaten (ANN-309)', async () => {
@@ -327,6 +345,10 @@ describe('Eine Nachricht (KOM-001)', () => {
     zeige(OFFEN.id);
     await screen.findByLabelText('Noch etwas ergänzen');
     hinweisPruefen(document.body);
+    // Zustand und Frist als eine Zeile unter dem Titel, nicht als Abzeichen (L9).
+    const zustand = screen.getByText('bei der Praxis').parentElement!;
+    expect(zustand).toHaveTextContent('… bei der Praxis · Antwort bis 13.10.2026');
+    expect(zustand.className).not.toContain('rounded-pill');
     await nutzer.type(screen.getByLabelText('Noch etwas ergänzen'), 'Oder Montag?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await waitFor(() =>

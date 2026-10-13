@@ -5,10 +5,12 @@ import { Angabefeld } from '@/components/ui/Angabefeld';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { HakenSymbol } from '@/components/ui/HakenSymbol';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import { dosierungAlltag } from '@/features/exercise-plans/dosierung';
+
 import { angabeGueltig, groessenImTakt } from '@/lib/erfassungsgroessen';
 import {
   abgelegterPlan,
@@ -22,7 +24,9 @@ import {
   type WartendeEinheit,
 } from './ablage';
 import { ladePlaene, plaeneSchluessel, type PlanPosition, type Plattformzugang } from './api';
+import { Notrufnummer } from './Notfallsatz';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
+import { Uebungsinhalt } from './Uebungsinhalt';
 
 /**
  * Die Durchführungsansicht (UEB-010, IDEA-ORG-003): „Ich stehe gerade in der
@@ -263,40 +267,37 @@ function Einheit({
 
   return (
     <>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-ink-muted">
-          Übung {index + 1} von {plan.items.length}
-        </p>
-        <Zurueck pfad={zurueckPfad} onZurueck={onZurueck}>
-          Abbrechen
-        </Zurueck>
-      </div>
+      {/* Arbeitsseite (DESIGN.md): der Name als Titel, darüber, wo man im
+          Plan steht; „Abbrechen“ leise im Kopf. */}
+      <PageHeader
+        kicker={`Übung ${index + 1} von ${plan.items.length}`}
+        title={position.variant_lay_name}
+        actions={
+          <Zurueck pfad={zurueckPfad} onZurueck={onZurueck}>
+            Abbrechen
+          </Zurueck>
+        }
+      />
       {ohneVerbindung ? (
-        <p className="text-ink-muted mt-2 text-sm">
+        <Statusmeldung ton="neutral" className="mb-4">
           Ohne Verbindung: Ihr Plan vom letzten Laden. Die Haken bleiben auf dem Gerät, bis
           Verbindung besteht.
-        </p>
+        </Statusmeldung>
       ) : null}
       {abgewiesen.map((a) => (
-        <Statusmeldung key={a.einheitId} ton="fehler" className="mt-3">
-          {`Nicht übertragen: ${a.satz}`}{' '}
-          <button type="button" className="underline" onClick={() => abweisungGelesen(a.einheitId)}>
+        <div key={a.einheitId} className="mb-4 flex flex-wrap items-center gap-x-3">
+          <Statusmeldung ton="fehler">{`Nicht übertragen: ${a.satz}`}</Statusmeldung>
+          <Button
+            type="button"
+            variant="quiet"
+            groesse="kompakt"
+            onClick={() => abweisungGelesen(a.einheitId)}
+          >
             Ausblenden
-          </button>
-        </Statusmeldung>
+          </Button>
+        </div>
       ))}
-      <h1 className="text-accent text-h3 mt-2 font-bold">{position.variant_lay_name}</h1>
-      <p className="mt-3 text-lg">{dosierungAlltag(position)}</p>
-      {position.instruction ? <p className="mt-2">{position.instruction}</p> : null}
-      {position.equipment.length > 0 ? (
-        <p className="text-ink-muted mt-2">Sie brauchen: {position.equipment.join(', ')}</p>
-      ) : null}
-      {position.note ? (
-        <p className="mt-2">
-          <span className="font-semibold">Hinweis: </span>
-          {position.note}
-        </p>
-      ) : null}
+      <Uebungsinhalt position={position} />
 
       <ul className="mt-6 flex flex-col gap-3" aria-label="Durchgänge">
         {Array.from({ length: position.sets }, (_, i) => i + 1).map((durchgang) => {
@@ -394,11 +395,13 @@ function Pause({ sekunden, onEnde }: { sekunden: number; onEnde: () => void }) {
     return () => window.clearInterval(uhr);
   }, [sekunden]);
   return (
-    <div className="rounded-card border-line bg-surface mt-4 flex items-center justify-between gap-3 border p-4">
-      <p className="text-lg" aria-hidden="true">
+    // Eine Zeile mit Linie links wie die Meldungen des Systems (DESIGN.md,
+    // Regel 2); die Sekunden groß, damit sie aus Armlänge lesbar sind.
+    <div className="border-accent bg-accent-soft mt-4 flex flex-wrap items-center justify-between gap-x-3 border-l-4 py-2 pr-2 pl-4">
+      <p className="text-ink" aria-hidden="true">
         {rest > 0 ? (
           <>
-            Pause: <span className="font-bold tabular-nums">{rest}</span> s
+            Pause: <span className="text-h3 font-bold tabular-nums">{rest}</span> s
           </>
         ) : (
           'Weiter mit dem nächsten Durchgang.'
@@ -470,11 +473,10 @@ function Abschluss({
   });
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">Einheit beenden</h1>
-      <p className="mt-2">{plan.title}</p>
+      <PageHeader title="Einheit beenden" description={plan.title} />
       <form
         noValidate
-        className="mt-6 flex flex-col gap-4"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           if (!ungueltig) beenden.mutate();
@@ -495,9 +497,13 @@ function Abschluss({
         {plan.note_allowed && abgehakt > 0 ? (
           <TextArea
             label="Das war schwierig, weil … (freiwillig)"
-            hint={`${
-              plan.service_area === 'therapy' ? 'Ihre Therapeut:in' : 'Ihre Trainingsbetreuung'
-            } sieht diesen Satz. Er wird nicht laufend gelesen – bei akuten Beschwerden: 112 oder 116117.`}
+            hint={
+              <>
+                {plan.service_area === 'therapy' ? 'Ihre Therapeut:in' : 'Ihre Trainingsbetreuung'}{' '}
+                sieht diesen Satz. Er wird nicht laufend gelesen – bei akuten Beschwerden:{' '}
+                <Notrufnummer nummer="112" /> oder <Notrufnummer nummer="116117" />.
+              </>
+            }
             maxLength={500}
             rows={3}
             value={notiz}
@@ -512,21 +518,24 @@ function Abschluss({
             {`„${ungueltig.kurz}“: bitte eine ganze Zahl von ${ungueltig.min} bis ${ungueltig.max}.`}
           </Statusmeldung>
         ) : null}
-        {abgehakt > 0 ? (
-          <Button type="submit" disabled={beenden.isPending}>
-            {beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden'}
-          </Button>
-        ) : (
+        {abgehakt > 0 ? null : (
           <Statusmeldung>
             Sie haben noch keinen Durchgang abgehakt. Ohne Haken gibt es nichts zu speichern.
           </Statusmeldung>
         )}
-        <Button type="button" variant="secondary" onClick={onZurueck}>
-          Zurück zu den Übungen
-        </Button>
-        <Zurueck pfad={zurueckPfad} onZurueck={onAbbrechen}>
-          Abbrechen
-        </Zurueck>
+        <Formularfuss>
+          {abgehakt > 0 ? (
+            <Button type="submit" disabled={beenden.isPending}>
+              {beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden'}
+            </Button>
+          ) : null}
+          <Button type="button" variant="secondary" onClick={onZurueck}>
+            Zurück zu den Übungen
+          </Button>
+          <Zurueck pfad={zurueckPfad} onZurueck={onAbbrechen}>
+            Abbrechen
+          </Zurueck>
+        </Formularfuss>
       </form>
     </>
   );

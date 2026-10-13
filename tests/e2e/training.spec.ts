@@ -33,7 +33,15 @@ test.describe('Training', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=detail`);
       await expect(page.getByRole('heading', { name: 'Tina Trainingskundin' })).toBeVisible();
+      // Welle B3a: Objektkopf mit Reitern wie die Akte; jeder Reiter ohne Querrollen.
+      const reiter = page.getByRole('navigation', { name: 'Bereiche der Trainingskund:in' });
+      await expect(reiter.getByRole('link')).toHaveCount(4);
       expect(await ueberlaeuft(page)).toBe(false);
+      for (const name of ['Verlauf', 'Stammdaten', 'Verträge']) {
+        await reiter.getByRole('link', { name }).click();
+        await expect(reiter.getByRole('link', { name })).toHaveAttribute('aria-current', 'page');
+        expect(await ueberlaeuft(page), name).toBe(false);
+      }
       await page.getByRole('button', { name: 'Vertrag beenden' }).click();
       await expect(page.getByLabel('Letzter Vertragstag')).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
@@ -46,7 +54,11 @@ test.describe('Training', () => {
       await page.setViewportSize({ width: breite, height: 900 });
 
       await page.goto(`${PRUEFSEITE}?seite=termin`);
-      await expect(page.getByRole('heading', { name: 'Trainingstermin', level: 1 })).toBeVisible();
+      // Kopf wie das Termin-Fenster: „Trainingstermin" darüber, der Name als Weg.
+      await expect(
+        page.getByRole('heading', { name: 'Tina Trainingskundin', level: 1 }),
+      ).toBeVisible();
+      await expect(page.getByText('Trainingstermin', { exact: true })).toBeVisible();
       await expect(page.getByRole('link', { name: 'Tina Trainingskundin' })).toBeVisible();
       await expect(page.getByText('7 Termine von 10')).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
@@ -62,8 +74,13 @@ test.describe('Training', () => {
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=detail`);
+      await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+      // Die laufende Vereinbarung als Kachel über der Liste (wie die Grundlage der Akte).
+      await expect(page.getByText('7 Termine von 10')).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      await page.goto(`${PRUEFSEITE}?seite=detail&bereich=vertraege`);
       await expect(page.getByRole('heading', { name: 'Vereinbarungen' })).toBeVisible();
-      await expect(page.getByRole('heading', { name: 'Termine', exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Vereinbarung anlegen' }).click();
       await expect(page.getByLabel('Vereinbarte Einheiten')).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
@@ -113,6 +130,16 @@ test.describe('Training', () => {
     expect(anlegen!.height).toBeGreaterThanOrEqual(44);
 
     await page.goto(`${PRUEFSEITE}?seite=detail`);
+    const termin = await page.getByRole('link', { name: 'Termin anlegen' }).boundingBox();
+    expect(termin!.height).toBeGreaterThanOrEqual(44);
+    for (const reiter of await page
+      .getByRole('navigation', { name: 'Bereiche der Trainingskund:in' })
+      .getByRole('link')
+      .all()) {
+      expect((await reiter.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+
+    await page.goto(`${PRUEFSEITE}?seite=detail&bereich=vertraege`);
     const beenden = await page.getByRole('button', { name: 'Vertrag beenden' }).boundingBox();
     expect(beenden!.height).toBeGreaterThanOrEqual(44);
 

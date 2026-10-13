@@ -6,9 +6,13 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
-import { Aufklappzeichen, CardGrid, Inhaltsflaeche } from '@/components/ui/Card';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Section } from '@/components/ui/Section';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatEuro } from '@/lib/geld';
 import { sichereAlsDatei } from '@/features/datenschutz/datei';
 import { isOwner, type CurrentUser } from '@/features/session/types';
@@ -85,7 +89,7 @@ function Praxisstatistik() {
     <>
       <PageHeader
         title="Statistiken"
-        description="Fünf Zahlen für die Praxisführung – jede mit Ziel und dem nächsten Schritt –, darunter der Verlauf. Umsatz je Person sehen nur du und die Person selbst bei Umsatzbeteiligung."
+        description="Fünf Zahlen mit Ziel und nächstem Schritt."
         actions={
           k && ziele.data ? (
             <Button variant="secondary" onClick={() => sichereCsv(k, ziele.data)} type="button">
@@ -95,78 +99,63 @@ function Praxisstatistik() {
         }
       />
 
-      {kennzahlen.isPending ? <LoadingState label="Die Statistik wird geladen …" /> : null}
-      {kennzahlen.isError ? (
-        <>
-          <ErrorState
-            title="Die Statistik konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => kennzahlen.refetch()}
-          />
-          {monat !== null ? (
-            <Button variant="quiet" type="button" onClick={() => setMonat(null)}>
-              Zum laufenden Monat
-            </Button>
-          ) : null}
-        </>
-      ) : null}
-      {ziele.isError ? (
-        <ErrorState
-          title="Die Zielwerte konnten nicht geladen werden."
-          description="Die Zahlen stehen trotzdem da; der Vergleich mit dem Ziel fehlt."
-          onErneut={() => ziele.refetch()}
-        />
-      ) : null}
-
-      {k ? (
-        <>
-          <div className="mb-6 sm:w-64">
-            <Select
-              label="Monat für Umsatz und Zahlungseingang"
-              value={monat ?? k.month}
-              onChange={(e) => setMonat(e.target.value)}
-            >
-              {monatsauswahl(k.today).map((wert) => (
-                <option key={wert} value={wert}>
-                  {monatsname(wert)}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <CardGrid>
-            {KENNZAHLEN.map((kennzahl) => (
-              <Kennzahlkarte
-                key={kennzahl.ziel}
-                kennzahl={kennzahl}
-                k={k}
-                ziel={ziele.data?.[kennzahl.ziel] ?? null}
-                zieleGeladen={ziele.isSuccess}
+      {/* Laden, Fehler und veralteter Stand über den Baustein (DESIGN.md
+          Regel 8, R2-neu4). Scheitert ein anderer Monat, führt ein Knopf
+          zurück zum laufenden - die Auswahl steht dann nicht da. */}
+      <Abfragezustand
+        abfrage={kennzahlen}
+        laden="Die Statistik wird geladen …"
+        fehler="Die Statistik konnte nicht geladen werden."
+        inKarte
+      >
+        {(daten) => (
+          <>
+            <div className="mb-6 sm:w-64">
+              <Select
+                label="Monat für Umsatz und Zahlungseingang"
+                value={monat ?? daten.month}
+                onChange={(e) => setMonat(e.target.value)}
               >
-                <Einzelheiten
-                  kennzahl={kennzahl}
-                  k={k}
-                  ziel={ziele.data?.[kennzahl.ziel] ?? null}
+                {monatsauswahl(daten.today).map((wert) => (
+                  <option key={wert} value={wert}>
+                    {monatsname(wert)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {ziele.isError ? (
+              <div className="mb-6">
+                <ErrorState
+                  title="Die Zielwerte konnten nicht geladen werden."
+                  description="Die Zahlen stehen trotzdem da; der Vergleich mit dem Ziel fehlt."
+                  onErneut={() => ziele.refetch()}
                 />
-              </Kennzahlkarte>
-            ))}
-          </CardGrid>
+              </div>
+            ) : null}
 
-          <Verlauf monat={monat} heute={k.today} />
+            <Kennzahlliste k={daten} ziele={ziele.data} zieleGeladen={ziele.isSuccess} />
 
-          {/* Die Fußnote erklärt die Rechnung, nicht die Zahlen - zugeklappt (UX-005i). */}
-          <details className="group border-line mt-8 max-w-prose border-t pt-2">
-            <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
-              <Aufklappzeichen />
-              Hinweise zur Berechnung
-            </summary>
-            <p className="text-ink-muted mt-2 text-sm">
-              Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die übrigen
-              Zahlen gelten zum Stand {tagText(k.today)}. Kein steuerlicher Abschluss – die
-              Aufteilung nach Steuerkennzeichen steht unter Abrechnung → Auswertung.
-            </p>
-          </details>
-        </>
+            <Verlauf monat={monat} heute={daten.today} />
+
+            {/* Die Fußnote erklärt die Rechnung, nicht die Zahlen - zugeklappt (UX-005i). */}
+            <div className="mt-8 max-w-prose">
+              <Disclosure summary="Hinweise zur Berechnung">
+                <p className="text-ink-muted text-sm">
+                  Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die
+                  übrigen Zahlen gelten zum Stand {tagText(daten.today)}. Kein steuerlicher
+                  Abschluss – die Aufteilung nach Steuerkennzeichen steht unter Abrechnung →
+                  Auswertung.
+                </p>
+              </Disclosure>
+            </div>
+          </>
+        )}
+      </Abfragezustand>
+      {kennzahlen.isError && monat !== null ? (
+        <Button variant="quiet" type="button" onClick={() => setMonat(null)}>
+          Zum laufenden Monat
+        </Button>
       ) : null}
     </>
   );
@@ -177,7 +166,42 @@ function sichereCsv(k: Kennzahlen, ziele: Ziele) {
   sichereAlsDatei(csvDateiname(k), `\uFEFF${alsCsv(k, ziele)}`, 'text/csv;charset=utf-8');
 }
 
-function Kennzahlkarte({
+/**
+ * Die fünf Kennzahlen als beschriftete Liste in **einer** Karte (ANN-494,
+ * R2-O8): Name links (am Telefon darüber), daneben Wert, Zielstand,
+ * Einzelheiten, Ziel und der nächste Schritt; Linien trennen die Kennzahlen
+ * (DESIGN.md Regel 2). Fünf sind mehr als die vier Kacheln, die eine Seite
+ * trägt (Prüfliste 5) - bis dahin standen fünf gleich gerahmte Kästen
+ * untereinander.
+ */
+function Kennzahlliste({
+  k,
+  ziele,
+  zieleGeladen,
+}: {
+  k: Kennzahlen;
+  ziele: Ziele | undefined;
+  zieleGeladen: boolean;
+}) {
+  return (
+    <Section titel="Kennzahlen" rahmen>
+      <DetailList>
+        {KENNZAHLEN.map((kennzahl) => {
+          const ziel = ziele?.[kennzahl.ziel] ?? null;
+          return (
+            <DetailRow key={kennzahl.ziel} label={kennzahl.titel}>
+              <Kennzahlangabe kennzahl={kennzahl} k={k} ziel={ziel} zieleGeladen={zieleGeladen}>
+                <Einzelheiten kennzahl={kennzahl} k={k} ziel={ziel} />
+              </Kennzahlangabe>
+            </DetailRow>
+          );
+        })}
+      </DetailList>
+    </Section>
+  );
+}
+
+function Kennzahlangabe({
   kennzahl,
   k,
   ziel,
@@ -190,35 +214,33 @@ function Kennzahlkarte({
   zieleGeladen: boolean;
   children: ReactNode;
 }) {
-  const wert = kennzahl.wert(k);
-  const stand = zielstand(wert, ziel, kennzahl.richtung);
-  const titelId = useId();
+  const stand = zielstand(kennzahl.wert(k), ziel, kennzahl.richtung);
 
+  // Eine Gruppe je Kennzahl, damit Vorlesesoftware sie als Bereich anspringt.
   return (
-    <section aria-labelledby={titelId}>
-      <Inhaltsflaeche className="flex h-full flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id={titelId} className="text-ink text-liste font-semibold">
-            {kennzahl.titel}
-          </h2>
-          {stand === 'erreicht' ? <Badge ton="positiv">Ziel erreicht</Badge> : null}
-          {stand === 'verfehlt' ? <Badge ton="warnung">Ziel verfehlt</Badge> : null}
-        </div>
-
+    <section aria-label={kennzahl.titel} className="flex flex-col gap-2 whitespace-normal">
+      {/* Der Zielstand als Zeichen und Wort neben dem Wert (DESIGN.md
+          Regel 5); ohne Ziel kein Abzeichen. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <p className="text-ink text-2xl font-semibold tabular-nums">
-          {formatiere(wert, kennzahl.einheit)}
+          {formatiere(kennzahl.wert(k), kennzahl.einheit)}
         </p>
+        {stand === 'erreicht' ? (
+          <Badge ton="positiv">Ziel erreicht</Badge>
+        ) : stand === 'verfehlt' ? (
+          <Badge ton="warnung">Ziel verfehlt</Badge>
+        ) : null}
+      </div>
 
-        <div className="text-ink-muted text-sm">{children}</div>
+      <div className="text-ink-muted text-sm">{children}</div>
 
-        {zieleGeladen ? <Zielzeile kennzahl={kennzahl} ziel={ziel} /> : null}
+      {zieleGeladen ? <Zielzeile kennzahl={kennzahl} ziel={ziel} /> : null}
 
-        <div className="mt-auto pt-1">
-          <ButtonLink to={kennzahl.handlung.to} variant="secondary" groesse="kompakt">
-            {kennzahl.handlung.label}
-          </ButtonLink>
-        </div>
-      </Inhaltsflaeche>
+      <div className="pt-1">
+        <ButtonLink to={kennzahl.handlung.to} variant="secondary" groesse="kompakt">
+          {kennzahl.handlung.label}
+        </ButtonLink>
+      </div>
     </section>
   );
 }
@@ -240,7 +262,11 @@ function Einzelheiten({
             {monatsname(k.month)}, Rechnungsstellung brutto · {monatsname(k.previous_month)}:{' '}
             {formatEuro(k.revenue_previous_cents)}
           </p>
-          <div className="my-3">
+          <p className="text-ink mt-1">
+            Zahlungseingang {formatEuro(k.payments_cents)} · {monatsname(k.previous_month)}:{' '}
+            {formatEuro(k.payments_previous_cents)}
+          </p>
+          <Aufschluesselung>
             <Balkenliste
               titel="Umsatz nach Bereich"
               format={formatEuro}
@@ -249,11 +275,7 @@ function Einzelheiten({
                 { schluessel: 'training', label: 'Training', wert: k.revenue_training_cents },
               ]}
             />
-          </div>
-          <p className="text-ink">
-            Zahlungseingang {formatEuro(k.payments_cents)} · {monatsname(k.previous_month)}:{' '}
-            {formatEuro(k.payments_previous_cents)}
-          </p>
+          </Aufschluesselung>
         </>
       );
     case 'open_items_cents':
@@ -263,7 +285,7 @@ function Einzelheiten({
             {k.open_count} {k.open_count === 1 ? 'Rechnung' : 'Rechnungen'} offen, Stand{' '}
             {tagText(k.today)}
           </p>
-          <div className="mt-3">
+          <Aufschluesselung>
             <Balkenliste
               titel="Offene Posten nach Alter"
               format={formatEuro}
@@ -290,7 +312,7 @@ function Einzelheiten({
                 },
               ]}
             />
-          </div>
+          </Aufschluesselung>
         </>
       );
     case 'utilization_percent': {
@@ -331,7 +353,7 @@ function Einzelheiten({
             davon {k.absences_with_fee} mit Ausfallhonorar, erfasst{' '}
             {formatEuro(k.absence_fee_cents)}
           </p>
-          <div className="mt-3">
+          <Aufschluesselung>
             <Balkenliste
               titel="Ausfälle im Vergleich"
               format={(wert) => String(wert)}
@@ -340,11 +362,26 @@ function Einzelheiten({
                 { schluessel: 'davor', label: 'vier Wochen davor', wert: k.absences_previous },
               ]}
             />
-          </div>
-          <p className="mt-2">Ausfallhonorare davor: {formatEuro(k.absence_fee_previous_cents)}</p>
+            <p className="mt-2">
+              Ausfallhonorare davor: {formatEuro(k.absence_fee_previous_cents)}
+            </p>
+          </Aufschluesselung>
         </>
       );
   }
+}
+
+/**
+ * Die Aufschlüsselung einer Kennzahl als Balken - am Telefon auf Abruf, ab
+ * 1024 px offen (Design-Rollout B6): Die Karte zeigt die Zahl und den
+ * nächsten Schritt; wie sie sich zusammensetzt, steht einen Tipp tiefer.
+ */
+function Aufschluesselung({ children }: { children: ReactNode }) {
+  return (
+    <Disclosure summary="Aufschlüsselung" offenAb="lg">
+      {children}
+    </Disclosure>
+  );
 }
 
 function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null }) {
@@ -376,16 +413,21 @@ function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null
     speichern.mutate(ergebnis.wert);
   }
 
+  // Das Ziel steht selten zur Änderung an - der Aufklapper zeigt es und
+  // öffnet das Feld auf Abruf (DESIGN.md „Disclosure“).
   return (
-    <details className="group border-line border-t pt-1">
-      <summary className={`${aufklappKopfKlassen} text-sm`}>
-        <span className="text-ink">
-          Ziel:{' '}
-          {ziel === null ? 'nicht gesetzt' : `${richtung} ${formatiere(ziel, kennzahl.einheit)}`}
-        </span>
-        <span className="text-accent ml-auto text-sm">Ändern</span>
-      </summary>
-      <form onSubmit={absenden} className="mt-2 flex flex-col gap-2" noValidate>
+    <Disclosure
+      summary={
+        <>
+          <span className="text-ink">
+            Ziel:{' '}
+            {ziel === null ? 'nicht gesetzt' : `${richtung} ${formatiere(ziel, kennzahl.einheit)}`}
+          </span>
+          <span className="text-accent ml-auto text-sm font-semibold">Ändern</span>
+        </>
+      }
+    >
+      <form onSubmit={absenden} className="flex flex-col gap-2" noValidate>
         <Field
           label={`Ziel ${kennzahl.titel} (${richtung}${kennzahl.einheit === 'cent' ? ', Euro' : kennzahl.einheit === 'prozent' ? ', Prozent' : ''})`}
           hint="Leer lassen, um das Ziel zu entfernen."
@@ -405,7 +447,7 @@ function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null
           ) : null}
         </div>
       </form>
-    </details>
+    </Disclosure>
   );
 }
 
@@ -435,113 +477,128 @@ function Verlauf({ monat, heute }: { monat: string | null; heute: string }) {
   const gewaehlt = monat ?? `${heute.slice(0, 7)}-01`;
 
   return (
-    <div className="mt-8 grid gap-3 lg:grid-cols-2">
-      <Grafikflaeche
-        titel="Umsatz der letzten 12 Monate"
-        unterzeile="Säulen: Umsatz nach Rechnungsstellung · Punkte: Zahlungseingang"
-        breit
-        zustand={monate}
-      >
-        {monate.data ? (
-          <Saeulendiagramm
-            titel="Umsatz und Zahlungseingang der letzten 12 Monate"
-            {...umsatzReihen(monate.data)}
-            format={formatEuro}
-            achsenformat={euroKurz}
-          />
-        ) : null}
-      </Grafikflaeche>
+    <Section titel="Verlauf">
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Grafikflaeche
+          titel="Umsatz der letzten 12 Monate"
+          unterzeile="Säulen: Umsatz nach Rechnungsstellung · Punkte: Zahlungseingang"
+          breit
+        >
+          <Abfragezustand
+            abfrage={monate}
+            laden="Wird geladen …"
+            fehler="Umsatz der letzten 12 Monate: konnte nicht geladen werden."
+          >
+            {(daten) => (
+              <Saeulendiagramm
+                titel="Umsatz und Zahlungseingang der letzten 12 Monate"
+                {...umsatzReihen(daten)}
+                format={formatEuro}
+                achsenformat={euroKurz}
+              />
+            )}
+          </Abfragezustand>
+        </Grafikflaeche>
 
-      <Grafikflaeche
-        titel="Umsatz nach Therapeut:in"
-        unterzeile="Letzte 6 Monate, nach Rechnungsstellung, der behandelnden Person zugeordnet"
-        zustand={
-          personenZeigen ? jePerson : { isPending: false, isError: false, refetch: () => null }
-        }
-      >
-        {!personenZeigen && !jePerson.data ? (
-          <div>
-            <p className="text-ink-muted mb-3 max-w-prose text-sm">
-              Umsatz je Person sind Beschäftigtendaten.
-            </p>
-            <Button type="button" variant="secondary" onClick={() => setPersonenZeigen(true)}>
-              Umsatz je Person anzeigen
-            </Button>
-          </div>
-        ) : null}
-        {jePerson.data ? (
-          jePerson.data.length === 0 ? (
-            <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
+        <Grafikflaeche
+          titel="Umsatz nach Therapeut:in"
+          unterzeile="Letzte 6 Monate, nach Rechnungsstellung, der behandelnden Person zugeordnet"
+        >
+          {personenZeigen || jePerson.data ? (
+            <Abfragezustand
+              abfrage={jePerson}
+              laden="Wird geladen …"
+              fehler="Umsatz nach Therapeut:in: konnte nicht geladen werden."
+              leer={{
+                wenn: (daten) => daten.length === 0,
+                titel: 'In diesen Monaten ist nichts abgerechnet.',
+              }}
+            >
+              {(daten) => (
+                <Saeulendiagramm
+                  titel="Umsatz je Therapeut:in der letzten 6 Monate"
+                  {...personenReihen(daten, letzteMonate(heute, 6))}
+                  gestapelt
+                  format={formatEuro}
+                  achsenformat={euroKurz}
+                />
+              )}
+            </Abfragezustand>
           ) : (
-            <Saeulendiagramm
-              titel="Umsatz je Therapeut:in der letzten 6 Monate"
-              {...personenReihen(jePerson.data, letzteMonate(heute, 6))}
-              gestapelt
-              format={formatEuro}
-              achsenformat={euroKurz}
-            />
-          )
-        ) : null}
-      </Grafikflaeche>
+            <div>
+              <Button
+                type="button"
+                variant="secondary"
+                groesse="kompakt"
+                onClick={() => setPersonenZeigen(true)}
+              >
+                Umsatz je Person anzeigen
+              </Button>
+              {/* Wer die Zahl sieht, und dass sie Beschäftigtendaten ist
+                (ANN-156): ein Satz mit Datenschutzfunktion, deshalb klein
+                und an der Stelle, an der sie geladen wird. */}
+              <Kleingedrucktes className="mt-2">
+                Umsatz je Person sind Beschäftigtendaten. Ihn sehen nur du und die Person selbst bei
+                Umsatzbeteiligung.
+              </Kleingedrucktes>
+            </div>
+          )}
+        </Grafikflaeche>
 
-      <Grafikflaeche
-        titel="Umsatzstärkste Leistungen"
-        unterzeile={`${monatsname(gewaehlt)}, nach Rechnungsstellung`}
-        zustand={leistungen}
-      >
-        {leistungen.data ? (
-          leistungen.data.length === 0 ? (
-            <p className="text-ink-muted text-sm">In diesem Monat ist nichts abgerechnet.</p>
-          ) : (
-            <Balkenliste
-              titel="Umsatzstärkste Leistungen"
-              format={formatEuro}
-              zeilen={leistungen.data.map((l) => ({
-                schluessel: l.code,
-                label: (
-                  <>
-                    <span className="font-medium">{l.code}</span>{' '}
-                    <span className="text-ink-muted">{l.label}</span>
-                  </>
-                ),
-                wert: l.revenue_cents,
-              }))}
-            />
-          )
-        ) : null}
-      </Grafikflaeche>
-    </div>
+        <Grafikflaeche
+          titel="Umsatzstärkste Leistungen"
+          unterzeile={`${monatsname(gewaehlt)}, nach Rechnungsstellung`}
+        >
+          <Abfragezustand
+            abfrage={leistungen}
+            laden="Wird geladen …"
+            fehler="Umsatzstärkste Leistungen: konnte nicht geladen werden."
+            leer={{
+              wenn: (daten) => daten.length === 0,
+              titel: 'In diesem Monat ist nichts abgerechnet.',
+            }}
+          >
+            {(daten) => (
+              <Balkenliste
+                titel="Umsatzstärkste Leistungen"
+                format={formatEuro}
+                zeilen={daten.map((l) => ({
+                  schluessel: l.code,
+                  label: (
+                    <>
+                      <span className="font-medium">{l.code}</span>{' '}
+                      <span className="text-ink-muted">{l.label}</span>
+                    </>
+                  ),
+                  wert: l.revenue_cents,
+                }))}
+              />
+            )}
+          </Abfragezustand>
+        </Grafikflaeche>
+      </div>
+    </Section>
   );
 }
 
+/** Die Fläche einer Grafik: Titel, eine Zeile darunter, der Inhalt. */
 function Grafikflaeche({
   titel,
   unterzeile,
   breit = false,
-  zustand,
   children,
 }: {
   titel: string;
   unterzeile: string;
   breit?: boolean;
-  zustand: { isPending: boolean; isError: boolean; refetch: () => unknown };
   children: ReactNode;
 }) {
   const titelId = useId();
   return (
     <section aria-labelledby={titelId} className={breit ? 'lg:col-span-2' : ''}>
       <Inhaltsflaeche className="h-full">
-        <h2 id={titelId} className="text-ink text-liste font-semibold">
-          {titel}
-        </h2>
-        <p className="text-ink-muted mb-3 text-sm">{unterzeile}</p>
-        {zustand.isPending ? <LoadingState label="Wird geladen …" /> : null}
-        {zustand.isError ? (
-          <ErrorState
-            title={`${titel}: konnte nicht geladen werden.`}
-            onErneut={() => zustand.refetch()}
-          />
-        ) : null}
+        <Zwischentitel id={titelId}>{titel}</Zwischentitel>
+        <p className="text-ink-muted -mt-2 mb-3 text-sm">{unterzeile}</p>
         {children}
       </Inhaltsflaeche>
     </section>
@@ -560,7 +617,6 @@ function MeinUmsatz({ zeitzone }: { zeitzone: string }) {
   });
   // Der Monat in der Zeitzone der Praxis, wie der Server rechnet.
   const monate = letzteMonate(todayInTimeZone(zeitzone), 12);
-  const daten = jePerson.data ? personenReihen(jePerson.data, monate) : null;
   const summe = (jePerson.data ?? [])
     .filter((z) => z.month === monate.at(-1))
     .reduce((s, z) => s + z.revenue_cents, 0);
@@ -569,27 +625,39 @@ function MeinUmsatz({ zeitzone }: { zeitzone: string }) {
     <>
       <PageHeader
         title="Statistiken"
-        description="Dein Umsatz der letzten 12 Monate nach Rechnungsstellung – die Grundlage deiner Umsatzbeteiligung. Nur du und die Praxisleitung sehen ihn."
+        description="Dein Umsatz der letzten 12 Monate nach Rechnungsstellung."
       />
-      <Grafikflaeche
-        titel="Mein Umsatz"
-        unterzeile={`Laufender Monat: ${formatEuro(summe)}`}
-        zustand={jePerson}
-      >
-        {daten ? (
-          jePerson.data!.length === 0 ? (
-            <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
-          ) : (
-            <Saeulendiagramm
-              titel="Mein Umsatz der letzten 12 Monate"
-              kategorien={daten.kategorien}
-              reihen={daten.reihen.map((r) => ({ ...r, name: 'Umsatz' }))}
-              format={formatEuro}
-              achsenformat={euroKurz}
-            />
-          )
-        ) : null}
-      </Grafikflaeche>
+      <Section titel="Verlauf">
+        <Grafikflaeche titel="Mein Umsatz" unterzeile={`Laufender Monat: ${formatEuro(summe)}`}>
+          <Abfragezustand
+            abfrage={jePerson}
+            laden="Wird geladen …"
+            fehler="Mein Umsatz: konnte nicht geladen werden."
+            leer={{
+              wenn: (zeilen) => zeilen.length === 0,
+              titel: 'In diesen Monaten ist nichts abgerechnet.',
+            }}
+          >
+            {(zeilen) => {
+              const daten = personenReihen(zeilen, monate);
+              return (
+                <Saeulendiagramm
+                  titel="Mein Umsatz der letzten 12 Monate"
+                  kategorien={daten.kategorien}
+                  reihen={daten.reihen.map((r) => ({ ...r, name: 'Umsatz' }))}
+                  format={formatEuro}
+                  achsenformat={euroKurz}
+                />
+              );
+            }}
+          </Abfragezustand>
+          {/* Wofür die Zahl gilt und wer sie sieht (ANN-156): ein Satz mit
+              Datenschutzfunktion, klein unter der Grafik statt im Kopf. */}
+          <Kleingedrucktes className="mt-3">
+            Die Grundlage deiner Umsatzbeteiligung. Nur du und die Praxisleitung sehen ihn.
+          </Kleingedrucktes>
+        </Grafikflaeche>
+      </Section>
     </>
   );
 }

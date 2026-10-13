@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
@@ -47,40 +49,41 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
           beschriftung="Zurück zur Verordnung"
         />
       ) : (
-        <Rueckweg standard={verordnungen} beschriftung="Zurück zu den Verordnungen" />
+        // Beschriftet wie der Reiter: „Zurück zu den Behandlungsgrundlagen“ (A8).
+        <Rueckweg standard={verordnungen} />
       )}
     </div>
   );
+  // Laden und Fehler mit dem Kopf der Seite, wie die Warteliste (A7), so
+  // breit und so mittig wie das Blatt. Das Blatt selbst trägt seinen
+  // Briefkopf; dieser Kopf steht nur ohne Blatt.
+  const zustand = (inhalt: ReactNode) => (
+    <>
+      {rueckweg}
+      <div className="nicht-drucken mx-auto max-w-[210mm]">
+        <PageHeader title="Therapiebericht" />
+        {inhalt}
+      </div>
+    </>
+  );
 
-  if (bericht.isPending) {
-    return (
-      <>
-        {rueckweg}
-        <LoadingState label="Bericht wird geladen …" />
-      </>
-    );
-  }
-  if (bericht.isError && !bericht.data) {
-    return (
-      <>
-        {rueckweg}
-        <ErrorState
-          title="Der Bericht konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => bericht.refetch()}
-        />
-      </>
-    );
-  }
+  // Laden und Ladefehler über den Baustein (Regel 8; Nachprüfung neu5); ein
+  // Bericht, den es nicht (mehr) gibt, ist kein Ladefehler und bietet keinen
+  // neuen Versuch an.
   if (!bericht.data) {
-    return (
-      <>
-        {rueckweg}
-        <ErrorState
-          title="Bericht nicht gefunden"
-          description="Vielleicht wurde der Entwurf inzwischen verworfen."
-        />
-      </>
+    return zustand(
+      <Abfragezustand
+        abfrage={bericht}
+        laden="Bericht wird geladen …"
+        fehler="Der Bericht konnte nicht geladen werden."
+      >
+        {() => (
+          <ErrorState
+            title="Bericht nicht gefunden"
+            description="Vielleicht wurde der Entwurf inzwischen verworfen."
+          />
+        )}
+      </Abfragezustand>,
     );
   }
 

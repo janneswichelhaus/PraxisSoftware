@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEREICHSNAME, einstiegBeenden, einstiegSchluessel, type Plattformzugang } from './api';
 import { Benachrichtigungen } from './Benachrichtigungen';
@@ -19,6 +21,14 @@ import { Einwilligungen } from './Einwilligungen';
  * eigenen Zugang.
  */
 type Schritt = 'willkommen' | 'einwilligungen' | 'benachrichtigungen' | 'fertig';
+
+/** Der Titel je Schritt - über `PageHeader`, nicht von Hand (DESIGN.md, Plattform). */
+const TITEL: Record<Schritt, string> = {
+  willkommen: 'Willkommen',
+  einwilligungen: 'Ihre Einwilligungen',
+  benachrichtigungen: 'Benachrichtigungen',
+  fertig: 'Fertig',
+};
 
 export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: string }) {
   const queryClient = useQueryClient();
@@ -40,13 +50,10 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
 
   return (
     <>
-      <p className="text-ink-muted text-sm">
-        Schritt {nummer + 1} von {schritte.length}
-      </p>
+      <PageHeader kicker={`Schritt ${nummer + 1} von ${schritte.length}`} title={TITEL[schritt]} />
       {schritt === 'willkommen' ? (
         <>
-          <h1 className="text-accent text-h3 mt-2 font-bold">Willkommen</h1>
-          <p className="text-ink mt-3 max-w-prose text-base leading-relaxed">
+          <p className="text-ink max-w-prose text-base leading-relaxed">
             {fuer
               ? `Hier sehen Sie, was ${name} für ${fuer} bereithält.`
               : `Hier sehen Sie, was ${name} für Sie bereithält.`}{' '}
@@ -60,8 +67,7 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
       ) : null}
       {schritt === 'einwilligungen' ? (
         <>
-          <h1 className="text-accent text-h3 mt-2 font-bold">Ihre Einwilligungen</h1>
-          <p className="text-ink mt-3 max-w-prose text-base leading-relaxed">
+          <p className="text-ink max-w-prose text-base leading-relaxed">
             Sie müssen hier nichts entscheiden. Unter „Ich“ geht es auch später.
           </p>
           <Einwilligungen zugang={zugang} einstieg />
@@ -69,8 +75,7 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
       ) : null}
       {schritt === 'benachrichtigungen' ? (
         <>
-          <h1 className="text-accent text-h3 mt-2 font-bold">Benachrichtigungen</h1>
-          <p className="text-ink mt-3 max-w-prose text-base leading-relaxed">
+          <p className="text-ink max-w-prose text-base leading-relaxed">
             Sie müssen hier nichts einschalten. Alles, was zu tun ist, steht auch in Ihrer
             Übersicht. Unter „Ich“ → „Einstellungen“ geht es auch später.
           </p>
@@ -78,12 +83,9 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
         </>
       ) : null}
       {schritt === 'fertig' ? (
-        <>
-          <h1 className="text-accent text-h3 mt-2 font-bold">Fertig</h1>
-          <p className="text-ink mt-3 max-w-prose text-base leading-relaxed">
-            Sie finden alles in der Übersicht. Wenn Sie Fragen haben, wenden Sie sich an die Praxis.
-          </p>
-        </>
+        <p className="text-ink max-w-prose text-base leading-relaxed">
+          Sie finden alles in der Übersicht. Wenn Sie Fragen haben, wenden Sie sich an die Praxis.
+        </p>
       ) : null}
 
       {beenden.error ? (
@@ -91,7 +93,7 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
           {beenden.error.message}
         </Statusmeldung>
       ) : null}
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <Formularfuss>
         {letzter ? (
           <Button type="button" onClick={() => beenden.mutate()} disabled={beenden.isPending}>
             {beenden.isPending ? 'Einen Moment …' : 'Zur Übersicht'}
@@ -111,7 +113,7 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
             </Button>
           </>
         )}
-      </div>
+      </Formularfuss>
     </>
   );
 }

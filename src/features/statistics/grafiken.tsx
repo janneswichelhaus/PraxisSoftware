@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Disclosure } from '@/components/ui/Card';
 import { REIHEN, rasterschritte, type Kategorie, type Reihe } from './diagramme';
 
 /**
@@ -294,8 +294,9 @@ function Tabelle({
   format: (wert: number) => string;
 }) {
   return (
-    <details className="group mt-1">
-      <summary className={`${aufklappKopfKlassen} text-accent text-sm`}>Als Tabelle</summary>
+    // Die Zahlen der Grafik als Zeitreihe auf Abruf (DESIGN.md Lücke 9.11:
+    // eine Tabelle nur für Zeitreihen).
+    <Disclosure summary="Als Tabelle">
       <div className="overflow-x-auto">
         <table className="text-ink w-full text-sm tabular-nums">
           <caption className="sr-only">{titel}</caption>
@@ -331,7 +332,7 @@ function Tabelle({
           </tbody>
         </table>
       </div>
-    </details>
+    </Disclosure>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useId, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { EmptyState } from '@/components/ui/Feedback';
 import { Textlink } from '@/components/ui/Textlink';
 import { travelPlan } from '@/components/ui/travelPlan';
 import { formatLocalTime } from '@/features/appointments/api';
@@ -90,7 +91,10 @@ export function MorgenVorschau({
         </Textlink>
       </div>
       {plan.length === 0 ? (
-        <p className="text-ink-muted text-sm">Morgen sind Ihnen keine Termine zugeordnet.</p>
+        // In der Karte wie der Leerzustand des heutigen Tags darüber: zwei
+        // Leerzustände auf einer Seite, ein Bau (DESIGN.md Regel 8;
+        // Design-Review R2, U4).
+        <EmptyState inKarte title="Morgen sind Ihnen keine Termine zugeordnet" />
       ) : (
         <>
           <Tageskacheln

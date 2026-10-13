@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
@@ -98,10 +98,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <PageHeader
-        title="Rechnungen"
-        description="Privatrechnungen aus erfassten Leistungen, je Person und Verordnung."
-      />
+      <PageHeader title="Rechnungen" description="Privatrechnungen aus erfassten Leistungen." />
 
       <Section
         titel="Offene Posten"
@@ -121,61 +118,65 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
           </div>
         ) : null}
 
-        {posten.isPending ? <LoadingState label="Offene Posten werden geladen …" /> : null}
-        {posten.isError ? (
-          <ErrorState
-            title="Die offenen Posten konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => posten.refetch()}
-          />
-        ) : null}
-        {posten.data && posten.data.length === 0 ? (
-          <EmptyState title="Nichts offen" description="Jede ausgestellte Rechnung ist bezahlt." />
-        ) : null}
-
-        <ul className="flex flex-col gap-3">
-          {(posten.data ?? []).map((eintrag) => (
-            <li key={eintrag.id}>
-              <PostenKarte
-                posten={eintrag}
-                darfBuchen={darfAusstellen}
-                zeitzone={user.organizationTimeZone}
-                onGebucht={(text) =>
-                  setBuchung((alt) => ({ text, nummer: (alt?.nummer ?? 0) + 1 }))
-                }
-              />
-            </li>
-          ))}
-        </ul>
+        {/* Laden, Fehler und Leer über den Baustein, der Leerzustand in der
+            Karte wie die Posten selbst (R2-O2; bis dahin frei auf dem
+            Seitengrund, die Rechnungsliste darunter in einer Karte). */}
+        <Abfragezustand
+          abfrage={posten}
+          laden="Offene Posten werden geladen …"
+          fehler="Die offenen Posten konnten nicht geladen werden."
+          leer={{
+            wenn: (daten) => daten.length === 0,
+            titel: 'Nichts offen',
+            beschreibung: 'Jede ausgestellte Rechnung ist bezahlt.',
+          }}
+          inKarte
+        >
+          {(daten) => (
+            <ul className="flex flex-col gap-3">
+              {daten.map((eintrag) => (
+                <li key={eintrag.id}>
+                  <PostenKarte
+                    posten={eintrag}
+                    darfBuchen={darfAusstellen}
+                    zeitzone={user.organizationTimeZone}
+                    onGebucht={(text) =>
+                      setBuchung((alt) => ({ text, nummer: (alt?.nummer ?? 0) + 1 }))
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Abfragezustand>
       </Section>
 
       {/* Ohne Hinweis: Die Karten sagen Person, Monat und Leistungen selbst
           (UX-005i). */}
       <Section titel="Abzurechnen">
-        {kandidaten.isPending ? <LoadingState label="Leistungen werden geladen …" /> : null}
-        {kandidaten.isError ? (
-          <ErrorState
-            title="Die abzurechnenden Leistungen konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => kandidaten.refetch()}
-          />
-        ) : null}
-        {kandidaten.data && kandidaten.data.length === 0 ? (
-          <EmptyState
-            title="Nichts abzurechnen"
-            description="Jede erfasste Leistung steht auf einer Rechnung."
-          />
-        ) : null}
-
-        <ul className="flex flex-col gap-3">
-          {(kandidaten.data ?? []).map((kandidat) => (
-            <li
-              key={`${kandidat.patient_id ?? kandidat.training_relationship_id}-${kandidat.period_month}-${kandidat.service_area}`}
-            >
-              <KandidatenKarte kandidat={kandidat} darfAusstellen={darfAusstellen} />
-            </li>
-          ))}
-        </ul>
+        <Abfragezustand
+          abfrage={kandidaten}
+          laden="Leistungen werden geladen …"
+          fehler="Die abzurechnenden Leistungen konnten nicht geladen werden."
+          leer={{
+            wenn: (daten) => daten.length === 0,
+            titel: 'Nichts abzurechnen',
+            beschreibung: 'Jede erfasste Leistung steht auf einer Rechnung.',
+          }}
+          inKarte
+        >
+          {(daten) => (
+            <ul className="flex flex-col gap-3">
+              {daten.map((kandidat) => (
+                <li
+                  key={`${kandidat.patient_id ?? kandidat.training_relationship_id}-${kandidat.period_month}-${kandidat.service_area}`}
+                >
+                  <KandidatenKarte kandidat={kandidat} darfAusstellen={darfAusstellen} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Abfragezustand>
       </Section>
 
       <Rechnungsliste />
