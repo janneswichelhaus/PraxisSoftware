@@ -139,6 +139,7 @@ function Zugewiesen({ plan }: { plan: Plan }) {
             </>
           )
         }
+        mitMarke={!(plan.review_due && entscheiden)}
         hinweise={
           plan.review_due && entscheiden ? (
             <Warnzeile>
@@ -189,7 +190,6 @@ function Laufzeit({ plan, abgelaufen }: { plan: Plan; abgelaufen: boolean }) {
         </Tile>
         <Tile
           label="Läuft bis"
-          ton={plan.review_due && plan.status === 'assigned' ? 'warnung' : 'neutral'}
           {...(abgelaufen
             ? { zusatz: 'abgelaufen' }
             : plan.extended_at && plan.original_runs_until
@@ -198,9 +198,6 @@ function Laufzeit({ plan, abgelaufen }: { plan: Plan; abgelaufen: boolean }) {
         >
           {formatDate(plan.runs_until)}
         </Tile>
-        {plan.sessions_per_week ? (
-          <Tile label="Einheiten je Woche">{plan.sessions_per_week}</Tile>
-        ) : null}
         {plan.ended_at ? (
           <Tile
             label={plan.status === 'superseded' ? 'Abgelöst' : 'Beendet'}

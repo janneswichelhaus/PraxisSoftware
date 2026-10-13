@@ -29,6 +29,9 @@ import { KOERPERREGIONEN, KOERPERREGION_LABEL, type Koerperregion } from './type
  * mindestens eine ihrer Varianten passt.
  */
 
+/** So viele Zeilen zeigen Bibliothek und Auswahlblatt, bevor „Weitere laden“ kommt. */
+export const ZEILEN_JE_SEITE = 40;
+
 /** Hilfsmittelfilter: nur Varianten ohne Hilfsmittel. */
 export const OHNE_AUSRUESTUNG = '__ohne__';
 

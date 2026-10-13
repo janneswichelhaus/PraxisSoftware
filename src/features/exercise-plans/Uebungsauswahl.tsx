@@ -8,6 +8,7 @@ import type { Bibliothek, Uebung, Variante } from '@/features/exercises/api';
 import { NeueUebungFormular } from '@/features/exercises/Formulare';
 import {
   KEIN_FILTER,
+  ZEILEN_JE_SEITE,
   filtere,
   gesetzteFilter,
   ungeprueft,
@@ -114,7 +115,13 @@ export function Uebungsauswahl({
   onHinzufuegen: (gewaehlt: Gewaehlt[]) => void;
   onSchliessen: () => void;
 }) {
-  const [filter, setFilter] = useState<Filter>(KEIN_FILTER);
+  const [filter, setFilterRoh] = useState<Filter>(KEIN_FILTER);
+  const [zeigen, setZeigen] = useState(ZEILEN_JE_SEITE);
+  // Eine neue Suche beginnt wieder mit der ersten Seite.
+  const setFilter = (neu: Filter) => {
+    setZeigen(ZEILEN_JE_SEITE);
+    setFilterRoh(neu);
+  };
   const [auswahl, setAuswahl] = useState<string[]>([]);
   const [anlegen, setAnlegen] = useState(false);
   const [ungespeichert, setUngespeichert] = useState(false);
@@ -220,7 +227,7 @@ export function Uebungsauswahl({
         />
       ) : (
         <ListRows>
-          {zeilen.map(({ uebung, variante }) => (
+          {zeilen.slice(0, zeigen).map(({ uebung, variante }) => (
             <Auswahlzeile
               key={variante.id}
               uebung={uebung}
@@ -232,6 +239,18 @@ export function Uebungsauswahl({
           ))}
         </ListRows>
       )}
+      {zeilen.length > zeigen ? (
+        <div className="mt-2">
+          <Button
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            onClick={() => setZeigen((bisher) => bisher + ZEILEN_JE_SEITE)}
+          >
+            Weitere laden ({zeilen.length - zeigen})
+          </Button>
+        </div>
+      ) : null}
       {bibliothek.can_manage && zeilen.length > 0 ? (
         <div className="mt-2">
           <Button type="button" variant="quiet" groesse="kompakt" onClick={() => setAnlegen(true)}>

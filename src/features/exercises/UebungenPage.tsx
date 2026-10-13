@@ -30,6 +30,7 @@ import {
 import { Bibliotheksfilter } from './Bibliotheksfilter';
 import {
   KEIN_FILTER,
+  ZEILEN_JE_SEITE,
   filtere,
   gesetzteFilter,
   ohneFilter,
@@ -175,12 +176,19 @@ function Liste({
   );
   const gefiltert = filter.text.trim() !== '' || gesetzteFilter(filter) > 0;
   const ueber = (n: number) => (n === 1 ? '1 Übung' : `${n} Übungen`);
+  // „Weitere laden“ (DESIGN.md, Liste): 200 Zeilen mit Bild auf einmal kosten
+  // am Telefon Zeit und Rollen; eine neue Suche beginnt wieder oben.
+  const [zeigen, setZeigen] = useState(ZEILEN_JE_SEITE);
+  const filtern = (neu: Filter) => {
+    setZeigen(ZEILEN_JE_SEITE);
+    setFilter(neu);
+  };
 
   return (
     <>
       <Bibliotheksfilter
         filter={filter}
-        setFilter={setFilter}
+        setFilter={filtern}
         uebungen={aktivAlle}
         ergebnis={
           gefiltert ? `${aktiv.length} von ${ueber(aktivAlle.length)}` : ueber(aktivAlle.length)
@@ -199,7 +207,7 @@ function Liste({
                     type="button"
                     variant="secondary"
                     groesse="kompakt"
-                    onClick={() => setFilter(ohneFilter(filter))}
+                    onClick={() => filtern(ohneFilter(filter))}
                   >
                     Filter zurücksetzen
                   </Button>
@@ -208,11 +216,25 @@ function Liste({
             : {})}
         />
       ) : (
-        <ListRows>
-          {aktiv.map((treffer) => (
-            <Zeile key={treffer.uebung.id} treffer={treffer} />
-          ))}
-        </ListRows>
+        <>
+          <ListRows>
+            {aktiv.slice(0, zeigen).map((treffer) => (
+              <Zeile key={treffer.uebung.id} treffer={treffer} />
+            ))}
+          </ListRows>
+          {aktiv.length > zeigen ? (
+            <div className="mt-3">
+              <Button
+                type="button"
+                variant="secondary"
+                groesse="kompakt"
+                onClick={() => setZeigen((bisher) => bisher + ZEILEN_JE_SEITE)}
+              >
+                Weitere laden ({aktiv.length - zeigen})
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
       {archiviert.length > 0 ? (
         <div className="mt-8">

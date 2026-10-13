@@ -35,10 +35,13 @@ export function Plankopf({
   plan,
   aktionen,
   hinweise,
+  mitMarke = true,
 }: {
   plan: Plan;
   aktionen?: ReactNode;
   hinweise?: ReactNode;
+  /** Ohne Abzeichen, wenn eine `Warnzeile` dasselbe schon sagt. */
+  mitMarke?: boolean;
 }) {
   const [suche] = useSearchParams();
   const name = `${plan.given_name} ${plan.family_name}`;
@@ -57,7 +60,7 @@ export function Plankopf({
         meta={[name, art, plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null]
           .filter(Boolean)
           .join(' · ')}
-        status={marke(plan)}
+        status={mitMarke ? marke(plan) : null}
         aktionen={aktionen}
         hinweise={hinweise}
       />

@@ -912,7 +912,8 @@ describe('Laufzeit und Wiedervorlage (UEB-007)', () => {
     expect(await screen.findByText(/Die Laufzeit endet am/)).toHaveTextContent(
       'Bitte entscheiden: verlängern, als neue Fassung ändern oder beenden.',
     );
-    expect(screen.getByText('läuft aus')).toBeInTheDocument();
+    // Die Warnzeile sagt es; ein Abzeichen „läuft aus“ daneben wäre doppelt.
+    expect(screen.queryByText('läuft aus')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Verlängern bis')).toHaveValue('2026-11-21');
     await user.click(screen.getByRole('button', { name: 'Verlängern' }));
     await waitFor(() => expect(extendPlan).toHaveBeenCalledWith('p1', '2026-11-21'));
