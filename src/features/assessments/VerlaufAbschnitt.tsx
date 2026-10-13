@@ -143,8 +143,8 @@ export function VerlaufAbschnitt({
               Linie, kein Trend (ADR-006 Punkt 11). Nur, wo ein Bild steht. */}
           {reihen.length > 0 ? (
             <Kleingedrucktes className="mt-3">
-              Die Werte der abgeschlossenen Bögen als Punkte, ohne Linie und ohne Trend.
-              Senkrechte Linien sind Ereignisse, Striche an der Zeitachse durchgeführte Termine.
+              Die Werte der abgeschlossenen Bögen als Punkte, ohne Linie und ohne Trend. Senkrechte
+              Linien sind Ereignisse, Striche an der Zeitachse durchgeführte Termine.
             </Kleingedrucktes>
           ) : null}
           <Section ebene={3} titel="Ereignisse">
