@@ -93,11 +93,14 @@ export function PageHeader({
           das Anti-Muster „Anlegen unter dem Titel“ (DESIGN.md). Der Titel
           nimmt den Rest der Zeile und bricht zwischen Wörtern um; erst wenn
           sein längstes Wort neben den Aktionen keinen Platz hat, rücken sie
-          darunter (`basis-36` samt Mindestbreite des längsten Worts). */}
+          darunter (`basis-36` samt Mindestbreite des längsten Worts). Steht
+          die Aktion allein in der Zeile, darf sie schmaler werden als ihr
+          Text breit ist - bei 200 % Vergrößerung bricht dann die Beschriftung
+          um, statt die Seite waagerecht scrollen zu lassen (POR-020). */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         {actions ? <div className="flex-1 basis-36">{kopf}</div> : kopf}
         {actions ? (
-          <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <div className="ml-auto flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
             <KnopfGroesse value="kompakt">{actions}</KnopfGroesse>
           </div>
         ) : null}
