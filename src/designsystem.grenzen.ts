@@ -69,8 +69,6 @@ export const GRENZEN: Record<
 
     'features/platform': 9,
 
-    'features/reimbursements': 1,
-
     'features/slot-search': 1,
 
     'features/staff': 2,
