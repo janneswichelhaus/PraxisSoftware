@@ -71,6 +71,9 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
     expect(screen.queryByLabelText('E-Mail-Adresse')).toBeNull();
     expect(screen.queryByText(/Kennwort vergessen/)).toBeNull();
     expect(screen.getByText(/Die Praxis gibt Ihnen eine neue Einladung/)).toBeInTheDocument();
+    // Die Hilfe am Rechner auf Abruf, nicht als dritter grauer Satz (L8).
+    expect(screen.getByText('Am Rechner anmelden').closest('summary')).not.toBeNull();
+    expect(screen.getByText(/„anderes Gerät“ wählen/)).not.toBeVisible();
   });
 
   it('meldet mit dem Passkey an', async () => {
@@ -162,6 +165,15 @@ describe('LoginPage: Testzugang mit Kennwort, nur außerhalb der Produktion (Pun
     expect(screen.getByLabelText('E-Mail-Adresse')).not.toBeVisible();
     await user.click(kopf);
     expect(screen.getByLabelText('E-Mail-Adresse')).toBeVisible();
+    // Beide Köpfe mittig über den Baustein, nicht aus der Seite (L8); das
+    // Formular linksbündig wie die PIN auf der Sperrseite.
+    for (const titel of ['Testkonten', 'Am Rechner anmelden']) {
+      expect(screen.getByText(titel).className.split(' ')).toContain('justify-center');
+    }
+    expect(screen.getByRole('form', { name: 'Testzugang' })).toHaveClass('text-left');
+    expect(
+      screen.getByText(/Testkonten melden sich mit Kennwort an/).closest('.text-left'),
+    ).toBeNull();
   });
 
   it('stellt beschriftete Felder mit passenden Autocomplete-Werten bereit', () => {

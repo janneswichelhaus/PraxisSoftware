@@ -64,18 +64,20 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     Object.fromEntries([...suche.entries()].filter(([k]) => k === 'bereich' || k === 'zugang')),
   ).toString();
   const wunschPfad = `${PLATTFORM_PFAD}/termine/wunsch${bereich ? `?${bereich}` : ''}`;
+  // Die eine Aufgabe der Seite als Hauptknopf unter den kommenden Terminen,
+  // am Telefon in voller Breite und mit dem Daumen erreichbar (DESIGN.md,
+  // Seitentyp „Plattform“) - nicht klein oben rechts im Kopf.
+  const wunschKnopf = (
+    <div className="mt-6">
+      <ButtonLink to={wunschPfad} groesse="normal" className="w-full sm:w-auto">
+        Termin wünschen
+      </ButtonLink>
+    </div>
+  );
 
   return (
     <>
-      <PageHeader
-        title="Termine"
-        actions={
-          // Auf der Plattform in voller Größe (DESIGN.md, Seitentyp „Plattform“).
-          <ButtonLink to={wunschPfad} groesse="normal">
-            Termin wünschen
-          </ButtonLink>
-        }
-      />
+      <PageHeader title="Termine" />
       {suche.get('gesendet') === '1' ? (
         <Rueckmeldung className="mb-6">
           Ihr Wunsch ist bei der Praxis angekommen. Sie meldet sich bei Ihnen.
@@ -90,6 +92,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
         {(liste) => (
           <>
             <Kommende termine={liste} bereich={bereich} />
+            {wunschKnopf}
             {wuensche.data && wuensche.data.length > 0 ? (
               <Wuensche zugang={zugang} wuensche={wuensche.data} />
             ) : null}
@@ -98,6 +101,8 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
           </>
         )}
       </Abfragezustand>
+      {/* Ohne geladene Termine bleibt der Wunsch trotzdem möglich. */}
+      {termine.data === undefined ? wunschKnopf : null}
     </>
   );
 }

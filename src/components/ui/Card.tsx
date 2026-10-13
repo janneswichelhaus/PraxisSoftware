@@ -133,6 +133,10 @@ export function Aufklappzeichen({ offen }: { offen?: boolean }) {
  *   * `offenAb="lg"` öffnet ihn beim ersten Zeichnen ab 1024 px - für das,
  *     was am Rechner Platz hat und am Telefon nur auf Wunsch steht.
  *
+ * `mittig` setzt Zeichen und Titel in die Mitte der Linie - für eine Seite,
+ * die selbst mittig steht (`Vollseite mittig`, die Anmeldung; Sichtung
+ * 13.10.2026, L8). Der Inhalt folgt der Ausrichtung der Seite.
+ *
  * `onUmschalten` meldet jedes Auf- und Zuklappen - für Inhalt, der erst beim
  * Öffnen geladen werden soll, weil schon das Lesen protokolliert wird.
  */
@@ -143,6 +147,7 @@ export function Disclosure({
   offen = false,
   offenAb,
   inKarte = false,
+  mittig = false,
   onUmschalten,
   children,
 }: {
@@ -152,12 +157,14 @@ export function Disclosure({
   offen?: boolean;
   offenAb?: 'lg';
   inKarte?: boolean;
+  mittig?: boolean;
   onUmschalten?: (offen: boolean) => void;
   children: ReactNode;
 }) {
   // Einmal beim ersten Zeichnen gelesen; danach entscheidet die Person. Wer
   // das Fenster später breiter zieht, bekommt nichts ungefragt aufgeklappt.
   const [anfangsOffen] = useState(() => offen || (offenAb === 'lg' && abBreite(BREITE_LG)));
+  const kopfKlassen = mittig ? `${aufklappKopfKlassen} justify-center` : aufklappKopfKlassen;
   return (
     <details
       open={anfangsOffen}
@@ -170,7 +177,7 @@ export function Disclosure({
           : 'group border-line mt-2 border-t pt-2'
       }
     >
-      <summary className={`${aufklappKopfKlassen} ${aufklappKoepfe[kopf]}`}>
+      <summary className={`${kopfKlassen} ${aufklappKoepfe[kopf]}`}>
         <Aufklappzeichen />
         {summary}
         {/* Der Zähler ist ein eigenes Element neben dem Titel: Der Titel darf

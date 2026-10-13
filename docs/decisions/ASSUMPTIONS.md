@@ -5126,3 +5126,39 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Vier als `TileGrid`, die fünfte anderswo: `Kennzahlliste` ersetzen · Aufwand `mittel`.
 
+### ANN-497 — Kästchenspalten so breit wie das längste Wort der Frage
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Befundbogen)
+
+**Annahme.** Eine Mehrfachauswahl setzt Spalten von mindestens 9,5rem und mindestens dem längsten Wort ihrer Optionen in `ch` plus Kästchen; wo das nicht zweimal passt, steht sie einspaltig. Kein Wort bricht mitten durch, auch nicht mit Trennstrich.
+
+**Begründung.** Sichtung L1: „Nachtschmerze/n“ bei 18 px auf der Plattform. `ch` misst in Hanken Grotesk bei den Wörtern des Bogens 4 bis 37 % mehr als gesetzt, die Schätzung liegt so auf der sicheren Seite. Am Telefon wird der Bogen der Plattform dadurch länger.
+
+**Anker.** `laengstesWort` in `src/features/assessments/darstellung.ts`.
+
+**Änderungspfad.** Nur lange Optionen über die volle Breite statt der ganzen Frage einspaltig · Aufwand `klein`.
+
+### ANN-498 — Seiten des Körperschemas als Schrift über der Zeichnung
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** R und L stehen als Text über den Ecken der Zeichnung statt im Bild, in Tinte, 600 und der Schrift der Seite (Plattform 18 px); „Vorderansicht“ und „Rückansicht“ ebenso in Tinte.
+
+**Begründung.** Sichtung L1: Im Bild schrumpften sie mit der Zeichnung auf rund 12 px Grau. Die Lage folgt den bisherigen Bildkoordinaten (x 40, 400, 440, 790 von 820).
+
+**Anker.** `KoerperschemaBild` in `src/features/assessments/KoerperschemaFeld.tsx`.
+
+**Änderungspfad.** Zurück in das SVG mit größerer Schrift · Aufwand `klein`.
+
+### ANN-499 — Kachelbeschriftung auf der Plattform ohne Versalien
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)
+
+**Annahme.** Auf der Plattform steht die Beschriftung einer `Tile` in gewöhnlicher Schreibung, 500 statt 600 und ohne Laufweite; die Kachel ist innen 12 statt 14 px breit. „Wiederholungen“ passt so bei 375 px in eine Zeile.
+
+**Begründung.** Sichtung L6: In Versalien bei 18 px brach das Wort in einer Kachel von rund 160 px. Unter 375 px greift der weiche Trennstrich der Seite.
+
+**Anker.** `Tile` in `src/components/ui/Tile.tsx`.
+
+**Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
+

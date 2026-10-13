@@ -57,47 +57,48 @@ function KennwortTestzugang() {
   return (
     // Zugeklappt hinter „Testkonten" (Jannes, 2026-10-11): Die Seite zeigt so
     // schon das Bild des Betriebs, in dem es diesen Weg nicht gibt.
-    <div className="mt-6 text-left">
-      <Disclosure summary="Testkonten">
-        <Kleingedrucktes className="mb-4">
-          Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
-          gibt es diesen Weg nicht.
-        </Kleingedrucktes>
-        <form
-          onSubmit={(event) => void handleSubmit(event)}
-          noValidate
-          aria-label="Testzugang"
-          className="flex flex-col gap-4 text-left"
-        >
-          {error ? (
-            <div ref={fehlerkasten} tabIndex={-1}>
-              <ErrorState title={error} />
-            </div>
-          ) : null}
-          <Field
-            label="E-Mail-Adresse"
-            type="email"
-            name="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <Field
-            label="Kennwort"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
-            {pending ? 'Anmeldung läuft …' : 'Anmelden'}
-          </Button>
-        </form>
-      </Disclosure>
-    </div>
+    // Kopf und Satz mittig wie die Seite (Sichtung 13.10.2026, L8); das
+    // Formular steht linksbündig wie die PIN auf der Sperrseite - eine
+    // Beschriftung gehört an die Kante ihres Felds.
+    <Disclosure mittig summary="Testkonten">
+      <Kleingedrucktes className="mb-4">
+        Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
+        gibt es diesen Weg nicht.
+      </Kleingedrucktes>
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        aria-label="Testzugang"
+        className="flex flex-col gap-4 text-left"
+      >
+        {error ? (
+          <div ref={fehlerkasten} tabIndex={-1}>
+            <ErrorState title={error} />
+          </div>
+        ) : null}
+        <Field
+          label="E-Mail-Adresse"
+          type="email"
+          name="email"
+          autoComplete="username"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <Field
+          label="Kennwort"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
+          {pending ? 'Anmeldung läuft …' : 'Anmelden'}
+        </Button>
+      </form>
+    </Disclosure>
   );
 }
 
@@ -147,11 +148,14 @@ export function LoginPage({
   return (
     // Die Anmeldemaske ist die Haustür — hier steht die Marke selbst, nicht
     // ihr Name als Text (`Vollseite`, MARKE-001).
+    // Ein Satz zum Lesen statt drei grauer (Sichtung 13.10.2026, L8): Wer
+    // den Passkey verloren hat, liest den Weg in Tinte und 16 px; die Hilfe am
+    // Rechner steht auf Abruf; wer die Seite nutzen darf, sagt das
+    // Kleingedruckte am Fuß. Alles mittig wie Marke und Titel.
     <Vollseite
       mittig
       titel="Anmelden"
-      einleitung="Zugang ausschließlich für Mitarbeitende und Patient:innen der Praxis."
-      kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig."
+      kleingedrucktes="Nur für Mitarbeitende und Patient:innen der Praxis, jede Person mit eigenem Konto."
     >
       <div className="flex flex-col gap-4">
         {/* Kein Grund, kein Name (BEF-047): Was eine Sperre oder ein
@@ -175,14 +179,19 @@ export function LoginPage({
           <Statusmeldung ton="warnung">{PASSKEY_SAETZE.nichtUnterstuetzt}</Statusmeldung>
         )}
 
-        <Kleingedrucktes>
-          Am Rechner ohne eigenen Passkey im Passkey-Fenster „anderes Gerät“ wählen und den Code mit
-          dem Telefon scannen. Passkey verloren oder neues Telefon? Die Praxis gibt Ihnen eine neue
-          Einladung.
-        </Kleingedrucktes>
+        <p className="text-ink text-base">
+          Passkey verloren oder neues Telefon? Die Praxis gibt Ihnen eine neue Einladung.
+        </p>
       </div>
 
-      {testzugang ? <KennwortTestzugang /> : null}
+      <div className="mt-6">
+        <Disclosure mittig summary="Am Rechner anmelden">
+          <p className="text-ink text-base">
+            Im Passkey-Fenster „anderes Gerät“ wählen und den Code mit dem Telefon scannen.
+          </p>
+        </Disclosure>
+        {testzugang ? <KennwortTestzugang /> : null}
+      </div>
     </Vollseite>
   );
 }

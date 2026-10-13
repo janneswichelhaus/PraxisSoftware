@@ -20,6 +20,9 @@ import {
 /** Halbmesser des Kreises im Bild; bei 375 px Breite rund 11 px am Schirm. */
 const RADIUS = 26;
 
+/** Eine Seitenangabe (R/L) über einer Ecke der Zeichnung. */
+const SEITE = 'text-ink pointer-events-none absolute top-1 text-sm leading-none font-semibold';
+
 /**
  * Das Körperschema als Eingabe (FRB-002d, `IDEA-PRX-027`, ANN-107).
  *
@@ -175,45 +178,42 @@ export function KoerperschemaBild({
       }`}
       aria-hidden="true"
     >
-      <svg
-        viewBox={`0 0 ${BILD_BREITE} ${BILD_HOEHE}`}
-        className={`h-auto w-full ${onAntippen ? 'cursor-crosshair' : ''}`}
-        role="presentation"
-        onClick={onAntippen ? klick : undefined}
-      >
-        <image href={bild} x={0} y={0} width={BILD_BREITE} height={BILD_HOEHE} />
-        {/* Die Seiten der Person, nicht des Bildes. */}
-        <text x={40} y={34} className="fill-ink-muted text-[32px]">
-          R
-        </text>
-        <text x={400} y={34} textAnchor="end" className="fill-ink-muted text-[32px]">
-          L
-        </text>
-        <text x={440} y={34} className="fill-ink-muted text-[32px]">
-          L
-        </text>
-        <text x={790} y={34} textAnchor="end" className="fill-ink-muted text-[32px]">
-          R
-        </text>
-        {markierungen.map((m, i) => {
-          const p = imBild(m);
-          return (
-            <circle
-              key={`${m.x}-${m.y}-${i}`}
-              data-markierung={m.bereich}
-              cx={p.x}
-              cy={p.y}
-              r={RADIUS}
-              // Durchscheinend, damit der Kreis die Anatomie nicht verdeckt
-              // (ANN-107) - ein Überzug wie der Schleier des Dialogs, keine
-              // Farbe des Systems.
-              className="fill-accent/20 stroke-accent"
-              strokeWidth={5}
-            />
-          );
-        })}
-      </svg>
-      <div className="text-ink-muted flex flex-wrap justify-around gap-x-2 text-xs">
+      <div className="relative">
+        <svg
+          viewBox={`0 0 ${BILD_BREITE} ${BILD_HOEHE}`}
+          className={`block h-auto w-full ${onAntippen ? 'cursor-crosshair' : ''}`}
+          role="presentation"
+          onClick={onAntippen ? klick : undefined}
+        >
+          <image href={bild} x={0} y={0} width={BILD_BREITE} height={BILD_HOEHE} />
+          {markierungen.map((m, i) => {
+            const p = imBild(m);
+            return (
+              <circle
+                key={`${m.x}-${m.y}-${i}`}
+                data-markierung={m.bereich}
+                cx={p.x}
+                cy={p.y}
+                r={RADIUS}
+                // Durchscheinend, damit der Kreis die Anatomie nicht verdeckt
+                // (ANN-107) - ein Überzug wie der Schleier des Dialogs, keine
+                // Farbe des Systems.
+                className="fill-accent/20 stroke-accent"
+                strokeWidth={5}
+              />
+            );
+          })}
+        </svg>
+        {/* Die Seiten der Person, nicht des Bildes. Als Schrift über dem Bild
+            statt im Bild (ANN-498): Im Bild schrumpften sie mit der Zeichnung
+            auf rund 12 px; so haben sie die Schrift der Seite - auf der
+            Plattform 18 px - und Tinte statt Grau. Tipps gehen hindurch. */}
+        <span className={`${SEITE} left-[5%]`}>R</span>
+        <span className={`${SEITE} right-[51%]`}>L</span>
+        <span className={`${SEITE} left-[54%]`}>L</span>
+        <span className={`${SEITE} right-[4%]`}>R</span>
+      </div>
+      <div className="text-ink flex flex-wrap justify-around gap-x-2 text-sm font-medium">
         <span>Vorderansicht</span>
         <span>Rückansicht</span>
       </div>

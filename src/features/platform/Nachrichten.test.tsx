@@ -181,6 +181,15 @@ function hinweisPruefen(container: HTMLElement) {
   expect(hinweis).toHaveTextContent('Nicht für akute Beschwerden.');
   expect(hinweis).toHaveTextContent('112');
   expect(hinweis).toHaveTextContent('116117');
+  // Die Nummern zum Antippen, fest - nie aus dem Inhalt einer Nachricht (L2).
+  expect(within(hinweis).getByRole('link', { name: '112 anrufen' })).toHaveAttribute(
+    'href',
+    'tel:112',
+  );
+  expect(within(hinweis).getByRole('link', { name: '116117 anrufen' })).toHaveAttribute(
+    'href',
+    'tel:116117',
+  );
 }
 
 describe('Nachrichten (KOM-001)', () => {
@@ -336,6 +345,10 @@ describe('Eine Nachricht (KOM-001)', () => {
     zeige(OFFEN.id);
     await screen.findByLabelText('Noch etwas ergänzen');
     hinweisPruefen(document.body);
+    // Zustand und Frist als eine Zeile unter dem Titel, nicht als Abzeichen (L9).
+    const zustand = screen.getByText('bei der Praxis').parentElement!;
+    expect(zustand).toHaveTextContent('… bei der Praxis · Antwort bis 13.10.2026');
+    expect(zustand.className).not.toContain('rounded-pill');
     await nutzer.type(screen.getByLabelText('Noch etwas ergänzen'), 'Oder Montag?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await waitFor(() =>

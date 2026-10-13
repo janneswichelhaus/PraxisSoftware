@@ -13,6 +13,24 @@ export function beschriftung(item: ScoreItem): string {
   return `${nummer}${item.text}${praxis}`;
 }
 
+/**
+ * Zeichen im längsten Wort der Optionen - die Mindestbreite einer Spalte in
+ * `ch` (ANN-497). Getrennt wird nur, wo der Browser sicher umbricht: am
+ * Leerraum und nach einem Bindestrich vor einem Buchstaben. „hoch-/runter“
+ * und „Verdauungsbeschwerden/Sodbrennen“ zählen ganz. `ch` ist in Hanken
+ * Grotesk breiter als ein durchschnittlicher Buchstabe; die Schätzung liegt
+ * so auf der sicheren Seite.
+ */
+export function laengstesWort(optionen: readonly { label: string }[]): number {
+  let laengstes = 0;
+  for (const option of optionen) {
+    for (const wort of option.label.split(/\s+|(?<=-)(?=\p{L})/u)) {
+      laengstes = Math.max(laengstes, wort.length);
+    }
+  }
+  return laengstes;
+}
+
 /** Der Buchstabe einer Teilfrage, wie er im Bogen steht: „a) Was verbessert …" → „a". */
 const TEILFRAGE = /^([a-z])\)\s/;
 

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
@@ -30,7 +30,6 @@ import {
 } from './api';
 import {
   NICHT_AKUT,
-  NOTFALL,
   OHNE_EINWILLIGUNG,
   THEMA_NAME,
   THEMEN,
@@ -38,6 +37,7 @@ import {
   type Thema,
 } from './nachrichtentexte';
 import { AnhaengeAbschnitt } from './Anhaenge';
+import { Notfallsatz } from './Notfallsatz';
 import { zeitmarke, type Ansicht } from './anhangtexte';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { datum, tagKurz, uhrzeit } from './zeit';
@@ -62,13 +62,11 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
     queryFn: () => ladeNachrichten(zugang.access_id),
   });
 
-  const kopf = (aktion: ReactNode = null) => (
-    <PageHeader title="Nachrichten" {...(aktion ? { actions: aktion } : {})} />
-  );
+  const kopf = <PageHeader title="Nachrichten" />;
   if (daten.data === undefined) {
     return (
       <>
-        {kopf()}
+        {kopf}
         <Abfragezustand
           abfrage={daten}
           laden="Ihre Nachrichten werden geladen …"
@@ -86,14 +84,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      {kopf(
-        can_write ? (
-          // Auf der Plattform in voller Größe (DESIGN.md, Seitentyp „Plattform“).
-          <ButtonLink to={mit('/nachrichten/neu')} groesse="normal">
-            Neue Nachricht
-          </ButtonLink>
-        ) : null,
-      )}
+      {kopf}
       {suche.get('gesendet') === '1' ? (
         <Rueckmeldung className="mb-4">Ihre Nachricht ist bei der Praxis angekommen.</Rueckmeldung>
       ) : null}
@@ -120,6 +111,16 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
           ))}
         </Listenabschnitt>
       </div>
+      {/* Die eine Aufgabe der Seite als Hauptknopf unter der Liste, am Telefon
+          in voller Breite (DESIGN.md, Seitentyp „Plattform“) - nicht klein
+          oben rechts im Kopf. */}
+      {can_write ? (
+        <div className="mt-6">
+          <ButtonLink to={mit('/nachrichten/neu')} groesse="normal" className="w-full sm:w-auto">
+            Neue Nachricht
+          </ButtonLink>
+        </div>
+      ) : null}
       {/* Erledigtes auf Abruf: Es wird mit jeder Frage länger (DESIGN.md, Regel 6). */}
       {erledigt.length > 0 ? (
         <div className="mt-8">
@@ -162,7 +163,7 @@ export function Notfallhinweis({
     >
       <p className="text-ink">{zusage(werktage)}</p>
       <p className="text-ink mt-1">
-        <strong>{NICHT_AKUT}</strong> {NOTFALL}
+        <strong>{NICHT_AKUT}</strong> <Notfallsatz />
       </p>
     </div>
   );
@@ -170,10 +171,12 @@ export function Notfallhinweis({
 
 // Jeder Zustand mit Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6):
 // „neutral“ und „akzent“ tragen kein eigenes, deshalb `zeichen` (ANN-485).
-const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen?: string }> = {
+// „erledigt“ nennt das Zeichen seines Tons noch einmal - für die Zeile im
+// Kopf einer Nachricht, die ohne `Badge` auskommt (L9).
+const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen: string }> = {
   open: { wort: 'bei der Praxis', ton: 'neutral', zeichen: STATUSZEICHEN.wartet },
   answered: { wort: 'beantwortet', ton: 'akzent', zeichen: STATUSZEICHEN.antwort },
-  closed: { wort: 'erledigt', ton: 'positiv' },
+  closed: { wort: 'erledigt', ton: 'positiv', zeichen: '✓' },
 };
 
 function Nachrichtzeile({
@@ -487,13 +490,15 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
             {nachricht.reference_label ? (
               <span className="text-ink block">Zu: {nachricht.reference_label}</span>
             ) : null}
-            <span className="mt-2 block">
-              <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
-                {zustand.wort}
-                {nachricht.status === 'open' && nachricht.due_on
-                  ? ` · Antwort bis ${datum(nachricht.due_on)}`
-                  : ''}
-              </Badge>
+            {/* Der Zustand als Zeile mit Zeichen und Wort, nicht als
+                Abzeichen: Mit der Frist bräche die Pille bei 18 px auf zwei
+                Zeilen (Sichtung 13.10.2026, L9). */}
+            <span className="text-ink mt-1 block">
+              <span aria-hidden="true">{zustand.zeichen} </span>
+              <span className="font-semibold">{zustand.wort}</span>
+              {nachricht.status === 'open' && nachricht.due_on
+                ? ` · Antwort bis ${datum(nachricht.due_on)}`
+                : ''}
             </span>
           </>
         }

@@ -514,6 +514,22 @@ describe('Disclosure', () => {
       expect.arrayContaining(['border-t', 'border-line', 'mt-2', 'pt-2']),
     );
     expect(klassenVon(kopf.closest('details'))).not.toContain('rounded-card');
+    expect(klassenVon(kopf)).not.toContain('justify-center');
+  });
+
+  it('setzt mit mittig Zeichen und Titel in die Mitte, der Inhalt bleibt, wie er ist (L8)', () => {
+    renderWithProviders(
+      <Disclosure mittig summary="Am Rechner anmelden">
+        <p>Im Passkey-Fenster</p>
+      </Disclosure>,
+    );
+    const kopf = screen.getByText('Am Rechner anmelden');
+    expect(kopf.tagName).toBe('SUMMARY');
+    expect(klassenVon(kopf)).toEqual(
+      expect.arrayContaining(['flex', 'min-h-11', 'items-center', 'justify-center']),
+    );
+    // Nur der Kopf: Wie der Inhalt steht, sagt die Seite darum.
+    expect(klassenVon(screen.getByText('Im Passkey-Fenster').parentElement)).toEqual(['mt-2']);
   });
 
   it('setzt den Zaehler in Klammern hinter den Titel', () => {
