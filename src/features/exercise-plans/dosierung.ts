@@ -49,6 +49,27 @@ export function dosierungFachlich(d: Dosis): string {
   return teile.join(' · ');
 }
 
+/**
+ * Kurz für die Zeile im Planeditor (Welle B): „3 × 10 · je Seite · 5 s
+ * halten · 2× täglich" - dazu die Last, wenn eine eingetragen ist. Tempo,
+ * Pause und doppelte Progression stehen im Fenster der Position.
+ */
+export function dosierungKurz(d: Dosis): string {
+  const teile: string[] = [];
+  const wdh = wiederholungen(d, '–');
+  const dauer = d.duration_seconds ?? 0;
+  teile.push(
+    wdh
+      ? `${d.sets} × ${wdh}`
+      : `${d.sets} × ${dauer >= 120 && dauer % 60 === 0 ? `${dauer / 60} min` : `${dauer} s`}`,
+  );
+  if (d.per_side) teile.push('je Seite');
+  if (wdh && d.hold_seconds) teile.push(`${d.hold_seconds} s halten`);
+  if (d.times_per_day) teile.push(`${d.times_per_day}× täglich`);
+  if (d.load) teile.push(d.load);
+  return teile.join(' · ');
+}
+
 function mal(anzahl: number, einzahl: string, mehrzahl: string): string {
   return `${anzahl} ${anzahl === 1 ? einzahl : mehrzahl}`;
 }

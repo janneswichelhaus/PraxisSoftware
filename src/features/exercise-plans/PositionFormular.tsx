@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Chip } from '@/components/ui/Chip';
 import { Field } from '@/components/ui/Field';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
-import { SearchField } from '@/components/ui/SearchField';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Segment } from '@/components/ui/Segment';
 import { Feldgruppe } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import { ACHSE_LABEL, KOERPERREGION_LABEL, type Achse } from '@/features/exercises/types';
-import { Select } from '@/components/ui/Select';
-import { filtere, KEIN_FILTER } from '@/features/exercises/suche';
+import { ACHSE_LABEL, type Achse } from '@/features/exercises/types';
 import type { Bibliothek } from '@/features/exercises/api';
 import {
   PLAENE_SCHLUESSEL,
@@ -19,15 +21,17 @@ import {
   type Position,
   type PositionEingabe,
 } from './api';
-import { dosierungFachlich } from './dosierung';
+import { dosierungKurz } from './dosierung';
+import { Zahlschritt } from './Zahlschritt';
 
 /**
- * Eine Position anlegen oder ändern (UEB-004): Übung aus der Bibliothek und
- * Dosierung (ANN-299).
+ * Die Dosierung einer Position ändern (UEB-004, ANN-299; ANN-471: kompakt mit
+ * Zahlschritten statt zehn Feldern untereinander).
  *
- * Gewählt wird über die Suche der Bibliothek - in beiden Sprachebenen, nach
- * Bezeichnung geordnet (ADR-006 Punkt 10). Archivierte Varianten stehen nicht
- * zur Wahl; eine schon gewählte bleibt (ANN-296).
+ * Oben, was fast jede Übung braucht - Sätze, Wiederholungen oder Dauer,
+ * Halten, je Seite, wie oft am Tag (ANN-384) - mit Plus und Minus, ohne
+ * Tastatur. Last, Tempo, Pause, doppelte Progression und der Hinweis an die
+ * Person stehen unter „Mehr“.
  *
  * An einer Position aus der vorigen Fassung (UEB-006, ANN-301) gibt es
  * höchstens einen Schritt in genau einer Achse: eine andere Variante nur über
@@ -36,15 +40,9 @@ import { dosierungFachlich } from './dosierung';
  * nichts schlägt einen Schritt vor (ADR-006 Punkt 10).
  */
 
-type Feld =
-  'variante' | 'saetze' | 'wdhVon' | 'wdhBis' | 'dauer' | 'pause' | 'last' | 'doppelt' | 'achse';
+type Feld = 'pause' | 'last' | 'doppelt' | 'achse';
 
 const FELDNAMEN: Readonly<Record<Feld, string>> = {
-  variante: 'Übung',
-  saetze: 'Sätze',
-  wdhVon: 'Wiederholungen von',
-  wdhBis: 'Wiederholungen bis',
-  dauer: 'Dauer',
   pause: 'Pause',
   last: 'Last',
   doppelt: 'Doppelte Progression',
@@ -53,11 +51,15 @@ const FELDNAMEN: Readonly<Record<Feld, string>> = {
 
 interface Werte {
   variantId: string;
-  saetze: string;
+  saetze: number;
   art: 'wdh' | 'dauer';
-  wdhVon: string;
-  wdhBis: string;
-  dauer: string;
+  bereich: boolean;
+  wdhVon: number;
+  wdhBis: number;
+  dauer: number;
+  halten: number;
+  jeSeite: boolean;
+  amTag: number;
   last: string;
   tempo: string;
   pause: string;
@@ -65,19 +67,25 @@ interface Werte {
   hinweis: string;
 }
 
-function ausgang(position?: Position): Werte {
+function ausgang(position: Position): Werte {
+  const von = position.reps_min ?? 10;
+  const bis = position.reps_max ?? von;
   return {
-    variantId: position?.variant_id ?? '',
-    saetze: String(position?.sets ?? 3),
-    art: position?.duration_seconds != null ? 'dauer' : 'wdh',
-    wdhVon: position?.reps_min != null ? String(position.reps_min) : '10',
-    wdhBis: position?.reps_max != null ? String(position.reps_max) : '12',
-    dauer: position?.duration_seconds != null ? String(position.duration_seconds) : '30',
-    last: position?.load ?? '',
-    tempo: position?.tempo ?? '',
-    pause: position?.rest_seconds != null ? String(position.rest_seconds) : '',
-    doppelt: position?.double_progression ?? false,
-    hinweis: position?.note ?? '',
+    variantId: position.variant_id,
+    saetze: position.sets,
+    art: position.duration_seconds !== null ? 'dauer' : 'wdh',
+    bereich: bis > von,
+    wdhVon: von,
+    wdhBis: bis,
+    dauer: position.duration_seconds ?? 30,
+    halten: position.hold_seconds ?? 0,
+    jeSeite: position.per_side,
+    amTag: position.times_per_day ?? 0,
+    last: position.load ?? '',
+    tempo: position.tempo ?? '',
+    pause: position.rest_seconds !== null ? String(position.rest_seconds) : '',
+    doppelt: position.double_progression,
+    hinweis: position.note ?? '',
   };
 }
 
@@ -87,6 +95,8 @@ function ganz(text: string): number | null {
   return Number(t);
 }
 
+type Richtung = 'kein' | 'harder' | 'easier';
+
 export function PositionFormular({
   planId,
   position,
@@ -95,60 +105,38 @@ export function PositionFormular({
   idPraefix,
   onFertig,
   onAbbrechen,
+  zusatz,
 }: {
   planId: string;
-  position?: Position;
-  bibliothek: Bibliothek;
+  position: Position;
+  /** Für die Verbindungen der vorigen Variante; ohne sie kein Wechsel der Übung. */
+  bibliothek: Bibliothek | undefined;
   /** UEB-006: die Position der vorigen Fassung, gegen die der Schritt gilt. */
   vorige?: Position | undefined;
   idPraefix: string;
   onFertig: () => void;
   onAbbrechen: () => void;
+  /** Weitere Handlungen unter dem Formular (Reihenfolge, entfernen). */
+  zusatz?: ReactNode;
 }) {
   const queryClient = useQueryClient();
   const [werte, setWerte] = useState<Werte>(() => ausgang(position));
-  const [suche, setSuche] = useState('');
-  const [waehlen, setWaehlen] = useState(!position);
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
-  const [richtung, setRichtung] = useState<'' | 'harder' | 'easier'>(
-    position?.step_direction ?? '',
-  );
-  const [achse, setAchse] = useState<string>(position?.step_axis ?? '');
+  const [richtung, setRichtung] = useState<Richtung>(position.step_direction ?? 'kein');
+  const [achse, setAchse] = useState<string>(position.step_axis ?? '');
 
-  const varianten = useMemo(() => {
-    const karte = new Map<
-      string,
-      { uebung: string; uebungLaie: string; region: string; name: string; laie: string }
-    >();
-    for (const uebung of bibliothek.exercises) {
-      for (const v of uebung.variants) {
-        karte.set(v.id, {
-          uebung: uebung.name,
-          uebungLaie: uebung.lay_name,
-          region: KOERPERREGION_LABEL[uebung.body_region],
-          name: v.name,
-          laie: v.lay_name,
-        });
-      }
+  const namen = useMemo(() => {
+    const karte = new Map<string, string>();
+    for (const uebung of bibliothek?.exercises ?? []) {
+      for (const v of uebung.variants) karte.set(v.id, v.name);
     }
     return karte;
   }, [bibliothek]);
 
-  const treffer = useMemo(
-    () =>
-      filtere(
-        bibliothek.exercises.filter((uebung) => !uebung.archived),
-        { ...KEIN_FILTER, text: suche },
-      ),
-    [bibliothek, suche],
-  );
-
-  const gewaehlt = varianten.get(werte.variantId);
-
   // Die Nachbarn der vorigen Variante entlang der gewählten Achse in der
   // gewählten Richtung - so, wie die Praxis sie verbunden hat (UEB-002).
   const nachbarn = useMemo(() => {
-    if (!vorige || !richtung || !achse) return [];
+    if (!vorige || richtung === 'kein' || !achse || !bibliothek) return [];
     return bibliothek.links
       .filter(
         (link) =>
@@ -163,10 +151,8 @@ export function PositionFormular({
         const v = uebung?.variants.find((x) => x.id === id);
         return uebung !== undefined && v !== undefined && !uebung.archived && !v.archived;
       })
-      .sort((a, b) =>
-        (varianten.get(a)?.name ?? '').localeCompare(varianten.get(b)?.name ?? '', 'de'),
-      );
-  }, [vorige, richtung, achse, bibliothek, varianten]);
+      .sort((a, b) => (namen.get(a) ?? '').localeCompare(namen.get(b) ?? '', 'de'));
+  }, [vorige, richtung, achse, bibliothek, namen]);
 
   const speichern = useMutation({
     mutationFn: (eingabe: PositionEingabe) => savePosition(eingabe),
@@ -182,59 +168,44 @@ export function PositionFormular({
 
   function absenden() {
     const gefunden: Partial<Record<Feld, string>> = {};
-    if (!werte.variantId) gefunden.variante = 'Bitte eine Übung wählen.';
-    const saetze = ganz(werte.saetze);
-    if (saetze === null || saetze < 1 || saetze > 20) gefunden.saetze = 'Bitte 1 bis 20 Sätze.';
-    let wdhVon: number | null = null;
-    let wdhBis: number | null = null;
-    let dauer: number | null = null;
-    if (werte.art === 'wdh') {
-      wdhVon = ganz(werte.wdhVon);
-      wdhBis = ganz(werte.wdhBis);
-      if (wdhVon === null || wdhVon < 1 || wdhVon > 100) gefunden.wdhVon = 'Bitte 1 bis 100.';
-      if (wdhBis === null || wdhBis < 1 || wdhBis > 100) gefunden.wdhBis = 'Bitte 1 bis 100.';
-      else if (wdhVon !== null && wdhBis < wdhVon) gefunden.wdhBis = 'Bis ist kleiner als von.';
-    } else {
-      dauer = ganz(werte.dauer);
-      if (dauer === null || dauer < 1 || dauer > 3600)
-        gefunden.dauer = 'Bitte 1 bis 3600 Sekunden.';
-    }
+    const mitWdh = werte.art === 'wdh';
+    const von = werte.wdhVon;
+    const bis = werte.bereich ? werte.wdhBis : werte.wdhVon;
     let pause: number | null = null;
     if (werte.pause.trim()) {
       pause = ganz(werte.pause);
       if (pause === null || pause > 600) gefunden.pause = 'Bitte 0 bis 600 Sekunden.';
     }
-    if (werte.doppelt) {
-      if (werte.art !== 'wdh' || wdhVon === null || wdhBis === null || wdhBis <= wdhVon) {
+    if (werte.doppelt && mitWdh) {
+      if (bis <= von) {
         gefunden.doppelt = 'Doppelte Progression braucht einen Bereich, etwa 8 bis 12.';
       } else if (!werte.last.trim()) {
         gefunden.last = 'Doppelte Progression braucht eine Last.';
       }
     }
-    if (vorige && richtung && !achse) gefunden.achse = 'Bitte die Achse wählen.';
+    if (vorige && richtung !== 'kein' && !achse) gefunden.achse = 'Bitte die Achse wählen.';
     setFehler(gefunden);
     if (Object.keys(gefunden).length > 0) return;
+    const schritt = vorige && richtung !== 'kein';
     speichern.mutate({
-      ...(position ? { id: position.id } : {}),
+      id: position.id,
       planId,
       variantId: werte.variantId,
-      saetze: saetze ?? 0,
-      wdhVon,
-      wdhBis,
-      dauer,
+      saetze: werte.saetze,
+      wdhVon: mitWdh ? von : null,
+      wdhBis: mitWdh ? bis : null,
+      dauer: mitWdh ? null : werte.dauer,
       last: werte.last,
       tempo: werte.tempo,
       pause,
-      doppelt: werte.doppelt,
+      doppelt: mitWdh && werte.doppelt,
       hinweis: werte.hinweis,
-      achse: vorige && richtung ? achse : null,
-      richtung: vorige && richtung ? richtung : null,
-      // UEB-012 (ANN-384): Halten, je Seite und Häufigkeit am Tag hat dieses
-      // Formular noch nicht; was die Position schon trägt, bleibt erhalten.
-      // Halten gibt es nur zu Wiederholungen.
-      halten: werte.art === 'wdh' ? (position?.hold_seconds ?? null) : null,
-      jeSeite: position?.per_side ?? false,
-      amTag: position?.times_per_day ?? null,
+      achse: schritt ? achse : null,
+      richtung: schritt ? richtung : null,
+      // Halten gibt es nur zu Wiederholungen; 0 heißt ohne (ANN-384).
+      halten: mitWdh && werte.halten > 0 ? werte.halten : null,
+      jeSeite: werte.jeSeite,
+      amTag: werte.amTag > 0 ? werte.amTag : null,
     });
   }
 
@@ -248,8 +219,7 @@ export function PositionFormular({
   return (
     <form
       noValidate
-      className="max-w-xl"
-      aria-label={position ? 'Übung im Plan ändern' : 'Übung zum Plan hinzufügen'}
+      aria-label="Übung im Plan ändern"
       onSubmit={(event) => {
         event.preventDefault();
         if (!speichern.isPending) absenden();
@@ -257,113 +227,31 @@ export function PositionFormular({
     >
       <Fehlerzusammenfassung fehler={zusammenfassung} />
       <Feldgruppe>
-        <fieldset id={id('variante')} tabIndex={-1} className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium">Übung *</legend>
-          {gewaehlt ? (
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm">
-                <span className="font-medium">{gewaehlt.name}</span>
-                <span className="text-ink-muted block">
-                  {gewaehlt.uebung} · {gewaehlt.region}
-                </span>
-              </p>
-              {!waehlen && !vorige ? (
-                <Button
-                  type="button"
-                  variant="quiet"
-                  groesse="kompakt"
-                  onClick={() => setWaehlen(true)}
-                >
-                  Andere Übung wählen
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
-          {waehlen && !vorige ? (
-            <div className="flex flex-col gap-2">
-              <SearchField
-                label="Übung suchen"
-                placeholder="fachlich oder in Alltagssprache"
-                value={suche}
-                onChange={setSuche}
-              />
-              {treffer.length === 0 ? (
-                <p className="text-ink-muted text-sm">Keine Übung gefunden.</p>
-              ) : (
-                <ul className="border-line bg-surface rounded-card max-h-72 overflow-y-auto border">
-                  {treffer.flatMap(({ uebung }) =>
-                    uebung.variants
-                      .filter((v) => !v.archived)
-                      .map((v) => (
-                        <li key={v.id} className="border-line border-b last:border-b-0">
-                          <button
-                            type="button"
-                            aria-pressed={werte.variantId === v.id}
-                            className={`hover:bg-surface-sunken min-h-11 w-full px-3 py-2 text-left text-sm ${
-                              werte.variantId === v.id ? 'bg-accent-soft' : ''
-                            }`}
-                            onClick={() => {
-                              setze('variantId', v.id);
-                              setWaehlen(false);
-                            }}
-                          >
-                            <span className="font-medium">{v.name}</span>
-                            <span className="text-ink-muted block">
-                              {uebung.name} · {v.lay_name}
-                            </span>
-                          </button>
-                        </li>
-                      )),
-                  )}
-                </ul>
-              )}
-            </div>
-          ) : null}
-          {fehler.variante ? (
-            <p className="text-danger text-sm" role="alert">
-              {fehler.variante}
-            </p>
-          ) : null}
-        </fieldset>
-
         {vorige ? (
-          <fieldset id={id('achse')} tabIndex={-1} className="flex flex-col gap-2">
+          <fieldset id={id('achse')} tabIndex={-1} className="flex flex-col gap-3">
             <legend className="mb-1 text-sm font-medium">
               Schritt gegenüber der vorigen Fassung
             </legend>
             <p className="text-ink-muted text-sm">
-              Vorher: {vorige.variant_name} · {dosierungFachlich(vorige)}. Je Übung höchstens ein
-              Schritt in genau einer Achse.
+              Vorher: {vorige.variant_name} · {dosierungKurz(vorige)}
             </p>
-            <div className="flex flex-wrap gap-x-6">
-              {(
-                [
-                  ['', 'Kein Schritt'],
-                  ['harder', 'Schwerer'],
-                  ['easier', 'Leichter'],
-                ] as const
-              ).map(([wert, text]) => (
-                <label key={wert} className="flex min-h-11 items-center gap-2">
-                  <input
-                    type="radio"
-                    name={id('richtung')}
-                    checked={richtung === wert}
-                    onChange={() => {
-                      setRichtung(wert);
-                      if (!wert) {
-                        setAchse('');
-                        setze('variantId', vorige.variant_id);
-                      }
-                    }}
-                  />
-                  {text}
-                </label>
-              ))}
-            </div>
-            {richtung ? (
+            <Segment
+              beschriftung="Schritt"
+              wahlen={[
+                { wert: 'kein', text: 'Kein Schritt' },
+                { wert: 'harder', text: 'Schwerer' },
+                { wert: 'easier', text: 'Leichter' },
+              ]}
+              gewaehlt={richtung}
+              onWaehlen={(wert) => {
+                setRichtung(wert);
+                if (wert === 'kein') setAchse('');
+                setze('variantId', vorige.variant_id);
+              }}
+            />
+            {richtung !== 'kein' ? (
               <Select
                 label="Achse"
-                className="max-w-64"
                 value={achse}
                 error={fehler.achse}
                 onChange={(event) => {
@@ -379,33 +267,29 @@ export function PositionFormular({
                 ))}
               </Select>
             ) : null}
-            {richtung && achse ? (
+            {richtung !== 'kein' && achse ? (
               nachbarn.length > 0 ? (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-2">
                   <p className="text-sm">
                     {richtung === 'harder' ? 'Schwerer' : 'Leichter'} laut Bibliothek – oder den
                     Wert unten ändern:
                   </p>
-                  <ul className="flex flex-col gap-1">
+                  <div className="flex flex-wrap gap-2">
                     {nachbarn.map((nachbar) => (
-                      <li key={nachbar}>
-                        <Button
-                          type="button"
-                          variant={werte.variantId === nachbar ? 'secondary' : 'quiet'}
-                          groesse="kompakt"
-                          aria-pressed={werte.variantId === nachbar}
-                          onClick={() =>
-                            setze(
-                              'variantId',
-                              werte.variantId === nachbar ? vorige.variant_id : nachbar,
-                            )
-                          }
-                        >
-                          {varianten.get(nachbar)?.name ?? nachbar}
-                        </Button>
-                      </li>
+                      <Chip
+                        key={nachbar}
+                        gewaehlt={werte.variantId === nachbar}
+                        onClick={() =>
+                          setze(
+                            'variantId',
+                            werte.variantId === nachbar ? vorige.variant_id : nachbar,
+                          )
+                        }
+                      >
+                        {namen.get(nachbar) ?? nachbar}
+                      </Chip>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               ) : (
                 <p className="text-ink-muted text-sm">
@@ -417,134 +301,191 @@ export function PositionFormular({
           </fieldset>
         ) : null}
 
-        <Field
-          label="Sätze *"
-          feldId={id('saetze')}
-          inputMode="numeric"
-          className="max-w-32"
-          value={werte.saetze}
-          error={fehler.saetze}
-          onChange={(event) => setze('saetze', event.target.value)}
+        <Segment
+          beschriftung="Je Satz"
+          wahlen={[
+            { wert: 'wdh', text: 'Wiederholungen' },
+            { wert: 'dauer', text: 'Dauer' },
+          ]}
+          gewaehlt={werte.art}
+          onWaehlen={(art) => setze('art', art)}
         />
 
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium">Je Satz *</legend>
-          <div className="flex flex-wrap gap-x-6">
-            <label className="flex min-h-11 items-center gap-2">
-              <input
-                type="radio"
-                name={id('art')}
-                checked={werte.art === 'wdh'}
-                onChange={() => setze('art', 'wdh')}
+        <div className="grid grid-cols-2 gap-3">
+          <Zahlschritt
+            beschriftung="Sätze"
+            wert={werte.saetze}
+            min={1}
+            max={20}
+            onAendern={(wert) => setze('saetze', wert)}
+          />
+          {werte.art === 'dauer' ? (
+            <Zahlschritt
+              beschriftung="Dauer"
+              einheit="s"
+              wert={werte.dauer}
+              min={5}
+              max={3600}
+              schritt={5}
+              onAendern={(wert) => setze('dauer', wert)}
+            />
+          ) : werte.bereich ? (
+            <>
+              <Zahlschritt
+                beschriftung="Wiederholungen von"
+                wert={werte.wdhVon}
+                min={1}
+                max={100}
+                onAendern={(wert) =>
+                  setWerte((bisher) => ({
+                    ...bisher,
+                    wdhVon: wert,
+                    wdhBis: Math.max(bisher.wdhBis, wert),
+                  }))
+                }
               />
-              Wiederholungen
-            </label>
-            <label className="flex min-h-11 items-center gap-2">
-              <input
-                type="radio"
-                name={id('art')}
-                checked={werte.art === 'dauer'}
-                onChange={() => {
-                  setze('art', 'dauer');
-                  setze('doppelt', false);
-                }}
+              <Zahlschritt
+                beschriftung="bis"
+                wert={werte.wdhBis}
+                min={1}
+                max={100}
+                onAendern={(wert) =>
+                  setWerte((bisher) => ({
+                    ...bisher,
+                    wdhBis: wert,
+                    wdhVon: Math.min(bisher.wdhVon, wert),
+                  }))
+                }
               />
-              Dauer
-            </label>
-          </div>
-          {werte.art === 'wdh' ? (
-            <div className="flex flex-wrap gap-4">
-              <Field
-                label="von"
-                feldId={id('wdhVon')}
-                inputMode="numeric"
-                className="max-w-24"
-                value={werte.wdhVon}
-                error={fehler.wdhVon}
-                onChange={(event) => setze('wdhVon', event.target.value)}
-              />
-              <Field
-                label="bis"
-                hint="Gleich „von“ für eine feste Zahl."
-                feldId={id('wdhBis')}
-                inputMode="numeric"
-                className="max-w-24"
-                value={werte.wdhBis}
-                error={fehler.wdhBis}
-                onChange={(event) => setze('wdhBis', event.target.value)}
-              />
-            </div>
+            </>
           ) : (
-            <Field
-              label="Sekunden"
-              feldId={id('dauer')}
-              inputMode="numeric"
-              className="max-w-32"
-              value={werte.dauer}
-              error={fehler.dauer}
-              onChange={(event) => setze('dauer', event.target.value)}
+            <Zahlschritt
+              beschriftung="Wiederholungen"
+              wert={werte.wdhVon}
+              min={1}
+              max={100}
+              onAendern={(wert) =>
+                setWerte((bisher) => ({ ...bisher, wdhVon: wert, wdhBis: wert }))
+              }
             />
           )}
-        </fieldset>
-
-        <Field
-          label="Last"
-          hint="Frei, etwa „5 kg“ oder „Theraband rot“."
-          feldId={id('last')}
-          maxLength={40}
-          value={werte.last}
-          error={fehler.last}
-          onChange={(event) => setze('last', event.target.value)}
-        />
-        <Field
-          label="Tempo"
-          hint="Frei, etwa „3 s runter, 1 s hoch“."
-          feldId={id('tempo')}
-          maxLength={40}
-          value={werte.tempo}
-          onChange={(event) => setze('tempo', event.target.value)}
-        />
-        <Field
-          label="Pause zwischen den Sätzen (Sekunden)"
-          feldId={id('pause')}
-          inputMode="numeric"
-          className="max-w-32"
-          value={werte.pause}
-          error={fehler.pause}
-          onChange={(event) => setze('pause', event.target.value)}
-        />
-        {werte.art === 'wdh' ? (
-          <Checkbox
-            label="Doppelte Progression"
-            hint="Erst die Wiederholungen bis zur Obergrenze, dann – nach Rücksprache – mehr Last."
-            feldId={id('doppelt')}
-            checked={werte.doppelt}
-            error={fehler.doppelt}
-            onChange={(event) => setze('doppelt', event.target.checked)}
+          {werte.art === 'wdh' ? (
+            <Zahlschritt
+              beschriftung="Halten"
+              einheit="s"
+              leer="ohne"
+              wert={werte.halten}
+              min={0}
+              max={600}
+              onAendern={(wert) => setze('halten', wert)}
+            />
+          ) : null}
+          <Zahlschritt
+            beschriftung="Am Tag"
+            einheit="×"
+            leer="ohne"
+            wert={werte.amTag}
+            min={0}
+            max={10}
+            onAendern={(wert) => setze('amTag', wert)}
           />
-        ) : null}
-        <TextArea
-          label="Hinweis an die Person"
-          hint="In Alltagssprache. Keine Angaben zu Diagnose oder Befund."
-          maxLength={500}
-          rows={2}
-          value={werte.hinweis}
-          onChange={(event) => setze('hinweis', event.target.value)}
+        </div>
+        <Checkbox
+          label="Je Seite"
+          checked={werte.jeSeite}
+          onChange={(event) => setze('jeSeite', event.target.checked)}
         />
+
+        <Disclosure
+          summary="Last, Tempo, Pause, Hinweis"
+          offen={Boolean(
+            werte.last ||
+            werte.tempo ||
+            werte.pause ||
+            werte.doppelt ||
+            werte.hinweis ||
+            werte.bereich,
+          )}
+        >
+          <Feldgruppe>
+            <Field
+              label="Last"
+              hint="Frei, etwa „5 kg“ oder „Theraband rot“."
+              feldId={id('last')}
+              maxLength={40}
+              value={werte.last}
+              error={fehler.last}
+              onChange={(event) => setze('last', event.target.value)}
+            />
+            <Field
+              label="Tempo"
+              hint="Frei, etwa „3 s runter, 1 s hoch“."
+              feldId={id('tempo')}
+              maxLength={40}
+              value={werte.tempo}
+              onChange={(event) => setze('tempo', event.target.value)}
+            />
+            <Field
+              label="Pause zwischen den Sätzen (Sekunden)"
+              feldId={id('pause')}
+              inputMode="numeric"
+              className="max-w-32"
+              value={werte.pause}
+              error={fehler.pause}
+              onChange={(event) => setze('pause', event.target.value)}
+            />
+            {werte.art === 'wdh' ? (
+              <>
+                <Checkbox
+                  label="Wiederholungen als Bereich (von – bis)"
+                  checked={werte.bereich}
+                  onChange={(event) => {
+                    const an = event.target.checked;
+                    setWerte((bisher) => ({
+                      ...bisher,
+                      bereich: an,
+                      wdhBis: an
+                        ? Math.min(100, Math.max(bisher.wdhBis, bisher.wdhVon + 2))
+                        : bisher.wdhVon,
+                      doppelt: an ? bisher.doppelt : false,
+                    }));
+                  }}
+                />
+                <Checkbox
+                  label="Doppelte Progression"
+                  hint="Erst die Wiederholungen bis zur Obergrenze, dann – nach Rücksprache – mehr Last."
+                  feldId={id('doppelt')}
+                  checked={werte.doppelt}
+                  error={fehler.doppelt}
+                  onChange={(event) => setze('doppelt', event.target.checked)}
+                />
+              </>
+            ) : null}
+            <TextArea
+              label="Hinweis an die Person"
+              hint="In Alltagssprache. Keine Angaben zu Diagnose oder Befund."
+              maxLength={500}
+              rows={2}
+              value={werte.hinweis}
+              onChange={(event) => setze('hinweis', event.target.value)}
+            />
+          </Feldgruppe>
+        </Disclosure>
       </Feldgruppe>
       {speichern.isError ? (
         <Statusmeldung ton="fehler" className="mt-4">
           {speichern.error.message}
         </Statusmeldung>
       ) : null}
-      <div className="mt-5 flex flex-wrap gap-3">
+      <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>
-          {speichern.isPending ? 'Wird gespeichert …' : position ? 'Speichern' : 'Hinzufügen'}
+          {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
         <Button type="button" variant="quiet" onClick={onAbbrechen}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
+      {zusatz}
     </form>
   );
 }

@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { ListRow } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
@@ -25,7 +27,8 @@ import { laufzeitStand } from './laufzeit';
  * Entwürfe stehen oben, dann zugewiesene, dann beendete. Ein neuer Plan
  * entsteht sofort als Entwurf und öffnet sich zum Zusammenstellen; der Titel
  * ist dort änderbar. Ob die Person schreiben darf, sagt der Server
- * (`can_write`, ANN-298).
+ * (`can_write`, ANN-298). Welle B: ein `Listenabschnitt`, Zustände über
+ * `Abfragezustand`.
  */
 export function PlanAbschnitt({
   bereich,
@@ -40,7 +43,7 @@ export function PlanAbschnitt({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const titel = bereich === 'therapy' ? 'Übungspläne' : 'Trainingspläne';
-  const { data, isPending, isError } = useQuery({
+  const abfrage = useQuery({
     queryKey: planlisteSchluessel(bereich, verhaeltnisId),
     queryFn: () => fetchPlanliste(bereich, verhaeltnisId),
     retry: false,
@@ -55,59 +58,60 @@ export function PlanAbschnitt({
     },
   });
 
-  if (isPending) {
+  const data = abfrage.data;
+  if (!data) {
     return (
       <Section titel={titel}>
-        <p className="text-ink-muted text-sm">Pläne werden geladen …</p>
-      </Section>
-    );
-  }
-  if (isError || !data) {
-    return (
-      <Section titel={titel}>
-        <Statusmeldung ton="fehler">Die Pläne konnten nicht geladen werden.</Statusmeldung>
+        {/* `null` heißt: die Liste ist nicht lesbar - wie ein Ladefehler. */}
+        {data === null ? (
+          <Statusmeldung ton="fehler">Die Pläne konnten nicht geladen werden.</Statusmeldung>
+        ) : (
+          <Abfragezustand
+            abfrage={abfrage}
+            laden="Pläne werden geladen …"
+            fehler="Die Pläne konnten nicht geladen werden."
+            inKarte
+          >
+            {() => null}
+          </Abfragezustand>
+        )}
       </Section>
     );
   }
 
   return (
-    <Section
+    <Listenabschnitt
       titel={titel}
-      aktion={
-        data.can_write ? (
-          <Button
-            variant="secondary"
-            groesse="kompakt"
-            disabled={anlegen.isPending}
-            onClick={() => anlegen.mutate()}
-          >
-            {anlegen.isPending ? 'Wird angelegt …' : 'Neuer Plan'}
-          </Button>
-        ) : null
-      }
+      {...(data.can_write
+        ? {
+            aktion: (
+              <Button
+                variant="secondary"
+                groesse="kompakt"
+                disabled={anlegen.isPending}
+                onClick={() => anlegen.mutate()}
+              >
+                {anlegen.isPending ? 'Wird angelegt …' : 'Neuer Plan'}
+              </Button>
+            ),
+          }
+        : {})}
+      leer={{ titel: 'Noch kein Plan' }}
+      {...(anlegen.isError
+        ? { mehr: <Statusmeldung ton="fehler">{anlegen.error.message}</Statusmeldung> }
+        : {})}
     >
-      {anlegen.isError ? (
-        <Statusmeldung ton="fehler" className="mb-3">
-          {anlegen.error.message}
-        </Statusmeldung>
-      ) : null}
-      {data.plans.length === 0 ? (
-        <p className="text-ink-muted text-sm">Noch kein Plan.</p>
-      ) : (
-        <ListRows>
-          {data.plans.map((plan) => (
-            <ListRow
-              key={plan.id}
-              titel={plan.title}
-              meta={planMeta(plan)}
-              status={planMarke(plan, data.today)}
-              gedaempft={plan.status === 'ended' || plan.status === 'superseded'}
-              to={mitRueckweg(planPfad(bereich, verhaeltnisId, plan.id), rueckweg)}
-            />
-          ))}
-        </ListRows>
-      )}
-    </Section>
+      {data.plans.map((plan) => (
+        <ListRow
+          key={plan.id}
+          titel={plan.title}
+          meta={planMeta(plan)}
+          status={planMarke(plan, data.today)}
+          gedaempft={plan.status === 'ended' || plan.status === 'superseded'}
+          to={mitRueckweg(planPfad(bereich, verhaeltnisId, plan.id), rueckweg)}
+        />
+      ))}
+    </Listenabschnitt>
   );
 }
 
