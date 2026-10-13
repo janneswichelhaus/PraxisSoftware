@@ -9,12 +9,15 @@ import type { Katalogeintrag } from '../typen';
  * Wesentliche ist: AT-01 (Lage und Hände), AT-03 und AT-04 (Kutschersitz,
  * Torwartstellung), AT-06 (Armheben) und AT-07 (Seitneigung von vorn).
  * AT-02, AT-05, AT-08, AT-09, AT-10 und AT-11 zeigen nur die
- * Ausgangsstellung (ANN-480): aufrecht im Sitz, bei AT-05 die Hände an den
- * Flanken, bei AT-11 vor der Brust (die Drehung um die Längsachse zeigt
- * weder die Seiten- noch die Vorderansicht; den Strohhalm kennt der Zeichner
- * nicht). Ein Atemzug zählt als Wiederholung. Inhalt KI-erstellt und bis
- * zur Durchsicht durch die Praxis ungeprüft (ANN-386); Vorsicht steht nur
- * unter `hinweise_praxis`.
+ * Ausgangsstellung (ANN-480): aufrecht im Sitz, bei AT-05 von vorn mit den
+ * Händen an den Flanken und locker hängenden Schultern, bei AT-11 von der
+ * Seite mit den Armen vor der Brust - die Vorderansicht ließe die Unterarme
+ * im Rumpf verschwinden, und die Drehung um die Längsachse zeigt keine der
+ * beiden Ansichten (den Strohhalm kennt der Zeichner nicht). Die Unterarme
+ * stehen dafür mit Winkeln vor der Brust: Der Griff `brust` legte die
+ * Ellbogen nach hinten wie beim Rudern. Ein Atemzug zählt als Wiederholung.
+ * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
+ * (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -176,8 +179,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz_front',
-      start: { arm: [55, 55], ellbogen: [-118, -118] },
-      ende: { arm: [55, 55], ellbogen: [-118, -118] },
+      start: { arm: [40, 40], ellbogen: [-110, -110] },
+      ende: { arm: [40, 40], ellbogen: [-110, -110] },
     },
   },
   {
@@ -353,9 +356,9 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     bild: {
       v: 1,
-      basis: 'sitz_front',
-      start: { haende: ['brust', 'brust'] },
-      ende: { haende: ['brust', 'brust'] },
+      basis: 'sitz',
+      start: { schulter: [28, 24], ellbogen: [145, 150] },
+      ende: { schulter: [28, 24], ellbogen: [145, 150] },
     },
   },
 ];

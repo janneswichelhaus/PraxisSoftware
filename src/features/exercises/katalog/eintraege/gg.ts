@@ -523,8 +523,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
       ende: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
       hilfsmittel: [
-        { art: 'stuhl', x: 55 },
-        { art: 'stuhl', x: -55 },
+        { art: 'stuhl', x: 80 },
+        { art: 'stuhl', x: -80 },
       ],
     },
   },
