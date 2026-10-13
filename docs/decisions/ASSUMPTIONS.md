@@ -4607,3 +4607,27 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
 
 **Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
+
+### ANN-445 — Nachtrag, Korrektur und Verlauf in der Hülle der Schreibseite, ohne eigenes „Abbrechen“
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Nachtrag, Nachtrag bearbeiten, Korrektur und Änderungsverlauf stehen wie die Schreibseite als Fläche mit Kopfzeile (Pfeil, Name, Art, Tag mit Jahr, Uhrzeit) und Aktionsleiste („Entwurf“ · „Festschreiben“). Der Pfeil ist der Weg hinaus; ein zweites „Abbrechen“ entfällt. Die Folge des Festschreibens hängt am Knopf für Vorlesesoftware, Frist und Protokollierung stehen als Kleingedrucktes.
+
+**Begründung.** DESIGN.md Seitentyp „Arbeitsseite“; die Schreibseite (Handoff 2026-10-01, 6a) ist so abgenommen.
+
+**Anker.** `Schreibflaeche` in `src/features/documentation/Schreibflaeche.tsx`.
+
+**Änderungspfad.** „Abbrechen“ zurück: je Seite ein `ButtonLink` in die Aktionsleiste · Aufwand `klein`.
+
+### ANN-446 — Die Erhebung zeigt den Bogen in Abschnitten von etwa acht Fragen
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Erhebungsseite teilt den Bogen nur in der Darstellung: gleiche Nummer und gemeinsamer Hinweis bleiben zusammen, sonst endet ein Abschnitt nach etwa acht Fragen; der erste ist offen, „Weiter“ öffnet den nächsten, beanstandete klappen bei der Prüfung auf. Fragen, Wortlaut und Antworten bleiben unverändert; die Plattform zeigt den Bogen weiter ganz.
+
+**Begründung.** 46 Fragen untereinander waren bei 375 px 9.751 px lang.
+
+**Anker.** `ABSCHNITT_GROESSE` in `src/features/assessments/abschnitte.ts`.
+
+**Änderungspfad.** Andere Größe: die Konstante; ohne Abschnitte: `teile.length === 1` in `ErhebungPage` · Aufwand `klein`.

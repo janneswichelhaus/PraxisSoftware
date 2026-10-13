@@ -22,7 +22,8 @@ import { FREITEXT } from './format';
  *
  * Der Pfeil führt dorthin, woher die Seite kam, und heißt danach („Zurück
  * zur Übersicht“) - wie jeder Weg hinaus läuft er durch den
- * Textverlustschutz der Seite.
+ * Textverlustschutz der Seite. Ein eigenes „Abbrechen“ daneben gibt es nicht
+ * (ANN-445).
  *
  * Lokal gebaut, solange die Hülle nur in der Dokumentation gebraucht wird;
  * gehört mit der Schreibseite als Baustein nach `src/components/ui`.

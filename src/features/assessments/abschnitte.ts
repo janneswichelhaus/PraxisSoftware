@@ -10,7 +10,7 @@ export interface Abschnitt {
   items: ScoreItem[];
 }
 
-/** So viele Fragen fasst ein Abschnitt ungefähr. */
+/** So viele Fragen fasst ein Abschnitt ungefähr (ANN-446). */
 export const ABSCHNITT_GROESSE = 8;
 
 /**
