@@ -1,7 +1,11 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatEuro } from '@/lib/geld';
@@ -31,16 +35,16 @@ export function Datenexport({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={`${PLATTFORM_PFAD}/ich`}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm print:hidden"
-      >
-        ← Zu „Ich“
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Meine Daten</h1>
+      <Rueckweg
+        standard={`${PLATTFORM_PFAD}/ich`}
+        beschriftung="Zu „Ich“"
+        className="print:hidden"
+      />
+      <PageHeader title="Meine Daten" />
       {ergebnis ? null : (
         <>
-          <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+          {/* Was drin ist und was nicht - vor dem Abruf (ADR-023 Punkt 12). */}
+          <p className="text-ink max-w-prose text-base leading-relaxed">
             {fuer ? `Sie holen hier die Daten von ${fuer}. ` : ''}
             Sie bekommen alles, was Sie hier auf der Plattform sehen: Ihre Angaben zur Person,
             Termine, Wünsche, {zugang.relationship_kind === 'treatment' ? 'Befundbogen, ' : ''}
@@ -51,16 +55,16 @@ export function Datenexport({ zugang }: { zugang: Plattformzugang }) {
               ? 'Eine vollständige Kopie Ihrer Akte bekommen Sie bei der Praxis.'
               : 'Eine vollständige Auskunft bekommen Sie bei der Praxis.'}
           </p>
-          <div className="mt-5">
-            <Button type="button" onClick={() => abrufen.mutate()} disabled={abrufen.isPending}>
-              {abrufen.isPending ? 'Wird zusammengestellt …' : 'Daten zusammenstellen'}
-            </Button>
-          </div>
           {abrufen.error ? (
-            <Statusmeldung ton="fehler" className="mt-3">
+            <Statusmeldung ton="fehler" className="mt-6">
               {abrufen.error.message}
             </Statusmeldung>
           ) : null}
+          <Formularfuss>
+            <Button type="button" onClick={() => abrufen.mutate()} disabled={abrufen.isPending}>
+              {abrufen.isPending ? 'Wird zusammengestellt …' : 'Daten zusammenstellen'}
+            </Button>
+          </Formularfuss>
         </>
       )}
       {ergebnis ? <Ergebnis daten={ergebnis.daten} roh={ergebnis.roh} /> : null}
@@ -108,10 +112,10 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
 
   return (
     <>
-      <Statusmeldung ton="erfolg" className="mt-3 print:hidden">
+      <Statusmeldung ton="erfolg" className="print:hidden">
         Ihre Daten sind zusammengestellt.
       </Statusmeldung>
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row print:hidden">
+      <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto print:hidden">
         <Button type="button" onClick={() => speichern(roh, daten)}>
           Als Datei speichern
         </Button>
@@ -119,9 +123,9 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
           Drucken
         </Button>
       </div>
-      <p className="text-ink-muted mt-3 max-w-prose text-sm print:hidden">
+      <Kleingedrucktes className="mt-3 print:hidden">
         Die Datei ist im Format JSON. Andere Programme können sie lesen.
-      </p>
+      </Kleingedrucktes>
 
       <p className="text-ink mt-6 text-base">
         Stand {datum(daten.exported_at)} · {daten.organization}
@@ -135,8 +139,10 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
         {p.email ? <Zeile label="E-Mail">{p.email}</Zeile> : null}
       </Abschnitt>
 
-      <Abschnitt titel={`Termine (${daten.appointments.length})`}>
-        {daten.appointments.length === 0 ? <Leer /> : null}
+      <Abschnitt
+        titel={`Termine (${daten.appointments.length})`}
+        leer={daten.appointments.length === 0}
+      >
         {daten.appointments.map((t) => (
           <Zeile key={t.id} label={`${tagLang(t.starts_at)}, ${zeitraum(t.starts_at, t.ends_at)}`}>
             {terminBeschreibung(t).titel} · {STATUS[t.status]}
@@ -144,8 +150,10 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
         ))}
       </Abschnitt>
 
-      <Abschnitt titel={`Terminwünsche (${daten.appointment_requests.length})`}>
-        {daten.appointment_requests.length === 0 ? <Leer /> : null}
+      <Abschnitt
+        titel={`Terminwünsche (${daten.appointment_requests.length})`}
+        leer={daten.appointment_requests.length === 0}
+      >
         {daten.appointment_requests.map((w) => (
           <Zeile key={w.id} label={datum(w.created_at)}>
             {w.kind === 'new' ? 'Termin gewünscht' : w.kind === 'change' ? 'Änderung' : 'Absage'}
@@ -155,8 +163,10 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
       </Abschnitt>
 
       {/* KOM-004: die eigenen Nachrichten mit Antworten. */}
-      <Abschnitt titel={`Nachrichten (${daten.messages.length})`}>
-        {daten.messages.length === 0 ? <Leer /> : null}
+      <Abschnitt
+        titel={`Nachrichten (${daten.messages.length})`}
+        leer={daten.messages.length === 0}
+      >
         {daten.messages.map((m) => (
           <Zeile key={m.id} label={datum(m.created_at)}>
             {THEMA_NAME[m.topic]} · {m.entries.length}{' '}
@@ -166,8 +176,10 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
       </Abschnitt>
 
       {daten.relationship === 'treatment' ? (
-        <Abschnitt titel={`Befundbogen (${daten.questionnaires.length})`}>
-          {daten.questionnaires.length === 0 ? <Leer /> : null}
+        <Abschnitt
+          titel={`Befundbogen (${daten.questionnaires.length})`}
+          leer={daten.questionnaires.length === 0}
+        >
           {daten.questionnaires.map((b) => (
             <Zeile key={b.id} label={datum(b.recorded_on)}>
               {b.status === 'abgeschlossen' ? 'abgeschickt' : 'Entwurf'}
@@ -176,8 +188,7 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
         </Abschnitt>
       ) : null}
 
-      <Abschnitt titel={`Rechnungen (${daten.invoices.length})`}>
-        {daten.invoices.length === 0 ? <Leer /> : null}
+      <Abschnitt titel={`Rechnungen (${daten.invoices.length})`} leer={daten.invoices.length === 0}>
         {daten.invoices.map((r) => (
           <Zeile key={r.id} label={`${r.invoice_number} vom ${datum(r.issued_on)}`}>
             {formatEuro(r.total_cents, r.currency)}
@@ -188,8 +199,10 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
 
       {/* ANG-008: die eigenen Trainingspakete. */}
       {daten.relationship === 'training' ? (
-        <Abschnitt titel={`Trainingspakete (${daten.training_packages.length})`}>
-          {daten.training_packages.length === 0 ? <Leer /> : null}
+        <Abschnitt
+          titel={`Trainingspakete (${daten.training_packages.length})`}
+          leer={daten.training_packages.length === 0}
+        >
           {daten.training_packages.map((k) => (
             <Zeile key={k.starts_on} label={`${datum(k.starts_on)} bis ${datum(k.ends_on)}`}>
               {k.label} · {formatEuro(k.price_cents, k.currency)}
@@ -209,8 +222,10 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
       ) : null}
 
       {daten.relationship === 'treatment' ? (
-        <Abschnitt titel={`Dokumente (${daten.documents.length})`}>
-          {daten.documents.length === 0 ? <Leer /> : null}
+        <Abschnitt
+          titel={`Dokumente (${daten.documents.length})`}
+          leer={daten.documents.length === 0}
+        >
           {daten.documents.map((d) => (
             <Zeile key={d.id} label={d.display_name}>
               freigegeben am {datum(d.released_at)}
@@ -231,28 +246,27 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
   );
 }
 
-function Abschnitt({ titel, children }: { titel: string; children: ReactNode }) {
+/** Ein Teil der Auskunft: beschriftete Angaben, ohne Einträge ein Satz. */
+function Abschnitt({
+  titel,
+  leer = false,
+  children,
+}: {
+  titel: string;
+  leer?: boolean;
+  children: ReactNode;
+}) {
   return (
     <Section titel={titel} rahmen>
-      <dl className="flex flex-col gap-3">{children}</dl>
+      {leer ? (
+        <p className="text-ink-muted text-base">Keine Einträge.</p>
+      ) : (
+        <DetailList>{children}</DetailList>
+      )}
     </Section>
   );
 }
 
 function Zeile({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="wrap-anywhere">
-      <dt className="text-ink-muted text-sm">{label}</dt>
-      <dd className="text-ink text-base">{children}</dd>
-    </div>
-  );
-}
-
-function Leer() {
-  return (
-    <div>
-      <dt className="sr-only">Hinweis</dt>
-      <dd className="text-ink-muted text-base">Keine Einträge.</dd>
-    </div>
-  );
+  return <DetailRow label={label}>{children}</DetailRow>;
 }
