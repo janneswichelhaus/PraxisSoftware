@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
+import { Filterleiste } from '@/components/ui/Filterleiste';
 import { SearchField } from '@/components/ui/SearchField';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Textlink } from '@/components/ui/Textlink';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -88,14 +89,11 @@ export function Rechnungsliste() {
           : undefined
       }
     >
-      {/* Suche und Filter in einer Zeile ab 640 px; am Handy die Suche über
-          Zustand und Monat. */}
-      <div
-        role="search"
-        aria-label="Rechnungen suchen"
-        className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_11rem_11rem]"
-      >
-        <div className="col-span-2 sm:col-span-1">
+      {/* Die Suche offen, Zustand und Monat am Telefon hinter „Filter (n)“
+          (Filterleiste, R2-O2); ab 640 px stehen sie offen daneben. */}
+      <Filterleiste
+        beschriftung="Rechnungen suchen"
+        suche={
           <SearchField
             label="Suche"
             placeholder="Nummer oder Name"
@@ -103,7 +101,13 @@ export function Rechnungsliste() {
             maxLength={SUCHE_HOECHSTENS}
             onChange={setSuche}
           />
-        </div>
+        }
+        gesetzt={(filter === '' ? 0 : 1) + (monat === '' ? 0 : 1)}
+        onZuruecksetzen={() => {
+          setFilter('');
+          setMonat('');
+        }}
+      >
         <Select
           label="Zustand"
           value={filter}
@@ -122,48 +126,45 @@ export function Rechnungsliste() {
           value={monat}
           onChange={(e) => setMonat(e.target.value)}
         />
-      </div>
+      </Filterleiste>
 
-      {rechnungen.isPending ? <LoadingState label="Rechnungen werden geladen …" /> : null}
-      {rechnungen.isError ? (
-        <ErrorState
-          title="Die Rechnungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => rechnungen.refetch()}
-        />
-      ) : null}
-      {rechnungen.data && zeilen.length === 0 ? (
-        eingeschraenkt ? (
-          <EmptyState
-            title="Keine passende Rechnung"
-            description="Suche oder Filter ändern - gesucht wird in Nummer, Name und Empfänger:in."
-          />
-        ) : (
-          <EmptyState title="Noch keine Rechnung" />
-        )
-      ) : null}
-
-      {zeilen.length > 0 ? (
-        <>
-          {/* Spaltenköpfe nur am Rechner; am Handy sagt jede Zeile alles. */}
-          <div
-            aria-hidden="true"
-            className="text-ink-muted tracking-label border-line hidden border-b pb-2 text-xs font-semibold uppercase lg:grid lg:grid-cols-[10rem_minmax(0,1fr)_12rem_8rem] lg:gap-4"
-          >
-            <span>Nummer</span>
-            <span>Person und Empfänger:in</span>
-            <span>Zustand</span>
-            <span className="text-right">Betrag</span>
-          </div>
-          <ul className="divide-line divide-y">
-            {zeilen.map((rechnung) => (
-              <li key={rechnung.id} className="py-3">
-                <Rechnungszeile rechnung={rechnung} />
-              </li>
-            ))}
-          </ul>
-        </>
-      ) : null}
+      <Abfragezustand
+        abfrage={rechnungen}
+        laden="Rechnungen werden geladen …"
+        fehler="Die Rechnungen konnten nicht geladen werden."
+        leer={{
+          wenn: (daten) => daten.pages.every((seite) => seite.length === 0),
+          ...(eingeschraenkt
+            ? {
+                titel: 'Keine passende Rechnung',
+                beschreibung:
+                  'Suche oder Filter ändern - gesucht wird in Nummer, Name und Empfänger:in.',
+              }
+            : { titel: 'Noch keine Rechnung' }),
+        }}
+      >
+        {() => (
+          <>
+            {/* Spaltenköpfe nur am Rechner; am Handy sagt jede Zeile alles. */}
+            <div
+              aria-hidden="true"
+              className="text-ink-muted tracking-label border-line hidden border-b pb-2 text-xs font-semibold uppercase lg:grid lg:grid-cols-[10rem_minmax(0,1fr)_12rem_8rem] lg:gap-4"
+            >
+              <span>Nummer</span>
+              <span>Person und Empfänger:in</span>
+              <span>Zustand</span>
+              <span className="text-right">Betrag</span>
+            </div>
+            <ul className="divide-line divide-y">
+              {zeilen.map((rechnung) => (
+                <li key={rechnung.id} className="py-3">
+                  <Rechnungszeile rechnung={rechnung} />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Abfragezustand>
 
       {rechnungen.hasNextPage ? (
         <Button
