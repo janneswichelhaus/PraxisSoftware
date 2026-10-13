@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
@@ -56,9 +58,11 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
+      {/* Unter dem Titel das Rad, sobald es gewählt ist - statt eines Satzes,
+          was ein Check-Up ist (Regel 6). */}
       <PageHeader
         title="Fahrrad-Check-Up"
-        description="Sicherheitsprüfung mit Bestätigung durch die prüfende Person."
+        description={schritt === 'formular' && rad ? rad.name : undefined}
       />
 
       <SimulationsMeldung eintrag={meldung} />
@@ -74,18 +78,21 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
           onZurueck={() => setSchritt('auswahl')}
         />
       ) : (
-        <div className="flex max-w-md flex-col gap-4">
-          <p className="text-ink-muted text-sm">
-            Die Nummer eines Rads steht am Sattelrohr, direkt unter dem Sattel.
-          </p>
-          <Select label="Rad" value={radId} onChange={(event) => setRadId(event.target.value)}>
+        <div className="max-w-formular">
+          {/* Der Satz hilft beim Wählen und steht deshalb am Feld. */}
+          <Select
+            label="Rad"
+            hint="Die Nummer eines Rads steht am Sattelrohr, direkt unter dem Sattel."
+            value={radId}
+            onChange={(event) => setRadId(event.target.value)}
+          >
             {zustand.raeder.map((eintrag) => (
               <option key={eintrag.id} value={eintrag.id}>
                 {radMitStandort(zustand, eintrag)}
               </option>
             ))}
           </Select>
-          <div className="flex flex-wrap items-center gap-3">
+          <Formularfuss>
             <Button
               onClick={() => {
                 // Die Meldung gehörte zum vorigen Rad (VOR-03).
@@ -96,13 +103,10 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
             >
               Weiter
             </Button>
-            <Link
-              to="/betrieb/flotte"
-              className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
-            >
-              Zurück zur Radflotte
-            </Link>
-          </div>
+            <ButtonLink to="/betrieb/flotte" variant="quiet">
+              Abbrechen
+            </ButtonLink>
+          </Formularfuss>
         </div>
       )}
     </>
@@ -194,21 +198,21 @@ function Checkupformular({
   return (
     // Feldabstand der Feldgruppe (TOK-15): 16 px wie in jedem anderen
     // Formular, bis dahin 20 px.
-    <div className="max-w-xl">
+    <div className="max-w-formular">
       <Feldgruppe>
-        <p className="text-ink text-liste font-medium">{rad.name}</p>
-
         <Field
           label="Prüfende Person"
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
 
-        <fieldset className="border-line rounded-card border p-4">
-          <legend className="text-ink px-1 text-sm font-medium">Prüfpunkte</legend>
-          <ul className="divide-line divide-y">
+        {/* Ohne Rahmen um die Gruppe (Formular, Leitfaden L2): die
+            Prüfpunkte als Zeilen mit Linie dazwischen. */}
+        <fieldset>
+          <legend className="text-ink mb-1 text-sm font-medium">Prüfpunkte</legend>
+          <ul className="border-line border-y">
             {befunde.map((befund, index) => (
-              <li key={befund.frage} className="py-3 first:pt-0 last:pb-0">
+              <li key={befund.frage} className="border-line border-t py-3 first:border-t-0">
                 <p className="text-ink text-liste">{befund.frage}</p>
                 <div
                   role="radiogroup"
@@ -292,21 +296,24 @@ function Checkupformular({
           erklaerung="Ich bestätige, dass ich das gesamte Fahrrad gründlich auf Sicherheit geprüft habe."
           onChange={setUnterschrieben}
         />
-
-        <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">
-          <Button onClick={speichern} disabled={name.trim() === '' || !unterschrieben}>
-            Check-Up in die Vorschau übernehmen
-          </Button>
-          <Button variant="quiet" onClick={onZurueck}>
-            Zurück
-          </Button>
-        </div>
-        {!unterschrieben ? (
-          <p className="text-ink-muted text-sm">
-            Die Bestätigung fehlt noch. Sie können unterschreiben oder Ihren Namen tippen.
-          </p>
-        ) : null}
       </Feldgruppe>
+      {/* Gesperrt steht der Knopf gestrichelt da; der Satz darüber sagt, was
+          fehlt (BEF-069). */}
+      <Formularfuss
+        trenner
+        zusatz={
+          !unterschrieben
+            ? 'Die Bestätigung fehlt noch. Sie können unterschreiben oder Ihren Namen tippen.'
+            : undefined
+        }
+      >
+        <Button onClick={speichern} disabled={name.trim() === '' || !unterschrieben}>
+          Check-Up in die Vorschau übernehmen
+        </Button>
+        <Button variant="quiet" onClick={onZurueck}>
+          Zurück
+        </Button>
+      </Formularfuss>
     </div>
   );
 }

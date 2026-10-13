@@ -53,8 +53,6 @@ export const GRENZEN: Record<
 
     'features/files': 4,
 
-    'features/fleet': 3,
-
     'features/messages': 4,
 
     'features/offline-documentation': 2,
@@ -120,8 +118,6 @@ export const GRENZEN: Record<
     'features/billing': 13,
 
     'features/datenschutz': 1,
-
-    'features/fleet': 1,
 
     'features/messages': 1,
 
@@ -207,8 +203,6 @@ export const GRENZEN: Record<
     'features/exercises': 3,
 
     'features/files': 1,
-
-    'features/fleet': 1,
 
     'features/messages': 1,
 
