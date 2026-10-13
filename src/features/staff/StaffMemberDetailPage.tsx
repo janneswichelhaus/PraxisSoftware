@@ -38,8 +38,8 @@ import {
 } from '@/features/session/types';
 import { StaffAccountSection } from './StaffAccountSection';
 import { StaffEinsatz } from './StaffEinsatz';
-import { Suchreiterleiste } from './Suchreiter';
-import { useOffenerReiter, type Suchreiter } from './offenerReiter';
+import { Suchreiterleiste } from '@/components/ui/Reiterleiste';
+import { useOffenerReiter, type Suchreiter } from '@/components/ui/offenerReiter';
 import {
   fetchStaffFutureAppointments,
   fetchStaffMember,

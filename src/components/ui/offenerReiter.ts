@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
+/** Ein Reiter der `Suchreiterleiste`: sein Wert im Suchteil und seine Beschriftung. */
 export interface Suchreiter<W extends string> {
   wert: W;
   label: string;
@@ -12,7 +13,7 @@ export interface Suchreiter<W extends string> {
  *
  * Festlegung: ANN-460 (Reiter und Detail ohne eigene Route im Suchparameter).
  *
- * Eigene Datei neben `Suchreiter.tsx`, damit dort nur Komponenten stehen
+ * Eigene Datei neben `Reiterleiste.tsx`, damit dort nur Komponenten stehen
  * (schnelles Neuladen).
  */
 export function useOffenerReiter<W extends string>(param: string, werte: readonly W[]): W {

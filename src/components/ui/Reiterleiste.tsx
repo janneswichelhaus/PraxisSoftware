@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
+import { Link, NavLink, useLocation, useSearchParams } from 'react-router-dom';
+import { useOffenerReiter, type Suchreiter } from './offenerReiter';
 import { rolleInsBild, useRandVerlauf, VERLAUF_FREI_PX } from './waagerechtRollen';
 
 export interface Reiter {
@@ -71,17 +72,101 @@ export function Randverlauf({ links, rechts }: { links: boolean; rechts: boolean
  */
 export function Reiterleiste({ reiter, label }: { reiter: readonly Reiter[]; label: string }) {
   const { pathname } = useLocation();
+  return (
+    <Reiterreihe label={label} offen={pathname}>
+      {reiter.map((eintrag) => (
+        <li key={eintrag.to} className="shrink-0">
+          <NavLink to={eintrag.to} end={eintrag.end ?? false} className={reiterKlassen}>
+            {eintrag.label}
+          </NavLink>
+        </li>
+      ))}
+    </Reiterreihe>
+  );
+}
+
+/**
+ * Die `Reiterleiste` für ein Objekt ohne Unterrouten: Der offene Reiter steht
+ * im Suchteil der Adresse (`?bereich=einsatz`, ANN-460), nicht im Pfad - die
+ * Mitarbeiter:in und die Trainingskund:in. Aussehen und Verhalten wie oben;
+ * ohne oder mit unbekanntem Wert gilt der erste Reiter.
+ *
+ * Jeder Reiter nennt sich in der Adresse, auch der erste (R2-O6): So bleibt
+ * `?bereich=einsatz` gültig, wenn sich die Reihenfolge ändert, und ein
+ * Lesezeichen öffnet denselben Reiter. Die übrigen Suchparameter (etwa der
+ * Rückweg `?zurueck=`) reisen mit.
+ *
+ * Bis R2-neu6 lokal in `features/staff`; seit sie zwei Objekte tragen, ist
+ * sie Baustein.
+ */
+export function Suchreiterleiste<W extends string>({
+  reiter,
+  param,
+  label,
+}: {
+  reiter: readonly Suchreiter<W>[];
+  /** Name des Suchparameters, etwa `bereich`. */
+  param: string;
+  label: string;
+}) {
+  const { pathname } = useLocation();
+  const [suche] = useSearchParams();
+  const offen = useOffenerReiter(
+    param,
+    reiter.map((eintrag) => eintrag.wert),
+  );
+
+  function ziel(wert: W): string {
+    const neu = new URLSearchParams(suche);
+    neu.set(param, wert);
+    return `${pathname}?${neu.toString()}`;
+  }
+
+  return (
+    <Reiterreihe label={label} offen={offen}>
+      {reiter.map((eintrag) => (
+        <li key={eintrag.wert} className="shrink-0">
+          <Link
+            to={ziel(eintrag.wert)}
+            aria-current={eintrag.wert === offen ? 'page' : undefined}
+            className={reiterKlassen}
+          >
+            {eintrag.label}
+          </Link>
+        </li>
+      ))}
+    </Reiterreihe>
+  );
+}
+
+/** Pille 44 px, 15 px; der offene Reiter auf der Akzentfläche in der Hauptfarbe, 600. */
+const reiterKlassen =
+  'text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-semibold';
+
+/**
+ * Die Reihe beider Leisten: Linie darüber, schmal waagerecht rollend mit
+ * `Randverlauf`, ab 640 px umbrechend. `offen` ist das, woran der offene
+ * Reiter hängt (Pfad oder Wert) - ändert es sich, rollt er ins Bild.
+ */
+function Reiterreihe({
+  label,
+  offen,
+  children,
+}: {
+  label: string;
+  offen: string;
+  children: ReactNode;
+}) {
   const liste = useRef<HTMLUListElement>(null);
 
   // Vor dem Zeichnen, damit die Leiste nicht erst am Anfang steht und dann
   // springt: Auf dem letzten Reiter war der markierte Eintrag am Telefon
   // sonst nicht zu sehen.
   useLayoutEffect(() => {
-    const aktiv = liste.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (liste.current && aktiv) rolleInsBild(liste.current, aktiv, VERLAUF_FREI_PX);
-  }, [pathname]);
+    rolleOffenenReiterInsBild(liste);
+  }, [offen]);
   // Nach dem Rollen gemessen: Erst dann steht fest, was links und rechts fehlt.
-  const rand = useRandVerlauf(liste, pathname);
+  const rand = useRandVerlauf(liste, offen);
 
   return (
     <nav aria-label={label} className="border-line relative border-t">
@@ -89,19 +174,14 @@ export function Reiterleiste({ reiter, label }: { reiter: readonly Reiter[]; lab
         ref={liste}
         className="flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3"
       >
-        {reiter.map((eintrag) => (
-          <li key={eintrag.to} className="shrink-0">
-            <NavLink
-              to={eintrag.to}
-              end={eintrag.end ?? false}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-semibold"
-            >
-              {eintrag.label}
-            </NavLink>
-          </li>
-        ))}
+        {children}
       </ul>
       <Randverlauf {...rand} />
     </nav>
   );
+}
+
+function rolleOffenenReiterInsBild(liste: RefObject<HTMLUListElement | null>) {
+  const aktiv = liste.current?.querySelector<HTMLElement>('[aria-current="page"]');
+  if (liste.current && aktiv) rolleInsBild(liste.current, aktiv, VERLAUF_FREI_PX);
 }

@@ -4832,7 +4832,7 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Begründung.** Der Rollout ändert keine Routen; der Suchparameter hält „Zurück“ im Browser und Lesezeichen.
 
-**Anker.** `useOffenerReiter` in `src/features/staff/offenerReiter.ts`.
+**Anker.** `useOffenerReiter` in `src/components/ui/offenerReiter.ts`.
 
 **Änderungspfad.** Unterrouten anlegen und `Reiterleiste` nutzen · Aufwand `klein`.
 
