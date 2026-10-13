@@ -274,12 +274,18 @@ comment on column public.exercise_variants.catalog_version is
   'UEB-012 (ANN-382): Fassung des Katalogeintrags bei der Uebernahme (semver).';
 comment on column public.exercise_variants.goal is
   'UEB-012 (ANN-383): Ziel aus app.exercise_goals() - zum Suchen, nie aus Angaben einer Person vorbelegt (ADR-006 Punkt 10).';
+comment on column public.exercise_variants.starting_position is
+  'UEB-012 (ANN-383): Ausgangsstellung aus app.exercise_starting_positions() - zum Suchen, keine Auswahl (ADR-006 Punkt 10).';
+comment on column public.exercise_variants.level is
+  'UEB-012 (ANN-383): Niveau 1 bis 3 des Katalogs - zum Suchen, fuer alle gleich, nie aus Angaben einer Person abgeleitet (ADR-006 Punkt 10).';
 comment on column public.exercise_variants.default_dosage is
   'UEB-012 (ANN-384): Standarddosierung des Katalogs in der Form der Planposition. Fuer alle gleich, nie aus Angaben einer Person abgeleitet (ADR-006 Punkt 10).';
 comment on column public.exercise_variants.illustration is
   'UEB-012 (ANN-381): Posen-Beschreibung des Uebungsbilds (jsonb, Fassung 1, hoechstens 4096 Byte) - keine Datei (ADR-017 Punkt 4).';
 comment on column public.exercise_variants.reviewed_at is
-  'UEB-012 (ANN-386): Pruefvermerk - die Praxis hat Text, Dosierung und Bild fachlich durchgesehen. Ohne Vermerk gilt eine uebernommene Variante als ungeprueft; das blockiert nur das Scharfschalten (PROJECT_PRINCIPLES.md 15.2).';
+  'UEB-012 (ANN-386): Pruefvermerk - die Praxis hat Text, Dosierung und Bild fachlich durchgesehen. Ohne Vermerk gilt eine uebernommene Variante als ungeprueft; das blockiert nur das Scharfschalten (PROJECT_PRINCIPLES.md 15.2). Faellt, sobald sich der Inhalt aendert (save_exercise_variant).';
+comment on column public.exercise_variants.reviewed_by is
+  'UEB-012 (ANN-386): wer den Pruefvermerk gesetzt hat (owner, set_exercise_variant_reviewed); nur zusammen mit reviewed_at. Nachweis an der Zeile statt Auditaktion (ADR-010 Fassung 3).';
 
 create unique index exercise_variants_catalog_key_unique
   on public.exercise_variants (organization_id, catalog_key)
@@ -303,6 +309,8 @@ alter table public.exercise_plan_items
 
 comment on column public.exercise_plan_items.hold_seconds is
   'UEB-012 (ANN-384): jede Wiederholung so viele Sekunden halten; nur mit Wiederholungen.';
+comment on column public.exercise_plan_items.per_side is
+  'UEB-012 (ANN-384): die Dosierung gilt je Koerperseite; keine Achse eines Schritts (ANN-387).';
 comment on column public.exercise_plan_items.times_per_day is
   'UEB-012 (ANN-384): wie oft am Tag; ohne Angabe gilt sessions_per_week des Plans.';
 comment on column public.exercise_plan_items.illustration is
