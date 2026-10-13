@@ -5090,15 +5090,15 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Wieder ab einer Vorschau einklappen: `vorschauen.length > 0` · Aufwand `klein`.
 
-### ANN-494 — Statistik: vier Kennzahlen als Kacheln, „Verordnungen ohne Anschluss“ als Zeile
+### ANN-494 — Statistik: fünf Kennzahlen als beschriftete Liste in einer Karte, keine Kacheln
 
 Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
 
-**Annahme.** Umsatz, Offene Posten, Auslastung und Ausfälle stehen als Kacheln, ab 640 px zwei mal zwei. „Verordnungen ohne Anschluss“ steht als Zeile über die ganze Breite darunter – mit Zahl, Satz, Ziel und „Verordner:innen anfragen“. CSV und Reihenfolge der Kennzahlen bleiben.
+**Annahme.** Die fünf Kennzahlen stehen als `DetailList` in einer Karte: der Name links, am Telefon darüber; daneben Wert, Zielstand, Einzelheiten, Ziel und der nächste Schritt; Linien trennen sie. Reihenfolge, CSV und alle Handlungen bleiben.
 
-**Begründung.** DESIGN.md: höchstens vier Kacheln (Review R2-O8). Diese Kennzahl hat die kürzeste Erklärung und keine Aufschlüsselung; sie passt in eine Zeile.
+**Begründung.** Fünf gleichrangige Zahlen sind mehr als die vier Kacheln einer Seite (DESIGN.md Prüfliste 5); die fünfte als Zeile unter vier Kacheln sah am Telefon aus wie eine fünfte Kachel (Review R2-O8, neu1). Gruppen in einer Karte trennt eine Linie (Regel 2).
 
-**Anker.** `KENNZAHL_ALS_ZEILE` in `src/features/statistics/StatisticsPage.tsx`.
+**Anker.** `Kennzahlliste` in `src/features/statistics/StatisticsPage.tsx`.
 
-**Änderungspfad.** Andere Kennzahl als Zeile: Schlüssel tauschen · Aufwand `klein`.
+**Änderungspfad.** Vier als `TileGrid`, die fünfte anderswo: `Kennzahlliste` ersetzen · Aufwand `mittel`.
 
