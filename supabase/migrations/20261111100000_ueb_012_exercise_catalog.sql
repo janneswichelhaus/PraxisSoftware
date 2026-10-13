@@ -681,6 +681,12 @@ comment on function app.exercise_catalog_entry(jsonb) is
 -- wird gemeldet. Die interne Fassung nimmt Organisation und Person als
 -- Argument - fuer Seed und Test-Umgebung; aufrufen kann sie keine
 -- Anwendungsrolle.
+--
+-- SECURITY INVOKER: Sie prueft keine Rolle selbst und bekommt deshalb auch
+-- keine eigenen Rechte. Sie laeuft mit denen des Aufrufers - als Definer
+-- public.import_exercise_catalog nach app.exercise_library_writer(), im Seed
+-- der Superuser. Ein Fehler beim Entzug der Rechte oeffnet so keinen
+-- Schreibweg an der Pruefung vorbei.
 -- -----------------------------------------------------------------------------
 create function app.import_exercise_catalog_for(
   p_org              uuid,
@@ -690,7 +696,7 @@ create function app.import_exercise_catalog_for(
 )
 returns jsonb
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
@@ -789,7 +795,7 @@ revoke all on function app.import_exercise_catalog_for(uuid, uuid, jsonb, boolea
   from public, anon, authenticated;
 
 comment on function app.import_exercise_catalog_for(uuid, uuid, jsonb, boolean) is
-  'UEB-012 (ANN-382): uebernimmt Katalogeintraege in die Bibliothek einer Organisation - erst alles pruefen, dann je Eintrag Uebung und Variante; vorhandene catalog_key ueberspringen, Namenskonflikte melden, nie ueberschreiben. Intern: fuer Seed und public.import_exercise_catalog, fuer keine Anwendungsrolle ausfuehrbar.';
+  'UEB-012 (ANN-382): uebernimmt Katalogeintraege in die Bibliothek einer Organisation - erst alles pruefen, dann je Eintrag Uebung und Variante; vorhandene catalog_key ueberspringen, Namenskonflikte melden, nie ueberschreiben. Intern: fuer Seed und public.import_exercise_catalog, fuer keine Anwendungsrolle ausfuehrbar; security invoker, weil sie selbst keine Rolle prueft.';
 
 create function public.import_exercise_catalog(p_entries jsonb)
 returns jsonb

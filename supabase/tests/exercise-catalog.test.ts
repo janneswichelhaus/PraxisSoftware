@@ -284,6 +284,13 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
     await expect(
       asAnon(intern, [organizationId, users.ownerTherapist, JSON.stringify([KN01])]),
     ).rejects.toMatchObject({ code: '42501' });
+    // Sie prüft keine Rolle selbst und läuft deshalb mit den Rechten des
+    // Aufrufers - nie mit eigenen (Zweitreview UEB-012).
+    const { rows } = await asPostgres<{ definer: boolean }>(
+      `select prosecdef as definer from pg_proc
+        where oid = 'app.import_exercise_catalog_for(uuid, uuid, jsonb, boolean)'::regprocedure`,
+    );
+    expect(rows).toEqual([{ definer: false }]);
   });
 
   it('lässt die andere Organisation unberührt - in beide Richtungen (ADR-003)', async () => {
