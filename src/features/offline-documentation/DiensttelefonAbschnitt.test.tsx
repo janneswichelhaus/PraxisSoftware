@@ -27,6 +27,21 @@ describe('DiensttelefonAbschnitt', () => {
     expect(await einrichtungLesen('anna')).not.toBeNull();
   });
 
+  it('sagt vor dem Einschalten, wer die Vorgabe verantwortet und was ein Verlust kostet', async () => {
+    render(<DiensttelefonAbschnitt besitzer="anna" />);
+    // ADR-024 Punkt 6: Die Anwendung prüft die Vorgabe nicht, die Praxis
+    // verantwortet sie; eine Fernlöschung gibt es nicht. Gekürzt in der
+    // Design-Runde 2 (T7), der Inhalt bleibt - nach dem Knopf, als
+    // Kleingedrucktes.
+    const knopf = await screen.findByRole('button', { name: 'Auf diesem Gerät einschalten' });
+    const satz = screen.getByText(
+      /Die Praxis verantwortet die Angaben, die Anwendung prüft sie nicht/,
+    );
+    expect(satz).toHaveTextContent(/Ohne Fernlöschung gehen nicht übertragene Entwürfe/);
+    expect(satz).toHaveClass('text-kleingedruckt');
+    expect(knopf.compareDocumentPosition(satz) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('lässt nicht ausschalten, solange Entwürfe nur auf dem Gerät liegen', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<DiensttelefonAbschnitt besitzer="anna" />);

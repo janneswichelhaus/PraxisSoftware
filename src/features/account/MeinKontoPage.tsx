@@ -90,10 +90,10 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
     <Section titel="Zweiter Faktor">
       {/* UI-002d, ANN-028: Die Auskunft steht ganz oben und unabhängig davon,
           ob schon ein Faktor eingerichtet ist - sie gilt in beiden Fällen. */}
-      {/* Kurz (Design-Review T7): was er heute bewirkt, nicht, warum. */}
+      {/* Kurz (Design-Review T7, Runde 2): was er heute bewirkt, nicht,
+          warum. „Ändern“ heißt Einrichten und Entfernen eines Passkeys. */}
       <Statusmeldung ton="warnung">
-        Die Anmeldung fragt den zweiten Faktor <strong>derzeit nicht ab</strong>; eingerichtet
-        verlangt ihn nur das Einrichten und Entfernen eines Passkeys.
+        Die Anmeldung fragt ihn <strong>derzeit nicht ab</strong>, nur das Ändern von Passkeys.
       </Statusmeldung>
 
       {faktoren.isPending ? <LoadingState label="Stand wird geladen …" /> : null}
@@ -142,9 +142,10 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
       {faktoren.data && bestaetigt.length === 0 ? (
         <div>
           {isOwner(user.roles) ? (
+            // Deutlicher als bei anderen Rollen, aber in einer Zeile (T7):
+            // Wer Zugänge, Rollen und das Protokoll verwaltet, liest es hier.
             <Statusmeldung className="mt-4">
-              Dieses Konto darf Zugänge, Rollen und das Protokoll verwalten und hat noch keinen
-              zweiten Faktor.
+              Verwaltungsrechte, aber noch kein zweiter Faktor.
             </Statusmeldung>
           ) : (
             <Statusmeldung className="mt-4">

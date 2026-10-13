@@ -49,9 +49,12 @@ export function DiensttelefonAbschnitt({
   if (einrichtung === undefined) return null;
 
   return (
+    // Kopf eine Zeile (DESIGN.md Regel 6, Design-Review R2 T7): „für ein
+    // Diensttelefon“ bestätigt die Gerätevorgabe, „ohne Verbindung“ sagt der
+    // Titel.
     <Section
       titel="Dokumentieren ohne Empfang"
-      hinweis="Für ein Diensttelefon: Tagesplan und Entwürfe der Dokumentation bleiben auf diesem Gerät, auch ohne Verbindung."
+      hinweis="Tagesplan und Entwürfe bleiben auf dem Gerät."
     >
       {fehler ? (
         <Statusmeldung ton="fehler" className="mb-3">
@@ -86,9 +89,7 @@ export function DiensttelefonAbschnitt({
         </>
       ) : (
         <>
-          <p className="text-ink text-sm">
-            Bitte nur einschalten, wenn alles davon für dieses Gerät gilt:
-          </p>
+          <p className="text-ink text-sm">Nur einschalten, wenn alles davon gilt:</p>
           <div className="mt-2">
             {GERAETEVORGABE.map((zeile, i) => (
               <Checkbox
@@ -110,10 +111,13 @@ export function DiensttelefonAbschnitt({
           >
             Auf diesem Gerät einschalten
           </Button>
+          {/* ADR-024 Punkt 6: Wer verantwortet, und was ein Verlust kostet.
+              Was der Passkey ohne Verbindung öffnet, sagt die Sperre ohne
+              Netz dort, wo es gilt (`ohneNetz.tsx`) - hier stand es doppelt
+              (Design-Review R2 T7). */}
           <Kleingedrucktes className="mt-3">
-            Die Anwendung kann diese Angaben nicht prüfen; die Praxis verantwortet sie. Ohne
-            Verbindung öffnet Ihr Passkey nur, was auf dem Gerät liegt. Eine Fernlöschung gibt es
-            nicht: Geht das Gerät verloren, sind nicht übertragene Entwürfe verloren.
+            Die Praxis verantwortet die Angaben, die Anwendung prüft sie nicht. Ohne Fernlöschung
+            gehen nicht übertragene Entwürfe mit dem Gerät verloren.
           </Kleingedrucktes>
         </>
       )}
