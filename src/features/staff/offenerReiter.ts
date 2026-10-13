@@ -10,6 +10,8 @@ export interface Suchreiter<W extends string> {
  * oder mit unbekanntem Wert gilt der erste. So bleibt die Route des Objekts
  * dieselbe, und „Zurück" im Browser führt in den vorigen Reiter.
  *
+ * Festlegung: ANN-460 (Reiter und Detail ohne eigene Route im Suchparameter).
+ *
  * Eigene Datei neben `Suchreiter.tsx`, damit dort nur Komponenten stehen
  * (schnelles Neuladen).
  */

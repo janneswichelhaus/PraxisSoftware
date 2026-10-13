@@ -4607,3 +4607,27 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
 
 **Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
+
+### ANN-460 — Reiter und Detail ohne eigene Route stehen im Suchparameter
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Wo eine Seite im Design-Rollout Reiter oder Liste → Detail bekommt, aber keine Unterroute hat, steht der offene Teil im Suchparameter derselben Route: Mitarbeiter:in `?bereich=`, Datenklasse `?klasse=`, Zeitkonto `?person=`. Unbekannte Werte öffnen den ersten Reiter bzw. eine Meldung mit Rückweg.
+
+**Begründung.** Der Rollout ändert keine Routen; der Suchparameter hält „Zurück“ im Browser und Lesezeichen.
+
+**Anker.** `useOffenerReiter` in `src/features/staff/offenerReiter.ts`.
+
+**Änderungspfad.** Unterrouten anlegen und `Reiterleiste` nutzen · Aufwand `klein`.
+
+### ANN-461 — Ein Speichern für Kalender und Vergütung der Mitarbeiter:in
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Im Reiter „Einsatz“ speichert ein Knopf Kalender und Vergütungsmodell. Nur Geändertes geht an den Server, der Kalender zuerst; scheitert ein Teil, nennt die Meldung ihn, der andere bleibt gespeichert. Ohne Änderung: „Nichts geändert.“
+
+**Begründung.** Auftrag Welle B: ein Speichern je Formular statt gestrichelter Knöpfe je Abschnitt; beide Serverfunktionen bleiben getrennt.
+
+**Anker.** `StaffEinsatz` in `src/features/staff/StaffEinsatz.tsx`.
+
+**Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.

@@ -34,6 +34,8 @@ import {
  * „Umsatzbeteiligung" sieht sie unter Statistiken ihren eigenen Umsatz
  * (STA-006, ANN-156).
  *
+ * Festlegung: ANN-461 (ein Speichern für Kalender und Vergütung).
+ *
  * Nur für owner gerendert; verbindlich prüft der Server.
  */
 export function StaffEinsatz({ staff }: { staff: StaffMember }) {
