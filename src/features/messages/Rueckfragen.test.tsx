@@ -126,7 +126,7 @@ describe('Rückfragen (KOM-002)', () => {
       'href',
       `/rueckfragen/${ZEILE.id}`,
     );
-    expect(screen.getByText(/innerhalb von 2 Werktagen/)).toBeInTheDocument();
+    expect(screen.getByText('Zusage: Antwort in 2 Werktagen (Mo–Fr).')).toBeInTheDocument();
     expect(screen.queryByText('Antwortfrist ändern')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Antwortfrist')).not.toBeInTheDocument();
   });

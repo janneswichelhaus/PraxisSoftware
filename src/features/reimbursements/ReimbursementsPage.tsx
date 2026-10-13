@@ -145,7 +145,7 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Erstattungen"
-        description="Stromkosten für das Laden der Diensträder und ausgelegte Einkäufe."
+        description="Stromkosten der Diensträder und Einkäufe."
         actions={<Button onClick={() => setFormular(true)}>Erstattung einreichen</Button>}
       />
 
@@ -153,16 +153,16 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
 
       {/* Wem „(Sie)" gehört, steht dabei (VOR-07): In der Vorschau ist das
           angemeldete Konto einer Demoperson zugeordnet, und ohne diesen Satz
-          markierte „(ich)" scheinbar eine fremde Person. */}
-      {identitaet ? (
+          markierte „(ich)" scheinbar eine fremde Person. Nur, wenn eine
+          Zeile so markiert ist - sonst erklärte der Satz nichts, was zu sehen
+          ist (R2-neu3); wer einreicht, wählt das Formular. */}
+      {identitaet &&
+      zustand.erstattungen.some(
+        (erstattung) => erstattung.mitarbeiterId === identitaet.person.id,
+      ) ? (
         <p className="text-ink-muted mb-4 max-w-prose text-sm">
           Ihre Erstattungen in der Vorschau sind die von {identitaet.person.name}
-          {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}
-          {zustand.erstattungen.some(
-            (erstattung) => erstattung.mitarbeiterId === identitaet.person.id,
-          )
-            ? ', markiert mit „(Sie)“.'
-            : '; bisher liegt keine vor.'}
+          {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}, markiert mit „(Sie)“.
         </p>
       ) : null}
 

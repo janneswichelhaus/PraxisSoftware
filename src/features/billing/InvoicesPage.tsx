@@ -98,10 +98,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <PageHeader
-        title="Rechnungen"
-        description="Privatrechnungen aus erfassten Leistungen, je Person und Verordnung."
-      />
+      <PageHeader title="Rechnungen" description="Privatrechnungen aus erfassten Leistungen." />
 
       <Section
         titel="Offene Posten"
