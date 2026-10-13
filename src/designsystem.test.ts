@@ -379,6 +379,27 @@ describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
   });
 });
 
+describe('Farben des Übungsbilds (ANN-381)', () => {
+  /**
+   * Ferne Körperseite, Bewegungspfeil und Band sind Linien im Übungsbild,
+   * keine Textfarben: Als Text lägen sie unter 4,5:1. Der Wächter hält sie
+   * aus jeder Utility außer `stroke-` und `fill-` heraus.
+   */
+  it('verwendet figur-* nur als Linie und Fläche im Bild', () => {
+    expect(css).toMatch(/--color-figur-fern:\s*oklch\(/);
+    expect(css).toMatch(/--color-figur-bewegung:\s*oklch\(/);
+    expect(css).toMatch(/--color-figur-band:\s*oklch\(/);
+    const FREMD = /(?<![\w-])(?!stroke-|fill-)[a-z][a-z-]*-figur-(?:fern|bewegung|band)\b/g;
+    const finden = (zeile: string) => Array.from(zeile.matchAll(FREMD), (f) => f[0]);
+    expect(funde(finden)).toEqual([]);
+    // Gegenprobe
+    expect(finden('className="text-figur-fern"')).toEqual(['text-figur-fern']);
+    expect(finden("linie: 'bg-figur-band'")).toEqual(['bg-figur-band']);
+    expect(finden("linie: 'stroke-figur-bewegung'")).toEqual([]);
+    expect(finden('  --color-figur-fern: oklch(62% 0.06 158);')).toEqual([]);
+  });
+});
+
 describe('Tokens aus dem Handoff Schrift und Knöpfe vom 2026-10-06 (SKN-001)', () => {
   it('fuehrt Kleingedrucktes (14 px) und Absenderzeile (11 px) als Token ohne eigene Zeilenhoehe', () => {
     expect(css).toMatch(/--text-kleingedruckt:\s*0\.875rem;/);
