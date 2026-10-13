@@ -123,7 +123,8 @@ export function PasskeyAbschnitt({
     <Section
       titel="Passkeys"
       rahmen={rahmen}
-      hinweis="Anmelden und entsperren mit Gesicht, Finger oder der Sperre des Geräts."
+      // Eine Zeile am Telefon (Design-Review T7, DESIGN.md Regel 6).
+      hinweis="Anmelden mit Gesicht, Finger oder Gerätesperre."
     >
       {passkeys.isPending ? <LoadingState label="Passkeys werden geladen …" /> : null}
       {passkeys.isError ? (
