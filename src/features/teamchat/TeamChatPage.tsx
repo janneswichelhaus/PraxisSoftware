@@ -203,9 +203,12 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
         </nav>
 
         {kanal ? (
+          // Ohne die Beschreibung des Kanals unter dem Titel (DESIGN.md Regel
+          // 6, R2-neu7): Der Name sagt, wofür er ist, und die Regel zu
+          // klinischen Inhalten steht am Eingabefeld, wo sie die Eingabe
+          // ändert.
           <Section
             titel={kanal.art === 'kanal' ? `# ${kanal.name}` : kanal.name}
-            hinweis={kanal.beschreibung}
             aktion={
               // Nur, wenn es Ungelesenes gibt (VOR-23) - sonst meldete der
               // Knopf einen Vorgang, der nichts tat.
@@ -246,16 +249,6 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
             )}
 
             <div className="mt-6">
-              {/* Unter welchem Namen die eigene Nachricht erscheint, steht
-                    dabei (VOR-07): In der Vorschau schreibt das Konto als
-                    Demoperson, und ohne diesen Satz stand die eigene Nachricht
-                    scheinbar unter fremdem Namen. */}
-              {identitaet ? (
-                <p className="text-ink-muted mb-2 text-sm">
-                  Sie schreiben in der Vorschau als {identitaet.person.name}
-                  {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}.
-                </p>
-              ) : null}
               {antwortAuf ? (
                 <div className="mb-2 flex flex-wrap items-center gap-x-3">
                   <p className="text-ink-muted min-w-0 text-sm">
@@ -269,7 +262,13 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
               ) : null}
               <TextArea
                 rows={3}
-                label={antwortAuf ? 'Antwort' : 'Neue Nachricht'}
+                // Unter welchem Namen die eigene Nachricht erscheint, sagt die
+                // Beschriftung (VOR-07): In der Vorschau schreibt das Konto als
+                // Demoperson, und ohne den Namen stand die eigene Nachricht
+                // scheinbar unter fremdem. Bis R2-neu7 ein eigener Satz.
+                label={`${antwortAuf ? 'Antwort' : 'Neue Nachricht'}${
+                  identitaet ? ` als ${identitaet.person.name}` : ''
+                }`}
                 hint="Keine Diagnosen und keine klinischen Freitexte im Teamkanal."
                 placeholder="Organisatorische Abstimmung"
                 value={entwurf}
