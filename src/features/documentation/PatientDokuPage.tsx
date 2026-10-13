@@ -2,12 +2,14 @@ import { BefundKarte } from '@/features/assessments/BefundKarte';
 import { DokuDateien } from '@/features/files/Aktendateien';
 import { Patientenfotos } from '@/features/files/FotosImVerlauf';
 import { usePatientRecord } from '@/features/patients/akte';
+import { useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
 import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
 import { canReadExercisePlans } from '@/features/session/types';
 import { DieserTermin, PatientRecordDocumentation } from './PatientRecordDocumentation';
 import { NachrichtenInDerAkte } from '@/features/messages/InDieAkte';
+import { PLAENE_ANKER, useSprungmarke } from './sprungmarke';
 
 /**
  * Der Reiter „Doku" der Akte (AKTE-007; Anordnung seit Akte entschlacken,
@@ -27,6 +29,9 @@ export function PatientDokuPage() {
   const [suche] = useSearchParams();
   const terminId = suche.get('termin');
   const ort = useLocation();
+  // „Plan mitgeben →" aus „Danach" rollt zu den Übungsplänen (Praxis-Review R2, P5).
+  const raster = useRef<HTMLDivElement>(null);
+  useSprungmarke(PLAENE_ANKER, ort.hash, raster);
   return (
     <>
       {terminId ? (
@@ -38,7 +43,10 @@ export function PatientDokuPage() {
           Pläne, Fotos und Dateien), am Rechner die Dokumentation links über
           alle drei Zeilen, Befund, Pläne und Fotos rechts. */}
       <div className="@container">
-        <div className="@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(300px,400px)] @zweispaltig:grid-rows-[auto_auto_1fr] @zweispaltig:gap-x-8 grid items-start gap-6">
+        <div
+          ref={raster}
+          className="@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(300px,400px)] @zweispaltig:grid-rows-[auto_auto_1fr] @zweispaltig:gap-x-8 grid items-start gap-6"
+        >
           <div className="@zweispaltig:col-start-2 @zweispaltig:row-start-1 min-w-0">
             <BefundKarte patient={patient} />
           </div>
@@ -52,7 +60,10 @@ export function PatientDokuPage() {
           </div>
           {/* UEB-EPIC-002: die Übungspläne der Akte (ANN-297). */}
           {canReadExercisePlans(user.roles, 'therapy') ? (
-            <div className="@zweispaltig:col-start-2 @zweispaltig:row-start-2 flex min-w-0 flex-col gap-6">
+            <div
+              id={PLAENE_ANKER}
+              className="@zweispaltig:col-start-2 @zweispaltig:row-start-2 flex min-w-0 scroll-mt-20 flex-col gap-6"
+            >
               <PlanAbschnitt
                 bereich="therapy"
                 verhaeltnisId={patient.id}
