@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import { zwischen, umgebung } from './loeser';
 import type { Uebungsbild as Bild } from './schema';
 import { szene, type Darstellung, type Farbe, type Strich, type Szene } from './szene';
@@ -137,9 +138,11 @@ export function Uebungsbild({
   // Bei reduzierter Bewegung zeigt die Doppelansicht ohnehin beide Stellungen.
   const knopf =
     animierbar && !(reduziert && darstellung === 'start-ende') ? (
-      <button
+      <Button
         type="button"
-        className="text-accent hover:text-accent-hover mt-1 inline-flex min-h-11 items-center gap-2 text-sm font-semibold"
+        variant="quiet"
+        groesse="kompakt"
+        className="mt-1 gap-2"
         aria-pressed={abspielen || endeZeigen}
         onClick={() => {
           if (reduziert) {
@@ -160,7 +163,7 @@ export function Uebungsbild({
               ? 'Ausgangsstellung zeigen'
               : 'Endstellung zeigen'
             : 'Bewegung abspielen'}
-      </button>
+      </Button>
     ) : null;
 
   if ('start' in statisch && statisch.start && statisch.ende && !bewegt) {
