@@ -42,17 +42,30 @@ beforeEach(() => {
 
 describe('Reiter Übungen (UEB-009)', () => {
   it('zeigt den Plan mit Dosierung in Worten, Anleitung und Hinweis', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
     expect(await screen.findByRole('heading', { name: 'Heimprogramm Knie' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Übungen' })).toBeInTheDocument();
     expect(screen.getByText('Bis 18.11.2026 · 3-mal pro Woche')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        '3 Durchgänge mit je 10 bis 12 Wiederholungen. Pause dazwischen: 30 Sekunden.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Festhalten.')).toBeInTheDocument();
-    expect(screen.getByText('Langsam ablassen.')).toBeInTheDocument();
+    // Je Übung eine Zeile: Name und Dosierung in Worten (ANN-466).
+    const zeile = screen.getByRole('button', { name: /1\. Am Geländer in die Hocke/ });
+    expect(zeile).toHaveTextContent('3 Durchgänge · je 10 bis 12 Wiederholungen');
+    // Ein Tipp öffnet die Übung: Bildplatz, Dosierung als Kacheln, Anleitung, Hinweis.
+    await user.click(zeile);
+    const fenster = screen.getByRole('dialog', { name: 'Am Geländer in die Hocke' });
+    expect(within(fenster).getByRole('img', { name: /Noch kein Bild/ })).toBeInTheDocument();
+    const kacheln = within(fenster)
+      .getAllByRole('term')
+      .map((t) => `${t.textContent} ${t.nextElementSibling?.textContent}`);
+    expect(kacheln).toEqual([
+      'Durchgänge 3',
+      'Wieder\u00ADholungen 10 bis 12 je Durchgang',
+      'Pause 30 Sekunden',
+    ]);
+    expect(within(fenster).getByText('Festhalten.')).toBeInTheDocument();
+    expect(within(fenster).getByText('Langsam ablassen.')).toBeInTheDocument();
+    await user.click(within(fenster).getByRole('button', { name: 'Schließen' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Plan als PDF' })).toHaveAttribute(
       'href',
       `/p/uebungen/blatt/${eigenerPlan().id}`,

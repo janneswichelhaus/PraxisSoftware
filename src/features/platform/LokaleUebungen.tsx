@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, LoadingState } from '@/components/ui/Feedback';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import {
@@ -48,7 +50,7 @@ export function LokaleUebungen({
             Sperren
           </Button>
         </header>
-        <main className="mx-auto w-full max-w-xl flex-1 px-5 pt-5 pb-10">
+        <main className="max-w-formular mx-auto w-full flex-1 px-5 pt-5 pb-10">
           <Statusmeldung ton="warnung">
             Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.
           </Statusmeldung>
@@ -107,7 +109,9 @@ function Auswahl({
   const anzahl = wartend.data?.length ?? 0;
   return (
     <>
-      <h1 className="text-accent text-h3 mt-4 font-bold">Übungen</h1>
+      <div className="mt-6">
+        <PageHeader title="Übungen" />
+      </div>
       {beendet ? (
         <Statusmeldung ton="neutral" className="mt-3">
           Ihre Einheit liegt auf diesem Gerät. Sie wird übertragen, sobald Verbindung besteht und
@@ -128,13 +132,12 @@ function Auswahl({
         />
       ) : (
         plaene.map(({ zugangId, vertreten, plan }) => (
-          <section key={`${zugangId}-${plan.id}`} className="mt-6" aria-label={plan.title}>
-            <h2 className="text-h4 font-semibold">{plan.title}</h2>
-            {vertreten ? <p className="text-ink-muted mt-1">für {vertreten}</p> : null}
+          <Section key={`${zugangId}-${plan.id}`} titel={plan.title}>
+            {vertreten ? <p className="text-ink-muted mb-3">für {vertreten}</p> : null}
             <Button className="mt-3 w-full" onClick={() => onWahl(zugangId, plan)}>
               Jetzt üben
             </Button>
-          </section>
+          </Section>
         ))
       )}
     </>
