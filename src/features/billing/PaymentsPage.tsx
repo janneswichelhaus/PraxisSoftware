@@ -3,7 +3,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -50,7 +51,6 @@ export function PaymentsPage({ user }: { user: CurrentUser }) {
 
       <Section
         titel="Erfasste Zahlungen"
-        rahmen
         // Gekürzt sagt die Liste es (ABR-034, BEF-061 Option 1): Bis hierher
         // endete sie stumm bei 100 Zahlungen.
         hinweis={
@@ -59,34 +59,78 @@ export function PaymentsPage({ user }: { user: CurrentUser }) {
             : undefined
         }
       >
-        {zahlungen.isPending ? <LoadingState label="Zahlungen werden geladen …" /> : null}
-        {zahlungen.isError ? (
-          <ErrorState
-            title="Die Zahlungen konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => zahlungen.refetch()}
-          />
-        ) : null}
-        {zahlungen.data && zahlungen.data.length === 0 ? (
-          <EmptyState
-            title="Noch keine Zahlung"
-            description="Zahlungen werden am offenen Posten oder an der Rechnung erfasst."
-          />
-        ) : null}
-
-        <ul className="divide-line divide-y">
-          {(zahlungen.data ?? []).map((zahlung) => (
-            <li key={zahlung.id} className="py-3">
-              <Zahlungszeile zahlung={zahlung} darfBuchen={darfBuchen} />
-            </li>
-          ))}
-        </ul>
+        <Abfragezustand
+          abfrage={zahlungen}
+          laden="Zahlungen werden geladen …"
+          fehler="Die Zahlungen konnten nicht geladen werden."
+          inKarte
+          leer={{
+            wenn: (liste) => liste.length === 0,
+            titel: 'Noch keine Zahlung',
+            beschreibung: 'Zahlungen werden am offenen Posten oder an der Rechnung erfasst.',
+          }}
+        >
+          {(liste) => (
+            // Die Datenliste nach dem Vorbild der Rechnungsliste (ABR-034):
+            // ab 1024 px Spalten, darunter Nummer und Betrag oben, der Rest
+            // darunter.
+            <Datenliste
+              beschriftung="Erfasste Zahlungen"
+              zeilen={liste}
+              schluessel={(zahlung) => zahlung.id}
+              spalten={zahlungsspalten(darfBuchen)}
+            />
+          )}
+        </Abfragezustand>
       </Section>
     </>
   );
 }
 
-function Zahlungszeile({
+function zahlungsspalten(darfBuchen: boolean): Datenspalte<ZahlungMitRechnung>[] {
+  return [
+    {
+      titel: 'Rechnung',
+      breite: '10rem',
+      telefon: 'kopf',
+      // Die Nummer ist ein Link und sieht aus wie einer (ABR-25),
+      // unterstrichen, 44 px hoch, und bricht nicht um - sie ist die Kennung,
+      // nach der jemand sucht. Sie nimmt den Rückweg mit, damit „Zurück" auf
+      // der Rechnung wieder hierher führt (ABR-29).
+      inhalt: (zahlung) => (
+        <Textlink
+          to={mitRueckweg(`/abrechnung/rechnungen/${zahlung.invoice_id}`, '/abrechnung/zahlungen')}
+          alleinstehend
+          className="text-liste font-medium whitespace-nowrap"
+        >
+          {zahlung.invoice_number ?? 'Rechnung'}
+        </Textlink>
+      ),
+    },
+    {
+      titel: 'Zahlung',
+      inhalt: (zahlung) => <Zahlungsangaben zahlung={zahlung} darfBuchen={darfBuchen} />,
+    },
+    {
+      titel: 'Betrag',
+      breite: '8rem',
+      rechts: true,
+      telefon: 'ende',
+      inhalt: (zahlung) => (
+        <span className={zahlung.voided_at !== null ? 'text-ink-muted line-through' : undefined}>
+          {zahlung.direction === 'refund' ? '−' : ''}
+          {formatEuro(zahlung.amount_cents, zahlung.currency)}
+        </span>
+      ),
+    },
+  ];
+}
+
+/**
+ * Tag, Empfänger, Richtung und Weg einer Zahlung, dazu Rückzahlung und
+ * Storno als Zeichen und Wort - und der Weg, sie zu stornieren.
+ */
+function Zahlungsangaben({
   zahlung,
   darfBuchen,
 }: {
@@ -97,36 +141,13 @@ function Zahlungszeile({
 
   return (
     <>
-      {/*
-        Datum, Nummer und Betrag in einer Zeile, alles Weitere darunter: Bei
-        375 px stand der Empfängername vorher neben der Nummer und hat sie
-        mitten im Wort umgebrochen („RG-2026-" / „0001"). Eine Rechnungsnummer
-        bricht nicht — sie ist die Kennung, nach der jemand sucht.
-
-        Die Nummer ist ein Link und sieht aus wie einer (ABR-25): unterstrichen,
-        in der Hauptfarbe, 44 px hoch. Er nimmt den Rückweg mit, damit „Zurück"
-        auf der Rechnung wieder hierher führt (ABR-29).
-      */}
-      <div className="flex items-center gap-x-3">
-        <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
-          {formatDate(zahlung.paid_on)}
-        </span>
-        <Textlink
-          to={mitRueckweg(`/abrechnung/rechnungen/${zahlung.invoice_id}`, '/abrechnung/zahlungen')}
-          alleinstehend
-          className="text-liste font-medium whitespace-nowrap"
-        >
-          {zahlung.invoice_number ?? 'Rechnung'}
-        </Textlink>
-        <span
-          className={`text-liste ml-auto shrink-0 font-medium tabular-nums ${
-            storniert ? 'text-ink-muted line-through' : 'text-ink'
-          }`}
-        >
-          {zahlung.direction === 'refund' ? '−' : ''}
-          {formatEuro(zahlung.amount_cents, zahlung.currency)}
-        </span>
-      </div>
+      <p className="text-ink-muted text-sm">
+        <span className="tabular-nums">{formatDate(zahlung.paid_on)}</span> ·{' '}
+        {zahlung.recipient_name} · {richtungLabels[zahlung.direction]} ·{' '}
+        {zahlungswegAnzeige[zahlung.method] ?? zahlung.method}
+        {zahlung.note ? ` · ${zahlung.note}` : ''}
+        {storniert && zahlung.void_reason ? ` · storniert: ${zahlung.void_reason}` : ''}
+      </p>
 
       {zahlung.direction === 'refund' || storniert ? (
         <div className="mt-1 flex flex-wrap gap-2">
@@ -135,15 +156,8 @@ function Zahlungszeile({
         </div>
       ) : null}
 
-      <p className="text-ink-muted mt-1 text-sm">
-        {zahlung.recipient_name} · {richtungLabels[zahlung.direction]} ·{' '}
-        {zahlungswegAnzeige[zahlung.method] ?? zahlung.method}
-        {zahlung.note ? ` · ${zahlung.note}` : ''}
-        {storniert && zahlung.void_reason ? ` · storniert: ${zahlung.void_reason}` : ''}
-      </p>
-
       {darfBuchen && !storniert ? (
-        <div className="mt-2">
+        <div className="mt-1">
           <Zahlungsstorno zahlungId={zahlung.id} invoiceId={zahlung.invoice_id} />
         </div>
       ) : null}
