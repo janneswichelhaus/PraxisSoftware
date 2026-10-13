@@ -106,6 +106,13 @@ test.describe('Plattform', () => {
       await expect(
         page.getByRole('heading', { name: 'Anamnesebogen Version 8 (DIGOTOR)' }),
       ).toBeVisible();
+      // In Schritten mit sichtbarem Fortschritt (ANN-467); „Absenden“ im letzten.
+      await expect(page.getByText(/^Schritt 1 von \d+$/)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Absenden' })).toHaveCount(0);
+      expect(await ueberlaeuft(page)).toBe(false);
+      while ((await page.getByRole('button', { name: 'Absenden' }).count()) === 0) {
+        await page.getByRole('button', { name: 'Weiter' }).click();
+      }
       await expect(page.getByRole('button', { name: 'Absenden' })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
     });

@@ -322,16 +322,14 @@ function Uebungsfenster({
 }) {
   return (
     <Dialogfenster titel={position.variant_lay_name} onSchliessen={onSchliessen}>
+      {/* Der Fokus steht am Anfang der Übung, nicht auf „Schließen“ am Ende:
+          Sonst öffnete das Fenster am Telefon unten, und Name und Bild lägen
+          außerhalb des Blicks. */}
       <div className="plattform-schrift">
+        <span data-autofocus tabIndex={-1} className="block outline-none" />
         <Uebungsinhalt position={position} />
         <div className="mt-6">
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full"
-            data-autofocus
-            onClick={onSchliessen}
-          >
+          <Button type="button" variant="secondary" className="w-full" onClick={onSchliessen}>
             Schließen
           </Button>
         </div>
