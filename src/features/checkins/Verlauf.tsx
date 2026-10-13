@@ -6,6 +6,7 @@ import { Punktbild } from '@/components/ui/Punktbild';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   EINGABETEXTE,
@@ -121,13 +122,24 @@ export function Verlaufsereignisse({
           ))}
         </ol>
       )}
-      {daten.appointment_days.length > 0 ? (
+      {/* Die Legende nur, wo ein Bild steht: Ohne Angaben gibt es keine
+          Zeitachse, und der Satz erklärte nichts (Sichtung 13.10.2026, A10). */}
+      {daten.appointment_days.length > 0 &&
+      (daten.checkins.length > 0 || daten.sessions.length > 0) ? (
         <p className="text-ink-muted text-sm">Striche an der Zeitachse: durchgeführte Termine.</p>
       ) : null}
       {art === 'treatment' ? (
-        <p className="text-ink-muted text-sm">
-          Ereignisse wie Operation oder Erkrankung vermerkt die Praxis im Befund unter „Verlauf“.
-        </p>
+        // Ein Weg statt eines Erklärsatzes (A10): In der Behandlung vermerkt
+        // die Praxis Ereignisse im Befund; die Liste hier liest sie nur.
+        daten.can_write ? (
+          <Textlink
+            to={`/patienten/${verhaeltnisId}/doku/befund`}
+            alleinstehend
+            className="text-sm"
+          >
+            Ereignis im Befund vermerken
+          </Textlink>
+        ) : null
       ) : daten.events_writable ? (
         <EreignisVermerken verhaeltnisId={verhaeltnisId} heute={daten.today} />
       ) : daten.can_write && daten.relationship_open && daten.health_consent === false ? (

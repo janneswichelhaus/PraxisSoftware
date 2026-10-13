@@ -241,12 +241,11 @@ export function TreatmentBasisFormFields({
 
       {/* ADR-020 Punkt 4: Die Diagnose bleibt klinisch - und beim Selbstzahler
           leer. Sie wird hier nicht angeboten; was beim Wechsel der Bauart schon
-          dastand, leert das Formular sichtbar (siehe TreatmentBasisFormPage). */}
+          dastand, leert das Formular sichtbar (siehe TreatmentBasisFormPage).
+          Ohne Satz unter dem Titel (Regel 6; Sichtung 13.10.2026, A10): Das
+          Feld „Diagnose oder Leitsymptomatik“ sagt selbst, was hierher gehört. */}
       {verordnung ? (
-        <Section
-          titel="Klinische Angaben"
-          hinweis="Der Behandlungsverlauf gehört in die Behandlungsdokumentation, nicht hierher."
-        >
+        <Section titel="Klinische Angaben">
           <Feldgruppe>
             <TextArea
               label="Diagnose oder Leitsymptomatik"
