@@ -187,16 +187,18 @@ describe('Nachrichten (KOM-001)', () => {
   it('zeigt Zusage und Notfallhinweis, laufende und erledigte Nachrichten', async () => {
     renderWithProviders(<Nachrichten zugang={ZUGANG} />, '/p/nachrichten');
     expect(await screen.findByRole('heading', { name: 'Nachrichten' })).toBeInTheDocument();
-    hinweisPruefen(document.body);
-    expect(screen.getByRole('link', { name: 'Neue Nachricht' })).toHaveAttribute(
+    // Der Titel steht schon beim Laden; Hinweis und Knopf kommen mit den Daten.
+    expect(await screen.findByRole('link', { name: 'Neue Nachricht' })).toHaveAttribute(
       'href',
       '/p/nachrichten/neu',
     );
+    hinweisPruefen(document.body);
     expect(screen.getByText('bei der Praxis')).toBeInTheDocument();
     expect(screen.getByText(/^Antwort bis 13\.10\.2026\./)).toBeInTheDocument();
     expect(screen.getByText('Übung · Kniebeuge am Geländer')).toBeInTheDocument();
     expect(screen.getByText('beantwortet')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Erledigt' })).toBeInTheDocument();
+    // Erledigtes steht auf Abruf, mit der Zahl im Kopf (DESIGN.md, Regel 6).
+    expect(screen.getByText('Erledigt').closest('summary')).toHaveTextContent('Erledigt (1)');
   });
 
   it('die Frist kommt aus den Praxisstammdaten (ANN-309)', async () => {

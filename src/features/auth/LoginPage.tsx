@@ -1,7 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Aufklappzeichen } from '@/components/ui/Card';
-import { aufklappKoepfe, aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Disclosure } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
@@ -58,49 +57,47 @@ function KennwortTestzugang() {
   return (
     // Zugeklappt hinter „Testkonten" (Jannes, 2026-10-11): Die Seite zeigt so
     // schon das Bild des Betriebs, in dem es diesen Weg nicht gibt.
-    <details className="group mt-6">
-      <summary className={`${aufklappKopfKlassen} ${aufklappKoepfe.text} justify-center`}>
-        <Aufklappzeichen />
-        Testkonten
-      </summary>
-      <p className="text-ink-muted mt-2 mb-4 text-sm leading-relaxed">
-        Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
-        gibt es diesen Weg nicht.
-      </p>
-      <form
-        onSubmit={(event) => void handleSubmit(event)}
-        noValidate
-        aria-label="Testzugang"
-        className="flex flex-col gap-4 text-left"
-      >
-        {error ? (
-          <div ref={fehlerkasten} tabIndex={-1}>
-            <ErrorState title={error} />
-          </div>
-        ) : null}
-        <Field
-          label="E-Mail-Adresse"
-          type="email"
-          name="email"
-          autoComplete="username"
-          required
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-        <Field
-          label="Kennwort"
-          type="password"
-          name="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-        <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
-          {pending ? 'Anmeldung läuft …' : 'Anmelden'}
-        </Button>
-      </form>
-    </details>
+    <div className="mt-6 text-left">
+      <Disclosure summary="Testkonten">
+        <Kleingedrucktes className="mb-4">
+          Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
+          gibt es diesen Weg nicht.
+        </Kleingedrucktes>
+        <form
+          onSubmit={(event) => void handleSubmit(event)}
+          noValidate
+          aria-label="Testzugang"
+          className="flex flex-col gap-4 text-left"
+        >
+          {error ? (
+            <div ref={fehlerkasten} tabIndex={-1}>
+              <ErrorState title={error} />
+            </div>
+          ) : null}
+          <Field
+            label="E-Mail-Adresse"
+            type="email"
+            name="email"
+            autoComplete="username"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+          <Field
+            label="Kennwort"
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
+            {pending ? 'Anmeldung läuft …' : 'Anmelden'}
+          </Button>
+        </form>
+      </Disclosure>
+    </div>
   );
 }
 

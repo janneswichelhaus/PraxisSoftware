@@ -205,9 +205,10 @@ describe('Rechnungen (POR-013)', () => {
     expect(ladeRechnung).toHaveBeenCalledWith(ZUGANG.access_id, ZEILE.id);
     expect(screen.getByText(/Offen sind 100,00 €, fällig am 09\.10\.2026/)).toBeInTheDocument();
     // Zwei Krankengymnastiken werden eine Position mit zwei Tagen.
-    const zeile = screen.getByText('Krankengymnastik').closest('tr')!;
+    // Positionen als Datenliste: je Position eine Zeile (DESIGN.md, Regel 3).
+    const zeile = screen.getByText('Krankengymnastik').closest('li')!;
     expect(zeile).toHaveTextContent('Tage: 02.09.2026, 23.09.2026');
-    expect(zeile).toHaveTextContent('2');
+    expect(zeile).toHaveTextContent('2 × 100,00 €');
     expect(screen.getByText('240,00 €')).toBeInTheDocument();
     expect(screen.getByText(/IBAN DE02 1203 0000 0000 2020 51/)).toBeInTheDocument();
     expect(screen.getByText(/Umsatzsteuerfrei nach § 4 Nr. 14 UStG/)).toBeInTheDocument();

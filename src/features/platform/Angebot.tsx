@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
   angebotAnnehmen,
@@ -53,31 +57,24 @@ export function Angebot({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={PLATTFORM_PFAD}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm print:hidden"
-      >
-        ← Zur Übersicht
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Training nach Ihrer Behandlung</h1>
+      <Rueckweg standard={PLATTFORM_PFAD} beschriftung="Zur Übersicht" className="print:hidden" />
+      <PageHeader title="Training nach Ihrer Behandlung" />
       {bestaetigung ? (
         <Bestaetigung bestaetigung={bestaetigung} />
       ) : (
         <>
-          {angebot.isPending ? <LoadingState label="Das Angebot wird geladen …" /> : null}
+          {angebot.isPending ? <LoadingState label="Das Angebot wird geladen …" inKarte /> : null}
           {angebot.isError ? (
-            <div className="mt-4">
+            <div>
               <ErrorState
                 title="Das Angebot konnte nicht geladen werden."
-                description="Bitte die Verbindung prüfen und erneut versuchen."
+                description={VERBINDUNG_PRUEFEN}
                 onErneut={() => angebot.refetch()}
               />
             </div>
           ) : null}
           {angebot.data === null ? (
-            <p className="text-ink mt-4 text-base leading-relaxed">
-              Zurzeit liegt kein Angebot der Praxis vor.
-            </p>
+            <EmptyState inKarte title="Zurzeit liegt kein Angebot der Praxis vor." />
           ) : null}
           {angebot.data ? (
             <Formular zugang={zugang} angebot={angebot.data} onGebucht={setBestaetigung} />
@@ -130,7 +127,7 @@ function Formular({
 
   return (
     <>
-      <p className="text-ink mt-2 text-base leading-relaxed">
+      <p className="text-ink text-base leading-relaxed">
         Die Praxis bietet Ihnen an, nach Ihrer Behandlung mit einem Training weiterzumachen. Das
         Angebot gilt bis {datum(angebot.valid_until)}.
       </p>
@@ -232,16 +229,13 @@ function Formular({
             ))}
           </div>
         ))}
-        <details className="mt-3">
-          <summary className="text-accent min-h-11 cursor-pointer py-2 text-base">
-            Muster-Widerrufsformular
-          </summary>
+        <Disclosure summary="Muster-Widerrufsformular">
           {musterformular(angebot.practice).map((zeile) => (
             <p key={zeile} className="text-ink mt-1 text-sm leading-relaxed">
               {zeile}
             </p>
           ))}
-        </details>
+        </Disclosure>
         {angebot.early_start ? (
           <div className="mt-4">
             <Checkbox
@@ -260,25 +254,30 @@ function Formular({
       </Section>
 
       {angebot.can_accept ? (
-        <div className="mt-6 flex flex-col gap-3">
-          <p className="text-ink-muted max-w-prose text-sm leading-relaxed">{AKTE_ERFAEHRT}</p>
-          {buchen.isError ? (
-            <Statusmeldung ton="fehler">{buchen.error.message}</Statusmeldung>
-          ) : null}
-          <div>
-            <Button
-              disabled={buchen.isPending}
-              onClick={() => {
-                setGeprueft(true);
-                if ((freigaben.length > 0 && !einwilligung) || (angebot.early_start && !frueh))
-                  return;
-                buchen.mutate();
-              }}
-            >
-              {buchen.isPending ? 'Wird gebucht …' : BUCHEN}
-            </Button>
-          </div>
-        </div>
+        <Formularfuss
+          zusatz={
+            <>
+              {AKTE_ERFAEHRT}
+              {buchen.isError ? (
+                <Statusmeldung ton="fehler" className="mt-3">
+                  {buchen.error.message}
+                </Statusmeldung>
+              ) : null}
+            </>
+          }
+        >
+          <Button
+            disabled={buchen.isPending}
+            onClick={() => {
+              setGeprueft(true);
+              if ((freigaben.length > 0 && !einwilligung) || (angebot.early_start && !frueh))
+                return;
+              buchen.mutate();
+            }}
+          >
+            {buchen.isPending ? 'Wird gebucht …' : BUCHEN}
+          </Button>
+        </Formularfuss>
       ) : null}
     </>
   );

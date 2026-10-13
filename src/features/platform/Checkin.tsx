@@ -3,9 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Angabefeld } from '@/components/ui/Angabefeld';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Textlink } from '@/components/ui/Textlink';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Disclosure } from '@/components/ui/Card';
 import { Punktbild } from '@/components/ui/Punktbild';
 import { Verlaufstabelle } from '@/components/ui/Verlaufstabelle';
@@ -40,28 +44,20 @@ export function Checkin({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">Check-in</h1>
+      <Rueckweg standard={zurueck} beschriftung="Zur Übersicht" />
+      <PageHeader title="Check-in" />
       {isPending ? (
-        <LoadingState label="Ihr Check-in wird geladen …" />
+        <LoadingState label="Ihr Check-in wird geladen …" inKarte />
       ) : isError ? (
-        <div className="mt-6">
-          <ErrorState
-            title="Ihr Check-in konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => void refetch()}
-          />
-        </div>
+        <ErrorState
+          title="Ihr Check-in konnte nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => void refetch()}
+        />
       ) : data?.can_answer && data.schedule ? (
         <Formular zugang={zugang} daten={data} zurueck={zurueck} />
       ) : (
-        <>
-          <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
-            {warumNicht(zugang, data ?? null)}
-          </p>
-          <Textlink alleinstehend to={zurueck}>
-            Zur Übersicht →
-          </Textlink>
-        </>
+        <EmptyState inKarte title={warumNicht(zugang, data ?? null)} />
       )}
     </>
   );
@@ -149,37 +145,39 @@ function Formular({
       {hauptfragen.map(feld)}
       {/* TRK-005: Angaben zum Zusammenhang (IDEA-TRK-006, ANN-355). */}
       {zusammenhang.length > 0 ? (
-        <div className="flex flex-col gap-6">
-          <h2 className="text-ink text-base font-semibold">Zum Zusammenhang</h2>
-          {zusammenhang.map(feld)}
-        </div>
+        <Section titel="Zum Zusammenhang">
+          <div className="flex flex-col gap-6">{zusammenhang.map(feld)}</div>
+        </Section>
       ) : null}
       {aktivitaet.length > 0 ? (
-        <div className="flex flex-col gap-6">
-          <h2 className="text-ink text-base font-semibold">Außerhalb der Übungen</h2>
-          <p className="text-ink-muted -mt-4 max-w-prose text-sm">
-            Grob genügt. Es geht nicht um mehr oder weniger, sondern darum, Ihre anderen Angaben
-            richtig zu lesen.
-          </p>
-          {aktivitaet.map(feld)}
-        </div>
+        <Section
+          titel="Außerhalb der Übungen"
+          hinweis="Grob genügt. Es geht nicht um mehr oder weniger, sondern darum, Ihre anderen Angaben richtig zu lesen."
+        >
+          <div className="flex flex-col gap-6">{aktivitaet.map(feld)}</div>
+        </Section>
       ) : null}
-      <p className="text-ink-muted max-w-prose text-sm">
-        {leserIn(zugang)} sieht Ihre Angaben beim nächsten Termin; sie werden nicht laufend gelesen.{' '}
-        <strong>{NICHT_AKUT}</strong> {NOTFALL}
-      </p>
       {hinweis ? <Statusmeldung ton="fehler">{hinweis}</Statusmeldung> : null}
       {absenden.isError ? (
         <Statusmeldung ton="fehler">{absenden.error.message}</Statusmeldung>
       ) : null}
-      <div className="flex flex-col gap-3 sm:flex-row">
+      {/* Wer liest und wann, und der Notfallhinweis: vor dem Knopf, nicht
+          dahinter (IDEA-TRK-004, ADR-006 Punkt 4). */}
+      <Formularfuss
+        zusatz={
+          <>
+            {leserIn(zugang)} sieht Ihre Angaben beim nächsten Termin; sie werden nicht laufend
+            gelesen. <strong>{NICHT_AKUT}</strong> {NOTFALL}
+          </>
+        }
+      >
         <Button type="submit" disabled={absenden.isPending}>
           {absenden.isPending ? 'Wird gesendet …' : 'Absenden'}
         </Button>
         <Button type="button" variant="quiet" onClick={() => void navigate(zurueck)}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }
@@ -205,33 +203,33 @@ export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
   const leer = !data || (data.history.length === 0 && data.session_history.length === 0);
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">Meine Angaben</h1>
-      <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
-        Ihre Antworten über die Zeit. Jeder Punkt ist eine Antwort von Ihnen.
-      </p>
+      <Rueckweg
+        standard={`${PLATTFORM_PFAD}/ich${bereich ? `?${bereich}` : ''}`}
+        beschriftung="Zu „Ich“"
+      />
+      <PageHeader
+        title="Meine Angaben"
+        description="Ihre Antworten über die Zeit. Jeder Punkt ist eine Antwort von Ihnen."
+      />
       {isPending ? (
-        <LoadingState label="Ihre Angaben werden geladen …" />
+        <LoadingState label="Ihre Angaben werden geladen …" inKarte />
       ) : isError ? (
-        <div className="mt-6">
-          <ErrorState
-            title="Ihre Angaben konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => void refetch()}
-          />
-        </div>
+        <ErrorState
+          title="Ihre Angaben konnten nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => void refetch()}
+        />
       ) : leer ? (
-        <p className="text-ink mt-6 text-base">Noch keine Angaben.</p>
+        <EmptyState inKarte title="Noch keine Angaben." />
       ) : (
-        <div className="mt-6 flex flex-col gap-8">
+        <>
+          {/* Steht immer gleich da, unabhängig von den Werten (ADR-006 Punkt 11). */}
           <p className="text-ink-muted max-w-prose text-base">
             Werte schwanken von Tag zu Tag. Was sie für Sie bedeuten, besprechen Sie mit Ihrer
             Praxis.
           </p>
           {data.history.length > 0 ? (
-            <section aria-labelledby="angaben-checkin" className="flex flex-col gap-4">
-              <h2 id="angaben-checkin" className="text-ink text-lg font-semibold">
-                Aus dem Check-in
-              </h2>
+            <Section titel="Aus dem Check-in">
               <EigeneBilder
                 erfassungen={data.history.map((c) => ({ datum: c.answered_on, werte: c.values }))}
               />
@@ -247,13 +245,10 @@ export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
                 />
                 <p className="text-ink-muted mt-2 text-sm">Ein Strich heißt: nicht angegeben.</p>
               </Disclosure>
-            </section>
+            </Section>
           ) : null}
           {data.session_history.length > 0 ? (
-            <section aria-labelledby="angaben-uebungen" className="flex flex-col gap-4">
-              <h2 id="angaben-uebungen" className="text-ink text-lg font-semibold">
-                Nach den Übungen
-              </h2>
+            <Section titel="Nach den Übungen">
               <EigeneBilder
                 erfassungen={data.session_history.map((e) => ({
                   datum: e.performed_on,
@@ -273,15 +268,10 @@ export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
                   }))}
                 />
               </Disclosure>
-            </section>
+            </Section>
           ) : null}
-        </div>
+        </>
       )}
-      <div className="mt-6">
-        <Textlink alleinstehend to={`${PLATTFORM_PFAD}/ich${bereich ? `?${bereich}` : ''}`}>
-          Zurück zu „Ich“ →
-        </Textlink>
-      </div>
     </>
   );
 }

@@ -3,6 +3,7 @@ import { usePasskeyVonSelbst } from '../passkeyVonSelbst';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
 import { ANMELDESAETZE } from '../anmeldefehler';
 import { PIN_LAENGE, gibMitPinFrei, hatPin } from '../appPin';
@@ -206,11 +207,11 @@ export function Sperrseite({
             {passkeyLaeuft ? 'Wird geprüft …' : 'Mit Passkey entsperren'}
           </Button>
         ) : (
-          <p className="text-ink-muted text-sm leading-relaxed">
+          <Statusmeldung ton="warnung">
             {pinDa
               ? 'Dieser Browser unterstützt keine Passkeys. Entsperren geht hier mit der PIN.'
               : 'Dieser Browser unterstützt keine Passkeys.'}
-          </p>
+          </Statusmeldung>
         )}
       </div>
 

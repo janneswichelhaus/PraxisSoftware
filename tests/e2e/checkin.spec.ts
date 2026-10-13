@@ -54,16 +54,19 @@ test.describe('Check-in (TRK-EPIC-001)', () => {
       expect(await axeVerstoesse(page)).toEqual([]);
     });
 
-    test(`Kachel, Dank und Meine Angaben bei ${breite} px`, async ({ page }) => {
+    test(`Zeile, Dank und Meine Angaben bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=checkin-uebersicht`);
-      await expect(page.getByText('3 kurze Fragen')).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Jetzt beantworten →' })).toBeVisible();
+      await expect(page.getByText('3 kurze Fragen', { exact: false })).toBeVisible();
+      // Die ganze Zeile unter „Jetzt dran“ ist das Ziel (ANN-465).
+      const zeile = page.getByRole('link', { name: /Check-in beantworten/ });
+      await expect(zeile).toBeVisible();
+      expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(56);
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=checkin-danke`);
       await expect(page.getByText(/sieht Ihre Angaben beim nächsten Termin/)).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Jetzt beantworten →' })).toHaveCount(0);
+      await expect(page.getByRole('link', { name: /Check-in beantworten/ })).toHaveCount(0);
 
       await page.goto(`${PRUEFSEITE}?seite=angaben`);
       await expect(page.getByRole('heading', { name: 'Meine Angaben' })).toBeVisible();

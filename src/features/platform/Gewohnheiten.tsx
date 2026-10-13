@@ -2,9 +2,14 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Chip } from '@/components/ui/Chip';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Textlink } from '@/components/ui/Textlink';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { tagesreihe } from '@/lib/gewohnheiten';
 import {
   gewohnheitenSchluessel,
@@ -38,24 +43,25 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <h1 className="text-accent text-h3 font-bold">Gewohnheiten</h1>
+      <Rueckweg
+        standard={`${PLATTFORM_PFAD}${bereich ? `?${bereich}` : ''}`}
+        beschriftung="Zur Übersicht"
+      />
+      <PageHeader title="Gewohnheiten" />
       {isPending ? (
-        <LoadingState label="Ihre Gewohnheiten werden geladen …" />
+        <LoadingState label="Ihre Gewohnheiten werden geladen …" inKarte />
       ) : isError ? (
-        <div className="mt-6">
-          <ErrorState
-            title="Ihre Gewohnheiten konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => void refetch()}
-          />
-        </div>
+        <ErrorState
+          title="Ihre Gewohnheiten konnten nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => void refetch()}
+        />
       ) : laufend.length === 0 ? (
-        <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
-          Mit Ihrer Praxis ist zurzeit keine Gewohnheit vereinbart.
-        </p>
+        <EmptyState inKarte title="Mit Ihrer Praxis ist zurzeit keine Gewohnheit vereinbart." />
       ) : (
         <>
-          <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+          {/* Steht immer gleich da (IDEA-ALT-002 „Vorsicht“, ADR-006 Punkt 11). */}
+          <p className="text-ink max-w-prose text-base leading-relaxed">
             Tippen Sie die Tage an, an denen Sie es gemacht haben. Ein Tag ohne Haken ist einfach
             ein Tag ohne Haken – es gibt keine Serie, die abreißt.
           </p>
@@ -71,18 +77,15 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
                 : 'Ihr Zugang erlaubt gerade kein Vermerken.'}
             </p>
           ) : null}
-          <ul className="mt-6 flex flex-col gap-8">
-            {laufend.map((g) => (
-              <Eintrag key={g.id} zugang={zugang} gewohnheit={g} daten={data!} />
-            ))}
-          </ul>
+          <Section titel="Mit Ihrer Praxis vereinbart">
+            <ul className="flex flex-col gap-8">
+              {laufend.map((g) => (
+                <Eintrag key={g.id} zugang={zugang} gewohnheit={g} daten={data!} />
+              ))}
+            </ul>
+          </Section>
         </>
       )}
-      <div className="mt-8">
-        <Textlink alleinstehend to={`${PLATTFORM_PFAD}${bereich ? `?${bereich}` : ''}`}>
-          Zur Übersicht →
-        </Textlink>
-      </div>
     </>
   );
 }
@@ -121,10 +124,12 @@ function Eintrag({
 
   return (
     <li className="flex flex-col gap-3" aria-labelledby={titelId}>
-      <h2 id={titelId} className="text-ink text-lg font-semibold">
-        {gewohnheit.cue}: {gewohnheit.action}
-      </h2>
-      {gewohnheit.place ? <p className="text-ink-muted -mt-2">{gewohnheit.place}</p> : null}
+      <div>
+        <Zwischentitel id={titelId}>
+          {gewohnheit.cue}: {gewohnheit.action}
+        </Zwischentitel>
+        {gewohnheit.place ? <p className="text-ink-muted -mt-2">{gewohnheit.place}</p> : null}
+      </div>
       {gewohnheit.paused ? (
         <p className="text-ink">Pausiert. Setzen Sie fort, wenn es wieder geht.</p>
       ) : (
@@ -135,21 +140,17 @@ function Eintrag({
         >
           {tage.map((t) =>
             t.vorBeginn ? null : (
-              <button
+              // Ein Schalter je Tag (`Chip` mit `gewaehlt`): vermerkt mit Haken auf
+              // der Akzentfläche - Zeichen und Wort, nie Farbe allein.
+              <Chip
                 key={t.datum}
-                type="button"
-                aria-pressed={t.vermerkt}
+                gewaehlt={t.vermerkt}
                 disabled={!daten.can_mark || beschaeftigt}
                 onClick={() => vermerken.mutate({ tag: t.datum, gemacht: !t.vermerkt })}
-                className={`rounded-button min-h-11 min-w-16 border px-2 py-1 text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed ${
-                  t.vermerkt
-                    ? 'border-ink bg-ink text-surface'
-                    : 'border-ink-muted text-ink bg-transparent'
-                }`}
+                className="tabular-nums"
               >
-                <span aria-hidden="true">{t.vermerkt ? '✓ ' : ''}</span>
                 {t.datum === daten.today ? 'heute' : tagKurz(`${t.datum}T12:00:00`)}
-              </button>
+              </Chip>
             ),
           )}
         </div>

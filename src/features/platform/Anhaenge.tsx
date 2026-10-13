@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import {
   anhangLoeschen,
@@ -141,14 +143,15 @@ export function AnhaengeAbschnitt({
   const text = EINWILLIGUNGSTEXTE.message_attachments;
 
   return (
-    <section aria-labelledby={`anhaenge-${nachricht.id}`} className="mt-6">
-      <h2 id={`anhaenge-${nachricht.id}`} className="text-ink text-base font-semibold">
-        Fotos und Videos
-      </h2>
+    <section aria-labelledby={`anhaenge-${nachricht.id}`} className="mt-8">
+      <Zwischentitel id={`anhaenge-${nachricht.id}`}>Fotos und Videos</Zwischentitel>
       {anhaenge.length > 0 ? (
-        <ul className="border-line divide-line rounded-card mt-2 divide-y border">
+        <ListRows>
           {anhaenge.map((a) => (
-            <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 p-3">
+            <li
+              key={a.id}
+              className="border-line flex flex-wrap items-center justify-between gap-2 border-t py-3 first:border-t-0"
+            >
               <div className="min-w-0">
                 <p className="text-ink text-base font-medium">{beschreibung(a)}</p>
                 <p className="text-ink-muted text-sm">
@@ -184,7 +187,7 @@ export function AnhaengeAbschnitt({
               ) : null}
             </li>
           ))}
-        </ul>
+        </ListRows>
       ) : null}
       {ungeprueft ? (
         <p className="text-ink-muted mt-2 text-sm">
@@ -337,7 +340,7 @@ export function Aufnahmeansicht({
         <img
           src={adresse}
           alt={`Foto vom ${datum(anhang.created_at)}`}
-          className="bg-ink rounded-image block max-h-[70vh] w-full max-w-2xl object-contain"
+          className="bg-ink rounded-image block max-h-[70vh] w-full object-contain"
         />
       ) : adresse ? (
         <video
@@ -349,7 +352,7 @@ export function Aufnahmeansicht({
           controlsList="nodownload noremoteplayback"
           disablePictureInPicture
           aria-label={`Video vom ${datum(anhang.created_at)}`}
-          className="bg-ink rounded-image block max-h-[70vh] w-full max-w-2xl object-contain"
+          className="bg-ink rounded-image block max-h-[70vh] w-full object-contain"
         />
       ) : null}
       <div className="mt-2">

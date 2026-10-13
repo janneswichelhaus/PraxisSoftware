@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import {
@@ -96,12 +101,7 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      <Link
-        to={zurueck}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu den Terminen
-      </Link>
+      <Rueckweg standard={zurueck} beschriftung="Zu den Terminen" />
       {termine.isPending ? (
         <LoadingState label="Ihr Termin wird geladen …" />
       ) : !termin ? (
@@ -113,18 +113,18 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
         <>
           <Terminkopf termin={termin} />
           {termin.status !== 'confirmed' || new Date(termin.starts_at).getTime() <= Date.now() ? (
-            <p className="text-ink mt-6 max-w-prose text-base leading-relaxed">
+            <p className="text-ink max-w-prose text-base leading-relaxed">
               Dieser Termin lässt sich hier nicht mehr ändern. Bei Fragen rufen Sie bitte die Praxis
               an.
             </p>
           ) : termin.open_request_kind ? (
-            <Statusmeldung ton="neutral" className="mt-6">
+            <Statusmeldung ton="neutral">
               {termin.open_request_kind === 'cancel'
                 ? 'Ihr Absagewunsch ist bei der Praxis. Sie meldet sich bei Ihnen.'
                 : 'Ihr Änderungswunsch ist bei der Praxis. Sie meldet sich bei Ihnen.'}
             </Statusmeldung>
           ) : art === null ? (
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
               <Button type="button" onClick={() => setArt('change')}>
                 Termin ändern
               </Button>
@@ -133,67 +133,61 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
               </Button>
             </div>
           ) : art === 'cancel' ? (
-            <form
-              onSubmit={(e) => absenden(e, 'cancel')}
-              noValidate
-              className="mt-6 flex flex-col gap-6"
-            >
-              <h2 className="text-ink text-h3 font-semibold">Termin absagen</h2>
-              <Ausfallhonorar spaet={termin.late_notice === true} />
-              <TextArea
-                label="Möchten Sie der Praxis etwas mitteilen? (freiwillig)"
-                hint={`${notiz.trim().length} von ${NOTIZ_MAX} Zeichen`}
-                rows={3}
-                value={notiz}
-                onChange={(e) => setNotiz(e.target.value)}
-              />
-              {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-              <p className="text-ink-muted max-w-prose text-sm">
-                Die Praxis trägt die Absage ein. Als Eingang Ihrer Absage gilt der Zeitpunkt, zu dem
-                Sie diesen Wunsch senden.
-              </p>
-              <div className="flex flex-col gap-3 sm:flex-row">
+            <form onSubmit={(e) => absenden(e, 'cancel')} noValidate>
+              <Section titel="Termin absagen">
+                <Feldgruppe>
+                  <Ausfallhonorar spaet={termin.late_notice === true} />
+                  <TextArea
+                    label="Möchten Sie der Praxis etwas mitteilen? (freiwillig)"
+                    hint={`${notiz.trim().length} von ${NOTIZ_MAX} Zeichen`}
+                    rows={3}
+                    value={notiz}
+                    onChange={(e) => setNotiz(e.target.value)}
+                  />
+                  {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
+                </Feldgruppe>
+              </Section>
+              <Formularfuss zusatz="Die Praxis trägt die Absage ein. Als Eingang Ihrer Absage gilt der Zeitpunkt, zu dem Sie diesen Wunsch senden.">
                 <Button type="submit" disabled={senden.isPending}>
                   {senden.isPending ? 'Wird gesendet …' : 'Absagewunsch senden'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setArt(null)}>
+                <Button type="button" variant="quiet" onClick={() => setArt(null)}>
                   Abbrechen
                 </Button>
-              </div>
+              </Formularfuss>
             </form>
           ) : (
-            <form
-              onSubmit={(e) => absenden(e, 'change')}
-              noValidate
-              className="mt-6 flex flex-col gap-8"
-            >
-              <h2 className="text-ink text-h3 font-semibold">Termin ändern</h2>
-              <p className="text-ink max-w-prose text-base leading-relaxed">
-                Sagen Sie uns, wann es Ihnen stattdessen passt. Die Praxis sucht einen neuen Termin
-                und meldet sich bei Ihnen; bis dahin bleibt der Termin oben bestehen.
-              </p>
-              <Wunschfelder tage={tage} zeiten={zeiten} onTage={setTage} onZeiten={setZeiten} />
-              <TextArea
-                label="Was sollen wir noch wissen? (freiwillig)"
-                hint={`${notiz.trim().length} von ${NOTIZ_MAX} Zeichen`}
-                rows={3}
-                value={notiz}
-                onChange={(e) => setNotiz(e.target.value)}
-              />
-              <Statusmeldung ton={termin.late_notice ? 'warnung' : 'neutral'}>
-                {termin.late_notice
-                  ? 'Ihr Termin beginnt in weniger als 24 Stunden. Gibt die Praxis ihn auf Ihren Wunsch frei, gilt das wie eine kurzfristige Absage, und wir berechnen ein Ausfallhonorar nach unserer Preisliste.'
-                  : 'Gibt die Praxis den Termin auf Ihren Wunsch frei, gilt das wie eine Absage. Ihr Wunsch geht rechtzeitig ein, es entsteht kein Ausfallhonorar.'}
-              </Statusmeldung>
-              {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-              <div className="flex flex-col gap-3 sm:flex-row">
+            <form onSubmit={(e) => absenden(e, 'change')} noValidate>
+              <Section titel="Termin ändern">
+                <div className="flex flex-col gap-8">
+                  <p className="text-ink max-w-prose text-base leading-relaxed">
+                    Sagen Sie uns, wann es Ihnen stattdessen passt. Die Praxis sucht einen neuen
+                    Termin und meldet sich bei Ihnen; bis dahin bleibt der Termin oben bestehen.
+                  </p>
+                  <Wunschfelder tage={tage} zeiten={zeiten} onTage={setTage} onZeiten={setZeiten} />
+                  <TextArea
+                    label="Was sollen wir noch wissen? (freiwillig)"
+                    hint={`${notiz.trim().length} von ${NOTIZ_MAX} Zeichen`}
+                    rows={3}
+                    value={notiz}
+                    onChange={(e) => setNotiz(e.target.value)}
+                  />
+                  <Statusmeldung ton={termin.late_notice ? 'warnung' : 'neutral'}>
+                    {termin.late_notice
+                      ? 'Ihr Termin beginnt in weniger als 24 Stunden. Gibt die Praxis ihn auf Ihren Wunsch frei, gilt das wie eine kurzfristige Absage, und wir berechnen ein Ausfallhonorar nach unserer Preisliste.'
+                      : 'Gibt die Praxis den Termin auf Ihren Wunsch frei, gilt das wie eine Absage. Ihr Wunsch geht rechtzeitig ein, es entsteht kein Ausfallhonorar.'}
+                  </Statusmeldung>
+                  {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
+                </div>
+              </Section>
+              <Formularfuss>
                 <Button type="submit" disabled={senden.isPending}>
                   {senden.isPending ? 'Wird gesendet …' : 'Änderungswunsch senden'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setArt(null)}>
+                <Button type="button" variant="quiet" onClick={() => setArt(null)}>
                   Abbrechen
                 </Button>
-              </div>
+              </Formularfuss>
             </form>
           )}
         </>
@@ -205,13 +199,18 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
 function Terminkopf({ termin }: { termin: Termin }) {
   const { titel, ort } = terminBeschreibung(termin);
   return (
-    <>
-      <h1 className="text-accent text-h3 font-bold">{tagLang(termin.starts_at)}</h1>
-      <p className="text-ink mt-1 text-base font-semibold">
-        {zeitraum(termin.starts_at, termin.ends_at)} · {titel}
-      </p>
-      {ort ? <p className="text-ink-muted mt-1 text-base">{ort}</p> : null}
-    </>
+    <PageHeader
+      kicker="Termin"
+      title={tagLang(termin.starts_at)}
+      description={
+        <>
+          <span className="text-ink block font-semibold">
+            {zeitraum(termin.starts_at, termin.ends_at)} · {titel}
+          </span>
+          {ort ? <span className="block">{ort}</span> : null}
+        </>
+      }
+    />
   );
 }
 
@@ -219,24 +218,21 @@ function Terminkopf({ termin }: { termin: Termin }) {
  * Der Hinweis zum Ausfallhonorar vor dem Absagewunsch (DSN-001 4.1): fester
  * Wortlaut, unter 24 Stunden deutlich. Derselbe Mangel wie BEF-079 in der
  * Praxis darf hier nicht entstehen - die Frist steht vor dem Knopf, nicht
- * dahinter.
+ * dahinter. Die ganze Regel steht auf Abruf darunter.
  */
 function Ausfallhonorar({ spaet }: { spaet: boolean }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div>
       <Statusmeldung ton={spaet ? 'warnung' : 'neutral'}>
         {spaet ? AUSFALLHONORAR_SPAET : AUSFALLHONORAR_RECHTZEITIG}
       </Statusmeldung>
-      <details className="text-ink-muted text-sm">
-        <summary className="text-ink min-h-11 cursor-pointer font-medium">
-          Unsere Regel zum Ausfallhonorar
-        </summary>
-        <ul className="mt-2 flex flex-col gap-2">
+      <Disclosure summary="Unsere Regel zum Ausfallhonorar">
+        <ul className="text-ink-muted flex flex-col gap-2 text-sm">
           {AUSFALLHONORAR_REGEL.map((satz) => (
             <li key={satz}>{satz}</li>
           ))}
         </ul>
-      </details>
+      </Disclosure>
     </div>
   );
 }

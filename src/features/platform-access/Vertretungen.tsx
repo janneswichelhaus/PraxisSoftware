@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatLocalDate } from '@/features/appointments/api';
@@ -72,8 +73,10 @@ export function Vertretungen({
   const beendet = (data ?? []).filter((v) => v.status === 'revoked');
 
   return (
+    // Eine Gruppe im Abschnitt „Plattform“: Zwischentitel und Linie statt
+    // eines zweiten Kastens (DESIGN.md, Regel 2).
     <div className="border-line mt-5 border-t pt-4">
-      <h3 className="text-ink text-base font-semibold">Vertretung</h3>
+      <Zwischentitel>Vertretung</Zwischentitel>
       {isPending ? (
         <LoadingState label="Vertretungen werden geladen …" />
       ) : isError ? (
@@ -85,9 +88,9 @@ export function Vertretungen({
       ) : (
         <>
           {laufend.length === 0 && !formularOffen ? (
-            <p className="text-ink-muted mt-1 text-sm">Niemand handelt für diese Person.</p>
+            <p className="text-ink-muted text-sm">Niemand handelt für diese Person.</p>
           ) : null}
-          <ul className="divide-line mt-2 flex flex-col divide-y">
+          <ul className="flex flex-col">
             {laufend.map((v) => (
               <VertretungsEintrag
                 key={v.id}
@@ -202,7 +205,7 @@ function VertretungsEintrag({
   return (
     // Zeilen mit Linien statt eigener Karten - der Abschnitt ist schon eine
     // (Leitfaden L2).
-    <li className="py-3">
+    <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-ink font-medium">{v.representative_name}</span>
         <span className="text-ink-muted text-sm">{artText(v)}</span>

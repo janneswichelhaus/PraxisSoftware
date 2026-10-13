@@ -39,8 +39,6 @@ export const GRENZEN: Record<
   breiten: {
     'features/billing': 1,
 
-    'features/platform': 9,
-
     'features/tours': 3,
   },
   details: {
@@ -48,13 +46,9 @@ export const GRENZEN: Record<
 
     'features/assessments': 2,
 
-    'features/auth': 1,
-
     'features/datenschutz': 1,
 
     'features/files': 1,
-
-    'features/platform': 2,
 
     'features/tours': 2,
 
@@ -65,15 +59,9 @@ export const GRENZEN: Record<
 
     'features/appointments': 1,
 
-    'features/auth': 1,
-
     'features/billing': 1,
 
     'features/datenschutz': 1,
-
-    'features/platform': 2,
-
-    'features/platform-access': 1,
   },
   knoepfe: {
     app: 2,
@@ -88,7 +76,7 @@ export const GRENZEN: Record<
 
     'features/files': 1,
 
-    'features/platform': 5,
+    'features/platform': 1,
 
     'features/today': 1,
 
@@ -98,8 +86,6 @@ export const GRENZEN: Record<
   },
   tabellen: {
     'features/fleet': 1,
-
-    'features/platform': 1,
 
     'features/statistics': 1,
 
@@ -115,10 +101,6 @@ export const GRENZEN: Record<
     'features/documentation': 4,
 
     'features/patients': 1,
-
-    'features/platform': 48,
-
-    'features/platform-access': 1,
 
     'features/today': 4,
 

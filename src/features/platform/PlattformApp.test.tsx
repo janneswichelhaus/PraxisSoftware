@@ -203,7 +203,8 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     expect(
       await screen.findByText(/Einwilligungen gibt nur Max Mustermann selbst/),
     ).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(
+    // Das Band ist eine eigene Statuszeile, neben dem Laden der Übersicht.
+    expect(screen.getByText(/Sie handeln für/).closest('[role="status"]')).toHaveTextContent(
       'Sie handeln für Max Mustermann · Begleitung',
     );
     expect(screen.getByText(/Einwilligungen gibt nur Max Mustermann selbst/)).toBeInTheDocument();

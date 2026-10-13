@@ -1,9 +1,12 @@
 import { einwilligungAngeboten } from '@/lib/einwilligung';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRows } from '@/components/ui/ListRow';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Section } from '@/components/ui/Section';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   einwilligungSchreiben,
   einwilligungenSchluessel,
@@ -51,42 +54,44 @@ export function Einwilligungen({
     <>
       {einstieg ? null : (
         <>
-          <Link
-            to={`${PLATTFORM_PFAD}/ich`}
-            className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-          >
-            ← Zu „Ich“
-          </Link>
-          <h1 className="text-accent text-h3 font-bold">Einwilligungen</h1>
+          <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+          <PageHeader title="Einwilligungen" />
         </>
       )}
-      <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+      {/* Freiwillig und ohne Nachteil - vor jeder Entscheidung (Art. 7 DSGVO). */}
+      <p className="text-ink max-w-prose text-base leading-relaxed">
         {fuer ? `Sie entscheiden hier für ${fuer}. ` : ''}
         Für manches braucht die Praxis Ihr ausdrückliches Ja.{' '}
         {OHNE_NACHTEIL[zugang.relationship_kind]}
       </p>
-      {einwilligungen.isPending ? (
-        <LoadingState label="Ihre Einwilligungen werden geladen …" />
-      ) : einwilligungen.data === undefined ? (
-        <ErrorState
-          title="Ihre Einwilligungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => einwilligungen.refetch()}
-        />
-      ) : einwilligungen.data.length === 0 ? (
-        <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
-          Über Einwilligungen entscheiden die Person selbst oder ihre rechtliche Vertretung.
-        </p>
-      ) : (
-        <div className="mt-6">
-          {einwilligungen.data
-            .filter((e) => einwilligungAngeboten(e.purpose, e.state === 'granted'))
-            .map((e) => (
-              <Zweck key={e.purpose} zugang={zugang} einwilligung={e} />
-            ))}
-          <p className="text-ink-muted mt-6 max-w-prose text-sm leading-relaxed">{FREIWILLIG}</p>
-        </div>
-      )}
+      <div className="mt-6">
+        <Abfragezustand
+          abfrage={einwilligungen}
+          laden="Ihre Einwilligungen werden geladen …"
+          fehler="Ihre Einwilligungen konnten nicht geladen werden."
+          inKarte
+          leer={{
+            wenn: (liste) => liste.length === 0,
+            titel:
+              'Über Einwilligungen entscheiden die Person selbst oder ihre rechtliche Vertretung.',
+          }}
+        >
+          {(liste) => (
+            <>
+              {/* Je Zweck eine Zeile der Liste mit Text, Stand und genau einer
+                  Handlung (DESIGN.md, Regel 3) - keine Karte je Zweck. */}
+              <ListRows>
+                {liste
+                  .filter((e) => einwilligungAngeboten(e.purpose, e.state === 'granted'))
+                  .map((e) => (
+                    <Zweck key={e.purpose} zugang={zugang} einwilligung={e} />
+                  ))}
+              </ListRows>
+              <Kleingedrucktes className="mt-6">{FREIWILLIG}</Kleingedrucktes>
+            </>
+          )}
+        </Abfragezustand>
+      </div>
     </>
   );
 }
@@ -130,9 +135,10 @@ function Zweck({
   });
 
   return (
-    <Section titel={text.titel} rahmen>
+    <li className="border-line border-t py-4 first:border-t-0">
+      <Zwischentitel>{text.titel}</Zwischentitel>
       <p className="text-ink max-w-prose text-base leading-relaxed">{text.text}</p>
-      <p className="text-ink mt-3 text-base font-medium">{standText(e)}</p>
+      <p className="text-ink mt-3 text-base font-semibold">{standText(e)}</p>
       <div className="mt-3">
         {erteilt ? (
           <Rueckfrage
@@ -165,6 +171,6 @@ function Zweck({
           </p>
         )}
       </div>
-    </Section>
+    </li>
   );
 }

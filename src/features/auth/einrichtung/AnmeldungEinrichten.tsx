@@ -54,7 +54,7 @@ export function AnmeldungEinrichten({
   return (
     <Vollseite
       titel="Anmeldung einrichten"
-      einleitung="Diese Anwendung kennt kein Kennwort. Sie melden sich mit einem Passkey an – Gesicht, Finger oder die Sperre Ihres Telefons. Die PIN der Anwendung hilft, wenn der Passkey einmal nicht klappt."
+      einleitung="Diese Anwendung kennt kein Kennwort: Sie melden sich mit einem Passkey an – Gesicht, Finger oder die Sperre Ihres Telefons."
       kleingedrucktes="Biometrische Merkmale verlassen Ihr Gerät nicht. Der Anmeldedienst speichert nur den öffentlichen Schlüssel des Passkeys, die Anwendung von der PIN nur eine nicht umkehrbare Prüfsumme."
     >
       {fehler ? (
@@ -76,7 +76,7 @@ export function AnmeldungEinrichten({
       </Section>
 
       {passkeyDa && !stand.pin ? (
-        <Section titel="2. PIN">
+        <Section titel="2. PIN" hinweis="Der Rückweg, wenn der Passkey einmal nicht klappt.">
           <PinFestlegen onGesetzt={onFertig} knopf="PIN festlegen und fertig" />
         </Section>
       ) : null}
