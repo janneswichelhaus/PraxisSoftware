@@ -65,8 +65,6 @@ export const GRENZEN: Record<
 
     'features/open-points': 2,
 
-    'features/patients': 2,
-
     'features/platform': 9,
 
     'features/reimbursements': 1,
@@ -146,8 +144,6 @@ export const GRENZEN: Record<
     'features/offline-documentation': 1,
 
     'features/open-points': 13,
-
-    'features/patients': 1,
 
     'features/platform': 2,
 
@@ -242,7 +238,7 @@ export const GRENZEN: Record<
 
     'features/open-points': 2,
 
-    'features/patients': 2,
+    'features/patients': 1,
 
     'features/platform': 48,
 

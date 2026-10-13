@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import type * as PatientsApi from './api';
 import type { Patient } from './api';
 import { renderWithProviders, testPatient } from '@/test-utils';
@@ -10,6 +10,11 @@ import { renderWithProviders, testPatient } from '@/test-utils';
 function SearchParamsProbe() {
   const [params] = useSearchParams();
   return <span data-testid="search-params">{params.toString()}</span>;
+}
+
+/** Zeigt den Pfad im MemoryRouter - für den Sprung in die Akte. */
+function OrtProbe() {
+  return <span data-testid="ort">{useLocation().pathname}</span>;
 }
 
 const fetchPatients = vi.fn();
@@ -100,7 +105,7 @@ describe('PatientsListPage', () => {
     renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Mustermann, Max/ });
 
-    await user.type(screen.getByLabelText('Liste filtern'), 'erika');
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'erika');
 
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
@@ -119,7 +124,8 @@ describe('PatientsListPage', () => {
     // keine Ratefrage nach der Anmeldung, sondern ein Schritt (WRT-01).
     expect(meldung.textContent).not.toMatch(/rls/i);
     expect(meldung.textContent).not.toMatch(/angemeldet/);
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und später erneut versuchen.');
+    // Der Satz des Systems (ANN-406), nicht eine Abwandlung je Seite.
+    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
   });
 
   it('laedt die Liste nach einem Fehler auf Wunsch erneut (UIK-16)', async () => {
@@ -165,14 +171,14 @@ describe('PatientsListPage', () => {
     renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Mustermann, Max/ });
 
-    await user.type(screen.getByLabelText('Liste filtern'), '555123');
+    await user.type(screen.getByLabelText('Patient:in suchen'), '555123');
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
     });
     expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
 
-    await user.clear(screen.getByLabelText('Liste filtern'));
-    await user.type(screen.getByLabelText('Liste filtern'), 'hamburg');
+    await user.clear(screen.getByLabelText('Patient:in suchen'));
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'hamburg');
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
     });
@@ -232,7 +238,7 @@ describe('PatientsListPage', () => {
     await screen.findByRole('link', { name: /Mustermann, Max/ });
     expect(screen.getByTestId('search-params')).toHaveTextContent('');
 
-    await user.type(screen.getByLabelText('Liste filtern'), 'erika');
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'erika');
     await waitFor(() => {
       expect(screen.getByTestId('search-params')).toHaveTextContent('q=erika');
     });
@@ -262,7 +268,7 @@ describe('PatientsListPage', () => {
 
     expect(await screen.findByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
-    expect(screen.getByLabelText('Liste filtern')).toHaveValue('erika');
+    expect(screen.getByLabelText('Patient:in suchen')).toHaveValue('erika');
     expect(screen.getByLabelText('Versorgung')).toHaveValue('inactive');
   });
 
@@ -279,14 +285,59 @@ describe('PatientsListPage', () => {
     expect(screen.getByLabelText('Versorgung')).toHaveValue('all');
   });
 
-  it('beherbergt die serverseitige Namenssuche des Bereichs (UX-013, E17)', async () => {
-    // Die Suche aus der Kopfleiste wohnt seit UX-013 auch hier: Sie springt
-    // aus dem gesamten Bestand in eine Akte. Der Filter darunter ist etwas
-    // anderes - er engt die Liste ein, die schon geladen ist.
-    fetchPatients.mockResolvedValue([patient('1', 'Max', 'Mustermann', 'active')]);
+  // B1, ANN-430: Ein Feld statt „Patient:in suchen“ und „Liste filtern“. Es
+  // kann, was die Namenssuche des Bereichs konnte - beide Schreibrichtungen,
+  // Umlaute eingeebnet - und was der Filter konnte.
+  it('sucht in einem Feld: Name in beiden Richtungen, ohne Umlautsorgen', async () => {
+    fetchPatients.mockResolvedValue([
+      patient('1', 'Max', 'Mustermann', 'active'),
+      patient('2', 'Jürgen', 'Müller', 'active'),
+    ]);
+    const user = userEvent.setup();
     renderWithProviders(<PatientsListPage />);
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
 
-    expect(await screen.findByRole('combobox', { name: 'Patient:in suchen' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Liste filtern')).toBeInTheDocument();
+    // Nur noch ein Suchfeld, keine zweite Trefferliste daneben.
+    expect(screen.getAllByRole('searchbox')).toHaveLength(1);
+    expect(screen.queryByRole('combobox', { name: 'Patient:in suchen' })).toBeNull();
+
+    const feld = screen.getByLabelText('Patient:in suchen');
+    await user.type(feld, 'mueller jur');
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
+    });
+    expect(screen.getByRole('link', { name: /Müller, Jürgen/ })).toBeInTheDocument();
+
+    await user.clear(feld);
+    await user.type(feld, 'Max Muster');
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Müller, Jürgen/ })).toBeNull();
+    });
+    expect(screen.getByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
+  });
+
+  it('öffnet mit der Eingabetaste die Akte, wenn genau eine übrig ist', async () => {
+    fetchPatients.mockResolvedValue([
+      patient('1', 'Max', 'Mustermann', 'active'),
+      patient('2', 'Erika', 'Beispiel', 'active'),
+    ]);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <PatientsListPage />
+        <OrtProbe />
+      </>,
+    );
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
+
+    // Bei zwei Treffern bleibt die Liste stehen.
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'e{Enter}');
+    expect(screen.getByTestId('ort')).toHaveTextContent(/^\/$/);
+
+    await user.clear(screen.getByLabelText('Patient:in suchen'));
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'erika{Enter}');
+    await waitFor(() => {
+      expect(screen.getByTestId('ort')).toHaveTextContent('/patienten/2');
+    });
   });
 });

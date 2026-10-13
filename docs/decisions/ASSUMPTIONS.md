@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-12.
+Zuletzt aktualisiert: 2026-10-13.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -4607,3 +4607,15 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
 
 **Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
+
+### ANN-430 — Patientenliste: ein Suchfeld statt Namenssuche und Listenfilter
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Patientenliste hat ein Suchfeld: Es filtert die geladene Liste nach Name (beide Schreibrichtungen, Umlaute eingeebnet wie `app.suchform`), Ort, PLZ, Telefon und E-Mail; die Eingabetaste öffnet die Akte, wenn genau eine übrig ist. Die serverseitige Namenssuche bleibt in der Kopfleiste und in den Vorgängen.
+
+**Begründung.** Zwei Felder für denselben Bestand (gleiches Leserecht, ADR-004) verlangten eine Wahl vor dem Tippen; Auftrag Design-Rollout B1.
+
+**Anker.** `matches` und `absenden` in `src/features/patients/PatientsListPage.tsx`.
+
+**Änderungspfad.** `Patientensuche` wieder über die Liste setzen · Aufwand `klein`.

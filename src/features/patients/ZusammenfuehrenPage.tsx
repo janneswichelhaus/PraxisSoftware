@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Tile, TileGrid } from '@/components/ui/Tile';
 import { formatDate } from '@/lib/datum';
 import { fetchPatient, findPossibleDuplicates, fullName, type Patient } from './api';
 import { Patientensuche } from './Patientensuche';
@@ -35,17 +40,14 @@ import {
 
 function Kopf({ titel, person }: { titel: string; person: Zusammenfuehrungsplan['source'] }) {
   return (
-    <Card className="flex-1">
-      <p className="text-ink-muted text-sm">{titel}</p>
-      <p className="text-ink mt-1 font-medium">
-        {person.given_name} {person.family_name}
-      </p>
-      <p className="text-ink-muted text-sm">
-        {person.date_of_birth ? `geb. ${formatDate(person.date_of_birth)}` : 'ohne Geburtsdatum'}
-        {' · '}
-        {person.status === 'active' ? 'in Versorgung' : 'nicht in Versorgung'}
-      </p>
-    </Card>
+    <Tile
+      label={titel}
+      zusatz={`${person.date_of_birth ? `geb. ${formatDate(person.date_of_birth)}` : 'ohne Geburtsdatum'} · ${
+        person.status === 'active' ? 'in Versorgung' : 'nicht in Versorgung'
+      }`}
+    >
+      {person.given_name} {person.family_name}
+    </Tile>
   );
 }
 
@@ -63,7 +65,7 @@ function Vorschau({
   const queryClient = useQueryClient();
   const [geprueft, setGeprueft] = useState(false);
 
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['patient-merge-preview', dubletteId, patient.id],
     queryFn: () => previewPatientMerge(dubletteId, patient.id),
     retry: false,
@@ -81,90 +83,85 @@ function Vorschau({
     },
   });
 
-  if (isPending) return <LoadingState label="Vorschau wird geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Die Vorschau konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und später erneut versuchen."
-        onErneut={() => void refetch()}
-      />
-    );
-  }
-
-  const wandert = wandertMit(data.counts);
-  const gesperrt = data.blockers.length > 0;
-
   return (
-    <Section titel="Vorschau" ebene={3}>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Kopf titel="Bleibt" person={data.target} />
-        <Kopf titel="Geht darin auf" person={data.source} />
-      </div>
+    <Section titel="Vorschau">
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Vorschau wird geladen …"
+        fehler="Die Vorschau konnte nicht geladen werden."
+      >
+        {(data) => {
+          const wandert = wandertMit(data.counts);
+          const gesperrt = data.blockers.length > 0;
+          return (
+            <>
+              {/* Am Telefon untereinander - die bleibende Akte oben -, ab
+                  etwa 560 px nebeneinander (TileGrid „breit“). */}
+              <TileGrid>
+                <Kopf titel="Bleibt" person={data.target} />
+                <Kopf titel="Geht darin auf" person={data.source} />
+              </TileGrid>
 
-      <dl className="mt-4 flex flex-col gap-3 text-sm">
-        <div>
-          <dt className="text-ink-muted">Wandert mit</dt>
-          <dd className="text-ink">
-            {wandert.length > 0 ? wandert.join(', ') : 'Nichts außer den Stammdaten.'}
-          </dd>
-        </div>
-        {data.conflicts.length > 0 ? (
-          <div>
-            <dt className="text-ink-muted">
-              In beiden Akten verschieden – es bleibt der Wert von hier
-            </dt>
-            <dd className="text-ink">{data.conflicts.map(feldLabel).join(', ')}</dd>
-          </div>
-        ) : null}
-        {data.appended.length > 0 ? (
-          <div>
-            <dt className="text-ink-muted">Wird angehängt</dt>
-            <dd className="text-ink">{data.appended.map(feldLabel).join(', ')}</dd>
-          </div>
-        ) : null}
-      </dl>
+              <DetailList>
+                <DetailRow label="Wandert mit">
+                  {wandert.length > 0 ? wandert.join(', ') : 'Nichts außer den Stammdaten.'}
+                </DetailRow>
+                {data.conflicts.length > 0 ? (
+                  <DetailRow label="In beiden Akten verschieden – es bleibt der Wert von hier">
+                    {data.conflicts.map(feldLabel).join(', ')}
+                  </DetailRow>
+                ) : null}
+                {data.appended.length > 0 ? (
+                  <DetailRow label="Wird angehängt">
+                    {data.appended.map(feldLabel).join(', ')}
+                  </DetailRow>
+                ) : null}
+              </DetailList>
 
-      {gesperrt ? (
-        <div className="mt-4 flex flex-col gap-2">
-          {data.blockers.map((sperre) => (
-            <Statusmeldung key={sperre} ton="warnung">
-              {sperrText(sperre)}
-            </Statusmeldung>
-          ))}
-          <div>
-            <Button variant="secondary" onClick={onAndere}>
-              Andere Akte wählen
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 flex flex-col gap-3">
-          <Checkbox
-            label="Beide Akten betreffen dieselbe Person."
-            checked={geprueft}
-            onChange={(event) => setGeprueft(event.target.checked)}
-          />
-          {/* ANN-150: nicht rückgängig - das steht vor dem Knopf, nicht danach. */}
-          <p className="text-ink-muted text-sm">
-            Nicht rückgängig zu machen. Ausgestellte Rechnungen und abgeschlossene Dokumentation
-            bleiben, wie sie sind; nur ihr Bezug wechselt. Die leere Akte wird gelöscht.
-          </p>
-          {mutation.isError ? (
-            <Statusmeldung ton="fehler">
-              Die Akten konnten nicht zusammengeführt werden. Es hat sich nichts geändert.
-            </Statusmeldung>
-          ) : null}
-          <div className="flex flex-wrap gap-3">
-            <Button disabled={!geprueft || mutation.isPending} onClick={() => mutation.mutate()}>
-              {mutation.isPending ? 'Wird zusammengeführt …' : 'Zusammenführen'}
-            </Button>
-            <Button variant="secondary" onClick={onAndere} disabled={mutation.isPending}>
-              Andere Akte wählen
-            </Button>
-          </div>
-        </div>
-      )}
+              {gesperrt ? (
+                <div className="mt-4 flex flex-col gap-2">
+                  {data.blockers.map((sperre) => (
+                    <Statusmeldung key={sperre} ton="warnung">
+                      {sperrText(sperre)}
+                    </Statusmeldung>
+                  ))}
+                  <Formularfuss>
+                    <Button variant="secondary" onClick={onAndere}>
+                      Andere Akte wählen
+                    </Button>
+                  </Formularfuss>
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <Checkbox
+                    label="Beide Akten betreffen dieselbe Person."
+                    checked={geprueft}
+                    onChange={(event) => setGeprueft(event.target.checked)}
+                  />
+                  {mutation.isError ? (
+                    <Statusmeldung ton="fehler" className="mt-3">
+                      Die Akten konnten nicht zusammengeführt werden. Es hat sich nichts geändert.
+                    </Statusmeldung>
+                  ) : null}
+                  {/* ANN-150: nicht rückgängig - das steht vor dem Knopf, nicht
+                      danach, als Satz über den Knöpfen. */}
+                  <Formularfuss zusatz="Nicht rückgängig zu machen. Ausgestellte Rechnungen und abgeschlossene Dokumentation bleiben, wie sie sind; nur ihr Bezug wechselt. Die leere Akte wird gelöscht.">
+                    <Button
+                      disabled={!geprueft || mutation.isPending}
+                      onClick={() => mutation.mutate()}
+                    >
+                      {mutation.isPending ? 'Wird zusammengeführt …' : 'Zusammenführen'}
+                    </Button>
+                    <Button variant="quiet" onClick={onAndere} disabled={mutation.isPending}>
+                      Andere Akte wählen
+                    </Button>
+                  </Formularfuss>
+                </div>
+              )}
+            </>
+          );
+        }}
+      </Abfragezustand>
     </Section>
   );
 }
@@ -178,34 +175,35 @@ function Auswahl({ patient, onAuswahl }: { patient: Patient; onAuswahl: (id: str
   });
   const moegliche = (data ?? []).filter((treffer) => treffer.id !== patient.id);
 
+  // Die möglichen Dubletten nach der Regel des Dublettenhinweises als Zeilen,
+  // jede andere Akte über die Suche darunter.
   return (
-    <Section titel="Welche Akte ist die Dublette?" ebene={3}>
+    <Section titel="Welche Akte ist die Dublette?">
       {moegliche.length > 0 ? (
-        <>
-          <p className="text-ink-muted mb-2 text-sm">
-            Mögliche Dubletten nach Name und Geburtsdatum:
-          </p>
-          <ul className="mb-4 flex flex-col gap-2">
-            {moegliche.map((treffer) => (
-              <li key={treffer.id}>
-                <Button variant="secondary" onClick={() => onAuswahl(treffer.id)}>
-                  {treffer.given_name} {treffer.family_name}
-                  {treffer.date_of_birth
-                    ? `, geb. ${formatDate(treffer.date_of_birth)}`
-                    : ', ohne Geburtsdatum'}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </>
+        <ListRows className="mb-4">
+          {moegliche.map((treffer) => (
+            <ListRow
+              key={treffer.id}
+              onClick={() => onAuswahl(treffer.id)}
+              titel={`${treffer.given_name} ${treffer.family_name}`}
+              meta={
+                treffer.date_of_birth
+                  ? `geb. ${formatDate(treffer.date_of_birth)}`
+                  : 'ohne Geburtsdatum'
+              }
+            />
+          ))}
+        </ListRows>
       ) : null}
-      <Patientensuche
-        label="Andere Akte suchen"
-        labelSichtbar
-        onAuswahl={(id) => {
-          if (id !== patient.id) onAuswahl(id);
-        }}
-      />
+      <div className="max-w-formular">
+        <Patientensuche
+          label="Andere Akte suchen"
+          labelSichtbar
+          onAuswahl={(id) => {
+            if (id !== patient.id) onAuswahl(id);
+          }}
+        />
+      </div>
     </Section>
   );
 }
@@ -214,11 +212,12 @@ export function ZusammenfuehrenPage() {
   const { patientId = '' } = useParams();
   const [dublette, setDublette] = useState<string | null>(null);
   const [fertig, setFertig] = useState(false);
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['patient', patientId],
     queryFn: () => fetchPatient(patientId),
     enabled: Boolean(patientId),
   });
+  const { data } = abfrage;
 
   return (
     <>
@@ -237,40 +236,36 @@ export function ZusammenfuehrenPage() {
         }
       />
 
-      {isPending ? <LoadingState label="Akte wird geladen …" /> : null}
-      {isError ? (
-        <ErrorState
-          title="Die Akte konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
-          onErneut={() => void refetch()}
-        />
-      ) : null}
-      {data === null ? (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-        />
-      ) : null}
-
-      {data && fertig ? (
-        <div className="flex flex-col items-start gap-3">
-          <Statusmeldung ton="erfolg">Die Dublette ist in dieser Akte aufgegangen.</Statusmeldung>
-          <ButtonLink to={`/patienten/${data.id}`}>Zur Akte</ButtonLink>
-        </div>
-      ) : null}
-
-      {data && !fertig && dublette === null ? (
-        <Auswahl patient={data} onAuswahl={setDublette} />
-      ) : null}
-
-      {data && !fertig && dublette !== null ? (
-        <Vorschau
-          patient={data}
-          dubletteId={dublette}
-          onFertig={() => setFertig(true)}
-          onAndere={() => setDublette(null)}
-        />
-      ) : null}
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Akte wird geladen …"
+        fehler="Die Akte konnte nicht geladen werden."
+      >
+        {(patient) =>
+          patient === null ? (
+            <ErrorState
+              title="Nicht gefunden"
+              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+            />
+          ) : fertig ? (
+            <div className="flex flex-col items-start gap-4">
+              <Rueckmeldung className="w-full">
+                Die Dublette ist in dieser Akte aufgegangen.
+              </Rueckmeldung>
+              <ButtonLink to={`/patienten/${patient.id}`}>Zur Akte</ButtonLink>
+            </div>
+          ) : dublette === null ? (
+            <Auswahl patient={patient} onAuswahl={setDublette} />
+          ) : (
+            <Vorschau
+              patient={patient}
+              dubletteId={dublette}
+              onFertig={() => setFertig(true)}
+              onAndere={() => setDublette(null)}
+            />
+          )
+        }
+      </Abfragezustand>
     </>
   );
 }

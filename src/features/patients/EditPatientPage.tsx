@@ -5,9 +5,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { alsFormularfehler } from '@/lib/formularfehler';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
@@ -124,7 +126,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
       {/* UX-005e: Nur der Name - das Sternchen erklärt sich am Feld. */}
       <PageHeader title={TITEL} description={fullName(patient)} />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             STAMMDATEN_REIHENFOLGE,
@@ -150,16 +152,17 @@ function EditPatientForm({ patient }: { patient: Patient }) {
             über den Knöpfen (PAT-02). */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <Formularfuss>
           <Button ref={speichernRef} type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Wird gespeichert …' : 'Änderungen speichern'}
           </Button>
           {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
-              dieselbe Rückfrage wie jeder andere Weg hinaus. */}
-          <ButtonLink to={zurueck} variant="secondary">
+              dieselbe Rückfrage wie jeder andere Weg hinaus. Leise, wie jedes
+              Abbrechen am Formularende (DESIGN.md, Formular). */}
+          <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
 
       {/* Ein Fehlschlag kann nicht neben dem Knopf stehen, der ihn auslöst: Am
@@ -185,7 +188,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
 export function EditPatientPage() {
   const { patientId = '' } = useParams<{ patientId: string }>();
 
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['patient', patientId],
     queryFn: () => fetchPatient(patientId),
     enabled: Boolean(patientId),
@@ -201,25 +204,23 @@ export function EditPatientPage() {
         beschriftung="Zurück zu den Stammdaten"
       />
 
-      {data ? (
-        <EditPatientForm patient={data} />
+      {abfrage.data ? (
+        <EditPatientForm patient={abfrage.data} />
       ) : (
         <>
           <PageHeader title={TITEL} />
-          {isPending ? <LoadingState label="Patientendaten werden geladen …" /> : null}
-          {isError ? (
-            <ErrorState
-              title="Die Patientendaten konnten nicht geladen werden."
-              description="Bitte die Verbindung prüfen und später erneut versuchen."
-              onErneut={() => void refetch()}
-            />
-          ) : null}
-          {data === null ? (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
-            />
-          ) : null}
+          <Abfragezustand
+            abfrage={abfrage}
+            laden="Patientendaten werden geladen …"
+            fehler="Die Patientendaten konnten nicht geladen werden."
+          >
+            {() => (
+              <ErrorState
+                title="Nicht gefunden"
+                description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+              />
+            )}
+          </Abfragezustand>
         </>
       )}
     </>
