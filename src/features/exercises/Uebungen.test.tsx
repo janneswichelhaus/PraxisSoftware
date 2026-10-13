@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { OHNE_KATALOG } from './testdaten';
+// Statisch geladen, damit der Knopf den Katalog ohne Wartezeit nachlädt.
+import { KATALOG } from './katalog';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -185,8 +187,7 @@ describe('UebungenPage (UEB-001)', () => {
     expect(screen.getByText(/ausgelassen: Mini-Kniebeuge mit Halt/)).toBeInTheDocument();
     expect(screen.getByText(/gelten bis zur Durchsicht durch die Praxis als/)).toBeInTheDocument();
     // Der ganze Katalog geht an den Server - der prüft und überspringt.
-    const [eintraege] = importiereKatalog.mock.calls[0] as [{ schluessel: string }[]];
-    expect(eintraege.map((e) => e.schluessel)).toContain('KN-01');
+    expect(importiereKatalog).toHaveBeenCalledWith(KATALOG);
   });
 
   it('bietet die Standardbibliothek ohne Pflegerecht nicht an (ANN-293)', async () => {
