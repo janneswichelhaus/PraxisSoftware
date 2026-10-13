@@ -1,9 +1,347 @@
 import type { Katalogeintrag } from '../typen';
 
 /**
- * Gruppe EH des Übungskatalogs.
+ * Gruppe EH: Ellenbogen und Hand.
  *
- * Wird von Welle A Inhalt gefüllt. Vorbild und Regeln: `kn.ts` und
- * `src/features/exercises/katalog/index.ts`.
+ * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
+ * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
+ * Vorsicht steht als Satz unter `hinweise_praxis`.
+ *
+ * Ohne Bild, weil die Figur keine Hand, kein Handgelenk und keine Finger hat
+ * und den Unterarm nicht drehen kann (lieber kein Bild als ein falsches):
+ * EH-02 und EH-05 bis EH-12. Bilder haben nur die Übungen, die sich im
+ * Ellbogen und in der Schulter zeigen (EH-01, EH-03, EH-04).
  */
-export const EINTRAEGE: readonly Katalogeintrag[] = [];
+export const EINTRAEGE: readonly Katalogeintrag[] = [
+  {
+    schluessel: 'EH-01',
+    version: '1.0.0',
+    name: 'Ellenbogen beugen und strecken',
+    alltagsname: 'Arm beugen und strecken',
+    region: 'ellenbogen',
+    ziel: 'mobilitaet',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: [],
+    niveau: 1,
+    dosierung: { saetze: 2, wiederholungen: 10, taeglich: 2 },
+    anleitung: [
+      'Setzen Sie sich aufrecht hin, die Arme hängen locker neben dem Körper, die Handflächen zeigen nach vorn.',
+      'Beugen Sie einen oder beide Ellbogen langsam, bis die Hand Richtung Schulter kommt.',
+      'Strecken Sie den Arm danach langsam wieder ganz.',
+      'Der Oberarm bleibt dabei ruhig neben dem Körper.',
+    ],
+    fehler: [
+      'Der Oberarm wandert nach vorn, statt neben dem Körper zu bleiben.',
+      'Der Arm wird am Ende nicht ganz gestreckt.',
+      'Die Bewegung geht mit Schwung.',
+    ],
+    hinweise_praxis:
+      'Nach Ruhigstellung oder Operation gelten Bewegungsgrenzen nach ärztlicher Vorgabe.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { schulter: [15, 10], ellbogen: [5, 5] },
+      ende: { schulter: [15, 10], ellbogen: [132, 128] },
+      bewegung: ['hand_nah'],
+    },
+  },
+  {
+    schluessel: 'EH-02',
+    version: '1.0.0',
+    name: 'Pro- und Supination',
+    alltagsname: 'Handfläche nach oben und unten drehen',
+    region: 'ellenbogen',
+    ziel: 'mobilitaet',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: ['tisch'],
+    niveau: 1,
+    dosierung: { saetze: 2, wiederholungen: 10, taeglich: 2 },
+    anleitung: [
+      'Setzen Sie sich an einen Tisch und legen Sie den Unterarm auf, der Ellbogen ist rechtwinklig gebeugt und liegt am Körper.',
+      'Drehen Sie die Handfläche langsam nach oben, so weit es angenehm geht.',
+      'Drehen Sie sie danach langsam nach unten, bis der Handrücken oben liegt.',
+      'Nur der Unterarm dreht sich, der Ellbogen bleibt am Körper.',
+    ],
+    fehler: [
+      'Der Ellbogen wandert vom Körper weg, die Schulter dreht mit.',
+      'Die Drehung kommt aus dem Handgelenk statt aus dem Unterarm.',
+    ],
+  },
+  {
+    schluessel: 'EH-03',
+    version: '1.0.0',
+    name: 'Bizepscurl',
+    alltagsname: 'Gewicht zur Schulter beugen',
+    region: 'ellenbogen',
+    ziel: 'kraft',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: ['hantel'],
+    niveau: 2,
+    dosierung: { saetze: 3, wiederholungen: 12 },
+    anleitung: [
+      'Setzen Sie sich aufrecht hin und nehmen Sie in jede Hand eine Hantel oder eine Wasserflasche.',
+      'Lassen Sie die Arme neben dem Körper hängen, die Handflächen zeigen nach vorn.',
+      'Beugen Sie die Ellbogen langsam und führen Sie das Gewicht Richtung Schulter.',
+      'Senken Sie es langsam wieder ab, bis die Arme fast gestreckt sind.',
+    ],
+    fehler: [
+      'Der Oberkörper schwingt nach hinten mit.',
+      'Die Ellbogen wandern nach vorn.',
+      'Das Gewicht fällt schnell nach unten, statt langsam abgesenkt zu werden.',
+    ],
+    hinweise_praxis:
+      'Das Gewicht steht in der Dosierung als Last, etwa „1 kg“ oder „0,5-l-Flasche“.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { schulter: [15, 10], ellbogen: [5, 5] },
+      ende: { schulter: [15, 10], ellbogen: [128, 124] },
+      hilfsmittel: [{ art: 'hantel', an: 'hand_nah' }],
+      bewegung: ['hand_nah'],
+    },
+  },
+  {
+    schluessel: 'EH-04',
+    version: '1.0.0',
+    name: 'Trizepsstrecken mit Abstützen',
+    alltagsname: 'Arm nach hinten strecken',
+    region: 'ellenbogen',
+    ziel: 'kraft',
+    ausgangsstellung: 'stand',
+    hilfsmittel: ['tisch', 'hantel'],
+    niveau: 2,
+    dosierung: { saetze: 3, wiederholungen: 12, je_seite: true },
+    anleitung: [
+      'Stellen Sie sich vor einen Tisch und stützen Sie sich mit einer Hand darauf ab, der Rücken ist gerade nach vorn geneigt.',
+      'Nehmen Sie das Gewicht in die andere Hand und legen Sie den Oberarm eng an den Körper, der Ellbogen ist gebeugt.',
+      'Strecken Sie den Ellbogen langsam, bis der Arm gerade nach hinten zeigt; der Oberarm bleibt ruhig.',
+      'Beugen Sie den Arm langsam wieder und wechseln Sie nach allen Wiederholungen die Seite.',
+    ],
+    fehler: [
+      'Der Oberarm schwingt mit, statt ruhig am Körper zu bleiben.',
+      'Der Rücken wird rund.',
+      'Das Gewicht wird mit Schwung nach hinten geworfen.',
+    ],
+    hinweise_praxis:
+      'Das Gewicht steht in der Dosierung als Last, etwa „1 kg“; die stützende Hand gibt Halt und Gleichgewicht.',
+    bild: {
+      v: 1,
+      basis: 'stand',
+      start: {
+        rumpf: 58,
+        huefte: [64, 64],
+        knie: [12, 12],
+        schulter: [-18, 60],
+        ellbogen: [95, 0],
+        haende: [null, 'tisch'],
+      },
+      ende: {
+        rumpf: 58,
+        huefte: [64, 64],
+        knie: [12, 12],
+        schulter: [-18, 60],
+        ellbogen: [4, 0],
+        haende: [null, 'tisch'],
+      },
+      hilfsmittel: [
+        { art: 'tisch', x: 70 },
+        { art: 'hantel', an: 'hand_nah' },
+      ],
+      bewegung: ['hand_nah'],
+    },
+  },
+  {
+    schluessel: 'EH-05',
+    version: '1.0.0',
+    name: 'Exzentrische Handgelenksextension',
+    alltagsname: 'Gewicht langsam absenken',
+    region: 'ellenbogen',
+    ziel: 'kraft',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: ['tisch', 'hantel'],
+    niveau: 2,
+    dosierung: { saetze: 3, wiederholungen: 15, taeglich: 1 },
+    anleitung: [
+      'Setzen Sie sich an einen Tisch und legen Sie den Unterarm so auf, dass die Hand über die Kante ragt, die Handfläche zeigt nach unten.',
+      'Nehmen Sie ein leichtes Gewicht in die Hand und heben Sie die Hand mit Hilfe der anderen Hand nach oben.',
+      'Lassen Sie die helfende Hand los und senken Sie das Gewicht ganz langsam ab, etwa 3 bis 4 Sekunden lang.',
+      'Heben Sie die Hand wieder mit Hilfe der anderen Hand an und beginnen Sie von vorn.',
+    ],
+    fehler: [
+      'Das Gewicht wird aus eigener Kraft wieder hochgehoben statt mit der anderen Hand.',
+      'Das Absenken geht zu schnell.',
+      'Der Unterarm hebt von der Tischplatte ab.',
+    ],
+    hinweise_praxis:
+      'Die Dosierung gilt für einen Arm; für beide Seiten im Plan „je Seite“ setzen. Ein leichter Belastungsschmerz während der Übung ist häufig, er sollte bis zum nächsten Tag abklingen. Gewicht als Last eintragen.',
+  },
+  {
+    schluessel: 'EH-06',
+    version: '1.0.0',
+    name: 'Dehnung der Handgelenkstrecker',
+    alltagsname: 'Handrücken sanft beugen',
+    region: 'ellenbogen',
+    ziel: 'dehnung',
+    ausgangsstellung: 'stand',
+    hilfsmittel: [],
+    niveau: 1,
+    dosierung: { saetze: 3, dauer_s: 30, taeglich: 1 },
+    anleitung: [
+      'Stellen Sie sich aufrecht hin und strecken Sie einen Arm gerade nach vorn, die Handfläche zeigt nach unten.',
+      'Beugen Sie das Handgelenk, sodass die Finger nach unten zeigen.',
+      'Ziehen Sie mit der anderen Hand den Handrücken sanft zu sich, bis Sie oben am Unterarm eine Dehnung spüren.',
+      'Halten Sie die Dehnung ruhig und atmen Sie weiter.',
+    ],
+    fehler: [
+      'Der Ellbogen wird gebeugt.',
+      'Es wird ruckartig oder kräftig gezogen.',
+      'Die Schulter zieht nach oben.',
+    ],
+    hinweise_praxis:
+      'Die Dosierung gilt für einen Arm; für beide Seiten im Plan „je Seite“ setzen. Kribbeln in den Fingern ist kein Dehngefühl.',
+  },
+  {
+    schluessel: 'EH-07',
+    version: '1.0.0',
+    name: 'Handgelenk beugen und strecken',
+    alltagsname: 'Hand auf und ab bewegen',
+    region: 'hand',
+    ziel: 'mobilitaet',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: ['tisch'],
+    niveau: 1,
+    dosierung: { saetze: 2, wiederholungen: 10, taeglich: 2 },
+    anleitung: [
+      'Setzen Sie sich an einen Tisch und legen Sie den Unterarm so auf, dass die Hand über die Kante ragt.',
+      'Heben Sie die Hand langsam nach oben, so weit es angenehm geht.',
+      'Senken Sie sie danach langsam nach unten, so weit es angenehm geht.',
+      'Der Unterarm bleibt dabei ruhig liegen, die Finger sind locker.',
+    ],
+    fehler: [
+      'Der Unterarm hebt von der Tischplatte ab.',
+      'Die Finger werden zur festen Faust geschlossen.',
+      'Die Bewegung geht mit Schwung.',
+    ],
+  },
+  {
+    schluessel: 'EH-08',
+    version: '1.0.0',
+    name: 'Faustschluss und Finger spreizen',
+    alltagsname: 'Faust machen, Finger spreizen',
+    region: 'hand',
+    ziel: 'mobilitaet',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: [],
+    niveau: 1,
+    dosierung: { saetze: 2, wiederholungen: 10, taeglich: 3 },
+    anleitung: [
+      'Setzen Sie sich bequem hin und legen Sie den Unterarm auf dem Oberschenkel oder einem Tisch ab.',
+      'Schließen Sie die Hand langsam zu einer lockeren Faust, der Daumen liegt außen.',
+      'Öffnen Sie die Hand danach und spreizen Sie die Finger weit auseinander.',
+      'Wechseln Sie ruhig zwischen Faust und gespreizten Fingern.',
+    ],
+    fehler: [
+      'Die Faust wird mit voller Kraft zusammengedrückt.',
+      'Die Finger werden beim Öffnen nicht ganz gestreckt.',
+    ],
+    hinweise_praxis: 'Bei geschwollener Hand die Übung mit hochgelagertem Arm ausführen lassen.',
+  },
+  {
+    schluessel: 'EH-09',
+    version: '1.0.0',
+    name: 'Sehnengleitübungen',
+    alltagsname: 'Finger in fünf Stellungen führen',
+    region: 'hand',
+    ziel: 'mobilitaet',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: [],
+    niveau: 1,
+    dosierung: { wiederholungen: 5, taeglich: 3 },
+    anleitung: [
+      'Setzen Sie sich bequem hin, stützen Sie den Ellbogen auf und strecken Sie die Finger gerade nach oben.',
+      'Beugen Sie nur die vorderen Fingergelenke zu einer Hakenfaust, strecken Sie die Finger wieder und schließen Sie die Hand dann zur vollen Faust.',
+      'Beugen Sie danach nur die Fingergrundgelenke, die Finger bleiben gestreckt wie eine Tischplatte.',
+      'Machen Sie zuletzt eine gerade Faust: Die Fingerkuppen berühren unten die Handfläche, die vordersten Gelenke bleiben gestreckt.',
+      'Kehren Sie nach jeder Stellung zur geraden Hand zurück und halten Sie jede Stellung kurz.',
+    ],
+    fehler: [
+      'Die Stellungen werden mit Kraft erzwungen statt ruhig erreicht.',
+      'Das Handgelenk beugt sich mit.',
+      'Bei der Hakenfaust beugen sich auch die Fingergrundgelenke.',
+    ],
+    hinweise_praxis:
+      'Die Dosierung gilt je Stellung. Die fünf Stellungen einmal gemeinsam einüben; nach Operation an Sehnen der Hand gilt das Schema der Handchirurgie.',
+  },
+  {
+    schluessel: 'EH-10',
+    version: '1.0.0',
+    name: 'Griffkraft mit Softball',
+    alltagsname: 'Weichen Ball zusammendrücken',
+    region: 'hand',
+    ziel: 'kraft',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: ['ball'],
+    niveau: 1,
+    dosierung: { saetze: 3, wiederholungen: 10, halten_s: 3, taeglich: 1 },
+    anleitung: [
+      'Setzen Sie sich bequem hin und nehmen Sie einen weichen Ball in die Hand.',
+      'Drücken Sie den Ball mit der ganzen Hand zusammen, so fest es angenehm ist.',
+      'Halten Sie den Druck so lange wie im Plan angegeben und atmen Sie dabei weiter.',
+      'Lassen Sie langsam los und öffnen Sie die Hand ganz.',
+    ],
+    fehler: [
+      'Das Handgelenk knickt beim Drücken ab.',
+      'Die Luft wird angehalten.',
+      'Es wird so fest gedrückt, dass es schmerzt.',
+    ],
+    hinweise_praxis:
+      'Ein Schaumstoffball oder eine zusammengerollte Socke genügt; die Härte des Balls als Last eintragen.',
+  },
+  {
+    schluessel: 'EH-11',
+    version: '1.0.0',
+    name: 'Handtuch auswringen',
+    alltagsname: 'Handtuch auswringen',
+    region: 'hand',
+    ziel: 'kraft',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: ['handtuch'],
+    niveau: 2,
+    dosierung: { saetze: 3, wiederholungen: 10, taeglich: 1 },
+    anleitung: [
+      'Setzen Sie sich aufrecht hin und fassen Sie ein zusammengerolltes Handtuch mit beiden Händen vor dem Körper.',
+      'Drehen Sie die Hände gegeneinander, als wollten Sie das Handtuch auswringen.',
+      'Lösen Sie die Spannung und drehen Sie danach in die andere Richtung.',
+      'Arbeiten Sie langsam und nur mit so viel Kraft, wie es angenehm ist.',
+    ],
+    fehler: [
+      'Die Schultern ziehen nach oben.',
+      'Es wird ruckartig gedreht.',
+      'Die Handgelenke knicken stark ab.',
+    ],
+    hinweise_praxis:
+      'Belastet Handgelenk und Daumensattelgelenk deutlich; erst üben, wenn diese Belastung erlaubt ist.',
+  },
+  {
+    schluessel: 'EH-12',
+    version: '1.0.0',
+    name: 'Daumen-Finger-Opposition',
+    alltagsname: 'Daumen tippt jede Fingerkuppe an',
+    region: 'hand',
+    ziel: 'koordination',
+    ausgangsstellung: 'sitz',
+    hilfsmittel: [],
+    niveau: 1,
+    dosierung: { saetze: 3, wiederholungen: 4, taeglich: 2 },
+    anleitung: [
+      'Setzen Sie sich bequem hin, die Hand ist locker geöffnet.',
+      'Tippen Sie mit der Daumenkuppe nacheinander die Kuppen von Zeigefinger, Mittelfinger, Ringfinger und kleinem Finger an.',
+      'Jede Fingerkuppe zählt als eine Wiederholung; nach dem kleinen Finger ist ein Durchgang geschafft.',
+      'Achten Sie darauf, dass sich die Kuppen berühren und jedes Mal ein kleines „O“ entsteht.',
+    ],
+    fehler: [
+      'Der Daumen berührt die Finger seitlich statt mit der Kuppe.',
+      'Die Bewegung wird hastig statt genau ausgeführt.',
+    ],
+  },
+];
