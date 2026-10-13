@@ -10,9 +10,12 @@ import type { Katalogeintrag } from '../typen';
  * Bilder wie in `gg.ts`: Die Arbeitsplatte steht vor der Person oder - beim
  * Gehen und in der Vorderansicht - hinter ihr. Greifen mit Gegenständen,
  * Fingerarbeit und Drehungen um die eigene Achse zeigen nur die
- * Ausgangsstellung (ANN-480): NE-05 und NE-06 mit den Händen auf der Platte
- * (Becher, Münzen und Knöpfe kennt der Zeichner nicht), NE-11 im Schritt mit
- * dem Stuhl in Reichweite hinter der Person.
+ * Ausgangsstellung (ANN-480): NE-05 und NE-06 aufrecht im Sitz mit den
+ * Händen auf den Oberschenkeln, ohne Tisch wie die Gruppe EH - der Tisch des
+ * Zeichners ist eine Arbeitsplatte (90 cm) und stünde im Sitz auf
+ * Schulterhöhe; das verleitete zum Hochziehen der Schulter. Becher, Münzen
+ * und Knöpfe kennt der Zeichner nicht. NE-11 steht im Schritt mit dem Stuhl
+ * in Reichweite hinter der Person.
  *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
  * (ANN-386).
@@ -181,9 +184,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz',
-      start: { haende: ['tisch', 'oberschenkel'] },
-      ende: { haende: ['tisch', 'oberschenkel'] },
-      hilfsmittel: [{ art: 'tisch', x: 48 }],
+      start: { haende: ['oberschenkel', 'oberschenkel'] },
+      ende: { haende: ['oberschenkel', 'oberschenkel'] },
     },
   },
   {
@@ -213,9 +215,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz',
-      start: { haende: ['tisch', 'tisch'] },
-      ende: { haende: ['tisch', 'tisch'] },
-      hilfsmittel: [{ art: 'tisch', x: 48 }],
+      start: { haende: ['oberschenkel', 'oberschenkel'] },
+      ende: { haende: ['oberschenkel', 'oberschenkel'] },
     },
   },
   {

@@ -12,8 +12,12 @@ import type { Katalogeintrag } from '../typen';
  * Handgelenk und keine Finger und kann den Unterarm nicht drehen: EH-02 und
  * EH-05 bis EH-12 zeigen deshalb die Ausgangsstellung (ANN-480). Den Tisch
  * lassen sie weg - er ist eine Arbeitsplatte (90 cm) und stünde im Sitz auf
- * Brusthöhe; der Unterarm liegt auf dem Oberschenkel. Das Handtuch bei EH-11
- * halten beide Hände vor dem Bauch (Vorderansicht).
+ * Brusthöhe; der Unterarm liegt auf dem Oberschenkel. Bei EH-02 liegt der
+ * Ellbogen dabei am Körper. EH-05 und EH-07 neigen den Oberkörper etwas vor,
+ * damit der Unterarm auf dem Oberschenkel liegt und die Hand an der Kniekante
+ * frei ist - der Oberschenkel steht in der Anleitung als Alternative zum
+ * Tisch. Das Handtuch bei EH-11 halten beide Hände vor dem Bauch, die
+ * Ellbogen nah am Körper (Vorderansicht).
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -72,8 +76,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz',
-      start: { schulter: [2, 14], ellbogen: [88, 62], haende: [null, 'oberschenkel'] },
-      ende: { schulter: [2, 14], ellbogen: [88, 62], haende: [null, 'oberschenkel'] },
+      start: { schulter: [4, 14], ellbogen: [58, 62], haende: [null, 'oberschenkel'] },
+      ende: { schulter: [4, 14], ellbogen: [58, 62], haende: [null, 'oberschenkel'] },
     },
   },
   {
@@ -167,11 +171,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     region: 'ellenbogen',
     ziel: 'kraft',
     ausgangsstellung: 'sitz',
-    hilfsmittel: ['tisch', 'hantel'],
+    hilfsmittel: ['hantel'],
+    hilfsmittel_optional: ['tisch'],
     niveau: 2,
     dosierung: { saetze: 3, wiederholungen: 15, taeglich: 1 },
     anleitung: [
-      'Setzen Sie sich an einen Tisch und legen Sie den Unterarm so auf, dass die Hand über die Kante ragt, die Handfläche zeigt nach unten.',
+      'Setzen Sie sich an einen Tisch und legen Sie den Unterarm so auf, dass die Hand über die Kante ragt, die Handfläche zeigt nach unten. Ohne Tisch liegt der Unterarm auf dem Oberschenkel, die Hand ragt über das Knie.',
       'Nehmen Sie ein leichtes Gewicht in die Hand und heben Sie die Hand mit Hilfe der anderen Hand nach oben.',
       'Lassen Sie die helfende Hand los und senken Sie das Gewicht ganz langsam ab, etwa 3 bis 4 Sekunden lang.',
       'Heben Sie die Hand wieder mit Hilfe der anderen Hand an und beginnen Sie von vorn.',
@@ -179,15 +184,15 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: [
       'Das Gewicht wird aus eigener Kraft wieder hochgehoben statt mit der anderen Hand.',
       'Das Absenken geht zu schnell.',
-      'Der Unterarm hebt von der Tischplatte ab.',
+      'Der Unterarm hebt von der Unterlage ab.',
     ],
     hinweise_praxis:
       'Die Dosierung gilt für einen Arm; für beide Seiten im Plan „je Seite“ setzen. Ein leichter Belastungsschmerz während der Übung ist häufig, er sollte bis zum nächsten Tag abklingen. Gewicht als Last eintragen.',
     bild: {
       v: 1,
       basis: 'sitz',
-      start: {},
-      ende: {},
+      start: { rumpf: 30, huefte: [117, 117], haende: ['knie', 'oberschenkel'] },
+      ende: { rumpf: 30, huefte: [117, 117], haende: ['knie', 'oberschenkel'] },
       hilfsmittel: [{ art: 'hantel', an: 'hand_nah' }],
     },
   },
@@ -230,21 +235,27 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     region: 'hand',
     ziel: 'mobilitaet',
     ausgangsstellung: 'sitz',
-    hilfsmittel: ['tisch'],
+    hilfsmittel: [],
+    hilfsmittel_optional: ['tisch'],
     niveau: 1,
     dosierung: { saetze: 2, wiederholungen: 10, taeglich: 2 },
     anleitung: [
-      'Setzen Sie sich an einen Tisch und legen Sie den Unterarm so auf, dass die Hand über die Kante ragt.',
+      'Setzen Sie sich an einen Tisch und legen Sie den Unterarm so auf, dass die Hand über die Kante ragt. Ohne Tisch liegt der Unterarm auf dem Oberschenkel, die Hand ragt über das Knie.',
       'Heben Sie die Hand langsam nach oben, so weit es angenehm geht.',
       'Senken Sie sie danach langsam nach unten, so weit es angenehm geht.',
       'Der Unterarm bleibt dabei ruhig liegen, die Finger sind locker.',
     ],
     fehler: [
-      'Der Unterarm hebt von der Tischplatte ab.',
+      'Der Unterarm hebt von der Unterlage ab.',
       'Die Finger werden zur festen Faust geschlossen.',
       'Die Bewegung geht mit Schwung.',
     ],
-    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { rumpf: 30, huefte: [117, 117], haende: ['knie', 'oberschenkel'] },
+      ende: { rumpf: 30, huefte: [117, 117], haende: ['knie', 'oberschenkel'] },
+    },
   },
   {
     schluessel: 'EH-08',
@@ -361,8 +372,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz_front',
-      start: { arm: [45, 45], ellbogen: [-116, -116] },
-      ende: { arm: [45, 45], ellbogen: [-116, -116] },
+      start: { arm: [20, 20], ellbogen: [-110, -110] },
+      ende: { arm: [20, 20], ellbogen: [-110, -110] },
       hilfsmittel: [{ art: 'handtuch', von: 'hand_nah', nach: 'hand_fern' }],
     },
   },
