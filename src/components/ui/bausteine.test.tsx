@@ -1797,6 +1797,11 @@ describe('Fortschrittspunkte (ProgressDots)', () => {
     expect(offen).toEqual(expect.arrayContaining(['bg-surface-sunken', 'border-line-strong']));
     expect(abgesagt).toEqual(expect.arrayContaining(['bg-danger', 'border-danger']));
     expect(nichtAngetroffen).toEqual(expect.arrayContaining(['bg-warnung', 'border-warnung']));
+    // Status = Zeichen + Wort (DESIGN.md Regel 5; Design-Review R2, U1): Ein
+    // gefüllter Punkt trägt das Zeichen seines Abzeichens, nicht nur die Farbe.
+    expect(punkte.map((punkt) => punkt.querySelector('svg')?.getAttribute('data-zeichen'))).toEqual(
+      ['haken', 'ausrufezeichen', undefined, undefined, 'kreuz'],
+    );
     // 12 px, rund, Farbwechsel in 200 ms.
     for (const klassen of [erledigt, naechster, offen]) {
       expect(klassen).toEqual(
