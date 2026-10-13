@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { rolleInsBild } from '@/components/ui/waagerechtRollen';
+import { Randverlauf } from '@/components/ui/Reiterleiste';
+import { rolleInsBild, useRandVerlauf, VERLAUF_FREI_PX } from '@/components/ui/waagerechtRollen';
 import { useOffenerReiter, type Suchreiter } from './offenerReiter';
 
 /**
@@ -36,8 +37,10 @@ export function Suchreiterleiste<W extends string>({
 
   useLayoutEffect(() => {
     const aktiv = liste.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (liste.current && aktiv) rolleInsBild(liste.current, aktiv);
+    if (liste.current && aktiv) rolleInsBild(liste.current, aktiv, VERLAUF_FREI_PX);
   }, [offen]);
+  // Wie die `Reiterleiste`: ein Verlauf am Rand zeigt weitere Reiter an (A1).
+  const rand = useRandVerlauf(liste, offen);
 
   function ziel(wert: W, erster: boolean): string {
     const neu = new URLSearchParams(suche);
@@ -48,7 +51,7 @@ export function Suchreiterleiste<W extends string>({
   }
 
   return (
-    <nav aria-label={label} className="border-line border-t">
+    <nav aria-label={label} className="border-line relative border-t">
       <ul
         ref={liste}
         className="flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3"
@@ -65,6 +68,7 @@ export function Suchreiterleiste<W extends string>({
           </li>
         ))}
       </ul>
+      <Randverlauf {...rand} />
     </nav>
   );
 }
