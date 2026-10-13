@@ -8,11 +8,13 @@ import type { Katalogeintrag } from '../typen';
  * Auswahlkriterium (ADR-006 Punkt 10) - eine Vorsicht steht als Satz unter
  * `hinweise_praxis`.
  *
- * Ohne Bild (lieber kein Bild als ein falsches): LW-05 (die Drehung um die
- * Längsachse zeigt die Seitenansicht nicht), LW-09 (die Spannung im Bauch ist
- * nicht zu sehen), LW-17 (die gebeugten Knie im Seitstütz verschwinden in der
- * Frontansicht, der Unterarm zeigt zum Betrachter) und LW-20 (Zug von der
- * Seite und Drücken nach vorn passen in keine Ansicht zugleich).
+ * Nur die Ausgangsstellung (ANN-480; lieber die Stellung als ein falsches
+ * Bewegungsbild): LW-05 (die Drehung um die Längsachse zeigt die
+ * Seitenansicht nicht), LW-09 (die Spannung im Bauch ist nicht zu sehen) und
+ * LW-20 (Zug von der Seite und Drücken nach vorn passen in keine Ansicht
+ * zugleich). LW-17 steht in der Frontansicht: Unterschenkel und Unterarm
+ * zeigen vom Betrachter weg und sind kaum zu sehen, das Heben des Beckens
+ * schon.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -174,6 +176,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Die Knie fallen mit Schwung zur Seite.', 'Die gegenüberliegende Schulter hebt ab.'],
     hinweise_praxis:
       'Nach Hüftendoprothese mit hinterem Zugang: Sinken die Knie zur Gegenseite, gerät das operierte Bein in Adduktion und Innenrotation; das Ausmaß dann nach ärztlicher Vorgabe begrenzen.',
+    bild: {
+      v: 1,
+      basis: 'rueckenlage_angestellt',
+      unterlage: 'matte',
+      start: {},
+      ende: {},
+    },
   },
   {
     schluessel: 'LW-06',
@@ -320,6 +329,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Becken kippt mit oder das Gesäß wird angespannt.',
       'Es wird zu kräftig angespannt.',
     ],
+    bild: {
+      v: 1,
+      basis: 'rueckenlage_angestellt',
+      unterlage: 'matte',
+      // Die Hände liegen auf dem Unterbauch, die Ellbogen neben dem Körper.
+      start: { schulter: [-7, -7], ellbogen: [35, 35] },
+      ende: { schulter: [-7, -7], ellbogen: [35, 35] },
+    },
   },
   {
     schluessel: 'LW-10',
@@ -618,6 +635,30 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Belastet die Schulter des Stützarms; bei Beschwerden dort nicht üben. Liegen auf der operierten Seite nach Hüftendoprothese nur nach ärztlicher Vorgabe.',
+    bild: {
+      v: 1,
+      basis: 'seitlage_front',
+      unterlage: 'matte',
+      anker: 'ellbogen_fern',
+      // Der untere Oberarm steht senkrecht; die Unterschenkel zeigen vom
+      // Betrachter weg und verschwinden in der Frontansicht.
+      start: {
+        rumpf: 54,
+        bein: [36, -36],
+        knie: [90, 90],
+        arm: [8, 54],
+        ellbogen: [0, -90],
+        haende: ['huefte', null],
+      },
+      ende: {
+        rumpf: 74,
+        knie: [90, 90],
+        arm: [8, 74],
+        ellbogen: [0, -90],
+        haende: ['huefte', null],
+      },
+      bewegung: ['becken'],
+    },
   },
   {
     schluessel: 'LW-18',
@@ -714,5 +755,15 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“. Mehr Abstand zur Befestigung erhöht den Zug.',
+    bild: {
+      v: 1,
+      basis: 'stand_front',
+      start: { haende: ['brust', 'brust'] },
+      ende: { haende: ['brust', 'brust'] },
+      hilfsmittel: [
+        { art: 'tuerrahmen', x: -60 },
+        { art: 'band', von: 'tuerrahmen', nach: 'hand_nah' },
+      ],
+    },
   },
 ];
