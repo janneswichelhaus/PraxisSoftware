@@ -216,6 +216,22 @@ describe('TagUmplanenPage', () => {
     expect(screen.getByRole('link', { name: 'Zum Kalender' })).toHaveAttribute('href', '/kalender');
   });
 
+  it('endet als Formular: Absagen in voller Breite, daneben Abbrechen zurück in den Kalender (T3)', async () => {
+    rendern(
+      `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zurueck=%2Fkalender%3Fansicht%3Dtag`,
+    );
+    const absagen = await screen.findByRole('button', { name: '2 Termine absagen' });
+    // Hauptknopf in Seitengröße (48 px), nicht kompakt wie in einer Aktionsleiste.
+    expect(absagen).toHaveClass('h-12');
+    const abbrechen = screen.getByRole('link', { name: 'Abbrechen' });
+    expect(abbrechen).toHaveAttribute('href', '/kalender?ansicht=tag');
+    // Beide im selben Formularfuss, der Hauptknopf zuerst.
+    expect(absagen.parentElement).toBe(abbrechen.parentElement);
+    expect(
+      absagen.compareDocumentPosition(abbrechen) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('bietet einem Zugang ohne Terminrecht keine Absage an', async () => {
     rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}`, ['patient']);
     await screen.findByText(/Diese Termine werden abgesagt/);
