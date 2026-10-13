@@ -50,16 +50,20 @@ export function TrainingClientFields({
     <>
       <Section titel="Person">
         <Feldgruppe>
-          {feld('given_name', 'Vorname *', {
-            ...OHNE_AUTOKORREKTUR,
-            maxLength: 100,
-            required: true,
-          })}
-          {feld('family_name', 'Nachname *', {
-            ...OHNE_AUTOKORREKTUR,
-            maxLength: 100,
-            required: true,
-          })}
+          {/* Zwei Felder nebeneinander nur ab 640 px und nur, was
+              zusammengehört (DESIGN.md „Formular“). */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {feld('given_name', 'Vorname *', {
+              ...OHNE_AUTOKORREKTUR,
+              maxLength: 100,
+              required: true,
+            })}
+            {feld('family_name', 'Nachname *', {
+              ...OHNE_AUTOKORREKTUR,
+              maxLength: 100,
+              required: true,
+            })}
+          </div>
           {feld('date_of_birth', 'Geburtsdatum', {
             type: 'date',
             min: '1900-01-01',
@@ -74,10 +78,14 @@ export function TrainingClientFields({
           {feld('email', 'E-Mail', { type: 'email' })}
           {/* Zwei Felder wie in der Akte (ABN-020, BEF-111): Der Hausbesuch
               übernimmt sie unverändert, die Rechnung braucht beide. */}
-          {feld('street', 'Straße', { ...OHNE_AUTOKORREKTUR, maxLength: 200 })}
-          {feld('house_number', 'Hausnummer', { ...OHNE_AUTOKORREKTUR, maxLength: 20 })}
-          {feld('postal_code', 'PLZ', { inputMode: 'numeric', maxLength: 12 })}
-          {feld('city', 'Ort', { ...OHNE_AUTOKORREKTUR, maxLength: 100 })}
+          <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+            {feld('street', 'Straße', { ...OHNE_AUTOKORREKTUR, maxLength: 200 })}
+            {feld('house_number', 'Hausnummer', { ...OHNE_AUTOKORREKTUR, maxLength: 20 })}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
+            {feld('postal_code', 'PLZ', { inputMode: 'numeric', maxLength: 12 })}
+            {feld('city', 'Ort', { ...OHNE_AUTOKORREKTUR, maxLength: 100 })}
+          </div>
         </Feldgruppe>
       </Section>
 

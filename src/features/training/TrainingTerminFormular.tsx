@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import type { Formularfehler } from '@/lib/formularfehler';
@@ -79,7 +80,10 @@ export function TrainingTerminFormular({
   /** Der laufende Praxistag, für die Vorabfrage zur Vergangenheit. */
   heute: string;
   rasterMinuten: number | null;
-  /** Felder davor - beim Anlegen Kund:in und Vereinbarung. */
+  /**
+   * Felder davor - beim Anlegen Kund:in und Vereinbarung, als eigener
+   * Abschnitt vor „Person und Art“ und „Zeit und Ort“ der geteilten Felder.
+   */
   vorFeldern?: ReactNode;
   /** Ist alles gewählt, was vor den Feldern steht? Sonst kein Absenden. */
   bereit?: boolean;
@@ -214,7 +218,7 @@ export function TrainingTerminFormular({
   }
 
   return (
-    <form onSubmit={absenden} noValidate className="max-w-xl">
+    <form onSubmit={absenden} noValidate className="max-w-formular">
       <Fehlerzusammenfassung
         key={pruefung.nummer}
         fehler={Object.values(fehler).some(Boolean) ? pruefung.fehler : []}
@@ -295,16 +299,19 @@ export function TrainingTerminFormular({
 
       {schutz}
 
-      <div className="mt-8 flex flex-wrap gap-3">
+      {/* Am Telefon untereinander in voller Breite, der Hauptknopf zuerst
+          (DESIGN.md „Formular“). Abbrechen ist ein Seitenwechsel und damit
+          ein Link (UIK-13). */}
+      <Formularfuss>
         <Button type="submit" disabled={mutation.isPending || !bereit}>
           {mutation.isPending ? laeuftText : absendeText}
         </Button>
-        <ButtonLink to={abbrechenZiel} variant="secondary">
+        <ButtonLink to={abbrechenZiel} variant="quiet">
           Abbrechen
         </ButtonLink>
-      </div>
+      </Formularfuss>
 
-      <Kleingedrucktes className="mt-10">
+      <Kleingedrucktes className="mt-8">
         Am Termin stehen nur organisatorische Angaben. Was in der Einheit passiert, gehört nicht
         hierher.
       </Kleingedrucktes>

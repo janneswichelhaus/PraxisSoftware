@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatDate } from '@/lib/datum';
 import {
   fetchProfil,
@@ -41,7 +44,8 @@ export function TrainingProfil({
     refetchOnWindowFocus: false,
   });
   const [bearbeiten, setBearbeiten] = useState(false);
-  const [gespeichert, setGespeichert] = useState(false);
+  // Zählt die Speichervorgänge: Jede Bestätigung ist eine neue Zeile.
+  const [gespeichert, setGespeichert] = useState(0);
 
   return (
     <Section
@@ -53,58 +57,57 @@ export function TrainingProfil({
             type="button"
             variant="secondary"
             groesse="kompakt"
-            onClick={() => {
-              setGespeichert(false);
-              setBearbeiten(true);
-            }}
+            onClick={() => setBearbeiten(true)}
           >
             Bearbeiten
           </Button>
         ) : null
       }
     >
-      {sicht.isPending ? (
-        <LoadingState label="Voraussetzungen werden geladen …" />
-      ) : sicht.isError ? (
-        <ErrorState
-          title="Die Voraussetzungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void sicht.refetch()}
-        />
-      ) : !sicht.data ? null : bearbeiten ? (
-        <Bearbeiten
-          relationshipId={relationshipId}
-          sicht={sicht.data}
-          onFertig={(ok) => {
-            setBearbeiten(false);
-            setGespeichert(ok);
-          }}
-        />
-      ) : (
-        <Anzeige sicht={sicht.data} gespeichert={gespeichert} />
-      )}
+      <Abfragezustand
+        abfrage={sicht}
+        laden="Voraussetzungen werden geladen …"
+        fehler="Die Voraussetzungen konnten nicht geladen werden."
+      >
+        {(daten) =>
+          !daten ? null : bearbeiten ? (
+            <Bearbeiten
+              relationshipId={relationshipId}
+              sicht={daten}
+              onFertig={(ok) => {
+                setBearbeiten(false);
+                if (ok) setGespeichert((zahl) => zahl + 1);
+              }}
+            />
+          ) : (
+            <Anzeige sicht={daten} gespeichert={gespeichert} />
+          )
+        }
+      </Abfragezustand>
     </Section>
   );
 }
 
-function Anzeige({ sicht, gespeichert }: { sicht: Profilsicht; gespeichert: boolean }) {
+function Anzeige({ sicht, gespeichert }: { sicht: Profilsicht; gespeichert: number }) {
   const gefuellt = PROFILFELDER.filter(([feld]) => sicht.profile?.[feld]);
   return (
-    <div className="flex flex-col gap-4">
-      {gespeichert ? <Statusmeldung ton="erfolg">Gespeichert.</Statusmeldung> : null}
+    // Die erste Angabenliste trägt keine Kopflinie: Sie stünde direkt unter
+    // dem Rahmen der Karte (wie `Inhaltsflaeche`).
+    <div className="flex flex-col gap-4 [&>dl:first-child]:mt-0 [&>dl:first-child]:border-t-0">
+      {gespeichert > 0 ? <Rueckmeldung key={gespeichert}>Gespeichert.</Rueckmeldung> : null}
       {/* ANN-264: Das Profil bleibt bedienbar; der Stand der Einwilligung
           steht dabei, damit niemand ihn suchen muss. */}
       {sicht.health_consent ? null : (
-        <p className="text-warnung text-sm">
+        <Statusmeldung ton="warnung">
           Keine Einwilligung zu Gesundheitsangaben vermerkt. Belastungsgrenzen und Vorgeschichte
           erst eintragen, wenn sie vorliegt.
-        </p>
+        </Statusmeldung>
       )}
       {gefuellt.length > 0 ? (
         <DetailList>
           {gefuellt.map(([feld, label]) => (
             <DetailRow key={feld} label={label}>
-              <span className="whitespace-pre-line">{sicht.profile![feld]}</span>
+              {sicht.profile![feld]}
             </DetailRow>
           ))}
         </DetailList>
@@ -112,20 +115,21 @@ function Anzeige({ sicht, gespeichert }: { sicht: Profilsicht; gespeichert: bool
         <p className="text-ink-muted text-sm">Noch nichts eingetragen.</p>
       )}
       {sicht.takeovers.length > 0 ? (
+        // Eine Gruppe in derselben Karte, mit Zwischentitel statt eigenem
+        // Kasten (Leitfaden L2); je Übernahme Titel, Text und Herkunft.
         <div role="group" aria-label="Aus der Behandlung übernommen">
-          <p className="text-ink text-liste font-medium">Aus der Behandlung übernommen</p>
-          <ul className="divide-line mt-1 divide-y">
+          <Zwischentitel>Aus der Behandlung übernommen</Zwischentitel>
+          <DetailList>
             {sicht.takeovers.map((angabe) => (
-              <li key={angabe.title} className="flex flex-col gap-0.5 py-2">
-                <p className="text-ink text-sm font-medium">{angabe.title}</p>
-                <p className="text-ink text-sm whitespace-pre-line">{angabe.body}</p>
-                <p className="text-ink-muted text-sm">
+              <DetailRow key={angabe.title} label={angabe.title}>
+                {angabe.body}
+                <span className="text-ink-muted block text-sm whitespace-normal">
                   Angeboten am {formatDate(angabe.offered_on)}, von der Person freigegeben am{' '}
                   {formatDate(angabe.released_on)}
-                </p>
-              </li>
+                </span>
+              </DetailRow>
             ))}
-          </ul>
+          </DetailList>
         </div>
       ) : null}
     </div>
@@ -163,7 +167,7 @@ function Bearbeiten({
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="max-w-formular flex flex-col gap-4"
       aria-label="Voraussetzungen bearbeiten"
       onSubmit={(event) => {
         event.preventDefault();
@@ -184,14 +188,14 @@ function Bearbeiten({
       {speichern.isError ? (
         <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
       ) : null}
-      <div className="flex flex-wrap gap-3">
+      <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
         <Button type="button" variant="quiet" onClick={() => onFertig(false)}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }

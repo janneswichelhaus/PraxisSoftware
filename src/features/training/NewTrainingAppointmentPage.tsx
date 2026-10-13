@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ErrorState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Feldgruppe, Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -92,10 +94,9 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <Rueckweg standard={zurueck} />
-      <PageHeader
-        title="Trainingstermin anlegen"
-        description="Ein Termin im gemeinsamen Kalender. Mit * markierte Felder sind erforderlich."
-      />
+      {/* Kein Satz zu den Sternchen und keiner zum Kalender: Sie erklärten
+          das Formular, nicht den Termin (UX-005g, Design-Rollout B3a). */}
+      <PageHeader title="Trainingstermin anlegen" />
 
       <TrainingTerminFormular
         startwerte={startwerte}
@@ -121,53 +122,57 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
           );
         }}
         vorFeldern={
-          <div className="mb-6 flex flex-col gap-5">
-            {kundinnen.isError ? (
-              <ErrorState
-                title={`Die ${BEGRIFFE.trainingskundInnen} konnten nicht geladen werden.`}
-                description="Bitte die Verbindung prüfen und erneut versuchen."
-                onErneut={() => kundinnen.refetch()}
-              />
-            ) : (
-              <Select
-                label={`${BEGRIFFE.trainingskundIn} *`}
-                feldId="trainingstermin-kunde"
-                value={kunde}
-                error={kundeFehler}
-                hint="Nur mit laufendem Vertrag."
-                onChange={(e) => {
-                  setKunde(e.target.value);
-                  setBasis('');
-                  setKundeFehler(e.target.value ? undefined : 'Bitte eine Kund:in wählen.');
-                }}
-              >
-                <option value="">
-                  {kundinnen.isPending ? 'Wird geladen …' : 'Bitte wählen …'}
-                </option>
-                {laufende.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {`${k.family_name}, ${k.given_name}`}
+          // Ein eigener Abschnitt vor den geteilten Feldern (Design-Rollout
+          // B3a): wer und woran, dann „Person und Art“ und „Zeit und Ort“.
+          <Section titel="Kund:in und Vereinbarung">
+            <Feldgruppe>
+              {kundinnen.isError ? (
+                <ErrorState
+                  title={`Die ${BEGRIFFE.trainingskundInnen} konnten nicht geladen werden.`}
+                  description={VERBINDUNG_PRUEFEN}
+                  onErneut={() => kundinnen.refetch()}
+                />
+              ) : (
+                <Select
+                  label={`${BEGRIFFE.trainingskundIn} *`}
+                  feldId="trainingstermin-kunde"
+                  value={kunde}
+                  error={kundeFehler}
+                  hint="Nur mit laufendem Vertrag."
+                  onChange={(e) => {
+                    setKunde(e.target.value);
+                    setBasis('');
+                    setKundeFehler(e.target.value ? undefined : 'Bitte eine Kund:in wählen.');
+                  }}
+                >
+                  <option value="">
+                    {kundinnen.isPending ? 'Wird geladen …' : 'Bitte wählen …'}
                   </option>
-                ))}
-              </Select>
-            )}
-            {kunde ? (
-              <Select
-                label="Vereinbarung"
-                feldId="trainingstermin-vereinbarung"
-                value={basis}
-                hint="Ohne Vereinbarung ist es eine Einzelstunde."
-                onChange={(e) => setBasis(e.target.value)}
-              >
-                <option value="">Einzelstunde ohne Vereinbarung</option>
-                {offene.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {`Seit ${formatDate(v.started_on)} · ${vereinbarungText(v)}`}
-                  </option>
-                ))}
-              </Select>
-            ) : null}
-          </div>
+                  {laufende.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {`${k.family_name}, ${k.given_name}`}
+                    </option>
+                  ))}
+                </Select>
+              )}
+              {kunde ? (
+                <Select
+                  label="Vereinbarung"
+                  feldId="trainingstermin-vereinbarung"
+                  value={basis}
+                  hint="Ohne Vereinbarung ist es eine Einzelstunde."
+                  onChange={(e) => setBasis(e.target.value)}
+                >
+                  <option value="">Einzelstunde ohne Vereinbarung</option>
+                  {offene.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {`Seit ${formatDate(v.started_on)} · ${vereinbarungText(v)}`}
+                    </option>
+                  ))}
+                </Select>
+              ) : null}
+            </Feldgruppe>
+          </Section>
         }
       />
     </>

@@ -3,11 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -60,11 +63,11 @@ export function Trainingsangebot({ patientId }: { patientId: string }) {
       aria-label="Training nach der Behandlung"
       role="group"
     >
-      <p className="text-ink text-liste font-medium">Training nach der Behandlung</p>
+      <Zwischentitel>Training nach der Behandlung</Zwischentitel>
       {sicht.data.offers.length === 0 ? (
         <p className="text-ink-muted text-sm">Kein Angebot.</p>
       ) : (
-        <ul className="divide-line mt-1 divide-y">
+        <ul>
           {sicht.data.offers.map((angebot) => (
             <AngebotZeile key={angebot.id} angebot={angebot} patientId={patientId} />
           ))}
@@ -88,7 +91,8 @@ function standSatz(angebot: Angebot): string {
 
 function AngebotZeile({ angebot, patientId }: { angebot: Angebot; patientId: string }) {
   return (
-    <li className="flex flex-col gap-1 py-2">
+    // Zeilen mit einer Linie dazwischen, nicht darüber (DESIGN.md „Listen“).
+    <li className="border-line flex flex-col gap-1 border-t py-2 first:border-t-0 first:pt-0">
       <p className="text-ink text-sm">
         {angebot.label}, ab {formatDate(angebot.starts_on)}, {formatEuro(angebot.price_cents)}
       </p>
@@ -276,10 +280,12 @@ function Anbieten({ patientId, sicht }: { patientId: string; sicht: Angebotssich
 
       <fieldset className="flex flex-col gap-3">
         <legend className="text-ink mb-1 text-sm font-medium">Aus der Behandlung mitgeben</legend>
-        <p className="text-ink-muted max-w-prose text-sm">
+        {/* Was mit den Angaben geschieht (ADR-021 Punkt 7) - ein Satz mit
+            Datenfluss-Funktion, deshalb als Kleingedrucktes. */}
+        <Kleingedrucktes>
           Die Person sieht jede Angabe wörtlich und gibt sie einzeln frei. Nur was sie freigibt,
           wird ins Training kopiert.
-        </p>
+        </Kleingedrucktes>
         {angaben.map((angabe, index) => (
           <div key={index} className="border-line flex flex-col gap-2 border-l-2 pl-3">
             <Field
@@ -340,7 +346,7 @@ function Anbieten({ patientId, sicht }: { patientId: string; sicht: Angebotssich
       {speichern.isError ? (
         <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
       ) : null}
-      <div className="flex flex-wrap gap-3">
+      <Formularfuss>
         <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird festgehalten …' : 'Angebot festhalten'}
         </Button>
@@ -355,7 +361,7 @@ function Anbieten({ patientId, sicht }: { patientId: string; sicht: Angebotssich
         >
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }

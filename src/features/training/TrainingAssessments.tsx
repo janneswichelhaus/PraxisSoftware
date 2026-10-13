@@ -1,13 +1,17 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
@@ -54,22 +58,22 @@ export function TrainingAssessments({ verhaeltnisId }: { verhaeltnisId: string }
   });
   if (sicht.data === null) return null;
   return (
-    <Section
-      titel="Assessments"
-      hinweis="Tests mit Messbedingungen und geplanter Wiederholung. Gezeigt wird, was gemessen wurde – ohne Einordnung."
-      rahmen
-    >
-      {sicht.isPending ? (
-        <LoadingState label="Assessments werden geladen …" />
-      ) : sicht.isError ? (
-        <ErrorState
-          title="Die Assessments konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => sicht.refetch()}
-        />
-      ) : (
-        <Inhalt verhaeltnisId={verhaeltnisId} sicht={sicht.data} />
-      )}
+    // Kein Erklärsatz unter dem Titel (DESIGN.md Regel 6); der Satz zur
+    // fehlenden Einordnung bleibt als Kleingedrucktes (ADR-006 Punkte 11
+    // und 13).
+    <Section titel="Assessments">
+      <Inhaltsflaeche>
+        <Abfragezustand
+          abfrage={sicht}
+          laden="Assessments werden geladen …"
+          fehler="Die Assessments konnten nicht geladen werden."
+        >
+          {(daten) => (daten ? <Inhalt verhaeltnisId={verhaeltnisId} sicht={daten} /> : null)}
+        </Abfragezustand>
+      </Inhaltsflaeche>
+      <Kleingedrucktes className="mt-2">
+        Gezeigt wird, was gemessen wurde – ohne Einordnung.
+      </Kleingedrucktes>
     </Section>
   );
 }
@@ -81,8 +85,8 @@ function Inhalt({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Assess
   return (
     <div className="flex flex-col gap-4">
       {termine.length > 0 ? (
-        <div className="flex flex-col gap-1">
-          <h3 className="text-ink text-base font-semibold">Wiederholung</h3>
+        <div>
+          <Zwischentitel>Wiederholung</Zwischentitel>
           <ul className="flex flex-col gap-1 text-sm">
             {termine.map((t) => (
               <li key={t.titel} className="text-ink">
@@ -124,15 +128,20 @@ function Inhalt({ verhaeltnisId, sicht }: { verhaeltnisId: string; sicht: Assess
         />
       ) : darfFesthalten ? (
         <div>
-          <Button type="button" variant="secondary" onClick={() => setFormular('neu')}>
+          <Button
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            onClick={() => setFormular('neu')}
+          >
             Assessment festhalten
           </Button>
         </div>
       ) : sicht.can_write && sicht.relationship_open ? (
-        <p className="text-ink-muted text-sm">
+        <Kleingedrucktes>
           Testergebnisse sind Gesundheitsangaben. Festgehalten werden sie erst mit der Einwilligung
           zu Gesundheitsangaben im Training.
-        </p>
+        </Kleingedrucktes>
       ) : null}
     </div>
   );
@@ -156,21 +165,34 @@ function Batterie({
 }) {
   const zeilen = [...new Set(liste.flatMap((a) => a.results.map((r) => r.label)))];
   return (
-    <div className="rounded-card border-line bg-surface flex flex-col gap-2 border p-3">
-      <h3 className="text-ink text-base font-semibold">{titel}</h3>
-      <div role="region" aria-label={`Messungen ${titel}`} tabIndex={0} className="overflow-x-auto">
-        <table className="text-sm">
+    // Eine Gruppe in der Karte, durch eine Linie getrennt - kein Kasten im
+    // Kasten (Leitfaden L2).
+    <div className="border-line border-t pt-4 first:border-t-0 first:pt-0">
+      <Zwischentitel>{titel}</Zwischentitel>
+      {/* Eine Zeitreihe wie die `Verlaufstabelle`: je Messung eine Zeile, je
+          Tag eine Spalte, jüngste links; am Telefon rollt die Tabelle in sich,
+          die Messung bleibt stehen (DESIGN.md 9.11). */}
+      <div
+        role="region"
+        aria-label={`Messungen ${titel}`}
+        tabIndex={0}
+        className="focus-visible:outline-accent relative max-w-full overflow-x-auto focus-visible:outline-2"
+      >
+        <table className="text-ink min-w-full border-collapse text-sm">
           <caption className="sr-only">Messungen {titel}, jüngste links</caption>
           <thead>
             <tr>
-              <th scope="col" className="text-ink-muted pr-4 text-left font-medium">
+              <th
+                scope="col"
+                className="bg-surface text-ink-muted sticky left-0 py-2 pr-4 text-left font-medium"
+              >
                 Messung
               </th>
               {liste.map((a) => (
                 <th
                   key={a.id}
                   scope="col"
-                  className="text-ink pr-4 text-left font-semibold whitespace-nowrap tabular-nums"
+                  className="py-2 pr-4 text-left font-semibold whitespace-nowrap tabular-nums"
                 >
                   {formatDate(a.performed_on)}
                 </th>
@@ -180,17 +202,17 @@ function Batterie({
           <tbody>
             {zeilen.map((label) => (
               <tr key={label} className="border-line border-t">
-                <th scope="row" className="text-ink py-1 pr-4 text-left font-normal">
+                <th
+                  scope="row"
+                  className="bg-surface sticky left-0 py-2 pr-4 text-left font-normal"
+                >
                   {label}
                 </th>
                 {liste.map((a) => {
                   const e = a.results.find((r) => r.label === label);
                   const seiten = e ? seitenText(e) : null;
                   return (
-                    <td
-                      key={a.id}
-                      className="text-ink py-1 pr-4 align-top whitespace-nowrap tabular-nums"
-                    >
+                    <td key={a.id} className="py-2 pr-4 align-top whitespace-nowrap tabular-nums">
                       {e ? ergebnisText(e) : <span aria-label="nicht gemessen">–</span>}
                       {seiten ? (
                         <span className="text-ink-muted block text-xs">{seiten}</span>
@@ -203,7 +225,7 @@ function Batterie({
           </tbody>
         </table>
       </div>
-      <ul className="flex flex-col gap-1 text-sm">
+      <ul className="mt-2 flex flex-col gap-1 text-sm">
         {liste.map((a, i) => {
           const vorige = liste[i + 1];
           const anders = vorige !== undefined && (vorige.conditions ?? '') !== (a.conditions ?? '');
@@ -222,7 +244,7 @@ function Batterie({
         })}
       </ul>
       {darfWiederholen ? (
-        <div>
+        <div className="mt-2">
           <Button type="button" variant="quiet" groesse="kompakt" onClick={onWiederholen}>
             Wiederholen wie am {formatDate(liste[0]!.performed_on)}
           </Button>
@@ -257,6 +279,7 @@ function Entfernen({
       <Rueckfrage
         ausloeser="Entfernen"
         ausloeserVariante="quiet"
+        ausloeserGroesse="kompakt"
         bezeichnung={`${assessment.title} vom ${tag} entfernen`}
         bestaetigen="Ja, entfernen"
         bestaetigenLaeuft="Wird entfernt …"
@@ -383,11 +406,11 @@ function Festhalten({
       onSubmit={absenden}
       noValidate
       aria-label="Assessment festhalten"
-      className="border-line flex flex-col gap-3 border-t pt-4"
+      className="border-line max-w-formular flex flex-col gap-4 border-t pt-4"
     >
-      <h3 className="text-ink text-base font-semibold">
+      <Zwischentitel>
         {vorlage ? `${vorlage.title} wiederholen` : 'Assessment festhalten'}
-      </h3>
+      </Zwischentitel>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Test"
@@ -421,7 +444,8 @@ function Festhalten({
             key={i}
             role="group"
             aria-label={`Messung ${i + 1}`}
-            className="rounded-card border-line flex flex-col gap-2 border p-3"
+            // Eine Linie links statt eines Kastens im Formular (Leitfaden L2).
+            className="border-line flex flex-col gap-2 border-l-2 pl-3"
           >
             <div className="grid gap-2 sm:grid-cols-[2fr_1fr]">
               <Field
@@ -504,14 +528,14 @@ function Festhalten({
         <Statusmeldung ton="fehler">{festhalten.error.message}</Statusmeldung>
       ) : null}
       {schutz}
-      <div className="flex flex-wrap gap-2">
+      <Formularfuss>
         <Button type="submit" disabled={festhalten.isPending}>
           {festhalten.isPending ? 'Wird festgehalten …' : 'Festhalten'}
         </Button>
         <Button type="button" variant="quiet" onClick={onFertig}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }
