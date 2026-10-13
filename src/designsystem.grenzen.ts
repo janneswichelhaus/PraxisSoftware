@@ -49,8 +49,6 @@ export const GRENZEN: Record<
 
     'features/datenschutz': 2,
 
-    'features/documentation': 1,
-
     'features/exercise-plans': 4,
 
     'features/exercises': 5,
