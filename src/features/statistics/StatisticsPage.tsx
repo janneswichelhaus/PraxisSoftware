@@ -6,9 +6,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
-import { Aufklappzeichen, CardGrid, Inhaltsflaeche } from '@/components/ui/Card';
+import { CardGrid, Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Section } from '@/components/ui/Section';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import { sichereAlsDatei } from '@/features/datenschutz/datei';
 import { isOwner, type CurrentUser } from '@/features/session/types';
@@ -85,7 +88,7 @@ function Praxisstatistik() {
     <>
       <PageHeader
         title="Statistiken"
-        description="Fünf Zahlen für die Praxisführung – jede mit Ziel und dem nächsten Schritt –, darunter der Verlauf. Umsatz je Person sehen nur du und die Person selbst bei Umsatzbeteiligung."
+        description="Fünf Zahlen für die Praxisführung, jede mit Ziel und nächstem Schritt."
         actions={
           k && ziele.data ? (
             <Button variant="secondary" onClick={() => sichereCsv(k, ziele.data)} type="button">
@@ -95,12 +98,14 @@ function Praxisstatistik() {
         }
       />
 
-      {kennzahlen.isPending ? <LoadingState label="Die Statistik wird geladen …" /> : null}
+      {kennzahlen.isPending ? (
+        <LoadingState label="Die Statistik wird geladen …" inKarte kacheln={4} />
+      ) : null}
       {kennzahlen.isError ? (
         <>
           <ErrorState
             title="Die Statistik konnte nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
+            description={VERBINDUNG_PRUEFEN}
             onErneut={() => kennzahlen.refetch()}
           />
           {monat !== null ? (
@@ -134,38 +139,38 @@ function Praxisstatistik() {
             </Select>
           </div>
 
-          <CardGrid>
-            {KENNZAHLEN.map((kennzahl) => (
-              <Kennzahlkarte
-                key={kennzahl.ziel}
-                kennzahl={kennzahl}
-                k={k}
-                ziel={ziele.data?.[kennzahl.ziel] ?? null}
-                zieleGeladen={ziele.isSuccess}
-              >
-                <Einzelheiten
+          <Section titel="Kennzahlen">
+            <CardGrid>
+              {KENNZAHLEN.map((kennzahl) => (
+                <Kennzahlkarte
+                  key={kennzahl.ziel}
                   kennzahl={kennzahl}
                   k={k}
                   ziel={ziele.data?.[kennzahl.ziel] ?? null}
-                />
-              </Kennzahlkarte>
-            ))}
-          </CardGrid>
+                  zieleGeladen={ziele.isSuccess}
+                >
+                  <Einzelheiten
+                    kennzahl={kennzahl}
+                    k={k}
+                    ziel={ziele.data?.[kennzahl.ziel] ?? null}
+                  />
+                </Kennzahlkarte>
+              ))}
+            </CardGrid>
+          </Section>
 
           <Verlauf monat={monat} heute={k.today} />
 
           {/* Die Fußnote erklärt die Rechnung, nicht die Zahlen - zugeklappt (UX-005i). */}
-          <details className="group border-line mt-8 max-w-prose border-t pt-2">
-            <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
-              <Aufklappzeichen />
-              Hinweise zur Berechnung
-            </summary>
-            <p className="text-ink-muted mt-2 text-sm">
-              Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die übrigen
-              Zahlen gelten zum Stand {tagText(k.today)}. Kein steuerlicher Abschluss – die
-              Aufteilung nach Steuerkennzeichen steht unter Abrechnung → Auswertung.
-            </p>
-          </details>
+          <div className="mt-8 max-w-prose">
+            <Disclosure summary="Hinweise zur Berechnung">
+              <p className="text-ink-muted text-sm">
+                Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die
+                übrigen Zahlen gelten zum Stand {tagText(k.today)}. Kein steuerlicher Abschluss –
+                die Aufteilung nach Steuerkennzeichen steht unter Abrechnung → Auswertung.
+              </p>
+            </Disclosure>
+          </div>
         </>
       ) : null}
     </>
@@ -197,15 +202,22 @@ function Kennzahlkarte({
   return (
     <section aria-labelledby={titelId}>
       <Inhaltsflaeche className="flex h-full flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id={titelId} className="text-ink text-liste font-semibold">
-            {kennzahl.titel}
-          </h2>
-          {stand === 'erreicht' ? <Badge ton="positiv">Ziel erreicht</Badge> : null}
-          {stand === 'verfehlt' ? <Badge ton="warnung">Ziel verfehlt</Badge> : null}
-        </div>
+        {/* Der Zielstand als Zeichen und Wort neben dem Titel (DESIGN.md
+            Regel 5); ohne Ziel kein Abzeichen. */}
+        <Zwischentitel
+          id={titelId}
+          aktion={
+            stand === 'erreicht' ? (
+              <Badge ton="positiv">Ziel erreicht</Badge>
+            ) : stand === 'verfehlt' ? (
+              <Badge ton="warnung">Ziel verfehlt</Badge>
+            ) : undefined
+          }
+        >
+          {kennzahl.titel}
+        </Zwischentitel>
 
-        <p className="text-ink text-2xl font-semibold tabular-nums">
+        <p className="text-ink -mt-3 text-2xl font-semibold tabular-nums">
           {formatiere(wert, kennzahl.einheit)}
         </p>
 
@@ -240,7 +252,11 @@ function Einzelheiten({
             {monatsname(k.month)}, Rechnungsstellung brutto · {monatsname(k.previous_month)}:{' '}
             {formatEuro(k.revenue_previous_cents)}
           </p>
-          <div className="my-3">
+          <p className="text-ink mt-1">
+            Zahlungseingang {formatEuro(k.payments_cents)} · {monatsname(k.previous_month)}:{' '}
+            {formatEuro(k.payments_previous_cents)}
+          </p>
+          <Aufschluesselung>
             <Balkenliste
               titel="Umsatz nach Bereich"
               format={formatEuro}
@@ -249,11 +265,7 @@ function Einzelheiten({
                 { schluessel: 'training', label: 'Training', wert: k.revenue_training_cents },
               ]}
             />
-          </div>
-          <p className="text-ink">
-            Zahlungseingang {formatEuro(k.payments_cents)} · {monatsname(k.previous_month)}:{' '}
-            {formatEuro(k.payments_previous_cents)}
-          </p>
+          </Aufschluesselung>
         </>
       );
     case 'open_items_cents':
@@ -263,7 +275,7 @@ function Einzelheiten({
             {k.open_count} {k.open_count === 1 ? 'Rechnung' : 'Rechnungen'} offen, Stand{' '}
             {tagText(k.today)}
           </p>
-          <div className="mt-3">
+          <Aufschluesselung>
             <Balkenliste
               titel="Offene Posten nach Alter"
               format={formatEuro}
@@ -290,7 +302,7 @@ function Einzelheiten({
                 },
               ]}
             />
-          </div>
+          </Aufschluesselung>
         </>
       );
     case 'utilization_percent': {
@@ -331,7 +343,7 @@ function Einzelheiten({
             davon {k.absences_with_fee} mit Ausfallhonorar, erfasst{' '}
             {formatEuro(k.absence_fee_cents)}
           </p>
-          <div className="mt-3">
+          <Aufschluesselung>
             <Balkenliste
               titel="Ausfälle im Vergleich"
               format={(wert) => String(wert)}
@@ -340,11 +352,26 @@ function Einzelheiten({
                 { schluessel: 'davor', label: 'vier Wochen davor', wert: k.absences_previous },
               ]}
             />
-          </div>
-          <p className="mt-2">Ausfallhonorare davor: {formatEuro(k.absence_fee_previous_cents)}</p>
+            <p className="mt-2">
+              Ausfallhonorare davor: {formatEuro(k.absence_fee_previous_cents)}
+            </p>
+          </Aufschluesselung>
         </>
       );
   }
+}
+
+/**
+ * Die Aufschlüsselung einer Kennzahl als Balken - am Telefon auf Abruf, ab
+ * 1024 px offen (Design-Rollout B6): Die Karte zeigt die Zahl und den
+ * nächsten Schritt; wie sie sich zusammensetzt, steht einen Tipp tiefer.
+ */
+function Aufschluesselung({ children }: { children: ReactNode }) {
+  return (
+    <Disclosure summary="Aufschlüsselung" offenAb="lg">
+      {children}
+    </Disclosure>
+  );
 }
 
 function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null }) {
@@ -376,16 +403,21 @@ function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null
     speichern.mutate(ergebnis.wert);
   }
 
+  // Das Ziel steht selten zur Änderung an - der Aufklapper zeigt es und
+  // öffnet das Feld auf Abruf (DESIGN.md „Disclosure“).
   return (
-    <details className="group border-line border-t pt-1">
-      <summary className={`${aufklappKopfKlassen} text-sm`}>
-        <span className="text-ink">
-          Ziel:{' '}
-          {ziel === null ? 'nicht gesetzt' : `${richtung} ${formatiere(ziel, kennzahl.einheit)}`}
-        </span>
-        <span className="text-accent ml-auto text-sm">Ändern</span>
-      </summary>
-      <form onSubmit={absenden} className="mt-2 flex flex-col gap-2" noValidate>
+    <Disclosure
+      summary={
+        <>
+          <span className="text-ink">
+            Ziel:{' '}
+            {ziel === null ? 'nicht gesetzt' : `${richtung} ${formatiere(ziel, kennzahl.einheit)}`}
+          </span>
+          <span className="text-accent ml-auto text-sm font-semibold">Ändern</span>
+        </>
+      }
+    >
+      <form onSubmit={absenden} className="flex flex-col gap-2" noValidate>
         <Field
           label={`Ziel ${kennzahl.titel} (${richtung}${kennzahl.einheit === 'cent' ? ', Euro' : kennzahl.einheit === 'prozent' ? ', Prozent' : ''})`}
           hint="Leer lassen, um das Ziel zu entfernen."
@@ -405,7 +437,7 @@ function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null
           ) : null}
         </div>
       </form>
-    </details>
+    </Disclosure>
   );
 }
 
@@ -435,82 +467,93 @@ function Verlauf({ monat, heute }: { monat: string | null; heute: string }) {
   const gewaehlt = monat ?? `${heute.slice(0, 7)}-01`;
 
   return (
-    <div className="mt-8 grid gap-3 lg:grid-cols-2">
-      <Grafikflaeche
-        titel="Umsatz der letzten 12 Monate"
-        unterzeile="Säulen: Umsatz nach Rechnungsstellung · Punkte: Zahlungseingang"
-        breit
-        zustand={monate}
-      >
-        {monate.data ? (
-          <Saeulendiagramm
-            titel="Umsatz und Zahlungseingang der letzten 12 Monate"
-            {...umsatzReihen(monate.data)}
-            format={formatEuro}
-            achsenformat={euroKurz}
-          />
-        ) : null}
-      </Grafikflaeche>
-
-      <Grafikflaeche
-        titel="Umsatz nach Therapeut:in"
-        unterzeile="Letzte 6 Monate, nach Rechnungsstellung, der behandelnden Person zugeordnet"
-        zustand={
-          personenZeigen ? jePerson : { isPending: false, isError: false, refetch: () => null }
-        }
-      >
-        {!personenZeigen && !jePerson.data ? (
-          <div>
-            <p className="text-ink-muted mb-3 max-w-prose text-sm">
-              Umsatz je Person sind Beschäftigtendaten.
-            </p>
-            <Button type="button" variant="secondary" onClick={() => setPersonenZeigen(true)}>
-              Umsatz je Person anzeigen
-            </Button>
-          </div>
-        ) : null}
-        {jePerson.data ? (
-          jePerson.data.length === 0 ? (
-            <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
-          ) : (
+    <Section titel="Verlauf">
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Grafikflaeche
+          titel="Umsatz der letzten 12 Monate"
+          unterzeile="Säulen: Umsatz nach Rechnungsstellung · Punkte: Zahlungseingang"
+          breit
+          zustand={monate}
+        >
+          {monate.data ? (
             <Saeulendiagramm
-              titel="Umsatz je Therapeut:in der letzten 6 Monate"
-              {...personenReihen(jePerson.data, letzteMonate(heute, 6))}
-              gestapelt
+              titel="Umsatz und Zahlungseingang der letzten 12 Monate"
+              {...umsatzReihen(monate.data)}
               format={formatEuro}
               achsenformat={euroKurz}
             />
-          )
-        ) : null}
-      </Grafikflaeche>
+          ) : null}
+        </Grafikflaeche>
 
-      <Grafikflaeche
-        titel="Umsatzstärkste Leistungen"
-        unterzeile={`${monatsname(gewaehlt)}, nach Rechnungsstellung`}
-        zustand={leistungen}
-      >
-        {leistungen.data ? (
-          leistungen.data.length === 0 ? (
-            <p className="text-ink-muted text-sm">In diesem Monat ist nichts abgerechnet.</p>
-          ) : (
-            <Balkenliste
-              titel="Umsatzstärkste Leistungen"
-              format={formatEuro}
-              zeilen={leistungen.data.map((l) => ({
-                schluessel: l.code,
-                label: (
-                  <>
-                    <span className="font-medium">{l.code}</span>{' '}
-                    <span className="text-ink-muted">{l.label}</span>
-                  </>
-                ),
-                wert: l.revenue_cents,
-              }))}
-            />
-          )
-        ) : null}
-      </Grafikflaeche>
-    </div>
+        <Grafikflaeche
+          titel="Umsatz nach Therapeut:in"
+          unterzeile="Letzte 6 Monate, nach Rechnungsstellung, der behandelnden Person zugeordnet"
+          zustand={
+            personenZeigen ? jePerson : { isPending: false, isError: false, refetch: () => null }
+          }
+        >
+          {!personenZeigen && !jePerson.data ? (
+            <div>
+              <Button
+                type="button"
+                variant="secondary"
+                groesse="kompakt"
+                onClick={() => setPersonenZeigen(true)}
+              >
+                Umsatz je Person anzeigen
+              </Button>
+              {/* Wer die Zahl sieht, und dass sie Beschäftigtendaten ist
+                (ANN-156): ein Satz mit Datenschutzfunktion, deshalb klein
+                und an der Stelle, an der sie geladen wird. */}
+              <Kleingedrucktes className="mt-2">
+                Umsatz je Person sind Beschäftigtendaten. Ihn sehen nur du und die Person selbst bei
+                Umsatzbeteiligung.
+              </Kleingedrucktes>
+            </div>
+          ) : null}
+          {jePerson.data ? (
+            jePerson.data.length === 0 ? (
+              <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
+            ) : (
+              <Saeulendiagramm
+                titel="Umsatz je Therapeut:in der letzten 6 Monate"
+                {...personenReihen(jePerson.data, letzteMonate(heute, 6))}
+                gestapelt
+                format={formatEuro}
+                achsenformat={euroKurz}
+              />
+            )
+          ) : null}
+        </Grafikflaeche>
+
+        <Grafikflaeche
+          titel="Umsatzstärkste Leistungen"
+          unterzeile={`${monatsname(gewaehlt)}, nach Rechnungsstellung`}
+          zustand={leistungen}
+        >
+          {leistungen.data ? (
+            leistungen.data.length === 0 ? (
+              <p className="text-ink-muted text-sm">In diesem Monat ist nichts abgerechnet.</p>
+            ) : (
+              <Balkenliste
+                titel="Umsatzstärkste Leistungen"
+                format={formatEuro}
+                zeilen={leistungen.data.map((l) => ({
+                  schluessel: l.code,
+                  label: (
+                    <>
+                      <span className="font-medium">{l.code}</span>{' '}
+                      <span className="text-ink-muted">{l.label}</span>
+                    </>
+                  ),
+                  wert: l.revenue_cents,
+                }))}
+              />
+            )
+          ) : null}
+        </Grafikflaeche>
+      </div>
+    </Section>
   );
 }
 
@@ -531,10 +574,8 @@ function Grafikflaeche({
   return (
     <section aria-labelledby={titelId} className={breit ? 'lg:col-span-2' : ''}>
       <Inhaltsflaeche className="h-full">
-        <h2 id={titelId} className="text-ink text-liste font-semibold">
-          {titel}
-        </h2>
-        <p className="text-ink-muted mb-3 text-sm">{unterzeile}</p>
+        <Zwischentitel id={titelId}>{titel}</Zwischentitel>
+        <p className="text-ink-muted -mt-2 mb-3 text-sm">{unterzeile}</p>
         {zustand.isPending ? <LoadingState label="Wird geladen …" /> : null}
         {zustand.isError ? (
           <ErrorState
@@ -571,25 +612,27 @@ function MeinUmsatz({ zeitzone }: { zeitzone: string }) {
         title="Statistiken"
         description="Dein Umsatz der letzten 12 Monate nach Rechnungsstellung – die Grundlage deiner Umsatzbeteiligung. Nur du und die Praxisleitung sehen ihn."
       />
-      <Grafikflaeche
-        titel="Mein Umsatz"
-        unterzeile={`Laufender Monat: ${formatEuro(summe)}`}
-        zustand={jePerson}
-      >
-        {daten ? (
-          jePerson.data!.length === 0 ? (
-            <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
-          ) : (
-            <Saeulendiagramm
-              titel="Mein Umsatz der letzten 12 Monate"
-              kategorien={daten.kategorien}
-              reihen={daten.reihen.map((r) => ({ ...r, name: 'Umsatz' }))}
-              format={formatEuro}
-              achsenformat={euroKurz}
-            />
-          )
-        ) : null}
-      </Grafikflaeche>
+      <Section titel="Verlauf">
+        <Grafikflaeche
+          titel="Mein Umsatz"
+          unterzeile={`Laufender Monat: ${formatEuro(summe)}`}
+          zustand={jePerson}
+        >
+          {daten ? (
+            jePerson.data!.length === 0 ? (
+              <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
+            ) : (
+              <Saeulendiagramm
+                titel="Mein Umsatz der letzten 12 Monate"
+                kategorien={daten.kategorien}
+                reihen={daten.reihen.map((r) => ({ ...r, name: 'Umsatz' }))}
+                format={formatEuro}
+                achsenformat={euroKurz}
+              />
+            )
+          ) : null}
+        </Grafikflaeche>
+      </Section>
     </>
   );
 }

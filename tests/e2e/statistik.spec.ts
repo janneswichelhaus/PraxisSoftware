@@ -51,9 +51,11 @@ test.describe('Statistiken', () => {
     await page.goto(PRUEFSEITE);
     const handlung = await page.getByRole('link', { name: 'Anrufliste für morgen' }).boundingBox();
     expect(handlung!.height).toBeGreaterThanOrEqual(44);
+    // Seit dem Design-Rollout B6 trägt die Karte zwei Aufklapper:
+    // „Aufschlüsselung“ und das Ziel. Geprüft wird der des Ziels.
     const ziel = await page
       .getByRole('region', { name: 'Ausfälle' })
-      .locator('summary')
+      .locator('summary', { hasText: 'Ziel' })
       .boundingBox();
     expect(ziel!.height).toBeGreaterThanOrEqual(44);
   });

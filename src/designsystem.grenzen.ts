@@ -116,8 +116,6 @@ export const GRENZEN: Record<
 
     'features/staff': 1,
 
-    'features/statistics': 3,
-
     'features/therapy-reports': 1,
 
     'features/tours': 2,
@@ -249,8 +247,6 @@ export const GRENZEN: Record<
     'features/preview': 1,
 
     'features/retention': 2,
-
-    'features/statistics': 2,
 
     'features/teamchat': 2,
 
