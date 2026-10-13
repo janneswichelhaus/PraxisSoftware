@@ -1722,6 +1722,8 @@ describe('Übersicht', () => {
       expect(screen.queryByText(/^Jetzt, /)).toBeNull();
       expect(screen.queryByRole('button', { name: /^Termin abschließen/ })).toBeNull();
       expect(screen.queryByRole('button', { name: /^Behandlung abschließen/ })).toBeNull();
+      // Eine Verspätung gibt es nur heute (Auftrag C1).
+      expect(screen.queryByRole('button', { name: 'Später da?' })).toBeNull();
       // Der Teamplan fragt denselben Tag ab.
       const query = fetchAppointments.mock.calls.at(-1)?.[0] as AppointmentsApiModule.CalendarQuery;
       expect(query.von).toBe(morgen);

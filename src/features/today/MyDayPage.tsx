@@ -577,7 +577,7 @@ function MeinTag({
             reihe
           )
         }
-        aktionen={kommt ? <SpaeterDa termin={termin} praxis={praxis} /> : null}
+        aktionen={kommt && istHeute ? <SpaeterDa termin={termin} praxis={praxis} /> : null}
         hinweis={kommt && fahrzeiten.veraltet.has(termin.id) ? VERALTET_TEXT : null}
         onZuklappen={() => umschalten(termin.id)}
       />
@@ -708,8 +708,9 @@ function MeinTag({
       termin.kind === 'therapy' &&
       termin.status === 'confirmed' &&
       termin.appointment_type === 'home_visit';
+    // Eine Verspätung gibt es nur heute; an einem künftigen Tag wartet alles.
     const nebenaktionen =
-      fokus.art !== 'besuch' ? null : phase === 'wartet' ? (
+      fokus.art !== 'besuch' || !istHeute ? null : phase === 'wartet' ? (
         <SpaeterDa termin={termin} praxis={praxis} />
       ) : anDerTuer ? (
         <HomeVisitFlow
