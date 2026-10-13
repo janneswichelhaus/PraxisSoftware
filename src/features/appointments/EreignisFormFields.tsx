@@ -207,7 +207,7 @@ export function EreignisArbeitszeitRueckfrage({
         Mindestens eine beteiligte Person hat zu dieser Zeit keine hinterlegte Arbeitszeit. Es wurde
         noch nichts eingetragen.
       </p>
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
         <Button type="button" disabled={laeuft} data-autofocus onClick={onBestaetigen}>
           {beschriftung}
         </Button>

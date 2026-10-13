@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
@@ -616,7 +617,7 @@ function Wochenplan({
     return (
       <ErrorState
         title="Die Arbeitszeiten konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und später erneut versuchen."
+        description={VERBINDUNG_PRUEFEN}
         onErneut={() => void zeiten.refetch()}
       />
     );
@@ -937,7 +938,7 @@ function Abweichungen({
       return (
         <ErrorState
           title="Die Abweichungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void ausnahmen.refetch()}
         />
       );
@@ -1307,7 +1308,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
       {therapeuten.isError && !therapeuten.data ? (
         <ErrorState
           title="Die behandelnden Personen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und später erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void therapeuten.refetch()}
         />
       ) : null}

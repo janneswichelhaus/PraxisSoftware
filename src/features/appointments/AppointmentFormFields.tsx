@@ -542,7 +542,7 @@ export function ArbeitszeitRueckfrage({
         </>
       ) : null}
       <p className="text-ink-muted mt-2 text-xs">Der Termin wurde noch nicht gespeichert.</p>
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
         <Button type="button" disabled={laeuft} data-autofocus onClick={onBestaetigen}>
           {laeuft ? 'Wird gespeichert …' : beschriftung}
         </Button>
