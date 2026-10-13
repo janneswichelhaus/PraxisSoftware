@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { EmptyState } from '@/components/ui/Feedback';
+import { ListRows } from '@/components/ui/ListRow';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Dateiansicht } from '@/features/files/Dateiansicht';
@@ -48,38 +51,32 @@ export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
   });
   return (
     <>
-      <Link
-        to={`${PLATTFORM_PFAD}/ich`}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu „Ich“
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Dokumente</h1>
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <PageHeader title="Dokumente" />
       {zugang.relationship_kind !== 'treatment' ? (
-        <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
-          Im Training gibt es keine Dokumente.
-        </p>
-      ) : dokumente.isPending ? (
-        <LoadingState label="Ihre Dokumente werden geladen …" />
-      ) : dokumente.data === undefined ? (
-        <ErrorState
-          title="Ihre Dokumente konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => dokumente.refetch()}
-        />
-      ) : dokumente.data.length === 0 ? (
-        <p className="text-ink mt-4 max-w-prose text-base leading-relaxed">
-          Die Praxis hat noch kein Dokument für Sie freigegeben. Was Sie hier sehen, entscheidet
-          Ihre Therapeut:in Stück für Stück.
-        </p>
+        <EmptyState inKarte title="Im Training gibt es keine Dokumente." />
       ) : (
-        <Section titel="Freigegebene Dokumente" rahmen>
-          <ul className="flex flex-col">
-            {dokumente.data.map((d) => (
-              <Dokumentzeile key={d.id} zugang={zugang} dokument={d} />
-            ))}
-          </ul>
-        </Section>
+        <Abfragezustand
+          abfrage={dokumente}
+          laden="Ihre Dokumente werden geladen …"
+          fehler="Ihre Dokumente konnten nicht geladen werden."
+          inKarte
+          leer={{
+            wenn: (liste) => liste.length === 0,
+            titel: 'Die Praxis hat noch kein Dokument für Sie freigegeben.',
+            beschreibung: 'Was Sie hier sehen, entscheidet Ihre Therapeut:in Stück für Stück.',
+          }}
+        >
+          {(liste) => (
+            <Section titel="Freigegebene Dokumente">
+              <ListRows>
+                {liste.map((d) => (
+                  <Dokumentzeile key={d.id} zugang={zugang} dokument={d} />
+                ))}
+              </ListRows>
+            </Section>
+          )}
+        </Abfragezustand>
       )}
     </>
   );
