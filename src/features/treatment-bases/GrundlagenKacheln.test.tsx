@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TreatmentBasesApi from './api';
 import type * as DateienApi from '@/features/files/api';
@@ -270,6 +270,64 @@ describe('GrundlagenKacheln', () => {
     zeigen();
     await user.click(await screen.findByRole('button', { name: /Selbstzahler/ }));
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('lässt die ICD-Zeile weg, solange kein Code erfasst ist (UX-005e, Nachprüfung A9)', async () => {
+    renderWithProviders(
+      <GrundlagenKacheln
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        aktuell={[eintrag({ diagnosis_icd10: null })]}
+        abgeschlossen={[]}
+      />,
+      `/patienten/${PATIENT}/verordnungen`,
+    );
+    const kachel = await screen.findByRole('button', { name: /Dr\. med\. Petra Probst/ });
+    expect(kachel).toHaveTextContent('KG7/10');
+    // Kein leerer Wert wie „ICD –“.
+    expect(kachel).not.toHaveTextContent('ICD');
+  });
+
+  describe('Verlauf an den Rändern (Nachprüfung A9)', () => {
+    // Vier Kacheln à 168 px, 300 px sichtbar - wie die Leiste bei 375 px.
+    afterEach(() => vi.restoreAllMocks());
+
+    it('zeigt rechts „›“, solange Kacheln außer Sicht liegen, links „‹“, wenn gerollt - auf jeder Breite', async () => {
+      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(function (
+        this: Element,
+      ) {
+        return this.tagName === 'UL' ? 4 * 168 : 0;
+      });
+      vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(function (
+        this: Element,
+      ) {
+        return this.tagName === 'UL' ? 300 : 0;
+      });
+      zeigen();
+      await screen.findByText('Daten fehlen');
+      expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
+      const rechts = document.querySelector('[data-verlauf="rechts"]')!;
+      expect(rechts).toHaveTextContent('›');
+      expect(rechts).toHaveAttribute('aria-hidden', 'true');
+      const klassen = rechts.className.split(/\s+/);
+      expect(klassen).toEqual(expect.arrayContaining(['pointer-events-none', 'from-surface']));
+      // Die Leiste rollt auch am Rechner, sobald mehr Kacheln da sind.
+      expect(klassen).not.toContain('sm:hidden');
+
+      const liste = screen.getByRole('list');
+      liste.scrollLeft = 4 * 168 - 300;
+      fireEvent.scroll(liste);
+      expect(document.querySelector('[data-verlauf="rechts"]')).toBeNull();
+      expect(document.querySelector('[data-verlauf="links"]')).toHaveTextContent('‹');
+    });
+
+    it('zeigt keinen Verlauf, wenn alle Kacheln zu sehen sind', async () => {
+      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(300);
+      vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(300);
+      zeigen();
+      await screen.findByText('Daten fehlen');
+      expect(document.querySelector('[data-verlauf]')).toBeNull();
+    });
   });
 
   it('zeigt ohne Grundlage und ohne Foto nichts', async () => {

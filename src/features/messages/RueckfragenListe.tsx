@@ -73,6 +73,11 @@ export function RueckfragenListe({
   );
 }
 
+/** Einzahl und Mehrzahl - an der Akte stand „1 Einträge“ (Sichtung Akte). */
+function eintraege(anzahl: number): string {
+  return anzahl === 1 ? '1 Eintrag' : `${anzahl} Einträge`;
+}
+
 function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: boolean }) {
   const name = [zeile.given_name, zeile.family_name].filter(Boolean).join(' ') || 'Ohne Namen';
   const thema =
@@ -93,7 +98,7 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
     <ListRow
       zeit={formatDate(zeile.last_entry_at.slice(0, 10)).slice(0, 6)}
       titel={mitName ? name : thema}
-      meta={`${mitName ? thema : `${zeile.entry_count} Einträge`}${frist}${von}${
+      meta={`${mitName ? thema : eintraege(zeile.entry_count)}${frist}${von}${
         zeile.record_assigned_at ? ' · in der Akte' : ''
       }`}
       status={<Zustand zeile={zeile} kurz />}

@@ -244,7 +244,9 @@ function VersorgungAbschliessen({
 
 /**
  * Eine Karte der Stammdaten (Akte entschlacken, 2026-10-03): Label in
- * Versalien, rechts ein leises „Bearbeiten" mit 44 px Tippziel ins Formular.
+ * Versalien, rechts „Bearbeiten" ins Formular - als unterstrichener
+ * `Textlink` mit 44 px Tippziel, wie im Kopf jeder Behandlungsgrundlage
+ * (Regel 9; Nachprüfung neu3: bis dahin ein leiser Knopf ohne Linie).
  */
 function Karte({
   titel,
@@ -262,14 +264,14 @@ function Karte({
       rahmen
       aktion={
         bearbeiten ? (
-          <ButtonLink
+          <Textlink
             to={bearbeiten}
-            variant="quiet"
-            groesse="kompakt"
+            alleinstehend
+            className="text-sm"
             aria-label={`${titel} bearbeiten`}
           >
             Bearbeiten
-          </ButtonLink>
+          </Textlink>
         ) : null
       }
     >
@@ -673,7 +675,9 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           Dublette und Betroffenenrechten. */}
       {beendenStatus || beendenAbschluss || beendenZugang ? (
         <Section titel="Beenden">
-          <div className="flex flex-col items-start gap-1">
+          {/* 12 px zwischen den Auslösern: Mit Handschuhen liegt „sperren“
+              sonst zu dicht an „entziehen“ (Grundsatz 3; Nachprüfung neu1). */}
+          <div className="flex flex-col items-start gap-3">
             {beendenStatus ? <StatusAktion patient={patient} variante="quiet" /> : null}
             {beendenAbschluss ? (
               <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />

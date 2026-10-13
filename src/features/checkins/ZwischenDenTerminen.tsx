@@ -82,11 +82,12 @@ export function ZwischenDenTerminen({
           }
         </Abfragezustand>
       </Inhaltsflaeche>
-      {/* Unter der Karte, nicht in ihr: ein Satz über den Abschnitt, kein
-          Teil seines Inhalts. */}
+      {/* ANN-487: Unter der Karte nur die Grenze aus ADR-006 Punkt 11 und
+          DSN-001 D5 - kein Alarm, gelesen wird beim Termin. Ein MDR-Satz
+          (Regel 6), keine Erklärung; „Check-ins der Person über die
+          Plattform“ davor ist entfallen (Nachprüfung A10). */}
       <Kleingedrucktes className="mt-2">
-        Check-ins der Person über die Plattform. Gelesen wird beim nächsten Termin – es gibt keinen
-        Alarm.
+        Kein Alarm je Check-in – gelesen wird beim nächsten Termin.
       </Kleingedrucktes>
     </Section>
   );

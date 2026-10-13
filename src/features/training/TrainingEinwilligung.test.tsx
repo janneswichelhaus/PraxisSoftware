@@ -49,7 +49,8 @@ describe('TrainingEinwilligung (POR-017)', () => {
     renderWithProviders(
       <TrainingEinwilligung relationshipId={TINA} darfSchreiben zeitzone="Europe/Berlin" />,
     );
-    expect(await screen.findByText('Nicht erteilt')).toBeInTheDocument();
+    // Zeichen und Wort, auch ohne eigenen Ton (Regel 5, ANN-485).
+    expect(await screen.findByText('Nicht erteilt')).toHaveTextContent('–Nicht erteilt');
     await nutzer.click(screen.getByRole('button', { name: 'Einwilligung vermerken' }));
     expect(screen.getByLabelText('Unterschrieben am')).toBeInTheDocument();
     const knoepfe = screen.getAllByRole('button', { name: 'Einwilligung vermerken' });
