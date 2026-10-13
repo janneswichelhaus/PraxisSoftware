@@ -185,6 +185,10 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
 
       <div className={`max-w-formular ${neuAnlegen ? '' : 'mt-6'}`.trim()}>
         <Section titel="Angaben">
+          {/* Hinweise nur, wo sie die Eingabe ändern (DESIGN.md Regel 6,
+              R2-neu8): wer den Schlüsselcode sieht und was „Frei“ heißt.
+              Stammdepot und Standort sagen ihre Namen; dass das Feld
+              „Aktuell gefahren von“ leer bleibt, sagt seine erste Wahl. */}
           <Feldgruppe>
             <Field
               label="Name / Kennzeichnung"
@@ -195,7 +199,6 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
 
             <Select
               label="Stammdepot"
-              hint="Wo das Rad eigentlich hingehört."
               value={entwurf.stammdepotId}
               onChange={(event) => aendere('stammdepotId', event.target.value)}
             >
@@ -208,7 +211,6 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
 
             <Select
               label="Aktueller Standort"
-              hint="Wo das Rad gerade wirklich steht."
               value={entwurf.depotId}
               onChange={(event) => aendere('depotId', event.target.value)}
             >
@@ -265,7 +267,6 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
 
             <Select
               label="Aktuell gefahren von"
-              hint="Nur ausfüllen, wenn jemand anderes als die Stammnutzer:in fährt."
               value={entwurf.aktuellerNutzerId ?? ''}
               onChange={(event) => aendere('aktuellerNutzerId', event.target.value || null)}
             >
@@ -293,7 +294,7 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
             {isOwner(user.roles) ? (
               <Field
                 label="Schlüsselcode"
-                hint={`Für die Nachbestellung eines Ersatzschlüssels. Nur für ${roleLabels.owner} sichtbar.`}
+                hint={`Nur für ${roleLabels.owner} sichtbar.`}
                 value={entwurf.schluesselcode}
                 onChange={(event) => aendere('schluesselcode', event.target.value)}
               />
