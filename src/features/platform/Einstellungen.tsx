@@ -36,9 +36,7 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
       <PageHeader title="Einstellungen" />
       <Section titel="Schriftgröße" rahmen>
         <Schriftwahl groesse={groesse} onWahl={setzen} />
-        <p className="text-ink-muted mt-3 max-w-prose text-sm">
-          Gilt nur auf diesem Gerät. Auf einem anderen Gerät stellen Sie sie dort ein.
-        </p>
+        <p className="text-ink-muted mt-2 max-w-prose text-sm">Gilt nur auf diesem Gerät.</p>
       </Section>
       <Benachrichtigungen zugaenge={zugaenge} />
       <Section titel="Was die Praxis für Sie eingestellt hat" rahmen>
@@ -62,6 +60,12 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   );
 }
 
+/**
+ * Drei Größen als Auswahlknöpfe ohne eigenen Rahmen: Sie stehen schon in der
+ * Karte des Abschnitts (DESIGN.md, Regel 2 - kein Kasten im Kasten). Kein
+ * `Segment`: Drei Knöpfe nebeneinander passen bei „Sehr groß" und 200 %
+ * Vergrößerung nicht in 188 px; untereinander bricht nichts.
+ */
 function Schriftwahl({
   groesse,
   onWahl,
@@ -73,22 +77,18 @@ function Schriftwahl({
   return (
     <fieldset>
       <legend className="sr-only">Schriftgröße</legend>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col">
         {SCHRIFTGROESSEN.map((s) => (
-          <label
-            key={s}
-            className="border-line has-[:checked]:border-accent has-[:checked]:bg-accent-soft rounded-button flex min-h-12 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 border px-4 py-2"
-          >
+          <label key={s} className="flex min-h-12 cursor-pointer items-center gap-3">
             <input
               type="radio"
               name={name}
               value={s}
               checked={groesse === s}
               onChange={() => onWahl(s)}
-              className="size-5 shrink-0"
+              className="border-line-strong text-accent focus-visible:outline-accent size-5 shrink-0"
             />
             <span className="text-ink text-base">{SCHRIFTGROESSE_NAME[s]}</span>
-            {groesse === s ? <span className="text-ink-muted ml-auto text-sm">gewählt</span> : null}
           </label>
         ))}
       </div>

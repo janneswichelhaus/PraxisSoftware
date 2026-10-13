@@ -24,7 +24,8 @@ import {
   type Plattformzugang,
 } from './api';
 import { leserIn } from './checkintexte';
-import { NICHT_AKUT, NOTFALL } from './nachrichtentexte';
+import { NICHT_AKUT } from './nachrichtentexte';
+import { Notfallsatz } from './Notfallsatz';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 
 /**
@@ -167,7 +168,7 @@ function Formular({
         zusatz={
           <>
             {leserIn(zugang)} sieht Ihre Angaben beim nächsten Termin; sie werden nicht laufend
-            gelesen. <strong>{NICHT_AKUT}</strong> {NOTFALL}
+            gelesen. <strong>{NICHT_AKUT}</strong> <Notfallsatz />
           </>
         }
       >

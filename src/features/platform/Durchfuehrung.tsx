@@ -24,6 +24,7 @@ import {
   type WartendeEinheit,
 } from './ablage';
 import { ladePlaene, plaeneSchluessel, type PlanPosition, type Plattformzugang } from './api';
+import { Notrufnummer } from './Notfallsatz';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Uebungsinhalt } from './Uebungsinhalt';
 
@@ -496,9 +497,13 @@ function Abschluss({
         {plan.note_allowed && abgehakt > 0 ? (
           <TextArea
             label="Das war schwierig, weil … (freiwillig)"
-            hint={`${
-              plan.service_area === 'therapy' ? 'Ihre Therapeut:in' : 'Ihre Trainingsbetreuung'
-            } sieht diesen Satz. Er wird nicht laufend gelesen – bei akuten Beschwerden: 112 oder 116117.`}
+            hint={
+              <>
+                {plan.service_area === 'therapy' ? 'Ihre Therapeut:in' : 'Ihre Trainingsbetreuung'}{' '}
+                sieht diesen Satz. Er wird nicht laufend gelesen – bei akuten Beschwerden:{' '}
+                <Notrufnummer nummer="112" /> oder <Notrufnummer nummer="116117" />.
+              </>
+            }
             maxLength={500}
             rows={3}
             value={notiz}

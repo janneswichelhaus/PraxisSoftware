@@ -34,6 +34,14 @@ export const NICHT_AKUT = 'Nicht für akute Beschwerden.';
 export const NOTFALL =
   'Im Notfall 112, außerhalb der Sprechzeiten der ärztliche Bereitschaftsdienst 116117.';
 
+/**
+ * Die Nummern im Notfallhinweis, die als `tel:`-Link erscheinen
+ * (`Notfallsatz`): Notruf und ärztlicher Bereitschaftsdienst. Fest, nie aus
+ * Daten.
+ */
+export const NOTRUFNUMMERN = ['112', '116117'] as const;
+export type Notrufnummer = (typeof NOTRUFNUMMERN)[number];
+
 /** Im Training ohne Einwilligung (ANN-311): warum zwei Themen fehlen. */
 export const OHNE_EINWILLIGUNG =
   'Fragen zu Übungen und Beschwerden sind Angaben zu Ihrer Gesundheit. Sie können sie hier stellen, sobald Sie unter „Ich → Einwilligungen“ eingewilligt haben. Termin, Rechnung und Sonstiges gehen immer.';
