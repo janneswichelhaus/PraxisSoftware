@@ -176,21 +176,28 @@ export function NewTrainingClientPage() {
                       titel={`${treffer.given_name} ${treffer.family_name}${geboren(treffer)} – schon im Training`}
                     />
                   ))}
+                  {/* Eine eigene Zeile statt des `aktion`-Platzes der
+                      ListRow: Der lange Knopf rückt am Telefon unter den
+                      Namen, statt ihn auf wenige Zeichen zu drücken. */}
                   {aktenTreffer.map((treffer) => (
-                    <ListRow
+                    <li
                       key={treffer.person_id}
-                      titel={`${treffer.given_name} ${treffer.family_name}${geboren(treffer)}`}
-                      aktion={
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          disabled={beschaeftigt}
-                          onClick={() => anbinden.mutate(treffer.person_id)}
-                        >
-                          Training für diese Person beginnen
-                        </Button>
-                      }
-                    />
+                      className="border-line flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t py-2 first:border-t-0"
+                    >
+                      <span className="text-ink text-base font-semibold">
+                        {treffer.given_name} {treffer.family_name}
+                        {geboren(treffer)}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        groesse="kompakt"
+                        disabled={beschaeftigt}
+                        onClick={() => anbinden.mutate(treffer.person_id)}
+                      >
+                        Training für diese Person beginnen
+                      </Button>
+                    </li>
                   ))}
                 </ListRows>
               ) : null}
