@@ -39,8 +39,6 @@ export const GRENZEN: Record<
   breiten: {
     'features/account': 1,
 
-    'features/appointments': 1,
-
     'features/assessments': 3,
 
     'features/billing': 7,
