@@ -24,13 +24,13 @@ import {
 } from './api';
 
 const WEEKDAYS = [
-  { value: 1, label: 'Montag' },
-  { value: 2, label: 'Dienstag' },
-  { value: 3, label: 'Mittwoch' },
-  { value: 4, label: 'Donnerstag' },
-  { value: 5, label: 'Freitag' },
-  { value: 6, label: 'Samstag' },
-  { value: 7, label: 'Sonntag' },
+  { value: 1, label: 'Montag', kurz: 'Mo' },
+  { value: 2, label: 'Dienstag', kurz: 'Di' },
+  { value: 3, label: 'Mittwoch', kurz: 'Mi' },
+  { value: 4, label: 'Donnerstag', kurz: 'Do' },
+  { value: 5, label: 'Freitag', kurz: 'Fr' },
+  { value: 6, label: 'Samstag', kurz: 'Sa' },
+  { value: 7, label: 'Sonntag', kurz: 'So' },
 ];
 
 /** Häkchen je Wochentag und Hälfte: [Vormittag, Nachmittag]. */
@@ -120,8 +120,17 @@ function TerritoryForm({ territory, onDone }: { territory: Territory | null; onD
               {WEEKDAYS.map((day) => {
                 const [am, pm] = grid[day.value] ?? [false, false];
                 return (
-                  <div key={day.value} className="grid grid-cols-[7rem_1fr_1fr] items-center gap-2">
-                    <span className="text-ink text-sm">{day.label}</span>
+                  // Am Telefon der Tag kurz: „Nachmittag“ passte sonst nicht
+                  // neben „Donnerstag“ und lief über die Karte hinaus. Die
+                  // Kästchen tragen den vollen Namen (aria-label).
+                  <div
+                    key={day.value}
+                    className="grid grid-cols-[2.5rem_1fr_1fr] items-center gap-2 sm:grid-cols-[7rem_1fr_1fr]"
+                  >
+                    <span aria-hidden="true" className="text-ink text-sm">
+                      <span className="sm:hidden">{day.kurz}</span>
+                      <span className="max-sm:hidden">{day.label}</span>
+                    </span>
                     <Checkbox
                       label="Vormittag"
                       checked={am}
@@ -287,10 +296,13 @@ export function TerritoriesPage({ user }: { user: CurrentUser }) {
         </Abfragezustand>
       </div>
 
-      {/* Was die Regel bewirkt - und was nicht. */}
-      <Kleingedrucktes className="mt-8">
-        Gebietstage warnen beim Hausbesuch; sie verbieten nichts.
-      </Kleingedrucktes>
+      {/* Was die Regel bewirkt - und was nicht. Ohne Gebiete sagt es der
+          Leerzustand. */}
+      {abfrage.data && abfrage.data.length > 0 ? (
+        <Kleingedrucktes className="mt-8">
+          Gebietstage warnen beim Hausbesuch; sie verbieten nichts.
+        </Kleingedrucktes>
+      ) : null}
     </>
   );
 }
