@@ -370,8 +370,12 @@ export function Uebersicht({
         <p className="text-ink max-w-prose text-base leading-relaxed">
           <strong>{NICHT_AKUT}</strong> <Notfallsatz />
         </p>
-        {/* Ein eigenes Ziel mit 44 px, kein Link im Fließtext (DSN-001 Abschnitt 7). */}
-        <Textlink alleinstehend to={mit('/nachrichten')}>
+        {/* Ein eigenes Ziel mit 44 px, kein Link im Fließtext (DSN-001 Abschnitt 7).
+            16 px Luft darüber: Die Tippfläche einer Notrufnummer ragt 10 px
+            unter die letzte Zeile des Satzes (`Notrufnummer`); ohne den
+            Abstand lägen beide Ziele übereinander, sobald die Nummer am
+            Zeilenanfang steht (Sichtung 13.10.2026, neu4). */}
+        <Textlink alleinstehend to={mit('/nachrichten')} className="mt-4">
           Der Praxis schreiben →
         </Textlink>
       </Section>
