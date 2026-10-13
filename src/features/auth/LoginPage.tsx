@@ -15,6 +15,12 @@ import { usePasskeyVonSelbst } from './passkeyVonSelbst';
 import { useSitzungEndeteVonAussen } from './sitzungsende';
 
 /**
+ * Die Köpfe der Aufklapper mittig wie der Rest der Seite (Sichtung
+ * 13.10.2026, L8); was aufklappt - das Formular -, steht linksbündig.
+ */
+const AUFKLAPPER_MITTIG = '[&_summary]:justify-center';
+
+/**
  * Der Kennwortweg für Testkonten (ADR-025 Punkt 15).
  *
  * Nur außerhalb der Produktion: Automatisierte Tests und der erste Einstieg in
@@ -57,7 +63,7 @@ function KennwortTestzugang() {
   return (
     // Zugeklappt hinter „Testkonten" (Jannes, 2026-10-11): Die Seite zeigt so
     // schon das Bild des Betriebs, in dem es diesen Weg nicht gibt.
-    <div className="mt-6 text-left">
+    <div className="text-left">
       <Disclosure summary="Testkonten">
         <Kleingedrucktes className="mb-4">
           Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
@@ -147,11 +153,14 @@ export function LoginPage({
   return (
     // Die Anmeldemaske ist die Haustür — hier steht die Marke selbst, nicht
     // ihr Name als Text (`Vollseite`, MARKE-001).
+    // Ein Satz zum Lesen statt drei grauer (Sichtung 13.10.2026, L8): Wer
+    // den Passkey verloren hat, liest den Weg in Tinte und 16 px; die Hilfe am
+    // Rechner steht auf Abruf; wer die Seite nutzen darf, sagt das
+    // Kleingedruckte am Fuß. Alles mittig wie Marke und Titel.
     <Vollseite
       mittig
       titel="Anmelden"
-      einleitung="Zugang ausschließlich für Mitarbeitende und Patient:innen der Praxis."
-      kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig."
+      kleingedrucktes="Nur für Mitarbeitende und Patient:innen der Praxis, jede Person mit eigenem Konto."
     >
       <div className="flex flex-col gap-4">
         {/* Kein Grund, kein Name (BEF-047): Was eine Sperre oder ein
@@ -175,14 +184,19 @@ export function LoginPage({
           <Statusmeldung ton="warnung">{PASSKEY_SAETZE.nichtUnterstuetzt}</Statusmeldung>
         )}
 
-        <Kleingedrucktes>
-          Am Rechner ohne eigenen Passkey im Passkey-Fenster „anderes Gerät“ wählen und den Code mit
-          dem Telefon scannen. Passkey verloren oder neues Telefon? Die Praxis gibt Ihnen eine neue
-          Einladung.
-        </Kleingedrucktes>
+        <p className="text-ink text-base">
+          Passkey verloren oder neues Telefon? Die Praxis gibt Ihnen eine neue Einladung.
+        </p>
       </div>
 
-      {testzugang ? <KennwortTestzugang /> : null}
+      <div className={`mt-6 ${AUFKLAPPER_MITTIG}`}>
+        <Disclosure summary="Am Rechner anmelden">
+          <p className="text-ink text-base">
+            Im Passkey-Fenster „anderes Gerät“ wählen und den Code mit dem Telefon scannen.
+          </p>
+        </Disclosure>
+        {testzugang ? <KennwortTestzugang /> : null}
+      </div>
     </Vollseite>
   );
 }

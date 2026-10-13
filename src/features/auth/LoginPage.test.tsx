@@ -71,6 +71,9 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
     expect(screen.queryByLabelText('E-Mail-Adresse')).toBeNull();
     expect(screen.queryByText(/Kennwort vergessen/)).toBeNull();
     expect(screen.getByText(/Die Praxis gibt Ihnen eine neue Einladung/)).toBeInTheDocument();
+    // Die Hilfe am Rechner auf Abruf, nicht als dritter grauer Satz (L8).
+    expect(screen.getByText('Am Rechner anmelden').closest('summary')).not.toBeNull();
+    expect(screen.getByText(/„anderes Gerät“ wählen/)).not.toBeVisible();
   });
 
   it('meldet mit dem Passkey an', async () => {
