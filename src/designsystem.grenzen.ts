@@ -55,8 +55,6 @@ export const GRENZEN: Record<
 
     'features/exercises': 5,
 
-    'features/files': 4,
-
     'features/fleet': 3,
 
     'features/messages': 4,
@@ -211,8 +209,6 @@ export const GRENZEN: Record<
     'features/exercise-plans': 4,
 
     'features/exercises': 3,
-
-    'features/files': 1,
 
     'features/fleet': 1,
 

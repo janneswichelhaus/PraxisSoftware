@@ -44,7 +44,7 @@ export function Dateiansicht({
         <img
           src={adresse}
           alt={name}
-          className="bg-ink rounded-image block max-h-[70vh] w-full max-w-2xl object-contain"
+          className="bg-ink rounded-image max-w-spalte block max-h-[70vh] w-full object-contain"
         />
       ) : null}
       <div className="mt-3">
@@ -81,7 +81,7 @@ export function PdfRahmen({ daten, titel }: { daten: Blob; titel: string }) {
     <iframe
       src={adresse}
       title={titel}
-      className="border-line rounded-image block h-[70vh] w-full max-w-2xl border bg-white"
+      className="border-line rounded-image max-w-spalte block h-[70vh] w-full border bg-white"
     />
   ) : null;
 }
