@@ -831,8 +831,9 @@ describe('SubNav', () => {
     );
 
     // „Zahlungen" liegt bei 480-600 px, sichtbar sind 300: Die Liste rollt so
-    // weit, dass der Eintrag ganz und 24 px vom Nachbarn zu sehen sind.
-    expect(screen.getByRole('list').scrollLeft).toBe(600 + 24 - 300);
+    // weit, dass der Eintrag ganz und 72 px vom Nachbarn zu sehen sind - so
+    // breit wie der Verlauf am Rand, der den Nachbarn ausblendet (T2).
+    expect(screen.getByRole('list').scrollLeft).toBe(600 + 72 - 300);
     expect(seiteRollen).not.toHaveBeenCalled();
   });
 
@@ -851,7 +852,7 @@ describe('SubNav', () => {
     expect(liste.scrollLeft).toBe(0);
 
     await user.click(screen.getByRole('link', { name: 'Auswertung' }));
-    expect(liste.scrollLeft).toBe(720 + 24 - 300);
+    expect(liste.scrollLeft).toBe(720 + 72 - 300);
 
     await user.click(screen.getByRole('link', { name: 'Rechnungen' }));
     expect(liste.scrollLeft).toBe(0);
@@ -866,7 +867,7 @@ describe('SubNav', () => {
       '/abrechnung/auswertung',
     );
     expect(screen.getByRole('list').scrollLeft).toBe(0);
-    // Nichts liegt rechts außer Sicht: kein Verlauf.
+    // Nichts liegt außer Sicht: kein Verlauf, weder rechts noch links.
     expect(document.querySelector('[data-verlauf]')).toBeNull();
   });
 
@@ -878,8 +879,10 @@ describe('SubNav', () => {
     );
     const liste = screen.getByRole('list');
     // Sechs Einträge à 120 px, 300 sichtbar, Anfang: rechts liegt noch etwas.
-    const verlauf = document.querySelector('[data-verlauf]')!;
+    const verlauf = document.querySelector('[data-verlauf="rechts"]')!;
     expect(verlauf).not.toBeNull();
+    // Am Anfang liegt links nichts: kein Verlauf dort.
+    expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
     // Dekorativ, von der Fläche nach durchsichtig, nur unter 640 px, nicht
     // klickbar - der letzte sichtbare Eintrag bleibt darunter zu treffen.
     expect(verlauf).toHaveAttribute('aria-hidden', 'true');
@@ -895,15 +898,32 @@ describe('SubNav', () => {
       ]),
     );
 
-    // Ans Ende gerollt: nichts mehr rechts, der Verlauf geht.
+    // Ans Ende gerollt: nichts mehr rechts, der Verlauf geht - und links
+    // steht seither einer, statt eines hart abgeschnittenen Worts (T2).
     liste.scrollLeft = 720 - 300;
     fireEvent.scroll(liste);
-    expect(document.querySelector('[data-verlauf]')).toBeNull();
+    expect(document.querySelector('[data-verlauf="rechts"]')).toBeNull();
+    const links = document.querySelector('[data-verlauf="links"]')!;
+    expect(links).not.toBeNull();
+    expect(links).toHaveAttribute('aria-hidden', 'true');
+    expect(links).toHaveTextContent('‹');
+    expect(links.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        'w-18',
+        'left-4',
+        'bg-linear-to-r',
+        'from-canvas',
+        'to-transparent',
+        'sm:hidden',
+        'pointer-events-none',
+      ]),
+    );
 
-    // Wieder zurück: er kommt wieder.
+    // Wieder zurück: rechts kommt er wieder, links geht er.
     liste.scrollLeft = 0;
     fireEvent.scroll(liste);
-    expect(document.querySelector('[data-verlauf]')).not.toBeNull();
+    expect(document.querySelector('[data-verlauf="rechts"]')).not.toBeNull();
+    expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
   });
 });
 
