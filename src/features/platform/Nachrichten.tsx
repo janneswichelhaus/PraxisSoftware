@@ -30,7 +30,6 @@ import {
 } from './api';
 import {
   NICHT_AKUT,
-  NOTFALL,
   OHNE_EINWILLIGUNG,
   THEMA_NAME,
   THEMEN,
@@ -38,6 +37,7 @@ import {
   type Thema,
 } from './nachrichtentexte';
 import { AnhaengeAbschnitt } from './Anhaenge';
+import { Notfallsatz } from './Notfallsatz';
 import { zeitmarke, type Ansicht } from './anhangtexte';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { datum, tagKurz, uhrzeit } from './zeit';
@@ -162,7 +162,7 @@ export function Notfallhinweis({
     >
       <p className="text-ink">{zusage(werktage)}</p>
       <p className="text-ink mt-1">
-        <strong>{NICHT_AKUT}</strong> {NOTFALL}
+        <strong>{NICHT_AKUT}</strong> <Notfallsatz />
       </p>
     </div>
   );

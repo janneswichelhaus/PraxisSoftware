@@ -37,7 +37,8 @@ import {
 } from './api';
 import { nachDemCheckin } from './checkintexte';
 import { fuerDiePlattform } from './instrumentwahl';
-import { NICHT_AKUT, NOTFALL, THEMA_NAME } from './nachrichtentexte';
+import { NICHT_AKUT, THEMA_NAME } from './nachrichtentexte';
+import { Notfallsatz } from './Notfallsatz';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { terminBeschreibung } from './terminbeschreibung';
 import { datum, kuenftig, tagKurz, tagLang, zeitraum } from './zeit';
@@ -367,7 +368,7 @@ export function Uebersicht({
 
       <Section titel="Fragen an die Praxis">
         <p className="text-ink max-w-prose text-base leading-relaxed">
-          <strong>{NICHT_AKUT}</strong> {NOTFALL}
+          <strong>{NICHT_AKUT}</strong> <Notfallsatz />
         </p>
         {/* Ein eigenes Ziel mit 44 px, kein Link im Fließtext (DSN-001 Abschnitt 7). */}
         <Textlink alleinstehend to={mit('/nachrichten')}>

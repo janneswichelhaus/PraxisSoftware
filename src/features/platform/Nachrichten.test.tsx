@@ -181,6 +181,15 @@ function hinweisPruefen(container: HTMLElement) {
   expect(hinweis).toHaveTextContent('Nicht für akute Beschwerden.');
   expect(hinweis).toHaveTextContent('112');
   expect(hinweis).toHaveTextContent('116117');
+  // Die Nummern zum Antippen, fest - nie aus dem Inhalt einer Nachricht (L2).
+  expect(within(hinweis).getByRole('link', { name: '112 anrufen' })).toHaveAttribute(
+    'href',
+    'tel:112',
+  );
+  expect(within(hinweis).getByRole('link', { name: '116117 anrufen' })).toHaveAttribute(
+    'href',
+    'tel:116117',
+  );
 }
 
 describe('Nachrichten (KOM-001)', () => {
