@@ -1836,7 +1836,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 6) · erledigt · Wiedervorlage: —
 
-**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“
+**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“; die Rückfrage gilt auf der Schreibseite nach dem Festschreiben nicht mehr (ANN-475, offen)
 
 **Annahme.** Am dokumentierten Termin bestätigt die behandelnde Person, welche Heilmittel sie geleistet hat — vorbelegt aus der Grundlage, mit einer Rückfrage, geschrieben über dieselbe `record_billable_services` wie im Büro. `therapist` und `team_lead` dürfen das **nur an ihrem eigenen Termin** (ihre Beschäftigtenkennung steht am Termin); `owner` und `office` weiter an jedem. **Zurücknehmen** und das **Ausfallhonorar** (eine Forderung gegen die Patient:in) bleiben bei `owner` und `office`. Ist das Kontingent danach erreicht, sagt die Seite es; eine Rechnung entsteht dabei nie — sie bleibt im Büro (ANN-077). Das Protokoll trägt, ob am Termin oder im Büro erfasst wurde.
 
@@ -4812,3 +4812,65 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.
 
+
+### ANN-475 — Heilmittel nach dem Festschreiben: ein Tipp statt Rückfrage
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
+
+**Ablösung.** ändert ANN-140 nur in der Bedienung auf der Schreibseite („mit einer Rückfrage“); im Terminfenster bleibt die Rückfrage.
+
+**Annahme.** Nach dem Festschreiben bestätigt „Heilmittel bestätigen“ die vorbelegten, sichtbar angehakten Heilmittel mit einem Tipp; die Folge („zählt weiter, korrigieren nur im Büro“) steht am Knopf. Weg, Rollen und Schutz vor Doppelerfassung bleiben beim Server (`record_billable_services`).
+
+**Begründung.** Kernablauf K5 (≤ 6 Tipps); dasselbe Muster wie beim Festschreiben (UX-007, ADR-016 Punkt 4): ausdrücklich durch Beschriftung und sichtbare Folge.
+
+**Anker.** `einTipp` in `Auswahl`, `src/features/appointments/HeilmittelBestaetigen.tsx`.
+
+**Änderungspfad.** Rückfrage auch hier: `einTipp` in `HeilmittelAmAbschluss` weglassen · Aufwand `klein`.
+
+### ANN-476 — „Später da?“ als SMS aus der SMS-App des Diensttelefons
+
+Datenschutz · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung vor Produktivstart (ADR-007)
+
+**Annahme.** „Später da?“ übergibt Mobilnummer und Vorlagentext („Guten Tag, hier ‹Praxis›. Ich bin etwa 10/15/20 Minuten später da als vereinbart.“) per `sms:` an die SMS-App; gesendet wird von Hand. Kein Dienstleister, keine Speicherung, kein Protokoll. Der Anrufknopf (`tel:`) zeigt keine Nummer im Bild.
+
+**Begründung.** Wie Anruf und Terminmail aus dem eigenen Postfach (CAL-013); B15 (automatische Nachrichten) bleibt unberührt. Der Text nennt weder Namen noch Gesundheitsangaben (Art. 5 Abs. 1 lit. c DSGVO).
+
+**Anker.** `verspaetungsText`/`smsHref` in `src/features/today/besuchswege.ts`.
+
+**Änderungspfad.** Abschalten: `SpaeterDa` nicht mehr einsetzen · Aufwand `klein`.
+
+### ANN-477 — Folgetermin aus Vorschlägen mit einem Tipp, ohne Grundlage
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
+
+**Annahme.** Nach dem Festschreiben stehen bis zu drei Plätze: nächste Woche zur gleichen Zeit, dann je Tag der nächste freie der nächsten 14 Tage (`find_free_slots`: gleiche Person, Art, Dauer, Gebietstag zuerst; Hausbesuch mit `rate_slot_travel`). Ein Tipp legt über `create_appointment` an – ohne Behandlungsgrundlage, wie „Folgetermin anlegen“ im Terminfenster. Steht schon ein künftiger Termin, gilt der Teil als erledigt.
+
+**Begründung.** Muster U2, Kernablauf K7; der Server prüft Arbeitszeit, Raster und Überschneidung, reserviert wird nichts (§8).
+
+**Anker.** `FolgeterminVorschlaege` in `src/features/appointments/FolgeterminVorschlaege.tsx`.
+
+**Änderungspfad.** Grundlage mitgeben: `treatment_basis_id` der Abrechnungslage an `createAppointment` · Aufwand `klein`.
+
+### ANN-478 — „Nachzuholen“: sieben Tage zurück über die Tagesliste
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Übersicht zeigt heute für Schreibende Besuche der letzten 7 Tage ohne Haken oder mit offener Doku, gelesen über `list_day_plan` je Tag (keine neue Serverfunktion, kein Protokoll). Unbestätigte Heilmittel früherer Tage stehen dort nicht – die Tagesliste kennt sie nicht.
+
+**Begründung.** Analyse „Alltag unterwegs“ Rang 5, Lösung S; Entwürfe werden nach einem Tag festgeschrieben (ADR-016 Punkt 7), eine Woche reicht für Liegengebliebenes.
+
+**Anker.** `NACHZUHOLEN_TAGE` in `src/features/today/NochOffen.tsx`.
+
+**Änderungspfad.** Heilmittel früherer Tage: schlanke Lesefunktion (Rang 5, Lösung M) · Aufwand `mittel`.
+
+### ANN-479 — „Niemand öffnet?“: Die 15-Minuten-Uhr hakt „gewartet“ vor
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
+
+**Annahme.** An der Karte der Übersicht läuft ab dem Tipp auf „Niemand öffnet?“ eine sichtbare Uhr bis 15:00; danach ist „15 Minuten vor Ort gewartet“ einmal vorgehakt. Klingeln und Anrufen hakt die Person selbst, der Vermerk braucht weiter alle drei Haken und den Knopf (ADR-018 Punkt 9). Im Terminfenster bleibt der Ablauf ohne Uhr.
+
+**Begründung.** Analyse Rang 9: Die Uhr misst, was das Kästchen bisher nur behauptete; sie läuft nur im Speicher der Seite.
+
+**Anker.** `Wartezeit` in `src/features/appointments/HomeVisitFlow.tsx`.
+
+**Änderungspfad.** Nicht vorhaken: `onAbgelaufen` weglassen · Aufwand `klein`.
