@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -6,7 +6,11 @@ import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { symbolknopfKlassen } from '@/components/ui/buttonStile';
 import { EmptyState } from '@/components/ui/Feedback';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { fetchAbrechnungslage, positionText } from '@/features/appointments/abrechnungslage-api';
+import {
+  fetchAbrechnungslage,
+  positionText,
+  type Abrechnungslage,
+} from '@/features/appointments/abrechnungslage-api';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
@@ -23,6 +27,7 @@ import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
+import { Danach } from './Danach';
 import { useTextUebernahme } from './uebernahme';
 import {
   completeTreatment,
@@ -60,6 +65,7 @@ function Abschluss({
   zumTermin,
   eingehend,
   inzwischen,
+  onFestgeschrieben,
 }: {
   /** Das eigene Konto - für die Ablage auf dem Diensttelefon (OFF-003). */
   besitzer: string;
@@ -73,6 +79,11 @@ function Abschluss({
   eingehend: string;
   /** Was sich geändert hat, seit die Seite offen ist (DOK-B01). */
   inzwischen: Statuswechsel | undefined;
+  /**
+   * Nach dem Festschreiben bleibt die Seite stehen und zeigt „Danach“
+   * (Auftrag C1); bis dahin ging es mit der Meldung zurück zum Termin.
+   */
+  onFestgeschrieben: (meldung: string) => void;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -273,15 +284,7 @@ function Abschluss({
   // Der Pfeil führt dorthin, woher die Seite kam - sonst zum Termin. Er läuft
   // wie jeder Weg hinaus durch den Textverlustschutz.
   const zurueck = leseRueckweg(suche, zumTermin);
-  const position = lage ? positionText(lage) : null;
-  const kopfzeile = [
-    ohneBehandlung ? 'Ohne Behandlung' : 'Dokumentation',
-    kurzesDatum(appointment.starts_at, zone),
-    formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone),
-    position,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const kopfzeile = kopfzeileFuer(appointment, lage, ohneBehandlung);
   const hierher = mitRueckweg(`/termine/${appointment.id}/abschluss`, zurueck);
   const anzahlBefund = Object.keys(bausteine.auswahl).length;
 
@@ -355,12 +358,14 @@ function Abschluss({
             void schreiben({
               ausfuehren: abschlussSchreiben,
               fehlertitel: 'Nicht festgeschrieben',
-              danach: () =>
-                weiterZumTermin(
+              danach: () => {
+                freigeben();
+                onFestgeschrieben(
                   ohneBehandlung
                     ? 'Mit Vermerk festgeschrieben. Der Termin ist abgeschlossen.'
                     : 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.',
-                ),
+                );
+              },
             }).finally(() => setSchreibtAbschluss(false));
           }}
         >
@@ -544,6 +549,65 @@ function Abschluss({
   );
 }
 
+/** Die Zeile unter dem Namen: was, Tag, Uhrzeit, „Termin n von m“. */
+function kopfzeileFuer(
+  appointment: Appointment,
+  lage: Abrechnungslage | null | undefined,
+  ohneBehandlung: boolean,
+): string {
+  const zone = appointment.organization_time_zone;
+  return [
+    ohneBehandlung ? 'Ohne Behandlung' : 'Dokumentation',
+    kurzesDatum(appointment.starts_at, zone),
+    formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone),
+    lage ? positionText(lage) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/**
+ * „Danach“ mit dem Kopf der Schreibseite (Auftrag C1) - nach dem eigenen
+ * Festschreiben mit der Meldung, sonst unter „Bereits finalisiert“.
+ */
+function DanachSeite({
+  user,
+  appointment,
+  meldung,
+  kopf,
+  ohneBehandlung,
+  zumTermin,
+}: {
+  user: CurrentUser;
+  appointment: Appointment;
+  meldung: string | null;
+  kopf?: ReactNode;
+  ohneBehandlung: boolean;
+  zumTermin: string;
+}) {
+  const [suche] = useSearchParams();
+  const { data: lage } = useQuery({
+    queryKey: ['appointment', appointment.id, 'abrechnungslage'],
+    queryFn: () => fetchAbrechnungslage(appointment.id),
+    enabled: appointment.kind === 'therapy',
+    retry: false,
+  });
+  const zurueck = leseRueckweg(suche, zumTermin);
+  return (
+    <Danach
+      user={user}
+      appointment={appointment}
+      kopfzeile={kopfzeileFuer(appointment, lage, ohneBehandlung)}
+      kopf={kopf}
+      meldung={meldung}
+      ohneBehandlung={ohneBehandlung}
+      zurueck={zurueck}
+      zumTermin={zumTermin}
+      hierher={mitRueckweg(`/termine/${appointment.id}/abschluss`, zurueck)}
+    />
+  );
+}
+
 /** „Do 01.10." - Wochentag kurz, Tag und Monat, in der Zeit der Praxis. */
 function kurzesDatum(iso: string, zone: string): string {
   const teile = new Intl.DateTimeFormat('de-DE', {
@@ -583,6 +647,11 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
   // (DOK-B01). Finalisiert eine Kollegin oder die Frist, sagt das Büro ab,
   // während hier geschrieben wird, verschwand bisher das Feld samt Text.
   const ausgangslage = useRef<{ termin: string; abschluss: boolean } | null>(null);
+  // Nach dem eigenen Festschreiben: die Meldung, unter der „Danach“ steht.
+  const [festgeschrieben, setFestgeschrieben] = useState<{
+    termin: string;
+    meldung: string;
+  } | null>(null);
 
   return (
     <DocumentationShell
@@ -592,6 +661,25 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
       eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
+        const ohneBehandlung =
+          // Der Vermerk gilt am Hausbesuch (ANN-055). Ein verstellter
+          // Parameter an einem Praxistermin fällt hier still weg, statt in
+          // eine Fehlermeldung des Servers zu laufen; verbindlich weist der
+          // Server ihn ohnehin ab.
+          ohneBehandlungGewaehlt && appointment.appointment_type === 'home_visit';
+
+        if (festgeschrieben?.termin === appointment.id) {
+          return (
+            <DanachSeite
+              user={user}
+              appointment={appointment}
+              meldung={festgeschrieben.meldung}
+              ohneBehandlung={ohneBehandlung}
+              zumTermin={zumTermin}
+            />
+          );
+        }
+
         const zustand = zustandFuer(appointment, dokumentation.primary);
         const warAbschluss =
           ausgangslage.current?.termin === appointment.id && ausgangslage.current.abschluss;
@@ -605,16 +693,13 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
               key={appointment.id}
               appointment={appointment}
               note={dokumentation.primary}
-              // Der Vermerk gilt am Hausbesuch (ANN-055). Ein verstellter
-              // Parameter an einem Praxistermin fällt hier still weg, statt in
-              // eine Fehlermeldung des Servers zu laufen; verbindlich weist der
-              // Server ihn ohnehin ab.
-              ohneBehandlung={
-                ohneBehandlungGewaehlt && appointment.appointment_type === 'home_visit'
-              }
+              ohneBehandlung={ohneBehandlung}
               zumTermin={zumTermin}
               eingehend={eingehend}
               inzwischen={zustand === 'abschluss' ? undefined : zustand}
+              onFestgeschrieben={(meldung) =>
+                setFestgeschrieben({ termin: appointment.id, meldung })
+              }
             />
           );
         }
@@ -639,14 +724,31 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
           );
         }
 
+        if (!dokumentation.primary) return null;
         // Derselbe Zustand heißt überall gleich: „Bereits finalisiert“ (DOK-08).
-        return dokumentation.primary ? (
+        const finalisiert = (
           <BereitsFinalisiert
             appointmentId={appointment.id}
             eintrag={dokumentation.primary}
             eingehend={eingehend}
+            kompakt={appointment.kind === 'therapy'}
           />
-        ) : null;
+        );
+        // Am Behandlungstermin steht darunter, was nach dem Festschreiben noch
+        // zu tun ist (Auftrag C1) - so führt „Heilmittel offen“ aus der
+        // Übersicht hierher.
+        return appointment.kind === 'therapy' ? (
+          <DanachSeite
+            user={user}
+            appointment={appointment}
+            meldung={null}
+            kopf={finalisiert}
+            ohneBehandlung={dokumentation.primary.visit_without_treatment}
+            zumTermin={zumTermin}
+          />
+        ) : (
+          finalisiert
+        );
       }}
     </DocumentationShell>
   );
