@@ -4,13 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Textlink } from '@/components/ui/Textlink';
 import type { CurrentUser } from '@/features/session/types';
-import {
-  ausfallhonorarRegel,
-  datenschutzinformation,
-  DATENSCHUTZINFORMATION_FASSUNG,
-  type Abschnitt,
-} from './patienteninformation';
-import { AbsenderBlock } from './AbsenderBlock';
+import { Aufnahmeblatt } from './Aufnahmeblatt';
 import { useAbsender } from './useAbsender';
 
 /**
@@ -32,6 +26,10 @@ import { useAbsender } from './useAbsender';
  * **Absender (UX-009a, BEF-052).** Beide Blätter tragen oben Name, Anschrift,
  * Telefon und E-Mail der Praxis aus den Stammdaten (ANN-323) - auch wenn
  * therapist druckt. Die Datenschutzinformation nennt sie zusätzlich im Text.
+ *
+ * Das Blatt selbst steht seit Welle B in `Aufnahmeblatt.tsx`: Es folgt dem
+ * Profil „Druckblatt“ (DESIGN.md) mit eigenen Überschriften; diese Seite
+ * trägt nur die Bedienung drumherum.
  */
 export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
   const { patientId = '' } = useParams();
@@ -53,27 +51,7 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
 
       <div className="mx-auto max-w-[210mm]">{hinweis}</div>
 
-      <article className="text-ink text-liste mx-auto max-w-[210mm]">
-        <p className="text-warnung border-line border-b pb-2 text-sm font-medium">
-          Entwurf – vor der Verwendung mit echten Patient:innen durch die Datenschutzberatung zu
-          prüfen.
-        </p>
-
-        <AbsenderBlock absender={absender} className="mt-4" />
-        <h1 className="text-h4 mt-6 font-bold">Datenschutzinformation</h1>
-        <p className="text-ink-muted mt-1 text-sm">
-          Fassung {DATENSCHUTZINFORMATION_FASSUNG} · nach Art. 13 DSGVO
-        </p>
-        {datenschutzinformation(absender).map((abschnitt) => (
-          <Blattabschnitt key={abschnitt.titel} abschnitt={abschnitt} />
-        ))}
-
-        <div className="border-line mt-10 border-t pt-6 print:break-before-page">
-          <AbsenderBlock absender={absender} />
-          <h2 className="text-h4 mt-6 font-bold">{ausfallhonorarRegel().titel}</h2>
-          <Blattabschnitt abschnitt={{ ...ausfallhonorarRegel(), titel: '' }} />
-        </div>
-      </article>
+      <Aufnahmeblatt absender={absender} />
 
       <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
         <div>
@@ -92,18 +70,5 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
         </p>
       </div>
     </>
-  );
-}
-
-function Blattabschnitt({ abschnitt }: { abschnitt: Abschnitt }) {
-  return (
-    <section className="mt-5">
-      {abschnitt.titel ? <h2 className="text-sm font-semibold">{abschnitt.titel}</h2> : null}
-      {abschnitt.absaetze.map((absatz) => (
-        <p key={absatz} className="mt-2 leading-relaxed">
-          {absatz}
-        </p>
-      ))}
-    </section>
   );
 }
