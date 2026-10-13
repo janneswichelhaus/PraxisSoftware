@@ -5006,3 +5006,15 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `einklappbar` in `src/components/ui/SubNav.tsx`.
 
 **Änderungspfad.** Wieder ab einer Vorschau einklappen: `vorschauen.length > 0` · Aufwand `klein`.
+
+### ANN-494 — Statistik: vier Kennzahlen als Kacheln, „Verordnungen ohne Anschluss“ als Zeile
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Umsatz, Offene Posten, Auslastung und Ausfälle stehen als Kacheln, ab 640 px zwei mal zwei. „Verordnungen ohne Anschluss“ steht als Zeile über die ganze Breite darunter – mit Zahl, Satz, Ziel und „Verordner:innen anfragen“. CSV und Reihenfolge der Kennzahlen bleiben.
+
+**Begründung.** DESIGN.md: höchstens vier Kacheln (Review R2-O8). Diese Kennzahl hat die kürzeste Erklärung und keine Aufschlüsselung; sie passt in eine Zeile.
+
+**Anker.** `KENNZAHL_ALS_ZEILE` in `src/features/statistics/StatisticsPage.tsx`.
+
+**Änderungspfad.** Andere Kennzahl als Zeile: Schlüssel tauschen · Aufwand `klein`.

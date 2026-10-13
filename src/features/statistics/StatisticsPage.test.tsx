@@ -93,6 +93,24 @@ describe('StatisticsPage (STA-003)', () => {
     ).toHaveAttribute('href', '/warteliste');
   });
 
+  it('stellt vier Kennzahlen als Kacheln und die fünfte als Zeile darunter (R2-O8)', async () => {
+    renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
+    await screen.findByRole('region', { name: (name) => name === 'Umsatz' });
+
+    const kacheln = karte('Umsatz').parentElement!;
+    for (const titel of ['Offene Posten', 'Auslastung', 'Ausfälle']) {
+      expect(karte(titel).parentElement).toBe(kacheln);
+    }
+    expect(kacheln.children).toHaveLength(4);
+    const zeile = karte('Verordnungen ohne Anschluss');
+    expect(kacheln.contains(zeile)).toBe(false);
+    // Auch die Zeile trägt Ziel und nächsten Schritt.
+    expect(within(zeile).getByText(/Ziel:/)).toBeInTheDocument();
+    expect(
+      within(zeile).getByRole('link', { name: 'Verordner:innen anfragen' }),
+    ).toBeInTheDocument();
+  });
+
   it('haelt Umsatz und Zahlungseingang in getrennten Zahlen', async () => {
     renderWithProviders(<StatisticsPage user={testUser(['owner', 'therapist'])} />, '/statistiken');
     const umsatz = await screen.findByRole('region', { name: (name) => name === 'Umsatz' });
