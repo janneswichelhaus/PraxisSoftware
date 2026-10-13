@@ -9,15 +9,21 @@ import type { Katalogeintrag } from '../typen';
  * Hüftendoprothese je nach Zugang stehen als Satz unter `hinweise_praxis`,
  * zum Nachlesen für die Fachperson - nie als Filter oder Abgleich.
  *
- * Nur die Ausgangsstellung (ANN-480) zeigen HU-02 (der Fuß bleibt liegen,
- * während das Knie aufgeht - die Frontansicht bewegt das ganze Bein; die
- * gebeugten Beine erscheinen verkürzt), HU-08 (Knie öffnen bei stehenden
- * Füßen), HU-16 (das überschlagene Bein liegt quer zur Blickrichtung; im
- * Bild hängt der Unterschenkel über dem anderen Knie, das Vorneigen steht im
- * Text) und HU-17 (der Zug zur Gegenschulter liegt quer). HU-03 zeigt das
- * Heben des unteren Beins von vorn, das obere steht verkürzt davor. HU-14
+ * HU-02 bleibt ohne Bild: Die Vorderansicht zeigt gebeugte Hüften und Knie
+ * nur als kürzere Beine, das Bild sähe aus wie der Start von HU-01 und
+ * verleitete zum Abspreizen des gestreckten Beins (ein Bild von oben wäre
+ * eine neue Fassung). Nur die Ausgangsstellung (ANN-480) zeigen HU-08 (Knie
+ * öffnen bei stehenden Füßen; die Hüften etwas unter 90° gezeichnet, damit
+ * die Knie unter dem Rumpf erscheinen und das Band dazwischen sichtbar
+ * wird), HU-16 (von vorn: Der Unterschenkel des überschlagenen Beins liegt
+ * quer vor dem anderen Knie, der Fuß ragt darüber hinaus; das Vorneigen
+ * steht im Text) und HU-17 (der Zug zur Gegenschulter liegt quer). HU-03
+ * zeigt das Heben des unteren Beins von vorn; das obere steht mit stark
+ * gebeugtem Knie als kurzes Stück steil vor dem Rumpf auf der Matte. HU-14
  * legt die Person mit dem Becken an das Ende des Betts, damit das Bein
- * herabhängen kann; die Bettkante der Anleitung liegt an der Längsseite.
+ * herabhängen kann; im Ende sinkt vor allem der Oberschenkel, das Knie bleibt
+ * gebeugt, der Fuß berührt den Boden. Die Bettkante der Anleitung liegt an
+ * der Längsseite.
  */
 
 /** Was nach Hüftendoprothese für alle Hüftübungen gilt - der erste Satz jedes Hinweises. */
@@ -83,14 +89,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Knie fällt schnell zurück.',
     ],
     hinweise_praxis: `${TEP} Mit Band über den Knien steigern; die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“.`,
-    bild: {
-      v: 1,
-      basis: 'seitlage_front',
-      unterlage: 'matte',
-      start: { huefte: [45, 45], knie: [90, 90] },
-      ende: { huefte: [45, 45], knie: [90, 90] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'HU-03',
@@ -116,8 +114,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       v: 1,
       basis: 'seitlage_front',
       unterlage: 'matte',
-      start: { huefte: [60, 0], knie: [90, 0], bein: [-25, 0] },
-      ende: { huefte: [60, 0], knie: [90, 0], bein: [-25, -15] },
+      start: { huefte: [80, 0], knie: [140, 0], bein: [-34, 0] },
+      ende: { huefte: [80, 0], knie: [140, 0], bein: [-34, -15] },
       bewegung: ['knoechel_fern'],
     },
   },
@@ -296,8 +294,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz_front',
-      start: {},
-      ende: {},
+      start: { huefte: [70, 70], knie: [128, 128], bein: [10, 10] },
+      ende: { huefte: [70, 70], knie: [128, 128], bein: [10, 10] },
       hilfsmittel: [{ art: 'band', von: 'knie_nah', nach: 'knie_fern' }],
     },
   },
@@ -497,8 +495,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       },
       ende: {
         sitz: 'bett',
-        huefte: [-15, 120],
-        knie: [36, 120],
+        huefte: [-10, 120],
+        knie: [50, 120],
         fuss_flach: [true, false],
         schulter: [11, 11],
         ellbogen: [91, 91],
@@ -578,21 +576,9 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     hinweise_praxis: `${TEP} Hier: Nach Hüftendoprothese erst nach ärztlicher Freigabe, denn das Vorneigen beugt die Hüfte über 90°.`,
     bild: {
       v: 1,
-      basis: 'sitz',
-      start: {
-        rumpf: 0,
-        huefte: [110, 87],
-        knie: [115, 87],
-        sprung: [20, 0],
-        fuss_flach: [false, true],
-      },
-      ende: {
-        rumpf: 0,
-        huefte: [110, 87],
-        knie: [115, 87],
-        sprung: [20, 0],
-        fuss_flach: [false, true],
-      },
+      basis: 'sitz_front',
+      start: { bein: [-78, 6], knie: [55, 90] },
+      ende: { bein: [-78, 6], knie: [55, 90] },
     },
   },
   {
