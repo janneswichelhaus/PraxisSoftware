@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
@@ -93,15 +96,34 @@ function Erfasst({ stand, user }: { stand: LeistungenAmTermin; user: CurrentUser
   );
 }
 
+/** Was der Server gegen eine Bestätigung einwendet, als Satz für die Praxis. */
+function erfassenFehler(fehler: Error): string {
+  if (fehler instanceof KontingentAusgeschoepft) {
+    return 'Die Grundlage ist bereits ausgeschöpft. Bitte im Büro klären, auf welche Grundlage der Termin gehört.';
+  }
+  if (fehler instanceof KeinTerminhonorar) {
+    return 'Für diesen Tag gilt kein Terminhonorar. Bitte im Büro klären – die Praxisinhaber:in legt es in der Preisliste oder in der Akte fest.';
+  }
+  return fehler.message;
+}
+
 function Auswahl({
   appointment,
   stand,
   onBestaetigt,
+  einTipp = false,
 }: {
   appointment: Appointment;
   stand: LeistungenAmTermin;
   onBestaetigt: () => void;
+  /**
+   * Auf der Schreibseite nach dem Festschreiben (ANN-475): Auswahl und Folge
+   * stehen über dem Knopf, ein Tipp bestätigt - ohne die Rückfrage des
+   * Terminfensters.
+   */
+  einTipp?: boolean;
 }) {
+  const folgeId = useId();
   const queryClient = useQueryClient();
   const vorschlag = useQuery({
     queryKey: ['appointment', appointment.id, 'leistungsvorschlag'],
@@ -153,6 +175,52 @@ function Auswahl({
     setAuswahl(neu);
   };
 
+  if (einTipp) {
+    return (
+      <div>
+        <fieldset className="flex flex-col gap-1">
+          <legend className="sr-only">Geleistete Heilmittel</legend>
+          {positionen.map((p) => (
+            <Checkbox
+              key={p.catalog_item_id}
+              label={p.label}
+              checked={gewaehlt.has(p.catalog_item_id)}
+              disabled={erfassen.isPending}
+              onChange={() => umschalten(p.catalog_item_id)}
+            />
+          ))}
+        </fieldset>
+        <Kontingent positionen={stand.basis_items} />
+        {erfassen.isError ? (
+          <Statusmeldung ton="fehler" className="mt-3">
+            {erfassenFehler(erfassen.error)}
+          </Statusmeldung>
+        ) : null}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          {/* Sekundär: Der eine Hauptknopf der Seite ist „Fertig". */}
+          <Button
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            disabled={ausgewaehlt.length === 0 || erfassen.isPending}
+            aria-describedby={folgeId}
+            onClick={() => {
+              if (erfassen.isPending) return;
+              erfassen.mutate(ausgewaehlt);
+            }}
+          >
+            {erfassen.isPending ? 'Wird bestätigt …' : 'Heilmittel bestätigen'}
+          </Button>
+        </div>
+        <Kleingedrucktes id={folgeId} className="mt-2">
+          {ausgewaehlt.length === 0
+            ? 'Mindestens ein Heilmittel auswählen.'
+            : 'Die genutzte Menge der Grundlage zählt damit weiter. Korrigieren lässt sich das danach nur im Büro.'}
+        </Kleingedrucktes>
+      </div>
+    );
+  }
+
   return (
     <div>
       <p className="text-ink-muted text-sm">
@@ -179,15 +247,7 @@ function Auswahl({
             bezeichnung="Heilmittel bestätigen"
             bestaetigen="Ja, so bestätigen"
             bestaetigenLaeuft="Wird bestätigt …"
-            fehler={
-              erfassen.isError
-                ? erfassen.error instanceof KontingentAusgeschoepft
-                  ? 'Die Grundlage ist bereits ausgeschöpft. Bitte im Büro klären, auf welche Grundlage der Termin gehört.'
-                  : erfassen.error instanceof KeinTerminhonorar
-                    ? 'Für diesen Tag gilt kein Terminhonorar. Bitte im Büro klären – die Praxisinhaber:in legt es in der Preisliste oder in der Akte fest.'
-                    : erfassen.error.message
-                : undefined
-            }
+            fehler={erfassen.isError ? erfassenFehler(erfassen.error) : undefined}
             onBestaetigen={() => erfassen.mutateAsync(ausgewaehlt)}
             onAbbrechen={() => erfassen.reset()}
           >
@@ -262,5 +322,69 @@ export function HeilmittelBestaetigen({
         )
       ) : null}
     </Section>
+  );
+}
+
+/**
+ * Heilmittel nach dem Festschreiben, auf der Schreibseite (Auftrag C1,
+ * ANN-475): derselbe Weg wie im Terminfenster - `record_billable_services`
+ * mit Dokumentationskopplung (§19), Kontingent und Schutz vor
+ * Doppelerfassung (ADR-009 Punkt 4), wer darf, entscheidet der Server
+ * (ANN-140). Anders ist nur die Bedienung: vorbelegt, ein Tipp. Ist schon
+ * bestätigt, steht es als erledigt da (Leitfaden L3).
+ *
+ * Die Seite zeigt den Teil nur, wer an diesem Termin bestätigen darf
+ * (`canRecordAtAppointment`); vor dem Festschreiben schweigt er.
+ */
+export function HeilmittelAmAbschluss({
+  appointment,
+  user,
+}: {
+  appointment: Appointment;
+  user: CurrentUser;
+}) {
+  const erfassbar = appointment.status === 'documented';
+  const stand = useQuery({
+    queryKey: ['appointment', appointment.id, 'leistungen'],
+    queryFn: () => fetchLeistungenAmTermin(appointment.id),
+    enabled: erfassbar || appointment.status === 'invoiced',
+    retry: false,
+  });
+
+  if (!erfassbar && appointment.status !== 'invoiced') return null;
+  const daten = stand.data;
+  // Ohne Recht liefert der Server keine Zeile: Dann gibt es hier nichts.
+  if (daten === null) return null;
+
+  return (
+    <section aria-labelledby={`heilmittel-${appointment.id}`}>
+      <Zwischentitel id={`heilmittel-${appointment.id}`}>Heilmittel</Zwischentitel>
+      {stand.isPending ? <LoadingState label="Heilmittel werden geladen …" /> : null}
+      {stand.isError ? (
+        <ErrorState
+          title="Die Heilmittel zu diesem Termin konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => stand.refetch()}
+        />
+      ) : null}
+      {daten ? (
+        daten.services.length > 0 ? (
+          <div>
+            <p className="text-accent text-liste font-semibold">
+              <span aria-hidden="true">✓ </span>
+              Bestätigt:{' '}
+              {daten.services
+                .map((s) => (s.quantity > 1 ? `${s.label} × ${s.quantity}` : s.label))
+                .join(', ')}
+            </p>
+            {kontingentErreicht(daten.basis_items) ? <KontingentHinweis user={user} /> : null}
+          </div>
+        ) : daten.can_record && erfassbar ? (
+          <Auswahl appointment={appointment} stand={daten} einTipp onBestaetigt={() => undefined} />
+        ) : (
+          <p className="text-ink-muted text-liste">Noch nicht bestätigt.</p>
+        )
+      ) : null}
+    </section>
   );
 }
