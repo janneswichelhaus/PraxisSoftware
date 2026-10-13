@@ -1,33 +1,43 @@
 ---
 name: sichtung
-description: Jannes geht eine Sichtung aus docs/sichtung/ durch; Claude führt Schritt für Schritt, trägt Befunde nach BEFUNDE.md und das Ergebnis ein. Nichts bauen. Nur auf ausdrücklichen Aufruf mit /sichtung oder /sichtung <Datei>.
+description: Jannes sichtet über Bilder - Bildstrecke (vorher/nachher, 375 und 1280 px) durchwischen, höchstens 20 Punkte, etwa 10 Minuten; Claude trägt Befunde nach BEFUNDE.md und den Fortschritt ein. Mit /sichtung triage <Datei> werden alte Sichtungsschritte per Bildstrecke geschlossen. Nichts bauen. Nur auf ausdrücklichen Aufruf mit /sichtung, /sichtung <PR oder Bereich> oder /sichtung triage <Datei>.
 disable-model-invocation: true
 ---
 
 # Sichtung
 
-Gesammelte Durchsicht je Block am Handy statt Abnahme je Epic (E-6; Roadmap,
-Abweichungsregel 1). Regeln und Dateien: `docs/sichtung/README.md`.
+Jannes prüft Belege, nicht Klickanleitungen: die **Bildstrecke** einer PR, etwa 10 Minuten am
+Handy. Regeln: `docs/sichtung/README.md`. **Nichts bauen.**
 
-1. **Datei wählen.** `/sichtung <Datei>` nimmt die genannte; ohne Angabe die
-   erste mit Stand „offen" aus der Tabelle in `docs/sichtung/README.md`.
-   Nur diese Datei und das README lesen.
-2. **Vorbereiten.** Umgebung nennen (lokal im WLAN nach `docs/DEVELOPMENT.md`,
-   „Handytest im WLAN", oder die Test-Umgebung), Konten, die Vorbereitungszeile
-   der Datei. In der Cloud-Session kann Claude die Schritte hinter der
-   Anmeldung nicht selbst ausführen — Jannes klickt, Claude führt.
-3. **Führen.** Schritt für Schritt: Tun und Erwarten in einem Satz, dann auf
-   Jannes' Antwort warten („ok", „Befund: …", Bildschirmfoto). Nicht mehrere
-   Schritte auf einmal abfragen, es sei denn, Jannes will es so.
-4. **Befunde.** Jede Abweichung als `BEF-NNN` nach `docs/development/BEFUNDE.md`
-   (nächste freie Nummer, auch gegen `archiv/BEFUNDE-ERLEDIGT.md`, Bereich, Rolle, Schritt der Sichtung, erwartete und
-   beobachtete Wirkung) — **keine echten Daten, keine Namen außer Seed**.
-   Nicht beheben: Ein Befund wird die erste Story des nächsten Loops derselben
-   Etappe.
-5. **Abschluss.** In der Datei unter „Ergebnis" Datum, Gerät und die
-   Befundnummern eintragen; im README den Stand auf „gesichtet <Datum>" (oder
-   „teilweise, Schritte …") setzen. In `docs/development/fortschritt.json` die
-   Posten der abgedeckten Loops auf `gesichtet` mit `gesichtet_am`, dann
-   `pnpm fortschritt --schreiben`; `docs/STATUS.md` nachziehen.
-6. `pnpm format:check && pnpm docs:check`, Commit, Push, Pull Request.
-   **Nichts bauen.**
+## Bildsichtung
+
+1. **Quelle.** `/sichtung` nimmt die jüngste PR mit Bildstrecke, `/sichtung <PR oder Bereich>` die
+   genannte. Fehlen Bilder, erzeugt Claude sie selbst: Cloud-Stack (`CLAUDE.md`), dann
+   `pnpm bildstrecke` für die Routen der PR bei 375 und 1280 px, Bilder selbst ansehen.
+2. **Zeigen.** Den Kontaktbogen (vorher/nachher je Route) als Datei oder Seite geben, dazu
+   höchstens **20 Punkte**: die Fragen der PR und je Bild eine Prüffrage aus der Prüfliste in
+   `docs/design/DESIGN.md` oder dem Budget aus `docs/product/kernablaeufe.md`. Nicht Schritt für
+   Schritt abfragen — Jannes antwortet gesammelt: „ok“ oder „Befund: <Bild>, <was>“.
+3. **Am Gerät** nur, was ein Bild nicht zeigt: Kamera, Passkey, Flugmodus, Sonne, Halterung am Rad —
+   höchstens fünf Punkte je PR, auf der Test-Umgebung.
+4. **Befunde** als `BEF-NNN` nach `docs/development/BEFUNDE.md` (nächste freie Nummer, auch gegen
+   `archiv/BEFUNDE-ERLEDIGT.md`; Bereich, Rolle, Bild, erwartet, gesehen) — **keine echten Daten,
+   keine Namen außer Seed**. Sie werden die erste Story der nächsten Überholung des Bereichs.
+5. **Abschluss.** In `docs/development/fortschritt.json` die gesichteten Posten auf `gesichtet` mit
+   `gesichtet_am`, dann `pnpm fortschritt --schreiben`; STATUS in drei Zeilen;
+   `pnpm format:check && pnpm docs:check`, Commit, Push, PR.
+
+## Triage alter Sichtungsschritte (`/sichtung triage <Datei>`)
+
+Für eine Datei aus `docs/sichtung/` je offenem Schritt genau eine Einordnung, ohne Jannes:
+
+- **durch Bild belegt** — die Route steht in einer aktuellen Bildstrecke, und das Bild zeigt, was
+  der Schritt erwartet;
+- **durch Test belegt** — ein E2E- oder Komponententest prüft genau das (Datei und Testname nennen);
+- **Gerät** — braucht Kamera, Passkey, Flugmodus, Sonne oder echten Kartendienst: auf die
+  Sichtliste im README;
+- **Bildstrecke** — noch nicht abgebildet: kommt in die Bildstrecke der nächsten Überholung.
+
+In der Datei unter „Ergebnis“ Datum und die Einordnung je Schritt eintragen, im README den Stand.
+Eine Einordnung ist kein Häkchen: „durch Bild belegt“ nur mit Bildpfad, „durch Test belegt“ nur
+mit Testnamen.

@@ -1,13 +1,37 @@
 # Roadmap
 
-Version 7.11 · Stand 2026-10-08 · **in Kraft**
+Version 7.13 · Stand 2026-10-12 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
-([`UMBAU.md`](UMBAU.md)): Handy und Bedienbarkeit kommen nach vorn, die
+([`archiv/UMBAU.md`](archiv/UMBAU.md)): Handy und Bedienbarkeit kommen nach vorn, die
 Plattform für Patient:innen hat zwei Stufen, die externen Anfragen gehen ab
-Anfang 2027 parallel zum Bauen hinaus. Ältere Fassungen und ausführliche
+Anfang 2027 parallel zum Bauen hinaus. Fassung 7.13 stellt die Arbeitsweise auf
+Bereichsüberholungen um (Block unten). Ältere Fassungen und ausführliche
 Fortschrittsvermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
+
+## Bereichsüberholungen (Auftrag Jannes 2026-10-12)
+
+Jannes' Vorgaben vom 2026-10-12: Design der ganzen App hat Vorrang (Maßstab sind die schon
+optimierten Seiten), Übungen kommen als mitgelieferte Bibliothek, größere Schritte, weniger
+Doku, praxisnah, Smartphone zuerst. Gearbeitet wird deshalb in **Bereichsüberholungen**
+(`/bereich`, `.claude/skills/bereich/SKILL.md`): ein Arbeitsbereich in einem Zug, von den
+Abläufen und dem Referenzabgleich aus, mit Bildstrecke vorher/nachher und einer PR. Bedienbarkeit
+und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
+
+**Reihenfolge — Vorschlag, Jannes entscheidet:**
+
+| # | Überholung | Inhalt | Kernabläufe ([`../product/kernablaeufe.md`](../product/kernablaeufe.md)) |
+| --- | --- | --- | --- |
+| 1 | **Design der ganzen App und Übungsbibliothek** | Seitenrezeptur `docs/design/DESIGN.md` flächig, Bibliothek mit Zeichnungen, Prozess verschlankt — die PR dieser Session | K12 |
+| 2 | **Besuch in einem Zug** | Tag, Termin und Dokumentation am Rad: Doku, Heilmittel, Folgetermin auf einer Strecke | K1–K9, K15 |
+| 3 | **Erstaufnahme geführt** | Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege — nichts vergessen | K10, K11 |
+| 4 | **Monatsabrechnung in einem Lauf** | Leistungen, Rechnungen, Zahlungseingang als Sammellauf | K13, K14 |
+| 5 | **Plattform** | Ansichten für Patient:innen und Kund:innen nach DESIGN.md | — |
+
+Die Kette unten bleibt gültig; ihre offenen Epics (ab ALT-EPIC-002) folgen nach den
+Überholungen oder werden in die passende Überholung gezogen, wenn sie denselben Bereich
+berühren. Befunde eines Bereichs werden in dessen Überholung erledigt.
 
 ## Was dieses Dokument ist und was nicht
 
@@ -24,11 +48,12 @@ Fortschrittsvermerke: [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
   (Rang 6) und importieren nichts. Seit 6.0 steht jede nicht verworfene Idee
   an einer Stelle dieses Plans — oder im Abschnitt „Nicht in V1" mit Grund.
 - Befunde sammelt [`BEFUNDE.md`](BEFUNDE.md), den Stand der Oberfläche
-  [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md), die Ablaufrunden
-  [`OPTIMIERUNG.md`](OPTIMIERUNG.md).
+  [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md), die Kernabläufe mit Tipp-Budgets
+  [`../product/kernablaeufe.md`](../product/kernablaeufe.md) (die früheren
+  Ablaufrunden: [`archiv/OPTIMIERUNG.md`](archiv/OPTIMIERUNG.md)).
 
-Ein Loop liest hier nur die Zeile seiner Aufgabe und den Absatz darüber
-(Leseregel in `.claude/skills/weiter/SKILL.md`) und stellt am Ende
+Eine Session liest hier nur die Zeile ihrer Aufgabe und den Absatz darüber
+(`.claude/skills/weiter/SKILL.md`) und stellt am Ende
 `fortschritt.json` und [`../STATUS.md`](../STATUS.md) nach; die Tabelle unter
 „Fortschritt" entsteht daraus.
 
@@ -128,8 +153,9 @@ sagt, gegen welchen Grundsatz.
    einem Adapter mit `mock`-Weg gebaut und ist ohne ihn benutzbar oder
    abgeschaltet. So kann ein negatives Prüfergebnis eine Funktion kosten,
    aber nicht die Eröffnung.
-6. **Sehen, was gebaut ist.** Jede Oberfläche kommt mit Bildschirmfotos in
-   der Pull Request; gesichtet wird gesammelt am eigenen Handy (Regel 1).
+6. **Sehen, was gebaut ist.** Jede Oberfläche kommt mit einer Bildstrecke
+   vorher/nachher (375 und 1280 px) in der Pull Request; gesichtet wird über die
+   Bilder (Regel 1).
 
 ---
 
@@ -142,7 +168,7 @@ in den Etappen darunter.
 | # | Block | Code-Loops | Docs-Sessions | Jannes |
 | --- | --- | --- | --- | --- |
 | 0 | **Erledigt** | alle Loops bis PAT-006 — Fortschrittstabelle | ADR-017 bis ADR-022, E18, OPS-001-Dokument | Sichtung |
-| 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → ~~G6c~~ (gebaut 2026-09-26) | Umbau U1 bis U4 ([`UMBAU.md`](UMBAU.md)) | ~~G6c: Wahl zu den Schreibpfaden~~ (2026-09-26: wie empfohlen); vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
+| 1 | **Rückstand und Umbau** | ~~G19~~ (gebaut 2026-09-22) → ~~G6a~~ → ~~G6b~~ (gebaut 2026-09-23) → ~~G6c~~ (gebaut 2026-09-26) | Umbau U1 bis U4 ([`archiv/UMBAU.md`](archiv/UMBAU.md)) | ~~G6c: Wahl zu den Schreibpfaden~~ (2026-09-26: wie empfohlen); vier Sichtungen des Rückstands ([`../sichtung/`](../sichtung/README.md)) |
 | 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → ~~UX-EPIC-002~~ (gebaut 2026-09-26) → ~~UX-EPIC-003~~ (gebaut 2026-09-26) | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → UX-EPIC-004 → PRX-EPIC-003 → PRX-EPIC-003b → STA-EPIC-001 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
@@ -179,7 +205,7 @@ fehlende Kriterium.
 | --- | --- | --- |
 | M1 | Kernprozess Ende-zu-Ende | Ein synthetischer Fall läuft **lokal** durch: Verordnung → Serie → Termin durchgeführt → Dokumentation finalisiert → Leistung → Rechnung → Zahlung · derselbe Fall als E2E-Test hinter der Anmeldung · von Jannes gesichtet · jede Datenklasse hat Löschpfad und Test |
 | M2 | Software fertig (Feature-Freeze V1) | Blöcke 1 bis 9 gebaut **und gesichtet** · Probewoche 1 durchlaufen, Befunde geschlossen · Kollegin-Test durchlaufen · DSFA-Paket und Anfragen verschickt · kein offener Befund der Klasse „Datenverlust/Falschzuordnung" |
-| M3 | Go-live-Gate | Ergebnisse aus B1, B2 (DSFA) und B4 liegen vor und sind eingearbeitet · OPS-001 positiv · jede Anbieterprüfung positiv **oder** die Funktion abgeschaltet · ADR-007 sieben Vorbedingungen · kein Register-Eintrag Datenschutz/Recht auf `offen` oder `entschieden (Jannes)` · Restore-Test 1 und 2 · Deployment aus Tag mit Freigabe · Redaction-Prüfung grün · Betriebsdokumentation (13 Positionen) · OPS-007 gegen die Test-Umgebung geprobt · Rückfallplan unterschrieben · Messrunde nach `OPTIMIERUNG.md` · Sitzungssperre nach ADR-025 gebaut und gesichtet (G20) |
+| M3 | Go-live-Gate | Ergebnisse aus B1, B2 (DSFA) und B4 liegen vor und sind eingearbeitet · OPS-001 positiv · jede Anbieterprüfung positiv **oder** die Funktion abgeschaltet · ADR-007 sieben Vorbedingungen · kein Register-Eintrag Datenschutz/Recht auf `offen` oder `entschieden (Jannes)` · Restore-Test 1 und 2 · Deployment aus Tag mit Freigabe · Redaction-Prüfung grün · Betriebsdokumentation (13 Positionen) · OPS-007 gegen die Test-Umgebung geprobt · Rückfallplan unterschrieben · Messrunde der Kernabläufe ([`../product/kernablaeufe.md`](../product/kernablaeufe.md); Verfahren bis 2026-10-12 in [`archiv/OPTIMIERUNG.md`](archiv/OPTIMIERUNG.md)) · Sitzungssperre nach ADR-025 gebaut und gesichtet (G20) |
 | M4 | Produktionssystem steht | Produktivprojekt in freigegebener EU-Region aus dem freigegebenen Tag · OPS-007 durchlaufen · keine synthetischen Daten · Backup, Monitoring und Release-Takt nach BETRIEB-001 aktiv |
 | M5 | Eröffnung | **Juli 2027.** Probewoche 2 durchlaufen · Restore-Test 3 · Change-Freeze eingehalten · Datenschutzinformation und Behandlungsvertrag nennen alle Auftragsverarbeiter · erster Behandlungstag läuft mit der Software |
 | M6 | Erster Betriebsmonat | Vier Wochen ohne Befund der Klasse „Datenverlust/Falschzuordnung" · Störfallliste ausgewertet · Optimierungsrunde durchgeführt |
@@ -188,14 +214,13 @@ fehlende Kriterium.
 
 ## Abweichungsregeln
 
-1. **Sichtung statt Abnahme je Epic** (Jannes, 2026-09-23, E-6). Ein Loop
-   ohne Oberfläche ist fertig mit grüner CI, `pnpm test:db` und Zweitreview.
-   Ein Loop mit Oberfläche bringt Bildschirmfotos (Desktop und 375 px) in der
-   Pull Request. Jannes sichtet gesammelt je Block am eigenen Handy — ab
-   Block 1a auf der Test-Umgebung, bis dahin lokal im WLAN — mit `/sichtung`
-   nach [`../sichtung/README.md`](../sichtung/README.md): eine Datei je Etappe,
-   höchstens 15 Schritte. Der Rückstand von über 30 Epics steht in vier
-   solchen Dateien (Kernprozess, L, T, G).
+1. **Sichtung statt Abnahme je Epic** (Jannes, 2026-09-23, E-6; über Bilder seit
+   2026-10-12). Ein Loop ohne Oberfläche ist fertig mit grüner CI, `pnpm test:db`
+   und Zweitreview. Eine PR mit Oberfläche bringt eine Bildstrecke vorher/nachher
+   (375 und 1280 px), von Claude selbst geprüft; Jannes sichtet sie in etwa zehn
+   Minuten mit `/sichtung` nach [`../sichtung/README.md`](../sichtung/README.md),
+   höchstens 20 Punkte. Am Gerät bleibt nur, was ein Bild nicht zeigt. Die
+   offenen Klickschritte der alten Dateien werden per Bildstrecke triagiert.
 2. **Das Bauen dauert länger.** Der Umfang wird nicht gekürzt (Jannes,
    2026-09-22). Die Anfragen laufen trotzdem ab Anfang 2027. Steht M4 zur Eröffnung
    nicht, eröffnet die Praxis mit dem Papierprozess (H4), und die Software
@@ -215,9 +240,9 @@ fehlende Kriterium.
 | --- | --- | --- | --- | --- | --- |
 | R1 | **Die Prüfungen kommen zu spät für Juli 2027.** B2 mit DSFA und B1 brauchen erfahrungsgemäß vier bis sechs Monate | mittel | sehr hoch | Die Anfragen sind im Januar 2027 nicht verschickt | Anfragen ab Anfang 2027 parallel zum Bauen (E-1); DSFA-Paket und Anfragen bis Ende 2026 vorbereiten; was danach noch gebaut wird, geht als Nachtrag hinterher; Rückfall H4 |
 | R2 | Providerprüfung Supabase negativ — und das erst 2027 | niedrig | sehr hoch | Gate-Punkt 3 (§203 Abs. 4 StGB) unbeantwortet | Nähte eines Wechsels in Teil 7 von [`../decisions/providerpruefung-supabase.md`](../decisions/providerpruefung-supabase.md); die Unterlagen aus Teil 9 zu laden kostet nichts und ist keine Anfrage |
-| R3 | Jannes' Zeit reicht nicht für Abnahmen — **eingetreten** (über 30 Epics seit 2026-09-12 ohne Abnahme) | eingetreten | hoch | Ein Block endet ohne Sichtung | Sichtung statt Abnahme je Epic (Regel 1), Rückstand auf vier Sichtungen zu höchstens 15 Schritten verdichtet; Bildschirmfotos in jeder PR; Test-Umgebung fürs Handy (Block 1a) |
+| R3 | Jannes' Zeit reicht nicht für Abnahmen — **eingetreten** (über 30 Epics seit 2026-09-12 ohne Abnahme) | eingetreten | hoch | Ein Block endet ohne Sichtung | Sichtung statt Abnahme je Epic (Regel 1), seit 2026-10-12 über die Bildstrecke jeder PR (etwa zehn Minuten); offene Klickschritte per Bildstrecke triagiert; Test-Umgebung fürs Handy (Block 1a) |
 | R12 | Die Oberfläche passt nicht zur Arbeit am Rad und wird spät nachgearbeitet | mittel | hoch | Jannes findet Begriffe oder Abläufe unklar | UX-Fundament in Block 1a; Begriffsliste als Maßstab jeder neuen Oberfläche; Sichtung am Handy |
-| R4 | Der Umfang ist rund dreimal so groß wie in 5.49 | hoch | hoch | Block 4 beginnt nicht, während Block 2 noch offen ist | Reihenfolge nach Grundsatz 3 (Komfort zuletzt); Loops klein schneiden; Tempo im Wochenupdate zählen |
+| R4 | Der Umfang ist rund dreimal so groß wie in 5.49 | hoch | hoch | Block 4 beginnt nicht, während Block 2 noch offen ist | Reihenfolge nach Grundsatz 3 (Komfort zuletzt); Bereichsüberholungen in großen Schritten mit unveränderten Gates, Bildstrecke und Zweitreview je kritischem Teil; Tempo im Wochenupdate zählen |
 | R5 | Die Plattform öffnet die Anwendung nach außen (Konten für Patient:innen und Kund:innen) | mittel | sehr hoch | ein Portalpfad ohne Negativfall in `pnpm test:db` | ADR-023 vor dem ersten Loop; jede Portalsicht mit Negativfall „fremde Person"; Zweitreview Pflicht (ADR-013 Punkt 9) |
 | R6 | Befunde aus der Sichtung kommen als Welle | hoch | mittel | Rückstand wächst | Abweichungsregel 1; Befunde als erste Story der nächsten Loop derselben Etappe |
 | R7 | MDR: Tracking, Fortschritt und KI rücken an die Grenze | mittel | sehr hoch | eine Story, die eine Aussage **über** Daten erzeugt statt sie zu zeigen | §17 und das Register `src/app/mdr.ts`; „Nicht in V1" oben; B1 prüft den ganzen Umfang |
@@ -447,7 +472,7 @@ aus POR-EPIC-003, als Rechtsfrage bei B2.
 ### Block 8 — Spur A2: Praxisbetrieb
 
 Ersetzt die Vorschaubereiche aus [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md)
-Abschnitt 2 — ersetzt, nicht daneben gebaut. Beschäftigtendaten ohne
+(„Praxisbetrieb") — ersetzt, nicht daneben gebaut. Beschäftigtendaten ohne
 Leistungskontrolle (§20, B6).
 
 | Loop | Ergebnis | Ersetzt Vorschau | Voraussetzung |
@@ -466,7 +491,7 @@ Leistungskontrolle (§20, B6).
 | **KI-EPIC-002** | Sprache umformen, ohne Inhalt hinzuzufügen | Freitext strukturieren, Patientensprache, Antwortentwürfe, Zusammenfassung ohne Bewertung, **Felder der Verordnung aus dem Foto vorschlagen** — jeweils mit Quellenbindung und menschlicher Freigabe | `IDEA-KI-002`, `-003`, `-004` |
 | **MAP-007** | Führung auf dem Gerät, ohne dass die Praxis die Position erfährt | Zuschnitt in [`MAP-LOOPS.md`](MAP-LOOPS.md); zuerst **E-24** (liefern die Radprofile Manöver? — ein Aufruf; ohne Ja entfällt das Epic) | `IDEA-PRX-044`, §20.1 |
 | **PRX-EPIC-004** | Komfort für die Praxisführung | Kennzahlen für Training, Abo und Pakete nachziehen (auf STA-EPIC-001), Export für die Steuerberatung (Format als Annahme bis B4), Farbcodierung je Terminart und Person, Kalender-Abo (Bedenken: ohne Namen), Planungskarte der aktiven Adressen (Bedenken), Kartenzahlung beim Hausbesuch hinter Adapter (Grundsatz 5) | `IDEA-PRX-026`, `-021`, `-024`, `-033`, `-022` |
-| **UI-003** | Feinschliff und Barrierefreiheit über alle Seiten (G17) | Feindesign, PWA-Manifest, Befunde aus den Ablaufrunden nach `OPTIMIERUNG.md` | — |
+| **UI-003** | Feinschliff und Barrierefreiheit über alle Seiten (G17) | Feindesign, PWA-Manifest, was die Bereichsüberholungen (oben) übrig lassen | — |
 
 ### Blöcke 10 bis 14 — vom Freeze bis zur Eröffnung
 
@@ -566,27 +591,28 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
 Die Reihenfolge ist verbindlich (E-15), einen Kalender gibt es nicht.
 
 1. **Vorher:** `git pull --ff-only origin main`.
-2. **Aufruf:** genau einer, als erste Nachricht; **ein Thema je Session.** Im
-   Normalfall `/weiter` — er nimmt die erste Aufgabe aus
-   [`../STATUS.md`](../STATUS.md), Code wie Dokumentation. Welchen Pfad ein
-   Auftrag nimmt, sagt K1 in [`GRAPH-ENGINEERING-WORKFLOW.md`](GRAPH-ENGINEERING-WORKFLOW.md).
-3. **Nachher:** den Bericht lesen, Fragen mit je einem Satz beantworten („wie
-   empfohlen" reicht). Merge und Sichtung nach der „Definition of Done".
+2. **Aufruf:** als erste Nachricht. Im Normalfall `/weiter` — er nimmt die
+   erste Aufgabe aus [`../STATUS.md`](../STATUS.md) und führt sie als
+   `/bereich` oder `/feature-loop` aus; ein Auftrag darf mehrere Aufgaben oder
+   einen ganzen Bereich nennen. Welche Prüfungen ein Diff braucht, sagt K1 in
+   `CLAUDE.md` („Arbeitsweise").
+3. **Nachher:** die Bildstrecke ansehen, die Fragen der PR mit je einem Satz
+   beantworten („wie empfohlen" reicht). Merge nach der „Definition of Done".
 
 Antworten am besten mit Kennung (`B4: liegt vor, Ergebnis …`), Entscheidungen
 als „entschieden: …".
 
 | Zweck | Aufruf |
 | --- | --- |
-| **Nächste Aufgabe** | `/weiter` — oder `/weiter <Kennung>` für eine bestimmte |
+| **Nächste Aufgabe** | `/weiter` — oder `/weiter <Kennung>`, `/weiter <A>, <B>` |
+| **Bereichsüberholung** | `/bereich <Bereich>` — ein Arbeitsbereich in einem Zug, eine PR mit Bildstrecke |
+| **Einzelauftrag** | `/feature-loop <Auftrag>` — Epic oder Befundbündel an Datenmodell oder Rechten |
 | **Idee** | `/idee <Idee in zwei Sätzen>` — nur Ideenspeicher, nichts bauen |
-| **Sichtung** | `/sichtung` — oder `/sichtung <Datei>` aus `docs/sichtung/` |
+| **Sichtung** | `/sichtung` — Bildstrecke der jüngsten PR; `/sichtung triage <Datei>` für alte Klickschritte |
 | Befund | `Befund: <Beobachtung, Bereich, Rolle>. In docs/development/BEFUNDE.md eintragen, nicht bauen.` |
 | Antworten eintragen | `Docs-Session ohne Code: meine Antworten in docs/development/ROADMAP.md und docs/decisions/OPEN_DECISIONS.md einarbeiten. Antworten: …` |
-| Sandbox | `/sandbox <Thema>` — Oberflächen-Prototyp (Pfad S); endet mit „übernehmen oder verwerfen" |
-| Zweitreview | `Zweitreview <Loop-Kennung>: den Diff des offenen Pull Requests gegen die Review-Checkliste aus ADR-013 Punkt 9 lesen. Befunde als Einzel-Story-Loop vorschlagen, nichts bauen.` — Pflicht, sobald der Loop-Bericht A5 als ausstehend nennt |
-| Ablaufrunde | `Ablaufrunde <Bereich> nach docs/development/OPTIMIERUNG.md` (ruht bis Probewoche 1) |
-| Roadmap prüfen | `Planungssession ohne Code: Gesamtstand prüfen (git fetch, Branches, Pull Requests), docs/development/ROADMAP.md gegen den Stand nachstellen, nächsten Loop vorschlagen. Nichts bauen.` |
+| Zweitreview | `Zweitreview <Kennung>: den Diff des offenen Pull Requests mit .claude/agents/sicherheits-reviewer.md gegen die Review-Checkliste aus ADR-013 Punkt 9 prüfen. Nichts bauen.` — Pflicht, sobald eine PR ihn als ausstehend nennt |
+| Roadmap prüfen | `Planungssession ohne Code: Gesamtstand prüfen (git fetch, Branches, Pull Requests), docs/development/ROADMAP.md gegen den Stand nachstellen, nächsten Auftrag vorschlagen. Nichts bauen.` |
 
 Docs-Sessions für ADRs und Providerprüfungen laufen über `/weiter`, sobald sie
 in STATUS stehen; ihre Vorgabe ist die Zeile hier und die dort genannten ADRs.
@@ -595,66 +621,78 @@ in STATUS stehen; ihre Vorgabe ist die Zeile hier und die dort genannten ADRs.
 
 ## Definition of Done
 
-**Je Story:** vertikaler Schnitt, Tests, Registereinträge (Skill-Schritt D),
-Oberflächen-Checkliste abgehakt (`docs/sichtung/README.md`). **Je neue Tabelle zusätzlich:** Datenklasse und
+**Je Story:** vertikaler Schnitt, Tests, Annahmen mit Anker, bei Oberfläche die
+Prüfliste in `docs/design/DESIGN.md` und die übrigen Punkte aus
+[`../sichtung/README.md`](../sichtung/README.md). **Je neue Tabelle zusätzlich:** Datenklasse und
 Frist als `COMMENT`, Löschpfad in LOE-002, ein `test:db`-Fall, der die Löschung
 dieser Klasse prüft. **Je Portalsicht zusätzlich:** Negativfall „fremde
 Person" in `pnpm test:db`.
 
-**Je Epic:** Checks nach Skill-Schritt H · `fortschritt.json` nachgestellt und
-`pnpm fortschritt --schreiben` · `STATUS.md` nachgestellt · bei Oberfläche
-Bildschirmfotos (Desktop und 375 px) in der Pull Request und höchstens drei
-Schritte in der Sichtung des Blocks · **Jannes mergt nach grüner CI**; steht
-ein Zweitreview (A5) aus, erst danach · ohne Oberfläche ist das Epic damit
-gesichtet, mit Oberfläche in der Sichtung des Blocks (Regel 1) · Befunde nach
-`BEFUNDE.md` und als erste Story in den nächsten Loop derselben Etappe.
+**Je PR:** Prüfungen nach dem Skill (`/bereich` Schritt 6–7, `/feature-loop`
+Schritt C) · bei Pfad A Checkliste aus ADR-013 Punkt 9 und Zweitreview ·
+`fortschritt.json` nachgestellt und `pnpm fortschritt --schreiben` · STATUS in
+drei Zeilen · bei Oberfläche die Bildstrecke vorher/nachher (375 und 1280 px)
+in der PR · **Jannes mergt nach grüner CI**; steht ein Zweitreview aus, erst
+danach · ohne Oberfläche ist die PR damit gesichtet, mit Oberfläche nach der
+Bildsichtung (Regel 1) · Befunde nach `BEFUNDE.md` und als erste Story in die
+nächste Überholung desselben Bereichs.
 
 **V1 fertig (M2):** alle Etappen der Blöcke 1 bis 9 gesichtet; jede Funktion
 mit ungeprüftem Anbieter ist ohne ihn benutzbar oder abgeschaltet.
 
 ---
 
-## Credit-Budget
+## Arbeitsweise und Budget
 
-**Sitzungszuschnitt**
+Seit 2026-10-12 (Auftrag Jannes) ersetzt diese Liste das frühere Credit-Budget
+(„ein Loop je Session", „ein Thema je Session", „Loops klein schneiden",
+„keine Subagenten"; Wortlaut in Git, Fassung 7.12). Maßgeblich ist `CLAUDE.md`,
+„Arbeitsweise".
 
-1. **Ein Loop = eine Session.** Zuschnitt (Epic oder Einzel-Story) nach dem
-   Feature-Loop-Skill; je Story ein Commit und die eng betroffenen Checks.
-2. **Stories so schneiden, dass jeder Diff am Stück lesbar bleibt.** Die
-   vollständige Testsuite läuft einmal am Ende des Epics.
-3. **Neues Thema = neue Session.** Rückfragen zum laufenden Loop in derselben.
-4. **Ein aktiver Feature-Branch.** Merge nach der „Definition of Done";
-   gemergte Branches werden gelöscht.
+**Zuschnitt**
 
-**Leseverhalten**
+1. **Ein Auftrag wird vollständig abgearbeitet** — ein Bereich (`/bereich`) oder
+   eine Liste von Epics (`/feature-loop`), ohne Zwischenstopp. Anhalten nur bei
+   der Stoppliste aus §15.1, nach drei erfolglosen Reparaturversuchen derselben
+   Ursache oder bei vollem Kontext (dann übergeben, nicht abbrechen).
+2. **Kleine Agentenschritte, große Lieferung:** je Story ein Commit und die eng
+   betroffenen Checks; eine PR je Bereich, bei einem für sich
+   zweitreviewpflichtigen Fundament eine PR je Epic.
+3. **Ein Branch je Bereich**, vor der PR auf `main` gebracht; gemergte Branches
+   werden gelöscht.
 
-5. **Eine Leseregel** (`.claude/skills/weiter/SKILL.md`): `STATUS.md`, die
-   Zeile der Aufgabe in dieser Roadmap mit dem Absatz darüber, die benannten ADRs.
-6. **Die im SPEC benannten ADRs vollständig** — mindestens alle, die der Loop
-   berührt. Bei RLS, Löschung und Abrechnung sind das mehr als zwei.
-7. **Höchstens eine Ideenspeicher-Datei** je Loop, nach dem Index in
-   `IDEENSPEICHER.md` — die, auf die die Spalte „Quelle" zeigt.
-8. **Keine Subagenten** außer bei echt breiter Suche und für den Zweitreview
-   in frischem Kontext (ADR-013 Punkt 9, Nr. 8; Gate A5).
+**Lesen**
+
+4. `STATUS.md`, die Zeile der Aufgabe hier, die Spec; ADRs nach dem Index in
+   `CLAUDE.md` — die benannten ganz, bei RLS, Löschung und Abrechnung mehr als zwei.
+5. Ideenspeicher und Referenzdateien gezielt; Recherche über Subagenten, damit
+   der Hauptkontext frei bleibt.
+
+**Parallelität**
+
+6. **Subagenten und Workflows sind erlaubt** für Recherche und Referenzabgleich,
+   für Design-, Praxis- und Sicherheitsreview (`.claude/agents/`) und für
+   Oberflächenarbeit an unabhängigen Routen in eigenen Worktrees.
+7. **Fundament seriell:** Migrationen, Policies und RPCs baut ein Agent nach dem
+   anderen, mit gezieltem `pnpm test:db` und Zweitreview, bevor die Oberfläche
+   darauf aufsetzt.
 
 **Verifikation**
 
-9. Während der Entwicklung nur die eng betroffenen Checks; die vollständige
-   Runde **einmal** am Ende (Skill-Schritt H).
-10. Keine identischen teuren Läufe ohne Änderung dazwischen.
-11. `pnpm test:db` bei Migrationen und Policies — auch in der Cloudumgebung.
-12. **Zweitreview** vor dem Merge nach ADR-013 Punkt 9, Nr. 8.
+8. Während der Entwicklung nur die eng betroffenen Checks; die vollständige
+   Runde **einmal** am Ende. Keine identischen teuren Läufe ohne Änderung.
+9. `pnpm test:db` bei Migrationen und Policies — auch in der Cloudumgebung.
+10. **Zweitreview** vor dem Merge nach ADR-013 Punkt 9, Nr. 8.
+11. **Bildstrecke** bei jeder Oberfläche, vorher/nachher, selbst angesehen.
 
 **Rhythmus**
 
-13. **Ein Loop je Session ist das Maß.** Braucht ein Epic drei Sessions, war
-    der Schnitt zu groß; passen drei in eine, war er zu klein.
-14. Die Planungssession ist **absichtlich klein**.
-15. **Planungsreview, wenn ein Block fertig ist:** Meilensteinstand,
-    Prüfungsstand, Risiken, Reihenfolge des nächsten Blocks.
+12. **Planungsreview, wenn eine Überholung oder ein Block fertig ist:**
+    Meilensteinstand, Prüfungsstand, Risiken, nächste Überholung.
 
-Das Modell steht projektweit in `.claude/settings.json`; wann eine Session mit
-`/effort xhigh` startet, sagt `docs/development/SESSION-START.md`.
+Das Modell steht projektweit in `.claude/settings.json`; bei Migration, RLS,
+Policy oder Zweitreview startet die Session mit `/effort xhigh`
+([`SESSION-START.md`](SESSION-START.md)).
 
 ---
 
@@ -662,8 +700,8 @@ Das Modell steht projektweit in `.claude/settings.json`; wann eine Session mit
 
 Auftrag für eine Planungssession, von Hand gestartet (die Montagsroutine ist seit 2026-09-23 abgeschaltet). Sie **baut nichts.**
 
-1. `docs/STATUS.md`, die Abschnitte „Die Kette bis zur Eröffnung" und
-   „Meilensteine" dieser Datei, `ARBEITSBEREICHE.md` §2, die Ausgabe von
+1. `docs/STATUS.md`, die Abschnitte „Bereichsüberholungen", „Die Kette bis zur
+   Eröffnung" und „Meilensteine" dieser Datei, die Ausgabe von
    `node scripts/fortschritt.mjs` (braucht kein `pnpm install`) und
    `git log --since='8 days ago' --oneline` lesen.
 2. Feststellen, welche Loops seit dem letzten Update fertig **und gesichtet**
@@ -675,8 +713,6 @@ Auftrag für eine Planungssession, von Hand gestartet (die Montagsroutine ist se
 5. Antwort in festem Format, höchstens zwölf Zeilen: _was als Nächstes ansteht ·
    offene Sichtungen · Jannes entscheidet oder liefert · M1 bis M6 je erreicht
    oder offen, mit dem fehlenden Kriterium in einem Wort_.
-6. Die Tabelle „Sandbox-Prototypen" in `ARBEITSBEREICHE.md` §2 lesen und
-   abgelaufene Prototypen nennen (ab zwei fertigen Code-Loops seit „Angelegt").
 
 Die abgeschaltete Routine beschreibt `docs/DEVELOPMENT.md`, „Wochenroutine".
 
@@ -690,9 +726,9 @@ einer Sichtung `gesichtet_am` — und erzeugt die Tabelle unten mit
 `pnpm fortschritt --schreiben`; `pnpm docs:check` meldet jede Abweichung. Die
 Tabelle nennt jeden Posten, der nicht mehr `offen` ist.
 
-- **fertig** — gebaut, Skill-Schritt I durchlaufen; zählt `0,85`.
-- **gesichtet** — mit Oberfläche in einer Sichtung nach
-  [`../sichtung/`](../sichtung/README.md) durchgegangen; ohne Oberfläche gemergt
+- **fertig** — gebaut, PR mit Doku-Pflichten nach dem Skill; zählt `0,85`.
+- **gesichtet** — mit Oberfläche mit Bildern geprüft und von Jannes freigegeben
+  ([`../sichtung/`](../sichtung/README.md)); ohne Oberfläche gemergt
   mit grüner CI, `pnpm test:db` und Zweitreview (Regel 1); bei Entscheidungen
   und Prüfungen bestätigt. Zählt `1`.
 - `vorläufig` und `entwurf` zählen `0,5`, `in Arbeit` `0,4`.
@@ -851,6 +887,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.13 | 2026-10-12 | **Bereichsüberholungen** (Auftrag Jannes: Design der ganzen App, Übungsbibliothek, größere Schritte, weniger Doku): neuer Block oben mit Reihenfolge als Vorschlag; „Credit-Budget" wird „Arbeitsweise und Budget" (Auftrag vollständig abarbeiten, Subagenten und Worktrees erlaubt, Fundament seriell); Sichtung über Bildstrecke (Regel 1, Definition of Done, Fortschritt); Sandbox-Pfad und Ablaufrunden entfallen, Kernabläufe mit Tipp-Budgets in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). Kette der Blöcke unverändert. |
 | 7.12 | 2026-10-10 | **G22 SEC-EPIC-002 Anmeldung ohne Kennwort** eingeschoben (Jannes: „jetzt bauen und scharf schalten“, im Alltag Passkey, Rückweg eigene App-PIN, kein Kennwort): ADR-025 Fassung 2, ADR-023 Fassung 4, Prinzipien 0.25 (§3.4, Ausnahme für die App-PIN). Nächster Bau-Loop vor KOM-EPIC-002; Reihenfolge der Blöcke sonst unverändert. |
 | 7.11 | 2026-10-08 | **FLT-EPIC-001** um das Markieren am 3D-Rad ergänzt (Jannes: an der Stelle der Roadmap umsetzen, nicht vorziehen): Check-Up und Pannenmeldung mit Stellen am 3D-Modell, Seite „Stellen am Rad", PDF für die Werkstatt. Entwurf, Entscheidungen, Leinwand-Dateien und Akzeptanzkriterien im [Handoff Lastenrad 3D](../design/handoff-2026-10-08-lastenrad-3d.md), `IDEA-PRX-057`. Reihenfolge der Blöcke unverändert. |
 | 7.10 | 2026-10-05 | **UBK-EPIC-001** eingeschoben und gebaut (Auftrag Jannes): Übersicht nach der Uhr statt nach dem Haken (ANN-117 Fassung 2), Tageswechsel (ANN-234), Tageskarte als Ganzes zum Termin mit „i“ am Namen, Fahrwege als Blöcke im Kalender (ANN-235); BEF-051 mitgenommen. Reihenfolge der Blöcke unverändert; POR-EPIC-002 bleibt der nächste Bau-Loop. |

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  OBERGRENZEN,
+  SKILL_GRENZE_BYTES,
   aktuelleFassungen,
   prinzipienAbschnitte,
   prinzipienVersionen,
   pruefeEindeutigkeit,
+  pruefeObergrenzen,
   pruefeVerweise,
   vermerkZeilen,
 } from './docs-check-regeln.mjs';
@@ -191,6 +194,72 @@ describe('eindeutige Nummern', () => {
         { pfad: 'b.md', text: '### E-20 — Rückfrage zu IDEA-PRX-004' },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('Obergrenzen in Bytes (Regel E, 2026-10-12)', () => {
+  const dateien = (inhalte) => {
+    const karte = new Map(Object.entries(inhalte));
+    return (pfad) => karte.get(pfad) ?? null;
+  };
+
+  it('faengt die eine lange Zeile, an der die Zeilengrenze vorbeiging', () => {
+    // STATUS hatte 60 Zeilen bei 47 KB; die laengste allein 26.879 Zeichen.
+    const status = `# Status\n${'x'.repeat(26879)}\n`;
+    expect(
+      pruefeObergrenzen(
+        [{ pfad: 'docs/STATUS.md', bytes: 4096 }],
+        dateien({ 'docs/STATUS.md': status }),
+      ),
+    ).toEqual(['docs/STATUS.md: 26889 Bytes, erlaubt sind 4096.']);
+  });
+
+  it('zaehlt UTF-8-Bytes, nicht Zeichen: ein Umlaut sind zwei', () => {
+    const grenze = [{ pfad: 'a.md', bytes: 5 }];
+    expect(pruefeObergrenzen(grenze, dateien({ 'a.md': 'äää' }))).toEqual([
+      'a.md: 6 Bytes, erlaubt sind 5.',
+    ]);
+    expect(pruefeObergrenzen(grenze, dateien({ 'a.md': 'aaaaa' }))).toEqual([]);
+  });
+
+  it('laesst die Zeilengrenze dort, wo sie steht', () => {
+    const grenze = [{ pfad: 'o.md', zeilen: 2 }];
+    expect(pruefeObergrenzen(grenze, dateien({ 'o.md': 'a\nb\n' }))).toEqual([]);
+    expect(pruefeObergrenzen(grenze, dateien({ 'o.md': 'a\nb\nc\n' }))).toEqual([
+      'o.md: 3 Zeilen, erlaubt sind 2.',
+    ]);
+  });
+
+  it('meldet eine fehlende Pflichtdatei, uebergeht eine fehlende optionale', () => {
+    expect(
+      pruefeObergrenzen(
+        [
+          { pfad: 'CLAUDE.md', bytes: 10 },
+          { pfad: 'docs/design/DESIGN.md', bytes: 10, optional: true },
+        ],
+        dateien({}),
+      ),
+    ).toEqual(['CLAUDE.md: fehlt, wird aber von docs:check erwartet.']);
+  });
+
+  it('prueft eine optionale Datei, sobald es sie gibt', () => {
+    expect(
+      pruefeObergrenzen(
+        [{ pfad: 'docs/design/DESIGN.md', bytes: 3, optional: true }],
+        dateien({ 'docs/design/DESIGN.md': 'abcd' }),
+      ),
+    ).toEqual(['docs/design/DESIGN.md: 4 Bytes, erlaubt sind 3.']);
+  });
+
+  it('haelt die Grenzen fest: gesenkt werden darf, gehoben nicht still', () => {
+    expect(OBERGRENZEN).toEqual([
+      { pfad: 'CLAUDE.md', bytes: 8192 },
+      { pfad: 'docs/STATUS.md', bytes: 4096 },
+      { pfad: 'docs/development/ARBEITSBEREICHE.md', bytes: 8192 },
+      { pfad: 'docs/design/DESIGN.md', bytes: 12288, optional: true },
+      { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 400 },
+    ]);
+    expect(SKILL_GRENZE_BYTES).toBe(8192);
   });
 });
 

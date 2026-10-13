@@ -39,8 +39,8 @@ scripts/           Prüf- und Hilfsskripte
 marke/             Wortmarke und App-Symbole (einzige Quelle)
 docs/adr/          Architecture Decision Records
 docs/decisions/    offene Entscheidungen, Anfragen und Annahmenregister
-docs/development/  Roadmap, Arbeitsbereiche, Befunde, Graph-Engineering-Workflow
-docs/sichtung/     Sichtung je Etappe (höchstens 15 Schritte)
+docs/development/  Roadmap, Arbeitsbereiche, Befunde, Archiv
+docs/sichtung/     Bildsichtung, Sichtliste am Gerät, alte Sichtungen zur Triage
 docs/datenschutz/  Verfahren und Nachweise für den Datenschutzprozess (ADR-007)
 docs/betrieb/      Runbooks für den Betrieb (Bootstrap, OPS-007)
 docs/product/      Ideenspeicher für spätere Funktionen (nicht normativ)

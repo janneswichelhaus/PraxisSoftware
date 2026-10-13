@@ -9,7 +9,7 @@ Quelle ist der Arbeitsauftrag von Jannes vom 2026-09-21, wörtlich abgelegt als
 [`../../quellen/ARBEITSAUFTRAG_Bausteine-und-Scores.md`](../../quellen/ARBEITSAUFTRAG_Bausteine-und-Scores.md).
 Das Material selbst liegt in [`../../quellen/README.md`](../../quellen/README.md).
 Dieses Dokument ersetzt keinen Schritt des
-[Feature-Loops](GRAPH-ENGINEERING-WORKFLOW.md), keinen ADR und keine Zeile der
+[Feature-Loops](../../.claude/skills/feature-loop/SKILL.md), keinen ADR und keine Zeile der
 [ROADMAP.md](ROADMAP.md) — es sagt, in welcher Reihenfolge welche Loops was
 bauen, woran sie gemessen werden und was vorher entschieden sein muss.
 

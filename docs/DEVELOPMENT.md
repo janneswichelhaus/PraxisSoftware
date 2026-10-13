@@ -213,9 +213,9 @@ wieder her.
 
 **7. Sichtung**
 
-Was je Etappe anzusehen ist, steht in [`sichtung/`](sichtung/README.md) —
-höchstens 15 Schritte je Datei; in einer Session mit `/sichtung`. Am Handy
-geht das mit „Handytest im WLAN" unten.
+Gesichtet wird über die Bildstrecke einer PR mit `/sichtung`; was nur am
+Gerät geht, steht auf der Sichtliste in [`sichtung/`](sichtung/README.md). Am
+Handy geht das mit „Handytest im WLAN" unten.
 
 **8. Typische Fehler**
 
@@ -431,8 +431,8 @@ mit dem Merge auf den aktuellen `main`.
 
 **Modell und Aufwand.** `.claude/settings.json` setzt Opus 5 projektweit. Einen
 Aufwand je Aufgabe kennt die Datei nicht; die Regel „Migration, RLS, Policy
-oder Zweitreview mit `/effort xhigh`" steht in
-[`development/SESSION-START.md`](development/SESSION-START.md). In der
+oder Zweitreview mit `/effort xhigh`" steht in [`../CLAUDE.md`](../CLAUDE.md)
+(„Arbeitsweise", K1). In der
 Weboberfläche hat die Modellwahl beim Sessionstart Vorrang — die Datei gilt für
 CLI-Sessions.
 

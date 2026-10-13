@@ -1,5 +1,9 @@
 # Optimierung der Arbeitsbereiche
 
+> **Archiviert am 2026-10-12** (Prozess verschlanken). Inhalt unverändert, nur die relativen
+> Verweise zeigen vom neuen Ort aus auf dieselben Dateien. Es gilt, was in den lebenden
+> Dokumenten steht ([`CLAUDE.md`](../../../CLAUDE.md), Archiv-Index [`README.md`](README.md)).
+
 Stand 2026-09-23 · Steuerungsdokument ohne Inhaltsrang, wie `ROADMAP.md`.
 
 > **Eingefroren bis Probewoche 1** (Entscheidung Jannes, 2026-09-13, nach der
@@ -9,7 +13,7 @@ Stand 2026-09-23 · Steuerungsdokument ohne Inhaltsrang, wie `ROADMAP.md`.
 > Sichtung je Block am Handy (E-6, 2026-09-23 — sie ersetzt den
 > Praxistest-Bogen vor jedem Loop mit Oberfläche) und das Praxistagebuch.
 > Befunde an der laufenden Anwendung sammelt
-> [`BEFUNDE.md`](BEFUNDE.md). Scorecard und Ablaufkarten ruhen; die
+> [`BEFUNDE.md`](../BEFUNDE.md). Scorecard und Ablaufkarten ruhen; die
 > Scorecard unten ist der Schätzstand vom 2026-09-06, **vor** UX-EPIC-001,
 > CAL-EPIC-003 und den Umbauten vom 12.09., und wurde nicht nachgemessen.
 

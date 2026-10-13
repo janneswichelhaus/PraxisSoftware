@@ -61,7 +61,7 @@ Idee (hier)
   → offene Entscheidung (docs/decisions/OPEN_DECISIONS.md), falls eine nötig ist
   → ADR (docs/adr/), falls die Entscheidung teuer rückgängig zu machen ist
   → Feature-Spezifikation
-  → /feature-loop
+  → /feature-loop oder /bereich
 ```
 
 Ist ein Eintrag diesen Weg gegangen, steht er auf `überführt` mit Ziel.
@@ -255,6 +255,7 @@ einem Verwurf. Neue Einträge hängen hinten an.
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------ |
+| [kernablaeufe.md](kernablaeufe.md)                                           | 15 Kernabläufe aus Jannes' Behandlungstag mit Tipp-Budgets bei 375 px; Maßstab für `/bereich` | —      |
 | [referenz-navigation.md](ideen/referenz-navigation.md)                       | Informationsarchitektur, Navigation, Vergleichssoftware, Screenshot-Referenzen              | —      |
 | [referenz-wettbewerb.md](ideen/referenz-wettbewerb.md)                       | Funktionen von iPrax, THEORG, thevea, appointmed, Optica u. a. mit Quellen; „wie lösen es andere" | —  |
 | [referenz-iprax.md](ideen/referenz-iprax.md)                                 | Bildschirmfotos aus iPrax (2026-09-16): Anlegen-Menü im Kalender, Zeitspanne aufziehen, personenzentrierte Unterbereiche | —      |
