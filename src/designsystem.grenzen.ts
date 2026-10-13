@@ -127,7 +127,7 @@ export const GRENZEN: Record<
   divideY: {
     app: 1,
 
-    'features/appointments': 2,
+    'features/appointments': 1,
 
     'features/audit': 1,
 
@@ -216,7 +216,7 @@ export const GRENZEN: Record<
   ueberschriften: {
     app: 1,
 
-    'features/appointments': 5,
+    'features/appointments': 4,
 
     'features/assessments': 2,
 

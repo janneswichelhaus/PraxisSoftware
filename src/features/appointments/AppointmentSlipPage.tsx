@@ -2,22 +2,15 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { TermineMailen } from './TermineMailen';
-import {
-  addAppointmentNotification,
-  fetchAppointmentSlip,
-  formatLocalDate,
-  formatLocalTimeRange,
-  slipOrt,
-  staffName,
-} from './api';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { AbsenderBlock } from '@/features/datenschutz/AbsenderBlock';
+import { Terminzettelblatt } from './Terminzettelblatt';
+import { addAppointmentNotification, fetchAppointmentSlip } from './api';
 import { useAbsender } from '@/features/datenschutz/useAbsender';
 import { absenderKontakt } from '@/features/datenschutz/absender';
 import type { CurrentUser } from '@/features/session/types';
@@ -158,52 +151,21 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
       {kopf}
       {hinweis}
 
-      {/* Bewusst kein PageHeader: Die Überschrift steht auf dem Papier und ist
-          an die Patient:in gerichtet, nicht an die bedienende Person. Die
-          Größe ist trotzdem eine des Systems (H4, TER-16). */}
-      <section className="max-w-prose">
-        <AbsenderBlock absender={absender} className="mb-6" />
-        <h1 className="text-ink text-h4 font-bold">Ihre nächsten Termine</h1>
-        <p className="text-ink-muted text-liste mt-1">{fullName(patientDaten)}</p>
-
-        {eintraege.length === 0 ? (
-          <div className="mt-6">
-            <EmptyState
-              title="Keine bevorstehenden Termine"
-              description="Sobald ein Termin vereinbart ist, steht er hier und lässt sich ausdrucken."
-            />
-          </div>
-        ) : (
-          <ul className="divide-line border-line mt-6 divide-y border-t border-b">
-            {eintraege.map((eintrag) => (
-              <li key={eintrag.id} className="py-3">
-                <p className="text-ink text-liste font-medium">
-                  {formatLocalDate(eintrag.starts_at, eintrag.organization_time_zone)}
-                </p>
-                <p className="text-ink text-liste mt-0.5">
-                  {formatLocalTimeRange(
-                    eintrag.starts_at,
-                    eintrag.ends_at,
-                    eintrag.organization_time_zone,
-                  )}
-                  {' · '}
-                  {slipOrt(eintrag)}
-                </p>
-                <p className="text-ink-muted mt-0.5 text-sm">{staffName(eintrag)}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <Kleingedrucktes className="mt-6">
-          Bitte sagen Sie einen Termin rechtzeitig ab, wenn Sie ihn nicht wahrnehmen können
-          {kontakt ? ` – ${kontakt}` : ''}.
-        </Kleingedrucktes>
-      </section>
+      {/* Das Blatt selbst nach dem Profil „Druckblatt“ (DESIGN.md). */}
+      <Terminzettelblatt
+        absender={absender}
+        patientName={fullName(patientDaten)}
+        eintraege={eintraege}
+        kontakt={kontakt}
+      />
 
       {eintraege.length > 0 ? (
-        <div className="nicht-drucken mt-8 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="nicht-drucken max-w-prose">
+          {/* Kein Absatz dazu, was der Druck vermerkt und was nicht: Die
+              Rückfrage nach dem Druck sagt es dort, wo es ansteht (UX-005g).
+              Am Telefon in voller Breite unter dem Blatt (DESIGN.md
+              „Formular“). */}
+          <Formularfuss>
             <Button
               type="button"
               disabled={absenderLaedt}
@@ -215,29 +177,31 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
             >
               Terminzettel drucken
             </Button>
-            {/* Eine Bestätigung im Erfolgston, und mit dem Fokus: Der Knopf,
-                der ihn hatte, ist mit der Frage verschwunden (UIK-21, ZST-16). */}
-            {vermerken.isSuccess ? (
-              <Rueckmeldung>
-                Die aufgeführten Termine sind als „Terminzettel ausgehändigt“ vermerkt. Am Termin
-                lässt sich der Vermerk zurücknehmen.
-              </Rueckmeldung>
-            ) : null}
-          </div>
+          </Formularfuss>
+
+          {/* Eine Bestätigung im Erfolgston, und mit dem Fokus: Der Knopf,
+              der ihn hatte, ist mit der Frage verschwunden (UIK-21, ZST-16). */}
+          {vermerken.isSuccess ? (
+            <Rueckmeldung className="mt-6">
+              Die aufgeführten Termine sind als „Terminzettel ausgehändigt“ vermerkt. Am Termin
+              lässt sich der Vermerk zurücknehmen.
+            </Rueckmeldung>
+          ) : null}
 
           {/* Die Frage nach dem Druckdialog - der zweite Schritt (ANN-039
               Fassung 2). Sie bleibt stehen, bis sie beantwortet ist: Eine
               Meldung, die von selbst verschwindet, wäre genau die stille
-              Annahme, die hier abgeschafft wird. */}
+              Annahme, die hier abgeschafft wird. Eine Zeile mit Linie links
+              wie jede Rückfrage (DESIGN.md Regel 2), keine Karte. */}
           {gedruckt ? (
             <div
               role="status"
-              className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-3 border px-4 py-3"
+              className="border-line-strong bg-surface-sunken mt-6 flex flex-col gap-3 border-l-4 py-3 pr-4 pl-4"
             >
               <p className="text-ink text-liste">
                 Wurde der Zettel ausgehändigt? Nur dann gelten die Termine als mitgeteilt.
               </p>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
                 <Button
                   type="button"
                   disabled={vermerken.isPending}
@@ -245,24 +209,21 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
                 >
                   {vermerken.isPending ? 'Wird vermerkt …' : 'Ja, als mitgeteilt vermerken'}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => setGedruckt(false)}>
+                <Button type="button" variant="quiet" onClick={() => setGedruckt(false)}>
                   Nein, nichts vermerken
                 </Button>
-                {vermerken.isError ? (
-                  <Statusmeldung ton="fehler">
-                    {vermerken.error.message} Es wurde nichts vermerkt.
-                  </Statusmeldung>
-                ) : null}
               </div>
+              {vermerken.isError ? (
+                <Statusmeldung ton="fehler">
+                  {vermerken.error.message} Es wurde nichts vermerkt.
+                </Statusmeldung>
+              ) : null}
             </div>
           ) : null}
 
-          {/* Kein Absatz dazu, was der Druck vermerkt und was nicht: Die
-              Rückfrage nach dem Druck sagt es dort, wo es ansteht (UX-005g). */}
-
           {/* Der zweite Weg steht unter dem ersten, nicht daneben: Der Ausdruck
               bleibt der Normalfall, die E-Mail die Ausnahme auf Wunsch. */}
-          <div className="border-line mt-3 border-t pt-4">
+          <div className="border-line mt-8 border-t pt-6">
             <TermineMailen patient={patientDaten} eintraege={eintraege} />
           </div>
         </div>
