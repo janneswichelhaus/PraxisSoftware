@@ -40,10 +40,9 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
       {/* Am Telefon rutscht der Knopf unter den Rückweg; der Abstand darunter
           trennt ihn vom Blatt. */}
       <div className="nicht-drucken mx-auto mb-4 flex max-w-[210mm] flex-wrap items-start justify-between gap-x-4">
-        <Rueckweg
-          standard={`/patienten/${patientId}/stammdaten`}
-          beschriftung="Zurück zum Datenschutz der Akte"
-        />
+        {/* „Zurück zu den Stammdaten“, wie der Reiter heißt (Sichtung
+            13.10.2026, A8) - abgeleitet aus dem Ziel. */}
+        <Rueckweg standard={`/patienten/${patientId}/stammdaten`} />
         <Button type="button" disabled={laedt} onClick={() => window.print()}>
           Blätter drucken
         </Button>

@@ -424,10 +424,11 @@ describe('Therapiebericht: Zustände', () => {
       screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/angemeldet/)).toBeNull();
-    expect(screen.getByRole('link', { name: /Zurück zu den Verordnungen/ })).toHaveAttribute(
-      'href',
-      `/patienten/${PATIENT}/verordnungen`,
-    );
+    // Beschriftet wie der Reiter, mit dem Kopf der Seite (Sichtung A7, A8).
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toHaveAttribute('href', `/patienten/${PATIENT}/verordnungen`);
+    expect(screen.getByRole('heading', { level: 1, name: 'Therapiebericht' })).toBeInTheDocument();
 
     fetchBericht.mockResolvedValue(bericht());
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
@@ -439,7 +440,10 @@ describe('Therapiebericht: Zustände', () => {
     zeigeFormular();
 
     expect(await screen.findByText('Bericht nicht gefunden')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Zurück zu den Verordnungen/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Therapiebericht' })).toBeInTheDocument();
   });
 });
 
@@ -521,8 +525,12 @@ describe('Therapiebericht als Blatt', () => {
     );
     zeigeDruck();
 
-    expect(await screen.findByRole('heading', { name: 'Therapiebericht' })).toBeInTheDocument();
-    expect(screen.getByText('Synthetischer Befund: Abduktion rechts 90 Grad.')).toBeInTheDocument();
+    // Gewartet wird auf das Blatt: Den Kopf „Therapiebericht“ trägt seit der
+    // Sichtung A7 auch der Ladezustand.
+    expect(
+      await screen.findByText('Synthetischer Befund: Abduktion rechts 90 Grad.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Therapiebericht' })).toBeInTheDocument();
     expect(screen.getByText('Synthetisch: Folgeverordnung.')).toBeInTheDocument();
     expect(screen.getByText('Anna Beispiel, 21.09.2026')).toBeInTheDocument();
     expect(screen.getByText('7 Termine, 22.06.2026 bis 03.08.2026')).toBeInTheDocument();
@@ -555,10 +563,11 @@ describe('Therapiebericht als Blatt', () => {
     expect(await screen.findByText('Der Bericht konnte nicht geladen werden.')).toBeInTheDocument();
     expect(screen.queryByText(/angemeldet/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Zurück zu den Verordnungen/ })).toHaveAttribute(
-      'href',
-      `/patienten/${PATIENT}/verordnungen`,
-    );
+    // Beschriftet wie der Reiter, mit dem Kopf der Seite (Sichtung A7, A8).
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toHaveAttribute('href', `/patienten/${PATIENT}/verordnungen`);
+    expect(screen.getByRole('heading', { level: 1, name: 'Therapiebericht' })).toBeInTheDocument();
   });
 
   it('meldet einen verworfenen Bericht als nicht gefunden, mit Rückweg', async () => {
@@ -566,7 +575,10 @@ describe('Therapiebericht als Blatt', () => {
     zeigeDruck();
 
     expect(await screen.findByText('Bericht nicht gefunden')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Zurück zu den Verordnungen/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Therapiebericht' })).toBeInTheDocument();
   });
 
   it('vermerkt den Druck, bevor der Druckdialog aufgeht', async () => {
