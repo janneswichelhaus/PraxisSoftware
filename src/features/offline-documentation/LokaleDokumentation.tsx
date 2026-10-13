@@ -22,7 +22,7 @@ export function LokaleDokumentation({
           Sperren
         </Button>
       </header>
-      <main className="mx-auto w-full max-w-xl flex-1 px-4 pt-5 pb-10 sm:px-5">
+      <main className="max-w-spalte mx-auto w-full flex-1 px-4 pt-4 pb-8 sm:px-6">
         <Statusmeldung ton="warnung">
           Ohne Verbindung. Hier ist nur, was auf diesem Gerät liegt.
         </Statusmeldung>

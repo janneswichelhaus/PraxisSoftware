@@ -42,9 +42,9 @@ export function AufDemGeraetPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Auf dem Gerät"
-        description="Was auf diesem Diensttelefon liegt: Ihr Tagesplan von heute und Entwürfe, die noch nicht übertragen sind."
+        description="Tagesplan von heute und Entwürfe auf diesem Diensttelefon."
       />
-      <div className="mt-6 max-w-xl">
+      <div className="max-w-spalte">
         <AufDemGeraet
           besitzer={user.profile.id}
           serverwege={serverwege}
