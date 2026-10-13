@@ -1,6 +1,8 @@
-import { Fragment, useId, type ReactNode } from 'react';
+import { Fragment, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Aufklappzeichen } from '@/components/ui/Card';
 import { NowMarker } from '@/components/ui/NowMarker';
 import { TravelBar } from '@/components/ui/TravelBar';
 import { zeitstrahlRaster, zeitstrahlSchiene } from '@/components/ui/timelineStile';
@@ -153,6 +155,8 @@ export function Zeitstrahl({
   veraltet,
   karte,
   aktionen,
+  aufklappen,
+  fruehereZusammenfassen = false,
 }: {
   /** Die Überschrift für Vorlesesoftware; die Morgen-Vorschau hat ihre eigene. */
   titel?: string;
@@ -185,15 +189,46 @@ export function Zeitstrahl({
    * nicht in ihr - ein Knopf darf nicht in einem Link liegen.
    */
   aktionen?: (termin: DayPlanEntry) => ReactNode;
+  /**
+   * Zeilen, die in der Übersicht aufklappen, statt in den Kalender zu
+   * springen (Auftrag C1, Analyse „Alltag unterwegs“ Rang 8): Die Zeile wird
+   * ein Knopf, aufgeklappt steht an ihrer Stelle die Karte des Termins mit
+   * Navigation, Anruf und Doku. Ohne Angabe bleibt jede Zeile ein Link - so
+   * in der Morgen-Vorschau.
+   */
+  aufklappen?: {
+    offenId: string | null;
+    aufklappbar: (termin: DayPlanEntry) => boolean;
+    umschalten: (id: string) => void;
+    karte: (termin: DayPlanEntry) => ReactNode;
+  };
+  /**
+   * Am Telefon stehen die erledigten oder ausgefallenen Termine vor
+   * dem ausgeklappten als eine Zeile „Erledigt (n)“ (Auftrag C1): Die Karte
+   * des nächsten Wegs bleibt mit ihrem Hauptknopf über der Tableiste, auch
+   * am dritten Besuch des Tages. Ein Tipp zeigt sie; ab 640 px stehen sie
+   * immer da. Liegengebliebenes bleibt sichtbar - es verlangt etwas.
+   */
+  fruehereZusammenfassen?: boolean;
 }) {
   const jetztText = jetztMarke ? formatLocalTime(new Date(jetzt).toISOString(), zeitzone) : '';
   const vorIndex = plan.findIndex((termin) => Date.parse(termin.starts_at) > jetzt);
   // Ohne Marke steht sie hinter dem letzten Termin - und wird dort nicht gezeichnet.
   const markeVor = !jetztMarke || vorIndex < 0 ? plan.length : vorIndex;
   const titelId = useId();
+  const [fruehereOffen, setFruehereOffen] = useState(false);
+  const fokusIndex = fokusId === null ? -1 : plan.findIndex((termin) => termin.id === fokusId);
+  const vorbei = fruehereZusammenfassen
+    ? plan.slice(0, Math.max(0, fokusIndex)).filter((termin) => {
+        const stand = standVon(termin, jetzt);
+        return stand === 'erledigt' || stand === 'ausgefallen';
+      })
+    : [];
+  const zusammengefasst = new Set(vorbei.map((termin) => termin.id));
+  const alleErledigt = vorbei.every((termin) => standVon(termin, jetzt) === 'erledigt');
 
   return (
-    <section aria-labelledby={titelId} className="mt-5">
+    <section aria-labelledby={titelId} className="mt-3 sm:mt-5">
       <h2
         id={titelId}
         className={
@@ -207,11 +242,15 @@ export function Zeitstrahl({
       <ol>
         {plan.map((termin, index) => {
           const istFokus = termin.id === fokusId;
+          const aufklappbar = !istFokus && (aufklappen?.aufklappbar(termin) ?? false);
+          const offen = aufklappbar && aufklappen?.offenId === termin.id;
+          // Fokus und aufgeklappte Zeile stehen als Karte da.
+          const alsKarte = istFokus || offen;
           const letzter = index === plan.length - 1 && (!jetztMarke || markeVor !== plan.length);
           const stand = standVon(termin, jetzt);
           const anfahrt = anfahrten.get(termin.id);
           const uebergang =
-            !istFokus &&
+            !alsKarte &&
             stand === 'kommt' &&
             termin.appointment_type === 'home_visit' &&
             termin.kind !== 'internal' &&
@@ -233,13 +272,80 @@ export function Zeitstrahl({
           );
           // Uhrzeit und Punkt stehen auf der Höhe der Namenszeile - und die
           // rutscht, wenn ein Übergang darüber liegt oder die Karte beginnt.
-          const zeitOben = istFokus ? 'pt-3.5' : uebergang ? 'pt-[26px]' : 'pt-1';
-          const punktOben = istFokus ? 'mt-[18px]' : uebergang ? 'mt-[31px]' : 'mt-[9px]';
+          const zeitOben = alsKarte ? 'pt-3.5' : uebergang ? 'pt-[26px]' : 'pt-1';
+          const punktOben = alsKarte ? 'mt-[18px]' : uebergang ? 'mt-[31px]' : 'mt-[9px]';
+          // Die Zeile selbst: Name, Ort, Grund und Abzeichen.
+          const zeilenInhalt = (
+            <>
+              <span className="min-w-0 flex-1 basis-40">
+                <span
+                  className={`block text-base wrap-anywhere ${
+                    stand === 'kommt' || stand === 'liegengeblieben'
+                      ? 'text-ink font-semibold'
+                      : 'text-ink-muted font-medium'
+                  }`}
+                >
+                  {terminName(termin)}
+                </span>
+                <span className="text-ink-muted block text-sm wrap-anywhere">
+                  {ortText(termin, anfahrt, stand)}
+                </span>
+                {grund ? (
+                  <span className="text-warnung block text-sm font-medium">
+                    <span aria-hidden="true">! </span>
+                    {grund}
+                  </span>
+                ) : null}
+              </span>
+              <span className="flex shrink-0 flex-wrap items-center gap-2 empty:hidden">
+                {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
+                <Laengenzeichen termin={termin} />
+                {/* „Steht aus" ist der Regelfall und sagt nichts (UX-005h). */}
+                {termin.status === 'confirmed' ? null : (
+                  <Badge ton={dayPlanStatusTon[termin.status]}>
+                    {dayPlanStatusLabels[termin.status]}
+                  </Badge>
+                )}
+              </span>
+            </>
+          );
+          // Die ganze Zeile ist das Ziel (Design-Handoff, „Zeile"). Sie liegt
+          // auf dem Seitengrund; das Überfahren hebt sie als weiße Fläche ab.
+          // Am Telefon rückt das Abzeichen unter den Namen, statt ihn in zwei
+          // Zeilen zu drücken.
+          const zeilenKlassen =
+            'hover:bg-surface rounded-button -ml-2 flex min-h-11 min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1 text-left transition-colors duration-120';
 
           return (
             <Fragment key={termin.id}>
+              {zusammengefasst.has(termin.id) && vorbei[0]?.id === termin.id ? (
+                <li className={`${zeitstrahlRaster} sm:hidden`}>
+                  <span />
+                  <span aria-hidden="true" className="relative flex justify-center">
+                    <span className={zeitstrahlSchiene} />
+                  </span>
+                  <div className="-ml-2 pb-1.5">
+                    <Button
+                      type="button"
+                      variant="quiet"
+                      groesse="kompakt"
+                      aria-expanded={fruehereOffen}
+                      onClick={() => setFruehereOffen((bisher) => !bisher)}
+                      className="px-2"
+                    >
+                      <Aufklappzeichen offen={fruehereOffen} />
+                      {alleErledigt ? 'Erledigt' : 'Vorbei'} ({vorbei.length})
+                    </Button>
+                  </div>
+                </li>
+              ) : null}
               {index === markeVor ? <NowMarker zeit={jetztText} /> : null}
-              <li className={zeitstrahlRaster} data-termin={termin.id}>
+              <li
+                className={`${zeitstrahlRaster} ${
+                  zusammengefasst.has(termin.id) && !fruehereOffen ? 'max-sm:hidden' : ''
+                }`.trim()}
+                data-termin={termin.id}
+              >
                 <span
                   className={`text-liste font-semibold tabular-nums ${zeitOben} ${
                     stand === 'kommt' || stand === 'liegengeblieben' ? 'text-ink' : 'text-ink-muted'
@@ -270,49 +376,25 @@ export function Zeitstrahl({
                   ) : null}
                   {istFokus ? (
                     karte
+                  ) : offen ? (
+                    aufklappen?.karte(termin)
                   ) : (
-                    // Die ganze Zeile ist das Ziel (Design-Handoff, „Zeile").
-                    // Sie liegt auf dem Seitengrund; das Überfahren hebt sie
-                    // als weiße Fläche ab.
                     <div className="flex items-center gap-2">
-                      <Link
-                        to={ziel}
-                        // Am Telefon rückt das Abzeichen unter den Namen, statt
-                        // ihn in zwei Zeilen zu drücken.
-                        className="hover:bg-surface rounded-button -ml-2 flex min-h-11 min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1 transition-colors duration-120"
-                      >
-                        <span className="min-w-0 flex-1 basis-40">
-                          <span
-                            className={`block text-base wrap-anywhere ${
-                              stand === 'kommt' || stand === 'liegengeblieben'
-                                ? 'text-ink font-semibold'
-                                : 'text-ink-muted font-medium'
-                            }`}
-                          >
-                            {terminName(termin)}
-                          </span>
-                          <span className="text-ink-muted block text-sm wrap-anywhere">
-                            {ortText(termin, anfahrt, stand)}
-                          </span>
-                          {grund ? (
-                            <span className="text-warnung block text-sm font-medium">
-                              <span aria-hidden="true">! </span>
-                              {grund}
-                            </span>
-                          ) : null}
-                        </span>
-                        <span className="flex shrink-0 flex-wrap items-center gap-2 empty:hidden">
-                          {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
-                          <Laengenzeichen termin={termin} />
-                          {/* „Steht aus" ist der Regelfall und sagt nichts
-                            (UX-005h). */}
-                          {termin.status === 'confirmed' ? null : (
-                            <Badge ton={dayPlanStatusTon[termin.status]}>
-                              {dayPlanStatusLabels[termin.status]}
-                            </Badge>
-                          )}
-                        </span>
-                      </Link>
+                      {aufklappbar ? (
+                        <button
+                          type="button"
+                          data-zeile=""
+                          aria-expanded={false}
+                          onClick={() => aufklappen?.umschalten(termin.id)}
+                          className={zeilenKlassen}
+                        >
+                          {zeilenInhalt}
+                        </button>
+                      ) : (
+                        <Link to={ziel} className={zeilenKlassen}>
+                          {zeilenInhalt}
+                        </Link>
+                      )}
                       {aktionen?.(termin)}
                     </div>
                   )}

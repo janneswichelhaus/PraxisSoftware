@@ -1,12 +1,59 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
-import { dayKey, recordNoShow, type Appointment } from './api';
+import { dayKey, fetchAppointment, recordNoShow, type Appointment } from './api';
+
+/**
+ * Was der Ablauf vom Termin braucht. Die Übersicht kennt den Bearbeitungsstand
+ * (`updated_at`) nicht - dann liest der Ablauf ihn unmittelbar vor dem
+ * Vermerk, wie der Haken (`TerminAbschliessen`).
+ */
+export type NiemandOeffnetTermin = Pick<
+  Appointment,
+  'id' | 'patient_id' | 'staff_member_id' | 'starts_at' | 'organization_time_zone'
+> & { updated_at?: string };
+
+/** Wie lange vor Ort gewartet wird (ADR-018 Punkt 9, Schritt 2). */
+const WARTEZEIT_MS = 15 * 60 * 1000;
+
+function minutenSekunden(ms: number): string {
+  const sekunden = Math.floor(ms / 1000);
+  return `${Math.floor(sekunden / 60)}:${String(sekunden % 60).padStart(2, '0')}`;
+}
+
+/**
+ * Die sichtbare 15-Minuten-Uhr an der Tür (Auftrag C1, Analyse „Alltag
+ * unterwegs“ Rang 9). Sie läuft ab dem Tipp auf „Niemand öffnet?“ und hakt
+ * „gewartet“ nach Ablauf einmal vor (ANN-479); bestätigt wird der Vermerk
+ * weiter mit allen drei Haken und dem Knopf darunter.
+ */
+function Wartezeit({ seit, onAbgelaufen }: { seit: number; onAbgelaufen: () => void }) {
+  const [jetzt, setJetzt] = useState(() => Date.now());
+  useEffect(() => {
+    const takt = window.setInterval(() => setJetzt(Date.now()), 1000);
+    return () => window.clearInterval(takt);
+  }, []);
+  const vergangen = Math.min(WARTEZEIT_MS, Math.max(0, jetzt - seit));
+  const abgelaufen = vergangen >= WARTEZEIT_MS;
+  useEffect(() => {
+    if (abgelaufen) onAbgelaufen();
+    // Einmal beim Ablauf; ein späteres Abwählen bleibt stehen.
+  }, [abgelaufen]);
+  return (
+    <div className="mb-2 ml-8">
+      <p role="timer" className="text-ink text-sm font-semibold tabular-nums">
+        {abgelaufen ? '15 Minuten gewartet' : `Gewartet ${minutenSekunden(vergangen)} von 15:00`}
+      </p>
+      <ProgressBar wert={vergangen} von={WARTEZEIT_MS} />
+    </div>
+  );
+}
 
 /**
  * Das Protokoll aus Hausbesuch-Szenario 2 (CAL-018, ADR-018 Fassung 3
@@ -30,7 +77,7 @@ const PROTOKOLLSCHRITTE = [
  * Gelesen wird sie erst, wenn der Ablauf offen ist, und unter demselben
  * Schlüssel wie in der Übersicht - wer von dort kommt, wartet nicht.
  */
-function Rufnummern({ appointment }: { appointment: Appointment }) {
+function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
   const tag = dayKey(appointment.starts_at, appointment.organization_time_zone);
   const { data, isPending, isError } = useQuery({
     queryKey: ['day-plan', tag, appointment.staff_member_id],
@@ -93,18 +140,44 @@ function Rufnummern({ appointment }: { appointment: Appointment }) {
 export function HomeVisitFlow({
   appointment,
   melden,
+  mitUhr = false,
+  wege,
+  inKarte = false,
 }: {
-  appointment: Appointment;
+  appointment: NiemandOeffnetTermin;
   melden: (text: string) => void;
+  /** Die 15-Minuten-Uhr an Schritt 2 - an der Karte der Übersicht (Auftrag C1). */
+  mitUhr?: boolean;
+  /**
+   * Die beiden anderen Fälle als Wege, wo die Seite sie nicht selbst trägt
+   * (die Übersicht): ohne Angabe verweisen die Sätze auf die Knöpfe des
+   * Terminfensters („oben“, „am Seitenende“).
+   */
+  wege?: { ohneBehandlung: string; absagen: string };
+  /**
+   * In einer Karte (die Tageskarte der Übersicht): durch eine Linie
+   * abgesetzt statt als zweiter Kasten (DESIGN.md Regel 2); der Knopf darf
+   * in der schmalen Spalte umbrechen.
+   */
+  inKarte?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [offen, setOffen] = useState(false);
+  const [seit, setSeit] = useState<number | null>(null);
   const [schritte, setSchritte] = useState<Record<string, boolean>>({});
   const [fehler, setFehler] = useState<string | undefined>(undefined);
   const bereichId = useId();
 
   const vermerken = useMutation({
-    mutationFn: () => recordNoShow(appointment.id, appointment.updated_at, true),
+    mutationFn: async () => {
+      if (appointment.updated_at) {
+        await recordNoShow(appointment.id, appointment.updated_at, true);
+        return;
+      }
+      const termin = await fetchAppointment(appointment.id);
+      if (!termin) throw new Error('Der Termin wurde nicht gefunden.');
+      await recordNoShow(termin.id, termin.updated_at, true);
+    },
     onSuccess: () => {
       for (const queryKey of [['appointment', appointment.id], ['appointments'], ['day-plan']]) {
         void queryClient.invalidateQueries({ queryKey });
@@ -131,7 +204,10 @@ export function HomeVisitFlow({
         groesse="kompakt"
         aria-expanded={offen}
         aria-controls={bereichId}
-        onClick={() => setOffen((bisher) => !bisher)}
+        onClick={() => {
+          setOffen((bisher) => !bisher);
+          setSeit((bisher) => bisher ?? Date.now());
+        }}
       >
         Niemand öffnet?
       </Button>
@@ -143,7 +219,11 @@ export function HomeVisitFlow({
           // Ein Kasten wie die Rückfrage: eine Karte, keine Schaltfläche
           // (DS-001), über die ganze Breite unter der Knopfreihe; 16 innen
           // wie die Rückfrage seit dem Design-Handoff vom 2026-10-01.
-          className="border-line-strong bg-surface-sunken rounded-card order-last w-full border p-4"
+          className={
+            inKarte
+              ? 'border-line order-last w-full border-t pt-3'
+              : 'border-line-strong bg-surface-sunken rounded-card order-last w-full border p-4'
+          }
         >
           <p className="text-ink text-sm">
             Drei Schritte, jeder bestätigt. Danach gilt der Termin als „nicht angetroffen“ und löst
@@ -170,6 +250,12 @@ export function HomeVisitFlow({
                       setFehler(undefined);
                     }}
                   />
+                  {schritt.id === 'gewartet' && mitUhr && seit !== null ? (
+                    <Wartezeit
+                      seit={seit}
+                      onAbgelaufen={() => setSchritte((bisher) => ({ ...bisher, gewartet: true }))}
+                    />
+                  ) : null}
                   {schritt.id === 'angerufen' ? (
                     <div className="mb-2 ml-8">
                       <Rufnummern appointment={appointment} />
@@ -194,7 +280,12 @@ export function HomeVisitFlow({
               Leistungen erfasst.": gestrichen im Design-Handoff vom 2026-10-01
               (Abschnitt 1). Die Folge steht schon im Satz über den Schritten. */}
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button type="button" disabled={vermerken.isPending} onClick={absenden}>
+            <Button
+              type="button"
+              disabled={vermerken.isPending}
+              onClick={absenden}
+              className={inKarte ? 'h-auto min-h-12 py-2 text-left' : ''}
+            >
               {vermerken.isPending ? 'Wird vermerkt …' : 'Als „nicht angetroffen“ vermerken'}
             </Button>
           </div>
@@ -207,17 +298,32 @@ export function HomeVisitFlow({
                 Aktionsleiste (Design-Handoff 2026-10-01, Abschnitt 6); hier
                 bleibt der Fall genannt, damit der Ablauf durch alle drei
                 Szenarien führt (ADR-018 Punkt 9). */}
-            <p className="text-ink-muted max-w-prose text-sm">
-              Tür geöffnet, aber keine Behandlung? Dann oben „Ohne Behandlung“ – der Termin gilt als
-              durchgeführt, ohne Ausfallhonorar.
-            </p>
+            {wege ? (
+              <p className="text-ink-muted max-w-prose text-sm">
+                Tür geöffnet, aber keine Behandlung?{' '}
+                <Textlink to={wege.ohneBehandlung}>Ohne Behandlung festhalten</Textlink> – der
+                Termin gilt als durchgeführt, ohne Ausfallhonorar.
+              </p>
+            ) : (
+              <p className="text-ink-muted max-w-prose text-sm">
+                Tür geöffnet, aber keine Behandlung? Dann oben „Ohne Behandlung“ – der Termin gilt
+                als durchgeführt, ohne Ausfallhonorar.
+              </p>
+            )}
             {/* Der dritte Fall bleibt als eine Zeile (ANN-198): Der Handoff
                 strich den Satz, ADR-018 Punkt 9.3 verlangt aber, dass die
                 Oberfläche durch alle drei Szenarien führt. Die 24-Stunden-Regel
                 erklärt die Absage-Rückfrage selbst. */}
-            <p className="text-ink-muted mt-1 max-w-prose text-sm">
-              Vorher abgesagt? Dann am Seitenende „Termin absagen“.
-            </p>
+            {wege ? (
+              <p className="text-ink-muted mt-1 max-w-prose text-sm">
+                Vorher abgesagt? Dann am Termin{' '}
+                <Textlink to={wege.absagen}>„Termin absagen“</Textlink>.
+              </p>
+            ) : (
+              <p className="text-ink-muted mt-1 max-w-prose text-sm">
+                Vorher abgesagt? Dann am Seitenende „Termin absagen“.
+              </p>
+            )}
           </div>
         </section>
       ) : null}

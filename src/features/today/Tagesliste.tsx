@@ -1,6 +1,7 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { formatLocalTimeRange, kalenderZumTermin } from '@/features/appointments/api';
@@ -51,8 +52,10 @@ const darueber = 'relative z-10';
  * ganze Spanne in der Nebenzeile, weil das Ende am Strahl nicht steht.
  *
  * **Pillen statt Textblock:** Liege und offene Erstaufnahme stehen als Pillen
- * unter der Anschrift. Etage, Zugangshinweis, Besonderheit und Rufnummern
- * liegen hinter dem Info-Knopf „i“ - seit UBK-004 in der Namenszeile, bis
+ * unter den Knöpfen (seit Auftrag C1; bis dahin unter der Anschrift, wo sie
+ * den Hauptknopf am Telefon unter die Tableiste schoben). Etage,
+ * Zugangshinweis, Besonderheit und Rufnummern liegen hinter dem Info-Knopf
+ * „i“ - seit UBK-004 in der Namenszeile, bis
  * dahin am Ende der Adresszeile (Jannes 2026-10-03, AKTE-008; 2026-10-05):
  * Sie sind wichtig, wenn man vor der Tür steht, und sonst Text,
  * den Umstehende mitlesen. Ohne eine dieser Angaben gibt es keinen Knopf.
@@ -73,6 +76,7 @@ export function Tageskarte({
   aktionen,
   hinweis,
   abschlussgespraech,
+  onZuklappen,
 }: {
   termin: DayPlanEntry;
   /** Die Zeile über dem Namen: „Erster Weg · ≈ 12 min", „Jetzt · bis 10:10". */
@@ -91,6 +95,11 @@ export function Tageskarte({
   hinweis?: string | null;
   /** KND-001: einer der letzten Termine - Zeit für das Abschlussgespräch (ANN-286). */
   abschlussgespraech?: boolean;
+  /**
+   * Eine aufgeklappte Zeile des Zeitstrahls (Auftrag C1) klappt hier wieder
+   * zu - rechts in der Kopfzeile, neben einem Abzeichen.
+   */
+  onZuklappen?: () => void;
 }) {
   const [infoOffen, setInfoOffen] = useState(false);
   const infoId = useId();
@@ -137,14 +146,29 @@ export function Tageskarte({
         <h3 className="text-accent tracking-label text-xs font-semibold uppercase">{kicker}</h3>
         {/* „Steht aus" ist der Regelfall und sagt nichts; nur ein abweichender
             Zustand trägt ein Abzeichen (UX-005h). */}
-        {termin.status !== 'confirmed' ? (
-          <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
-        ) : relativ ? (
-          // Am Telefon ist die Karte zu schmal dafür: Die Angabe bräche in eine
-          // eigene Zeile um und schöbe den Hauptknopf vom ersten Bildschirm.
-          // Dort sagen es Jetzt-Marke und Wegbalken.
-          <p className="text-ink-muted text-sm max-sm:hidden">{relativ}</p>
-        ) : null}
+        <span className="flex items-center gap-2 empty:hidden">
+          {termin.status !== 'confirmed' ? (
+            <Badge ton={dayPlanStatusTon[termin.status]}>
+              {dayPlanStatusLabels[termin.status]}
+            </Badge>
+          ) : relativ ? (
+            // Am Telefon ist die Karte zu schmal dafür: Die Angabe bräche in eine
+            // eigene Zeile um und schöbe den Hauptknopf vom ersten Bildschirm.
+            // Dort sagen es Jetzt-Marke und Wegbalken.
+            <p className="text-ink-muted text-sm max-sm:hidden">{relativ}</p>
+          ) : null}
+          {onZuklappen ? (
+            <Symbolknopf
+              beschriftung={`Zuklappen: ${terminName(termin)}`}
+              data-zuklappen=""
+              aria-expanded
+              onClick={onZuklappen}
+              className={`${darueber} -my-2.5 -mr-2`}
+            >
+              <span className="size-2 translate-y-0.5 rotate-45 border-t-2 border-l-2 border-current" />
+            </Symbolknopf>
+          ) : null}
+        </span>
       </div>
 
       {/* Der Name führt in die Akte, und zwar mit dem Weg zurück in den Tag
@@ -175,21 +199,19 @@ export function Tageskarte({
         {hatInfo ? (
           // 22 px im Bild, 44 px zum Tippen: Der Knopf ragt über seine Zeile
           // hinaus, ohne sie höher zu machen.
-          <button
-            type="button"
-            aria-label="Etage, Zugang und Kontakt"
+          <Symbolknopf
+            beschriftung="Etage, Zugang und Kontakt"
             {...info}
-            className="text-accent hover:bg-accent-soft rounded-button relative z-10 -my-2.5 inline-flex size-11 shrink-0 items-center justify-center transition-colors duration-120"
+            className="relative z-10 -my-2.5 shrink-0"
           >
             <span
-              aria-hidden="true"
               className={`rounded-pill border-accent inline-flex size-[22px] items-center justify-center border-[1.5px] text-xs leading-none font-bold ${
                 infoOffen ? 'bg-accent-soft' : ''
               }`}
             >
               i
             </span>
-          </button>
+          </Symbolknopf>
         ) : null}
       </div>
 
@@ -214,44 +236,6 @@ export function Tageskarte({
         <address className="text-ink mt-2.5 min-w-0 text-base leading-[1.4] wrap-anywhere not-italic">
           {adresse.join(', ')}
         </address>
-      ) : null}
-
-      {liege || fehlt.length > 0 || abschluss ? (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {/* UX-003a: Die Liege gehört zur Person, nicht zum Termin (ANN-116). */}
-          {liege ? (
-            <span className={`${pille} bg-accent-soft text-accent`}>
-              <span aria-hidden="true">✓</span>
-              Liege
-            </span>
-          ) : null}
-          {/* PRX-013: Die Pille sagt, dass etwas fehlt; was fehlt, steht in der
-              Akte - und für Vorlesesoftware gleich dabei. */}
-          {fehlt.length > 0 && termin.patient_id ? (
-            <Link
-              to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
-              className={`${pille} ${darueber} bg-warnung-soft text-warnung hover:border-warnung border border-transparent transition-colors duration-120`}
-            >
-              <span aria-hidden="true">!</span>
-              Erstaufnahme offen
-              <span className="sr-only">: {openItemsText(fehlt)}</span>
-              <span aria-hidden="true">→</span>
-            </Link>
-          ) : null}
-          {/* KND-001: In den letzten Terminen erinnert die Karte an das
-              Abschlussgespräch (4.10, ANN-286). Angeboten wird mündlich; das
-              Angebot hält die Akte fest. */}
-          {abschluss && termin.patient_id ? (
-            <Link
-              to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
-              className={`${pille} ${darueber} bg-accent-soft text-accent hover:border-accent border border-transparent transition-colors duration-120`}
-            >
-              Abschlussgespräch
-              <span className="sr-only">: Wie geht es nach der Behandlung weiter?</span>
-              <span aria-hidden="true">→</span>
-            </Link>
-          ) : null}
-        </div>
       ) : null}
 
       {/* „Zugangshinweis" wie im Feld der Stammdaten (WRT-17): „Zugang"
@@ -302,6 +286,45 @@ export function Tageskarte({
         <div className={`${darueber} mt-3.5 flex flex-col gap-2`}>
           {hauptaktion}
           {aktionen ? <div className="flex flex-wrap gap-2">{aktionen}</div> : null}
+        </div>
+      ) : null}
+      {/* Unter den Knöpfen (Auftrag C1): Der Hauptknopf bleibt am Telefon
+          über der Tableiste, die Pillen stehen gleich darunter. */}
+      {liege || fehlt.length > 0 || abschluss ? (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          {/* UX-003a: Die Liege gehört zur Person, nicht zum Termin (ANN-116). */}
+          {liege ? (
+            <span className={`${pille} bg-accent-soft text-accent`}>
+              <span aria-hidden="true">✓</span>
+              Liege
+            </span>
+          ) : null}
+          {/* PRX-013: Die Pille sagt, dass etwas fehlt; was fehlt, steht in der
+              Akte - und für Vorlesesoftware gleich dabei. */}
+          {fehlt.length > 0 && termin.patient_id ? (
+            <Link
+              to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
+              className={`${pille} ${darueber} bg-warnung-soft text-warnung hover:border-warnung border border-transparent transition-colors duration-120`}
+            >
+              <span aria-hidden="true">!</span>
+              Erstaufnahme offen
+              <span className="sr-only">: {openItemsText(fehlt)}</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
+          {/* KND-001: In den letzten Terminen erinnert die Karte an das
+              Abschlussgespräch (4.10, ANN-286). Angeboten wird mündlich; das
+              Angebot hält die Akte fest. */}
+          {abschluss && termin.patient_id ? (
+            <Link
+              to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
+              className={`${pille} ${darueber} bg-accent-soft text-accent hover:border-accent border border-transparent transition-colors duration-120`}
+            >
+              Abschlussgespräch
+              <span className="sr-only">: Wie geht es nach der Behandlung weiter?</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
         </div>
       ) : null}
     </article>

@@ -6,6 +6,9 @@ import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as LageApi from '@/features/appointments/abrechnungslage-api';
 import type * as DokumentationApi from './api';
 import type * as Bausteine from './textbausteine';
+import type * as SlotApi from '@/features/slot-search/api';
+import type * as BillingApi from '@/features/billing/api';
+import type * as LeistungenApi from '@/features/appointments/leistungenAmTermin';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
@@ -53,6 +56,27 @@ const fetchAbrechnungslage = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
 const fetchBefundangaben = vi.fn();
 const befundangabenSichern = vi.fn();
+// Auftrag C1: „Danach" - Heilmittel, Folgetermin.
+const fetchUpcomingAppointments = vi.fn();
+const findFreeSlots = vi.fn();
+const fetchLeistungenAmTermin = vi.fn();
+const fetchVorschlag = vi.fn();
+const recordLeistungen = vi.fn();
+
+vi.mock('@/features/slot-search/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof SlotApi>()),
+  findFreeSlots: (params: SlotApi.SearchParams) => findFreeSlots(params) as Promise<SlotApi.Slot[]>,
+}));
+vi.mock('@/features/billing/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof BillingApi>()),
+  fetchVorschlag: (id: string) => fetchVorschlag(id) as Promise<BillingApi.Vorschlag[]>,
+  recordLeistungen: (...args: unknown[]) => recordLeistungen(...args) as Promise<void>,
+}));
+vi.mock('@/features/appointments/leistungenAmTermin', async (importOriginal) => ({
+  ...(await importOriginal<typeof LeistungenApi>()),
+  fetchLeistungenAmTermin: (id: string) =>
+    fetchLeistungenAmTermin(id) as Promise<LeistungenApi.LeistungenAmTermin | null>,
+}));
 
 vi.mock('@/features/appointments/abrechnungslage-api', async (importOriginal) => ({
   ...(await importOriginal<typeof LageApi>()),
@@ -74,6 +98,8 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     ...actual,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
+    fetchUpcomingAppointments: (id: string) =>
+      fetchUpcomingAppointments(id) as Promise<AppointmentsApi.UpcomingAppointment[]>,
   };
 });
 
@@ -102,6 +128,18 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 }));
 
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
+
+const FESTGESCHRIEBEN = 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.';
+
+/**
+ * Nach dem Festschreiben bleibt die Seite stehen und zeigt „Danach"
+ * (Auftrag C1); erst „Fertig" führt mit der Meldung weiter.
+ */
+async function fertigNachDanach(user: ReturnType<typeof userEvent.setup>) {
+  expect(await screen.findByText(FESTGESCHRIEBEN)).toBeInTheDocument();
+  expect(navigate).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: 'Fertig' }));
+}
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche = '') {
   return renderWithProviders(
@@ -148,6 +186,13 @@ describe('CompleteTreatmentPage', () => {
     completeTreatment.mockResolvedValue(undefined);
     createTreatmentNote.mockResolvedValue(NOTE_ID);
     updateTreatmentNote.mockResolvedValue(undefined);
+    fetchUpcomingAppointments.mockReset();
+    fetchUpcomingAppointments.mockResolvedValue([]);
+    findFreeSlots.mockReset();
+    findFreeSlots.mockResolvedValue([]);
+    fetchLeistungenAmTermin.mockReset();
+    fetchVorschlag.mockReset();
+    recordLeistungen.mockReset();
   });
 
   it('ist eine Schreibfläche: Name im Kopf, Feld, Fußleiste mit Entwurf und Festschreiben (Handoff 6a)', async () => {
@@ -253,9 +298,10 @@ describe('CompleteTreatmentPage', () => {
     // Kein zweiter Schreibweg daneben.
     expect(createTreatmentNote).not.toHaveBeenCalled();
     expect(updateTreatmentNote).not.toHaveBeenCalled();
-    // Zurück zum Termin, der erfährt, was geschehen ist (DOK-15, ZST-17).
+    // „Fertig" führt zurück zum Termin, der erfährt, was geschehen ist (DOK-15, ZST-17).
+    await fertigNachDanach(user);
     expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
-      state: { meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.' },
+      state: { meldung: FESTGESCHRIEBEN },
     });
   });
 
@@ -267,11 +313,138 @@ describe('CompleteTreatmentPage', () => {
     expect(screen.getByRole('link', { name: 'Zurück' })).toHaveAttribute('href', '/');
 
     await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
-    await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith('/', {
-        state: { meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.' },
-      }),
-    );
+    await fertigNachDanach(user);
+    expect(navigate).toHaveBeenCalledWith('/', { state: { meldung: FESTGESCHRIEBEN } });
+  });
+
+  describe('Auftrag C1: „Danach" nach dem Festschreiben', () => {
+    const dokumentiert = { ...termin, status: 'documented' as const };
+    const stand = (bestaetigt: boolean): LeistungenApi.LeistungenAmTermin => ({
+      appointment_id: TERMIN_ID,
+      can_record: true,
+      services: bestaetigt
+        ? [{ code: 'KG', label: 'Krankengymnastik', quantity: 1, status: 'billable' }]
+        : [],
+      recorded_at: null,
+      recorded_by_name: null,
+      basis_items: null,
+      session_fee_cents: null,
+    });
+    const vorschlag = (id: string, label: string, suggested: boolean): BillingApi.Vorschlag => ({
+      catalog_item_id: id,
+      code: id,
+      label,
+      item_kind: 'treatment',
+      unit_price_cents: 3000,
+      currency: 'EUR',
+      tax_treatment: 'exempt_healthcare',
+      tax_rate_permille: 0,
+      service_area: 'therapy',
+      suggested,
+      in_session_fee: false,
+    });
+
+    it('bestätigt die vorbelegten Heilmittel mit einem Tipp über den bestehenden Weg (ANN-475)', async () => {
+      const user = userEvent.setup();
+      completeTreatment.mockImplementation(() => {
+        fetchAppointment.mockResolvedValue(dokumentiert);
+        return Promise.resolve();
+      });
+      fetchLeistungenAmTermin.mockResolvedValue(stand(false));
+      fetchVorschlag.mockResolvedValue([
+        vorschlag('k1', 'Krankengymnastik', true),
+        vorschlag('k2', 'Wärme', false),
+      ]);
+      recordLeistungen.mockImplementation(() => {
+        fetchLeistungenAmTermin.mockResolvedValue(stand(true));
+        return Promise.resolve();
+      });
+      rendern(['therapist'], '?zurueck=%2F');
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      expect(await screen.findByText(FESTGESCHRIEBEN)).toBeInTheDocument();
+      // Kein Feld mehr: Festgeschrieben ist festgeschrieben.
+      expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
+
+      expect(await screen.findByRole('checkbox', { name: 'Krankengymnastik' })).toBeChecked();
+      expect(screen.getByRole('checkbox', { name: 'Wärme' })).not.toBeChecked();
+      const knopf = screen.getByRole('button', { name: 'Heilmittel bestätigen' });
+      // Die Folge steht am Knopf, nicht in einer Rückfrage danach.
+      expect(knopf).toHaveAccessibleDescription(/Korrigieren lässt sich das danach nur im Büro/);
+      await user.click(knopf);
+
+      expect(recordLeistungen).toHaveBeenCalledTimes(1);
+      expect(recordLeistungen).toHaveBeenCalledWith(TERMIN_ID, [
+        { catalog_item_id: 'k1', quantity: 1 },
+      ]);
+      expect(
+        await screen.findByText(/Bestätigt:\s*Krankengymnastik/, { exact: false }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Heilmittel bestätigen' })).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Fertig' }));
+      expect(navigate).toHaveBeenCalledWith('/', { state: { meldung: FESTGESCHRIEBEN } });
+    });
+
+    it('zeigt keine Heilmittel, wo die Rolle am Termin nicht bestätigen darf', async () => {
+      const user = userEvent.setup();
+      completeTreatment.mockImplementation(() => {
+        fetchAppointment.mockResolvedValue({ ...dokumentiert, staff_member_id: 'fremd' });
+        return Promise.resolve();
+      });
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      expect(await screen.findByText(FESTGESCHRIEBEN)).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Heilmittel' })).toBeNull();
+      expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
+    });
+
+    it('nennt einen schon stehenden nächsten Termin als erledigt (L3)', async () => {
+      const user = userEvent.setup();
+      fetchUpcomingAppointments.mockResolvedValue([
+        {
+          id: 'n1',
+          starts_at: '2027-05-19T08:00:00.000Z',
+          ends_at: '2027-05-19T09:00:00.000Z',
+          appointment_type: 'home_visit',
+          status: 'confirmed',
+          staff_given_name: 'Anna',
+          staff_family_name: 'Beispiel',
+          notification_channels: [],
+          organization_time_zone: 'Europe/Berlin',
+        },
+      ]);
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      expect(
+        await screen.findByText(/Nächster Termin: Mi 19\.05\., 10:00 Uhr/),
+      ).toBeInTheDocument();
+      expect(findFreeSlots).not.toHaveBeenCalled();
+      expect(screen.getByRole('link', { name: /Andere Zeit suchen/ })).toHaveAttribute(
+        'href',
+        expect.stringMatching(/^\/patienten\/.+\/plaetze\?zurueck=/),
+      );
+    });
+
+    it('zeigt am bereits festgeschriebenen Termin „Danach" unter „Bereits finalisiert"', async () => {
+      fetchAppointment.mockResolvedValue(dokumentiert);
+      fetchTreatmentDocumentation.mockResolvedValue({
+        primary: { ...entwurf, status: 'final', version_count: 1 },
+        addenda: [],
+      });
+      fetchLeistungenAmTermin.mockResolvedValue(stand(false));
+      fetchVorschlag.mockResolvedValue([vorschlag('k1', 'Krankengymnastik', true)]);
+      rendern(['therapist'], '?zurueck=%2F');
+      expect(await screen.findByText('Bereits finalisiert')).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Heilmittel bestätigen' })).toBeEnabled();
+      expect(screen.getByRole('link', { name: 'Zurück zur Übersicht' })).toHaveAttribute(
+        'href',
+        '/',
+      );
+    });
   });
 
   it('verbindet die Folge mit dem Knopf, damit sie auch vorgelesen wird (DOK-20)', async () => {
@@ -461,7 +634,8 @@ describe('CompleteTreatmentPage', () => {
       });
       await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
-      await waitFor(() => expect(navigate).toHaveBeenCalled());
+      await fertigNachDanach(user);
+      expect(navigate).toHaveBeenCalled();
       expect(screen.queryByText(/inzwischen finalisiert/)).toBeNull();
     });
   });
@@ -738,13 +912,10 @@ describe('CompleteTreatmentPage', () => {
       await user.click(screen.getByRole('button', { name: 'Hausbesuch' }));
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Befund:');
       fertig();
-      await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
-          state: {
-            meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.',
-          },
-        }),
-      );
+      await fertigNachDanach(user);
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
+        state: { meldung: FESTGESCHRIEBEN },
+      });
     });
 
     it('bietet ohne Behandlung keine Bausteine an', async () => {

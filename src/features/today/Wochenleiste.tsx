@@ -29,10 +29,10 @@ export function Wochenleiste({
   const tage = fensterTage(tag, heute);
   const anfang = tage[0]!;
   const pfeil =
-    'text-ink-muted hover:text-accent flex min-h-16 w-7 shrink-0 items-center justify-center text-xl';
+    'text-ink-muted hover:text-accent flex min-h-12 w-7 shrink-0 items-center justify-center text-xl sm:min-h-16';
 
   return (
-    <nav aria-label="Tag wählen" className="mb-5 flex items-stretch gap-1">
+    <nav aria-label="Tag wählen" className="mb-3 flex items-stretch gap-1 sm:mb-5">
       <Link to={tagesPfad(tagePlus(anfang, -7), heute)} className={pfeil} aria-label="Vorige Woche">
         <span aria-hidden="true">‹</span>
       </Link>
@@ -46,7 +46,7 @@ export function Wochenleiste({
                 to={tagesPfad(t, heute)}
                 aria-label={tagesName(t, heute, zahl)}
                 aria-current={gewaehlt ? 'date' : undefined}
-                className={`rounded-card flex min-h-16 flex-col items-center justify-center gap-0.5 py-2 ${
+                className={`rounded-card flex min-h-12 flex-col items-center justify-center py-1 sm:min-h-16 sm:gap-0.5 sm:py-2 ${
                   gewaehlt ? 'bg-accent text-surface' : 'text-ink hover:bg-surface-sunken'
                 }`}
               >
@@ -58,7 +58,7 @@ export function Wochenleiste({
                   {KURZ.format(alsDatum(t)).replace('.', '')}
                 </span>
                 <span
-                  className={`text-lg leading-tight font-bold tabular-nums ${
+                  className={`text-base leading-tight font-bold tabular-nums sm:text-lg ${
                     !gewaehlt && t === heute ? 'text-accent' : ''
                   }`}
                 >
