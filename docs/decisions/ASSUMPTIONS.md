@@ -4740,6 +4740,30 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Wochenformular: RPC für die ganze Woche, Formular über alle Zeilen · Aufwand `mittel`.
 
+### ANN-443 — „Übungen hinzufügen“ fügt mehrere in einem Zug hinzu, jede mit ihrer Standarddosierung
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Im Auswahlblatt des Planeditors werden mehrere Varianten mit Haken gewählt; „n hinzufügen“ legt sie in der Reihenfolge der Wahl an, je mit der Standarddosierung des Katalogs (ANN-384), eigene Übungen ohne sie mit der bisherigen Vorbelegung 3 × 10–12. Ein Aufruf je Position, nacheinander; scheitert einer, bleibt es bei den angekommenen, und die Meldung sagt, wie viele es sind. Nichts ist vorausgewählt.
+
+**Begründung.** Analyse Training 12.10., Abschnitt 5: rund 35 Tipps für fünf Übungen. Eine Serverfunktion für viele Positionen bräuchte eine Migration.
+
+**Anker.** `fuegeHinzu` und `standardDosis` in `src/features/exercise-plans/hinzufuegen.ts`.
+
+**Änderungspfad.** Ein Aufruf für alle: RPC mit Liste, eine Transaktion · Aufwand `mittel`.
+
+### ANN-444 — „Aus Vorlage“ findet die Übungen über den Katalogschlüssel; die Liste kennt nur die Vorlagen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Eine Vorlage fügt ihre Übungen über `catalog_key` zur nicht archivierten Variante der Praxis hinzu, mit der Dosierung der Vorlage, sonst der Standarddosierung. Was fehlt oder archiviert ist, nennt die Meldung; owner übernimmt Fehlendes aus dem Katalog und fügt es an. Ein leerer Entwurf mit Standardtitel heißt danach wie die Vorlage. Die Liste ist nach Name geordnet und bekommt nur die Vorlagen (ADR-006 Punkt 10).
+
+**Begründung.** Referenzanalyse Training, Abschnitt 9, Weg A; Zuweisen in fünf Tipps (K12).
+
+**Anker.** `ausVorlage` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
+
+**Änderungspfad.** Vorlagen der Praxis: eigene Tabelle und Migration · Aufwand `mittel`.
+
 ### ANN-445 — Nachtrag, Korrektur und Verlauf in der Hülle der Schreibseite, ohne eigenes „Abbrechen“
 
 Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
@@ -4812,3 +4836,38 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.
 
+### ANN-470 — Eine neue Übung entsteht mit ihrer ersten Variante in einem Formular
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+
+**Annahme.** „Übung anlegen“ fragt Bezeichnungen, Region, Anleitung und Ausrüstung in einem Formular ab und legt Übung und erste Variante mit denselben Bezeichnungen an (`save_exercise`, dann `save_exercise_variant`). Scheitert die Variante, sagt das Formular, dass die Übung schon besteht, und ein zweiter Versuch legt nur die Variante an. Owner legt so auch im Auswahlblatt des Plans an; die neue Variante ist danach gewählt.
+
+**Begründung.** Analyse Training 12.10., Abschnitt 1.2: zwei Formulare und ein Seitenwechsel je fehlender Übung.
+
+**Anker.** `NeueUebungFormular` in `src/features/exercises/Formulare.tsx`.
+
+**Änderungspfad.** Beides in einer Transaktion: RPC `save_exercise_with_variant` · Aufwand `mittel`.
+
+### ANN-471 — Die Dosierung einer Position ändert man mit Zahlschritten; eine Übung tauscht man durch Entfernen und Hinzufügen
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Ein Tipp auf die Zeile öffnet ein Fenster mit Plus und Minus für Sätze, Wiederholungen oder Dauer, Halten und „am Tag“ (0 heißt ohne) und dem Schalter „je Seite“; Last, Tempo, Pause, Bereich, doppelte Progression und Hinweis stehen unter „Mehr“, dazu Reihenfolge und Entfernen. Einen Wechsel der Übung an einer Position gibt es nur noch als Schritt einer neuen Fassung (ANN-301).
+
+**Begründung.** Zehn Felder untereinander am Telefon (Analyse 12.10., Abschnitt 1.1); der Tausch ohne Fassung war selten.
+
+**Anker.** `PositionFormular` in `src/features/exercise-plans/PositionFormular.tsx`.
+
+**Änderungspfad.** Tausch zurück: Auswahlblatt mit Einzelwahl im Fenster · Aufwand `klein`.
+
+### ANN-472 — Filter der Bibliothek: ein Wert je Filter genügt, alle Filter zugleich; „nach Bedarf“ zählt mit
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+
+**Annahme.** Region, Ziel, Ausgangsstellung, Hilfsmittel und Niveau sind Chips; innerhalb eines Filters reicht ein gewählter Wert, zwischen den Filtern gilt jeder. Ein Hilfsmittel „nach Bedarf“ zählt als dieses Hilfsmittel. Chips gibt es nur für Werte, die vorkommen. Die Suche ebnet Umlaute ein wie die Patientensuche. „Ungeprüft“ (ANN-386) steht leise in der Zeile, nicht als Abzeichen.
+
+**Begründung.** Ordnungen nach ADR-006 Punkt 10, von Hand gesetzt; ein Abzeichen an fast jeder Zeile wäre kein Ausnahmezeichen.
+
+**Anker.** `filtere` und `facetten` in `src/features/exercises/suche.ts`.
+
+**Änderungspfad.** „Nur mit diesen Hilfsmitteln“ (Teilmenge): eine Zeile in `passtHilfsmittel` · Aufwand `klein`.
