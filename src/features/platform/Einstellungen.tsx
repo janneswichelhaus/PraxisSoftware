@@ -1,6 +1,9 @@
 import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Disclosure } from '@/components/ui/Card';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
 import { Benachrichtigungen } from './Benachrichtigungen';
@@ -29,13 +32,8 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
   const [groesse, setzen] = useSchriftgroesse();
   return (
     <>
-      <Link
-        to={`${PLATTFORM_PFAD}/ich`}
-        className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu „Ich“
-      </Link>
-      <h1 className="text-accent text-h3 font-bold">Einstellungen</h1>
+      <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
+      <PageHeader title="Einstellungen" />
       <Section titel="Schriftgröße" rahmen>
         <Schriftwahl groesse={groesse} onWahl={setzen} />
         <p className="text-ink-muted mt-3 max-w-prose text-sm">
@@ -43,20 +41,23 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
         </p>
       </Section>
       <Benachrichtigungen zugaenge={zugaenge} />
-      {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12). */}
-      <PasskeyAbschnitt rahmen />
-      <PinAbschnitt rahmen />
       <Section titel="Was die Praxis für Sie eingestellt hat" rahmen>
-        <ul className="flex flex-col gap-4">
-          <li>
-            <p className="text-ink text-base font-medium">Anrede</p>
-            <p className="text-ink text-base">Die Praxis spricht Sie mit „Sie“ an.</p>
-          </li>
+        <DetailList>
+          <DetailRow label="Anrede">Die Praxis spricht Sie mit „Sie“ an.</DetailRow>
           {zugaenge.map((z) => (
             <EinstiegStand key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
           ))}
-        </ul>
+        </DetailList>
       </Section>
+      {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12) - selten
+          gebraucht, deshalb auf Abruf (ANN-468). Die Einrichtungspflicht sorgt
+          dafür, dass beides im Betrieb schon da ist. */}
+      <div className="mt-8">
+        <Disclosure inKarte kopf="betont" summary="Passkey und PIN">
+          <PasskeyAbschnitt />
+          <PinAbschnitt />
+        </Disclosure>
+      </div>
     </>
   );
 }
@@ -107,13 +108,10 @@ function EinstiegStand({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: 
     ? ` – ${zugang.access_kind === 'self' ? BEREICHSNAME[zugang.relationship_kind] : `für ${zugang.represented_name ?? 'eine andere Person'}`}`
     : '';
   return (
-    <li>
-      <p className="text-ink text-base font-medium">Einstieg{bereich}</p>
-      <p className="text-ink text-base">
-        {data.skipped_at
-          ? `Die Praxis hat den Einstieg am ${datum(data.skipped_at)} für Sie übersprungen. Ihre Einwilligungen hat sie dabei nicht berührt.`
-          : `Sie haben den Einstieg am ${datum(data.finished_at!)} beendet.`}
-      </p>
-    </li>
+    <DetailRow label={`Einstieg${bereich}`}>
+      {data.skipped_at
+        ? `Die Praxis hat den Einstieg am ${datum(data.skipped_at)} für Sie übersprungen. Ihre Einwilligungen hat sie dabei nicht berührt.`
+        : `Sie haben den Einstieg am ${datum(data.finished_at!)} beendet.`}
+    </DetailRow>
   );
 }

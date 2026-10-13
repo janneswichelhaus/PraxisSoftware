@@ -114,8 +114,9 @@ describe('Benachrichtigungen (KOM-011)', () => {
         ]}
       />,
     );
-    expect(await screen.findByRole('heading', { name: 'Für Ihre Behandlung' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Für Ihr Training' })).toBeInTheDocument();
+    // Je Zugang ein Aufklapper mit dem Namen im Kopf (ANN-468).
+    expect((await screen.findByText('Für Ihre Behandlung')).closest('summary')).not.toBeNull();
+    expect(screen.getByText('Für Ihr Training').closest('summary')).not.toBeNull();
     expect(ladeBenachrichtigungen).toHaveBeenCalledTimes(2);
   });
 });
