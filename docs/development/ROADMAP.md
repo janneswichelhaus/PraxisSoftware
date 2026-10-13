@@ -23,11 +23,11 @@ und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
 
 | # | Überholung | Inhalt | Kernabläufe ([`../product/kernablaeufe.md`](../product/kernablaeufe.md)) |
 | --- | --- | --- | --- |
-| 1 | **Design der ganzen App und Übungsbibliothek** | Seitenrezeptur `docs/design/DESIGN.md` flächig, Bibliothek mit Zeichnungen, Prozess verschlankt — die PR dieser Session | K12 |
-| 2 | **Besuch in einem Zug** | Tag, Termin und Dokumentation am Rad: Doku, Heilmittel, Folgetermin auf einer Strecke | K1–K9, K15 |
+| 1 | **Design der ganzen App, Übungsbibliothek, Besuch in einem Zug** — gebaut (PR #239) | Seitenrezeptur `docs/design/DESIGN.md` flächig samt Plattform, Katalog mit Zeichnungen, Besuch von der Tür bis zur Navigation in 6 Tipps, Prozess verschlankt | K5, K12, K15 |
+| 2 | **Restbefunde der Praxis-Prüfung** | Letzten Eintrag übernehmen, Absage in 4 Tipps, Material und letzte Doku an der Karte, Übung aus der Bibliothek zuweisen | K3, K6, K9 |
 | 3 | **Erstaufnahme geführt** | Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege — nichts vergessen | K10, K11 |
 | 4 | **Monatsabrechnung in einem Lauf** | Leistungen, Rechnungen, Zahlungseingang als Sammellauf | K13, K14 |
-| 5 | **Plattform** | Ansichten für Patient:innen und Kund:innen nach DESIGN.md | — |
+| 5 | **Übungen, zweite Runde** | Durchsicht des Katalogs, eigene Vorlagen, Fassung 2 der Figur | K12 |
 
 Die Kette unten bleibt gültig; ihre offenen Epics (ab ALT-EPIC-002) folgen nach den
 Überholungen oder werden in die passende Überholung gezogen, wenn sie denselben Bereich
@@ -848,6 +848,9 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | OFF-EPIC-001 Dokumentation ohne Empfang | fertig | 2026-10-12 | OFF-001 bis OFF-003, Zweitreview | — | Sichtung: Verlauf Schritte 7 bis 9 |
 | B | OUT-EPIC-001 Fortschritt ohne Bewertung | fertig | 2026-10-12 | OUT-001 bis OUT-004, Zweitreview | — | Sichtung: Verlauf Schritte 10 bis 12 |
 | B | ALT-EPIC-001 Aktivitäten und Gewohnheiten | fertig | 2026-10-12 | ALT-001 bis ALT-003, Zweitreview | — | Sichtung: Verlauf Schritte 13 bis 15 |
+| B | DES-EPIC-001 Design der ganzen App nach DESIGN.md: Bausteine, Ratsche, Bereiche B1 bis B8, Runde 2 nach Design- und Praxis-Review | fertig | 2026-10-13 | PR #239, docs/design/DESIGN.md, src/designsystem.test.ts, Bildstrecke vorher/nachher | — | Auftrag Jannes (12.10.2026); Sichtung per Bildstrecke im PR |
+| B | UEB-012 Mitgelieferter Übungskatalog: 196 Übungen, 193 gezeichnete Figuren, 15 Vorlagen, Übernahme durch owner | fertig | 2026-10-13 | PR #239, Migration 20261111100000_ueb_012_exercise_catalog.sql, supabase/tests/exercise-catalog.test.ts, Zweitreview | — | Auftrag Jannes (12.10.2026); Inhalte KI-erstellt, „ungeprüft“ bis zur Durchsicht (ANN-386) |
+| B | BES-EPIC-001 Besuch in einem Zug: Danach auf der Schreibseite, Folgetermin mit einem Tipp, Später da?, Niemand öffnet?, Heute noch offen | fertig | 2026-10-13 | PR #239, tests/e2e/besuch.spec.ts (höchstens 6 Tipps) | — | Auftrag Jannes (12.10.2026), Kernablauf K5 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
