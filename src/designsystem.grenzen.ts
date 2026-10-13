@@ -73,15 +73,11 @@ export const GRENZEN: Record<
 
     'features/therapy-reports': 5,
 
-    'features/timeaccount': 1,
-
     'features/tours': 3,
 
     'features/training': 3,
 
     'features/treatment-bases': 3,
-
-    'features/vacation': 2,
 
     'features/waitlist': 1,
   },
@@ -144,8 +140,6 @@ export const GRENZEN: Record<
     'features/slot-search': 1,
 
     'features/teamchat': 1,
-
-    'features/timeaccount': 1,
 
     'features/training': 6,
 

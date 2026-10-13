@@ -17,13 +17,27 @@ describe('Zeitkonto', () => {
     expect(screen.queryByRole('heading', { name: 'Mein Zeitkonto' })).toBeNull();
     expect(screen.getAllByText(/^Lena Hartmann/)).toHaveLength(1);
 
-    // Jede Karte trägt genau eine Zeile zu den Buchungen: den Aufklapper
-    // „Buchungen (N)" oder „Keine Buchungen" (UX-005i).
-    const karten = screen
-      .getAllByText(/^(Buchungen \(\d+\)|Keine Buchungen)$/)
-      .map((zeile) => zeile.closest('div'));
-    expect(karten[0]).toHaveTextContent('Lena Hartmann (Sie)');
+    // Seit Welle B eine Zeile je Person (Liste → Detail): Die erste Zeile ist
+    // das eigene Konto, die Nebenzeile nennt die Zahl der Buchungen.
+    const zeilen = within(screen.getByRole('list')).getAllByRole('link');
+    expect(zeilen[0]).toHaveTextContent('Lena Hartmann (Sie)');
+    expect(zeilen[0]).toHaveTextContent(/(\d+ Buchungen?|Keine Buchungen)/);
     expect(screen.queryByText(/Saldo über alle Personen/)).toBeNull();
+  });
+
+  it('öffnet das Konto einer Person mit Saldo und Buchungen (Liste → Detail)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await nutzer.click(screen.getAllByRole('link', { name: /Lena Hartmann/ })[0]!);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Lena Hartmann (Sie)' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Saldo')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^Buchungen/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zu den Zeitkonten' })).toHaveAttribute(
+      'href',
+      '/betrieb/zeitkonto',
+    );
   });
 
   it('benennt, wem das eigene Konto in der Vorschau gehoert (VOR-07)', () => {

@@ -1,11 +1,17 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Badge } from '@/components/ui/Badge';
-import { Card, CardGrid, Disclosure } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Tile, TileGrid } from '@/components/ui/Tile';
 import type { CurrentUser } from '@/features/session/types';
 import {
   mitarbeiterName,
@@ -28,13 +34,21 @@ import type { Buchungsart, Zeitbuchung } from '@/features/preview/types';
  * Behandlungsstunden sind keine tatsächlich geleistete Arbeitszeit. Eine
  * Vermischung wäre arbeitsrechtlich falsch und würde Tourendaten zur
  * Leistungskontrolle machen (PROJECT_PRINCIPLES.md 20).
+ *
+ * Seit Welle B (B7) Liste und Detail: je Person eine Zeile mit ihrem Saldo,
+ * die Zeile öffnet ihre Buchungen (`?person=…`, dieselbe Route).
  */
+
+/** Der Suchparameter der geöffneten Person. */
+const PERSON_PARAM = 'person';
 
 export function TimeAccountPage({ user }: { user: CurrentUser }) {
   const { zustand } = useVorschau();
   const identitaet = vorschauidentitaet(zustand, user);
   const [formular, setFormular] = useState(false);
   const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
+  const [suche] = useSearchParams();
+  const geoeffnet = suche.get(PERSON_PARAM);
 
   const saldenNachPerson = zustand.mitarbeitende.map((person) => {
     const buchungen = zustand.zeitbuchungen
@@ -69,11 +83,21 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
     );
   }
 
+  const auswahl = geoeffnet
+    ? saldenNachPerson.find((eintrag) => eintrag.person.id === geoeffnet)
+    : undefined;
+  if (geoeffnet) {
+    return (
+      <Personenkonto eintrag={auswahl} eigene={auswahl ? auswahl.person.id === eigeneId : false} />
+    );
+  }
+
   return (
     <>
+      {/* Ohne Satz unter dem Titel (Regel 6); „Stunden eintragen“ kompakt im
+          Kopf (ANN-403). */}
       <PageHeader
         title="Zeitkonto"
-        description="Geleistete und abgebaute Stunden mit laufendem Saldo."
         actions={<Button onClick={() => setFormular(true)}>Stunden eintragen</Button>}
       />
 
@@ -89,73 +113,85 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
             }
           : {})}
       >
-        <CardGrid>
+        <ListRows>
           {reihenfolge.map((eintrag) => (
-            <Personenkarte
+            <ListRow
               key={eintrag.person.id}
-              {...eintrag}
-              eigene={eintrag.person.id === eigeneId}
+              to={`/betrieb/zeitkonto?${PERSON_PARAM}=${encodeURIComponent(eintrag.person.id)}`}
+              // Ohne Rollenzeile: Fürs Zeitkonto zählt die Person, nicht ihre
+              // Rolle (UX-005i).
+              titel={`${eintrag.person.name}${eintrag.person.id === eigeneId ? ' (Sie)' : ''}`}
+              meta={buchungenText(eintrag.buchungen.length)}
+              // Der Saldo als Zahl, ohne ✓ oder × (VOR-13): Minusstunden sind
+              // keine Verfehlung, und das Zeitkonto bewertet niemanden (§20).
+              status={<Badge ton="neutral">{formatStunden(eintrag.saldo)}</Badge>}
             />
           ))}
-        </CardGrid>
+        </ListRows>
       </Abschnitt>
     </>
   );
 }
 
-function Personenkarte({
-  person,
-  buchungen,
-  saldo,
+/** „3 Buchungen“, „1 Buchung“, „Keine Buchungen“. */
+function buchungenText(anzahl: number): string {
+  if (anzahl === 0) return 'Keine Buchungen';
+  return anzahl === 1 ? '1 Buchung' : `${anzahl} Buchungen`;
+}
+
+/**
+ * Das Zeitkonto einer Person: Saldo und Buchungen (Welle B, B7). Dieselben
+ * Angaben, die bis dahin im Aufklapper der Karte standen.
+ */
+function Personenkonto({
+  eintrag,
   eigene,
 }: {
-  person: { id: string; name: string; rolle: string };
-  buchungen: Zeitbuchung[];
-  saldo: number;
+  eintrag:
+    { person: { id: string; name: string }; buchungen: Zeitbuchung[]; saldo: number } | undefined;
   eigene: boolean;
 }) {
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          {/* Ohne Rollenzeile: Fürs Zeitkonto zählt die Person, nicht ihre
-              Rolle (UX-005i). */}
-          <p className="text-ink text-liste truncate font-semibold">
-            {person.name}
-            {eigene ? ' (Sie)' : ''}
-          </p>
-        </div>
-        {/* Der Saldo als Zahl, ohne ✓ oder × (VOR-13): Minusstunden sind
-            keine Verfehlung, und das Zeitkonto bewertet niemanden (§20). */}
-        <Badge ton="neutral">{formatStunden(saldo)}</Badge>
-      </div>
-      {/* Zahl und Aufklapper in einer Zeile statt „3 Buchungen" über
-          „Buchungen anzeigen" (UX-005i). */}
-      {buchungen.length === 0 ? (
-        <p className="text-ink-muted mt-2 text-sm">Keine Buchungen</p>
+    <>
+      <Rueckweg standard="/betrieb/zeitkonto" beschriftung="Zurück zu den Zeitkonten" />
+      {eintrag ? (
+        <>
+          <PageHeader
+            kicker="Zeitkonto"
+            title={`${eintrag.person.name}${eigene ? ' (Sie)' : ''}`}
+          />
+          {/* Der Saldo als Zahl, ohne Wertung (VOR-13, §20). */}
+          <TileGrid spalte="kachel">
+            <Tile label="Saldo">{formatStunden(eintrag.saldo)}</Tile>
+          </TileGrid>
+          <div className="mt-8">
+            <Listenabschnitt
+              titel="Buchungen"
+              anzahl={eintrag.buchungen.length}
+              leer={{ titel: 'Keine Buchungen' }}
+            >
+              {eintrag.buchungen.map((buchung) => (
+                <ListRow
+                  key={buchung.id}
+                  titel={formatDatum(buchung.datum)}
+                  meta={buchung.grund || undefined}
+                  betrag={`${buchung.art === 'geleistet' ? '+' : '−'}${buchung.stunden} h`}
+                />
+              ))}
+            </Listenabschnitt>
+          </div>
+        </>
       ) : (
-        <Disclosure summary={`Buchungen (${buchungen.length})`}>
-          <ul className="divide-line divide-y text-sm">
-            {buchungen.map((buchung) => (
-              <li key={buchung.id} className="flex items-baseline justify-between gap-3 py-1.5">
-                <span className="min-w-0">
-                  <span className="text-ink block">{formatDatum(buchung.datum)}</span>
-                  {buchung.grund ? (
-                    <span className="text-ink-muted block text-sm">{buchung.grund}</span>
-                  ) : null}
-                </span>
-                <span
-                  className={`shrink-0 font-medium ${buchung.art === 'geleistet' ? 'text-positiv' : 'text-ink-muted'}`}
-                >
-                  {buchung.art === 'geleistet' ? '+' : '−'}
-                  {buchung.stunden} h
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Disclosure>
+        <>
+          <PageHeader title="Zeitkonto" />
+          <EmptyState
+            inKarte
+            title="Diese Person gibt es in der Vorschau nicht."
+            description="Der Vorschaustand wird bei jedem Neuladen zurückgesetzt. Bitte die Person in der Liste neu wählen."
+          />
+        </>
       )}
-    </Card>
+    </>
   );
 }
 
@@ -214,7 +250,7 @@ function Buchungsformular({
   return (
     <>
       <PageHeader title="Stunden eintragen" />
-      <div className="flex max-w-xl flex-col gap-4">
+      <div className="max-w-formular flex flex-col gap-4">
         <Select
           label="Person"
           value={mitarbeiterId}
@@ -261,15 +297,16 @@ function Buchungsformular({
           value={grund}
           onChange={(event) => setGrund(event.target.value)}
         />
-
-        <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">
+      </div>
+      <div className="max-w-formular">
+        <Formularfuss>
           <Button onClick={absenden} disabled={!gueltig}>
             Buchung in die Vorschau übernehmen
           </Button>
           <Button variant="quiet" onClick={onAbbrechen}>
             Abbrechen
           </Button>
-        </div>
+        </Formularfuss>
       </div>
     </>
   );

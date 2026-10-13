@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -7,8 +6,11 @@ import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Badge, type Ton } from '@/components/ui/Badge';
-import { Card, CardGrid } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRows } from '@/components/ui/ListRow';
+import { Textlink } from '@/components/ui/Textlink';
+import { KnopfGroesse } from '@/components/ui/knopfGroesse';
 import { roleLabels } from '@/components/ui/roleLabels';
 import type { CurrentUser } from '@/features/session/types';
 import { montagDerWoche, plusTage } from '@/features/preview/demodaten';
@@ -115,9 +117,10 @@ export function VacationPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
+      {/* Ohne Satz unter dem Titel (Regel 6); „Urlaub beantragen“ kompakt im
+          Kopf (ANN-403). */}
       <PageHeader
         title="Urlaub"
-        description="Abwesenheiten planen, beantragen und entscheiden."
         actions={<Button onClick={() => setFormular(true)}>Urlaub beantragen</Button>}
       />
 
@@ -125,14 +128,14 @@ export function VacationPage({ user }: { user: CurrentUser }) {
 
       {entscheidungsrecht ? (
         // Ohne „Zur Entscheidung durch …": Wer die Knöpfe sieht, darf
-        // entscheiden (UX-005i).
+        // entscheiden (UX-005i). Die Arbeit steht an jeder Zeile (L3).
         <Abschnitt titel={`Offene Anträge (${offene.length})`}>
           {offene.length === 0 ? (
-            <EmptyState title="Keine offenen Anträge" />
+            <EmptyState inKarte title="Keine offenen Anträge" />
           ) : (
-            <CardGrid>
+            <ListRows>
               {offene.map((antrag) => (
-                <Antragskarte
+                <Antragszeile
                   key={antrag.id}
                   antrag={antrag}
                   zustand={zustand}
@@ -141,7 +144,7 @@ export function VacationPage({ user }: { user: CurrentUser }) {
                   onAblehnen={() => setEntscheidung({ antrag, art: 'ablehnen' })}
                 />
               ))}
-            </CardGrid>
+            </ListRows>
           )}
         </Abschnitt>
       ) : null}
@@ -153,13 +156,13 @@ export function VacationPage({ user }: { user: CurrentUser }) {
         >
           <Konto personId={identitaet.person.id} />
           {eigene.length === 0 ? (
-            <EmptyState title="Noch keine eigenen Anträge" />
+            <EmptyState inKarte title="Noch keine eigenen Anträge" />
           ) : (
-            <CardGrid>
+            <ListRows>
               {eigene.map((antrag) => (
-                <Antragskarte key={antrag.id} antrag={antrag} zustand={zustand} ohneName />
+                <Antragszeile key={antrag.id} antrag={antrag} zustand={zustand} ohneName />
               ))}
-            </CardGrid>
+            </ListRows>
           )}
         </Abschnitt>
       ) : null}
@@ -168,14 +171,14 @@ export function VacationPage({ user }: { user: CurrentUser }) {
           bei 390 px rund 600 px Tabelle vor den eigenen Stand. */}
       <Wochenuebersicht />
 
-      {/* Entschieden wird oben unter „Offene Anträge"; dieselbe Karte mit
+      {/* Entschieden wird oben unter „Offene Anträge"; dieselbe Zeile mit
           Knöpfen stand hier ein zweites Mal (VOR-16). */}
-      <Abschnitt titel="Alle Anträge" beschreibung="Team-Übersicht der Abwesenheiten.">
-        <CardGrid>
+      <Abschnitt titel="Alle Anträge">
+        <ListRows>
           {zustand.urlaub.map((antrag) => (
-            <Antragskarte key={antrag.id} antrag={antrag} zustand={zustand} />
+            <Antragszeile key={antrag.id} antrag={antrag} zustand={zustand} />
           ))}
-        </CardGrid>
+        </ListRows>
       </Abschnitt>
     </>
   );
@@ -185,7 +188,17 @@ export function VacationPage({ user }: { user: CurrentUser }) {
 // Karten und Übersichten
 // -----------------------------------------------------------------------------
 
-function Antragskarte({
+/**
+ * Ein Antrag als Zeile einer Liste (Welle B, B7; Leitfaden L2) statt als
+ * Karte je Antrag: Name, Zeitraum und Tage, darunter Grund, Entscheidung und
+ * eine zeitgleiche Abwesenheit; der Stand rechts als Abzeichen.
+ *
+ * Mit Genehmigen und Ablehnen stehen die Knöpfe **unter** der Zeile, nicht
+ * daneben: Neben dem Namen ließen zwei Knöpfe ihm bei 375 px rund 90 px.
+ * Gleiche Maße wie `ListRow` (56 px, 16/600 und 14 px Leise). Lokal gebaut;
+ * eine Zeile mit Aktionen darunter fehlt in `src/components/ui`.
+ */
+function Antragszeile({
   antrag,
   zustand,
   ohneStatus = false,
@@ -203,60 +216,62 @@ function Antragskarte({
   onAblehnen?: (() => void) | undefined;
 }) {
   const zeitgleich = zeitgleicheAbwesenheiten(zustand.urlaub, antrag, antrag.mitarbeiterId);
+  const zeitraum = `${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} · ${tage(antrag.tage)}`;
 
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-2">
+    <li className="border-line border-t py-2 first:border-t-0">
+      <div className="flex min-h-10 items-center justify-between gap-3">
         <div className="min-w-0">
-          {ohneName ? null : (
-            <p className="text-ink text-liste truncate font-semibold">
-              {mitarbeiterName(zustand, antrag.mitarbeiterId)}
-            </p>
-          )}
-          <p className={`text-sm ${ohneName ? 'text-ink font-medium' : 'text-ink-muted mt-0.5'}`}>
-            {formatDatum(antrag.von)} – {formatDatum(antrag.bis)} · {tage(antrag.tage)}
+          <p className="text-ink text-base font-semibold">
+            {ohneName ? zeitraum : mitarbeiterName(zustand, antrag.mitarbeiterId)}
           </p>
+          <div className="text-ink-muted text-sm">
+            {ohneName ? null : <p>{zeitraum}</p>}
+            {antrag.grund ? <p>Grund: {antrag.grund}</p> : null}
+            {antrag.status === 'abgelehnt' && antrag.ablehnungsgrund ? (
+              <p className="text-danger">Ablehnung: {antrag.ablehnungsgrund}</p>
+            ) : null}
+            {antrag.status === 'genehmigt' ? (
+              <p>
+                Genehmigt von {antrag.entschiedenVon} am {formatDatum(antrag.entschiedenAm)}
+                {antrag.unterschrift ? ' · Bestätigung liegt vor' : ''}
+              </p>
+            ) : null}
+            {zeitgleich.length > 0 ? (
+              <p className="text-warnung font-medium">
+                <span aria-hidden="true">! </span>
+                Zeitgleich abwesend:{' '}
+                {zeitgleich
+                  .map((eintrag) => mitarbeiterName(zustand, eintrag.mitarbeiterId))
+                  .join(', ')}
+              </p>
+            ) : null}
+          </div>
         </div>
         {ohneStatus ? null : (
-          <Badge ton={statusTon[antrag.status]}>{urlaubsstatusLabels[antrag.status]}</Badge>
+          <span className="shrink-0">
+            <Badge ton={statusTon[antrag.status]}>{urlaubsstatusLabels[antrag.status]}</Badge>
+          </span>
         )}
       </div>
 
-      {antrag.grund ? <p className="text-ink-muted mt-2 text-sm">Grund: {antrag.grund}</p> : null}
-
-      {antrag.status === 'abgelehnt' && antrag.ablehnungsgrund ? (
-        <p className="text-danger mt-2 text-sm">Ablehnung: {antrag.ablehnungsgrund}</p>
-      ) : null}
-
-      {antrag.status === 'genehmigt' ? (
-        <p className="text-ink-muted mt-2 text-sm">
-          Genehmigt von {antrag.entschiedenVon} am {formatDatum(antrag.entschiedenAm)}
-          {antrag.unterschrift ? ' · Bestätigung liegt vor' : ''}
-        </p>
-      ) : null}
-
-      {zeitgleich.length > 0 ? (
-        <p className="text-warnung bg-warnung-soft border-warnung mt-2 border-l-4 py-2 pr-3 pl-3 text-sm">
-          Zeitgleich abwesend:{' '}
-          {zeitgleich.map((eintrag) => mitarbeiterName(zustand, eintrag.mitarbeiterId)).join(', ')}
-        </p>
-      ) : null}
-
       {onGenehmigen || onAblehnen ? (
-        <div className="border-line mt-3 flex flex-wrap gap-3 border-t pt-3">
-          {onGenehmigen ? (
-            <Button variant="secondary" onClick={onGenehmigen}>
-              Genehmigen
-            </Button>
-          ) : null}
-          {onAblehnen ? (
-            <Button variant="quiet" onClick={onAblehnen}>
-              Ablehnen
-            </Button>
-          ) : null}
+        <div className="mt-2 flex flex-wrap gap-2">
+          <KnopfGroesse value="kompakt">
+            {onGenehmigen ? (
+              <Button variant="secondary" onClick={onGenehmigen}>
+                Genehmigen
+              </Button>
+            ) : null}
+            {onAblehnen ? (
+              <Button variant="quiet" onClick={onAblehnen}>
+                Ablehnen
+              </Button>
+            ) : null}
+          </KnopfGroesse>
         </div>
       ) : null}
-    </Card>
+    </li>
   );
 }
 
@@ -478,7 +493,7 @@ function Antragsformular({
   return (
     <>
       <PageHeader title="Urlaub beantragen" />
-      <div className="flex max-w-xl flex-col gap-4">
+      <div className="max-w-formular flex flex-col gap-4">
         <Select
           label="Person"
           value={mitarbeiterId}
@@ -546,15 +561,16 @@ function Antragsformular({
           value={grund}
           onChange={(event) => setGrund(event.target.value)}
         />
-
-        <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">
+      </div>
+      <div className="max-w-formular">
+        <Formularfuss>
           <Button onClick={absenden} disabled={!gueltig}>
             Antrag in die Vorschau übernehmen
           </Button>
           <Button variant="quiet" onClick={onAbbrechen}>
             Abbrechen
           </Button>
-        </div>
+        </Formularfuss>
       </div>
     </>
   );
@@ -641,7 +657,7 @@ function Entscheidungsformular({
         description={`${mitarbeiterName(zustand, antrag.mitarbeiterId)} · ${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} · ${tage(antrag.tage)}`}
       />
 
-      <div className="flex max-w-xl flex-col gap-4">
+      <div className="max-w-formular flex flex-col gap-4">
         {konto ? (
           <p className="text-ink-muted text-sm">
             Nach dieser Entscheidung verbleiben rechnerisch{' '}
@@ -660,15 +676,14 @@ function Entscheidungsformular({
         ) : null}
 
         {art === 'genehmigen' ? (
-          <p className="text-ink-muted rounded-card border border-dashed px-3 py-2 text-sm">
+          // Eine Zeile auf vertiefter Fläche statt eines gestrichelten Kastens
+          // (Leitfaden L2); die Aussage bleibt vollständig.
+          <p className="text-ink bg-surface-sunken rounded-card px-4 py-3 text-sm">
             Termine im Zeitraum müssen anschließend bewusst bearbeitet werden. Sie werden nicht
             automatisch abgesagt.{' '}
-            <Link
-              to={`/kalender?ansicht=tag&datum=${antrag.von}`}
-              className="text-accent hover:text-accent-hover underline"
-            >
+            <Textlink to={`/kalender?ansicht=tag&datum=${antrag.von}`}>
               Kalender ab {formatDatum(antrag.von)} öffnen
-            </Link>
+            </Textlink>
           </p>
         ) : null}
 
@@ -689,8 +704,9 @@ function Entscheidungsformular({
         ) : (
           <SignaturFeld beschriftung="Bestätigung der Genehmigung" onChange={setUnterschrieben} />
         )}
-
-        <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">
+      </div>
+      <div className="max-w-formular">
+        <Formularfuss>
           <Button
             onClick={bestaetigen}
             disabled={
@@ -702,7 +718,7 @@ function Entscheidungsformular({
           <Button variant="quiet" onClick={onAbbrechen}>
             Abbrechen
           </Button>
-        </div>
+        </Formularfuss>
       </div>
     </>
   );
