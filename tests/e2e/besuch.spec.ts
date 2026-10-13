@@ -43,7 +43,14 @@ function um(uhrzeit: string, tag = heute()): Date {
 
 /** Der Server der Prüfseite: Stand des Tages und Zähler je Vorgang. */
 function nachbildung() {
-  const stand = { festgeschrieben: false, heilmittel: false, folgetermin: null as null | string };
+  const stand = {
+    festgeschrieben: false,
+    heilmittel: false,
+    folgetermin: null as null | string,
+    // Der Haken in der Übersicht (`complete_appointment`), zurück über
+    // „Rückgängig" (`reopen_appointment`, Praxis-Review R2, P1).
+    abgeschlossen: false,
+  };
   const aufrufe: Record<string, unknown[]> = {};
 
   const besuche = (festgeschrieben: boolean) => [
@@ -54,7 +61,7 @@ function nachbildung() {
       appointment_type: 'home_visit',
       kind: 'therapy',
       title: null,
-      status: festgeschrieben ? 'documented' : 'confirmed',
+      status: festgeschrieben ? 'documented' : stand.abgeschlossen ? 'completed' : 'confirmed',
       starts_at: um('09:00').toISOString(),
       ends_at: um('10:00').toISOString(),
       patient_given_name: 'Erika',
@@ -113,7 +120,7 @@ function nachbildung() {
     staff_member_id: STAFF,
     location_id: null,
     appointment_type: 'home_visit',
-    status: stand.festgeschrieben ? 'documented' : 'confirmed',
+    status: stand.festgeschrieben ? 'documented' : stand.abgeschlossen ? 'completed' : 'confirmed',
     starts_at: um('09:00').toISOString(),
     ends_at: um('10:00').toISOString(),
     updated_at: `${heute()}T05:00:00.000000+00`,
@@ -254,6 +261,14 @@ function nachbildung() {
       stand.folgetermin = 'eeeeeeee-eeee-4eee-8eee-000000000001';
       return stand.folgetermin;
     },
+    complete_appointment: () => {
+      stand.abgeschlossen = true;
+      return null;
+    },
+    reopen_appointment: () => {
+      stand.abgeschlossen = false;
+      return BESUCH_1;
+    },
   };
 
   async function beantworte(route: Route) {
@@ -357,6 +372,53 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
     p_end_time: '10:00',
     p_appointment_type: 'home_visit',
   });
+});
+
+// Praxis-Review R2, P1: Die Karte ist kein Flächen-Link mehr, die Knöpfe
+// stehen 12 px auseinander, und ein Fehltipp auf den Haken lässt sich an Ort
+// und Stelle zurücknehmen - über den bestehenden Weg `reopen_appointment`.
+test('nimmt einen Fehltipp auf den Haken mit „Rückgängig" zurück (R2, P1)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.clock.setFixedTime(um('09:20'));
+  const server = nachbildung();
+  await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  await page.route('**/functions/v1/**', (route) => route.fulfill({ status: 503, body: '' }));
+
+  await page.goto(PRUEFSEITE);
+  const karte = page.getByRole('article');
+  await expect(karte.getByRole('heading', { name: 'Jetzt · bis 10:00' })).toBeVisible();
+
+  // Doku, Anruf, Haken: 12 px auseinander; dazwischen liegt kein Ziel.
+  const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
+  const anruf = (await karte.getByRole('link', { name: /^Anrufen/ }).boundingBox())!;
+  const haken = karte.getByRole('button', { name: /^Termin abschließen/ });
+  const hakenKasten = (await haken.boundingBox())!;
+  expect(anruf.x - (doku.x + doku.width)).toBeGreaterThanOrEqual(12);
+  expect(hakenKasten.x - (anruf.x + anruf.width)).toBeGreaterThanOrEqual(12);
+  const dazwischen = await page.evaluate(
+    ([x, y]) => document.elementFromPoint(x!, y!)?.closest('a, button')?.outerHTML ?? null,
+    [hakenKasten.x - 6, hakenKasten.y + hakenKasten.height / 2],
+  );
+  expect(dazwischen).toBeNull();
+
+  await haken.click();
+  await expect(page.getByRole('status').filter({ hasText: 'abgeschlossen' })).toHaveText(
+    /Erika Beispiel abgeschlossen\. Doku offen\./,
+  );
+  expect(server.aufrufe.complete_appointment).toHaveLength(1);
+
+  const zurueck = page.getByRole('button', { name: /^Rückgängig/ });
+  expect((await zurueck.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await zurueck.click();
+  await expect(page.getByRole('status').filter({ hasText: 'wieder offen' })).toHaveText(
+    /Erika Beispiel wieder offen\./,
+  );
+  expect(server.aufrufe.reopen_appointment).toHaveLength(1);
+  expect(server.aufrufe.reopen_appointment?.[0]).toMatchObject({ p_appointment_id: BESUCH_1 });
+  // Der Besuch steht wieder offen da, mit dem Haken an seiner Karte.
+  await expect(karte.getByRole('heading', { name: 'Jetzt · bis 10:00' })).toBeVisible();
+  await expect(karte.getByRole('button', { name: /^Termin abschließen/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Rückgängig/ })).toHaveCount(0);
 });
 
 // Praxis-Review R2, P2: Im Funkloch nach dem Besuch scheitert die Suche nach

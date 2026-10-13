@@ -204,6 +204,7 @@ vi.mock('@/features/today/api', async (importOriginal) => {
 const fetchAppointments = vi.fn();
 const fetchAppointment = vi.fn();
 const completeAppointment = vi.fn();
+const reopenAppointment = vi.fn();
 
 // PRX-013: offene Erstaufnahmen; ohne Angabe keine.
 const fetchOpenIntakes = vi.fn(() => Promise.resolve([] as unknown[]));
@@ -221,6 +222,7 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     fetchAppointment: (id: string) => fetchAppointment(id) as Promise<unknown>,
     completeAppointment: (id: string, stand: string) =>
       completeAppointment(id, stand) as Promise<void>,
+    reopenAppointment: (id: string, stand: string) => reopenAppointment(id, stand) as Promise<void>,
   };
 });
 
@@ -471,7 +473,8 @@ describe('Übersicht', () => {
     expect(haken.className).not.toContain('bg-accent ');
     expect(haken).toHaveClass('size-11');
     const reihe = haken.parentElement!;
-    expect(reihe).toHaveClass('flex', 'gap-2');
+    // 12 px zwischen den Knöpfen (Praxis-Review R2, P1).
+    expect(reihe).toHaveClass('flex', 'gap-3');
     expect(reihe).toContainElement(doku);
     const anruf = within(reihe).getByRole('link', { name: 'Anrufen: Erika Beispiel' });
     expect(anruf).toHaveAttribute('href', 'tel:+491600000006');
@@ -499,6 +502,51 @@ describe('Übersicht', () => {
       expect(completeAppointment).toHaveBeenCalledWith('t1', '2026-10-01T06:00:00Z'),
     );
     expect(await screen.findByRole('status')).toHaveTextContent(/abgeschlossen. Doku offen./);
+  });
+
+  it('nimmt den Haken mit „Rückgängig" zurück - über „Termin wieder öffnen" (R2, P1)', async () => {
+    fetchAppointment
+      .mockResolvedValueOnce({ id: 't1', updated_at: '2026-10-01T06:00:00Z' })
+      .mockResolvedValueOnce({ id: 't1', updated_at: '2026-10-01T06:05:00Z' });
+    completeAppointment.mockResolvedValue(undefined);
+    reopenAppointment.mockReset();
+    reopenAppointment.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    const karte = await findeKarte();
+
+    await user.click(within(karte).getByRole('button', { name: 'Behandlung abschließen' }));
+    const zurueck = await screen.findByRole('button', {
+      name: 'Rückgängig: Erika Beispiel wieder öffnen',
+    });
+    // Neben der Meldung, nicht in ihr: Die Meldung bleibt ein Satz.
+    expect(screen.getByRole('status')).not.toContainElement(zurueck);
+    await user.click(zurueck);
+
+    // Derselbe Weg wie im Terminfenster, mit dem Stand unmittelbar vorher.
+    await waitFor(() =>
+      expect(reopenAppointment).toHaveBeenCalledWith('t1', '2026-10-01T06:05:00Z'),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent('Erika Beispiel wieder offen.');
+    expect(screen.queryByRole('button', { name: /^Rückgängig/ })).toBeNull();
+  });
+
+  it('sagt, wenn „Rückgängig" abgewiesen wird', async () => {
+    fetchAppointment.mockResolvedValue({ id: 't1', updated_at: '2026-10-01T06:00:00Z' });
+    completeAppointment.mockResolvedValue(undefined);
+    reopenAppointment.mockReset();
+    reopenAppointment.mockRejectedValue(
+      new Error('Der Termin konnte nicht wieder geöffnet werden.'),
+    );
+    const user = userEvent.setup();
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    const karte = await findeKarte();
+
+    await user.click(within(karte).getByRole('button', { name: 'Behandlung abschließen' }));
+    await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
+    expect(
+      await screen.findByText('Der Termin konnte nicht wieder geöffnet werden.'),
+    ).toBeInTheDocument();
   });
 
   it('zeigt einen abgewiesenen Abschluss als Fehler', async () => {
@@ -802,7 +850,7 @@ describe('Übersicht', () => {
       expect(screen.queryByRole('button', { name: /ganzer Tag/i })).toBeNull();
     });
 
-    it('macht ohne Navigationsziel den Abschluss zum Hauptknopf', async () => {
+    it('macht ohne Navigationsziel „Doku" zum einen Hauptknopf, der Haken bleibt 48 px (R2, U2)', async () => {
       fetchDayPlan.mockResolvedValue([
         tagesEintrag({
           appointment_type: 'practice',
@@ -817,14 +865,22 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       const haken = await screen.findByRole('button', { name: /^Termin abschließen/ });
-      expect(haken.className).toContain('bg-accent ');
-      expect(haken).toHaveClass('size-12');
-      expect(screen.getByRole('link', { name: 'Doku zu diesem Termin' }).className).toContain(
-        'bg-accent ',
-      );
+      expect(haken.className).not.toContain('bg-accent ');
+      expect(haken).toHaveClass('size-12', 'border-line-strong');
+      const doku = screen.getByRole('link', { name: 'Doku zu diesem Termin' });
+      expect(doku.className).toContain('bg-accent ');
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
-      // Ein Hauptknopf je Ansicht: kein zweiter, kleiner Haken daneben.
+      // Ein Hauptknopf je Ansicht (DESIGN.md Regel 4): genau ein gefüllter
+      // Knopf in der Karte - und kein zweiter, kleiner Haken daneben.
+      const karte = screen.getByRole('article');
+      const gefuellt = [...karte.querySelectorAll('a, button')].filter((ziel) =>
+        ziel.classList.contains('bg-accent'),
+      );
+      expect(gefuellt).toEqual([doku]);
       expect(screen.getAllByRole('button', { name: /^Termin abschließen/ })).toHaveLength(1);
+      // Der Haken am Ende der Reihe, 12 px neben dem Anruf (P1).
+      expect(doku.compareDocumentPosition(haken) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(haken.parentElement).toHaveClass('gap-3');
     });
 
     it('traegt nach dem Abschliessen an jedem Behandlungstermin einen eigenen Doku-Knopf (L3)', async () => {
@@ -890,7 +946,7 @@ describe('Übersicht', () => {
 
       const kopf = screen.getByRole('heading', { level: 1 }).closest('header')!;
       expect(kopf).toContainElement(fortschritt);
-      // „Donnerstag, 1. Oktober 2026" statt „01.10.2026".
+      // „Donnerstag, 1. Oktober 2026" statt „01.10.2026" - ab 640 px.
       expect(
         within(kopf).getByText(
           /^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d{1,2}\. \S+ \d{4}$/,
@@ -938,9 +994,10 @@ describe('Übersicht', () => {
       expect(
         within(karte).getByRole('heading', { name: `Jetzt · bis ${uhr(laufend.ends_at)}` }),
       ).toBeInTheDocument();
-      // Haken 48 und „Doku" teilen sich den Hauptknopf (Handoff 6a).
+      // „Doku" ist der eine Hauptknopf, der Haken steht 48 px mit Rahmen
+      // daneben (Design-Review R2, U2).
       const haken = within(karte).getByRole('button', { name: /^Termin abschließen/ });
-      expect(haken.className).toContain('bg-accent ');
+      expect(haken.className).not.toContain('bg-accent ');
       expect(haken).toHaveClass('size-12');
       // Ab dem Beginn führt „Doku" direkt auf die Schreibseite (Auftrag C1).
       const doku = within(karte).getByRole('link', { name: 'Doku zu diesem Termin' });
@@ -1541,7 +1598,8 @@ describe('Übersicht', () => {
         `/patienten/p1?zurueck=${encodeURIComponent('/')}`,
       );
       // Ein Name, ein Ziel: In der Zeile ist die ganze Zeile das Ziel - sie
-      // klappt auf (Auftrag C1); die Fläche der Karte führt in den Termin.
+      // klappt auf (Auftrag C1); an der Karte führt „Termin →" in der
+      // Kopfzeile in den Termin (Praxis-Review R2, P1).
       const user = userEvent.setup();
       await user.click(zeileImStrahl(/Max Mustermann/));
       const karten = screen.getAllByRole('article');

@@ -379,7 +379,9 @@ export function Zeitstrahl({
                   ) : offen ? (
                     aufklappen?.karte(termin)
                   ) : (
-                    <div className="flex items-center gap-2">
+                    // 12 px zwischen Zeile, „Doku“ und Haken (Praxis-Review R2,
+                    // P1): Der Haken schließt ab, ein Fehltipp darf ihn nicht treffen.
+                    <div className="flex items-center gap-3">
                       {aufklappbar ? (
                         <button
                           type="button"

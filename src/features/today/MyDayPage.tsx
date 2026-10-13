@@ -49,7 +49,7 @@ import { fetchAbrechnungslage, positionText } from '@/features/appointments/abre
 import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
 import { Tageskarte } from './Tagesliste';
-import { AnrufKnopf, SpaeterDa } from './Besuchsknoepfe';
+import { AnrufKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
 import { dokuZiel } from './besuchswege';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
@@ -435,8 +435,15 @@ function MeinTag({
   const tagWort = tagesWort(datum, heute);
 
   // Was der Haken bewirkt hat - oder warum nicht (Design-Handoff 2026-10-01,
-  // Abschnitt 5a Punkt 4). Steht oben, nimmt den Fokus.
-  const [meldung, setMeldung] = useState<{ ton: 'ok' | 'fehler'; text: string } | null>(null);
+  // Abschnitt 5a Punkt 4). Steht oben, nimmt den Fokus. Nach dem Haken trägt
+  // sie „Rückgängig" (Praxis-Review R2, P1): Ein Fehltipp ließ sich bis dahin
+  // nur über Kalender → Termin → „Termin wieder öffnen" zurücknehmen.
+  const [meldung, setMeldung] = useState<{
+    ton: 'ok' | 'fehler';
+    text: string;
+    /** Der eben abgehakte Termin - für „Rückgängig". */
+    abgehakt?: { id: string; name: string };
+  } | null>(null);
 
   /**
    * Der Haken an einem bestätigten Behandlungstermin (Abschnitt 6a): schließt
@@ -446,6 +453,7 @@ function MeinTag({
     termin: DayPlanEntry,
     groesse: 'normal' | 'gross' = 'normal',
     beschriftung?: string,
+    variante: 'primary' | 'secondary' = 'secondary',
   ): ReactNode {
     if (!darfTermine || termin.kind !== 'therapy' || termin.status !== 'confirmed') return null;
     // Ein künftiger Tag wird nicht abgehakt (ANN-234): Der Besuch war noch nicht.
@@ -456,7 +464,7 @@ function MeinTag({
         appointmentId={termin.id}
         name={name}
         {...(beschriftung ? { beschriftung } : {})}
-        variant={groesse === 'gross' ? 'primary' : 'secondary'}
+        variant={variante}
         groesse={groesse}
         onAbgeschlossen={() =>
           setMeldung({
@@ -464,6 +472,7 @@ function MeinTag({
             text: darfDokumentieren
               ? `${name} abgeschlossen. Doku offen.`
               : `${name} abgeschlossen.`,
+            abgehakt: { id: termin.id, name },
           })
         }
         onFehler={(text) => setMeldung({ ton: 'fehler', text })}
@@ -540,12 +549,15 @@ function MeinTag({
     ) : null;
   }
 
-  /** Eine Reihe: „Doku" so breit wie möglich, daneben Symbolknöpfe. */
+  /**
+   * Eine Reihe: „Doku" so breit wie möglich, daneben Symbolknöpfe - 12 px
+   * auseinander, der Haken zuletzt (Praxis-Review R2, P1).
+   */
   function knopfreihe(doku: ReactNode, symbole: ReactNode[]): ReactNode {
     const da = symbole.filter(Boolean);
     if (!doku && da.length === 0) return null;
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {doku}
         {da}
       </div>
@@ -668,26 +680,40 @@ function MeinTag({
 
     // ANN-117 Fassung 2: Ein vorbeigegangener, nicht abgehakter Besuch hält
     // die Karte nur, wenn kein Weg mehr aussteht - dann zum Abschließen.
-    const kicker =
-      fokus.art === 'dokumentation'
-        ? termin.status === 'confirmed'
-          ? `Seit ${ende} offen`
-          : 'Doku offen'
-        : phase === 'laeuft'
-          ? `Jetzt · bis ${ende}`
-          : phase === 'ueberfaellig'
-            ? `Seit ${ende} offen`
-            : `${wege.erster?.id === termin.id && wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg'}${
-                anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''
-              }`;
+    // Die Fahrzeit im Kicker weicht am Telefon, wenn die Kachel „Abfahrt"
+    // darüber denselben Weg nennt (`weg`, ANN-484): So passt „Termin →" in
+    // dieselbe Zeile (Praxis-Review R2, P1), und der Hauptknopf bleibt über
+    // der Tableiste.
+    const wegTitel =
+      wege.erster?.id === termin.id && wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg';
+    const kicker: ReactNode =
+      fokus.art === 'dokumentation' ? (
+        termin.status === 'confirmed' ? (
+          `Seit ${ende} offen`
+        ) : (
+          'Doku offen'
+        )
+      ) : phase === 'laeuft' ? (
+        `Jetzt · bis ${ende}`
+      ) : phase === 'ueberfaellig' ? (
+        `Seit ${ende} offen`
+      ) : anfahrt ? (
+        <>
+          {wegTitel}{' '}
+          <span className={weg ? 'max-sm:hidden' : ''}>{`· ≈ ${anfahrt.minuten} min`}</span>
+        </>
+      ) : (
+        wegTitel
+      );
 
-    // Ein Hauptknopf je Ansicht (UX-EPIC-002): die Navigation, solange der
-    // Besuch wartet; darunter „Doku", Anruf und der Haken in einer Reihe. Ab
-    // dem Beginn - und davor, wenn es kein Ziel für die Navigation gibt
-    // (Praxis, Video) - ist der Haken der Hauptknopf (Design-Handoff
-    // 2026-10-01, Abschnitt 6a): Der Haken schließt ab, „Doku" führt ab dem
-    // Beginn direkt auf die Schreibseite (Auftrag C1). Der Anruf steht an jeder
-    // Karte (Auftrag C1).
+    // Ein Hauptknopf je Ansicht (UX-EPIC-002, DESIGN.md Regel 4): die
+    // Navigation, solange der Besuch wartet; darunter „Doku", Anruf und der
+    // Haken in einer Reihe. Ab dem Beginn - und davor, wenn es kein Ziel für
+    // die Navigation gibt (Praxis, Video) - ist „Doku" der eine gefüllte
+    // Knopf (Design-Review R2, U2; ANN-481): Er führt ab dem Beginn direkt auf
+    // die Schreibseite (Auftrag C1). Der Haken steht 48 px groß mit Rahmen am
+    // Ende der Reihe; gefüllt nur, wo es kein „Doku" gibt. Der Anruf steht an
+    // jeder Karte (Auftrag C1).
     const zeigtDoku = behandlung;
     let hauptaktion: ReactNode = null;
     if (!arbeitet && hatNavigation) {
@@ -701,14 +727,14 @@ function MeinTag({
         </>
       );
     } else {
-      const grosserHaken = haken(termin, 'gross');
       const doku = zeigtDoku ? dokuKnopf(termin, 'primary', 'min-w-0 flex-1') : null;
+      const grosserHaken = haken(termin, 'gross', undefined, doku ? 'secondary' : 'primary');
       hauptaktion =
         grosserHaken || doku ? (
-          <div className="flex w-full items-center gap-2">
-            {grosserHaken}
+          <div className="flex w-full items-center gap-3">
             {doku}
             <AnrufKnopf termin={termin} groesse="gross" />
+            {grosserHaken}
           </div>
         ) : null;
     }
@@ -791,12 +817,30 @@ function MeinTag({
       />
     ) : null;
 
+  // „Rückgängig" nur, solange der Termin nach der Liste noch abgeschlossen (oder
+  // noch nicht nachgeladen) ist: Nach dem Festschreiben gibt es den Rückweg
+  // nicht mehr (ADR-018 Punkt 2).
+  const abgehakt = meldung?.ton === 'ok' ? meldung.abgehakt : undefined;
+  const abgehaktJetzt = abgehakt ? sortiert.find((t) => t.id === abgehakt.id) : undefined;
+  const rueckgaengig =
+    abgehakt && (abgehaktJetzt?.status === 'completed' || abgehaktJetzt?.status === 'confirmed') ? (
+      <HakenRueckgaengig
+        appointmentId={abgehakt.id}
+        name={abgehakt.name}
+        onWiederOffen={() => setMeldung({ ton: 'ok', text: `${abgehakt.name} wieder offen.` })}
+        onFehler={(text) => setMeldung({ ton: 'fehler', text })}
+      />
+    ) : null;
+
   return (
     <>
       {meldung?.ton === 'ok' ? (
-        <Rueckmeldung key={meldung.text} className="mb-4">
-          {meldung.text}
-        </Rueckmeldung>
+        <div className="mb-4 flex items-center gap-3">
+          <Rueckmeldung key={meldung.text} className="min-w-0 flex-1">
+            {meldung.text}
+          </Rueckmeldung>
+          {rueckgaengig}
+        </div>
       ) : meldung ? (
         <Statusmeldung ton="fehler" className="mb-4">
           {meldung.text}

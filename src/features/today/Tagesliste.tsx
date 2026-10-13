@@ -2,6 +2,7 @@ import { Fragment, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
+import { Textlink } from '@/components/ui/Textlink';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { formatLocalTimeRange, kalenderZumTermin } from '@/features/appointments/api';
@@ -23,15 +24,8 @@ const pille =
 
 /** Der Name als Link: 20 px in 700, Unterstrich 2 px mit 4 px Abstand, Tippziel 44 px. */
 const namenslink =
-  'text-accent hover:text-accent-hover relative z-10 inline-flex min-h-11 items-center underline ' +
+  'text-accent hover:text-accent-hover inline-flex min-h-11 items-center underline ' +
   'decoration-2 underline-offset-4 transition-colors';
-
-/**
- * Was über der Fläche der Karte liegt und selbst ein Ziel ist (UBK-004): Es
- * hebt sich über den Link der ganzen Karte, sonst fiele jeder Tipp darauf
- * auf den Termin.
- */
-const darueber = 'relative z-10';
 
 /**
  * Der eine ausgeklappte Termin im Zeitstrahl, so wie man ihn an der
@@ -40,13 +34,11 @@ const darueber = 'relative z-10';
  * Bewusst eine Karte statt einer Zeile: Anschrift, Zugang und Rufnummer
  * müssen bei 375 px ohne einen Seitenwechsel erreichbar sein.
  *
- * **Die ganze Karte öffnet den Termin** (UBK-004, Auftrag Jannes 2026-10-05):
- * Bis dahin stand dafür eine Fußzeile „Termin öffnen →“. Jetzt spannt ein
- * Link seine Fläche über die Karte (`after:inset-0`); die eigenständigen
- * Ziele - Akte, Info, Erstaufnahme, Anruf, Navigation, Doku, Haken - liegen
- * darüber (`darueber`). Verschachtelt sind die Ziele nicht: Im Dokument ist
- * der Termin ein Link neben den anderen, mit eigenem Namen für Tastatur und
- * Vorlesesoftware.
+ * **Der Termin ist ein kleiner Link „Termin →“ in der Kopfzeile** (Praxis-
+ * Review R2, P1). Von UBK-004 bis dahin spannte ein Link seine Fläche über
+ * die ganze Karte (`after:inset-0`): Ein Fehltipp neben Doku, Hörer oder
+ * Haken landete im Kalender - unterwegs, mit einer Hand. Jetzt ist nur, was
+ * wie ein Ziel aussieht, auch eines; die Knöpfe stehen 12 px auseinander.
  *
  * Die Uhrzeit des Beginns steht am Zeitstrahl daneben; die Karte nennt die
  * ganze Spanne in der Nebenzeile, weil das Ende am Strahl nicht steht.
@@ -79,8 +71,11 @@ export function Tageskarte({
   onZuklappen,
 }: {
   termin: DayPlanEntry;
-  /** Die Zeile über dem Namen: „Erster Weg · ≈ 12 min", „Jetzt · bis 10:10". */
-  kicker: string;
+  /**
+   * Die Zeile über dem Namen: „Erster Weg · ≈ 12 min", „Jetzt · bis 10:10".
+   * Ein Element, wenn ein Teil davon am Telefon weichen darf.
+   */
+  kicker: ReactNode;
   /** Rechts neben dem Kicker, solange kein Zustand dort steht: „in 25 Minuten". */
   relativ?: string | null;
   /** „Termin 2 von 6", wenn die Grundlage es hergibt (PRX-008). */
@@ -130,23 +125,13 @@ export function Tageskarte({
   };
 
   return (
-    <article className="rounded-card border-line bg-surface hover:border-line-strong relative border px-4 py-3.5 transition-colors duration-120">
-      {/* Der Termin als Fläche der ganzen Karte (UBK-004). Sein Name steht
-          nur für Vorlesesoftware da; das Auge sieht die Karte, die Tastatur
-          einen Rahmen um sie. */}
-      <Link
-        to={terminZiel}
-        className="after:rounded-card focus-visible:after:outline-accent after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2"
-      >
-        <span className="sr-only">
-          {termin.kind === 'internal' ? 'Fehlzeit öffnen' : 'Termin öffnen'}
-        </span>
-      </Link>
+    <article className="rounded-card border-line bg-surface border px-4 py-3.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="text-accent tracking-label text-xs font-semibold uppercase">{kicker}</h3>
         {/* „Steht aus" ist der Regelfall und sagt nichts; nur ein abweichender
-            Zustand trägt ein Abzeichen (UX-005h). */}
-        <span className="flex items-center gap-2 empty:hidden">
+            Zustand trägt ein Abzeichen (UX-005h). Bricht die Zeile um, bleibt
+            dieser Teil rechts - das Zuklappen steht immer am selben Ort. */}
+        <span className="ml-auto flex items-center gap-3 empty:hidden">
           {termin.status !== 'confirmed' ? (
             <Badge ton={dayPlanStatusTon[termin.status]}>
               {dayPlanStatusLabels[termin.status]}
@@ -157,13 +142,22 @@ export function Tageskarte({
             // Dort sagen es Jetzt-Marke und Wegbalken.
             <p className="text-ink-muted text-sm max-sm:hidden">{relativ}</p>
           ) : null}
+          {/* Der Weg in den Termin (Absage, Verlegen, wieder öffnen) - klein,
+              aber 44 px hoch; der Name der Karte führt in die Akte. Das
+              Tippziel ragt über die Zeile hinaus, ohne sie höher zu machen:
+              Am Telefon bleibt der Hauptknopf über der Tableiste. */}
+          <Textlink alleinstehend to={terminZiel} className="-my-3.5 gap-1 text-sm font-semibold">
+            {termin.kind === 'internal' ? 'Fehlzeit' : 'Termin'}{' '}
+            <span className="sr-only">öffnen</span>
+            <span aria-hidden="true">→</span>
+          </Textlink>
           {onZuklappen ? (
             <Symbolknopf
               beschriftung={`Zuklappen: ${terminName(termin)}`}
               data-zuklappen=""
               aria-expanded
               onClick={onZuklappen}
-              className={`${darueber} -my-2.5 -mr-2`}
+              className="-my-2.5 -mr-2"
             >
               <span className="size-2 translate-y-0.5 rotate-45 border-t-2 border-l-2 border-current" />
             </Symbolknopf>
@@ -202,7 +196,7 @@ export function Tageskarte({
           <Symbolknopf
             beschriftung="Etage, Zugang und Kontakt"
             {...info}
-            className="relative z-10 -my-2.5 shrink-0"
+            className="-my-2.5 shrink-0"
           >
             <span
               className={`rounded-pill border-accent inline-flex size-[22px] items-center justify-center border-[1.5px] text-xs leading-none font-bold ${
@@ -243,7 +237,7 @@ export function Tageskarte({
       {hatInfo && infoOffen ? (
         <dl
           id={infoId}
-          className="bg-canvas rounded-button text-ink relative z-10 mt-2.5 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
+          className="bg-canvas rounded-button text-ink mt-2.5 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
         >
           {stockwerk ? (
             <>
@@ -282,10 +276,12 @@ export function Tageskarte({
         </dl>
       ) : null}
 
+      {/* 12 px zwischen den Knöpfen (P1): Mit 8 px traf ein Daumen am
+          Lastenrad den Nachbarn - und der Haken schließt ab. */}
       {hauptaktion || aktionen ? (
-        <div className={`${darueber} mt-3.5 flex flex-col gap-2`}>
+        <div className="mt-3.5 flex flex-col gap-3">
           {hauptaktion}
-          {aktionen ? <div className="flex flex-wrap gap-2">{aktionen}</div> : null}
+          {aktionen ? <div className="flex flex-wrap gap-3">{aktionen}</div> : null}
         </div>
       ) : null}
       {/* Unter den Knöpfen (Auftrag C1): Der Hauptknopf bleibt am Telefon
@@ -304,7 +300,7 @@ export function Tageskarte({
           {fehlt.length > 0 && termin.patient_id ? (
             <Link
               to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
-              className={`${pille} ${darueber} bg-warnung-soft text-warnung hover:border-warnung border border-transparent transition-colors duration-120`}
+              className={`${pille} bg-warnung-soft text-warnung hover:border-warnung border border-transparent transition-colors duration-120`}
             >
               <span aria-hidden="true">!</span>
               Erstaufnahme offen
@@ -318,7 +314,7 @@ export function Tageskarte({
           {abschluss && termin.patient_id ? (
             <Link
               to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
-              className={`${pille} ${darueber} bg-accent-soft text-accent hover:border-accent border border-transparent transition-colors duration-120`}
+              className={`${pille} bg-accent-soft text-accent hover:border-accent border border-transparent transition-colors duration-120`}
             >
               Abschlussgespräch
               <span className="sr-only">: Wie geht es nach der Behandlung weiter?</span>
