@@ -666,12 +666,18 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
       await screen.findByRole('button', { name: 'Termine vorschlagen' });
       await pruefeBarrierefreiheit(container);
 
-      // Die Liste bringt je Zeile zwei weitere Felder und eine Schaltfläche -
-      // genau dort entstehen Beschriftungen, die sich leicht doppeln.
+      // Die Liste bringt je Zeile ein Ziel; ihr Fenster zwei weitere Felder
+      // und zwei Schaltflächen (Design-Rollout B2) - genau dort entstehen
+      // Beschriftungen, die sich leicht doppeln.
       await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), 'st-1');
       await user.type(screen.getByLabelText('Beginn *'), '09:00');
       await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
+      const zeile = (name: string) => name.includes('Termin 1: ');
+      await user.click(await screen.findByRole('button', { name: zeile }));
       await screen.findByLabelText('Datum 1');
+      // Das Fenster hängt am Ende des Dokuments, nicht im Container der Seite.
+      await pruefeBarrierefreiheit(document.body);
+      await user.click(screen.getByRole('button', { name: 'Fertig' }));
       await pruefeBarrierefreiheit(container);
     },
   );
