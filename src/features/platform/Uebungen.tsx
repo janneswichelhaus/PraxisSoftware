@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Medienbild } from '@/components/ui/Medienbild';
+import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
@@ -257,7 +258,17 @@ function PlanAbschnitt({
             // Name, welche Übung es ist.
             bild={
               <span aria-hidden="true">
-                <Medienbild vorschau alt="" />
+                <Medienbild vorschau alt="">
+                  {p.illustration ? (
+                    <Uebungsbild
+                      bild={p.illustration}
+                      name={p.variant_lay_name}
+                      darstellung="vorschau"
+                      dekorativ
+                      className="size-full"
+                    />
+                  ) : null}
+                </Medienbild>
               </span>
             }
             titel={`${p.position}. ${p.variant_lay_name}`}

@@ -1,6 +1,7 @@
 import { Medienbild } from '@/components/ui/Medienbild';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import type { Dosis } from '@/features/exercise-plans/dosierung';
+import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
 import type { Ablageplan } from './ablage';
 
 /**
@@ -8,15 +9,29 @@ import type { Ablageplan } from './ablage';
  * als Kacheln, dann Anleitung, Hilfsmittel und Hinweis - in der Übersicht
  * („Übungen“) und in der Durchführung gleich.
  *
- * Das Bild hat seinen festen Platz (4:3, `Medienbild`), auch solange es noch
- * keins gibt: Dann steht dort der Platzhalter „Noch kein Bild“ (ANN-466). Die
- * gezeichneten Figuren der Übungsbibliothek kommen später als `children` des
- * `Medienbild` hinein; die Felder der Übung bleiben dieselben.
+ * Das Bild hat seinen festen Platz (4:3, `Medienbild`, ANN-466): die
+ * gezeichnete Figur aus dem eingefrorenen Plan als Bewegungsbild, auf Tippen
+ * abgespielt (UEB-012, ANN-381); ohne Bild der Platzhalter „Noch kein Bild“.
  */
 export function Uebungsinhalt({ position }: { position: Ablageplan['items'][number] }) {
   return (
     <>
-      <Medienbild alt={`Zeichnung der Übung „${position.variant_lay_name}“`} />
+      {position.illustration ? (
+        <Uebungsbild
+          bild={position.illustration}
+          name={position.variant_lay_name}
+          darstellung="bewegung"
+          animierbar
+          dekorativ
+          einfassen={(zeichnung) => (
+            <Medienbild alt={`Zeichnung der Übung „${position.variant_lay_name}“`}>
+              {zeichnung}
+            </Medienbild>
+          )}
+        />
+      ) : (
+        <Medienbild alt={`Zeichnung der Übung „${position.variant_lay_name}“`} />
+      )}
       <div className="mt-4">
         <Dosierungskacheln dosis={position} />
       </div>
