@@ -106,8 +106,6 @@ export const GRENZEN: Record<
 
     'features/platform': 2,
 
-    'features/preview': 1,
-
     'features/statistics': 3,
 
     'features/therapy-reports': 1,
@@ -229,8 +227,6 @@ export const GRENZEN: Record<
     'features/platform': 48,
 
     'features/platform-access': 1,
-
-    'features/preview': 1,
 
     'features/statistics': 2,
 
