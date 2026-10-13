@@ -1022,11 +1022,11 @@ begin
          and ((p_reps_max, p_reps_min) > (v_vorher.reps_max, v_vorher.reps_min)) <> v_schwerer)
      or (v_achse = 'wiederholungen' and p_duration_seconds is not null
          and (p_duration_seconds > v_vorher.duration_seconds) <> v_schwerer)
-     -- Nur das Halten aendert sich: laenger (oder neu) halten ist schwerer.
+     -- Aendert sich das Halten, passt es zur Richtung - allein wie zusammen
+     -- mit den Wiederholungen: laenger (oder neu) halten ist schwerer.
+     -- Mehr Wiederholungen bei kuerzerem Halten ist kein Schritt (ANN-387).
      or (v_achse = 'wiederholungen'
          and p_hold_seconds is distinct from v_vorher.hold_seconds
-         and (p_reps_max, p_reps_min) is not distinct from (v_vorher.reps_max, v_vorher.reps_min)
-         and p_duration_seconds is not distinct from v_vorher.duration_seconds
          and (coalesce(p_hold_seconds, 0) > coalesce(v_vorher.hold_seconds, 0)) <> v_schwerer) then
     raise exception 'step direction does not match the change' using errcode = '22023';
   end if;

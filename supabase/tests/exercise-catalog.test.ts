@@ -677,6 +677,59 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
     );
   });
 
+  it('lässt keine gemischte Richtung zu: Wiederholungen und Halten ändern sich gleichsinnig (ANN-387)', async () => {
+    // Vorige Fassung: 3 × 10, je 5 Sekunden halten.
+    const p = await entwurf();
+    await asUserCommitted(users.therapist, POSITION, [p, kn01.id, 5, false, null]);
+    await asUserCommitted(
+      users.therapist,
+      'select public.assign_exercise_plan($1::uuid, $2::date)',
+      [p, await praxistag(42)],
+    );
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.therapist,
+      'select public.create_exercise_plan_version($1::uuid) as id',
+      [p],
+    );
+    const { rows: neu } = await asPostgres<{ id: string }>(
+      'select id from public.exercise_plan_items where plan_id = $1',
+      [rows[0]!.id],
+    );
+    const SCHRITT = `select public.save_exercise_plan_item($1::uuid, null, $2::uuid, 3, $3::integer,
+       $3::integer, null, null, null, 30, false, null, 'wiederholungen', $4, $5::integer, false, null)`;
+    const schritt = (wiederholungen: number, richtung: string, halten: number | null) =>
+      asUserCommitted(users.therapist, SCHRITT, [
+        neu[0]!.id,
+        kn01.id,
+        wiederholungen,
+        richtung,
+        halten,
+      ]);
+
+    // Mehr Wiederholungen bei kürzerem oder ohne Halten: weder schwerer noch leichter.
+    for (const [wiederholungen, richtung, halten] of [
+      [12, 'harder', 3],
+      [12, 'easier', 3],
+      [12, 'harder', null],
+      [8, 'harder', 8],
+      [8, 'easier', 8],
+    ] as const) {
+      await expect(schritt(wiederholungen, richtung, halten)).rejects.toThrow(
+        /step direction does not match/,
+      );
+    }
+    // Gleichsinnig ist ein Schritt.
+    await schritt(12, 'harder', 5);
+    await schritt(12, 'harder', 8);
+    await schritt(8, 'easier', 3);
+    await schritt(8, 'easier', 5);
+    const { rows: gespeichert } = await asPostgres<Record<string, unknown>>(
+      'select reps_min, hold_seconds, step_direction from public.exercise_plan_items where id = $1',
+      [neu[0]!.id],
+    );
+    expect(gespeichert).toEqual([{ reps_min: 8, hold_seconds: 5, step_direction: 'easier' }]);
+  });
+
   it('hängt jede übernommene Zeile an die Organisation der Testpraxis', async () => {
     const { rows } = await asPostgres<{ anzahl: number }>(
       `select count(*)::int as anzahl from public.exercise_variants

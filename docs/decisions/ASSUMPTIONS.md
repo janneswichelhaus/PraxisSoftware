@@ -4600,7 +4600,7 @@ Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Go-live; Jan
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Pläne
 
-**Annahme.** In einer neuen Fassung (ANN-301) ist längeres oder neues Halten ein Schritt „schwerer" auf der Achse Wiederholungen; je Seite und Häufigkeit am Tag ändern sich frei wie der Hinweis.
+**Annahme.** In einer neuen Fassung (ANN-301) ist längeres oder neues Halten ein Schritt „schwerer" auf der Achse Wiederholungen; je Seite und Häufigkeit am Tag ändern sich frei wie der Hinweis. Ändern sich Wiederholungen und Halten zugleich, gehen beide in die Richtung des Schritts.
 
 **Begründung.** Halten ist eine Dauer wie `duration_seconds`; die Frequenz liegt am Plan (UEB-006).
 
