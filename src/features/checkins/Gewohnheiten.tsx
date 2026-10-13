@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
@@ -85,12 +84,14 @@ export function Gewohnheiten({
           </ul>
         </Disclosure>
       ) : null}
-      {/* Was die Person sieht und was nicht geschieht - als Kleingedrucktes
-          statt als Erklärsatz unter dem Titel (DESIGN.md Regel 6). */}
-      <Kleingedrucktes>
-        Wenige, sehr kleine Gewohnheiten, an eine bestehende Handlung gekoppelt. Die Person vermerkt
-        die Tage selbst; es gibt keine Serie und keine Erinnerung.
-      </Kleingedrucktes>
+      {/* Wie Gewohnheiten gemeint sind, auf Abruf - Hilfe ist kein
+          Kleingedrucktes (Regel 6; Nachprüfung A10). */}
+      <Disclosure summary="So geht’s">
+        <p className="text-ink-muted max-w-prose text-sm">
+          Wenige, sehr kleine Gewohnheiten, an eine bestehende Handlung gekoppelt. Die Person
+          vermerkt die Tage selbst; es gibt keine Serie und keine Erinnerung.
+        </p>
+      </Disclosure>
     </section>
   );
 }
