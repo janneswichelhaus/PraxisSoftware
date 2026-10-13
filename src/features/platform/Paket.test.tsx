@@ -92,7 +92,9 @@ describe('Trainingspaket auf der Plattform (ANG-008)', () => {
     ladeMeinePakete.mockResolvedValue([]);
     ladeAngebote.mockResolvedValue(ANGEBOTE);
     renderWithProviders(<Paket zugang={ZUGANG} />);
-    expect(await screen.findByText('Sie haben zurzeit kein Paket.')).toBeInTheDocument();
+    const leer = await screen.findByText('Sie haben zurzeit kein Paket.');
+    // Der Leerzustand des Systems, mittig in der Karte wie die übrigen (L5).
+    expect(leer.parentElement).toHaveClass('text-center');
     expect(screen.getByText('390,00 €')).toBeInTheDocument();
   });
 

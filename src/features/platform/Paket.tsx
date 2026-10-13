@@ -75,6 +75,15 @@ const STAND: Record<MeinPaket['state'], (paket: MeinPaket) => string> = {
 function MeinePakete({ pakete }: { pakete: MeinPaket[] }) {
   const aktuell = pakete.filter((k) => k.state !== 'ended');
   const frueher = pakete.filter((k) => k.state === 'ended');
+  // Ohne jedes Paket der Leerzustand des Systems, mittig in der Karte wie
+  // „Pakete und Preise“ darunter (DESIGN.md 9.17).
+  if (aktuell.length === 0 && frueher.length === 0) {
+    return (
+      <Section titel="Ihr Paket">
+        <EmptyState inKarte title="Sie haben zurzeit kein Paket." />
+      </Section>
+    );
+  }
   return (
     <Section titel="Ihr Paket" rahmen>
       {aktuell.length === 0 ? (
