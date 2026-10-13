@@ -12,9 +12,13 @@ import type { Katalogeintrag } from '../typen';
  * Bewegungsbild): LW-05 (die Drehung um die Längsachse zeigt die
  * Seitenansicht nicht), LW-09 (die Spannung im Bauch ist nicht zu sehen) und
  * LW-20 (Zug von der Seite und Drücken nach vorn passen in keine Ansicht
- * zugleich). LW-17 steht in der Frontansicht: Unterschenkel und Unterarm
- * zeigen vom Betrachter weg und sind kaum zu sehen, das Heben des Beckens
- * schon.
+ * zugleich).
+ *
+ * Ohne Bild (lieber kein Bild als ein falsches): LW-17. Die Frontansicht
+ * verkürzt den gebeugten Unterschenkel auf null und hängt den Fuß ans Knie -
+ * das Bild zeigte den schwereren Seitstütz auf den Füßen statt auf den Knien.
+ * Ein Bild erst mit einer Fassung, die den verdeckten Unterschenkel erkennbar
+ * zeichnet.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -333,9 +337,11 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       v: 1,
       basis: 'rueckenlage_angestellt',
       unterlage: 'matte',
-      // Die Hände liegen auf dem Unterbauch, die Ellbogen neben dem Körper.
-      start: { schulter: [-7, -7], ellbogen: [35, 35] },
-      ende: { schulter: [-7, -7], ellbogen: [35, 35] },
+      // Die Hände liegen auf dem Unterbauch, die Ellbogen neben dem Körper. Von
+      // Hand gesetzt: Das Handziel `bauch` legte den Ellbogen unter den Rumpf
+      // und höbe die ganze Figur von der Matte.
+      start: { schulter: [-10, -10], ellbogen: [45, 45] },
+      ende: { schulter: [-10, -10], ellbogen: [45, 45] },
     },
   },
   {
@@ -635,30 +641,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Belastet die Schulter des Stützarms; bei Beschwerden dort nicht üben. Liegen auf der operierten Seite nach Hüftendoprothese nur nach ärztlicher Vorgabe.',
-    bild: {
-      v: 1,
-      basis: 'seitlage_front',
-      unterlage: 'matte',
-      anker: 'ellbogen_fern',
-      // Der untere Oberarm steht senkrecht; die Unterschenkel zeigen vom
-      // Betrachter weg und verschwinden in der Frontansicht.
-      start: {
-        rumpf: 54,
-        bein: [36, -36],
-        knie: [90, 90],
-        arm: [8, 54],
-        ellbogen: [0, -90],
-        haende: ['huefte', null],
-      },
-      ende: {
-        rumpf: 74,
-        knie: [90, 90],
-        arm: [8, 74],
-        ellbogen: [0, -90],
-        haende: ['huefte', null],
-      },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'LW-18',
@@ -758,8 +740,9 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'stand_front',
-      start: { haende: ['brust', 'brust'] },
-      ende: { haende: ['brust', 'brust'] },
+      // Beide Hände halten das Band zusammen vor dem Brustbein.
+      start: { arm: [15, 15], ellbogen: [-144, -144] },
+      ende: { arm: [15, 15], ellbogen: [-144, -144] },
       hilfsmittel: [
         { art: 'tuerrahmen', x: -60 },
         { art: 'band', von: 'tuerrahmen', nach: 'hand_nah' },
