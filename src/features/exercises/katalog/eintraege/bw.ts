@@ -7,9 +7,10 @@ import type { Katalogeintrag } from '../typen';
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
  * Vorsicht steht als Satz unter `hinweise_praxis`.
  *
- * Ohne Bild, weil die Figur es nicht richtig zeigen kann (lieber kein Bild als
- * ein falsches): BW-02 (Schulterblätter hat die Figur nicht), BW-04 und BW-06
- * (Drehung des Rumpfs), BW-09 (Arme quer vor dem Körper).
+ * Nur die Ausgangsstellung (ANN-480), weil die Figur die Bewegung nicht
+ * richtig zeigen kann (lieber die Stellung als ein falsches Bewegungsbild):
+ * BW-02 (Schulterblätter hat die Figur nicht), BW-04 und BW-06 (Drehung des
+ * Rumpfs), BW-09 (Arme quer vor dem Körper).
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -66,6 +67,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Rücken geht ins Hohlkreuz, statt nur die Schulterblätter zu bewegen.',
       'Das Kinn schiebt sich nach vorn.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+      ende: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+    },
   },
   {
     schluessel: 'BW-03',
@@ -127,6 +134,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper neigt sich beim Drehen zur Seite.',
       'Die Drehung wird mit Schwung ans Ende geführt.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      start: { haende: ['brust', 'brust'] },
+      ende: { haende: ['brust', 'brust'] },
+    },
   },
   {
     schluessel: 'BW-05',
@@ -190,6 +203,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Den Arm nur so weit öffnen, wie es ohne Schmerz in der Schulter geht; er muss den Boden nicht erreichen.',
+    bild: {
+      v: 1,
+      basis: 'seitlage_front',
+      unterlage: 'matte',
+      start: { huefte: [75, 75], knie: [90, 90], haende: ['boden', 'boden'] },
+      ende: { huefte: [75, 75], knie: [90, 90], haende: ['boden', 'boden'] },
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'BW-07',
@@ -282,6 +303,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Ellbogen beugen sich stark.',
     ],
     hinweise_praxis: 'Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“.',
+    bild: {
+      v: 1,
+      basis: 'stand',
+      start: { schulter: [90, 90], ellbogen: [0, 0] },
+      ende: { schulter: [90, 90], ellbogen: [0, 0] },
+      hilfsmittel: [{ art: 'band', von: 'hand_fern', nach: 'hand_nah' }],
+    },
   },
   {
     schluessel: 'BW-10',
