@@ -8,6 +8,9 @@ import { renderWithProviders, testStaffMember, testUser } from '@/test-utils';
 
 const STAFF_ID = '55555555-5555-4555-8555-000000000002';
 
+/** Zurück führt in den Reiter, der die Stammdaten zeigt (R2-O6). */
+const KONTAKT = `/praxis/team/${STAFF_ID}?bereich=kontakt`;
+
 const anna = testStaffMember({
   id: STAFF_ID,
   work_phone: '+49 7071 0000102',
@@ -88,9 +91,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
       given_name: 'Anna',
       work_phone: '+49 7071 999',
     });
-    await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/praxis/team/${STAFF_ID}`, { replace: true }),
-    );
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith(KONTAKT, { replace: true }));
   });
 
   it('bietet den Beschaeftigungsstatus nicht als Eingabefeld an', async () => {
@@ -111,7 +112,7 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '← Zurück zu den Stammdaten' })).toHaveAttribute(
       'href',
-      `/praxis/team/${STAFF_ID}`,
+      KONTAKT,
     );
   });
 
@@ -133,12 +134,9 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
 
     expect(screen.getByRole('link', { name: '← Zurück zu Anna Beispiel' })).toHaveAttribute(
       'href',
-      `/praxis/team/${STAFF_ID}`,
+      KONTAKT,
     );
-    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
-      'href',
-      `/praxis/team/${STAFF_ID}`,
-    );
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', KONTAKT);
   });
 
   it('fragt vor dem Weggehen nur, wenn etwas geaendert ist (ORG-03)', async () => {
@@ -208,8 +206,10 @@ describe('EditStaffMemberPage fuer office (E10, ANN-024)', { timeout: 20_000 }, 
     expect(await screen.findByLabelText('Diensttelefon')).toBeInTheDocument();
     expect(screen.queryByLabelText('Private E-Mail')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Geburtsdatum')).not.toBeInTheDocument();
+    // Seit R2-O7 kürzer, Aussage gleich: Privates pflegt nur owner, und es
+    // bleibt beim Speichern stehen.
     expect(
-      screen.getByText(/Privatangaben .* pflegt\s*ausschließlich die Praxisinhaber:in/s),
+      screen.getByText(/Privates pflegt nur die Praxisinhaber:in; es bleibt beim Speichern/),
     ).toBeInTheDocument();
   });
 

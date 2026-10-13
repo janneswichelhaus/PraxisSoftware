@@ -193,7 +193,12 @@ describe('StaffMemberDetailPage', () => {
       date_of_birth: '1992-06-02',
       private_phone: '+49 7071 0000002',
     });
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    // Die Privatangaben stehen im Reiter „Kontakt“, für owner seit R2-O6 der
+    // letzte.
+    renderWithProviders(
+      <StaffMemberDetailPage user={testUser(['owner'])} />,
+      `/praxis/team/${STAFF_ID}?bereich=kontakt`,
+    );
     expect(await screen.findByText('Privat')).toBeInTheDocument();
     expect(screen.getByText('+49 7071 0000002')).toBeInTheDocument();
   });
@@ -369,22 +374,41 @@ describe('StaffMemberDetailPage', () => {
   });
 
   describe('Objektkopf und Reiter (Welle B, B7)', () => {
-    it('zeigt owner die Reiter Kontakt, Einsatz und Zugang, Kontakt offen', async () => {
-      renderWithProviders(
+    it('zeigt owner die Reiter Einsatz, Zugang und Kontakt, Einsatz offen (R2-O6)', async () => {
+      const { unmount } = renderWithProviders(
         <StaffMemberDetailPage user={testUser(['owner'])} />,
         `/praxis/team/${STAFF_ID}`,
       );
       const reiter = await screen.findByRole('navigation', { name: 'Bereiche der Mitarbeiter:in' });
-      expect(within(reiter).getByRole('link', { name: 'Kontakt' })).toHaveAttribute(
+      // Reiterfolge nach DESIGN.md „Objekt“: Arbeit zuerst, Stammdaten zuletzt.
+      expect(
+        within(reiter)
+          .getAllByRole('link')
+          .map((link) => link.textContent),
+      ).toEqual(['Einsatz', 'Zugang', 'Kontakt']);
+      expect(within(reiter).getByRole('link', { name: 'Einsatz' })).toHaveAttribute(
         'aria-current',
         'page',
       );
+      // Jeder Reiter nennt sich in der Adresse, auch der erste: `?bereich=`
+      // bleibt gültig.
       expect(within(reiter).getByRole('link', { name: 'Einsatz' })).toHaveAttribute(
         'href',
         `/praxis/team/${STAFF_ID}?bereich=einsatz`,
       );
-      expect(within(reiter).getByRole('link', { name: 'Zugang' })).toBeInTheDocument();
+      expect(within(reiter).getByRole('link', { name: 'Kontakt' })).toHaveAttribute(
+        'href',
+        `/praxis/team/${STAFF_ID}?bereich=kontakt`,
+      );
       // Der Statuswechsel steht im Reiter „Einsatz“, nicht unter dem Kontakt.
+      expect(await screen.findByRole('button', { name: 'Als inaktiv führen' })).toBeInTheDocument();
+      unmount();
+
+      renderWithProviders(
+        <StaffMemberDetailPage user={testUser(['owner'])} />,
+        `/praxis/team/${STAFF_ID}?bereich=kontakt`,
+      );
+      expect(await screen.findByText('Dienstlich')).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Als inaktiv führen' })).toBeNull();
     });
 

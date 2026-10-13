@@ -99,10 +99,15 @@ describe('Kommunikation', () => {
     expect(treffer.textContent).not.toMatch(/PROJECT_PRINCIPLES/);
   });
 
+  it('heißt wie sein Reiter (R2-O9)', () => {
+    oeffne();
+    expect(screen.getByRole('heading', { level: 1, name: 'Teamchat' })).toBeInTheDocument();
+  });
+
   it('spricht von Antworten statt von Threads (VOR-25)', () => {
     oeffne();
     expect(
-      screen.getByText('Kanäle, Direktnachrichten und Antworten für organisatorische Abstimmung.'),
+      screen.getByText('Kanäle, Direktnachrichten und Antworten im Team.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Threads/)).toBeNull();
   });

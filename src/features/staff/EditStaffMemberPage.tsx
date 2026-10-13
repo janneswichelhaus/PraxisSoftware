@@ -36,6 +36,15 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 const TITEL = 'Stammdaten bearbeiten';
 
 /**
+ * Der Reiter, der die Stammdaten zeigt (R2-O6): Seit „Einsatz“ der erste
+ * Reiter ist, führt der Weg aus der Bearbeitung dorthin, wo das Gespeicherte
+ * steht.
+ */
+function stammdatenPfad(id: string): string {
+  return `/praxis/team/${id}?bereich=kontakt`;
+}
+
+/**
  * Formular für die Änderung der Mitarbeiterstammdaten.
  *
  * Vorbefüllt aus dem gelesenen Datensatz. Der Beschäftigungsstatus ist bewusst
@@ -63,7 +72,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
 
   // Zurück in den Datensatz - oder dorthin, woher die Bearbeitung kam (ORG-24).
-  const zurueck = leseRueckweg(suche, `/praxis/team/${staff.id}`);
+  const zurueck = leseRueckweg(suche, stammdatenPfad(staff.id));
 
   const ungespeichert = staffReihenfolge(privat).some((feld) => werte[feld] !== ausgang[feld]);
   const { freigeben, schutz } = useTextverlustschutz({ ungespeichert, texte: EINGABETEXTE });
@@ -172,7 +181,7 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
       ) : null}
 
       <Kleingedrucktes className="max-w-formular mt-8">
-        {sichtbarkeitDerAngaben(privat)} Der Beschäftigungsstatus wird hier nicht verändert.
+        {sichtbarkeitDerAngaben(privat)}
       </Kleingedrucktes>
     </>
   );
@@ -193,7 +202,7 @@ export function EditStaffMemberPage({ user }: { user: CurrentUser }) {
       {/* Der Rückweg steht vor jedem Zustand - auch im Fehlerfall gibt es
           einen Weg hinaus (ORG-24, ZST-08). */}
       <Rueckweg
-        standard={`/praxis/team/${staffMemberId}`}
+        standard={stammdatenPfad(staffMemberId)}
         beschriftung={data ? `Zurück zu ${fullName(data)}` : 'Zurück zu den Stammdaten'}
       />
 

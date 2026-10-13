@@ -131,11 +131,12 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
 
       {/* Suche offen, die Beschäftigung am Telefon hinter „Filter“
           (Filterleiste, ANN-405). Der Baustein `Select` mit 48 px wie das
-          Suchfeld (ORG-16, TOK-13, UIK-19). */}
+          Suchfeld (ORG-16, TOK-13, UIK-19). Der Platzhalter passt bei 375 px
+          ganz ins Feld (R2-O10). */}
       <Filterleiste
         suche={
           <SearchField
-            placeholder="Name, dienstliche Erreichbarkeit, Standort"
+            placeholder="Name, Telefon, E-Mail, Standort"
             value={query}
             onChange={updateQuery}
           />
@@ -203,10 +204,11 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
                         {/* Am Telefon steht das Etikett unter der Standortzeile
                             (ORG-11): Neben dem Namen ließ es ihm bei 390 px
                             rund 115 px, und ausgerechnet der Name wurde
-                            gekürzt. Inaktiv steht rechts als Status. */}
+                            gekürzt. Inaktiv steht rechts als Status. Eine
+                            Ausnahme mit Zeichen und Wort (R2-O4). */}
                         {nichtZuordenbar ? (
                           <span className="mt-1.5 block">
-                            <Badge>Nicht für Termine zuordenbar</Badge>
+                            <Badge ton="warnung">Nicht für Termine zuordenbar</Badge>
                           </span>
                         ) : null}
                       </>

@@ -27,7 +27,6 @@ import {
   terminFehlerliste,
   terminFeldfehler,
 } from '@/features/appointments/terminformular';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Die Felder, an denen sich eine Eingabe von der Vorbelegung unterscheiden kann. */
 const FELDER: readonly AppointmentFormField[] = [
@@ -301,7 +300,8 @@ export function TrainingTerminFormular({
 
       {/* Am Telefon untereinander in voller Breite, der Hauptknopf zuerst
           (DESIGN.md „Formular“). Abbrechen ist ein Seitenwechsel und damit
-          ein Link (UIK-13). */}
+          ein Link (UIK-13). Kein Satz mehr darunter, dass am Termin nur
+          Organisatorisches steht (R2-O7): Das Formular hat kein Freitextfeld. */}
       <Formularfuss>
         <Button type="submit" disabled={mutation.isPending || !bereit}>
           {mutation.isPending ? laeuftText : absendeText}
@@ -310,11 +310,6 @@ export function TrainingTerminFormular({
           Abbrechen
         </ButtonLink>
       </Formularfuss>
-
-      <Kleingedrucktes className="mt-8">
-        Am Termin stehen nur organisatorische Angaben. Was in der Einheit passiert, gehört nicht
-        hierher.
-      </Kleingedrucktes>
     </form>
   );
 }

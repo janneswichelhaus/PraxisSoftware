@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
-import { CardGrid, Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
+import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Section } from '@/components/ui/Section';
@@ -139,24 +139,50 @@ function Praxisstatistik() {
             </Select>
           </div>
 
+          {/* Höchstens vier Kacheln (DESIGN.md, R2-O8, ANN-494): vier
+              Kennzahlen als Kacheln, ab 640 px zwei mal zwei; die fünfte
+              steht als Zeile darunter - mit Ziel und nächstem Schritt wie
+              die anderen. Bis dahin standen fünf Karten mit je einem Knopf
+              drei und zwei nebeneinander. */}
           <Section titel="Kennzahlen">
-            <CardGrid>
-              {KENNZAHLEN.map((kennzahl) => (
-                <Kennzahlkarte
-                  key={kennzahl.ziel}
-                  kennzahl={kennzahl}
-                  k={k}
-                  ziel={ziele.data?.[kennzahl.ziel] ?? null}
-                  zieleGeladen={ziele.isSuccess}
-                >
-                  <Einzelheiten
+            <div className="grid gap-3 sm:grid-cols-2">
+              {KENNZAHLEN.filter((kennzahl) => kennzahl.ziel !== KENNZAHL_ALS_ZEILE).map(
+                (kennzahl) => (
+                  <Kennzahlkarte
+                    key={kennzahl.ziel}
                     kennzahl={kennzahl}
                     k={k}
                     ziel={ziele.data?.[kennzahl.ziel] ?? null}
-                  />
-                </Kennzahlkarte>
-              ))}
-            </CardGrid>
+                    zieleGeladen={ziele.isSuccess}
+                  >
+                    <Einzelheiten
+                      kennzahl={kennzahl}
+                      k={k}
+                      ziel={ziele.data?.[kennzahl.ziel] ?? null}
+                    />
+                  </Kennzahlkarte>
+                ),
+              )}
+            </div>
+            {KENNZAHLEN.filter((kennzahl) => kennzahl.ziel === KENNZAHL_ALS_ZEILE).map(
+              (kennzahl) => (
+                <div key={kennzahl.ziel} className="mt-3">
+                  <Kennzahlkarte
+                    kennzahl={kennzahl}
+                    k={k}
+                    ziel={ziele.data?.[kennzahl.ziel] ?? null}
+                    zieleGeladen={ziele.isSuccess}
+                    zeile
+                  >
+                    <Einzelheiten
+                      kennzahl={kennzahl}
+                      k={k}
+                      ziel={ziele.data?.[kennzahl.ziel] ?? null}
+                    />
+                  </Kennzahlkarte>
+                </div>
+              ),
+            )}
           </Section>
 
           <Verlauf monat={monat} heute={k.today} />
@@ -182,54 +208,90 @@ function sichereCsv(k: Kennzahlen, ziele: Ziele) {
   sichereAlsDatei(csvDateiname(k), `\uFEFF${alsCsv(k, ziele)}`, 'text/csv;charset=utf-8');
 }
 
+/**
+ * Die Kennzahl, die unter den vier Kacheln als Zeile steht (ANN-494): die mit
+ * der kürzesten Erklärung und ohne Aufschlüsselung.
+ */
+const KENNZAHL_ALS_ZEILE = 'ending_bases';
+
 function Kennzahlkarte({
   kennzahl,
   k,
   ziel,
   zieleGeladen,
+  zeile = false,
   children,
 }: {
   kennzahl: Kennzahl;
   k: Kennzahlen;
   ziel: number | null;
   zieleGeladen: boolean;
+  /** Als Zeile über die ganze Breite: Zahl neben dem Satz, Knopf rechts. */
+  zeile?: boolean;
   children: ReactNode;
 }) {
   const wert = kennzahl.wert(k);
   const stand = zielstand(wert, ziel, kennzahl.richtung);
   const titelId = useId();
 
+  // Der Zielstand als Zeichen und Wort neben dem Titel (DESIGN.md Regel 5);
+  // ohne Ziel kein Abzeichen.
+  const titel = (
+    <Zwischentitel
+      id={titelId}
+      aktion={
+        stand === 'erreicht' ? (
+          <Badge ton="positiv">Ziel erreicht</Badge>
+        ) : stand === 'verfehlt' ? (
+          <Badge ton="warnung">Ziel verfehlt</Badge>
+        ) : undefined
+      }
+    >
+      {kennzahl.titel}
+    </Zwischentitel>
+  );
+  const zahl = (
+    <p className="text-ink text-2xl font-semibold tabular-nums">
+      {formatiere(wert, kennzahl.einheit)}
+    </p>
+  );
+  const handlung = (
+    <ButtonLink to={kennzahl.handlung.to} variant="secondary" groesse="kompakt">
+      {kennzahl.handlung.label}
+    </ButtonLink>
+  );
+
+  if (zeile) {
+    return (
+      <section aria-labelledby={titelId}>
+        <Inhaltsflaeche className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              {titel}
+              <div className="-mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                {zahl}
+                <div className="text-ink-muted min-w-0 text-sm">{children}</div>
+              </div>
+            </div>
+            <div className="shrink-0">{handlung}</div>
+          </div>
+          {zieleGeladen ? <Zielzeile kennzahl={kennzahl} ziel={ziel} /> : null}
+        </Inhaltsflaeche>
+      </section>
+    );
+  }
+
   return (
     <section aria-labelledby={titelId}>
       <Inhaltsflaeche className="flex h-full flex-col gap-2">
-        {/* Der Zielstand als Zeichen und Wort neben dem Titel (DESIGN.md
-            Regel 5); ohne Ziel kein Abzeichen. */}
-        <Zwischentitel
-          id={titelId}
-          aktion={
-            stand === 'erreicht' ? (
-              <Badge ton="positiv">Ziel erreicht</Badge>
-            ) : stand === 'verfehlt' ? (
-              <Badge ton="warnung">Ziel verfehlt</Badge>
-            ) : undefined
-          }
-        >
-          {kennzahl.titel}
-        </Zwischentitel>
-
-        <p className="text-ink -mt-2 text-2xl font-semibold tabular-nums">
-          {formatiere(wert, kennzahl.einheit)}
-        </p>
+        {titel}
+        <div className="-mt-2">{zahl}</div>
 
         <div className="text-ink-muted text-sm">{children}</div>
 
         {zieleGeladen ? <Zielzeile kennzahl={kennzahl} ziel={ziel} /> : null}
 
-        <div className="mt-auto pt-1">
-          <ButtonLink to={kennzahl.handlung.to} variant="secondary" groesse="kompakt">
-            {kennzahl.handlung.label}
-          </ButtonLink>
-        </div>
+        <div className="mt-auto pt-1">{handlung}</div>
       </Inhaltsflaeche>
     </section>
   );

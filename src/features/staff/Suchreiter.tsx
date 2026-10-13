@@ -42,12 +42,13 @@ export function Suchreiterleiste<W extends string>({
   // Wie die `Reiterleiste`: ein Verlauf am Rand zeigt weitere Reiter an (A1).
   const rand = useRandVerlauf(liste, offen);
 
-  function ziel(wert: W, erster: boolean): string {
+  // Jeder Reiter nennt sich in der Adresse, auch der erste (R2-O6): So bleibt
+  // `?bereich=einsatz` gültig, wenn sich die Reihenfolge ändert, und ein
+  // Lesezeichen öffnet denselben Reiter. Ohne Parameter gilt weiter der erste.
+  function ziel(wert: W): string {
     const neu = new URLSearchParams(suche);
-    if (erster) neu.delete(param);
-    else neu.set(param, wert);
-    const text = neu.toString();
-    return text ? `${pathname}?${text}` : pathname;
+    neu.set(param, wert);
+    return `${pathname}?${neu.toString()}`;
   }
 
   return (
@@ -56,10 +57,10 @@ export function Suchreiterleiste<W extends string>({
         ref={liste}
         className="flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3"
       >
-        {reiter.map((eintrag, index) => (
+        {reiter.map((eintrag) => (
           <li key={eintrag.wert} className="shrink-0">
             <Link
-              to={ziel(eintrag.wert, index === 0)}
+              to={ziel(eintrag.wert)}
               aria-current={eintrag.wert === offen ? 'page' : undefined}
               className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-semibold"
             >

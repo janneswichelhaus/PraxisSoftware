@@ -5078,3 +5078,27 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Untereinander: `grid-cols` erst ab `sm:` setzen · Aufwand `klein`.
 
+### ANN-493 — Unternavigation: eine einzelne Vorschau steht offen, erst ab zwei eingeklappt
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die `SubNav` klappt Vorschauen erst ab zwei hinter „Vorschau (n)“ ein. Eine einzelne Vorschau (Teamchat unter Kommunikation) steht mit ihrer Marke „Vorschau“ in der Leiste, auf jeder Seite des Bereichs gleich.
+
+**Begründung.** „Vorschau (1)“ ersetzte einen Eintrag durch einen und versteckte nur den Namen; die Leiste hieß je nach Seite „Rückfragen · Vorschau (1)“ oder „Rückfragen · Teamchat“ (Review R2-O9). Die Kennzeichnung nach ANN-112 bleibt.
+
+**Anker.** `einklappbar` in `src/components/ui/SubNav.tsx`.
+
+**Änderungspfad.** Wieder ab einer Vorschau einklappen: `vorschauen.length > 0` · Aufwand `klein`.
+
+### ANN-494 — Statistik: vier Kennzahlen als Kacheln, „Verordnungen ohne Anschluss“ als Zeile
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Umsatz, Offene Posten, Auslastung und Ausfälle stehen als Kacheln, ab 640 px zwei mal zwei. „Verordnungen ohne Anschluss“ steht als Zeile über die ganze Breite darunter – mit Zahl, Satz, Ziel und „Verordner:innen anfragen“. CSV und Reihenfolge der Kennzahlen bleiben.
+
+**Begründung.** DESIGN.md: höchstens vier Kacheln (Review R2-O8). Diese Kennzahl hat die kürzeste Erklärung und keine Aufschlüsselung; sie passt in eine Zeile.
+
+**Anker.** `KENNZAHL_ALS_ZEILE` in `src/features/statistics/StatisticsPage.tsx`.
+
+**Änderungspfad.** Andere Kennzahl als Zeile: Schlüssel tauschen · Aufwand `klein`.
+

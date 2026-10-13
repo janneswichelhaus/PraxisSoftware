@@ -20,7 +20,8 @@ describe('Pannenassistent', () => {
 
   it('kennzeichnet die Kölner Herkunft der Standortangaben', () => {
     oeffne();
-    expect(screen.getByText(/für Tübingen noch zu prüfen/)).toBeInTheDocument();
+    expect(screen.getByText('Köln-Vorlage')).toBeInTheDocument();
+    expect(screen.getByText(/Für Tübingen noch zu prüfen/)).toBeInTheDocument();
   });
 
   it('beginnt mit der Radauswahl, wenn kein Rad vorgegeben ist', () => {

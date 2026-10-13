@@ -7,7 +7,6 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Filterleiste } from '@/components/ui/Filterleiste';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchField } from '@/components/ui/SearchField';
@@ -57,9 +56,9 @@ export function TrainingClientsPage({ user }: { user: CurrentUser }) {
   return (
     <>
       {/* Seitentyp „Liste“ (DESIGN.md, Welle B3a): Titel und „Anlegen“
-          kompakt in einer Zeile, darunter die Suche, dann die Zeilen. Der
-          Satz zur Trennung von der Behandlung bleibt - als Kleingedrucktes
-          am Ende statt als zweite Zeile im Kopf (ADR-021). */}
+          kompakt in einer Zeile, darunter die Suche, dann die Zeilen. Ohne
+          Satz zur Trennung von der Behandlung (R2-O7, Regel 6): Sie liegt
+          in den Rechten (ADR-021), nicht in einem Hinweis. */}
       <PageHeader
         title={BEGRIFFE.trainingskundInnen}
         actions={
@@ -138,10 +137,6 @@ export function TrainingClientsPage({ user }: { user: CurrentUser }) {
           )
         }
       </Abfragezustand>
-
-      <Kleingedrucktes className="mt-8">
-        Personal Training – Vertrag und Kontakt, getrennt von der Behandlung.
-      </Kleingedrucktes>
     </>
   );
 }

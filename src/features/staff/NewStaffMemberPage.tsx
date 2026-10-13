@@ -177,10 +177,9 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       <Kleingedrucktes className="max-w-formular mt-8">
-        {sichtbarkeitDerAngaben(privat)} Es entstehen die Stammdaten, aber noch kein Zugang zur
-        Anwendung. Für eigene Termine als behandelnde Person ist zusätzlich ein Zugang mit der Rolle
-        Therapeut:in oder Teamleitung nötig – ihn lädt die Praxisinhaber:in anschließend bei der
-        Person unter „Zugang“ ein.
+        {/* Kurz (R2-O7): Wie die Person für Termine zuordenbar wird, sagt
+            ihre Seite („Zugang“) und die Liste („Wer ist zuordenbar?“). */}
+        {sichtbarkeitDerAngaben(privat)} Es entsteht noch kein Zugang zur Anwendung.
       </Kleingedrucktes>
     </>
   );

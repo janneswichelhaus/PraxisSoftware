@@ -123,7 +123,7 @@ export function RevenuePage() {
           <EmptyState
             inKarte
             title="Noch keine Grundlage gewählt"
-            description="Wählen Sie oben Zufluss oder Rechnungsstellung. Ohne Grundlage ist eine Zahl nicht zu lesen – deshalb steht hier keine."
+            description="Wählen Sie oben Zufluss oder Rechnungsstellung."
           />
         </Section>
       ) : (
@@ -148,12 +148,12 @@ export function RevenuePage() {
 
       {/* Zwei Sätze mit Rechtsfunktion (B9, ADR-009 Punkt 19): Die Wahl der
           Grundlage trifft die Steuerberatung, und die Seite ist kein
-          Abschluss. Am Seitenende als Kleingedrucktes (DESIGN.md Regel 6). */}
+          Abschluss. Am Seitenende als Kleingedrucktes (DESIGN.md Regel 6), seit R2-O7
+          auf drei Zeilen gekürzt. */}
       <Kleingedrucktes className="mt-8">
-        Zufluss und Rechnungsstellung ergeben verschiedene Zahlen. Welche Ihre Gewinnermittlung
-        verlangt, sagt Ihnen Ihre Steuerberatung – diese Auswertung wählt sie nicht für Sie. Kein
-        steuerlicher Abschluss: Die Auswertung fasst zusammen, was in ausgestellten Dokumenten und
-        gebuchten Zahlungen steht. Sie bewertet nichts und ersetzt keine Gewinnermittlung.
+        Welche Grundlage Ihre Gewinnermittlung verlangt, sagt Ihre Steuerberatung – diese Auswertung
+        wählt sie nicht. Kein steuerlicher Abschluss: eine Summe, keine Bewertung; sie ersetzt keine
+        Gewinnermittlung.
       </Kleingedrucktes>
     </>
   );

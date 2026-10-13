@@ -47,7 +47,7 @@ import {
 
 const standTon: Record<Erstattungsstand, Ton> = {
   eingereicht: 'warnung',
-  genehmigt: 'akzent',
+  genehmigt: 'positiv',
   abgelehnt: 'kritisch',
   ausgezahlt: 'positiv',
 };

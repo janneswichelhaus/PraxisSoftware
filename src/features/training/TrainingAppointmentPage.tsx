@@ -182,25 +182,16 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
         </DataList>
 
         {/* Die Vorgänge am Termin stehen in seiner Karte, kompakt wie an
-            einer Karte üblich (DESIGN.md Regel 4); das Absagen leise am Ende
-            (Zerstörendes). Der Hauptknopf der Seite ist der Abschluss des
-            Protokolls in der Leiste darunter. */}
+            einer Karte üblich (DESIGN.md Regel 4). Der Hauptknopf der Seite
+            ist der Abschluss des Protokolls in der Leiste darunter. */}
         {darfAendern || darfAbschliessen ? (
           <div className="border-line mt-3 flex flex-wrap items-start gap-2 border-t pt-3">
             <KnopfGroesse value="kompakt">
               {darfAbschliessen ? <TerminAbschluss termin={termin} onGeaendert={gemeldet} /> : null}
               {darfAendern ? (
-                <>
-                  <ButtonLink to={mitRueckweg(`${hier}/bearbeiten`, hier)} variant="secondary">
-                    Verschieben
-                  </ButtonLink>
-                  <Absagen
-                    termin={termin}
-                    name={name}
-                    liestProtokoll={liestProtokoll}
-                    onAbgesagt={() => gemeldet('Termin abgesagt.')}
-                  />
-                </>
+                <ButtonLink to={mitRueckweg(`${hier}/bearbeiten`, hier)} variant="secondary">
+                  Verschieben
+                </ButtonLink>
               ) : null}
             </KnopfGroesse>
           </div>
@@ -211,6 +202,20 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
           über der Tableiste (DESIGN.md „Arbeitsseite“). */}
       {darfProtokoll || zeigtProtokoll ? (
         <TrainingProtokoll termin={termin} darfSchreiben={darfProtokoll} />
+      ) : null}
+
+      {/* Das Absagen leise am Ende der Seite, mit Rückfrage (DESIGN.md,
+          Zerstörendes; R2-O10) - bis dahin stand es mitten in der
+          Terminkarte neben „Verschieben“. */}
+      {darfAendern ? (
+        <div className="border-line max-w-formular mt-8 border-t pt-6">
+          <Absagen
+            termin={termin}
+            name={name}
+            liestProtokoll={liestProtokoll}
+            onAbgesagt={() => gemeldet('Termin abgesagt.')}
+          />
+        </div>
       ) : null}
     </>
   );
@@ -273,7 +278,6 @@ function Absagen({
     <Rueckfrage
       ausloeser="Termin absagen"
       ausloeserVariante="quiet"
-      ausloeserGroesse="kompakt"
       bestaetigen="Ja, Termin absagen"
       bestaetigenLaeuft="Wird abgesagt …"
       fehler={mutation.isError ? mutation.error.message : undefined}

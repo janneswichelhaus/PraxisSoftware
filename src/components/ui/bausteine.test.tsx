@@ -822,6 +822,36 @@ describe('SubNav', () => {
     });
   }
 
+  it('klappt eine einzelne Vorschau nicht ein, erst ab zwei (ANN-493)', () => {
+    const { unmount } = renderWithProviders(
+      <SubNav
+        eintraege={[
+          { to: '/rueckfragen', label: 'Rückfragen', end: false },
+          { to: '/team', label: 'Teamchat', vorschau: true },
+        ]}
+        label="Bereich Kommunikation"
+      />,
+      '/rueckfragen',
+    );
+    expect(screen.getByRole('link', { name: /^Teamchat/ })).toHaveTextContent('TeamchatVorschau');
+    expect(screen.queryByRole('button', { name: /^Vorschau/ })).toBeNull();
+    unmount();
+
+    renderWithProviders(
+      <SubNav
+        eintraege={[
+          { to: '/praxis/team', label: 'Mitarbeitende' },
+          { to: '/betrieb/urlaub', label: 'Urlaub', vorschau: true },
+          { to: '/betrieb/zeitkonto', label: 'Zeitkonto', vorschau: true },
+        ]}
+        label="Bereich Organisatorisches"
+      />,
+      '/praxis/team',
+    );
+    expect(screen.getByRole('button', { name: 'Vorschau (2)' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^Urlaub/ })).toBeNull();
+  });
+
   it('rollt den aktiven Eintrag waagerecht ins Bild, ohne die Seite zu rollen (UIK-10)', () => {
     geometrie();
     const seiteRollen = vi.spyOn(Element.prototype, 'scrollIntoView');

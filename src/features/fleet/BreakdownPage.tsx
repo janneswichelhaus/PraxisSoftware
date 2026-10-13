@@ -157,6 +157,7 @@ export function BreakdownPage() {
   }
 
   const auswahl = antworten(ablauf.schritt);
+  const hauptknopf = hauptaktion(ablauf, setAblauf, weiter, beenden);
 
   return (
     <>
@@ -176,16 +177,16 @@ export function BreakdownPage() {
       />
 
       <div className="max-w-formular">
+        {/* Herkunft als Abzeichen und ein kurzer Satz in einer Zeile (R2-O1);
+            die ganze Erklärung steht bei den Einstellungen der Radflotte. */}
         <div className="mb-6 flex flex-wrap items-center gap-2">
           <Badge ton="warnung">{vorlage.herkunft}-Vorlage</Badge>
-          <span className="text-ink-muted text-sm">{vorlage.pruefhinweis}</span>
+          <span className="text-ink-muted text-sm">Für Tübingen noch zu prüfen.</span>
         </div>
 
         <Schrittinhalt
           ablauf={ablauf}
           setAblauf={setAblauf}
-          weiter={weiter}
-          beenden={beenden}
           punkte={zusammenfassungspunkte(kontext)}
         />
 
@@ -228,8 +229,18 @@ export function BreakdownPage() {
           </div>
         ) : null}
 
-        {/* Leise am Ende: ein Schritt zurück oder ganz abbrechen. */}
-        <div className="border-line mt-8 flex flex-wrap gap-2 border-t pt-4">
+        {/* Der Hauptknopf des Schritts, dann leise ein Schritt zurück oder
+            ganz abbrechen - als Formularfuß, am Telefon untereinander in
+            voller Breite (R2-O1; bis dahin ein halber Knopf mitten im
+            Schritt und „Abbrechen“ abgesetzt unter einer Linie). */}
+        <Formularfuss
+          zusatz={
+            ablauf.schritt === 'weiterfahrtMoeglich'
+              ? 'Die Meldung sperrt das Rad nicht; es bleibt in der Planung.'
+              : undefined
+          }
+        >
+          {hauptknopf}
           {kannZurueck(ablauf) ? (
             <Button variant="quiet" onClick={() => setAblauf((aktuell) => zurueck(aktuell))}>
               ← Zurück
@@ -238,10 +249,84 @@ export function BreakdownPage() {
           <ButtonLink to="/betrieb/flotte" variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </div>
     </>
   );
+}
+
+/**
+ * Der Hauptknopf eines Schritts, wenn er einen hat - Schritte mit Antworten
+ * („Ja“, „Nein“, „Klein“, „Groß“) haben keinen, dort ist jede Antwort ein
+ * Knopf. Getrennt vom Inhalt, damit er im Formularfuß steht.
+ */
+function hauptaktion(
+  ablauf: Ablaufzustand,
+  setAblauf: (aktualisierung: (aktuell: Ablaufzustand) => Ablaufzustand) => void,
+  weiter: (ziel: SchrittId) => void,
+  beenden: (art: Abschlussart) => void,
+): ReactNode {
+  switch (ablauf.schritt) {
+    case 'radwahl':
+      return (
+        <Button onClick={() => weiter('weiterfahrt')} disabled={!ablauf.radId}>
+          Weiter
+        </Button>
+      );
+    case 'weiterfahrtMoeglich':
+      return (
+        <Button
+          onClick={() => beenden('meldungOhneSperre')}
+          disabled={ablauf.freitext.trim() === ''}
+        >
+          Melden
+        </Button>
+      );
+    case 'werkstattReparieren':
+      return (
+        <Button onClick={() => beenden('lokalRepariert')}>
+          Erledigt – Rad als „In Reparatur“ markieren
+        </Button>
+      );
+    case 'depotBringen':
+      return (
+        <Button onClick={() => beenden('depotAbgestellt')}>Rad als „In Reparatur“ markieren</Button>
+      );
+    case 'radZuruecklassen':
+      return (
+        <Button
+          onClick={() =>
+            setAblauf((aktuell) => gehe({ ...aktuell, herkunft: 'zuruecklassen' }, 'fuehrerschein'))
+          }
+        >
+          Weiter
+        </Button>
+      );
+    case 'zusammenfassung':
+      return (
+        <Button onClick={() => beenden('transportFortsetzung')}>
+          Bestätigen – Rad als „In Reparatur“ markieren
+        </Button>
+      );
+    case 'vertragswerkstattReparieren':
+      return (
+        <Button onClick={() => beenden('vertragswerkstattRepariert')}>
+          Erledigt – Rad als „In Reparatur“ markieren
+        </Button>
+      );
+    case 'vertragswerkstattUebergabe':
+      return (
+        <Button
+          onClick={() =>
+            setAblauf((aktuell) => gehe({ ...aktuell, herkunft: 'uebergabe' }, 'fuehrerschein'))
+          }
+        >
+          Weiter
+        </Button>
+      );
+    default:
+      return null;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -251,14 +336,10 @@ export function BreakdownPage() {
 function Schrittinhalt({
   ablauf,
   setAblauf,
-  weiter,
-  beenden,
   punkte,
 }: {
   ablauf: Ablaufzustand;
   setAblauf: (aktualisierung: (aktuell: Ablaufzustand) => Ablaufzustand) => void;
-  weiter: (ziel: SchrittId) => void;
-  beenden: (art: Abschlussart) => void;
   punkte: string[];
 }) {
   const { zustand: vorschau } = useVorschau();
@@ -269,52 +350,30 @@ function Schrittinhalt({
   switch (ablauf.schritt) {
     case 'radwahl':
       return (
-        <div className="mb-4 flex flex-col gap-4">
-          <Select
-            label="Rad"
-            value={ablauf.radId ?? ''}
-            onChange={(event) =>
-              setAblauf((aktuell) => ({ ...aktuell, radId: event.target.value }))
-            }
-          >
-            {vorschau.raeder.map((rad) => (
-              <option key={rad.id} value={rad.id}>
-                {radMitStandort(vorschau, rad)}
-              </option>
-            ))}
-          </Select>
-          <div>
-            <Button onClick={() => weiter('weiterfahrt')} disabled={!ablauf.radId}>
-              Weiter
-            </Button>
-          </div>
-        </div>
+        <Select
+          label="Rad"
+          value={ablauf.radId ?? ''}
+          onChange={(event) => setAblauf((aktuell) => ({ ...aktuell, radId: event.target.value }))}
+        >
+          {vorschau.raeder.map((rad) => (
+            <option key={rad.id} value={rad.id}>
+              {radMitStandort(vorschau, rad)}
+            </option>
+          ))}
+        </Select>
       );
 
     case 'weiterfahrtMoeglich':
       return (
-        <div className="mb-4 flex flex-col gap-4">
-          <TextArea
-            rows={3}
-            label="Was ist auffällig?"
-            placeholder="z. B. Klingel klemmt, Licht flackert"
-            value={ablauf.freitext}
-            onChange={(event) =>
-              setAblauf((aktuell) => ({ ...aktuell, freitext: event.target.value }))
-            }
-          />
-          <div>
-            <Button
-              onClick={() => beenden('meldungOhneSperre')}
-              disabled={ablauf.freitext.trim() === ''}
-            >
-              Melden
-            </Button>
-          </div>
-          <p className="text-ink-muted text-sm">
-            Diese Meldung sperrt das Rad nicht. Es bleibt in der Planung verfügbar.
-          </p>
-        </div>
+        <TextArea
+          rows={3}
+          label="Was ist auffällig?"
+          placeholder="z. B. Klingel klemmt, Licht flackert"
+          value={ablauf.freitext}
+          onChange={(event) =>
+            setAblauf((aktuell) => ({ ...aktuell, freitext: event.target.value }))
+          }
+        />
       );
 
     case 'schadensgroesse':
@@ -326,15 +385,12 @@ function Schrittinhalt({
 
     case 'werkstattReparieren':
       return (
-        <div className="mb-4">
+        <div>
           <Hinweiskasten>Rad bitte vor Ort reparieren lassen.</Hinweiskasten>
-          <p className="text-ink text-liste mb-4">
+          <p className="text-ink text-liste">
             Behandlung, die nicht mehr zu schaffen ist, telefonisch absagen. Eintrag im Kalender und
             kurze Information an Praxismanagement und {vorlage.zustaendigeRolle}.
           </p>
-          <Button onClick={() => beenden('lokalRepariert')}>
-            Erledigt – Rad als „In Reparatur“ markieren
-          </Button>
         </div>
       );
 
@@ -348,7 +404,7 @@ function Schrittinhalt({
 
     case 'depotBringen':
       return (
-        <div className="mb-4">
+        <div>
           <Hinweiskasten>
             {vorlage.depot.bezeichnung}: {vorlage.depot.zugangHinweis}
           </Hinweiskasten>
@@ -356,19 +412,16 @@ function Schrittinhalt({
             {vorlage.zustaendigeRolle} kurz über den Schaden informieren, damit die Reparatur
             koordiniert werden kann.
           </p>
-          <p className="text-ink text-liste mb-4">
+          <p className="text-ink text-liste">
             Bis auf Weiteres bitte <strong>{ersatzrad}</strong> nutzen – so lange, bis das defekte
             Rad wieder freigegeben ist.
           </p>
-          <Button onClick={() => beenden('depotAbgestellt')}>
-            Rad als „In Reparatur“ markieren
-          </Button>
         </div>
       );
 
     case 'radZuruecklassen':
       return (
-        <div className="mb-4 flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
           <Field
             label="Standort / Adresse"
             placeholder="Wo genau steht das Rad?"
@@ -389,23 +442,12 @@ function Schrittinhalt({
             {vorlage.mitnehmen.join(' und ')} vom Rad entfernen und mitnehmen. Rad an einem festen
             Gegenstand anketten.
           </p>
-          <div>
-            <Button
-              onClick={() =>
-                setAblauf((aktuell) =>
-                  gehe({ ...aktuell, herkunft: 'zuruecklassen' }, 'fuehrerschein'),
-                )
-              }
-            >
-              Weiter
-            </Button>
-          </div>
         </div>
       );
 
     case 'fahrzeugErreichbar':
       return (
-        <div className="mb-4 flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <Button
             variant="secondary"
             className="justify-start"
@@ -433,21 +475,16 @@ function Schrittinhalt({
 
     case 'zusammenfassung':
       return (
-        <div className="mb-4">
-          <ul className="text-ink text-liste mb-4 list-disc space-y-1 pl-5">
-            {punkte.map((punkt) => (
-              <li key={punkt}>{punkt}</li>
-            ))}
-          </ul>
-          <Button onClick={() => beenden('transportFortsetzung')}>
-            Bestätigen – Rad als „In Reparatur“ markieren
-          </Button>
-        </div>
+        <ul className="text-ink text-liste list-disc space-y-1 pl-5">
+          {punkte.map((punkt) => (
+            <li key={punkt}>{punkt}</li>
+          ))}
+        </ul>
       );
 
     case 'vertragswerkstattKontakt':
       return (
-        <div className="mb-4">
+        <div>
           <p className="text-ink text-liste mb-3">
             Kontakt zu {vorlage.werkstatt.name} aufnehmen: Bescheid geben, dass Sie aus der Praxis
             kommen und in etwa 15 Minuten mit einem Schaden vorbeikommen.
@@ -461,30 +498,16 @@ function Schrittinhalt({
       );
 
     case 'vertragswerkstattReparieren':
-      return (
-        <div className="mb-4">
-          <Hinweiskasten>Reparatur durchführen lassen.</Hinweiskasten>
-          <Button onClick={() => beenden('vertragswerkstattRepariert')}>
-            Erledigt – Rad als „In Reparatur“ markieren
-          </Button>
-        </div>
-      );
+      return <Hinweiskasten>Reparatur durchführen lassen.</Hinweiskasten>;
 
     case 'vertragswerkstattUebergabe':
       return (
-        <div className="mb-4">
+        <div>
           <p className="text-ink text-liste mb-2">{vorlage.zustaendigeRolle} Bescheid geben.</p>
-          <p className="text-ink text-liste mb-4">
+          <p className="text-ink text-liste">
             Am nächsten Werktag <strong>{ersatzrad}</strong> nutzen, so lange, bis das andere Rad
             wieder freigegeben ist.
           </p>
-          <Button
-            onClick={() =>
-              setAblauf((aktuell) => gehe({ ...aktuell, herkunft: 'uebergabe' }, 'fuehrerschein'))
-            }
-          >
-            Weiter
-          </Button>
         </div>
       );
 

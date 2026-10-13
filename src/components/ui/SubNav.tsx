@@ -62,7 +62,8 @@ function istAktiv(eintrag: SubNavEintrag, pathname: string): boolean {
  * Vorschauen stehen eingeklappt hinter einem Knopf „Vorschau" (UX-002h,
  * Bedienprinzip „was nicht gebraucht wird, ist eingeklappt"): Wer den Bereich
  * öffnet, trifft auf das, was wirkt. Steht man auf einer Vorschau, ist die
- * Gruppe offen — sonst wäre der markierte Punkt unsichtbar.
+ * Gruppe offen — sonst wäre der markierte Punkt unsichtbar. Eingeklappt wird
+ * erst ab zwei Vorschauen; eine einzelne steht mit ihrer Marke da (ANN-493).
  */
 export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label: string }) {
   const { pathname } = useLocation();
@@ -119,8 +120,12 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
       liegtUnter(eintrag.to, pathname) ||
       (eintrag.pfade ?? []).some((pfad) => liegtUnter(pfad, pathname)),
   );
-  // Ohne echten Punkt gäbe es nichts, wofür eingeklappt würde.
-  const einklappbar = echte.length > 0 && vorschauen.length > 0 && !vorschauAktiv;
+  // Ohne echten Punkt gäbe es nichts, wofür eingeklappt würde. Eine einzelne
+  // Vorschau steht offen mit ihrer Marke (ANN-493, R2-O9): „Vorschau (1)“
+  // ersetzte einen Eintrag durch einen und versteckte nur seinen Namen - die
+  // Leiste hieß dann je nach Seite „Rückfragen · Vorschau (1)“ oder
+  // „Rückfragen · Teamchat“.
+  const einklappbar = echte.length > 0 && vorschauen.length > 1 && !vorschauAktiv;
   const sichtbar = einklappbar && !offen ? echte : eintraege;
 
   return (

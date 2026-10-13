@@ -116,7 +116,9 @@ test.describe('STAFF-001: Anlegen und Bearbeiten', () => {
     await page.getByLabel('Diensttelefon').fill('+49 7071 4711');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
 
-    await expect(page).toHaveURL(/\/praxis\/team\/[0-9a-f-]{36}$/);
+    // Zurück in den Reiter „Kontakt“, der die Stammdaten zeigt - seit R2-O6
+    // ist „Einsatz“ der erste Reiter.
+    await expect(page).toHaveURL(/\/praxis\/team\/[0-9a-f-]{36}\?bereich=kontakt$/);
     await expect(detailWert(page, 'Diensttelefon')).toHaveText('+49 7071 4711');
   });
 });

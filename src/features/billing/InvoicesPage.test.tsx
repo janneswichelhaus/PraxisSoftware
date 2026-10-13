@@ -689,6 +689,25 @@ describe('Rechnungsliste mit Suche, Filter und Weitere laden (ABR-034, BEF-061)'
     expect(await screen.findByText('Keine passende Rechnung')).toBeInTheDocument();
   });
 
+  it('stellt die Leerzustände in Karten und Zustand und Monat hinter „Filter“ (R2-O2)', async () => {
+    fetchRechnungen.mockResolvedValue([]);
+    const user = userEvent.setup();
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    for (const titel of ['Nichts offen', 'Nichts abzurechnen', 'Noch keine Rechnung']) {
+      expect((await screen.findByText(titel)).closest('.rounded-card')).toHaveClass('bg-surface');
+    }
+
+    const schalter = screen.getByRole('button', { name: 'Filter' });
+    expect(schalter).toHaveAttribute('aria-expanded', 'false');
+    await user.click(schalter);
+    await user.selectOptions(screen.getByLabelText('Zustand'), 'overdue');
+    expect(screen.getByRole('button', { name: 'Filter (1)' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
   it('nennt bei gekürzten offenen Posten die volle Zahl', async () => {
     fetchRechnungen.mockResolvedValue([]);
     fetchOffenePosten.mockResolvedValue([posten({ total_count: 140, open_total_cents: 900_000 })]);

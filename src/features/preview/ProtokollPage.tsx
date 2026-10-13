@@ -93,10 +93,10 @@ export function ProtokollPage() {
         </div>
       ) : null}
 
+      {/* Zwei kurze Sätze statt fünf Zeilen (R2-O7). */}
       <Kleingedrucktes className="mt-8">
-        Der Vorschaustand liegt ausschließlich im Arbeitsspeicher dieser Sitzung. Ein Neuladen der
-        Seite stellt die synthetischen Ausgangsdaten wieder her. Es wurden keine Daten gespeichert,
-        keine Nachrichten versendet und keine Genehmigungen oder Zahlungen ausgelöst.
+        Nur im Arbeitsspeicher dieser Sitzung; Neuladen setzt zurück. Nichts wurde gespeichert,
+        versendet, genehmigt oder bezahlt.
       </Kleingedrucktes>
     </>
   );

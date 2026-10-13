@@ -304,7 +304,10 @@ export function BikeEditPage({ user }: { user: CurrentUser }) {
             <fieldset>
               <legend className="text-ink mb-1 text-sm font-medium">Wochenplan</legend>
               <p className="text-ink-muted mb-3 text-sm">„Frei“ heißt: für andere planbar.</p>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {/* Am Telefon untereinander, erst ab 640 px vier nebeneinander
+                  (DESIGN.md Formular; R2-O3: bei 375 px standen zwei halbe
+                  Auswahlfelder je Zeile). */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
                 {wochentage.map((tag) => (
                   <Select
                     key={tag}

@@ -94,10 +94,13 @@ describe('Anrufliste (PRX-014)', () => {
       '/offen/anrufe?datum=2031-03-11',
     );
 
-    // Die Ausgänge stehen unter der Zeile, an der gerade telefoniert wird.
-    await user.click(
-      await screen.findByRole('button', { name: 'Anruf vermerken: Max Mustermann' }),
-    );
+    // Die Ausgänge stehen unter der Zeile, an der gerade telefoniert wird;
+    // der Knopf dazu steht mit Wort sichtbar da (R2-O5).
+    const vermerken = await screen.findByRole('button', {
+      name: 'Anruf vermerken: Max Mustermann',
+    });
+    expect(vermerken).toHaveTextContent('Anruf vermerken');
+    await user.click(vermerken);
     const gruppe = await screen.findByRole('group', { name: 'Anruf bei Max Mustermann' });
     await user.click(within(gruppe).getByRole('button', { name: 'Nicht erreicht' }));
     await waitFor(() => expect(recordCallOutcome).toHaveBeenCalledWith('a1', 'not_reached'));
@@ -133,8 +136,12 @@ describe('Anrufliste (PRX-014)', () => {
       '/offen/anrufe?datum=2031-03-11',
     );
     await screen.findByText('An diesem Tag stehen keine Behandlungstermine.');
-    await user.click(screen.getByRole('button', { name: 'Nächster Tag' }));
+    await user.click(screen.getByRole('button', { name: 'Folgetag' }));
     await waitFor(() => expect(fetchCallList).toHaveBeenCalledWith('2031-03-12'));
+    // Beschriftet statt nackter Pfeile (R2-O5).
+    await user.click(screen.getByRole('button', { name: 'Vortag' }));
+    await user.click(screen.getByRole('button', { name: 'Vortag' }));
+    await waitFor(() => expect(fetchCallList).toHaveBeenCalledWith('2031-03-10'));
   });
 });
 
