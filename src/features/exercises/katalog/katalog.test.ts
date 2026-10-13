@@ -116,4 +116,15 @@ describe('Übungskatalog', () => {
       for (const s of schluessel) expect(katalogeintrag(s), `${v.schluessel}: ${s}`).toBeDefined();
     }
   });
+
+  it('benennt Vorlagen nach Region und Ziel, nie nach einer Diagnose (ADR-006 Punkt 10)', () => {
+    for (const v of KATALOG_VORLAGEN) {
+      expect(v.name, v.schluessel).not.toMatch(DIAGNOSE);
+      expect(v.ziel, v.schluessel).not.toMatch(DIAGNOSE);
+      const umschriften = (`${v.name} ${v.ziel}`.match(UMSCHRIFT) ?? []).filter(
+        (w) => !ECHT.test(w),
+      );
+      expect(umschriften, v.schluessel).toEqual([]);
+    }
+  });
 });
