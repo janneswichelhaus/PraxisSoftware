@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
@@ -62,13 +62,11 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
     queryFn: () => ladeNachrichten(zugang.access_id),
   });
 
-  const kopf = (aktion: ReactNode = null) => (
-    <PageHeader title="Nachrichten" {...(aktion ? { actions: aktion } : {})} />
-  );
+  const kopf = <PageHeader title="Nachrichten" />;
   if (daten.data === undefined) {
     return (
       <>
-        {kopf()}
+        {kopf}
         <Abfragezustand
           abfrage={daten}
           laden="Ihre Nachrichten werden geladen …"
@@ -86,14 +84,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
 
   return (
     <>
-      {kopf(
-        can_write ? (
-          // Auf der Plattform in voller Größe (DESIGN.md, Seitentyp „Plattform“).
-          <ButtonLink to={mit('/nachrichten/neu')} groesse="normal">
-            Neue Nachricht
-          </ButtonLink>
-        ) : null,
-      )}
+      {kopf}
       {suche.get('gesendet') === '1' ? (
         <Rueckmeldung className="mb-4">Ihre Nachricht ist bei der Praxis angekommen.</Rueckmeldung>
       ) : null}
@@ -120,6 +111,16 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
           ))}
         </Listenabschnitt>
       </div>
+      {/* Die eine Aufgabe der Seite als Hauptknopf unter der Liste, am Telefon
+          in voller Breite (DESIGN.md, Seitentyp „Plattform“) - nicht klein
+          oben rechts im Kopf. */}
+      {can_write ? (
+        <div className="mt-6">
+          <ButtonLink to={mit('/nachrichten/neu')} groesse="normal" className="w-full sm:w-auto">
+            Neue Nachricht
+          </ButtonLink>
+        </div>
+      ) : null}
       {/* Erledigtes auf Abruf: Es wird mit jeder Frage länger (DESIGN.md, Regel 6). */}
       {erledigt.length > 0 ? (
         <div className="mt-8">
