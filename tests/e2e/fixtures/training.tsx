@@ -24,11 +24,14 @@ import '@/index.css';
  *
  * `?seite=liste` (Standard), `?seite=neu`, `?seite=detail`, seit TRN-EPIC-002
  * `?seite=termin` (Trainingstermin) und `?seite=termin-neu`, seit
- * TRN-EPIC-004 `?seite=termin-dokumentiert` (abgeschlossenes Protokoll). Die Daten
+ * TRN-EPIC-004 `?seite=termin-dokumentiert` (abgeschlossenes Protokoll); an
+ * `?seite=detail` öffnet `&bereich=` einen Reiter (Welle B3a). Die Daten
  * liegen vorab im Cache; gesprochen wird mit keinem Server. Alles ist
  * synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'liste';
+// Welle B3a: der offene Reiter der Trainingskund:in (`?bereich=vertraege`).
+const bereich = new URLSearchParams(window.location.search).get('bereich');
 
 const TINA = 'eeeeeeee-eeee-4eee-8eee-000000000001';
 
@@ -310,7 +313,7 @@ const start =
   seite === 'neu'
     ? '/training/neu'
     : seite === 'detail'
-      ? `/training/${TINA}`
+      ? `/training/${TINA}${bereich ? `?bereich=${bereich}` : ''}`
       : seite === 'termin'
         ? `/training/termine/${TERMIN}`
         : seite === 'termin-neu'

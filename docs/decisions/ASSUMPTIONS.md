@@ -4632,6 +4632,18 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Wochenformular: RPC für die ganze Woche, Formular über alle Zeilen · Aufwand `mittel`.
 
+### ANN-440 — Trainingskund:in mit vier Reitern; ein Reiter lädt erst, wenn er offen ist
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die Trainingskund:in ist eine Objektseite wie die Akte: Termine (mit Plänen und Einheiten), Verlauf (Check-ins, Assessments), Verträge (Vereinbarungen, Paket, Einwilligung, Vertragsende leise am Ende), Stammdaten (Kontakt, Voraussetzungen, Plattform, Rückfragen). Was ein Reiter zeigt, wird erst beim Öffnen geladen – protokollierte Lesezugriffe entstehen dann erst.
+
+**Begründung.** Auftrag Welle B (B3a): vierzehn Abschnitte, 3.838 px am Telefon; Reiterfolge nach DESIGN.md „Objekt“.
+
+**Anker.** `bereiche` in `Ansicht`, `src/features/training/TrainingClientPage.tsx`.
+
+**Änderungspfad.** Abschnitte zwischen Reitern verschieben oder vorab laden · Aufwand `klein`.
+
 ### ANN-450 — Offene Punkte sind ein Eingang: nur Gruppen mit Einträgen, das Dringlichste zuerst
 
 Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)

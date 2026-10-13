@@ -1,21 +1,27 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Disclosure } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Tile, TileGrid } from '@/components/ui/Tile';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
+  dayKey,
+  formatLocalDate,
   formatLocalTimeRange,
+  todayInTimeZone,
 } from '@/features/appointments/api';
 import {
   createTrainingBasis,
@@ -25,16 +31,46 @@ import {
   vereinbarungText,
   type TrainingBasis,
   type TrainingClient,
+  type TrainingClientAppointment,
 } from './api';
 
-function kurzesDatum(iso: string, zone: string): string {
-  return new Intl.DateTimeFormat('de-DE', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    timeZone: zone,
-  }).format(new Date(iso));
+/** „10:00–11:00 Uhr · Video · Tom" - eine abweichende Art steht dabei (ANN-192). */
+function terminMeta(termin: TrainingClientAppointment, zone: string): string {
+  return [
+    formatLocalTimeRange(termin.starts_at, termin.ends_at, zone),
+    appointmentTypeHint(termin.appointment_type),
+    termin.staff_given_name,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** Eine Terminzeile: der ganze Eintrag führt zum Trainingstermin. */
+function Terminzeile({
+  termin,
+  zone,
+  hier,
+}: {
+  termin: TrainingClientAppointment;
+  zone: string;
+  hier: string;
+}) {
+  return (
+    <ListRow
+      to={mitRueckweg(`/training/termine/${termin.id}`, hier)}
+      titel={formatLocalDate(termin.starts_at, zone)}
+      meta={terminMeta(termin, zone)}
+      gedaempft={termin.status === 'cancelled'}
+      // „Bestätigt" ist der Regelfall und trägt kein Abzeichen (UX-005i).
+      status={
+        termin.status === 'confirmed' ? undefined : (
+          <Badge ton={appointmentStatusTon[termin.status]}>
+            {appointmentStatusLabels[termin.status]}
+          </Badge>
+        )
+      }
+    />
+  );
 }
 
 /**
@@ -43,15 +79,19 @@ function kurzesDatum(iso: string, zone: string): string {
  * Ab 30 Tagen zurück, nur Trainingstermine - eine Behandlung derselben Person
  * steht hier nie, auch nicht für owner (ADR-021 Punkt 3). Die Liste gehört zur
  * protokollierten Detailansicht (ANN-175).
+ *
+ * Seit dem Design-Rollout (Welle B3a) nach dem Vorbild der Akte: oben der
+ * nächste Termin und die laufende Vereinbarung als Kacheln, dann „Kommende
+ * Termine", das Vergangene zugeklappt. Dieselbe Abfrage wie bisher, nur
+ * geteilt nach „schon vorbei" und „kommt noch". „Termin anlegen" steht im
+ * Kopf der Seite.
  */
 export function TrainingTermine({
   kundin,
   zeitzone,
-  darfPlanen,
 }: {
   kundin: TrainingClient;
   zeitzone: string;
-  darfPlanen: boolean;
 }) {
   const hier = `/training/${kundin.id}`;
   const termine = useQuery({
@@ -61,59 +101,107 @@ export function TrainingTermine({
   });
 
   return (
-    <Section
-      titel="Termine"
-      rahmen
-      aktion={
-        darfPlanen && kundin.status === 'active' ? (
-          <ButtonLink
-            to={mitRueckweg(`/training/termine/neu?kunde=${kundin.id}`, hier)}
-            variant="secondary"
-            groesse="kompakt"
-          >
-            Termin anlegen
-          </ButtonLink>
-        ) : null
-      }
+    <Abfragezustand
+      abfrage={termine}
+      laden="Termine werden geladen …"
+      fehler="Die Termine konnten nicht geladen werden."
+      inKarte
+      kacheln={2}
     >
-      {termine.isPending ? (
-        <LoadingState label="Termine werden geladen …" />
-      ) : termine.isError ? (
-        <ErrorState
-          title="Die Termine konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => termine.refetch()}
-        />
-      ) : termine.data.length === 0 ? (
-        <p className="text-ink-muted text-sm">Keine Termine in den letzten 30 Tagen und danach.</p>
-      ) : (
-        <ul className="divide-line flex flex-col divide-y">
-          {termine.data.map((t) => (
-            <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-              <Link
-                className="text-accent hover:underline"
-                to={mitRueckweg(`/training/termine/${t.id}`, hier)}
-              >
-                {kurzesDatum(t.starts_at, zeitzone)},{' '}
-                {formatLocalTimeRange(t.starts_at, t.ends_at, zeitzone)}
-              </Link>
-              <span className="text-ink-muted flex items-center gap-2 text-sm">
-                {/* Nur eine abweichende Terminart steht dran (ANN-192, UX-005i). */}
-                {appointmentTypeHint(t.appointment_type)
-                  ? `${appointmentTypeHint(t.appointment_type)} · `
-                  : ''}
-                {t.staff_given_name}
-                {t.status === 'confirmed' ? null : (
-                  <Badge ton={appointmentStatusTon[t.status]}>
-                    {appointmentStatusLabels[t.status]}
-                  </Badge>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Section>
+      {(liste) => {
+        const jetzt = Date.now();
+        const kommend = liste.filter((t) => Date.parse(t.ends_at) >= jetzt);
+        // Neueste zuerst, wie in der Akte.
+        const vergangen = liste.filter((t) => Date.parse(t.ends_at) < jetzt).reverse();
+        const naechster = kommend.find((t) => t.status === 'confirmed') ?? null;
+        return (
+          <>
+            <Terminkacheln kundin={kundin} naechster={naechster} zone={zeitzone} />
+            <Section titel="Kommende Termine">
+              {kommend.length === 0 ? (
+                <EmptyState inKarte title="Kein Termin geplant." />
+              ) : (
+                <ListRows>
+                  {kommend.map((t) => (
+                    <Terminzeile key={t.id} termin={t} zone={zeitzone} hier={hier} />
+                  ))}
+                </ListRows>
+              )}
+            </Section>
+            {/* Was war, zugeklappt in einer Karte - wie in der Akte. Die
+                Liste reicht 30 Tage zurück. */}
+            {vergangen.length > 0 ? (
+              <div className="mt-8">
+                <Disclosure
+                  inKarte
+                  kopf="label"
+                  anzahl={vergangen.length}
+                  summary={<h2>Vergangene Termine</h2>}
+                >
+                  <ListRows rahmen={false}>
+                    {vergangen.map((t) => (
+                      <Terminzeile key={t.id} termin={t} zone={zeitzone} hier={hier} />
+                    ))}
+                  </ListRows>
+                </Disclosure>
+              </div>
+            ) : null}
+          </>
+        );
+      }}
+    </Abfragezustand>
+  );
+}
+
+/**
+ * Nächster Termin und laufende Vereinbarung als Kacheln (Design-Handoff
+ * 2026-10-01, Abschnitt 7; wie „Nächster Termin" und „Grundlage" der Akte).
+ * Die Vereinbarungen kommen aus derselben Abfrage wie im Reiter „Verträge".
+ */
+function Terminkacheln({
+  kundin,
+  naechster,
+  zone,
+}: {
+  kundin: TrainingClient;
+  naechster: TrainingClientAppointment | null;
+  zone: string;
+}) {
+  const vereinbarungen = useQuery({
+    queryKey: ['training-bases', kundin.id],
+    queryFn: () => listTrainingBases(kundin.id),
+    retry: false,
+  });
+  const laufend = vereinbarungen.data?.find((v) => v.status === 'active') ?? null;
+  if (!naechster && !laufend) return null;
+  const heute = todayInTimeZone(zone);
+
+  return (
+    <div className="mb-6">
+      <TileGrid spalte="kachel">
+        {naechster ? (
+          <Tile
+            label="Nächster Termin"
+            ton="akzent"
+            zusatz={[appointmentTypeHint(naechster.appointment_type), naechster.staff_given_name]
+              .filter(Boolean)
+              .join(' · ')}
+          >
+            {dayKey(naechster.starts_at, zone) === heute
+              ? 'Heute'
+              : formatLocalDate(naechster.starts_at, zone)}
+            <span className="block tabular-nums">
+              {formatLocalTimeRange(naechster.starts_at, naechster.ends_at, zone)}
+            </span>
+          </Tile>
+        ) : null}
+        {laufend ? (
+          <Tile label="Vereinbarung" zusatz={`Seit ${formatDate(laufend.started_on)}`}>
+            {vereinbarungText(laufend)}
+          </Tile>
+        ) : null}
+      </TileGrid>
+    </div>
   );
 }
 
@@ -143,7 +231,6 @@ export function TrainingVereinbarungen({
   return (
     <Section
       titel="Vereinbarungen"
-      rahmen
       aktion={
         darfSchreiben && laeuft && !neu ? (
           <Button type="button" variant="secondary" groesse="kompakt" onClick={() => setNeu(true)}>
@@ -153,32 +240,38 @@ export function TrainingVereinbarungen({
       }
     >
       {neu ? <NeueVereinbarung kundin={kundin} onFertig={() => setNeu(false)} /> : null}
-      {liste.isPending ? (
-        <LoadingState label="Vereinbarungen werden geladen …" />
-      ) : liste.isError ? (
-        <ErrorState
-          title="Die Vereinbarungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => liste.refetch()}
-        />
-      ) : liste.data.length === 0 ? (
-        <p className="text-ink-muted text-sm">Keine Vereinbarung – Termine sind Einzelstunden.</p>
-      ) : (
-        <ul className="divide-line flex flex-col divide-y">
-          {liste.data.map((v) => (
-            <Vereinbarung
-              key={v.id}
-              vereinbarung={v}
-              kundin={kundin}
-              darfSchreiben={darfSchreiben && (v.status === 'active' || laeuft)}
-            />
-          ))}
-        </ul>
-      )}
+      <Abfragezustand
+        abfrage={liste}
+        laden="Vereinbarungen werden geladen …"
+        fehler="Die Vereinbarungen konnten nicht geladen werden."
+        inKarte
+        leer={{
+          wenn: (daten) => daten.length === 0,
+          titel: 'Keine Vereinbarung – Termine sind Einzelstunden.',
+        }}
+      >
+        {(daten) => (
+          <ListRows>
+            {daten.map((v) => (
+              <Vereinbarung
+                key={v.id}
+                vereinbarung={v}
+                kundin={kundin}
+                darfSchreiben={darfSchreiben && (v.status === 'active' || laeuft)}
+              />
+            ))}
+          </ListRows>
+        )}
+      </Abfragezustand>
     </Section>
   );
 }
 
+/**
+ * Eine Vereinbarung als Zeile. Ihr Vorgang öffnet eine Rückfrage an Ort und
+ * Stelle, die über die volle Breite der Zeile aufgeht - deshalb eine eigene
+ * Zeile im Raster der `ListRow` statt ihres `aktion`-Platzes.
+ */
 function Vereinbarung({
   vereinbarung,
   kundin,
@@ -198,17 +291,22 @@ function Vereinbarung({
   });
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 py-3">
-      <div>
-        <p className="text-ink text-sm font-medium">Seit {formatDate(vereinbarung.started_on)}</p>
+    <li className="border-line flex min-h-14 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t py-2 first:border-t-0">
+      <div className="min-w-0">
+        <p
+          className={`text-base ${offen ? 'text-ink font-semibold' : 'text-ink-muted font-medium'}`}
+        >
+          Seit {formatDate(vereinbarung.started_on)}
+        </p>
         <p className="text-ink-muted text-sm">{vereinbarungText(vereinbarung)}</p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {offen ? null : <Badge>Abgeschlossen</Badge>}
         {darfSchreiben ? (
           <Rueckfrage
             ausloeser={offen ? 'Abschließen' : 'Wieder öffnen'}
             ausloeserVariante="quiet"
+            ausloeserGroesse="kompakt"
             bestaetigen={offen ? 'Vereinbarung abschließen' : 'Wieder öffnen'}
             bestaetigenLaeuft="Wird gespeichert …"
             fehler={mutation.isError ? mutation.error.message : undefined}
@@ -259,44 +357,47 @@ function NeueVereinbarung({ kundin, onFertig }: { kundin: TrainingClient; onFert
   }
 
   return (
-    <form onSubmit={absenden} noValidate className="border-line mb-4 border-b pb-4">
-      <div className="flex flex-wrap gap-4">
-        <div className="min-w-[10rem] flex-1">
-          <Field
-            label="Beginn"
-            type="date"
-            hint="Leer heißt heute."
-            value={beginn}
-            onChange={(e) => setBeginn(e.target.value)}
-          />
-        </div>
-        <div className="min-w-[10rem] flex-1">
-          <Field
-            label="Vereinbarte Einheiten"
-            inputMode="numeric"
-            hint="Leer heißt ohne feste Anzahl."
-            value={anzahl}
-            error={fehler}
-            onChange={(e) => {
-              setAnzahl(e.target.value.trim());
-              setFehler(undefined);
-            }}
-          />
-        </div>
+    // Ein Formular über der Liste, ohne eigenen Kasten (Leitfaden L2): Felder
+    // sind ohnehin weiß; eine Linie trennt es von den Zeilen darunter.
+    <form
+      onSubmit={absenden}
+      noValidate
+      aria-label="Vereinbarung anlegen"
+      className="border-line max-w-formular mb-6 border-b pb-6"
+    >
+      <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+        <Field
+          label="Beginn"
+          type="date"
+          hint="Leer heißt heute."
+          value={beginn}
+          onChange={(e) => setBeginn(e.target.value)}
+        />
+        <Field
+          label="Vereinbarte Einheiten"
+          inputMode="numeric"
+          hint="Leer heißt ohne feste Anzahl."
+          value={anzahl}
+          error={fehler}
+          onChange={(e) => {
+            setAnzahl(e.target.value.trim());
+            setFehler(undefined);
+          }}
+        />
       </div>
       {mutation.isError ? (
         <Statusmeldung ton="fehler" className="mt-4">
           {mutation.error.message}
         </Statusmeldung>
       ) : null}
-      <div className="mt-4 flex flex-wrap gap-3">
-        <Button type="submit" groesse="kompakt" disabled={mutation.isPending}>
+      <Formularfuss>
+        <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? 'Wird angelegt …' : 'Vereinbarung anlegen'}
         </Button>
-        <Button type="button" variant="secondary" groesse="kompakt" onClick={onFertig}>
+        <Button type="button" variant="quiet" onClick={onFertig}>
           Abbrechen
         </Button>
-      </div>
+      </Formularfuss>
     </form>
   );
 }

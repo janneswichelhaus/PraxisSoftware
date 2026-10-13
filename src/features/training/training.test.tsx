@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TrainingApi from './api';
 import type * as RouterModul from 'react-router-dom';
@@ -127,7 +127,7 @@ describe('TrainingClientsPage', () => {
     listTrainingClients.mockResolvedValue([tina]);
     renderWithProviders(<TrainingClientsPage user={testUser(['office'])} />);
     await screen.findByRole('link', { name: /Tina/ });
-    await user.type(screen.getByLabelText('Liste filtern'), 'xyz');
+    await user.type(screen.getByLabelText('Trainingskund:in suchen'), 'xyz');
     expect(screen.getByText('Keine Treffer')).toBeInTheDocument();
   });
 
@@ -228,7 +228,8 @@ describe('NewTrainingClientPage', () => {
 });
 
 describe('TrainingClientPage', () => {
-  it('zeigt Kontakt und Vertrag und bietet Beenden an', async () => {
+  it('zeigt Name und Vertrag im Kopf, Kontakt in den Stammdaten und Beenden in den Verträgen', async () => {
+    const nutzer = userEvent.setup();
     getTrainingClient.mockResolvedValue(tina);
     renderWithProviders(<TrainingClientPage user={testUser(['trainer'])} />);
 
@@ -236,15 +237,29 @@ describe('TrainingClientPage', () => {
       await screen.findByRole('heading', { name: 'Tina Trainingskundin' }),
     ).toBeInTheDocument();
     expect(getTrainingClient).toHaveBeenCalledWith(TINA);
-    expect(getTrainingClient).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('link', { name: 'tina@beispiel.invalid' })).toHaveAttribute(
+    expect(screen.getByText(/Vertrag seit 01\.09\.2026/)).toBeInTheDocument();
+    // Welle B3a: Reiter wie in der Akte, der erste offen.
+    const reiter = screen.getByRole('navigation', { name: 'Bereiche der Trainingskund:in' });
+    expect(within(reiter).getByRole('link', { name: 'Termine' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    // Kein Wort über eine Behandlung (§4.8).
+    expect(screen.queryByText(/Akte|Patient/)).toBeNull();
+
+    await nutzer.click(within(reiter).getByRole('link', { name: 'Stammdaten' }));
+    expect(await screen.findByRole('link', { name: 'tina@beispiel.invalid' })).toHaveAttribute(
       'href',
       'mailto:tina@beispiel.invalid',
     );
     expect(screen.getByText('Trainingsweg 1, 72070 Tuebingen')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Vertrag beenden' })).toBeInTheDocument();
-    // Kein Wort über eine Behandlung (§4.8).
     expect(screen.queryByText(/Akte|Patient/)).toBeNull();
+
+    await nutzer.click(within(reiter).getByRole('link', { name: 'Verträge' }));
+    expect(await screen.findByRole('button', { name: 'Vertrag beenden' })).toBeInTheDocument();
+    expect(screen.queryByText(/Akte|Patient/)).toBeNull();
+    // Der Reiterwechsel lädt die Kundin nicht neu - kein zweites Öffnen (ANN-175).
+    expect(getTrainingClient).toHaveBeenCalledTimes(1);
   });
 
   it('beendet den Vertrag erst nach der Rückfrage mit dem gewählten Tag', async () => {
@@ -255,6 +270,7 @@ describe('TrainingClientPage', () => {
       <TrainingClientPage
         user={{ ...testUser(['trainer']), organizationTimeZone: 'Europe/Berlin' }}
       />,
+      '/?bereich=vertraege',
     );
     await user.click(await screen.findByRole('button', { name: 'Vertrag beenden' }));
     expect(screen.getByText(/Aufbewahrung von drei Jahren/)).toBeInTheDocument();
@@ -273,8 +289,10 @@ describe('TrainingClientPage', () => {
       contract_ended_on: '2026-09-20',
     });
     reopenTrainingRelationship.mockResolvedValue(undefined);
-    renderWithProviders(<TrainingClientPage user={testUser(['office'])} />);
+    renderWithProviders(<TrainingClientPage user={testUser(['office'])} />, '/?bereich=vertraege');
     expect(await screen.findByText('Vertrag beendet')).toBeInTheDocument();
+    // Ohne laufenden Vertrag kein neuer Termin.
+    expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Vertrag wieder aufnehmen' }));
     await user.click(screen.getByRole('button', { name: 'Vertrag wieder aufnehmen' }));
     await waitFor(() => expect(reopenTrainingRelationship).toHaveBeenCalledWith(TINA));
@@ -284,8 +302,13 @@ describe('TrainingClientPage', () => {
     const user = userEvent.setup();
     getTrainingClient.mockResolvedValue(tina);
     updateTrainingClient.mockResolvedValue(undefined);
-    renderWithProviders(<TrainingClientPage user={testUser(['trainer'])} />);
+    renderWithProviders(
+      <TrainingClientPage user={testUser(['trainer'])} />,
+      '/?bereich=stammdaten',
+    );
     await user.click(await screen.findByRole('button', { name: 'Bearbeiten' }));
+    // Wer tippt, sieht die Reiter nicht (wie die Formulare der Akte).
+    expect(screen.queryByRole('navigation', { name: 'Bereiche der Trainingskund:in' })).toBeNull();
 
     await user.clear(screen.getByLabelText('Vertragsbeginn *'));
     await user.click(screen.getByRole('button', { name: 'Speichern' }));
@@ -302,15 +325,86 @@ describe('TrainingClientPage', () => {
         expect.objectContaining({ phone: '+49 7071 0000200', contract_started_on: '2026-09-02' }),
       ),
     );
+    expect(await screen.findByText('Gespeichert.')).toBeInTheDocument();
   });
 
   it('bietet einer Rolle ohne Schreibrecht nichts zum Ändern an', async () => {
+    const nutzer = userEvent.setup();
     getTrainingClient.mockResolvedValue(tina);
     // Nur Darstellung: therapist bekommt die Seite gar nicht und vom Server
-    // keine Zeile. Hier die zweite Linie der Oberfläche.
-    renderWithProviders(<TrainingClientPage user={testUser(['therapist'])} />);
+    // keine Zeile. Hier die zweite Linie der Oberfläche - in jedem Reiter.
+    renderWithProviders(
+      <TrainingClientPage
+        user={{ ...testUser(['therapist']), organizationTimeZone: 'Europe/Berlin' }}
+      />,
+      '/?bereich=stammdaten',
+    );
     await screen.findByRole('heading', { name: 'Tina Trainingskundin' });
+    expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
+    const reiter = screen.getByRole('navigation', { name: 'Bereiche der Trainingskund:in' });
+    await nutzer.click(within(reiter).getByRole('link', { name: 'Verträge' }));
+    await screen.findByRole('heading', { name: 'Vereinbarungen' });
     expect(screen.queryByRole('button', { name: 'Vertrag beenden' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Vereinbarung anlegen' })).toBeNull();
+  });
+
+  it('teilt die Termine wie die Akte: Kacheln, Kommende, Vergangene zugeklappt', async () => {
+    getTrainingClient.mockResolvedValue(tina);
+    const termin = (id: string, tage: number, status: string) => {
+      const beginn = new Date(Date.now() + tage * 86_400_000);
+      return {
+        id,
+        training_basis_id: null,
+        staff_member_id: '55555555-5555-4555-8555-000000000006',
+        staff_given_name: 'Tom',
+        staff_family_name: 'Trainingsbetreuung',
+        appointment_type: 'video',
+        status,
+        starts_at: beginn.toISOString(),
+        ends_at: new Date(beginn.getTime() + 3_600_000).toISOString(),
+      };
+    };
+    listTrainingClientAppointments.mockResolvedValue([
+      termin('aaaaaaaa-aaaa-4aaa-8aaa-000000000001', -3, 'completed'),
+      termin('aaaaaaaa-aaaa-4aaa-8aaa-000000000002', 2, 'confirmed'),
+    ]);
+    listTrainingBases.mockResolvedValue([
+      {
+        id: 'b1',
+        status: 'active',
+        started_on: '2026-09-01',
+        agreed_quantity: 10,
+        appointment_count: 2,
+      },
+    ]);
+    renderWithProviders(
+      <TrainingClientPage
+        user={{ ...testUser(['trainer']), organizationTimeZone: 'Europe/Berlin' }}
+      />,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Kommende Termine' })).toBeInTheDocument();
+    expect(screen.getByText('Nächster Termin')).toBeInTheDocument();
+    expect(await screen.findByText('2 Termine von 10')).toBeInTheDocument();
+    // Das Vergangene steht zugeklappt, mit seiner Zahl.
+    expect(screen.getByRole('heading', { name: 'Vergangene Termine' })).toBeInTheDocument();
+    const links = screen.getAllByRole('link', { name: /Video · Tom/ });
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute(
+      'href',
+      expect.stringContaining('/training/termine/aaaaaaaa-aaaa-4aaa-8aaa-000000000002'),
+    );
+  });
+
+  it('bietet Termin anlegen im Kopf an, mit der Kundin und dem Weg zurück', async () => {
+    getTrainingClient.mockResolvedValue(tina);
+    renderWithProviders(
+      <TrainingClientPage
+        user={{ ...testUser(['trainer']), organizationTimeZone: 'Europe/Berlin' }}
+      />,
+    );
+    const anlegen = await screen.findByRole('link', { name: 'Termin anlegen' });
+    expect(anlegen.getAttribute('href')).toContain(`/training/termine/neu?kunde=${TINA}`);
   });
 });
