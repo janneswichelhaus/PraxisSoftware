@@ -184,15 +184,68 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     expect(rueck).toHaveTextContent('Rückweg etwa 18 Minuten, 11:00 bis 11:18');
 
     // Design-Review T5: In einer schmalen Spalte fällt das Wort, nicht die
-    // Einheit - „≈ 18 min“ steht ganz da, das Wort erst ab Platz dafür.
-    expect(rueck).toHaveClass('@container', 'whitespace-nowrap');
+    // Einheit - „≈ 18 min“ steht ganz da, das Wort nur, wo es danebenpasst.
+    // Ohne Schwellwert (R2, neu2): Die Zeilen laufen von unten nach oben, zu
+    // sehen ist nur die oberste; reicht die Breite nicht, rutscht die Zahl
+    // hinauf und das Wort hinaus. jsdom kennt kein Layout - geprüft wird der
+    // Aufbau, die Wirkung zeigen die Bilder der Bildstrecke.
+    expect(rueck).toHaveClass('whitespace-nowrap');
     const wort = within(rueck).getByText('Rückweg', { selector: 'span span' });
-    expect(wort).toHaveClass('hidden', '@min-[6.75rem]:inline');
-    expect(within(weg!).getByText('Weg', { selector: 'span span' })).toHaveClass(
-      'hidden',
-      '@min-[5rem]:inline',
+    const zeile = wort.parentElement!;
+    expect(zeile).toHaveAttribute('data-testid', 'fahrweg-text');
+    expect(zeile).toHaveClass('flex', 'flex-wrap-reverse', 'content-end', 'h-4', 'overflow-hidden');
+    expect(zeile.className).not.toMatch(/@min-\[/);
+    // Das Wort steht vor der Zahl, die Zahl ist ein eigenes Stück.
+    expect(zeile.children).toHaveLength(2);
+    expect(zeile.children[0]).toBe(wort);
+    expect(zeile.children[1]).toHaveTextContent(/^≈ 18 min$/);
+    expect(within(weg!).getByText('Weg', { selector: 'span span' }).parentElement).toBe(
+      within(weg!).getByTestId('fahrweg-text'),
     );
-    expect(wort.parentElement).toHaveTextContent(/≈ 18 min$/);
+  });
+
+  it('nennt Weg und Minuten im Tooltip, auch wo der Block zu niedrig für die Zahl ist (neu5)', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[
+          {
+            id: 'st-1',
+            titel: 'Anna Beispiel',
+            baender: [],
+            fahrwege: [
+              {
+                vonMinute: 534,
+                bisMinute: 540,
+                minuten: 6,
+                auskunft: {
+                  von: 'Praxis',
+                  nach: 'Beispielstrasse 12',
+                  minuten: 6,
+                  meter: null,
+                  ziel: null,
+                  rueckweg: false,
+                  tourZiel: '/touren',
+                },
+              },
+            ],
+          },
+        ]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+    const weg = screen.getByTestId('fahrweg');
+    // 6 Minuten bei 80 px je Stunde: 8 px - zu niedrig für die Zahl.
+    expect(weg.style.height).toBe('8px');
+    expect(within(weg).getByTestId('fahrweg-text')).toHaveClass('hidden');
+    expect(weg).toHaveAttribute('title', 'Weg ≈ 6 min, 08:54–09:00');
   });
 });
 
@@ -377,7 +430,7 @@ describe('Spaltenbreite je Ansicht (Runde 3, Handoff Kalender und Tour 2026-10-0
 });
 
 describe('Kurze Kachel (Design-Review T5)', () => {
-  it('zeigt bei einer Zeile den Titel statt der Uhrzeit - die Uhrzeit bleibt vorgelesen', () => {
+  it('zeigt bei einer Zeile den Titel und die Uhrzeit dahinter, wo beide passen', () => {
     renderWithProviders(
       <CalendarGrid
         spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [] }]}
@@ -403,8 +456,19 @@ describe('Kurze Kachel (Design-Review T5)', () => {
     );
     const kachel = screen.getAllByRole('link')[0]!;
     expect(within(kachel).getByText('Teambesprechung')).not.toHaveClass('sr-only');
-    expect(within(kachel).getByTestId('kachel-zeit')).toHaveClass('sr-only');
-    expect(within(kachel).getByTestId('kachel-zeit')).toHaveTextContent('08:00–08:25');
+    const zeit = within(kachel).getByTestId('kachel-zeit');
+    expect(zeit).toHaveTextContent('08:00–08:25');
+    // Design-Review R2 (neu1): Die Uhrzeit steht hinter dem Titel in derselben
+    // Zeile und ist zu sehen, wo beide ganz hineinpassen; sonst bricht sie in
+    // die zweite Zeile um, die `h-4` abschneidet. Vorgelesen wird sie immer
+    // (kein `aria-hidden`), nach dem Titel (KAL-16).
+    expect(zeit).not.toHaveClass('sr-only');
+    expect(zeit).not.toHaveAttribute('aria-hidden');
+    const zeile = within(kachel).getByTestId('kachel-einzeiler');
+    expect(zeile).toHaveClass('flex', 'flex-wrap', 'h-4', 'overflow-hidden');
+    expect(zeile.lastElementChild).toBe(zeit);
+    expect(zeile.firstElementChild).toHaveTextContent('Teambesprechung');
+    expect(zeile.firstElementChild).toHaveClass('truncate', 'max-w-full');
   });
 
   it('setzt die Uhrzeit über den Titel, sobald zwei Zeilen Platz haben', () => {
