@@ -29,7 +29,8 @@
     "scan:secrets": "./scripts/scan-secrets.sh",
     "screenshots": "node scripts/screenshots.mjs",
     "fortschritt": "node scripts/fortschritt.mjs",
-    "definitionen:sql": "node scripts/definitionen-sql.mjs"
+    "definitionen:sql": "node scripts/definitionen-sql.mjs",
+    "katalog:sql": "node scripts/katalog-sql.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
