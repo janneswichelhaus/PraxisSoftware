@@ -1,3 +1,4 @@
+import { Abfragezustand, type Abfrage } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { Routenergebnis } from '@/lib/location/route';
@@ -15,19 +16,51 @@ import { FEHLERTEXTE } from './karte/fehlertexte';
  * als die Rechnung (ADR-019, B6).
  */
 
-/** Summe der Route über dem Tag — oder der Grund, warum es keine gibt. */
+/**
+ * Summe der Route über dem Tag — oder der Grund, warum es keine gibt.
+ *
+ * Laden und Fehler über `Abfragezustand` (DESIGN.md Regel 8, Design-Review
+ * T4). Bis dahin stand „Route und Fahrzeiten werden berechnet …“ auch dann
+ * im Bild, wenn nichts berechnet wurde: Liegen alle Stopps am Startort, gibt
+ * es keine zwei Punkte, die Abfrage läuft nie los, und der Satz blieb neben
+ * „Fahrzeit nicht verfügbar“ stehen. Ohne Fahrt (`noetig` falsch) steht hier
+ * deshalb nichts.
+ */
 export function Routenzusammenfassung({
-  laedt,
+  abfrage,
+  noetig,
+}: {
+  readonly abfrage: Abfrage<Routenergebnis>;
+  /** Gibt es mindestens zwei verschiedene Orte, also eine Route? */
+  readonly noetig: boolean;
+}) {
+  if (!noetig) return null;
+  return (
+    <Abfragezustand
+      abfrage={abfrage}
+      laden="Route und Fahrzeiten werden berechnet …"
+      fehler="Die Route konnte nicht berechnet werden."
+    >
+      {(ergebnis) => (
+        <Routensumme
+          ergebnis={ergebnis}
+          laeuft={abfrage.isFetching}
+          erneutVersuchen={() => void abfrage.refetch()}
+        />
+      )}
+    </Abfragezustand>
+  );
+}
+
+function Routensumme({
   ergebnis,
+  laeuft,
   erneutVersuchen,
 }: {
-  readonly laedt: boolean;
-  readonly ergebnis: Routenergebnis | undefined;
+  readonly ergebnis: Routenergebnis;
+  readonly laeuft: boolean;
   readonly erneutVersuchen: () => void;
 }) {
-  if (laedt || ergebnis === undefined) {
-    return <p className="text-ink-muted text-sm">Route und Fahrzeiten werden berechnet …</p>;
-  }
   if (!ergebnis.ok) {
     const text = FEHLERTEXTE[ergebnis.error.code];
     return (
@@ -39,9 +72,10 @@ export function Routenzusammenfassung({
           type="button"
           variant="secondary"
           className="print:hidden"
+          disabled={laeuft}
           onClick={erneutVersuchen}
         >
-          Erneut versuchen
+          {laeuft ? 'Wird berechnet …' : 'Erneut versuchen'}
         </Button>
       </div>
     );

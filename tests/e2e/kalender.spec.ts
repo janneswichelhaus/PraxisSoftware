@@ -231,6 +231,14 @@ test.describe('Kalender', () => {
       await expect(wege).toHaveCount(5);
       await expect(wege.nth(0)).toContainText('Weg ≈ 15 min');
       await expect(wege.nth(4)).toContainText('Rückweg ≈ 16 min');
+      // Design-Review T5: Die Zahl mit Einheit steht ganz im Block - fehlt der
+      // Platz, fällt das Wort davor, nicht „min“.
+      for (const index of [0, 4]) {
+        const passt = await wege
+          .nth(index)
+          .evaluate((block) => block.scrollWidth <= block.clientWidth);
+        expect(passt).toBe(true);
+      }
       // Der Block endet an der Oberkante des Besuchs, zu dem gefahren wird.
       const weg = (await wege.nth(1).boundingBox())!;
       const carl = spalte.getByRole('button', { name: /^Carl Muster/ });

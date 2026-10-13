@@ -155,7 +155,8 @@ describe('NewAppointmentPage', () => {
   it('nennt die vorausgewaehlte Patient:in einmal, in der Beschreibung (TER-21)', async () => {
     rendern();
     await formularAbwarten();
-    expect(screen.getByText(/^Für Berta Bestand\./)).toBeInTheDocument();
+    // Eine Angabe, kein Satz: ohne Schlusspunkt (Design-Review T8).
+    expect(screen.getByText('Für Berta Bestand')).toBeInTheDocument();
     // Kein zweiter Kasten mit demselben Namen direkt darunter.
     expect(screen.getAllByText(/Berta Bestand/)).toHaveLength(1);
     expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();

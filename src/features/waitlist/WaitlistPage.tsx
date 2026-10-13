@@ -218,10 +218,10 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
         )}
       </Abfragezustand>
 
-      {/* Was die Seite nicht tut, steht am Ende - nicht im Kopf (B15). */}
+      {/* Was die Seite nicht tut, steht am Ende - nicht im Kopf (B15); eine
+          Zeile, ohne Erklärung des Ablaufs (Design-Review T7). */}
       <Kleingedrucktes className="mt-8">
-        Wird ein Platz frei, zeigt die Absage die passenden Einträge. Angerufen wird von hier;
-        versendet wird nichts.
+        Angerufen wird von hier; versendet wird nichts.
       </Kleingedrucktes>
     </>
   );

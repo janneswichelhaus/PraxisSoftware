@@ -90,10 +90,10 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
     <Section titel="Zweiter Faktor">
       {/* UI-002d, ANN-028: Die Auskunft steht ganz oben und unabhängig davon,
           ob schon ein Faktor eingerichtet ist - sie gilt in beiden Fällen. */}
+      {/* Kurz (Design-Review T7): was er heute bewirkt, nicht, warum. */}
       <Statusmeldung ton="warnung">
-        Die Anmeldung fragt den zweiten Faktor <strong>derzeit nicht ab</strong>; der Passkey prüft
-        schon Gerät und Person. Ist er eingerichtet, verlangt der Anmeldedienst ihn beim Einrichten
-        und Entfernen eines Passkeys.
+        Die Anmeldung fragt den zweiten Faktor <strong>derzeit nicht ab</strong>; eingerichtet
+        verlangt ihn nur das Einrichten und Entfernen eines Passkeys.
       </Statusmeldung>
 
       {faktoren.isPending ? <LoadingState label="Stand wird geladen …" /> : null}
@@ -144,7 +144,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
           {isOwner(user.roles) ? (
             <Statusmeldung className="mt-4">
               Dieses Konto darf Zugänge, Rollen und das Protokoll verwalten und hat noch keinen
-              zweiten Faktor. Für diese Rechte ist er vorgesehen, sobald die Anmeldung ihn abfragt.
+              zweiten Faktor.
             </Statusmeldung>
           ) : (
             <Statusmeldung className="mt-4">
@@ -332,10 +332,10 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <Kleingedrucktes className="mt-10">
           {/* Wer Stammdaten und Rollen pflegt (WRT-12, ORG-27) - seit Welle B
               hier statt unter dem Titel. */}
-          Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement. Zweiter Faktor und das
-          Beenden der Sitzungen werden protokolliert – ohne Einmalkennwort und ohne Gerätekennung.
-          Einrichten und Entfernen eines Passkeys hält der Anmeldedienst in seinem eigenen Protokoll
-          fest. Die PIN und ihre Verwendung werden nicht protokolliert.
+          {/* Gekürzt, Inhalt gleich (Design-Review T7). */}
+          Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement. Zweiter Faktor und
+          Sitzungsende werden protokolliert, ohne Einmalkennwort und Gerätekennung; Passkeys nur im
+          Protokoll des Anmeldedienstes, die PIN gar nicht.
         </Kleingedrucktes>
       </div>
     </>

@@ -424,7 +424,8 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
         description={
           istEreignis
             ? 'Hier wird nur die beteiligte Person getauscht.'
-            : `Für ${patientName(daten)}.`
+            : // Eine Angabe, kein Satz: ohne Punkt wie überall (T8).
+              `Für ${patientName(daten)}`
         }
       />
 

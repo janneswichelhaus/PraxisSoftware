@@ -5066,3 +5066,15 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Andere Zeichen dort eintragen oder `eigenesZeichen` weglassen · Aufwand `klein`.
 
+### ANN-489 — Eine Zeitspanne (von/bis) steht auch am Telefon in einer Zeile
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
+
+**Annahme.** Von und bis einer Zeitspanne gelten als ein zusammengehöriges Paar (wie PLZ/Ort) und stehen auch unter 640 px nebeneinander, solange jedes Feld 48 px hoch und rund 120 px breit bleibt. Sichtbar steht nur „von“/„bis“; der zugängliche Name nennt Block und Nummer („Abweichender Block 1 von“).
+
+**Begründung.** DESIGN.md erlaubt zwei Felder nebeneinander erst ab 640 px; untereinander verdoppelte sich die Höhe jedes Blocks, und die lange Beschriftung brach bei 375 px um (Design-Review T6).
+
+**Anker.** Kommentar `ANN-489` an `BlockFelder` in `src/features/scheduling/SchedulingPage.tsx`.
+
+**Änderungspfad.** Untereinander: `grid-cols` erst ab `sm:` setzen · Aufwand `klein`.
+

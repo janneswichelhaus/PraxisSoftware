@@ -151,9 +151,52 @@ describe('PageHeader', () => {
     // auf jeder Breite.
     expect(klassen).not.toContain('text-h2');
     expect(klassen).toEqual(expect.arrayContaining(['font-extrabold', 'tracking-display']));
-    // Beschreibung: 14 px, leise, 4 px unter dem Titel.
-    const beschreibung = screen.getByText('12 Personen').className.split(/\s+/);
-    expect(beschreibung).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'mt-1']));
+    // Beschreibung: 14 px, leise, 4 px unter dem Titel, eine Zeile.
+    const beschreibung = screen.getByText('12 Personen');
+    expect(beschreibung.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['text-ink-muted', 'text-sm', 'line-clamp-1']),
+    );
+    expect(beschreibung.parentElement).toHaveClass('mt-1');
+    // Kurz und (in jsdom ungemessen) nicht abgeschnitten: kein „Mehr“.
+    expect(screen.queryByRole('button', { name: 'Mehr' })).toBeNull();
+  });
+
+  it('stellt die Aktion in die Zeile des Titels, die Beschreibung darunter (Design-Review T1)', () => {
+    renderWithProviders(
+      <PageHeader
+        title="Erstattungen"
+        description="Stromkosten für das Laden der Diensträder und ausgelegte Einkäufe."
+        actions={<Button type="button">Erstattung einreichen</Button>}
+      />,
+    );
+    const titel = screen.getByRole('heading', { level: 1 });
+    const knopf = screen.getByRole('button', { name: 'Erstattung einreichen' });
+    const beschreibung = screen.getByText(/Stromkosten/);
+    // Titel und Aktion teilen sich eine Zeile ...
+    const zeile = knopf.closest('header > div')!;
+    expect(zeile).toContainElement(titel);
+    // ... die Beschreibung steht nicht darin, sondern darunter auf ganzer Breite.
+    expect(zeile).not.toContainElement(beschreibung);
+    expect(
+      zeile.compareDocumentPosition(beschreibung) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('klappt eine lange Beschreibung hinter „Mehr“ ein und auf', async () => {
+    const user = userEvent.setup();
+    const lang =
+      'Ein Satz, der deutlich länger ist als eine Zeile am Telefon und deshalb hinter dem Aufklapper steht.';
+    renderWithProviders(<PageHeader title="Seite" description={lang} />);
+    const satz = screen.getByText(lang);
+    expect(satz).toHaveClass('line-clamp-1');
+    const mehr = screen.getByRole('button', { name: 'Mehr' });
+    expect(mehr).toHaveAttribute('aria-expanded', 'false');
+    await user.click(mehr);
+    expect(satz).not.toHaveClass('line-clamp-1');
+    expect(screen.getByRole('button', { name: 'Weniger' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 });
 
@@ -788,8 +831,9 @@ describe('SubNav', () => {
     );
 
     // „Zahlungen" liegt bei 480-600 px, sichtbar sind 300: Die Liste rollt so
-    // weit, dass der Eintrag ganz und 24 px vom Nachbarn zu sehen sind.
-    expect(screen.getByRole('list').scrollLeft).toBe(600 + 24 - 300);
+    // weit, dass der Eintrag ganz und 72 px vom Nachbarn zu sehen sind - so
+    // breit wie der Verlauf am Rand, der den Nachbarn ausblendet (T2).
+    expect(screen.getByRole('list').scrollLeft).toBe(600 + 72 - 300);
     expect(seiteRollen).not.toHaveBeenCalled();
   });
 
@@ -808,7 +852,7 @@ describe('SubNav', () => {
     expect(liste.scrollLeft).toBe(0);
 
     await user.click(screen.getByRole('link', { name: 'Auswertung' }));
-    expect(liste.scrollLeft).toBe(720 + 24 - 300);
+    expect(liste.scrollLeft).toBe(720 + 72 - 300);
 
     await user.click(screen.getByRole('link', { name: 'Rechnungen' }));
     expect(liste.scrollLeft).toBe(0);
@@ -823,7 +867,7 @@ describe('SubNav', () => {
       '/abrechnung/auswertung',
     );
     expect(screen.getByRole('list').scrollLeft).toBe(0);
-    // Nichts liegt rechts außer Sicht: kein Verlauf.
+    // Nichts liegt außer Sicht: kein Verlauf, weder rechts noch links.
     expect(document.querySelector('[data-verlauf]')).toBeNull();
   });
 
@@ -835,8 +879,10 @@ describe('SubNav', () => {
     );
     const liste = screen.getByRole('list');
     // Sechs Einträge à 120 px, 300 sichtbar, Anfang: rechts liegt noch etwas.
-    const verlauf = document.querySelector('[data-verlauf]')!;
+    const verlauf = document.querySelector('[data-verlauf="rechts"]')!;
     expect(verlauf).not.toBeNull();
+    // Am Anfang liegt links nichts: kein Verlauf dort.
+    expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
     // Dekorativ, von der Fläche nach durchsichtig, nur unter 640 px, nicht
     // klickbar - der letzte sichtbare Eintrag bleibt darunter zu treffen.
     expect(verlauf).toHaveAttribute('aria-hidden', 'true');
@@ -852,15 +898,32 @@ describe('SubNav', () => {
       ]),
     );
 
-    // Ans Ende gerollt: nichts mehr rechts, der Verlauf geht.
+    // Ans Ende gerollt: nichts mehr rechts, der Verlauf geht - und links
+    // steht seither einer, statt eines hart abgeschnittenen Worts (T2).
     liste.scrollLeft = 720 - 300;
     fireEvent.scroll(liste);
-    expect(document.querySelector('[data-verlauf]')).toBeNull();
+    expect(document.querySelector('[data-verlauf="rechts"]')).toBeNull();
+    const links = document.querySelector('[data-verlauf="links"]')!;
+    expect(links).not.toBeNull();
+    expect(links).toHaveAttribute('aria-hidden', 'true');
+    expect(links).toHaveTextContent('‹');
+    expect(links.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        'w-18',
+        'left-4',
+        'bg-linear-to-r',
+        'from-canvas',
+        'to-transparent',
+        'sm:hidden',
+        'pointer-events-none',
+      ]),
+    );
 
-    // Wieder zurück: er kommt wieder.
+    // Wieder zurück: rechts kommt er wieder, links geht er.
     liste.scrollLeft = 0;
     fireEvent.scroll(liste);
-    expect(document.querySelector('[data-verlauf]')).not.toBeNull();
+    expect(document.querySelector('[data-verlauf="rechts"]')).not.toBeNull();
+    expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
   });
 });
 

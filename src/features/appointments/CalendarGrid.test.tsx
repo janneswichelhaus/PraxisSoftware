@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils';
 import type { CalendarEntry } from './api';
@@ -166,7 +166,9 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     expect(weg!.style.height).toBe('16px');
     // 5 Minuten sichtbar: zu niedrig für die Zahl, vorgelesen wird sie trotzdem.
     expect(frueh!.style.top).toBe('0px');
-    expect(within(frueh!).getByText('Weg ≈ 15 min')).toHaveClass('hidden');
+    const sichtbar = frueh!.querySelector('[aria-hidden="true"]')!;
+    expect(sichtbar).toHaveTextContent('Weg ≈ 15 min');
+    expect(sichtbar).toHaveClass('hidden');
     expect(frueh).toHaveTextContent('Fahrweg etwa 15 Minuten, 07:50 bis 08:05');
 
     const veraltet = screen.getByTestId('fahrweg-veraltet');
@@ -180,6 +182,17 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     const rueck = screen.getAllByTestId('fahrweg')[2]!;
     expect(rueck).toHaveTextContent('Rückweg ≈ 18 min');
     expect(rueck).toHaveTextContent('Rückweg etwa 18 Minuten, 11:00 bis 11:18');
+
+    // Design-Review T5: In einer schmalen Spalte fällt das Wort, nicht die
+    // Einheit - „≈ 18 min“ steht ganz da, das Wort erst ab Platz dafür.
+    expect(rueck).toHaveClass('@container', 'whitespace-nowrap');
+    const wort = within(rueck).getByText('Rückweg', { selector: 'span span' });
+    expect(wort).toHaveClass('hidden', '@min-[6.75rem]:inline');
+    expect(within(weg!).getByText('Weg', { selector: 'span span' })).toHaveClass(
+      'hidden',
+      '@min-[5rem]:inline',
+    );
+    expect(wort.parentElement).toHaveTextContent(/≈ 18 min$/);
   });
 });
 
@@ -360,5 +373,146 @@ describe('Spaltenbreite je Ansicht (Runde 3, Handoff Kalender und Tour 2026-10-0
 
   it('nimmt ohne Angabe die Breite der Teamansicht', () => {
     expect(zeichne()).toContain('minmax(9rem, 1fr)');
+  });
+});
+
+describe('Kurze Kachel (Design-Review T5)', () => {
+  it('zeigt bei einer Zeile den Titel statt der Uhrzeit - die Uhrzeit bleibt vorgelesen', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [] }]}
+        eintraege={[
+          {
+            // 25 Minuten bei 96 px je Stunde: 40 px, eine Zeile.
+            eintrag: termin({ kind: 'internal', title: 'Teambesprechung', patient_id: null }),
+            spalteId: 'st-1',
+            beginnMinute: 480,
+            endeMinute: 505,
+            ziehbar: false,
+          },
+        ]}
+        fenster={{ vonMinute: 420, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={96}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+    const kachel = screen.getAllByRole('link')[0]!;
+    expect(within(kachel).getByText('Teambesprechung')).not.toHaveClass('sr-only');
+    expect(within(kachel).getByTestId('kachel-zeit')).toHaveClass('sr-only');
+    expect(within(kachel).getByTestId('kachel-zeit')).toHaveTextContent('08:00–08:25');
+  });
+
+  it('setzt die Uhrzeit über den Titel, sobald zwei Zeilen Platz haben', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [] }]}
+        eintraege={[
+          {
+            eintrag: termin({}),
+            spalteId: 'st-1',
+            beginnMinute: 540,
+            endeMinute: 600,
+            ziehbar: false,
+          },
+        ]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+    const zeit = screen.getByTestId('kachel-zeit');
+    expect(zeit).not.toHaveClass('sr-only');
+    expect(zeit).toHaveClass('order-first');
+  });
+});
+
+describe('Gewählter Termin im Bild (Design-Review T5)', () => {
+  const SPALTEN = ['st-1', 'st-2', 'st-3'];
+
+  /**
+   * jsdom kennt kein Layout: Das Gitter ist 300 px breit, die Zeitachse 52,
+   * jede Spalte 160 - und alles verschiebt sich mit dem Bildlauf des Gitters.
+   */
+  function geometrie() {
+    vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(function (this: Element) {
+      return this.classList.contains('overflow-x-auto') ? 300 : 0;
+    });
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: Element,
+    ) {
+      const rechteck = (left: number, width: number) =>
+        ({ left, right: left + width, width, top: 0, bottom: 100, height: 100 }) as DOMRect;
+      const gitter = this.closest('.overflow-x-auto');
+      if (this === gitter) return rechteck(0, 300);
+      const spalte = this.closest('[role="group"]');
+      const name = spalte?.getAttribute('aria-label') ?? '';
+      const index = SPALTEN.findIndex((id) => name.includes(`Person ${id}`));
+      if (spalte && index >= 0) {
+        return rechteck(52 + index * 160 - (gitter?.scrollLeft ?? 0), 160);
+      }
+      return rechteck(0, 0);
+    });
+  }
+
+  function gitter(gewaehlt: string | null, spalteId = 'st-1') {
+    return (
+      <CalendarGrid
+        spaltenModell={SPALTEN.map((id) => ({ id, titel: `Person ${id}`, baender: [] }))}
+        eintraege={[
+          {
+            eintrag: termin({ id: 'ter-1', staff_member_id: spalteId }),
+            spalteId,
+            beginnMinute: 540,
+            endeMinute: 600,
+            ziehbar: false,
+          },
+        ]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onWaehlen={() => {}}
+        gewaehlt={gewaehlt}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />
+    );
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('rollt die Spalte des geöffneten Termins zurück ins Bild', () => {
+    geometrie();
+    const { rerender } = renderWithProviders(gitter(null));
+    const kasten = document.querySelector<HTMLElement>('.overflow-x-auto')!;
+    // Vom Bildlauf der Woche übrig: Die erste Spalte liegt links außer Sicht.
+    kasten.scrollLeft = 200;
+    rerender(gitter('ter-1'));
+    // Die Spalte beginnt wieder an der Zeitachse.
+    expect(kasten.scrollLeft).toBe(0);
+  });
+
+  it('lässt den Bildlauf stehen, wenn die Spalte schon ganz zu sehen ist', () => {
+    geometrie();
+    const { rerender } = renderWithProviders(gitter(null, 'st-2'));
+    const kasten = document.querySelector<HTMLElement>('.overflow-x-auto')!;
+    // Spalte 2 liegt ohne Bildlauf bei 212-372 px; bei 160 px Bildlauf bei
+    // 52-212 - ganz zu sehen im 300 px breiten Gitter.
+    kasten.scrollLeft = 160;
+    rerender(gitter('ter-1', 'st-2'));
+    expect(kasten.scrollLeft).toBe(160);
   });
 });

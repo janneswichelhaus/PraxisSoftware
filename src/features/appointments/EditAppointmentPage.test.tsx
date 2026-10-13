@@ -152,7 +152,8 @@ describe('EditAppointmentPage', () => {
 
     // Der Name steht in der Seitenbeschreibung; einen eigenen Kasten mit dem
     // Satz, dass der Termin nicht übertragbar sei, gibt es seit UX-005g nicht.
-    expect(screen.getByText('Für Berta Bestand.')).toBeInTheDocument();
+    // Eine Angabe, kein Satz: ohne Schlusspunkt (Design-Review T8).
+    expect(screen.getByText('Für Berta Bestand')).toBeInTheDocument();
     expect(
       screen.queryByText('Ein Termin kann nicht auf eine andere Person übertragen werden.'),
     ).not.toBeInTheDocument();

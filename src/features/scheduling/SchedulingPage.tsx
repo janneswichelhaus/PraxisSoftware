@@ -398,12 +398,17 @@ function BlockFelder({
           return (
             // Von, bis und Entfernen in einer Zeile (Design-Rollout B2): vorher
             // stand unter jedem Block ein eigener Knopf „Block n entfernen“.
+            // ANN-489: Die Zeitspanne ist ein Paar und bleibt auch am Telefon
+            // in einer Zeile; sichtbar steht nur „von“/„bis“ - „Abweichender
+            // Block 1 von“ brach bei 375 px in zwei Zeilen (Design-Review T6).
+            // Vorgelesen wird der ganze Name mit Block und Nummer.
             <div
               key={index}
               className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-3"
             >
               <Field
-                label={`${nummer} von`}
+                label="von"
+                aria-label={`${nummer} von`}
                 feldId={`${idPraefix}-${index}-von`}
                 type="time"
                 value={block.von}
@@ -412,7 +417,8 @@ function BlockFelder({
                 onChange={(e) => setzen(index, 'von', e.target.value)}
               />
               <Field
-                label={`${nummer} bis`}
+                label="bis"
+                aria-label={`${nummer} bis`}
                 feldId={`${idPraefix}-${index}-bis`}
                 type="time"
                 value={block.bis}

@@ -126,6 +126,27 @@ describe('useFahrten', () => {
     });
   });
 
+  it('kennt am Startort keine Fahrt und keine Route - statt „nicht verfügbar“ (Design-Review T4)', async () => {
+    // Ein Besuch an der Praxis, Start und Ende dort: ein einziger Punkt.
+    const praxis = { lat: 48.5, lon: 9 };
+    const { result } = renderHook(() => useFahrten(praxis, [stopp(1, 48.5)], praxis), {
+      wrapper,
+    });
+    expect(result.current.routeNoetig).toBe(false);
+    expect(result.current.rueckweg).toEqual({ sekunden: 0, meter: 0 });
+    // Nichts geht zum Kartendienst, nichts zur Prüfung.
+    await waitFor(() => expect(invoke).not.toHaveBeenCalled());
+    expect(rpc).not.toHaveBeenCalledWith('check_travel_buffers', expect.anything());
+  });
+
+  it('nennt zwei Termine am selben Ort ohne Fahrt, auch solange die Route fehlt', () => {
+    const { result } = renderHook(() => useFahrten(null, [stopp(1, 48.5), stopp(2, 48.5)]), {
+      wrapper,
+    });
+    expect(result.current.routeNoetig).toBe(false);
+    expect(result.current.zwischen[0]).toMatchObject({ sekunden: 0, meter: 0 });
+  });
+
   it('prueft nichts, wenn die Route fehlt', async () => {
     invoke.mockResolvedValue({
       data: { ok: false, error: { code: 'not_configured', message: 'x' } },

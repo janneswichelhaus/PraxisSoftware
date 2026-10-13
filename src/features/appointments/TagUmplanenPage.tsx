@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
-import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -246,9 +246,11 @@ function Umplanung({
   const tagText = zone ? formatLocalDate(`${datum}T12:00:00Z`, zone) : datum;
   const zumKalender = leseRueckweg(suche, '/kalender');
 
-  // Eine Arbeitsseite (DESIGN.md „Arbeitsseite“): oben die Liste, unten die
-  // klebende Aktionsleiste mit der einen Handlung - erst „absagen“, danach
-  // „Zum Kalender“. Am Telefon liegt sie über der Tableiste im Daumenbereich.
+  // Ein Formular (DESIGN.md „Formular“, Design-Review T3): oben die Liste,
+  // darunter der Absagegrund und der Formularfuss - am Telefon in voller
+  // Breite im Daumenbereich, mit „Abbrechen“ zurück in den Kalender. Bis dahin
+  // stand der Knopf kompakt rechts in der Aktionsleiste einer Arbeitsseite.
+  // Nach der Absage ist der Fuss der Weg zurück in den Kalender.
   return (
     <>
       <Rueckweg standard="/kalender" />
@@ -326,17 +328,17 @@ function Umplanung({
                         </Select>
                       </div>
 
-                      {/* Platz unter dem Inhalt, damit die Leiste nichts verdeckt. */}
-                      <div className="h-8" />
-                      <Aktionsleiste>
-                        <div className="ml-auto flex w-full justify-end">
+                      <div className="max-w-formular">
+                        <Formularfuss>
                           <Rueckfrage
                             ausloeser={`${betroffen.length} ${terminWort(betroffen.length)} absagen`}
                             ausloeserVariante="primary"
-                            ausloeserGroesse="kompakt"
                             bezeichnung="Tag umplanen"
                             bestaetigen="Ja, alle absagen"
                             bestaetigenLaeuft="Wird abgesagt …"
+                            // Daneben steht „Abbrechen“ für die ganze Seite;
+                            // die Frage schließt mit eigenem Wort.
+                            abbrechen="Nicht absagen"
                             fehler={mutation.isError ? mutation.error.message : undefined}
                             laeuft={mutation.isPending}
                             onAbbrechen={() => setGrundFehler(undefined)}
@@ -347,8 +349,11 @@ function Umplanung({
                             erhalten und geben ihre Zeiträume wieder frei. Eine Absage lässt sich
                             nicht zurücknehmen – danach steht die Anrufliste hier.
                           </Rueckfrage>
-                        </div>
-                      </Aktionsleiste>
+                          <ButtonLink to={zumKalender} variant="quiet">
+                            Abbrechen
+                          </ButtonLink>
+                        </Formularfuss>
+                      </div>
                     </>
                   ) : (
                     <Statusmeldung className="mt-4">
@@ -389,13 +394,10 @@ function Umplanung({
                   gespeichert.
                 </Kleingedrucktes>
 
-                <div className="h-8" />
                 {/* Nach dem letzten Anruf der Weg zum freien Tag (KAL-19). */}
-                <Aktionsleiste>
-                  <ButtonLink to={zumKalender} className="ml-auto">
-                    Zum Kalender
-                  </ButtonLink>
-                </Aktionsleiste>
+                <Formularfuss>
+                  <ButtonLink to={zumKalender}>Zum Kalender</ButtonLink>
+                </Formularfuss>
               </>
             )
           }

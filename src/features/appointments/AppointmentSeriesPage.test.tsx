@@ -269,6 +269,29 @@ describe('AppointmentSeriesPage', () => {
     );
   });
 
+  it('bietet im Formularfuss „Abbrechen“ an - vor und nach dem Vorschlag (Design-Review T8)', async () => {
+    const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
+    const user = userEvent.setup();
+    renderWithProviders(
+      <AppointmentSeriesPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/verordnungen/${VERORDNUNG}/serie?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    const vorschlag = await formularAbwarten();
+    // Dorthin, wohin auch der Rückweg führt; leise, nach dem Hauptknopf.
+    const abbrechen = screen.getByRole('link', { name: 'Abbrechen' });
+    expect(abbrechen).toHaveAttribute('href', kalender);
+    expect(abbrechen.parentElement).toBe(vorschlag.parentElement);
+
+    await vorschlagen(user);
+    await screen.findByText('Alle 3 Termine sind planbar.');
+    // Mit Liste steht es einmal, im Fuss mit „Anlegen“.
+    const nachher = screen.getAllByRole('link', { name: 'Abbrechen' });
+    expect(nachher).toHaveLength(1);
+    expect(nachher[0]!.parentElement).toBe(
+      screen.getByRole('button', { name: '3 Termine anlegen' }).parentElement,
+    );
+  });
+
   it('übernimmt die Person der Kalenderspalte statt „ich" (KAL-05)', async () => {
     // Tim ist selbst zuordenbar - und plant trotzdem in Annas Spalte für Anna.
     fetchAssignableTherapists.mockResolvedValue([

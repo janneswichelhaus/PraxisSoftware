@@ -33,11 +33,14 @@ describe('BereichePage', () => {
       <BereichePage user={testUser(['patient'], 'Max Mustermann')} />,
       '/bereiche',
     );
-    expect(
-      screen.getByText(/Vorschauen — im Untermenü so bezeichnet — und die Kommunikation speichern/),
-    ).toHaveTextContent(
-      'Vorschauen — im Untermenü so bezeichnet — und die Kommunikation speichern nichts; was dort simuliert wurde, steht im Vorschau-Protokoll.',
+    // Kurz und als Kleingedrucktes (Design-Review T7); die Kommunikation ist
+    // seit KOM-002 keine Vorschau mehr und steht deshalb nicht mehr darin.
+    const satz = screen.getByText(/Vorschauen speichern nichts/);
+    expect(satz).toHaveTextContent(
+      'Vorschauen speichern nichts; was dort simuliert wurde, steht im Vorschau-Protokoll.',
     );
+    expect(satz).toHaveClass('text-kleingedruckt');
+    expect(satz).not.toHaveTextContent(/Kommunikation/);
     expect(screen.queryByText(/als Vorschau gekennzeichnet/)).toBeNull();
     const link = screen.getByRole('link', { name: 'Vorschau-Protokoll' });
     expect(link).toHaveAttribute('href', '/vorschau/protokoll');

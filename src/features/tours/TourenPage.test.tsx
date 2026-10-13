@@ -295,13 +295,28 @@ describe('TourenPage nach dem UX-Review (UXR-003)', () => {
   const jannes = { ...testUser(['therapist']), staffMemberId: 'jannes' };
 
   it('druckt das Datum mit - im Titel der Liste, ohne Routensumme (TER-12)', async () => {
+    // Start an der Praxis und ein Besuch: zwei Orte, also eine Route, die
+    // gerade berechnet wird (ohne zweiten Ort gibt es keine Summe, T4).
+    fetchStandorte.mockResolvedValue([
+      {
+        id: 'ort',
+        name: 'Praxis',
+        street: 'Praxisweg',
+        house_number: '1',
+        postal_code: '72070',
+        city: 'Tuebingen',
+        lat: 48.5,
+        lon: 9.05,
+        geocode_precision: 'address',
+      },
+    ]);
     renderWithProviders(<TourenPage user={jannes} />, '/touren?tag=2026-09-10');
 
     const titel = await screen.findByRole('heading', {
       name: 'Tourenliste · Jannes Test · 10.09.2026',
     });
     // Routensumme und ihre Meldungen gehören zur Bedienung, nicht aufs Papier.
-    const summe = within(titel.closest('section')!).getByText(
+    const summe = await within(titel.closest('section')!).findByText(
       'Route und Fahrzeiten werden berechnet …',
     );
     expect(summe.closest('.print\\:hidden')).not.toBeNull();
