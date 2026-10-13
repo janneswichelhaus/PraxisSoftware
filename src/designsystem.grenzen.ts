@@ -75,8 +75,6 @@ export const GRENZEN: Record<
 
     'features/territories': 1,
 
-    'features/therapy-reports': 5,
-
     'features/timeaccount': 1,
 
     'features/tours': 3,
@@ -115,8 +113,6 @@ export const GRENZEN: Record<
     'features/staff': 1,
 
     'features/statistics': 3,
-
-    'features/therapy-reports': 1,
 
     'features/tours': 2,
 
