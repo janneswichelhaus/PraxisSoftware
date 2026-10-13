@@ -83,10 +83,7 @@ export function StaffMasterDataFields({
         </Feldgruppe>
       </Section>
 
-      <Section
-        titel="Dienstlich"
-        hinweis="Für alle Praxisrollen sichtbar – für Vertretung, Rückfragen und Einsatzplanung."
-      >
+      <Section titel="Dienstlich">
         <Feldgruppe>
           <Field
             label="Dienstliche E-Mail"
@@ -150,18 +147,8 @@ export function StaffMasterDataFields({
         </Feldgruppe>
       </Section>
 
-      {!privat ? (
-        <Kleingedrucktes className="mt-6">
-          Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt
-          ausschließlich die Praxisinhaber:in. Sie bleiben beim Speichern unverändert.
-        </Kleingedrucktes>
-      ) : null}
-
       {privat ? (
-        <Section
-          titel="Privat"
-          hinweis="Beschäftigtendaten. Nur für die Praxisinhaber:in und die betroffene Person sichtbar; alle Angaben sind freiwillig."
-        >
+        <Section titel="Privat">
           <Feldgruppe>
             <Field
               label="Geburtsdatum"
@@ -225,6 +212,17 @@ export function StaffMasterDataFields({
           </Feldgruppe>
         </Section>
       ) : null}
+
+      {/* Wer was sieht, als Kleingedrucktes am Ende der Felder statt als
+          Satz unter jeder Überschrift (Regel 6): Sichtbarkeit und
+          Freiwilligkeit der Beschäftigtendaten sind Aussagen zum Datenfluss
+          und bleiben vollständig. */}
+      <Kleingedrucktes className="mt-6">
+        Dienstliche Angaben sehen alle Praxisrollen – für Vertretung, Rückfragen und Einsatzplanung.{' '}
+        {privat
+          ? 'Privatangaben sind Beschäftigtendaten: nur für die Praxisinhaber:in und die betroffene Person sichtbar, alle Angaben freiwillig.'
+          : 'Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt ausschließlich die Praxisinhaber:in. Sie bleiben beim Speichern unverändert.'}
+      </Kleingedrucktes>
     </>
   );
 }

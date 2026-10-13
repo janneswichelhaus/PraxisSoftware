@@ -1,0 +1,20 @@
+import { useSearchParams } from 'react-router-dom';
+
+export interface Suchreiter<W extends string> {
+  wert: W;
+  label: string;
+}
+
+/**
+ * Der offene Reiter steht im Suchteil der Adresse (`?bereich=zugang`); ohne
+ * oder mit unbekanntem Wert gilt der erste. So bleibt die Route des Objekts
+ * dieselbe, und „Zurück" im Browser führt in den vorigen Reiter.
+ *
+ * Eigene Datei neben `Suchreiter.tsx`, damit dort nur Komponenten stehen
+ * (schnelles Neuladen).
+ */
+export function useOffenerReiter<W extends string>(param: string, werte: readonly W[]): W {
+  const [suche] = useSearchParams();
+  const wert = suche.get(param);
+  return werte.find((eintrag) => eintrag === wert) ?? (werte[0] as W);
+}

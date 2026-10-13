@@ -73,8 +73,6 @@ export const GRENZEN: Record<
 
     'features/slot-search': 1,
 
-    'features/staff': 2,
-
     'features/territories': 1,
 
     'features/therapy-reports': 5,
@@ -116,8 +114,6 @@ export const GRENZEN: Record<
 
     'features/preview': 1,
 
-    'features/staff': 1,
-
     'features/statistics': 3,
 
     'features/therapy-reports': 1,
@@ -158,8 +154,6 @@ export const GRENZEN: Record<
     'features/scheduling': 2,
 
     'features/slot-search': 1,
-
-    'features/staff': 2,
 
     'features/teamchat': 1,
 

@@ -16,6 +16,7 @@ import { createStaffMember, leereStammdaten, staffMasterDataSchema, type StaffFe
 import { StaffMasterDataFields } from './StaffMasterDataFields';
 import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 
 /**
  * Anlage eines Mitarbeiterdatensatzes.
@@ -114,10 +115,10 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
 
       <PageHeader
         title="Mitarbeiter:in anlegen"
-        description="Stammdaten für die Praxis. Mit * markierte Felder sind erforderlich."
+        description="Mit * markierte Felder sind erforderlich."
       />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={absenden} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             staffReihenfolge(privat),
@@ -141,16 +142,17 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
             über den Knöpfen. */}
         {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
+        <Formularfuss>
           <Button ref={absendenRef} type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Wird angelegt …' : 'Mitarbeiter:in anlegen'}
           </Button>
           {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
-              dieselbe Rückfrage wie jeder andere Weg hinaus. */}
-          <ButtonLink to={zurueck} variant="secondary">
+              dieselbe Rückfrage wie jeder andere Weg hinaus. Leise (DESIGN.md
+              „Formular“). */}
+          <ButtonLink to={zurueck} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
 
       {/* Ein Fehlschlag kann nicht neben dem Knopf stehen, der ihn auslöst: Am
@@ -169,7 +171,7 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
         </Hinweisfenster>
       ) : null}
 
-      <Kleingedrucktes className="mt-10">
+      <Kleingedrucktes className="max-w-formular mt-8">
         Es entstehen die Stammdaten, aber noch kein Zugang zur Anwendung. Für eigene Termine als
         behandelnde Person ist zusätzlich ein Zugang mit der Rolle Therapeut:in oder Teamleitung
         nötig – ihn lädt die Praxisinhaber:in anschließend bei der Person unter „Zugang“ ein.

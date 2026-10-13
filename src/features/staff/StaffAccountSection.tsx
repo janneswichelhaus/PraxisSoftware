@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Button } from '@/components/ui/Button';
-import { Aufklappzeichen } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { RoleBadge } from '@/components/ui/RoleBadge';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -43,7 +45,7 @@ import { ROLLENHINWEISE } from './rollenhinweise';
 const WAEHLBARE_ROLLEN: RoleKey[] = ['therapist', 'team_lead', 'office', 'trainer', 'owner'];
 
 /** Was nach einem gescheiterten Vorgang zu tun ist (WRT-01). */
-const ERNEUT = 'Bitte die Verbindung prüfen und erneut versuchen.';
+const ERNEUT = VERBINDUNG_PRUEFEN;
 
 function formatiereDatum(wert: string): string {
   const datum = new Date(wert);
@@ -163,12 +165,7 @@ function Einladungsformular({
         : undefined;
 
   return (
-    <div className="max-w-md">
-      <p className="text-ink-muted mb-4 text-sm">
-        Hier entsteht die Berechtigung, noch kein Konto. Wirksam wird sie, wenn die Person sich
-        anmeldet und die Einladung annimmt.
-      </p>
-
+    <div className="max-w-formular">
       <Field
         label="E-Mail-Adresse für den Zugang"
         feldId="einladung-email"
@@ -213,11 +210,20 @@ function Einladungsformular({
         </Statusmeldung>
       ) : null}
 
-      <Button type="button" className="mt-5" disabled={mutation.isPending} onClick={absenden}>
-        {/* Im Normalfall geht beim Einladen keine Mail hinaus - es entsteht
-            die Einladung (ORG-10). */}
-        {mutation.isPending ? 'Wird angelegt …' : 'Zugang einladen'}
-      </Button>
+      <Formularfuss>
+        <Button type="button" disabled={mutation.isPending} onClick={absenden}>
+          {/* Im Normalfall geht beim Einladen keine Mail hinaus - es entsteht
+              die Einladung (ORG-10). */}
+          {mutation.isPending ? 'Wird angelegt …' : 'Zugang einladen'}
+        </Button>
+      </Formularfuss>
+
+      {/* Was der Knopf bewirkt - und was nicht: Es entsteht die Berechtigung,
+          kein Konto (ADR-004). Als Kleingedrucktes am Ende (Regel 6). */}
+      <Kleingedrucktes className="mt-4">
+        Hier entsteht die Berechtigung, noch kein Konto. Wirksam wird sie, wenn die Person sich
+        anmeldet und die Einladung annimmt.
+      </Kleingedrucktes>
     </div>
   );
 }
@@ -291,12 +297,8 @@ function OffeneEinladung({
           es das Konto schon gibt - die Mail ging hinaus -, entfällt er
           (ORG-10). Zugeklappt, weil er das System erklärt (UX-005i). */}
       {!abgelaufen && letzteZustellung !== 'gesendet' ? (
-        <details className="group border-line bg-surface-sunken rounded-card mt-4 border px-3">
-          <summary className={`${aufklappKopfKlassen} text-ink text-sm font-medium`}>
-            <Aufklappzeichen />
-            Konto beim Anmeldedienst anlegen – so geht's
-          </summary>
-          <p className="text-ink-muted pb-3 text-sm leading-relaxed">
+        <Disclosure summary="Konto beim Anmeldedienst anlegen – so geht's">
+          <p className="text-ink-muted max-w-prose text-sm leading-relaxed">
             Die Berechtigung steht. Damit sich die Person anmelden kann, braucht sie einmalig ein
             Konto beim Anmeldedienst – die Praxisplattform legt keines an, weil die
             Selbstregistrierung bewusst abgeschaltet ist. Das Konto legt an, wer den Anmeldedienst
@@ -304,7 +306,7 @@ function OffeneEinladung({
             dieser Adresse. Danach „Anmeldemail senden“ – die Person meldet sich an und nimmt die
             Einladung an; die Rollen oben werden dabei gesetzt.
           </p>
-        </details>
+        </Disclosure>
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -437,7 +439,7 @@ function BestehenderZugang({
   const mitRueckfrage = entzogen.length > 0 && geaendert && rollen.length > 0;
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-formular">
       {/* Keine Zeile „Stand: Eingerichtet": Eingerichtet ist der Regelfall,
           gesperrt sagt die Warnung darunter (UX-005i). */}
       {!aktiv ? (
@@ -476,7 +478,7 @@ function BestehenderZugang({
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      <Formularfuss>
         {mitRueckfrage ? (
           <Rueckfrage
             ausloeser="Rollen speichern"
@@ -528,7 +530,7 @@ function BestehenderZugang({
             Verwerfen
           </Button>
         ) : null}
-      </div>
+      </Formularfuss>
       {rollen.length === 0 ? (
         <Statusmeldung className="mt-2">
           Ein Zugang braucht mindestens eine Rolle. Soll die Person keine Daten mehr sehen, sperren
