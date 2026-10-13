@@ -9,14 +9,15 @@ import type { Katalogeintrag } from '../typen';
  *
  * Nur die Ausgangsstellung (ANN-480) zeigen Übungen, deren Bewegung die
  * Linienfigur nicht eindeutig zeigen kann: Drehungen im Oberarm (SH-05,
- * SH-10, SH-11, SH-13 bis SH-15; der Unterarm zeigt dabei zum Betrachter),
+ * SH-10, SH-11, SH-13, SH-14; der Unterarm zeigt dabei zum Betrachter),
  * Bewegungen des Schulterblatts (SH-02, SH-03), Dehnungen hinter dem Rücken
  * und quer vor der Brust (SH-08, SH-09) und das Heben in der
  * Schulterblattebene (SH-16). Lieber die Stellung als ein falsches
- * Bewegungsbild. Beim Tischgleiten (SH-06) hat der Tisch der Figur
- * Arbeitsplattenhöhe, die Hand liegt deshalb höher als an einem Esstisch; bei
- * der Diagonale (SH-22) verschwindet der Arm zu Beginn vor dem Rumpf, der
- * Pfeil zeigt den Weg.
+ * Bewegungsbild. In Seitlage (SH-15) liegen Start und Ende des Unterarms in
+ * der Bildebene; diese Übung steht als Bewegung. Das Tischgleiten (SH-06)
+ * steht an der Arbeitsplatte, weil der Tisch der Figur deren Höhe hat; bei der
+ * Diagonale (SH-22) verschwindet der Arm zu Beginn vor dem Rumpf, der Pfeil
+ * zeigt den Weg.
  */
 
 const NACH_OPERATION =
@@ -84,7 +85,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     niveau: 1,
     dosierung: { saetze: 1, wiederholungen: 10, halten_s: 5, taeglich: 2 },
     anleitung: [
-      'Setzen Sie sich aufrecht auf einen Stuhl, die Arme hängen locker.',
+      'Setzen Sie sich aufrecht auf einen Stuhl, die Hände liegen locker auf den Oberschenkeln.',
       'Ziehen Sie beide Schulterblätter sanft nach hinten und unten, als wollten Sie sie in die Gesäßtaschen stecken.',
       'Halten Sie die Spannung 5 Sekunden und atmen Sie dabei ruhig weiter.',
       'Lassen Sie danach wieder locker.',
@@ -98,8 +99,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz',
-      start: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
-      ende: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+      start: { rumpf: 0 },
+      ende: { rumpf: 0 },
     },
   },
   {
@@ -114,7 +115,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     niveau: 1,
     dosierung: { saetze: 1, wiederholungen: 10, taeglich: 3 },
     anleitung: [
-      'Setzen Sie sich aufrecht auf einen Stuhl, die Arme hängen locker neben dem Körper.',
+      'Setzen Sie sich aufrecht auf einen Stuhl, die Hände liegen locker auf den Oberschenkeln.',
       'Ziehen Sie beide Schultern langsam nach oben zu den Ohren.',
       'Führen Sie sie dann nach hinten und unten, sodass ein großer, ruhiger Kreis entsteht.',
       'Atmen Sie dabei ruhig weiter.',
@@ -127,8 +128,8 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz',
-      start: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
-      ende: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+      start: { rumpf: 0 },
+      ende: { rumpf: 0 },
     },
   },
   {
@@ -198,19 +199,19 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
     schluessel: 'SH-06',
     version: '1.0.0',
-    name: 'Tischgleiten im Sitz',
+    name: 'Tischgleiten im Stand',
     alltagsname: 'Arm auf dem Tisch nach vorn schieben',
     region: 'schulter',
     ziel: 'mobilitaet',
-    ausgangsstellung: 'sitz',
-    hilfsmittel: ['stuhl', 'tisch', 'handtuch'],
+    ausgangsstellung: 'stand',
+    hilfsmittel: ['tisch', 'handtuch'],
     niveau: 1,
     dosierung: { saetze: 2, wiederholungen: 10, taeglich: 2 },
     anleitung: [
-      'Setzen Sie sich vor einen Tisch und legen Sie Unterarm und Hand auf ein Handtuch auf der Tischplatte.',
-      'Schieben Sie das Handtuch mit dem Arm langsam nach vorn und neigen Sie den Oberkörper dabei mit.',
+      'Stellen Sie sich dicht vor eine Arbeitsplatte oder einen hohen Tisch und legen Sie die Hand auf ein Handtuch auf der Platte.',
+      'Schieben Sie das Handtuch mit der Hand langsam nach vorn und beugen Sie den Oberkörper dabei aus der Hüfte mit.',
       'Gehen Sie so weit, wie es angenehm ist, und halten Sie kurz.',
-      'Ziehen Sie den Arm danach langsam wieder zu sich heran.',
+      'Richten Sie sich danach langsam wieder auf und ziehen Sie den Arm zu sich heran.',
     ],
     fehler: [
       'Die Schulter wird zum Ohr hochgezogen.',
@@ -219,17 +220,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     hinweise_praxis: NACH_OPERATION,
     bild: {
       v: 1,
-      basis: 'sitz',
-      // Der Tisch der Figur ist so hoch wie eine Arbeitsplatte; die Hand gleitet auf ihm.
-      start: { rumpf: 0, haende: ['tisch', 'oberschenkel'] },
-      ende: {
-        rumpf: 25,
-        huefte: [112, 112],
-        schulter: [111.5, 0],
-        ellbogen: [0, 0],
-        haende: [null, 'oberschenkel'],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 48 }],
+      basis: 'stand',
+      // An der Arbeitsplatte: Die Hand gleitet auf der Platte nach vorn, der
+      // Oberkörper beugt aus der Hüfte mit; der andere Arm hängt am Körper.
+      start: { haende: ['tisch', null] },
+      ende: { rumpf: 45, huefte: [45, 45], schulter: [96, 10], ellbogen: [0, 10] },
+      hilfsmittel: [{ art: 'tisch', x: 22 }],
       bewegung: ['hand_nah'],
     },
   },
@@ -289,9 +285,10 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'stand',
-      // Die obere Hand hält das Handtuch hinter dem Kopf, die untere hinter dem Rücken.
-      start: { schulter: [150, -30], ellbogen: [150, 30] },
-      ende: { schulter: [150, -30], ellbogen: [150, 30] },
+      // Die obere Hand hält das Handtuch hinter dem Kopf, der Ellbogen zeigt zur
+      // Decke; die untere Hand hält es hinter dem Rücken.
+      start: { schulter: [170, -30], ellbogen: [160, 30] },
+      ende: { schulter: [170, -30], ellbogen: [160, 30] },
       hilfsmittel: [{ art: 'handtuch', von: 'hand_nah', nach: 'hand_fern' }],
     },
   },
@@ -316,9 +313,10 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz_front',
-      // Der linke Arm im Bild liegt in Schulterhöhe quer vor der Brust, die andere Hand hält ihn.
-      start: { arm: [-90, 18], ellbogen: [0, 144] },
-      ende: { arm: [-90, 18], ellbogen: [0, 144] },
+      // Der linke Arm im Bild liegt in Schulterhöhe quer vor der Brust; die andere
+      // Hand greift ihn oberhalb des Ellbogens, nicht am Unterarm.
+      start: { arm: [-90, 5], ellbogen: [0, -170] },
+      ende: { arm: [-90, 5], ellbogen: [0, -170] },
     },
   },
   {
@@ -346,10 +344,11 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     hinweise_praxis: ISOMETRIE,
     bild: {
       v: 1,
-      basis: 'stand_front',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'wand', x: -24 }],
+      basis: 'stand',
+      // Seitenansicht: Ellbogen am Körper, rechtwinklig gebeugt, der Unterarm
+      // zeigt nach vorn. Die Wand stünde neben der Figur; sie steht im Text.
+      start: { schulter: [0, -4], ellbogen: [90, 10] },
+      ende: { schulter: [0, -4], ellbogen: [90, 10] },
     },
   },
   {
@@ -379,9 +378,11 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'stand',
+      // Der Rahmen läuft hinter Hand und Unterarm durch: Die Handfläche liegt an
+      // seiner Kante, nicht die Fingerspitzen davor.
       start: { schulter: [0, -4], ellbogen: [90, 10] },
       ende: { schulter: [0, -4], ellbogen: [90, 10] },
-      hilfsmittel: [{ art: 'tuerrahmen', x: 40 }],
+      hilfsmittel: [{ art: 'tuerrahmen', x: 26 }],
     },
   },
   {
@@ -441,8 +442,10 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'stand_front',
-      start: { haende: ['bauch', null] },
-      ende: { haende: ['bauch', null] },
+      // Ellbogen am Rumpf, der Unterarm waagerecht vor dem Bauch; das Band zeigt,
+      // wo die Hand liegt.
+      start: { arm: [7, 7], ellbogen: [-95, 6] },
+      ende: { arm: [7, 7], ellbogen: [-95, 6] },
       hilfsmittel: [
         { art: 'tuerrahmen', x: 55 },
         { art: 'band', von: 'tuerrahmen', nach: 'hand_nah' },
@@ -509,12 +512,17 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       v: 1,
       basis: 'seitlage_front',
       unterlage: 'matte',
-      start: { huefte: [30, 30], knie: [45, 45], ellbogen: [-90, 30] },
-      ende: { huefte: [30, 30], knie: [45, 45], ellbogen: [-90, 30] },
+      // Der Unterarm dreht von vor dem Bauch zur Decke; Start und Ende liegen in
+      // der Bildebene. Start 270 ist dieselbe Lage wie -90, führt die Animation
+      // aber über den Oberarm statt über einen gestreckten Ellbogen - die
+      // Drehung selbst geht zum Betrachter hin.
+      start: { huefte: [30, 30], knie: [45, 45], ellbogen: [270, 30] },
+      ende: { huefte: [30, 30], knie: [45, 45], ellbogen: [90, 30] },
       hilfsmittel: [
         { art: 'kissen', an: 'kopf' },
         { art: 'hantel', an: 'hand_nah' },
       ],
+      bewegung: ['hand_nah'],
     },
   },
   {
