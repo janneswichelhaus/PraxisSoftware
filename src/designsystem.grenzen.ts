@@ -218,7 +218,7 @@ export const GRENZEN: Record<
 
     'features/appointments': 5,
 
-    'features/assessments': 2,
+    'features/assessments': 1,
 
     'features/checkins': 5,
 
