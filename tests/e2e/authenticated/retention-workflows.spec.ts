@@ -50,12 +50,20 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
     await expect(page.getByRole('heading', { name: 'Aufbewahrung und Löschung' })).toBeVisible();
 
     // Die gesetzlich geprägte Klasse steht mit Frist, Anker und Fundstelle da.
-    // Alle drei Angaben kommen auf dieser Seite genau einmal vor - nur die
-    // Patientenakte rechnet ab dem Abschluss der Versorgung.
+    // Seit Welle B (B7) ist der Plan eine Zeilenliste: Die Zeile nennt Frist
+    // und Anker, sie öffnet die Klasse (`?klasse=`, dieselbe Route), und dort
+    // stehen alle drei Angaben je in ihrer eigenen Zeile. Geprüft wird über
+    // die Beschriftung der Zeile, nicht über die ganze Seite - so ist jede
+    // Angabe genau dieser Klasse zugeordnet.
+    const zeile = page.getByRole('link', { name: /^Klinische Patientenakte/ });
+    await expect(zeile).toContainText('10 Jahre · ab Abschluss der Versorgung');
+    await zeile.click();
+    await expect(page).toHaveURL(/\/praxis\/sicherheit\/aufbewahrung\?klasse=patientenakte$/);
+
     await expect(page.getByRole('heading', { name: 'Klinische Patientenakte' })).toBeVisible();
-    await expect(page.getByText('10 Jahre', { exact: true })).toBeVisible();
-    await expect(page.getByText('ab Abschluss der Versorgung')).toBeVisible();
-    await expect(page.getByText('§ 630f Abs. 3 BGB')).toBeVisible();
+    await expect(detailWert(page, 'Frist')).toHaveText('10 Jahre');
+    await expect(detailWert(page, 'Gerechnet')).toHaveText('ab Abschluss der Versorgung');
+    await expect(detailWert(page, 'Grundlage')).toHaveText('§ 630f Abs. 3 BGB');
   });
 
   test('sagt bei einer offenen Frist ausdrücklich, dass nicht gelöscht wird', async ({ page }) => {
@@ -66,18 +74,22 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
     // stille Lücke dastehen, sondern muss am Bildschirm benannt sein - mit
     // dem Kürzel der Annahme, die die Datenschutzprüfung abarbeitet.
     //
-    // Das Abzeichen steht neben der Überschrift im selben Kasten; die
-    // Zuordnung wird deshalb über genau dieses Elternelement geprüft und
-    // nicht über die ganze Seite - sonst bewiese der Test nur, dass
-    // IRGENDEINE Klasse ein Kürzel trägt.
+    // Seit Welle B (B7) steht im Plan eine Zeile je Klasse; sie nennt die
+    // fehlende Frist und trägt das Abzeichen der Annahme. Geprüft wird an
+    // genau dieser Zeile und nicht auf der ganzen Seite - sonst bewiese der
+    // Test nur, dass IRGENDEINE Klasse keine Frist hat.
+    const zeile = page.getByRole('link', { name: /^Beschäftigtendaten/ });
+    await expect(zeile).toContainText('Keine automatische Löschung');
+    await expect(zeile).toContainText('Annahme – Prüfung offen');
+
+    // Das Kürzel steht im Detail der Klasse (`?klasse=`) neben dem Abzeichen
+    // im Kopf; die Zuordnung wird deshalb über genau dieses Elternelement der
+    // Überschrift geprüft.
+    await zeile.click();
     const kopf = page.getByRole('heading', { name: 'Beschäftigtendaten' }).locator('..');
     await expect(kopf).toContainText('ANN-030');
-    // `exact` ist hier wichtig: ohne ihn trifft der Text auch die Einträge im
-    // zugeklappten Aufklappbereich („… — keine automatische Löschung"), und
-    // die sind nicht sichtbar.
-    await expect(
-      page.getByText('Keine automatische Löschung', { exact: true }).first(),
-    ).toBeVisible();
+    await expect(kopf).toContainText('Annahme – Prüfung offen');
+    await expect(detailWert(page, 'Frist')).toHaveText('Keine automatische Löschung');
   });
 
   test('zeigt den leeren Zustand als Text, nicht als leere Fläche', async ({ page }) => {
@@ -183,19 +195,23 @@ test.describe('LOE-001c: Löschsperre', () => {
       await anmelden(page, KONTEN.owner);
       await page.goto('/praxis/sicherheit/aufbewahrung');
 
-      // Name und Grund stehen auf dieser Seite nur in der Sperre.
-      const karte = page.getByRole('heading', { name: 'Max Mustermann' });
-      await expect(karte).toBeVisible();
+      // Name und Grund stehen auf dieser Seite nur in der Sperre. Seit
+      // Welle B ist die Sperre eine Zeile der Liste (`ListRow`) statt einer
+      // Karte mit Überschrift; Name, Grund und Zustand werden deshalb an
+      // genau dieser Zeile geprüft.
+      const zeile = page.getByRole('listitem').filter({ hasText: 'Max Mustermann' });
+      await expect(zeile).toBeVisible();
       await expect(page.getByText('E2E-Testsperre')).toBeVisible();
+      await expect(zeile).toContainText('E2E-Testsperre');
 
       // Der Zustand steht als Wort im Abzeichen, nicht nur als Farbe
-      // (Oberflächen-Checkliste Punkt 4). Geprüft wird er im Kopf der Karte
-      // und nicht auf der ganzen Seite: `getByText` sucht case-insensitiv
-      // nach einem Teilstring und fand sonst auch den Hinweis über dem
-      // Abschnitt („Eine gesperrte Akte wird nicht gelöscht …"). Und `exact`
-      // hilft hier nicht - das Abzeichen trägt vor dem Wort noch sein
-      // Zeichen, sein Textinhalt ist also „!Gesperrt".
-      await expect(karte.locator('..')).toContainText('Gesperrt');
+      // (Oberflächen-Checkliste Punkt 4). Geprüft wird er in der Zeile und
+      // nicht auf der ganzen Seite: `getByText` sucht case-insensitiv nach
+      // einem Teilstring und fand sonst auch den Satz unter „Grundlagen"
+      // („Eine gesperrte Akte wird nicht gelöscht …"). Und `exact` hilft
+      // hier nicht - das Abzeichen trägt vor dem Wort noch sein Zeichen,
+      // sein Textinhalt ist also „!Gesperrt".
+      await expect(zeile).toContainText('Gesperrt');
     } finally {
       // Auch wenn oben etwas scheitert: die Sperre darf nicht stehen bleiben,
       // sonst findet der nächste Lauf einen anderen Ausgangspunkt vor.
