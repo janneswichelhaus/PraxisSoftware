@@ -974,12 +974,14 @@ describe('Übersicht', () => {
           /^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d{1,2}\. \S+ \d{4}$/,
         ),
       ).toHaveClass('max-sm:hidden');
-      // Am Telefon kurz, aber da (Design-Review R2, U3): „Dienstag, 13. Okt.".
+      // Am Telefon über der Wochenleiste nur Monat und Jahr: Wochentag und Tag
+      // stehen in der Leiste (Design-Review R2, U3; Jannes 13.10.2026).
+      expect(within(kopf).getByText(/^[A-ZÄÖÜ][a-zäöü]+ \d{4}$/)).toHaveClass('sm:hidden');
       expect(
-        within(kopf).getByText(
+        within(kopf).queryByText(
           /^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d{1,2}\. [^\s\d]+$/,
         ),
-      ).toHaveClass('sm:hidden');
+      ).toBeNull();
       // Status = Zeichen + Wort (R2, U1): Neben den Punkten steht am Telefon
       // die Kurzform; der ganze Satz bleibt für Vorlesesoftware.
       expect(within(kopf).getByText('1 von 2')).toHaveClass('sm:hidden');
@@ -1784,6 +1786,8 @@ describe('Übersicht', () => {
       expect(heuteLink).toHaveAttribute('aria-current', 'date');
       await waitFor(() => expect(heuteLink).toHaveAccessibleName(/, heute: 2 Termine$/));
       expect(heuteLink.querySelectorAll('[data-punkte] > span')).toHaveLength(2);
+      // Reihen zu drei: Die Punkte bleiben in ihrer Tageszelle (Jannes, 13.10.2026).
+      expect(heuteLink.querySelector('[data-punkte]')).toHaveClass('grid-cols-[repeat(3,4px)]');
       expect(within(tage[1]!).getByRole('link')).toHaveAttribute(
         'href',
         `/?tag=${tagePlus(heute(), 1)}`,

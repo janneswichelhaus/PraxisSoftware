@@ -163,6 +163,17 @@ function kurzesDatum(tag: string): string {
   return KURZES_DATUM.format(new Date(`${tag}T12:00:00Z`));
 }
 
+const MONAT_UND_JAHR = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** „Oktober 2026" - über der Wochenleiste, die Wochentag und Tag schon nennt. */
+function monatUndJahr(tag: string): string {
+  return MONAT_UND_JAHR.format(new Date(`${tag}T12:00:00Z`));
+}
+
 /** Richtungszeichen hinter einem Link, nicht Teil seines Namens (WRT-08). */
 function Pfeil() {
   return <span aria-hidden="true">→</span>;
@@ -1114,11 +1125,15 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           title={
             <span className="max-sm:text-h4">{`${greeting()}, ${firstName(user.profile.display_name)}`}</span>
           }
-          // Das Datum steht auch am Telefon (Design-Review R2, U3): Die
-          // Wochenleiste nennt nur „DI 13", und ohne sie stand gar keins da.
+          // Das Datum steht auch am Telefon (Design-Review R2, U3). Mit der
+          // Wochenleiste nur Monat und Jahr: Wochentag und Tag stehen dort
+          // schon („DI 13"), doppelt sah es aus wie ein Fehler (Jannes,
+          // 13.10.2026). Ohne Leiste, etwa beim Trainer, das kurze Datum.
           description={
             <>
-              <span className="sm:hidden">{kurzesDatum(tag)}</span>
+              <span className="sm:hidden">
+                {eigeneTagesliste || darfTermine ? monatUndJahr(tag) : kurzesDatum(tag)}
+              </span>
               <span className="max-sm:hidden">{langesDatum(tag)}</span>
             </>
           }
