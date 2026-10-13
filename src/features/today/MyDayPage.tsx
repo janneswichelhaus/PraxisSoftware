@@ -151,6 +151,18 @@ function langesDatum(tag: string): string {
   return formatLocalDate(`${tag}T12:00:00Z`, 'UTC');
 }
 
+const KURZES_DATUM = new Intl.DateTimeFormat('de-DE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
+});
+
+/** „Dienstag, 13. Okt." - das Datum im Kopf am Telefon (Design-Review R2, U3). */
+function kurzesDatum(tag: string): string {
+  return KURZES_DATUM.format(new Date(`${tag}T12:00:00Z`));
+}
+
 /** Richtungszeichen hinter einem Link, nicht Teil seines Namens (WRT-08). */
 function Pfeil() {
   return <span aria-hidden="true">→</span>;
@@ -1039,21 +1051,32 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         }
         className={eigeneTagesliste && tagesliste.data ? 'print:hidden' : ''}
       >
-        {/* Am Telefon ein kompakter Kopf (Auftrag C1): Gruß und Punkte in
-            einer Zeile, das Datum trägt die Wochenleiste darunter. So liegt
-            der Hauptknopf des nächsten Besuchs auch bei 375 × 667 über der
-            Tableiste. Ab 640 px wie bisher. */}
+        {/* Am Telefon ein kompakter Kopf (Auftrag C1): Gruß in h4, darunter
+            das kurze Datum, rechts Punkte und Kurzform. So liegt der
+            Hauptknopf des nächsten Besuchs auch bei 375 × 667 über der
+            Tableiste. Ab 640 px das lange Datum und der ganze Satz. */}
         <PageHeader
           title={
             <span className="max-sm:text-h4">{`${greeting()}, ${firstName(user.profile.display_name)}`}</span>
           }
-          description={<span className="max-sm:hidden">{langesDatum(tag)}</span>}
+          // Das Datum steht auch am Telefon (Design-Review R2, U3): Die
+          // Wochenleiste nennt nur „DI 13", und ohne sie stand gar keins da.
+          description={
+            <>
+              <span className="sm:hidden">{kurzesDatum(tag)}</span>
+              <span className="max-sm:hidden">{langesDatum(tag)}</span>
+            </>
+          }
           actions={
             // Tagesfortschritt im Kopf: ein Punkt je Behandlungsbesuch.
-            // Fehlzeiten und Training zählen nicht (ANN-117). Am Telefon
-            // stehen nur die Punkte, der Satz bleibt für Vorlesesoftware.
+            // Fehlzeiten und Training zählen nicht (ANN-117). Status = Zeichen
+            // + Wort (Design-Review R2, U1): am Telefon „2 von 6" neben den
+            // Punkten, der ganze Satz für Vorlesesoftware und ab 640 px.
             fortschritt.gesamt > 0 ? (
               <ProgressDots punkte={fortschritt.punkte}>
+                <span aria-hidden="true" className="tabular-nums sm:hidden">
+                  {`${fortschritt.erledigt} von ${fortschritt.gesamt}`}
+                </span>
                 <span className="max-sm:sr-only">{fortschrittText(fortschritt)}</span>
               </ProgressDots>
             ) : undefined

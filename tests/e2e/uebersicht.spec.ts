@@ -45,6 +45,16 @@ for (const breite of [375, 1280]) {
   }) => {
     await oeffne(page, '08:05', breite);
 
+    // Datum und Tagesfortschritt stehen auch am Telefon da (Design-Review R2,
+    // U1, U3): kurz am Telefon, lang ab 640 px.
+    const kopf = page.locator('header').filter({ has: page.getByRole('heading', { level: 1 }) });
+    await expect(
+      kopf.getByText(breite < 640 ? /^\S+, \d{1,2}\. \S+$/ : /^\S+, \d{1,2}\. \S+ \d{4}$/),
+    ).toBeVisible();
+    await expect(
+      kopf.getByText(breite < 640 ? '0 von 3' : '0 von 3 Besuchen erledigt', { exact: true }),
+    ).toBeVisible();
+
     const liege = page.getByText('Liege heute', { exact: true }).locator('..');
     await expect(liege).toContainText('Ja');
     await expect(liege).toContainText('ab 2. Besuch, 10:00');

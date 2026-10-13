@@ -895,7 +895,18 @@ describe('Übersicht', () => {
         within(kopf).getByText(
           /^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d{1,2}\. \S+ \d{4}$/,
         ),
-      ).toBeInTheDocument();
+      ).toHaveClass('max-sm:hidden');
+      // Am Telefon kurz, aber da (Design-Review R2, U3): „Dienstag, 13. Okt.".
+      expect(
+        within(kopf).getByText(
+          /^(Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag), \d{1,2}\. [^\s\d]+$/,
+        ),
+      ).toHaveClass('sm:hidden');
+      // Status = Zeichen + Wort (R2, U1): Neben den Punkten steht am Telefon
+      // die Kurzform; der ganze Satz bleibt für Vorlesesoftware.
+      expect(within(kopf).getByText('1 von 2')).toHaveClass('sm:hidden');
+      expect(within(kopf).getByText('1 von 2')).toHaveAttribute('aria-hidden', 'true');
+      expect(fortschritt).toHaveClass('max-sm:sr-only');
       // Ein Punkt je Behandlungsbesuch: erledigt, dann der nächste.
       const punkte = [...kopf.querySelectorAll('[data-punkt]')].map((punkt) =>
         punkt.getAttribute('data-punkt'),
