@@ -68,9 +68,9 @@ export function EreignisFormFields({
   standorteFehler?: ReactNode;
 }) {
   return (
-    // Drei Gruppen statt sieben Felder untereinander (Design-Rollout B2,
-    // DESIGN.md „Formular“): was und wer, wo, wann. Die Reihenfolge bleibt die
-    // der Fehlerzusammenfassung (KAL-17).
+    // Zwei Gruppen statt sieben Felder untereinander (Design-Rollout B2,
+    // DESIGN.md „Formular“): was und wer, dann wo und wann. Die Reihenfolge
+    // bleibt die der Fehlerzusammenfassung (KAL-17).
     <>
       <Section titel="Fehlzeit">
         <Feldgruppe>
@@ -91,47 +91,45 @@ export function EreignisFormFields({
         </Feldgruppe>
       </Section>
 
-      <Section titel="Ort">
-        {/* Ort und Standort gehören zusammen und stehen ab 640 px
-            nebeneinander (DESIGN.md „Formular“). */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
-          <Select
-            label="Ort *"
-            value={werte.appointment_type}
-            onChange={(e) =>
-              onChange('appointment_type', e.target.value === 'video' ? 'video' : 'practice')
-            }
-          >
-            <option value="practice">In der Praxis</option>
-            <option value="video">Video</option>
-          </Select>
-
-          {werte.appointment_type === 'practice' ? (
-            standorteFehler ? (
-              // Die Fehlermeldung braucht die ganze Breite.
-              <div className="sm:col-span-2">{standorteFehler}</div>
-            ) : (
-              <Select
-                label="Standort *"
-                feldId={EREIGNIS_FELD_IDS.location_id}
-                value={werte.location_id}
-                error={fehler.location_id}
-                onChange={(e) => onChange('location_id', e.target.value)}
-              >
-                <option value="">Bitte wählen …</option>
-                {standorte.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name}
-                  </option>
-                ))}
-              </Select>
-            )
-          ) : null}
-        </div>
-      </Section>
-
-      <Section titel="Zeit">
+      <Section titel="Ort und Zeit">
         <Feldgruppe>
+          {/* Ort und Standort gehören zusammen und stehen ab 640 px
+            nebeneinander (DESIGN.md „Formular“). */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start">
+            <Select
+              label="Ort *"
+              value={werte.appointment_type}
+              onChange={(e) =>
+                onChange('appointment_type', e.target.value === 'video' ? 'video' : 'practice')
+              }
+            >
+              <option value="practice">In der Praxis</option>
+              <option value="video">Video</option>
+            </Select>
+
+            {werte.appointment_type === 'practice' ? (
+              standorteFehler ? (
+                // Die Fehlermeldung braucht die ganze Breite.
+                <div className="sm:col-span-2">{standorteFehler}</div>
+              ) : (
+                <Select
+                  label="Standort *"
+                  feldId={EREIGNIS_FELD_IDS.location_id}
+                  value={werte.location_id}
+                  error={fehler.location_id}
+                  onChange={(e) => onChange('location_id', e.target.value)}
+                >
+                  <option value="">Bitte wählen …</option>
+                  {standorte.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </Select>
+              )
+            ) : null}
+          </div>
+
           {datumFest ? (
             <div>
               <p className="text-ink text-sm font-medium">

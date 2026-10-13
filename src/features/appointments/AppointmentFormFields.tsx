@@ -193,8 +193,9 @@ export function AppointmentFormFields({
     ) : null;
 
   return (
-    // Drei Gruppen statt sieben Felder untereinander (Design-Rollout B2,
-    // DESIGN.md „Formular“): wer und was, wann, wo. Die Reihenfolge der Felder
+    // Zwei Gruppen statt sieben Felder untereinander (Design-Rollout B2,
+    // DESIGN.md „Formular“): wer und was, dann wann und wo - der Ort folgt der
+    // Zeit, wie die Auskunft „Passt es?“ danach. Die Reihenfolge der Felder
     // bleibt die der Fehlerzusammenfassung (UIK-02); der Feldabstand ist der
     // jeder Feldgruppe (TOK-15).
     <>
@@ -218,7 +219,7 @@ export function AppointmentFormFields({
         </Feldgruppe>
       </Section>
 
-      <Section titel="Zeit">
+      <Section titel="Zeit und Ort">
         <Feldgruppe>
           <Field
             label="Datum *"
@@ -280,14 +281,10 @@ export function AppointmentFormFields({
               )}
             </div>
           </div>
+
+          {ort}
         </Feldgruppe>
       </Section>
-
-      {ort ? (
-        <Section titel="Ort">
-          <Feldgruppe>{ort}</Feldgruppe>
-        </Section>
-      ) : null}
     </>
   );
 }

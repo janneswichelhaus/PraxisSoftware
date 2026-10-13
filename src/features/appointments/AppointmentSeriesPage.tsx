@@ -553,7 +553,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           fehler={Object.values(fehler).some(Boolean) ? pruefungsstand.fehler : []}
         />
 
-        <Section titel="Person und Art">
+        <Section titel="Person und Ort">
           {/* Feldabstand wie in jedem anderen Formular (TOK-15). */}
           <Feldgruppe>
             <div className="flex flex-col gap-2">
@@ -596,11 +596,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 </option>
               ))}
             </Select>
-          </Feldgruppe>
-        </Section>
 
-        {art === 'practice' || art === 'home_visit' ? (
-          <Section titel="Ort">
             {art === 'practice' ? (
               <div className="flex flex-col gap-2">
                 <Select
@@ -629,7 +625,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                   />
                 ) : null}
               </div>
-            ) : (
+            ) : art === 'home_visit' ? (
               <UebernommeneAdresse
                 street={patientDaten.street}
                 houseNumber={patientDaten.house_number}
@@ -639,9 +635,9 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 // (TER-15), wie in der Terminanlage.
                 ergaenzenZiel={mitRueckweg(`${akte}/bearbeiten`, rueckkehrAdresse())}
               />
-            )}
-          </Section>
-        ) : null}
+            ) : null}
+          </Feldgruppe>
+        </Section>
 
         <Section titel="Rhythmus">
           <Feldgruppe>
