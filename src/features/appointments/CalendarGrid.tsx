@@ -604,6 +604,38 @@ export function CalendarGrid({
     kasten.scrollLeft = spalte.getBoundingClientRect().left - erste.getBoundingClientRect().left;
   });
 
+  // Die Spalte des gewählten Termins steht im Bild (Design-Review T5): Öffnete
+  // ein Link den Termin im Team-Tag, blieb der waagerechte Bildlauf der
+  // Woche stehen, und die Spalte der Behandelnden lag links außer Sicht -
+  // daneben das Termin-Fenster zu einem Termin, den man nicht sah. Einmal je
+  // Wahl; liegt die Spalte schon ganz im Bild, bleibt alles, wo es ist.
+  const gerollteWahl = useRef<string | null>(null);
+  useEffect(() => {
+    if (!gewaehlt) {
+      gerollteWahl.current = null;
+      return;
+    }
+    if (gerollteWahl.current === gewaehlt) return;
+    const kasten = gitterRef.current;
+    const kachel = kachelRefs.current.get(gewaehlt);
+    const erste = spaltenModell[0] ? spaltenRefs.current.get(spaltenModell[0].id) : undefined;
+    if (!kasten || !kachel || !erste) return;
+    const spalte = [...spaltenRefs.current.values()].find((element) => element.contains(kachel));
+    if (!spalte) return;
+    gerollteWahl.current = gewaehlt;
+    const rahmen = kasten.getBoundingClientRect();
+    const ziel = spalte.getBoundingClientRect();
+    const anfang = erste.getBoundingClientRect();
+    // Sichtbar ist, was rechts der stehenden Zeitachse liegt: Sie ist so
+    // breit, wie die erste Spalte ohne Bildlauf vom Rand entfernt beginnt.
+    const zeitachse = anfang.left - rahmen.left + kasten.scrollLeft;
+    const imBild =
+      ziel.left >= rahmen.left + zeitachse - 1 &&
+      ziel.right <= rahmen.left + kasten.clientWidth + 1;
+    if (imBild) return;
+    kasten.scrollLeft = ziel.left - anfang.left;
+  });
+
   // Der Fokus nach einem geschlossenen Kasten (KAL-21). Ohne Ziel - die
   // Kachel ist nach dem Blättern fort - der Knopf in der Ecke.
   useEffect(() => {
@@ -1014,10 +1046,27 @@ export function CalendarGrid({
                   const inhalt = (
                     <>
                       {/* Die Zahl nur, wo sie hineinpasst; vorgelesen wird sie immer. */}
+                      {/* Das Wort davor nur, wo die Spalte breit genug ist
+                          (Design-Review T5): In der Woche am Telefon stand
+                          „Rückweg ≈ 11“ und die Einheit fiel ab. Schmal steht
+                          „≈ 11 min“ ganz da; was es ist, sagt die Lage. */}
                       <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
-                        {w.veraltet
-                          ? '! Adresse veraltet'
-                          : `${w.rueckweg ? 'Rückweg' : 'Weg'} ≈ ${w.minuten} min`}
+                        {w.veraltet ? (
+                          '! Adresse veraltet'
+                        ) : (
+                          <>
+                            <span
+                              className={
+                                w.rueckweg
+                                  ? 'hidden @min-[6.75rem]:inline'
+                                  : 'hidden @min-[5rem]:inline'
+                              }
+                            >
+                              {w.rueckweg ? 'Rückweg ' : 'Weg '}
+                            </span>
+                            {`≈ ${w.minuten} min`}
+                          </>
+                        )}
                       </span>
                       <span className="sr-only">
                         {w.veraltet
@@ -1033,8 +1082,10 @@ export function CalendarGrid({
                     : gewaehlt
                       ? 'border-accent bg-accent-soft text-accent border-2 border-solid'
                       : 'border-accent/40 bg-accent-soft text-accent border border-dashed';
+                  // `@container`: Die Breite des Blocks entscheidet über das
+                  // Wort vor der Zahl (T5).
                   const lage =
-                    'rounded-button absolute inset-x-1 overflow-hidden px-1.5 text-left text-xs leading-4 font-semibold';
+                    'rounded-button @container absolute inset-x-1 overflow-hidden px-1.5 text-left text-xs leading-4 font-semibold whitespace-nowrap';
                   if (!w.auskunft || w.veraltet) {
                     return (
                       <div
@@ -1437,37 +1488,45 @@ function Kachel({
 
   const inhalt = (
     <>
-      {zeilen >= 2 ? (
-        // Der Titel eines Ereignisses steht dort, wo sonst der Name steht -
-        // und ein Zeichen davor sagt, dass es keine Behandlung ist (CAL-015b).
-        // Vorgelesen wird das Wort, nicht das Zeichen (KAL-16).
-        <span
-          className={`block truncate text-[0.8125rem] leading-4 font-semibold ${
-            eintrag.status === 'documented' || eintrag.status === 'invoiced'
-              ? 'text-ink-muted'
-              : 'text-ink'
-          }`}
-        >
-          {eintrag.kind === 'internal' ? (
-            <>
-              <span aria-hidden="true">▪ </span>
-              <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
-            </>
-          ) : null}
-          {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
-              als Wort (TRN-006, ADR-021 Punkt 9). */}
-          {eintrag.kind === 'training' ? (
-            <>
-              <span aria-hidden="true">◆ </span>
-              <span className="sr-only">Training: </span>
-            </>
-          ) : null}
-          {terminBezeichnung(eintrag)}
-        </span>
-      ) : (
-        <span className="sr-only">{terminBezeichnung(eintrag)}</span>
-      )}
-      <span className="text-ink-muted order-first block truncate text-xs leading-4 tabular-nums">
+      {/* Der Titel eines Ereignisses steht dort, wo sonst der Name steht -
+          und ein Zeichen davor sagt, dass es keine Behandlung ist (CAL-015b).
+          Vorgelesen wird das Wort, nicht das Zeichen (KAL-16). Er steht
+          immer da: Hat die Kachel nur eine Zeile, trägt sie den Titel und
+          nicht die Uhrzeit (Design-Review T5) - eine 25-Minuten-Fehlzeit
+          zeigte bis dahin nur „08:00–08:25“ und nicht, was sie ist. */}
+      <span
+        className={`block truncate text-[0.8125rem] leading-4 font-semibold ${
+          eintrag.status === 'documented' || eintrag.status === 'invoiced'
+            ? 'text-ink-muted'
+            : 'text-ink'
+        }`}
+      >
+        {eintrag.kind === 'internal' ? (
+          <>
+            <span aria-hidden="true">▪ </span>
+            <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
+          </>
+        ) : null}
+        {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
+            als Wort (TRN-006, ADR-021 Punkt 9). */}
+        {eintrag.kind === 'training' ? (
+          <>
+            <span aria-hidden="true">◆ </span>
+            <span className="sr-only">Training: </span>
+          </>
+        ) : null}
+        {terminBezeichnung(eintrag)}
+      </span>
+      {/* Die Uhrzeit über dem Titel, wo Platz ist; sonst nur vorgelesen und
+          im Tooltip. */}
+      <span
+        data-testid="kachel-zeit"
+        className={
+          zeilen >= 2
+            ? 'text-ink-muted order-first block truncate text-xs leading-4 tabular-nums'
+            : 'sr-only'
+        }
+      >
         {bisher ? <span>Bisher · </span> : null}
         {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
         <Laengenzeichen termin={eintrag} knapp />
