@@ -8,7 +8,9 @@ import type { Katalogeintrag } from '../typen';
  * eine Vorsicht gilt. Inhalt KI-erstellt und bis zur Durchsicht durch die
  * Praxis ungeprüft (ANN-386). Keine Diagnose als Auswahlkriterium
  * (ADR-006 Punkt 10) - eine Vorsicht steht als Satz unter
- * `hinweise_praxis`.
+ * `hinweise_praxis`. KN-05 zeigt nur die Ausgangsstellung (ANN-480), die
+ * Figur hat keine Finger: im Langsitz, die Hände am Knie. Liegend erreichen
+ * die Hände das Knie nur mit angehobenem Rumpf, und dann spannt das Bein an.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -138,12 +140,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     alltagsname: 'Kniescheibe sanft verschieben',
     region: 'knie',
     ziel: 'mobilitaet',
-    ausgangsstellung: 'rueckenlage',
+    ausgangsstellung: 'sitz',
     hilfsmittel: [],
     niveau: 1,
     dosierung: { saetze: 1, wiederholungen: 10, taeglich: 2 },
     anleitung: [
-      'Legen Sie sich auf den Rücken, das Bein liegt gestreckt und ganz locker.',
+      'Setzen Sie sich mit ausgestreckten Beinen aufs Bett oder Sofa und lehnen Sie den Rücken an, das Bein liegt gestreckt und ganz locker.',
       'Fassen Sie die Kniescheibe mit Daumen und Zeigefinger am oberen und unteren Rand.',
       'Schieben Sie sie sanft nach oben und unten, danach nach rechts und links.',
       'Bewegen Sie jede Richtung 10-mal, ohne auf die Kniescheibe zu drücken.',
@@ -153,6 +155,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es wird auf die Kniescheibe gedrückt, statt sie zu schieben.',
     ],
     hinweise_praxis: 'Erst nach abgeschlossener Wundheilung, nicht über der Narbe.',
+    bild: {
+      v: 1,
+      basis: 'langsitz',
+      unterlage: 'bett',
+      start: { rumpf: 10, haende: ['knie', 'knie'] },
+      ende: { rumpf: 10, haende: ['knie', 'knie'] },
+    },
   },
   {
     schluessel: 'KN-06',

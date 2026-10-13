@@ -4,13 +4,15 @@ import type { Katalogeintrag } from '../typen';
  * Gruppe AF: Alltagsfunktionen und Transfers.
  *
  * Aufstehen, Hinsetzen, Treppe, Heben und Tragen - so, wie es im Alltag
- * vorkommt. Ohne Bild bleiben AF-06 (bis zum Boden reicht die Hand nur aus
- * der tiefen Hocke, und dann stieße der Kopf an jede Arbeitsplatte, die im
- * Stand erreichbar ist) und AF-09 (der Stuhl steht im Zeichner immer mit der
- * Lehne zur Person; das Abstützen auf die Sitzfläche von vorn lässt sich
- * nicht zeigen). Der Gegenstand bei AF-07 erscheint als Ball, die Taschen
- * bei AF-08 als Hanteln. Inhalt KI-erstellt und bis zur Durchsicht durch die
- * Praxis ungeprüft (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
+ * vorkommt. AF-06 steht seitlich an der Arbeitsplatte wie die Gruppe GG
+ * (zwei Tische Rücken an Rücken hinter der Person, die ferne Hand darauf)
+ * und geht in die tiefe Hocke wie AF-07; der Gegenstand am Fuß erscheint als
+ * Ball. Bei AF-09 steht statt des Stuhls ein Hocker: Der Stuhl steht im
+ * Zeichner immer mit der Lehne zur Person, die Hände sollen aber von vorn
+ * auf die Sitzfläche; die Anleitung nennt deshalb beide. Der Gegenstand
+ * bei AF-07 erscheint als Ball, die Taschen bei AF-08 als Hanteln. Inhalt
+ * KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft (ANN-386);
+ * Vorsicht steht nur unter `hinweise_praxis`.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -206,7 +208,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     niveau: 2,
     dosierung: { saetze: 2, wiederholungen: 5, taeglich: 1 },
     anleitung: [
-      'Stellen Sie sich vor eine Arbeitsplatte und legen Sie einen leichten Gegenstand neben Ihren Fuß auf den Boden.',
+      'Stellen Sie sich seitlich an eine Arbeitsplatte und legen Sie einen leichten Gegenstand neben Ihren Fuß auf den Boden.',
       'Stützen Sie sich mit einer Hand fest auf der Arbeitsplatte ab.',
       'Beugen Sie Knie und Hüfte und greifen Sie mit der freien Hand den Gegenstand, der Rücken bleibt lang.',
       'Drücken Sie sich mit den Beinen und der stützenden Hand wieder in den Stand.',
@@ -216,6 +218,23 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Gegenstand liegt zu weit vom Körper entfernt.',
       'Die Person kommt mit Schwung hoch.',
     ],
+    bild: {
+      v: 1,
+      basis: 'stand',
+      start: { haende: [null, 'tisch'] },
+      ende: {
+        rumpf: 60,
+        huefte: [140, 140],
+        knie: [140, 140],
+        haende: ['boden', 'tisch'],
+      },
+      hilfsmittel: [
+        { art: 'tisch', x: 0 },
+        { art: 'tisch', x: -0.1 },
+        { art: 'ball', an: 'zehen_nah' },
+      ],
+      bewegung: ['hand_nah'],
+    },
   },
   {
     schluessel: 'AF-07',
@@ -304,18 +323,34 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     niveau: 3,
     dosierung: { wiederholungen: [2, 3] },
     anleitung: [
-      'Drehen Sie sich am Boden auf die Seite und kommen Sie über den Vierfüßlerstand in den Kniestand vor einem stabilen Stuhl.',
+      'Drehen Sie sich am Boden auf die Seite und kommen Sie über den Vierfüßlerstand in den Kniestand vor einem stabilen Stuhl oder festen Hocker.',
       'Stützen Sie beide Hände auf die Sitzfläche.',
       'Stellen Sie einen Fuß vor sich auf den Boden, sodass Sie auf einem Knie knien.',
       'Drücken Sie sich mit dem vorderen Bein und den Armen hoch in den Stand.',
-      'Drehen Sie sich um und setzen Sie sich auf den Stuhl, bevor Sie weitergehen.',
+      'Drehen Sie sich um und setzen Sie sich darauf, bevor Sie weitergehen.',
     ],
     fehler: [
-      'Der Stuhl steht nicht fest und rutscht weg.',
+      'Stuhl oder Hocker stehen nicht fest und rutschen weg.',
       'Die Person versucht, sich aus der Rückenlage direkt hochzuziehen.',
       'Die Person steht zu schnell auf und bekommt Schwindel.',
     ],
     hinweise_praxis:
       'Zuerst gemeinsam im Hausbesuch üben. Den Ablauf für Stürze besprechen (Hausnotruf, Telefon in Reichweite). Ein Kissen unter den Knien schont die Kniescheiben.',
+    bild: {
+      v: 1,
+      basis: 'kniestand',
+      anker: 'knie_fern',
+      start: { rumpf: 35, huefte: [35, 35], schulter: [61, 61], ellbogen: [32, 32] },
+      ende: {
+        rumpf: 35,
+        huefte: [125, 35],
+        schulter: [61, 61],
+        ellbogen: [32, 32],
+        fuss_flach: [true, false],
+        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'knie_fern'] },
+      },
+      hilfsmittel: [{ art: 'hocker', x: 75 }],
+      bewegung: ['knie_nah'],
+    },
   },
 ];

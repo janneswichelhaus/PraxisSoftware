@@ -10,9 +10,13 @@ import type { Katalogeintrag } from '../typen';
  * Platte vor ihr (Hände `tisch`). Geht oder tritt sie seitlich an der Platte
  * entlang, steht die Platte hinter ihr - zwei Tische Rücken an Rücken um den
  * Anker - und die ferne Hand liegt darauf. Die Vorderansicht zeigt die Person
- * von hinten vor der Platte, beide Hände liegen auf. Übungen, deren Kern sich
+ * von hinten vor der Platte, beide Hände liegen auf; steht sie seitlich an
+ * der Platte (GG-16), steht die Platte neben ihr. Übungen, deren Kern sich
  * nicht zeichnen lässt (Kopfdrehen, Wege am Boden, Richtungen rund um die
- * Uhr), bleiben ohne Bild.
+ * Uhr), zeigen nur die Ausgangsstellung (ANN-480): GG-13 und GG-14 im
+ * Schritt wie AU-01 (GG-14 zwischen den beiden Stühlen; die Wand bei GG-13
+ * läge neben der Person und fehlt), GG-16 mit der Hand auf der Platte,
+ * GG-20 im Sitz vor der Wand mit dem Zettel.
  *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10).
@@ -480,6 +484,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Mit langsamen, kleinen Kopfdrehungen beginnen. Nimmt Schwindel deutlich zu, die Übung zurückstellen.',
+    bild: {
+      v: 1,
+      basis: 'stand',
+      anker: 'becken',
+      start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
+      ende: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
+    },
   },
   {
     schluessel: 'GG-14',
@@ -505,6 +516,17 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit Halt in Reichweite und einmal gemeinsam geübt. Ein Stuhl im Rücken ist für Ängstliche sinnvoll.',
+    bild: {
+      v: 1,
+      basis: 'stand',
+      anker: 'becken',
+      start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
+      ende: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
+      hilfsmittel: [
+        { art: 'stuhl', x: 80 },
+        { art: 'stuhl', x: -80 },
+      ],
+    },
   },
   {
     schluessel: 'GG-15',
@@ -573,6 +595,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit Halt in Reichweite und einmal gemeinsam geübt. Ein Stuhl im Rücken ist für Ängstliche sinnvoll.',
+    bild: {
+      v: 1,
+      basis: 'stand_front',
+      start: { haende: ['tisch', null] },
+      ende: { haende: ['tisch', null] },
+      hilfsmittel: [{ art: 'tisch', x: -40 }],
+    },
   },
   {
     schluessel: 'GG-17',
@@ -715,5 +744,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Schwindelbeschwerden nur nach Befund. Die Symptome können während der Übung kurz zunehmen, das vorher erklären.',
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {}, hilfsmittel: [{ art: 'wand', x: 100 }] },
   },
 ];

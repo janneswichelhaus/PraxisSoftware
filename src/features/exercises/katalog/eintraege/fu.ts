@@ -7,9 +7,14 @@ import type { Katalogeintrag } from '../typen';
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
  * Vorsicht steht als Satz unter `hinweise_praxis`.
  *
- * Ohne Bild bleiben Übungen, die in den Zehen oder im Fußgewölbe spielen oder
- * Kreise und Buchstaben schreiben: Der Fuß der Linienfigur ist ein Stück.
- * Lieber kein Bild als ein falsches.
+ * Übungen, die in den Zehen oder im Fußgewölbe spielen oder Kreise und
+ * Buchstaben schreiben, zeigen nur die Ausgangsstellung (ANN-480): Der Fuß
+ * der Linienfigur ist ein Stück. Das Handtuch bei FU-07 liegt unter der
+ * Sohle (ein Handtuch vor den Zehen am Boden wäre eine neue Fassung), der
+ * Ball bei FU-11 vor dem Fuß. FU-12 zeigt die Variante mit dem Handtuch wie
+ * FU-09 mit dem Band: Bein vorgestreckt, Ferse am Boden, das Handtuch vom
+ * Vorfuß zu den Händen. Den Fuß auf dem anderen Knie kann die Seitenansicht
+ * nicht zeigen, er läge quer zur Blickrichtung.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -250,6 +255,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Ferse hebt vom Boden ab.',
       'Der Fuß wird als Ganzes zurückgezogen, statt mit den Zehen zu greifen.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'handtuch', von: 'ferse_nah', nach: 'zehen_nah' }],
+    },
   },
   {
     schluessel: 'FU-08',
@@ -275,6 +287,7 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Bewegung ist klein und braucht meist eine gemeinsame Anleitung im Hausbesuch, anfangs mit Blick auf den Fuß.',
+    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'FU-09',
@@ -342,6 +355,22 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das ganze Bein bewegt sich mit, statt nur der Fuß.',
       'Die Buchstaben werden klein und hastig.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: {
+        knie: [50, 87],
+        sprung: [-10, 0],
+        fuss_flach: [false, true],
+        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
+      },
+      ende: {
+        knie: [50, 87],
+        sprung: [-10, 0],
+        fuss_flach: [false, true],
+        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
+      },
+    },
   },
   {
     schluessel: 'FU-11',
@@ -366,6 +395,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei herabgesetztem Gefühl an den Füßen den Druck vorher gemeinsam prüfen und die Haut danach ansehen.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'ball', an: 'zehen_nah' }],
+    },
   },
   {
     schluessel: 'FU-12',
@@ -375,18 +411,37 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     region: 'fuss',
     ziel: 'dehnung',
     ausgangsstellung: 'sitz',
-    hilfsmittel: ['stuhl'],
-    hilfsmittel_optional: ['handtuch'],
+    hilfsmittel: ['stuhl', 'handtuch'],
     niveau: 1,
     dosierung: { saetze: 3, dauer_s: 30, je_seite: true, taeglich: 1 },
     anleitung: [
-      'Setzen Sie sich auf einen Stuhl und legen Sie einen Fuß auf das andere Knie.',
-      'Fassen Sie die Zehen mit einer Hand und ziehen Sie sie sanft Richtung Schienbein.',
+      'Setzen Sie sich auf einen Stuhl, strecken Sie ein Bein nach vorn und stellen Sie die Ferse auf den Boden.',
+      'Legen Sie ein Handtuch um den Vorfuß und halten Sie die Enden mit beiden Händen fest.',
+      'Ziehen Sie die Zehen mit dem Handtuch sanft Richtung Schienbein. Wer das Bein gut überschlagen kann, legt den Fuß stattdessen auf das andere Knie und zieht die Zehen mit der Hand.',
       'Halten Sie die Dehnung in der Fußsohle ruhig und atmen Sie weiter.',
       'Wechseln Sie danach die Seite.',
     ],
     fehler: ['Es wird ruckartig gezogen.', 'Nur die große Zehe wird gezogen.'],
     hinweise_praxis:
-      'Gut vor den ersten Schritten am Morgen. Gelingt das Überschlagen des Beins nicht, ein Handtuch um die Zehen legen und damit ziehen.',
+      'Gut vor den ersten Schritten am Morgen. Das Bild zeigt die Variante mit dem Handtuch; sie braucht kein Überschlagen des Beins.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: {
+        knie: [15, 87],
+        sprung: [-15, 0],
+        fuss_flach: [false, true],
+        haende: ['brust', 'brust'],
+        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
+      },
+      ende: {
+        knie: [15, 87],
+        sprung: [-15, 0],
+        fuss_flach: [false, true],
+        haende: ['brust', 'brust'],
+        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
+      },
+      hilfsmittel: [{ art: 'handtuch', von: 'zehen_nah', nach: 'hand_nah' }],
+    },
   },
 ];

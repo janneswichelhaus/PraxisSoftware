@@ -6,10 +6,11 @@ import type { Katalogeintrag } from '../typen';
  * Gehen, Marschieren, Treppe und Bewegungstrainer - Ausdauer im Alltag der
  * Wohnung, ohne Geräte. Die Dauer ist ein vorsichtiger Startwert; ein
  * Bereich der Liste („5 bis 10 Minuten") steht als unterer Wert in der
- * Dosierung und als Spanne unter `hinweise_praxis`. Ohne Bild bleibt AU-05:
- * Den Bewegungstrainer kennt der Zeichner nicht, und Radeln ohne Gerät sähe
- * aus wie Marschieren. Inhalt KI-erstellt und bis zur Durchsicht durch die
- * Praxis ungeprüft (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
+ * Dosierung und als Spanne unter `hinweise_praxis`. AU-05 zeigt nur die
+ * Ausgangsstellung (ANN-480): Den Bewegungstrainer kennt der Zeichner nicht,
+ * und Radeln ohne Gerät sähe aus wie Marschieren; die Füße stehen wie auf
+ * den Pedalen. Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis
+ * ungeprüft (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -182,6 +183,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Intensität so wählen, dass sich die Person dabei noch unterhalten kann. Startwert 10 Minuten; bis 20 Minuten im Plan anpassen. Den Widerstand des Geräts bei Bedarf als Last eintragen.',
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { knie: [65, 100], sprung: [20, 0], fuss_flach: [false, false] },
+      ende: { knie: [65, 100], sprung: [20, 0], fuss_flach: [false, false] },
+    },
   },
   {
     schluessel: 'AU-06',
