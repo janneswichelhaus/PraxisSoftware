@@ -20,7 +20,7 @@ test.describe('Instrumente', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Instrumente' })).toBeVisible();
     await expect(page.getByRole('listitem')).toHaveCount(4);
     // Die drei freien bleiben ohne Vorlage inaktiv (ANN-099); der Anamnesebogen ist aktiv.
-    await expect(page.getByText('Inaktiv', { exact: true })).toHaveCount(3);
+    await expect(page.getByRole('listitem').filter({ hasText: 'Inaktiv' })).toHaveCount(3);
     await expect(
       page.getByRole('link', { name: /Anamnesebogen Version 8 \(DIGOTOR\)/ }),
     ).toBeVisible();
