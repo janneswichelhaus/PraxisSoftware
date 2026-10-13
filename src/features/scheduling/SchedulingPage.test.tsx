@@ -369,6 +369,20 @@ describe('SchedulingPage', () => {
       expect(screen.getByText('Der Montag ist gespeichert.')).toBeInTheDocument();
     });
 
+    it('beschriftet von und bis kurz und liest Block und Nummer vor (ANN-489, Design-Review T6)', async () => {
+      rendern();
+      await wochenplanAbwarten();
+
+      const beginn = screen.getByLabelText('Block 1 von');
+      // Sichtbar steht nur „von“ - die lange Beschriftung brach am Telefon um.
+      const sichtbar = document.querySelector(`label[for="${beginn.id}"]`);
+      expect(sichtbar).toHaveTextContent(/^von$/);
+      expect(beginn).toHaveAccessibleName('Block 1 von');
+      expect(screen.getByLabelText('Block 1 bis')).toHaveAccessibleName('Block 1 bis');
+      // Von, bis und Entfernen bleiben eine Zeile - auch unter 640 px.
+      expect(beginn.closest('.grid')).toHaveClass('grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]');
+    });
+
     it('speichert einen geleerten Wochentag erst nach der Rueckfrage als "keine Termine" (ORG-02)', async () => {
       const user = userEvent.setup();
       rendern();
