@@ -170,6 +170,19 @@
   --color-reihe-5: oklch(64% 0.11 150);
   --color-reihe-6: oklch(50% 0.105 320);
 
+  /* --- Übungsbild (ANN-381) -------------------------------------------------
+     Die Linienfigur der Übungsbibliothek: die nahe Körperseite in der
+     Hauptfarbe (`accent`), die ferne in Figur fern, Hilfsmittel in
+     `line-strong` auf der Vertiefung. Alle drei neuen Farben sind nur Linie
+     und Fläche, nie Text, und halten als grafisches Element 3:1 auf Weiß
+     (WCAG 1.4.11, `src/lib/kontrast.test.ts`). */
+  /* Salbeigrün, heller als die Hauptfarbe: die abgewandte Körperseite. */
+  --color-figur-fern: oklch(62% 0.06 158);
+  /* Ocker: der Pfeil, der die Bewegung zeigt. */
+  --color-figur-bewegung: oklch(58% 0.12 68);
+  /* Terrakotta: das Übungsband. */
+  --color-figur-band: oklch(57% 0.13 30);
+
   /* --- Schrift und Maße ----------------------------------------------------- */
 
   --font-sans:

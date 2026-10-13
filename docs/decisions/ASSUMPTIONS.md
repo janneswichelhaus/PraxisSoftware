@@ -4512,6 +4512,114 @@ Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Go-liv
 
 **Änderungspfad.** Mit Virenprüfung einschalten: ADR-026 annehmen, Prüfer bauen, dann die Spalte der Organisation im Go-live-Gate setzen · Aufwand `klein` im Code. Einschalten über die Oberfläche (Inhaber:in): eine Funktion mit Rolle `owner`, die nur bei `app.message_attachment_scan_required()` einschaltet · Aufwand `mittel`. Global statt je Organisation: die Funktion liest eine Konstante · Aufwand `klein`.
 
+### ANN-380 — Der Seed übernimmt den ganzen Übungskatalog mit festen Kennungen; ein Namenskonflikt bricht den Seed ab
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** `supabase/seed.sql` ruft `app.import_exercise_catalog_for` mit dem ganzen Katalog auf (erzeugt von `pnpm katalog:sql`), Kennungen aus md5(Organisation, Schlüssel). Die neun Seed-Übungen bleiben mit ihren Kennungen.
+
+**Begründung.** Lokal, CI und Test-Umgebung (`neu-aufsetzen.psql` spielt den Seed ein) zeigen denselben Bestand; derselbe Prüfweg wie der Knopf.
+
+**Anker.** `p_feste_kennungen` in `supabase/migrations/20261111100000_ueb_012_exercise_catalog.sql`.
+
+**Änderungspfad.** Seed ohne Katalog: den Abschnitt leeren · Aufwand `klein`.
+
+### ANN-381 — Ein Übungsbild ist eine Posen-Beschreibung (jsonb, Fassung 1, höchstens 4 KB), die der Code zeichnet; sie wird beim Zuweisen eingefroren
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Keine Datei und keine Ablage (ADR-017 Punkt 4): Grundstellung plus Winkel; der Zeichner rechnet Bodenkontakt, Griffe und Ausschnitt. Maße und Grundstellungen gehören zur Fassung und ändern sich nur mit `v: 2`. Ungültig wird zu „kein Bild".
+
+**Begründung.** Einheitlich, offline im Build (ADR-024 Punkt 1), testbar, ohne Anbieter; eingefroren wie Name und Anleitung (ANN-300).
+
+**Anker.** `app.exercise_illustration_valid` in der Migration UEB-012; `src/features/exercises/bild/schema.ts`.
+
+**Änderungspfad.** Neue Fassung: `v: 2` neben `v: 1` · Aufwand `mittel`. Fotos/Videos: neue Fassung von ADR-017 · Aufwand `groß`.
+
+### ANN-382 — Der Übungskatalog ist Produktinhalt im Release; die Praxis übernimmt ihn als Kopie mit Herkunft, ein späterer Import überschreibt nichts
+
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Ohne `organization_id` wie die Instrumente (ANN-083); je Eintrag eine Übung mit einer Variante, Herkunft `catalog_key`/`catalog_version`, je Praxis einmal. Vorhandene Schlüssel werden übersprungen, gleiche Bezeichnungen gemeldet; erst alles prüfen, dann schreiben.
+
+**Begründung.** Fremdschlüssel, RLS und Schnappschuss der Bibliothek bleiben; die Praxis passt ihre Kopie frei an (Analyse 12.10., Variante a).
+
+**Anker.** `app.import_exercise_catalog_for` in der Migration UEB-012; `src/features/exercises/katalog/index.ts`.
+
+**Änderungspfad.** Neue Fassung übernehmen anbieten: Vergleich `catalog_version` · Aufwand `mittel`.
+
+### ANN-383 — Ziel, Ausgangsstellung, Niveau 1–3 und Hilfsmittel sind feste Listen des Katalogs; kein Feld „Krankheitsbild"
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Acht Ziele, acht Ausgangsstellungen, 17 Hilfsmittel (Hausrat zuerst); eigene Übungen behalten freie Schlagworte (ANN-295). Keine Diagnose und keine Kontraindikation als Feld (ADR-006 Punkt 10).
+
+**Begründung.** Ordnungen zum Suchen, die der ADR ausdrücklich zulässt; ein Krankheitsbild lüde zum Abgleich mit der Akte ein.
+
+**Anker.** `app.exercise_goals`, `app.exercise_starting_positions`, `app.exercise_equipment_labels` in der Migration UEB-012; `src/features/exercises/katalog/typen.ts`.
+
+**Änderungspfad.** Ein Wert mehr: Liste an beiden Stellen · Aufwand `klein`.
+
+### ANN-384 — Die Standarddosierung kommt aus dem Katalog; Positionen kennen Halten, je Seite und Häufigkeit am Tag
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** Die Standarddosierung ist für alle gleich und nie aus Angaben einer Person abgeleitet (ADR-006 Punkt 10). Halten nur mit Wiederholungen („10-mal 5 Sekunden"); Wiederholungen oder Dauer bleibt (ANN-299).
+
+**Begründung.** 115 von 196 Standarddosierungen brauchen eines der drei Felder (Analyse 12.10.).
+
+**Anker.** `app.exercise_dosage_valid` und `save_exercise_plan_item` in der Migration UEB-012; `src/features/exercises/katalog/dosierung.ts`.
+
+**Änderungspfad.** Häufigkeit je Woche an der Position: eine Spalte · Aufwand `mittel`.
+
+### ANN-385 — Den Katalog übernehmen darf owner, wie die Bibliothek pflegen
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+
+**Annahme.** `import_exercise_catalog` prüft wie jeder Schreibweg der Bibliothek (`app.exercise_library_writer`, ANN-293); die interne Fassung ist für keine Anwendungsrolle ausführbar. Keine neue Auditaktion: `created_by` steht an der Zeile (ADR-010 Fassung 3).
+
+**Begründung.** Wer übernimmt, ändert, was alle Pläne anbieten – dieselbe Überlegung wie bei der Pflege.
+
+**Anker.** `public.import_exercise_catalog` in der Migration UEB-012.
+
+**Änderungspfad.** Weitere Rollen: `app.can_manage_exercise_library` · Aufwand `klein`.
+
+### ANN-386 — KI-erstellte Katalogtexte und -bilder gelten bis zur Durchsicht durch die Praxis als ungeprüft; das blockiert nur das Scharfschalten
+
+Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Go-live; Jannes' Durchsicht je Gruppe
+
+**Annahme.** Ohne Prüfvermerk (`reviewed_at`/`reviewed_by`, nur owner) ist eine übernommene Variante ungeprüft und wird so angezeigt. Vor dem Einsatz bei echten Patient:innen sieht Jannes jede Übung durch, die in einem Plan steht (§15.2, § 630c Abs. 2 BGB).
+
+**Begründung.** Fehlerhafte Anleitung wäre ein Behandlungsfehler; Bauen mit synthetischen Daten wartet nicht darauf.
+
+**Anker.** `set_exercise_variant_reviewed` in der Migration UEB-012; Hinweis in `src/features/exercises/UebungPage.tsx`.
+
+**Änderungspfad.** Zuweisen nur geprüfter Varianten: Prüfung in `assign_exercise_plan` · Aufwand `klein`.
+
+### ANN-387 — Halten gehört zur Achse Wiederholungen; je Seite und Häufigkeit am Tag sind keine Achse
+
+Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Pläne
+
+**Annahme.** In einer neuen Fassung (ANN-301) ist längeres oder neues Halten ein Schritt „schwerer" auf der Achse Wiederholungen; je Seite und Häufigkeit am Tag ändern sich frei wie der Hinweis.
+
+**Begründung.** Halten ist eine Dauer wie `duration_seconds`; die Frequenz liegt am Plan (UEB-006).
+
+**Anker.** `app.exercise_plan_step_check` in der Migration UEB-012.
+
+**Änderungspfad.** Halten als Achse Tempo: eine Zeile im Schritt · Aufwand `klein`.
+
+### ANN-388 — Die computererzeugten Linienfiguren brauchen keine Kennzeichnung nach Art. 50 KI-VO; die Oberfläche sagt freiwillig „KI-erstellt"
+
+Recht · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datenschutz- und Rechtsprüfung (B2)
+
+**Annahme.** Eine aus eigenem Code gezeichnete Piktogrammfigur ist kein Deepfake, die Praxis kein Anbieter eines generativen Systems; der Hinweis nach der Übernahme nennt Text und Bild „KI-erstellt".
+
+**Begründung.** Art. 50 KI-VO zielt auf Deepfakes und Anbieter generativer Systeme; Wortlaut nicht selbst geprüft, deshalb Prüfpaket.
+
+**Anker.** Meldung in `KatalogUebernehmen`, `src/features/exercises/UebungenPage.tsx`.
+
+**Änderungspfad.** Pflichthinweis am Bild: ein Satz in `Uebungsbild` · Aufwand `klein`.
+
 ### ANN-400 — DESIGN.md ist die einzige Seitenrezeptur; eine Ratsche hält je Verzeichnis den Stand alter Muster
 
 Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)

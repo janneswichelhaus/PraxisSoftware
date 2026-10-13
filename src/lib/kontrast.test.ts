@@ -243,6 +243,23 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     expect(schlechtesterKontrast('salbei')).toBeLessThan(4.5);
   });
 
+  // Das Uebungsbild (ANN-381): ferne Koerperseite, Bewegungspfeil und Band
+  // sind Linien eines Bildes, das auf Weiss oder auf der Vertiefung steht -
+  // 3:1 nach WCAG 1.4.11 gegen jede der drei Flaechen. Text tragen sie nie
+  // (Waechter in src/designsystem.test.ts). Die nahe Seite traegt `accent`.
+  it.each([['figur-fern'], ['figur-bewegung'], ['figur-band'], ['accent']])(
+    'zeichnet das Uebungsbild mit %s mindestens 3:1 auf jeder Flaeche',
+    (token) => {
+      expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(3);
+    },
+  );
+
+  // Nahe und ferne Koerperseite muessen sich unterscheiden, sonst liest sich
+  // die Seitenansicht nicht: deutlicher Helligkeitsabstand in Oklch.
+  it('hebt die ferne Koerperseite deutlich von der nahen ab', () => {
+    expect(tokens['figur-fern']!.L - tokens.accent!.L).toBeGreaterThanOrEqual(0.2);
+  });
+
   // `warnung-mittel` ist ausdruecklich keine Textfarbe: 4.06:1 auf Weiss und
   // 3.39:1 auf warnung-soft liegen unter den 4.5:1 fuer Text. Die Stufe steht
   // deshalb als Wort und Zahl in `warnung` daneben. Diese Zusicherung haelt

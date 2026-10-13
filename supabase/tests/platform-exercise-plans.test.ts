@@ -73,21 +73,27 @@ describe('platform_exercise_plans (UEB-009)', () => {
       // UEB-011: die gewählten Übungstage.
       'weekdays',
     ]);
-    // Keine fachlichen Namen, keine Kennung der Bibliothek, kein Schritt.
+    // Keine fachlichen Namen, keine Kennung der Bibliothek, kein Schritt, keine
+    // Herkunft aus dem Katalog. UEB-012 nimmt ausdrücklich auf: das
+    // eingefrorene Bild und Halten, je Seite, Häufigkeit am Tag.
     expect(Object.keys(daten!.plans[0]!.items[0]!).sort()).toEqual([
       'double_progression',
       'duration_seconds',
       'equipment',
+      'hold_seconds',
       'id',
+      'illustration',
       'instruction',
       'load',
       'note',
+      'per_side',
       'position',
       'reps_max',
       'reps_min',
       'rest_seconds',
       'sets',
       'tempo',
+      'times_per_day',
       'variant_lay_name',
     ]);
     expect(daten!.plans[0]!.items[0]).toMatchObject({ note: 'Langsam', sets: 3 });
