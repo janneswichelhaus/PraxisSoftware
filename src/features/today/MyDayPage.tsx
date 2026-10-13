@@ -1094,24 +1094,27 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
               etwas fällig ist. Wer selbst unterwegs ist, sieht sie unter dem
               eigenen Tag: Liege und nächster Weg bleiben auf dem ersten
-              Bildschirm (UX-EPIC-003). */}
-        <OpenPointsSummary user={user} today={heute} />
+              Bildschirm (UX-EPIC-003). Ohne Fälliges steht an ihrer Stelle
+              der ruhige Weg zur Büroliste - nie beide (Design-Review R2, U6). */}
+        <OpenPointsSummary
+          user={user}
+          today={heute}
+          sonst={
+            canReadPatientDirectory(user.roles) ? (
+              <p className="border-line nicht-drucken mt-8 border-t pt-3">
+                <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
+                  Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
+                  <Pfeil />
+                </Textlink>
+              </p>
+            ) : null
+          }
+        />
 
         {teamplanZuerst && tagesroute ? <div className="mt-6">{tagesroute}</div> : null}
 
         {eigeneTagesliste ? null : <div className="mt-6">{teamplan}</div>}
       </Zweispalter>
-
-      {/* PRX-EPIC-003: der ruhige Weg zur Büroliste, auch wenn nichts fällig
-          ist - die Zeile oben erscheint nur mit Fälligem. */}
-      {canReadPatientDirectory(user.roles) ? (
-        <p className="border-line nicht-drucken lg:max-w-spalte mt-8 border-t pt-3">
-          <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
-            Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
-            <Pfeil />
-          </Textlink>
-        </p>
-      ) : null}
 
       {/* TRN-EPIC-001: der Weg in den Bereich Training für die Rollen, die ihn
           sehen - für die Trainingsbetreuung der einzige Arbeitsbereich neben
