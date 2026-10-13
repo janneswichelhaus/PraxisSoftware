@@ -5066,17 +5066,17 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Andere Zeichen dort eintragen oder `eigenesZeichen` weglassen · Aufwand `klein`.
 
-### ANN-489 — Eine Zeitspanne (von/bis) steht auch am Telefon in einer Zeile
+### ANN-489 — Von und bis einer Zeitspanne stehen erst ab 640 px nebeneinander
 
-Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
+Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Zeitspanne als Paar in DESIGN.md?)
 
-**Annahme.** Von und bis einer Zeitspanne gelten als ein zusammengehöriges Paar (wie PLZ/Ort) und stehen auch unter 640 px nebeneinander, solange jedes Feld 48 px hoch und rund 120 px breit bleibt. Sichtbar steht nur „von“/„bis“; der zugängliche Name nennt Block und Nummer („Abweichender Block 1 von“).
+**Annahme.** Ein Zeitblock der Arbeitszeiten steht am Telefon untereinander: „von“ mit dem Entfernen daneben, „bis“ darunter; 24 px trennen die Blöcke, 12 px die Felder. Ab 640 px stehen von, bis und × in einer Zeile. Sichtbar steht nur „von“/„bis“; vorgelesen wird „Abweichender Block 1 von“.
 
-**Begründung.** DESIGN.md erlaubt zwei Felder nebeneinander erst ab 640 px; untereinander verdoppelte sich die Höhe jedes Blocks, und die lange Beschriftung brach bei 375 px um (Design-Review T6).
+**Begründung.** DESIGN.md (Formular) erlaubt zwei Felder nebeneinander erst ab 640 px; Beginn und Ende einer Fehlzeit stehen am Telefon ebenso untereinander (Design-Review R2 T6).
 
 **Anker.** Kommentar `ANN-489` an `BlockFelder` in `src/features/scheduling/SchedulingPage.tsx`.
 
-**Änderungspfad.** Untereinander: `grid-cols` erst ab `sm:` setzen · Aufwand `klein`.
+**Änderungspfad.** Nimmt Jannes die Zeitspanne als Paar in DESIGN.md auf: `grid-cols` ohne `sm:` · Aufwand `klein`.
 
 ### ANN-493 — Unternavigation: eine einzelne Vorschau steht offen, erst ab zwei eingeklappt
 

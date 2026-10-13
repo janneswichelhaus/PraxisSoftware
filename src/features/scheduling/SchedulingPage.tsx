@@ -391,43 +391,49 @@ function BlockFelder({
   return (
     <fieldset className="border-0 p-0">
       <legend className="text-ink text-sm font-medium">{legende}</legend>
-      <div className="mt-2 flex flex-col gap-3">
+      <div className="mt-2 flex flex-col gap-6 sm:gap-3">
         {bloecke.map((block, index) => {
           const nummer = `${blockLabel} ${index + 1}`;
           const entfernbar = bloecke.length > 1 || block.von !== '' || block.bis !== '';
           return (
-            // Von, bis und Entfernen in einer Zeile (Design-Rollout B2): vorher
+            // Ein Block: von, bis und Entfernen (Design-Rollout B2) - vorher
             // stand unter jedem Block ein eigener Knopf „Block n entfernen“.
-            // ANN-489: Die Zeitspanne ist ein Paar und bleibt auch am Telefon
-            // in einer Zeile; sichtbar steht nur „von“/„bis“ - „Abweichender
-            // Block 1 von“ brach bei 375 px in zwei Zeilen (Design-Review T6).
-            // Vorgelesen wird der ganze Name mit Block und Nummer.
+            // ANN-489: Nebeneinander erst ab 640 px (DESIGN.md, Formular), am
+            // Telefon untereinander wie Beginn und Ende einer Fehlzeit; das
+            // Entfernen steht dort neben „von“. Die Blöcke trennt der größere
+            // Abstand (24 statt 12 px). Sichtbar steht nur „von“/„bis“,
+            // vorgelesen wird der ganze Name mit Block und Nummer (T6).
             <div
               key={index}
-              className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-3"
+              data-testid="zeitblock"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
             >
-              <Field
-                label="von"
-                aria-label={`${nummer} von`}
-                feldId={`${idPraefix}-${index}-von`}
-                type="time"
-                value={block.von}
-                error={fehler?.[index]?.von}
-                disabled={gesperrt}
-                onChange={(e) => setzen(index, 'von', e.target.value)}
-              />
-              <Field
-                label="bis"
-                aria-label={`${nummer} bis`}
-                feldId={`${idPraefix}-${index}-bis`}
-                type="time"
-                value={block.bis}
-                error={fehler?.[index]?.bis}
-                disabled={gesperrt}
-                onChange={(e) => setzen(index, 'bis', e.target.value)}
-              />
+              <div className="col-start-1 row-start-1">
+                <Field
+                  label="von"
+                  aria-label={`${nummer} von`}
+                  feldId={`${idPraefix}-${index}-von`}
+                  type="time"
+                  value={block.von}
+                  error={fehler?.[index]?.von}
+                  disabled={gesperrt}
+                  onChange={(e) => setzen(index, 'von', e.target.value)}
+                />
+              </div>
+              <div className="col-start-1 row-start-2 sm:col-start-2 sm:row-start-1">
+                <Field
+                  label="bis"
+                  aria-label={`${nummer} bis`}
+                  feldId={`${idPraefix}-${index}-bis`}
+                  type="time"
+                  value={block.bis}
+                  error={fehler?.[index]?.bis}
+                  disabled={gesperrt}
+                  onChange={(e) => setzen(index, 'bis', e.target.value)}
+                />
+              </div>
               {/* Die Spalte bleibt, auch ohne Knopf: So fluchten die Felder. */}
-              <div className="mb-0.5 size-11">
+              <div className="col-start-2 row-start-1 mb-0.5 size-11 sm:col-start-3">
                 {entfernbar ? (
                   <Symbolknopf
                     beschriftung={`${nummer} entfernen`}
