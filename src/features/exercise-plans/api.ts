@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { bildFeld } from '@/features/exercises/bild/schema';
 import { ACHSEN, KOERPERREGIONEN } from '@/features/exercises/types';
 
 /**
@@ -33,11 +34,17 @@ const positionSchema = z.object({
   body_region: z.enum(KOERPERREGIONEN),
   instruction: z.string().nullable(),
   equipment: z.array(z.string()),
+  /** UEB-012: im Entwurf das Bild der Bibliothek, nach der Zuweisung das eingefrorene. */
+  illustration: bildFeld,
   variant_archived: z.boolean(),
   sets: z.number(),
   reps_min: z.number().nullable(),
   reps_max: z.number().nullable(),
   duration_seconds: z.number().nullable(),
+  /** UEB-012 (ANN-384): Halten je Wiederholung, je Seite, Häufigkeit am Tag. */
+  hold_seconds: z.number().nullable().default(null),
+  per_side: z.boolean().default(false),
+  times_per_day: z.number().nullable().default(null),
   load: z.string().nullable(),
   tempo: z.string().nullable(),
   rest_seconds: z.number().nullable(),
@@ -208,6 +215,8 @@ function meldung(error: Fehler, rest: string): Error {
     ['sets is invalid', 'Bitte die Sätze prüfen (1 bis 20).'],
     ['duration is invalid', 'Bitte die Dauer prüfen (1 bis 3600 Sekunden).'],
     ['rest is invalid', 'Bitte die Pause prüfen (0 bis 600 Sekunden).'],
+    ['hold is invalid', 'Halten geht nur mit Wiederholungen (1 bis 600 Sekunden).'],
+    ['times per day is invalid', 'Bitte die Häufigkeit am Tag prüfen (1 bis 10).'],
     [
       'double progression',
       'Doppelte Progression braucht einen Wiederholungsbereich und eine Last.',
@@ -296,6 +305,11 @@ export interface PositionEingabe {
   /** UEB-006: der eine Schritt gegenüber der vorigen Fassung. */
   achse: string | null;
   richtung: 'harder' | 'easier' | null;
+  /** UEB-012 (ANN-384): Halten je Wiederholung in Sekunden, nur mit Wiederholungen. */
+  halten?: number | null;
+  jeSeite?: boolean;
+  /** Wie oft am Tag; ohne Angabe gilt die Häufigkeit des Plans. */
+  amTag?: number | null;
 }
 
 export async function savePosition(eingabe: PositionEingabe): Promise<string> {
@@ -317,6 +331,9 @@ export async function savePosition(eingabe: PositionEingabe): Promise<string> {
       p_note: eingabe.hinweis,
       p_step_axis: eingabe.achse,
       p_step_direction: eingabe.richtung,
+      p_hold_seconds: eingabe.halten ?? null,
+      p_per_side: eingabe.jeSeite ?? false,
+      p_times_per_day: eingabe.amTag ?? null,
     },
     rest,
   );

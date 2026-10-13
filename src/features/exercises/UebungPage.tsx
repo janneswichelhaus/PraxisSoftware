@@ -24,6 +24,7 @@ import {
   type Uebung,
   type Variante,
 } from './api';
+import { Uebungsbild } from './bild/Uebungsbild';
 import { UebungFormular, VarianteFormular } from './Formulare';
 import { variantenOrte, type Ort } from './orte';
 import { VerbindungFormular, VerbindungenAnzeige } from './Verbindungen';
@@ -116,6 +117,23 @@ function VarianteKarte({
           </div>
         ) : (
           <>
+            {/* UEB-012 (ANN-381): das Übungsbild, Start und Ende; abspielen nur auf Tippen. */}
+            {variante.illustration ? (
+              <div className="mt-3 max-w-md">
+                <Uebungsbild
+                  bild={variante.illustration}
+                  name={variante.lay_name}
+                  darstellung="start-ende"
+                  animierbar
+                />
+              </div>
+            ) : null}
+            {variante.catalog_key && !variante.reviewed_at ? (
+              <p className="text-ink-muted mt-2 text-sm">
+                Aus dem Übungskatalog ({variante.catalog_key}), noch nicht von der Praxis
+                durchgesehen.
+              </p>
+            ) : null}
             <dl className="mt-3 flex flex-col gap-3">
               {variante.instruction ? (
                 <Angabe label="Kurzanleitung">{variante.instruction}</Angabe>

@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { katalogeintrag } from '@/features/exercises/katalog';
+import { OHNE_KATALOG } from '@/features/exercises/testdaten';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -42,6 +44,7 @@ function variante(
     common_faults: null,
     practice_notes: null,
     archived: false,
+    ...OHNE_KATALOG,
     ...zusatz,
   };
 }
@@ -62,6 +65,8 @@ const KNIEBEUGE: Uebung = {
       {
         common_faults: 'Knie fallen nach innen; Fersen heben ab.',
         practice_notes: 'Höhe des Griffs vor Ort zeigen.',
+        // UEB-012: ein Bild aus dem Katalog - Vorschau in der Liste, Start und Ende in der Übung.
+        illustration: katalogeintrag('KN-07')?.bild ?? null,
       },
     ),
     variante(

@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { OHNE_KATALOG } from '@/features/exercises/testdaten';
+import { OHNE_ZUSATZ } from '@/features/exercise-plans/testdaten';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -36,6 +38,7 @@ function variante(id: string, name: string, laie: string, ausruestung: string[] 
     common_faults: null,
     practice_notes: null,
     archived: false,
+    ...OHNE_KATALOG,
   };
 }
 
@@ -91,6 +94,7 @@ function position(id: string, nr: number, teil: Partial<Position>): Position {
       'Mit beiden Händen festhalten. Langsam halb in die Hocke, kurz halten, wieder aufrichten.',
     equipment: ['Geländer'],
     variant_archived: false,
+    ...OHNE_ZUSATZ,
     sets: 3,
     reps_min: 8,
     reps_max: 12,

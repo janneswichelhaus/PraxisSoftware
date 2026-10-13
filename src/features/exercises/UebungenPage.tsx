@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -11,7 +11,8 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { canReadExerciseLibrary, type CurrentUser } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
-import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Uebung } from './api';
+import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, importiereKatalog, type Uebung } from './api';
+import { Uebungsbild } from './bild/Uebungsbild';
 import { UebungFormular } from './Formulare';
 import {
   KEIN_FILTER,
@@ -42,8 +43,19 @@ function anzahlVarianten(uebung: Uebung): string {
 }
 
 function Zeile({ treffer: { uebung, variantenTreffer } }: { treffer: Treffer }) {
+  // UEB-012: das erste Bild der Übung als Vorschau (56 px); ohne Bild nur Text.
+  const bild = uebung.variants.find((v) => !v.archived && v.illustration)?.illustration ?? null;
   return (
     <ListRow
+      {...(bild
+        ? {
+            zeit: (
+              <span className="block size-14">
+                <Uebungsbild bild={bild} name={uebung.lay_name} darstellung="vorschau" dekorativ />
+              </span>
+            ),
+          }
+        : {})}
       titel={uebung.name}
       meta={
         <>
@@ -119,6 +131,55 @@ function Filterleiste({
           </Button>
         ) : null}
       </Disclosure>
+    </div>
+  );
+}
+
+/**
+ * UEB-012 (ANN-385): den mitgelieferten Übungskatalog übernehmen - nur owner.
+ * Der Katalog wird erst beim Tippen geladen (eigener Teil des Builds). Was die
+ * Praxis schon hat, bleibt unverändert; Namenskonflikte werden genannt. Die
+ * Meldung nennt Text und Bild freiwillig „KI-erstellt" und „ungeprüft"
+ * (ANN-388, ANN-386).
+ */
+function KatalogUebernehmen() {
+  const queryClient = useQueryClient();
+  const uebernehmen = useMutation({
+    mutationFn: async () => {
+      const { KATALOG } = await import('./katalog');
+      return importiereKatalog(KATALOG);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL }),
+  });
+  const e = uebernehmen.data;
+  return (
+    <div className="mb-6 flex flex-col gap-2">
+      <div>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={uebernehmen.isPending}
+          onClick={() => uebernehmen.mutate()}
+        >
+          {uebernehmen.isPending ? 'Wird übernommen …' : 'Standardbibliothek übernehmen'}
+        </Button>
+      </div>
+      {e ? (
+        <Statusmeldung ton="erfolg">
+          {e.imported.length === 1 ? '1 Übung' : `${e.imported.length} Übungen`} übernommen
+          {e.skipped.length > 0 ? `, ${e.skipped.length} schon vorhanden und unverändert` : ''}
+          {e.conflicts.length > 0
+            ? `, ${e.conflicts.length} wegen gleicher Bezeichnung ausgelassen: ${e.conflicts
+                .map((k) => k.name)
+                .join(', ')}`
+            : ''}
+          . Die Übungen sind KI-erstellt und gelten bis zur Durchsicht durch die Praxis als
+          ungeprüft.
+        </Statusmeldung>
+      ) : null}
+      {uebernehmen.isError ? (
+        <Statusmeldung ton="fehler">{uebernehmen.error.message}</Statusmeldung>
+      ) : null}
     </div>
   );
 }
@@ -202,6 +263,8 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
           </Statusmeldung>
         </div>
       ) : null}
+
+      {data?.can_manage ? <KatalogUebernehmen /> : null}
 
       {isPending ? <LoadingState label="Übungen werden geladen …" /> : null}
       {isError ? (

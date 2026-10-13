@@ -229,6 +229,12 @@ export function PositionFormular({
       hinweis: werte.hinweis,
       achse: vorige && richtung ? achse : null,
       richtung: vorige && richtung ? richtung : null,
+      // UEB-012 (ANN-384): Halten, je Seite und Häufigkeit am Tag hat dieses
+      // Formular noch nicht; was die Position schon trägt, bleibt erhalten.
+      // Halten gibt es nur zu Wiederholungen.
+      halten: werte.art === 'wdh' ? (position?.hold_seconds ?? null) : null,
+      jeSeite: position?.per_side ?? false,
+      amTag: position?.times_per_day ?? null,
     });
   }
 

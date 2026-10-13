@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { bildFeld } from './bild/schema';
+import { AUSGANGSSTELLUNGEN, ZIELE, type Katalogeintrag } from './katalog/typen';
 import { ACHSEN, KOERPERREGIONEN } from './types';
 
 /**
@@ -11,6 +13,22 @@ import { ACHSEN, KOERPERREGIONEN } from './types';
  * `can_manage` steuert hier nur die Darstellung.
  */
 
+/**
+ * UEB-012 (ANN-384): die Standarddosierung des Katalogs in der Form der
+ * Planposition. Für alle gleich, nie aus Angaben einer Person abgeleitet.
+ */
+export const standarddosierungSchema = z.object({
+  sets: z.number(),
+  reps_min: z.number().nullable().default(null),
+  reps_max: z.number().nullable().default(null),
+  duration_seconds: z.number().nullable().default(null),
+  hold_seconds: z.number().nullable().default(null),
+  per_side: z.boolean().default(false),
+  times_per_day: z.number().nullable().default(null),
+});
+
+export type Standarddosierung = z.infer<typeof standarddosierungSchema>;
+
 const varianteSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -20,6 +38,18 @@ const varianteSchema = z.object({
   common_faults: z.string().nullable(),
   practice_notes: z.string().nullable(),
   archived: z.boolean(),
+  // UEB-012: Herkunft aus dem Katalog, Ordnungen, Standarddosierung, Bild und
+  // Prüfvermerk (ANN-381 bis ANN-386). Bei eigenen Varianten leer.
+  catalog_key: z.string().nullable().default(null),
+  catalog_version: z.string().nullable().default(null),
+  goal: z.enum(ZIELE).nullable().catch(null),
+  starting_position: z.enum(AUSGANGSSTELLUNGEN).nullable().catch(null),
+  level: z.number().int().min(1).max(3).nullable().catch(null),
+  default_dosage: standarddosierungSchema.nullable().catch(null),
+  /** Ein ungültiges Bild wird zu `null` - lieber kein Bild als ein falsches. */
+  illustration: bildFeld,
+  reviewed_at: z.string().nullable().default(null),
+  reviewed_by_name: z.string().nullable().default(null),
 });
 
 export type Variante = z.infer<typeof varianteSchema>;
@@ -227,6 +257,43 @@ export async function loeseVerbindung(id: string): Promise<void> {
   if (error) {
     gemeinsam(error);
     throw new Error('Die Verbindung konnte nicht gelöst werden.');
+  }
+}
+
+const uebernahmeSchema = z.object({
+  imported: z.array(z.string()),
+  skipped: z.array(z.string()),
+  conflicts: z.array(z.object({ catalog_key: z.string(), name: z.string() })),
+});
+
+export type Uebernahme = z.infer<typeof uebernahmeSchema>;
+
+/**
+ * UEB-012 (ANN-385): den mitgelieferten Katalog in die Bibliothek der Praxis
+ * übernehmen - nur owner. Der Server prüft jeden Eintrag, überspringt, was
+ * die Praxis schon hat, und überschreibt nichts.
+ */
+export async function importiereKatalog(eintraege: readonly Katalogeintrag[]): Promise<Uebernahme> {
+  const rest = 'Der Katalog konnte nicht übernommen werden.';
+  const { data, error } = (await getSupabase().rpc('import_exercise_catalog', {
+    p_entries: eintraege,
+  })) as { data: unknown; error: Fehler };
+  if (error) {
+    gemeinsam(error);
+    throw new Error(rest);
+  }
+  return antwort(uebernahmeSchema, data, rest);
+}
+
+/** UEB-012 (ANN-386): Prüfvermerk setzen oder nehmen - nur owner. */
+export async function setzePruefvermerk(varianteId: string, geprueft: boolean): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_exercise_variant_reviewed', {
+    p_variant_id: varianteId,
+    p_reviewed: geprueft,
+  })) as { error: Fehler };
+  if (error) {
+    gemeinsam(error);
+    throw new Error('Der Prüfvermerk konnte nicht gespeichert werden.');
   }
 }
 

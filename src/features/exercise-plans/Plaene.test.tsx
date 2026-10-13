@@ -5,6 +5,8 @@ import type * as Api from './api';
 import type * as BibliothekApi from '@/features/exercises/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { dosierungAlltag, dosierungFachlich, unterschiede } from './dosierung';
+import { OHNE_KATALOG } from '@/features/exercises/testdaten';
+import { OHNE_ZUSATZ } from './testdaten';
 
 const fetchPlanliste = vi.fn();
 const fetchPlan = vi.fn();
@@ -73,6 +75,7 @@ export const BIBLIOTHEK: BibliothekApi.Bibliothek = {
           common_faults: null,
           practice_notes: null,
           archived: false,
+          ...OHNE_KATALOG,
         },
         {
           id: 'v2',
@@ -83,6 +86,7 @@ export const BIBLIOTHEK: BibliothekApi.Bibliothek = {
           common_faults: null,
           practice_notes: null,
           archived: false,
+          ...OHNE_KATALOG,
         },
       ],
     },
@@ -102,6 +106,7 @@ export const BIBLIOTHEK: BibliothekApi.Bibliothek = {
           common_faults: null,
           practice_notes: null,
           archived: false,
+          ...OHNE_KATALOG,
         },
       ],
     },
@@ -122,6 +127,7 @@ export function position(teil: Partial<Api.Position> = {}): Api.Position {
     instruction: 'Festhalten.',
     equipment: ['Geländer'],
     variant_archived: false,
+    ...OHNE_ZUSATZ,
     sets: 3,
     reps_min: 8,
     reps_max: 12,

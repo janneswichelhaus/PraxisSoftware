@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Uebung, Variante } from './api';
+import { OHNE_KATALOG } from './testdaten';
 import { KEIN_FILTER, OHNE_AUSRUESTUNG, ausruestungen, filtere, gesetzteFilter } from './suche';
 
 function variante(id: string, name: string, laie: string, ausruestung: string[] = []): Variante {
@@ -12,6 +13,7 @@ function variante(id: string, name: string, laie: string, ausruestung: string[] 
     common_faults: null,
     practice_notes: null,
     archived: false,
+    ...OHNE_KATALOG,
   };
 }
 

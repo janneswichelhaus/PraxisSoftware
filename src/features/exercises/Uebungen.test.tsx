@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { OHNE_KATALOG } from './testdaten';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -15,6 +16,7 @@ const verbinde = vi.fn();
 const loeseVerbindung = vi.fn();
 const loescheUebung = vi.fn();
 const loescheVariante = vi.fn();
+const importiereKatalog = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof Api>();
@@ -29,6 +31,8 @@ vi.mock('./api', async (importOriginal) => {
     loeseVerbindung: (...args: unknown[]) => loeseVerbindung(...args) as Promise<void>,
     loescheUebung: (...args: unknown[]) => loescheUebung(...args) as Promise<void>,
     loescheVariante: (...args: unknown[]) => loescheVariante(...args) as Promise<void>,
+    importiereKatalog: (...args: unknown[]) =>
+      importiereKatalog(...args) as Promise<Api.Uebernahme>,
   };
 });
 
@@ -44,6 +48,7 @@ const GELAENDER: Api.Variante = {
   common_faults: 'Knie fallen nach innen.',
   practice_notes: 'Nicht unter Schmerz über 5.',
   archived: false,
+  ...OHNE_KATALOG,
 };
 
 const ALT: Api.Variante = {
@@ -55,6 +60,7 @@ const ALT: Api.Variante = {
   common_faults: null,
   practice_notes: null,
   archived: true,
+  ...OHNE_KATALOG,
 };
 
 const KNIEBEUGE: Api.Uebung = {
@@ -84,6 +90,7 @@ const VORWAERTS: Api.Variante = {
   common_faults: null,
   practice_notes: null,
   archived: false,
+  ...OHNE_KATALOG,
 };
 
 const AUSFALLSCHRITT: Api.Uebung = {
@@ -122,6 +129,7 @@ beforeEach(() => {
     loescheVariante,
     verbinde,
     loeseVerbindung,
+    importiereKatalog,
   ]) {
     f.mockReset();
   }
@@ -160,6 +168,34 @@ describe('UebungenPage (UEB-001)', () => {
     renderWithProviders(<UebungenPage user={testUser(['therapist'])} />);
     await screen.findByRole('link', { name: /Kniebeuge/ });
     expect(screen.queryByRole('button', { name: 'Übung anlegen' })).not.toBeInTheDocument();
+  });
+
+  it('bietet owner die Standardbibliothek an und meldet, was übernommen wurde (ANN-385)', async () => {
+    const user = userEvent.setup();
+    importiereKatalog.mockResolvedValue({
+      imported: ['KN-01', 'KN-02'],
+      skipped: ['KN-03'],
+      conflicts: [{ catalog_key: 'KN-07', name: 'Mini-Kniebeuge mit Halt' }],
+    });
+    renderWithProviders(<UebungenPage user={testUser(['owner'])} />);
+    await user.click(await screen.findByRole('button', { name: 'Standardbibliothek übernehmen' }));
+    expect(
+      await screen.findByText(/2 Übungen übernommen, 1 schon vorhanden und unverändert/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/ausgelassen: Mini-Kniebeuge mit Halt/)).toBeInTheDocument();
+    expect(screen.getByText(/gelten bis zur Durchsicht durch die Praxis als/)).toBeInTheDocument();
+    // Der ganze Katalog geht an den Server - der prüft und überspringt.
+    const [eintraege] = importiereKatalog.mock.calls[0] as [{ schluessel: string }[]];
+    expect(eintraege.map((e) => e.schluessel)).toContain('KN-01');
+  });
+
+  it('bietet die Standardbibliothek ohne Pflegerecht nicht an (ANN-293)', async () => {
+    fetchBibliothek.mockResolvedValue(bibliothek(false));
+    renderWithProviders(<UebungenPage user={testUser(['therapist'])} />);
+    await screen.findByRole('link', { name: /Kniebeuge/ });
+    expect(
+      screen.queryByRole('button', { name: 'Standardbibliothek übernehmen' }),
+    ).not.toBeInTheDocument();
   });
 
   it('legt eine Übung mit beiden Bezeichnungen und Region an', async () => {
