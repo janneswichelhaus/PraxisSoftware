@@ -37,8 +37,6 @@ export const GRENZEN: Record<
   Readonly<Record<string, number>>
 > = {
   breiten: {
-    'features/account': 1,
-
     'features/appointments': 8,
 
     'features/assessments': 3,
@@ -47,8 +45,6 @@ export const GRENZEN: Record<
 
     'features/checkins': 2,
 
-    'features/datenschutz': 2,
-
     'features/documentation': 8,
 
     'features/exercise-plans': 4,
@@ -56,8 +52,6 @@ export const GRENZEN: Record<
     'features/exercises': 5,
 
     'features/files': 4,
-
-    'features/fleet': 3,
 
     'features/messages': 4,
 
@@ -73,13 +67,9 @@ export const GRENZEN: Record<
 
     'features/slot-search': 1,
 
-    'features/staff': 2,
-
     'features/territories': 1,
 
     'features/therapy-reports': 5,
-
-    'features/timeaccount': 1,
 
     'features/tours': 3,
 
@@ -87,16 +77,12 @@ export const GRENZEN: Record<
 
     'features/treatment-bases': 3,
 
-    'features/vacation': 2,
-
     'features/waitlist': 1,
   },
   details: {
     'features/appointments': 4,
 
     'features/assessments': 2,
-
-    'features/audit': 1,
 
     'features/auth': 1,
 
@@ -114,10 +100,6 @@ export const GRENZEN: Record<
 
     'features/platform': 2,
 
-    'features/preview': 1,
-
-    'features/staff': 1,
-
     'features/statistics': 3,
 
     'features/therapy-reports': 1,
@@ -131,15 +113,11 @@ export const GRENZEN: Record<
 
     'features/appointments': 3,
 
-    'features/audit': 1,
-
     'features/auth': 1,
 
     'features/billing': 13,
 
     'features/datenschutz': 1,
-
-    'features/fleet': 1,
 
     'features/messages': 1,
 
@@ -153,17 +131,11 @@ export const GRENZEN: Record<
 
     'features/platform-access': 1,
 
-    'features/retention': 1,
-
     'features/scheduling': 2,
 
     'features/slot-search': 1,
 
-    'features/staff': 2,
-
     'features/teamchat': 1,
-
-    'features/timeaccount': 1,
 
     'features/training': 6,
 
@@ -224,8 +196,6 @@ export const GRENZEN: Record<
 
     'features/checkins': 5,
 
-    'features/datenschutz': 3,
-
     'features/documentation': 4,
 
     'features/exercise-plans': 4,
@@ -233,8 +203,6 @@ export const GRENZEN: Record<
     'features/exercises': 3,
 
     'features/files': 1,
-
-    'features/fleet': 1,
 
     'features/messages': 1,
 
@@ -247,10 +215,6 @@ export const GRENZEN: Record<
     'features/platform': 48,
 
     'features/platform-access': 1,
-
-    'features/preview': 1,
-
-    'features/retention': 2,
 
     'features/statistics': 2,
 

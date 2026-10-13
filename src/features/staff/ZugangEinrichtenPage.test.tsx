@@ -44,11 +44,13 @@ describe('ZugangEinrichtenPage', () => {
     expect(screen.getByRole('main')).toBeInTheDocument();
   });
 
-  it('sagt vorher, dass danach ein eigenes Kennwort festzulegen ist (AUTH-08)', () => {
+  // Seit ADR-025 Fassung 2 gibt es kein Kennwort mehr: Nach dem Annehmen
+  // verlangt die Einrichtungspflicht Passkey und PIN. Die Seite sagt das
+  // vorher, in einem Satz unter dem Titel (Welle B, B7).
+  it('sagt vorher, was nach dem Annehmen einzurichten ist (AUTH-08)', () => {
     renderWithProviders(<ZugangEinrichtenPage onEingerichtet={vi.fn()} onAbmelden={vi.fn()} />);
-    expect(
-      screen.getByText(/Legen Sie danach unter „Mein Konto“ ein eigenes Kennwort fest/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/danach richten Sie Passkey und PIN ein/)).toBeInTheDocument();
+    expect(screen.queryByText(/Kennwort/)).toBeNull();
   });
 
   it('bleibt bis zum Wechsel in die Anwendung beim Laufzustand (AUTH-08)', async () => {

@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Badge } from '@/components/ui/Badge';
@@ -53,6 +54,10 @@ const wochentagNamen = [
   'Samstag',
 ];
 
+/**
+ * Ein Hinweis im Schritt als Zeile auf Fläche, ohne Rahmen (Leitfaden L2:
+ * Meldungen sind Zeilen).
+ */
 function Hinweiskasten({
   ton = 'info',
   children,
@@ -60,11 +65,8 @@ function Hinweiskasten({
   ton?: 'info' | 'warnung';
   children: ReactNode;
 }) {
-  const klassen =
-    ton === 'warnung'
-      ? 'border-warnung/30 bg-warnung-soft text-warnung'
-      : 'border-accent/25 bg-accent-soft text-accent';
-  return <div className={`rounded-card mb-4 border px-4 py-3 text-sm ${klassen}`}>{children}</div>;
+  const klassen = ton === 'warnung' ? 'bg-warnung-soft text-warnung' : 'bg-accent-soft text-accent';
+  return <div className={`rounded-card mb-4 px-4 py-3 text-sm ${klassen}`}>{children}</div>;
 }
 
 export function BreakdownPage() {
@@ -135,18 +137,20 @@ export function BreakdownPage() {
         <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
         <PageHeader title="Panne melden" description="Meldung abgeschlossen." />
         <SimulationsMeldung eintrag={ergebnis} />
-        <div className="flex flex-wrap gap-3">
-          {/* Seitenwechsel als ButtonLink statt eigener Klassenkette (VOR-12). */}
-          <ButtonLink to="/betrieb/flotte">Zurück zur Radflotte</ButtonLink>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setErgebnis(null);
-              setAblauf(ablaufStarten(null, vorschau.raeder[0]?.id ?? null));
-            }}
-          >
-            Weitere Panne melden
-          </Button>
+        <div className="max-w-formular">
+          <Formularfuss>
+            {/* Seitenwechsel als ButtonLink statt eigener Klassenkette (VOR-12). */}
+            <ButtonLink to="/betrieb/flotte">Zurück zur Radflotte</ButtonLink>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setErgebnis(null);
+                setAblauf(ablaufStarten(null, vorschau.raeder[0]?.id ?? null));
+              }}
+            >
+              Weitere Panne melden
+            </Button>
+          </Formularfuss>
         </div>
       </>
     );
@@ -157,22 +161,25 @@ export function BreakdownPage() {
   return (
     <>
       <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
-      {/* Solange das Rad gewählt wird, ist keines gewählt - auch wenn die
-          Auswahl eines vorbelegt (VOR-18). */}
+      {/* Eine Frage je Schritt, und die Frage ist der Titel (Welle B): Der
+          Vorgang und das Rad stehen als Zeile darüber. Solange das Rad
+          gewählt wird, ist keines gewählt - auch wenn die Auswahl eines
+          vorbelegt (VOR-18). Bis dahin stand der Ablauf als Karte mit
+          eigener Überschrift unter dem Seitentitel. */}
       <PageHeader
-        title="Panne melden"
-        description={rad && ablauf.schritt !== 'radwahl' ? rad.name : 'Rad noch nicht ausgewählt'}
+        kicker={
+          rad && ablauf.schritt !== 'radwahl'
+            ? `Panne melden · ${rad.name}`
+            : 'Panne melden · Rad noch nicht ausgewählt'
+        }
+        title={frage(ablauf.schritt, vorlage)}
       />
 
-      <div className="rounded-card border-line bg-surface max-w-xl border p-5">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="max-w-formular">
+        <div className="mb-6 flex flex-wrap items-center gap-2">
           <Badge ton="warnung">{vorlage.herkunft}-Vorlage</Badge>
           <span className="text-ink-muted text-sm">{vorlage.pruefhinweis}</span>
         </div>
-
-        <h2 className="text-ink mb-4 text-[1.0625rem] font-semibold">
-          {frage(ablauf.schritt, vorlage)}
-        </h2>
 
         <Schrittinhalt
           ablauf={ablauf}
@@ -221,18 +228,16 @@ export function BreakdownPage() {
           </div>
         ) : null}
 
-        <div className="border-line mt-6 flex flex-wrap gap-3 border-t pt-4">
-          <Link
-            to="/betrieb/flotte"
-            className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
-          >
-            Abbrechen
-          </Link>
+        {/* Leise am Ende: ein Schritt zurück oder ganz abbrechen. */}
+        <div className="border-line mt-8 flex flex-wrap gap-2 border-t pt-4">
           {kannZurueck(ablauf) ? (
             <Button variant="quiet" onClick={() => setAblauf((aktuell) => zurueck(aktuell))}>
               ← Zurück
             </Button>
           ) : null}
+          <ButtonLink to="/betrieb/flotte" variant="quiet">
+            Abbrechen
+          </ButtonLink>
         </div>
       </div>
     </>

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -7,6 +7,9 @@ import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testStaffMember, testUser } from '@/test-utils';
 
 const STAFF_ID = '55555555-5555-4555-8555-000000000002';
+
+/** Der Reiter „Einsatz“: Kalender, Vergütung, Beschäftigung (Welle B, B7). */
+const EINSATZ = `/praxis/team/${STAFF_ID}?bereich=einsatz`;
 
 const aktiv = testStaffMember({
   id: STAFF_ID,
@@ -214,7 +217,7 @@ describe('StaffMemberDetailPage', () => {
   });
 
   it('bietet owner die Verwaltung an', async () => {
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
     const link = await screen.findByRole('link', { name: 'Stammdaten bearbeiten' });
     expect(link).toHaveAttribute('href', `/praxis/team/${STAFF_ID}/bearbeiten`);
     expect(screen.getByRole('button', { name: 'Als inaktiv führen' })).toBeInTheDocument();
@@ -222,7 +225,7 @@ describe('StaffMemberDetailPage', () => {
 
   it('schreibt erst nach der Rueckfrage', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
 
     await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
     expect(setStaffEmploymentStatus).not.toHaveBeenCalled();
@@ -238,7 +241,7 @@ describe('StaffMemberDetailPage', () => {
 
   it('sagt in der Rueckfrage zu, dass bestehende Zuordnungen erhalten bleiben', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
 
     await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
     expect(screen.getByText(/bleiben vollständig erhalten/)).toBeInTheDocument();
@@ -265,7 +268,7 @@ describe('StaffMemberDetailPage', () => {
       },
     ]);
 
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
     await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
     await user.click(screen.getByRole('button', { name: 'Als inaktiv führen' }));
 
@@ -280,7 +283,7 @@ describe('StaffMemberDetailPage', () => {
     setStaffEmploymentStatus.mockRejectedValueOnce(new OffeneTermineError());
     fetchStaffFutureAppointments.mockResolvedValue([]);
 
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
     await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
     await user.click(screen.getByRole('button', { name: 'Als inaktiv führen' }));
 
@@ -299,7 +302,7 @@ describe('StaffMemberDetailPage', () => {
     const user = userEvent.setup();
     fetchStaffMember.mockResolvedValue({ ...aktiv, employment_status: 'inactive' });
 
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
     await user.click(await screen.findByRole('button', { name: 'Wieder als aktiv führen' }));
     await user.click(screen.getByRole('button', { name: 'Wieder als aktiv führen' }));
 
@@ -314,7 +317,7 @@ describe('StaffMemberDetailPage', () => {
     fetchStaffMember
       .mockResolvedValueOnce(aktiv)
       .mockResolvedValue({ ...aktiv, employment_status: 'inactive' });
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
 
     await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
     await user.click(screen.getByRole('button', { name: 'Als inaktiv führen' }));
@@ -329,7 +332,7 @@ describe('StaffMemberDetailPage', () => {
   it('sagt beim gescheiterten Wechsel, was zu tun ist (ORG-15)', async () => {
     const user = userEvent.setup();
     setStaffEmploymentStatus.mockRejectedValue(new Error('Netz weg'));
-    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
 
     await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
     await user.click(screen.getByRole('button', { name: 'Als inaktiv führen' }));
@@ -365,11 +368,46 @@ describe('StaffMemberDetailPage', () => {
     expect(await screen.findByRole('heading', { name: 'Anna Beispiel' })).toBeInTheDocument();
   });
 
+  describe('Objektkopf und Reiter (Welle B, B7)', () => {
+    it('zeigt owner die Reiter Kontakt, Einsatz und Zugang, Kontakt offen', async () => {
+      renderWithProviders(
+        <StaffMemberDetailPage user={testUser(['owner'])} />,
+        `/praxis/team/${STAFF_ID}`,
+      );
+      const reiter = await screen.findByRole('navigation', { name: 'Bereiche der Mitarbeiter:in' });
+      expect(within(reiter).getByRole('link', { name: 'Kontakt' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(within(reiter).getByRole('link', { name: 'Einsatz' })).toHaveAttribute(
+        'href',
+        `/praxis/team/${STAFF_ID}?bereich=einsatz`,
+      );
+      expect(within(reiter).getByRole('link', { name: 'Zugang' })).toBeInTheDocument();
+      // Der Statuswechsel steht im Reiter „Einsatz“, nicht unter dem Kontakt.
+      expect(screen.queryByRole('button', { name: 'Als inaktiv führen' })).toBeNull();
+    });
+
+    it('zeigt office keine Reiterleiste - es gibt nur den Kontakt', async () => {
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+      expect(screen.queryByRole('navigation', { name: 'Bereiche der Mitarbeiter:in' })).toBeNull();
+    });
+
+    it('fasst Kalender und Vergütung in ein Formular mit einem Speichern', async () => {
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
+      await screen.findByLabelText('Vergütungsmodell');
+      expect(screen.getAllByRole('button', { name: /speichern/i })).toHaveLength(1);
+    });
+  });
+
   describe('Vergütungsmodell (STA-005)', () => {
     it('laesst owner das Modell eintragen', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />, EINSATZ);
       const auswahl = await screen.findByLabelText('Vergütungsmodell');
+      // Bis das Modell geladen ist, steht die Auswahl gesperrt da.
+      await waitFor(() => expect(auswahl).toBeEnabled());
       expect(auswahl).toHaveValue('');
       await user.selectOptions(auswahl, 'revenue_share');
       await user.click(screen.getByRole('button', { name: 'Speichern' }));

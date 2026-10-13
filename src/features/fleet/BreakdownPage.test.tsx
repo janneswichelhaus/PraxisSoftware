@@ -154,7 +154,7 @@ describe('Pannenassistent', () => {
   it('nennt im Kopf kein Rad, solange es gewaehlt wird (VOR-18)', () => {
     oeffne('/betrieb/flotte/panne');
     // Die Auswahl ist vorbelegt, gewählt ist damit aber noch nichts.
-    expect(screen.getByText('Rad noch nicht ausgewählt')).toBeInTheDocument();
+    expect(screen.getByText(/Rad noch nicht ausgewählt/)).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Rad' })).toHaveDisplayValue(
       'Lastenrad 1 · Raddepot Nord',
     );

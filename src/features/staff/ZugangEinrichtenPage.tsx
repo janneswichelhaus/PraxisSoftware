@@ -55,8 +55,13 @@ export function ZugangEinrichtenPage({
   );
 
   return (
+    // Ein Satz unter dem Titel statt eines Absatzes (Regel 6, Welle B): wo
+    // das Konto steht und was der Knopf bewirkt. Der Hinweis auf ein eigenes
+    // Kennwort ist entfallen - in Produktion verlangt die Einrichtungspflicht
+    // danach Passkey und PIN (ADR-025 Fassung 2), ein Kennwort gibt es nicht.
     <Vollseite
       titel="Zugang einrichten"
+      einleitung="Ihr Konto ist noch keiner Praxis zugeordnet. Mit der Einladung erhalten Sie die vorgesehenen Rollen; danach richten Sie Passkey und PIN ein."
       kleingedrucktes="Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig. Der Beitritt wird protokolliert."
     >
       {ohneEinladung ? (
@@ -65,9 +70,6 @@ export function ZugangEinrichtenPage({
             title="Für diesen Zugang liegt keine offene Einladung vor."
             description="Bitte wenden Sie sich an die Praxisinhaber:in. Dieses Konto hat keinen Zugriff auf Daten der Praxis."
           />
-          <p className="text-ink-muted mt-4 text-sm leading-relaxed">
-            Sobald die Praxisinhaber:in die Einladung angelegt hat, lässt sie sich hier annehmen.
-          </p>
           <Button
             variant="secondary"
             className="mt-4 w-full"
@@ -79,15 +81,8 @@ export function ZugangEinrichtenPage({
         </div>
       ) : (
         <>
-          <p className="text-ink-muted text-sm leading-relaxed">
-            Ihr Konto ist angemeldet, aber noch keiner Praxis zugeordnet. Mit dem nächsten Schritt
-            nehmen Sie die Einladung an und erhalten die dafür vorgesehenen Rollen. Legen Sie danach
-            unter „Mein Konto“ ein eigenes Kennwort fest, damit Sie sich auch ohne Mail anmelden
-            können.
-          </p>
-
           {mutation.isError ? (
-            <div ref={fehlerkasten} tabIndex={-1} className="mt-4 outline-none">
+            <div ref={fehlerkasten} tabIndex={-1} className="mb-4 outline-none">
               <Statusmeldung ton="fehler">
                 Der Zugang konnte nicht eingerichtet werden. Bitte die Verbindung prüfen und erneut
                 versuchen.
@@ -96,7 +91,7 @@ export function ZugangEinrichtenPage({
           ) : null}
 
           <Button
-            className="mt-6 w-full"
+            className="w-full"
             disabled={mutation.isPending}
             onClick={() => mutation.mutate()}
           >

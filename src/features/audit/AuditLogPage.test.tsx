@@ -212,7 +212,12 @@ describe('AuditLogPage', () => {
     for (const feld of felder) {
       expect(feld).toHaveClass('w-full', 'h-12');
     }
-    expect(felder[0]!.closest('form')).toHaveClass('grid-cols-1');
+    // Seit Welle B in der Filterleiste: am Telefon eine Spalte, ab 640 px
+    // nebeneinander, jeder Filter höchstens so breit wie die Seite.
+    const knopf = screen.getByRole('button', { name: 'Filter' });
+    const bereich = document.getElementById(knopf.getAttribute('aria-controls') ?? '');
+    expect(bereich).toHaveClass('flex-col', 'sm:*:max-w-full');
+    for (const feld of felder) expect(bereich).toContainElement(feld);
   });
 
   it('blaettert seitenweise und meldet die Gesamtzahl', async () => {
@@ -339,7 +344,10 @@ describe('AuditLogPage', () => {
     expect(fetchAuditEvents).toHaveBeenLastCalledWith(
       expect.objectContaining({ action: 'access.denied', from: '2026-08-01', page: 0 }),
     );
-    expect(screen.getByText('Filter (2 gesetzt)').closest('details')).toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: 'Filter (2)' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
     expect(screen.getByLabelText('Aktion')).toHaveValue('access.denied');
   });
 
@@ -350,8 +358,11 @@ describe('AuditLogPage', () => {
     renderWithProviders(<AuditLogPage />);
     await screen.findByText('Keine Einträge im gewählten Zeitraum');
 
-    // jsdom ist schmal wie ein Telefon (keine Breite ab 1024 px).
-    expect(screen.getByText('Filter').closest('details')).not.toHaveAttribute('open');
+    // jsdom ist schmal wie ein Telefon; die Filterleiste steht zu.
+    expect(screen.getByRole('button', { name: 'Filter' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   it('gruppiert die Aktionen im Filter wie der Katalog (BEF-065)', async () => {

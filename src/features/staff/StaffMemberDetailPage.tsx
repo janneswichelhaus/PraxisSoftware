@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
-import { Rueckweg } from '@/components/ui/Rueckweg';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Objektkopf } from '@/components/ui/Objektkopf';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Section } from '@/components/ui/Section';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentTypeHint,
   fetchAssignableTherapists,
@@ -18,9 +23,9 @@ import {
   formatLocalTimeRange,
   todayInTimeZone,
 } from '@/features/appointments/api';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
+import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
 import { fullName } from '@/features/patients/api';
 import {
@@ -32,8 +37,9 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { StaffAccountSection } from './StaffAccountSection';
-import { StaffCalendarSection } from './StaffCalendarSection';
-import { StaffCompensationSection } from './StaffCompensationSection';
+import { StaffEinsatz } from './StaffEinsatz';
+import { Suchreiterleiste } from './Suchreiter';
+import { useOffenerReiter, type Suchreiter } from './offenerReiter';
 import {
   fetchStaffFutureAppointments,
   fetchStaffMember,
@@ -100,9 +106,11 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
   if (data.length === 0) return null;
 
   return (
-    <ul className="divide-line border-line mt-3 divide-y border-y text-sm">
+    // Zeilen mit Linie dazwischen, wie die Zeilen einer Liste - in der
+    // Rückfrage ohne eigene Karte (Leitfaden L2).
+    <ul className="border-line mt-3 border-y text-sm">
       {data.map((termin) => (
-        <li key={termin.id} className="py-2">
+        <li key={termin.id} className="border-line border-t py-2 first:border-t-0">
           <span className="text-ink block">
             {formatLocalDate(termin.starts_at, timeZone)} ·{' '}
             {formatLocalTimeRange(termin.starts_at, termin.ends_at, timeZone)}{' '}
@@ -171,12 +179,15 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
     <div className="flex w-full flex-col items-start gap-3">
       <Rueckfrage
         ausloeser={beschriftung}
+        // Leise am Ende des Reiters (DESIGN.md, Zerstörendes): Der Wechsel
+        // ist selten und hat Folgen; die Rückfrage sagt welche.
+        ausloeserVariante="quiet"
         bezeichnung={`${beschriftung} – Rückfrage`}
         bestaetigen={termineOffen ? 'Trotz offener Termine deaktivieren' : beschriftung}
         bestaetigenLaeuft="Wird geändert …"
         fehler={
           mutation.isError && !termineOffen
-            ? 'Der Beschäftigungsstatus konnte nicht geändert werden. Bitte die Verbindung prüfen und erneut versuchen.'
+            ? `Der Beschäftigungsstatus konnte nicht geändert werden. ${VERBINDUNG_PRUEFEN}`
             : undefined
         }
         laeuft={mutation.isPending}
@@ -213,6 +224,9 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
   );
 }
 
+/** Die Reiter der Mitarbeiter:in: Kontakt, Einsatz, Zugang (DESIGN.md „Objekt“). */
+type Bereich = 'kontakt' | 'einsatz' | 'zugang';
+
 function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser }) {
   /**
    * Kalender und Arbeitszeiten stehen nur zur Verfügung, wenn diese Person
@@ -230,6 +244,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
     // ihm ohnehin verweigert; Kalender und Arbeitszeiten sind ihm nicht offen.
     enabled: canManageAppointments(user.roles),
   });
+  const [suche] = useSearchParams();
   const behandelt = (therapeuten.data ?? []).some((t) => t.staff_member_id === staff.id);
   const zone = user.organizationTimeZone;
   // Zwei getrennte Rechte seit E10: Stammdaten pflegt auch das Office, den
@@ -248,99 +263,141 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
     staff.private_phone !== null ||
     adresse !== '';
 
+  // Welle B (B7): Objektkopf und Reiter statt acht Abschnitten untereinander.
+  // Kontakt für alle Rollen; Einsatz (Kalender, Vergütung, Beschäftigung) und
+  // Zugang nur, wer sie verwalten darf - ohne sie keine Reiterleiste.
+  const bereiche: Suchreiter<Bereich>[] = [
+    { wert: 'kontakt', label: 'Kontakt' },
+    ...(isOwner(user.roles) || darfBeschaeftigung
+      ? [{ wert: 'einsatz' as const, label: 'Einsatz' }]
+      : []),
+    ...(darfZugang ? [{ wert: 'zugang' as const, label: 'Zugang' }] : []),
+  ];
+  const offen = useOffenerReiter(
+    BEREICH_PARAM,
+    bereiche.map((bereich) => bereich.wert),
+  );
+  const rueckwegZiel = leseRueckweg(suche, '/praxis/team');
+
   return (
     <>
-      <PageHeader
-        title={fullName(staff)}
-        description={aktiv ? undefined : 'Inaktiv – wird nicht mehr für neue Termine angeboten.'}
-        actions={
+      <Objektkopf
+        titel={fullName(staff)}
+        rueckweg={{
+          to: rueckwegZiel,
+          beschriftung:
+            rueckwegZiel === '/praxis/team'
+              ? 'Zurück zu den Mitarbeitenden'
+              : rueckwegBeschriftung(rueckwegZiel),
+        }}
+        meta={staff.primary_location_name ?? 'Ohne festen Standort'}
+        // Aktiv ist der Regelfall und trägt kein Abzeichen (UX-005i).
+        status={aktiv ? null : <Badge>Inaktiv</Badge>}
+        aktionen={
           darfStammdaten ? (
-            // Ein Seitenwechsel im Knopfstil des Systems (ORG-16, TOK-11):
-            // bis UXR-011 ein Nachbau in Tinte mit 15 px und 500.
+            // Ein Seitenwechsel im Knopfstil des Systems (ORG-16, TOK-11).
             <ButtonLink to={`/praxis/team/${staff.id}/bearbeiten`} variant="secondary">
               Stammdaten bearbeiten
             </ButtonLink>
           ) : null
         }
+        fuss={aktiv ? null : 'Inaktiv – wird nicht mehr für neue Termine angeboten.'}
+        reiter={
+          bereiche.length > 1 ? (
+            <Suchreiterleiste
+              reiter={bereiche}
+              param={BEREICH_PARAM}
+              label="Bereiche der Mitarbeiter:in"
+            />
+          ) : null
+        }
       />
 
-      <Section titel="Dienstlich" rahmen>
-        <DetailList>
-          <KontaktZeile label="Diensttelefon" wert={staff.work_phone} schema="tel" />
-          <KontaktZeile label="Dienstliche E-Mail" wert={staff.work_email} schema="mailto" />
-          {/* Keine Zeile „Beschäftigung": Aktiv ist der Regelfall, inaktiv
-              steht im Seitenkopf. Leere Angaben nehmen keine Zeile (UX-005i). */}
-          {staff.primary_location_name ? (
-            <DetailRow label="Hauptstandort">{staff.primary_location_name}</DetailRow>
-          ) : null}
-          {/* Die beiden Fragen, die am Mitarbeiterdatensatz tatsächlich
-              anschließen: „wann arbeitet die Person" und „was hat sie vor".
-              Beide waren vorher nur über die Hauptnavigation und eine erneute
-              Auswahl erreichbar (UX-012). */}
-          {behandelt ? (
-            <DetailRow label="Planung">
-              <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <Textlink
-                  to={`/kalender?ansicht=woche${zone ? `&datum=${todayInTimeZone(zone)}` : ''}&person=${staff.id}`}
-                  alleinstehend
-                  className="text-sm"
-                >
-                  Woche im Kalender
-                </Textlink>
-                <Textlink
-                  to={`/praxis/planung?person=${staff.id}`}
-                  alleinstehend
-                  className="text-sm"
-                >
-                  {BEGRIFFE.arbeitszeiten}
-                </Textlink>
-              </span>
-            </DetailRow>
-          ) : null}
-          {/* Warum eine aktive Person nicht im Kalender steht, sagte bis
-              UXR-011 nur die Liste (ORG-25). Nur mit geladener Antwort - ohne
-              sie keine Aussage (ORG-14). */}
-          {aktiv && therapeuten.isSuccess && !behandelt ? (
-            <DetailRow label="Planung">
-              Nicht für Termine zuordenbar – dafür braucht die Person einen Zugang mit der Rolle
-              Therapeut:in oder Teamleitung.
-            </DetailRow>
-          ) : null}
-        </DetailList>
-      </Section>
+      <div className="mt-6 min-w-0">
+        {offen === 'kontakt' ? (
+          <Inhaltsflaeche className="lg:max-w-spalte">
+            <Zwischentitel>Dienstlich</Zwischentitel>
+            <DetailList>
+              <KontaktZeile label="Diensttelefon" wert={staff.work_phone} schema="tel" />
+              <KontaktZeile label="Dienstliche E-Mail" wert={staff.work_email} schema="mailto" />
+              {/* Keine Zeile „Beschäftigung" und keine zum Hauptstandort: Beides
+                  steht im Kopf. Leere Angaben nehmen keine Zeile (UX-005i). */}
+              {/* Die beiden Fragen, die am Mitarbeiterdatensatz tatsächlich
+                  anschließen: „wann arbeitet die Person" und „was hat sie vor"
+                  (UX-012). */}
+              {behandelt ? (
+                <DetailRow label="Planung">
+                  <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <Textlink
+                      to={`/kalender?ansicht=woche${zone ? `&datum=${todayInTimeZone(zone)}` : ''}&person=${staff.id}`}
+                      alleinstehend
+                      className="text-sm"
+                    >
+                      Woche im Kalender
+                    </Textlink>
+                    <Textlink
+                      to={`/praxis/planung?person=${staff.id}`}
+                      alleinstehend
+                      className="text-sm"
+                    >
+                      {BEGRIFFE.arbeitszeiten}
+                    </Textlink>
+                  </span>
+                </DetailRow>
+              ) : null}
+              {/* Warum eine aktive Person nicht im Kalender steht (ORG-25). Nur
+                  mit geladener Antwort - ohne sie keine Aussage (ORG-14). */}
+              {aktiv && therapeuten.isSuccess && !behandelt ? (
+                <DetailRow label="Planung">
+                  Nicht für Termine zuordenbar – dafür braucht die Person einen Zugang mit der Rolle
+                  Therapeut:in oder Teamleitung.
+                </DetailRow>
+              ) : null}
+            </DetailList>
 
-      {privatSichtbar ? (
-        <Section titel="Privat" rahmen>
-          <DetailList>
-            {staff.date_of_birth ? (
-              <DetailRow label="Geburtsdatum">{formatDate(staff.date_of_birth)}</DetailRow>
+            {/* Eine Karte für beides (Leitfaden L2): Privat ist eine Gruppe mit
+                Zwischentitel, kein zweiter Kasten. */}
+            {privatSichtbar ? (
+              <>
+                <Zwischentitel>Privat</Zwischentitel>
+                <DetailList>
+                  {staff.date_of_birth ? (
+                    <DetailRow label="Geburtsdatum">{formatDate(staff.date_of_birth)}</DetailRow>
+                  ) : null}
+                  <KontaktZeile label="Privattelefon" wert={staff.private_phone} schema="tel" />
+                  <KontaktZeile label="Private E-Mail" wert={staff.private_email} schema="mailto" />
+                  {adresse ? <DetailRow label="Adresse">{adresse}</DetailRow> : null}
+                </DetailList>
+              </>
             ) : null}
-            <KontaktZeile label="Privattelefon" wert={staff.private_phone} schema="tel" />
-            <KontaktZeile label="Private E-Mail" wert={staff.private_email} schema="mailto" />
-            {adresse ? <DetailRow label="Adresse">{adresse}</DetailRow> : null}
-          </DetailList>
-        </Section>
-      ) : null}
+          </Inhaltsflaeche>
+        ) : null}
 
-      {/* AKTE-009: in den Kalender nehmen, ohne dass die Person ihren Zugang
-          selbst einrichtet (ANN-226). Allein owner, wie der Zugang. */}
-      {isOwner(user.roles) ? <StaffCalendarSection staff={staff} /> : null}
+        {offen === 'einsatz' ? (
+          <>
+            {/* AKTE-009 und STA-005: ein Formular, ein Speichern. Allein owner,
+                wie der Zugang (ANN-226, ANN-157). */}
+            {isOwner(user.roles) ? <StaffEinsatz staff={staff} /> : null}
+            {/* Der Statuswechsel leise am Ende des Reiters, mit Rückfrage
+                (DESIGN.md, Zerstörendes). */}
+            {darfBeschaeftigung ? (
+              <div className="border-line max-w-formular mt-8 flex border-t pt-6">
+                <StatusAktion staff={staff} timeZone={user.organizationTimeZone} />
+              </div>
+            ) : null}
+          </>
+        ) : null}
 
-      {darfZugang ? <StaffAccountSection staff={staff} eigeneUserId={user.profile.id} /> : null}
-
-      {/* Vergütungsmodell (STA-005): allein owner, wie Beschäftigungsstatus. */}
-      {isOwner(user.roles) ? <StaffCompensationSection staff={staff} /> : null}
-
-      {darfBeschaeftigung ? (
-        <div className="mt-5 flex">
-          <StatusAktion staff={staff} timeZone={user.organizationTimeZone} />
-        </div>
-      ) : null}
-      {/* Keine Fußnote mehr: Was die Deaktivierung mit dem Zugang macht, sagt
-          ihre Rückfrage; den Rest erklärte sie nur das System (UX-005i). */}
+        {offen === 'zugang' && darfZugang ? (
+          <StaffAccountSection staff={staff} eigeneUserId={user.profile.id} />
+        ) : null}
+      </div>
     </>
   );
 }
+
+/** Der Suchparameter des offenen Reiters (`?bereich=einsatz`). */
+const BEREICH_PARAM = 'bereich';
 
 export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
   const { staffMemberId } = useParams<{ staffMemberId: string }>();
@@ -354,7 +411,14 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <Rueckweg standard="/praxis/team" beschriftung="Zurück zu den Mitarbeitenden" />
+      {/* Ab 640 px als Zeile über dem Kopf; darunter steht derselbe Weg als
+          Pfeil vor dem Namen (Objektkopf, RAH-007). Ohne Datensatz bleibt die
+          Zeile auch am Telefon - es gibt keinen Kopf mit Pfeil. */}
+      <Rueckweg
+        standard="/praxis/team"
+        beschriftung="Zurück zu den Mitarbeitenden"
+        className={data ? 'mb-3 max-sm:hidden' : ''}
+      />
 
       {data ? (
         <StaffDetail staff={data} user={user} />
@@ -362,11 +426,11 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
         <>
           {/* Auch ohne Daten trägt die Seite einen Titel (UIK-16). */}
           <PageHeader title="Mitarbeiter:in" />
-          {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}
+          {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" inKarte /> : null}
           {isError ? (
             <ErrorState
               title="Die Mitarbeiterdaten konnten nicht geladen werden."
-              description="Bitte die Verbindung prüfen und später erneut versuchen."
+              description={VERBINDUNG_PRUEFEN}
               onErneut={() => void refetch()}
             />
           ) : null}

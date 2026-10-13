@@ -2050,7 +2050,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) ·
 
 **Begründung.** Die Sicht auf den eigenen Umsatz soll an einer vereinbarten Tatsache hängen, nicht an einer Rolle; eine fehlende Angabe darf niemandem Zahlen zeigen. Sätze und Abrechnung der Beteiligung sind ein eigenes Epic.
 
-**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffCompensationSection.tsx`.
+**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffEinsatz.tsx`.
 
 **Änderungspfad.** Weitere Modelle: Wert in der Check-Constraint und in der Auswahl · Aufwand `klein`. Die Person wählt selbst in der Anwendung: eigener Schreibweg mit Bestätigung durch owner · Aufwand `mittel`.
 
@@ -2740,7 +2740,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Kalender ohne Zug
 
 **Begründung.** Jannes (2026-10-03): Neu angelegte Therapeut:innen sollen sofort im Kalender stehen, ohne ihren Zugang selbst zu aktivieren. Ein Zugang, den owner samt Kennwort anlegt, bräuchte einen Admin-Schlüssel am Server und weichte die Bestätigung der E-Mail-Adresse auf – das hat Jannes verworfen. Der zweite Weg ergänzt den ersten, statt ihn zu ersetzen; bestehende Konten und Tests bleiben unberührt. Unsicher: ob ein Zugang mit Behandlungsrolle die Person künftig auch automatisch in den Kalender nehmen soll, ohne dass owner das Merkmal setzt – heute tut er das über den bisherigen Weg ohnehin.
 
-**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; `StaffCalendarSection` in `src/features/staff/StaffCalendarSection.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
+**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; Abschnitt „Kalender“ in `src/features/staff/StaffEinsatz.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
 
 **Änderungspfad.** Kalender nur noch über das Merkmal (der Zugang reicht nicht mehr): den zweiten Zweig in beiden Prädikaten streichen und das Merkmal aus den bestehenden Konten befüllen · Aufwand `mittel`. Auch office darf das Merkmal setzen: `app.can_manage_staff_master_data` statt `app.can_manage_staff_accounts` · Aufwand `klein`.
 
@@ -4610,3 +4610,27 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Segment` in `src/components/ui/Segment.tsx`; `Filterchips` in `src/components/ui/Chip.tsx`.
 
 **Änderungspfad.** Eine Rolle zusammenlegen: Baustein und Aufrufer · Aufwand `klein`.
+
+### ANN-460 — Reiter und Detail ohne eigene Route stehen im Suchparameter
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Wo eine Seite im Design-Rollout Reiter oder Liste → Detail bekommt, aber keine Unterroute hat, steht der offene Teil im Suchparameter derselben Route: Mitarbeiter:in `?bereich=`, Datenklasse `?klasse=`, Zeitkonto `?person=`. Unbekannte Werte öffnen den ersten Reiter bzw. eine Meldung mit Rückweg.
+
+**Begründung.** Der Rollout ändert keine Routen; der Suchparameter hält „Zurück“ im Browser und Lesezeichen.
+
+**Anker.** `useOffenerReiter` in `src/features/staff/offenerReiter.ts`.
+
+**Änderungspfad.** Unterrouten anlegen und `Reiterleiste` nutzen · Aufwand `klein`.
+
+### ANN-461 — Ein Speichern für Kalender und Vergütung der Mitarbeiter:in
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Im Reiter „Einsatz“ speichert ein Knopf Kalender und Vergütungsmodell. Nur Geändertes geht an den Server, der Kalender zuerst; scheitert ein Teil, nennt die Meldung ihn, der andere bleibt gespeichert. Ohne Änderung: „Nichts geändert.“
+
+**Begründung.** Auftrag Welle B: ein Speichern je Formular statt gestrichelter Knöpfe je Abschnitt; beide Serverfunktionen bleiben getrennt.
+
+**Anker.** `StaffEinsatz` in `src/features/staff/StaffEinsatz.tsx`.
+
+**Änderungspfad.** Zwei Formulare mit je eigenem Knopf · Aufwand `klein`.

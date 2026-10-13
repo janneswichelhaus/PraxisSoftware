@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -102,7 +104,7 @@ export function KeyPage({ user }: { user: CurrentUser }) {
 
       <SimulationsMeldung eintrag={meldung} />
 
-      <div className="flex max-w-md flex-col gap-4">
+      <div className="max-w-formular flex flex-col gap-4">
         <Select label="Rad" value={radId} onChange={(event) => setRadId(event.target.value)}>
           <option value="">Bitte wählen …</option>
           {auswahl.map((eintrag) => (
@@ -115,7 +117,9 @@ export function KeyPage({ user }: { user: CurrentUser }) {
         </Select>
 
         {bereitsEntnommen ? (
-          <p className="rounded-card border-warnung/30 bg-warnung-soft text-warnung border px-4 py-3 text-sm">
+          // Eine Meldung als Zeile auf Fläche, ohne Rahmen (Leitfaden L2).
+          <p className="rounded-card bg-warnung-soft text-warnung px-4 py-3 text-sm font-medium">
+            <span aria-hidden="true">! </span>
             Der Schlüssel ist bereits bei {rad?.schluesselInhaber}. Bitte erst zurücklegen lassen
             oder ein anderes Rad wählen.
           </p>
@@ -132,7 +136,9 @@ export function KeyPage({ user }: { user: CurrentUser }) {
             Grund nicht offensichtlich, also sagt ein Satz, was fehlt (Handoff
             Schrift und Knöpfe, Abschnitt 3). Ist der Schlüssel schon
             entnommen, sagt es die Warnung darüber - kein zweiter Satz. */}
-        <div className="flex flex-wrap items-center gap-3">
+      </div>
+      <div className="max-w-formular">
+        <Formularfuss zusatz={fehlt ? <span id="entnahme-fehlt">{fehlt}</span> : undefined}>
           <Button
             onClick={bestaetigen}
             disabled={!rad || bereitsEntnommen || name.trim() === ''}
@@ -140,18 +146,10 @@ export function KeyPage({ user }: { user: CurrentUser }) {
           >
             Entnahme bestätigen
           </Button>
-          <Link
-            to="/betrieb/flotte"
-            className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
-          >
-            Zurück zur Radflotte
-          </Link>
-          {fehlt ? (
-            <p id="entnahme-fehlt" className="text-ink-muted basis-full text-sm">
-              {fehlt}
-            </p>
-          ) : null}
-        </div>
+          <ButtonLink to="/betrieb/flotte" variant="quiet">
+            Abbrechen
+          </ButtonLink>
+        </Formularfuss>
       </div>
     </>
   );
