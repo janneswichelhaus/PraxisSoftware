@@ -224,7 +224,7 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
   );
 }
 
-/** Die Reiter der Mitarbeiter:in: Kontakt, Einsatz, Zugang (DESIGN.md „Objekt“). */
+/** Die Reiter der Mitarbeiter:in: Einsatz, Zugang, Kontakt (DESIGN.md „Objekt“). */
 type Bereich = 'kontakt' | 'einsatz' | 'zugang';
 
 function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser }) {
@@ -266,12 +266,14 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
   // Welle B (B7): Objektkopf und Reiter statt acht Abschnitten untereinander.
   // Kontakt für alle Rollen; Einsatz (Kalender, Vergütung, Beschäftigung) und
   // Zugang nur, wer sie verwalten darf - ohne sie keine Reiterleiste.
+  // Reiterfolge nach DESIGN.md „Objekt“ (R2-O6): die Arbeit (Einsatz) zuerst
+  // und offen, die Stammdaten (Kontakt) zuletzt.
   const bereiche: Suchreiter<Bereich>[] = [
-    { wert: 'kontakt', label: 'Kontakt' },
     ...(isOwner(user.roles) || darfBeschaeftigung
       ? [{ wert: 'einsatz' as const, label: 'Einsatz' }]
       : []),
     ...(darfZugang ? [{ wert: 'zugang' as const, label: 'Zugang' }] : []),
+    { wert: 'kontakt', label: 'Kontakt' },
   ];
   const offen = useOffenerReiter(
     BEREICH_PARAM,
