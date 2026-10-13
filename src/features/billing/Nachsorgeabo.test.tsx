@@ -54,7 +54,24 @@ describe('Nachsorge-Abo in der Akte (ANG-001)', () => {
   it('sagt vor dem Abschluss der Versorgung, was zu tun ist (ANN-268)', async () => {
     fetchNachsorge.mockResolvedValue(sicht({ earliest_start: null }));
     renderWithProviders(<Nachsorgeabo patientId="p1" />);
-    expect(await screen.findByText(/erst die Versorgung abschließen/)).toBeInTheDocument();
+    // Der Stand in einer Zeile statt eines Erklärsatzes (Regel 6).
+    expect(
+      await screen.findByText('Kein Abo · möglich ab dem Abschluss der Versorgung'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Abo anlegen' })).not.toBeInTheDocument();
+  });
+
+  it('nennt nach einem früheren Abo, ab wann ein neues geht (ANN-268)', async () => {
+    fetchNachsorge.mockResolvedValue(
+      sicht({
+        earliest_start: null,
+        subscriptions: [{ ...LAUFEND, ends_on: '2026-10-31', current_month_end: null }],
+      }),
+    );
+    renderWithProviders(<Nachsorgeabo patientId="p1" />);
+    expect(
+      await screen.findByText('Neues Abo erst ab dem Abschluss der Versorgung'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Abo anlegen' })).not.toBeInTheDocument();
   });
 

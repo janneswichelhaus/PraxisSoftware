@@ -49,11 +49,18 @@ export function Nachsorgeabo({ patientId }: { patientId: string }) {
   if (!sicht.data) return null;
 
   const laufend = sicht.data.subscriptions.find((abo) => abo.ends_on === null);
+  // ANN-268: vor dem Abschluss der Versorgung gibt es kein Abo. Das sagt der
+  // Stand in einer Zeile, statt eines Satzes, der auf einen Knopf weit unten
+  // zeigt (Regel 6; Nachprüfung neu2) - und statt eines Knopfes, der
+  // abgewiesen würde.
+  const vorDemAbschluss = !sicht.data.earliest_start;
   return (
     <div className="border-line mt-3 border-t pt-3" aria-label="Nachsorge-Abo" role="group">
       <p className="text-ink text-liste font-medium">Nachsorge-Abo</p>
       {sicht.data.subscriptions.length === 0 ? (
-        <p className="text-ink-muted text-sm">Kein Abo.</p>
+        <p className="text-ink-muted text-sm">
+          {vorDemAbschluss ? 'Kein Abo · möglich ab dem Abschluss der Versorgung' : 'Kein Abo.'}
+        </p>
       ) : (
         <Eintraege beschriftung="Abos" rahmen={false}>
           {sicht.data.subscriptions.map((abo) => (
@@ -195,13 +202,11 @@ function Anlegen({ patientId, sicht }: { patientId: string; sicht: Nachsorgesich
     },
   });
 
-  // ANN-268: vor dem Abschluss der Versorgung gibt es kein Abo. Der Satz sagt,
-  // was zu tun ist, statt einen Knopf anzubieten, der abgewiesen würde.
+  // ANN-268: vor dem Abschluss der Versorgung kein Knopf. Ohne frühere Abos
+  // sagt das schon die Zeile „Kein Abo · …“ darüber.
   if (!sicht.earliest_start) {
-    return (
-      <p className="text-ink-muted mt-1 text-sm">
-        Ein Abo beginnt nach der Behandlung – erst die Versorgung abschließen.
-      </p>
+    return sicht.subscriptions.length === 0 ? null : (
+      <p className="text-ink-muted mt-1 text-sm">Neues Abo erst ab dem Abschluss der Versorgung</p>
     );
   }
 
