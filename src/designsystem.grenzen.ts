@@ -41,7 +41,7 @@ export const GRENZEN: Record<
 
     'features/appointments': 8,
 
-    'features/assessments': 3,
+    'features/assessments': 2,
 
     'features/billing': 7,
 
