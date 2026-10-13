@@ -3,8 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
@@ -137,7 +139,7 @@ function EntryForm({
       />
       {schutz}
 
-      <form onSubmit={submit} noValidate className="max-w-xl">
+      <form onSubmit={submit} noValidate className="max-w-formular">
         <Section titel="Termin">
           <Feldgruppe>
             <Select
@@ -156,28 +158,31 @@ function EntryForm({
                 );
               })}
             </Select>
-            <Select
-              label="Terminart"
-              value={state.type}
-              onChange={(e) => set('type', appointmentTypeSchema.parse(e.target.value))}
-            >
-              {appointmentTypeSchema.options.map((type) => (
-                <option key={type} value={type}>
-                  {appointmentTypeLabels[type]}
-                </option>
-              ))}
-            </Select>
-            <Field
-              label="Dauer in Minuten"
-              type="number"
-              inputMode="numeric"
-              min={DURATION_MIN}
-              max={DURATION_MAX}
-              step={5}
-              value={state.duration}
-              onChange={(e) => set('duration', e.target.value)}
-              error={errors.duration}
-            />
+            {/* Art und Dauer gehören zusammen: ab 640 px nebeneinander. */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Select
+                label="Terminart"
+                value={state.type}
+                onChange={(e) => set('type', appointmentTypeSchema.parse(e.target.value))}
+              >
+                {appointmentTypeSchema.options.map((type) => (
+                  <option key={type} value={type}>
+                    {appointmentTypeLabels[type]}
+                  </option>
+                ))}
+              </Select>
+              <Field
+                label="Dauer in Minuten"
+                type="number"
+                inputMode="numeric"
+                min={DURATION_MIN}
+                max={DURATION_MAX}
+                step={5}
+                value={state.duration}
+                onChange={(e) => set('duration', e.target.value)}
+                error={errors.duration}
+              />
+            </div>
             <Select
               label="Therapeut:in"
               value={state.staffMemberId}
@@ -193,7 +198,7 @@ function EntryForm({
           </Feldgruppe>
         </Section>
 
-        <Section titel="Wunschzeiten" hinweis="Wann die Person kann. Ohne Angabe heißt: jederzeit.">
+        <Section titel="Wunschzeiten" hinweis="Ohne Wunschzeit heißt: jederzeit.">
           {state.windows.length > 0 ? (
             <ul className="flex flex-col gap-3">
               {state.windows.map((w, index) => (
@@ -312,14 +317,14 @@ function EntryForm({
           </Statusmeldung>
         ) : null}
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <Formularfuss>
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? 'Wird gespeichert …' : 'Speichern'}
           </Button>
           <ButtonLink to={back} variant="quiet">
             Abbrechen
           </ButtonLink>
-        </div>
+        </Formularfuss>
       </form>
     </>
   );
@@ -345,7 +350,7 @@ export function NewWaitlistEntryPage() {
       <>
         <Rueckweg standard={LIST} beschriftung="Zurück zur Warteliste" />
         <PageHeader title="Auf die Warteliste setzen" description="Zuerst die Patient:in wählen." />
-        <div className="max-w-md">
+        <div className="max-w-formular">
           <Patientensuche
             label="Patient:in suchen"
             labelSichtbar
@@ -360,19 +365,30 @@ export function NewWaitlistEntryPage() {
     );
   }
 
-  if (patient.isPending) return <LoadingState label="Patient:in wird geladen …" />;
-  if (patient.isError || !patient.data) {
+  if (patient.data) {
     return (
-      <ErrorState
-        title="Die Patient:in konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => void patient.refetch()}
-      />
+      <EntryForm patientId={valid} patientLabel={fullName(patient.data)} entry={null} back={back} />
     );
   }
 
+  // Laden und Fehler mit Rückweg und Kopf - der Weg hinaus bleibt (PAT-22).
   return (
-    <EntryForm patientId={valid} patientLabel={fullName(patient.data)} entry={null} back={back} />
+    <>
+      <Rueckweg standard={back} beschriftung="Zurück zur Warteliste" />
+      <PageHeader title="Auf die Warteliste setzen" />
+      <Abfragezustand
+        abfrage={patient}
+        laden="Patient:in wird geladen …"
+        fehler="Die Patient:in konnte nicht geladen werden."
+      >
+        {() => (
+          <ErrorState
+            title="Nicht gefunden"
+            description="Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+          />
+        )}
+      </Abfragezustand>
+    </>
   );
 }
 
@@ -388,32 +404,35 @@ export function EditWaitlistEntryPage() {
     retry: false,
   });
 
-  if (list.isPending) return <LoadingState label="Eintrag wird geladen …" />;
-  if (list.isError) {
+  const entry = list.data?.find((e) => e.id === entryId);
+  if (entry) {
     return (
-      <ErrorState
-        title="Der Eintrag konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => void list.refetch()}
-      />
-    );
-  }
-  const entry = list.data.find((e) => e.id === entryId);
-  if (!entry) {
-    return (
-      <ErrorState
-        title="Diesen Eintrag gibt es nicht mehr."
-        description="Er wurde geschlossen oder gelöscht. Die Warteliste zeigt den aktuellen Stand."
+      <EntryForm
+        patientId={entry.patient_id}
+        patientLabel={`${entry.patient_given_name} ${entry.patient_family_name}`}
+        entry={entry}
+        back={back}
       />
     );
   }
 
+  // Laden, Fehler und „gibt es nicht mehr“ mit Rückweg und Kopf (PAT-22).
   return (
-    <EntryForm
-      patientId={entry.patient_id}
-      patientLabel={`${entry.patient_given_name} ${entry.patient_family_name}`}
-      entry={entry}
-      back={back}
-    />
+    <>
+      <Rueckweg standard={back} beschriftung="Zurück zur Warteliste" />
+      <PageHeader title="Eintrag der Warteliste bearbeiten" />
+      <Abfragezustand
+        abfrage={list}
+        laden="Eintrag wird geladen …"
+        fehler="Der Eintrag konnte nicht geladen werden."
+      >
+        {() => (
+          <ErrorState
+            title="Diesen Eintrag gibt es nicht mehr."
+            description="Er wurde geschlossen oder gelöscht. Die Warteliste zeigt den aktuellen Stand."
+          />
+        )}
+      </Abfragezustand>
+    </>
   );
 }

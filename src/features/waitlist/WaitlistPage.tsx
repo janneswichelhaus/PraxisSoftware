@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Segment, type Segmentwahl } from '@/components/ui/Segment';
 import { Textlink } from '@/components/ui/Textlink';
 import { kalenderZumTermin, todayInTimeZone } from '@/features/appointments/api';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import type { CurrentUser } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
+import { Arbeitszeile } from './Arbeitszeile';
 import { basisText, wishText } from './format';
 import {
   fetchWaitlist,
@@ -25,28 +28,25 @@ import {
   type WaitlistEntry,
 } from './api';
 
-const FILTER_LABELS: Record<ListFilter, string> = {
-  open: 'Offen',
-  closed: 'Geschlossen',
-};
+const FILTER_WAHLEN: readonly Segmentwahl<ListFilter>[] = [
+  { wert: 'open', text: 'Offen' },
+  { wert: 'closed', text: 'Geschlossen' },
+];
 
+/** Die Nummern zum Anrufen - Textlinks auf `tel:`, je Nummer einer (B15). */
 function PhoneLinks({ entry }: { entry: WaitlistEntry }) {
   const numbers = [entry.phone, entry.phone_mobile].filter((n): n is string => Boolean(n));
   if (numbers.length === 0) {
-    return <span className="text-ink-muted text-sm">Keine Telefonnummer hinterlegt</span>;
+    return <p className="text-ink-muted mt-1 text-sm">Keine Telefonnummer hinterlegt</p>;
   }
   return (
-    <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+    <p className="mt-1 flex flex-wrap gap-x-4 text-sm">
       {numbers.map((number) => (
-        <a
-          key={number}
-          href={telHref(number)}
-          className="text-accent inline-flex min-h-11 items-center underline underline-offset-2"
-        >
+        <Textlink key={number} href={telHref(number)} alleinstehend>
           Anrufen: {number}
-        </a>
+        </Textlink>
       ))}
-    </span>
+    </p>
   );
 }
 
@@ -57,62 +57,66 @@ function EntryItem({ entry, today }: { entry: WaitlistEntry; today: string }) {
   const here = '/warteliste';
 
   return (
-    <li className="py-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <Link
-          to={`/patienten/${entry.patient_id}/termine`}
-          className="text-ink text-liste font-medium break-words underline-offset-2 hover:underline"
-        >
+    <Arbeitszeile
+      titel={
+        <Textlink to={`/patienten/${entry.patient_id}/termine`}>
           {entry.patient_family_name}, {entry.patient_given_name}
-        </Link>
-        <span className="flex flex-wrap gap-2">
-          {isOpen ? <Badge>{reasonLabels[entry.priority_reason]}</Badge> : null}
-          {entry.status === 'placed' ? <Badge ton="positiv">Eingeplant</Badge> : null}
-          {entry.status === 'withdrawn' ? <Badge>Zurückgezogen</Badge> : null}
-        </span>
-      </div>
-
-      <p className="text-ink mt-1 text-sm">{wishText(entry)}</p>
-      <p className="text-ink-muted mt-0.5 text-sm">
-        {[
-          basisText(entry),
-          isOpen ? `wartet ${waitingText(entry.created_at, today)}` : null,
-          entry.earliest_on ? `frühestens ab ${formatDate(entry.earliest_on)}` : null,
-          entry.needed_by ? `bis spätestens ${formatDate(entry.needed_by)}` : null,
-          !isOpen && entry.closed_at
-            ? `geschlossen am ${formatDate(entry.closed_at.slice(0, 10))}`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
-      {entry.note ? <p className="text-ink mt-1 text-sm break-words">„{entry.note}"</p> : null}
-
-      {isOpen ? (
+        </Textlink>
+      }
+      // Der Grund steht nur am offenen Eintrag; ein geschlossener sagt, wie
+      // er geschlossen wurde.
+      status={
+        isOpen ? (
+          <Badge>{reasonLabels[entry.priority_reason]}</Badge>
+        ) : entry.status === 'placed' ? (
+          <Badge ton="positiv">Eingeplant</Badge>
+        ) : entry.status === 'withdrawn' ? (
+          <Badge>Zurückgezogen</Badge>
+        ) : undefined
+      }
+      meta={
         <>
-          <div className="mt-2">
-            <PhoneLinks entry={entry} />
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <span className="text-ink block">{wishText(entry)}</span>
+          <span className="block">
+            {[
+              basisText(entry),
+              isOpen ? `wartet ${waitingText(entry.created_at, today)}` : null,
+              entry.earliest_on ? `frühestens ab ${formatDate(entry.earliest_on)}` : null,
+              entry.needed_by ? `bis spätestens ${formatDate(entry.needed_by)}` : null,
+              !isOpen && entry.closed_at
+                ? `geschlossen am ${formatDate(entry.closed_at.slice(0, 10))}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        </>
+      }
+      aktionen={
+        isOpen ? (
+          <>
+            {/* Kein Hauptknopf je Zeile: Auf der Liste stehen mehrere
+                Einträge, und genau ein Hauptknopf je Ansicht (DESIGN.md
+                Regel 4) ist der im Kopf. */}
             <ButtonLink
               to={mitRueckweg(
                 `/patienten/${entry.patient_id}/plaetze?warteliste=${entry.id}`,
                 here,
               )}
-              groesse="kompakt"
+              variant="secondary"
             >
               Freie Termine suchen
             </ButtonLink>
             <ButtonLink
               to={mitRueckweg(`/warteliste/${entry.id}/bearbeiten`, here)}
-              variant="secondary"
-              groesse="kompakt"
+              variant="quiet"
             >
               Bearbeiten
             </ButtonLink>
             <Rueckfrage
               ausloeser="Von der Liste nehmen"
               ausloeserVariante="quiet"
+              ausloeserGroesse="kompakt"
               bestaetigen="Von der Liste nehmen"
               bestaetigenLaeuft="Wird genommen …"
               fehler={error}
@@ -130,19 +134,17 @@ function EntryItem({ entry, today }: { entry: WaitlistEntry; today: string }) {
               {entry.patient_given_name} {entry.patient_family_name} von der Warteliste nehmen? Der
               Eintrag bleibt unter „Geschlossen" sichtbar.
             </Rueckfrage>
-          </div>
-        </>
-      ) : entry.placed_appointment_id ? (
-        <p className="mt-2 text-sm">
-          <Link
-            to={kalenderZumTermin(entry.placed_appointment_id)}
-            className="text-accent underline underline-offset-2"
-          >
+          </>
+        ) : entry.placed_appointment_id ? (
+          <Textlink to={kalenderZumTermin(entry.placed_appointment_id)} alleinstehend>
             Zum Termin
-          </Link>
-        </p>
-      ) : null}
-    </li>
+          </Textlink>
+        ) : undefined
+      }
+    >
+      {entry.note ? <p className="text-ink mt-1 text-sm break-words">„{entry.note}"</p> : null}
+      {isOpen ? <PhoneLinks entry={entry} /> : null}
+    </Arbeitszeile>
   );
 }
 
@@ -162,7 +164,7 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
   const neuerTermin = leseAngelegtenTermin(suche);
   const today = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
 
-  const { data, isPending, isError, refetch, isRefetchError } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['waitlist', filter],
     queryFn: () => fetchWaitlist(filter),
     retry: false,
@@ -170,10 +172,11 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
+      {/* Seitentyp „Liste“ (DESIGN.md): „Eintragen“ kompakt neben dem Titel,
+          die Ansicht als Segment, die Einträge als Zeilen. */}
       <PageHeader
         title="Warteliste"
-        description="Wer auf einen Termin wartet. Wird ein Platz frei, zeigt die Absage die passenden Einträge; angerufen wird von hier – versendet wird nichts."
-        actions={<ButtonLink to="/warteliste/neu">Auf die Warteliste setzen</ButtonLink>}
+        actions={<ButtonLink to="/warteliste/neu">Eintragen</ButtonLink>}
       />
 
       {neuerTermin ? (
@@ -183,56 +186,43 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
         </Rueckmeldung>
       ) : null}
 
-      <div role="group" aria-label="Einträge anzeigen" className="mb-4 flex gap-2">
-        {(Object.keys(FILTER_LABELS) as ListFilter[]).map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={filter === value}
-            onClick={() => setFilter(value)}
-            className={`rounded-pill min-h-11 border px-4 text-sm font-medium ${
-              filter === value
-                ? 'border-accent bg-accent-soft text-accent'
-                : 'border-line-strong text-ink'
-            }`}
-          >
-            {FILTER_LABELS[value]}
-          </button>
-        ))}
+      <div className="mb-4">
+        <Segment
+          beschriftung="Einträge anzeigen"
+          wahlen={FILTER_WAHLEN}
+          gewaehlt={filter}
+          onWaehlen={setFilter}
+        />
       </div>
 
-      {isPending ? <LoadingState label="Warteliste wird geladen …" /> : null}
-      {isError && !data ? (
-        <ErrorState
-          title="Die Warteliste konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => void refetch()}
-        />
-      ) : null}
-      {isRefetchError && data ? (
-        <Statusmeldung ton="warnung" className="mb-3">
-          Die Liste konnte nicht aktualisiert werden; der angezeigte Stand kann veraltet sein.
-        </Statusmeldung>
-      ) : null}
-
-      {data && data.length === 0 ? (
-        <EmptyState
-          title={filter === 'open' ? 'Niemand wartet' : 'Noch nichts geschlossen'}
-          description={
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Warteliste wird geladen …"
+        fehler="Die Warteliste konnte nicht geladen werden."
+        inKarte
+        leer={{
+          wenn: (eintraege) => eintraege.length === 0,
+          titel: filter === 'open' ? 'Niemand wartet' : 'Noch nichts geschlossen',
+          beschreibung:
             filter === 'open'
-              ? 'Wer keinen zeitnahen Termin bekommt, lässt sich hier oder aus der Akte eintragen.'
-              : 'Eingeplante und zurückgezogene Einträge erscheinen hier.'
-          }
-        />
-      ) : null}
+              ? 'Eintragen lässt sich hier oder aus der Akte.'
+              : 'Eingeplante und zurückgezogene Einträge erscheinen hier.',
+        }}
+      >
+        {(eintraege) => (
+          <ListRows>
+            {eintraege.map((entry) => (
+              <EntryItem key={entry.id} entry={entry} today={today} />
+            ))}
+          </ListRows>
+        )}
+      </Abfragezustand>
 
-      {data && data.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {data.map((entry) => (
-            <EntryItem key={entry.id} entry={entry} today={today} />
-          ))}
-        </ul>
-      ) : null}
+      {/* Was die Seite nicht tut, steht am Ende - nicht im Kopf (B15). */}
+      <Kleingedrucktes className="mt-8">
+        Wird ein Platz frei, zeigt die Absage die passenden Einträge. Angerufen wird von hier;
+        versendet wird nichts.
+      </Kleingedrucktes>
     </>
   );
 }

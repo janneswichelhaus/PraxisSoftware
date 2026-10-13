@@ -69,11 +69,7 @@ export const GRENZEN: Record<
 
     'features/reimbursements': 1,
 
-    'features/slot-search': 1,
-
     'features/staff': 2,
-
-    'features/territories': 1,
 
     'features/therapy-reports': 5,
 
@@ -84,8 +80,6 @@ export const GRENZEN: Record<
     'features/training': 3,
 
     'features/vacation': 2,
-
-    'features/waitlist': 1,
   },
   details: {
     'features/appointments': 4,
@@ -151,8 +145,6 @@ export const GRENZEN: Record<
 
     'features/scheduling': 2,
 
-    'features/slot-search': 1,
-
     'features/staff': 2,
 
     'features/teamchat': 1,
@@ -162,8 +154,6 @@ export const GRENZEN: Record<
     'features/training': 6,
 
     'features/training-offers': 1,
-
-    'features/waitlist': 2,
   },
   knoepfe: {
     app: 2,
@@ -191,8 +181,6 @@ export const GRENZEN: Record<
     'features/tours': 2,
 
     'features/treatment-bases': 4,
-
-    'features/waitlist': 1,
   },
   tabellen: {
     'features/exercise-plans': 1,
@@ -247,8 +235,6 @@ export const GRENZEN: Record<
     'features/statistics': 2,
 
     'features/teamchat': 2,
-
-    'features/territories': 1,
 
     'features/today': 4,
 
