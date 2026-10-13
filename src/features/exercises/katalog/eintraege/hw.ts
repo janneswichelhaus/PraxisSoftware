@@ -10,7 +10,9 @@ import type { Katalogeintrag } from '../typen';
  * Nur die Ausgangsstellung (ANN-480), weil die Figur die Bewegung nicht
  * richtig zeigen kann (lieber die Stellung als ein falsches Bewegungsbild):
  * HW-01 (Nicken bei liegendem Kopf - der Kopf ist ein Kreis), HW-03, HW-06 und
- * HW-10 (Drehung des Kopfes ist nicht darstellbar).
+ * HW-10 (Drehung des Kopfes ist nicht darstellbar). HW-06 steht in der
+ * Seitenansicht, damit die Vorneigung zu sehen ist und das Bild nicht der
+ * Seitneigung von HW-05 gleicht.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -182,9 +184,11 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     bild: {
       v: 1,
-      basis: 'sitz_front',
-      start: { arm: [10, 121], ellbogen: [6, 145], haende: ['sitz', null] },
-      ende: { arm: [10, 121], ellbogen: [6, 145], haende: ['sitz', null] },
+      basis: 'sitz',
+      // Seitenansicht: Kinn zur Brust, die nahe (rechte) Hand hält sich an der
+      // Sitzfläche, die ferne (linke) liegt am Hinterkopf. Die Drehung steht im Text.
+      start: { rumpf: 0, kopf: 35, haende: ['sitz', 'nacken'] },
+      ende: { rumpf: 0, kopf: 35, haende: ['sitz', 'nacken'] },
     },
   },
   {
@@ -306,12 +310,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     bild: {
       v: 1,
       basis: 'sitz_front',
-      // Beide Hände halten die Enden vor der Brust, das Handtuch liegt im Nacken.
-      start: { arm: [52, 52], ellbogen: [-134, -134] },
-      ende: { arm: [52, 52], ellbogen: [-134, -134] },
+      // Beide Hände halten die Enden vor der Brust, die Ellbogen nah am Körper;
+      // das Handtuch liegt direkt unter dem Hinterkopf, nicht tief im Nacken.
+      start: { arm: [25, 25], ellbogen: [-155, -155] },
+      ende: { arm: [25, 25], ellbogen: [-155, -155] },
       hilfsmittel: [
-        { art: 'handtuch', von: 'schulter', nach: 'hand_nah' },
-        { art: 'handtuch', von: 'schulter', nach: 'hand_fern' },
+        { art: 'handtuch', von: 'kopf', nach: 'hand_nah' },
+        { art: 'handtuch', von: 'kopf', nach: 'hand_fern' },
       ],
     },
   },
