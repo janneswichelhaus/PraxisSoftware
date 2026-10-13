@@ -5090,3 +5090,15 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Zurück in das SVG mit größerer Schrift · Aufwand `klein`.
 
+### ANN-499 — Kachelbeschriftung auf der Plattform ohne Versalien
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)
+
+**Annahme.** Auf der Plattform steht die Beschriftung einer `Tile` in gewöhnlicher Schreibung, 500 statt 600 und ohne Laufweite; die Kachel ist innen 12 statt 14 px breit. „Wiederholungen“ passt so bei 375 px in eine Zeile.
+
+**Begründung.** Sichtung L6: In Versalien bei 18 px brach das Wort in einer Kachel von rund 160 px. Unter 375 px greift der weiche Trennstrich der Seite.
+
+**Anker.** `Tile` in `src/components/ui/Tile.tsx`.
+
+**Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
+

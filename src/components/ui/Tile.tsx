@@ -79,11 +79,17 @@ export function Tile({
   const bild = zeichen[ton];
   return (
     <div
-      className={`rounded-card px-kachel-x py-kachel-y min-h-18 min-w-0 border ${flaechen[ton]} ${className}`}
+      className={`rounded-card px-kachel-x py-kachel-y min-h-18 min-w-0 border [.plattform-schrift_&]:px-3 ${flaechen[ton]} ${className}`}
     >
       {/* Beschriftung als `--type-label`: 12 px in 600, Versalien mit 0.14em
-          Laufweite - dieselbe Rolle wie ein Abschnittstitel. */}
-      <dt className={`tracking-label text-xs font-semibold uppercase ${beschriftungen[ton]}`}>
+          Laufweite - dieselbe Rolle wie ein Abschnittstitel. Auf der
+          Plattform (18 px) in gewöhnlicher Schreibung und 500, die Kachel
+          innen 12 px: In Versalien passt „Wiederholungen" nicht in eine
+          Kachel von 160 px und bräche mitten im Wort (Sichtung 13.10.2026,
+          L6, ANN-499); so passt es bei 375 px in eine Zeile. */}
+      <dt
+        className={`tracking-label text-xs font-semibold uppercase [.plattform-schrift_&]:font-medium [.plattform-schrift_&]:tracking-normal [.plattform-schrift_&]:normal-case ${beschriftungen[ton]}`}
+      >
         {bild ? <span aria-hidden="true">{bild} </span> : null}
         {label}
       </dt>
