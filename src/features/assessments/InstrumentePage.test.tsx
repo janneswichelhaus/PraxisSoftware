@@ -55,10 +55,17 @@ function zeigen(scores?: ScoreDefinition[], instrument?: string) {
 describe('Instrumente', () => {
   it('listet jedes Instrument der Bibliothek als Zeile mit Weg ins Einzelne', () => {
     zeigen();
+    const ziele = screen
+      .getAllByRole('link')
+      .map((link) => [link.textContent, link.getAttribute('href')] as const);
     for (const score of bibliothek.scores) {
       expect(
-        screen.getByRole('link', { name: new RegExp(score.meta.name_de.replace(/[()]/g, '.')) }),
-      ).toHaveAttribute('href', `/praxis/instrumente?instrument=${score.meta.id}`);
+        ziele.some(
+          ([text, ziel]) =>
+            text?.startsWith(score.meta.name_de) &&
+            ziel === `/praxis/instrumente?instrument=${score.meta.id}`,
+        ),
+      ).toBe(true);
     }
   });
 
