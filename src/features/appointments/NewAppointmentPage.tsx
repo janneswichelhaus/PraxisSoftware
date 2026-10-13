@@ -445,7 +445,8 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
 
       {/* Nur der Name; der Satz zu den Sternchen erklärte das Formular, nicht
           den Termin (UX-005g). */}
-      <PageHeader title="Termin anlegen" description={`Für ${fullName(patientDaten)}.`} />
+      {/* Eine Angabe, kein Satz: ohne Punkt wie überall (Design-Review T8). */}
+      <PageHeader title="Termin anlegen" description={`Für ${fullName(patientDaten)}`} />
 
       {patient.isError ? (
         <NachladeHinweis

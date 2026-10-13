@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Tile, TileGrid } from '@/components/ui/Tile';
@@ -431,6 +432,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
   // Der Rückweg steht in jedem Zustand der Seite (ZST-08). Er folgt dem
   // mitgereisten Weg - aus dem Kalender zurück in den Kalender (TER-03).
   const kopf = <Rueckweg standard={akte} beschriftung="Zurück zur Akte" />;
+  const abbrechenZiel = leseRueckweg(suche, akte);
 
   // Ersetzt wird die Seite nur, solange es keine Daten gibt: Ein
   // gescheitertes Nachladen nimmt Vorschlag und Liste nicht mehr mit
@@ -491,7 +493,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
       {/* Nur der Name; „alles oder nichts" sagt die Prüfmeldung dort, wo es
           zählt (UX-005g). */}
-      <PageHeader title="Dauertermin anlegen" description={`Für ${fullName(patientDaten)}.`} />
+      {/* Eine Angabe, kein Satz: ohne Punkt wie überall (Design-Review T8). */}
+      <PageHeader title="Dauertermin anlegen" description={`Für ${fullName(patientDaten)}`} />
 
       {patient.isError || kontingent.isError ? (
         <NachladeHinweis
@@ -728,6 +731,14 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           >
             {pruefung.isPending ? 'Wird geprüft …' : 'Termine vorschlagen'}
           </Button>
+          {/* „Abbrechen“ leise am Ende des Fusses (DESIGN.md „Formular“,
+              Design-Review T8) - dorthin, wohin auch der Rückweg führt. Mit
+              einer Liste steht es im Fuss darunter. */}
+          {liste && liste.length > 0 ? null : (
+            <ButtonLink to={abbrechenZiel} variant="quiet">
+              Abbrechen
+            </ButtonLink>
+          )}
         </Formularfuss>
       </form>
 
@@ -852,6 +863,9 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
               >
                 Erneut prüfen
               </Button>
+              <ButtonLink to={abbrechenZiel} variant="quiet">
+                Abbrechen
+              </ButtonLink>
             </Formularfuss>
           ) : null}
 

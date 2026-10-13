@@ -30,8 +30,8 @@ import {
   EREIGNIS_BESCHRIFTUNGEN,
   EREIGNIS_FEHLERFELDER,
   EREIGNIS_FELD_IDS,
-  ereignisGeaendert,
   FEHLZEIT_BEISPIELE,
+  ereignisGeaendert,
   istIsoDatum,
   mitEingetragenerFehlzeit,
   type EreignisFehlerfeld,
@@ -283,7 +283,9 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
           Fehlzeit nicht ist (UX-005g). */}
       <PageHeader
         title="Dauerfehlzeit eintragen"
-        description={`Dieselbe Fehlzeit über mehrere Wochen – ${FEHLZEIT_BEISPIELE}.`}
+        // Eine Zeile am Telefon, mit denselben Beispielen wie Anlegen-Leiste
+        // und Fehlzeit (KAL-27); eine Angabe ohne Schlusspunkt (T8).
+        description={`Über mehrere Wochen: ${FEHLZEIT_BEISPIELE}`}
       />
 
       <form onSubmit={absenden} noValidate className="max-w-formular">
