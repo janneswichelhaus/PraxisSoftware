@@ -11,7 +11,6 @@ import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import {
   appointmentTypeHint,
@@ -33,7 +32,7 @@ import {
   type CallEntry,
   type CallOutcome,
 } from './call-list-api';
-import { Anrufknopf, MehrSymbol } from './Symbole';
+import { Anrufknopf } from './Symbole';
 
 const TAG = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -137,84 +136,92 @@ function AnrufZeile({
       }
       to={mitRueckweg(`/patienten/${entry.patient_id}`, zurueck)}
       aktion={
-        <>
-          {erste ? (
-            <Anrufknopf
-              nummer={erste.nummer}
-              beschriftung={`${name} anrufen, ${erste.label} ${erste.nummer}`}
-              onClick={() => setOffen(true)}
-            />
-          ) : null}
-          <Symbolknopf
-            beschriftung={`Anruf vermerken: ${name}`}
-            aria-expanded={offen}
-            aria-controls={bereich}
-            onClick={() => setOffen(!offen)}
-          >
-            <MehrSymbol />
-          </Symbolknopf>
-        </>
+        erste ? (
+          <Anrufknopf
+            nummer={erste.nummer}
+            beschriftung={`${name} anrufen, ${erste.label} ${erste.nummer}`}
+            onClick={() => setOffen(true)}
+          />
+        ) : null
       }
       unten={
-        offen ? (
-          <div id={bereich} className="flex flex-col gap-3">
-            {nummern.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {nummern.map((n) => (
-                  <a key={n.label} href={telHref(n.nummer)} className={kartenAktionKlassen()}>
-                    <span className="text-ink-muted">{n.label}</span>
-                    <span className="tabular-nums">{n.nummer}</span>
-                  </a>
-                ))}
-              </div>
-            ) : null}
-            <div className="flex flex-wrap gap-2" role="group" aria-label={`Anruf bei ${name}`}>
-              {/* Sekundär wie die übrigen: ein Hauptknopf je Ansicht, und die
+        <>
+          {/* Sichtbar mit Wort und Rahmen unter der Zeile (R2-O5): Hinter
+              „…“ ohne Rahmen fand ihn nur, wer ihn kannte - wer vom
+              Tischtelefon anruft, braucht ihn aber jedes Mal. */}
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              groesse="kompakt"
+              aria-label={`Anruf vermerken: ${name}`}
+              aria-expanded={offen}
+              aria-controls={bereich}
+              onClick={() => setOffen(!offen)}
+            >
+              Anruf vermerken
+            </Button>
+          </div>
+          {offen ? (
+            <div id={bereich} className="flex flex-col gap-3">
+              {nummern.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {nummern.map((n) => (
+                    <a key={n.label} href={telHref(n.nummer)} className={kartenAktionKlassen()}>
+                      <span className="text-ink-muted">{n.label}</span>
+                      <span className="tabular-nums">{n.nummer}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+              <div className="flex flex-wrap gap-2" role="group" aria-label={`Anruf bei ${name}`}>
+                {/* Sekundär wie die übrigen: ein Hauptknopf je Ansicht, und die
                   Liste trägt viele Zeilen (Bedienprinzipien, UX-EPIC-002). */}
-              <Button
-                type="button"
-                variant="secondary"
-                groesse="kompakt"
-                disabled={laeuft}
-                onClick={() => vermerken.mutate('reached')}
-              >
-                Erreicht, bestätigt
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                groesse="kompakt"
-                disabled={laeuft}
-                onClick={() => vermerken.mutate('not_reached')}
-              >
-                Nicht erreicht
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                groesse="kompakt"
-                disabled={laeuft}
-                onClick={() => vermerken.mutate('voicemail')}
-              >
-                Nachricht hinterlassen
-              </Button>
-              {entry.call_outcome ? (
                 <Button
                   type="button"
-                  variant="quiet"
+                  variant="secondary"
                   groesse="kompakt"
                   disabled={laeuft}
-                  onClick={() => vermerken.mutate('cleared')}
+                  onClick={() => vermerken.mutate('reached')}
                 >
-                  Zurücksetzen
+                  Erreicht, bestätigt
                 </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  groesse="kompakt"
+                  disabled={laeuft}
+                  onClick={() => vermerken.mutate('not_reached')}
+                >
+                  Nicht erreicht
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  groesse="kompakt"
+                  disabled={laeuft}
+                  onClick={() => vermerken.mutate('voicemail')}
+                >
+                  Nachricht hinterlassen
+                </Button>
+                {entry.call_outcome ? (
+                  <Button
+                    type="button"
+                    variant="quiet"
+                    groesse="kompakt"
+                    disabled={laeuft}
+                    onClick={() => vermerken.mutate('cleared')}
+                  >
+                    Zurücksetzen
+                  </Button>
+                ) : null}
+              </div>
+              {vermerken.isError ? (
+                <Statusmeldung ton="fehler">{vermerken.error.message}</Statusmeldung>
               ) : null}
             </div>
-            {vermerken.isError ? (
-              <Statusmeldung ton="fehler">{vermerken.error.message}</Statusmeldung>
-            ) : null}
-          </div>
-        ) : null
+          ) : null}
+        </>
       }
     />
   );
@@ -259,23 +266,15 @@ export function CallListPage({ user }: { user: CurrentUser }) {
         title="Anrufliste"
         description={`${datum === tagePlus(heute, 1) ? 'Morgen, ' : ''}${formatDatum(datum)}`}
         actions={
-          <div className="flex gap-1">
-            <Symbolknopf
-              beschriftung="Vorheriger Tag"
-              variant="secondary"
-              className="text-xl"
-              onClick={() => wechseln(-1)}
-            >
-              ‹
-            </Symbolknopf>
-            <Symbolknopf
-              beschriftung="Nächster Tag"
-              variant="secondary"
-              className="text-xl"
-              onClick={() => wechseln(1)}
-            >
-              ›
-            </Symbolknopf>
+          // Mit Wort statt nackter Pfeile (R2-O5): „‹“ allein war ein Zeichen
+          // von 8 px in einem 44-px-Kasten.
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={() => wechseln(-1)}>
+              <span aria-hidden="true">‹</span> Vortag
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => wechseln(1)}>
+              Folgetag <span aria-hidden="true">›</span>
+            </Button>
           </div>
         }
       />

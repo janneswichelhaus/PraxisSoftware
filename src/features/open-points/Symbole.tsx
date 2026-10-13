@@ -46,23 +46,6 @@ export function StiftSymbol({ className = 'size-5' }: { className?: string }) {
   );
 }
 
-/** Drei Punkte: mehr zu dieser Zeile. */
-export function MehrSymbol({ className = 'size-5' }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden="true"
-      focusable="false"
-      className={className}
-    >
-      <circle cx="4.5" cy="10" r="1.6" />
-      <circle cx="10" cy="10" r="1.6" />
-      <circle cx="15.5" cy="10" r="1.6" />
-    </svg>
-  );
-}
-
 /**
  * Anrufen als `tel:`-Verweis in Gestalt eines `Symbolknopf` (44 × 44 px):
  * ein Ziel nach draußen, deshalb ein Link und kein Knopf (Regel 9). Der Name
