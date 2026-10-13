@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { KnopfGroesse } from './knopfGroesse';
 
 /**
@@ -24,16 +24,18 @@ export function PageHeader({
    */
   title: ReactNode;
   /**
-   * Die Zeile unter dem Titel. Als Text wird sie ab einer Länge eingeklappt
-   * (BEF-076); als Element steht sie, wie sie kommt — die Terminseite trägt
-   * dort Datum, Zeit und die Zeichen des Termins (UX-005a), keinen Fließtext.
+   * Die Zeile unter dem Titel, auf ganzer Breite. Als Text steht sie in
+   * einer Zeile, der Rest hinter „Mehr“ (BEF-076, Design-Review T1); als
+   * Element steht sie, wie sie kommt — die Terminseite trägt dort Datum, Zeit
+   * und die Zeichen des Termins (UX-005a), keinen Fließtext.
    */
   description?: ReactNode;
   /**
    * Aktionen rechts neben dem Titel, höchstens eine primär. Knöpfe und
    * Knopf-Links darin sind ohne eigene Angabe **kompakt** (44 px, ANN-403):
    * In voller Größe brach „Anlegen“ am Telefon unter den Titel und schob die
-   * Liste nach unten (DESIGN.md, Regel „Kopf“).
+   * Liste nach unten (DESIGN.md, Regel „Kopf“). Sie stehen in der Zeile des
+   * Titels, nicht neben dessen Beschreibung (Design-Review T1).
    */
   actions?: ReactNode;
   /**
@@ -58,80 +60,118 @@ export function PageHeader({
    */
   kompakt?: boolean;
 }) {
+  const kopf = (
+    <div className={kompakt ? 'flex min-w-0 flex-wrap items-baseline gap-x-3' : undefined}>
+      {kicker ? (
+        <p className="text-ink-muted tracking-label mb-1 text-xs font-semibold uppercase">
+          {kicker}
+        </p>
+      ) : null}
+      {/* Seitentitel als `--type-h2` in der Hauptfarbe (DS-001). Der Titel
+          ist die einzige Stelle, an der die Marke im Inhalt vorkommt —
+          deshalb Hauptfarbe statt Tinte. Unter 640 px 26 statt 32 px
+          (Design-Handoff 2026-10-01): Am Telefon passt der Titel damit
+          in eine Zeile. */}
+      <h1
+        className={
+          kompakt
+            ? 'text-accent text-h4 font-bold'
+            : 'text-accent text-h2-mobil sm:text-h2 tracking-display font-extrabold'
+        }
+      >
+        {title}
+      </h1>
+      {/* Flach steht die Zeile neben dem Titel (IDEA-PRX-038). */}
+      {kompakt && description ? <div className="text-ink-muted text-sm">{description}</div> : null}
+    </div>
+  );
+
   return (
-    <header
-      className={`flex flex-wrap items-end justify-between gap-3 ${kompakt ? 'mb-4' : 'mb-6'}`}
-    >
-      <div className={kompakt ? 'flex min-w-0 flex-wrap items-baseline gap-x-3' : 'min-w-0'}>
-        {kicker ? (
-          <p className="text-ink-muted tracking-label mb-1 text-xs font-semibold uppercase">
-            {kicker}
-          </p>
-        ) : null}
-        {/* Seitentitel als `--type-h2` in der Hauptfarbe (DS-001). Der Titel
-            ist die einzige Stelle, an der die Marke im Inhalt vorkommt —
-            deshalb Hauptfarbe statt Tinte. Unter 640 px 26 statt 32 px
-            (Design-Handoff 2026-10-01): Am Telefon passt der Titel damit
-            in eine Zeile. */}
-        <h1
-          className={
-            kompakt
-              ? 'text-accent text-h4 font-bold'
-              : 'text-accent text-h2-mobil sm:text-h2 tracking-display font-extrabold'
-          }
-        >
-          {title}
-        </h1>
-        {typeof description === 'string' && description ? (
-          kompakt || description.length <= KURZ ? (
-            <p className={`text-ink-muted max-w-prose text-sm ${kompakt ? '' : 'mt-1'}`}>
-              {description}
-            </p>
-          ) : (
-            <Erklaerung text={description} />
-          )
-        ) : description && typeof description !== 'string' ? (
-          <div className={`text-ink-muted max-w-prose text-sm ${kompakt ? '' : 'mt-1'}`}>
-            {description}
+    <header className={kompakt ? 'mb-4' : 'mb-6'}>
+      {/* Titel und Aktionen in einer Zeile (Design-Review T1): Die Aktion
+          steht neben dem Titel, nicht unter Titel und Beschreibung - das war
+          das Anti-Muster „Anlegen unter dem Titel“ (DESIGN.md). Der Titel
+          nimmt den Rest der Zeile und bricht zwischen Wörtern um; erst wenn
+          sein längstes Wort neben den Aktionen keinen Platz hat, rücken sie
+          darunter (`basis-36` samt Mindestbreite des längsten Worts). */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        {actions ? <div className="flex-1 basis-36">{kopf}</div> : kopf}
+        {actions ? (
+          <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+            <KnopfGroesse value="kompakt">{actions}</KnopfGroesse>
           </div>
         ) : null}
       </div>
-      {actions ? <KnopfGroesse value="kompakt">{actions}</KnopfGroesse> : null}
+      {/* Die Beschreibung darunter auf ganzer Breite, höchstens eine Zeile
+          (DESIGN.md Regel 6); was länger ist, steht hinter „Mehr“. */}
+      {kompakt || !description ? null : typeof description === 'string' ? (
+        <Beschreibung text={description} />
+      ) : (
+        <div className="text-ink-muted mt-1 max-w-prose text-sm">{description}</div>
+      )}
     </header>
   );
 }
 
 /**
- * Ab dieser Länge steht die Erklärung unter dem Titel eingeklappt (BEF-076).
- * Etwa eine Zeile am Handy; kürzere Sätze stehen ganz da.
+ * Ab dieser Länge steht die Beschreibung immer eingeklappt (BEF-076): mehr
+ * als eine Zeile ist sie auch am Rechner (`max-w-prose`). Kürzere klappen
+ * ein, sobald sie gemessen nicht in eine Zeile passen - am Telefon also schon
+ * ab rund 50 Zeichen (Design-Review T1).
  */
 const KURZ = 90;
 
 /**
- * Eine lange Erklärung zeigt ihre erste Zeile und „Mehr" (BEF-076).
+ * Die Beschreibung unter dem Titel: eine Zeile, der Rest hinter „Mehr“
+ * (BEF-076, DESIGN.md Regel 6).
  *
- * Jannes: „Es ist immer extrem viel Text zu sehen." Die Erklärungen bleiben,
- * wer sie braucht, klappt sie auf - der Rest der Seite rückt nach oben. Der
+ * Jannes: „Es ist immer extrem viel Text zu sehen.“ Die Zeile bleibt; wer
+ * mehr braucht, klappt sie auf - der Rest der Seite rückt nach oben. Ob sie
+ * in eine Zeile passt, entscheidet die Breite, nicht die Zeichenzahl: Bis zum
+ * Design-Review standen Sätze unter 90 Zeichen am Telefon zweizeilig da. Der
  * ganze Text steht auch eingeklappt im Dokument, Vorlesewerkzeuge lesen ihn
  * vollständig.
  */
-function Erklaerung({ text }: { text: string }) {
+function Beschreibung({ text }: { text: string }) {
   const [offen, setOffen] = useState(false);
+  const [abgeschnitten, setAbgeschnitten] = useState(text.length > KURZ);
+  const zeile = useRef<HTMLParagraphElement>(null);
   const id = useId();
+
+  // Gemessen nur eingeklappt: Aufgeklappt passt alles, und „Weniger“ muss
+  // trotzdem bleiben. Neu bei jeder Breitenänderung (Drehen, Seitenleiste).
+  useLayoutEffect(() => {
+    const element = zeile.current;
+    if (!element || offen) return;
+    const messen = () =>
+      setAbgeschnitten(text.length > KURZ || element.scrollHeight > element.clientHeight + 1);
+    messen();
+    const beobachter =
+      typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(messen);
+    beobachter?.observe(element);
+    return () => beobachter?.disconnect();
+  }, [text, offen]);
+
   return (
-    <div className="mt-1 flex max-w-prose items-start gap-2">
-      <p id={id} className={`text-ink-muted min-w-0 text-sm ${offen ? '' : 'line-clamp-1'}`}>
+    <div className="mt-1 flex max-w-prose items-baseline gap-2">
+      <p
+        ref={zeile}
+        id={id}
+        className={`text-ink-muted min-w-0 text-sm ${offen ? '' : 'line-clamp-1'}`}
+      >
         {text}
       </p>
-      <button
-        type="button"
-        aria-expanded={offen}
-        aria-controls={id}
-        onClick={() => setOffen((bisher) => !bisher)}
-        className="text-accent -my-3 min-h-11 shrink-0 text-sm font-semibold underline underline-offset-2"
-      >
-        {offen ? 'Weniger' : 'Mehr'}
-      </button>
+      {abgeschnitten ? (
+        <button
+          type="button"
+          aria-expanded={offen}
+          aria-controls={id}
+          onClick={() => setOffen((bisher) => !bisher)}
+          className="text-accent -my-3 min-h-11 shrink-0 text-sm font-semibold underline underline-offset-2"
+        >
+          {offen ? 'Weniger' : 'Mehr'}
+        </button>
+      ) : null}
     </div>
   );
 }

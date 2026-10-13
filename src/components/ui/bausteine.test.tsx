@@ -151,9 +151,52 @@ describe('PageHeader', () => {
     // auf jeder Breite.
     expect(klassen).not.toContain('text-h2');
     expect(klassen).toEqual(expect.arrayContaining(['font-extrabold', 'tracking-display']));
-    // Beschreibung: 14 px, leise, 4 px unter dem Titel.
-    const beschreibung = screen.getByText('12 Personen').className.split(/\s+/);
-    expect(beschreibung).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'mt-1']));
+    // Beschreibung: 14 px, leise, 4 px unter dem Titel, eine Zeile.
+    const beschreibung = screen.getByText('12 Personen');
+    expect(beschreibung.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['text-ink-muted', 'text-sm', 'line-clamp-1']),
+    );
+    expect(beschreibung.parentElement).toHaveClass('mt-1');
+    // Kurz und (in jsdom ungemessen) nicht abgeschnitten: kein „Mehr“.
+    expect(screen.queryByRole('button', { name: 'Mehr' })).toBeNull();
+  });
+
+  it('stellt die Aktion in die Zeile des Titels, die Beschreibung darunter (Design-Review T1)', () => {
+    renderWithProviders(
+      <PageHeader
+        title="Erstattungen"
+        description="Stromkosten für das Laden der Diensträder und ausgelegte Einkäufe."
+        actions={<Button type="button">Erstattung einreichen</Button>}
+      />,
+    );
+    const titel = screen.getByRole('heading', { level: 1 });
+    const knopf = screen.getByRole('button', { name: 'Erstattung einreichen' });
+    const beschreibung = screen.getByText(/Stromkosten/);
+    // Titel und Aktion teilen sich eine Zeile ...
+    const zeile = knopf.closest('header > div')!;
+    expect(zeile).toContainElement(titel);
+    // ... die Beschreibung steht nicht darin, sondern darunter auf ganzer Breite.
+    expect(zeile).not.toContainElement(beschreibung);
+    expect(
+      zeile.compareDocumentPosition(beschreibung) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('klappt eine lange Beschreibung hinter „Mehr“ ein und auf', async () => {
+    const user = userEvent.setup();
+    const lang =
+      'Ein Satz, der deutlich länger ist als eine Zeile am Telefon und deshalb hinter dem Aufklapper steht.';
+    renderWithProviders(<PageHeader title="Seite" description={lang} />);
+    const satz = screen.getByText(lang);
+    expect(satz).toHaveClass('line-clamp-1');
+    const mehr = screen.getByRole('button', { name: 'Mehr' });
+    expect(mehr).toHaveAttribute('aria-expanded', 'false');
+    await user.click(mehr);
+    expect(satz).not.toHaveClass('line-clamp-1');
+    expect(screen.getByRole('button', { name: 'Weniger' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
   });
 });
 
