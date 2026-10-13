@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
@@ -231,9 +232,30 @@ export function FolgeterminVorschlaege({
       </>
     );
   } else if (kommende.isError || frei.isError) {
+    // Im Funkloch nach dem Besuch (Praxis-Review R2, P2): Die Suche läuft
+    // ohne Wiederholung (`retry: false`) - „Erneut suchen" fragt nur nach,
+    // was gescheitert ist; die Seite und der Rest von „Danach" bleiben stehen.
+    const sucht = kommende.isFetching || frei.isFetching || amTag.isFetching;
     inhalt = (
       <>
-        <Statusmeldung ton="fehler">Die freien Zeiten konnten nicht gesucht werden.</Statusmeldung>
+        <div className="flex flex-wrap items-center gap-3">
+          <Statusmeldung ton="fehler">
+            Die freien Zeiten konnten nicht gesucht werden.
+          </Statusmeldung>
+          <Button
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            disabled={sucht}
+            onClick={() => {
+              for (const abfrage of [kommende, frei, amTag]) {
+                if (abfrage.isError) void abfrage.refetch();
+              }
+            }}
+          >
+            {sucht ? 'Wird gesucht …' : 'Erneut suchen'}
+          </Button>
+        </div>
         {andereZeit}
       </>
     );

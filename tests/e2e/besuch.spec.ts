@@ -359,6 +359,48 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
   });
 });
 
+// Praxis-Review R2, P2: Im Funkloch nach dem Besuch scheitert die Suche nach
+// freien Zeiten. „Erneut suchen" fragt noch einmal - die Seite bleibt stehen,
+// nichts wird neu geladen.
+test('sucht den Folgetermin nach einem Funkloch mit „Erneut suchen" noch einmal (R2, P2)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.clock.setFixedTime(um('09:20'));
+  const server = nachbildung();
+  let funkloch = true;
+  await page.route('**/rest/v1/**', async (route) => {
+    if (funkloch && route.request().url().includes('/rpc/find_free_slots')) {
+      await route.abort('internetdisconnected');
+      return;
+    }
+    await server.beantworte(route);
+  });
+  await page.route('**/functions/v1/**', (route) => route.fulfill({ status: 503, body: '' }));
+
+  await page.goto(PRUEFSEITE);
+  await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
+  await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
+  await page.getByRole('button', { name: 'Festschreiben' }).click();
+
+  const fehler = page.getByText('Die freien Zeiten konnten nicht gesucht werden.');
+  await expect(fehler).toBeVisible();
+  const erneut = page.getByRole('button', { name: 'Erneut suchen' });
+  expect((await erneut.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  const wegeVorher = await page.evaluate(
+    () => (window as unknown as { __wege: string[] }).__wege.length,
+  );
+
+  funkloch = false;
+  await erneut.click();
+  await expect(page.getByRole('button', { name: /gleiche Zeit/ })).toBeVisible();
+  await expect(fehler).toHaveCount(0);
+  // Kein Seitenwechsel: „Danach" bleibt, wo es war.
+  expect(await page.evaluate(() => (window as unknown as { __wege: string[] }).__wege.length)).toBe(
+    wegeVorher,
+  );
+});
+
 for (const [breite, hoehe] of [
   [375, 667],
   [1280, 800],
