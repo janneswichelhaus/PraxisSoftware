@@ -153,8 +153,6 @@ export const GRENZEN: Record<
 
     'features/retention': 1,
 
-    'features/scheduling': 2,
-
     'features/slot-search': 1,
 
     'features/staff': 2,
