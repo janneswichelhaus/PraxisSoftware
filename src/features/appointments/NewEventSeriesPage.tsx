@@ -284,8 +284,10 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title="Dauerfehlzeit eintragen"
         // Eine Zeile am Telefon, mit denselben Beispielen wie Anlegen-Leiste
-        // und Fehlzeit (KAL-27); eine Angabe ohne Schlusspunkt (T8).
-        description={`Über mehrere Wochen: ${FEHLZEIT_BEISPIELE}`}
+        // und Fehlzeit (KAL-27). Mit Schlusspunkt wie „Fehlzeit eintragen“:
+        // Beschreibungen enden mit Punkt, nur Namen und Daten nicht (T8,
+        // Design-Review R2).
+        description={`Über mehrere Wochen: ${FEHLZEIT_BEISPIELE}.`}
       />
 
       <form onSubmit={absenden} noValidate className="max-w-formular">
