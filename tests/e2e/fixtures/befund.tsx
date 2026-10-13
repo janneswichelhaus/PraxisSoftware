@@ -1,10 +1,17 @@
 import { useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { Section } from '@/components/ui/Section';
 import type { Antwort, Antworten } from '@/features/assessments/antworten';
 import { ErhebungAnsicht } from '@/features/assessments/ErhebungAnsicht';
 import { FragebogenFelder } from '@/features/assessments/FragebogenFelder';
 import { Hervorhebungen } from '@/features/assessments/Hervorhebungen';
+import { Befund } from '@/features/assessments/PatientBefundPage';
+import { erhebungenQueryKey } from '@/features/assessments/api';
+import { ereignisseQueryKey } from '@/features/assessments/verlauf';
+import type { Patient } from '@/features/patients/api';
+import type { CurrentUser } from '@/features/session/types';
 import { instrumentFuer } from '@/features/assessments/instrumente';
 import { Ereignisliste, Messreihenbild } from '@/features/assessments/Messreihenbild';
 import { messreihen, type Verlaufsereignis } from '@/features/assessments/verlauf';
@@ -115,6 +122,94 @@ export function Seite() {
   );
 }
 
+/**
+ * `?ansicht=akte`: der Befund, wie er in der Akte unter `doku/befund` steht
+ * (Design-Rollout B4) - mit Liege, Bögen, Messverlauf und Ereignissen aus
+ * dem Speicher, ohne Server.
+ */
+const PATIENT = '66666666-6666-4666-8666-000000000001';
+
+const patient: Patient = {
+  id: PATIENT,
+  status: 'active',
+  care_started_on: '2026-08-01',
+  care_concluded_on: null,
+  given_name: 'Max',
+  family_name: 'Mustermann',
+  date_of_birth: '1961-03-12',
+  email: null,
+  phone: null,
+  phone_work: null,
+  phone_mobile: null,
+  institution: null,
+  street: null,
+  house_number: null,
+  postal_code: null,
+  city: null,
+  primary_therapist_staff_member_id: null,
+  primary_therapist_name: 'Anna Beispiel',
+  home_visit_access_note: null,
+  special_note: null,
+  remark: null,
+  geocode_precision: 'address',
+  treatment_table_required: false,
+  take_along_items: [],
+};
+
+const nutzer: CurrentUser = {
+  profile: {
+    id: '11111111-1111-4111-8111-000000000002',
+    organization_id: '22222222-2222-4222-8222-000000000001',
+    person_id: '44444444-4444-4444-8444-000000000002',
+    display_name: 'Anna Beispiel',
+    is_active: true,
+  },
+  roles: ['therapist'],
+  organizationName: 'Test Praxis Tuebingen',
+  organizationTimeZone: 'Europe/Berlin',
+  appointmentGridMinutes: 5,
+  staffMemberId: '55555555-5555-4555-8555-000000000002',
+  revenueShare: false,
+};
+
+function InDerAkte() {
+  const [client] = useState(() => {
+    const neu = new QueryClient({
+      defaultOptions: { queries: { staleTime: Infinity, retry: false } },
+    });
+    neu.setQueryData(erhebungenQueryKey(PATIENT), [
+      { ...erhebung('a', '2026-08-03', 7), answers: BEISPIEL },
+      erhebung('b', '2026-09-01', 6),
+      { ...erhebung('c', '2026-09-22', 4), status: 'entwurf', completed_at: null },
+    ]);
+    neu.setQueryData(ereignisseQueryKey(PATIENT), EREIGNISSE);
+    neu.setQueryData(['verlauf-termine', PATIENT], []);
+    return neu;
+  });
+  const [router] = useState(() =>
+    createMemoryRouter(
+      [
+        {
+          path: '*',
+          element: (
+            <main className="max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12">
+              <Befund patient={patient} user={nutzer} />
+            </main>
+          ),
+        },
+      ],
+      { initialEntries: [`/patienten/${PATIENT}/doku/befund`] },
+    ),
+  );
+  return (
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
+  );
+}
+
 const wurzel = document.getElementById('wurzel');
 if (!wurzel) throw new Error('Wurzelelement der Prüfseite fehlt.');
-createRoot(wurzel).render(<Seite />);
+createRoot(wurzel).render(
+  new URLSearchParams(window.location.search).get('ansicht') === 'akte' ? <InDerAkte /> : <Seite />,
+);

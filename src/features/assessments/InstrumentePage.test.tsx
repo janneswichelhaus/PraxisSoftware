@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
+import { renderWithProviders } from '@/test-utils';
 import { InstrumentePage } from './InstrumentePage';
 import { bibliothek } from './bibliothek';
 import { scoreDefinitionSchema, type ScoreDefinition } from './schema';
@@ -43,57 +44,100 @@ function mitSchwellenwerten(): ScoreDefinition {
   });
 }
 
+/** Die Seite unter ihrer Adresse - mit `?instrument=` das Instrument im Einzelnen. */
+function zeigen(scores?: ScoreDefinition[], instrument?: string) {
+  return renderWithProviders(
+    <InstrumentePage {...(scores ? { scores } : {})} />,
+    instrument ? `/praxis/instrumente?instrument=${instrument}` : '/praxis/instrumente',
+  );
+}
+
 describe('Instrumente', () => {
-  it('zeigt jedes Instrument der Bibliothek mit Version und Lizenz', () => {
-    render(<InstrumentePage />);
+  it('listet jedes Instrument der Bibliothek als Zeile mit Weg ins Einzelne', () => {
+    zeigen();
+    const ziele = screen
+      .getAllByRole('link')
+      .map((link) => [link.textContent, link.getAttribute('href')] as const);
     for (const score of bibliothek.scores) {
-      const karte = screen.getByRole('heading', { name: score.meta.name_de }).closest('div')
-        ?.parentElement as HTMLElement;
-      expect(within(karte).getByText(score.meta.version)).toBeInTheDocument();
+      expect(
+        ziele.some(
+          ([text, ziel]) =>
+            text?.startsWith(score.meta.name_de) &&
+            ziel === `/praxis/instrumente?instrument=${score.meta.id}`,
+        ),
+      ).toBe(true);
     }
-    expect(screen.getAllByText(/frei verwendbar, Stand \d{2}\.\d{2}\.\d{4}/)).toHaveLength(
-      bibliothek.scores.length,
-    );
+  });
+
+  it('zeigt im Einzelnen Fassung und Lizenz', () => {
+    for (const score of bibliothek.scores) {
+      const { unmount } = zeigen(undefined, score.meta.id);
+      expect(
+        screen.getByRole('heading', { level: 1, name: score.meta.name_de }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(score.meta.version)).toBeInTheDocument();
+      expect(screen.getByText(/frei verwendbar, Stand \d{2}\.\d{2}\.\d{4}/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Zurück zu den Instrumenten/ })).toHaveAttribute(
+        'href',
+        '/praxis/instrumente',
+      );
+      unmount();
+    }
   });
 
   it('kennzeichnet ein Instrument ohne Vorlage als inaktiv mit vorlaeufigem Wortlaut', () => {
-    render(<InstrumentePage />);
-    expect(screen.getAllByText('Inaktiv · Wortlaut vorläufig')).toHaveLength(3);
+    const liste = zeigen();
+    // In der Zeile kurz, im Einzelnen mit Grund.
+    expect(screen.getAllByText('Inaktiv')).toHaveLength(3);
+    liste.unmount();
+    zeigen(undefined, 'psfs');
+    expect(screen.getByText('Inaktiv · Wortlaut vorläufig')).toBeInTheDocument();
   });
 
   it('spricht von Fragen und Fassung und nennt keinen Dateinamen (BEF-15, BEF-16)', () => {
-    const { container } = render(<InstrumentePage />);
-    const anamnese = screen
-      .getByRole('heading', { name: 'Anamnesebogen Version 8 (DIGOTOR)' })
-      .closest('div')?.parentElement as HTMLElement;
+    const { container } = zeigen(undefined, 'anamnese_v8');
 
-    expect(within(anamnese).getByText('Fassung')).toBeInTheDocument();
-    expect(within(anamnese).getByText('46, keine geht in eine Rechnung ein')).toBeInTheDocument();
-    expect(within(anamnese).getByText('DIGOTOR GbR, Version 8, 07/2026')).toBeInTheDocument();
-    expect(within(anamnese).getByText('Wortlaut (46 Fragen)')).toBeInTheDocument();
+    expect(screen.getByText('Fassung')).toBeInTheDocument();
+    expect(screen.getByText('46, keine geht in eine Rechnung ein')).toBeInTheDocument();
+    expect(screen.getByText('DIGOTOR GbR, Version 8, 07/2026')).toBeInTheDocument();
+    expect(screen.getByText('Wortlaut (46 Fragen)')).toBeInTheDocument();
     // Was aus dem Inventar stammt, bleibt wörtlich - als Zitat gekennzeichnet.
     expect(
-      within(anamnese).getByText('Laut Inventar: „Kein Scoring - reine Informationserfassung“'),
+      screen.getByText('Laut Inventar: „Kein Scoring - reine Informationserfassung“'),
     ).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/Items|\.pdf|gewertet/);
   });
 
+  it('nennt auch in der Liste keinen Dateinamen und spricht nicht von Items', () => {
+    const { container } = zeigen();
+    expect(container.textContent).not.toMatch(/Items|\.pdf|gewertet/);
+  });
+
   it('zeigt den Wortlaut samt Ankern der Skala', () => {
-    render(<InstrumentePage />);
+    zeigen(undefined, 'nrs_schmerz');
     expect(screen.getByText('Wie stark sind Ihre Schmerzen im Moment?')).toBeInTheDocument();
     expect(screen.getByText(/0 = „keine Schmerzen“/)).toBeInTheDocument();
   });
 
   it('zeigt weder Cut-off noch MCID noch MDC (ADR-006 Punkt 11)', () => {
-    const { container } = render(<InstrumentePage scores={[mitSchwellenwerten()]} />);
+    const liste = zeigen([mitSchwellenwerten()]);
+    expect(liste.container.textContent).not.toMatch(/SICHTBAR/);
+    liste.unmount();
+
+    const { container } = zeigen([mitSchwellenwerten()], 'synthetisch');
     expect(screen.getByText('Aktiv')).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/SICHTBAR/);
   });
 
   it('sagt es, wenn kein Instrument vorliegt', () => {
-    render(<InstrumentePage scores={[]} />);
+    zeigen([]);
     // Ein Leerzustand der Seite, keine Meldung neben einer Aktion (BEF-18).
     expect(screen.getByText('Noch liegt kein Instrument vor.')).toBeInTheDocument();
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('zeigt bei einer unbekannten Kennung wieder die Liste', () => {
+    zeigen(undefined, 'gibt-es-nicht');
+    expect(screen.getByRole('heading', { level: 1, name: 'Instrumente' })).toBeInTheDocument();
   });
 });

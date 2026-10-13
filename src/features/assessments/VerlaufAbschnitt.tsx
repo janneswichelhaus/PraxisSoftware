@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Field } from '@/components/ui/Field';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
@@ -89,10 +90,7 @@ export function VerlaufAbschnitt({
     );
 
   return (
-    <Section
-      titel="Messverlauf"
-      hinweis="Die Werte der abgeschlossenen Bögen als Punkte, ohne Linie und ohne Trend. Senkrechte Linien sind Ereignisse, Striche an der Zeitachse durchgeführte Termine."
-    >
+    <Section titel="Messverlauf">
       {ereignisse.isPending ? (
         <LoadingState label="Ereignisse werden geladen …" />
       ) : ereignisse.data === undefined ? (
@@ -122,9 +120,7 @@ export function VerlaufAbschnitt({
             </p>
           ) : null}
           {reihen.length === 0 ? (
-            <p className="text-ink-muted text-sm">
-              Noch kein abgeschlossener Bogen mit Skalenwerten.
-            </p>
+            <EmptyState inKarte title="Noch kein abgeschlossener Bogen mit Skalenwerten." />
           ) : (
             // Zwei Bilder nebeneinander, sobald der Bereich 672 px breit ist
             // (BEF-20): Einspaltig blieb am Bildschirm rechts die halbe Breite
@@ -143,18 +139,28 @@ export function VerlaufAbschnitt({
               </div>
             </div>
           )}
+          {/* Wie das Bild zu lesen ist - und was es bewusst nicht zeigt: keine
+              Linie, kein Trend (ADR-006 Punkt 11). Nur, wo ein Bild steht. */}
+          {reihen.length > 0 ? (
+            <Kleingedrucktes className="mt-3">
+              Die Werte der abgeschlossenen Bögen als Punkte, ohne Linie und ohne Trend. Senkrechte
+              Linien sind Ereignisse, Striche an der Zeitachse durchgeführte Termine.
+            </Kleingedrucktes>
+          ) : null}
           <Section ebene={3} titel="Ereignisse">
             <Ereignisliste
               ereignisse={ereignisse.data}
               onEntfernen={darfSetzen ? (e) => entfernen.mutateAsync(e.id) : undefined}
             />
             <EntfernteEreignisse patientId={patientId} zeitzone={zeitzone} />
+            {/* Seltenes auf Abruf (DESIGN.md): Ein Ereignis wie eine Operation
+                wird selten vermerkt. */}
+            {darfSetzen ? (
+              <Disclosure summary="Ereignis vermerken" kopf="betont">
+                <EreignisSetzen patientId={patientId} zeitzone={zeitzone} />
+              </Disclosure>
+            ) : null}
           </Section>
-          {darfSetzen ? (
-            <Section ebene={3} titel="Ereignis vermerken">
-              <EreignisSetzen patientId={patientId} zeitzone={zeitzone} />
-            </Section>
-          ) : null}
         </>
       )}
     </Section>
@@ -283,7 +289,7 @@ function EreignisSetzen({ patientId, zeitzone }: { patientId: string; zeitzone: 
   }
 
   return (
-    <form onSubmit={absenden} noValidate className="flex max-w-xl flex-col gap-3">
+    <form onSubmit={absenden} noValidate className="max-w-formular flex flex-col gap-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Tag"

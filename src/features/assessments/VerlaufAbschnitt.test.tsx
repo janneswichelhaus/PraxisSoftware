@@ -110,7 +110,8 @@ describe('Messverlauf', { timeout: 20_000 }, () => {
     abschnitt();
     expect(await screen.findByRole('heading', { level: 2, name: 'Messverlauf' })).toBeVisible();
     expect(await screen.findByRole('heading', { level: 3, name: 'Ereignisse' })).toBeVisible();
-    expect(screen.getByRole('heading', { level: 3, name: 'Ereignis vermerken' })).toBeVisible();
+    // Seltenes auf Abruf: Vermerkt wird hinter einem Aufklapper.
+    expect(screen.getByText('Ereignis vermerken')).toBeVisible();
   });
 
   it('sagt beim Laden nicht „Noch kein Ereignis vermerkt." (BEF-13)', () => {
@@ -211,7 +212,8 @@ describe('Messverlauf', { timeout: 20_000 }, () => {
     const user = userEvent.setup();
     abschnitt();
 
-    await user.type(await screen.findByLabelText('Notiz (optional)'), 'Knie-TEP rechts');
+    await user.click(await screen.findByText('Ereignis vermerken'));
+    await user.type(screen.getByLabelText('Notiz (optional)'), 'Knie-TEP rechts');
     await user.click(screen.getByRole('link', { name: 'Zum Kalender' }));
 
     const kasten = await screen.findByRole('group', { name: 'Ungespeichertes Ereignis' });

@@ -202,7 +202,7 @@ const router = createMemoryRouter(
     {
       path: '/patienten/:patientId/berichte/:berichtId',
       element: (
-        <main className="mx-auto max-w-5xl px-4 py-6">
+        <main className="max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12">
           <TherapieberichtPage user={nutzer} />
         </main>
       ),
@@ -210,7 +210,7 @@ const router = createMemoryRouter(
     {
       path: '/patienten/:patientId/berichte/:berichtId/druck',
       element: (
-        <main className="mx-auto max-w-5xl px-4 py-6">
+        <main className="max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12">
           <TherapieberichtDruckPage user={nutzer} />
         </main>
       ),

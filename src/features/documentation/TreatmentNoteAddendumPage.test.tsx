@@ -131,7 +131,7 @@ describe('TreatmentNoteAddendumPage', () => {
 
     expect(await screen.findByTestId('ursprung')).toHaveTextContent(INHALT);
     await user.type(feld(), 'Synthetisch: Heimprogramm nachgereicht.');
-    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
     await waitFor(() => {
       expect(createTreatmentNoteAddendum).toHaveBeenCalledWith(
@@ -147,13 +147,15 @@ describe('TreatmentNoteAddendumPage', () => {
     );
   });
 
-  it('behält den mitgereisten Rückweg für „Abbrechen“ und den Weg danach (DOK-01)', async () => {
+  it('behält den mitgereisten Rückweg für den Pfeil im Kopf und den Weg danach (DOK-01)', async () => {
     const user = userEvent.setup();
     rendern(['therapist'], '?zurueck=%2F');
 
     await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
-    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/');
-    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+    // Der Pfeil im Kopf der Schreibfläche ist der Weg hinaus, wie auf der
+    // Schreibseite.
+    expect(screen.getByRole('link', { name: /Zurück zur Übersicht/ })).toHaveAttribute('href', '/');
+    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith('/', {
         state: { meldung: 'Nachtrag als Entwurf gespeichert.' },
@@ -184,7 +186,7 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await waitFor(() => expect(feld()).toHaveValue(''));
-    expect(screen.getByRole('button', { name: 'Als Entwurf speichern' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Entwurf' })).toBeDisabled();
   });
 
   it('verweist bei einem Entwurf auf den Bearbeitungsweg', async () => {
@@ -224,9 +226,10 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
-    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
-    expect(await screen.findByText('Nicht gespeichert')).toBeInTheDocument();
+    // Als Zeile über der Aktionsleiste, wie auf der Schreibseite.
+    expect(await screen.findByText(/^Nicht gespeichert:/)).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -273,7 +276,7 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Nachtrag'), nachtrag.content);
-    const knopf = screen.getByRole('button', { name: 'Nachtrag festschreiben' });
+    const knopf = screen.getByRole('button', { name: 'Festschreiben' });
     // Die Folge steht über dem Knopf und ist mit ihm verbunden (ADR-016 Punkt 4).
     expect(knopf).toHaveAccessibleDescription(/als Version 1 zum Teil der Akte/);
     await user.click(knopf);
@@ -295,9 +298,9 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
-    await user.click(screen.getByRole('button', { name: 'Nachtrag festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
-    expect(await screen.findByText('Nicht festgeschrieben')).toBeInTheDocument();
+    expect(await screen.findByText(/^Nicht festgeschrieben:/)).toBeInTheDocument();
     expect(finalizeTreatmentNote).not.toHaveBeenCalled();
     expect(feld()).toHaveValue('Synthetisch: nachgereicht.');
   });

@@ -37,25 +37,17 @@ export const GRENZEN: Record<
   Readonly<Record<string, number>>
 > = {
   breiten: {
-    'features/assessments': 3,
-
     'features/billing': 7,
 
     'features/checkins': 2,
-
-    'features/documentation': 8,
 
     'features/exercise-plans': 4,
 
     'features/exercises': 5,
 
-    'features/offline-documentation': 2,
-
     'features/platform': 9,
 
     'features/reimbursements': 1,
-
-    'features/therapy-reports': 5,
 
     'features/tours': 3,
 
@@ -74,15 +66,11 @@ export const GRENZEN: Record<
 
     'features/datenschutz': 1,
 
-    'features/documentation': 2,
-
     'features/files': 1,
 
     'features/platform': 2,
 
     'features/statistics': 3,
-
-    'features/therapy-reports': 1,
 
     'features/tours': 2,
 
@@ -98,8 +86,6 @@ export const GRENZEN: Record<
     'features/billing': 13,
 
     'features/datenschutz': 1,
-
-    'features/offline-documentation': 1,
 
     'features/platform': 2,
 
@@ -150,8 +136,6 @@ export const GRENZEN: Record<
 
     'features/appointments': 4,
 
-    'features/assessments': 2,
-
     'features/checkins': 5,
 
     'features/documentation': 4,
@@ -159,8 +143,6 @@ export const GRENZEN: Record<
     'features/exercise-plans': 4,
 
     'features/exercises': 3,
-
-    'features/offline-documentation': 2,
 
     'features/patients': 1,
 
