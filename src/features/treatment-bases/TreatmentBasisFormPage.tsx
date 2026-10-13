@@ -482,7 +482,7 @@ function GrundlagenFormular({
           Grundlage, samt Ausweg (ZST-13, VER-15). */}
       {/* Zerstörendes leise am Ende (DESIGN.md, Regel „Objekt“). */}
       {bestand ? (
-        <div className="border-line mt-8 flex border-t pt-6">
+        <div className="border-line max-w-formular mt-8 flex border-t pt-6">
           <Rueckfrage
             ausloeser="Grundlage löschen"
             ausloeserVariante="quiet"

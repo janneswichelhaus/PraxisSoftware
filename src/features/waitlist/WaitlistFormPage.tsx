@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -28,6 +29,7 @@ import { Patientensuche } from '@/features/patients/Patientensuche';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { fetchPatientTreatmentBases, grundlageBezeichnung } from '@/features/treatment-bases/api';
 import { formatDate } from '@/lib/datum';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { EMPTY, fromEntry, validate, type FieldName, type FormState } from './form';
 import {
@@ -48,6 +50,24 @@ import {
 
 const LIST = '/warteliste';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Die Felder mit Prüfung, in der Reihenfolge des Formulars - für die
+ * Fehlerzusammenfassung über dem Formular (DESIGN.md, Formular).
+ */
+const FEHLERFELDER: readonly FieldName[] = ['duration', 'windows', 'dates', 'note'];
+const FEHLERBESCHRIFTUNG: Record<FieldName, string> = {
+  duration: 'Dauer in Minuten',
+  windows: 'Wunschzeiten',
+  dates: 'Bis spätestens',
+  note: 'Notiz',
+};
+const FEHLERFELD_ID: Record<FieldName, string> = {
+  duration: 'warteliste-dauer',
+  windows: 'warteliste-wunschzeit',
+  dates: 'warteliste-bis',
+  note: 'warteliste-notiz',
+};
 
 const LOSS_TEXTS: Verlustschutztexte = {
   ...EINGABETEXTE,
@@ -140,6 +160,15 @@ function EntryForm({
       {schutz}
 
       <form onSubmit={submit} noValidate className="max-w-formular">
+        <Fehlerzusammenfassung
+          fehler={alsFormularfehler(
+            FEHLERFELDER,
+            FEHLERBESCHRIFTUNG,
+            errors,
+            (feld) => FEHLERFELD_ID[feld],
+          )}
+        />
+
         <Section titel="Termin">
           <Feldgruppe>
             <Select
@@ -173,6 +202,7 @@ function EntryForm({
               </Select>
               <Field
                 label="Dauer in Minuten"
+                feldId={FEHLERFELD_ID.duration}
                 type="number"
                 inputMode="numeric"
                 min={DURATION_MIN}
@@ -208,6 +238,7 @@ function EntryForm({
                 >
                   <Select
                     label="Wochentag"
+                    feldId={index === 0 ? FEHLERFELD_ID.windows : undefined}
                     value={String(w.weekday)}
                     onChange={(e) => setWindow(index, { weekday: Number(e.target.value) })}
                   >
@@ -248,11 +279,10 @@ function EntryForm({
               ))}
             </ul>
           ) : null}
-          {errors.windows ? (
-            <Statusmeldung ton="fehler" className="mt-2">
-              {errors.windows}
-            </Statusmeldung>
-          ) : null}
+          {/* Ohne `role="alert"` wie der Fehler an jedem Feld: Die
+              Fehlerzusammenfassung über dem Formular ist die eine Meldung,
+              die Vorlesesoftware ansagt (UX-012). */}
+          {errors.windows ? <p className="text-danger mt-2 text-sm">{errors.windows}</p> : null}
           {state.windows.length < WINDOWS_MAX ? (
             <Button
               type="button"
@@ -293,6 +323,7 @@ function EntryForm({
               />
               <Field
                 label="Bis spätestens"
+                feldId={FEHLERFELD_ID.dates}
                 type="date"
                 value={state.neededBy}
                 onChange={(e) => set('neededBy', e.target.value)}
@@ -301,6 +332,7 @@ function EntryForm({
             </div>
             <TextArea
               label="Notiz"
+              feldId={FEHLERFELD_ID.note}
               hint="Organisatorisch, etwa wann die Person erreichbar ist. Keine Befunde."
               maxLength={NOTE_MAX}
               rows={3}

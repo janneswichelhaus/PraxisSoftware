@@ -123,6 +123,24 @@ describe('Warteliste: Formular (PRX-001)', () => {
     });
   });
 
+  // DESIGN.md, Formular: Was zu korrigieren ist, steht über den Feldern, und
+  // jeder Eintrag führt zum Feld.
+  it('fasst Fehler über dem Formular zusammen und führt zum Feld', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewWaitlistEntryPage />, `/warteliste/neu?patient=${PATIENT_ID}`);
+
+    const dauer = await screen.findByLabelText('Dauer in Minuten');
+    await user.clear(dauer);
+    await user.type(dauer, '3');
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+
+    const zusammenfassung = await screen.findByRole('alert');
+    expect(zusammenfassung).toHaveTextContent('Bitte prüfen Sie diese Angabe');
+    await user.click(screen.getByRole('link', { name: /Dauer/ }));
+    expect(dauer).toHaveFocus();
+    expect(createWaitlistEntry).not.toHaveBeenCalled();
+  });
+
   it('zeigt den Fehler des Servers, etwa bei einer Dublette', async () => {
     const { AlreadyOnWaitlistError } = await import('./api');
     createWaitlistEntry.mockRejectedValue(new AlreadyOnWaitlistError());
