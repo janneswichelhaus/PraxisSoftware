@@ -5054,3 +5054,15 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Fahrzeit immer zeigen: `max-sm:hidden` streichen, Platz anderswo sparen · Aufwand `klein`.
 
+### ANN-485 — Zeichen für Zustände ohne eigenen Ton
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Akte)
+
+**Annahme.** Ein Zustand im Ton `neutral` oder `akzent` trägt ein eigenes Zeichen: – nicht gegeben („Nicht erteilt“), … liegt bei der Praxis („bei der Praxis“), × bewusst nicht („Abgelehnt am …“, wie „× Abgesagt“), ? nicht geprüft („Fahrweg nicht geprüft“), ↩ Antwort liegt vor („beantwortet“). „Nicht in Versorgung“ in der Liste trägt wie im Kopf der Akte `warnung` (!).
+
+**Begründung.** DESIGN.md Regel 5 „Status = Zeichen + Wort“; der Badge setzt nur für positiv, warnung, kritisch ein Zeichen. Text-Zeichen statt Symbolen (9.15).
+
+**Anker.** `STATUSZEICHEN` in `src/components/ui/Badge.tsx`.
+
+**Änderungspfad.** Andere Zeichen dort eintragen oder `eigenesZeichen` weglassen · Aufwand `klein`.
+

@@ -197,6 +197,9 @@ describe('Nachrichten (KOM-001)', () => {
     expect(screen.getByText(/^Antwort bis 13\.10\.2026\./)).toBeInTheDocument();
     expect(screen.getByText('Übung · Kniebeuge am Geländer')).toBeInTheDocument();
     expect(screen.getByText('beantwortet')).toBeInTheDocument();
+    // Jeder Zustand mit Zeichen und Wort (Regel 5, ANN-485).
+    expect(screen.getByText('beantwortet')).toHaveTextContent('↩beantwortet');
+    expect(screen.getByText('bei der Praxis')).toHaveTextContent('…bei der Praxis');
     // Erledigtes steht auf Abruf, mit der Zahl im Kopf (DESIGN.md, Regel 6).
     expect(screen.getByText('Erledigt').closest('summary')).toHaveTextContent('Erledigt (1)');
   });

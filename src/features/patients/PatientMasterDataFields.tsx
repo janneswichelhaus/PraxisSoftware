@@ -1,4 +1,5 @@
 import { Field } from '@/components/ui/Field';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import type { AssignableTherapist } from '@/features/appointments/api';
@@ -99,7 +100,9 @@ export function PatientMasterDataFields({
       ? bisherigeTherapeutin
         ? 'Die Liste der Therapeut:innen ließ sich nicht laden – die bisherige Zuordnung bleibt erhalten.'
         : 'Die Liste der Therapeut:innen ließ sich nicht laden. Eine Zuordnung lässt sich später nachtragen.'
-      : 'Vorbelegung für die Terminplanung. Sie schränkt den Zugriff auf die Akte nicht ein.';
+      : // Gekürzt (Sichtung 13.10.2026, A10); dass die Zuordnung kein Recht
+        // ist, ändert, was man wählt - das bleibt.
+        'Vorbelegung für die Terminplanung, kein Zugriffsrecht.';
 
   return (
     <>
@@ -258,8 +261,10 @@ export function PatientMasterDataFields({
       </Section>
 
       {/* UX-005e: Auf das Wesentliche gekürzt - geblieben ist, was die
-          Eingabe betrifft: wer die Angaben sieht (ANN-010, ADR-004). */}
-      <Section titel="Hausbesuch und Praxisangaben" hinweis="Für Patientenzugänge nicht sichtbar.">
+          Eingabe betrifft: wer die Angaben sieht (ANN-010, ADR-004). Seit
+          der Sichtung vom 13.10.2026 (A10) als Kleingedrucktes am Ende des
+          Abschnitts statt als Satz unter dem Titel (Regel 6). */}
+      <Section titel="Hausbesuch und Praxisangaben">
         <Feldgruppe>
           <Select
             label="Feste Therapeut:in"
@@ -322,6 +327,9 @@ export function PatientMasterDataFields({
             onChange={(event) => onChange('remark', event.target.value)}
           />
         </Feldgruppe>
+        <Kleingedrucktes className="mt-3">
+          Hausbesuch und Praxisangaben sind für Patientenzugänge nicht sichtbar.
+        </Kleingedrucktes>
       </Section>
     </>
   );

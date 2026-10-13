@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Badge, type Ton } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -168,9 +168,11 @@ export function Notfallhinweis({
   );
 }
 
-const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton }> = {
-  open: { wort: 'bei der Praxis', ton: 'neutral' },
-  answered: { wort: 'beantwortet', ton: 'akzent' },
+// Jeder Zustand mit Zeichen und Wort (Regel 5; Sichtung 13.10.2026, A6):
+// „neutral“ und „akzent“ tragen kein eigenes, deshalb `zeichen` (ANN-485).
+const ZUSTAND: Record<Nachricht['status'], { wort: string; ton: Ton; zeichen?: string }> = {
+  open: { wort: 'bei der Praxis', ton: 'neutral', zeichen: STATUSZEICHEN.wartet },
+  answered: { wort: 'beantwortet', ton: 'akzent', zeichen: STATUSZEICHEN.antwort },
   closed: { wort: 'erledigt', ton: 'positiv' },
 };
 
@@ -198,7 +200,11 @@ function Nachrichtzeile({
         (nachricht.reference_label ? ` · ${nachricht.reference_label}` : '')
       }
       meta={`${frist}${erste ? kuerzen(erste.body, 80) : ''}`}
-      status={<Badge ton={zustand.ton}>{zustand.wort}</Badge>}
+      status={
+        <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
+          {zustand.wort}
+        </Badge>
+      }
       to={to}
       gedaempft={gedaempft}
     />
@@ -482,7 +488,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
               <span className="text-ink block">Zu: {nachricht.reference_label}</span>
             ) : null}
             <span className="mt-2 block">
-              <Badge ton={zustand.ton}>
+              <Badge ton={zustand.ton} eigenesZeichen={zustand.zeichen}>
                 {zustand.wort}
                 {nachricht.status === 'open' && nachricht.due_on
                   ? ` · Antwort bis ${datum(nachricht.due_on)}`

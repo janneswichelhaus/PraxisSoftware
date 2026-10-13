@@ -295,7 +295,11 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
 
         if (!eintrag) {
           return (
-            <ZustandMitRueckweg appointmentId={appointment.id}>
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Nachtrag', appointment)}
+            >
               <ErrorState
                 title="Nicht gefunden"
                 description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
@@ -307,7 +311,11 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
         // Erwartbare Zustände mit dem nächsten Schritt, kein Alarm (DOK-12).
         if (eintrag.addendum_to_note_id !== null) {
           return (
-            <ZustandMitRueckweg appointmentId={appointment.id}>
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Nachtrag', appointment)}
+            >
               <EmptyState
                 title="Kein Nachtrag zum Nachtrag"
                 description="Ein Nachtrag ergänzt immer den ursprünglichen Eintrag. Bitte diesen ergänzen."
@@ -329,7 +337,11 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
 
         if (eintrag.status !== 'final') {
           return (
-            <ZustandMitRueckweg appointmentId={appointment.id}>
+            <ZustandMitRueckweg
+              appointmentId={appointment.id}
+              titel={patientName(appointment)}
+              beschreibung={kopfzeileFuer('Nachtrag', appointment)}
+            >
               <NochEinEntwurf
                 appointmentId={appointment.id}
                 eintrag={eintrag}

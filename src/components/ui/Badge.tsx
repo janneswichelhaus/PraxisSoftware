@@ -29,6 +29,27 @@ const zeichen: Partial<Record<Ton, string>> = {
 };
 
 /**
+ * Zeichen für Zustände ohne eigenen Ton (ANN-485, Regel 5 „Status = Zeichen
+ * + Wort“): `neutral` und `akzent` tragen von sich aus keins, ein Zustand
+ * braucht aber eins (Sichtung 13.10.2026, A6). Über `eigenesZeichen`:
+ *
+ *   * `fehlt` - (noch) nicht gegeben („Nicht erteilt“).
+ *   * `wartet` - liegt bei jemand anderem („bei der Praxis“).
+ *   * `abgelehnt` - bewusst nicht („Abgelehnt am …“), wie „× Abgesagt“.
+ *   * `unbekannt` - nicht geprüft („Fahrweg nicht geprüft“).
+ *   * `antwort` - eine Antwort liegt vor („beantwortet“).
+ *
+ * Kein „○“: In der Schrift der Anwendung las es sich als großes O.
+ */
+export const STATUSZEICHEN = {
+  fehlt: '–',
+  wartet: '…',
+  abgelehnt: '×',
+  unbekannt: '?',
+  antwort: '↩',
+} as const;
+
+/**
  * Kurzes Statuszeichen.
  *
  * Der Zustand steht immer als Text im Abzeichen, der Ton ergänzt ihn nur.

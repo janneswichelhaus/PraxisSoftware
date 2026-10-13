@@ -146,14 +146,24 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
       beschriftung="Zurück zur Verordnung"
     />
   ) : (
-    <Rueckweg standard={verordnungen} beschriftung="Zurück zu den Verordnungen" />
+    // Ohne Bericht keine Verordnung: zurück in den Reiter, beschriftet wie er
+    // heißt - „Zurück zu den Behandlungsgrundlagen“ (Sichtung 13.10.2026, A8).
+    <Rueckweg standard={verordnungen} />
+  );
+  // Laden und Fehler mit dem Kopf der Seite, wie die Warteliste (A7): Bis
+  // dahin stand die Meldung ohne Überschrift da.
+  const zustandKopf = (
+    <>
+      {rueckweg}
+      <PageHeader title="Therapiebericht" />
+    </>
   );
 
   if (!formularOffen) {
     if (bericht.isPending) {
       return (
         <>
-          {rueckweg}
+          {zustandKopf}
           <LoadingState label="Bericht wird geladen …" />
         </>
       );
@@ -162,7 +172,7 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
     if (bericht.isError && !bericht.data) {
       return (
         <>
-          {rueckweg}
+          {zustandKopf}
           <ErrorState
             title="Der Bericht konnte nicht geladen werden."
             description="Bitte die Verbindung prüfen und erneut versuchen."
@@ -174,7 +184,7 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
     if (!bericht.data) {
       return (
         <>
-          {rueckweg}
+          {zustandKopf}
           <ErrorState
             title="Bericht nicht gefunden"
             description="Vielleicht wurde der Entwurf inzwischen verworfen."
@@ -188,7 +198,7 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
     if (quellen.isPending) {
       return (
         <>
-          {rueckweg}
+          {zustandKopf}
           <LoadingState label="Einträge der Akte werden geladen …" />
         </>
       );
@@ -196,7 +206,7 @@ export function TherapieberichtPage({ user }: { user: CurrentUser }) {
     if (quellen.isError && !quellen.data) {
       return (
         <>
-          {rueckweg}
+          {zustandKopf}
           <ErrorState
             title="Die Einträge der Akte konnten nicht geladen werden."
             description="Bitte die Verbindung prüfen und erneut versuchen."

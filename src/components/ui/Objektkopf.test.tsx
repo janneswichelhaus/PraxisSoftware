@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Badge } from './Badge';
@@ -167,6 +167,71 @@ describe('Reiterleiste (Design-Fundament)', () => {
     expect(klassenVon(screen.getByRole('list'))).toEqual(
       expect.arrayContaining(['overflow-x-auto', 'sm:flex-wrap', 'sm:overflow-visible']),
     );
+  });
+
+  describe('Verlauf an den Rändern (Sichtung 13.10.2026, A1)', () => {
+    // Vier Reiter à 120 px, 300 px sichtbar - wie die Akte bei 375 px.
+    const VIER = [...REITER, { to: '/patienten/1/verordnungen', label: 'Grundlagen' }];
+    function geometrie() {
+      const breite = 300;
+      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(function (
+        this: Element,
+      ) {
+        return this.tagName === 'UL' ? VIER.length * 120 : 0;
+      });
+      vi.spyOn(Element.prototype, 'clientWidth', 'get').mockImplementation(function (
+        this: Element,
+      ) {
+        return this.tagName === 'UL' ? breite : 0;
+      });
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element,
+      ) {
+        const rechteck = (left: number, width: number) =>
+          ({ left, right: left + width, width, top: 0, bottom: 44, height: 44 }) as DOMRect;
+        if (this.tagName === 'UL') return rechteck(0, breite);
+        const liste = this.closest('ul');
+        const index = VIER.findIndex((eintrag) => eintrag.label === this.textContent);
+        return rechteck(index * 120 - (liste?.scrollLeft ?? 0), 120);
+      });
+    }
+    afterEach(() => vi.restoreAllMocks());
+
+    it('zeigt rechts „›", solange dort Reiter außer Sicht liegen, und links „‹", wenn gerollt', () => {
+      geometrie();
+      renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/termine');
+      const liste = screen.getByRole('list');
+      expect(document.querySelector('[data-verlauf="links"]')).toBeNull();
+      const rechts = document.querySelector('[data-verlauf="rechts"]')!;
+      expect(rechts).not.toBeNull();
+      expect(rechts).toHaveTextContent('›');
+      // Dekorativ, auf der weißen Karte, nur wo die Leiste rollt, nicht klickbar.
+      expect(rechts).toHaveAttribute('aria-hidden', 'true');
+      expect(klassenVon(rechts)).toEqual(
+        expect.arrayContaining(['from-surface', 'sm:hidden', 'pointer-events-none']),
+      );
+
+      // Ans Ende gerollt: rechts nichts mehr, links liegt jetzt etwas.
+      liste.scrollLeft = VIER.length * 120 - 300;
+      fireEvent.scroll(liste);
+      expect(document.querySelector('[data-verlauf="rechts"]')).toBeNull();
+      expect(document.querySelector('[data-verlauf="links"]')).toHaveTextContent('‹');
+    });
+
+    it('rollt den offenen Reiter so weit, dass er nicht unter dem Verlauf liegt', () => {
+      geometrie();
+      renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/stammdaten');
+      // „Stammdaten" liegt bei 240-360 px; rechts bleiben 48 px frei (Verlauf 40).
+      expect(screen.getByRole('list').scrollLeft).toBe(360 + 48 - 300);
+      expect(document.querySelector('[data-verlauf="links"]')).not.toBeNull();
+    });
+
+    it('zeigt keinen Verlauf, wo die Leiste umbricht und alles zu sehen ist', () => {
+      vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(300);
+      vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(300);
+      renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/termine');
+      expect(document.querySelector('[data-verlauf]')).toBeNull();
+    });
   });
 
   it('ist ohne end auch auf Unterseiten aktiv, mit end nur auf dem Pfad', () => {

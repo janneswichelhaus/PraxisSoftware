@@ -105,6 +105,10 @@ describe('Datenschutz der Akte', () => {
 
     // Etiketten beginnen groß (WRT-16).
     expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(2);
+    // Zeichen und Wort, auch ohne eigenen Ton (Regel 5, ANN-485).
+    for (const etikett of screen.getAllByText('Nicht erteilt')) {
+      expect(etikett).toHaveTextContent('–Nicht erteilt');
+    }
     // ANN-316: Die Einwilligung zu Fotos wird nicht mehr angeboten.
     expect(screen.queryByText('Fotos im Behandlungsverlauf')).toBeNull();
   });

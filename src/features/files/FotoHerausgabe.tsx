@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
@@ -108,30 +109,35 @@ export function FotoHerausgabe({ patientId }: { patientId: string }) {
   });
 
   return (
-    // Eine Liste wie die übrigen der Seite, also im Rahmen (DAT-21).
-    <Section
-      titel="Fotos herausgeben"
-      rahmen
-      hinweis="Zur vollständigen Kopie gehören die Fotos selbst, auch gesperrte. Hier entsteht je Foto eine Kopie für die Person (Art. 15 Abs. 3 und Art. 20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie wird protokolliert."
-    >
-      {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
-      {fotos.isError ? (
-        <ErrorState
-          title="Die Fotos konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => fotos.refetch()}
-        />
-      ) : null}
-      {fotos.data && fotos.data.length === 0 ? (
-        <EmptyState title="Keine Fotos" description="Für diese Person liegt kein Foto vor." />
-      ) : null}
-      {fotos.data && fotos.data.length > 0 ? (
-        <ul className="flex flex-col">
-          {fotos.data.map((foto) => (
-            <Zeile key={foto.id} foto={foto} />
-          ))}
-        </ul>
-      ) : null}
-    </Section>
+    <>
+      {/* Eine Liste wie die übrigen der Seite, also im Rahmen (DAT-21). Der
+          Rechtssatz steht als Kleingedrucktes unter der Karte, nicht unter dem
+          Titel (Regel 6; Sichtung 13.10.2026, A10). */}
+      <Section titel="Fotos herausgeben" rahmen>
+        {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
+        {fotos.isError ? (
+          <ErrorState
+            title="Die Fotos konnten nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => fotos.refetch()}
+          />
+        ) : null}
+        {fotos.data && fotos.data.length === 0 ? (
+          <EmptyState title="Keine Fotos" description="Für diese Person liegt kein Foto vor." />
+        ) : null}
+        {fotos.data && fotos.data.length > 0 ? (
+          <ul className="flex flex-col">
+            {fotos.data.map((foto) => (
+              <Zeile key={foto.id} foto={foto} />
+            ))}
+          </ul>
+        ) : null}
+      </Section>
+      <Kleingedrucktes className="mt-2">
+        Zur vollständigen Kopie gehören die Fotos selbst, auch gesperrte. Hier entsteht je Foto eine
+        Kopie für die Person (Art. 15 Abs. 3 und Art. 20 DSGVO) – der einzige Weg, auf dem ein Foto
+        die Anwendung verlässt. Jede Kopie wird protokolliert.
+      </Kleingedrucktes>
+    </>
   );
 }

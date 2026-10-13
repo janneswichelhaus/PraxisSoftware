@@ -27,7 +27,7 @@ import {
 } from './api';
 import { QrCode } from './QrCode';
 import { Vertretungen } from './Vertretungen';
-import { ZUSTAND, anzeigezustand } from './zustand';
+import { ZUSTAND, anzeigezustand, usePlattformzugang, zugangBeendbar } from './zustand';
 
 /**
  * Der Abschnitt „Plattform" an Akte und Trainingsverhältnis (POR-002,
@@ -45,6 +45,11 @@ import { ZUSTAND, anzeigezustand } from './zustand';
  *
  * Darunter stehen die Vertretungen (POR-005): eigene Konten, die für die
  * Person handeln, mit eigenem Zugang zu diesem Verhältnis.
+ *
+ * Mit `beendenAmEnde` fehlen „Sperren“ und „Entziehen“ hier; die Seite setzt
+ * sie mit `PlattformzugangBeenden` leise ans Ende des Reiters (Objekt-Rezeptur,
+ * DESIGN.md 9.16; Sichtung 13.10.2026, A5). „Entsperren“ bleibt im Abschnitt:
+ * Es nimmt etwas zurück, statt etwas zu beenden.
  */
 export function PlattformAbschnitt({
   art,
@@ -52,6 +57,7 @@ export function PlattformAbschnitt({
   darfVerwalten,
   zeitzone,
   praxis,
+  beendenAmEnde = false,
 }: {
   art: Verhaeltnisart;
   verhaeltnisId: string;
@@ -59,6 +65,8 @@ export function PlattformAbschnitt({
   zeitzone: string;
   /** Name der Praxis für den Wortlaut der Einwilligung zur Begleitung. */
   praxis: string;
+  /** Sperren und Entziehen stehen am Ende der Seite (`PlattformzugangBeenden`). */
+  beendenAmEnde?: boolean;
 }) {
   const schluessel = zugangsschluessel(art, verhaeltnisId);
   const { data, isPending, isError, refetch } = useQuery({
@@ -93,6 +101,7 @@ export function PlattformAbschnitt({
             zugang={data ?? null}
             darfVerwalten={darfVerwalten}
             zeitzone={zeitzone}
+            beendenAmEnde={beendenAmEnde}
             onEinladungVorOrt={(e) => setEinladung({ einladung: e })}
           />
           <Vertretungen
@@ -115,6 +124,7 @@ function Zustand({
   zugang,
   darfVerwalten,
   zeitzone,
+  beendenAmEnde,
   onEinladungVorOrt,
 }: {
   art: Verhaeltnisart;
@@ -122,6 +132,7 @@ function Zustand({
   zugang: Plattformzugang | null;
   darfVerwalten: boolean;
   zeitzone: string;
+  beendenAmEnde: boolean;
   onEinladungVorOrt: (einladung: Einladung) => void;
 }) {
   const queryClient = useQueryClient();
@@ -137,14 +148,6 @@ function Zustand({
   });
   const versenden = useMutation({
     mutationFn: (e: Einladung) => sendPlatformInvitation(e.invitation_id, e.code),
-  });
-  const sperren = useMutation({
-    mutationFn: (sperre: boolean) => setPlatformAccessLocked(zugang?.id ?? '', sperre),
-    onSuccess: neuLaden,
-  });
-  const entziehen = useMutation({
-    mutationFn: () => revokePlatformAccess(zugang?.id ?? ''),
-    onSuccess: neuLaden,
   });
 
   async function vorOrt() {
@@ -257,39 +260,141 @@ function Zustand({
           {zugang?.id && (aktiv || eingeladen) ? (
             <EinstiegUeberspringen zugangId={zugang.id} />
           ) : null}
-          {aktiv || gesperrt ? (
-            <Rueckfrage
+          {(aktiv && !beendenAmEnde) || gesperrt ? (
+            <SperrenFrage
+              art={art}
+              verhaeltnisId={verhaeltnisId}
+              zugangId={zugang?.id ?? ''}
+              sperre={aktiv}
               ausloeser={aktiv ? 'Sperren' : 'Entsperren'}
-              bestaetigen={aktiv ? 'Sperren' : 'Entsperren'}
-              bestaetigenLaeuft={aktiv ? 'Wird gesperrt …' : 'Wird entsperrt …'}
-              fehler={sperren.error?.message}
-              onBestaetigen={() => sperren.mutateAsync(aktiv)}
-            >
-              <p>
-                {aktiv
-                  ? 'Die Person sieht ab sofort nichts mehr auf der Plattform. Das lässt sich zurücknehmen.'
-                  : 'Die Person kann die Plattform wieder nutzen.'}
-              </p>
-            </Rueckfrage>
+            />
           ) : null}
-          {aktiv || gesperrt || eingeladen ? (
-            <Rueckfrage
+          {(aktiv || gesperrt || eingeladen) && !beendenAmEnde ? (
+            <EntziehenFrage
+              art={art}
+              verhaeltnisId={verhaeltnisId}
+              zugangId={zugang?.id ?? ''}
               ausloeser="Entziehen"
-              ausloeserVariante="quiet"
-              bestaetigen="Zugang entziehen"
-              bestaetigenLaeuft="Wird entzogen …"
-              fehler={entziehen.error?.message}
-              onBestaetigen={() => entziehen.mutateAsync()}
-            >
-              <p>
-                Der Zugang endet endgültig. Ein neuer braucht eine neue Einladung. An der Akte und
-                am Verhältnis ändert sich nichts.
-              </p>
-            </Rueckfrage>
+            />
           ) : null}
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** Sperren oder Entsperren eines Zugangs, erst nach der Rückfrage. */
+function SperrenFrage({
+  art,
+  verhaeltnisId,
+  zugangId,
+  sperre,
+  ausloeser,
+  variante = 'secondary',
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  zugangId: string;
+  /** `true` sperrt, `false` entsperrt. */
+  sperre: boolean;
+  ausloeser: string;
+  variante?: 'secondary' | 'quiet';
+}) {
+  const queryClient = useQueryClient();
+  const sperren = useMutation({
+    mutationFn: () => setPlatformAccessLocked(zugangId, sperre),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: zugangsschluessel(art, verhaeltnisId) }),
+  });
+  return (
+    <Rueckfrage
+      ausloeser={ausloeser}
+      ausloeserVariante={variante}
+      bestaetigen={sperre ? 'Sperren' : 'Entsperren'}
+      bestaetigenLaeuft={sperre ? 'Wird gesperrt …' : 'Wird entsperrt …'}
+      fehler={sperren.error?.message}
+      onBestaetigen={() => sperren.mutateAsync()}
+    >
+      <p>
+        {sperre
+          ? 'Die Person sieht ab sofort nichts mehr auf der Plattform. Das lässt sich zurücknehmen.'
+          : 'Die Person kann die Plattform wieder nutzen.'}
+      </p>
+    </Rueckfrage>
+  );
+}
+
+/** Einen Zugang endgültig entziehen, erst nach der Rückfrage. */
+function EntziehenFrage({
+  art,
+  verhaeltnisId,
+  zugangId,
+  ausloeser,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+  zugangId: string;
+  ausloeser: string;
+}) {
+  const queryClient = useQueryClient();
+  const entziehen = useMutation({
+    mutationFn: () => revokePlatformAccess(zugangId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: zugangsschluessel(art, verhaeltnisId) }),
+  });
+  return (
+    <Rueckfrage
+      ausloeser={ausloeser}
+      ausloeserVariante="quiet"
+      bestaetigen="Zugang entziehen"
+      bestaetigenLaeuft="Wird entzogen …"
+      fehler={entziehen.error?.message}
+      onBestaetigen={() => entziehen.mutateAsync()}
+    >
+      <p>
+        Der Zugang endet endgültig. Ein neuer braucht eine neue Einladung. An der Akte und am
+        Verhältnis ändert sich nichts.
+      </p>
+    </Rueckfrage>
+  );
+}
+
+/**
+ * Sperren und Entziehen des Zugangs als leise Auslöser am Ende einer Seite
+ * (Sichtung 13.10.2026, A5) - gegenüber `PlattformAbschnitt` mit
+ * `beendenAmEnde`. Liest denselben Zugang (derselbe Abfrageschlüssel, eine
+ * Anfrage). Ohne Zugang, der sich beenden ließe, steht nichts. Wer verwalten
+ * darf, entscheidet die Seite; verbindlich prüft der Server (ADR-004).
+ */
+export function PlattformzugangBeenden({
+  art,
+  verhaeltnisId,
+}: {
+  art: Verhaeltnisart;
+  verhaeltnisId: string;
+}) {
+  const zugang = usePlattformzugang(art, verhaeltnisId);
+  if (!zugang?.id || !zugangBeendbar(zugang)) return null;
+  const aktiv = anzeigezustand(zugang) === 'active';
+  return (
+    <>
+      {aktiv ? (
+        <SperrenFrage
+          art={art}
+          verhaeltnisId={verhaeltnisId}
+          zugangId={zugang.id}
+          sperre
+          ausloeser="Plattformzugang sperren"
+          variante="quiet"
+        />
+      ) : null}
+      <EntziehenFrage
+        art={art}
+        verhaeltnisId={verhaeltnisId}
+        zugangId={zugang.id}
+        ausloeser="Plattformzugang entziehen"
+      />
+    </>
   );
 }
 

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { rolleInsBild } from './waagerechtRollen';
+import { rolleInsBild, useRandVerlauf, VERLAUF_FREI_PX } from './waagerechtRollen';
 
 export interface Reiter {
   /** Ziel des Reiters, samt Suchteil (etwa dem Rückweg des Objekts). */
@@ -8,6 +8,47 @@ export interface Reiter {
   label: string;
   /** Aktiv nur auf genau diesem Pfad; ohne Angabe auch auf allem darunter. */
   end?: boolean;
+}
+
+const verlaufKlassen =
+  'from-surface text-line-strong pointer-events-none absolute inset-y-0 flex w-10 items-center to-transparent text-xl sm:hidden';
+
+/**
+ * Der Hinweis, dass in einer waagerecht rollenden Reiterreihe links oder
+ * rechts noch Reiter liegen: ein Verlauf von Weiß nach durchsichtig mit „‹"
+ * oder „›" am Rand - dasselbe Prinzip wie in der `SubNav` (Sichtung vom
+ * 13.10.2026, A1: bei 375 px standen Reste wie „Stammd" oder „oku" ohne
+ * Hinweis auf weitere Reiter).
+ *
+ * Steht im `nav` der Reihe, das dafür `relative` ist; `links` und `rechts`
+ * misst `useRandVerlauf`. Rein dekorativ und nicht klickbar: Was dahinter
+ * liegt, erreicht man durch Wischen, Vorlesesoftware liest die ganze Liste.
+ * Von Weiß (`surface`), weil die Reihe in der Karte des `Objektkopf`s steht;
+ * nur unter 640 px, darüber bricht die Reihe um.
+ */
+export function Randverlauf({ links, rechts }: { links: boolean; rechts: boolean }) {
+  return (
+    <>
+      {links ? (
+        <span
+          aria-hidden="true"
+          data-verlauf="links"
+          className={`${verlaufKlassen} left-0 justify-start bg-linear-to-r pl-1`}
+        >
+          ‹
+        </span>
+      ) : null}
+      {rechts ? (
+        <span
+          aria-hidden="true"
+          data-verlauf="rechts"
+          className={`${verlaufKlassen} right-0 justify-end bg-linear-to-l pr-1`}
+        >
+          ›
+        </span>
+      ) : null}
+    </>
+  );
 }
 
 /**
@@ -24,8 +65,9 @@ export interface Reiter {
  * ist (Pille). Zwei gleich aussehende Reihen übereinander wären ein Rätsel.
  *
  * Schmal scrollt die Reihe waagerecht, statt in zwei Zeilen umzubrechen, und
- * der offene Reiter rollt ins Bild (PAT-01, RSP-04). Ab 640 px bricht sie um:
- * Mit der Maus gibt es keine Wischgeste.
+ * der offene Reiter rollt ins Bild (PAT-01, RSP-04) - so weit, dass er vor
+ * dem `Randverlauf` steht, der zeigt, dass es weitergeht. Ab 640 px bricht
+ * sie um: Mit der Maus gibt es keine Wischgeste.
  */
 export function Reiterleiste({ reiter, label }: { reiter: readonly Reiter[]; label: string }) {
   const { pathname } = useLocation();
@@ -36,11 +78,13 @@ export function Reiterleiste({ reiter, label }: { reiter: readonly Reiter[]; lab
   // sonst nicht zu sehen.
   useLayoutEffect(() => {
     const aktiv = liste.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (liste.current && aktiv) rolleInsBild(liste.current, aktiv);
+    if (liste.current && aktiv) rolleInsBild(liste.current, aktiv, VERLAUF_FREI_PX);
   }, [pathname]);
+  // Nach dem Rollen gemessen: Erst dann steht fest, was links und rechts fehlt.
+  const rand = useRandVerlauf(liste, pathname);
 
   return (
-    <nav aria-label={label} className="border-line border-t">
+    <nav aria-label={label} className="border-line relative border-t">
       <ul
         ref={liste}
         className="flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3"
@@ -57,6 +101,7 @@ export function Reiterleiste({ reiter, label }: { reiter: readonly Reiter[]; lab
           </li>
         ))}
       </ul>
+      <Randverlauf {...rand} />
     </nav>
   );
 }
