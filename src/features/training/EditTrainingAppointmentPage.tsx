@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -44,31 +45,29 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
       />
     );
   }
-  if (termin.isPending) return <LoadingState label="Formular wird vorbereitet …" />;
-  if (termin.isError) {
-    return (
-      <>
-        <Rueckweg standard={zurueck} />
-        <ErrorState
-          title="Der Trainingstermin konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => termin.refetch()}
-        />
-      </>
-    );
-  }
   const t = termin.data;
   if (!t || t.status !== 'confirmed') {
     return (
       <>
         <Rueckweg standard={zurueck} />
-        <EmptyState
-          title={
-            t
-              ? 'Nur ein bestätigter Termin lässt sich verschieben'
-              : 'Trainingstermin nicht gefunden'
-          }
-        />
+        <PageHeader title="Trainingstermin verschieben" />
+        <Abfragezustand
+          abfrage={termin}
+          laden="Formular wird vorbereitet …"
+          fehler="Der Trainingstermin konnte nicht geladen werden."
+          inKarte
+        >
+          {(geladen) => (
+            <EmptyState
+              inKarte
+              title={
+                geladen
+                  ? 'Nur ein bestätigter Termin lässt sich verschieben'
+                  : 'Trainingstermin nicht gefunden'
+              }
+            />
+          )}
+        </Abfragezustand>
       </>
     );
   }
