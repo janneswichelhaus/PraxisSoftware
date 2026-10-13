@@ -131,11 +131,12 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
 
       {/* Suche offen, die Beschäftigung am Telefon hinter „Filter“
           (Filterleiste, ANN-405). Der Baustein `Select` mit 48 px wie das
-          Suchfeld (ORG-16, TOK-13, UIK-19). */}
+          Suchfeld (ORG-16, TOK-13, UIK-19). Der Platzhalter passt bei 375 px
+          ganz ins Feld (R2-O10). */}
       <Filterleiste
         suche={
           <SearchField
-            placeholder="Name, dienstliche Erreichbarkeit, Standort"
+            placeholder="Name, Telefon, E-Mail, Standort"
             value={query}
             onChange={updateQuery}
           />
