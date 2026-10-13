@@ -155,18 +155,18 @@ describe('TreatmentNotePage', () => {
   });
 
   describe('Rückweg (DOK-01, NAV-03, ZST-17)', () => {
-    it('behält den mitgereisten Rückweg für Kopf, „Abbrechen“ und den Weg nach dem Speichern', async () => {
+    it('behält den mitgereisten Rückweg für den Pfeil im Kopf und den Weg nach dem Speichern', async () => {
       const user = userEvent.setup();
       rendern(['therapist'], '?zurueck=%2F');
 
       await waitFor(() => expect(feld()).toHaveValue(''));
-      // Kopf: dorthin, woher die Person kam - hier die Übersicht.
+      // Der Pfeil im Kopf der Schreibfläche ist der Weg hinaus (wie auf der
+      // Schreibseite): dorthin, woher die Person kam - hier die Übersicht.
       expect(screen.getByRole('link', { name: /Zurück zur Übersicht/ })).toHaveAttribute(
         'href',
         '/',
       );
-      // „Abbrechen“ und nach dem Speichern: zum Termin, der den Rückweg behält.
-      expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/');
+      // Nach dem Speichern: zum Termin, der den Rückweg behält.
 
       await user.type(feld(), 'Neuer synthetischer Eintrag.');
       await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
@@ -369,8 +369,8 @@ describe('TreatmentNotePage', () => {
       rendern();
       await myofaszial(user);
       await user.type(feld(), ' Ergänzt.');
-      await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
-      await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+      await user.click(screen.getByRole('link', { name: /Zurück zum Kalender/ }));
+      await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
 
       await waitFor(() =>
         expect(updateTreatmentNote).toHaveBeenCalledWith(DOKU_ID, STAND, `${INHALT} Ergänzt.`),
@@ -440,7 +440,8 @@ describe('TreatmentNotePage', () => {
     await user.type(feld(), ' Eigener Zusatz.');
     await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
 
-    expect(await screen.findByText('Nicht gespeichert')).toBeInTheDocument();
+    // Als Zeile über der Aktionsleiste, wie auf der Schreibseite.
+    expect(await screen.findByText(/^Nicht gespeichert:/)).toBeInTheDocument();
     expect(
       screen.getByText(/zwischenzeitlich von einer anderen Person geändert/),
     ).toBeInTheDocument();
@@ -580,7 +581,7 @@ describe('TreatmentNotePage', () => {
     expect(ursprung.closest('details')!.open).toBe(false);
 
     await user.type(nachtragsfeld, ' Ergaenzt.');
-    await user.click(screen.getByRole('button', { name: 'Nachtrag festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
     // Erst sichern, dann auf dem neuen Stand finalisieren.
     await waitFor(() =>
@@ -604,14 +605,14 @@ describe('TreatmentNotePage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(''));
     await user.type(feld(), 'Noch nicht gespeichert.');
-    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('link', { name: /Zurück zum Kalender/ }));
 
-    // Die Rückfrage stellt seit FIX-011 der Navigationsschutz: derselbe Kasten
-    // für „Abbrechen", das Hauptmenü, den Patientenwechsel und das Zurück des
-    // Browsers.
-    expect(await screen.findByText(/Beim Weitergehen geht er verloren/)).toBeInTheDocument();
+    // Die Rückfrage stellt seit FIX-011 der Navigationsschutz: dieselbe Zeile
+    // für den Pfeil im Kopf, das Hauptmenü, den Patientenwechsel und das
+    // Zurück des Browsers - über der Aktionsleiste, wie auf der Schreibseite.
+    expect(await screen.findByText('Text noch nicht gespeichert.')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Hier bleiben' }));
+    await user.click(screen.getByRole('button', { name: 'Weiterschreiben' }));
     expect(feld()).toHaveValue('Noch nicht gespeichert.');
     expect(
       screen.queryByRole('group', { name: 'Ungespeicherte Dokumentation' }),
@@ -629,8 +630,8 @@ describe('TreatmentNotePage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(''));
     await user.type(feld(), 'Noch nicht gespeichert.');
-    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
-    await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+    await user.click(screen.getByRole('link', { name: /Zurück zum Kalender/ }));
+    await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
 
     await waitFor(() =>
       expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Noch nicht gespeichert.'),
@@ -706,7 +707,8 @@ describe('TreatmentNotePage', () => {
     expect(screen.queryByText('Befund aus Bausteinen')).toBeNull();
 
     await user.type(nachtragsfeld, ' Ergaenzt.');
-    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+    // Neben „Festschreiben“ heißt der Entwurfsweg kurz, wie auf der Schreibseite.
+    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
     await waitFor(() => {
       expect(updateTreatmentNote).toHaveBeenCalledWith(
@@ -742,8 +744,10 @@ describe('TreatmentNotePage', () => {
 
     expect(await screen.findByText('Bereits finalisiert')).toBeInTheDocument();
     expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
-    // Ein erwartbarer Zustand, kein Alarm - mit dem nächsten Schritt (DOK-12).
+    // Ein erwartbarer Zustand, kein Alarm - mit dem nächsten Schritt und dem
+    // Weg zurück (DOK-12).
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('link', { name: /Zurück zur Übersicht/ })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Nachtrag hinzufügen' })).toHaveAttribute(
       'href',
       `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag?zurueck=%2F`,

@@ -49,7 +49,7 @@ export const GRENZEN: Record<
 
     'features/datenschutz': 2,
 
-    'features/documentation': 8,
+    'features/documentation': 1,
 
     'features/exercise-plans': 4,
 
@@ -105,8 +105,6 @@ export const GRENZEN: Record<
     'features/checkins': 1,
 
     'features/datenschutz': 1,
-
-    'features/documentation': 2,
 
     'features/files': 1,
 

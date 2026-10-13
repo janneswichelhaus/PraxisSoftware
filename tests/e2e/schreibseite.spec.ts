@@ -92,3 +92,36 @@ test('beginnt das Feld am kleinen Telefon in der oberen Hälfte (BEF-001)', asyn
   expect(feld.y).toBeLessThanOrEqual(200);
   expect(feld.y + feld.height).toBeLessThanOrEqual(667);
 });
+
+// Design-Rollout B4: Nachtrag, Nachtrag bearbeiten, Korrektur und Verlauf
+// stehen in derselben Hülle wie die Schreibseite - Pfeil und Name im Kopf,
+// die Knöpfe in der Aktionsleiste über der Tableiste.
+for (const [ansicht, knopf] of [
+  ['nachtrag', 'Festschreiben'],
+  ['nachtrag-entwurf', 'Festschreiben'],
+  ['korrektur', 'Korrektur festschreiben'],
+] as const) {
+  for (const breite of [375, 1280]) {
+    test(`hält in der Hülle (${ansicht}) den Hauptknopf im Bild (${breite} px)`, async ({
+      page,
+    }) => {
+      await oeffne(page, breite, ansicht);
+      const haupt = page.getByRole('button', { name: knopf, exact: true });
+      await expect(haupt).toBeInViewport();
+      const box = (await haupt.boundingBox())!;
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      if (breite < 640) expect(box.y + box.height).toBeLessThanOrEqual(760 - 56);
+      await expect(page.getByRole('link', { name: /^Zurück/ })).toBeInViewport();
+      await ohneUeberlauf(page);
+    });
+  }
+}
+
+test('zeigt den Änderungsverlauf in der Hülle, jede Version für sich (375 px)', async ({
+  page,
+}) => {
+  await oeffne(page, 375, 'verlauf');
+  await expect(page.getByText(/^Änderungsverlauf · Eintrag · /)).toBeVisible();
+  await expect(page.getByLabel('Version 2').getByText('Geltende Fassung')).toBeVisible();
+  await ohneUeberlauf(page);
+});

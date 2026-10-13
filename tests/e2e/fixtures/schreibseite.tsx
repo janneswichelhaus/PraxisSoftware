@@ -1,10 +1,19 @@
+import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { Appointment } from '@/features/appointments/api';
 import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
 import { CompleteTreatmentPage } from '@/features/documentation/CompleteTreatmentPage';
-import type { PatientTreatmentNotesEntry, TreatmentNote } from '@/features/documentation/api';
+import { TreatmentNoteAddendumPage } from '@/features/documentation/TreatmentNoteAddendumPage';
+import { TreatmentNoteHistoryPage } from '@/features/documentation/TreatmentNoteHistoryPage';
+import { TreatmentNotePage } from '@/features/documentation/TreatmentNotePage';
+import { TreatmentNoteRevisionPage } from '@/features/documentation/TreatmentNoteRevisionPage';
+import type {
+  PatientTreatmentNotesEntry,
+  TreatmentNote,
+  TreatmentNoteVersion,
+} from '@/features/documentation/api';
 import type { TextSnippet } from '@/features/documentation/textbausteine';
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
@@ -14,8 +23,10 @@ import '@/index.css';
  * Abschnitt 6a): die eine Schreibseite im Rahmen des Inhaltsbereichs, mit
  * einer Tableiste am Telefon. Ansichten über `?ansicht=`: `neu` (leeres Feld),
  * `entwurf` (vorhandener Entwurf) und `tuer` (Hausbesuch-Szenario 1, „Mit
- * Vermerk festschreiben"). Die Daten liegen vorab im Cache; gesprochen wird
- * mit keinem Server. Alles ist synthetisch.
+ * Vermerk festschreiben"). Dazu die übrigen Wege eines Eintrags in derselben
+ * Hülle (Design-Rollout B4): `nachtrag`, `nachtrag-entwurf` (Nachtrag
+ * bearbeiten), `korrektur` und `verlauf`. Die Daten liegen vorab im Cache;
+ * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const ansicht = new URLSearchParams(window.location.search).get('ansicht') ?? 'neu';
 
@@ -95,6 +106,48 @@ function note(teil: Partial<TreatmentNote>): TreatmentNote {
   };
 }
 
+const FESTGESCHRIEBEN = note({
+  content:
+    'Synthetisch: Schulter rechts, Elevation aktiv bis 140°. Übungen im Stand wiederholt; Theraband gelb mitgegeben.',
+  version_count: 2,
+});
+
+const NACHTRAG_ID = '99999999-9999-4999-8999-000000000002';
+const nachtragEntwurf = note({
+  id: NACHTRAG_ID,
+  addendum_to_note_id: FESTGESCHRIEBEN.id,
+  status: 'draft',
+  content: 'Synthetisch: Nachgereicht – Heimprogramm telefonisch bestätigt.',
+  finalized_at: null,
+  finalisation_kind: null,
+  version_count: 0,
+});
+
+const versionen: TreatmentNoteVersion[] = [
+  {
+    version_no: 1,
+    content: 'Synthetisch: Schulter rechts, Elevation aktiv bis 130°. Übungen im Stand wiederholt.',
+    change_reason: null,
+    recorded_at: '2026-09-28T09:05:00.000000+00:00',
+    author_name: 'Anna Beispiel',
+  },
+  {
+    version_no: 2,
+    content: FESTGESCHRIEBEN.content,
+    change_reason: 'Zahlendreher beim Winkel.',
+    recorded_at: '2026-09-29T07:30:00.000000+00:00',
+    author_name: 'Anna Beispiel',
+  },
+];
+
+const WEGE: Record<string, string> = {
+  nachtrag: `/termine/${TERMIN}/dokumentation/${FESTGESCHRIEBEN.id}/nachtrag`,
+  'nachtrag-entwurf': `/termine/${TERMIN}/dokumentation/${NACHTRAG_ID}/bearbeiten`,
+  korrektur: `/termine/${TERMIN}/dokumentation/${FESTGESCHRIEBEN.id}/korrektur`,
+  verlauf: `/termine/${TERMIN}/dokumentation/${FESTGESCHRIEBEN.id}/verlauf`,
+};
+const weg = WEGE[ansicht];
+
 const entwurf = note({
   status: 'draft',
   content: 'Synthetisch: Schulter rechts, Elevation aktiv bis 140°. Übungen im Stand wiederholt.',
@@ -160,10 +213,16 @@ const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
 client.setQueryData(['appointment', TERMIN], termin);
-client.setQueryData(['treatment-note', TERMIN], {
-  primary: ansicht === 'entwurf' ? entwurf : null,
-  addenda: [],
-});
+client.setQueryData(
+  ['treatment-note', TERMIN],
+  weg
+    ? {
+        primary: FESTGESCHRIEBEN,
+        addenda: ansicht === 'nachtrag-entwurf' ? [nachtragEntwurf] : [],
+      }
+    : { primary: ansicht === 'entwurf' ? entwurf : null, addenda: [] },
+);
+client.setQueryData(['treatment-note-versions', FESTGESCHRIEBEN.id], versionen);
 client.setQueryData(['appointment', TERMIN, 'abrechnungslage'], lage);
 client.setQueryData(['text-snippets'], bausteine);
 client.setQueryData(
@@ -184,24 +243,64 @@ client.setQueryData(
 
 const suche = ansicht === 'tuer' ? '?ohne-behandlung=1&zurueck=%2F' : '?zurueck=%2F';
 
+/** Derselbe Inhaltsbereich wie in der Anwendung (AppShell), mit Tableiste am Telefon. */
+export function Rahmen({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <main className="max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12">
+        {children}
+      </main>
+      {/* Platzhalter der Tableiste am Telefon. */}
+      <div className="border-line bg-surface fixed inset-x-0 bottom-0 z-30 h-14 border-t sm:hidden" />
+    </>
+  );
+}
+
 const router = createMemoryRouter(
   [
     {
       path: '/termine/:appointmentId/abschluss',
       element: (
-        <>
-          {/* Derselbe Inhaltsbereich wie in der Anwendung (AppShell). */}
-          <main className="max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12">
-            <CompleteTreatmentPage user={benutzer} />
-          </main>
-          {/* Platzhalter der Tableiste am Telefon. */}
-          <div className="border-line bg-surface fixed inset-x-0 bottom-0 z-30 h-14 border-t sm:hidden" />
-        </>
+        <Rahmen>
+          <CompleteTreatmentPage user={benutzer} />
+        </Rahmen>
+      ),
+    },
+    {
+      path: '/termine/:appointmentId/dokumentation/:noteId/nachtrag',
+      element: (
+        <Rahmen>
+          <TreatmentNoteAddendumPage user={benutzer} />
+        </Rahmen>
+      ),
+    },
+    {
+      path: '/termine/:appointmentId/dokumentation/:noteId/bearbeiten',
+      element: (
+        <Rahmen>
+          <TreatmentNotePage user={benutzer} />
+        </Rahmen>
+      ),
+    },
+    {
+      path: '/termine/:appointmentId/dokumentation/:noteId/korrektur',
+      element: (
+        <Rahmen>
+          <TreatmentNoteRevisionPage user={benutzer} />
+        </Rahmen>
+      ),
+    },
+    {
+      path: '/termine/:appointmentId/dokumentation/:noteId/verlauf',
+      element: (
+        <Rahmen>
+          <TreatmentNoteHistoryPage user={benutzer} />
+        </Rahmen>
       ),
     },
     { path: '*', element: <p>Ende der Prüfseite.</p> },
   ],
-  { initialEntries: [`/termine/${TERMIN}/abschluss${suche}`] },
+  { initialEntries: [`${weg ?? `/termine/${TERMIN}/abschluss`}${suche}`] },
 );
 
 createRoot(document.getElementById('wurzel')!).render(

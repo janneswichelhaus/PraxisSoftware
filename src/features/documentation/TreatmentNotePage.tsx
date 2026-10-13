@@ -2,27 +2,24 @@ import { useId, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { leseMeldung } from '@/features/appointments/terminformular';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { Aufklappzeichen } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
-import { TextArea } from '@/components/ui/TextArea';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
-import {
-  formatLocalDate,
-  formatLocalTimeRange,
-  patientName,
-  type Appointment,
-} from '@/features/appointments/api';
+import { patientName, type Appointment } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';
-import { FREITEXT, statuswechselText, type Statuswechsel } from './format';
+import { kopfzeileFuer, statuswechselText, type Statuswechsel } from './format';
+import {
+  Schreibfeld,
+  Schreibflaeche,
+  Ursprungseintrag,
+  ZustandMitRueckweg,
+} from './Schreibflaeche';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
@@ -85,9 +82,9 @@ function Editor({
   const ortZustand: unknown = useLocation().state;
   // Was die Übernahme im Konfliktfall angelegt hat, sagt die Seite einmal (BEF-056).
   const [eingangsmeldung] = useState(() => leseMeldung(ortZustand));
-  const zone = appointment.organization_time_zone;
   const feldId = useId();
   const folgeId = useId();
+  const fristId = useId();
 
   const istNachtrag = note?.addendum_to_note_id != null;
 
@@ -170,6 +167,8 @@ function Editor({
   const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert: geaendert,
     speichern: entwurfSichern,
+    // Als Zeile über der Aktionsleiste, wie auf der Schreibseite.
+    kompakt: true,
     // Von selbst nur, was sich sichern lässt: kein leeres oder zu langes Feld,
     // kein Eintrag, der inzwischen finalisiert oder dessen Termin abgesagt ist
     // (BEF-056, ANN-319).
@@ -259,26 +258,35 @@ function Editor({
     });
   }
 
-  return (
-    <>
-      <PageHeader
-        title={istNachtrag ? 'Nachtrag bearbeiten' : 'Behandlungsdokumentation'}
-        description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
-        kompakt
-      />
+  const nachtragFestschreibbar = istNachtrag && !wechsel;
 
-      <form onSubmit={absenden} noValidate className="max-w-2xl">
-        {/* Hat sich der Stand geändert, während hier geschrieben wurde, bleibt
-            das Feld stehen und sagt es (DOK-B01) - statt samt Text zu
-            verschwinden. */}
+  return (
+    <Schreibflaeche
+      zurueck={eingehend || zumTermin}
+      titel={patientName(appointment)}
+      kopfzeile={kopfzeileFuer(istNachtrag ? 'Nachtrag' : 'Dokumentation', appointment)}
+      leiste={
+        <TextbausteinLeiste alsChips onEinfuegen={(text, titel) => einfuegen(titel, wert, text)} />
+      }
+    >
+      {/* Beim Bearbeiten eines Nachtrags steht der Ursprung zugeklappt
+          darüber, wie beim Anlegen (BEF-056, BEF-057). */}
+      {istNachtrag && ursprung ? <Ursprungseintrag inhalt={ursprung.content} /> : null}
+
+      <form onSubmit={absenden} noValidate className="flex min-w-0 flex-1 flex-col">
+        {/* Was die Übernahme im Konfliktfall angelegt hat, sagt die Seite
+            einmal (BEF-056). */}
         {eingangsmeldung && !geaendert ? (
-          <Statusmeldung ton="erfolg" className="mb-3">
+          <Statusmeldung ton="erfolg" className="shrink-0 px-4 py-2">
             {eingangsmeldung}
           </Statusmeldung>
         ) : null}
 
+        {/* Hat sich der Stand geändert, während hier geschrieben wurde, bleibt
+            das Feld stehen und sagt es (DOK-B01) - statt samt Text zu
+            verschwinden. */}
         {wechsel ? (
-          <Statusmeldung ton="warnung" className="mb-3">
+          <Statusmeldung ton="warnung" className="shrink-0 px-4 py-2">
             {statuswechselText(wechsel, geaendert)}
           </Statusmeldung>
         ) : null}
@@ -287,121 +295,107 @@ function Editor({
             zu einem Nachtrag gibt es keinen weiteren (ADR-016 Punkt 6) - oder
             als Korrektur mit Begründung. */}
         {wechsel === 'finalisiert' && textGeaendert && note ? (
-          <TextUebernehmen
-            nachtragMoeglich={!istNachtrag}
-            gesperrt={laeuft}
-            onNachtrag={uebernahme.alsNachtrag}
-            onKorrektur={uebernahme.inKorrektur}
-          />
+          <div className="shrink-0 px-4 py-2">
+            <TextUebernehmen
+              className=""
+              nachtragMoeglich={!istNachtrag}
+              gesperrt={laeuft}
+              onNachtrag={uebernahme.alsNachtrag}
+              onKorrektur={uebernahme.inKorrektur}
+            />
+          </div>
         ) : null}
 
-        {/* Beim Bearbeiten eines Nachtrags steht der Ursprung zugeklappt
-            darüber, wie beim Anlegen (BEF-056, BEF-057). */}
-        {istNachtrag && ursprung ? (
-          <details className="group border-line mb-4 border-y">
-            <summary className={`${aufklappKopfKlassen} text-ink min-h-12 text-sm`}>
-              <Aufklappzeichen />
-              <span className="tracking-label text-ink-muted shrink-0 text-xs font-semibold uppercase">
-                Ursprünglicher Eintrag
-              </span>
-              <span
-                aria-hidden="true"
-                className="text-ink-muted min-w-0 truncate group-open:hidden"
-              >
-                {ursprung.content}
-              </span>
-            </summary>
-            <p
-              data-testid="ursprung"
-              className={`text-ink text-liste max-w-prose pb-4 leading-relaxed ${FREITEXT}`}
-            >
-              {ursprung.content}
-            </p>
-          </details>
-        ) : null}
-
-        <TextbausteinLeiste onEinfuegen={(text, titel) => einfuegen(titel, wert, text)} />
-
-        <TextArea
-          label={istNachtrag ? 'Nachtrag' : 'Eintrag zur Behandlung'}
-          // Der Entwurf wird nicht ewig einer: Mit der Dokumentationsfrist der
-          // Praxis wird er von selbst Version 1 (ADR-016 Punkt 7, DOK-02).
-          hint={`Freitext. ${istNachtrag ? 'Der Nachtrag' : 'Der Eintrag'} bleibt ein Entwurf, bis jemand ihn finalisiert – spätestens automatisch mit Ablauf der Dokumentationsfrist der Praxis.`}
-          rows={14}
+        <Schreibfeld
           feldId={feldId}
-          value={wert}
-          error={fehler}
+          label={istNachtrag ? 'Nachtrag' : 'Eintrag zur Behandlung'}
+          wert={wert}
+          fehler={fehler}
+          beschreibungId={fristId}
           readOnly={schreibtFest}
-          onChange={(event) => {
-            setEntwurf(event.target.value);
+          onAendern={(neu) => {
+            setEntwurf(neu);
             vergessen();
             if (fehler) setFehler(undefined);
           }}
         />
 
-        <Einfuegemeldung
-          einfuegung={letzte && letzte.nachher === wert ? letzte : null}
-          gesperrt={laeuft}
-          onRueckgaengig={rueckgaengig}
-        />
+        <div className="shrink-0 px-4 empty:hidden">
+          <Einfuegemeldung
+            einfuegung={letzte && letzte.nachher === wert ? letzte : null}
+            gesperrt={laeuft}
+            onRueckgaengig={rueckgaengig}
+          />
+        </div>
 
         {istNachtrag ? null : (
-          <BausteinFeld
-            bausteine={bausteine}
-            onUebernehmen={(text) => einfuegen('Befund aus Bausteinen', wert, text)}
-            gesperrt={laeuft}
-          />
+          <div className="border-line shrink-0 border-t">
+            <BausteinFeld
+              bausteine={bausteine}
+              onUebernehmen={(text) => einfuegen('Befund aus Bausteinen', wert, text)}
+              gesperrt={laeuft}
+            />
+          </div>
         )}
 
-        {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer Stelle:
-            Alle Schreibwege dieser Seite laufen durch denselben Vorgang. */}
-        {sicherungsstand}
-        {schutz}
+        {/* Der Entwurf wird nicht ewig einer: Mit der Dokumentationsfrist der
+            Praxis wird er von selbst Version 1 (ADR-016 Punkt 7, DOK-02). */}
+        <Kleingedrucktes className="shrink-0 px-4 pt-2 pb-3">
+          <span id={fristId}>
+            {istNachtrag ? 'Der Nachtrag' : 'Der Eintrag'} bleibt ein Entwurf, bis jemand ihn
+            finalisiert – spätestens automatisch mit Ablauf der Dokumentationsfrist der Praxis.
+          </span>{' '}
+          Der Entwurf wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
+          wird protokolliert.
+        </Kleingedrucktes>
 
-        {/* Die Folge des Festschreibens steht über dem Knopf (ADR-016
-            Punkt 4, BEF-056) - nicht in einer zweiten Rückfrage. */}
-        {istNachtrag && !wechsel ? (
-          <p id={folgeId} className="text-ink-muted mt-5 text-sm">
-            „Nachtrag festschreiben“ macht ihn als Version 1 zum Teil der Akte. Danach ist er nur
-            noch mit Begründung änderbar.
+        {/* Die Folge des Festschreibens für Vorlesesoftware, wie auf der
+            Schreibseite (ADR-016 Punkt 4, BEF-056, DOK-20). */}
+        {nachtragFestschreibbar ? (
+          <p id={folgeId} className="sr-only">
+            Festschreiben macht den Nachtrag als Version 1 zum Teil der Akte. Danach ist er nur noch
+            mit Begründung änderbar.
           </p>
         ) : null}
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          {istNachtrag && !wechsel ? (
+        {/* Fehler, Stand der Sicherung und Rückfrage stehen seit FIX-014 an
+            einer Stelle - als Zeile über der Leiste (ANN-046). */}
+        <Aktionsleiste
+          einbettung="flaeche"
+          oben={
+            <>
+              {sicherungsstand}
+              {schutz}
+            </>
+          }
+        >
+          <Button
+            type="submit"
+            variant={nachtragFestschreibbar ? 'quiet' : 'primary'}
+            groesse="kompakt"
+            className="ml-auto"
+            disabled={laeuft || !geaendert}
+          >
+            {laeuft && !schreibtFest
+              ? 'Wird gespeichert …'
+              : nachtragFestschreibbar
+                ? 'Entwurf'
+                : 'Als Entwurf speichern'}
+          </Button>
+          {nachtragFestschreibbar ? (
             <Button
               type="button"
+              groesse="kompakt"
               disabled={laeuft || wert.trim() === ''}
               aria-describedby={folgeId}
               onClick={nachtragAbschliessen}
             >
-              {schreibtFest ? 'Wird festgeschrieben …' : 'Nachtrag festschreiben'}
+              {schreibtFest ? 'Wird festgeschrieben …' : 'Festschreiben'}
             </Button>
           ) : null}
-          <Button
-            type="submit"
-            variant={istNachtrag && !wechsel ? 'secondary' : 'primary'}
-            disabled={laeuft || !geaendert}
-          >
-            {laeuft && !schreibtFest ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
-          </Button>
-
-          {/* „Abbrechen“ ist seit FIX-011 ein gewöhnlicher Weg zurück: Die
-              Rückfrage vor dem Verwerfen stellt der Navigationsschutz, und
-              zwar für diesen Weg wie für jeden anderen aus dieser Seite
-              heraus. Eine zweite eigene Rückfrage an dieser Stelle hätte
-              zweimal dasselbe gefragt. */}
-          <ButtonLink to={zumTermin} variant="quiet">
-            Abbrechen
-          </ButtonLink>
-        </div>
+        </Aktionsleiste>
       </form>
-
-      <Kleingedrucktes className="mt-10">
-        Der Entwurf wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
-        wird protokolliert.
-      </Kleingedrucktes>
-    </>
+    </Schreibflaeche>
   );
 }
 
@@ -448,6 +442,7 @@ export function TreatmentNotePage({ user }: { user: CurrentUser }) {
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
       verweigert="Behandlungsdokumentation schreiben dürfen Therapeut:innen und Teamleitung."
+      eigenerKopf
     >
       {({ appointment, dokumentation, eingehend, zumTermin }) => {
         const eintrag = noteId ? findeEintrag(dokumentation, noteId) : dokumentation.primary;
@@ -480,43 +475,63 @@ export function TreatmentNotePage({ user }: { user: CurrentUser }) {
           );
         }
 
-        if (zustand === 'nicht-gefunden') {
-          return (
-            <ErrorState
-              title="Nicht gefunden"
-              description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
+        return (
+          <ZustandMitRueckweg appointmentId={appointment.id}>
+            <Zustand
+              zustand={zustand}
+              appointment={appointment}
+              eintrag={eintrag}
+              eingehend={eingehend}
             />
-          );
-        }
-
-        // Erwartbare Zustände stehen ruhig da, mit dem nächsten Schritt
-        // (DOK-12) - kein roter Alarm.
-        if (zustand === 'abgesagt') {
-          return (
-            <EmptyState
-              title="Termin abgesagt"
-              description="Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation."
-            />
-          );
-        }
-
-        if (zustand === 'nicht-angetroffen') {
-          return (
-            <EmptyState
-              title="Nicht angetroffen"
-              description="Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst am Termin „Termin wieder öffnen“."
-            />
-          );
-        }
-
-        return eintrag ? (
-          <BereitsFinalisiert
-            appointmentId={appointment.id}
-            eintrag={eintrag}
-            eingehend={eingehend}
-          />
-        ) : null;
+          </ZustandMitRueckweg>
+        );
       }}
     </DocumentationShell>
   );
+}
+
+/** Ein Zustand, der den Editor ausschließt - ruhig, mit dem nächsten Schritt (DOK-12). */
+function Zustand({
+  zustand,
+  appointment,
+  eintrag,
+  eingehend,
+}: {
+  zustand: Entwurfszustand;
+  appointment: Appointment;
+  eintrag: TreatmentNote | null;
+  eingehend: string;
+}) {
+  if (zustand === 'nicht-gefunden') {
+    return (
+      <ErrorState
+        title="Nicht gefunden"
+        description="Dieser Eintrag gehört nicht zu diesem Termin oder existiert nicht."
+      />
+    );
+  }
+
+  // Erwartbare Zustände stehen ruhig da, mit dem nächsten Schritt
+  // (DOK-12) - kein roter Alarm.
+  if (zustand === 'abgesagt') {
+    return (
+      <EmptyState
+        title="Termin abgesagt"
+        description="Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation."
+      />
+    );
+  }
+
+  if (zustand === 'nicht-angetroffen') {
+    return (
+      <EmptyState
+        title="Nicht angetroffen"
+        description="Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst am Termin „Termin wieder öffnen“."
+      />
+    );
+  }
+
+  return eintrag ? (
+    <BereitsFinalisiert appointmentId={appointment.id} eintrag={eintrag} eingehend={eingehend} />
+  ) : null;
 }
