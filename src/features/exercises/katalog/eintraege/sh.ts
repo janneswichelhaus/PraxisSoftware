@@ -7,13 +7,16 @@ import type { Katalogeintrag } from '../typen';
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
  * Vorsicht steht als Satz unter `hinweise_praxis`.
  *
- * Ohne Bild bleiben Übungen, deren Bewegung die Linienfigur nicht eindeutig
- * zeigen kann: Drehungen im Oberarm (der Unterarm zeigt dabei zum Betrachter),
- * Bewegungen des Schulterblatts, das Heben in der Schulterblattebene, Arme
- * vor oder hinter dem Rumpf in der Frontansicht (sie verschwinden in der
- * Fläche des Rumpfs) und die Diagonale über den Körper. Das Tischgleiten
- * bleibt ohne Bild, weil der Tisch der Figur Arbeitsplattenhöhe hat und im
- * Sitz zu hoch stünde. Lieber kein Bild als ein falsches.
+ * Nur die Ausgangsstellung (ANN-480) zeigen Übungen, deren Bewegung die
+ * Linienfigur nicht eindeutig zeigen kann: Drehungen im Oberarm (SH-05,
+ * SH-10, SH-11, SH-13 bis SH-15; der Unterarm zeigt dabei zum Betrachter),
+ * Bewegungen des Schulterblatts (SH-02, SH-03), Dehnungen hinter dem Rücken
+ * und quer vor der Brust (SH-08, SH-09) und das Heben in der
+ * Schulterblattebene (SH-16). Lieber die Stellung als ein falsches
+ * Bewegungsbild. Beim Tischgleiten (SH-06) hat der Tisch der Figur
+ * Arbeitsplattenhöhe, die Hand liegt deshalb höher als an einem Esstisch; bei
+ * der Diagonale (SH-22) verschwindet der Arm zu Beginn vor dem Rumpf, der
+ * Pfeil zeigt den Weg.
  */
 
 const NACH_OPERATION =
@@ -92,6 +95,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es wird mit großer Kraft gezogen statt sanft.',
     ],
     hinweise_praxis: NACH_OPERATION,
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+      ende: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+    },
   },
   {
     schluessel: 'SH-03',
@@ -115,6 +124,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Kreise sind klein und schnell statt groß und langsam.',
     ],
     hinweise_praxis: NACH_OPERATION,
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      start: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+      ende: { rumpf: 0, schulter: [4, -4], ellbogen: [10, 10] },
+    },
   },
   {
     schluessel: 'SH-04',
@@ -170,6 +185,15 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     fehler: ['Der Ellbogen löst sich vom Körper.', 'Der Arm wird mit Schwung nach außen gedrückt.'],
     hinweise_praxis: `${NACH_OPERATION} Ein gefaltetes Handtuch unter dem Oberarm entlastet die Schulter.`,
+    bild: {
+      v: 1,
+      basis: 'rueckenlage_angestellt',
+      unterlage: 'matte',
+      // Oberarme am Körper, Unterarme zur Decke; der Stab liegt quer in beiden Händen.
+      start: { schulter: [0, 0], ellbogen: [90, 90] },
+      ende: { schulter: [0, 0], ellbogen: [90, 90] },
+      hilfsmittel: [{ art: 'stab', an: 'haende' }],
+    },
   },
   {
     schluessel: 'SH-06',
@@ -193,6 +217,21 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Arm wird angehoben, statt auf dem Tisch geschoben zu werden.',
     ],
     hinweise_praxis: NACH_OPERATION,
+    bild: {
+      v: 1,
+      basis: 'sitz',
+      // Der Tisch der Figur ist so hoch wie eine Arbeitsplatte; die Hand gleitet auf ihm.
+      start: { rumpf: 0, haende: ['tisch', 'oberschenkel'] },
+      ende: {
+        rumpf: 25,
+        huefte: [112, 112],
+        schulter: [111.5, 0],
+        ellbogen: [0, 0],
+        haende: [null, 'oberschenkel'],
+      },
+      hilfsmittel: [{ art: 'tisch', x: 48 }],
+      bewegung: ['hand_nah'],
+    },
   },
   {
     schluessel: 'SH-07',
@@ -247,6 +286,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es wird ruckartig gezogen.',
       'Die untere Schulter kippt nach vorn.',
     ],
+    bild: {
+      v: 1,
+      basis: 'stand',
+      // Die obere Hand hält das Handtuch hinter dem Kopf, die untere hinter dem Rücken.
+      start: { schulter: [150, -30], ellbogen: [150, 30] },
+      ende: { schulter: [150, -30], ellbogen: [150, 30] },
+      hilfsmittel: [{ art: 'handtuch', von: 'hand_nah', nach: 'hand_fern' }],
+    },
   },
   {
     schluessel: 'SH-09',
@@ -266,6 +313,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Halten Sie die Dehnung ruhig, die Schultern bleiben unten.',
     ],
     fehler: ['Der Oberkörper dreht sich mit.', 'Die Schulter wird zum Ohr hochgezogen.'],
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      // Der linke Arm im Bild liegt in Schulterhöhe quer vor der Brust, die andere Hand hält ihn.
+      start: { arm: [-90, 18], ellbogen: [0, 144] },
+      ende: { arm: [-90, 18], ellbogen: [0, 144] },
+    },
   },
   {
     schluessel: 'SH-10',
@@ -290,6 +344,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es wird mit voller Kraft gedrückt.',
     ],
     hinweise_praxis: ISOMETRIE,
+    bild: {
+      v: 1,
+      basis: 'stand_front',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'wand', x: -24 }],
+    },
   },
   {
     schluessel: 'SH-11',
@@ -315,6 +376,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Luft wird angehalten.',
     ],
     hinweise_praxis: `${ISOMETRIE} Ein gefaltetes Handtuch zwischen Ellbogen und Körper hilft, den Ellbogen am Platz zu halten.`,
+    bild: {
+      v: 1,
+      basis: 'stand',
+      start: { schulter: [0, -4], ellbogen: [90, 10] },
+      ende: { schulter: [0, -4], ellbogen: [90, 10] },
+      hilfsmittel: [{ art: 'tuerrahmen', x: 40 }],
+    },
   },
   {
     schluessel: 'SH-12',
@@ -370,6 +438,16 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Handgelenk knickt ab.',
     ],
     hinweise_praxis: BAND,
+    bild: {
+      v: 1,
+      basis: 'stand_front',
+      start: { haende: ['bauch', null] },
+      ende: { haende: ['bauch', null] },
+      hilfsmittel: [
+        { art: 'tuerrahmen', x: 55 },
+        { art: 'band', von: 'tuerrahmen', nach: 'hand_nah' },
+      ],
+    },
   },
   {
     schluessel: 'SH-14',
@@ -391,6 +469,17 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     fehler: ['Der Ellbogen löst sich vom Körper.', 'Der Oberkörper dreht sich mit.'],
     hinweise_praxis: `${BAND} Ein gefaltetes Handtuch zwischen Ellbogen und Körper hilft, den Ellbogen am Platz zu halten.`,
+    bild: {
+      v: 1,
+      basis: 'stand_front',
+      // Der Unterarm zeigt zur Tür; in der Frontansicht liegt er waagerecht.
+      start: { arm: [7, 7], ellbogen: [88, 6] },
+      ende: { arm: [7, 7], ellbogen: [88, 6] },
+      hilfsmittel: [
+        { art: 'tuerrahmen', x: -55 },
+        { art: 'band', von: 'tuerrahmen', nach: 'hand_nah' },
+      ],
+    },
   },
   {
     schluessel: 'SH-15',
@@ -416,6 +505,17 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Mit leichtem Gewicht beginnen, etwa einer kleinen Wasserflasche; die Last im Plan als Dosierung eintragen.',
+    bild: {
+      v: 1,
+      basis: 'seitlage_front',
+      unterlage: 'matte',
+      start: { huefte: [30, 30], knie: [45, 45], ellbogen: [-90, 30] },
+      ende: { huefte: [30, 30], knie: [45, 45], ellbogen: [-90, 30] },
+      hilfsmittel: [
+        { art: 'kissen', an: 'kopf' },
+        { art: 'hantel', an: 'hand_nah' },
+      ],
+    },
   },
   {
     schluessel: 'SH-16',
@@ -441,6 +541,16 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Last im Plan als Dosierung eintragen; ohne Gewicht beginnen, wenn das Heben bis Schulterhöhe schon anstrengt.',
+    bild: {
+      v: 1,
+      basis: 'stand_front',
+      start: {},
+      ende: {},
+      hilfsmittel: [
+        { art: 'hantel', an: 'hand_nah' },
+        { art: 'hantel', an: 'hand_fern' },
+      ],
+    },
   },
   {
     schluessel: 'SH-17',
@@ -644,5 +754,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Schulter wird zum Ohr hochgezogen.',
     ],
     hinweise_praxis: `${BAND} Den Bewegungsweg einmal gemeinsam führen, bevor allein geübt wird.`,
+    bild: {
+      v: 1,
+      basis: 'stand_front',
+      // Die Hand beginnt vor der Hüfte der Gegenseite, der Arm liegt dabei vor dem Rumpf.
+      start: { arm: [-30, 7], ellbogen: [0, 6] },
+      ende: { arm: [150, 7], ellbogen: [0, 6] },
+      hilfsmittel: [{ art: 'band', von: 'zehen_fern', nach: 'hand_nah' }],
+      bewegung: ['hand_nah'],
+    },
   },
 ];

@@ -7,9 +7,10 @@ import type { Katalogeintrag } from '../typen';
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
  * Vorsicht steht als Satz unter `hinweise_praxis`.
  *
- * Ohne Bild, weil die Figur es nicht richtig zeigen kann (lieber kein Bild als
- * ein falsches): HW-01 (Nicken bei liegendem Kopf - der Kopf ist ein Kreis),
- * HW-03, HW-06 und HW-10 (Drehung des Kopfes ist nicht darstellbar).
+ * Nur die Ausgangsstellung (ANN-480), weil die Figur die Bewegung nicht
+ * richtig zeigen kann (lieber die Stellung als ein falsches Bewegungsbild):
+ * HW-01 (Nicken bei liegendem Kopf - der Kopf ist ein Kreis), HW-03, HW-06 und
+ * HW-10 (Drehung des Kopfes ist nicht darstellbar).
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -34,6 +35,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Halsmuskeln vorn spannen sich sichtbar an.',
       'Das Nicken ist zu kräftig; gemeint ist eine kleine, sanfte Bewegung.',
     ],
+    bild: {
+      v: 1,
+      basis: 'rueckenlage_angestellt',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'HW-02',
@@ -87,6 +95,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Kopf neigt sich beim Drehen zur Seite oder nach vorn.',
       'Die Bewegung geht mit Schwung ans Ende.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      start: {},
+      ende: {},
+    },
   },
   {
     schluessel: 'HW-04',
@@ -166,6 +180,12 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Schulter der gedehnten Seite zieht nach oben.',
       'Der Rücken wird rund, statt nur den Kopf zu neigen.',
     ],
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      start: { arm: [10, 121], ellbogen: [6, 145], haende: ['sitz', null] },
+      ende: { arm: [10, 121], ellbogen: [6, 145], haende: ['sitz', null] },
+    },
   },
   {
     schluessel: 'HW-07',
@@ -283,6 +303,17 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur nach Befund der oberen Halswirbelsäule und nach gemeinsamem Einüben; Griff und Zugrichtung vor Ort zeigen. Bei Schwindel, Sehstörungen, Übelkeit oder Kribbeln abbrechen.',
+    bild: {
+      v: 1,
+      basis: 'sitz_front',
+      // Beide Hände halten die Enden vor der Brust, das Handtuch liegt im Nacken.
+      start: { arm: [52, 52], ellbogen: [-134, -134] },
+      ende: { arm: [52, 52], ellbogen: [-134, -134] },
+      hilfsmittel: [
+        { art: 'handtuch', von: 'schulter', nach: 'hand_nah' },
+        { art: 'handtuch', von: 'schulter', nach: 'hand_fern' },
+      ],
+    },
   },
   {
     schluessel: 'HW-11',

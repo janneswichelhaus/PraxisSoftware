@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { zwischen, umgebung } from './loeser';
-import type { Uebungsbild as Bild } from './schema';
+import { istAusgangsstellung, type Uebungsbild as Bild } from './schema';
 import { szene, type Darstellung, type Farbe, type Strich, type Szene } from './szene';
 
 /**
@@ -11,6 +11,10 @@ import { szene, type Darstellung, type Farbe, type Strich, type Szene } from './
  * - `bewegung`: ein Bild, die Ausgangsstellung blass, die Endstellung kräftig,
  *   dazu ein Pfeil - für Karten am Telefon;
  * - `vorschau`: quadratisch, ohne Pfeil - für Listen (56 px).
+ *
+ * Ein Bild der Ausgangsstellung (`istAusgangsstellung`, ANN-480) zeigt in
+ * `start-ende` und `bewegung` eine Figur mit der Unterschrift
+ * „Ausgangsstellung", ohne Knopf; die Vorschau bleibt, wie sie ist.
  *
  * Mit `animierbar` spielt ein Knopf die Bewegung ab - nur auf Tippen, nie von
  * selbst. Bei „Bewegung reduzieren" wechselt er stattdessen zwischen
@@ -114,13 +118,17 @@ export function Uebungsbild({
   const [t, setT] = useState(0);
   const [reduziert] = useState(bewegungReduziert);
 
+  // Nur die Stellung: eine Figur, kein Pfeil, nichts abzuspielen (ANN-480).
+  const nurStellung = darstellung !== 'vorschau' && istAusgangsstellung(bild);
+
   const statisch = useMemo(() => {
+    if (nurStellung) return { einzeln: szene(bild, 'start') };
     if (darstellung === 'start-ende') {
       return { start: szene(bild, 'start'), ende: szene(bild, 'ende') };
     }
     const art: Darstellung = darstellung === 'vorschau' ? 'vorschau' : 'bewegung';
     return { einzeln: szene(bild, art) };
-  }, [bild, darstellung]);
+  }, [bild, darstellung, nurStellung]);
 
   const u = useMemo(() => umgebung(bild), [bild]);
 
@@ -145,7 +153,7 @@ export function Uebungsbild({
 
   // Bei reduzierter Bewegung zeigt die Doppelansicht ohnehin beide Stellungen.
   const knopf =
-    animierbar && !(reduziert && darstellung === 'start-ende') ? (
+    animierbar && !nurStellung && !(reduziert && darstellung === 'start-ende') ? (
       <Button
         type="button"
         variant="quiet"
@@ -173,6 +181,36 @@ export function Uebungsbild({
             : 'Bewegung abspielen'}
       </Button>
     ) : null;
+
+  if (nurStellung && 'einzeln' in statisch) {
+    const zeichnung = (
+      <Zeichnung
+        s={statisch.einzeln}
+        beschriftung={`${name}: Ausgangsstellung`}
+        dekorativ={dekorativ}
+        className="bg-surface-sunken rounded-image"
+      />
+    );
+    const stellung = (
+      <figure className="m-0">
+        {einfassen ? einfassen(zeichnung) : zeichnung}
+        <figcaption className="text-ink-muted mt-1 text-center text-xs font-semibold">
+          Ausgangsstellung
+        </figcaption>
+      </figure>
+    );
+    return (
+      <div className={className}>
+        {darstellung === 'start-ende' ? (
+          // Im Maß eines Bildes aus Start und Ende: Ein Planblatt zeigt alle
+          // Figuren gleich groß.
+          <div className="grid grid-cols-2 gap-2">{stellung}</div>
+        ) : (
+          stellung
+        )}
+      </div>
+    );
+  }
 
   if ('start' in statisch && statisch.start && statisch.ende && !bewegt) {
     return (
