@@ -4994,3 +4994,15 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Nicht vorhaken: `onAbgelaufen` weglassen · Aufwand `klein`.
 
+
+### ANN-493 — Unternavigation: eine einzelne Vorschau steht offen, erst ab zwei eingeklappt
+
+Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+
+**Annahme.** Die `SubNav` klappt Vorschauen erst ab zwei hinter „Vorschau (n)“ ein. Eine einzelne Vorschau (Teamchat unter Kommunikation) steht mit ihrer Marke „Vorschau“ in der Leiste, auf jeder Seite des Bereichs gleich.
+
+**Begründung.** „Vorschau (1)“ ersetzte einen Eintrag durch einen und versteckte nur den Namen; die Leiste hieß je nach Seite „Rückfragen · Vorschau (1)“ oder „Rückfragen · Teamchat“ (Review R2-O9). Die Kennzeichnung nach ANN-112 bleibt.
+
+**Anker.** `einklappbar` in `src/components/ui/SubNav.tsx`.
+
+**Änderungspfad.** Wieder ab einer Vorschau einklappen: `vorschauen.length > 0` · Aufwand `klein`.

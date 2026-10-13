@@ -133,10 +133,9 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <PageHeader
-        title="Kommunikation"
-        description="Kanäle, Direktnachrichten und Antworten für organisatorische Abstimmung."
-      />
+      {/* Der Titel heißt wie der Reiter (R2-O9); „Kommunikation“ ist der
+          Bereich darüber. */}
+      <PageHeader title="Teamchat" description="Kanäle, Direktnachrichten und Antworten im Team." />
 
       <SimulationsMeldung eintrag={meldung} />
 
