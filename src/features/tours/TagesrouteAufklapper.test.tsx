@@ -91,11 +91,21 @@ beforeEach(() => {
 describe('TagesrouteAufklapper', () => {
   it('traegt ein Aufklappzeichen und laedt erst beim Aufklappen (UEB-03)', () => {
     zeige();
-    const kopf = screen.getByText('Tagesroute auf der Karte');
-    expect(kopf.tagName).toBe('SUMMARY');
-    expect(kopf.querySelector('[data-aufklappzeichen]')).not.toBeNull();
+    // Der Titel ist eine Überschrift im Kopf des Aufklappers (UEB-17).
+    const titel = screen.getByRole('heading', { name: 'Tagesroute auf der Karte' });
+    const kopf = titel.closest('summary');
+    expect(kopf).not.toBeNull();
+    expect(kopf!.querySelector('[data-aufklappzeichen]')).not.toBeNull();
     expect(kopf).toHaveClass('min-h-11');
     expect(fetchDayRoute).not.toHaveBeenCalled();
+  });
+
+  it('ist derselbe Aufklapper wie die übrigen der Übersicht: Karte, Titel in 600 (R2, U5)', () => {
+    zeige();
+    const kopf = screen.getByText('Tagesroute auf der Karte').closest('summary')!;
+    expect(kopf).toHaveClass('font-semibold');
+    expect(kopf).not.toHaveClass('uppercase');
+    expect(kopf.closest('details')).toHaveClass('rounded-card', 'border', 'bg-surface');
   });
 
   it('bietet nach einem Ladefehler „Erneut versuchen" an (WRT-01, ZST-04)', async () => {

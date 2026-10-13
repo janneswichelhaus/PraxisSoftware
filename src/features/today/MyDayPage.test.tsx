@@ -1498,11 +1498,15 @@ describe('Übersicht', () => {
         expect(kopf.querySelector('[data-aufklappzeichen]')).not.toBeNull();
         expect(kopf).toHaveClass('min-h-11');
       }
-      // Die Aufklapp-Überschrift im Label-Stil wie ein Abschnitt (UEB-17):
-      // beim Teamplan trägt ihn der Kopf, die Überschrift darin erbt ihn.
-      expect(
-        screen.getByRole('heading', { name: 'Tagesplan des Teams' }).closest('summary'),
-      ).toHaveClass('tracking-label', 'uppercase');
+      // Ein Stil für alle Aufklapper der Übersicht (Design-Review R2, U5): als
+      // Karte, der Titel eine Überschrift in 600, ohne Versalien - wie
+      // „Nachzuholen". Bis dahin standen drei Stile auf einer Seite.
+      for (const kopf of koepfe) {
+        expect(kopf).toHaveClass('font-semibold');
+        expect(kopf).not.toHaveClass('uppercase');
+        expect(kopf.closest('details')).toHaveClass('rounded-card', 'border');
+        expect(kopf.querySelector('h2')).not.toBeNull();
+      }
     });
 
     it('erklaert die Uebergabe an Google Maps nicht mehr unter der Karte (Entscheidung Jannes, 2026-10-01)', async () => {

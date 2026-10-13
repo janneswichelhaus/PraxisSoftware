@@ -205,9 +205,11 @@ function Teamplan({
 
   return (
     <section>
+      {/* Derselbe Aufklapper wie „Nachzuholen" und „Tagesroute" (Design-
+          Review R2, U5): Karte, Titel in 600 mit Zähler. */}
       <Disclosure
         inKarte
-        kopf="label"
+        kopf="betont"
         offen={offen}
         {...(offenAbLg ? { offenAb: 'lg' as const } : {})}
         {...(data ? { anzahl: alleHeute.length } : {})}
