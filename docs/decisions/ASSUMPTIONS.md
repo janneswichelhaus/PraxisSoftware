@@ -5046,9 +5046,9 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
-**Annahme.** Unter 640 px zeigt die Karte des nächsten Wegs „Nächster Weg“ ohne „≈ n min“, wenn die Kachel „Abfahrt“ darüber denselben Weg nennt; die Wochenleiste rückt 12 px an den Kopf. So passen „Termin →“ und das Datum, und der Hauptknopf bleibt bei 375 × 667 über der Tableiste.
+**Annahme.** Unter 640 px zeigt die Karte des nächsten Wegs „Nächster Weg“ ohne „≈ n min“, wenn die Kachel „Abfahrt“ darüber denselben Weg nennt; die Wochenleiste rückt 12 px an den Kopf (Kopf zu Inhalt 12 statt 24 px). So passen „Termin →“ und das Datum, und der Hauptknopf bleibt bei 375 × 667 über der Tableiste.
 
-**Begründung.** R2 P1 und U3 bringen eine Zeile mehr; `uebersicht.spec.ts` hält den Hauptknopf über der Tableiste.
+**Begründung.** R2 P1 und U3 bringen eine Zeile mehr; `uebersicht.spec.ts` hält den Hauptknopf über der Tableiste, beim dritten Besuch mit 3 px Reserve.
 
 **Anker.** `wegTitel` in `src/features/today/MyDayPage.tsx`.
 
