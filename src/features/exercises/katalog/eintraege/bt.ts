@@ -4,10 +4,11 @@ import type { Katalogeintrag } from '../typen';
  * Gruppe BT: Bett und Frühmobilisation.
  *
  * Für die ersten Tage nach Entlassung und für Menschen, die viel liegen. Bilder
- * auf dem Bett, mit Kissen unter dem Kopf. Ohne Bild bleiben, was die Figur
- * nicht zeigen kann: Kreisen (BT-02), reine Anspannung ohne sichtbare
- * Bewegung (BT-03, BT-04), Rückenlage von oben (BT-06) und der Wechsel der
- * Lage beim Drehen und Aufsetzen (BT-09, BT-10). Einseitige Übungen tragen
+ * auf dem Bett, mit Kissen unter dem Kopf. Nur die Ausgangsstellung (ANN-480)
+ * zeigen Übungen, deren Bewegung die Figur nicht zeigen kann: Kreisen
+ * (BT-02), reine Anspannung ohne sichtbare Bewegung (BT-03, BT-04), das
+ * Abspreizen, das nur von oben zu sehen wäre (BT-06), und der Wechsel der Lage
+ * beim Drehen und Aufsetzen (BT-09, BT-10). Einseitige Übungen tragen
  * „je Seite", auch wo die Liste es nicht ausschreibt (BT-03, BT-05, BT-07).
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
  * (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
@@ -61,6 +62,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Beine bleiben dabei ruhig liegen, nur die Füße bewegen sich.',
     ],
     fehler: ['Die Kreise sind klein und eckig.', 'Das ganze Bein dreht mit.'],
+    bild: {
+      v: 1,
+      basis: 'rueckenlage',
+      unterlage: 'bett',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'BT-03',
@@ -83,6 +92,25 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberschenkel bleibt locker, die Kniescheibe bewegt sich kaum.',
       'Die Luft wird angehalten.',
     ],
+    bild: {
+      v: 1,
+      basis: 'rueckenlage',
+      unterlage: 'bett',
+      start: {
+        huefte: [12, 0],
+        knie: [22, 0],
+        loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
+      },
+      ende: {
+        huefte: [12, 0],
+        knie: [22, 0],
+        loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
+      },
+      hilfsmittel: [
+        { art: 'kissen', an: 'kopf' },
+        { art: 'rolle', an: 'knie_nah' },
+      ],
+    },
   },
   {
     schluessel: 'BT-04',
@@ -102,6 +130,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Lassen Sie danach ganz locker und machen Sie eine kurze Pause.',
     ],
     fehler: ['Die Luft wird angehalten.', 'Der Rücken drückt sich ins Hohlkreuz.'],
+    bild: {
+      v: 1,
+      basis: 'rueckenlage',
+      unterlage: 'bett',
+      start: {},
+      ende: {},
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'BT-05',
@@ -165,6 +201,14 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nach Hüftendoprothese: Bewegungsgrenzen nach OP-Bericht und ärztlicher Vorgabe. Beim hinteren Zugang gelten häufig für einige Wochen Grenzen bei Beugung über 90°, Adduktion über die Mittellinie und Innenrotation.',
+    bild: {
+      v: 1,
+      basis: 'rueckenlage',
+      unterlage: 'bett',
+      start: { sprung: [-10, -10] },
+      ende: { sprung: [-10, -10] },
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'BT-07',
@@ -263,6 +307,15 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zuerst gemeinsam im Hausbesuch üben; auf genug Platz zur Bettkante achten, damit beim Drehen niemand herausfällt.',
+    bild: {
+      v: 1,
+      basis: 'rueckenlage_angestellt',
+      unterlage: 'bett',
+      // Die nahe Hand liegt auf der Brust, der Ellbogen neben dem Körper.
+      start: { schulter: [-7, 4], ellbogen: [161, 0] },
+      ende: { schulter: [-7, 4], ellbogen: [161, 0] },
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
   {
     schluessel: 'BT-10',
@@ -287,5 +340,13 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Kreislauf beachten: Nach längerer Bettruhe vor dem Aufstehen eine Weile sitzen lassen. Zuerst gemeinsam im Hausbesuch üben.',
+    bild: {
+      v: 1,
+      basis: 'seitlage_front',
+      unterlage: 'bett',
+      start: { huefte: [45, 45], knie: [60, 60], haende: ['boden', null] },
+      ende: { huefte: [45, 45], knie: [60, 60], haende: ['boden', null] },
+      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
+    },
   },
 ];
