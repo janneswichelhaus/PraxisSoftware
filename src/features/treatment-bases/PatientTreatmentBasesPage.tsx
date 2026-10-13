@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Kontaktwege } from './Kontaktwege';
@@ -203,12 +203,9 @@ function Verordnungskopf({
           <Grundlagentitel verordnung={verordnung} />
         </span>
         {bearbeiten ? (
-          <Link
-            to={bearbeiten}
-            className="text-accent inline-flex min-h-11 items-center text-sm font-normal hover:underline"
-          >
+          <Textlink to={bearbeiten} alleinstehend className="text-sm font-normal">
             Bearbeiten
-          </Link>
+          </Textlink>
         ) : null}
       </p>
       {verordner ? <p className="text-ink-muted mt-0.5 text-sm">{verordner}</p> : null}
@@ -379,9 +376,10 @@ function Verordnungsaktionen({
   const offen = eintrag.zustand === 'offen';
   const serieHaupt = darfPlanen && planbar && offen;
   const uebertragenHaupt = darfPlanen && ungedeckt > 0 && !offen;
-  const textlink = 'text-accent inline-flex min-h-11 items-center text-sm hover:underline';
   const serie = `/patienten/${patient.id}/verordnungen/${verordnung.id}/serie`;
 
+  // Die leisen Wege als `Textlink` - unterstrichen, 44 px Tippziel (Regel 9;
+  // Sichtung 13.10.2026, A2): Ohne Unterstreichung sahen sie aus wie Text.
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
       {serieHaupt ? (
@@ -398,9 +396,9 @@ function Verordnungsaktionen({
           (CAL-007). Wer Termine plant, sieht sie - das ist ein anderes Recht
           als das Schreiben der Verordnung (ADR-004). */}
       {darfPlanen && planbar && !serieHaupt ? (
-        <Link to={serie} className={textlink}>
+        <Textlink to={serie} alleinstehend className="text-sm">
           Dauertermin anlegen
-        </Link>
+        </Textlink>
       ) : null}
       {/* Der zweite Weg neben der Serie: in den vollständigen Kalender wechseln,
           dort scrollen und eine freie Stelle antippen (CAL-015c). Patient:in
@@ -408,48 +406,44 @@ function Verordnungsaktionen({
           beides schon fest. Die Serie plant im Raster, dieser Weg sucht die
           Lücke. */}
       {darfPlanen && planbar ? (
-        <Link
-          to={kalenderZiel}
-          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
-        >
+        <Textlink to={kalenderZiel} alleinstehend className="text-sm">
           Im Kalender einen Platz suchen
-        </Link>
+        </Textlink>
       ) : null}
       {/* Die Anwendung sucht die Lücke (PRX-003): freie Plätze als
           Vorschlagsliste, die Verordnung reist ins Formular mit. */}
       {darfPlanen && planbar ? (
-        <Link
+        <Textlink
           to={mitRueckweg(
             `/patienten/${patient.id}/plaetze?verordnung=${verordnung.id}`,
             `/patienten/${patient.id}/verordnungen`,
           )}
-          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+          alleinstehend
+          className="text-sm"
         >
           Freie Termine suchen
-        </Link>
+        </Textlink>
       ) : null}
       {/* Derselbe Vorgang, zwei Richtungen (CAL-022). Ohne Ziel in der Adresse
           fragt die Seite danach; mit Ziel steht diese Grundlage schon da. */}
       {darfPlanen && ungedeckt > 0 && !uebertragenHaupt ? (
-        <Link to={uebertragen} className={textlink}>
+        <Textlink to={uebertragen} alleinstehend className="text-sm">
           Termine übertragen
-        </Link>
+        </Textlink>
       ) : null}
       {darfPlanen && planbar && ungedeckt === 0 && uebernehmbar ? (
-        <Link
-          to={`${uebertragen}?ziel=${verordnung.id}`}
-          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
-        >
+        <Textlink to={`${uebertragen}?ziel=${verordnung.id}`} alleinstehend className="text-sm">
           Termine übernehmen
-        </Link>
+        </Textlink>
       ) : null}
       {darfSchreiben && !bearbeitenImKopf ? (
-        <Link
+        <Textlink
           to={`/patienten/${patient.id}/verordnungen/${verordnung.id}/bearbeiten`}
-          className={textlink}
+          alleinstehend
+          className="text-sm"
         >
           Bearbeiten
-        </Link>
+        </Textlink>
       ) : null}
     </div>
   );
