@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { STAND_VERALTET } from '@/components/ui/abfrageTexte';
 import type * as AppointmentsApi from './api';
 import type * as TodayApi from '@/features/today/api';
 import { renderWithProviders, testUser } from '@/test-utils';
@@ -340,9 +341,8 @@ describe('TagUmplanenPage', () => {
     fetchDayPlan.mockRejectedValue(new Error('Netz'));
     window.dispatchEvent(new Event('visibilitychange'));
 
-    expect(
-      await screen.findByText('Der Stand konnte nicht aktualisiert werden.'),
-    ).toBeInTheDocument();
+    // Der Satz des Bausteins für einen veralteten Stand (Abfragezustand).
+    expect(await screen.findByText(STAND_VERALTET)).toBeInTheDocument();
     expect(screen.getByText('Anrufliste (1)')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Erika Beispiel' })).toBeInTheDocument();
   });
