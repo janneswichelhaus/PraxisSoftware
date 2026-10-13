@@ -15,12 +15,6 @@ import { usePasskeyVonSelbst } from './passkeyVonSelbst';
 import { useSitzungEndeteVonAussen } from './sitzungsende';
 
 /**
- * Die Köpfe der Aufklapper mittig wie der Rest der Seite (Sichtung
- * 13.10.2026, L8); was aufklappt - das Formular -, steht linksbündig.
- */
-const AUFKLAPPER_MITTIG = '[&_summary]:justify-center';
-
-/**
  * Der Kennwortweg für Testkonten (ADR-025 Punkt 15).
  *
  * Nur außerhalb der Produktion: Automatisierte Tests und der erste Einstieg in
@@ -63,47 +57,48 @@ function KennwortTestzugang() {
   return (
     // Zugeklappt hinter „Testkonten" (Jannes, 2026-10-11): Die Seite zeigt so
     // schon das Bild des Betriebs, in dem es diesen Weg nicht gibt.
-    <div className="text-left">
-      <Disclosure summary="Testkonten">
-        <Kleingedrucktes className="mb-4">
-          Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
-          gibt es diesen Weg nicht.
-        </Kleingedrucktes>
-        <form
-          onSubmit={(event) => void handleSubmit(event)}
-          noValidate
-          aria-label="Testzugang"
-          className="flex flex-col gap-4 text-left"
-        >
-          {error ? (
-            <div ref={fehlerkasten} tabIndex={-1}>
-              <ErrorState title={error} />
-            </div>
-          ) : null}
-          <Field
-            label="E-Mail-Adresse"
-            type="email"
-            name="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <Field
-            label="Kennwort"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
-            {pending ? 'Anmeldung läuft …' : 'Anmelden'}
-          </Button>
-        </form>
-      </Disclosure>
-    </div>
+    // Kopf und Satz mittig wie die Seite (Sichtung 13.10.2026, L8); das
+    // Formular steht linksbündig wie die PIN auf der Sperrseite - eine
+    // Beschriftung gehört an die Kante ihres Felds.
+    <Disclosure mittig summary="Testkonten">
+      <Kleingedrucktes className="mb-4">
+        Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
+        gibt es diesen Weg nicht.
+      </Kleingedrucktes>
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        aria-label="Testzugang"
+        className="flex flex-col gap-4 text-left"
+      >
+        {error ? (
+          <div ref={fehlerkasten} tabIndex={-1}>
+            <ErrorState title={error} />
+          </div>
+        ) : null}
+        <Field
+          label="E-Mail-Adresse"
+          type="email"
+          name="email"
+          autoComplete="username"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <Field
+          label="Kennwort"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
+          {pending ? 'Anmeldung läuft …' : 'Anmelden'}
+        </Button>
+      </form>
+    </Disclosure>
   );
 }
 
@@ -189,8 +184,8 @@ export function LoginPage({
         </p>
       </div>
 
-      <div className={`mt-6 ${AUFKLAPPER_MITTIG}`}>
-        <Disclosure summary="Am Rechner anmelden">
+      <div className="mt-6">
+        <Disclosure mittig summary="Am Rechner anmelden">
           <p className="text-ink text-base">
             Im Passkey-Fenster „anderes Gerät“ wählen und den Code mit dem Telefon scannen.
           </p>

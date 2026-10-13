@@ -165,6 +165,15 @@ describe('LoginPage: Testzugang mit Kennwort, nur außerhalb der Produktion (Pun
     expect(screen.getByLabelText('E-Mail-Adresse')).not.toBeVisible();
     await user.click(kopf);
     expect(screen.getByLabelText('E-Mail-Adresse')).toBeVisible();
+    // Beide Köpfe mittig über den Baustein, nicht aus der Seite (L8); das
+    // Formular linksbündig wie die PIN auf der Sperrseite.
+    for (const titel of ['Testkonten', 'Am Rechner anmelden']) {
+      expect(screen.getByText(titel).className.split(' ')).toContain('justify-center');
+    }
+    expect(screen.getByRole('form', { name: 'Testzugang' })).toHaveClass('text-left');
+    expect(
+      screen.getByText(/Testkonten melden sich mit Kennwort an/).closest('.text-left'),
+    ).toBeNull();
   });
 
   it('stellt beschriftete Felder mit passenden Autocomplete-Werten bereit', () => {
