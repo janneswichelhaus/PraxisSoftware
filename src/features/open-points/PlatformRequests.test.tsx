@@ -93,7 +93,8 @@ describe('PlatformRequests (POR-011)', () => {
     renderWithProviders(<PlatformRequests timeZone="Europe/Berlin" />, '/offen');
     expect(await screen.findByRole('heading', { name: 'Terminwünsche (3)' })).toBeInTheDocument();
 
-    expect(screen.getByRole('link', { name: 'Beispiel, Erika' })).toHaveAttribute(
+    // Die ganze Zeile ist der Weg zur Person (Design-Rollout B5).
+    expect(screen.getByRole('link', { name: /^Beispiel, Erika/ })).toHaveAttribute(
       'href',
       expect.stringContaining('/patienten/66666666-6666-4666-8666-000000000002'),
     );
@@ -116,7 +117,7 @@ describe('PlatformRequests (POR-011)', () => {
     expect(terminLink).toHaveTextContent(/9\. Oktober 2026/);
     expect(terminLink).toHaveTextContent(/09:00/);
 
-    expect(screen.getByRole('link', { name: 'Training, Tina' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /^Training, Tina.* · Training/ })).toHaveAttribute(
       'href',
       expect.stringContaining('/training/eeeeeeee-eeee-4eee-8eee-000000000001'),
     );
@@ -161,9 +162,13 @@ describe('PlatformRequests (POR-011)', () => {
     );
   });
 
-  it('sagt ohne Wuensche, dass nichts offen ist', async () => {
+  it('zeigt ohne Wunsch keine Gruppe - „Nichts offen" sagt die Seite einmal', async () => {
     fetchPlatformRequests.mockResolvedValue([]);
-    renderWithProviders(<PlatformRequests timeZone="Europe/Berlin" />, '/offen');
-    expect(await screen.findByText('Kein offener Wunsch von der Plattform.')).toBeInTheDocument();
+    const { container } = renderWithProviders(
+      <PlatformRequests timeZone="Europe/Berlin" />,
+      '/offen',
+    );
+    await waitFor(() => expect(fetchPlatformRequests).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
   });
 });

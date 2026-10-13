@@ -1,97 +1,84 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/Badge';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
+import { StatusMark } from '@/components/ui/StatusMark';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { bauartLabels } from '@/features/treatment-bases/api';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { telHref } from '@/lib/telefon';
+import { abfragen } from './eingang';
 import { formatDay } from './format';
-import {
-  ENDING_KEY,
-  IDLE_KEY,
-  fetchCareWithoutConclusion,
-  fetchEndingPrescriptions,
-} from './reminders-api';
+import { Anrufknopf } from './Symbole';
 
 /**
  * „Verordnung endet" (PRX-016): Verordnungen ohne Anschluss, deren Termine
- * genutzt oder ganz verplant sind und deren letzter Termin bald ist. Die
- * Liste sagt, ob eine Empfehlung zum Verordnungsende vorliegt - geschrieben
- * wird sie im Therapiebericht, nicht hier (DOK-005). Keine Bewertung: ob es
- * weitergeht, entscheiden Therapeut:in und Verordner:in (§17).
+ * genutzt oder ganz verplant sind und deren letzter Termin in den nächsten
+ * zwei Wochen ist. Die Liste sagt, ob eine Empfehlung zum Verordnungsende
+ * vorliegt - geschrieben wird sie im Therapiebericht, nicht hier (DOK-005).
+ * Keine Bewertung: ob es weitergeht, entscheiden Therapeut:in und
+ * Verordner:in (§17). Die Zeile führt zu den Verordnungen der Person; daneben
+ * der Anruf bei der Verordner:in. Endet keine, keine Gruppe.
  */
 export function EndingPrescriptions({ timeZone }: { timeZone: string }) {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: ENDING_KEY,
-    queryFn: fetchEndingPrescriptions,
-    retry: false,
-  });
+  const { data, isError, refetch } = useQuery(abfragen.verordnungEndet());
 
-  return (
-    <Section
-      titel={data && data.length > 0 ? `Verordnung endet (${data.length})` : 'Verordnung endet'}
-      hinweis="Alle Termine genutzt oder verplant, der letzte in den nächsten zwei Wochen – und noch keine Folgeverordnung."
-    >
-      {isPending ? <LoadingState label="Verordnungen werden geladen …" /> : null}
-      {isError ? (
+  if (isError && !data) {
+    return (
+      <Section titel="Verordnung endet">
         <ErrorState
           title="Die endenden Verordnungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
-      ) : null}
-      {data && data.length === 0 ? (
-        <p className="text-ink-muted text-sm">
-          Keine Verordnung endet in den nächsten zwei Wochen.
-        </p>
-      ) : null}
-      {data && data.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {data.map((eintrag) => (
-            <li key={eintrag.treatment_basis_id} className="flex flex-col gap-1 py-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <Link
-                  to={mitRueckweg(`/patienten/${eintrag.patient_id}/verordnungen`, '/offen')}
-                  className="text-accent text-liste font-medium hover:underline"
-                >
-                  {eintrag.patient_family_name}, {eintrag.patient_given_name}
-                </Link>
+      </Section>
+    );
+  }
+  if (!data || data.length === 0) return null;
+
+  return (
+    <Listenabschnitt titel="Verordnung endet" anzahl={data.length}>
+      {data.map((eintrag) => (
+        <ListRow
+          key={eintrag.treatment_basis_id}
+          titel={`${eintrag.patient_family_name}, ${eintrag.patient_given_name}`}
+          meta={
+            <>
+              {bauartLabels[eintrag.treatment_basis_kind]} vom {formatDate(eintrag.issued_on)} ·{' '}
+              {Math.max(eintrag.used, eintrag.planned)} von {eintrag.prescribed} Terminen
+              {eintrag.last_appointment_at
+                ? ` · letzter am ${formatDay(eintrag.last_appointment_at, timeZone)}`
+                : ''}
+              <span className="mt-0.5 block">
+                {/* Fehlt die Empfehlung, ist das die offene Arbeit: Zeichen
+                    und Wort; liegt sie vor, ein leises Wort mit Haken. */}
                 {eintrag.has_recommendation ? (
-                  <Badge ton="positiv">Empfehlung liegt vor</Badge>
+                  <StatusMark ton="positiv">Empfehlung liegt vor</StatusMark>
                 ) : (
-                  <Badge ton="warnung">Keine Empfehlung</Badge>
+                  <StatusMark ton="warnung">Keine Empfehlung</StatusMark>
                 )}
-              </div>
-              <p className="text-ink-muted text-sm">
-                {bauartLabels[eintrag.treatment_basis_kind]} vom {formatDate(eintrag.issued_on)} ·{' '}
-                {Math.max(eintrag.used, eintrag.planned)} von {eintrag.prescribed} Terminen
-                {eintrag.last_appointment_at
-                  ? ` · letzter am ${formatDay(eintrag.last_appointment_at, timeZone)}`
-                  : ''}
-              </p>
-              {eintrag.prescriber_name ? (
-                <p className="text-ink-muted text-sm">
-                  {eintrag.prescriber_name}
-                  {eintrag.prescriber_phone ? (
-                    <>
-                      {' · '}
-                      <a
-                        href={telHref(eintrag.prescriber_phone)}
-                        className="text-accent tabular-nums hover:underline"
-                      >
-                        {eintrag.prescriber_phone}
-                      </a>
-                    </>
-                  ) : null}
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </Section>
+                {eintrag.prescriber_name ? ` · ${eintrag.prescriber_name}` : ''}
+                {/* Ab 640 px steht die Nummer im Anrufknopf daneben. */}
+                {eintrag.prescriber_phone ? (
+                  <span className="tabular-nums sm:hidden"> · {eintrag.prescriber_phone}</span>
+                ) : null}
+              </span>
+            </>
+          }
+          to={mitRueckweg(`/patienten/${eintrag.patient_id}/verordnungen`, '/offen')}
+          aktion={
+            eintrag.prescriber_phone ? (
+              <Anrufknopf
+                nummer={eintrag.prescriber_phone}
+                beschriftung={`${eintrag.prescriber_name ?? 'Verordner:in'} anrufen, ${eintrag.prescriber_phone}`}
+              />
+            ) : null
+          }
+        />
+      ))}
+    </Listenabschnitt>
   );
 }
 
@@ -102,54 +89,46 @@ export function EndingPrescriptions({ timeZone }: { timeZone: string }) {
  * abschließen tut die Therapeut:in in den Stammdaten.
  */
 export function CareWithoutConclusionList({ timeZone }: { timeZone: string }) {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: IDLE_KEY,
-    queryFn: fetchCareWithoutConclusion,
-    retry: false,
-  });
+  const { data, isError, refetch } = useQuery(abfragen.ohneAbschluss());
 
-  return (
-    <Section
-      titel={
-        data && data.length > 0
-          ? `Versorgung abschließen? (${data.length})`
-          : 'Versorgung abschließen?'
-      }
-      hinweis="Seit sechs Monaten kein Termin und keiner geplant. Ist die Behandlung beendet, gehört der Abschluss in die Stammdaten – erst mit ihm läuft die Aufbewahrungsfrist."
-    >
-      {isPending ? <LoadingState label="Akten werden geladen …" /> : null}
-      {isError ? (
+  if (isError && !data) {
+    return (
+      <Section titel="Versorgung abschließen?">
         <ErrorState
           title="Die Akten ohne Abschluss konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
-      ) : null}
-      {data && data.length === 0 ? (
-        <p className="text-ink-muted text-sm">Keine Akte wartet auf die Frage.</p>
-      ) : null}
-      {data && data.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {data.map((eintrag) => (
-            <li
-              key={eintrag.patient_id}
-              className="flex flex-wrap items-baseline justify-between gap-2 py-3"
-            >
-              <Link
-                to={mitRueckweg(`/patienten/${eintrag.patient_id}/stammdaten`, '/offen')}
-                className="text-accent text-liste font-medium hover:underline"
-              >
-                {eintrag.patient_family_name}, {eintrag.patient_given_name}
-              </Link>
-              <span className="text-ink-muted text-sm">
-                {eintrag.last_appointment_at
-                  ? `Letzter Termin am ${formatDay(eintrag.last_appointment_at, timeZone)}`
-                  : `Ohne Termin, angelegt am ${formatDay(eintrag.patient_created_at, timeZone)}`}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </Section>
+      </Section>
+    );
+  }
+  if (!data || data.length === 0) return null;
+
+  return (
+    <Listenabschnitt
+      titel="Versorgung abschließen?"
+      anzahl={data.length}
+      mehr={
+        // Die Frist hängt am Abschluss (ADR-008) - deshalb steht der Satz
+        // da, als Kleingedrucktes.
+        <Kleingedrucktes>
+          Seit sechs Monaten kein Termin und keiner geplant. Ist die Behandlung beendet, gehört der
+          Abschluss in die Stammdaten – erst mit ihm läuft die Aufbewahrungsfrist.
+        </Kleingedrucktes>
+      }
+    >
+      {data.map((eintrag) => (
+        <ListRow
+          key={eintrag.patient_id}
+          titel={`${eintrag.patient_family_name}, ${eintrag.patient_given_name}`}
+          meta={
+            eintrag.last_appointment_at
+              ? `Letzter Termin am ${formatDay(eintrag.last_appointment_at, timeZone)}`
+              : `Ohne Termin, angelegt am ${formatDay(eintrag.patient_created_at, timeZone)}`
+          }
+          to={mitRueckweg(`/patienten/${eintrag.patient_id}/stammdaten`, '/offen')}
+        />
+      ))}
+    </Listenabschnitt>
   );
 }

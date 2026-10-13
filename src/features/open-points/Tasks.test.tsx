@@ -116,7 +116,8 @@ describe('Offene Punkte - Aufgaben (PRX-012)', () => {
     expect(screen.getByText('Heute fällig')).toBeInTheDocument();
     // Ohne Zuweisung steht nichts - „Für alle im Team" ist der Regelfall (UX-005h).
     expect(screen.queryByText('Für alle im Team')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Max Mustermann' })).toHaveAttribute(
+    // Mit einer Person ist die ganze Zeile der Weg in ihre Akte (Design-Rollout B5).
+    expect(screen.getByRole('link', { name: /Rückruf.*Max Mustermann/ })).toHaveAttribute(
       'href',
       '/patienten/66666666-6666-4666-8666-000000000001?zurueck=%2Foffen',
     );
@@ -200,7 +201,9 @@ describe('Offene Punkte - Aufgaben (PRX-012)', () => {
     vi.useRealTimers();
     const user = userEvent.setup();
     renderWithProviders(<OpenPointsPage user={testUser(['office'])} />);
-    await screen.findByText('Keine offene Aufgabe.');
+    await waitFor(() => expect(fetchTasks).toHaveBeenCalledWith('open'));
+    // Ohne offene Aufgabe keine Gruppe „Aufgaben" - der Rückblick bleibt am Ende.
+    expect(screen.queryByRole('heading', { name: /Aufgaben/ })).toBeNull();
     expect(fetchTasks).not.toHaveBeenCalledWith('done');
 
     await user.click(screen.getByText('Zuletzt erledigt'));

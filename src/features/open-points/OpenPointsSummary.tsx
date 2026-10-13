@@ -9,7 +9,7 @@ import {
   isTherapyStaff,
   type CurrentUser,
 } from '@/features/session/types';
-import { OPEN_SCANS_KEY } from './PrescriptionsToCapture';
+import { OPEN_SCANS_KEY } from './eingang';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from './platform-requests-api';
 import { TASKS_KEY, fetchTasks, isOverdue } from './tasks-api';
 import { fetchRueckfragen, rueckfragenKey } from '@/features/messages/api';

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import type * as FilesApi from '@/features/files/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -47,10 +47,11 @@ describe('Offene Punkte - Verordnungen zu erfassen (PRX-011)', () => {
     expect(screen.queryByRole('img')).toBeNull();
   });
 
-  it('sagt in einem Satz, dass nichts wartet', async () => {
+  it('zeigt ohne Foto keine Gruppe - „Nichts offen" sagt die Seite einmal (Eingang.test)', async () => {
     fetchOffeneScans.mockResolvedValue([]);
     renderWithProviders(<OpenPointsPage user={testUser(['therapist'])} />);
-    expect(await screen.findByText('Keine Verordnung wartet aufs Erfassen.')).toBeInTheDocument();
+    await waitFor(() => expect(fetchOffeneScans).toHaveBeenCalled());
+    expect(screen.queryByText('Verordnungen zu erfassen', { exact: false })).toBeNull();
   });
 
   it('fragt fuer eine Rolle ohne Grundlagenrecht gar nicht erst', () => {

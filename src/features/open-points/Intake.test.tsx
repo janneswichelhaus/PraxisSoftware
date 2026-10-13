@@ -29,25 +29,38 @@ describe('OpenIntakes (PRX-013)', () => {
     ]);
     renderWithProviders(<OpenIntakes />);
 
-    expect(await screen.findByRole('link', { name: 'Aufnahme, Lena' })).toBeInTheDocument();
+    // Die Zeile führt in die Akte und nennt alle offenen Punkte.
+    expect(
+      await screen.findByRole('link', { name: /^Aufnahme, Lena.*Verordnungsfoto · Anmeldebogen/ }),
+    ).toHaveAttribute('href', `/patienten/${LENA}?zurueck=%2Foffen`);
     expect(screen.getByRole('heading', { name: 'Erstaufnahme offen (1)' })).toBeInTheDocument();
-    // AKTE-007: Der Anmeldebogen steht in den Stammdaten, das Foto an den
-    // Behandlungsgrundlagen (ANN-224).
-    expect(screen.getByRole('link', { name: 'Anmeldebogen' })).toHaveAttribute(
-      'href',
-      `/patienten/${LENA}/stammdaten?zurueck=%2Foffen#anmeldebogen`,
-    );
-    expect(screen.getByRole('link', { name: 'Verordnungsfoto' })).toHaveAttribute(
+    // Daneben der Weg an die Stelle des ersten offenen Punkts. AKTE-007: das
+    // Foto an den Behandlungsgrundlagen (ANN-224).
+    expect(screen.getByRole('link', { name: 'Verordnungsfoto: Lena Aufnahme' })).toHaveAttribute(
       'href',
       `/patienten/${LENA}/verordnungen?zurueck=%2Foffen`,
     );
   });
 
-  it('sagt, wenn alles vollstaendig ist', async () => {
-    fetchOpenIntakes.mockResolvedValue([]);
+  it('fuehrt zum Anmeldebogen in die Stammdaten (AKTE-007, ANN-224)', async () => {
+    fetchOpenIntakes.mockResolvedValue([
+      {
+        patient_id: LENA,
+        patient_given_name: 'Lena',
+        patient_family_name: 'Aufnahme',
+        open_items: ['registration_form'],
+      },
+    ]);
     renderWithProviders(<OpenIntakes />);
     expect(
-      await screen.findByText('Bei allen in Versorgung ist die Erstaufnahme vollständig.'),
-    ).toBeInTheDocument();
+      await screen.findByRole('link', { name: 'Anmeldebogen: Lena Aufnahme' }),
+    ).toHaveAttribute('href', `/patienten/${LENA}/stammdaten?zurueck=%2Foffen#anmeldebogen`);
+  });
+
+  it('zeigt keine Gruppe, wenn alles vollstaendig ist', async () => {
+    fetchOpenIntakes.mockResolvedValue([]);
+    const { container } = renderWithProviders(<OpenIntakes />);
+    await vi.waitFor(() => expect(fetchOpenIntakes).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
   });
 });

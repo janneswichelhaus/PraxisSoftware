@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Field } from '@/components/ui/Field';
+import { Inhaltsflaeche } from '@/components/ui/Card';
+import { Chip } from '@/components/ui/Chip';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { SearchField } from '@/components/ui/SearchField';
+import { Section } from '@/components/ui/Section';
 import { TextArea } from '@/components/ui/TextArea';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/Feedback';
@@ -135,107 +140,98 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
 
       <SimulationsMeldung eintrag={meldung} />
 
-      <div className="mb-5 max-w-sm">
-        <Field
-          label="Suche"
-          type="search"
-          placeholder="In Nachrichten suchen"
-          value={suche}
-          onChange={(event) => setSuche(event.target.value)}
-        />
-      </div>
+      <div className="max-w-spalte">
+        <div className="max-w-formular mb-6">
+          <SearchField
+            label="Suche"
+            placeholder="In Nachrichten suchen"
+            value={suche}
+            onChange={setSuche}
+          />
+        </div>
 
-      {nadel ? (
-        <section className="mb-6">
-          <h2 className="text-ink mb-2 text-[1.0625rem] font-semibold">{treffer.length} Treffer</h2>
-          {/* Die Regel, nicht ihre Fundstelle in den Projektunterlagen
-              (WRT-03, VOR-25). */}
-          <p className="text-ink-muted mb-3 text-sm">
-            Eine echte Suche zeigt nur, was Sie sehen dürfen. In der Vorschau gibt es keine
-            Berechtigungsprüfung.
-          </p>
-          <ul className="divide-line border-line divide-y border-y">
-            {treffer.map((nachricht) => (
-              <li key={nachricht.id} className="py-3">
-                <p className="text-ink-muted text-sm">
-                  {zustand.kanaele.find((eintrag) => eintrag.id === nachricht.kanalId)?.name} ·{' '}
-                  {mitarbeiterName(zustand, nachricht.autorId)} ·{' '}
-                  {formatZeitpunkt(nachricht.zeitpunkt, zeitzone)}
-                </p>
-                <p className="text-ink text-liste mt-0.5">{nachricht.text}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+        {nadel ? (
+          <div className="mb-8">
+            <Section titel={`${treffer.length} Treffer`}>
+              {/* Die Regel, nicht ihre Fundstelle in den Projektunterlagen
+                  (WRT-03, VOR-25). */}
+              <Kleingedrucktes className="mb-3">
+                Eine echte Suche zeigt nur, was Sie sehen dürfen. In der Vorschau gibt es keine
+                Berechtigungsprüfung.
+              </Kleingedrucktes>
+              {treffer.length > 0 ? (
+                <ListRows>
+                  {treffer.map((nachricht) => (
+                    <ListRow
+                      key={nachricht.id}
+                      titel={<span className="font-normal">{nachricht.text}</span>}
+                      meta={`${
+                        zustand.kanaele.find((eintrag) => eintrag.id === nachricht.kanalId)?.name ??
+                        ''
+                      } · ${mitarbeiterName(zustand, nachricht.autorId)} · ${formatZeitpunkt(
+                        nachricht.zeitpunkt,
+                        zeitzone,
+                      )}`}
+                    />
+                  ))}
+                </ListRows>
+              ) : (
+                <EmptyState inKarte title="Nichts gefunden" />
+              )}
+            </Section>
+          </div>
+        ) : null}
 
-      <div className="grid gap-6 md:grid-cols-[14rem_1fr]">
-        {/* min-w-0: Ohne das waechst der Rasterbereich auf die Breite der
-            Kanalliste, und die ganze Seite scrollt waagerecht statt nur die
-            Leiste selbst. */}
-        <nav aria-label="Kanäle" className="min-w-0">
-          <ul className="flex gap-2 overflow-x-auto md:flex-col md:overflow-visible">
+        {/* Die Kanäle als Chips: am Telefon eine Reihe, die waagerecht
+            rollt; ab 640 px brechen sie um. `min-w-0`, damit nur die Reihe
+            rollt und nicht die Seite. */}
+        <nav aria-label="Kanäle" className="mb-6 min-w-0">
+          <ul className="-mx-1 flex gap-2 overflow-x-auto px-1 py-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
             {zustand.kanaele.map((eintrag) => {
               const ungelesen = zustand.nachrichten.filter(
                 (nachricht) => nachricht.kanalId === eintrag.id && !nachricht.gelesen,
               ).length;
-              const aktiv = eintrag.id === kanalId;
               return (
-                <li key={eintrag.id} className="shrink-0 md:shrink">
-                  <button
-                    type="button"
-                    onClick={() => setKanalId(eintrag.id)}
-                    aria-current={aktiv ? 'true' : undefined}
-                    className={`rounded-button text-liste flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left transition-colors ${
-                      aktiv
-                        ? 'bg-accent-soft text-accent font-medium'
-                        : 'text-ink-muted hover:bg-surface-sunken'
-                    }`}
-                  >
-                    <span className="truncate">
-                      {eintrag.art === 'kanal' ? `# ${eintrag.name}` : eintrag.name}
-                    </span>
+                <li key={eintrag.id} className="shrink-0">
+                  <Chip gewaehlt={eintrag.id === kanalId} onClick={() => setKanalId(eintrag.id)}>
+                    {eintrag.art === 'kanal' ? `# ${eintrag.name}` : eintrag.name}
                     {ungelesen > 0 ? <Badge ton="akzent">{ungelesen}</Badge> : null}
-                  </button>
+                  </Chip>
                 </li>
               );
             })}
           </ul>
         </nav>
 
-        <section className="min-w-0">
-          {kanal ? (
-            <>
-              <div className="border-line mb-4 flex flex-wrap items-start justify-between gap-3 border-b pb-3">
-                <div className="min-w-0">
-                  <h2 className="text-ink text-[1.0625rem] font-semibold">
-                    {kanal.art === 'kanal' ? `# ${kanal.name}` : kanal.name}
-                  </h2>
-                  <p className="text-ink-muted mt-0.5 text-sm">{kanal.beschreibung}</p>
-                </div>
-                {/* Nur, wenn es Ungelesenes gibt (VOR-23) - sonst meldete der
-                    Knopf einen Vorgang, der nichts tat. */}
-                {ungelesenImKanal ? (
-                  <Button variant="quiet" onClick={alsGelesen}>
-                    Als gelesen markieren
-                  </Button>
-                ) : null}
-              </div>
-
-              {nachrichtenImKanal.length === 0 ? (
-                <EmptyState title="Noch keine Nachrichten" />
-              ) : (
-                <ul className="space-y-4">
+        {kanal ? (
+          <Section
+            titel={kanal.art === 'kanal' ? `# ${kanal.name}` : kanal.name}
+            hinweis={kanal.beschreibung}
+            aktion={
+              // Nur, wenn es Ungelesenes gibt (VOR-23) - sonst meldete der
+              // Knopf einen Vorgang, der nichts tat.
+              ungelesenImKanal ? (
+                <Button variant="quiet" groesse="kompakt" onClick={alsGelesen}>
+                  Als gelesen markieren
+                </Button>
+              ) : undefined
+            }
+          >
+            {nachrichtenImKanal.length === 0 ? (
+              <EmptyState inKarte title="Noch keine Nachrichten" />
+            ) : (
+              <Inhaltsflaeche>
+                <ul>
                   {nachrichtenImKanal
                     .filter((nachricht) => nachricht.threadVon === null)
                     .map((nachricht) => (
-                      <li key={nachricht.id}>
+                      <li key={nachricht.id} className="border-line border-t py-3 first:border-t-0">
                         <Nachrichtenblock
                           nachricht={nachricht}
                           zeitzone={zeitzone}
                           onAntworten={() => setAntwortAuf(nachricht)}
                         />
-                        <ul className="border-line mt-2 ml-4 space-y-3 border-l pl-4">
+                        <ul className="border-line mt-2 ml-4 space-y-3 border-l pl-4 empty:hidden">
                           {nachrichtenImKanal
                             .filter((antwort) => antwort.threadVon === nachricht.id)
                             .map((antwort) => (
@@ -247,47 +243,47 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
                       </li>
                     ))}
                 </ul>
-              )}
+              </Inhaltsflaeche>
+            )}
 
-              <div className="border-line mt-6 border-t pt-4">
-                {/* Unter welchem Namen die eigene Nachricht erscheint, steht
+            <div className="mt-6">
+              {/* Unter welchem Namen die eigene Nachricht erscheint, steht
                     dabei (VOR-07): In der Vorschau schreibt das Konto als
                     Demoperson, und ohne diesen Satz stand die eigene Nachricht
                     scheinbar unter fremdem Namen. */}
-                {identitaet ? (
-                  <p className="text-ink-muted mb-2 text-sm">
-                    Sie schreiben in der Vorschau als {identitaet.person.name}
-                    {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}.
+              {identitaet ? (
+                <p className="text-ink-muted mb-2 text-sm">
+                  Sie schreiben in der Vorschau als {identitaet.person.name}
+                  {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}.
+                </p>
+              ) : null}
+              {antwortAuf ? (
+                <div className="mb-2 flex flex-wrap items-center gap-x-3">
+                  <p className="text-ink-muted min-w-0 text-sm">
+                    Antwort auf: „{zitat(antwortAuf.text)}“
                   </p>
-                ) : null}
-                {antwortAuf ? (
-                  <div className="mb-2 flex flex-wrap items-center gap-x-3">
-                    <p className="text-ink-muted min-w-0 text-sm">
-                      Antwort auf: „{zitat(antwortAuf.text)}“
-                    </p>
-                    {/* 44 px statt einer Textzeile (VOR-11). */}
-                    <Button variant="quiet" groesse="kompakt" onClick={() => setAntwortAuf(null)}>
-                      Abbrechen
-                    </Button>
-                  </div>
-                ) : null}
-                <TextArea
-                  rows={3}
-                  label={antwortAuf ? 'Antwort' : 'Neue Nachricht'}
-                  hint="Keine Diagnosen und keine klinischen Freitexte im Teamkanal."
-                  placeholder="Organisatorische Abstimmung"
-                  value={entwurf}
-                  onChange={(event) => setEntwurf(event.target.value)}
-                />
-                <div className="mt-3">
-                  <Button onClick={senden} disabled={entwurf.trim() === '' || !identitaet}>
-                    In die Vorschau schreiben
+                  {/* 44 px statt einer Textzeile (VOR-11). */}
+                  <Button variant="quiet" groesse="kompakt" onClick={() => setAntwortAuf(null)}>
+                    Abbrechen
                   </Button>
                 </div>
+              ) : null}
+              <TextArea
+                rows={3}
+                label={antwortAuf ? 'Antwort' : 'Neue Nachricht'}
+                hint="Keine Diagnosen und keine klinischen Freitexte im Teamkanal."
+                placeholder="Organisatorische Abstimmung"
+                value={entwurf}
+                onChange={(event) => setEntwurf(event.target.value)}
+              />
+              <div className="mt-3">
+                <Button onClick={senden} disabled={entwurf.trim() === '' || !identitaet}>
+                  In die Vorschau schreiben
+                </Button>
               </div>
-            </>
-          ) : null}
-        </section>
+            </div>
+          </Section>
+        ) : null}
       </div>
     </>
   );

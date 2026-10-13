@@ -9,7 +9,7 @@ import { CALL_LIST_KEY } from '@/features/open-points/call-list-api';
 import { CallListPage } from '@/features/open-points/CallListPage';
 import { OPEN_INTAKES_KEY, type OpenIntake } from '@/features/open-points/intake-api';
 import { OpenPointsPage } from '@/features/open-points/OpenPointsPage';
-import { OPEN_SCANS_KEY } from '@/features/open-points/PrescriptionsToCapture';
+import { OPEN_SCANS_KEY, WAITLIST_REVIEW_KEY } from '@/features/open-points/eingang';
 import {
   ENDING_KEY,
   IDLE_KEY,
@@ -21,19 +21,23 @@ import {
   type PlatformRequest,
 } from '@/features/open-points/platform-requests-api';
 import { TASKS_KEY, type Task } from '@/features/open-points/tasks-api';
+import { FAELLIG_SCHLUESSEL } from '@/features/exercise-plans/api';
+import { rueckfragenKey, type Rueckfragezeile } from '@/features/messages/api';
+import { ABO_KUENDIGUNGEN_KEY } from '@/features/open-points/aftercare-cancellations-api';
+import { CONSENT_WITHDRAWALS_KEY } from '@/features/open-points/consent-withdrawals-api';
 import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
 import type { WaitlistEntry } from '@/features/waitlist/api';
-import { WAITLIST_REVIEW_KEY } from '@/features/open-points/WaitlistReview';
 import '@/index.css';
 
 /**
  * Einstieg der Prüfseite aus `offen.html` (PRX-EPIC-003).
  *
- * Drei Ansichten über `?ansicht=`: `liste` (Offene Punkte als Praxisinhaberin,
- * alle Abschnitte), `formular` (Aufgabe anlegen mit einer Person) und
- * `anrufe` (Anrufliste für morgen). Die Daten liegen vorab im Cache; gesprochen
- * wird mit keinem Server. Alles ist synthetisch.
+ * Ansichten über `?ansicht=`: `liste` (Offene Punkte als Praxisinhaberin,
+ * Gruppen mit Einträgen), `leer` (alles erledigt: „Nichts offen"), `formular`
+ * (Aufgabe anlegen mit einer Person) und `anrufe` (Anrufliste für morgen). Die
+ * Daten liegen vorab im Cache; gesprochen wird mit keinem Server. Alles ist
+ * synthetisch.
  */
 const ansicht = new URLSearchParams(window.location.search).get('ansicht') ?? 'liste';
 
@@ -349,14 +353,63 @@ client.setQueryData(
       ]
     : [],
 );
+// KOM-002: eine überfällige Rückfrage aus der Behandlung - die Gruppe zählt
+// nur, Namen und Text stehen erst in der Liste bzw. beim Öffnen (ADR-010).
+client.setQueryData(rueckfragenKey(null, null, false), [
+  {
+    id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
+    relationship_kind: 'treatment',
+    relationship_id: ERIKA,
+    patient_id: ERIKA,
+    training_relationship_id: null,
+    given_name: 'Erika',
+    family_name: 'Beispiel',
+    topic: 'complaint',
+    reference_label: null,
+    status: 'open',
+    due_on: tagPlus(-1),
+    overdue: true,
+    created_at: `${tagPlus(-3)}T08:00:00Z`,
+    last_entry_at: `${tagPlus(-3)}T08:00:00Z`,
+    closed_at: null,
+    closed_by_side: null,
+    entry_count: 1,
+    asked_by: 'self',
+    representative_name: null,
+    can_answer: true,
+    record_assigned_at: null,
+  },
+] satisfies Rueckfragezeile[]);
+// Ohne Widerruf, Kündigung und auslaufenden Plan: Diese Gruppen fehlen.
+client.setQueryData(CONSENT_WITHDRAWALS_KEY, []);
+client.setQueryData(ABO_KUENDIGUNGEN_KEY, []);
+client.setQueryData(FAELLIG_SCHLUESSEL, { today: HEUTE, plans: [] });
 client.setQueryData(['patient', MAX], {
   id: MAX,
   given_name: 'Max',
   family_name: 'Mustermann',
 });
 
+// `?ansicht=leer`: alles erledigt - der Eingang sagt einmal „Nichts offen".
+if (ansicht === 'leer') {
+  for (const schluessel of [
+    [...TASKS_KEY, 'open'],
+    OPEN_SCANS_KEY,
+    OPEN_INTAKES_KEY,
+    [...CALL_LIST_KEY, MORGEN],
+    ENDING_KEY,
+    IDLE_KEY,
+    WAITLIST_REVIEW_KEY,
+    PLATFORM_REQUESTS_KEY,
+    rueckfragenKey(null, null, false),
+  ]) {
+    client.setQueryData(schluessel, []);
+  }
+}
+
 const start: Record<string, string> = {
   liste: '/offen',
+  leer: '/offen',
   formular: `/offen?aufgabe=neu&patient=${MAX}`,
   anrufe: `/offen/anrufe?datum=${MORGEN}`,
 };

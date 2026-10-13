@@ -1,73 +1,90 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
-import {
-  OPEN_INTAKES_KEY,
-  fetchOpenIntakes,
-  intakeItemLabels,
-  intakeItemTarget,
-} from './intake-api';
+import { abfragen } from './eingang';
+import { intakeItemLabels, intakeItemTarget, openItemsText } from './intake-api';
+
+/** So viele Zeilen zeigt die Gruppe, bevor „Alle … anzeigen" kommt. */
+const KURZ = 5;
 
 /**
  * „Erstaufnahme offen" (PRX-013): Personen in Versorgung, bei denen einer der
- * fünf Punkte fehlt. Jeder Punkt führt in den Bereich der Akte, in dem er
- * erledigt wird - und verschwindet von allein, sobald er dort steht.
+ * Punkte fehlt. Die Zeile führt in die Akte, der Knopf daneben an die Stelle,
+ * an der der erste offene Punkt erledigt wird - und die Zeile verschwindet
+ * von allein, sobald alles dort steht. Sind alle vollständig, keine Gruppe.
+ *
+ * Die Liste ist oft ein Rückstand, kein Tagesgeschäft: Sie zeigt die ersten
+ * fünf, der Rest steht hinter „Alle … anzeigen" (die Zahl steht im Titel).
  */
 export function OpenIntakes() {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: OPEN_INTAKES_KEY,
-    queryFn: fetchOpenIntakes,
-    retry: false,
-  });
+  const { data, isError, refetch } = useQuery(abfragen.erstaufnahmen());
+  const [alle, setAlle] = useState(false);
 
-  return (
-    <Section
-      titel={data && data.length > 0 ? `Erstaufnahme offen (${data.length})` : 'Erstaufnahme offen'}
-    >
-      {isPending ? <LoadingState label="Erstaufnahmen werden geladen …" /> : null}
-      {isError ? (
+  if (isError && !data) {
+    return (
+      <Section titel="Erstaufnahme offen">
         <ErrorState
           title="Die offenen Erstaufnahmen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
-      ) : null}
-      {data && data.length === 0 ? (
-        <p className="text-ink-muted text-sm">
-          Bei allen in Versorgung ist die Erstaufnahme vollständig.
-        </p>
-      ) : null}
-      {data && data.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {data.map((eintrag) => (
-            <li key={eintrag.patient_id} className="py-3">
-              <p className="text-ink text-liste font-medium wrap-anywhere">
-                <Link
-                  to={mitRueckweg(`/patienten/${eintrag.patient_id}`, '/offen')}
-                  className="hover:underline"
+      </Section>
+    );
+  }
+  if (!data || data.length === 0) return null;
+  // Eine einzelne weitere Zeile steht gleich da - ein Knopf für eine Zeile
+  // wäre länger als sie.
+  const kuerzbar = data.length > KURZ + 1;
+  const sichtbar = kuerzbar && !alle ? data.slice(0, KURZ) : data;
+
+  return (
+    <Listenabschnitt
+      titel="Erstaufnahme offen"
+      anzahl={data.length}
+      mehr={
+        kuerzbar ? (
+          <Button type="button" variant="quiet" groesse="kompakt" onClick={() => setAlle(!alle)}>
+            {alle ? 'Weniger anzeigen' : `Alle ${data.length} anzeigen`}
+          </Button>
+        ) : undefined
+      }
+    >
+      {sichtbar.map((eintrag) => {
+        const erster = eintrag.open_items[0];
+        const name = `${eintrag.patient_given_name} ${eintrag.patient_family_name}`;
+        return (
+          <ListRow
+            key={eintrag.patient_id}
+            titel={
+              <span className="wrap-anywhere">
+                {eintrag.patient_family_name}, {eintrag.patient_given_name}
+              </span>
+            }
+            // Die Gruppe heißt „Erstaufnahme offen" - ein „Offen:" je Zeile
+            // wiederholte sie (UX-005h).
+            meta={openItemsText(eintrag.open_items)}
+            to={mitRueckweg(`/patienten/${eintrag.patient_id}`, '/offen')}
+            aktion={
+              erster ? (
+                <ButtonLink
+                  to={mitRueckweg(intakeItemTarget(eintrag.patient_id, erster), '/offen')}
+                  variant="secondary"
+                  aria-label={`${intakeItemLabels[erster]}: ${name}`}
                 >
-                  {eintrag.patient_family_name}, {eintrag.patient_given_name}
-                </Link>
-              </p>
-              <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm">
-                {/* Der Abschnitt heißt „Erstaufnahme offen" - ein „Offen:"
-                    je Zeile wiederholte ihn (UX-005h). */}
-                {eintrag.open_items.map((item) => (
-                  <Link
-                    key={item}
-                    to={mitRueckweg(intakeItemTarget(eintrag.patient_id, item), '/offen')}
-                    className="text-accent inline-flex min-h-11 items-center hover:underline sm:min-h-0"
-                  >
-                    {intakeItemLabels[item]}
-                  </Link>
-                ))}
-              </p>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </Section>
+                  {intakeItemLabels[erster]}
+                </ButtonLink>
+              ) : null
+            }
+          />
+        );
+      })}
+    </Listenabschnitt>
   );
 }

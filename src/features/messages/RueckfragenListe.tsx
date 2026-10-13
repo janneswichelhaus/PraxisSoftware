@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { formatDate } from '@/lib/datum';
 import {
@@ -26,6 +26,7 @@ export function RueckfragenListe({
   mitName = true,
   leer,
   nurWennVorhanden = false,
+  leerInKarte = false,
 }: {
   art: Verhaeltnisart | null;
   verhaeltnisId?: string | null;
@@ -34,32 +35,41 @@ export function RueckfragenListe({
   leer: string;
   /** Ohne Rückfrage gar nichts zeigen - für Seiten, auf denen sie nur dazukommen. */
   nurWennVorhanden?: boolean;
+  /**
+   * Laden und Leer in einer Karte (DESIGN.md Regel 8) - für die Liste als
+   * eigene Seite. Als Abschnitt an Akte und Trainingsverhältnis steht „leer"
+   * als ein Satz, wie bisher.
+   */
+  leerInKarte?: boolean;
 }) {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: rueckfragenKey(art, verhaeltnisId, mitErledigten),
     queryFn: () => fetchRueckfragen(art, verhaeltnisId, mitErledigten),
     retry: false,
   });
-  if (isPending)
-    return nurWennVorhanden ? null : <LoadingState label="Rückfragen werden geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Die Rückfragen konnten nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => refetch()}
-      />
-    );
-  }
-  if (data.length === 0) {
-    return nurWennVorhanden ? null : <p className="text-ink-muted text-sm">{leer}</p>;
-  }
+  if (nurWennVorhanden && !abfrage.isError && (abfrage.data?.length ?? 0) === 0) return null;
   return (
-    <ListRows>
-      {data.map((z) => (
-        <Rueckfragezeile key={z.id} zeile={z} mitName={mitName} />
-      ))}
-    </ListRows>
+    <Abfragezustand
+      abfrage={abfrage}
+      laden="Rückfragen werden geladen …"
+      fehler="Die Rückfragen konnten nicht geladen werden."
+      inKarte={leerInKarte}
+      {...(leerInKarte
+        ? { leer: { wenn: (d: Rueckfragezeile[]) => d.length === 0, titel: leer } }
+        : {})}
+    >
+      {(data) =>
+        data.length === 0 ? (
+          <p className="text-ink-muted text-sm">{leer}</p>
+        ) : (
+          <ListRows>
+            {data.map((z) => (
+              <Rueckfragezeile key={z.id} zeile={z} mitName={mitName} />
+            ))}
+          </ListRows>
+        )
+      }
+    </Abfragezustand>
   );
 }
 

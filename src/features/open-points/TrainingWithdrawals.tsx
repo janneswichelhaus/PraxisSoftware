@@ -1,13 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Section } from '@/components/ui/Section';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
+import { StatusMark } from '@/components/ui/StatusMark';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
-import {
-  fetchTrainingswiderrufe,
-  TRAININGSWIDERRUFE_KEY,
-  type Trainingswiderruf,
-} from './training-withdrawals-api';
+import { abfragen } from './eingang';
+import type { Trainingswiderruf } from './training-withdrawals-api';
 
 /**
  * „Trainingsvertrag widerrufen" in Offene Punkte (KND-004). Die Praxis wickelt
@@ -16,23 +15,23 @@ import {
  * 14 Tage (BEF-129, ANN-341). Ohne Widerruf steht hier nichts.
  */
 export function TrainingWithdrawals() {
-  const { data } = useQuery({
-    queryKey: TRAININGSWIDERRUFE_KEY,
-    queryFn: fetchTrainingswiderrufe,
-    retry: false,
-  });
+  const { data } = useQuery(abfragen.trainingswiderrufe());
   if (!data || data.length === 0) return null;
   return (
-    <Section
-      titel={`Trainingsvertrag widerrufen (${data.length})`}
-      hinweis="Über die Plattform widerrufen. Bitte Paket und Zahlung abwickeln. Ein Widerruf bleibt hier, bis sein Paket entfernt ist, mindestens 14 Tage."
+    <Listenabschnitt
+      titel="Trainingsvertrag widerrufen"
+      anzahl={data.length}
+      mehr={
+        <Kleingedrucktes>
+          Über die Plattform widerrufen. Bitte Paket und Zahlung abwickeln. Ein Widerruf bleibt
+          hier, bis sein Paket entfernt ist, mindestens 14 Tage.
+        </Kleingedrucktes>
+      }
     >
-      <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-        {data.map((w) => (
-          <Zeile key={w.contract_id} widerruf={w} />
-        ))}
-      </ul>
-    </Section>
+      {data.map((w) => (
+        <Zeile key={w.contract_id} widerruf={w} />
+      ))}
+    </Listenabschnitt>
   );
 }
 
@@ -43,21 +42,23 @@ function Zeile({ widerruf: w }: { widerruf: Trainingswiderruf }) {
       ? `von ${w.withdrawn_representative_name} (rechtliche Vertretung)`
       : 'von der Person selbst';
   return (
-    <li className="py-3">
-      <p className="text-ink text-liste font-medium">
-        <Link
-          to={mitRueckweg(`/training/${w.training_relationship_id}`, '/offen')}
-          className="hover:text-accent underline-offset-2 hover:underline"
-        >
-          {name}
-        </Link>
-      </p>
-      <p className="text-ink-muted text-sm">
-        {w.package_label}: widerrufen am {formatDate(w.withdrawn_on)}, {von}
-      </p>
-      <p className={w.package_open ? 'text-warnung text-sm font-medium' : 'text-ink-muted text-sm'}>
-        {w.package_open ? 'Paket besteht noch' : 'Paket entfernt'}
-      </p>
-    </li>
+    <ListRow
+      titel={name}
+      meta={
+        <>
+          {w.package_label}: widerrufen am {formatDate(w.withdrawn_on)}, {von}
+          <span className="mt-0.5 block">
+            {/* Das noch bestehende Paket ist die offene Arbeit (BEF-129):
+                Zeichen und Wort; das entfernte steht leise. */}
+            {w.package_open ? (
+              <StatusMark ton="warnung">Paket besteht noch</StatusMark>
+            ) : (
+              'Paket entfernt'
+            )}
+          </span>
+        </>
+      }
+      to={mitRueckweg(`/training/${w.training_relationship_id}`, '/offen')}
+    />
   );
 }

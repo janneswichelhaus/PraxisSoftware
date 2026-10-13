@@ -2,10 +2,13 @@ import { useState, type FormEvent } from 'react';
 import { Field } from '@/components/ui/Field';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -42,75 +45,67 @@ const ANTWORT_MAX = 2000;
  * „Antwort fällig bis …" oben, überfällige mit Wort (ANN-309). Die Liste
  * zeigt keinen Text - erst das Öffnen liest ihn (ADR-010).
  *
- * Fragen aus dem Training kommen im Bereich Training an (DSN-001 D1).
+ * Seitentyp Liste (DESIGN.md): Kopf mit der Zusage als Zeile darunter, die
+ * Liste in voller Breite, der Leerzustand in der Karte; das Ändern der Frist
+ * (selten, nur owner) leise am Ende. Fragen aus dem Training kommen im
+ * Bereich Training an (DSN-001 D1).
  */
 export function RueckfragenPage({ user }: { user: CurrentUser }) {
   const [mitErledigten, setMitErledigten] = useState(false);
+  const { data: frist } = useQuery({ queryKey: ANTWORTFRIST_KEY, queryFn: fetchAntwortfrist });
+  const fristBekannt = frist !== undefined && frist !== null;
+
   return (
     <>
       <PageHeader
         title="Rückfragen"
-        description="Fragen von Patient:innen über die Plattform – bis sie erledigt sind."
+        description={
+          fristBekannt
+            ? `Zusage: Antwort in der Regel innerhalb von ${frist} ${
+                frist === 1 ? 'Werktag' : 'Werktagen'
+              } (Montag bis Freitag).`
+            : undefined
+        }
       />
-      <div className="flex flex-col gap-6 lg:max-w-3xl">
-        <Antwortfrist darfAendern={isOwner(user.roles)} />
+      <div className="mb-3">
         <Checkbox
           label="Erledigte anzeigen"
           checked={mitErledigten}
           onChange={() => setMitErledigten((x) => !x)}
         />
-        <RueckfragenListe
-          art="treatment"
-          mitErledigten={mitErledigten}
-          leer="Keine offene Rückfrage. Neue Fragen von Patient:innen erscheinen hier."
-        />
       </div>
+      <RueckfragenListe
+        art="treatment"
+        mitErledigten={mitErledigten}
+        leerInKarte
+        leer={mitErledigten ? 'Noch keine Rückfrage.' : 'Keine offene Rückfrage.'}
+      />
+      {isOwner(user.roles) && fristBekannt ? (
+        <div className="mt-8">
+          <Disclosure summary="Antwortfrist ändern">
+            <Antwortfrist bisher={frist} />
+          </Disclosure>
+        </div>
+      ) : null}
     </>
   );
 }
 
 /**
- * Die Zusage an die Patient:innen (ANN-309). Ändern darf nur owner, wie die
- * übrigen Praxisstammdaten; verbindlich prüft der Server.
+ * Die Zusage an die Patient:innen ändern (ANN-309). Ändern darf nur owner,
+ * wie die übrigen Praxisstammdaten; verbindlich prüft der Server.
  */
-function Antwortfrist({ darfAendern }: { darfAendern: boolean }) {
+function Antwortfrist({ bisher }: { bisher: number }) {
   const queryClient = useQueryClient();
-  const { data } = useQuery({ queryKey: ANTWORTFRIST_KEY, queryFn: fetchAntwortfrist });
-  const [bearbeiten, setBearbeiten] = useState(false);
-  const [wert, setWert] = useState('2');
+  const [wert, setWert] = useState(String(bisher));
   const speichern = useMutation({
     mutationFn: () => saveAntwortfrist(Number(wert)),
-    onSuccess: async () => {
-      setBearbeiten(false);
-      await queryClient.invalidateQueries({ queryKey: ANTWORTFRIST_KEY });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ANTWORTFRIST_KEY }),
   });
-  if (data === undefined || data === null) return null;
-  const satz = `Zusage an die Patient:innen: Antwort in der Regel innerhalb von ${data} ${
-    data === 1 ? 'Werktag' : 'Werktagen'
-  } (Montag bis Freitag).`;
-  if (!bearbeiten) {
-    return (
-      <p className="text-ink-muted text-sm">
-        {satz}{' '}
-        {darfAendern ? (
-          <button
-            type="button"
-            className="text-accent min-h-11 underline"
-            onClick={() => {
-              setWert(String(data));
-              setBearbeiten(true);
-            }}
-          >
-            Ändern
-          </button>
-        ) : null}
-      </p>
-    );
-  }
   return (
     <form
-      className="flex flex-wrap items-end gap-3"
+      aria-label="Antwortfrist ändern"
+      className="max-w-formular"
       onSubmit={(e) => {
         e.preventDefault();
         speichern.mutate();
@@ -123,15 +118,20 @@ function Antwortfrist({ darfAendern }: { darfAendern: boolean }) {
           </option>
         ))}
       </Select>
-      <Button type="submit" disabled={speichern.isPending}>
-        Speichern
-      </Button>
-      <Button type="button" variant="secondary" onClick={() => setBearbeiten(false)}>
-        Abbrechen
-      </Button>
       {speichern.isError ? (
-        <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
+        <Statusmeldung ton="fehler" className="mt-3">
+          {speichern.error.message}
+        </Statusmeldung>
+      ) : speichern.isSuccess ? (
+        <Statusmeldung ton="erfolg" className="mt-3">
+          Antwortfrist gespeichert.
+        </Statusmeldung>
       ) : null}
+      <div className="mt-4">
+        <Button type="submit" groesse="kompakt" disabled={speichern.isPending}>
+          Speichern
+        </Button>
+      </div>
     </form>
   );
 }
@@ -141,10 +141,14 @@ function Antwortfrist({ darfAendern }: { darfAendern: boolean }) {
  * markieren" - und seit KOM-004 „In die Akte übernehmen". Das Laden ist das
  * Lesen und steht als „Akte geöffnet" bzw. „Trainingsverhältnis geöffnet" im
  * Protokoll.
+ *
+ * Eine Arbeitsspalte (`max-w-spalte`): Rückweg, Kopf mit Person, Thema und
+ * Zustand, der Verlauf als eine Karte mit Linien statt einer Karte je
+ * Nachricht, darunter Anhänge, Antwort und - leise am Ende - „In die Akte".
  */
 export function RueckfragePage({ user }: { user: CurrentUser }) {
   const { messageId } = useParams();
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: rueckfrageKey(messageId ?? ''),
     queryFn: () => fetchRueckfrage(messageId ?? ''),
     enabled: Boolean(messageId),
@@ -153,100 +157,126 @@ export function RueckfragePage({ user }: { user: CurrentUser }) {
   const zone = user.organizationTimeZone ?? 'Europe/Berlin';
   const [ansicht, setAnsicht] = useState<Ansicht | null>(null);
 
-  if (isPending) return <LoadingState label="Die Rückfrage wird geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Die Rückfrage konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => refetch()}
-      />
-    );
-  }
-  if (!data) {
-    return (
-      <>
-        <PageHeader title="Rückfrage" />
-        <p className="text-ink">Diese Rückfrage gibt es nicht oder sie ist nicht für dich.</p>
-      </>
-    );
-  }
+  return (
+    <Abfragezustand
+      abfrage={abfrage}
+      laden="Die Rückfrage wird geladen …"
+      fehler="Die Rückfrage konnte nicht geladen werden."
+    >
+      {(data) =>
+        data ? (
+          <Vorgang vorgang={data} zone={zone} ansicht={ansicht} setAnsicht={setAnsicht} />
+        ) : (
+          <>
+            <PageHeader title="Rückfrage" />
+            <p className="text-ink">Diese Rückfrage gibt es nicht oder sie ist nicht für dich.</p>
+          </>
+        )
+      }
+    </Abfragezustand>
+  );
+}
+
+function Vorgang({
+  vorgang: data,
+  zone,
+  ansicht,
+  setAnsicht,
+}: {
+  vorgang: Rueckfrage;
+  zone: string;
+  ansicht: Ansicht | null;
+  setAnsicht: (a: Ansicht | null) => void;
+}) {
   const name = [data.given_name, data.family_name].filter(Boolean).join(' ') || 'Ohne Namen';
   const pfad = personPfad(data);
   // Im Training steht die Liste bei den Trainingskund:innen (DSN-001 D1).
   const zurueck = data.relationship_kind === 'training' ? '/training' : '/rueckfragen';
 
   return (
-    <>
-      <Link
-        to={zurueck}
-        className="text-ink-muted hover:text-ink mb-2 inline-flex min-h-11 items-center text-sm"
-      >
-        ← Zu den Rückfragen
-      </Link>
+    <div className="max-w-spalte">
+      <Rueckweg standard={zurueck} beschriftung="Zu den Rückfragen" />
       <PageHeader
         title={pfad ? <Link to={pfad}>{name}</Link> : name}
         kicker={data.relationship_kind === 'training' ? 'Rückfrage · Training' : 'Rückfrage'}
         description={
-          THEMA_LABEL[data.topic] + (data.reference_label ? ` · zu ${data.reference_label}` : '')
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>
+              {THEMA_LABEL[data.topic] +
+                (data.reference_label ? ` · zu ${data.reference_label}` : '')}
+            </span>
+            <Zustand zeile={data} />
+          </span>
         }
       />
-      <div className="flex flex-col gap-6 lg:max-w-3xl">
-        <p>
-          <Zustand zeile={data} />
-        </p>
-        <ol aria-label="Verlauf" className="flex flex-col gap-3">
-          {data.entries.map((e) => (
-            <li
-              key={e.id}
-              className={`rounded-card border p-4 ${
-                e.side === 'practice' ? 'border-accent bg-accent-soft' : 'border-line bg-surface'
-              }`}
-            >
-              <p className="text-ink-muted text-sm">
-                <span className="text-ink font-semibold">{verfasser(e, name)}</span> ·{' '}
-                {kurzesDatum(e.created_at, zone)}, {formatLocalTime(e.created_at, zone)}
-              </p>
-              <p className="text-ink mt-1 leading-relaxed whitespace-pre-line">{e.body}</p>
-              {e.attachment_mark_seconds != null ? (
-                e.attachment_id &&
-                (data.attachments ?? []).some((a) => a.id === e.attachment_id) ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="mt-2"
-                    onClick={() =>
-                      setAnsicht({ anhangId: e.attachment_id!, ab: e.attachment_mark_seconds! })
-                    }
-                  >
-                    Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
-                  </Button>
-                ) : (
-                  <p className="text-ink-muted mt-2 text-sm">
-                    Zeitmarke bei {zeitmarke(e.attachment_mark_seconds)} – das Video ist gelöscht.
+      <Section titel="Verlauf">
+        <Inhaltsflaeche>
+          <ol aria-label="Verlauf">
+            {data.entries.map((e) => (
+              <li key={e.id} className="border-line border-t py-3 first:border-t-0">
+                {/* Die Praxis antwortet eingerückt mit Linie in der
+                    Hauptfarbe - wer spricht, sagt der Name davor. */}
+                <div
+                  className={e.side === 'practice' ? 'border-accent border-l-2 pl-3' : undefined}
+                >
+                  <p className="text-ink-muted text-sm">
+                    <span className="text-ink font-semibold">{verfasser(e, name)}</span> ·{' '}
+                    {kurzesDatum(e.created_at, zone)}, {formatLocalTime(e.created_at, zone)}
                   </p>
-                )
-              ) : null}
-            </li>
-          ))}
-        </ol>
-        <RueckfrageAnhaenge
-          vorgang={data}
-          name={name}
-          zeitzone={zone}
-          ansicht={ansicht}
-          setAnsicht={setAnsicht}
-        />
+                  <p className="text-ink mt-1 leading-relaxed wrap-anywhere whitespace-pre-line">
+                    {e.body}
+                  </p>
+                  {e.attachment_mark_seconds != null ? (
+                    e.attachment_id &&
+                    (data.attachments ?? []).some((a) => a.id === e.attachment_id) ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        groesse="kompakt"
+                        className="mt-2"
+                        onClick={() =>
+                          setAnsicht({
+                            anhangId: e.attachment_id!,
+                            ab: e.attachment_mark_seconds!,
+                          })
+                        }
+                      >
+                        Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
+                      </Button>
+                    ) : (
+                      <p className="text-ink-muted mt-2 text-sm">
+                        Zeitmarke bei {zeitmarke(e.attachment_mark_seconds)} – das Video ist
+                        gelöscht.
+                      </p>
+                    )
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Inhaltsflaeche>
         {data.status === 'closed' && data.closed_at ? (
-          <p className="text-ink-muted text-sm">
+          <p className="text-ink-muted mt-3 text-sm">
             Erledigt am {formatDate(data.closed_at.slice(0, 10))}
             {data.closed_by_side === 'person' ? ' von der Person selbst' : ' durch die Praxis'}.
           </p>
         ) : null}
-        <InDieAkte vorgang={data} zeitzone={zone} />
-        {data.status !== 'closed' ? <Antworten vorgang={data} /> : null}
-      </div>
-    </>
+      </Section>
+      <RueckfrageAnhaenge
+        vorgang={data}
+        name={name}
+        zeitzone={zone}
+        ansicht={ansicht}
+        setAnsicht={setAnsicht}
+      />
+      {data.status !== 'closed' ? <Antworten vorgang={data} /> : null}
+      {/* Endgültig und selten - leise am Ende, mit Rückfrage (ANN-312). */}
+      {data.record_assigned_at || data.can_assign ? (
+        <div className="border-line mt-8 border-t pt-6">
+          <InDieAkte vorgang={data} zeitzone={zone} />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -281,11 +311,13 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
 
   if (!vorgang.can_answer) {
     return (
-      <Statusmeldung ton="neutral">
-        {vorgang.relationship_kind === 'training'
-          ? 'Auf diese Rückfrage antworten Inhaber:in und Trainingsbetreuung. Bitte gib sie weiter.'
-          : 'Auf Fragen zu Übungen und Beschwerden antworten Therapeut:innen. Bitte gib die Rückfrage weiter.'}
-      </Statusmeldung>
+      <Section titel="Antworten">
+        <Statusmeldung ton="neutral">
+          {vorgang.relationship_kind === 'training'
+            ? 'Auf diese Rückfrage antworten Inhaber:in und Trainingsbetreuung. Bitte gib sie weiter.'
+            : 'Auf Fragen zu Übungen und Beschwerden antworten Therapeut:innen. Bitte gib die Rückfrage weiter.'}
+        </Statusmeldung>
+      </Section>
     );
   }
 
@@ -319,41 +351,44 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
 
   return (
     <Section titel="Antworten">
-      <form onSubmit={absenden} noValidate className="flex flex-col gap-4">
-        <TextArea
-          label="Antwort an die Person"
-          hint={`Die Person sieht die Antwort als „Praxis“, ohne deinen Namen. ${text.trim().length} von ${ANTWORT_MAX} Zeichen`}
-          rows={4}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-        />
-        {videos.length > 0 ? (
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Select
-              label="Auf eine Stelle im Video zeigen (freiwillig)"
-              value={videoId}
-              onChange={(e) => setVideoId(e.target.value)}
-            >
-              <option value="">Ohne Zeitmarke</option>
-              {videos.map((v, i) => (
-                <option key={v.id} value={v.id}>
-                  Video {i + 1} ({zeitmarke(v.duration_seconds ?? 0)})
-                </option>
-              ))}
-            </Select>
-            {video ? (
-              <Field
-                label="Sekunde"
-                inputMode="numeric"
-                hint={`0 bis ${video.duration_seconds ?? 0}`}
-                value={sekunde}
-                onChange={(e) => setSekunde(e.target.value)}
-              />
-            ) : null}
-          </div>
-        ) : null}
-        {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-        <div className="flex flex-col gap-3 sm:flex-row">
+      <form onSubmit={absenden} noValidate>
+        <div className="flex flex-col gap-4">
+          <TextArea
+            label="Antwort an die Person"
+            hint={`Die Person sieht die Antwort als „Praxis“, ohne deinen Namen. ${text.trim().length} von ${ANTWORT_MAX} Zeichen`}
+            rows={4}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          {videos.length > 0 ? (
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Select
+                label="Auf eine Stelle im Video zeigen (freiwillig)"
+                value={videoId}
+                onChange={(e) => setVideoId(e.target.value)}
+              >
+                <option value="">Ohne Zeitmarke</option>
+                {videos.map((v, i) => (
+                  <option key={v.id} value={v.id}>
+                    Video {i + 1} ({zeitmarke(v.duration_seconds ?? 0)})
+                  </option>
+                ))}
+              </Select>
+              {video ? (
+                <Field
+                  label="Sekunde"
+                  inputMode="numeric"
+                  hint={`0 bis ${video.duration_seconds ?? 0}`}
+                  value={sekunde}
+                  onChange={(e) => setSekunde(e.target.value)}
+                />
+              ) : null}
+            </div>
+          ) : null}
+          {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
+        </div>
+        {/* Hauptknopf zuerst, am Telefon untereinander in voller Breite. */}
+        <Formularfuss>
           <Button type="submit" disabled={antworten.isPending}>
             {antworten.isPending ? 'Wird gesendet …' : 'Antwort senden'}
           </Button>
@@ -365,7 +400,7 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
           >
             Als erledigt markieren
           </Button>
-        </div>
+        </Formularfuss>
       </form>
     </Section>
   );

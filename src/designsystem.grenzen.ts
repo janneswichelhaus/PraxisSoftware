@@ -49,11 +49,7 @@ export const GRENZEN: Record<
 
     'features/exercises': 5,
 
-    'features/messages': 4,
-
     'features/offline-documentation': 2,
-
-    'features/open-points': 2,
 
     'features/platform': 9,
 
@@ -82,8 +78,6 @@ export const GRENZEN: Record<
 
     'features/files': 1,
 
-    'features/open-points': 2,
-
     'features/platform': 2,
 
     'features/statistics': 3,
@@ -105,17 +99,11 @@ export const GRENZEN: Record<
 
     'features/datenschutz': 1,
 
-    'features/messages': 1,
-
     'features/offline-documentation': 1,
-
-    'features/open-points': 13,
 
     'features/platform': 2,
 
     'features/platform-access': 1,
-
-    'features/teamchat': 1,
 
     'features/training': 6,
 
@@ -136,11 +124,7 @@ export const GRENZEN: Record<
 
     'features/files': 1,
 
-    'features/messages': 1,
-
     'features/platform': 5,
-
-    'features/teamchat': 1,
 
     'features/today': 1,
 
@@ -176,11 +160,7 @@ export const GRENZEN: Record<
 
     'features/exercises': 3,
 
-    'features/messages': 1,
-
     'features/offline-documentation': 2,
-
-    'features/open-points': 2,
 
     'features/patients': 1,
 
@@ -189,8 +169,6 @@ export const GRENZEN: Record<
     'features/platform-access': 1,
 
     'features/statistics': 2,
-
-    'features/teamchat': 2,
 
     'features/today': 4,
 

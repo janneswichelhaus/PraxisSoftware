@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { ErrorState } from '@/components/ui/Feedback';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { TextArea } from '@/components/ui/TextArea';
+import { Textlink } from '@/components/ui/Textlink';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatLocalDate, formatLocalTimeRange } from '@/features/appointments/api';
 import { mitRueckweg } from '@/lib/rueckweg';
+import { Arbeitszeile } from './Arbeitszeile';
+import { abfragen } from './eingang';
 import {
   PLATFORM_REQUESTS_KEY,
   REQUEST_KIND_LABEL,
   cancelFromRequest,
-  fetchPlatformRequests,
   resolvePlatformRequest,
   requestText,
   type PlatformRequest,
@@ -24,40 +26,35 @@ const ANTWORT_MAX = 300;
 
 /**
  * „Terminwünsche" in Offene Punkte (POR-011, DSN-001 Abschnitt 6): was von
- * der Plattform kommt, bis es erledigt ist. Je Wunsch die Person, was sie
- * wünscht, seit wann, und die passende Handlung: einen Termin anlegen, die
- * Absage eintragen (mit dem Zeitpunkt des Wunsches als Eingang, D4) oder
- * antworten. Welche Wünsche eine Rolle sieht, entscheidet der Server je
- * Kontext.
+ * der Plattform kommt, bis es erledigt ist. Je Wunsch eine Zeile - die Person
+ * (der Weg in Akte oder Trainingsverhältnis), was sie wünscht, seit wann -
+ * und darunter die passende Handlung: einen Termin anlegen, die Absage
+ * eintragen (mit dem Zeitpunkt des Wunsches als Eingang, D4) oder antworten.
+ * Welche Wünsche eine Rolle sieht, entscheidet der Server je Kontext. Ohne
+ * offenen Wunsch keine Gruppe.
  */
 export function PlatformRequests({ timeZone }: { timeZone: string }) {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: PLATFORM_REQUESTS_KEY,
-    queryFn: () => fetchPlatformRequests('open'),
-    retry: false,
-  });
+  const { data, isError, refetch } = useQuery(abfragen.terminwuensche());
 
-  return (
-    <Section titel={data && data.length > 0 ? `Terminwünsche (${data.length})` : 'Terminwünsche'}>
-      {isPending ? <LoadingState label="Terminwünsche werden geladen …" /> : null}
-      {isError ? (
+  if (isError && !data) {
+    return (
+      <Section titel="Terminwünsche">
         <ErrorState
           title="Die Terminwünsche konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
-      ) : null}
-      {data && data.length === 0 ? (
-        <p className="text-ink-muted text-sm">Kein offener Wunsch von der Plattform.</p>
-      ) : null}
-      {data && data.length > 0 ? (
-        <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-          {data.map((wunsch) => (
-            <Zeile key={wunsch.id} wunsch={wunsch} timeZone={timeZone} />
-          ))}
-        </ul>
-      ) : null}
-    </Section>
+      </Section>
+    );
+  }
+  if (!data || data.length === 0) return null;
+
+  return (
+    <Listenabschnitt titel="Terminwünsche" anzahl={data.length}>
+      {data.map((wunsch) => (
+        <Zeile key={wunsch.id} wunsch={wunsch} timeZone={timeZone} />
+      ))}
+    </Listenabschnitt>
   );
 }
 
@@ -113,6 +110,7 @@ function Zeile({ wunsch: w, timeZone }: { wunsch: PlatformRequest; timeZone: str
   const hier = '/offen';
   const text = requestText(w);
   const termin = terminPfad(w);
+  const neuerTermin = w.kind === 'new' ? neuerTerminPfad(w) : null;
   const terminAbgesagt = w.appointment_status === 'cancelled';
   const antwortfeld = (
     <TextArea
@@ -125,97 +123,95 @@ function Zeile({ wunsch: w, timeZone }: { wunsch: PlatformRequest; timeZone: str
   );
 
   return (
-    <li className="flex flex-col gap-3 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 wrap-anywhere">
-          <p className="text-ink text-liste font-medium">
-            {person ? (
-              <Link to={mitRueckweg(person, hier)} className="hover:underline">
-                {name}
-              </Link>
-            ) : (
-              name
-            )}
-            {w.relationship_kind === 'training' ? (
-              <span className="text-ink-muted font-normal"> · Training</span>
-            ) : null}
-          </p>
-          <p className="text-ink-muted text-sm">
-            {REQUEST_KIND_LABEL[w.kind]} vom {formatDay(w.created_at, timeZone)}
-            {w.representative_name ? ` · durch ${w.representative_name} (Vertretung)` : ''}
-          </p>
-        </div>
-        <Badge ton="akzent">angefragt</Badge>
-      </div>
-      {w.appointment_starts_at && w.appointment_ends_at ? (
-        <p className="text-ink text-sm">
-          <span className="font-medium">Termin: </span>
-          {termin ? (
-            <Link to={mitRueckweg(termin, hier)} className="hover:underline">
-              {formatLocalDate(w.appointment_starts_at, timeZone)},{' '}
-              {formatLocalTimeRange(w.appointment_starts_at, w.appointment_ends_at, timeZone)}
-            </Link>
-          ) : (
-            formatLocalDate(w.appointment_starts_at, timeZone)
-          )}
-          {terminAbgesagt ? ' · schon abgesagt' : ''}
-        </p>
-      ) : w.kind !== 'new' ? (
-        <p className="text-ink-muted text-sm">Der Termin dazu besteht nicht mehr.</p>
-      ) : null}
-      {text ? (
-        <p className="text-ink text-sm">
-          <span className="font-medium">Wunsch: </span>
-          {text}
-        </p>
-      ) : null}
-      {w.note ? <p className="text-ink text-sm italic">„{w.note}“</p> : null}
-      <div className="flex flex-wrap gap-2">
-        {w.kind === 'new' && neuerTerminPfad(w) ? (
-          <ButtonLink to={mitRueckweg(neuerTerminPfad(w)!, hier)} variant="secondary">
-            Termin anlegen
-          </ButtonLink>
-        ) : null}
-        {w.kind === 'cancel' && w.appointment_id && !terminAbgesagt ? (
-          <Rueckfrage
-            ausloeser="Absage eintragen"
-            ausloeserVariante="primary"
-            bestaetigen="Absage eintragen"
-            bestaetigenLaeuft="Wird eingetragen …"
-            fehler={absagen.error?.message}
-            onBestaetigen={() => absagen.mutateAsync()}
-          >
-            <p>
-              Der Termin wird mit dem Grund „Patient:in hat abgesagt“ abgesagt. Als Eingang der
-              Absage gilt der Zeitpunkt des Wunsches, {formatDay(w.created_at, timeZone)}; ob ein
-              Ausfallhonorar entsteht, rechnet die Anwendung daraus.
+    <Arbeitszeile
+      titel={<span className="wrap-anywhere">{name}</span>}
+      meta={`${REQUEST_KIND_LABEL[w.kind]} vom ${formatDay(w.created_at, timeZone)}${
+        w.relationship_kind === 'training' ? ' · Training' : ''
+      }${w.representative_name ? ` · durch ${w.representative_name} (Vertretung)` : ''}`}
+      {...(person ? { to: mitRueckweg(person, hier) } : {})}
+      unten={
+        <>
+          {w.appointment_starts_at && w.appointment_ends_at ? (
+            <p className="text-ink text-sm">
+              <span className="font-medium">Termin: </span>
+              {termin ? (
+                <Textlink to={mitRueckweg(termin, hier)}>
+                  {formatLocalDate(w.appointment_starts_at, timeZone)},{' '}
+                  {formatLocalTimeRange(w.appointment_starts_at, w.appointment_ends_at, timeZone)}
+                </Textlink>
+              ) : (
+                formatLocalDate(w.appointment_starts_at, timeZone)
+              )}
+              {terminAbgesagt ? ' · schon abgesagt' : ''}
             </p>
-          </Rueckfrage>
-        ) : null}
-        <Rueckfrage
-          ausloeser="Erledigt"
-          bestaetigen="Als erledigt beantworten"
-          bestaetigenLaeuft="Wird beantwortet …"
-          fehler={beantworten.error?.message}
-          onBestaetigen={() => beantworten.mutateAsync('done')}
-        >
-          <p>Die Person sieht „erledigt“ und Ihre Antwort auf der Plattform.</p>
-          {antwortfeld}
-        </Rueckfrage>
-        <Rueckfrage
-          ausloeser="Nicht möglich"
-          ausloeserVariante="quiet"
-          bestaetigen="Als nicht möglich beantworten"
-          bestaetigenLaeuft="Wird beantwortet …"
-          fehler={beantworten.error?.message}
-          onBestaetigen={() => beantworten.mutateAsync('declined')}
-        >
-          <p>
-            Die Person sieht „nicht möglich“ und Ihre Antwort. Bitte sagen Sie, wie es weitergeht.
-          </p>
-          {antwortfeld}
-        </Rueckfrage>
-      </div>
-    </li>
+          ) : w.kind !== 'new' ? (
+            <p className="text-ink-muted text-sm">Der Termin dazu besteht nicht mehr.</p>
+          ) : null}
+          {text || w.note ? (
+            <div className="text-ink text-sm">
+              {text ? (
+                <p>
+                  <span className="font-medium">Wunsch: </span>
+                  {text}
+                </p>
+              ) : null}
+              {w.note ? <p className="wrap-anywhere italic">„{w.note}“</p> : null}
+            </div>
+          ) : null}
+          {/* Die Arbeit an der Zeile (L3), alle kompakt und keiner als
+              Hauptknopf: Die Liste trägt viele Wünsche, die Seite einen
+              Hauptknopf nur, wo es einen gibt. */}
+          <div className="flex flex-wrap gap-2">
+            {neuerTermin ? (
+              <ButtonLink to={mitRueckweg(neuerTermin, hier)} variant="secondary" groesse="kompakt">
+                Termin anlegen
+              </ButtonLink>
+            ) : null}
+            {w.kind === 'cancel' && w.appointment_id && !terminAbgesagt ? (
+              <Rueckfrage
+                ausloeser="Absage eintragen"
+                ausloeserGroesse="kompakt"
+                bestaetigen="Absage eintragen"
+                bestaetigenLaeuft="Wird eingetragen …"
+                fehler={absagen.error?.message}
+                onBestaetigen={() => absagen.mutateAsync()}
+              >
+                <p>
+                  Der Termin wird mit dem Grund „Patient:in hat abgesagt“ abgesagt. Als Eingang der
+                  Absage gilt der Zeitpunkt des Wunsches, {formatDay(w.created_at, timeZone)}; ob
+                  ein Ausfallhonorar entsteht, rechnet die Anwendung daraus.
+                </p>
+              </Rueckfrage>
+            ) : null}
+            <Rueckfrage
+              ausloeser="Erledigt"
+              ausloeserGroesse="kompakt"
+              bestaetigen="Als erledigt beantworten"
+              bestaetigenLaeuft="Wird beantwortet …"
+              fehler={beantworten.error?.message}
+              onBestaetigen={() => beantworten.mutateAsync('done')}
+            >
+              <p>Die Person sieht „erledigt“ und Ihre Antwort auf der Plattform.</p>
+              {antwortfeld}
+            </Rueckfrage>
+            <Rueckfrage
+              ausloeser="Nicht möglich"
+              ausloeserVariante="quiet"
+              ausloeserGroesse="kompakt"
+              bestaetigen="Als nicht möglich beantworten"
+              bestaetigenLaeuft="Wird beantwortet …"
+              fehler={beantworten.error?.message}
+              onBestaetigen={() => beantworten.mutateAsync('declined')}
+            >
+              <p>
+                Die Person sieht „nicht möglich“ und Ihre Antwort. Bitte sagen Sie, wie es
+                weitergeht.
+              </p>
+              {antwortfeld}
+            </Rueckfrage>
+          </div>
+        </>
+      }
+    />
   );
 }
