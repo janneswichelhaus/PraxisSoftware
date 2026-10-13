@@ -44,8 +44,11 @@ export const IDS = Object.freeze({
   trainingTina: 'eeeeeeee-eeee-4eee-8eee-000000000001',
   planErika: 'aeaeaeae-aeae-4eae-8eae-000000000001',
   planTraining: 'aeaeaeae-aeae-4eae-8eae-000000000002',
-  /** Kniebeuge aus der Übungsbibliothek. */
-  uebung: 'abababab-abab-4bab-8bab-000000000001',
+  /**
+   * Mini-Kniebeuge mit Halt (KN-07) aus dem mitgelieferten Katalog - mit Bild.
+   * Feste Kennung des Seeds: md5('<Praxis>:uebung:KN-07') (ANN-380).
+   */
+  uebung: '5a72622b-f921-f78e-d1a1-ce4f3d0f9269',
   /** Rückfrage aus der Behandlung (Erika) und aus dem Training (Tina). */
   rueckfrage: 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001',
   rueckfrageTraining: 'd1d1d1d1-d1d1-4d1d-8d1d-000000000004',
@@ -511,7 +514,7 @@ export const ROUTEN = Object.freeze([
     muster: '/uebungen/:uebungId',
     pfad: `/uebungen/${IDS.uebung}`,
     bereich: 'Übungen und Training',
-    etikett: 'Übung (Kniebeuge)',
+    etikett: 'Übung aus dem Katalog',
     konten: ['owner'],
   },
   {

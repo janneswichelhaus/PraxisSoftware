@@ -842,6 +842,8 @@ $seed$;
 -- auslaeuft (Wiedervorlage, ANN-302), und ein Trainingsplan fuer Tina. Beide
 -- entstehen wie in der Anwendung als Entwurf, bekommen ihren Schnappschuss
 -- (ANN-300) und werden dann zugewiesen - der Riegel laesst genau diesen Weg zu.
+-- Die Positionen kommen aus dem mitgelieferten Katalog, wie in der Praxis
+-- ueblich: mit Bild, das der Schnappschuss einfriert (ANN-381).
 -- -----------------------------------------------------------------------------
 insert into public.exercise_plans
   (id, organization_id, service_area, patient_id, training_relationship_id, title, sessions_per_week, created_by, updated_by) values
@@ -850,16 +852,16 @@ insert into public.exercise_plans
 
 insert into public.exercise_plan_items
   (organization_id, plan_id, position, variant_id, sets, reps_min, reps_max, duration_seconds, load, tempo, rest_seconds, double_progression, note, created_by, updated_by) values
-  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 1, 'acacacac-acac-4cac-8cac-000000000001', 3, 8, 12, null, 'Rucksack 3 kg', null, 60, true, 'Langsam runter, zügig hoch.', '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
-  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 2, 'acacacac-acac-4cac-8cac-000000000005', 2, null, null, 30, null, null, 45, false, null, '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
-  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 3, 'acacacac-acac-4cac-8cac-000000000007', 3, 12, 15, null, null, null, 30, false, null, '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
-  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000002', 1, 'acacacac-acac-4cac-8cac-000000000009', 3, 10, 15, null, 'Theraband gelb', '2 s ziehen, 2 s zurück', 60, true, null, '11111111-1111-4111-8111-000000000007', '11111111-1111-4111-8111-000000000007'),
-  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000002', 2, 'acacacac-acac-4cac-8cac-000000000011', 3, 8, 8, null, null, null, 90, false, 'Vorderes Knie bleibt über dem Fuß.', '11111111-1111-4111-8111-000000000007', '11111111-1111-4111-8111-000000000007');
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 1, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'KN-07'), 3, 8, 12, null, 'Rucksack 3 kg', null, 60, true, 'Langsam runter, zügig hoch.', '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 2, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'LW-12'), 2, null, null, 30, null, null, 45, false, null, '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 3, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'FU-01'), 3, 12, 15, null, null, null, 30, false, null, '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000002', 1, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'BW-08'), 3, 10, 15, null, 'Theraband gelb', '2 s ziehen, 2 s zurück', 60, true, null, '11111111-1111-4111-8111-000000000007', '11111111-1111-4111-8111-000000000007'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000002', 2, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'HU-19'), 3, 8, 8, null, null, null, 90, false, 'Vorderes Knie bleibt über dem Fuß.', '11111111-1111-4111-8111-000000000007', '11111111-1111-4111-8111-000000000007');
 
 update public.exercise_plan_items i
    set exercise_name = e.name, exercise_lay_name = e.lay_name, variant_name = v.name,
        variant_lay_name = v.lay_name, body_region = e.body_region, instruction = v.instruction,
-       equipment = v.equipment
+       equipment = v.equipment, illustration = v.illustration
   from public.exercise_variants v
   join public.exercises e on e.id = v.exercise_id
  where v.id = i.variant_id
