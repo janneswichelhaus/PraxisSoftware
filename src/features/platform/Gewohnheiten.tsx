@@ -77,7 +77,7 @@ export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
                 : 'Ihr Zugang erlaubt gerade kein Vermerken.'}
             </p>
           ) : null}
-          <Section titel="Ihre Gewohnheiten">
+          <Section titel="Mit Ihrer Praxis vereinbart">
             <ul className="flex flex-col gap-8">
               {laufend.map((g) => (
                 <Eintrag key={g.id} zugang={zugang} gewohnheit={g} daten={data!} />
