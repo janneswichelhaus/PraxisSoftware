@@ -668,6 +668,87 @@ describe('Verordnungsbereich der Akte', () => {
       expect(screen.getByText(/6 von 6 Terminen genutzt · 6 verplant/)).toBeInTheDocument();
     });
 
+    // B1, B7: Was noch abzurechnen ist, liegt nicht zugeklappt im Archiv.
+    it('laesst sie bei den aktuellen, solange sie abzurechnen ist (B1, B7)', async () => {
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent(),
+        kontingent({
+          treatment_basis_id: 'v0',
+          prescribed: 6,
+          used: 6,
+          planned: 6,
+          upcoming: 0,
+          remaining: 0,
+          performed: 6,
+          documented: 6,
+          open_count: 0,
+          past_open: 0,
+          state: 'abrechnen',
+          released_at: null,
+          invoiced: false,
+          can_release: true,
+        }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByRole('button', { name: 'In die Abrechnung stellen' }),
+      ).toBeVisible();
+      expect(
+        screen.queryByRole('heading', { name: 'Ausgeschöpfte Behandlungsgrundlagen' }),
+      ).toBeNull();
+    });
+
+    it('laesst sie auch in der Abrechnung bei den aktuellen - mit dem Weg zurück', async () => {
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent(),
+        kontingent({
+          treatment_basis_id: 'v0',
+          prescribed: 6,
+          used: 6,
+          planned: 6,
+          upcoming: 0,
+          remaining: 0,
+          state: 'in_abrechnung',
+          released_at: '2027-05-13T09:00:00Z',
+          invoiced: false,
+          can_release: false,
+        }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByRole('button', { name: 'Aus der Abrechnung zurückholen' }),
+      ).toBeVisible();
+      expect(
+        screen.queryByRole('heading', { name: 'Ausgeschöpfte Behandlungsgrundlagen' }),
+      ).toBeNull();
+    });
+
+    it('legt sie zu den ausgeschöpften, sobald sie abgerechnet ist', async () => {
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent(),
+        kontingent({
+          treatment_basis_id: 'v0',
+          prescribed: 6,
+          used: 6,
+          planned: 6,
+          upcoming: 0,
+          remaining: 0,
+          state: 'abgerechnet',
+          released_at: '2027-05-13T09:00:00Z',
+          invoiced: true,
+          can_release: false,
+        }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByRole('heading', { name: 'Ausgeschöpfte Behandlungsgrundlagen' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/6 von 6 Terminen genutzt · 6 verplant$/)).toBeInTheDocument();
+    });
+
     it('haelt ihre Einzelheiten bis zum Aufklappen zurueck', async () => {
       const user = userEvent.setup();
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);

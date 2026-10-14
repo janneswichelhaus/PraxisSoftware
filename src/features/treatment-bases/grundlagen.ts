@@ -87,6 +87,19 @@ export const zustandLabels: Record<Verordnungszustand, string> = {
   ausgeschoepft: 'Ausgeschöpft',
 };
 
+/**
+ * B1, B7 (BEF-151, BEF-157): Eine ausgeschöpfte Grundlage, an der noch etwas
+ * offen ist - Haken oder Doku nachholen, in die Abrechnung stellen, die
+ * Rechnung abwarten -, ist noch keine Geschichte. Sie bleibt bei den
+ * aktuellen, bis sie abgerechnet ist: Freigabe und Zurückholen liegen dann
+ * nicht zugeklappt im Archiv, und nach dem Tipp steht der neue Stand an
+ * derselben Stelle.
+ */
+function nochOffen(eintrag: VerordnungMitZahlen): boolean {
+  const zustand = eintrag.kontingent?.state;
+  return zustand === 'nachholen' || zustand === 'abrechnen' || zustand === 'in_abrechnung';
+}
+
 interface VerordnungenDerAkte {
   eintraege: VerordnungMitZahlen[];
   aktuell: VerordnungMitZahlen[];
@@ -149,8 +162,12 @@ export function useVerordnungenDerAkte(patientId: string, user: CurrentUser): Ve
 
   return {
     eintraege,
-    aktuell: eintraege.filter((eintrag) => eintrag.zustand !== 'ausgeschoepft'),
-    abgeschlossen: eintraege.filter((eintrag) => eintrag.zustand === 'ausgeschoepft'),
+    aktuell: eintraege.filter(
+      (eintrag) => eintrag.zustand !== 'ausgeschoepft' || nochOffen(eintrag),
+    ),
+    abgeschlossen: eintraege.filter(
+      (eintrag) => eintrag.zustand === 'ausgeschoepft' && !nochOffen(eintrag),
+    ),
     // Die Zahlen dürfen nachlaufen: Die Verordnung ist auch ohne sie lesbar,
     // und ein Ladebalken über der ganzen Liste wäre der schlechtere Tausch.
     isPending: verordnungen.isPending,

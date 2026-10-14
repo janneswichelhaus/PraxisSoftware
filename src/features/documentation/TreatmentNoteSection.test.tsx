@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as LageApi from '@/features/appointments/abrechnungslage-api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
@@ -70,6 +71,16 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
+const fetchAbrechnungslage = vi.fn();
+vi.mock('@/features/appointments/abrechnungslage-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof LageApi>();
+  return {
+    ...actual,
+    fetchAbrechnungslage: (id: string) =>
+      fetchAbrechnungslage(id) as Promise<LageApi.Abrechnungslage | null>,
+  };
+});
+
 const { TreatmentNoteSection } = await import('./TreatmentNoteSection');
 
 function rendern(
@@ -89,6 +100,40 @@ describe('TreatmentNoteSection', () => {
     finalizeTreatmentNote.mockReset();
     finalizeTreatmentNote.mockResolvedValue(undefined);
     fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    fetchAbrechnungslage.mockReset();
+    fetchAbrechnungslage.mockResolvedValue(null);
+  });
+
+  // B7 (ANN-515): In der Abrechnung sperrt der Server Nachtrag und Korrektur -
+  // die Wege dorthin stehen dann gar nicht erst da.
+  it('bietet in der Abrechnung weder Nachtrag noch Korrektur an (B7)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
+    fetchAbrechnungslage.mockResolvedValue({
+      appointment_id: TERMIN_ID,
+      treatment_basis_id: '88888888-8888-4888-8888-000000000004',
+      treatment_basis_kind: 'first',
+      treatment_basis_issued_on: '2027-04-01',
+      basis_position: 10,
+      basis_appointment_count: 10,
+      billing_visible: false,
+      recipient_kind: null,
+      open_invoice_count: null,
+      open_outstanding_cents: null,
+      open_overdue: null,
+      closing_talk_due: false,
+      basis_released_at: '2027-05-13T09:00:00Z',
+    });
+    rendern();
+
+    expect(
+      await screen.findByText(
+        'In der Abrechnung: Nachtrag und Korrektur erst nach dem Zurückholen in der Akte.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nachtrag hinzufügen' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Korrigieren' })).toBeNull();
+    // Den Verlauf lesen geht weiter.
+    expect(screen.getByRole('link', { name: 'Änderungsverlauf' })).toBeInTheDocument();
   });
 
   it('zeigt den Entwurf mit Zustand, Urheberschaft und Aenderungszeitpunkt', async () => {
