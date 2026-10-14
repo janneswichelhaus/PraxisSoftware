@@ -4576,6 +4576,8 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Ü
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
+**Ablösung.** abgelöst durch ANN-536 für gewählte Einträge beim Hinzufügen zu einem Plan; den ganzen Katalog übernimmt weiter owner
+
 **Annahme.** `import_exercise_catalog` prüft wie jeder Schreibweg der Bibliothek (`app.exercise_library_writer`, ANN-293); die interne Fassung ist für keine Anwendungsrolle ausführbar. Keine neue Auditaktion: `created_by` steht an der Zeile (ADR-010 Fassung 3).
 
 **Begründung.** Wer übernimmt, ändert, was alle Pläne anbieten – dieselbe Überlegung wie bei der Pflege.
@@ -4768,11 +4770,13 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
 
+**Ablösung.** abgelöst durch ANN-537 in der Übernahme
+
 **Annahme.** Eine Vorlage fügt ihre Übungen über `catalog_key` zur nicht archivierten Variante der Praxis hinzu, mit der Dosierung der Vorlage, sonst der Standarddosierung. Was fehlt oder archiviert ist, nennt die Meldung; owner übernimmt Fehlendes aus dem Katalog und fügt es an. Ein leerer Entwurf mit Standardtitel heißt danach wie die Vorlage. Die Liste ist nach Name geordnet und bekommt nur die Vorlagen (ADR-006 Punkt 10).
 
 **Begründung.** Referenzanalyse Training, Abschnitt 9, Weg A; Zuweisen in fünf Tipps (K12).
 
-**Anker.** `ausVorlage` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
+**Anker.** `vorlagenZeilen` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
 
 **Änderungspfad.** Vorlagen der Praxis: eigene Tabelle und Migration · Aufwand `mittel`.
 
@@ -5167,9 +5171,11 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
 
-**Annahme.** Wer einen Plan des Bereichs schreiben darf, übernimmt beim Hinzufügen die gewählten Katalogeinträge in die Bibliothek – höchstens so viele, wie der Entwurf noch fasst. Derselbe Weg wie der Import: alles prüfen, nichts überschreiben, ohne Prüfvermerk (ANN-386); eine gleichnamige eigene Übung mit genau einer Variante wird genommen. Pflege, Archiv und Prüfvermerk bleiben bei owner (ANN-293).
+**Ablösung.** ersetzt ANN-385 für gewählte Einträge beim Hinzufügen zu einem Plan
 
-**Begründung.** Befund B9: Aus einer Vorlage kam nichts oder, nur für owner, alles auf einmal. Eine Liste statt Katalog und Bibliothek.
+**Annahme.** Wer einen Plan des Bereichs schreiben darf, übernimmt beim Hinzufügen gewählte Katalogeinträge in die Bibliothek, höchstens so viele, wie der Entwurf fasst. Weg wie der Import: alles prüfen, nichts überschreiben, ohne Prüfvermerk (ANN-386). Pflege, Archiv und Prüfvermerk bleiben bei owner.
+
+**Begründung.** Befund B9: Aus einer Vorlage kam nichts oder, nur für owner, alles auf einmal.
 
 **Anker.** `public.add_catalog_exercises_for_plan` in `supabase/migrations/20261116100000_o_002_uebungsplan_katalog_und_stand.sql`.
 
@@ -5178,6 +5184,8 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 ### ANN-537 — Eine Vorlage zeigt ihre Übungen als Vorschau, alle vorgewählt
 
 Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-444 in der Übernahme
 
 **Annahme.** Ein Tipp auf eine Vorlage zeigt ihre Übungen mit Haken, vorgewählt ist alles außer dem, was schon im Plan steht; Archiviertes steht ohne Haken mit Wort. Was der Praxis fehlt, kommt still mit (ANN-536). Im leeren Entwurf stehen die Vorlagen gleich auf der Seite: Plan aus Vorlage zuweisen in fünf Tipps.
 

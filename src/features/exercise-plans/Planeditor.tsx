@@ -170,30 +170,40 @@ export function Planeditor({
       : `Ein Plan hat höchstens 30 Übungen – es ${frei === 1 ? 'passt noch eine' : `passen noch ${frei}`}.`;
   }
 
-  async function ausAuswahl(gewaehlt: Gewaehlt[]) {
-    const zuViele = passtNicht(gewaehlt.length);
+  /**
+   * Aus Auswahlblatt oder Vorschau: erst der Platz im Plan, dann übernehmen
+   * und hinzufügen. Scheitert die Übernahme, bleibt das Fenster mit der
+   * Meldung offen, und es ist nichts passiert.
+   */
+  async function waehlen(wuensche: Wunsch[]) {
+    const zuViele = passtNicht(wuensche.length);
     setAuswahlFehler(zuViele);
-    if (zuViele) return;
-    const eintraege = new Map((katalog.data ?? []).map((e) => [e.schluessel, e]));
-    let antwort: Awaited<ReturnType<typeof hinzufuegenMitKatalog>>;
+    if (zuViele) return null;
     try {
-      antwort = await hinzufuegenMitKatalog(
-        gewaehlt.map((g) => ({
-          variante: g.variante,
-          dosis: standardDosis(g.variante),
-          eintrag:
-            nurImKatalog(g.variante) && g.variante.catalog_key
-              ? eintraege.get(g.variante.catalog_key)
-              : undefined,
-        })),
-      );
+      const antwort = await hinzufuegenMitKatalog(wuensche);
+      setFenster(null);
+      return antwort;
     } catch (fehler) {
       setAuswahlFehler(
         fehler instanceof Error ? fehler.message : 'Die Übungen konnten nicht übernommen werden.',
       );
-      return;
+      return null;
     }
-    setFenster(null);
+  }
+
+  async function ausAuswahl(gewaehlt: Gewaehlt[]) {
+    const eintraege = new Map((katalog.data ?? []).map((e) => [e.schluessel, e]));
+    const antwort = await waehlen(
+      gewaehlt.map((g) => ({
+        variante: g.variante,
+        dosis: standardDosis(g.variante),
+        eintrag:
+          nurImKatalog(g.variante) && g.variante.catalog_key
+            ? eintraege.get(g.variante.catalog_key)
+            : undefined,
+      })),
+    );
+    if (!antwort) return;
     const { ergebnis, anzahl, nicht } = antwort;
     const satz = hinzugefuegtSatz(ergebnis, anzahl);
     if (ergebnis.fehler) melde(null, satz, nichtSatz(nicht));
@@ -205,22 +215,11 @@ export function Planeditor({
    * Vorlage; was der Praxis fehlt, übernimmt der Server still.
    */
   async function ausVorlage(vorlage: Katalogvorlage, gewaehlt: Vorlagenwahl[]) {
-    const zuViele = passtNicht(gewaehlt.length);
-    setAuswahlFehler(zuViele);
-    if (zuViele) return;
     const leer = plan.items.length === 0;
-    let antwort: Awaited<ReturnType<typeof hinzufuegenMitKatalog>>;
-    try {
-      antwort = await hinzufuegenMitKatalog(
-        gewaehlt.map((z) => ({ variante: z.variante, dosis: z.dosis, eintrag: z.eintrag })),
-      );
-    } catch (fehler) {
-      setAuswahlFehler(
-        fehler instanceof Error ? fehler.message : 'Die Übungen konnten nicht übernommen werden.',
-      );
-      return;
-    }
-    setFenster(null);
+    const antwort = await waehlen(
+      gewaehlt.map((z) => ({ variante: z.variante, dosis: z.dosis, eintrag: z.eintrag })),
+    );
+    if (!antwort) return;
     const { ergebnis, anzahl, nicht } = antwort;
     // Ein neuer, leerer Entwurf heißt danach wie die Vorlage - nach Thema,
     // ohne Person.
@@ -305,7 +304,7 @@ export function Planeditor({
       ) : null}
       {bibliothek.isError ? (
         <Statusmeldung ton="fehler" className="mt-4">
-          Die Übungsbibliothek konnte nicht geladen werden.
+          Die Übungen konnten nicht geladen werden.
         </Statusmeldung>
       ) : null}
 

@@ -236,9 +236,7 @@ export function Uebungsauswahl({
       {zeilen.length === 0 ? (
         <EmptyState
           inKarte
-          title={
-            alleZeilen.length === 0 ? 'Die Bibliothek ist noch leer.' : 'Keine Übung gefunden.'
-          }
+          title={alleZeilen.length === 0 ? 'Noch keine Übung.' : 'Keine Übung gefunden.'}
           {...(bibliothek.can_manage
             ? {
                 aktion: (
