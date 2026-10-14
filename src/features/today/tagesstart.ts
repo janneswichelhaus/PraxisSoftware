@@ -267,6 +267,48 @@ export interface NaechsterWeg {
   fahrtMin: number;
 }
 
+/** Ein schmaler Wegbalken im Zeitstrahl: zwei Uhrzeiten und die Fahrt dazwischen. */
+export interface Wegstrecke {
+  von: Wegende;
+  bis: Wegende;
+  fahrtMin: number;
+}
+
+/**
+ * Der Weg zu einem Hausbesuch als schmaler Balken: vom Ende des Termins davor
+ * bis zum Beginn, mit der geschätzten Fahrt (Design-Handoff 2026-10-01,
+ * Abschnitt 5a). Eine Rechnung für die Zeilen des Zeitstrahls und für die
+ * Karten (B6) - gleich, ob der Termin davor abgehakt ist.
+ *
+ * Ist das Ende davor vorbei, beginnt der Balken jetzt, wie die Kachel
+ * „Abfahrt“ (ANN-196): Die Karte des nächsten Wegs sagte sonst „4 min
+ * Puffer“, während die Kachel darüber „6 min zu knapp“ meldet. Über einer
+ * späteren Zeile liegt das Ende davor noch vor einem - dort ist es dieselbe
+ * Zahl wie geplant.
+ *
+ * Ohne Termin davor (der erste Weg vom Startort), an Praxis-, Video- und
+ * Fehlzeitterminen und ohne Fahrzeit gibt es keinen: ungeprüft ist nicht
+ * „kurz" (MAP-004b).
+ */
+export function wegZumBesuch(
+  termin: DayPlanEntry,
+  anfahrt: Anfahrt | undefined,
+  zeitzone: string,
+  jetzt: number,
+): Wegstrecke | null {
+  const vorher = anfahrt?.vorher;
+  if (!anfahrt || !vorher) return null;
+  if (termin.kind === 'internal' || termin.appointment_type !== 'home_visit') return null;
+  return {
+    von:
+      jetzt <= Date.parse(vorher.ends_at)
+        ? { zeit: formatLocalTime(vorher.ends_at, zeitzone), label: terminName(vorher) }
+        : { zeit: formatLocalTime(new Date(jetzt).toISOString(), zeitzone), label: 'Jetzt' },
+    bis: { zeit: formatLocalTime(termin.starts_at, zeitzone), label: terminName(termin) },
+    fahrtMin: anfahrt.minuten,
+  };
+}
+
 /** ANN-236: statt einer Fahrzeit, wenn die Anschrift am Termin nicht mehr zur Akte passt. */
 export const VERALTET_TEXT = 'Fahrzeit nicht verfügbar – Adresse am Termin veraltet';
 

@@ -5162,3 +5162,14 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
 
+### ANN-532 — Wegbalken an der Karte, am Telefon an Stelle der Minutenangabe
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+
+**Annahme.** Karte des nächsten Wegs und aufgeklappte Zeile tragen den schmalen Wegbalken wie über den Zeilen unter dem Kicker, an Stelle von „· ≈ n min“; ist das Ende davor vorbei, beginnt er jetzt (wie die Kachel, ANN-196). Nennt die Kachel „Abfahrt“ denselben Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen (Zahlen nur für Vorlesesoftware).
+
+**Begründung.** B6: Nach einem abgehakten Besuch fehlte der Balken an der Karte. Als eigene Zeile schöbe er bei 375 × 667 den Hauptknopf unter die Tableiste (3 px Reserve, ANN-484).
+
+**Anker.** `weg` in `src/features/today/Tagesliste.tsx`.
+
+**Änderungspfad.** Balken über die Karte wie über die Zeilen, Platz anderswo sparen · Aufwand `klein`.

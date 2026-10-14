@@ -78,6 +78,7 @@ import {
   terminName,
   VERALTET_TEXT,
   wegeDesTages,
+  wegZumBesuch,
   type Fokus,
   type NaechsterWeg,
   type Tagesfortschritt,
@@ -586,8 +587,11 @@ function MeinTag({
     const kommt = stehtAus(termin, jetzt);
     const liegt = nichtAbgeschlossen(termin, jetzt);
     const anfahrt = fahrzeiten.anfahrten.get(termin.id);
+    // Der Wegbalken, der über der Zeile lag, steht in der Karte an Stelle
+    // der Minuten (B6).
+    const balken = kommt ? wegZumBesuch(termin, anfahrt, zone, jetzt) : null;
     const kicker = kommt
-      ? `Später${anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''}`
+      ? `Später${anfahrt && !balken ? ` · ≈ ${anfahrt.minuten} min` : ''}`
       : liegt
         ? `Seit ${formatLocalTime(termin.ends_at, zone)} offen`
         : 'Vorbei';
@@ -601,6 +605,7 @@ function MeinTag({
       <Tageskarte
         termin={termin}
         kicker={kicker}
+        weg={balken ? { ...balken, kachelNenntIhn: false } : null}
         erstaufnahme={
           erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
         }
@@ -694,9 +699,14 @@ function MeinTag({
     // Die Fahrzeit im Kicker weicht am Telefon, wenn die Kachel „Abfahrt"
     // darüber denselben Weg nennt (`weg`, ANN-484): So passt „Termin →" in
     // dieselbe Zeile (Praxis-Review R2, P1), und der Hauptknopf bleibt über
-    // der Tableiste.
+    // der Tableiste. Kommt der Weg von einem Termin davor, steht an Stelle
+    // der Minuten der Wegbalken wie über den Zeilen (B6).
     const wegTitel =
       wege.erster?.id === termin.id && wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg';
+    const balken =
+      fokus.art === 'besuch' && phase === 'wartet'
+        ? wegZumBesuch(termin, anfahrt, zone, jetzt)
+        : null;
     const kicker: ReactNode =
       fokus.art === 'dokumentation' ? (
         termin.status === 'confirmed' ? (
@@ -708,7 +718,7 @@ function MeinTag({
         `Jetzt · bis ${ende}`
       ) : phase === 'ueberfaellig' ? (
         `Seit ${ende} offen`
-      ) : anfahrt ? (
+      ) : anfahrt && !balken ? (
         <>
           {wegTitel}{' '}
           <span className={weg ? 'max-sm:hidden' : ''}>{`· ≈ ${anfahrt.minuten} min`}</span>
@@ -781,6 +791,7 @@ function MeinTag({
       <Tageskarte
         termin={termin}
         kicker={kicker}
+        weg={balken ? { ...balken, kachelNenntIhn: weg !== null } : null}
         relativ={fokus.art === 'besuch' ? bisBeginn(termin, jetzt) : null}
         position={lage && lage.appointment_id === termin.id ? positionText(lage) : null}
         abschlussgespraech={!!lage && lage.appointment_id === termin.id && lage.closing_talk_due}

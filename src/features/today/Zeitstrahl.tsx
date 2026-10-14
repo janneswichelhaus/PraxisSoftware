@@ -15,6 +15,7 @@ import {
   einordnung,
   nichtAbgeschlossen,
   terminName,
+  wegZumBesuch,
   type Anfahrt,
 } from './tagesstart';
 
@@ -137,8 +138,9 @@ function PunktZeichen({ art }: { art: 'erledigt' | 'ausgefallen' }) {
  *
  * Die Jetzt-Marke steht vor dem ersten Termin, der noch nicht begonnen hat.
  * Über jedem späteren Hausbesuch mit bekannter Fahrzeit liegt ein schmaler
- * Wegbalken vom Ende des Termins davor; an Praxis- und Videoterminen und ohne
- * Fahrzeit gibt es keinen.
+ * Wegbalken vom Ende des Termins davor (`wegZumBesuch`); an Praxis- und
+ * Videoterminen und ohne Fahrzeit gibt es keinen. Eine ausgeklappte Karte
+ * trägt ihn selbst, unter ihrem Kicker (B6) - die Seite reicht ihn ihr.
  *
  * `jetzt` kommt von außen und rückt mit der Seite jede Minute nach.
  */
@@ -249,14 +251,9 @@ export function Zeitstrahl({
           const letzter = index === plan.length - 1 && (!jetztMarke || markeVor !== plan.length);
           const stand = standVon(termin, jetzt);
           const anfahrt = anfahrten.get(termin.id);
+          // Über der Zeile; eine Karte trägt den Balken selbst (B6).
           const uebergang =
-            !alsKarte &&
-            stand === 'kommt' &&
-            termin.appointment_type === 'home_visit' &&
-            termin.kind !== 'internal' &&
-            anfahrt?.vorher
-              ? { anfahrt, vorher: anfahrt.vorher }
-              : null;
+            !alsKarte && stand === 'kommt' ? wegZumBesuch(termin, anfahrt, zeitzone, jetzt) : null;
           const beginn = Date.parse(termin.starts_at);
           const grund =
             stand === 'liegengeblieben'
@@ -360,20 +357,7 @@ export function Zeitstrahl({
                   </span>
                 </span>
                 <div className={`min-w-0 ${letzter ? '' : 'pb-[18px]'}`.trim()}>
-                  {uebergang ? (
-                    <TravelBar
-                      size="klein"
-                      von={{
-                        zeit: formatLocalTime(uebergang.vorher.ends_at, zeitzone),
-                        label: terminName(uebergang.vorher),
-                      }}
-                      bis={{
-                        zeit: formatLocalTime(termin.starts_at, zeitzone),
-                        label: terminName(termin),
-                      }}
-                      fahrtMin={uebergang.anfahrt.minuten}
-                    />
-                  ) : null}
+                  {uebergang ? <TravelBar size="klein" {...uebergang} /> : null}
                   {istFokus ? (
                     karte
                   ) : offen ? (

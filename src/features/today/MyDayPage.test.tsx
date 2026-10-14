@@ -1177,6 +1177,57 @@ describe('Übersicht', () => {
       );
     });
 
+    it('zeigt den Wegbalken auch an der Karte des naechsten Wegs nach einem abgehakten Besuch (B6)', async () => {
+      // Alle Besuche am selben Tag (BEF-120): nur die Uhr steht fest.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-08-31T07:00:00Z'));
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
+      const davor = tagesEintrag({
+        id: 't3',
+        patient_id: 'p3',
+        starts_at: inMinuten(-100),
+        ends_at: inMinuten(-40),
+        status: 'documented',
+        documentation_status: 'final',
+        patient_given_name: 'Petra',
+        patient_family_name: 'Platzhalter',
+      });
+      const plan = [davor, tagesEintrag({ id: 't1' }), zweiterBesuch()];
+      fetchDayPlan.mockResolvedValue(plan);
+      fetchDayRoute.mockResolvedValue([
+        routenpunkt(plan[0]!, 48.53, 9.05),
+        routenpunkt(plan[1]!, 48.521, 9.057),
+        routenpunkt(plan[2]!, 48.526, 9.064),
+      ]);
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 10, 12, 9));
+      const user = userEvent.setup();
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      // Die Karte: der Kicker ohne Minuten, darunter der Balken wie über den
+      // Zeilen. Das Ende des abgehakten Besuchs ist vorbei: Er beginnt jetzt,
+      // wie die Kachel (ANN-196) - 60 Minuten, 12 davon Fahrt.
+      const karte = await findeKarte();
+      const zahlen = await within(karte).findByText('≈ 12 min Rad · 48 min Puffer');
+      expect(within(karte).getByRole('heading', { name: 'Nächster Weg' })).toBeInTheDocument();
+      // Die Kachel „Abfahrt" nennt denselben Weg: Am Telefon weichen die Zahlen.
+      expect(zahlen).toHaveClass('max-sm:sr-only');
+      expect(await screen.findByText('Abfahrt', { exact: true })).toBeInTheDocument();
+      // Die Zeile danach behält ihren Balken über sich: 75 Minuten, 9 Fahrt.
+      expect(screen.getByText('≈ 9 min Rad · 66 min Puffer')).not.toHaveClass('max-sm:sr-only');
+
+      // Aufgeklappt trägt die spätere Zeile den Balken in der Karte, mit Zahlen.
+      await user.click(zeileImStrahl(/Max Mustermann/));
+      const spaeter = screen.getAllByRole('article')[1]!;
+      expect(within(spaeter).getByRole('heading', { name: 'Später' })).toBeInTheDocument();
+      expect(within(spaeter).getByText('≈ 9 min Rad · 66 min Puffer')).not.toHaveClass(
+        'max-sm:sr-only',
+      );
+      expect(screen.getAllByText('≈ 9 min Rad · 66 min Puffer')).toHaveLength(1);
+    });
+
     it('sagt dazu, wenn die Fahrzeiten eine Nachbildung ohne Kartendienst sind', async () => {
       const plan = [tagesEintrag({ id: 't1' })];
       fetchDayPlan.mockResolvedValue(plan);

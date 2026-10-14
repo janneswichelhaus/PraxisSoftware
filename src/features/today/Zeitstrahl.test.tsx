@@ -221,7 +221,8 @@ describe('Zeitstrahl', () => {
     zeichne();
 
     const [, erste, zweite, dritte] = screen.getAllByRole('listitem');
-    // Der ausgeklappte Termin trägt keinen - sein Weg steht im großen Balken.
+    // Über dem ausgeklappten Termin liegt keiner: Die Karte trägt ihren Weg
+    // selbst, unter dem Kicker (B6) - die Seite reicht ihn ihr.
     expect(within(erste!).queryByText(/min Rad/)).toBeNull();
     // 09:30 bis 10:00: 30 Minuten, 9 davon Fahrt.
     expect(within(zweite!).getByText('≈ 9 min Rad · 21 min Puffer')).toHaveClass('text-accent');
@@ -229,6 +230,28 @@ describe('Zeitstrahl', () => {
     const knapp = within(dritte!).getByText(/26 min Rad/);
     expect(knapp.textContent).toBe('! ≈ 26 min Rad · 4 min Puffer');
     expect(knapp).toHaveClass('text-warnung');
+  });
+
+  it('zeichnet über einer Karte keinen zweiten Balken - weder am naechsten Weg noch aufgeklappt (B6)', () => {
+    zeichne({
+      plan: [{ ...erika, status: 'completed' }, max, petra],
+      fokusId: 'b',
+      jetzt: zeitpunkt('07:40'),
+      karte: <article>Karte von Max</article>,
+      aufklappen: {
+        offenId: 'c',
+        aufklappbar: () => true,
+        umschalten: () => undefined,
+        karte: () => <article>Karte von Petra</article>,
+      },
+    });
+    for (const karte of ['Karte von Max', 'Karte von Petra']) {
+      const eintrag = screen.getByText(karte).closest('li')!;
+      expect(within(eintrag).queryByText(/min Rad/)).toBeNull();
+    }
+    // Uhrzeit und Punkt bleiben auf der Höhe der ersten Zeile der Karte.
+    const zeit = within(screen.getByText('Karte von Max').closest('li')!).getByText('10:00');
+    expect(zeit).toHaveClass('pt-3.5');
   });
 
   it('zeigt keinen Wegbalken an Praxis, Video und Fehlzeit, ohne Fahrzeit oder ohne Termin davor', () => {

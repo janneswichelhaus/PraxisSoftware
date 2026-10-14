@@ -16,6 +16,7 @@ import {
   tagesfortschritt,
   terminName,
   wegeDesTages,
+  wegZumBesuch,
   type Anfahrt,
 } from './tagesstart';
 
@@ -494,6 +495,57 @@ describe('Der naechste Weg (Design-Handoff 2026-10-01, ANN-196)', () => {
       bis: { zeit: '12:00', label: 'Test Dritte' },
       fahrtMin: 20,
     });
+  });
+});
+
+describe('Der Weg zu einem Besuch als schmaler Balken (B6)', () => {
+  const a = eintrag({ id: 'a', um: '06:30', bis: '07:30', patient_family_name: 'Erika' });
+  const b = eintrag({ id: 'b', um: '08:00', bis: '09:00', patient_family_name: 'Max' });
+  const zone = 'Europe/Berlin';
+
+  it('rechnet vom Ende des Termins davor bis zum Beginn - gleich, ob der davor abgehakt ist', () => {
+    const erwartet = {
+      von: { zeit: '09:30', label: 'Test Erika' },
+      bis: { zeit: '10:00', label: 'Test Max' },
+      fahrtMin: 9,
+    };
+    expect(wegZumBesuch(b, { minuten: 9, vorher: a }, zone, zeitpunkt('06:40'))).toEqual(erwartet);
+    // Früh abgehakt: Das geplante Ende gilt weiter.
+    for (const status of ['completed', 'documented', 'no_show'] as const) {
+      expect(
+        wegZumBesuch(b, { minuten: 9, vorher: { ...a, status } }, zone, zeitpunkt('07:10')),
+      ).toEqual(erwartet);
+    }
+    // Genau am Ende gilt noch der geplante Abstand.
+    expect(wegZumBesuch(b, { minuten: 9, vorher: a }, zone, zeitpunkt('07:30'))).toEqual(erwartet);
+  });
+
+  it('beginnt jetzt, sobald das Ende davor vorbei ist - wie die Kachel „Abfahrt" (ANN-196)', () => {
+    expect(
+      wegZumBesuch(
+        b,
+        { minuten: 9, vorher: { ...a, status: 'documented' } },
+        zone,
+        zeitpunkt('07:45'),
+      ),
+    ).toEqual({
+      von: { zeit: '09:45', label: 'Jetzt' },
+      bis: { zeit: '10:00', label: 'Test Max' },
+      fahrtMin: 9,
+    });
+  });
+
+  it('gibt es nicht ohne Termin davor, ohne Fahrzeit und nicht an Praxis, Video und Fehlzeit', () => {
+    const jetzt = zeitpunkt('06:00');
+    expect(wegZumBesuch(a, { minuten: 12, vorher: null }, zone, jetzt)).toBeNull();
+    expect(wegZumBesuch(b, undefined, zone, jetzt)).toBeNull();
+    for (const anders of [
+      { ...b, appointment_type: 'practice' as const },
+      { ...b, appointment_type: 'video' as const },
+      { ...b, kind: 'internal' as const, patient_id: null, title: 'Pause' },
+    ]) {
+      expect(wegZumBesuch(anders, { minuten: 9, vorher: a }, zone, jetzt)).toBeNull();
+    }
   });
 });
 

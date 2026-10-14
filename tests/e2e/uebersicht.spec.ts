@@ -124,6 +124,48 @@ for (const [abfrage, uhrzeit, knopf] of [
   });
 }
 
+// B6: Nach einem abgehakten Besuch trägt die Karte des nächsten Wegs den
+// Wegbalken wie die Zeilen - unter dem Kicker, an Stelle der Minuten. Am
+// Telefon ohne Zahlen (die Kachel „Abfahrt" nennt den Weg) und ohne eine
+// Zeile mehr: Der Hauptknopf bleibt über der Tableiste (Test oben).
+for (const breite of [375, 1280]) {
+  test(`zeigt den Wegbalken auch an der Karte nach einem abgehakten Besuch (${breite} px, B6)`, async ({
+    page,
+  }) => {
+    await oeffne(page, '09:45', breite, '?ansicht=zweiter', 667);
+    const karte = page.getByRole('article');
+    const kicker = karte.getByRole('heading', { name: 'Nächster Weg', exact: true });
+    await expect(kicker).toBeVisible();
+    const fahrt = karte.locator('[aria-hidden="true"] [style*="width"]');
+    await expect(fahrt).toBeVisible();
+    const k = (await kicker.boundingBox())!;
+    const f = (await fahrt.boundingBox())!;
+    const n = (await karte
+      .getByRole('link', { name: 'Max Mustermann', exact: true })
+      .boundingBox())!;
+    // Unter dem Kicker, über dem Namen.
+    expect(f.y).toBeGreaterThanOrEqual(k.y + k.height);
+    expect(f.y + f.height).toBeLessThanOrEqual(n.y);
+    // Erika ist seit 09:30 fertig: Der Balken beginnt jetzt wie die Kachel
+    // (ANN-196) - 09:45 bis 10:00 bei 9 Minuten Fahrt.
+    const zahlen = karte.getByText('≈ 9 min Rad · 6 min Puffer');
+    const z = (await zahlen.boundingBox())!;
+    if (breite < 640) {
+      expect(z.width).toBeLessThanOrEqual(1);
+      await expect(page.getByText('Abfahrt', { exact: true })).toBeVisible();
+    } else {
+      expect(z.width).toBeGreaterThan(100);
+    }
+    // Uhrzeit und Punkt bleiben auf der Höhe des Kickers.
+    const punkt = (await page
+      .locator('li[data-termin]', { has: karte })
+      .locator('[data-punkt]')
+      .boundingBox())!;
+    expect(Math.abs(punkt.y + punkt.height / 2 - (k.y + k.height / 2))).toBeLessThanOrEqual(3);
+    await ohneUeberlauf(page);
+  });
+}
+
 test('fasst am Telefon das Erledigte vor dem nächsten Besuch in einer Zeile zusammen', async ({
   page,
 }) => {
@@ -149,7 +191,11 @@ test('klappt eine spätere Zeile mit Navigation, Anruf und Doku auf (Auftrag C1)
   const karten = page.getByRole('article');
   await expect(karten).toHaveCount(2);
   const karte = karten.nth(1);
-  await expect(karte.getByRole('heading', { name: /^Später/ })).toBeVisible();
+  await expect(karte.getByRole('heading', { name: 'Später', exact: true })).toBeVisible();
+  // Der Balken, der über der Zeile lag, steht jetzt in der Karte - mit
+  // Zahlen, denn diesen Weg nennt keine Kachel (B6).
+  await expect(karte.getByText('≈ 9 min Rad · 21 min Puffer')).toBeVisible();
+  await expect(page.getByText('≈ 9 min Rad · 21 min Puffer')).toHaveCount(1);
   for (const ziel of [
     karte.getByRole('button', { name: 'Navigation starten' }),
     karte.getByRole('link', { name: 'Doku zu diesem Termin' }),
