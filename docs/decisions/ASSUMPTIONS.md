@@ -5162,3 +5162,51 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
 
+
+### ANN-500 — Absage im Terminpanel, Grund als Chips
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Restbefunde)
+
+**Annahme.** „Termin absagen“ steht am bestätigten Behandlungstermin direkt im Terminpanel des Kalenders, mit derselben Rückfrage wie im Fenster „Aktionen“; der Absagegrund ist eine Chip-Reihe statt einer Auswahlliste. Weiter ohne Vorbelegung (ANN-034), „Gerade eben“ bleibt vorbelegt (ANN-048).
+
+**Begründung.** K9: vorher 7 Tipps über Fenster, Bildlauf und Liste, jetzt 4 (Kachel, Absagen, Grund, Ja). Die Bestätigung trägt die Kalenderseite, weil der abgesagte Termin aus dem Filter fällt.
+
+**Anker.** `darfAbsagen` in `src/features/appointments/TerminPanel.tsx`.
+
+**Änderungspfad.** Auslöser wieder nur im Fenster „Aktionen“ · Aufwand `klein`.
+
+### ANN-501 — Material und letzter Eintrag hinter „Vor der Tür“ an der Tageskarte
+
+Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Restbefunde)
+
+**Annahme.** Der Knopf „i“ der Tageskarte heißt „Vor der Tür“ und zeigt neben Etage, Zugang und Kontakt das Material (aus dem Tagesplan) und, für Rollen mit Leserecht, den letzten Eintrag aus `get_appointment_brief`. Gelesen wird erst beim Öffnen; protokolliert wie der Kurzblick („Akte geöffnet“, einmal je Akte und Tag, ANN-230).
+
+**Begründung.** K3 ≤ 1 Tipp, vorher 3 über Kalender und Fenster. ANN-138 (kein Material offen neben dem Namen) und ANN-200 (Lesen nur nach Handlung) bleiben gewahrt.
+
+**Anker.** `mitEintrag` in `src/features/today/Tagesliste.tsx`.
+
+**Änderungspfad.** Letzten Eintrag wieder nur im Kurzblick · Aufwand `klein`.
+
+### ANN-502 — „Wie zuletzt“ übernimmt den letzten Haupteintrag
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Restbefunde)
+
+**Annahme.** Ein Chip „Wie zuletzt“ vorn in der Reihe der Schreibseite fügt den letzten Haupteintrag eines früheren Behandlungstermins wie einen Textbaustein ein (mit „Rückgängig“). Ein Vermerk „ohne Behandlung“ wird nicht übernommen; der Text wird gelesen und angepasst, bevor er festgeschrieben wird (ADR-016 Punkt 4).
+
+**Begründung.** K6 fehlte; jetzt 3 Tipps + Text ab der Karte. Lesepfad und Protokoll des Kurzblicks, kein neuer Pfad.
+
+**Anker.** `WieZuletzt` in `src/features/documentation/WieZuletzt.tsx`.
+
+**Änderungspfad.** Chip entfernen oder je Abschnitt übernehmen (Handoff 6a) · Aufwand `klein`.
+
+### ANN-503 — Übung aus der Bibliothek in Entwurf, neue Fassung oder neuen Plan
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Restbefunde)
+
+**Annahme.** „Zu einem Plan“ auf der Übungsseite (nur, wer Übungspläne der Therapie schreibt) legt die gezeigte Variante mit ihrer Standarddosierung in den Entwurf der gewählten Patient:in; ohne Entwurf in eine neue Fassung des laufenden Plans (ANN-300), sonst in einen neuen Plan. Danach steht der Plan offen; zugewiesen wird dort.
+
+**Begründung.** Vorher ≈ 9 Tipps samt erneuter Suche, jetzt 2 bis im Plan, 4 bis zugewiesen. Trainingspläne bleiben beim bisherigen Weg.
+
+**Anker.** `planFuerUebung` in `src/features/exercise-plans/zielplan.ts`.
+
+**Änderungspfad.** Ziel wählbar machen (Entwurf oder neuer Plan) · Aufwand `klein`.
