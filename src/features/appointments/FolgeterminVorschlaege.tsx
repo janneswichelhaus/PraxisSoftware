@@ -424,15 +424,21 @@ export function FolgeterminVorschlaege({
     const bei = angelegt.slot.staff_name ? ` bei ${angelegt.slot.staff_name}` : '';
     inhalt = (
       <div ref={meldung} tabIndex={-1} className="outline-none">
-        <div className="flex flex-wrap items-center gap-x-3">
-          <p className="text-accent text-liste font-semibold" role="status">
-            <span aria-hidden="true">✓ </span>
-            Folgetermin angelegt: {tagKurz(angelegt.slot.slot_date)}, {angelegt.slot.start_time} Uhr
-            {bei} ·{' '}
-            <Textlink to={mitRueckweg(kalenderZumTermin(angelegt.id), hierher)} className="text-sm">
-              Im Kalender
-            </Textlink>
-          </p>
+        <p className="text-accent text-liste font-semibold" role="status">
+          <span aria-hidden="true">✓ </span>
+          Folgetermin angelegt: {tagKurz(angelegt.slot.slot_date)}, {angelegt.slot.start_time} Uhr
+          {bei}
+        </p>
+        {/* Zwei Ziele mit voller Höhe und 12 px Abstand in jeder Richtung:
+            Ein knapper Tipp auf „Im Kalender“ nimmt den Termin nicht zurück. */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(kalenderZumTermin(angelegt.id), hierher)}
+            className="text-sm"
+          >
+            Im Kalender
+          </Textlink>
           {/* Leise: der Weg zurück für den Fehltipp, kein zweiter Hauptknopf. */}
           <Button
             type="button"

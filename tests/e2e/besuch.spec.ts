@@ -710,7 +710,19 @@ test('nimmt einen eben angelegten Folgetermin mit „Rückgängig" zurück (B8)'
   );
   const zurueck = page.getByRole('button', { name: /^Rückgängig/ });
   await expect(zurueck).toBeInViewport();
-  expect((await zurueck.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  const knopf = (await zurueck.boundingBox())!;
+  expect(knopf.height).toBeGreaterThanOrEqual(44);
+  // „Im Kalender“ ist ein eigenes Ziel daneben - ebenso hoch und mit Abstand,
+  // damit ein knapper Tipp darauf den Termin nicht zurücknimmt.
+  const link = (await page.getByRole('link', { name: 'Im Kalender' }).boundingBox())!;
+  expect(link.height).toBeGreaterThanOrEqual(44);
+  const abstand = Math.max(
+    knopf.x - (link.x + link.width),
+    link.x - (knopf.x + knopf.width),
+    knopf.y - (link.y + link.height),
+    link.y - (knopf.y + knopf.height),
+  );
+  expect(abstand).toBeGreaterThanOrEqual(8);
 
   await zurueck.click();
   await expect(page.getByText('Folgetermin zurückgenommen.')).toBeVisible();

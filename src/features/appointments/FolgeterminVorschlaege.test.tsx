@@ -434,10 +434,14 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     expect(await screen.findByText(/Folgetermin angelegt:/)).toHaveTextContent(
       `${BEGINN} Uhr bei Anna Beispiel`,
     );
-    expect(screen.getByRole('link', { name: 'Im Kalender' })).toHaveAttribute(
+    const kalender = screen.getByRole('link', { name: 'Im Kalender' });
+    expect(kalender).toHaveAttribute(
       'href',
       `/kalender?termin=neu-1&zurueck=${encodeURIComponent('/hier')}`,
     );
+    // Ein eigenes Ziel von 44 px neben „Rückgängig“, nicht im Satz darüber.
+    expect(kalender).toHaveClass('min-h-11');
+    expect(kalender.closest('[role="status"]')).toBeNull();
   });
 
   it('nimmt den eben angelegten Folgetermin mit „Rückgängig“ zurück (ANN-534)', async () => {
