@@ -5271,7 +5271,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Vor
 
 **Anker.** `app.record_default_services` in `supabase/migrations/20261112130000_a_004_leistung_mit_dem_haken.sql`.
 
-**Änderungspfad.** Andere Vorbelegung: diese Funktion · Aufwand `klein`.
+**Änderungspfad.** Andere Vorbelegung: diese Funktion; Haken als Bedingung: Trigger und Liste in `…160000_a_007_leistung_nur_mit_haken.sql` · Aufwand `klein`.
 
 ### ANN-514 — Stand der Grundlage an einer Stelle; freigeben, sobald nichts offen ist
 
@@ -5315,7 +5315,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-430 in der Liste (das Suchfeld bleibt)
 
-**Annahme.** Liste und Wahl der Person für einen Termin laden jede lesbare Akte und sortieren nach „Zuletzt“ (Vorgabe), „Verordnung“ oder „A–Z“; Filterchips zeigen Karteileichen und, für owner und office, Offenes und zu Mahnendes; gesucht wird ab dem ersten Zeichen, der Begriff steht nur in der Kartei in der Adresse. Kopfleiste und Formulare suchen weiter ab drei Zeichen (ANN-061).
+**Annahme.** Liste und Wahl der Person für einen Termin laden jede lesbare Akte und sortieren nach „Zuletzt“ (Vorgabe), „Verordnung“ oder „A–Z“; Filterchips zeigen Karteileichen und, für owner und office, Offenes und zu Mahnendes; gesucht wird ab dem ersten Zeichen; der Begriff steht in keiner Adresse, die Kartei merkt ihn sich für den Rückweg im Arbeitsspeicher (ADR-011). Kopfleiste und Formulare suchen weiter ab drei Zeichen (ANN-061).
 
 **Begründung.** Befund B10; Rechte unverändert: `list_patient_overview` prüft wie `patient_directory`.
 

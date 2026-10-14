@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -6,9 +6,13 @@ import type * as UebersichtApi from './uebersicht';
 import type { Patienteneintrag } from './uebersicht';
 import { renderWithProviders } from '@/test-utils';
 
+/** Jede Adresse, die die Liste durchläuft - auch eine, die gleich wieder ersetzt wird. */
+const adressen: string[] = [];
+
 /** Macht die aktuelle URL innerhalb des MemoryRouter fuer Assertions sichtbar. */
 function SearchParamsProbe() {
   const [params] = useSearchParams();
+  adressen.push(params.toString());
   return <span data-testid="search-params">{params.toString()}</span>;
 }
 
@@ -27,6 +31,7 @@ vi.mock('./uebersicht', async (importOriginal) => {
 });
 
 const { PatientsListPage } = await import('./PatientsListPage');
+const { suchbegriffMerken } = await import('./suchbegriff');
 
 function eintrag(
   id: string,
@@ -68,6 +73,11 @@ function reihenfolge(): string[] {
 }
 
 describe('PatientsListPage (B1, B10)', () => {
+  beforeEach(() => {
+    suchbegriffMerken('');
+    adressen.length = 0;
+  });
+
   it('listet die vom Server freigegebenen Patient:innen - ohne „Nicht in Versorgung“', async () => {
     fetchPatientOverview.mockResolvedValue([
       eintrag('1', 'Max', 'Mustermann'),
@@ -97,21 +107,40 @@ describe('PatientsListPage (B1, B10)', () => {
     );
   });
 
-  // PAT-08: Die Akte führt zurück in genau diese Ansicht.
-  it('gibt der Akte Suche, Sortierung und Auswahl als Rückweg mit', async () => {
+  // PAT-08: Die Akte führt zurück in genau diese Ansicht - der Suchbegriff
+  // (meist ein Name) steht dabei nie in einer Adresse (ADR-011).
+  it('gibt der Akte Sortierung und Auswahl als Rückweg mit, den Suchbegriff nicht', async () => {
     fetchPatientOverview.mockResolvedValue([
       eintrag('1', 'Max', 'Mustermann'),
       eintrag('2', 'Erika', 'Beispiel', { bases_need_appointments: 1, open_bases: 1 }),
     ]);
+    const user = userEvent.setup();
 
-    renderWithProviders(<PatientsListPage />, '/patienten?q=erika&sort=name&zeigen=termine_fehlen');
+    renderWithProviders(<PatientsListPage />, '/patienten?sort=name&zeigen=termine_fehlen');
+    await user.type(await screen.findByLabelText('Patient:in suchen'), 'erika');
 
     const link = await screen.findByRole('link', { name: /Beispiel, Erika/ });
     const ziel = new URL(link.getAttribute('href') ?? '', 'http://liste.test');
     expect(ziel.pathname).toBe('/patienten/2');
-    expect(ziel.searchParams.get('zurueck')).toBe(
-      '/patienten?q=erika&sort=name&zeigen=termine_fehlen',
-    );
+    expect(ziel.searchParams.get('zurueck')).toBe('/patienten?sort=name&zeigen=termine_fehlen');
+    expect(link.getAttribute('href')).not.toMatch(/erika/i);
+  });
+
+  it('hat den Suchbegriff nach dem Weg in die Akte und zurück noch (PAT-08)', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel'),
+    ]);
+    const user = userEvent.setup();
+
+    const { unmount } = renderWithProviders(<PatientsListPage />);
+    await user.type(await screen.findByLabelText('Patient:in suchen'), 'erika');
+    unmount();
+
+    renderWithProviders(<PatientsListPage />);
+    expect(await screen.findByLabelText('Patient:in suchen')).toHaveValue('erika');
+    expect(await screen.findByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
   });
 
   it('sortiert nach zuletzt behandelt, offener Verordnung und A–Z', async () => {
@@ -337,7 +366,7 @@ describe('PatientsListPage (B1, B10)', () => {
     expect(screen.queryByText('Noch keine Patient:innen')).toBeNull();
   });
 
-  it('spiegelt Suche, Sortierung und Auswahl in der URL', async () => {
+  it('spiegelt Sortierung und Auswahl in der URL, den Suchbegriff nie (ADR-011)', async () => {
     fetchPatientOverview.mockResolvedValue([
       eintrag('1', 'Max', 'Mustermann'),
       eintrag('2', 'Erika', 'Beispiel', { open_bases: 1, bases_ready: 1 }),
@@ -354,15 +383,15 @@ describe('PatientsListPage (B1, B10)', () => {
     expect(screen.getByTestId('search-params')).toHaveTextContent('');
 
     await user.type(screen.getByLabelText('Patient:in suchen'), 'erika');
-    await waitFor(() => {
-      expect(screen.getByTestId('search-params')).toHaveTextContent('q=erika');
-    });
+    expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
+    expect(screen.getByTestId('search-params')).toHaveTextContent('');
 
     await user.click(screen.getByRole('button', { name: 'A–Z' }));
     await user.click(screen.getByRole('button', { name: /Abrechnen \(1\)/ }));
     await waitFor(() => {
       const params = screen.getByTestId('search-params').textContent ?? '';
-      expect(params).toContain('q=erika');
+      expect(params).not.toContain('q=');
+      expect(params).not.toMatch(/erika/i);
       expect(params).toContain('sort=name');
       expect(params).toContain('zeigen=abrechnen');
     });
@@ -372,27 +401,37 @@ describe('PatientsListPage (B1, B10)', () => {
     await user.click(screen.getByRole('button', { name: /Abrechnen \(1\)/ }));
     await user.click(screen.getByRole('button', { name: 'Zuletzt' }));
     await waitFor(() => {
-      const params = screen.getByTestId('search-params').textContent ?? '';
-      expect(params).toContain('q=erika');
-      expect(params).not.toContain('zeigen');
-      expect(params).not.toContain('sort');
+      expect(screen.getByTestId('search-params')).toHaveTextContent('');
     });
+    expect(screen.getByLabelText('Patient:in suchen')).toHaveValue('erika');
+    // Auch keine Zwischenadresse trug den Begriff.
+    for (const adresse of adressen) expect(adresse).not.toMatch(/q=|erika/i);
   });
 
-  it('stellt Suche, Sortierung und Auswahl beim Aufruf einer geteilten URL wieder her', async () => {
+  it('stellt Sortierung und Auswahl aus der URL wieder her und entfernt einen alten Suchbegriff', async () => {
     fetchPatientOverview.mockResolvedValue([
       eintrag('1', 'Max', 'Mustermann', { open_bases: 1, bases_ready: 1 }),
       eintrag('2', 'Erika', 'Beispiel', { open_bases: 1, bases_ready: 1 }),
       eintrag('3', 'Erich', 'Zeisig'),
     ]);
 
-    renderWithProviders(<PatientsListPage />, '/patienten?q=eri&sort=name&zeigen=abrechnen');
+    renderWithProviders(
+      <>
+        <PatientsListPage />
+        <SearchParamsProbe />
+      </>,
+      '/patienten?q=eri&sort=name&zeigen=abrechnen',
+    );
 
     expect(await screen.findByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
+    expect(screen.getByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Zeisig, Erich/ })).toBeNull();
-    expect(screen.getByLabelText('Patient:in suchen')).toHaveValue('eri');
     expect(screen.getByRole('button', { name: 'A–Z' })).toHaveAttribute('aria-pressed', 'true');
+    // Ein Begriff aus einer alten Adresse wird nicht übernommen, sondern entfernt.
+    expect(screen.getByLabelText('Patient:in suchen')).toHaveValue('');
+    await waitFor(() => {
+      expect(screen.getByTestId('search-params')).toHaveTextContent('sort=name&zeigen=abrechnen');
+    });
   });
 
   it('ignoriert ungueltige Werte aus der URL statt abzustuerzen', async () => {

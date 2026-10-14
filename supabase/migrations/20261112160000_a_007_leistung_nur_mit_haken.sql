@@ -11,13 +11,16 @@
 --        a) list_open_billable_appointments fuehrt einen Behandlungstermin ohne
 --           Gebuehrenanlass nur mit Haken.
 --        b) Ein Trigger an billable_services haelt die Regel fuer jeden Weg
---           fest (record_billable_services, kuenftige Wege).
+--           fest (record_billable_services, kuenftige Wege) - beim Anlegen
+--           und beim Umhaengen auf einen anderen Termin.
 --      Ein Gebuehrenanlass (Ausfallhonorar) braucht keinen Haken; das Training
 --      bleibt, wie es ist (ANN-036, ADR-022 Punkt 6).
 --   2. delete_treatment_basis loescht keine Grundlage, die in der Abrechnung
 --      steht (ANN-515): Sonst fiele mit der Zuordnung der Termine die Sperre,
---      ohne dass jemand zurueckgeholt haette. Der Aufbewahrungslauf loescht
---      ueber die Akte und ist davon nicht beruehrt.
+--      ohne dass jemand zurueckgeholt haette. Die Zeile wird vor der Pruefung
+--      gesperrt, damit eine gleichzeitige Freigabe nicht dazwischenkommt.
+--      Der Aufbewahrungslauf loescht ueber die Akte und ist davon nicht
+--      beruehrt.
 -- =============================================================================
 
 -- 1. Der Haken als Bedingung ----------------------------------------------------
@@ -119,6 +122,10 @@ begin
   if new.appointment_id is null then
     return new;
   end if;
+  -- Beim Aendern nur, wenn die Leistung an einen anderen Termin wandert.
+  if tg_op = 'UPDATE' and new.appointment_id is not distinct from old.appointment_id then
+    return new;
+  end if;
 
   select a.kind, a.status, a.completed_at,
          app.billable_fee_basis(a.fee_basis, a.fee_waived_at) as anlass
@@ -138,16 +145,16 @@ $$;
 revoke all on function app.billable_services_require_check() from public, anon, authenticated;
 
 create trigger billable_services_require_check
-  before insert on public.billable_services
+  before insert or update of appointment_id on public.billable_services
   for each row execute function app.billable_services_require_check();
 
 comment on function app.billable_services_require_check() is
-  'B4/B7 (ANN-513): Eine Leistung an einem Behandlungstermin entsteht nur mit dem Haken (oder aus einem Gebuehrenanlass) - auf jedem Weg, auch im Buero.';
+  'B4/B7 (ANN-513): Eine Leistung an einem Behandlungstermin entsteht nur mit dem Haken (oder aus einem Gebuehrenanlass) - auf jedem Weg, auch im Buero, und auch beim Umhaengen auf einen anderen Termin.';
 
 -- 2. Keine Loeschung einer Grundlage in der Abrechnung ---------------------------
 
 -- Juengste Fassung aus 20261006110100_log_001b_schreibpfade.sql; neu ist nur die
--- Pruefung auf die Freigabe.
+-- Pruefung auf die Freigabe unter Zeilensperre.
 CREATE OR REPLACE FUNCTION public.delete_treatment_basis(p_treatment_basis_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -155,9 +162,10 @@ CREATE OR REPLACE FUNCTION public.delete_treatment_basis(p_treatment_basis_id uu
  SET search_path TO ''
 AS $function$
 declare
-  v_actor      uuid;
-  v_org        uuid;
-  v_patient_id uuid;
+  v_actor        uuid;
+  v_org          uuid;
+  v_patient_id   uuid;
+  v_freigegeben  timestamptz;
 begin
   v_actor := auth.uid();
   if v_actor is null then
@@ -173,6 +181,19 @@ begin
     raise exception 'not allowed to write treatment_bases' using errcode = '42501';
   end if;
 
+  -- B7 (ANN-515): In der Abrechnung erst zurueckholen. Die Zeile wird vor
+  -- der Pruefung gesperrt: Eine gleichzeitige Freigabe wartet dann, statt
+  -- dass das Loeschen die eben freigegebene Grundlage mitnimmt.
+  select b.billing_released_at into v_freigegeben
+  from public.treatment_bases b
+  where b.id = p_treatment_basis_id
+    and b.organization_id = v_org
+  for update;
+
+  if v_freigegeben is not null then
+    raise exception 'treatment basis is in billing' using errcode = '55000';
+  end if;
+
   -- PRX-010 (Zweitreview): Mit der Grundlage fielen ihre klinischen Texte;
   -- das bleibt den therapeutischen Rollen vorbehalten.
   if not app.can_clear_treatment_basis_clinical_texts()
@@ -186,16 +207,6 @@ begin
     where r.treatment_basis_id = p_treatment_basis_id and r.organization_id = v_org
   ) then
     raise exception 'treatment basis has therapy reports' using errcode = '23503';
-  end if;
-
-  -- B7 (ANN-515): In der Abrechnung erst zurueckholen.
-  if exists (
-    select 1 from public.treatment_bases b
-    where b.id = p_treatment_basis_id
-      and b.organization_id = v_org
-      and b.billing_released_at is not null
-  ) then
-    raise exception 'treatment basis is in billing' using errcode = '55000';
   end if;
 
   delete from public.treatment_bases p

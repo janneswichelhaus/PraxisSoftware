@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -11,6 +11,7 @@ import { Segment } from '@/components/ui/Segment';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { formatEuro } from '@/lib/geld';
 import { ageInYears } from './api';
+import { gemerkterSuchbegriff, suchbegriffMerken } from './suchbegriff';
 import {
   PATIENT_OVERVIEW_KEY,
   SORTIERUNGEN,
@@ -57,32 +58,50 @@ function metaZeile(eintrag: Patienteneintrag, heute: Date): string {
  *
  * Sortierung und Auswahl stehen in der Adresszeile (UX-012), damit die Akte
  * in genau diese Ansicht zurückführt; andere Parameter der Seite bleiben
- * stehen. Der Suchbegriff - meist ein Name - nur dort, wo die Kartei ihn schon
- * so führte (`sucheInAdresse`); beim Anlegen eines Termins bleibt er im
- * Zustand der Seite und wandert nicht mit der Kennung der Person in die
- * nächste Adresse (ANN-061, ADR-011). Rechte und RLS bleiben, wie sie sind:
- * Die Liste zeigt, was der Server liefert.
+ * stehen. Der Suchbegriff - meist ein Name - nie (ADR-011, ADR-013 Punkt 9
+ * Nr. 5): Die Kartei merkt ihn sich für den Rückweg im Arbeitsspeicher
+ * (`begriffMerken`), beim Anlegen eines Termins bleibt er im Zustand der
+ * Seite. Ein `q` aus einer alten Adresse wird entfernt, nicht übernommen.
+ * Rechte und RLS bleiben, wie sie sind: Die Liste zeigt, was der Server
+ * liefert.
  */
 export function Patientenauswahl({
   ziel,
   suchbeschriftung = 'Patient:in suchen',
   leer,
-  sucheInAdresse = false,
+  begriffMerken = false,
 }: {
   /** Wohin eine Zeile führt. */
   ziel: (patientId: string) => string;
   suchbeschriftung?: string;
   /** Leerzustand ohne jede Akte. */
   leer: { titel: string; beschreibung?: string };
-  /** Den Suchbegriff als `q` in der Adresse führen (nur die Kartei, wie bisher). */
-  sucheInAdresse?: boolean;
+  /** Den Suchbegriff für den Rückweg aus der Akte merken (nur die Kartei). */
+  begriffMerken?: boolean;
 }) {
   const [parameter, setParameter] = useSearchParams();
   const navigate = useNavigate();
-  const [lokalerBegriff, setLokalerBegriff] = useState('');
-  const begriff = sucheInAdresse ? (parameter.get('q') ?? '') : lokalerBegriff;
+  const [begriff, setBegriff] = useState(() => (begriffMerken ? gemerkterSuchbegriff() : ''));
   const sortierung = leseSortierung(parameter.get('sort'));
   const zeigen = leseZeigen(parameter.get('zeigen'));
+  const alterBegriff = parameter.has('q');
+
+  useEffect(() => {
+    if (!alterBegriff) return;
+    setParameter(
+      (bisher) => {
+        const neu = new URLSearchParams(bisher);
+        neu.delete('q');
+        return neu;
+      },
+      { replace: true },
+    );
+  }, [alterBegriff, setParameter]);
+
+  function suchen(wert: string) {
+    setBegriff(wert);
+    if (begriffMerken) suchbegriffMerken(wert);
+  }
 
   const abfrage = useQuery({
     queryKey: PATIENT_OVERVIEW_KEY,
@@ -104,7 +123,7 @@ export function Patientenauswahl({
   const wahlen = useMemo(() => zeigenWahlen(data ?? []), [data]);
   const heute = new Date();
 
-  function setzen(schluessel: 'q' | 'sort' | 'zeigen', wert: string | null) {
+  function setzen(schluessel: 'sort' | 'zeigen', wert: string | null) {
     setParameter(
       (bisher) => {
         const neu = new URLSearchParams(bisher);
@@ -135,9 +154,7 @@ export function Patientenauswahl({
               label={suchbeschriftung}
               placeholder="Name, Ort, Telefon, E-Mail"
               value={begriff}
-              onChange={(wert) =>
-                sucheInAdresse ? setzen('q', wert.trim() ? wert : null) : setLokalerBegriff(wert)
-              }
+              onChange={suchen}
             />
           </form>
         }

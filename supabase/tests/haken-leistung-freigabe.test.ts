@@ -1,4 +1,5 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Client } from 'pg';
 import {
   SEED,
   asAnon,
@@ -6,7 +7,9 @@ import {
   asUser,
   asUserCommitted,
   fremdeOrganisation,
+  jwtClaims,
   resetDatabaseOhneTermine,
+  testDatabaseUrl,
 } from './helpers/db';
 
 /**
@@ -317,6 +320,31 @@ describe('Leistung mit dem Haken (B7, ANN-513)', () => {
     await expect(erfassen()).rejects.toThrow(/not checked off/);
   });
 
+  // Zweitreview-Nachpruefung: Die Regel gilt auch, wenn eine Leistung an
+  // einen anderen Termin wandert - heute tut das kein Weg, ein kuenftiger
+  // haelt sich daran.
+  it('haengt keine Leistung an einen Termin ohne Haken um', async () => {
+    const abgehakt = await termin();
+    await festschreiben(abgehakt);
+    await abhaken(abgehakt);
+    expect(await leistungen(abgehakt)).toEqual(['KG']);
+    const ohneHaken = await termin();
+
+    await expect(
+      asPostgres(
+        'update public.billable_services set appointment_id = $2 where appointment_id = $1',
+        [abgehakt, ohneHaken],
+      ),
+    ).rejects.toThrow(/not checked off/);
+    // Ohne Wechsel des Termins bleibt alles, wie es ist.
+    await asPostgres(
+      'update public.billable_services set appointment_id = appointment_id where appointment_id = $1',
+      [abgehakt],
+    );
+    expect(await leistungen(abgehakt)).toEqual(['KG']);
+    expect(await leistungen(ohneHaken)).toEqual([]);
+  });
+
   // ANN-513 (Zweitreview H1): Der Haken gehoert zum Termin, nicht zur Person.
   // Wer ihn zuruecknehmen darf, nimmt die Leistung mit - auch die einer
   // Kollegin oder die das Buero erfasst hat, solange keine Rechnung sie fuehrt.
@@ -586,6 +614,64 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
     ).rejects.toThrow(/treatment basis is in billing/);
     const { rows } = await asPostgres<{ anzahl: string }>(
       'select count(*)::text as anzahl from public.treatment_bases where id = $1',
+      [GRUNDLAGE],
+    );
+    expect(rows[0]!.anzahl).toBe('1');
+  });
+
+  // Zweitreview-Nachpruefung: Freigabe und Loeschen zur selben Zeit. Das
+  // Loeschen wartet auf die Freigabe und weist dann ab, statt die eben
+  // freigegebene Grundlage mitzunehmen.
+  it('loescht auch bei gleichzeitiger Freigabe nicht', async () => {
+    await vollstaendig();
+    const freigabe = new Client({ connectionString: testDatabaseUrl() });
+    const loeschen = new Client({ connectionString: testDatabaseUrl() });
+    await freigabe.connect();
+    await loeschen.connect();
+    try {
+      for (const [verbindung, konto] of [
+        [freigabe, users.therapist],
+        [loeschen, users.ownerTherapist],
+      ] as const) {
+        await verbindung.query('begin');
+        await verbindung.query("select set_config('role', 'authenticated', true)");
+        await verbindung.query("select set_config('request.jwt.claims', $1, true)", [
+          jwtClaims(konto),
+        ]);
+      }
+      await freigabe.query(FREIGEBEN, [GRUNDLAGE]);
+      const { rows: prozess } = await loeschen.query<{ pid: number }>(
+        'select pg_backend_pid() as pid',
+      );
+      const versuch = loeschen
+        .query('select public.delete_treatment_basis($1::uuid)', [GRUNDLAGE])
+        .then(
+          () => null,
+          (fehler: Error) => fehler,
+        );
+      // Das Loeschen steht an der Sperre der noch offenen Freigabe.
+      await vi.waitFor(
+        async () => {
+          const { rows } = await asPostgres<{ wartet: string | null }>(
+            'select wait_event_type as wartet from pg_stat_activity where pid = $1',
+            [prozess[0]!.pid],
+          );
+          expect(rows[0]?.wartet).toBe('Lock');
+        },
+        { timeout: 15_000, interval: 50 },
+      );
+      await freigabe.query('commit');
+
+      expect((await versuch)?.message).toMatch(/treatment basis is in billing/);
+    } finally {
+      await freigabe.query('rollback').catch(() => undefined);
+      await loeschen.query('rollback').catch(() => undefined);
+      await freigabe.end();
+      await loeschen.end();
+    }
+    const { rows } = await asPostgres<{ anzahl: string }>(
+      `select count(*)::text as anzahl from public.treatment_bases
+        where id = $1 and billing_released_at is not null`,
       [GRUNDLAGE],
     );
     expect(rows[0]!.anzahl).toBe('1');
