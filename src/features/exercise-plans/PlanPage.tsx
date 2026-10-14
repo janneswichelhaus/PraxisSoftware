@@ -171,7 +171,11 @@ function Zugewiesen({ plan, zugewiesenBis }: { plan: Plan; zugewiesenBis: string
       {zugewiesenBis ? (
         <Rueckmeldung className="mt-4">
           Zugewiesen bis {formatDate(zugewiesenBis)}.{' '}
-          <Textlink to={`${planPfad(plan.service_area, plan.relationship_id, plan.id)}/blatt`}>
+          {/* Alleinstehend: 44 px Tippziel, auch mitten in der Bestätigung. */}
+          <Textlink
+            alleinstehend
+            to={`${planPfad(plan.service_area, plan.relationship_id, plan.id)}/blatt`}
+          >
             Als PDF oder drucken
           </Textlink>
         </Rueckmeldung>
