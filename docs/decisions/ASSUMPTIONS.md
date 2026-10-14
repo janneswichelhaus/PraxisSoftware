@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-13.
+Zuletzt aktualisiert: 2026-10-14.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -5210,3 +5210,16 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `planFuerUebung` in `src/features/exercise-plans/zielplan.ts`.
 
 **Änderungspfad.** Ziel wählbar machen (Entwurf oder neuer Plan) · Aufwand `klein`.
+
+### ANN-530 — „Passt es?“ bietet die früheste passende Zeit an, nur wenn die Gegenseite hält
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Ist im Terminformular die Anfahrt zu knapp, steht darunter „Auf 16:25 verschieben“ (frühester Beginn des Servers, nur am selben Tag); bei zu knapper Weiter- oder Rückfahrt „Auf 15:40 vorziehen“ (Beginn − ⌈−Luft / Raster⌉ · Raster). Angeboten wird nur, wenn die Luft der Gegenseite danach ≥ 0 bleibt oder sie ungeprüft ist, sonst „Zwischen Termin davor und danach reicht die Zeit nicht.“; anlegen zur alten Zeit bleibt möglich.
+
+**Begründung.** B2 (Jannes, 14.10.2026). Gerundet wird weiter im Server (ANN-097): Das Angebot rechnet nur mit seiner Luft, nach dem Tipp prüft er neu.
+
+**Anker.** `wegangebot` in `src/features/appointments/wegpruefung.ts`; Anzeige `Wegauskunft.tsx`.
+
+**Änderungspfad.** Andere Regel, auch über die Gegenseite hinweg: `wegangebot` · Aufwand `klein`.
+

@@ -88,13 +88,17 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useParams: () => ({ appointmentId: TERMIN_ID }),
 }));
 
-// UBK-012: hier zählt, welche Frage die Seite stellt.
-const wegfragen = vi.hoisted((): { letzte: unknown } => ({ letzte: null }));
+// UBK-012: hier zählt, welche Frage die Seite stellt - und was sie mit einer
+// Antwort anfängt, die der Test vorgibt (B2).
+const wegfragen = vi.hoisted((): { letzte: unknown; antwort: unknown } => ({
+  letzte: null,
+  antwort: { stand: 'aus' },
+}));
 vi.mock('./wegpruefung', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useWegpruefung: (frage: unknown) => {
     wegfragen.letzte = frage;
-    return { stand: 'aus' };
+    return frage === null ? { stand: 'aus' } : wegfragen.antwort;
   },
 }));
 
@@ -129,6 +133,7 @@ describe('EditAppointmentPage', () => {
     fetchLocations.mockResolvedValue([{ id: ORT, name: 'Hauptstandort Tuebingen' }]);
     updateAppointment.mockResolvedValue(undefined);
     fetchPatient.mockResolvedValue(patient);
+    wegfragen.antwort = { stand: 'aus' };
   });
 
   it('befuellt das Formular aus dem bestehenden Termin', async () => {
@@ -299,6 +304,53 @@ describe('EditAppointmentPage', () => {
       await user.clear(screen.getByLabelText('Beginn *'));
       await user.type(screen.getByLabelText('Beginn *'), '14:00');
       expect(screen.getByText('Ende: 14:30 Uhr')).toBeInTheDocument();
+    });
+
+    it('zieht auf Wunsch vor, wenn die Weiterfahrt zu knapp ist - mit seiner Länge (B2)', async () => {
+      fetchAppointment.mockResolvedValue(kurz);
+      // Weiterfahrt 7 Minuten zu knapp, davor 30 Minuten Luft.
+      wegfragen.antwort = {
+        stand: 'bereit',
+        an: {
+          stand: 'geprueft',
+          luft: 30,
+          stufe: 'passt',
+          fruehester: '2027-05-12T06:30:00Z',
+          fahrtMinuten: 12,
+          nachbar: 'termin',
+          nachbarZeit: '2027-05-12T06:15:00Z',
+        },
+        weiter: {
+          stand: 'geprueft',
+          luft: -7,
+          stufe: 'nicht',
+          fruehester: '2027-05-12T07:50:00Z',
+          fahrtMinuten: 17,
+          nachbar: 'termin',
+          nachbarZeit: '2027-05-12T07:43:00Z',
+        },
+      };
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.click(await screen.findByRole('button', { name: 'Auf 08:50 vorziehen' }));
+
+      // Nur verschoben, nicht verkürzt oder verlängert (8.1, ANN-056).
+      expect(screen.getByLabelText('Beginn *')).toHaveValue('08:50');
+      expect(screen.getByText('Ende: 09:20 Uhr')).toBeInTheDocument();
+      expect(wegfragen.letzte).toMatchObject({
+        beginnMinute: 8 * 60 + 50,
+        endeMinute: 9 * 60 + 20,
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment.mock.calls[0]?.[2]).toMatchObject({
+        date: '2027-05-12',
+        start_time: '08:50',
+        end_time: '09:20',
+      });
     });
 
     it('fragt beim Zuruecklegen in die Vergangenheit nach und schickt das Kennzeichen (FIX-019)', async () => {

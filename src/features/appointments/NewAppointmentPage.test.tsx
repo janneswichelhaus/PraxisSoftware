@@ -455,6 +455,39 @@ describe('NewAppointmentPage', () => {
     await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(1));
   });
 
+  it('verschiebt auf Wunsch auf den frühesten Beginn, das Ende mit der gewählten Länge (B2)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'practice');
+    await zeitenSetzen(user);
+    await user.selectOptions(screen.getByLabelText('Dauer'), '45');
+    expect(screen.getByText('Ende: 09:45 Uhr')).toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', { name: 'Auf 09:20 verschieben' }));
+
+    expect(screen.getByLabelText('Beginn *')).toHaveValue('09:20');
+    expect(screen.getByText('Ende: 10:05 Uhr')).toBeInTheDocument();
+    // Die Auskunft fragt mit dem neuen Beginn neu; dort bietet sie nichts mehr an.
+    expect(wegfragen.letzte).toMatchObject({
+      beginnMinute: 9 * 60 + 20,
+      endeMinute: 10 * 60 + 5,
+    });
+    expect(screen.queryByRole('button', { name: /verschieben$/ })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+    await waitFor(() =>
+      expect(createAppointment).toHaveBeenCalledWith(
+        PATIENT_ID,
+        expect.objectContaining({ date: '2027-05-12', start_time: '09:20', end_time: '10:05' }),
+        false,
+        null,
+        false,
+      ),
+    );
+  });
+
   it('kehrt nach dem Anlegen dorthin zurueck, wo es begann - mit dem neuen Termin (FIX-016)', async () => {
     // Aus dem Kalender getippt: der Rueckweg ist der Kalenderstand. Zurueck
     // geht es dorthin, der neue Termin wird hervorgehoben (BEF-016).

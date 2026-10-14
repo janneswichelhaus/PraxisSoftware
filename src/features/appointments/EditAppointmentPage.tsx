@@ -587,9 +587,22 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           }
         />
 
-        {/* UBK-012: An- und Weiterfahrt, nur Auskunft. */}
+        {/* UBK-012: An- und Weiterfahrt, nur Auskunft - mit dem Angebot, auf
+            die früheste passende Zeit zu verschieben (B2). */}
         {user.organizationTimeZone ? (
-          <Wegauskunft pruefung={weg} zeitzone={user.organizationTimeZone} />
+          <Wegauskunft
+            pruefung={weg}
+            zeitzone={user.organizationTimeZone}
+            verschieben={
+              wegfrage
+                ? {
+                    frage: wegfrage,
+                    rasterMinuten: user.appointmentGridMinutes,
+                    onBeginn: (beginn) => setzen('start_time', beginn),
+                  }
+                : undefined
+            }
+          />
         ) : null}
 
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird -
