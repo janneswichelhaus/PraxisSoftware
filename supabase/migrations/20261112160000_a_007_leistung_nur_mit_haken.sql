@@ -153,8 +153,9 @@ comment on function app.billable_services_require_check() is
 
 -- 2. Keine Loeschung einer Grundlage in der Abrechnung ---------------------------
 
--- Juengste Fassung aus 20261006110100_log_001b_schreibpfade.sql; neu ist nur die
--- Pruefung auf die Freigabe unter Zeilensperre.
+-- Juengste Fassung aus 20261006110100_log_001b_schreibpfade.sql; neu sind die
+-- Pruefung auf die Freigabe unter Zeilensperre und die Reihenfolge der Sperren
+-- (Termine, Positionen, Grundlage).
 CREATE OR REPLACE FUNCTION public.delete_treatment_basis(p_treatment_basis_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -180,6 +181,27 @@ begin
   if v_org is null then
     raise exception 'not allowed to write treatment_bases' using errcode = '42501';
   end if;
+
+  -- Zweitreview A (Nachtrag): erst die Termine und Positionen der Grundlage,
+  -- dann die Grundlage - dieselbe Reihenfolge wie jeder Schreiber (Termin,
+  -- Position, Grundlage). Mit der Grundlage zuerst warteten das Loeschen
+  -- (Termine auf null, Positionen fort) und eine laufende Terminaenderung
+  -- (Sperrpruefung an der Grundlage) aufeinander (40P01). Die Termine nur
+  -- `for no key update`, wie das Loeschen sie ohnehin aendert: Ein neuer
+  -- Eintrag zu einem Termin bleibt so moeglich.
+  perform 1
+  from public.appointments a
+  where a.treatment_basis_id = p_treatment_basis_id
+    and a.organization_id = v_org
+  order by a.id
+  for no key update;
+
+  perform 1
+  from public.treatment_base_items i
+  where i.treatment_basis_id = p_treatment_basis_id
+    and i.organization_id = v_org
+  order by i.id
+  for update;
 
   -- B7 (ANN-515): In der Abrechnung erst zurueckholen. Die Zeile wird vor
   -- der Pruefung gesperrt: Eine gleichzeitige Freigabe wartet dann, statt

@@ -350,18 +350,23 @@ begin
     return new;
   end if;
 
+  -- Erst die Spalten, dann die Sperre (Zweitreview A, Nachtrag): Eine
+  -- Aenderung, die die Abrechnung nicht beruehrt - Zusammenfuehren, Titel -,
+  -- sperrt die Grundlage nicht und wartet auf keine Freigabe.
+  if new.starts_at          is not distinct from old.starts_at
+     and new.ends_at            is not distinct from old.ends_at
+     and new.status             is not distinct from old.status
+     and new.completed_at       is not distinct from old.completed_at
+     and new.treatment_basis_id is not distinct from old.treatment_basis_id
+     and new.staff_member_id    is not distinct from old.staff_member_id then
+    return new;
+  end if;
+
   if (old.treatment_basis_id is not null and app.treatment_basis_locked(old.treatment_basis_id))
      or (new.treatment_basis_id is not null
          and new.treatment_basis_id is distinct from old.treatment_basis_id
          and app.treatment_basis_locked(new.treatment_basis_id)) then
-    if new.starts_at          is distinct from old.starts_at
-       or new.ends_at            is distinct from old.ends_at
-       or new.status             is distinct from old.status
-       or new.completed_at       is distinct from old.completed_at
-       or new.treatment_basis_id is distinct from old.treatment_basis_id
-       or new.staff_member_id    is distinct from old.staff_member_id then
-      raise exception 'treatment basis is in billing' using errcode = '55000';
-    end if;
+    raise exception 'treatment basis is in billing' using errcode = '55000';
   end if;
   return new;
 end;
@@ -438,10 +443,15 @@ begin
     return old;
   end if;
 
-  if app.treatment_basis_locked(new.treatment_basis_id)
-     and (tg_op = 'INSERT'
-          or new.prescribed_quantity is distinct from old.prescribed_quantity
-          or new.remedy is distinct from old.remedy) then
+  -- Erst die Spalten, dann die Sperre: Die genutzte Menge folgt den
+  -- Leistungen und sperrt die Grundlage nicht (Zweitreview A, Nachtrag).
+  if tg_op = 'UPDATE'
+     and new.prescribed_quantity is not distinct from old.prescribed_quantity
+     and new.remedy is not distinct from old.remedy then
+    return new;
+  end if;
+
+  if app.treatment_basis_locked(new.treatment_basis_id) then
     raise exception 'treatment basis is in billing' using errcode = '55000';
   end if;
   return new;
