@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hakenFehlt, hakenZuruecknehmbar, istAbgehakt } from './haken';
+import { dokumentiertOhneHaken, hakenFehlt, hakenZuruecknehmbar, istAbgehakt } from './haken';
 
 describe('Haken als eigenes Merkmal (B4)', () => {
   it('nennt abgeschlossen und abgerechnet abgehakt, bestätigt nicht', () => {
@@ -25,6 +25,13 @@ describe('Haken als eigenes Merkmal (B4)', () => {
     expect(hakenFehlt('completed', '2026-10-14T08:00:00Z')).toBe(false);
     expect(hakenFehlt('no_show', null)).toBe(false);
     expect(hakenFehlt('cancelled', null)).toBe(false);
+  });
+
+  it('erkennt den festgeschriebenen Termin, dem nur der Haken fehlt', () => {
+    expect(dokumentiertOhneHaken('documented', null)).toBe(true);
+    expect(dokumentiertOhneHaken('documented', '2026-10-14T08:00:00Z')).toBe(false);
+    expect(dokumentiertOhneHaken('documented', undefined)).toBe(false);
+    expect(dokumentiertOhneHaken('confirmed', null)).toBe(false);
   });
 
   it('nimmt jeden Haken zurück, nur nicht am abgerechneten Termin', () => {

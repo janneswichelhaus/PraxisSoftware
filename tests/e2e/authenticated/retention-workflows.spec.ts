@@ -151,19 +151,16 @@ test.describe('LOE-001b: Abschluss der Versorgung', () => {
     await expect(page.getByRole('button', { name: 'Versorgung abschließen' })).toBeVisible();
   });
 
-  test('bietet office den Abschluss nicht an, wohl aber den Statuswechsel', async ({ page }) => {
+  test('bietet office den Abschluss nicht an', async ({ page }) => {
     await anmelden(page, KONTEN.office);
 
     await page.goto(`/patienten/${PATIENTEN.max}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Max Mustermann' })).toBeVisible();
 
-    // Der Rollenschnitt ist hier bewusst ein anderer als beim
-    // organisatorischen Status: verwalten ja, über den Behandlungsverlauf
-    // urteilen nein (ANN-032).
-    await expect(
-      page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
-    ).toBeVisible();
+    // Über den Behandlungsverlauf urteilt office nicht (ANN-032). Den
+    // organisatorischen Status gibt es seit B1 nicht mehr (ANN-510).
     await expect(page.getByRole('button', { name: 'Versorgung abschließen' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /in Versorgung führen/ })).toHaveCount(0);
   });
 
   test('weist office auch auf RPC-Ebene ab - der Knopf ist nicht die Kontrolle', async ({

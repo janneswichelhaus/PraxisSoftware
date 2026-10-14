@@ -16,7 +16,11 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Zweispalter } from '@/components/ui/Zweispalter';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
-import { hakenFehlt, hakenZuruecknehmbar } from '@/features/appointments/haken';
+import {
+  dokumentiertOhneHaken,
+  hakenFehlt,
+  hakenZuruecknehmbar,
+} from '@/features/appointments/haken';
 import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
 import { FreigabeNachHaken } from '@/features/appointments/FreigabeNachHaken';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -523,7 +527,12 @@ function MeinTag({
    */
   function zeilenAktionen(termin: DayPlanEntry): ReactNode {
     const doku = dokuFuer(termin);
-    const zweites = nichtAbgeschlossen(termin, jetzt) ? (
+    // B4: Ist die Doku festgeschrieben, steht der Haken gleich da - auch
+    // bevor die Zeit des Besuchs um ist (Kernablauf K5).
+    const hakenDa =
+      nichtAbgeschlossen(termin, jetzt) ||
+      (termin.kind === 'therapy' && dokumentiertOhneHaken(termin.status, termin.checked_at));
+    const zweites = hakenDa ? (
       haken(termin)
     ) : termin.kind === 'internal' ? null : (
       <AnrufKnopf termin={termin} />
@@ -611,6 +620,9 @@ function MeinTag({
     const zone = termin.organization_time_zone;
     const kommt = stehtAus(termin, jetzt);
     const liegt = nichtAbgeschlossen(termin, jetzt);
+    const hakenDa =
+      liegt ||
+      (termin.kind === 'therapy' && dokumentiertOhneHaken(termin.status, termin.checked_at));
     const anfahrt = fahrzeiten.anfahrten.get(termin.id);
     const kicker = kommt
       ? `Später${anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''}`
@@ -619,7 +631,7 @@ function MeinTag({
         : 'Vorbei';
     const reihe = knopfreihe(dokuKnopf(termin, 'secondary', 'min-w-0 flex-1'), [
       <AnrufKnopf key="anruf" termin={termin} />,
-      liegt ? (
+      hakenDa ? (
         <Fragment key="haken">{haken(termin, 'normal', 'Behandlung abschließen')}</Fragment>
       ) : null,
     ]);

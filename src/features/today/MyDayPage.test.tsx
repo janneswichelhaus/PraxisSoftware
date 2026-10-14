@@ -1479,6 +1479,27 @@ describe('Übersicht', () => {
       expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
     });
 
+    // K5: Wer während des Besuchs festschreibt, hakt gleich an der Zeile ab -
+    // nicht erst nach dem Ende (B4).
+    it('bietet den Haken an der Zeile, sobald die Doku festgeschrieben ist - auch vor dem Ende (B4, K5)', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({
+          id: 't1',
+          status: 'documented',
+          documentation_status: 'final',
+          checked_at: null,
+          starts_at: inMinuten(-20),
+          ends_at: inMinuten(40),
+        }),
+        zweiterBesuch(),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByRole('button', { name: 'Termin abschließen: Erika Beispiel' }),
+      ).toBeInTheDocument();
+    });
+
     it('stellt Laden und Fehler des Teamplans in seinen Abschnitt, mit Erneut (UEB-05, ZST-18)', async () => {
       const user = userEvent.setup();
       fetchAppointments.mockRejectedValue(new Error('Serverfehler'));

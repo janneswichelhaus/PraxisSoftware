@@ -27,6 +27,17 @@ export function hakenFehlt(status: AppointmentStatus, hakenAm: string | null | u
 }
 
 /**
+ * Festgeschrieben, aber noch nicht abgehakt: Der Besuch ist vorbei, auch wenn
+ * seine Zeit noch läuft - der Haken steht deshalb gleich an der Zeile.
+ */
+export function dokumentiertOhneHaken(
+  status: AppointmentStatus,
+  hakenAm: string | null | undefined,
+): boolean {
+  return status === 'documented' && hakenAm === null;
+}
+
+/**
  * Lässt sich der Haken zurücknehmen? Jederzeit, solange die Leistung nicht
  * abgerechnet ist - das prüft der Server (`reopen_appointment`); die Oberfläche
  * bietet es an jedem abgehakten Termin an, der nicht abgerechnet ist.

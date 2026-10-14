@@ -112,9 +112,14 @@ function stand(nummer: number): Partial<DayPlanEntry> {
   const davor = ansicht === 'zweiter' ? 2 : ansicht === 'dritter' ? 3 : 0;
   if (nummer < davor) return { status: 'documented', documentation_status: 'final' };
   if (ansicht === 'doku') {
-    return nummer === 3
-      ? { status: 'completed', documentation_status: 'draft' }
-      : { status: 'documented', documentation_status: 'final' };
+    // B4 (BEF-154): Festschreiben hakt nicht ab - am zweiten Besuch fehlt der
+    // Haken noch, am dritten die Doku.
+    if (nummer === 3) return { status: 'completed', documentation_status: 'draft' };
+    return {
+      status: 'documented',
+      documentation_status: 'final',
+      checked_at: nummer === 2 ? null : new Date(Date.now() - 3_600_000).toISOString(),
+    };
   }
   return {};
 }
@@ -311,25 +316,6 @@ client.setQueryData(
     },
   ],
 );
-// Auftrag C1: am ersten und dritten Besuch sind die Heilmittel bestätigt, am
-// zweiten noch nicht - am Tagesende steht er unter „Heute noch offen".
-for (const [index, bestaetigt] of [
-  [0, true],
-  [1, false],
-  [2, true],
-] as const) {
-  client.setQueryData(['appointment', tag[index]!.id, 'leistungen'], {
-    appointment_id: tag[index]!.id,
-    can_record: true,
-    services: bestaetigt
-      ? [{ code: 'KG', label: 'Krankengymnastik', quantity: 1, status: 'billable' }]
-      : [],
-    recorded_at: null,
-    recorded_by_name: null,
-    basis_items: null,
-    session_fee_cents: null,
-  });
-}
 // „Nachzuholen" (ANN-478): gestern eine Doku offen, die Tage davor leer.
 for (let abstand = 1; abstand <= 7; abstand++) {
   const t = tagePlus(heute, -abstand);

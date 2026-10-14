@@ -16,10 +16,11 @@ import '@/index.css';
  * Einstieg der Prüfseite aus `termin.html` (PRX-EPIC-002, UX-EPIC-005) - das
  * Fenster „Aktionen“ eines Termins (Akte entschlacken, 2026-10-03).
  *
- * Ansichten über `?ansicht=`: `behandelnd` (Anna an ihrem dokumentierten
- * Hausbesuch: Zähler, Kurzblick, Heilmittel bestätigen), `buero` (derselbe
- * Termin für das Büro: dazu Empfänger und offene Rechnungen), `bestaetigt`
- * (Heilmittel bestätigt, Grundlage ausgeschöpft), `hausbesuch` (Anna vor der
+ * Ansichten über `?ansicht=`: `behandelnd` (Anna an ihrem dokumentierten und
+ * abgehakten Hausbesuch: Zähler, Kurzblick, die Leistung zur Kontrolle - B7),
+ * `buero` (derselbe Termin für das Büro: dazu Empfänger und offene
+ * Rechnungen), `bestaetigt` (der zehnte von zehn Terminen: die Verordnung ist
+ * vollständig, darunter „In die Abrechnung stellen“), `hausbesuch` (Anna vor der
  * Tür: der bestätigte Hausbesuch mit dem Ablauf „Niemand öffnet?"), `fremd`
  * (Jannes am bestätigten Hausbesuch von Anna, mit Mitteilungszeichen),
  * `praxis` (ein Praxistermin: die Ausnahme trägt ihr Kennzeichen) und
@@ -165,20 +166,32 @@ const lage: Abrechnungslage = {
   open_overdue: buero ? true : null,
   // KND-001: ?abschluss zeigt die Erinnerung an das Abschlussgespräch.
   closing_talk_due: new URLSearchParams(window.location.search).has('abschluss'),
+  // B7 (ANN-514): der Haken des Termins und der Stand der Verordnung.
+  checked_at: offen || abgesagt ? null : '2026-09-28T09:05:00.000Z',
+  basis_performed: ansicht === 'bestaetigt' ? 10 : 8,
+  basis_open: ansicht === 'bestaetigt' ? 0 : 2,
+  basis_complete: ansicht === 'bestaetigt',
+  basis_ready: ansicht === 'bestaetigt',
+  basis_released_at: null,
+  basis_invoiced: false,
+  basis_state: ansicht === 'bestaetigt' ? 'abrechnen' : 'laeuft',
+  can_release: !offen && !abgesagt,
 };
 
 const bestaetigt = ansicht === 'bestaetigt';
+// B7 (ANN-513): Mit Haken und festgeschriebener Doku ist die Leistung erfasst.
+const erfasst = !offen && !abgesagt;
 const leistungen: LeistungenAmTermin = {
   appointment_id: TERMIN,
   can_record: true,
-  services: bestaetigt
+  services: erfasst
     ? [
         { code: 'KG', label: 'Krankengymnastik', quantity: 1, status: 'billable' },
         { code: 'WT', label: 'Wärmetherapie', quantity: 1, status: 'billable' },
       ]
     : [],
-  recorded_at: bestaetigt ? '2026-09-28T09:06:00+00:00' : null,
-  recorded_by_name: bestaetigt ? 'Anna Beispiel' : null,
+  recorded_at: erfasst ? '2026-09-28T09:06:00+00:00' : null,
+  recorded_by_name: erfasst ? 'Anna Beispiel' : null,
   basis_items: [
     { remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: bestaetigt ? 10 : 7 },
     { remedy: 'Wärmetherapie', prescribed_quantity: 10, used_quantity: bestaetigt ? 10 : 7 },
