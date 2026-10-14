@@ -25,10 +25,11 @@ sind die Punkte **1, 7, 8, 10, 13, 17 und 18** und die Liste „Nicht entschiede
 Vermerk. Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.25, §3.4.
 
 **Fassung 5 (2026-10-14, E-001, Befund B11)**: Die Vorschau der Praxis (DSN-001 D7) ist als
-**Einsicht** gebaut; ergänzt ist nur **Punkt 25** (mit Vermerk): nur `owner`, nur am eigenen,
-aktiven Zugang der Person, gelesen über einen Verteiler mit fester Liste lesender Projektionen in
-einer nur lesenden Transaktion. Nichts geschieht im Namen der Person; protokolliert wird nach
-Punkt 24 mit den vorhandenen Aktionen (ADR-010). Die übrigen Punkte bleiben unverändert.
+**Einsicht** gebaut; ergänzt sind **Punkt 25** und **Punkt 19** (je mit Vermerk): nur `owner`,
+nur am eigenen, aktiven Zugang der Person, gelesen über einen Verteiler mit fester Liste lesender
+Projektionen in einer nur lesenden Transaktion; die Übungstage bleiben bei der Person (ANN-307).
+Nichts geschieht im Namen der Person; protokolliert wird nach Punkt 24 mit den vorhandenen
+Aktionen (ADR-010). Die übrigen Punkte bleiben unverändert.
 
 **Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
 
@@ -298,7 +299,11 @@ Funktionen, die den Zugriff aus `auth.uid()` über einen **aktiven Zugang** zum 
 ableiten. Eine Kennung, die der Browser mitschickt, wählt höchstens unter den eigenen Zugängen
 aus und gewährt nie etwas. Für Plattformkonten gibt es keine Tabellen-Policy auf Praxistabellen
 und kein direktes `SELECT`. Das ist ADR-004 Punkt 5, angewandt auf die neue Seite: Die
-Projektion entscheidet, RLS bleibt die zweite Linie.
+Projektion entscheidet, RLS bleibt die zweite Linie. *(Fassung 5)* Der Wächter der Projektionen
+kennt seitdem einen zweiten, nur lesenden Weg: die Einsicht der Praxisinhaber:in (Punkt 25). Er
+gilt nur innerhalb des Verteilers `platform_preview`, der Rolle, Sitzung und Zugang selbst prüft,
+und schaltet die Transaktion auf „nur lesen" (ANN-529). Eine Kennung aus dem Browser gewährt
+weiterhin nichts.
 
 **20. Der Selbstzugriff über `person_id` entfällt.** Die Klauseln
 `person_id = app.current_person_id()` bzw. `id = app.current_person_id()` in
@@ -361,7 +366,9 @@ heißt **Einsicht**: Nur die Praxisinhaber:in öffnet sie, am aktiven eigenen Zu
 der Server schaltet die Transaktion dabei auf „nur lesen" (ANN-529) und schreibt den Lesezugriff
 wie beim Öffnen der Akte (Punkt 24, keine neue Aktion). Die Oberfläche zeigt keine Schreibknöpfe,
 Seiten, die nur schreiben, sind nicht erreichbar, Dokumente und Anhänge werden nicht geöffnet
-(ANN-527); die Sicht einer Vertretung zeigt die Einsicht nicht (ANN-528).
+(ANN-527); die Sicht einer Vertretung zeigt die Einsicht nicht (ANN-528). Was die Praxis nach
+einer Entscheidung nicht sieht, sieht sie auch hier nicht: Die Übungstage kommen leer, die Seiten
+sagen, dass nur die Person sie sieht (ANN-307).
 
 **26. Der Plattformcode ist ein eigenes Feature** unter `src/features/` (ADR-015 Punkt 23). Er
 spricht nur Plattformprojektionen an. Ein Test oder eine Lint-Regel prüft, dass er keine
@@ -494,4 +501,4 @@ muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihen
 | 2 | 2026-09-30 | **Punkt 5 geändert** (Jannes): Konto 30 Tage nach dem letzten Zugang, Zugang mit Nachweis drei Jahre wie das Auditlog statt zwölf Monate; Wortlaut der Fassung 1 im Punkt. Punkt 11: Mail nur an eine von der Person selbst bestätigte Adresse. Punkt 13: Ausweis und Vollmacht ansehen, nichts speichern; Einwilligung zur Begleitung nach Art. 9 Abs. 2 lit. a mit vier Bedingungen. Erledigungsvermerk in den Folgefragen. Übrige Punkte und W1 bis W6 unverändert. |
 | 3 | 2026-10-09 | BEF-138, Entscheidung von Jannes in der Abnahme vom 2026-10-09 (ANN-249): **Punkt 24** ohne „jeder Dokumentabruf"; der Abruf eines freigegebenen Dokuments wird nicht protokolliert, bei einer Vertretung zählt er als Lesen (ADR-010 Fassung 4, Punkt 22). W5 mit Vermerk. Übrige Punkte unverändert. |
 | 4 | 2026-10-10 | Anmeldung ohne Kennwort nach ADR-025 Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort. Geändert sind die Punkte 1, 7, 8, 10, 13, 17 und 18 und die Liste „Nicht entschieden“, jeweils mit Vermerk. *Zeile nachgetragen 2026-10-14 aus der Statuszeile.* |
-| 5 | 2026-10-14 | E-001 (Befund B11): **Punkt 25** mit Vermerk — die Vorschau (DSN-001 D7) ist als Einsicht gebaut: owner, eigener aktiver Zugang, Verteiler `platform_preview` mit fester Liste, nur lesende Transaktion, Protokoll nach Punkt 24 mit den vorhandenen Aktionen (ANN-525 bis ANN-529). Übrige Punkte unverändert. |
+| 5 | 2026-10-14 | E-001 (Befund B11): **Punkt 25** mit Vermerk — die Vorschau (DSN-001 D7) ist als Einsicht gebaut: owner, eigener aktiver Zugang, Verteiler `platform_preview` mit fester Liste, nur lesende Transaktion, Protokoll nach Punkt 24 mit den vorhandenen Aktionen (ANN-525 bis ANN-529), ohne die Übungstage (ANN-307). **Punkt 19** mit Vermerk: der zweite, nur lesende Weg des Wächters. Übrige Punkte unverändert. |

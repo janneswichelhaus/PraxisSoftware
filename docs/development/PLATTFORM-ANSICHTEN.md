@@ -383,7 +383,7 @@ die Ansicht nicht so baut, dass die Vorschau später nicht geht.
 die Plattform“ im Abschnitt Plattform, nur für die Praxisinhaber:in und nur am
 aktiven eigenen Zugang; dasselbe Gerüst, nur lesend, mit der Leiste „Einsicht ·
 nur lesen“, protokolliert wie das Öffnen der Akte ([ADR-023](../adr/ADR-023-platform-access.md)
-Fassung 5, Punkt 25; ANN-525 bis ANN-529).
+Fassung 5, Punkt 25; ANN-525 bis ANN-529). Die Übungstage sieht dort nur die Person (ANN-307).
 
 ## 9. Was daraus in welchem Loop entsteht
 

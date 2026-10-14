@@ -3,8 +3,9 @@ import { screen, within } from '@testing-library/react';
 import { useLocation } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import type { Nachricht, Plattformzugang } from './api';
-import { EINSICHT_LESEN, type Einsichtsquelle } from './einsicht';
+import { EINSICHT_LESEN, TAGE_NUR_DIE_PERSON, type Einsichtsquelle } from './einsicht';
 import { PlattformApp } from './PlattformApp';
+import { eigenerPlan } from './testdaten';
 
 /**
  * Die Plattform in der Einsicht der Praxis (E-001, DSN-001 D7): dasselbe
@@ -253,6 +254,37 @@ describe('Plattform in der Einsicht (E-001)', () => {
     expect(screen.queryByRole('link', { name: /Meine Daten/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Abmelden|abmelden/ })).not.toBeInTheDocument();
     expect(netz.aufgerufen).toBe(0);
+  });
+
+  // ANN-307: Die Übungstage sieht nur die Person. Der Server liefert sie der
+  // Einsicht leer (`supabase/tests/platform-preview.test.ts`); die Seiten
+  // sagen das, statt „keine Tage" zu zeigen - und zeigen keine, selbst wenn
+  // welche kämen.
+  it.each([
+    ['wie vom Server: leer', []],
+    ['selbst wenn welche kämen', [1, 3]],
+  ])('Übungstage: nur die Person sieht sie (%s)', async (_fall, tage) => {
+    const vorher = DATEN.platform_exercise_plans;
+    DATEN.platform_exercise_plans = {
+      today: '2026-10-14',
+      plans: [eigenerPlan({ weekdays: tage, can_choose_days: true })],
+    };
+    try {
+      const uebungen = zeige('/p/uebungen');
+      expect(await screen.findByText('Heimprogramm Knie')).toBeInTheDocument();
+      expect(screen.getByText(TAGE_NUR_DIE_PERSON)).toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /Meine Übungstage/ })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Meine Übungstage:/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /üben/ })).not.toBeInTheDocument();
+      uebungen.unmount();
+
+      zeige('/p/termine');
+      expect(await screen.findByText(TAGE_NUR_DIE_PERSON)).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Diese Woche' })).not.toBeInTheDocument();
+      expect(screen.queryByText('Übungstag')).not.toBeInTheDocument();
+    } finally {
+      DATEN.platform_exercise_plans = vorher;
+    }
   });
 
   it('ohne Einsicht bleiben die Seiten der Person, wie sie sind', () => {

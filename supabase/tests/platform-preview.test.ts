@@ -77,6 +77,8 @@ const FREMD_KONTO = '99999999-9999-4999-8999-0000000000e2';
 const FREMD_ZUGANG = 'cafecafe-cafe-4afe-8afe-0000000000e2';
 const ARZTBRIEF = 'abababab-abab-4bab-8bab-0000000000e1';
 const PLAN_ERIKA = 'aeaeaeae-aeae-4eae-8eae-000000000001';
+/** Dienstag und Donnerstag - von Erika selbst gewählt (ANN-307). */
+const TAGE_ERIKA = [2, 4];
 const RUECKFRAGE_ERIKA = 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001';
 const UNBEKANNT = '0b0b0b0b-0b0b-4b0b-8b0b-0b0b0b0b0b0b';
 
@@ -156,7 +158,29 @@ async function vorbereiten(): Promise<Vorbereitet> {
      values ($1, $2, current_date - 5, $3) returning id`,
     [organizationId, patients.erika, users.office],
   );
+  // ANN-307: Erika wählt ihre Übungstage über ihren eigenen Weg - die sieht
+  // nur sie, nicht die Praxis und nicht die Einsicht.
+  await asUserCommitted(
+    users.plattformErika,
+    'select public.set_platform_exercise_days($1::uuid, $2::uuid, $3::integer[])',
+    [platformAccesses.erikaBehandlung, PLAN_ERIKA, TAGE_ERIKA],
+  );
   return { wunsch: wunsch.rows[0]!.id, gewohnheit: gewohnheit.rows[0]!.id, abo: abo.rows[0]!.id };
+}
+
+interface Plaene {
+  plans: ({ id: string; weekdays: number[] } & Record<string, unknown>)[];
+}
+
+/**
+ * ANN-307 (Jannes): Die Übungstage sieht nur die Person, die Praxis nicht -
+ * die Einsicht bekommt sie leer. Die einzige Stelle, an der die Einsicht von
+ * der Sicht der Person abweicht.
+ */
+function ohneUebungstage(funktion: string, daten: unknown): unknown {
+  if (funktion !== 'platform_exercise_plans' || daten === null) return daten;
+  const plaene = daten as Plaene;
+  return { ...plaene, plans: plaene.plans.map((plan) => ({ ...plan, weekdays: [] })) };
 }
 
 /** Was die Person selbst bekommt - in derselben Form, wie der Verteiler es liefert. */
@@ -468,7 +492,7 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
           const argumente = funktion === 'platform_invoice' ? { p_invoice_id: UNBEKANNT } : {};
           const person = await alsPerson(konto, zugang, funktion, argumente);
           const einsicht = await inDerEinsicht(users.ownerTherapist, zugang, funktion, argumente);
-          expect(einsicht, funktion).toEqual(person);
+          expect(einsicht, funktion).toEqual(ohneUebungstage(funktion, person));
         }
       });
     }
@@ -519,6 +543,31 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
           can_end: true,
         }),
       ]);
+    });
+
+    it('liefert die Übungstage leer - die sieht nur die Person (ANN-307)', async () => {
+      const person = (await alsPerson(
+        users.plattformErika,
+        platformAccesses.erikaBehandlung,
+        'platform_exercise_plans',
+      )) as Plaene;
+      const einsicht = (await inDerEinsicht(
+        users.ownerTherapist,
+        platformAccesses.erikaBehandlung,
+        'platform_exercise_plans',
+      )) as Plaene;
+      // Bestätigt: Die Person sieht die Tage, die sie selbst gewählt hat.
+      expect(person.plans.find((p) => p.id === PLAN_ERIKA)?.weekdays).toEqual(TAGE_ERIKA);
+      // Die Einsicht bekommt für denselben Plan keine - und sonst alles gleich.
+      expect(einsicht.plans.find((p) => p.id === PLAN_ERIKA)?.weekdays).toEqual([]);
+      expect(einsicht).toEqual(ohneUebungstage('platform_exercise_plans', person));
+      expect(JSON.stringify(einsicht)).not.toContain(JSON.stringify(TAGE_ERIKA));
+      // Auch an der Tabelle vorbei liest owner die Tage nicht.
+      expect(
+        await fehler(
+          asUser(users.ownerTherapist, 'select weekdays from public.exercise_plan_days'),
+        ),
+      ).toBe('42501');
     });
 
     it('liefert den Kontext in der Form von platform_context(), dazu Name und Verhältnis', async () => {
@@ -903,6 +952,36 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
       expect(await pruefen(users.office, E)).toEqual({ lesbar: false, lesend: 'off' });
       expect(await pruefen(users.therapist, E)).toEqual({ lesbar: false, lesend: 'off' });
       expect(await pruefen(FREMDE_ORGANISATION.owner, E)).toEqual({ lesbar: false, lesend: 'off' });
+    });
+
+    it('gibt auch den Weg nach der Lesefrist nur owner und nur am eigenen Zugang frei', async () => {
+      // app.platform_own_access_after_reading: Widerrufen nach der Lesefrist
+      // (D2, ANN-261) - mit derselben Freigabe wie der Wächter.
+      const nachDerLesefrist = 'select app.platform_own_access_after_reading($1::uuid) as frei';
+      const pruefen = async (konto: string, zugang: string) =>
+        sitzung(async (client) => {
+          await client.query('begin');
+          await client.query("select set_config('request.jwt.claims', $1, true)", [
+            jwtClaims(konto),
+          ]);
+          await client.query("select set_config('app.platform_preview_access', $1, true)", [
+            zugang,
+          ]);
+          const { rows } = await client.query<{ frei: boolean }>(nachDerLesefrist, [zugang]);
+          const lesend = await client.query<{ v: string }>(
+            "select current_setting('transaction_read_only') as v",
+          );
+          await client.query('rollback');
+          return { frei: rows[0]!.frei, lesend: lesend.rows[0]!.v };
+        });
+      expect(await pruefen(users.ownerTherapist, E)).toEqual({ frei: true, lesend: 'on' });
+      // Vertretung, fremde Organisation, andere Rolle: nichts frei, nichts gesperrt.
+      expect(await pruefen(users.ownerTherapist, platformAccesses.paulaBegleitungMax)).toEqual({
+        frei: false,
+        lesend: 'off',
+      });
+      expect(await pruefen(users.office, E)).toEqual({ frei: false, lesend: 'off' });
+      expect(await pruefen(FREMDE_ORGANISATION.owner, E)).toEqual({ frei: false, lesend: 'off' });
     });
   });
 

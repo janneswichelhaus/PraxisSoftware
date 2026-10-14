@@ -25,6 +25,12 @@ import type { Verbindung } from './api';
 export const IN_DER_EINSICHT = 'In der Einsicht wird nichts geändert.';
 
 /**
+ * ANN-307: Die Übungstage sieht nur die Person - der Server liefert sie der
+ * Einsicht leer. Statt „keine Tage" steht dort dieser Satz.
+ */
+export const TAGE_NUR_DIE_PERSON = 'Die Übungstage sieht nur die Person.';
+
+/**
  * Die Projektionen, die die Einsicht liest - dieselbe Liste wie
  * `app.platform_preview_functions()` am Server; den Kontext lädt die
  * Praxisseite selbst. Was hier fehlt, liest die Einsicht nicht.

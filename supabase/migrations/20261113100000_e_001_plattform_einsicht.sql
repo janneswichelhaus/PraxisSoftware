@@ -36,7 +36,11 @@
 --
 -- Nicht in der Liste: jeder Schreibweg, platform_export (schreibt ins
 -- Protokoll), issue_platform_file_link und issue_platform_message_attachment_link
--- (schreiben Freigaben), platform_notification_settings (Geraet der Person).
+-- (schreiben Freigaben), platform_notification_settings (Geraet der Person;
+-- ANN-344: die Praxis sieht die Wahl nicht).
+--
+-- Eine Ausnahme im Ergebnis: Die Uebungstage aus platform_exercise_plans
+-- (ANN-307, nur die Person und die Auskunft) kommen in der Einsicht leer.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -318,6 +322,17 @@ begin
     v_ergebnis := public.platform_training_offers(v_zugang.id);
   elsif p_function = 'platform_exercise_plans' then
     v_ergebnis := public.platform_exercise_plans(v_zugang.id);
+    -- ANN-307 (Jannes): Die Uebungstage waehlt die Person fuer sich; die
+    -- Praxis liest sie nicht (public.exercise_plan_days ohne Policy), nur die
+    -- Auskunft nach Art. 15 nennt sie. Auch die Einsicht bekommt je Plan eine
+    -- leere Liste - die einzige Stelle, an der sie von der Sicht der Person
+    -- abweicht.
+    if jsonb_typeof(v_ergebnis -> 'plans') = 'array' then
+      v_ergebnis := jsonb_set(v_ergebnis, '{plans}', coalesce((
+        select jsonb_agg(p.plan || jsonb_build_object('weekdays', '[]'::jsonb) order by p.nr)
+        from jsonb_array_elements(v_ergebnis -> 'plans') with ordinality as p(plan, nr)
+      ), '[]'::jsonb));
+    end if;
   elsif p_function = 'platform_messages' then
     v_ergebnis := public.platform_messages(v_zugang.id);
   elsif p_function = 'platform_checkins' then
@@ -335,7 +350,7 @@ end;
 $$;
 
 comment on function public.platform_preview(uuid, text, jsonb) is
-  'E-001 (DSN-001 D7, ADR-023 Fassung 5): Einsicht der Praxisinhaber:in in die Plattform einer Person, nur lesend. Nur owner, nur der eigene aktive Zugang der Person, feste Liste lesender Projektionen (app.platform_preview_functions), Ergebnis wie fuer die Person; protokolliert als patient_record.viewed bzw. training_relationship.viewed (ADR-023 Punkt 24), die Transaktion ist danach nur lesend. Abgewiesen: access.denied mit HTTP 403.';
+  'E-001 (DSN-001 D7, ADR-023 Fassung 5): Einsicht der Praxisinhaber:in in die Plattform einer Person, nur lesend. Nur owner, nur der eigene aktive Zugang der Person, feste Liste lesender Projektionen (app.platform_preview_functions), Ergebnis wie fuer die Person ausser den Uebungstagen (ANN-307: nur die Person); protokolliert als patient_record.viewed bzw. training_relationship.viewed (ADR-023 Punkt 24), die Transaktion ist danach nur lesend. Abgewiesen: access.denied mit HTTP 403.';
 
 revoke all on function public.platform_preview(uuid, text, jsonb) from public, anon;
 grant execute on function public.platform_preview(uuid, text, jsonb) to authenticated;

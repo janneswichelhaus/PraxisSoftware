@@ -20,7 +20,7 @@ import {
   type Termin,
   type Terminwunsch,
 } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
+import { TAGE_NUR_DIE_PERSON, useNurLesen, usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung, wunschText } from './terminbeschreibung';
 import { datum, kalendertag, kuenftig, tagKurz, zeitraum } from './zeit';
@@ -96,7 +96,12 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
             {wuensche.data && wuensche.data.length > 0 ? (
               <Wuensche zugang={zugang} wuensche={wuensche.data} />
             ) : null}
-            {plaene.data ? <DieseWoche termine={liste} plaene={plaene.data} /> : null}
+            {plaene.data && !nurLesen ? <DieseWoche termine={liste} plaene={plaene.data} /> : null}
+            {/* ANN-307: Die Übungstage der Woche sieht nur die Person; die
+                Einsicht bekommt sie leer und sagt das, statt still zu fehlen. */}
+            {nurLesen && plaene.data?.plans.some((p) => p.status === 'assigned') ? (
+              <p className="text-ink-muted mt-8 max-w-prose">{TAGE_NUR_DIE_PERSON}</p>
+            ) : null}
             <Vergangene termine={liste} />
           </>
         )}
