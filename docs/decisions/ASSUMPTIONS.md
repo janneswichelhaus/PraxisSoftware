@@ -5178,9 +5178,9 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
 
-**Annahme.** „Ausfall“ steht in der Übersicht an jeder Behandlung, die begonnen hat, bestätigt ist und keine Doku hat, auch keinen Entwurf: an der Zeile, aufgeklappt und an der Karte des nächsten Wegs (dort statt „Niemand öffnet?“, auch am Praxistermin). Hausbesuch: Protokoll, Gebühr erst nach drei Haken; Praxis und Video: Bestätigung ohne Gebühr.
+**Annahme.** „Ausfall“ steht in der Übersicht an jeder Behandlung, die begonnen hat, bestätigt ist und keine Doku hat, auch keinen Entwurf: an der Zeile, aufgeklappt und an der Karte des nächsten Wegs (dort statt „Niemand öffnet?“, neu auch am Praxistermin, mit Entwurf nicht mehr). Hausbesuch: Protokoll, Gebühr erst nach drei Haken; Praxis und Video: die Rückfrage ohne Gebühr aus dem Terminfenster.
 
-**Begründung.** B12. Vor dem Beginn ist ein Ausfall nicht feststellbar, mit Doku weist `record_no_show` ab. Ein Name für dasselbe; am Telefon rücken die Knöpfe unter Name und Ort.
+**Begründung.** B12. Vor dem Beginn ist ein Ausfall nicht feststellbar, mit Doku weist `record_no_show` ab. Die Karte ist die Zeile ihres Termins, daher dieselbe Regel. Ein Name für dasselbe; am Telefon rücken die Knöpfe unter Name und Ort.
 
 **Anker.** `ausfallMoeglich` in `src/features/today/besuchswege.ts`.
 

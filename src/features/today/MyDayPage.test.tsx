@@ -36,6 +36,12 @@ const EIGENE_STAFF_ID = '55555555-5555-4555-8555-000000000002';
 const FREMDE_STAFF_ID = 'staff-fremde';
 const HEUTE = '2026-08-31';
 const ZONE = 'Europe/Berlin';
+/**
+ * „Ausfall“ an Zeile und Karte (B12): sichtbar das Wort, für Vorlesesoftware
+ * dahinter Name und Uhrzeit (UEB-10). Gesucht wird nach dem Anfang - so
+ * trifft auch eine Abwesenheitsprüfung jeden dieser Knöpfe.
+ */
+const AUSFALL = /^Ausfall für /;
 
 /** Ein Zeitpunkt relativ zu jetzt. */
 function inMinuten(minuten: number): string {
@@ -1039,7 +1045,7 @@ describe('Übersicht', () => {
       );
       // Am Hausbesuch „Ausfall" an der Karte (Auftrag C1; seit B12 derselbe
       // Name wie an jeder Zeile).
-      expect(within(karte).getByRole('button', { name: 'Ausfall' })).toBeInTheDocument();
+      expect(within(karte).getByRole('button', { name: AUSFALL })).toBeInTheDocument();
       expect(within(karte).queryByRole('button', { name: 'Niemand öffnet?' })).toBeNull();
       // Die Navigation entfällt.
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
@@ -2040,8 +2046,9 @@ describe('Übersicht', () => {
       recordNoShow.mockResolvedValue(undefined);
     });
 
-    it('steht an jeder begonnenen Behandlung ohne Doku - nicht vorher, nicht mit Doku', async () => {
-      fetchDayPlan.mockResolvedValue([
+    /** Begonnen ohne Doku (Anna, Bernd), mit Entwurf, abgehakt und noch nicht begonnen. */
+    function tagMitAllenFaellen(): TodayApiModule.DayPlanEntry[] {
+      return [
         anna,
         bernd,
         vorbei({
@@ -2064,17 +2071,25 @@ describe('Übersicht', () => {
         }),
         tagesEintrag({ id: 't1' }),
         zweiterBesuch(),
-      ]);
+      ];
+    }
+
+    it('steht an jeder begonnenen Behandlung ohne Doku - am Hausbesuch wie in der Praxis', async () => {
+      fetchDayPlan.mockResolvedValue(tagMitAllenFaellen());
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       // Am Hausbesuch und in der Praxis, leise und 44 px hoch.
       const eintrag = await eintragVon(/Anna Ausfall/);
-      const ausfall = within(eintrag).getByRole('button', { name: 'Ausfall' });
+      const ausfall = within(eintrag).getByRole('button', { name: AUSFALL });
       expect(ausfall).toHaveClass('min-h-11', 'text-accent');
       expect(ausfall.className).not.toContain('border-line-strong');
+      // Für Vorlesesoftware unterscheidbar: das Wort zuerst, dann wessen Termin (UEB-10).
+      expect(ausfall).toHaveAccessibleName(
+        `Ausfall für Anna Ausfall um ${uhr(anna.starts_at)} Uhr`,
+      );
       expect(
-        within(await eintragVon(/Bernd Praxis/)).getByRole('button', { name: 'Ausfall' }),
-      ).toBeInTheDocument();
+        within(await eintragVon(/Bernd Praxis/)).getByRole('button', { name: AUSFALL }),
+      ).toHaveAccessibleName(`Ausfall für Bernd Praxis um ${uhr(bernd.starts_at)} Uhr`);
 
       // Vor „Doku" und dem Haken, 12 px auseinander; am Telefon rücken die
       // Knöpfe unter Name und Ort, rechtsbündig.
@@ -2086,29 +2101,32 @@ describe('Übersicht', () => {
       expect(zeile).toHaveClass('max-sm:basis-full');
       expect(zeile.parentElement).toHaveClass('flex-wrap', 'justify-end', 'gap-3');
       expect(zeile.parentElement).toContainElement(ausfall);
+    });
+
+    it('steht nicht vor dem Beginn, nicht mit Doku-Entwurf und nicht nach dem Haken', async () => {
+      fetchDayPlan.mockResolvedValue(tagMitAllenFaellen());
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       // Mit Entwurf, abgehakt, vor dem Beginn: kein Ausfall, die Zeile bleibt, wie sie war.
       for (const name of [/Clara Entwurf/, /Dora Abgehakt/, /Max Mustermann/]) {
-        expect(
-          within(await eintragVon(name)).queryByRole('button', { name: 'Ausfall' }),
-        ).toBeNull();
+        expect(within(await eintragVon(name)).queryByRole('button', { name: AUSFALL })).toBeNull();
         expect(zeileImStrahl(name)).not.toHaveClass('max-sm:basis-full');
         expect(zeileImStrahl(name).parentElement).not.toHaveClass('flex-wrap');
       }
       // Der nächste Weg hat noch nicht begonnen.
-      expect(within(await findeKarte()).queryByRole('button', { name: 'Ausfall' })).toBeNull();
+      expect(within(await findeKarte()).queryByRole('button', { name: AUSFALL })).toBeNull();
     });
 
     it('steht nur für die Rollen der Terminverwaltung - auch für das Büro', async () => {
       fetchDayPlan.mockResolvedValue([anna]);
       const { unmount } = renderMitVorschau(<MyDayPage user={testUser(['trainer'])} />);
       await imStrahlFinden(/Anna Ausfall/);
-      expect(screen.queryByRole('button', { name: 'Ausfall' })).toBeNull();
+      expect(screen.queryByRole('button', { name: AUSFALL })).toBeNull();
       unmount();
 
       renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
       expect(
-        within(await eintragVon(/Anna Ausfall/)).getByRole('button', { name: 'Ausfall' }),
+        within(await eintragVon(/Anna Ausfall/)).getByRole('button', { name: AUSFALL }),
       ).toBeInTheDocument();
     });
 
@@ -2118,8 +2136,10 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       const eintrag = await eintragVon(/Anna Ausfall/);
 
-      await user.click(within(eintrag).getByRole('button', { name: 'Ausfall' }));
-      const feld = within(eintrag).getByRole('region', { name: 'Ausfall' });
+      await user.click(within(eintrag).getByRole('button', { name: AUSFALL }));
+      const feld = within(eintrag).getByRole('region', {
+        name: `Ausfall für Anna Ausfall um ${uhr(anna.starts_at)} Uhr`,
+      });
       // An der Zeile ohne Uhr - die gehört an die Tür (ANN-479).
       expect(within(feld).queryByRole('timer')).toBeNull();
       // Die anderen Fälle führen aus der Übersicht, nicht auf Knöpfe des Terminfensters.
@@ -2157,8 +2177,15 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       const eintrag = await eintragVon(/Bernd Praxis/);
 
-      await user.click(within(eintrag).getByRole('button', { name: 'Ausfall' }));
-      const feld = within(eintrag).getByRole('region', { name: 'Ausfall' });
+      await user.click(within(eintrag).getByRole('button', { name: AUSFALL }));
+      // Dieselbe Rückfrage wie im Terminfenster (`NichtAngetroffenAktion`):
+      // Fläche mit Linie links, unter „Doku“ und dem Haken der Zeile.
+      const feld = within(eintrag).getByRole('group', {
+        name: `Ausfall für Bernd Praxis um ${uhr(bernd.starts_at)} Uhr`,
+      });
+      expect(feld).toHaveClass('border-l-4', 'order-last', 'w-full');
+      expect(feld).not.toHaveClass('rounded-card');
+      expect(feld.parentElement).toBe(zeileImStrahl(/Bernd Praxis/).parentElement);
       expect(within(feld).queryByRole('checkbox')).toBeNull();
       expect(feld).toHaveTextContent(/für Bernd Praxis wird als „nicht angetroffen“ geführt/);
       expect(feld).not.toHaveTextContent(/Ausfallhonorar/);
@@ -2167,10 +2194,12 @@ describe('Übersicht', () => {
 
       // „Abbrechen" schließt und gibt den Fokus zurück.
       await user.click(within(feld).getByRole('button', { name: 'Abbrechen' }));
-      expect(within(eintrag).queryByRole('region', { name: 'Ausfall' })).toBeNull();
-      expect(within(eintrag).getByRole('button', { name: 'Ausfall' })).toHaveFocus();
+      expect(within(eintrag).queryByRole('group', { name: AUSFALL })).toBeNull();
+      await waitFor(() =>
+        expect(within(eintrag).getByRole('button', { name: AUSFALL })).toHaveFocus(),
+      );
 
-      await user.click(within(eintrag).getByRole('button', { name: 'Ausfall' }));
+      await user.click(within(eintrag).getByRole('button', { name: AUSFALL }));
       await user.click(within(eintrag).getByRole('button', { name: 'Ja, niemand angetroffen' }));
       await waitFor(() =>
         expect(recordNoShow).toHaveBeenCalledWith('b', '2026-10-01T06:00:00Z', false),
@@ -2191,7 +2220,7 @@ describe('Übersicht', () => {
 
       // An der Tür: derselbe Name, mit Rahmen und der Uhr.
       const karte = await findeKarte();
-      const tuer = within(karte).getByRole('button', { name: 'Ausfall' });
+      const tuer = within(karte).getByRole('button', { name: AUSFALL });
       expect(tuer.className).toContain('border-line-strong');
       await user.click(tuer);
       expect(within(karte).getByRole('timer')).toBeInTheDocument();
@@ -2200,7 +2229,7 @@ describe('Übersicht', () => {
       await user.click(zeileImStrahl(/Anna Ausfall/));
       const karten = screen.getAllByRole('article');
       const annasKarte = karten.find((k) => within(k).queryByText('Anna Ausfall'))!;
-      const knopf = within(annasKarte).getByRole('button', { name: 'Ausfall' });
+      const knopf = within(annasKarte).getByRole('button', { name: AUSFALL });
       expect(knopf.className).toContain('border-line-strong');
       await user.click(knopf);
       expect(within(annasKarte).queryByRole('timer')).toBeNull();
@@ -2216,7 +2245,7 @@ describe('Übersicht', () => {
         }),
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      expect(within(await findeKarte()).queryByRole('button', { name: 'Ausfall' })).toBeNull();
+      expect(within(await findeKarte()).queryByRole('button', { name: AUSFALL })).toBeNull();
     });
 
     it('bietet ihn an der Karte des nächsten Wegs auch am laufenden Praxistermin an', async () => {
@@ -2225,7 +2254,7 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       const karte = await findeKarte();
-      expect(within(karte).getByRole('button', { name: 'Ausfall' })).toBeInTheDocument();
+      expect(within(karte).getByRole('button', { name: AUSFALL })).toBeInTheDocument();
     });
   });
 

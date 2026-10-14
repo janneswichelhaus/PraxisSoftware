@@ -238,13 +238,18 @@ for (const breite of [375, 1280]) {
     const strahl = page.getByRole('heading', { name: 'Tagesablauf' }).locator('..');
     const max = strahl.locator('li[data-termin]', { hasText: 'Max Mustermann' });
     const zeile = max.locator('[data-zeile]');
-    const ausfall = max.getByRole('button', { name: 'Ausfall' });
+    // Für Vorlesesoftware trägt jeder „Ausfall“ Name und Uhrzeit (UEB-10).
+    const ausfall = max.getByRole('button', {
+      name: 'Ausfall für Max Mustermann um 10:00 Uhr',
+      exact: true,
+    });
     const doku = max.getByRole('link', { name: /^Doku zum Termin um / });
     const haken = max.getByRole('button', { name: /^Termin abschließen/ });
     await expect(ausfall).toBeVisible();
     await expect(
       strahl.locator('li[data-termin]', { hasText: 'Erika Beispiel' }).getByRole('button', {
-        name: 'Ausfall',
+        name: 'Ausfall für Erika Beispiel um 08:30 Uhr',
+        exact: true,
       }),
     ).toBeVisible();
     // Petra hat noch nicht begonnen: kein Ausfall an der Karte des nächsten Wegs.
@@ -269,7 +274,10 @@ for (const breite of [375, 1280]) {
 
     // Das Protokoll öffnet sich unter der Zeile über die ganze Breite.
     await ausfall.click();
-    const feld = max.getByRole('region', { name: 'Ausfall' });
+    const feld = max.getByRole('region', {
+      name: 'Ausfall für Max Mustermann um 10:00 Uhr',
+      exact: true,
+    });
     await expect(feld.getByRole('checkbox')).toHaveCount(3);
     const inhalt = (await max.locator(':scope > div').boundingBox())!;
     const f = (await feld.boundingBox())!;

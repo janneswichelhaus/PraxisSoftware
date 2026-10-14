@@ -6,10 +6,12 @@ import { symbolknopfKlassen, type SymbolGroesse } from '@/components/ui/buttonSt
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchAppointment,
+  formatLocalTime,
   kalenderZumTermin,
   reopenAppointment,
 } from '@/features/appointments/api';
-import { HomeVisitFlow, NichtAngetroffenOhneGebuehr } from '@/features/appointments/HomeVisitFlow';
+import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
+import { NichtAngetroffenAktion } from '@/features/appointments/NichtAngetroffen';
 import type { DayPlanEntry } from './api';
 import {
   VERSPAETUNG_MINUTEN,
@@ -121,8 +123,12 @@ export function SpaeterDa({ termin, praxis }: { termin: DayPlanEntry; praxis: st
  *
  * Am Hausbesuch das Protokoll - geklingelt, 15 Minuten gewartet, angerufen;
  * das Ausfallhonorar erst nach allen drei Haken -, an der Tür mit der Uhr
- * (ANN-479). Am Praxis- und Videotermin die Bestätigung ohne Gebühr
- * (ANN-055). An der Zeile leise, an der Karte mit Rahmen.
+ * (ANN-479). Am Praxis- und Videotermin dieselbe Rückfrage ohne Gebühr wie
+ * im Terminfenster (`NichtAngetroffenAktion`, ANN-055); sie öffnet sich unter
+ * den Knöpfen der Reihe. An der Zeile leise, an der Karte mit Rahmen.
+ *
+ * Für Vorlesesoftware trägt jeder Knopf, wessen Termin er meint - das
+ * sichtbare Wort zuerst wie „Doku“ und der Haken daneben (UEB-10).
  */
 export function AusfallKnopf({
   termin,
@@ -134,15 +140,20 @@ export function AusfallKnopf({
   ort: 'zeile' | 'karte' | 'tuer';
   melden: (text: string) => void;
 }) {
-  const inKarte = ort !== 'zeile';
   const variante = ort === 'zeile' ? 'quiet' : 'secondary';
+  const zusatz = `für ${terminName(termin)} um ${formatLocalTime(
+    termin.starts_at,
+    termin.organization_time_zone,
+  )} Uhr`;
   if (termin.appointment_type !== 'home_visit') {
     return (
-      <NichtAngetroffenOhneGebuehr
+      <NichtAngetroffenAktion
         appointment={termin}
         ausloeser="Ausfall"
         ausloeserVariante={variante}
-        inKarte={inKarte}
+        ausloeserGroesse="kompakt"
+        ausloeserZusatz={zusatz}
+        unterDerReihe
         melden={melden}
       />
     );
@@ -152,8 +163,9 @@ export function AusfallKnopf({
       appointment={termin}
       ausloeser="Ausfall"
       ausloeserVariante={variante}
+      ausloeserZusatz={zusatz}
       mitUhr={ort === 'tuer'}
-      inKarte={inKarte}
+      inKarte={ort !== 'zeile'}
       wege={{
         ohneBehandlung: mitRueckweg(`/termine/${termin.id}/abschluss?ohne-behandlung=1`, '/'),
         absagen: mitRueckweg(kalenderZumTermin(termin.id), '/'),

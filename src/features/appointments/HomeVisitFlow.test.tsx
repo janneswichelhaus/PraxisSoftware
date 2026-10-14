@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as TodayApi from '@/features/today/api';
 import { renderWithProviders, testAppointment } from '@/test-utils';
-import { HomeVisitFlow, NichtAngetroffenOhneGebuehr } from './HomeVisitFlow';
+import { HomeVisitFlow } from './HomeVisitFlow';
 
 const recordNoShow = vi.fn();
 const fetchAppointment = vi.fn();
@@ -145,71 +144,21 @@ describe('„Ausfall“ in der Übersicht (B12)', () => {
     expect(recordNoShow).not.toHaveBeenCalled();
   });
 
-  it('bestätigt am Praxistermin ohne Gebühr und liest den Stand unmittelbar vorher', async () => {
-    const melden = vi.fn();
-    const user = userEvent.setup();
+  it('nennt Vorlesesoftware an Knopf und Feld, wessen Termin es ist - das Wort zuerst', () => {
     renderWithProviders(
-      <NichtAngetroffenOhneGebuehr
-        appointment={{
-          ...ausDerUebersicht,
-          patient_given_name: 'Erika',
-          patient_family_name: 'Beispiel',
-        }}
-        melden={melden}
-        ausloeser="Ausfall"
-      />,
-    );
-    const knopf = screen.getByRole('button', { name: 'Ausfall' });
-    expect(knopf).toHaveAttribute('aria-expanded', 'false');
-    expect(knopf).not.toHaveAttribute('aria-controls');
-    await user.click(knopf);
-
-    const feld = screen.getByRole('region', { name: 'Ausfall' });
-    expect(knopf).toHaveAttribute('aria-controls', feld.id);
-    expect(feld).toHaveTextContent(
-      /für Erika Beispiel wird als „nicht angetroffen“ geführt\. Der Zeitraum bleibt belegt\./,
-    );
-    // Kein Protokoll, keine Forderung (ANN-055).
-    expect(screen.queryByRole('checkbox')).toBeNull();
-    expect(feld).not.toHaveTextContent(/Ausfallhonorar/);
-    const ja = screen.getByRole('button', { name: 'Ja, niemand angetroffen' });
-    expect(ja).toHaveFocus();
-
-    await user.click(ja);
-    await vi.waitFor(() =>
-      expect(recordNoShow).toHaveBeenCalledWith(termin.id, termin.updated_at, false),
-    );
-    expect(fetchAppointment).toHaveBeenCalledWith(termin.id);
-    await vi.waitFor(() =>
-      expect(melden).toHaveBeenCalledWith('Als „nicht angetroffen“ vermerkt.'),
-    );
-    expect(screen.queryByRole('region', { name: 'Ausfall' })).toBeNull();
-  });
-
-  it('zeigt einen abgewiesenen Vermerk im Feld und lässt es offen', async () => {
-    recordNoShow.mockRejectedValue(new Error('Der Termin wurde inzwischen geändert.'));
-    const user = userEvent.setup();
-    renderWithProviders(
-      <NichtAngetroffenOhneGebuehr
-        appointment={{
-          ...ausDerUebersicht,
-          patient_given_name: 'Erika',
-          patient_family_name: 'Beispiel',
-          updated_at: '2026-10-01T06:00:00Z',
-        }}
+      <HomeVisitFlow
+        appointment={ausDerUebersicht}
         melden={() => undefined}
-        inKarte
+        ausloeser="Ausfall"
+        ausloeserZusatz="für Erika Beispiel um 10:00 Uhr"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
-    const feld = screen.getByRole('region', { name: 'Nicht angetroffen' });
-    // In einer Karte durch eine Linie abgesetzt, kein zweiter Kasten.
-    expect(feld).toHaveClass('border-t');
-    await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
-    expect(await screen.findByText('Der Termin wurde inzwischen geändert.')).toBeInTheDocument();
-    // Der bekannte Stand wird genommen, ohne nachzulesen.
-    expect(fetchAppointment).not.toHaveBeenCalled();
-    expect(recordNoShow).toHaveBeenCalledWith(termin.id, '2026-10-01T06:00:00Z', false);
-    expect(screen.getByRole('region', { name: 'Nicht angetroffen' })).toBeInTheDocument();
+    const knopf = screen.getByRole('button', { name: 'Ausfall für Erika Beispiel um 10:00 Uhr' });
+    // Zu sehen ist nur das Wort; der Zusatz steht für Vorlesesoftware.
+    expect(screen.getByText('für Erika Beispiel um 10:00 Uhr')).toHaveClass('sr-only');
+    fireEvent.click(knopf);
+    expect(
+      screen.getByRole('region', { name: 'Ausfall für Erika Beispiel um 10:00 Uhr' }),
+    ).toBeInTheDocument();
   });
 });

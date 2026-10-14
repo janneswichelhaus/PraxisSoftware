@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -7,15 +7,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
-import {
-  dayKey,
-  fetchAppointment,
-  formatLocalDate,
-  formatLocalTime,
-  patientName,
-  recordNoShow,
-  type Appointment,
-} from './api';
+import { dayKey, fetchAppointment, recordNoShow, type Appointment } from './api';
 
 /**
  * Was der Ablauf vom Termin braucht. Die Übersicht kennt den Bearbeitungsstand
@@ -26,22 +18,6 @@ export type NiemandOeffnetTermin = Pick<
   Appointment,
   'id' | 'patient_id' | 'staff_member_id' | 'starts_at' | 'organization_time_zone'
 > & { updated_at?: string };
-
-/**
- * Das Feld unter dem Knopf: in einer Karte durch eine Linie abgesetzt statt
- * als zweiter Kasten (DESIGN.md Regel 2), sonst ein Kasten wie die
- * Rückfrage - über die ganze Breite unter der Knopfreihe.
- */
-function feldKlassen(inKarte: boolean): string {
-  return inKarte
-    ? 'border-line order-last w-full border-t pt-3'
-    : 'border-line-strong bg-surface-sunken rounded-card order-last w-full border p-4';
-}
-
-/** Ein Knopf im Feld, der in der schmalen Spalte umbrechen darf; in der Karte linksbündig. */
-function umbrechenKlassen(inKarte: boolean): string {
-  return inKarte ? 'h-auto min-h-12 py-2 text-left' : 'h-auto min-h-12 py-2';
-}
 
 /** Wie lange vor Ort gewartet wird (ADR-018 Punkt 9, Schritt 2). */
 const WARTEZEIT_MS = 15 * 60 * 1000;
@@ -169,6 +145,7 @@ export function HomeVisitFlow({
   inKarte = false,
   ausloeser = 'Niemand öffnet?',
   ausloeserVariante = 'secondary',
+  ausloeserZusatz,
 }: {
   appointment: NiemandOeffnetTermin;
   melden: (text: string) => void;
@@ -179,6 +156,12 @@ export function HomeVisitFlow({
   ausloeser?: string;
   /** An der Zeile der Übersicht leise, an Karte und Terminfenster mit Rahmen. */
   ausloeserVariante?: 'secondary' | 'quiet';
+  /**
+   * Für Vorlesesoftware hinter dem sichtbaren Wort, an Knopf und Feld: wessen
+   * Termin („für Erika Beispiel um 10:00 Uhr“). In der Übersicht stehen
+   * mehrere „Ausfall“ untereinander (UEB-10).
+   */
+  ausloeserZusatz?: string | undefined;
   /** Die 15-Minuten-Uhr an Schritt 2 - an der Karte der Übersicht (Auftrag C1). */
   mitUhr?: boolean;
   /**
@@ -242,16 +225,26 @@ export function HomeVisitFlow({
         }}
       >
         {ausloeser}
+        {ausloeserZusatz ? (
+          <>
+            {' '}
+            <span className="sr-only">{ausloeserZusatz}</span>
+          </>
+        ) : null}
       </Button>
 
       {offen ? (
         <section
           id={bereichId}
-          aria-label={ausloeser}
+          aria-label={ausloeserZusatz ? `${ausloeser} ${ausloeserZusatz}` : ausloeser}
           // Ein Kasten wie die Rückfrage: eine Karte, keine Schaltfläche
           // (DS-001), über die ganze Breite unter der Knopfreihe; 16 innen
           // wie die Rückfrage seit dem Design-Handoff vom 2026-10-01.
-          className={feldKlassen(inKarte)}
+          className={
+            inKarte
+              ? 'border-line order-last w-full border-t pt-3'
+              : 'border-line-strong bg-surface-sunken rounded-card order-last w-full border p-4'
+          }
         >
           <p className="text-ink text-sm">
             Drei Schritte, jeder bestätigt. Danach gilt der Termin als „nicht angetroffen“ und löst
@@ -311,7 +304,7 @@ export function HomeVisitFlow({
               type="button"
               disabled={vermerken.isPending}
               onClick={absenden}
-              className={umbrechenKlassen(inKarte)}
+              className={inKarte ? 'h-auto min-h-12 py-2 text-left' : 'h-auto min-h-12 py-2'}
             >
               {vermerken.isPending ? 'Wird vermerkt …' : 'Als „nicht angetroffen“ vermerken'}
             </Button>
@@ -351,123 +344,6 @@ export function HomeVisitFlow({
                 Vorher abgesagt? Dann am Seitenende „Termin absagen“.
               </p>
             )}
-          </div>
-        </section>
-      ) : null}
-    </>
-  );
-}
-
-/**
- * „Nicht angetroffen“ am Praxis- und am Videotermin aus der Übersicht (B12):
- * dieselbe Bestätigung ohne Gebühr wie im Terminfenster
- * (`NichtAngetroffenAktion`, CAL-014c, ANN-055) - an der Praxistür gibt es
- * nichts zu klingeln, und für das Nichtantreffen dort gibt es keine
- * Gebührenregel. Gebaut wie der Ablauf am Hausbesuch: Der Knopf bleibt, das
- * Feld steht darunter über die ganze Breite, damit Zeile und Karte beide
- * Fälle gleich tragen. Der Fokus springt beim Öffnen auf „Ja“ und beim
- * Abbrechen zurück wie bei der Rückfrage.
- *
- * Den Bearbeitungsstand liest sie, wo die Übersicht ihn nicht kennt,
- * unmittelbar vor dem Vermerk. Verbindlich prüft der Server
- * (`record_no_show`, ADR-004).
- */
-export function NichtAngetroffenOhneGebuehr({
-  appointment,
-  melden,
-  ausloeser = 'Nicht angetroffen',
-  ausloeserVariante = 'secondary',
-  inKarte = false,
-}: {
-  appointment: NiemandOeffnetTermin &
-    Pick<Appointment, 'patient_given_name' | 'patient_family_name'>;
-  melden: (text: string) => void;
-  ausloeser?: string;
-  ausloeserVariante?: 'secondary' | 'quiet';
-  inKarte?: boolean;
-}) {
-  const queryClient = useQueryClient();
-  const [offen, setOffen] = useState(false);
-  const bereichId = useId();
-  const ausloeserRef = useRef<HTMLButtonElement>(null);
-  const bestaetigenRef = useRef<HTMLButtonElement>(null);
-  const zone = appointment.organization_time_zone;
-
-  const vermerken = useMutation({
-    mutationFn: async () => {
-      const stand = appointment.updated_at ?? (await fetchAppointment(appointment.id))?.updated_at;
-      if (!stand) throw new Error('Der Termin wurde nicht gefunden.');
-      await recordNoShow(appointment.id, stand, false);
-    },
-    onSuccess: () => {
-      for (const queryKey of [['appointment', appointment.id], ['appointments'], ['day-plan']]) {
-        void queryClient.invalidateQueries({ queryKey });
-      }
-      setOffen(false);
-      melden('Als „nicht angetroffen“ vermerkt.');
-    },
-  });
-
-  useEffect(() => {
-    if (offen) bestaetigenRef.current?.focus();
-  }, [offen]);
-
-  return (
-    <>
-      <Button
-        ref={ausloeserRef}
-        type="button"
-        variant={ausloeserVariante}
-        groesse="kompakt"
-        aria-expanded={offen}
-        aria-controls={offen ? bereichId : undefined}
-        onClick={() => {
-          vermerken.reset();
-          setOffen((bisher) => !bisher);
-        }}
-      >
-        {ausloeser}
-      </Button>
-
-      {offen ? (
-        <section id={bereichId} aria-label={ausloeser} className={feldKlassen(inKarte)}>
-          <p className="text-ink max-w-prose text-sm">
-            Der Termin am {formatLocalDate(appointment.starts_at, zone)} um{' '}
-            {formatLocalTime(appointment.starts_at, zone)} Uhr für {patientName(appointment)} wird
-            als „nicht angetroffen“ geführt. Der Zeitraum bleibt belegt. Ein Irrtum lässt sich über
-            „Termin wieder öffnen“ zurücknehmen.
-          </p>
-          {vermerken.isError ? (
-            <Statusmeldung ton="fehler" className="mt-2">
-              {vermerken.error.message}
-            </Statusmeldung>
-          ) : null}
-          {/* Während der Vorgang läuft, bricht „Abbrechen“ nichts ab - beide
-              Knöpfe sind bis zur Antwort gesperrt (wie die Rückfrage). */}
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button
-              ref={bestaetigenRef}
-              type="button"
-              disabled={vermerken.isPending}
-              onClick={() => {
-                if (vermerken.isPending) return;
-                vermerken.mutate();
-              }}
-              className={umbrechenKlassen(inKarte)}
-            >
-              {vermerken.isPending ? 'Wird vermerkt …' : 'Ja, niemand angetroffen'}
-            </Button>
-            <Button
-              type="button"
-              variant="quiet"
-              disabled={vermerken.isPending}
-              onClick={() => {
-                setOffen(false);
-                ausloeserRef.current?.focus();
-              }}
-            >
-              Abbrechen
-            </Button>
           </div>
         </section>
       ) : null}
