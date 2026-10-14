@@ -5166,13 +5166,13 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
 
-**Annahme.** Karte des nächsten Wegs und aufgeklappte Zeile tragen den schmalen Wegbalken wie über den Zeilen unter dem Kicker, an Stelle von „· ≈ n min“; ist das Ende davor vorbei, beginnt er jetzt (wie die Kachel, ANN-196). Nennt die Kachel „Abfahrt“ denselben Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen (Zahlen nur für Vorlesesoftware).
+**Annahme.** Karte des nächsten Wegs und aufgeklappte Zeile tragen den schmalen Wegbalken unter dem Kicker statt „· ≈ n min“; ist das Ende davor vorbei, beginnt er jetzt (wie die Kachel). Nennt die Kachel „Abfahrt“ denselben Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen.
 
-**Begründung.** B6: Nach einem abgehakten Besuch fehlte der Balken an der Karte. Als eigene Zeile schöbe er bei 375 × 667 den Hauptknopf unter die Tableiste (3 px Reserve, ANN-484).
+**Begründung.** B6: Nach einem abgehakten Besuch fehlte der Balken. Als eigene Zeile schöbe er bei 375 × 667 den Hauptknopf unter die Tableiste (ANN-484). „Jetzt“ statt Ende davor weicht vom Auftrag ab, folgt Jannes’ Abnahme zu ANN-196: sonst Puffer am Balken, „zu knapp“ in der Kachel.
 
 **Anker.** `weg` in `src/features/today/Tagesliste.tsx`.
 
-**Änderungspfad.** Balken über die Karte wie über die Zeilen, Platz anderswo sparen · Aufwand `klein`.
+**Änderungspfad.** Wie im Auftrag: Zweig „jetzt“ in `wegZumBesuch` streichen · Aufwand `klein`. Balken über der Karte, Platz anderswo sparen · Aufwand `klein`.
 
 ### ANN-533 — „Ausfall“ ab Beginn des Termins und nur ohne Doku
 
