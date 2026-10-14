@@ -24,13 +24,20 @@ Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, ke
 sind die Punkte **1, 7, 8, 10, 13, 17 und 18** und die Liste „Nicht entschieden“, jeweils mit
 Vermerk. Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.25, §3.4.
 
+**Fassung 5 (2026-10-14, E-001, Befund B11)**: Die Vorschau der Praxis (DSN-001 D7) ist als
+**Einsicht** gebaut; ergänzt ist nur **Punkt 25** (mit Vermerk): nur `owner`, nur am eigenen,
+aktiven Zugang der Person, gelesen über einen Verteiler mit fester Liste lesender Projektionen in
+einer nur lesenden Transaktion. Nichts geschieht im Namen der Person; protokolliert wird nach
+Punkt 24 mit den vorhandenen Aktionen (ADR-010). Die übrigen Punkte bleiben unverändert.
+
 **Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Den Zweifel an der Einwilligungsfähigkeit (Punkt 13) vermerkt die Praxis am Zugang der rechtlichen Vertretung (`companion_declined_*`), nicht im Auditlog (ANN-207 Fassung 2).*
 
 ## Datum
 
-2026-09-30 · Fassung 2: 2026-09-30 · Fassung 3: 2026-10-09 · Fassung 4: 2026-10-10
+2026-09-30 · Fassung 2: 2026-09-30 · Fassung 3: 2026-10-09 · Fassung 4: 2026-10-10 · Fassung 5:
+2026-10-14
 
 ## Kontext
 
@@ -348,7 +355,13 @@ Anwendung (ADR-015 Punkt 1). Das Gate unterscheidet nach der Art des Kontos: Ein
 bekommt die Praxisoberfläche, ein Plattformkonto das Gerüst aus DSN-001 unter eigenem Pfadpräfix
 (der SPEC wählt es). Ein Plattformkonto sieht nie Seitenleiste, Funktionssuche oder Praxisbegriffe.
 Ein Praxiskonto sieht das Plattformgerüst nur als Vorschau (D7, später). Die Weiche im Router
-dient der Bedienung. **Der Schutz liegt in den Punkten 19 bis 21.**
+dient der Bedienung. **Der Schutz liegt in den Punkten 19 bis 21.** *(Fassung 5)* Die Vorschau
+heißt **Einsicht**: Nur die Praxisinhaber:in öffnet sie, am aktiven eigenen Zugang einer Person
+(ANN-525, ANN-526). Gelesen wird über `platform_preview` mit fester Liste lesender Projektionen;
+der Server schaltet die Transaktion dabei auf „nur lesen" (ANN-529) und schreibt den Lesezugriff
+wie beim Öffnen der Akte (Punkt 24, keine neue Aktion). Die Oberfläche zeigt keine Schreibknöpfe,
+Seiten, die nur schreiben, sind nicht erreichbar, Dokumente und Anhänge werden nicht geöffnet
+(ANN-527); die Sicht einer Vertretung zeigt die Einsicht nicht (ANN-528).
 
 **26. Der Plattformcode ist ein eigenes Feature** unter `src/features/` (ADR-015 Punkt 23). Er
 spricht nur Plattformprojektionen an. Ein Test oder eine Lint-Regel prüft, dass er keine
@@ -480,3 +493,5 @@ muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihen
 | 1 | 2026-09-30 | Erstfassung nach DSN-001 (bestätigt 2026-09-30); 26 Punkte, Wahlpunkte W1 bis W6; am selben Tag angenommen, W1 bis W6 wie empfohlen. |
 | 2 | 2026-09-30 | **Punkt 5 geändert** (Jannes): Konto 30 Tage nach dem letzten Zugang, Zugang mit Nachweis drei Jahre wie das Auditlog statt zwölf Monate; Wortlaut der Fassung 1 im Punkt. Punkt 11: Mail nur an eine von der Person selbst bestätigte Adresse. Punkt 13: Ausweis und Vollmacht ansehen, nichts speichern; Einwilligung zur Begleitung nach Art. 9 Abs. 2 lit. a mit vier Bedingungen. Erledigungsvermerk in den Folgefragen. Übrige Punkte und W1 bis W6 unverändert. |
 | 3 | 2026-10-09 | BEF-138, Entscheidung von Jannes in der Abnahme vom 2026-10-09 (ANN-249): **Punkt 24** ohne „jeder Dokumentabruf"; der Abruf eines freigegebenen Dokuments wird nicht protokolliert, bei einer Vertretung zählt er als Lesen (ADR-010 Fassung 4, Punkt 22). W5 mit Vermerk. Übrige Punkte unverändert. |
+| 4 | 2026-10-10 | Anmeldung ohne Kennwort nach ADR-025 Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort. Geändert sind die Punkte 1, 7, 8, 10, 13, 17 und 18 und die Liste „Nicht entschieden“, jeweils mit Vermerk. *Zeile nachgetragen 2026-10-14 aus der Statuszeile.* |
+| 5 | 2026-10-14 | E-001 (Befund B11): **Punkt 25** mit Vermerk — die Vorschau (DSN-001 D7) ist als Einsicht gebaut: owner, eigener aktiver Zugang, Verteiler `platform_preview` mit fester Liste, nur lesende Transaktion, Protokoll nach Punkt 24 mit den vorhandenen Aktionen (ANN-525 bis ANN-529). Übrige Punkte unverändert. |
