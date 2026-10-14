@@ -41,6 +41,43 @@ function um(uhrzeit: string, tag = heute()): Date {
   return new Date(utc - versatz);
 }
 
+// Befund B8: erfundene Punkte in Tübingen, keiner davon eine Wohnadresse.
+const PATIENTIN = { lat: 48.5216, lon: 9.0576 };
+const NAH = { lat: 48.523, lon: 9.06 };
+const WEIT = { lat: 48.545, lon: 9.1 };
+
+/** Die Termine mit Ort an den Tagen der Vorschläge (nur Zeiten und Punkte). */
+function tagesroute(tag: string) {
+  const stopp = (id: string, von: string, bis: string, ort: { lat: number; lon: number }) => ({
+    id,
+    kind: 'therapy',
+    appointment_type: 'home_visit',
+    status: 'confirmed',
+    starts_at: um(von, tag).toISOString(),
+    ends_at: um(bis, tag).toISOString(),
+    lat: ort.lat,
+    lon: ort.lon,
+    geocode_precision: 'address',
+    position_source: 'visit',
+    address_outdated: false,
+  });
+  // Nächste Woche: davor 07:00–07:45, danach 10:35, beide gleich um die Ecke.
+  if (tag === tagePlus(heute(), 7)) {
+    return [stopp('n1', '07:00', '07:45', NAH), stopp('n2', '10:35', '11:35', NAH)];
+  }
+  // Morgen endet ein Besuch weit weg um 14:00: Der Platz um 14:00 ist zu knapp.
+  if (tag === tagePlus(heute(), 1)) return [stopp('n3', '13:00', '14:00', WEIT)];
+  return [];
+}
+
+/** Luftlinie in Metern - die Nachbildung des Kartendienstes rechnet damit. */
+function meter(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const grad = Math.PI / 180;
+  const x = (b.lon - a.lon) * grad * Math.cos(((a.lat + b.lat) / 2) * grad);
+  const y = (b.lat - a.lat) * grad;
+  return Math.sqrt(x * x + y * y) * 6_371_000;
+}
+
 /** Der Server der Prüfseite: Stand des Tages und Zähler je Vorgang. */
 function nachbildung() {
   const stand = {
@@ -243,20 +280,52 @@ function nachbildung() {
             },
           ]
         : [],
-    // Nächste Woche zur gleichen Zeit frei; in den zwei Wochen dazu zwei Plätze.
+    // Nächste Woche zur gleichen Zeit frei; in den zwei Wochen dazu vier Plätze,
+    // zwei davon morgen.
     find_free_slots: (p) =>
       p.p_from === p.p_to
         ? [slot(String(p.p_from), '09:00', '10:00')]
         : [
             slot(String(p.p_from), '14:00', '15:00'),
-            slot(tagePlus(String(p.p_from), 2), '08:00', '09:00'),
+            slot(String(p.p_from), '16:00', '17:00'),
+            slot(tagePlus(String(p.p_from), 1), '08:00', '09:00'),
+            slot(tagePlus(String(p.p_from), 2), '10:00', '11:00'),
           ],
-    rate_slot_travel: (p) =>
-      (p.p_items as { index: number }[]).map((item) => ({
-        item_index: item.index,
-        status: 'ok',
-        shortfall_minutes: 0,
-      })),
+    // „Passt es?“ je Vorschlag (B8): Tagesroute, Position der Akte und die
+    // Rechnung des Servers - hier vereinfacht: ganze Minuten, aufgerundet.
+    list_day_route: (p) => tagesroute(String(p.p_date)),
+    get_visit_position: () => [PATIENTIN],
+    check_travel_fit: (p) =>
+      (
+        p.p_items as {
+          index: number;
+          duration_minutes: number;
+          starts_at: string;
+          previous_end?: string;
+          travel_to_seconds?: number;
+          next_start?: string;
+          travel_from_seconds?: number;
+        }[]
+      ).map((f) => {
+        const beginn = Date.parse(f.starts_at);
+        const ende = beginn + f.duration_minutes * 60_000;
+        const hin = Math.ceil((f.travel_to_seconds ?? 0) / 60);
+        const weg = Math.ceil((f.travel_from_seconds ?? 0) / 60);
+        return {
+          item_index: f.index,
+          starts_at: f.starts_at,
+          arrival_earliest_start: f.previous_end
+            ? new Date(Date.parse(f.previous_end) + hin * 60_000).toISOString()
+            : null,
+          arrival_slack_minutes: f.previous_end
+            ? Math.floor((beginn - Date.parse(f.previous_end)) / 60_000) - hin
+            : null,
+          next_earliest_start: f.next_start ? new Date(ende + weg * 60_000).toISOString() : null,
+          departure_slack_minutes: f.next_start
+            ? Math.floor((Date.parse(f.next_start) - ende) / 60_000) - weg
+            : null,
+        };
+      }),
     create_appointment: () => {
       stand.folgetermin = 'eeeeeeee-eeee-4eee-8eee-000000000001';
       return stand.folgetermin;
@@ -277,6 +346,19 @@ function nachbildung() {
       await route.fulfill({ json: [termin()] });
       return;
     }
+    // Arbeitszeit an jedem Tag 07:30 bis 18:00 - der Tagesrand für „Passt es?“.
+    if (url.pathname.endsWith('/staff_working_hours')) {
+      await route.fulfill({
+        json: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+          id: `arbeitszeit-${weekday}`,
+          staff_member_id: STAFF,
+          weekday,
+          starts_at: '07:30:00',
+          ends_at: '18:00:00',
+        })),
+      });
+      return;
+    }
     const name = url.pathname.split('/rpc/')[1];
     if (!name) {
       await route.fulfill({ json: [] });
@@ -288,7 +370,36 @@ function nachbildung() {
     await route.fulfill({ json: antwort ? antwort(parameter) : [] });
   }
 
-  return { stand, aufrufe, beantworte };
+  /** Der Kartendienst: Routen aus der Luftlinie bei 15 km/h. */
+  async function kartendienst(route: Route) {
+    const koerper = (route.request().postDataJSON() ?? {}) as {
+      aufgabe?: string;
+      waypoints?: { lat: number; lon: number }[];
+    };
+    if (koerper.aufgabe !== 'route' || !koerper.waypoints) {
+      await route.fulfill({ status: 503, body: '' });
+      return;
+    }
+    const punkte = koerper.waypoints;
+    const legs = punkte.slice(1).map((punkt, i) => {
+      const strecke = meter(punkte[i]!, punkt);
+      return { distanceMeters: Math.round(strecke), durationSeconds: Math.round(strecke / 4.2) };
+    });
+    await route.fulfill({
+      json: {
+        ok: true,
+        quelle: 'anbieter',
+        value: {
+          distanceMeters: legs.reduce((summe, leg) => summe + leg.distanceMeters, 0),
+          durationSeconds: legs.reduce((summe, leg) => summe + leg.durationSeconds, 0),
+          legs,
+          geometry: [],
+        },
+      },
+    });
+  }
+
+  return { stand, aufrufe, beantworte, kartendienst };
 }
 
 test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigation (K5)', async ({
@@ -330,9 +441,9 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
   await tippe(page.getByRole('button', { name: 'Heilmittel bestätigen' }));
   await expect(page.getByText(/Bestätigt: Krankengymnastik, Hausbesuch/)).toBeVisible();
 
-  // 4. Folgetermin: nächste Woche, gleiche Zeit, ein Tipp (ANN-477).
+  // 4. Folgetermin: nächste Woche, gleiche Zeit, ein Tipp auf die Zeile (ANN-477, B8).
   const gleich = page.getByRole('button', {
-    name: /Folgetermin anlegen: .* · 09:00 · gleiche Zeit/,
+    name: /^Folgetermin anlegen: .*09:00–10:00.*gleiche Zeit/,
   });
   await tippe(gleich);
   await expect(page.getByText(/Folgetermin angelegt: /)).toBeVisible();
@@ -464,6 +575,51 @@ test('sucht den Folgetermin nach einem Funkloch mit „Erneut versuchen" noch ei
   expect(await page.evaluate(() => (window as unknown as { __wege: string[] }).__wege.length)).toBe(
     wegeVorher,
   );
+});
+
+// Befund B8: Jeder Vorschlag sagt, bei wem er liegt, was davor und danach
+// kommt, ob die Wege aufgehen und wie lang der Termin sein dürfte. Ein Platz
+// mit zu knapper Anfahrt steht gar nicht erst da; der nächste rückt nach.
+test('zeigt Folgetermine als Zeilen mit Therapeut:in, Nachbarn und Wegen (B8)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.clock.setFixedTime(um('09:20'));
+  const server = nachbildung();
+  await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  await page.route('**/functions/v1/**', (route) => server.kartendienst(route));
+
+  await page.goto(PRUEFSEITE);
+  await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
+  await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
+  await page.getByRole('button', { name: 'Festschreiben' }).click();
+
+  const zeilen = page.getByRole('button', { name: /^Folgetermin anlegen:/ });
+  await expect(zeilen).toHaveCount(3);
+  // Nächste Woche, gleiche Zeit: 34 Minuten Luft bis zum Termin danach - 60
+  // plus 30 im Raster von 5 Minuten.
+  await expect(zeilen.nth(0)).toContainText('09:00–10:00');
+  await expect(zeilen.nth(0)).toContainText('Anna Beispiel · gleiche Zeit');
+  await expect(zeilen.nth(0)).toContainText('davor 07:00–07:45 · danach 10:35');
+  await expect(zeilen.nth(0)).toContainText('Wege passen · bis 90 Min. möglich');
+  // Morgen um 14:00 reicht die Anfahrt nicht: Der Platz um 16:00 rückt nach,
+  // mit der Rückfahrt bis zum Arbeitsende um 18:00.
+  await expect(page.getByRole('button', { name: /14:00–15:00/ })).toHaveCount(0);
+  await expect(zeilen.nth(1)).toContainText('16:00–17:00');
+  await expect(zeilen.nth(1)).toContainText('davor 13:00–14:00');
+  await expect(zeilen.nth(1)).toContainText('Wege passen · bis 115 Min. möglich');
+  await expect(zeilen.nth(2)).toContainText('08:00–09:00');
+  await expect(zeilen.nth(2)).toContainText('kein Termin davor oder danach');
+  // Gefragt wurde der Server - die Rundung gehört ihm (ANN-097).
+  expect(server.aufrufe.check_travel_fit?.length).toBeGreaterThanOrEqual(4);
+
+  for (const zeile of await zeilen.all()) {
+    expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  const ueberlauf = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(ueberlauf).toBe(false);
 });
 
 for (const [breite, hoehe] of [
