@@ -187,6 +187,18 @@ describe('Vorschau einer Vorlage (Befund B9, ANN-537)', () => {
     ]);
   });
 
+  it('zeigt ohne Übernahmerecht, was der Praxis fehlt, ohne Wahl (ANN-293)', () => {
+    const ohneRecht = vorlagenZeilen(VORLAGE, BIBLIOTHEK, katalog, false);
+    expect(ohneRecht.map((z) => [z.schluessel, z.art])).toEqual([
+      ['KN-02', 'waehlbar'],
+      ['KN-01', 'waehlbar'],
+      ['KN-03', 'archiviert'],
+      ['KN-09', 'fehlt'],
+    ]);
+    expect(ohneRecht[3]).toEqual({ art: 'fehlt', schluessel: 'KN-09', name: KN09.name });
+    expect(vorausgewaehlt(ohneRecht, new Set())).toEqual(['KN-02', 'KN-01']);
+  });
+
   it('wählt alles Wählbare vor, außer was schon im Plan steht', () => {
     expect(vorausgewaehlt(zeilen, new Set())).toEqual(['KN-02', 'KN-01', 'KN-09']);
     expect(vorausgewaehlt(zeilen, new Set(['a']))).toEqual(['KN-02', 'KN-09']);

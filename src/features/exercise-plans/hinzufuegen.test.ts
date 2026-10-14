@@ -170,6 +170,25 @@ describe('mitKatalog (Befund B9, O-002)', () => {
     expect(nichtSatz([])).toBeNull();
   });
 
+  it('sagt „nicht in der Bibliothek“, wenn nur owner übernehmen dürfte (ANN-293)', async () => {
+    const { positionen, nicht } = await mitKatalog(
+      'p1',
+      [
+        { variante: { id: 'katalog:KN-01' }, dosis, eintrag: KN01 },
+        { variante: { id: 'katalog:KN-07' }, dosis, eintrag: KN07 },
+      ],
+      () =>
+        Promise.resolve({
+          variants: { 'KN-01': 'da-kn01' },
+          imported: [],
+          conflicts: [{ catalog_key: 'KN-07', name: KN07.name, reason: 'missing' }],
+        }),
+    );
+    expect(positionen.map((p) => p.variantId)).toEqual(['da-kn01']);
+    expect(nicht).toEqual([{ name: KN07.name, grund: 'fehlt' }]);
+    expect(nichtSatz(nicht)).toBe(`Nicht hinzugefügt: ${KN07.name} (nicht in der Bibliothek).`);
+  });
+
   it('legt nichts an, wenn die Übernahme scheitert', async () => {
     await expect(
       mitKatalog('p1', [{ variante: { id: 'katalog:KN-01' }, dosis, eintrag: KN01 }], () =>

@@ -152,7 +152,9 @@ export async function mitKatalog(
     const id = antwort?.variants[w.eintrag.schluessel];
     if (id) return [neuePosition(planId, id, w.dosis)];
     const konflikt = antwort?.conflicts.find((k) => k.catalog_key === w.eintrag?.schluessel);
-    nicht.push({ name: w.eintrag.name, grund: konflikt?.reason ?? 'fehlt' });
+    // 'missing': fehlt der Bibliothek, und übernehmen darf nur owner (ANN-293).
+    const grund = !konflikt || konflikt.reason === 'missing' ? 'fehlt' : konflikt.reason;
+    nicht.push({ name: w.eintrag.name, grund });
     return [];
   });
   return { positionen, nicht };
@@ -161,7 +163,7 @@ export async function mitKatalog(
 const GRUND: Readonly<Record<NichtHinzugefuegt['grund'], string>> = {
   name: 'Name schon vergeben',
   archived: 'archiviert',
-  fehlt: 'nicht übernommen',
+  fehlt: 'nicht in der Bibliothek',
 };
 
 /** „Nicht hinzugefügt: Fußgleiten im Sitz (archiviert)." */

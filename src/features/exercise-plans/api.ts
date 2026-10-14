@@ -90,8 +90,7 @@ const planSchema = z.object({
   ended_by_name: z.string().nullable(),
   created_at: z.string(),
   created_by_name: z.string().nullable(),
-  /** O-002: zuletzt geändert - Zeitpunkt, Tag in der Zeitzone der Praxis, Person. */
-  updated_at: z.string().nullable().default(null),
+  /** O-002: zuletzt geändert - der Tag in der Zeitzone der Praxis und die Person. */
   updated_on: z.string().nullable().default(null),
   updated_by_name: z.string().nullable().default(null),
   today: z.string(),
@@ -387,7 +386,8 @@ const katalogUebernahmeSchema = z.object({
     z.object({
       catalog_key: z.string(),
       name: z.string(),
-      reason: z.enum(['name', 'archived']),
+      // 'missing': fehlt der Bibliothek, und übernehmen darf nur owner (ANN-293).
+      reason: z.enum(['name', 'archived', 'missing']),
     }),
   ),
 });

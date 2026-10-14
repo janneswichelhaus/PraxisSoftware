@@ -182,7 +182,6 @@ const praxisplan: Plan = {
   created_at: '2026-10-01T07:00:00Z',
   created_by_name: 'Anna Beispiel',
   version_number: 1,
-  updated_at: '2026-10-01T08:00:00Z',
   updated_on: '2026-10-01',
   updated_by_name: 'Anna Beispiel',
   today: heute,

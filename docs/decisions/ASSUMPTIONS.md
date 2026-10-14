@@ -5518,19 +5518,19 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Knappe auch weglassen: `stufe !== 'passt'` in `urteilAus` · Aufwand `klein`.
 
-### ANN-536 — Wer einen Plan schreibt, übernimmt gewählte Katalogübungen beim Hinzufügen, ungeprüft
+### ANN-536 — Katalogübungen übernimmt beim Hinzufügen nur owner, einzeln
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Frage im Bericht)
 
 **Ablösung.** ersetzt ANN-385 für gewählte Einträge beim Hinzufügen zu einem Plan
 
-**Annahme.** Wer einen Plan des Bereichs schreiben darf, übernimmt beim Hinzufügen gewählte Katalogeinträge in die Bibliothek, höchstens so viele, wie der Entwurf fasst. Weg wie der Import: alles prüfen, nichts überschreiben, ohne Prüfvermerk (ANN-386). Pflege, Archiv und Prüfvermerk bleiben bei owner.
+**Annahme.** owner übernimmt gewählte Katalogeinträge beim Hinzufügen, einzeln, höchstens so viele, wie der Entwurf fasst; Weg wie der Import, ohne Prüfvermerk (ANN-386). Die anderen Planrollen wählen aus der Bibliothek; was einer Vorlage fehlt, steht ohne Haken da, der Server meldet `missing` und schreibt nichts (ANN-293).
 
-**Begründung.** Befund B9: Aus einer Vorlage kam nichts oder, nur für owner, alles auf einmal.
+**Begründung.** Befund B9. Alle Planrollen übernehmen zu lassen, hätte die entschiedene ANN-293 aufgeweicht (Zweitreview); das entscheidet Jannes.
 
-**Anker.** `public.add_catalog_exercises_for_plan` in `supabase/migrations/20261116100000_o_002_uebungsplan_katalog_und_stand.sql`.
+**Anker.** `v_pflegt` in `public.add_catalog_exercises_for_plan`, `supabase/migrations/20261116100000_o_002_uebungsplan_katalog_und_stand.sql`.
 
-**Änderungspfad.** Wieder nur owner: Funktion entfernen, Auswahl auf die Bibliothek beschränken · Aufwand `klein`.
+**Änderungspfad.** Alle Planrollen übernehmen lassen: `v_pflegt` auf `true`, im `Planeditor` die Bedingung `can_manage` streichen · Aufwand `klein`.
 
 ### ANN-537 — Eine Vorlage zeigt ihre Übungen als Vorschau, alle vorgewählt
 

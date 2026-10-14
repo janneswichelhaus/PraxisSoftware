@@ -204,8 +204,10 @@ function uebernommen(e: Katalogeintrag) {
 
 /**
  * Der synthetische Bestand: Knie, Hüfte, Gleichgewicht aus dem Katalog, alle
- * ungeprüft. Der Rest des Katalogs steht im Auswahlblatt daneben und kommt
- * beim Hinzufügen dazu (Befund B9, `add_catalog_exercises_for_plan`).
+ * ungeprüft. Für owner (`can_manage`) steht der Rest des Katalogs im
+ * Auswahlblatt daneben und kommt beim Hinzufügen dazu (Befund B9,
+ * `add_catalog_exercises_for_plan`); alle anderen wählen aus der Bibliothek
+ * (ANN-293).
  */
 function bibliothek() {
   return {
@@ -252,13 +254,19 @@ class Nachbau {
       case 'list_exercise_library':
         return this.bibliothek;
       case 'add_catalog_exercises_for_plan': {
-        // Wie der Server: Vorhandenes nehmen, Fehlendes übernehmen (O-002).
+        // Wie der Server: Vorhandenes nehmen; Fehlendes übernimmt nur owner,
+        // sonst kommt es als „missing“ zurück (O-002, ANN-293).
         const variants: Record<string, string> = {};
         const imported: string[] = [];
+        const conflicts: { catalog_key: string; name: string; reason: string }[] = [];
         for (const e of a['p_entries'] as Katalogeintrag[]) {
           const da = this.bibliothek.exercises.find((u) =>
             u.variants.some((v) => v.catalog_key === e.schluessel),
           );
+          if (!da && !this.bibliothek.can_manage) {
+            conflicts.push({ catalog_key: e.schluessel, name: e.name, reason: 'missing' });
+            continue;
+          }
           if (!da) {
             this.bibliothek.exercises.push(uebernommen(e));
             imported.push(e.schluessel);
@@ -266,7 +274,7 @@ class Nachbau {
           variants[e.schluessel] = `v-${e.schluessel}`;
         }
         this.uebernommen.push(...imported);
-        return { variants, imported, conflicts: [] };
+        return { variants, imported, conflicts };
       }
       case 'list_exercise_plans':
         return {
@@ -468,10 +476,11 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     expect(z.eingaben).toBe(1);
   });
 
-  test('eine Übung, die der Praxis noch fehlt, kommt beim Hinzufügen still dazu (B9)', async ({
+  test('eine Übung, die der Praxis noch fehlt, kommt für owner beim Hinzufügen still dazu (B9)', async ({
     page,
   }) => {
     const nachbau = await mitNachbau(page);
+    nachbau.bibliothek.can_manage = true;
     const fehlt = KATALOG.find((e) => e.schluessel === 'BT-01')!;
     expect(nachbau.bibliothek.exercises.some((u) => u.name === fehlt.name)).toBe(false);
     await page.goto(`${PRUEFSEITE}?seite=planbau`);
@@ -490,57 +499,88 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
-  test('aus Vorlage mit Vorschau: höchstens 5 Tipps, ohne Tastatur (K12)', async ({ page }) => {
-    // Dreizehn Aufrufe an den Nachbau, dazu axe: bei voller Maschine länger.
-    test.slow();
+  test('ohne Pflegerecht steht nur die Bibliothek im Auswahlblatt (ANN-293)', async ({ page }) => {
     const nachbau = await mitNachbau(page);
-    const z = new Zaehler();
+    const fehlt = KATALOG.find((e) => e.schluessel === 'BT-01')!;
     await page.goto(`${PRUEFSEITE}?seite=planbau`);
-    await z.tippe(page.getByRole('button', { name: 'Neuer Plan' }));
-    // Im leeren Entwurf stehen die Vorlagen gleich als Zeilen (Befund B9).
-    await z.tippe(page.getByRole('button', { name: /Knie im Sitz \(Prüfvorlage\)/ }));
-    const vorschau = page.getByRole('dialog', { name: 'Knie im Sitz (Prüfvorlage)' });
-    // Alle vorgewählt - auch die Übung, die der Praxis noch fehlt.
-    await expect(vorschau.getByRole('checkbox')).toHaveCount(6);
-    for (const haken of await vorschau.getByRole('checkbox').all()) {
-      await expect(haken).toBeChecked();
-    }
-    for (const zeile of await vorschau.locator('label').all()) {
-      expect(await hoehe(zeile)).toBeGreaterThanOrEqual(44);
-    }
-    expect(await ueberlaeuft(page)).toBe(false);
-    expect(await axeVerstoesse(page)).toEqual([]);
-    await z.tippe(vorschau.getByRole('button', { name: '6 hinzufügen' }));
-    await expect(page.getByText(/6 Übungen hinzugefügt aus „Knie im Sitz/)).toBeVisible({
-      timeout: 15_000,
-    });
-    await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
-    await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
-    await expect(
-      page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' }),
-    ).toBeVisible();
-
-    const plan = [...nachbau.plaene.values()][0]!;
-    expect(plan.status).toBe('assigned');
-    expect(plan.items.map((i) => i['variant_id'])).toEqual([
-      'v-KN-01',
-      'v-KN-02',
-      'v-KN-03',
-      'v-KN-05',
-      'v-KN-06',
-      'v-AF-01',
-    ]);
-    // Was der Praxis fehlte, kam still dazu.
-    expect(nachbau.uebernommen).toEqual(['AF-01']);
-    // Der leere Entwurf heißt danach wie die Vorlage.
-    expect(plan.title).toBe('Knie im Sitz (Prüfvorlage)');
-    // Vorher (bis Befund B9): 5 Tipps ohne Wahl, wenn alles in der Bibliothek
-    // stand; fehlte etwas, für owner 6 Tipps mit allem, für die Therapeut:in
-    // nur eine Warnung.
-    test.info().annotations.push({ type: 'Tipps', description: `${z.tipps} Tipps, keine Eingabe` });
-    expect(z.tipps).toBe(5);
-    expect(z.tipps).toBeLessThanOrEqual(5);
-    expect(z.eingaben).toBe(0);
-    expect(await ueberlaeuft(page)).toBe(false);
+    await page.getByRole('button', { name: 'Neuer Plan' }).click();
+    await page.getByRole('button', { name: 'Übungen hinzufügen' }).click();
+    const blatt = page.getByRole('dialog', { name: 'Übungen hinzufügen' });
+    await blatt.getByRole('searchbox', { name: 'Übung suchen' }).fill('knie');
+    await expect(blatt.getByRole('checkbox').first()).toBeVisible();
+    await blatt.getByRole('searchbox', { name: 'Übung suchen' }).fill(fehlt.alltagsname);
+    await expect(blatt.getByRole('checkbox', { name: fehlt.name })).toHaveCount(0);
+    expect(nachbau.uebernommen).toEqual([]);
   });
+
+  // Was der Praxis fehlt, übernimmt nur owner (ANN-293): Die Therapeut:in
+  // sieht die Zeile ohne Haken, owner fügt sie mit hinzu.
+  for (const { wer, pflegt } of [
+    { wer: 'die Therapeut:in', pflegt: false },
+    { wer: 'owner', pflegt: true },
+  ]) {
+    test(`aus Vorlage mit Vorschau für ${wer}: höchstens 5 Tipps, ohne Tastatur (K12)`, async ({
+      page,
+    }) => {
+      // Dreizehn Aufrufe an den Nachbau, dazu axe: bei voller Maschine länger.
+      test.slow();
+      const nachbau = await mitNachbau(page);
+      nachbau.bibliothek.can_manage = pflegt;
+      const anzahl = pflegt ? 6 : 5;
+      const z = new Zaehler();
+      await page.goto(`${PRUEFSEITE}?seite=planbau`);
+      await z.tippe(page.getByRole('button', { name: 'Neuer Plan' }));
+      // Im leeren Entwurf stehen die Vorlagen gleich als Zeilen (Befund B9).
+      await z.tippe(page.getByRole('button', { name: /Knie im Sitz \(Prüfvorlage\)/ }));
+      const vorschau = page.getByRole('dialog', { name: 'Knie im Sitz (Prüfvorlage)' });
+      // Alles Wählbare vorgewählt.
+      await expect(vorschau.getByRole('checkbox')).toHaveCount(anzahl);
+      for (const haken of await vorschau.getByRole('checkbox').all()) {
+        await expect(haken).toBeChecked();
+      }
+      // Für die Therapeut:in die eine fehlende Übung als Zeile ohne Haken.
+      await expect(
+        vorschau.getByRole('listitem').filter({ hasText: 'nicht in der Bibliothek' }),
+      ).toHaveCount(pflegt ? 0 : 1);
+      for (const zeile of await vorschau.locator('label').all()) {
+        expect(await hoehe(zeile)).toBeGreaterThanOrEqual(44);
+      }
+      expect(await ueberlaeuft(page)).toBe(false);
+      expect(await axeVerstoesse(page)).toEqual([]);
+      await z.tippe(vorschau.getByRole('button', { name: `${anzahl} hinzufügen` }));
+      await expect(
+        page.getByText(`${anzahl} Übungen hinzugefügt aus „Knie im Sitz (Prüfvorlage)“.`),
+      ).toBeVisible({ timeout: 15_000 });
+      await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
+      await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
+      await expect(
+        page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' }),
+      ).toBeVisible();
+
+      const plan = [...nachbau.plaene.values()][0]!;
+      expect(plan.status).toBe('assigned');
+      expect(plan.items.map((i) => i['variant_id'])).toEqual([
+        'v-KN-01',
+        'v-KN-02',
+        'v-KN-03',
+        'v-KN-05',
+        'v-KN-06',
+        ...(pflegt ? ['v-AF-01'] : []),
+      ]);
+      // Was der Praxis fehlte, kam für owner still dazu.
+      expect(nachbau.uebernommen).toEqual(pflegt ? ['AF-01'] : []);
+      // Der leere Entwurf heißt danach wie die Vorlage.
+      expect(plan.title).toBe('Knie im Sitz (Prüfvorlage)');
+      // Vorher (bis Befund B9): 5 Tipps ohne Wahl, wenn alles in der Bibliothek
+      // stand; fehlte etwas, für owner 6 Tipps mit allem, für die Therapeut:in
+      // nur eine Warnung.
+      test
+        .info()
+        .annotations.push({ type: 'Tipps', description: `${z.tipps} Tipps, keine Eingabe` });
+      expect(z.tipps).toBe(5);
+      expect(z.tipps).toBeLessThanOrEqual(5);
+      expect(z.eingaben).toBe(0);
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+  }
 });

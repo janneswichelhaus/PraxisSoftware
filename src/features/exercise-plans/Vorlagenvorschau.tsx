@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
@@ -15,8 +16,9 @@ export type Vorlagenwahl = Extract<Vorlagenzeile, { art: 'waehlbar' }>;
  * Die Vorschau einer Vorlage (Befund B9): Ein Tipp auf eine Vorlage
  * zeigt ihre Übungen als Zeilen mit Haken, alle vorgewählt außer dem, was
  * schon im Plan steht; „n hinzufügen“ legt die gewählten mit der Dosierung
- * der Vorlage an. Fehlt eine Übung der Praxis, kommt sie still mit
- * (`addCatalogExercises`); eine archivierte steht ohne Haken mit dem Wort da.
+ * der Vorlage an. Fehlt eine Übung der Praxis, kommt sie für owner still mit
+ * (`addCatalogExercises`); für alle anderen steht sie ohne Haken mit „nicht in
+ * der Bibliothek“ da (ANN-293), eine archivierte mit „archiviert“.
  *
  * Bekommt Vorlage und Zeilen - keine Person, keine Diagnose (ADR-006
  * Punkt 10). Die Vorauswahl ist der Inhalt der Vorlage, für jede Person
@@ -81,12 +83,21 @@ export function Vorlagenvorschau({
               key={zeile.schluessel}
               bild={<Vorschaubild bild={null} name={zeile.name} />}
               titel={zeile.name}
-              status={<Badge ton="warnung">archiviert</Badge>}
+              status={
+                <Badge ton="warnung">
+                  {zeile.art === 'archiviert' ? 'archiviert' : 'nicht in der Bibliothek'}
+                </Badge>
+              }
               gedaempft
             />
           ),
         )}
       </ListRows>
+      {zeilen.some((zeile) => zeile.art === 'fehlt') ? (
+        <Kleingedrucktes className="mt-2">
+          Was nicht in der Bibliothek steht, übernimmt die Praxisinhaber:in aus dem Katalog.
+        </Kleingedrucktes>
+      ) : null}
       <Auswahlfuss
         anzahl={gewaehlt.length}
         laeuft={laeuft}

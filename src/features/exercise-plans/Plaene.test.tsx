@@ -265,7 +265,6 @@ export function plan(teil: Partial<Api.Plan> = {}): Api.Plan {
     created_at: '2026-10-07T08:00:00Z',
     created_by_name: 'Anna Beispiel',
     version_number: 1,
-    updated_at: '2026-10-07T09:30:00Z',
     updated_on: '2026-10-07',
     updated_by_name: 'Anna Beispiel',
     today: '2026-10-07',
@@ -863,6 +862,24 @@ describe('Eine Übungsliste: Bibliothek und Katalog (Befund B9, ANN-536)', () =>
   const HU01 = katalogeintrag('HU-01')!;
   const name = (n: string) => (zugaenglich: string) => zugaenglich.startsWith(n);
 
+  // Aus dem Katalog übernimmt nur, wer die Bibliothek pflegt (owner, ANN-293).
+  beforeEach(() => {
+    fetchBibliothek.mockResolvedValue({ ...BIBLIOTHEK, can_manage: true });
+  });
+
+  it('zeigt ohne Pflegerecht nur die Bibliothek (ANN-293)', async () => {
+    const user = userEvent.setup();
+    fetchBibliothek.mockResolvedValue(BIBLIOTHEK);
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Übungen hinzufügen' }));
+    const blatt = await screen.findByRole('dialog', { name: 'Übungen hinzufügen' });
+    expect(
+      within(blatt).getByRole('checkbox', { name: /Rudern, Theraband gelb/ }),
+    ).toBeInTheDocument();
+    expect(within(blatt).queryByRole('checkbox', { name: name(KN03.name) })).toBeNull();
+    expect(within(blatt).queryByRole('checkbox', { name: name(HU01.name) })).toBeNull();
+  });
+
   it('übernimmt eine Übung aus dem Katalog still und fügt sie mit ihrer Standarddosierung hinzu', async () => {
     const user = userEvent.setup();
     addCatalogExercises.mockResolvedValue({
@@ -960,6 +977,11 @@ describe('Aus Vorlage mit Vorschau (Welle B, Befund B9, ANN-537)', () => {
   const name = (n: string) => (zugaenglich: string) => zugaenglich.startsWith(n);
   const KN03 = katalogeintrag('KN-03')!;
 
+  // Was der Praxis fehlt, übernimmt nur owner (ANN-293) - eigener Test unten.
+  beforeEach(() => {
+    fetchBibliothek.mockResolvedValue({ ...BIBLIOTHEK, can_manage: true });
+  });
+
   it('blendet Vorlagen aus, solange es keine gibt', async () => {
     fetchPlan.mockResolvedValue(plan({ items: [] }));
     planseite([]);
@@ -1007,6 +1029,7 @@ describe('Aus Vorlage mit Vorschau (Welle B, Befund B9, ANN-537)', () => {
     expect(within(vorschau).getByRole('button', { name: '3 hinzufügen' })).toBeEnabled();
     // Die alte Warnung und der Knopf für owner sind weg.
     expect(screen.queryByText(/Nicht in der Bibliothek der Praxis/)).toBeNull();
+    expect(within(vorschau).queryByText(/übernimmt die Praxisinhaber:in/)).toBeNull();
     expect(
       screen.queryByRole('button', { name: 'Aus dem Katalog übernehmen und hinzufügen' }),
     ).toBeNull();
@@ -1046,6 +1069,26 @@ describe('Aus Vorlage mit Vorschau (Welle B, Befund B9, ANN-537)', () => {
       await screen.findByText('2 Übungen hinzugefügt aus „Knie im Sitz“.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('zeigt ohne Pflegerecht, was der Bibliothek fehlt, ohne Haken und übernimmt nichts (ANN-293)', async () => {
+    const user = userEvent.setup();
+    fetchBibliothek.mockResolvedValue(BIBLIOTHEK);
+    fetchPlan.mockResolvedValue(plan({ items: [], title: 'Übungsplan' }));
+    planseite(VORLAGEN);
+    await user.click(await screen.findByRole('button', { name: /^Knie im Sitz/ }));
+    const vorschau = await screen.findByRole('dialog', { name: 'Knie im Sitz' });
+    const fehlt = within(vorschau).getByText(KN03.name).closest('li')!;
+    expect(within(fehlt).queryByRole('checkbox')).toBeNull();
+    expect(within(fehlt).getByText('nicht in der Bibliothek')).toBeInTheDocument();
+    expect(
+      within(vorschau).getByText(
+        'Was nicht in der Bibliothek steht, übernimmt die Praxisinhaber:in aus dem Katalog.',
+      ),
+    ).toBeInTheDocument();
+    await user.click(within(vorschau).getByRole('button', { name: '2 hinzufügen' }));
+    await waitFor(() => expect(savePosition).toHaveBeenCalledTimes(2));
+    expect(addCatalogExercises).not.toHaveBeenCalled();
   });
 
   it('überschreibt beim Titel aus der Vorlage keine eben gewählte Häufigkeit', async () => {

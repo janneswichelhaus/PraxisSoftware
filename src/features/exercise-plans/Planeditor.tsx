@@ -399,7 +399,9 @@ export function Planeditor({
         ) : (
           <Uebungsauswahl
             bibliothek={b}
-            {...(katalog.data ? { katalog: katalog.data } : {})}
+            // Fehlendes aus dem Katalog übernimmt nur, wer die Bibliothek
+            // pflegt (owner, ANN-293); die anderen wählen aus der Bibliothek.
+            {...(katalog.data && b.can_manage ? { katalog: katalog.data } : {})}
             katalogFehlt={katalog.isError}
             imPlan={imPlan}
             laeuft={laeuft}
@@ -426,7 +428,7 @@ export function Planeditor({
         ) : (
           <Vorlagenvorschau
             vorlage={fenster.vorlage}
-            zeilen={vorlagenZeilen(fenster.vorlage, b, katalog.data ?? [])}
+            zeilen={vorlagenZeilen(fenster.vorlage, b, katalog.data ?? [], b.can_manage)}
             katalogFehlt={katalog.isError}
             imPlan={imPlan}
             laeuft={laeuft}

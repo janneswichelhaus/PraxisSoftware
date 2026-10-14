@@ -29,8 +29,10 @@ export function vorlagenListe(vorlagen: readonly Katalogvorlage[]): Katalogvorla
 
 /**
  * Eine Übung der Vorlage in der Vorschau (Befund B9): wählbar - aus
- * der Bibliothek oder, wenn sie der Praxis fehlt, aus dem Katalog mit ihrem
- * Eintrag, den der Server beim Hinzufügen übernimmt -, oder archiviert.
+ * der Bibliothek oder, wenn sie der Praxis fehlt, für owner aus dem Katalog
+ * mit ihrem Eintrag, den der Server beim Hinzufügen übernimmt -, archiviert,
+ * oder für alle anderen Rollen „nicht in der Bibliothek“ (ANN-293: übernehmen
+ * darf nur owner).
  */
 export type Vorlagenzeile =
   | {
@@ -43,7 +45,8 @@ export type Vorlagenzeile =
       /** Nur im Katalog: der Eintrag, den der Server übernimmt. */
       eintrag?: Katalogeintrag;
     }
-  | { art: 'archiviert'; schluessel: string; name: string };
+  | { art: 'archiviert'; schluessel: string; name: string }
+  | { art: 'fehlt'; schluessel: string; name: string };
 
 /**
  * Die Übungen einer Vorlage in ihrer Reihenfolge: über den Katalogschlüssel
@@ -58,6 +61,8 @@ export function vorlagenZeilen(
   vorlage: Katalogvorlage,
   bibliothek: Bibliothek,
   katalog: readonly Katalogeintrag[],
+  /** Darf die Rolle Fehlendes aus dem Katalog übernehmen (owner, ANN-293)? */
+  uebernehmen = true,
 ): Vorlagenzeile[] {
   const zeilen: Vorlagenzeile[] = [];
   for (const eintrag of vorlage.uebungen) {
@@ -86,6 +91,10 @@ export function vorlagenZeilen(
     }
     const ausKatalog = katalog.find((e) => e.schluessel === eintrag.schluessel);
     if (!ausKatalog) continue;
+    if (!uebernehmen) {
+      zeilen.push({ art: 'fehlt', schluessel: eintrag.schluessel, name: ausKatalog.name });
+      continue;
+    }
     const uebung = alsUebung(ausKatalog);
     const variante = uebung.variants[0]!;
     zeilen.push({

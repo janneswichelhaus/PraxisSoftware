@@ -3,19 +3,22 @@
 -- Hinzufuegen uebernehmen, Stand und Fassung des Plans
 --
 --   public.add_catalog_exercises_for_plan  gewaehlte Katalogeintraege fuer einen
---                                          Planentwurf in die Bibliothek
---                                          uebernehmen (ANN-536)
---   public.get_exercise_plan               + version_number, updated_at,
---                                          updated_on, updated_by_name,
+--                                          Planentwurf aufloesen; was der
+--                                          Bibliothek fehlt, uebernimmt nur
+--                                          owner (ANN-536, ANN-293)
+--   public.get_exercise_plan               + version_number, updated_on,
+--                                          updated_by_name,
 --                                          follow_up.runs_from
 --
 -- EINE LISTE STATT KATALOG UND BIBLIOTHEK: Wer einen Plan zusammenstellt,
 -- waehlt aus einer Liste - der Bibliothek der Praxis und den Eintraegen des
 -- mitgelieferten Katalogs (src/features/exercises/katalog, ANN-382), die ihr
--- noch fehlen. Gewaehlte Katalogeintraege kommen beim Hinzufuegen in die
--- Bibliothek, danach legt die Anwendung wie bisher je Uebung eine Position an
--- (save_exercise_plan_item). Bis O-002 uebernahm nur owner, und immer alles,
--- was einer Vorlage fehlte (ANN-385).
+-- noch fehlen (die fehlenden nur fuer owner). Gewaehlte Katalogeintraege
+-- uebernimmt owner beim Hinzufuegen in die Bibliothek, danach legt die
+-- Anwendung wie bisher je Uebung eine Position an (save_exercise_plan_item).
+-- Bis O-002 uebernahm owner immer alles, was einer Vorlage fehlte (ANN-385);
+-- jetzt einzeln. Andere Rollen bekommen, was die Bibliothek schon hat
+-- (ANN-293, entschieden: anlegen und pflegen nur owner).
 --
 -- DERSELBE WEG WIE DER IMPORT (ANN-382, ANN-386): app.import_exercise_catalog_
 -- for prueft erst alle Eintraege (app.exercise_catalog_entry), dann schreibt
@@ -37,10 +40,14 @@
 -- 1. Gewaehlte Katalogeintraege fuer einen Planentwurf uebernehmen
 --
 -- ANN-536: Wer einen Plan des Bereichs schreiben darf
--- (app.can_write_exercise_plans), uebernimmt beim Hinzufuegen die GEWAEHLTEN
--- Katalogeintraege - hoechstens so viele, wie der Entwurf noch fasst (30
--- Positionen). Rolle, Organisation, Bereich und Entwurf prueft derselbe
--- Einstieg wie bei jeder Position (app.exercise_plan_for_write).
+-- (app.can_write_exercise_plans), bekommt beim Hinzufuegen fuer die
+-- GEWAEHLTEN Katalogeintraege die Varianten der Praxis - hoechstens so viele,
+-- wie der Entwurf noch fasst (30 Positionen). Rolle, Organisation, Bereich und
+-- Entwurf prueft derselbe Einstieg wie bei jeder Position
+-- (app.exercise_plan_for_write). Uebernehmen, was der Bibliothek fehlt, darf
+-- weiter nur owner (ANN-293, entschieden; Zweitreview o_002 Punkt 6): Fuer
+-- andere Rollen wird nichts geschrieben, Fehlendes steht unter conflicts
+-- (reason 'missing').
 --
 -- Liefert je Schluessel die Variante der Praxis - neu uebernommen oder schon
 -- vorhanden. Heisst schon eine eigene Uebung der Praxis so, wird sie genommen,
@@ -67,6 +74,8 @@ declare
   v_anzahl     integer;
   v_varianten  jsonb := '{}'::jsonb;
   v_konflikte  jsonb := '[]'::jsonb;
+  v_pflegt     boolean;
+  v_gesehen    text[] := '{}';
 begin
   -- 42501 ohne Schreibrecht in einem Bereich, P0002 fuer einen fremden Plan
   -- oder einen des anderen Bereichs (ADR-021 Punkt 6). Sperrt die Zeile.
@@ -87,9 +96,25 @@ begin
     raise exception 'too many exercises in plan' using errcode = '22023';
   end if;
 
-  -- Erst alles pruefen, dann schreiben; Vorhandenes ueberspringen, nie
-  -- ueberschreiben, Namenskonflikte melden (ANN-382).
-  v_ergebnis := app.import_exercise_catalog_for(v_plan.organization_id, v_actor, p_entries, false);
+  -- ANN-293: Die Bibliothek pflegt owner - auch das Uebernehmen aus dem
+  -- Katalog. Nur dann: erst alles pruefen, dann schreiben; Vorhandenes
+  -- ueberspringen, nie ueberschreiben, Namenskonflikte melden (ANN-382).
+  -- Fuer andere Rollen dieselbe Pruefung - jeder Eintrag gueltig, kein
+  -- Schluessel doppelt -, geschrieben wird nichts.
+  v_pflegt := app.can_manage_exercise_library();
+  if v_pflegt then
+    v_ergebnis := app.import_exercise_catalog_for(
+      v_plan.organization_id, v_actor, p_entries, false);
+  else
+    for v_e in select value from jsonb_array_elements(p_entries) loop
+      v_schluessel := app.exercise_catalog_entry(v_e) ->> 'catalog_key';
+      if v_schluessel = any (v_gesehen) then
+        raise exception 'catalog key % is duplicated', v_schluessel using errcode = '22023';
+      end if;
+      v_gesehen := v_gesehen || v_schluessel;
+    end loop;
+    v_ergebnis := jsonb_build_object('imported', '[]'::jsonb);
+  end if;
 
   for v_e in select value from jsonb_array_elements(p_entries) loop
     -- Schluessel und Name hat app.exercise_catalog_entry schon geprueft.
@@ -127,8 +152,11 @@ begin
     if v_anzahl = 1 then
       v_varianten := v_varianten || jsonb_build_object(v_schluessel, v_variante);
     else
+      -- Mit Uebernahme hat ein gleicher Name sie verhindert; ohne fehlt der
+      -- Eintrag der Bibliothek - ausser zwei gleichnamige stehen zur Wahl.
       v_konflikte := v_konflikte || jsonb_build_array(jsonb_build_object(
-        'catalog_key', v_schluessel, 'name', v_name, 'reason', 'name'));
+        'catalog_key', v_schluessel, 'name', v_name,
+        'reason', case when v_pflegt or v_anzahl > 1 then 'name' else 'missing' end));
     end if;
   end loop;
 
@@ -144,14 +172,18 @@ revoke all on function public.add_catalog_exercises_for_plan(uuid, jsonb) from p
 grant execute on function public.add_catalog_exercises_for_plan(uuid, jsonb) to authenticated;
 
 comment on function public.add_catalog_exercises_for_plan(uuid, jsonb) is
-  'O-002 (ANN-536): uebernimmt die gewaehlten Katalogeintraege fuer einen Planentwurf in die Bibliothek der Praxis - nur nach app.can_write_exercise_plans(Bereich des Plans), Plan im Entwurf, hoechstens so viele, wie er noch fasst (30). Derselbe Pruef- und Schreibweg wie public.import_exercise_catalog: ungeprueft bis zur Durchsicht durch owner (ANN-386), nie ueberschreiben. Liefert variants (Schluessel -> Variante der Praxis), imported und conflicts (name, archived). Keine neue Auditaktion: created_by steht an der Zeile.';
+  'O-002 (ANN-536): liefert fuer die gewaehlten Katalogeintraege eines Planentwurfs die Varianten der Praxis - nach app.can_write_exercise_plans(Bereich des Plans), Plan im Entwurf, hoechstens so viele, wie er noch fasst (30). Uebernehmen, was der Bibliothek fehlt, nur fuer owner (ANN-293, app.can_manage_exercise_library) ueber denselben Pruef- und Schreibweg wie public.import_exercise_catalog: ungeprueft bis zur Durchsicht (ANN-386), nie ueberschreiben. Liefert variants (Schluessel -> Variante der Praxis), imported und conflicts (name, archived, missing). Keine neue Auditaktion: created_by steht an der Zeile.';
+
+comment on function app.import_exercise_catalog_for(uuid, uuid, jsonb, boolean) is
+  'UEB-012 (ANN-382): uebernimmt Katalogeintraege in die Bibliothek einer Organisation - erst alles pruefen, dann je Eintrag Uebung und Variante; vorhandene catalog_key ueberspringen, Namenskonflikte melden, nie ueberschreiben. Intern: fuer Seed, public.import_exercise_catalog und public.add_catalog_exercises_for_plan (dort nur fuer owner, ANN-293); fuer keine Anwendungsrolle ausfuehrbar; security invoker, weil sie selbst keine Rolle prueft.';
 
 -- -----------------------------------------------------------------------------
 -- 2. Stand und Fassung am Plan
 --
 -- Aus 20261019110000_ueb_010_exercise_sessions.sql (juengste Fassung); neu
 -- sind version_number (die Stelle in der Kette ueber previous_plan_id, 1 =
--- erste Fassung), updated_at, updated_on (der Tag in der Zeitzone der Praxis),
+-- erste Fassung), updated_on (der Tag in der Zeitzone der Praxis - nur der
+-- Tag, nicht die genaue Zeit neben dem Namen, Zweitreview o_002 Punkt 4),
 -- updated_by_name und runs_from an der Folgefassung. Rechte, Protokoll und die
 -- uebrigen Schluessel unveraendert.
 -- -----------------------------------------------------------------------------
@@ -241,7 +273,6 @@ begin
     'created_at', v_plan.created_at,
     'created_by_name', (select up.display_name from public.user_profiles up where up.id = v_plan.created_by),
     -- O-002: zuletzt geaendert - im Entwurf der Stand der Arbeit.
-    'updated_at', v_plan.updated_at,
     'updated_on', (select (v_plan.updated_at at time zone o.time_zone)::date
                    from public.organizations o where o.id = v_org),
     'updated_by_name', (select up.display_name from public.user_profiles up where up.id = v_plan.updated_by),
