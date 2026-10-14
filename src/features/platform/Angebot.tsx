@@ -13,14 +13,13 @@ import { Textlink } from '@/components/ui/Textlink';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
-  angebotAnnehmen,
   KONTEXT_SCHLUESSEL,
-  ladeTrainingsangebot,
   trainingsangebotSchluessel,
   type Buchungsbestaetigung,
   type Plattformzugang,
   type Trainingsangebot,
 } from './api';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import { EINWILLIGUNGSTEXTE, FREIWILLIG, OHNE_NACHTEIL } from './einwilligungstexte';
 import { PAKETINHALT, steuerHinweis } from './paketbedingungen';
 import { PLATTFORM_PFAD } from './pfade';
@@ -49,9 +48,10 @@ import { datum, uhrzeit } from './zeit';
  * der Server (`can_accept`, `blocker`).
  */
 export function Angebot({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const angebot = useQuery({
     queryKey: trainingsangebotSchluessel(zugang.access_id),
-    queryFn: () => ladeTrainingsangebot(zugang.access_id),
+    queryFn: () => api.ladeTrainingsangebot(zugang.access_id),
   });
   const [bestaetigung, setBestaetigung] = useState<Buchungsbestaetigung | null>(null);
 
@@ -94,6 +94,8 @@ function Formular({
   angebot: Trainingsangebot;
   onGebucht: (bestaetigung: Buchungsbestaetigung) => void;
 }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const [freigaben, setFreigaben] = useState<number[]>([]);
   const [kontakt, setKontakt] = useState(false);
@@ -102,7 +104,7 @@ function Formular({
   const [geprueft, setGeprueft] = useState(false);
   const buchen = useMutation({
     mutationFn: () =>
-      angebotAnnehmen(zugang.access_id, {
+      api.angebotAnnehmen(zugang.access_id, {
         angebotId: angebot.id,
         freigaben,
         kontakt,
@@ -121,6 +123,8 @@ function Formular({
     },
   });
 
+  // E-001: In der Einsicht wird nichts angekreuzt und nichts gebucht.
+  const annehmbar = angebot.can_accept && !nurLesen;
   const einwilligungFehlt = geprueft && freigaben.length > 0 && !einwilligung;
   const fruehFehlt = geprueft && angebot.early_start && !frueh;
   const text = EINWILLIGUNGSTEXTE.training_health_data;
@@ -175,7 +179,7 @@ function Formular({
                 label={<span className="font-medium">{angabe.title}</span>}
                 hint={angabe.body}
                 checked={freigaben.includes(index + 1)}
-                disabled={!angebot.can_accept}
+                disabled={!annehmbar}
                 onChange={(event) =>
                   setFreigaben(
                     event.target.checked
@@ -190,7 +194,7 @@ function Formular({
                 label={<span className="font-medium">Kontaktdaten</span>}
                 hint={kontaktZeile(angebot.contact)}
                 checked={kontakt}
-                disabled={!angebot.can_accept}
+                disabled={!annehmbar}
                 onChange={(event) => setKontakt(event.target.checked)}
               />
             ) : null}
@@ -207,7 +211,7 @@ function Formular({
           <Checkbox
             label="Ich willige ein."
             checked={einwilligung}
-            disabled={!angebot.can_accept}
+            disabled={!annehmbar}
             error={
               einwilligungFehlt
                 ? 'Angaben aus Ihrer Behandlung gehen nur mit dieser Einwilligung ins Training. Bitte einwilligen oder die Häkchen oben entfernen.'
@@ -241,7 +245,7 @@ function Formular({
             <Checkbox
               label={FRUEHER_BEGINN}
               checked={frueh}
-              disabled={!angebot.can_accept}
+              disabled={!annehmbar}
               error={
                 fruehFehlt
                   ? `Ihr Training beginnt am ${datum(angebot.starts_on)}, also innerhalb der Widerrufsfrist. Bitte bestätigen – oder die Praxis um einen späteren Beginn bitten.`
@@ -253,7 +257,7 @@ function Formular({
         ) : null}
       </Section>
 
-      {angebot.can_accept ? (
+      {annehmbar ? (
         <Formularfuss
           zusatz={
             <>

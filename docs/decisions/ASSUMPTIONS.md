@@ -5186,6 +5186,18 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Zustand `locked` zulassen und die Leiste „gesperrt“ zeigen lassen · Aufwand `klein`.
 
+### ANN-527 — Die Einsicht listet Dokumente und Anhänge, öffnet sie aber nicht
+
+Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Satz nennt den Ort in der Praxis.
+
+**Begründung.** Öffnen hieße ein neuer Leseweg in den Speicher über den Zugang der Person, mit eigener Regel und eigenem Nachweis. In Akte und Rückfragen öffnet die Praxis dieselbe Datei mit ihrem Nachweis (ADR-010).
+
+**Anker.** `einsichtsApi` in `src/features/platform/einsicht.ts`: `ladeDokumentZumAnzeigen`, `ladeDokumentHerunter` und `ladeAnhang` werfen.
+
+**Änderungspfad.** Eine lesende Signatur über `platform_preview`, mit ADR-Änderung · Aufwand `mittel`.
+
 ### ANN-529 — Die Einsicht sperrt Schreibwege über eine nur lesende Transaktion
 
 Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —

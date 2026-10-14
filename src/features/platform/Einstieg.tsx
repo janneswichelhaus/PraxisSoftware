@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { BEREICHSNAME, einstiegBeenden, einstiegSchluessel, type Plattformzugang } from './api';
+import { BEREICHSNAME, einstiegSchluessel, type Plattformzugang } from './api';
+import { usePlattformApi } from './einsicht';
 import { Benachrichtigungen } from './Benachrichtigungen';
 import { Einwilligungen } from './Einwilligungen';
 
@@ -31,6 +32,7 @@ const TITEL: Record<Schritt, string> = {
 };
 
 export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: string }) {
+  const api = usePlattformApi();
   const queryClient = useQueryClient();
   // Eine Begleitung entscheidet keine Einwilligungen (ADR-023 Punkt 13).
   const schritte: Schritt[] =
@@ -41,7 +43,7 @@ export function Einstieg({ zugang, praxis }: { zugang: Plattformzugang; praxis: 
   const schritt = schritte[nummer] ?? 'fertig';
   const letzter = nummer === schritte.length - 1;
   const beenden = useMutation({
-    mutationFn: () => einstiegBeenden(zugang.access_id),
+    mutationFn: () => api.einstiegBeenden(zugang.access_id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: einstiegSchluessel(zugang.access_id) }),
   });

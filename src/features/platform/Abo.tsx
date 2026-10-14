@@ -9,14 +9,13 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import {
-  aboKuendigen,
   aboSchluessel,
   KONTEXT_SCHLUESSEL,
-  ladeAbo,
   type Kuendigungsbestaetigung,
   type Nachsorgeabo,
   type Plattformzugang,
 } from './api';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum, kalendertag, uhrzeit } from './zeit';
 
@@ -32,9 +31,10 @@ import { datum, kalendertag, uhrzeit } from './zeit';
  * ist, sagt der Server.
  */
 export function Abo({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const abo = useQuery({
     queryKey: aboSchluessel(zugang.access_id),
-    queryFn: () => ladeAbo(zugang.access_id),
+    queryFn: () => api.ladeAbo(zugang.access_id),
   });
 
   return (
@@ -62,6 +62,7 @@ export function Abo({ zugang }: { zugang: Plattformzugang }) {
 }
 
 function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) {
+  const nurLesen = useNurLesen();
   const [bestaetigung, setBestaetigung] = useState<Kuendigungsbestaetigung | null>(null);
   const [schritt, setSchritt] = useState<'stand' | 'bestaetigen'>('stand');
 
@@ -115,7 +116,8 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
           <p className="text-ink text-base leading-relaxed">
             Monatlich kündbar, zum Ende des laufenden Abo-Monats.
           </p>
-          {abo.can_cancel ? (
+          {/* E-001: In der Einsicht wird nicht gekündigt. */}
+          {nurLesen ? null : abo.can_cancel ? (
             <div className="mt-4">
               <Button variant="secondary" onClick={() => setSchritt('bestaetigen')}>
                 Abo kündigen
@@ -145,9 +147,10 @@ function Bestaetigen({
   onFertig: (bestaetigung: Kuendigungsbestaetigung) => void;
   onAbbrechen: () => void;
 }) {
+  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const kuendigen = useMutation({
-    mutationFn: () => aboKuendigen(zugang.access_id, abo.id),
+    mutationFn: () => api.aboKuendigen(zugang.access_id, abo.id),
     onSuccess: async (bestaetigung) => {
       onFertig(bestaetigung);
       await queryClient.invalidateQueries({ queryKey: aboSchluessel(zugang.access_id) });
