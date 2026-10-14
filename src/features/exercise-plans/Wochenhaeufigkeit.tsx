@@ -1,10 +1,11 @@
-import { useId, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useId } from 'react';
+import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
-import { PLAENE_SCHLUESSEL, savePlan, type Plan } from './api';
+import { PLAENE_SCHLUESSEL, type Plan } from './api';
 import { haeufigkeit } from './dosierung';
+import { haeufigkeitSchluessel, kopfdatenScope, speichereKopfdaten } from './kopfdaten';
 import { MinusSymbol, PlusSymbol } from './Zahlschritt';
 
 /** Höchstens so viele Einheiten je Woche - wie `exercise_plans.sessions_per_week`. */
@@ -17,26 +18,32 @@ const HOECHSTENS = 14;
  *
  * Vorbelegt ist nichts („ohne Angabe“); die Zahl wählt die Fachperson, nie
  * etwas aus Angaben der Person (ADR-006 Punkt 10). Jeder Tipp wird sofort
- * gespeichert, der Reihe nach (`scope`), damit der letzte Tipp auch der
- * letzte Stand am Server ist; scheitert einer, springt die Zahl zurück.
+ * gespeichert, der Reihe nach mit Titel und Vorlage (`kopfdatenScope`), damit
+ * der letzte Tipp auch der letzte Stand am Server ist.
+ *
+ * Die Zeile zeigt den letzten Tipp, solange gespeichert wird, sonst den Stand
+ * am Server. Scheitert ein Tipp, gilt wieder dieser - nie der vorige Tipp:
+ * Sonst ginge der Plan mit einer anderen Häufigkeit zur Person, als die Zeile
+ * zeigt (Prüfung O-002).
  */
 export function Wochenhaeufigkeit({ plan }: { plan: Plan }) {
   const queryClient = useQueryClient();
   const beschriftung = useId();
-  const [wert, setWert] = useState(plan.sessions_per_week ?? 0);
+  const schluessel = haeufigkeitSchluessel(plan.id);
   const speichern = useMutation({
-    scope: { id: `haeufigkeit-${plan.id}` },
-    mutationFn: (neu: number) => savePlan(plan.id, plan.title, neu > 0 ? neu : null),
-    onMutate: (neu) => {
-      const vorher = wert;
-      setWert(neu);
-      return { vorher };
-    },
-    onError: (_fehler, _neu, kontext) => {
-      if (kontext) setWert(kontext.vorher);
-    },
+    mutationKey: schluessel,
+    scope: kopfdatenScope(plan.id),
+    mutationFn: (neu: number) =>
+      speichereKopfdaten(queryClient, plan, { einheitenJeWoche: neu > 0 ? neu : null }),
+    // Fertig erst nach dem Nachladen: So springt die Zahl nicht kurz auf den
+    // alten Stand, und der nächste Aufruf in der Reihe liest den neuen.
     onSettled: () => queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL }),
   });
+  const laufend = useMutationState({
+    filters: { mutationKey: schluessel, status: 'pending' },
+    select: (mutation) => mutation.state.variables as number,
+  });
+  const wert = laufend.at(-1) ?? plan.sessions_per_week ?? 0;
 
   return (
     <div className="mt-6">

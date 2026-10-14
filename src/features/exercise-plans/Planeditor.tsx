@@ -22,7 +22,6 @@ import {
   deletePosition,
   discardPlan,
   movePosition,
-  savePlan,
   savePosition,
   verhaeltnisPfad,
   type Plan,
@@ -30,6 +29,7 @@ import {
 } from './api';
 import { Fassungen } from './Fassungen';
 import { schrittZeilen, standardTitel, vorigePosition } from './fassung';
+import { kopfdatenScope, speichereKopfdaten } from './kopfdaten';
 import {
   POSITIONEN_HOECHSTENS,
   fuegeHinzu,
@@ -124,6 +124,14 @@ export function Planeditor({
     fehler: string | null = null,
     hinweis: string | null = null,
   ) => setMeldung((bisher) => ({ nr: (bisher?.nr ?? 0) + 1, erfolg, fehler, hinweis }));
+
+  // Der Titel aus einer Vorlage - in derselben Reihe wie die Häufigkeit, damit
+  // keiner von beiden den anderen überschreibt (kopfdaten.ts).
+  const umbenennen = useMutation({
+    scope: kopfdatenScope(plan.id),
+    mutationFn: (titel: string) => speichereKopfdaten(queryClient, plan, { titel }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL }),
+  });
 
   /** Positionen in einem Zug, mit Fortschritt („2 von 5“); danach neu laden. */
   async function hinzufuegen(eingaben: PositionEingabe[]): Promise<Hinzufuegen> {
@@ -225,11 +233,10 @@ export function Planeditor({
     // ohne Person.
     if (ergebnis.hinzugefuegt > 0 && leer && standardTitel(plan)) {
       try {
-        await savePlan(plan.id, vorlage.name, plan.sessions_per_week);
+        await umbenennen.mutateAsync(vorlage.name);
       } catch {
         // Der Titel bleibt dann „Übungsplan“; die Übungen sind da.
       }
-      await queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL });
     }
     const satz = hinzugefuegtSatz(ergebnis, anzahl);
     if (ergebnis.fehler) melde(null, satz, nichtSatz(nicht));
@@ -552,7 +559,10 @@ function Kopfdaten({ plan, onFertig }: { plan: Plan; onFertig: () => void }) {
   const [titel, setTitel] = useState(plan.title);
   const [fehler, setFehler] = useState<string | undefined>();
   const speichern = useMutation({
-    mutationFn: () => savePlan(plan.id, titel, plan.sessions_per_week),
+    // In der Reihe mit der Häufigkeit; die nimmt er vom zuletzt gespeicherten
+    // Stand, nicht vom Öffnen des Fensters (kopfdaten.ts).
+    scope: kopfdatenScope(plan.id),
+    mutationFn: () => speichereKopfdaten(queryClient, plan, { titel }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL });
       onFertig();
@@ -616,6 +626,9 @@ function Zuweisen({
   const [fehler, setFehler] = useState<string | undefined>();
   const spaetestens = tagPlus(plan.today, LAUFZEIT_HOECHSTENS_TAGE);
   const zuweisen = useMutation({
+    // Wartet, bis der letzte Tipp auf die Häufigkeit gespeichert ist: Der Plan
+    // geht mit dem zur Person, was die Zeile zeigt (kopfdaten.ts).
+    scope: kopfdatenScope(plan.id),
     mutationFn: () => assignPlan(plan.id, bis),
     onSuccess: async () => {
       // Vor dem Neuladen: Die Planseite zeigt danach den zugewiesenen Plan

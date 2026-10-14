@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { focusManager } from '@tanstack/react-query';
+import { Route, Routes } from 'react-router-dom';
 import type * as Api from './api';
 import type * as BibliothekApi from '@/features/exercises/api';
 import { katalogeintrag } from '@/features/exercises/katalog';
@@ -277,13 +279,53 @@ export function plan(teil: Partial<Api.Plan> = {}): Api.Plan {
   };
 }
 
-/** Der Entwurf, mit den synthetischen Vorlagen oder ohne. */
+/**
+ * Der Entwurf, mit den synthetischen Vorlagen oder ohne - unter seiner
+ * Adresse wie in der Anwendung: Die Seite lädt den Plan unter der Kennung aus
+ * der Adresse, und Titel und Häufigkeit lesen ihn dort (kopfdaten.ts).
+ */
 function planseite(vorlagen: readonly Katalogvorlage[] = []) {
   return renderWithProviders(
     <VorlagenKontext.Provider value={vorlagen}>
-      <PlanPage />
+      <Routes>
+        <Route path="/patienten/:patientId/plaene/:planId" element={<PlanPage />} />
+        <Route path="*" element={<p>Andere Seite</p>} />
+      </Routes>
     </VorlagenKontext.Provider>,
+    '/patienten/pat1/plaene/p1',
   );
+}
+
+/** Ein Aufruf, den der Test selbst beendet - auf oder zu. */
+interface Tor {
+  versprechen: Promise<void>;
+  auf: () => void;
+  zu: (fehler: Error) => void;
+}
+
+function tor(): Tor {
+  let auf!: () => void;
+  let zu!: (fehler: Error) => void;
+  const versprechen = new Promise<void>((ja, nein) => {
+    auf = ja;
+    zu = nein;
+  });
+  return { versprechen, auf, zu };
+}
+
+/**
+ * Titel und Häufigkeit am Server nachgebaut: Gespeichertes kommt beim
+ * Nachladen zurück. Liegt ein Tor bereit, wartet der nächste Aufruf darauf;
+ * geht es zu, bleibt der Stand, wie er war.
+ */
+function kopfNachbau(start: Api.Plan = plan()) {
+  const server = { plan: start, tore: [] as Tor[] };
+  fetchPlan.mockImplementation(() => Promise.resolve(server.plan));
+  savePlan.mockImplementation(async (_id: string, titel: string, einheiten: number | null) => {
+    await server.tore.shift()?.versprechen;
+    server.plan = { ...server.plan, title: titel, sessions_per_week: einheiten };
+  });
+  return server;
 }
 
 beforeEach(() => {
@@ -583,6 +625,7 @@ describe('Planeditor: Entwurf als Arbeitsseite (UEB-004, Welle B)', () => {
 
   it('zeigt die Häufigkeit pro Woche im Entwurf und ändert sie mit je einem Tipp (Befund B9)', async () => {
     const user = userEvent.setup();
+    const server = kopfNachbau();
     planseite();
     const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
     const zeile = gruppe.closest('li')!;
@@ -590,36 +633,124 @@ describe('Planeditor: Entwurf als Arbeitsseite (UEB-004, Welle B)', () => {
     // Die Metazeile des Kopfes nennt sie auch.
     expect(screen.getByText(/Erika Beispiel · Übungsplan · 3-mal pro Woche/)).toBeInTheDocument();
     await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
-    expect(zeile).toHaveTextContent('4-mal pro Woche');
+    await waitFor(() => expect(zeile).toHaveTextContent('4-mal pro Woche'));
     await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Heimprogramm Knie', 4));
     expect(savePlan).toHaveBeenCalledTimes(1);
+    // Nach dem Nachladen sagen Zeile und Kopf dasselbe wie der Server.
+    expect(
+      await screen.findByText(/Erika Beispiel · Übungsplan · 4-mal pro Woche/),
+    ).toBeInTheDocument();
+    expect(zeile).toHaveTextContent('4-mal pro Woche');
+    expect(server.plan.sessions_per_week).toBe(4);
   });
 
   it('lässt die Häufigkeit ohne Angabe, bis die Fachperson eine wählt', async () => {
     const user = userEvent.setup();
-    fetchPlan.mockResolvedValue(plan({ sessions_per_week: null }));
+    const server = kopfNachbau(plan({ sessions_per_week: null }));
     planseite();
     const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
     expect(gruppe.closest('li')).toHaveTextContent('ohne Angabe');
     expect(within(gruppe).getByRole('button', { name: 'Häufigkeit: weniger' })).toBeDisabled();
     await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
-    expect(gruppe.closest('li')).toHaveTextContent('Einmal pro Woche');
+    await waitFor(() => expect(gruppe.closest('li')).toHaveTextContent('Einmal pro Woche'));
     await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Heimprogramm Knie', 1));
     await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: weniger' }));
     await waitFor(() => expect(savePlan).toHaveBeenLastCalledWith('p1', 'Heimprogramm Knie', null));
-    expect(gruppe.closest('li')).toHaveTextContent('ohne Angabe');
+    await waitFor(() => expect(gruppe.closest('li')).toHaveTextContent('ohne Angabe'));
+    expect(server.plan.sessions_per_week).toBeNull();
   });
 
   it('nimmt die Häufigkeit zurück, wenn das Speichern scheitert', async () => {
     const user = userEvent.setup();
-    savePlan.mockRejectedValueOnce(new Error('Bitte die Einheiten je Woche prüfen (1 bis 14).'));
+    const server = kopfNachbau();
+    const scheitert = tor();
+    server.tore.push(scheitert);
     planseite();
     const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
     await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
+    await waitFor(() => expect(gruppe.closest('li')).toHaveTextContent('4-mal pro Woche'));
+    scheitert.zu(new Error('Bitte die Einheiten je Woche prüfen (1 bis 14).'));
     expect(
       await screen.findByText('Bitte die Einheiten je Woche prüfen (1 bis 14).'),
     ).toBeInTheDocument();
+    await waitFor(() => expect(gruppe.closest('li')).toHaveTextContent('3-mal pro Woche'));
+  });
+
+  // Prüfung O-002: Bisher sprang die Zeile nach einem Fehler auf den vorigen
+  // Tipp zurück, nicht auf den Stand am Server.
+  it('zeigt nach zwei gescheiterten Tipps den gespeicherten Stand, nicht den vorigen Tipp', async () => {
+    const user = userEvent.setup();
+    const server = kopfNachbau();
+    const erster = tor();
+    const zweiter = tor();
+    server.tore.push(erster, zweiter);
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    const zeile = gruppe.closest('li')!;
+    const mehr = within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' });
+    await user.click(mehr);
+    await waitFor(() => expect(zeile).toHaveTextContent('4-mal pro Woche'));
+    await user.click(mehr);
+    await waitFor(() => expect(zeile).toHaveTextContent('5-mal pro Woche'));
+    // Der Reihe nach: Der zweite Tipp wartet, bis der erste fertig ist.
+    expect(savePlan).toHaveBeenCalledTimes(1);
+    expect(savePlan).toHaveBeenLastCalledWith('p1', 'Heimprogramm Knie', 4);
+
+    erster.zu(new Error('Der Plan konnte nicht gespeichert werden.'));
+    await waitFor(() => expect(savePlan).toHaveBeenCalledTimes(2));
+    expect(savePlan).toHaveBeenLastCalledWith('p1', 'Heimprogramm Knie', 5);
+    expect(zeile).toHaveTextContent('5-mal pro Woche');
+
+    zweiter.zu(new Error('Der Plan konnte nicht gespeichert werden.'));
+    expect(
+      await screen.findByText('Der Plan konnte nicht gespeichert werden.'),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(zeile).toHaveTextContent('3-mal pro Woche'));
+    expect(screen.getByText(/Erika Beispiel · Übungsplan · 3-mal pro Woche/)).toBeInTheDocument();
+    expect(server.plan.sessions_per_week).toBe(3);
+  });
+
+  it('zeigt nach gescheitertem ersten und gelungenem zweiten Tipp, was gespeichert ist', async () => {
+    const user = userEvent.setup();
+    const server = kopfNachbau();
+    const erster = tor();
+    const zweiter = tor();
+    server.tore.push(erster, zweiter);
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    const zeile = gruppe.closest('li')!;
+    const mehr = within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' });
+    await user.click(mehr);
+    await waitFor(() => expect(zeile).toHaveTextContent('4-mal pro Woche'));
+    await user.click(mehr);
+    await waitFor(() => expect(zeile).toHaveTextContent('5-mal pro Woche'));
+
+    erster.zu(new Error('Der Plan konnte nicht gespeichert werden.'));
+    await waitFor(() => expect(savePlan).toHaveBeenCalledTimes(2));
+    zweiter.auf();
+    await waitFor(() =>
+      expect(screen.getByText(/Erika Beispiel · Übungsplan · 5-mal pro Woche/)).toBeInTheDocument(),
+    );
+    expect(zeile).toHaveTextContent('5-mal pro Woche');
+    expect(server.plan.sessions_per_week).toBe(5);
+    expect(screen.queryByText('Der Plan konnte nicht gespeichert werden.')).toBeNull();
+  });
+
+  it('folgt dem Stand am Server, wenn sich die Häufigkeit anderswo ändert', async () => {
+    const server = kopfNachbau();
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
     expect(gruppe.closest('li')).toHaveTextContent('3-mal pro Woche');
+    // Eine Kollegin ändert sie; beim Zurückkommen in die Anwendung lädt die
+    // Seite den Plan neu.
+    server.plan = { ...server.plan, sessions_per_week: 2 };
+    try {
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+      await waitFor(() => expect(gruppe.closest('li')).toHaveTextContent('2-mal pro Woche'));
+    } finally {
+      focusManager.setFocused(undefined);
+    }
   });
 
   it('ändert den Titel im Fenster und lässt die Häufigkeit, wie sie ist', async () => {
@@ -633,6 +764,33 @@ describe('Planeditor: Entwurf als Arbeitsseite (UEB-004, Welle B)', () => {
     await user.type(feld, 'Knie, Woche 2');
     await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
     await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Knie, Woche 2', 3));
+  });
+
+  it('nimmt beim Titel die eben gewählte Häufigkeit, auch wenn sie noch gespeichert wird', async () => {
+    const user = userEvent.setup();
+    const server = kopfNachbau();
+    const langsam = tor();
+    server.tore.push(langsam);
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
+    await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Heimprogramm Knie', 4));
+
+    await user.click(screen.getByRole('button', { name: 'Titel ändern' }));
+    const fenster = screen.getByRole('dialog', { name: 'Titel ändern' });
+    const feld = within(fenster).getByLabelText('Titel *');
+    await user.clear(feld);
+    await user.type(feld, 'Knie, Woche 2');
+    await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
+    // Wartet auf die Häufigkeit, statt sie mit dem alten Stand zu überschreiben.
+    expect(savePlan).toHaveBeenCalledTimes(1);
+    langsam.auf();
+    await waitFor(() => expect(savePlan).toHaveBeenLastCalledWith('p1', 'Knie, Woche 2', 4));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(server.plan).toEqual(
+      expect.objectContaining({ title: 'Knie, Woche 2', sessions_per_week: 4 }),
+    );
+    expect(gruppe.closest('li')).toHaveTextContent('4-mal pro Woche');
   });
 
   it('zeigt einen Entwurf ohne Schreibrecht nur an (ANN-298)', async () => {
@@ -890,6 +1048,36 @@ describe('Aus Vorlage mit Vorschau (Welle B, Befund B9, ANN-537)', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('überschreibt beim Titel aus der Vorlage keine eben gewählte Häufigkeit', async () => {
+    const user = userEvent.setup();
+    addCatalogExercises.mockResolvedValue({
+      variants: { 'KN-03': 'k3-neu' },
+      imported: ['KN-03'],
+      conflicts: [],
+    });
+    const server = kopfNachbau(plan({ items: [], title: 'Übungsplan', sessions_per_week: null }));
+    const langsam = tor();
+    server.tore.push(langsam);
+    planseite(VORLAGEN);
+    // Erst die Häufigkeit - ihr Speichern dauert -, gleich danach die Vorlage.
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
+    await user.click(screen.getByRole('button', { name: /^Knie im Sitz/ }));
+    const vorschau = await screen.findByRole('dialog', { name: 'Knie im Sitz' });
+    await user.click(within(vorschau).getByRole('button', { name: '3 hinzufügen' }));
+    await waitFor(() => expect(savePosition).toHaveBeenCalledTimes(3));
+    // Der Titel wartet auf die Häufigkeit und nimmt sie mit.
+    expect(savePlan).toHaveBeenCalledTimes(1);
+    langsam.auf();
+    await waitFor(() => expect(savePlan).toHaveBeenLastCalledWith('p1', 'Knie im Sitz', 1));
+    expect(
+      await screen.findByText('3 Übungen hinzugefügt aus „Knie im Sitz“.'),
+    ).toBeInTheDocument();
+    expect(server.plan).toEqual(
+      expect.objectContaining({ title: 'Knie im Sitz', sessions_per_week: 1 }),
+    );
+  });
+
   it('wählt nicht vor, was schon im Plan steht, und öffnet die Liste mit Übungen über „Aus Vorlage“', async () => {
     const user = userEvent.setup();
     fetchPlan.mockResolvedValue(
@@ -984,6 +1172,32 @@ describe('Zuweisen und Schnappschuss (UEB-005)', () => {
     expect(within(fenster).getByText(/Danach lässt er sich nicht mehr ändern/)).toBeInTheDocument();
     await user.click(within(fenster).getByRole('button', { name: 'Zuweisen' }));
     await waitFor(() => expect(assignPlan).toHaveBeenCalledWith('p1', '2026-11-18'));
+  });
+
+  it('weist erst zu, wenn der letzte Tipp auf die Häufigkeit gespeichert ist', async () => {
+    const user = userEvent.setup();
+    const server = kopfNachbau();
+    const langsam = tor();
+    server.tore.push(langsam);
+    let beimZuweisen: number | null = null;
+    assignPlan.mockImplementation(() => {
+      beimZuweisen = server.plan.sessions_per_week;
+      return Promise.resolve();
+    });
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
+    await user.click(screen.getByRole('button', { name: 'Zuweisen' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Plan zuweisen' })).getByRole('button', {
+        name: 'Zuweisen',
+      }),
+    );
+    expect(assignPlan).not.toHaveBeenCalled();
+    langsam.auf();
+    await waitFor(() => expect(assignPlan).toHaveBeenCalledWith('p1', '2026-11-18'));
+    // Sonst ginge der Plan mit 3 statt 4 Einheiten zur Person.
+    expect(beimZuweisen).toBe(4);
   });
 
   it('bestätigt das Zuweisen und bietet das Blatt an - der Plan nützt auch ohne Plattform (Befund B9)', async () => {
