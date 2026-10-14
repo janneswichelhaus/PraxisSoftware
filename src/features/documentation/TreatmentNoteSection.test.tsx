@@ -125,11 +125,14 @@ describe('TreatmentNoteSection', () => {
     });
     rendern();
 
-    expect(
-      await screen.findByText(
-        'In der Abrechnung: Nachtrag und Korrektur erst nach dem Zurückholen in der Akte.',
-      ),
-    ).toBeInTheDocument();
+    // Ein Zustand statt eines Satzes, und der Weg zur Grundlage in der Akte.
+    expect(await screen.findByText('In der Abrechnung')).toBeInTheDocument();
+    const ziel = new URL(
+      screen.getByRole('link', { name: 'In der Akte zurückholen' }).getAttribute('href')!,
+      'http://x',
+    );
+    expect(ziel.pathname).toBe(`/patienten/${termin.patient_id}/verordnungen`);
+    expect(ziel.hash).toBe('#verordnung-88888888-8888-4888-8888-000000000004');
     expect(screen.queryByRole('link', { name: 'Nachtrag hinzufügen' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Korrigieren' })).toBeNull();
     // Den Verlauf lesen geht weiter.

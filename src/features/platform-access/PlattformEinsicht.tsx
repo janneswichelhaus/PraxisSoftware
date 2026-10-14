@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { tabTitel } from '@/app/tabtitel';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Textlink } from '@/components/ui/Textlink';
 import type { Plattformzugang } from '@/features/platform/api';
 import type { Einsichtsquelle } from '@/features/platform/einsicht';
@@ -15,6 +22,7 @@ import {
   einsichtskontextSchluessel,
   ladeEinsichtskontext,
   rueckwegAusDerEinsicht,
+  wegeAusDerEinsicht,
   type Einsichtskontext,
 } from './einsicht';
 
@@ -72,32 +80,33 @@ function Einsicht({ zugangId }: { zugangId: string }) {
     staleTime: 0,
   });
 
-  if (kontext.isPending) {
-    return (
-      <main className="max-w-formular mx-auto w-full px-5 py-10">
-        <LoadingState label="Die Einsicht wird geladen …" />
-      </main>
-    );
-  }
-  if (kontext.isError) {
-    return (
-      <main className="max-w-formular mx-auto w-full px-5 py-10">
-        {kontext.error instanceof EinsichtAbgewiesen ? (
-          <ErrorState title="Diese Einsicht ist nicht möglich." />
-        ) : (
-          <ErrorState
-            title="Die Einsicht konnte nicht geladen werden."
-            description={VERBINDUNG_PRUEFEN}
-            onErneut={() => void kontext.refetch()}
-          />
-        )}
+  // Laden und Fehler stehen ohne Leiste und ohne Plattform in einer Spalte;
+  // eine Abweisung des Servers ist endgültig - kein neuer Versuch, auch nicht
+  // über einem alten Stand.
+  return (
+    <Abfragezustand
+      abfrage={kontext}
+      laden="Die Einsicht wird geladen …"
+      fehler="Die Einsicht konnte nicht geladen werden."
+      endgueltig={{
+        wenn: (fehler) => fehler instanceof EinsichtAbgewiesen,
+        titel: 'Diese Einsicht ist nicht möglich.',
+      }}
+      ausweg={
         <Textlink alleinstehend to="/" className="mt-4">
           Zur Übersicht
         </Textlink>
-      </main>
-    );
-  }
-  return <Ansicht zugangId={zugangId} kontext={kontext.data} />;
+      }
+      rahmen={inEinerSpalte}
+    >
+      {(daten) => <Ansicht zugangId={zugangId} kontext={daten} />}
+    </Abfragezustand>
+  );
+}
+
+/** Laden und Fehler in einer Spalte mit `main`, ohne Leiste und ohne Plattform. */
+function inEinerSpalte(zustand: ReactNode) {
+  return <main className="max-w-formular mx-auto w-full px-5 py-8">{zustand}</main>;
 }
 
 function Ansicht({ zugangId, kontext }: { zugangId: string; kontext: Einsichtskontext }) {
@@ -125,7 +134,11 @@ function Ansicht({ zugangId, kontext }: { zugangId: string; kontext: Einsichtsko
     (funktion, argumente) => einsichtLesen(zugangId, funktion, argumente),
     [zugangId],
   );
-  const einsicht = useMemo(() => ({ zugangId, quelle }), [zugangId, quelle]);
+  // Was die Einsicht nicht öffnet, öffnet die Praxis an seinem Ort (ANN-527).
+  const einsicht = useMemo(
+    () => ({ zugangId, quelle, wege: wegeAusDerEinsicht(kontext) }),
+    [zugangId, quelle, kontext],
+  );
 
   // Der Tab trägt nie einen Namen (BEF-050); eine neue Seite beginnt oben.
   useEffect(() => {

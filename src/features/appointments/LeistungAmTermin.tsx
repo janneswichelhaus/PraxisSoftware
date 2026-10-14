@@ -106,7 +106,7 @@ export function LeistungAmTermin({
       {abgehakt ? (
         <StatusMark ton="positiv">Erbracht</StatusMark>
       ) : (
-        <StatusMark>Noch nicht abgehakt</StatusMark>
+        <StatusMark ton="warnung">Haken fehlt</StatusMark>
       )}
       {abgehakt && !dokumentiert ? (
         <Kleingedrucktes>Abrechenbar mit der festgeschriebenen Doku.</Kleingedrucktes>
@@ -127,8 +127,6 @@ export function LeistungAmTermin({
         <FreigabeVorschlag
           treatmentBasisId={daten.treatment_basis_id}
           patientId={appointment.patient_id}
-          erbracht={daten.basis_performed ?? null}
-          termine={daten.basis_appointment_count}
         />
       ) : null}
     </div>

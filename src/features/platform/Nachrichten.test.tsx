@@ -39,6 +39,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Nachrichten, NeueNachricht, NachrichtDetail } = await import('./Nachrichten');
+const { PraxiswegeKontext } = await import('./einsicht');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -436,6 +437,29 @@ describe('Foto und Video an der Nachricht (KOM-007, ADR-017 Abschnitt L)', () =>
     einwilligungSchreiben.mockResolvedValue(undefined);
     URL.createObjectURL = vi.fn(() => 'blob:test');
     URL.revokeObjectURL = vi.fn();
+  });
+
+  it('die Person sieht ihre Knöpfe, nie den Weg der Einsicht zur Rückfrage (E-001)', async () => {
+    ladeNachrichten.mockResolvedValue(
+      daten({
+        can_attach: true,
+        attachment_consent: 'granted',
+        attachment_limit: 3,
+        attachment_max_seconds: 30,
+        messages: [MIT_VIDEO],
+      }),
+    );
+    renderWithProviders(
+      <PraxiswegeKontext.Provider value={{ datei: null, rueckfrage: (id) => `/rueckfragen/${id}` }}>
+        <Routes>
+          <Route path="/p/nachrichten/:nachrichtId" element={<NachrichtDetail zugang={ZUGANG} />} />
+        </Routes>
+      </PraxiswegeKontext.Provider>,
+      `/p/nachrichten/${MIT_VIDEO.id}`,
+    );
+    const abschnitt = await screen.findByRole('region', { name: 'Fotos und Videos' });
+    expect(within(abschnitt).getByRole('button', { name: 'Ansehen' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /In den Rückfragen/ })).not.toBeInTheDocument();
   });
 
   it('zeigt jeden Anhang mit Löschdatum, ohne Vorschaubild (Punkte 40, 65)', async () => {

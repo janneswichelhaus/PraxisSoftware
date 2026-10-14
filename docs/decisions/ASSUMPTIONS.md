@@ -5240,9 +5240,9 @@ Datenschutz · entschieden (Jannes) · 2026-10-14 · Jannes (Befund B1) · Prüf
 
 **Ablösung.** ersetzt ANN-032 in der Frage „Fristanker“
 
-**Annahme.** Die zehn Jahre laufen ab dem spätesten Tag aus abgehaktem, dokumentiertem, abgerechnetem oder als nicht angetroffen vermerktem Behandlungstermin, erfasster Leistung und ausdrücklichem Abschluss. Steht ein Behandlungstermin bevor, läuft keine Frist; ohne Behandlung auch nicht.
+**Annahme.** Die zehn Jahre laufen ab dem spätesten Tag aus abgehaktem, dokumentiertem, abgerechnetem oder nicht angetroffenem Behandlungstermin (verlängert), erfasster Leistung und Abschluss. Ein künftiger Behandlungstermin hält die Frist an; ohne Behandlung läuft keine, „Offen“ legt die Akte nach sechs Monaten vor.
 
-**Begründung.** Jannes: Die Frist braucht ein Datum auch ohne Abschluss. Rechnungen halten über ihre eigene Frist (ADR-008 Punkt 5); §630f zählt ab der Behandlung.
+**Begründung.** Jannes: Die Frist braucht ein Datum ohne Abschluss. Rechnungen halten über ihre eigene Frist (ADR-008 Punkt 5); §630f zählt ab der Behandlung.
 
 **Anker.** `app.patient_retention_anchor` in `supabase/migrations/20261112110000_a_002_fristanker_aus_letzter_behandlung.sql`.
 
@@ -5414,7 +5414,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
-**Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Satz nennt den Ort in der Praxis.
+**Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Link führt an den Ort in der Praxis (Reiter der Akte, Rückfrage).
 
 **Begründung.** Öffnen hieße ein neuer Leseweg in den Speicher über den Zugang der Person, mit eigener Regel und eigenem Nachweis. In Akte und Rückfragen öffnet die Praxis dieselbe Datei mit ihrem Nachweis (ADR-010).
 

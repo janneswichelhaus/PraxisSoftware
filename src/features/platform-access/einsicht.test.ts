@@ -6,6 +6,7 @@ import {
   istEinsichtspfad,
   ladeEinsichtskontext,
   rueckwegAusDerEinsicht,
+  wegeAusDerEinsicht,
 } from './einsicht';
 
 /**
@@ -18,6 +19,7 @@ vi.mock('@/lib/supabase', () => ({ getSupabase: () => ({ rpc }) }));
 
 const ZUGANG = 'cafecafe-cafe-4afe-8afe-000000000002';
 const ERIKA = '66666666-6666-4666-8666-000000000002';
+const RUECKFRAGE = 'dddddddd-dddd-4ddd-8ddd-000000000002';
 
 const kontext = {
   access_id: ZUGANG,
@@ -69,6 +71,27 @@ describe('Einsicht der Praxis (E-001)', () => {
     expect(rueckwegAusDerEinsicht({ ...geladen, relationship_kind: 'training' }).ziel).toBe(
       `/training/${ERIKA}`,
     );
+  });
+
+  it('führt dorthin, wo die Praxis öffnet, was die Einsicht nicht öffnet (ANN-527)', async () => {
+    rpc.mockResolvedValue({ data: [kontext], error: null, status: 200 });
+    const behandlung = wegeAusDerEinsicht(await ladeEinsichtskontext(ZUGANG));
+    // Eine Datei im Reiter der Akte, in dem sie steht (AKTE-007).
+    expect(behandlung.datei?.('arztbrief')).toBe(`/patienten/${ERIKA}/doku`);
+    expect(behandlung.datei?.('verordnungsscan')).toBe(`/patienten/${ERIKA}/verordnungen`);
+    expect(behandlung.datei?.('vertrag')).toBe(`/patienten/${ERIKA}/stammdaten#anmeldebogen`);
+    expect(behandlung.datei?.('unbekannte_art')).toBe(`/patienten/${ERIKA}/stammdaten`);
+    // Eine Aufnahme an ihrer Rückfrage, im Bereich des Verhältnisses (DSN-001 D1).
+    expect(behandlung.rueckfrage(RUECKFRAGE)).toBe(`/rueckfragen/${RUECKFRAGE}`);
+
+    rpc.mockResolvedValue({
+      data: [{ ...kontext, relationship_kind: 'training' }],
+      error: null,
+      status: 200,
+    });
+    const training = wegeAusDerEinsicht(await ladeEinsichtskontext(ZUGANG));
+    expect(training.datei).toBeNull();
+    expect(training.rueckfrage(RUECKFRAGE)).toBe(`/training/rueckfragen/${RUECKFRAGE}`);
   });
 
   it('unterscheidet Abweisung und Netzfehler beim Kontext', async () => {

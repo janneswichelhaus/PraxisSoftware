@@ -81,6 +81,8 @@ const PLAN_ERIKA = 'aeaeaeae-aeae-4eae-8eae-000000000001';
 const TAGE_ERIKA = [2, 4];
 const RUECKFRAGE_ERIKA = 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001';
 const UNBEKANNT = '0b0b0b0b-0b0b-4b0b-8b0b-0b0b0b0b0b0b';
+/** Eine ausgestellte Behandlungsrechnung Erikas: Die Einsicht zeigt sie wie Erika (Zweitreview E). */
+const RECHNUNG_ERIKA = 'ffffffff-ffff-4fff-8fff-0000000000e1';
 
 interface Vorbereitet {
   wunsch: string;
@@ -164,6 +166,51 @@ async function vorbereiten(): Promise<Vorbereitet> {
     users.plattformErika,
     'select public.set_platform_exercise_days($1::uuid, $2::uuid, $3::integer[])',
     [platformAccesses.erikaBehandlung, PLAN_ERIKA, TAGE_ERIKA],
+  );
+  await asPostgres(
+    `insert into public.invoices
+       (id, organization_id, patient_id, training_relationship_id, service_area, status, period_month,
+        invoice_number, issued_on, issued_at, issued_by, due_on, total_cents, tax_total_cents, currency,
+        snapshot, created_by)
+     values ($1, $2, $3, null, 'therapy', 'issued', '2026-09-01', 'RG-2026-0101',
+             '2026-09-25', now(), $4, current_date + 10, 14000, 0, 'EUR', $5::jsonb, $4)`,
+    [
+      RECHNUNG_ERIKA,
+      organizationId,
+      patients.erika,
+      users.office,
+      JSON.stringify({
+        schema_version: 5,
+        period_month: '2026-09-01',
+        service_period: { from: '2026-09-02', to: '2026-09-23' },
+        currency: 'EUR',
+        issuer: { legal_name: 'Test Praxis Tuebingen' },
+        recipient: { kind: 'self', name: 'Erika Beispiel' },
+        patient: { name: 'Erika Beispiel', date_of_birth: null },
+        treatment_bases: [],
+        items: [
+          {
+            performed_on: '2026-09-02',
+            code: 'KG',
+            label: 'Krankengymnastik',
+            item_kind: 'treatment',
+            quantity: 1,
+            unit_price_cents: 14000,
+            line_total_cents: 14000,
+            currency: 'EUR',
+            tax_treatment: 'exempt_healthcare',
+            tax_rate_permille: 0,
+          },
+        ],
+        tax_groups: [],
+        totals: { total_cents: 14000, tax_total_cents: 0 },
+      }),
+    ],
+  );
+  await asPostgres(
+    `insert into public.payments (organization_id, invoice_id, direction, amount_cents, paid_on, method, currency, created_by)
+     values ($1, $2, 'incoming', 4000, current_date, 'bank_transfer', 'EUR', $3)`,
+    [organizationId, RECHNUNG_ERIKA, users.office],
   );
   return { wunsch: wunsch.rows[0]!.id, gewohnheit: gewohnheit.rows[0]!.id, abo: abo.rows[0]!.id };
 }
@@ -489,13 +536,36 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
     ] as const) {
       it(`liefert für jede Projektion der Liste dasselbe wie der Person (${name})`, async () => {
         for (const funktion of LISTE.filter((f) => f !== 'platform_context')) {
-          const argumente = funktion === 'platform_invoice' ? { p_invoice_id: UNBEKANNT } : {};
-          const person = await alsPerson(konto, zugang, funktion, argumente);
-          const einsicht = await inDerEinsicht(users.ownerTherapist, zugang, funktion, argumente);
-          expect(einsicht, funktion).toEqual(ohneUebungstage(funktion, person));
+          // Eine echte Rechnung und eine unbekannte Kennung (Zweitreview E).
+          for (const rechnung of funktion === 'platform_invoice'
+            ? [RECHNUNG_ERIKA, UNBEKANNT]
+            : [null]) {
+            const argumente = rechnung ? { p_invoice_id: rechnung } : {};
+            const person = await alsPerson(konto, zugang, funktion, argumente);
+            const einsicht = await inDerEinsicht(users.ownerTherapist, zugang, funktion, argumente);
+            expect(einsicht, `${funktion} ${rechnung ?? ''}`).toEqual(
+              ohneUebungstage(funktion, person),
+            );
+          }
         }
       });
     }
+
+    it('zeigt Erikas ausgestellte Rechnung in der Einsicht wie bei ihr', async () => {
+      const argumente = { p_invoice_id: RECHNUNG_ERIKA };
+      const blatt = (await inDerEinsicht(
+        users.ownerTherapist,
+        platformAccesses.erikaBehandlung,
+        'platform_invoice',
+        argumente,
+      )) as { invoice_number?: string } | null;
+      expect(blatt).not.toBeNull();
+      expect(JSON.stringify(blatt)).toContain('RG-2026-0101');
+      // Am Zugang einer anderen Person ist sie nicht da.
+      expect(
+        await inDerEinsicht(users.ownerTherapist, MAX_ZUGANG, 'platform_invoice', argumente),
+      ).toBeNull();
+    });
 
     it('zeigt, was die Person sieht: Nachrichten als „Sie“, Fähigkeiten wie bei ihr', async () => {
       const nachrichten = (await inDerEinsicht(
@@ -927,7 +997,7 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
 
     it('gibt den Zugang nur für owner frei und nur für den eigenen Zugang', async () => {
       const lesbar = `select count(*)::int as n from app.platform_readable_access($1::uuid)`;
-      const pruefen = async (konto: string, zugang: string) =>
+      const pruefen = async (konto: string, zugang: string, abgefragt: string = zugang) =>
         sitzung(async (client) => {
           await client.query('begin');
           await client.query("select set_config('request.jwt.claims', $1, true)", [
@@ -936,7 +1006,7 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
           await client.query("select set_config('app.platform_preview_access', $1, true)", [
             zugang,
           ]);
-          const { rows } = await client.query<{ n: number }>(lesbar, [zugang]);
+          const { rows } = await client.query<{ n: number }>(lesbar, [abgefragt]);
           const lesend = await client.query<{ v: string }>(
             "select current_setting('transaction_read_only') as v",
           );
@@ -952,13 +1022,21 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
       expect(await pruefen(users.office, E)).toEqual({ lesbar: false, lesend: 'off' });
       expect(await pruefen(users.therapist, E)).toEqual({ lesbar: false, lesend: 'off' });
       expect(await pruefen(FREMDE_ORGANISATION.owner, E)).toEqual({ lesbar: false, lesend: 'off' });
+      // Frei ist genau der gesetzte Zugang: nicht Erikas Training (anderer
+      // Leistungsbereich), nicht der Zugang einer anderen Person (Zweitreview E).
+      for (const anderer of [platformAccesses.erikaTraining, MAX_ZUGANG]) {
+        expect(await pruefen(users.ownerTherapist, E, anderer)).toEqual({
+          lesbar: false,
+          lesend: 'off',
+        });
+      }
     });
 
     it('gibt auch den Weg nach der Lesefrist nur owner und nur am eigenen Zugang frei', async () => {
       // app.platform_own_access_after_reading: Widerrufen nach der Lesefrist
       // (D2, ANN-261) - mit derselben Freigabe wie der Wächter.
       const nachDerLesefrist = 'select app.platform_own_access_after_reading($1::uuid) as frei';
-      const pruefen = async (konto: string, zugang: string) =>
+      const pruefen = async (konto: string, zugang: string, abgefragt: string = zugang) =>
         sitzung(async (client) => {
           await client.query('begin');
           await client.query("select set_config('request.jwt.claims', $1, true)", [
@@ -967,7 +1045,7 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
           await client.query("select set_config('app.platform_preview_access', $1, true)", [
             zugang,
           ]);
-          const { rows } = await client.query<{ frei: boolean }>(nachDerLesefrist, [zugang]);
+          const { rows } = await client.query<{ frei: boolean }>(nachDerLesefrist, [abgefragt]);
           const lesend = await client.query<{ v: string }>(
             "select current_setting('transaction_read_only') as v",
           );
@@ -982,6 +1060,12 @@ describe('Einsicht der Praxisinhaber:in (E-001)', () => {
       });
       expect(await pruefen(users.office, E)).toEqual({ frei: false, lesend: 'off' });
       expect(await pruefen(FREMDE_ORGANISATION.owner, E)).toEqual({ frei: false, lesend: 'off' });
+      for (const anderer of [platformAccesses.erikaTraining, MAX_ZUGANG]) {
+        expect(await pruefen(users.ownerTherapist, E, anderer)).toEqual({
+          frei: false,
+          lesend: 'off',
+        });
+      }
     });
   });
 

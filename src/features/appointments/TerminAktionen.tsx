@@ -324,33 +324,48 @@ function ZustandZeilen({ appointment }: { appointment: Appointment }) {
 }
 
 /**
- * Unter den Zeilen der Weg zurück: am abgehakten Termin „Haken zurücknehmen“
- * - seit B4 jederzeit, auch nach dem Festschreiben -, am nicht angetroffenen
- * „Termin wieder öffnen“.
+ * Am Ende der Weg zurück: am abgehakten Termin „Haken zurücknehmen“ - seit B4
+ * jederzeit, auch nach dem Festschreiben -, am nicht angetroffenen „Termin
+ * wieder öffnen“. Leise und mit Rückfrage (Design-Review): Der Haken nimmt
+ * die Leistungen des Termins mit. Steht die Verordnung in der Abrechnung
+ * (`gesperrt`), gibt es ihn nicht - der Server sperrt dann ohnehin (ANN-515).
  */
 function WiederOeffnen({
   appointment,
   darfWiederOeffnen,
+  gesperrt,
   melden,
 }: {
   appointment: Appointment;
   darfWiederOeffnen: boolean;
+  gesperrt: boolean;
   melden: Melden;
 }) {
-  if (!darfWiederOeffnen) return null;
+  const queryClient = useQueryClient();
   const haken = appointment.status !== 'no_show';
+  const mutation = useMutation({
+    mutationFn: () => reopenAppointment(appointment.id, appointment.updated_at),
+    onSuccess: () => {
+      // Der Kalender führt den Termin sonst weiter im alten Status.
+      nachladen(queryClient, ['appointment', appointment.id], ['appointments']);
+      melden(haken ? 'Haken zurückgenommen.' : 'Termin wieder geöffnet.');
+    },
+  });
+  if (!darfWiederOeffnen || (haken && gesperrt)) return null;
   return (
-    <div className="mt-3 flex">
-      <StatusAktion
-        appointment={appointment}
-        aktion={reopenAppointment}
-        beschriftung={haken ? 'Haken zurücknehmen' : 'Termin wieder öffnen'}
-        laufend={haken ? 'Wird zurückgenommen …' : 'Wird geöffnet …'}
-        erfolg={haken ? 'Haken zurückgenommen.' : 'Termin wieder geöffnet.'}
-        variant="secondary"
-        melden={melden}
-      />
-    </div>
+    <Rueckfrage
+      ausloeser={haken ? 'Haken zurücknehmen' : 'Termin wieder öffnen'}
+      ausloeserVariante="quiet"
+      ausloeserGroesse="kompakt"
+      bestaetigen={haken ? 'Ja, zurücknehmen' : 'Ja, wieder öffnen'}
+      bestaetigenLaeuft={haken ? 'Wird zurückgenommen …' : 'Wird geöffnet …'}
+      fehler={mutation.isError ? mutation.error.message : undefined}
+      onBestaetigen={() => mutation.mutateAsync()}
+    >
+      {haken
+        ? 'Der Termin gilt dann als nicht erbracht; seine Leistung fällt weg.'
+        : 'Der Vermerk „nicht angetroffen“ fällt weg.'}
+    </Rueckfrage>
   );
 }
 
@@ -991,6 +1006,8 @@ function TerminAktionen({
               appointmentId={appointment.id}
               stand={appointment.updated_at}
               variant={darfDokumentieren ? 'secondary' : 'primary'}
+              // Als Hauptknopf am Telefon in voller Breite (Grundsatz 1).
+              className={darfDokumentieren ? '' : 'w-full sm:w-auto'}
               text="Abhaken"
               onAbgeschlossen={() =>
                 melden(darfDokumentieren ? 'Termin abgehakt. Doku offen.' : 'Termin abgehakt.')
@@ -1032,6 +1049,9 @@ function TerminAktionen({
             appointmentId={appointment.id}
             stand={appointment.updated_at}
             variant="primary"
+            // Der häufigste Vorgang nach dem Festschreiben: am Telefon in
+            // voller Breite (Design-Review, Grundsatz 1).
+            className="w-full sm:w-auto"
             text="Abhaken"
             onAbgeschlossen={() => melden('Termin abgehakt.')}
             onFehler={setAbschlussFehler}
@@ -1133,13 +1153,6 @@ function TerminAktionen({
           </div>
         ) : null}
 
-        {istEreignis ? null : (
-          <WiederOeffnen
-            appointment={appointment}
-            darfWiederOeffnen={darfWiederOeffnen}
-            melden={melden}
-          />
-        )}
         {darfVerzichten ? <GebuehrVerzicht appointment={appointment} melden={melden} /> : null}
 
         {/* Am Ereignis bleibt die Karte des Zustands (Absage, Wiederöffnen). */}
@@ -1167,6 +1180,15 @@ function TerminAktionen({
             Folgetermin anlegen
           </ButtonLink>
         ) : null}
+
+        {istEreignis ? null : (
+          <WiederOeffnen
+            appointment={appointment}
+            darfWiederOeffnen={darfWiederOeffnen}
+            gesperrt={Boolean(lage.data?.basis_released_at)}
+            melden={melden}
+          />
+        )}
       </div>
 
       {/* Nachrücken (PRX-004): Ein abgesagter Behandlungstermin in der Zukunft

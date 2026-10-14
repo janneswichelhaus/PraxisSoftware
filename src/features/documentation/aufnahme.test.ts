@@ -163,6 +163,31 @@ describe('useAufnahme', () => {
     expect(mikrofon.spuren[0]!.beendet).toBe(true);
   });
 
+  it('beginnt nicht, wenn die Seite verborgen wurde, während das Mikrofon öffnete', async () => {
+    mikrofon.halteAn();
+    const hook = aufnehmen();
+    let laeuft: Promise<void> = Promise.resolve();
+    act(() => {
+      laeuft = hook.result.current.starten();
+    });
+    const sichtbar = Object.getOwnPropertyDescriptor(document, 'visibilityState');
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    try {
+      await act(async () => {
+        mikrofon.gibFrei();
+        await laeuft;
+      });
+    } finally {
+      if (sichtbar) Object.defineProperty(document, 'visibilityState', sichtbar);
+      else delete (document as { visibilityState?: unknown }).visibilityState;
+    }
+    expect(Testrecorder.alle).toEqual([]);
+    expect(hook.result.current.zustand).toBe('bereit');
+    expect(mikrofon.spuren[0]!.beendet).toBe(true);
+    expect(hook.fertig).toEqual([]);
+    expect(hook.fehler).toEqual([]);
+  });
+
   it('hält an, wenn das Mikrofon wegfällt', async () => {
     const hook = aufnehmen();
     await starten(hook);

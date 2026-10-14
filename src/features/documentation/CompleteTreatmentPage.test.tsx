@@ -424,7 +424,7 @@ describe('CompleteTreatmentPage', () => {
       expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
 
       expect(await screen.findByText('2. von 10 Terminen · KG, MT')).toBeInTheDocument();
-      expect(screen.getByText('Noch nicht abgehakt')).toBeInTheDocument();
+      expect(screen.getByText('Haken fehlt')).toBeInTheDocument();
       // ANN-475 ist ersetzt: kein Häkchen je Heilmittel, kein Bestätigen.
       expect(screen.queryByRole('checkbox')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Heilmittel bestätigen' })).toBeNull();
@@ -464,7 +464,8 @@ describe('CompleteTreatmentPage', () => {
       releaseTreatmentBasisForBilling.mockResolvedValue(undefined);
       rendern(['therapist'], '?zurueck=%2F');
 
-      expect(await screen.findByText(/10 von 10 Terminen erbracht und dokumentiert/)).toBeVisible();
+      // Den Stand nennt die Zeile; der Vorschlag ist nur der Knopf.
+      expect(await screen.findByText(/^10\. von 10 Terminen/)).toBeVisible();
       expect(screen.getByText('Erbracht')).toBeInTheDocument();
       const stellen = screen.getByRole('button', { name: 'In die Abrechnung stellen' });
       // Sekundär: Der eine Hauptknopf bleibt „Fertig“.
@@ -1299,8 +1300,29 @@ describe('CompleteTreatmentPage', () => {
         expect(screen.getByRole('button', { name: 'Fertig' })).toHaveClass('bg-accent');
         expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
-        expect(screen.getByRole('button', { name: 'Abbrechen' })).toBeEnabled();
+        // Verwerfen nur mit Rückfrage; „Fertig“ steht allein (Praxis-Review).
+        expect(screen.getByRole('button', { name: 'Verwerfen' })).toBeEnabled();
+        expect(screen.queryByRole('button', { name: 'Abbrechen' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
+      });
+
+      it('verwirft eine laufende Aufnahme erst nach der Rückfrage', async () => {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        rendern();
+        await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+        await screen.findByText('0:00');
+
+        // Der Fehltipp: Die Rückfrage geht auf, die Aufnahme läuft weiter.
+        await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+        const frage = await screen.findByRole('button', { name: 'Ja, verwerfen' });
+        await act(() => vi.advanceTimersByTimeAsync(2100));
+        expect(screen.getByText('0:02')).toBeInTheDocument();
+        expect(aufnahme.mikrofon.spuren[0]!.beendet).toBe(false);
+
+        await user.click(frage);
+        expect(await screen.findByRole('button', { name: 'Sprechen' })).toBeInTheDocument();
+        expect(aufnahme.mikrofon.spuren[0]!.beendet).toBe(true);
+        expect(diktatAufbereiten).not.toHaveBeenCalled();
       });
 
       // Eigene Frist: Tippen mit vorgestellter Uhr dauert auf einem geteilten
@@ -1463,6 +1485,32 @@ describe('CompleteTreatmentPage', () => {
       expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
       await user.click(screen.getByRole('button', { name: 'Erneut senden' }));
 
+      expect(await screen.findByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
+      const [erste, zweite] = diktatAufbereiten.mock.calls as [
+        [{ audio: Blob }],
+        [{ audio: Blob }],
+      ];
+      expect(zweite[0].audio).toBe(erste[0].audio);
+    });
+
+    it('behält beim Abbrechen der Aufbereitung die Aufnahme für „Erneut senden“', async () => {
+      let antworten: (wert: unknown) => void = () => undefined;
+      diktatAufbereiten.mockImplementationOnce(() => new Promise((fertig) => (antworten = fertig)));
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+      await user.click(await screen.findByRole('button', { name: 'Fertig' }));
+      await screen.findByText('Wird aufbereitet …');
+
+      await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+      expect(
+        await screen.findByText('Aufbereitung angehalten. Die Aufnahme ist noch da.'),
+      ).toBeInTheDocument();
+      // Die verspätete Antwort gehört zu niemandem mehr.
+      antworten({ ok: true, vorschlag: VORSCHLAG });
+      expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Erneut senden' }));
       expect(await screen.findByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
       const [erste, zweite] = diktatAufbereiten.mock.calls as [
         [{ audio: Blob }],

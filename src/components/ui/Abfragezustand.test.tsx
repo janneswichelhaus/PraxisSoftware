@@ -79,3 +79,75 @@ describe('Abfragezustand (Design-Fundament, ANN-406)', () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+/** Eine Abweisung des Servers - kein Netzfehler. */
+class Abgewiesen extends Error {}
+
+/** Eine Seite ohne Rahmen der Anwendung, etwa die Einsicht der Praxis (E-001). */
+function Vollbild({ zustand }: { zustand: Abfrage<string> }) {
+  return (
+    <Abfragezustand
+      abfrage={zustand}
+      laden="Die Einsicht wird geladen …"
+      fehler="Die Einsicht konnte nicht geladen werden."
+      endgueltig={{
+        wenn: (fehler) => fehler instanceof Abgewiesen,
+        titel: 'Diese Einsicht ist nicht möglich.',
+      }}
+      ausweg={<a href="/">Zur Übersicht</a>}
+      rahmen={(inhalt) => <main data-testid="rahmen">{inhalt}</main>}
+    >
+      {(daten) => <section aria-label="Inhalt">{daten}</section>}
+    </Abfragezustand>
+  );
+}
+
+describe('Abfragezustand ohne Rahmen der Anwendung (E-001)', () => {
+  it('hüllt das Laden ein, ohne Ausweg', () => {
+    renderWithProviders(<Vollbild zustand={abfrage({ isPending: true })} />);
+    expect(screen.getByTestId('rahmen')).toContainElement(screen.getByRole('status'));
+    expect(screen.queryByRole('link', { name: 'Zur Übersicht' })).toBeNull();
+  });
+
+  it('nennt einen endgültigen Fehler mit eigenem Titel, ohne Verbindungssatz und neuen Versuch', () => {
+    renderWithProviders(
+      <Vollbild zustand={abfrage<string>({ isError: true, error: new Abgewiesen() })} />,
+    );
+    const rahmen = screen.getByTestId('rahmen');
+    const meldung = screen.getByRole('alert');
+    expect(rahmen).toContainElement(meldung);
+    expect(meldung).toHaveTextContent('Diese Einsicht ist nicht möglich.');
+    expect(meldung).not.toHaveTextContent(VERBINDUNG_PRUEFEN);
+    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
+    expect(rahmen).toContainElement(screen.getByRole('link', { name: 'Zur Übersicht' }));
+  });
+
+  it('lässt nach einer Abweisung keinen alten Stand stehen', () => {
+    renderWithProviders(
+      <Vollbild
+        zustand={abfrage({ data: 'Erika Beispiel', isError: true, error: new Abgewiesen() })}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Diese Einsicht ist nicht möglich.');
+    expect(screen.queryByRole('region', { name: 'Inhalt' })).toBeNull();
+    expect(screen.queryByText(STAND_VERALTET)).toBeNull();
+  });
+
+  it('bietet beim Netzfehler den neuen Versuch und den Ausweg', async () => {
+    const user = userEvent.setup();
+    const zustand = abfrage<string>({ isError: true, error: new Error('Failed to fetch') });
+    renderWithProviders(<Vollbild zustand={zustand} />);
+    const rahmen = screen.getByTestId('rahmen');
+    expect(screen.getByRole('alert')).toHaveTextContent(VERBINDUNG_PRUEFEN);
+    expect(rahmen).toContainElement(screen.getByRole('link', { name: 'Zur Übersicht' }));
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(zustand.refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('zeigt den Inhalt ohne Rahmen und ohne Ausweg', () => {
+    renderWithProviders(<Vollbild zustand={abfrage({ data: 'Erika Beispiel' })} />);
+    expect(screen.getByRole('region', { name: 'Inhalt' })).toHaveTextContent('Erika Beispiel');
+    expect(screen.queryByTestId('rahmen')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Zur Übersicht' })).toBeNull();
+  });
+});

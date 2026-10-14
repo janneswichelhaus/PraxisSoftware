@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Button } from '@/components/ui/Button';
 import { Filterchips } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Filterleiste } from '@/components/ui/Filterleiste';
@@ -70,20 +71,31 @@ export function Patientenauswahl({
   suchbeschriftung = 'Patient:in suchen',
   leer,
   begriffMerken = false,
+  wahlenNur,
+  anlegen,
 }: {
   /** Wohin eine Zeile führt. */
   ziel: (patientId: string) => string;
   suchbeschriftung?: string;
   /** Leerzustand ohne jede Akte. */
-  leer: { titel: string; beschreibung?: string };
+  leer: { titel: string; beschreibung?: string; aktion?: ReactNode };
   /** Den Suchbegriff für den Rückweg aus der Akte merken (nur die Kartei). */
   begriffMerken?: boolean;
+  /** Nur diese Auswahl anbieten - beim Termin anlegen „Termine fehlen“. */
+  wahlenNur?: readonly Zeigen[];
+  /**
+   * Der Weg zur Anlage, wenn die Gesuchte fehlt: steht unter „Keine Treffer“
+   * - der häufigste Grund dafür ist eine neue Person (UX-012).
+   */
+  anlegen?: ReactNode;
 }) {
   const [parameter, setParameter] = useSearchParams();
   const navigate = useNavigate();
   const [begriff, setBegriff] = useState(() => (begriffMerken ? gemerkterSuchbegriff() : ''));
   const sortierung = leseSortierung(parameter.get('sort'));
   const zeigen = leseZeigen(parameter.get('zeigen'));
+  // Eine Auswahl aus der Adresse, die hier nicht angeboten wird, filtert nicht.
+  const angeboten = zeigen && (!wahlenNur || wahlenNur.includes(zeigen)) ? zeigen : null;
   const alterBegriff = parameter.has('q');
 
   useEffect(() => {
@@ -116,23 +128,26 @@ export function Patientenauswahl({
   const auswahlzeile = useRef<HTMLDivElement>(null);
   const hatWahlen = (data ?? []).length > 0;
   useEffect(() => {
-    if (!zeigen || !hatWahlen) return;
+    if (!angeboten || !hatWahlen) return;
     auswahlzeile.current
       ?.querySelector<HTMLElement>('[aria-pressed="true"]')
       ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
-  }, [zeigen, hatWahlen]);
+  }, [angeboten, hatWahlen]);
 
   const sichtbar = useMemo(
     () =>
       sortieren(
         (data ?? []).filter(
-          (eintrag) => passtZuZeigen(eintrag, zeigen) && passtZurSuche(eintrag, begriff),
+          (eintrag) => passtZuZeigen(eintrag, angeboten) && passtZurSuche(eintrag, begriff),
         ),
         sortierung,
       ),
-    [data, begriff, sortierung, zeigen],
+    [data, begriff, sortierung, angeboten],
   );
-  const wahlen = useMemo(() => zeigenWahlen(data ?? []), [data]);
+  const wahlen = useMemo(
+    () => zeigenWahlen(data ?? [], angeboten, wahlenNur),
+    [data, angeboten, wahlenNur],
+  );
   const heute = new Date();
 
   function setzen(schluessel: 'sort' | 'zeigen', wert: string | null) {
@@ -154,7 +169,7 @@ export function Patientenauswahl({
     if (begriff.trim() && einzige && weitere.length === 0) void navigate(ziel(einzige.id));
   }
 
-  const eingeschraenkt = begriff.trim() !== '' || zeigen !== null;
+  const eingeschraenkt = begriff.trim() !== '' || angeboten !== null;
 
   return (
     <>
@@ -175,8 +190,11 @@ export function Patientenauswahl({
             ? `${sichtbar.length} von ${data.length}`
             : undefined
         }
-      />
-      <div className="mb-4 flex flex-col gap-3">
+        // Sortieren und Auswahl stehen in der Leiste: am Telefon hinter
+        // „Filter (n)“, ab 640 px offen (DESIGN.md, Seitentyp Liste).
+        gesetzt={angeboten ? 1 : 0}
+        onZuruecksetzen={() => setzen('zeigen', null)}
+      >
         <Segment<Sortierung>
           beschriftung="Sortieren"
           wahlen={SORTIERUNGEN}
@@ -192,12 +210,12 @@ export function Patientenauswahl({
                 wert: wahl.wert,
                 text: `${wahl.text} (${wahl.anzahl})`,
               }))}
-              gewaehlt={zeigen ? [zeigen] : []}
+              gewaehlt={angeboten ? [angeboten] : []}
               onAendern={(gewaehlt) => setzen('zeigen', gewaehlt[0] ?? null)}
             />
           </div>
         ) : null}
-      </div>
+      </Filterleiste>
 
       <Abfragezustand
         abfrage={abfrage}
@@ -208,7 +226,28 @@ export function Patientenauswahl({
       >
         {() =>
           sichtbar.length === 0 ? (
-            <EmptyState inKarte title="Keine Treffer" description="Suche oder Auswahl anpassen." />
+            <EmptyState
+              inKarte
+              title="Keine Treffer"
+              description={angeboten || anlegen ? undefined : 'Suche anpassen.'}
+              aktion={
+                angeboten || anlegen ? (
+                  <>
+                    {angeboten ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        groesse="kompakt"
+                        onClick={() => setzen('zeigen', null)}
+                      >
+                        Auswahl aufheben
+                      </Button>
+                    ) : null}
+                    {anlegen}
+                  </>
+                ) : undefined
+              }
+            />
           ) : (
             <ListRows>
               {sichtbar.map((eintrag) => {

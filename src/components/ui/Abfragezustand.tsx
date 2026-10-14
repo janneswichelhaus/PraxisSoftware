@@ -6,6 +6,8 @@ import { VERBINDUNG_PRUEFEN } from './abfrageTexte';
 /** Was der Baustein von einer Abfrage (`useQuery`) braucht. */
 export interface Abfrage<T> {
   data: T | undefined;
+  /** Der Fehler selbst - gebraucht nur für `endgueltig`. */
+  error?: unknown;
   isPending: boolean;
   isError: boolean;
   isFetching: boolean;
@@ -27,17 +29,28 @@ export interface Abfrage<T> {
  *     „Der angezeigte Stand konnte nicht aktualisiert werden …“ mit „Erneut
  *     versuchen“ (`NachladeHinweis`) - nie ein Formular, das mitten in der
  *     Eingabe verschwindet.
+ *   * **Endgültiger Fehler** (`endgueltig`, etwa eine Abweisung des Servers):
+ *     ein eigener Titel, ohne Satz zur Verbindung und ohne „Erneut versuchen“ -
+ *     ein neuer Versuch behebt ihn nicht. Er ersetzt auch einen alten Stand:
+ *     Was der Server abweist, bleibt nicht stehen.
  *   * **Leer:** trifft `leer.wenn` zu, ein `EmptyState` (in einer Karte, wenn
  *     `inKarte`) mit dem nächsten Schritt.
  *   * Sonst `children(daten)`.
+ *
+ * Für eine Seite ohne Rahmen der Anwendung, deren Inhalt seine Hülle selbst
+ * mitbringt (die Einsicht der Praxis, E-001): `rahmen` hüllt Laden und Fehler
+ * ein, `ausweg` steht unter jeder Fehlermeldung.
  */
 export function Abfragezustand<T>({
   abfrage,
   laden,
   fehler,
+  endgueltig,
   leer,
   inKarte = false,
   kacheln = 0,
+  ausweg,
+  rahmen = ohneRahmen,
   children,
 }: {
   abfrage: Abfrage<T>;
@@ -45,6 +58,11 @@ export function Abfragezustand<T>({
   laden: string;
   /** Titel des Fehlers, etwa „Die Patientenliste konnte nicht geladen werden.“ */
   fehler: string;
+  /** Ein Fehler, den kein neuer Versuch behebt, und sein Titel. */
+  endgueltig?: {
+    wenn: (fehler: unknown) => boolean;
+    titel: string;
+  };
   leer?: {
     wenn: (daten: T) => boolean;
     titel: string;
@@ -53,15 +71,34 @@ export function Abfragezustand<T>({
   };
   inKarte?: boolean;
   kacheln?: number;
+  /** Der Weg hinaus unter jeder Fehlermeldung, etwa „Zur Übersicht“. */
+  ausweg?: ReactNode;
+  /** Die Hülle um Laden und Fehler - nicht um den Inhalt. */
+  rahmen?: (zustand: ReactNode) => ReactNode;
   children: (daten: T) => ReactNode;
 }) {
-  const { data, isPending, isError, isFetching } = abfrage;
+  const { data, error, isPending, isError, isFetching } = abfrage;
+  const alsFehler = (meldung: ReactNode) =>
+    rahmen(
+      ausweg === undefined ? (
+        meldung
+      ) : (
+        <>
+          {meldung}
+          {ausweg}
+        </>
+      ),
+    );
+
+  if (isError && endgueltig?.wenn(error)) return alsFehler(<ErrorState title={endgueltig.titel} />);
 
   if (data === undefined) {
-    if (isPending) return <LoadingState label={laden} inKarte={inKarte} kacheln={kacheln} />;
+    if (isPending) {
+      return rahmen(<LoadingState label={laden} inKarte={inKarte} kacheln={kacheln} />);
+    }
     if (isError) {
-      return (
-        <ErrorState title={fehler} description={VERBINDUNG_PRUEFEN} onErneut={abfrage.refetch} />
+      return alsFehler(
+        <ErrorState title={fehler} description={VERBINDUNG_PRUEFEN} onErneut={abfrage.refetch} />,
       );
     }
     return null;
@@ -88,4 +125,9 @@ export function Abfragezustand<T>({
       )}
     </>
   );
+}
+
+/** Ohne eigene Hülle stehen Laden und Fehler, wo der Inhalt stünde. */
+function ohneRahmen(zustand: ReactNode): ReactNode {
+  return zustand;
 }

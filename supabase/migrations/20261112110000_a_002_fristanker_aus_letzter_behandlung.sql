@@ -26,7 +26,9 @@
 --     Behandlungstermin haelt die Akte immer.
 --   * apply_retention und patient_retention_status rechnen mit dem Anker
 --     (juengste Fassungen, sonst wortgleich).
---   * Die Erinnerung „Versorgung abschliessen?“ entfaellt.
+--   * Die Erinnerung „Versorgung abschliessen?“ gilt nur noch fuer Akten ohne
+--     jede Behandlung: Nur sie haben keinen Anker (Zweitreview A, Befund 2;
+--     ADR-008 Punkt 3).
 -- =============================================================================
 
 -- ANN-511: der Fristanker der Patientenakte - eine Stelle.
@@ -676,8 +678,70 @@ end;
 $function$;
 
 -- -----------------------------------------------------------------------------
--- Die Erinnerung „Versorgung abschliessen?“ entfaellt: Der Anker braucht den
--- Vorgang nicht mehr. Statt ihrer zeigt die Uebersicht offene Grundlagen ohne
--- weitere Termine und solche, die abzurechnen sind (20261112150000_a_006).
+-- Die Erinnerung „Versorgung abschliessen?“ nur noch fuer Akten ohne jede
+-- Behandlung. Mit einer Behandlung setzt sie den Anker von selbst; offene
+-- Grundlagen zeigt die Uebersicht (20261112150000_a_006). Ohne Behandlung
+-- aber gibt es keinen Anker und damit keine Frist - die Akte stuende sonst
+-- unbegrenzt und unbemerkt (Zweitreview A, Befund 2; ADR-008 Punkt 3,
+-- Art. 5 Abs. 1 lit. e DSGVO). Der Abschluss in den Stammdaten setzt ihn.
+-- Gleiche Signatur und Rechte wie in 20260929210000_prx_016_reminders.sql.
 -- -----------------------------------------------------------------------------
-drop function if exists public.list_care_without_conclusion();
+create or replace function public.list_care_without_conclusion()
+returns table (
+  patient_id           uuid,
+  patient_given_name   text,
+  patient_family_name  text,
+  last_appointment_at  timestamptz,
+  patient_created_at   timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_org uuid;
+begin
+  if auth.uid() is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+  if not app.can_conclude_patient_care() then
+    perform app.record_denied_read(auth.uid(), 'patient_directory.read', 'not allowed to read care without conclusion');
+    return;
+  end if;
+  v_org := app.current_organization_id();
+  if v_org is null then
+    raise exception 'not allowed to read care without conclusion' using errcode = '42501';
+  end if;
+
+  return query
+  select pa.id,
+         pe.given_name,
+         pe.family_name,
+         letzter.zeit,
+         pa.created_at
+  from public.patients pa
+  join public.persons pe on pe.id = pa.person_id
+  cross join lateral (
+    select max(a.starts_at) as zeit
+    from public.appointments a
+    where a.patient_id = pa.id
+      and a.organization_id = v_org
+      and a.kind = 'therapy'
+      and a.status <> 'cancelled'
+  ) letzter
+  where pa.organization_id = v_org
+    -- Ohne jede Behandlung, Leistung und ohne Abschluss: kein Anker (ANN-511).
+    and app.patient_retention_anchor(pa.id) is null
+    and not app.patient_has_upcoming_care(pa.id)
+    -- Der letzte Termin liegt lange zurueck; ohne Termin zaehlt die Anlage.
+    and coalesce(letzter.zeit, pa.created_at) < now() - app.reminder_care_idle()
+  order by coalesce(letzter.zeit, pa.created_at) asc, pe.family_name, pa.id;
+end;
+$$;
+
+comment on function public.list_care_without_conclusion() is
+  'B1 (ANN-511, Zweitreview A): Akten ohne jede Behandlung, Leistung und ohne Abschluss - also ohne Fristanker -, seit sechs Monaten ohne Termin und ohne kommenden. Fragt nur; der Abschluss in den Stammdaten setzt den Anker (ADR-008 Punkt 3). Rollen, die abschliessen duerfen; ein abgewiesener Versuch wird als patient_directory.read protokolliert.';
+
+revoke all on function public.list_care_without_conclusion() from public, anon;
+grant execute on function public.list_care_without_conclusion() to authenticated;
