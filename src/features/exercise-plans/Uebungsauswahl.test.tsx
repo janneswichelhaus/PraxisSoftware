@@ -194,5 +194,15 @@ describe('Uebungsauswahl', () => {
       expect(screen.getByText('Nicht alle Übungen konnten geladen werden.')).toBeInTheDocument();
       expect(screen.getAllByRole('checkbox')).toHaveLength(3);
     });
+
+    // B9: Ein langer Fachname bricht um, statt in den Haken zu laufen; ob er
+    // bei 375 px passt, misst plaene.spec.ts im Browser.
+    it('lässt einen langen Fachnamen umbrechen', () => {
+      const BT01 = katalogeintrag('BT-01')!;
+      zeigen(BIBLIOTHEK, new Set(), undefined, [BT01]);
+      const titel = screen.getByText('Fußpumpe (Dorsal-/Plantarflexion)');
+      expect(titel).toHaveClass('wrap-anywhere');
+      expect(titel.parentElement).toHaveClass('min-w-0');
+    });
   });
 });

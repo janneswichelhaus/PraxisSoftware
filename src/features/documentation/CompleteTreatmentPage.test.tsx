@@ -894,12 +894,43 @@ describe('CompleteTreatmentPage', () => {
       );
     });
 
+    // B5: „+ Befund“ steht vorn, gleich nach „Wie zuletzt“ - die eigenen
+    // Bausteine sind beliebig viele und schoben ihn bei 375 px aus dem Bild.
+    it('stellt „+ Befund“ zwischen „Wie zuletzt“ und die eigenen Bausteine (B5)', async () => {
+      rendern();
+
+      const bausteine = await screen.findByRole('group', { name: 'Textbausteine' });
+      const zuletzt = screen.getByRole('button', { name: 'Wie zuletzt' });
+      const befund = screen.getByRole('button', { name: /^\+ Befund/ });
+      // Eine Zeile, in dieser Reihenfolge.
+      expect(befund.parentElement).toBe(bausteine.parentElement);
+      expect(zuletzt.compareDocumentPosition(befund)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(befund.compareDocumentPosition(bausteine)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it('stellt ohne eigene Bausteine den Link hinter „+ Befund“ (B5)', async () => {
+      fetchTextSnippets.mockResolvedValue([]);
+      rendern();
+
+      const link = await screen.findByRole('link', { name: 'Eigene Bausteine anlegen' });
+      const befund = screen.getByRole('button', { name: /^\+ Befund/ });
+      expect(
+        screen.getByRole('button', { name: 'Wie zuletzt' }).compareDocumentPosition(befund),
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      expect(befund.compareDocumentPosition(link)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
     it('blockiert die Dokumentation nicht, wenn die Bausteine nicht laden', async () => {
       fetchTextSnippets.mockRejectedValue(new Error('kaputt'));
       rendern();
 
       expect(await screen.findByLabelText('Eintrag zur Behandlung')).toBeInTheDocument();
       expect(screen.queryByRole('group', { name: 'Textbausteine' })).toBeNull();
+      // Ohne Bausteine endet die Zeile mit „+ Befund“, nicht mit einem Trenner.
+      const befund = screen.getByRole('button', { name: /^\+ Befund/ });
+      await waitFor(() => expect(screen.queryByTestId('bausteine-platzhalter')).toBeNull());
+      expect(befund.nextElementSibling).toHaveClass('last:hidden');
+      expect(befund.nextElementSibling?.nextElementSibling).toBeNull();
     });
   });
   /**

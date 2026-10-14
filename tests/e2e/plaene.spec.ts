@@ -230,6 +230,8 @@ class Nachbau {
   bibliothek = bibliothek();
   /** Was aus dem Katalog übernommen wurde, in der Reihenfolge der Aufrufe. */
   uebernommen: string[] = [];
+  /** Der Plattformzugang der Person: keiner oder aktiv (Bestätigung, B9). */
+  plattform: 'keiner' | 'aktiv' = 'keiner';
   plaene = new Map<string, Argumente & { items: Argumente[] }>();
   zaehler = 0;
 
@@ -385,6 +387,28 @@ class Nachbau {
         p.assigned_by_name = 'Anna Beispiel';
         return null;
       }
+      case 'get_platform_access': {
+        // Wie der Server: ohne Zugang eine leere Zeile (POR-002).
+        const aktiv = this.plattform === 'aktiv';
+        return [
+          {
+            id: aktiv ? 'bbbbbbbb-0000-4000-8000-000000000001' : null,
+            status: aktiv ? 'active' : null,
+            created_at: aktiv ? `${HEUTE}T07:00:00Z` : null,
+            activated_at: aktiv ? `${HEUTE}T07:05:00Z` : null,
+            locked_at: null,
+            revoked_at: null,
+            revoked_reason: null,
+            invitation_id: null,
+            invitation_purpose: null,
+            invitation_channel: null,
+            invitation_expires_at: null,
+            invitation_sent_at: null,
+            relationship_email: null,
+            ended_at: null,
+          },
+        ];
+      }
       default:
         throw new Error(`Der Nachbau kennt ${name} nicht.`);
     }
@@ -451,10 +475,14 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
     await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
     // Befund B9: Die Bestätigung führt gleich zum Planblatt - auch ohne
-    // Plattform; der Link im Satz ist ein Tippziel von 44 px.
+    // Plattform; der Link im Satz ist ein Tippziel von 44 px. Ohne Zugang
+    // sagt sie, dass das Blatt der Weg zur Person ist.
     expect(
       await hoehe(page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' })),
     ).toBeGreaterThanOrEqual(44);
+    await expect(page.getByRole('status').filter({ hasText: 'Zugewiesen bis' })).toContainText(
+      'Ohne Plattformzugang: Als PDF oder drucken mitgeben.',
+    );
     expect(await ueberlaeuft(page)).toBe(false);
 
     const plan = [...nachbau.plaene.values()][0]!;
@@ -490,6 +518,10 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     await blatt.getByRole('searchbox', { name: 'Übung suchen' }).fill(fehlt.alltagsname);
     const haken = blatt.getByRole('checkbox', { name: fehlt.name });
     await expect(haken).toHaveAccessibleName(/ungeprüft/);
+    // B9: Der lange Fachname („Fußpumpe (Dorsal-/Plantarflexion)“) bricht bei
+    // 375 px um, statt in den Haken zu laufen.
+    const titel = blatt.getByText(fehlt.name, { exact: true });
+    expect(await titel.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
     await haken.check();
     await blatt.getByRole('button', { name: '1 hinzufügen' }).click();
     await expect(page.getByText('1 Übung hinzugefügt.')).toBeVisible();
@@ -526,6 +558,8 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
       test.slow();
       const nachbau = await mitNachbau(page);
       nachbau.bibliothek.can_manage = pflegt;
+      // Einmal mit, einmal ohne Plattformzugang der Person (B9).
+      nachbau.plattform = pflegt ? 'aktiv' : 'keiner';
       const anzahl = pflegt ? 6 : 5;
       const z = new Zaehler();
       await page.goto(`${PRUEFSEITE}?seite=planbau`);
@@ -556,6 +590,12 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
       await expect(
         page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' }),
       ).toBeVisible();
+      // Die Bestätigung sagt, ob die Person den Plan auf der Plattform sieht.
+      await expect(page.getByRole('status').filter({ hasText: 'Zugewiesen bis' })).toContainText(
+        pflegt
+          ? 'Erika sieht ihn auf der Plattform. Als PDF oder drucken'
+          : 'Ohne Plattformzugang: Als PDF oder drucken mitgeben.',
+      );
 
       const plan = [...nachbau.plaene.values()][0]!;
       expect(plan.status).toBe('assigned');

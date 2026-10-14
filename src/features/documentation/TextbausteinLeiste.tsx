@@ -71,7 +71,7 @@ export function TextbausteinLeiste({
   const bausteine: TextSnippet[] = data.filter((baustein) => !baustein.shared);
 
   if (bausteine.length === 0) {
-    // In der Chipzeile vor „+ Befund“; 44 px hoch.
+    // In der Chipzeile hinter „+ Befund“ (B5); 44 px hoch.
     const link = (
       <Textlink
         alleinstehend

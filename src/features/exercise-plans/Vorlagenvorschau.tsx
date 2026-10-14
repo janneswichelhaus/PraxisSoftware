@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
 import { Vorschaubild } from '@/features/exercises/Vorschaubild';
@@ -17,8 +18,8 @@ export type Vorlagenwahl = Extract<Vorlagenzeile, { art: 'waehlbar' }>;
  * zeigt ihre Übungen als Zeilen mit Haken, alle vorgewählt außer dem, was
  * schon im Plan steht; „n hinzufügen“ legt die gewählten mit der Dosierung
  * der Vorlage an. Fehlt eine Übung der Praxis, kommt sie für owner still mit
- * (`addCatalogExercises`); für alle anderen steht sie ohne Haken mit „nicht in
- * der Bibliothek“ da (ANN-293), eine archivierte mit „archiviert“.
+ * (`addCatalogExercises`); für alle anderen steht sie ohne Haken mit
+ * „! nicht in der Bibliothek“ da (ANN-293), eine archivierte mit „archiviert“.
  *
  * Bekommt Vorlage und Zeilen - keine Person, keine Diagnose (ADR-006
  * Punkt 10). Die Vorauswahl ist der Inhalt der Vorlage, für jede Person
@@ -78,17 +79,23 @@ export function Vorlagenvorschau({
               imPlan={imPlan.has(zeile.variante.id)}
               onUmschalten={() => umschalten(zeile.schluessel)}
             />
-          ) : (
+          ) : zeile.art === 'archiviert' ? (
             <ListRow
               key={zeile.schluessel}
               bild={<Vorschaubild bild={null} name={zeile.name} />}
-              titel={zeile.name}
-              // Der längere Grund als Nebenzeile: Als Badge ließe er bei
-              // 375 px dem Namen keinen Platz.
-              {...(zeile.art === 'archiviert'
-                ? { status: <Badge ton="warnung">archiviert</Badge> }
-                : { meta: 'nicht in der Bibliothek' })}
+              titel={<span className="wrap-anywhere">{zeile.name}</span>}
+              status={<Badge ton="warnung">archiviert</Badge>}
               gedaempft
+            />
+          ) : (
+            // Fehlt der Bibliothek: Zeichen und Wort (DESIGN.md Regel 5) als
+            // Nebenzeile - als Badge ließe der längere Grund bei 375 px dem
+            // Namen keinen Platz. Nicht gedämpft: Das meint Erledigtes (B9).
+            <ListRow
+              key={zeile.schluessel}
+              bild={<Vorschaubild bild={null} name={zeile.name} />}
+              titel={<span className="wrap-anywhere">{zeile.name}</span>}
+              meta={<StatusMark ton="warnung">nicht in der Bibliothek</StatusMark>}
             />
           ),
         )}

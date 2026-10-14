@@ -146,6 +146,10 @@ for (const breite of [375, 1280]) {
     // Unter dem Kicker, über dem Namen.
     expect(f.y).toBeGreaterThanOrEqual(k.y + k.height);
     expect(f.y + f.height).toBeLessThanOrEqual(n.y);
+    if (breite < 640) {
+      // Am Telefon auf der Mitte der Lücke zwischen Kicker und Name (B6).
+      expect(Math.abs(f.y + f.height / 2 - (k.y + k.height + n.y) / 2)).toBeLessThanOrEqual(1);
+    }
     // Erika ist seit 09:30 fertig: Der Balken beginnt jetzt wie die Kachel
     // (ANN-196) - 09:45 bis 10:00 bei 9 Minuten Fahrt.
     const zahlen = karte.getByText('≈ 9 min Rad · 6 min Puffer');

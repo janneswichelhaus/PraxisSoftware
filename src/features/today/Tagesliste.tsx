@@ -211,7 +211,9 @@ export function Tageskarte({
           den Zeilen, ohne Ziel. ANN-532: Nennt die Kachel „Abfahrt" denselben
           Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen;
           die Karte wird dadurch nicht höher, und der Hauptknopf bleibt über
-          der Tableiste. */}
+          der Tableiste. Die Lage ist so hoch wie diese Lücke (`h-3.5` wie
+          `mt-3.5` der Namenszeile) und stellt den Balken auf ihre Mitte -
+          statt eines Pixelversatzes. */}
       {weg ? (
         <div
           className={`pointer-events-none ${
@@ -220,7 +222,9 @@ export function Tageskarte({
         >
           <div
             className={
-              weg.kachelNenntIhn ? 'max-sm:absolute max-sm:inset-x-0 max-sm:-top-[3px]' : ''
+              weg.kachelNenntIhn
+                ? 'max-sm:absolute max-sm:inset-x-0 max-sm:top-0 max-sm:flex max-sm:h-3.5 max-sm:flex-col max-sm:justify-center'
+                : ''
             }
           >
             <TravelBar

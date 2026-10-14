@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { focusManager } from '@tanstack/react-query';
 import { Route, Routes } from 'react-router-dom';
@@ -8,6 +8,7 @@ import type * as BibliothekApi from '@/features/exercises/api';
 import { katalogeintrag } from '@/features/exercises/katalog';
 import type { Katalogeintrag, Katalogvorlage } from '@/features/exercises/katalog/typen';
 import type * as KatalogLaden from '@/features/exercises/katalogLaden';
+import type * as ZugangApi from '@/features/platform-access/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { dosierungAlltag, dosierungFachlich, dosierungKurz, unterschiede } from './dosierung';
 import { OHNE_KATALOG } from '@/features/exercises/testdaten';
@@ -33,6 +34,7 @@ const saveUebung = vi.fn();
 const saveVariante = vi.fn();
 const addCatalogExercises = vi.fn();
 const ladeKatalog = vi.fn();
+const getPlatformAccess = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof Api>();
@@ -63,6 +65,16 @@ vi.mock('@/features/exercises/katalogLaden', async (importOriginal) => {
   return {
     ...actual,
     ladeKatalog: () => ladeKatalog() as Promise<readonly Katalogeintrag[]>,
+  };
+});
+
+// Der Plattformzugang der Person - für die Bestätigung nach dem Zuweisen (B9).
+vi.mock('@/features/platform-access/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof ZugangApi>();
+  return {
+    ...actual,
+    getPlatformAccess: (...a: unknown[]) =>
+      getPlatformAccess(...a) as Promise<ZugangApi.Plattformzugang | null>,
   };
 });
 
@@ -348,9 +360,12 @@ beforeEach(() => {
     saveVariante,
     addCatalogExercises,
     ladeKatalog,
+    getPlatformAccess,
   ]) {
     f.mockReset();
   }
+  // Ohne Zugang liefert der Server eine leere Zeile; `null` steht für dasselbe.
+  getPlatformAccess.mockResolvedValue(null);
   ladeKatalog.mockResolvedValue(
     ['KN-01', 'KN-02', 'KN-03', 'KN-04', 'HU-01'].map((k) => katalogeintrag(k)!),
   );
@@ -1080,7 +1095,16 @@ describe('Aus Vorlage mit Vorschau (Welle B, Befund B9, ANN-537)', () => {
     const vorschau = await screen.findByRole('dialog', { name: 'Knie im Sitz' });
     const fehlt = within(vorschau).getByText(KN03.name).closest('li')!;
     expect(within(fehlt).queryByRole('checkbox')).toBeNull();
-    expect(within(fehlt).getByText('nicht in der Bibliothek')).toBeInTheDocument();
+    // Zeichen und Wort als Nebenzeile (DESIGN.md Regel 5), kein Abzeichen;
+    // nicht gedämpft - das meint Erledigtes (B9).
+    const grund = within(fehlt).getByText('nicht in der Bibliothek');
+    expect(grund).toHaveClass('text-warnung');
+    expect(grund).toHaveTextContent(/^!/);
+    expect(within(fehlt).getByText(KN03.name).parentElement).toHaveClass(
+      'text-ink',
+      'font-semibold',
+    );
+    expect(within(fehlt).getByText(KN03.name).parentElement).not.toHaveClass('text-ink-muted');
     expect(
       within(vorschau).getByText(
         'Was nicht in der Bibliothek steht, übernimmt die Praxisinhaber:in aus dem Katalog.',
@@ -1243,7 +1267,8 @@ describe('Zuweisen und Schnappschuss (UEB-005)', () => {
     expect(beimZuweisen).toBe(4);
   });
 
-  it('bestätigt das Zuweisen und bietet das Blatt an - der Plan nützt auch ohne Plattform (Befund B9)', async () => {
+  /** Zuweisen bis zum 18.11. und die Bestätigung danach. */
+  async function zuweisenUndBestaetigung(): Promise<HTMLElement> {
     const user = userEvent.setup();
     fetchPlan.mockResolvedValueOnce(plan()).mockResolvedValue(
       plan({
@@ -1264,12 +1289,64 @@ describe('Zuweisen und Schnappschuss (UEB-005)', () => {
     );
     const meldung = (await screen.findByText(/Zugewiesen bis 18\.11\.2026\./)).closest(
       '[role="status"]',
-    )!;
+    );
     expect(meldung).not.toBeNull();
-    expect(
-      within(meldung as HTMLElement).getByRole('link', { name: 'Als PDF oder drucken' }),
-    ).toHaveAttribute('href', '/patienten/pat1/plaene/p1/blatt');
+    return meldung as HTMLElement;
+  }
+
+  it('bestätigt das Zuweisen und bietet das Blatt an - der Plan nützt auch ohne Plattform (Befund B9)', async () => {
+    const meldung = await zuweisenUndBestaetigung();
+    // Ohne Plattformzugang ist das Blatt der Weg zur Person (Praxis-Review B9).
+    await waitFor(() =>
+      expect(meldung).toHaveTextContent(
+        'Zugewiesen bis 18.11.2026. Ohne Plattformzugang: Als PDF oder drucken mitgeben.',
+      ),
+    );
+    expect(within(meldung).getByRole('link', { name: 'Als PDF oder drucken' })).toHaveAttribute(
+      'href',
+      '/patienten/pat1/plaene/p1/blatt',
+    );
+    // Derselbe Zugang wie im Abschnitt „Plattform“ der Akte.
+    expect(getPlatformAccess).toHaveBeenCalledWith('treatment', 'pat1');
     expect(screen.getByText('Fassung 1 · Stand 07.10.2026 · Anna Beispiel')).toBeInTheDocument();
+  });
+
+  it('sagt nach dem Zuweisen, dass die Person den Plan auf der Plattform sieht (B9)', async () => {
+    getPlatformAccess.mockResolvedValue({
+      id: '11111111-1111-4111-8111-000000000001',
+      status: 'active',
+      created_at: '2026-09-01T08:00:00Z',
+      activated_at: '2026-09-02T08:00:00Z',
+      locked_at: null,
+      revoked_at: null,
+      revoked_reason: null,
+      invitation_id: null,
+      invitation_purpose: null,
+      invitation_channel: null,
+      invitation_expires_at: null,
+      invitation_sent_at: null,
+      relationship_email: null,
+      ended_at: null,
+    } satisfies ZugangApi.Plattformzugang);
+    const meldung = await zuweisenUndBestaetigung();
+    await waitFor(() =>
+      expect(meldung).toHaveTextContent(
+        'Zugewiesen bis 18.11.2026. Erika sieht ihn auf der Plattform. Als PDF oder drucken',
+      ),
+    );
+    expect(meldung).not.toHaveTextContent('Ohne Plattformzugang');
+    // Das Blatt bleibt ein Weg, etwa zum Ausdrucken.
+    expect(within(meldung).getByRole('link', { name: 'Als PDF oder drucken' })).toBeInTheDocument();
+  });
+
+  it('bleibt beim Weg zum Blatt, wenn der Zugang nicht zu laden ist (B9)', async () => {
+    getPlatformAccess.mockRejectedValue(new Error('Failed to fetch'));
+    const meldung = await zuweisenUndBestaetigung();
+    await waitFor(() => expect(getPlatformAccess).toHaveBeenCalled());
+    // Die Ablehnung ist verarbeitet (ohne erneuten Versuch) - es bleibt beim Blatt.
+    await act(() => new Promise<void>((fertig) => setTimeout(fertig, 50)));
+    expect(meldung).toHaveTextContent('Zugewiesen bis 18.11.2026. Als PDF oder drucken');
+    expect(meldung).not.toHaveTextContent(/Plattform/);
   });
 
   it('zeigt die Bestätigung nur nach dem eigenen Zuweisen, nicht beim Öffnen', async () => {
@@ -1284,6 +1361,8 @@ describe('Zuweisen und Schnappschuss (UEB-005)', () => {
     planseite();
     expect(await screen.findByRole('link', { name: 'Als PDF oder drucken' })).toBeInTheDocument();
     expect(screen.queryByText(/Zugewiesen bis/)).toBeNull();
+    // Den Zugang fragt die Seite erst für die Bestätigung.
+    expect(getPlatformAccess).not.toHaveBeenCalled();
   });
 
   it('zeigt den zugewiesenen Plan ohne Bearbeitung, fachlich und in Alltagssprache', async () => {

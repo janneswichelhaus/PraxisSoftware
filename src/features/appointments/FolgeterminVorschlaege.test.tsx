@@ -476,29 +476,113 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
   });
 
   // Zweitreview F2 (ANN-534): Sieht die Person ihre Termine auf der
-  // Plattform, sagt „Rückgängig“ den Termin als Praxis ab - sie sieht die
-  // Absage, nichts verschwindet still.
-  it('sagt den Folgetermin ab, wenn die Person ihn auf der Plattform sieht', async () => {
-    const { AufDerPlattformSichtbar } =
-      await vi.importActual<typeof FolgeterminApi>('./folgetermin-api');
-    undoAppointmentCreation.mockRejectedValue(new AufDerPlattformSichtbar());
-    cancelAppointment.mockResolvedValue(undefined);
-    const user = userEvent.setup();
-    rendern();
-    const [erste] = await zeilen(3);
-    await user.click(erste!);
-    await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
+  // Plattform, lässt sich der Termin nur als Praxis absagen - sie sieht die
+  // Absage, nichts verschwindet still. B8: Die Seite fragt erst, an der
+  // Stelle von „Rückgängig“ (wie `Rueckfrage`), und sagt erst auf „Termin
+  // absagen“ ab.
+  describe('wenn die Person den Folgetermin auf der Plattform sieht (B8)', () => {
+    beforeEach(async () => {
+      const { AufDerPlattformSichtbar } =
+        await vi.importActual<typeof FolgeterminApi>('./folgetermin-api');
+      undoAppointmentCreation.mockRejectedValue(new AufDerPlattformSichtbar());
+      cancelAppointment.mockReset();
+      cancelAppointment.mockResolvedValue(undefined);
+    });
 
-    expect(
-      await screen.findByText(
-        'Folgetermin abgesagt – die Person sieht ihn auf der Plattform als abgesagt.',
-      ),
-    ).toBeInTheDocument();
-    expect(cancelAppointment).toHaveBeenCalledWith(
-      'neu-1',
-      '2026-10-14T07:25:00.123456+00:00',
-      'practice_request',
-    );
+    /** Folgetermin anlegen und „Rückgängig“ tippen - bis die Rückfrage steht. */
+    async function rueckfrage(user: ReturnType<typeof userEvent.setup>) {
+      rendern();
+      const [erste] = await zeilen(3);
+      await user.click(erste!);
+      await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
+      return screen.findByRole('group', { name: 'Folgetermin absagen' });
+    }
+
+    it('fragt erst und sagt nichts ab', async () => {
+      const user = userEvent.setup();
+      const frage = await rueckfrage(user);
+
+      expect(frage).toHaveTextContent(
+        'Berta sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht Berta dort.',
+      );
+      expect(undoAppointmentCreation).toHaveBeenCalledTimes(1);
+      expect(cancelAppointment).not.toHaveBeenCalled();
+      // An der Stelle von „Rückgängig“; der Fokus steht auf der Bestätigung.
+      expect(screen.queryByRole('button', { name: /^Rückgängig/ })).toBeNull();
+      const absagen = within(frage).getByRole('button', { name: 'Termin absagen' });
+      expect(absagen).toHaveFocus();
+      expect(within(frage).getByRole('button', { name: 'Behalten' })).toBeInTheDocument();
+      expect(screen.getByText(/Folgetermin angelegt:/)).toBeInTheDocument();
+    });
+
+    it('sagt den Folgetermin erst auf „Termin absagen“ als Praxis ab', async () => {
+      const user = userEvent.setup();
+      const frage = await rueckfrage(user);
+      await user.click(within(frage).getByRole('button', { name: 'Termin absagen' }));
+
+      expect(cancelAppointment).toHaveBeenCalledTimes(1);
+      expect(cancelAppointment).toHaveBeenCalledWith(
+        'neu-1',
+        '2026-10-14T07:25:00.123456+00:00',
+        'practice_request',
+      );
+      const bestaetigt = await screen.findByText('Folgetermin abgesagt.');
+      expect(bestaetigt.closest('[tabindex="-1"]')).toHaveFocus();
+      // Die Vorschläge stehen wieder da; Meldung und Rückfrage sind fort.
+      await zeilen(3);
+      expect(screen.queryByText(/Folgetermin angelegt:/)).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Folgetermin absagen' })).toBeNull();
+    });
+
+    it('lässt mit „Behalten“ alles, wie es ist', async () => {
+      const user = userEvent.setup();
+      const frage = await rueckfrage(user);
+      await user.click(within(frage).getByRole('button', { name: 'Behalten' }));
+
+      expect(cancelAppointment).not.toHaveBeenCalled();
+      expect(screen.queryByRole('group', { name: 'Folgetermin absagen' })).toBeNull();
+      expect(screen.getByText(/Folgetermin angelegt:/)).toHaveTextContent(
+        `${BEGINN} Uhr bei Anna Beispiel`,
+      );
+      expect(screen.getByRole('link', { name: 'Im Kalender' })).toBeInTheDocument();
+      // Der Fokus kehrt auf „Rückgängig“ zurück; nichts ist zurückgenommen.
+      expect(screen.getByRole('button', { name: /^Rückgängig/ })).toHaveFocus();
+      expect(screen.queryByText('Folgetermin abgesagt.')).toBeNull();
+      expect(screen.queryByText('Folgetermin zurückgenommen.')).toBeNull();
+      expect(vorschlaege()).toHaveLength(0);
+    });
+
+    it('zeigt, was der Server beim Absagen einwendet, und lässt die Rückfrage stehen', async () => {
+      cancelAppointment.mockRejectedValue(
+        new Error('Der Termin wurde inzwischen geändert. Bitte neu laden.'),
+      );
+      const user = userEvent.setup();
+      const frage = await rueckfrage(user);
+      await user.click(within(frage).getByRole('button', { name: 'Termin absagen' }));
+
+      expect(await within(frage).findByRole('alert')).toHaveTextContent(
+        'Der Termin wurde inzwischen geändert.',
+      );
+      expect(screen.getByText(/Folgetermin angelegt:/)).toBeInTheDocument();
+      expect(screen.queryByText('Folgetermin abgesagt.')).toBeNull();
+    });
+
+    it('nennt die Person ohne Vornamen „die Person“', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <FolgeterminVorschlaege
+          appointment={{ ...termin, patient_given_name: null }}
+          user={testUser(['therapist'])}
+          hierher="/hier"
+        />,
+      );
+      const [erste] = await zeilen(3);
+      await user.click(erste!);
+      await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
+      expect(await screen.findByRole('group', { name: 'Folgetermin absagen' })).toHaveTextContent(
+        'Die Person sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht sie dort.',
+      );
+    });
   });
 
   it('zeigt, was der Server beim Zurücknehmen einwendet, und lässt die Meldung stehen', async () => {

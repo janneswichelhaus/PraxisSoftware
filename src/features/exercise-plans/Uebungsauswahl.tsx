@@ -101,7 +101,9 @@ export function Auswahlzeile({
           <Vorschaubild bild={variante.illustration} name={variante.lay_name} />
         </span>
         <span className="min-w-0">
-          <span className="text-ink block text-base font-semibold">{titel}</span>
+          {/* Lange Fachnamen wie „Fußpumpe (Dorsal-/Plantarflexion)“ brechen
+              bei 375 px um, statt in den Haken zu laufen (B9). */}
+          <span className="text-ink block text-base font-semibold wrap-anywhere">{titel}</span>
           <span className="text-ink-muted block text-sm">{meta}</span>
         </span>
         <input

@@ -110,7 +110,8 @@ test('bietet bei zu knapper Anfahrt „Auf 16:25 verschieben“ in voller Breite
   await expect(page.getByLabel('Beginn *')).toHaveValue('16:25');
   await expect(page.getByText('Ende: 17:25 Uhr')).toBeVisible();
   // Die Auskunft fragt mit dem neuen Beginn neu - und bietet nichts mehr an.
-  await expect(auskunft.getByText('Anfahrt: passt · 0 Min. Luft')).toBeVisible();
+  // Ohne Luft sagt das Wort wie das Zeichen „knapp“, nicht „passt“ (B2).
+  await expect(auskunft.getByText('Anfahrt: knapp · 0 Min. Luft')).toBeVisible();
   await expect(auskunft.getByText('Rückfahrt: passt · 5 Min. Luft')).toBeVisible();
   await expect(auskunft.getByRole('button')).toHaveCount(0);
   expect(fragen.map((f) => f.starts_at)).toEqual([

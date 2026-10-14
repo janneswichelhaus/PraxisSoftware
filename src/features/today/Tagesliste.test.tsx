@@ -558,6 +558,10 @@ describe('Tageskarte', () => {
       const lage = container.querySelector<HTMLElement>('[style]')!.closest('.max-sm\\:absolute');
       expect(lage).not.toBeNull();
       expect(lage!.parentElement).toHaveClass('max-sm:h-0', 'max-sm:relative', 'sm:mt-2');
+      // Auf der Mitte der Lücke über dem Namen (so hoch wie `mt-3.5`), ohne
+      // Pixelversatz (B6, DESIGN.md Regel 7); gemessen in uebersicht.spec.ts.
+      expect(lage).toHaveClass('max-sm:top-0', 'max-sm:h-3.5', 'max-sm:justify-center');
+      expect(lage!.className).not.toMatch(/\[\d+px\]/);
     });
 
     it('nennt einen knappen Weg mit Zeichen und Wort', () => {

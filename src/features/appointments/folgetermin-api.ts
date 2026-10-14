@@ -8,8 +8,8 @@ import { getSupabase } from '@/lib/supabase';
 
 /**
  * Die Person sieht ihre Termine auf der Plattform (Zweitreview F2, ANN-534):
- * Dann fällt der Termin nicht still weg - „Rückgängig“ sagt ihn als Praxis
- * ab, und die Person sieht die Absage.
+ * Dann fällt der Termin nicht still weg - er lässt sich nur als Praxis
+ * absagen, und die Person sieht die Absage. Die Seite fragt vorher (B8).
  */
 export class AufDerPlattformSichtbar extends Error {
   constructor() {

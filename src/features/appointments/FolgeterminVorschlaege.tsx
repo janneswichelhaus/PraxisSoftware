@@ -56,6 +56,20 @@ interface Angelegt {
   readonly stand: string | null;
 }
 
+/**
+ * Der eben angelegte Termin lässt sich nur noch absagen: Die Person sieht ihn
+ * auf der Plattform (ANN-534). Die Seite fragt, bevor sie absagt (B8).
+ */
+interface Absagefrage {
+  readonly id: string;
+  /** Der Stand, den das Zurücknehmen eben geprüft hat. */
+  readonly stand: string;
+}
+
+/** Was „Rückgängig“ ergab: gelöscht, oder es bleibt nur die Absage. */
+type Zuruecknahme =
+  { readonly art: 'geloescht' } | { readonly art: 'nur_absage'; readonly stand: string };
+
 /** Die Abfragen, die einen neuen oder zurückgenommenen Termin zeigen. */
 const TERMINABFRAGEN = [
   ['appointments'],
@@ -250,8 +264,11 @@ function Vorschlag({
  *
  * Solange die Meldung „Folgetermin angelegt“ steht, nimmt „Rückgängig“ den
  * Termin zurück (`undo_appointment_creation`); danach stehen die Vorschläge
- * wieder da. Steht schon ein nächster Termin, steht er als erledigt da
- * (Leitfaden L3); „Andere Zeit suchen“ führt in die ausführliche Terminsuche.
+ * wieder da. Sieht die Person den Termin schon auf der Plattform, fragt die
+ * Seite an derselben Stelle, ob sie ihn absagen soll - abgesagt wird erst auf
+ * „Termin absagen“ (B8, ANN-534). Steht schon ein nächster Termin, steht er
+ * als erledigt da (Leitfaden L3); „Andere Zeit suchen“ führt in die
+ * ausführliche Terminsuche.
  */
 export function FolgeterminVorschlaege({
   appointment,
@@ -277,9 +294,25 @@ export function FolgeterminVorschlaege({
   const naechsteWoche = tagePlus(datum, 7);
   const [angelegt, setAngelegt] = useState<Angelegt | null>(null);
   const [zurueckgenommen, setZurueckgenommen] = useState(false);
-  // Sah die Person den Termin auf der Plattform, wurde er abgesagt statt
-  // gelöscht (ANN-534) - die Meldung sagt es.
+  // Sah die Person den Termin auf der Plattform, wurde er nach der Rückfrage
+  // abgesagt statt gelöscht (ANN-534) - die Meldung sagt es.
   const [alsAbsage, setAlsAbsage] = useState(false);
+  // Die Rückfrage vor dem Absagen (B8) - wie `Rueckfrage`: Sie ersetzt
+  // „Rückgängig“, der Fokus geht auf „Termin absagen“ und mit „Behalten“
+  // zurück auf „Rückgängig“.
+  const [absagefrage, setAbsagefrage] = useState<Absagefrage | null>(null);
+  const absagenKnopf = useRef<HTMLButtonElement>(null);
+  const rueckgaengigKnopf = useRef<HTMLButtonElement>(null);
+  const [fokusZurueck, setFokusZurueck] = useState(false);
+  useEffect(() => {
+    if (absagefrage) absagenKnopf.current?.focus();
+  }, [absagefrage]);
+  useEffect(() => {
+    if (!absagefrage && fokusZurueck) {
+      rueckgaengigKnopf.current?.focus();
+      setFokusZurueck(false);
+    }
+  }, [absagefrage, fokusZurueck]);
   // Die Meldung nimmt den Fokus: Der getippte Knopf verschwindet mit dem
   // Anlegen bzw. Zurücknehmen, sonst fiele der Fokus an den Seitenanfang.
   const meldung = useRef<HTMLDivElement>(null);
@@ -372,7 +405,9 @@ export function FolgeterminVorschlaege({
     onSuccess: async (neu) => {
       setAngelegt(neu);
       setZurueckgenommen(false);
+      setAbsagefrage(null);
       zuruecknehmen.reset();
+      absagen.reset();
       setMeldungNr((n) => n + 1);
       for (const queryKey of TERMINABFRAGEN) {
         await queryClient.invalidateQueries({ queryKey });
@@ -380,14 +415,29 @@ export function FolgeterminVorschlaege({
     },
   });
 
+  /** Der Termin ist fort - gelöscht oder abgesagt; die Vorschläge stehen wieder da. */
+  async function zurueckgenommenMelden(abgesagt: boolean) {
+    // Erst nachladen, dann umschalten: Sonst stünde der zurückgenommene
+    // Termin einen Augenblick als „Nächster Termin“ da.
+    await Promise.all(
+      TERMINABFRAGEN.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+    );
+    anlegen.reset();
+    setAngelegt(null);
+    setAbsagefrage(null);
+    setZurueckgenommen(true);
+    setAlsAbsage(abgesagt);
+    setMeldungNr((n) => n + 1);
+  }
+
   // Zurücknehmen prüft der Server ganz: Person, Zeit, Zustand, was daran
   // hängt - und dass seit dem Anlegen niemand den Termin geändert hat
   // (`updated_at = created_at`). Ließ sich der Stand nach dem Anlegen nicht
   // lesen, wird er deshalb jetzt gelesen und genauso geprüft. Sieht die Person
-  // ihre Termine auf der Plattform, sagt „Rückgängig“ den Termin als Praxis ab
-  // - ohne Gebühr, und die Person sieht die Absage (ANN-534, ADR-018 Punkt 2).
+  // ihre Termine auf der Plattform, lässt sich der Termin nur noch absagen
+  // (ANN-534, ADR-018 Punkt 2): Dann fragt die Seite erst (B8).
   const zuruecknehmen = useMutation({
-    mutationFn: async (termin: Angelegt): Promise<'geloescht' | 'abgesagt'> => {
+    mutationFn: async (termin: Angelegt): Promise<Zuruecknahme> => {
       let stand = termin.stand;
       if (stand === null) {
         const jetzt = await fetchAppointment(termin.id);
@@ -396,25 +446,28 @@ export function FolgeterminVorschlaege({
       }
       try {
         await undoAppointmentCreation(termin.id, stand);
-        return 'geloescht';
+        return { art: 'geloescht' };
       } catch (fehler) {
         if (!(fehler instanceof AufDerPlattformSichtbar)) throw fehler;
-        await cancelAppointment(termin.id, stand, 'practice_request');
-        return 'abgesagt';
+        return { art: 'nur_absage', stand };
       }
     },
-    onSuccess: async (ergebnis) => {
-      // Erst nachladen, dann umschalten: Sonst stünde der zurückgenommene
-      // Termin einen Augenblick als „Nächster Termin“ da.
-      await Promise.all(
-        TERMINABFRAGEN.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-      );
-      anlegen.reset();
-      setAngelegt(null);
-      setZurueckgenommen(true);
-      setAlsAbsage(ergebnis === 'abgesagt');
-      setMeldungNr((n) => n + 1);
+    onSuccess: async (ergebnis, termin) => {
+      if (ergebnis.art === 'nur_absage') {
+        setAbsagefrage({ id: termin.id, stand: ergebnis.stand });
+        return;
+      }
+      await zurueckgenommenMelden(false);
     },
+  });
+
+  // Erst „Termin absagen“ sagt ab: als Praxis, ohne Gebühr; die Person sieht
+  // die Absage (ADR-018 Punkt 2). Den Stand prüft der Server wie beim Absagen
+  // im Kalender.
+  const absagen = useMutation({
+    mutationFn: (frage: Absagefrage) =>
+      cancelAppointment(frage.id, frage.stand, 'practice_request'),
+    onSuccess: () => zurueckgenommenMelden(true),
   });
   const waehlen = useCallback(
     (slot: Slot) => {
@@ -436,6 +489,7 @@ export function FolgeterminVorschlaege({
   let inhalt;
   if (angelegt) {
     const bei = angelegt.slot.staff_name ? ` bei ${angelegt.slot.staff_name}` : '';
+    const vorname = appointment.patient_given_name?.trim();
     inhalt = (
       <div ref={meldung} tabIndex={-1} className="outline-none">
         <p className="text-accent text-liste font-semibold" role="status">
@@ -453,24 +507,75 @@ export function FolgeterminVorschlaege({
           >
             Im Kalender
           </Textlink>
-          {/* Leise: der Weg zurück für den Fehltipp, kein zweiter Hauptknopf. */}
-          <Button
-            type="button"
-            variant="quiet"
-            groesse="kompakt"
-            disabled={zuruecknehmen.isPending}
-            aria-busy={zuruecknehmen.isPending || undefined}
-            onClick={() => {
-              if (zuruecknehmen.isPending) return;
-              zuruecknehmen.mutate(angelegt);
-            }}
-          >
-            {zuruecknehmen.isPending ? 'Wird zurückgenommen …' : 'Rückgängig'}
-            <span className="sr-only">: Folgetermin zurücknehmen</span>
-          </Button>
+          {/* Leise: der Weg zurück für den Fehltipp, kein zweiter Hauptknopf.
+              Während der Rückfrage steht sie an seiner Stelle. */}
+          {absagefrage ? null : (
+            <Button
+              ref={rueckgaengigKnopf}
+              type="button"
+              variant="quiet"
+              groesse="kompakt"
+              disabled={zuruecknehmen.isPending}
+              aria-busy={zuruecknehmen.isPending || undefined}
+              onClick={() => {
+                if (zuruecknehmen.isPending) return;
+                zuruecknehmen.mutate(angelegt);
+              }}
+            >
+              {zuruecknehmen.isPending ? 'Wird zurückgenommen …' : 'Rückgängig'}
+              <span className="sr-only">: Folgetermin zurücknehmen</span>
+            </Button>
+          )}
         </div>
         {zuruecknehmen.isError ? (
           <Statusmeldung ton="fehler">{zuruecknehmen.error.message}</Statusmeldung>
+        ) : null}
+        {absagefrage ? (
+          // Dasselbe Muster wie `Rueckfrage`: vertiefte Fläche mit Linie
+          // links, kein Kasten im Kasten (Leitfaden L2).
+          <div
+            role="group"
+            aria-label="Folgetermin absagen"
+            className="border-line-strong bg-surface-sunken mt-3 w-full border-l-4 py-3 pr-4 pl-4"
+          >
+            <p className="text-ink text-sm">
+              {vorname
+                ? `${vorname} sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht ${vorname} dort.`
+                : 'Die Person sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht sie dort.'}
+            </p>
+            {absagen.isError ? (
+              <Statusmeldung ton="fehler" className="mt-2">
+                {absagen.error.message}
+              </Statusmeldung>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Button
+                ref={absagenKnopf}
+                type="button"
+                disabled={absagen.isPending}
+                onClick={() => {
+                  if (absagen.isPending) return;
+                  absagen.mutate(absagefrage);
+                }}
+              >
+                {absagen.isPending ? 'Wird abgesagt …' : 'Termin absagen'}
+              </Button>
+              {/* Bis zur Antwort gesperrt: Der Aufruf am Server würde
+                  trotzdem wirksam (wie `Rueckfrage`, Zweitreview H2). */}
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={absagen.isPending}
+                onClick={() => {
+                  setAbsagefrage(null);
+                  absagen.reset();
+                  setFokusZurueck(true);
+                }}
+              >
+                Behalten
+              </Button>
+            </div>
+          </div>
         ) : null}
       </div>
     );
@@ -566,10 +671,9 @@ export function FolgeterminVorschlaege({
       <Zwischentitel id={`folgetermin-${appointment.id}`}>Folgetermin</Zwischentitel>
       {zurueckgenommen && !angelegt ? (
         <div ref={meldung} tabIndex={-1} className="outline-none">
+          {/* Was die Person sieht, sagte die Rückfrage vor dem Absagen. */}
           <Statusmeldung ton="erfolg">
-            {alsAbsage
-              ? 'Folgetermin abgesagt – die Person sieht ihn auf der Plattform als abgesagt.'
-              : 'Folgetermin zurückgenommen.'}
+            {alsAbsage ? 'Folgetermin abgesagt.' : 'Folgetermin zurückgenommen.'}
           </Statusmeldung>
         </div>
       ) : null}

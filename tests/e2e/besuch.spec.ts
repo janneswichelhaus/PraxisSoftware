@@ -417,6 +417,12 @@ function nachbildung() {
       stand.folgetermin = null;
       return null;
     },
+    // B8: Sieht die Person ihn schon auf der Plattform, sagt die Praxis ihn
+    // nach der Rückfrage ab; danach ist er kein nächster Termin mehr.
+    cancel_appointment: () => {
+      stand.folgetermin = null;
+      return null;
+    },
     complete_appointment: () => {
       stand.abgeschlossen = true;
       return null;
@@ -862,6 +868,84 @@ test('nimmt einen eben angelegten Folgetermin mit „Rückgängig" zurück (B8)'
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
   expect(ueberlauf).toBe(false);
+});
+
+// Befund B8, ANN-534: Sieht die Person den eben angelegten Termin schon auf
+// der Plattform, lässt er sich nur absagen. Die Seite fragt an der Stelle von
+// „Rückgängig“ (wie `Rueckfrage`): „Behalten“ lässt alles, wie es ist; erst
+// „Termin absagen“ sagt ab - als Praxis, mit dem Stand nach dem Anlegen.
+test('fragt vor dem Absagen, wenn die Person den Folgetermin auf der Plattform sieht (B8)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.clock.setFixedTime(um('09:20'));
+  const server = nachbildung();
+  await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  await page.route('**/functions/v1/**', (route) => route.fulfill({ status: 503, body: '' }));
+  // Später registriert, geht vor: Der Server nimmt den Termin nicht zurück.
+  const zuruecknehmen: unknown[] = [];
+  await page.route('**/rest/v1/rpc/undo_appointment_creation', async (route) => {
+    zuruecknehmen.push(route.request().postDataJSON());
+    await route.fulfill({
+      status: 400,
+      json: { code: '22023', message: 'appointment is visible on the platform' },
+    });
+  });
+  const querrollen = () =>
+    page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+
+  await page.goto(PRUEFSEITE);
+  await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
+  await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
+  await page.getByRole('button', { name: 'Festschreiben' }).click();
+  await page
+    .getByRole('button', { name: /^Folgetermin anlegen: .*09:00–10:00.*gleiche Zeit/ })
+    .click();
+  await expect(page.getByText(/Folgetermin angelegt: /)).toBeVisible();
+
+  // Erst fragen: Nichts ist abgesagt, „Rückgängig“ ist der Frage gewichen.
+  await page.getByRole('button', { name: /^Rückgängig/ }).click();
+  const frage = page.getByRole('group', { name: 'Folgetermin absagen' });
+  await expect(frage).toContainText(
+    'Erika sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht Erika dort.',
+  );
+  const absagen = frage.getByRole('button', { name: 'Termin absagen' });
+  const behalten = frage.getByRole('button', { name: 'Behalten' });
+  await expect(absagen).toBeFocused();
+  for (const knopf of [absagen, behalten]) {
+    await expect(knopf).toBeInViewport();
+    expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  await expect(page.getByRole('button', { name: /^Rückgängig/ })).toHaveCount(0);
+  expect(server.aufrufe.cancel_appointment).toBeUndefined();
+  expect(await querrollen()).toBe(false);
+
+  // „Behalten“ lässt alles, wie es ist.
+  await behalten.click();
+  await expect(frage).toHaveCount(0);
+  await expect(page.getByText(/Folgetermin angelegt: /)).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Rückgängig/ })).toBeFocused();
+  expect(server.aufrufe.cancel_appointment).toBeUndefined();
+
+  // Noch einmal - jetzt absagen.
+  await page.getByRole('button', { name: /^Rückgängig/ }).click();
+  await frage.getByRole('button', { name: 'Termin absagen' }).click();
+  await expect(page.getByText('Folgetermin abgesagt.')).toBeVisible();
+  expect(server.aufrufe.cancel_appointment).toEqual([
+    {
+      p_appointment_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+      p_expected_updated_at: `${heute()}T07:25:00.123456+00:00`,
+      p_reason: 'practice_request',
+      p_received_on: null,
+      p_received_time: null,
+    },
+  ]);
+  expect(zuruecknehmen).toHaveLength(2);
+  await expect(page.getByRole('button', { name: /^Folgetermin anlegen:/ })).toHaveCount(3);
+  await expect(page.getByText(/Folgetermin angelegt: /)).toHaveCount(0);
+  expect(await querrollen()).toBe(false);
 });
 
 for (const [breite, hoehe] of [

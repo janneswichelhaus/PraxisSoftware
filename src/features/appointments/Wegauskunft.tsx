@@ -192,8 +192,15 @@ function Angebot({
           ? 'danach'
           : 'Termin danach'
         : 'Arbeitsende';
+    // Zeichen und Wort wie die Zeilen darüber (DESIGN.md Regel 5). Keine
+    // eigene `Statusmeldung`: Die Auskunft ist schon die Region, die vorliest.
     return (
-      <p className="text-ink text-sm">{`Zwischen ${davor} und ${danach} reicht die Zeit nicht.`}</p>
+      <p className={`text-sm ${farbe.knapp}`}>
+        <span aria-hidden="true" className="mr-1.5">
+          !
+        </span>
+        {`Zwischen ${davor} und ${danach} reicht die Zeit nicht.`}
+      </p>
     );
   }
   const beginn = minuteZuZeit(angebot.beginnMinute);
@@ -285,10 +292,13 @@ function seitenzeile(richtung: 'an' | 'weiter', seite: Seite, zeitzone: string):
           ton: 'nicht',
         };
       }
+      // Zeichen und Wort sagen dasselbe (B2): unter fünf Minuten Luft
+      // „! knapp“, sonst „✓ passt“ (ANN-238).
+      const knapp = seite.stufe === 'knapp';
       return {
-        text: `${titel}: passt · ${seite.luft} Min. Luft`,
+        text: `${titel}: ${knapp ? 'knapp' : 'passt'} · ${seite.luft} Min. Luft`,
         detail: weg,
-        ton: seite.stufe === 'knapp' ? 'knapp' : 'gut',
+        ton: knapp ? 'knapp' : 'gut',
       };
     }
   }

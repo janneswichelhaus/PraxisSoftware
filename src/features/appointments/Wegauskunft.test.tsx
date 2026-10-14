@@ -22,7 +22,7 @@ function geprueft(over: Partial<Extract<Seite, { stand: 'geprueft' }>>): Seite {
 }
 
 describe('Wegauskunft', () => {
-  it('sagt „passt · X Min. Luft“ mit Fahrzeit, ohne Namen', () => {
+  it('sagt „passt · X Min. Luft“ bzw. „knapp · X Min. Luft“ mit Fahrzeit, ohne Namen', () => {
     render(
       <Wegauskunft
         zeitzone={ZONE}
@@ -39,11 +39,33 @@ describe('Wegauskunft', () => {
       />,
     );
     expect(screen.getByText('Passt es?')).toBeInTheDocument();
-    expect(screen.getByText('Anfahrt: passt · 12 Min. Luft')).toBeInTheDocument();
+    const anfahrt = screen.getByText('Anfahrt: passt · 12 Min. Luft');
+    expect(anfahrt).toHaveClass('text-positiv');
+    expect(anfahrt).toHaveTextContent(/^✓/);
     expect(screen.getByText(/≈ 18 Min\. vom Termin davor \(bis 09:30 Uhr\)/)).toBeInTheDocument();
-    expect(screen.getByText('Weiterfahrt: passt · 3 Min. Luft')).toHaveClass('text-warnung');
+    // B2: Unter fünf Minuten Luft sagt das Wort, was das Zeichen sagt - nie
+    // „! … passt“.
+    const weiterfahrt = screen.getByText('Weiterfahrt: knapp · 3 Min. Luft');
+    expect(weiterfahrt).toHaveClass('text-warnung');
+    expect(weiterfahrt).toHaveTextContent(/^!/);
+    expect(screen.queryByText(/passt · 3 Min\. Luft/)).toBeNull();
     expect(screen.getByText(/gleicher Ort/)).toBeInTheDocument();
     expect(screen.queryByText(/trotzdem anlegen/)).toBeNull();
+  });
+
+  it('sagt auch bei 0 Minuten Luft „knapp“, ab fünf Minuten „passt“', () => {
+    render(
+      <Wegauskunft
+        zeitzone={ZONE}
+        pruefung={{
+          stand: 'bereit',
+          an: geprueft({ luft: 0, stufe: 'knapp' }),
+          weiter: geprueft({ luft: 5, stufe: 'passt', nachbar: 'tagesrand' }),
+        }}
+      />,
+    );
+    expect(screen.getByText('Anfahrt: knapp · 0 Min. Luft')).toHaveClass('text-warnung');
+    expect(screen.getByText('Rückfahrt: passt · 5 Min. Luft')).toHaveClass('text-positiv');
   });
 
   it('sagt „zu knapp um X Min.“ mit fruehestem Beginn - und dass es nur Auskunft ist', () => {
@@ -270,9 +292,13 @@ describe('Wegauskunft', () => {
       // Zehn Minuten später, aber nur fünf Minuten Luft danach.
       zeigen({ ...anfahrtZuKnapp, weiter: geprueft({ luft: 5, stufe: 'passt' }) }, '16:15');
       expect(screen.queryByRole('button')).toBeNull();
-      expect(
-        screen.getByText('Zwischen Termin davor und danach reicht die Zeit nicht.'),
-      ).toBeInTheDocument();
+      // B2: mit Zeichen und Wort wie die Zeilen darüber - in der Auskunft,
+      // die schon vorliest, ohne eigene Meldung.
+      const keineZeit = screen.getByText('Zwischen Termin davor und danach reicht die Zeit nicht.');
+      expect(keineZeit).toHaveClass('text-warnung');
+      expect(keineZeit).toHaveTextContent(/^!/);
+      expect(keineZeit).not.toHaveAttribute('role');
+      expect(screen.getAllByRole('status')).toHaveLength(1);
       expect(
         screen.getByText('Nur Auskunft – der Termin lässt sich trotzdem anlegen.'),
       ).toBeInTheDocument();

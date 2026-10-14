@@ -34,7 +34,7 @@ const SCHREIBSEITE = '/termine/t1/abschluss?zurueck=%2Fkalender';
 
 /**
  * B5 (ANN-531): In der Leiste stehen nur die eigenen Bausteine. Ohne eigene
- * führt ein leiser Link zur Bausteinseite; „+ Befund“ daneben stellt die
+ * führt ein leiser Link zur Bausteinseite; „+ Befund“ davor stellt die
  * Schreibseite und bleibt, wie er ist.
  */
 describe('TextbausteinLeiste', () => {
