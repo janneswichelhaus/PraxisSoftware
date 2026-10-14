@@ -250,7 +250,7 @@ test('haelt Etage, Zugang und Kontakt hinter dem Info-Knopf', async ({ page }) =
   await expect(karte.getByText('Testweg 7, 72072 Tuebingen')).toBeVisible();
   await expect(karte.getByRole('button', { name: 'Erdgeschoss' })).toHaveCount(0);
   await expect(karte.getByText('Erdgeschoss', { exact: true })).toHaveCount(0);
-  const info = karte.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+  const info = karte.getByRole('button', { name: 'Vor der Tür' });
   await expect(karte.getByText('Schlüssel bei der Nachbarin.', { exact: false })).toHaveCount(0);
   // Die Nummer steht nicht im Bild: Der Anrufknopf (Auftrag C1) ist ein
   // Symbol, die Nummern selbst liegen hinter dem „i".
@@ -501,7 +501,7 @@ test('oeffnet den Termin ueber „Termin →" in der Kopfzeile, nicht ueber die 
   await oeffne(page, '08:05', 375);
   const karte = page.getByRole('article');
   const name = karte.getByRole('link', { name: 'Erika Beispiel', exact: true });
-  const info = karte.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+  const info = karte.getByRole('button', { name: 'Vor der Tür' });
   const n = (await name.boundingBox())!;
   const i = (await info.boundingBox())!;
   // Auf einer Höhe: Die Mitten liegen höchstens 6 px auseinander (UBK-004).

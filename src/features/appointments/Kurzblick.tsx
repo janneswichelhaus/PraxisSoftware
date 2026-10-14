@@ -14,9 +14,10 @@ import { fetchKurzblick, type Kurzblick as KurzblickDaten } from './kurzblick-ap
 /**
  * Der Inhalt - erst gezeichnet und gelesen, wenn der Blick offen ist.
  *
- * Jede Abfrage schreibt einen Auditeintrag (ANN-137). Die Abfrage lebt deshalb
- * nur so lange wie das offene Aufklappen: `gcTime: 0` wirft sie beim Zuklappen
- * weg, und das nächste Aufklappen liest und protokolliert neu.
+ * Das Lesen protokolliert der Server - seit LOG-EPIC-001 als „Akte geöffnet“,
+ * einmal je Akte und Tag (ANN-137, ANN-230). Die Abfrage lebt nur so lange wie
+ * das offene Aufklappen: `gcTime: 0` wirft sie beim Zuklappen weg, und das
+ * nächste Aufklappen liest neu.
  */
 function KurzblickInhalt({ appointmentId }: { appointmentId: string }) {
   const { data, isPending, isError, refetch } = useQuery({
@@ -76,8 +77,36 @@ function Grundlage({ blick }: { blick: KurzblickDaten }) {
   );
 }
 
-function KurzblickAnzeige({ blick }: { blick: KurzblickDaten }) {
+/**
+ * Der letzte Haupteintrag vor diesem Termin im Wortlaut (ANN-137) - im
+ * Kurzblick und an der Tageskarte („Vor der Tür“, K3, ANN-501).
+ */
+function LetzterEintrag({ blick }: { blick: KurzblickDaten }) {
   const zone = blick.organization_time_zone;
+  return blick.last_note_content !== null && blick.last_note_appointment_start ? (
+    <>
+      <span className="flex flex-wrap items-center gap-2">
+        <span>{formatLocalDate(blick.last_note_appointment_start, zone)}</span>
+        {blick.last_note_status === 'draft' ? <Badge>Entwurf</Badge> : null}
+        {blick.last_note_visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
+      </span>
+      {/* Der Wortlaut, unverändert - keine Kürzung, keine Hervorhebung
+          (ADR-006). */}
+      <span className={`text-ink mt-2 block max-w-prose leading-relaxed ${FREITEXT}`}>
+        {blick.last_note_content}
+      </span>
+      {blick.last_note_author_name ? (
+        <span className="text-ink-muted mt-1 block text-xs">
+          Verfasst von {blick.last_note_author_name}. Nachträge stehen in der Akte.
+        </span>
+      ) : null}
+    </>
+  ) : (
+    <span className="text-ink-muted">Noch kein Eintrag vor diesem Termin.</span>
+  );
+}
+
+function KurzblickAnzeige({ blick }: { blick: KurzblickDaten }) {
   return (
     // Leere Werte bekommen keine Zeile - ein „—" sagt im Treppenhaus nichts
     // (UX-005g). Grundlage und letzter Eintrag bleiben, weil ihr Fehlen eine
@@ -98,27 +127,7 @@ function KurzblickAnzeige({ blick }: { blick: KurzblickDaten }) {
         <Grundlage blick={blick} />
       </DetailRow>
       <DetailRow label="Letzter Eintrag">
-        {blick.last_note_content !== null && blick.last_note_appointment_start ? (
-          <>
-            <span className="flex flex-wrap items-center gap-2">
-              <span>{formatLocalDate(blick.last_note_appointment_start, zone)}</span>
-              {blick.last_note_status === 'draft' ? <Badge>Entwurf</Badge> : null}
-              {blick.last_note_visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
-            </span>
-            {/* Der Wortlaut, unverändert - keine Kürzung, keine Hervorhebung
-                (ADR-006). */}
-            <span className={`text-ink mt-2 block max-w-prose leading-relaxed ${FREITEXT}`}>
-              {blick.last_note_content}
-            </span>
-            {blick.last_note_author_name ? (
-              <span className="text-ink-muted mt-1 block text-xs">
-                Verfasst von {blick.last_note_author_name}. Nachträge stehen in der Akte.
-              </span>
-            ) : null}
-          </>
-        ) : (
-          <span className="text-ink-muted">Noch kein Eintrag vor diesem Termin.</span>
-        )}
+        <LetzterEintrag blick={blick} />
       </DetailRow>
     </DetailList>
   );
@@ -191,4 +200,31 @@ export function Kurzblick({
       ) : null}
     </details>
   );
+}
+
+/**
+ * Der letzte Eintrag an der Tageskarte (K3, ANN-501): gelesen, wenn „Vor der
+ * Tür“ aufgeht - derselbe Lesepfad und dieselbe Protokollierung wie der
+ * Kurzblick (`get_appointment_brief`, einmal je Akte und Tag, ANN-230).
+ */
+export function LetzterEintragVorDerTuer({ appointmentId }: { appointmentId: string }) {
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: ['appointment-brief', appointmentId],
+    queryFn: () => fetchKurzblick(appointmentId),
+    retry: false,
+    gcTime: 0,
+    staleTime: Infinity,
+  });
+  if (isPending) return <LoadingState label="Letzter Eintrag wird geladen …" />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Der letzte Eintrag konnte nicht geladen werden."
+        description="Bitte die Verbindung prüfen und erneut versuchen."
+        onErneut={() => refetch()}
+      />
+    );
+  }
+  if (!data) return null;
+  return <LetzterEintrag blick={data} />;
 }

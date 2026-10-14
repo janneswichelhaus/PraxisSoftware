@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Textlink } from '@/components/ui/Textlink';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
+import { LetzterEintragVorDerTuer } from '@/features/appointments/Kurzblick';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { formatLocalTimeRange, kalenderZumTermin } from '@/features/appointments/api';
 import { openItemsText, type IntakeItem } from '@/features/open-points/intake-api';
@@ -83,6 +84,7 @@ export function Tageskarte({
   aktionen,
   hinweis,
   abschlussgespraech,
+  vorDerTuer = false,
   onZuklappen,
 }: {
   termin: DayPlanEntry;
@@ -106,6 +108,11 @@ export function Tageskarte({
   /** KND-001: einer der letzten Termine - Zeit für das Abschlussgespräch (ANN-286). */
   abschlussgespraech?: boolean;
   /**
+   * Darf die Person den letzten Eintrag lesen (`canReadTreatmentNote`)? Dann
+   * steht er hinter dem „i“ neben Zugang und Material (K3, ANN-501).
+   */
+  vorDerTuer?: boolean;
+  /**
    * Eine aufgeklappte Zeile des Zeitstrahls (Auftrag C1) klappt hier wieder
    * zu - rechts in der Kopfzeile, neben einem Abzeichen.
    */
@@ -120,8 +127,17 @@ export function Tageskarte({
   const art = einordnung(termin);
   const { stockwerk, rest: zugang } = zugangMitStockwerk(termin.home_visit_access_note);
   const besonderheit = termin.special_note?.trim() || null;
+  // Material und letzter Eintrag vor der Tür (K3, ANN-501): Das Material
+  // kommt aus dem Tagesplan, der Eintrag wird erst beim Öffnen gelesen.
+  const material = termin.take_along_items ?? [];
+  const mitEintrag = vorDerTuer && termin.kind === 'therapy' && termin.patient_id !== null;
   const hatInfo =
-    stockwerk !== null || zugang !== null || besonderheit !== null || nummern.length > 0;
+    stockwerk !== null ||
+    zugang !== null ||
+    besonderheit !== null ||
+    nummern.length > 0 ||
+    material.length > 0 ||
+    mitEintrag;
   // Die Liege fährt nur zum Hausbesuch mit (BEF-051, ANN-116 Fassung 2).
   const liege =
     termin.treatment_table_required === true && termin.appointment_type === 'home_visit';
@@ -212,11 +228,7 @@ export function Tageskarte({
           // 22 px im Bild, 44 px zum Tippen: Der Knopf ragt wie der Name nach
           // unten über seine Zeile hinaus, ohne sie höher zu machen; das
           // Zeichen rückt um dieselben 10 px hoch auf die Mitte des Namens.
-          <Symbolknopf
-            beschriftung="Etage, Zugang und Kontakt"
-            {...info}
-            className="-mb-[19px] shrink-0"
-          >
+          <Symbolknopf beschriftung="Vor der Tür" {...info} className="-mb-[19px] shrink-0">
             <span
               className={`rounded-pill border-accent inline-flex size-[22px] -translate-y-2.5 items-center justify-center border-[1.5px] text-xs leading-none font-bold ${
                 infoOffen ? 'bg-accent-soft' : ''
@@ -279,6 +291,14 @@ export function Tageskarte({
               <dd className="min-w-0 wrap-anywhere">{besonderheit}</dd>
             </>
           ) : null}
+          {/* PRX-007: von Hand an der Person gepflegt (ANN-138) - hinter dem
+              „i“, nicht offen neben dem Namen. */}
+          {material.length > 0 ? (
+            <>
+              <dt className="text-ink-muted font-semibold">Material</dt>
+              <dd className="min-w-0 wrap-anywhere">{material.join(', ')}</dd>
+            </>
+          ) : null}
           {/* Kontakt ist Aktion, nicht Text (Oberflächen-Checkliste Punkt 8):
               Textlinks mit 44 px Tippziel. Bis AKTE-008 standen die Nummern
               offen unter den Handlungen; jetzt hier (Jannes 2026-10-03). */}
@@ -295,6 +315,17 @@ export function Tageskarte({
               </dd>
             </Fragment>
           ))}
+          {mitEintrag ? (
+            <>
+              {/* Über die ganze Breite: Der Wortlaut ist länger als eine
+                  Angabe (ADR-006, ungekürzt). */}
+              <dt className="text-ink-muted col-span-2 mt-1 font-semibold">Letzter Eintrag</dt>
+              <dd className="col-span-2 min-w-0">
+                <LetzterEintragVorDerTuer appointmentId={termin.id} />
+                <span className="text-ink-muted mt-1 block text-xs">Lesen wird protokolliert.</span>
+              </dd>
+            </>
+          ) : null}
         </dl>
       ) : null}
 
