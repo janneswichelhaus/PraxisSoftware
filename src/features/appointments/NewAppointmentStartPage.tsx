@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
-import { Patientensuche } from '@/features/patients/Patientensuche';
+import { Patientenauswahl } from '@/features/patients/Patientenauswahl';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
@@ -131,13 +131,10 @@ export function NewAppointmentStartPage() {
       ) : null}
 
       <Section titel="Patient:in">
-        <div className="max-w-formular">
-          <Patientensuche
-            label="Patient:in suchen"
-            labelSichtbar
-            onAuswahl={(patientId) => void navigate(formular(patientId))}
-          />
-        </div>
+        {/* B10 (BEF-160): die Liste zum Filtern und Sortieren statt der Suche
+            ab drei Zeichen - zuletzt behandelt zuerst. Eine Zeile führt ins
+            Terminformular. */}
+        <Patientenauswahl ziel={formular} leer={{ titel: 'Noch keine Patient:innen' }} />
         {/* Der häufigste Grund für einen leeren Treffer: Die Person ist neu.
             Vorher war das hier eine Sackgasse - Kartei öffnen, anlegen,
             zurückfinden, von vorn beginnen (UX-012). */}

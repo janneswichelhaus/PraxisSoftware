@@ -1,20 +1,23 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as RemindersApi from './reminders-api';
+import type * as UebersichtApi from '@/features/patients/uebersicht';
 import { renderWithProviders } from '@/test-utils';
 
 const fetchEndingPrescriptions = vi.fn();
-const fetchCareWithoutConclusion = vi.fn();
+const fetchPatientOverview = vi.fn();
 
 vi.mock('./reminders-api', async (importOriginal) => ({
   ...(await importOriginal<typeof RemindersApi>()),
   fetchEndingPrescriptions: () =>
     fetchEndingPrescriptions() as Promise<RemindersApi.EndingPrescription[]>,
-  fetchCareWithoutConclusion: () =>
-    fetchCareWithoutConclusion() as Promise<RemindersApi.CareWithoutConclusion[]>,
+}));
+vi.mock('@/features/patients/uebersicht', async (importOriginal) => ({
+  ...(await importOriginal<typeof UebersichtApi>()),
+  fetchPatientOverview: () => fetchPatientOverview() as Promise<UebersichtApi.Patienteneintrag[]>,
 }));
 
-const { EndingPrescriptions, CareWithoutConclusionList } = await import('./Reminders');
+const { EndingPrescriptions, OffeneVerordnungen } = await import('./Reminders');
 
 const PATIENT = '66666666-6666-4666-8666-000000000001';
 
@@ -60,24 +63,64 @@ describe('Verordnung endet (PRX-016)', () => {
   });
 });
 
-describe('Versorgung abschliessen? (PRX-016)', () => {
-  it('fuehrt in die Stammdaten, wo der Abschluss gesetzt wird', async () => {
-    fetchCareWithoutConclusion.mockResolvedValue([
-      {
-        patient_id: PATIENT,
-        patient_given_name: 'Max',
-        patient_family_name: 'Mustermann',
-        last_appointment_at: '2026-02-01T08:00:00.000Z',
-        patient_created_at: '2025-11-01T08:00:00.000Z',
-      },
+// B1 (BEF-151): Statt „Versorgung abschließen?“ die Karteileichen - eine
+// Verordnung, die Termine braucht oder abzurechnen ist.
+describe('Verordnung offen (B1)', () => {
+  function eintrag(
+    id: string,
+    family: string,
+    overrides: Partial<UebersichtApi.Patienteneintrag>,
+  ): UebersichtApi.Patienteneintrag {
+    return {
+      id,
+      given_name: 'Max',
+      family_name: family,
+      date_of_birth: null,
+      email: null,
+      phone: null,
+      postal_code: null,
+      city: null,
+      last_visit_on: null,
+      next_appointment_at: null,
+      open_bases: 0,
+      bases_need_appointments: 0,
+      bases_need_followup: 0,
+      bases_ready: 0,
+      bases_in_billing: 0,
+      billing_visible: false,
+      invoices_issued: null,
+      invoices_paid: null,
+      outstanding_cents: null,
+      invoices_overdue: null,
+      reminders_due: null,
+      ...overrides,
+    };
+  }
+
+  it('führt zu den Grundlagen der Akte und nennt, was fehlt', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag(PATIENT, 'Mustermann', { open_bases: 1, bases_need_appointments: 1 }),
+      eintrag('p2', 'Beispiel', { open_bases: 1, bases_ready: 1 }),
+      eintrag('p3', 'Ruhig', { open_bases: 1 }),
     ]);
-    renderWithProviders(<CareWithoutConclusionList timeZone="Europe/Berlin" />);
-    expect(await screen.findByRole('link', { name: /^Mustermann, Max/ })).toHaveAttribute(
+    renderWithProviders(<OffeneVerordnungen />);
+
+    const max = await screen.findByRole('link', { name: /^Mustermann, Max/ });
+    expect(max).toHaveAttribute('href', `/patienten/${PATIENT}/verordnungen?zurueck=%2Foffen`);
+    expect(max).toHaveTextContent('Termine fehlen');
+    expect(screen.getByRole('link', { name: /^Beispiel, Max/ })).toHaveTextContent('Abrechnen');
+    // Was läuft, ist keine Karteileiche.
+    expect(screen.queryByRole('link', { name: /^Ruhig/ })).toBeNull();
+    expect(screen.getByRole('link', { name: 'In der Patientenliste' })).toHaveAttribute(
       'href',
-      `/patienten/${PATIENT}/stammdaten?zurueck=%2Foffen`,
+      '/patienten?sort=verordnung',
     );
-    // Die Frist hängt am Abschluss (ADR-008) - der Satz bleibt als Kleingedrucktes.
-    expect(screen.getByText(/erst mit ihm läuft die Aufbewahrungsfrist/)).toBeInTheDocument();
-    expect(screen.getByText('Letzter Termin am 01.02.2026')).toBeInTheDocument();
+  });
+
+  it('zeigt keine Gruppe, wenn keine Verordnung offen ist', async () => {
+    fetchPatientOverview.mockResolvedValue([eintrag(PATIENT, 'Mustermann', { open_bases: 1 })]);
+    const { container } = renderWithProviders(<OffeneVerordnungen />);
+    await vi.waitFor(() => expect(fetchPatientOverview).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
   });
 });

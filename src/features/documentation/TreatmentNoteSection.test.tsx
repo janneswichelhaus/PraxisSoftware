@@ -406,15 +406,19 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     expect(finalizeTreatmentNote).not.toHaveBeenCalled();
   });
 
-  it('sagt am offenen Termin, dass er als durchgeführt geführt wird (BEF-055)', async () => {
+  // BEF-055, seit B4: Die Finalisierung hakt nicht ab - die Folge, die bleibt,
+  // ist das gesperrte „nicht angetroffen“.
+  it('sagt am offenen Termin, dass „nicht angetroffen“ danach nicht mehr geht (BEF-055, B4)', async () => {
     const user = userEvent.setup();
     rendern(['therapist']);
 
     await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
 
-    expect(screen.getByRole('group', { name: 'Dokumentation finalisieren' })).toHaveTextContent(
-      'Der Termin wird dabei als durchgeführt geführt',
+    const rueckfrage = screen.getByRole('group', { name: 'Dokumentation finalisieren' });
+    expect(rueckfrage).toHaveTextContent(
+      '„Nicht angetroffen“ lässt sich danach nicht mehr vermerken.',
     );
+    expect(rueckfrage).not.toHaveTextContent('als durchgeführt');
   });
 
   it('nennt die Folge für den Termin nicht, wenn er schon abgeschlossen ist', async () => {
@@ -424,7 +428,7 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
 
     expect(screen.getByRole('group', { name: 'Dokumentation finalisieren' })).not.toHaveTextContent(
-      'als durchgeführt geführt',
+      'nicht mehr vermerken',
     );
   });
 

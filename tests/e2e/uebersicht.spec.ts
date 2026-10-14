@@ -377,11 +377,14 @@ test('listet am Tagesende erst, was heute offen ist, dann morgen (Auftrag C1)', 
   page,
 }) => {
   await oeffne(page, '17:00', 375, '?ansicht=doku');
-  await expect(page.getByRole('heading', { name: 'Alle Besuche erledigt' })).toBeVisible();
+  // B4: Solange ein Haken fehlt, ist der Tag nicht „erledigt“ - nur kein Weg
+  // mehr offen.
+  await expect(page.getByRole('heading', { name: 'Kein Weg mehr offen' })).toBeVisible();
   const offen = page.getByRole('heading', { name: 'Heute noch offen (2)' }).locator('../..');
   await expect(offen).toBeVisible();
   const zeilen = offen.getByRole('listitem');
-  await expect(zeilen.filter({ hasText: 'Max Mustermann' })).toContainText('Heilmittel offen');
+  // B4/B7: festgeschrieben, aber noch ohne Haken - Heilmittel bestätigt niemand mehr.
+  await expect(zeilen.filter({ hasText: 'Max Mustermann' })).toContainText('Haken fehlt');
   await expect(zeilen.filter({ hasText: 'Petra Platzhalter' })).toContainText('Doku im Entwurf');
   for (const knopf of await offen.getByRole('link').all()) {
     expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);

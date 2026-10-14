@@ -102,9 +102,9 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-002 — Versorgungsstatus `inactive` und Rollenschnitt des Wechsels
 
-Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wiedervorlage: Jannes (Rollenschnitt, B9); der Behandlungsabschluss ist mit ANN-032 erledigt
+Praxisprozess · verworfen · 2026-10-14 · ANN-032, ANN-510 · erledigt · Wiedervorlage: keine
 
-**Ablösung.** abgelöst durch ANN-032 in der Frage „Behandlungsabschluss"
+**Ablösung.** abgelöst durch ANN-032 in der Frage „Behandlungsabschluss", im Übrigen durch ANN-510 (B1: kein Versorgungsstatus mehr)
 
 **Annahme.** `inactive` ist eine rein organisatorische Markierung („nicht in laufender Versorgung"), kein Behandlungsabschluss im Sinne von ADR-008, und startet keine Aufbewahrungsfrist. Den Status wechseln dürfen `owner`, `team_lead` und `office`, `therapist` nicht.
 
@@ -480,7 +480,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 Praxisprozess · entschieden (Jannes) · 2026-09-11 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Praxiswochen (passt der Vorgang in den Alltag?); die Datenschutzprüfung sieht den Fristanker unabhängig davon
 
-**Ablösung.** ersetzt ANN-002 in der Frage „Behandlungsabschluss"
+**Ablösung.** ersetzt ANN-002 in der Frage „Behandlungsabschluss"; abgelöst durch ANN-511 in der Frage „Fristanker" (der Abschluss zählt nur noch, wenn er nach der letzten Behandlung liegt)
 
 **Annahme.** Der „Abschluss der Behandlung" aus §630f Abs. 3 BGB ist ein ausdrücklicher Vorgang auf der Akte: `patients.care_concluded_on`, gesetzt von `owner`, `therapist` oder `team_lead`, mit frei wählbarem Tag (nicht in der Zukunft, nicht vor dem Beginn der Versorgung) und zurücknehmbar. Ohne diesen Vorgang läuft keine Aufbewahrungsfrist und wird nichts gelöscht; eine Rücknahme lässt die Frist mit dem nächsten Abschluss neu beginnen.
 
@@ -529,6 +529,8 @@ Recht · entschieden (Jannes) · 2026-09-12, nachgezogen 2026-09-16 (CAL-018) ·
 ### ANN-036 — `documented` auch aus `confirmed`: die Finalisierung schließt den Termin mit ab
 
 Technik · in ADR überführt · 2026-09-13 · ADR-018 Fassung 3 · erledigt · Wiedervorlage: ADR-018; erneut nur, wenn ein Loop den Terminzustand `invoiced` setzt — die Abrechnung setzt ihn nicht (R3-001)
+
+**Ablösung.** abgelöst durch ANN-512 am Behandlungstermin (ADR-018 Fassung 5: die Finalisierung setzt `completed_at` dort nicht mehr); am Trainingstermin gilt der Eintrag weiter
 
 **Verweis.** Am 2026-09-13 in ADR-018 Fassung 3 überführt: Die Finalisierung einer Behandlungsdokumentation hebt den Termin auch aus `confirmed` auf `documented`, setzt `completed_at` nach und lässt `completed_by` leer. Maßgeblich ist seitdem der ADR; Herleitung und Abwägung: Git-Historie bis `7160fd5`.
 
@@ -1836,7 +1838,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 6) · erledigt · Wiedervorlage: —
 
-**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“; die Rückfrage gilt auf der Schreibseite nach dem Festschreiben nicht mehr (ANN-475, offen)
+**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“; abgelöst durch ANN-513 (B7: keine Bestätigung am Termin, die Leistung entsteht mit Haken und Doku, der Haken nimmt sie mit zurück) und ANN-514 (Freigabe zur Abrechnung); die Rollenregel zum Lesen am Termin gilt weiter
 
 **Annahme.** Am dokumentierten Termin bestätigt die behandelnde Person, welche Heilmittel sie geleistet hat — vorbelegt aus der Grundlage, mit einer Rückfrage, geschrieben über dieselbe `record_billable_services` wie im Büro. `therapist` und `team_lead` dürfen das **nur an ihrem eigenen Termin** (ihre Beschäftigtenkennung steht am Termin); `owner` und `office` weiter an jedem. **Zurücknehmen** und das **Ausfallhonorar** (eine Forderung gegen die Patient:in) bleiben bei `owner` und `office`. Ist das Kontingent danach erreicht, sagt die Seite es; eine Rechnung entsteht dabei nie — sie bleibt im Büro (ANN-077). Das Protokoll trägt, ob am Termin oder im Büro erfasst wurde.
 
@@ -4720,6 +4722,8 @@ Oberfläche · offen · 2026-10-12 · — · — · Wiedervorlage: Jannes (Sicht
 
 Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
 
+**Ablösung.** abgelöst durch ANN-517 (B10: Sortierung und Filterchips; das Suchfeld bleibt)
+
 **Annahme.** Die Patientenliste hat ein Suchfeld: Es filtert die geladene Liste nach Name (beide Schreibrichtungen, Umlaute eingeebnet wie `app.suchform`), Ort, PLZ, Telefon und E-Mail; die Eingabetaste öffnet die Akte, wenn genau eine übrig ist. Die serverseitige Namenssuche bleibt in der Kopfleiste und in den Vorgängen.
 
 **Begründung.** Zwei Felder für denselben Bestand (gleiches Leserecht, ADR-004) verlangten eine Wahl vor dem Tippen; Auftrag Design-Rollout B1.
@@ -4934,9 +4938,9 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-475 — Heilmittel nach dem Festschreiben: ein Tipp statt Rückfrage
 
-Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
+Praxisprozess · verworfen · 2026-10-14 · ANN-513 · erledigt · Wiedervorlage: keine
 
-**Ablösung.** ändert ANN-140 nur in der Bedienung auf der Schreibseite („mit einer Rückfrage“); im Terminfenster bleibt die Rückfrage.
+**Ablösung.** ändert ANN-140 nur in der Bedienung auf der Schreibseite („mit einer Rückfrage“); abgelöst durch ANN-513 (B7: keine Heilmittelbestätigung mehr).
 
 **Annahme.** Nach dem Festschreiben bestätigt „Heilmittel bestätigen“ die vorbelegten, sichtbar angehakten Heilmittel mit einem Tipp; die Folge („zählt weiter, korrigieren nur im Büro“) steht am Knopf. Weg, Rollen und Schutz vor Doppelerfassung bleiben beim Server (`record_billable_services`).
 
@@ -5032,7 +5036,9 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
 
 ### ANN-483 — „Rückgängig“ nach dem Haken öffnet den Termin wieder, solange er abgeschlossen ist
 
-Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: —
+Praxisprozess · verworfen · 2026-10-14 · ANN-512 · erledigt · Wiedervorlage: keine
+
+**Ablösung.** abgelöst durch ANN-512: Der Haken lässt sich jederzeit zurücknehmen, auch an einem dokumentierten Termin
 
 **Annahme.** Nach dem Haken steht neben der Meldung „Rückgängig“; es ruft `reopen_appointment` wie „Termin wieder öffnen“ im Terminfenster, ohne Zeitgrenze, solange die Tagesliste den Termin nicht weiter als „abgeschlossen“ führt. Eine Rückfrage vor dem Haken gibt es nicht.
 
@@ -5211,6 +5217,112 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Ziel wählbar machen (Entwurf oder neuer Plan) · Aufwand `klein`.
 
+### ANN-510 — Kein Versorgungsstatus mehr: jede Akte ist planbar
+
+Praxisprozess · entschieden (Jannes) · 2026-10-14 · Jannes (Befund B1) · erledigt · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-002
+
+**Annahme.** „Nicht in Versorgung“ entfällt: `patients.status` nimmt nur noch `active` an, `set_patient_status` und `app.can_change_patient_status` sind entfernt, `create_appointment` prüft keinen Status. Liegengebliebenes zeigt die Patientenliste über offene Verordnungen (ANN-514).
+
+**Begründung.** Befund B1: Der Schalter sperrte nur Termine; Karteileichen erkennt man an Verordnungen, Rechnungen und Mahnungen.
+
+**Anker.** Constraint `patients_status_active_only` in `supabase/migrations/20261112100000_a_001_ohne_versorgungsstatus.sql`.
+
+**Änderungspfad.** Status, Umschalter und Prüfung als neue Migration zurück · Aufwand `mittel`.
+
+### ANN-511 — Fristanker der Akte: die letzte Behandlung, der Abschluss nur, wenn später
+
+Datenschutz · entschieden (Jannes) · 2026-10-14 · Jannes (Befund B1) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (§630f Abs. 3 BGB)
+
+**Ablösung.** ersetzt ANN-032 in der Frage „Fristanker“
+
+**Annahme.** Die zehn Jahre laufen ab dem spätesten Tag aus abgehaktem, dokumentiertem, abgerechnetem oder als nicht angetroffen vermerktem Behandlungstermin, erfasster Leistung und ausdrücklichem Abschluss. Steht ein Behandlungstermin bevor, läuft keine Frist; ohne Behandlung auch nicht.
+
+**Begründung.** Jannes: Die Frist braucht ein Datum auch ohne Abschluss. Rechnungen halten über ihre eigene Frist (ADR-008 Punkt 5); §630f zählt ab der Behandlung.
+
+**Anker.** `app.patient_retention_anchor` in `supabase/migrations/20261112110000_a_002_fristanker_aus_letzter_behandlung.sql`.
+
+**Änderungspfad.** Anderer Anker: diese Funktion · Aufwand `klein`, solange nichts gelöscht wurde.
+
+### ANN-512 — Der Haken ist ein Merkmal neben dem Zustand; Festschreiben hakt nicht ab
+
+Praxisprozess · entschieden (Jannes) · 2026-10-14 · Jannes (Befund B4) · erledigt · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-036 am Behandlungstermin und ANN-483
+
+**Annahme.** Am Behandlungstermin tragen `completed_at`/`completed_by` den Haken. Die Finalisierung hebt auf `documented`, setzt ihn aber nicht; abgehakt wird in Übersicht oder Kalender, auch nach der Doku, und zurücknehmen geht jederzeit (`reopened_at`). Am Trainingstermin gilt ANN-036 weiter.
+
+**Begründung.** Befund B4: Dokumentieren und Abhaken sind getrennt. ADR-018 Punkt 2 („documented kehrt nicht zurück“) bleibt wahr.
+
+**Anker.** `app.mark_appointment_documented` in `supabase/migrations/20261112120000_a_003_haken_als_merkmal.sql`.
+
+**Änderungspfad.** Wieder mit der Finalisierung abhaken: eine Zeile dort · Aufwand `klein`.
+
+### ANN-513 — Haken und Doku erfassen die Leistung von selbst
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Vorbelegung je Heilmittel)
+
+**Ablösung.** ersetzt ANN-475 und ANN-140 in der Frage „wer Heilmittel bestätigt“
+
+**Annahme.** Ist ein Behandlungstermin mit Grundlage abgehakt und dokumentiert, egal in welcher Reihenfolge, erfasst der Server je Heilmittel mit Restmenge eine Einheit und das Terminhonorar; ohne Haken entsteht keine, auch nicht im Büro. Der Haken gehört zum Termin: Wer ihn zurücknehmen darf, auch an einem fremden, nimmt die Leistung mit, solange keine Rechnung und kein Entwurf sie führt.
+
+**Begründung.** Befund B7: Der Haken heißt „Leistung erbracht“. „Tür geöffnet“ rechnet normal ab (§8).
+
+**Anker.** `app.record_default_services` in `supabase/migrations/20261112130000_a_004_leistung_mit_dem_haken.sql`.
+
+**Änderungspfad.** Andere Vorbelegung: diese Funktion · Aufwand `klein`.
+
+### ANN-514 — Stand der Grundlage an einer Stelle; freigeben, sobald nichts offen ist
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rollen der Freigabe)
+
+**Annahme.** Bereit ist eine Grundlage, wenn jeder Termin abgehakt und dokumentiert, abgesagt oder nicht angetroffen ist und kein Entwurf an ihm hängt; vorgeschlagen wird die Freigabe, wenn zudem alle verordneten Termine erbracht sind. Freigeben dürfen owner, therapist, team_lead und office; den Stand ohne Beträge sehen alle Praxisrollen.
+
+**Begründung.** Befunde B1 und B7; eine früher beendete Behandlung soll abrechenbar sein (ADR-020 Punkt 9).
+
+**Anker.** `app.treatment_basis_billing` in `supabase/migrations/20261112140000_a_005_abrechnungsfreigabe_und_sperre.sql`.
+
+**Änderungspfad.** Andere Regel oder Rollen: diese Funktion und `app.can_release_treatment_basis` · Aufwand `klein`.
+
+### ANN-515 — Nach der Freigabe sperrt der Server Doku, Zeit und Terminzahl
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Nachträge nach der Freigabe)
+
+**Annahme.** Ist die Grundlage in der Abrechnung, weisen Trigger ab: Zeit, Zustand, Haken, Zuordnung und Mitarbeitende ihrer Termine, neue Termine, Inhalt, Korrektur und Nachtrag der Doku, Terminzahl, Bauart und Positionen. Zurückholen hebt die Sperre auf, solange keine Rechnung zur Grundlage besteht.
+
+**Begründung.** Befund B7: Was abgerechnet wird, ändert sich nicht mehr; der Server sperrt, nicht die Oberfläche (ADR-004).
+
+**Anker.** `app.appointments_basis_lock` und die Trigger daneben in `supabase/migrations/20261112140000_a_005_abrechnungsfreigabe_und_sperre.sql`.
+
+**Änderungspfad.** Nachträge zulassen: Bedingung im Trigger der Doku · Aufwand `klein`.
+
+### ANN-516 — „Zu mahnen“: überfällig und keine Erinnerung mit laufender Frist
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Eine ausgestellte, nicht stornierte Rechnung ist zu mahnen, wenn ein Betrag offen ist, das Zahlungsziel vor heute liegt und keine Zahlungserinnerung eine Frist bis heute oder später trägt. Liste und Akte zeigen es nur owner und office (ANN-139).
+
+**Begründung.** Befund B1: sehen, wo eine Mahnung fällig ist; eine laufende Erinnerung braucht keine zweite.
+
+**Anker.** `app.invoice_reminder_due` in `supabase/migrations/20261112150000_a_006_patientenuebersicht.sql`.
+
+**Änderungspfad.** Andere Regel: diese Funktion · Aufwand `klein`.
+
+### ANN-517 — Patientenliste: sortieren und zeigen statt Namenssuche ab drei Zeichen
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-430 in der Liste (das Suchfeld bleibt)
+
+**Annahme.** Liste und Wahl der Person für einen Termin laden jede lesbare Akte und sortieren nach „Zuletzt“ (Vorgabe), „Verordnung“ oder „A–Z“; Filterchips zeigen Karteileichen und, für owner und office, Offenes und zu Mahnendes; gesucht wird ab dem ersten Zeichen, der Begriff steht nur in der Kartei in der Adresse. Kopfleiste und Formulare suchen weiter ab drei Zeichen (ANN-061).
+
+**Begründung.** Befund B10; Rechte unverändert: `list_patient_overview` prüft wie `patient_directory`.
+
+**Anker.** `leseSortierung` in `src/features/patients/uebersicht.ts`.
+
+**Änderungspfad.** Andere Vorgabe: dieser Wert · Aufwand `klein`.
+
 ### ANN-520 — Diktat: Vorschlag nur in der Seite, Rohaudio nie gespeichert
 
 Datenschutz · offen · 2026-10-14 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Anbieter mit C6
@@ -5270,3 +5382,63 @@ Technik · offen · 2026-10-14 · — · — · Wiedervorlage: Anbieterentscheid
 **Anker.** Fehlertext `not_configured` in `src/lib/ki/gateway.ts`; die Wahl in `richteEin` in `supabase/functions/ai-gateway/auswahl.ts`.
 
 **Änderungspfad.** Anbieter nach C6: Adapter, Wert in `richteEin`, Eintrag in der Zweckliste · Aufwand `mittel`.
+
+### ANN-525 — Die Einsicht in die Plattform einer Person hat nur owner
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rolle der Einsicht)
+
+**Annahme.** „So sieht … die Plattform“ (DSN-001 D7) darf nur `owner`; therapist, team_lead, office und trainer weist `platform_preview` mit `access.denied` ab.
+
+**Begründung.** Befund B11: „über meinen Zugang“. Später zu öffnen ist billig, eine weitere Rolle wäre neue Sichtbarkeit zwischen Rollen (ADR-013 Punkt 9). Gelesen wird wie in der Akte (ADR-023 Punkt 24).
+
+**Anker.** Rollenprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+
+**Änderungspfad.** Weitere Rolle im Verteiler und in `app.platform_preview_grant`, Knopf in `PlattformAbschnitt` · Aufwand `klein`.
+
+### ANN-526 — Eingesehen wird nur der eigene, aktive Zugang der Person
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Einsicht gibt es nur für den eigenen Zugang der Person im Zustand `active`; eingeladen, gesperrt, entzogen und fremde Organisation weist der Server gleich ab.
+
+**Begründung.** Nur ein aktiver Zugang zeigt der Person etwas (ADR-023 Punkt 18); gleiche Antworten verraten nicht, welcher Zustand vorliegt (§13).
+
+**Anker.** Zugangsprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+
+**Änderungspfad.** Zustand `locked` zulassen und die Leiste „gesperrt“ zeigen lassen · Aufwand `klein`.
+
+### ANN-527 — Die Einsicht listet Dokumente und Anhänge, öffnet sie aber nicht
+
+Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Satz nennt den Ort in der Praxis.
+
+**Begründung.** Öffnen hieße ein neuer Leseweg in den Speicher über den Zugang der Person, mit eigener Regel und eigenem Nachweis. In Akte und Rückfragen öffnet die Praxis dieselbe Datei mit ihrem Nachweis (ADR-010).
+
+**Anker.** `einsichtsApi` in `src/features/platform/einsicht.ts`: `ladeDokumentZumAnzeigen`, `ladeDokumentHerunter` und `ladeAnhang` werfen.
+
+**Änderungspfad.** Eine lesende Signatur über `platform_preview`, mit ADR-Änderung · Aufwand `mittel`.
+
+### ANN-528 — Die Einsicht zeigt die Sicht der Person, nicht die einer Vertretung
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht einer Vertretung)
+
+**Annahme.** „So sieht … die Plattform“ steht nur am eigenen Zugang der Person; was eine Begleitung oder rechtliche Vertretung sieht, zeigt die Einsicht nicht.
+
+**Begründung.** Befund B11 fragt nach der Sicht der Person. Die Sicht einer Vertretung hängt an ihren Rechten (ADR-023 Punkte 13 bis 15) und wäre eine zweite Einsicht mit eigener Prüfung.
+
+**Anker.** Knopf in `PlattformAbschnitt` (`src/features/platform-access/PlattformAbschnitt.tsx`).
+
+**Änderungspfad.** Knopf je Vertretung in `Vertretungen`, Verteiler für Vertretungen öffnen · Aufwand `mittel`.
+
+### ANN-529 — Die Einsicht sperrt Schreibwege über eine nur lesende Transaktion
+
+Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Gibt der Wächter einen Zugang für die Einsicht frei, schaltet er die Transaktion auf `read only`; die Fähigkeiten (`can_write`, `can_answer` …) bleiben, wie die Person sie hat.
+
+**Begründung.** Ein Riegel für jeden Schreibweg, auch die nur mit Recht `read` und künftige (25006 im Test); `writable = false` änderte, was die Einsicht anzeigt.
+
+**Anker.** `app.platform_preview_grant` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+
+**Änderungspfad.** Zusätzlich `app.platform_access_writable` und Schreibrechte in der Einsicht auf `false`, die Projektionen fragen dann einen eigenen Helfer · Aufwand `mittel`.

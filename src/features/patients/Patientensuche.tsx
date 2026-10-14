@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Badge } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { SearchCombobox, type Suchtreffer } from '@/components/ui/SearchCombobox';
@@ -32,8 +31,6 @@ function alsTreffer(patient: PatientSearchHit): Suchtreffer {
     // unterscheiden lassen - dafür steht es hier und für nichts sonst. In
     // derselben Form wie im Kopf der Akte (WRT-15).
     zusatz: patient.date_of_birth ? `geb. ${formatDate(patient.date_of_birth)}` : undefined,
-    abzeichen:
-      patient.status === 'inactive' ? <Badge ton="neutral">Nicht in Versorgung</Badge> : undefined,
   };
 }
 

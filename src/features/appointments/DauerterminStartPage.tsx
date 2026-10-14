@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { fetchPatient, fullName } from '@/features/patients/api';
-import { Patientensuche } from '@/features/patients/Patientensuche';
+import { Patientenauswahl } from '@/features/patients/Patientenauswahl';
 import { canWriteTreatmentBases, type CurrentUser } from '@/features/session/types';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
 import {
@@ -96,9 +96,16 @@ export function DauerterminStartPage({ user }: { user: CurrentUser }) {
 
       {patientId === null ? (
         <Section titel="Patient:in">
-          <div className="max-w-formular">
-            <Patientensuche label="Patient:in suchen" labelSichtbar onAuswahl={waehlePatient} />
-          </div>
+          {/* B10 (BEF-160): die Liste zum Filtern und Sortieren statt der
+              Suche ab drei Zeichen. Eine Zeile wählt die Person. */}
+          <Patientenauswahl
+            ziel={(id) => {
+              const naechste = new URLSearchParams(suche);
+              naechste.set('patient', id);
+              return `${ort.pathname}?${naechste.toString()}`;
+            }}
+            leer={{ titel: 'Noch keine Patient:innen' }}
+          />
         </Section>
       ) : (
         <Grundlagenwahl

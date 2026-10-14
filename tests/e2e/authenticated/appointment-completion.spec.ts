@@ -48,7 +48,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
     await expect(detailWert(page, 'Abgeschlossen am')).not.toBeEmpty();
@@ -65,7 +65,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     // Keine Rueckfrage nach Inhalten. office liest die Dokumentation und sieht
@@ -82,12 +82,13 @@ test.describe('CAL-004: Termin abschliessen', () => {
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     await expect(page.getByRole('link', { name: 'Bearbeiten' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Termin wieder öffnen' })).toBeVisible();
+    // B4 (ADR-018 Fassung 5): Der Haken lässt sich jederzeit zurücknehmen.
+    await expect(page.getByRole('button', { name: 'Haken zurücknehmen' })).toBeVisible();
   });
 
   test('haelt den Zeitraum eines abgeschlossenen Termins weiter belegt', async ({ page }) => {
@@ -97,7 +98,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von, bis });
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     // Anders als bei einer Absage bleibt der Zeitraum belegt: der Termin hat
@@ -118,7 +119,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
 
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     // Ohne Zutun, also im Standardfilter - ein abgehakter Termin darf nicht
@@ -145,10 +146,10 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
-    await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
+    await page.getByRole('button', { name: 'Haken zurücknehmen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Steht aus');
     // Der Abschlusszeitpunkt ist mit dem Status verschwunden.
     await expect(page.getByText('Abgeschlossen am')).toHaveCount(0);
@@ -173,7 +174,8 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
 
-    await expect(page.getByRole('button', { name: 'Termin abschließen' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Abhaken', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Haken zurücknehmen' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Termin wieder öffnen' })).toHaveCount(0);
   });
 });
@@ -208,7 +210,7 @@ test.describe('CAL-004: Serverseitige Grenzen', () => {
 
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     // Die Oberflaeche blendet die Absage aus - verbindlich ist aber der Server

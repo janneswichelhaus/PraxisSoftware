@@ -16,13 +16,8 @@ import { Verlaufstabelle } from '@/components/ui/Verlaufstabelle';
 import { formatDate } from '@/lib/datum';
 import { angabeGueltig, erfassungsgroesse, nurFragen, wertText } from '@/lib/erfassungsgroessen';
 import { bildreihen } from '@/lib/verlaufsbild';
-import {
-  checkinAbsenden,
-  checkinsSchluessel,
-  ladeCheckins,
-  type EigeneCheckins,
-  type Plattformzugang,
-} from './api';
+import { checkinsSchluessel, type EigeneCheckins, type Plattformzugang } from './api';
+import { usePlattformApi } from './einsicht';
 import { leserIn } from './checkintexte';
 import { NICHT_AKUT } from './nachrichtentexte';
 import { Notfallsatz } from './Notfallsatz';
@@ -35,12 +30,13 @@ import { PLATTFORM_PFAD, bereichParameter } from './pfade';
  * Lob, keine Einordnung eines Werts (ADR-006 Punkt 11).
  */
 export function Checkin({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
   const zurueck = `${PLATTFORM_PFAD}${bereich ? `?${bereich}` : ''}`;
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: checkinsSchluessel(zugang.access_id),
-    queryFn: () => ladeCheckins(zugang.access_id),
+    queryFn: () => api.ladeCheckins(zugang.access_id),
   });
 
   return (
@@ -84,6 +80,7 @@ function Formular({
   daten: EigeneCheckins;
   zurueck: string;
 }) {
+  const api = usePlattformApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fragen = (daten.schedule?.parameter_keys ?? [])
@@ -105,7 +102,7 @@ function Formular({
   );
   const [hinweis, setHinweis] = useState<string | undefined>(undefined);
   const absenden = useMutation({
-    mutationFn: (angaben: Record<string, number>) => checkinAbsenden(zugang.access_id, angaben),
+    mutationFn: (angaben: Record<string, number>) => api.checkinAbsenden(zugang.access_id, angaben),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: checkinsSchluessel(zugang.access_id) });
       void navigate(`${zurueck}${zurueck.includes('?') ? '&' : '?'}checkin=1`);
@@ -194,11 +191,12 @@ function Formular({
  * Ereignisse und Planwechsel der Praxis stehen hier nicht.
  */
 export function MeineAngaben({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: checkinsSchluessel(zugang.access_id),
-    queryFn: () => ladeCheckins(zugang.access_id),
+    queryFn: () => api.ladeCheckins(zugang.access_id),
   });
   const vermerk = (art: string) => (art === 'legal_representative' ? 'Vertretung' : null);
   const leer = !data || (data.history.length === 0 && data.session_history.length === 0);

@@ -17,7 +17,6 @@ import type { GeocodeResult } from '@/lib/location/contract';
  */
 const patientSchema = z.object({
   id: z.string(),
-  status: z.enum(['active', 'inactive']),
   care_started_on: z.string().nullable(),
   // Anker der zehnjährigen Aufbewahrung (ADR-008, LOE-001b). Leer bedeutet:
   // laufende Versorgung, keine Frist. Wann der Abschluss festgehalten wurde,
@@ -57,36 +56,8 @@ const patientSchema = z.object({
 
 export type Patient = z.infer<typeof patientSchema>;
 
-/**
- * Die Liste liest eine eigene, schlanke Sicht (R3-012).
- *
- * `patient_list_entries` trägt genau das, was die Liste zeigt und wonach sie
- * sucht. Die Auswahl trifft die Datenbank (ADR-004, „Projektionen"): Eine
- * kürzere Spaltenliste an dieser Stelle wäre dieselbe Entscheidung im Client
- * — und die nächste Erweiterung hätte sie still wieder aufgehoben.
- */
-const patientListenzeileSchema = z.object({
-  id: z.string(),
-  status: z.enum(['active', 'inactive']),
-  given_name: z.string(),
-  family_name: z.string(),
-  date_of_birth: z.string().nullable(),
-  email: z.string().nullable(),
-  phone: z.string().nullable(),
-  postal_code: z.string().nullable(),
-  city: z.string().nullable(),
-});
-
-export type PatientListenzeile = z.infer<typeof patientListenzeileSchema>;
-
-const LISTEN_SELECT = [
-  'id, status',
-  'given_name, family_name, date_of_birth',
-  'email, phone, postal_code, city',
-].join(', ');
-
 const SELECT = [
-  'id, status, care_started_on, care_concluded_on',
+  'id, care_started_on, care_concluded_on',
   'given_name, family_name, date_of_birth',
   'email, phone, phone_work, phone_mobile, institution',
   'street, house_number, postal_code, city',
@@ -96,16 +67,6 @@ const SELECT = [
   'treatment_table_required',
   'take_along_items',
 ].join(', ');
-
-export async function fetchPatients(): Promise<PatientListenzeile[]> {
-  const { data, error } = await getSupabase()
-    .from('patient_list_entries')
-    .select(LISTEN_SELECT)
-    .order('family_name', { ascending: true });
-
-  if (error) throw new Error('Die Patientenliste konnte nicht geladen werden.');
-  return z.array(patientListenzeileSchema).parse(data ?? []);
-}
 
 export async function fetchPatient(patientId: string): Promise<Patient | null> {
   const { data, error } = await getSupabase()
@@ -122,9 +83,8 @@ export async function fetchPatient(patientId: string): Promise<Patient | null> {
 // -----------------------------------------------------------------------------
 // Serverseitige Suche (UX-004)
 //
-// Getrennt von `fetchPatients`: Die Kartei liefert die volle Projektion für
-// eine Liste mit Filtern, die Suche nur Name, Geburtsdatum und Status für eine
-// Trefferliste. Gesucht wird serverseitig - die Alternative wäre, für jedes
+// Getrennt von der Patientenliste (`list_patient_overview`, B10): Die Suche
+// liefert nur Name und Geburtsdatum für eine Trefferliste. Gesucht wird serverseitig - die Alternative wäre, für jedes
 // Suchfeld den gesamten Bestand auszuliefern.
 // -----------------------------------------------------------------------------
 
@@ -143,7 +103,6 @@ const patientSearchHitSchema = z.object({
   given_name: z.string(),
   family_name: z.string(),
   date_of_birth: z.string().nullable(),
-  status: z.enum(['active', 'inactive']),
 });
 
 export type PatientSearchHit = z.infer<typeof patientSearchHitSchema>;
@@ -415,26 +374,6 @@ export async function updatePatient(
   // Keine Details aus der Datenbank nach außen: eine fremde und eine
   // unbekannte ID sollen auch in der Oberfläche gleich aussehen.
   if (error) throw new Error('Die Stammdaten konnten nicht gespeichert werden.');
-}
-
-/**
- * Setzt den organisatorischen Versorgungsstatus.
- *
- * Rein organisatorisch: 'inactive' bedeutet "nicht in laufender Versorgung"
- * und ist kein Behandlungsabschluss im Sinne von ADR-008. Die Berechtigung
- * prüft die Serverfunktion selbst; die ausgeblendete Schaltfläche ist keine
- * Zugriffskontrolle (ADR-004).
- */
-export async function setPatientStatus(
-  patientId: string,
-  status: Patient['status'],
-): Promise<void> {
-  const { error } = await getSupabase().rpc('set_patient_status', {
-    p_patient_id: patientId,
-    p_status: status,
-  });
-
-  if (error) throw new Error('Der Versorgungsstatus konnte nicht geändert werden.');
 }
 
 /**

@@ -41,18 +41,21 @@ test.describe('Termin: Kurzblick, Zähler und Heilmittel', () => {
     await expect(page.getByText('Theraband, Kinesiotape, Übungsplan ausgedruckt')).toBeVisible();
   });
 
-  test('die Behandelnde sieht Zähler und Heilmittel, aber keine Zahlungsangaben', async ({
+  // B7 (BEF-157): Die Leistung steht zur Kontrolle da; abgehakt wird nur der
+  // Termin, keine Heilmittel (ersetzt ANN-475).
+  test('die Behandelnde sieht Zähler und Leistung, hakt keine Heilmittel ab und sieht kein Geld', async ({
     page,
   }) => {
     await page.goto(`${PRUEFSEITE}?ansicht=behandelnd`);
     await expect(page.getByText('Termin 8 von 10')).toBeVisible();
-    await expect(page.getByRole('checkbox', { name: 'Krankengymnastik' })).toBeChecked();
-    await expect(page.getByRole('checkbox', { name: 'Manuelle Therapie' })).not.toBeChecked();
+    await expect(
+      page.getByText('8. von 10 Terminen · Krankengymnastik, Wärmetherapie'),
+    ).toBeVisible();
+    await expect(page.getByText(/Erbracht$/)).toBeVisible();
+    await expect(page.getByRole('checkbox')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Heilmittel bestätigen' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'In die Abrechnung stellen' })).toHaveCount(0);
     await expect(page.getByText('Offene Rechnungen')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Heilmittel bestätigen' }).click();
-    await expect(page.getByRole('group', { name: 'Heilmittel bestätigen' })).toContainText(
-      'Korrigieren lässt sich das danach nur im Büro',
-    );
   });
 
   test('das Büro sieht Empfänger und offene Rechnungen', async ({ page }) => {
@@ -61,14 +64,22 @@ test.describe('Termin: Kurzblick, Zähler und Heilmittel', () => {
     await expect(page.getByText(/1 Rechnung, 90,00\s€ offen – davon überfällig/)).toBeVisible();
   });
 
-  test('nach dem Bestätigen: kein Knopf zum Zurücknehmen, Hinweis bei ausgeschöpfter Grundlage', async ({
-    page,
-  }) => {
-    await page.goto(`${PRUEFSEITE}?ansicht=bestaetigt`);
-    await expect(page.getByText('Bestätigt von Anna Beispiel.')).toBeVisible();
-    await expect(page.getByText(/Die Grundlage ist damit ausgeschöpft/)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Heilmittel bestätigen' })).toHaveCount(0);
-  });
+  for (const breite of [375, 1280]) {
+    test(`ist die Verordnung vollständig, schlägt der Termin die Abrechnung vor (${breite} px)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?ansicht=bestaetigt`);
+      await expect(
+        page.getByText('Verordnung vollständig: 10 von 10 Terminen erbracht und dokumentiert.'),
+      ).toBeVisible();
+      const knopf = page.getByRole('button', { name: 'In die Abrechnung stellen' });
+      await expect(knopf).toBeVisible();
+      expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      await expect(page.getByRole('button', { name: 'Heilmittel bestätigen' })).toHaveCount(0);
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+  }
 });
 
 // UI-Redesign Schritt 4 (Design-Handoff 2026-10-01, Abschnitt 6).
@@ -98,16 +109,16 @@ test.describe('Termin: Anordnung nach dem Design-Handoff', () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=hausbesuch`);
     // Der Abschluss steht als eigene Gruppe vor den Zeilen (BEF-055): „Doku“
-    // als Hauptknopf, „Niemand öffnet?“ daneben, „Nur Termin abschließen“
-    // eingeklappt darunter.
+    // als Hauptknopf, daneben seit B4 (BEF-154) „Abhaken“ als eigener Schritt
+    // und „Niemand öffnet?“.
     const abschluss = page.getByRole('group', { name: 'Abschluss' });
     const niemand = abschluss.getByRole('button', { name: 'Niemand öffnet?' });
     await expect(niemand).toBeVisible();
     expect((await niemand.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(abschluss.getByRole('link', { name: 'Doku schreiben' })).toBeVisible();
-    await expect(
-      abschluss.getByRole('button', { name: 'Nur Termin abschließen', exact: true }),
-    ).toBeHidden();
+    const haken = abschluss.getByRole('button', { name: 'Abhaken', exact: true });
+    await expect(haken).toBeVisible();
+    expect((await haken.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     const auswahl = page.getByRole('group', { name: 'Aktionen' });
     const absage = page.getByRole('button', { name: 'Termin absagen' });
     await absage.scrollIntoViewIfNeeded();

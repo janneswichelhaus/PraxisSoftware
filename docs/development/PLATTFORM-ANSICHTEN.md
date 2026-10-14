@@ -379,6 +379,11 @@ später.
 **Empfehlung (b), später** — frühestens, wenn die Ansicht der Person steht;
 bis dahin zeigt die Person ihr eigenes Handy. Aufgeführt, damit POR-EPIC-002
 die Ansicht nicht so baut, dass die Vorschau später nicht geht.
+*Gebaut 2026-10-14 (E-001, Befund B11) als „Einsicht“:* Knopf „So sieht …
+die Plattform“ im Abschnitt Plattform, nur für die Praxisinhaber:in und nur am
+aktiven eigenen Zugang; dasselbe Gerüst, nur lesend, mit der Leiste „Einsicht ·
+nur lesen“, protokolliert wie das Öffnen der Akte ([ADR-023](../adr/ADR-023-platform-access.md)
+Fassung 5, Punkt 25; ANN-525 bis ANN-529). Die Übungstage sieht dort nur die Person (ANN-307).
 
 ## 9. Was daraus in welchem Loop entsteht
 

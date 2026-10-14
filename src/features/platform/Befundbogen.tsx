@@ -17,15 +17,8 @@ import { antwortFehler, type Antwort, type Antworten } from '@/features/assessme
 import { beschriftung, frageFeldId } from '@/features/assessments/darstellung';
 import type { ScoreDefinition, ScoreItem } from '@/features/assessments/schema';
 import type { Formularfehler } from '@/lib/formularfehler';
-import {
-  befundbogenAbsenden,
-  befundbogenSchluessel,
-  befundbogenSpeichern,
-  befundbogenVerwerfen,
-  ladeBefundbogen,
-  type Bogenstand,
-  type Plattformzugang,
-} from './api';
+import { befundbogenSchluessel, type Bogenstand, type Plattformzugang } from './api';
+import { usePlattformApi } from './einsicht';
 import { bogenschritte, schrittTitel } from './bogenschritte';
 import { fuerDiePlattform } from './instrumentwahl';
 import { PLATTFORM_PFAD } from './pfade';
@@ -46,6 +39,7 @@ import { datum } from './zeit';
  * gesichert, nie im Browser (ADR-001).
  */
 export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const bereich = new URLSearchParams(
     Object.fromEntries([...suche.entries()].filter(([k]) => k === 'bereich' || k === 'zugang')),
@@ -53,7 +47,7 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
   const zurueck = `${PLATTFORM_PFAD}${bereich ? `?${bereich}` : ''}`;
   const stand = useQuery({
     queryKey: befundbogenSchluessel(zugang.access_id),
-    queryFn: () => ladeBefundbogen(zugang.access_id),
+    queryFn: () => api.ladeBefundbogen(zugang.access_id),
   });
   const instrument = fuerDiePlattform()[0];
 
@@ -154,6 +148,7 @@ function Formular({
   entwurf: Bogenstand | undefined;
   zurueck: string;
 }) {
+  const api = usePlattformApi();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [antworten, setAntworten] = useState<Antworten>(
@@ -225,7 +220,7 @@ function Formular({
 
   const speichern = useMutation({
     mutationFn: async (absenden: boolean) => {
-      const id = await befundbogenSpeichern({
+      const id = await api.befundbogenSpeichern({
         zugangId: zugang.access_id,
         entwurfId,
         instrumentId: definition.meta.id,
@@ -233,7 +228,7 @@ function Formular({
         antworten,
       });
       setEntwurfId(id);
-      if (absenden) await befundbogenAbsenden(zugang.access_id, id);
+      if (absenden) await api.befundbogenAbsenden(zugang.access_id, id);
       return absenden;
     },
     onSuccess: async (abgesendet) => {
@@ -244,7 +239,7 @@ function Formular({
   });
 
   const verwerfen = useMutation({
-    mutationFn: () => befundbogenVerwerfen(zugang.access_id, entwurfId!),
+    mutationFn: () => api.befundbogenVerwerfen(zugang.access_id, entwurfId!),
     onSuccess: async () => {
       await neuLaden();
       void navigate(zurueck);

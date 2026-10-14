@@ -13,13 +13,11 @@ import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { tagesreihe } from '@/lib/gewohnheiten';
 import {
   gewohnheitenSchluessel,
-  gewohnheitPausieren,
-  gewohnheitVermerken,
-  ladeGewohnheiten,
   type EigeneGewohnheit,
   type EigeneGewohnheiten,
   type Plattformzugang,
 } from './api';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { tagKurz } from './zeit';
 
@@ -33,11 +31,12 @@ import { tagKurz } from './zeit';
  * Satz über leere Tage steht immer gleich da.
  */
 export function Gewohnheiten({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: gewohnheitenSchluessel(zugang.access_id),
-    queryFn: () => ladeGewohnheiten(zugang.access_id),
+    queryFn: () => api.ladeGewohnheiten(zugang.access_id),
   });
   const laufend = (data?.habits ?? []).filter((g) => g.ended_at === null);
 
@@ -99,20 +98,22 @@ function Eintrag({
   gewohnheit: EigeneGewohnheit;
   daten: EigeneGewohnheiten;
 }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const [fehler, setFehler] = useState<string | undefined>(undefined);
   const neu = async () =>
     queryClient.invalidateQueries({ queryKey: gewohnheitenSchluessel(zugang.access_id) });
   const vermerken = useMutation({
     mutationFn: ({ tag, gemacht }: { tag: string; gemacht: boolean }) =>
-      gewohnheitVermerken(zugang.access_id, gewohnheit.id, tag, gemacht),
+      api.gewohnheitVermerken(zugang.access_id, gewohnheit.id, tag, gemacht),
     onMutate: () => setFehler(undefined),
     onError: (grund: Error) => setFehler(grund.message),
     onSettled: neu,
   });
   const pausieren = useMutation({
     mutationFn: (pausiert: boolean) =>
-      gewohnheitPausieren(zugang.access_id, gewohnheit.id, pausiert),
+      api.gewohnheitPausieren(zugang.access_id, gewohnheit.id, pausiert),
     onMutate: () => setFehler(undefined),
     onError: (grund: Error) => setFehler(grund.message),
     onSettled: neu,
@@ -120,6 +121,8 @@ function Eintrag({
   // ANN-370: die letzten sieben Tage, ältester zuerst; vor dem Beginn nichts.
   const tage = tagesreihe(daten.today, daten.mark_days, gewohnheit.marks, gewohnheit.starts_on);
   const beschaeftigt = vermerken.isPending || pausieren.isPending;
+  // E-001: In der Einsicht wird kein Tag vermerkt und nichts pausiert.
+  const vermerkbar = daten.can_mark && !nurLesen;
   const titelId = `gewohnheit-${gewohnheit.id}`;
 
   return (
@@ -145,7 +148,7 @@ function Eintrag({
               <Chip
                 key={t.datum}
                 gewaehlt={t.vermerkt}
-                disabled={!daten.can_mark || beschaeftigt}
+                disabled={!vermerkbar || beschaeftigt}
                 onClick={() => vermerken.mutate({ tag: t.datum, gemacht: !t.vermerkt })}
                 className="tabular-nums"
               >
@@ -156,7 +159,7 @@ function Eintrag({
         </div>
       )}
       {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-      {daten.can_mark ? (
+      {vermerkbar ? (
         <div>
           <Button
             variant="quiet"

@@ -1680,6 +1680,16 @@ export function schreibfehler(error: { message?: string } | null, standard: stri
       'Der Trainingsvertrag ist beendet – es lassen sich keine Termine mehr planen.',
     );
   }
+  // B7 (ANN-515): Nach „In die Abrechnung stellen“ sind Zeit, Haken und
+  // Anzahl der Termine gesperrt.
+  if (error?.message?.includes('treatment basis is in billing')) {
+    return new Error(
+      'Die Verordnung ist in der Abrechnung. Zum Ändern zuerst in der Akte zurückholen.',
+    );
+  }
+  if (error?.message?.includes('billable services are in billing')) {
+    return new Error('Die Leistung dieses Termins ist schon abgerechnet. Der Haken bleibt.');
+  }
   if (error?.message?.includes('documented appointment cannot be changed')) {
     return new Error(
       'Der Termin ist dokumentiert und lässt sich nicht mehr ändern. Eine Korrektur gehört in die Behandlungsdokumentation.',

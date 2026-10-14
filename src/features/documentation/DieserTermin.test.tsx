@@ -15,7 +15,7 @@ const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const DOKU = `/patienten/${PATIENT_ID}/doku?termin=${TERMIN_ID}`;
 
-const patient: PatientsApi.Patient = testPatient({ id: PATIENT_ID, status: 'active' });
+const patient: PatientsApi.Patient = testPatient({ id: PATIENT_ID });
 
 /** Synthetischer Inhalt. */
 const INHALT = 'Synthetisch: Gangschule im Flur, Treppe mit Gelaender.';

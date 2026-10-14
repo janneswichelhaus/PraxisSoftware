@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  canChangePatientStatus,
   canConcludePatientCare,
   canCorrectPatientFileType,
   canManageAppointments,
@@ -48,30 +47,6 @@ describe('canReadPatientDirectory', () => {
   it('wertet Mehrfachrollen als Vereinigung (ADR-004)', () => {
     expect(canReadPatientDirectory(['patient', 'therapist'])).toBe(true);
     expect(canReadPatientDirectory([])).toBe(false);
-  });
-});
-
-describe('canChangePatientStatus', () => {
-  it.each([['owner'], ['team_lead'], ['office']] as const)(
-    'erlaubt %s den Statuswechsel',
-    (role) => {
-      expect(canChangePatientStatus([role])).toBe(true);
-    },
-  );
-
-  it('schliesst therapist aus, obwohl die Kartei lesbar ist', () => {
-    // Der Statuswechsel ist ein Verwaltungsvorgang, kein Behandlungsschritt.
-    expect(canReadPatientDirectory(['therapist'])).toBe(true);
-    expect(canChangePatientStatus(['therapist'])).toBe(false);
-  });
-
-  it('erlaubt einem reinen Patientenkonto keinen Statuswechsel', () => {
-    expect(canChangePatientStatus(['patient'])).toBe(false);
-    expect(canChangePatientStatus([])).toBe(false);
-  });
-
-  it('wertet Mehrfachrollen als Vereinigung (ADR-004)', () => {
-    expect(canChangePatientStatus(['therapist', 'office'])).toBe(true);
   });
 });
 

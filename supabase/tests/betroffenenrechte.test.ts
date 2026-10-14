@@ -476,7 +476,20 @@ describe('patient_retention_status', () => {
     await resetDatabase();
   }, 120_000);
 
-  it('meldet ohne Abschluss der Versorgung eine Frist, die noch nicht laeuft', async () => {
+  // B1 (ANN-511): Solange ein Termin kommt, laeuft die Versorgung - und
+  // keine Frist. Der kommende Termin steht hier ausdruecklich: Die Termine des
+  // Seeds liegen auf festen Uhrzeiten des Tages und waeren abends vorbei.
+  it('meldet waehrend laufender Versorgung eine Frist, die noch nicht laeuft', async () => {
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, location_id, appointment_type, status,
+         starts_at, ends_at
+       ) values ($1, $2, '55555555-5555-4555-8555-000000000002',
+                 '33333333-3333-4333-8333-000000000001', 'practice', 'confirmed',
+                 date_trunc('hour', now()) + interval '50 hours',
+                 date_trunc('hour', now()) + interval '51 hours')`,
+      [SEED.organizationId, patients.max],
+    );
     const { rows } = await asUser<{ stand: Record<string, unknown> }>(
       users.ownerTherapist,
       AUFBEWAHRUNG,
@@ -493,7 +506,35 @@ describe('patient_retention_status', () => {
     expect(akte['frist_ende']).toBeNull();
   });
 
+  /**
+   * Legt die Termine der Akte so, dass der letzte am `letzter` endet - die
+   * Versorgung ist dann vorbei (B1, ANN-511). Ein Termin wird abgehakt.
+   */
+  async function behandeltBis(letzter: string) {
+    await asPostgres(
+      `with verschiebung as (
+         select timestamptz '${letzter} 09:00:00+01' - max(starts_at) as um
+         from public.appointments where patient_id = $1
+       )
+       update public.appointments a
+          set starts_at = a.starts_at + v.um,
+              ends_at   = a.ends_at + v.um
+         from verschiebung v
+        where a.patient_id = $1`,
+      [patients.max],
+    );
+    await asPostgres(
+      `update public.appointments
+          set status = 'completed', completed_at = ends_at, completed_by = $2::uuid
+        where id = (select id from public.appointments
+                     where patient_id = $1 and status = 'confirmed'
+                     order by starts_at desc limit 1)`,
+      [patients.max, users.therapist],
+    );
+  }
+
   it('rechnet nach dem Abschluss zehn Jahre ab dem Ankerdatum', async () => {
+    await behandeltBis('2026-03-10');
     await asUserCommitted(
       users.ownerTherapist,
       'select public.conclude_patient_care($1::uuid, $2)',
@@ -514,6 +555,43 @@ describe('patient_retention_status', () => {
     // Praxiszeitzone (app.retention_due_at, ADR-008 Punkt 2). Mitte Maerz gilt
     // in Europe/Berlin noch die Normalzeit, deshalb 23:00 UTC des Vortags.
     expect(new Date(String(akte['loeschbar_ab'])).toISOString()).toBe('2036-03-15T23:00:00.000Z');
+  });
+
+  // B1 (BEF-151, ANN-511): Ohne festgehaltenen Abschluss rechnet die Frist ab
+  // der letzten Behandlung; liegt sie nach dem Abschluss, ab ihr.
+  it('rechnet ohne Abschluss ab der letzten Behandlung', async () => {
+    await behandeltBis('2026-05-10');
+
+    const { rows } = await asUser<{ stand: Record<string, unknown> }>(
+      users.ownerTherapist,
+      AUFBEWAHRUNG,
+      [patients.max],
+    );
+
+    const stand = rows[0]!.stand;
+    expect(stand['versorgung_abgeschlossen_am']).toBeNull();
+    const klassen = stand['klassen'] as Record<string, unknown>[];
+    const akte = klassen.find((k) => k['key'] === 'patientenakte')!;
+    expect(akte['anker_datum']).toBe('2026-05-10');
+    expect(akte['frist_ende']).toBe('2036-05-10');
+  });
+
+  it('nimmt die spaetere Behandlung, wenn sie nach dem Abschluss liegt', async () => {
+    await behandeltBis('2026-05-10');
+    await asUserCommitted(
+      users.ownerTherapist,
+      'select public.conclude_patient_care($1::uuid, $2)',
+      [patients.max, '2026-03-15'],
+    );
+
+    const { rows } = await asUser<{ stand: Record<string, unknown> }>(
+      users.ownerTherapist,
+      AUFBEWAHRUNG,
+      [patients.max],
+    );
+    const klassen = rows[0]!.stand['klassen'] as Record<string, unknown>[];
+    const akte = klassen.find((k) => k['key'] === 'patientenakte')!;
+    expect(akte['anker_datum']).toBe('2026-05-10');
   });
 
   it('nennt eine laufende Loeschsperre als eigenen Grund', async () => {

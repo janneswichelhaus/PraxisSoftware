@@ -10,8 +10,10 @@ import {
 /**
  * „Besuch in einem Zug“ (Auftrag C1, Kernablauf K5 in
  * `docs/product/kernablaeufe.md`): von der Tür bis zur Navigation zum
- * nächsten Besuch - dokumentieren, Heilmittel bestätigen, Folgetermin
- * anlegen, zurück in den Tag, losfahren.
+ * nächsten Besuch - dokumentieren, Folgetermin anlegen, zurück in den Tag,
+ * abhaken, losfahren. Seit B4 und B7 (BEF-154, BEF-157) hakt das
+ * Festschreiben nicht ab, und Heilmittel bestätigt niemand mehr: Mit Haken
+ * und Doku erfasst der Server die Leistung selbst.
  *
  * Gezählt wird, was die Software verlangt: Tipps (Berührungen, ohne den
  * getippten Text) und Wechsel (neue Route in der Anwendung; die Übergabe an
@@ -22,7 +24,7 @@ import {
  * Die Prüfseite hat keinen Server. Was die Seiten schreiben und nachladen,
  * beantwortet hier eine kleine Nachbildung - und hält fest, dass jeder
  * Vorgang über den bestehenden Weg genau einmal lief (`complete_treatment`,
- * `record_billable_services`, `create_appointment`).
+ * `complete_appointment`, `create_appointment`).
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/besuch.html';
 const ZONE = 'Europe/Berlin';
@@ -70,6 +72,8 @@ function nachbildung() {
       kind: 'therapy',
       title: null,
       status: festgeschrieben ? 'documented' : stand.abgeschlossen ? 'completed' : 'confirmed',
+      // B4: der Haken neben dem Zustand (ADR-018 Fassung 5).
+      checked_at: stand.abgeschlossen ? um('09:55').toISOString() : null,
       starts_at: um('09:00').toISOString(),
       ends_at: um('10:00').toISOString(),
       patient_given_name: 'Erika',
@@ -98,6 +102,7 @@ function nachbildung() {
       kind: 'therapy',
       title: null,
       status: 'confirmed',
+      checked_at: null,
       starts_at: um('10:30').toISOString(),
       ends_at: um('11:30').toISOString(),
       patient_given_name: 'Max',
@@ -137,7 +142,7 @@ function nachbildung() {
     visit_house_number: '7',
     visit_postal_code: '72072',
     visit_city: 'Tuebingen',
-    completed_at: null,
+    completed_at: stand.abgeschlossen ? um('09:55').toISOString() : null,
     cancellation_reason: null,
     no_show_recorded_at: null,
     no_show_protocol_confirmed: null,
@@ -353,28 +358,33 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
   await tippe(karte.getByRole('link', { name: 'Doku zu diesem Termin' }));
   await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
 
-  // 2. Festschreiben - die Seite bleibt stehen und zeigt „Danach".
+  // 2. Festschreiben - die Seite bleibt stehen und zeigt „Danach". Es hakt
+  // nicht ab (B4), und Heilmittel bestätigt niemand (B7).
   await tippe(page.getByRole('button', { name: 'Festschreiben' }));
   await expect(
     page.getByText('Eintrag als Version 1 festgeschrieben.', { exact: false }),
   ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Heilmittel bestätigen' })).toHaveCount(0);
+  await expect(page.getByRole('checkbox')).toHaveCount(0);
 
-  // 3. Heilmittel vorbelegt, ein Tipp (ANN-475).
-  await expect(page.getByRole('checkbox', { name: 'Krankengymnastik' })).toBeChecked();
-  await tippe(page.getByRole('button', { name: 'Heilmittel bestätigen' }));
-  await expect(page.getByText(/Bestätigt: Krankengymnastik, Hausbesuch/)).toBeVisible();
-
-  // 4. Folgetermin: nächste Woche, gleiche Zeit, ein Tipp (ANN-477).
+  // 3. Folgetermin: nächste Woche, gleiche Zeit, ein Tipp (ANN-477).
   const gleich = page.getByRole('button', {
     name: /Folgetermin anlegen: .* · 09:00 · gleiche Zeit/,
   });
   await tippe(gleich);
   await expect(page.getByText(/Folgetermin angelegt: /)).toBeVisible();
 
-  // 5. Fertig - zurück in den Tag.
+  // 4. Fertig - zurück in den Tag.
   await tippe(page.getByRole('button', { name: 'Fertig' }));
   const naechste = page.getByRole('article');
   await expect(naechste.getByRole('link', { name: 'Max Mustermann', exact: true })).toBeVisible();
+
+  // 5. Abhaken an der Zeile des eben dokumentierten Besuchs - gleich, nicht
+  // erst nach seinem Ende (B4).
+  await tippe(page.getByRole('button', { name: 'Termin abschließen: Erika Beispiel' }));
+  await expect(page.getByRole('status').filter({ hasText: 'abgeschlossen' })).toHaveText(
+    /Erika Beispiel abgeschlossen\./,
+  );
 
   // 6. Navigation zum nächsten Besuch, Übergabe an die Karten-App.
   const karten = page.waitForEvent('popup');
@@ -383,22 +393,21 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
 
   const wege = await page.evaluate(() => (window as unknown as { __wege: string[] }).__wege);
   const wechsel = wege.length - 1;
-  // Festgehalten für den Bericht: vorher ≈ 12 Tipps, 8 Wechsel.
+  // Festgehalten für den Bericht: vorher ≈ 12 Tipps, 8 Wechsel; mit Heilmittel-
+  // bestätigung 6 Tipps (ANN-475), seit B4/B7 der Haken statt der Heilmittel.
   test.info().annotations.push({ type: 'K5', description: `${tipps} Tipps, ${wechsel} Wechsel` });
   expect(tipps).toBeLessThanOrEqual(6);
   expect(wechsel).toBeLessThanOrEqual(2);
   expect(wege).toEqual(['/', `/termine/${BESUCH_1}/abschluss?zurueck=%2F`, '/']);
 
-  // Jeder Vorgang lief genau einmal über den bestehenden Weg.
+  // Jeder Vorgang lief genau einmal über den bestehenden Weg; die Leistung
+  // erfasst der Server mit Haken und Doku selbst (ANN-513).
   expect(server.aufrufe.complete_treatment).toHaveLength(1);
-  expect(server.aufrufe.record_billable_services).toHaveLength(1);
-  expect(server.aufrufe.record_billable_services?.[0]).toMatchObject({
+  expect(server.aufrufe.complete_appointment).toHaveLength(1);
+  expect(server.aufrufe.complete_appointment?.[0]).toMatchObject({
     p_appointment_id: BESUCH_1,
-    p_items: [
-      { catalog_item_id: 'k1', quantity: 1 },
-      { catalog_item_id: 'k2', quantity: 1 },
-    ],
   });
+  expect(server.aufrufe.record_billable_services).toBeUndefined();
   expect(server.aufrufe.create_appointment).toHaveLength(1);
   expect(server.aufrufe.create_appointment?.[0]).toMatchObject({
     p_date: tagePlus(heute(), 7),
@@ -597,7 +606,6 @@ for (const [breite, hoehe] of [
     await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
     await page.getByRole('button', { name: 'Festschreiben' }).click();
-    await expect(page.getByRole('button', { name: 'Heilmittel bestätigen' })).toBeVisible();
     await expect(page.getByRole('button', { name: /gleiche Zeit/ })).toBeVisible();
 
     // „Fertig" bleibt im Bild, am Telefon über der Tableiste.

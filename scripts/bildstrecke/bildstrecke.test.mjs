@@ -23,6 +23,10 @@ const PLATTFORM = routenmusterAusQuelle(
   { konstanten: new Map([['PLATTFORM_PFAD', PLATTFORM_PFAD]]) },
 );
 const ERFASST = new Set(ROUTEN.map((route) => route.muster));
+/** Eine Route je Muster - die Einsicht der Praxis (E-001) zählt für sich. */
+const EINDEUTIG = new Set(
+  ROUTEN.map((route) => (route.einsicht ? `${route.muster} (Einsicht)` : route.muster)),
+);
 const AUSNAHMEN = new Set(AUSGENOMMEN.map((eintrag) => eintrag.muster));
 
 describe('Routenliste der Bildstrecke', () => {
@@ -63,7 +67,7 @@ describe('Routenliste der Bildstrecke', () => {
   });
 
   it('Bereiche, Etiketten und Konten sind gültig, Muster eindeutig', () => {
-    expect(ERFASST.size).toBe(ROUTEN.length);
+    expect(EINDEUTIG.size).toBe(ROUTEN.length);
     for (const route of ROUTEN) {
       expect(BEREICHE, route.muster).toContain(route.bereich);
       expect(route.etikett.trim().length, route.muster).toBeGreaterThan(2);
@@ -73,6 +77,14 @@ describe('Routenliste der Bildstrecke', () => {
       }
       // Plattformseiten nur mit Plattformkonten, Praxisseiten nie mit ihnen.
       const plattform = route.muster === PLATTFORM_PFAD || route.muster.startsWith('/p/');
+      if (route.einsicht) {
+        // E-001: Die Einsicht zeigt eine Plattformseite, und nur der
+        // Praxisinhaber:in - nie einem Plattformkonto, nie einer anderen Rolle.
+        expect(plattform, route.muster).toBe(true);
+        expect(route.oeffentlich, route.muster).toBeUndefined();
+        expect(route.konten, route.muster).toEqual(['owner']);
+        continue;
+      }
       for (const konto of route.konten) {
         if (route.oeffentlich) expect(konto, route.muster).toBe('ohne');
         else expect(PLATTFORMKONTEN.has(konto), `${route.muster}: ${konto}`).toBe(plattform);

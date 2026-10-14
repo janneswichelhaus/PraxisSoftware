@@ -29,7 +29,6 @@ const MAX = {
   given_name: 'Max',
   family_name: 'Mustermann',
   date_of_birth: '1957-04-30',
-  status: 'active' as const,
 };
 
 const PETRA = {
@@ -37,7 +36,6 @@ const PETRA = {
   given_name: 'Petra',
   family_name: 'Platzhalter',
   date_of_birth: '1971-12-05',
-  status: 'inactive' as const,
 };
 
 /**
@@ -83,13 +81,15 @@ describe('Patientensuche', () => {
     expect(await screen.findByText('geb. 30.04.1957')).toBeInTheDocument();
   });
 
-  it('kennzeichnet eine nicht laufende Versorgung als Text', async () => {
+  // B1 (BEF-151): Einen Versorgungsstatus gibt es nicht mehr - auch kein Etikett.
+  it('nennt keinen Versorgungsstatus mehr', async () => {
     searchPatients.mockResolvedValue([PETRA]);
     const user = userEvent.setup();
     renderWithProviders(<Patientensuche />);
 
     await user.type(screen.getByRole('combobox', { name: 'Patient:in suchen' }), 'pla');
-    expect(await screen.findByText('Nicht in Versorgung')).toBeInTheDocument();
+    expect(await screen.findByText(/Platzhalter/)).toBeInTheDocument();
+    expect(screen.queryByText(/in Versorgung/i)).toBeNull();
   });
 
   it('sagt "Kein Treffer" statt eine leere Flaeche zu zeigen', async () => {

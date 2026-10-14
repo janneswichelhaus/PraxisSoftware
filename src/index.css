@@ -296,6 +296,10 @@
      Fließtext `max-w-prose`. */
   --container-formular: 36rem;
   --container-spalte: 48rem;
+  /* Die Einsicht der Praxis in die Plattform (E-001, DSN-001 D7): am breiten
+     Bildschirm ein Telefon von 390 px, so breit, wie die Person die
+     Plattform meist sieht. */
+  --container-telefon: 24.375rem;
 }
 
 /* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,

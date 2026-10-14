@@ -230,7 +230,7 @@ test.describe('CAL-006: Verschieben', () => {
 
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, { tag, von, bis });
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);

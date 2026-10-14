@@ -376,13 +376,6 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
                           ? `geb. ${formatDate(patient.date_of_birth)}`
                           : undefined
                       }
-                      abzeichen={
-                        patient.status === 'inactive' ? (
-                          <span className="text-ink-muted shrink-0 text-xs">
-                            Nicht in Versorgung
-                          </span>
-                        ) : undefined
-                      }
                       onWaehlen={() => ausfuehren({ art: 'patient', patient })}
                     />
                   ))}

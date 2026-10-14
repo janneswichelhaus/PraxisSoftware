@@ -25,7 +25,6 @@ const DUBLETTE = '66666666-6666-4666-8666-0000000000d3';
 
 const petra = {
   id: PETRA,
-  status: 'active',
   care_started_on: '2026-02-10',
   care_concluded_on: null,
   given_name: 'Petra',
@@ -53,7 +52,6 @@ const treffer: PatientSearchHit[] = [
     given_name: 'Petra',
     family_name: 'Platzhalter',
     date_of_birth: null,
-    status: 'active',
   },
 ];
 
@@ -63,7 +61,6 @@ const plan: Zusammenfuehrungsplan = {
     given_name: 'Petra',
     family_name: 'Platzhalter',
     date_of_birth: null,
-    status: 'active',
     care_concluded_on: null,
   },
   target: {
@@ -71,7 +68,6 @@ const plan: Zusammenfuehrungsplan = {
     given_name: 'Petra',
     family_name: 'Platzhalter',
     date_of_birth: '1971-12-05',
-    status: 'active',
     care_concluded_on: null,
   },
   counts: {

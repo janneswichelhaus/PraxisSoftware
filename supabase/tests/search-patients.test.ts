@@ -31,7 +31,8 @@ describe('search_patients', () => {
   beforeAll(async () => {
     await resetDatabase();
 
-    // Zwei Namen mit Umlauten und Sonderzeichen, rein synthetisch.
+    // Zwei Namen mit Umlauten und Sonderzeichen, rein synthetisch. Seit B1
+    // (ANN-510) gibt es nur noch den Status 'active'.
     await asPostgres(
       `with neu as (
          insert into public.persons (organization_id, given_name, family_name)
@@ -39,8 +40,7 @@ describe('search_patients', () => {
          returning id, family_name
        )
        insert into public.patients (organization_id, person_id, status)
-       select $1, neu.id, case when neu.family_name = 'Müller' then 'active' else 'inactive' end
-       from neu`,
+       select $1, neu.id, 'active' from neu`,
       [organizationId],
     );
   }, 120_000);

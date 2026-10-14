@@ -131,7 +131,6 @@ const PATIENT = '66666666-6666-4666-8666-000000000001';
 
 const patient: Patient = {
   id: PATIENT,
-  status: 'active',
   care_started_on: '2026-08-01',
   care_concluded_on: null,
   given_name: 'Max',

@@ -553,14 +553,13 @@ export function zeitImLauf(lauf: number, minutenAbAcht = 0, stufen = 12): string
  * ab und bleibt stehen. Auf einem belasteten Runner ist genau das passiert.
  */
 /**
- * Schließt den offenen Termin ohne Dokumentation ab (BEF-055): Für
- * Behandelnde liegt der Weg seit UX-EPIC-007 eingeklappt unter „Nur Termin
- * abschließen“; „Doku“ ist der Hauptknopf.
+ * Hakt den offenen Termin ab, ohne zu dokumentieren (B4, BEF-154): Seit
+ * ADR-018 Fassung 5 steht „Abhaken“ neben „Doku“, und das Festschreiben
+ * hakt nicht ab.
  */
 export async function nurTerminAbschliessen(page: Page): Promise<void> {
   const fenster = page.getByRole('dialog');
-  await fenster.locator('summary', { hasText: 'Nur Termin abschließen' }).click();
-  await fenster.getByRole('button', { name: 'Nur Termin abschließen', exact: true }).click();
+  await fenster.getByRole('button', { name: 'Abhaken', exact: true }).click();
 }
 
 export async function terminUeberOberflaeche(

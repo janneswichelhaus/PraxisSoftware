@@ -7,7 +7,8 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
 import { Benachrichtigungen } from './Benachrichtigungen';
-import { BEREICHSNAME, einstiegSchluessel, ladeEinstieg, type Plattformzugang } from './api';
+import { BEREICHSNAME, einstiegSchluessel, type Plattformzugang } from './api';
+import { usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import {
   SCHRIFTGROESSEN,
@@ -98,9 +99,10 @@ function Schriftwahl({
 
 /** Der Einstieg je Zugang: beendet oder von der Praxis übersprungen. */
 function EinstiegStand({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: einstiegSchluessel(zugang.access_id),
-    queryFn: () => ladeEinstieg(zugang.access_id),
+    queryFn: () => api.ladeEinstieg(zugang.access_id),
     retry: false,
   });
   if (!data || (!data.skipped_at && !data.finished_at)) return null;

@@ -178,12 +178,43 @@ describe('Uebergaenge ohne Rueckweg (ADR-018 Punkt 2)', () => {
     expect(await zustand(termin.id)).toBe('cancelled');
   });
 
-  it('oeffnet einen dokumentierten Termin nicht wieder - korrigiert wird in der Dokumentation', async () => {
+  // B4 (BEF-154, ADR-018 Fassung 5): Der Haken laesst sich jederzeit
+  // zuruecknehmen - auch nach dem Festschreiben. Zurueck nach 'confirmed'
+  // geht ein dokumentierter Termin dabei nie: Korrigiert wird die Doku.
+  it('nimmt an einem dokumentierten Termin nur den Haken zurueck - der Zustand bleibt (B4)', async () => {
     const termin = await anlegen();
     const dokumentiert = await zustandSetzen(termin.id, 'documented');
 
+    await asUserCommitted(users.office, OEFFNEN, [dokumentiert.id, dokumentiert.updated_at]);
+
+    const { rows } = await asPostgres<{
+      status: string;
+      completed_at: string | null;
+      completed_by: string | null;
+      reopened_by: string | null;
+    }>(
+      'select status, completed_at, completed_by, reopened_by from public.appointments where id = $1',
+      [termin.id],
+    );
+    expect(rows[0]).toEqual({
+      status: 'documented',
+      completed_at: null,
+      completed_by: null,
+      reopened_by: users.office,
+    });
+  });
+
+  it('hat an einem dokumentierten Termin ohne Haken nichts zurueckzunehmen', async () => {
+    const termin = await anlegen();
+    await zustandSetzen(termin.id, 'documented');
+    await asPostgres(
+      'update public.appointments set completed_at = null, completed_by = null where id = $1',
+      [termin.id],
+    );
+    const ohneHaken = await stand(termin.id);
+
     await expect(
-      asUser(users.office, OEFFNEN, [dokumentiert.id, dokumentiert.updated_at]),
+      asUser(users.office, OEFFNEN, [ohneHaken.id, ohneHaken.updated_at]),
     ).rejects.toThrow(/not completed/);
     expect(await zustand(termin.id)).toBe('documented');
   });
@@ -560,9 +591,28 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
     expect(await invarianteGilt()).toBe(true);
   });
 
-  it('setzt dabei completed_at, laesst completed_by aber leer - es hat niemand abgeschlossen', async () => {
+  // B4 (BEF-154, ANN-512): Festschreiben hakt nicht ab. Bis dahin setzte die
+  // Finalisierung completed_at mit (ANN-036).
+  it('setzt dabei keinen Haken - Doku und Haken sind getrennt (B4)', async () => {
     const termin = await anlegen();
     const notiz = await entwurf(termin.id);
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+
+    const { rows } = await asPostgres<{
+      status: string;
+      completed_at: string | null;
+      completed_by: string | null;
+    }>('select status, completed_at, completed_by from public.appointments where id = $1', [
+      termin.id,
+    ]);
+    expect(rows[0]).toEqual({ status: 'documented', completed_at: null, completed_by: null });
+  });
+
+  it('behaelt den Haken eines abgehakten Termins bei der Finalisierung', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+    const fertig = await stand(termin.id);
+    await asUserCommitted(users.office, ABSCHLIESSEN, [fertig.id, fertig.updated_at]);
     await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
 
     const { rows } = await asPostgres<{ completed_at: string | null; completed_by: string | null }>(
@@ -570,7 +620,34 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
       [termin.id],
     );
     expect(rows[0]?.completed_at).not.toBeNull();
-    expect(rows[0]?.completed_by).toBeNull();
+    expect(rows[0]?.completed_by).toBe(users.office);
+  });
+
+  it('hakt einen dokumentierten Termin ohne Haken ab, ohne den Zustand zu aendern (B4)', async () => {
+    const termin = await anlegen();
+    const notiz = await entwurf(termin.id);
+    await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
+    const ohneHaken = await stand(termin.id);
+
+    await asUserCommitted(users.office, ABSCHLIESSEN, [ohneHaken.id, ohneHaken.updated_at]);
+
+    const { rows } = await asPostgres<{
+      status: string;
+      completed_at: string | null;
+      completed_by: string | null;
+    }>('select status, completed_at, completed_by from public.appointments where id = $1', [
+      termin.id,
+    ]);
+    expect(rows[0]?.status).toBe('documented');
+    expect(rows[0]?.completed_at).not.toBeNull();
+    expect(rows[0]?.completed_by).toBe(users.office);
+    expect(await invarianteGilt()).toBe(true);
+
+    // Ein zweiter Haken ist keiner.
+    const abgehakt = await stand(termin.id);
+    await expect(
+      asUser(users.office, ABSCHLIESSEN, [abgehakt.id, abgehakt.updated_at]),
+    ).rejects.toThrow(/already completed/);
   });
 
   it('weist die Finalisierung an der Dokumentation nach, nicht im Auditlog (LOG-EPIC-001)', async () => {

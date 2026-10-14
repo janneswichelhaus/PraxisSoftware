@@ -19,15 +19,6 @@ import {
   befundbogenSchluessel,
   checkinsSchluessel,
   gewohnheitenSchluessel,
-  ladeAbo,
-  ladeBefundbogen,
-  ladeCheckins,
-  ladeGewohnheiten,
-  ladeRechnungen,
-  ladeTermine,
-  ladeNachrichten,
-  ladeTrainingsangebot,
-  ladeWuensche,
   nachrichtenSchluessel,
   rechnungenSchluessel,
   trainingsangebotSchluessel,
@@ -35,6 +26,7 @@ import {
   wuenscheSchluessel,
   type Plattformzugang,
 } from './api';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import { nachDemCheckin } from './checkintexte';
 import { fuerDiePlattform } from './instrumentwahl';
 import { NICHT_AKUT, THEMA_NAME } from './nachrichtentexte';
@@ -63,11 +55,17 @@ export function Uebersicht({
   praxis,
   zugang,
   eigeneBereiche,
+  einstiegSteht = false,
 }: {
   praxis: string;
   zugang: Plattformzugang;
   eigeneBereiche: number;
+  /** E-001: nur in der Einsicht - die Person sähe zuerst den Einstieg. */
+  einstiegSteht?: boolean;
 }) {
+  const api = usePlattformApi();
+  // E-001: In der Einsicht führt keine Zeile auf eine Seite, die nur schreibt.
+  const nurLesen = useNurLesen();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
   const mit = (pfad: string) => `${PLATTFORM_PFAD}${pfad}${bereich ? `?${bereich}` : ''}`;
@@ -77,31 +75,31 @@ export function Uebersicht({
 
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
-    queryFn: () => ladeTermine(zugang.access_id),
+    queryFn: () => api.ladeTermine(zugang.access_id),
   });
   const wuensche = useQuery({
     queryKey: wuenscheSchluessel(zugang.access_id),
-    queryFn: () => ladeWuensche(zugang.access_id),
+    queryFn: () => api.ladeWuensche(zugang.access_id),
   });
   const rechnungen = useQuery({
     queryKey: rechnungenSchluessel(zugang.access_id),
-    queryFn: () => ladeRechnungen(zugang.access_id),
+    queryFn: () => api.ladeRechnungen(zugang.access_id),
   });
   // KOM-001: eine Antwort der Praxis auf eine Nachricht (DSN-001 4.1 Punkt 5).
   const nachrichten = useQuery({
     queryKey: nachrichtenSchluessel(zugang.access_id),
-    queryFn: () => ladeNachrichten(zugang.access_id),
+    queryFn: () => api.ladeNachrichten(zugang.access_id),
   });
   const bogen = useQuery({
     queryKey: befundbogenSchluessel(zugang.access_id),
-    queryFn: () => ladeBefundbogen(zugang.access_id),
+    queryFn: () => api.ladeBefundbogen(zugang.access_id),
     enabled: behandlung,
   });
 
   // ANG-004 (ANN-274): Nach einem Nachsorge-Abo zählt die Lesezeit vom Ende des Abos.
   const abo = useQuery({
     queryKey: aboSchluessel(zugang.access_id),
-    queryFn: () => ladeAbo(zugang.access_id),
+    queryFn: () => api.ladeAbo(zugang.access_id),
     enabled: behandlung,
   });
   const aboEndet = abo.data && abo.data.state !== 'running' ? abo.data : null;
@@ -110,7 +108,7 @@ export function Uebersicht({
   // nicht - der Server liefert ihr nichts (Recht contract).
   const angebot = useQuery({
     queryKey: trainingsangebotSchluessel(zugang.access_id),
-    queryFn: () => ladeTrainingsangebot(zugang.access_id),
+    queryFn: () => api.ladeTrainingsangebot(zugang.access_id),
     enabled: behandlung && zugang.access_kind !== 'companion',
   });
 
@@ -118,13 +116,13 @@ export function Uebersicht({
   // Mahnung: Verpasstes zählt nicht (IDEA-TRK-004).
   const checkin = useQuery({
     queryKey: checkinsSchluessel(zugang.access_id),
-    queryFn: () => ladeCheckins(zugang.access_id),
+    queryFn: () => api.ladeCheckins(zugang.access_id),
   });
   const checkinOffen = Boolean(checkin.data?.can_answer);
   // ALT-003: laufende Gewohnheiten zum Antippen - ohne Zählwerk, ohne Mahnung.
   const gewohnheiten = useQuery({
     queryKey: gewohnheitenSchluessel(zugang.access_id),
-    queryFn: () => ladeGewohnheiten(zugang.access_id),
+    queryFn: () => api.ladeGewohnheiten(zugang.access_id),
   });
   const laufendeGewohnheiten = (gewohnheiten.data?.habits ?? []).filter(
     (g) => g.ended_at === null && !g.paused,
@@ -223,6 +221,11 @@ export function Uebersicht({
               : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`}
         </Statusmeldung>
       ) : null}
+      {einstiegSteht ? (
+        <Statusmeldung className="mb-4" ton="neutral">
+          Der Einstieg steht noch aus. Beim nächsten Öffnen sieht die Person ihn zuerst.
+        </Statusmeldung>
+      ) : null}
 
       {gescheitert ? (
         <ErrorState
@@ -249,7 +252,7 @@ export function Uebersicht({
         <Listenabschnitt titel="Jetzt dran">
           {bogenOffen ? (
             <ListRow
-              to={mit('/befundbogen')}
+              {...(nurLesen ? {} : { to: mit('/befundbogen') })}
               titel={bogenEntwurf ? 'Befundbogen weiter ausfüllen' : 'Befundbogen ausfüllen'}
               meta={[
                 instrument?.meta.name_de ?? 'Befundbogen',
@@ -269,7 +272,7 @@ export function Uebersicht({
           ) : null}
           {checkinOffen && checkin.data?.schedule ? (
             <ListRow
-              to={mit('/checkin')}
+              {...(nurLesen ? {} : { to: mit('/checkin') })}
               titel="Check-in beantworten"
               meta={`${
                 // Der Zusammenhang zählt nicht als Frage (ANN-355, ANN-369).
@@ -375,9 +378,11 @@ export function Uebersicht({
             unter die letzte Zeile des Satzes (`Notrufnummer`); ohne den
             Abstand lägen beide Ziele übereinander, sobald die Nummer am
             Zeilenanfang steht (Sichtung 13.10.2026, neu4). */}
-        <Textlink alleinstehend to={mit('/nachrichten')} className="mt-4">
-          Der Praxis schreiben →
-        </Textlink>
+        {nurLesen ? null : (
+          <Textlink alleinstehend to={mit('/nachrichten')} className="mt-4">
+            Der Praxis schreiben →
+          </Textlink>
+        )}
       </Section>
     </>
   );

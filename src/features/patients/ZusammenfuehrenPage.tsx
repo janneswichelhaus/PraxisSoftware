@@ -42,9 +42,9 @@ function Kopf({ titel, person }: { titel: string; person: Zusammenfuehrungsplan[
   return (
     <Tile
       label={titel}
-      zusatz={`${person.date_of_birth ? `geb. ${formatDate(person.date_of_birth)}` : 'ohne Geburtsdatum'} · ${
-        person.status === 'active' ? 'in Versorgung' : 'nicht in Versorgung'
-      }`}
+      zusatz={
+        person.date_of_birth ? `geb. ${formatDate(person.date_of_birth)}` : 'ohne Geburtsdatum'
+      }
     >
       {person.given_name} {person.family_name}
     </Tile>
@@ -76,7 +76,7 @@ function Vorschau({
   const mutation = useMutation({
     mutationFn: () => mergePatients(dubletteId, patient.id),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-overview'] });
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
       queryClient.removeQueries({ queryKey: ['patient', dubletteId] });
       onFertig();

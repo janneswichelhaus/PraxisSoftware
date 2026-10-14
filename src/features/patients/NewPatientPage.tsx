@@ -91,7 +91,7 @@ export function NewPatientPage() {
   const mutation = useMutation({
     mutationFn: createPatient,
     onSuccess: async (patientId) => {
-      await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-overview'] });
       const trenner = zurueck.includes('?') ? '&' : '?';
       // Gespeichert: Der eigene Weg hinaus ist kein Verlust (ANN-046).
       freigeben();
@@ -223,7 +223,6 @@ export function NewPatientPage() {
                   >
                     {treffer.given_name} {treffer.family_name}
                     {treffer.date_of_birth ? `, geb. ${formatDate(treffer.date_of_birth)}` : ''}
-                    {treffer.status === 'inactive' ? ' (nicht in Versorgung)' : ''}
                   </Textlink>
                 </li>
               ))}

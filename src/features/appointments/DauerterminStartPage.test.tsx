@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from '@/features/patients/api';
+import type * as UebersichtApi from '@/features/patients/uebersicht';
 import type * as GrundlagenApi from '@/features/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const navigate = vi.fn();
-const searchPatients = vi.fn();
+const fetchPatientOverview = vi.fn();
 const fetchPatient = vi.fn();
 const fetchPatientTreatmentBases = vi.fn();
 const fetchPatientTreatmentBasesClinical = vi.fn();
@@ -17,11 +18,14 @@ vi.mock('@/features/patients/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,
-    searchPatients: (begriff: string) =>
-      searchPatients(begriff) as Promise<PatientsApi.PatientSearchHit[]>,
     fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
   };
 });
+
+vi.mock('@/features/patients/uebersicht', async (importOriginal) => ({
+  ...(await importOriginal<typeof UebersichtApi>()),
+  fetchPatientOverview: () => fetchPatientOverview() as Promise<UebersichtApi.Patienteneintrag[]>,
+}));
 
 vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
   const actual = await importOriginal<typeof GrundlagenApi>();
@@ -97,7 +101,31 @@ function rendern(pfad: string) {
 describe('DauerterminStartPage', () => {
   beforeEach(() => {
     navigate.mockReset();
-    searchPatients.mockReset().mockResolvedValue([MAX]);
+    fetchPatientOverview.mockReset().mockResolvedValue([
+      {
+        id: MAX.id,
+        given_name: MAX.given_name,
+        family_name: MAX.family_name,
+        date_of_birth: MAX.date_of_birth,
+        email: null,
+        phone: null,
+        postal_code: null,
+        city: 'Tuebingen',
+        last_visit_on: '2026-10-01',
+        next_appointment_at: null,
+        open_bases: 1,
+        bases_need_appointments: 0,
+        bases_need_followup: 0,
+        bases_ready: 0,
+        bases_in_billing: 0,
+        billing_visible: false,
+        invoices_issued: null,
+        invoices_paid: null,
+        outstanding_cents: null,
+        invoices_overdue: null,
+        reminders_due: null,
+      },
+    ]);
     fetchPatient.mockReset().mockResolvedValue(MAX);
     for (const f of [fetchPatientTreatmentBases, fetchPatientTreatmentBasesClinical]) {
       f.mockReset().mockResolvedValue([grundlage(G1, '2027-04-01')]);
@@ -112,8 +140,9 @@ describe('DauerterminStartPage', () => {
     );
 
     expect(screen.getByText('Erster Termin: 12.05.2027, ab 09:00 Uhr')).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText('Patient:in suchen'), 'Must');
-    await userEvent.click(await screen.findByRole('option', { name: /Max Mustermann/ }));
+    // B10 (ANN-517): eine Liste statt der Suche ab drei Zeichen.
+    expect(screen.queryByRole('combobox', { name: 'Patient:in suchen' })).toBeNull();
+    await userEvent.click(await screen.findByRole('link', { name: /Mustermann, Max/ }));
 
     // Die Wahl landet in der Adresse; die Grundlagen fragt der nächste Schritt.
     expect(await screen.findByRole('heading', { name: /Grundlage/ })).toBeInTheDocument();

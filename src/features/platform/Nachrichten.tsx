@@ -17,17 +17,13 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import {
-  ladeNachrichten,
-  ladePlaene,
-  nachrichtErledigen,
-  nachrichtNachtragen,
-  nachrichtStellen,
   nachrichtenSchluessel,
   plaeneSchluessel,
   type Nachricht,
   type NachrichtEintrag,
   type Plattformzugang,
 } from './api';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import {
   NICHT_AKUT,
   OHNE_EINWILLIGUNG,
@@ -54,12 +50,15 @@ export const NACHRICHT_MAX = 2000;
  * (ADR-006 Punkt 4). Was die Person sieht, liefert der Server über den Zugang.
  */
 export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
+  // E-001: In der Einsicht wird keine Nachricht geschrieben.
+  const nurLesen = useNurLesen();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
   const mit = (pfad: string) => `${PLATTFORM_PFAD}${pfad}${bereich ? `?${bereich}` : ''}`;
   const daten = useQuery({
     queryKey: nachrichtenSchluessel(zugang.access_id),
-    queryFn: () => ladeNachrichten(zugang.access_id),
+    queryFn: () => api.ladeNachrichten(zugang.access_id),
   });
 
   const kopf = <PageHeader title="Nachrichten" />;
@@ -114,7 +113,7 @@ export function Nachrichten({ zugang }: { zugang: Plattformzugang }) {
       {/* Die eine Aufgabe der Seite als Hauptknopf unter der Liste, am Telefon
           in voller Breite (DESIGN.md, Seitentyp „Plattform“) - nicht klein
           oben rechts im Kopf. */}
-      {can_write ? (
+      {can_write && !nurLesen ? (
         <div className="mt-6">
           <ButtonLink to={mit('/nachrichten/neu')} groesse="normal" className="w-full sm:w-auto">
             Neue Nachricht
@@ -224,6 +223,7 @@ function kuerzen(text: string, laenge: number): string {
  * eine Übung daraus (IDEA-KOM-001). Ein Hauptknopf, Abbrechen immer sichtbar.
  */
 export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const navigate = useNavigate();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
@@ -232,11 +232,11 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
 
   const daten = useQuery({
     queryKey: nachrichtenSchluessel(zugang.access_id),
-    queryFn: () => ladeNachrichten(zugang.access_id),
+    queryFn: () => api.ladeNachrichten(zugang.access_id),
   });
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => ladePlaene(zugang.access_id),
+    queryFn: () => api.ladePlaene(zugang.access_id),
   });
 
   // Aus der Übung heraus kommt der Bezug über die Adresse mit (Uebungen).
@@ -248,7 +248,7 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
 
   const senden = useMutation({
     mutationFn: () =>
-      nachrichtStellen({
+      api.nachrichtStellen({
         zugangId: zugang.access_id,
         thema: thema!,
         text: text.trim(),
@@ -403,6 +403,8 @@ export function NeueNachricht({ zugang }: { zugang: Plattformzugang }) {
  * (ADR-023 Punkt 22).
  */
 export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   const { nachrichtId } = useParams();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
@@ -413,20 +415,20 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
   const [ansicht, setAnsicht] = useState<Ansicht | null>(null);
   const daten = useQuery({
     queryKey: nachrichtenSchluessel(zugang.access_id),
-    queryFn: () => ladeNachrichten(zugang.access_id),
+    queryFn: () => api.ladeNachrichten(zugang.access_id),
   });
   const neuLaden = () =>
     queryClient.invalidateQueries({ queryKey: nachrichtenSchluessel(zugang.access_id) });
 
   const nachtragen = useMutation({
-    mutationFn: () => nachrichtNachtragen(zugang.access_id, nachrichtId!, text.trim()),
+    mutationFn: () => api.nachrichtNachtragen(zugang.access_id, nachrichtId!, text.trim()),
     onSuccess: async () => {
       setText('');
       await neuLaden();
     },
   });
   const erledigen = useMutation({
-    mutationFn: () => nachrichtErledigen(zugang.access_id, nachrichtId!),
+    mutationFn: () => api.nachrichtErledigen(zugang.access_id, nachrichtId!),
     onSuccess: neuLaden,
   });
 
@@ -456,7 +458,8 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
       </>
     );
   }
-  const offen = nachricht.status !== 'closed' && daten.data.can_write;
+  // E-001: In der Einsicht ist kein Vorgang offen - nichts ergänzen, nichts erledigen.
+  const offen = nachricht.status !== 'closed' && daten.data.can_write && !nurLesen;
 
   function absenden(e: React.FormEvent) {
     e.preventDefault();
@@ -520,16 +523,22 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
             {e.attachment_mark_seconds != null ? (
               e.attachment_id &&
               (nachricht.attachments ?? []).some((a) => a.id === e.attachment_id) ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="mt-2"
-                  onClick={() =>
-                    setAnsicht({ anhangId: e.attachment_id!, ab: e.attachment_mark_seconds! })
-                  }
-                >
-                  Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
-                </Button>
+                nurLesen ? (
+                  <p className="text-ink-muted mt-2 text-sm">
+                    Bezieht sich auf das Video bei {zeitmarke(e.attachment_mark_seconds)}.
+                  </p>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-2"
+                    onClick={() =>
+                      setAnsicht({ anhangId: e.attachment_id!, ab: e.attachment_mark_seconds! })
+                    }
+                  >
+                    Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
+                  </Button>
+                )
               ) : (
                 <p className="text-ink-muted mt-2 text-sm">
                   Bezieht sich auf Ihr Video bei {zeitmarke(e.attachment_mark_seconds)}. Das Video

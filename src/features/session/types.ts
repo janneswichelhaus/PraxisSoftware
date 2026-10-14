@@ -69,19 +69,6 @@ export function canReadPatientDirectory(roles: readonly RoleKey[]): boolean {
 }
 
 /**
- * Rollen, die den Versorgungsstatus wechseln duerfen.
- *
- * Enger als die Kartei: behandelnde Therapeut:innen dokumentieren, verwalten
- * aber nicht den Patientenbestand. Steuert ausschliesslich die Darstellung -
- * verbindlich ist app.can_change_patient_status() in der Datenbank.
- */
-const statusRoles: RoleKey[] = ['owner', 'team_lead', 'office'];
-
-export function canChangePatientStatus(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => statusRoles.includes(role));
-}
-
-/**
  * Rollen, die Termine planen duerfen.
  *
  * Terminplanung ist ein organisatorischer Vorgang: alle vier Praxisrollen
@@ -318,6 +305,17 @@ export function canManageServiceCatalog(roles: readonly RoleKey[]): boolean {
  */
 export function canRecordBillableServices(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => role === 'owner' || role === 'office');
+}
+
+/**
+ * Darf die Person eine Grundlage in die Abrechnung stellen oder zurückholen
+ * (B7, BEF-157)? Wer abhakt und wer abrechnet. Nur Darstellung - verbindlich
+ * ist app.can_release_treatment_basis() in der Datenbank.
+ */
+export function canReleaseTreatmentBasis(roles: readonly RoleKey[]): boolean {
+  return roles.some(
+    (role) => role === 'owner' || role === 'therapist' || role === 'team_lead' || role === 'office',
+  );
 }
 
 /**

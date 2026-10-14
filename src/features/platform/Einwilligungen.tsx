@@ -7,13 +7,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import {
-  einwilligungSchreiben,
-  einwilligungenSchluessel,
-  ladeEinwilligungen,
-  type Einwilligung,
-  type Plattformzugang,
-} from './api';
+import { einwilligungenSchluessel, type Einwilligung, type Plattformzugang } from './api';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import {
   EINWILLIGUNGSFASSUNG,
   EINWILLIGUNGSTEXTE,
@@ -44,9 +39,10 @@ export function Einwilligungen({
   /** Im Einstieg (POR-019) ohne Rückweg zu „Ich" und ohne eigene Überschrift. */
   einstieg?: boolean;
 }) {
+  const api = usePlattformApi();
   const einwilligungen = useQuery({
     queryKey: einwilligungenSchluessel(zugang.access_id),
-    queryFn: () => ladeEinwilligungen(zugang.access_id),
+    queryFn: () => api.ladeEinwilligungen(zugang.access_id),
   });
   const fuer = zugang.access_kind === 'legal_representative' ? zugang.represented_name : null;
 
@@ -119,12 +115,14 @@ function Zweck({
   zugang: Plattformzugang;
   einwilligung: Einwilligung;
 }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const text = EINWILLIGUNGSTEXTE[e.purpose];
   const erteilt = e.state === 'granted';
   const schreiben = useMutation({
     mutationFn: () =>
-      einwilligungSchreiben({
+      api.einwilligungSchreiben({
         zugangId: zugang.access_id,
         zweck: e.purpose,
         erteilen: !erteilt,
@@ -139,38 +137,41 @@ function Zweck({
       <Zwischentitel>{text.titel}</Zwischentitel>
       <p className="text-ink max-w-prose text-base leading-relaxed">{text.text}</p>
       <p className="text-ink mt-3 text-base font-semibold">{standText(e)}</p>
-      <div className="mt-3">
-        {erteilt ? (
-          <Rueckfrage
-            ausloeser="Widerrufen"
-            bezeichnung={`${text.titel}: widerrufen`}
-            bestaetigen="Ja, widerrufen"
-            bestaetigenLaeuft="Wird widerrufen …"
-            fehler={schreiben.error?.message}
-            onBestaetigen={() => schreiben.mutateAsync()}
-          >
-            <p>
-              Ab jetzt gilt Ihre Einwilligung nicht mehr.
-              {text.widerruf ? ` ${text.widerruf}` : ''}
+      {/* E-001: In der Einsicht wird weder eingewilligt noch widerrufen. */}
+      {nurLesen ? null : (
+        <div className="mt-3">
+          {erteilt ? (
+            <Rueckfrage
+              ausloeser="Widerrufen"
+              bezeichnung={`${text.titel}: widerrufen`}
+              bestaetigen="Ja, widerrufen"
+              bestaetigenLaeuft="Wird widerrufen …"
+              fehler={schreiben.error?.message}
+              onBestaetigen={() => schreiben.mutateAsync()}
+            >
+              <p>
+                Ab jetzt gilt Ihre Einwilligung nicht mehr.
+                {text.widerruf ? ` ${text.widerruf}` : ''}
+              </p>
+            </Rueckfrage>
+          ) : e.can_grant ? (
+            <Rueckfrage
+              ausloeser="Einwilligen"
+              bezeichnung={`${text.titel}: einwilligen`}
+              bestaetigen="Ja, ich willige ein"
+              bestaetigenLaeuft="Wird gespeichert …"
+              fehler={schreiben.error?.message}
+              onBestaetigen={() => schreiben.mutateAsync()}
+            >
+              <p>Sie willigen in das ein, was oben steht. Widerrufen können Sie jederzeit hier.</p>
+            </Rueckfrage>
+          ) : (
+            <p className="text-ink-muted text-sm">
+              Ihr Zugang ist beendet. Widerrufen können Sie hier weiter, einwilligen nicht mehr.
             </p>
-          </Rueckfrage>
-        ) : e.can_grant ? (
-          <Rueckfrage
-            ausloeser="Einwilligen"
-            bezeichnung={`${text.titel}: einwilligen`}
-            bestaetigen="Ja, ich willige ein"
-            bestaetigenLaeuft="Wird gespeichert …"
-            fehler={schreiben.error?.message}
-            onBestaetigen={() => schreiben.mutateAsync()}
-          >
-            <p>Sie willigen in das ein, was oben steht. Widerrufen können Sie jederzeit hier.</p>
-          </Rueckfrage>
-        ) : (
-          <p className="text-ink-muted text-sm">
-            Ihr Zugang ist beendet. Widerrufen können Sie hier weiter, einwilligen nicht mehr.
-          </p>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </li>
   );
 }

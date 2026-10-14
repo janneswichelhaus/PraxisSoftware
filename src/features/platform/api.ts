@@ -31,6 +31,26 @@ const kontextSchema = z.object({
 export type Plattformzugang = z.infer<typeof kontextSchema>;
 export type Bereich = Plattformzugang['relationship_kind'];
 
+/**
+ * Wie die Plattform eine Projektion liest (E-001). Gewöhnlich direkt beim
+ * Server mit der eigenen Sitzung (`DIREKT`); in der Einsicht der Praxis
+ * (DSN-001 D7) über `einsichtsVerbindung` aus `./einsicht`, die nur die feste
+ * Liste lesender Projektionen kennt. Schreibende Wege nehmen keine
+ * Verbindung an: In der Einsicht ersetzt sie `einsichtsApi`, bevor etwas das
+ * Gerät verlässt.
+ */
+export interface Verbindung {
+  rpc(
+    funktion: string,
+    argumente: Record<string, unknown>,
+  ): PromiseLike<{ data: unknown; error: unknown }>;
+}
+
+/** Die Verbindung der Person selbst: direkt, mit ihrer eigenen Sitzung. */
+export const DIREKT: Verbindung = {
+  rpc: (funktion, argumente) => getSupabase().rpc(funktion, argumente),
+};
+
 export const KONTEXT_SCHLUESSEL = ['platform-context'] as const;
 
 /**
@@ -88,11 +108,14 @@ export function vertretungenSchluessel(zugangId: string) {
  * Wer für die Person Zugang hat. Der Server antwortet nur über den eigenen
  * Zugang oder eine rechtliche Vertretung; einer Begleitung leer.
  */
-export async function ladeMeineVertretungen(zugangId: string): Promise<MeineVertretung[]> {
+export async function ladeMeineVertretungen(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<MeineVertretung[]> {
   const satz = 'Die Liste konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_representatives', {
+  const ergebnis = await verbindung.rpc('platform_representatives', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(vertretungSchema), ergebnis.data ?? [], satz);
 }
@@ -143,11 +166,14 @@ export function termineSchluessel(zugangId: string) {
  * zwölf Monate (ANN-251). Welche Zeilen, entscheidet der Server über den
  * Zugang; die Kennung wählt nur unter den eigenen aus (ADR-023 Punkt 19).
  */
-export async function ladeTermine(zugangId: string): Promise<Termin[]> {
+export async function ladeTermine(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Termin[]> {
   const satz = 'Ihre Termine konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_appointments', {
+  const ergebnis = await verbindung.rpc('platform_appointments', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(terminSchema), ergebnis.data ?? [], satz);
 }
@@ -184,11 +210,14 @@ export function wuenscheSchluessel(zugangId: string) {
 }
 
 /** Die eigenen Wünsche des Bereichs, offene zuerst. */
-export async function ladeWuensche(zugangId: string): Promise<Terminwunsch[]> {
+export async function ladeWuensche(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Terminwunsch[]> {
   const satz = 'Ihre Terminwünsche konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_appointment_requests', {
+  const ergebnis = await verbindung.rpc('platform_appointment_requests', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(wunschSchema), ergebnis.data ?? [], satz);
 }
@@ -291,11 +320,14 @@ export function befundbogenSchluessel(zugangId: string) {
 }
 
 /** Der Stand der Bögen, die die Person ausfüllt - nur im Behandlungszugang. */
-export async function ladeBefundbogen(zugangId: string): Promise<Bogenstand[]> {
+export async function ladeBefundbogen(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Bogenstand[]> {
   const satz = 'Ihr Befundbogen konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_questionnaire', {
+  const ergebnis = await verbindung.rpc('platform_questionnaire', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(bogenSchema), ergebnis.data ?? [], satz);
 }
@@ -382,11 +414,14 @@ export function rechnungenSchluessel(zugangId: string) {
 }
 
 /** Die ausgestellten Rechnungen des Bereichs - mit Recht `billing`, sonst leer. */
-export async function ladeRechnungen(zugangId: string): Promise<Rechnungszeile[]> {
+export async function ladeRechnungen(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Rechnungszeile[]> {
   const satz = 'Ihre Rechnungen konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_invoices', {
+  const ergebnis = await verbindung.rpc('platform_invoices', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(rechnungZeileSchema), ergebnis.data ?? [], satz);
 }
@@ -488,12 +523,13 @@ export function rechnungSchluessel(zugangId: string, rechnungId: string) {
 export async function ladeRechnung(
   zugangId: string,
   rechnungId: string,
+  verbindung: Verbindung = DIREKT,
 ): Promise<Rechnungsblatt | null> {
   const satz = 'Die Rechnung konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_invoice', {
+  const ergebnis = await verbindung.rpc('platform_invoice', {
     p_access_id: zugangId,
     p_invoice_id: rechnungId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   if (ergebnis.data === null || ergebnis.data === undefined) return null;
   return antwort(rechnungSchema, ergebnis.data, satz);
@@ -518,11 +554,14 @@ export function dokumenteSchluessel(zugangId: string) {
 }
 
 /** Die einzeln freigegebenen Dokumente der Akte - nur im Behandlungszugang. */
-export async function ladeDokumente(zugangId: string): Promise<Dokument[]> {
+export async function ladeDokumente(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Dokument[]> {
   const satz = 'Ihre Dokumente konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_files', {
+  const ergebnis = await verbindung.rpc('platform_files', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(dokumentSchema), ergebnis.data ?? [], satz);
 }
@@ -617,11 +656,14 @@ export function einwilligungenSchluessel(zugangId: string) {
  * Der Stand je Zweck. Leer für eine Begleitung: Sie erteilt nichts, und der
  * Stand geht sie nichts an (Punkt 13).
  */
-export async function ladeEinwilligungen(zugangId: string): Promise<Einwilligung[]> {
+export async function ladeEinwilligungen(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Einwilligung[]> {
   const satz = 'Ihre Einwilligungen konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_consents', {
+  const ergebnis = await verbindung.rpc('platform_consents', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(einwilligungSchema), ergebnis.data ?? [], satz);
 }
@@ -680,11 +722,14 @@ export function paketeSchluessel(zugangId: string) {
 }
 
 /** Die eigenen Pakete; `null` heißt: für diesen Zugang nicht sichtbar (Recht billing). */
-export async function ladeMeinePakete(zugangId: string): Promise<MeinPaket[] | null> {
+export async function ladeMeinePakete(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<MeinPaket[] | null> {
   const satz = 'Ihr Paket konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_training_packages', {
+  const ergebnis = await verbindung.rpc('platform_training_packages', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(meinPaketSchema).nullable(), ergebnis.data ?? null, satz);
 }
@@ -710,11 +755,14 @@ export function angeboteSchluessel(zugangId: string) {
 }
 
 /** Die Pakete der geltenden Preisliste; `null`: für diesen Zugang keine (nur Training). */
-export async function ladeAngebote(zugangId: string): Promise<Paketangebote | null> {
+export async function ladeAngebote(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Paketangebote | null> {
   const satz = 'Die Preise konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_training_offers', {
+  const ergebnis = await verbindung.rpc('platform_training_offers', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(angeboteSchema.nullable(), ergebnis.data ?? null, satz);
 }
@@ -778,11 +826,14 @@ export function einstiegSchluessel(zugangId: string) {
   return ['platform-onboarding', zugangId] as const;
 }
 
-export async function ladeEinstieg(zugangId: string): Promise<Einstiegsstand | null> {
+export async function ladeEinstieg(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Einstiegsstand | null> {
   const satz = 'Der Einstieg konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_onboarding', {
+  const ergebnis = await verbindung.rpc('platform_onboarding', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(einstiegSchema), ergebnis.data ?? [], satz)[0] ?? null;
 }
@@ -822,11 +873,14 @@ export function aboSchluessel(zugangId: string) {
 }
 
 /** Das eigene Abo; `null` heißt: keins, oder für diesen Zugang nicht sichtbar. */
-export async function ladeAbo(zugangId: string): Promise<Nachsorgeabo | null> {
+export async function ladeAbo(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Nachsorgeabo | null> {
   const satz = 'Ihr Abo konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_aftercare', {
+  const ergebnis = await verbindung.rpc('platform_aftercare', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(aboSchema.nullable(), ergebnis.data ?? null, satz);
 }
@@ -912,11 +966,14 @@ export function trainingsangebotSchluessel(zugangId: string) {
 }
 
 /** Das offene Angebot der Praxis; `null`: keins, oder für diesen Zugang nicht sichtbar. */
-export async function ladeTrainingsangebot(zugangId: string): Promise<Trainingsangebot | null> {
+export async function ladeTrainingsangebot(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Trainingsangebot | null> {
   const satz = 'Das Angebot konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_training_offer', {
+  const ergebnis = await verbindung.rpc('platform_training_offer', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(trainingsangebotSchema.nullable(), ergebnis.data ?? null, satz);
 }
@@ -1014,11 +1071,14 @@ export function vertragSchluessel(zugangId: string) {
 }
 
 /** Der eigene Trainingsvertrag; `null`: keiner, oder für diesen Zugang nicht sichtbar. */
-export async function ladeVertrag(zugangId: string): Promise<Trainingsvertrag | null> {
+export async function ladeVertrag(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Trainingsvertrag | null> {
   const satz = 'Ihr Vertrag konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_training_contract', {
+  const ergebnis = await verbindung.rpc('platform_training_contract', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(vertragSchema.nullable(), ergebnis.data ?? null, satz);
 }
@@ -1124,11 +1184,14 @@ export function plaeneSchluessel(zugangId: string) {
  * (ANN-304) - als Schnappschuss in Alltagssprache. Welche, entscheidet der
  * Server über den Zugang (ADR-023 Punkt 22).
  */
-export async function ladePlaene(zugangId: string): Promise<EigenePlaene> {
+export async function ladePlaene(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<EigenePlaene> {
   const satz = 'Ihre Übungen konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_exercise_plans', {
+  const ergebnis = await verbindung.rpc('platform_exercise_plans', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   return antwort(eigenePlaeneSchema, ergebnis.data ?? { today: '', plans: [] }, satz);
 }
@@ -1296,11 +1359,14 @@ export function nachrichtenSchluessel(zugangId: string) {
 }
 
 /** Die Vorgänge des gewählten Bereichs mit ihren Einträgen, offene zuerst. */
-export async function ladeNachrichten(zugangId: string): Promise<Nachrichten> {
+export async function ladeNachrichten(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<Nachrichten> {
   const satz = 'Ihre Nachrichten konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_messages', {
+  const ergebnis = await verbindung.rpc('platform_messages', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error || ergebnis.data === null) throw new Error(satz);
   return antwort(nachrichtenSchema, ergebnis.data, satz);
 }
@@ -1647,11 +1713,14 @@ export function checkinsSchluessel(zugangId: string) {
 }
 
 /** Ob ein Check-in fällig ist, die Fragen und „Meine Angaben" (TRK-003). */
-export async function ladeCheckins(zugangId: string): Promise<EigeneCheckins | null> {
+export async function ladeCheckins(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<EigeneCheckins | null> {
   const satz = 'Ihr Check-in konnte nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_checkins', {
+  const ergebnis = await verbindung.rpc('platform_checkins', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   if (ergebnis.data === null) return null;
   return antwort(eigeneCheckinsSchema, ergebnis.data, satz);
@@ -1709,11 +1778,14 @@ export function gewohnheitenSchluessel(zugangId: string) {
   return ['platform-habits', zugangId] as const;
 }
 
-export async function ladeGewohnheiten(zugangId: string): Promise<EigeneGewohnheiten | null> {
+export async function ladeGewohnheiten(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<EigeneGewohnheiten | null> {
   const satz = 'Ihre Gewohnheiten konnten nicht geladen werden.';
-  const ergebnis = (await getSupabase().rpc('platform_habits', {
+  const ergebnis = await verbindung.rpc('platform_habits', {
     p_access_id: zugangId,
-  })) as { data: unknown; error: unknown };
+  });
   if (ergebnis.error) throw new Error(satz);
   if (ergebnis.data === null) return null;
   return antwort(eigeneGewohnheitenSchema, ergebnis.data, satz);

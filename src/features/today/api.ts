@@ -9,6 +9,7 @@ import {
   type AppointmentStatus,
 } from '@/features/appointments/api';
 import { documentationStatusSchema } from '@/features/documentation/api';
+import { hakenFehlt } from '@/features/appointments/haken';
 
 // -----------------------------------------------------------------------------
 // Tagesliste des Hausbesuchstags (UX-001)
@@ -57,6 +58,12 @@ const dayPlanEntrySchema = z.object({
    * Training - nicht, dass es keine Dokumentation gibt.
    */
   documentation_status: documentationStatusSchema.nullable(),
+  /**
+   * B4 (BEF-154): der Haken, getrennt vom Zustand - ein dokumentierter Termin
+   * kann noch ohne Haken sein (`istAbgehakt`). Optional, damit ein älterer
+   * Stand ohne die Spalte weiter gelesen wird.
+   */
+  checked_at: z.string().nullable().optional(),
   organization_time_zone: z.string(),
   // MAP-006d: Kartenposition des Hausbesuchs für den Handoff (ANN-018).
   // Optional, damit ein älterer Stand ohne die Spalten weiter gelesen wird.
@@ -124,17 +131,19 @@ export const TAGESPLAN_VORHALTEDAUER_MS = 8 * 60 * 60 * 1000;
 /**
  * Verlangt dieser Termin heute noch etwas?
  *
- * Zwei Fälle, und der zweite ist der, den die Praxis am Abend beschäftigt:
+ * Drei Fälle, und die letzten beiden beschäftigen die Praxis am Abend:
  *
  *   1. Der Besuch steht noch aus (`confirmed`).
- *   2. Der Besuch ist abgeschlossen, aber die Dokumentation ist noch nicht
+ *   2. Die Doku ist festgeschrieben, aber der Haken fehlt (B4): Festschreiben
+ *      hakt nicht ab.
+ *   3. Der Besuch ist abgeschlossen, aber die Dokumentation ist noch nicht
  *      finalisiert - sichtbar nur für Rollen, die auch dokumentieren dürfen.
  *      Für alle anderen wäre es eine Aufgabe, die sie nicht erledigen können.
  *
  * Ein abgesagter Termin ist nie offen, und ein nicht angetroffener auch nicht:
  * Der Vermerk schließt den Vorgang ab, und offen bleibt daran nichts (ADR-018
- * Fassung 2 Punkt 8). Ein dokumentierter Termin ist es ebenfalls nicht - der
- * Zustand sagt bereits, dass die Dokumentation festgeschrieben ist.
+ * Fassung 2 Punkt 8). Ein dokumentierter und abgehakter Termin ist es
+ * ebenfalls nicht.
  *
  * Ist der Dokumentationsstand unbekannt (`null`, weil die Rolle den
  * Behandlungsnachweis nicht lesen darf), zählt allein der Terminstatus -
@@ -151,7 +160,8 @@ export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): bool
   // gehört ein kommender Termin nach oben, nicht unter „Erledigt".
   if (termin.kind === 'training') return termin.status === 'confirmed';
   if (termin.kind !== 'therapy') return false;
-  if (termin.status === 'confirmed') return true;
+  // B4: Dokumentiert, aber nicht abgehakt, verlangt noch den Haken.
+  if (hakenFehlt(termin.status, termin.checked_at)) return true;
   if (termin.status !== 'completed') return false;
   // Die Aufgabe „Doku schreiben" gehört den Schreibenden; den Stand selbst
   // zeigt `offenGrund` allen, die lesen dürfen (ABN-005, ANN-201 Fassung 2).
