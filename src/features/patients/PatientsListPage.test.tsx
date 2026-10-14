@@ -434,6 +434,32 @@ describe('PatientsListPage (B1, B10)', () => {
     });
   });
 
+  // B13: Am Telefon läuft die Auswahl seitlich aus dem Bild. Kommt die Liste
+  // mit einer Auswahl zurück, steht die gewählte im Bild.
+  it('holt eine gewählte Auswahl aus der Adresse ins Bild', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann', { open_bases: 1, bases_ready: 1 }),
+      eintrag('2', 'Erika', 'Beispiel'),
+    ]);
+    const insBild = vi.fn();
+    // jsdom kennt scrollIntoView nicht; der Test setzt es für sich und räumt auf.
+    const vorher = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      configurable: true,
+      writable: true,
+      value: insBild,
+    });
+    try {
+      renderWithProviders(<PatientsListPage />, '/patienten?zeigen=abrechnen');
+      const chip = await screen.findByRole('button', { name: /Abrechnen \(1\)/ });
+      await waitFor(() => expect(insBild).toHaveBeenCalled());
+      expect(insBild.mock.contexts[0]).toBe(chip);
+    } finally {
+      if (vorher) Object.defineProperty(Element.prototype, 'scrollIntoView', vorher);
+      else Reflect.deleteProperty(Element.prototype, 'scrollIntoView');
+    }
+  });
+
   it('ignoriert ungueltige Werte aus der URL statt abzustuerzen', async () => {
     fetchPatientOverview.mockResolvedValue([
       eintrag('1', 'Max', 'Mustermann'),
