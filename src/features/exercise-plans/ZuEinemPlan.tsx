@@ -57,23 +57,27 @@ export function ZuEinemPlan({ variante, rueckweg }: { variante: Variante; rueckw
       {offen ? (
         <Dialogfenster titel="Zu einem Übungsplan" onSchliessen={() => setOffen(false)}>
           <p className="text-ink-muted mb-3 text-sm">{variante.name}</p>
-          <Patientensuche
-            label="Für wen?"
-            labelSichtbar
-            onAuswahl={(patientId) => {
-              if (!hinzufuegen.isPending) hinzufuegen.mutate(patientId);
-            }}
-          />
-          {hinzufuegen.isPending ? (
-            <Statusmeldung ton="neutral" className="mt-3">
-              Wird hinzugefügt …
-            </Statusmeldung>
-          ) : null}
-          {hinzufuegen.isError ? (
-            <Statusmeldung ton="fehler" className="mt-3">
-              {hinzufuegen.error.message}
-            </Statusmeldung>
-          ) : null}
+          {/* Die Trefferliste klappt unter dem Feld auf; ohne diese Höhe
+              schnitt das Fenster sie am Telefon ab (Sichtung 375 px). */}
+          <div className="min-h-80">
+            <Patientensuche
+              label="Für wen?"
+              labelSichtbar
+              onAuswahl={(patientId) => {
+                if (!hinzufuegen.isPending) hinzufuegen.mutate(patientId);
+              }}
+            />
+            {hinzufuegen.isPending ? (
+              <Statusmeldung ton="neutral" className="mt-3">
+                Wird hinzugefügt …
+              </Statusmeldung>
+            ) : null}
+            {hinzufuegen.isError ? (
+              <Statusmeldung ton="fehler" className="mt-3">
+                {hinzufuegen.error.message}
+              </Statusmeldung>
+            ) : null}
+          </div>
           <div className="mt-4 flex justify-end">
             <Button type="button" variant="quiet" onClick={() => setOffen(false)}>
               Abbrechen
