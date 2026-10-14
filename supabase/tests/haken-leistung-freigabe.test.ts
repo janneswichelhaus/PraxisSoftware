@@ -801,6 +801,120 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
       );
       expect(rows[0]!.freigegeben).toBe(false);
     });
+
+    // Zweitreview A (Nachtrag), Befund 2: Erst die Spalten, dann die Sperre -
+    // was die Abrechnung nicht beruehrt, wartet auf keine Freigabe.
+    it('laesst eine Aenderung ohne Bezug zur Abrechnung nicht auf die Freigabe warten', async () => {
+      const [a] = await vollstaendig();
+      const [freigabe] = await verbunden(users.therapist);
+      const [anderer] = await verbunden(null);
+      try {
+        await freigabe.query(FREIGEBEN, [GRUNDLAGE]);
+        const durch = anderer
+          .query('update public.appointments set title = title where id = $1', [a])
+          .then(() =>
+            anderer.query(
+              'update public.treatment_base_items set used_quantity = used_quantity where treatment_basis_id = $1',
+              [GRUNDLAGE],
+            ),
+          )
+          .then(() => 'durch');
+        const ergebnis = await Promise.race([
+          durch,
+          new Promise((fertig) => setTimeout(() => fertig('wartet'), 5_000)),
+        ]);
+        expect(ergebnis).toBe('durch');
+        await freigabe.query('commit');
+      } finally {
+        await freigabe.query('rollback').catch(() => undefined);
+        await anderer.query('rollback').catch(() => undefined);
+        await freigabe.end();
+        await anderer.end();
+      }
+    });
+
+    // Zweitreview A (Nachtrag), Befund 1: Das Loeschen sperrt Termine und
+    // Positionen vor der Grundlage, wie jeder Schreiber. Mit der Grundlage
+    // zuerst hielte es sie, waehrend die Ruecknahme auf sie wartet und das
+    // Loeschen auf den Termin der Ruecknahme - beide aufeinander (40P01).
+    it('laesst Loeschen und eine laufende Haken-Ruecknahme nacheinander laufen', async () => {
+      const [a] = await vollstaendig();
+      const zeitstempel = await stand(a);
+      const schreiber = new Client({ connectionString: testDatabaseUrl() });
+      await schreiber.connect();
+      const [loeschen, loeschenPid] = await verbunden(users.ownerTherapist);
+      try {
+        // Der Schreiber haelt den Termin schon - so beginnt reopen_appointment.
+        await schreiber.query('begin');
+        await schreiber.query('select 1 from public.appointments where id = $1 for update', [a]);
+        await schreiber.query("select set_config('role', 'authenticated', true)");
+        await schreiber.query("select set_config('request.jwt.claims', $1, true)", [
+          jwtClaims(users.therapist),
+        ]);
+        const versuch = loeschen
+          .query('select public.delete_treatment_basis($1::uuid)', [GRUNDLAGE])
+          .then(
+            () => null,
+            (fehler: Error) => fehler,
+          );
+        await wartetAufSperre(loeschenPid);
+        await schreiber.query(ZURUECKNEHMEN, [a, zeitstempel]);
+        await schreiber.query('commit');
+        expect(await versuch).toBeNull();
+        // In derselben Transaktion nachsehen und danach zuruecknehmen: Die
+        // Grundlage braucht der naechste Test.
+        await loeschen.query("select set_config('role', 'postgres', true)");
+        const { rows } = await loeschen.query<{
+          grundlage: string | null;
+          haken: string | null;
+          da: boolean;
+        }>(
+          `select a.treatment_basis_id as grundlage, a.completed_at as haken,
+                  exists (select 1 from public.treatment_bases b where b.id = $2) as da
+             from public.appointments a where a.id = $1`,
+          [a, GRUNDLAGE],
+        );
+        expect(rows[0]).toEqual({ grundlage: null, haken: null, da: false });
+      } finally {
+        await schreiber.query('rollback').catch(() => undefined);
+        await loeschen.query('rollback').catch(() => undefined);
+        await schreiber.end();
+        await loeschen.end();
+      }
+    });
+
+    // Zweitreview A (Nachtrag), Testluecke: Ein Schreiber wartet auf ein
+    // laufendes Zurueckholen und geht danach durch.
+    it('laesst eine Haken-Ruecknahme nach einem gleichzeitigen Zurueckholen durch', async () => {
+      const [a] = await vollstaendig();
+      await asUserCommitted(users.therapist, FREIGEBEN, [GRUNDLAGE]);
+      const zeitstempel = await stand(a);
+      const [zurueck] = await verbunden(users.therapist);
+      const [schreiber, schreiberPid] = await verbunden(users.therapist);
+      try {
+        await zurueck.query(ZURUECKHOLEN, [GRUNDLAGE]);
+        const versuch = schreiber.query(ZURUECKNEHMEN, [a, zeitstempel]).then(
+          () => null,
+          (fehler: Error) => fehler,
+        );
+        await wartetAufSperre(schreiberPid);
+        await zurueck.query('commit');
+        expect(await versuch).toBeNull();
+        await schreiber.query('commit');
+      } finally {
+        await zurueck.query('rollback').catch(() => undefined);
+        await schreiber.query('rollback').catch(() => undefined);
+        await zurueck.end();
+        await schreiber.end();
+      }
+      const { rows } = await asPostgres<{ freigegeben: boolean; haken: boolean }>(
+        `select b.billing_released_at is not null as freigegeben,
+                (select a.completed_at is not null from public.appointments a where a.id = $2) as haken
+           from public.treatment_bases b where b.id = $1`,
+        [GRUNDLAGE, a],
+      );
+      expect(rows[0]).toEqual({ freigegeben: false, haken: false });
+    });
   });
 
   it('gibt die Spalten nicht zum direkten Schreiben frei', async () => {
