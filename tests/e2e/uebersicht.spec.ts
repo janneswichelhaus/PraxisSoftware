@@ -124,6 +124,48 @@ for (const [abfrage, uhrzeit, knopf] of [
   });
 }
 
+// B6: Nach einem abgehakten Besuch trägt die Karte des nächsten Wegs den
+// Wegbalken wie die Zeilen - unter dem Kicker, an Stelle der Minuten. Am
+// Telefon ohne Zahlen (die Kachel „Abfahrt" nennt den Weg) und ohne eine
+// Zeile mehr: Der Hauptknopf bleibt über der Tableiste (Test oben).
+for (const breite of [375, 1280]) {
+  test(`zeigt den Wegbalken auch an der Karte nach einem abgehakten Besuch (${breite} px, B6)`, async ({
+    page,
+  }) => {
+    await oeffne(page, '09:45', breite, '?ansicht=zweiter', 667);
+    const karte = page.getByRole('article');
+    const kicker = karte.getByRole('heading', { name: 'Nächster Weg', exact: true });
+    await expect(kicker).toBeVisible();
+    const fahrt = karte.locator('[aria-hidden="true"] [style*="width"]');
+    await expect(fahrt).toBeVisible();
+    const k = (await kicker.boundingBox())!;
+    const f = (await fahrt.boundingBox())!;
+    const n = (await karte
+      .getByRole('link', { name: 'Max Mustermann', exact: true })
+      .boundingBox())!;
+    // Unter dem Kicker, über dem Namen.
+    expect(f.y).toBeGreaterThanOrEqual(k.y + k.height);
+    expect(f.y + f.height).toBeLessThanOrEqual(n.y);
+    // Erika ist seit 09:30 fertig: Der Balken beginnt jetzt wie die Kachel
+    // (ANN-196) - 09:45 bis 10:00 bei 9 Minuten Fahrt.
+    const zahlen = karte.getByText('≈ 9 min Rad · 6 min Puffer');
+    const z = (await zahlen.boundingBox())!;
+    if (breite < 640) {
+      expect(z.width).toBeLessThanOrEqual(1);
+      await expect(page.getByText('Abfahrt', { exact: true })).toBeVisible();
+    } else {
+      expect(z.width).toBeGreaterThan(100);
+    }
+    // Uhrzeit und Punkt bleiben auf der Höhe des Kickers.
+    const punkt = (await page
+      .locator('li[data-termin]', { has: karte })
+      .locator('[data-punkt]')
+      .boundingBox())!;
+    expect(Math.abs(punkt.y + punkt.height / 2 - (k.y + k.height / 2))).toBeLessThanOrEqual(3);
+    await ohneUeberlauf(page);
+  });
+}
+
 test('fasst am Telefon das Erledigte vor dem nächsten Besuch in einer Zeile zusammen', async ({
   page,
 }) => {
@@ -149,7 +191,11 @@ test('klappt eine spätere Zeile mit Navigation, Anruf und Doku auf (Auftrag C1)
   const karten = page.getByRole('article');
   await expect(karten).toHaveCount(2);
   const karte = karten.nth(1);
-  await expect(karte.getByRole('heading', { name: /^Später/ })).toBeVisible();
+  await expect(karte.getByRole('heading', { name: 'Später', exact: true })).toBeVisible();
+  // Der Balken, der über der Zeile lag, steht jetzt in der Karte - mit
+  // Zahlen, denn diesen Weg nennt keine Kachel (B6).
+  await expect(karte.getByText('≈ 9 min Rad · 21 min Puffer')).toBeVisible();
+  await expect(page.getByText('≈ 9 min Rad · 21 min Puffer')).toHaveCount(1);
   for (const ziel of [
     karte.getByRole('button', { name: 'Navigation starten' }),
     karte.getByRole('link', { name: 'Doku zu diesem Termin' }),
@@ -168,18 +214,80 @@ test('klappt eine spätere Zeile mit Navigation, Anruf und Doku auf (Auftrag C1)
   await expect(zeile).toBeFocused();
 });
 
-test('zeigt „Niemand öffnet?" an der laufenden Karte mit der 15-Minuten-Uhr (Auftrag C1)', async ({
+test('zeigt „Ausfall" an der laufenden Karte mit der 15-Minuten-Uhr (Auftrag C1, B12)', async ({
   page,
 }) => {
   await oeffne(page, '08:40', 375);
   const karte = page.getByRole('article');
-  await karte.getByRole('button', { name: 'Niemand öffnet?' }).click();
+  await karte.getByRole('button', { name: 'Ausfall' }).click();
   await expect(karte.getByRole('timer')).toHaveText(/^Gewartet \d+:\d\d von 15:00$/);
   const vermerken = karte.getByRole('button', { name: /nicht angetroffen/ });
   expect((await vermerken.boundingBox())!.height).toBeGreaterThanOrEqual(48);
   await expect(karte.getByRole('link', { name: 'Ohne Behandlung festhalten' })).toBeVisible();
   await ohneUeberlauf(page);
 });
+
+// B12: „Ausfall" an jeder begonnenen Behandlung ohne Doku, nicht nur an der
+// Karte des nächsten Wegs. 11:10: Erika und Max sind vorbei und nicht
+// abgehakt, Petra (11:30) hat noch nicht begonnen.
+for (const breite of [375, 1280]) {
+  test(`bietet „Ausfall" an jeder begonnenen Zeile ohne Doku (${breite} px, B12)`, async ({
+    page,
+  }) => {
+    await oeffne(page, '11:10', breite, '', 667);
+    const strahl = page.getByRole('heading', { name: 'Tagesablauf' }).locator('..');
+    const max = strahl.locator('li[data-termin]', { hasText: 'Max Mustermann' });
+    const zeile = max.locator('[data-zeile]');
+    // Für Vorlesesoftware trägt jeder „Ausfall“ Name und Uhrzeit (UEB-10).
+    const ausfall = max.getByRole('button', {
+      name: 'Ausfall für Max Mustermann um 10:00 Uhr',
+      exact: true,
+    });
+    const doku = max.getByRole('link', { name: /^Doku zum Termin um / });
+    const haken = max.getByRole('button', { name: /^Termin abschließen/ });
+    await expect(ausfall).toBeVisible();
+    await expect(
+      strahl.locator('li[data-termin]', { hasText: 'Erika Beispiel' }).getByRole('button', {
+        name: 'Ausfall für Erika Beispiel um 08:30 Uhr',
+        exact: true,
+      }),
+    ).toBeVisible();
+    // Petra hat noch nicht begonnen: kein Ausfall an der Karte des nächsten Wegs.
+    await expect(page.getByRole('article').getByRole('button', { name: 'Ausfall' })).toHaveCount(0);
+
+    const [z, a, d, h] = await Promise.all(
+      [zeile, ausfall, doku, haken].map(async (ziel) => (await ziel.boundingBox())!),
+    );
+    for (const kasten of [z!, a!, d!, h!]) expect(kasten.height).toBeGreaterThanOrEqual(44);
+    // „Ausfall", „Doku", Haken: 12 px auseinander, der Haken zuletzt.
+    expect(d!.x - (a!.x + a!.width)).toBeGreaterThanOrEqual(12);
+    expect(h!.x - (d!.x + d!.width)).toBeGreaterThanOrEqual(12);
+    expect(Math.abs(a!.y - h!.y)).toBeLessThanOrEqual(1);
+    if (breite < 640) {
+      // Am Telefon unter Name und Ort, 12 px abgesetzt; die Zeile hat die ganze Breite.
+      expect(a!.y).toBeGreaterThanOrEqual(z!.y + z!.height + 11.5);
+      expect(z!.width).toBeGreaterThan(220);
+    } else {
+      // Ab 640 px in einer Reihe mit Name und Ort.
+      expect(a!.y).toBeLessThan(z!.y + z!.height);
+    }
+
+    // Das Protokoll öffnet sich unter der Zeile über die ganze Breite.
+    await ausfall.click();
+    const feld = max.getByRole('region', {
+      name: 'Ausfall für Max Mustermann um 10:00 Uhr',
+      exact: true,
+    });
+    await expect(feld.getByRole('checkbox')).toHaveCount(3);
+    const inhalt = (await max.locator(':scope > div').boundingBox())!;
+    const f = (await feld.boundingBox())!;
+    expect(f.width).toBeGreaterThanOrEqual(inhalt.width - 1);
+    expect(f.y).toBeGreaterThan(a!.y + a!.height);
+    const vermerken = feld.getByRole('button', { name: /nicht angetroffen/ });
+    expect((await vermerken.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await ohneUeberlauf(page);
+  });
+}
 
 test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergaengen', async ({
   page,

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Textlink } from '@/components/ui/Textlink';
+import { TravelBar } from '@/components/ui/TravelBar';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { LetzterEintragVorDerTuer } from '@/features/appointments/Kurzblick';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -18,7 +19,7 @@ import {
   type DayPlanEntry,
 } from './api';
 import { zugangMitStockwerk } from './stockwerk';
-import { einordnung, terminName } from './tagesstart';
+import { einordnung, terminName, type Wegstrecke } from './tagesstart';
 
 /** Eine Pille der Karte: 36 px hoch, 14 px in 600 (Design-Handoff 2026-10-01). */
 const pille =
@@ -78,6 +79,7 @@ const namenslink =
 export function Tageskarte({
   termin,
   kicker,
+  weg,
   relativ,
   position,
   erstaufnahme,
@@ -94,6 +96,13 @@ export function Tageskarte({
    * Ein Element, wenn ein Teil davon am Telefon weichen darf.
    */
   kicker: ReactNode;
+  /**
+   * Der Weg vom Termin davor als schmaler Balken (B6, `wegZumBesuch`) - an
+   * Stelle der Minuten im Kicker. `kachelNenntIhn`: Die Kachel „Abfahrt"
+   * über dem Zeitstrahl nennt denselben Weg; am Telefon weichen dann die
+   * Zahlen, wie bis dahin die Minuten (ANN-484).
+   */
+  weg?: (Wegstrecke & { kachelNenntIhn: boolean }) | null;
   /** Rechts neben dem Kicker, solange kein Zustand dort steht: „in 25 Minuten". */
   relativ?: string | null;
   /** „Termin 2 von 6", wenn die Grundlage es hergibt (PRX-008). */
@@ -197,6 +206,33 @@ export function Tageskarte({
           ) : null}
         </span>
       </div>
+
+      {/* Der Wegbalken unter dem Kicker, an Stelle der Minuten (B6) - wie über
+          den Zeilen, ohne Ziel. ANN-532: Nennt die Kachel „Abfahrt" denselben
+          Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen;
+          die Karte wird dadurch nicht höher, und der Hauptknopf bleibt über
+          der Tableiste. */}
+      {weg ? (
+        <div
+          className={`pointer-events-none ${
+            weg.kachelNenntIhn ? 'max-sm:relative max-sm:h-0 sm:mt-2' : 'mt-2'
+          }`}
+        >
+          <div
+            className={
+              weg.kachelNenntIhn ? 'max-sm:absolute max-sm:inset-x-0 max-sm:-top-[3px]' : ''
+            }
+          >
+            <TravelBar
+              size="klein"
+              von={weg.von}
+              bis={weg.bis}
+              fahrtMin={weg.fahrtMin}
+              zahlenAmTelefon={!weg.kachelNenntIhn}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {/* Der Name führt in die Akte, und zwar mit dem Weg zurück in den Tag
           wie jedes andere Ziel der Karte (UEB-13). Er ist als Link zu

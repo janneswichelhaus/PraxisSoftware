@@ -1315,6 +1315,40 @@ describe('Rueckfrage', () => {
     expect(screen.queryByRole('group')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Wird gelöscht …' })).not.toBeInTheDocument();
   });
+
+  /**
+   * B12: Gleiche Auslöser untereinander - „Ausfall“ an jeder Zeile der
+   * Übersicht - unterscheidet Vorlesesoftware am Zusatz; zu sehen ist nur
+   * das Wort, mit dem der Name beginnt (UEB-10).
+   */
+  it('nennt einen Zusatz hinter dem Wort an Auslöser und Kasten', async () => {
+    const user = userEvent.setup();
+    aufbau({ ausloeserZusatz: 'für Erika Beispiel um 10:00 Uhr' });
+
+    const knopf = screen.getByRole('button', {
+      name: 'Verordnung löschen für Erika Beispiel um 10:00 Uhr',
+    });
+    expect(screen.getByText('für Erika Beispiel um 10:00 Uhr')).toHaveClass('sr-only');
+    await user.click(knopf);
+    expect(
+      screen.getByRole('group', { name: 'Verordnung löschen für Erika Beispiel um 10:00 Uhr' }),
+    ).toBeInTheDocument();
+  });
+
+  it('rückt in einer Knopfreihe auf Wunsch unter die übrigen Knöpfe', async () => {
+    const user = userEvent.setup();
+    aufbau({ unterDerReihe: true });
+    await user.click(screen.getByRole('button', { name: 'Verordnung löschen' }));
+    expect(screen.getByRole('group')).toHaveClass('order-last', 'w-full', 'border-l-4');
+  });
+
+  it('bleibt ohne diesen Wunsch an der Stelle des Klicks', async () => {
+    const user = userEvent.setup();
+    aufbau();
+    await user.click(screen.getByRole('button', { name: 'Verordnung löschen' }));
+    expect(screen.getByRole('group')).not.toHaveClass('order-last');
+    expect(screen.getByRole('group')).toHaveAccessibleName('Verordnung löschen');
+  });
 });
 
 /**

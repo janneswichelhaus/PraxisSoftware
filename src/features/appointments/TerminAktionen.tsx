@@ -53,7 +53,6 @@ import {
   feeBasisLabels,
   locationSummary,
   patientName,
-  recordNoShow,
   reopenAppointment,
   waiveAppointmentFee,
   schreibeTerminVorbelegung,
@@ -64,6 +63,7 @@ import {
   type EventParticipant,
 } from './api';
 import { TAGESLAGE } from './tageslage';
+import { NichtAngetroffenAktion } from './NichtAngetroffen';
 
 /**
  * Meldet der Seite einen bestätigten Vorgang (ZST-16, TER-17).
@@ -781,57 +781,6 @@ function SerieAbsageAktion({ appointment, melden }: { appointment: Appointment; 
         Eine Fehlzeit des Praxisbetriebs löst kein Ausfallhonorar aus – es gibt keine Patient:in,
         die absagen könnte.
       </p>
-    </Rueckfrage>
-  );
-}
-
-/**
- * „Nicht angetroffen" am Praxis- und am Videotermin — ein Schritt ohne
- * Honorar (CAL-014c, ANN-055).
- *
- * Das Protokoll ist ein Hausbesuchsprotokoll; an der Praxistür gibt es nichts
- * zu klingeln, und für das Nichtantreffen in der Praxis gibt es keine
- * Festlegung. Der Hausbesuch führt seit UX-005b seinen eigenen Ablauf
- * („Niemand öffnet?", `HomeVisitFlow`). Verbindlich prüft beides der Server.
- *
- * Die Rückfrage bleibt: Der Vermerk sperrt die Dokumentation und ist damit
- * mehr als ein Haken. Zurückgenommen wird er über „Termin wieder öffnen".
- */
-function NichtAngetroffenAktion({
-  appointment,
-  melden,
-}: {
-  appointment: Appointment;
-  melden: Melden;
-}) {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: () => recordNoShow(appointment.id, appointment.updated_at, false),
-    onSuccess: () => {
-      nachladen(queryClient, ['appointment', appointment.id], ['appointments'], ['day-plan']);
-      melden('Als „nicht angetroffen“ vermerkt.');
-    },
-  });
-
-  return (
-    <Rueckfrage
-      ausloeser="Nicht angetroffen"
-      bezeichnung="Nicht angetroffen"
-      bestaetigen="Ja, niemand angetroffen"
-      bestaetigenLaeuft="Wird vermerkt …"
-      fehler={mutation.isError ? mutation.error.message : undefined}
-      laeuft={mutation.isPending}
-      onBestaetigen={() => mutation.mutateAsync()}
-    >
-      <p>
-        Der Termin am {formatLocalDate(appointment.starts_at, appointment.organization_time_zone)}{' '}
-        um {formatLocalTime(appointment.starts_at, appointment.organization_time_zone)} Uhr für{' '}
-        {patientName(appointment)} wird als „nicht angetroffen“ geführt. Der Zeitraum bleibt belegt.
-        Ein Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen.
-      </p>
-      {/* „Das ist ein organisatorischer Vermerk …" ist gestrichen
-          (Design-Handoff 2026-10-01, Abschnitt 1). */}
     </Rueckfrage>
   );
 }

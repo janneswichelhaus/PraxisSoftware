@@ -21,7 +21,6 @@ import {
   hakenFehlt,
   hakenZuruecknehmbar,
 } from '@/features/appointments/haken';
-import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
 import { FreigabeNachHaken } from '@/features/appointments/FreigabeNachHaken';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
@@ -35,7 +34,6 @@ import {
   staffName,
   todayInTimeZone,
   type CalendarEntry,
-  kalenderZumTermin,
   terminPfad,
 } from '@/features/appointments/api';
 import {
@@ -54,8 +52,8 @@ import { fetchAbrechnungslage, positionText } from '@/features/appointments/abre
 import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
 import { Tageskarte } from './Tagesliste';
-import { AnrufKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
-import { dokuZiel } from './besuchswege';
+import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
+import { ausfallMoeglich, dokuZiel } from './besuchswege';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
 import { Zeitstrahl } from './Zeitstrahl';
@@ -83,6 +81,7 @@ import {
   terminName,
   VERALTET_TEXT,
   wegeDesTages,
+  wegZumBesuch,
   type Fokus,
   type NaechsterWeg,
   type Tagesfortschritt,
@@ -519,6 +518,19 @@ function MeinTag({
   }
 
   /**
+   * „Ausfall“ an jeder Behandlung, die begonnen hat und keine Doku hat (B12,
+   * `ausfallMoeglich`) - an der Zeile, in der aufgeklappten Karte und an der
+   * Karte des nächsten Wegs. Nur für die Rollen der Terminverwaltung;
+   * verbindlich prüft der Server (`record_no_show`).
+   */
+  function ausfall(termin: DayPlanEntry, ort: 'zeile' | 'karte' | 'tuer'): ReactNode {
+    if (!darfTermine || !ausfallMoeglich(termin, jetzt)) return null;
+    return (
+      <AusfallKnopf termin={termin} ort={ort} melden={(text) => setMeldung({ ton: 'ok', text })} />
+    );
+  }
+
+  /**
    * Die Knöpfe einer Zeile (Leitfaden L3, Jannes 2026-10-06): „Doku" an jedem
    * Behandlungstermin, auch nach dem Abschließen und Festschreiben - erledigt
    * heißt nicht unerreichbar. Daneben der Haken, solange ein vorbeigegangener
@@ -624,8 +636,11 @@ function MeinTag({
       liegt ||
       (termin.kind === 'therapy' && dokumentiertOhneHaken(termin.status, termin.checked_at));
     const anfahrt = fahrzeiten.anfahrten.get(termin.id);
+    // Der Wegbalken, der über der Zeile lag, steht in der Karte an Stelle
+    // der Minuten (B6).
+    const balken = kommt ? wegZumBesuch(termin, anfahrt, zone, jetzt) : null;
     const kicker = kommt
-      ? `Später${anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''}`
+      ? `Später${anfahrt && !balken ? ` · ≈ ${anfahrt.minuten} min` : ''}`
       : liegt
         ? `Seit ${formatLocalTime(termin.ends_at, zone)} offen`
         : 'Vorbei';
@@ -635,11 +650,15 @@ function MeinTag({
         <Fragment key="haken">{haken(termin, 'normal', 'Behandlung abschließen')}</Fragment>
       ) : null,
     ]);
+    // Unter den Knöpfen: „Später da?“ vor dem Besuch, „Ausfall“ ab dem Beginn.
+    const spaeter = kommt && istHeute ? <SpaeterDa termin={termin} praxis={praxis} /> : null;
+    const ausfaelle = ausfall(termin, 'karte');
     return (
       <Tageskarte
         termin={termin}
         kicker={kicker}
         vorDerTuer={darfDokuLesen}
+        weg={balken ? { ...balken, kachelNenntIhn: false } : null}
         erstaufnahme={
           erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
         }
@@ -654,8 +673,11 @@ function MeinTag({
           )
         }
         aktionen={
-          kommt && istHeute ? (
-            <SpaeterDa termin={termin} praxis={praxis} />
+          spaeter || ausfaelle ? (
+            <>
+              {spaeter}
+              {ausfaelle}
+            </>
           ) : (
             hakenZuruecknehmen(termin)
           )
@@ -739,9 +761,14 @@ function MeinTag({
     // Die Fahrzeit im Kicker weicht am Telefon, wenn die Kachel „Abfahrt"
     // darüber denselben Weg nennt (`weg`, ANN-484): So passt „Termin →" in
     // dieselbe Zeile (Praxis-Review R2, P1), und der Hauptknopf bleibt über
-    // der Tableiste.
+    // der Tableiste. Kommt der Weg von einem Termin davor, steht an Stelle
+    // der Minuten der Wegbalken wie über den Zeilen (B6).
     const wegTitel =
       wege.erster?.id === termin.id && wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg';
+    const balken =
+      fokus.art === 'besuch' && phase === 'wartet'
+        ? wegZumBesuch(termin, anfahrt, zone, jetzt)
+        : null;
     const kicker: ReactNode =
       fokus.art === 'dokumentation' ? (
         hakenFehlt(termin.status, termin.checked_at) ? (
@@ -753,7 +780,7 @@ function MeinTag({
         `Jetzt · bis ${ende}`
       ) : phase === 'ueberfaellig' ? (
         `Seit ${ende} offen`
-      ) : anfahrt ? (
+      ) : anfahrt && !balken ? (
         <>
           {wegTitel}{' '}
           <span className={weg ? 'max-sm:hidden' : ''}>{`· ≈ ${anfahrt.minuten} min`}</span>
@@ -796,37 +823,22 @@ function MeinTag({
     }
 
     // Unter den Knöpfen, was je nach Phase dazukommt: „Später da?“ auf dem
-    // Weg, „Niemand öffnet?“ an der Tür ab dem Beginn (Auftrag C1, Analyse
-    // Rang 9) - derselbe Ablauf wie im Terminfenster, mit der Uhr.
-    const anDerTuer =
-      fokus.art === 'besuch' &&
-      phase !== 'wartet' &&
-      darfTermine &&
-      termin.kind === 'therapy' &&
-      termin.status === 'confirmed' &&
-      termin.appointment_type === 'home_visit';
+    // Weg, „Ausfall“ ab dem Beginn (Auftrag C1, Analyse Rang 9; B12) - am
+    // Hausbesuch derselbe Ablauf wie im Terminfenster, an der Tür mit der Uhr.
     // Eine Verspätung gibt es nur heute; an einem künftigen Tag wartet alles.
     const nebenaktionen =
       fokus.art !== 'besuch' || !istHeute ? null : phase === 'wartet' ? (
         <SpaeterDa termin={termin} praxis={praxis} />
-      ) : anDerTuer ? (
-        <HomeVisitFlow
-          appointment={termin}
-          mitUhr
-          inKarte
-          wege={{
-            ohneBehandlung: mitRueckweg(`/termine/${termin.id}/abschluss?ohne-behandlung=1`, '/'),
-            absagen: mitRueckweg(kalenderZumTermin(termin.id), '/'),
-          }}
-          melden={(text) => setMeldung({ ton: 'ok', text })}
-        />
-      ) : null;
+      ) : (
+        ausfall(termin, 'tuer')
+      );
 
     return (
       <Tageskarte
         termin={termin}
         kicker={kicker}
         vorDerTuer={darfDokuLesen}
+        weg={balken ? { ...balken, kachelNenntIhn: weg !== null } : null}
         relativ={fokus.art === 'besuch' ? bisBeginn(termin, jetzt) : null}
         position={lage && lage.appointment_id === termin.id ? positionText(lage) : null}
         abschlussgespraech={!!lage && lage.appointment_id === termin.id && lage.closing_talk_due}
@@ -864,6 +876,7 @@ function MeinTag({
         veraltet={fahrzeiten.veraltet}
         karte={karte()}
         aktionen={zeilenAktionen}
+        ausfall={(termin) => ausfall(termin, 'zeile')}
         aufklappen={{
           offenId: offeneZeile,
           aufklappbar: (termin) =>

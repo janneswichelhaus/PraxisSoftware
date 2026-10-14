@@ -114,3 +114,51 @@ describe('HomeVisitFlow an der Karte der Übersicht (Auftrag C1)', () => {
     expect(screen.queryByRole('timer')).toBeNull();
   });
 });
+
+describe('„Ausfall“ in der Übersicht (B12)', () => {
+  beforeEach(() => {
+    recordNoShow.mockReset();
+    recordNoShow.mockResolvedValue(undefined);
+    fetchAppointment.mockReset();
+    fetchAppointment.mockResolvedValue(termin);
+  });
+
+  it('heißt am Hausbesuch „Ausfall“, leise an der Zeile, und führt durch dasselbe Protokoll', () => {
+    renderWithProviders(
+      <HomeVisitFlow
+        appointment={ausDerUebersicht}
+        melden={() => undefined}
+        ausloeser="Ausfall"
+        ausloeserVariante="quiet"
+      />,
+    );
+    const knopf = screen.getByRole('button', { name: 'Ausfall' });
+    expect(knopf.className).not.toContain('border-line-strong');
+    expect(knopf).toHaveClass('min-h-11');
+    fireEvent.click(knopf);
+    const feld = screen.getByRole('region', { name: 'Ausfall' });
+    expect(feld).toHaveClass('w-full', 'order-last');
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+    fireEvent.click(screen.getByRole('button', { name: /nicht angetroffen/ }));
+    expect(screen.getByText('Bitte alle drei Schritte des Protokolls bestätigen.')).toBeVisible();
+    expect(recordNoShow).not.toHaveBeenCalled();
+  });
+
+  it('nennt Vorlesesoftware an Knopf und Feld, wessen Termin es ist - das Wort zuerst', () => {
+    renderWithProviders(
+      <HomeVisitFlow
+        appointment={ausDerUebersicht}
+        melden={() => undefined}
+        ausloeser="Ausfall"
+        ausloeserZusatz="für Erika Beispiel um 10:00 Uhr"
+      />,
+    );
+    const knopf = screen.getByRole('button', { name: 'Ausfall für Erika Beispiel um 10:00 Uhr' });
+    // Zu sehen ist nur das Wort; der Zusatz steht für Vorlesesoftware.
+    expect(screen.getByText('für Erika Beispiel um 10:00 Uhr')).toHaveClass('sr-only');
+    fireEvent.click(knopf);
+    expect(
+      screen.getByRole('region', { name: 'Ausfall für Erika Beispiel um 10:00 Uhr' }),
+    ).toBeInTheDocument();
+  });
+});

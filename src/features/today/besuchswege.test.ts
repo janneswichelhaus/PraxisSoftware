@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DayPlanEntry } from './api';
 import {
   anrufNummer,
+  ausfallMoeglich,
   dokuZiel,
   smsHref,
   smsNummer,
@@ -95,5 +96,38 @@ describe('Anruf und „Später da?" (ANN-476)', () => {
     expect(ziel.startsWith('sms:+491600000006?&body=')).toBe(true);
     expect(decodeURIComponent(ziel.split('body=')[1]!)).toBe(text);
     expect(VERSPAETUNG_MINUTEN).toEqual([10, 15, 20]);
+  });
+});
+
+describe('„Ausfall“ an der Zeile (B12, ANN-533)', () => {
+  it('steht ab dem Beginn eines bestätigten Behandlungstermins ohne Doku - am Hausbesuch wie in der Praxis', () => {
+    expect(ausfallMoeglich(termin(), BEGINN)).toBe(true);
+    expect(ausfallMoeglich(termin(), BEGINN + 3 * 3_600_000)).toBe(true);
+    expect(ausfallMoeglich(termin({ appointment_type: 'practice' }), BEGINN)).toBe(true);
+    expect(ausfallMoeglich(termin({ appointment_type: 'video' }), BEGINN)).toBe(true);
+  });
+
+  it('steht nicht vor dem Beginn - vorher ist ein Ausfall nicht feststellbar', () => {
+    expect(ausfallMoeglich(termin(), BEGINN - 1)).toBe(false);
+    // Ein künftiger Tag der Übersicht liegt ganz vor einem (ANN-234).
+    expect(ausfallMoeglich(termin(), 0)).toBe(false);
+  });
+
+  it('steht nicht, sobald es eine Doku gibt - auch keinen Entwurf - oder der Stand unbekannt ist', () => {
+    for (const documentation_status of ['draft', 'final', null] as const) {
+      expect(ausfallMoeglich(termin({ documentation_status }), BEGINN)).toBe(false);
+    }
+  });
+
+  it('steht nur am bestätigten Termin', () => {
+    for (const status of ['completed', 'documented', 'invoiced', 'no_show', 'cancelled'] as const) {
+      expect(ausfallMoeglich(termin({ status }), BEGINN)).toBe(false);
+    }
+  });
+
+  it('steht nicht an Training, Fehlzeit oder einem Termin ohne Patient:in', () => {
+    expect(ausfallMoeglich(termin({ kind: 'training', patient_id: null }), BEGINN)).toBe(false);
+    expect(ausfallMoeglich(termin({ kind: 'internal', patient_id: null }), BEGINN)).toBe(false);
+    expect(ausfallMoeglich(termin({ patient_id: null }), BEGINN)).toBe(false);
   });
 });

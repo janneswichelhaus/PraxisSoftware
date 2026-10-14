@@ -5466,6 +5466,30 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Bausteine der Praxis wieder in der Leiste: Filter weg, Kästchen „Baustein der Praxis“ zurück · Aufwand `klein`.
 
+### ANN-532 — Wegbalken an der Karte, am Telefon an Stelle der Minutenangabe
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+
+**Annahme.** Karte des nächsten Wegs und aufgeklappte Zeile tragen den schmalen Wegbalken unter dem Kicker statt „· ≈ n min“; ist das Ende davor vorbei, beginnt er jetzt (wie die Kachel). Nennt die Kachel „Abfahrt“ denselben Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen.
+
+**Begründung.** B6: Nach einem abgehakten Besuch fehlte der Balken. Als eigene Zeile schöbe er bei 375 × 667 den Hauptknopf unter die Tableiste (ANN-484). „Jetzt“ statt Ende davor weicht vom Auftrag ab, folgt Jannes’ Abnahme zu ANN-196: sonst Puffer am Balken, „zu knapp“ in der Kachel.
+
+**Anker.** `weg` in `src/features/today/Tagesliste.tsx`.
+
+**Änderungspfad.** Wie im Auftrag: Zweig „jetzt“ in `wegZumBesuch` streichen · Aufwand `klein`. Balken über der Karte, Platz anderswo sparen · Aufwand `klein`.
+
+### ANN-533 — „Ausfall“ ab Beginn des Termins und nur ohne Doku
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+
+**Annahme.** „Ausfall“ steht in der Übersicht an jeder Behandlung, die begonnen hat, bestätigt ist und keine Doku hat, auch keinen Entwurf: an der Zeile, aufgeklappt und an der Karte des nächsten Wegs (dort statt „Niemand öffnet?“, neu auch am Praxistermin, mit Entwurf nicht mehr). Hausbesuch: Protokoll, Gebühr erst nach drei Haken; Praxis und Video: die Rückfrage ohne Gebühr aus dem Terminfenster.
+
+**Begründung.** B12. Vor dem Beginn ist ein Ausfall nicht feststellbar, mit Doku weist `record_no_show` ab. Die Karte ist die Zeile ihres Termins, daher dieselbe Regel. Ein Name für dasselbe; am Telefon rücken die Knöpfe unter Name und Ort.
+
+**Anker.** `ausfallMoeglich` in `src/features/today/besuchswege.ts`.
+
+**Änderungspfad.** Bedingungen in `ausfallMoeglich` ändern · Aufwand `klein`.
+
 ### ANN-534 — Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
