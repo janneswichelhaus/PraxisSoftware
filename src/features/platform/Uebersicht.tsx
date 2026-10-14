@@ -221,10 +221,11 @@ export function Uebersicht({
               : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`}
         </Statusmeldung>
       ) : null}
+      {/* E-001: Status als Zeichen und Wort (DESIGN.md Regel 5), kein Erklärsatz. */}
       {einstiegSteht ? (
-        <Statusmeldung className="mb-4" ton="neutral">
-          Der Einstieg steht noch aus. Beim nächsten Öffnen sieht die Person ihn zuerst.
-        </Statusmeldung>
+        <p className="mb-4">
+          <StatusMark ton="warnung">Einstieg steht aus</StatusMark>
+        </p>
       ) : null}
 
       {gescheitert ? (

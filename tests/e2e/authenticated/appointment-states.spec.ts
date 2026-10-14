@@ -115,6 +115,7 @@ test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
     await expect(fenster.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
+    await page.getByRole('button', { name: 'Ja, wieder öffnen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Steht aus');
   });
 });

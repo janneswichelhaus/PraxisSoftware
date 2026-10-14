@@ -677,6 +677,132 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
     expect(rows[0]!.anzahl).toBe('1');
   });
 
+  // Zweitreview A (Endstand), Befund 1: Ein Schreibvorgang, der waehrend einer
+  // noch offenen Freigabe ansetzt, wartet auf sie und wird dann abgewiesen -
+  // statt die gerade freigegebene Grundlage still zu veraendern.
+  describe('haelt die Sperre bei gleichzeitiger Freigabe', () => {
+    // Die Prozessnummer vorher holen: Eine wartende Verbindung beantwortet
+    // keine weitere Abfrage, bis ihre Sperre frei ist.
+    async function verbunden(konto: string | null): Promise<[Client, number]> {
+      const verbindung = new Client({ connectionString: testDatabaseUrl() });
+      await verbindung.connect();
+      await verbindung.query('begin');
+      if (konto) {
+        await verbindung.query("select set_config('role', 'authenticated', true)");
+        await verbindung.query("select set_config('request.jwt.claims', $1, true)", [
+          jwtClaims(konto),
+        ]);
+      }
+      const { rows } = await verbindung.query<{ pid: number }>('select pg_backend_pid() as pid');
+      return [verbindung, rows[0]!.pid];
+    }
+
+    async function wartetAufSperre(pid: number): Promise<void> {
+      await vi.waitFor(
+        async () => {
+          const { rows } = await asPostgres<{ wartet: string | null }>(
+            'select wait_event_type as wartet from pg_stat_activity where pid = $1',
+            [pid],
+          );
+          expect(rows[0]?.wartet).toBe('Lock');
+        },
+        { timeout: 15_000, interval: 50 },
+      );
+    }
+
+    it.each([
+      [
+        'Haken zuruecknehmen',
+        users.therapist,
+        async (a: string) => [ZURUECKNEHMEN, [a, await stand(a)]] as const,
+      ],
+      [
+        'Nachtrag anlegen',
+        users.therapist,
+        async (a: string) => {
+          const { rows } = await asPostgres<{ id: string }>(
+            'select id from public.treatment_notes where appointment_id = $1 and addendum_to_note_id is null',
+            [a],
+          );
+          return [
+            'select public.create_treatment_note_addendum($1::uuid, $2)',
+            [rows[0]!.id, 'Synthetischer Nachtrag waehrend der Freigabe.'],
+          ] as const;
+        },
+      ],
+      [
+        'neuen Termin der Grundlage anlegen',
+        null,
+        () =>
+          Promise.resolve([
+            `insert into public.appointments (
+               organization_id, patient_id, staff_member_id, location_id, appointment_type,
+               status, starts_at, ends_at, treatment_basis_id
+             ) values ($1, $2, $3, $4, 'practice', 'confirmed',
+               date_trunc('hour', now()) + interval '50 hours',
+               date_trunc('hour', now()) + interval '51 hours', $5)`,
+            [organizationId, patients.erika, STAFF_ANNA, LOCATION, GRUNDLAGE],
+          ] as const),
+      ],
+    ] as const)(
+      '%s wartet auf die Freigabe und wird abgewiesen',
+      async (_was, konto, schreiben) => {
+        const [a] = await vollstaendig();
+        const [sql, werte] = await schreiben(a);
+        const [freigabe] = await verbunden(users.therapist);
+        const [zweiter, zweiterPid] = await verbunden(konto);
+        try {
+          await freigabe.query(FREIGEBEN, [GRUNDLAGE]);
+          const versuch = zweiter.query(sql, [...werte]).then(
+            () => null,
+            (fehler: Error) => fehler,
+          );
+          await wartetAufSperre(zweiterPid);
+          await freigabe.query('commit');
+          expect((await versuch)?.message).toMatch(/treatment basis is in billing/);
+        } finally {
+          await freigabe.query('rollback').catch(() => undefined);
+          await zweiter.query('rollback').catch(() => undefined);
+          await freigabe.end();
+          await zweiter.end();
+        }
+        const { rows } = await asPostgres<{ freigegeben: boolean; offen: number }>(
+          `select b.billing_released_at is not null as freigegeben,
+                (select open_count from app.treatment_basis_billing(b.id)) as offen
+           from public.treatment_bases b where b.id = $1`,
+          [GRUNDLAGE],
+        );
+        expect(rows[0]).toEqual({ freigegeben: true, offen: 0 });
+      },
+    );
+
+    it('laesst eine Freigabe auf eine laufende Haken-Ruecknahme warten und weist sie dann ab', async () => {
+      const [a] = await vollstaendig();
+      const [zuruecknehmen] = await verbunden(users.therapist);
+      const [freigabe, freigabePid] = await verbunden(users.therapist);
+      try {
+        await zuruecknehmen.query(ZURUECKNEHMEN, [a, await stand(a)]);
+        const versuch = freigabe.query(FREIGEBEN, [GRUNDLAGE]).then(
+          () => null,
+          (fehler: Error) => fehler,
+        );
+        await wartetAufSperre(freigabePid);
+        await zuruecknehmen.query('commit');
+        expect((await versuch)?.message).toMatch(/treatment basis has open appointments/);
+      } finally {
+        await zuruecknehmen.query('rollback').catch(() => undefined);
+        await freigabe.query('rollback').catch(() => undefined);
+        await zuruecknehmen.end();
+        await freigabe.end();
+      }
+      const { rows } = await asPostgres<{ freigegeben: boolean }>(
+        'select billing_released_at is not null as freigegeben from public.treatment_bases where id = $1',
+        [GRUNDLAGE],
+      );
+      expect(rows[0]!.freigegeben).toBe(false);
+    });
+  });
+
   it('gibt die Spalten nicht zum direkten Schreiben frei', async () => {
     await expect(
       asUser(

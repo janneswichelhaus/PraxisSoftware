@@ -27,6 +27,9 @@ import { leseTerminVorbelegung, schreibeTerminVorbelegung } from './api';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Für eine Serie zählt von den Karteileichen nur diese (B1, B10). */
+const NUR_TERMINE_FEHLEN = ['termine_fehlen'] as const;
+
 /**
  * Dauertermin aus dem Kalender, wenn die Zeit feststeht und die Person noch
  * nicht (BEF-042).
@@ -72,6 +75,15 @@ export function DauerterminStartPage({ user }: { user: CurrentUser }) {
     setSuche(naechste);
   }
 
+  // Die Patientenanlage hängt die neue Kennung an diese Adresse an - damit
+  // steht die Person gewählt da (NewPatientPage, UX-012).
+  const anlegen = mitRueckweg('/patienten/neu', `${ort.pathname}${ort.search}`);
+  const anlegenKnopf = (
+    <ButtonLink to={anlegen} variant="secondary" groesse="kompakt">
+      Patient:in anlegen
+    </ButtonLink>
+  );
+
   // „Uhr" nur mit einem Beginn - ohne ihn stand „28.09.2026 Uhr" da (KAL-10).
   const zeit = vorbelegung.datum
     ? `${formatDate(vorbelegung.datum)}${vorbelegung.beginn ? `, ab ${vorbelegung.beginn} Uhr` : ''}`
@@ -89,6 +101,15 @@ export function DauerterminStartPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title={`${BEGRIFFE.dauertermin} anlegen`}
         description="Zuerst die Patient:in, dann die Behandlungsgrundlage."
+        // Wie beim Termin: Die Gesuchte ist neu - anlegen und mit ihr hierher
+        // zurück, gleich in den zweiten Schritt (Design-Review A, Befund 6).
+        actions={
+          patientId === null ? (
+            <ButtonLink to={anlegen} variant="secondary">
+              Patient:in anlegen
+            </ButtonLink>
+          ) : undefined
+        }
       />
 
       {/* Eine Zeile statt Abschnitt und Tabelle für einen einzigen Wert (UX-005g). */}
@@ -104,7 +125,9 @@ export function DauerterminStartPage({ user }: { user: CurrentUser }) {
               naechste.set('patient', id);
               return `${ort.pathname}?${naechste.toString()}`;
             }}
-            leer={{ titel: 'Noch keine Patient:innen' }}
+            wahlenNur={NUR_TERMINE_FEHLEN}
+            leer={{ titel: 'Noch keine Patient:innen', aktion: anlegenKnopf }}
+            anlegen={anlegenKnopf}
           />
         </Section>
       ) : (

@@ -84,9 +84,7 @@ describe('Abrechnung einer Verordnung in der Akte (B1, B7)', () => {
   it('stellt auch eine früher beendete Behandlung in die Abrechnung - mit der echten Zahl', () => {
     rendern({ performed: 6, documented: 6, state: 'termine_fehlen' });
     expect(screen.getByText('Termine fehlen')).toBeInTheDocument();
-    expect(
-      screen.getByText('6 von 10 Terminen erbracht und dokumentiert, keiner mehr offen.'),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/6 von 10 erbracht · 6 dokumentiert/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'In die Abrechnung stellen' })).toBeInTheDocument();
   });
 

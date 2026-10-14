@@ -521,6 +521,28 @@ describe('TerminAktionenDialog', () => {
       expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeInTheDocument();
     });
 
+    // Design-Review A: Wiederöffnen fragt nach - der Vermerk fällt weg.
+    it('öffnet einen vermerkten Termin nach einer Rückfrage wieder', async () => {
+      const vermerkt = {
+        ...praxistermin,
+        status: 'no_show' as const,
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+      };
+      fetchAppointment.mockResolvedValue(vermerkt);
+      const user = userEvent.setup();
+      rendern();
+
+      await user.click(await screen.findByRole('button', { name: 'Termin wieder öffnen' }));
+      expect(reopenAppointment).not.toHaveBeenCalled();
+      expect(screen.getByText('Der Vermerk „nicht angetroffen“ fällt weg.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Ja, wieder öffnen' }));
+
+      await waitFor(() =>
+        expect(reopenAppointment).toHaveBeenCalledWith(TERMIN_ID, vermerkt.updated_at),
+      );
+      expect(await screen.findByText('Termin wieder geöffnet.')).toBeInTheDocument();
+    });
+
     it('bietet am vermerkten Termin kein zweites Vermerken und kein Absagen an', async () => {
       fetchAppointment.mockResolvedValue({
         ...praxistermin,
@@ -1292,7 +1314,10 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
 
+      // Eine Rückfrage, denn mit dem Haken fällt die Leistung weg (B4).
       await user.click(screen.getByRole('button', { name: 'Haken zurücknehmen' }));
+      expect(reopenAppointment).not.toHaveBeenCalled();
+      await user.click(await screen.findByRole('button', { name: 'Ja, zurücknehmen' }));
 
       await waitFor(() =>
         expect(reopenAppointment).toHaveBeenCalledWith(TERMIN_ID, abgeschlossen.updated_at),
@@ -1336,6 +1361,7 @@ describe('TerminAktionenDialog', () => {
 
       expect(screen.queryByRole('button', { name: 'Abhaken' })).toBeNull();
       await user.click(screen.getByRole('button', { name: 'Haken zurücknehmen' }));
+      await user.click(await screen.findByRole('button', { name: 'Ja, zurücknehmen' }));
 
       await waitFor(() =>
         expect(reopenAppointment).toHaveBeenCalledWith(TERMIN_ID, dokumentiert.updated_at),

@@ -4,8 +4,8 @@ import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
@@ -230,10 +230,24 @@ function Eintrag({
           </ButtonLink>
         ) : null}
 
-        {darfSchreiben && final && inAbrechnung ? (
-          <Kleingedrucktes>
-            In der Abrechnung: Nachtrag und Korrektur erst nach dem Zurückholen in der Akte.
-          </Kleingedrucktes>
+        {/* Ein Zustand statt eines Satzes, einmal am Haupteintrag - und der
+            Weg dorthin, wo die Sperre aufgeht: die Grundlage in der Akte
+            (Design-Review A, Befund 10). Wer schreiben darf, darf auch
+            zurückholen (canReleaseTreatmentBasis); verbindlich prüft der
+            Server. */}
+        {darfSchreiben && final && inAbrechnung && !istNachtrag ? (
+          <span className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1">
+            <StatusMark>In der Abrechnung</StatusMark>
+            {appointment.patient_id && lage.data?.treatment_basis_id ? (
+              <Textlink
+                to={mit(
+                  `/patienten/${appointment.patient_id}/verordnungen#verordnung-${lage.data.treatment_basis_id}`,
+                )}
+              >
+                In der Akte zurückholen <span aria-hidden="true">→</span>
+              </Textlink>
+            ) : null}
+          </span>
         ) : null}
 
         {note.version_count > 0 ? (

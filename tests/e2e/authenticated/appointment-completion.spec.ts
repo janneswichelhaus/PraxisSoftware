@@ -149,7 +149,9 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
+    // Eine Rückfrage: Mit dem Haken fällt die Leistung weg (B4).
     await page.getByRole('button', { name: 'Haken zurücknehmen' }).click();
+    await page.getByRole('button', { name: 'Ja, zurücknehmen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Steht aus');
     // Der Abschlusszeitpunkt ist mit dem Status verschwunden.
     await expect(page.getByText('Abgeschlossen am')).toHaveCount(0);

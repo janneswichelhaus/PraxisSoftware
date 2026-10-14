@@ -26,7 +26,8 @@ export const IN_DER_EINSICHT = 'In der Einsicht wird nichts geändert.';
 
 /**
  * ANN-307: Die Übungstage sieht nur die Person - der Server liefert sie der
- * Einsicht leer. Statt „keine Tage" steht dort dieser Satz.
+ * Einsicht leer. Statt „keine Tage" steht unter „Termine“ dieser Satz; unter
+ * „Übungen“ fehlen die Tage ohne ihn (die Leiste sagt „nur lesen“).
  */
 export const TAGE_NUR_DIE_PERSON = 'Die Übungstage sieht nur die Person.';
 
@@ -212,4 +213,26 @@ export const NurLesenKontext = createContext(false);
 /** Ob jeder Schreibknopf fehlen soll (Einsicht der Praxis, E-001). */
 export function useNurLesen(): boolean {
   return useContext(NurLesenKontext);
+}
+
+/**
+ * Die Wege aus der Einsicht in die Praxis (E-001, DESIGN.md Regel 6): Was die
+ * Einsicht nicht öffnet - ein Dokument, eine Aufnahme (ANN-527) -, öffnet die
+ * Praxis an seinem Ort. Die Adressen kennt nur die Praxisseite
+ * (`features/platform-access`); die Plattform bekommt sie eingespeist wie die
+ * Quelle und kennt keine Seite der Praxis.
+ */
+export interface Praxiswege {
+  /** Wo eine Datei dieser Art in der Akte steht; im Training gibt es keine. */
+  datei: ((dokumentart: string) => string) | null;
+  /** Eine Rückfrage, wie die Praxis sie liest. */
+  rueckfrage: (nachrichtId: string) => string;
+}
+
+/** Ohne Einsicht gibt es keine Wege in die Praxis. */
+export const PraxiswegeKontext = createContext<Praxiswege | null>(null);
+
+/** Die Wege in die Praxis - nur in der Einsicht und nur, wenn die Praxisseite sie gibt. */
+export function usePraxiswege(): Praxiswege | null {
+  return useContext(PraxiswegeKontext);
 }

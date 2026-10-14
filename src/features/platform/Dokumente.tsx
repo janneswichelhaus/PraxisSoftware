@@ -8,9 +8,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Dateiansicht } from '@/features/files/Dateiansicht';
 import { dokumenteSchluessel, type Dokument, type Plattformzugang } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
+import { useNurLesen, usePlattformApi, usePraxiswege } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum } from './zeit';
 
@@ -39,7 +40,6 @@ function groesse(bytes: number): string {
  */
 export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
-  const nurLesen = useNurLesen();
   const dokumente = useQuery({
     queryKey: dokumenteSchluessel(zugang.access_id),
     queryFn: () => api.ladeDokumente(zugang.access_id),
@@ -70,9 +70,6 @@ export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
                   <Dokumentzeile key={d.id} zugang={zugang} dokument={d} />
                 ))}
               </ListRows>
-              {nurLesen ? (
-                <p className="text-ink-muted mt-2 text-sm">In der Akte unter Dateien öffnen.</p>
-              ) : null}
             </Section>
           )}
         </Abfragezustand>
@@ -84,6 +81,7 @@ export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
 function Dokumentzeile({ zugang, dokument: d }: { zugang: Plattformzugang; dokument: Dokument }) {
   const api = usePlattformApi();
   const nurLesen = useNurLesen();
+  const wege = usePraxiswege();
   const [laeuft, setLaeuft] = useState<'oeffnen' | 'herunterladen' | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [ansicht, setAnsicht] = useState<Blob | null>(null);
@@ -122,8 +120,15 @@ function Dokumentzeile({ zugang, dokument: d }: { zugang: Plattformzugang; dokum
             {datum(d.released_at)}
           </p>
         </div>
-        {/* E-001: In der Einsicht wird kein Dokument geöffnet. */}
-        {nurLesen ? null : (
+        {/* E-001 (ANN-527): In der Einsicht wird kein Dokument geöffnet - der
+            Weg führt in den Reiter der Akte, in dem es steht. */}
+        {nurLesen ? (
+          wege?.datei ? (
+            <Textlink alleinstehend to={wege.datei(d.document_type)}>
+              In der Akte öffnen<span className="sr-only">: {d.display_name}</span>
+            </Textlink>
+          ) : null
+        ) : (
           <div className="flex flex-wrap gap-2">
             {bild ? (
               <Button

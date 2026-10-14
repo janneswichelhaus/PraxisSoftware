@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { aktenortDerDatei } from '@/features/files/dokumentarten';
+import { rueckfragePfad } from '@/features/messages/api';
+import type { Praxiswege } from '@/features/platform/einsicht';
 
 /**
  * Die Einsicht der Praxis in die Plattform einer Person (E-001, DSN-001 D7,
@@ -92,4 +95,18 @@ export function rueckwegAusDerEinsicht(kontext: Einsichtskontext): {
         ziel: `/training/${kontext.relationship_id}`,
         beschriftung: 'Zurück zum Trainingsverhältnis',
       };
+}
+
+/**
+ * Wo die Praxis öffnet, was die Einsicht nicht öffnet (ANN-527, DESIGN.md
+ * Regel 6): eine Datei im Reiter der Akte, in dem sie steht (AKTE-007), eine
+ * Aufnahme an ihrer Rückfrage im Bereich des Verhältnisses (DSN-001 D1).
+ */
+export function wegeAusDerEinsicht(kontext: Einsichtskontext): Praxiswege {
+  const { relationship_kind: art, relationship_id: verhaeltnisId } = kontext;
+  return {
+    datei:
+      art === 'treatment' ? (dokumentart) => aktenortDerDatei(verhaeltnisId, dokumentart) : null,
+    rueckfrage: (nachrichtId) => rueckfragePfad({ id: nachrichtId, relationship_kind: art }),
+  };
 }
