@@ -1099,36 +1099,44 @@ describe('CompleteTreatmentPage', () => {
         expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
       });
 
-      it('speichert den Vorschlag nie - erst die Übernahme macht Text daraus, der wie getippter gesichert wird', async () => {
-        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-        rendern();
-        const vorschlag = await diktieren(user);
+      // Eigene Frist: Tippen mit vorgestellter Uhr dauert auf einem geteilten
+      // Rechner länger als die üblichen fünf Sekunden.
+      it(
+        'speichert den Vorschlag nie - erst die Übernahme macht Text daraus, der wie getippter gesichert wird',
+        {
+          timeout: 15_000,
+        },
+        async () => {
+          const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+          rendern();
+          const vorschlag = await diktieren(user);
 
-        // Auch nach mehreren Pausen geht vom Vorschlag nichts auf den Server.
-        await act(() => vi.advanceTimersByTimeAsync(3100 * 3));
-        expect(createTreatmentNote).not.toHaveBeenCalled();
-        expect(updateTreatmentNote).not.toHaveBeenCalled();
+          // Auch nach mehreren Pausen geht vom Vorschlag nichts auf den Server.
+          await act(() => vi.advanceTimersByTimeAsync(3100 * 3));
+          expect(createTreatmentNote).not.toHaveBeenCalled();
+          expect(updateTreatmentNote).not.toHaveBeenCalled();
 
-        await user.clear(vorschlag);
-        await user.type(vorschlag, 'Befund{Enter}Keine Schwellung, Beugung 110 Grad.');
-        await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
+          await user.clear(vorschlag);
+          await user.type(vorschlag, 'Befund{Enter}Keine Schwellung, Beugung 110 Grad.');
+          await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
 
-        const feld = screen.getByLabelText('Eintrag zur Behandlung');
-        expect(feld).toHaveValue('Befund\nKeine Schwellung, Beugung 110 Grad.');
-        expect(
-          screen.getByText('„Vorschlag aus der Aufnahme“ am Ende eingefügt.'),
-        ).toBeInTheDocument();
-        expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
+          const feld = screen.getByLabelText('Eintrag zur Behandlung');
+          expect(feld).toHaveValue('Befund\nKeine Schwellung, Beugung 110 Grad.');
+          expect(
+            screen.getByText('„Vorschlag aus der Aufnahme“ am Ende eingefügt.'),
+          ).toBeInTheDocument();
+          expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
 
-        await act(() => vi.advanceTimersByTimeAsync(3100));
-        await waitFor(() =>
-          expect(createTreatmentNote).toHaveBeenCalledWith(
-            TERMIN_ID,
-            'Befund\nKeine Schwellung, Beugung 110 Grad.',
-          ),
-        );
-        expect(completeTreatment).not.toHaveBeenCalled();
-      });
+          await act(() => vi.advanceTimersByTimeAsync(3100));
+          await waitFor(() =>
+            expect(createTreatmentNote).toHaveBeenCalledWith(
+              TERMIN_ID,
+              'Befund\nKeine Schwellung, Beugung 110 Grad.',
+            ),
+          );
+          expect(completeTreatment).not.toHaveBeenCalled();
+        },
+      );
     });
 
     it('bereitet nach „Fertig“ auf und zeigt den Vorschlag lesbar, prüfbar und korrigierbar', async () => {
