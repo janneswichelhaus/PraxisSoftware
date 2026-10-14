@@ -41,16 +41,22 @@ function Pruefseite({
   speichern,
   mitFreigabe = false,
   texte,
+  nichtSicherbar,
+  kompakt = false,
 }: {
   ungespeichert?: boolean;
   speichern?: () => Promise<boolean>;
   mitFreigabe?: boolean;
   texte?: Verlustschutztexte;
+  nichtSicherbar?: string;
+  kompakt?: boolean;
 }) {
   const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
     ungespeichert,
     ...(speichern ? { speichern } : {}),
     ...(texte ? { texte } : {}),
+    nichtSicherbar,
+    kompakt,
   });
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
@@ -1013,5 +1019,106 @@ describe('Textverlustschutz: Sicherung von selbst (BEF-056, ANN-319)', () => {
     // Die nächste Pause sichert den Rest.
     await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
     expect(speichern).toHaveBeenLastCalledWith('Eins Zwei');
+  });
+});
+
+/**
+ * Was sich nicht speichern lässt (KI-EPIC-001, ADR-016 Punkt 10): Eine
+ * laufende Aufnahme oder ein Vorschlag aus ihr hält an wie Text, wird aber
+ * nie gesichert - weder aus der Rückfrage noch vor der Sitzungssperre.
+ */
+describe('Textverlustschutz: Offenes, das sich nicht speichern lässt (KI-EPIC-001)', () => {
+  const SATZ = 'Der Vorschlag aus der Aufnahme ist nicht übernommen.';
+
+  it('meldet es beim Verlassen des Fensters an den Browser', () => {
+    const anmelden = vi.spyOn(window, 'addEventListener');
+    renderWithProviders(
+      <Pruefseite ungespeichert={false} nichtSicherbar={SATZ} />,
+      '/dokumentation',
+    );
+    expect(anmelden.mock.calls.some(([typ]) => typ === 'beforeunload')).toBe(true);
+  });
+
+  it('hält den Seitenwechsel an, nennt es und bietet kein Speichern an', async () => {
+    const user = userEvent.setup();
+    const speichern = vi.fn(() => Promise.resolve(true));
+    renderWithProviders(
+      <Pruefseite ungespeichert={false} speichern={speichern} nichtSicherbar={SATZ} />,
+      '/dokumentation',
+    );
+    await user.click(screen.getByRole('link', { name: 'Weggehen' }));
+
+    expect(screen.getByText(SATZ)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Speichern und weitergehen' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Verwerfen und weitergehen' }));
+    expect(adresse()).toBe('Adresse: /woanders');
+    expect(speichern).not.toHaveBeenCalled();
+  });
+
+  it('nennt in der Zeile Text und Vorschlag und speichert nur den Text', async () => {
+    const user = userEvent.setup();
+    const speichern = vi.fn(() => Promise.resolve(true));
+    renderWithProviders(
+      <Pruefseite speichern={speichern} nichtSicherbar={SATZ} kompakt />,
+      '/dokumentation',
+    );
+    await user.click(screen.getByRole('link', { name: 'Weggehen' }));
+
+    expect(screen.getByText(`Text noch nicht gespeichert. ${SATZ}`)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
+    await waitFor(() => expect(adresse()).toBe('Adresse: /woanders'));
+    expect(speichern).toHaveBeenCalledTimes(1);
+  });
+
+  it('fragt vor dem Abmelden', async () => {
+    const user = userEvent.setup();
+    const abmelden = vi.fn();
+    renderWithProviders(
+      <AbmeldeschutzProvider onAbmelden={abmelden}>
+        <Kopfzeilenknopf />
+        <Pruefseite ungespeichert={false} nichtSicherbar={SATZ} kompakt />
+      </AbmeldeschutzProvider>,
+      '/dokumentation',
+    );
+    await user.click(screen.getByRole('button', { name: 'Abmelden' }));
+    expect(screen.getByText(`${SATZ} Abmelden?`)).toBeInTheDocument();
+    expect(abmelden).not.toHaveBeenCalled();
+  });
+
+  it('lässt die Seite vor der Sitzungssperre verborgen stehen und sichert nur den Text', async () => {
+    const angemeldet = new Set<Sicherung>();
+    const speichern = vi.fn(() => Promise.resolve(true));
+    const { rerender } = renderWithProviders(
+      <SperrsicherungKontext.Provider
+        value={{
+          meldeAn: (sicherung) => {
+            angemeldet.add(sicherung);
+            return () => angemeldet.delete(sicherung);
+          },
+        }}
+      >
+        <Pruefseite ungespeichert={false} speichern={speichern} nichtSicherbar={SATZ} />
+      </SperrsicherungKontext.Provider>,
+      '/dokumentation',
+    );
+    const [sicherung] = [...angemeldet];
+    await expect(sicherung!()).resolves.toBe(false);
+    expect(speichern).not.toHaveBeenCalled();
+
+    rerender(
+      <SperrsicherungKontext.Provider
+        value={{
+          meldeAn: (s) => {
+            angemeldet.add(s);
+            return () => angemeldet.delete(s);
+          },
+        }}
+      >
+        <Pruefseite speichern={speichern} nichtSicherbar={SATZ} />
+      </SperrsicherungKontext.Provider>,
+    );
+    const [mitText] = [...angemeldet];
+    await expect(mitText!()).resolves.toBe(false);
+    expect(speichern).toHaveBeenCalledTimes(1);
   });
 });

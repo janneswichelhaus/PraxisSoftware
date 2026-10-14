@@ -84,7 +84,7 @@ Feature, **P3** später.
 | E10 | Wer schreibt Mitarbeiterdaten | **erledigt 2026-09-11** — umgesetzt in STAFF-002a | `PROJECT_PRINCIPLES.md` 0.6 §4.3/§4.5 nachgezogen; Privatangaben folgen dem Leserecht (ANN-024) |
 | E11 | Wer gilt als behandelnde Person | **erledigt 2026-09-11** — Konten und Rollen entstehen in der Anwendung (STAFF-002b) | — |
 | E12 | Terminfenster: Abweichung, Fahrpuffer, Warnung oder Sperre | Kernregel **entschieden 2026-09-08** (§8.1) · Punkt 1 **neu entschieden 2026-09-16**: Länge **frei**, Abweichung von 45/60 wird gekennzeichnet · Punkt 2 damit **gegenstandslos** · Punkt 3 und 4 **vorläufig entschieden 2026-09-12**, **gebaut in MAP-006** (Warnung, keine Sperre) · Punkt 3a **vorläufig beantwortet** durch ANN-097 (Live-Abruf, keine Speicherung) | `PROJECT_PRINCIPLES.md` **0.11 §8.1**; CAL-010a und CAL-015 gebaut, **CAL-020 baut die freie Länge**, CAL-010b entfallen |
-| E13 | Sprachdokumentation: Anbieter, Architektur, Audio, Frist | Anforderung **entschieden 2026-09-08** (§6.3); Umsetzung **offen** | §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6 |
+| E13 | Sprachdokumentation: Anbieter, Architektur, Audio, Frist | Anforderung **entschieden 2026-09-08** (§6.3); für den Mock-Betrieb **überbrückt durch ANN-520** (2026-10-14); Anbieter **offen** (C6) | §6.3, ADR-005 Punkt 9, ADR-006 Punkt 8, ADR-016 Punkt 10; Anbieter mit C6 |
 | E14 | Gebühr beim Nichtantreffen am Hausbesuch | **erledigt 2026-09-13** — Hausbesuch-Szenarien verbindlich; Absage unter 24 Stunden **entschieden 2026-09-12** und gebaut (CAL-014); **umgesetzt 2026-09-16 in CAL-018** | `PROJECT_PRINCIPLES.md` 0.10 §8, [ADR-018](../adr/ADR-018-appointment-states.md) Fassung 3; Rechnungstext Fall 1 mit B4 |
 | E15 | Office sieht klinische Inhalte | **entschieden (Jannes) 2026-09-13**; umgesetzt 2026-09-15 in ROL-EPIC-001; Prüfvermerk für B2 | `PROJECT_PRINCIPLES.md` 0.10 §4.3/§4.4/§10, [ADR-004](../adr/ADR-004-authorization-model.md) Fassung 2; C1 und C2 überholt |
 | E16 | Abrechnungsgrundlage neben der Verordnung (Privatrezept, Selbstzahler, weitere) | **erledigt 2026-09-16** (Jannes), gebaut in GRD-001 — Teil A: abgerechnet wird auch vor dem Ende einer Grundlage · Teil B: **eine** Klammer „Behandlungsgrundlage", die Verordnung ist eine Bauart davon | [ADR-020](../adr/ADR-020-treatment-basis.md) (angenommen 2026-09-16); unten; gebaut in GRD-001 |
@@ -310,7 +310,7 @@ Zahlen. Wo: §8.1, ADR-019 Punkt 16. Annahmen: ANN-049, ANN-056, ANN-097.
 
 ### E13 — Sprachdokumentation: Anbieter, Architektur, Audio, Frist
 
-Anforderung entschieden · 2026-09-08 (§6.3); Umsetzung offen · P3
+Anforderung entschieden · 2026-09-08 (§6.3); für den Mock-Betrieb überbrückt durch ANN-520 (2026-10-14), Anbieter offen (C6) · P3
 
 Offen sind fünf Punkte: Anbieter (Prüfkatalog wie jeder Verarbeitungsdienst,
 gehört zu C6); Rohaudio — ob, wo, wie lange (ADR-008 kennt keine Datenklasse

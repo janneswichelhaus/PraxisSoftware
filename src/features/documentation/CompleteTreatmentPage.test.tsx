@@ -10,7 +10,12 @@ import type * as SlotApi from '@/features/slot-search/api';
 import type * as BillingApi from '@/features/billing/api';
 import type * as LeistungenApi from '@/features/appointments/leistungenAmTermin';
 import type * as RouterModul from 'react-router-dom';
+import type * as KiGateway from '@/lib/ki/gateway';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
+import { KI_FEHLERTEXTE } from '@/lib/ki/gateway';
+import { AUFNAHMEFEHLER, DIKTAT_OFFEN } from './diktat';
+import { installiereAufnahme } from './testaufnahme';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const NOTE_ID = '88888888-8888-4888-8888-000000000001';
@@ -125,6 +130,14 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useNavigate: () => navigate,
   useParams: () => ({ appointmentId: TERMIN_ID }),
+}));
+
+// KI-EPIC-001: Der Gateway antwortet hier nicht über das Netz.
+const diktatAufbereiten = vi.fn();
+vi.mock('@/lib/ki/gateway', async (importOriginal) => ({
+  ...(await importOriginal<typeof KiGateway>()),
+  diktatAufbereiten: (...args: unknown[]) =>
+    diktatAufbereiten(...args) as Promise<KiGateway.Diktatergebnis>,
 }));
 
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
@@ -993,5 +1006,331 @@ describe('CompleteTreatmentPage', () => {
     expect(within(gruppe).getByRole('button', { name: 'Als Nachtrag übernehmen' })).toBeEnabled();
     expect(within(gruppe).getByRole('button', { name: 'In Korrektur übernehmen' })).toBeEnabled();
     expect(feld).toHaveValue(`${entwurf.content} Zusatz.`);
+  });
+
+  /**
+   * Spracheingabe als bevorzugter Weg (BEF-153, KI-EPIC-001, 6.3): Sprechen
+   * nur auf Tipp, Vorschlag über dem Feld, Übernahme erst auf ausdrücklichen
+   * Tipp - und davor wird nichts gespeichert. Mikrofon und Recorder sind
+   * nachgebildet (`testaufnahme.ts`), der Gateway ist es auch.
+   */
+  describe('Spracheingabe (BEF-153, KI-EPIC-001)', () => {
+    const VORSCHLAG: KiGateway.Diktatvorschlag = {
+      transkript:
+        'Patientin berichtet, Schmerz drei von zehn. Keine Schwellung. Plan: vielleicht Treppe [unverständlich].',
+      abschnitte: [
+        { titel: 'Angaben der Patient:in', text: 'Patientin berichtet, Schmerz drei von zehn.' },
+        { titel: 'Befund', text: 'Keine Schwellung.' },
+        { titel: 'Plan', text: 'Plan: vielleicht Treppe [unverständlich].' },
+      ],
+      quelle: 'nachbildung',
+    };
+    const VORSCHLAGSTEXT =
+      'Angaben der Patient:in\nPatientin berichtet, Schmerz drei von zehn.\n\n' +
+      'Befund\nKeine Schwellung.\n\nPlan\nPlan: vielleicht Treppe [unverständlich].';
+
+    let aufnahme: ReturnType<typeof installiereAufnahme>;
+
+    beforeEach(() => {
+      aufnahme = installiereAufnahme();
+      diktatAufbereiten.mockReset();
+      diktatAufbereiten.mockResolvedValue({ ok: true, vorschlag: VORSCHLAG });
+    });
+
+    afterEach(() => {
+      aufnahme.entfernen();
+    });
+
+    async function diktieren(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+      await user.click(await screen.findByRole('button', { name: 'Fertig' }));
+      return screen.findByLabelText('Text des Vorschlags');
+    }
+
+    it('macht „Sprechen“ zum Hauptknopf, solange das Feld leer ist (ANN-521)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const sprechen = await screen.findByRole('button', { name: 'Sprechen' });
+      const festschreiben = screen.getByRole('button', { name: 'Festschreiben' });
+      expect(sprechen).toHaveClass('bg-accent', 'h-12');
+      expect(festschreiben).not.toHaveClass('bg-accent');
+      // Gesprochen wird nur auf Tipp: Beim Öffnen fragt niemand das Mikrofon.
+      expect(aufnahme.mikrofon.anfragen).toEqual([]);
+
+      await user.type(screen.getByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      expect(festschreiben).toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Sprechen' })).not.toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Sprechen' })).toHaveClass('border-line-strong');
+    });
+
+    describe('mit Uhr', () => {
+      beforeEach(() => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+      });
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('zeigt während der Aufnahme Zeichen, Wort und Uhr und hält Festschreiben an', async () => {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        rendern();
+        await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+
+        const uhr = await screen.findByText('0:00');
+        // Status als Zeichen und Wort, vorgelesen ohne jede Sekunde.
+        expect(uhr.closest('[role="status"]')).toHaveTextContent('Aufnahme 0:00');
+        expect(uhr).toHaveAttribute('aria-live', 'off');
+        await act(() => vi.advanceTimersByTimeAsync(2100));
+        expect(screen.getByText('0:02')).toBeInTheDocument();
+
+        expect(screen.getByRole('button', { name: 'Fertig' })).toHaveClass('bg-accent');
+        expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+        expect(screen.getByRole('button', { name: 'Abbrechen' })).toBeEnabled();
+        expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
+      });
+
+      it('speichert den Vorschlag nie - erst die Übernahme macht Text daraus, der wie getippter gesichert wird', async () => {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        rendern();
+        const vorschlag = await diktieren(user);
+
+        // Auch nach mehreren Pausen geht vom Vorschlag nichts auf den Server.
+        await act(() => vi.advanceTimersByTimeAsync(3100 * 3));
+        expect(createTreatmentNote).not.toHaveBeenCalled();
+        expect(updateTreatmentNote).not.toHaveBeenCalled();
+
+        await user.clear(vorschlag);
+        await user.type(vorschlag, 'Befund{Enter}Keine Schwellung, Beugung 110 Grad.');
+        await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
+
+        const feld = screen.getByLabelText('Eintrag zur Behandlung');
+        expect(feld).toHaveValue('Befund\nKeine Schwellung, Beugung 110 Grad.');
+        expect(
+          screen.getByText('„Vorschlag aus der Aufnahme“ am Ende eingefügt.'),
+        ).toBeInTheDocument();
+        expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
+
+        await act(() => vi.advanceTimersByTimeAsync(3100));
+        await waitFor(() =>
+          expect(createTreatmentNote).toHaveBeenCalledWith(
+            TERMIN_ID,
+            'Befund\nKeine Schwellung, Beugung 110 Grad.',
+          ),
+        );
+        expect(completeTreatment).not.toHaveBeenCalled();
+      });
+    });
+
+    it('bereitet nach „Fertig“ auf und zeigt den Vorschlag lesbar, prüfbar und korrigierbar', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const vorschlag = await diktieren(user);
+
+      expect(diktatAufbereiten).toHaveBeenCalledTimes(1);
+      const [anfrage] = diktatAufbereiten.mock.calls[0] as [
+        { terminId: string; audio: Blob; dauerS: number },
+      ];
+      // Die Aufnahme gehört zum Termin dieser Seite (6.3).
+      expect(anfrage.terminId).toBe(TERMIN_ID);
+      expect(anfrage.audio).toBeInstanceOf(Blob);
+      expect(anfrage.dauerS).toBeGreaterThanOrEqual(0);
+      // Nach dem Stopp ist das Mikrofon frei.
+      expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true);
+
+      expect(
+        screen.getByRole('heading', {
+          level: 2,
+          name: 'Vorschlag aus der Aufnahme – bitte prüfen',
+        }),
+      ).toBeInTheDocument();
+      expect(vorschlag).toHaveValue(VORSCHLAGSTEXT);
+      expect(vorschlag).toBeEnabled();
+      expect(screen.getByText('1 Stelle unverständlich')).toBeInTheDocument();
+      expect(screen.getByText(/Nachbildung ohne Spracherkennung/)).toBeInTheDocument();
+      expect(screen.getByText('Wörtlich gesprochen')).toBeInTheDocument();
+      expect(screen.getByText(VORSCHLAG.transkript)).toBeInTheDocument();
+      expect(
+        screen.getByText(/nur für diesen Vorschlag verarbeitet und nicht gespeichert/),
+      ).toBeInTheDocument();
+      // Das Feld bleibt leer, bis jemand übernimmt.
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('');
+      expect(screen.getByRole('button', { name: 'In die Doku übernehmen' })).toHaveClass(
+        'bg-accent',
+      );
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+
+      // Korrigiert man die Stelle, zählt die Zeile mit.
+      await user.clear(vorschlag);
+      await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
+      expect(screen.queryByText(/Stelle unverständlich/)).toBeNull();
+    });
+
+    it('hängt den Vorschlag ans Ende und holt ihn mit „Rückgängig“ zurück', async () => {
+      const user = userEvent.setup();
+      rendern();
+      const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+      await user.type(feld, 'Heute geübt.');
+      await diktieren(user);
+      await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
+      expect(feld).toHaveValue(`Heute geübt.\n\n${VORSCHLAGSTEXT}`);
+
+      await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
+      expect(feld).toHaveValue('Heute geübt.');
+      expect(screen.getByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
+    });
+
+    it('verwirft den Vorschlag erst nach Rückfrage', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await diktieren(user);
+      await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+      const frage = screen.getByRole('group', { name: 'Vorschlag aus der Aufnahme verwerfen' });
+      await user.click(within(frage).getByRole('button', { name: 'Ja, verwerfen' }));
+
+      expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('');
+      expect(screen.getByRole('button', { name: 'Sprechen' })).toBeEnabled();
+      expect(createTreatmentNote).not.toHaveBeenCalled();
+    });
+
+    it('schreibt nicht fest und speichert keinen Entwurf, solange der Vorschlag offen ist', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await diktieren(user);
+
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      expect(screen.getByText(DIKTAT_OFFEN)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Entwurf' }));
+      expect(completeTreatment).not.toHaveBeenCalled();
+      expect(createTreatmentNote).not.toHaveBeenCalled();
+    });
+
+    it('sagt bei einer Abweisung, was los ist - Tippen bleibt', async () => {
+      diktatAufbereiten.mockResolvedValue({
+        ok: false,
+        fehler: 'forbidden',
+        meldung: KI_FEHLERTEXTE.forbidden,
+        erneutMoeglich: false,
+      });
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+      await user.click(await screen.findByRole('button', { name: 'Fertig' }));
+
+      expect(await screen.findByText(KI_FEHLERTEXTE.forbidden)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Erneut senden' })).toBeNull();
+      await user.type(screen.getByLabelText('Eintrag zur Behandlung'), 'Getippt.');
+      expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Getippt.');
+    });
+
+    it('bietet nach einem Ausfall „Erneut senden“ mit derselben Aufnahme an', async () => {
+      diktatAufbereiten.mockResolvedValueOnce({
+        ok: false,
+        fehler: 'unavailable',
+        meldung: KI_FEHLERTEXTE.unavailable,
+        erneutMoeglich: true,
+      });
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+      await user.click(await screen.findByRole('button', { name: 'Fertig' }));
+
+      expect(await screen.findByText(/Die Aufnahme ist noch da/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+      await user.click(screen.getByRole('button', { name: 'Erneut senden' }));
+
+      expect(await screen.findByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
+      const [erste, zweite] = diktatAufbereiten.mock.calls as [
+        [{ audio: Blob }],
+        [{ audio: Blob }],
+      ];
+      expect(zweite[0].audio).toBe(erste[0].audio);
+    });
+
+    it('hält Aufnahme, Ausfall und Vorschlag barrierefrei (axe)', { timeout: 30_000 }, async () => {
+      diktatAufbereiten.mockResolvedValueOnce({
+        ok: false,
+        fehler: 'timeout',
+        meldung: KI_FEHLERTEXTE.timeout,
+        erneutMoeglich: true,
+      });
+      const user = userEvent.setup();
+      const { container } = rendern();
+      await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+      await screen.findByRole('button', { name: 'Fertig' });
+      // Die Uhr läuft weiter, während axe prüft.
+      await act(() => pruefeBarrierefreiheit(container));
+
+      await user.click(screen.getByRole('button', { name: 'Fertig' }));
+      await screen.findByRole('button', { name: 'Erneut senden' });
+      await pruefeBarrierefreiheit(container);
+
+      await user.click(screen.getByRole('button', { name: 'Erneut senden' }));
+      await screen.findByLabelText('Text des Vorschlags');
+      await user.click(screen.getByText('Wörtlich gesprochen'));
+      await pruefeBarrierefreiheit(container);
+    });
+
+    it('meldet ein verweigertes Mikrofon klar', async () => {
+      aufnahme.mikrofon.verweigere('NotAllowedError');
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+      expect(await screen.findByText(AUFNAHMEFEHLER.verweigert)).toBeInTheDocument();
+      expect(diktatAufbereiten).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Sprechen' })).toBeEnabled();
+    });
+
+    it('ist ohne Netz aus und lässt Festschreiben Hauptknopf', async () => {
+      const verbunden = Object.getOwnPropertyDescriptor(Navigator.prototype, 'onLine');
+      Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
+      try {
+        rendern();
+        const sprechen = await screen.findByRole('button', { name: 'Sprechen' });
+        expect(sprechen).toBeDisabled();
+        expect(screen.getByText('Ohne Netz nicht verfügbar.')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
+      } finally {
+        delete (navigator as { onLine?: boolean }).onLine;
+        if (verbunden) expect(navigator.onLine).toBe(true);
+      }
+    });
+
+    it('sagt ohne Aufnahme im Browser, dass es hier nicht geht', async () => {
+      aufnahme.entfernen();
+      rendern();
+      expect(await screen.findByRole('button', { name: 'Sprechen' })).toBeDisabled();
+      expect(
+        screen.getByText('Auf diesem Gerät nicht verfügbar – bitte tippen.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
+    });
+
+    it('bietet am Vermerk „ohne Behandlung“ kein Sprechen an', async () => {
+      rendern(['therapist'], '?ohne-behandlung=1');
+      expect(
+        await screen.findByRole('button', { name: 'Mit Vermerk festschreiben' }),
+      ).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
+    });
+
+    it('fragt beim Verlassen mit offenem Vorschlag nach - ohne „Speichern“, denn er wird nie gespeichert', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await diktieren(user);
+      await user.click(screen.getByRole('link', { name: 'Zurück' }));
+
+      const frage = await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' });
+      expect(
+        within(frage).getByText('Der Vorschlag aus der Aufnahme ist nicht übernommen.'),
+      ).toBeInTheDocument();
+      expect(within(frage).queryByRole('button', { name: 'Speichern und weiter' })).toBeNull();
+      await user.click(within(frage).getByRole('button', { name: 'Weiterschreiben' }));
+      expect(screen.getByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
+      expect(navigate).not.toHaveBeenCalled();
+    });
   });
 });

@@ -5162,6 +5162,30 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
 
+### ANN-520 — Diktat: Vorschlag nur in der Seite, Rohaudio nie gespeichert
+
+Datenschutz · offen · 2026-10-14 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Anbieter mit C6
+
+**Annahme.** Die Aufnahme geht nur für die Anfrage an den Gateway und liegt sonst nur im Arbeitsspeicher der Seite, bis sie aufbereitet oder verworfen ist; Transkript und Vorschlag leben nur im Zustand der Schreibseite. Nichts davon kommt in Datenbank, Ablage, Log oder Gerätespeicher; erst „Übernehmen“ macht den Text zum Entwurf. Keine neue Datenklasse; E13 ist für den Mock-Betrieb überbrückt.
+
+**Begründung.** §6.3, ADR-016 Punkt 10: Ein ungeprüfter Vorschlag darf nie in die Akte, auch nicht durch Fristablauf. Kein Eintrag in `src/app/mdr.ts`: Transkription und Einordnung deckt ADR-006 Punkt 8.
+
+**Anker.** `useDiktat` in `src/features/documentation/diktat.ts`.
+
+**Änderungspfad.** Vorschlag oder Audio aufbewahren: Tabelle mit Datenklasse und Frist, Löschlauf, DSFA · Aufwand `groß`.
+
+### ANN-521 — Schreibseite: „Sprechen“ ist Hauptknopf, solange das Feld leer ist
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)
+
+**Annahme.** Ist das Feld leer und nichts offen, ist „Sprechen“ der Hauptknopf (48 px, am Telefon in voller Breite über der Fußleiste), „Festschreiben“ sekundär. Mit Text im Feld ist „Festschreiben“ Hauptknopf, „Sprechen“ sekundär mit Zeichen und Wort. Während Aufnahme und Vorschlag tragen „Fertig“, „Erneut senden“ oder „In die Doku übernehmen“ den Hauptknopf.
+
+**Begründung.** BEF-153 will die Spracheingabe als bevorzugten, prominenten Weg; DESIGN.md Regel 4 lässt einen Hauptknopf je Ansicht. Die Übernahme ist ein Tipp mehr, weil §6.3 sie verlangt.
+
+**Anker.** `sprechenHaupt` in `src/features/documentation/CompleteTreatmentPage.tsx`.
+
+**Änderungspfad.** Andere Regel: die Bedingung und `Sprechleiste` · Aufwand `klein`.
+
 ### ANN-522 — Diktat: vier Abschnitte der Vorlage, Leeres entfällt
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)

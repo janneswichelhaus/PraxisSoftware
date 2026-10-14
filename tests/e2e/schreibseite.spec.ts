@@ -125,3 +125,107 @@ test('zeigt den Änderungsverlauf in der Hülle, jede Version für sich (375 px)
   await expect(page.getByLabel('Version 2').getByText('Geltende Fassung')).toBeVisible();
   await ohneUeberlauf(page);
 });
+
+/**
+ * Spracheingabe (BEF-153, KI-EPIC-001) im echten Browser bei 375 px: „Sprechen“
+ * im Daumenbereich, 48 px, in voller Breite; Aufnahme mit Zeichen und Uhr;
+ * Vorschlag über dem Feld; Übernahme ins Feld - nirgends Querrollen. Mikrofon
+ * und Recorder sind nachgebildet, der Gateway antwortet über die Route wie die
+ * Nachbildung. Gesprochen wird mit keinem Server.
+ */
+function mikrofonNachbilden() {
+  class Recorder extends EventTarget {
+    static isTypeSupported(typ: string) {
+      return typ.startsWith('audio/webm');
+    }
+    state: 'inactive' | 'recording' = 'inactive';
+    mimeType: string;
+    constructor(_strom: unknown, optionen: { mimeType?: string } = {}) {
+      super();
+      this.mimeType = optionen.mimeType ?? 'audio/webm';
+    }
+    start() {
+      this.state = 'recording';
+    }
+    stop() {
+      if (this.state === 'inactive') return;
+      this.state = 'inactive';
+      const daten = Object.assign(new Event('dataavailable'), {
+        data: new Blob([new Uint8Array(64)], { type: this.mimeType }),
+      });
+      this.dispatchEvent(daten);
+      this.dispatchEvent(new Event('stop'));
+    }
+  }
+  const spur = { kind: 'audio', stop() {}, addEventListener() {} };
+  Object.defineProperty(window, 'MediaRecorder', { configurable: true, value: Recorder });
+  Object.defineProperty(navigator, 'mediaDevices', {
+    configurable: true,
+    value: {
+      getUserMedia: () =>
+        Promise.resolve({ getTracks: () => [spur], getAudioTracks: () => [spur] }),
+    },
+  });
+}
+
+const DIKTAT = {
+  ok: true,
+  transkript:
+    'Patientin berichtet, das rechte Knie sei besser, Schmerz drei von zehn. Keine Schwellung. Eigenübungen weiter, vielleicht Treppe [unverständlich].',
+  abschnitte: [
+    {
+      titel: 'Angaben der Patient:in',
+      text: 'Patientin berichtet, das rechte Knie sei besser, Schmerz drei von zehn.',
+    },
+    { titel: 'Befund', text: 'Keine Schwellung.' },
+    { titel: 'Plan', text: 'Eigenübungen weiter, vielleicht Treppe [unverständlich].' },
+  ],
+  quelle: 'nachbildung',
+};
+
+test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übernahme (375 px)', async ({
+  page,
+}) => {
+  await page.addInitScript(mikrofonNachbilden);
+  let anfrage = '';
+  await page.route('**/functions/v1/ai-gateway', async (route) => {
+    anfrage = route.request().postDataBuffer()?.toString('latin1') ?? '';
+    await route.fulfill({ status: 200, contentType: 'application/json', json: DIKTAT });
+  });
+  await oeffne(page, 375);
+
+  const sprechen = page.getByRole('button', { name: 'Sprechen' });
+  await expect(sprechen).toBeInViewport();
+  const knopf = (await sprechen.boundingBox())!;
+  expect(knopf.height).toBeGreaterThanOrEqual(48);
+  // In voller Breite der Zeile und über der Tableiste (56 px).
+  expect(knopf.width).toBeGreaterThanOrEqual(375 - 2 * 16);
+  expect(knopf.y + knopf.height).toBeLessThanOrEqual(760 - 56);
+  await ohneUeberlauf(page);
+
+  await sprechen.click();
+  const fertig = page.getByRole('button', { name: 'Fertig' });
+  await expect(fertig).toBeInViewport();
+  await expect(page.getByText(/^Aufnahme\s*0:0\d$/)).toBeVisible();
+  expect((await fertig.boundingBox())!.height).toBeGreaterThanOrEqual(48);
+  await expect(page.getByRole('button', { name: 'Festschreiben' })).toBeDisabled();
+  await ohneUeberlauf(page);
+
+  await fertig.click();
+  await expect(
+    page.getByRole('heading', { name: 'Vorschlag aus der Aufnahme – bitte prüfen' }),
+  ).toBeVisible();
+  await expect(page.getByText('1 Stelle unverständlich')).toBeVisible();
+  // Hinaus gingen Zweck, Termin, Dauer und Aufnahme - kein Name.
+  for (const feld of ['zweck', 'termin', 'dauer_s', 'audio']) {
+    expect(anfrage).toContain(`name="${feld}"`);
+  }
+  expect(anfrage).toContain('dokumentation.diktat');
+  expect(anfrage).not.toContain('Mustermann');
+  await ohneUeberlauf(page);
+
+  await page.getByRole('button', { name: 'In die Doku übernehmen' }).click();
+  await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(/^Angaben der Patient:in\n/);
+  await expect(page.getByRole('button', { name: 'Festschreiben' })).toBeInViewport();
+  await ohneUeberlauf(page);
+});
