@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
@@ -1739,6 +1739,31 @@ describe('Zeile (ListRow)', () => {
     );
 
     await pruefeBarrierefreiheit(container);
+  });
+
+  // B12: Ein Feld unter der Zeile, über die volle Breite - die Zeile darüber
+  // bleibt, wie sie ist.
+  it('trägt `darunter` unter Ziel und Aktion, in derselben Zeile der Liste', () => {
+    renderWithProviders(
+      <ListRows>
+        <ListRow
+          zeit="09:00"
+          titel="Max Mustermann"
+          to="/termine/1"
+          aktion={<button type="button">Doku</button>}
+          darunter={<button type="button">Ausfall</button>}
+        />
+      </ListRows>,
+    );
+    const zeilen = screen.getAllByRole('listitem');
+    expect(zeilen).toHaveLength(1);
+    const [zeile] = zeilen;
+    expect(within(zeile!).getByRole('link')).toHaveTextContent('Max Mustermann');
+    expect(within(zeile!).getByRole('button', { name: 'Doku' })).toBeInTheDocument();
+    const ausfall = within(zeile!).getByRole('button', { name: 'Ausfall' });
+    // Ziel und Aktion stehen in einer Reihe, das Feld darunter.
+    expect(ausfall.parentElement).toBe(zeile);
+    expect(klassenVon(zeile)).not.toContain('flex');
   });
 
   it('ist mit onClick ein Knopf, der kein Formular abschickt', async () => {

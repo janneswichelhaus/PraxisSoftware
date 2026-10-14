@@ -1006,10 +1006,16 @@ function MeinTag({
           darfDokumentieren={darfDokumentieren}
           jetzt={jetzt}
           zeitzone={zeitzone}
+          ausfall={(termin) => ausfall(termin, 'zeile')}
         />
       ) : null}
       {istHeute && !stehtBesuchAus && darfDokumentieren ? (
-        <Nachzuholen heute={heute} staffMemberId={staffMemberId} zeitzone={zeitzone} />
+        <Nachzuholen
+          heute={heute}
+          staffMemberId={staffMemberId}
+          zeitzone={zeitzone}
+          ausfall={(termin) => ausfall(termin, 'zeile')}
+        />
       ) : null}
 
       {/* Steht heute kein Weg mehr aus, ist morgen das Nächste (Jannes,
@@ -1029,7 +1035,12 @@ function MeinTag({
       {/* Liegengebliebenes der letzten Tage, unter dem eigenen Tag: Der
           nächste Weg bleibt auf dem ersten Bildschirm (Auftrag C1). */}
       {istHeute && stehtBesuchAus && darfDokumentieren ? (
-        <Nachzuholen heute={heute} staffMemberId={staffMemberId} zeitzone={zeitzone} />
+        <Nachzuholen
+          heute={heute}
+          staffMemberId={staffMemberId}
+          zeitzone={zeitzone}
+          ausfall={(termin) => ausfall(termin, 'zeile')}
+        />
       ) : null}
     </>
   );

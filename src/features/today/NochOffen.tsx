@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
@@ -50,6 +51,17 @@ function ZeilenAktion({
   return darfDokumentieren ? <DokuKnopf termin={termin} /> : null;
 }
 
+/**
+ * „Ausfall“ unter der Zeile (B12): Das Feld dahinter - Protokoll am
+ * Hausbesuch, Rückfrage sonst - braucht die volle Breite, neben dem Ziel
+ * hätte es keinen Platz. Wann er steht, entscheidet die Übersicht
+ * (`ausfallMoeglich`, Recht der Rolle); hier wird er nur platziert.
+ */
+function ausfallZeile(knopf: ReactNode): ReactNode {
+  if (knopf === null || knopf === undefined || knopf === false) return null;
+  return <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">{knopf}</div>;
+}
+
 function DokuKnopf({ termin }: { termin: DayPlanEntry }) {
   return (
     <ButtonLink to={schreibseite(termin.id)} variant="secondary">
@@ -70,6 +82,7 @@ export function NochOffen({
   darfDokumentieren,
   jetzt,
   zeitzone,
+  ausfall,
 }: {
   plan: readonly DayPlanEntry[];
   /** „Heute“, „Gestern“ … am Satzanfang. */
@@ -77,6 +90,8 @@ export function NochOffen({
   darfDokumentieren: boolean;
   jetzt: number;
   zeitzone: string;
+  /** „Ausfall“ zu einem Termin, wo er passt, sonst `null` (B12). */
+  ausfall?: (termin: DayPlanEntry) => ReactNode;
 }) {
   const zeilen = plan.flatMap((termin) => {
     const grund = fehlt(termin, darfDokumentieren, jetzt);
@@ -98,6 +113,7 @@ export function NochOffen({
             </span>
           }
           aktion={<ZeilenAktion termin={termin} darfDokumentieren={darfDokumentieren} />}
+          darunter={ausfall ? ausfallZeile(ausfall(termin)) : undefined}
         />
       ))}
     </Listenabschnitt>
@@ -121,10 +137,13 @@ export function Nachzuholen({
   heute,
   staffMemberId,
   zeitzone,
+  ausfall,
 }: {
   heute: string;
   staffMemberId: string;
   zeitzone: string;
+  /** „Ausfall“ zu einem Termin, wo er passt, sonst `null` (B12). */
+  ausfall?: (termin: DayPlanEntry) => ReactNode;
 }) {
   const tage = Array.from({ length: NACHZUHOLEN_TAGE }, (_, index) =>
     tagePlus(heute, index - NACHZUHOLEN_TAGE),
@@ -158,6 +177,7 @@ export function Nachzuholen({
               titel={terminName(termin)}
               meta={`${tagLang(termin, zeitzone)} · ${grund}`}
               aktion={<ZeilenAktion termin={termin} darfDokumentieren />}
+              darunter={ausfall ? ausfallZeile(ausfall(termin)) : undefined}
             />
           ))}
         </ListRows>
