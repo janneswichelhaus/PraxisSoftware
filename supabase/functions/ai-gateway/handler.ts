@@ -2,8 +2,9 @@
  * Der Gateway selbst, ohne Laufzeit (KI-EPIC-001, ADR-005, BEF-153).
  *
  * Hier steht der ganze Ablauf - Vorabanfrage, Methode, Sitzung, Zweck,
- * Anbieter, Formular, Eingaben, Berechtigung, Adapter, Antwort, Log -, und
- * nichts davon kennt Deno, ein Secret oder einen Anbieter. Alles, was von außen kommt, ist
+ * Anbieter, Formular, Eingaben, Berechtigung, Adapter, Antwort,
+ * Protokolleintrag -, und nichts davon kennt Deno, ein Secret oder einen
+ * Anbieter. Alles, was von außen kommt, ist
  * eine Abhängigkeit im Aufruf; deshalb ist diese Datei vollständig mit
  * Unit-Tests prüfbar (wie `location-provider/handler.ts`).
  *
@@ -17,7 +18,9 @@
  *     Format, Sprache und die Regeln des Zwecks - Termin, Person und Konto
  *     bleiben hier (die Typen haben dafür kein Feld);
  *   * erlaubtes Modell: nur ein Adapter aus der Liste des Zwecks;
- *   * Logging: nur Fehler, nur Zweck, Anbieterkennung, Klasse und Dauer;
+ *   * Logging: Fehler meldet der Handler als `Protokolleintrag` - nur Zweck,
+ *     Anbieterkennung, Klasse und Dauer. Einen Ausgang ins Betriebslog gibt
+ *     es dafür noch nicht (`index.ts`, ADR-011 Punkt 6);
  *   * Fehlerbehandlung: feste Klassen mit festen HTTP-Status.
  *
  * **Zwei Anfragen.** `GET` fragt nur, ob der Zweck hier bedient wird
@@ -84,7 +87,7 @@ const HOECHST_ZEICHEN = 50_000;
 interface HandlerOptionen {
   /** `null`, wenn kein Anbieter eingerichtet ist - dann `not_configured`. */
   readonly adapter: Sprachadapter | null;
-  /** Wurde die Nachbildung in der Produktion abgewiesen? Dann steht es im Log. */
+  /** Wurde die Nachbildung in der Produktion abgewiesen? Dann meldet der Handler es. */
   readonly gateAbgewiesen?: boolean;
   readonly pruefeSitzung: Sitzungspruefung;
   readonly pruefeBerechtigung: Berechtigungspruefung;
@@ -140,7 +143,8 @@ export function erstelleHandler({
     if (nurStatus) return antwort({ ok: true, verfuegbar: bedient }, 200);
 
     if (adapter === null) {
-      // Die Nachbildung in der Produktion: abgewiesen, und das steht im Log.
+      // Die Nachbildung in der Produktion: abgewiesen, und der Handler
+      // meldet es als Protokolleintrag.
       if (gateAbgewiesen) {
         protokolliere({
           zweck: zweck.kennung,

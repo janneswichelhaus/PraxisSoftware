@@ -42,7 +42,10 @@ export function umgebungsart(wert: string | undefined): Umgebungsart {
 export interface Einrichtung {
   /** `null`: nicht eingerichtet oder in der Produktion abgewiesen. */
   readonly adapter: Sprachadapter | null;
-  /** Wurde die Nachbildung in der Produktion abgewiesen? Dann steht es im Log. */
+  /**
+   * Wurde die Nachbildung in der Produktion abgewiesen? Dann meldet der
+   * Handler es als Protokolleintrag (noch ohne Ausgang, `index.ts`).
+   */
   readonly gateAbgewiesen: boolean;
 }
 

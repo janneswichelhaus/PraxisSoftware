@@ -30,8 +30,12 @@ export const AUDIOFORMATE = [
   'audio/wav',
 ] as const;
 
-/** Höchstens 10 MB je Aufnahme (ANN-523). */
-export const HOECHST_BYTES = 10 * 1024 * 1024;
+/**
+ * Höchstens 5 MiB je Aufnahme (ANN-523): fünf Minuten bei bis zu 140 kbit/s.
+ * Die Tonlänge selbst misst der Gateway nicht; mit 64 kbit/s passen knapp
+ * elf Minuten hinein.
+ */
+export const HOECHST_BYTES = 5 * 1024 * 1024;
 
 /** Höchstens fünf Minuten je Aufnahme (ANN-523). */
 export const HOECHST_DAUER_S = 300;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DIKTAT_HOECHSTDAUER_S } from '@/lib/ki/gateway';
+import { DIKTAT_HOECHSTBYTES, DIKTAT_HOECHSTDAUER_S } from '@/lib/ki/gateway';
 
 /**
  * Die Aufnahme eines Diktats im Browser (KI-EPIC-001, PROJECT_PRINCIPLES.md
@@ -9,7 +9,7 @@ import { DIKTAT_HOECHSTDAUER_S } from '@/lib/ki/gateway';
  * lange, wie die Anzeige im Blick ist:
  *
  *   * Stopp per Tipp (`beenden`, `abbrechen`) und von selbst nach höchstens
- *     fünf Minuten (ANN-523);
+ *     fünf Minuten oder kurz vor der Größengrenze des Gateways (ANN-523);
  *   * Stopp, sobald die Seite verborgen wird (anderes Programm, Bildschirm
  *     aus) oder das Mikrofon wegfällt (Anruf, Freigabe entzogen) - eine
  *     Aufnahme ohne sichtbare Anzeige gibt es nicht;
@@ -26,10 +26,16 @@ export const HOECHSTDAUER_S = DIKTAT_HOECHSTDAUER_S;
 
 /**
  * Bitrate der Aufnahme: Für Sprache genügen 64 kbit/s, fünf Minuten sind dann
- * etwa 2,4 MB - weit unter der Grenze von 10 MB, auch wenn ein Browser mehr
- * nimmt, als er soll.
+ * etwa 2,4 MB - die Hälfte der Grenze von 5 MiB.
  */
 export const AUDIO_BITRATE = 64_000;
+
+/**
+ * Nimmt ein Browser mehr, als er soll, endet die Aufnahme kurz vor der
+ * Größengrenze des Gateways statt mit einer Abweisung danach. Die Reserve
+ * fasst das letzte Stück, das nach dem Stopp noch kommt (je Sekunde eines).
+ */
+export const AUFNAHME_HOECHSTBYTES = DIKTAT_HOECHSTBYTES - 256 * 1024;
 
 /**
  * Formate in der Reihenfolge der Wahl. Was der Browser kann, sagt
@@ -122,6 +128,8 @@ interface Lauf {
   stream: MediaStream | null;
   recorder: MediaRecorder | null;
   teile: Blob[];
+  /** Bisher aufgenommene Bytes - für die Größengrenze. */
+  bytes: number;
   format: string;
   beginn: number;
   uhr: number | undefined;
@@ -142,10 +150,12 @@ export function useAufnahme({
   onFertig,
   onFehler,
   hoechstdauerS = HOECHSTDAUER_S,
+  hoechstbytes = AUFNAHME_HOECHSTBYTES,
 }: {
   onFertig: (aufnahme: Aufnahme) => void;
   onFehler: (fehler: Aufnahmefehler) => void;
   hoechstdauerS?: number;
+  hoechstbytes?: number;
 }) {
   const [zustand, setZustand] = useState<Aufnahmezustand>('bereit');
   const [sekunden, setSekunden] = useState(0);
@@ -218,6 +228,7 @@ export function useAufnahme({
       stream: null,
       recorder: null,
       teile: [],
+      bytes: 0,
       format: '',
       beginn: 0,
       uhr: undefined,
@@ -268,7 +279,10 @@ export function useAufnahme({
     l.recorder = recorder;
     l.format = recorder.mimeType || format || 'audio/webm';
     recorder.addEventListener('dataavailable', (ereignis) => {
-      if (ereignis.data.size > 0) l.teile.push(ereignis.data);
+      if (ereignis.data.size === 0) return;
+      l.teile.push(ereignis.data);
+      l.bytes += ereignis.data.size;
+      if (l.bytes >= hoechstbytes) anhalten(false);
     });
     recorder.addEventListener('stop', () => abschliessen(l));
     recorder.addEventListener('error', () => {
@@ -308,7 +322,7 @@ export function useAufnahme({
     } catch {
       l.sperre = null;
     }
-  }, [abschliessen, anhalten, aufraeumen, hoechstdauerS]);
+  }, [abschliessen, anhalten, aufraeumen, hoechstbytes, hoechstdauerS]);
 
   // Wer die Seite verlässt, nimmt nichts mit und lässt nichts laufen.
   useEffect(

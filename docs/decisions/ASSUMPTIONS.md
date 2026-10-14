@@ -5198,13 +5198,13 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Andere Abschnitte: beide Listen und die Signalwörter der Nachbildung · Aufwand `klein`.
 
-### ANN-523 — Diktat: höchstens fünf Minuten und 10 MB je Aufnahme
+### ANN-523 — Diktat: höchstens fünf Minuten und 5 MiB je Aufnahme
 
 Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
-**Annahme.** Eine Aufnahme endet nach fünf Minuten von selbst; der Gateway nimmt höchstens 300 s und 10 MB an. Aufgenommen wird mit 64 kbit/s (fünf Minuten etwa 2,4 MB) in einem Format, das `MediaRecorder` liefert.
+**Annahme.** Eine Aufnahme endet nach fünf Minuten von selbst, ebenso kurz vor 5 MiB; aufgenommen wird mit 64 kbit/s (fünf Minuten etwa 2,4 MB) in einem Format, das `MediaRecorder` liefert. Der Gateway nimmt höchstens 300 s gemeldete Dauer und 5 MiB an; die Tonlänge selbst misst er nicht.
 
-**Begründung.** §6.3 verlangt ein bewusst gestartetes Nachdiktat und schließt fortlaufende Aufnahme aus; die Frist macht das zur festen Grenze. 10 MB ist die Grenze der Anhänge (ADR-017 Punkt 63).
+**Begründung.** §6.3 verlangt ein bewusst gestartetes Nachdiktat und schließt fortlaufende Aufnahme aus; die Frist macht das zur festen Grenze. 5 MiB sind fünf Minuten bei 140 kbit/s: Puffer für Browser, die mehr nehmen; mit 64 kbit/s passen höchstens knapp elf Minuten hinein.
 
 **Anker.** `DIKTAT_HOECHSTDAUER_S` und `DIKTAT_HOECHSTBYTES` in `src/lib/ki/gateway.ts`; die Kopie in `zwecke.ts` des Gateways hält `vertrag.test.ts`.
 

@@ -28,7 +28,7 @@ describe('Zweckliste', () => {
     },
   );
 
-  it('erlaubt Ton in fünf Formaten, höchstens 10 MB und fünf Minuten, auf Deutsch', () => {
+  it('erlaubt Ton in fünf Formaten, höchstens 5 MiB und fünf Minuten, auf Deutsch', () => {
     const { eingabe } = ZWECKE['dokumentation.diktat'];
     expect([...eingabe.formate]).toEqual([
       'audio/webm',
@@ -39,10 +39,19 @@ describe('Zweckliste', () => {
     ]);
     expect(eingabe.formate).toBe(AUDIOFORMATE);
     expect(eingabe.hoechstBytes).toBe(HOECHST_BYTES);
-    expect(HOECHST_BYTES).toBe(10 * 1024 * 1024);
+    expect(HOECHST_BYTES).toBe(5 * 1024 * 1024);
     expect(eingabe.hoechstDauerS).toBe(HOECHST_DAUER_S);
     expect(HOECHST_DAUER_S).toBe(300);
     expect(eingabe.sprache).toBe('de');
+  });
+
+  it('passt die Größengrenze zu fünf Minuten - mit Puffer, ohne Viertelstunden (ANN-523)', () => {
+    const bytesBei = (kbits: number) => (HOECHST_DAUER_S * kbits * 1000) / 8;
+    // Fünf Minuten passen auch, wenn ein Browser das Doppelte der 64 kbit/s nimmt …
+    expect(HOECHST_BYTES).toBeGreaterThanOrEqual(bytesBei(128));
+    // … aber nicht wesentlich mehr: bei 64 kbit/s höchstens knapp elf Minuten.
+    expect(HOECHST_BYTES).toBeLessThanOrEqual(bytesBei(160));
+    expect(HOECHST_BYTES / ((64 * 1000) / 8) / 60).toBeLessThan(11);
   });
 
   it('lässt bis zur Anbieterentscheidung nur die Nachbildung zu', () => {

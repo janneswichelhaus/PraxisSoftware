@@ -46,12 +46,14 @@ export type Diktatabschnittstitel = (typeof DIKTAT_ABSCHNITTE)[number];
 
 /**
  * ANN-523: Eine Aufnahme dauert höchstens fünf Minuten und ist höchstens
- * 10 MB groß. Die Aufnahme hält nach fünf Minuten von selbst an; die Größe
- * erreicht sie mit 64 kbit/s nie (`AUDIO_BITRATE` in
- * `features/documentation/aufnahme.ts`). Verbindlich prüft der Gateway.
+ * 5 MiB groß. Der Browser hält bei beiden Grenzen von selbst an
+ * (`features/documentation/aufnahme.ts`; mit 64 kbit/s sind fünf Minuten
+ * etwa 2,4 MB). Der Gateway prüft die gemeldete Dauer und die Größe, die
+ * Tonlänge selbst misst er nicht: 5 MiB sind fünf Minuten bei 140 kbit/s,
+ * mit 64 kbit/s passen knapp elf Minuten hinein.
  */
 export const DIKTAT_HOECHSTDAUER_S = 300;
-export const DIKTAT_HOECHSTBYTES = 10 * 1024 * 1024;
+export const DIKTAT_HOECHSTBYTES = 5 * 1024 * 1024;
 
 /** Die Fehlerklassen des Gateways - deckungsgleich mit `ai-gateway/typen.ts`. */
 export const GATEWAY_FEHLERKLASSEN = [

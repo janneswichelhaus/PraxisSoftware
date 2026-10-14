@@ -17,9 +17,11 @@ import { DIKTAT_ABSCHNITTE, DIKTAT_REGELN, HOECHST_BYTES } from './zwecke.ts';
 
 /**
  * Der Ablauf des Gateways (KI-EPIC-001, BEF-153): Sitzung, Zweck, Anbieter,
- * Formular, Eingaben, Berechtigung, Adapter, Antwort und Log - jede
- * Fehlerklasse mit ihrem Status, die Nachbildung in der Produktion
- * ausgeschlossen, keine Kennung an den Adapter und kein Inhalt im Log.
+ * Formular, Eingaben, Berechtigung, Adapter, Antwort und Protokolleintrag -
+ * jede Fehlerklasse mit ihrem Status, die Nachbildung in der Produktion
+ * ausgeschlossen, keine Kennung an den Adapter und kein Inhalt im
+ * Protokolleintrag. Einen Ausgang ins Betriebslog hat er noch nicht
+ * (`index.ts`, ADR-011 Punkt 6).
  */
 
 const TERMIN = '77777777-7777-4777-8777-000000000001';
@@ -250,7 +252,7 @@ describe('ai-gateway: Ablauf', () => {
 });
 
 describe('ai-gateway: Sitzung', () => {
-  it('weist ohne gültige Sitzung mit 401 ab, ohne Log, Datenbank oder Adapter', async () => {
+  it('weist ohne gültige Sitzung mit 401 ab, ohne Protokolleintrag, Datenbank oder Adapter', async () => {
     const { adapter, transkribiert } = spion();
     const { handler, protokoll, pruefeBerechtigung } = gateway({
       adapter,
@@ -357,7 +359,7 @@ describe('ai-gateway: Formular und Eingaben', () => {
     });
   });
 
-  it('weist eine Aufnahme über 10 MB mit 413 ab', async () => {
+  it('weist eine Aufnahme über der Größengrenze mit 413 ab', async () => {
     const gross = new Uint8Array(HOECHST_BYTES + 1);
     expect(
       await klasse(felder({ audio: { daten: gross, typ: 'audio/webm', datei: 'lang.webm' } })),
@@ -395,14 +397,14 @@ describe('ai-gateway: Formular und Eingaben', () => {
 });
 
 describe('ai-gateway: Berechtigung', () => {
-  it('weist ab, was die Datenbank verweigert - ohne Adapter und ohne Log', async () => {
+  it('weist ab, was die Datenbank verweigert - ohne Adapter und ohne Protokolleintrag', async () => {
     const { adapter, transkribiert } = spion();
     const { handler, protokoll } = gateway({ adapter, berechtigung: 'verweigert' });
     const antwort = await handler(anfrage());
     expect(antwort.status).toBe(403);
     expect(await fehlerklasse(antwort)).toBe('forbidden');
     expect(transkribiert).toEqual([]);
-    // Den Versuch hält die Datenbank selbst fest (access.denied), nicht das Log.
+    // Den Versuch hält die Datenbank selbst fest (access.denied), nicht der Gateway.
     expect(protokoll).toEqual([]);
   });
 
@@ -427,7 +429,7 @@ describe('ai-gateway: Berechtigung', () => {
 });
 
 describe('ai-gateway: die Frage vor „Sprechen“ (GET)', () => {
-  it('meldet einen bedienten Zweck als verfügbar - ohne Datenbank, Adapter und Log', async () => {
+  it('meldet einen bedienten Zweck als verfügbar - ohne Datenbank, Adapter und Protokolleintrag', async () => {
     const { adapter, transkribiert } = spion();
     const { handler, protokoll, pruefeBerechtigung, pruefeSitzung } = gateway({ adapter });
     const antwort = await handler(statusanfrage());
@@ -444,7 +446,7 @@ describe('ai-gateway: die Frage vor „Sprechen“ (GET)', () => {
     ['ohne Anbieter', { adapter: null }],
     ['mit der Nachbildung in der Produktion', { adapter: null, gateAbgewiesen: true }],
     ['mit einem Adapter, den der Zweck nicht nennt', { adapter: spion({ id: 'fremd' }).adapter }],
-  ] as const)('meldet %s „nicht verfügbar“, ohne Log', async (_f, aufbau) => {
+  ] as const)('meldet %s „nicht verfügbar“, ohne Protokolleintrag', async (_f, aufbau) => {
     const { handler, protokoll } = gateway(aufbau);
     const antwort = await handler(statusanfrage());
     expect(antwort.status).toBe(200);
@@ -483,7 +485,7 @@ describe('ai-gateway: Anbieter', () => {
     }
   });
 
-  it('antwortet ohne eingerichteten Anbieter „nicht eingerichtet" - ohne Log', async () => {
+  it('antwortet ohne eingerichteten Anbieter „nicht eingerichtet" - ohne Protokolleintrag', async () => {
     const { handler, protokoll } = gateway({ adapter: null });
     const antwort = await handler(anfrage());
     expect(antwort.status).toBe(503);
@@ -491,7 +493,7 @@ describe('ai-gateway: Anbieter', () => {
     expect(protokoll).toEqual([]);
   });
 
-  it('schließt die Nachbildung in der Produktion aus und vermerkt das im Log', async () => {
+  it('schließt die Nachbildung in der Produktion aus und meldet das als Protokolleintrag', async () => {
     const { handler, protokoll } = gateway({ adapter: null, gateAbgewiesen: true });
     const antwort = await handler(anfrage());
     expect(antwort.status).toBe(503);
@@ -652,7 +654,7 @@ describe('ai-gateway: Anbieter', () => {
   });
 });
 
-describe('ai-gateway: Fehlerklassen und Log', () => {
+describe('ai-gateway: Fehlerklassen und Protokolleinträge', () => {
   it('kennt für jede Fehlerklasse einen festen HTTP-Status', () => {
     expect(Object.keys(STATUS).sort()).toEqual([...FEHLERKLASSEN].sort());
     expect(STATUS).toEqual({
@@ -666,7 +668,7 @@ describe('ai-gateway: Fehlerklassen und Log', () => {
     });
   });
 
-  it('schreibt ins Log nie einen Inhalt, eine Kennung oder eine Größe', async () => {
+  it('meldet im Protokolleintrag nie einen Inhalt, eine Kennung oder eine Größe', async () => {
     const geheim = 'Synthetisch: Herr Beispiel klagt über Knieschmerz rechts';
     const protokoll: Protokolleintrag[] = [];
     const laeufe: Aufbau[] = [

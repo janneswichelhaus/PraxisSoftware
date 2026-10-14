@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DIKTAT_HOECHSTBYTES, DIKTAT_HOECHSTDAUER_S } from '@/lib/ki/gateway';
 import {
   AUDIO_BITRATE,
+  AUFNAHME_HOECHSTBYTES,
   HOECHSTDAUER_S,
   aufnahmeMoeglich,
   aufnahmedauer,
@@ -118,6 +119,29 @@ describe('useAufnahme', () => {
     expect(hook.result.current.zustand).toBe('bereit');
     expect(hook.fertig).toHaveLength(1);
     expect(hook.fertig[0]!.dauerS).toBe(HOECHSTDAUER_S);
+    expect(mikrofon.spuren[0]!.beendet).toBe(true);
+  });
+
+  it('hält kurz vor der Größengrenze von selbst an - auch wenn der Browser mehr nimmt', async () => {
+    const fertig: Aufnahme[] = [];
+    const hook = renderHook(() =>
+      useAufnahme({
+        onFertig: (aufnahme) => fertig.push(aufnahme),
+        onFehler: () => undefined,
+        hoechstbytes: 1000,
+      }),
+    );
+    await act(async () => {
+      await hook.result.current.starten();
+    });
+    act(() => letzterRecorder().liefere(600));
+    expect(hook.result.current.zustand).toBe('laeuft');
+
+    act(() => letzterRecorder().liefere(600));
+    expect(hook.result.current.zustand).toBe('bereit');
+    expect(fertig).toHaveLength(1);
+    // Das letzte Stück nach dem Stopp kommt noch dazu (64 Bytes).
+    expect(fertig[0]!.audio.size).toBe(600 + 600 + 64);
     expect(mikrofon.spuren[0]!.beendet).toBe(true);
   });
 
@@ -275,6 +299,9 @@ describe('Aufnahme: Hilfen', () => {
     expect(HOECHSTDAUER_S).toBe(DIKTAT_HOECHSTDAUER_S);
     // Luft für Browser, die mehr Bitrate nehmen, als sie sollen.
     expect((AUDIO_BITRATE / 8) * HOECHSTDAUER_S).toBeLessThan(DIKTAT_HOECHSTBYTES / 2);
+    // Und wer doch mehr nimmt, hält vorher an - mit Platz für das letzte Stück.
+    expect(AUFNAHME_HOECHSTBYTES).toBeLessThan(DIKTAT_HOECHSTBYTES);
+    expect(AUFNAHME_HOECHSTBYTES).toBeGreaterThan(DIKTAT_HOECHSTBYTES * 0.9);
   });
 
   it('schreibt die Dauer als Minuten und Sekunden', () => {

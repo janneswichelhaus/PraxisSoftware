@@ -114,7 +114,7 @@ export interface Strukturierungsanfrage {
  * und der Prüfung nach ADR-002 (ADR-005 Punkte 8 und 9).
  */
 export interface Sprachadapter {
-  /** Kennung für Zweckliste und Log, zum Beispiel `mock`. */
+  /** Kennung für Zweckliste und Protokolleintrag, zum Beispiel `mock`. */
   readonly id: string;
   readonly quelle: Quelle;
   transkribiere(
@@ -128,7 +128,8 @@ export interface Sprachadapter {
 }
 
 /**
- * Was ein Fehler im Log hinterlässt (ADR-011): Zweck, Anbieterkennung,
+ * Was der Handler zu einem Fehler meldet (ADR-011) - einen Ausgang ins
+ * Betriebslog gibt es dafür noch nicht (`index.ts`): Zweck, Anbieterkennung,
  * Fehlerklasse und Dauer. Kein Feld für Inhalt, Kennung oder Größe der
  * Aufnahme - was nicht hineinpasst, kann nicht hineingeraten.
  */

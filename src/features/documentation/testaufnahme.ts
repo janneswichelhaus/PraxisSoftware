@@ -79,6 +79,14 @@ export class Testrecorder {
     this.feuere('stop', {});
   }
 
+  /** Ein Stück Aufnahme, wie es der Browser je Zeitscheibe liefert. */
+  liefere(bytes: number): void {
+    if (this.state !== 'recording') return;
+    this.feuere('dataavailable', {
+      data: new Blob([new Uint8Array(bytes)], { type: this.mimeType }),
+    });
+  }
+
   /** Der Browser meldet einen Fehler mitten in der Aufnahme. */
   stoere(): void {
     this.state = 'inactive';
