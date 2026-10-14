@@ -4578,6 +4578,8 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Ü
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
+**Ablösung.** abgelöst durch ANN-536 für gewählte Einträge beim Hinzufügen zu einem Plan; den ganzen Katalog übernimmt weiter owner
+
 **Annahme.** `import_exercise_catalog` prüft wie jeder Schreibweg der Bibliothek (`app.exercise_library_writer`, ANN-293); die interne Fassung ist für keine Anwendungsrolle ausführbar. Keine neue Auditaktion: `created_by` steht an der Zeile (ADR-010 Fassung 3).
 
 **Begründung.** Wer übernimmt, ändert, was alle Pläne anbieten – dieselbe Überlegung wie bei der Pflege.
@@ -4772,11 +4774,13 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
 
+**Ablösung.** abgelöst durch ANN-537 in der Übernahme
+
 **Annahme.** Eine Vorlage fügt ihre Übungen über `catalog_key` zur nicht archivierten Variante der Praxis hinzu, mit der Dosierung der Vorlage, sonst der Standarddosierung. Was fehlt oder archiviert ist, nennt die Meldung; owner übernimmt Fehlendes aus dem Katalog und fügt es an. Ein leerer Entwurf mit Standardtitel heißt danach wie die Vorlage. Die Liste ist nach Name geordnet und bekommt nur die Vorlagen (ADR-006 Punkt 10).
 
 **Begründung.** Referenzanalyse Training, Abschnitt 9, Weg A; Zuweisen in fünf Tipps (K12).
 
-**Anker.** `ausVorlage` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
+**Anker.** `vorlagenZeilen` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
 
 **Änderungspfad.** Vorlagen der Praxis: eigene Tabelle und Migration · Aufwand `mittel`.
 
@@ -5513,3 +5517,43 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `urteilAus` in `src/features/appointments/folgetermin.ts`.
 
 **Änderungspfad.** Knappe auch weglassen: `stufe !== 'passt'` in `urteilAus` · Aufwand `klein`.
+
+### ANN-536 — Wer einen Plan schreibt, übernimmt gewählte Katalogübungen beim Hinzufügen, ungeprüft
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Ablösung.** ersetzt ANN-385 für gewählte Einträge beim Hinzufügen zu einem Plan
+
+**Annahme.** Wer einen Plan des Bereichs schreiben darf, übernimmt beim Hinzufügen gewählte Katalogeinträge in die Bibliothek, höchstens so viele, wie der Entwurf fasst. Weg wie der Import: alles prüfen, nichts überschreiben, ohne Prüfvermerk (ANN-386). Pflege, Archiv und Prüfvermerk bleiben bei owner.
+
+**Begründung.** Befund B9: Aus einer Vorlage kam nichts oder, nur für owner, alles auf einmal.
+
+**Anker.** `public.add_catalog_exercises_for_plan` in `supabase/migrations/20261116100000_o_002_uebungsplan_katalog_und_stand.sql`.
+
+**Änderungspfad.** Wieder nur owner: Funktion entfernen, Auswahl auf die Bibliothek beschränken · Aufwand `klein`.
+
+### ANN-537 — Eine Vorlage zeigt ihre Übungen als Vorschau, alle vorgewählt
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-444 in der Übernahme
+
+**Annahme.** Ein Tipp auf eine Vorlage zeigt ihre Übungen mit Haken, vorgewählt ist alles außer dem, was schon im Plan steht; Archiviertes steht ohne Haken mit Wort. Was der Praxis fehlt, kommt still mit (ANN-536). Im leeren Entwurf stehen die Vorlagen gleich auf der Seite: Plan aus Vorlage zuweisen in fünf Tipps.
+
+**Begründung.** Befund B9: einzeln wählbar, kein unerwartetes Übertragen. Die Vorauswahl ist der Inhalt der Vorlage, für jede Person gleich (ADR-006 Punkt 10).
+
+**Anker.** `vorausgewaehlt` in `src/features/exercise-plans/vorlagen.ts`.
+
+**Änderungspfad.** Nichts vorwählen: `vorausgewaehlt` liefert eine leere Liste · Aufwand `klein`.
+
+### ANN-538 — Der Stand eines Plans: Fassung aus der Kette, Tag der Zuweisung, wer zugewiesen hat
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Kopf zeigt „Fassung 2 · Stand 14.10.2026 · Anna Beispiel“, im Entwurf „Entwurf · zuletzt geändert … von …“ statt eines Abzeichens; die Nummer zählt der Server über `previous_plan_id`. Die Plattform zeigt „Stand“ mit dem Tag der Zuweisung, „Fassungen“ Nummer und Stand.
+
+**Begründung.** Befund B9: Bei einem Wechsel der Therapeut:in soll sichtbar sein, welche Fassung gilt; eine neue Fassung soll auf der Plattform als aktualisierter Plan erkennbar sein. Keine neue Spalte nötig.
+
+**Anker.** `standZeile` in `src/features/exercise-plans/fassung.ts`.
+
+**Änderungspfad.** Nummer als Spalte führen: Migration mit Datenumzug · Aufwand `mittel`.

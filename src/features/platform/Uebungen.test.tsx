@@ -46,7 +46,10 @@ describe('Reiter Übungen (UEB-009)', () => {
     renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
     expect(await screen.findByRole('heading', { name: 'Heimprogramm Knie' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Übungen' })).toBeInTheDocument();
-    expect(screen.getByText('Bis 18.11.2026 · 3-mal pro Woche')).toBeInTheDocument();
+    // Befund B9: der Stand aus dem Tag der Zuweisung.
+    expect(
+      screen.getByText('Stand 07.10.2026 · Bis 18.11.2026 · 3-mal pro Woche'),
+    ).toBeInTheDocument();
     // Je Übung eine Zeile: Name und Dosierung in Worten (ANN-466).
     const zeile = screen.getByRole('button', { name: /1\. Am Geländer in die Hocke/ });
     expect(zeile).toHaveTextContent('3 Durchgänge · je 10 bis 12 Wiederholungen');

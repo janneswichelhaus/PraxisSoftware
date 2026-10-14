@@ -5,8 +5,9 @@ import { vorlagenListe } from './vorlagen';
 
 /**
  * „Aus Vorlage" (Welle B): die mitgelieferten Zusammenstellungen als Zeilen,
- * nach Name. Ein Tipp fügt alle Übungen der Vorlage mit ihrer Dosierung zum
- * Entwurf hinzu.
+ * nach Name. Ein Tipp öffnet die Vorschau der Vorlage mit ihren Übungen
+ * (Befund B9, `Vorlagenvorschau`); im leeren Entwurf stehen dieselben Zeilen
+ * gleich auf der Seite.
  *
  * **Bekommt nur die Vorlagen** - keinen Plan, keine Person, keine Diagnose
  * (ADR-006 Punkt 10). Die Liste sieht für jede Person gleich aus;
@@ -25,14 +26,26 @@ export function Vorlagenauswahl({
     <Dialogfenster titel="Aus Vorlage" onSchliessen={onSchliessen}>
       <ListRows>
         {vorlagenListe(vorlagen).map((vorlage) => (
-          <ListRow
-            key={vorlage.schluessel}
-            titel={vorlage.name}
-            meta={`${vorlage.uebungen.length === 1 ? '1 Übung' : `${vorlage.uebungen.length} Übungen`} · ${vorlage.ziel}`}
-            onClick={() => onWaehlen(vorlage)}
-          />
+          <VorlageZeile key={vorlage.schluessel} vorlage={vorlage} onWaehlen={onWaehlen} />
         ))}
       </ListRows>
     </Dialogfenster>
+  );
+}
+
+/** Eine Vorlage als Zeile: Name, Zahl der Übungen und Ziel; die ganze Zeile ist das Ziel. */
+export function VorlageZeile({
+  vorlage,
+  onWaehlen,
+}: {
+  vorlage: Katalogvorlage;
+  onWaehlen: (vorlage: Katalogvorlage) => void;
+}) {
+  return (
+    <ListRow
+      titel={vorlage.name}
+      meta={`${vorlage.uebungen.length === 1 ? '1 Übung' : `${vorlage.uebungen.length} Übungen`} · ${vorlage.ziel}`}
+      onClick={() => onWaehlen(vorlage)}
+    />
   );
 }

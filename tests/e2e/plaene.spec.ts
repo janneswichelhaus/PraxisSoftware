@@ -4,6 +4,7 @@ import type AxeCore from 'axe-core';
 import { KATALOG } from '../../src/features/exercises/katalog';
 import { alsDosis } from '../../src/features/exercises/katalog/dosierung';
 import { ausruestungVon } from '../../src/features/exercises/katalog/schema';
+import type { Katalogeintrag } from '../../src/features/exercises/katalog/typen';
 
 /**
  * Übungspläne im echten Browser (UEB-EPIC-002, Welle B).
@@ -49,10 +50,20 @@ async function hoehe(knopf: Locator): Promise<number> {
 test.describe('Übungspläne', () => {
   for (const breite of [375, 1280]) {
     test(`Entwurf mit Auswahlblatt und Dosierung bei ${breite} px`, async ({ page }) => {
+      // Das Auswahlblatt lädt den Katalog (eigener Teil des Builds), dazu
+      // zweimal axe: Beim ersten Aufruf übersetzt der Entwicklungsserver ihn.
+      test.slow();
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(PRUEFSEITE);
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Heimprogramm Knie');
-      for (const name of ['Übungen hinzufügen', 'Zuweisen', 'Aus Vorlage', 'Bearbeiten']) {
+      for (const name of [
+        'Übungen hinzufügen',
+        'Zuweisen',
+        'Aus Vorlage',
+        'Titel ändern',
+        'Häufigkeit: weniger',
+        'Häufigkeit: mehr',
+      ]) {
         expect(await hoehe(page.getByRole('button', { name, exact: true }))).toBeGreaterThanOrEqual(
           44,
         );
@@ -60,6 +71,9 @@ test.describe('Übungspläne', () => {
       expect(
         await hoehe(page.getByRole('button', { name: /1\. Kniebeuge am Geländer/ })),
       ).toBeGreaterThanOrEqual(44);
+      // Befund B9: die Häufigkeit pro Woche als Zeile direkt im Entwurf.
+      await expect(page.getByRole('group', { name: 'Häufigkeit' })).toBeVisible();
+      await expect(page.getByText('3-mal pro Woche').first()).toBeVisible();
 
       // Das Auswahlblatt: Suche, Filter auf Abruf, Zeilen mit Haken.
       await page.getByRole('button', { name: 'Übungen hinzufügen' }).click();
@@ -147,52 +161,58 @@ test.describe('Übungspläne', () => {
 
 const HEUTE = '2026-10-07';
 
-/** Der synthetische Bestand: Knie, Hüfte, Gleichgewicht aus dem Katalog, alle ungeprüft. */
+/** Ein Katalogeintrag, wie ihn die Bibliothek nach der Übernahme führt - ungeprüft. */
+function uebernommen(e: Katalogeintrag) {
+  const d = alsDosis(e.dosierung);
+  return {
+    id: `u-${e.schluessel}`,
+    name: e.name,
+    lay_name: e.alltagsname,
+    body_region: e.region,
+    archived: false,
+    variants: [
+      {
+        id: `v-${e.schluessel}`,
+        name: e.name,
+        lay_name: e.alltagsname,
+        instruction: e.anleitung.join('\n'),
+        equipment: ausruestungVon(e),
+        common_faults: e.fehler.join('\n'),
+        practice_notes: e.hinweise_praxis ?? null,
+        archived: false,
+        catalog_key: e.schluessel,
+        catalog_version: e.version,
+        goal: e.ziel,
+        starting_position: e.ausgangsstellung,
+        level: e.niveau,
+        default_dosage: {
+          sets: d.sets,
+          reps_min: d.reps_min,
+          reps_max: d.reps_max,
+          duration_seconds: d.duration_seconds,
+          hold_seconds: d.hold_seconds ?? null,
+          per_side: d.per_side ?? false,
+          times_per_day: d.times_per_day ?? null,
+        },
+        illustration: e.bild ?? null,
+        reviewed_at: null,
+        reviewed_by_name: null,
+      },
+    ],
+  };
+}
+
+/**
+ * Der synthetische Bestand: Knie, Hüfte, Gleichgewicht aus dem Katalog, alle
+ * ungeprüft. Der Rest des Katalogs steht im Auswahlblatt daneben und kommt
+ * beim Hinzufügen dazu (Befund B9, `add_catalog_exercises_for_plan`).
+ */
 function bibliothek() {
-  const eintraege = KATALOG.filter((e) => /^(KN|HU|GG)-/.test(e.schluessel));
   return {
     can_manage: false,
     links: [],
-    exercises: eintraege
-      .map((e) => {
-        const d = alsDosis(e.dosierung);
-        return {
-          id: `u-${e.schluessel}`,
-          name: e.name,
-          lay_name: e.alltagsname,
-          body_region: e.region,
-          archived: false,
-          variants: [
-            {
-              id: `v-${e.schluessel}`,
-              name: e.name,
-              lay_name: e.alltagsname,
-              instruction: e.anleitung.join('\n'),
-              equipment: ausruestungVon(e),
-              common_faults: e.fehler.join('\n'),
-              practice_notes: e.hinweise_praxis ?? null,
-              archived: false,
-              catalog_key: e.schluessel,
-              catalog_version: e.version,
-              goal: e.ziel,
-              starting_position: e.ausgangsstellung,
-              level: e.niveau,
-              default_dosage: {
-                sets: d.sets,
-                reps_min: d.reps_min,
-                reps_max: d.reps_max,
-                duration_seconds: d.duration_seconds,
-                hold_seconds: d.hold_seconds ?? null,
-                per_side: d.per_side ?? false,
-                times_per_day: d.times_per_day ?? null,
-              },
-              illustration: e.bild ?? null,
-              reviewed_at: null,
-              reviewed_by_name: null,
-            },
-          ],
-        };
-      })
+    exercises: KATALOG.filter((e) => /^(KN|HU|GG)-/.test(e.schluessel))
+      .map(uebernommen)
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'de')),
   };
 }
@@ -206,6 +226,8 @@ type Argumente = Record<string, unknown>;
  */
 class Nachbau {
   bibliothek = bibliothek();
+  /** Was aus dem Katalog übernommen wurde, in der Reihenfolge der Aufrufe. */
+  uebernommen: string[] = [];
   plaene = new Map<string, Argumente & { items: Argumente[] }>();
   zaehler = 0;
 
@@ -229,6 +251,23 @@ class Nachbau {
     switch (name) {
       case 'list_exercise_library':
         return this.bibliothek;
+      case 'add_catalog_exercises_for_plan': {
+        // Wie der Server: Vorhandenes nehmen, Fehlendes übernehmen (O-002).
+        const variants: Record<string, string> = {};
+        const imported: string[] = [];
+        for (const e of a['p_entries'] as Katalogeintrag[]) {
+          const da = this.bibliothek.exercises.find((u) =>
+            u.variants.some((v) => v.catalog_key === e.schluessel),
+          );
+          if (!da) {
+            this.bibliothek.exercises.push(uebernommen(e));
+            imported.push(e.schluessel);
+          }
+          variants[e.schluessel] = `v-${e.schluessel}`;
+        }
+        this.uebernommen.push(...imported);
+        return { variants, imported, conflicts: [] };
+      }
       case 'list_exercise_plans':
         return {
           can_write: true,
@@ -403,7 +442,12 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     await expect(page.getByText('5 Übungen hinzugefügt.')).toBeVisible();
     await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
     await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
-    await expect(page.getByRole('link', { name: 'Als PDF oder drucken' })).toBeVisible();
+    // Befund B9: Die Bestätigung führt gleich zum Planblatt - auch ohne
+    // Plattform; der Link im Satz ist ein Tippziel von 44 px.
+    expect(
+      await hoehe(page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' })),
+    ).toBeGreaterThanOrEqual(44);
+    expect(await ueberlaeuft(page)).toBe(false);
 
     const plan = [...nachbau.plaene.values()][0]!;
     expect(plan.status).toBe('assigned');
@@ -424,21 +468,57 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     expect(z.eingaben).toBe(1);
   });
 
-  test('aus Vorlage: höchstens 8 Tipps, ohne Tastatur', async ({ page }) => {
+  test('eine Übung, die der Praxis noch fehlt, kommt beim Hinzufügen still dazu (B9)', async ({
+    page,
+  }) => {
+    const nachbau = await mitNachbau(page);
+    const fehlt = KATALOG.find((e) => e.schluessel === 'BT-01')!;
+    expect(nachbau.bibliothek.exercises.some((u) => u.name === fehlt.name)).toBe(false);
+    await page.goto(`${PRUEFSEITE}?seite=planbau`);
+    await page.getByRole('button', { name: 'Neuer Plan' }).click();
+    await page.getByRole('button', { name: 'Übungen hinzufügen' }).click();
+    const blatt = page.getByRole('dialog', { name: 'Übungen hinzufügen' });
+    await blatt.getByRole('searchbox', { name: 'Übung suchen' }).fill(fehlt.alltagsname);
+    const haken = blatt.getByRole('checkbox', { name: fehlt.name });
+    await expect(haken).toHaveAccessibleName(/ungeprüft/);
+    await haken.check();
+    await blatt.getByRole('button', { name: '1 hinzufügen' }).click();
+    await expect(page.getByText('1 Übung hinzugefügt.')).toBeVisible();
+    expect(nachbau.uebernommen).toEqual(['BT-01']);
+    const plan = [...nachbau.plaene.values()][0]!;
+    expect(plan.items.map((i) => i['variant_id'])).toEqual(['v-BT-01']);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+
+  test('aus Vorlage mit Vorschau: höchstens 5 Tipps, ohne Tastatur (K12)', async ({ page }) => {
+    // Dreizehn Aufrufe an den Nachbau, dazu axe: bei voller Maschine länger.
+    test.slow();
     const nachbau = await mitNachbau(page);
     const z = new Zaehler();
     await page.goto(`${PRUEFSEITE}?seite=planbau`);
     await z.tippe(page.getByRole('button', { name: 'Neuer Plan' }));
-    await z.tippe(page.getByRole('button', { name: 'Aus Vorlage' }));
-    await z.tippe(
-      page.getByRole('dialog', { name: 'Aus Vorlage' }).getByRole('button', {
-        name: /Knie im Sitz \(Prüfvorlage\)/,
-      }),
-    );
-    await expect(page.getByText(/5 Übungen hinzugefügt aus „Knie im Sitz/)).toBeVisible();
+    // Im leeren Entwurf stehen die Vorlagen gleich als Zeilen (Befund B9).
+    await z.tippe(page.getByRole('button', { name: /Knie im Sitz \(Prüfvorlage\)/ }));
+    const vorschau = page.getByRole('dialog', { name: 'Knie im Sitz (Prüfvorlage)' });
+    // Alle vorgewählt - auch die Übung, die der Praxis noch fehlt.
+    await expect(vorschau.getByRole('checkbox')).toHaveCount(6);
+    for (const haken of await vorschau.getByRole('checkbox').all()) {
+      await expect(haken).toBeChecked();
+    }
+    for (const zeile of await vorschau.locator('label').all()) {
+      expect(await hoehe(zeile)).toBeGreaterThanOrEqual(44);
+    }
+    expect(await ueberlaeuft(page)).toBe(false);
+    expect(await axeVerstoesse(page)).toEqual([]);
+    await z.tippe(vorschau.getByRole('button', { name: '6 hinzufügen' }));
+    await expect(page.getByText(/6 Übungen hinzugefügt aus „Knie im Sitz/)).toBeVisible({
+      timeout: 15_000,
+    });
     await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
     await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
-    await expect(page.getByRole('link', { name: 'Als PDF oder drucken' })).toBeVisible();
+    await expect(
+      page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' }),
+    ).toBeVisible();
 
     const plan = [...nachbau.plaene.values()][0]!;
     expect(plan.status).toBe('assigned');
@@ -448,12 +528,18 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
       'v-KN-03',
       'v-KN-05',
       'v-KN-06',
+      'v-AF-01',
     ]);
+    // Was der Praxis fehlte, kam still dazu.
+    expect(nachbau.uebernommen).toEqual(['AF-01']);
     // Der leere Entwurf heißt danach wie die Vorlage.
     expect(plan.title).toBe('Knie im Sitz (Prüfvorlage)');
+    // Vorher (bis Befund B9): 5 Tipps ohne Wahl, wenn alles in der Bibliothek
+    // stand; fehlte etwas, für owner 6 Tipps mit allem, für die Therapeut:in
+    // nur eine Warnung.
     test.info().annotations.push({ type: 'Tipps', description: `${z.tipps} Tipps, keine Eingabe` });
     expect(z.tipps).toBe(5);
-    expect(z.tipps).toBeLessThanOrEqual(8);
+    expect(z.tipps).toBeLessThanOrEqual(5);
     expect(z.eingaben).toBe(0);
     expect(await ueberlaeuft(page)).toBe(false);
   });

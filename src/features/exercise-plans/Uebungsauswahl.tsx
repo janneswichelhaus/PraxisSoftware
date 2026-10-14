@@ -6,6 +6,7 @@ import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { Bibliothek, Uebung, Variante } from '@/features/exercises/api';
 import { NeueUebungFormular } from '@/features/exercises/Formulare';
+import type { Katalogeintrag } from '@/features/exercises/katalog/typen';
 import {
   KEIN_FILTER,
   ZEILEN_JE_SEITE,
@@ -18,18 +19,25 @@ import { KOERPERREGION_LABEL } from '@/features/exercises/types';
 import { useFormularschutz } from '@/features/exercises/useFormularschutz';
 import { Bibliotheksfilter } from '@/features/exercises/Bibliotheksfilter';
 import { Vorschaubild } from '@/features/exercises/Vorschaubild';
-import { dosierungKurz } from './dosierung';
+import { dosierungKurz, type Dosis } from './dosierung';
 import { standardDosis } from './hinzufuegen';
+import { eineListe } from './uebungsliste';
 
 /**
  * Das Auswahlblatt „Übungen hinzufügen" (Welle B; Analyse Training 12.10.,
  * Abschnitt 5, Weg B).
  *
- * Ein Fenster, am Telefon von unten: Suche und Filterchips der Bibliothek,
- * darunter jede Variante als Zeile mit Bild, Name und Standarddosierung und
- * einem Haken. Mehrere wählen, dann **„n hinzufügen"** - alle in einem Zug,
- * jede mit ihrer Standarddosierung (ANN-384); die Dosierung ändert man danach
- * an der Zeile im Plan.
+ * Ein Fenster, am Telefon von unten: Suche und Filterchips, darunter jede
+ * Variante als Zeile mit Bild, Name und Standarddosierung und einem Haken.
+ * Mehrere wählen, dann **„n hinzufügen"** - alle in einem Zug, jede mit ihrer
+ * Standarddosierung (ANN-384); die Dosierung ändert man danach an der Zeile
+ * im Plan.
+ *
+ * **Eine Liste** (Befund B9, O-002): die Bibliothek der Praxis und die
+ * Einträge des mitgelieferten Katalogs, die ihr fehlen (`eineListe`). Einen
+ * gewählten Katalogeintrag übernimmt der Planeditor beim Hinzufügen still;
+ * an der Zeile steht dafür nur „ungeprüft“, wie an jeder übernommenen Übung
+ * ohne Prüfvermerk (ANN-386).
  *
  * Geordnet nach Bezeichnung wie die Bibliothek; gefiltert nur von Hand.
  * Nichts hier liest Diagnose, Befund oder Verlauf der Person, nichts ist
@@ -41,23 +49,33 @@ import { standardDosis } from './hinzufuegen';
  * Keine bestehende Serverfunktion liefert ihn ohne Personenbezug.
  */
 
+/** Ohne Katalog - fest, damit die Liste nicht bei jedem Zeichnen neu entsteht. */
+const KEIN_KATALOG: readonly Katalogeintrag[] = [];
+
 export interface Gewaehlt {
   uebung: Uebung;
   variante: Variante;
 }
 
-/** Eine Zeile mit Haken - die ganze Zeile ist das Ziel (ein `label`). */
-function Auswahlzeile({
+/**
+ * Eine Zeile mit Haken - die ganze Zeile ist das Ziel (ein `label`). Auch die
+ * Vorschau einer Vorlage zeigt so ihre Übungen, dort mit der Dosierung der
+ * Vorlage (`dosis`).
+ */
+export function Auswahlzeile({
   uebung,
   variante,
   gewaehlt,
   imPlan,
+  dosis,
   onUmschalten,
 }: {
   uebung: Uebung;
   variante: Variante;
   gewaehlt: boolean;
   imPlan: boolean;
+  /** Ohne Angabe die Standarddosierung (ANN-384). */
+  dosis?: Dosis;
   onUmschalten: () => void;
 }) {
   const id = useId();
@@ -65,7 +83,7 @@ function Auswahlzeile({
   const meta = [
     variante.name === uebung.name ? null : uebung.name,
     KOERPERREGION_LABEL[uebung.body_region],
-    dosierungKurz(standardDosis(variante)),
+    dosierungKurz(dosis ?? standardDosis(variante)),
     ungeprueft(variante) ? 'ungeprüft' : null,
     imPlan ? 'schon im Plan' : null,
   ]
@@ -100,6 +118,8 @@ function Auswahlzeile({
 
 export function Uebungsauswahl({
   bibliothek,
+  katalog = KEIN_KATALOG,
+  katalogFehlt = false,
   imPlan,
   laeuft,
   fehler,
@@ -107,6 +127,10 @@ export function Uebungsauswahl({
   onSchliessen,
 }: {
   bibliothek: Bibliothek;
+  /** Der mitgelieferte Katalog; was die Bibliothek schon hat, steht nur einmal da. */
+  katalog?: readonly Katalogeintrag[];
+  /** Der Katalog ließ sich nicht laden - die Liste zeigt nur die Bibliothek. */
+  katalogFehlt?: boolean;
   /** Varianten, die schon im Plan stehen - nur zur Anzeige. */
   imPlan: ReadonlySet<string>;
   /** Läuft das Hinzufügen, und wie weit („2 von 5")? */
@@ -138,10 +162,10 @@ export function Uebungsauswahl({
 
   const aktiv = useMemo(
     () =>
-      bibliothek.exercises.filter(
+      eineListe(bibliothek, katalog).filter(
         (uebung) => !uebung.archived && uebung.variants.some((v) => !v.archived),
       ),
-    [bibliothek],
+    [bibliothek, katalog],
   );
   const treffer = filtere(aktiv, filter);
   const zeilen = treffer.flatMap((t) =>
@@ -204,12 +228,15 @@ export function Uebungsauswahl({
         suchbeschriftung="Übung suchen"
         eingeklappt
       />
+      {katalogFehlt ? (
+        <Statusmeldung ton="warnung" className="mb-3">
+          Nicht alle Übungen konnten geladen werden.
+        </Statusmeldung>
+      ) : null}
       {zeilen.length === 0 ? (
         <EmptyState
           inKarte
-          title={
-            alleZeilen.length === 0 ? 'Die Bibliothek ist noch leer.' : 'Keine Übung gefunden.'
-          }
+          title={alleZeilen.length === 0 ? 'Noch keine Übung.' : 'Keine Übung gefunden.'}
           {...(bibliothek.can_manage
             ? {
                 aktion: (
@@ -259,31 +286,55 @@ export function Uebungsauswahl({
         </div>
       ) : null}
 
-      {/* Klebt am unteren Rand des Fensters: Die Wahl bleibt beim Rollen
-          durch die Liste mit dem Daumen erreichbar. */}
-      <div className="bg-surface border-line sticky -bottom-6 -mx-6 mt-4 -mb-6 border-t px-6 py-3">
-        {fehler ? (
-          <Statusmeldung ton="fehler" className="mb-2">
-            {fehler}
-          </Statusmeldung>
-        ) : null}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            disabled={gewaehlt.length === 0 || laeuft !== null}
-            onClick={() => onHinzufuegen(gewaehlt)}
-          >
-            {laeuft
-              ? `Wird hinzugefügt … (${laeuft})`
-              : gewaehlt.length === 0
-                ? 'Hinzufügen'
-                : `${gewaehlt.length} hinzufügen`}
-          </Button>
-          <Button type="button" variant="quiet" disabled={laeuft !== null} onClick={onSchliessen}>
-            Abbrechen
-          </Button>
-        </div>
-      </div>
+      <Auswahlfuss
+        anzahl={gewaehlt.length}
+        laeuft={laeuft}
+        fehler={fehler}
+        onHinzufuegen={() => onHinzufuegen(gewaehlt)}
+        onSchliessen={onSchliessen}
+      />
     </Dialogfenster>
+  );
+}
+
+/**
+ * Der Fuß des Auswahlblatts und der Vorschau einer Vorlage: „n hinzufügen“
+ * als Hauptknopf, „Abbrechen“ leise. Klebt am unteren Rand des Fensters - die
+ * Wahl bleibt beim Rollen durch die Liste mit dem Daumen erreichbar.
+ */
+export function Auswahlfuss({
+  anzahl,
+  laeuft,
+  fehler,
+  onHinzufuegen,
+  onSchliessen,
+}: {
+  anzahl: number;
+  /** Läuft das Hinzufügen, und wie weit („2 von 5")? */
+  laeuft: string | null;
+  fehler: string | null;
+  onHinzufuegen: () => void;
+  onSchliessen: () => void;
+}) {
+  return (
+    <div className="bg-surface border-line sticky -bottom-6 -mx-6 mt-4 -mb-6 border-t px-6 py-3">
+      {fehler ? (
+        <Statusmeldung ton="fehler" className="mb-2">
+          {fehler}
+        </Statusmeldung>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" disabled={anzahl === 0 || laeuft !== null} onClick={onHinzufuegen}>
+          {laeuft
+            ? `Wird hinzugefügt … (${laeuft})`
+            : anzahl === 0
+              ? 'Hinzufügen'
+              : `${anzahl} hinzufügen`}
+        </Button>
+        <Button type="button" variant="quiet" disabled={laeuft !== null} onClick={onSchliessen}>
+          Abbrechen
+        </Button>
+      </div>
+    </div>
   );
 }
