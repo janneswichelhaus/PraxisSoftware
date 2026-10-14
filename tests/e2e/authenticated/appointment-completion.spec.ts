@@ -169,7 +169,7 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
     await page.getByRole('button', { name: 'Termin absagen' }).click();
-    await page.getByLabel('Absagegrund').selectOption('patient_request');
+    await page.getByRole('button', { name: 'Patient:in hat abgesagt' }).click();
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
 
