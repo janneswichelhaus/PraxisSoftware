@@ -5162,3 +5162,14 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
 
+### ANN-534 — Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
+
+**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant ist und nichts an ihm hängt (Doku, Entwurf, Leistung, Mitteilung, Warteliste, Wunsch, Serie). Offene Zustellaufträge fallen mit. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung.
+
+**Begründung.** Der Termin war nie wirksam; eine Absage meldete „Termin abgesagt“ (KOM-009). Nachweis ist, was gilt (ADR-010 Punkt 15); ein Restore zieht nach (ADR-008 Punkt 8).
+
+**Anker.** `public.undo_appointment_creation`, `supabase/migrations/20261115100000_o_001_termin_anlegen_zuruecknehmen.sql`.
+
+**Änderungspfad.** Anderes Fenster: Intervall in der Funktion · Aufwand `klein`. Spur: Auditaktion mit ADR-010-Änderung und Freigabe · Aufwand `klein`.
