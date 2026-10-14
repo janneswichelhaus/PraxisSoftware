@@ -70,6 +70,7 @@ const fetchAssignableTrainers = vi.fn();
 const fetchLocations = vi.fn();
 const fetchAppointment = vi.fn();
 const updateAppointment = vi.fn();
+const cancelAppointment = vi.fn();
 const fetchWorkingHours = vi.fn();
 const fetchWorkingHourExceptions = vi.fn();
 
@@ -86,6 +87,7 @@ vi.mock('./api', async (importOriginal) => {
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
+    cancelAppointment: (...args: unknown[]) => cancelAppointment(...args) as Promise<void>,
     updateAppointment: (
       id: string,
       stand: string,
@@ -2718,6 +2720,52 @@ describe('CalendarPage: Doku offen und Terminpanel', () => {
 
     await user.click(within(panel).getByRole('button', { name: 'Terminpanel schließen' }));
     expect(screen.queryByRole('region', { name: /Max Mustermann/ })).toBeNull();
+  });
+
+  it('sagt am Telefon in vier Tipps ab: Kachel, Absagen, Grund, Ja (K9, ANN-500)', async () => {
+    fetchAppointments.mockResolvedValue([eintrag()]);
+    cancelAppointment.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+    await user.click(await screen.findByRole('button', { name: /Max Mustermann/ }));
+    const panel = screen.getByRole('region', { name: /Max Mustermann/ });
+    await user.click(await within(panel).findByRole('button', { name: 'Termin absagen' }));
+    // Kein Grund ist vorgewählt (ANN-034): ohne Wahl sagt nichts ab.
+    await user.click(within(panel).getByRole('button', { name: 'Ja, Termin absagen' }));
+    expect(await within(panel).findByText('Bitte einen Absagegrund auswählen.')).toBeVisible();
+    expect(cancelAppointment).not.toHaveBeenCalled();
+
+    await user.click(within(panel).getByRole('button', { name: 'Patient:in hat abgesagt' }));
+    await user.click(within(panel).getByRole('button', { name: 'Ja, Termin absagen' }));
+    await waitFor(() =>
+      expect(cancelAppointment).toHaveBeenCalledWith(
+        bestand.id,
+        bestand.updated_at,
+        'patient_request',
+        null,
+        null,
+      ),
+    );
+    expect(await within(panel).findByText(/Termin abgesagt/)).toBeVisible();
+    // Auch auf der Seite: Das Panel geht mit dem Termin, wenn der Filter ihn ausblendet.
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((zeile) => /Termin abgesagt/.test(zeile.textContent ?? '')),
+    ).toBe(true);
+  });
+
+  it('bietet am abgeschlossenen Termin im Panel keine Absage an (K9)', async () => {
+    fetchAppointments.mockResolvedValue([eintrag({ status: 'completed' })]);
+    const user = userEvent.setup();
+    rendern('/kalender?ansicht=tag&datum=2027-05-12&status=all');
+
+    await user.click(await screen.findByRole('button', { name: /Max Mustermann/ }));
+    const panel = screen.getByRole('region', { name: /Max Mustermann/ });
+    await within(panel).findByRole('button', { name: 'Aktionen …' });
+    // Abgeschlossen ist nicht mehr absagbar.
+    expect(within(panel).queryByRole('button', { name: 'Termin absagen' })).toBeNull();
   });
 
   it('bietet am eigenen Termin Haken und Doku an', async () => {

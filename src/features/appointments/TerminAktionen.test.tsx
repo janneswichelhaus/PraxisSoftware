@@ -396,7 +396,7 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(await screen.findByRole('button', { name: 'Patient:in hat abgesagt' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
       await waitFor(() =>
@@ -425,7 +425,7 @@ describe('TerminAktionenDialog', () => {
       expect(await screen.findByText('Bitte einen Absagegrund auswählen.')).toBeInTheDocument();
       expect(cancelAppointment).not.toHaveBeenCalled();
       // Die Rueckfrage bleibt offen: die Auswahl steht weiter zur Verfuegung.
-      expect(screen.getByLabelText('Absagegrund')).toBeInTheDocument();
+      expect(screen.getByRole('group', { name: 'Absagegrund' })).toBeInTheDocument();
     });
 
     it('loest bei doppeltem Klick nur einen Schreibvorgang aus', async () => {
@@ -441,7 +441,7 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_moved');
+      await user.click(await screen.findByRole('button', { name: 'Patient:in hat verlegt' }));
 
       const knopf = screen.getByRole('button', { name: 'Ja, Termin absagen' });
       await user.click(knopf);
@@ -461,7 +461,7 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'other');
+      await user.click(await screen.findByRole('button', { name: 'Sonstiger Grund' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
       expect(
@@ -792,7 +792,7 @@ describe('TerminAktionenDialog', () => {
       await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(await screen.findByRole('button', { name: 'Patient:in hat abgesagt' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
       // Ohne Angabe stempelt der Server: null, null.
@@ -813,7 +813,7 @@ describe('TerminAktionenDialog', () => {
       await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(await screen.findByRole('button', { name: 'Patient:in hat abgesagt' }));
       await user.selectOptions(
         screen.getByLabelText('Wann ist die Absage eingegangen?'),
         'frueher',
@@ -839,7 +839,7 @@ describe('TerminAktionenDialog', () => {
       await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(await screen.findByRole('button', { name: 'Patient:in hat abgesagt' }));
       await user.selectOptions(
         screen.getByLabelText('Wann ist die Absage eingegangen?'),
         'frueher',
@@ -957,12 +957,11 @@ describe('TerminAktionenDialog', () => {
         screen.getByText(/Die Frist wird automatisch berechnet; genau 24 Stunden vorher gilt/),
       ).toBeInTheDocument();
       expect(screen.queryByText(/Server/)).not.toBeInTheDocument();
-      // Die leere Auswahl heißt wie in jedem anderen Formular (WRT-14).
-      expect(
-        within(screen.getByLabelText('Absagegrund')).getByRole('option', {
-          name: 'Bitte wählen …',
-        }),
-      ).toBeInTheDocument();
+      // Kein Grund ist vorgewählt (ANN-034); die Chips sind Schalter (K9).
+      const gruende = within(screen.getByRole('group', { name: 'Absagegrund' }));
+      for (const chip of gruende.getAllByRole('button')) {
+        expect(chip).toHaveAttribute('aria-pressed', 'false');
+      }
     });
   });
 
@@ -1051,12 +1050,12 @@ describe('TerminAktionenDialog', () => {
       await screen.findByRole('heading', { name: /Teambesprechung/ });
       await user.click(screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }));
 
-      const auswahl = await screen.findByLabelText('Absagegrund');
+      const auswahl = await screen.findByRole('group', { name: 'Absagegrund' });
       expect(
-        within(auswahl).queryByRole('option', { name: 'Patient:in hat abgesagt' }),
+        within(auswahl).queryByRole('button', { name: 'Patient:in hat abgesagt' }),
       ).not.toBeInTheDocument();
       expect(
-        within(auswahl).getByRole('option', { name: 'Praxis hat abgesagt' }),
+        within(auswahl).getByRole('button', { name: 'Praxis hat abgesagt' }),
       ).toBeInTheDocument();
 
       expect(screen.queryByLabelText('Wann ist die Absage eingegangen?')).not.toBeInTheDocument();
@@ -1160,7 +1159,7 @@ describe('TerminAktionenDialog', () => {
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
       await user.click(screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }));
-      await user.selectOptions(await screen.findByLabelText('Absagegrund'), 'practice_request');
+      await user.click(await screen.findByRole('button', { name: 'Praxis hat abgesagt' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Teilnahme absagen' }));
 
       await waitFor(() =>
@@ -1627,7 +1626,7 @@ describe('TerminAktionenDialog', () => {
       await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'practice_request');
+      await user.click(await screen.findByRole('button', { name: 'Praxis hat abgesagt' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
       const meldung = await screen.findByText('Termin abgesagt.');
@@ -1674,7 +1673,7 @@ describe('TerminAktionenDialog', () => {
       });
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(await screen.findByRole('button', { name: 'Patient:in hat abgesagt' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
       expect(

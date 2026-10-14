@@ -17,6 +17,7 @@ import {
 } from '@/features/session/types';
 import { Laengenzeichen } from './Laengenzeichen';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
+import { AbsageAktion } from './TerminAktionen';
 import { VERLAUF_ANKER } from '@/features/documentation/PatientRecordDocumentation';
 import {
   appointmentStatusLabels,
@@ -64,6 +65,7 @@ export function TerminPanel({
   rueckweg,
   onSchliessen,
   onAktionen,
+  onAbgesagt,
 }: {
   eintrag: CalendarEntry;
   user: CurrentUser;
@@ -72,6 +74,11 @@ export function TerminPanel({
   onSchliessen: () => void;
   /** Öffnet das Fenster mit den übrigen Aktionen am Termin (`TerminAktionenDialog`). */
   onAktionen: () => void;
+  /**
+   * Nach der Absage: Der Kalender filtert abgesagte Termine meist aus, das
+   * Panel geht dann mit dem Termin - die Meldung muss die Seite tragen (K9).
+   */
+  onAbgesagt?: (meldung: string) => void;
 }) {
   const zone = user.organizationTimeZone ?? 'Europe/Berlin';
   const titelRef = useRef<HTMLHeadingElement>(null);
@@ -99,6 +106,11 @@ export function TerminPanel({
     eigener &&
     canWriteTreatmentNote(user.roles) &&
     (eintrag.status === 'confirmed' || offen);
+  // Absage am Telefon (K9, ANN-500): vom Panel aus, ohne das Fenster der
+  // übrigen Aktionen. Dieselbe Rückfrage mit Pflichtgrund wie dort;
+  // verbindlich prüft `cancel_appointment`.
+  const darfAbsagen =
+    behandlung && eintrag.status === 'confirmed' && canManageAppointments(user.roles);
   const art =
     eintrag.kind === 'internal'
       ? BEGRIFFE.fehlzeit
@@ -214,7 +226,7 @@ export function TerminPanel({
         </div>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-4">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
         {behandlung && canReadTreatmentNote(user.roles) ? (
           <Textlink
             alleinstehend
@@ -237,6 +249,16 @@ export function TerminPanel({
             Aktionen …
           </Button>
         )}
+        {darfAbsagen && termin ? (
+          <AbsageAktion
+            appointment={termin}
+            kompakt
+            melden={(text) => {
+              setMeldung({ ton: 'erfolg', text });
+              onAbgesagt?.(text);
+            }}
+          />
+        ) : null}
       </div>
     </section>
   );

@@ -627,6 +627,7 @@ function MeinTag({
       <Tageskarte
         termin={termin}
         kicker={kicker}
+        vorDerTuer={darfDokuLesen}
         erstaufnahme={
           erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
         }
@@ -813,6 +814,7 @@ function MeinTag({
       <Tageskarte
         termin={termin}
         kicker={kicker}
+        vorDerTuer={darfDokuLesen}
         relativ={fokus.art === 'besuch' ? bisBeginn(termin, jetzt) : null}
         position={lage && lage.appointment_id === termin.id ? positionText(lage) : null}
         abschlussgespraech={!!lage && lage.appointment_id === termin.id && lage.closing_talk_due}

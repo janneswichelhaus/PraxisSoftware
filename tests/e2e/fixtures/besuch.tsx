@@ -110,6 +110,9 @@ const tag: DayPlanEntry[] = [
     visit_lat: 48.5216,
     visit_lon: 9.0576,
     patient_phone_mobile: '+49 160 0000006',
+    // K3: hinter „Vor der Tür“ (ANN-501).
+    home_visit_access_note: '2. OG, Klingel Beispiel',
+    take_along_items: ['Theraband', 'Faszienrolle'],
   }),
   besuch('cccccccc-cccc-4ccc-8ccc-000000000002', '10:30', '11:30', {
     patient_id: '66666666-6666-4666-8666-000000000102',

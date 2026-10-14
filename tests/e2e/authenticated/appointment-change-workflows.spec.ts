@@ -195,7 +195,7 @@ test.describe('CAL-003: Absagen', () => {
     await expect(rueckfrage).toContainText('Bitte einen Absagegrund auswählen.');
     await expect(detailWert(page, 'Status')).toContainText('Steht aus');
 
-    await page.getByLabel('Absagegrund').selectOption('patient_request');
+    await page.getByRole('button', { name: 'Patient:in hat abgesagt' }).click();
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
@@ -231,7 +231,7 @@ test.describe('CAL-003: Absagen', () => {
     await terminAnlegen(page, { tag, von, bis });
 
     await page.getByRole('button', { name: 'Termin absagen' }).click();
-    await page.getByLabel('Absagegrund').selectOption('patient_request');
+    await page.getByRole('button', { name: 'Patient:in hat abgesagt' }).click();
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
 
