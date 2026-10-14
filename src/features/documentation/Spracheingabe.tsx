@@ -98,14 +98,27 @@ export function Sprechleiste({
             </span>
           </span>
         </p>
-        <div className="ml-auto flex gap-2">
-          <Button type="button" variant="quiet" groesse="normal" onClick={diktat.abbrechen}>
-            Abbrechen
-          </Button>
-          <Button type="button" groesse="normal" onClick={diktat.fertig}>
-            Fertig
-          </Button>
+        {/* Verwerfen nur mit Rückfrage und weit weg von „Fertig“: Ein Fehltipp
+            mit Handschuh kostete sonst das ganze Diktat (Praxis-Review). */}
+        <div className="ml-auto">
+          <Rueckfrage
+            ausloeser="Verwerfen"
+            ausloeserVariante="quiet"
+            bezeichnung="Aufnahme verwerfen"
+            bestaetigen="Ja, verwerfen"
+            onBestaetigen={diktat.abbrechen}
+          >
+            Die Aufnahme ist nicht gespeichert und lässt sich danach nicht zurückholen.
+          </Rueckfrage>
         </div>
+        <Button
+          type="button"
+          groesse="normal"
+          className="w-full basis-full sm:w-auto sm:basis-auto"
+          onClick={diktat.fertig}
+        >
+          Fertig
+        </Button>
       </Zeile>
     );
   }

@@ -58,6 +58,9 @@ export const DIKTAT_OFFEN =
 export const AUFNAHME_OFFEN =
   'Die Aufnahme ist noch nicht aufbereitet. Bitte erneut senden oder verwerfen, dann speichern oder festschreiben.';
 
+/** Nach „Abbrechen“ während der Aufbereitung: Die Aufnahme ist noch da. */
+export const AUFBEREITUNG_ANGEHALTEN = 'Aufbereitung angehalten.';
+
 /** Der Stand nach der Aufnahme. */
 export type Diktatstand =
   | { readonly art: 'bereit' }
@@ -229,11 +232,13 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
         aufnahme.abbrechen();
         return;
       }
+      // Während der Aufbereitung hält „Abbrechen“ nur das Senden an: Die
+      // Aufnahme bleibt für „Erneut senden“, verworfen wird nur mit Rückfrage
+      // (Praxis-Review: ein Fehltipp kostete sonst das ganze Diktat).
       if (stand.art === 'aufbereitung') {
         anfrage.current?.abort();
         anfrage.current = null;
-        zuSenden.current = null;
-        setStand({ art: 'bereit' });
+        setStand({ art: 'gescheitert', meldung: AUFBEREITUNG_ANGEHALTEN });
       }
     },
     erneut: () => {

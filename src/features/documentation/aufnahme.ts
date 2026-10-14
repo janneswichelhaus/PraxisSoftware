@@ -262,6 +262,13 @@ export function useAufnahme({
       aufraeumen(l);
       return;
     }
+    // Während das Mikrofon öffnete, wurde die Seite verborgen: Ohne sichtbare
+    // Anzeige beginnt keine Aufnahme (6.3) - die Wache unten käme erst mit dem
+    // nächsten Wechsel.
+    if (document.visibilityState === 'hidden') {
+      anhalten(true);
+      return;
+    }
 
     const format = waehleFormat((typ) => MediaRecorder.isTypeSupported(typ));
     let recorder: MediaRecorder;
