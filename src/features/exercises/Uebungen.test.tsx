@@ -432,6 +432,25 @@ describe('UebungAnsicht (UEB-001, Welle B: Objektseite)', () => {
     expect(screen.queryByText('Pflege')).not.toBeInTheDocument();
   });
 
+  it('bietet „Zu einem Plan" nur, wer Übungspläne schreibt (ANN-503)', async () => {
+    fetchBibliothek.mockResolvedValue(bibliothek(false));
+    const { unmount } = renderWithProviders(
+      <UebungAnsicht user={testUser(['therapist'])} uebungId="u1" />,
+    );
+    await screen.findByRole('heading', { level: 1, name: 'Kniebeuge' });
+    expect(screen.getByRole('button', { name: 'Zu einem Plan' })).toBeEnabled();
+    unmount();
+
+    for (const rolle of ['office', 'trainer'] as const) {
+      const { unmount: weg } = renderWithProviders(
+        <UebungAnsicht user={testUser([rolle])} uebungId="u1" />,
+      );
+      await screen.findByRole('heading', { level: 1, name: 'Kniebeuge' });
+      expect(screen.queryByRole('button', { name: 'Zu einem Plan' })).toBeNull();
+      weg();
+    }
+  });
+
   it('legt eine Variante mit Ausrüstung als Schlagworten an', async () => {
     const user = userEvent.setup();
     renderWithProviders(<UebungAnsicht user={testUser(['owner'])} uebungId="u1" />);

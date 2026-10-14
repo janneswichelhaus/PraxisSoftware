@@ -6,9 +6,10 @@ import { BAUARTEN } from '@/features/treatment-bases/api';
 // Vertretungs-Kurzblick am Termin (PRX-006, ANN-137)
 //
 // Ein eigener Lesepfad: `get_appointment_brief` liefert nur, was vor der Tür
-// zählt, und schreibt bei jedem Aufruf `appointment_brief.viewed` - dazu
-// `treatment_note.viewed`, wenn ein Eintrag gezeigt wird. Aufgerufen wird er
-// deshalb erst beim Aufklappen, nie vorab.
+// zählt, und protokolliert das Lesen als „Akte geöffnet“, einmal je Akte und
+// Tag (LOG-EPIC-001, ANN-230). Aufgerufen wird er deshalb erst auf eine
+// Handlung hin, nie vorab: beim Aufklappen des Kurzblicks, an „Vor der Tür“
+// der Tageskarte (K3) und mit „Wie zuletzt“ auf der Schreibseite (K6).
 // -----------------------------------------------------------------------------
 
 const positionSchema = z.object({

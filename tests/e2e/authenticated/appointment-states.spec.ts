@@ -76,7 +76,7 @@ test.describe('CAL-008b: Absage nur mit Grund', () => {
     await expect(rueckfrage).toContainText('Bitte einen Absagegrund auswählen.');
     await expect(detailWert(page, 'Status')).toContainText('Steht aus');
 
-    await page.getByLabel('Absagegrund').selectOption('practice_moved');
+    await page.getByRole('button', { name: 'Praxis hat verlegt' }).click();
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
@@ -138,7 +138,7 @@ test.describe('CAL-014c: Absage unter 24 Stunden', () => {
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     await page.getByRole('button', { name: 'Termin absagen' }).click();
-    await page.getByLabel('Absagegrund').selectOption('patient_request');
+    await page.getByRole('button', { name: 'Patient:in hat abgesagt' }).click();
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
@@ -164,7 +164,7 @@ test.describe('CAL-014c: Absage unter 24 Stunden', () => {
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
     await page.getByRole('button', { name: 'Termin absagen' }).click();
-    await page.getByLabel('Absagegrund').selectOption('patient_request');
+    await page.getByRole('button', { name: 'Patient:in hat abgesagt' }).click();
     await page.getByLabel('Wann ist die Absage eingegangen?').selectOption('frueher');
     // Gestern: ein Eingang in der Zukunft wird zu Recht abgewiesen, und die
     // Tagesfenster dieser Datei liegen in der Zukunft.

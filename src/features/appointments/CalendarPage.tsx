@@ -315,6 +315,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Umschreiben der Adresse nimmt den Zustand der Navigation nicht mit.
   const ortZustand: unknown = useLocation().state;
   const [eingangsmeldung] = useState(() => leseMeldung(ortZustand));
+  // Die Absage aus dem Panel (K9): Ein abgesagter Termin fällt aus dem
+  // Standardfilter und nimmt das Panel mit; die Bestätigung bleibt hier.
+  const [absage, setAbsage] = useState<{ text: string; nr: number } | null>(null);
   const [sprungZiel, setSprungZiel] = useState<string | null>(null);
   useEffect(() => {
     if (terminImLink) setSprungZiel(terminImLink);
@@ -1753,6 +1756,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {/* Zurück aus dem Fehlzeit-Formular (KAL-22): Die Fehlzeit kann an
           einem anderen Tag liegen - die Zeile sagt, dass es geklappt hat. */}
       {eingangsmeldung ? <Rueckmeldung className="mt-4">{eingangsmeldung}</Rueckmeldung> : null}
+      {absage ? (
+        <Rueckmeldung key={absage.nr} className="mt-4">
+          {absage.text}
+        </Rueckmeldung>
+      ) : null}
 
       {eingetragen ? (
         <Statusmeldung ton="erfolg" className="mt-4">
@@ -1974,6 +1982,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             if (terminImLink) setSuche(new URLSearchParams(kalenderSuche), { replace: true });
           }}
           onAktionen={() => setAktionenId(gewaehlt.id)}
+          onAbgesagt={(text) => setAbsage((bisher) => ({ text, nr: (bisher?.nr ?? 0) + 1 }))}
         />
       ) : null}
 
