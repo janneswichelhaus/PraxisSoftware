@@ -549,6 +549,21 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
           where id = $1`,
         [patients.max, users.therapist],
       );
+      // B1 (ANN-511): Die Frist rechnet ab der letzten Behandlung - die Termine
+      // der Akte liegen vor dem Abschluss.
+      await asPostgres(
+        `update public.appointments
+            set starts_at = starts_at - interval '12 years',
+                ends_at   = ends_at   - interval '12 years'
+          where patient_id = $1`,
+        [patients.max],
+      );
+      await asPostgres(
+        `update public.billable_services
+            set performed_on = (performed_on - interval '12 years')::date
+          where patient_id = $1`,
+        [patients.max],
+      );
 
       // Die Verordnung wird vor den Terminen geloescht (LOE-002). Ohne
       // ON DELETE SET NULL scheiterte der Lauf an dieser Stelle.

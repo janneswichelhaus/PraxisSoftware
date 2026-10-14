@@ -39,6 +39,22 @@ async function abgeschlossenVor(patientId: string, jahre: number) {
       where id = $1`,
     [patientId, jahre, users.therapist],
   );
+  // B1 (ANN-511): Die Frist rechnet ab dem Spaeteren aus Abschluss, letzter
+  // Behandlung, Leistung und Rechnung. Ein Abschluss vor N Jahren mit
+  // Terminen von heute waere kein Szenario - die Behandlungen liegen davor.
+  await asPostgres(
+    `update public.appointments
+        set starts_at = starts_at - ($2::int + 1) * interval '1 year',
+            ends_at   = ends_at   - ($2::int + 1) * interval '1 year'
+      where patient_id = $1`,
+    [patientId, jahre],
+  );
+  await asPostgres(
+    `update public.billable_services
+        set performed_on = (performed_on - ($2::int + 1) * interval '1 year')::date
+      where patient_id = $1`,
+    [patientId, jahre],
+  );
 }
 
 /**

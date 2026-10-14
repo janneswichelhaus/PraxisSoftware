@@ -177,7 +177,8 @@ describe('Test-Umgebung neu aufsetzen (OPS-002a)', () => {
       `select count(*) as anzahl, count(*) filter (where status = 'active') as aktiv
          from public.patients where id::text like '66666666-6666-4666-8666-0000000001%'`,
     );
-    expect(rows[0]).toEqual({ anzahl: '12', aktiv: '11' });
+    // B1 (ANN-510): „Nicht in Versorgung“ gibt es nicht mehr - jede Akte ist aktiv.
+    expect(rows[0]).toEqual({ anzahl: '12', aktiv: '12' });
 
     // Die Erstaufnahme: der Anmeldebogen ist bei manchen offen, bei manchen da.
     const offen = await asUser<{ patient_id: string; open_items: string[] }>(

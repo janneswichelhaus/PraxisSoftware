@@ -31,7 +31,8 @@ const ZUSAMMENFUEHREN = 'select public.merge_patients($1::uuid, $2::uuid) as erg
 interface Akte {
   vorname: string;
   nachname: string;
-  status?: 'active' | 'inactive';
+  /** B1 (ANN-510): Es gibt nur noch 'active'. */
+  status?: 'active';
   geburt?: string | null;
   telefon?: string | null;
   email?: string | null;
@@ -448,7 +449,6 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       ziel = await legeAkteAn({
         vorname: 'Petra',
         nachname: 'Zusammen',
-        status: 'inactive',
         geburt: '1971-12-05',
         telefon: '0221 222',
         besonderheit: 'Klingel defekt',
@@ -570,7 +570,8 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       });
     });
 
-    it('führt die Person wieder als aktiv (ANN-148)', async () => {
+    // B1 (ANN-510): Ohne Versorgungsstatus bleibt die Akte, wie sie ist - planbar.
+    it('führt die Person als aktiv, ohne Abschluss (ANN-148)', async () => {
       const { rows } = await asPostgres<{ status: string; care_concluded_on: string | null }>(
         'select status, care_concluded_on from public.patients where id = $1',
         [ziel.patient],
@@ -651,13 +652,13 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       const ziel = await legeAkteAn({ vorname: 'Anja', nachname: 'Abschluss' });
       const quelle = await legeAkteAn({ vorname: 'Anja', nachname: 'Abschluss' });
       await asPostgres(
-        `update public.patients set status = 'inactive', care_concluded_on = current_date - $2::int,
+        `update public.patients set care_concluded_on = current_date - $2::int,
                 care_concluded_at = now(), care_concluded_by = $3
           where id = $1`,
         [ziel.patient, 20, users.therapist],
       );
       await asPostgres(
-        `update public.patients set status = 'inactive', care_concluded_on = current_date - $2::int,
+        `update public.patients set care_concluded_on = current_date - $2::int,
                 care_concluded_at = now(), care_concluded_by = $3
           where id = $1`,
         [quelle.patient, 5, users.ownerTherapist],
@@ -668,7 +669,7 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
          from public.patients where id = $1`,
         [ziel.patient],
       );
-      expect(rows[0]).toEqual({ status: 'inactive', tage: 5, by: users.ownerTherapist });
+      expect(rows[0]).toEqual({ status: 'active', tage: 5, by: users.ownerTherapist });
     });
   });
 
