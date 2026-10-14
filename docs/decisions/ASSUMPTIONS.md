@@ -5162,3 +5162,39 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
 
+### ANN-525 — Die Einsicht in die Plattform einer Person hat nur owner
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rolle der Einsicht)
+
+**Annahme.** „So sieht … die Plattform“ (DSN-001 D7) darf nur `owner`; therapist, team_lead, office und trainer weist `platform_preview` mit `access.denied` ab.
+
+**Begründung.** Befund B11: „über meinen Zugang“. Später zu öffnen ist billig, eine weitere Rolle wäre neue Sichtbarkeit zwischen Rollen (ADR-013 Punkt 9). Gelesen wird wie in der Akte (ADR-023 Punkt 24).
+
+**Anker.** Rollenprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+
+**Änderungspfad.** Weitere Rolle im Verteiler und in `app.platform_preview_grant`, Knopf in `PlattformAbschnitt` · Aufwand `klein`.
+
+### ANN-526 — Eingesehen wird nur der eigene, aktive Zugang der Person
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Einsicht gibt es nur für den eigenen Zugang der Person im Zustand `active`; eingeladen, gesperrt, entzogen und fremde Organisation weist der Server gleich ab.
+
+**Begründung.** Nur ein aktiver Zugang zeigt der Person etwas (ADR-023 Punkt 18); gleiche Antworten verraten nicht, welcher Zustand vorliegt (§13).
+
+**Anker.** Zugangsprüfung in `public.platform_preview` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+
+**Änderungspfad.** Zustand `locked` zulassen und die Leiste „gesperrt“ zeigen lassen · Aufwand `klein`.
+
+### ANN-529 — Die Einsicht sperrt Schreibwege über eine nur lesende Transaktion
+
+Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Gibt der Wächter einen Zugang für die Einsicht frei, schaltet er die Transaktion auf `read only`; die Fähigkeiten (`can_write`, `can_answer` …) bleiben, wie die Person sie hat.
+
+**Begründung.** Ein Riegel für jeden Schreibweg, auch die nur mit Recht `read` und künftige (25006 im Test); `writable = false` änderte, was die Einsicht anzeigt.
+
+**Anker.** `app.platform_preview_grant` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
+
+**Änderungspfad.** Zusätzlich `app.platform_access_writable` und Schreibrechte in der Einsicht auf `false`, die Projektionen fragen dann einen eigenen Helfer · Aufwand `mittel`.
+
