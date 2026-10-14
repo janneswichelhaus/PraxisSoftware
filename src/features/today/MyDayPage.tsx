@@ -16,7 +16,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Zweispalter } from '@/components/ui/Zweispalter';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
-import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
@@ -29,7 +28,6 @@ import {
   staffName,
   todayInTimeZone,
   type CalendarEntry,
-  kalenderZumTermin,
   terminPfad,
 } from '@/features/appointments/api';
 import {
@@ -49,8 +47,8 @@ import { fetchAbrechnungslage, positionText } from '@/features/appointments/abre
 import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
 import { Tageskarte } from './Tagesliste';
-import { AnrufKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
-import { dokuZiel } from './besuchswege';
+import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuchsknoepfe';
+import { ausfallMoeglich, dokuZiel } from './besuchswege';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
 import { Zeitstrahl } from './Zeitstrahl';
@@ -510,6 +508,19 @@ function MeinTag({
   }
 
   /**
+   * „Ausfall“ an jeder Behandlung, die begonnen hat und keine Doku hat (B12,
+   * `ausfallMoeglich`) - an der Zeile, in der aufgeklappten Karte und an der
+   * Karte des nächsten Wegs. Nur für die Rollen der Terminverwaltung;
+   * verbindlich prüft der Server (`record_no_show`).
+   */
+  function ausfall(termin: DayPlanEntry, ort: 'zeile' | 'karte' | 'tuer'): ReactNode {
+    if (!darfTermine || !ausfallMoeglich(termin, jetzt)) return null;
+    return (
+      <AusfallKnopf termin={termin} ort={ort} melden={(text) => setMeldung({ ton: 'ok', text })} />
+    );
+  }
+
+  /**
    * Die Knöpfe einer Zeile (Leitfaden L3, Jannes 2026-10-06): „Doku" an jedem
    * Behandlungstermin, auch nach dem Abschließen und Festschreiben - erledigt
    * heißt nicht unerreichbar. Daneben der Haken, solange ein vorbeigegangener
@@ -601,6 +612,9 @@ function MeinTag({
         <Fragment key="haken">{haken(termin, 'normal', 'Behandlung abschließen')}</Fragment>
       ) : null,
     ]);
+    // Unter den Knöpfen: „Später da?“ vor dem Besuch, „Ausfall“ ab dem Beginn.
+    const spaeter = kommt && istHeute ? <SpaeterDa termin={termin} praxis={praxis} /> : null;
+    const ausfaelle = ausfall(termin, 'karte');
     return (
       <Tageskarte
         termin={termin}
@@ -619,7 +633,14 @@ function MeinTag({
             reihe
           )
         }
-        aktionen={kommt && istHeute ? <SpaeterDa termin={termin} praxis={praxis} /> : null}
+        aktionen={
+          spaeter || ausfaelle ? (
+            <>
+              {spaeter}
+              {ausfaelle}
+            </>
+          ) : null
+        }
         hinweis={kommt && fahrzeiten.veraltet.has(termin.id) ? VERALTET_TEXT : null}
         onZuklappen={() => umschalten(termin.id)}
       />
@@ -761,31 +782,15 @@ function MeinTag({
     }
 
     // Unter den Knöpfen, was je nach Phase dazukommt: „Später da?“ auf dem
-    // Weg, „Niemand öffnet?“ an der Tür ab dem Beginn (Auftrag C1, Analyse
-    // Rang 9) - derselbe Ablauf wie im Terminfenster, mit der Uhr.
-    const anDerTuer =
-      fokus.art === 'besuch' &&
-      phase !== 'wartet' &&
-      darfTermine &&
-      termin.kind === 'therapy' &&
-      termin.status === 'confirmed' &&
-      termin.appointment_type === 'home_visit';
+    // Weg, „Ausfall“ ab dem Beginn (Auftrag C1, Analyse Rang 9; B12) - am
+    // Hausbesuch derselbe Ablauf wie im Terminfenster, an der Tür mit der Uhr.
     // Eine Verspätung gibt es nur heute; an einem künftigen Tag wartet alles.
     const nebenaktionen =
       fokus.art !== 'besuch' || !istHeute ? null : phase === 'wartet' ? (
         <SpaeterDa termin={termin} praxis={praxis} />
-      ) : anDerTuer ? (
-        <HomeVisitFlow
-          appointment={termin}
-          mitUhr
-          inKarte
-          wege={{
-            ohneBehandlung: mitRueckweg(`/termine/${termin.id}/abschluss?ohne-behandlung=1`, '/'),
-            absagen: mitRueckweg(kalenderZumTermin(termin.id), '/'),
-          }}
-          melden={(text) => setMeldung({ ton: 'ok', text })}
-        />
-      ) : null;
+      ) : (
+        ausfall(termin, 'tuer')
+      );
 
     return (
       <Tageskarte
@@ -829,6 +834,7 @@ function MeinTag({
         veraltet={fahrzeiten.veraltet}
         karte={karte()}
         aktionen={zeilenAktionen}
+        ausfall={(termin) => ausfall(termin, 'zeile')}
         aufklappen={{
           offenId: offeneZeile,
           aufklappbar: (termin) =>

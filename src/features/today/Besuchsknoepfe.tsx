@@ -3,7 +3,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { symbolknopfKlassen, type SymbolGroesse } from '@/components/ui/buttonStile';
-import { fetchAppointment, reopenAppointment } from '@/features/appointments/api';
+import { mitRueckweg } from '@/lib/rueckweg';
+import {
+  fetchAppointment,
+  kalenderZumTermin,
+  reopenAppointment,
+} from '@/features/appointments/api';
+import { HomeVisitFlow, NichtAngetroffenOhneGebuehr } from '@/features/appointments/HomeVisitFlow';
 import type { DayPlanEntry } from './api';
 import {
   VERSPAETUNG_MINUTEN,
@@ -103,6 +109,57 @@ export function SpaeterDa({ termin, praxis }: { termin: DayPlanEntry; praxis: st
         </div>
       ) : null}
     </>
+  );
+}
+
+/**
+ * „Ausfall“ an Zeile und Karte der Übersicht (B12; wann, sagt
+ * `ausfallMoeglich`). Ein Name für dasselbe an jeder Stelle - auch an der
+ * Karte des nächsten Wegs, wo der Einstieg bis dahin „Niemand öffnet?“ hieß:
+ * Jannes nennt ihn „Ausfall“, er passt an jede Terminart und in die schmale
+ * Zeile, und das Feld darunter führt durch die Fälle (ADR-018 Punkt 9.3).
+ *
+ * Am Hausbesuch das Protokoll - geklingelt, 15 Minuten gewartet, angerufen;
+ * das Ausfallhonorar erst nach allen drei Haken -, an der Tür mit der Uhr
+ * (ANN-479). Am Praxis- und Videotermin die Bestätigung ohne Gebühr
+ * (ANN-055). An der Zeile leise, an der Karte mit Rahmen.
+ */
+export function AusfallKnopf({
+  termin,
+  ort,
+  melden,
+}: {
+  termin: DayPlanEntry;
+  /** `zeile` im Zeitstrahl, `karte` aufgeklappt, `tuer` an der Karte des nächsten Wegs. */
+  ort: 'zeile' | 'karte' | 'tuer';
+  melden: (text: string) => void;
+}) {
+  const inKarte = ort !== 'zeile';
+  const variante = ort === 'zeile' ? 'quiet' : 'secondary';
+  if (termin.appointment_type !== 'home_visit') {
+    return (
+      <NichtAngetroffenOhneGebuehr
+        appointment={termin}
+        ausloeser="Ausfall"
+        ausloeserVariante={variante}
+        inKarte={inKarte}
+        melden={melden}
+      />
+    );
+  }
+  return (
+    <HomeVisitFlow
+      appointment={termin}
+      ausloeser="Ausfall"
+      ausloeserVariante={variante}
+      mitUhr={ort === 'tuer'}
+      inKarte={inKarte}
+      wege={{
+        ohneBehandlung: mitRueckweg(`/termine/${termin.id}/abschluss?ohne-behandlung=1`, '/'),
+        absagen: mitRueckweg(kalenderZumTermin(termin.id), '/'),
+      }}
+      melden={melden}
+    />
   );
 }
 

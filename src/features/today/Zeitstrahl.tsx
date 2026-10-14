@@ -157,6 +157,7 @@ export function Zeitstrahl({
   veraltet,
   karte,
   aktionen,
+  ausfall,
   aufklappen,
   fruehereZusammenfassen = false,
 }: {
@@ -191,6 +192,13 @@ export function Zeitstrahl({
    * nicht in ihr - ein Knopf darf nicht in einem Link liegen.
    */
   aktionen?: (termin: DayPlanEntry) => ReactNode;
+  /**
+   * „Ausfall“ an der Zeile (B12) - vor „Doku“ und dem Haken. Weil drei
+   * Knöpfe neben Name und Ort am Telefon keinen Platz lassen, rücken die
+   * Knöpfe einer solchen Zeile dort unter Name und Ort, 12 px abgesetzt; das
+   * Feld, das „Ausfall“ öffnet, steht darunter über die ganze Breite.
+   */
+  ausfall?: (termin: DayPlanEntry) => ReactNode;
   /**
    * Zeilen, die in der Übersicht aufklappen, statt in den Kalender zu
    * springen (Auftrag C1, Analyse „Alltag unterwegs“ Rang 8): Die Zeile wird
@@ -312,6 +320,8 @@ export function Zeitstrahl({
           // Zeilen zu drücken.
           const zeilenKlassen =
             'hover:bg-surface rounded-button -ml-2 flex min-h-11 min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1 text-left transition-colors duration-120';
+          const ausfallKnopf = alsKarte ? null : (ausfall?.(termin) ?? null);
+          const zeilenZiel = ausfallKnopf ? `${zeilenKlassen} max-sm:basis-full` : zeilenKlassen;
 
           return (
             <Fragment key={termin.id}>
@@ -364,23 +374,30 @@ export function Zeitstrahl({
                     aufklappen?.karte(termin)
                   ) : (
                     // 12 px zwischen Zeile, „Doku“ und Haken (Praxis-Review R2,
-                    // P1): Der Haken schließt ab, ein Fehltipp darf ihn nicht treffen.
-                    <div className="flex items-center gap-3">
+                    // P1): Der Haken schließt ab, ein Fehltipp darf ihn nicht
+                    // treffen. Mit „Ausfall“ rücken die Knöpfe am Telefon unter
+                    // Name und Ort, rechtsbündig wie in jeder Zeile (B12).
+                    <div
+                      className={`flex items-center gap-3 ${
+                        ausfallKnopf ? 'flex-wrap justify-end' : ''
+                      }`.trim()}
+                    >
                       {aufklappbar ? (
                         <button
                           type="button"
                           data-zeile=""
                           aria-expanded={false}
                           onClick={() => aufklappen?.umschalten(termin.id)}
-                          className={zeilenKlassen}
+                          className={zeilenZiel}
                         >
                           {zeilenInhalt}
                         </button>
                       ) : (
-                        <Link to={ziel} className={zeilenKlassen}>
+                        <Link to={ziel} className={zeilenZiel}>
                           {zeilenInhalt}
                         </Link>
                       )}
+                      {ausfallKnopf}
                       {aktionen?.(termin)}
                     </div>
                   )}

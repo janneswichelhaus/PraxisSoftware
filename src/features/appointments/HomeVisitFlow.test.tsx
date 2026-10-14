@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as TodayApi from '@/features/today/api';
 import { renderWithProviders, testAppointment } from '@/test-utils';
-import { HomeVisitFlow } from './HomeVisitFlow';
+import { HomeVisitFlow, NichtAngetroffenOhneGebuehr } from './HomeVisitFlow';
 
 const recordNoShow = vi.fn();
 const fetchAppointment = vi.fn();
@@ -112,5 +113,103 @@ describe('HomeVisitFlow an der Karte der Übersicht (Auftrag C1)', () => {
     expect(screen.queryByText(/Dann oben/)).toBeNull();
     // Ohne `mitUhr` keine Uhr - so im Terminfenster.
     expect(screen.queryByRole('timer')).toBeNull();
+  });
+});
+
+describe('„Ausfall“ in der Übersicht (B12)', () => {
+  beforeEach(() => {
+    recordNoShow.mockReset();
+    recordNoShow.mockResolvedValue(undefined);
+    fetchAppointment.mockReset();
+    fetchAppointment.mockResolvedValue(termin);
+  });
+
+  it('heißt am Hausbesuch „Ausfall“, leise an der Zeile, und führt durch dasselbe Protokoll', () => {
+    renderWithProviders(
+      <HomeVisitFlow
+        appointment={ausDerUebersicht}
+        melden={() => undefined}
+        ausloeser="Ausfall"
+        ausloeserVariante="quiet"
+      />,
+    );
+    const knopf = screen.getByRole('button', { name: 'Ausfall' });
+    expect(knopf.className).not.toContain('border-line-strong');
+    expect(knopf).toHaveClass('min-h-11');
+    fireEvent.click(knopf);
+    const feld = screen.getByRole('region', { name: 'Ausfall' });
+    expect(feld).toHaveClass('w-full', 'order-last');
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+    fireEvent.click(screen.getByRole('button', { name: /nicht angetroffen/ }));
+    expect(screen.getByText('Bitte alle drei Schritte des Protokolls bestätigen.')).toBeVisible();
+    expect(recordNoShow).not.toHaveBeenCalled();
+  });
+
+  it('bestätigt am Praxistermin ohne Gebühr und liest den Stand unmittelbar vorher', async () => {
+    const melden = vi.fn();
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NichtAngetroffenOhneGebuehr
+        appointment={{
+          ...ausDerUebersicht,
+          patient_given_name: 'Erika',
+          patient_family_name: 'Beispiel',
+        }}
+        melden={melden}
+        ausloeser="Ausfall"
+      />,
+    );
+    const knopf = screen.getByRole('button', { name: 'Ausfall' });
+    expect(knopf).toHaveAttribute('aria-expanded', 'false');
+    expect(knopf).not.toHaveAttribute('aria-controls');
+    await user.click(knopf);
+
+    const feld = screen.getByRole('region', { name: 'Ausfall' });
+    expect(knopf).toHaveAttribute('aria-controls', feld.id);
+    expect(feld).toHaveTextContent(
+      /für Erika Beispiel wird als „nicht angetroffen“ geführt\. Der Zeitraum bleibt belegt\./,
+    );
+    // Kein Protokoll, keine Forderung (ANN-055).
+    expect(screen.queryByRole('checkbox')).toBeNull();
+    expect(feld).not.toHaveTextContent(/Ausfallhonorar/);
+    const ja = screen.getByRole('button', { name: 'Ja, niemand angetroffen' });
+    expect(ja).toHaveFocus();
+
+    await user.click(ja);
+    await vi.waitFor(() =>
+      expect(recordNoShow).toHaveBeenCalledWith(termin.id, termin.updated_at, false),
+    );
+    expect(fetchAppointment).toHaveBeenCalledWith(termin.id);
+    await vi.waitFor(() =>
+      expect(melden).toHaveBeenCalledWith('Als „nicht angetroffen“ vermerkt.'),
+    );
+    expect(screen.queryByRole('region', { name: 'Ausfall' })).toBeNull();
+  });
+
+  it('zeigt einen abgewiesenen Vermerk im Feld und lässt es offen', async () => {
+    recordNoShow.mockRejectedValue(new Error('Der Termin wurde inzwischen geändert.'));
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NichtAngetroffenOhneGebuehr
+        appointment={{
+          ...ausDerUebersicht,
+          patient_given_name: 'Erika',
+          patient_family_name: 'Beispiel',
+          updated_at: '2026-10-01T06:00:00Z',
+        }}
+        melden={() => undefined}
+        inKarte
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
+    const feld = screen.getByRole('region', { name: 'Nicht angetroffen' });
+    // In einer Karte durch eine Linie abgesetzt, kein zweiter Kasten.
+    expect(feld).toHaveClass('border-t');
+    await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+    expect(await screen.findByText('Der Termin wurde inzwischen geändert.')).toBeInTheDocument();
+    // Der bekannte Stand wird genommen, ohne nachzulesen.
+    expect(fetchAppointment).not.toHaveBeenCalled();
+    expect(recordNoShow).toHaveBeenCalledWith(termin.id, '2026-10-01T06:00:00Z', false);
+    expect(screen.getByRole('region', { name: 'Nicht angetroffen' })).toBeInTheDocument();
   });
 });

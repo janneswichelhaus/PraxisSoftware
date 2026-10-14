@@ -5173,3 +5173,15 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `weg` in `src/features/today/Tagesliste.tsx`.
 
 **Änderungspfad.** Balken über die Karte wie über die Zeilen, Platz anderswo sparen · Aufwand `klein`.
+
+### ANN-533 — „Ausfall“ ab Beginn des Termins und nur ohne Doku
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+
+**Annahme.** „Ausfall“ steht in der Übersicht an jeder Behandlung, die begonnen hat, bestätigt ist und keine Doku hat, auch keinen Entwurf: an der Zeile, aufgeklappt und an der Karte des nächsten Wegs (dort statt „Niemand öffnet?“, auch am Praxistermin). Hausbesuch: Protokoll, Gebühr erst nach drei Haken; Praxis und Video: Bestätigung ohne Gebühr.
+
+**Begründung.** B12. Vor dem Beginn ist ein Ausfall nicht feststellbar, mit Doku weist `record_no_show` ab. Ein Name für dasselbe; am Telefon rücken die Knöpfe unter Name und Ort.
+
+**Anker.** `ausfallMoeglich` in `src/features/today/besuchswege.ts`.
+
+**Änderungspfad.** Bedingungen in `ausfallMoeglich` ändern · Aufwand `klein`.

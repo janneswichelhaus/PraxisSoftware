@@ -375,6 +375,42 @@ describe('Zeitstrahl', () => {
   });
 });
 
+describe('Zeitstrahl: „Ausfall“ an der Zeile (B12)', () => {
+  it('stellt „Ausfall“ vor die Knöpfe der Zeile und lässt sie am Telefon unter Name und Ort rücken', () => {
+    zeichne({
+      plan: [erika, max, petra],
+      fokusId: 'b',
+      jetzt: zeitpunkt('07:40'),
+      aktionen: (termin) => <a href={`/doku/${termin.id}`}>Doku</a>,
+      ausfall: (termin) =>
+        termin.id === 'a' ? (
+          <button type="button">Ausfall</button>
+        ) : termin.id === 'b' ? (
+          <button type="button">Ausfall an der Karte</button>
+        ) : null,
+    });
+
+    const zeile = screen.getByRole('link', { name: /Test Erika/ });
+    const reihe = zeile.parentElement!;
+    const ausfall = within(reihe).getByRole('button', { name: 'Ausfall' });
+    // Vor „Doku“, 12 px auseinander, rechtsbündig; am Telefon nimmt die Zeile
+    // die erste Reihe ganz, die Knöpfe stehen darunter.
+    expect(
+      ausfall.compareDocumentPosition(within(reihe).getByRole('link', { name: 'Doku' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(reihe).toHaveClass('flex', 'flex-wrap', 'justify-end', 'gap-3');
+    expect(zeile).toHaveClass('max-sm:basis-full', 'min-h-11');
+
+    // Eine Zeile ohne „Ausfall“ bleibt, wie sie war.
+    const ohne = screen.getByRole('link', { name: /Test Petra/ });
+    expect(ohne.parentElement).not.toHaveClass('flex-wrap');
+    expect(ohne).not.toHaveClass('max-sm:basis-full');
+    // Die Karte trägt ihre Knöpfe selbst - der Zeitstrahl hängt keinen an.
+    expect(screen.queryByRole('button', { name: 'Ausfall an der Karte' })).toBeNull();
+  });
+});
+
 describe('Zeitstrahl: schlanke Zeilen (Jannes, 2026-10-11)', () => {
   it('nennt die Liege an einem ausstehenden Hausbesuch, nicht am Praxistermin', () => {
     const mitLiege = eintrag({
