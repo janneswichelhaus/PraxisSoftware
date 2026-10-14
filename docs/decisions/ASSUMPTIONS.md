@@ -5162,3 +5162,38 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
 
+### ANN-522 — Diktat: vier Abschnitte der Vorlage, Leeres entfällt
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)
+
+**Annahme.** Ein Diktat wird in „Angaben der Patient:in“, „Befund“, „Behandlung“ und „Plan“ eingeordnet, in dieser Reihenfolge; was nicht vorkommt, entfällt. Im Feld steht je Abschnitt der Titel in einer Zeile, darunter der Text, dazwischen eine Leerzeile.
+
+**Begründung.** §6.3 verlangt, die Aussage der Patient:in von der eigenen Beobachtung zu trennen; eine Vorlage gibt es noch nicht (ADR-016 lässt die Struktur offen). Die Form folgt dem Befund aus Bausteinen (ANN-130).
+
+**Anker.** `DIKTAT_ABSCHNITTE` in `src/lib/ki/gateway.ts`; die Kopie in `supabase/functions/ai-gateway/zwecke.ts` hält `vertrag.test.ts`.
+
+**Änderungspfad.** Andere Abschnitte: beide Listen und die Signalwörter der Nachbildung · Aufwand `klein`.
+
+### ANN-523 — Diktat: höchstens fünf Minuten und 10 MB je Aufnahme
+
+Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Eine Aufnahme endet nach fünf Minuten von selbst; der Gateway nimmt höchstens 300 s und 10 MB an. Aufgenommen wird mit 64 kbit/s (fünf Minuten etwa 2,4 MB) in einem Format, das `MediaRecorder` liefert.
+
+**Begründung.** §6.3 verlangt ein bewusst gestartetes Nachdiktat und schließt fortlaufende Aufnahme aus; die Frist macht das zur festen Grenze. 10 MB ist die Grenze der Anhänge (ADR-017 Punkt 63).
+
+**Anker.** `DIKTAT_HOECHSTDAUER_S` und `DIKTAT_HOECHSTBYTES` in `src/lib/ki/gateway.ts`; die Kopie in `zwecke.ts` des Gateways hält `vertrag.test.ts`.
+
+**Änderungspfad.** Andere Grenze: beide Stellen · Aufwand `klein`.
+
+### ANN-524 — AI Gateway: Anbieter nur per Secret, ohne stillen Rückfall
+
+Technik · offen · 2026-10-14 · — · — · Wiedervorlage: Anbieterentscheidung (C6)
+
+**Annahme.** Der Gateway wählt den Adapter nur über `AI_PROVIDER`; heute gibt es nur `mock`. Jeder andere oder fehlende Wert heißt „nicht eingerichtet“, nie die Nachbildung; ohne `APP_ENVIRONMENT` oder in der Produktion antwortet auch `mock` nicht. Ein echter Adapter wird nicht vorgebaut.
+
+**Begründung.** ADR-005 Punkte 5 und 8: Mock bis zur Providerentscheidung, Produktion erst nach Prüfung. Dieselbe Regel wie beim Kartendienst (ANN-090, ANN-094).
+
+**Anker.** Fehlertext `not_configured` in `src/lib/ki/gateway.ts`; die Wahl in `richteEin` in `supabase/functions/ai-gateway/auswahl.ts`.
+
+**Änderungspfad.** Anbieter nach C6: Adapter, Wert in `richteEin`, Eintrag in der Zweckliste · Aufwand `mittel`.

@@ -120,7 +120,16 @@ Grenzen:
   echte API, RLS entscheidet. Keine Bildtransformation, kein TUS/S3, keine Bucket-Verwaltung.
 - **Kein Mailversand:** GoTrue ohne SMTP meldet Erfolg, die Mail verfällt. Kein Realtime, kein
   Studio, kein `pg_cron`; PostgreSQL 16 statt 17 wie im Docker-Stack. Edge Functions ohne `supabase/functions/.env.local` nur mit dem
-  Kartendienst als Nachbildung.
+  Kartendienst und dem AI Gateway als Nachbildung.
+
+**AI Gateway lokal (KI-EPIC-001).** Das Diktat der Schreibseite geht an die Edge Function
+`ai-gateway`; bis zur Anbieterentscheidung (C6, E13) antwortet nur die Nachbildung mit einem festen
+synthetischen Diktat, gleich was gesprochen wird. Der Cloud-Stack setzt dafür ohne eigene Datei
+`AI_PROVIDER=mock` und `APP_ENVIRONMENT=development`; wer `supabase/functions/.env.local` pflegt
+(ungetrackt), trägt beide Zeilen dort ein. Fehlt `AI_PROVIDER`, meldet die Schreibseite „nicht
+eingerichtet"; fehlt `APP_ENVIRONMENT`, gilt die Produktion, und dort antwortet die Nachbildung nicht.
+Das Mikrofon braucht `localhost` oder HTTPS. Die Test-Umgebung sperrt es per Permissions-Policy
+(ADR-017 Punkt 33), dort bleibt die Spracheingabe aus.
 - Vor E2E-Läufen `reset` ohne `--reich`: Die Tests zählen auf den schlanken Seed. Port 54329 bleibt
   `pnpm test:db`; `TEST_DATABASE_URL` nie auf 54339 richten. Die Werte stehen in
   `.env.development.local`, nicht in `.env.local`: Die liest auch Vitest, und mit echten Werten

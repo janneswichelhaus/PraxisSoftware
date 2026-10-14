@@ -80,6 +80,8 @@ describe('gateway.mjs: supabase/config.toml', () => {
   it('kennt verify_jwt jeder Edge Function', () => {
     expect(konfiguration.verifyJwtByFunction.get('location-provider')).toBe(true);
     expect(konfiguration.verifyJwtByFunction.get('platform-access')).toBe(false);
+    // KI-EPIC-001: Das AI Gateway nimmt nur angemeldete Aufrufe an.
+    expect(konfiguration.verifyJwtByFunction.get('ai-gateway')).toBe(true);
   });
 
   it('liest die Groessengrenze der Storage-API', () => {
