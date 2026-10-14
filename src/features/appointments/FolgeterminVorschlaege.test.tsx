@@ -412,28 +412,39 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     );
   });
 
-  it('nimmt nichts zurück, was inzwischen anders dasteht', async () => {
+  it('überlässt die Frage „inzwischen geändert?“ dem Server und zeigt seine Antwort', async () => {
     fetchAppointment.mockRejectedValueOnce(new Error('Failed to fetch'));
     const user = userEvent.setup();
     rendern();
     const [erste] = await zeilen(3);
     await user.click(erste!);
     await screen.findByText(/Folgetermin angelegt:/);
-    // Jemand hat ihn verschoben: zwei Stunden später.
+    // Jemand hat inzwischen das Ende geändert - Tag und Beginn sind gleich.
+    // Den neuen Stand weist der Server ab (`updated_at = created_at`,
+    // supabase/tests/appointment-undo.test.ts).
     fetchAppointment.mockResolvedValueOnce(
       testAppointment({
         id: 'neu-1',
         status: 'confirmed',
-        starts_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN) + 120, ZONE),
-        ends_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN) + 180, ZONE),
+        starts_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN), ZONE),
+        ends_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN) + 90, ZONE),
+        updated_at: '2026-10-14T07:31:00.000000+00:00',
         organization_time_zone: ZONE,
       }),
+    );
+    undoAppointmentCreation.mockRejectedValueOnce(
+      new Error('Der Termin wurde inzwischen geändert. Bitte im Kalender ansehen.'),
     );
     await user.click(screen.getByRole('button', { name: /^Rückgängig/ }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Der Termin wurde inzwischen geändert.',
     );
-    expect(undoAppointmentCreation).not.toHaveBeenCalled();
+    expect(undoAppointmentCreation).toHaveBeenCalledWith(
+      'neu-1',
+      '2026-10-14T07:31:00.000000+00:00',
+    );
+    expect(screen.getByText(/Folgetermin angelegt:/)).toBeInTheDocument();
+    expect(screen.queryByText('Folgetermin zurückgenommen.')).toBeNull();
   });
 
   it('sagt, was der Server einwendet, und legt nichts still an', async () => {

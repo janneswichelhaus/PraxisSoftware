@@ -9,10 +9,12 @@
 --
 -- ANN-534: Zuruecknehmen darf nur, wer angelegt hat, mit einer Rolle der
 -- Terminverwaltung, in derselben Organisation und hoechstens 15 Minuten nach
--- dem Anlegen. Es entsteht keine Auditaktion (ADR-010 Punkte 16 und 17,
--- supabase/audit-aktionen.txt bleibt): Der Termin war nie wirksam. Damit er
--- nach einer Wiederherstellung nicht zurueckkehrt, steht er im Loeschjournal
--- (ADR-008 Punkt 8) - Tabelle und Kennung, kein Inhalt, keine Person.
+-- dem Anlegen - und nur einen Termin, den seitdem niemand geaendert hat
+-- (updated_at = created_at). Es entsteht keine Auditaktion (ADR-010 Punkte
+-- 16 und 17, supabase/audit-aktionen.txt bleibt): Der Termin war nie
+-- wirksam. Damit er nach einer Wiederherstellung nicht zurueckkehrt, steht er
+-- im Loeschjournal (ADR-008 Punkt 8) - Tabelle und Kennung, kein Inhalt,
+-- keine Person.
 --
 -- Wirksam geworden ist er, sobald etwas an ihm haengt. Die Fremdschluessel
 -- auf public.appointments (Stand dieser Migration, aus pg_constraint):
@@ -91,7 +93,13 @@ begin
     raise exception 'undo window has passed' using errcode = '22023';
   end if;
 
-  if v_termin.updated_at is distinct from p_expected_updated_at then
+  -- Der Stand, den die Aufrufende kennt, und kein geaenderter: Die
+  -- Schreibwege am Termin setzen updated_at neu, create_appointment legt ihn
+  -- gleich created_at an. So greift die Pruefung auch, wenn der Stand erst
+  -- jetzt gelesen wurde - eine neue Person, ein anderer Ort oder ein anderes
+  -- Ende fallen nicht still mit dem Termin.
+  if v_termin.updated_at is distinct from p_expected_updated_at
+     or v_termin.updated_at is distinct from v_termin.created_at then
     raise exception 'appointment was changed meanwhile' using errcode = '40001';
   end if;
 
@@ -169,7 +177,7 @@ end;
 $$;
 
 comment on function public.undo_appointment_creation(uuid, timestamptz) is
-  'O-001 (B8, ANN-534): nimmt einen eben angelegten Behandlungstermin zurueck und loescht ihn - nur die anlegende Person mit Rolle der Terminverwaltung, hoechstens 15 Minuten nach dem Anlegen, noch geplant, mit passendem updated_at, ohne Doku, Entwurf, Leistung, Honorar, Anrufstand, Warteliste, Plattformwunsch, Serie und ohne Mitteilung. Offene Zustellauftraege fallen mit. Kein Auditeintrag; im Loeschjournal (ADR-008 Punkt 8).';
+  'O-001 (B8, ANN-534): nimmt einen eben angelegten Behandlungstermin zurueck und loescht ihn - nur die anlegende Person mit Rolle der Terminverwaltung, hoechstens 15 Minuten nach dem Anlegen, noch geplant, seitdem unveraendert (updated_at = created_at, passend zum erwarteten Stand), ohne Doku, Entwurf, Leistung, Honorar, Anrufstand, Warteliste, Plattformwunsch, Serie und ohne Mitteilung. Offene Zustellauftraege fallen mit. Kein Auditeintrag; im Loeschjournal (ADR-008 Punkt 8).';
 
 revoke all on function public.undo_appointment_creation(uuid, timestamptz) from public, anon;
 grant execute on function public.undo_appointment_creation(uuid, timestamptz) to authenticated;

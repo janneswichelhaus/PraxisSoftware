@@ -62,6 +62,21 @@ async function anlegen(userId: string): Promise<Angelegt> {
   return { id, stand: await stand(id) };
 }
 
+/**
+ * Als wäre der Termin vor `minuten` Minuten angelegt: Anlegen und Stand
+ * rücken gemeinsam zurück, wie `create_appointment` sie setzt.
+ */
+async function angelegtVor(termin: Angelegt, minuten: number): Promise<Angelegt> {
+  await asPostgres(
+    `update public.appointments
+        set created_at = now() - make_interval(mins => $2),
+            updated_at = now() - make_interval(mins => $2)
+      where id = $1`,
+    [termin.id, minuten],
+  );
+  return { id: termin.id, stand: await stand(termin.id) };
+}
+
 async function gibtEs(id: string): Promise<boolean> {
   const { rows } = await asPostgres('select 1 from public.appointments where id = $1', [id]);
   return rows.length === 1;
@@ -143,11 +158,7 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
     });
 
     it('geht nach 14 Minuten noch', async () => {
-      const termin = await anlegen(users.therapist);
-      await asPostgres(
-        "update public.appointments set created_at = now() - interval '14 minutes' where id = $1",
-        [termin.id],
-      );
+      const termin = await angelegtVor(await anlegen(users.therapist), 14);
       await zuruecknehmenBestaetigt(users.therapist, termin);
       expect(await gibtEs(termin.id)).toBe(false);
     });
@@ -242,11 +253,7 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
 
   describe('wann es nicht mehr geht', () => {
     it('weist nach 15 Minuten ab', async () => {
-      const termin = await anlegen(users.therapist);
-      await asPostgres(
-        "update public.appointments set created_at = now() - interval '16 minutes' where id = $1",
-        [termin.id],
-      );
+      const termin = await angelegtVor(await anlegen(users.therapist), 16);
       await expect(zuruecknehmen(users.therapist, termin)).rejects.toThrow(
         /undo window has passed/,
       );
@@ -282,6 +289,33 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
         /appointment was changed meanwhile/,
       );
       expect(await gibtEs(termin.id)).toBe(true);
+    });
+
+    it('weist einen geänderten Termin auch mit seinem neuen Stand ab (Tag und Beginn gleich)', async () => {
+      // So fragt die Oberfläche, wenn sie den Stand nach dem Anlegen nicht
+      // lesen konnte: Sie liest ihn erst beim Zurücknehmen. Eine Änderung
+      // dazwischen - hier das Ende - darf nicht still mit dem Termin fallen.
+      const tag = naechsterTag();
+      const { rows } = await asUserCommitted<{ id: string }>(users.therapist, ANLEGEN, [
+        patients.erika,
+        ANNA,
+        tag,
+        '09:00',
+        '10:00',
+      ]);
+      const id = rows[0]!.id;
+      await asUserCommitted(
+        users.office,
+        `select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, 'video', $4::date,
+                '09:00'::time, '10:30'::time, null, true)`,
+        [id, await stand(id), ANNA, tag],
+      );
+      const neu = { id, stand: await stand(id) };
+
+      await expect(zuruecknehmen(users.therapist, neu)).rejects.toThrow(
+        /appointment was changed meanwhile/,
+      );
+      expect(await gibtEs(id)).toBe(true);
     });
 
     it.each([

@@ -5166,13 +5166,13 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
 
-**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant ist und nichts an ihm hängt (Doku, Entwurf, Leistung, Mitteilung, Warteliste, Wunsch, Serie). Offene Zustellaufträge fallen mit. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung.
+**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert (`updated_at = created_at`) und nichts an ihm hängt (Doku, Entwurf, Leistung, Mitteilung, Warteliste, Wunsch, Serie). Offene Zustellaufträge fallen mit. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung (`termin_ohne_nachweis`).
 
-**Begründung.** Der Termin war nie wirksam; eine Absage meldete „Termin abgesagt“ (KOM-009). Nachweis ist, was gilt (ADR-010 Punkt 15); ein Restore zieht nach (ADR-008 Punkt 8).
+**Begründung.** Nie wirksam; eine Absage meldete „Termin abgesagt“ (KOM-009). Nachweis ist, was gilt (ADR-010 Punkt 15); ein Restore zieht nach (ADR-008 Punkt 8).
 
-**Anker.** `public.undo_appointment_creation`, `supabase/migrations/20261115100000_o_001_termin_anlegen_zuruecknehmen.sql`.
+**Anker.** `public.undo_appointment_creation` (Migration `o_001`).
 
-**Änderungspfad.** Anderes Fenster: Intervall in der Funktion · Aufwand `klein`. Spur: Auditaktion mit ADR-010-Änderung und Freigabe · Aufwand `klein`.
+**Änderungspfad.** Fenster: Intervall in der Funktion · Aufwand `klein`. Spur: Auditaktion mit ADR-010-Änderung und Freigabe · Aufwand `klein`.
 
 ### ANN-535 — Folgeterminvorschläge: zu knapp fällt weg, ungeprüft bleibt
 

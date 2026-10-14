@@ -326,22 +326,16 @@ export function FolgeterminVorschlaege({
     },
   });
 
-  // Zurücknehmen prüft der Server ganz (Person, Zeit, Zustand, was daran
-  // hängt). Ließ sich der Stand nach dem Anlegen nicht lesen, wird er jetzt
-  // gelesen - aber nur ein Termin, der noch so dasteht wie angelegt.
+  // Zurücknehmen prüft der Server ganz: Person, Zeit, Zustand, was daran
+  // hängt - und dass seit dem Anlegen niemand den Termin geändert hat
+  // (`updated_at = created_at`). Ließ sich der Stand nach dem Anlegen nicht
+  // lesen, wird er deshalb jetzt gelesen und genauso geprüft.
   const zuruecknehmen = useMutation({
     mutationFn: async (termin: Angelegt) => {
       let stand = termin.stand;
       if (stand === null) {
         const jetzt = await fetchAppointment(termin.id);
         if (!jetzt) throw new Error('Den Termin gibt es nicht mehr.');
-        if (
-          jetzt.status !== 'confirmed' ||
-          dayKey(jetzt.starts_at, zone) !== termin.slot.slot_date ||
-          formatLocalTime(jetzt.starts_at, zone) !== termin.slot.start_time
-        ) {
-          throw new Error('Der Termin wurde inzwischen geändert. Bitte im Kalender ansehen.');
-        }
         stand = jetzt.updated_at;
       }
       await undoAppointmentCreation(termin.id, stand);
