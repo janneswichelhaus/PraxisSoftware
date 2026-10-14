@@ -1,4 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
+import { Chip } from '@/components/ui/Chip';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Select } from '@/components/ui/Select';
@@ -363,7 +365,16 @@ function WiederOeffnen({
  * Es ist ausdrücklich keine Löschung: der Termin bleibt erhalten. Die
  * Beschriftung vermeidet deshalb jede Löschsprache.
  */
-function AbsageAktion({ appointment, melden }: { appointment: Appointment; melden: Melden }) {
+export function AbsageAktion({
+  appointment,
+  melden,
+  kompakt = false,
+}: {
+  appointment: Appointment;
+  melden: Melden;
+  /** Im Terminpanel des Kalenders: Auslöser in Zeilengröße (K9, ANN-500). */
+  kompakt?: boolean;
+}) {
   const queryClient = useQueryClient();
   // Ein Ereignis sagt keine Patient:in ab: Es gibt keine, es gibt keinen
   // Behandlungsbeginn, auf den sich eine Frist bezöge, und der Server setzt
@@ -373,6 +384,7 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
   const istEreignis = appointment.kind === 'internal';
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
+  const grundFehlerId = useId();
   // Der Eingang: „jetzt" ist der Regelfall am Telefon, „früher" die
   // nachträgliche Erfassung. Vorbelegt ist „jetzt" - das ist keine stille
   // Annahme, sondern der Augenblick, in dem gerade jemand absagt (ANN-048).
@@ -445,6 +457,7 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
       // Leise am Seitenende (Design-Handoff 2026-10-01, Abschnitt 6): Die
       // Absage ist selten, und die Rückfrage danach bleibt.
       ausloeserVariante="quiet"
+      ausloeserGroesse={kompakt ? 'kompakt' : 'normal'}
       bezeichnung={istEreignis ? 'Teilnahme absagen' : 'Termin absagen'}
       bestaetigen={istEreignis ? 'Ja, Teilnahme absagen' : 'Ja, Termin absagen'}
       bestaetigenLaeuft="Wird abgesagt …"
@@ -462,37 +475,48 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
         {istEreignis ? ' ' : ` für ${patientName(appointment)} `}
         wird als abgesagt geführt.{' '}
         {istEreignis ? 'Die Fehlzeit selbst bleibt für die übrigen Beteiligten bestehen. ' : ''}
-        Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage
-        lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.
+        {/* Im Panel nur das, was die Entscheidung trägt (K9, Design-Review). */}
+        {kompakt
+          ? 'Eine Absage lässt sich nicht zurücknehmen.'
+          : 'Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.'}
       </p>
-      {/* Grund und Eingang nebeneinander, sobald zwei Spalten von je 220 px
-          passen (Design-Handoff 2026-10-01, Abschnitt 6). */}
-      <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,220px),1fr))] items-start gap-3">
-        <Select
-          label="Absagegrund"
-          value={grund}
-          error={grundFehler}
-          onChange={(e) => {
-            setGrund(e.target.value);
-            setGrundFehler(undefined);
-          }}
-        >
-          <option value="">Bitte wählen …</option>
+      {/* Der Grund als eine Reihe Chips (K9, ANN-500): ein Tipp statt Liste
+          öffnen und wählen. Weiterhin ohne Vorbelegung (ANN-034). */}
+      <fieldset
+        className="mt-3"
+        aria-describedby={grundFehler ? grundFehlerId : undefined}
+        aria-invalid={grundFehler ? true : undefined}
+      >
+        <legend className="text-ink mb-2 text-sm font-semibold">Absagegrund</legend>
+        <div className="flex flex-wrap gap-2">
           {waehlbareAbsagegruende(istEreignis).map(([wert, beschriftung]) => (
-            <option key={wert} value={wert}>
+            <Chip
+              key={wert}
+              gewaehlt={grund === wert}
+              onClick={() => {
+                setGrund(wert);
+                setGrundFehler(undefined);
+              }}
+            >
               {beschriftung}
-            </option>
+            </Chip>
           ))}
-        </Select>
+        </div>
+        {grundFehler ? (
+          <p id={grundFehlerId} role="alert" className="text-danger mt-1.5 text-sm font-semibold">
+            {grundFehler}
+          </p>
+        ) : null}
+      </fieldset>
+      {/* Der Eingang, getrennt vom Zeitpunkt der Eingabe (§8, ADR-018
+          Fassung 2 Punkt 8). Der Anruf kommt abends aufs Band, eingetragen
+          wird am nächsten Morgen - ohne diese Angabe entschiede die
+          Schreibgeschwindigkeit des Büros über eine Forderung.
 
-        {/* Der Eingang, getrennt vom Zeitpunkt der Eingabe (§8, ADR-018
-            Fassung 2 Punkt 8). Der Anruf kommt abends aufs Band, eingetragen
-            wird am nächsten Morgen - ohne diese Angabe entschiede die
-            Schreibgeschwindigkeit des Büros über eine Forderung.
-
-            Am Ereignis entfällt die Frage: Es gibt keine Frist, die vom Eingang
-            abhinge (CAL-016). */}
-        {istEreignis ? null : (
+          Am Ereignis entfällt die Frage: Es gibt keine Frist, die vom Eingang
+          abhinge (CAL-016). */}
+      {istEreignis ? null : (
+        <div className="mt-3 max-w-sm">
           <Select
             label="Wann ist die Absage eingegangen?"
             value={eingang}
@@ -505,8 +529,8 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
             <option value="jetzt">Gerade eben</option>
             <option value="frueher">Früher – jetzt erst eingetragen</option>
           </Select>
-        )}
-      </div>
+        </div>
+      )}
 
       {!istEreignis && eingang === 'frueher' ? (
         <div className="mt-3 flex max-w-sm flex-wrap gap-3">
@@ -543,11 +567,12 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
           die absagen könnte.
         </p>
       ) : (
-        <p className="text-ink-muted mt-3 text-sm">
+        // Die Regel zum Ausfallhonorar ist ein Rechtssatz (DESIGN.md Regel 6).
+        <Kleingedrucktes className="mt-3">
           Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt
           oder verlegt, merkt die Anwendung ein Ausfallhonorar vor. Die Frist wird automatisch
           berechnet; genau 24 Stunden vorher gilt noch als rechtzeitig.
-        </p>
+        </Kleingedrucktes>
       )}
     </Rueckfrage>
   );

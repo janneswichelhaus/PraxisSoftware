@@ -12,6 +12,7 @@ import type * as LeistungenApi from '@/features/appointments/leistungenAmTermin'
 import type * as RouterModul from 'react-router-dom';
 import type * as KiGateway from '@/lib/ki/gateway';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import type * as KurzblickApi from '@/features/appointments/kurzblick-api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { KI_FEHLERTEXTE } from '@/lib/ki/gateway';
 import {
@@ -71,6 +72,13 @@ const findFreeSlots = vi.fn();
 const fetchLeistungenAmTermin = vi.fn();
 const fetchVorschlag = vi.fn();
 const recordLeistungen = vi.fn();
+// K6: „Wie zuletzt" liest über den Kurzblick (ANN-502).
+const fetchKurzblick = vi.fn();
+
+vi.mock('@/features/appointments/kurzblick-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof KurzblickApi>()),
+  fetchKurzblick: (id: string) => fetchKurzblick(id) as Promise<unknown>,
+}));
 
 vi.mock('@/features/slot-search/api', async (importOriginal) => ({
   ...(await importOriginal<typeof SlotApi>()),
@@ -215,6 +223,7 @@ describe('CompleteTreatmentPage', () => {
     fetchLeistungenAmTermin.mockReset();
     fetchVorschlag.mockReset();
     recordLeistungen.mockReset();
+    fetchKurzblick.mockReset();
   });
 
   it('ist eine Schreibfläche: Name im Kopf, Feld, Fußleiste mit Entwurf und Festschreiben (Handoff 6a)', async () => {
@@ -672,6 +681,110 @@ describe('CompleteTreatmentPage', () => {
       await fertigNachDanach(user);
       expect(navigate).toHaveBeenCalled();
       expect(screen.queryByText(/inzwischen finalisiert/)).toBeNull();
+    });
+  });
+
+  describe('K6: Wie zuletzt (ANN-502)', () => {
+    const blick = {
+      appointment_id: TERMIN_ID,
+      patient_id: 'p1',
+      home_visit_access_note: null,
+      special_note: null,
+      take_along_items: [],
+      primary_therapist_name: null,
+      treatment_basis_id: null,
+      treatment_basis_kind: null,
+      treatment_basis_issued_on: null,
+      basis_appointment_count: null,
+      basis_used: null,
+      basis_planned: null,
+      basis_items: null,
+      last_note_id: 'n0',
+      last_note_appointment_start: '2027-05-05T07:00:00.000Z',
+      last_note_status: 'final' as const,
+      last_note_content: 'MT LWS, Gangschule 10 min, Heimprogramm wiederholt.',
+      last_note_visit_without_treatment: false,
+      last_note_author_name: 'Anna Beispiel',
+      organization_time_zone: 'Europe/Berlin',
+    };
+
+    it('liest erst auf den Tipp und schreibt mit zwei Tipps fest', async () => {
+      const user = userEvent.setup();
+      fetchKurzblick.mockResolvedValue(blick);
+      rendern();
+
+      const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+      // Kein Lesen klinischer Einträge ohne Handlung (ANN-200).
+      expect(fetchKurzblick).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Wie zuletzt' }));
+      expect(fetchKurzblick).toHaveBeenCalledWith(TERMIN_ID);
+      await waitFor(() =>
+        expect(feld).toHaveValue('MT LWS, Gangschule 10 min, Heimprogramm wiederholt.'),
+      );
+      expect(screen.getByText('„Eintrag vom 05.05.2027“ am Ende eingefügt.')).toBeInTheDocument();
+
+      // Angepasst wird von Hand, festgeschrieben wird ausdrücklich.
+      await user.type(feld, ' Heute Treppe.');
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          'MT LWS, Gangschule 10 min, Heimprogramm wiederholt. Heute Treppe.',
+          termin.updated_at,
+          null,
+          false,
+        ),
+      );
+    });
+
+    it('nimmt die Übernahme mit „Rückgängig" zurück', async () => {
+      const user = userEvent.setup();
+      fetchKurzblick.mockResolvedValue(blick);
+      rendern();
+
+      const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+      await user.type(feld, 'Eigener Satz.');
+      await user.click(screen.getByRole('button', { name: 'Wie zuletzt' }));
+      await waitFor(() =>
+        expect(feld).toHaveValue(
+          'Eigener Satz.\n\nMT LWS, Gangschule 10 min, Heimprogramm wiederholt.',
+        ),
+      );
+      await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
+      expect(feld).toHaveValue('Eigener Satz.');
+    });
+
+    it('sagt, wenn es nichts zu übernehmen gibt, und fügt nichts ein', async () => {
+      const user = userEvent.setup();
+      fetchKurzblick.mockResolvedValue({
+        ...blick,
+        last_note_content: 'Tür geöffnet, nicht behandelt.',
+        last_note_visit_without_treatment: true,
+      });
+      rendern();
+
+      const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+      await user.click(screen.getByRole('button', { name: 'Wie zuletzt' }));
+      expect(
+        await screen.findByText('Der letzte Eintrag ist ein Vermerk ohne Behandlung.'),
+      ).toBeInTheDocument();
+      expect(feld).toHaveValue('');
+
+      fetchKurzblick.mockResolvedValue({
+        ...blick,
+        last_note_content: null,
+        last_note_appointment_start: null,
+      });
+      await user.click(screen.getByRole('button', { name: 'Wie zuletzt' }));
+      expect(await screen.findByText('Noch kein Eintrag vor diesem Termin.')).toBeInTheDocument();
+      expect(feld).toHaveValue('');
+    });
+
+    it('steht nicht am Vermerk „ohne Behandlung"', async () => {
+      rendern(['therapist'], '?ohne-behandlung=1');
+      await screen.findByLabelText('Eintrag zur Behandlung');
+      expect(screen.queryByRole('button', { name: 'Wie zuletzt' })).toBeNull();
     });
   });
 

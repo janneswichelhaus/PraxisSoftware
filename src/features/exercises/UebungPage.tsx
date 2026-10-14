@@ -21,7 +21,12 @@ import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Zweispalter } from '@/components/ui/Zweispalter';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { FREITEXT } from '@/features/documentation/format';
-import { canReadExerciseLibrary, type CurrentUser } from '@/features/session/types';
+import {
+  canReadExerciseLibrary,
+  canWriteExercisePlans,
+  type CurrentUser,
+} from '@/features/session/types';
+import { ZuEinemPlan } from '@/features/exercise-plans/ZuEinemPlan';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import {
@@ -427,7 +432,11 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
         {(bibliothek) => {
           const uebung = bibliothek.exercises.find((eintrag) => eintrag.id === uebungId);
           return uebung ? (
-            <Inhalt bibliothek={bibliothek} uebung={uebung} />
+            <Inhalt
+              bibliothek={bibliothek}
+              uebung={uebung}
+              zuPlan={canWriteExercisePlans(user.roles, 'therapy')}
+            />
           ) : (
             <EmptyState
               inKarte
@@ -441,7 +450,16 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
   );
 }
 
-function Inhalt({ bibliothek, uebung }: { bibliothek: Bibliothek; uebung: Uebung }) {
+function Inhalt({
+  bibliothek,
+  uebung,
+  zuPlan,
+}: {
+  bibliothek: Bibliothek;
+  uebung: Uebung;
+  /** Darf die Person Übungspläne schreiben? Dann „Zu einem Plan“ (ANN-503). */
+  zuPlan: boolean;
+}) {
   const schutz: Schutz = useFormularschutz();
   const queryClient = useQueryClient();
   const [formular, setFormular] = useState<Formular>(null);
@@ -544,10 +562,20 @@ function Inhalt({ bibliothek, uebung }: { bibliothek: Bibliothek; uebung: Uebung
         meta={`${uebung.lay_name} · ${KOERPERREGION_LABEL[uebung.body_region]}`}
         status={uebung.archived ? <Badge ton="warnung">Archiviert</Badge> : null}
         aktionen={
-          pflegen && gezeigt ? (
-            <Button type="button" variant="secondary" onClick={() => setFormular('variante')}>
-              Bearbeiten
-            </Button>
+          gezeigt && (zuPlan || pflegen) ? (
+            <>
+              {zuPlan && !uebung.archived ? (
+                <ZuEinemPlan
+                  variante={gezeigt}
+                  rueckweg={`/uebungen/${uebung.id}#variante-${gezeigt.id}`}
+                />
+              ) : null}
+              {pflegen ? (
+                <Button type="button" variant="secondary" onClick={() => setFormular('variante')}>
+                  Bearbeiten
+                </Button>
+              ) : null}
+            </>
           ) : null
         }
         hinweise={

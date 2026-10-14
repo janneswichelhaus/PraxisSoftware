@@ -28,6 +28,7 @@ import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
 import { Danach } from './Danach';
+import { WieZuletzt } from './WieZuletzt';
 import { useTextUebernahme } from './uebernahme';
 import { DIKTAT_TITEL, useDiktat } from './diktat';
 import { Sprechleiste, VorschlagAusAufnahme } from './Spracheingabe';
@@ -100,6 +101,8 @@ function Abschluss({
   const [befundOffen, setBefundOffen] = useState(false);
   const [verlaufOffen, setVerlaufOffen] = useState(false);
   const [verlaufAnzahl, setVerlaufAnzahl] = useState<number | null>(null);
+  // „Wie zuletzt“ ohne Ergebnis (K6): eine Zeile unter der Chipreihe.
+  const [zuletztHinweis, setZuletztHinweis] = useState<string | null>(null);
 
   // „Termin 2 von 6" im Kopf - derselbe Lesepfad wie die Übersicht (PRX-008).
   const { data: lage } = useQuery({
@@ -344,6 +347,19 @@ function Abschluss({
           statt umzubrechen. Während eines Schreibvorgangs fügt die Leiste
           nichts ein: Das Feld ist dann festgehalten (Zweitreview FRB-EPIC-003). */}
       <div className="border-line nicht-drucken flex shrink-0 items-center gap-2 overflow-x-auto border-b px-4 py-1.5">
+        {/* K6: der letzte Eintrag als Ausgangspunkt, vorn in der Reihe
+            (ANN-502). Nicht am Vermerk „ohne Behandlung“. */}
+        {!ohneBehandlung && appointment.kind === 'therapy' ? (
+          <>
+            <WieZuletzt
+              appointmentId={appointment.id}
+              gesperrt={laeuft}
+              onUebernehmen={(titel, text) => einfuegen(titel, wert, text)}
+              onHinweis={setZuletztHinweis}
+            />
+            <span aria-hidden="true" className="bg-line h-6 w-px shrink-0" />
+          </>
+        ) : null}
         <TextbausteinLeiste
           alsChips
           onEinfuegen={(text, titel) => {
@@ -367,6 +383,12 @@ function Abschluss({
           </>
         )}
       </div>
+
+      {zuletztHinweis ? (
+        <p role="status" className="border-line text-ink-muted shrink-0 border-b px-4 py-2 text-sm">
+          {zuletztHinweis}
+        </p>
+      ) : null}
 
       {ohneBehandlung ? null : (
         <BausteinFeld

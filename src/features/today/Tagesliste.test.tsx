@@ -1,10 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type { DayPlanEntry } from './api';
+import type * as KurzblickApi from '@/features/appointments/kurzblick-api';
 import { Tageskarte } from './Tagesliste';
+
+const fetchKurzblick = vi.fn();
+vi.mock('@/features/appointments/kurzblick-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof KurzblickApi>()),
+  fetchKurzblick: (id: string) => fetchKurzblick(id) as Promise<unknown>,
+}));
 
 /**
  * Die Tageskarte (UX-001) nach dem UX-Review (UXR-003) und dem Design-Handoff
@@ -171,7 +178,7 @@ describe('Tageskarte', () => {
       expect(screen.queryByText('Klingel „Mustermann“.')).toBeNull();
       expect(screen.queryByText('Hund im Flur.')).toBeNull();
       expect(screen.queryByRole('link', { name: /0000005/ })).toBeNull();
-      const knopf = screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+      const knopf = screen.getByRole('button', { name: 'Vor der Tür' });
       expect(knopf).toHaveAttribute('aria-expanded', 'false');
       // Kein Verweis auf etwas, das es im Dokument nicht gibt (UIK-08).
       expect(knopf).not.toHaveAttribute('aria-controls');
@@ -183,7 +190,7 @@ describe('Tageskarte', () => {
         <Tageskarte termin={eintrag({ patient_phone: '+49 7071 0000009' })} kicker="Erster Weg" />,
       );
 
-      const knopf = screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+      const knopf = screen.getByRole('button', { name: 'Vor der Tür' });
       // 44 px Tippziel, auch wenn das Bild nur 22 px misst.
       expect(knopf).toHaveClass('size-11');
       expect(knopf).toHaveAttribute('type', 'button');
@@ -232,7 +239,7 @@ describe('Tageskarte', () => {
         />,
       );
       expect(screen.queryByText('1. OG')).toBeNull();
-      await user.click(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
+      await user.click(screen.getByRole('button', { name: 'Vor der Tür' }));
       expect(screen.getByText('1. OG')).toBeInTheDocument();
       expect(screen.queryByText('Zugangshinweis')).toBeNull();
     });
@@ -244,7 +251,7 @@ describe('Tageskarte', () => {
           kicker="Erster Weg"
         />,
       );
-      expect(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Vor der Tür' })).toBeInTheDocument();
     });
 
     it('zeigt ohne Etage, Zugang, Besonderheit und Rufnummer keinen Info-Knopf', () => {
@@ -259,7 +266,7 @@ describe('Tageskarte', () => {
           kicker="Erster Weg"
         />,
       );
-      expect(screen.queryByRole('button', { name: 'Etage, Zugang und Kontakt' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Vor der Tür' })).toBeNull();
     });
 
     it('laesst einen Hinweis ohne erkennbare Etage ganz', async () => {
@@ -270,10 +277,67 @@ describe('Tageskarte', () => {
           kicker="Erster Weg"
         />,
       );
-      await user.click(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
+      await user.click(screen.getByRole('button', { name: 'Vor der Tür' }));
       expect(screen.getByText('Klingel Müller, 2. OG')).toBeInTheDocument();
       expect(screen.queryByText('Etage')).toBeNull();
       expect(screen.queryByText('Besonderheit')).toBeNull();
+    });
+
+    it('zeigt vor der Tuer Material und den letzten Eintrag mit einem Tipp (K3, ANN-501)', async () => {
+      const user = userEvent.setup();
+      fetchKurzblick.mockReset();
+      fetchKurzblick.mockResolvedValue({
+        appointment_id: 't1',
+        patient_id: 'p1',
+        home_visit_access_note: null,
+        special_note: null,
+        take_along_items: ['Theraband'],
+        primary_therapist_name: null,
+        treatment_basis_id: null,
+        treatment_basis_kind: null,
+        treatment_basis_issued_on: null,
+        basis_appointment_count: null,
+        basis_used: null,
+        basis_planned: null,
+        basis_items: null,
+        last_note_id: 'n1',
+        last_note_appointment_start: '2026-09-21T07:00:00.000Z',
+        last_note_status: 'final',
+        last_note_content: 'Knie aktiv bis 110 Grad, Treppe mit Gelaender.',
+        last_note_visit_without_treatment: false,
+        last_note_author_name: 'Anna Beispiel',
+        organization_time_zone: 'Europe/Berlin',
+      });
+      renderWithProviders(
+        <Tageskarte
+          termin={eintrag({ take_along_items: ['Theraband', 'Faszienrolle'] })}
+          kicker="Erster Weg"
+          vorDerTuer
+        />,
+      );
+      // Zu, bis jemand öffnet: kein Material neben dem Namen, kein Lesen.
+      expect(screen.queryByText('Theraband, Faszienrolle')).toBeNull();
+      expect(fetchKurzblick).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Vor der Tür' }));
+      expect(screen.getByText('Theraband, Faszienrolle')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Knie aktiv bis 110 Grad, Treppe mit Gelaender.'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Lesen wird protokolliert.')).toBeInTheDocument();
+      expect(fetchKurzblick).toHaveBeenCalledWith('t1');
+    });
+
+    it('liest den letzten Eintrag nur fuer Rollen, die ihn lesen duerfen (K3)', async () => {
+      const user = userEvent.setup();
+      fetchKurzblick.mockReset();
+      renderWithProviders(
+        <Tageskarte termin={eintrag({ take_along_items: ['Theraband'] })} kicker="Erster Weg" />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Vor der Tür' }));
+      expect(screen.getByText('Theraband')).toBeInTheDocument();
+      expect(screen.queryByText('Letzter Eintrag')).toBeNull();
+      expect(fetchKurzblick).not.toHaveBeenCalled();
     });
 
     it('zeigt die Liege als Pille mit Haekchen (ANN-116)', () => {
@@ -378,7 +442,7 @@ describe('Tageskarte', () => {
         kicker="Erster Weg"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
+    await user.click(screen.getByRole('button', { name: 'Vor der Tür' }));
 
     const stellen = screen.getAllByText(langesWort);
     expect(stellen).toHaveLength(2);
@@ -442,7 +506,7 @@ describe('Tageskarte', () => {
 
   it('stellt das „i" in die Namenszeile, nicht hinter die Anschrift (UBK-004)', () => {
     renderWithProviders(<Tageskarte termin={eintrag()} kicker="Erster Weg" />);
-    const knopf = screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+    const knopf = screen.getByRole('button', { name: 'Vor der Tür' });
     const name = screen.getByRole('link', { name: 'Max Mustermann' });
     expect(knopf.parentElement).toBe(name.closest('p')!.parentElement);
     const anschrift = screen.getByText('Beispielstrasse 12, 72070 Tuebingen');

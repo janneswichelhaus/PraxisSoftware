@@ -620,7 +620,7 @@ describe('Übersicht', () => {
     // Etagen-Pille, ein Tipp auf (i) zeigt alles.
     expect(within(karte).queryByText('Erdgeschoss')).toBeNull();
     expect(within(karte).queryByText('Klingel "Beispiel".')).toBeNull();
-    await user.click(within(karte).getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
+    await user.click(within(karte).getByRole('button', { name: 'Vor der Tür' }));
     expect(within(karte).getByText('Erdgeschoss')).toBeInTheDocument();
     expect(within(karte).getByText('Klingel "Beispiel".')).toBeInTheDocument();
 
@@ -700,7 +700,7 @@ describe('Übersicht', () => {
       expect(meldung.parentElement).toHaveClass('bg-warnung-soft', 'rounded-card');
       // Entscheidend: die Anschrift steht noch da - und der Weg zum Hinweis.
       expect(screen.getByText('Testweg 7, 72072 Tuebingen')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Vor der Tür' })).toBeInTheDocument();
     });
 
     it('aktualisiert den alten Stand ueber die Abfrage, nicht ueber ein Neuladen (UEB-05)', async () => {
