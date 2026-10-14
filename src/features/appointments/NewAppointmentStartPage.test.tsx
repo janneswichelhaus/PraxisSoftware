@@ -210,6 +210,8 @@ describe('NewAppointmentStartPage', () => {
       'http://test',
     );
     expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+    // Der Suchbegriff - meist ein Name - wandert nicht mit (ANN-061).
+    expect(ziel.searchParams.get('q')).toBeNull();
   });
 
   it('beschriftet das Suchfeld sichtbar - hier ist es das Hauptfeld der Seite', () => {

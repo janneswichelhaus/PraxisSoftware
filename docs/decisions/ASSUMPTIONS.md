@@ -5265,7 +5265,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Vor
 
 **Ablösung.** ersetzt ANN-475 und ANN-140 in der Frage „wer Heilmittel bestätigt“
 
-**Annahme.** Ist ein Behandlungstermin mit Grundlage abgehakt und dokumentiert, egal in welcher Reihenfolge, erfasst der Server je Heilmittel mit Restmenge eine Einheit und das Terminhonorar. Wer den Haken zurücknimmt, nimmt sie mit, solange keine Rechnung und kein Entwurf sie führt. Ohne Grundlage erfasst das Büro.
+**Annahme.** Ist ein Behandlungstermin mit Grundlage abgehakt und dokumentiert, egal in welcher Reihenfolge, erfasst der Server je Heilmittel mit Restmenge eine Einheit und das Terminhonorar; ohne Haken entsteht keine, auch nicht im Büro. Der Haken gehört zum Termin: Wer ihn zurücknehmen darf, auch an einem fremden, nimmt die Leistung mit, solange keine Rechnung und kein Entwurf sie führt.
 
 **Begründung.** Befund B7: Der Haken heißt „Leistung erbracht“. „Tür geöffnet“ rechnet normal ab (§8).
 
@@ -5277,7 +5277,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Vor
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rollen der Freigabe)
 
-**Annahme.** Bereit ist eine Grundlage, wenn jeder Termin abgehakt und dokumentiert, abgesagt oder nicht angetroffen ist und kein Entwurf an ihm hängt; vorgeschlagen wird die Freigabe, wenn zudem alle verordneten Termine erbracht sind. Freigeben dürfen owner, therapist, team_lead und office.
+**Annahme.** Bereit ist eine Grundlage, wenn jeder Termin abgehakt und dokumentiert, abgesagt oder nicht angetroffen ist und kein Entwurf an ihm hängt; vorgeschlagen wird die Freigabe, wenn zudem alle verordneten Termine erbracht sind. Freigeben dürfen owner, therapist, team_lead und office; den Stand ohne Beträge sehen alle Praxisrollen.
 
 **Begründung.** Befunde B1 und B7; eine früher beendete Behandlung soll abrechenbar sein (ADR-020 Punkt 9).
 
@@ -5315,7 +5315,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-430 in der Liste (das Suchfeld bleibt)
 
-**Annahme.** Liste und Wahl der Person für einen Termin laden jede lesbare Akte und sortieren nach „Zuletzt“ (Vorgabe), „Verordnung“ oder „A–Z“; Filterchips zeigen Karteileichen und, für owner und office, Offenes und zu Mahnendes; gesucht wird ab dem ersten Zeichen. Kopfleiste und Formulare suchen weiter ab drei Zeichen (ANN-061).
+**Annahme.** Liste und Wahl der Person für einen Termin laden jede lesbare Akte und sortieren nach „Zuletzt“ (Vorgabe), „Verordnung“ oder „A–Z“; Filterchips zeigen Karteileichen und, für owner und office, Offenes und zu Mahnendes; gesucht wird ab dem ersten Zeichen, der Begriff steht nur in der Kartei in der Adresse. Kopfleiste und Formulare suchen weiter ab drei Zeichen (ANN-061).
 
 **Begründung.** Befund B10; Rechte unverändert: `list_patient_overview` prüft wie `patient_directory`.
 

@@ -872,6 +872,12 @@ export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
       'An dieser Verordnung hängt ein Therapiebericht. Sie lässt sich deshalb nicht löschen; einen Entwurf können Sie vorher verwerfen.',
     );
   }
+  if (error?.message?.includes('treatment basis is in billing')) {
+    // B7 (ANN-515): Eine Verordnung in der Abrechnung fällt nicht still weg.
+    throw new Error(
+      'Die Verordnung ist in der Abrechnung. Zum Löschen zuerst aus der Abrechnung zurückholen.',
+    );
+  }
   if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gelöscht werden.');
 }
 

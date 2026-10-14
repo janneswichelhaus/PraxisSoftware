@@ -1218,6 +1218,12 @@ export async function recordLeistungen(
 
   if (error?.message?.includes('quantity exhausted')) throw new KontingentAusgeschoepft();
   if (error?.message?.includes('no session fee')) throw new KeinTerminhonorar();
+  // B4/B7 (ANN-513): Ohne Haken ist am Behandlungstermin nichts erbracht.
+  if (error?.message?.includes('not checked off')) {
+    throw new Error(
+      'Der Termin ist noch nicht abgehakt. Mit dem Haken entsteht die Leistung von selbst.',
+    );
+  }
   if (error) throw new Error('Die Leistungen konnten nicht erfasst werden.');
 }
 

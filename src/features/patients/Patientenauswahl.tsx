@@ -1,4 +1,4 @@
-import { useMemo, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -55,25 +55,32 @@ function metaZeile(eintrag: Patienteneintrag, heute: Date): string {
  * Karteileichen (B1): Termine fehlen, Haken oder Doku fehlt, abrechnen, in
  * der Abrechnung - für owner und office dazu zu mahnen und offene Rechnungen.
  *
- * Suche, Sortierung und Auswahl stehen in der Adresszeile (UX-012), damit die
- * Akte in genau diese Ansicht zurückführt; andere Parameter der Seite bleiben
- * stehen. Rechte und RLS bleiben, wie sie sind: Die Liste zeigt, was der
- * Server liefert.
+ * Sortierung und Auswahl stehen in der Adresszeile (UX-012), damit die Akte
+ * in genau diese Ansicht zurückführt; andere Parameter der Seite bleiben
+ * stehen. Der Suchbegriff - meist ein Name - nur dort, wo die Kartei ihn schon
+ * so führte (`sucheInAdresse`); beim Anlegen eines Termins bleibt er im
+ * Zustand der Seite und wandert nicht mit der Kennung der Person in die
+ * nächste Adresse (ANN-061, ADR-011). Rechte und RLS bleiben, wie sie sind:
+ * Die Liste zeigt, was der Server liefert.
  */
 export function Patientenauswahl({
   ziel,
   suchbeschriftung = 'Patient:in suchen',
   leer,
+  sucheInAdresse = false,
 }: {
   /** Wohin eine Zeile führt. */
   ziel: (patientId: string) => string;
   suchbeschriftung?: string;
   /** Leerzustand ohne jede Akte. */
   leer: { titel: string; beschreibung?: string };
+  /** Den Suchbegriff als `q` in der Adresse führen (nur die Kartei, wie bisher). */
+  sucheInAdresse?: boolean;
 }) {
   const [parameter, setParameter] = useSearchParams();
   const navigate = useNavigate();
-  const begriff = parameter.get('q') ?? '';
+  const [lokalerBegriff, setLokalerBegriff] = useState('');
+  const begriff = sucheInAdresse ? (parameter.get('q') ?? '') : lokalerBegriff;
   const sortierung = leseSortierung(parameter.get('sort'));
   const zeigen = leseZeigen(parameter.get('zeigen'));
 
@@ -128,7 +135,9 @@ export function Patientenauswahl({
               label={suchbeschriftung}
               placeholder="Name, Ort, Telefon, E-Mail"
               value={begriff}
-              onChange={(wert) => setzen('q', wert.trim() ? wert : null)}
+              onChange={(wert) =>
+                sucheInAdresse ? setzen('q', wert.trim() ? wert : null) : setLokalerBegriff(wert)
+              }
             />
           </form>
         }

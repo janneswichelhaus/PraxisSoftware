@@ -24,7 +24,10 @@
 --   * Termine ohne Grundlage erfasst sie nicht - dort gibt es kein
 --     verordnetes Heilmittel; das Buero erfasst sie wie bisher.
 --   * Ein Ausfallhonorar (fee_basis) bleibt beim Buero (ADR-018 Punkt 4).
---   * Ein Besuch ohne Behandlung (Pflichtvermerk, CAL-018) erzeugt nichts.
+--   * Ein Besuch ohne Behandlung (Pflichtvermerk, CAL-018) ist keine
+--     Ausnahme: Er gilt als durchgefuehrt und wird normal abgerechnet
+--     (PROJECT_PRINCIPLES.md §8, ADR-018 Punkt 9 Nr. 2); wie die Rechnung ihn
+--     benennt, bleibt Teil von B4.
 --
 -- Dazu zaehlt `used` der Grundlage nur noch abgehakte Termine: Ein
 -- dokumentierter Termin ohne Haken ist seit B4 nicht erbracht.

@@ -27,6 +27,7 @@ export function PatientsListPage() {
         actions={<ButtonLink to="/patienten/neu">{ANLEGEN}</ButtonLink>}
       />
       <Patientenauswahl
+        sucheInAdresse
         ziel={(id) => mitRueckweg(`/patienten/${id}`, rueckweg)}
         leer={{
           titel: 'Noch keine Patient:innen',

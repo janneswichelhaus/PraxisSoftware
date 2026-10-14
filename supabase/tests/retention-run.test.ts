@@ -198,6 +198,51 @@ describe('Loeschlauf: klinische Patientenakte', () => {
     );
   });
 
+  // Zweitreview H3: Die Sperre einer Verordnung in der Abrechnung (ANN-515)
+  // gilt Aenderungen, nicht dem Loeschen der Akte - ein Fehler hier hielte den
+  // Lauf fuer alle Praxen an.
+  it('loescht eine Akte, deren Verordnung in der Abrechnung steht, ohne an der Sperre zu scheitern', async () => {
+    await abgeschlossenVor(patients.max, 11);
+    await asPostgres(
+      `update public.treatment_bases
+          set billing_released_at = now(), billing_released_by = $2
+        where patient_id = $1`,
+      [patients.max, users.office],
+    );
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.patients where id = $1', [patients.max])).toBe(
+      0,
+    );
+    expect(
+      await anzahl('select count(*) from public.treatment_bases where patient_id = $1', [
+        patients.max,
+      ]),
+    ).toBe(0);
+  });
+
+  // ANN-511: Ohne jede Behandlung und ohne Abschluss gibt es keinen Anker -
+  // und damit keine Frist, gleich wie alt die Akte ist.
+  it('loescht eine Akte ohne jede Behandlung und ohne Abschluss nie', async () => {
+    const { rows: person } = await asPostgres<{ id: string }>(
+      `insert into public.persons (organization_id, given_name, family_name)
+       values ($1, 'Nie', 'Behandelt') returning id`,
+      [organizationId],
+    );
+    const { rows: akte } = await asPostgres<{ id: string }>(
+      `insert into public.patients (organization_id, person_id, created_at)
+       values ($1, $2, now() - interval '20 years') returning id`,
+      [organizationId, person[0]!.id],
+    );
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.patients where id = $1', [akte[0]!.id])).toBe(
+      1,
+    );
+  });
+
   it('haelt eine Akte mit einem kommenden Termin, auch nach langem Abschluss', async () => {
     await abgeschlossenVor(patients.max, 11);
     await asPostgres(

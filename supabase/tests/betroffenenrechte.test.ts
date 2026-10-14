@@ -477,8 +477,19 @@ describe('patient_retention_status', () => {
   }, 120_000);
 
   // B1 (ANN-511): Solange ein Termin kommt, laeuft die Versorgung - und
-  // keine Frist. Der Seed hat fuer Max kommende Termine.
+  // keine Frist. Der kommende Termin steht hier ausdruecklich: Die Termine des
+  // Seeds liegen auf festen Uhrzeiten des Tages und waeren abends vorbei.
   it('meldet waehrend laufender Versorgung eine Frist, die noch nicht laeuft', async () => {
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, location_id, appointment_type, status,
+         starts_at, ends_at
+       ) values ($1, $2, '55555555-5555-4555-8555-000000000002',
+                 '33333333-3333-4333-8333-000000000001', 'practice', 'confirmed',
+                 date_trunc('hour', now()) + interval '50 hours',
+                 date_trunc('hour', now()) + interval '51 hours')`,
+      [SEED.organizationId, patients.max],
+    );
     const { rows } = await asUser<{ stand: Record<string, unknown> }>(
       users.ownerTherapist,
       AUFBEWAHRUNG,

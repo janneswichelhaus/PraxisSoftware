@@ -1,12 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   SEED,
+  asAnon,
   asPostgres,
   asUser,
   asUserCommitted,
   fremdeOrganisation,
   resetDatabaseOhneTermine,
 } from './helpers/db';
+import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
  * Die Patientenliste mit Karteileichen und Zahlungsstand (B1, B10; BEF-151,
@@ -188,22 +190,24 @@ describe('Patientenliste mit Karteileichen und Zahlungsstand (B1, B10)', () => {
     expect(rows[0]!.last_reminder_on).not.toBeNull();
   });
 
-  it('gibt die Rechnungen einer Akte nur owner und office', async () => {
-    const vorher = await asPostgres<{ anzahl: string }>(
-      `select count(*)::text as anzahl from public.audit_log
-        where action = 'access.denied' and context ->> 'operation' = 'invoicing.read'`,
-    );
-    const { rows } = await asUser(users.therapist, RECHNUNGEN, [RITA]);
-    expect(rows).toEqual([]);
-    const nachher = await asPostgres<{ anzahl: string }>(
-      `select count(*)::text as anzahl from public.audit_log
-        where action = 'access.denied' and context ->> 'operation' = 'invoicing.read'`,
-    );
-    expect(Number(nachher.rows[0]!.anzahl)).toBeGreaterThanOrEqual(Number(vorher.rows[0]!.anzahl));
+  it('gibt die Rechnungen einer Akte nur owner und office - sonst leer und mit Eintrag (G6b)', async () => {
+    // Behandelnde, Teamleitung und Trainingsbetreuung: abgewiesen, und die
+    // Abweisung ueberlebt den Aufruf (genau ein Eintrag je Versuch).
+    for (const konto of [users.therapist, users.teamLead, users.trainer]) {
+      await erwarteAbgewiesenenLeseversuch(konto, RECHNUNGEN, [RITA], 'invoicing.read');
+    }
+    // Ein Patientenkonto wie eine Rolle ohne Recht; ein Plattformkonto hat
+    // keine Praxis und wird ohne Liste abgewiesen.
+    await erwarteAbgewiesenenLeseversuch(users.patientMax, RECHNUNGEN, [RITA], 'invoicing.read');
+    await expect(asUser(users.plattformErika, RECHNUNGEN, [RITA])).rejects.toThrow(/not allowed/);
+    await expect(asAnon(RECHNUNGEN, [RITA])).rejects.toThrow(/permission denied/);
     // Eine fremde Praxis sieht die Rechnungen dieser Akte nicht.
     const fremd = await fremdeOrganisation();
     const fremde = await asUser(fremd.owner, RECHNUNGEN, [RITA]);
     expect(fremde.rows).toEqual([]);
+    // Positivkontrolle: office sieht die Rechnung.
+    const buero = await asUser(users.office, RECHNUNGEN, [RITA]);
+    expect(buero.rows.length).toBeGreaterThan(0);
   });
 
   it('weist ab, wer die Kartei nicht lesen darf - mit leerer Liste und Eintrag (G6b)', async () => {

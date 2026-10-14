@@ -647,6 +647,48 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
     });
   });
 
+  // Zweitreview H3: Die Sperre einer Verordnung in der Abrechnung (ANN-515)
+  // gilt Aenderungen an Doku, Zeit und Terminzahl, nicht dem Bezug zur Akte.
+  describe('Verordnung in der Abrechnung (B7, ANN-515)', () => {
+    it('führt zusammen, auch wenn eine Verordnung der Dublette freigegeben ist', async () => {
+      const ziel = await legeAkteAn({
+        vorname: 'Frieda',
+        nachname: 'Freigabe',
+        geburt: '1960-01-01',
+        telefon: '0221 111',
+        besonderheit: null,
+        mitnehmen: [],
+        liege: null,
+      });
+      const quelle = await legeAkteAn({
+        vorname: 'Frieda',
+        nachname: 'Freigabe',
+        geburt: '1960-01-02',
+        telefon: '0221 112',
+        besonderheit: null,
+        mitnehmen: [],
+        liege: null,
+      });
+      const b = await fuelle(quelle.patient);
+      await asPostgres(
+        `update public.treatment_bases
+            set billing_released_at = now(), billing_released_by = $2
+          where id = $1`,
+        [b.grundlage, users.office],
+      );
+
+      await zusammenfuehren(quelle.patient, ziel.patient);
+
+      expect(await patientVon('treatment_bases', b.grundlage)).toBe(ziel.patient);
+      expect(await patientVon('appointments', b.termin)).toBe(ziel.patient);
+      const { rows } = await asPostgres<{ billing_released_at: string | null }>(
+        'select billing_released_at from public.treatment_bases where id = $1',
+        [b.grundlage],
+      );
+      expect(rows[0]!.billing_released_at).not.toBeNull();
+    });
+  });
+
   describe('Versorgungsstand (ANN-148)', () => {
     it('behält bei zwei Abschlüssen den späteren', async () => {
       const ziel = await legeAkteAn({ vorname: 'Anja', nachname: 'Abschluss' });

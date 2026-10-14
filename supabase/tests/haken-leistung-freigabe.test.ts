@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   SEED,
+  asAnon,
   asPostgres,
   asUser,
   asUserCommitted,
@@ -270,6 +271,89 @@ describe('Leistung mit dem Haken (B7, ANN-513)', () => {
     await expect(asUser(users.trainer, ABHAKEN, [id, await stand(id)])).rejects.toThrow();
     expect(await leistungen(id)).toEqual([]);
   });
+
+  // Zweitreview R3: Ohne Haken ist nichts erbracht - auch das Buero erfasst
+  // dann nichts, und nach der Ruecknahme steht der Termin nicht wieder an.
+  it('erfasst ohne Haken nichts, auch nicht im Buero, und fuehrt ihn nicht unter „Zu erfassen“', async () => {
+    const id = await termin();
+    await festschreiben(id);
+
+    const offen = async () => {
+      const { rows } = await asUser<{ appointment_id: string }>(
+        users.office,
+        'select appointment_id from public.list_open_billable_appointments(200)',
+      );
+      return rows.map((r) => r.appointment_id);
+    };
+    const { rows: katalog } = await asPostgres<{ id: string }>(
+      `select c.id from public.service_catalog_items c
+        where c.catalog_version_id = app.active_service_catalog_version($1, current_date)
+          and c.code = 'KG'`,
+      [organizationId],
+    );
+    const erfassen = () =>
+      asUser(users.office, 'select public.record_billable_services($1::uuid, $2::jsonb)', [
+        id,
+        JSON.stringify([{ catalog_item_id: katalog[0]!.id, quantity: 1 }]),
+      ]);
+
+    expect(await offen()).not.toContain(id);
+    await expect(erfassen()).rejects.toThrow(/not checked off/);
+    // Auch an der Tabelle selbst, an jedem Weg vorbei.
+    await expect(
+      asPostgres(
+        `insert into public.billable_services
+           (organization_id, patient_id, appointment_id, catalog_item_id, performed_on, created_by)
+         values ($1, $2, $3, $4, current_date, $5)`,
+        [organizationId, patients.erika, id, katalog[0]!.id, users.office],
+      ),
+    ).rejects.toThrow(/not checked off/);
+
+    await abhaken(id);
+    expect(await leistungen(id)).toEqual(['KG']);
+    await asUserCommitted(users.therapist, ZURUECKNEHMEN, [id, await stand(id)]);
+    expect(await leistungen(id)).toEqual([]);
+    expect(await offen()).not.toContain(id);
+    await expect(erfassen()).rejects.toThrow(/not checked off/);
+  });
+
+  // ANN-513 (Zweitreview H1): Der Haken gehoert zum Termin, nicht zur Person.
+  // Wer ihn zuruecknehmen darf, nimmt die Leistung mit - auch die einer
+  // Kollegin oder die das Buero erfasst hat, solange keine Rechnung sie fuehrt.
+  it('nimmt mit dem Haken an einem fremden Termin auch dessen Leistung zurueck', async () => {
+    const id = await termin();
+    await festschreiben(id);
+    await abhaken(id);
+    expect(await leistungen(id)).toEqual(['KG']);
+
+    // Der Termin ist Annas; team_lead nimmt den Haken zurueck.
+    await asUserCommitted(users.teamLead, ZURUECKNEHMEN, [id, await stand(id)]);
+    expect(await leistungen(id)).toEqual([]);
+    expect(await honorare(id)).toBe(0);
+    expect(await genutzt()).toBe(0);
+  });
+
+  // Zweitreview H3: Der naechtliche Lauf schreibt einen Entwurf fest; steht
+  // der Haken schon, entsteht dabei die Leistung - ohne den Lauf aufzuhalten.
+  it('erfasst die Leistung im naechtlichen Lauf, wenn der Haken vor der Doku stand', async () => {
+    const id = await termin();
+    await abhaken(id);
+    await asUserCommitted(users.therapist, 'select public.create_treatment_note($1::uuid, $2)', [
+      id,
+      'Synthetischer Entwurf: Uebungen angeleitet.',
+    ]);
+    await asPostgres(
+      "update public.treatment_notes set created_at = created_at - interval '5 days' where appointment_id = $1",
+      [id],
+    );
+
+    const { rows } = await asPostgres<{ n: number }>(
+      'select public.finalize_overdue_treatment_notes() as n',
+    );
+    expect(rows[0]!.n).toBeGreaterThanOrEqual(1);
+    expect(await leistungen(id)).toEqual(['KG']);
+    expect(await honorare(id)).toBe(1);
+  });
 });
 
 describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
@@ -464,6 +548,47 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
     ).rejects.toThrow(/not found/);
 
     await asUserCommitted(users.office, FREIGEBEN, [GRUNDLAGE]);
+  });
+
+  it('laesst nur Behandelnde und Buero zurueckholen, sonst niemanden (ADR-004)', async () => {
+    await vollstaendig();
+    await asUserCommitted(users.therapist, FREIGEBEN, [GRUNDLAGE]);
+
+    for (const konto of [users.trainer, users.patientMax, users.plattformErika]) {
+      await expect(asUser(konto, ZURUECKHOLEN, [GRUNDLAGE])).rejects.toThrow(
+        /not allowed|not authenticated/,
+      );
+    }
+    const fremd = await fremdeOrganisation();
+    await expect(asUser(fremd.owner, ZURUECKHOLEN, [GRUNDLAGE])).rejects.toThrow(/not found/);
+    await expect(
+      asUser(users.office, ZURUECKHOLEN, ['88888888-8888-4888-8888-0000000000ff']),
+    ).rejects.toThrow(/not found/);
+    await expect(asAnon(ZURUECKHOLEN, [GRUNDLAGE])).rejects.toThrow(/permission denied/);
+    await expect(asAnon(FREIGEBEN, [GRUNDLAGE])).rejects.toThrow(/permission denied/);
+
+    // Die Freigabe steht unveraendert.
+    const { rows } = await asPostgres<{ billing_released_at: string | null }>(
+      'select billing_released_at from public.treatment_bases where id = $1',
+      [GRUNDLAGE],
+    );
+    expect(rows[0]!.billing_released_at).not.toBeNull();
+  });
+
+  // Zweitreview H2: Loeschen hebelte die Sperre aus - die Termine verloren
+  // die Zuordnung und waren wieder frei.
+  it('loescht keine Grundlage, die in der Abrechnung steht', async () => {
+    await vollstaendig();
+    await asUserCommitted(users.therapist, FREIGEBEN, [GRUNDLAGE]);
+
+    await expect(
+      asUser(users.ownerTherapist, 'select public.delete_treatment_basis($1::uuid)', [GRUNDLAGE]),
+    ).rejects.toThrow(/treatment basis is in billing/);
+    const { rows } = await asPostgres<{ anzahl: string }>(
+      'select count(*)::text as anzahl from public.treatment_bases where id = $1',
+      [GRUNDLAGE],
+    );
+    expect(rows[0]!.anzahl).toBe('1');
   });
 
   it('gibt die Spalten nicht zum direkten Schreiben frei', async () => {

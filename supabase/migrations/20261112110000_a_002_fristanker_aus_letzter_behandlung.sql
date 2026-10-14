@@ -82,7 +82,7 @@ comment on function app.patient_has_upcoming_care(uuid) is
   'B1 (BEF-151): Hat die Akte einen kuenftigen, nicht abgesagten Behandlungstermin? Dann faellt sie im Loeschlauf nicht, gleich was der Anker sagt.';
 
 update public.retention_classes
-   set note = 'Zehn Jahre nach Abschluss der Behandlung. Der Anker ist app.patient_retention_anchor (B1, ADR-008 Fassung 3): das spaeteste Datum aus letzter Behandlung, Leistung, Rechnung und einem etwaigen ausdruecklichen Abschluss. Ohne jede Behandlung laeuft keine Frist; ein kuenftiger Termin haelt die Akte.',
+   set note = 'Zehn Jahre nach Abschluss der Behandlung. Der Anker ist app.patient_retention_anchor (B1, ADR-008 Fassung 3): das spaeteste Datum aus letzter Behandlung, erfasster Leistung und einem etwaigen ausdruecklichen Abschluss. Rechnungen halten ueber ihre eigene Frist. Ohne jede Behandlung laeuft keine Frist; ein kuenftiger Termin haelt die Akte.',
        assumption_key = 'ANN-511'
  where key = 'patientenakte';
 
@@ -149,7 +149,7 @@ begin
     --
     -- B1 (BEF-151, ADR-008 Fassung 3): Der Anker ist nicht mehr allein der
     -- ausdrueckliche Abschluss, sondern app.patient_retention_anchor - das
-    -- spaeteste Datum aus letzter Behandlung, Leistung, Rechnung und einem
+    -- spaeteste Datum aus letzter Behandlung, erfasster Leistung und einem
     -- etwaigen ausdruecklichen Abschluss. Eine Akte mit kuenftigem Termin
     -- faellt nie, und ohne jede Behandlung laeuft weiter keine Frist.
     -- -------------------------------------------------------------------
@@ -607,7 +607,7 @@ begin
   select p.care_concluded_on into v_abschluss
   from public.patients p where p.id = p_patient_id;
 
-  -- B1 (ADR-008 Fassung 3): Anker aus letzter Behandlung, Leistung, Rechnung
+  -- B1 (ADR-008 Fassung 3): Anker aus letzter Behandlung, erfasster Leistung
   -- und einem etwaigen ausdruecklichen Abschluss. Ohne jede Behandlung laeuft
   -- keine Frist; ein kuenftiger Termin haelt die Akte (dann kein Datum).
   v_anker := case when app.patient_has_upcoming_care(p_patient_id) then null

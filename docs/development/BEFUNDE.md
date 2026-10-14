@@ -666,7 +666,7 @@ eingeklappt.
 | ------- | - |
 | Datum   | 2026-10-14 |
 | Bereich | Patient:innen und Akte |
-| Quelle  | Jannes, Durchsicht am Rechner (Befund B1, Bild 1) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B1) |
 | Status  | erledigt in PR A (Abrechnung, Akte, Haken) |
 | Berührt | `patients.status`, `set_patient_status`, Patientenliste, Akte „Verordnungen“, Offene Punkte, Fristanker (ADR-008) |
 
@@ -680,13 +680,13 @@ eingeklappt.
 | ------- | - |
 | Datum   | 2026-10-14 |
 | Bereich | Kalender, Termine, Warteliste |
-| Quelle  | Jannes, Durchsicht am Rechner (Befund B2) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B2, Bild 1) |
 | Status  | eingeplant in PR O (Oberfläche) |
 | Berührt | Hinweis „Fahrzeit zu knapp/zu lang“ am Termin |
 
-**Beobachtung.** Der Hinweis nennt das Problem, bietet aber keine Lösung.
+**Beobachtung.** Beim Anlegen nennt „Anfahrt zu knapp“ den frühesten Beginn, bietet aber keinen Weg dorthin; ebenso bei zu langer Fahrt oder Rückfahrt.
 
-**Erwartet.** Ein Knopf „Auf HH:MM verschieben“ im 5-Minuten-Raster, der die passende Zeit vorschlägt.
+**Erwartet.** Ein optionaler Knopf „Auf 16:25 verschieben“ auf die früheste passende Zeit im 5-Minuten-Raster; zur ursprünglichen Zeit anlegen bleibt möglich.
 
 ### BEF-153 — Spracheingabe auf der Schreibseite
 
@@ -726,9 +726,9 @@ eingeklappt.
 | Status  | eingeplant in PR O (Oberfläche) |
 | Berührt | Startinhalte der Textbausteine |
 
-**Beobachtung.** Die mitgelieferten Bausteine passen nicht zur Praxis.
+**Beobachtung.** Die mitgelieferten Bausteine passen nicht zum Alltag der einzelnen Therapeut:in.
 
-**Erwartet.** Von den mitgelieferten bleibt nur der Befund-Baustein.
+**Erwartet.** Der Baustein zum Befund bleibt; die übrigen mitgelieferten werden nicht mehr eingeblendet, jede Therapeut:in legt sich eigene an.
 
 ### BEF-156 — Kein Fahrtbalken nach einem abgehakten Termin
 
@@ -736,13 +736,13 @@ eingeklappt.
 | ------- | - |
 | Datum   | 2026-10-14 |
 | Bereich | Übersicht (Tag) |
-| Quelle  | Jannes, Durchsicht am Rechner (Befund B6) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B6, Bild 2) |
 | Status  | eingeplant in PR O (Oberfläche) |
 | Berührt | Zeitstrahl der Tagesübersicht |
 
-**Beobachtung.** Nach einem abgehakten Termin fehlt die Fahrt zum nächsten.
+**Beobachtung.** Nach einem abgehakten Termin fehlt der Fahrtbalken zum nächsten Termin; an der Karte des nächsten Wegs steht nur die Fahrzeit als Text (Bild 2).
 
-**Erwartet.** Der Fahrtbalken steht auch nach einem abgehakten Termin.
+**Erwartet.** Der Balken steht auch dort.
 
 ### BEF-157 — Heilmittel abhaken am Termin; keine Freigabe zur Abrechnung
 
@@ -750,7 +750,7 @@ eingeklappt.
 | ------- | - |
 | Datum   | 2026-10-14 |
 | Bereich | Kalender, Termine, Warteliste; Dokumentation; Abrechnung, Statistiken |
-| Quelle  | Jannes, Durchsicht am Rechner (Befund B7, Bild 2) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B7) |
 | Status  | erledigt in PR A (Abrechnung, Akte, Haken) |
 | Berührt | `HeilmittelBestaetigen`, `billable_services`, `treatment_bases`, Sperre der Doku |
 
@@ -778,13 +778,13 @@ eingeklappt.
 | ------- | - |
 | Datum   | 2026-10-14 |
 | Bereich | Training und Übungen |
-| Quelle  | Jannes, Durchsicht am Rechner (Befund B9) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B9, Bild 3) |
 | Status  | eingeplant in PR O (Oberfläche) |
 | Berührt | Übungsplan anlegen und bearbeiten |
 
-**Beobachtung.** Der Übungsplan braucht zu viele Schritte.
+**Beobachtung.** Den aktuellen Plan zu erstellen kostet zu viele Klicks; „pro Woche“ ist nicht zu finden, und aus Vorlage und Katalog kamen plötzlich zehn Übungen auf einmal statt einzeln wählbarer (Bild 3).
 
-**Erwartet.** Vereinfachen, bei 375 px mit dem Daumen bedienbar.
+**Erwartet.** Mit wenig Klicks, einzeln wählbare Übungen, Häufigkeit pro Woche; bei Therapeutenwechsel sichtbar, auf welchem Stand der Plan ist; Änderungen erscheinen als aktualisierter Plan auf der Plattform, und der Plan nützt auch ohne Plattform.
 
 ### BEF-160 — Patientenliste nur über die Suche ab drei Zeichen
 
@@ -792,7 +792,7 @@ eingeklappt.
 | ------- | - |
 | Datum   | 2026-10-14 |
 | Bereich | Patient:innen und Akte; Kalender, Termine, Warteliste |
-| Quelle  | Jannes, Durchsicht am Rechner (Befund B10, Bild 3) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B10) |
 | Status  | erledigt in PR A (Abrechnung, Akte, Haken) |
 | Berührt | Patientenliste, Wahl der Person für Termin und Dauertermin |
 
@@ -824,9 +824,9 @@ eingeklappt.
 | Status  | eingeplant in PR O (Oberfläche) |
 | Berührt | Zeilen der Tagesliste |
 
-**Beobachtung.** Ein Ausfall lässt sich nicht direkt an der Zeile vermerken.
+**Beobachtung.** „Niemand öffnet?“ steht nur am nächsten Weg, nicht an den übrigen Patientenzeilen.
 
-**Erwartet.** Ein Knopf „Ausfall“ an jeder Zeile.
+**Erwartet.** An jeder Patientenzeile ein Knopf „Ausfall“, der durch das Protokoll nach ADR-018 Punkt 9 führt.
 
 ### BEF-163 — Alles auch am Telefon
 
