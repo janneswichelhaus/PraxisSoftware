@@ -8,14 +8,15 @@ import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { findFreeSlots, type SearchParams, type Slot } from '@/features/slot-search/api';
-import { fetchDayRoute } from '@/features/tours/tagesroute';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   createAppointment,
   dayKey,
   fetchAppointment,
+  fetchAppointments,
   fetchUpcomingAppointments,
   formatLocalTime,
   kalenderZumTermin,
@@ -23,10 +24,13 @@ import {
   zeitpunktIn,
   type Appointment,
 } from './api';
-import { tagePlus } from './calendar';
+import { arbeitszeitBaender, tagePlus } from './calendar';
 import { undoAppointmentCreation } from './folgetermin-api';
 import {
+  dauerangabe,
+  freieMinuten,
   nachbarText,
+  nachbarZeiten,
   plane,
   tagKurz,
   urteilAus,
@@ -34,7 +38,7 @@ import {
   type Kandidat,
   type Urteil,
 } from './folgetermin';
-import { frageAusFormular, nachbarnDes, useWegpruefung } from './wegpruefung';
+import { frageAusFormular, useWegpruefung } from './wegpruefung';
 
 /** Höchstens so viele Vorschläge stehen da. */
 const VORSCHLAEGE = 3;
@@ -90,9 +94,11 @@ function Plus() {
 
 /**
  * Ein Kandidat: geprüft wie „Passt es?“ im Terminformular (Nachbarn und
- * Tagesränder, `useWegpruefung`), dazu die Termine davor und danach aus der
- * Tagesroute derselben Person - derselbe Zwischenspeicher. Er meldet sein
- * Urteil nach oben; ob er dasteht, entscheidet `plane`.
+ * Tagesränder, `useWegpruefung`), dazu die Belegung des Tages derselben
+ * Person - alle ihre Termine, auch Video und Ereignisse, und ihre Arbeitszeit
+ * mit Pausen, über dieselben Abfragen wie Kalender und „Passt es?“. Daraus
+ * stehen die Termine davor und danach und die mögliche Dauer da. Er meldet
+ * sein Urteil nach oben; ob er dasteht, entscheidet `plane`.
  */
 function Vorschlag({
   slot,
@@ -130,12 +136,35 @@ function Vorschlag({
     [slot, appointment.appointment_type, appointment.location_id, appointment.patient_id, zone],
   );
   const pruefung = useWegpruefung(frage);
-  const tag = useQuery({
-    queryKey: ['day-route', slot.slot_date, slot.staff_member_id],
-    queryFn: () => fetchDayRoute(slot.slot_date, slot.staff_member_id),
+  // Die Tagesroute kennt nur Termine mit Ort; davor, danach und die mögliche
+  // Dauer brauchen jeden Termin der Person an diesem Tag (Befund B8).
+  const folgetag = tagePlus(slot.slot_date, 1);
+  const kalender = useQuery({
+    queryKey: ['appointments', slot.slot_date, folgetag, slot.staff_member_id, null, 'active'],
+    queryFn: () =>
+      fetchAppointments({
+        von: slot.slot_date,
+        bis: folgetag,
+        person: slot.staff_member_id,
+        standort: null,
+        status: 'active',
+      }),
     retry: false,
   });
-  const urteil = urteilAus(pruefung, tag.isSuccess || tag.isError);
+  const wochenplan = useQuery({
+    queryKey: ['working-hours'],
+    queryFn: fetchWorkingHours,
+    retry: false,
+  });
+  const ausnahmen = useQuery({
+    queryKey: ['working-hour-exceptions', slot.slot_date, slot.slot_date],
+    queryFn: () => fetchWorkingHourExceptions(slot.slot_date, slot.slot_date),
+    retry: false,
+  });
+  const urteil = urteilAus(
+    pruefung,
+    [kalender, wochenplan, ausnahmen].every((abfrage) => abfrage.isSuccess || abfrage.isError),
+  );
   const eigenerSchluessel = schluessel(slot);
   useEffect(() => {
     onUrteil(eigenerSchluessel, urteil);
@@ -143,12 +172,28 @@ function Vorschlag({
 
   if (!zeigen) return null;
 
-  const { vorher, nachher } = nachbarnDes(
-    tag.data ?? [],
-    Date.parse(zeitpunktIn(slot.slot_date, minuteAus(slot.start_time), zone)),
+  const beginn = Date.parse(zeitpunktIn(slot.slot_date, minuteAus(slot.start_time), zone));
+  const { vorher, nachher } = nachbarZeiten(
+    kalender.data ?? [],
+    beginn,
     Date.parse(zeitpunktIn(slot.slot_date, minuteAus(slot.end_time), zone)),
   );
-  const weg = wegangabe(pruefung, dauer, raster);
+  const frei =
+    kalender.isSuccess && wochenplan.isSuccess && ausnahmen.isSuccess
+      ? freieMinuten({
+          beginn,
+          beginnMinute: minuteAus(slot.start_time),
+          nachher,
+          baender: arbeitszeitBaender(
+            slot.staff_member_id,
+            slot.slot_date,
+            wochenplan.data,
+            ausnahmen.data,
+          ),
+        })
+      : 'unbekannt';
+  const weg = wegangabe(pruefung);
+  const moeglich = dauerangabe(pruefung, { dauer, raster, frei });
   const wer = [
     slot.staff_name,
     gleicheZeit ? 'gleiche Zeit' : null,
@@ -171,13 +216,18 @@ function Vorschlag({
       meta={
         <>
           {wer ? <span className="block">{wer}</span> : null}{' '}
-          {tag.isSuccess ? (
+          {kalender.isSuccess ? (
             <span className="block">{nachbarText(vorher, nachher, zone)}</span>
           ) : null}{' '}
-          {weg ? (
+          {weg || moeglich ? (
             <span className="block">
-              {weg.ton === 'neutral' ? weg.wort : <StatusMark ton={weg.ton}>{weg.wort}</StatusMark>}
-              {weg.dauer ? ` · ${weg.dauer}` : null}
+              {weg?.ton === 'warnung' ? (
+                <StatusMark ton="warnung">{weg.wort}</StatusMark>
+              ) : (
+                weg?.wort
+              )}
+              {weg && moeglich ? ' · ' : null}
+              {moeglich}
             </span>
           ) : null}
         </>

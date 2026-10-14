@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import type { Tagesstopp } from '@/features/tours/tagesroute';
 import { zeitpunktIn } from './api';
 import {
+  dauerangabe,
+  freieMinuten,
   moeglicheDauer,
   moeglichText,
   nachbarText,
+  nachbarZeiten,
   plane,
   tagKurz,
   urteilAus,
   wegangabe,
   type Urteil,
+  type Zeitraum,
 } from './folgetermin';
 import { luftStufe, type Seite, type Wegpruefung } from './wegpruefung';
 
@@ -34,20 +37,24 @@ function bereit(an: Seite, weiter: Seite): Wegpruefung {
   return { stand: 'bereit', an, weiter };
 }
 
-function stopp(von: string, bis: string): Tagesstopp {
-  const minute = (z: string) => Number(z.slice(0, 2)) * 60 + Number(z.slice(3));
+function minute(zeit: string): number {
+  return Number(zeit.slice(0, 2)) * 60 + Number(zeit.slice(3));
+}
+
+/** Ein Termin am Tag, gleich welcher Art - es zählen nur die Zeiten. */
+function termin(von: string, bis: string): Zeitraum {
   return {
-    id: `${von}-${bis}`,
-    kind: 'therapy',
-    appointment_type: 'home_visit',
-    status: 'confirmed',
     starts_at: zeitpunktIn(TAG, minute(von), ZONE),
     ends_at: zeitpunktIn(TAG, minute(bis), ZONE),
-    lat: 48.52,
-    lon: 9.05,
-    geocode_precision: 'address',
-    position_source: 'visit',
   };
+}
+
+function um(zeit: string): number {
+  return Date.parse(zeitpunktIn(TAG, minute(zeit), ZONE));
+}
+
+function band(von: string, bis: string) {
+  return { vonMinute: minute(von), bisMinute: minute(bis) };
 }
 
 describe('tagKurz', () => {
@@ -138,14 +145,84 @@ describe('plane (ANN-535)', () => {
   });
 });
 
+describe('nachbarZeiten', () => {
+  it('nimmt jeden Termin des Tages, den nächsten davor und danach', () => {
+    const video = termin('10:00', '10:30');
+    const { vorher, nachher } = nachbarZeiten(
+      [termin('07:00', '07:45'), termin('08:00', '08:45'), video, termin('11:30', '12:30')],
+      um('09:00'),
+      um('10:00'),
+    );
+    expect(vorher).toEqual(termin('08:00', '08:45'));
+    // Direkt anschließend zählt - auch ein Termin ohne Ort.
+    expect(nachher).toBe(video);
+  });
+
+  it('übergeht, was den Vorschlag überschneidet', () => {
+    expect(nachbarZeiten([termin('08:30', '09:30')], um('09:00'), um('10:00'))).toEqual({
+      vorher: null,
+      nachher: null,
+    });
+  });
+});
+
+describe('freieMinuten', () => {
+  const arbeit = [band('08:00', '12:00'), band('13:00', '17:00')];
+
+  it('reicht bis zum nächsten Termin, gleich welcher Art', () => {
+    expect(
+      freieMinuten({
+        beginn: um('09:00'),
+        beginnMinute: minute('09:00'),
+        nachher: termin('10:15', '10:45'),
+        baender: arbeit,
+      }),
+    ).toBe(75);
+  });
+
+  it('endet an der Pause, auch wenn danach lange nichts kommt', () => {
+    expect(
+      freieMinuten({
+        beginn: um('11:00'),
+        beginnMinute: minute('11:00'),
+        nachher: termin('14:00', '15:00'),
+        baender: arbeit,
+      }),
+    ).toBe(60);
+  });
+
+  it('zählt aneinanderstoßende Bänder als eines', () => {
+    expect(
+      freieMinuten({
+        beginn: um('11:00'),
+        beginnMinute: minute('11:00'),
+        nachher: null,
+        baender: [band('12:00', '16:00'), band('08:00', '12:00')],
+      }),
+    ).toBe(300);
+  });
+
+  it('kennt ohne Termin danach und außerhalb jedes Bands keine Grenze', () => {
+    expect(
+      freieMinuten({
+        beginn: um('18:00'),
+        beginnMinute: minute('18:00'),
+        nachher: null,
+        baender: arbeit,
+      }),
+    ).toBeNull();
+  });
+});
+
 describe('moeglicheDauer', () => {
-  it('rundet die Luft zur Weiterfahrt auf das Raster ab', () => {
+  it('rundet die Luft danach auf das Raster ab', () => {
     expect(moeglicheDauer(60, 32, 5)).toBe(90);
     expect(moeglicheDauer(60, 32, 10)).toBe(90);
     expect(moeglicheDauer(60, 32, 15)).toBe(90);
     expect(moeglicheDauer(60, 29, 15)).toBe(75);
     expect(moeglicheDauer(60, 4, 5)).toBe(60);
     expect(moeglicheDauer(45, 0, 5)).toBe(45);
+    expect(moeglicheDauer(45, -5, 5)).toBe(45);
   });
 
   it('nimmt ohne Raster der Praxis fünf Minuten', () => {
@@ -159,55 +236,112 @@ describe('moeglicheDauer', () => {
   });
 });
 
-describe('wegangabe', () => {
-  it('sagt „Wege passen“ mit der möglichen Dauer', () => {
-    expect(wegangabe(bereit(geprueft(20), geprueft(32)), 60, 5)).toEqual({
-      ton: 'positiv',
-      wort: 'Wege passen',
-      dauer: 'bis 90 Min. möglich',
-    });
+describe('dauerangabe (ANN-535)', () => {
+  const passt = bereit(geprueft(20), geprueft(32));
+
+  it('rechnet mit der Luft zur Weiterfahrt, wenn die Belegung weiter reicht', () => {
+    expect(dauerangabe(passt, { dauer: 60, raster: 5, frei: 240 })).toBe('bis 90 Min. möglich');
   });
 
   it('rechnet am Tagesrand bis zum Arbeitsende (Rückfahrt)', () => {
-    expect(wegangabe(bereit(geprueft(20), geprueft(15, 'tagesrand')), 60, 5)?.dauer).toBe(
+    expect(
+      dauerangabe(bereit(geprueft(20), geprueft(15, 'tagesrand')), {
+        dauer: 60,
+        raster: 5,
+        frei: 240,
+      }),
+    ).toBe('bis 75 Min. möglich');
+  });
+
+  it('endet am nächsten Termin ohne Ort oder an der Pause, auch wenn der Weg mehr hergäbe', () => {
+    // Videotermin um 10:00 nach dem Vorschlag 09:00–10:00: nichts dazu.
+    expect(dauerangabe(passt, { dauer: 60, raster: 5, frei: 60 })).toBe('bis 60 Min. möglich');
+    expect(dauerangabe(passt, { dauer: 60, raster: 15, frei: 80 })).toBe('bis 75 Min. möglich');
+  });
+
+  it('nennt am Videotermin die Grenze der Belegung', () => {
+    expect(dauerangabe({ stand: 'aus' }, { dauer: 45, raster: 5, frei: 75 })).toBe(
       'bis 75 Min. möglich',
     );
+    expect(dauerangabe({ stand: 'aus' }, { dauer: 45, raster: 5, frei: null })).toBeNull();
+  });
+
+  it('nennt ohne Weiterfahrt mit Ort die Grenze der Belegung', () => {
+    expect(
+      dauerangabe(bereit(geprueft(20), { stand: 'offen' }), { dauer: 60, raster: 5, frei: 90 }),
+    ).toBe('bis 90 Min. möglich');
+  });
+
+  it('sagt nichts, solange die Weiterfahrt oder die Belegung unbekannt ist', () => {
+    expect(dauerangabe(passt, { dauer: 60, raster: 5, frei: 'unbekannt' })).toBeNull();
+    for (const weiter of [
+      { stand: 'nicht_geprueft' },
+      { stand: 'nachbar_nicht_verortet' },
+      { stand: 'laedt' },
+    ] as const) {
+      expect(
+        dauerangabe(bereit(geprueft(20), weiter), { dauer: 60, raster: 5, frei: 240 }),
+      ).toBeNull();
+    }
+    for (const stand of ['nicht_verortet', 'veraltet', 'fehler', 'laedt'] as const) {
+      expect(dauerangabe({ stand }, { dauer: 60, raster: 5, frei: 240 })).toBeNull();
+    }
+  });
+
+  it('nimmt bei ungeprüfter Anfahrt die geprüfte Weiterfahrt', () => {
+    expect(
+      dauerangabe(bereit({ stand: 'nicht_geprueft' }, geprueft(30)), {
+        dauer: 60,
+        raster: 5,
+        frei: 240,
+      }),
+    ).toBe('bis 90 Min. möglich');
+  });
+});
+
+describe('wegangabe', () => {
+  it('sagt „Wege passen“ leise: der Regelfall trägt kein Abzeichen (DESIGN.md Regel 5)', () => {
+    expect(wegangabe(bereit(geprueft(20), geprueft(32)))).toEqual({
+      ton: 'neutral',
+      wort: 'Wege passen',
+    });
   });
 
   it('nennt eine knappe Seite als Warnung', () => {
-    expect(wegangabe(bereit(geprueft(3), geprueft(30)), 60, 5)).toMatchObject({
+    expect(wegangabe(bereit(geprueft(3), geprueft(30)))).toEqual({
       ton: 'warnung',
       wort: 'Weg knapp',
     });
   });
 
   it('nennt Ungeprüftes leise', () => {
-    expect(wegangabe(bereit({ stand: 'nicht_geprueft' }, geprueft(30)), 60, 5)).toEqual({
+    expect(wegangabe(bereit({ stand: 'nicht_geprueft' }, geprueft(30)))).toEqual({
       ton: 'neutral',
       wort: 'Weg ungeprüft',
-      dauer: 'bis 90 Min. möglich',
     });
-    expect(wegangabe({ stand: 'nicht_verortet' }, 60, 5)).toEqual({
+    expect(wegangabe({ stand: 'nicht_verortet' })).toEqual({
       ton: 'neutral',
       wort: 'Weg ungeprüft',
-      dauer: null,
     });
   });
 
   it('sagt nichts, wo es nichts zu prüfen gibt', () => {
-    expect(wegangabe({ stand: 'aus' }, 60, 5)).toBeNull();
-    expect(wegangabe(bereit({ stand: 'offen' }, { stand: 'offen' }), 60, 5)).toBeNull();
-    expect(wegangabe(bereit({ stand: 'offen' }, geprueft(30)), 60, 5)?.wort).toBe('Weg passt');
+    expect(wegangabe({ stand: 'aus' })).toBeNull();
+    expect(wegangabe(bereit({ stand: 'offen' }, { stand: 'offen' }))).toBeNull();
+    expect(wegangabe(bereit({ stand: 'offen' }, geprueft(30)))).toEqual({
+      ton: 'neutral',
+      wort: 'Weg passt',
+    });
   });
 });
 
 describe('nachbarText', () => {
   it('nennt nur Zeiten', () => {
-    expect(nachbarText(stopp('08:00', '08:45'), stopp('11:30', '12:30'), ZONE)).toBe(
+    expect(nachbarText(termin('08:00', '08:45'), termin('11:30', '12:30'), ZONE)).toBe(
       'davor 08:00–08:45 · danach 11:30',
     );
-    expect(nachbarText(null, stopp('11:30', '12:30'), ZONE)).toBe('danach 11:30');
-    expect(nachbarText(stopp('08:00', '08:45'), null, ZONE)).toBe('davor 08:00–08:45');
+    expect(nachbarText(null, termin('11:30', '12:30'), ZONE)).toBe('danach 11:30');
+    expect(nachbarText(termin('08:00', '08:45'), null, ZONE)).toBe('davor 08:00–08:45');
     expect(nachbarText(null, null, ZONE)).toBe('kein Termin davor oder danach');
   });
 });

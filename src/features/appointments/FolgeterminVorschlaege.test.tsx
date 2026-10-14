@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
+import type * as SchedulingApi from '@/features/scheduling/api';
 import type * as SlotApi from '@/features/slot-search/api';
-import type * as TagesrouteModul from '@/features/tours/tagesroute';
 import type * as WegModul from './wegpruefung';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
@@ -15,6 +15,7 @@ import { FolgeterminVorschlaege } from './FolgeterminVorschlaege';
 const fetchUpcomingAppointments = vi.fn();
 const createAppointment = vi.fn();
 const fetchAppointment = vi.fn();
+const fetchAppointments = vi.fn();
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof AppointmentsApi>()),
   fetchUpcomingAppointments: (id: string) =>
@@ -22,6 +23,16 @@ vi.mock('./api', async (importOriginal) => ({
   createAppointment: (...args: unknown[]) => createAppointment(...args) as Promise<string>,
   fetchAppointment: (id: string) =>
     fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
+  fetchAppointments: (query: AppointmentsApi.CalendarQuery) =>
+    fetchAppointments(query) as Promise<AppointmentsApi.CalendarEntry[]>,
+}));
+const fetchWorkingHours = vi.fn();
+const fetchWorkingHourExceptions = vi.fn();
+vi.mock('@/features/scheduling/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof SchedulingApi>()),
+  fetchWorkingHours: () => fetchWorkingHours() as Promise<SchedulingApi.WorkingHour[]>,
+  fetchWorkingHourExceptions: (von: string, bis: string) =>
+    fetchWorkingHourExceptions(von, bis) as Promise<SchedulingApi.WorkingHourException[]>,
 }));
 const undoAppointmentCreation = vi.fn();
 vi.mock('./folgetermin-api', () => ({
@@ -32,12 +43,6 @@ const findFreeSlots = vi.fn();
 vi.mock('@/features/slot-search/api', async (importOriginal) => ({
   ...(await importOriginal<typeof SlotApi>()),
   findFreeSlots: (params: SlotApi.SearchParams) => findFreeSlots(params) as Promise<SlotApi.Slot[]>,
-}));
-const fetchDayRoute = vi.fn();
-vi.mock('@/features/tours/tagesroute', async (importOriginal) => ({
-  ...(await importOriginal<typeof TagesrouteModul>()),
-  fetchDayRoute: (datum: string, person: string) =>
-    fetchDayRoute(datum, person) as Promise<TagesrouteModul.Tagesstopp[]>,
 }));
 
 /**
@@ -135,24 +140,51 @@ function platz(datum: string, von: string, teil: Partial<SlotApi.Slot> = {}): Sl
   };
 }
 
-function stopp(datum: string, von: string, bis: string): TagesrouteModul.Tagesstopp {
-  const minute = (z: string) => Number(z.slice(0, 2)) * 60 + Number(z.slice(3));
+function minuteAus(zeit: string): number {
+  return Number(zeit.slice(0, 2)) * 60 + Number(zeit.slice(3, 5));
+}
+
+/** „hh:mm“ aus einer Minute des Tages. */
+function zeit(minute: number): string {
+  return `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
+}
+
+/** Ein Termin derselben Person im Kalender - erfunden, ohne Namen. */
+function eintrag(
+  datum: string,
+  von: string,
+  bis: string,
+  art: AppointmentsApi.AppointmentType = 'home_visit',
+): AppointmentsApi.CalendarEntry {
   return {
     id: `${datum}-${von}`,
+    patient_id: 'p-andere',
+    staff_member_id: termin.staff_member_id,
+    location_id: null,
+    appointment_type: art,
     kind: 'therapy',
-    appointment_type: 'home_visit',
+    title: null,
     status: 'confirmed',
-    starts_at: zeitpunktIn(datum, minute(von), ZONE),
-    ends_at: zeitpunktIn(datum, minute(bis), ZONE),
-    lat: 48.53,
-    lon: 9.06,
-    geocode_precision: 'address',
-    position_source: 'visit',
+    starts_at: zeitpunktIn(datum, minuteAus(von), ZONE),
+    ends_at: zeitpunktIn(datum, minuteAus(bis), ZONE),
+    patient_given_name: null,
+    patient_family_name: null,
+    staff_given_name: 'Anna',
+    staff_family_name: 'Beispiel',
+    location_name: null,
   };
 }
 
-function minuteAus(zeit: string): number {
-  return Number(zeit.slice(0, 2)) * 60 + Number(zeit.slice(3, 5));
+/** Arbeitszeit an einem Tag abweichend vom Wochenplan, etwa mit Pause. */
+function ausnahme(datum: string, von: string, bis: string): SchedulingApi.WorkingHourException {
+  return {
+    id: `${datum}-${von}`,
+    staff_member_id: termin.staff_member_id,
+    on_date: datum,
+    kind: 'block',
+    starts_at: von,
+    ends_at: bis,
+  };
 }
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
@@ -206,8 +238,21 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     );
     undoAppointmentCreation.mockReset();
     undoAppointmentCreation.mockResolvedValue(undefined);
-    fetchDayRoute.mockReset();
-    fetchDayRoute.mockResolvedValue([]);
+    fetchAppointments.mockReset();
+    fetchAppointments.mockResolvedValue([]);
+    // Jeden Tag 06:00 bis 20:00, ohne Pause - die Wege setzen die Grenze.
+    fetchWorkingHours.mockReset();
+    fetchWorkingHours.mockResolvedValue(
+      [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+        id: `arbeit-${weekday}`,
+        staff_member_id: termin.staff_member_id,
+        weekday,
+        starts_at: '06:00',
+        ends_at: '20:00',
+      })),
+    );
+    fetchWorkingHourExceptions.mockReset();
+    fetchWorkingHourExceptions.mockResolvedValue([]);
     findFreeSlots.mockReset();
     findFreeSlots.mockImplementation((p: SlotApi.SearchParams) =>
       Promise.resolve(
@@ -232,7 +277,7 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     const [erste, zweite, dritte] = await zeilen(3);
     expect(erste).toHaveTextContent(`${BEGINN}–`);
     expect(erste).toHaveTextContent('gleiche Zeit');
-    // Nur Abweichungen tragen ein Wort (UX-005g).
+    // Der Gebietstag steht nur als Abweichung da (UX-005g).
     expect(zweite).toHaveTextContent('14:00–15:00');
     expect(zweite).toHaveTextContent('außerhalb Gebietstag');
     expect(dritte).toHaveTextContent('08:00–09:00');
@@ -247,10 +292,10 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
   });
 
   it('zeigt Therapeut:in, die Termine davor und danach und die mögliche Dauer', async () => {
-    fetchDayRoute.mockImplementation((datum: string) =>
+    fetchAppointments.mockImplementation((q: AppointmentsApi.CalendarQuery) =>
       Promise.resolve(
-        datum === NAECHSTE_WOCHE
-          ? [stopp(datum, '06:30', '07:15'), stopp(datum, '12:30', '13:30')]
+        q.von === NAECHSTE_WOCHE
+          ? [eintrag(q.von, '06:30', '07:15'), eintrag(q.von, '12:30', '13:30')]
           : [],
       ),
     );
@@ -260,10 +305,55 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     await vi.waitFor(() => expect(erste).toHaveTextContent('davor 06:30–07:15 · danach 12:30'));
     // 32 Minuten Luft zur Weiterfahrt, auf das Raster abgerundet: 60 + 30.
     expect(erste).toHaveTextContent('Wege passen · bis 90 Min. möglich');
-    expect(within(erste!).getByText('Wege passen')).toHaveTextContent('✓');
+    // Der Regelfall trägt kein Abzeichen (DESIGN.md Regel 5): Was nicht
+    // passt, steht gar nicht da.
+    expect(erste).not.toHaveTextContent('✓');
     // Nur Zeiten, kein Name eines anderen Termins.
     expect(zweite).toHaveTextContent('kein Termin davor oder danach');
-    expect(fetchDayRoute).toHaveBeenCalledWith(NAECHSTE_WOCHE, termin.staff_member_id);
+    // Die Termine des Tages kommen aus dem Kalender derselben Person.
+    expect(fetchAppointments).toHaveBeenCalledWith({
+      von: NAECHSTE_WOCHE,
+      bis: tagePlus(NAECHSTE_WOCHE, 1),
+      person: termin.staff_member_id,
+      standort: null,
+      status: 'active',
+    });
+  });
+
+  it('nennt den Videotermin danach und hält die Dauer an ihm und an der Pause an (B8)', async () => {
+    // Direkt nach dem Vorschlag ein Videotermin - in der Tagesroute steht er
+    // nicht, der Weg gäbe 90 Minuten her.
+    const danach = minuteAus(BEGINN) + 60;
+    fetchAppointments.mockImplementation((q: AppointmentsApi.CalendarQuery) =>
+      Promise.resolve(
+        q.von === NAECHSTE_WOCHE ? [eintrag(q.von, zeit(danach), zeit(danach + 30), 'video')] : [],
+      ),
+    );
+    // Morgen Pause ab 15:00.
+    const morgen = tagePlus(TAG, 1);
+    fetchWorkingHourExceptions.mockImplementation((von: string) =>
+      Promise.resolve(
+        von === morgen
+          ? [ausnahme(morgen, '08:00', '15:00'), ausnahme(morgen, '16:00', '20:00')]
+          : [],
+      ),
+    );
+    rendern();
+    const [erste, zweite] = await zeilen(3);
+    await vi.waitFor(() => expect(erste).toHaveTextContent(`danach ${zeit(danach)}`));
+    expect(erste).toHaveTextContent('Wege passen · bis 60 Min. möglich');
+    expect(zweite).toHaveTextContent('14:00–15:00');
+    expect(zweite).toHaveTextContent('kein Termin davor oder danach');
+    expect(zweite).toHaveTextContent('Wege passen · bis 60 Min. möglich');
+  });
+
+  it('nennt keine Dauer, wenn die Termine des Tages nicht zu laden sind', async () => {
+    fetchAppointments.mockRejectedValue(new Error('Die Termine konnten nicht geladen werden.'));
+    rendern();
+    const [erste] = await zeilen(3);
+    expect(erste).toHaveTextContent('Wege passen');
+    expect(erste).not.toHaveTextContent('möglich');
+    expect(erste).not.toHaveTextContent('davor');
   });
 
   it('lässt zu knappe Vorschläge weg, der nächste Platz rückt nach (ANN-535)', async () => {

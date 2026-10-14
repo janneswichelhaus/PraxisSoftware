@@ -70,6 +70,47 @@ function tagesroute(tag: string) {
   return [];
 }
 
+/**
+ * Dieselben Tage im Kalender (`list_appointments`): jeder Termin der Person,
+ * auch ohne Ort. Morgen um 17:30 ein Videotermin, den die Tagesroute nicht
+ * kennt - er begrenzt die mögliche Dauer des Platzes davor (B8).
+ */
+function kalender(tag: string) {
+  const eintrag = (t: {
+    id: string;
+    appointment_type: string;
+    starts_at: string;
+    ends_at: string;
+  }) => ({
+    ...t,
+    patient_id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000099',
+    staff_member_id: STAFF,
+    location_id: null,
+    kind: 'therapy',
+    title: null,
+    status: 'confirmed',
+    patient_given_name: null,
+    patient_family_name: null,
+    staff_given_name: 'Anna',
+    staff_family_name: 'Beispiel',
+    location_name: null,
+  });
+  const eintraege = tagesroute(tag).map(({ id, appointment_type, starts_at, ends_at }) =>
+    eintrag({ id, appointment_type, starts_at, ends_at }),
+  );
+  if (tag === tagePlus(heute(), 1)) {
+    eintraege.push(
+      eintrag({
+        id: 'v1',
+        appointment_type: 'video',
+        starts_at: um('17:30', tag).toISOString(),
+        ends_at: um('18:00', tag).toISOString(),
+      }),
+    );
+  }
+  return eintraege;
+}
+
 /** Luftlinie in Metern - die Nachbildung des Kartendienstes rechnet damit. */
 function meter(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
   const grad = Math.PI / 180;
@@ -294,6 +335,8 @@ function nachbildung() {
     // „Passt es?“ je Vorschlag (B8): Tagesroute, Position der Akte und die
     // Rechnung des Servers - hier vereinfacht: ganze Minuten, aufgerundet.
     list_day_route: (p) => tagesroute(String(p.p_date)),
+    // Davor, danach und die mögliche Dauer: alle Termine der Person am Tag.
+    list_appointments: (p) => (p.p_staff_member_id === STAFF ? kalender(String(p.p_from)) : []),
     get_visit_position: () => [PATIENTIN],
     check_travel_fit: (p) =>
       (
@@ -623,12 +666,13 @@ test('zeigt Folgetermine als Zeilen mit Therapeut:in, Nachbarn und Wegen (B8)', 
   await expect(zeilen.nth(0)).toContainText('Anna Beispiel · gleiche Zeit');
   await expect(zeilen.nth(0)).toContainText('davor 07:00–07:45 · danach 10:35');
   await expect(zeilen.nth(0)).toContainText('Wege passen · bis 90 Min. möglich');
-  // Morgen um 14:00 reicht die Anfahrt nicht: Der Platz um 16:00 rückt nach,
-  // mit der Rückfahrt bis zum Arbeitsende um 18:00.
+  // Morgen um 14:00 reicht die Anfahrt nicht: Der Platz um 16:00 rückt nach.
+  // Die Rückfahrt bis zum Arbeitsende um 18:00 gäbe 115 Minuten her, der
+  // Videotermin um 17:30 - ohne Ort, nicht in der Tagesroute - nur 90.
   await expect(page.getByRole('button', { name: /14:00–15:00/ })).toHaveCount(0);
   await expect(zeilen.nth(1)).toContainText('16:00–17:00');
-  await expect(zeilen.nth(1)).toContainText('davor 13:00–14:00');
-  await expect(zeilen.nth(1)).toContainText('Wege passen · bis 115 Min. möglich');
+  await expect(zeilen.nth(1)).toContainText('davor 13:00–14:00 · danach 17:30');
+  await expect(zeilen.nth(1)).toContainText('Wege passen · bis 90 Min. möglich');
   await expect(zeilen.nth(2)).toContainText('08:00–09:00');
   await expect(zeilen.nth(2)).toContainText('kein Termin davor oder danach');
   // Gefragt wurde der Server - die Rundung gehört ihm (ANN-097).

@@ -5178,7 +5178,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
 
-**Annahme.** Jeder Vorschlag wird wie „Passt es?“ geprüft (Nachbarn und Tagesränder, höchstens sechs Kandidaten). Ist eine Seite zu knapp, fällt er weg; der nächste freie Platz rückt nach, auch am selben Tag. Ohne Ergebnis (Kartendienst, Adresse) bleibt er mit „Weg ungeprüft“. Mögliche Dauer: Dauer plus Luft zur Weiterfahrt, auf das Raster abgerundet; am Tagesrand bis zur Rückfahrt zum Arbeitsende.
+**Annahme.** Jeder Vorschlag wird wie „Passt es?“ geprüft (Nachbarn und Tagesränder, höchstens sechs Kandidaten). Ist eine Seite zu knapp, fällt er weg; der nächste freie Platz rückt nach, auch am selben Tag. Ohne Ergebnis (Kartendienst, Adresse) bleibt er mit „Weg ungeprüft“. Mögliche Dauer: Dauer plus Luft zur Weiterfahrt (am Tagesrand bis zur Rückfahrt), höchstens bis zum nächsten Termin jeder Art oder zur Pause, auf das Raster abgerundet.
 
 **Begründung.** Befund B8: Unmögliches nicht vorschlagen. Ungeprüft ist nicht unmöglich (ANN-136). Gezeigt wird erst, was entschieden ist – keine Zeile verrutscht unter dem Daumen.
 
