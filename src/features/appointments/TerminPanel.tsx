@@ -17,6 +17,7 @@ import {
 } from '@/features/session/types';
 import { Laengenzeichen } from './Laengenzeichen';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
+import { AbsageAktion } from './TerminAktionen';
 import { VERLAUF_ANKER } from '@/features/documentation/PatientRecordDocumentation';
 import {
   appointmentStatusLabels,
@@ -99,6 +100,11 @@ export function TerminPanel({
     eigener &&
     canWriteTreatmentNote(user.roles) &&
     (eintrag.status === 'confirmed' || offen);
+  // Absage am Telefon (K9, ANN-500): vom Panel aus, ohne das Fenster der
+  // übrigen Aktionen. Dieselbe Rückfrage mit Pflichtgrund wie dort;
+  // verbindlich prüft `cancel_appointment`.
+  const darfAbsagen =
+    behandlung && eintrag.status === 'confirmed' && canManageAppointments(user.roles);
   const art =
     eintrag.kind === 'internal'
       ? BEGRIFFE.fehlzeit
@@ -214,7 +220,7 @@ export function TerminPanel({
         </div>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-4">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
         {behandlung && canReadTreatmentNote(user.roles) ? (
           <Textlink
             alleinstehend
@@ -237,6 +243,13 @@ export function TerminPanel({
             Aktionen …
           </Button>
         )}
+        {darfAbsagen && termin ? (
+          <AbsageAktion
+            appointment={termin}
+            kompakt
+            melden={(text) => setMeldung({ ton: 'erfolg', text })}
+          />
+        ) : null}
       </div>
     </section>
   );
