@@ -110,7 +110,7 @@ describe('Leistung am Termin (B7, BEF-157)', () => {
   it('zeigt die Stelle in der Verordnung und das Heilmittel - ohne etwas abzuhaken', async () => {
     rendern();
     expect(await screen.findByText('2. von 10 Terminen · Krankengymnastik')).toBeInTheDocument();
-    expect(screen.getByText('Noch nicht abgehakt')).toBeInTheDocument();
+    expect(screen.getByText('Haken fehlt')).toBeInTheDocument();
     // Keine Heilmittel-Bestätigung mehr (ersetzt ANN-475).
     expect(screen.queryByRole('checkbox')).toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
@@ -126,7 +126,7 @@ describe('Leistung am Termin (B7, BEF-157)', () => {
   it('nennt eine festgeschriebene Doku ohne Haken nicht erbracht (B4)', async () => {
     fetchAbrechnungslage.mockResolvedValue(lage({ checked_at: null }));
     rendern({ status: 'documented', completed_at: null });
-    expect(await screen.findByText('Noch nicht abgehakt')).toBeInTheDocument();
+    expect(await screen.findByText('Haken fehlt')).toBeInTheDocument();
     expect(screen.queryByText('Erbracht')).toBeNull();
   });
 
@@ -144,12 +144,10 @@ describe('Leistung am Termin (B7, BEF-157)', () => {
     const user = userEvent.setup();
     rendern({ status: 'documented', completed_at: '2027-05-12T08:00:00Z' });
 
-    expect(
-      await screen.findByText(
-        'Verordnung vollständig: 10 von 10 Terminen erbracht und dokumentiert.',
-      ),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'In die Abrechnung stellen' }));
+    // Den Stand nennt die Zeile darüber; der Vorschlag ist nur der Knopf.
+    expect(await screen.findByText('10. von 10 Terminen · Krankengymnastik')).toBeInTheDocument();
+    expect(screen.queryByText(/Verordnung vollständig/)).toBeNull();
+    await user.click(await screen.findByRole('button', { name: 'In die Abrechnung stellen' }));
     await waitFor(() => expect(releaseTreatmentBasisForBilling).toHaveBeenCalledWith(GRUNDLAGE));
     expect(
       await screen.findByText('In die Abrechnung gestellt. Doku und Termine sind jetzt gesperrt.'),

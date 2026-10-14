@@ -70,9 +70,8 @@ test.describe('Termin: Kurzblick, Zähler und Heilmittel', () => {
     }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?ansicht=bestaetigt`);
-      await expect(
-        page.getByText('Verordnung vollständig: 10 von 10 Terminen erbracht und dokumentiert.'),
-      ).toBeVisible();
+      // Den Stand nennt die Zeile der Leistung; der Vorschlag ist nur der Knopf.
+      await expect(page.getByText(/^10\. von 10 Terminen/)).toBeVisible();
       const knopf = page.getByRole('button', { name: 'In die Abrechnung stellen' });
       await expect(knopf).toBeVisible();
       expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);

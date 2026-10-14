@@ -172,15 +172,78 @@ describe('Verordnung endet (PRX-016)', () => {
 // entfallen. Die Frist rechnet ab der letzten Behandlung; ein Abschluss ist
 // dafuer nicht mehr noetig. Die Karteileichen stehen in der Patientenliste
 // (list_patient_overview, patientenuebersicht.test.ts).
-describe('Versorgung ohne Abschluss entfaellt (B1)', () => {
+describe('Akte ohne Behandlung (B1, Zweitreview A, ADR-008 Punkt 3)', () => {
   beforeEach(async () => {
     await resetDatabase();
+    await person();
   }, 120_000);
 
-  it('kennt die Serverfunktion nicht mehr - fuer keine Rolle', async () => {
-    for (const konto of [users.ownerTherapist, users.therapist, users.office]) {
-      await expect(asUser(konto, OHNE_ABSCHLUSS)).rejects.toThrow(/does not exist/);
+  async function ohneAbschluss(konto: string = users.therapist): Promise<string[]> {
+    return (await asUser<{ patient_id: string }>(konto, OHNE_ABSCHLUSS)).rows.map(
+      (r) => r.patient_id,
+    );
+  }
+
+  async function angelegtVorSiebenMonaten(): Promise<void> {
+    await asPostgres(
+      `update public.patients set created_at = now() - interval '7 months' where id = $1`,
+      [LENA],
+    );
+  }
+
+  it('legt eine Akte ohne jede Behandlung nach sechs Monaten vor', async () => {
+    expect(await ohneAbschluss()).not.toContain(LENA);
+    await angelegtVorSiebenMonaten();
+    expect(await ohneAbschluss()).toContain(LENA);
+  });
+
+  it('legt sie auch mit einem alten, nie abgehakten Termin vor - der setzt keinen Anker', async () => {
+    await angelegtVorSiebenMonaten();
+    await termin(null, -200);
+    expect(await ohneAbschluss()).toContain(LENA);
+  });
+
+  it('schweigt, sobald eine Behandlung den Anker setzt', async () => {
+    await angelegtVorSiebenMonaten();
+    await asPostgres(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, location_id, appointment_type,
+         status, starts_at, ends_at, completed_at, completed_by
+       ) values ($1, $2, $3, $4, 'practice', 'completed',
+         now() - interval '200 days', now() - interval '200 days' + interval '45 minutes',
+         now() - interval '200 days' + interval '45 minutes', $5)`,
+      [organizationId, LENA, ANNA, LOCATION, users.therapist],
+    );
+    expect(await ohneAbschluss()).not.toContain(LENA);
+  });
+
+  it('schweigt bei einem kommenden Termin, einem juengeren Termin und nach dem Abschluss', async () => {
+    await angelegtVorSiebenMonaten();
+    await termin(null, 5);
+    expect(await ohneAbschluss()).not.toContain(LENA);
+
+    await asPostgres('delete from public.appointments where patient_id = $1', [LENA]);
+    await termin(null, -30);
+    expect(await ohneAbschluss()).not.toContain(LENA);
+
+    await asPostgres('delete from public.appointments where patient_id = $1', [LENA]);
+    await asPostgres(
+      `update public.patients set care_concluded_on = current_date, care_concluded_at = now(), care_concluded_by = $2 where id = $1`,
+      [LENA, users.therapist],
+    );
+    expect(await ohneAbschluss()).not.toContain(LENA);
+  });
+
+  it('zeigt die Liste nur den Rollen, die abschliessen duerfen', async () => {
+    await angelegtVorSiebenMonaten();
+    for (const konto of [users.ownerTherapist, users.therapist, users.teamLead]) {
+      expect(await ohneAbschluss(konto), konto).toContain(LENA);
     }
-    await expect(asAnon(OHNE_ABSCHLUSS)).rejects.toThrow(/does not exist|permission denied/);
+    for (const konto of [users.office, users.trainer, users.patientMax]) {
+      await erwarteAbgewiesenenLeseversuch(konto, OHNE_ABSCHLUSS, [], 'patient_directory.read');
+    }
+    const fremd = await fremdeOrganisation();
+    expect(await ohneAbschluss(fremd.owner)).not.toContain(LENA);
+    await expect(asAnon(OHNE_ABSCHLUSS)).rejects.toThrow(/permission denied/i);
   });
 });
