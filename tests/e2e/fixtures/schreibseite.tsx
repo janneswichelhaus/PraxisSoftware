@@ -185,20 +185,34 @@ const lage: Abrechnungslage = {
   closing_talk_due: false,
 };
 
+/**
+ * Drei eigene Bausteine für die Chipzeile und einer der Praxis, der seit B5
+ * (ANN-531) nicht mehr in der Leiste steht. `?bausteine=keine`: nur dieser -
+ * die Leiste zeigt dann „Eigene Bausteine anlegen“.
+ */
+const PRAXISBAUSTEIN: TextSnippet = {
+  id: 'b0',
+  title: 'Eigenuebungen besprochen',
+  body: 'Eigenübungen besprochen.',
+  shared: true,
+  editable: false,
+};
+
 const bausteine: TextSnippet[] = [
+  PRAXISBAUSTEIN,
   {
     id: 'b1',
     title: 'Hausbesuch',
     body: 'Hausbesuch durchgeführt.',
-    shared: true,
-    editable: false,
+    shared: false,
+    editable: true,
   },
   {
     id: 'b2',
     title: 'Heimprogramm',
     body: 'Heimprogramm besprochen.',
-    shared: true,
-    editable: false,
+    shared: false,
+    editable: true,
   },
   {
     id: 'b3',
@@ -224,7 +238,12 @@ client.setQueryData(
 );
 client.setQueryData(['treatment-note-versions', FESTGESCHRIEBEN.id], versionen);
 client.setQueryData(['appointment', TERMIN, 'abrechnungslage'], lage);
-client.setQueryData(['text-snippets'], bausteine);
+client.setQueryData(
+  ['text-snippets'],
+  new URLSearchParams(window.location.search).get('bausteine') === 'keine'
+    ? [PRAXISBAUSTEIN]
+    : bausteine,
+);
 client.setQueryData(
   ['patient-treatment-notes', MAX, 'schreibseite'],
   [

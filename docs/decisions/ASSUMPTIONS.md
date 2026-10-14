@@ -5223,3 +5223,15 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Andere Regel, auch über die Gegenseite hinweg: `wegangebot` · Aufwand `klein`.
 
+### ANN-531 — Textbausteine: in der Leiste nur eigene, keine neuen Bausteine der Praxis
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Leiste der Schreibseite zeigt nur die eigenen Bausteine der angemeldeten Person, ohne eigene den leisen Link „Eigene Bausteine anlegen“; „+ Befund“ bleibt. Die Bausteinseite legt nur noch eigene an; vorhandene Bausteine der Praxis sieht nur owner, eingeklappt, und kann sie löschen.
+
+**Begründung.** B5 (Jannes, 14.10.2026): Jede Therapeut:in legt sich eigene für den Alltag an. Nur Oberfläche: `list_text_snippets` und `create_text_snippet` bleiben unverändert.
+
+**Anker.** Filter in `src/features/documentation/TextbausteinLeiste.tsx`; Seite `TextbausteinePage.tsx`.
+
+**Änderungspfad.** Bausteine der Praxis wieder in der Leiste: Filter weg, Kästchen „Baustein der Praxis“ zurück · Aufwand `klein`.
+

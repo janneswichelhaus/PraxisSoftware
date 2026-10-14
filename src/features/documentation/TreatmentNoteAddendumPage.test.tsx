@@ -249,8 +249,9 @@ describe('TreatmentNoteAddendumPage', () => {
         id: 'b1',
         title: 'Heimprogramm',
         body: 'Synthetisch: Heimprogramm besprochen.',
-        shared: true,
-        editable: false,
+        // B5: In der Leiste stehen nur eigene Bausteine.
+        shared: false,
+        editable: true,
       },
     ]);
     const user = userEvent.setup();
