@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-PR #240 (Restbefunde der Praxis-Prüfung) wartet auf Jannes: „Vor der Tür“ an der Tageskarte (K3: 1 Tipp),
-„Wie zuletzt“ auf der Schreibseite (K6: 3 + Text), Absage im Terminpanel (K9: 4), Übung aus der
-Bibliothek in den Plan (2 bis im Plan). Fragen und Bilder in der PR. PR #239 ist gemergt.
+Vier PRs aus Jannes’ Durchsicht vom 14.10. (B1–B13) warten auf Jannes, in dieser Reihenfolge: #241 Leistung,
+Haken, Liste → #242 Einsicht → #243 Spracheingabe mit Nachbildung → #244 Oberfläche. Bericht mit
+Bildpaaren und fünf Fragen: https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g. PR #240 ist gemergt.
 
 ## Danach
 
@@ -23,7 +23,7 @@ Aus der bisherigen Kette danach: ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem
 
 ## Bei Jannes
 
-- PR #240: Bilder ansehen (~10 min), Fragen beantworten, mergen.
+- #241, #242, #243, #244: Bericht ansehen (~15 min), fünf Fragen beantworten, in Reihenfolge mergen.
 - Übungskatalog fachlich durchsehen (KI-erstellt, „ungeprüft“, ANN-386); ANN-475 bis ANN-480
   ansehen (Besuch, Ausgangsstellung).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
