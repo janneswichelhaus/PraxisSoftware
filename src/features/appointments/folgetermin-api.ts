@@ -6,6 +6,18 @@ import { getSupabase } from '@/lib/supabase';
  * festlegen können.
  */
 
+/**
+ * Die Person sieht ihre Termine auf der Plattform (Zweitreview F2, ANN-534):
+ * Dann fällt der Termin nicht still weg - „Rückgängig“ sagt ihn als Praxis
+ * ab, und die Person sieht die Absage.
+ */
+export class AufDerPlattformSichtbar extends Error {
+  constructor() {
+    super('Die Person sieht ihre Termine auf der Plattform.');
+    this.name = 'AufDerPlattformSichtbar';
+  }
+}
+
 /** Was der Server einwendet - in Worten, die sagen, was jetzt zu tun ist. */
 function meldung(text: string | undefined): string {
   if (text?.includes('undo window has passed')) {
@@ -44,5 +56,6 @@ export async function undoAppointmentCreation(
     p_appointment_id: appointmentId,
     p_expected_updated_at: expectedUpdatedAt,
   })) as { error: { message?: string } | null };
+  if (error?.message?.includes('visible on the platform')) throw new AufDerPlattformSichtbar();
   if (error) throw new Error(meldung(error.message));
 }

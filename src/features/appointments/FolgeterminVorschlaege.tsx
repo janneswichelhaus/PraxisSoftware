@@ -13,6 +13,7 @@ import { canManageAppointments, type CurrentUser } from '@/features/session/type
 import { findFreeSlots, type SearchParams, type Slot } from '@/features/slot-search/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
+  cancelAppointment,
   createAppointment,
   dayKey,
   fetchAppointment,
@@ -25,7 +26,7 @@ import {
   type Appointment,
 } from './api';
 import { arbeitszeitBaender, tagePlus } from './calendar';
-import { undoAppointmentCreation } from './folgetermin-api';
+import { AufDerPlattformSichtbar, undoAppointmentCreation } from './folgetermin-api';
 import {
   dauerangabe,
   freieMinuten,
@@ -276,6 +277,9 @@ export function FolgeterminVorschlaege({
   const naechsteWoche = tagePlus(datum, 7);
   const [angelegt, setAngelegt] = useState<Angelegt | null>(null);
   const [zurueckgenommen, setZurueckgenommen] = useState(false);
+  // Sah die Person den Termin auf der Plattform, wurde er abgesagt statt
+  // gelöscht (ANN-534) - die Meldung sagt es.
+  const [alsAbsage, setAlsAbsage] = useState(false);
   // Die Meldung nimmt den Fokus: Der getippte Knopf verschwindet mit dem
   // Anlegen bzw. Zurücknehmen, sonst fiele der Fokus an den Seitenanfang.
   const meldung = useRef<HTMLDivElement>(null);
@@ -379,18 +383,27 @@ export function FolgeterminVorschlaege({
   // Zurücknehmen prüft der Server ganz: Person, Zeit, Zustand, was daran
   // hängt - und dass seit dem Anlegen niemand den Termin geändert hat
   // (`updated_at = created_at`). Ließ sich der Stand nach dem Anlegen nicht
-  // lesen, wird er deshalb jetzt gelesen und genauso geprüft.
+  // lesen, wird er deshalb jetzt gelesen und genauso geprüft. Sieht die Person
+  // ihre Termine auf der Plattform, sagt „Rückgängig“ den Termin als Praxis ab
+  // - ohne Gebühr, und die Person sieht die Absage (ANN-534, ADR-018 Punkt 2).
   const zuruecknehmen = useMutation({
-    mutationFn: async (termin: Angelegt) => {
+    mutationFn: async (termin: Angelegt): Promise<'geloescht' | 'abgesagt'> => {
       let stand = termin.stand;
       if (stand === null) {
         const jetzt = await fetchAppointment(termin.id);
         if (!jetzt) throw new Error('Den Termin gibt es nicht mehr.');
         stand = jetzt.updated_at;
       }
-      await undoAppointmentCreation(termin.id, stand);
+      try {
+        await undoAppointmentCreation(termin.id, stand);
+        return 'geloescht';
+      } catch (fehler) {
+        if (!(fehler instanceof AufDerPlattformSichtbar)) throw fehler;
+        await cancelAppointment(termin.id, stand, 'practice_request');
+        return 'abgesagt';
+      }
     },
-    onSuccess: async () => {
+    onSuccess: async (ergebnis) => {
       // Erst nachladen, dann umschalten: Sonst stünde der zurückgenommene
       // Termin einen Augenblick als „Nächster Termin“ da.
       await Promise.all(
@@ -399,6 +412,7 @@ export function FolgeterminVorschlaege({
       anlegen.reset();
       setAngelegt(null);
       setZurueckgenommen(true);
+      setAlsAbsage(ergebnis === 'abgesagt');
       setMeldungNr((n) => n + 1);
     },
   });
@@ -552,7 +566,11 @@ export function FolgeterminVorschlaege({
       <Zwischentitel id={`folgetermin-${appointment.id}`}>Folgetermin</Zwischentitel>
       {zurueckgenommen && !angelegt ? (
         <div ref={meldung} tabIndex={-1} className="outline-none">
-          <Statusmeldung ton="erfolg">Folgetermin zurückgenommen.</Statusmeldung>
+          <Statusmeldung ton="erfolg">
+            {alsAbsage
+              ? 'Folgetermin abgesagt – die Person sieht ihn auf der Plattform als abgesagt.'
+              : 'Folgetermin zurückgenommen.'}
+          </Statusmeldung>
         </div>
       ) : null}
       {inhalt}

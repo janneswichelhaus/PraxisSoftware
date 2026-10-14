@@ -10,7 +10,8 @@
 -- ANN-534: Zuruecknehmen darf nur, wer angelegt hat, mit einer Rolle der
 -- Terminverwaltung, in derselben Organisation und hoechstens 15 Minuten nach
 -- dem Anlegen - und nur einen Termin, den seitdem niemand geaendert hat
--- (updated_at = created_at). Es entsteht keine Auditaktion (ADR-010 Punkte
+-- (updated_at = created_at) und den die Person nicht auf der Plattform sehen
+-- kann; sieht sie ihn, sagt die Oberflaeche ihn ab (Zweitreview F2). Es entsteht keine Auditaktion (ADR-010 Punkte
 -- 16 und 17, supabase/audit-aktionen.txt bleibt): Der Termin war nie
 -- wirksam. Damit er nach einer Wiederherstellung nicht zurueckkehrt, steht er
 -- im Loeschjournal (ADR-008 Punkt 8) - Tabelle und Kennung, kein Inhalt,
@@ -70,7 +71,7 @@ begin
   -- Gesperrt bis zum Ende der Transaktion: Wer gleichzeitig etwas an den
   -- Termin haengt (Fremdschluessel), wartet - und danach sieht die Pruefung
   -- unten seine Zeile, oder sein Eintrag scheitert am fehlenden Termin.
-  select a.id, a.kind, a.status, a.created_by, a.created_at, a.updated_at
+  select a.id, a.kind, a.status, a.patient_id, a.created_by, a.created_at, a.updated_at
     into v_termin
   from public.appointments a
   where a.id = p_appointment_id
@@ -161,6 +162,20 @@ begin
     raise exception 'patient already notified' using errcode = '22023';
   end if;
 
+  -- Zweitreview F2: Sieht die Person ihre Termine auf der Plattform - eigener
+  -- Zugang oder Begleitung, aktiv -, hat sie diesen womoeglich schon gesehen.
+  -- Dann faellt er nicht still weg (ADR-018 Punkt 2); die Oberflaeche sagt
+  -- ihn stattdessen als Praxis ab, und die Person sieht die Absage.
+  if exists (
+    select 1 from public.platform_accesses z
+    where z.organization_id = v_org
+      and z.relationship_kind = 'treatment'
+      and z.patient_id = v_termin.patient_id
+      and z.status = 'active'
+  ) then
+    raise exception 'appointment is visible on the platform' using errcode = '22023';
+  end if;
+
   -- Offene, verworfene und aufgegebene Auftraege fallen mit dem Termin.
   delete from public.notification_deliveries d
    where d.subject_id = p_appointment_id
@@ -177,7 +192,7 @@ end;
 $$;
 
 comment on function public.undo_appointment_creation(uuid, timestamptz) is
-  'O-001 (B8, ANN-534): nimmt einen eben angelegten Behandlungstermin zurueck und loescht ihn - nur die anlegende Person mit Rolle der Terminverwaltung, hoechstens 15 Minuten nach dem Anlegen, noch geplant, seitdem unveraendert (updated_at = created_at, passend zum erwarteten Stand), ohne Doku, Entwurf, Leistung, Honorar, Anrufstand, Warteliste, Plattformwunsch, Serie und ohne Mitteilung. Offene Zustellauftraege fallen mit. Kein Auditeintrag; im Loeschjournal (ADR-008 Punkt 8).';
+  'O-001 (B8, ANN-534): nimmt einen eben angelegten Behandlungstermin zurueck und loescht ihn - nur die anlegende Person mit Rolle der Terminverwaltung, hoechstens 15 Minuten nach dem Anlegen, noch geplant, seitdem unveraendert (updated_at = created_at, passend zum erwarteten Stand), ohne Doku, Entwurf, Leistung, Honorar, Anrufstand, Warteliste, Plattformwunsch, Serie und ohne Mitteilung, und nur, wenn die Person ihre Termine nicht auf der Plattform sieht. Offene Zustellauftraege fallen mit. Kein Auditeintrag; im Loeschjournal (ADR-008 Punkt 8).';
 
 revoke all on function public.undo_appointment_creation(uuid, timestamptz) from public, anon;
 grant execute on function public.undo_appointment_creation(uuid, timestamptz) to authenticated;

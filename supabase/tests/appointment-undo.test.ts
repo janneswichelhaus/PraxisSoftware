@@ -49,10 +49,15 @@ async function stand(id: string): Promise<string> {
   return rows[0]!.stand;
 }
 
-/** Legt bestätigt an, wie die Oberfläche es tut (`create_appointment`). */
-async function anlegen(userId: string): Promise<Angelegt> {
+/**
+ * Legt bestätigt an, wie die Oberfläche es tut (`create_appointment`). Erika
+ * sieht ihre Termine auf der Plattform (eigener Zugang), Max über eine
+ * Begleitung; Petra hat keinen Zugang - nur bei ihr geht das Zurücknehmen
+ * durch (Zweitreview F2).
+ */
+async function anlegen(userId: string, patient: string = patients.erika): Promise<Angelegt> {
   const { rows } = await asUserCommitted<{ id: string }>(userId, ANLEGEN, [
-    patients.erika,
+    patient,
     ANNA,
     naechsterTag(),
     '09:00',
@@ -123,7 +128,7 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
 
   describe('was gelingt', () => {
     it('nimmt den eben angelegten Termin zurück: die Zeile fällt, das Auditlog bleibt', async () => {
-      const termin = await anlegen(users.therapist);
+      const termin = await anlegen(users.therapist, patients.petra);
       const protokollVorher = await asPostgres<{ n: string }>(
         'select count(*)::text as n from public.audit_log',
       );
@@ -152,19 +157,19 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
       ['team_lead', users.teamLead],
       ['office', users.office],
     ])('erlaubt es %s für den selbst angelegten Termin', async (_rolle, userId) => {
-      const termin = await anlegen(userId);
+      const termin = await anlegen(userId, patients.petra);
       await zuruecknehmenBestaetigt(userId, termin);
       expect(await gibtEs(termin.id)).toBe(false);
     });
 
     it('geht nach 14 Minuten noch', async () => {
-      const termin = await angelegtVor(await anlegen(users.therapist), 14);
+      const termin = await angelegtVor(await anlegen(users.therapist, patients.petra), 14);
       await zuruecknehmenBestaetigt(users.therapist, termin);
       expect(await gibtEs(termin.id)).toBe(false);
     });
 
     it('nimmt offene und verworfene Zustellaufträge mit', async () => {
-      const termin = await anlegen(users.therapist);
+      const termin = await anlegen(users.therapist, patients.petra);
       await zustellauftrag(termin.id, 'offen', 'email');
       await zustellauftrag(termin.id, 'verworfen', 'push');
 
@@ -178,7 +183,7 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
     });
 
     it('kehrt nach einer Wiederherstellung nicht zurück (ADR-008 Punkt 8)', async () => {
-      const termin = await anlegen(users.therapist);
+      const termin = await anlegen(users.therapist, patients.petra);
       // Die Sicherung von vorher: die Zeile, wie sie war.
       const { rows: sicherung } = await asPostgres<{ zeile: string }>(
         'select row_to_json(a)::text as zeile from public.appointments a where a.id = $1',
@@ -198,6 +203,19 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
       // nur mit dem Datenbankkonto).
       await asPostgres('select public.reapply_deletion_journal()');
       expect(await gibtEs(termin.id)).toBe(false);
+    });
+
+    // Zweitreview F2: Sieht die Person ihre Termine auf der Plattform, fällt
+    // der Termin nicht still weg - die Oberfläche sagt ihn ab (ADR-018 Punkt 2).
+    it.each([
+      ['eigener Zugang (Erika)', patients.erika],
+      ['Begleitung (Max)', patients.max],
+    ])('weist ab, wenn die Person ihn auf der Plattform sieht: %s', async (_wie, patient) => {
+      const termin = await anlegen(users.therapist, patient);
+      await expect(zuruecknehmen(users.therapist, termin)).rejects.toThrow(
+        /appointment is visible on the platform/,
+      );
+      expect(await gibtEs(termin.id)).toBe(true);
     });
   });
 
@@ -397,13 +415,32 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
       ],
       [
         'Leistung',
+        // Seit PR A entsteht an einem Termin ohne Haken auf keinem Weg eine
+        // Leistung (Trigger billable_services_require_check, ANN-513). Die
+        // Prüfung hier bleibt als zweite Linie; der Test legt die Zeile
+        // deshalb bewusst am Trigger vorbei an - in einer Anweisung, die bei
+        // einem Fehler ganz zurückrollt.
+        (termin) =>
+          asPostgres(`
+            alter table public.billable_services disable trigger billable_services_require_check;
+            insert into public.billable_services
+              (organization_id, patient_id, appointment_id, catalog_item_id, quantity,
+               performed_on, created_by)
+            values ('${organizationId}', '${patients.erika}', '${termin}', '${KATALOG_KG}', 1,
+                    current_date, '${users.therapist}');
+            alter table public.billable_services enable trigger billable_services_require_check;
+          `),
+      ],
+      [
+        'Honorar',
         (termin) =>
           asPostgres(
-            `insert into public.billable_services
-               (organization_id, patient_id, appointment_id, catalog_item_id, quantity,
+            `insert into public.appointment_session_fees
+               (organization_id, appointment_id, amount_cents, source, catalog_version_id,
                 performed_on, created_by)
-             values ($2, $3, $1, $4, 1, current_date, $5)`,
-            [termin, organizationId, patients.erika, KATALOG_KG, users.therapist],
+             select $2, $1, 14000, 'tariff',
+                    app.active_service_catalog_version($2, current_date), current_date, $3`,
+            [termin, organizationId, users.therapist],
           ),
       ],
       [
@@ -428,6 +465,26 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
           ),
       ],
       [
+        'Terminwunsch, der zu diesem Termin geführt hat',
+        (termin) =>
+          asPostgres(
+            `insert into public.platform_appointment_requests
+               (organization_id, relationship_kind, relationship_id, patient_id, kind,
+                preferred_days, status, created_by_access_id, created_by,
+                resolved_at, resolved_by, resulting_appointment_id)
+             values ($2, 'treatment', $3, $3, 'new', array[current_date + 7], 'done', $4, $5,
+                     now(), $6, $1)`,
+            [
+              termin,
+              organizationId,
+              patients.erika,
+              platformAccesses.erikaBehandlung,
+              users.plattformErika,
+              users.office,
+            ],
+          ),
+      ],
+      [
         'Terminwunsch der Plattform',
         (termin) =>
           asPostgres(
@@ -449,6 +506,25 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
     it.each(anhaenge)('weist ab mit %s', async (_was, anhaengen) => {
       const termin = await anlegen(users.therapist);
       await anhaengen(termin.id);
+      await expect(zuruecknehmen(users.therapist, termin)).rejects.toThrow(
+        /appointment creation cannot be undone/,
+      );
+      expect(await gibtEs(termin.id)).toBe(true);
+    });
+
+    // Zweitreview F3: nur Behandlungstermine - ein internes Ereignis nicht.
+    it('weist ein internes Ereignis ab, auch das eigene', async () => {
+      const { rows } = await asPostgres<{ id: string }>(
+        `insert into public.appointments (
+           organization_id, patient_id, staff_member_id, appointment_type, kind, title,
+           event_group_id, status, starts_at, ends_at, created_by
+         ) values ($1, null, $2, 'video', 'internal', 'Teambesprechung', gen_random_uuid(),
+                   'confirmed', now() + interval '3 days', now() + interval '3 days 30 minutes',
+                   $3)
+         returning id`,
+        [organizationId, ANNA, users.therapist],
+      );
+      const termin = { id: rows[0]!.id, stand: await stand(rows[0]!.id) };
       await expect(zuruecknehmen(users.therapist, termin)).rejects.toThrow(
         /appointment creation cannot be undone/,
       );

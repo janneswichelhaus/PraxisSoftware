@@ -6,7 +6,7 @@ vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ rpc }),
 }));
 
-const { undoAppointmentCreation } = await import('./folgetermin-api');
+const { AufDerPlattformSichtbar, undoAppointmentCreation } = await import('./folgetermin-api');
 
 /** Befund B8: Zurücknehmen über `undo_appointment_creation`, Einwände in Worten. */
 describe('undoAppointmentCreation', () => {
@@ -21,6 +21,18 @@ describe('undoAppointmentCreation', () => {
       p_appointment_id: 'neu-1',
       p_expected_updated_at: '2026-10-14T07:25:00.123456+00:00',
     });
+  });
+
+  // Zweitreview F2: kein Fehler für die Person, sondern ein eigener Fall -
+  // die Oberfläche sagt den Termin dann ab (ANN-534).
+  it('kennzeichnet einen Termin, den die Person auf der Plattform sieht', async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { message: 'appointment is visible on the platform' },
+    });
+    await expect(undoAppointmentCreation('neu-1', 'stand')).rejects.toBeInstanceOf(
+      AufDerPlattformSichtbar,
+    );
   });
 
   it.each([

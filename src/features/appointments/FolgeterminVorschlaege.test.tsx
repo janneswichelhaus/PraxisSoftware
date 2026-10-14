@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
+import type * as FolgeterminApi from './folgetermin-api';
 import type * as SchedulingApi from '@/features/scheduling/api';
 import type * as SlotApi from '@/features/slot-search/api';
 import type * as WegModul from './wegpruefung';
@@ -16,8 +17,10 @@ const fetchUpcomingAppointments = vi.fn();
 const createAppointment = vi.fn();
 const fetchAppointment = vi.fn();
 const fetchAppointments = vi.fn();
+const cancelAppointment = vi.fn();
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof AppointmentsApi>()),
+  cancelAppointment: (...args: unknown[]) => cancelAppointment(...args) as Promise<void>,
   fetchUpcomingAppointments: (id: string) =>
     fetchUpcomingAppointments(id) as Promise<AppointmentsApi.UpcomingAppointment[]>,
   createAppointment: (...args: unknown[]) => createAppointment(...args) as Promise<string>,
@@ -35,7 +38,8 @@ vi.mock('@/features/scheduling/api', async (importOriginal) => ({
     fetchWorkingHourExceptions(von, bis) as Promise<SchedulingApi.WorkingHourException[]>,
 }));
 const undoAppointmentCreation = vi.fn();
-vi.mock('./folgetermin-api', () => ({
+vi.mock('./folgetermin-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof FolgeterminApi>()),
   undoAppointmentCreation: (id: string, stand: string) =>
     undoAppointmentCreation(id, stand) as Promise<void>,
 }));
@@ -469,6 +473,32 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     await zeilen(3);
     expect(screen.queryByText(/Folgetermin angelegt:/)).toBeNull();
     expect(screen.queryByRole('button', { name: /^Rückgängig/ })).toBeNull();
+  });
+
+  // Zweitreview F2 (ANN-534): Sieht die Person ihre Termine auf der
+  // Plattform, sagt „Rückgängig“ den Termin als Praxis ab - sie sieht die
+  // Absage, nichts verschwindet still.
+  it('sagt den Folgetermin ab, wenn die Person ihn auf der Plattform sieht', async () => {
+    const { AufDerPlattformSichtbar } =
+      await vi.importActual<typeof FolgeterminApi>('./folgetermin-api');
+    undoAppointmentCreation.mockRejectedValue(new AufDerPlattformSichtbar());
+    cancelAppointment.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    rendern();
+    const [erste] = await zeilen(3);
+    await user.click(erste!);
+    await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
+
+    expect(
+      await screen.findByText(
+        'Folgetermin abgesagt – die Person sieht ihn auf der Plattform als abgesagt.',
+      ),
+    ).toBeInTheDocument();
+    expect(cancelAppointment).toHaveBeenCalledWith(
+      'neu-1',
+      '2026-10-14T07:25:00.123456+00:00',
+      'practice_request',
+    );
   });
 
   it('zeigt, was der Server beim Zurücknehmen einwendet, und lässt die Meldung stehen', async () => {

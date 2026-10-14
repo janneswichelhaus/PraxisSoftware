@@ -5498,9 +5498,9 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
 
-**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert (`updated_at = created_at`) und nichts an ihm hängt (Doku, Entwurf, Leistung, Mitteilung, Warteliste, Wunsch, Serie). Offene Zustellaufträge fallen mit. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung (`termin_ohne_nachweis`).
+**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert und nichts an ihm hängt (Doku, Leistung, Honorar, Mitteilung, Warteliste, Wunsch, Serie). Sieht die Person ihre Termine auf der Plattform, sagt „Rückgängig“ ihn als Praxis ab. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung.
 
-**Begründung.** Nie wirksam; eine Absage meldete „Termin abgesagt“ (KOM-009). Nachweis ist, was gilt (ADR-010 Punkt 15); ein Restore zieht nach (ADR-008 Punkt 8).
+**Begründung.** Nie wirksam; ein Restore zieht nach (ADR-008 Punkt 8). Was die Person sehen konnte, verschwindet nicht still (ADR-018 Punkt 2).
 
 **Anker.** `public.undo_appointment_creation` (Migration `o_001`).
 
