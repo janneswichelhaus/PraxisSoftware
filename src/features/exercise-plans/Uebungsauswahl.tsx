@@ -6,6 +6,7 @@ import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { Bibliothek, Uebung, Variante } from '@/features/exercises/api';
 import { NeueUebungFormular } from '@/features/exercises/Formulare';
+import type { Katalogeintrag } from '@/features/exercises/katalog/typen';
 import {
   KEIN_FILTER,
   ZEILEN_JE_SEITE,
@@ -20,16 +21,23 @@ import { Bibliotheksfilter } from '@/features/exercises/Bibliotheksfilter';
 import { Vorschaubild } from '@/features/exercises/Vorschaubild';
 import { dosierungKurz } from './dosierung';
 import { standardDosis } from './hinzufuegen';
+import { eineListe } from './uebungsliste';
 
 /**
  * Das Auswahlblatt „Übungen hinzufügen" (Welle B; Analyse Training 12.10.,
  * Abschnitt 5, Weg B).
  *
- * Ein Fenster, am Telefon von unten: Suche und Filterchips der Bibliothek,
- * darunter jede Variante als Zeile mit Bild, Name und Standarddosierung und
- * einem Haken. Mehrere wählen, dann **„n hinzufügen"** - alle in einem Zug,
- * jede mit ihrer Standarddosierung (ANN-384); die Dosierung ändert man danach
- * an der Zeile im Plan.
+ * Ein Fenster, am Telefon von unten: Suche und Filterchips, darunter jede
+ * Variante als Zeile mit Bild, Name und Standarddosierung und einem Haken.
+ * Mehrere wählen, dann **„n hinzufügen"** - alle in einem Zug, jede mit ihrer
+ * Standarddosierung (ANN-384); die Dosierung ändert man danach an der Zeile
+ * im Plan.
+ *
+ * **Eine Liste** (Befund B9, O-002): die Bibliothek der Praxis und die
+ * Einträge des mitgelieferten Katalogs, die ihr fehlen (`eineListe`). Einen
+ * gewählten Katalogeintrag übernimmt der Planeditor beim Hinzufügen still;
+ * an der Zeile steht dafür nur „ungeprüft“, wie an jeder übernommenen Übung
+ * ohne Prüfvermerk (ANN-386).
  *
  * Geordnet nach Bezeichnung wie die Bibliothek; gefiltert nur von Hand.
  * Nichts hier liest Diagnose, Befund oder Verlauf der Person, nichts ist
@@ -40,6 +48,9 @@ import { standardDosis } from './hinzufuegen';
  * gewählt. Ein Abschnitt „Zuletzt in Plänen dieser Praxis" fehlt bewusst:
  * Keine bestehende Serverfunktion liefert ihn ohne Personenbezug.
  */
+
+/** Ohne Katalog - fest, damit die Liste nicht bei jedem Zeichnen neu entsteht. */
+const KEIN_KATALOG: readonly Katalogeintrag[] = [];
 
 export interface Gewaehlt {
   uebung: Uebung;
@@ -100,6 +111,8 @@ function Auswahlzeile({
 
 export function Uebungsauswahl({
   bibliothek,
+  katalog = KEIN_KATALOG,
+  katalogFehlt = false,
   imPlan,
   laeuft,
   fehler,
@@ -107,6 +120,10 @@ export function Uebungsauswahl({
   onSchliessen,
 }: {
   bibliothek: Bibliothek;
+  /** Der mitgelieferte Katalog; was die Bibliothek schon hat, steht nur einmal da. */
+  katalog?: readonly Katalogeintrag[];
+  /** Der Katalog ließ sich nicht laden - die Liste zeigt nur die Bibliothek. */
+  katalogFehlt?: boolean;
   /** Varianten, die schon im Plan stehen - nur zur Anzeige. */
   imPlan: ReadonlySet<string>;
   /** Läuft das Hinzufügen, und wie weit („2 von 5")? */
@@ -138,10 +155,10 @@ export function Uebungsauswahl({
 
   const aktiv = useMemo(
     () =>
-      bibliothek.exercises.filter(
+      eineListe(bibliothek, katalog).filter(
         (uebung) => !uebung.archived && uebung.variants.some((v) => !v.archived),
       ),
-    [bibliothek],
+    [bibliothek, katalog],
   );
   const treffer = filtere(aktiv, filter);
   const zeilen = treffer.flatMap((t) =>
@@ -204,6 +221,11 @@ export function Uebungsauswahl({
         suchbeschriftung="Übung suchen"
         eingeklappt
       />
+      {katalogFehlt ? (
+        <Statusmeldung ton="warnung" className="mb-3">
+          Nicht alle Übungen konnten geladen werden.
+        </Statusmeldung>
+      ) : null}
       {zeilen.length === 0 ? (
         <EmptyState
           inKarte

@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
 import type * as BibliothekApi from '@/features/exercises/api';
 import { katalogeintrag } from '@/features/exercises/katalog';
-import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
+import type { Katalogeintrag, Katalogvorlage } from '@/features/exercises/katalog/typen';
+import type * as KatalogLaden from '@/features/exercises/katalogLaden';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { dosierungAlltag, dosierungFachlich, dosierungKurz, unterschiede } from './dosierung';
 import { OHNE_KATALOG } from '@/features/exercises/testdaten';
@@ -28,6 +29,8 @@ const fetchBibliothek = vi.fn();
 const importiereKatalog = vi.fn();
 const saveUebung = vi.fn();
 const saveVariante = vi.fn();
+const addCatalogExercises = vi.fn();
+const ladeKatalog = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof Api>();
@@ -46,6 +49,18 @@ vi.mock('./api', async (importOriginal) => {
     extendPlan: (...a: unknown[]) => extendPlan(...a) as Promise<void>,
     endPlan: (...a: unknown[]) => endPlan(...a) as Promise<void>,
     fetchFaellige: () => fetchFaellige() as Promise<Api.Faellige | null>,
+    addCatalogExercises: (...a: unknown[]) =>
+      addCatalogExercises(...a) as Promise<Api.KatalogUebernahme>,
+  };
+});
+
+// Ein kleiner synthetischer Katalog statt der 196 Einträge - aus echten
+// Einträgen zusammengestellt, damit Namen und Dosierungen stimmen.
+vi.mock('@/features/exercises/katalogLaden', async (importOriginal) => {
+  const actual = await importOriginal<typeof KatalogLaden>();
+  return {
+    ...actual,
+    ladeKatalog: () => ladeKatalog() as Promise<readonly Katalogeintrag[]>,
   };
 });
 
@@ -286,9 +301,14 @@ beforeEach(() => {
     importiereKatalog,
     saveUebung,
     saveVariante,
+    addCatalogExercises,
+    ladeKatalog,
   ]) {
     f.mockReset();
   }
+  ladeKatalog.mockResolvedValue(
+    ['KN-01', 'KN-02', 'KN-03', 'KN-04', 'HU-01'].map((k) => katalogeintrag(k)!),
+  );
   fetchBibliothek.mockResolvedValue(BIBLIOTHEK);
   fetchPlan.mockResolvedValue(plan());
   createPlan.mockResolvedValue('neu');
@@ -616,6 +636,104 @@ describe('Planeditor: Entwurf als Arbeitsseite (UEB-004, Welle B)', () => {
     planseite();
     await user.click(await screen.findByRole('button', { name: 'Übungen hinzufügen' }));
     expect(screen.queryByRole('button', { name: /Übung anlegen/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('Eine Übungsliste: Bibliothek und Katalog (Befund B9, ANN-536)', () => {
+  const KN03 = katalogeintrag('KN-03')!;
+  const HU01 = katalogeintrag('HU-01')!;
+  const name = (n: string) => (zugaenglich: string) => zugaenglich.startsWith(n);
+
+  it('übernimmt eine Übung aus dem Katalog still und fügt sie mit ihrer Standarddosierung hinzu', async () => {
+    const user = userEvent.setup();
+    addCatalogExercises.mockResolvedValue({
+      variants: { 'KN-03': 'k3-neu' },
+      imported: ['KN-03'],
+      conflicts: [],
+    });
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Übungen hinzufügen' }));
+    const blatt = await screen.findByRole('dialog', { name: 'Übungen hinzufügen' });
+    // Vorhandenes (KN-01, KN-02, archiviertes KN-04) steht nur einmal da.
+    expect(
+      within(blatt).getAllByRole('checkbox', { name: name('Kniestreckung im Sitz') }),
+    ).toHaveLength(1);
+    expect(
+      within(blatt).queryByRole('checkbox', { name: name('Passive Kniestreckung') }),
+    ).toBeNull();
+    await user.click(within(blatt).getByRole('checkbox', { name: name(KN03.name) }));
+    await user.click(within(blatt).getByRole('checkbox', { name: /Rudern, Theraband gelb/ }));
+    await user.click(within(blatt).getByRole('button', { name: '2 hinzufügen' }));
+
+    await waitFor(() => expect(savePosition).toHaveBeenCalledTimes(2));
+    expect(addCatalogExercises).toHaveBeenCalledTimes(1);
+    expect(addCatalogExercises.mock.calls[0]![0]).toBe('p1');
+    expect(
+      (addCatalogExercises.mock.calls[0]![1] as Katalogeintrag[]).map((e) => e.schluessel),
+    ).toEqual(['KN-03']);
+    // In der Reihenfolge der Wahl, mit der Variante, die der Server nennt.
+    expect(savePosition.mock.calls.map((c) => (c[0] as Api.PositionEingabe).variantId)).toEqual([
+      'k3-neu',
+      'v3',
+    ]);
+    expect(await screen.findByText('2 Übungen hinzugefügt.')).toBeInTheDocument();
+    // Die Bibliothek wird neu geladen: Die Übung steht jetzt dort.
+    expect(fetchBibliothek.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('sagt, was nicht in den Plan kam', async () => {
+    const user = userEvent.setup();
+    addCatalogExercises.mockResolvedValue({
+      variants: { 'HU-01': 'h1-neu' },
+      imported: ['HU-01'],
+      conflicts: [{ catalog_key: 'KN-03', name: KN03.name, reason: 'archived' }],
+    });
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Übungen hinzufügen' }));
+    const blatt = await screen.findByRole('dialog', { name: 'Übungen hinzufügen' });
+    await user.click(within(blatt).getByRole('checkbox', { name: name(KN03.name) }));
+    await user.click(within(blatt).getByRole('checkbox', { name: name(HU01.name) }));
+    await user.click(within(blatt).getByRole('button', { name: '2 hinzufügen' }));
+    expect(await screen.findByText('1 Übung hinzugefügt.')).toBeInTheDocument();
+    expect(screen.getByText(`Nicht hinzugefügt: ${KN03.name} (archiviert).`)).toBeInTheDocument();
+    expect(savePosition).toHaveBeenCalledTimes(1);
+  });
+
+  it('bleibt im Blatt und legt nichts an, wenn die Übernahme scheitert', async () => {
+    const user = userEvent.setup();
+    addCatalogExercises.mockRejectedValue(
+      new Error('Die Übungen konnten nicht übernommen werden.'),
+    );
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Übungen hinzufügen' }));
+    const blatt = await screen.findByRole('dialog', { name: 'Übungen hinzufügen' });
+    await user.click(within(blatt).getByRole('checkbox', { name: name(KN03.name) }));
+    await user.click(within(blatt).getByRole('button', { name: '1 hinzufügen' }));
+    expect(
+      await within(blatt).findByText('Die Übungen konnten nicht übernommen werden.'),
+    ).toBeInTheDocument();
+    expect(savePosition).not.toHaveBeenCalled();
+    expect(within(blatt).getByRole('checkbox', { name: name(KN03.name) })).toBeChecked();
+  });
+
+  it('sagt vorher, wie viele Übungen noch in den Plan passen (höchstens 30)', async () => {
+    const user = userEvent.setup();
+    fetchPlan.mockResolvedValue(
+      plan({
+        items: Array.from({ length: 29 }, (_, i) => position({ id: `i${i}`, position: i + 1 })),
+      }),
+    );
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Übungen hinzufügen' }));
+    const blatt = await screen.findByRole('dialog', { name: 'Übungen hinzufügen' });
+    await user.click(within(blatt).getByRole('checkbox', { name: name(KN03.name) }));
+    await user.click(within(blatt).getByRole('checkbox', { name: /Rudern, Theraband gelb/ }));
+    await user.click(within(blatt).getByRole('button', { name: '2 hinzufügen' }));
+    expect(
+      within(blatt).getByText('Ein Plan hat höchstens 30 Übungen – es passt noch eine.'),
+    ).toBeInTheDocument();
+    expect(addCatalogExercises).not.toHaveBeenCalled();
+    expect(savePosition).not.toHaveBeenCalled();
   });
 });
 

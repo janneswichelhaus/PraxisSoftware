@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
@@ -22,6 +23,7 @@ import { KATALOG_SCHLUESSEL, ladeKatalog } from '@/features/exercises/katalogLad
 import { formatDate } from '@/lib/datum';
 import {
   PLAENE_SCHLUESSEL,
+  addCatalogExercises,
   assignPlan,
   deletePosition,
   discardPlan,
@@ -35,17 +37,23 @@ import {
 import { Fassungen } from './Fassungen';
 import { schrittZeilen, standardTitel, vorigePosition } from './fassung';
 import {
+  POSITIONEN_HOECHSTENS,
   fuegeHinzu,
   hinzugefuegtSatz,
+  mitKatalog,
   neuePosition,
+  nichtSatz,
   standardDosis,
   type Hinzufuegen,
+  type NichtHinzugefuegt,
+  type Wunsch,
 } from './hinzufuegen';
 import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE, tagPlus } from './laufzeit';
 import { Plankopf } from './Plankopf';
 import { PositionFormular } from './PositionFormular';
 import { Positionszeile } from './Positionszeile';
 import { Uebungsauswahl, type Gewaehlt } from './Uebungsauswahl';
+import { nurImKatalog } from './uebungsliste';
 import { Vorlagenauswahl } from './Vorlagenauswahl';
 import { VorlagenKontext, ausVorlage } from './vorlagen';
 import { Zahlschritt } from './Zahlschritt';
@@ -57,7 +65,9 @@ import { Zahlschritt } from './Zahlschritt';
  * Die Übungen stehen als Zeilen mit Bild und kurzer Dosierung; ein Tipp auf
  * eine Zeile öffnet ihre Dosierung (Zahlschritte, Reihenfolge, entfernen).
  * Die Hauptaktion **„Übungen hinzufügen“** öffnet das Auswahlblatt, in dem
- * mehrere Übungen in einem Zug mit ihrer Standarddosierung dazukommen;
+ * mehrere Übungen in einem Zug mit ihrer Standarddosierung dazukommen - aus
+ * einer Liste von Bibliothek und Katalog; was nur im Katalog steht, übernimmt
+ * der Server dabei still (Befund B9, ANN-536);
  * **„Aus Vorlage“** fügt eine mitgelieferte Zusammenstellung hinzu. Die
  * Knöpfe stehen in der klebenden Aktionsleiste, mit dem Daumen erreichbar.
  *
@@ -77,6 +87,8 @@ interface Meldung {
   nr: number;
   erfolg: string | null;
   fehler: string | null;
+  /** Was nicht hinzukam, etwa eine archivierte Übung (O-002). */
+  hinweis?: string | null;
 }
 
 /** Was nach einer Vorlage fehlt - mit dem Weg, es zu übernehmen (owner). */
@@ -100,9 +112,22 @@ export function Planeditor({ plan }: { plan: Plan }) {
   const [meldung, setMeldung] = useState<Meldung | null>(null);
   const [rest, setRest] = useState<Vorlagenrest | null>(null);
   const [laeuft, setLaeuft] = useState<string | null>(null);
+  const [auswahlFehler, setAuswahlFehler] = useState<string | null>(null);
+  // Der mitgelieferte Katalog (ein eigener Teil des Builds, ANN-382) - erst,
+  // wenn das Auswahlblatt ihn braucht.
+  const katalog = useQuery({
+    queryKey: KATALOG_SCHLUESSEL,
+    queryFn: ladeKatalog,
+    staleTime: Infinity,
+    retry: false,
+    enabled: fenster?.art === 'auswahl',
+  });
 
-  const melde = (erfolg: string | null, fehler: string | null = null) =>
-    setMeldung((bisher) => ({ nr: (bisher?.nr ?? 0) + 1, erfolg, fehler }));
+  const melde = (
+    erfolg: string | null,
+    fehler: string | null = null,
+    hinweis: string | null = null,
+  ) => setMeldung((bisher) => ({ nr: (bisher?.nr ?? 0) + 1, erfolg, fehler, hinweis }));
 
   /** Positionen in einem Zug, mit Fortschritt („2 von 5“); danach neu laden. */
   async function hinzufuegen(eingaben: PositionEingabe[]): Promise<Hinzufuegen> {
@@ -117,15 +142,67 @@ export function Planeditor({ plan }: { plan: Plan }) {
     }
   }
 
+  /**
+   * Übernimmt, was nur im Katalog steht, und fügt dann alle in einem Zug
+   * hinzu (O-002). Scheitert die Übernahme, wirft sie - und nichts ist
+   * passiert: Der Server übernimmt alles oder nichts.
+   */
+  async function hinzufuegenMitKatalog(
+    wuensche: Wunsch[],
+  ): Promise<{ ergebnis: Hinzufuegen; anzahl: number; nicht: NichtHinzugefuegt[] }> {
+    setLaeuft(`0 von ${wuensche.length}`);
+    let vorbereitet: Awaited<ReturnType<typeof mitKatalog>>;
+    try {
+      vorbereitet = await mitKatalog(plan.id, wuensche, addCatalogExercises);
+    } catch (fehler) {
+      setLaeuft(null);
+      throw fehler;
+    }
+    if (wuensche.some((w) => w.eintrag)) {
+      await queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL });
+    }
+    const ergebnis = await hinzufuegen(vorbereitet.positionen);
+    return { ergebnis, anzahl: vorbereitet.positionen.length, nicht: vorbereitet.nicht };
+  }
+
+  /** Wie viele noch in den Plan passen - der Server nimmt höchstens 30. */
+  function passtNicht(anzahl: number): string | null {
+    const frei = POSITIONEN_HOECHSTENS - plan.items.length;
+    if (anzahl <= frei) return null;
+    return frei <= 0
+      ? 'Ein Plan hat höchstens 30 Übungen.'
+      : `Ein Plan hat höchstens 30 Übungen – es ${frei === 1 ? 'passt noch eine' : `passen noch ${frei}`}.`;
+  }
+
   async function ausAuswahl(gewaehlt: Gewaehlt[]) {
-    const ergebnis = await hinzufuegen(
-      gewaehlt.map((g) => neuePosition(plan.id, g.variante.id, standardDosis(g.variante))),
-    );
+    const zuViele = passtNicht(gewaehlt.length);
+    setAuswahlFehler(zuViele);
+    if (zuViele) return;
+    const eintraege = new Map((katalog.data ?? []).map((e) => [e.schluessel, e]));
+    let antwort: Awaited<ReturnType<typeof hinzufuegenMitKatalog>>;
+    try {
+      antwort = await hinzufuegenMitKatalog(
+        gewaehlt.map((g) => ({
+          variante: g.variante,
+          dosis: standardDosis(g.variante),
+          eintrag:
+            nurImKatalog(g.variante) && g.variante.catalog_key
+              ? eintraege.get(g.variante.catalog_key)
+              : undefined,
+        })),
+      );
+    } catch (fehler) {
+      setAuswahlFehler(
+        fehler instanceof Error ? fehler.message : 'Die Übungen konnten nicht übernommen werden.',
+      );
+      return;
+    }
     setFenster(null);
     setRest(null);
-    const satz = hinzugefuegtSatz(ergebnis, gewaehlt.length);
-    if (ergebnis.fehler) melde(null, satz);
-    else melde(satz);
+    const { ergebnis, anzahl, nicht } = antwort;
+    const satz = hinzugefuegtSatz(ergebnis, anzahl);
+    if (ergebnis.fehler) melde(null, satz, nichtSatz(nicht));
+    else melde(ergebnis.hinzugefuegt > 0 ? satz : null, null, nichtSatz(nicht));
   }
 
   async function namenAusKatalog(schluessel: readonly string[]): Promise<string[]> {
@@ -274,6 +351,11 @@ export function Planeditor({ plan }: { plan: Plan }) {
           {meldung.fehler}
         </Statusmeldung>
       ) : null}
+      {meldung?.hinweis ? (
+        <Statusmeldung ton="warnung" className="mt-4">
+          {meldung.hinweis}
+        </Statusmeldung>
+      ) : null}
       {rest && (rest.fehlend.length > 0 || rest.archiviertNamen.length > 0) ? (
         <div className="mt-4 flex flex-col gap-2">
           {rest.fehlend.length > 0 ? (
@@ -368,23 +450,34 @@ export function Planeditor({ plan }: { plan: Plan }) {
           type="button"
           className="ml-auto"
           disabled={!b || laeuft !== null}
-          onClick={() => setFenster({ art: 'auswahl' })}
+          onClick={() => {
+            setAuswahlFehler(null);
+            setFenster({ art: 'auswahl' });
+          }}
         >
           {laeuft ? `Wird hinzugefügt … (${laeuft})` : 'Übungen hinzufügen'}
         </Button>
       </Aktionsleiste>
 
       {fenster?.art === 'auswahl' && b ? (
-        <Uebungsauswahl
-          bibliothek={b}
-          imPlan={imPlan}
-          laeuft={laeuft}
-          fehler={null}
-          onHinzufuegen={(gewaehlt) => void ausAuswahl(gewaehlt)}
-          onSchliessen={() => {
-            if (laeuft === null) setFenster(null);
-          }}
-        />
+        katalog.isPending ? (
+          <Dialogfenster titel="Übungen hinzufügen" onSchliessen={() => setFenster(null)}>
+            <LoadingState label="Übungen werden geladen …" />
+          </Dialogfenster>
+        ) : (
+          <Uebungsauswahl
+            bibliothek={b}
+            {...(katalog.data ? { katalog: katalog.data } : {})}
+            katalogFehlt={katalog.isError}
+            imPlan={imPlan}
+            laeuft={laeuft}
+            fehler={auswahlFehler}
+            onHinzufuegen={(gewaehlt) => void ausAuswahl(gewaehlt)}
+            onSchliessen={() => {
+              if (laeuft === null) setFenster(null);
+            }}
+          />
+        )
       ) : null}
       {fenster?.art === 'vorlage' && b ? (
         <Vorlagenauswahl

@@ -4,6 +4,7 @@ import type AxeCore from 'axe-core';
 import { KATALOG } from '../../src/features/exercises/katalog';
 import { alsDosis } from '../../src/features/exercises/katalog/dosierung';
 import { ausruestungVon } from '../../src/features/exercises/katalog/schema';
+import type { Katalogeintrag } from '../../src/features/exercises/katalog/typen';
 
 /**
  * Übungspläne im echten Browser (UEB-EPIC-002, Welle B).
@@ -147,52 +148,58 @@ test.describe('Übungspläne', () => {
 
 const HEUTE = '2026-10-07';
 
-/** Der synthetische Bestand: Knie, Hüfte, Gleichgewicht aus dem Katalog, alle ungeprüft. */
+/** Ein Katalogeintrag, wie ihn die Bibliothek nach der Übernahme führt - ungeprüft. */
+function uebernommen(e: Katalogeintrag) {
+  const d = alsDosis(e.dosierung);
+  return {
+    id: `u-${e.schluessel}`,
+    name: e.name,
+    lay_name: e.alltagsname,
+    body_region: e.region,
+    archived: false,
+    variants: [
+      {
+        id: `v-${e.schluessel}`,
+        name: e.name,
+        lay_name: e.alltagsname,
+        instruction: e.anleitung.join('\n'),
+        equipment: ausruestungVon(e),
+        common_faults: e.fehler.join('\n'),
+        practice_notes: e.hinweise_praxis ?? null,
+        archived: false,
+        catalog_key: e.schluessel,
+        catalog_version: e.version,
+        goal: e.ziel,
+        starting_position: e.ausgangsstellung,
+        level: e.niveau,
+        default_dosage: {
+          sets: d.sets,
+          reps_min: d.reps_min,
+          reps_max: d.reps_max,
+          duration_seconds: d.duration_seconds,
+          hold_seconds: d.hold_seconds ?? null,
+          per_side: d.per_side ?? false,
+          times_per_day: d.times_per_day ?? null,
+        },
+        illustration: e.bild ?? null,
+        reviewed_at: null,
+        reviewed_by_name: null,
+      },
+    ],
+  };
+}
+
+/**
+ * Der synthetische Bestand: Knie, Hüfte, Gleichgewicht aus dem Katalog, alle
+ * ungeprüft. Der Rest des Katalogs steht im Auswahlblatt daneben und kommt
+ * beim Hinzufügen dazu (Befund B9, `add_catalog_exercises_for_plan`).
+ */
 function bibliothek() {
-  const eintraege = KATALOG.filter((e) => /^(KN|HU|GG)-/.test(e.schluessel));
   return {
     can_manage: false,
     links: [],
-    exercises: eintraege
-      .map((e) => {
-        const d = alsDosis(e.dosierung);
-        return {
-          id: `u-${e.schluessel}`,
-          name: e.name,
-          lay_name: e.alltagsname,
-          body_region: e.region,
-          archived: false,
-          variants: [
-            {
-              id: `v-${e.schluessel}`,
-              name: e.name,
-              lay_name: e.alltagsname,
-              instruction: e.anleitung.join('\n'),
-              equipment: ausruestungVon(e),
-              common_faults: e.fehler.join('\n'),
-              practice_notes: e.hinweise_praxis ?? null,
-              archived: false,
-              catalog_key: e.schluessel,
-              catalog_version: e.version,
-              goal: e.ziel,
-              starting_position: e.ausgangsstellung,
-              level: e.niveau,
-              default_dosage: {
-                sets: d.sets,
-                reps_min: d.reps_min,
-                reps_max: d.reps_max,
-                duration_seconds: d.duration_seconds,
-                hold_seconds: d.hold_seconds ?? null,
-                per_side: d.per_side ?? false,
-                times_per_day: d.times_per_day ?? null,
-              },
-              illustration: e.bild ?? null,
-              reviewed_at: null,
-              reviewed_by_name: null,
-            },
-          ],
-        };
-      })
+    exercises: KATALOG.filter((e) => /^(KN|HU|GG)-/.test(e.schluessel))
+      .map(uebernommen)
       .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase(), 'de')),
   };
 }
@@ -206,6 +213,8 @@ type Argumente = Record<string, unknown>;
  */
 class Nachbau {
   bibliothek = bibliothek();
+  /** Was aus dem Katalog übernommen wurde, in der Reihenfolge der Aufrufe. */
+  uebernommen: string[] = [];
   plaene = new Map<string, Argumente & { items: Argumente[] }>();
   zaehler = 0;
 
@@ -229,6 +238,23 @@ class Nachbau {
     switch (name) {
       case 'list_exercise_library':
         return this.bibliothek;
+      case 'add_catalog_exercises_for_plan': {
+        // Wie der Server: Vorhandenes nehmen, Fehlendes übernehmen (O-002).
+        const variants: Record<string, string> = {};
+        const imported: string[] = [];
+        for (const e of a['p_entries'] as Katalogeintrag[]) {
+          const da = this.bibliothek.exercises.find((u) =>
+            u.variants.some((v) => v.catalog_key === e.schluessel),
+          );
+          if (!da) {
+            this.bibliothek.exercises.push(uebernommen(e));
+            imported.push(e.schluessel);
+          }
+          variants[e.schluessel] = `v-${e.schluessel}`;
+        }
+        this.uebernommen.push(...imported);
+        return { variants, imported, conflicts: [] };
+      }
       case 'list_exercise_plans':
         return {
           can_write: true,
@@ -422,6 +448,28 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     expect(z.tipps).toBe(11);
     expect(z.tipps).toBeLessThanOrEqual(15);
     expect(z.eingaben).toBe(1);
+  });
+
+  test('eine Übung, die der Praxis noch fehlt, kommt beim Hinzufügen still dazu (B9)', async ({
+    page,
+  }) => {
+    const nachbau = await mitNachbau(page);
+    const fehlt = KATALOG.find((e) => e.schluessel === 'BT-01')!;
+    expect(nachbau.bibliothek.exercises.some((u) => u.name === fehlt.name)).toBe(false);
+    await page.goto(`${PRUEFSEITE}?seite=planbau`);
+    await page.getByRole('button', { name: 'Neuer Plan' }).click();
+    await page.getByRole('button', { name: 'Übungen hinzufügen' }).click();
+    const blatt = page.getByRole('dialog', { name: 'Übungen hinzufügen' });
+    await blatt.getByRole('searchbox', { name: 'Übung suchen' }).fill(fehlt.alltagsname);
+    const haken = blatt.getByRole('checkbox', { name: fehlt.name });
+    await expect(haken).toHaveAccessibleName(/ungeprüft/);
+    await haken.check();
+    await blatt.getByRole('button', { name: '1 hinzufügen' }).click();
+    await expect(page.getByText('1 Übung hinzugefügt.')).toBeVisible();
+    expect(nachbau.uebernommen).toEqual(['BT-01']);
+    const plan = [...nachbau.plaene.values()][0]!;
+    expect(plan.items.map((i) => i['variant_id'])).toEqual(['v-BT-01']);
+    expect(await ueberlaeuft(page)).toBe(false);
   });
 
   test('aus Vorlage: höchstens 8 Tipps, ohne Tastatur', async ({ page }) => {
