@@ -5198,6 +5198,18 @@ Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Eine lesende Signatur über `platform_preview`, mit ADR-Änderung · Aufwand `mittel`.
 
+### ANN-528 — Die Einsicht zeigt die Sicht der Person, nicht die einer Vertretung
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht einer Vertretung)
+
+**Annahme.** „So sieht … die Plattform“ steht nur am eigenen Zugang der Person; was eine Begleitung oder rechtliche Vertretung sieht, zeigt die Einsicht nicht.
+
+**Begründung.** Befund B11 fragt nach der Sicht der Person. Die Sicht einer Vertretung hängt an ihren Rechten (ADR-023 Punkte 13 bis 15) und wäre eine zweite Einsicht mit eigener Prüfung.
+
+**Anker.** Knopf in `PlattformAbschnitt` (`src/features/platform-access/PlattformAbschnitt.tsx`).
+
+**Änderungspfad.** Knopf je Vertretung in `Vertretungen`, Verteiler für Vertretungen öffnen · Aufwand `mittel`.
+
 ### ANN-529 — Die Einsicht sperrt Schreibwege über eine nur lesende Transaktion
 
 Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —

@@ -6,6 +6,7 @@ import type * as DokumentationApiModule from '@/features/documentation/api';
 import type * as TreatmentBasesApiModule from '@/features/treatment-bases/api';
 import type * as RetentionApiModule from '@/features/retention/api';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
+import type * as EinsichtModule from '@/features/platform-access/einsicht';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -55,6 +56,11 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
   fetchTreatmentBasis: () => Promise.resolve(null),
   fetchPatientTreatmentBases: () => Promise.resolve([]),
   fetchPatientTreatmentBasesClinical: () => Promise.resolve([]),
+}));
+// E-001: Die Einsicht lädt hier nie fertig - geprüft wird, wer sie bekommt.
+vi.mock('@/features/platform-access/einsicht', async (importOriginal) => ({
+  ...(await importOriginal<typeof EinsichtModule>()),
+  ladeEinsichtskontext: () => new Promise(() => undefined),
 }));
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApiModule>()),
@@ -488,4 +494,34 @@ describe('AuthenticatedRoutes', () => {
       expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     });
   });
+});
+
+/**
+ * Die Einsicht in die Plattform einer Person (E-001, DSN-001 D7): nur die
+ * Praxisinhaber:in, ohne Praxisrahmen. Jede andere Rolle landet unter `/p`
+ * auf der Übersicht; verbindlich prüft der Server (`platform-preview.test.ts`).
+ */
+describe('Einsicht in die Plattform (E-001)', () => {
+  const EINSICHT = '/p?zugang=cafecafe-cafe-4afe-8afe-000000000002';
+
+  it('zeigt owner die Einsicht statt des Praxisrahmens', async () => {
+    renderWithProviders(
+      <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
+      EINSICHT,
+    );
+    expect(await screen.findByText('Die Einsicht wird geladen …')).toBeInTheDocument();
+    expect(screen.queryAllByRole('navigation', { name: 'Arbeitsbereiche' })).toEqual([]);
+  });
+
+  it.each([['therapist'], ['team_lead'], ['office'], ['trainer'], ['patient']] as const)(
+    'leitet %s von der Einsicht auf die Uebersicht um',
+    async (role) => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
+        EINSICHT,
+      );
+      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      expect(screen.queryByText('Die Einsicht wird geladen …')).toBeNull();
+    },
+  );
 });
