@@ -21,7 +21,6 @@ import {
 import { usePlattformzugang, zugangBeendbar } from '@/features/platform-access/zustand';
 import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
 import {
-  canChangePatientStatus,
   canConcludePatientCare,
   canManageInvoicing,
   canManageServiceCatalog,
@@ -47,13 +46,7 @@ import { AnmeldebogenDateien, SonstigeDateien } from '@/features/files/Aktendate
 import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
 import { Mitnehmen } from './Mitnehmen';
-import {
-  concludePatientCare,
-  jahrPlus,
-  reopenPatientCare,
-  setPatientStatus,
-  type Patient,
-} from './api';
+import { concludePatientCare, jahrPlus, reopenPatientCare, type Patient } from './api';
 
 /**
  * Stammdaten und Verwaltung (AKTE-005).
@@ -99,53 +92,6 @@ function TelefonZeile({ label, nummer }: { label: string; nummer: string | null 
 const KONTAKT_IN_DER_ZEILE = 'sm:-my-2.5 sm:py-2.5';
 
 /**
- * Wechsel des Versorgungsstatus.
- *
- * Bewusst mit Rückfrage: der Wechsel nimmt einen Patienten aus dem laufenden
- * Betrieb, und ein versehentlicher Klick soll das nicht auslösen
- * (PROJECT_PRINCIPLES.md 13). Die Rückfrage ist Bedienkomfort - verbindlich
- * prüft `set_patient_status` die Berechtigung erneut.
- */
-function StatusAktion({
-  patient,
-  variante = 'secondary',
-}: {
-  patient: Patient;
-  /** Leise am Ende des Reiters (A5); „Wieder in Versorgung führen“ bleibt sekundär. */
-  variante?: 'secondary' | 'quiet';
-}) {
-  const queryClient = useQueryClient();
-  const zielStatus: Patient['status'] = patient.status === 'active' ? 'inactive' : 'active';
-
-  const mutation = useMutation({
-    mutationFn: () => setPatientStatus(patient.id, zielStatus),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['patients'] });
-      await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
-    },
-  });
-
-  const beschriftung =
-    zielStatus === 'inactive' ? 'Nicht mehr in Versorgung führen' : 'Wieder in Versorgung führen';
-
-  return (
-    <Rueckfrage
-      ausloeser={beschriftung}
-      ausloeserVariante={variante}
-      bestaetigen={beschriftung}
-      bestaetigenLaeuft="Wird geändert …"
-      fehler={mutation.isError ? 'Der Versorgungsstatus konnte nicht geändert werden.' : undefined}
-      laeuft={mutation.isPending}
-      onBestaetigen={() => mutation.mutateAsync()}
-    >
-      {zielStatus === 'inactive'
-        ? 'Diese Person wird als nicht in Versorgung geführt. Die Akte bleibt vollständig erhalten.'
-        : 'Diese Person wird wieder als in Versorgung geführt.'}
-    </Rueckfrage>
-  );
-}
-
-/**
  * Abschluss der Versorgung festhalten oder zurücknehmen (LOE-001b).
  *
  * Der Vorgang startet die zehnjährige Aufbewahrung nach ADR-008 — deshalb die
@@ -172,7 +118,7 @@ function VersorgungAbschliessen({
     mutationFn: () =>
       abgeschlossen ? reopenPatientCare(patient.id) : concludePatientCare(patient.id, tag),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-overview'] });
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
       // ANG-001: Der Abschluss ist der früheste Beginn des Nachsorge-Abos (ANN-268).
       await queryClient.invalidateQueries({ queryKey: nachsorgeSchluessel(patient.id) });
@@ -389,7 +335,6 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   const address = [street, [patient.postal_code, patient.city].filter(Boolean).join(' ')]
     .filter(Boolean)
     .join(', ');
-  const darfStatusWechseln = canChangePatientStatus(user.roles);
   const darfVerorten = canReadPatientDirectory(user.roles);
   // Die Rollenmenge von app.can_update_patient() ist die der Kartei.
   const darfLiegeSetzen = canReadPatientDirectory(user.roles);
@@ -404,11 +349,9 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // app.can_merge_patients).
   const darfZusammenfuehren = isOwner(user.roles);
   // Zurücknehmen steht in der Verwaltung, Beenden am Ende des Reiters (A5).
-  const inVersorgung = patient.status === 'active';
+  // B1 (BEF-151): „Nicht in Versorgung“ gibt es nicht mehr.
   const abgeschlossen = patient.care_concluded_on !== null;
-  const zuruecknehmenStatus = darfStatusWechseln && !inVersorgung;
   const zuruecknehmenAbschluss = darfAbschliessen && abgeschlossen;
-  const beendenStatus = darfStatusWechseln && inVersorgung;
   const beendenAbschluss = darfAbschliessen && !abgeschlossen;
   // Derselbe Zugang wie im Abschnitt „Plattform“ (ein Abfrageschlüssel).
   const plattformzugang = usePlattformzugang(
@@ -582,9 +525,8 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           </DetailList>
           {/* Hier steht nur, was etwas zurücknimmt; was eine Akte aus dem
               Betrieb nimmt, steht leise am Ende des Reiters (A5). */}
-          {zuruecknehmenStatus || zuruecknehmenAbschluss ? (
+          {zuruecknehmenAbschluss ? (
             <div className="border-line mt-3 flex flex-wrap items-start gap-3 border-t pt-3">
-              {zuruecknehmenStatus ? <StatusAktion patient={patient} /> : null}
               {zuruecknehmenAbschluss ? (
                 <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
               ) : null}
@@ -674,12 +616,11 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           (DESIGN.md, Objekt-Rezeptur und 9.16; Sichtung 13.10.2026, A5). Bis
           dahin standen diese Auslöser mitten im Reiter, vor Rückfragen,
           Dublette und Betroffenenrechten. */}
-      {beendenStatus || beendenAbschluss || beendenZugang ? (
+      {beendenAbschluss || beendenZugang ? (
         <Section titel="Beenden">
           {/* 12 px zwischen den Auslösern: Mit Handschuhen liegt „sperren“
               sonst zu dicht an „entziehen“ (Grundsatz 3; Nachprüfung neu1). */}
           <div className="flex flex-col items-start gap-3">
-            {beendenStatus ? <StatusAktion patient={patient} variante="quiet" /> : null}
             {beendenAbschluss ? (
               <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
             ) : null}

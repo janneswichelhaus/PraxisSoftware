@@ -211,6 +211,12 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
       'Dieser Eintrag ist noch ein Entwurf. Korrektur und Nachtrag gibt es erst nach der Finalisierung.',
     );
   }
+  // B7 (ANN-515): Nach „In die Abrechnung stellen“ ist die Doku gesperrt.
+  if (error?.message?.includes('treatment basis is in billing')) {
+    return new ZustandGeaendertError(
+      'Die Verordnung ist in der Abrechnung. Zum Ändern zuerst in der Akte zurückholen.',
+    );
+  }
   if (error?.message?.includes('change reason is required')) {
     return new Error('Für eine Korrektur ist eine kurze Begründung erforderlich.');
   }
@@ -300,13 +306,11 @@ export async function finalizeTreatmentNote(
 }
 
 /**
- * Schließt eine Behandlung in einem Schritt ab (UX-007).
+ * Schreibt und finalisiert eine Behandlung in einem Schritt (UX-007).
  *
- * Entwurf schreiben, finalisieren und den Termin abschließen passieren
- * serverseitig in **einer** Transaktion. Drei einzelne Aufrufe könnten
- * dazwischen scheitern und einen halben Zustand hinterlassen - eine
- * finalisierte Dokumentation an einem Termin, der noch als geplant geführt
- * wird (PROJECT_PRINCIPLES.md 13).
+ * Entwurf schreiben und finalisieren passieren serverseitig in **einer**
+ * Transaktion (PROJECT_PRINCIPLES.md 13). Den Termin hakt das seit B4
+ * (BEF-154) nicht mehr ab: Doku und Haken sind getrennt.
  *
  * `expectedNoteUpdatedAt` ist der Stand des Entwurfs, auf dem die Eingabe
  * beruht, oder `null`, wenn es beim Öffnen keinen gab. Beides wird

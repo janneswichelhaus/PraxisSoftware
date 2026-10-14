@@ -178,8 +178,15 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
     expect(nachher.rows.map((r) => r.patient_id)).not.toContain(LENA);
   });
 
-  it('fuehrt nicht, wer nicht mehr in Versorgung ist oder abgeschlossen hat', async () => {
-    await asPostgres(`update public.patients set status = 'inactive' where id = $1`, [LENA]);
+  // B1 (BEF-151): „Nicht in Versorgung“ gibt es nicht mehr; der festgehaltene
+  // Abschluss nimmt die Akte weiter aus der Liste.
+  it('fuehrt nicht, wer die Versorgung abgeschlossen hat', async () => {
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date, care_concluded_at = now(), care_concluded_by = $2
+        where id = $1`,
+      [LENA, users.therapist],
+    );
     const { rows } = await asUser<{ patient_id: string }>(users.office, LISTE);
     expect(rows.map((r) => r.patient_id)).not.toContain(LENA);
   });

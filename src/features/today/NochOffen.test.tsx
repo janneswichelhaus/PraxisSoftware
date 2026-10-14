@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import type * as TodayApiModule from './api';
-import type * as LeistungenModule from '@/features/appointments/leistungenAmTermin';
 import { tagePlus } from '@/features/appointments/calendar';
 import { renderMitVorschau } from '@/test-utils';
 import { Nachzuholen, NochOffen } from './NochOffen';
@@ -11,12 +10,6 @@ vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof TodayApiModule>()),
   fetchDayPlan: (tag: string, person: string) =>
     fetchDayPlan(tag, person) as Promise<TodayApiModule.DayPlanEntry[]>,
-}));
-const fetchLeistungenAmTermin = vi.fn();
-vi.mock('@/features/appointments/leistungenAmTermin', async (importOriginal) => ({
-  ...(await importOriginal<typeof LeistungenModule>()),
-  fetchLeistungenAmTermin: (id: string) =>
-    fetchLeistungenAmTermin(id) as Promise<LeistungenModule.LeistungenAmTermin | null>,
 }));
 
 const HEUTE = '2026-10-13';
@@ -69,6 +62,15 @@ describe('Nachzuholen (Auftrag C1, ANN-478)', () => {
                 patient_family_name: 'Mustermann',
               }),
               eintrag({ id: 'fertig', status: 'documented', documentation_status: 'final' }),
+              // B4: festgeschrieben, aber nicht abgehakt - es fehlt der Haken.
+              eintrag({
+                id: 'ohne-haken',
+                status: 'documented',
+                documentation_status: 'final',
+                checked_at: null,
+                patient_given_name: 'Lea',
+                patient_family_name: 'Ruhig',
+              }),
               eintrag({ id: 'abgesagt', status: 'cancelled' }),
               eintrag({ id: 'weg', status: 'no_show', documentation_status: null }),
               eintrag({ id: 'fehlzeit', kind: 'internal', patient_id: null, status: 'confirmed' }),
@@ -79,12 +81,18 @@ describe('Nachzuholen (Auftrag C1, ANN-478)', () => {
     renderMitVorschau(<Nachzuholen heute={HEUTE} staffMemberId="s1" zeitzone={ZONE} />);
 
     const kopf = await screen.findByRole('heading', { name: 'Nachzuholen' });
-    expect(kopf.closest('summary')).toHaveTextContent('Nachzuholen (2)');
+    expect(kopf.closest('summary')).toHaveTextContent('Nachzuholen (3)');
     const zeilen = screen.getAllByRole('listitem');
-    expect(zeilen).toHaveLength(2);
+    expect(zeilen).toHaveLength(3);
     expect(zeilen[0]).toHaveTextContent('Erika Beispiel');
     expect(zeilen[0]).toHaveTextContent('Doku offen');
     expect(zeilen[1]).toHaveTextContent('Nicht abgeschlossen');
+    expect(zeilen[2]).toHaveTextContent('Haken fehlt');
+    // Wo nur der Haken fehlt, ist er die Aktion - nicht „Doku“.
+    expect(
+      within(zeilen[2]!).getByRole('button', { name: 'Termin abschließen: Lea Ruhig' }),
+    ).toBeInTheDocument();
+    expect(within(zeilen[2]!).queryByRole('link', { name: /^Doku/ })).toBeNull();
     expect(within(zeilen[0]!).getByRole('link', { name: /^Doku/ })).toHaveAttribute(
       'href',
       `/termine/doku-offen/abschluss?zurueck=${encodeURIComponent('/')}`,
@@ -109,43 +117,40 @@ describe('Nachzuholen (Auftrag C1, ANN-478)', () => {
   });
 });
 
-describe('NochOffen (Auftrag C1)', () => {
-  beforeEach(() => {
-    fetchLeistungenAmTermin.mockReset();
-  });
-
-  it('fragt den Stand der Heilmittel nur, wo die Rolle bestätigen darf (ANN-140)', async () => {
-    fetchLeistungenAmTermin.mockResolvedValue({
-      appointment_id: 'eigen',
-      can_record: true,
-      services: [],
-      recorded_at: null,
-      recorded_by_name: null,
-      basis_items: null,
-      session_fee_cents: null,
-    });
+describe('NochOffen (Auftrag C1, B4, B7)', () => {
+  it('nennt eine festgeschriebene Doku ohne Haken „Haken fehlt“ und bietet den Haken an', async () => {
     renderMitVorschau(
       <NochOffen
         plan={[
-          eintrag({ id: 'eigen', status: 'documented', documentation_status: 'final' }),
           eintrag({
-            id: 'fremd',
-            staff_member_id: 's2',
+            id: 'ohne-haken',
             status: 'documented',
             documentation_status: 'final',
+            checked_at: null,
+          }),
+          eintrag({
+            id: 'abgehakt',
+            status: 'documented',
+            documentation_status: 'final',
+            checked_at: '2026-10-12T09:00:00.000Z',
+            patient_given_name: 'Max',
+            patient_family_name: 'Mustermann',
           }),
         ]}
         tagWort="Heute"
         darfDokumentieren
-        darfHeilmittel={(person) => person === 's1'}
         jetzt={Date.parse('2026-10-12T18:00:00.000Z')}
         zeitzone={ZONE}
       />,
     );
     expect(await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).toBeVisible();
-    expect(fetchLeistungenAmTermin).toHaveBeenCalledTimes(1);
-    expect(fetchLeistungenAmTermin).toHaveBeenCalledWith('eigen');
-    expect(screen.getByText('Heilmittel offen')).toBeInTheDocument();
+    expect(screen.getByText('Haken fehlt')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Termin abschließen: Erika Beispiel' }),
+    ).toBeInTheDocument();
+    // B7: Heilmittel bestätigt niemand mehr - es gibt dafür keine Zeile.
+    expect(screen.queryByText('Heilmittel offen')).toBeNull();
+    expect(screen.queryByText(/Mustermann/)).toBeNull();
   });
 
   it('nennt offene Doku nur denen, die schreiben', () => {
@@ -154,7 +159,6 @@ describe('NochOffen (Auftrag C1)', () => {
         plan={[eintrag({ id: 'a', documentation_status: 'draft' })]}
         tagWort="Heute"
         darfDokumentieren={false}
-        darfHeilmittel={() => false}
         jetzt={Date.parse('2026-10-12T18:00:00.000Z')}
         zeitzone={ZONE}
       />,

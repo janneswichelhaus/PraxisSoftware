@@ -15,13 +15,10 @@ import {
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { roleLabel } from '@/components/ui/roleLabels';
 import {
-  canChangePatientStatus,
   canManageAppointments,
   canWriteTreatmentBases,
   type CurrentUser,
-  type RoleKey,
 } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
@@ -106,7 +103,7 @@ function Aktenavigation({
  * nicht aus - es ist Arbeit fürs Büro, kein Hinweis vor der Behandlung.
  */
 function AnmeldebogenHinweis({ patient, user }: { patient: Patient; user: CurrentUser }) {
-  const offen = useOffeneErstaufnahme(patient.id, patient.status === 'active', user);
+  const offen = useOffeneErstaufnahme(patient.id, true, user);
   if (!offen.includes('registration_form')) return null;
   // ANN-227: Ein Tipp öffnet die Kamera, das Foto erledigt den Anmeldebogen -
   // ohne Umweg über die Stammdaten.
@@ -175,39 +172,6 @@ function HinweiseImKopf({ patient }: { patient: Patient }) {
 }
 
 /**
- * Die Praxisrollen in der Reihenfolge, in der der Satz sie nennt. Wer davon
- * den Versorgungsstatus wechseln darf, sagt `canChangePatientStatus` - so
- * nennt der Kopf nie eine andere Rolle als die Verwaltung der Stammdaten.
- * Verbindlich prüft der Server (ADR-004).
- */
-const PRAXISROLLEN: readonly RoleKey[] = ['office', 'team_lead', 'owner', 'therapist'];
-
-function aufzaehlung(teile: string[]): string {
-  if (teile.length < 2) return teile.join('');
-  return `${teile.slice(0, -1).join(', ')} und ${teile.at(-1)}`;
-}
-
-/**
- * Warum „Termin anlegen" fehlt (PAT-05).
- *
- * Bei einer Person, die nicht in laufender Versorgung ist, verschwand der
- * Knopf bisher ohne ein Wort. Wer sie einplanen wollte, suchte ihn - und fand
- * keinen Weg. Der Satz nennt den Grund und den Weg zurück: für Rollen mit
- * Statusrecht den Ort, für alle anderen, wer es darf.
- */
-function OhneNeueTermine({ user }: { user: CurrentUser }) {
-  const weg = canChangePatientStatus(user.roles)
-    ? 'Wieder als aktiv führen unter Stammdaten → Verwaltung.'
-    : `Wieder als aktiv führen dürfen die Rollen ${aufzaehlung(
-        PRAXISROLLEN.filter((rolle) => canChangePatientStatus([rolle])).map(roleLabel),
-      )}.`;
-
-  // UX-005e: Der Grund steht schon im Etikett daneben; der Satz nennt nur
-  // noch die Folge und den Weg zurück.
-  return <>Keine neuen Termine. {weg}</>;
-}
-
-/**
  * Kopf der Akte: wer die Person ist - und die beiden Wege, die täglich
  * gebraucht werden (`Objektkopf`, Design-Fundament).
  *
@@ -227,7 +191,6 @@ function PatientKopf({
   const alter = ageInYears(patient.date_of_birth);
   const darfTerminePlanen = canManageAppointments(user.roles);
   const darfVerordnen = canWriteTreatmentBases(user.roles);
-  const aktiv = patient.status === 'active';
   const ort = useLocation();
   const aktuell = useAktuelleGrundlage(patient.id, user);
 
@@ -236,7 +199,8 @@ function PatientKopf({
   // Ohne ihn fiel der Termin nach dem Anlegen auf „Zurück zur Patientenliste"
   // zurück, und wer aus dem Kalender kam, fand nicht mehr dorthin.
   const hier = `${ort.pathname}${ort.search}`;
-  const zeigtTermin = darfTerminePlanen && aktiv;
+  // B1 (BEF-151): Jede Akte ist planbar - „Nicht in Versorgung“ ist entfallen.
+  const zeigtTermin = darfTerminePlanen;
 
   // Der Rückweg unter 640 px als Pfeil vor dem Namen (Handoff Rahmen vom
   // 2026-10-05, Variante 4b, RAH-007): Die Zeile „← Zurück zu den
@@ -261,17 +225,13 @@ function PatientKopf({
           {patient.city ? ` · ${patient.city}` : ''}
         </>
       }
-      // UX-005e: Der Regelfall trägt kein Etikett - „In Versorgung" stand an
-      // jeder Akte und sagte nichts. Nur die Ausnahme ist markiert. Der
-      // Abschluss ist etwas anderes als der Status und gehört in den Kopf: Er
-      // sagt, dass die Behandlung beendet ist und die Aufbewahrung läuft
-      // (LOE-001b, ADR-008). Ist er gesetzt, steht nur er da - zwei Wörter für
-      // dieselbe Lage verwirrten (BEF-067).
+      // UX-005e: Der Regelfall trägt kein Etikett. Seit B1 (BEF-151) gibt es
+      // „Nicht in Versorgung“ nicht mehr; der festgehaltene Abschluss bleibt
+      // und gehört in den Kopf: Er sagt, dass die Behandlung beendet ist
+      // (LOE-001b, ADR-008).
       status={
         patient.care_concluded_on ? (
           <Badge>Versorgung abgeschlossen am {formatDate(patient.care_concluded_on)}</Badge>
-        ) : !aktiv ? (
-          <Badge ton="warnung">Nicht in Versorgung</Badge>
         ) : null
       }
       // AKTE-007: Abrechnungsart und Liege als Abzeichen - die Liege steht vor
@@ -310,7 +270,6 @@ function PatientKopf({
           </>
         ) : null
       }
-      fuss={darfTerminePlanen && !aktiv ? <OhneNeueTermine user={user} /> : null}
       hinweise={
         <>
           <AnmeldebogenHinweis patient={patient} user={user} />

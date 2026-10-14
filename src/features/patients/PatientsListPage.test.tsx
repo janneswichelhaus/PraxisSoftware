@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import type * as PatientsApi from './api';
-import type { Patient } from './api';
-import { renderWithProviders, testPatient } from '@/test-utils';
+import type * as UebersichtApi from './uebersicht';
+import type { Patienteneintrag } from './uebersicht';
+import { renderWithProviders } from '@/test-utils';
 
 /** Macht die aktuelle URL innerhalb des MemoryRouter fuer Assertions sichtbar. */
 function SearchParamsProbe() {
@@ -17,36 +17,61 @@ function OrtProbe() {
   return <span data-testid="ort">{useLocation().pathname}</span>;
 }
 
-const fetchPatients = vi.fn();
-vi.mock('./api', async (importOriginal) => {
-  const actual = await importOriginal<typeof PatientsApi>();
-  return { ...actual, fetchPatients: () => fetchPatients() as Promise<Patient[]> };
+const fetchPatientOverview = vi.fn();
+vi.mock('./uebersicht', async (importOriginal) => {
+  const actual = await importOriginal<typeof UebersichtApi>();
+  return {
+    ...actual,
+    fetchPatientOverview: () => fetchPatientOverview() as Promise<Patienteneintrag[]>,
+  };
 });
 
 const { PatientsListPage } = await import('./PatientsListPage');
 
-function patient(
+function eintrag(
   id: string,
   given: string,
   family: string,
-  status: 'active' | 'inactive',
-  overrides: Partial<Patient> = {},
-): Patient {
-  return testPatient({
+  overrides: Partial<Patienteneintrag> = {},
+): Patienteneintrag {
+  return {
     id,
-    status,
     given_name: given,
     family_name: family,
+    date_of_birth: '1957-04-30',
+    email: null,
+    phone: null,
+    postal_code: '72070',
     city: 'Tuebingen',
+    last_visit_on: null,
+    next_appointment_at: null,
+    open_bases: 0,
+    bases_need_appointments: 0,
+    bases_need_followup: 0,
+    bases_ready: 0,
+    bases_in_billing: 0,
+    billing_visible: false,
+    invoices_issued: null,
+    invoices_paid: null,
+    outstanding_cents: null,
+    invoices_overdue: null,
+    reminders_due: null,
     ...overrides,
-  });
+  };
 }
 
-describe('PatientsListPage', () => {
-  it('listet die vom Server freigegebenen Patient:innen', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'inactive'),
+/** Die Namen der Zeilen in der angezeigten Reihenfolge. */
+function reihenfolge(): string[] {
+  return screen
+    .getAllByRole('link', { name: /, / })
+    .map((link) => (link.textContent ?? '').split(/\d/)[0]?.trim() ?? '');
+}
+
+describe('PatientsListPage (B1, B10)', () => {
+  it('listet die vom Server freigegebenen Patient:innen - ohne „Nicht in Versorgung“', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel'),
     ]);
 
     renderWithProviders(<PatientsListPage />);
@@ -55,17 +80,15 @@ describe('PatientsListPage', () => {
       'href',
       '/patienten/1',
     );
-    // Das Etikett des Systems, groß geschrieben wie der Filter (PAT-14, WRT-16).
-    const erika = screen.getByRole('link', { name: /Beispiel, Erika/ });
-    expect(within(erika).getByText('Nicht in Versorgung')).toBeInTheDocument();
-    // Zeichen und Wort wie im Kopf der Akte (Regel 5; Sichtung A6).
-    expect(within(erika).getByText('Nicht in Versorgung')).toHaveTextContent(
-      '!Nicht in Versorgung',
-    );
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
+    // BEF-151: Den Versorgungsstatus gibt es nicht mehr - weder als Etikett
+    // noch als Filter.
+    expect(screen.queryByText(/in Versorgung/i)).toBeNull();
+    expect(screen.queryByLabelText('Versorgung')).toBeNull();
   });
 
   it('bietet das Anlegen unter demselben Namen wie die Kopfsuche an (PAT-21)', async () => {
-    fetchPatients.mockResolvedValue([]);
+    fetchPatientOverview.mockResolvedValue([]);
     renderWithProviders(<PatientsListPage />);
 
     expect(await screen.findByRole('link', { name: 'Patient:in anlegen' })).toHaveAttribute(
@@ -74,42 +97,159 @@ describe('PatientsListPage', () => {
     );
   });
 
-  // PAT-08: Die Akte führt zurück in die gefilterte Liste. Vorher stand sie
-  // nach jeder geöffneten Akte wieder ungefiltert da.
-  it('gibt der Akte Suchbegriff und Statusfilter als Rückweg mit', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'inactive'),
+  // PAT-08: Die Akte führt zurück in genau diese Ansicht.
+  it('gibt der Akte Suche, Sortierung und Auswahl als Rückweg mit', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel', { bases_need_appointments: 1, open_bases: 1 }),
     ]);
 
-    renderWithProviders(<PatientsListPage />, '/patienten?q=erika&status=inactive');
+    renderWithProviders(<PatientsListPage />, '/patienten?q=erika&sort=name&zeigen=termine_fehlen');
 
     const link = await screen.findByRole('link', { name: /Beispiel, Erika/ });
     const ziel = new URL(link.getAttribute('href') ?? '', 'http://liste.test');
     expect(ziel.pathname).toBe('/patienten/2');
-    expect(ziel.searchParams.get('zurueck')).toBe('/patienten?q=erika&status=inactive');
+    expect(ziel.searchParams.get('zurueck')).toBe(
+      '/patienten?q=erika&sort=name&zeigen=termine_fehlen',
+    );
   });
 
-  it('nimmt den Statusfilter in das Auswahlfeld des Systems auf (PAT-14, UIK-19)', async () => {
-    fetchPatients.mockResolvedValue([patient('1', 'Max', 'Mustermann', 'active')]);
+  it('sortiert nach zuletzt behandelt, offener Verordnung und A–Z', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Anna', 'Alt', { last_visit_on: '2026-01-10' }),
+      eintrag('2', 'Bert', 'Brandneu', { last_visit_on: '2026-10-13' }),
+      eintrag('3', 'Carla', 'Nie'),
+      eintrag('4', 'Dora', 'Dazwischen', {
+        last_visit_on: '2026-06-01',
+        open_bases: 1,
+        bases_need_appointments: 1,
+      }),
+      eintrag('5', 'Emil', 'Ende', { last_visit_on: '2026-09-01', open_bases: 1 }),
+    ]);
+    const user = userEvent.setup();
     renderWithProviders(<PatientsListPage />);
+    await screen.findByRole('link', { name: /Alt, Anna/ });
 
+    // Vorgabe: zuletzt behandelt zuerst, nie Behandelte am Ende.
+    expect(screen.getByRole('button', { name: 'Zuletzt' })).toHaveAttribute('aria-pressed', 'true');
+    expect(reihenfolge()).toEqual([
+      'Brandneu, Bert',
+      'Ende, Emil',
+      'Dazwischen, Dora',
+      'Alt, Anna',
+      'Nie, Carla',
+    ]);
+
+    // Offene Verordnung zuerst: was Arbeit verlangt, dann was läuft, dann A–Z.
+    await user.click(screen.getByRole('button', { name: 'Verordnung' }));
+    expect(reihenfolge()).toEqual([
+      'Dazwischen, Dora',
+      'Ende, Emil',
+      'Alt, Anna',
+      'Brandneu, Bert',
+      'Nie, Carla',
+    ]);
+
+    await user.click(screen.getByRole('button', { name: 'A–Z' }));
+    expect(reihenfolge()).toEqual([
+      'Alt, Anna',
+      'Brandneu, Bert',
+      'Dazwischen, Dora',
+      'Ende, Emil',
+      'Nie, Carla',
+    ]);
+  });
+
+  it('macht Karteileichen sichtbar: Auswahl mit Anzahl, Zeichen und Wort an der Zeile', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann', { open_bases: 1, bases_need_appointments: 1 }),
+      eintrag('2', 'Erika', 'Beispiel', { open_bases: 1, bases_ready: 1 }),
+      eintrag('3', 'Jonas', 'Nachtrag', { open_bases: 1, bases_need_followup: 1 }),
+      eintrag('4', 'Lea', 'Ruhig'),
+    ]);
+    const user = userEvent.setup();
+    renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Mustermann, Max/ });
-    // 48 px wie das Filterfeld daneben, nicht 44.
-    expect(screen.getByLabelText('Versorgung')).toHaveClass('h-12');
+
+    const zeigen = screen.getByRole('group', { name: 'Zeigen' });
+    expect(
+      within(zeigen).getByRole('button', { name: /Termine fehlen \(1\)/ }),
+    ).toBeInTheDocument();
+    expect(within(zeigen).getByRole('button', { name: /Abrechnen \(1\)/ })).toBeInTheDocument();
+    expect(
+      within(zeigen).getByRole('button', { name: /Haken oder Doku fehlt \(1\)/ }),
+    ).toBeInTheDocument();
+    // Ohne Treffer keine Auswahl - und Geld nur mit Recht.
+    expect(within(zeigen).queryByRole('button', { name: /In der Abrechnung/ })).toBeNull();
+    expect(within(zeigen).queryByRole('button', { name: /Zu mahnen/ })).toBeNull();
+
+    // Zeichen und Wort an der Zeile (DESIGN.md Regel 5).
+    expect(
+      within(screen.getByRole('link', { name: /Mustermann, Max/ })).getByText('Termine fehlen'),
+    ).toHaveTextContent('!Termine fehlen');
+    expect(
+      within(screen.getByRole('link', { name: /Beispiel, Erika/ })).getByText('Abrechnen'),
+    ).toBeInTheDocument();
+
+    await user.click(within(zeigen).getByRole('button', { name: /Abrechnen \(1\)/ }));
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
+    });
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Ruhig, Lea/ })).toBeNull();
+  });
+
+  it('zeigt Offenes und zu Mahnendes nur, wenn der Server es liefert (ANN-139, ANN-516)', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann', {
+        billing_visible: true,
+        invoices_issued: 2,
+        invoices_paid: 1,
+        outstanding_cents: 12000,
+        invoices_overdue: 1,
+        reminders_due: 1,
+      }),
+      eintrag('2', 'Erika', 'Beispiel', {
+        billing_visible: true,
+        invoices_issued: 1,
+        invoices_paid: 1,
+        outstanding_cents: 0,
+        invoices_overdue: 0,
+        reminders_due: 0,
+      }),
+    ]);
+    const user = userEvent.setup();
+    renderWithProviders(<PatientsListPage />);
+    const max = await screen.findByRole('link', { name: /Mustermann, Max/ });
+
+    expect(within(max).getByText('Zu mahnen')).toBeInTheDocument();
+    expect(within(max).getByText(/120,00/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('link', { name: /Beispiel, Erika/ })).queryByText(/€/),
+    ).toBeNull();
+
+    const zeigen = screen.getByRole('group', { name: 'Zeigen' });
+    await user.click(within(zeigen).getByRole('button', { name: /Zu mahnen \(1\)/ }));
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /Beispiel, Erika/ })).toBeNull();
+    });
+    expect(
+      within(zeigen).getByRole('button', { name: /Offene Rechnung \(1\)/ }),
+    ).toBeInTheDocument();
   });
 
   it('filtert die Anzeige ueber die Suche', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'active'),
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel'),
     ]);
     const user = userEvent.setup();
 
     renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Mustermann, Max/ });
 
-    await user.type(screen.getByLabelText('Patient:in suchen'), 'erika');
+    // B10: ab dem ersten Zeichen, keine Mindestlänge - „k“ trifft nur Erika.
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'k');
 
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
@@ -118,26 +258,22 @@ describe('PatientsListPage', () => {
   });
 
   it('zeigt bei einem Fehler eine verstaendliche Meldung statt einer leeren Liste', async () => {
-    fetchPatients.mockRejectedValue(new Error('rls'));
+    fetchPatientOverview.mockRejectedValue(new Error('rls'));
 
     renderWithProviders(<PatientsListPage />);
 
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent('Die Patientenliste konnte nicht geladen werden.');
-    // Kein technisches Detail nach aussen (PROJECT_PRINCIPLES.md 13) - und
-    // keine Ratefrage nach der Anmeldung, sondern ein Schritt (WRT-01).
+    // Kein technisches Detail nach aussen (PROJECT_PRINCIPLES.md 13).
     expect(meldung.textContent).not.toMatch(/rls/i);
     expect(meldung.textContent).not.toMatch(/angemeldet/);
-    // Der Satz des Systems (ANN-406), nicht eine Abwandlung je Seite.
     expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
   });
 
   it('laedt die Liste nach einem Fehler auf Wunsch erneut (UIK-16)', async () => {
-    // Die Datei setzt den Mock sonst nirgends zurück; gezählt werden hier nur
-    // die Aufrufe dieses Tests.
-    fetchPatients.mockReset();
-    fetchPatients.mockRejectedValueOnce(new Error('offline'));
-    fetchPatients.mockResolvedValueOnce([patient('1', 'Max', 'Mustermann', 'active')]);
+    fetchPatientOverview.mockReset();
+    fetchPatientOverview.mockRejectedValueOnce(new Error('offline'));
+    fetchPatientOverview.mockResolvedValueOnce([eintrag('1', 'Max', 'Mustermann')]);
     const user = userEvent.setup();
 
     renderWithProviders(<PatientsListPage />);
@@ -145,16 +281,15 @@ describe('PatientsListPage', () => {
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
     expect(await screen.findByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
-    expect(fetchPatients).toHaveBeenCalledTimes(2);
+    expect(fetchPatientOverview).toHaveBeenCalledTimes(2);
   });
 
   it('zeigt eine leere Kartei ohne Fehlermeldung', async () => {
-    fetchPatients.mockResolvedValue([]);
+    fetchPatientOverview.mockResolvedValue([]);
 
     renderWithProviders(<PatientsListPage />);
 
     expect(await screen.findByText('Noch keine Patient:innen')).toBeInTheDocument();
-    // Der leere Zustand nennt den nächsten Schritt (PAT-22).
     expect(
       screen.getByText('Die erste Akte entsteht über „Patient:in anlegen“.'),
     ).toBeInTheDocument();
@@ -162,9 +297,9 @@ describe('PatientsListPage', () => {
   });
 
   it('filtert ueber die Suche auch nach Ort, Telefon und E-Mail', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active', { city: 'Tuebingen' }),
-      patient('2', 'Erika', 'Beispiel', 'active', {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann', { city: 'Tuebingen' }),
+      eintrag('2', 'Erika', 'Beispiel', {
         city: 'Hamburg',
         phone: '0221 555123',
         email: 'erika@example.test',
@@ -189,47 +324,23 @@ describe('PatientsListPage', () => {
     expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
   });
 
-  it('filtert nach Status aktiv/inaktiv', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'inactive'),
-    ]);
-    const user = userEvent.setup();
-
-    renderWithProviders(<PatientsListPage />);
-    await screen.findByRole('link', { name: /Mustermann, Max/ });
-    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
-
-    await user.selectOptions(screen.getByLabelText('Versorgung'), 'active');
-    await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /Beispiel, Erika/ })).toBeNull();
-    });
-    expect(screen.getByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
-
-    await user.selectOptions(screen.getByLabelText('Versorgung'), 'inactive');
-    await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
-    });
-    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
-  });
-
-  it('zeigt "Keine Treffer" statt der Leerlauf-Meldung, wenn ein Filter alles ausblendet', async () => {
-    fetchPatients.mockResolvedValue([patient('1', 'Max', 'Mustermann', 'active')]);
+  it('zeigt "Keine Treffer" statt der Leerlauf-Meldung, wenn die Suche alles ausblendet', async () => {
+    fetchPatientOverview.mockResolvedValue([eintrag('1', 'Max', 'Mustermann')]);
     const user = userEvent.setup();
 
     renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Mustermann, Max/ });
 
-    await user.selectOptions(screen.getByLabelText('Versorgung'), 'inactive');
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'zzz');
 
     expect(await screen.findByText('Keine Treffer')).toBeInTheDocument();
     expect(screen.queryByText('Noch keine Patient:innen')).toBeNull();
   });
 
-  it('spiegelt Suche und Status in der URL, damit die Ansicht teilbar/bookmarkbar ist', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'inactive'),
+  it('spiegelt Suche, Sortierung und Auswahl in der URL', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel', { open_bases: 1, bases_ready: 1 }),
     ]);
     const user = userEvent.setup();
 
@@ -247,61 +358,66 @@ describe('PatientsListPage', () => {
       expect(screen.getByTestId('search-params')).toHaveTextContent('q=erika');
     });
 
-    await user.selectOptions(screen.getByLabelText('Versorgung'), 'inactive');
+    await user.click(screen.getByRole('button', { name: 'A–Z' }));
+    await user.click(screen.getByRole('button', { name: /Abrechnen \(1\)/ }));
     await waitFor(() => {
       const params = screen.getByTestId('search-params').textContent ?? '';
       expect(params).toContain('q=erika');
-      expect(params).toContain('status=inactive');
+      expect(params).toContain('sort=name');
+      expect(params).toContain('zeigen=abrechnen');
     });
 
-    await user.selectOptions(screen.getByLabelText('Versorgung'), 'all');
+    // Ein zweiter Tipp hebt die Auswahl auf; „Zuletzt“ ist die Vorgabe und
+    // steht nicht in der Adresse.
+    await user.click(screen.getByRole('button', { name: /Abrechnen \(1\)/ }));
+    await user.click(screen.getByRole('button', { name: 'Zuletzt' }));
     await waitFor(() => {
       const params = screen.getByTestId('search-params').textContent ?? '';
       expect(params).toContain('q=erika');
-      expect(params).not.toContain('status');
+      expect(params).not.toContain('zeigen');
+      expect(params).not.toContain('sort');
     });
   });
 
-  it('stellt Suche und Status beim Aufruf einer geteilten URL wieder her', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'inactive'),
+  it('stellt Suche, Sortierung und Auswahl beim Aufruf einer geteilten URL wieder her', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann', { open_bases: 1, bases_ready: 1 }),
+      eintrag('2', 'Erika', 'Beispiel', { open_bases: 1, bases_ready: 1 }),
+      eintrag('3', 'Erich', 'Zeisig'),
     ]);
 
-    renderWithProviders(<PatientsListPage />, '/patienten?q=erika&status=inactive');
+    renderWithProviders(<PatientsListPage />, '/patienten?q=eri&sort=name&zeigen=abrechnen');
 
     expect(await screen.findByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
-    expect(screen.getByLabelText('Patient:in suchen')).toHaveValue('erika');
-    expect(screen.getByLabelText('Versorgung')).toHaveValue('inactive');
+    expect(screen.queryByRole('link', { name: /Zeisig, Erich/ })).toBeNull();
+    expect(screen.getByLabelText('Patient:in suchen')).toHaveValue('eri');
+    expect(screen.getByRole('button', { name: 'A–Z' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('ignoriert einen ungueltigen Status-Wert aus der URL statt abzustuerzen', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'inactive'),
+  it('ignoriert ungueltige Werte aus der URL statt abzustuerzen', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel'),
     ]);
 
-    renderWithProviders(<PatientsListPage />, '/patienten?status=geloescht');
+    renderWithProviders(<PatientsListPage />, '/patienten?status=inactive&sort=quer&zeigen=x');
 
     expect(await screen.findByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
-    expect(screen.getByLabelText('Versorgung')).toHaveValue('all');
+    expect(screen.getByRole('button', { name: 'Zuletzt' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  // B1, ANN-430: Ein Feld statt „Patient:in suchen“ und „Liste filtern“. Es
-  // kann, was die Namenssuche des Bereichs konnte - beide Schreibrichtungen,
-  // Umlaute eingeebnet - und was der Filter konnte.
+  // B1, ANN-430: Ein Feld - Name in beiden Richtungen, Umlaute eingeebnet.
   it('sucht in einem Feld: Name in beiden Richtungen, ohne Umlautsorgen', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Jürgen', 'Müller', 'active'),
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Jürgen', 'Müller'),
     ]);
     const user = userEvent.setup();
     renderWithProviders(<PatientsListPage />);
     await screen.findByRole('link', { name: /Mustermann, Max/ });
 
-    // Nur noch ein Suchfeld, keine zweite Trefferliste daneben.
     expect(screen.getAllByRole('searchbox')).toHaveLength(1);
     expect(screen.queryByRole('combobox', { name: 'Patient:in suchen' })).toBeNull();
 
@@ -321,9 +437,9 @@ describe('PatientsListPage', () => {
   });
 
   it('öffnet mit der Eingabetaste die Akte, wenn genau eine übrig ist', async () => {
-    fetchPatients.mockResolvedValue([
-      patient('1', 'Max', 'Mustermann', 'active'),
-      patient('2', 'Erika', 'Beispiel', 'active'),
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel'),
     ]);
     const user = userEvent.setup();
     renderWithProviders(

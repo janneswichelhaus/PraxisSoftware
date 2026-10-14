@@ -62,12 +62,6 @@ async function endend(konto: string = users.office): Promise<string[]> {
   );
 }
 
-async function ohneAbschluss(konto: string = users.therapist): Promise<string[]> {
-  return (await asUser<{ patient_id: string }>(konto, OHNE_ABSCHLUSS)).rows.map(
-    (r) => r.patient_id,
-  );
-}
-
 describe('Verordnung endet (PRX-016)', () => {
   beforeEach(async () => {
     await resetDatabase();
@@ -174,56 +168,19 @@ describe('Verordnung endet (PRX-016)', () => {
   });
 });
 
-describe('Versorgung ohne Abschluss (PRX-016)', () => {
+// B1 (BEF-151, ANN-511): Die Erinnerung „Versorgung abschliessen?“ ist
+// entfallen. Die Frist rechnet ab der letzten Behandlung; ein Abschluss ist
+// dafuer nicht mehr noetig. Die Karteileichen stehen in der Patientenliste
+// (list_patient_overview, patientenuebersicht.test.ts).
+describe('Versorgung ohne Abschluss entfaellt (B1)', () => {
   beforeEach(async () => {
     await resetDatabase();
-    await person();
   }, 120_000);
 
-  it('fragt nach sechs Monaten ohne Termin und ohne kommenden', async () => {
-    await termin(null, -200);
-    expect(await ohneAbschluss()).toContain(LENA);
-  });
-
-  it('fragt nicht bei einem juengeren oder einem kommenden Termin', async () => {
-    await termin(null, -200);
-    await termin(null, -30);
-    expect(await ohneAbschluss()).not.toContain(LENA);
-
-    await asPostgres('delete from public.appointments where patient_id = $1', [LENA]);
-    await termin(null, -200);
-    await termin(null, 5);
-    expect(await ohneAbschluss()).not.toContain(LENA);
-  });
-
-  it('zaehlt ohne Termin die Anlage der Akte', async () => {
-    expect(await ohneAbschluss()).not.toContain(LENA);
-    await asPostgres(
-      `update public.patients set created_at = now() - interval '7 months' where id = $1`,
-      [LENA],
-    );
-    expect(await ohneAbschluss()).toContain(LENA);
-  });
-
-  it('fragt nicht nach einem Abschluss, der schon da ist', async () => {
-    await termin(null, -200);
-    await asPostgres(
-      `update public.patients set care_concluded_on = current_date, care_concluded_at = now(), care_concluded_by = $2 where id = $1`,
-      [LENA, users.therapist],
-    );
-    expect(await ohneAbschluss()).not.toContain(LENA);
-  });
-
-  it('zeigt die Liste nur den Rollen, die abschliessen duerfen', async () => {
-    await termin(null, -200);
-    for (const konto of [users.ownerTherapist, users.therapist, users.teamLead]) {
-      expect(await ohneAbschluss(konto), konto).toContain(LENA);
+  it('kennt die Serverfunktion nicht mehr - fuer keine Rolle', async () => {
+    for (const konto of [users.ownerTherapist, users.therapist, users.office]) {
+      await expect(asUser(konto, OHNE_ABSCHLUSS)).rejects.toThrow(/does not exist/);
     }
-    for (const konto of [users.office, users.trainer, users.patientMax]) {
-      await erwarteAbgewiesenenLeseversuch(konto, OHNE_ABSCHLUSS, [], 'patient_directory.read');
-    }
-    const fremd = await fremdeOrganisation();
-    expect(await ohneAbschluss(fremd.owner)).not.toContain(LENA);
-    await expect(asAnon(OHNE_ABSCHLUSS)).rejects.toThrow(/permission denied/i);
+    await expect(asAnon(OHNE_ABSCHLUSS)).rejects.toThrow(/does not exist|permission denied/);
   });
 });

@@ -2,19 +2,22 @@
 
 ## Status
 
-**Angenommen — Fassung 5** (2026-10-05). Fassung 1 am 2026-08-28, Fassung 2
+**Angenommen — Fassung 6** (2026-10-14). Fassung 1 am 2026-08-28, Fassung 2
 (Punkte 15 bis 20, zwei Leistungsbereiche, E18) am 2026-09-20, Fassung 3
 (Punkt 21, Nachsorge-Abo und Trainingspaket) am 2026-09-23, Fassung 4
 (Punkt 22, Terminhonorar; Präzisierungen an Punkt 5 und 17) am 2026-10-02 aus
 der Abnahme der Annahmen durch den Projektinhaber, Fassung 5 (Punkt 23,
-Rechnungsdarstellung beim Terminhonorar, B17) am 2026-10-05. Die Punkte 1 bis
-22 gelten unverändert; Punkt 13 trägt einen Erledigungsvermerk.
+Rechnungsdarstellung beim Terminhonorar, B17) am 2026-10-05, Fassung 6
+(Punkt 24, Leistung mit dem Haken und Freigabe zur Abrechnung, B7) am
+2026-10-14. Die Punkte 1 bis 23 gelten unverändert; Punkt 23 spricht seit
+Fassung 6 von den erfassten statt den bestätigten Heilmitteln, Punkt 13 trägt
+einen Erledigungsvermerk.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
 
 ## Datum
 
-2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3); 2026-10-02 (Fassung 4); 2026-10-05 (Fassung 5)
+2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3); 2026-10-02 (Fassung 4); 2026-10-05 (Fassung 5); 2026-10-14 (Fassung 6)
 
 ## Kontext
 
@@ -229,7 +232,8 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
     Gliederung. Eine Zeile „Behandlung“ ließe sich keinem Höchstbetrag
     zuordnen. Deshalb gilt:
     - Je Termin wird das Terminhonorar auf die **am Termin bestätigten
-      Heilmittel** aufgeteilt. Die Summe der Positionen eines Termins ist
+      Heilmittel** aufgeteilt. *(Fassung 6: die am Termin erfassten; bestätigt
+      wird am Termin nichts mehr, Punkt 24.)* Die Summe der Positionen eines Termins ist
       **genau** das Terminhonorar; die Aufteilung verändert keinen Betrag,
       sie gliedert ihn.
     - Aufgeteilt wird **anteilig nach den Preisen der Heilmittel in der am
@@ -247,6 +251,30 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
       ihrer Katalogposition.
     Ob neben der Position ein Vergleichsbetrag (Kassen- oder Beihilfesatz)
     steht, ist nicht entschieden; ohne Entscheidung steht keiner da.
+
+24. *(Fassung 6)* **Der Haken ist die Leistung; abgerechnet wird nach
+    Freigabe der Grundlage.** Der Projektinhaber hat festgelegt (B7): keine
+    Heilmittelbestätigung am Termin; der Haken heißt „Leistung erbracht";
+    ist die Grundlage vollständig, schlägt die Anwendung vor, sie in die
+    Abrechnung zu stellen, ein Tipp bestätigt; danach sind Doku, Zeitpunkt und
+    Anzahl der Termine nicht mehr änderbar. Daraus folgt:
+    - **Die Leistung entsteht serverseitig**, sobald ein Behandlungstermin mit
+      Grundlage abgehakt **und** dokumentiert ist, in beliebiger Reihenfolge:
+      je Heilmittel der Grundlage mit Restmenge eine Einheit, dazu das
+      Terminhonorar (Punkt 22). Punkt 13 (erst nach finalisierter Doku) und
+      Punkt 4 (keine Mehrfacherfassung) gelten unverändert. Ohne Grundlage,
+      Preisliste oder Honorar entsteht nichts; dann erfasst das Büro.
+    - **Wer den Haken zurücknimmt, nimmt die Leistung mit**, solange keine
+      Rechnung und kein Rechnungsentwurf sie führt; sonst bleibt der Haken.
+    - **Freigabe zur Abrechnung** an der Grundlage (Zeitpunkt und Person,
+      [ADR-020](ADR-020-treatment-basis.md) Punkt 9), sobald jeder ihrer
+      Termine abgehakt und dokumentiert, abgesagt oder nicht angetroffen ist
+      — auch vor dem letzten verordneten Termin. Danach sperrt der Server Doku,
+      Zeitpunkt und Anzahl ihrer Termine; zurückholen geht, bis eine Rechnung
+      sie führt.
+    - Die Rechnung entsteht weiter im Büro; die Freigabe ist ihre Vorstufe,
+      keine Bedingung.
+    Annahmen: ANN-513 bis ANN-515.
 
 ## Konsequenzen
 
@@ -407,6 +435,12 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 - Wie greifen Zugriffsrechte des Office (§4.3) auf Rechnungen mit
   Leistungsangaben, solange C1 nicht entschieden ist?
 
+**Neu mit Fassung 6:**
+
+- Soll die Vorbelegung (je Heilmittel mit Restmenge eine Einheit) bei
+  Verordnungen mit mehreren Heilmitteln anders laufen, etwa nur das erste?
+  Heute korrigiert das Büro vor der Rechnung.
+
 **Neu mit Fassung 5:**
 
 - Braucht eine Beihilfestelle neben der Position einen Vergleichsbetrag, und
@@ -453,3 +487,4 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 | 3       | 2026-09-23 | **Punkt 21 ergänzt:** Nachsorge-Abo (Bereich `therapy`, Monatsrechnung, frühestens ab Ende der Behandlungsgrundlage, monatlich kündbar) und Trainingspaket (fester Zeitraum, nicht pausierbar) als abrechenbare Ereignisse. Erledigungsvermerk an Punkt 13 (kein Override in V1). Punkte 1 bis 20 unverändert. Anlass: Entscheidungen des Projektinhabers vom 2026-09-23 (`../development/UMBAU.md`, E-4). |
 | 4       | 2026-10-02 | **Punkt 22 ergänzt: Terminhonorar** — je durchgeführtem Behandlungstermin genau einmal das vereinbarte Sitzungshonorar; verordnete Heilmittel, erbrachte Leistungen und Honorarberechnung getrennt; die Heilmittelauswahl verändert den Preis nicht; Tarif und patientenbezogene Vereinbarung versioniert. **Punkt 5 präzisiert:** die mit der Person vereinbarte Regelung geht dem allgemeinen Tarif vor. **Punkt 17 präzisiert:** Lückenlosigkeit ist interne Praxisregel, gesetzlich verlangt ist die Einmaligkeit. Rechnungsdarstellung offen (B17). Anlass: Abnahme der Annahmen, Block 4 (Jannes). Punkte 1 bis 21 sonst unverändert. |
 | 5       | 2026-10-05 | **Punkt 23 ergänzt: Rechnungsdarstellung beim Terminhonorar** (B17 entschieden, Jannes): Einzelpositionen je bestätigtem Heilmittel, das Terminhonorar anteilig nach den Preisen der Heilmittel aufgeteilt, Summe je Termin genau das Honorar; Behandlungstage je Position, Verordnung und Diagnose auf der Rechnung; eine Rechnung je Behandlungsgrundlage statt je Kalendermonat. Anlass: Prüfung einer Musterrechnung gegen die Vorgaben von Beihilfe (Paragraf 23 BBhV, Anlage 9) und privater Krankenversicherung. Punkte 1 bis 22 unverändert. |
+| 6       | 2026-10-14 | **Punkt 24 ergänzt: Der Haken ist die Leistung** (B7, Jannes): keine Heilmittelbestätigung am Termin; Haken und festgeschriebene Doku erfassen die Leistung von selbst, die Rücknahme des Hakens nimmt sie mit, solange keine Rechnung sie führt; Freigabe zur Abrechnung an der Grundlage mit Sperre von Doku, Zeitpunkt und Terminzahl. Punkt 23 spricht von erfassten statt bestätigten Heilmitteln (Vermerk). Punkte 1 bis 22 unverändert. |

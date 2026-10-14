@@ -30,7 +30,10 @@ async function anzahl(sql: string, params: unknown[] = []): Promise<number> {
   return Number(rows[0]?.count ?? 0);
 }
 
-/** Setzt den Abschluss der Versorgung auf „vor N Jahren". */
+/**
+ * Setzt den Abschluss der Versorgung auf „vor N Jahren" - samt den
+ * Behandlungen und Leistungen der Akte davor.
+ */
 async function abgeschlossenVor(patientId: string, jahre: number) {
   await asPostgres(
     `update public.patients
@@ -40,6 +43,22 @@ async function abgeschlossenVor(patientId: string, jahre: number) {
             care_concluded_by = $3::uuid
       where id = $1`,
     [patientId, jahre, users.therapist],
+  );
+  // B1 (ANN-511): Die Frist rechnet ab dem Spaeteren aus Abschluss, letzter
+  // Behandlung, Leistung und Rechnung. Ein Abschluss vor N Jahren mit
+  // Terminen von heute waere kein Szenario - die Behandlungen liegen davor.
+  await asPostgres(
+    `update public.appointments
+        set starts_at = starts_at - ($2::int + 1) * interval '1 year',
+            ends_at   = ends_at   - ($2::int + 1) * interval '1 year'
+      where patient_id = $1`,
+    [patientId, jahre],
+  );
+  await asPostgres(
+    `update public.billable_services
+        set performed_on = (performed_on - ($2::int + 1) * interval '1 year')::date
+      where patient_id = $1`,
+    [patientId, jahre],
   );
 }
 
@@ -128,6 +147,120 @@ describe('Loeschlauf: klinische Patientenakte', () => {
         patients.max,
       ]),
     ).toBe(0);
+  });
+
+  // B1 (BEF-151, ANN-511): Die Frist rechnet ab dem Spaeteren aus
+  // ausdruecklichem Abschluss, letzter Behandlung und letzter Leistung - der
+  // Abschluss kann sie nur verlaengern, nie verkuerzen.
+  it('rechnet ab der letzten Behandlung, wenn sie nach dem festgehaltenen Abschluss liegt', async () => {
+    await abgeschlossenVor(patients.max, 11);
+    // Eine abgehakte Behandlung vor fuenf Jahren - nach dem Abschluss.
+    await asPostgres(
+      `update public.appointments
+          set starts_at = now() - interval '5 years',
+              ends_at   = now() - interval '5 years' + interval '45 minutes',
+              status = 'completed', completed_at = now() - interval '5 years',
+              completed_by = $2::uuid
+        where id = (select id from public.appointments where patient_id = $1
+                     order by starts_at limit 1)`,
+      [patients.max, users.therapist],
+    );
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.patients where id = $1', [patients.max])).toBe(
+      1,
+    );
+  });
+
+  it('loescht ohne festgehaltenen Abschluss zehn Jahre nach der letzten Behandlung', async () => {
+    await abgeschlossenVor(patients.max, 11);
+    // Kein Abschluss: Der Anker kommt allein aus der abgehakten Behandlung.
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = null, care_concluded_at = null, care_concluded_by = null
+        where id = $1`,
+      [patients.max],
+    );
+    await asPostgres(
+      `update public.appointments
+          set status = 'completed', completed_at = ends_at, completed_by = $2::uuid
+        where id = (select id from public.appointments
+                     where patient_id = $1 and status = 'confirmed'
+                     order by starts_at desc limit 1)`,
+      [patients.max, users.therapist],
+    );
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.patients where id = $1', [patients.max])).toBe(
+      0,
+    );
+  });
+
+  // Zweitreview H3: Die Sperre einer Verordnung in der Abrechnung (ANN-515)
+  // gilt Aenderungen, nicht dem Loeschen der Akte - ein Fehler hier hielte den
+  // Lauf fuer alle Praxen an.
+  it('loescht eine Akte, deren Verordnung in der Abrechnung steht, ohne an der Sperre zu scheitern', async () => {
+    await abgeschlossenVor(patients.max, 11);
+    await asPostgres(
+      `update public.treatment_bases
+          set billing_released_at = now(), billing_released_by = $2
+        where patient_id = $1`,
+      [patients.max, users.office],
+    );
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.patients where id = $1', [patients.max])).toBe(
+      0,
+    );
+    expect(
+      await anzahl('select count(*) from public.treatment_bases where patient_id = $1', [
+        patients.max,
+      ]),
+    ).toBe(0);
+  });
+
+  // ANN-511: Ohne jede Behandlung und ohne Abschluss gibt es keinen Anker -
+  // und damit keine Frist, gleich wie alt die Akte ist.
+  it('loescht eine Akte ohne jede Behandlung und ohne Abschluss nie', async () => {
+    const { rows: person } = await asPostgres<{ id: string }>(
+      `insert into public.persons (organization_id, given_name, family_name)
+       values ($1, 'Nie', 'Behandelt') returning id`,
+      [organizationId],
+    );
+    const { rows: akte } = await asPostgres<{ id: string }>(
+      `insert into public.patients (organization_id, person_id, created_at)
+       values ($1, $2, now() - interval '20 years') returning id`,
+      [organizationId, person[0]!.id],
+    );
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.patients where id = $1', [akte[0]!.id])).toBe(
+      1,
+    );
+  });
+
+  it('haelt eine Akte mit einem kommenden Termin, auch nach langem Abschluss', async () => {
+    await abgeschlossenVor(patients.max, 11);
+    await asPostgres(
+      `update public.appointments
+          set starts_at = now() + interval '7 days',
+              ends_at   = now() + interval '7 days' + interval '45 minutes',
+              status = 'confirmed', completed_at = null, completed_by = null
+        where id = (select id from public.appointments
+                     where patient_id = $1 and status = 'confirmed'
+                     order by starts_at limit 1)`,
+      [patients.max],
+    );
+
+    await lauf();
+
+    expect(await anzahl('select count(*) from public.patients where id = $1', [patients.max])).toBe(
+      1,
+    );
   });
 
   it('loescht die erfassten Leistungen mit der Akte und journalisiert sie als Abrechnungsdaten', async () => {

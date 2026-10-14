@@ -9,11 +9,17 @@ Index in `CLAUDE.md` und in der Tabelle in `PROJECT_PRINCIPLES.md` §21 (0.11.1)
 Er ändert keine Aussage der Prinzipien — er führt §14 und §19 für die
 Planungsklammer aus.
 
+**Fassung 2 (2026-10-14)** — nach den Befunden B1 und B7 des Projektinhabers
+(BEF-151, BEF-157): Die Grundlage trägt die **Freigabe zur Abrechnung** und
+einen Stand an einer Stelle (Punkt 9 neu). Das beantwortet die offene
+Folgefrage, ob eine Grundlage vor ihrem letzten Termin enden kann. Die Punkte
+1 bis 8 gelten unverändert.
+
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
 
 ## Datum
 
-2026-09-16
+2026-09-16 · Fassung 2: 2026-10-14
 
 ## Kontext
 
@@ -88,6 +94,20 @@ Benennung. Die alten Werte bleiben im zulässigen Wertebereich, weil
 Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
 `subject_type`.
 
+**9. Stand und Freigabe zur Abrechnung** *(Fassung 2)*. Jede Grundlage hat
+einen Stand aus einer Stelle (ANN-514): **läuft**, **Termine fehlen**,
+**Haken oder Doku fehlt**, **abrechnen**, **in der Abrechnung**,
+**abgerechnet**. Sind alle ihre Termine abgehakt und dokumentiert, abgesagt
+oder nicht angetroffen, kann sie **in die Abrechnung gestellt** werden — auch
+vor dem letzten verordneten Termin; vorgeschlagen wird es, wenn alle
+verordneten Termine erbracht sind. Zeitpunkt und Person der Freigabe und des
+Zurückholens stehen an der Grundlage (ADR-010 Punkt 15). Danach sind Doku,
+Zeitpunkt und Anzahl ihrer Termine gesperrt (ANN-515,
+[ADR-016](ADR-016-clinical-documentation-record.md) Punkt 11); zurückholen
+geht, solange keine Rechnung sie führt. Punkt 6 gilt weiter: Die Freigabe
+ist keine Rechnung, und Rechnungen entstehen im Büro
+([ADR-009](ADR-009-private-billing-model.md) Punkt 24).
+
 ## Konsequenzen
 
 - **Ein eigener Loop vor VER-EPIC-002** (GRD-001): Migration, die acht
@@ -115,7 +135,9 @@ Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
   Termine ist eine Planungsgröße — kein verkauftes Paket und keine Anzahlung
   (B11: vorerst nicht anbieten; Preise kommen mit ABR-001).
 - **Keine Änderung an Abrechnung, Leistungen oder Rechnungszuständen**
-  (ADR-009 unverändert).
+  (ADR-009 unverändert). *Seit Fassung 2 trägt die Grundlage die Freigabe zur
+  Abrechnung (Punkt 9); Leistungen und Rechnungszustände bleiben, wie
+  ADR-009 sie regelt.*
 - **Keine neue Bauart auf Vorrat.** „Weitere Methoden" bekommen ihren Wert,
   wenn sie gebraucht werden.
 - **Keine Änderung am Rollenschnitt** (ADR-004, E15) und keine an der
@@ -136,9 +158,11 @@ Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
   Praxis rechnet privat ab, und `prescription_kind` war von Anfang an bewusst
   nicht der GKV-Rezepttyp (ADR-009). Es bleibt bei zwei Bauarten:
   Verordnung (`first`, `follow_up`) und Selbstzahler (`self_pay`).
-- Ob eine Grundlage **abgeschlossen** werden kann, ohne dass alle Termine
+- ~~Ob eine Grundlage **abgeschlossen** werden kann, ohne dass alle Termine
   stattgefunden haben — heute endet eine Verordnung faktisch mit ihrem
-  Kontingent. Gehört zu CAL-EPIC-004c.
+  Kontingent. Gehört zu CAL-EPIC-004c.~~ *Beantwortet mit Fassung 2
+  (Punkt 9): Sie kann in die Abrechnung gestellt werden, sobald nichts mehr
+  offen ist.*
 
 ## Änderungshistorie
 
@@ -146,3 +170,4 @@ Auditzeilen **niemals** umgeschrieben werden (ADR-010). Dasselbe gilt für
 | --- | --- | --- |
 | 1 | 2026-09-16 | Erstfassung, vorgeschlagen nach E16 (Jannes, 2026-09-16) |
 | 1.1 | 2026-09-18 | Keine Änderung an einer Entscheidung: Die erste offene Folgefrage ist mit dem SPEC von GRD-001 beantwortet und als beantwortet vermerkt. Gebaut in GRD-001 (PR gegen `main`). |
+| 2 | 2026-10-14 | Punkt 9 neu (B1, B7): Stand der Grundlage an einer Stelle, Freigabe zur Abrechnung mit Sperre, Zurückholen ohne Rechnung. Beantwortet die Folgefrage zum früheren Ende. Punkte 1 bis 8 unverändert. |

@@ -2,13 +2,14 @@
 
 ## Status
 
-Angenommen — **Fassung 2** (2026-10-03): Die Fristen des Auditlogs,
-des Löschjournals und der Löschaufträge im Retention Schedule
+Angenommen — **Fassung 3** (2026-10-14): Der Fristanker der klinischen
+Akte (Punkt 11 neu, Befund B1). Fassung 2 (2026-10-03): Die Fristen des
+Auditlogs, des Löschjournals und der Löschaufträge im Retention Schedule
 (LOG-EPIC-001). Alles Übrige gilt unverändert.
 
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-10-03
+2026-08-28 · Fassung 2: 2026-10-03 · Fassung 3: 2026-10-14
 
 ## Kontext
 
@@ -59,6 +60,16 @@ gehört zu den Vorbedingungen des Produktivstarts.
    aufbewahrungspflichtigen fachlichen Datensätzen** behandelt.
 10. **Kein dauerhaftes Soft-Delete ersetzt die gesetzlich beziehungsweise
     datenschutzrechtlich erforderliche endgültige Löschung.**
+11. *(Fassung 3)* **Der „Abschluss der Behandlung" aus Punkt 4 ist der
+    späteste Tag aus letzter Behandlung, letzter Leistung und ausdrücklichem
+    Abschluss.** Als Behandlung zählt ein Behandlungstermin, der abgehakt,
+    dokumentiert, abgerechnet oder als nicht angetroffen vermerkt ist; als
+    Leistung eine erfasste abrechenbare Leistung. Der ausdrückliche Abschluss
+    der Versorgung bleibt möglich und zählt, wenn er später liegt. Steht ein
+    Behandlungstermin bevor, läuft keine Frist; ohne jede Behandlung auch
+    nicht. Rechnungen sind kein Teil des Ankers: Sie halten über ihre eigene
+    Frist (Punkt 5). Der Projektinhaber hat festgelegt, dass die Frist ein
+    Datum auch ohne ausdrücklichen Abschluss braucht (B1); Umsetzung ANN-511.
 
 ### Initialer Retention Schedule
 
@@ -138,12 +149,15 @@ Verankerung im Code und Änderungspfad.
 - Ob und wie anonymisierte Daten nach Fristablauf für Auswertungen erhalten
   bleiben.
 - Die Definition des „Abschlusses der Behandlung" als fachlicher Vorgang.
+  *Beantwortet mit Punkt 11 (Fassung 3).*
 - Änderungen an der Versionierung klinischer Dokumentation nach §5.
 
 ## Offene Folgefragen
 
-- Wie wird „Abschluss der Behandlung" fachlich definiert und im System
-  gesetzt — manuell, durch Zeitablauf, oder beides?
+- ~~Wie wird „Abschluss der Behandlung" fachlich definiert und im System
+  gesetzt — manuell, durch Zeitablauf, oder beides?~~ *Beantwortet mit
+  Punkt 11 (Fassung 3): beides — aus der letzten Behandlung, ein
+  ausdrücklicher Abschluss zählt, wenn er später liegt.*
 - Wie werden wirksame Löschungen so protokolliert, dass sie nach einem Restore
   erneut angewendet werden können, ohne selbst zum Personendatenbestand zu
   werden?
@@ -167,3 +181,4 @@ Verankerung im Code und Änderungspfad.
 |---|---|---|
 | 1 | 2026-08-28 | Angenommen. |
 | 2 | 2026-10-03 | Retention Schedule (LOG-EPIC-001): Auditlog in zwei Fristen (12 Monate Lesen und Sicherheit, 3 Jahre übrige), Löschjournal 60 Tage, quittierte Löschaufträge 3 Jahre; ein Legal Hold hält jeden Auditeintrag seiner Akte ([ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3). Übrige Punkte unverändert. |
+| 3 | 2026-10-14 | Punkt 11 neu (B1): Fristanker der klinischen Akte aus letzter Behandlung, letzter Leistung und ausdrücklichem Abschluss; keine Frist, solange ein Behandlungstermin bevorsteht. Beantwortet die Folgefrage zum „Abschluss der Behandlung". Übrige Punkte unverändert. |
