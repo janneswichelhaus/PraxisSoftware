@@ -68,7 +68,16 @@ const planSchema = z.object({
   sessions_per_week: z.number().nullable(),
   status: z.enum(PLANSTATUS),
   previous_plan_id: z.string().nullable(),
-  follow_up: z.object({ id: z.string(), status: z.enum(PLANSTATUS) }).nullable(),
+  follow_up: z
+    .object({
+      id: z.string(),
+      status: z.enum(PLANSTATUS),
+      /** O-002: der Beginn der Folgefassung - leer, solange sie Entwurf ist. */
+      runs_from: z.string().nullable().default(null),
+    })
+    .nullable(),
+  /** O-002: die Stelle in der Kette der Fassungen, 1 = erste - der Server zählt. */
+  version_number: z.number().int().min(1).default(1),
   assigned_at: z.string().nullable(),
   assigned_by_name: z.string().nullable(),
   runs_from: z.string().nullable(),
@@ -81,6 +90,10 @@ const planSchema = z.object({
   ended_by_name: z.string().nullable(),
   created_at: z.string(),
   created_by_name: z.string().nullable(),
+  /** O-002: zuletzt geändert - Zeitpunkt, Tag in der Zeitzone der Praxis, Person. */
+  updated_at: z.string().nullable().default(null),
+  updated_on: z.string().nullable().default(null),
+  updated_by_name: z.string().nullable().default(null),
   today: z.string(),
   can_write: z.boolean(),
   /** UEB-007: Die Wiedervorlage steht an (ANN-302) - der Server rechnet. */

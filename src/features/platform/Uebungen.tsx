@@ -220,8 +220,15 @@ function PlanAbschnitt({
   return (
     <Section titel={plan.title}>
       <p className="text-ink-muted">
-        {laufzeitText(plan, heute)}
-        {plan.sessions_per_week ? ` · ${haeufigkeit(plan.sessions_per_week)}` : ''}
+        {[
+          // Befund B9: der Tag der Zuweisung - eine neue Fassung ist so als
+          // aktualisierter Plan zu erkennen.
+          plan.assigned_on ? `Stand ${formatDate(plan.assigned_on)}` : null,
+          laufzeitText(plan, heute),
+          plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </p>
       {zuletzt ? (
         <p className="text-ink-muted">

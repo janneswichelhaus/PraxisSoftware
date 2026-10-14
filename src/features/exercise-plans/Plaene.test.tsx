@@ -262,6 +262,10 @@ export function plan(teil: Partial<Api.Plan> = {}): Api.Plan {
     ended_by_name: null,
     created_at: '2026-10-07T08:00:00Z',
     created_by_name: 'Anna Beispiel',
+    version_number: 1,
+    updated_at: '2026-10-07T09:30:00Z',
+    updated_on: '2026-10-07',
+    updated_by_name: 'Anna Beispiel',
     today: '2026-10-07',
     can_write: true,
     review_due: false,
@@ -432,7 +436,10 @@ describe('Planeditor: Entwurf als Arbeitsseite (UEB-004, Welle B)', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Heimprogramm Knie' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Entwurf')).toBeInTheDocument();
+    // Befund B9: der Stand des Entwurfs - „Entwurf“ steht in ihm, kein Abzeichen.
+    expect(
+      screen.getByText('Entwurf · zuletzt geändert 07.10.2026 von Anna Beispiel'),
+    ).toBeInTheDocument();
   });
 
   it('fügt mehrere Übungen in einem Zug mit ihrer Standarddosierung hinzu', async () => {
@@ -1035,6 +1042,7 @@ describe('Progression von Hand (UEB-006)', () => {
   const fassung = (teil: Partial<Api.Position> = {}) =>
     plan({
       id: 'p2',
+      version_number: 2,
       previous_plan_id: 'p1',
       previous: {
         id: 'p1',
@@ -1059,10 +1067,12 @@ describe('Progression von Hand (UEB-006)', () => {
     fetchPlan.mockResolvedValue({
       ...zugewiesen(),
       can_write: false,
-      follow_up: { id: 'p2', status: 'draft' },
+      follow_up: { id: 'p2', status: 'draft', runs_from: null },
     });
     planseite();
-    expect(await screen.findByRole('link', { name: 'Neue Fassung (Entwurf)' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: /^Fassung 2\s*Neue Fassung · Entwurf$/ }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Neue Fassung' })).not.toBeInTheDocument();
   });
 
@@ -1074,7 +1084,32 @@ describe('Progression von Hand (UEB-006)', () => {
     const zeile = await screen.findByRole('button', { name: /1\. Kniebeuge am Geländer/ });
     expect(zeile).toHaveTextContent('Schwerer: Last');
     expect(zeile).toHaveTextContent('Last: 5 kg → 7 kg');
-    expect(screen.getByRole('link', { name: 'Vorige Fassung' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /^Fassung 1\s*Vorige Fassung · Stand 01\.10\.2026$/ }),
+    ).toBeInTheDocument();
+    // Der Kopf nennt die Fassung des Entwurfs.
+    expect(
+      screen.getByText('Fassung 2 · Entwurf · zuletzt geändert 07.10.2026 von Anna Beispiel'),
+    ).toBeInTheDocument();
+  });
+
+  it('nennt am zugewiesenen Plan Fassung, Stand und wer zugewiesen hat (Befund B9, ANN-538)', async () => {
+    fetchPlan.mockResolvedValue({
+      ...zugewiesen(),
+      version_number: 2,
+      assigned_by_name: 'Anna Beispiel',
+      previous_plan_id: 'p0',
+      previous: null,
+      follow_up: { id: 'p3', status: 'assigned', runs_from: '2026-10-20' },
+    });
+    planseite();
+    expect(
+      await screen.findByText('Fassung 2 · Stand 01.10.2026 · Anna Beispiel'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /^Fassung 3\s*Neue Fassung · Stand 20\.10\.2026$/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Fassung 1\s*Vorige Fassung$/ })).toBeInTheDocument();
   });
 
   it('wählt den Schritt von Hand - die Nachbarn erst nach Richtung und Achse (ADR-006 Punkt 10)', async () => {

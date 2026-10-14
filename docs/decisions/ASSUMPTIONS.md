@@ -5186,3 +5186,15 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
 **Anker.** `vorausgewaehlt` in `src/features/exercise-plans/vorlagen.ts`.
 
 **Änderungspfad.** Nichts vorwählen: `vorausgewaehlt` liefert eine leere Liste · Aufwand `klein`.
+
+### ANN-538 — Der Stand eines Plans: Fassung aus der Kette, Tag der Zuweisung, wer zugewiesen hat
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Kopf zeigt „Fassung 2 · Stand 14.10.2026 · Anna Beispiel“, im Entwurf „Entwurf · zuletzt geändert … von …“ statt eines Abzeichens; die Nummer zählt der Server über `previous_plan_id`. Die Plattform zeigt „Stand“ mit dem Tag der Zuweisung, „Fassungen“ Nummer und Stand.
+
+**Begründung.** Befund B9: Bei einem Wechsel der Therapeut:in soll sichtbar sein, welche Fassung gilt; eine neue Fassung soll auf der Plattform als aktualisierter Plan erkennbar sein. Keine neue Spalte nötig.
+
+**Anker.** `standZeile` in `src/features/exercise-plans/fassung.ts`.
+
+**Änderungspfad.** Nummer als Spalte führen: Migration mit Datenumzug · Aufwand `mittel`.

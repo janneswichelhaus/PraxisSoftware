@@ -214,6 +214,10 @@ function plan(teil: Partial<Plan>): Plan {
     ended_by_name: null,
     created_at: '2026-10-07T08:00:00Z',
     created_by_name: 'Anna Beispiel',
+    version_number: 1,
+    updated_at: '2026-10-07T09:30:00Z',
+    updated_on: HEUTE,
+    updated_by_name: 'Anna Beispiel',
     today: HEUTE,
     can_write: true,
     review_due: false,
@@ -255,6 +259,7 @@ const zugewiesen = plan({
 
 const fassung = plan({
   id: 'p2',
+  version_number: 2,
   previous_plan_id: 'p1',
   previous: {
     id: 'p1',
