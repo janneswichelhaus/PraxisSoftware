@@ -4966,7 +4966,7 @@ Datenschutz · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datens
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
 
-**Annahme.** Nach dem Festschreiben stehen bis zu drei Plätze: nächste Woche zur gleichen Zeit, dann je Tag der nächste freie der nächsten 14 Tage (`find_free_slots`: gleiche Person, Art, Dauer, Gebietstag zuerst; Hausbesuch mit `rate_slot_travel`). Ein Tipp legt über `create_appointment` an – ohne Behandlungsgrundlage, wie „Folgetermin anlegen“ im Terminfenster. Steht schon ein künftiger Termin, gilt der Teil als erledigt.
+**Annahme.** Nach dem Festschreiben stehen bis zu drei Plätze: nächste Woche zur gleichen Zeit, dann je Tag der nächste freie der nächsten 14 Tage (`find_free_slots`: gleiche Person, Art, Dauer, Gebietstag zuerst; Wege wie „Passt es?“, ANN-535). Ein Tipp legt über `create_appointment` an – ohne Behandlungsgrundlage, wie „Folgetermin anlegen“ im Terminfenster. Steht schon ein künftiger Termin, gilt der Teil als erledigt.
 
 **Begründung.** Muster U2, Kernablauf K7; der Server prüft Arbeitszeit, Raster und Überschneidung, reserviert wird nichts (§8).
 
@@ -5167,7 +5167,6 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Tile` in `src/components/ui/Tile.tsx`.
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
-
 
 ### ANN-500 — Absage im Terminpanel, Grund als Chips
 
@@ -5466,3 +5465,27 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 **Anker.** Filter in `src/features/documentation/TextbausteinLeiste.tsx`; Seite `TextbausteinePage.tsx`.
 
 **Änderungspfad.** Bausteine der Praxis wieder in der Leiste: Filter weg, Kästchen „Baustein der Praxis“ zurück · Aufwand `klein`.
+
+### ANN-534 — Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
+
+**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert (`updated_at = created_at`) und nichts an ihm hängt (Doku, Entwurf, Leistung, Mitteilung, Warteliste, Wunsch, Serie). Offene Zustellaufträge fallen mit. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung (`termin_ohne_nachweis`).
+
+**Begründung.** Nie wirksam; eine Absage meldete „Termin abgesagt“ (KOM-009). Nachweis ist, was gilt (ADR-010 Punkt 15); ein Restore zieht nach (ADR-008 Punkt 8).
+
+**Anker.** `public.undo_appointment_creation` (Migration `o_001`).
+
+**Änderungspfad.** Fenster: Intervall in der Funktion · Aufwand `klein`. Spur: Auditaktion mit ADR-010-Änderung und Freigabe · Aufwand `klein`.
+
+### ANN-535 — Folgeterminvorschläge: zu knapp fällt weg, ungeprüft bleibt
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
+
+**Annahme.** Jeder Vorschlag wird wie „Passt es?“ geprüft (Nachbarn und Tagesränder, höchstens sechs Kandidaten). Ist eine Seite zu knapp, fällt er weg; der nächste freie Platz rückt nach, auch am selben Tag. Ohne Ergebnis (Kartendienst, Adresse) bleibt er mit „Weg ungeprüft“. Mögliche Dauer: Dauer plus Luft zur Weiterfahrt (am Tagesrand bis zur Rückfahrt), höchstens bis zum nächsten Termin jeder Art oder zur Pause, auf das Raster abgerundet.
+
+**Begründung.** Befund B8: Unmögliches nicht vorschlagen. Ungeprüft ist nicht unmöglich (ANN-136). Gezeigt wird erst, was entschieden ist – keine Zeile verrutscht unter dem Daumen.
+
+**Anker.** `urteilAus` in `src/features/appointments/folgetermin.ts`.
+
+**Änderungspfad.** Knappe auch weglassen: `stufe !== 'passt'` in `urteilAus` · Aufwand `klein`.
