@@ -10,7 +10,12 @@ import { CallListPage } from '@/features/open-points/CallListPage';
 import { OPEN_INTAKES_KEY, type OpenIntake } from '@/features/open-points/intake-api';
 import { OpenPointsPage } from '@/features/open-points/OpenPointsPage';
 import { OPEN_SCANS_KEY, WAITLIST_REVIEW_KEY } from '@/features/open-points/eingang';
-import { ENDING_KEY, type EndingPrescription } from '@/features/open-points/reminders-api';
+import {
+  ENDING_KEY,
+  IDLE_KEY,
+  type CareWithoutConclusion,
+  type EndingPrescription,
+} from '@/features/open-points/reminders-api';
 import { PATIENT_OVERVIEW_KEY, type Patienteneintrag } from '@/features/patients/uebersicht';
 import {
   PLATFORM_REQUESTS_KEY,
@@ -217,6 +222,17 @@ const endend: EndingPrescription[] = [
   },
 ];
 
+// B1 (Zweitreview A): eine Akte ohne jede Behandlung - ohne Fristanker.
+const ohneBehandlung: CareWithoutConclusion[] = [
+  {
+    patient_id: '66666666-6666-4666-8666-000000000005',
+    patient_given_name: 'Olga',
+    patient_family_name: 'Ohnetermin',
+    last_appointment_at: null,
+    patient_created_at: '2025-11-03T08:00:00+00:00',
+  },
+];
+
 // B1 (BEF-151): eine Verordnung, die Termine braucht - „Verordnung offen“.
 const uebersicht: Patienteneintrag[] = [
   {
@@ -263,6 +279,7 @@ client.setQueryData(OPEN_INTAKES_KEY, erstaufnahmen);
 client.setQueryData([...CALL_LIST_KEY, MORGEN], anrufe);
 client.setQueryData(ENDING_KEY, endend);
 client.setQueryData(PATIENT_OVERVIEW_KEY, uebersicht);
+client.setQueryData(IDLE_KEY, ohneBehandlung);
 client.setQueryData(['staff-members'], mitarbeitende);
 // ABN-018 (BEF-108): seit über acht Wochen unverändert - zu prüfen.
 const zuPruefen: WaitlistEntry[] = [
@@ -412,6 +429,7 @@ if (ansicht === 'leer') {
     [...CALL_LIST_KEY, MORGEN],
     ENDING_KEY,
     PATIENT_OVERVIEW_KEY,
+    IDLE_KEY,
     WAITLIST_REVIEW_KEY,
     PLATFORM_REQUESTS_KEY,
     rueckfragenKey(null, null, false),

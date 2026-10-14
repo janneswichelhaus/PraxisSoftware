@@ -401,7 +401,7 @@ describe('CompleteTreatmentPage', () => {
       expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
 
       expect(await screen.findByText('2. von 10 Terminen · KG, MT')).toBeInTheDocument();
-      expect(screen.getByText('Noch nicht abgehakt')).toBeInTheDocument();
+      expect(screen.getByText('Haken fehlt')).toBeInTheDocument();
       // ANN-475 ist ersetzt: kein Häkchen je Heilmittel, kein Bestätigen.
       expect(screen.queryByRole('checkbox')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Heilmittel bestätigen' })).toBeNull();
@@ -441,7 +441,8 @@ describe('CompleteTreatmentPage', () => {
       releaseTreatmentBasisForBilling.mockResolvedValue(undefined);
       rendern(['therapist'], '?zurueck=%2F');
 
-      expect(await screen.findByText(/10 von 10 Terminen erbracht und dokumentiert/)).toBeVisible();
+      // Den Stand nennt die Zeile; der Vorschlag ist nur der Knopf.
+      expect(await screen.findByText(/^10\. von 10 Terminen/)).toBeVisible();
       expect(screen.getByText('Erbracht')).toBeInTheDocument();
       const stellen = screen.getByRole('button', { name: 'In die Abrechnung stellen' });
       // Sekundär: Der eine Hauptknopf bleibt „Fertig“.

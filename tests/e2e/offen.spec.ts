@@ -44,6 +44,7 @@ test.describe('Offene Punkte', () => {
       'Verordnung endet (1)',
       'Warteliste prüfen (1)',
       'Verordnung offen (1)',
+      'Akte ohne Behandlung (1)',
     ]);
     const aufgaben = page.locator('section', {
       has: page.getByRole('heading', { name: 'Aufgaben (3)' }),

@@ -19,11 +19,6 @@ export function FreigabeNachHaken({
   const { data } = useAbrechnungslage(appointmentId);
   if (!data?.treatment_basis_id || !data.can_release || !data.basis_complete) return null;
   return (
-    <FreigabeVorschlag
-      treatmentBasisId={data.treatment_basis_id}
-      patientId={patientId}
-      erbracht={data.basis_performed ?? null}
-      termine={data.basis_appointment_count}
-    />
+    <FreigabeVorschlag treatmentBasisId={data.treatment_basis_id} patientId={patientId} mitStand />
   );
 }

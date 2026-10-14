@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { ErrorState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Textlink } from '@/components/ui/Textlink';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
@@ -127,6 +128,57 @@ export function OffeneVerordnungen() {
             )
           }
           to={mitRueckweg(`/patienten/${eintrag.id}/verordnungen`, '/offen')}
+        />
+      ))}
+    </Listenabschnitt>
+  );
+}
+
+/**
+ * „Akte ohne Behandlung“ (Zweitreview A, ADR-008 Punkt 3): Akten ohne jede
+ * Behandlung, Leistung und ohne Abschluss, seit sechs Monaten ohne Termin und
+ * ohne kommenden. Sie haben keinen Fristanker (ANN-511) und stünden sonst
+ * unbemerkt. Die Liste fragt nur; den Abschluss setzt die Therapeut:in in den
+ * Stammdaten.
+ */
+export function AktenOhneBehandlung({ timeZone }: { timeZone: string }) {
+  const { data, isError, refetch } = useQuery(abfragen.ohneBehandlung());
+
+  if (isError && !data) {
+    return (
+      <Section titel="Akte ohne Behandlung">
+        <ErrorState
+          title="Die Akten ohne Behandlung konnten nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => refetch()}
+        />
+      </Section>
+    );
+  }
+  if (!data || data.length === 0) return null;
+
+  return (
+    <Listenabschnitt
+      titel="Akte ohne Behandlung"
+      anzahl={data.length}
+      mehr={
+        // Ein Rechtssatz zur Frist (DESIGN.md Regel 6) - deshalb Kleingedrucktes.
+        <Kleingedrucktes>
+          Ohne Behandlung läuft keine Aufbewahrungsfrist. Ist nichts mehr geplant, gehört der
+          Abschluss in die Stammdaten.
+        </Kleingedrucktes>
+      }
+    >
+      {data.map((eintrag) => (
+        <ListRow
+          key={eintrag.patient_id}
+          titel={`${eintrag.patient_family_name}, ${eintrag.patient_given_name}`}
+          meta={
+            eintrag.last_appointment_at
+              ? `Letzter Termin am ${formatDay(eintrag.last_appointment_at, timeZone)}`
+              : `Ohne Termin, angelegt am ${formatDay(eintrag.patient_created_at, timeZone)}`
+          }
+          to={mitRueckweg(`/patienten/${eintrag.patient_id}/stammdaten`, '/offen')}
         />
       ))}
     </Listenabschnitt>

@@ -158,24 +158,36 @@ $$;
 revoke all on function app.can_release_treatment_basis() from public, anon;
 grant execute on function app.can_release_treatment_basis() to authenticated;
 
+-- Zweitreview A (Endstand), Befund 1: Die Sperre haelt auch gegen
+-- gleichzeitige Schreibvorgaenge. FOR KEY SHARE wartet auf eine laufende
+-- Freigabe, ein Zurueckholen oder ein Loeschen (FOR UPDATE an derselben Zeile)
+-- und liest danach deren Ergebnis; umgekehrt wartet eine Freigabe auf einen
+-- Schreibvorgang, der hier schon gesperrt hat, und rechnet ihn mit. Mit
+-- gewoehnlichen Aenderungen der Grundlage (FOR NO KEY UPDATE) kollidiert es
+-- nicht. Gerufen nur aus den Sperr-Triggern unten, also nie in einer nur
+-- lesenden Transaktion.
 create function app.treatment_basis_locked(p_treatment_basis_id uuid)
 returns boolean
-language sql
-stable
+language plpgsql
+volatile
 security definer
 set search_path = ''
 as $$
-  select coalesce((
-    select b.billing_released_at is not null
-    from public.treatment_bases b
-    where b.id = p_treatment_basis_id
-  ), false)
+declare
+  v_freigegeben timestamptz;
+begin
+  select b.billing_released_at into v_freigegeben
+  from public.treatment_bases b
+  where b.id = p_treatment_basis_id
+  for key share;
+  return v_freigegeben is not null;
+end;
 $$;
 
 revoke all on function app.treatment_basis_locked(uuid) from public, anon, authenticated;
 
 comment on function app.treatment_basis_locked(uuid) is
-  'B7 (ANN-515): Ist die Grundlage in die Abrechnung gestellt? Dann sind Doku, Zeitpunkt und Anzahl ihrer Termine gesperrt.';
+  'B7 (ANN-515): Ist die Grundlage in die Abrechnung gestellt? Dann sind Doku, Zeitpunkt und Anzahl ihrer Termine gesperrt. Liest die Zeile FOR KEY SHARE, damit eine gleichzeitige Freigabe und ein Schreibvorgang nacheinander laufen (ADR-016 Punkt 11).';
 
 -- 3. Freigeben und Zurueckholen -------------------------------------------------
 

@@ -5,19 +5,23 @@ import type * as UebersichtApi from '@/features/patients/uebersicht';
 import { renderWithProviders } from '@/test-utils';
 
 const fetchEndingPrescriptions = vi.fn();
+const fetchCareWithoutConclusion = vi.fn();
 const fetchPatientOverview = vi.fn();
 
 vi.mock('./reminders-api', async (importOriginal) => ({
   ...(await importOriginal<typeof RemindersApi>()),
   fetchEndingPrescriptions: () =>
     fetchEndingPrescriptions() as Promise<RemindersApi.EndingPrescription[]>,
+  fetchCareWithoutConclusion: () =>
+    fetchCareWithoutConclusion() as Promise<RemindersApi.CareWithoutConclusion[]>,
 }));
 vi.mock('@/features/patients/uebersicht', async (importOriginal) => ({
   ...(await importOriginal<typeof UebersichtApi>()),
   fetchPatientOverview: () => fetchPatientOverview() as Promise<UebersichtApi.Patienteneintrag[]>,
 }));
 
-const { EndingPrescriptions, OffeneVerordnungen } = await import('./Reminders');
+const { AktenOhneBehandlung, EndingPrescriptions, OffeneVerordnungen } =
+  await import('./Reminders');
 
 const PATIENT = '66666666-6666-4666-8666-000000000001';
 
@@ -121,6 +125,35 @@ describe('Verordnung offen (B1)', () => {
     fetchPatientOverview.mockResolvedValue([eintrag(PATIENT, 'Mustermann', { open_bases: 1 })]);
     const { container } = renderWithProviders(<OffeneVerordnungen />);
     await vi.waitFor(() => expect(fetchPatientOverview).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('Akte ohne Behandlung (Zweitreview A, ADR-008 Punkt 3)', () => {
+  it('führt in die Stammdaten, wo der Abschluss den Fristanker setzt', async () => {
+    fetchCareWithoutConclusion.mockResolvedValue([
+      {
+        patient_id: PATIENT,
+        patient_given_name: 'Max',
+        patient_family_name: 'Mustermann',
+        last_appointment_at: null,
+        patient_created_at: '2025-11-01T08:00:00.000Z',
+      },
+    ]);
+    renderWithProviders(<AktenOhneBehandlung timeZone="Europe/Berlin" />);
+    expect(await screen.findByRole('link', { name: /^Mustermann, Max/ })).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT}/stammdaten?zurueck=%2Foffen`,
+    );
+    expect(screen.getByText('Ohne Termin, angelegt am 01.11.2025')).toBeInTheDocument();
+    // Der Rechtssatz zur Frist steht als Kleingedrucktes (DESIGN.md Regel 6).
+    expect(screen.getByText(/Ohne Behandlung läuft keine Aufbewahrungsfrist/)).toBeInTheDocument();
+  });
+
+  it('zeigt keine Gruppe, wenn jede Akte einen Anker hat', async () => {
+    fetchCareWithoutConclusion.mockResolvedValue([]);
+    const { container } = renderWithProviders(<AktenOhneBehandlung timeZone="Europe/Berlin" />);
+    await vi.waitFor(() => expect(fetchCareWithoutConclusion).toHaveBeenCalled());
     expect(container).toBeEmptyDOMElement();
   });
 });

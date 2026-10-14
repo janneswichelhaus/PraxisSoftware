@@ -110,9 +110,16 @@ export function passtZuZeigen(eintrag: Patienteneintrag, zeigen: Zeigen | null):
   }
 }
 
-/** Die Auswahl, die es für diese Liste gibt: nur mit Treffern, Geld nur mit Recht. */
+/**
+ * Die Auswahl, die es für diese Liste gibt: nur mit Treffern, Geld nur mit
+ * Recht. Die gewählte bleibt auch ohne Treffer stehen - sonst sähe man eine
+ * leere Liste ohne ihren Grund und ohne Weg zurück (Design-Review). `nur`
+ * beschränkt die Auswahl, etwa beim Termin anlegen auf „Termine fehlen“.
+ */
 export function zeigenWahlen(
   liste: readonly Patienteneintrag[],
+  gewaehlt: Zeigen | null = null,
+  nur?: readonly Zeigen[],
 ): { wert: Zeigen; text: string; anzahl: number }[] {
   const abrechnung = liste.some((eintrag) => eintrag.billing_visible);
   const alle: Zeigen[] = [
@@ -123,12 +130,13 @@ export function zeigenWahlen(
     ...(abrechnung ? (['mahnen', 'offen'] as const) : []),
   ];
   return alle
+    .filter((wert) => !nur || nur.includes(wert))
     .map((wert) => ({
       wert,
       text: zeigenLabels[wert],
       anzahl: liste.filter((eintrag) => passtZuZeigen(eintrag, wert)).length,
     }))
-    .filter((wahl) => wahl.anzahl > 0);
+    .filter((wahl) => wahl.anzahl > 0 || wahl.wert === gewaehlt);
 }
 
 /**

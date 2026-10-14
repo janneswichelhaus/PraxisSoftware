@@ -123,6 +123,37 @@ describe('NewAppointmentStartPage', () => {
     });
   });
 
+  // B1/B10: Beim Termin zählt von den Karteileichen nur „Termine fehlen“;
+  // eine andere Auswahl aus der Adresse filtert hier nicht.
+  it('bietet von den Karteileichen nur „Termine fehlen“ an', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      { ...MAX, open_bases: 1, bases_need_appointments: 1 },
+      { ...ERIKA, open_bases: 1, bases_ready: 1 },
+    ]);
+    renderWithProviders(<NewAppointmentStartPage />, `${VORBELEGT}&zeigen=abrechnen`);
+
+    expect(await screen.findByRole('button', { name: /Termine fehlen \(1\)/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Abrechnen/ })).toBeNull();
+    expect(screen.getByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
+  });
+
+  // Design-Review A, Befund 6: Wer niemanden findet, sucht meist eine neue
+  // Person - der Abstecher steht im Kopf und unter „Keine Treffer“.
+  it('bietet „Patient:in anlegen“ auch unter „Keine Treffer“ an', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
+
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'Neumann');
+    expect(await screen.findByText('Keine Treffer')).toBeInTheDocument();
+    const wege = screen.getAllByRole('link', { name: 'Patient:in anlegen' });
+    expect(wege).toHaveLength(2);
+    for (const weg of wege) {
+      expect(weg.getAttribute('href')!.startsWith('/patienten/neu?')).toBe(true);
+    }
+  });
+
   it('zeigt die vorbelegte Zeit, damit sie vor der Auswahl prüfbar ist', async () => {
     renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
 

@@ -460,6 +460,37 @@ describe('PatientsListPage (B1, B10)', () => {
     }
   });
 
+  // Design-Review A: Die gewählte Auswahl verschwindet nicht, wenn sie leer
+  // wird - sonst stünde eine leere Liste ohne ihren Grund da.
+  it('lässt eine leere Auswahl stehen und bietet den Weg hinaus', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      eintrag('1', 'Max', 'Mustermann'),
+      eintrag('2', 'Erika', 'Beispiel', { open_bases: 1, bases_need_appointments: 1 }),
+    ]);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <PatientsListPage />
+        <SearchParamsProbe />
+      </>,
+      '/patienten?zeigen=abrechnen',
+    );
+
+    expect(await screen.findByText('Keine Treffer')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Abrechnen \(0\)/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.getByRole('button', { name: 'Filter zurücksetzen' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Auswahl aufheben' }));
+    expect(await screen.findByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
+    expect(screen.getByTestId('search-params')).toHaveTextContent('');
+    // Ohne Auswahl ist eine leere Wahl kein Angebot mehr.
+    expect(screen.queryByRole('button', { name: /Abrechnen/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Filter zurücksetzen' })).toBeNull();
+  });
+
   it('ignoriert ungueltige Werte aus der URL statt abzustuerzen', async () => {
     fetchPatientOverview.mockResolvedValue([
       eintrag('1', 'Max', 'Mustermann'),

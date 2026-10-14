@@ -40,20 +40,19 @@ function nachladen(queryClient: ReturnType<typeof useQueryClient>, patientId: st
  * (ANN-515). Verbindlich prüft der Server Recht und Stand.
  *
  * Sekundär: Der eine Hauptknopf der Ansicht bleibt, wo er ist („Fertig“, der
- * nächste Weg).
+ * nächste Weg). Ohne eigene Fläche und ohne Erklärsatz (DESIGN.md Regeln 2
+ * und 6): Den Stand nennt die Zeile darüber - nur wo keine steht (nach dem
+ * Haken in der Übersicht), sagt `mitStand` ihn als Zeichen und Wort.
  */
 export function FreigabeVorschlag({
   treatmentBasisId,
   patientId,
-  erbracht,
-  termine,
+  mitStand = false,
 }: {
   treatmentBasisId: string;
   patientId: string | null;
-  /** Abgehakte Termine der Grundlage. */
-  erbracht: number | null;
-  /** Termine der Grundlage laut Verordnung. */
-  termine: number | null;
+  /** „Verordnung vollständig“ über dem Knopf - wo keine Zeile den Stand nennt. */
+  mitStand?: boolean;
 }) {
   const queryClient = useQueryClient();
   const freigabe = useMutation({
@@ -68,14 +67,8 @@ export function FreigabeVorschlag({
   }
 
   return (
-    <div className="bg-surface-sunken rounded-card flex flex-col gap-3 px-4 py-3">
-      <p className="text-ink text-liste font-semibold">
-        {erbracht === null || termine === null
-          ? 'Alle Termine erbracht und dokumentiert.'
-          : erbracht >= termine
-            ? `Verordnung vollständig: ${erbracht} von ${termine} Terminen erbracht und dokumentiert.`
-            : `${erbracht} von ${termine} Terminen erbracht und dokumentiert, keiner mehr offen.`}
-      </p>
+    <div className="flex flex-col items-start gap-2">
+      {mitStand ? <StatusMark ton="positiv">Verordnung vollständig</StatusMark> : null}
       {freigabe.isError ? (
         <Statusmeldung ton="fehler">{freigabe.error.message}</Statusmeldung>
       ) : null}
@@ -197,12 +190,7 @@ export function AbrechnungDerGrundlage({
         </span>
       )}
       {kontingent.can_release ? (
-        <FreigabeVorschlag
-          treatmentBasisId={kontingent.treatment_basis_id}
-          patientId={patientId}
-          erbracht={kontingent.performed ?? null}
-          termine={kontingent.prescribed}
-        />
+        <FreigabeVorschlag treatmentBasisId={kontingent.treatment_basis_id} patientId={patientId} />
       ) : null}
     </div>
   );

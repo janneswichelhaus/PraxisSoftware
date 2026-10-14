@@ -161,6 +161,27 @@ describe('DauerterminStartPage', () => {
 
   // R1 (Zweitreview): Der Suchbegriff - meist ein Name - steht weder in der
   // Adresse dieser Seite noch im Ziel der Zeile.
+  // Design-Review A, Befund 6: Ist die Person neu, führt „Patient:in
+  // anlegen“ mit dieser Seite als Rückweg hin und - mit ihrer Kennung - in
+  // den zweiten Schritt zurück. Ohne Person im Kopf, mit ihr nicht mehr.
+  it('bietet „Patient:in anlegen“ mit dieser Seite als Rückweg an', async () => {
+    renderWithProviders(
+      <DauerterminStartPage user={testUser(['therapist'])} />,
+      '/termine/dauertermin?datum=2027-05-12&beginn=09%3A00',
+    );
+
+    const link = await screen.findByRole('link', { name: 'Patient:in anlegen' });
+    expect(link.getAttribute('href')!.startsWith('/patienten/neu?')).toBe(true);
+    const zurueck = new URL(link.getAttribute('href')!, 'http://x').searchParams.get('zurueck');
+    expect(zurueck).toBe('/termine/dauertermin?datum=2027-05-12&beginn=09%3A00');
+  });
+
+  it('fragt mit gewählter Person nicht mehr nach einer neuen', async () => {
+    rendern(MIT_PERSON);
+    await waitFor(() => expect(fetchPatient).toHaveBeenCalled());
+    expect(screen.queryByRole('link', { name: 'Patient:in anlegen' })).toBeNull();
+  });
+
   it('hält den Suchbegriff aus jeder Adresse heraus (ADR-011)', async () => {
     adressen.length = 0;
     const user = userEvent.setup();
