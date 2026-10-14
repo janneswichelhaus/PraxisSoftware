@@ -5,7 +5,18 @@ import type * as PatientsApi from '@/features/patients/api';
 import type * as UebersichtApi from '@/features/patients/uebersicht';
 import type * as GrundlagenApi from '@/features/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
+
+/** Jede Adresse, die die Seite durchläuft - auch eine, die gleich wieder ersetzt wird. */
+const adressen: string[] = [];
+
+/** Zeigt die Parameter der aktuellen Adresse im MemoryRouter und merkt sich jede. */
+function Adressprobe() {
+  const [parameter] = useSearchParams();
+  adressen.push(parameter.toString());
+  return <span data-testid="adresse">{parameter.toString()}</span>;
+}
 
 const navigate = vi.fn();
 const fetchPatientOverview = vi.fn();
@@ -146,6 +157,33 @@ describe('DauerterminStartPage', () => {
 
     // Die Wahl landet in der Adresse; die Grundlagen fragt der nächste Schritt.
     expect(await screen.findByRole('heading', { name: /Grundlage/ })).toBeInTheDocument();
+  });
+
+  // R1 (Zweitreview): Der Suchbegriff - meist ein Name - steht weder in der
+  // Adresse dieser Seite noch im Ziel der Zeile.
+  it('hält den Suchbegriff aus jeder Adresse heraus (ADR-011)', async () => {
+    adressen.length = 0;
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <DauerterminStartPage user={testUser(['therapist'])} />
+        <Adressprobe />
+      </>,
+      '/termine/dauertermin?datum=2027-05-12&beginn=09%3A00',
+    );
+
+    await user.type(await screen.findByLabelText('Patient:in suchen'), 'muster');
+    await user.click(screen.getByRole('button', { name: 'A–Z' }));
+    expect(screen.getByTestId('adresse')).toHaveTextContent('sort=name');
+    expect(adressen.length).toBeGreaterThan(1);
+    for (const adresse of adressen) {
+      expect(adresse).not.toContain('q=');
+      expect(adresse).not.toMatch(/muster/i);
+    }
+    const ziel = screen.getByRole('link', { name: /Mustermann, Max/ }).getAttribute('href') ?? '';
+    expect(ziel).toContain(`patient=${MAX.id}`);
+    expect(ziel).not.toContain('q=');
+    expect(ziel).not.toMatch(/muster/i);
   });
 
   it('springt bei genau einer offenen Grundlage direkt in die Serie', async () => {

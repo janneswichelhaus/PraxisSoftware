@@ -4,7 +4,18 @@ import userEvent from '@testing-library/user-event';
 import type * as UebersichtApi from '@/features/patients/uebersicht';
 import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
+
+/** Jede Adresse, die die Seite durchläuft - auch eine, die gleich wieder ersetzt wird. */
+const adressen: string[] = [];
+
+/** Zeigt die Parameter der aktuellen Adresse im MemoryRouter und merkt sich jede. */
+function Adressprobe() {
+  const [parameter] = useSearchParams();
+  adressen.push(parameter.toString());
+  return <span data-testid="adresse">{parameter.toString()}</span>;
+}
 
 const navigate = vi.fn();
 const fetchPatientOverview = vi.fn();
@@ -212,6 +223,35 @@ describe('NewAppointmentStartPage', () => {
     expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
     // Der Suchbegriff - meist ein Name - wandert nicht mit (ANN-061).
     expect(ziel.searchParams.get('q')).toBeNull();
+  });
+
+  // R1 (Zweitreview): Der Suchbegriff - meist ein Name - steht weder in der
+  // Adresse dieser Seite noch im Ziel der Zeile, und er bleibt nicht hängen.
+  it('hält den Suchbegriff aus jeder Adresse heraus (ADR-011)', async () => {
+    adressen.length = 0;
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(
+      <>
+        <NewAppointmentStartPage />
+        <Adressprobe />
+      </>,
+      VORBELEGT,
+    );
+
+    await user.type(await screen.findByLabelText('Patient:in suchen'), 'muster');
+    await user.click(screen.getByRole('button', { name: 'A–Z' }));
+    expect(screen.getByTestId('adresse')).toHaveTextContent('sort=name');
+    expect(adressen.length).toBeGreaterThan(1);
+    for (const adresse of adressen) {
+      expect(adresse).not.toContain('q=');
+      expect(adresse).not.toMatch(/muster/i);
+    }
+    const ziel = screen.getByRole('link', { name: /Mustermann, Max/ }).getAttribute('href') ?? '';
+    expect(ziel).not.toMatch(/muster/i);
+    unmount();
+
+    renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
+    expect(await screen.findByLabelText('Patient:in suchen')).toHaveValue('');
   });
 
   it('beschriftet das Suchfeld sichtbar - hier ist es das Hauptfeld der Seite', () => {
