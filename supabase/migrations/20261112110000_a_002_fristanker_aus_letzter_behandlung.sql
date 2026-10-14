@@ -695,7 +695,10 @@ returns table (
   patient_created_at   timestamptz
 )
 language plpgsql
-stable
+-- volatile, nicht stable: Der Abweisungseintrag schreibt (BEF-082) - in einer
+-- nur lesenden Transaktion, wie PostgREST sie fuer stable oeffnet, ginge er
+-- verloren (Zweitreview A, Nachtrag).
+volatile
 security definer
 set search_path = ''
 as $$

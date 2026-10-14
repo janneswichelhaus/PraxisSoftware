@@ -371,7 +371,6 @@ describe('Audit-Lesepfad', () => {
       'get_practice_statistics',
       'get_practice_targets',
       'list_call_list',
-      'list_care_without_conclusion',
       'list_ending_prescriptions',
       'list_open_intakes',
       'list_open_prescription_scans',
