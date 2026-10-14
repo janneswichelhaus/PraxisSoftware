@@ -5,7 +5,7 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-PR (Restbefunde der Praxis-Prüfung) wartet auf Jannes: „Vor der Tür“ an der Tageskarte (K3: 1 Tipp),
+PR #240 (Restbefunde der Praxis-Prüfung) wartet auf Jannes: „Vor der Tür“ an der Tageskarte (K3: 1 Tipp),
 „Wie zuletzt“ auf der Schreibseite (K6: 3 + Text), Absage im Terminpanel (K9: 4), Übung aus der
 Bibliothek in den Plan (2 bis im Plan). Fragen und Bilder in der PR. PR #239 ist gemergt.
 
@@ -23,7 +23,7 @@ Aus der bisherigen Kette danach: ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem
 
 ## Bei Jannes
 
-- PR Restbefunde: Bilder ansehen (~10 min), Fragen beantworten, mergen.
+- PR #240: Bilder ansehen (~10 min), Fragen beantworten, mergen.
 - Übungskatalog fachlich durchsehen (KI-erstellt, „ungeprüft“, ANN-386); ANN-475 bis ANN-480
   ansehen (Besuch, Ausgangsstellung).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.

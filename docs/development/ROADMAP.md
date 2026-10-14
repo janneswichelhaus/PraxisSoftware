@@ -24,7 +24,7 @@ und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
 | # | Überholung | Inhalt | Kernabläufe ([`../product/kernablaeufe.md`](../product/kernablaeufe.md)) |
 | --- | --- | --- | --- |
 | 1 | **Design der ganzen App, Übungsbibliothek, Besuch in einem Zug** — gebaut (PR #239) | Seitenrezeptur `docs/design/DESIGN.md` flächig samt Plattform, Katalog mit Zeichnungen, Besuch von der Tür bis zur Navigation in 6 Tipps, Prozess verschlankt | K5, K12, K15 |
-| 2 | **Restbefunde der Praxis-Prüfung** — gebaut (PR folgt, Branch `ccr-d79ef3d1-5rclb1`) | Letzten Eintrag übernehmen, Absage in 4 Tipps, Material und letzte Doku an der Karte, Übung aus der Bibliothek zuweisen | K3, K6, K9 |
+| 2 | **Restbefunde der Praxis-Prüfung** — gebaut (PR #240) | Letzten Eintrag übernehmen, Absage in 4 Tipps, Material und letzte Doku an der Karte, Übung aus der Bibliothek zuweisen | K3, K6, K9 |
 | 3 | **Erstaufnahme geführt** | Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege — nichts vergessen | K10, K11 |
 | 4 | **Monatsabrechnung in einem Lauf** | Leistungen, Rechnungen, Zahlungseingang als Sammellauf | K13, K14 |
 | 5 | **Übungen, zweite Runde** | Durchsicht des Katalogs, eigene Vorlagen, Fassung 2 der Figur | K12 |
