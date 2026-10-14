@@ -16,10 +16,10 @@ import {
 import { DIKTAT_ABSCHNITTE, DIKTAT_REGELN, HOECHST_BYTES } from './zwecke.ts';
 
 /**
- * Der Ablauf des Gateways (KI-EPIC-001, BEF-153): Sitzung, Formular, Zweck,
- * Eingaben, Berechtigung, Adapter, Antwort und Log - jede Fehlerklasse mit
- * ihrem Status, die Nachbildung in der Produktion ausgeschlossen, keine
- * Kennung an den Adapter und kein Inhalt im Log.
+ * Der Ablauf des Gateways (KI-EPIC-001, BEF-153): Sitzung, Zweck, Anbieter,
+ * Formular, Eingaben, Berechtigung, Adapter, Antwort und Log - jede
+ * Fehlerklasse mit ihrem Status, die Nachbildung in der Produktion
+ * ausgeschlossen, keine Kennung an den Adapter und kein Inhalt im Log.
  */
 
 const TERMIN = '77777777-7777-4777-8777-000000000001';
@@ -65,10 +65,9 @@ function multipart(felder: ReadonlyArray<readonly [string, Feld]>) {
 }
 
 function felder(
-  ersatz: Partial<Record<'zweck' | 'termin' | 'audio' | 'dauer_s', Feld | null>> = {},
+  ersatz: Partial<Record<'termin' | 'audio' | 'dauer_s', Feld | null>> = {},
 ): Array<readonly [string, Feld]> {
   const standard: Record<string, Feld> = {
-    zweck: 'dokumentation.diktat',
     termin: TERMIN,
     audio: { daten: AUDIO, typ: 'audio/webm;codecs=opus', datei: 'aufnahme.webm' },
     dauer_s: '187',
@@ -78,16 +77,49 @@ function felder(
     .map(([name, wert]) => [name, wert] as const);
 }
 
-function anfrage(
-  liste: ReadonlyArray<readonly [string, Feld]> = felder(),
-  kopf: Record<string, string> = { Authorization: TOKEN },
-) {
+/** Die Adresse der Function; der Zweck steht in ihr, nicht im Formular. */
+function adresse(suche = '?zweck=dokumentation.diktat'): string {
+  return `https://beispiel.invalid/ai-gateway${suche}`;
+}
+
+function anfrage(liste: ReadonlyArray<readonly [string, Feld]> = felder(), suche?: string) {
   const { koerper, typ } = multipart(liste);
-  return new Request('https://beispiel.invalid/ai-gateway', {
+  return new Request(adresse(suche), {
     method: 'POST',
-    headers: { 'Content-Type': typ, ...kopf },
+    headers: { 'Content-Type': typ, Authorization: TOKEN },
     body: koerper,
   });
+}
+
+/** Die Frage vor „Sprechen“. */
+function statusanfrage(suche?: string) {
+  return new Request(adresse(suche), { method: 'GET', headers: { Authorization: TOKEN } });
+}
+
+/** Ein Körper, der mitzählt, wie viel von ihm gelesen wurde. */
+function zaehlenderStrom(stueckBytes = 1024 * 1024) {
+  const zaehler = { gelesen: 0 };
+  const stueck = new Uint8Array(stueckBytes);
+  // Ohne Vorrat (`highWaterMark: 0`): Ein Stück entsteht erst, wenn jemand liest.
+  const strom = new ReadableStream<Uint8Array>(
+    {
+      pull(steuerung) {
+        zaehler.gelesen += stueck.byteLength;
+        steuerung.enqueue(stueck);
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  return { strom, zaehler, stueckBytes };
+}
+
+function stromanfrage(strom: ReadableStream<Uint8Array>, suche?: string) {
+  return new Request(adresse(suche), {
+    method: 'POST',
+    headers: { Authorization: TOKEN, 'Content-Type': 'multipart/form-data; boundary=x' },
+    body: strom,
+    duplex: 'half',
+  } as RequestInit);
 }
 
 interface Aufbau {
@@ -171,11 +203,12 @@ describe('ai-gateway: Ablauf', () => {
     const antwort = await handler(new Request('https://beispiel.invalid/', { method: 'OPTIONS' }));
     expect(antwort.status).toBe(204);
     expect(antwort.headers.get('Access-Control-Allow-Headers')).toContain('x-client-info');
+    expect(antwort.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, OPTIONS');
   });
 
-  it('nimmt nur POST an', async () => {
+  it('nimmt nur GET und POST an', async () => {
     const { handler, pruefeSitzung } = gateway();
-    const antwort = await handler(new Request('https://beispiel.invalid/', { method: 'GET' }));
+    const antwort = await handler(new Request(adresse(), { method: 'PUT' }));
     expect(antwort.status).toBe(405);
     expect(await fehlerklasse(antwort)).toBe('invalid_request');
     expect(pruefeSitzung).not.toHaveBeenCalled();
@@ -260,10 +293,10 @@ describe('ai-gateway: Formular und Eingaben', () => {
   it('weist einen Körper ohne Formular ab', async () => {
     const { handler } = gateway();
     const antwort = await handler(
-      new Request('https://beispiel.invalid/', {
+      new Request(adresse(), {
         method: 'POST',
         headers: { Authorization: TOKEN, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zweck: 'dokumentation.diktat', termin: TERMIN }),
+        body: JSON.stringify({ termin: TERMIN }),
       }),
     );
     expect(antwort.status).toBe(400);
@@ -271,8 +304,7 @@ describe('ai-gateway: Formular und Eingaben', () => {
   });
 
   it.each([
-    ['ohne Zweck', felder({ zweck: null })],
-    ['mit unbekanntem Zweck', felder({ zweck: 'befund.deuten' })],
+    ['mit dem Zweck im Formular', [...felder(), ['zweck', 'dokumentation.diktat'] as const]],
     ['ohne Termin', felder({ termin: null })],
     ['mit einem Termin, der keine Kennung ist', felder({ termin: 'Max Mustermann' })],
     ['ohne Aufnahme', felder({ audio: null })],
@@ -302,6 +334,20 @@ describe('ai-gateway: Formular und Eingaben', () => {
     },
   );
 
+  it.each([
+    ['ohne Zweck', ''],
+    ['mit unbekanntem Zweck', '?zweck=befund.deuten'],
+    ['mit doppeltem Zweck', '?zweck=dokumentation.diktat&zweck=dokumentation.diktat'],
+  ])('weist eine Anfrage %s mit 400 ab, ohne die Aufnahme zu lesen', async (_f, suche) => {
+    const { handler, pruefeBerechtigung } = gateway();
+    const { strom, zaehler } = zaehlenderStrom();
+    const antwort = await handler(stromanfrage(strom, suche));
+    expect(antwort.status).toBe(400);
+    expect(await fehlerklasse(antwort)).toBe('invalid_request');
+    expect(zaehler.gelesen).toBe(0);
+    expect(pruefeBerechtigung).not.toHaveBeenCalled();
+  });
+
   it('weist eine Aufnahme über fünf Minuten mit 413 ab', async () => {
     expect(await klasse(felder({ dauer_s: '301' }))).toEqual({
       status: 413,
@@ -320,26 +366,12 @@ describe('ai-gateway: Formular und Eingaben', () => {
 
   it('liest eine Anfrage über der Grenze nicht erst ganz ein', async () => {
     const { handler, pruefeBerechtigung } = gateway();
-    let gelesenBytes = 0;
-    const stueck = new Uint8Array(1024 * 1024);
-    const strom = new ReadableStream<Uint8Array>({
-      pull(steuerung) {
-        gelesenBytes += stueck.byteLength;
-        steuerung.enqueue(stueck);
-      },
-    });
-    const antwort = await handler(
-      new Request('https://beispiel.invalid/', {
-        method: 'POST',
-        headers: { Authorization: TOKEN, 'Content-Type': 'multipart/form-data; boundary=x' },
-        body: strom,
-        duplex: 'half',
-      } as RequestInit),
-    );
+    const { strom, zaehler, stueckBytes } = zaehlenderStrom();
+    const antwort = await handler(stromanfrage(strom));
     expect(antwort.status).toBe(413);
     expect(await fehlerklasse(antwort)).toBe('too_large');
     // Höchstens die Grenze und ein Stück darüber, nicht ein endloser Strom.
-    expect(gelesenBytes).toBeLessThanOrEqual(HOECHST_BYTES + 3 * stueck.byteLength);
+    expect(zaehler.gelesen).toBeLessThanOrEqual(HOECHST_BYTES + 3 * stueckBytes);
     expect(pruefeBerechtigung).not.toHaveBeenCalled();
   });
 
@@ -394,7 +426,63 @@ describe('ai-gateway: Berechtigung', () => {
   });
 });
 
+describe('ai-gateway: die Frage vor „Sprechen“ (GET)', () => {
+  it('meldet einen bedienten Zweck als verfügbar - ohne Datenbank, Adapter und Log', async () => {
+    const { adapter, transkribiert } = spion();
+    const { handler, protokoll, pruefeBerechtigung, pruefeSitzung } = gateway({ adapter });
+    const antwort = await handler(statusanfrage());
+    expect(antwort.status).toBe(200);
+    expect(antwort.headers.get('Cache-Control')).toBe('no-store');
+    expect(await antwort.json()).toEqual({ ok: true, verfuegbar: true });
+    expect(pruefeSitzung).toHaveBeenCalledWith(TOKEN);
+    expect(pruefeBerechtigung).not.toHaveBeenCalled();
+    expect(transkribiert).toEqual([]);
+    expect(protokoll).toEqual([]);
+  });
+
+  it.each([
+    ['ohne Anbieter', { adapter: null }],
+    ['mit der Nachbildung in der Produktion', { adapter: null, gateAbgewiesen: true }],
+    ['mit einem Adapter, den der Zweck nicht nennt', { adapter: spion({ id: 'fremd' }).adapter }],
+  ] as const)('meldet %s „nicht verfügbar“, ohne Log', async (_f, aufbau) => {
+    const { handler, protokoll } = gateway(aufbau);
+    const antwort = await handler(statusanfrage());
+    expect(antwort.status).toBe(200);
+    expect(await antwort.json()).toEqual({ ok: true, verfuegbar: false });
+    expect(protokoll).toEqual([]);
+  });
+
+  it('antwortet ohne gültige Sitzung nicht', async () => {
+    const { handler } = gateway({ sitzung: { befund: 'abgelehnt' } });
+    const antwort = await handler(statusanfrage());
+    expect(antwort.status).toBe(401);
+    expect(await fehlerklasse(antwort)).toBe('session_invalid');
+  });
+
+  it('kennt nur die Zwecke der Zweckliste', async () => {
+    const { handler } = gateway();
+    const antwort = await handler(statusanfrage('?zweck=befund.deuten'));
+    expect(antwort.status).toBe(400);
+    expect(await fehlerklasse(antwort)).toBe('invalid_request');
+  });
+});
+
 describe('ai-gateway: Anbieter', () => {
+  it('prüft den Anbieter, bevor er die Aufnahme liest', async () => {
+    for (const aufbau of [
+      { adapter: null },
+      { adapter: spion({ id: 'irgendein-anbieter' }).adapter },
+    ]) {
+      const { handler, pruefeBerechtigung } = gateway(aufbau);
+      const { strom, zaehler } = zaehlenderStrom();
+      const antwort = await handler(stromanfrage(strom));
+      expect(antwort.status).toBe(503);
+      expect(await fehlerklasse(antwort)).toBe('not_configured');
+      expect(zaehler.gelesen).toBe(0);
+      expect(pruefeBerechtigung).not.toHaveBeenCalled();
+    }
+  });
+
   it('antwortet ohne eingerichteten Anbieter „nicht eingerichtet" - ohne Log', async () => {
     const { handler, protokoll } = gateway({ adapter: null });
     const antwort = await handler(anfrage());

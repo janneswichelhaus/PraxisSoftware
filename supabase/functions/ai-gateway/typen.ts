@@ -73,6 +73,15 @@ export type Antwort =
     }
   | { readonly ok: false; readonly error: Gatewayfehler };
 
+/**
+ * Die Antwort auf die Frage vor „Sprechen“ (`GET`): Wird der Zweck hier
+ * bedient? Nur ja oder nein - kein Anbieter, keine Quelle.
+ */
+export interface Statusantwort {
+  readonly ok: true;
+  readonly verfuegbar: boolean;
+}
+
 /** Was ein Adapter zurückgibt: Ergebnis oder eine der zwei Ausfallklassen. */
 export type Adapterergebnis<T> =
   | { readonly ok: true; readonly value: T }

@@ -17,7 +17,9 @@ import { AUFNAHME_OFFEN, DIKTAT_OFFEN, type Diktat } from './diktat';
  *
  * Der Weg ohne Sprechen bleibt vollständig (5): Feld, Textbausteine und Befund
  * stehen unverändert da, und ohne Netz, ohne Mikrofon oder bei verweigerter
- * Freigabe sagt die Zeile, warum es hier nicht geht.
+ * Freigabe sagt die Zeile, warum es hier nicht geht. Wo der Gateway das
+ * Diktat nicht anbietet oder die Seite das Mikrofon nicht öffnen darf, steht
+ * die Zeile gar nicht da.
  */
 
 /** Ein Mikrofon im Raster 20, Strich 1,75, runde Enden (DESIGN.md 9.15). */
@@ -153,6 +155,8 @@ export function Sprechleiste({
 
   // Ein offener Vorschlag steht über dem Feld; hier wartet nichts.
   if (stand.art === 'vorschlag') return null;
+  // Nicht eingerichtet oder das Mikrofon für die Seite gesperrt: kein Weg.
+  if (!diktat.angeboten) return null;
 
   const nutzbar = diktat.verfuegbar && verbunden;
   const grund = !diktat.verfuegbar

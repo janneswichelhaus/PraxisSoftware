@@ -1,22 +1,29 @@
 /**
  * Der Gateway selbst, ohne Laufzeit (KI-EPIC-001, ADR-005, BEF-153).
  *
- * Hier steht der ganze Ablauf - Vorabanfrage, Methode, Sitzung, Formular,
- * Zweck, Eingaben, Berechtigung, Adapter, Antwort, Log -, und nichts davon
- * kennt Deno, ein Secret oder einen Anbieter. Alles, was von außen kommt, ist
+ * Hier steht der ganze Ablauf - Vorabanfrage, Methode, Sitzung, Zweck,
+ * Anbieter, Formular, Eingaben, Berechtigung, Adapter, Antwort, Log -, und
+ * nichts davon kennt Deno, ein Secret oder einen Anbieter. Alles, was von außen kommt, ist
  * eine Abhängigkeit im Aufruf; deshalb ist diese Datei vollständig mit
  * Unit-Tests prüfbar (wie `location-provider/handler.ts`).
  *
  * Die Kontrollen aus PROJECT_PRINCIPLES.md 6.1 an einer Stelle:
  *   * Benutzerberechtigung: Sitzung beim Anmeldedienst, dann die Datenbank
  *     mit dem Token der Person (`check_dictation_access`);
- *   * Verarbeitungszweck: nur ein Zweck aus `zwecke.ts`;
+ *   * Verarbeitungszweck: nur ein Zweck aus `zwecke.ts`, genannt in der
+ *     Adresse (`?zweck=`) - so stehen Zweck und Anbieter fest, bevor ein
+ *     Byte der Aufnahme gelesen wird;
  *   * notwendige Daten, Datenminimierung: an den Adapter gehen Audio,
  *     Format, Sprache und die Regeln des Zwecks - Termin, Person und Konto
  *     bleiben hier (die Typen haben dafür kein Feld);
  *   * erlaubtes Modell: nur ein Adapter aus der Liste des Zwecks;
  *   * Logging: nur Fehler, nur Zweck, Anbieterkennung, Klasse und Dauer;
  *   * Fehlerbehandlung: feste Klassen mit festen HTTP-Status.
+ *
+ * **Zwei Anfragen.** `GET` fragt nur, ob der Zweck hier bedient wird
+ * (`{ ok, verfuegbar }`) - die Schreibseite bietet „Sprechen“ erst nach einem
+ * Ja an, wie die Karte erst nach ihrer Freigabe Kacheln lädt (ADR-019 Punkt
+ * 35). `POST` ist das Diktat.
  *
  * **Diese Function speichert nichts.** Die Aufnahme liegt nur für die
  * Dauer der Anfrage im Arbeitsspeicher; Transkript und Vorschlag gehen als
@@ -33,8 +40,9 @@ import type {
   Fehlerklasse,
   Protokolleintrag,
   Sprachadapter,
+  Statusantwort,
 } from './typen.ts';
-import { ZWECKE, zweckAus, type Zweck } from './zwecke.ts';
+import { zweckAus, type Zweck } from './zwecke.ts';
 
 /**
  * Die Kopfzeilen für den Aufruf aus dem Browser - wie beim Kartendienst: `*`
@@ -44,7 +52,7 @@ import { ZWECKE, zweckAus, type Zweck } from './zwecke.ts';
 const CORS: Readonly<Record<string, string>> = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -59,8 +67,8 @@ export const STATUS: Readonly<Record<Fehlerklasse, number>> = {
   timeout: 504,
 };
 
-/** Genau diese vier Felder trägt eine Anfrage, jedes genau einmal. */
-const FELDER = ['zweck', 'termin', 'audio', 'dauer_s'] as const;
+/** Genau diese drei Felder trägt ein Diktat, jedes genau einmal; der Zweck steht in der Adresse. */
+const FELDER = ['termin', 'audio', 'dauer_s'] as const;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -98,7 +106,10 @@ export function erstelleHandler({
 }: HandlerOptionen): (anfrage: Request) => Promise<Response> {
   return async (anfrage) => {
     if (anfrage.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-    if (anfrage.method !== 'POST') return fehler('invalid_request', 'nur POST', 405);
+    const nurStatus = anfrage.method === 'GET';
+    if (!nurStatus && anfrage.method !== 'POST') {
+      return fehler('invalid_request', 'nur GET und POST', 405);
+    }
 
     const authorization = anfrage.headers.get('Authorization');
     const sitzung = await pruefeSitzung(authorization);
@@ -118,15 +129,51 @@ export function erstelleHandler({
       return fehler('not_configured', sitzung.meldung);
     }
 
-    // Erst lesen, was kommt - höchstens so viel, wie eine erlaubte Aufnahme
-    // samt Formular braucht. Mehr bleibt ungelesen.
-    const formular = await liesFormular(anfrage, hoechstGrenze());
+    // Zweck und Anbieter stehen fest, bevor ein Byte der Aufnahme gelesen
+    // wird: Wo nichts eingerichtet ist, geht keine Aufnahme durch den Speicher.
+    const zweck = zweckDerAdresse(anfrage.url);
+    if (zweck === null) return fehler('invalid_request', 'unbekannter Zweck');
+    const bedient = adapter !== null && zweck.adapter.includes(adapter.id);
+
+    // Die Frage der Schreibseite vor „Sprechen“: nur ja oder nein, ohne
+    // Anbieter, ohne Log - eine Frage ist kein Anbieteraufruf.
+    if (nurStatus) return antwort({ ok: true, verfuegbar: bedient }, 200);
+
+    if (adapter === null) {
+      // Die Nachbildung in der Produktion: abgewiesen, und das steht im Log.
+      if (gateAbgewiesen) {
+        protokolliere({
+          zweck: zweck.kennung,
+          anbieter: 'gate',
+          code: 'gate_rejected',
+          dauerMs: 0,
+        });
+      }
+      return fehler('not_configured', 'kein Anbieter eingerichtet');
+    }
+    if (!bedient) {
+      // Ein Adapter, den der Zweck nicht nennt, bedient ihn nicht (6.1).
+      protokolliere({
+        zweck: zweck.kennung,
+        anbieter: adapter.id,
+        code: 'not_configured',
+        dauerMs: 0,
+      });
+      return fehler('not_configured', 'Anbieter für diesen Zweck nicht freigegeben');
+    }
+
+    // Erst jetzt lesen, was kommt - höchstens so viel, wie eine erlaubte
+    // Aufnahme samt Formular braucht. Mehr bleibt ungelesen.
+    const formular = await liesFormular(
+      anfrage,
+      zweck.eingabe.hoechstBytes + FORMULAR_ZUSCHLAG_BYTES,
+    );
     if (formular === 'zu_gross') return fehler('too_large', 'Anfrage zu groß');
     if (formular === null) return fehler('invalid_request', 'kein lesbares Formular');
 
-    const pruefung = pruefeEingabe(formular);
+    const pruefung = pruefeEingabe(formular, zweck);
     if (!pruefung.ok) return fehler(pruefung.code, pruefung.meldung);
-    const { zweck, terminId, datei, mime } = pruefung.eingabe;
+    const { terminId, datei, mime } = pruefung.eingabe;
 
     // Die Datenbank entscheidet über Rolle, Organisation, Leistungsbereich
     // und Zustand des Termins - mit dem Token der Person (ADR-004).
@@ -142,29 +189,6 @@ export function erstelleHandler({
         dauerMs: 0,
       });
       return fehler('unavailable', 'Berechtigung nicht prüfbar');
-    }
-
-    if (adapter === null) {
-      // Die Nachbildung in der Produktion: abgewiesen, und das steht im Log.
-      if (gateAbgewiesen) {
-        protokolliere({
-          zweck: zweck.kennung,
-          anbieter: 'gate',
-          code: 'gate_rejected',
-          dauerMs: 0,
-        });
-      }
-      return fehler('not_configured', 'kein Anbieter eingerichtet');
-    }
-    if (!zweck.adapter.includes(adapter.id)) {
-      // Ein Adapter, den der Zweck nicht nennt, bedient ihn nicht (6.1).
-      protokolliere({
-        zweck: zweck.kennung,
-        anbieter: adapter.id,
-        code: 'not_configured',
-        dauerMs: 0,
-      });
-      return fehler('not_configured', 'Anbieter für diesen Zweck nicht freigegeben');
     }
 
     const beginn = jetzt();
@@ -218,10 +242,15 @@ export function erstelleHandler({
   };
 }
 
-/** Die größte erlaubte Anfrage: die größte Aufnahme aller Zwecke und das Formular darum. */
-function hoechstGrenze(): number {
-  const groesste = Math.max(...Object.values(ZWECKE).map((zweck) => zweck.eingabe.hoechstBytes));
-  return groesste + FORMULAR_ZUSCHLAG_BYTES;
+/** Der Zweck aus der Adresse - genau einmal genannt und bekannt, sonst `null`. */
+function zweckDerAdresse(adresse: string): Zweck | null {
+  let werte: string[];
+  try {
+    werte = new URL(adresse).searchParams.getAll('zweck');
+  } catch {
+    return null;
+  }
+  return werte.length === 1 ? zweckAus(werte[0]) : null;
 }
 
 /** Was eine Datei im Formular mindestens kann - unabhängig von der Laufzeit. */
@@ -242,7 +271,6 @@ function istDatei(wert: unknown): wert is Datei {
 }
 
 interface Eingabe {
-  readonly zweck: Zweck;
   readonly terminId: string;
   readonly datei: Datei;
   /** Grundformat ohne Parameter. */
@@ -262,14 +290,14 @@ type Eingabepruefung =
  * Die Anfrage - oder warum sie nicht taugt. Geprüft wird vollständig und vor
  * dem ersten Kontakt zur Datenbank und zum Adapter.
  */
-function pruefeEingabe(formular: FormData): Eingabepruefung {
+function pruefeEingabe(formular: FormData, zweck: Zweck): Eingabepruefung {
   const ungueltig = (meldung: string): Eingabepruefung => ({
     ok: false,
     code: 'invalid_request',
     meldung,
   });
 
-  // Nur die vier Felder: Ein zusätzliches - etwa ein Name - wird nicht still
+  // Nur die drei Felder: Ein zusätzliches - etwa ein Name - wird nicht still
   // übergangen, sondern abgewiesen.
   let anzahl = 0;
   formular.forEach(() => {
@@ -278,9 +306,6 @@ function pruefeEingabe(formular: FormData): Eingabepruefung {
   if (anzahl !== FELDER.length || FELDER.some((feld) => formular.getAll(feld).length !== 1)) {
     return ungueltig('Formular unvollständig');
   }
-
-  const zweck = zweckAus(formular.get('zweck'));
-  if (zweck === null) return ungueltig('unbekannter Zweck');
 
   const termin = formular.get('termin');
   if (typeof termin !== 'string' || !UUID.test(termin)) return ungueltig('Termin fehlt');
@@ -305,7 +330,7 @@ function pruefeEingabe(formular: FormData): Eingabepruefung {
     return { ok: false, code: 'too_large', meldung: 'Aufnahme zu lang' };
   }
 
-  return { ok: true, eingabe: { zweck, terminId: termin, datei, mime, dauerS } };
+  return { ok: true, eingabe: { terminId: termin, datei, mime, dauerS } };
 }
 
 /**
@@ -409,7 +434,7 @@ function fehler(code: Fehlerklasse, meldung: string, status = STATUS[code]): Res
   return antwort({ ok: false, error: { code, message: `ai-gateway: ${meldung}` } }, status);
 }
 
-function antwort(koerper: Antwort, status: number): Response {
+function antwort(koerper: Antwort | Statusantwort, status: number): Response {
   return new Response(JSON.stringify(koerper), {
     status,
     headers: {

@@ -138,10 +138,12 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 // KI-EPIC-001: Der Gateway antwortet hier nicht über das Netz.
 const diktatAufbereiten = vi.fn();
+const diktatVerfuegbar = vi.fn<() => Promise<boolean>>();
 vi.mock('@/lib/ki/gateway', async (importOriginal) => ({
   ...(await importOriginal<typeof KiGateway>()),
   diktatAufbereiten: (...args: unknown[]) =>
     diktatAufbereiten(...args) as Promise<KiGateway.Diktatergebnis>,
+  diktatVerfuegbar: () => diktatVerfuegbar(),
 }));
 
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
@@ -173,6 +175,9 @@ function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche =
  */
 describe('CompleteTreatmentPage', () => {
   beforeEach(() => {
+    // Der Gateway bietet das Diktat an (die Fälle ohne stehen bei der Spracheingabe).
+    diktatVerfuegbar.mockReset();
+    diktatVerfuegbar.mockResolvedValue(true);
     fetchAppointment.mockReset();
     fetchTreatmentDocumentation.mockReset();
     completeTreatment.mockReset();
@@ -1359,7 +1364,10 @@ describe('CompleteTreatmentPage', () => {
       await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
       expect(await screen.findByText(AUFNAHMEFEHLER.verweigert)).toBeInTheDocument();
       expect(diktatAufbereiten).not.toHaveBeenCalled();
+      // Nochmals möglich, aber nicht mehr als Hauptknopf: Der führte gerade ins Leere.
       expect(screen.getByRole('button', { name: 'Sprechen' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Sprechen' })).not.toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
     });
 
     it('ist ohne Netz aus und lässt Festschreiben Hauptknopf', async () => {
@@ -1374,6 +1382,35 @@ describe('CompleteTreatmentPage', () => {
       } finally {
         delete (navigator as { onLine?: boolean }).onLine;
         if (verbunden) expect(navigator.onLine).toBe(true);
+      }
+    });
+
+    it('bietet „Sprechen“ nicht an, solange der Gateway das Diktat nicht meldet', async () => {
+      diktatVerfuegbar.mockResolvedValue(false);
+      rendern();
+      const festschreiben = await screen.findByRole('button', { name: 'Festschreiben' });
+      await waitFor(() => expect(diktatVerfuegbar).toHaveBeenCalledTimes(1));
+      // Kein Knopf, der ins Leere führt - und „Festschreiben“ bleibt Hauptknopf.
+      expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
+      expect(festschreiben).toHaveClass('bg-accent');
+      expect(aufnahme.mikrofon.anfragen).toEqual([]);
+    });
+
+    it('bietet „Sprechen“ nicht an, wo die Seite das Mikrofon nicht öffnen darf', async () => {
+      // So die Test-Umgebung: Permissions-Policy `microphone=()` (ADR-017 Punkt 33).
+      Object.defineProperty(document, 'featurePolicy', {
+        configurable: true,
+        value: { allowsFeature: (funktion: string) => funktion !== 'microphone' },
+      });
+      try {
+        rendern();
+        const festschreiben = await screen.findByRole('button', { name: 'Festschreiben' });
+        expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
+        expect(festschreiben).toHaveClass('bg-accent');
+        // Gefragt wird der Gateway dann gar nicht erst.
+        expect(diktatVerfuegbar).not.toHaveBeenCalled();
+      } finally {
+        delete (document as { featurePolicy?: unknown }).featurePolicy;
       }
     });
 

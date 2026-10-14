@@ -24,6 +24,12 @@ const FUNKTION = 'ai-gateway';
 export const ZWECK_DIKTAT = 'dokumentation.diktat';
 
 /**
+ * Die Function samt Zweck: Der Zweck steht in der Adresse, damit der Gateway
+ * Zweck und Anbieter prüft, bevor er ein Byte der Aufnahme liest.
+ */
+const ADRESSE_DIKTAT = `${FUNKTION}?zweck=${encodeURIComponent(ZWECK_DIKTAT)}`;
+
+/**
  * ANN-522: Die Abschnitte der Dokumentationsvorlage, in die ein Diktat
  * eingeordnet wird - Angaben der Patient:in getrennt vom eigenen Befund (6.3).
  * Was nicht vorkommt, liefert der Gateway nicht; ein anderer Titel ist eine
@@ -109,6 +115,8 @@ const erfolgSchema = z.object({
   quelle: z.enum(['anbieter', 'nachbildung']),
 });
 
+const statusSchema = z.object({ ok: z.literal(true), verfuegbar: z.boolean() });
+
 const fehlerSchema = z.object({
   ok: z.literal(false),
   error: z.object({ code: z.enum(GATEWAY_FEHLERKLASSEN), message: z.string() }),
@@ -146,12 +154,32 @@ function endung(mime: string): string {
 }
 
 /**
+ * Bietet der Gateway das Diktat hier an? Die Schreibseite fragt, bevor sie
+ * „Sprechen“ zeigt - wie die Karte, bevor sie Kacheln lädt (ADR-019 Punkt
+ * 35). `true` nur bei ausdrücklichem Ja; ein Fehler, eine fehlende Function
+ * oder eine Antwort in fremder Form heißen nein. Wirft nicht.
+ */
+export async function diktatVerfuegbar(signal?: AbortSignal): Promise<boolean> {
+  try {
+    const { data, error } = (await getSupabase().functions.invoke<unknown>(ADRESSE_DIKTAT, {
+      method: 'GET',
+      ...(signal ? { signal } : {}),
+    })) as { data: unknown; error: unknown };
+    if (error !== null) return false;
+    const status = statusSchema.safeParse(data);
+    return status.success && status.data.verfuegbar;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Ein Diktat aufbereiten: die Aufnahme an den Gateway, zurück kommen das
  * Transkript und der in die Vorlage eingeordnete Vorschlag.
  *
- * Hinaus gehen genau vier Felder: Zweck, Termin, Aufnahme, Dauer. Der Termin
- * ist die Zuordnung (6.3) und die Grundlage der Berechtigung am Server; er
- * bleibt im Gateway und erreicht keinen Anbieter.
+ * Hinaus gehen der Zweck in der Adresse und genau drei Felder: Termin,
+ * Aufnahme, Dauer. Der Termin ist die Zuordnung (6.3) und die Grundlage der
+ * Berechtigung am Server; er bleibt im Gateway und erreicht keinen Anbieter.
  *
  * Wirft nicht: Alles, was schiefgehen kann, endet in einer Fehlerklasse.
  */
@@ -170,7 +198,6 @@ export async function diktatAufbereiten({
   if (audio.size > DIKTAT_HOECHSTBYTES) return gescheitert('too_large');
 
   const formular = new FormData();
-  formular.append('zweck', ZWECK_DIKTAT);
   formular.append('termin', terminId);
   formular.append(
     'dauer_s',
@@ -191,10 +218,13 @@ export async function diktatAufbereiten({
 
   try {
     // Ausdrücklich umtypisiert: `error` ist in der Bibliothek `any`.
-    const { data, error, response } = (await getSupabase().functions.invoke<unknown>(FUNKTION, {
-      body: formular,
-      signal: steuerung.signal,
-    })) as { data: unknown; error: unknown; response?: Response };
+    const { data, error, response } = (await getSupabase().functions.invoke<unknown>(
+      ADRESSE_DIKTAT,
+      {
+        body: formular,
+        signal: steuerung.signal,
+      },
+    )) as { data: unknown; error: unknown; response?: Response };
 
     if (error !== null) {
       if (abgelaufen) return gescheitert('timeout');

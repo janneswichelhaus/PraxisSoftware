@@ -1,7 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
-import { diktatAufbereiten, vorschlagAlsText, type Diktatvorschlag } from '@/lib/ki/gateway';
-import { aufnahmeMoeglich, useAufnahme, type Aufnahme, type Aufnahmefehler } from './aufnahme';
+import {
+  ZWECK_DIKTAT,
+  diktatAufbereiten,
+  diktatVerfuegbar,
+  vorschlagAlsText,
+  type Diktatvorschlag,
+} from '@/lib/ki/gateway';
+import {
+  aufnahmeMoeglich,
+  mikrofonErlaubt,
+  useAufnahme,
+  type Aufnahme,
+  type Aufnahmefehler,
+} from './aufnahme';
 
 /**
  * Das Diktat auf der Schreibseite (BEF-153, KI-EPIC-001, PROJECT_PRINCIPLES.md
@@ -154,6 +167,21 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
     return Promise.resolve(true);
   });
 
+  // Angeboten wird „Sprechen“ nur, wo es gehen kann: Die Seite darf das
+  // Mikrofon öffnen, und der Gateway meldet das Diktat als eingerichtet
+  // (gefragt wird vorher, wie die Karte vor ihren Kacheln). Sonst steht der
+  // Weg gar nicht da - kein Knopf, der ins Leere führt, und „Festschreiben“
+  // bleibt Hauptknopf.
+  const erlaubt = aktiv && mikrofonErlaubt();
+  const gateway = useQuery({
+    queryKey: ['ki', 'verfuegbar', ZWECK_DIKTAT],
+    queryFn: ({ signal }) => diktatVerfuegbar(signal),
+    enabled: erlaubt,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+  const angeboten = erlaubt && gateway.data === true;
+
   const beschaeftigt = aufnahme.zustand !== 'bereit' || stand.art === 'aufbereitung';
   const ruhig = !beschaeftigt && stand.art === 'bereit';
 
@@ -177,8 +205,10 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
     aufnahme,
     meldung,
     hinweis,
-    /** Gibt es den Weg auf dieser Seite und diesem Gerät? */
-    verfuegbar: aktiv && aufnahmeMoeglich(),
+    /** Bietet die Seite den Weg an (Gateway eingerichtet, Mikrofon zugelassen)? */
+    angeboten,
+    /** Und kann dieses Gerät aufnehmen? */
+    verfuegbar: angeboten && aufnahmeMoeglich(),
     beschaeftigt,
     ruhig,
     offen,

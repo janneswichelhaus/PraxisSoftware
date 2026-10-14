@@ -54,6 +54,34 @@ export function aufnahmeMoeglich(): boolean {
   );
 }
 
+/** Was Chromium als Permissions-Policy der Seite anbietet (andere Browser: nichts). */
+interface Seitenrichtlinie {
+  allowsFeature(funktion: string): boolean;
+}
+
+/**
+ * Lässt die Seite das Mikrofon überhaupt zu? Eine Permissions-Policy kann es
+ * sperren - so die Test-Umgebung (`microphone=()`, ADR-017 Punkt 33). Dann
+ * führte „Sprechen“ ins Leere, und die Seite bietet es nicht an. Gefragt wird
+ * `document.permissionsPolicy` oder das ältere `document.featurePolicy`; wo
+ * der Browser keines von beiden kennt, bleibt es bei der Rückfrage des
+ * Browsers und ihrer Meldung.
+ */
+export function mikrofonErlaubt(): boolean {
+  if (typeof document === 'undefined') return false;
+  const seite = document as Document & {
+    permissionsPolicy?: Seitenrichtlinie;
+    featurePolicy?: Seitenrichtlinie;
+  };
+  const richtlinie = seite.permissionsPolicy ?? seite.featurePolicy;
+  if (typeof richtlinie?.allowsFeature !== 'function') return true;
+  try {
+    return richtlinie.allowsFeature('microphone');
+  } catch {
+    return true;
+  }
+}
+
 /** Das erste Format, das der Browser aufnehmen kann - oder keines (dann seine Vorgabe). */
 export function waehleFormat(unterstuetzt: (typ: string) => boolean): string | undefined {
   return AUFNAHMEFORMATE.find((typ) => {

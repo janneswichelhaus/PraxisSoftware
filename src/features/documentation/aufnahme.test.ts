@@ -6,6 +6,7 @@ import {
   HOECHSTDAUER_S,
   aufnahmeMoeglich,
   aufnahmedauer,
+  mikrofonErlaubt,
   useAufnahme,
   waehleFormat,
   type Aufnahme,
@@ -225,6 +226,37 @@ describe('Aufnahme: Hilfen', () => {
       weg();
     }
     expect(aufnahmeMoeglich()).toBe(false);
+  });
+
+  it('fragt die Permissions-Policy der Seite, ob das Mikrofon erlaubt ist', () => {
+    const setze = (name: 'permissionsPolicy' | 'featurePolicy', wert: unknown) =>
+      Object.defineProperty(document, name, { configurable: true, value: wert });
+    const weg = () => {
+      delete (document as { permissionsPolicy?: unknown }).permissionsPolicy;
+      delete (document as { featurePolicy?: unknown }).featurePolicy;
+    };
+    try {
+      // Ohne Schnittstelle (Firefox, Safari, jsdom): Es bleibt beim Browser.
+      expect(mikrofonErlaubt()).toBe(true);
+
+      // Die Test-Umgebung: `microphone=()`.
+      setze('featurePolicy', { allowsFeature: (f: string) => f !== 'microphone' });
+      expect(mikrofonErlaubt()).toBe(false);
+
+      // Die neuere Schnittstelle geht vor.
+      setze('permissionsPolicy', { allowsFeature: () => true });
+      expect(mikrofonErlaubt()).toBe(true);
+
+      // Eine Schnittstelle, die wirft, sperrt nichts.
+      setze('permissionsPolicy', {
+        allowsFeature: () => {
+          throw new Error('kaputt');
+        },
+      });
+      expect(mikrofonErlaubt()).toBe(true);
+    } finally {
+      weg();
+    }
   });
 
   it('wählt WebM vor MP4 vor Ogg - oder keines', () => {

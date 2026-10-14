@@ -307,9 +307,16 @@ function Abschluss({
   // steht sekundär daneben. Steht Text im Feld, ist „Festschreiben“ wieder
   // Hauptknopf und „Sprechen“ sekundär. Während Aufnahme und Vorschlag trägt
   // deren Leiste den Hauptknopf („Fertig“, „Erneut senden“, „In die Doku
-  // übernehmen“) - ein Hauptknopf je Ansicht (DESIGN.md Regel 4).
+  // übernehmen“) - ein Hauptknopf je Ansicht (DESIGN.md Regel 4). Nach einer
+  // Meldung (etwa: Mikrofon gesperrt) führt der Hauptknopf nicht wieder
+  // dorthin.
   const sprechenHaupt =
-    diktat.verfuegbar && verbunden && diktat.ruhig && wert.trim() === '' && !bausteine.text;
+    diktat.verfuegbar &&
+    verbunden &&
+    diktat.ruhig &&
+    diktat.meldung === undefined &&
+    wert.trim() === '' &&
+    !bausteine.text;
   const festschreibenHaupt = !sprechenHaupt && diktat.ruhig;
 
   return (

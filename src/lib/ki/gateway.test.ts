@@ -11,15 +11,16 @@ const {
   DIKTAT_HOECHSTBYTES,
   KI_FEHLERTEXTE,
   diktatAufbereiten,
+  diktatVerfuegbar,
   unverstaendlicheStellen,
   vorschlagAlsText,
 } = await import('./gateway');
 
 /**
  * Der eine Weg der Oberfläche zum AI Gateway (KI-EPIC-001, ADR-005 Punkt 4):
- * genau vier Felder hinaus, die Antwort nur in der Form des Gateways, jede
- * Störung eine Fehlerklasse mit einem Satz - und keine zweite Stelle im
- * Quelltext, die die Function aufruft.
+ * der Zweck in der Adresse und genau drei Felder hinaus, die Antwort nur in
+ * der Form des Gateways, jede Störung eine Fehlerklasse mit einem Satz - und
+ * keine zweite Stelle im Quelltext, die die Function aufruft.
  */
 
 const TERMIN = '77777777-7777-4777-8777-000000000001';
@@ -50,7 +51,7 @@ describe('diktatAufbereiten', () => {
     invoke.mockReset();
   });
 
-  it('schickt Zweck, Termin, Dauer und Aufnahme - sonst nichts', async () => {
+  it('schickt den Zweck in der Adresse, dazu Termin, Dauer und Aufnahme - sonst nichts', async () => {
     invoke.mockResolvedValue({ data: ERFOLG, error: null, response: antwortMit(200, ERFOLG) });
     const audio = aufnahme();
     const ergebnis = await diktatAufbereiten({ terminId: TERMIN, audio, dauerS: 41.6 });
@@ -65,10 +66,9 @@ describe('diktatAufbereiten', () => {
     });
     expect(invoke).toHaveBeenCalledTimes(1);
     const [funktion, optionen] = invoke.mock.calls[0] as [string, { body: FormData }];
-    expect(funktion).toBe('ai-gateway');
+    expect(funktion).toBe('ai-gateway?zweck=dokumentation.diktat');
     const formular = optionen.body;
-    expect([...formular.keys()].sort()).toEqual(['audio', 'dauer_s', 'termin', 'zweck']);
-    expect(formular.get('zweck')).toBe('dokumentation.diktat');
+    expect([...formular.keys()].sort()).toEqual(['audio', 'dauer_s', 'termin']);
     expect(formular.get('termin')).toBe(TERMIN);
     expect(formular.get('dauer_s')).toBe('42');
     const datei = formular.get('audio') as File;
@@ -156,6 +156,40 @@ describe('diktatAufbereiten', () => {
     expect(
       await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
     ).toMatchObject({ ok: false, fehler: 'function_unavailable', erneutMoeglich: true });
+  });
+});
+
+describe('diktatVerfuegbar', () => {
+  beforeEach(() => {
+    invoke.mockReset();
+  });
+
+  it('fragt den Gateway mit GET nach dem Zweck - ohne Termin, ohne Aufnahme', async () => {
+    invoke.mockResolvedValue({ data: { ok: true, verfuegbar: true }, error: null });
+    expect(await diktatVerfuegbar()).toBe(true);
+    expect(invoke).toHaveBeenCalledWith('ai-gateway?zweck=dokumentation.diktat', {
+      method: 'GET',
+    });
+  });
+
+  it('heißt nur bei ausdrücklichem Ja verfügbar', async () => {
+    const antworten = [
+      { data: { ok: true, verfuegbar: false }, error: null },
+      { data: { ok: true }, error: null },
+      { data: 'ja', error: null },
+      {
+        data: null,
+        error: new Error('http'),
+        response: antwortMit(401, { code: 401, message: 'Invalid JWT' }),
+      },
+      { data: null, error: new Error('fetch'), response: undefined },
+    ];
+    for (const antwort of antworten) {
+      invoke.mockResolvedValueOnce(antwort);
+      expect(await diktatVerfuegbar(), JSON.stringify(antwort.data)).toBe(false);
+    }
+    invoke.mockRejectedValueOnce(new Error('kaputt'));
+    expect(await diktatVerfuegbar()).toBe(false);
   });
 });
 

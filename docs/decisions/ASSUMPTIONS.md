@@ -5178,7 +5178,7 @@ Datenschutz · offen · 2026-10-14 · — · Prüfpaket · Wiedervorlage: Datens
 
 Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)
 
-**Annahme.** Ist das Feld leer und nichts offen, ist „Sprechen“ der Hauptknopf (48 px, am Telefon in voller Breite über der Fußleiste), „Festschreiben“ sekundär. Mit Text im Feld ist „Festschreiben“ Hauptknopf, „Sprechen“ sekundär mit Zeichen und Wort. Während Aufnahme und Vorschlag tragen „Fertig“, „Erneut senden“ oder „In die Doku übernehmen“ den Hauptknopf.
+**Annahme.** Ist das Feld leer, nichts offen und keine Meldung da, ist „Sprechen“ Hauptknopf (48 px, am Telefon volle Breite über der Fußleiste), „Festschreiben“ sekundär; mit Text im Feld umgekehrt, „Sprechen“ mit Zeichen und Wort. Während Aufnahme und Vorschlag tragen „Fertig“, „Erneut senden“ oder „In die Doku übernehmen“ den Hauptknopf. Ohne Angebot des Gateways oder bei gesperrtem Mikrofon fehlt „Sprechen“.
 
 **Begründung.** BEF-153 will die Spracheingabe als bevorzugten, prominenten Weg; DESIGN.md Regel 4 lässt einen Hauptknopf je Ansicht. Die Übernahme ist ein Tipp mehr, weil §6.3 sie verlangt.
 

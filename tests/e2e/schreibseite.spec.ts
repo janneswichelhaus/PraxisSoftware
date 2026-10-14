@@ -188,8 +188,17 @@ test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übern
 }) => {
   await page.addInitScript(mikrofonNachbilden);
   let anfrage = '';
-  await page.route('**/functions/v1/ai-gateway', async (route) => {
-    anfrage = route.request().postDataBuffer()?.toString('latin1') ?? '';
+  let adresse = '';
+  // Der Zweck steht in der Adresse: Erst fragt die Seite mit GET, ob das
+  // Diktat angeboten wird, dann geht die Aufnahme mit POST hinaus.
+  await page.route(/\/functions\/v1\/ai-gateway(\?|$)/, async (route) => {
+    const gestellt = route.request();
+    if (gestellt.method() === 'GET') {
+      await route.fulfill({ status: 200, json: { ok: true, verfuegbar: true } });
+      return;
+    }
+    adresse = gestellt.url();
+    anfrage = gestellt.postDataBuffer()?.toString('latin1') ?? '';
     await route.fulfill({ status: 200, contentType: 'application/json', json: DIKTAT });
   });
   await oeffne(page, 375);
@@ -216,11 +225,12 @@ test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übern
     page.getByRole('heading', { name: 'Vorschlag aus der Aufnahme – bitte prüfen' }),
   ).toBeVisible();
   await expect(page.getByText('1 Stelle unverständlich')).toBeVisible();
-  // Hinaus gingen Zweck, Termin, Dauer und Aufnahme - kein Name.
-  for (const feld of ['zweck', 'termin', 'dauer_s', 'audio']) {
+  // Hinaus gingen der Zweck in der Adresse, Termin, Dauer und Aufnahme - kein Name.
+  expect(new URL(adresse).searchParams.get('zweck')).toBe('dokumentation.diktat');
+  for (const feld of ['termin', 'dauer_s', 'audio']) {
     expect(anfrage).toContain(`name="${feld}"`);
   }
-  expect(anfrage).toContain('dokumentation.diktat');
+  expect(anfrage).not.toContain('name="zweck"');
   expect(anfrage).not.toContain('Mustermann');
   await ohneUeberlauf(page);
 
