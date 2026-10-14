@@ -5351,7 +5351,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
-**Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Satz nennt den Ort in der Praxis.
+**Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Link führt an den Ort in der Praxis (Reiter der Akte, Rückfrage).
 
 **Begründung.** Öffnen hieße ein neuer Leseweg in den Speicher über den Zugang der Person, mit eigener Regel und eigenem Nachweis. In Akte und Rückfragen öffnet die Praxis dieselbe Datei mit ihrem Nachweis (ADR-010).
 

@@ -24,10 +24,12 @@ import {
 import {
   NurLesenKontext,
   PlattformApiKontext,
+  PraxiswegeKontext,
   einsichtsApi,
   useNurLesen,
   usePlattformApi,
   type Einsichtsquelle,
+  type Praxiswege,
 } from './einsicht';
 import { Abo } from './Abo';
 import { Angebot } from './Angebot';
@@ -78,13 +80,16 @@ export { PLATTFORM_PFAD };
 
 /**
  * E-001: Die Einsicht der Praxis (DSN-001 D7) zeigt dasselbe Gerüst, nur
- * lesend. Die Praxisseite gibt den einen Zugang und ihre Quelle mit; die
- * Seiten bekommen daraus `einsichtsApi` und `useNurLesen()` über den
- * Kontext. Ohne `einsicht` ist es die Plattform der Person, wie bisher.
+ * lesend. Die Praxisseite gibt den einen Zugang und ihre Quelle mit, dazu die
+ * Wege in die Praxis; die Seiten bekommen daraus `einsichtsApi`,
+ * `useNurLesen()` und `usePraxiswege()` über den Kontext. Ohne `einsicht` ist
+ * es die Plattform der Person, wie bisher.
  */
 export interface Einsicht {
   zugangId: string;
   quelle: Einsichtsquelle;
+  /** Wo die Praxis öffnet, was die Einsicht nicht öffnet. */
+  wege?: Praxiswege;
 }
 
 export function PlattformApp({
@@ -108,7 +113,11 @@ export function PlattformApp({
   if (!api) return geruest;
   return (
     <PlattformApiKontext.Provider value={api}>
-      <NurLesenKontext.Provider value>{geruest}</NurLesenKontext.Provider>
+      <NurLesenKontext.Provider value>
+        <PraxiswegeKontext.Provider value={einsicht?.wege ?? null}>
+          {geruest}
+        </PraxiswegeKontext.Provider>
+      </NurLesenKontext.Provider>
     </PlattformApiKontext.Provider>
   );
 }

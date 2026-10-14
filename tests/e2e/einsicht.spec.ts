@@ -167,8 +167,8 @@ test.describe('Einsicht der Praxis (E-001)', () => {
       expect((await zurueck.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect((await leiste.boundingBox())!.y).toBe(0);
 
-      // Die Übersicht statt des Einstiegs, mit dem Satz, dass er aussteht.
-      await expect(page.getByText(/Der Einstieg steht noch aus/)).toBeVisible();
+      // Die Übersicht statt des Einstiegs, mit dem Status, dass er aussteht.
+      await expect(page.getByText('Einstieg steht aus')).toBeVisible();
       await expect(page.getByText('Nächster Termin')).toBeVisible();
       await expect(page.getByText(/Schritt 1 von/)).toHaveCount(0);
 
@@ -210,13 +210,20 @@ test.describe('Einsicht der Praxis (E-001)', () => {
       await expect(page.getByRole('button', { name: /Senden|erledigt/ })).toHaveCount(0);
       expect(await ueberlaeuft(page)).toBe(false);
 
-      // Ich: kein Abmelden, Dokumente ohne Öffnen.
+      // Ich: kein Abmelden, Dokumente ohne Öffnen - mit dem Weg in die Akte.
       await page.getByRole('link', { name: 'Ich', exact: true }).click();
       await expect(page.getByRole('heading', { name: 'Ich', level: 1 })).toBeVisible();
       await expect(page.getByRole('button', { name: /bmelden/ })).toHaveCount(0);
       await page.getByRole('link', { name: 'Dokumente' }).click();
-      await expect(page.getByText('Arztbrief Knie.pdf')).toBeVisible();
-      await expect(page.getByText('In der Akte unter Dateien öffnen.')).toBeVisible();
+      await expect(page.getByText('Arztbrief Knie.pdf', { exact: true })).toBeVisible();
+      // Der Name trägt das Dokument für Vorlesesoftware; Chromium setzt vor den
+      // verborgenen Teil ein Leerzeichen.
+      const inDieAkte = page.getByRole('link', {
+        name: /^In der Akte öffnen\s?: Arztbrief Knie\.pdf$/,
+      });
+      await expect(inDieAkte).toBeVisible();
+      await expect(inDieAkte).toHaveAttribute('href', `/patienten/${ERIKA}/doku`);
+      expect((await inDieAkte.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       await expect(page.getByRole('button', { name: /Ansehen|Herunterladen/ })).toHaveCount(0);
       expect(await ueberlaeuft(page)).toBe(false);
 

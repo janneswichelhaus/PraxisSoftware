@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import {
@@ -13,7 +14,7 @@ import {
   type Nachrichten,
   type Plattformzugang,
 } from './api';
-import { useNurLesen, usePlattformApi } from './einsicht';
+import { useNurLesen, usePlattformApi, usePraxiswege } from './einsicht';
 import { EINWILLIGUNGSFASSUNG, EINWILLIGUNGSTEXTE, FREIWILLIG } from './einwilligungstexte';
 import { AUFNAHMEHINWEIS, zeitmarke, type Ansicht } from './anhangtexte';
 import { Videodialog } from './Videodialog';
@@ -65,6 +66,7 @@ export function AnhaengeAbschnitt({
 }) {
   const api = usePlattformApi();
   const nurLesen = useNurLesen();
+  const wege = usePraxiswege();
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<'einwilligung' | 'foto' | 'video' | null>(null);
   const [nachEinwilligung, setNachEinwilligung] = useState<'foto' | 'video'>('foto');
@@ -190,9 +192,12 @@ export function AnhaengeAbschnitt({
           ))}
         </ListRows>
       ) : null}
-      {/* E-001: In der Einsicht wird nichts geöffnet. */}
-      {nurLesen && anhaenge.length > 0 ? (
-        <p className="text-ink-muted mt-2 text-sm">In den Rückfragen öffnen.</p>
+      {/* E-001 (ANN-527): In der Einsicht wird nichts geöffnet - der Weg führt
+          zu dieser Rückfrage in der Praxis, wo die Aufnahmen zu sehen sind. */}
+      {nurLesen && wege && anhaenge.length > 0 ? (
+        <Textlink alleinstehend to={wege.rueckfrage(nachricht.id)} className="mt-2">
+          In den Rückfragen öffnen →
+        </Textlink>
       ) : null}
       {ungeprueft ? (
         <p className="text-ink-muted mt-2 text-sm">

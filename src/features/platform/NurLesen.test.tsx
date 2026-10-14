@@ -3,8 +3,13 @@ import { screen, within } from '@testing-library/react';
 import { useLocation } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import type { Nachricht, Plattformzugang } from './api';
-import { EINSICHT_LESEN, TAGE_NUR_DIE_PERSON, type Einsichtsquelle } from './einsicht';
-import { PlattformApp } from './PlattformApp';
+import {
+  EINSICHT_LESEN,
+  TAGE_NUR_DIE_PERSON,
+  type Einsichtsquelle,
+  type Praxiswege,
+} from './einsicht';
+import { PlattformApp, type Einsicht } from './PlattformApp';
 import { eigenerPlan } from './testdaten';
 
 /**
@@ -143,19 +148,29 @@ const quelle = vi.fn<Einsichtsquelle>((funktion) =>
   Promise.resolve({ data: DATEN[funktion] ?? null, error: null }),
 );
 
+/**
+ * Die Wege in die Praxis, wie die Praxisseite sie einspeist
+ * (`wegeAusDerEinsicht`, dort geprüft) - hier nur, dass die Seiten sie nutzen.
+ */
+const WEGE: Praxiswege = {
+  datei: (art) => `/praxis/datei/${art}`,
+  rueckfrage: (id) => `/praxis/rueckfrage/${id}`,
+};
+const EINSICHT: Einsicht = { zugangId: ZUGANG, quelle, wege: WEGE };
+
 function Ort() {
   const { pathname } = useLocation();
   return <output data-testid="ort">{pathname}</output>;
 }
 
-function zeige(pfad: string, einsicht = true) {
+function zeige(pfad: string, einsicht: Einsicht | null = EINSICHT) {
   return renderWithProviders(
     <>
       <PlattformApp
         zugaenge={[ERIKA]}
         email={undefined}
         onAbmelden={() => undefined}
-        {...(einsicht ? { einsicht: { zugangId: ZUGANG, quelle } } : {})}
+        {...(einsicht ? { einsicht } : {})}
       />
       <Ort />
     </>,
@@ -171,7 +186,9 @@ beforeEach(() => {
 describe('Plattform in der Einsicht (E-001)', () => {
   it('liest nur über die Quelle und zeigt die Übersicht statt des Einstiegs', async () => {
     zeige(`/p?zugang=${ZUGANG}`);
-    expect(await screen.findByText(/Der Einstieg steht noch aus/)).toBeInTheDocument();
+    // Ein Status aus Zeichen und Wort, kein Erklärsatz (DESIGN.md Regeln 5, 6).
+    expect(await screen.findByText('Einstieg steht aus')).toBeInTheDocument();
+    expect(screen.queryByText(/Der Einstieg steht noch aus/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Schritt 1 von/)).not.toBeInTheDocument();
     // Der Befundbogen steht da, wie die Person ihn sieht - ohne Weg hinein.
     expect(await screen.findByText('Befundbogen ausfüllen')).toBeInTheDocument();
@@ -193,7 +210,7 @@ describe('Plattform in der Einsicht (E-001)', () => {
     '/p/einstellungen',
   ])('erreicht %s nicht - die Seite schreibt nur', async (pfad) => {
     zeige(pfad);
-    expect(await screen.findByText(/Der Einstieg steht noch aus/)).toBeInTheDocument();
+    expect(await screen.findByText('Einstieg steht aus')).toBeInTheDocument();
     expect(screen.getByTestId('ort')).toHaveTextContent(/^\/p$/);
     expect(netz.aufgerufen).toBe(0);
   });
@@ -217,7 +234,12 @@ describe('Plattform in der Einsicht (E-001)', () => {
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' });
     expect(within(verlauf).getByText('Bei 0:07 kippt das Knie nach innen.')).toBeInTheDocument();
     expect(within(verlauf).getByText('Bezieht sich auf das Video bei 0:07.')).toBeInTheDocument();
-    expect(screen.getByText('In den Rückfragen öffnen.')).toBeInTheDocument();
+    // Statt eines Satzes der Weg zu dieser Rückfrage in der Praxis (ANN-527).
+    expect(screen.getByRole('link', { name: 'In den Rückfragen öffnen →' })).toHaveAttribute(
+      'href',
+      `/praxis/rueckfrage/${NACHRICHT.id}`,
+    );
+    expect(screen.queryByText('In den Rückfragen öffnen.')).not.toBeInTheDocument();
     for (const name of [
       /Im Video bei/,
       'Ansehen',
@@ -235,7 +257,11 @@ describe('Plattform in der Einsicht (E-001)', () => {
   it('Dokumente und Einwilligungen: lesen ja, öffnen und entscheiden nein', async () => {
     const dokumente = zeige('/p/dokumente');
     expect(await screen.findByText('Arztbrief Knie.pdf')).toBeInTheDocument();
-    expect(screen.getByText('In der Akte unter Dateien öffnen.')).toBeInTheDocument();
+    // An der Zeile der Weg in den Reiter der Akte, in dem es steht (ANN-527).
+    expect(
+      screen.getByRole('link', { name: 'In der Akte öffnen: Arztbrief Knie.pdf' }),
+    ).toHaveAttribute('href', '/praxis/datei/arztbrief');
+    expect(screen.queryByText(/In der Akte unter Dateien/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Ansehen|Herunterladen/ })).not.toBeInTheDocument();
     dokumente.unmount();
 
@@ -258,8 +284,9 @@ describe('Plattform in der Einsicht (E-001)', () => {
 
   // ANN-307: Die Übungstage sieht nur die Person. Der Server liefert sie der
   // Einsicht leer (`supabase/tests/platform-preview.test.ts`); die Seiten
-  // sagen das, statt „keine Tage" zu zeigen - und zeigen keine, selbst wenn
-  // welche kämen.
+  // zeigen keine, selbst wenn welche kämen. Unter „Übungen“ fehlen sie ohne
+  // Satz (die Leiste sagt „nur lesen“), unter „Termine“ sagt einer, warum die
+  // Woche fehlt.
   it.each([
     ['wie vom Server: leer', []],
     ['selbst wenn welche kämen', [1, 3]],
@@ -272,7 +299,7 @@ describe('Plattform in der Einsicht (E-001)', () => {
     try {
       const uebungen = zeige('/p/uebungen');
       expect(await screen.findByText('Heimprogramm Knie')).toBeInTheDocument();
-      expect(screen.getByText(TAGE_NUR_DIE_PERSON)).toBeInTheDocument();
+      expect(screen.queryByText(TAGE_NUR_DIE_PERSON)).not.toBeInTheDocument();
       expect(screen.queryByRole('group', { name: /Meine Übungstage/ })).not.toBeInTheDocument();
       expect(screen.queryByText(/Meine Übungstage:/)).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /üben/ })).not.toBeInTheDocument();
@@ -287,8 +314,21 @@ describe('Plattform in der Einsicht (E-001)', () => {
     }
   });
 
+  it('ohne eingespeiste Wege: kein Link und kein Satz an Dokumenten und Aufnahmen', async () => {
+    const ohneWege: Einsicht = { zugangId: ZUGANG, quelle };
+    const dokumente = zeige('/p/dokumente', ohneWege);
+    expect(await screen.findByText('Arztbrief Knie.pdf')).toBeInTheDocument();
+    expect(screen.queryByText(/In der Akte/)).not.toBeInTheDocument();
+    dokumente.unmount();
+
+    zeige(`/p/nachrichten/${NACHRICHT.id}`, ohneWege);
+    expect(await screen.findByRole('list', { name: 'Verlauf' })).toBeInTheDocument();
+    expect(screen.getByText(/Video, 0:12/)).toBeInTheDocument();
+    expect(screen.queryByText(/In den Rückfragen/)).not.toBeInTheDocument();
+  });
+
   it('ohne Einsicht bleiben die Seiten der Person, wie sie sind', () => {
-    zeige('/p/termine/wunsch', false);
+    zeige('/p/termine/wunsch', null);
     expect(screen.getByTestId('ort')).toHaveTextContent('/p/termine/wunsch');
   });
 });

@@ -20,7 +20,7 @@ import { Planblatt } from '@/features/exercise-plans/Planblatt';
 import { haeufigkeit } from '@/features/exercise-plans/dosierung';
 import { formatDate } from '@/lib/datum';
 import { plaeneSchluessel, type EigenerPlan, type PlanPosition, type Plattformzugang } from './api';
-import { TAGE_NUR_DIE_PERSON, useNurLesen, usePlattformApi } from './einsicht';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import {
   DurchfuehrungKontext,
   abgelegteZugaenge,
@@ -225,12 +225,9 @@ function PlanAbschnitt({
           Zuletzt geübt: {zuletzt === heute ? 'heute' : formatDate(zuletzt)}
         </p>
       ) : null}
-      {nurLesen ? (
-        // ANN-307: Die Tage kommen in der Einsicht leer - sie sieht nur die Person.
-        plan.status === 'assigned' ? (
-          <p className="text-ink-muted">{TAGE_NUR_DIE_PERSON}</p>
-        ) : null
-      ) : plan.can_choose_days ? (
+      {/* ANN-307: Die Tage kommen in der Einsicht leer - sie sieht nur die
+          Person. Dort fehlen sie ohne Satz; die Leiste sagt „nur lesen“. */}
+      {nurLesen ? null : plan.can_choose_days ? (
         <Uebungstage zugang={zugang} plan={plan} />
       ) : plan.weekdays.length > 0 ? (
         <p className="text-ink-muted">Meine Übungstage: {tageText(plan.weekdays)}</p>
