@@ -28,6 +28,7 @@ import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
 import { Danach } from './Danach';
+import { WieZuletzt } from './WieZuletzt';
 import { useTextUebernahme } from './uebernahme';
 import {
   completeTreatment,
@@ -313,6 +314,18 @@ function Abschluss({
           statt umzubrechen. Während eines Schreibvorgangs fügt die Leiste
           nichts ein: Das Feld ist dann festgehalten (Zweitreview FRB-EPIC-003). */}
       <div className="border-line nicht-drucken flex shrink-0 items-center gap-2 overflow-x-auto border-b px-4 py-1.5">
+        {/* K6: der letzte Eintrag als Ausgangspunkt, vorn in der Reihe
+            (ANN-502). Nicht am Vermerk „ohne Behandlung“. */}
+        {!ohneBehandlung && appointment.kind === 'therapy' ? (
+          <>
+            <WieZuletzt
+              appointmentId={appointment.id}
+              gesperrt={laeuft}
+              onUebernehmen={(titel, text) => einfuegen(titel, wert, text)}
+            />
+            <span aria-hidden="true" className="bg-line h-6 w-px shrink-0" />
+          </>
+        ) : null}
         <TextbausteinLeiste
           alsChips
           onEinfuegen={(text, titel) => {
