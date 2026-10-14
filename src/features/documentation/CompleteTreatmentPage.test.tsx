@@ -215,8 +215,9 @@ describe('CompleteTreatmentPage', () => {
         id: 'b1',
         title: 'Hausbesuch',
         body: 'Hausbesuch durchgefuehrt.',
-        shared: true,
-        editable: false,
+        // B5: In der Leiste stehen nur eigene Bausteine.
+        shared: false,
+        editable: true,
       },
     ]);
 

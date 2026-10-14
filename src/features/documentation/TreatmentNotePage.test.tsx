@@ -204,8 +204,9 @@ describe('TreatmentNotePage', () => {
           id: 'b1',
           title: 'Manuelle Therapie',
           body: 'Manuelle Therapie durchgefuehrt.',
-          shared: true,
-          editable: false,
+          // B5: In der Leiste stehen nur eigene Bausteine.
+          shared: false,
+          editable: true,
         },
       ]);
     });

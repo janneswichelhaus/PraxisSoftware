@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-13.
+Zuletzt aktualisiert: 2026-10-14.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -5442,3 +5442,27 @@ Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
 **Anker.** `app.platform_preview_grant` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
 
 **Änderungspfad.** Zusätzlich `app.platform_access_writable` und Schreibrechte in der Einsicht auf `false`, die Projektionen fragen dann einen eigenen Helfer · Aufwand `mittel`.
+
+### ANN-530 — „Passt es?“ bietet die früheste passende Zeit an, nur wenn die Gegenseite hält
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Ist im Terminformular die Anfahrt zu knapp, steht darunter „Auf 16:25 verschieben“ (frühester Beginn des Servers, nur am selben Tag); bei zu knapper Weiter- oder Rückfahrt „Auf 15:40 vorziehen“ (Beginn − ⌈−Luft / Raster⌉ · Raster). Angeboten wird nur, wenn die Luft der Gegenseite danach ≥ 0 bleibt oder sie ungeprüft ist, sonst „Zwischen Termin davor und danach reicht die Zeit nicht.“; anlegen zur alten Zeit bleibt möglich.
+
+**Begründung.** B2 (Jannes, 14.10.2026). Gerundet wird weiter im Server (ANN-097): Das Angebot rechnet nur mit seiner Luft, nach dem Tipp prüft er neu.
+
+**Anker.** `wegangebot` in `src/features/appointments/wegpruefung.ts`; Anzeige `Wegauskunft.tsx`.
+
+**Änderungspfad.** Andere Regel, auch über die Gegenseite hinweg: `wegangebot` · Aufwand `klein`.
+
+### ANN-531 — Textbausteine: in der Leiste nur eigene, keine neuen Bausteine der Praxis
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Leiste der Schreibseite zeigt nur die eigenen Bausteine der angemeldeten Person, ohne eigene den leisen Link „Eigene Bausteine anlegen“; „+ Befund“ bleibt. Die Bausteinseite legt nur noch eigene an; vorhandene Bausteine der Praxis sieht nur owner, eingeklappt, und kann sie löschen.
+
+**Begründung.** B5 (Jannes, 14.10.2026): Jede Therapeut:in legt sich eigene für den Alltag an. Nur Oberfläche: `list_text_snippets` und `create_text_snippet` bleiben unverändert.
+
+**Anker.** Filter in `src/features/documentation/TextbausteinLeiste.tsx`; Seite `TextbausteinePage.tsx`.
+
+**Änderungspfad.** Bausteine der Praxis wieder in der Leiste: Filter weg, Kästchen „Baustein der Praxis“ zurück · Aufwand `klein`.

@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { TextArea } from '@/components/ui/TextArea';
 import { Section, Feldgruppe } from '@/components/ui/Section';
@@ -11,10 +10,10 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
+import { Disclosure } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { ListRow } from '@/components/ui/ListRow';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -40,11 +39,13 @@ import {
  * Ohne diese Seite wäre die Bausteinleiste in der Dokumentation dauerhaft
  * leer - deshalb gehört sie zur Story und nicht in einen späteren Loop.
  *
- * Zwei Geltungsbereiche, sichtbar getrennt: Bausteine der Praxis gelten für
- * alle und dürfen nur von der Praxisinhaber:in angelegt werden; eigene gehören
- * der angemeldeten Person und sieht sonst niemand. Der Geltungsbereich ist
- * nachträglich nicht änderbar - das ist keine Einschränkung der Oberfläche,
- * sondern eine Festlegung der Serverfunktion.
+ * Jede Person legt sich eigene Bausteine an; sie gehören ihr, und sonst sieht
+ * sie niemand. „Meine Bausteine“ ist deshalb der Inhalt der Seite (B5).
+ * Bausteine der Praxis stehen nicht mehr in der Leiste
+ * (`TextbausteinLeiste`), und neue legt die Seite nicht mehr an. Vorhandene
+ * sieht nur die Praxisinhaber:in, eingeklappt am Ende, und kann sie löschen -
+ * damit nichts unsichtbar liegen bleibt. Der Geltungsbereich ist nachträglich
+ * nicht änderbar - eine Festlegung der Serverfunktion.
  *
  * **Ungespeichertes geht nicht still verloren (DOK-03, ZST-05).** Ein
  * Baustein hat bis zu 2.000 Zeichen; ein Tipp in die Navigation verwarf sie
@@ -74,7 +75,6 @@ function Herkunft({ pfad }: { pfad: string }) {
 function BausteinFormular({
   formularId,
   baustein,
-  darfPraxisweit,
   onFertig,
   onAbbrechen,
   onUngespeichert,
@@ -82,9 +82,8 @@ function BausteinFormular({
 }: {
   /** Kennung für den Schutz der Seite: „neu“ oder die des Bausteins. */
   formularId: string;
-  /** Vorhandener Baustein zum Ändern; ohne ihn wird angelegt. */
+  /** Vorhandener Baustein zum Ändern; ohne ihn wird ein eigener angelegt. */
   baustein?: TextSnippet;
-  darfPraxisweit: boolean;
   /** Nach dem Speichern, mit dem Titel des gespeicherten Bausteins. */
   onFertig: (titel: string) => void;
   onAbbrechen?: () => void;
@@ -96,13 +95,9 @@ function BausteinFormular({
   const queryClient = useQueryClient();
   const [titel, setTitel] = useState(baustein?.title ?? '');
   const [text, setText] = useState(baustein?.body ?? '');
-  const [praxisweit, setPraxisweit] = useState(baustein?.shared ?? false);
   const [fehler, setFehler] = useState<Partial<Record<string, string>>>({});
 
-  const ungespeichert =
-    titel !== (baustein?.title ?? '') ||
-    text !== (baustein?.body ?? '') ||
-    praxisweit !== (baustein?.shared ?? false);
+  const ungespeichert = titel !== (baustein?.title ?? '') || text !== (baustein?.body ?? '');
 
   useEffect(() => {
     onUngespeichert(formularId, ungespeichert);
@@ -112,12 +107,13 @@ function BausteinFormular({
   useEffect(() => () => onUngespeichert(formularId, false), [formularId, onUngespeichert]);
 
   const speichern = useMutation({
-    mutationFn: async (eingabe: { titel: string; text: string; praxisweit: boolean }) => {
+    mutationFn: async (eingabe: { titel: string; text: string }) => {
       if (baustein) {
         await updateTextSnippet(baustein.id, eingabe.titel, eingabe.text);
         return;
       }
-      await createTextSnippet(eingabe.titel, eingabe.text, eingabe.praxisweit);
+      // Neu ist immer ein eigener Baustein (B5).
+      await createTextSnippet(eingabe.titel, eingabe.text, false);
     },
     onSuccess: async (_ergebnis, eingabe) => {
       await queryClient.invalidateQueries({ queryKey: ['text-snippets'] });
@@ -135,7 +131,7 @@ function BausteinFormular({
         const gefunden = bausteinFehler(titel, text);
         setFehler(gefunden);
         if (Object.keys(gefunden).length > 0) return;
-        speichern.mutate({ titel, text, praxisweit });
+        speichern.mutate({ titel, text });
       }}
       className="max-w-formular"
     >
@@ -164,17 +160,6 @@ function BausteinFormular({
             if (fehler['body']) setFehler((bisher) => ({ ...bisher, body: undefined }));
           }}
         />
-
-        {/* Der Geltungsbereich wird nur beim Anlegen gewählt - mit dem
-            Kästchen des Systems samt Hinweis (DOK-13). */}
-        {!baustein && darfPraxisweit ? (
-          <Checkbox
-            label="Baustein der Praxis"
-            hint="Erscheint bei allen dokumentierenden Personen. Ohne Haken gehört der Baustein nur Ihnen."
-            checked={praxisweit}
-            onChange={(event) => setPraxisweit(event.target.checked)}
-          />
-        ) : null}
       </Feldgruppe>
 
       {schutz}
@@ -206,7 +191,8 @@ const PARAMETER = 'baustein';
  * Ein Baustein im Einzelnen (Design-Rollout B4: Liste → Detail statt einer
  * Karte je Baustein mit Text und Knöpfen): Kopf mit Titel und Geltungsbereich,
  * der Text im Rahmen, „Bearbeiten“ im Kopf und „Löschen“ leise am Ende, nach
- * einer Rückfrage.
+ * einer Rückfrage. Ein Baustein der Praxis steht in keiner Leiste mehr; ihn
+ * zu bearbeiten hätte keine Wirkung, er lässt sich nur noch löschen (B5).
  */
 function BausteinDetail({
   baustein,
@@ -242,11 +228,11 @@ function BausteinDetail({
         title={baustein.title}
         description={
           baustein.shared
-            ? 'Für alle dokumentierenden Personen. Anlegen und ändern darf sie die Praxisinhaber:in.'
+            ? 'Baustein der Praxis, nicht in der Leiste.'
             : 'Sieht außer Ihnen niemand.'
         }
         actions={
-          baustein.editable && !bearbeiten ? (
+          baustein.editable && !baustein.shared && !bearbeiten ? (
             <Button type="button" variant="secondary" onClick={() => setBearbeiten(true)}>
               Bearbeiten
             </Button>
@@ -264,7 +250,6 @@ function BausteinDetail({
             <BausteinFormular
               formularId={baustein.id}
               baustein={baustein}
-              darfPraxisweit={false}
               onFertig={() => setBearbeiten(false)}
               onAbbrechen={() => setBearbeiten(false)}
               onUngespeichert={onUngespeichert}
@@ -280,6 +265,8 @@ function BausteinDetail({
               </p>
             </Section>
 
+            {/* Ohne `editable` steht hier nichts: Bausteine der Praxis sieht
+                nur owner (B5), und owner darf sie laut Serverfunktion ändern. */}
             {baustein.editable ? (
               // Zerstörendes leise am Ende, mit Rückfrage (DESIGN.md Regel 10).
               <div className="mt-8">
@@ -297,11 +284,7 @@ function BausteinDetail({
                   unberührt – ein Baustein ist eine Vorlage, kein Bestandteil der Akte.
                 </Rueckfrage>
               </div>
-            ) : (
-              <Kleingedrucktes className="mt-6">
-                Bausteine der Praxis pflegt die Praxisinhaber:in.
-              </Kleingedrucktes>
-            )}
+            ) : null}
           </>
         )}
       </div>
@@ -311,7 +294,8 @@ function BausteinDetail({
 
 export function TextbausteinePage({ user }: { user: CurrentUser }) {
   const darf = canWriteTreatmentNote(user.roles);
-  const darfPraxisweit = isOwner(user.roles);
+  /** Nur die Praxisinhaber:in sieht die vorhandenen Bausteine der Praxis - zum Löschen. */
+  const siehtPraxisbausteine = isOwner(user.roles);
   const [suche, setSuche] = useSearchParams();
   const herkunft = leseRueckweg(suche, '');
   const [anlegen, setAnlegen] = useState(false);
@@ -362,7 +346,10 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
     );
   }
 
-  const gewaehlt = abfrage.data?.find((baustein) => baustein.id === suche.get(PARAMETER));
+  const gewaehlt = abfrage.data?.find(
+    (baustein) =>
+      baustein.id === suche.get(PARAMETER) && (!baustein.shared || siehtPraxisbausteine),
+  );
   if (gewaehlt) {
     return (
       <BausteinDetail
@@ -422,7 +409,6 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
         <Section titel="Neuer Baustein">
           <BausteinFormular
             formularId="neu"
-            darfPraxisweit={darfPraxisweit}
             onFertig={(titel) => {
               setAnlegen(false);
               setMeldung({ text: `Baustein „${titel}“ angelegt.`, schluessel: Date.now() });
@@ -449,24 +435,32 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
           laden="Bausteine werden geladen …"
           fehler="Die Textbausteine konnten nicht geladen werden."
         >
-          {(daten) => (
-            <>
-              <Listenabschnitt
-                titel="Bausteine der Praxis"
-                anzahl={daten.filter((baustein) => baustein.shared).length}
-                leer={{ titel: 'Noch keine Bausteine der Praxis.' }}
-              >
-                {daten.filter((baustein) => baustein.shared).map(zeile)}
-              </Listenabschnitt>
-              <Listenabschnitt
-                titel="Meine Bausteine"
-                anzahl={daten.filter((baustein) => !baustein.shared).length}
-                leer={{ titel: 'Noch keine eigenen Bausteine.' }}
-              >
-                {daten.filter((baustein) => !baustein.shared).map(zeile)}
-              </Listenabschnitt>
-            </>
-          )}
+          {(daten) => {
+            const eigene = daten.filter((baustein) => !baustein.shared);
+            const derPraxis = siehtPraxisbausteine
+              ? daten.filter((baustein) => baustein.shared)
+              : [];
+            return (
+              <>
+                <Listenabschnitt
+                  titel="Meine Bausteine"
+                  anzahl={eigene.length}
+                  leer={{ titel: 'Noch keine eigenen Bausteine.' }}
+                >
+                  {eigene.map(zeile)}
+                </Listenabschnitt>
+                {/* Seltenes eingeklappt am Ende (DESIGN.md): Löschen im
+                    einzelnen Baustein, mit Rückfrage. */}
+                {derPraxis.length > 0 ? (
+                  <div className="mt-8">
+                    <Disclosure summary="Bausteine der Praxis (nicht in der Leiste)" kopf="label">
+                      <ListRows>{derPraxis.map(zeile)}</ListRows>
+                    </Disclosure>
+                  </div>
+                ) : null}
+              </>
+            );
+          }}
         </Abfragezustand>
       </div>
     </>

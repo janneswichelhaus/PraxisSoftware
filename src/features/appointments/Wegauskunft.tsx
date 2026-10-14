@@ -1,6 +1,15 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import { formatLocalTime } from './api';
-import { useWegpruefung, type Seite, type Wegfrage, type Wegpruefung } from './wegpruefung';
+import { minuteZuZeit } from './calendar';
+import {
+  useWegpruefung,
+  wegangebot,
+  type Seite,
+  type Wegangebot,
+  type Wegfrage,
+  type Wegpruefung,
+} from './wegpruefung';
 
 /**
  * „Passt es?“ - An- und Weiterfahrt eines geplanten Termins (UBK-012,
@@ -9,11 +18,16 @@ import { useWegpruefung, type Seite, type Wegfrage, type Wegpruefung } from './w
  *
  * Kein Name eines anderen Termins: „vom Termin davor (bis 10:00)“ genügt,
  * um ihn im Kalender zu finden.
+ *
+ * Im Formular steht unter einer zu knappen Zeile auf Wunsch ein Knopf, der den
+ * Beginn auf die früheste passende Zeit setzt (B2, `wegangebot`) - oder die Zeile,
+ * dass keine passt. Danach fragt die Auskunft mit dem neuen Beginn neu.
  */
 export function Wegauskunft({
   pruefung,
   zeitzone,
   variante = 'formular',
+  verschieben,
 }: {
   pruefung: Wegpruefung;
   zeitzone: string;
@@ -23,13 +37,33 @@ export function Wegauskunft({
    * `ziehen`: während der Geste - nur die Zeilen, nichts wird vorgelesen.
    */
   variante?: 'formular' | 'rueckfrage' | 'ziehen';
+  /**
+   * Nur im Formular: die Frage, zu der `pruefung` gehört, das Raster der
+   * Praxis und der Weg, den Beginn (`HH:MM`) zu setzen. Ohne Angabe kein
+   * Angebot.
+   */
+  verschieben?:
+    | {
+        frage: Wegfrage;
+        rasterMinuten: number | null;
+        onBeginn: (beginn: string) => void;
+      }
+    | undefined;
 }) {
+  // Nach dem Tipp verschwindet der Knopf; der Fokus bleibt in der Auskunft,
+  // statt an den Seitenanfang zu fallen.
+  const titel = useRef<HTMLParagraphElement>(null);
+
   if (pruefung.stand === 'aus') return null;
 
   const zeilen = inhalt(pruefung, zeitzone);
   const zuKnapp =
     pruefung.stand === 'bereit' &&
     [pruefung.an, pruefung.weiter].some((s) => s.stand === 'geprueft' && s.stufe === 'nicht');
+  const angebot =
+    variante === 'formular' && verschieben
+      ? wegangebot(pruefung, verschieben.frage, verschieben.rasterMinuten)
+      : null;
 
   return (
     <div
@@ -45,25 +79,39 @@ export function Wegauskunft({
       {...(variante === 'ziehen' ? {} : { role: 'status', 'aria-live': 'polite' as const })}
       data-testid="wegauskunft"
     >
-      {variante === 'ziehen' ? null : (
-        <p className={`text-ink font-semibold ${variante === 'formular' ? 'text-sm' : 'text-xs'}`}>
+      {variante === 'ziehen' ? null : variante === 'formular' ? (
+        // Fokussierbar, aber kein Bedienelement - wie die Rückmeldung ohne Rahmen.
+        <p ref={titel} tabIndex={-1} className="text-ink text-sm font-semibold outline-none">
           Passt es?
         </p>
+      ) : (
+        <p className="text-ink text-xs font-semibold">Passt es?</p>
       )}
       {zeilen.map((zeile) => (
-        <p key={zeile.text} className={`text-sm ${farbe[zeile.ton]}`}>
-          {zeile.ton === 'gut' ? (
-            <span aria-hidden="true" className="mr-1.5">
-              ✓
-            </span>
-          ) : zeile.ton === 'knapp' || zeile.ton === 'nicht' ? (
-            <span aria-hidden="true" className="mr-1.5">
-              !
-            </span>
+        <Fragment key={zeile.text}>
+          <p className={`text-sm ${farbe[zeile.ton]}`}>
+            {zeile.ton === 'gut' ? (
+              <span aria-hidden="true" className="mr-1.5">
+                ✓
+              </span>
+            ) : zeile.ton === 'knapp' || zeile.ton === 'nicht' ? (
+              <span aria-hidden="true" className="mr-1.5">
+                !
+              </span>
+            ) : null}
+            {zeile.text}
+            {zeile.detail ? <span className="text-ink-muted"> · {zeile.detail}</span> : null}
+          </p>
+          {angebot && verschieben && zeile.seite === angebot.seite ? (
+            <Angebot
+              angebot={angebot}
+              onBeginn={(beginn) => {
+                verschieben.onBeginn(beginn);
+                titel.current?.focus();
+              }}
+            />
           ) : null}
-          {zeile.text}
-          {zeile.detail ? <span className="text-ink-muted"> · {zeile.detail}</span> : null}
-        </p>
+        </Fragment>
       ))}
       {zuKnapp && variante === 'formular' ? (
         <p className="text-ink-muted text-xs">
@@ -124,6 +172,45 @@ interface Zeile {
   text: string;
   detail?: string;
   ton: Ton;
+  /** Die Seite, von der die Zeile spricht - dort steht ein Angebot. */
+  seite?: 'an' | 'weiter';
+}
+
+/** Der Knopf unter der zu knappen Zeile - oder die Zeile, dass keine Zeit passt. */
+function Angebot({
+  angebot,
+  onBeginn,
+}: {
+  angebot: Wegangebot;
+  onBeginn: (beginn: string) => void;
+}) {
+  if (angebot.art === 'keine_zeit') {
+    const davor = angebot.davor === 'termin' ? 'Termin davor' : 'Arbeitsbeginn';
+    const danach =
+      angebot.danach === 'termin'
+        ? angebot.davor === 'termin'
+          ? 'danach'
+          : 'Termin danach'
+        : 'Arbeitsende';
+    return (
+      <p className="text-ink text-sm">{`Zwischen ${davor} und ${danach} reicht die Zeit nicht.`}</p>
+    );
+  }
+  const beginn = minuteZuZeit(angebot.beginnMinute);
+  return (
+    // Sekundär und kompakt (44 px); am Telefon in voller Breite unter der Zeile.
+    <div className="py-1">
+      <Button
+        type="button"
+        variant="secondary"
+        groesse="kompakt"
+        className="w-full sm:w-auto"
+        onClick={() => onBeginn(beginn)}
+      >
+        {angebot.art === 'verschieben' ? `Auf ${beginn} verschieben` : `Auf ${beginn} vorziehen`}
+      </Button>
+    </div>
+  );
 }
 
 function inhalt(pruefung: Wegpruefung, zeitzone: string): Zeile[] {
@@ -139,10 +226,10 @@ function inhalt(pruefung: Wegpruefung, zeitzone: string): Zeile[] {
     case 'fehler':
       return [{ text: 'Der Fahrweg ließ sich gerade nicht prüfen.', ton: 'still' }];
     case 'bereit': {
-      const zeilen = [
-        seitenzeile('an', pruefung.an, zeitzone),
-        seitenzeile('weiter', pruefung.weiter, zeitzone),
-      ].filter((z): z is Zeile => z !== null);
+      const zeilen = (['an', 'weiter'] as const).flatMap((richtung) => {
+        const zeile = seitenzeile(richtung, pruefung[richtung], zeitzone);
+        return zeile ? [{ ...zeile, seite: richtung }] : [];
+      });
       return zeilen.length > 0
         ? zeilen
         : [{ text: 'Kein Termin mit Ort davor oder danach.', ton: 'still' }];
