@@ -4,7 +4,6 @@ import { FAELLIG_SCHLUESSEL, fetchFaellige, type Bereich } from '@/features/exer
 import { fetchOffeneScans } from '@/features/files/api';
 import { fetchRueckfragen, rueckfragenKey, type Verhaeltnisart } from '@/features/messages/api';
 import {
-  canConcludePatientCare,
   canManageAppointments,
   canManageInvoicing,
   canManageTasks,
@@ -22,12 +21,8 @@ import { CALL_LIST_KEY, fetchCallList, stillToCall } from './call-list-api';
 import { CONSENT_WITHDRAWALS_KEY, fetchConsentWithdrawals } from './consent-withdrawals-api';
 import { OPEN_INTAKES_KEY, fetchOpenIntakes } from './intake-api';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from './platform-requests-api';
-import {
-  ENDING_KEY,
-  IDLE_KEY,
-  fetchCareWithoutConclusion,
-  fetchEndingPrescriptions,
-} from './reminders-api';
+import { ENDING_KEY, fetchEndingPrescriptions } from './reminders-api';
+import { PATIENT_OVERVIEW_KEY, fetchPatientOverview } from '@/features/patients/uebersicht';
 import { TASKS_KEY, fetchTasks } from './tasks-api';
 import { TRAININGSWIDERRUFE_KEY, fetchTrainingswiderrufe } from './training-withdrawals-api';
 
@@ -117,11 +112,15 @@ export const abfragen = {
       retry: false,
       select: (eintraege) => eintraege.filter((e) => e.review_due),
     }),
-  ohneAbschluss: () =>
+  // B1 (BEF-151): Verordnungen, die Termine oder die Abrechnung brauchen -
+  // dieselbe Abfrage wie die Patientenliste, ein Schlüssel.
+  verordnungOffen: () =>
     queryOptions({
-      queryKey: IDLE_KEY,
-      queryFn: fetchCareWithoutConclusion,
+      queryKey: PATIENT_OVERVIEW_KEY,
+      queryFn: fetchPatientOverview,
       retry: false,
+      select: (liste) =>
+        liste.filter((eintrag) => eintrag.bases_need_appointments > 0 || eintrag.bases_ready > 0),
     }),
 };
 
@@ -153,7 +152,7 @@ export function eingangsrechte(user: CurrentUser) {
     verordnungEndet: canReadTreatmentBases(rollen),
     plaene: planBereiche.length > 0,
     warteliste: canManageAppointments(rollen),
-    ohneAbschluss: canConcludePatientCare(rollen),
+    verordnungOffen: canReadTreatmentBases(rollen),
   };
 }
 
@@ -213,7 +212,10 @@ export function useEingang(user: CurrentUser, today: string) {
     retry: false,
   });
   const warteliste = useQuery({ ...abfragen.warteliste(), enabled: darf.warteliste });
-  const ohneAbschluss = useQuery({ ...abfragen.ohneAbschluss(), enabled: darf.ohneAbschluss });
+  const verordnungOffen = useQuery({
+    ...abfragen.verordnungOffen(),
+    enabled: darf.verordnungOffen,
+  });
 
   const anrufeOffen = (anrufe.data ?? []).filter(stillToCall).length;
 
@@ -251,7 +253,7 @@ export function useEingang(user: CurrentUser, today: string) {
         .length,
     },
     { aktiv: darf.warteliste, ...warteliste, anzahl: warteliste.data?.length ?? 0 },
-    { aktiv: darf.ohneAbschluss, ...ohneAbschluss, anzahl: ohneAbschluss.data?.length ?? 0 },
+    { aktiv: darf.verordnungOffen, ...verordnungOffen, anzahl: verordnungOffen.data?.length ?? 0 },
   ];
 
   const sichtbar = gruppen.filter((g) => g.aktiv);

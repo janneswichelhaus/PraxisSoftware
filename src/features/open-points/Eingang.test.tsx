@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import type { OffenerScan } from '@/features/files/api';
 import type { Rueckfragezeile } from '@/features/messages/api';
-import type { CareWithoutConclusion } from './reminders-api';
+import type { Patienteneintrag } from '@/features/patients/uebersicht';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -17,7 +17,7 @@ const leer = () => Promise.resolve([]);
 const fetchRueckfragen = vi.fn<() => Promise<Rueckfragezeile[]>>();
 const fetchOffeneScans = vi.fn<() => Promise<OffenerScan[]>>();
 const fetchOpenIntakes = vi.fn<() => Promise<unknown[]>>();
-const fetchCareWithoutConclusion = vi.fn<() => Promise<CareWithoutConclusion[]>>();
+const fetchPatientOverview = vi.fn<() => Promise<Patienteneintrag[]>>();
 const fetchConsentWithdrawals = vi.fn<() => Promise<unknown[]>>();
 
 vi.mock('@/features/messages/api', async (importOriginal) => ({
@@ -35,7 +35,10 @@ vi.mock('./intake-api', async (importOriginal) => ({
 vi.mock('./reminders-api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchEndingPrescriptions: leer,
-  fetchCareWithoutConclusion: () => fetchCareWithoutConclusion(),
+}));
+vi.mock('@/features/patients/uebersicht', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchPatientOverview: () => fetchPatientOverview(),
 }));
 vi.mock('./consent-withdrawals-api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -103,7 +106,7 @@ beforeEach(() => {
   fetchRueckfragen.mockResolvedValue([]);
   fetchOffeneScans.mockResolvedValue([]);
   fetchOpenIntakes.mockResolvedValue([]);
-  fetchCareWithoutConclusion.mockResolvedValue([]);
+  fetchPatientOverview.mockResolvedValue([]);
   fetchConsentWithdrawals.mockResolvedValue([]);
 });
 
@@ -138,13 +141,29 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
         uploaded_by_name: null,
       },
     ]);
-    fetchCareWithoutConclusion.mockResolvedValue([
+    fetchPatientOverview.mockResolvedValue([
       {
-        patient_id: ERIKA,
-        patient_given_name: 'Erika',
-        patient_family_name: 'Beispiel',
-        last_appointment_at: '2026-02-01T08:00:00.000Z',
-        patient_created_at: '2025-11-01T08:00:00.000Z',
+        id: ERIKA,
+        given_name: 'Erika',
+        family_name: 'Beispiel',
+        date_of_birth: null,
+        email: null,
+        phone: null,
+        postal_code: null,
+        city: null,
+        last_visit_on: '2026-02-01',
+        next_appointment_at: null,
+        open_bases: 1,
+        bases_need_appointments: 1,
+        bases_need_followup: 0,
+        bases_ready: 0,
+        bases_in_billing: 0,
+        billing_visible: false,
+        invoices_issued: null,
+        invoices_paid: null,
+        outstanding_cents: null,
+        invoices_overdue: null,
+        reminders_due: null,
       },
     ]);
     renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
@@ -153,7 +172,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     expect(gruppen()).toEqual([
       'Rückfragen von der Plattform (1)',
       'Verordnungen zu erfassen (1)',
-      'Versorgung abschließen? (1)',
+      'Verordnung offen (1)',
     ]);
     expect(screen.queryByText('Nichts offen')).toBeNull();
   });

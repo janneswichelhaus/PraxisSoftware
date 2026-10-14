@@ -397,7 +397,6 @@ for (const [abstand, anzahl] of [
 
 const patient: Patient = {
   id: '66666666-6666-4666-8666-000000000002',
-  status: 'active',
   care_started_on: '2026-09-01',
   care_concluded_on: null,
   given_name: 'Max',

@@ -79,7 +79,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
   const mutation = useMutation({
     mutationFn: (values: PatientMasterDataValues) => updatePatient(patient.id, values),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['patients'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-overview'] });
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
       // Gespeichert: Der eigene Weg hinaus ist kein Verlust (ANN-046).
       freigeben();

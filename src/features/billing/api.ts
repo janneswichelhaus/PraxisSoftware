@@ -1395,3 +1395,43 @@ export function nachBereichen(zeilen: Einnahmenzeile[]): Bereichssumme[] {
 
   return [...gruppen.values()];
 }
+
+// -----------------------------------------------------------------------------
+// Rechnungen einer Person in der Akte (B1, BEF-151)
+// -----------------------------------------------------------------------------
+
+const rechnungDerAkteSchema = z.object({
+  id: z.string(),
+  status: z.enum(['draft', 'issued']),
+  invoice_number: z.string().nullable(),
+  period_month: z.string(),
+  issued_on: z.string().nullable(),
+  due_on: z.string().nullable(),
+  total_cents: z.number().nullable(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  currency: z.string().nullable(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  overdue: z.boolean(),
+  cancelled: z.boolean(),
+  /** ANN-516: überfällig und keine Zahlungserinnerung mit laufender Frist. */
+  reminder_due: z.boolean(),
+  last_reminder_on: z.string().nullable(),
+  treatment_basis_id: z.string().nullable(),
+});
+
+export type RechnungDerAkte = z.infer<typeof rechnungDerAkteSchema>;
+
+/**
+ * Die Rechnungen einer Person: was abgerechnet ist, was gezahlt wurde und wo
+ * zu mahnen ist. Nur für owner und office (ANN-139); für alle anderen weist
+ * der Server mit einer leeren Liste ab.
+ */
+export async function fetchRechnungenDerAkte(patientId: string): Promise<RechnungDerAkte[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_invoices', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Rechnungen konnten nicht geladen werden.');
+  return z.array(rechnungDerAkteSchema).parse(data ?? []);
+}

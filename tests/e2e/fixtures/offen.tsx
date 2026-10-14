@@ -10,12 +10,8 @@ import { CallListPage } from '@/features/open-points/CallListPage';
 import { OPEN_INTAKES_KEY, type OpenIntake } from '@/features/open-points/intake-api';
 import { OpenPointsPage } from '@/features/open-points/OpenPointsPage';
 import { OPEN_SCANS_KEY, WAITLIST_REVIEW_KEY } from '@/features/open-points/eingang';
-import {
-  ENDING_KEY,
-  IDLE_KEY,
-  type CareWithoutConclusion,
-  type EndingPrescription,
-} from '@/features/open-points/reminders-api';
+import { ENDING_KEY, type EndingPrescription } from '@/features/open-points/reminders-api';
+import { PATIENT_OVERVIEW_KEY, type Patienteneintrag } from '@/features/patients/uebersicht';
 import {
   PLATFORM_REQUESTS_KEY,
   type PlatformRequest,
@@ -221,13 +217,30 @@ const endend: EndingPrescription[] = [
   },
 ];
 
-const ohneAbschluss: CareWithoutConclusion[] = [
+// B1 (BEF-151): eine Verordnung, die Termine braucht - „Verordnung offen“.
+const uebersicht: Patienteneintrag[] = [
   {
-    patient_id: '66666666-6666-4666-8666-000000000004',
-    patient_given_name: 'Paula',
-    patient_family_name: 'Pause',
-    last_appointment_at: '2026-02-12T08:00:00+00:00',
-    patient_created_at: '2025-11-03T08:00:00+00:00',
+    id: '66666666-6666-4666-8666-000000000004',
+    given_name: 'Paula',
+    family_name: 'Pause',
+    date_of_birth: null,
+    email: null,
+    phone: null,
+    postal_code: null,
+    city: null,
+    last_visit_on: '2026-02-12',
+    next_appointment_at: null,
+    open_bases: 1,
+    bases_need_appointments: 1,
+    bases_need_followup: 0,
+    bases_ready: 0,
+    bases_in_billing: 0,
+    billing_visible: false,
+    invoices_issued: null,
+    invoices_paid: null,
+    outstanding_cents: null,
+    invoices_overdue: null,
+    reminders_due: null,
   },
 ];
 
@@ -249,7 +262,7 @@ client.setQueryData(OPEN_SCANS_KEY, scans);
 client.setQueryData(OPEN_INTAKES_KEY, erstaufnahmen);
 client.setQueryData([...CALL_LIST_KEY, MORGEN], anrufe);
 client.setQueryData(ENDING_KEY, endend);
-client.setQueryData(IDLE_KEY, ohneAbschluss);
+client.setQueryData(PATIENT_OVERVIEW_KEY, uebersicht);
 client.setQueryData(['staff-members'], mitarbeitende);
 // ABN-018 (BEF-108): seit über acht Wochen unverändert - zu prüfen.
 const zuPruefen: WaitlistEntry[] = [
@@ -398,7 +411,7 @@ if (ansicht === 'leer') {
     OPEN_INTAKES_KEY,
     [...CALL_LIST_KEY, MORGEN],
     ENDING_KEY,
-    IDLE_KEY,
+    PATIENT_OVERVIEW_KEY,
     WAITLIST_REVIEW_KEY,
     PLATFORM_REQUESTS_KEY,
     rueckfragenKey(null, null, false),

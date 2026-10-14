@@ -22,7 +22,6 @@ function linkZiel(link: HTMLElement): { pfad: string; zurueck: string | null } {
 
 const aktiv: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
-  status: 'active',
   care_started_on: '2026-01-05',
   date_of_birth: '1985-07-19',
   email: 'max.mustermann@example.invalid',
@@ -33,7 +32,6 @@ const aktiv: PatientsApi.Patient = testPatient({
   city: 'Tübingen',
 });
 
-const setPatientStatus = vi.fn();
 const concludePatientCare = vi.fn();
 const reopenPatientCare = vi.fn();
 const setTreatmentTableRequired = vi.fn();
@@ -43,7 +41,6 @@ vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,
-    setPatientStatus: (id: string, status: string) => setPatientStatus(id, status) as Promise<void>,
     concludePatientCare: (id: string, tag?: string) =>
       concludePatientCare(id, tag) as Promise<void>,
     reopenPatientCare: (id: string) => reopenPatientCare(id) as Promise<void>,
@@ -129,10 +126,8 @@ async function meldung(text: RegExp): Promise<HTMLElement> {
  */
 describe('Stammdaten der Akte', () => {
   beforeEach(() => {
-    setPatientStatus.mockReset();
     concludePatientCare.mockReset();
     reopenPatientCare.mockReset();
-    setPatientStatus.mockResolvedValue(undefined);
     concludePatientCare.mockResolvedValue(undefined);
     reopenPatientCare.mockResolvedValue(undefined);
     fetchDatenschutzvermerke.mockReset().mockResolvedValue([]);
@@ -497,19 +492,14 @@ describe('Stammdaten der Akte', () => {
   // Sichtung 13.10.2026, A5: Zerstörendes leise am Ende des Reiters, hinter
   // Rückfragen, Dublette und Betroffenenrechten (DESIGN.md 9.16).
   describe('Beenden am Ende des Reiters', () => {
-    it('stellt Status und Abschluss leise ans Ende, nach den Betroffenenrechten', () => {
+    it('stellt den Abschluss leise ans Ende, nach den Betroffenenrechten', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />);
 
       const beenden = screen.getByRole('heading', { name: 'Beenden' }).closest('section')!;
-      const status = within(beenden).getByRole('button', {
-        name: 'Nicht mehr in Versorgung führen',
-      });
       const abschluss = within(beenden).getByRole('button', { name: 'Versorgung abschließen' });
       // Leise: kein gefüllter und kein umrandeter Knopf.
-      for (const knopf of [status, abschluss]) {
-        expect(knopf).not.toHaveClass('bg-accent');
-        expect(knopf).not.toHaveClass('border-line-strong');
-      }
+      expect(abschluss).not.toHaveClass('bg-accent');
+      expect(abschluss).not.toHaveClass('border-line-strong');
       // Nicht mehr in der Verwaltung, und nach allem anderen im Reiter.
       const verwaltung = screen.getByRole('heading', { name: 'Verwaltung' }).closest('section')!;
       expect(within(verwaltung).queryByRole('button', { name: /Versorgung/ })).toBeNull();
@@ -520,17 +510,14 @@ describe('Stammdaten der Akte', () => {
       expect(beenden.nextElementSibling).toBeNull();
     });
 
-    it('lässt das Zurücknehmen in der Verwaltung', () => {
+    it('lässt das Zurücknehmen des Abschlusses in der Verwaltung', () => {
       renderWithProviders(
         <Stammdaten
-          patient={{ ...aktiv, status: 'inactive', care_concluded_on: '2026-03-12' }}
+          patient={{ ...aktiv, care_concluded_on: '2026-03-12' }}
           user={testUser(['owner'])}
         />,
       );
       const verwaltung = screen.getByRole('heading', { name: 'Verwaltung' }).closest('section')!;
-      expect(
-        within(verwaltung).getByRole('button', { name: 'Wieder in Versorgung führen' }),
-      ).toBeInTheDocument();
       expect(
         within(verwaltung).getByRole('button', { name: 'Abschluss zurücknehmen' }),
       ).toBeInTheDocument();
@@ -539,13 +526,17 @@ describe('Stammdaten der Akte', () => {
     });
   });
 
-  describe('Versorgungsstatus', () => {
-    it.each([['owner'], ['team_lead'], ['office']] as const)('zeigt %s die Aktion', (role) => {
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
-      expect(
-        screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
-      ).toBeInTheDocument();
-    });
+  // B1 (BEF-151): „Nicht in Versorgung“ ist entfallen - für keine Rolle gibt
+  // es den Umschalter noch, und der Server kennt ihn nicht mehr.
+  describe('Kein Versorgungsstatus mehr', () => {
+    it.each([['owner'], ['team_lead'], ['office'], ['therapist']] as const)(
+      'zeigt %s keinen Umschalter',
+      (role) => {
+        renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
+        expect(screen.queryByRole('button', { name: /in Versorgung führen/ })).toBeNull();
+        expect(screen.queryByText(/nicht in Versorgung/i)).toBeNull();
+      },
+    );
 
     // UX-005e: Kein erklärender Satz unter „Verwaltung" - was ein Vorgang tut,
     // sagt seine Rückfrage.
@@ -554,94 +545,6 @@ describe('Stammdaten der Akte', () => {
       expect(screen.getByText('Verwaltung')).toBeInTheDocument();
       expect(screen.queryByText(/rücknehmbar\./)).not.toBeInTheDocument();
       expect(screen.queryByText(/aus dem laufenden Betrieb/)).not.toBeInTheDocument();
-    });
-
-    it('blendet die Aktion fuer therapist aus, obwohl die Akte lesbar ist', () => {
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
-
-      expect(screen.getByRole('heading', { name: 'Person' })).toBeInTheDocument();
-      expect(
-        screen.queryByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
-      ).not.toBeInTheDocument();
-    });
-
-    it('schreibt erst nach der Rueckfrage', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-
-      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
-      expect(setPatientStatus).not.toHaveBeenCalled();
-
-      const buttons = screen.getAllByRole('button', { name: 'Nicht mehr in Versorgung führen' });
-      await user.click(buttons[buttons.length - 1]!);
-
-      await waitFor(() => expect(setPatientStatus).toHaveBeenCalledWith(PATIENT_ID, 'inactive'));
-    });
-
-    it('verwirft die Rueckfrage bei Abbrechen ohne Schreibvorgang', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-
-      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
-      await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
-
-      expect(setPatientStatus).not.toHaveBeenCalled();
-      expect(screen.queryByRole('button', { name: 'Abbrechen' })).not.toBeInTheDocument();
-    });
-
-    it('bietet einem inaktiven Datensatz die Reaktivierung an', async () => {
-      const user = userEvent.setup();
-      renderWithProviders(
-        <Stammdaten patient={{ ...aktiv, status: 'inactive' }} user={testUser(['office'])} />,
-      );
-
-      await user.click(screen.getByRole('button', { name: 'Wieder in Versorgung führen' }));
-      const buttons = screen.getAllByRole('button', { name: 'Wieder in Versorgung führen' });
-      await user.click(buttons[buttons.length - 1]!);
-
-      await waitFor(() => expect(setPatientStatus).toHaveBeenCalledWith(PATIENT_ID, 'active'));
-    });
-
-    it('loest bei doppeltem Klick nur einen Schreibvorgang aus', async () => {
-      const user = userEvent.setup();
-      let aufloesen: () => void = () => undefined;
-      setPatientStatus.mockImplementation(
-        () =>
-          new Promise<void>((resolve) => {
-            aufloesen = resolve;
-          }),
-      );
-
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
-      const buttons = screen.getAllByRole('button', { name: 'Nicht mehr in Versorgung führen' });
-      await user.click(buttons[buttons.length - 1]!);
-
-      const laufend = await screen.findByRole('button', { name: 'Wird geändert …' });
-      await user.click(laufend);
-
-      expect(setPatientStatus).toHaveBeenCalledTimes(1);
-
-      aufloesen();
-      await waitFor(() =>
-        expect(screen.queryByRole('button', { name: 'Wird geändert …' })).not.toBeInTheDocument(),
-      );
-      expect(setPatientStatus).toHaveBeenCalledTimes(1);
-    });
-
-    it('meldet einen fehlgeschlagenen Statuswechsel ohne interne Details', async () => {
-      const user = userEvent.setup();
-      setPatientStatus.mockRejectedValue(new Error('boom'));
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-
-      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
-      const buttons = screen.getAllByRole('button', { name: 'Nicht mehr in Versorgung führen' });
-      await user.click(buttons[buttons.length - 1]!);
-
-      expect(
-        await screen.findByText('Der Versorgungsstatus konnte nicht geändert werden.'),
-      ).toBeInTheDocument();
-      expect(screen.queryByText('boom')).not.toBeInTheDocument();
     });
   });
 
