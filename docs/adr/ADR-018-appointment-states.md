@@ -32,11 +32,19 @@ eine Absage; die Verlegung nennt deshalb, wer sie veranlasst hat. Neu ist
 Nr. 6, der bewusste Verzicht auf eine Gebühr als eigener Vermerk. Umsetzung
 ABN-006. Alles Übrige gilt unverändert.
 
+**Fassung 5 (2026-10-14)** — nach den Befunden B4 und B7 des Projektinhabers
+(BEF-154, BEF-157): Am Behandlungstermin ist der **Haken** ein Merkmal neben
+dem Zustand (Punkt 10 neu). Die Finalisierung hakt nicht mehr ab; das kehrt
+den Zusatz „setzt `completed_at` mit" aus Fassung 3 in Punkt 2 für den
+Behandlungstermin um — eine ausdrückliche Umkehr eines einzelnen Punktes durch
+den Projektinhaber, der alte Wortlaut bleibt in der Tabelle lesbar. Punkt 9
+Nr. 2 trägt dazu einen Vermerk. Alles Übrige gilt unverändert.
+
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
 
 ## Datum
 
-2026-09-11 · Fassung 2: 2026-09-12 · Fassung 3: 2026-09-13 · Fassung 4: 2026-10-02
+2026-09-11 · Fassung 2: 2026-09-12 · Fassung 3: 2026-09-13 · Fassung 4: 2026-10-02 · Fassung 5: 2026-10-14
 
 ## Kontext
 
@@ -115,7 +123,9 @@ freien Statuswechsel über die Tabelle.
 | `confirmed` | `no_show` | `record_no_show` (Ausfallhonorar-Kennzeichen) | Terminverwaltung |
 | `confirmed` | `completed` | `complete_appointment`, auch aus `complete_treatment` | therapeutische Rollen |
 | `completed` | `documented` | Finalisierung der Dokumentation (ADR-016) | derselbe Vorgang, dieselbe Transaktion |
-| `confirmed` | `documented` | Finalisierung der Dokumentation eines noch nicht abgeschlossenen Termins, auch automatisch nach ADR-016 Punkt 7; setzt `completed_at` mit (**Fassung 3**, aus ANN-036) | derselbe Vorgang, dieselbe Transaktion |
+| `confirmed` | `documented` | Finalisierung der Dokumentation eines noch nicht abgeschlossenen Termins, auch automatisch nach ADR-016 Punkt 7; setzt `completed_at` am Trainingstermin mit (**Fassung 3**, aus ANN-036), am Behandlungstermin seit **Fassung 5** nicht mehr (Punkt 10). *Fassung 3 lautete: „setzt `completed_at` mit"* | derselbe Vorgang, dieselbe Transaktion |
+| `documented` ohne Haken | `documented` mit Haken | `complete_appointment` am Behandlungstermin (**Fassung 5**, Punkt 10) | therapeutische Rollen |
+| `documented` mit Haken | `documented` ohne Haken | `reopen_appointment` am Behandlungstermin (**Fassung 5**, Punkt 10) | therapeutische Rollen |
 | `completed` | `confirmed` | `reopen_appointment` | therapeutische Rollen |
 | `no_show` | `confirmed` | `reopen_appointment` | therapeutische Rollen |
 | `documented` | `invoiced` | Ausstellung der Rechnung (ABR-003) | derselbe Vorgang, dieselbe Transaktion |
@@ -310,6 +320,9 @@ Daraus folgen vier Festlegungen:
    Zuschnitt CAL-018 festlegt — kein Freitext als einzige Quelle). Damit
    entsteht `documented`, und die Rechnung folgt dem regulären Weg aus Punkt 2.
    Eine Ausfallgebühr entsteht nicht; `fee_basis` bleibt leer.
+   *(Fassung 5: `complete_treatment` dokumentiert nur noch; abgehakt wird
+   getrennt nach Punkt 10, und mit dem Haken entsteht die Leistung wie an
+   jedem Behandlungstermin — normal abgerechnet, ADR-009 Punkt 24.)*
 3. **Die Oberfläche führt erklärend durch die drei Szenarien** — welcher Fall
    vorliegt, was daraus folgt, welche Angabe fehlt. Die Erklärung ist
    Bedienhilfe, keine Auswertung; sie wertet nichts je Person aus (§20).
@@ -323,6 +336,37 @@ Hausbesuchstermin die Bestätigung des Protokolls und setzt daraufhin
 `treatment_notes.visit_without_treatment`, gesetzt im Abschluss. Für Praxis-
 und Videotermine trifft E14 keine Aussage; dort bleibt es beim Vermerk ohne
 Gebühr (ANN-055, Wiedervorlage bei Jannes).
+
+### 10. Der Haken am Behandlungstermin
+
+**Neu in Fassung 5 (2026-10-14).** Der Projektinhaber hat festgelegt (B4, B7):
+
+> Dokumentieren und Abhaken sind getrennt. Eine festgeschriebene Doku hakt den
+> Termin nicht ab; abgehakt wird in der Übersicht oder im Kalender, und dort
+> lässt es sich jederzeit rückgängig machen. Der Haken heißt: Leistung
+> erbracht.
+
+Daraus folgen fünf Festlegungen:
+
+1. **Der Haken ist ein Merkmal, kein neunter Zustand.** Am Behandlungstermin
+   tragen `completed_at` und `completed_by` den Haken. `completed` bleibt
+   „abgehakt, noch nicht dokumentiert"; ein `documented` Termin steht mit
+   oder ohne Haken.
+2. **Die Finalisierung setzt den Haken nicht** ([ADR-016](ADR-016-clinical-documentation-record.md)
+   Punkt 4); sie hebt wie bisher auf `documented` (Punkt 3).
+3. **Zurücknehmen geht jederzeit:** aus `completed` nach `confirmed` wie
+   bisher, an `documented` nur das Merkmal — `documented` kehrt nicht nach
+   `confirmed` zurück (Punkt 2). Wer und wann stehen in `reopened_by` und
+   `reopened_at`.
+4. **Mit dem Haken entsteht die Leistung, mit der Rücknahme fällt sie**
+   ([ADR-009](ADR-009-private-billing-model.md) Punkt 24), solange keine
+   Rechnung und kein Rechnungsentwurf sie führt; sonst hält der Vorgang an.
+   Ist die Grundlage in die Abrechnung gestellt, ist der Haken gesperrt
+   ([ADR-020](ADR-020-treatment-basis.md) Punkt 9).
+5. **Am Trainingstermin bleibt es beim Bisherigen** (ADR-022 Punkt 6,
+   ANN-036): Das Protokoll schließt die Einheit mit ab.
+
+Umsetzung: ANN-512 in `supabase/migrations/20261112120000_a_003_haken_als_merkmal.sql`.
 
 ## Konsequenzen
 
@@ -414,3 +458,4 @@ hier die Abwägung und nicht nur das Ergebnis.
 | 2 | 2026-09-12 | Punkt 8 neu (24-Stunden-Frist, Eingang der Absage, nur Patientenabsage); Punkt 4 neu gefasst (Pflichtentscheidung beim Nichtantreffen entfällt) — eine Umkehr von Frage 6. |
 | 3 | 2026-09-13 | Punkt 9 neu (Hausbesuch-Szenarien, E14 erledigt): Nichtantreffen nach Protokoll setzt `no_show` als Gebührenanlass; „Tür geöffnet, keine Behandlung" gilt als durchgeführt mit Pflichtvermerk. Punkt 8 Nr. 5 aufgehoben, Punkt 4 auf zwei Anlässe berichtigt. Korrekturen aus dem Audit: `confirmed → documented` (ANN-036) und Storno-Rückweg nach `cancelled` in der Tabelle; Klarstellung zu „endgültig". Umsetzung CAL-018. Punkte 1, 3, 5–7 unverändert. |
 | 4 | 2026-10-02 | Punkt 8 Nr. 4 neu (Verlegung durch die Patient:in löst aus, `patient_moved`/`practice_moved`), Nr. 6 neu (Verzicht als eigener Vermerk). Umsetzung ABN-006, BEF-094. |
+| 5 | 2026-10-14 | Punkt 10 neu (Haken als Merkmal am Behandlungstermin, jederzeit zurücknehmbar, Leistung mit dem Haken; B4, B7). Umkehr in Punkt 2: Die Finalisierung setzt `completed_at` am Behandlungstermin nicht mehr; zwei Zeilen für den Haken am `documented` Termin. Vermerk an Punkt 9 Nr. 2. Übrige Punkte unverändert. |
