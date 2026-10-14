@@ -15,9 +15,12 @@ const ANLEGEN = `${BEGRIFFE.patientIn} anlegen`;
  */
 export function PatientsListPage() {
   const [parameter] = useSearchParams();
-  // Die Akte führt zurück in genau diese Ansicht - mit Suche, Sortierung und
-  // Auswahl (PAT-08, UX-012). Ohne Parameter braucht es keinen Rückweg.
-  const stand = parameter.toString();
+  // Die Akte führt zurück in genau diese Ansicht - mit Sortierung und Auswahl
+  // (PAT-08, UX-012); den Suchbegriff merkt sich die Liste im Arbeitsspeicher,
+  // nie in der Adresse (ADR-011). Ohne Parameter braucht es keinen Rückweg.
+  const ohneBegriff = new URLSearchParams(parameter);
+  ohneBegriff.delete('q');
+  const stand = ohneBegriff.toString();
   const rueckweg = stand ? `/patienten?${stand}` : null;
 
   return (
@@ -27,7 +30,7 @@ export function PatientsListPage() {
         actions={<ButtonLink to="/patienten/neu">{ANLEGEN}</ButtonLink>}
       />
       <Patientenauswahl
-        sucheInAdresse
+        begriffMerken
         ziel={(id) => mitRueckweg(`/patienten/${id}`, rueckweg)}
         leer={{
           titel: 'Noch keine Patient:innen',
