@@ -50,6 +50,9 @@ async function hoehe(knopf: Locator): Promise<number> {
 test.describe('Übungspläne', () => {
   for (const breite of [375, 1280]) {
     test(`Entwurf mit Auswahlblatt und Dosierung bei ${breite} px`, async ({ page }) => {
+      // Das Auswahlblatt lädt den Katalog (eigener Teil des Builds), dazu
+      // zweimal axe: Beim ersten Aufruf übersetzt der Entwicklungsserver ihn.
+      test.slow();
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(PRUEFSEITE);
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Heimprogramm Knie');
@@ -472,21 +475,33 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
-  test('aus Vorlage: höchstens 8 Tipps, ohne Tastatur', async ({ page }) => {
+  test('aus Vorlage mit Vorschau: höchstens 5 Tipps, ohne Tastatur (K12)', async ({ page }) => {
+    // Dreizehn Aufrufe an den Nachbau, dazu axe: bei voller Maschine länger.
+    test.slow();
     const nachbau = await mitNachbau(page);
     const z = new Zaehler();
     await page.goto(`${PRUEFSEITE}?seite=planbau`);
     await z.tippe(page.getByRole('button', { name: 'Neuer Plan' }));
-    await z.tippe(page.getByRole('button', { name: 'Aus Vorlage' }));
-    await z.tippe(
-      page.getByRole('dialog', { name: 'Aus Vorlage' }).getByRole('button', {
-        name: /Knie im Sitz \(Prüfvorlage\)/,
-      }),
-    );
-    await expect(page.getByText(/5 Übungen hinzugefügt aus „Knie im Sitz/)).toBeVisible();
+    // Im leeren Entwurf stehen die Vorlagen gleich als Zeilen (Befund B9).
+    await z.tippe(page.getByRole('button', { name: /Knie im Sitz \(Prüfvorlage\)/ }));
+    const vorschau = page.getByRole('dialog', { name: 'Knie im Sitz (Prüfvorlage)' });
+    // Alle vorgewählt - auch die Übung, die der Praxis noch fehlt.
+    await expect(vorschau.getByRole('checkbox')).toHaveCount(6);
+    for (const haken of await vorschau.getByRole('checkbox').all()) {
+      await expect(haken).toBeChecked();
+    }
+    for (const zeile of await vorschau.locator('label').all()) {
+      expect(await hoehe(zeile)).toBeGreaterThanOrEqual(44);
+    }
+    expect(await ueberlaeuft(page)).toBe(false);
+    expect(await axeVerstoesse(page)).toEqual([]);
+    await z.tippe(vorschau.getByRole('button', { name: '6 hinzufügen' }));
+    await expect(page.getByText(/6 Übungen hinzugefügt aus „Knie im Sitz/)).toBeVisible({
+      timeout: 15_000,
+    });
     await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
     await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
-    await expect(page.getByRole('link', { name: 'Als PDF oder drucken' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Als PDF oder drucken' }).first()).toBeVisible();
 
     const plan = [...nachbau.plaene.values()][0]!;
     expect(plan.status).toBe('assigned');
@@ -496,12 +511,18 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
       'v-KN-03',
       'v-KN-05',
       'v-KN-06',
+      'v-AF-01',
     ]);
+    // Was der Praxis fehlte, kam still dazu.
+    expect(nachbau.uebernommen).toEqual(['AF-01']);
     // Der leere Entwurf heißt danach wie die Vorlage.
     expect(plan.title).toBe('Knie im Sitz (Prüfvorlage)');
+    // Vorher (bis Befund B9): 5 Tipps ohne Wahl, wenn alles in der Bibliothek
+    // stand; fehlte etwas, für owner 6 Tipps mit allem, für die Therapeut:in
+    // nur eine Warnung.
     test.info().annotations.push({ type: 'Tipps', description: `${z.tipps} Tipps, keine Eingabe` });
     expect(z.tipps).toBe(5);
-    expect(z.tipps).toBeLessThanOrEqual(8);
+    expect(z.tipps).toBeLessThanOrEqual(5);
     expect(z.eingaben).toBe(0);
     expect(await ueberlaeuft(page)).toBe(false);
   });

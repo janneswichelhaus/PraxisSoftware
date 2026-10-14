@@ -737,86 +737,122 @@ describe('Eine Übungsliste: Bibliothek und Katalog (Befund B9, ANN-536)', () =>
   });
 });
 
-describe('Aus Vorlage (Welle B)', () => {
-  it('blendet „Aus Vorlage“ aus, solange es keine Vorlage gibt', async () => {
+describe('Aus Vorlage mit Vorschau (Welle B, Befund B9, ANN-537)', () => {
+  const name = (n: string) => (zugaenglich: string) => zugaenglich.startsWith(n);
+  const KN03 = katalogeintrag('KN-03')!;
+
+  it('blendet Vorlagen aus, solange es keine gibt', async () => {
     fetchPlan.mockResolvedValue(plan({ items: [] }));
     planseite([]);
     expect(await screen.findByText('Noch keine Übung')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Aus Vorlage' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Aus Vorlage' })).not.toBeInTheDocument();
   });
 
-  it('fügt die Übungen einer Vorlage über den Katalogschlüssel hinzu und nennt, was fehlt', async () => {
+  it('zeigt im leeren Entwurf die Vorlagen gleich als Zeilen, nach Name', async () => {
+    fetchPlan.mockResolvedValue(plan({ items: [] }));
+    planseite(VORLAGEN);
+    expect(await screen.findByRole('heading', { name: 'Aus Vorlage' })).toBeInTheDocument();
+    const zeilen = screen
+      .getAllByRole('button')
+      .filter((k) => /Übung(en)? · /.test(k.textContent ?? ''))
+      .map((k) => k.textContent);
+    expect(zeilen).toEqual([
+      'Arme im Sitz1 Übung · Kraft der Arme',
+      'Knie im Sitz4 Übungen · Kraft und Beweglichkeit im Sitz',
+    ]);
+    // Mit Übungen im Plan steht die Liste hinter „Aus Vorlage“.
+    expect(screen.queryByRole('button', { name: 'Aus Vorlage' })).not.toBeInTheDocument();
+  });
+
+  it('zeigt die Übungen der Vorlage mit Haken - alle vorgewählt, archivierte ohne Haken', async () => {
     const user = userEvent.setup();
     fetchPlan.mockResolvedValue(plan({ items: [], title: 'Übungsplan' }));
     planseite(VORLAGEN);
-    await user.click(await screen.findByRole('button', { name: 'Aus Vorlage' }));
-    const fenster = screen.getByRole('dialog', { name: 'Aus Vorlage' });
-    await user.click(within(fenster).getByRole('button', { name: /Knie im Sitz/ }));
+    await user.click(await screen.findByRole('button', { name: /^Knie im Sitz/ }));
+    const vorschau = await screen.findByRole('dialog', { name: 'Knie im Sitz' });
+    const haken = within(vorschau).getAllByRole('checkbox');
+    expect(haken.map((k) => (k as HTMLInputElement).checked)).toEqual([true, true, true]);
+    // Aus der Bibliothek, mit der Dosierung der Vorlage.
+    expect(
+      within(vorschau).getByRole('checkbox', { name: name('Kniebeugung im Sitz') }),
+    ).toHaveAccessibleName(/1 × 8/);
+    // Fehlt der Praxis: steht trotzdem zur Wahl, ungeprüft.
+    expect(within(vorschau).getByRole('checkbox', { name: name(KN03.name) })).toHaveAccessibleName(
+      /ungeprüft/,
+    );
+    // Archiviert: ohne Haken, mit Wort.
+    const archiviert = within(vorschau).getByText('Passive Kniestreckung').closest('li')!;
+    expect(within(archiviert).queryByRole('checkbox')).toBeNull();
+    expect(within(archiviert).getByText('archiviert')).toBeInTheDocument();
+    expect(within(vorschau).getByRole('button', { name: '3 hinzufügen' })).toBeEnabled();
+    // Die alte Warnung und der Knopf für owner sind weg.
+    expect(screen.queryByText(/Nicht in der Bibliothek der Praxis/)).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Aus dem Katalog übernehmen und hinzufügen' }),
+    ).toBeNull();
+  });
+
+  it('fügt die gewählten hinzu, übernimmt still, was fehlt, und benennt den Entwurf', async () => {
+    const user = userEvent.setup();
+    addCatalogExercises.mockResolvedValue({
+      variants: { 'KN-03': 'k3-neu' },
+      imported: ['KN-03'],
+      conflicts: [],
+    });
+    fetchPlan.mockResolvedValue(plan({ items: [], title: 'Übungsplan' }));
+    planseite(VORLAGEN);
+    await user.click(await screen.findByRole('button', { name: /^Knie im Sitz/ }));
+    const vorschau = await screen.findByRole('dialog', { name: 'Knie im Sitz' });
+    // Einzeln wählbar: eine heraus.
+    await user.click(
+      within(vorschau).getByRole('checkbox', { name: name('Kniestreckung im Sitz') }),
+    );
+    await user.click(within(vorschau).getByRole('button', { name: '2 hinzufügen' }));
 
     await waitFor(() => expect(savePosition).toHaveBeenCalledTimes(2));
+    expect(
+      (addCatalogExercises.mock.calls[0]![1] as Katalogeintrag[]).map((e) => e.schluessel),
+    ).toEqual(['KN-03']);
+    // In der Reihenfolge der Vorlage; die Dosierung der Vorlage geht vor.
     expect(savePosition.mock.calls[0]![0]).toEqual(
-      expect.objectContaining({ variantId: 'k1', saetze: 3, halten: 3, jeSeite: true, amTag: 1 }),
-    );
-    // Die Dosierung der Vorlage geht der Standarddosierung vor.
-    expect(savePosition.mock.calls[1]![0]).toEqual(
       expect.objectContaining({ variantId: 'k2', saetze: 1, wdhVon: 8, wdhBis: 8, amTag: null }),
+    );
+    expect(savePosition.mock.calls[1]![0]).toEqual(
+      expect.objectContaining({ variantId: 'k3-neu' }),
     );
     // Ein leerer Entwurf heißt danach wie die Vorlage.
     await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Knie im Sitz', 3));
     expect(
       await screen.findByText('2 Übungen hinzugefügt aus „Knie im Sitz“.'),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByText(
-        'Nicht in der Bibliothek der Praxis: Fußgleiten im Sitz. Übernehmen kann die Praxisinhaber:in.',
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('In der Bibliothek archiviert: Passive Kniestreckung, Ferse hochgelagert.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Aus dem Katalog übernehmen und hinzufügen' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('bietet owner an, was fehlt, aus dem Katalog zu übernehmen und hinzuzufügen (ANN-385)', async () => {
+  it('wählt nicht vor, was schon im Plan steht, und öffnet die Liste mit Übungen über „Aus Vorlage“', async () => {
     const user = userEvent.setup();
-    const KN03 = variante('k3', 'Fußgleiten im Sitz', 'Fuß auf dem Handtuch', {
-      catalog_key: 'KN-03',
-    });
-    const mitPflege = { ...BIBLIOTHEK, can_manage: true };
-    fetchBibliothek.mockResolvedValueOnce(mitPflege).mockResolvedValue({
-      ...mitPflege,
-      exercises: [
-        ...mitPflege.exercises,
-        {
-          id: 'u9',
-          name: 'Fußgleiten im Sitz',
-          lay_name: 'Fuß auf dem Handtuch',
-          body_region: 'knie',
-          archived: false,
-          variants: [KN03],
-        },
-      ],
-    });
+    fetchPlan.mockResolvedValue(
+      plan({ items: [position({ variant_id: 'k1', variant_name: 'Kniestreckung im Sitz' })] }),
+    );
     planseite(VORLAGEN);
     await user.click(await screen.findByRole('button', { name: 'Aus Vorlage' }));
-    await user.click(screen.getByRole('button', { name: /Knie im Sitz/ }));
     await user.click(
-      await screen.findByRole('button', { name: 'Aus dem Katalog übernehmen und hinzufügen' }),
+      within(screen.getByRole('dialog', { name: 'Aus Vorlage' })).getByRole('button', {
+        name: /^Knie im Sitz/,
+      }),
     );
-    await waitFor(() => expect(importiereKatalog).toHaveBeenCalledTimes(1));
-    const uebernommen = importiereKatalog.mock.calls[0]![0] as { schluessel: string }[];
-    expect(uebernommen.map((e) => e.schluessel)).toEqual(['KN-03']);
-    await waitFor(() =>
-      expect(savePosition).toHaveBeenCalledWith(expect.objectContaining({ variantId: 'k3' })),
-    );
-    expect(
-      await screen.findByText(/1 Übung übernommen und hinzugefügt\. Sie gelten bis zur Durchsicht/),
-    ).toBeInTheDocument();
+    const vorschau = await screen.findByRole('dialog', { name: 'Knie im Sitz' });
+    const kn01 = within(vorschau).getByRole('checkbox', { name: name('Kniestreckung im Sitz') });
+    expect(kn01).not.toBeChecked();
+    expect(kn01).toHaveAccessibleName(/schon im Plan/);
+    expect(within(vorschau).getByRole('button', { name: '2 hinzufügen' })).toBeEnabled();
+    // Ohne Plan zu verändern, wieder zu.
+    await user.click(within(vorschau).getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(savePosition).not.toHaveBeenCalled();
   });
 
-  it('liest für die Vorlagenliste nie Angaben der Person (ADR-006 Punkt 10)', async () => {
+  it('liest für Vorlagen und Vorschau nie Angaben der Person (ADR-006 Punkt 10)', async () => {
     // Die Liste bekommt nur die Vorlagen - sie entsteht ohne Plan und ohne Person …
     const ohnePerson = renderWithProviders(
       <Vorlagenauswahl
@@ -835,9 +871,10 @@ describe('Aus Vorlage (Welle B)', () => {
     expect(allein[1]).toContain('Knie im Sitz');
     ohnePerson.unmount();
 
-    // … und am Plan zweier verschiedener Personen gleich.
+    // … und am Plan zweier verschiedener Personen gleich - Liste wie Vorschau.
     const user = userEvent.setup();
     const gesehen: (string | null)[][] = [];
+    const vorgewaehlt: (string | null)[][] = [];
     for (const person of [
       plan({ given_name: 'Erika', family_name: 'Beispiel', title: 'Knie nach Operation' }),
       plan({
@@ -852,10 +889,23 @@ describe('Aus Vorlage (Welle B)', () => {
       const seite = planseite(VORLAGEN);
       await user.click(await screen.findByRole('button', { name: 'Aus Vorlage' }));
       gesehen.push(zeilen());
+      await user.click(
+        within(screen.getByRole('dialog', { name: 'Aus Vorlage' })).getByRole('button', {
+          name: /^Knie im Sitz/,
+        }),
+      );
+      const vorschau = await screen.findByRole('dialog', { name: 'Knie im Sitz' });
+      vorgewaehlt.push(
+        within(vorschau)
+          .getAllByRole('checkbox')
+          .filter((k) => (k as HTMLInputElement).checked)
+          .map((k) => k.closest('label')?.textContent ?? null),
+      );
       seite.unmount();
     }
     expect(gesehen[0]).toEqual(allein);
     expect(gesehen[1]).toEqual(allein);
+    expect(vorgewaehlt[1]).toEqual(vorgewaehlt[0]);
     // Keine Abfrage zur Person außer dem Plan selbst.
     expect(fetchPlanliste).not.toHaveBeenCalled();
   });

@@ -5174,3 +5174,15 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `public.add_catalog_exercises_for_plan` in `supabase/migrations/20261116100000_o_002_uebungsplan_katalog_und_stand.sql`.
 
 **Änderungspfad.** Wieder nur owner: Funktion entfernen, Auswahl auf die Bibliothek beschränken · Aufwand `klein`.
+
+### ANN-537 — Eine Vorlage zeigt ihre Übungen als Vorschau, alle vorgewählt
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Ein Tipp auf eine Vorlage zeigt ihre Übungen mit Haken, vorgewählt ist alles außer dem, was schon im Plan steht; Archiviertes steht ohne Haken mit Wort. Was der Praxis fehlt, kommt still mit (ANN-536). Im leeren Entwurf stehen die Vorlagen gleich auf der Seite: Plan aus Vorlage zuweisen in fünf Tipps.
+
+**Begründung.** Befund B9: einzeln wählbar, kein unerwartetes Übertragen. Die Vorauswahl ist der Inhalt der Vorlage, für jede Person gleich (ADR-006 Punkt 10).
+
+**Anker.** `vorausgewaehlt` in `src/features/exercise-plans/vorlagen.ts`.
+
+**Änderungspfad.** Nichts vorwählen: `vorausgewaehlt` liefert eine leere Liste · Aufwand `klein`.

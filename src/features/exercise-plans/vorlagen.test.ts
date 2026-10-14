@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Bibliothek, Variante } from '@/features/exercises/api';
+import { katalogeintrag } from '@/features/exercises/katalog';
 import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
 import { KATALOG_VORLAGEN } from '@/features/exercises/katalog/vorlagen';
 import { OHNE_KATALOG } from '@/features/exercises/testdaten';
 import { OHNE_STANDARD } from './hinzufuegen';
-import { ausVorlage, vorlagenListe } from './vorlagen';
+import { vorausgewaehlt, vorlagenListe, vorlagenZeilen, type Vorlagenzeile } from './vorlagen';
 
 /**
  * „Aus Vorlage" (Welle B): Vorlagenliste und Übernahme über den
@@ -120,6 +121,7 @@ describe('Vorlagenliste (ADR-006 Punkt 10)', () => {
     for (const datei of [
       'src/features/exercise-plans/vorlagen.ts',
       'src/features/exercise-plans/Vorlagenauswahl.tsx',
+      'src/features/exercise-plans/Vorlagenvorschau.tsx',
       'src/features/exercise-plans/Uebungsauswahl.tsx',
       'src/features/exercises/suche.ts',
     ]) {
@@ -134,14 +136,28 @@ describe('Vorlagenliste (ADR-006 Punkt 10)', () => {
   });
 });
 
-describe('Übungen aus einer Vorlage (Katalogschlüssel → Variante der Praxis)', () => {
-  it('findet die Varianten in der Reihenfolge der Vorlage, mit der Dosierung der Vorlage oder der Standarddosierung', () => {
-    const stand = ausVorlage(VORLAGE, BIBLIOTHEK);
-    expect(stand.positionen.map((p) => p.variante.id)).toEqual(['b', 'a']);
-    expect(stand.positionen[0]!.dosis).toEqual(
+describe('Vorschau einer Vorlage (Befund B9, ANN-537)', () => {
+  const KN09 = katalogeintrag('KN-09')!;
+  const katalog = [KN09, katalogeintrag('KN-02')!];
+  const zeilen = vorlagenZeilen(VORLAGE, BIBLIOTHEK, katalog);
+  const art = (z: Vorlagenzeile) =>
+    z.art === 'waehlbar' ? (z.eintrag ? 'katalog' : z.variante.id) : 'archiviert';
+
+  it('nimmt die Übungen in der Reihenfolge der Vorlage: Bibliothek, archiviert, Katalog', () => {
+    expect(zeilen.map((z) => [z.schluessel, art(z)])).toEqual([
+      ['KN-02', 'b'],
+      ['KN-01', 'a'],
+      ['KN-03', 'archiviert'],
+      ['KN-09', 'katalog'],
+    ]);
+  });
+
+  it('nimmt die Dosierung der Vorlage, sonst die Standarddosierung', () => {
+    const [kn02, kn01] = zeilen as Extract<Vorlagenzeile, { art: 'waehlbar' }>[];
+    expect(kn02!.dosis).toEqual(
       expect.objectContaining({ sets: 4, reps_min: 8, reps_max: 12, hold_seconds: 2 }),
     );
-    expect(stand.positionen[1]!.dosis).toEqual(
+    expect(kn01!.dosis).toEqual(
       expect.objectContaining({
         sets: 2,
         reps_min: null,
@@ -150,16 +166,32 @@ describe('Übungen aus einer Vorlage (Katalogschlüssel → Variante der Praxis)
         times_per_day: 2,
       }),
     );
+    // Ohne Standarddosierung die bisherige Vorbelegung.
+    const ohne = vorlagenZeilen(
+      { ...VORLAGE, uebungen: [{ schluessel: 'KN-02' }] },
+      BIBLIOTHEK,
+      [],
+    );
+    expect((ohne[0] as Extract<Vorlagenzeile, { art: 'waehlbar' }>).dosis).toEqual(OHNE_STANDARD);
   });
 
-  it('nennt, was archiviert ist und was der Praxis fehlt', () => {
-    const stand = ausVorlage(VORLAGE, BIBLIOTHEK);
-    expect(stand.archiviert).toEqual(['KN-03']);
-    expect(stand.fehlend).toEqual(['KN-09']);
+  it('bringt eine Übung, die der Praxis fehlt, mit ihrem Katalogeintrag', () => {
+    const kn09 = zeilen[3] as Extract<Vorlagenzeile, { art: 'waehlbar' }>;
+    expect(kn09.eintrag).toBe(KN09);
+    expect(kn09.variante).toMatchObject({ id: 'katalog:KN-09', name: KN09.name });
+    // Ohne Katalog fällt sie weg - sie hätte keinen Namen.
+    expect(vorlagenZeilen(VORLAGE, BIBLIOTHEK, []).map((z) => z.schluessel)).toEqual([
+      'KN-02',
+      'KN-01',
+      'KN-03',
+    ]);
   });
 
-  it('nimmt ohne Standarddosierung die bisherige Vorbelegung', () => {
-    const stand = ausVorlage({ ...VORLAGE, uebungen: [{ schluessel: 'KN-02' }] }, BIBLIOTHEK);
-    expect(stand.positionen[0]!.dosis).toEqual(OHNE_STANDARD);
+  it('wählt alles Wählbare vor, außer was schon im Plan steht', () => {
+    expect(vorausgewaehlt(zeilen, new Set())).toEqual(['KN-02', 'KN-01', 'KN-09']);
+    expect(vorausgewaehlt(zeilen, new Set(['a']))).toEqual(['KN-02', 'KN-09']);
+    // Zwei Parameter, keine Person (ADR-006 Punkt 10).
+    expect(vorausgewaehlt.length).toBe(2);
+    expect(vorlagenZeilen.length).toBe(3);
   });
 });

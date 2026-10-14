@@ -64,6 +64,9 @@ const PRUEFVORLAGEN: Katalogvorlage[] = [
       { schluessel: 'KN-03' },
       { schluessel: 'KN-05' },
       { schluessel: 'KN-06' },
+      // Steht nicht in der Bibliothek des Nachbaus: kommt beim Hinzufügen
+      // still dazu (Befund B9).
+      { schluessel: 'AF-01' },
     ],
   },
   {

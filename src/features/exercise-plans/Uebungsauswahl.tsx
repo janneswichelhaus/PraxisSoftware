@@ -19,7 +19,7 @@ import { KOERPERREGION_LABEL } from '@/features/exercises/types';
 import { useFormularschutz } from '@/features/exercises/useFormularschutz';
 import { Bibliotheksfilter } from '@/features/exercises/Bibliotheksfilter';
 import { Vorschaubild } from '@/features/exercises/Vorschaubild';
-import { dosierungKurz } from './dosierung';
+import { dosierungKurz, type Dosis } from './dosierung';
 import { standardDosis } from './hinzufuegen';
 import { eineListe } from './uebungsliste';
 
@@ -57,18 +57,25 @@ export interface Gewaehlt {
   variante: Variante;
 }
 
-/** Eine Zeile mit Haken - die ganze Zeile ist das Ziel (ein `label`). */
-function Auswahlzeile({
+/**
+ * Eine Zeile mit Haken - die ganze Zeile ist das Ziel (ein `label`). Auch die
+ * Vorschau einer Vorlage zeigt so ihre Übungen, dort mit der Dosierung der
+ * Vorlage (`dosis`).
+ */
+export function Auswahlzeile({
   uebung,
   variante,
   gewaehlt,
   imPlan,
+  dosis,
   onUmschalten,
 }: {
   uebung: Uebung;
   variante: Variante;
   gewaehlt: boolean;
   imPlan: boolean;
+  /** Ohne Angabe die Standarddosierung (ANN-384). */
+  dosis?: Dosis;
   onUmschalten: () => void;
 }) {
   const id = useId();
@@ -76,7 +83,7 @@ function Auswahlzeile({
   const meta = [
     variante.name === uebung.name ? null : uebung.name,
     KOERPERREGION_LABEL[uebung.body_region],
-    dosierungKurz(standardDosis(variante)),
+    dosierungKurz(dosis ?? standardDosis(variante)),
     ungeprueft(variante) ? 'ungeprüft' : null,
     imPlan ? 'schon im Plan' : null,
   ]
@@ -281,31 +288,55 @@ export function Uebungsauswahl({
         </div>
       ) : null}
 
-      {/* Klebt am unteren Rand des Fensters: Die Wahl bleibt beim Rollen
-          durch die Liste mit dem Daumen erreichbar. */}
-      <div className="bg-surface border-line sticky -bottom-6 -mx-6 mt-4 -mb-6 border-t px-6 py-3">
-        {fehler ? (
-          <Statusmeldung ton="fehler" className="mb-2">
-            {fehler}
-          </Statusmeldung>
-        ) : null}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            disabled={gewaehlt.length === 0 || laeuft !== null}
-            onClick={() => onHinzufuegen(gewaehlt)}
-          >
-            {laeuft
-              ? `Wird hinzugefügt … (${laeuft})`
-              : gewaehlt.length === 0
-                ? 'Hinzufügen'
-                : `${gewaehlt.length} hinzufügen`}
-          </Button>
-          <Button type="button" variant="quiet" disabled={laeuft !== null} onClick={onSchliessen}>
-            Abbrechen
-          </Button>
-        </div>
-      </div>
+      <Auswahlfuss
+        anzahl={gewaehlt.length}
+        laeuft={laeuft}
+        fehler={fehler}
+        onHinzufuegen={() => onHinzufuegen(gewaehlt)}
+        onSchliessen={onSchliessen}
+      />
     </Dialogfenster>
+  );
+}
+
+/**
+ * Der Fuß des Auswahlblatts und der Vorschau einer Vorlage: „n hinzufügen“
+ * als Hauptknopf, „Abbrechen“ leise. Klebt am unteren Rand des Fensters - die
+ * Wahl bleibt beim Rollen durch die Liste mit dem Daumen erreichbar.
+ */
+export function Auswahlfuss({
+  anzahl,
+  laeuft,
+  fehler,
+  onHinzufuegen,
+  onSchliessen,
+}: {
+  anzahl: number;
+  /** Läuft das Hinzufügen, und wie weit („2 von 5")? */
+  laeuft: string | null;
+  fehler: string | null;
+  onHinzufuegen: () => void;
+  onSchliessen: () => void;
+}) {
+  return (
+    <div className="bg-surface border-line sticky -bottom-6 -mx-6 mt-4 -mb-6 border-t px-6 py-3">
+      {fehler ? (
+        <Statusmeldung ton="fehler" className="mb-2">
+          {fehler}
+        </Statusmeldung>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" disabled={anzahl === 0 || laeuft !== null} onClick={onHinzufuegen}>
+          {laeuft
+            ? `Wird hinzugefügt … (${laeuft})`
+            : anzahl === 0
+              ? 'Hinzufügen'
+              : `${anzahl} hinzufügen`}
+        </Button>
+        <Button type="button" variant="quiet" disabled={laeuft !== null} onClick={onSchliessen}>
+          Abbrechen
+        </Button>
+      </div>
+    </div>
   );
 }

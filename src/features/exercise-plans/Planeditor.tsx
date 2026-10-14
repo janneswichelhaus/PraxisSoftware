@@ -12,12 +12,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Feldgruppe } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import {
-  BIBLIOTHEK_SCHLUESSEL,
-  fetchBibliothek,
-  importiereKatalog,
-  type Bibliothek,
-} from '@/features/exercises/api';
+import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Bibliothek } from '@/features/exercises/api';
 import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
 import { KATALOG_SCHLUESSEL, ladeKatalog } from '@/features/exercises/katalogLaden';
 import { formatDate } from '@/lib/datum';
@@ -41,7 +36,6 @@ import {
   fuegeHinzu,
   hinzugefuegtSatz,
   mitKatalog,
-  neuePosition,
   nichtSatz,
   standardDosis,
   type Hinzufuegen,
@@ -54,8 +48,9 @@ import { PositionFormular } from './PositionFormular';
 import { Positionszeile } from './Positionszeile';
 import { Uebungsauswahl, type Gewaehlt } from './Uebungsauswahl';
 import { nurImKatalog } from './uebungsliste';
-import { Vorlagenauswahl } from './Vorlagenauswahl';
-import { VorlagenKontext, ausVorlage } from './vorlagen';
+import { VorlageZeile, Vorlagenauswahl } from './Vorlagenauswahl';
+import { VorlagenKontext, vorlagenListe, vorlagenZeilen } from './vorlagen';
+import { Vorlagenvorschau, type Vorlagenwahl } from './Vorlagenvorschau';
 import { Zahlschritt } from './Zahlschritt';
 
 /**
@@ -67,9 +62,11 @@ import { Zahlschritt } from './Zahlschritt';
  * Die Hauptaktion **„Übungen hinzufügen“** öffnet das Auswahlblatt, in dem
  * mehrere Übungen in einem Zug mit ihrer Standarddosierung dazukommen - aus
  * einer Liste von Bibliothek und Katalog; was nur im Katalog steht, übernimmt
- * der Server dabei still (Befund B9, ANN-536);
- * **„Aus Vorlage“** fügt eine mitgelieferte Zusammenstellung hinzu. Die
- * Knöpfe stehen in der klebenden Aktionsleiste, mit dem Daumen erreichbar.
+ * der Server dabei still (Befund B9). **Vorlagen** stehen im leeren
+ * Entwurf gleich als Zeilen da, sonst hinter „Aus Vorlage“; ein Tipp zeigt
+ * die Vorschau mit allen Übungen vorgewählt, „n hinzufügen“ legt die
+ * gewählten an. Die Knöpfe stehen in der klebenden Aktionsleiste,
+ * mit dem Daumen erreichbar.
  *
  * Nichts hier wählt, sortiert oder belegt etwas aus Angaben der Person vor
  * (ADR-006 Punkt 10): Die Liste der Bibliothek und die der Vorlagen sehen für
@@ -79,6 +76,7 @@ import { Zahlschritt } from './Zahlschritt';
 type Fenster =
   | { art: 'auswahl' }
   | { art: 'vorlage' }
+  | { art: 'vorschau'; vorlage: Katalogvorlage }
   | { art: 'kopf' }
   | { art: 'zuweisen' }
   | { art: 'position'; id: string };
@@ -89,14 +87,6 @@ interface Meldung {
   fehler: string | null;
   /** Was nicht hinzukam, etwa eine archivierte Übung (O-002). */
   hinweis?: string | null;
-}
-
-/** Was nach einer Vorlage fehlt - mit dem Weg, es zu übernehmen (owner). */
-interface Vorlagenrest {
-  vorlage: Katalogvorlage;
-  fehlend: string[];
-  fehlendNamen: string[];
-  archiviertNamen: string[];
 }
 
 export function Planeditor({ plan }: { plan: Plan }) {
@@ -110,17 +100,16 @@ export function Planeditor({ plan }: { plan: Plan }) {
   });
   const [fenster, setFenster] = useState<Fenster | null>(null);
   const [meldung, setMeldung] = useState<Meldung | null>(null);
-  const [rest, setRest] = useState<Vorlagenrest | null>(null);
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [auswahlFehler, setAuswahlFehler] = useState<string | null>(null);
   // Der mitgelieferte Katalog (ein eigener Teil des Builds, ANN-382) - erst,
-  // wenn das Auswahlblatt ihn braucht.
+  // wenn Auswahlblatt oder Vorschau ihn brauchen.
   const katalog = useQuery({
     queryKey: KATALOG_SCHLUESSEL,
     queryFn: ladeKatalog,
     staleTime: Infinity,
     retry: false,
-    enabled: fenster?.art === 'auswahl',
+    enabled: fenster?.art === 'auswahl' || fenster?.art === 'vorschau',
   });
 
   const melde = (
@@ -198,34 +187,34 @@ export function Planeditor({ plan }: { plan: Plan }) {
       return;
     }
     setFenster(null);
-    setRest(null);
     const { ergebnis, anzahl, nicht } = antwort;
     const satz = hinzugefuegtSatz(ergebnis, anzahl);
     if (ergebnis.fehler) melde(null, satz, nichtSatz(nicht));
     else melde(ergebnis.hinzugefuegt > 0 ? satz : null, null, nichtSatz(nicht));
   }
 
-  async function namenAusKatalog(schluessel: readonly string[]): Promise<string[]> {
-    if (schluessel.length === 0) return [];
-    try {
-      const katalog = await queryClient.fetchQuery({
-        queryKey: KATALOG_SCHLUESSEL,
-        queryFn: ladeKatalog,
-        staleTime: Infinity,
-      });
-      return schluessel.map((s) => katalog.find((e) => e.schluessel === s)?.name ?? s);
-    } catch {
-      return [...schluessel];
-    }
-  }
-
-  async function ausVorlageHinzufuegen(vorlage: Katalogvorlage, b: Bibliothek) {
-    setFenster(null);
+  /**
+   * Die gewählten Übungen einer Vorlage hinzufügen, mit der Dosierung der
+   * Vorlage; was der Praxis fehlt, übernimmt der Server still.
+   */
+  async function ausVorlage(vorlage: Katalogvorlage, gewaehlt: Vorlagenwahl[]) {
+    const zuViele = passtNicht(gewaehlt.length);
+    setAuswahlFehler(zuViele);
+    if (zuViele) return;
     const leer = plan.items.length === 0;
-    const stand = ausVorlage(vorlage, b);
-    const ergebnis = await hinzufuegen(
-      stand.positionen.map((p) => neuePosition(plan.id, p.variante.id, p.dosis)),
-    );
+    let antwort: Awaited<ReturnType<typeof hinzufuegenMitKatalog>>;
+    try {
+      antwort = await hinzufuegenMitKatalog(
+        gewaehlt.map((z) => ({ variante: z.variante, dosis: z.dosis, eintrag: z.eintrag })),
+      );
+    } catch (fehler) {
+      setAuswahlFehler(
+        fehler instanceof Error ? fehler.message : 'Die Übungen konnten nicht übernommen werden.',
+      );
+      return;
+    }
+    setFenster(null);
+    const { ergebnis, anzahl, nicht } = antwort;
     // Ein neuer, leerer Entwurf heißt danach wie die Vorlage - nach Thema,
     // ohne Person.
     if (ergebnis.hinzugefuegt > 0 && leer && standardTitel(plan)) {
@@ -236,73 +225,16 @@ export function Planeditor({ plan }: { plan: Plan }) {
       }
       await queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL });
     }
-    const satz = ergebnis.fehler
-      ? hinzugefuegtSatz(ergebnis, stand.positionen.length)
-      : `${hinzugefuegtSatz(ergebnis, stand.positionen.length).replace(/\.$/, '')} aus „${vorlage.name}“.`;
-    if (ergebnis.fehler) melde(null, satz);
-    else if (ergebnis.hinzugefuegt > 0) melde(satz);
-    else setMeldung(null);
-    if (stand.fehlend.length > 0 || stand.archiviert.length > 0) {
-      setRest({
-        vorlage,
-        fehlend: stand.fehlend,
-        fehlendNamen: await namenAusKatalog(stand.fehlend),
-        archiviertNamen: await namenAusKatalog(stand.archiviert),
-      });
-    } else {
-      setRest(null);
+    const satz = hinzugefuegtSatz(ergebnis, anzahl);
+    if (ergebnis.fehler) melde(null, satz, nichtSatz(nicht));
+    else {
+      melde(
+        ergebnis.hinzugefuegt > 0 ? `${satz.replace(/\.$/, '')} aus „${vorlage.name}“.` : null,
+        null,
+        nichtSatz(nicht),
+      );
     }
   }
-
-  /** Owner: was der Vorlage fehlt, aus dem Katalog übernehmen und hinzufügen (ANN-385). */
-  const nachholen = useMutation({
-    mutationFn: async (offen: Vorlagenrest) => {
-      const katalog = await queryClient.fetchQuery({
-        queryKey: KATALOG_SCHLUESSEL,
-        queryFn: ladeKatalog,
-        staleTime: Infinity,
-      });
-      await importiereKatalog(katalog.filter((e) => offen.fehlend.includes(e.schluessel)));
-      await queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL });
-      const frisch = await queryClient.fetchQuery({
-        queryKey: BIBLIOTHEK_SCHLUESSEL,
-        queryFn: fetchBibliothek,
-      });
-      const stand = ausVorlage(
-        {
-          ...offen.vorlage,
-          uebungen: offen.vorlage.uebungen.filter((u) => offen.fehlend.includes(u.schluessel)),
-        },
-        frisch,
-      );
-      const ergebnis = await hinzufuegen(
-        stand.positionen.map((p) => neuePosition(plan.id, p.variante.id, p.dosis)),
-      );
-      return { ergebnis, stand, gewaehlt: offen.fehlend.length };
-    },
-    onSuccess: async ({ ergebnis, stand }) => {
-      if (ergebnis.fehler) melde(null, hinzugefuegtSatz(ergebnis, stand.positionen.length));
-      else {
-        melde(
-          `${ergebnis.hinzugefuegt === 1 ? '1 Übung' : `${ergebnis.hinzugefuegt} Übungen`} übernommen und hinzugefügt. Sie gelten bis zur Durchsicht durch die Praxis als ungeprüft.`,
-        );
-      }
-      const nochFehlend = stand.fehlend;
-      if (nochFehlend.length > 0 && rest) {
-        setRest({
-          ...rest,
-          fehlend: nochFehlend,
-          fehlendNamen: await namenAusKatalog(nochFehlend),
-        });
-      } else {
-        setRest((bisher) =>
-          bisher && bisher.archiviertNamen.length > 0
-            ? { ...bisher, fehlend: [], fehlendNamen: [] }
-            : null,
-        );
-      }
-    },
-  });
 
   const verwerfen = useMutation({
     mutationFn: () => discardPlan(plan.id),
@@ -317,18 +249,26 @@ export function Planeditor({ plan }: { plan: Plan }) {
   const offenePosition =
     fenster?.art === 'position' ? plan.items.find((p) => p.id === fenster.id) : undefined;
   const mitVorlagen = vorlagen.length > 0;
+  const leer = plan.items.length === 0;
+  const zurVorschau = (vorlage: Katalogvorlage) => {
+    setAuswahlFehler(null);
+    setFenster({ art: 'vorschau', vorlage });
+  };
 
-  const vorlageKnopf = mitVorlagen ? (
-    <Button
-      type="button"
-      variant="secondary"
-      groesse="kompakt"
-      disabled={!b || laeuft !== null}
-      onClick={() => setFenster({ art: 'vorlage' })}
-    >
-      Aus Vorlage
-    </Button>
-  ) : null;
+  // Im leeren Entwurf stehen die Vorlagen gleich auf der Seite (Befund B9:
+  // ein Tipp weniger); danach hinter „Aus Vorlage“.
+  const vorlageKnopf =
+    mitVorlagen && !leer ? (
+      <Button
+        type="button"
+        variant="secondary"
+        groesse="kompakt"
+        disabled={!b || laeuft !== null}
+        onClick={() => setFenster({ art: 'vorlage' })}
+      >
+        Aus Vorlage
+      </Button>
+    ) : null;
 
   return (
     <>
@@ -356,39 +296,6 @@ export function Planeditor({ plan }: { plan: Plan }) {
           {meldung.hinweis}
         </Statusmeldung>
       ) : null}
-      {rest && (rest.fehlend.length > 0 || rest.archiviertNamen.length > 0) ? (
-        <div className="mt-4 flex flex-col gap-2">
-          {rest.fehlend.length > 0 ? (
-            <Statusmeldung ton="warnung">
-              Nicht in der Bibliothek der Praxis: {rest.fehlendNamen.join(', ')}.
-              {b?.can_manage ? '' : ' Übernehmen kann die Praxisinhaber:in.'}
-            </Statusmeldung>
-          ) : null}
-          {rest.archiviertNamen.length > 0 ? (
-            <Statusmeldung ton="warnung">
-              In der Bibliothek archiviert: {rest.archiviertNamen.join(', ')}.
-            </Statusmeldung>
-          ) : null}
-          {rest.fehlend.length > 0 && b?.can_manage ? (
-            <div>
-              <Button
-                type="button"
-                variant="secondary"
-                groesse="kompakt"
-                disabled={nachholen.isPending || laeuft !== null}
-                onClick={() => nachholen.mutate(rest)}
-              >
-                {nachholen.isPending
-                  ? 'Wird übernommen …'
-                  : 'Aus dem Katalog übernehmen und hinzufügen'}
-              </Button>
-            </div>
-          ) : null}
-          {nachholen.isError ? (
-            <Statusmeldung ton="fehler">{nachholen.error.message}</Statusmeldung>
-          ) : null}
-        </div>
-      ) : null}
       {bibliothek.isError ? (
         <Statusmeldung ton="fehler" className="mt-4">
           Die Übungsbibliothek konnte nicht geladen werden.
@@ -398,15 +305,9 @@ export function Planeditor({ plan }: { plan: Plan }) {
       <div className="mt-6">
         <Listenabschnitt
           titel="Übungen"
-          {...(plan.items.length > 0 ? { anzahl: plan.items.length } : {})}
-          {...(vorlageKnopf && plan.items.length > 0 ? { aktion: vorlageKnopf } : {})}
-          leer={{
-            titel: 'Noch keine Übung',
-            beschreibung: mitVorlagen
-              ? 'Aus der Bibliothek wählen oder eine Vorlage übernehmen.'
-              : 'Aus der Bibliothek wählen.',
-            ...(vorlageKnopf ? { aktion: vorlageKnopf } : {}),
-          }}
+          {...(leer ? {} : { anzahl: plan.items.length })}
+          {...(vorlageKnopf ? { aktion: vorlageKnopf } : {})}
+          leer={{ titel: 'Noch keine Übung' }}
         >
           {plan.items.map((position) => (
             <Positionszeile
@@ -418,6 +319,22 @@ export function Planeditor({ plan }: { plan: Plan }) {
           ))}
         </Listenabschnitt>
       </div>
+
+      {mitVorlagen && leer ? (
+        <div className="mt-8">
+          <Listenabschnitt titel="Aus Vorlage">
+            {vorlagenListe(vorlagen).map((vorlage) => (
+              <VorlageZeile
+                key={vorlage.schluessel}
+                vorlage={vorlage}
+                onWaehlen={(gewaehlt) => {
+                  if (b && laeuft === null) zurVorschau(gewaehlt);
+                }}
+              />
+            ))}
+          </Listenabschnitt>
+        </div>
+      ) : null}
 
       <Fassungen plan={plan} />
 
@@ -482,9 +399,29 @@ export function Planeditor({ plan }: { plan: Plan }) {
       {fenster?.art === 'vorlage' && b ? (
         <Vorlagenauswahl
           vorlagen={vorlagen}
-          onWaehlen={(vorlage) => void ausVorlageHinzufuegen(vorlage, b)}
+          onWaehlen={zurVorschau}
           onSchliessen={() => setFenster(null)}
         />
+      ) : null}
+      {fenster?.art === 'vorschau' && b ? (
+        katalog.isPending ? (
+          <Dialogfenster titel={fenster.vorlage.name} onSchliessen={() => setFenster(null)}>
+            <LoadingState label="Übungen werden geladen …" />
+          </Dialogfenster>
+        ) : (
+          <Vorlagenvorschau
+            vorlage={fenster.vorlage}
+            zeilen={vorlagenZeilen(fenster.vorlage, b, katalog.data ?? [])}
+            katalogFehlt={katalog.isError}
+            imPlan={imPlan}
+            laeuft={laeuft}
+            fehler={auswahlFehler}
+            onHinzufuegen={(gewaehlt) => void ausVorlage(fenster.vorlage, gewaehlt)}
+            onSchliessen={() => {
+              if (laeuft === null) setFenster(null);
+            }}
+          />
+        )
       ) : null}
       {fenster?.art === 'kopf' ? <Kopfdaten plan={plan} onFertig={() => setFenster(null)} /> : null}
       {fenster?.art === 'zuweisen' ? (
