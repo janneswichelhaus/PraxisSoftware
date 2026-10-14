@@ -65,6 +65,7 @@ export function TerminPanel({
   rueckweg,
   onSchliessen,
   onAktionen,
+  onAbgesagt,
 }: {
   eintrag: CalendarEntry;
   user: CurrentUser;
@@ -73,6 +74,11 @@ export function TerminPanel({
   onSchliessen: () => void;
   /** Öffnet das Fenster mit den übrigen Aktionen am Termin (`TerminAktionenDialog`). */
   onAktionen: () => void;
+  /**
+   * Nach der Absage: Der Kalender filtert abgesagte Termine meist aus, das
+   * Panel geht dann mit dem Termin - die Meldung muss die Seite tragen (K9).
+   */
+  onAbgesagt?: (meldung: string) => void;
 }) {
   const zone = user.organizationTimeZone ?? 'Europe/Berlin';
   const titelRef = useRef<HTMLHeadingElement>(null);
@@ -247,7 +253,10 @@ export function TerminPanel({
           <AbsageAktion
             appointment={termin}
             kompakt
-            melden={(text) => setMeldung({ ton: 'erfolg', text })}
+            melden={(text) => {
+              setMeldung({ ton: 'erfolg', text });
+              onAbgesagt?.(text);
+            }}
           />
         ) : null}
       </div>

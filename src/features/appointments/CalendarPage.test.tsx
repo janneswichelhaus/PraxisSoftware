@@ -2748,6 +2748,12 @@ describe('CalendarPage: Doku offen und Terminpanel', () => {
       ),
     );
     expect(await within(panel).findByText(/Termin abgesagt/)).toBeVisible();
+    // Auch auf der Seite: Das Panel geht mit dem Termin, wenn der Filter ihn ausblendet.
+    expect(
+      screen
+        .getAllByRole('status')
+        .some((zeile) => /Termin abgesagt/.test(zeile.textContent ?? '')),
+    ).toBe(true);
   });
 
   it('bietet am abgeschlossenen Termin im Panel keine Absage an (K9)', async () => {

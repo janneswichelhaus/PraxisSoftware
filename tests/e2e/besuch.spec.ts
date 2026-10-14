@@ -1,4 +1,11 @@
-import { expect, test, type Locator, type Route } from '@playwright/test';
+import {
+  expect,
+  test,
+  type BrowserContext,
+  type Locator,
+  type Page,
+  type Route,
+} from '@playwright/test';
 
 /**
  * „Besuch in einem Zug“ (Auftrag C1, Kernablauf K5 in
@@ -21,6 +28,7 @@ const PRUEFSEITE = '/tests/e2e/fixtures/besuch.html';
 const ZONE = 'Europe/Berlin';
 const BESUCH_1 = 'cccccccc-cccc-4ccc-8ccc-000000000001';
 const STAFF = '55555555-5555-4555-8555-000000000002';
+const LETZTER_EINTRAG = 'Synthetisch: MT Knie, Treppe mit Geländer, Heimprogramm wiederholt.';
 
 function heute(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONE }).format(new Date());
@@ -73,8 +81,9 @@ function nachbildung() {
       visit_city: 'Tuebingen',
       patient_phone: null,
       patient_phone_mobile: '+49 160 0000006',
-      home_visit_access_note: null,
+      home_visit_access_note: '2. OG, Klingel Beispiel',
       special_note: null,
+      take_along_items: ['Theraband', 'Faszienrolle'],
       documentation_status: festgeschrieben ? 'final' : 'none',
       organization_time_zone: ZONE,
       visit_lat: 48.5216,
@@ -190,6 +199,31 @@ function nachbildung() {
       return null;
     },
     create_treatment_note: () => 'dddddddd-dddd-4ddd-8ddd-000000000001',
+    // K3, K6: der letzte Haupteintrag vor diesem Termin (ANN-501, ANN-502).
+    get_appointment_brief: () => [
+      {
+        appointment_id: BESUCH_1,
+        patient_id: '66666666-6666-4666-8666-000000000101',
+        home_visit_access_note: '2. OG, Klingel Beispiel',
+        special_note: null,
+        take_along_items: ['Theraband', 'Faszienrolle'],
+        primary_therapist_name: null,
+        treatment_basis_id: null,
+        treatment_basis_kind: null,
+        treatment_basis_issued_on: null,
+        basis_appointment_count: null,
+        basis_used: null,
+        basis_planned: null,
+        basis_items: null,
+        last_note_id: 'dddddddd-dddd-4ddd-8ddd-000000000000',
+        last_note_appointment_start: um('09:00', tagePlus(heute(), -7)).toISOString(),
+        last_note_status: 'final',
+        last_note_content: LETZTER_EINTRAG,
+        last_note_visit_without_treatment: false,
+        last_note_author_name: 'Anna Beispiel',
+        organization_time_zone: ZONE,
+      },
+    ],
     get_billable_service_draft: () =>
       [
         ['k1', 'KG', 'Krankengymnastik'],
@@ -371,6 +405,86 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
     p_start_time: '09:00',
     p_end_time: '10:00',
     p_appointment_type: 'home_visit',
+  });
+});
+
+/** Eine Prüfseite am Telefon mit dem Server der Nachbildung. */
+async function aufTelefon(page: Page, context: BrowserContext) {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.clock.setFixedTime(um('08:40'));
+  const server = nachbildung();
+  await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  await page.route('**/functions/v1/**', (route) => route.fulfill({ status: 503, body: '' }));
+  await context.route('https://www.google.com/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<p>Karten-App</p>' }),
+  );
+  let tipps = 0;
+  return {
+    server,
+    async tippe(ziel: Locator) {
+      tipps += 1;
+      await ziel.click();
+    },
+    get tipps() {
+      return tipps;
+    },
+  };
+}
+
+test('K3: vor der Tür Zugang, Material und letzter Eintrag mit einem Tipp (ANN-501)', async ({
+  page,
+  context,
+}) => {
+  const t = await aufTelefon(page, context);
+  await page.goto(PRUEFSEITE);
+  const karte = page.getByRole('article');
+  await expect(karte.getByRole('link', { name: 'Erika Beispiel', exact: true })).toBeVisible();
+  // Zu, bis jemand öffnet: kein Material neben dem Namen, kein Lesen.
+  await expect(karte.getByText('Theraband, Faszienrolle')).toHaveCount(0);
+  expect(t.server.aufrufe.get_appointment_brief).toBeUndefined();
+
+  await t.tippe(karte.getByRole('button', { name: 'Vor der Tür' }));
+  await expect(karte.getByText('2. OG', { exact: true })).toBeVisible();
+  await expect(karte.getByText('Theraband, Faszienrolle')).toBeVisible();
+  await expect(karte.getByText(LETZTER_EINTRAG)).toBeVisible();
+
+  test.info().annotations.push({ type: 'K3', description: `${t.tipps} Tipp (vorher 1 und 3)` });
+  expect(t.tipps).toBeLessThanOrEqual(1);
+  expect(t.server.aufrufe.get_appointment_brief).toHaveLength(1);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    ),
+  ).toBe(false);
+});
+
+test('K6: letzten Eintrag übernehmen und festschreiben in drei Tipps plus Text (ANN-502)', async ({
+  page,
+  context,
+}) => {
+  const t = await aufTelefon(page, context);
+  await page.clock.setFixedTime(um('09:20'));
+  await page.goto(PRUEFSEITE);
+  const karte = page.getByRole('article');
+  await expect(karte.getByRole('heading', { name: 'Jetzt · bis 10:00' })).toBeVisible();
+
+  await t.tippe(karte.getByRole('link', { name: 'Doku zu diesem Termin' }));
+  const feld = page.getByLabel('Eintrag zur Behandlung');
+  await t.tippe(page.getByRole('button', { name: 'Wie zuletzt' }));
+  await expect(feld).toHaveValue(LETZTER_EINTRAG);
+  await feld.press('End');
+  await feld.pressSequentially(' Heute 3 Stockwerke.');
+  await t.tippe(page.getByRole('button', { name: 'Festschreiben' }));
+  await expect(
+    page.getByText('Eintrag als Version 1 festgeschrieben.', { exact: false }),
+  ).toBeVisible();
+
+  test
+    .info()
+    .annotations.push({ type: 'K6', description: `${t.tipps} Tipps + Text (vorher: fehlt)` });
+  expect(t.tipps).toBeLessThanOrEqual(3);
+  expect(t.server.aufrufe.complete_treatment?.[0]).toMatchObject({
+    p_content: `${LETZTER_EINTRAG} Heute 3 Stockwerke.`,
   });
 });
 
