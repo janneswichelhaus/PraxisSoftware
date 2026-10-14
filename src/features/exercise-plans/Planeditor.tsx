@@ -10,7 +10,6 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
-import { Feldgruppe } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Bibliothek } from '@/features/exercises/api';
 import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
@@ -49,15 +48,16 @@ import { Positionszeile } from './Positionszeile';
 import { Uebungsauswahl, type Gewaehlt } from './Uebungsauswahl';
 import { nurImKatalog } from './uebungsliste';
 import { VorlageZeile, Vorlagenauswahl } from './Vorlagenauswahl';
+import { Wochenhaeufigkeit } from './Wochenhaeufigkeit';
 import { VorlagenKontext, vorlagenListe, vorlagenZeilen } from './vorlagen';
 import { Vorlagenvorschau, type Vorlagenwahl } from './Vorlagenvorschau';
-import { Zahlschritt } from './Zahlschritt';
 
 /**
  * Der Entwurf eines Plans als Arbeitsseite (UEB-004; Welle B, Analyse
  * Training 12.10., Abschnitt 5).
  *
- * Die Übungen stehen als Zeilen mit Bild und kurzer Dosierung; ein Tipp auf
+ * Oben die Häufigkeit pro Woche als Zeile mit Minus und Plus (Befund B9),
+ * darunter die Übungen als Zeilen mit Bild und kurzer Dosierung; ein Tipp auf
  * eine Zeile öffnet ihre Dosierung (Zahlschritte, Reihenfolge, entfernen).
  * Die Hauptaktion **„Übungen hinzufügen“** öffnet das Auswahlblatt, in dem
  * mehrere Übungen in einem Zug mit ihrer Standarddosierung dazukommen - aus
@@ -276,7 +276,7 @@ export function Planeditor({ plan }: { plan: Plan }) {
         plan={plan}
         aktionen={
           <Button type="button" variant="secondary" onClick={() => setFenster({ art: 'kopf' })}>
-            Bearbeiten
+            Titel ändern
           </Button>
         }
       />
@@ -302,7 +302,9 @@ export function Planeditor({ plan }: { plan: Plan }) {
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-6">
+      <Wochenhaeufigkeit key={plan.id} plan={plan} />
+
+      <div className="mt-8">
         <Listenabschnitt
           titel="Übungen"
           {...(leer ? {} : { anzahl: plan.items.length })}
@@ -532,16 +534,15 @@ function Positionsfenster({
 }
 
 // -----------------------------------------------------------------------------
-// Titel und Einheiten je Woche
+// Titel - die Häufigkeit steht seit Befund B9 direkt im Entwurf
 // -----------------------------------------------------------------------------
 
 function Kopfdaten({ plan, onFertig }: { plan: Plan; onFertig: () => void }) {
   const queryClient = useQueryClient();
   const [titel, setTitel] = useState(plan.title);
-  const [einheiten, setEinheiten] = useState(plan.sessions_per_week ?? 0);
   const [fehler, setFehler] = useState<string | undefined>();
   const speichern = useMutation({
-    mutationFn: () => savePlan(plan.id, titel, einheiten > 0 ? einheiten : null),
+    mutationFn: () => savePlan(plan.id, titel, plan.sessions_per_week),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL });
       onFertig();
@@ -549,7 +550,7 @@ function Kopfdaten({ plan, onFertig }: { plan: Plan; onFertig: () => void }) {
   });
 
   return (
-    <Dialogfenster titel="Titel und Häufigkeit" onSchliessen={onFertig}>
+    <Dialogfenster titel="Titel ändern" onSchliessen={onFertig}>
       <form
         noValidate
         onSubmit={(event) => {
@@ -562,23 +563,13 @@ function Kopfdaten({ plan, onFertig }: { plan: Plan; onFertig: () => void }) {
           if (!speichern.isPending) speichern.mutate();
         }}
       >
-        <Feldgruppe>
-          <Field
-            label="Titel *"
-            maxLength={80}
-            value={titel}
-            error={fehler}
-            onChange={(event) => setTitel(event.target.value)}
-          />
-          <Zahlschritt
-            beschriftung="Einheiten je Woche"
-            leer="ohne"
-            wert={einheiten}
-            min={0}
-            max={14}
-            onAendern={setEinheiten}
-          />
-        </Feldgruppe>
+        <Field
+          label="Titel *"
+          maxLength={80}
+          value={titel}
+          error={fehler}
+          onChange={(event) => setTitel(event.target.value)}
+        />
         {speichern.isError ? (
           <Statusmeldung ton="fehler" className="mt-4">
             {speichern.error.message}

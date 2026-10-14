@@ -56,7 +56,14 @@ test.describe('Übungspläne', () => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(PRUEFSEITE);
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Heimprogramm Knie');
-      for (const name of ['Übungen hinzufügen', 'Zuweisen', 'Aus Vorlage', 'Bearbeiten']) {
+      for (const name of [
+        'Übungen hinzufügen',
+        'Zuweisen',
+        'Aus Vorlage',
+        'Titel ändern',
+        'Häufigkeit: weniger',
+        'Häufigkeit: mehr',
+      ]) {
         expect(await hoehe(page.getByRole('button', { name, exact: true }))).toBeGreaterThanOrEqual(
           44,
         );
@@ -64,6 +71,9 @@ test.describe('Übungspläne', () => {
       expect(
         await hoehe(page.getByRole('button', { name: /1\. Kniebeuge am Geländer/ })),
       ).toBeGreaterThanOrEqual(44);
+      // Befund B9: die Häufigkeit pro Woche als Zeile direkt im Entwurf.
+      await expect(page.getByRole('group', { name: 'Häufigkeit' })).toBeVisible();
+      await expect(page.getByText('3-mal pro Woche').first()).toBeVisible();
 
       // Das Auswahlblatt: Suche, Filter auf Abruf, Zeilen mit Haken.
       await page.getByRole('button', { name: 'Übungen hinzufügen' }).click();

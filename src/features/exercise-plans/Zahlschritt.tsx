@@ -50,9 +50,7 @@ export function Zahlschritt({
           disabled={wert <= min}
           onClick={() => onAendern(weniger)}
         >
-          <svg viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor">
-            <path d="M5 10h10" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          <MinusSymbol />
         </Symbolknopf>
         <output
           aria-live="polite"
@@ -65,11 +63,26 @@ export function Zahlschritt({
           disabled={wert >= max}
           onClick={() => onAendern(mehr)}
         >
-          <svg viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor">
-            <path d="M5 10h10M10 5v10" strokeWidth="2" strokeLinecap="round" />
-          </svg>
+          <PlusSymbol />
         </Symbolknopf>
       </div>
     </div>
+  );
+}
+
+/** Minus und Plus des Zahlschritts - auch an der Häufigkeit des Plans (Befund B9). */
+export function MinusSymbol() {
+  return (
+    <svg viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor">
+      <path d="M5 10h10" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PlusSymbol() {
+  return (
+    <svg viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor">
+      <path d="M5 10h10M10 5v10" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }

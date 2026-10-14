@@ -574,6 +574,60 @@ describe('Planeditor: Entwurf als Arbeitsseite (UEB-004, Welle B)', () => {
     await waitFor(() => expect(discardPlan).toHaveBeenCalledWith('p1'));
   });
 
+  it('zeigt die Häufigkeit pro Woche im Entwurf und ändert sie mit je einem Tipp (Befund B9)', async () => {
+    const user = userEvent.setup();
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    const zeile = gruppe.closest('li')!;
+    expect(zeile).toHaveTextContent('3-mal pro Woche');
+    // Die Metazeile des Kopfes nennt sie auch.
+    expect(screen.getByText(/Erika Beispiel · Übungsplan · 3-mal pro Woche/)).toBeInTheDocument();
+    await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
+    expect(zeile).toHaveTextContent('4-mal pro Woche');
+    await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Heimprogramm Knie', 4));
+    expect(savePlan).toHaveBeenCalledTimes(1);
+  });
+
+  it('lässt die Häufigkeit ohne Angabe, bis die Fachperson eine wählt', async () => {
+    const user = userEvent.setup();
+    fetchPlan.mockResolvedValue(plan({ sessions_per_week: null }));
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    expect(gruppe.closest('li')).toHaveTextContent('ohne Angabe');
+    expect(within(gruppe).getByRole('button', { name: 'Häufigkeit: weniger' })).toBeDisabled();
+    await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
+    expect(gruppe.closest('li')).toHaveTextContent('Einmal pro Woche');
+    await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Heimprogramm Knie', 1));
+    await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: weniger' }));
+    await waitFor(() => expect(savePlan).toHaveBeenLastCalledWith('p1', 'Heimprogramm Knie', null));
+    expect(gruppe.closest('li')).toHaveTextContent('ohne Angabe');
+  });
+
+  it('nimmt die Häufigkeit zurück, wenn das Speichern scheitert', async () => {
+    const user = userEvent.setup();
+    savePlan.mockRejectedValueOnce(new Error('Bitte die Einheiten je Woche prüfen (1 bis 14).'));
+    planseite();
+    const gruppe = await screen.findByRole('group', { name: 'Häufigkeit' });
+    await user.click(within(gruppe).getByRole('button', { name: 'Häufigkeit: mehr' }));
+    expect(
+      await screen.findByText('Bitte die Einheiten je Woche prüfen (1 bis 14).'),
+    ).toBeInTheDocument();
+    expect(gruppe.closest('li')).toHaveTextContent('3-mal pro Woche');
+  });
+
+  it('ändert den Titel im Fenster und lässt die Häufigkeit, wie sie ist', async () => {
+    const user = userEvent.setup();
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Titel ändern' }));
+    const fenster = screen.getByRole('dialog', { name: 'Titel ändern' });
+    expect(within(fenster).queryByRole('group')).toBeNull();
+    const feld = within(fenster).getByLabelText('Titel *');
+    await user.clear(feld);
+    await user.type(feld, 'Knie, Woche 2');
+    await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
+    await waitFor(() => expect(savePlan).toHaveBeenCalledWith('p1', 'Knie, Woche 2', 3));
+  });
+
   it('zeigt einen Entwurf ohne Schreibrecht nur an (ANN-298)', async () => {
     fetchPlan.mockResolvedValue(plan({ can_write: false }));
     planseite();
