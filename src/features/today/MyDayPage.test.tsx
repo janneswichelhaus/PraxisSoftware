@@ -517,7 +517,7 @@ describe('Übersicht', () => {
 
     await user.click(within(karte).getByRole('button', { name: 'Behandlung abschließen' }));
     const zurueck = await screen.findByRole('button', {
-      name: 'Rückgängig: Erika Beispiel wieder öffnen',
+      name: 'Rückgängig: Haken bei Erika Beispiel',
     });
     // Neben der Meldung, nicht in ihr: Die Meldung bleibt ein Satz.
     expect(screen.getByRole('status')).not.toContainElement(zurueck);
@@ -1445,37 +1445,38 @@ describe('Übersicht', () => {
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
     });
 
-    it('nennt am Tagesende unbestätigte Heilmittel - nur, wo die Rolle bestätigen darf (ANN-140)', async () => {
+    // B4 (BEF-154): Festschreiben hakt nicht ab. Am Tagesende steht der Besuch
+    // mit festgeschriebener Doku, aber ohne Haken, als „Haken fehlt“ - mit dem
+    // Haken als Aktion. Heilmittel bestätigt seit B7 niemand mehr.
+    it('nennt am Tagesende einen festgeschriebenen Besuch ohne Haken (B4, B7)', async () => {
       fetchDayPlan.mockResolvedValue([
-        tagesEintrag({ id: 't1', status: 'documented', documentation_status: 'final' }),
-        zweiterBesuch({ status: 'documented', documentation_status: 'final' }),
-      ]);
-      fetchLeistungenAmTermin.mockImplementation((id: string) =>
-        Promise.resolve({
-          appointment_id: id,
-          can_record: true,
-          services:
-            id === 't1'
-              ? [{ code: 'KG', label: 'Krankengymnastik', quantity: 1, status: 'billable' }]
-              : [],
-          recorded_at: null,
-          recorded_by_name: null,
-          basis_items: null,
-          session_fee_cents: null,
+        tagesEintrag({
+          id: 't1',
+          status: 'documented',
+          documentation_status: 'final',
+          checked_at: '2026-10-01T07:00:00Z',
         }),
-      );
+        // Vorbei, festgeschrieben, nicht abgehakt.
+        zweiterBesuch({
+          status: 'documented',
+          documentation_status: 'final',
+          checked_at: null,
+          starts_at: inMinuten(-120),
+          ends_at: inMinuten(-75),
+        }),
+      ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).closest(
         'section',
       )!;
       expect(offen).toHaveTextContent('Max Mustermann');
-      expect(offen).toHaveTextContent('Heilmittel offen');
-      expect(within(offen).getByRole('link', { name: /^Heilmittel/ })).toHaveAttribute(
-        'href',
-        `/termine/t2/abschluss?zurueck=${encodeURIComponent('/')}`,
-      );
-      expect(fetchLeistungenAmTermin).toHaveBeenCalledTimes(2);
+      expect(offen).toHaveTextContent('Haken fehlt');
+      expect(
+        within(offen).getByRole('button', { name: 'Termin abschließen: Max Mustermann' }),
+      ).toBeInTheDocument();
+      expect(offen).not.toHaveTextContent('Heilmittel');
+      expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
     });
 
     it('stellt Laden und Fehler des Teamplans in seinen Abschnitt, mit Erneut (UEB-05, ZST-18)', async () => {
@@ -1670,6 +1671,61 @@ describe('Übersicht', () => {
       await user.click(zu);
       expect(within(li).queryByRole('article')).toBeNull();
       expect(zeileImStrahl(/Max Mustermann/)).toHaveFocus();
+    });
+
+    // B4 (BEF-154): Der Haken lässt sich jederzeit zurücknehmen - auch nach
+    // dem Festschreiben, an der aufgeklappten Zeile des Besuchs.
+    it('nimmt den Haken an einer abgehakten, dokumentierten Zeile zurück (B4)', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({
+          id: 't1',
+          status: 'documented',
+          documentation_status: 'final',
+          checked_at: '2026-10-01T07:00:00Z',
+          starts_at: inMinuten(-120),
+          ends_at: inMinuten(-75),
+        }),
+        zweiterBesuch(),
+      ]);
+      fetchAppointment.mockResolvedValue({
+        id: 't1',
+        status: 'documented',
+        completed_at: '2026-10-01T07:00:00Z',
+        updated_at: '2026-10-01T07:00:00Z',
+      });
+      reopenAppointment.mockReset();
+      reopenAppointment.mockResolvedValue(undefined);
+      const user = userEvent.setup();
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      await findeKarte();
+
+      const zeile = zeileImStrahl(/Erika Beispiel/);
+      const li = zeile.closest('li')!;
+      await user.click(zeile);
+      const karte = within(li).getByRole('article');
+      await user.click(
+        within(karte).getByRole('button', { name: 'Haken zurücknehmen: Haken bei Erika Beispiel' }),
+      );
+
+      await waitFor(() =>
+        expect(reopenAppointment).toHaveBeenCalledWith('t1', '2026-10-01T07:00:00Z'),
+      );
+      expect(
+        await screen.findByText('Haken bei Erika Beispiel zurückgenommen.'),
+      ).toBeInTheDocument();
+    });
+
+    it('bietet an einer nicht abgehakten Zeile kein Zurücknehmen an', async () => {
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ id: 't1' }), zweiterBesuch()]);
+      const user = userEvent.setup();
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      await findeKarte();
+
+      const zeile = zeileImStrahl(/Max Mustermann/);
+      const li = zeile.closest('li')!;
+      await user.click(zeile);
+      expect(within(li).getByRole('article')).toBeInTheDocument();
+      expect(within(li).queryByRole('button', { name: /^Haken zurücknehmen/ })).toBeNull();
     });
 
     it('kündigt eine Verspätung als SMS aus dem eigenen Telefon an (ANN-476)', async () => {

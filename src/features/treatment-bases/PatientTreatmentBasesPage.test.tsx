@@ -543,18 +543,16 @@ describe('Verordnungsbereich der Akte', () => {
       expect(screen.getByRole('link', { name: 'Dauertermin anlegen' })).toBeInTheDocument();
     });
 
-    it('bietet einer inaktiven Person keine Serie an', async () => {
+    // B1 (BEF-151): Ohne Versorgungsstatus ist jede Akte planbar.
+    it('bietet jeder Akte die Serie an', async () => {
       fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
       renderWithProviders(
-        <Verordnungsbereich
-          patient={testPatient({ status: 'inactive' })}
-          user={testUser(['office'])}
-        />,
+        <Verordnungsbereich patient={testPatient()} user={testUser(['office'])} />,
       );
 
       await screen.findByText('Folgeverordnung vom 18.06.2026');
-      expect(screen.queryByRole('link', { name: 'Dauertermin anlegen' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Dauertermin anlegen' })).toBeInTheDocument();
     });
 
     it('laesst office die Verordnung bearbeiten (PRX-010), die Trainingsbetreuung nicht', async () => {

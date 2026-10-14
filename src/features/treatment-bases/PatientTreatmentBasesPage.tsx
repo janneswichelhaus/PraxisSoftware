@@ -15,6 +15,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import {
   canManageAppointments,
   canReadClinicalPatientFiles,
+  canReleaseTreatmentBasis,
   canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
@@ -34,8 +35,11 @@ import {
 } from '@/features/therapy-reports/BerichteDerVerordnung';
 import { useBerichteDerAkte } from '@/features/therapy-reports/useBerichteDerAkte';
 import { empfehlungDerVerordnung, type Berichtszeile } from '@/features/therapy-reports/api';
+import { AbrechnungDerGrundlage } from './Freigabe';
+import { RechnungenDerAkte } from '@/features/billing/RechnungenDerAkte';
 import {
   fetchPrescribers,
+  grundlagenZustandLabels,
   nachJahr,
   grundlageBezeichnung,
   istVerordnung,
@@ -87,9 +91,17 @@ import {
 function Kontingentzeilen({
   kontingent,
   terminlink,
+  patientId,
+  darfZurueckholen,
+  zeitzone,
 }: {
   kontingent: TreatmentBasisKontingent | null;
   terminlink: string;
+  patientId: string;
+  /** Darf die Person die Grundlage aus der Abrechnung zurückholen (B7)? */
+  darfZurueckholen: boolean;
+  /** Zeitzone der Praxis für den Tag der Freigabe. */
+  zeitzone: string | null;
 }) {
   if (!kontingent) return null;
 
@@ -141,6 +153,18 @@ function Kontingentzeilen({
           ? 'Nichts mehr – jeder mögliche Termin ist genutzt oder verplant'
           : `${kontingent.remaining} ${kontingent.remaining === 1 ? 'Termin' : 'Termine'}`}
       </DetailRow>
+      {/* B1/B7 (BEF-151, BEF-157): der Stand für die Abrechnung - mit dem
+          Vorschlag „In die Abrechnung stellen“ und dem Weg zurück. */}
+      {kontingent.state ? (
+        <DetailRow label="Abrechnung">
+          <AbrechnungDerGrundlage
+            kontingent={kontingent}
+            patientId={patientId}
+            darfZurueckholen={darfZurueckholen}
+            zeitzone={zeitzone}
+          />
+        </DetailRow>
+      ) : null}
     </>
   );
 }
@@ -341,7 +365,6 @@ function Verordnungsaktionen({
   const { verordnung, kontingent } = eintrag;
   const darfPlanen = canManageAppointments(user.roles);
   const darfSchreiben = canWriteTreatmentBases(user.roles);
-  const planbar = patient.status === 'active';
   const ungedeckt = kontingent?.uncovered ?? 0;
   // Übernehmen lohnt nur, wenn anderswo etwas ungedeckt steht. Die eigene Zahl
   // zählt dabei nicht mit: Sie wandert nicht auf sich selbst.
@@ -374,7 +397,7 @@ function Verordnungsaktionen({
   // offen „Dauertermin anlegen“, verplant mit ungedeckten Terminen „Termine
   // übertragen“. Alles andere steht leise daneben.
   const offen = eintrag.zustand === 'offen';
-  const serieHaupt = darfPlanen && planbar && offen;
+  const serieHaupt = darfPlanen && offen;
   const uebertragenHaupt = darfPlanen && ungedeckt > 0 && !offen;
   const serie = `/patienten/${patient.id}/verordnungen/${verordnung.id}/serie`;
 
@@ -395,7 +418,7 @@ function Verordnungsaktionen({
       {/* Die Serie hängt an der Verordnung, weil dort das Kontingent steht
           (CAL-007). Wer Termine plant, sieht sie - das ist ein anderes Recht
           als das Schreiben der Verordnung (ADR-004). */}
-      {darfPlanen && planbar && !serieHaupt ? (
+      {darfPlanen && !serieHaupt ? (
         <Textlink to={serie} alleinstehend className="text-sm">
           Dauertermin anlegen
         </Textlink>
@@ -405,14 +428,14 @@ function Verordnungsaktionen({
           und Verordnung reisen als Kontext mit - im Formular steht danach
           beides schon fest. Die Serie plant im Raster, dieser Weg sucht die
           Lücke. */}
-      {darfPlanen && planbar ? (
+      {darfPlanen ? (
         <Textlink to={kalenderZiel} alleinstehend className="text-sm">
           Im Kalender einen Platz suchen
         </Textlink>
       ) : null}
       {/* Die Anwendung sucht die Lücke (PRX-003): freie Plätze als
           Vorschlagsliste, die Verordnung reist ins Formular mit. */}
-      {darfPlanen && planbar ? (
+      {darfPlanen ? (
         <Textlink
           to={mitRueckweg(
             `/patienten/${patient.id}/plaetze?verordnung=${verordnung.id}`,
@@ -431,7 +454,7 @@ function Verordnungsaktionen({
           Termine übertragen
         </Textlink>
       ) : null}
-      {darfPlanen && planbar && ungedeckt === 0 && uebernehmbar ? (
+      {darfPlanen && ungedeckt === 0 && uebernehmbar ? (
         <Textlink to={`${uebertragen}?ziel=${verordnung.id}`} alleinstehend className="text-sm">
           Termine übernehmen
         </Textlink>
@@ -573,6 +596,9 @@ function LaufendeVerordnung({
             <Kontingentzeilen
               kontingent={kontingent}
               terminlink={terminlink(patient.id, verordnung.id)}
+              patientId={patient.id}
+              darfZurueckholen={canReleaseTreatmentBasis(user.roles)}
+              zeitzone={user.organizationTimeZone}
             />
             {/* Seit VER-EPIC-002 immer: Welche Heilmittel die Grundlage trägt,
                 steht in keiner Zahl darüber - auch nicht bei einem einzigen. */}
@@ -674,6 +700,11 @@ function AbgeschlosseneVerordnung({
                   ? `${kontingent.used} von ${kontingent.prescribed} Terminen genutzt`
                   : null,
                 kontingent ? `${kontingent.planned} verplant` : null,
+                // B1: Eine ausgeschöpfte Grundlage, die noch nicht abgerechnet
+                // ist, ist keine erledigte - das Wort steht in der Zeile.
+                kontingent?.state && kontingent.state !== 'abgerechnet'
+                  ? grundlagenZustandLabels[kontingent.state]
+                  : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}
@@ -686,6 +717,9 @@ function AbgeschlosseneVerordnung({
             <Kontingentzeilen
               kontingent={kontingent}
               terminlink={terminlink(patient.id, verordnung.id)}
+              patientId={patient.id}
+              darfZurueckholen={canReleaseTreatmentBasis(user.roles)}
+              zeitzone={user.organizationTimeZone}
             />
             {verordnung.items.length > 0 ? (
               <DetailRow label="Heilmittel">
@@ -743,6 +777,13 @@ export function PatientTreatmentBasesPage() {
       <div className="mt-8">
         <OffeneVerordnungsfotos patientId={patient.id} user={user} />
       </div>
+      {/* B1 (BEF-151): was abgerechnet ist, was gezahlt wurde und wo zu
+          mahnen ist - für owner und office, unter den Grundlagen. */}
+      <RechnungenDerAkte
+        patientId={patient.id}
+        user={user}
+        hierher={`/patienten/${patient.id}/verordnungen`}
+      />
     </>
   );
 }

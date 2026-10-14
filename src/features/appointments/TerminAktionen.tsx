@@ -7,8 +7,6 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
-import { Aufklappzeichen } from '@/components/ui/Card';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { TerminMetazeile, TerminZeilen, Zeile } from './TerminKompakt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { MitteilungVermerken } from './MitteilungVermerken';
@@ -16,7 +14,8 @@ import { AbrechnungAbschnitt } from './Abrechnungslage';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import { AppointmentHeadline } from './AppointmentHeadline';
 import { HomeVisitFlow } from './HomeVisitFlow';
-import { HeilmittelBestaetigen } from './HeilmittelBestaetigen';
+import { LeistungAmTermin } from './LeistungAmTermin';
+import { hakenFehlt, hakenZuruecknehmbar } from './haken';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -108,8 +107,9 @@ function zustandsHinweis(appointment: Appointment): string | null {
     case 'cancelled':
       return 'Eine Absage wird nicht zurückgenommen – für einen neuen Termin bitte neu anlegen.';
     case 'no_show':
-    case 'completed':
       return 'Zum Ändern erst wieder öffnen.';
+    case 'completed':
+      return 'Zum Ändern erst den Haken zurücknehmen.';
     case 'documented':
       return 'Korrigiert wird in der Dokumentation, nicht am Termin.';
     default:
@@ -321,7 +321,11 @@ function ZustandZeilen({ appointment }: { appointment: Appointment }) {
   return honorar;
 }
 
-/** „Termin wieder öffnen" unter den Zeilen - nur an abgeschlossenen und nicht angetroffenen. */
+/**
+ * Unter den Zeilen der Weg zurück: am abgehakten Termin „Haken zurücknehmen“
+ * - seit B4 jederzeit, auch nach dem Festschreiben -, am nicht angetroffenen
+ * „Termin wieder öffnen“.
+ */
 function WiederOeffnen({
   appointment,
   darfWiederOeffnen,
@@ -332,14 +336,15 @@ function WiederOeffnen({
   melden: Melden;
 }) {
   if (!darfWiederOeffnen) return null;
+  const haken = appointment.status !== 'no_show';
   return (
     <div className="mt-3 flex">
       <StatusAktion
         appointment={appointment}
         aktion={reopenAppointment}
-        beschriftung="Termin wieder öffnen"
-        laufend="Wird geöffnet …"
-        erfolg="Termin wieder geöffnet."
+        beschriftung={haken ? 'Haken zurücknehmen' : 'Termin wieder öffnen'}
+        laufend={haken ? 'Wird zurückgenommen …' : 'Wird geöffnet …'}
+        erfolg={haken ? 'Haken zurückgenommen.' : 'Termin wieder geöffnet.'}
         variant="secondary"
         melden={melden}
       />
@@ -902,8 +907,17 @@ function TerminAktionen({
   // ueber den Abschluss hinweg. Verbindlich pruefen das die Serverfunktionen
   // (ADR-018, ADR-004).
   const darfAendern = darfVerwalten && appointment.status === 'confirmed';
+  // B4 (BEF-154): Der Haken lässt sich jederzeit zurücknehmen, auch nach dem
+  // Festschreiben - der Server prüft, ob die Leistung schon abgerechnet ist.
   const darfWiederOeffnen =
-    darfVerwalten && (appointment.status === 'completed' || appointment.status === 'no_show');
+    darfVerwalten &&
+    (appointment.status === 'no_show' ||
+      (appointment.kind === 'therapy' &&
+        hakenZuruecknehmbar(appointment.status, appointment.completed_at)));
+  const hakenOffen =
+    appointment.kind === 'therapy' &&
+    appointment.status === 'documented' &&
+    hakenFehlt(appointment.status, appointment.completed_at);
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
   // ABN-006: Verzichten dürfen, wer ein Ausfallhonorar erfasst (owner, office).
   const darfVerzichten =
@@ -983,26 +997,36 @@ function TerminAktionen({
 
       {/* Der Abschluss am offenen Termin steht vor Dokumentation und
           Detailzeilen (BEF-055, Entscheidung Jannes 2026-10-09): ein
-          Hauptknopf je Ansicht. Wer dokumentiert, schließt über „Doku“ ab -
-          dort wird festgeschrieben, und der Termin gilt damit als
-          durchgeführt. Am Hausbesuch stehen „Niemand öffnet?“ und „Ohne
-          Behandlung“ daneben; der Abschluss ohne Dokumentation (ANN-005)
-          heißt „Nur Termin abschließen“ und liegt eingeklappt darunter.
-          Rollen ohne Doku-Recht haben „Termin abschließen“ als Hauptknopf,
-          mit seiner Folge. */}
+          Hauptknopf je Ansicht. Seit B4 (BEF-154) sind Doku und Haken
+          getrennt: „Doku“ schreibt und schreibt fest, „Abhaken“ stellt fest,
+          dass die Behandlung stattgefunden hat - in beliebiger Reihenfolge.
+          Am Hausbesuch stehen „Niemand öffnet?“ und „Ohne Behandlung“
+          daneben. Rollen ohne Doku-Recht haben „Abhaken“ als Hauptknopf. */}
       {darfAendern && !istEreignis ? (
         <div role="group" aria-label="Abschluss" className="mt-4 flex flex-col items-start gap-3">
-          {darfDokumentieren ? (
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {darfDokumentieren ? (
               <ButtonLink
                 to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}
                 groesse="kompakt"
               >
                 Doku <span className="sr-only">schreiben</span>
               </ButtonLink>
-              {istHausbesuch ? (
-                <>
-                  <HomeVisitFlow appointment={appointment} melden={melden} />
+            ) : null}
+            <TerminAbschliessenKnopf
+              appointmentId={appointment.id}
+              stand={appointment.updated_at}
+              variant={darfDokumentieren ? 'secondary' : 'primary'}
+              text="Abhaken"
+              onAbgeschlossen={() =>
+                melden(darfDokumentieren ? 'Termin abgehakt. Doku offen.' : 'Termin abgehakt.')
+              }
+              onFehler={setAbschlussFehler}
+            />
+            {istHausbesuch ? (
+              <>
+                <HomeVisitFlow appointment={appointment} melden={melden} />
+                {darfDokumentieren ? (
                   <ButtonLink
                     to={mitRueckweg(
                       `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
@@ -1013,52 +1037,31 @@ function TerminAktionen({
                   >
                     Ohne Behandlung
                   </ButtonLink>
-                </>
-              ) : null}
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <TerminAbschliessenKnopf
-                appointmentId={appointment.id}
-                stand={appointment.updated_at}
-                variant="primary"
-                text="Termin abschließen"
-                onAbgeschlossen={() => melden('Termin abgeschlossen.')}
-                onFehler={setAbschlussFehler}
-              />
-              {istHausbesuch ? <HomeVisitFlow appointment={appointment} melden={melden} /> : null}
-              <p className="text-ink-muted basis-full text-sm">
-                Der Termin gilt damit als durchgeführt.
-              </p>
-            </div>
-          )}
+                ) : null}
+              </>
+            ) : null}
+          </div>
 
           {istHausbesuch ? null : (
             <NichtAngetroffenAktion appointment={appointment} melden={melden} />
           )}
 
-          {darfDokumentieren ? (
-            <details className="group">
-              <summary className={`${aufklappKopfKlassen} text-ink text-sm`}>
-                <Aufklappzeichen />
-                Nur Termin abschließen
-              </summary>
-              <div className="flex flex-col items-start gap-2 pb-1 pl-6">
-                <p className="text-ink-muted max-w-prose text-sm">
-                  Schließt den Termin ab, ohne zu dokumentieren. Die Doku bleibt offen.
-                </p>
-                <TerminAbschliessenKnopf
-                  appointmentId={appointment.id}
-                  stand={appointment.updated_at}
-                  variant="secondary"
-                  text="Nur Termin abschließen"
-                  onAbgeschlossen={() => melden('Termin abgeschlossen. Doku offen.')}
-                  onFehler={setAbschlussFehler}
-                />
-              </div>
-            </details>
-          ) : null}
+          {abschlussFehler ? <Statusmeldung ton="fehler">{abschlussFehler}</Statusmeldung> : null}
+        </div>
+      ) : null}
 
+      {/* B4: Die Doku ist festgeschrieben, der Haken fehlt noch - er wird hier
+          oder in der Übersicht gesetzt, nie vom Festschreiben. */}
+      {darfVerwalten && hakenOffen ? (
+        <div role="group" aria-label="Abschluss" className="mt-4 flex flex-col items-start gap-3">
+          <TerminAbschliessenKnopf
+            appointmentId={appointment.id}
+            stand={appointment.updated_at}
+            variant="primary"
+            text="Abhaken"
+            onAbgeschlossen={() => melden('Termin abgehakt.')}
+            onFehler={setAbschlussFehler}
+          />
           {abschlussFehler ? <Statusmeldung ton="fehler">{abschlussFehler}</Statusmeldung> : null}
         </div>
       ) : null}
@@ -1234,11 +1237,12 @@ function TerminAktionen({
         </div>
       ) : null}
 
-      {/* Termin abhaken (PRX-009): die geleisteten Heilmittel bestätigen - die
-          behandelnde Person an ihrem Termin, das Büro an jedem (ANN-140). */}
+      {/* Die Leistung zur Kontrolle (B7, BEF-157): Mit dem Haken gilt sie als
+          erbracht - bestätigt wird nichts mehr. Die behandelnde Person an
+          ihrem Termin, das Büro an jedem (ANN-140). */}
       {appointment.kind === 'therapy' &&
       canRecordAtAppointment(user.roles, appointment.staff_member_id, user.staffMemberId) ? (
-        <HeilmittelBestaetigen appointment={appointment} user={user} />
+        <LeistungAmTermin appointment={appointment} user={user} />
       ) : null}
 
       {/* BEF-081: Empfänger und offene Rechnungen - nur für owner und office. */}

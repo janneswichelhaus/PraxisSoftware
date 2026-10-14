@@ -5,7 +5,8 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { tagePlus } from '@/features/appointments/calendar';
 import { formatLocalTime } from '@/features/appointments/api';
-import { fetchLeistungenAmTermin } from '@/features/appointments/leistungenAmTermin';
+import { hakenFehlt } from '@/features/appointments/haken';
+import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import {
   fetchDayPlan,
   nachUhrzeit,
@@ -25,8 +26,28 @@ import { nichtAbgeschlossen, terminName } from './tagesstart';
  */
 function fehlt(termin: DayPlanEntry, darfDokumentieren: boolean, jetzt: number): string | null {
   if (termin.kind !== 'therapy' || !termin.patient_id) return null;
-  if (nichtAbgeschlossen(termin, jetzt)) return 'Nicht abgeschlossen';
+  // B4: Festgeschrieben, aber nicht abgehakt - es fehlt nur der Haken.
+  if (nichtAbgeschlossen(termin, jetzt)) {
+    return termin.status === 'documented' ? 'Haken fehlt' : 'Nicht abgeschlossen';
+  }
   return darfDokumentieren ? offenGrund(termin) : null;
+}
+
+/**
+ * Was eine Zeile anbietet: der Haken, wo nur er fehlt (B4), sonst „Doku“.
+ * Der Haken ist der Weg, den auch die Übersicht geht (`complete_appointment`).
+ */
+function ZeilenAktion({
+  termin,
+  darfDokumentieren,
+}: {
+  termin: DayPlanEntry;
+  darfDokumentieren: boolean;
+}) {
+  if (termin.status === 'documented' && hakenFehlt(termin.status, termin.checked_at)) {
+    return <TerminAbschliessenKnopf appointmentId={termin.id} name={terminName(termin)} />;
+  }
+  return darfDokumentieren ? <DokuKnopf termin={termin} /> : null;
 }
 
 function DokuKnopf({ termin }: { termin: DayPlanEntry }) {
@@ -39,19 +60,14 @@ function DokuKnopf({ termin }: { termin: DayPlanEntry }) {
 
 /**
  * Der Tagesabschluss als Liste (Auftrag C1, Analyse „Alltag unterwegs“
- * Rang 13): erst was heute noch offen ist - Doku und Heilmittel -, dann
- * kommt „Morgen“. Jede Zeile führt mit einem Tipp auf die Schreibseite;
- * dort stehen nach dem Festschreiben auch die Heilmittel (`Danach`).
- *
- * „Heilmittel offen“ liest je dokumentiertem Besuch den Stand am Termin
- * (`get_appointment_services`, ohne Protokollierung) - nur, wo die Rolle an
- * diesem Termin bestätigen darf (ANN-140).
+ * Rang 13): erst was heute noch offen ist - Haken und Doku -, dann kommt
+ * „Morgen“. Seit B7 (BEF-157) gibt es keine Heilmittel mehr zu bestätigen:
+ * Mit Haken und Doku entsteht die Leistung von selbst (ANN-513).
  */
 export function NochOffen({
   plan,
   tagWort,
   darfDokumentieren,
-  darfHeilmittel,
   jetzt,
   zeitzone,
 }: {
@@ -59,46 +75,18 @@ export function NochOffen({
   /** „Heute“, „Gestern“ … am Satzanfang. */
   tagWort: string;
   darfDokumentieren: boolean;
-  darfHeilmittel: (staffMemberId: string) => boolean;
   jetzt: number;
   zeitzone: string;
 }) {
-  const dokumentiert = plan.filter(
-    (t) =>
-      t.kind === 'therapy' &&
-      t.patient_id !== null &&
-      t.status === 'documented' &&
-      darfHeilmittel(t.staff_member_id),
-  );
-  const leistungen = useQueries({
-    queries: dokumentiert.map((t) => ({
-      queryKey: ['appointment', t.id, 'leistungen'],
-      queryFn: () => fetchLeistungenAmTermin(t.id),
-      retry: false,
-    })),
-  });
-  const heilmittelOffen = new Set(
-    dokumentiert
-      .filter((_, index) => {
-        const stand = leistungen[index]?.data;
-        return !!stand && stand.can_record && stand.services.length === 0;
-      })
-      .map((t) => t.id),
-  );
-
   const zeilen = plan.flatMap((termin) => {
     const grund = fehlt(termin, darfDokumentieren, jetzt);
-    if (grund) return [{ termin, grund, heilmittel: false }];
-    if (heilmittelOffen.has(termin.id)) {
-      return [{ termin, grund: 'Heilmittel offen', heilmittel: true }];
-    }
-    return [];
+    return grund ? [{ termin, grund }] : [];
   });
   if (zeilen.length === 0) return null;
 
   return (
     <Listenabschnitt titel={`${tagWort} noch offen`} anzahl={zeilen.length}>
-      {zeilen.map(({ termin, grund, heilmittel }) => (
+      {zeilen.map(({ termin, grund }) => (
         <ListRow
           key={termin.id}
           zeit={formatLocalTime(termin.starts_at, zeitzone)}
@@ -109,15 +97,7 @@ export function NochOffen({
               {grund}
             </span>
           }
-          aktion={
-            heilmittel ? (
-              <ButtonLink to={schreibseite(termin.id)} variant="secondary">
-                Heilmittel <span className="sr-only">bestätigen: {terminName(termin)}</span>
-              </ButtonLink>
-            ) : darfDokumentieren ? (
-              <DokuKnopf termin={termin} />
-            ) : undefined
-          }
+          aktion={<ZeilenAktion termin={termin} darfDokumentieren={darfDokumentieren} />}
         />
       ))}
     </Listenabschnitt>
@@ -132,8 +112,7 @@ export const NACHZUHOLEN_TAGE = 7;
  * Besuch ohne Haken, eine Doku offen oder im Entwurf (Auftrag C1, Analyse
  * Rang 5, ANN-478). Gelesen über dieselbe Tagesliste wie die Wochenleiste
  * (`list_day_plan`, ohne Protokollierung), je Tag eine Abfrage; eine neue
- * Serverfunktion gibt es dafür nicht. Unbestätigte Heilmittel früherer Tage
- * kennt die Tagesliste nicht - sie stehen hier deshalb nicht.
+ * Serverfunktion gibt es dafür nicht.
  *
  * Eine Zeile, zugeklappt; aufgeklappt führt jeder Eintrag mit einem Tipp auf
  * die Schreibseite.
@@ -178,7 +157,7 @@ export function Nachzuholen({
               zeit={formatLocalTime(termin.starts_at, zeitzone)}
               titel={terminName(termin)}
               meta={`${tagLang(termin, zeitzone)} · ${grund}`}
-              aktion={<DokuKnopf termin={termin} />}
+              aktion={<ZeilenAktion termin={termin} darfDokumentieren />}
             />
           ))}
         </ListRows>

@@ -42,7 +42,7 @@ export const GRENZEN: Record<
     'features/tours': 3,
   },
   details: {
-    'features/appointments': 4,
+    'features/appointments': 3,
 
     'features/assessments': 2,
 

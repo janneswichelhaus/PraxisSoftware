@@ -14,7 +14,6 @@ const ORT = '33333333-3333-4333-8333-000000000001';
 
 const patient: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
-  status: 'active',
   given_name: 'Max',
   family_name: 'Mustermann',
   street: 'Beispielstrasse',

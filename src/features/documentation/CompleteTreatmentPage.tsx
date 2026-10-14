@@ -360,10 +360,12 @@ function Abschluss({
               fehlertitel: 'Nicht festgeschrieben',
               danach: () => {
                 freigeben();
+                // B4 (BEF-154): Festschreiben hakt nicht ab - abgehakt wird
+                // in der Übersicht oder im Kalender.
                 onFestgeschrieben(
                   ohneBehandlung
-                    ? 'Mit Vermerk festgeschrieben. Der Termin ist abgeschlossen.'
-                    : 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.',
+                    ? 'Mit Vermerk festgeschrieben.'
+                    : 'Eintrag als Version 1 festgeschrieben.',
                 );
               },
             }).finally(() => setSchreibtAbschluss(false));
@@ -462,11 +464,11 @@ function Abschluss({
           </div>
 
           {/* Die Folge des Festschreibens für Vorlesesoftware: Der Knopf heißt
-              nach dem, was er tut (ADR-016 Punkt 4); dass der Termin damit als
-              durchgeführt gilt, hört man mit (DOK-20). */}
+              nach dem, was er tut (ADR-016 Punkt 4), die Folge hört man mit
+              (DOK-20). Seit B4 hakt das Festschreiben den Termin nicht ab. */}
           <p id={folgeId} className="sr-only">
-            Schreibt den Eintrag als Version 1 fest; der Termin gilt damit als durchgeführt. Danach
-            nur mit Begründung änderbar.
+            Schreibt den Eintrag als Version 1 fest; abgehakt wird der Termin getrennt. Danach nur
+            mit Begründung änderbar.
           </p>
 
           {/* Fußleiste: bleibt beim Scrollen stehen, am Telefon über der

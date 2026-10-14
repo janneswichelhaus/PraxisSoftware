@@ -6,7 +6,7 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { FolgeterminVorschlaege } from '@/features/appointments/FolgeterminVorschlaege';
-import { HeilmittelAmAbschluss } from '@/features/appointments/HeilmittelBestaetigen';
+import { LeistungAmTermin } from '@/features/appointments/LeistungAmTermin';
 import { patientName, type Appointment } from '@/features/appointments/api';
 import {
   canReadExercisePlans,
@@ -22,11 +22,11 @@ const TEIL = 'border-line border-t pt-4 first:border-t-0 first:pt-0';
 
 /**
  * Was nach dem Festschreiben am Besuch noch zu tun ist (Auftrag C1, Muster U1
- * und U8 des Referenzabgleichs): Heilmittel bestätigen, Folgetermin anlegen,
- * Übungsplan mitgeben - an einem Ort statt über Akte und Kalender. Jeder Teil
- * erscheint nur, wenn die Rolle ihn darf, und steht als erledigt da, wenn er
- * es ist (Leitfaden L3). Am Vermerk „ohne Behandlung“ gibt es weder
- * Heilmittel noch Plan: Behandelt wurde nicht.
+ * und U8 des Referenzabgleichs): die Leistung zur Kontrolle (seit B7 ohne
+ * Bestätigung, mit dem Vorschlag „In die Abrechnung stellen“), Folgetermin
+ * anlegen, Übungsplan mitgeben - an einem Ort statt über Akte und Kalender.
+ * Jeder Teil erscheint nur, wenn die Rolle ihn darf (Leitfaden L3). Am Vermerk
+ * „ohne Behandlung“ gibt es weder Leistung noch Plan: Behandelt wurde nicht.
  */
 export function DanachTeile({
   appointment,
@@ -41,7 +41,7 @@ export function DanachTeile({
   hierher: string;
 }) {
   const behandlung = !ohneBehandlung && appointment.kind === 'therapy';
-  const heilmittel =
+  const leistung =
     behandlung &&
     canRecordAtAppointment(user.roles, appointment.staff_member_id, user.staffMemberId);
   const plan =
@@ -49,9 +49,9 @@ export function DanachTeile({
 
   return (
     <div className="flex flex-col gap-4">
-      {heilmittel ? (
-        <div className={TEIL}>
-          <HeilmittelAmAbschluss appointment={appointment} user={user} />
+      {leistung ? (
+        <div className={`${TEIL} empty:hidden`}>
+          <LeistungAmTermin appointment={appointment} user={user} amAbschluss />
         </div>
       ) : null}
       <div className={`${TEIL} empty:hidden`}>

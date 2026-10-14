@@ -16,7 +16,9 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Zweispalter } from '@/components/ui/Zweispalter';
 import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
+import { hakenFehlt, hakenZuruecknehmbar } from '@/features/appointments/haken';
 import { HomeVisitFlow } from '@/features/appointments/HomeVisitFlow';
+import { FreigabeNachHaken } from '@/features/appointments/FreigabeNachHaken';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
@@ -40,7 +42,6 @@ import {
   isTherapyStaff,
   canReadTreatmentNote,
   canWriteTreatmentNote,
-  canRecordAtAppointment,
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
@@ -399,7 +400,6 @@ function MeinTag({
   jetzt,
   heute,
   praxis,
-  darfHeilmittel,
 }: {
   abfrage: UseQueryResult<DayPlanEntry[]>;
   /** Die Tagesliste nach Uhrzeit; leer, solange nichts geladen ist. */
@@ -421,8 +421,6 @@ function MeinTag({
   heute: string;
   /** Der Name der Praxis für die Nachricht „Später da?“ (ANN-476). */
   praxis: string;
-  /** Darf die Person an einem Termin dieser Behandelnden Heilmittel bestätigen (ANN-140)? */
-  darfHeilmittel: (staffMemberId: string) => boolean;
 }) {
   const { data: termine, isPending, isError, isFetching, dataUpdatedAt, refetch } = abfrage;
 
@@ -466,7 +464,14 @@ function MeinTag({
     beschriftung?: string,
     variante: 'primary' | 'secondary' = 'secondary',
   ): ReactNode {
-    if (!darfTermine || termin.kind !== 'therapy' || termin.status !== 'confirmed') return null;
+    // B4: auch eine festgeschriebene Doku wartet noch auf ihren Haken.
+    if (
+      !darfTermine ||
+      termin.kind !== 'therapy' ||
+      !hakenFehlt(termin.status, termin.checked_at)
+    ) {
+      return null;
+    }
     // Ein künftiger Tag wird nicht abgehakt (ANN-234): Der Besuch war noch nicht.
     if (datum > heute) return null;
     const name = terminName(termin);
@@ -480,9 +485,10 @@ function MeinTag({
         onAbgeschlossen={() =>
           setMeldung({
             ton: 'ok',
-            text: darfDokumentieren
-              ? `${name} abgeschlossen. Doku offen.`
-              : `${name} abgeschlossen.`,
+            text:
+              darfDokumentieren && termin.status !== 'documented'
+                ? `${name} abgeschlossen. Doku offen.`
+                : `${name} abgeschlossen.`,
             abgehakt: { id: termin.id, name },
           })
         }
@@ -576,6 +582,26 @@ function MeinTag({
   }
 
   /**
+   * Den Haken zurücknehmen - jederzeit, auch nach dem Festschreiben (B4,
+   * BEF-154): an der aufgeklappten Zeile eines abgehakten Besuchs. Ob es
+   * geht, entscheidet der Server (abgerechnet, Verordnung in der Abrechnung).
+   */
+  function hakenZuruecknehmen(termin: DayPlanEntry): ReactNode {
+    if (!darfTermine || termin.kind !== 'therapy') return null;
+    if (!hakenZuruecknehmbar(termin.status, termin.checked_at)) return null;
+    const name = terminName(termin);
+    return (
+      <HakenRueckgaengig
+        appointmentId={termin.id}
+        name={name}
+        beschriftung="Haken zurücknehmen"
+        onWiederOffen={() => setMeldung({ ton: 'ok', text: `Haken bei ${name} zurückgenommen.` })}
+        onFehler={(text) => setMeldung({ ton: 'fehler', text })}
+      />
+    );
+  }
+
+  /**
    * Eine aufgeklappte Zeile (Auftrag C1, Analyse „Alltag unterwegs“ Rang 8):
    * dieselbe Karte wie die des nächsten Wegs, mit Navigation, Anruf und Doku,
    * ohne Hauptfarbe - der eine Hauptknopf bleibt an der Karte des nächsten
@@ -614,7 +640,13 @@ function MeinTag({
             reihe
           )
         }
-        aktionen={kommt && istHeute ? <SpaeterDa termin={termin} praxis={praxis} /> : null}
+        aktionen={
+          kommt && istHeute ? (
+            <SpaeterDa termin={termin} praxis={praxis} />
+          ) : (
+            hakenZuruecknehmen(termin)
+          )
+        }
         hinweis={kommt && fahrzeiten.veraltet.has(termin.id) ? VERALTET_TEXT : null}
         onZuklappen={() => umschalten(termin.id)}
       />
@@ -699,7 +731,7 @@ function MeinTag({
       wege.erster?.id === termin.id && wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg';
     const kicker: ReactNode =
       fokus.art === 'dokumentation' ? (
-        termin.status === 'confirmed' ? (
+        hakenFehlt(termin.status, termin.checked_at) ? (
           `Seit ${ende} offen`
         ) : (
           'Doku offen'
@@ -828,13 +860,16 @@ function MeinTag({
       />
     ) : null;
 
-  // „Rückgängig" nur, solange der Termin nach der Liste noch abgeschlossen (oder
-  // noch nicht nachgeladen) ist: Nach dem Festschreiben gibt es den Rückweg
-  // nicht mehr (ADR-018 Punkt 2).
+  // „Rückgängig" nur, solange der Termin nach der Liste noch abgehakt (oder
+  // noch nicht nachgeladen) ist. Seit B4 auch nach dem Festschreiben: Doku und
+  // Haken sind getrennt (ADR-018 Fassung 5).
   const abgehakt = meldung?.ton === 'ok' ? meldung.abgehakt : undefined;
   const abgehaktJetzt = abgehakt ? sortiert.find((t) => t.id === abgehakt.id) : undefined;
   const rueckgaengig =
-    abgehakt && (abgehaktJetzt?.status === 'completed' || abgehaktJetzt?.status === 'confirmed') ? (
+    abgehakt &&
+    abgehaktJetzt &&
+    (hakenZuruecknehmbar(abgehaktJetzt.status, abgehaktJetzt.checked_at) ||
+      hakenFehlt(abgehaktJetzt.status, abgehaktJetzt.checked_at)) ? (
       <HakenRueckgaengig
         appointmentId={abgehakt.id}
         name={abgehakt.name}
@@ -856,6 +891,16 @@ function MeinTag({
         <Statusmeldung ton="fehler" className="mb-4">
           {meldung.text}
         </Statusmeldung>
+      ) : null}
+      {/* B7: Hat dieser Haken die Verordnung vollständig gemacht, folgt der
+          Vorschlag „In die Abrechnung stellen“ (ein Tipp). */}
+      {abgehakt && darfTermine ? (
+        <div className="mb-4 empty:hidden">
+          <FreigabeNachHaken
+            appointmentId={abgehakt.id}
+            patientId={abgehaktJetzt?.patient_id ?? null}
+          />
+        </div>
       ) : null}
       {/* „Stand von …" erscheint nur, wenn die Liste tatsächlich nicht mehr
           frisch ist (UX-011). Dauerhaft angezeigt wäre es Rauschen - wie ein
@@ -924,7 +969,7 @@ function MeinTag({
           dem Leerzustand - heute vor morgen (Design-Review R2, U4; ANN-482). */}
       {ohneBesuch ? strahl : null}
 
-      {/* Am Tagesende erst, was heute noch offen ist - Doku und Heilmittel -,
+      {/* Am Tagesende erst, was heute noch offen ist - Haken und Doku -,
           dann was liegen geblieben ist, dann morgen (Auftrag C1, Analyse
           Rang 13). */}
       {!stehtBesuchAus ? (
@@ -932,7 +977,6 @@ function MeinTag({
           plan={sortiert}
           tagWort={TagesWort(datum, heute)}
           darfDokumentieren={darfDokumentieren}
-          darfHeilmittel={darfHeilmittel}
           jetzt={jetzt}
           zeitzone={zeitzone}
         />
@@ -1178,9 +1222,6 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             jetzt={jetzt}
             heute={heute}
             praxis={user.organizationName ?? 'Ihrer Praxis'}
-            darfHeilmittel={(person) =>
-              canRecordAtAppointment(user.roles, person, user.staffMemberId)
-            }
           />
         ) : null}
 

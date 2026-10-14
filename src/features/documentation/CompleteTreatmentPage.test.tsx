@@ -9,6 +9,7 @@ import type * as Bausteine from './textbausteine';
 import type * as SlotApi from '@/features/slot-search/api';
 import type * as BillingApi from '@/features/billing/api';
 import type * as LeistungenApi from '@/features/appointments/leistungenAmTermin';
+import type * as GrundlagenApi from '@/features/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
@@ -62,6 +63,13 @@ const findFreeSlots = vi.fn();
 const fetchLeistungenAmTermin = vi.fn();
 const fetchVorschlag = vi.fn();
 const recordLeistungen = vi.fn();
+const releaseTreatmentBasisForBilling = vi.fn();
+
+vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof GrundlagenApi>()),
+  releaseTreatmentBasisForBilling: (id: string) =>
+    releaseTreatmentBasisForBilling(id) as Promise<void>,
+}));
 
 vi.mock('@/features/slot-search/api', async (importOriginal) => ({
   ...(await importOriginal<typeof SlotApi>()),
@@ -129,7 +137,8 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
 
-const FESTGESCHRIEBEN = 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.';
+// B4 (BEF-154): Festschreiben hakt nicht ab - die Meldung sagt nur, was geschah.
+const FESTGESCHRIEBEN = 'Eintrag als Version 1 festgeschrieben.';
 
 /**
  * Nach dem Festschreiben bleibt die Seite stehen und zeigt „Danach"
@@ -279,7 +288,7 @@ describe('CompleteTreatmentPage', () => {
     expect(screen.queryByText('Letzte Woche: Gangschule.')).toBeNull();
   });
 
-  it('schliesst Dokumentation und Termin mit einer einzigen Aktion ab', async () => {
+  it('schreibt die Dokumentation mit einer einzigen Aktion fest - ohne abzuhaken (B4)', async () => {
     const user = userEvent.setup();
     rendern();
 
@@ -330,35 +339,50 @@ describe('CompleteTreatmentPage', () => {
       basis_items: null,
       session_fee_cents: null,
     });
-    const vorschlag = (id: string, label: string, suggested: boolean): BillingApi.Vorschlag => ({
-      catalog_item_id: id,
-      code: id,
-      label,
-      item_kind: 'treatment',
-      unit_price_cents: 3000,
-      currency: 'EUR',
-      tax_treatment: 'exempt_healthcare',
-      tax_rate_permille: 0,
-      service_area: 'therapy',
-      suggested,
-      in_session_fee: false,
+
+    /** Die Abrechnungslage am Termin: zweiter von zehn Terminen der Folgeverordnung. */
+    const lage = (teil: Partial<LageApi.Abrechnungslage> = {}): LageApi.Abrechnungslage => ({
+      appointment_id: TERMIN_ID,
+      treatment_basis_id: 'b1',
+      treatment_basis_kind: 'follow_up',
+      treatment_basis_issued_on: '2027-05-01',
+      basis_position: 2,
+      basis_appointment_count: 10,
+      billing_visible: false,
+      recipient_kind: null,
+      open_invoice_count: null,
+      open_outstanding_cents: null,
+      open_overdue: null,
+      closing_talk_due: false,
+      checked_at: null,
+      basis_performed: 1,
+      basis_open: 9,
+      basis_complete: false,
+      basis_ready: false,
+      basis_released_at: null,
+      basis_invoiced: false,
+      basis_state: 'laeuft',
+      can_release: false,
+      ...teil,
+    });
+    const mitGrundlage = (): LeistungenApi.LeistungenAmTermin => ({
+      ...stand(false),
+      basis_items: [
+        { remedy: 'KG', prescribed_quantity: 10, used_quantity: 1 },
+        { remedy: 'MT', prescribed_quantity: 10, used_quantity: 1 },
+      ],
     });
 
-    it('bestätigt die vorbelegten Heilmittel mit einem Tipp über den bestehenden Weg (ANN-475)', async () => {
+    // B7 (BEF-157): Nach dem Festschreiben steht die Leistung zur Kontrolle da -
+    // bestätigt wird nichts mehr; mit dem Haken gilt sie als erbracht.
+    it('zeigt die Leistung zur Kontrolle statt einer Bestätigung (B7)', async () => {
       const user = userEvent.setup();
       completeTreatment.mockImplementation(() => {
         fetchAppointment.mockResolvedValue(dokumentiert);
         return Promise.resolve();
       });
-      fetchLeistungenAmTermin.mockResolvedValue(stand(false));
-      fetchVorschlag.mockResolvedValue([
-        vorschlag('k1', 'Krankengymnastik', true),
-        vorschlag('k2', 'Wärme', false),
-      ]);
-      recordLeistungen.mockImplementation(() => {
-        fetchLeistungenAmTermin.mockResolvedValue(stand(true));
-        return Promise.resolve();
-      });
+      fetchAbrechnungslage.mockResolvedValue(lage());
+      fetchLeistungenAmTermin.mockResolvedValue(mitGrundlage());
       rendern(['therapist'], '?zurueck=%2F');
 
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
@@ -367,37 +391,71 @@ describe('CompleteTreatmentPage', () => {
       // Kein Feld mehr: Festgeschrieben ist festgeschrieben.
       expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
 
-      expect(await screen.findByRole('checkbox', { name: 'Krankengymnastik' })).toBeChecked();
-      expect(screen.getByRole('checkbox', { name: 'Wärme' })).not.toBeChecked();
-      const knopf = screen.getByRole('button', { name: 'Heilmittel bestätigen' });
-      // Die Folge steht am Knopf, nicht in einer Rückfrage danach.
-      expect(knopf).toHaveAccessibleDescription(/Korrigieren lässt sich das danach nur im Büro/);
-      await user.click(knopf);
-
-      expect(recordLeistungen).toHaveBeenCalledTimes(1);
-      expect(recordLeistungen).toHaveBeenCalledWith(TERMIN_ID, [
-        { catalog_item_id: 'k1', quantity: 1 },
-      ]);
-      expect(
-        await screen.findByText(/Bestätigt:\s*Krankengymnastik/, { exact: false }),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('2. von 10 Terminen · KG, MT')).toBeInTheDocument();
+      expect(screen.getByText('Noch nicht abgehakt')).toBeInTheDocument();
+      // ANN-475 ist ersetzt: kein Häkchen je Heilmittel, kein Bestätigen.
+      expect(screen.queryByRole('checkbox')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Heilmittel bestätigen' })).toBeNull();
+      expect(fetchVorschlag).not.toHaveBeenCalled();
+      expect(recordLeistungen).not.toHaveBeenCalled();
 
       await user.click(screen.getByRole('button', { name: 'Fertig' }));
       expect(navigate).toHaveBeenCalledWith('/', { state: { meldung: FESTGESCHRIEBEN } });
     });
 
-    it('zeigt keine Heilmittel, wo die Rolle am Termin nicht bestätigen darf', async () => {
+    it('schlägt am letzten Termin „In die Abrechnung stellen“ vor - ein Tipp (B7)', async () => {
+      const user = userEvent.setup();
+      fetchAppointment.mockResolvedValue({
+        ...dokumentiert,
+        completed_at: '2027-05-12T09:00:00.000Z',
+      });
+      fetchTreatmentDocumentation.mockResolvedValue({
+        primary: { ...entwurf, status: 'final', version_count: 1 },
+        addenda: [],
+      });
+      fetchAbrechnungslage.mockResolvedValue(
+        lage({
+          basis_position: 10,
+          checked_at: '2027-05-12T09:00:00.000Z',
+          basis_performed: 10,
+          basis_open: 0,
+          basis_complete: true,
+          basis_ready: true,
+          basis_state: 'abrechnen',
+          can_release: true,
+        }),
+      );
+      fetchLeistungenAmTermin.mockResolvedValue({
+        ...mitGrundlage(),
+        services: [{ code: 'KG', label: 'KG', quantity: 1, status: 'billable' }],
+      });
+      releaseTreatmentBasisForBilling.mockResolvedValue(undefined);
+      rendern(['therapist'], '?zurueck=%2F');
+
+      expect(await screen.findByText(/10 von 10 Terminen erbracht und dokumentiert/)).toBeVisible();
+      expect(screen.getByText('Erbracht')).toBeInTheDocument();
+      const stellen = screen.getByRole('button', { name: 'In die Abrechnung stellen' });
+      // Sekundär: Der eine Hauptknopf bleibt „Fertig“.
+      expect(stellen).not.toHaveClass('bg-accent');
+      await user.click(stellen);
+
+      expect(releaseTreatmentBasisForBilling).toHaveBeenCalledTimes(1);
+      expect(releaseTreatmentBasisForBilling).toHaveBeenCalledWith('b1');
+      expect(await screen.findByText(/In die Abrechnung gestellt/)).toBeInTheDocument();
+    });
+
+    it('zeigt keine Leistung, wo die Rolle am Termin nicht bestätigen darf', async () => {
       const user = userEvent.setup();
       completeTreatment.mockImplementation(() => {
         fetchAppointment.mockResolvedValue({ ...dokumentiert, staff_member_id: 'fremd' });
         return Promise.resolve();
       });
+      fetchAbrechnungslage.mockResolvedValue(lage());
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
       await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
       expect(await screen.findByText(FESTGESCHRIEBEN)).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { name: 'Heilmittel' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Leistung' })).toBeNull();
       expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
     });
 
@@ -448,11 +506,12 @@ describe('CompleteTreatmentPage', () => {
         primary: { ...entwurf, status: 'final', version_count: 1 },
         addenda: [],
       });
-      fetchLeistungenAmTermin.mockResolvedValue(stand(false));
-      fetchVorschlag.mockResolvedValue([vorschlag('k1', 'Krankengymnastik', true)]);
+      fetchAbrechnungslage.mockResolvedValue(lage());
+      fetchLeistungenAmTermin.mockResolvedValue(mitGrundlage());
       rendern(['therapist'], '?zurueck=%2F');
       expect(await screen.findByText('Bereits finalisiert')).toBeInTheDocument();
-      expect(await screen.findByRole('button', { name: 'Heilmittel bestätigen' })).toBeEnabled();
+      expect(await screen.findByRole('heading', { name: 'Leistung' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Heilmittel bestätigen' })).toBeNull();
       expect(screen.getByRole('link', { name: 'Zurück zur Übersicht' })).toHaveAttribute(
         'href',
         '/',
@@ -465,7 +524,7 @@ describe('CompleteTreatmentPage', () => {
 
     expect(
       await screen.findByRole('button', { name: 'Festschreiben' }),
-    ).toHaveAccessibleDescription(/als Version 1 fest; der Termin gilt damit als durchgeführt/);
+    ).toHaveAccessibleDescription(/als Version 1 fest; abgehakt wird der Termin getrennt/);
   });
 
   it('uebergibt den Stand eines vorhandenen Entwurfs zur Konflikterkennung', async () => {

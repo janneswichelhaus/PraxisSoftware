@@ -9,6 +9,7 @@ import { zeitstrahlRaster, zeitstrahlSchiene } from '@/components/ui/timelineSti
 import { mitRueckweg } from '@/lib/rueckweg';
 import { formatLocalTime, kalenderZumTermin } from '@/features/appointments/api';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
+import { hakenFehlt } from '@/features/appointments/haken';
 import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund, type DayPlanEntry } from './api';
 import {
   VERALTET_TEXT,
@@ -34,7 +35,7 @@ function standVon(termin: DayPlanEntry, jetzt: number): Stand {
   if (termin.status === 'cancelled' || termin.status === 'no_show') return 'ausgefallen';
   if (termin.kind === 'internal') return Date.parse(termin.ends_at) <= jetzt ? 'erledigt' : 'kommt';
   if (nichtAbgeschlossen(termin, jetzt)) return 'liegengeblieben';
-  return termin.status === 'confirmed' ? 'kommt' : 'erledigt';
+  return hakenFehlt(termin.status, termin.checked_at) ? 'kommt' : 'erledigt';
 }
 
 /**
@@ -260,7 +261,9 @@ export function Zeitstrahl({
           const beginn = Date.parse(termin.starts_at);
           const grund =
             stand === 'liegengeblieben'
-              ? 'Nicht abgeschlossen'
+              ? termin.status === 'documented'
+                ? 'Haken fehlt'
+                : 'Nicht abgeschlossen'
               : (offenGrund(termin) ??
                 (stand === 'kommt' && veraltet?.has(termin.id) ? VERALTET_TEXT : null) ??
                 (stand === 'kommt' && erstaufnahmeOffen?.(termin) ? 'Erstaufnahme offen' : null));

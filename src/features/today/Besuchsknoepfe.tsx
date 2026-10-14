@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { symbolknopfKlassen, type SymbolGroesse } from '@/components/ui/buttonStile';
 import { fetchAppointment, reopenAppointment } from '@/features/appointments/api';
+import { hakenZuruecknehmbar } from '@/features/appointments/haken';
 import type { DayPlanEntry } from './api';
 import {
   VERSPAETUNG_MINUTEN,
@@ -111,18 +112,22 @@ export function SpaeterDa({ termin, praxis }: { termin: DayPlanEntry; praxis: st
  * Haken schloss den Besuch ab, und zurück ging es nur über Kalender → Termin
  * → „Termin wieder öffnen“. Der Knopf nimmt genau diesen Weg
  * (`reopen_appointment`) - keine neue Serverfunktion; der Server erlaubt ihn
- * denselben Rollen wie den Haken und nur, solange der Termin abgeschlossen
- * ist (ANN-483). Den Bearbeitungsstand liest er unmittelbar vorher, wie der
- * Haken, und öffnet nur, was noch abgeschlossen ist.
+ * denselben Rollen wie den Haken. Seit B4 (BEF-154) jederzeit, auch nach dem
+ * Festschreiben, solange die Leistung nicht abgerechnet und die Verordnung
+ * nicht in der Abrechnung ist. Den Bearbeitungsstand liest er unmittelbar
+ * vorher, wie der Haken, und nimmt nur einen Haken zurück, der noch steht.
  */
 export function HakenRueckgaengig({
   appointmentId,
   name,
+  beschriftung = 'Rückgängig',
   onWiederOffen,
   onFehler,
 }: {
   appointmentId: string;
   name: string;
+  /** „Haken zurücknehmen“ an der aufgeklappten Zeile, sonst „Rückgängig“. */
+  beschriftung?: string;
   onWiederOffen: () => void;
   onFehler: (meldung: string) => void;
 }) {
@@ -134,7 +139,7 @@ export function HakenRueckgaengig({
       // Nur den eigenen Haken zurücknehmen: Steht der Termin inzwischen anders
       // (etwa „nicht angetroffen“), hat ihn jemand geändert - dann nicht
       // wieder öffnen, sondern im Kalender ansehen (Zweitreview, Befund 3).
-      if (termin.status !== 'completed') {
+      if (!hakenZuruecknehmbar(termin.status, termin.completed_at)) {
         throw new Error('Der Termin wurde inzwischen geändert. Bitte im Kalender ansehen.');
       }
       await reopenAppointment(termin.id, termin.updated_at);
@@ -147,9 +152,7 @@ export function HakenRueckgaengig({
     },
     onError: (fehler) => {
       onFehler(
-        fehler instanceof Error
-          ? fehler.message
-          : 'Der Termin konnte nicht wieder geöffnet werden.',
+        fehler instanceof Error ? fehler.message : 'Der Haken konnte nicht zurückgenommen werden.',
       );
     },
   });
@@ -166,8 +169,8 @@ export function HakenRueckgaengig({
         mutation.mutate();
       }}
     >
-      {mutation.isPending ? 'Wird geöffnet …' : 'Rückgängig'}
-      <span className="sr-only">: {name} wieder öffnen</span>
+      {mutation.isPending ? 'Wird zurückgenommen …' : beschriftung}
+      <span className="sr-only">: Haken bei {name}</span>
     </Button>
   );
 }

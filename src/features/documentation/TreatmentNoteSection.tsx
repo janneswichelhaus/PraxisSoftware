@@ -195,10 +195,10 @@ function Eintrag({
             Begründung und bleibt nachvollziehbar.
             {/* Die zweite Folge, die bisher niemand ansagte (BEF-055, Teil 1):
                 Am offenen Termin setzt die Finalisierung den Termin mit auf
-                „dokumentiert“ (ADR-018 Fassung 3, ANN-036). Danach ist
-                „nicht angetroffen“ nicht mehr wählbar. */}
+                „dokumentiert“ (ADR-018 Fassung 3). Danach ist „nicht
+                angetroffen“ nicht mehr wählbar. Abgehakt wird seit B4 getrennt. */}
             {!istNachtrag && appointment.status === 'confirmed'
-              ? ' Der Termin wird dabei als durchgeführt geführt; „nicht angetroffen“ lässt sich danach nicht mehr vermerken.'
+              ? ' „Nicht angetroffen“ lässt sich danach nicht mehr vermerken.'
               : null}
           </Rueckfrage>
         ) : null}
