@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -110,6 +110,18 @@ export function Patientenauswahl({
   });
   const { data } = abfrage;
 
+  // Am Telefon läuft die Auswahl seitlich aus dem Bild (B13). Kommt die Liste
+  // mit einer Auswahl zurück - aus der Akte, über einen Link -, steht die
+  // gewählte im Bild, sonst sähe man eine gefilterte Liste ohne ihren Grund.
+  const auswahlzeile = useRef<HTMLDivElement>(null);
+  const hatWahlen = (data ?? []).length > 0;
+  useEffect(() => {
+    if (!zeigen || !hatWahlen) return;
+    auswahlzeile.current
+      ?.querySelector<HTMLElement>('[aria-pressed="true"]')
+      ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+  }, [zeigen, hatWahlen]);
+
   const sichtbar = useMemo(
     () =>
       sortieren(
@@ -172,16 +184,18 @@ export function Patientenauswahl({
           onWaehlen={(wert) => setzen('sort', wert === 'zuletzt' ? null : wert)}
         />
         {wahlen.length > 0 ? (
-          <Filterchips<Zeigen>
-            beschriftung="Zeigen"
-            mehrfach={false}
-            wahlen={wahlen.map((wahl) => ({
-              wert: wahl.wert,
-              text: `${wahl.text} (${wahl.anzahl})`,
-            }))}
-            gewaehlt={zeigen ? [zeigen] : []}
-            onAendern={(gewaehlt) => setzen('zeigen', gewaehlt[0] ?? null)}
-          />
+          <div ref={auswahlzeile}>
+            <Filterchips<Zeigen>
+              beschriftung="Zeigen"
+              mehrfach={false}
+              wahlen={wahlen.map((wahl) => ({
+                wert: wahl.wert,
+                text: `${wahl.text} (${wahl.anzahl})`,
+              }))}
+              gewaehlt={zeigen ? [zeigen] : []}
+              onAendern={(gewaehlt) => setzen('zeigen', gewaehlt[0] ?? null)}
+            />
+          </div>
         ) : null}
       </div>
 
