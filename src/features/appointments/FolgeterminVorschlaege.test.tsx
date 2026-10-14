@@ -14,11 +14,19 @@ import { FolgeterminVorschlaege } from './FolgeterminVorschlaege';
 
 const fetchUpcomingAppointments = vi.fn();
 const createAppointment = vi.fn();
+const fetchAppointment = vi.fn();
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof AppointmentsApi>()),
   fetchUpcomingAppointments: (id: string) =>
     fetchUpcomingAppointments(id) as Promise<AppointmentsApi.UpcomingAppointment[]>,
   createAppointment: (...args: unknown[]) => createAppointment(...args) as Promise<string>,
+  fetchAppointment: (id: string) =>
+    fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
+}));
+const undoAppointmentCreation = vi.fn();
+vi.mock('./folgetermin-api', () => ({
+  undoAppointmentCreation: (id: string, stand: string) =>
+    undoAppointmentCreation(id, stand) as Promise<void>,
 }));
 const findFreeSlots = vi.fn();
 vi.mock('@/features/slot-search/api', async (importOriginal) => ({
@@ -143,6 +151,10 @@ function stopp(datum: string, von: string, bis: string): TagesrouteModul.Tagesst
   };
 }
 
+function minuteAus(zeit: string): number {
+  return Number(zeit.slice(0, 2)) * 60 + Number(zeit.slice(3, 5));
+}
+
 function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
   return renderWithProviders(
     <FolgeterminVorschlaege appointment={termin} user={testUser(rollen)} hierher="/hier" />,
@@ -179,6 +191,21 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     fetchUpcomingAppointments.mockResolvedValue([]);
     createAppointment.mockReset();
     createAppointment.mockResolvedValue('neu-1');
+    fetchAppointment.mockReset();
+    fetchAppointment.mockImplementation((id: string) =>
+      Promise.resolve(
+        testAppointment({
+          id,
+          status: 'confirmed',
+          starts_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN), ZONE),
+          ends_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN) + 60, ZONE),
+          updated_at: '2026-10-14T07:25:00.123456+00:00',
+          organization_time_zone: ZONE,
+        }),
+      ),
+    );
+    undoAppointmentCreation.mockReset();
+    undoAppointmentCreation.mockResolvedValue(undefined);
     fetchDayRoute.mockReset();
     fetchDayRoute.mockResolvedValue([]);
     findFreeSlots.mockReset();
@@ -321,6 +348,92 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
       'href',
       `/kalender?termin=neu-1&zurueck=${encodeURIComponent('/hier')}`,
     );
+  });
+
+  it('nimmt den eben angelegten Folgetermin mit „Rückgängig“ zurück (ANN-534)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    const [erste] = await zeilen(3);
+    await user.click(erste!);
+    const meldung = await screen.findByText(/Folgetermin angelegt:/);
+    // Die Meldung nimmt den Fokus - der getippte Knopf ist fort.
+    expect(meldung.closest('[tabindex="-1"]')).toHaveFocus();
+    // Mit dem Stand gleich nach dem Anlegen.
+    expect(fetchAppointment).toHaveBeenCalledWith('neu-1');
+
+    const zurueck = screen.getByRole('button', { name: /^Rückgängig/ });
+    expect(zurueck).toHaveClass('min-h-11');
+    await user.click(zurueck);
+    expect(undoAppointmentCreation).toHaveBeenCalledTimes(1);
+    expect(undoAppointmentCreation).toHaveBeenCalledWith(
+      'neu-1',
+      '2026-10-14T07:25:00.123456+00:00',
+    );
+    const bestaetigt = await screen.findByText('Folgetermin zurückgenommen.');
+    expect(bestaetigt.closest('[tabindex="-1"]')).toHaveFocus();
+    // Die Vorschläge stehen wieder da; die Meldung zum Anlegen ist fort.
+    await zeilen(3);
+    expect(screen.queryByText(/Folgetermin angelegt:/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Rückgängig/ })).toBeNull();
+  });
+
+  it('zeigt, was der Server beim Zurücknehmen einwendet, und lässt die Meldung stehen', async () => {
+    undoAppointmentCreation.mockRejectedValue(
+      new Error(
+        'Die Zeit zum Zurücknehmen ist vorbei. Der Termin lässt sich jetzt nur noch im Kalender absagen.',
+      ),
+    );
+    const user = userEvent.setup();
+    rendern();
+    const [erste] = await zeilen(3);
+    await user.click(erste!);
+    await user.click(await screen.findByRole('button', { name: /^Rückgängig/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Die Zeit zum Zurücknehmen ist vorbei.',
+    );
+    expect(screen.getByText(/Folgetermin angelegt:/)).toBeInTheDocument();
+    expect(screen.queryByText('Folgetermin zurückgenommen.')).toBeNull();
+  });
+
+  it('liest den Stand vor dem Zurücknehmen nach, wenn er beim Anlegen fehlte', async () => {
+    fetchAppointment.mockRejectedValueOnce(new Error('Failed to fetch'));
+    const user = userEvent.setup();
+    rendern();
+    const [erste] = await zeilen(3);
+    await user.click(erste!);
+    // Angelegt ist angelegt, auch ohne gelesenen Stand.
+    expect(await screen.findByText(/Folgetermin angelegt:/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Rückgängig/ }));
+    expect(await screen.findByText('Folgetermin zurückgenommen.')).toBeInTheDocument();
+    expect(fetchAppointment).toHaveBeenCalledTimes(2);
+    expect(undoAppointmentCreation).toHaveBeenCalledWith(
+      'neu-1',
+      '2026-10-14T07:25:00.123456+00:00',
+    );
+  });
+
+  it('nimmt nichts zurück, was inzwischen anders dasteht', async () => {
+    fetchAppointment.mockRejectedValueOnce(new Error('Failed to fetch'));
+    const user = userEvent.setup();
+    rendern();
+    const [erste] = await zeilen(3);
+    await user.click(erste!);
+    await screen.findByText(/Folgetermin angelegt:/);
+    // Jemand hat ihn verschoben: zwei Stunden später.
+    fetchAppointment.mockResolvedValueOnce(
+      testAppointment({
+        id: 'neu-1',
+        status: 'confirmed',
+        starts_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN) + 120, ZONE),
+        ends_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN) + 180, ZONE),
+        organization_time_zone: ZONE,
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: /^Rückgängig/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Der Termin wurde inzwischen geändert.',
+    );
+    expect(undoAppointmentCreation).not.toHaveBeenCalled();
   });
 
   it('sagt, was der Server einwendet, und legt nichts still an', async () => {

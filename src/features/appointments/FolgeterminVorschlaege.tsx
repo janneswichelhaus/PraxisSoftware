@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { StatusMark } from '@/components/ui/StatusMark';
@@ -14,6 +15,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import {
   createAppointment,
   dayKey,
+  fetchAppointment,
   fetchUpcomingAppointments,
   formatLocalTime,
   kalenderZumTermin,
@@ -22,6 +24,7 @@ import {
   type Appointment,
 } from './api';
 import { tagePlus } from './calendar';
+import { undoAppointmentCreation } from './folgetermin-api';
 import {
   nachbarText,
   plane,
@@ -39,6 +42,24 @@ const VORSCHLAEGE = 3;
 const KANDIDATEN = 6;
 /** So weit nach vorn wird gesucht - zwei Wochen ab morgen. */
 const SUCHTAGE = 14;
+
+/** Der eben angelegte Folgetermin - solange die Meldung steht, lässt er sich zurücknehmen. */
+interface Angelegt {
+  readonly id: string;
+  readonly slot: Slot;
+  /** `updated_at` direkt nach dem Anlegen; `null`, wenn er sich nicht lesen ließ. */
+  readonly stand: string | null;
+}
+
+/** Die Abfragen, die einen neuen oder zurückgenommenen Termin zeigen. */
+const TERMINABFRAGEN = [
+  ['appointments'],
+  ['day-plan'],
+  ['day-route'],
+  ['patient-upcoming-appointments'],
+  ['patient-appointments'],
+  ['free-slots'],
+] as const;
 
 function schluessel(slot: Slot): string {
   return `${slot.staff_member_id}|${slot.slot_date}|${slot.start_time}`;
@@ -176,8 +197,10 @@ function Vorschlag({
  * auf die Zeile legt den Termin an; `create_appointment` prüft alles noch
  * einmal (§8), nichts ist vorher reserviert.
  *
- * Steht schon ein nächster Termin, steht er als erledigt da (Leitfaden L3);
- * „Andere Zeit suchen“ führt in die ausführliche Terminsuche.
+ * Solange die Meldung „Folgetermin angelegt“ steht, nimmt „Rückgängig“ den
+ * Termin zurück (`undo_appointment_creation`); danach stehen die Vorschläge
+ * wieder da. Steht schon ein nächster Termin, steht er als erledigt da
+ * (Leitfaden L3); „Andere Zeit suchen“ führt in die ausführliche Terminsuche.
  */
 export function FolgeterminVorschlaege({
   appointment,
@@ -201,7 +224,15 @@ export function FolgeterminVorschlaege({
   const heute = todayInTimeZone(zone);
   const von = tagePlus(datum > heute ? datum : heute, 1);
   const naechsteWoche = tagePlus(datum, 7);
-  const [angelegt, setAngelegt] = useState<{ id: string; text: string } | null>(null);
+  const [angelegt, setAngelegt] = useState<Angelegt | null>(null);
+  const [zurueckgenommen, setZurueckgenommen] = useState(false);
+  // Die Meldung nimmt den Fokus: Der getippte Knopf verschwindet mit dem
+  // Anlegen bzw. Zurücknehmen, sonst fiele der Fokus an den Seitenanfang.
+  const meldung = useRef<HTMLDivElement>(null);
+  const [meldungNr, setMeldungNr] = useState(0);
+  useEffect(() => {
+    if (meldungNr > 0) meldung.current?.focus();
+  }, [meldungNr]);
 
   const kommende = useQuery({
     queryKey: ['patient-upcoming-appointments', patientId],
@@ -270,28 +301,61 @@ export function FolgeterminVorschlaege({
   );
 
   const anlegen = useMutation({
-    mutationFn: (slot: Slot) =>
-      createAppointment(patientId!, {
+    mutationFn: async (slot: Slot): Promise<Angelegt> => {
+      const id = await createAppointment(patientId!, {
         staff_member_id: slot.staff_member_id,
         appointment_type: appointment.appointment_type,
         date: slot.slot_date,
         start_time: slot.start_time,
         end_time: slot.end_time,
         location_id: appointment.location_id ?? '',
-      }),
-    onSuccess: async (id, slot) => {
-      const bei = slot.staff_name ? ` bei ${slot.staff_name}` : '';
-      setAngelegt({ id, text: `${tagKurz(slot.slot_date)}, ${slot.start_time} Uhr${bei}` });
-      for (const queryKey of [
-        ['appointments'],
-        ['day-plan'],
-        ['day-route'],
-        ['patient-upcoming-appointments'],
-        ['patient-appointments'],
-        ['free-slots'],
-      ]) {
+      });
+      // Der Stand gleich nach dem Anlegen ist der, den „Rückgängig“ meint.
+      // Scheitert das Lesen, ist der Termin trotzdem angelegt.
+      const neu = await fetchAppointment(id).catch(() => null);
+      return { id, slot, stand: neu?.updated_at ?? null };
+    },
+    onSuccess: async (neu) => {
+      setAngelegt(neu);
+      setZurueckgenommen(false);
+      zuruecknehmen.reset();
+      setMeldungNr((n) => n + 1);
+      for (const queryKey of TERMINABFRAGEN) {
         await queryClient.invalidateQueries({ queryKey });
       }
+    },
+  });
+
+  // Zurücknehmen prüft der Server ganz (Person, Zeit, Zustand, was daran
+  // hängt). Ließ sich der Stand nach dem Anlegen nicht lesen, wird er jetzt
+  // gelesen - aber nur ein Termin, der noch so dasteht wie angelegt.
+  const zuruecknehmen = useMutation({
+    mutationFn: async (termin: Angelegt) => {
+      let stand = termin.stand;
+      if (stand === null) {
+        const jetzt = await fetchAppointment(termin.id);
+        if (!jetzt) throw new Error('Den Termin gibt es nicht mehr.');
+        if (
+          jetzt.status !== 'confirmed' ||
+          dayKey(jetzt.starts_at, zone) !== termin.slot.slot_date ||
+          formatLocalTime(jetzt.starts_at, zone) !== termin.slot.start_time
+        ) {
+          throw new Error('Der Termin wurde inzwischen geändert. Bitte im Kalender ansehen.');
+        }
+        stand = jetzt.updated_at;
+      }
+      await undoAppointmentCreation(termin.id, stand);
+    },
+    onSuccess: async () => {
+      // Erst nachladen, dann umschalten: Sonst stünde der zurückgenommene
+      // Termin einen Augenblick als „Nächster Termin“ da.
+      await Promise.all(
+        TERMINABFRAGEN.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+      anlegen.reset();
+      setAngelegt(null);
+      setZurueckgenommen(true);
+      setMeldungNr((n) => n + 1);
     },
   });
   const waehlen = useCallback(
@@ -313,14 +377,38 @@ export function FolgeterminVorschlaege({
 
   let inhalt;
   if (angelegt) {
+    const bei = angelegt.slot.staff_name ? ` bei ${angelegt.slot.staff_name}` : '';
     inhalt = (
-      <p className="text-accent text-liste font-semibold" role="status">
-        <span aria-hidden="true">✓ </span>
-        Folgetermin angelegt: {angelegt.text} ·{' '}
-        <Textlink to={mitRueckweg(kalenderZumTermin(angelegt.id), hierher)} className="text-sm">
-          Im Kalender
-        </Textlink>
-      </p>
+      <div ref={meldung} tabIndex={-1} className="outline-none">
+        <div className="flex flex-wrap items-center gap-x-3">
+          <p className="text-accent text-liste font-semibold" role="status">
+            <span aria-hidden="true">✓ </span>
+            Folgetermin angelegt: {tagKurz(angelegt.slot.slot_date)}, {angelegt.slot.start_time} Uhr
+            {bei} ·{' '}
+            <Textlink to={mitRueckweg(kalenderZumTermin(angelegt.id), hierher)} className="text-sm">
+              Im Kalender
+            </Textlink>
+          </p>
+          {/* Leise: der Weg zurück für den Fehltipp, kein zweiter Hauptknopf. */}
+          <Button
+            type="button"
+            variant="quiet"
+            groesse="kompakt"
+            disabled={zuruecknehmen.isPending}
+            aria-busy={zuruecknehmen.isPending || undefined}
+            onClick={() => {
+              if (zuruecknehmen.isPending) return;
+              zuruecknehmen.mutate(angelegt);
+            }}
+          >
+            {zuruecknehmen.isPending ? 'Wird zurückgenommen …' : 'Rückgängig'}
+            <span className="sr-only">: Folgetermin zurücknehmen</span>
+          </Button>
+        </div>
+        {zuruecknehmen.isError ? (
+          <Statusmeldung ton="fehler">{zuruecknehmen.error.message}</Statusmeldung>
+        ) : null}
+      </div>
     );
   } else if (naechster) {
     inhalt = (
@@ -412,6 +500,11 @@ export function FolgeterminVorschlaege({
   return (
     <section aria-labelledby={`folgetermin-${appointment.id}`}>
       <Zwischentitel id={`folgetermin-${appointment.id}`}>Folgetermin</Zwischentitel>
+      {zurueckgenommen && !angelegt ? (
+        <div ref={meldung} tabIndex={-1} className="outline-none">
+          <Statusmeldung ton="erfolg">Folgetermin zurückgenommen.</Statusmeldung>
+        </div>
+      ) : null}
       {inhalt}
     </section>
   );

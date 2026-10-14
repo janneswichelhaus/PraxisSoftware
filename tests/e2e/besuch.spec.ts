@@ -330,6 +330,11 @@ function nachbildung() {
       stand.folgetermin = 'eeeeeeee-eeee-4eee-8eee-000000000001';
       return stand.folgetermin;
     },
+    // B8, ANN-534: Zurücknehmen löscht den eben angelegten Termin.
+    undo_appointment_creation: () => {
+      stand.folgetermin = null;
+      return null;
+    },
     complete_appointment: () => {
       stand.abgeschlossen = true;
       return null;
@@ -343,6 +348,22 @@ function nachbildung() {
   async function beantworte(route: Route) {
     const url = new URL(route.request().url());
     if (url.pathname.endsWith('/appointment_directory')) {
+      // Der eben angelegte Folgetermin, wie „Rückgängig“ ihn liest (B8).
+      if (stand.folgetermin && url.searchParams.get('id') === `eq.${stand.folgetermin}`) {
+        await route.fulfill({
+          json: [
+            {
+              ...termin(),
+              id: stand.folgetermin,
+              status: 'confirmed',
+              starts_at: um('09:00', tagePlus(heute(), 7)).toISOString(),
+              ends_at: um('10:00', tagePlus(heute(), 7)).toISOString(),
+              updated_at: `${heute()}T07:25:00.123456+00:00`,
+            },
+          ],
+        });
+        return;
+      }
       await route.fulfill({ json: [termin()] });
       return;
     }
@@ -616,6 +637,48 @@ test('zeigt Folgetermine als Zeilen mit Therapeut:in, Nachbarn und Wegen (B8)', 
   for (const zeile of await zeilen.all()) {
     expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
+  const ueberlauf = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(ueberlauf).toBe(false);
+});
+
+// Befund B8, ANN-534: Ein Fehltipp auf einen Vorschlag lässt sich an Ort und
+// Stelle zurücknehmen - über `undo_appointment_creation`, mit dem Stand gleich
+// nach dem Anlegen. Danach stehen die Vorschläge wieder da.
+test('nimmt einen eben angelegten Folgetermin mit „Rückgängig" zurück (B8)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.clock.setFixedTime(um('09:20'));
+  const server = nachbildung();
+  await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  await page.route('**/functions/v1/**', (route) => route.fulfill({ status: 503, body: '' }));
+
+  await page.goto(PRUEFSEITE);
+  await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
+  await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
+  await page.getByRole('button', { name: 'Festschreiben' }).click();
+
+  await page
+    .getByRole('button', { name: /^Folgetermin anlegen: .*09:00–10:00.*gleiche Zeit/ })
+    .click();
+  await expect(page.getByText(/Folgetermin angelegt: /)).toContainText(
+    '09:00 Uhr bei Anna Beispiel',
+  );
+  const zurueck = page.getByRole('button', { name: /^Rückgängig/ });
+  await expect(zurueck).toBeInViewport();
+  expect((await zurueck.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+
+  await zurueck.click();
+  await expect(page.getByText('Folgetermin zurückgenommen.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Folgetermin anlegen:/ })).toHaveCount(3);
+  await expect(page.getByText(/Folgetermin angelegt: /)).toHaveCount(0);
+  expect(server.aufrufe.create_appointment).toHaveLength(1);
+  expect(server.aufrufe.undo_appointment_creation).toEqual([
+    {
+      p_appointment_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+      p_expected_updated_at: `${heute()}T07:25:00.123456+00:00`,
+    },
+  ]);
   const ueberlauf = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
   );
