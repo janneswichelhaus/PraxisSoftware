@@ -13,10 +13,12 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Warnzeile } from '@/components/ui/Objektkopf';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { angabenZeile } from '@/lib/erfassungsgroessen';
@@ -61,6 +63,9 @@ export function PlanPage() {
     queryFn: () => fetchPlan(planId),
     retry: false,
   });
+  // Befund B9: Nach dem Zuweisen bestätigt die Seite es mit dem Weg zum
+  // Planblatt - der Plan nützt so auch ohne Plattform.
+  const [zugewiesen, setZugewiesen] = useState<{ planId: string; bis: string } | null>(null);
 
   return (
     <Abfragezustand
@@ -71,7 +76,11 @@ export function PlanPage() {
     >
       {(plan) =>
         plan ? (
-          <Ansicht plan={plan} />
+          <Ansicht
+            plan={plan}
+            zugewiesenBis={zugewiesen?.planId === plan.id ? zugewiesen.bis : null}
+            onZugewiesen={(bis) => setZugewiesen({ planId: plan.id, bis })}
+          />
         ) : (
           <>
             <Rueckweg standard="/" />
@@ -83,19 +92,27 @@ export function PlanPage() {
   );
 }
 
-function Ansicht({ plan }: { plan: Plan }) {
+function Ansicht({
+  plan,
+  zugewiesenBis,
+  onZugewiesen,
+}: {
+  plan: Plan;
+  zugewiesenBis: string | null;
+  onZugewiesen: (bis: string) => void;
+}) {
   const entwurf = plan.status === 'draft';
   if (entwurf && plan.can_write && plan.relationship_open) {
-    return <Planeditor plan={plan} />;
+    return <Planeditor plan={plan} onZugewiesen={onZugewiesen} />;
   }
-  return <Zugewiesen plan={plan} />;
+  return <Zugewiesen plan={plan} zugewiesenBis={entwurf ? null : zugewiesenBis} />;
 }
 
 // -----------------------------------------------------------------------------
 // Zugewiesen, beendet, abgelöst - oder ein Entwurf ohne Schreibrecht
 // -----------------------------------------------------------------------------
 
-function Zugewiesen({ plan }: { plan: Plan }) {
+function Zugewiesen({ plan, zugewiesenBis }: { plan: Plan; zugewiesenBis: string | null }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const entwurf = plan.status === 'draft';
@@ -151,6 +168,14 @@ function Zugewiesen({ plan }: { plan: Plan }) {
           ) : undefined
         }
       />
+      {zugewiesenBis ? (
+        <Rueckmeldung className="mt-4">
+          Zugewiesen bis {formatDate(zugewiesenBis)}.{' '}
+          <Textlink to={`${planPfad(plan.service_area, plan.relationship_id, plan.id)}/blatt`}>
+            Als PDF oder drucken
+          </Textlink>
+        </Rueckmeldung>
+      ) : null}
       {neu.isError ? (
         <Statusmeldung ton="fehler" className="mt-4">
           {neu.error.message}

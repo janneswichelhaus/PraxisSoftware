@@ -89,7 +89,14 @@ interface Meldung {
   hinweis?: string | null;
 }
 
-export function Planeditor({ plan }: { plan: Plan }) {
+export function Planeditor({
+  plan,
+  onZugewiesen,
+}: {
+  plan: Plan;
+  /** Nach dem Zuweisen: das Ende der Laufzeit - die Planseite bestätigt es. */
+  onZugewiesen?: (bis: string) => void;
+}) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const vorlagen = useContext(VorlagenKontext);
@@ -427,7 +434,11 @@ export function Planeditor({ plan }: { plan: Plan }) {
       ) : null}
       {fenster?.art === 'kopf' ? <Kopfdaten plan={plan} onFertig={() => setFenster(null)} /> : null}
       {fenster?.art === 'zuweisen' ? (
-        <Zuweisen plan={plan} onSchliessen={() => setFenster(null)} />
+        <Zuweisen
+          plan={plan}
+          onSchliessen={() => setFenster(null)}
+          {...(onZugewiesen ? { onZugewiesen } : {})}
+        />
       ) : null}
       {offenePosition ? (
         <Positionsfenster
@@ -592,7 +603,15 @@ function Kopfdaten({ plan, onFertig }: { plan: Plan; onFertig: () => void }) {
 // Zuweisen (UEB-005, ANN-300, ANN-302)
 // -----------------------------------------------------------------------------
 
-function Zuweisen({ plan, onSchliessen }: { plan: Plan; onSchliessen: () => void }) {
+function Zuweisen({
+  plan,
+  onSchliessen,
+  onZugewiesen,
+}: {
+  plan: Plan;
+  onSchliessen: () => void;
+  onZugewiesen?: (bis: string) => void;
+}) {
   const queryClient = useQueryClient();
   const [bis, setBis] = useState(() => tagPlus(plan.today, LAUFZEIT_VORSCHLAG_TAGE));
   const [fehler, setFehler] = useState<string | undefined>();
@@ -600,6 +619,9 @@ function Zuweisen({ plan, onSchliessen }: { plan: Plan; onSchliessen: () => void
   const zuweisen = useMutation({
     mutationFn: () => assignPlan(plan.id, bis),
     onSuccess: async () => {
+      // Vor dem Neuladen: Die Planseite zeigt danach den zugewiesenen Plan
+      // und bestätigt ihn dort (Befund B9).
+      onZugewiesen?.(bis);
       await queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL });
       onSchliessen();
     },

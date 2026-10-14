@@ -986,6 +986,49 @@ describe('Zuweisen und Schnappschuss (UEB-005)', () => {
     await waitFor(() => expect(assignPlan).toHaveBeenCalledWith('p1', '2026-11-18'));
   });
 
+  it('bestätigt das Zuweisen und bietet das Blatt an - der Plan nützt auch ohne Plattform (Befund B9)', async () => {
+    const user = userEvent.setup();
+    fetchPlan.mockResolvedValueOnce(plan()).mockResolvedValue(
+      plan({
+        status: 'assigned',
+        assigned_at: '2026-10-07T09:00:00Z',
+        assigned_by_name: 'Anna Beispiel',
+        runs_from: '2026-10-07',
+        runs_until: '2026-11-18',
+        original_runs_until: '2026-11-18',
+      }),
+    );
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Zuweisen' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Plan zuweisen' })).getByRole('button', {
+        name: 'Zuweisen',
+      }),
+    );
+    const meldung = (await screen.findByText(/Zugewiesen bis 18\.11\.2026\./)).closest(
+      '[role="status"]',
+    )!;
+    expect(meldung).not.toBeNull();
+    expect(
+      within(meldung as HTMLElement).getByRole('link', { name: 'Als PDF oder drucken' }),
+    ).toHaveAttribute('href', '/patienten/pat1/plaene/p1/blatt');
+    expect(screen.getByText('Fassung 1 · Stand 07.10.2026 · Anna Beispiel')).toBeInTheDocument();
+  });
+
+  it('zeigt die Bestätigung nur nach dem eigenen Zuweisen, nicht beim Öffnen', async () => {
+    fetchPlan.mockResolvedValue(
+      plan({
+        status: 'assigned',
+        runs_from: '2026-10-01',
+        runs_until: '2026-11-12',
+        original_runs_until: '2026-11-12',
+      }),
+    );
+    planseite();
+    expect(await screen.findByRole('link', { name: 'Als PDF oder drucken' })).toBeInTheDocument();
+    expect(screen.queryByText(/Zugewiesen bis/)).toBeNull();
+  });
+
   it('zeigt den zugewiesenen Plan ohne Bearbeitung, fachlich und in Alltagssprache', async () => {
     fetchPlan.mockResolvedValue(
       plan({

@@ -442,7 +442,10 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     await expect(page.getByText('5 Übungen hinzugefügt.')).toBeVisible();
     await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
     await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
-    await expect(page.getByRole('link', { name: 'Als PDF oder drucken' })).toBeVisible();
+    // Befund B9: Die Bestätigung führt gleich zum Planblatt - auch ohne Plattform.
+    await expect(
+      page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' }),
+    ).toBeVisible();
 
     const plan = [...nachbau.plaene.values()][0]!;
     expect(plan.status).toBe('assigned');
@@ -511,7 +514,9 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
     });
     await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
     await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
-    await expect(page.getByRole('link', { name: 'Als PDF oder drucken' }).first()).toBeVisible();
+    await expect(
+      page.getByRole('status').getByRole('link', { name: 'Als PDF oder drucken' }),
+    ).toBeVisible();
 
     const plan = [...nachbau.plaene.values()][0]!;
     expect(plan.status).toBe('assigned');
