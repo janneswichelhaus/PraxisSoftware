@@ -5162,3 +5162,15 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
 
+
+### ANN-536 — Wer einen Plan schreibt, übernimmt gewählte Katalogübungen beim Hinzufügen, ungeprüft
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Wer einen Plan des Bereichs schreiben darf, übernimmt beim Hinzufügen die gewählten Katalogeinträge in die Bibliothek – höchstens so viele, wie der Entwurf noch fasst. Derselbe Weg wie der Import: alles prüfen, nichts überschreiben, ohne Prüfvermerk (ANN-386); eine gleichnamige eigene Übung mit genau einer Variante wird genommen. Pflege, Archiv und Prüfvermerk bleiben bei owner (ANN-293).
+
+**Begründung.** Befund B9: Aus einer Vorlage kam nichts oder, nur für owner, alles auf einmal. Eine Liste statt Katalog und Bibliothek.
+
+**Anker.** `public.add_catalog_exercises_for_plan` in `supabase/migrations/20261116100000_o_002_uebungsplan_katalog_und_stand.sql`.
+
+**Änderungspfad.** Wieder nur owner: Funktion entfernen, Auswahl auf die Bibliothek beschränken · Aufwand `klein`.
