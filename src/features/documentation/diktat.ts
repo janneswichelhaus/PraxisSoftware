@@ -33,6 +33,12 @@ export const AUFNAHMEFEHLER: Readonly<Record<Aufnahmefehler, string>> = {
 export const NICHTS_VERSTANDEN =
   'In der Aufnahme war nichts zu verstehen. Bitte noch einmal sprechen.';
 
+/**
+ * Die Sitzungssperre kam während der Aufnahme: angehalten, aber nicht
+ * gesendet - nach der Freigabe geht sie mit „Erneut senden“ hinaus.
+ */
+export const BEI_SPERRE_ANGEHALTEN = 'Bei der Sperre angehalten und nicht gesendet.';
+
 /** Was steht, wenn Festschreiben oder Entwurf wartet (wie beim Befund aus Bausteinen). */
 export const DIKTAT_OFFEN =
   'Der Vorschlag aus der Aufnahme steht noch nicht im Text. Bitte übernehmen oder verwerfen, dann speichern oder festschreiben.';
@@ -57,6 +63,10 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
   const anfrage = useRef<AbortController | null>(null);
   // Der zuletzt übernommene Vorschlag: „Rückgängig" holt ihn zurück.
   const uebernommen = useRef<Extract<Diktatstand, { art: 'vorschlag' }> | null>(null);
+  // Vor der Sitzungssperre angehalten: Die Aufnahme bleibt hier und wird
+  // nicht gesendet - mit dem Token kurz vor oder nach der Frist des Servers
+  // käme sie als Abweisung zurück und wäre verloren.
+  const zurueckhalten = useRef(false);
 
   const aufbereiten = useCallback(
     async (aufnahme: Aufnahme) => {
@@ -101,8 +111,19 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
   );
 
   const aufnahme = useAufnahme({
-    onFertig: (fertig) => void aufbereiten(fertig),
-    onFehler: (fehler) => setMeldung(AUFNAHMEFEHLER[fehler]),
+    onFertig: (fertig) => {
+      if (zurueckhalten.current) {
+        zurueckhalten.current = false;
+        zuSenden.current = fertig;
+        setStand({ art: 'gescheitert', meldung: BEI_SPERRE_ANGEHALTEN });
+        return;
+      }
+      void aufbereiten(fertig);
+    },
+    onFehler: (fehler) => {
+      zurueckhalten.current = false;
+      setMeldung(AUFNAHMEFEHLER[fehler]);
+    },
   });
 
   // Wer die Seite verlässt, bricht eine laufende Aufbereitung ab.
@@ -115,12 +136,21 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
   );
 
   // Vor der Sitzungssperre (ADR-025 Punkt 4) endet eine laufende Aufnahme:
-  // Hinter der Sperre gäbe es keine Anzeige mehr. Aufbereitet wird, was da
-  // ist; scheitert das an der Sperre, bleibt die Aufnahme für „Erneut senden".
+  // Hinter der Sperre gäbe es keine Anzeige mehr. Gesendet wird sie nicht -
+  // sie bleibt als „nicht aufbereitet“ stehen (die Seite hält der
+  // Textverlustschutz verborgen fest, ANN-257), und nach der Freigabe geht
+  // sie mit „Erneut senden“ und der neuen Sitzung hinaus. Wer gerade erst das
+  // Mikrofon öffnet, hat noch nichts aufgenommen: Das bricht ab.
   const aufnahmeRef = useRef(aufnahme);
   aufnahmeRef.current = aufnahme;
   useSperrsicherung(() => {
-    if (aufnahmeRef.current.zustand !== 'bereit') aufnahmeRef.current.beenden();
+    const laufend = aufnahmeRef.current;
+    if (laufend.zustand === 'laeuft') {
+      zurueckhalten.current = true;
+      laufend.beenden();
+    } else if (laufend.zustand === 'startet') {
+      laufend.abbrechen();
+    }
     return Promise.resolve(true);
   });
 
@@ -160,6 +190,7 @@ export function useDiktat({ terminId, aktiv }: { terminId: string; aktiv: boolea
       setMeldung(undefined);
       setHinweis(false);
       uebernommen.current = null;
+      zurueckhalten.current = false;
       void aufnahme.starten();
     },
     fertig: aufnahme.beenden,

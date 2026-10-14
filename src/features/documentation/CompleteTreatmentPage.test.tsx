@@ -14,7 +14,11 @@ import type * as KiGateway from '@/lib/ki/gateway';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { KI_FEHLERTEXTE } from '@/lib/ki/gateway';
-import { AUFNAHMEFEHLER, DIKTAT_OFFEN } from './diktat';
+import {
+  SperrsicherungKontext,
+  type Sicherung,
+} from '@/features/auth/sitzungssperre/sperrsicherung';
+import { AUFNAHMEFEHLER, BEI_SPERRE_ANGEHALTEN, DIKTAT_OFFEN } from './diktat';
 import { installiereAufnahme } from './testaufnahme';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
@@ -1248,6 +1252,80 @@ describe('CompleteTreatmentPage', () => {
         [{ audio: Blob }],
       ];
       expect(zweite[0].audio).toBe(erste[0].audio);
+    });
+
+    describe('vor der Sitzungssperre (ADR-025 Punkt 4)', () => {
+      /** Die Seite unter einer nachgebildeten Sperre; zurück kommen ihre Sicherungen. */
+      function rendernMitSperre(): Set<Sicherung> {
+        const angemeldet = new Set<Sicherung>();
+        renderWithProviders(
+          <SperrsicherungKontext.Provider
+            value={{
+              meldeAn: (sicherung) => {
+                angemeldet.add(sicherung);
+                return () => angemeldet.delete(sicherung);
+              },
+            }}
+          >
+            <CompleteTreatmentPage user={testUser(['therapist'])} />
+          </SperrsicherungKontext.Provider>,
+          `/termine/${TERMIN_ID}/abschluss`,
+        );
+        return angemeldet;
+      }
+
+      async function sperren(angemeldet: Set<Sicherung>): Promise<boolean[]> {
+        let ergebnisse: boolean[] = [];
+        await act(async () => {
+          ergebnisse = await Promise.all([...angemeldet].map((sicherung) => sicherung()));
+        });
+        return ergebnisse;
+      }
+
+      it('hält eine laufende Aufnahme an und sendet sie erst nach der Freigabe', async () => {
+        const user = userEvent.setup();
+        const angemeldet = rendernMitSperre();
+        await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+        await screen.findByRole('button', { name: 'Fertig' });
+
+        const ergebnisse = await sperren(angemeldet);
+
+        // Nicht gesendet: Mit dem Token an der Frist käme sie als Abweisung
+        // zurück und wäre verloren.
+        expect(diktatAufbereiten).not.toHaveBeenCalled();
+        expect(
+          await screen.findByText(`${BEI_SPERRE_ANGEHALTEN} Die Aufnahme ist noch da.`),
+        ).toBeInTheDocument();
+        // Das Mikrofon ist aus, und die Seite bleibt verborgen stehen (ANN-257).
+        expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true);
+        expect(ergebnisse).toContain(false);
+
+        // Nach der Freigabe: dieselbe Aufnahme, ein Aufruf.
+        await user.click(screen.getByRole('button', { name: 'Erneut senden' }));
+        expect(await screen.findByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
+        expect(diktatAufbereiten).toHaveBeenCalledTimes(1);
+        const [anfrage] = diktatAufbereiten.mock.calls[0] as [{ audio: Blob }];
+        expect(anfrage.audio.size).toBe(64);
+      });
+
+      it('bricht ab, wenn das Mikrofon noch gar nicht offen ist', async () => {
+        aufnahme.mikrofon.halteAn();
+        const user = userEvent.setup();
+        const angemeldet = rendernMitSperre();
+        await user.click(await screen.findByRole('button', { name: 'Sprechen' }));
+        expect(await screen.findByText('Mikrofon wird geöffnet …')).toBeInTheDocument();
+
+        await sperren(angemeldet);
+        await act(async () => {
+          aufnahme.mikrofon.gibFrei();
+          await Promise.resolve();
+        });
+
+        expect(await screen.findByRole('button', { name: 'Sprechen' })).toBeEnabled();
+        expect(screen.queryByText(BEI_SPERRE_ANGEHALTEN, { exact: false })).toBeNull();
+        expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true);
+        expect(diktatAufbereiten).not.toHaveBeenCalled();
+      });
     });
 
     it('hält Aufnahme, Ausfall und Vorschlag barrierefrei (axe)', { timeout: 30_000 }, async () => {
