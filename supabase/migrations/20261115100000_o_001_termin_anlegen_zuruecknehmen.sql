@@ -98,7 +98,11 @@ begin
   -- Schreibwege am Termin setzen updated_at neu, create_appointment legt ihn
   -- gleich created_at an. So greift die Pruefung auch, wenn der Stand erst
   -- jetzt gelesen wurde - eine neue Person, ein anderer Ort oder ein anderes
-  -- Ende fallen nicht still mit dem Termin.
+  -- Ende fallen nicht still mit dem Termin. Ausnahme:
+  -- transfer_appointments_to_treatment_basis laesst updated_at stehen
+  -- (log_001b); eine Uebertragung auf eine andere Grundlage innerhalb der
+  -- 15 Minuten faellt mit dem Termin weg - nichts Wirksames, der Termin hat
+  -- weder Doku noch Leistung (ANN-534).
   if v_termin.updated_at is distinct from p_expected_updated_at
      or v_termin.updated_at is distinct from v_termin.created_at then
     raise exception 'appointment was changed meanwhile' using errcode = '40001';
@@ -165,13 +169,18 @@ begin
   -- Zweitreview F2: Sieht die Person ihre Termine auf der Plattform - eigener
   -- Zugang oder Begleitung, aktiv -, hat sie diesen womoeglich schon gesehen.
   -- Dann faellt er nicht still weg (ADR-018 Punkt 2); die Oberflaeche sagt
-  -- ihn stattdessen als Praxis ab, und die Person sieht die Absage.
+  -- ihn stattdessen als Praxis ab, und die Person sieht die Absage. Ebenso,
+  -- wenn der Zugang seit dem Anlegen gesperrt oder entzogen wurde: Bis dahin
+  -- war der Termin sichtbar (Zweitreview Endstand, Befund 2; locked_at leert
+  -- das Entsperren, revoked_at bleibt).
   if exists (
     select 1 from public.platform_accesses z
     where z.organization_id = v_org
       and z.relationship_kind = 'treatment'
       and z.patient_id = v_termin.patient_id
-      and z.status = 'active'
+      and (z.status = 'active'
+           or z.locked_at >= v_termin.created_at
+           or z.revoked_at >= v_termin.created_at)
   ) then
     raise exception 'appointment is visible on the platform' using errcode = '22023';
   end if;
@@ -183,6 +192,10 @@ begin
 
   delete from public.appointments a where a.id = p_appointment_id;
 
+  -- Wie beim Verwerfen eines Nachtrags (abn_022): eigener Lauf, due_at ist der
+  -- Zeitpunkt des Zuruecknehmens, keine abgelaufene Frist. Die Datenklasse ist
+  -- die des abgesagten Termins ohne Nachweis - eine eigene Klasse fuer
+  -- Verworfenes waere ein eigener Auftrag (ANN-534).
   insert into public.deletion_journal
     (organization_id, run_id, target_table, target_id, retention_class, due_at)
   values

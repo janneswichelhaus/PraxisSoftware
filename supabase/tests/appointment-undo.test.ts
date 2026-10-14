@@ -217,6 +217,55 @@ describe('undo_appointment_creation (O-001, ANN-534)', () => {
       );
       expect(await gibtEs(termin.id)).toBe(true);
     });
+
+    // Zweitreview Endstand, Befund 2: Bis zum Sperren oder Entziehen war der
+    // Termin sichtbar - auch dann fällt er nicht still weg.
+    describe('mit einem Zugang, der seit dem Anlegen nicht mehr aktiv ist', () => {
+      const ZUGANG_ZURUECK = `update public.platform_accesses
+          set status = 'active', locked_at = null, locked_by = null,
+              revoked_at = null, revoked_by = null, revoked_reason = null
+        where id = $1`;
+
+      it.each([
+        [
+          'gesperrt',
+          `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+        ],
+        [
+          'entzogen',
+          `update public.platform_accesses
+              set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
+            where id = $1`,
+        ],
+      ])('weist ab: %s', async (_wie, aendern) => {
+        const termin = await anlegen(users.therapist, patients.erika);
+        try {
+          await asPostgres(aendern, [platformAccesses.erikaBehandlung]);
+          await expect(zuruecknehmen(users.therapist, termin)).rejects.toThrow(
+            /appointment is visible on the platform/,
+          );
+          expect(await gibtEs(termin.id)).toBe(true);
+        } finally {
+          await asPostgres(ZUGANG_ZURUECK, [platformAccesses.erikaBehandlung]);
+        }
+      });
+
+      it('nimmt zurück, wenn der Zugang schon vor dem Anlegen gesperrt war', async () => {
+        await asPostgres(
+          `update public.platform_accesses
+              set status = 'locked', locked_at = now() - interval '1 hour'
+            where id = $1`,
+          [platformAccesses.erikaBehandlung],
+        );
+        try {
+          const termin = await anlegen(users.therapist, patients.erika);
+          await zuruecknehmenBestaetigt(users.therapist, termin);
+          expect(await gibtEs(termin.id)).toBe(false);
+        } finally {
+          await asPostgres(ZUGANG_ZURUECK, [platformAccesses.erikaBehandlung]);
+        }
+      });
+    });
   });
 
   describe('wer nicht darf', () => {

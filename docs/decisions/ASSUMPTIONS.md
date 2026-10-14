@@ -5496,15 +5496,15 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-534 — Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Frage im Bericht)
 
-**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert und nichts an ihm hängt (Doku, Leistung, Honorar, Mitteilung, Warteliste, Wunsch, Serie). Sieht die Person ihre Termine auf der Plattform, sagt „Rückgängig“ ihn als Praxis ab. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung.
+**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert und nichts an ihm hängt (Doku, Leistung, Honorar, Mitteilung, Warteliste, Wunsch, Serie). Sieht die Person ihre Termine auf der Plattform oder sah sie sie seit dem Anlegen, sagt „Rückgängig“ ihn als Praxis ab. Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung, `due_at` ist der Zeitpunkt des Zurücknehmens.
 
 **Begründung.** Nie wirksam; ein Restore zieht nach (ADR-008 Punkt 8). Was die Person sehen konnte, verschwindet nicht still (ADR-018 Punkt 2).
 
 **Anker.** `public.undo_appointment_creation` (Migration `o_001`).
 
-**Änderungspfad.** Fenster: Intervall in der Funktion · Aufwand `klein`. Spur: Auditaktion mit ADR-010-Änderung und Freigabe · Aufwand `klein`.
+**Änderungspfad.** Immer absagen statt löschen: nur die Absage in `FolgeterminVorschlaege` · Aufwand `klein`.
 
 ### ANN-535 — Folgeterminvorschläge: zu knapp fällt weg, ungeprüft bleibt
 

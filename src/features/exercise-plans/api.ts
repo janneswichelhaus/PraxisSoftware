@@ -381,7 +381,10 @@ const katalogUebernahmeSchema = z.object({
   /** Je Katalogschlüssel die Variante der Praxis - neu übernommen oder schon da. */
   variants: z.record(z.string(), z.string()),
   imported: z.array(z.string()),
-  /** Nicht genommen: gleichnamige eigene Übung ohne eindeutige Variante, archiviert. */
+  /**
+   * Nicht genommen: gleichnamige eigene Übung ohne eindeutige Variante,
+   * archiviert, oder - für alle außer owner - nicht in der Bibliothek.
+   */
   conflicts: z.array(
     z.object({
       catalog_key: z.string(),
@@ -395,10 +398,12 @@ const katalogUebernahmeSchema = z.object({
 export type KatalogUebernahme = z.infer<typeof katalogUebernahmeSchema>;
 
 /**
- * O-002 (Befund B9): die gewählten Katalogeinträge für diesen Entwurf in die
- * Bibliothek übernehmen - für jede Rolle, die den Plan schreiben darf,
- * ungeprüft bis zur Durchsicht durch owner. Der Server prüft jeden Eintrag
- * und überschreibt nichts; die Positionen legt danach `savePosition` an.
+ * O-002 (Befund B9): für die gewählten Katalogeinträge dieses Entwurfs die
+ * Varianten der Praxis holen. Was der Bibliothek fehlt, übernimmt der Server
+ * nur für owner - ungeprüft bis zur Durchsicht (ANN-293, ANN-536); für die
+ * anderen Rollen, die den Plan schreiben, kommt es als `missing` zurück. Der
+ * Server prüft jeden Eintrag und überschreibt nichts; die Positionen legt
+ * danach `savePosition` an.
  */
 export async function addCatalogExercises(
   planId: string,

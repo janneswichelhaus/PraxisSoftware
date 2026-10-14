@@ -83,11 +83,11 @@ export function Vorlagenvorschau({
               key={zeile.schluessel}
               bild={<Vorschaubild bild={null} name={zeile.name} />}
               titel={zeile.name}
-              status={
-                <Badge ton="warnung">
-                  {zeile.art === 'archiviert' ? 'archiviert' : 'nicht in der Bibliothek'}
-                </Badge>
-              }
+              // Der längere Grund als Nebenzeile: Als Badge ließe er bei
+              // 375 px dem Namen keinen Platz.
+              {...(zeile.art === 'archiviert'
+                ? { status: <Badge ton="warnung">archiviert</Badge> }
+                : { meta: 'nicht in der Bibliothek' })}
               gedaempft
             />
           ),
