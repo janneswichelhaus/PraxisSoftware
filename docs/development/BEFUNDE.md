@@ -667,7 +667,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Patient:innen und Akte |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B1) |
-| Status  | erledigt in PR A (Abrechnung, Akte, Haken) |
+| Status  | gebaut in #241, wartet auf Merge |
 | Berührt | `patients.status`, `set_patient_status`, Patientenliste, Akte „Verordnungen“, Offene Punkte, Fristanker (ADR-008) |
 
 **Beobachtung.** „Nicht in Versorgung“ pflegt niemand und sperrt nur Termine. Karteileichen – eine offene Verordnung, der Termine fehlen oder die abzurechnen ist – sieht man nirgends; was abgerechnet, bezahlt und zu mahnen ist, steht verstreut. Ohne den Status braucht die Aufbewahrung trotzdem ein Ankerdatum.
@@ -681,7 +681,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Kalender, Termine, Warteliste |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B2, Bild 1) |
-| Status  | eingeplant in PR O (Oberfläche) |
+| Status  | gebaut in #244, wartet auf Merge |
 | Berührt | Hinweis „Fahrzeit zu knapp/zu lang“ am Termin |
 
 **Beobachtung.** Beim Anlegen nennt „Anfahrt zu knapp“ den frühesten Beginn, bietet aber keinen Weg dorthin; ebenso bei zu langer Fahrt oder Rückfahrt.
@@ -695,7 +695,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Dokumentation |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B3) |
-| Status  | eingeplant in PR S (Sprache, KI-Gateway) |
+| Status  | gebaut mit Nachbildung in #243, wartet auf Merge; Anbieter offen (Jannes) |
 | Berührt | `CompleteTreatmentPage`, Edge Function `ai-gateway`, E13 |
 
 **Beobachtung.** Diktieren geht nicht; die Doku entsteht nur getippt oder aus Bausteinen.
@@ -709,7 +709,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Übersicht (Tag); Kalender, Termine, Warteliste; Dokumentation |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B4) |
-| Status  | erledigt in PR A (Abrechnung, Akte, Haken) |
+| Status  | gebaut in #241, wartet auf Merge |
 | Berührt | `complete_treatment`, `app.mark_appointment_documented`, `reopen_appointment`, Tagesliste, Terminfenster |
 
 **Beobachtung.** Die festgeschriebene Doku hakt den Termin mit ab; zurücknehmen geht nur kurz nach dem Haken und nicht an einem dokumentierten Termin.
@@ -723,7 +723,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Dokumentation |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B5) |
-| Status  | eingeplant in PR O (Oberfläche) |
+| Status  | gebaut in #244, wartet auf Merge |
 | Berührt | Startinhalte der Textbausteine |
 
 **Beobachtung.** Die mitgelieferten Bausteine passen nicht zum Alltag der einzelnen Therapeut:in.
@@ -737,7 +737,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Übersicht (Tag) |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B6, Bild 2) |
-| Status  | eingeplant in PR O (Oberfläche) |
+| Status  | gebaut in #244, wartet auf Merge; Abweichung ANN-532 als Frage |
 | Berührt | Zeitstrahl der Tagesübersicht |
 
 **Beobachtung.** Nach einem abgehakten Termin fehlt der Fahrtbalken zum nächsten Termin; an der Karte des nächsten Wegs steht nur die Fahrzeit als Text (Bild 2).
@@ -751,7 +751,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Kalender, Termine, Warteliste; Dokumentation; Abrechnung, Statistiken |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B7) |
-| Status  | erledigt in PR A (Abrechnung, Akte, Haken) |
+| Status  | gebaut in #241, wartet auf Merge; Nachträge nach der Freigabe als Frage |
 | Berührt | `HeilmittelBestaetigen`, `billable_services`, `treatment_bases`, Sperre der Doku |
 
 **Beobachtung.** Am Termin werden Heilmittel abgehakt, obwohl der Haken am Termin schon sagt, dass behandelt wurde; was erbracht ist und wann eine Verordnung abzurechnen ist, steht nirgends.
@@ -765,7 +765,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Kalender, Termine, Warteliste |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B8) |
-| Status  | eingeplant in PR O (Oberfläche) |
+| Status  | gebaut in #244, wartet auf Merge; Löschen beim Zurücknehmen als Frage (ANN-534) |
 | Berührt | Folgetermin nach dem Haken |
 
 **Beobachtung.** Ein angelegter Folgetermin lässt sich nicht zurücknehmen; Therapeut:in, Nachbartermine, Dauer und Fahrzeit stehen nicht dabei, und es werden Zeiten vorgeschlagen, die nicht gehen.
@@ -779,7 +779,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Training und Übungen |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B9, Bild 3) |
-| Status  | eingeplant in PR O (Oberfläche) |
+| Status  | gebaut in #244, wartet auf Merge; Katalogübernahme als Frage (ANN-536) |
 | Berührt | Übungsplan anlegen und bearbeiten |
 
 **Beobachtung.** Den aktuellen Plan zu erstellen kostet zu viele Klicks; „pro Woche“ ist nicht zu finden, und aus Vorlage und Katalog kamen plötzlich zehn Übungen auf einmal statt einzeln wählbarer (Bild 3).
@@ -793,7 +793,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Patient:innen und Akte; Kalender, Termine, Warteliste |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B10) |
-| Status  | erledigt in PR A (Abrechnung, Akte, Haken) |
+| Status  | gebaut in #241, wartet auf Merge |
 | Berührt | Patientenliste, Wahl der Person für Termin und Dauertermin |
 
 **Beobachtung.** Wer eine Person sucht, muss drei Zeichen tippen; sortieren oder filtern geht nicht.
@@ -807,7 +807,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Plattform (Patient:innen, Kund:innen) |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B11) |
-| Status  | eingeplant in PR E (Plattform-Einsicht) |
+| Status  | gebaut in #242, wartet auf Merge |
 | Berührt | Akte „Plattform“, `/p` |
 
 **Beobachtung.** Was eine Person auf der Plattform sieht, kann die Praxis nicht nachvollziehen.
@@ -821,7 +821,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | Übersicht (Tag) |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B12) |
-| Status  | eingeplant in PR O (Oberfläche) |
+| Status  | gebaut in #244, wartet auf Merge |
 | Berührt | Zeilen der Tagesliste |
 
 **Beobachtung.** „Niemand öffnet?“ steht nur am nächsten Weg, nicht an den übrigen Patientenzeilen.
@@ -835,7 +835,7 @@ eingeklappt.
 | Datum   | 2026-10-14 |
 | Bereich | alle berührten Bereiche |
 | Quelle  | Jannes, Durchsicht am Rechner (Befund B13) |
-| Status  | eingeplant in allen vier PRs dieses Auftrags |
+| Status  | geprüft in #241, #242, #243, #244 (Bildpaare 375 und 1280 px im Bericht) |
 | Berührt | jede Änderung aus BEF-151 bis BEF-162 |
 
 **Beobachtung.** Die Durchsicht lief am Rechner; das Hauptgerät ist das Telefon.

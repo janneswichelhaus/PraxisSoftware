@@ -1077,6 +1077,15 @@
           "fertig_am": "2026-10-13",
           "nachweis": "PR #239, tests/e2e/besuch.spec.ts (höchstens 6 Tipps)",
           "vermerk": "Auftrag Jannes (12.10.2026), Kernablauf K5"
+        },
+        {
+          "id": "durchsicht-2026-10-14",
+          "name": "Durchsicht 14.10.: Befunde B1 bis B13 (Leistung, Haken, Liste; Einsicht in die Plattform; Spracheingabe mit Nachbildung; Oberfläche)",
+          "gewicht": 2,
+          "status": "fertig",
+          "fertig_am": "2026-10-14",
+          "nachweis": "PRs #241, #242, #243, #244, BEF-151 bis BEF-163, Bericht mit Bildpaaren",
+          "vermerk": "Auftrag Jannes (14.10.2026); Sichtung per Bildpaaren im Bericht; Anbieter für die Spracheingabe offen"
         }
       ]
     },
