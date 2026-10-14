@@ -98,6 +98,8 @@ function Abschluss({
   const [befundOffen, setBefundOffen] = useState(false);
   const [verlaufOffen, setVerlaufOffen] = useState(false);
   const [verlaufAnzahl, setVerlaufAnzahl] = useState<number | null>(null);
+  // „Wie zuletzt“ ohne Ergebnis (K6): eine Zeile unter der Chipreihe.
+  const [zuletztHinweis, setZuletztHinweis] = useState<string | null>(null);
 
   // „Termin 2 von 6" im Kopf - derselbe Lesepfad wie die Übersicht (PRX-008).
   const { data: lage } = useQuery({
@@ -322,6 +324,7 @@ function Abschluss({
               appointmentId={appointment.id}
               gesperrt={laeuft}
               onUebernehmen={(titel, text) => einfuegen(titel, wert, text)}
+              onHinweis={setZuletztHinweis}
             />
             <span aria-hidden="true" className="bg-line h-6 w-px shrink-0" />
           </>
@@ -349,6 +352,12 @@ function Abschluss({
           </>
         )}
       </div>
+
+      {zuletztHinweis ? (
+        <p role="status" className="border-line text-ink-muted shrink-0 border-b px-4 py-2 text-sm">
+          {zuletztHinweis}
+        </p>
+      ) : null}
 
       {ohneBehandlung ? null : (
         <BausteinFeld

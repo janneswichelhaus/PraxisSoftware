@@ -1,6 +1,7 @@
 import { Fragment, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Textlink } from '@/components/ui/Textlink';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
@@ -322,7 +323,7 @@ export function Tageskarte({
               <dt className="text-ink-muted col-span-2 mt-1 font-semibold">Letzter Eintrag</dt>
               <dd className="col-span-2 min-w-0">
                 <LetzterEintragVorDerTuer appointmentId={termin.id} />
-                <span className="text-ink-muted mt-1 block text-xs">Lesen wird protokolliert.</span>
+                <Kleingedrucktes className="mt-1">Lesen wird protokolliert.</Kleingedrucktes>
               </dd>
             </>
           ) : null}

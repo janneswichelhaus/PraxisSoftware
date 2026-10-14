@@ -1,5 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 import { Chip } from '@/components/ui/Chip';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Select } from '@/components/ui/Select';
@@ -474,8 +475,10 @@ export function AbsageAktion({
         {istEreignis ? ' ' : ` für ${patientName(appointment)} `}
         wird als abgesagt geführt.{' '}
         {istEreignis ? 'Die Fehlzeit selbst bleibt für die übrigen Beteiligten bestehen. ' : ''}
-        Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage
-        lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.
+        {/* Im Panel nur das, was die Entscheidung trägt (K9, Design-Review). */}
+        {kompakt
+          ? 'Eine Absage lässt sich nicht zurücknehmen.'
+          : 'Der Eintrag bleibt vollständig erhalten und gibt seinen Zeitraum wieder frei. Eine Absage lässt sich nicht zurücknehmen – für einen neuen Eintrag bitte neu anlegen.'}
       </p>
       {/* Der Grund als eine Reihe Chips (K9, ANN-500): ein Tipp statt Liste
           öffnen und wählen. Weiterhin ohne Vorbelegung (ANN-034). */}
@@ -564,11 +567,12 @@ export function AbsageAktion({
           die absagen könnte.
         </p>
       ) : (
-        <p className="text-ink-muted mt-3 text-sm">
+        // Die Regel zum Ausfallhonorar ist ein Rechtssatz (DESIGN.md Regel 6).
+        <Kleingedrucktes className="mt-3">
           Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt
           oder verlegt, merkt die Anwendung ein Ausfallhonorar vor. Die Frist wird automatisch
           berechnet; genau 24 Stunden vorher gilt noch als rechtzeitig.
-        </p>
+        </Kleingedrucktes>
       )}
     </Rueckfrage>
   );

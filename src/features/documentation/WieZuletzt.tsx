@@ -22,14 +22,20 @@ export function WieZuletzt({
   appointmentId,
   gesperrt,
   onUebernehmen,
+  onHinweis,
 }: {
   appointmentId: string;
   /** Während eines Schreibvorgangs fügt nichts ein (FIX-014). */
   gesperrt: boolean;
   onUebernehmen: (titel: string, text: string) => void;
+  /**
+   * Warum nichts übernommen wurde - die Seite zeigt es als Zeile unter der
+   * Chipreihe, die waagerecht läuft und keinen Satz umbrechen kann.
+   */
+  onHinweis: (hinweis: string | null) => void;
 }) {
   const [laedt, setLaedt] = useState(false);
-  const [hinweis, setHinweis] = useState<string | null>(null);
+  const setHinweis = onHinweis;
 
   async function uebernehmen() {
     setLaedt(true);
@@ -37,7 +43,13 @@ export function WieZuletzt({
     try {
       const blick = await fetchKurzblick(appointmentId);
       const text = blick?.last_note_content?.trim();
-      if (!blick || !text || !blick.last_note_appointment_start) {
+      // Null Zeilen heißt: Der Server gibt den Blick nicht heraus - das ist
+      // etwas anderes als „noch kein Eintrag“.
+      if (!blick) {
+        setHinweis('Der letzte Eintrag ist hier nicht zu sehen.');
+        return;
+      }
+      if (!text || !blick.last_note_appointment_start) {
         setHinweis('Noch kein Eintrag vor diesem Termin.');
         return;
       }
@@ -63,15 +75,8 @@ export function WieZuletzt({
   }
 
   return (
-    <>
-      <Chip onClick={() => void uebernehmen()} disabled={gesperrt || laedt}>
-        {laedt ? 'Wird geladen …' : 'Wie zuletzt'}
-      </Chip>
-      {hinweis ? (
-        <span role="status" className="text-ink-muted shrink-0 text-sm whitespace-nowrap">
-          {hinweis}
-        </span>
-      ) : null}
-    </>
+    <Chip onClick={() => void uebernehmen()} disabled={gesperrt || laedt}>
+      {laedt ? 'Wird geladen …' : 'Wie zuletzt'}
+    </Chip>
   );
 }

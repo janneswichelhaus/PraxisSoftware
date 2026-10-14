@@ -45,7 +45,6 @@ export function ZuEinemPlan({ variante, rueckweg }: { variante: Variante; rueckw
       <Button
         type="button"
         variant="primary"
-        groesse="kompakt"
         disabled={variante.archived}
         onClick={() => {
           hinzufuegen.reset();

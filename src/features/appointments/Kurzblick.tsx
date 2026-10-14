@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Aufklappzeichen } from '@/components/ui/Card';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Badge } from '@/components/ui/Badge';
@@ -208,23 +209,20 @@ export function Kurzblick({
  * Kurzblick (`get_appointment_brief`, einmal je Akte und Tag, ANN-230).
  */
 export function LetzterEintragVorDerTuer({ appointmentId }: { appointmentId: string }) {
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['appointment-brief', appointmentId],
     queryFn: () => fetchKurzblick(appointmentId),
     retry: false,
     gcTime: 0,
     staleTime: Infinity,
   });
-  if (isPending) return <LoadingState label="Letzter Eintrag wird geladen …" />;
-  if (isError) {
-    return (
-      <ErrorState
-        title="Der letzte Eintrag konnte nicht geladen werden."
-        description="Bitte die Verbindung prüfen und erneut versuchen."
-        onErneut={() => refetch()}
-      />
-    );
-  }
-  if (!data) return null;
-  return <LetzterEintrag blick={data} />;
+  return (
+    <Abfragezustand
+      abfrage={abfrage}
+      laden="Letzter Eintrag wird geladen …"
+      fehler="Der letzte Eintrag konnte nicht geladen werden."
+    >
+      {(blick) => (blick ? <LetzterEintrag blick={blick} /> : null)}
+    </Abfragezustand>
+  );
 }

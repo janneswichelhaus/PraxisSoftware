@@ -93,7 +93,9 @@ test('Übung aus der Bibliothek in den Plan: zwei Tipps bis zum Plan, vier bis z
   await fenster.getByLabel('Für wen?').fill('Mustermann');
   await z.tippe(fenster.getByRole('option', { name: /Max Mustermann/ }));
 
-  await expect(page).toHaveURL(new RegExp(`/patienten/${PATIENTEN.max}/plaene/`));
+  await expect(page).toHaveURL((url) =>
+    url.pathname.startsWith(`/patienten/${PATIENTEN.max}/plaene/`),
+  );
   expect(z.tipps).toBeLessThanOrEqual(2);
 
   await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
