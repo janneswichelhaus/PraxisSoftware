@@ -237,6 +237,9 @@ export function erstelleHandler({
     if (!einordnung.ok) return scheitert(einordnung.error.code, 'Einordnung fehlgeschlagen');
     const abschnitte = inVorlage(einordnung.value.abschnitte, zweck);
     if (abschnitte === null) return scheitert('unavailable', 'Einordnung unbrauchbar');
+    // Verstanden, aber nirgends eingeordnet: Das wäre eine Auslassung (6.3),
+    // und die Seite sähe nur „nichts zu verstehen“. Also kein Ergebnis.
+    if (abschnitte.length === 0) return scheitert('unavailable', 'Einordnung ohne Abschnitt');
 
     return antwort({ ok: true, transkript, abschnitte, quelle: adapter.quelle }, 200);
   };

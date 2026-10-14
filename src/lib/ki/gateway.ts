@@ -108,12 +108,19 @@ const abschnittSchema = z.object({
   text: z.string().max(50_000),
 });
 
-const erfolgSchema = z.object({
-  ok: z.literal(true),
-  transkript: z.string().max(50_000),
-  abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
-  quelle: z.enum(['anbieter', 'nachbildung']),
-});
+const erfolgSchema = z
+  .object({
+    ok: z.literal(true),
+    transkript: z.string().max(50_000),
+    abschnitte: z.array(abschnittSchema).max(DIKTAT_ABSCHNITTE.length),
+    quelle: z.enum(['anbieter', 'nachbildung']),
+  })
+  // Verstanden, aber nichts eingeordnet, wäre eine Auslassung (6.3) - der
+  // Gateway liefert das nicht, und hier gilt es als unbrauchbare Antwort.
+  .refine(
+    (antwort) => antwort.transkript.trim() === '' || antwort.abschnitte.length > 0,
+    'Transkript ohne Abschnitt',
+  );
 
 const statusSchema = z.object({ ok: z.literal(true), verfuegbar: z.boolean() });
 

@@ -608,6 +608,8 @@ describe('ai-gateway: Anbieter', () => {
   });
 
   it.each([
+    ['keinem Abschnitt', []],
+    ['nur leeren Abschnitten', [{ titel: 'Befund', text: '   ' }]],
     ['einen erfundenen Abschnitt', [{ titel: 'Diagnose', text: 'Gonarthrose rechts.' }]],
     [
       'einen Abschnitt doppelt',

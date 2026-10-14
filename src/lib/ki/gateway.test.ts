@@ -151,6 +151,22 @@ describe('diktatAufbereiten', () => {
     ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
   });
 
+  it('nimmt kein Transkript ohne eingeordneten Abschnitt an (6.3)', async () => {
+    invoke.mockResolvedValue({ data: { ...ERFOLG, abschnitte: [] }, error: null });
+    expect(
+      await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 }),
+    ).toMatchObject({ ok: false, fehler: 'function_unavailable' });
+  });
+
+  it('nimmt eine Aufnahme ohne verständliches Wort als leeren Vorschlag an', async () => {
+    const leer = { ok: true, transkript: '', abschnitte: [], quelle: 'nachbildung' };
+    invoke.mockResolvedValue({ data: leer, error: null });
+    expect(await diktatAufbereiten({ terminId: TERMIN, audio: aufnahme(), dauerS: 5 })).toEqual({
+      ok: true,
+      vorschlag: { transkript: '', abschnitte: [], quelle: 'nachbildung' },
+    });
+  });
+
   it('wirft nie, auch wenn die Bibliothek wirft', async () => {
     invoke.mockRejectedValue(new Error('kaputt'));
     expect(
