@@ -1389,3 +1389,17 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Entscheiden, ob der Punkt gebraucht wird; wenn ja, Einzel-Story-Loop: Zahl der Verhältnisse, deren Check-in seit mindestens einem Takt fällig ist, je Bereich in Offene Punkte – organisatorisch, ohne Wert und ohne Bewertung (ADR-006 Punkt 11).
 
 **Entscheidung (2026-10-15).** Jannes: „Nein“ – keine Liste „Check-in ausgeblieben“ in der Übersicht. Die Fälligkeit bleibt an Akte und Trainingsverhältnis.
+
+### BEF-165 — Der Hinweis nach § 19 UStG steht nicht im Schnappschuss der Rechnung
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-15 |
+| Bereich | Abrechnung: Rechnung, Ausdruck |
+| Quelle  | Zweitreview zur PR vom 2026-10-15 (Checkliste Punkt 9, Rechnungsdaten) |
+| Status  | erledigt 2026-10-15 (Bereichsüberholung 4, Migration `abr_040_monatslauf`): `app.small_business_notice()` schreibt den Hinweis beim Ausstellen ins Dokument (`issuer.small_business_notice`, `schema_version` 6); Ansicht und Blatt zeigen ihn aus dem Dokument, ältere Snapshots über `src/features/billing/hinweise.ts`; ANN-541 verankert dort |
+| Berührt | `KLEINUNTERNEHMER_HINWEIS` in `src/features/billing/api.ts`, `InvoiceDetailPage.tsx`, `InvoicePrintPage.tsx`, `app.build_invoice_document` |
+
+**Beobachtung.** Ob der Hinweis erscheint, entscheidet `issuer.small_business` aus dem Schnappschuss. Den Wortlaut setzt aber der Client. Eine neue Formulierung (zuletzt ANN-541) ändert damit auch das Bild schon ausgestellter Rechnungen. Der Befreiungsgrund nach § 4 Nr. 14 steht dagegen im Schnappschuss (ANN-082). Heute ohne Folge: Echte Rechnungen gibt es noch nicht.
+
+**Erwartet.** Vor dem ersten echten Rechnungslauf, zusammen mit der Antwort aus B4: Den Hinweis beim Ausstellen ins Dokument schreiben (wie `exemption_reason`), `schema_version` erhöhen, nur aus dem Dokument anzeigen.

@@ -5619,10 +5619,10 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung de
 
 Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung der Bereichsüberholung „Monatsabrechnung in einem Lauf“
 
-**Annahme.** Der Lauf auf `/abrechnung` legt Entwürfe nur für Zeilen an, die fertig sind: eine Verordnung erst, wenn sie in die Abrechnung gestellt ist; ohne Verordnung (Monat, Training, Abo, Ausfallhonorar) nur einen abgeschlossenen Kalendermonat. Korrekturen nach Storno bleiben einzeln. Ausgestellt werden alle stehenden Entwürfe nach einer Rückfrage mit Anzahl, Summe und Kreisen; jede Rechnung einzeln über `issue_invoice`, ein Fehlschlag hält die übrigen nicht auf.
+**Annahme.** Der Lauf auf `/abrechnung` legt Entwürfe nur für Zeilen an, die fertig sind: eine Verordnung erst, wenn sie in die Abrechnung gestellt ist; ohne Verordnung (Monat, Training, Abo, Ausfallhonorar) nur einen abgeschlossenen Kalendermonat. Korrekturen nach Storno bleiben einzeln. Ausgestellt werden die fertigen Entwürfe (dieselbe Regel, ohne Korrekturen) nach einer Rückfrage mit Anzahl, Summe und Kreisen; jede Rechnung einzeln über `issue_invoice`, ein Fehlschlag hält die übrigen nicht auf.
 
 **Begründung.** K13 (≤ 3 Tipps). Ohne Freigabe käme eine laufende Verordnung auf zwei Rechnungen, ohne Monatsgrenze ein Monat. Die Freigabe ist nach ADR-009 Punkt 24 keine Bedingung der einzelnen Rechnung; die bleibt im Büro möglich.
 
-**Anker.** `laufstand` in `src/features/billing/lauf.ts`.
+**Anker.** `fertig` in `src/features/billing/lauf.ts` (für Zeilen und Entwürfe).
 
 **Änderungspfad.** Regel dort ändern · Aufwand `klein`.

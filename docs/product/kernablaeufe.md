@@ -11,7 +11,7 @@ Scorecard) und der Referenzabgleich vom 2026-10-12 (Jane, Cliniko, Physitrack, a
 Link, Auswahl, Kästchen); getippter Text steht als „+ Text“. Ein **Wechsel** ist eine neue Route
 oder App. Gemessen wird die Software per Playwright, kein Mensch (§20 bleibt unberührt). „Heute“
 ist am 2026-10-12 aus Code und Prüfseiten **gezählt**, nicht gemessen; ein Ablauftest ersetzt die
-Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag „Besuch in einem Zug“; „R2“: am 2026-10-14 nach den Restbefunden der Praxis-Prüfung; „E3“: am 2026-10-15 nach „Erstaufnahme geführt“.
+Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag „Besuch in einem Zug“; „R2“: am 2026-10-14 nach den Restbefunden der Praxis-Prüfung; „E3“: am 2026-10-15 nach „Erstaufnahme geführt“; „M4“: am 2026-10-15 nach „Monatsabrechnung in einem Lauf“.
 
 | # | Ablauf (Auslöser → fertig) | Rolle, Häufigkeit | Budget | Heute | Herkunft, Vorbild |
 | --- | --- | --- | --- | --- | --- |
@@ -27,8 +27,8 @@ Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag �
 | K10 | Erstaufnahme vor Ort, geführt: Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege | Therapie, wöchentlich | ≤ 15 Tipps + Felder, nichts vergessen | 10 vom Terminpanel bis zur Doku, 2 Wechsel (Verordnung, Anmeldebogen, eine Einwilligung, Liege; gemessen, `kernablaeufe.spec.ts`); am Gerät je Foto 2 Tipps mehr im Kameradialog: 14; Anamnesebogen vor Ort statt vorab: 16 + Felder; vorher ≥ 25, ≥ 10 Wechsel – E3 | T7, T8 |
 | K11 | Neuaufnahme am Telefon (Stammdaten, Anschrift für Hausbesuch) | Büro, wöchentlich | ≤ 8 Tipps + Felder, ≤ 90 s | 3 + Felder über „Weiter“ (gemessen, `kernablaeufe.spec.ts`; vorher ≈ 12 + 9 Felder) – E3 | Scorecard |
 | K12 | Heimprogramm aus Vorlage zuweisen und mitgeben | Therapie, wöchentlich | ≤ 5 Tipps | 6 + 5 je Übung | Physitrack |
-| K13 | Monatsabrechnung: alle Rechnungen eines Monats ausstellen | Büro, monatlich | ≤ 3 Tipps für den Lauf | ≈ 15 je Rechnung | appointmed |
-| K14 | Offene Posten sehen, Zahlung buchen | Büro, wöchentlich | 0 Tipps bis zur Liste, ≤ 3 je Zahlung | 0 und 3 (erreicht) | Scorecard |
+| K13 | Monatsabrechnung: alle Rechnungen eines Monats ausstellen | Büro, monatlich | ≤ 3 Tipps für den Lauf | 3 für alle fertigen Rechnungen: Lauf starten, ausstellen, Ja; danach „Alle drucken“ (gemessen, `abrechnungslauf.spec.ts`; vorher ≈ 15 je Rechnung) – M4 | appointmed |
+| K14 | Offene Posten sehen, Zahlung buchen | Büro, wöchentlich | 0 Tipps bis zur Liste, ≤ 3 je Zahlung | 0; gesammelt 2 + 1 je Posten: „Mehrere buchen“, Haken, buchen (gemessen, `abrechnungslauf.spec.ts`); einzeln 2 an der Zeile (gezählt); vorher 3 je Zahlung – M4 | Scorecard |
 | K15 | Tagesabschluss: was ist heute noch offen | Therapie, täglich | 0 Tipps, ein Abschnitt | 0: „Heute noch offen“ (Doku, Haken) vor „Morgen“ – C1, B4 | T9; Scorecard |
 
 **Regeln.**

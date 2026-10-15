@@ -1070,6 +1070,15 @@
           "vermerk": "Bereichsüberholung 3 der Roadmap; ANN-542, ANN-543; Sichtung per Bildstrecke im PR"
         },
         {
+          "id": "abr-epic-040",
+          "name": "Monatsabrechnung in einem Lauf (K13), Zahlungseingang gesammelt (K14), Sammeldruck, §-19-Hinweis im Schnappschuss (BEF-165)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-15",
+          "nachweis": "Branch ccr-92feaef7-zkxssj, Migration 20261118100000_abr_040_monatslauf.sql, tests/e2e/abrechnungslauf.spec.ts (K13 3 Tipps), Zweitreview",
+          "vermerk": "Bereichsüberholung 4 der Roadmap; ANN-544; Sichtung per Bildstrecke im PR"
+        },
+        {
           "id": "ueb-012",
           "name": "UEB-012 Mitgelieferter Übungskatalog: 196 Übungen, 193 gezeichnete Figuren, 15 Vorlagen, Übernahme durch owner",
           "gewicht": 2,
