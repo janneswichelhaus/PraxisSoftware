@@ -32,7 +32,7 @@ import { punktAmModell } from './stellen';
  * Inhaltsbreite (`Zweispalter`), sonst untereinander.
  *
  * Eine Nummerierung über alle offenen Stellen; erledigte Stellen (mit der
- * Freigabe, ANN-550) stehen eingeklappt darunter und behalten ihren Text.
+ * Freigabe, ANN-555) stehen eingeklappt darunter und behalten ihren Text.
  */
 export function RadStellen({
   detail,
@@ -143,7 +143,7 @@ export function RadStellen({
           </Listenabschnitt>
         ))}
         {darfFreigeben && !bike.block ? (
-          // Ohne Sperre erledigt „Freigeben“ nur die Stellen (ANN-550) - leise
+          // Ohne Sperre erledigt „Freigeben“ nur die Stellen (ANN-555) - leise
           // am Ende, mit Rückfrage.
           <div className="mt-6">
             <Rueckfrage

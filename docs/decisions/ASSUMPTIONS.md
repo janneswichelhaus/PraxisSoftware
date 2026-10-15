@@ -67,7 +67,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 100 Einträge):
+Zusatz `Prüfpaket` (heute 144 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -5638,3 +5638,111 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiede
 **Anker.** Container `flex flex-col gap-8` in `MyDayPage` (`src/features/today/MyDayPage.tsx`).
 
 **Änderungspfad.** Karte zurück: Git-Verlauf von `Tagesabschluss` · Aufwand `klein`.
+
+### ANN-550 — Radflotte: Freigeben und von Hand sperren dürfen Inhaber:in und Teamleitung
+
+Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung der Bereichsüberholung „Radflotte“
+
+**Annahme.** Ein gesperrtes Rad freigeben (Sperre aufheben, offene Stellen erledigen) und ein Rad von Hand sperren dürfen `owner` und `team_lead`. Lesen, Schlüssel, Panne, Check-Up und die Unterlage für die Werkstatt haben alle Behandlungsrollen samt Büro; Räder und Depots pflegt nur `owner` (BEF-066).
+
+**Begründung.** §4.5 nennt die Rad- und Ressourcenzuteilung als Recht der Teamleitung, die Standortvorlage „bis die Teamleitung das Rad wieder freigibt“. Ohne Teamleitung gibt die Inhaber:in frei.
+
+**Anker.** `app.can_release_fleet_bike()` in `supabase/migrations/20261119100000_flt_001_radflotte.sql`.
+
+**Änderungspfad.** Andere Rollen: die eine Funktion · Aufwand `klein`.
+
+### ANN-551 — Radflotte: Ereignisse drei Jahre, Schlüssel 30 Tage, keine Löschsperre
+
+Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Check-Ups, Pannen, Sperren und Stellen samt Fotos fallen drei Jahre nach Ende des Kalenderjahres des Ereignisses (Sperre: der Freigabe), nie solange eine Stelle oder Sperre offen ist; der Schlüsselverlauf 30 Tage nach der Rückgabe. Ein Rad kennt keine Löschsperre (BEF-166).
+
+**Begründung.** Nachweis der Pflege des Arbeitsmittels für die Verjährung (§§ 195, 199 BGB); Kontrollen vor der Fahrt haben keine gesetzliche Frist. Der Schlüssel beantwortet die Frage nach der letzten Fahrt, ohne Auswertung je Person (§20). Unsicher: ob ein Unfall länger braucht.
+
+**Anker.** Datenklassen `radflotte_ereignis` und `schluesselverlauf` in `supabase/migrations/20261119100000_flt_001_radflotte.sql`.
+
+**Änderungspfad.** Fristen: die zwei Datenklassen · `klein`; Löschsperre am Rad (BEF-166) · `mittel`.
+
+### ANN-552 — Fotos am Rad: eigener Bucket, derselbe Weg wie Dateien der Akte
+
+Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Fotos an einer Stelle oder am Check-Up liegen im privaten Bucket `radflotte` und folgen ADR-017 sinngemäß: zwei Phasen mit Prüfung am Server, ohne Metadaten, Ansehen über eine einmalige Freigabe. Hochladen nur zur eigenen Meldung binnen 24 Stunden, höchstens vier je Bezug; löschen die aufnehmende Person am selben Tag und `owner`.
+
+**Begründung.** Ein Rad ist kein Patientenbezug, ein Foto kann aber nebenbei Personen oder Hausnummern zeigen; deshalb derselbe Schutz und vor der Aufnahme „Nur das Rad fotografieren“. Ein verlorenes Objekt fällt erst beim Öffnen auf (BEF-167).
+
+**Anker.** `app.fleet_photo_bucket()` in `supabase/migrations/20261119110000_flt_002_fotos_am_rad.sql`.
+
+**Änderungspfad.** Fotos anders ablegen oder abschalten: Bucket, Tabelle und Funktionen der Migration · Aufwand `mittel`.
+
+### ANN-553 — Check-Up: ein Haken der angemeldeten Person statt einer Unterschrift
+
+Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Check-Up endet mit dem Kästchen „Ich, ‹Name›, habe das ganze Rad gründlich auf Sicherheit geprüft.“; am Check-Up stehen das angemeldete Konto und die Zeit, keine gezeichnete Unterschrift.
+
+**Begründung.** Offene Frage im Handoff Lastenrad 3D (Abschnitt 7): Die Unterschrift der Vorlage wiese nichts nach, was die Anmeldung mit Sitzungssperre (ADR-025) nicht schon belegt, und wäre ein weiteres Datum über Beschäftigte.
+
+**Anker.** `p_confirmed` in `public.record_fleet_checkup` (`supabase/migrations/20261119100000_flt_001_radflotte.sql`).
+
+**Änderungspfad.** Unterschrift zurück: Bildfeld am Check-Up und Zeichenfeld · Aufwand `mittel`.
+
+### ANN-554 — Radflotte: keine Schlüssel- und Zugangscodes, Standortvorlage nur zu lesen
+
+Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —
+
+**Annahme.** Weder Rad noch Depot trägt einen Schlüssel-, Tresor- oder Zugangscode; ein Depot hat nur Name und Hinweis. Die Standortvorlage des Pannenablaufs ist die Kölner mit Platzhaltern und bleibt in der Anwendung nur zu lesen, bis die Tübinger Angaben geprüft vorliegen.
+
+**Begründung.** Ein Code in der Anwendung läge in jeder Sicherung und auf jedem Diensttelefon; er gehört in die Zugangsverwaltung der Praxis. Die Vorlage ist für Tübingen ungeprüft (§15.2, Roadmap).
+
+**Anker.** `Einstellungen` in `src/features/fleet/FleetPage.tsx`.
+
+**Änderungspfad.** Eigene Vorlage pflegen: Tabelle und Formular · Aufwand `mittel`.
+
+### ANN-555 — Stellen am Rad: Punkt im Modell, Nummer je Meldung, Freigabe erledigt sie
+
+Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
+
+**Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und den Punkt in Modellkoordinaten mit der Fassung des Modells; bei anderer Fassung zeigt die Nadel die Bauteilmitte. Nummeriert wird je Meldung in der Reihenfolge des Setzens. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
+
+**Begründung.** Handoff Lastenrad 3D, AC 2 und 3, Abschnitt 7 (offene Stellen beim nächsten Check-Up).
+
+**Anker.** `MODEL_VERSION` in `src/features/fleet/bike3d/zones.ts`.
+
+**Änderungspfad.** Stellen übernehmen statt erledigen: Freigabe und Check-Up am Server · Aufwand `mittel`.
+
+### ANN-556 — three.js nur auf Abruf, nie im Einstiegsbundle
+
+Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
+
+**Annahme.** Betrachter und Bilder der Werkstattunterlage laden three.js über einen dynamischen Import; ohne WebGL oder ohne Netz und Zwischenspeicher trägt die Bauteil-Liste.
+
+**Begründung.** Das Diensttelefon lädt die Übersicht unterwegs; das 3D-Paket gehört nur auf die Seiten mit Rad (ADR-015, ADR-024).
+
+**Anker.** `import('./viewer')` in `src/features/fleet/bike3d/BikeModel3D.tsx`.
+
+**Änderungspfad.** Vorab laden: Eintrag im Service Worker · Aufwand `klein`.
+
+### ANN-557 — Zustand eines Rads abgeleitet; mit Verlauf ausmustern statt löschen
+
+Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
+
+**Annahme.** „In Reparatur“ ist eine offene Sperre, „Im Einsatz“ ein genommener Schlüssel, sonst „Verfügbar“; kein Statusfeld am Rad. „Rad entfernen“ löscht ein Rad ohne Verlauf und mustert eines mit Verlauf aus: aus der Flotte, Stammnutzer:in entfernt, Verlauf bis zum Ende seiner Frist.
+
+**Begründung.** Ein Statusfeld neben Sperre und Schlüssel wäre eine zweite Wahrheit (`ARBEITSBEREICHE.md`, Regel 1); Löschen mit Verlauf nähme den Nachweis aus ANN-551.
+
+**Anker.** `radzustand` in `src/features/fleet/rad.ts`.
+
+**Änderungspfad.** Weitere Zustände (etwa „Inspektion“): Sperrgrund statt Statusfeld · Aufwand `klein`.
+
+### ANN-558 — Pannenort als Freitext nur fürs Team, gelöscht mit der Freigabe
+
+Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Wo ein zurückgelassenes Rad steht, ist Freitext (bis 120 Zeichen) an der Pannenmeldung. Er geht an keinen Dienst, nicht in die Unterlage für die Werkstatt und nicht in die Zusammenfassung und wird mit der Freigabe oder dem Ausmustern des Rads geleert.
+
+**Begründung.** Der Ort liegt oft vor dem Haus einer Patientin und trüge so nebenbei einen Patientenbezug (ADR-019); gebraucht wird er nur, bis das Rad abgeholt ist.
+
+**Anker.** Spalte `location_note` in `public.fleet_breakdowns` (`supabase/migrations/20261119100000_flt_001_radflotte.sql`).
+
+**Änderungspfad.** Länger aufbewahren: Leeren in `release_fleet_bike` streichen · Aufwand `klein`.

@@ -8,7 +8,7 @@ export const FOTOS_JE_STELLE = 4;
 
 /**
  * Fotos, die mit einer Stelle oder einem Check-Up hochgeladen werden, bis
- * dahin nur im Arbeitsspeicher (ADR-017 Punkt 33 sinngemäß, ANN-547): über
+ * dahin nur im Arbeitsspeicher (ADR-017 Punkt 33 sinngemäß, ANN-552): über
  * den Kameradialog der Anwendung, nicht über die Kamera-App - so landet kein
  * Bild in der Mediathek und ihrem Cloud-Backup. Hochgeladen wird erst mit dem
  * Speichern der Meldung, an deren Stelle die Fotos hängen.

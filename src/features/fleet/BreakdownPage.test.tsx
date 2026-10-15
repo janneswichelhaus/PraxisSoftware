@@ -128,7 +128,7 @@ describe('Panne melden', () => {
     expect(screen.queryByText(/Kettenriss/)).toBeNull();
   });
 
-  it('hält den Ort des zurückgelassenen Rads aus dem Abschluss heraus (ANN-553)', async () => {
+  it('hält den Ort des zurückgelassenen Rads aus dem Abschluss heraus (ANN-558)', async () => {
     const nutzer = userEvent.setup();
     recordBreakdown.mockResolvedValue({ breakdownId: 'p', spotIds: [], blocked: true });
     oeffne();

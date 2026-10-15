@@ -9,7 +9,7 @@ import { Fotoreihe } from './Fotoreihe';
 /**
  * Der Verlauf eines Rads (FLT-EPIC-001): Check-Ups, Pannen, Sperren und
  * Freigaben in einer Liste, neueste zuerst; der Schlüssel eingeklappt
- * darunter - er wechselt zweimal am Tag und steht nur 30 Tage (ANN-546).
+ * darunter - er wechselt zweimal am Tag und steht nur 30 Tage (ANN-551).
  *
  * Wer geprüft oder gemeldet hat, steht am Ereignis (Handoff, Abschnitt 6);
  * eine Auswertung je Person gibt es nicht (§20).

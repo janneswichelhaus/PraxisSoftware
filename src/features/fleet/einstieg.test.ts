@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * three.js liegt nicht im Einstiegsbundle (Handoff Lastenrad 3D, AC 8;
- * ANN-551).
+ * ANN-556).
  *
  * Geladen wird das 3D-Rad nur auf den Seiten der Radflotte, per dynamischem
  * Import von `bike3d/viewer` und `bike3d/werkstattbilder`. Dieser Test geht
@@ -73,7 +73,7 @@ function erreichbar(einstieg: string): { dateien: Set<string>; mitThree: string[
   return { dateien, mitThree };
 }
 
-describe('three.js nur auf Abruf (AC 8, ANN-551)', () => {
+describe('three.js nur auf Abruf (AC 8, ANN-556)', () => {
   const { dateien, mitThree } = erreichbar(join(quelle, 'main.tsx'));
 
   it('findet den Einstieg und die Seiten der Radflotte darunter', () => {

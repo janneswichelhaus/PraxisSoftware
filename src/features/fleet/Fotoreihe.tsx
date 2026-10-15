@@ -7,7 +7,7 @@ import { Dateiansicht } from '@/features/files/Dateiansicht';
 import { FLOTTE_SCHLUESSEL, deleteFleetPhoto, loadFleetPhoto, type FleetPhoto } from './api';
 
 /**
- * Die Fotos einer Stelle oder eines Check-Ups (ANN-547): je ein Knopf
+ * Die Fotos einer Stelle oder eines Check-Ups (ANN-552): je ein Knopf
  * „Foto 1“, „Foto 2“; erst ein Tippen lädt das Bild - in den Speicher der
  * Seite, nicht auf das Gerät, über eine einmalige Freigabe (ADR-017 Punkt 54
  * sinngemäß). Löschen darf, wer es aufgenommen hat (am selben Tag), und die

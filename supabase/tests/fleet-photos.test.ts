@@ -13,7 +13,7 @@ import {
 } from './helpers/db';
 
 /**
- * Fotos am Rad (FLT-002, ANN-547): ADR-017 sinngemäß wie die Anhänge an
+ * Fotos am Rad (FLT-002, ANN-552): ADR-017 sinngemäß wie die Anhänge an
  * Rückfragen (Punkt 60) - eigener Bucket, eigene Tabelle, derselbe Weg.
  *
  *   * Zwei Phasen mit Bestätigung, nur zum eigenen Check-Up oder zur eigenen
@@ -102,7 +102,7 @@ async function meldung(versuch: Promise<unknown>): Promise<string> {
 /**
  * Ein frischer Check-Up an Lastenrad 2 mit einer Stelle am Lenker - auf dem
  * Weg der Anwendung, damit Bezug und Zeit stimmen. Der Lenker hebt keinen
- * Prüfpunkt an (ANN-550); alle Prüfpunkte stehen auf "In Ordnung".
+ * Prüfpunkt an (ANN-555); alle Prüfpunkte stehen auf "In Ordnung".
  */
 async function checkUp(konto: string): Promise<{ checkup: string; stelle: string }> {
   const { rows: katalog } = await asPostgres<{ items: string[] }>(
@@ -1119,7 +1119,7 @@ describe('Fotos am Rad (FLT-002)', () => {
     });
   });
 
-  describe('Löschlauf (ADR-008, ANN-546)', () => {
+  describe('Löschlauf (ADR-008, ANN-551)', () => {
     it('nach der Frist fallen die Fotos mit Check-Up, Panne und Stellen; das Objekt folgt über den Auftrag', async () => {
       await seedFrisch();
       const amCheckup = await fotografieren(users.teamLead, { checkup: FLOTTE.checkup });
@@ -1127,7 +1127,7 @@ describe('Fotos am Rad (FLT-002)', () => {
       const amRiemen = await fotografieren(users.teamLead, { spot: FLOTTE.stelleRiemen });
       const alle = [amCheckup, anDerBremse, amRiemen];
 
-      // Solange Stellen und Sperre offen sind, fällt nichts (ANN-546).
+      // Solange Stellen und Sperre offen sind, fällt nichts (ANN-551).
       await asPostgres(
         "update public.fleet_checkups set checked_at = now() - interval '5 years' where id = $1",
         [FLOTTE.checkup],

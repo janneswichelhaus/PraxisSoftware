@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+Radflotte echt (FLT-EPIC-001), eine PR, Branch `ccr-658a5e25-l0njkl`: Depots, Räder, Schlüssel mit
+einem Tipp, Check-Up und Panne mit Stellen am 3D-Rad, Freigabe mit Rückfrage, Unterlage für die
+Werkstatt als PDF; BEF-049 erledigt, BEF-066 für die Flotte; ANN-550 bis ANN-558.
+
 Übersicht (15.10., Branch `claude/practical-curie-1jy88f`): Abschlusskarte in Tiefgrün und Link zu
 den Trainingskund:innen entfernt, alle Abschnitte unter dem Kopf 32 px auseinander (ANN-546).
 
@@ -32,6 +36,7 @@ Widerruf zu Anhängen im Training (ANN-333).
 - Übungskatalog fachlich durchsehen (Texte KI-erstellt, „ungeprüft“, ANN-386); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
+- Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Sichtung neu: ~170 offene Schritte werden per Bildstrecke triagiert (`sichtung/README.md`); am
   Gerät bleibt nur, was eine Hand braucht (Kamera, Passkey, Flugmodus, Sonne).
 - Annahmen: bestätigen nur noch, was teuer zurückzunehmen ist (Kopf von `ASSUMPTIONS.md`);
@@ -49,5 +54,6 @@ Widerruf zu Anhängen im Training (ANN-333).
 
 ## Letzte Session
 
-15.10.2026, Branch `ccr-92feaef7-zkxssj`: Monatsabrechnung in einem Lauf. **Lokal:** `git pull`,
-Migration `20261118100000_abr_040_monatslauf` (`supabase db reset`).
+15.10.2026, Branch `ccr-658a5e25-l0njkl`: Radflotte. **Lokal:** `git pull`, `pnpm install`,
+Migrationen `20261119100000_flt_001_radflotte` und `20261119110000_flt_002_fotos_am_rad`
+(`supabase db reset`).

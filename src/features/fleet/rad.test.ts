@@ -10,7 +10,7 @@ import {
 } from './rad';
 import { ANNA, TIM, testFlotte, testRad } from './testdaten';
 
-describe('Zustand eines Rads (ANN-552)', () => {
+describe('Zustand eines Rads (ANN-557)', () => {
   it('leitet ihn aus Sperre und Schlüssel ab, die Sperre geht vor', () => {
     expect(radzustand(testRad())).toBe('verfuegbar');
     const schluessel = { holder_staff_id: ANNA.id, holder_name: ANNA.name, taken_at: '' };

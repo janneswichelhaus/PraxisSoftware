@@ -5,7 +5,7 @@
 -- der markierten Stelle; fuer alles andere gibt es 'Weitere Fotos'." Ein Foto
 -- zeigt einen Gegenstand, nie eine Person (Abschnitt 6).
 --
--- EIGENER BEREICH, DERSELBE WEG (ANN-547): ADR-017 regelt Dateien zu
+-- EIGENER BEREICH, DERSELBE WEG (ANN-552): ADR-017 regelt Dateien zu
 -- Patient:innen. Fotos am Rad sind keine - sie folgen den Abschnitten A bis F
 -- sinngemaess, wie die Anhaenge an Rueckfragen (ADR-017 Punkt 60): eigene
 -- Datenklasse, eigener Bucket, eigene Tabelle, zwei Phasen mit Bestaetigung,
@@ -49,7 +49,7 @@ as $$
 $$;
 
 comment on function app.fleet_photo_bucket() is
-  'FLT-002 (ANN-547): Name des privaten Buckets der Fotos am Rad. Die einzige Stelle, an der er steht.';
+  'FLT-002 (ANN-552): Name des privaten Buckets der Fotos am Rad. Die einzige Stelle, an der er steht.';
 
 -- Hoechstens vier Fotos je Stelle und je Check-Up.
 create function app.fleet_photo_limit()
@@ -108,7 +108,7 @@ create table public.fleet_photos (
 );
 
 comment on table public.fleet_photos is
-  'FLT-002 (ANN-547): Foto an einer Stelle am Rad oder an einem Check-Up ("Weitere Fotos"). Nur Gegenstaende, nie Personen. Datenklasse radflotte_ereignis, faellt mit Stelle oder Check-Up (cascade) und hinterlaesst einen Loeschauftrag fuer das Objekt (ADR-017 Punkt 25). Kein Tabellenrecht.';
+  'FLT-002 (ANN-552): Foto an einer Stelle am Rad oder an einem Check-Up ("Weitere Fotos"). Nur Gegenstaende, nie Personen. Datenklasse radflotte_ereignis, faellt mit Stelle oder Check-Up (cascade) und hinterlaesst einen Loeschauftrag fuer das Objekt (ADR-017 Punkt 25). Kein Tabellenrecht.';
 comment on column public.fleet_photos.checksum_sha256 is
   'SHA-256 der abgelegten Bytes, im Browser gerechnet; zum Nachweis des Servers erst mit verified_at (ADR-017 Punkte 9 und 49).';
 
@@ -200,7 +200,7 @@ revoke all on public.fleet_photo_access_grants from public, anon, authenticated;
 insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
 values
   ('fleet_photos', 'radflotte_ereignis', 'ueber_elterndatensatz',
-   'Fotos am Rad (FLT-002): fallen mit ihrer Stelle oder ihrem Check-Up (cascade) und damit nach deren Frist (ANN-546); das Objekt folgt ueber den Loeschauftrag (ADR-017 Punkt 25).',
+   'Fotos am Rad (FLT-002): fallen mit ihrer Stelle oder ihrem Check-Up (cascade) und damit nach deren Frist (ANN-551); das Objekt folgt ueber den Loeschauftrag (ADR-017 Punkt 25).',
    221),
   ('fleet_photo_access_grants', 'radflotte_ereignis', 'ueber_elterndatensatz',
    'Einmalige Lesefreigabe an einem Foto am Rad (ANN-052): beim ersten Zugriff verbraucht, nach 30 Sekunden verfallen; faellt spaetestens mit dem Foto (cascade).',
@@ -288,7 +288,7 @@ revoke all on function public.prepare_fleet_photo_upload(uuid, uuid, bigint, tex
 grant execute on function public.prepare_fleet_photo_upload(uuid, uuid, bigint, text) to authenticated;
 
 comment on function public.prepare_fleet_photo_upload(uuid, uuid, bigint, text) is
-  'FLT-002 (ANN-547, ADR-017 Punkt 7a): Phase (a) - Foto zur eigenen Stelle oder zum eigenen Check-Up, binnen 24 Stunden, hoechstens vier je Bezug, nur JPEG; liefert den Objektschluessel, bevor Bytes fliessen.';
+  'FLT-002 (ANN-552, ADR-017 Punkt 7a): Phase (a) - Foto zur eigenen Stelle oder zum eigenen Check-Up, binnen 24 Stunden, hoechstens vier je Bezug, nur JPEG; liefert den Objektschluessel, bevor Bytes fliessen.';
 
 -- Die eigene vorbereitete Zeile des Kontos.
 create function app.own_pending_fleet_photo(p_photo_id uuid)
@@ -737,7 +737,7 @@ grant execute on function public.record_fleet_photo_verification(uuid, boolean, 
   to service_role;
 
 comment on function public.record_fleet_photo_verification(uuid, boolean, boolean, boolean) is
-  'FLT-002 (ADR-017 Punkte 49 bis 52, ANN-547): Ergebnis der Pruefung am Inhalt - Typ an der Signatur, Pruefsumme, keine Metadaten. Bestanden: geprueft und ready. Befund: verworfen mit Loeschauftrag. Nur fuer den Dienst.';
+  'FLT-002 (ADR-017 Punkte 49 bis 52, ANN-552): Ergebnis der Pruefung am Inhalt - Typ an der Signatur, Pruefsumme, keine Metadaten. Bestanden: geprueft und ready. Befund: verworfen mit Loeschauftrag. Nur fuer den Dienst.';
 
 -- -----------------------------------------------------------------------------
 -- 10. Abgleich (ADR-017 Punkt 27): verwaiste Objekte auch im neuen Bucket.

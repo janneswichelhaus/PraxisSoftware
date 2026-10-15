@@ -8,7 +8,7 @@ export interface Fotoauftrag {
 }
 
 /**
- * Die Fotos einer Meldung nacheinander übertragen (ANN-547): Hängen können
+ * Die Fotos einer Meldung nacheinander übertragen (ANN-552): Hängen können
  * sie erst, wenn Stelle oder Check-Up gespeichert sind. Was scheitert, bleibt
  * im Arbeitsspeicher der Seite und lässt sich erneut versuchen, solange sie
  * offen ist - kein Zwischenspeicher, keine Warteschlange (ADR-017 Punkt 33).

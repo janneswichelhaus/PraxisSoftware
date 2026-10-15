@@ -17,7 +17,7 @@ import type { Spot } from './api';
  * Stellen einer Meldung, die gerade offene Stelle und was das Rad zeigt.
  * Ohne Oberfläche, damit Check-Up und Panne denselben Zustand führen und die
  * Prüfliste des Check-Ups ihn mitlesen kann (Stelle hebt Prüfpunkt an,
- * ANN-550).
+ * ANN-555).
  */
 
 export type Erfassungsart = 'checkup' | 'panne';
@@ -180,7 +180,7 @@ export function useStellenerfassung({
   };
 }
 
-/** Der Punkt einer gespeicherten Stelle - auf einer anderen Fassung des Modells die Mitte des Bauteils (ANN-550). */
+/** Der Punkt einer gespeicherten Stelle - auf einer anderen Fassung des Modells die Mitte des Bauteils (ANN-555). */
 export function punktAmModell(
   spot: Pick<Spot, 'point' | 'model_version'>,
   bauart: BikeType,

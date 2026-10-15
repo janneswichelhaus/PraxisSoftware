@@ -55,10 +55,10 @@ import { nummerDerStelle, useStellenerfassung, type Stelle } from './stellen';
  * Prüfpunkte der Bauart mit drei Bewertungen, Notiz, weitere Fotos und die
  * Bestätigung. Die Prüfpunkte stehen wie in der Vorlage auf „In Ordnung“;
  * getippt wird nur, was abweicht. Eine Stelle am Rad hebt die Bewertung
- * ihres Prüfpunkts an, nie ab (ANN-550) - die Seite setzt es, der Server
+ * ihres Prüfpunkts an, nie ab (ANN-555) - die Seite setzt es, der Server
  * prüft es.
  *
- * **Bestätigung ohne Unterschrift (ANN-548).** Wer prüft, ist angemeldet und
+ * **Bestätigung ohne Unterschrift (ANN-553).** Wer prüft, ist angemeldet und
  * steht am Check-Up; ein Kästchen mit dem eigenen Namen ersetzt die
  * gezeichnete Unterschrift der Vorlage, die nichts nachwiese, was die
  * Anmeldung nicht schon belegt.
@@ -218,7 +218,7 @@ function Checkupformular({
   const { stellen } = erfassung;
 
   function bewerte(punkt: CheckItemKey, wert: CheckRating) {
-    // Nie unter das, was eine Stelle am Rad schon sagt (ANN-550).
+    // Nie unter das, was eine Stelle am Rad schon sagt (ANN-555).
     setBewertungen((vorher) => ({ ...vorher, [punkt]: ratingWithSpots(punkt, wert, stellen) }));
   }
 

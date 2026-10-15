@@ -26,7 +26,7 @@ export interface Pruefergebnis {
 }
 
 /**
- * Was geprüft wird (ANN-337, ANN-547): eine Datei der Akte (`file_id`), ein
+ * Was geprüft wird (ANN-337, ANN-552): eine Datei der Akte (`file_id`), ein
  * Anhang an einer Rückfrage (`attachment_id`) oder ein Foto am Rad
  * (`photo_id`, FLT-002) - derselbe Ablauf, je eigene Datenbankfunktionen.
  */

@@ -31,7 +31,7 @@ export const antriebsriss: Record<BikeType, string> = { load60_riemen: 'Riemenri
 
 /**
  * Fassung der Geometrie je Bauart. Eine Stelle speichert ihren Punkt in
- * Modellkoordinaten und dazu die Fassung, an der er gesetzt wurde (ANN-550):
+ * Modellkoordinaten und dazu die Fassung, an der er gesetzt wurde (ANN-555):
  * Ändert sich die Geometrie, zeigt eine alte Stelle auf die Mitte ihres
  * Bauteils statt auf einen Punkt, der nicht mehr am Rad liegt.
  */
@@ -168,7 +168,7 @@ const RATING_ORDER: Record<CheckRating, number> = { ok: 0, beobachten: 1, proble
 
 /**
  * Eine Stelle hebt die Bewertung ihres Prüfpunkts an, nie ab (Handoff,
- * Vorschlag 3, ANN-550): „Problem“ an der Bremse setzt „Bremsen“ auf
+ * Vorschlag 3, ANN-555): „Problem“ an der Bremse setzt „Bremsen“ auf
  * „Problem“; eine Stelle „Beobachten“ lässt ein „Problem“ stehen.
  */
 export function raiseRating(rating: CheckRating, severity: Severity): CheckRating {

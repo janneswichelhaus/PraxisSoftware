@@ -49,7 +49,7 @@ const BEREICHE: Suchreiter<Bereich>[] = [
  * und Stammnutzer:in, „In Reparatur“ als Ausnahme und die zwei Wege des
  * Tages - Check-Up und Panne, im gesperrten Zustand die Unterlage für die
  * Werkstatt. Die Freigabe steht an der Warnzeile, mit Rückfrage, weil sie
- * die offenen Stellen erledigt (ANN-550).
+ * die offenen Stellen erledigt (ANN-555).
  *
  * Reiter nach DESIGN.md: die Arbeit (Stellen am Rad) zuerst, dann der
  * Verlauf, die Angaben zuletzt. Der offene Reiter steht in der Adresse

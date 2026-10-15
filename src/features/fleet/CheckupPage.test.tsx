@@ -105,7 +105,7 @@ describe('Fahrrad-Check-Up', () => {
     ).toBeInTheDocument();
   });
 
-  it('zählt neue Stellen nach den schon offenen des Rads weiter (ANN-550)', async () => {
+  it('zählt neue Stellen nach den schon offenen des Rads weiter (ANN-555)', async () => {
     const nutzer = userEvent.setup();
     fetchBike.mockResolvedValue(
       testDetail({ bike: RAD, spots: [testStelle({ id: 'alt', number: 1, zone: 'riemen' })] }),

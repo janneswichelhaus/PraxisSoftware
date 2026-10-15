@@ -134,7 +134,7 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
   'app.patient_photo_bucket': 'Konstante',
   // KOM-005: der Bucket der Anhänge an Rückfragen (ADR-017 Punkt 60).
   'app.message_attachment_bucket': 'Konstante',
-  // FLT-002: der Bucket der Fotos am Rad (ANN-547).
+  // FLT-002: der Bucket der Fotos am Rad (ANN-552).
   'app.fleet_photo_bucket': 'Konstante',
   'app.patient_search_min_length': 'Konstante',
   'app.retention_interval': 'Frist einer Datenklasse aus dem Katalog, ohne Personenbezug',

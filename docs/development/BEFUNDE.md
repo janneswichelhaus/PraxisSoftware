@@ -296,77 +296,6 @@ Fläche. Das helle Schema allein meldet `index.html` seit UXR-001 an (vorher
 „light dark“ mit dunklen Auswahllisten auf dunkel eingestellten Handys, Review
 NAV-10).
 
-### BEF-049 — Menü und Untermenü: Die Vorschau „Kommunikation“ belegt einen Tab, Organisatorisches ist am Handy zu lang, „Arbeitszeiten“ beginnt mit Einstellungen
-
-|         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Bereich | Tableiste (unter 640 px), Alle Bereiche (`/bereiche`), Kopfsuche, Kommunikation (`/team`), Untermenü Organisatorisches, Arbeitszeiten (`/praxis/planung`), Radflotte (Vorschau)                                                                                                                                                                                                                                                                                                           |
-| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs NAV-07, VOR-04, VOR-09, ORG-08, ORG-06                                                                                                                                                                                                                                                                                                                                                        |
-| Status  | entschieden 2026-10-05 (Jannes), Option 2; gebaut in RAH-EPIC-001 (2026-10-06): Tableiste nach Reife (ANN-244), Satz auf `/bereiche`, Vorschau-Protokoll in der Suche, „Sicherheit und Aufbewahrung“ als ein Punkt mit Reitern, Verlauf am scrollbaren Rand, „Praxiseinstellungen“ eingeklappt unter den Arbeitszeiten. Offen: „Panne melden“ und „Schlüssel entnehmen“ als Vorgänge in der Suche (FLT-EPIC-001) |
-| Berührt | `src/app/navigation.tsx` (`betriebUnterpunkte`, `tableiste`), `src/app/BereichePage.tsx` (Z. 38–41), `src/app/funktionen.ts` (Z. 245–266), `src/components/ui/SubNav.tsx` (Z. 40–58), `src/features/scheduling/SchedulingPage.tsx` (Z. 122, 211, 580–603), `src/features/staff/StaffMemberDetailPage.tsx` (Z. 259–264), `tests/e2e/organisation.spec.ts` (Z. 26–28); ANN-111, ANN-112; Festlegung vom 2026-09-22 (keine neuen Vorschau-Kennzeichnungen, `ARBEITSBEREICHE.md` Abschnitt 2) |
-
-**Beobachtung.**
-
-- **Tableiste und Kennzeichnung.** Die Tableiste nimmt bei mehr als fünf
-  Bereichen die ersten vier — für owner und office Übersicht, Kalender,
-  Patienten, Nachrichten; Abrechnung und Organisatorisches liegen hinter „Mehr“.
-  „Kommunikation“ ist ganz Vorschau (Teamchat ohne Versand) und trägt weder in
-  Seitenleiste, Tableiste noch Kopfsuche ein Vorschau-Zeichen; die Seite sagt es
-  nur im Knopf „In die Vorschau schreiben“. `/bereiche` behauptet: „Bereiche
-  ohne fertige Hintergrundfunktionen sind als Vorschau gekennzeichnet.“ — die
-  Liste darüber kennzeichnet keinen. Der einzige Weg zum Vorschau-Protokoll
-  steht dort; therapist und team_lead haben keinen „Mehr“-Eintrag, und ab 640 px
-  führt kein Menü hin.
-- **Untermenü Organisatorisches.** owner hat sechs Punkte plus „Vorschau (4)“;
-  bei 390 px sind nur Mitarbeitende, Arbeitszeiten und Textbausteine ganz zu
-  sehen, der Rest liegt rechts außerhalb, ohne Verlauf oder Pfeil — auf den
-  Sicherheitsseiten auch der aktive Punkt selbst. Das beantwortet die offene
-  Frage aus ANN-112 mit einer Messung: Auch eingeklappt ist die Leiste für owner
-  zu lang.
-- **Pannenweg.** „Panne melden“ liegt vier (therapist) bzw. fünf Tipps (owner,
-  office) tief; die Kopfsuche findet „Panne“ nicht.
-- **Arbeitszeiten.** Für owner stehen Praxisraster, Frist der automatischen
-  Finalisierung und Startort der Touren als offene Karten mit eigenen
-  Hauptknöpfen vor den Arbeitszeiten; „Behandelnde Person“ beginnt bei 1 610 px
-  (390), 1 361 px (820) und 1 314 px (1440). Der Weg „Arbeitszeiten“ aus dem
-  Mitarbeiterdatensatz landet beim Minutenraster, und die Dokumentationsfrist
-  sucht unter „Arbeitszeiten“ niemand.
-
-**Frage an Jannes.** (1) Wie weit sollen Vorschauen aus der Navigation
-zurücktreten — bis ganz aus dem Menü (die offene Frage aus ANN-112)? (2) Wohin
-gehören Raster, Frist und Startort?
-
-**Optionen.**
-
-1. **Nur berichtigen:** den Satz auf `/bereiche` an den Stand anpassen (etwa
-   „Vorschauen — im Untermenü so bezeichnet — und die Kommunikation speichern
-   nichts; was dort simuliert wurde, steht im Vorschau-Protokoll.“), von dort
-   und aus der Suche ein Weg zum Vorschau-Protokoll für alle Rollen;
-   Arbeitszeiten zuerst, Raster, Frist und Startort darunter eingeklappt als
-   „Praxiseinstellungen“. Folge: kleinste Änderung; ein Daumenziel führt weiter
-   in einen Chat ohne Versand, das Untermenü bleibt am Handy zu lang.
-2. **Wie 1, dazu Reife vor Reihenfolge:** Die Tableiste überspringt Bereiche,
-   die ganz Vorschau sind — owner und office sehen Übersicht, Kalender,
-   Patienten, Abrechnung, Mehr; Sicherheit und Aufbewahrung werden ein Punkt;
-   „Panne melden“ und „Schlüssel entnehmen“ findet die Suche als Vorgänge.
-   Folge: Abrechnung mit einem Tipp, ein kürzeres Untermenü; die sechs Bereiche
-   und ihre Reihenfolge in der Seitenleiste bleiben, und es entsteht keine neue
-   Vorschau-Kennzeichnung.
-3. **Vorschauen ganz aus dem Menü,** erreichbar nur über „Alle Bereiche“ und die
-   Suche. Folge: das kürzeste Menü; wer eine Vorschau zeigen will, muss sie
-   suchen.
-
-**Empfehlung.** Option 2, Raster, Frist und Startort eingeklappt unter den
-Arbeitszeiten (kein neuer Menüpunkt, das Untermenü soll kürzer werden). Ein
-Vorschau-Zeichen an „Kommunikation“ empfiehlt dieser Befund bewusst nicht: Nach
-deiner Festlegung vom 2026-09-22 entsteht eine Kennzeichnung nicht neu
-(`ARBEITSBEREICHE.md` Abschnitt 2); der Satz auf `/bereiche` wird deshalb an den
-Stand angepasst, nicht die Bereiche an den Satz. Den aktiven Punkt rollt das
-Untermenü seit UXR-001 ins Bild (Review VOR-05, UIK-10); ohne Entscheidung
-offen bleibt ein Verlauf am scrollbaren Rand; die E2E-Prüfung soll Sichtbarkeit prüfen statt
-zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
-
 ### BEF-050 — Jede Seite heißt im Browser-Tab „Own Motion“
 
 |         |                                                                                                                                                             |
@@ -415,7 +344,7 @@ Marke vorsieht.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Bereich | Organisatorisches → Vorschau: Zeitkonto (`/betrieb/zeitkonto`), Erstattungen (`/betrieb/erstattungen`), Urlaub (`/betrieb/urlaub`), Radflotte (`/betrieb/flotte`)                                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs VOR-14, VOR-22                                                                                                                                                                                                                                                                                                  |
-| Status  | entschieden 2026-10-09 (Jannes); eingeplant in FLT-EPIC-001, URL-001, ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Status  | entschieden 2026-10-09 (Jannes); Radflotte erledigt in FLT-EPIC-001 (2026-10-15, über RLS und `app.can_manage_fleet`); eingeplant in URL-001, ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Berührt | `src/features/timeaccount/TimeAccountPage.tsx` (Z. 77, 96), `src/features/reimbursements/ReimbursementsPage.tsx` (Z. 68, 254, 337), `src/features/vacation/VacationPage.tsx` (Z. 158, 214, 490), `src/features/fleet/FleetPage.tsx` (Z. 193–229, 343), `src/features/fleet/BikeEditPage.tsx` (Z. 294); §4.3, §4.5, §16, §20; B6; ANN-024; ADR-004; Roadmap Block 8 (FLT-EPIC-001, URL-001, ZK-001, ERS-001) |
 
 **Beobachtung.** Als therapist angemeldet: „Saldo über alle Personen: −3,25 h“
@@ -659,3 +588,45 @@ eingeklappt.
 **Beobachtung.** Diktieren geht nicht; die Doku entsteht nur getippt oder aus Bausteinen.
 
 **Erwartet.** Spracheingabe über das AI Gateway, in Entwicklung und Test gegen eine Nachbildung; den Anbieter entscheidet Jannes (ADR-002, ADR-005).
+
+### BEF-166 — Ein Rad kennt keine Löschsperre
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-15 |
+| Bereich | Radflotte (`/betrieb/flotte…`), Löschlauf |
+| Quelle  | FLT-EPIC-001, Bau des Löschlaufs `app.delete_due_fleet_records` |
+| Status  | offen |
+| Berührt | `supabase/migrations/20261119100000_flt_001_radflotte.sql` (Abschnitt 22); ANN-551, ANN-033; ADR-008 |
+
+**Beobachtung.** Check-Ups, Pannen und Sperren fallen drei Jahre nach dem Ereignis von selbst; eine Löschsperre gibt es nur an der Akte (ANN-033). Ist ein Unfall mit einem Rad länger streitig, fiele der Nachweis der Pflege.
+
+**Erwartet.** Eine Löschsperre je Rad mit Grund, gesetzt von `owner`, die der Löschlauf beachtet; bis dahin sichert die Praxis die Unterlage für die Werkstatt als PDF. Pfad A (Löschpfad).
+
+### BEF-167 — Fotos am Rad: Ein verlorenes Objekt fällt erst beim Öffnen auf
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-15 |
+| Bereich | Radflotte, Fotos am Rad |
+| Quelle  | FLT-EPIC-001, Review der Fotos am Rad (Subagent) |
+| Status  | offen |
+| Berührt | `supabase/migrations/20261119110000_flt_002_fotos_am_rad.sql`, `src/features/fleet/Fotoreihe.tsx`; ADR-017 (Abgleich); ANN-552 |
+
+**Beobachtung.** Die Dateien der Akte tragen nach dem Abgleich mit dem Speicher `object_missing` und sagen das in der Liste. Die Fotos am Rad kennen das Kennzeichen nicht; ein verlorenes Foto steht in der Fotoreihe wie jedes andere und meldet erst beim Öffnen einen Fehler.
+
+**Erwartet.** Derselbe Abgleich und dasselbe Kennzeichen wie bei den Dateien der Akte; die Fotoreihe sagt, dass das Foto fehlt. Pfad A (Dateien).
+
+### BEF-168 — Die Urlaubsvorschau nennt Stammräder aus den Demodaten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-15 |
+| Bereich | Urlaub (`/betrieb/urlaub`, Vorschau) |
+| Quelle  | FLT-EPIC-001, Durchsicht der übrigen Vorschauen |
+| Status  | eingeplant in URL-001 |
+| Berührt | `src/features/vacation/VacationPage.tsx` (`betroffeneRaeder`), `src/features/preview/demodaten.ts` (`demoRaeder`) |
+
+**Beobachtung.** Die Radflotte ist echt; die Urlaubsvorschau meldet nach „Genehmigen“ aber „Stammrad Lastenrad 2 ist im Zeitraum als frei markiert“ aus den acht Rädern der Demodaten, die mit der echten Flotte nichts gemein haben.
+
+**Erwartet.** Mit URL-001 entfällt der Satz: Die echte Radflotte liest ganztägige Abwesenheiten schon selbst und zeigt das Rad an diesen Tagen frei („Diese Woche frei: Do (abwesend)“).

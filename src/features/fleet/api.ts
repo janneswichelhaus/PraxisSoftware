@@ -13,7 +13,7 @@ import { BIKE_TYPES, type CheckRating, type ModelPoint, type Severity } from './
  * `…110000_flt_002_fotos_am_rad.sql`.
  *
  * Ob jemand ein Rad anlegt, freigibt oder einen Schlüssel nimmt, entscheidet
- * der Server (BEF-066, ANN-545); die Oberfläche fragt `can_manage` und
+ * der Server (BEF-066, ANN-550); die Oberfläche fragt `can_manage` und
  * `can_release` nur ab, um nicht anzubieten, was abgewiesen würde (ADR-004).
  */
 
@@ -354,7 +354,7 @@ export async function saveBike(rad: BikeInput): Promise<string> {
   return antwort(z.string(), data, 'Das Rad konnte nicht gespeichert werden.');
 }
 
-/** `deleted` ohne Verlauf, `archived` mit (ANN-552). */
+/** `deleted` ohne Verlauf, `archived` mit (ANN-557). */
 export async function removeBike(bikeId: string): Promise<'deleted' | 'archived'> {
   const data = await rufe(
     'remove_fleet_bike',
@@ -389,7 +389,7 @@ export async function returnKey(bikeId: string): Promise<void> {
 // Check-Up, Panne, Sperre, Freigabe
 // -----------------------------------------------------------------------------
 
-/** Eine Stelle, wie sie zum Server geht (ANN-550). */
+/** Eine Stelle, wie sie zum Server geht (ANN-555). */
 export interface SpotInput {
   zone: string;
   severity: Severity;
@@ -488,7 +488,7 @@ export async function releaseBike(
 }
 
 // -----------------------------------------------------------------------------
-// Fotos am Rad (ANN-547): derselbe Weg wie die Dateien der Akte (ADR-017
+// Fotos am Rad (ANN-552): derselbe Weg wie die Dateien der Akte (ADR-017
 // Punkt 7), mit eigenen Funktionen.
 // -----------------------------------------------------------------------------
 

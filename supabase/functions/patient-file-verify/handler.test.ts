@@ -230,7 +230,7 @@ describe('patient-file-verify', () => {
     expect(log).toEqual([expect.objectContaining({ dateiId: DATEI, klasse: 'passed' })]);
   });
 
-  it('ein Foto am Rad mit Aufnahmemetadaten oder in einem anderen Format ist ein Befund (ANN-547)', async () => {
+  it('ein Foto am Rad mit Aufnahmemetadaten oder in einem anderen Format ist ein Befund (ANN-552)', async () => {
     const handy = jpegVomHandy(6);
     const png = basis(CHROMIUM_PNG);
     for (const [bytes, erwartet] of [

@@ -38,7 +38,7 @@ import {
  * Portiert aus `docs/design/lastenrad-3d/kanvas/Lastenrad3D.dc.html`
  * (`buildCargoBike`, three.js r149) auf three.js 0.186: Farbräume statt
  * `encoding`, sonst unverändert - die Maße sind die des Entwurfs, damit
- * Punkte in Modellkoordinaten (ANN-550) an derselben Stelle bleiben.
+ * Punkte in Modellkoordinaten (ANN-555) an derselben Stelle bleiben.
  *
  * Einheiten in Metern. x zeigt nach vorn (Vorderrad), y nach oben, z nach
  * rechts (Antriebsseite). Boden bei y = 0.

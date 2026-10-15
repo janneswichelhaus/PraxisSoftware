@@ -22,7 +22,7 @@ import { WOCHENTAGE } from './format';
  *
  * Stammnutzer:in aus dem Mitarbeiterstamm statt Freitext - Tippfehler
  * ordneten sonst ein Rad einer Person zu, die es nicht gibt. Kein
- * Schlüsselcode und kein Zugangscode (ANN-549): Codes gehören in die
+ * Schlüsselcode und kein Zugangscode (ANN-554): Codes gehören in die
  * Zugangsverwaltung der Praxis, nicht in die Anwendung.
  *
  * Der Wochenplan sind die Tage der Stammnutzer:in; „frei“ ist, was nicht

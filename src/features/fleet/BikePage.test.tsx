@@ -47,7 +47,7 @@ beforeEach(() => {
 /**
  * Ein Rad (FLT-EPIC-001, DESIGN.md „Objekt“): Objektkopf mit Zustand,
  * „Stellen am Rad“ mit derselben Nummer an Nadel und Liste (AC 5),
- * Freigabe mit Rückfrage nur für owner und team_lead (ANN-545), Verlauf und
+ * Freigabe mit Rückfrage nur für owner und team_lead (ANN-550), Verlauf und
  * Angaben.
  */
 describe('Rad', () => {
@@ -83,7 +83,7 @@ describe('Rad', () => {
     ).toBeInTheDocument();
   });
 
-  it('gibt nach Rückfrage frei und sagt, was mit den Stellen geschieht (ANN-550)', async () => {
+  it('gibt nach Rückfrage frei und sagt, was mit den Stellen geschieht (ANN-555)', async () => {
     const nutzer = userEvent.setup();
     fetchFleet.mockResolvedValue(testFlotte({ can_release: true }));
     oeffne(RAD3, ['therapist', 'team_lead']);

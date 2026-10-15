@@ -135,7 +135,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       // Punkt 3: ein Bucket je Datenklasse. Seit DOK-006 zwei - die Akte und
       // die Patientenfotos mit eigener Frist (Punkt 32); seit KOM-005 drei -
       // dazu die Anhänge an Rückfragen (Punkt 60); seit FLT-002 vier - die
-      // Fotos am Rad (ANN-547).
+      // Fotos am Rad (ANN-552).
       expect(rows.map((r) => r.id)).toEqual([
         'patientenakte',
         'patientenfotos',

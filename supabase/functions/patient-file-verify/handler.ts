@@ -64,7 +64,7 @@ export function erstelleHandler({
     if (anfrage.method !== 'POST') return ende(405, 'bad_request');
     if (!instanz) return ende(503, 'not_configured');
 
-    // KOM-006 (ANN-337), FLT-002 (ANN-547): eine Datei der Akte, ein Anhang
+    // KOM-006 (ANN-337), FLT-002 (ANN-552): eine Datei der Akte, ein Anhang
     // an einer Rückfrage oder ein Foto am Rad - genau eines davon.
     let art: Art = 'datei';
     try {
@@ -109,7 +109,7 @@ export function erstelleHandler({
     // Zweitreview S2: Was sich nicht prüfen lässt, besteht nicht - ein
     // Fehler beim Zerlegen heißt verwerfen, nicht 500 ohne Ergebnis.
     // Ein Foto am Rad prüft sich wie ein Patientenfoto: JPEG an der Signatur,
-    // Prüfsumme, Erlaubnisliste des Geräts (FLT-002, ANN-547).
+    // Prüfsumme, Erlaubnisliste des Geräts (FLT-002, ANN-552).
     let ergebnis: Awaited<ReturnType<typeof pruefeInhalt>>;
     try {
       ergebnis =

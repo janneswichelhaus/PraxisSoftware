@@ -14,12 +14,12 @@ import {
  * Radflotte (FLT-EPIC-001, FLT-001): Depots, Räder, Schlüssel, Check-Up,
  * Panne, Sperre und Stellen am 3D-Rad.
  *
- * Geprüft werden die Rollen aus BEF-066 und ANN-545 samt Negativfällen
+ * Geprüft werden die Rollen aus BEF-066 und ANN-550 samt Negativfällen
  * (ADR-013 Punkt 9 Nr. 1: andere Organisation, Rolle ohne Recht,
  * Patientenkonto, Plattformkonto), die geschlossenen Tabellen, die
  * Eingabeprüfung, die Regel „eine Stelle hebt ihren Prüfpunkt an, nie ab“
- * (ANN-550), Sperre und Freigabe, die Unterlage für die Werkstatt ohne Namen
- * und Ort und der Löschlauf mit Journal (ANN-546, ADR-013 Nr. 4).
+ * (ANN-555), Sperre und Freigabe, die Unterlage für die Werkstatt ohne Namen
+ * und Ort und der Löschlauf mit Journal (ANN-551, ADR-013 Nr. 4).
  */
 
 const { users, organizationId } = SEED;
@@ -145,7 +145,7 @@ describe('Radflotte (FLT-001)', () => {
       });
     });
 
-    it('nennt die Rechte je Rolle (BEF-066, ANN-545)', async () => {
+    it('nennt die Rechte je Rolle (BEF-066, ANN-550)', async () => {
       const owner = await daten<Flotte>(users.ownerTherapist, LISTE, [null]);
       const leitung = await daten<Flotte>(users.teamLead, LISTE, [null]);
       const buero = await daten<Flotte>(users.office, LISTE, [null]);
@@ -232,7 +232,7 @@ describe('Radflotte (FLT-001)', () => {
       }
     });
 
-    it('lässt nur owner und team_lead sperren und freigeben (ANN-545)', async () => {
+    it('lässt nur owner und team_lead sperren und freigeben (ANN-550)', async () => {
       for (const konto of [users.therapist, users.office]) {
         expect(
           (await fehler(konto, `select public.release_fleet_bike($1::uuid)`, [FLOTTE.rad3]))?.code,
@@ -462,7 +462,7 @@ describe('Radflotte (FLT-001)', () => {
       expect(rest).toEqual([]);
     });
 
-    it('löscht ein Rad ohne Verlauf und mustert eines mit Verlauf aus (ANN-552)', async () => {
+    it('löscht ein Rad ohne Verlauf und mustert eines mit Verlauf aus (ANN-557)', async () => {
       const { rows } = await asUserCommitted<{ id: string }>(users.ownerTherapist, RAD_SPEICHERN, [
         null,
         'Lastenrad 9',
@@ -631,7 +631,7 @@ describe('Radflotte (FLT-001)', () => {
       expect(blatt.spots.map((s) => [s.number, s.zone])).toEqual(erwartet);
     });
 
-    it('hebt die Bewertung über die Stelle an, nie ab (ANN-550)', async () => {
+    it('hebt die Bewertung über die Stelle an, nie ab (ANN-555)', async () => {
       const stelle = (severity: string) =>
         JSON.stringify([{ zone: 'bremse-hinten', severity, point: null, note: null }]);
       // Problem an der Bremse, „Bremsen“ aber nur beobachten: abgewiesen.
@@ -801,7 +801,7 @@ describe('Radflotte (FLT-001)', () => {
       ).toBeNull();
     });
 
-    it('leert den Pannenort mit der Freigabe und beim Ausmustern (ANN-553)', async () => {
+    it('leert den Pannenort mit der Freigabe und beim Ausmustern (ANN-558)', async () => {
       // Der Ort eines zurückgelassenen Rads kann ein Hausbesuch sein. Er wird
       // gebraucht, bis das Rad wieder da ist - nicht die drei Jahre der Meldung.
       for (const rad of [FLOTTE.rad2, FLOTTE.rad4]) {
@@ -943,7 +943,7 @@ describe('Radflotte (FLT-001)', () => {
     });
   });
 
-  describe('Löschlauf (ANN-546, ADR-013 Punkt 9 Nr. 4)', () => {
+  describe('Löschlauf (ANN-551, ADR-013 Punkt 9 Nr. 4)', () => {
     async function vorhanden(tabelle: string, id: string): Promise<boolean> {
       const { rows } = await asPostgres(`select 1 from public.${tabelle} where id = $1`, [id]);
       return rows.length > 0;

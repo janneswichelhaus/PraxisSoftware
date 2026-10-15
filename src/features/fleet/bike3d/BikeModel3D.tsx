@@ -19,7 +19,7 @@ import type { BikeViewer } from './viewer';
  * festen Ansichten (Handoff Lastenrad 3D, Abschnitt 4 und 5).
  *
  * three.js lädt erst hier, per dynamischem Import von `./viewer` - nie im
- * Einstiegsbundle (AC 8, ANN-551; `einstieg.test.ts` wacht). Ohne WebGL steht
+ * Einstiegsbundle (AC 8, ANN-556; `einstieg.test.ts` wacht). Ohne WebGL steht
  * eine Meldung da, und das Markieren geht über die Bauteil-Liste weiter, die
  * jede Seite neben dem Rad anbietet (AC 7). Das Rad ist deshalb nie der
  * einzige Weg: Bedienung ohne Ziehen und ohne Tippen auf kleine Flächen.

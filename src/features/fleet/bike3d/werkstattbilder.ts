@@ -30,7 +30,7 @@ import { BIKE_CENTER, isZoneKey, type ModelPoint } from './zones';
  * Der Ausschnitt nimmt die Kamera des Bauteils; die Bremse vorne abweichend
  * von links, damit kein angeschnittener Aufkleber im Bild steht.
  *
- * Geladen wird die Datei wie der Betrachter nur auf Abruf (ANN-551).
+ * Geladen wird die Datei wie der Betrachter nur auf Abruf (ANN-556).
  */
 
 export interface Bildstelle {

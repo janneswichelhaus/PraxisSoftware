@@ -66,7 +66,7 @@ import { aktiveStandortvorlage } from './standortvorlage';
  * sie diese Woche ganztägig abwesend ist, „frei, weil abwesend“ - und der
  * Filter „Frei am“ beantwortet „welches Rad ist am Donnerstag frei“.
  *
- * Wer was darf, entscheidet der Server (ANN-545); die Seite fragt nur
+ * Wer was darf, entscheidet der Server (ANN-550); die Seite fragt nur
  * `can_manage`, um „Rad hinzufügen“ nicht anzubieten, wo es abgewiesen würde.
  */
 
@@ -135,7 +135,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
   return (
     <>
       {/* Ohne Satz unter dem Titel (Regel 6); „Rad hinzufügen“ kompakt im
-          Kopf, nur wo der Server es annimmt (ANN-403, ANN-545). */}
+          Kopf, nur wo der Server es annimmt (ANN-403, ANN-550). */}
       <PageHeader
         title="Radflotte"
         actions={
@@ -492,7 +492,7 @@ function Radzeile({
 
 /**
  * Depots und die Standortvorlage des Pannenablaufs. Die Vorlage bleibt nur
- * zu lesen: Sie stammt aus Köln und ist für Tübingen ungeprüft (ANN-549,
+ * zu lesen: Sie stammt aus Köln und ist für Tübingen ungeprüft (ANN-554,
  * §15.2); eine änderbare Betriebsanweisung setzt die geprüften Tübinger
  * Angaben voraus. Zugangscodes stehen nie in der Anwendung.
  */

@@ -14,9 +14,9 @@ import { depotName, standort } from './rad';
 /**
  * Die Angaben eines Rads (DESIGN.md „Objekt“, Reiter Stammdaten zuletzt): für
  * die Praxisinhaber:in das Formular, sonst zum Lesen. Leise am Ende, mit
- * Rückfrage: von Hand sperren (Teamleitung und Inhaber:in, ANN-545) und das
+ * Rückfrage: von Hand sperren (Teamleitung und Inhaber:in, ANN-550) und das
  * Rad entfernen (Inhaber:in) - ohne Verlauf gelöscht, mit Verlauf
- * ausgemustert, der Verlauf bleibt bis zum Ende seiner Frist (ANN-552).
+ * ausgemustert, der Verlauf bleibt bis zum Ende seiner Frist (ANN-557).
  */
 export function RadAngaben({
   rad,

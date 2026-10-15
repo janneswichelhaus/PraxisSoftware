@@ -2,7 +2,7 @@ import type { Bike, Depot, Fleet } from './api';
 import type { Wochentag } from './format';
 
 /**
- * Der Zustand eines Rads, abgeleitet statt gespeichert (ANN-552): gesperrt
+ * Der Zustand eines Rads, abgeleitet statt gespeichert (ANN-557): gesperrt
  * heißt „In Reparatur“, ein entnommener Schlüssel „Im Einsatz“, sonst
  * „Verfügbar“. Es gibt kein Statusfeld, das neben Sperre und Schlüssel
  * auseinanderlaufen könnte.

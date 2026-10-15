@@ -11,13 +11,13 @@
 --   public.fleet_depots          Abstellorte der Raeder (Betriebsdaten)
 --   public.fleet_bikes           die Raeder mit Bauart, Depot, Stammnutzer:in
 --                                und Wochenplan
---   public.fleet_key_handovers   wer den Schluessel eines Rads hat (ANN-546)
+--   public.fleet_key_handovers   wer den Schluessel eines Rads hat (ANN-551)
 --   public.fleet_checkups        Fahrrad-Check-Up mit zwoelf Pruefpunkten
 --   public.fleet_breakdowns      Pannenmeldung mit dem Abschluss des Assistenten
 --   public.fleet_blocks          Sperre eines Rads bis zur Freigabe
 --   public.fleet_spots           Stellen am 3D-Rad aus Check-Up und Panne
 --
--- ROLLEN (BEF-066, ANN-545): Lesen und Schluessel, Panne, Check-Up alle
+-- ROLLEN (BEF-066, ANN-550): Lesen und Schluessel, Panne, Check-Up alle
 -- Praxisrollen der Behandlung (owner, therapist, team_lead, office) -
 -- dieselben, die heute die Route sehen. Raeder und Depots anlegen, aendern,
 -- entfernen nur owner. Freigeben und von Hand sperren owner und team_lead
@@ -25,7 +25,7 @@
 -- sagt "bis die Teamleitung das Rad wieder freigibt"). Trainingsbetreuung und
 -- Plattformkonten sehen nichts.
 --
--- STATUS OHNE ZWEITE WAHRHEIT (ANN-552): "In Reparatur" ist eine offene
+-- STATUS OHNE ZWEITE WAHRHEIT (ANN-557): "In Reparatur" ist eine offene
 -- Sperre, "im Einsatz" ein entnommener Schluessel, sonst "verfuegbar". Kein
 -- Statusfeld am Rad, das neben Sperre und Schluessel etwas anderes sagen
 -- koennte.
@@ -125,7 +125,7 @@ as $$
   end
 $$;
 
--- ANN-550: die Fassung der Geometrie, an der eine Stelle gesetzt wurde.
+-- ANN-555: die Fassung der Geometrie, an der eine Stelle gesetzt wurde.
 create function app.fleet_model_version(p_bike_type text)
 returns smallint
 language sql
@@ -174,7 +174,7 @@ comment on function app.fleet_outcome_blocks(text) is
   'FLT-001: ob ein Abschluss des Pannenassistenten das Rad sperrt - alle ausser "Weiterfahrt moeglich" (pannenablauf.ts, abschluss().sperrt).';
 
 -- -----------------------------------------------------------------------------
--- 2. Wer liest, wer pflegt, wer gibt frei (BEF-066, ANN-545)
+-- 2. Wer liest, wer pflegt, wer gibt frei (BEF-066, ANN-550)
 -- -----------------------------------------------------------------------------
 create function app.can_read_fleet()
 returns boolean
@@ -196,7 +196,7 @@ as $$
   select app.has_any_role('owner')
 $$;
 
--- ANN-545: freigeben und von Hand sperren - owner und team_lead.
+-- ANN-550: freigeben und von Hand sperren - owner und team_lead.
 create function app.can_release_fleet_bike()
 returns boolean
 language sql
@@ -219,7 +219,7 @@ comment on function app.can_read_fleet() is
 comment on function app.can_manage_fleet() is
   'FLT-001 (BEF-066): wer Raeder und Depots anlegt, aendert und entfernt - owner. Die eine Stelle fuer die Regel.';
 comment on function app.can_release_fleet_bike() is
-  'FLT-001 (ANN-545): wer ein Rad freigibt oder von Hand sperrt - owner und team_lead. Die eine Stelle fuer die Regel.';
+  'FLT-001 (ANN-550): wer ein Rad freigibt oder von Hand sperrt - owner und team_lead. Die eine Stelle fuer die Regel.';
 
 -- Gemeinsamer Einstieg: angemeldet, darf, hat eine Organisation. Liefert die
 -- Organisation. Erst Konto und Recht, dann die Eingaben - ein Plattformkonto
@@ -326,7 +326,7 @@ create table public.fleet_depots (
   id              uuid primary key default extensions.gen_random_uuid(),
   organization_id uuid not null references public.organizations (id) on delete restrict,
   name            text not null check (length(btrim(name)) between 1 and 80),
-  -- "Betrieblicher Abstellort, Keller" - nie ein Zugangscode (ANN-549).
+  -- "Betrieblicher Abstellort, Keller" - nie ein Zugangscode (ANN-554).
   note            text check (note is null or length(btrim(note)) between 1 and 200),
   created_at      timestamptz not null default now(),
   created_by      uuid not null,
@@ -336,7 +336,7 @@ create table public.fleet_depots (
 );
 
 comment on table public.fleet_depots is
-  'FLT-001: Abstellort der Raeder (Raddepot). Ein betrieblicher Ort, kein Behandlungsraum; keine Zugangscodes (ANN-549). Datenklasse: Betriebsdaten der Praxis OHNE Personenbezug. Frist: bis zur Loeschung durch die Praxis. Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
+  'FLT-001: Abstellort der Raeder (Raddepot). Ein betrieblicher Ort, kein Behandlungsraum; keine Zugangscodes (ANN-554). Datenklasse: Betriebsdaten der Praxis OHNE Personenbezug. Frist: bis zur Loeschung durch die Praxis. Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
 
 create unique index fleet_depots_name_unique
   on public.fleet_depots (organization_id, lower(btrim(name)));
@@ -366,7 +366,7 @@ create table public.fleet_bikes (
                       check (planned_weekdays <@ array[1, 2, 3, 4, 5, 6, 7]::smallint[]),
   battery           text check (battery is null or length(btrim(battery)) between 1 and 80),
   note              text check (note is null or length(btrim(note)) between 1 and 500),
-  -- Ausgemustert (ANN-552): nicht mehr in der Flotte, der Verlauf bleibt bis
+  -- Ausgemustert (ANN-557): nicht mehr in der Flotte, der Verlauf bleibt bis
   -- zum Ende seiner Frist.
   archived_at       timestamptz,
   archived_by       uuid,
@@ -391,7 +391,7 @@ create table public.fleet_bikes (
 );
 
 comment on table public.fleet_bikes is
-  'FLT-001: ein Rad der Flotte mit Bauart, Stammdepot, Standort, Stammnutzer:in und Wochenplan. Kein Statusfeld: "In Reparatur" ist eine offene Sperre, "im Einsatz" ein entnommener Schluessel (ANN-552). Kein Schluesselcode (ANN-549). Datenklasse: Betriebsdaten der Praxis; Personenbezug nur ueber die Stammnutzer:in, die beim Ausmustern faellt. Frist: bis zur Loeschung durch die Praxis. Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
+  'FLT-001: ein Rad der Flotte mit Bauart, Stammdepot, Standort, Stammnutzer:in und Wochenplan. Kein Statusfeld: "In Reparatur" ist eine offene Sperre, "im Einsatz" ein entnommener Schluessel (ANN-557). Kein Schluesselcode (ANN-554). Datenklasse: Betriebsdaten der Praxis; Personenbezug nur ueber die Stammnutzer:in, die beim Ausmustern faellt. Frist: bis zur Loeschung durch die Praxis. Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
 comment on column public.fleet_bikes.planned_weekdays is
   'Wochenplan der Stammnutzer:in: 1 = Montag bis 7 = Sonntag. An den uebrigen Tagen fuer andere planbar.';
 
@@ -405,7 +405,7 @@ revoke all on public.fleet_bikes from anon, authenticated;
 alter table public.fleet_bikes enable row level security;
 
 -- -----------------------------------------------------------------------------
--- 5. Schluessel (ANN-546: Verlauf 30 Tage nach der Rueckgabe)
+-- 5. Schluessel (ANN-551: Verlauf 30 Tage nach der Rueckgabe)
 -- -----------------------------------------------------------------------------
 create table public.fleet_key_handovers (
   id              uuid primary key default extensions.gen_random_uuid(),
@@ -428,7 +428,7 @@ create table public.fleet_key_handovers (
 );
 
 comment on table public.fleet_key_handovers is
-  'FLT-001: Schluesselstand eines Rads - wer ihn wann genommen und zurueckgelegt hat. Hoechstens ein offener Vorgang je Rad. Beschaeftigtendaten ohne Auswertung je Person (PROJECT_PRINCIPLES.md 20). Datenklasse schluesselverlauf: 30 Tage nach der Rueckgabe (ANN-546); offene nie. Kein Tabellenrecht.';
+  'FLT-001: Schluesselstand eines Rads - wer ihn wann genommen und zurueckgelegt hat. Hoechstens ein offener Vorgang je Rad. Beschaeftigtendaten ohne Auswertung je Person (PROJECT_PRINCIPLES.md 20). Datenklasse schluesselverlauf: 30 Tage nach der Rueckgabe (ANN-551); offene nie. Kein Tabellenrecht.';
 
 create unique index fleet_key_handovers_one_open
   on public.fleet_key_handovers (bike_id) where returned_at is null;
@@ -455,7 +455,7 @@ create table public.fleet_checkups (
   -- [{key, rating, note}] in der Reihenfolge von app.fleet_check_items.
   items           jsonb not null check (jsonb_typeof(items) = 'array'),
   note            text check (note is null or length(btrim(note)) between 1 and 1000),
-  -- ANN-548: Die angemeldete Person bestaetigt die Pruefung; die Zeile
+  -- ANN-553: Die angemeldete Person bestaetigt die Pruefung; die Zeile
   -- entsteht nur mit dieser Bestaetigung. Keine gezeichnete Unterschrift.
   checked_at      timestamptz not null default now(),
   checked_by      uuid not null,
@@ -466,7 +466,7 @@ create table public.fleet_checkups (
 );
 
 comment on table public.fleet_checkups is
-  'FLT-001: Fahrrad-Check-Up - zwoelf Pruefpunkte mit In Ordnung, Beobachten oder Problem, Notiz, Stellen am Rad (fleet_spots) und Fotos. Bestaetigt durch die angemeldete Person (ANN-548). Datenklasse radflotte_ereignis: drei Jahre ab Ende des Kalenderjahres, nie solange eine Stelle offen ist (ANN-546). Kein Tabellenrecht.';
+  'FLT-001: Fahrrad-Check-Up - zwoelf Pruefpunkte mit In Ordnung, Beobachten oder Problem, Notiz, Stellen am Rad (fleet_spots) und Fotos. Bestaetigt durch die angemeldete Person (ANN-553). Datenklasse radflotte_ereignis: drei Jahre ab Ende des Kalenderjahres, nie solange eine Stelle offen ist (ANN-551). Kein Tabellenrecht.';
 
 create index fleet_checkups_bike_idx on public.fleet_checkups (bike_id, checked_at desc);
 
@@ -485,7 +485,7 @@ create table public.fleet_breakdowns (
   summary         text not null check (length(btrim(summary)) between 1 and 1000),
   -- "Was ist auffaellig?" im Zweig "Weiterfahrt moeglich".
   remark          text check (remark is null or length(btrim(remark)) between 1 and 1000),
-  -- Wo das zurueckgelassene Rad steht (ANN-553): Freitext fuer das Team,
+  -- Wo das zurueckgelassene Rad steht (ANN-558): Freitext fuer das Team,
   -- ohne Kartendienst, nie in der Unterlage fuer die Werkstatt.
   location_note   text check (location_note is null or length(btrim(location_note)) between 1 and 200),
   transport       text check (transport is null or transport in ('carsharing', 'fahrdienst')),
@@ -498,9 +498,9 @@ create table public.fleet_breakdowns (
 );
 
 comment on table public.fleet_breakdowns is
-  'FLT-001: Pannenmeldung aus dem Pannenassistenten mit Abschluss, auffaelliger Stelle, Standort des zurueckgelassenen Rads (ANN-553) und Stellen am Rad. Ein sperrender Abschluss legt eine Sperre an (fleet_blocks). Datenklasse radflotte_ereignis: drei Jahre ab Ende des Kalenderjahres, nie solange eine Stelle oder ihre Sperre offen ist (ANN-546). Kein Tabellenrecht.';
+  'FLT-001: Pannenmeldung aus dem Pannenassistenten mit Abschluss, auffaelliger Stelle, Standort des zurueckgelassenen Rads (ANN-558) und Stellen am Rad. Ein sperrender Abschluss legt eine Sperre an (fleet_blocks). Datenklasse radflotte_ereignis: drei Jahre ab Ende des Kalenderjahres, nie solange eine Stelle oder ihre Sperre offen ist (ANN-551). Kein Tabellenrecht.';
 comment on column public.fleet_breakdowns.location_note is
-  'Standort des zurueckgelassenen Rads als Freitext (ANN-553). Kann nebenbei einen Patientenbezug tragen; geht deshalb an keinen Dienst und nicht in die Unterlage fuer die Werkstatt und wird mit der Freigabe oder dem Ausmustern des Rads geleert.';
+  'Standort des zurueckgelassenen Rads als Freitext (ANN-558). Kann nebenbei einen Patientenbezug tragen; geht deshalb an keinen Dienst und nicht in die Unterlage fuer die Werkstatt und wird mit der Freigabe oder dem Ausmustern des Rads geleert.';
 
 create index fleet_breakdowns_bike_idx on public.fleet_breakdowns (bike_id, reported_at desc);
 
@@ -533,7 +533,7 @@ create table public.fleet_blocks (
 );
 
 comment on table public.fleet_blocks is
-  'FLT-001: Sperre eines Rads ("In Reparatur") aus einer Panne oder von Hand, bis zur Freigabe (owner, team_lead; ANN-545). Datenklasse radflotte_ereignis: drei Jahre ab Ende des Kalenderjahres der Freigabe; offene nie (ANN-546). Kein Tabellenrecht.';
+  'FLT-001: Sperre eines Rads ("In Reparatur") aus einer Panne oder von Hand, bis zur Freigabe (owner, team_lead; ANN-550). Datenklasse radflotte_ereignis: drei Jahre ab Ende des Kalenderjahres der Freigabe; offene nie (ANN-551). Kein Tabellenrecht.';
 
 create unique index fleet_blocks_one_open on public.fleet_blocks (bike_id) where released_at is null;
 create index fleet_blocks_breakdown_idx on public.fleet_blocks (breakdown_id)
@@ -543,7 +543,7 @@ revoke all on public.fleet_blocks from anon, authenticated;
 alter table public.fleet_blocks enable row level security;
 
 -- -----------------------------------------------------------------------------
--- 9. Stellen am Rad (ANN-550)
+-- 9. Stellen am Rad (ANN-555)
 --
 -- Der Punkt steht in Modellkoordinaten, nicht als Bildschirmposition: So
 -- zeigen jede Ansicht, "Am Rad zeigen" und die Unterlage fuer die Werkstatt
@@ -568,10 +568,10 @@ create table public.fleet_spots (
   created_at      timestamptz not null default now(),
   -- Reihenfolge des Anlegens: Die Stellen einer Meldung tragen denselben
   -- Zeitpunkt (eine Transaktion); ihre Nummern folgen der Reihenfolge, in der
-  -- sie gesetzt wurden, nicht dem Zufall der Kennung (ANN-550).
+  -- sie gesetzt wurden, nicht dem Zufall der Kennung (ANN-555).
   seq             bigint generated always as identity,
   created_by      uuid not null,
-  -- Mit "Freigeben" erledigt (ANN-550); bleibt im Verlauf.
+  -- Mit "Freigeben" erledigt (ANN-555); bleibt im Verlauf.
   resolved_at     timestamptz,
   resolved_by     uuid,
   constraint fleet_spots_id_organization unique (id, organization_id),
@@ -597,7 +597,7 @@ create table public.fleet_spots (
 );
 
 comment on table public.fleet_spots is
-  'FLT-001: Stelle am 3D-Rad aus einem Check-Up oder einer Panne - Bauteil, Punkt in Modellkoordinaten mit Fassung des Modells, Einstufung, Notiz (ANN-550). Mit "Freigeben" erledigt, bleibt im Verlauf. Datenklasse radflotte_ereignis, faellt mit Check-Up oder Panne (cascade). Kein Tabellenrecht.';
+  'FLT-001: Stelle am 3D-Rad aus einem Check-Up oder einer Panne - Bauteil, Punkt in Modellkoordinaten mit Fassung des Modells, Einstufung, Notiz (ANN-555). Mit "Freigeben" erledigt, bleibt im Verlauf. Datenklasse radflotte_ereignis, faellt mit Check-Up oder Panne (cascade). Kein Tabellenrecht.';
 comment on column public.fleet_spots.note is
   'Notiz zur Stelle. Kann nebenbei einen Patientenbezug tragen (Handoff Abschnitt 6); der Hinweis steht am Feld, und die Unterlage fuer die Werkstatt bittet um Pruefung vor dem Weitergeben.';
 
@@ -611,16 +611,16 @@ revoke all on public.fleet_spots from anon, authenticated;
 alter table public.fleet_spots enable row level security;
 
 -- -----------------------------------------------------------------------------
--- 10. Datenklassen und Fristen (ADR-008, ANN-546)
+-- 10. Datenklassen und Fristen (ADR-008, ANN-551)
 -- -----------------------------------------------------------------------------
 insert into public.retention_classes
   (key, basis, legal_reference, anchor, retention_interval, assumption_key, note, sort_order)
 values
   ('radflotte_ereignis', 'intern', 'Par. 195, 199 BGB', 'calendar_year_end', interval '3 years',
-   'ANN-546',
+   'ANN-551',
    'Check-Ups, Pannenmeldungen, Sperren und Stellen am Rad mit ihren Fotos: drei Jahre ab Ende des Kalenderjahres des Ereignisses (bei der Sperre: der Freigabe). Nie, solange eine Stelle oder Sperre offen ist. Nachweis der Pflege des Arbeitsmittels fuer die Verjaehrungsfrist; Kontrollen vor der Fahrt kennen keine gesetzliche Frist (BetrSichV Par. 4 Abs. 5).',
    91),
-  ('schluesselverlauf', 'intern', null, 'case_closed', interval '30 days', 'ANN-546',
+  ('schluesselverlauf', 'intern', null, 'case_closed', interval '30 days', 'ANN-551',
    'Wer den Schluessel eines Rads genommen und zurueckgelegt hat: 30 Tage nach der Rueckgabe; ein offener Vorgang nie. Genug, um bei einem Schaden nach der letzten Fahrt zu fragen; keine Auswertung je Person (PROJECT_PRINCIPLES.md 20).',
    92);
 
@@ -630,22 +630,22 @@ values
    'Raddepots (FLT-001). Betriebliche Orte ohne Personenbezug; bleiben, bis die Praxis das Depot entfernt. Ein Depot mit Raedern laesst sich nicht entfernen (FK restrict).',
    214),
   ('fleet_bikes', 'betriebsdaten', 'keine',
-   'Raeder der Flotte (FLT-001). Bleiben, bis die Praxis sie entfernt; mit Verlauf wird ein Rad ausgemustert, die Stammnutzer:in faellt dabei (ANN-552). Der Verlauf faellt nach seiner eigenen Frist.',
+   'Raeder der Flotte (FLT-001). Bleiben, bis die Praxis sie entfernt; mit Verlauf wird ein Rad ausgemustert, die Stammnutzer:in faellt dabei (ANN-557). Der Verlauf faellt nach seiner eigenen Frist.',
    215),
   ('fleet_key_handovers', 'schluesselverlauf', 'automatisch',
-   'Schluesselstand (FLT-001): 30 Tage nach der Rueckgabe; offen nie (ANN-546). Faellt frueher mit dem Rad (cascade).',
+   'Schluesselstand (FLT-001): 30 Tage nach der Rueckgabe; offen nie (ANN-551). Faellt frueher mit dem Rad (cascade).',
    216),
   ('fleet_checkups', 'radflotte_ereignis', 'automatisch',
-   'Check-Ups (FLT-001): drei Jahre ab Ende des Kalenderjahres der Pruefung, nicht solange eine ihrer Stellen offen ist (ANN-546). Stellen und Fotos fallen mit (cascade).',
+   'Check-Ups (FLT-001): drei Jahre ab Ende des Kalenderjahres der Pruefung, nicht solange eine ihrer Stellen offen ist (ANN-551). Stellen und Fotos fallen mit (cascade).',
    217),
   ('fleet_breakdowns', 'radflotte_ereignis', 'automatisch',
-   'Pannenmeldungen (FLT-001): drei Jahre ab Ende des Kalenderjahres der Meldung, nicht solange eine Stelle oder eine Sperre aus ihr offen ist (ANN-546). Stellen und Fotos fallen mit (cascade).',
+   'Pannenmeldungen (FLT-001): drei Jahre ab Ende des Kalenderjahres der Meldung, nicht solange eine Stelle oder eine Sperre aus ihr offen ist (ANN-551). Stellen und Fotos fallen mit (cascade).',
    218),
   ('fleet_blocks', 'radflotte_ereignis', 'automatisch',
-   'Sperren (FLT-001): drei Jahre ab Ende des Kalenderjahres der Freigabe; offene nie (ANN-546).',
+   'Sperren (FLT-001): drei Jahre ab Ende des Kalenderjahres der Freigabe; offene nie (ANN-551).',
    219),
   ('fleet_spots', 'radflotte_ereignis', 'ueber_elterndatensatz',
-   'Stellen am Rad (FLT-001): fallen mit ihrem Check-Up oder ihrer Pannenmeldung (cascade, ANN-546).',
+   'Stellen am Rad (FLT-001): fallen mit ihrem Check-Up oder ihrer Pannenmeldung (cascade, ANN-551).',
    220);
 
 -- -----------------------------------------------------------------------------
@@ -1207,11 +1207,11 @@ comment on function public.save_fleet_bike(
   'FLT-001: Rad anlegen (p_bike_id null) oder aendern - Name, Bauart, Stammdepot, Standort (Depot oder benannter Ort), Ersatzrad, Stammnutzer:in, Wochenplan, Akku, Notiz. Nur owner (BEF-066). Gleichzeitige Aenderung: 40001.';
 
 -- -----------------------------------------------------------------------------
--- 16. Rad entfernen (owner; ANN-552)
+-- 16. Rad entfernen (owner; ANN-557)
 --
 -- Ohne Verlauf wird das Rad geloescht. Mit Verlauf wird es ausgemustert: Es
 -- verschwindet aus der Flotte, der Verlauf bleibt bis zum Ende seiner Frist
--- (Nachweis der Pflege, ANN-546), und die Stammnutzer:in faellt sofort.
+-- (Nachweis der Pflege, ANN-551), und die Stammnutzer:in faellt sofort.
 -- Ein entnommener Schluessel muss vorher zurueck.
 -- -----------------------------------------------------------------------------
 create function public.remove_fleet_bike(p_bike_id uuid)
@@ -1246,7 +1246,7 @@ begin
     update public.fleet_spots s
        set resolved_at = now(), resolved_by = auth.uid()
      where s.bike_id = p_bike_id and s.resolved_at is null;
-    -- Wie bei der Freigabe: kein Pannenort ueber das Rad hinaus (ANN-553).
+    -- Wie bei der Freigabe: kein Pannenort ueber das Rad hinaus (ANN-558).
     update public.fleet_breakdowns d
        set location_note = null
      where d.bike_id = p_bike_id and d.location_note is not null;
@@ -1271,7 +1271,7 @@ revoke all on function public.remove_fleet_bike(uuid) from public, anon;
 grant execute on function public.remove_fleet_bike(uuid) to authenticated;
 
 comment on function public.remove_fleet_bike(uuid) is
-  'FLT-001 (ANN-552): Rad entfernen. Ohne Verlauf geloescht, mit Verlauf ausgemustert - aus der Flotte, offene Sperre und Stellen erledigt, Stammnutzer:in entfernt, Verlauf bis zum Ende seiner Frist. Nur owner (BEF-066).';
+  'FLT-001 (ANN-557): Rad entfernen. Ohne Verlauf geloescht, mit Verlauf ausgemustert - aus der Flotte, offene Sperre und Stellen erledigt, Stammnutzer:in entfernt, Verlauf bis zum Ende seiner Frist. Nur owner (BEF-066).';
 
 -- -----------------------------------------------------------------------------
 -- 17. Schluessel nehmen und zuruecklegen (alle Praxisrollen der Behandlung)
@@ -1358,7 +1358,7 @@ comment on function public.return_fleet_key(uuid) is
   'FLT-001: Schluessel eines Rads zuruecklegen - wer ihn hat oder eine Kollegin fuer sie. Alle Praxisrollen der Behandlung (BEF-066).';
 
 -- -----------------------------------------------------------------------------
--- 18. Stellen pruefen und anlegen (ANN-550)
+-- 18. Stellen pruefen und anlegen (ANN-555)
 --
 -- p_spots: [{zone, severity, point: [x, y, z] | null, note}], hoechstens 20.
 -- Liefert die Kennungen in der Reihenfolge der Eingabe, damit die Fotos zu
@@ -1537,7 +1537,7 @@ revoke all on function public.record_fleet_checkup(uuid, jsonb, text, jsonb, boo
 grant execute on function public.record_fleet_checkup(uuid, jsonb, text, jsonb, boolean) to authenticated;
 
 comment on function public.record_fleet_checkup(uuid, jsonb, text, jsonb, boolean) is
-  'FLT-001: Check-Up erfassen - alle Pruefpunkte der Bauart in ihrer Reihenfolge, Notiz, Stellen am Rad, Bestaetigung der angemeldeten Person (ANN-548). Eine Stelle hebt ihren Pruefpunkt an, nie ab (ANN-550). Sperrt das Rad nicht (dafuer der Pannenassistent). Alle Praxisrollen der Behandlung (BEF-066).';
+  'FLT-001: Check-Up erfassen - alle Pruefpunkte der Bauart in ihrer Reihenfolge, Notiz, Stellen am Rad, Bestaetigung der angemeldeten Person (ANN-553). Eine Stelle hebt ihren Pruefpunkt an, nie ab (ANN-555). Sperrt das Rad nicht (dafuer der Pannenassistent). Alle Praxisrollen der Behandlung (BEF-066).';
 
 -- -----------------------------------------------------------------------------
 -- 20. Panne melden (alle Praxisrollen der Behandlung)
@@ -1619,10 +1619,10 @@ grant execute on function public.record_fleet_breakdown(uuid, text, text, text, 
   to authenticated;
 
 comment on function public.record_fleet_breakdown(uuid, text, text, text, text, text, jsonb) is
-  'FLT-001: Panne melden - Abschluss des Assistenten, Text, auffaellige Stelle, Standort des zurueckgelassenen Rads (ANN-553), Weiterfahrt und Stellen am Rad (jede ein Schaden). Sperrt nach app.fleet_outcome_blocks. Versendet nichts. Alle Praxisrollen der Behandlung (BEF-066).';
+  'FLT-001: Panne melden - Abschluss des Assistenten, Text, auffaellige Stelle, Standort des zurueckgelassenen Rads (ANN-558), Weiterfahrt und Stellen am Rad (jede ein Schaden). Sperrt nach app.fleet_outcome_blocks. Versendet nichts. Alle Praxisrollen der Behandlung (BEF-066).';
 
 -- -----------------------------------------------------------------------------
--- 21. Von Hand sperren und freigeben (owner, team_lead; ANN-545)
+-- 21. Von Hand sperren und freigeben (owner, team_lead; ANN-550)
 --
 -- Freigeben schliesst die offene Sperre und erledigt alle offenen Stellen des
 -- Rads; sie bleiben im Verlauf (Handoff, Vorschlag 2). Auch ein Rad ohne
@@ -1667,7 +1667,7 @@ revoke all on function public.block_fleet_bike(uuid, text) from public, anon;
 grant execute on function public.block_fleet_bike(uuid, text) to authenticated;
 
 comment on function public.block_fleet_bike(uuid, text) is
-  'FLT-001 (ANN-545): Rad von Hand sperren, mit Grund ("Inspektion in der Werkstatt"). owner und team_lead.';
+  'FLT-001 (ANN-550): Rad von Hand sperren, mit Grund ("Inspektion in der Werkstatt"). owner und team_lead.';
 
 create function public.release_fleet_bike(p_bike_id uuid)
 returns jsonb
@@ -1702,7 +1702,7 @@ begin
   end if;
   -- Der Ort, an dem das Rad zurueckgelassen wurde, hat seinen Zweck mit der
   -- Freigabe erfuellt: Das Rad ist wieder da. Er kann ein Hausbesuch sein und
-  -- bleibt deshalb nicht die drei Jahre der Meldung stehen (ANN-553).
+  -- bleibt deshalb nicht die drei Jahre der Meldung stehen (ANN-558).
   update public.fleet_breakdowns d
      set location_note = null
    where d.bike_id = p_bike_id and d.location_note is not null;
@@ -1714,17 +1714,17 @@ revoke all on function public.release_fleet_bike(uuid) from public, anon;
 grant execute on function public.release_fleet_bike(uuid) to authenticated;
 
 comment on function public.release_fleet_bike(uuid) is
-  'FLT-001 (ANN-545, ANN-550, ANN-553): Rad freigeben - schliesst die offene Sperre und erledigt alle offenen Stellen; beides bleibt im Verlauf. Der Pannenort des Rads wird geleert. owner und team_lead. Versendet nichts.';
+  'FLT-001 (ANN-550, ANN-555, ANN-558): Rad freigeben - schliesst die offene Sperre und erledigt alle offenen Stellen; beides bleibt im Verlauf. Der Pannenort des Rads wird geleert. owner und team_lead. Versendet nichts.';
 
 -- -----------------------------------------------------------------------------
--- 22. Loeschlauf (ADR-008, ANN-546)
+-- 22. Loeschlauf (ADR-008, ANN-551)
 --
 -- Eine Funktion fuer die ganze Radflotte, aufgerufen aus apply_retention -
 -- wie die Fotos der Akte (app.delete_due_patient_photos). Reihenfolge:
 -- Schluessel, Sperren, dann Check-Ups und Pannen (deren Stellen und Fotos
 -- fallen per cascade). Kein Legal Hold: Loeschsperren stehen heute an der
 -- Akte (ANN-033); ein Rad kennt keine. Wer eine Loeschung anhalten muss,
--- sichert vorher die Unterlage fuer die Werkstatt (ANN-546, BEF-166).
+-- sichert vorher die Unterlage fuer die Werkstatt (ANN-551, BEF-166).
 -- -----------------------------------------------------------------------------
 create function app.delete_due_fleet_records(p_org uuid, p_time_zone text, p_run uuid)
 returns integer
@@ -1853,10 +1853,10 @@ $$;
 revoke all on function app.delete_due_fleet_records(uuid, text, uuid) from public, anon, authenticated;
 
 comment on function app.delete_due_fleet_records(uuid, text, uuid) is
-  'FLT-001 (ANN-546): Loeschlauf der Radflotte - Schluessel 30 Tage nach der Rueckgabe, Sperren, Check-Ups und Pannen drei Jahre ab Ende des Kalenderjahres; offene nie. Schreibt das Loeschjournal. Aufgerufen aus public.apply_retention().';
+  'FLT-001 (ANN-551): Loeschlauf der Radflotte - Schluessel 30 Tage nach der Rueckgabe, Sperren, Check-Ups und Pannen drei Jahre ab Ende des Kalenderjahres; offene nie. Schreibt das Loeschjournal. Aufgerufen aus public.apply_retention().';
 
 -- -----------------------------------------------------------------------------
--- 23. Der Loeschlauf ruft die Radflotte auf (ADR-008, ANN-546)
+-- 23. Der Loeschlauf ruft die Radflotte auf (ADR-008, ANN-551)
 --
 -- Rumpf sonst unveraendert aus 20261112110000_a_002_fristanker_aus_letzter_behandlung.sql:
 -- ein Zaehler mehr, ein Aufruf mehr, ein Schluessel mehr im Kontext von
@@ -2266,7 +2266,7 @@ begin
     v_anhaenge := app.remove_message_attachments(v_org.id, 'due', null, v_run);
 
     -- -------------------------------------------------------------------
-    -- FLT-001 (ANN-546): Radflotte - Schluessel 30 Tage nach der Rueckgabe,
+    -- FLT-001 (ANN-551): Radflotte - Schluessel 30 Tage nach der Rueckgabe,
     -- Sperren, Check-Ups und Pannen drei Jahre ab Ende des Kalenderjahres;
     -- offene nie. Ohne Patientenbezug, deshalb ohne Legal Hold der Akte.
     -- -------------------------------------------------------------------

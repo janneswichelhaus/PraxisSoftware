@@ -32,12 +32,12 @@ import { nummerDerStelle, punktAmModell, type Entwurf, type Stellenzustand } fro
  * Stelle an - Pflicht, nicht Komfort: Bedienung ohne Ziehen und ohne Tippen
  * auf kleine Flächen, und ohne WebGL.
  *
- * Gespeichert wird der Punkt in Modellkoordinaten (ANN-550). Nummeriert wird
+ * Gespeichert wird der Punkt in Modellkoordinaten (ANN-555). Nummeriert wird
  * über alle offenen Stellen des Rads: Die schon offenen stehen mit ihrer
  * Nummer am Rad, die neuen zählen weiter - dieselbe Nummer danach an der
  * Nadel, in der Liste und in der Unterlage für die Werkstatt. Schon offene
  * Stellen werden nicht übernommen, nicht bestätigt und erst mit der
- * Freigabe erledigt (ANN-550).
+ * Freigabe erledigt (ANN-555).
  */
 
 export function Stellenerfassung({

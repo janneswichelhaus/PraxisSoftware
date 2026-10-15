@@ -62,7 +62,7 @@ import { aktiveStandortvorlage } from './standortvorlage';
  * Gespeichert wird mit dem Abschluss: Meldung, Stellen, Fotos; ein sperrender
  * Abschluss sperrt das Rad („In Reparatur“). Der Ort eines zurückgelassenen
  * Rads steht für das Team daneben, nie im Abschlusstext und nie in der
- * Unterlage für die Werkstatt, und geht mit der Freigabe (ANN-553).
+ * Unterlage für die Werkstatt, und geht mit der Freigabe (ANN-558).
  * **Versendet wird nichts:** keine E-Mail, keine Push-Nachricht, keine
  * Meldung an eine Werkstatt.
  */
@@ -194,7 +194,7 @@ function Pannenassistent({
   const melden = useMutation({
     mutationFn: async ({ art, bike }: { art: Abschlussart; bike: Bike }) => {
       // Der Abschluss so, wie er angezeigt wurde - ohne den Ort, der steht
-      // daneben (ANN-553).
+      // daneben (ANN-558).
       const ergebnis = abschluss(art, {
         vorlage,
         ersatzrad,

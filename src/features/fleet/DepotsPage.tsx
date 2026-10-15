@@ -32,7 +32,7 @@ const ZUR_FLOTTE = '/betrieb/flotte';
  * Die Depots der Radflotte (FLT-EPIC-001, Praxisinhaber:in): anlegen,
  * umbenennen, entfernen. Ein Depot, zu dem noch ein Rad gehört oder in dem
  * eines steht, bleibt (der Server weist ab, die Seite bietet es nicht an).
- * Kein Zugangscode (ANN-549).
+ * Kein Zugangscode (ANN-554).
  */
 export function DepotsPage({ user }: { user: CurrentUser }) {
   const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
