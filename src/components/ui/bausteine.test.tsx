@@ -1922,6 +1922,54 @@ describe('Fortschrittspunkte (ProgressDots)', () => {
     );
   });
 
+  it('teilt mit Doku einen Punkt in Haken links und Doku rechts (ANN-547)', () => {
+    const { container } = renderWithProviders(
+      <ProgressDots
+        punkte={['erledigt', 'erledigt', 'naechster', 'offen', 'abgesagt']}
+        doku={[true, false, true, false, true]}
+      >
+        2 von 4 Besuchen erledigt
+      </ProgressDots>,
+    );
+    const punkte = Array.from(container.querySelectorAll('[data-punkt]'));
+    const haelften = (punkt: Element) =>
+      ['haken', 'doku'].map((seite) =>
+        punkt.querySelector(`[data-haelfte="${seite}"]`)?.classList.contains('bg-accent'),
+      );
+    // Beides da: voll mit ✓, ohne Hälften.
+    expect(punkte[0]!.querySelector('[data-haelfte]')).toBeNull();
+    expect(punkte[0]!.querySelector('svg')).toHaveAttribute('data-zeichen', 'haken');
+    // Abgehakt ohne Doku: links voll, rechts leer, kein ✓.
+    expect(haelften(punkte[1]!)).toEqual([true, false]);
+    expect(punkte[1]!.querySelector('svg')).toBeNull();
+    expect(klassenVon(punkte[1])).toEqual(expect.arrayContaining(['border-accent', 'size-3']));
+    // Der nächste, schon dokumentiert: rechts voll.
+    expect(haelften(punkte[2]!)).toEqual([false, true]);
+    // Ein späterer ohne alles bleibt leise.
+    expect(haelften(punkte[3]!)).toEqual([false, false]);
+    expect(klassenVon(punkte[3])).toEqual(expect.arrayContaining(['border-line-strong']));
+    // Eine Absage hat keine Hälften.
+    expect(punkte[4]!.querySelector('[data-haelfte]')).toBeNull();
+    // Ohne `feier` rollt nichts.
+    expect(container.querySelector('[data-rad]')).toBeNull();
+  });
+
+  it('laesst mit `feier` einmal ein selbst gezeichnetes Rad ueber die Reihe rollen', () => {
+    const { container } = renderWithProviders(
+      <ProgressDots punkte={['erledigt']} doku={[true]} feier={1}>
+        1 von 1 Besuch erledigt
+      </ProgressDots>,
+    );
+    const rad = container.querySelector('[data-rad]')!;
+    // Schmuck, bei reduzierter Bewegung gar nicht da; die Marke bleibt unberührt.
+    expect(rad).toHaveAttribute('aria-hidden', 'true');
+    expect(klassenVon(rad)).toEqual(
+      expect.arrayContaining(['fortschritt-rad', 'motion-reduce:hidden']),
+    );
+    expect(rad.querySelector('img')).toBeNull();
+    expect(rad.querySelectorAll('line')).toHaveLength(6);
+  });
+
   it('laesst die Punktreihe weg, wenn es keinen Termin gibt', () => {
     const { container } = renderWithProviders(
       <ProgressDots punkte={[]}>Heute keine Besuche</ProgressDots>,

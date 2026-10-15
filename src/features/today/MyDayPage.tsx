@@ -69,6 +69,7 @@ import {
   hausbesucheDesTages,
   bisBeginn,
   fokusDesTages,
+  hakenUndDokuText,
   fortschrittText,
   liegeHeute,
   naechsterWeg,
@@ -1068,6 +1069,24 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     [sortiert, fokus],
   );
 
+  // ANN-547: Wird der gezeigte Tag in dieser Sitzung fertig - jeder Besuch
+  // abgehakt und dokumentiert -, rollt einmal das Rad über die Punkte, und
+  // das Telefon vibriert kurz. Nichts davon wird gespeichert oder gezählt;
+  // ein Tag, der schon fertig geöffnet wird, feiert nicht.
+  const [feier, setFeier] = useState(0);
+  const zuletzt = useRef<{ tag: string; fertig: boolean } | null>(null);
+  const fertig = darfDokumentieren && fortschritt.fertig;
+  const geladen = tagesliste.data !== undefined;
+  useEffect(() => {
+    if (!geladen) return;
+    const vorher = zuletzt.current;
+    zuletzt.current = { tag, fertig };
+    if (vorher?.tag === tag && !vorher.fertig && fertig) {
+      setFeier((n) => n + 1);
+      navigator.vibrate?.([20, 60, 20]);
+    }
+  }, [tag, fertig, geladen]);
+
   // ANN-117: Zugeklappt nur für die, die selbst unterwegs sind: Das Büro hat meist
   // keine eigenen Besuche, für es ist der Plan des Teams die Hauptsache.
   const teamplanZugeklappt = eigeneTagesliste && darfDokumentieren;
@@ -1165,11 +1184,18 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             // + Wort (Design-Review R2, U1): am Telefon „2 von 6" neben den
             // Punkten, der ganze Satz für Vorlesesoftware und ab 640 px.
             fortschritt.gesamt > 0 ? (
-              <ProgressDots punkte={fortschritt.punkte}>
+              <ProgressDots
+                punkte={fortschritt.punkte}
+                // Haken und Doku: zwei Hälften je Punkt, nur für die, die
+                // dokumentieren (ANN-547).
+                {...(darfDokumentieren ? { doku: fortschritt.doku, feier } : {})}
+              >
                 <span aria-hidden="true" className="tabular-nums sm:hidden">
                   {`${fortschritt.erledigt} von ${fortschritt.gesamt}`}
                 </span>
-                <span className="max-sm:sr-only">{fortschrittText(fortschritt)}</span>
+                <span className="max-sm:sr-only">
+                  {darfDokumentieren ? hakenUndDokuText(fortschritt) : fortschrittText(fortschritt)}
+                </span>
               </ProgressDots>
             ) : undefined
           }

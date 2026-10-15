@@ -53,7 +53,9 @@ for (const breite of [375, 1280]) {
       kopf.getByText(breite < 640 ? /^\S+ \d{4}$/ : /^\S+, \d{1,2}\. \S+ \d{4}$/),
     ).toBeVisible();
     await expect(
-      kopf.getByText(breite < 640 ? '0 von 3' : '0 von 3 Besuchen erledigt', { exact: true }),
+      kopf.getByText(breite < 640 ? '0 von 3' : '0 von 3 abgehakt · 0 dokumentiert', {
+        exact: true,
+      }),
     ).toBeVisible();
 
     const liege = page.getByText('Liege heute', { exact: true }).locator('..');
@@ -468,7 +470,7 @@ for (const breite of [375, 1280]) {
 
     // ANN-546: keine Karte in Tiefgrün - die Punkte im Kopf sagen es.
     await expect(page.getByText('Alle Besuche erledigt')).toHaveCount(0);
-    await expect(page.getByText('3 von 3 Besuchen erledigt').first()).toBeAttached();
+    await expect(page.getByText('3 von 3 abgehakt · 3 dokumentiert').first()).toBeAttached();
     await expect(page.getByText('Liege heute', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('article')).toHaveCount(0);
     // Darunter, was morgen kommt (Jannes, 2026-10-11): Liege und Abfahrt.
@@ -487,6 +489,45 @@ for (const breite of [375, 1280]) {
     await ohneUeberlauf(page);
   });
 }
+
+for (const breite of [375, 1280]) {
+  test(`teilt die Punkte in Haken und Doku und laesst beim letzten Haken das Rad rollen (${breite} px, ANN-547)`, async ({
+    page,
+  }) => {
+    await oeffne(page, '17:00', breite, '?ansicht=fastfertig');
+    const reihe = page.locator('[data-fortschritt]');
+    await expect(reihe.locator('..')).toContainText('2 von 3');
+    // Der dritte: festgeschrieben, der Haken fehlt - rechts voll, links leer.
+    const dritter = reihe.locator('[data-punkt]').nth(2);
+    await expect(dritter.locator('[data-haelfte="doku"]')).toHaveClass(/bg-accent/);
+    await expect(dritter.locator('[data-haelfte="haken"]')).not.toHaveClass(/bg-accent/);
+    await expect(page.locator('[data-rad]')).toHaveCount(0);
+
+    await page.evaluate(() => (window as unknown as { tagFertig: () => void }).tagFertig());
+
+    const rad = page.locator('[data-rad]');
+    await expect(rad).toBeVisible();
+    await expect(reihe.locator('[data-punkt="erledigt"]')).toHaveCount(3);
+    await page.waitForTimeout(400);
+    await page.screenshot({
+      path: `.tmp/screenshots/rad-${breite}.png`,
+      clip: { x: 0, y: 0, width: breite, height: 260 },
+    });
+    // Nach dem Rollen ist es unsichtbar, nichts bleibt stehen (900 ms).
+    await expect(rad).toHaveCSS('opacity', '0', { timeout: 2000 });
+    await ohneUeberlauf(page);
+  });
+}
+
+test('laesst das Rad bei reduzierter Bewegung weg (ANN-547)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await oeffne(page, '17:00', 375, '?ansicht=fastfertig');
+  const reihe = page.locator('[data-fortschritt]');
+  await expect(reihe.locator('[data-punkt]')).toHaveCount(3);
+  await page.evaluate(() => (window as unknown as { tagFertig: () => void }).tagFertig());
+  await expect(reihe.locator('[data-punkt="erledigt"]')).toHaveCount(3);
+  await expect(page.locator('[data-rad]')).toBeHidden();
+});
 
 test('listet am Tagesende erst, was heute offen ist, dann morgen (Auftrag C1)', async ({
   page,

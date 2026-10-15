@@ -142,6 +142,13 @@ export function bisBeginn(termin: DayPlanEntry, jetzt: number): string | null {
 export interface Tagesfortschritt {
   /** Ein Punkt je Behandlungstermin in Uhrzeitfolge, auch für eine Absage. */
   punkte: ProgressDot[];
+  /**
+   * Je Punkt: Ist die Doku festgeschrieben? Eine Absage und ein nicht
+   * angetroffener Besuch brauchen keine und gelten als fertig (ANN-547).
+   */
+  doku: boolean[];
+  /** Jeder Besuch abgehakt und, wo behandelt wurde, dokumentiert (ANN-547). */
+  fertig: boolean;
   /** Besuche, an denen heute nichts mehr zu fahren ist. */
   erledigt: number;
   /** Besuche des Tages ohne Absagen (`besucheDesTages`). */
@@ -167,6 +174,8 @@ export function tagesfortschritt(
 ): Tagesfortschritt {
   const behandlungen = [...plan].filter((termin) => termin.kind === 'therapy').sort(nachUhrzeit);
   const besuche = behandlungen.filter((termin) => termin.status !== 'cancelled');
+  const ohneDoku = (termin: DayPlanEntry) =>
+    termin.status === 'cancelled' || termin.status === 'no_show';
   return {
     punkte: behandlungen.map((termin) => {
       if (termin.status === 'cancelled') return 'abgesagt';
@@ -176,15 +185,36 @@ export function tagesfortschritt(
       }
       return 'erledigt';
     }),
+    doku: behandlungen.map((termin) => ohneDoku(termin) || dokuFestgeschrieben(termin)),
     erledigt: besuche.filter((termin) => !hakenFehlt(termin.status, termin.checked_at)).length,
     gesamt: besuche.length,
-    dokumentiert: besuche.filter(
-      (termin) =>
-        termin.documentation_status === 'final' ||
-        termin.status === 'documented' ||
-        termin.status === 'invoiced',
-    ).length,
+    dokumentiert: besuche.filter(dokuFestgeschrieben).length,
+    fertig:
+      besuche.length > 0 &&
+      besuche.every(
+        (termin) =>
+          !hakenFehlt(termin.status, termin.checked_at) &&
+          (ohneDoku(termin) || dokuFestgeschrieben(termin)),
+      ),
   };
+}
+
+/** Festgeschrieben - auch ohne lesbaren Dokumentationsstand sagt es der Terminzustand. */
+function dokuFestgeschrieben(termin: DayPlanEntry): boolean {
+  return (
+    termin.documentation_status === 'final' ||
+    termin.status === 'documented' ||
+    termin.status === 'invoiced'
+  );
+}
+
+/**
+ * „2 von 4 abgehakt · 1 dokumentiert" - der Satz neben den zwei Hälften für
+ * die, die dokumentieren (ANN-547). Kurz genug, dass der Gruß daneben nicht
+ * umbricht.
+ */
+export function hakenUndDokuText(fortschritt: Tagesfortschritt): string {
+  return `${fortschritt.erledigt} von ${fortschritt.gesamt} abgehakt · ${fortschritt.dokumentiert} dokumentiert`;
 }
 
 /** „1 von 4 Besuchen erledigt" - der Satz neben den Punkten. */
