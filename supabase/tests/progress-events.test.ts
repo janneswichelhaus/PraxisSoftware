@@ -49,6 +49,27 @@ async function lesen(konto: string, art: string, verhaeltnis: string): Promise<D
   return rows[0]!.daten;
 }
 
+/** Seed: Tinas durchgeführte Stunde von vorgestern (TRN-007) und Erikas Hausbesuch heute. */
+const SEED_TRAININGSSTUNDE_DURCHGEFUEHRT = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000009';
+const SEED_HAUSBESUCH_ERIKA = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000002';
+
+/**
+ * Der Tag eines Seed-Termins in der Zeitzone der Praxis (BEF-164). Der Seed
+ * setzt „heute“ beim Aufbau mit dem UTC-Datum; zwischen 0 und 2 Uhr Berliner
+ * Zeit liegt das einen Tag hinter dem Praxistag. Der erwartete Tag kommt
+ * deshalb aus dem Termin selbst, nicht aus `praxistag()`.
+ */
+async function tagDesTermins(id: string): Promise<string> {
+  const { rows } = await asPostgres<{ tag: string }>(
+    `select to_char((a.starts_at at time zone o.time_zone)::date, 'YYYY-MM-DD') as tag
+       from public.appointments a
+       join public.organizations o on o.id = a.organization_id
+      where a.id = $1`,
+    [id],
+  );
+  return rows[0]!.tag;
+}
+
 async function fehler(versuch: Promise<unknown>): Promise<string> {
   try {
     await versuch;
@@ -338,19 +359,20 @@ describe('Planwechsel, Termine und Ereignisse der Akte im Verlaufsbild (OUT-001)
   });
 
   it('nennt die Tage durchgeführter Termine, nicht die geplanten', async () => {
+    const trainingstag = await tagDesTermins(SEED_TRAININGSSTUNDE_DURCHGEFUEHRT);
     const daten = await lesen(users.trainer, 'training', trainingRelationships.tina);
     // Seed: eine durchgeführte Stunde vorgestern, zwei bestätigte heute und morgen.
-    expect(daten!.appointment_days).toEqual([await praxistag(-2)]);
+    expect(daten!.appointment_days).toEqual([trainingstag]);
     // Behandlung: Erikas Hausbesuch heute ist abgeschlossen (Seed), Terminart therapy.
     const akte = await lesen(users.therapist, 'treatment', patients.erika);
-    expect(akte!.appointment_days).toContain(await praxistag(0));
-    expect(akte!.appointment_days).not.toContain(await praxistag(-2));
+    expect(akte!.appointment_days).toContain(await tagDesTermins(SEED_HAUSBESUCH_ERIKA));
+    expect(akte!.appointment_days).not.toContain(trainingstag);
     // Anderer Bereich (ADR-021 Punkt 6): Erikas Behandlungstermin steht nicht
     // in ihrem Training, Tinas Trainingsstunde in keiner Akte.
     const erikaTraining = await lesen(users.trainer, 'training', trainingRelationships.erika);
     expect(erikaTraining!.appointment_days).toEqual([]);
     const max = await lesen(users.therapist, 'treatment', patients.max);
-    expect(max!.appointment_days).not.toContain(await praxistag(-2));
+    expect(max!.appointment_days).not.toContain(trainingstag);
   });
 
   it('zeigt in der Behandlung die Ereignisse der Akte , protokolliert als Öffnen der Akte', async () => {

@@ -1165,3 +1165,19 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Der Test nimmt jede Tabelle des Aufbewahrungsplans, die eine `patient_id` trägt, gleich welcher Klasse; was bewusst fehlt, steht mit Grund in `BEWUSST_AUSSEN`. Nur Test, ein Einzel-Story-Loop; zeigt er weitere Lücken, kommen sie in denselben Loop.
 
 **Umsetzung (2026-10-11).** Der Test nimmt jetzt jede Tabelle des Aufbewahrungsplans mit `patient_id`, gleich welcher Klasse, dazu wie bisher `patientenakte` und `personenstammdaten`; eine Tabelle, die unter anderem Namen in der Kopie steht, nennt `ABSCHNITT_FUER` (`patient_fee_agreements` als `fee_agreements`). Er fand eine echte Lücke: `platform_accesses` (Klasse `plattformzugang`). `export_patient_record` liefert dazu den Abschnitt `platform_accesses` – Art, Vertretung mit Name, Grundlage, Nachweisarten und Umfang, Einwilligung zur Begleitung, Zustand mit Zeitpunkten und Grund, Einstieg; keine Kennung von Zugang, Konto, Verhältnis oder Praxiskonto (ANN-342). Migration `20261103100000`, Beschriftung in `src/features/datenschutz/kategorien.ts`, Test in `betroffenenrechte.test.ts`, Gegenprobe ohne Migration rot. Zweitreview: kein Blocker; S1 (Testfall rechtliche Vertretung mit Zweifelvermerk und beendetem Zugang) eingebaut; H6 als BEF-146 geführt.
+
+### BEF-164 — Zwei DB-Tests rechnen „heute“ in UTC und werden zwischen 0 und 2 Uhr Berliner Zeit rot
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Prüfverfahren |
+| Quelle  | CI an #241 und #243 („Migrationen und RLS-Tests“, Teil 1/4 und 2/4) um 0:02 bis 0:06 Uhr Berliner Zeit (22:02 bis 22:06 UTC); auf `main` zur selben Uhrzeit nachgestellt |
+| Status  | erledigt in PR #245 |
+| Berührt | `supabase/tests/progress-events.test.ts`, `supabase/tests/message-attachments.test.ts` |
+
+**Beobachtung.** „nennt die Tage durchgeführter Termine“ erwartet Tinas Seed-Stunde von vorgestern am Praxistag minus zwei. Der Seed setzt „heute“ beim Aufbau aber mit dem UTC-Datum, und das liegt zwischen 0 und 2 Uhr Berliner Zeit einen Tag hinter dem Praxistag: geliefert `2026-10-12`, erwartet `2026-10-13`. Dahinter lag verdeckt dieselbe Abweichung bei Erikas Hausbesuch „heute“. „… Widerruf vom Papier …“ trägt den Widerruf mit `tagInTagen(0)` (UTC) ein, die Einwilligung auf der Plattform aber mit dem Praxistag – „withdrawal before consent“. Wie BEF-130: Der Code ist richtig, die Erwartung nicht.
+
+**Erwartet.** Beide Tests rechnen mit dem Tag der Praxis; keine Prüfung wird schwächer.
+
+**Umsetzung (2026-10-15).** `progress-events` liest den erwarteten Tag aus den Seed-Terminen selbst (`tagDesTermins`, in der Zeitzone der Praxis), `message-attachments` vermerkt den Widerruf mit `praxistag(0)`. Nachgestellt mit verschobener Uhr (libfaketime; Datenbank und Tests auf 0:20 Uhr Berliner Zeit): auf `main` beide rot mit den Meldungen aus der CI, mit der Korrektur 43 von 43 grün. Den Seed auf den Praxistag umzustellen, wie im Kommentar an #241 vorgeschlagen, reichte nicht: Ein Lauf über Mitternacht trennt den Aufbau des Seeds und den Test ohnehin.

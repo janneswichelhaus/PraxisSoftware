@@ -9,9 +9,9 @@ import {
   asUserCommitted,
   fremdeOrganisation,
   resetDatabase,
-  tagInTagen,
 } from './helpers/db';
 import { gleichzeitig } from './helpers/gleichzeitig';
+import { praxistag } from './helpers/plaene';
 
 /**
  * Foto und Video an einer Rückfrage (KOM-005, ADR-017 Abschnitt L).
@@ -536,14 +536,17 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     const vorgang = await fragen(erika);
     const VERMERK =
       "select public.record_patient_privacy_entry($1::uuid, $2, 'message_attachments', null, $3::date) as id";
+    // Der Tag des Vermerks ist der Praxistag wie bei der Einwilligung auf der
+    // Plattform; der UTC-Tag läge zwischen 0 und 2 Uhr davor (BEF-164).
+    const heute = await praxistag(0);
     expect(
       await meldung(
-        asUserCommitted(users.office, VERMERK, [patients.erika, 'consent_granted', tagInTagen(0)]),
+        asUserCommitted(users.office, VERMERK, [patients.erika, 'consent_granted', heute]),
       ),
     ).toContain('on the platform');
     expect(
       await meldung(
-        asUserCommitted(users.office, VERMERK, [patients.erika, 'consent_refused', tagInTagen(0)]),
+        asUserCommitted(users.office, VERMERK, [patients.erika, 'consent_refused', heute]),
       ),
     ).toContain('on the platform');
 
@@ -552,7 +555,7 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     await asUserCommitted(users.office, VERMERK, [
       patients.erika,
       'consent_withdrawn',
-      tagInTagen(0),
+      await praxistag(0),
     ]);
     expect((await ansicht(erika)).messages[0]!.attachments).toEqual([]);
     expect((await ansicht(erika)).attachment_consent).toBe('withdrawn');
