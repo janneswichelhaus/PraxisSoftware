@@ -1,6 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Client } from 'pg';
 import {
+  FREMDE_ORGANISATION,
   SEED,
   asAnon,
   asPostgres,
@@ -548,6 +549,52 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
     expect(rows[0]).toEqual({ billing_released_at: null, billing_withdrawn_by: users.office });
     // Der Haken laesst sich wieder zuruecknehmen.
     await asUserCommitted(users.therapist, ZURUECKNEHMEN, [a, await stand(a)]);
+  });
+
+  it('nennt die Freigabe in der Liste „Abzurechnen“ - nur Inhaber:in und Buero (K13, ANN-544)', async () => {
+    await vollstaendig();
+    const KANDIDATEN =
+      'select treatment_basis_id, basis_released_at from public.list_invoice_candidates(100)';
+    // Ohne Recht weist der Server ab oder liefert keine Zeile - beides heisst:
+    // nichts zu sehen.
+    const zeile = async (konto: string) => {
+      try {
+        const { rows } = await asUser<{
+          treatment_basis_id: string | null;
+          basis_released_at: string | null;
+        }>(konto, KANDIDATEN);
+        return rows.find((r) => r.treatment_basis_id === GRUNDLAGE);
+      } catch (fehler) {
+        expect(String(fehler)).toMatch(/not allowed|not authenticated/);
+        return undefined;
+      }
+    };
+
+    expect((await zeile(users.office))?.basis_released_at).toBeNull();
+
+    await asUserCommitted(users.therapist, FREIGEBEN, [GRUNDLAGE]);
+    const { rows } = await asPostgres<{ billing_released_at: Date }>(
+      'select billing_released_at from public.treatment_bases where id = $1',
+      [GRUNDLAGE],
+    );
+    expect(new Date((await zeile(users.office))!.basis_released_at!).getTime()).toBe(
+      rows[0]!.billing_released_at.getTime(),
+    );
+    expect((await zeile(users.ownerTherapist))?.basis_released_at).not.toBeNull();
+
+    // Negativfaelle (ADR-013 Punkt 9 Nr. 1): Behandelnde ohne Abrechnungsrecht,
+    // Patientenkonto, Plattformkonto und fremde Organisation sehen die Zeile nicht.
+    for (const konto of [
+      users.therapist,
+      users.patientErika,
+      users.plattformErika,
+      FREMDE_ORGANISATION.owner,
+    ]) {
+      expect(await zeile(konto)).toBeUndefined();
+    }
+
+    await asUserCommitted(users.office, ZURUECKHOLEN, [GRUNDLAGE]);
+    expect((await zeile(users.office))?.basis_released_at).toBeNull();
   });
 
   it('haelt eine Grundlage mit Rechnung in der Abrechnung', async () => {

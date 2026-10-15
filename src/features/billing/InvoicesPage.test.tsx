@@ -49,6 +49,7 @@ function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat 
     cancelled_invoice_id: null,
     cancelled_invoice_number: null,
     draft_replaces_invoice_number: null,
+    basis_released_at: null,
     ...rest,
   };
 }
@@ -248,6 +249,7 @@ describe('InvoicesPage', () => {
         cancelled_invoice_id: 'alt-1',
         cancelled_invoice_number: 'RG-2026-0007',
         draft_replaces_invoice_number: null,
+        basis_released_at: null,
         has_draft: true,
         draft_id: 'e1',
       }),

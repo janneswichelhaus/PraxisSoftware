@@ -60,6 +60,7 @@ interface Dokument {
   invoice_number: string | null;
   due_on: string | null;
   document: {
+    schema_version: number;
     currency: string;
     issuer: Record<string, unknown>;
     recipient: Record<string, unknown>;
@@ -692,6 +693,25 @@ describe('Rechnung', () => {
       expect(rechnung.document.totals.tax_total_cents).toBe(0);
       expect(rechnung.document.issuer.small_business).toBe(true);
       await asPostgres('update public.practice_billing_profiles set small_business = false');
+    });
+
+    it('schreibt den Hinweis nach Par. 19 UStG beim Ausstellen ins Dokument (BEF-165)', async () => {
+      await asPostgres('update public.practice_billing_profiles set small_business = true');
+      const klein = await ausgestellt(KATALOG.selbstzahler);
+      await asPostgres('update public.practice_billing_profiles set small_business = false');
+
+      // Der Wortlaut steht im Schnappschuss und bleibt, wie er war - auch
+      // wenn die Praxis spaeter umstellt (ADR-009 Punkt 10).
+      expect(klein.document.schema_version).toBe(6);
+      expect(klein.document.issuer.small_business_notice).toBe(
+        'Steuerbefreiung für Kleinunternehmer gemäß § 19 Abs. 1 UStG – es wird keine Umsatzsteuer berechnet.',
+      );
+    });
+
+    it('schreibt bei Regelbesteuerung keinen Hinweis nach Par. 19 UStG (BEF-165)', async () => {
+      const regel = await ausgestellt(KATALOG.kg);
+      expect(regel.document.schema_version).toBe(6);
+      expect(regel.document.issuer.small_business_notice).toBeNull();
     });
 
     it('scheitert ohne Praxis-Stammdaten und sagt, was fehlt', async () => {

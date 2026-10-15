@@ -75,8 +75,22 @@ export const steuerLabels: Record<KatalogPosition['tax_treatment'], string> = {
  * UStDV verlangt die Angabe, dass die Steuerbefreiung nach § 19 Abs. 1 UStG
  * gilt. Die eine Stelle für den Wortlaut.
  */
-export const KLEINUNTERNEHMER_HINWEIS =
+const KLEINUNTERNEHMER_HINWEIS =
   'Steuerbefreiung für Kleinunternehmer gemäß § 19 Abs. 1 UStG – es wird keine Umsatzsteuer berechnet.';
+
+/**
+ * Der Hinweis nach § 19 UStG auf einer Rechnung (BEF-165): Seit
+ * `schema_version` 6 steht er im Dokument, wie er beim Ausstellen galt - eine
+ * neue Formulierung ändert keine ausgestellte Rechnung. Nur ältere Snapshots
+ * ohne den Schlüssel bekommen den Wortlaut von hier.
+ */
+export function kleinunternehmerHinweis(absender: {
+  small_business: boolean;
+  small_business_notice?: string | null | undefined;
+}): string | null {
+  if (absender.small_business_notice !== undefined) return absender.small_business_notice;
+  return absender.small_business ? KLEINUNTERNEHMER_HINWEIS : null;
+}
 
 export const artLabels: Record<KatalogPosition['item_kind'], string> = {
   treatment: 'Behandlung',
@@ -432,6 +446,8 @@ const kandidatSchema = z.object({
   cancelled_invoice_number: z.string().nullable().default(null),
   /** Ist der stehende Entwurf eine Korrektur, die Nummer, die er ersetzt. */
   draft_replaces_invoice_number: z.string().nullable().default(null),
+  /** K13 (ANN-544): Die Verordnung ist in die Abrechnung gestellt am; sonst leer. */
+  basis_released_at: z.string().nullable().default(null),
 });
 
 export type Kandidat = z.infer<typeof kandidatSchema>;
@@ -568,6 +584,9 @@ const dokumentSchema = z.object({
     tax_number: z.string().nullable(),
     vat_id: z.string().nullable(),
     small_business: z.boolean(),
+    // BEF-165 (schema_version 6): der Hinweis nach § 19 UStG, wie er beim
+    // Ausstellen galt. Ältere Snapshots tragen ihn nicht.
+    small_business_notice: z.string().nullable().optional(),
     bank_name: z.string().nullable(),
     account_holder: z.string().nullable(),
     iban: z.string(),

@@ -8,7 +8,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
-  KLEINUNTERNEHMER_HINWEIS,
+  kleinunternehmerHinweis,
   KeineStammdaten,
   fetchRechnung,
   steuerLabels,
@@ -378,8 +378,10 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           ))}
         </ul>
 
-        {absender.small_business ? (
-          <p className="text-ink-muted print:text-ink mt-2 text-sm">{KLEINUNTERNEHMER_HINWEIS}</p>
+        {kleinunternehmerHinweis(absender) ? (
+          <p className="text-ink-muted print:text-ink mt-2 text-sm">
+            {kleinunternehmerHinweis(absender)}
+          </p>
         ) : null}
 
         {dokument.treatment_bases.length > 0 ? (

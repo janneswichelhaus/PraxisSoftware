@@ -29,7 +29,6 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import {
-  KLEINUNTERNEHMER_HINWEIS,
   KeineStammdaten,
   bereichLabels,
   deleteEntwurf,
@@ -40,6 +39,7 @@ import {
   fetchErinnerungen,
   fetchRechnung,
   fetchRechnungszahlungen,
+  kleinunternehmerHinweis,
   richtungLabels,
   saveEmpfaenger,
   setzeEmpfaenger,
@@ -490,8 +490,8 @@ function Dokument({
           ))}
         </ul>
 
-        {dokument.issuer.small_business ? (
-          <p className="text-ink-muted mt-2 text-sm">{KLEINUNTERNEHMER_HINWEIS}</p>
+        {kleinunternehmerHinweis(dokument.issuer) ? (
+          <p className="text-ink-muted mt-2 text-sm">{kleinunternehmerHinweis(dokument.issuer)}</p>
         ) : null}
       </Section>
 

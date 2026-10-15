@@ -118,6 +118,7 @@ const kandidaten: Kandidat[] = [
     cancelled_invoice_id: null,
     cancelled_invoice_number: null,
     draft_replaces_invoice_number: null,
+    basis_released_at: null,
   },
   // UX-008b: Leistungen aus einer stornierten Rechnung - nur die Korrektur führt weiter.
   {
@@ -139,6 +140,7 @@ const kandidaten: Kandidat[] = [
     cancelled_invoice_id: STORNIERT,
     cancelled_invoice_number: 'RG-2026-0009',
     draft_replaces_invoice_number: null,
+    basis_released_at: null,
   },
 ];
 

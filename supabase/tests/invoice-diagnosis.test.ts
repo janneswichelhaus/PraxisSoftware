@@ -96,7 +96,7 @@ describe('Diagnose auf der Rechnung (ANN-229)', () => {
     const { rows } = await asUser<Rechnung>(users.office, DOKUMENT, [entwurf[0]!.id]);
     const dokument = rows[0]!.rechnung.document;
 
-    expect(dokument.schema_version).toBe(5);
+    expect(dokument.schema_version).toBe(6);
     expect(dokument.treatment_bases).toHaveLength(1);
     const grundlage = dokument.treatment_bases[0]!;
     expect(grundlage.diagnosis_icd10).toBe('M54.2');
