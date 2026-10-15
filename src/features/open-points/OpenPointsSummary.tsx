@@ -110,7 +110,7 @@ export function OpenPointsSummary({
     // daneben nannte das Ziel zweimal (UX-005h).
     <Link
       to="/offen"
-      className="border-line bg-surface rounded-card hover:bg-accent-soft mt-6 flex min-h-15 items-center justify-between gap-3 border px-4 py-2 transition-colors duration-120"
+      className="border-line bg-surface rounded-card hover:bg-accent-soft flex min-h-15 items-center justify-between gap-3 border px-4 py-2 transition-colors duration-120"
     >
       <span className="min-w-0">
         <span className="text-ink block text-base font-semibold">

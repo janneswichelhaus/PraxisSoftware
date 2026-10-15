@@ -100,7 +100,7 @@ export const GRENZEN: Record<
 
     'features/patients': 1,
 
-    'features/today': 4,
+    'features/today': 3,
 
     'features/treatment-bases': 1,
   },

@@ -193,14 +193,6 @@ export function fortschrittText(fortschritt: Tagesfortschritt): string {
   return `${fortschritt.erledigt} von ${fortschritt.gesamt} ${besuche} erledigt`;
 }
 
-/** „3 Dokus festgeschrieben" - oder `null`, wenn noch keine festgeschrieben ist. */
-export function dokuText(fortschritt: Tagesfortschritt): string | null {
-  if (fortschritt.dokumentiert === 0) return null;
-  return fortschritt.dokumentiert === 1
-    ? '1 Doku festgeschrieben'
-    : `${fortschritt.dokumentiert} Dokus festgeschrieben`;
-}
-
 export type LiegeHeute =
   | { noetig: false }
   | {

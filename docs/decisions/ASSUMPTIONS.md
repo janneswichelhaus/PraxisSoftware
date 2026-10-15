@@ -1568,7 +1568,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Sichtung Kernproz
 
 **Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/today/tagesstart.ts`; Tests `src/features/today/tagesstart.test.ts`.
 
-**Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`. **Fassung 2 (UBK-EPIC-001, 2026-10-05, Auftrag Jannes: „nächster Weg nach Uhrzeit statt nach Abhaken“):** Noch anzufahren ist ein Besuch, der bestätigt ist **und dessen Ende noch nicht erreicht ist** (`stehtAus` in `tagesstart.ts`); nach seinem Ende gibt die Übersicht den nächsten Weg frei, auch ohne Haken, und nach einem frühen Haken ebenso. Der vorbeigegangene, nicht abgehakte Besuch bleibt im Zeitstrahl mit „Nicht abgeschlossen“ und dem Haken stehen; erst wenn kein Weg mehr aussteht, wird er die ausgeklappte Karte („Seit … offen“). Liege-Zeile, Wegbalken und Fahrzeitabfrage folgen derselben Regel; „n von m Besuchen erledigt“ zählt weiter nur Abgehaktes, und der Tagesabschluss sagt „Alle Besuche erledigt“ nur dann, sonst „Kein Weg mehr offen“. Gezählt wird für „ab n. Besuch“ seit BEF-051 nur unter Hausbesuchen (ANN-116 Fassung 2). Tests: `tagesstart.test.ts` („Die Uhr statt des Hakens“), `MyDayPage.test.tsx` (UBK-EPIC-001).
+**Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`. **Fassung 2 (UBK-EPIC-001, 2026-10-05, Auftrag Jannes: „nächster Weg nach Uhrzeit statt nach Abhaken“):** Noch anzufahren ist ein Besuch, der bestätigt ist **und dessen Ende noch nicht erreicht ist** (`stehtAus` in `tagesstart.ts`); nach seinem Ende gibt die Übersicht den nächsten Weg frei, auch ohne Haken, und nach einem frühen Haken ebenso. Der vorbeigegangene, nicht abgehakte Besuch bleibt im Zeitstrahl mit „Nicht abgeschlossen“ und dem Haken stehen; erst wenn kein Weg mehr aussteht, wird er die ausgeklappte Karte („Seit … offen“). Liege-Zeile, Wegbalken und Fahrzeitabfrage folgen derselben Regel; „n von m Besuchen erledigt“ zählt weiter nur Abgehaktes, und der Tagesabschluss sagt „Alle Besuche erledigt“ nur dann, sonst „Kein Weg mehr offen“ (seit ANN-546 ohne eigene Karte). Gezählt wird für „ab n. Besuch“ seit BEF-051 nur unter Hausbesuchen (ANN-116 Fassung 2). Tests: `tagesstart.test.ts` („Die Uhr statt des Hakens“), `MyDayPage.test.tsx` (UBK-EPIC-001).
 
 ### ANN-118 — Übertragung der MT-Bausteine: drei Lücken offen, SIG vollständig, Hinweise getrennt, kein Grenzwert
 
@@ -5626,3 +5626,15 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung de
 **Anker.** `fertig` in `src/features/billing/lauf.ts` (für Zeilen und Entwürfe).
 
 **Änderungspfad.** Regel dort ändern · Aufwand `klein`.
+
+### ANN-546 — Übersicht ohne Abschlusskarte, ein Abstand zwischen den Abschnitten
+
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Steht kein Besuch mehr aus, zeigt die Übersicht keine Karte in Tiefgrün mehr („Alle Besuche erledigt“, „Kein Weg mehr offen“); es folgen gleich „noch offen“, „Nachzuholen“, „Morgen“ und der Strahl. Unter dem Kopf stehen alle Abschnitte 32 px auseinander, auch die Karten der Kontextspalte am Telefon. Der Link zu den Trainingskund:innen entfällt; der Weg steht in der Navigation.
+
+**Begründung.** Auftrag Jannes: Die Karte wiederholte Punkte und „n von m“ im Kopf. DESIGN.md „Rhythmus“: Abschnitt zu Abschnitt 32.
+
+**Anker.** Container `flex flex-col gap-8` in `MyDayPage` (`src/features/today/MyDayPage.tsx`).
+
+**Änderungspfad.** Karte zurück: Git-Verlauf von `Tagesabschluss` · Aufwand `klein`.

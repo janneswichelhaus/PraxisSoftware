@@ -4,7 +4,6 @@ import {
   besuchsphase,
   besucheDesTages,
   bisBeginn,
-  dokuText,
   einordnung,
   fokusDesTages,
   fortschrittText,
@@ -363,17 +362,16 @@ describe('Tagesfortschritt (Design-Handoff 2026-10-01, 5a Punkt 3)', () => {
     // und der nicht angetroffene b.
     expect(fortschritt).toMatchObject({ gesamt: 5, erledigt: 3, dokumentiert: 1 });
     expect(fortschrittText(fortschritt)).toBe('3 von 5 Besuchen erledigt');
-    expect(dokuText(fortschritt)).toBe('1 Doku festgeschrieben');
   });
 
   it('kennt keinen naechsten Punkt, wenn keiner ausgeklappt ist', () => {
     expect(tagesfortschritt(plan, null).punkte).not.toContain('naechster');
   });
 
-  it('bildet Ein- und Mehrzahl und schweigt ohne festgeschriebene Doku', () => {
+  it('bildet Ein- und Mehrzahl und zaehlt festgeschriebene Dokus', () => {
     const einer = tagesfortschritt([eintrag({ id: 'a', um: '07:00' })], 'a');
     expect(fortschrittText(einer)).toBe('0 von 1 Besuch erledigt');
-    expect(dokuText(einer)).toBeNull();
+    expect(einer.dokumentiert).toBe(0);
 
     const fertig = tagesfortschritt(
       [
@@ -385,7 +383,7 @@ describe('Tagesfortschritt (Design-Handoff 2026-10-01, 5a Punkt 3)', () => {
     );
     // Auch ohne lesbaren Dokumentationsstand sagt der Terminzustand, dass
     // festgeschrieben ist.
-    expect(dokuText(fertig)).toBe('3 Dokus festgeschrieben');
+    expect(fertig.dokumentiert).toBe(3);
     expect(fortschrittText(fertig)).toBe('3 von 3 Besuchen erledigt');
   });
 
