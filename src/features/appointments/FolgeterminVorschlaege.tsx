@@ -1,106 +1,274 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
-import { Chip } from '@/components/ui/Chip';
+import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { tagePlus } from './calendar';
+import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
-import { usePlanungsmatrix } from '@/features/tours/fahrzeitfaktor';
-import {
-  findFreeSlots,
-  rateSlotTravel,
-  travelItems,
-  travelMatrixRequest,
-  type SearchParams,
-  type Slot,
-  type TravelRating,
-} from '@/features/slot-search/api';
+import { findFreeSlots, type SearchParams, type Slot } from '@/features/slot-search/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
+  cancelAppointment,
   createAppointment,
   dayKey,
+  fetchAppointment,
+  fetchAppointments,
   fetchUpcomingAppointments,
   formatLocalTime,
   kalenderZumTermin,
   todayInTimeZone,
+  zeitpunktIn,
   type Appointment,
 } from './api';
+import { arbeitszeitBaender, tagePlus } from './calendar';
+import { AufDerPlattformSichtbar, undoAppointmentCreation } from './folgetermin-api';
+import {
+  dauerangabe,
+  freieMinuten,
+  nachbarText,
+  nachbarZeiten,
+  plane,
+  tagKurz,
+  urteilAus,
+  wegangabe,
+  type Kandidat,
+  type Urteil,
+} from './folgetermin';
+import { frageAusFormular, useWegpruefung } from './wegpruefung';
 
-/** Höchstens so viele Vorschläge stehen als Chips da. */
+/** Höchstens so viele Vorschläge stehen da. */
 const VORSCHLAEGE = 3;
+/** Höchstens so viele Kandidaten werden geprüft - Nachbarn, Wege, Tagesränder. */
+const KANDIDATEN = 6;
 /** So weit nach vorn wird gesucht - zwei Wochen ab morgen. */
 const SUCHTAGE = 14;
 
-const WOCHENTAG = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' });
-
-/** „Di 20.10." aus einem Kalendertag. */
-function tagKurz(tag: string): string {
-  const [, monat, t] = tag.split('-');
-  return `${WOCHENTAG.format(new Date(`${tag}T12:00:00Z`)).replace('.', '')} ${t}.${monat}.`;
+/** Der eben angelegte Folgetermin - solange die Meldung steht, lässt er sich zurücknehmen. */
+interface Angelegt {
+  readonly id: string;
+  readonly slot: Slot;
+  /** `updated_at` direkt nach dem Anlegen; `null`, wenn er sich nicht lesen ließ. */
+  readonly stand: string | null;
 }
 
 /**
- * Die Fahrwege der Vorschläge, bewertet vom Server mit der Rundungsregel aus
- * §8.1 (ANN-136) - derselbe Weg wie `useTravelRatings` der Terminsuche
- * (`SlotSearchPage`). Scheitert die Matrix, heißt das „nicht geprüft", nie
- * „passt".
+ * Der eben angelegte Termin lässt sich nur noch absagen: Die Person sieht ihn
+ * auf der Plattform (ANN-534). Die Seite fragt, bevor sie absagt (B8).
  */
-function useFahrwege(slots: readonly Slot[], aktiv: boolean) {
-  const anfrage = useMemo(() => (aktiv ? travelMatrixRequest(slots) : null), [aktiv, slots]);
-  const matrix = usePlanungsmatrix(anfrage?.origins ?? [], anfrage?.destinations ?? [], {
-    aktiv: anfrage !== null,
-  });
-  const fertig = anfrage === null || matrix.isSuccess || matrix.isError;
-  const dauern = matrix.data?.ok === true ? matrix.data.value.matrix.durationsSeconds : null;
-  const items = useMemo(
-    () => (aktiv && fertig ? travelItems(slots, anfrage, dauern) : []),
-    [aktiv, fertig, slots, anfrage, dauern],
-  );
-  const bewertung = useQuery({
-    queryKey: ['slot-travel', items],
-    queryFn: () => rateSlotTravel(items),
-    enabled: items.length > 0,
-    retry: false,
-    gcTime: 30_000,
-  });
-  return {
-    jeIndex: new Map<number, TravelRating>((bewertung.data ?? []).map((r) => [r.item_index, r])),
-    prueft: aktiv && slots.length > 0 && (!fertig || bewertung.isPending),
-  };
+interface Absagefrage {
+  readonly id: string;
+  /** Der Stand, den das Zurücknehmen eben geprüft hat. */
+  readonly stand: string;
 }
 
-/** Was hinter Tag und Uhrzeit steht: nur Abweichungen (UX-005g) und „gleiche Zeit". */
-function zusatz(
-  slot: Slot,
-  gleicheZeit: boolean,
-  fahrweg: TravelRating | undefined,
-  prueft: boolean,
-  hausbesuch: boolean,
-): string[] {
-  const teile: string[] = [];
-  if (gleicheZeit) teile.push('gleiche Zeit');
-  if (slot.territory_status === 'outside') teile.push('außerhalb Gebietstag');
-  if (hausbesuch) {
-    if (fahrweg?.status === 'tight') teile.push('Weg knapp');
-    else if (fahrweg?.status === 'unknown') teile.push('Weg ungeprüft');
-    else if (!fahrweg && prueft) teile.push('Weg wird geprüft …');
-  }
-  return teile;
+/** Was „Rückgängig“ ergab: gelöscht, oder es bleibt nur die Absage. */
+type Zuruecknahme =
+  { readonly art: 'geloescht' } | { readonly art: 'nur_absage'; readonly stand: string };
+
+/** Die Abfragen, die einen neuen oder zurückgenommenen Termin zeigen. */
+const TERMINABFRAGEN = [
+  ['appointments'],
+  ['day-plan'],
+  ['day-route'],
+  ['patient-upcoming-appointments'],
+  ['patient-appointments'],
+  ['free-slots'],
+] as const;
+
+function schluessel(slot: Slot): string {
+  return `${slot.staff_member_id}|${slot.slot_date}|${slot.start_time}`;
+}
+
+/** „hh:mm“ als Minute des Tages. */
+function minuteAus(zeit: string): number {
+  const [stunde, minute] = zeit.split(':').map(Number) as [number, number];
+  return stunde * 60 + minute;
+}
+
+/** Plus, 20er-Raster wie die übrigen Zeichen (DESIGN.md 9.15): Ein Tipp legt an. */
+function Plus() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      className="text-accent size-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M10 4v12M4 10h12" />
+    </svg>
+  );
+}
+
+/**
+ * Ein Kandidat: geprüft wie „Passt es?“ im Terminformular (Nachbarn und
+ * Tagesränder, `useWegpruefung`), dazu die Belegung des Tages derselben
+ * Person - alle ihre Termine, auch Video und Ereignisse, und ihre Arbeitszeit
+ * mit Pausen, über dieselben Abfragen wie Kalender und „Passt es?“. Daraus
+ * stehen die Termine davor und danach und die mögliche Dauer da. Er meldet
+ * sein Urteil nach oben; ob er dasteht, entscheidet `plane`.
+ */
+function Vorschlag({
+  slot,
+  appointment,
+  gleicheZeit,
+  dauer,
+  raster,
+  zeigen,
+  onUrteil,
+  onWaehlen,
+}: {
+  slot: Slot;
+  appointment: Appointment;
+  gleicheZeit: boolean;
+  dauer: number;
+  raster: number | null;
+  zeigen: boolean;
+  onUrteil: (schluessel: string, urteil: Urteil) => void;
+  onWaehlen: (slot: Slot) => void;
+}) {
+  const zone = appointment.organization_time_zone;
+  const frage = useMemo(
+    () =>
+      frageAusFormular(
+        {
+          staff_member_id: slot.staff_member_id,
+          appointment_type: appointment.appointment_type,
+          date: slot.slot_date,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          location_id: appointment.location_id ?? '',
+        },
+        { patientId: appointment.patient_id, zeitzone: zone },
+      ),
+    [slot, appointment.appointment_type, appointment.location_id, appointment.patient_id, zone],
+  );
+  const pruefung = useWegpruefung(frage);
+  // Die Tagesroute kennt nur Termine mit Ort; davor, danach und die mögliche
+  // Dauer brauchen jeden Termin der Person an diesem Tag (Befund B8).
+  const folgetag = tagePlus(slot.slot_date, 1);
+  const kalender = useQuery({
+    queryKey: ['appointments', slot.slot_date, folgetag, slot.staff_member_id, null, 'active'],
+    queryFn: () =>
+      fetchAppointments({
+        von: slot.slot_date,
+        bis: folgetag,
+        person: slot.staff_member_id,
+        standort: null,
+        status: 'active',
+      }),
+    retry: false,
+  });
+  const wochenplan = useQuery({
+    queryKey: ['working-hours'],
+    queryFn: fetchWorkingHours,
+    retry: false,
+  });
+  const ausnahmen = useQuery({
+    queryKey: ['working-hour-exceptions', slot.slot_date, slot.slot_date],
+    queryFn: () => fetchWorkingHourExceptions(slot.slot_date, slot.slot_date),
+    retry: false,
+  });
+  const urteil = urteilAus(
+    pruefung,
+    [kalender, wochenplan, ausnahmen].every((abfrage) => abfrage.isSuccess || abfrage.isError),
+  );
+  const eigenerSchluessel = schluessel(slot);
+  useEffect(() => {
+    onUrteil(eigenerSchluessel, urteil);
+  }, [onUrteil, eigenerSchluessel, urteil]);
+
+  if (!zeigen) return null;
+
+  const beginn = Date.parse(zeitpunktIn(slot.slot_date, minuteAus(slot.start_time), zone));
+  const { vorher, nachher } = nachbarZeiten(
+    kalender.data ?? [],
+    beginn,
+    Date.parse(zeitpunktIn(slot.slot_date, minuteAus(slot.end_time), zone)),
+  );
+  const frei =
+    kalender.isSuccess && wochenplan.isSuccess && ausnahmen.isSuccess
+      ? freieMinuten({
+          beginn,
+          beginnMinute: minuteAus(slot.start_time),
+          nachher,
+          baender: arbeitszeitBaender(
+            slot.staff_member_id,
+            slot.slot_date,
+            wochenplan.data,
+            ausnahmen.data,
+          ),
+        })
+      : 'unbekannt';
+  const weg = wegangabe(pruefung);
+  const moeglich = dauerangabe(pruefung, { dauer, raster, frei });
+  const wer = [
+    slot.staff_name,
+    gleicheZeit ? 'gleiche Zeit' : null,
+    slot.territory_status === 'outside' ? 'außerhalb Gebietstag' : null,
+  ]
+    .filter((teil): teil is string => !!teil)
+    .join(' · ');
+
+  return (
+    <ListRow
+      onClick={() => onWaehlen(slot)}
+      titel={
+        <>
+          <span className="sr-only">Folgetermin anlegen:</span> {tagKurz(slot.slot_date)} ·{' '}
+          {slot.start_time}–{slot.end_time}
+        </>
+      }
+      // Die Zeilen der Nebenzeile mit Leerzeichen dazwischen: Vorgelesen
+      // wird der Knopf als ein Satz, auch wo kein Stil die Blöcke trennt.
+      meta={
+        <>
+          {wer ? <span className="block">{wer}</span> : null}{' '}
+          {kalender.isSuccess ? (
+            <span className="block">{nachbarText(vorher, nachher, zone)}</span>
+          ) : null}{' '}
+          {weg || moeglich ? (
+            <span className="block">
+              {weg?.ton === 'warnung' ? (
+                <StatusMark ton="warnung">{weg.wort}</StatusMark>
+              ) : (
+                weg?.wort
+              )}
+              {weg && moeglich ? ' · ' : null}
+              {moeglich}
+            </span>
+          ) : null}
+        </>
+      }
+      status={<Plus />}
+    />
+  );
 }
 
 /**
  * Der Folgetermin als Vorschläge (Auftrag C1, ANN-477; Muster U2 des
- * Referenzabgleichs): „Nächste Woche, gleiche Zeit“ und die nächsten freien
- * Plätze aus der Terminsuche (`find_free_slots` - Arbeitszeit, Belegung,
- * Gebietstag zuerst), beim Hausbesuch mit geprüftem Fahrweg. Ein Tipp legt
- * den Termin an; `create_appointment` prüft alles noch einmal (§8), nichts
- * ist vorher reserviert.
+ * Referenzabgleichs; Befund B8): „Nächste Woche, gleiche Zeit“ und die
+ * nächsten freien Plätze aus der Terminsuche (`find_free_slots` -
+ * Arbeitszeit, Belegung, Gebietstag zuerst), je Tag einer. Jede Zeile sagt,
+ * bei wem der Termin liegt, was davor und danach kommt und ob die Wege
+ * aufgehen; was nicht aufgeht, steht gar nicht erst da (`plane`). Ein Tipp
+ * auf die Zeile legt den Termin an; `create_appointment` prüft alles noch
+ * einmal (§8), nichts ist vorher reserviert.
  *
- * Steht schon ein nächster Termin, steht er als erledigt da (Leitfaden L3);
- * „Andere Zeit suchen“ führt in die ausführliche Terminsuche.
+ * Solange die Meldung „Folgetermin angelegt“ steht, nimmt „Rückgängig“ den
+ * Termin zurück (`undo_appointment_creation`); danach stehen die Vorschläge
+ * wieder da. Sieht die Person den Termin schon auf der Plattform, fragt die
+ * Seite an derselben Stelle, ob sie ihn absagen soll - abgesagt wird erst auf
+ * „Termin absagen“ (B8, ANN-534). Steht schon ein nächster Termin, steht er
+ * als erledigt da (Leitfaden L3); „Andere Zeit suchen“ führt in die
+ * ausführliche Terminsuche.
  */
 export function FolgeterminVorschlaege({
   appointment,
@@ -124,8 +292,34 @@ export function FolgeterminVorschlaege({
   const heute = todayInTimeZone(zone);
   const von = tagePlus(datum > heute ? datum : heute, 1);
   const naechsteWoche = tagePlus(datum, 7);
-  const hausbesuch = appointment.appointment_type === 'home_visit';
-  const [angelegt, setAngelegt] = useState<{ id: string; text: string } | null>(null);
+  const [angelegt, setAngelegt] = useState<Angelegt | null>(null);
+  const [zurueckgenommen, setZurueckgenommen] = useState(false);
+  // Sah die Person den Termin auf der Plattform, wurde er nach der Rückfrage
+  // abgesagt statt gelöscht (ANN-534) - die Meldung sagt es.
+  const [alsAbsage, setAlsAbsage] = useState(false);
+  // Die Rückfrage vor dem Absagen (B8) - wie `Rueckfrage`: Sie ersetzt
+  // „Rückgängig“, der Fokus geht auf „Termin absagen“ und mit „Behalten“
+  // zurück auf „Rückgängig“.
+  const [absagefrage, setAbsagefrage] = useState<Absagefrage | null>(null);
+  const absagenKnopf = useRef<HTMLButtonElement>(null);
+  const rueckgaengigKnopf = useRef<HTMLButtonElement>(null);
+  const [fokusZurueck, setFokusZurueck] = useState(false);
+  useEffect(() => {
+    if (absagefrage) absagenKnopf.current?.focus();
+  }, [absagefrage]);
+  useEffect(() => {
+    if (!absagefrage && fokusZurueck) {
+      rueckgaengigKnopf.current?.focus();
+      setFokusZurueck(false);
+    }
+  }, [absagefrage, fokusZurueck]);
+  // Die Meldung nimmt den Fokus: Der getippte Knopf verschwindet mit dem
+  // Anlegen bzw. Zurücknehmen, sonst fiele der Fokus an den Seitenanfang.
+  const meldung = useRef<HTMLDivElement>(null);
+  const [meldungNr, setMeldungNr] = useState(0);
+  useEffect(() => {
+    if (meldungNr > 0) meldung.current?.focus();
+  }, [meldungNr]);
 
   const kommende = useQuery({
     queryKey: ['patient-upcoming-appointments', patientId],
@@ -146,7 +340,9 @@ export function FolgeterminVorschlaege({
     windows: [],
   };
   const gleicheWoche = { ...basis, from: naechsteWoche, to: naechsteWoche, limit: 50 };
-  const naechsteTage = { ...basis, from: von, to: tagePlus(von, SUCHTAGE - 1), limit: 20 };
+  // Je Tag steht einer; fällt ein Platz weg, rückt der nächste nach - auch am
+  // selben Tag. Deshalb so viele Plätze, wie der Server hergibt.
+  const naechsteTage = { ...basis, from: von, to: tagePlus(von, SUCHTAGE - 1), limit: 50 };
   const amTag = useQuery({
     queryKey: ['free-slots', gleicheWoche],
     queryFn: () => findFreeSlots(gleicheWoche),
@@ -164,42 +360,122 @@ export function FolgeterminVorschlaege({
     amTag.data?.find(
       (s) => s.start_time === beginn && s.staff_member_id === appointment.staff_member_id,
     ) ?? null;
-  const vorschlaege = useMemo(() => {
+  // Gleiche Zeit nächste Woche zuerst, dann die Plätze in der Reihenfolge des
+  // Servers (Gebietstag, Tag, Beginn).
+  const kandidaten = useMemo(() => {
     const liste: Slot[] = gleich ? [gleich] : [];
-    const tage = new Set(liste.map((s) => s.slot_date));
+    const gesehen = new Set(liste.map(schluessel));
     for (const slot of frei.data ?? []) {
-      if (liste.length >= VORSCHLAEGE) break;
-      if (tage.has(slot.slot_date)) continue;
-      tage.add(slot.slot_date);
+      if (gesehen.has(schluessel(slot))) continue;
+      gesehen.add(schluessel(slot));
       liste.push(slot);
     }
     return liste;
   }, [gleich, frei.data]);
-  const fahrwege = useFahrwege(vorschlaege, hausbesuch);
+
+  const [urteile, setUrteile] = useState<ReadonlyMap<string, Urteil>>(() => new Map());
+  const melde = useCallback((kandidat: string, urteil: Urteil) => {
+    setUrteile((alt) => (alt.get(kandidat) === urteil ? alt : new Map(alt).set(kandidat, urteil)));
+  }, []);
+  const plan = useMemo(
+    () =>
+      plane(
+        kandidaten.map((slot): Kandidat => ({ schluessel: schluessel(slot), tag: slot.slot_date })),
+        urteile,
+        { ziel: VORSCHLAEGE, hoechstens: KANDIDATEN },
+      ),
+    [kandidaten, urteile],
+  );
 
   const anlegen = useMutation({
-    mutationFn: (slot: Slot) =>
-      createAppointment(patientId!, {
+    mutationFn: async (slot: Slot): Promise<Angelegt> => {
+      const id = await createAppointment(patientId!, {
         staff_member_id: slot.staff_member_id,
         appointment_type: appointment.appointment_type,
         date: slot.slot_date,
         start_time: slot.start_time,
         end_time: slot.end_time,
         location_id: appointment.location_id ?? '',
-      }),
-    onSuccess: async (id, slot) => {
-      setAngelegt({ id, text: `${tagKurz(slot.slot_date)}, ${slot.start_time} Uhr` });
-      for (const queryKey of [
-        ['appointments'],
-        ['day-plan'],
-        ['patient-upcoming-appointments'],
-        ['patient-appointments'],
-        ['free-slots'],
-      ]) {
+      });
+      // Der Stand gleich nach dem Anlegen ist der, den „Rückgängig“ meint.
+      // Scheitert das Lesen, ist der Termin trotzdem angelegt.
+      const neu = await fetchAppointment(id).catch(() => null);
+      return { id, slot, stand: neu?.updated_at ?? null };
+    },
+    onSuccess: async (neu) => {
+      setAngelegt(neu);
+      setZurueckgenommen(false);
+      setAbsagefrage(null);
+      zuruecknehmen.reset();
+      absagen.reset();
+      setMeldungNr((n) => n + 1);
+      for (const queryKey of TERMINABFRAGEN) {
         await queryClient.invalidateQueries({ queryKey });
       }
     },
   });
+
+  /** Der Termin ist fort - gelöscht oder abgesagt; die Vorschläge stehen wieder da. */
+  async function zurueckgenommenMelden(abgesagt: boolean) {
+    // Erst nachladen, dann umschalten: Sonst stünde der zurückgenommene
+    // Termin einen Augenblick als „Nächster Termin“ da.
+    await Promise.all(
+      TERMINABFRAGEN.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+    );
+    anlegen.reset();
+    setAngelegt(null);
+    setAbsagefrage(null);
+    setZurueckgenommen(true);
+    setAlsAbsage(abgesagt);
+    setMeldungNr((n) => n + 1);
+  }
+
+  // Zurücknehmen prüft der Server ganz: Person, Zeit, Zustand, was daran
+  // hängt - und dass seit dem Anlegen niemand den Termin geändert hat
+  // (`updated_at = created_at`). Ließ sich der Stand nach dem Anlegen nicht
+  // lesen, wird er deshalb jetzt gelesen und genauso geprüft. Sieht die Person
+  // ihre Termine auf der Plattform, lässt sich der Termin nur noch absagen
+  // (ANN-534, ADR-018 Punkt 2): Dann fragt die Seite erst (B8).
+  const zuruecknehmen = useMutation({
+    mutationFn: async (termin: Angelegt): Promise<Zuruecknahme> => {
+      let stand = termin.stand;
+      if (stand === null) {
+        const jetzt = await fetchAppointment(termin.id);
+        if (!jetzt) throw new Error('Den Termin gibt es nicht mehr.');
+        stand = jetzt.updated_at;
+      }
+      try {
+        await undoAppointmentCreation(termin.id, stand);
+        return { art: 'geloescht' };
+      } catch (fehler) {
+        if (!(fehler instanceof AufDerPlattformSichtbar)) throw fehler;
+        return { art: 'nur_absage', stand };
+      }
+    },
+    onSuccess: async (ergebnis, termin) => {
+      if (ergebnis.art === 'nur_absage') {
+        setAbsagefrage({ id: termin.id, stand: ergebnis.stand });
+        return;
+      }
+      await zurueckgenommenMelden(false);
+    },
+  });
+
+  // Erst „Termin absagen“ sagt ab: als Praxis, ohne Gebühr; die Person sieht
+  // die Absage (ADR-018 Punkt 2). Den Stand prüft der Server wie beim Absagen
+  // im Kalender.
+  const absagen = useMutation({
+    mutationFn: (frage: Absagefrage) =>
+      cancelAppointment(frage.id, frage.stand, 'practice_request'),
+    onSuccess: () => zurueckgenommenMelden(true),
+  });
+  const waehlen = useCallback(
+    (slot: Slot) => {
+      if (anlegen.isPending) return;
+      anlegen.mutate(slot);
+    },
+    [anlegen],
+  );
 
   if (!darf) return null;
 
@@ -212,14 +488,96 @@ export function FolgeterminVorschlaege({
 
   let inhalt;
   if (angelegt) {
+    const bei = angelegt.slot.staff_name ? ` bei ${angelegt.slot.staff_name}` : '';
+    const vorname = appointment.patient_given_name?.trim();
     inhalt = (
-      <p className="text-accent text-liste font-semibold" role="status">
-        <span aria-hidden="true">✓ </span>
-        Folgetermin angelegt: {angelegt.text}{' '}
-        <Textlink to={mitRueckweg(kalenderZumTermin(angelegt.id), hierher)} className="text-sm">
-          Im Kalender
-        </Textlink>
-      </p>
+      <div ref={meldung} tabIndex={-1} className="outline-none">
+        <p className="text-accent text-liste font-semibold" role="status">
+          <span aria-hidden="true">✓ </span>
+          Folgetermin angelegt: {tagKurz(angelegt.slot.slot_date)}, {angelegt.slot.start_time} Uhr
+          {bei}
+        </p>
+        {/* Zwei Ziele mit voller Höhe und 12 px Abstand in jeder Richtung:
+            Ein knapper Tipp auf „Im Kalender“ nimmt den Termin nicht zurück. */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(kalenderZumTermin(angelegt.id), hierher)}
+            className="text-sm"
+          >
+            Im Kalender
+          </Textlink>
+          {/* Leise: der Weg zurück für den Fehltipp, kein zweiter Hauptknopf.
+              Während der Rückfrage steht sie an seiner Stelle. */}
+          {absagefrage ? null : (
+            <Button
+              ref={rueckgaengigKnopf}
+              type="button"
+              variant="quiet"
+              groesse="kompakt"
+              disabled={zuruecknehmen.isPending}
+              aria-busy={zuruecknehmen.isPending || undefined}
+              onClick={() => {
+                if (zuruecknehmen.isPending) return;
+                zuruecknehmen.mutate(angelegt);
+              }}
+            >
+              {zuruecknehmen.isPending ? 'Wird zurückgenommen …' : 'Rückgängig'}
+              <span className="sr-only">: Folgetermin zurücknehmen</span>
+            </Button>
+          )}
+        </div>
+        {zuruecknehmen.isError ? (
+          <Statusmeldung ton="fehler">{zuruecknehmen.error.message}</Statusmeldung>
+        ) : null}
+        {absagefrage ? (
+          // Dasselbe Muster wie `Rueckfrage`: vertiefte Fläche mit Linie
+          // links, kein Kasten im Kasten (Leitfaden L2).
+          <div
+            role="group"
+            aria-label="Folgetermin absagen"
+            className="border-line-strong bg-surface-sunken mt-3 w-full border-l-4 py-3 pr-4 pl-4"
+          >
+            <p className="text-ink text-sm">
+              {vorname
+                ? `${vorname} sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht ${vorname} dort.`
+                : 'Die Person sieht den Termin auf der Plattform. Er lässt sich nur absagen; die Absage sieht sie dort.'}
+            </p>
+            {absagen.isError ? (
+              <Statusmeldung ton="fehler" className="mt-2">
+                {absagen.error.message}
+              </Statusmeldung>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Button
+                ref={absagenKnopf}
+                type="button"
+                disabled={absagen.isPending}
+                onClick={() => {
+                  if (absagen.isPending) return;
+                  absagen.mutate(absagefrage);
+                }}
+              >
+                {absagen.isPending ? 'Wird abgesagt …' : 'Termin absagen'}
+              </Button>
+              {/* Bis zur Antwort gesperrt: Der Aufruf am Server würde
+                  trotzdem wirksam (wie `Rueckfrage`, Zweitreview H2). */}
+              <Button
+                type="button"
+                variant="quiet"
+                disabled={absagen.isPending}
+                onClick={() => {
+                  setAbsagefrage(null);
+                  absagen.reset();
+                  setFokusZurueck(true);
+                }}
+              >
+                Behalten
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </div>
     );
   } else if (naechster) {
     inhalt = (
@@ -227,7 +585,8 @@ export function FolgeterminVorschlaege({
         <p className="text-accent text-liste font-semibold">
           <span aria-hidden="true">✓ </span>
           Nächster Termin: {tagKurz(dayKey(naechster.starts_at, zone))},{' '}
-          {formatLocalTime(naechster.starts_at, zone)} Uhr
+          {formatLocalTime(naechster.starts_at, zone)} Uhr bei {naechster.staff_given_name}{' '}
+          {naechster.staff_family_name}
         </p>
         {andereZeit}
       </>
@@ -261,39 +620,42 @@ export function FolgeterminVorschlaege({
       </p>
     );
   } else {
+    const keinerPasst = kandidaten.length > 0 && !plan.offen && plan.zeigen.length === 0;
     inhalt = (
       <>
-        {vorschlaege.length === 0 ? (
+        {kandidaten.length === 0 ? (
           <p className="text-ink-muted text-liste">In den nächsten zwei Wochen ist nichts frei.</p>
-        ) : (
-          <div role="group" aria-label="Folgetermin anlegen" className="flex flex-wrap gap-2">
-            {vorschlaege.map((slot, index) => {
-              const teile = zusatz(
-                slot,
-                slot === gleich,
-                fahrwege.jeIndex.get(index),
-                fahrwege.prueft,
-                hausbesuch,
-              );
-              return (
-                <Chip
-                  key={`${slot.slot_date}-${slot.start_time}`}
-                  disabled={anlegen.isPending}
-                  onClick={() => {
-                    if (anlegen.isPending) return;
-                    anlegen.mutate(slot);
-                  }}
-                >
-                  <span className="sr-only">Folgetermin anlegen: </span>
-                  {tagKurz(slot.slot_date)} · {slot.start_time}
-                  {teile.length > 0 ? (
-                    <span className="text-ink-muted font-medium"> · {teile.join(' · ')}</span>
-                  ) : null}
-                </Chip>
-              );
-            })}
-          </div>
-        )}
+        ) : null}
+        {keinerPasst ? (
+          <p className="text-ink-muted text-liste">
+            Die nächsten freien Plätze passen nicht zu den Wegen.
+          </p>
+        ) : null}
+        <ListRows rahmen={false}>
+          {kandidaten
+            .filter((slot) => plan.pruefen.has(schluessel(slot)))
+            .map((slot) => (
+              <Vorschlag
+                key={schluessel(slot)}
+                slot={slot}
+                appointment={appointment}
+                gleicheZeit={slot === gleich}
+                dauer={dauer}
+                raster={user.appointmentGridMinutes}
+                zeigen={plan.zeigen.includes(schluessel(slot))}
+                onUrteil={melde}
+                onWaehlen={waehlen}
+              />
+            ))}
+        </ListRows>
+        {plan.offen ? (
+          <p className="text-ink-muted text-sm" role="status">
+            {plan.zeigen.length === 0
+              ? 'Freie Zeiten werden geprüft …'
+              : 'Weitere Zeiten werden geprüft …'}
+          </p>
+        ) : null}
+        {anlegen.isPending ? <Statusmeldung>Folgetermin wird angelegt …</Statusmeldung> : null}
         {anlegen.isError ? (
           <Statusmeldung ton="fehler" className="mt-2">
             {anlegen.error.message}
@@ -307,6 +669,14 @@ export function FolgeterminVorschlaege({
   return (
     <section aria-labelledby={`folgetermin-${appointment.id}`}>
       <Zwischentitel id={`folgetermin-${appointment.id}`}>Folgetermin</Zwischentitel>
+      {zurueckgenommen && !angelegt ? (
+        <div ref={meldung} tabIndex={-1} className="outline-none">
+          {/* Was die Person sieht, sagte die Rückfrage vor dem Absagen. */}
+          <Statusmeldung ton="erfolg">
+            {alsAbsage ? 'Folgetermin abgesagt.' : 'Folgetermin zurückgenommen.'}
+          </Statusmeldung>
+        </div>
+      ) : null}
       {inhalt}
     </section>
   );

@@ -6,17 +6,19 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
 import { verhaeltnisPfad, type Plan } from './api';
 import { haeufigkeit } from './dosierung';
+import { standZeile } from './fassung';
 import { laufzeitStand } from './laufzeit';
 
 /**
  * Der Kopf eines Plans (Welle B, Seitentyp „Objekt“): Titel, Person, Art und
- * Häufigkeit; ein Abzeichen nur, wo der Plan vom Regelfall abweicht
- * (Entwurf, läuft aus, abgelaufen, beendet, abgelöst).
+ * Häufigkeit, darunter der Stand - Fassung, Tag und Person (Befund B9); ein
+ * Abzeichen nur, wo der Plan vom Regelfall abweicht (läuft aus, abgelaufen,
+ * beendet, abgelöst). „Entwurf“ steht im Stand selbst.
  */
 function marke(plan: Plan): ReactNode {
   switch (plan.status) {
     case 'draft':
-      return <Badge>Entwurf</Badge>;
+      return null;
     case 'ended':
       return <Badge>beendet</Badge>;
     case 'superseded':
@@ -57,9 +59,16 @@ export function Plankopf({
           to: ziel,
           beschriftung: ziel === standard ? `Zurück zu ${name}` : rueckwegBeschriftung(ziel),
         }}
-        meta={[name, art, plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null]
-          .filter(Boolean)
-          .join(' · ')}
+        meta={
+          <>
+            <span className="block">
+              {[name, art, plan.sessions_per_week ? haeufigkeit(plan.sessions_per_week) : null]
+                .filter(Boolean)
+                .join(' · ')}
+            </span>
+            <span className="block">{standZeile(plan)}</span>
+          </>
+        }
         status={mitMarke ? marke(plan) : null}
         aktionen={aktionen}
         hinweise={hinweise}

@@ -515,6 +515,77 @@ describe('Tageskarte', () => {
     ).toBeTruthy();
   });
 
+  describe('Wegbalken an der Karte (B6, ANN-532)', () => {
+    const weg = {
+      von: { zeit: '09:30', label: 'Erika Beispiel' },
+      bis: { zeit: '10:00', label: 'Max Mustermann' },
+      fahrtMin: 9,
+    };
+
+    it('stellt den Balken unter den Kicker, an Stelle der Minuten - ohne Ziel', () => {
+      const { container } = renderWithProviders(
+        <Tageskarte termin={eintrag()} kicker="Später" weg={{ ...weg, kachelNenntIhn: false }} />,
+      );
+      // Der Kicker bleibt die Überschrift; die Zahlen stehen beim Balken.
+      const kicker = screen.getByRole('heading', { level: 3, name: 'Später' });
+      const zahlen = screen.getByText('≈ 9 min Rad · 21 min Puffer');
+      expect(zahlen).toHaveClass('text-accent', 'text-xs');
+      expect(zahlen).not.toHaveClass('max-sm:sr-only');
+      // Unter dem Kicker, über dem Namen.
+      const name = screen.getByRole('link', { name: 'Max Mustermann' });
+      expect(
+        kicker.compareDocumentPosition(zahlen) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(zahlen.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      // Der Balken ist Bild und kein Ziel.
+      const balken = container.querySelector<HTMLElement>('[style]')!;
+      expect(balken.style.width).toBe('30%');
+      expect(balken.closest('[aria-hidden="true"]')).not.toBeNull();
+      expect(balken.closest('.pointer-events-none')).not.toBeNull();
+    });
+
+    it('legt ihn am Telefon ohne Zahlen in die Lücke über dem Namen, wenn die Kachel den Weg nennt', () => {
+      const { container } = renderWithProviders(
+        <Tageskarte
+          termin={eintrag()}
+          kicker="Nächster Weg"
+          weg={{ ...weg, kachelNenntIhn: true }}
+        />,
+      );
+      // Die Zahlen bleiben für Vorlesesoftware; zu sehen sind sie ab 640 px.
+      expect(screen.getByText('≈ 9 min Rad · 21 min Puffer')).toHaveClass('max-sm:sr-only');
+      // Unter 640 px nimmt der Balken keine Höhe: Die Karte wird nicht höher.
+      const lage = container.querySelector<HTMLElement>('[style]')!.closest('.max-sm\\:absolute');
+      expect(lage).not.toBeNull();
+      expect(lage!.parentElement).toHaveClass('max-sm:h-0', 'max-sm:relative', 'sm:mt-2');
+      // Auf der Mitte der Lücke über dem Namen (so hoch wie `mt-3.5`), ohne
+      // Pixelversatz (B6, DESIGN.md Regel 7); gemessen in uebersicht.spec.ts.
+      expect(lage).toHaveClass('max-sm:top-0', 'max-sm:h-3.5', 'max-sm:justify-center');
+      expect(lage!.className).not.toMatch(/\[\d+px\]/);
+    });
+
+    it('nennt einen knappen Weg mit Zeichen und Wort', () => {
+      renderWithProviders(
+        <Tageskarte
+          termin={eintrag()}
+          kicker="Nächster Weg"
+          weg={{ ...weg, fahrtMin: 26, kachelNenntIhn: false }}
+        />,
+      );
+      const zahlen = screen.getByText(/26 min Rad/);
+      expect(zahlen.textContent).toBe('! ≈ 26 min Rad · 4 min Puffer');
+      expect(zahlen).toHaveClass('text-warnung');
+    });
+
+    it('trägt ohne Weg keinen Balken', () => {
+      const { container } = renderWithProviders(
+        <Tageskarte termin={eintrag()} kicker="Erster Weg · ≈ 12 min" />,
+      );
+      expect(screen.queryByText(/min Rad/)).toBeNull();
+      expect(container.querySelector('[style]')).toBeNull();
+    });
+  });
+
   it('ist eine weisse Karte ohne Schatten', () => {
     const { container } = renderWithProviders(
       <Tageskarte termin={eintrag()} kicker="Erster Weg" />,

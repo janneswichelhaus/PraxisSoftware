@@ -42,6 +42,8 @@ export function Rueckfrage({
   ausloeser,
   ausloeserVariante = 'secondary',
   ausloeserGroesse = 'normal',
+  ausloeserZusatz,
+  unterDerReihe = false,
   bezeichnung,
   bestaetigen,
   bestaetigenLaeuft,
@@ -57,7 +59,21 @@ export function Rueckfrage({
   ausloeserVariante?: 'primary' | 'secondary' | 'quiet';
   /** `kompakt` in dichten Leisten (Design-Handoff 2026-10-01, Abschnitt 6). */
   ausloeserGroesse?: 'normal' | 'kompakt';
-  /** Zugängliche Bezeichnung des Kastens. Ohne Angabe der Auslösertext. */
+  /**
+   * Für Vorlesesoftware hinter dem sichtbaren Wort, etwa wessen Termin
+   * („für Erika Beispiel um 10:00 Uhr“): Stehen gleiche Auslöser
+   * untereinander, sind sie so zu unterscheiden. Der Name beginnt mit dem
+   * sichtbaren Wort, damit die Sprachsteuerung ihn trifft (UEB-10, WCAG
+   * 2.5.3); das Leerzeichen dazwischen setzt der Baustein wie bei „Doku“.
+   */
+  ausloeserZusatz?: string | undefined;
+  /**
+   * Der Auslöser steht in einer umbrechenden Knopfreihe: Der Kasten rückt
+   * über die ganze Breite unter die übrigen Knöpfe, statt sie unter sich zu
+   * schieben (`order-last`, wie die Felder der Übersicht, B12).
+   */
+  unterDerReihe?: boolean;
+  /** Zugängliche Bezeichnung des Kastens. Ohne Angabe Auslösertext und Zusatz. */
   bezeichnung?: string;
   /** Beschriftung der bestätigenden Schaltfläche. */
   bestaetigen: string;
@@ -142,6 +158,12 @@ export function Rueckfrage({
         }}
       >
         {ausloeser}
+        {ausloeserZusatz ? (
+          <>
+            {' '}
+            <span className="sr-only">{ausloeserZusatz}</span>
+          </>
+        ) : null}
       </Button>
     );
   }
@@ -149,12 +171,14 @@ export function Rueckfrage({
   return (
     <div
       role="group"
-      aria-label={bezeichnung ?? ausloeser}
+      aria-label={bezeichnung ?? (ausloeserZusatz ? `${ausloeser} ${ausloeserZusatz}` : ausloeser)}
       // Eine vertiefte Fläche mit Linie links (Leitfaden L2): Die Rückfrage
       // öffnet sich meist in einem Abschnitt, der schon eine Karte ist; als
       // eigene Karte war sie der Kasten im Kasten. Sie bleibt keine
       // Schaltfläche (DS-001).
-      className="border-line-strong bg-surface-sunken w-full border-l-4 py-3 pr-4 pl-4"
+      className={`border-line-strong bg-surface-sunken w-full border-l-4 py-3 pr-4 pl-4 ${
+        unterDerReihe ? 'order-last' : ''
+      }`.trim()}
     >
       <div className="text-ink text-sm">{children}</div>
       {meldung ? (

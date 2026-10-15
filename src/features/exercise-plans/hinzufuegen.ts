@@ -1,5 +1,6 @@
 import type { Variante } from '@/features/exercises/api';
-import type { PositionEingabe } from './api';
+import type { Katalogeintrag } from '@/features/exercises/katalog/typen';
+import type { KatalogUebernahme, PositionEingabe } from './api';
 import type { Dosis } from './dosierung';
 
 /**
@@ -11,6 +12,13 @@ import type { Dosis } from './dosierung';
  * Die Vorbelegung ist für alle gleich. Nichts hier liest Angaben einer
  * Person - keine Diagnose, kein Befund, kein Verlauf (ADR-006 Punkt 10).
  */
+
+/**
+ * So viele Positionen fasst ein Plan. Verbindlich prüft der Server
+ * (`save_exercise_plan_item`, `add_catalog_exercises_for_plan`); hier nur,
+ * damit das Auswahlblatt vorher sagt, wie viele noch passen.
+ */
+export const POSITIONEN_HOECHSTENS = 30;
 
 /** Die Vorbelegung ohne Standarddosierung - dieselbe wie im Formular bis Welle B. */
 export const OHNE_STANDARD: Dosis = {
@@ -108,4 +116,58 @@ export function hinzugefuegtSatz(ergebnis: Hinzufuegen, gewaehlt: number): strin
   const n = (anzahl: number) => (anzahl === 1 ? '1 Übung' : `${anzahl} Übungen`);
   if (!ergebnis.fehler) return `${n(ergebnis.hinzugefuegt)} hinzugefügt.`;
   return `${ergebnis.hinzugefuegt} von ${n(gewaehlt)} hinzugefügt. ${ergebnis.fehler}`;
+}
+
+/** Eine gewählte Übung mit ihrer Dosierung - aus dem Katalog mit ihrem Eintrag. */
+export interface Wunsch {
+  variante: Pick<Variante, 'id'>;
+  dosis: Dosis;
+  /** Steht die Übung bisher nur im Katalog: der Eintrag, den der Server übernimmt. */
+  eintrag?: Katalogeintrag | undefined;
+}
+
+/** Was nicht in den Plan kam, und warum. */
+export interface NichtHinzugefuegt {
+  name: string;
+  grund: 'name' | 'archived' | 'fehlt';
+}
+
+/**
+ * O-002 (Befund B9): übernimmt in einem Aufruf, was bisher nur im Katalog
+ * steht, und baut dann die Positionen in der Reihenfolge der Wahl. Was der
+ * Server nicht genommen hat - eine gleichnamige eigene Übung ohne eindeutige
+ * Variante, ein archivierter Eintrag -, fällt heraus und steht in `nicht`.
+ * Scheitert die Übernahme, wirft sie, und es entsteht keine Position.
+ */
+export async function mitKatalog(
+  planId: string,
+  wuensche: readonly Wunsch[],
+  uebernehmen: (planId: string, eintraege: Katalogeintrag[]) => Promise<KatalogUebernahme>,
+): Promise<{ positionen: PositionEingabe[]; nicht: NichtHinzugefuegt[] }> {
+  const eintraege = wuensche.flatMap((w) => (w.eintrag ? [w.eintrag] : []));
+  const antwort = eintraege.length > 0 ? await uebernehmen(planId, eintraege) : null;
+  const nicht: NichtHinzugefuegt[] = [];
+  const positionen = wuensche.flatMap((w) => {
+    if (!w.eintrag) return [neuePosition(planId, w.variante.id, w.dosis)];
+    const id = antwort?.variants[w.eintrag.schluessel];
+    if (id) return [neuePosition(planId, id, w.dosis)];
+    const konflikt = antwort?.conflicts.find((k) => k.catalog_key === w.eintrag?.schluessel);
+    // 'missing': fehlt der Bibliothek, und übernehmen darf nur owner (ANN-293).
+    const grund = !konflikt || konflikt.reason === 'missing' ? 'fehlt' : konflikt.reason;
+    nicht.push({ name: w.eintrag.name, grund });
+    return [];
+  });
+  return { positionen, nicht };
+}
+
+const GRUND: Readonly<Record<NichtHinzugefuegt['grund'], string>> = {
+  name: 'Name schon vergeben',
+  archived: 'archiviert',
+  fehlt: 'nicht in der Bibliothek',
+};
+
+/** „Nicht hinzugefügt: Fußgleiten im Sitz (archiviert)." */
+export function nichtSatz(nicht: readonly NichtHinzugefuegt[]): string | null {
+  if (nicht.length === 0) return null;
+  return `Nicht hinzugefügt: ${nicht.map((n) => `${n.name} (${GRUND[n.grund]})`).join(', ')}.`;
 }

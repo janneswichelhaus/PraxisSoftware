@@ -36,6 +36,12 @@ const EIGENE_STAFF_ID = '55555555-5555-4555-8555-000000000002';
 const FREMDE_STAFF_ID = 'staff-fremde';
 const HEUTE = '2026-08-31';
 const ZONE = 'Europe/Berlin';
+/**
+ * „Ausfall“ an Zeile und Karte (B12): sichtbar das Wort, für Vorlesesoftware
+ * dahinter Name und Uhrzeit (UEB-10). Gesucht wird nach dem Anfang - so
+ * trifft auch eine Abwesenheitsprüfung jeden dieser Knöpfe.
+ */
+const AUSFALL = /^Ausfall für /;
 
 /** Ein Zeitpunkt relativ zu jetzt. */
 function inMinuten(minuten: number): string {
@@ -205,6 +211,7 @@ const fetchAppointments = vi.fn();
 const fetchAppointment = vi.fn();
 const completeAppointment = vi.fn();
 const reopenAppointment = vi.fn();
+const recordNoShow = vi.fn();
 
 // PRX-013: offene Erstaufnahmen; ohne Angabe keine.
 const fetchOpenIntakes = vi.fn(() => Promise.resolve([] as unknown[]));
@@ -223,6 +230,8 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     completeAppointment: (id: string, stand: string) =>
       completeAppointment(id, stand) as Promise<void>,
     reopenAppointment: (id: string, stand: string) => reopenAppointment(id, stand) as Promise<void>,
+    recordNoShow: (id: string, stand: string, protokoll: boolean) =>
+      recordNoShow(id, stand, protokoll) as Promise<void>,
   };
 });
 
@@ -1034,8 +1043,10 @@ describe('Übersicht', () => {
       expect(within(karte).getByRole('link', { name: 'Anrufen: Erika Beispiel' })).toHaveClass(
         'size-12',
       );
-      // Am Hausbesuch „Niemand öffnet?" an der Karte (Auftrag C1).
-      expect(within(karte).getByRole('button', { name: 'Niemand öffnet?' })).toBeInTheDocument();
+      // Am Hausbesuch „Ausfall" an der Karte (Auftrag C1; seit B12 derselbe
+      // Name wie an jeder Zeile).
+      expect(within(karte).getByRole('button', { name: AUSFALL })).toBeInTheDocument();
+      expect(within(karte).queryByRole('button', { name: 'Niemand öffnet?' })).toBeNull();
       // Die Navigation entfällt.
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
       // Ein Doku-Knopf, auch hier (AKTE-008).
@@ -1175,6 +1186,57 @@ describe('Übersicht', () => {
         expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
         EIGENE_STAFF_ID,
       );
+    });
+
+    it('zeigt den Wegbalken auch an der Karte des naechsten Wegs nach einem abgehakten Besuch (B6)', async () => {
+      // Alle Besuche am selben Tag (BEF-120): nur die Uhr steht fest.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-08-31T07:00:00Z'));
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
+      const davor = tagesEintrag({
+        id: 't3',
+        patient_id: 'p3',
+        starts_at: inMinuten(-100),
+        ends_at: inMinuten(-40),
+        status: 'documented',
+        documentation_status: 'final',
+        patient_given_name: 'Petra',
+        patient_family_name: 'Platzhalter',
+      });
+      const plan = [davor, tagesEintrag({ id: 't1' }), zweiterBesuch()];
+      fetchDayPlan.mockResolvedValue(plan);
+      fetchDayRoute.mockResolvedValue([
+        routenpunkt(plan[0]!, 48.53, 9.05),
+        routenpunkt(plan[1]!, 48.521, 9.057),
+        routenpunkt(plan[2]!, 48.526, 9.064),
+      ]);
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 10, 12, 9));
+      const user = userEvent.setup();
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      // Die Karte: der Kicker ohne Minuten, darunter der Balken wie über den
+      // Zeilen. Das Ende des abgehakten Besuchs ist vorbei: Er beginnt jetzt,
+      // wie die Kachel (ANN-196) - 60 Minuten, 12 davon Fahrt.
+      const karte = await findeKarte();
+      const zahlen = await within(karte).findByText('≈ 12 min Rad · 48 min Puffer');
+      expect(within(karte).getByRole('heading', { name: 'Nächster Weg' })).toBeInTheDocument();
+      // Die Kachel „Abfahrt" nennt denselben Weg: Am Telefon weichen die Zahlen.
+      expect(zahlen).toHaveClass('max-sm:sr-only');
+      expect(await screen.findByText('Abfahrt', { exact: true })).toBeInTheDocument();
+      // Die Zeile danach behält ihren Balken über sich: 75 Minuten, 9 Fahrt.
+      expect(screen.getByText('≈ 9 min Rad · 66 min Puffer')).not.toHaveClass('max-sm:sr-only');
+
+      // Aufgeklappt trägt die spätere Zeile den Balken in der Karte, mit Zahlen.
+      await user.click(zeileImStrahl(/Max Mustermann/));
+      const spaeter = screen.getAllByRole('article')[1]!;
+      expect(within(spaeter).getByRole('heading', { name: 'Später' })).toBeInTheDocument();
+      expect(within(spaeter).getByText('≈ 9 min Rad · 66 min Puffer')).not.toHaveClass(
+        'max-sm:sr-only',
+      );
+      expect(screen.getAllByText('≈ 9 min Rad · 66 min Puffer')).toHaveLength(1);
     });
 
     it('sagt dazu, wenn die Fahrzeiten eine Nachbildung ohne Kartendienst sind', async () => {
@@ -2017,6 +2079,259 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />, '/?tag=2026-02-30');
       await screen.findByRole('navigation', { name: 'Tag wählen' });
       expect(fetchDayPlan).toHaveBeenCalledWith(heute(), EIGENE_STAFF_ID);
+    });
+  });
+
+  describe('B12: „Ausfall" an jeder Zeile (ANN-533)', () => {
+    /** Ein Besuch, der vorbei ist - weder abgehakt noch dokumentiert. */
+    function vorbei(teil: Partial<TodayApiModule.DayPlanEntry>): TodayApiModule.DayPlanEntry {
+      return tagesEintrag({ starts_at: inMinuten(-180), ends_at: inMinuten(-135), ...teil });
+    }
+
+    const anna = vorbei({
+      id: 'a',
+      patient_id: 'pa',
+      patient_given_name: 'Anna',
+      patient_family_name: 'Ausfall',
+    });
+    const bernd = vorbei({
+      id: 'b',
+      patient_id: 'pb',
+      starts_at: inMinuten(-130),
+      ends_at: inMinuten(-100),
+      appointment_type: 'practice',
+      location_name: 'Hauptstandort',
+      visit_street: null,
+      visit_house_number: null,
+      visit_postal_code: null,
+      visit_city: null,
+      patient_given_name: 'Bernd',
+      patient_family_name: 'Praxis',
+    });
+
+    /** Der Eintrag (`li`) einer Zeile im Strahl. */
+    async function eintragVon(name: RegExp): Promise<HTMLElement> {
+      return (await imStrahlFinden(name)).closest('li')!;
+    }
+
+    beforeEach(() => {
+      fetchAppointment.mockReset();
+      fetchAppointment.mockImplementation((id: string) =>
+        Promise.resolve({ id, status: 'confirmed', updated_at: '2026-10-01T06:00:00Z' }),
+      );
+      recordNoShow.mockReset();
+      recordNoShow.mockResolvedValue(undefined);
+    });
+
+    /** Begonnen ohne Doku (Anna, Bernd), mit Entwurf, abgehakt und noch nicht begonnen. */
+    function tagMitAllenFaellen(): TodayApiModule.DayPlanEntry[] {
+      return [
+        anna,
+        bernd,
+        vorbei({
+          id: 'c',
+          patient_id: 'pc',
+          starts_at: inMinuten(-90),
+          ends_at: inMinuten(-60),
+          documentation_status: 'draft',
+          patient_given_name: 'Clara',
+          patient_family_name: 'Entwurf',
+        }),
+        vorbei({
+          id: 'd',
+          patient_id: 'pd',
+          starts_at: inMinuten(-50),
+          ends_at: inMinuten(-20),
+          status: 'completed',
+          patient_given_name: 'Dora',
+          patient_family_name: 'Abgehakt',
+        }),
+        tagesEintrag({ id: 't1' }),
+        zweiterBesuch(),
+      ];
+    }
+
+    it('steht an jeder begonnenen Behandlung ohne Doku - am Hausbesuch wie in der Praxis', async () => {
+      fetchDayPlan.mockResolvedValue(tagMitAllenFaellen());
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      // Am Hausbesuch und in der Praxis, leise und 44 px hoch.
+      const eintrag = await eintragVon(/Anna Ausfall/);
+      const ausfall = within(eintrag).getByRole('button', { name: AUSFALL });
+      expect(ausfall).toHaveClass('min-h-11', 'text-accent');
+      expect(ausfall.className).not.toContain('border-line-strong');
+      // Für Vorlesesoftware unterscheidbar: das Wort zuerst, dann wessen Termin (UEB-10).
+      expect(ausfall).toHaveAccessibleName(
+        `Ausfall für Anna Ausfall um ${uhr(anna.starts_at)} Uhr`,
+      );
+      expect(
+        within(await eintragVon(/Bernd Praxis/)).getByRole('button', { name: AUSFALL }),
+      ).toHaveAccessibleName(`Ausfall für Bernd Praxis um ${uhr(bernd.starts_at)} Uhr`);
+
+      // Vor „Doku" und dem Haken, 12 px auseinander; am Telefon rücken die
+      // Knöpfe unter Name und Ort, rechtsbündig.
+      const doku = within(eintrag).getByRole('link', { name: /^Doku/ });
+      const haken = within(eintrag).getByRole('button', { name: /^Termin abschließen/ });
+      expect(ausfall.compareDocumentPosition(doku) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(doku.compareDocumentPosition(haken) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      const zeile = zeileImStrahl(/Anna Ausfall/);
+      expect(zeile).toHaveClass('max-sm:basis-full');
+      expect(zeile.parentElement).toHaveClass('flex-wrap', 'justify-end', 'gap-3');
+      expect(zeile.parentElement).toContainElement(ausfall);
+    });
+
+    it('steht nicht vor dem Beginn, nicht mit Doku-Entwurf und nicht nach dem Haken', async () => {
+      fetchDayPlan.mockResolvedValue(tagMitAllenFaellen());
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      // Mit Entwurf, abgehakt, vor dem Beginn: kein Ausfall, die Zeile bleibt, wie sie war.
+      for (const name of [/Clara Entwurf/, /Dora Abgehakt/, /Max Mustermann/]) {
+        expect(within(await eintragVon(name)).queryByRole('button', { name: AUSFALL })).toBeNull();
+        expect(zeileImStrahl(name)).not.toHaveClass('max-sm:basis-full');
+        expect(zeileImStrahl(name).parentElement).not.toHaveClass('flex-wrap');
+      }
+      // Der nächste Weg hat noch nicht begonnen.
+      expect(within(await findeKarte()).queryByRole('button', { name: AUSFALL })).toBeNull();
+    });
+
+    it('steht nur für die Rollen der Terminverwaltung - auch für das Büro', async () => {
+      fetchDayPlan.mockResolvedValue([anna]);
+      const { unmount } = renderMitVorschau(<MyDayPage user={testUser(['trainer'])} />);
+      await imStrahlFinden(/Anna Ausfall/);
+      expect(screen.queryByRole('button', { name: AUSFALL })).toBeNull();
+      unmount();
+
+      renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
+      expect(
+        within(await eintragVon(/Anna Ausfall/)).getByRole('button', { name: AUSFALL }),
+      ).toBeInTheDocument();
+    });
+
+    it('führt am Hausbesuch durch das Protokoll - die Gebühr erst nach allen drei Haken', async () => {
+      fetchDayPlan.mockResolvedValue([anna, tagesEintrag({ id: 't1' })]);
+      const user = userEvent.setup();
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      const eintrag = await eintragVon(/Anna Ausfall/);
+
+      await user.click(within(eintrag).getByRole('button', { name: AUSFALL }));
+      const feld = within(eintrag).getByRole('region', {
+        name: `Ausfall für Anna Ausfall um ${uhr(anna.starts_at)} Uhr`,
+      });
+      // An der Zeile ohne Uhr - die gehört an die Tür (ANN-479).
+      expect(within(feld).queryByRole('timer')).toBeNull();
+      // Die anderen Fälle führen aus der Übersicht, nicht auf Knöpfe des Terminfensters.
+      expect(
+        within(feld).getByRole('link', { name: 'Ohne Behandlung festhalten' }),
+      ).toHaveAttribute(
+        'href',
+        expect.stringMatching(/^\/termine\/a\/abschluss\?ohne-behandlung=1/),
+      );
+
+      const vermerken = within(feld).getByRole('button', { name: /nicht angetroffen/ });
+      await user.click(within(feld).getByRole('checkbox', { name: 'An der Tür geklingelt' }));
+      await user.click(within(feld).getByRole('checkbox', { name: '15 Minuten vor Ort gewartet' }));
+      await user.click(vermerken);
+      expect(
+        within(feld).getByText('Bitte alle drei Schritte des Protokolls bestätigen.'),
+      ).toBeInTheDocument();
+      expect(recordNoShow).not.toHaveBeenCalled();
+
+      await user.click(within(feld).getByRole('checkbox', { name: 'Telefonisch angerufen' }));
+      await user.click(vermerken);
+      // Den Stand liest der Ablauf unmittelbar vorher - die Tagesliste kennt ihn nicht.
+      await waitFor(() =>
+        expect(recordNoShow).toHaveBeenCalledWith('a', '2026-10-01T06:00:00Z', true),
+      );
+      expect(fetchAppointment).toHaveBeenCalledWith('a');
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.',
+      );
+    });
+
+    it('bestätigt am Praxistermin ohne Gebühr und ohne Protokoll', async () => {
+      fetchDayPlan.mockResolvedValue([bernd, tagesEintrag({ id: 't1' })]);
+      const user = userEvent.setup();
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      const eintrag = await eintragVon(/Bernd Praxis/);
+
+      await user.click(within(eintrag).getByRole('button', { name: AUSFALL }));
+      // Dieselbe Rückfrage wie im Terminfenster (`NichtAngetroffenAktion`):
+      // Fläche mit Linie links, unter „Doku“ und dem Haken der Zeile.
+      const feld = within(eintrag).getByRole('group', {
+        name: `Ausfall für Bernd Praxis um ${uhr(bernd.starts_at)} Uhr`,
+      });
+      expect(feld).toHaveClass('border-l-4', 'order-last', 'w-full');
+      expect(feld).not.toHaveClass('rounded-card');
+      expect(feld.parentElement).toBe(zeileImStrahl(/Bernd Praxis/).parentElement);
+      expect(within(feld).queryByRole('checkbox')).toBeNull();
+      expect(feld).toHaveTextContent(/für Bernd Praxis wird als „nicht angetroffen“ geführt/);
+      expect(feld).not.toHaveTextContent(/Ausfallhonorar/);
+      const ja = within(feld).getByRole('button', { name: 'Ja, niemand angetroffen' });
+      expect(ja).toHaveFocus();
+
+      // „Abbrechen" schließt und gibt den Fokus zurück.
+      await user.click(within(feld).getByRole('button', { name: 'Abbrechen' }));
+      expect(within(eintrag).queryByRole('group', { name: AUSFALL })).toBeNull();
+      await waitFor(() =>
+        expect(within(eintrag).getByRole('button', { name: AUSFALL })).toHaveFocus(),
+      );
+
+      await user.click(within(eintrag).getByRole('button', { name: AUSFALL }));
+      await user.click(within(eintrag).getByRole('button', { name: 'Ja, niemand angetroffen' }));
+      await waitFor(() =>
+        expect(recordNoShow).toHaveBeenCalledWith('b', '2026-10-01T06:00:00Z', false),
+      );
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'Als „nicht angetroffen“ vermerkt.',
+      );
+      expect(screen.getByRole('status')).not.toHaveTextContent(/Ausfallhonorar/);
+    });
+
+    it('steht auch in der aufgeklappten Zeile und an der Karte des nächsten Wegs ab dem Beginn', async () => {
+      fetchDayPlan.mockResolvedValue([
+        anna,
+        tagesEintrag({ id: 't1', starts_at: inMinuten(-10), ends_at: inMinuten(35) }),
+      ]);
+      const user = userEvent.setup();
+      const { unmount } = renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      // An der Tür: derselbe Name, mit Rahmen und der Uhr.
+      const karte = await findeKarte();
+      const tuer = within(karte).getByRole('button', { name: AUSFALL });
+      expect(tuer.className).toContain('border-line-strong');
+      await user.click(tuer);
+      expect(within(karte).getByRole('timer')).toBeInTheDocument();
+
+      // Aufgeklappt: in der Karte, mit Rahmen, ohne Uhr.
+      await user.click(zeileImStrahl(/Anna Ausfall/));
+      const karten = screen.getAllByRole('article');
+      const annasKarte = karten.find((k) => within(k).queryByText('Anna Ausfall'))!;
+      const knopf = within(annasKarte).getByRole('button', { name: AUSFALL });
+      expect(knopf.className).toContain('border-line-strong');
+      await user.click(knopf);
+      expect(within(annasKarte).queryByRole('timer')).toBeNull();
+      unmount();
+
+      // Mit einem Entwurf steht an der Tür kein Ausfall: Der Server wiese ihn ab.
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({
+          id: 't1',
+          starts_at: inMinuten(-10),
+          ends_at: inMinuten(35),
+          documentation_status: 'draft',
+        }),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      expect(within(await findeKarte()).queryByRole('button', { name: AUSFALL })).toBeNull();
+    });
+
+    it('bietet ihn an der Karte des nächsten Wegs auch am laufenden Praxistermin an', async () => {
+      fetchDayPlan.mockResolvedValue([
+        { ...bernd, id: 't1', starts_at: inMinuten(-10), ends_at: inMinuten(35) },
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      const karte = await findeKarte();
+      expect(within(karte).getByRole('button', { name: AUSFALL })).toBeInTheDocument();
     });
   });
 

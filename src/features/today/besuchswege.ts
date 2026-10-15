@@ -41,6 +41,27 @@ export function dokuZiel(
   return schreiben ? schreibseite(termin.id) : akte;
 }
 
+/**
+ * Darf an diesem Termin „Ausfall“ stehen (B12)?
+ *
+ * ANN-533: an einem Behandlungstermin, sobald er begonnen hat, solange er
+ * bestätigt ist und es keine Doku gibt - auch keinen Entwurf. Vor dem Beginn
+ * ist ein Ausfall nicht feststellbar; wo dokumentiert wurde, hat eine
+ * Behandlung stattgefunden. Ein anderer Tag der Übersicht misst mit seinem
+ * Bezugszeitpunkt (ANN-234): Gestern hat alles begonnen, morgen nichts. Das
+ * Recht der Rolle prüft die Seite; verbindlich prüft der Server
+ * (`record_no_show`, ADR-004).
+ */
+export function ausfallMoeglich(termin: DayPlanEntry, jetzt: number): boolean {
+  return (
+    termin.kind === 'therapy' &&
+    termin.patient_id !== null &&
+    termin.status === 'confirmed' &&
+    Date.parse(termin.starts_at) <= jetzt &&
+    termin.documentation_status === 'none'
+  );
+}
+
 /** Die Nummer für den Anrufknopf: zuerst Mobil, sonst das Festnetz (`rufnummern`). */
 export function anrufNummer(termin: DayPlanEntry): Rufnummer | null {
   return rufnummern(termin)[0] ?? null;

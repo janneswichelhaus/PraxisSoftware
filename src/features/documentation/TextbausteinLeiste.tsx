@@ -1,6 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Textlink } from '@/components/ui/Textlink';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchTextSnippets, type TextSnippet } from './textbausteine';
+
+/** Die Seite, auf der Bausteine gepflegt werden. */
+const BAUSTEINSEITE = '/praxis/textbausteine';
 
 /**
  * Die Bausteinleiste über dem Freitext (UX-008).
@@ -10,10 +16,11 @@ import { fetchTextSnippets, type TextSnippet } from './textbausteine';
  * ist er sinnlos. Was dabei geschah, sagt die Seite unter dem Feld - dafür
  * bekommt sie neben dem Text auch den Titel des Bausteins (DOK-10).
  *
- * Praxisweite Bausteine stehen vorn (die Reihenfolge kommt vom Server), eigene
- * dahinter; der Titel des Knopfes ist der Titel des Bausteins, sein
- * `title`-Attribut zeigt den vollen Text. Ohne Bausteine steht die Leiste
- * nicht da.
+ * In der Leiste stehen nur die eigenen Bausteine der angemeldeten Person, in
+ * der Reihenfolge des Servers (B5); der Titel des Knopfes ist der Titel des
+ * Bausteins, sein `title`-Attribut zeigt den vollen Text. Ohne eigene
+ * Bausteine steht an ihrer Stelle ein leiser Link „Eigene Bausteine anlegen“
+ * zur Bausteinseite, mit dem Rückweg hierher.
  *
  * Die Leiste ist eine benannte Gruppe (DOK-20), ohne sichtbare Überschrift
  * und ohne „Bausteine verwalten“ (BEF-077): Die Knöpfe erklären sich selbst,
@@ -33,6 +40,7 @@ export function TextbausteinLeiste({
    */
   alsChips?: boolean;
 }) {
+  const ort = useLocation();
   const { data, isPending, isError } = useQuery({
     queryKey: ['text-snippets'],
     queryFn: fetchTextSnippets,
@@ -57,8 +65,24 @@ export function TextbausteinLeiste({
   }
   if (isError) return null;
 
-  const bausteine: TextSnippet[] = data;
-  if (bausteine.length === 0) return null;
+  // ANN-531: Bausteine der Praxis stehen nicht mehr in der Leiste - jede
+  // Person legt sich eigene an. Der Server liefert sie weiter; nur hier
+  // bleiben sie weg.
+  const bausteine: TextSnippet[] = data.filter((baustein) => !baustein.shared);
+
+  if (bausteine.length === 0) {
+    // In der Chipzeile hinter „+ Befund“ (B5); 44 px hoch.
+    const link = (
+      <Textlink
+        alleinstehend
+        to={mitRueckweg(BAUSTEINSEITE, `${ort.pathname}${ort.search}`)}
+        className="shrink-0 text-sm whitespace-nowrap"
+      >
+        Eigene Bausteine anlegen
+      </Textlink>
+    );
+    return alsChips ? link : <div className="nicht-drucken mb-3">{link}</div>;
+  }
 
   if (alsChips) {
     return (

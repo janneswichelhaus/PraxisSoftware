@@ -343,9 +343,13 @@ function Abschluss({
         </div>
       </header>
 
-      {/* Chipzeile: Textbausteine, Trenner, „+ Befund". Läuft waagerecht,
-          statt umzubrechen. Während eines Schreibvorgangs fügt die Leiste
-          nichts ein: Das Feld ist dann festgehalten (Zweitreview FRB-EPIC-003). */}
+      {/* Chipzeile: „Wie zuletzt“ | „+ Befund“ | die eigenen Textbausteine
+          bzw. „Eigene Bausteine anlegen“. Läuft waagerecht, statt
+          umzubrechen - „+ Befund“ steht deshalb vorn und bei 375 px ganz im
+          Bild, die Bausteine sind beliebig viele (B5). Laden sie nicht, fällt
+          der Trenner am Ende weg (`last:hidden`). Während eines
+          Schreibvorgangs fügt die Leiste nichts ein: Das Feld ist dann
+          festgehalten (Zweitreview FRB-EPIC-003). */}
       <div className="border-line nicht-drucken flex shrink-0 items-center gap-2 overflow-x-auto border-b px-4 py-1.5">
         {/* K6: der letzte Eintrag als Ausgangspunkt, vorn in der Reihe
             (ANN-502). Nicht am Vermerk „ohne Behandlung“. */}
@@ -357,18 +361,11 @@ function Abschluss({
               onUebernehmen={(titel, text) => einfuegen(titel, wert, text)}
               onHinweis={setZuletztHinweis}
             />
-            <span aria-hidden="true" className="bg-line h-6 w-px shrink-0" />
+            <span aria-hidden="true" className="bg-line h-6 w-px shrink-0 last:hidden" />
           </>
         ) : null}
-        <TextbausteinLeiste
-          alsChips
-          onEinfuegen={(text, titel) => {
-            if (!laeuft) einfuegen(titel, wert, text);
-          }}
-        />
         {ohneBehandlung ? null : (
           <>
-            <span aria-hidden="true" className="bg-line h-6 w-px shrink-0" />
             <Button
               type="button"
               variant={befundOffen ? 'primary' : 'secondary'}
@@ -380,8 +377,15 @@ function Abschluss({
             >
               + Befund{anzahlBefund > 0 ? ` · ${anzahlBefund}` : ''}
             </Button>
+            <span aria-hidden="true" className="bg-line h-6 w-px shrink-0 last:hidden" />
           </>
         )}
+        <TextbausteinLeiste
+          alsChips
+          onEinfuegen={(text, titel) => {
+            if (!laeuft) einfuegen(titel, wert, text);
+          }}
+        />
       </div>
 
       {zuletztHinweis ? (

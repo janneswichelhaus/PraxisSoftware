@@ -221,7 +221,8 @@ describe('Zeitstrahl', () => {
     zeichne();
 
     const [, erste, zweite, dritte] = screen.getAllByRole('listitem');
-    // Der ausgeklappte Termin trägt keinen - sein Weg steht im großen Balken.
+    // Über dem ausgeklappten Termin liegt keiner: Die Karte trägt ihren Weg
+    // selbst, unter dem Kicker (B6) - die Seite reicht ihn ihr.
     expect(within(erste!).queryByText(/min Rad/)).toBeNull();
     // 09:30 bis 10:00: 30 Minuten, 9 davon Fahrt.
     expect(within(zweite!).getByText('≈ 9 min Rad · 21 min Puffer')).toHaveClass('text-accent');
@@ -229,6 +230,28 @@ describe('Zeitstrahl', () => {
     const knapp = within(dritte!).getByText(/26 min Rad/);
     expect(knapp.textContent).toBe('! ≈ 26 min Rad · 4 min Puffer');
     expect(knapp).toHaveClass('text-warnung');
+  });
+
+  it('zeichnet über einer Karte keinen zweiten Balken - weder am naechsten Weg noch aufgeklappt (B6)', () => {
+    zeichne({
+      plan: [{ ...erika, status: 'completed' }, max, petra],
+      fokusId: 'b',
+      jetzt: zeitpunkt('07:40'),
+      karte: <article>Karte von Max</article>,
+      aufklappen: {
+        offenId: 'c',
+        aufklappbar: () => true,
+        umschalten: () => undefined,
+        karte: () => <article>Karte von Petra</article>,
+      },
+    });
+    for (const karte of ['Karte von Max', 'Karte von Petra']) {
+      const eintrag = screen.getByText(karte).closest('li')!;
+      expect(within(eintrag).queryByText(/min Rad/)).toBeNull();
+    }
+    // Uhrzeit und Punkt bleiben auf der Höhe der ersten Zeile der Karte.
+    const zeit = within(screen.getByText('Karte von Max').closest('li')!).getByText('10:00');
+    expect(zeit).toHaveClass('pt-3.5');
   });
 
   it('zeigt keinen Wegbalken an Praxis, Video und Fehlzeit, ohne Fahrzeit oder ohne Termin davor', () => {
@@ -349,6 +372,42 @@ describe('Zeitstrahl', () => {
     expect(screen.getAllByRole('link')).toHaveLength(3);
     expect(screen.queryByText(/Anfahrt/)).toBeNull();
     expect(screen.queryByText('Karte von Erika')).toBeNull();
+  });
+});
+
+describe('Zeitstrahl: „Ausfall“ an der Zeile (B12)', () => {
+  it('stellt „Ausfall“ vor die Knöpfe der Zeile und lässt sie am Telefon unter Name und Ort rücken', () => {
+    zeichne({
+      plan: [erika, max, petra],
+      fokusId: 'b',
+      jetzt: zeitpunkt('07:40'),
+      aktionen: (termin) => <a href={`/doku/${termin.id}`}>Doku</a>,
+      ausfall: (termin) =>
+        termin.id === 'a' ? (
+          <button type="button">Ausfall</button>
+        ) : termin.id === 'b' ? (
+          <button type="button">Ausfall an der Karte</button>
+        ) : null,
+    });
+
+    const zeile = screen.getByRole('link', { name: /Test Erika/ });
+    const reihe = zeile.parentElement!;
+    const ausfall = within(reihe).getByRole('button', { name: 'Ausfall' });
+    // Vor „Doku“, 12 px auseinander, rechtsbündig; am Telefon nimmt die Zeile
+    // die erste Reihe ganz, die Knöpfe stehen darunter.
+    expect(
+      ausfall.compareDocumentPosition(within(reihe).getByRole('link', { name: 'Doku' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(reihe).toHaveClass('flex', 'flex-wrap', 'justify-end', 'gap-3');
+    expect(zeile).toHaveClass('max-sm:basis-full', 'min-h-11');
+
+    // Eine Zeile ohne „Ausfall“ bleibt, wie sie war.
+    const ohne = screen.getByRole('link', { name: /Test Petra/ });
+    expect(ohne.parentElement).not.toHaveClass('flex-wrap');
+    expect(ohne).not.toHaveClass('max-sm:basis-full');
+    // Die Karte trägt ihre Knöpfe selbst - der Zeitstrahl hängt keinen an.
+    expect(screen.queryByRole('button', { name: 'Ausfall an der Karte' })).toBeNull();
   });
 });
 

@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { PositionEingabe } from './api';
+import { katalogeintrag } from '@/features/exercises/katalog';
+import type { Katalogeintrag } from '@/features/exercises/katalog/typen';
+import type { KatalogUebernahme, PositionEingabe } from './api';
 import {
   OHNE_STANDARD,
   fuegeHinzu,
   hinzugefuegtSatz,
+  mitKatalog,
   neuePosition,
+  nichtSatz,
   standardDosis,
 } from './hinzufuegen';
 
@@ -95,5 +99,101 @@ describe('fuegeHinzu', () => {
     expect(hinzugefuegtSatz(ergebnis, 3)).toBe(
       '1 von 3 Übungen hinzugefügt. Ein Plan hat höchstens 30 Übungen.',
     );
+  });
+});
+
+describe('mitKatalog (Befund B9, O-002)', () => {
+  const KN01 = katalogeintrag('KN-01')!;
+  const KN07 = katalogeintrag('KN-07')!;
+  const HU01 = katalogeintrag('HU-01')!;
+  const dosis = { ...OHNE_STANDARD, sets: 2 };
+
+  it('übernimmt nur, was im Katalog steht, in einem Aufruf - und behält die Reihenfolge der Wahl', async () => {
+    const uebernehmen = vi.fn<(plan: string, e: Katalogeintrag[]) => Promise<KatalogUebernahme>>(
+      () =>
+        Promise.resolve({
+          variants: { 'KN-01': 'neu-kn01', 'KN-07': 'da-kn07' },
+          imported: ['KN-01'],
+          conflicts: [],
+        }),
+    );
+    const { positionen, nicht } = await mitKatalog(
+      'p1',
+      [
+        { variante: { id: 'katalog:KN-07' }, dosis, eintrag: KN07 },
+        { variante: { id: 'v-eigene' }, dosis },
+        { variante: { id: 'katalog:KN-01' }, dosis, eintrag: KN01 },
+      ],
+      uebernehmen,
+    );
+    expect(uebernehmen).toHaveBeenCalledTimes(1);
+    expect(uebernehmen.mock.calls[0]![0]).toBe('p1');
+    expect(uebernehmen.mock.calls[0]![1].map((e) => e.schluessel)).toEqual(['KN-07', 'KN-01']);
+    expect(positionen.map((p) => p.variantId)).toEqual(['da-kn07', 'v-eigene', 'neu-kn01']);
+    expect(positionen.every((p) => p.saetze === 2 && p.planId === 'p1')).toBe(true);
+    expect(nicht).toEqual([]);
+  });
+
+  it('ruft ohne Katalogeintrag nichts auf', async () => {
+    const uebernehmen = vi.fn();
+    const { positionen } = await mitKatalog('p1', [{ variante: { id: 'v1' }, dosis }], uebernehmen);
+    expect(uebernehmen).not.toHaveBeenCalled();
+    expect(positionen.map((p) => p.variantId)).toEqual(['v1']);
+  });
+
+  it('lässt weg, was der Server nicht genommen hat, und sagt warum', async () => {
+    const { positionen, nicht } = await mitKatalog(
+      'p1',
+      [
+        { variante: { id: 'katalog:KN-01' }, dosis, eintrag: KN01 },
+        { variante: { id: 'katalog:KN-07' }, dosis, eintrag: KN07 },
+        { variante: { id: 'katalog:HU-01' }, dosis, eintrag: HU01 },
+      ],
+      () =>
+        Promise.resolve({
+          variants: { 'HU-01': 'v-hu01' },
+          imported: ['HU-01'],
+          conflicts: [
+            { catalog_key: 'KN-01', name: KN01.name, reason: 'archived' },
+            { catalog_key: 'KN-07', name: KN07.name, reason: 'name' },
+          ],
+        }),
+    );
+    expect(positionen.map((p) => p.variantId)).toEqual(['v-hu01']);
+    expect(nicht).toEqual([
+      { name: KN01.name, grund: 'archived' },
+      { name: KN07.name, grund: 'name' },
+    ]);
+    expect(nichtSatz(nicht)).toBe(
+      `Nicht hinzugefügt: ${KN01.name} (archiviert), ${KN07.name} (Name schon vergeben).`,
+    );
+    expect(nichtSatz([])).toBeNull();
+  });
+
+  it('sagt „nicht in der Bibliothek“, wenn nur owner übernehmen dürfte (ANN-293)', async () => {
+    const { positionen, nicht } = await mitKatalog(
+      'p1',
+      [
+        { variante: { id: 'katalog:KN-01' }, dosis, eintrag: KN01 },
+        { variante: { id: 'katalog:KN-07' }, dosis, eintrag: KN07 },
+      ],
+      () =>
+        Promise.resolve({
+          variants: { 'KN-01': 'da-kn01' },
+          imported: [],
+          conflicts: [{ catalog_key: 'KN-07', name: KN07.name, reason: 'missing' }],
+        }),
+    );
+    expect(positionen.map((p) => p.variantId)).toEqual(['da-kn01']);
+    expect(nicht).toEqual([{ name: KN07.name, grund: 'fehlt' }]);
+    expect(nichtSatz(nicht)).toBe(`Nicht hinzugefügt: ${KN07.name} (nicht in der Bibliothek).`);
+  });
+
+  it('legt nichts an, wenn die Übernahme scheitert', async () => {
+    await expect(
+      mitKatalog('p1', [{ variante: { id: 'katalog:KN-01' }, dosis, eintrag: KN01 }], () =>
+        Promise.reject(new Error('Die Übungen konnten nicht übernommen werden.')),
+      ),
+    ).rejects.toThrow('Die Übungen konnten nicht übernommen werden.');
   });
 });

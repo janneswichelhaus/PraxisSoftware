@@ -13,12 +13,16 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Warnzeile } from '@/components/ui/Objektkopf';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
+import type { Plattformzugang } from '@/features/platform-access/api';
+import { anzeigezustand, usePlattformzugang } from '@/features/platform-access/zustand';
 import { angabenZeile } from '@/lib/erfassungsgroessen';
 import { formatDate } from '@/lib/datum';
 import {
@@ -61,6 +65,10 @@ export function PlanPage() {
     queryFn: () => fetchPlan(planId),
     retry: false,
   });
+  // Befund B9: Nach dem Zuweisen bestätigt die Seite es mit dem Weg zum
+  // Planblatt - der Plan nützt so auch ohne Plattform - und sagt, ob die
+  // Person ihn auf der Plattform sieht.
+  const [zugewiesen, setZugewiesen] = useState<{ planId: string; bis: string } | null>(null);
 
   return (
     <Abfragezustand
@@ -71,7 +79,11 @@ export function PlanPage() {
     >
       {(plan) =>
         plan ? (
-          <Ansicht plan={plan} />
+          <Ansicht
+            plan={plan}
+            zugewiesenBis={zugewiesen?.planId === plan.id ? zugewiesen.bis : null}
+            onZugewiesen={(bis) => setZugewiesen({ planId: plan.id, bis })}
+          />
         ) : (
           <>
             <Rueckweg standard="/" />
@@ -83,19 +95,46 @@ export function PlanPage() {
   );
 }
 
-function Ansicht({ plan }: { plan: Plan }) {
+function Ansicht({
+  plan,
+  zugewiesenBis,
+  onZugewiesen,
+}: {
+  plan: Plan;
+  zugewiesenBis: string | null;
+  onZugewiesen: (bis: string) => void;
+}) {
   const entwurf = plan.status === 'draft';
+  // B9 (Praxis-Review): Ob die Person den Plan auf der Plattform sieht, sagt
+  // ihr Zugang - dieselbe Abfrage wie der Abschnitt „Plattform“ der Akte,
+  // ohne eigene Serverfunktion. Gefragt wird erst nach dem eigenen Zuweisen,
+  // gleichzeitig mit dem Nachladen des Plans; zuweisen darf nur, wer das
+  // Verhältnis und damit den Zugang liest (`can_read_platform_access`).
+  const zugang = usePlattformzugang(
+    plan.service_area === 'therapy' ? 'treatment' : 'training',
+    plan.relationship_id,
+    zugewiesenBis !== null,
+  );
   if (entwurf && plan.can_write && plan.relationship_open) {
-    return <Planeditor plan={plan} />;
+    return <Planeditor plan={plan} onZugewiesen={onZugewiesen} />;
   }
-  return <Zugewiesen plan={plan} />;
+  return <Zugewiesen plan={plan} zugewiesenBis={entwurf ? null : zugewiesenBis} zugang={zugang} />;
 }
 
 // -----------------------------------------------------------------------------
 // Zugewiesen, beendet, abgelöst - oder ein Entwurf ohne Schreibrecht
 // -----------------------------------------------------------------------------
 
-function Zugewiesen({ plan }: { plan: Plan }) {
+function Zugewiesen({
+  plan,
+  zugewiesenBis,
+  zugang,
+}: {
+  plan: Plan;
+  zugewiesenBis: string | null;
+  /** Der Plattformzugang der Person; `undefined`, solange er nicht bekannt ist. */
+  zugang: Plattformzugang | null | undefined;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const entwurf = plan.status === 'draft';
@@ -151,6 +190,11 @@ function Zugewiesen({ plan }: { plan: Plan }) {
           ) : undefined
         }
       />
+      {zugewiesenBis ? (
+        <Rueckmeldung className="mt-4">
+          Zugewiesen bis {formatDate(zugewiesenBis)}. <Plattformsatz plan={plan} zugang={zugang} />
+        </Rueckmeldung>
+      ) : null}
       {neu.isError ? (
         <Statusmeldung ton="fehler" className="mt-4">
           {neu.error.message}
@@ -176,6 +220,38 @@ function Zugewiesen({ plan }: { plan: Plan }) {
       </div>
     </>
   );
+}
+
+/**
+ * Der zweite Satz der Bestätigung (B9, Praxis-Review): ob die Person den Plan
+ * auf der Plattform sieht, und der Weg zum Planblatt. Ist ihr Zugang noch
+ * nicht bekannt oder nicht zu laden, bleibt es beim Weg zum Blatt.
+ */
+function Plattformsatz({
+  plan,
+  zugang,
+}: {
+  plan: Plan;
+  zugang: Plattformzugang | null | undefined;
+}) {
+  // Alleinstehend: 44 px Tippziel, auch mitten in der Bestätigung.
+  const blatt = (
+    <Textlink
+      alleinstehend
+      to={`${planPfad(plan.service_area, plan.relationship_id, plan.id)}/blatt`}
+    >
+      Als PDF oder drucken
+    </Textlink>
+  );
+  if (zugang === undefined) return blatt;
+  if (anzeigezustand(zugang) === 'active') {
+    return (
+      <>
+        {plan.given_name} sieht ihn auf der Plattform. {blatt}
+      </>
+    );
+  }
+  return <>Ohne Plattformzugang: {blatt} mitgeben.</>;
 }
 
 function Laufzeit({ plan, abgelaufen }: { plan: Plan; abgelaufen: boolean }) {

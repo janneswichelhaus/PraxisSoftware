@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-13.
+Zuletzt aktualisiert: 2026-10-14.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -2884,7 +2884,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Faktor 1,5, Wiede
 
 Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung (UI-Redesign; Kartendienst)
 
-**Annahme.** Im Anlegen- und Ändern-Formular eines Behandlungstermins steht, sobald Person, Tag, Zeit und Ort feststehen, „Passt es?“ mit Anfahrt und Weiterfahrt: „passt · X Min. Luft“ oder „zu knapp um X Min., frühester Beginn …“. Luft ist der Beginn des Folgetermins minus (Ende plus Fahrzeit, aufgerundet aufs Raster) in ganzen Minuten, gerechnet allein im Server (`check_travel_fit`, dieselbe Rundung wie `check_travel_buffers`). Nachbarn sind die Termine mit Ort derselben Person an diesem Tag (`list_day_route`, ohne den bearbeiteten Termin); fehlt einer, zählt der Arbeitsbeginn bzw. das Arbeitsende am Startort (ohne Arbeitszeit bleibt die Seite leer). Stufen wie der Wegbalken (ANN-195): ab 5 Minuten passt es, 0 bis 4 ist knapp, darunter zu knapp. Ein neuer Hausbesuch nimmt die Koordinate der Akte über `get_visit_position` (Rechte wie die Terminsuche: owner, therapist, team_lead, office), ein bestehender behält seine (ANN-003) und ist bei veralteter Anschrift ungeprüft (ANN-236); ohne Koordinate steht „nicht verortet“ statt einer Zeit. Video prüft nichts. Nichts sperrt; „Passt es?“ steht nicht am Trainingsformular.
+**Annahme.** Im Anlegen- und Ändern-Formular eines Behandlungstermins steht, sobald Person, Tag, Zeit und Ort feststehen, „Passt es?“ mit Anfahrt und Weiterfahrt: „passt · X Min. Luft“ (unter 5 Minuten „knapp · X Min. Luft“, B2) oder „zu knapp um X Min., frühester Beginn …“. Luft ist der Beginn des Folgetermins minus (Ende plus Fahrzeit, aufgerundet aufs Raster) in ganzen Minuten, gerechnet allein im Server (`check_travel_fit`, dieselbe Rundung wie `check_travel_buffers`). Nachbarn sind die Termine mit Ort derselben Person an diesem Tag (`list_day_route`, ohne den bearbeiteten Termin); fehlt einer, zählt der Arbeitsbeginn bzw. das Arbeitsende am Startort (ohne Arbeitszeit bleibt die Seite leer). Stufen wie der Wegbalken (ANN-195): ab 5 Minuten passt es, 0 bis 4 ist knapp, darunter zu knapp. Ein neuer Hausbesuch nimmt die Koordinate der Akte über `get_visit_position` (Rechte wie die Terminsuche: owner, therapist, team_lead, office), ein bestehender behält seine (ANN-003) und ist bei veralteter Anschrift ungeprüft (ANN-236); ohne Koordinate steht „nicht verortet“ statt einer Zeit. Video prüft nichts. Nichts sperrt; „Passt es?“ steht nicht am Trainingsformular.
 
 **Begründung.** Zuschnitt Jannes (UBK-EPIC-002): nur Auskunft, live beim Verstellen, kein Name eines anderen Termins nötig („vom Termin davor (bis 10:00 Uhr)“). Die Rundung bleibt an einer Stelle (§8.1, ANN-097); `check_travel_fit` liest dafür keine Termine, sondern bekommt Zeiten und Fahrzeiten herein und gibt einem Aufrufer nichts, was er nicht schon hat. Die Koordinate der Akte gibt die Terminsuche denselben Rollen bereits (`find_free_slots`), ANN-016 bleibt für die Kartei bestehen. Zum Kartendienst geht eine Route über höchstens drei Koordinaten (ADR-019 Punkt 12, 13), mit Fahrzeitfaktor (ANN-237). Unsicher: ob der Arbeitsbeginn als Tagesrand im Alltag stört, wenn der erste Termin bewusst auf den Arbeitsbeginn gelegt ist.
 
@@ -4578,6 +4578,8 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Ü
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
+**Ablösung.** abgelöst durch ANN-536 für gewählte Einträge beim Hinzufügen zu einem Plan; den ganzen Katalog übernimmt weiter owner
+
 **Annahme.** `import_exercise_catalog` prüft wie jeder Schreibweg der Bibliothek (`app.exercise_library_writer`, ANN-293); die interne Fassung ist für keine Anwendungsrolle ausführbar. Keine neue Auditaktion: `created_by` steht an der Zeile (ADR-010 Fassung 3).
 
 **Begründung.** Wer übernimmt, ändert, was alle Pläne anbieten – dieselbe Überlegung wie bei der Pflege.
@@ -4772,11 +4774,13 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
 
+**Ablösung.** abgelöst durch ANN-537 in der Übernahme
+
 **Annahme.** Eine Vorlage fügt ihre Übungen über `catalog_key` zur nicht archivierten Variante der Praxis hinzu, mit der Dosierung der Vorlage, sonst der Standarddosierung. Was fehlt oder archiviert ist, nennt die Meldung; owner übernimmt Fehlendes aus dem Katalog und fügt es an. Ein leerer Entwurf mit Standardtitel heißt danach wie die Vorlage. Die Liste ist nach Name geordnet und bekommt nur die Vorlagen (ADR-006 Punkt 10).
 
 **Begründung.** Referenzanalyse Training, Abschnitt 9, Weg A; Zuweisen in fünf Tipps (K12).
 
-**Anker.** `ausVorlage` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
+**Anker.** `vorlagenZeilen` und `vorlagenListe` in `src/features/exercise-plans/vorlagen.ts`; `vorlagen.test.ts`.
 
 **Änderungspfad.** Vorlagen der Praxis: eigene Tabelle und Migration · Aufwand `mittel`.
 
@@ -4966,7 +4970,7 @@ Datenschutz · offen · 2026-10-13 · — · Prüfpaket · Wiedervorlage: Datens
 
 Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung „Besuch in einem Zug“)
 
-**Annahme.** Nach dem Festschreiben stehen bis zu drei Plätze: nächste Woche zur gleichen Zeit, dann je Tag der nächste freie der nächsten 14 Tage (`find_free_slots`: gleiche Person, Art, Dauer, Gebietstag zuerst; Hausbesuch mit `rate_slot_travel`). Ein Tipp legt über `create_appointment` an – ohne Behandlungsgrundlage, wie „Folgetermin anlegen“ im Terminfenster. Steht schon ein künftiger Termin, gilt der Teil als erledigt.
+**Annahme.** Nach dem Festschreiben stehen bis zu drei Plätze: nächste Woche zur gleichen Zeit, dann je Tag der nächste freie der nächsten 14 Tage (`find_free_slots`: gleiche Person, Art, Dauer, Gebietstag zuerst; Wege wie „Passt es?“, ANN-535). Ein Tipp legt über `create_appointment` an – ohne Behandlungsgrundlage, wie „Folgetermin anlegen“ im Terminfenster. Steht schon ein künftiger Termin, gilt der Teil als erledigt.
 
 **Begründung.** Muster U2, Kernablauf K7; der Server prüft Arbeitszeit, Raster und Überschneidung, reserviert wird nichts (§8).
 
@@ -5167,7 +5171,6 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `Tile` in `src/components/ui/Tile.tsx`.
 
 **Änderungspfad.** Versalien zurück und Kacheln auf der Plattform einspaltig · Aufwand `klein`.
-
 
 ### ANN-500 — Absage im Terminpanel, Grund als Chips
 
@@ -5442,3 +5445,115 @@ Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
 **Anker.** `app.platform_preview_grant` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
 
 **Änderungspfad.** Zusätzlich `app.platform_access_writable` und Schreibrechte in der Einsicht auf `false`, die Projektionen fragen dann einen eigenen Helfer · Aufwand `mittel`.
+
+### ANN-530 — „Passt es?“ bietet die früheste passende Zeit an, nur wenn die Gegenseite hält
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Ist im Terminformular die Anfahrt zu knapp, steht darunter „Auf 16:25 verschieben“ (frühester Beginn des Servers, nur am selben Tag); bei zu knapper Weiter- oder Rückfahrt „Auf 15:40 vorziehen“ (Beginn − ⌈−Luft / Raster⌉ · Raster). Angeboten wird nur, wenn die Luft der Gegenseite danach ≥ 0 bleibt oder sie ungeprüft ist, sonst „Zwischen Termin davor und danach reicht die Zeit nicht.“; anlegen zur alten Zeit bleibt möglich.
+
+**Begründung.** B2 (Jannes, 14.10.2026). Gerundet wird weiter im Server (ANN-097): Das Angebot rechnet nur mit seiner Luft, nach dem Tipp prüft er neu.
+
+**Anker.** `wegangebot` in `src/features/appointments/wegpruefung.ts`; Anzeige `Wegauskunft.tsx`.
+
+**Änderungspfad.** Andere Regel, auch über die Gegenseite hinweg: `wegangebot` · Aufwand `klein`.
+
+### ANN-531 — Textbausteine: in der Leiste nur eigene, keine neuen Bausteine der Praxis
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Leiste der Schreibseite zeigt nur die eigenen Bausteine der angemeldeten Person, ohne eigene den leisen Link „Eigene Bausteine anlegen“; „+ Befund“ bleibt. Die Bausteinseite legt nur noch eigene an; vorhandene Bausteine der Praxis sieht nur owner, eingeklappt, und kann sie löschen.
+
+**Begründung.** B5 (Jannes, 14.10.2026): Jede Therapeut:in legt sich eigene für den Alltag an. Nur Oberfläche: `list_text_snippets` und `create_text_snippet` bleiben unverändert.
+
+**Anker.** Filter in `src/features/documentation/TextbausteinLeiste.tsx`; Seite `TextbausteinePage.tsx`.
+
+**Änderungspfad.** Bausteine der Praxis wieder in der Leiste: Filter weg, Kästchen „Baustein der Praxis“ zurück · Aufwand `klein`.
+
+### ANN-532 — Wegbalken an der Karte, am Telefon an Stelle der Minutenangabe
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+
+**Annahme.** Karte des nächsten Wegs und aufgeklappte Zeile tragen den schmalen Wegbalken unter dem Kicker statt „· ≈ n min“; ist das Ende davor vorbei, beginnt er jetzt (wie die Kachel). Nennt die Kachel „Abfahrt“ denselben Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen.
+
+**Begründung.** B6: Nach einem abgehakten Besuch fehlte der Balken. Als eigene Zeile schöbe er bei 375 × 667 den Hauptknopf unter die Tableiste (ANN-484). „Jetzt“ statt Ende davor weicht vom Auftrag ab, folgt Jannes’ Abnahme zu ANN-196: sonst Puffer am Balken, „zu knapp“ in der Kachel.
+
+**Anker.** `weg` in `src/features/today/Tagesliste.tsx`.
+
+**Änderungspfad.** Wie im Auftrag: Zweig „jetzt“ in `wegZumBesuch` streichen · Aufwand `klein`. Balken über der Karte, Platz anderswo sparen · Aufwand `klein`.
+
+### ANN-533 — „Ausfall“ ab Beginn des Termins und nur ohne Doku
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+
+**Annahme.** „Ausfall“ steht in der Übersicht an jeder Behandlung, die begonnen hat, bestätigt ist und keine Doku hat, auch keinen Entwurf: an der Zeile, aufgeklappt und an der Karte des nächsten Wegs (dort statt „Niemand öffnet?“, neu auch am Praxistermin, mit Entwurf nicht mehr). Hausbesuch: Protokoll, Gebühr erst nach drei Haken; Praxis und Video: die Rückfrage ohne Gebühr aus dem Terminfenster.
+
+**Begründung.** B12. Vor dem Beginn ist ein Ausfall nicht feststellbar, mit Doku weist `record_no_show` ab. Die Karte ist die Zeile ihres Termins, daher dieselbe Regel. Ein Name für dasselbe; am Telefon rücken die Knöpfe unter Name und Ort.
+
+**Anker.** `ausfallMoeglich` in `src/features/today/besuchswege.ts`.
+
+**Änderungspfad.** Bedingungen in `ausfallMoeglich` ändern · Aufwand `klein`.
+
+### ANN-534 — Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Frage im Bericht)
+
+**Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert und nichts an ihm hängt (Doku, Leistung, Honorar, Mitteilung, Warteliste, Wunsch, Serie). Sieht die Person ihre Termine auf der Plattform oder sah sie sie seit dem Anlegen, fragt „Rückgängig“ nach und sagt ihn erst auf „Termin absagen“ als Praxis ab (B8). Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung, `due_at` ist der Zeitpunkt des Zurücknehmens.
+
+**Begründung.** Nie wirksam; ein Restore zieht nach (ADR-008 Punkt 8). Was die Person sehen konnte, verschwindet nicht still (ADR-018 Punkt 2).
+
+**Anker.** `public.undo_appointment_creation` (Migration `o_001`).
+
+**Änderungspfad.** Immer absagen statt löschen: nur die Absage in `FolgeterminVorschlaege` · Aufwand `klein`.
+
+### ANN-535 — Folgeterminvorschläge: zu knapp fällt weg, ungeprüft bleibt
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
+
+**Annahme.** Jeder Vorschlag wird wie „Passt es?“ geprüft (Nachbarn und Tagesränder, höchstens sechs Kandidaten). Ist eine Seite zu knapp, fällt er weg; der nächste freie Platz rückt nach, auch am selben Tag. Ohne Ergebnis (Kartendienst, Adresse) bleibt er mit „Weg ungeprüft“. Mögliche Dauer: Dauer plus Luft zur Weiterfahrt (am Tagesrand bis zur Rückfahrt), höchstens bis zum nächsten Termin jeder Art oder zur Pause, auf das Raster abgerundet.
+
+**Begründung.** Befund B8: Unmögliches nicht vorschlagen. Ungeprüft ist nicht unmöglich (ANN-136). Gezeigt wird erst, was entschieden ist – keine Zeile verrutscht unter dem Daumen.
+
+**Anker.** `urteilAus` in `src/features/appointments/folgetermin.ts`.
+
+**Änderungspfad.** Knappe auch weglassen: `stufe !== 'passt'` in `urteilAus` · Aufwand `klein`.
+
+### ANN-536 — Katalogübungen übernimmt beim Hinzufügen nur owner, einzeln
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Frage im Bericht)
+
+**Ablösung.** ersetzt ANN-385 für gewählte Einträge beim Hinzufügen zu einem Plan
+
+**Annahme.** owner übernimmt gewählte Katalogeinträge beim Hinzufügen, einzeln, höchstens so viele, wie der Entwurf fasst; Weg wie der Import, ohne Prüfvermerk (ANN-386). Die anderen Planrollen wählen aus der Bibliothek; was einer Vorlage fehlt, steht ohne Haken da, der Server meldet `missing` und schreibt nichts (ANN-293).
+
+**Begründung.** Befund B9. Alle Planrollen übernehmen zu lassen, hätte die entschiedene ANN-293 aufgeweicht (Zweitreview); das entscheidet Jannes.
+
+**Anker.** `v_pflegt` in `public.add_catalog_exercises_for_plan`, `supabase/migrations/20261116100000_o_002_uebungsplan_katalog_und_stand.sql`.
+
+**Änderungspfad.** Alle Planrollen übernehmen lassen: `v_pflegt` auf `true`, im `Planeditor` die Bedingung `can_manage` streichen · Aufwand `klein`.
+
+### ANN-537 — Eine Vorlage zeigt ihre Übungen als Vorschau, alle vorgewählt
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-444 in der Übernahme
+
+**Annahme.** Ein Tipp auf eine Vorlage zeigt ihre Übungen mit Haken, vorgewählt ist alles außer dem, was schon im Plan steht; Archiviertes steht ohne Haken mit Wort. Was der Praxis fehlt, kommt still mit (ANN-536). Im leeren Entwurf stehen die Vorlagen gleich auf der Seite: Plan aus Vorlage zuweisen in fünf Tipps.
+
+**Begründung.** Befund B9: einzeln wählbar, kein unerwartetes Übertragen. Die Vorauswahl ist der Inhalt der Vorlage, für jede Person gleich (ADR-006 Punkt 10).
+
+**Anker.** `vorausgewaehlt` in `src/features/exercise-plans/vorlagen.ts`.
+
+**Änderungspfad.** Nichts vorwählen: `vorausgewaehlt` liefert eine leere Liste · Aufwand `klein`.
+
+### ANN-538 — Der Stand eines Plans: Fassung aus der Kette, Tag der Zuweisung, wer zugewiesen hat
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Kopf zeigt „Fassung 2 · Stand 14.10.2026 · Anna Beispiel“, im Entwurf „Entwurf · zuletzt geändert … von …“ statt eines Abzeichens; die Nummer zählt der Server über `previous_plan_id`. Die Plattform zeigt „Stand“ mit dem Tag der Zuweisung, „Fassungen“ Nummer und Stand.
+
+**Begründung.** Befund B9: Bei einem Wechsel der Therapeut:in soll sichtbar sein, welche Fassung gilt; eine neue Fassung soll auf der Plattform als aktualisierter Plan erkennbar sein. Keine neue Spalte nötig.
+
+**Anker.** `standZeile` in `src/features/exercise-plans/fassung.ts`.
+
+**Änderungspfad.** Nummer als Spalte führen: Migration mit Datenumzug · Aufwand `mittel`.

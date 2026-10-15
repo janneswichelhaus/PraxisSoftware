@@ -105,6 +105,24 @@ describe('Nachzuholen (Auftrag C1, ANN-478)', () => {
     expect(fetchDayPlan).not.toHaveBeenCalledWith(HEUTE, 's1');
   });
 
+  it('setzt „Ausfall“ auch unter Liegengebliebenes (B12)', async () => {
+    const gestern = tagePlus(HEUTE, -1);
+    fetchDayPlan.mockImplementation((tag: string) =>
+      Promise.resolve(tag === gestern ? [eintrag({ id: 'kein-haken', status: 'confirmed' })] : []),
+    );
+    renderMitVorschau(
+      <Nachzuholen
+        heute={HEUTE}
+        staffMemberId="s1"
+        zeitzone={ZONE}
+        ausfall={(termin) => (
+          <button type="button">Ausfall für {termin.patient_family_name}</button>
+        )}
+      />,
+    );
+    expect(await screen.findByRole('button', { name: 'Ausfall für Beispiel' })).toBeInTheDocument();
+  });
+
   it('bleibt ohne Liegengebliebenes ganz weg', async () => {
     fetchDayPlan.mockResolvedValue([
       eintrag({ status: 'documented', documentation_status: 'final' }),
@@ -151,6 +169,43 @@ describe('NochOffen (Auftrag C1, B4, B7)', () => {
     // B7: Heilmittel bestätigt niemand mehr - es gibt dafür keine Zeile.
     expect(screen.queryByText('Heilmittel offen')).toBeNull();
     expect(screen.queryByText(/Mustermann/)).toBeNull();
+  });
+
+  // B12: „Ausfall“ an jeder Zeile - unter ihr, weil das Feld dahinter die
+  // volle Breite braucht. Wann er passt, sagt die Übersicht (`ausfall`).
+  it('setzt „Ausfall“ unter die Zeile, wo die Übersicht ihn anbietet (B12)', async () => {
+    const ausfall = vi.fn((termin: TodayApiModule.DayPlanEntry) =>
+      termin.id === 'nicht-abgeschlossen' ? (
+        <button type="button">Ausfall für {termin.patient_family_name}</button>
+      ) : null,
+    );
+    renderMitVorschau(
+      <NochOffen
+        plan={[
+          eintrag({ id: 'nicht-abgeschlossen', status: 'confirmed' }),
+          eintrag({
+            id: 'ohne-haken',
+            status: 'documented',
+            documentation_status: 'final',
+            checked_at: null,
+            patient_given_name: 'Max',
+            patient_family_name: 'Mustermann',
+          }),
+        ]}
+        tagWort="Heute"
+        darfDokumentieren
+        jetzt={Date.parse('2026-10-12T18:00:00.000Z')}
+        zeitzone={ZONE}
+        ausfall={ausfall}
+      />,
+    );
+    const knopf = await screen.findByRole('button', { name: 'Ausfall für Beispiel' });
+    // In derselben Zeile wie Name und Doku, darunter.
+    const zeile = knopf.closest('li')!;
+    expect(within(zeile).getByText('Erika Beispiel')).toBeInTheDocument();
+    expect(within(zeile).getByRole('link', { name: /^Doku/ })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Ausfall/ })).toHaveLength(1);
+    expect(ausfall).toHaveBeenCalledTimes(2);
   });
 
   it('nennt offene Doku nur denen, die schreiben', () => {

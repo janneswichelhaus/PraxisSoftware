@@ -49,6 +49,10 @@ interface Wegpunkt {
  *
  * `size="klein"` ist der schmale Übergang über einem späteren Hausbesuch im
  * Zeitstrahl: nur Balken und eine Zeile „≈ 9 min Rad · 11 min Puffer".
+ * Reicht die Breite nicht für beides, rücken die Zahlen unter den Balken,
+ * statt über den Rand zu laufen. `zahlenAmTelefon={false}` lässt sie unter
+ * 640 px nur für Vorlesesoftware stehen - für die Karte des nächsten Wegs,
+ * deren Weg die Kachel „Abfahrt" schon nennt (B6).
  *
  * Die Fahrzeit ist eine Schätzung (ADR-019) und steht deshalb mit „≈" da.
  * Gerechnet wird in `travelPlan.ts`.
@@ -60,6 +64,7 @@ export function TravelBar({
   size = 'gross',
   titel = 'Nächster Weg',
   ebene = 2,
+  zahlenAmTelefon = true,
 }: {
   /** Ende des vorigen Termins oder Startort. */
   von: Wegpunkt;
@@ -72,6 +77,8 @@ export function TravelBar({
   titel?: string;
   /** Ebene der Überschrift der großen Fassung. */
   ebene?: 2 | 3;
+  /** Nur `klein`: Zahlen unter 640 px sichtbar oder nur für Vorlesesoftware. */
+  zahlenAmTelefon?: boolean;
 }) {
   const titelId = useId();
   const { geplantMin, pufferMin, abfahrt, anteil, stufe } = travelPlan(
@@ -86,7 +93,7 @@ export function TravelBar({
 
   if (size === 'klein') {
     return (
-      <div className="flex min-h-5 items-center gap-2.5">
+      <div className="flex min-h-5 flex-wrap items-center gap-x-2.5 gap-y-0.5">
         <div aria-hidden="true" className="relative h-2.5 min-w-8 flex-1">
           <div className={`rounded-pill absolute inset-x-0 top-[3px] h-1 ${farben.spur}`} />
           <div
@@ -94,7 +101,11 @@ export function TravelBar({
             style={{ width: `${anteil}%` }}
           />
         </div>
-        <span className={`text-xs font-semibold whitespace-nowrap ${farben.text}`}>
+        <span
+          className={`text-xs font-semibold whitespace-nowrap ${farben.text} ${
+            zahlenAmTelefon ? '' : 'max-sm:sr-only'
+          }`.trim()}
+        >
           {knapp ? <span aria-hidden="true">! </span> : null}
           {fahrt} · {puffer}
         </span>

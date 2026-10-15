@@ -143,9 +143,25 @@ export function HomeVisitFlow({
   mitUhr = false,
   wege,
   inKarte = false,
+  ausloeser = 'Niemand öffnet?',
+  ausloeserVariante = 'secondary',
+  ausloeserZusatz,
 }: {
   appointment: NiemandOeffnetTermin;
   melden: (text: string) => void;
+  /**
+   * Der Name des Einstiegs - in der Übersicht „Ausfall“ an Zeile und Karte
+   * (B12), im Terminfenster „Niemand öffnet?“.
+   */
+  ausloeser?: string;
+  /** An der Zeile der Übersicht leise, an Karte und Terminfenster mit Rahmen. */
+  ausloeserVariante?: 'secondary' | 'quiet';
+  /**
+   * Für Vorlesesoftware hinter dem sichtbaren Wort, an Knopf und Feld: wessen
+   * Termin („für Erika Beispiel um 10:00 Uhr“). In der Übersicht stehen
+   * mehrere „Ausfall“ untereinander (UEB-10).
+   */
+  ausloeserZusatz?: string | undefined;
   /** Die 15-Minuten-Uhr an Schritt 2 - an der Karte der Übersicht (Auftrag C1). */
   mitUhr?: boolean;
   /**
@@ -156,8 +172,7 @@ export function HomeVisitFlow({
   wege?: { ohneBehandlung: string; absagen: string };
   /**
    * In einer Karte (die Tageskarte der Übersicht): durch eine Linie
-   * abgesetzt statt als zweiter Kasten (DESIGN.md Regel 2); der Knopf darf
-   * in der schmalen Spalte umbrechen.
+   * abgesetzt statt als zweiter Kasten (DESIGN.md Regel 2).
    */
   inKarte?: boolean;
 }) {
@@ -200,7 +215,7 @@ export function HomeVisitFlow({
     <>
       <Button
         type="button"
-        variant="secondary"
+        variant={ausloeserVariante}
         groesse="kompakt"
         aria-expanded={offen}
         aria-controls={bereichId}
@@ -209,13 +224,19 @@ export function HomeVisitFlow({
           setSeit((bisher) => bisher ?? Date.now());
         }}
       >
-        Niemand öffnet?
+        {ausloeser}
+        {ausloeserZusatz ? (
+          <>
+            {' '}
+            <span className="sr-only">{ausloeserZusatz}</span>
+          </>
+        ) : null}
       </Button>
 
       {offen ? (
         <section
           id={bereichId}
-          aria-label="Niemand öffnet?"
+          aria-label={ausloeserZusatz ? `${ausloeser} ${ausloeserZusatz}` : ausloeser}
           // Ein Kasten wie die Rückfrage: eine Karte, keine Schaltfläche
           // (DS-001), über die ganze Breite unter der Knopfreihe; 16 innen
           // wie die Rückfrage seit dem Design-Handoff vom 2026-10-01.
@@ -277,11 +298,13 @@ export function HomeVisitFlow({
               Leistungen erfasst.": gestrichen im Design-Handoff vom 2026-10-01
               (Abschnitt 1). Die Folge steht schon im Satz über den Schritten. */}
           <div className="mt-3 flex flex-wrap items-center gap-3">
+            {/* Der Knopf darf in der schmalen Spalte umbrechen - in der Karte
+                wie an einer Zeile der Übersicht (B12); breit bleibt er 48 px. */}
             <Button
               type="button"
               disabled={vermerken.isPending}
               onClick={absenden}
-              className={inKarte ? 'h-auto min-h-12 py-2 text-left' : ''}
+              className={inKarte ? 'h-auto min-h-12 py-2 text-left' : 'h-auto min-h-12 py-2'}
             >
               {vermerken.isPending ? 'Wird vermerkt …' : 'Als „nicht angetroffen“ vermerken'}
             </Button>

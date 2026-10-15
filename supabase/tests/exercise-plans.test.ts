@@ -83,7 +83,7 @@ export interface Plan {
   sessions_per_week: number | null;
   status: string;
   previous_plan_id: string | null;
-  follow_up: { id: string; status: string } | null;
+  follow_up: { id: string; status: string; runs_from: string | null } | null;
   runs_from: string | null;
   runs_until: string | null;
   original_runs_until: string | null;
@@ -888,7 +888,12 @@ describe('Übungspläne: Progression von Hand (UEB-006)', () => {
       [VARIANTE.rudernGelb, rudern, null],
     ]);
     expect(p.previous!.id).toBe(vorige);
-    expect((await planLesen(vorige))!.follow_up).toEqual({ id: neu, status: 'draft' });
+    // O-002: die Folgefassung mit ihrem Beginn - im Entwurf noch ohne.
+    expect((await planLesen(vorige))!.follow_up).toEqual({
+      id: neu,
+      status: 'draft',
+      runs_from: null,
+    });
     await expect(neueFassung(vorige)).rejects.toThrow(/already has a new version/);
   });
 

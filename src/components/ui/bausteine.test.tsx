@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
@@ -1315,6 +1315,40 @@ describe('Rueckfrage', () => {
     expect(screen.queryByRole('group')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Wird gelöscht …' })).not.toBeInTheDocument();
   });
+
+  /**
+   * B12: Gleiche Auslöser untereinander - „Ausfall“ an jeder Zeile der
+   * Übersicht - unterscheidet Vorlesesoftware am Zusatz; zu sehen ist nur
+   * das Wort, mit dem der Name beginnt (UEB-10).
+   */
+  it('nennt einen Zusatz hinter dem Wort an Auslöser und Kasten', async () => {
+    const user = userEvent.setup();
+    aufbau({ ausloeserZusatz: 'für Erika Beispiel um 10:00 Uhr' });
+
+    const knopf = screen.getByRole('button', {
+      name: 'Verordnung löschen für Erika Beispiel um 10:00 Uhr',
+    });
+    expect(screen.getByText('für Erika Beispiel um 10:00 Uhr')).toHaveClass('sr-only');
+    await user.click(knopf);
+    expect(
+      screen.getByRole('group', { name: 'Verordnung löschen für Erika Beispiel um 10:00 Uhr' }),
+    ).toBeInTheDocument();
+  });
+
+  it('rückt in einer Knopfreihe auf Wunsch unter die übrigen Knöpfe', async () => {
+    const user = userEvent.setup();
+    aufbau({ unterDerReihe: true });
+    await user.click(screen.getByRole('button', { name: 'Verordnung löschen' }));
+    expect(screen.getByRole('group')).toHaveClass('order-last', 'w-full', 'border-l-4');
+  });
+
+  it('bleibt ohne diesen Wunsch an der Stelle des Klicks', async () => {
+    const user = userEvent.setup();
+    aufbau();
+    await user.click(screen.getByRole('button', { name: 'Verordnung löschen' }));
+    expect(screen.getByRole('group')).not.toHaveClass('order-last');
+    expect(screen.getByRole('group')).toHaveAccessibleName('Verordnung löschen');
+  });
 });
 
 /**
@@ -1705,6 +1739,31 @@ describe('Zeile (ListRow)', () => {
     );
 
     await pruefeBarrierefreiheit(container);
+  });
+
+  // B12: Ein Feld unter der Zeile, über die volle Breite - die Zeile darüber
+  // bleibt, wie sie ist.
+  it('trägt `darunter` unter Ziel und Aktion, in derselben Zeile der Liste', () => {
+    renderWithProviders(
+      <ListRows>
+        <ListRow
+          zeit="09:00"
+          titel="Max Mustermann"
+          to="/termine/1"
+          aktion={<button type="button">Doku</button>}
+          darunter={<button type="button">Ausfall</button>}
+        />
+      </ListRows>,
+    );
+    const zeilen = screen.getAllByRole('listitem');
+    expect(zeilen).toHaveLength(1);
+    const [zeile] = zeilen;
+    expect(within(zeile!).getByRole('link')).toHaveTextContent('Max Mustermann');
+    expect(within(zeile!).getByRole('button', { name: 'Doku' })).toBeInTheDocument();
+    const ausfall = within(zeile!).getByRole('button', { name: 'Ausfall' });
+    // Ziel und Aktion stehen in einer Reihe, das Feld darunter.
+    expect(ausfall.parentElement).toBe(zeile);
+    expect(klassenVon(zeile)).not.toContain('flex');
   });
 
   it('ist mit onClick ein Knopf, der kein Formular abschickt', async () => {

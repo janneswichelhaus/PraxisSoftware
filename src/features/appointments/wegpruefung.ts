@@ -10,7 +10,7 @@ import {
   routenplan,
   type Tagesstopp,
 } from '@/features/tours/tagesroute';
-import { zeitpunktIn } from './api';
+import { dayKey, minutesOfDay, zeitpunktIn } from './api';
 import { arbeitszeitBaender, type Zeitband } from './calendar';
 import { checkTravelFit, fetchVisitPosition, type Passfrage } from './wegpruefung-api';
 
@@ -98,6 +98,82 @@ export type Wegpruefung =
   | { readonly stand: 'veraltet' }
   | { readonly stand: 'fehler' }
   | { readonly stand: 'bereit'; readonly an: Seite; readonly weiter: Seite };
+
+/**
+ * Was „Passt es?“ im Formular anbietet, wenn eine Seite zu knapp ist: einen
+ * neuen Beginn, oder die Auskunft, dass keine Zeit passt.
+ */
+export type Wegangebot =
+  | {
+      /** `verschieben`: später, bei zu knapper Anfahrt; `vorziehen`: früher, bei Weiter- oder Rückfahrt. */
+      readonly art: 'verschieben' | 'vorziehen';
+      /** Die Zeile, unter der das Angebot steht. */
+      readonly seite: 'an' | 'weiter';
+      /** Der neue Beginn in Minuten seit Mitternacht, im Raster. */
+      readonly beginnMinute: number;
+    }
+  | {
+      /** Jede Verschiebung bräche die andere Seite. */
+      readonly art: 'keine_zeit';
+      readonly seite: 'an' | 'weiter';
+      readonly davor: 'termin' | 'tagesrand';
+      readonly danach: 'termin' | 'tagesrand';
+    };
+
+/**
+ * ANN-530: Die früheste passende Zeit für einen Termin, dessen Weg zu knapp
+ * ist - ein Angebot, kein Zwang; angelegt werden kann weiter zur alten Zeit.
+ *
+ * Anfahrt zu knapp: der früheste Beginn, den der Server schon aufs Raster
+ * gerundet hat (nur am selben Tag). Weiter- oder Rückfahrt zu knapp: so viele
+ * Rasterschritte früher, wie der Fehlbetrag braucht -
+ * `beginn − ceil(−luft / raster) · raster`, abgerundet aufs Raster.
+ * Angeboten wird nur, was die Gegenseite nicht bricht: Ihre Luft nach der
+ * Verschiebung bleibt ≥ 0, oder sie ist nicht geprüft. Ist die Gegenseite der
+ * Tagesrand, hält das zugleich Arbeitsbeginn und Arbeitsende. Sonst
+ * `keine_zeit`; sind beide Seiten zu knapp, hilft keine Richtung. Nach dem
+ * Verschieben prüft der Server neu - seine Antwort bleibt die Auskunft.
+ */
+export function wegangebot(
+  pruefung: Wegpruefung,
+  frage: Pick<Wegfrage, 'datum' | 'beginnMinute' | 'endeMinute' | 'zeitzone'>,
+  /** Raster der Praxis; ohne Angabe 5 Minuten wie die Voreinstellung. */
+  rasterMinuten: number | null | undefined,
+): Wegangebot | null {
+  if (pruefung.stand !== 'bereit') return null;
+  const { an, weiter } = pruefung;
+  const anZuKnapp = an.stand === 'geprueft' && an.stufe === 'nicht';
+  const weiterZuKnapp = weiter.stand === 'geprueft' && weiter.stufe === 'nicht';
+  const keineZeit = (seite: 'an' | 'weiter'): Wegangebot | null =>
+    an.stand === 'geprueft' && weiter.stand === 'geprueft'
+      ? { art: 'keine_zeit', seite, davor: an.nachbar, danach: weiter.nachbar }
+      : null;
+
+  if (anZuKnapp && weiterZuKnapp) return keineZeit('weiter');
+  const dauer = frage.endeMinute - frage.beginnMinute;
+
+  if (an.stand === 'geprueft' && anZuKnapp) {
+    if (dayKey(an.fruehester, frage.zeitzone) !== frage.datum) return null;
+    const ziel = minutesOfDay(an.fruehester, frage.zeitzone);
+    // Über Mitternacht gibt es kein Ende (`fensterEnde`).
+    if (ziel <= frage.beginnMinute || ziel + dauer >= 24 * 60) return null;
+    const verschiebung = ziel - frage.beginnMinute;
+    if (weiter.stand === 'geprueft' && weiter.luft - verschiebung < 0) return keineZeit('an');
+    return { art: 'verschieben', seite: 'an', beginnMinute: ziel };
+  }
+
+  if (weiter.stand === 'geprueft' && weiterZuKnapp) {
+    const raster = rasterMinuten && rasterMinuten > 0 ? rasterMinuten : 5;
+    // Für einen Beginn im Raster dasselbe wie `beginn − ceil(−luft / raster) · raster`.
+    const ziel = Math.floor((frage.beginnMinute + weiter.luft) / raster) * raster;
+    if (ziel < 0 || ziel >= frage.beginnMinute) return null;
+    const verschiebung = frage.beginnMinute - ziel;
+    if (an.stand === 'geprueft' && an.luft - verschiebung < 0) return keineZeit('weiter');
+    return { art: 'vorziehen', seite: 'weiter', beginnMinute: ziel };
+  }
+
+  return null;
+}
 
 /**
  * Die Nachbarn eines geplanten Termins in der Tagesroute seiner Person:

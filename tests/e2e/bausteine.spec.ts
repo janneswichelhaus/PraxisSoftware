@@ -88,3 +88,75 @@ test('stellt die Ergebnisse eines Tests bei 375 px in eine Reihe', async ({ page
     );
   expect(gerahmt).toBe(0);
 });
+
+/**
+ * B5 (ANN-531): In der Chipzeile der Schreibseite stehen nur die eigenen
+ * Textbausteine; ohne eigene führt ein leiser Link zur Bausteinseite, hinter
+ * „+ Befund“, das bleibt, wie es ist. „+ Befund“ steht gleich nach „Wie
+ * zuletzt“ und damit bei 375 px ohne Wischen im Bild. Geprüft auf der
+ * Prüfseite der Schreibseite, am kleinen Telefon.
+ */
+const SCHREIBSEITE = '/tests/e2e/fixtures/schreibseite.html?ansicht=neu';
+
+test.describe('Textbausteine in der Chipzeile (B5)', () => {
+  test('zeigt nur die eigenen Bausteine, keine der Praxis (375 px)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(SCHREIBSEITE);
+    const leiste = page.getByRole('group', { name: 'Textbausteine' });
+    await expect(leiste.getByRole('button')).toHaveText([
+      'Hausbesuch',
+      'Heimprogramm',
+      'Schmerz unverändert',
+    ]);
+    await expect(page.getByText('Eigenuebungen besprochen')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Eigene Bausteine anlegen' })).toHaveCount(0);
+    // „Wie zuletzt“ | „+ Befund“ | eigene Bausteine: „+ Befund“ ohne Wischen
+    // ganz im Bild, die Bausteine dahinter.
+    const befund = page.getByRole('button', { name: /^\+ Befund/ });
+    await expect(befund).toBeInViewport({ ratio: 1 });
+    const zuletztBox = (await page.getByRole('button', { name: 'Wie zuletzt' }).boundingBox())!;
+    const befundBox = (await befund.boundingBox())!;
+    const leisteBox = (await leiste.boundingBox())!;
+    expect(zuletztBox.x + zuletztBox.width).toBeLessThanOrEqual(befundBox.x);
+    expect(befundBox.x + befundBox.width).toBeLessThanOrEqual(leisteBox.x);
+  });
+
+  test('führt ohne eigene Bausteine mit einem leisen Link zur Bausteinseite (375 px)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(`${SCHREIBSEITE}&bausteine=keine`);
+    const link = page.getByRole('link', { name: 'Eigene Bausteine anlegen' });
+    const befund = page.getByRole('button', { name: /^\+ Befund/ });
+    const querrollen = () =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      );
+
+    // „+ Befund“ ohne Wischen ganz im Bild; der Link mit 44 px Tippziel
+    // dahinter in derselben Zeile.
+    await expect(befund).toBeInViewport({ ratio: 1 });
+    await expect(link).toBeVisible();
+    const linkBox = (await link.boundingBox())!;
+    const befundBox = (await befund.boundingBox())!;
+    expect(linkBox.height).toBeGreaterThanOrEqual(44);
+    expect(Math.abs(linkBox.y + linkBox.height / 2 - (befundBox.y + befundBox.height / 2))).toBe(0);
+    expect(befundBox.x + befundBox.width).toBeLessThanOrEqual(linkBox.x);
+    await expect(page.getByRole('group', { name: 'Textbausteine' })).toHaveCount(0);
+    await expect(page.getByText('Eigenuebungen besprochen')).toHaveCount(0);
+    expect(await querrollen()).toBe(false);
+
+    // Mit „Wie zuletzt“ und „+ Befund“ vorn (K6, ANN-502) ist die Zeile bei
+    // 375 px breiter als das Bild und läuft waagerecht wie mit eigenen
+    // Bausteinen: Der Link ist mit einem Wischen in der Zeile ganz
+    // erreichbar, die Seite rollt dabei nicht quer.
+    await befund.hover();
+    await page.mouse.wheel(400, 0);
+    await expect(link).toBeInViewport({ ratio: 1 });
+    expect(await querrollen()).toBe(false);
+
+    await expect(link).toHaveAttribute('href', /^\/praxis\/textbausteine\?zurueck=%2Ftermine%2F/);
+    await link.click();
+    await expect(page.getByText('Ende der Prüfseite.')).toBeVisible();
+  });
+});

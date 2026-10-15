@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { bildFeld } from '@/features/exercises/bild/schema';
+import type { Katalogeintrag } from '@/features/exercises/katalog/typen';
 import { ACHSEN, KOERPERREGIONEN } from '@/features/exercises/types';
 
 /**
@@ -67,7 +68,16 @@ const planSchema = z.object({
   sessions_per_week: z.number().nullable(),
   status: z.enum(PLANSTATUS),
   previous_plan_id: z.string().nullable(),
-  follow_up: z.object({ id: z.string(), status: z.enum(PLANSTATUS) }).nullable(),
+  follow_up: z
+    .object({
+      id: z.string(),
+      status: z.enum(PLANSTATUS),
+      /** O-002: der Beginn der Folgefassung - leer, solange sie Entwurf ist. */
+      runs_from: z.string().nullable().default(null),
+    })
+    .nullable(),
+  /** O-002: die Stelle in der Kette der Fassungen, 1 = erste - der Server zählt. */
+  version_number: z.number().int().min(1).default(1),
   assigned_at: z.string().nullable(),
   assigned_by_name: z.string().nullable(),
   runs_from: z.string().nullable(),
@@ -80,6 +90,9 @@ const planSchema = z.object({
   ended_by_name: z.string().nullable(),
   created_at: z.string(),
   created_by_name: z.string().nullable(),
+  /** O-002: zuletzt geändert - der Tag in der Zeitzone der Praxis und die Person. */
+  updated_on: z.string().nullable().default(null),
+  updated_by_name: z.string().nullable().default(null),
   today: z.string(),
   can_write: z.boolean(),
   /** UEB-007: Die Wiedervorlage steht an (ANN-302) - der Server rechnet. */
@@ -362,6 +375,47 @@ export async function discardPlan(planId: string): Promise<void> {
     { p_plan_id: planId },
     'Der Entwurf konnte nicht verworfen werden.',
   );
+}
+
+const katalogUebernahmeSchema = z.object({
+  /** Je Katalogschlüssel die Variante der Praxis - neu übernommen oder schon da. */
+  variants: z.record(z.string(), z.string()),
+  imported: z.array(z.string()),
+  /**
+   * Nicht genommen: gleichnamige eigene Übung ohne eindeutige Variante,
+   * archiviert, oder - für alle außer owner - nicht in der Bibliothek.
+   */
+  conflicts: z.array(
+    z.object({
+      catalog_key: z.string(),
+      name: z.string(),
+      // 'missing': fehlt der Bibliothek, und übernehmen darf nur owner (ANN-293).
+      reason: z.enum(['name', 'archived', 'missing']),
+    }),
+  ),
+});
+
+export type KatalogUebernahme = z.infer<typeof katalogUebernahmeSchema>;
+
+/**
+ * O-002 (Befund B9): für die gewählten Katalogeinträge dieses Entwurfs die
+ * Varianten der Praxis holen. Was der Bibliothek fehlt, übernimmt der Server
+ * nur für owner - ungeprüft bis zur Durchsicht (ANN-293, ANN-536); für die
+ * anderen Rollen, die den Plan schreiben, kommt es als `missing` zurück. Der
+ * Server prüft jeden Eintrag und überschreibt nichts; die Positionen legt
+ * danach `savePosition` an.
+ */
+export async function addCatalogExercises(
+  planId: string,
+  eintraege: readonly Katalogeintrag[],
+): Promise<KatalogUebernahme> {
+  const rest = 'Die Übungen konnten nicht übernommen werden.';
+  const data = await rufe(
+    'add_catalog_exercises_for_plan',
+    { p_plan_id: planId, p_entries: eintraege },
+    rest,
+  );
+  return antwort(katalogUebernahmeSchema, data, rest);
 }
 
 /** UEB-005: zuweisen und einfrieren, mit Ende der Laufzeit (ANN-300, ANN-302). */

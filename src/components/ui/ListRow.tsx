@@ -63,6 +63,7 @@ export function ListRow({
   status,
   betrag,
   aktion,
+  darunter,
   to,
   onClick,
   gedaempft = false,
@@ -84,6 +85,12 @@ export function ListRow({
   betrag?: ReactNode;
   /** Knopf neben dem Ziel - nicht im Ziel. */
   aktion?: ReactNode;
+  /**
+   * Unter der Zeile, über die volle Breite: ein Knopf, der ein Feld aufklappt,
+   * das neben dem Ziel keinen Platz hätte - etwa „Ausfall“ mit seinem
+   * Protokoll (B12). Ohne Angabe bleibt die Zeile, wie sie ist.
+   */
+  darunter?: ReactNode;
   to?: string;
   onClick?: () => void;
   gedaempft?: boolean;
@@ -165,14 +172,30 @@ export function ListRow({
   );
 
   if (!aktion) {
-    return <li className="border-line border-t first:border-t-0">{zeile}</li>;
+    return (
+      <li className="border-line border-t first:border-t-0">
+        {zeile}
+        {darunter}
+      </li>
+    );
   }
-  return (
-    <li className="border-line flex items-center gap-2 border-t first:border-t-0">
+  const mitAktion = (
+    <>
       {zeile}
       <div className="flex shrink-0 items-center gap-2">
         <KnopfGroesse value="kompakt">{aktion}</KnopfGroesse>
       </div>
+    </>
+  );
+  if (darunter === undefined || darunter === null) {
+    return (
+      <li className="border-line flex items-center gap-2 border-t first:border-t-0">{mitAktion}</li>
+    );
+  }
+  return (
+    <li className="border-line border-t first:border-t-0">
+      <div className="flex items-center gap-2">{mitAktion}</div>
+      {darunter}
     </li>
   );
 }
