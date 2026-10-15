@@ -185,7 +185,18 @@ function Positionstabelle({ dokument }: { dokument: Rechnungsansicht['document']
   );
 }
 
-function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
+/**
+ * Ein Blatt. Seit K13 auch im Sammeldruck (`SammeldruckPage`): dort ohne den
+ * Druckknopf je Blatt und mit Seitenumbruch davor.
+ */
+export function Rechnungsblatt({
+  ansicht,
+  einzeln = true,
+}: {
+  ansicht: Rechnungsansicht;
+  /** Im Sammeldruck `false`: kein Knopf und kein Kleingedrucktes je Blatt. */
+  einzeln?: boolean;
+}) {
   const dokument = ansicht.document;
   const entwurf = ansicht.status === 'draft';
   // ABR-032: Ab schema_version 5 Positionen mit Behandlungstagen; ältere
@@ -421,11 +432,27 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         </section>
       </article>
 
+      {einzeln ? <Druckfuss entwurf={entwurf} /> : null}
+    </>
+  );
+}
+
+/** Druckknopf und Satz zur Ablage unter dem Blatt - einmal je Druckauftrag. */
+export function Druckfuss({
+  entwurf = false,
+  beschriftung,
+}: {
+  entwurf?: boolean;
+  /** Ohne Angabe „Rechnung drucken“ oder am Entwurf „Entwurf drucken“. */
+  beschriftung?: string;
+}) {
+  return (
+    <>
       <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
         <div>
           {/* Am Entwurf heißt der Knopf, was er druckt (ABR-26). */}
           <Button type="button" onClick={() => window.print()}>
-            {entwurf ? 'Entwurf drucken' : 'Rechnung drucken'}
+            {beschriftung ?? (entwurf ? 'Entwurf drucken' : 'Rechnung drucken')}
           </Button>
         </div>
         <Kleingedrucktes>

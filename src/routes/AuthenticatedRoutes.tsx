@@ -95,6 +95,7 @@ import { CatalogPage } from '@/features/billing/CatalogPage';
 import { CancellationPrintPage } from '@/features/billing/CancellationPrintPage';
 import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
+import { SammeldruckPage } from '@/features/billing/SammeldruckPage';
 import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
@@ -544,6 +545,9 @@ export function AuthenticatedRoutes({
                       path="/abrechnung/rechnungen/:invoiceId/druck"
                       element={<InvoicePrintPage />}
                     />
+                    {/* Die Rechnungen eines Abrechnungslaufs in einem
+                  Druckauftrag (K13); die Adresse traegt nur Kennungen. */}
+                    <Route path="/abrechnung/druck" element={<SammeldruckPage />} />
                     {/* Das Stornodokument zu einer Rechnung - ein eigenes Blatt
                   mit eigener Nummer, das an denselben Empfaenger geht
                   (ABR-003c, ADR-009 Punkt 9). */}

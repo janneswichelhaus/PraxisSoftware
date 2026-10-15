@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
@@ -12,6 +12,7 @@ const fetchOffenePosten = vi.fn();
 const createEntwurf = vi.fn();
 const erstelleKorrektur = vi.fn();
 const bucheZahlung = vi.fn();
+const stelleRechnungAus = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof BillingApi>();
@@ -24,6 +25,7 @@ vi.mock('./api', async (importOriginal) => {
     createEntwurf: (...args: unknown[]) => createEntwurf(...args) as Promise<string>,
     erstelleKorrektur: (id: string) => erstelleKorrektur(id) as Promise<string>,
     bucheZahlung: (...args: unknown[]) => bucheZahlung(...args) as Promise<void>,
+    stelleRechnungAus: (id: string) => stelleRechnungAus(id) as Promise<string>,
   };
 });
 
@@ -127,10 +129,10 @@ describe('InvoicesPage', () => {
     renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
     expect(await screen.findByText('Erika Beispiel')).toBeInTheDocument();
-    expect(screen.getByText('August 2026')).toBeInTheDocument();
-    expect(screen.getByText(/3 Leistungen · 135,00 €/)).toBeInTheDocument();
+    const liste = screen.getByRole('list', { name: 'Abzurechnende Leistungen' });
     // ABR-009: Der Bereich ist der dritte Schlüssel der Klammer.
-    expect(screen.getByText('Behandlung')).toBeInTheDocument();
+    expect(within(liste).getByText('August 2026 · Behandlung · 3 Leistungen')).toBeInTheDocument();
+    expect(within(liste).getByText('135,00 €')).toBeInTheDocument();
   });
 
   it('fuehrt beide Bereiche derselben Person als getrennte Zeilen (ABR-009)', async () => {
@@ -151,8 +153,8 @@ describe('InvoicesPage', () => {
 
     renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
-    expect(await screen.findByText('Behandlung')).toBeInTheDocument();
-    expect(screen.getByText('Training')).toBeInTheDocument();
+    expect(await screen.findByText(/· Behandlung ·/)).toBeInTheDocument();
+    expect(screen.getByText(/· Training ·/)).toBeInTheDocument();
 
     // Zwei Zeilen, zwei Entwürfe: Eine Person mit beiden Verhältnissen bekommt
     // in einem Monat zwei Rechnungen (ADR-009, Konsequenz zu Punkt 16).
@@ -203,8 +205,11 @@ describe('InvoicesPage', () => {
 
     renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
-    expect(await screen.findByText('Folgeverordnung vom 15.07.2026')).toBeInTheDocument();
-    expect(screen.getByText('22.07.2026 bis 27.08.2026')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /^Folgeverordnung vom 15\.07\.2026 · 22\.07\.2026 bis 27\.08\.2026 ·/,
+      ),
+    ).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Entwurf anlegen' }));
     expect(createEntwurf).toHaveBeenCalledWith(
       expect.objectContaining({ treatment_basis_id: 'g1' }),
@@ -606,18 +611,17 @@ describe('InvoicesPage', () => {
       expect(knopf.className.split(/\s+/)).toContain('min-h-11');
     });
 
-    it('stellt Posten und Monate als Karten auf Papier (ABR-33)', async () => {
+    it('stellt Posten und Abzurechnendes als Zeilen einer Liste auf Papier (DESIGN.md Regel 3)', async () => {
       fetchOffenePosten.mockResolvedValue([posten()]);
       fetchKandidaten.mockResolvedValue([kandidat()]);
 
       renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
+      // Eine Karte um die Liste, keine Karte je Eintrag (ABR-33, B6).
       const nummer = await screen.findByText('RG-2026-0001');
-      expect(nummer.closest('.rounded-card')).toHaveClass('bg-surface');
-      // Posten (Empfängerin) und Monat (Person) nennen denselben Namen.
-      const namen = screen.getAllByText('Erika Beispiel');
-      expect(namen).toHaveLength(2);
-      for (const name of namen) expect(name.closest('.rounded-card')).toHaveClass('bg-surface');
+      expect(nummer.closest('li')?.parentElement).toHaveClass('rounded-card', 'bg-surface');
+      const name = screen.getByText('Erika Beispiel');
+      expect(name.closest('li')?.parentElement).toHaveClass('rounded-card', 'bg-surface');
     });
 
     it('bietet beim Ladefehler einen nächsten Schritt statt einer Ratefrage (WRT-01)', async () => {
@@ -716,6 +720,176 @@ describe('Rechnungsliste mit Suche, Filter und Weitere laden (ABR-034, BEF-061)'
     renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
     expect(
       await screen.findByText(/140 Rechnungen · 9\.000,00 € offen · die 1 am frühesten fälligen/),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('Monatsabrechnung in einem Lauf (K13, ANN-544)', () => {
+  const heute = todayInTimeZone('Europe/Berlin');
+  const diesenMonat = `${heute.slice(0, 7)}-01`;
+
+  beforeEach(() => {
+    fetchKandidaten.mockReset();
+    fetchRechnungen.mockReset();
+    fetchOffenePosten.mockReset();
+    createEntwurf.mockReset();
+    stelleRechnungAus.mockReset();
+    fetchOffenePosten.mockResolvedValue([]);
+  });
+
+  it('legt Entwürfe für das Fertige an, prüft und stellt alle in drei Tipps aus', async () => {
+    const nutzer = userEvent.setup();
+    let angelegt = false;
+    fetchKandidaten.mockResolvedValue([
+      kandidat(),
+      // Der laufende Monat bleibt draußen - mit Grund an der Zeile.
+      kandidat({ patient_id: 'p2', patient_name: 'Max Mustermann', period_month: diesenMonat }),
+    ]);
+    fetchRechnungen.mockImplementation((auswahl?: { filter?: string }) =>
+      Promise.resolve(
+        auswahl?.filter === 'draft'
+          ? angelegt
+            ? [
+                rechnung({ id: 'e1', status: 'draft', invoice_number: null }),
+                rechnung({
+                  id: 'e2',
+                  status: 'draft',
+                  invoice_number: null,
+                  patient_name: 'Tina Training',
+                  recipient_name: 'Tina Training',
+                  service_area: 'training',
+                  total_cents: 7_500,
+                }),
+              ]
+            : []
+          : [],
+      ),
+    );
+    createEntwurf.mockImplementation(() => {
+      angelegt = true;
+      return Promise.resolve('e1');
+    });
+    stelleRechnungAus
+      .mockResolvedValueOnce('RG-2026-0001')
+      .mockRejectedValueOnce(
+        new (await import('./api')).AnschriftUnvollstaendig('street, postal_code'),
+      );
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByText('Monat läuft noch', { exact: false })).toBeInTheDocument();
+    expect(await screen.findByText('Eine Rechnung bereit')).toBeInTheDocument();
+
+    // 1. Starten: genau ein Entwurf - der abgeschlossene Monat.
+    await nutzer.click(screen.getByRole('button', { name: 'Abrechnungslauf starten' }));
+    expect(createEntwurf).toHaveBeenCalledTimes(1);
+    expect(createEntwurf).toHaveBeenCalledWith(expect.objectContaining({ patient_id: 'p1' }));
+
+    // Prüfliste: alle stehenden Entwürfe mit Empfänger und Betrag.
+    expect(await screen.findByText('2 Entwürfe · 210,00 €')).toBeInTheDocument();
+    expect(screen.getByText(/an Erika Beispiel \(Patient:in selbst\)/)).toBeInTheDocument();
+
+    // 2. Ausstellen öffnet die Rückfrage mit Summe und Kreisen (BEF-063).
+    await nutzer.click(screen.getByRole('button', { name: '2 Rechnungen ausstellen' }));
+    expect(
+      screen.getByText('1 aus dem Kreis Behandlung, 1 aus dem Kreis Training'),
+    ).toBeInTheDocument();
+
+    // 3. Bestätigen: jede einzeln; ein Fehlschlag hält den Rest nicht auf.
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, 2 Rechnungen ausstellen' }));
+    expect(await screen.findByText(/Eine Rechnung ausgestellt/)).toBeInTheDocument();
+    expect(stelleRechnungAus).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getByText(/In der Anschrift des Empfängers fehlt: Straße, PLZ/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zum Entwurf' })).toHaveAttribute(
+      'href',
+      '/abrechnung/rechnungen/e2',
+    );
+    expect(screen.getByRole('link', { name: 'Alle drucken' })).toHaveAttribute(
+      'href',
+      '/abrechnung/druck?rechnungen=e1',
+    );
+  });
+
+  it('nimmt eine Verordnung erst mit Freigabe auf und zeigt ohne Fertiges keinen Lauf', async () => {
+    fetchRechnungen.mockResolvedValue([]);
+    fetchKandidaten.mockResolvedValue([
+      kandidat({ treatment_basis_id: 'g1', basis_kind: 'first', basis_issued_on: '2026-07-15' }),
+    ]);
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByText(/Verordnung nicht freigegeben/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Abrechnungslauf starten' })).toBeNull();
+  });
+
+  it('zeigt Behandelnden ohne Abrechnungsrecht keinen Lauf', async () => {
+    fetchRechnungen.mockResolvedValue([]);
+    fetchKandidaten.mockResolvedValue([kandidat()]);
+
+    renderWithProviders(<InvoicesPage user={testUser(['therapist'])} />, '/abrechnung');
+
+    expect(await screen.findByText('Erika Beispiel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Abrechnungslauf starten' })).toBeNull();
+  });
+});
+
+describe('Zahlungseingang als Sammelbuchung (K14)', () => {
+  beforeEach(() => {
+    fetchKandidaten.mockReset();
+    fetchRechnungen.mockReset();
+    fetchOffenePosten.mockReset();
+    bucheZahlung.mockReset();
+    fetchKandidaten.mockResolvedValue([]);
+    fetchRechnungen.mockResolvedValue([]);
+    bucheZahlung.mockResolvedValue(undefined);
+  });
+
+  it('bucht angehakte Posten mit ihrem offenen Betrag in einem Tipp', async () => {
+    const nutzer = userEvent.setup();
+    fetchOffenePosten.mockResolvedValue([
+      posten({ total_count: 3, open_total_cents: 33_500 }),
+      posten({ id: 'r2', invoice_number: 'RG-2026-0002', outstanding_cents: 12_000 }),
+      posten({ id: 'r3', invoice_number: 'RG-2026-0003', outstanding_cents: 8_000 }),
+    ]);
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Mehrere buchen' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: 'RG-2026-0001 bezahlt' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: 'RG-2026-0003 bezahlt' }));
+    await nutzer.click(screen.getByRole('button', { name: /^2 Zahlungen buchen · 215,00\s€$/ }));
+
+    expect(bucheZahlung).toHaveBeenCalledTimes(2);
+    expect(bucheZahlung).toHaveBeenCalledWith({
+      invoiceId: 'r3',
+      betragCent: 8_000,
+      tag: todayInTimeZone('Europe/Berlin'),
+      weg: 'bank_transfer',
+      richtung: 'incoming',
+      notiz: null,
+    });
+    expect(await screen.findByText(/2 Zahlungen gebucht\. 215,00 €/)).toBeInTheDocument();
+  });
+
+  it('meldet einen abgewiesenen Posten und bucht die übrigen', async () => {
+    const nutzer = userEvent.setup();
+    fetchOffenePosten.mockResolvedValue([
+      posten(),
+      posten({ id: 'r2', invoice_number: 'RG-2026-0002' }),
+    ]);
+    bucheZahlung.mockRejectedValueOnce(new Error('nein')).mockResolvedValueOnce(undefined);
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Mehrere buchen' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: 'RG-2026-0001 bezahlt' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: 'RG-2026-0002 bezahlt' }));
+    await nutzer.click(screen.getByRole('button', { name: /^2 Zahlungen buchen/ }));
+
+    expect(
+      await screen.findByText(/Eine Zahlung gebucht\. Nicht gebucht: RG-2026-0001/),
     ).toBeInTheDocument();
   });
 });

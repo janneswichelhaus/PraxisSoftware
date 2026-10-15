@@ -38,7 +38,7 @@ export function laufstand(kandidat: Kandidat, heute: string): Laufstand {
 
 /** Warum eine Zeile nicht im Lauf steht - ein Wort an der Zeile, kein Warnzustand. */
 export const laufstandTexte: Partial<Record<Laufstand, string>> = {
-  nicht_freigegeben: 'Verordnung noch nicht in der Abrechnung',
+  nicht_freigegeben: 'Verordnung nicht freigegeben',
   laufender_monat: 'Monat läuft noch',
 };
 

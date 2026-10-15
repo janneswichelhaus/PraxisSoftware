@@ -667,6 +667,14 @@ export const ROUTEN = Object.freeze([
     ohneDaten: 'Der Seed hat keine Rechnung.',
   },
   {
+    muster: '/abrechnung/druck',
+    pfad: `/abrechnung/druck?rechnungen=${ohne}`,
+    bereich: 'Abrechnung',
+    etikett: 'Sammeldruck nach dem Lauf',
+    konten: ['owner'],
+    ohneDaten: 'Der Seed hat keine Rechnung.',
+  },
+  {
     muster: '/abrechnung/rechnungen/:invoiceId/storno',
     pfad: `/abrechnung/rechnungen/${ohne}/storno`,
     bereich: 'Abrechnung',
