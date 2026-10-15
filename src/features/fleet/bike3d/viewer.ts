@@ -404,6 +404,12 @@ export class BikeViewer {
   private raycast(x: number, y: number): BikePick | null {
     const rect = this.canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
+    // Kamera und Nadeln führt sonst erst das nächste Bild nach: Ein Antippen
+    // gleich nach dem Setzen der Nadeln träfe eine Nadel, die noch in voller
+    // Größe am Ursprung steht.
+    placeCamera(this.camera, this.orbit);
+    this.camera.updateMatrixWorld();
+    this.pins.updateMatrixWorld(true);
     const ndc = new Vector2(
       ((x - rect.left) / rect.width) * 2 - 1,
       -((y - rect.top) / rect.height) * 2 + 1,

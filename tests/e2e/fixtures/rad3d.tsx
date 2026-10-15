@@ -22,7 +22,7 @@ const STELLEN: BikeMarker[] = [
   },
 ];
 
-function Seite() {
+export function Seite() {
   const hoehe = Number(new URLSearchParams(window.location.search).get('hoehe') ?? 340);
   const [treffer, setTreffer] = useState<BikePick | null>(null);
   const [fokus, setFokus] = useState<{ zones: string[]; token: number } | null>(null);
