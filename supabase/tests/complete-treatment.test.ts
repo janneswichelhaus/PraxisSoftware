@@ -108,7 +108,7 @@ describe('complete_treatment', () => {
     ).rejects.toThrow(/not allowed to write treatment documentation/);
   });
 
-  it('legt an, finalisiert und schliesst ab - in einem Aufruf', async () => {
+  it('legt an und finalisiert in einem Aufruf - ohne den Termin abzuhaken (B4, ANN-512)', async () => {
     const t = await termin();
     await asUserCommitted(users.therapist, ABSCHLIESSEN, [
       t.id,
@@ -122,11 +122,11 @@ describe('complete_treatment', () => {
     expect(notiz!.finalized_at).not.toBeNull();
 
     // Seit CAL-008d hebt die Finalisierung den Termin auf documented
-    // (ADR-018 Punkt 3). Der Abschluss ist dabei trotzdem passiert:
-    // completed_at steht (ANN-230: das Datenmodell ist der Nachweis).
+    // (ADR-018 Punkt 3). Seit B4 (BEF-154) hakt sie ihn nicht mehr ab:
+    // completed_at bleibt leer, bis jemand in Übersicht oder Kalender hakt.
     const nachher = await terminLesen(t.id);
     expect(nachher.status).toBe('documented');
-    expect(nachher.completed_at).not.toBeNull();
+    expect(nachher.completed_at).toBeNull();
   });
 
   it('schreibt eine Version 1 mit dem abgeschlossenen Stand (ADR-016 Punkt 4)', async () => {
@@ -223,8 +223,10 @@ describe('complete_treatment', () => {
 
     expect((await notizLesen(t.id))!.status).toBe('final');
     // Kein zweiter Abschluss - aber die Finalisierung hebt den Zustand
-    // weiter auf documented (CAL-008d).
-    expect((await terminLesen(t.id)).status).toBe('documented');
+    // weiter auf documented (CAL-008d). Der Haken bleibt stehen (ANN-512).
+    const nachher = await terminLesen(t.id);
+    expect(nachher.status).toBe('documented');
+    expect(nachher.completed_at).not.toBeNull();
   });
 
   it('weist eine bereits finalisierte Dokumentation ab', async () => {
@@ -276,11 +278,12 @@ describe('complete_treatment', () => {
     );
     expect(version.rows).toEqual([{ author_id: users.therapist }]);
 
-    const abschluss = await asPostgres<{ completed_by: string | null }>(
-      'select completed_by from public.appointments where id = $1',
-      [t.id],
-    );
-    expect(abschluss.rows[0]!.completed_by).toBe(users.therapist);
+    // Abgehakt wird getrennt (B4, ANN-512): Der Eintrag setzt keinen Haken.
+    const abschluss = await asPostgres<{
+      completed_at: string | null;
+      completed_by: string | null;
+    }>('select completed_at, completed_by from public.appointments where id = $1', [t.id]);
+    expect(abschluss.rows[0]).toEqual({ completed_at: null, completed_by: null });
 
     const { rows } = await asPostgres<{ action: string }>(
       'select action from public.audit_log order by occurred_at, action',

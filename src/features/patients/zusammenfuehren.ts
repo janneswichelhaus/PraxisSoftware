@@ -15,7 +15,6 @@ const kopfSchema = z.object({
   given_name: z.string(),
   family_name: z.string(),
   date_of_birth: z.string().nullable(),
-  status: z.enum(['active', 'inactive']),
   care_concluded_on: z.string().nullable(),
 });
 

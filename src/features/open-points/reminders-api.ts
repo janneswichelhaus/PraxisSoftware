@@ -3,9 +3,10 @@ import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Erinnerungen am Rezeptende und an den vergessenen Abschluss (PRX-016,
- * ANN-146). Beide Listen fragen nur - sie setzen nichts und starten keine
- * Frist (IDEA-LZK-009).
+ * Erinnerungen am Rezeptende und an Akten ohne jede Behandlung (PRX-016,
+ * ANN-146, ANN-511). Beide Listen fragen nur - sie setzen nichts und starten
+ * keine Frist. Seit B1 rechnet die Frist ab der letzten Behandlung; nur eine
+ * Akte ohne Behandlung braucht noch den Abschluss (Zweitreview A).
  */
 
 const endingSchema = z.object({
@@ -48,7 +49,7 @@ export async function fetchEndingPrescriptions(): Promise<EndingPrescription[]> 
 }
 
 export async function fetchCareWithoutConclusion(): Promise<CareWithoutConclusion[]> {
-  const satz = 'Die Akten ohne Abschluss konnten nicht geladen werden.';
+  const satz = 'Die Akten ohne Behandlung konnten nicht geladen werden.';
   const { data, error } = (await getSupabase().rpc('list_care_without_conclusion')) as {
     data: unknown;
     error: unknown;

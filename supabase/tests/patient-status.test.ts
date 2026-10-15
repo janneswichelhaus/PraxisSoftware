@@ -1,298 +1,91 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
 
-const { users, organizationId, patients } = SEED;
+/**
+ * B1 (BEF-151, ANN-510, Auftrag Jannes 14.10.2026): „Nicht in Versorgung“ ist
+ * entfallen. Bis dahin schaltete `set_patient_status` eine Akte zwischen
+ * 'active' und 'inactive'; die einzige Wirkung war, dass `create_appointment`
+ * eine inaktive Akte abwies.
+ *
+ * Was jetzt gilt und hier festgehalten ist:
+ *   * Den Umschalter gibt es fuer niemanden mehr - weder die Serverfunktion
+ *     noch ihre Rollenpruefung.
+ *   * Die Spalte nimmt nur noch 'active' an; der Datenumzug hat jede Akte
+ *     dorthin gestellt.
+ *   * Am Tabellenrecht aendert sich nichts: authenticated schreibt weiter nur
+ *     ueber Serverfunktionen (ADR-004).
+ *   * Jede Akte bleibt fuer die Praxisrollen vollstaendig lesbar und planbar
+ *     (create-appointment.test.ts).
+ */
+
+const { users, patients } = SEED;
 
 const SETZEN = 'select public.set_patient_status($1::uuid, $2)';
 
-/** Der Seed fuehrt Max als aktiv und Petra als inaktiv. */
-const AKTIV = patients.max;
-const INAKTIV = patients.petra;
-
-function setzen(userId: string | null, patientId: string, status: string) {
-  return asUser(userId, SETZEN, [patientId, status]);
-}
-
-function setzenCommitted(userId: string, patientId: string, status: string) {
-  return asUserCommitted(userId, SETZEN, [patientId, status]);
-}
-
-async function statusVon(patientId: string): Promise<string | undefined> {
-  const { rows } = await asPostgres<{ status: string }>(
-    'select status from public.patients where id = $1',
-    [patientId],
-  );
-  return rows[0]?.status;
-}
-
-describe('set_patient_status: berechtigte Rollen', () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  }, 120_000);
-
-  it.each([
-    ['owner', users.ownerTherapist],
-    ['team_lead', users.teamLead],
-    ['office', users.office],
-  ])('erlaubt %s die Deaktivierung', async (_rolle, userId) => {
-    await setzenCommitted(userId, AKTIV, 'inactive');
-    expect(await statusVon(AKTIV)).toBe('inactive');
-  });
-
-  it.each([
-    ['owner', users.ownerTherapist],
-    ['team_lead', users.teamLead],
-    ['office', users.office],
-  ])('erlaubt %s die Reaktivierung', async (_rolle, userId) => {
-    await setzenCommitted(userId, INAKTIV, 'active');
-    expect(await statusVon(INAKTIV)).toBe('active');
-  });
-});
-
-describe('set_patient_status: unberechtigte Aufrufer', () => {
+describe('Versorgungsstatus entfaellt (B1, ANN-510)', () => {
   beforeAll(async () => {
     await resetDatabase();
   }, 120_000);
 
-  it('verweigert therapist den Statuswechsel, obwohl die Kartei lesbar ist', async () => {
-    // Der Rollenschnitt ist hier bewusst enger als beim Anlegen und Aendern.
-    const { rows } = await asUser(
+  it('kennt set_patient_status nicht mehr - fuer keine Rolle', async () => {
+    for (const konto of [
+      users.ownerTherapist,
+      users.teamLead,
+      users.office,
       users.therapist,
-      'select id from public.patient_directory where id = $1',
-      [AKTIV],
-    );
-    expect(rows).toHaveLength(1);
-
-    await expect(setzen(users.therapist, AKTIV, 'inactive')).rejects.toThrow(
-      /not allowed to change patient status/,
-    );
-  });
-
-  it('verweigert einem Patientenkonto den Statuswechsel', async () => {
-    await expect(setzen(users.patientMax, AKTIV, 'inactive')).rejects.toThrow(
-      /not allowed to change patient status/,
+      users.patientMax,
+    ]) {
+      await expect(asUser(konto, SETZEN, [patients.max, 'inactive'])).rejects.toThrow(
+        /does not exist/,
+      );
+    }
+    await expect(asAnon(SETZEN, [patients.max, 'inactive'])).rejects.toThrow(
+      /does not exist|permission denied/,
     );
   });
 
-  it('ist fuer anon nicht ausfuehrbar', async () => {
-    await expect(asAnon(SETZEN, [AKTIV, 'inactive'])).rejects.toThrow(/permission denied/i);
-  });
-
-  it('verweigert den Aufruf ohne Session', async () => {
-    await expect(setzen(null, AKTIV, 'inactive')).rejects.toThrow(/not authenticated/);
-  });
-
-  it('erteilt anon kein EXECUTE-Recht', async () => {
-    const { rows } = await asPostgres(`
-      select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname = 'set_patient_status'
-        and has_function_privilege('anon', p.oid, 'execute')
-    `);
+  it('kennt auch die Rollenpruefung des Umschalters nicht mehr', async () => {
+    const { rows } = await asPostgres(
+      `select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname in ('public', 'app')
+          and p.proname in ('set_patient_status', 'can_change_patient_status')`,
+    );
     expect(rows).toEqual([]);
   });
 
-  it('laeuft als SECURITY DEFINER mit leerem search_path', async () => {
-    const { rows } = await asPostgres<{ prosecdef: boolean; proconfig: string[] | null }>(`
-      select p.prosecdef, p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname = 'set_patient_status'
-    `);
-    expect(rows[0]?.prosecdef).toBe(true);
-    expect(rows[0]?.proconfig).toContain('search_path=""');
+  it('nimmt in der Spalte nur noch active an', async () => {
+    await expect(
+      asPostgres("update public.patients set status = 'inactive' where id = $1", [patients.petra]),
+    ).rejects.toThrow(/patients_status_active_only/);
+    const { rows } = await asPostgres<{ anzahl: string }>(
+      "select count(*)::text as anzahl from public.patients where status <> 'active'",
+    );
+    expect(rows[0]!.anzahl).toBe('0');
   });
 
-  it('gibt authenticated weiterhin kein direktes UPDATE-Recht', async () => {
+  it('gibt authenticated weiterhin kein direktes Schreibrecht', async () => {
     const { rows } = await asPostgres(`
       select table_name from information_schema.role_table_grants
       where table_schema = 'public' and grantee in ('anon', 'authenticated')
         and privilege_type in ('INSERT', 'UPDATE', 'DELETE')
     `);
     expect(rows).toEqual([]);
+    await expect(
+      asUser(users.ownerTherapist, "update public.patients set status = 'active' where id = $1", [
+        patients.max,
+      ]),
+    ).rejects.toThrow(/permission denied/);
   });
 
-  it('laesst den Status bei fehlender Berechtigung unveraendert', async () => {
-    await expect(setzen(users.therapist, AKTIV, 'inactive')).rejects.toThrow();
-    expect(await statusVon(AKTIV)).toBe('active');
-  });
-});
-
-describe('set_patient_status: Eingabepruefung', () => {
-  beforeAll(async () => {
-    await resetDatabase();
-  }, 120_000);
-
-  it.each([['archiviert'], ['ACTIVE'], ['']])(
-    'lehnt den unbekannten Status %p ab',
-    async (wert) => {
-      await expect(setzen(users.office, AKTIV, wert)).rejects.toThrow(/unknown patient status/);
-    },
-  );
-
-  it('lehnt einen fehlenden Status ab', async () => {
-    await expect(asUser(users.office, SETZEN, [AKTIV, null])).rejects.toThrow(
-      /unknown patient status/,
-    );
-  });
-
-  it('prueft den Status, bevor der Patient gesucht wird', async () => {
-    // Sonst waere die Reihenfolge der Meldungen ein Hinweis darauf, ob es die
-    // ID gibt.
-    const unbekannt = '66666666-6666-4666-8666-00000000ffff';
-    await expect(setzen(users.office, unbekannt, 'archiviert')).rejects.toThrow(
-      /unknown patient status/,
-    );
-  });
-});
-
-describe('set_patient_status: unbekannte und fremde Patienten', () => {
-  const fremdeOrg = '22222222-2222-4222-8222-0000000000f3';
-  const fremderOwner = '11111111-1111-4111-8111-0000000000f3';
-  const fremdePerson = '44444444-4444-4444-8444-0000000000f3';
-  const fremderPatient = '66666666-6666-4666-8666-0000000000f3';
-  const unbekannt = '66666666-6666-4666-8666-00000000ffff';
-
-  beforeAll(async () => {
-    await resetDatabase();
-    await asPostgres(`
-      insert into auth.users (id, email, aud, role)
-        values ('${fremderOwner}', 'frida.fremd@praxis.invalid', 'authenticated', 'authenticated');
-      insert into public.organizations (id, name, time_zone) values ('${fremdeOrg}', 'Test Praxis Woanders', 'Europe/Berlin');
-      insert into public.persons (id, organization_id, given_name, family_name)
-        values ('${fremdePerson}', '${fremdeOrg}', 'Frida', 'Fremd');
-      insert into public.user_profiles (id, organization_id, person_id, display_name)
-        values ('${fremderOwner}', '${fremdeOrg}', '${fremdePerson}', 'Frida Fremd');
-      insert into public.user_roles (user_id, organization_id, role_key)
-        values ('${fremderOwner}', '${fremdeOrg}', 'owner');
-      insert into public.patients (id, organization_id, person_id, status)
-        values ('${fremderPatient}', '${fremdeOrg}', '${fremdePerson}', 'active');
-    `);
-  }, 120_000);
-
-  it('erzeugt fuer eine unbekannte und eine fremde ID dieselbe Meldung', async () => {
-    const unbekanntFehler = await setzen(users.office, unbekannt, 'inactive').catch(
-      (e: Error) => e.message,
-    );
-    const fremdFehler = await setzen(users.office, fremderPatient, 'inactive').catch(
-      (e: Error) => e.message,
-    );
-
-    expect(unbekanntFehler).toBe('patient not found');
-    expect(fremdFehler).toBe(unbekanntFehler);
-  });
-
-  it('laesst den Patienten der fremden Praxis unveraendert', async () => {
-    await expect(setzen(users.ownerTherapist, fremderPatient, 'inactive')).rejects.toThrow(
-      /patient not found/,
-    );
-    expect(await statusVon(fremderPatient)).toBe('active');
-  });
-
-  it('nimmt keine organization_id entgegen', async () => {
-    const { rows } = await asPostgres<{ args: string }>(`
-      select pg_get_function_arguments(p.oid) as args
-      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname = 'set_patient_status'
-    `);
-    const argumente = rows[0]?.args ?? '';
-    expect(argumente).not.toMatch(/organization/i);
-    expect(argumente.match(/uuid/gi)).toHaveLength(1);
-  });
-});
-
-describe('set_patient_status: Audit', () => {
-  beforeAll(async () => {
-    await resetDatabase();
-    await asPostgres('delete from public.audit_log');
-    await setzenCommitted(users.teamLead, AKTIV, 'inactive');
-  }, 120_000);
-
-  it('setzt den Status an der Akte und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
-    // Der Statuswechsel ist eine anerkannte Luecke (ANN-230): die Akte zeigt
-    // den Stand, das Auditlog fuehrt ihn nicht mehr - und damit auch keine
-    // Stammdaten.
-    expect(await statusVon(AKTIV)).toBe('inactive');
-    const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
-      'select action, context from public.audit_log',
-    );
-    expect(rows).toEqual([]);
-  });
-
-  it('zeigt im owner-Lesepfad kein Schreibereignis (LOG-EPIC-001)', async () => {
-    const { rows } = await asUser<{ subject_id: string }>(
-      users.ownerTherapist,
-      'select subject_id from public.list_audit_events(null, null, null, null)',
-    );
-    expect(rows.filter((r) => r.subject_id === AKTIV)).toEqual([]);
-  });
-});
-
-describe('set_patient_status: Atomaritaet', () => {
-  beforeAll(async () => {
-    await resetDatabase();
-  }, 120_000);
-
-  it('haengt nicht an einem Auditeintrag: der Wechsel gelingt auch bei gesperrtem Auditlog (LOG-EPIC-001)', async () => {
-    // Seit LOG-EPIC-001 schreibt der Statuswechsel nichts ins Auditlog. Ein
-    // Auditlog, das jeden neuen Eintrag ablehnt, darf ihn deshalb nicht
-    // aufhalten - schluege er fehl, schriebe er doch noch einen Eintrag.
-    await asPostgres(`alter table public.audit_log
-       add constraint test_audit_blockiert check (false) not valid`);
-    try {
-      await setzenCommitted(users.office, AKTIV, 'inactive');
-      expect(await statusVon(AKTIV)).toBe('inactive');
-    } finally {
-      await asPostgres('alter table public.audit_log drop constraint test_audit_blockiert');
+  it('laesst jede Akte fuer die Praxisrollen vollstaendig lesbar', async () => {
+    for (const id of [patients.max, patients.petra]) {
+      const { rows } = await asUser<{ family_name: string; status: string }>(
+        users.therapist,
+        'select family_name, status from public.patient_directory where id = $1',
+        [id],
+      );
+      expect(rows[0]?.family_name).toBeTruthy();
+      expect(rows[0]?.status).toBe('active');
     }
-  });
-});
-
-describe('set_patient_status: Wechsel ohne Aenderung', () => {
-  beforeAll(async () => {
-    await resetDatabase();
-    await asPostgres('delete from public.audit_log');
-    // Max ist bereits aktiv.
-    await setzenCommitted(users.office, AKTIV, 'active');
-  }, 120_000);
-
-  it('erzeugt kein Auditereignis', async () => {
-    const { rows } = await asPostgres('select id from public.audit_log');
-    expect(rows).toEqual([]);
-  });
-
-  it('laesst den Status unveraendert', async () => {
-    expect(await statusVon(AKTIV)).toBe('active');
-  });
-});
-
-describe('set_patient_status: Abgrenzung zu anderen Daten', () => {
-  beforeAll(async () => {
-    await resetDatabase();
-    await setzenCommitted(users.office, AKTIV, 'inactive');
-  }, 120_000);
-
-  it('aendert weder Stammdaten noch die Organisationszuordnung', async () => {
-    const { rows } = await asPostgres<Record<string, unknown>>(
-      `select pe.given_name, pe.family_name, p.organization_id, p.person_id, p.care_started_on,
-              c.date_of_birth, c.city
-       from public.patients p
-       join public.persons pe on pe.id = p.person_id
-       join public.patient_contact_details c on c.patient_id = p.id
-       where p.id = $1`,
-      [AKTIV],
-    );
-    expect(rows[0]?.given_name).toBe('Max');
-    expect(rows[0]?.family_name).toBe('Mustermann');
-    expect(rows[0]?.organization_id).toBe(organizationId);
-    expect(rows[0]?.city).toBe('Tuebingen');
-  });
-
-  it('laesst die Akte fuer die Praxisrollen vollstaendig lesbar', async () => {
-    // 'inactive' ist eine organisatorische Markierung, keine Sperre.
-    const { rows } = await asUser<{ family_name: string; status: string }>(
-      users.therapist,
-      'select family_name, status from public.patient_directory where id = $1',
-      [AKTIV],
-    );
-    expect(rows[0]?.family_name).toBe('Mustermann');
-    expect(rows[0]?.status).toBe('inactive');
   });
 });

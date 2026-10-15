@@ -2,7 +2,11 @@
 
 ## Status
 
-Angenommen — **Fassung 3** (2026-10-03).
+Angenommen — **Fassung 4** (2026-10-14).
+
+Fassung 4 ergänzt Punkt 4 (die Finalisierung hakt den Termin nicht ab, B4)
+und fügt Punkt 11 an (Sperre nach der Freigabe zur Abrechnung, B7); die
+übrigen Punkte sind unverändert.
 
 Fassung 3 kehrt Punkt 9 (Auditpflicht) auf Entscheidung des Projektinhabers um
 (LOG-EPIC-001); die übrigen Punkte sind unverändert.
@@ -13,7 +17,7 @@ unten in der Änderungshistorie.
 
 ## Datum
 
-2026-09-01 (Fassung 1); 2026-09-08 (Fassung 2); 2026-10-03 (Fassung 3)
+2026-09-01 (Fassung 1); 2026-09-08 (Fassung 2); 2026-10-03 (Fassung 3); 2026-10-14 (Fassung 4)
 
 ## Kontext
 
@@ -73,6 +77,9 @@ Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
 4. **Finalisierung** ist ein ausdrücklicher Schritt durch eine:n Therapeut:in.
    Ab diesem Zeitpunkt ist der Eintrag Bestandteil der Akte. Finalisieren darf
    jede:r Therapeut:in, nicht nur der Verfasser.
+   *(Fassung 4)* Die Finalisierung **hakt den Termin nicht ab**: Festschreiben
+   und Abhaken sind getrennte Schritte ([ADR-018](ADR-018-appointment-states.md)
+   Punkt 10).
 
 5. **Nach der Finalisierung erzeugt jede Änderung eine neue Version.** Der
    Inhalt jeder früheren Version bleibt **vollständig abrufbar**, zusammen mit
@@ -116,6 +123,17 @@ Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
     KI-Vorschlag nicht** — unter keinen Umständen. Die inhaltlichen
     Anforderungen an eine Sprachdokumentation stehen in
     `PROJECT_PRINCIPLES.md` §6.3.
+
+11. **Sperre nach der Freigabe zur Abrechnung** (Fassung 4). Ist die
+    Behandlungsgrundlage eines Termins in die Abrechnung gestellt
+    ([ADR-020](ADR-020-treatment-basis.md) Punkt 9), lassen sich seine
+    Einträge weder ändern noch ergänzen — kein Entwurf, keine Korrektur, kein
+    Nachtrag —, bis die Grundlage zurückgeholt ist. Zurückholen geht, solange
+    keine Rechnung sie führt; danach erst nach einem Storno
+    ([ADR-009](ADR-009-private-billing-model.md) Punkt 9). Bis zur Freigabe
+    gilt Punkt 1 unverändert. Freigegeben wird nur ohne offenen Entwurf; die
+    automatische Finalisierung (Punkt 7) trifft deshalb nie auf eine gesperrte
+    Grundlage. Der Server sperrt, nicht die Oberfläche (ANN-515).
 
 ## Konsequenzen
 
@@ -190,6 +208,8 @@ Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
   die Akte überlagert?
 - Gilt Punkt 1 auch für Auszubildende oder Praktikant:innen, sobald es eine
   solche Rolle gibt? ADR-004 kennt sie heute nicht.
+- *(Fassung 4)* Sollen Nachträge nach der Freigabe zur Abrechnung möglich
+  bleiben (Punkt 11)? Heute nur nach dem Zurückholen.
 - Wie verhält sich die Frist aus Punkt 7 zu einer späten Übernahme nach
   Punkt 10? Der Fristanker ist heute die Behandlung (ANN-008), nicht die
   Entstehung des Entwurfs — eine Übernahme nach Fristablauf erzeugte damit
@@ -202,3 +222,4 @@ Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
 | 1       | 2026-09-01 | Erstfassung, angenommen.                                                                                                                                                                                                                                            |
 | 2       | 2026-09-08 | **Punkt 10 ergänzt:** ein KI-Vorschlag ist kein `Entwurf` und wird von der automatischen Finalisierung nach Punkt 7 nicht erfasst; erst die ausdrückliche Übernahme macht ihn zum Entwurf. Dazu drei Konsequenzen, die Abgrenzung zu Diktat/KI-Entwürfen präzisiert und eine offene Folgefrage zum Fristanker. Anlass: Entscheidung von Jannes zur Sprachdokumentation, verbindlich in `PROJECT_PRINCIPLES.md` §6.3 (Version 0.5). Die Punkte 1 bis 9 sind unverändert. |
 | 3       | 2026-10-03 | **Punkt 9 umgekehrt** (LOG-EPIC-001, Entscheidung des Projektinhabers): Schreibvorgänge weist der Eintrag selbst nach, das Lesen steht als „Akte geöffnet“ einmal je Person, Akte und Tag im Auditlog (ADR-010 Fassung 3). Die übrigen Punkte sind unverändert. |
+| 4       | 2026-10-14 | **Punkt 4 ergänzt** (B4): Die Finalisierung hakt den Termin nicht ab. **Punkt 11 neu** (B7): Nach der Freigabe zur Abrechnung sind die Einträge der Grundlage gesperrt, bis sie zurückgeholt ist. Dazu eine offene Folgefrage zu Nachträgen. Die übrigen Punkte sind unverändert. |

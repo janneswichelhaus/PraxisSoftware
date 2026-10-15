@@ -51,7 +51,6 @@ function plan(rest: Partial<MergeApi.Zusammenfuehrungsplan> = {}): MergeApi.Zusa
       given_name: 'Max',
       family_name: 'Mustermann',
       date_of_birth: null,
-      status: 'active',
       care_concluded_on: null,
     },
     target: {
@@ -59,7 +58,6 @@ function plan(rest: Partial<MergeApi.Zusammenfuehrungsplan> = {}): MergeApi.Zusa
       given_name: 'Max',
       family_name: 'Mustermann',
       date_of_birth: '1957-04-30',
-      status: 'active',
       care_concluded_on: null,
     },
     counts: { appointments: 3, treatment_notes: 1, invoices: 1, invoices_issued: 1, tasks: 0 },
@@ -85,14 +83,12 @@ describe('ZusammenfuehrenPage (PRX-018)', () => {
         given_name: 'Max',
         family_name: 'Mustermann',
         date_of_birth: '1957-04-30',
-        status: 'active',
       },
       {
         id: DUBLETTE_ID,
         given_name: 'Max',
         family_name: 'Mustermann',
         date_of_birth: null,
-        status: 'active',
       },
     ]);
     previewPatientMerge.mockResolvedValue(plan());

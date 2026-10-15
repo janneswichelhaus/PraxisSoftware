@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
-import { Textlink } from '@/components/ui/Textlink';
-import { Patientensuche } from '@/features/patients/Patientensuche';
+import { Patientenauswahl } from '@/features/patients/Patientenauswahl';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
@@ -15,6 +15,9 @@ import {
   leseTerminVorbelegung,
   schreibeTerminVorbelegung,
 } from './api';
+
+/** Beim Termin anlegen zählt von den Karteileichen nur diese (B1, B10). */
+const NUR_TERMINE_FEHLEN = ['termine_fehlen'] as const;
 
 /** Eine Kennung aus der Adresszeile, wie sie die Patientenanlage zurückgibt. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -54,6 +57,15 @@ export function NewAppointmentStartPage() {
    * freie Stelle im Kalender mitgebracht hat.
    */
   const hierher = mitRueckweg(`/termine/neu${anhang}`, rueckweg || null);
+  // Vorher eine Sackgasse - Kartei öffnen, anlegen, zurückfinden, von vorn
+  // beginnen (UX-012). Ohne den Nachsatz, dass die Vorbelegung erhalten
+  // bleibt: Sie bleibt es ohnehin (UX-005g).
+  const anlegen = mitRueckweg('/patienten/neu', hierher);
+  const anlegenKnopf = (
+    <ButtonLink to={anlegen} variant="secondary" groesse="kompakt">
+      Patient:in anlegen
+    </ButtonLink>
+  );
 
   /**
    * Zurück aus der Patientenanlage: direkt weiter ins Terminformular.
@@ -108,7 +120,18 @@ export function NewAppointmentStartPage() {
       {/* Der Weg zurück, meist in den Kalenderstand (KAL-19). */}
       <Rueckweg standard="/kalender" />
 
-      <PageHeader title="Termin anlegen" description="Zuerst die Patient:in wählen." />
+      {/* Der häufigste Grund, die Gesuchte nicht zu finden: Sie ist neu. Der
+          Abstecher steht im Kopf und unter „Keine Treffer“, nicht als Satz
+          unter der Liste (Design-Review A, Befund 6; UX-012). */}
+      <PageHeader
+        title="Termin anlegen"
+        description="Zuerst die Patient:in wählen."
+        actions={
+          <ButtonLink to={anlegen} variant="secondary">
+            Patient:in anlegen
+          </ButtonLink>
+        }
+      />
 
       {vorbelegt.length > 0 ? (
         <p className="text-ink text-liste mb-8 font-medium">{vorbelegt.join(' · ')}</p>
@@ -131,25 +154,16 @@ export function NewAppointmentStartPage() {
       ) : null}
 
       <Section titel="Patient:in">
-        <div className="max-w-formular">
-          <Patientensuche
-            label="Patient:in suchen"
-            labelSichtbar
-            onAuswahl={(patientId) => void navigate(formular(patientId))}
-          />
-        </div>
-        {/* Der häufigste Grund für einen leeren Treffer: Die Person ist neu.
-            Vorher war das hier eine Sackgasse - Kartei öffnen, anlegen,
-            zurückfinden, von vorn beginnen (UX-012). */}
-        {/* Ohne den Nachsatz, dass die Vorbelegung erhalten bleibt - das
-            erklärte das System; sie bleibt es ohnehin (UX-005g). */}
-        <p className="text-ink-muted mt-3 max-w-prose text-sm">
-          Noch nicht in der Kartei?{' '}
-          {/* Im Satz unterstrichen, nicht nur an der Farbe erkennbar (TOK-12). */}
-          <Textlink alleinstehend to={mitRueckweg('/patienten/neu', hierher)}>
-            Patient:in anlegen
-          </Textlink>
-        </p>
+        {/* B10 (BEF-160): die Liste zum Filtern und Sortieren statt der Suche
+            ab drei Zeichen - zuletzt behandelt zuerst. Eine Zeile führt ins
+            Terminformular. Von den Karteileichen zählt hier nur „Termine
+            fehlen“; der Rest gehört in die Kartei. */}
+        <Patientenauswahl
+          ziel={formular}
+          wahlenNur={NUR_TERMINE_FEHLEN}
+          leer={{ titel: 'Noch keine Patient:innen', aktion: anlegenKnopf }}
+          anlegen={anlegenKnopf}
+        />
       </Section>
     </>
   );

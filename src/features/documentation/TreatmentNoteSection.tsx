@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
@@ -14,6 +15,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import type { Appointment } from '@/features/appointments/api';
+import { useAbrechnungslage } from '@/features/appointments/useAbrechnungslage';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchDocumentationDeadline,
@@ -77,6 +79,12 @@ function Eintrag({
   });
 
   const final = note.status === 'final';
+  // B7 (ANN-515): Steht die Verordnung in der Abrechnung, sperrt der Server
+  // Nachtrag und Korrektur. Die Wege dorthin stehen dann nicht da - sonst
+  // schriebe man den Text und erführe erst beim Speichern davon. Dieselbe
+  // Abfrage wie die Leistung am Termin, gelesen wird einmal.
+  const lage = useAbrechnungslage(appointment.id);
+  const inAbrechnung = !!lage.data?.basis_released_at;
   // Nach der Finalisierung ist der Auslöser fort. Der Fokus fiele an den
   // Seitenanfang; er geht stattdessen auf die Bestätigung am Ort (ZST-16).
   const bestaetigt = finalisiertGemeldet && final;
@@ -195,10 +203,10 @@ function Eintrag({
             Begründung und bleibt nachvollziehbar.
             {/* Die zweite Folge, die bisher niemand ansagte (BEF-055, Teil 1):
                 Am offenen Termin setzt die Finalisierung den Termin mit auf
-                „dokumentiert“ (ADR-018 Fassung 3, ANN-036). Danach ist
-                „nicht angetroffen“ nicht mehr wählbar. */}
+                „dokumentiert“ (ADR-018 Fassung 3). Danach ist „nicht
+                angetroffen“ nicht mehr wählbar. Abgehakt wird seit B4 getrennt. */}
             {!istNachtrag && appointment.status === 'confirmed'
-              ? ' Der Termin wird dabei als durchgeführt geführt; „nicht angetroffen“ lässt sich danach nicht mehr vermerken.'
+              ? ' „Nicht angetroffen“ lässt sich danach nicht mehr vermerken.'
               : null}
           </Rueckfrage>
         ) : null}
@@ -206,7 +214,7 @@ function Eintrag({
         {/* Ergänzen ist der Regelfall, Ändern die Ausnahme (ADR-016 Punkt 6):
             Der Nachtrag steht vorn am Eintrag, die Korrektur leise dahinter
             (DOK-14). Zu einem Nachtrag gibt es keinen weiteren. */}
-        {darfSchreiben && final && !istNachtrag ? (
+        {darfSchreiben && final && !istNachtrag && !inAbrechnung ? (
           <ButtonLink
             to={mit(`${basis}/${note.id}/nachtrag`)}
             variant="secondary"
@@ -216,10 +224,30 @@ function Eintrag({
           </ButtonLink>
         ) : null}
 
-        {darfSchreiben && final ? (
+        {darfSchreiben && final && !inAbrechnung ? (
           <ButtonLink to={mit(`${basis}/${note.id}/korrektur`)} variant="quiet" groesse="kompakt">
             Korrigieren
           </ButtonLink>
+        ) : null}
+
+        {/* Ein Zustand statt eines Satzes, einmal am Haupteintrag - und der
+            Weg dorthin, wo die Sperre aufgeht: die Grundlage in der Akte
+            (Design-Review A, Befund 10). Wer schreiben darf, darf auch
+            zurückholen (canReleaseTreatmentBasis); verbindlich prüft der
+            Server. */}
+        {darfSchreiben && final && inAbrechnung && !istNachtrag ? (
+          <span className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1">
+            <StatusMark>In der Abrechnung</StatusMark>
+            {appointment.patient_id && lage.data?.treatment_basis_id ? (
+              <Textlink
+                to={mit(
+                  `/patienten/${appointment.patient_id}/verordnungen#verordnung-${lage.data.treatment_basis_id}`,
+                )}
+              >
+                In der Akte zurückholen <span aria-hidden="true">→</span>
+              </Textlink>
+            ) : null}
+          </span>
         ) : null}
 
         {note.version_count > 0 ? (

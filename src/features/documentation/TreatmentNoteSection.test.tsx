@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as LageApi from '@/features/appointments/abrechnungslage-api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
@@ -70,6 +71,16 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
+const fetchAbrechnungslage = vi.fn();
+vi.mock('@/features/appointments/abrechnungslage-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof LageApi>();
+  return {
+    ...actual,
+    fetchAbrechnungslage: (id: string) =>
+      fetchAbrechnungslage(id) as Promise<LageApi.Abrechnungslage | null>,
+  };
+});
+
 const { TreatmentNoteSection } = await import('./TreatmentNoteSection');
 
 function rendern(
@@ -89,6 +100,43 @@ describe('TreatmentNoteSection', () => {
     finalizeTreatmentNote.mockReset();
     finalizeTreatmentNote.mockResolvedValue(undefined);
     fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    fetchAbrechnungslage.mockReset();
+    fetchAbrechnungslage.mockResolvedValue(null);
+  });
+
+  // B7 (ANN-515): In der Abrechnung sperrt der Server Nachtrag und Korrektur -
+  // die Wege dorthin stehen dann gar nicht erst da.
+  it('bietet in der Abrechnung weder Nachtrag noch Korrektur an (B7)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
+    fetchAbrechnungslage.mockResolvedValue({
+      appointment_id: TERMIN_ID,
+      treatment_basis_id: '88888888-8888-4888-8888-000000000004',
+      treatment_basis_kind: 'first',
+      treatment_basis_issued_on: '2027-04-01',
+      basis_position: 10,
+      basis_appointment_count: 10,
+      billing_visible: false,
+      recipient_kind: null,
+      open_invoice_count: null,
+      open_outstanding_cents: null,
+      open_overdue: null,
+      closing_talk_due: false,
+      basis_released_at: '2027-05-13T09:00:00Z',
+    });
+    rendern();
+
+    // Ein Zustand statt eines Satzes, und der Weg zur Grundlage in der Akte.
+    expect(await screen.findByText('In der Abrechnung')).toBeInTheDocument();
+    const ziel = new URL(
+      screen.getByRole('link', { name: 'In der Akte zurückholen' }).getAttribute('href')!,
+      'http://x',
+    );
+    expect(ziel.pathname).toBe(`/patienten/${termin.patient_id}/verordnungen`);
+    expect(ziel.hash).toBe('#verordnung-88888888-8888-4888-8888-000000000004');
+    expect(screen.queryByRole('link', { name: 'Nachtrag hinzufügen' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Korrigieren' })).toBeNull();
+    // Den Verlauf lesen geht weiter.
+    expect(screen.getByRole('link', { name: 'Änderungsverlauf' })).toBeInTheDocument();
   });
 
   it('zeigt den Entwurf mit Zustand, Urheberschaft und Aenderungszeitpunkt', async () => {
@@ -406,15 +454,19 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     expect(finalizeTreatmentNote).not.toHaveBeenCalled();
   });
 
-  it('sagt am offenen Termin, dass er als durchgeführt geführt wird (BEF-055)', async () => {
+  // BEF-055, seit B4: Die Finalisierung hakt nicht ab - die Folge, die bleibt,
+  // ist das gesperrte „nicht angetroffen“.
+  it('sagt am offenen Termin, dass „nicht angetroffen“ danach nicht mehr geht (BEF-055, B4)', async () => {
     const user = userEvent.setup();
     rendern(['therapist']);
 
     await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
 
-    expect(screen.getByRole('group', { name: 'Dokumentation finalisieren' })).toHaveTextContent(
-      'Der Termin wird dabei als durchgeführt geführt',
+    const rueckfrage = screen.getByRole('group', { name: 'Dokumentation finalisieren' });
+    expect(rueckfrage).toHaveTextContent(
+      '„Nicht angetroffen“ lässt sich danach nicht mehr vermerken.',
     );
+    expect(rueckfrage).not.toHaveTextContent('als durchgeführt');
   });
 
   it('nennt die Folge für den Termin nicht, wenn er schon abgeschlossen ist', async () => {
@@ -424,7 +476,7 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
 
     expect(screen.getByRole('group', { name: 'Dokumentation finalisieren' })).not.toHaveTextContent(
-      'als durchgeführt geführt',
+      'nicht mehr vermerken',
     );
   });
 

@@ -587,10 +587,19 @@ describe('create_appointment: fachliche Pruefungen', () => {
     await asPostgres('delete from public.appointments');
   });
 
-  it('weist einen inaktiven Patienten ab', async () => {
-    await expect(anlegen(users.office, { patient: patients.petra })).rejects.toThrow(
-      /not in active care/,
-    );
+  // B1 (BEF-151, ANN-510): „Nicht in Versorgung“ ist entfallen - jede Akte
+  // der Praxis ist planbar, und einen anderen Status nimmt die Spalte nicht an.
+  it('plant jede Akte der Praxis - einen Versorgungsstatus gibt es nicht mehr', async () => {
+    await expect(anlegen(users.office, { patient: patients.petra })).resolves.toBeDefined();
+    await expect(
+      asPostgres("update public.patients set status = 'inactive' where id = $1", [patients.petra]),
+    ).rejects.toThrow(/patients_status_active_only/);
+  });
+
+  it('weist eine unbekannte Akte ab, wie eine fremde', async () => {
+    await expect(
+      anlegen(users.office, { patient: '66666666-6666-4666-8666-0000000000ff' }),
+    ).rejects.toThrow(/patient not found/);
   });
 
   it('weist ein Ende gleich dem Beginn ab', async () => {
@@ -690,7 +699,9 @@ describe('create_appointment: fachliche Pruefungen', () => {
 
   it('hinterlaesst bei einem Fehler weder Termin noch Erfolgsaudit', async () => {
     await asPostgres('delete from public.audit_log');
-    await expect(anlegen(users.office, { patient: patients.petra })).rejects.toThrow();
+    await expect(
+      anlegen(users.office, { patient: '66666666-6666-4666-8666-0000000000ff' }),
+    ).rejects.toThrow();
 
     const { rows: termine } = await asPostgres<{ anzahl: string }>(
       'select count(*)::text as anzahl from public.appointments',

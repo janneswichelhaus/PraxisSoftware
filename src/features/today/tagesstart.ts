@@ -1,5 +1,6 @@
 import type { ProgressDot } from '@/components/ui/ProgressDots';
 import { appointmentTypeHint, formatLocalTime } from '@/features/appointments/api';
+import { hakenFehlt } from '@/features/appointments/haken';
 import { istOffen, nachUhrzeit, type DayPlanEntry } from './api';
 
 // -----------------------------------------------------------------------------
@@ -55,13 +56,15 @@ export function stehtAus(termin: DayPlanEntry, jetzt: number): boolean {
   return termin.status === 'confirmed' && Date.parse(termin.ends_at) > jetzt;
 }
 
-/** Vorbei, aber nicht abgehakt: Das Ende ist erreicht, der Termin steht noch auf bestätigt. */
+/**
+ * Vorbei, aber nicht abgehakt: Das Ende ist erreicht, und der Termin steht
+ * noch auf bestätigt - oder seine Doku ist festgeschrieben, der Haken fehlt
+ * aber (B4: Festschreiben hakt nicht ab).
+ */
 export function nichtAbgeschlossen(termin: DayPlanEntry, jetzt: number): boolean {
-  return (
-    (termin.kind === 'therapy' || termin.kind === 'training') &&
-    termin.status === 'confirmed' &&
-    Date.parse(termin.ends_at) <= jetzt
-  );
+  if (Date.parse(termin.ends_at) > jetzt) return false;
+  if (termin.kind === 'training') return termin.status === 'confirmed';
+  return termin.kind === 'therapy' && hakenFehlt(termin.status, termin.checked_at);
 }
 
 export interface Wege {
@@ -168,10 +171,12 @@ export function tagesfortschritt(
     punkte: behandlungen.map((termin) => {
       if (termin.status === 'cancelled') return 'abgesagt';
       if (termin.status === 'no_show') return 'nicht_angetroffen';
-      if (termin.status === 'confirmed') return termin.id === naechsterId ? 'naechster' : 'offen';
+      if (hakenFehlt(termin.status, termin.checked_at)) {
+        return termin.id === naechsterId ? 'naechster' : 'offen';
+      }
       return 'erledigt';
     }),
-    erledigt: besuche.filter((termin) => termin.status !== 'confirmed').length,
+    erledigt: besuche.filter((termin) => !hakenFehlt(termin.status, termin.checked_at)).length,
     gesamt: besuche.length,
     dokumentiert: besuche.filter(
       (termin) =>

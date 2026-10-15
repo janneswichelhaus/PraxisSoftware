@@ -403,6 +403,40 @@ export function nachJahr<T extends TreatmentBasis>(
 // Termine je Verordnung (AKTE-002, VER-EPIC-002)
 // -----------------------------------------------------------------------------
 
+/**
+ * Der Stand einer Grundlage für die Abrechnung (B1/B7, ANN-514) - eine Stelle
+ * im Server (`app.treatment_basis_billing`), hier nur das Wort dazu.
+ */
+export const GRUNDLAGEN_ZUSTAENDE = [
+  'laeuft',
+  'termine_fehlen',
+  'nachholen',
+  'abrechnen',
+  'in_abrechnung',
+  'abgerechnet',
+] as const;
+export const grundlagenZustandSchema = z.enum(GRUNDLAGEN_ZUSTAENDE);
+export type GrundlagenZustand = z.infer<typeof grundlagenZustandSchema>;
+
+/** Zeichen und Wort je Zustand (DESIGN.md: Status ist Zeichen und Wort). */
+export const grundlagenZustandLabels: Record<GrundlagenZustand, string> = {
+  laeuft: 'Läuft',
+  termine_fehlen: 'Termine fehlen',
+  nachholen: 'Haken oder Doku fehlt',
+  abrechnen: 'Abrechnen',
+  in_abrechnung: 'In der Abrechnung',
+  abgerechnet: 'Abgerechnet',
+};
+
+export const grundlagenZustandTon: Record<GrundlagenZustand, 'neutral' | 'positiv' | 'warnung'> = {
+  laeuft: 'neutral',
+  termine_fehlen: 'warnung',
+  nachholen: 'warnung',
+  abrechnen: 'warnung',
+  in_abrechnung: 'positiv',
+  abgerechnet: 'positiv',
+};
+
 const kontingentSchema = z.object({
   treatment_basis_id: z.string(),
   /** Mögliche Termine aus `appointment_count` (ANN-064). */
@@ -419,9 +453,24 @@ const kontingentSchema = z.object({
   covered: z.number(),
   /** Der Überhang: geplant, aber von dieser Grundlage nicht gedeckt (CAL-022). */
   uncovered: z.number(),
+  /**
+   * B1/B7 (ANN-514): der Stand für die Abrechnung. Mit Vorgabe, damit ein
+   * älterer Stand ohne die Spalten weiter gelesen wird.
+   */
+  performed: z.number().default(0),
+  documented: z.number().default(0),
+  open_count: z.number().default(0),
+  past_open: z.number().default(0),
+  state: grundlagenZustandSchema.nullable().default(null),
+  released_at: z.string().nullable().default(null),
+  invoiced: z.boolean().default(false),
+  /** Darf die angemeldete Person die Grundlage jetzt in die Abrechnung stellen? */
+  can_release: z.boolean().default(false),
 });
 
-export type TreatmentBasisKontingent = z.infer<typeof kontingentSchema>;
+// Die Eingabeform: Die Felder aus B1/B7 sind dort optional, damit Prüfseiten
+// und Tests aus der Zeit davor gültig bleiben (wie `CalendarEntry`).
+export type TreatmentBasisKontingent = z.input<typeof kontingentSchema>;
 
 /**
  * Die Terminzahlen aller Behandlungsgrundlagen einer Person.
@@ -823,6 +872,12 @@ export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
       'An dieser Verordnung hängt ein Therapiebericht. Sie lässt sich deshalb nicht löschen; einen Entwurf können Sie vorher verwerfen.',
     );
   }
+  if (error?.message?.includes('treatment basis is in billing')) {
+    // B7 (ANN-515): Eine Verordnung in der Abrechnung fällt nicht still weg.
+    throw new Error(
+      'Die Verordnung ist in der Abrechnung. Zum Löschen zuerst aus der Abrechnung zurückholen.',
+    );
+  }
   if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gelöscht werden.');
 }
 
@@ -868,4 +923,56 @@ export async function transferAppointmentsToTreatmentBasis(
 
   if (error) throw new Error(uebertragungsfehler(error));
   return z.number().catch(terminIds.length).parse(data);
+}
+
+// -----------------------------------------------------------------------------
+// In die Abrechnung stellen (B7, BEF-157, ADR-020 Fassung 2)
+// -----------------------------------------------------------------------------
+
+/** Was der Server gegen die Freigabe einwendet, in Praxissprache. */
+function freigabefehler(error: unknown, standard: string): Error {
+  const meldung =
+    typeof (error as { message?: unknown })?.message === 'string'
+      ? (error as { message: string }).message
+      : '';
+  if (meldung.includes('open appointments')) {
+    return new Error(
+      'Es sind noch Termine offen: Jeder Termin der Verordnung braucht Haken und festgeschriebene Doku.',
+    );
+  }
+  if (meldung.includes('draft documentation')) {
+    return new Error(
+      'An einem Termin hängt noch ein Entwurf: erst festschreiben oder verwerfen, dann in die Abrechnung stellen.',
+    );
+  }
+  if (meldung.includes('already in billing')) {
+    return new Error('Die Verordnung ist schon in der Abrechnung.');
+  }
+  if (meldung.includes('has an invoice')) {
+    return new Error(
+      'Zur Verordnung gibt es eine Rechnung. Zurückholen geht erst nach einem Storno.',
+    );
+  }
+  return new Error(standard);
+}
+
+/**
+ * Stellt eine Grundlage in die Abrechnung (ein Tipp). Danach sind Doku,
+ * Zeitpunkt und Anzahl ihrer Termine gesperrt (ANN-515); verbindlich prüft der
+ * Server Recht, Organisation und dass jeder Termin abgehakt und dokumentiert ist.
+ */
+export async function releaseTreatmentBasisForBilling(grundlageId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('release_treatment_basis_for_billing', {
+    p_treatment_basis_id: grundlageId,
+  });
+  if (error)
+    throw freigabefehler(error, 'Die Verordnung konnte nicht in die Abrechnung gestellt werden.');
+}
+
+/** Holt eine Grundlage aus der Abrechnung zurück, solange keine Rechnung sie führt. */
+export async function withdrawTreatmentBasisFromBilling(grundlageId: string): Promise<void> {
+  const { error } = await getSupabase().rpc('withdraw_treatment_basis_from_billing', {
+    p_treatment_basis_id: grundlageId,
+  });
+  if (error) throw freigabefehler(error, 'Die Verordnung konnte nicht zurückgeholt werden.');
 }

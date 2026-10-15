@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-11
+Stand: 2026-10-14
 
 ## Zweck
 
@@ -659,3 +659,185 @@ eingeklappt.
 **Beobachtung.** (1) Ein abgewiesener Entwurf lässt sich nur kopieren oder verwerfen, nicht erneut senden – auch wenn das Recht inzwischen wieder besteht. (2) Einträge, die eine spätere Fassung der Anwendung nicht lesen kann (`unlesbar`), bleiben liegen, zählen aber weder im Hinweis noch beim Abmelden mit; „Verwerfen und abmelden“ nimmt sie ungenannt mit. (3) „Verwerfen und abmelden“ ist ein Tipp ohne zweite Bestätigung. (4) Fällt nur das Dokumentationsrecht weg (Zugang bleibt aktiv), bleibt der Tagesplan bis Tagesende oder Abmelden auf dem Gerät. Daneben: Bei zwei Tabs kann eine Änderung der Dauerablage die andere überholen (Lesen und Schreiben in getrennten Transaktionen); im Zustand „halten“ der Sperre kann ein Wieder-online übertragen, bevor die Oberfläche entsperrt ist (der Server weist mit 28000 ab).
 
 **Erwartet.** Einzel-Story-Loop vor dem Scharfschalten mit echten Daten: „Erneut senden“ an der Abweisung, `unlesbar` mitzählen, Rückfrage vor dem Verwerfen beim Abmelden, Tagesplan auch bei Rollenwegfall räumen.
+
+### BEF-151 — Akte und Patientenliste: „Nicht in Versorgung“, Karteileichen und Zahlungsstand
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Patient:innen und Akte |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B1) |
+| Status  | gebaut in #241, wartet auf Merge |
+| Berührt | `patients.status`, `set_patient_status`, Patientenliste, Akte „Verordnungen“, Offene Punkte, Fristanker (ADR-008) |
+
+**Beobachtung.** „Nicht in Versorgung“ pflegt niemand und sperrt nur Termine. Karteileichen – eine offene Verordnung, der Termine fehlen oder die abzurechnen ist – sieht man nirgends; was abgerechnet, bezahlt und zu mahnen ist, steht verstreut. Ohne den Status braucht die Aufbewahrung trotzdem ein Ankerdatum.
+
+**Erwartet.** Status entfernen (ANN-510); Liste und Akte zeigen Stand der Verordnungen, Rechnungen, Zahlungen und fällige Mahnungen (ANN-514, ANN-516); Fristanker aus letzter Behandlung oder Leistung (ADR-008 Fassung 3, ANN-511).
+
+### BEF-152 — Fahrzeit passt nicht: kein Weg, den Termin zu verschieben
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Kalender, Termine, Warteliste |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B2, Bild 1) |
+| Status  | gebaut in #244, wartet auf Merge |
+| Berührt | Hinweis „Fahrzeit zu knapp/zu lang“ am Termin |
+
+**Beobachtung.** Beim Anlegen nennt „Anfahrt zu knapp“ den frühesten Beginn, bietet aber keinen Weg dorthin; ebenso bei zu langer Fahrt oder Rückfahrt.
+
+**Erwartet.** Ein optionaler Knopf „Auf 16:25 verschieben“ auf die früheste passende Zeit im 5-Minuten-Raster; zur ursprünglichen Zeit anlegen bleibt möglich.
+
+### BEF-153 — Spracheingabe auf der Schreibseite
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Dokumentation |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B3) |
+| Status  | gebaut mit Nachbildung in #243, wartet auf Merge; Anbieter offen (Jannes) |
+| Berührt | `CompleteTreatmentPage`, Edge Function `ai-gateway`, E13 |
+
+**Beobachtung.** Diktieren geht nicht; die Doku entsteht nur getippt oder aus Bausteinen.
+
+**Erwartet.** Spracheingabe über das AI Gateway, in Entwicklung und Test gegen eine Nachbildung; den Anbieter entscheidet Jannes (ADR-002, ADR-005).
+
+### BEF-154 — Festschreiben hakt den Termin ab
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Übersicht (Tag); Kalender, Termine, Warteliste; Dokumentation |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B4) |
+| Status  | gebaut in #241, wartet auf Merge |
+| Berührt | `complete_treatment`, `app.mark_appointment_documented`, `reopen_appointment`, Tagesliste, Terminfenster |
+
+**Beobachtung.** Die festgeschriebene Doku hakt den Termin mit ab; zurücknehmen geht nur kurz nach dem Haken und nicht an einem dokumentierten Termin.
+
+**Erwartet.** Dokumentieren und Abhaken getrennt; abgehakt wird in Übersicht oder Kalender, jederzeit rücknehmbar (ADR-018 Fassung 5, ANN-512).
+
+### BEF-155 — Mitgelieferte Textbausteine bis auf den Befund
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Dokumentation |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B5) |
+| Status  | gebaut in #244, wartet auf Merge |
+| Berührt | Startinhalte der Textbausteine |
+
+**Beobachtung.** Die mitgelieferten Bausteine passen nicht zum Alltag der einzelnen Therapeut:in.
+
+**Erwartet.** Der Baustein zum Befund bleibt; die übrigen mitgelieferten werden nicht mehr eingeblendet, jede Therapeut:in legt sich eigene an.
+
+### BEF-156 — Kein Fahrtbalken nach einem abgehakten Termin
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Übersicht (Tag) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B6, Bild 2) |
+| Status  | gebaut in #244, wartet auf Merge; Abweichung ANN-532 als Frage |
+| Berührt | Zeitstrahl der Tagesübersicht |
+
+**Beobachtung.** Nach einem abgehakten Termin fehlt der Fahrtbalken zum nächsten Termin; an der Karte des nächsten Wegs steht nur die Fahrzeit als Text (Bild 2).
+
+**Erwartet.** Der Balken steht auch dort.
+
+### BEF-157 — Heilmittel abhaken am Termin; keine Freigabe zur Abrechnung
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Kalender, Termine, Warteliste; Dokumentation; Abrechnung, Statistiken |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B7) |
+| Status  | gebaut in #241, wartet auf Merge; Nachträge nach der Freigabe als Frage |
+| Berührt | `HeilmittelBestaetigen`, `billable_services`, `treatment_bases`, Sperre der Doku |
+
+**Beobachtung.** Am Termin werden Heilmittel abgehakt, obwohl der Haken am Termin schon sagt, dass behandelt wurde; was erbracht ist und wann eine Verordnung abzurechnen ist, steht nirgends.
+
+**Erwartet.** Leistung zeigen statt abhaken („2. von 10 Terminen · KG“ oder ohne Verordnung der Betrag); der Haken heißt erbracht; ist die Verordnung vollständig, mit einem Tipp in die Abrechnung stellen, danach Doku, Zeit und Terminzahl gesperrt (ADR-009 Fassung 6, ANN-513 bis ANN-515).
+
+### BEF-158 — Folgetermin: nicht rücknehmbar, ohne Kontext, mit unmöglichen Vorschlägen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Kalender, Termine, Warteliste |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B8) |
+| Status  | gebaut in #244, wartet auf Merge; Löschen beim Zurücknehmen als Frage (ANN-534) |
+| Berührt | Folgetermin nach dem Haken |
+
+**Beobachtung.** Ein angelegter Folgetermin lässt sich nicht zurücknehmen; Therapeut:in, Nachbartermine, Dauer und Fahrzeit stehen nicht dabei, und es werden Zeiten vorgeschlagen, die nicht gehen.
+
+**Erwartet.** Rücknehmbar, mit Therapeut:in, Nachbarn, Dauer und Passung der Fahrt; Unmögliches wird nicht vorgeschlagen.
+
+### BEF-159 — Übungsplan zu umständlich
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Training und Übungen |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B9, Bild 3) |
+| Status  | gebaut in #244, wartet auf Merge; Katalogübernahme als Frage (ANN-536) |
+| Berührt | Übungsplan anlegen und bearbeiten |
+
+**Beobachtung.** Den aktuellen Plan zu erstellen kostet zu viele Klicks; „pro Woche“ ist nicht zu finden, und aus Vorlage und Katalog kamen plötzlich zehn Übungen auf einmal statt einzeln wählbarer (Bild 3).
+
+**Erwartet.** Mit wenig Klicks, einzeln wählbare Übungen, Häufigkeit pro Woche; bei Therapeutenwechsel sichtbar, auf welchem Stand der Plan ist; Änderungen erscheinen als aktualisierter Plan auf der Plattform, und der Plan nützt auch ohne Plattform.
+
+### BEF-160 — Patientenliste nur über die Suche ab drei Zeichen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Patient:innen und Akte; Kalender, Termine, Warteliste |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B10) |
+| Status  | gebaut in #241, wartet auf Merge |
+| Berührt | Patientenliste, Wahl der Person für Termin und Dauertermin |
+
+**Beobachtung.** Wer eine Person sucht, muss drei Zeichen tippen; sortieren oder filtern geht nicht.
+
+**Erwartet.** Liste filterbar und sortierbar (zuletzt behandelt, offene Verordnung, A–Z), Rechte und RLS unverändert (ANN-517).
+
+### BEF-161 — Die Praxis sieht nicht, was die Person auf der Plattform sieht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Plattform (Patient:innen, Kund:innen) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B11) |
+| Status  | gebaut in #242, wartet auf Merge |
+| Berührt | Akte „Plattform“, `/p` |
+
+**Beobachtung.** Was eine Person auf der Plattform sieht, kann die Praxis nicht nachvollziehen.
+
+**Erwartet.** Eine nur lesende Einsicht in die Plattform der Person (ADR-023, Pfad A).
+
+### BEF-162 — „Ausfall“ nur über Umwege
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | Übersicht (Tag) |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B12) |
+| Status  | gebaut in #244, wartet auf Merge |
+| Berührt | Zeilen der Tagesliste |
+
+**Beobachtung.** „Niemand öffnet?“ steht nur am nächsten Weg, nicht an den übrigen Patientenzeilen.
+
+**Erwartet.** An jeder Patientenzeile ein Knopf „Ausfall“, der durch das Protokoll nach ADR-018 Punkt 9 führt.
+
+### BEF-163 — Alles auch am Telefon
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-14 |
+| Bereich | alle berührten Bereiche |
+| Quelle  | Jannes, Durchsicht am Rechner (Befund B13) |
+| Status  | geprüft in #241, #242, #243, #244 (Bildpaare 375 und 1280 px im Bericht) |
+| Berührt | jede Änderung aus BEF-151 bis BEF-162 |
+
+**Beobachtung.** Die Durchsicht lief am Rechner; das Hauptgerät ist das Telefon.
+
+**Erwartet.** Jede Änderung funktioniert bei 375 px (Bildstrecke 375 und 1280 px je Befund).

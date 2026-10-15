@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Textlink } from '@/components/ui/Textlink';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
@@ -83,19 +84,20 @@ export function EndingPrescriptions({ timeZone }: { timeZone: string }) {
 }
 
 /**
- * „Versorgung abschließen?" (PRX-016, IDEA-LZK-009): Akten ohne Abschluss,
- * seit sechs Monaten ohne Termin und ohne kommenden. Ohne Abschluss läuft
- * keine Aufbewahrungsfrist (LOE-001b) - die Liste fragt, entscheiden und
- * abschließen tut die Therapeut:in in den Stammdaten.
+ * „Verordnung offen“ (B1, BEF-151): Personen, deren Verordnung noch Termine
+ * braucht oder abzurechnen ist - die Karteileichen. Die Zeile führt zu den
+ * Grundlagen der Akte; die ganze Liste steht sortiert in der Patientenliste.
+ * Ersetzt „Versorgung abschließen?“: Die Frist rechnet seit ANN-511 ab der
+ * letzten Behandlung, ein Abschluss ist dafür nicht mehr nötig.
  */
-export function CareWithoutConclusionList({ timeZone }: { timeZone: string }) {
-  const { data, isError, refetch } = useQuery(abfragen.ohneAbschluss());
+export function OffeneVerordnungen() {
+  const { data, isError, refetch } = useQuery(abfragen.verordnungOffen());
 
   if (isError && !data) {
     return (
-      <Section titel="Versorgung abschließen?">
+      <Section titel="Verordnung offen">
         <ErrorState
-          title="Die Akten ohne Abschluss konnten nicht geladen werden."
+          title="Die offenen Verordnungen konnten nicht geladen werden."
           description={VERBINDUNG_PRUEFEN}
           onErneut={() => refetch()}
         />
@@ -106,14 +108,64 @@ export function CareWithoutConclusionList({ timeZone }: { timeZone: string }) {
 
   return (
     <Listenabschnitt
-      titel="Versorgung abschließen?"
+      titel="Verordnung offen"
       anzahl={data.length}
       mehr={
-        // Die Frist hängt am Abschluss (ADR-008) - deshalb steht der Satz
-        // da, als Kleingedrucktes.
+        <Textlink alleinstehend to="/patienten?sort=verordnung" className="text-sm">
+          In der Patientenliste
+        </Textlink>
+      }
+    >
+      {data.map((eintrag) => (
+        <ListRow
+          key={eintrag.id}
+          titel={`${eintrag.family_name}, ${eintrag.given_name}`}
+          status={
+            eintrag.bases_ready > 0 ? (
+              <StatusMark ton="warnung">Abrechnen</StatusMark>
+            ) : (
+              <StatusMark ton="warnung">Termine fehlen</StatusMark>
+            )
+          }
+          to={mitRueckweg(`/patienten/${eintrag.id}/verordnungen`, '/offen')}
+        />
+      ))}
+    </Listenabschnitt>
+  );
+}
+
+/**
+ * „Akte ohne Behandlung“ (Zweitreview A, ADR-008 Punkt 3): Akten ohne jede
+ * Behandlung, Leistung und ohne Abschluss, seit sechs Monaten ohne Termin und
+ * ohne kommenden. Sie haben keinen Fristanker (ANN-511) und stünden sonst
+ * unbemerkt. Die Liste fragt nur; den Abschluss setzt die Therapeut:in in den
+ * Stammdaten.
+ */
+export function AktenOhneBehandlung({ timeZone }: { timeZone: string }) {
+  const { data, isError, refetch } = useQuery(abfragen.ohneBehandlung());
+
+  if (isError && !data) {
+    return (
+      <Section titel="Akte ohne Behandlung">
+        <ErrorState
+          title="Die Akten ohne Behandlung konnten nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => refetch()}
+        />
+      </Section>
+    );
+  }
+  if (!data || data.length === 0) return null;
+
+  return (
+    <Listenabschnitt
+      titel="Akte ohne Behandlung"
+      anzahl={data.length}
+      mehr={
+        // Ein Rechtssatz zur Frist (DESIGN.md Regel 6) - deshalb Kleingedrucktes.
         <Kleingedrucktes>
-          Seit sechs Monaten kein Termin und keiner geplant. Ist die Behandlung beendet, gehört der
-          Abschluss in die Stammdaten – erst mit ihm läuft die Aufbewahrungsfrist.
+          Ohne Behandlung läuft keine Aufbewahrungsfrist. Ist nichts mehr geplant, gehört der
+          Abschluss in die Stammdaten.
         </Kleingedrucktes>
       }
     >

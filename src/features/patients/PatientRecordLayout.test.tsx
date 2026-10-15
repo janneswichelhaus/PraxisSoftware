@@ -16,7 +16,6 @@ const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
 const aktiv: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
-  status: 'active',
   given_name: 'Max',
   family_name: 'Mustermann',
   date_of_birth: '1985-07-19',
@@ -178,11 +177,15 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(screen.queryByText('Nicht in Versorgung')).not.toBeInTheDocument();
     });
 
-    it('kennzeichnet eine nicht laufende Versorgung', async () => {
-      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
-      akteRendern(['office']);
+    // B1 (BEF-151): „Nicht in Versorgung“ ist entfallen - jede Akte ist
+    // planbar, und der Kopf kennt das Etikett nicht mehr.
+    it('kennt kein „Nicht in Versorgung“ mehr und bietet jeder Akte den Termin an', async () => {
+      akteRendern(['office'], STAMMDATEN);
 
-      expect(await screen.findByText('Nicht in Versorgung')).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: 'Termin anlegen' })).toBeInTheDocument();
+      expect(screen.queryByText(/in Versorgung/i)).toBeNull();
+      expect(screen.queryByText(/Keine neuen Termine/)).toBeNull();
+      expect(screen.queryByText(/Wieder als aktiv führen/)).toBeNull();
     });
 
     it('nennt den Abschluss der Versorgung im Kopf', async () => {
@@ -220,40 +223,6 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       const akte = new URL(zurueck ?? '', 'http://akte.test');
       expect(akte.pathname).toBe(STAMMDATEN);
       expect(akte.searchParams.get(RUECKWEG_PARAM)).toBe(kalender);
-    });
-
-    it('bietet fuer eine:n inaktive:n Patient:in keinen Termin an', async () => {
-      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
-      akteRendern(['office']);
-
-      await screen.findByRole('heading', { name: 'Max Mustermann' });
-      expect(screen.queryByRole('link', { name: 'Termin anlegen' })).not.toBeInTheDocument();
-    });
-
-    // PAT-05: Der Knopf verschwand ohne ein Wort. Jetzt steht der Grund da -
-    // und der Weg zurück, je nach Recht der Rolle.
-    it('sagt bei einer inaktiven Person, warum es keinen Termin gibt und wo es weitergeht', async () => {
-      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
-      akteRendern(['office'], STAMMDATEN);
-
-      expect(
-        await screen.findByText(
-          'Keine neuen Termine. Wieder als aktiv führen unter Stammdaten → Verwaltung.',
-        ),
-      ).toBeInTheDocument();
-    });
-
-    it('nennt Therapeut:innen, welche Rollen die Person wieder aktiv führen dürfen', async () => {
-      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
-      akteRendern(['therapist'], STAMMDATEN);
-
-      expect(
-        await screen.findByText(
-          /Wieder als aktiv führen dürfen die Rollen Praxismanagement, Teamleitung und Praxisinhaber/,
-        ),
-      ).toBeInTheDocument();
-      // Der Knopf, den die Rolle hat, bleibt.
-      expect(screen.getByRole('link', { name: 'Grundlage erfassen' })).toBeInTheDocument();
     });
 
     it('sagt bei laufender Versorgung nichts dazu', async () => {
@@ -658,11 +627,11 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(screen.queryByText(/Anmeldebogen fehlt/)).toBeNull();
     });
 
-    it('fragt bei einer Person außerhalb der Versorgung nicht', async () => {
-      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
+    // B1: Ohne Versorgungsstatus fragt die Akte bei jeder Person.
+    it('fragt bei jeder Akte nach dem Anmeldebogen', async () => {
       akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
       await screen.findByRole('heading', { name: 'Max Mustermann' });
-      expect(fetchIntakeChecklist).not.toHaveBeenCalled();
+      await waitFor(() => expect(fetchIntakeChecklist).toHaveBeenCalledWith(PATIENT_ID));
     });
   });
 

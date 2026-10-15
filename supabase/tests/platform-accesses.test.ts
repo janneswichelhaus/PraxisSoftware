@@ -633,6 +633,21 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
         where id = $1`,
       [patients.max, users.therapist],
     );
+    // B1 (ANN-511): Die Frist rechnet ab der letzten Behandlung - die Termine
+    // der Akte liegen vor dem Abschluss.
+    await asPostgres(
+      `update public.appointments
+          set starts_at = starts_at - interval '12 years',
+              ends_at   = ends_at   - interval '12 years'
+        where patient_id = $1`,
+      [patients.max],
+    );
+    await asPostgres(
+      `update public.billable_services
+          set performed_on = (performed_on - interval '12 years')::date
+        where patient_id = $1`,
+      [patients.max],
+    );
     await asPostgres('select public.apply_retention()');
     await zugangsdienstLoescht();
 

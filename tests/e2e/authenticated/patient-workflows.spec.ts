@@ -57,65 +57,42 @@ test.describe('PAT-002: Stammdaten bearbeiten', () => {
   });
 });
 
-test.describe('PAT-003: Versorgungsstatus wechseln', () => {
-  test('setzt den Status dauerhaft auf inaktiv und wieder zurück', async ({ page }) => {
+test.describe('B1: Versorgungsstatus entfällt (BEF-151, ANN-510)', () => {
+  test('bietet in der Akte keinen Wechsel und kein Etikett mehr an', async ({ page }) => {
     await anmelden(page, KONTEN.office);
 
     await page.goto(`/patienten/${PATIENTEN.max}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Max Mustermann' })).toBeVisible();
-    // UX-005e: Der Status steht nur noch im Kopf der Akte - und dort nur als
-    // Ausnahme. Eine laufende Versorgung trägt weder Zeile noch Etikett.
-    const etikett = page.getByText('!Nicht in Versorgung', { exact: true });
-    await expect(etikett).toHaveCount(0);
-
-    // Der Wechsel verlangt eine Rückfrage; erst der zweite Klick schreibt.
-    await page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }).click();
-    await page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }).last().click();
-
-    // Das Etikett trägt seit UIK-18 das Zeichen „!“ (für Vorlesesoftware
-    // ausgeblendet); exact grenzt es gegen den Hinweis „Keine neuen
-    // Termine …“ ab.
-    await expect(etikett).toBeVisible();
-
-    await page.reload();
-    await expect(etikett).toBeVisible();
-
-    // Zurück auf den Seed-Zustand.
-    await page.getByRole('button', { name: 'Wieder in Versorgung führen' }).click();
-    await page.getByRole('button', { name: 'Wieder in Versorgung führen' }).last().click();
-    await expect(etikett).toHaveCount(0);
-    await expect(
-      page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
-    ).toBeVisible();
+    await expect(page.getByText(/^!?Nicht in Versorgung$/)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /in Versorgung führen/ })).toHaveCount(0);
   });
 });
 
-test.describe('PAT-003: Autorisierung auf RPC-Ebene', () => {
-  test('weist therapist den Statuswechsel ab, obwohl die Akte lesbar ist', async ({ request }) => {
-    // Kein UI-Nachweis: geprüft wird die Serverfunktion selbst, mit einem
-    // echten GoTrue-Token. Eine ausgeblendete Schaltfläche ist keine
+test.describe('B1: Autorisierung auf RPC-Ebene', () => {
+  test('kennt den Statuswechsel nicht mehr und lässt die Tabelle weiter nicht direkt schreiben', async ({
+    request,
+  }) => {
+    // Kein UI-Nachweis: geprüft wird der Server selbst, mit einem echten
+    // GoTrue-Token. Eine ausgeblendete Schaltfläche ist keine
     // Zugriffskontrolle (ADR-004).
     const token = await zugriffstoken(request, KONTEN.therapist);
 
     // Positivkontrolle: das Token trägt, und die Akte ist für diese Rolle
-    // lesbar. Die Abweisung unten ist damit eine Berechtigungsentscheidung
-    // und kein allgemeiner Zugriffsfehler.
-    const vorher = await statusUeberApi(request, token, PATIENTEN.max);
+    // lesbar.
+    expect(await statusUeberApi(request, token, PATIENTEN.max)).toBe('active');
 
-    const abgewiesen = await rpcAufrufen(request, token, 'set_patient_status', {
+    // Die Serverfunktion gibt es nicht mehr - für keine Rolle.
+    const entfallen = await rpcAufrufen(request, token, 'set_patient_status', {
       p_patient_id: PATIENTEN.max,
-      p_status: vorher === 'active' ? 'inactive' : 'active',
+      p_status: 'inactive',
     });
-    expect(abgewiesen.status()).toBe(403);
-    expect((await abgewiesen.json()) as { message?: string }).toMatchObject({
-      message: 'not allowed to change patient status',
-    });
+    expect(entfallen.status()).toBe(404);
 
-    // Auch der Weg an der Fachfunktion vorbei ist versperrt: authenticated hat
-    // kein UPDATE-Recht auf der Tabelle.
+    // Auch der Weg an der Fachfunktion vorbei bleibt versperrt: authenticated
+    // hat kein UPDATE-Recht auf der Tabelle.
     const direkt = await direktesUpdateVersuchen(request, token, PATIENTEN.max, 'inactive');
     expect(direkt.status()).toBeGreaterThanOrEqual(400);
 
-    expect(await statusUeberApi(request, token, PATIENTEN.max)).toBe(vorher);
+    expect(await statusUeberApi(request, token, PATIENTEN.max)).toBe('active');
   });
 });

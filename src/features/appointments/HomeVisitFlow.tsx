@@ -298,13 +298,13 @@ export function HomeVisitFlow({
             {wege ? (
               <p className="text-ink-muted max-w-prose text-sm">
                 Tür geöffnet, aber keine Behandlung?{' '}
-                <Textlink to={wege.ohneBehandlung}>Ohne Behandlung festhalten</Textlink> – der
-                Termin gilt als durchgeführt, ohne Ausfallhonorar.
+                <Textlink to={wege.ohneBehandlung}>Ohne Behandlung festhalten</Textlink> – ohne
+                Ausfallhonorar.
               </p>
             ) : (
               <p className="text-ink-muted max-w-prose text-sm">
-                Tür geöffnet, aber keine Behandlung? Dann oben „Ohne Behandlung“ – der Termin gilt
-                als durchgeführt, ohne Ausfallhonorar.
+                Tür geöffnet, aber keine Behandlung? Dann oben „Ohne Behandlung“ – ohne
+                Ausfallhonorar.
               </p>
             )}
             {/* Der dritte Fall bleibt als eine Zeile (ANN-198): Der Handoff

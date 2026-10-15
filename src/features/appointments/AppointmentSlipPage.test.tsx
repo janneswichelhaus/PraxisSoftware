@@ -11,7 +11,6 @@ const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
 const patient: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
-  status: 'active',
   given_name: 'Max',
   family_name: 'Mustermann',
   email: 'max@example.invalid',

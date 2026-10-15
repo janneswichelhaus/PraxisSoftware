@@ -11,7 +11,7 @@ import { AftercareCancellations } from './AftercareCancellations';
 import { TrainingWithdrawals } from './TrainingWithdrawals';
 import { CallsSummary } from './CallsSummary';
 import { ConsentWithdrawals } from './ConsentWithdrawals';
-import { CareWithoutConclusionList, EndingPrescriptions } from './Reminders';
+import { AktenOhneBehandlung, EndingPrescriptions, OffeneVerordnungen } from './Reminders';
 import { OpenIntakes } from './OpenIntakes';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
 import { AufgabeAnlegen, ErledigteAufgaben, Tasks } from './Tasks';
@@ -119,7 +119,8 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
           <PlanWiedervorlage bereiche={darf.planBereiche} rueckweg="/offen" nurWennVorhanden />
         ) : null}
         {darf.warteliste ? <WaitlistReview timeZone={timeZone} /> : null}
-        {darf.ohneAbschluss ? <CareWithoutConclusionList timeZone={timeZone} /> : null}
+        {darf.verordnungOffen ? <OffeneVerordnungen /> : null}
+        {darf.ohneBehandlung ? <AktenOhneBehandlung timeZone={timeZone} /> : null}
       </div>
 
       {/* Seltenes leise am Ende: der Rückblick und - wenn morgen niemand

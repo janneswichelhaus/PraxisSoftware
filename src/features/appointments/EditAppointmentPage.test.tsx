@@ -32,7 +32,6 @@ const termin = testAppointment({
 
 const patient: PatientsApi.Patient = testPatient({
   id: PATIENT_ID,
-  status: 'active',
   care_started_on: '2026-01-05',
   given_name: 'Berta',
   family_name: 'Bestand',

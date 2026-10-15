@@ -521,6 +521,28 @@ describe('TerminAktionenDialog', () => {
       expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeInTheDocument();
     });
 
+    // Design-Review A: Wiederöffnen fragt nach - der Vermerk fällt weg.
+    it('öffnet einen vermerkten Termin nach einer Rückfrage wieder', async () => {
+      const vermerkt = {
+        ...praxistermin,
+        status: 'no_show' as const,
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+      };
+      fetchAppointment.mockResolvedValue(vermerkt);
+      const user = userEvent.setup();
+      rendern();
+
+      await user.click(await screen.findByRole('button', { name: 'Termin wieder öffnen' }));
+      expect(reopenAppointment).not.toHaveBeenCalled();
+      expect(screen.getByText('Der Vermerk „nicht angetroffen“ fällt weg.')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Ja, wieder öffnen' }));
+
+      await waitFor(() =>
+        expect(reopenAppointment).toHaveBeenCalledWith(TERMIN_ID, vermerkt.updated_at),
+      );
+      expect(await screen.findByText('Termin wieder geöffnet.')).toBeInTheDocument();
+    });
+
     it('bietet am vermerkten Termin kein zweites Vermerken und kein Absagen an', async () => {
       fetchAppointment.mockResolvedValue({
         ...praxistermin,
@@ -615,14 +637,13 @@ describe('TerminAktionenDialog', () => {
 
       const knopf = await screen.findByRole('button', { name: 'Niemand öffnet?' });
       expect(knopf).toHaveAttribute('aria-expanded', 'false');
-      // Ein Hauptknopf (BEF-055): „Doku“, daneben „Niemand öffnet?“ und
-      // „Ohne Behandlung“; der Abschluss ohne Dokumentation liegt eingeklappt
-      // darunter und heißt „Nur Termin abschließen“.
+      // Ein Hauptknopf (BEF-055): „Doku“, daneben „Abhaken“ (B4: getrennt
+      // von der Doku), „Niemand öffnet?“ und „Ohne Behandlung“.
       const abschluss = screen.getByRole('group', { name: 'Abschluss' });
       expect(within(abschluss).getAllByRole('link', { name: 'Doku schreiben' })).toHaveLength(1);
-      const nur = within(abschluss).getByRole('button', { name: 'Nur Termin abschließen' });
-      expect(nur.closest('details')).not.toHaveAttribute('open');
-      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).toBeNull();
+      const haken = within(abschluss).getByRole('button', { name: 'Abhaken' });
+      expect(haken).not.toHaveClass('bg-accent');
+      expect(screen.queryByRole('button', { name: 'Nur Termin abschließen' })).toBeNull();
       expect(screen.getByRole('link', { name: 'Ohne Behandlung' })).toHaveAttribute(
         'href',
         expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
@@ -1189,23 +1210,22 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
 
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Abhaken' }));
 
       await waitFor(() =>
         expect(completeAppointment).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
       );
     });
 
-    it('gibt dem Büro „Termin abschließen“ als Hauptknopf mit seiner Folge (BEF-055)', async () => {
+    it('gibt dem Büro „Abhaken“ als Hauptknopf (BEF-055, B4)', async () => {
       rendern(['office']);
       const abschluss = await screen.findByRole('group', { name: 'Abschluss' });
-      const knopf = within(abschluss).getByRole('button', { name: 'Termin abschließen' });
+      const knopf = within(abschluss).getByRole('button', { name: 'Abhaken' });
       expect(knopf).toHaveClass('bg-accent');
-      expect(within(abschluss).getByText('Der Termin gilt damit als durchgeführt.')).toBeVisible();
       expect(within(abschluss).queryByRole('link', { name: 'Doku schreiben' })).toBeNull();
     });
 
-    it('stellt für Behandelnde „Doku“ als einzigen Hauptknopf vor die Zeilen; „Nur Termin abschließen“ schließt ab (BEF-055)', async () => {
+    it('stellt für Behandelnde „Doku“ als einzigen Hauptknopf vor die Zeilen; „Abhaken“ daneben hakt ab (BEF-055, B4)', async () => {
       const user = userEvent.setup();
       rendern(['therapist']);
       const abschluss = await screen.findByRole('group', { name: 'Abschluss' });
@@ -1224,21 +1244,18 @@ describe('TerminAktionenDialog', () => {
         abschluss.compareDocumentPosition(zeilen) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
 
-      await user.click(
-        within(abschluss).getByText('Nur Termin abschließen', { selector: 'summary' }),
-      );
-      await user.click(within(abschluss).getByRole('button', { name: 'Nur Termin abschließen' }));
+      await user.click(within(abschluss).getByRole('button', { name: 'Abhaken' }));
       await waitFor(() =>
         expect(completeAppointment).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
       );
-      expect(await screen.findByText('Termin abgeschlossen. Doku offen.')).toBeInTheDocument();
+      expect(await screen.findByText('Termin abgehakt. Doku offen.')).toBeInTheDocument();
     });
 
     it('fragt beim Abschliessen nicht nach einer Behandlungsdokumentation', async () => {
       const user = userEvent.setup();
       rendern();
       await screen.findByText('Berta Bestand');
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Abhaken' }));
 
       await waitFor(() => expect(completeAppointment).toHaveBeenCalled());
       // Kein Zwischenschritt, keine Rueckfrage nach Inhalten. Am offenen
@@ -1256,7 +1273,7 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
 
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Abhaken' }));
 
       expect(
         await screen.findByText('Der Termin konnte nicht abgeschlossen werden.'),
@@ -1288,20 +1305,76 @@ describe('TerminAktionenDialog', () => {
 
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Abhaken' })).not.toBeInTheDocument();
     });
 
-    it('oeffnet einen abgeschlossenen Termin wieder', async () => {
+    it('nimmt den Haken eines abgeschlossenen Termins zurück', async () => {
       fetchAppointment.mockResolvedValue(abgeschlossen);
       const user = userEvent.setup();
       rendern();
       await screen.findByText('Berta Bestand');
 
-      await user.click(screen.getByRole('button', { name: 'Termin wieder öffnen' }));
+      // Eine Rückfrage, denn mit dem Haken fällt die Leistung weg (B4).
+      await user.click(screen.getByRole('button', { name: 'Haken zurücknehmen' }));
+      expect(reopenAppointment).not.toHaveBeenCalled();
+      await user.click(await screen.findByRole('button', { name: 'Ja, zurücknehmen' }));
 
       await waitFor(() =>
         expect(reopenAppointment).toHaveBeenCalledWith(TERMIN_ID, abgeschlossen.updated_at),
       );
+      expect(await screen.findByText('Haken zurückgenommen.')).toBeInTheDocument();
+    });
+
+    // B4 (BEF-154): Festschreiben hakt nicht ab - der Haken fehlt noch und
+    // steht hier, getrennt von der Doku.
+    it('setzt den Haken an einer festgeschriebenen Doku ohne Haken', async () => {
+      const ohneHaken = {
+        ...praxistermin,
+        status: 'documented' as const,
+        completed_at: null,
+      };
+      fetchAppointment.mockResolvedValue(ohneHaken);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+      await screen.findByText('Berta Bestand');
+
+      expect(screen.queryByRole('button', { name: 'Haken zurücknehmen' })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Abhaken' }));
+
+      await waitFor(() =>
+        expect(completeAppointment).toHaveBeenCalledWith(TERMIN_ID, ohneHaken.updated_at),
+      );
+      expect(await screen.findByText('Termin abgehakt.')).toBeInTheDocument();
+    });
+
+    // B4: jederzeit zurücknehmbar, auch nach dem Festschreiben - die Doku
+    // bleibt festgeschrieben, der Server prüft die Abrechnung.
+    it('nimmt den Haken an einem dokumentierten Termin jederzeit zurück', async () => {
+      const dokumentiert = {
+        ...abgeschlossen,
+        status: 'documented' as const,
+      };
+      fetchAppointment.mockResolvedValue(dokumentiert);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+      await screen.findByText('Berta Bestand');
+
+      expect(screen.queryByRole('button', { name: 'Abhaken' })).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Haken zurücknehmen' }));
+      await user.click(await screen.findByRole('button', { name: 'Ja, zurücknehmen' }));
+
+      await waitFor(() =>
+        expect(reopenAppointment).toHaveBeenCalledWith(TERMIN_ID, dokumentiert.updated_at),
+      );
+    });
+
+    it('bietet am abgerechneten Termin keinen Rückweg', async () => {
+      fetchAppointment.mockResolvedValue({ ...abgeschlossen, status: 'invoiced' });
+      rendern();
+      await screen.findByText('Berta Bestand');
+
+      expect(screen.queryByRole('button', { name: 'Haken zurücknehmen' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Abhaken' })).toBeNull();
     });
 
     it('bietet am abgesagten Termin kein Abschliessen an', async () => {
@@ -1309,7 +1382,8 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
 
-      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Abhaken' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Haken zurücknehmen' })).not.toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: 'Termin wieder öffnen' }),
       ).not.toBeInTheDocument();
@@ -1319,7 +1393,7 @@ describe('TerminAktionenDialog', () => {
       rendern(['patient']);
       await screen.findByText('Berta Bestand');
 
-      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Abhaken' })).not.toBeInTheDocument();
     });
   });
 
@@ -1591,9 +1665,9 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
 
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Abhaken' }));
 
-      expect(zeileUm(await screen.findByText('Termin abgeschlossen.'))).toHaveFocus();
+      expect(zeileUm(await screen.findByText('Termin abgehakt.'))).toHaveFocus();
     });
 
     /**
@@ -1608,9 +1682,9 @@ describe('TerminAktionenDialog', () => {
       rendern();
       await screen.findByText('Berta Bestand');
 
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Abhaken' }));
 
-      expect(await screen.findByText(/^Termin abgeschlossen\./)).toBeInTheDocument();
+      expect(await screen.findByText(/^Termin abgehakt\./)).toBeInTheDocument();
     });
 
     it('nennt nach einer kurzfristigen Absage das vorgemerkte Ausfallhonorar (BEF-079)', async () => {

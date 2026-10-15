@@ -1,13 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type * as PatientsApi from '@/features/patients/api';
+import type * as UebersichtApi from '@/features/patients/uebersicht';
 import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 
+/** Jede Adresse, die die Seite durchläuft - auch eine, die gleich wieder ersetzt wird. */
+const adressen: string[] = [];
+
+/** Zeigt die Parameter der aktuellen Adresse im MemoryRouter und merkt sich jede. */
+function Adressprobe() {
+  const [parameter] = useSearchParams();
+  adressen.push(parameter.toString());
+  return <span data-testid="adresse">{parameter.toString()}</span>;
+}
+
 const navigate = vi.fn();
-const searchPatients = vi.fn();
+const fetchPatientOverview = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
@@ -16,14 +27,10 @@ vi.mock('./api', async (importOriginal) => ({
     fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
 }));
 
-vi.mock('@/features/patients/api', async (importOriginal) => {
-  const actual = await importOriginal<typeof PatientsApi>();
-  return {
-    ...actual,
-    searchPatients: (begriff: string) =>
-      searchPatients(begriff) as Promise<PatientsApi.PatientSearchHit[]>,
-  };
-});
+vi.mock('@/features/patients/uebersicht', async (importOriginal) => ({
+  ...(await importOriginal<typeof UebersichtApi>()),
+  fetchPatientOverview: () => fetchPatientOverview() as Promise<UebersichtApi.Patienteneintrag[]>,
+}));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
@@ -32,13 +39,39 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { NewAppointmentStartPage } = await import('./NewAppointmentStartPage');
 
-const MAX = {
-  id: '66666666-6666-4666-8666-000000000001',
-  given_name: 'Max',
-  family_name: 'Mustermann',
-  date_of_birth: '1957-04-30',
-  status: 'active' as const,
-};
+function eintrag(
+  id: string,
+  given: string,
+  family: string,
+  zuletzt: string | null,
+): UebersichtApi.Patienteneintrag {
+  return {
+    id,
+    given_name: given,
+    family_name: family,
+    date_of_birth: '1957-04-30',
+    email: null,
+    phone: null,
+    postal_code: null,
+    city: 'Tuebingen',
+    last_visit_on: zuletzt,
+    next_appointment_at: null,
+    open_bases: 0,
+    bases_need_appointments: 0,
+    bases_need_followup: 0,
+    bases_ready: 0,
+    bases_in_billing: 0,
+    billing_visible: false,
+    invoices_issued: null,
+    invoices_paid: null,
+    outstanding_cents: null,
+    invoices_overdue: null,
+    reminders_due: null,
+  };
+}
+
+const MAX = eintrag('66666666-6666-4666-8666-000000000001', 'Max', 'Mustermann', '2026-10-01');
+const ERIKA = eintrag('66666666-6666-4666-8666-000000000002', 'Erika', 'Beispiel', '2026-10-12');
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const VORBELEGT = `/termine/neu?datum=2027-05-12&beginn=09%3A00&ende=10%3A00&art=home_visit&person=${STAFF_ANNA}`;
@@ -51,8 +84,8 @@ const VORBELEGT = `/termine/neu?datum=2027-05-12&beginn=09%3A00&ende=10%3A00&art
 describe('NewAppointmentStartPage', () => {
   beforeEach(() => {
     navigate.mockReset();
-    searchPatients.mockReset();
-    searchPatients.mockResolvedValue([MAX]);
+    fetchPatientOverview.mockReset();
+    fetchPatientOverview.mockResolvedValue([MAX, ERIKA]);
     fetchAssignableTherapists
       .mockReset()
       .mockResolvedValue([{ staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' }]);
@@ -88,6 +121,37 @@ describe('NewAppointmentStartPage', () => {
 
       expect(navigate).not.toHaveBeenCalled();
     });
+  });
+
+  // B1/B10: Beim Termin zählt von den Karteileichen nur „Termine fehlen“;
+  // eine andere Auswahl aus der Adresse filtert hier nicht.
+  it('bietet von den Karteileichen nur „Termine fehlen“ an', async () => {
+    fetchPatientOverview.mockResolvedValue([
+      { ...MAX, open_bases: 1, bases_need_appointments: 1 },
+      { ...ERIKA, open_bases: 1, bases_ready: 1 },
+    ]);
+    renderWithProviders(<NewAppointmentStartPage />, `${VORBELEGT}&zeigen=abrechnen`);
+
+    expect(await screen.findByRole('button', { name: /Termine fehlen \(1\)/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Abrechnen/ })).toBeNull();
+    expect(screen.getByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
+  });
+
+  // Design-Review A, Befund 6: Wer niemanden findet, sucht meist eine neue
+  // Person - der Abstecher steht im Kopf und unter „Keine Treffer“.
+  it('bietet „Patient:in anlegen“ auch unter „Keine Treffer“ an', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
+
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'Neumann');
+    expect(await screen.findByText('Keine Treffer')).toBeInTheDocument();
+    const wege = screen.getAllByRole('link', { name: 'Patient:in anlegen' });
+    expect(wege).toHaveLength(2);
+    for (const weg of wege) {
+      expect(weg.getAttribute('href')!.startsWith('/patienten/neu?')).toBe(true);
+    }
   });
 
   it('zeigt die vorbelegte Zeit, damit sie vor der Auswahl prüfbar ist', async () => {
@@ -137,13 +201,10 @@ describe('NewAppointmentStartPage', () => {
   });
 
   it('reicht die Vorbelegung unveraendert an das Terminformular weiter', async () => {
-    const user = userEvent.setup();
     renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
 
-    await user.type(screen.getByRole('combobox', { name: 'Patient:in suchen' }), 'mus');
-    await user.click(await screen.findByRole('option', { name: /Max Mustermann/ }));
-
-    const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
+    const zeile = await screen.findByRole('link', { name: /Mustermann, Max/ });
+    const ziel = new URL(zeile.getAttribute('href')!, 'http://test');
     expect(ziel.pathname).toBe(`/patienten/${MAX.id}/termine/neu`);
     expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
     expect(ziel.searchParams.get('beginn')).toBe('09:00');
@@ -153,7 +214,6 @@ describe('NewAppointmentStartPage', () => {
   });
 
   it('kommt auch ganz ohne Vorbelegung zurecht', async () => {
-    const user = userEvent.setup();
     renderWithProviders(<NewAppointmentStartPage />, '/termine/neu');
 
     // Nichts übernommen - dann steht auch nichts da, und nichts wird versprochen.
@@ -161,10 +221,68 @@ describe('NewAppointmentStartPage', () => {
     expect(screen.queryByText(/\d{2}\.\d{2}\.\d{4}/)).toBeNull();
     expect(fetchAssignableTherapists).not.toHaveBeenCalled();
 
-    await user.type(screen.getByRole('combobox', { name: 'Patient:in suchen' }), 'mus');
-    await user.click(await screen.findByRole('option', { name: /Max Mustermann/ }));
+    expect(await screen.findByRole('link', { name: /Mustermann, Max/ })).toHaveAttribute(
+      'href',
+      `/patienten/${MAX.id}/termine/neu`,
+    );
+  });
 
-    expect(navigate).toHaveBeenCalledWith(`/patienten/${MAX.id}/termine/neu`);
+  // B10 (BEF-160): statt der Suche ab drei Zeichen eine Liste - zuletzt
+  // behandelt zuerst, filter- und sortierbar, die Suche ab dem ersten Zeichen.
+  it('zeigt eine Liste statt der Suche ab drei Zeichen, zuletzt behandelt zuerst (B10)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
+
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
+    expect(screen.queryByRole('combobox', { name: 'Patient:in suchen' })).toBeNull();
+    const namen = screen.getAllByRole('link', { name: /, / }).map((link) => link.textContent ?? '');
+    expect(namen[0]).toMatch(/^Beispiel, Erika/);
+    expect(namen[1]).toMatch(/^Mustermann, Max/);
+
+    await user.click(screen.getByRole('button', { name: 'A–Z' }));
+    expect(
+      screen.getAllByRole('link', { name: /, / }).map((link) => link.textContent ?? '')[0],
+    ).toMatch(/^Beispiel, Erika/);
+
+    await user.type(screen.getByLabelText('Patient:in suchen'), 'm');
+    expect(screen.queryByRole('link', { name: /Beispiel, Erika/ })).toBeNull();
+    // Die Vorbelegung bleibt in der Adresse, auch mit Suche und Sortierung.
+    const ziel = new URL(
+      screen.getByRole('link', { name: /Mustermann, Max/ }).getAttribute('href')!,
+      'http://test',
+    );
+    expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
+    // Der Suchbegriff - meist ein Name - wandert nicht mit (ANN-061).
+    expect(ziel.searchParams.get('q')).toBeNull();
+  });
+
+  // R1 (Zweitreview): Der Suchbegriff - meist ein Name - steht weder in der
+  // Adresse dieser Seite noch im Ziel der Zeile, und er bleibt nicht hängen.
+  it('hält den Suchbegriff aus jeder Adresse heraus (ADR-011)', async () => {
+    adressen.length = 0;
+    const user = userEvent.setup();
+    const { unmount } = renderWithProviders(
+      <>
+        <NewAppointmentStartPage />
+        <Adressprobe />
+      </>,
+      VORBELEGT,
+    );
+
+    await user.type(await screen.findByLabelText('Patient:in suchen'), 'muster');
+    await user.click(screen.getByRole('button', { name: 'A–Z' }));
+    expect(screen.getByTestId('adresse')).toHaveTextContent('sort=name');
+    expect(adressen.length).toBeGreaterThan(1);
+    for (const adresse of adressen) {
+      expect(adresse).not.toContain('q=');
+      expect(adresse).not.toMatch(/muster/i);
+    }
+    const ziel = screen.getByRole('link', { name: /Mustermann, Max/ }).getAttribute('href') ?? '';
+    expect(ziel).not.toMatch(/muster/i);
+    unmount();
+
+    renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
+    expect(await screen.findByLabelText('Patient:in suchen')).toHaveValue('');
   });
 
   it('beschriftet das Suchfeld sichtbar - hier ist es das Hauptfeld der Seite', () => {

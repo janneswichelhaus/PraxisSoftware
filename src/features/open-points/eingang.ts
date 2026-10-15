@@ -28,6 +28,7 @@ import {
   fetchCareWithoutConclusion,
   fetchEndingPrescriptions,
 } from './reminders-api';
+import { PATIENT_OVERVIEW_KEY, fetchPatientOverview } from '@/features/patients/uebersicht';
 import { TASKS_KEY, fetchTasks } from './tasks-api';
 import { TRAININGSWIDERRUFE_KEY, fetchTrainingswiderrufe } from './training-withdrawals-api';
 
@@ -117,11 +118,22 @@ export const abfragen = {
       retry: false,
       select: (eintraege) => eintraege.filter((e) => e.review_due),
     }),
-  ohneAbschluss: () =>
+  // Zweitreview A: Akten ohne jede Behandlung haben keinen Fristanker.
+  ohneBehandlung: () =>
     queryOptions({
       queryKey: IDLE_KEY,
       queryFn: fetchCareWithoutConclusion,
       retry: false,
+    }),
+  // B1 (BEF-151): Verordnungen, die Termine oder die Abrechnung brauchen -
+  // dieselbe Abfrage wie die Patientenliste, ein Schlüssel.
+  verordnungOffen: () =>
+    queryOptions({
+      queryKey: PATIENT_OVERVIEW_KEY,
+      queryFn: fetchPatientOverview,
+      retry: false,
+      select: (liste) =>
+        liste.filter((eintrag) => eintrag.bases_need_appointments > 0 || eintrag.bases_ready > 0),
     }),
 };
 
@@ -153,7 +165,8 @@ export function eingangsrechte(user: CurrentUser) {
     verordnungEndet: canReadTreatmentBases(rollen),
     plaene: planBereiche.length > 0,
     warteliste: canManageAppointments(rollen),
-    ohneAbschluss: canConcludePatientCare(rollen),
+    verordnungOffen: canReadTreatmentBases(rollen),
+    ohneBehandlung: canConcludePatientCare(rollen),
   };
 }
 
@@ -213,7 +226,11 @@ export function useEingang(user: CurrentUser, today: string) {
     retry: false,
   });
   const warteliste = useQuery({ ...abfragen.warteliste(), enabled: darf.warteliste });
-  const ohneAbschluss = useQuery({ ...abfragen.ohneAbschluss(), enabled: darf.ohneAbschluss });
+  const verordnungOffen = useQuery({
+    ...abfragen.verordnungOffen(),
+    enabled: darf.verordnungOffen,
+  });
+  const ohneBehandlung = useQuery({ ...abfragen.ohneBehandlung(), enabled: darf.ohneBehandlung });
 
   const anrufeOffen = (anrufe.data ?? []).filter(stillToCall).length;
 
@@ -251,7 +268,8 @@ export function useEingang(user: CurrentUser, today: string) {
         .length,
     },
     { aktiv: darf.warteliste, ...warteliste, anzahl: warteliste.data?.length ?? 0 },
-    { aktiv: darf.ohneAbschluss, ...ohneAbschluss, anzahl: ohneAbschluss.data?.length ?? 0 },
+    { aktiv: darf.verordnungOffen, ...verordnungOffen, anzahl: verordnungOffen.data?.length ?? 0 },
+    { aktiv: darf.ohneBehandlung, ...ohneBehandlung, anzahl: ohneBehandlung.data?.length ?? 0 },
   ];
 
   const sichtbar = gruppen.filter((g) => g.aktiv);

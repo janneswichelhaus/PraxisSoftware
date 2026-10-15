@@ -115,6 +115,7 @@ test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
     await expect(fenster.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
+    await page.getByRole('button', { name: 'Ja, wieder öffnen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Steht aus');
   });
 });
@@ -197,6 +198,13 @@ test.describe('CAL-008d: Dokumentiert kommt aus der Finalisierung', () => {
     await expect(page.getByRole('link', { name: 'Bearbeiten' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Termin wieder öffnen' })).toHaveCount(0);
+    // B4 (ADR-018 Fassung 5): Festschreiben hakt nicht ab - der Haken bleibt
+    // ein eigener Schritt, und erst er lässt sich zurücknehmen.
+    await expect(page.getByRole('button', { name: 'Abhaken', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Haken zurücknehmen' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Abhaken', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Haken zurücknehmen' })).toBeVisible();
+    await expect(detailWert(page, 'Status')).toContainText('Dokumentiert');
   });
 });
 

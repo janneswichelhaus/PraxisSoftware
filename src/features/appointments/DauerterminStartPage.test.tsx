@@ -2,12 +2,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from '@/features/patients/api';
+import type * as UebersichtApi from '@/features/patients/uebersicht';
 import type * as GrundlagenApi from '@/features/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
+/** Jede Adresse, die die Seite durchläuft - auch eine, die gleich wieder ersetzt wird. */
+const adressen: string[] = [];
+
+/** Zeigt die Parameter der aktuellen Adresse im MemoryRouter und merkt sich jede. */
+function Adressprobe() {
+  const [parameter] = useSearchParams();
+  adressen.push(parameter.toString());
+  return <span data-testid="adresse">{parameter.toString()}</span>;
+}
+
 const navigate = vi.fn();
-const searchPatients = vi.fn();
+const fetchPatientOverview = vi.fn();
 const fetchPatient = vi.fn();
 const fetchPatientTreatmentBases = vi.fn();
 const fetchPatientTreatmentBasesClinical = vi.fn();
@@ -17,11 +29,14 @@ vi.mock('@/features/patients/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
   return {
     ...actual,
-    searchPatients: (begriff: string) =>
-      searchPatients(begriff) as Promise<PatientsApi.PatientSearchHit[]>,
     fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
   };
 });
+
+vi.mock('@/features/patients/uebersicht', async (importOriginal) => ({
+  ...(await importOriginal<typeof UebersichtApi>()),
+  fetchPatientOverview: () => fetchPatientOverview() as Promise<UebersichtApi.Patienteneintrag[]>,
+}));
 
 vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
   const actual = await importOriginal<typeof GrundlagenApi>();
@@ -97,7 +112,31 @@ function rendern(pfad: string) {
 describe('DauerterminStartPage', () => {
   beforeEach(() => {
     navigate.mockReset();
-    searchPatients.mockReset().mockResolvedValue([MAX]);
+    fetchPatientOverview.mockReset().mockResolvedValue([
+      {
+        id: MAX.id,
+        given_name: MAX.given_name,
+        family_name: MAX.family_name,
+        date_of_birth: MAX.date_of_birth,
+        email: null,
+        phone: null,
+        postal_code: null,
+        city: 'Tuebingen',
+        last_visit_on: '2026-10-01',
+        next_appointment_at: null,
+        open_bases: 1,
+        bases_need_appointments: 0,
+        bases_need_followup: 0,
+        bases_ready: 0,
+        bases_in_billing: 0,
+        billing_visible: false,
+        invoices_issued: null,
+        invoices_paid: null,
+        outstanding_cents: null,
+        invoices_overdue: null,
+        reminders_due: null,
+      },
+    ]);
     fetchPatient.mockReset().mockResolvedValue(MAX);
     for (const f of [fetchPatientTreatmentBases, fetchPatientTreatmentBasesClinical]) {
       f.mockReset().mockResolvedValue([grundlage(G1, '2027-04-01')]);
@@ -112,11 +151,60 @@ describe('DauerterminStartPage', () => {
     );
 
     expect(screen.getByText('Erster Termin: 12.05.2027, ab 09:00 Uhr')).toBeInTheDocument();
-    await userEvent.type(screen.getByLabelText('Patient:in suchen'), 'Must');
-    await userEvent.click(await screen.findByRole('option', { name: /Max Mustermann/ }));
+    // B10 (ANN-517): eine Liste statt der Suche ab drei Zeichen.
+    expect(screen.queryByRole('combobox', { name: 'Patient:in suchen' })).toBeNull();
+    await userEvent.click(await screen.findByRole('link', { name: /Mustermann, Max/ }));
 
     // Die Wahl landet in der Adresse; die Grundlagen fragt der nächste Schritt.
     expect(await screen.findByRole('heading', { name: /Grundlage/ })).toBeInTheDocument();
+  });
+
+  // R1 (Zweitreview): Der Suchbegriff - meist ein Name - steht weder in der
+  // Adresse dieser Seite noch im Ziel der Zeile.
+  // Design-Review A, Befund 6: Ist die Person neu, führt „Patient:in
+  // anlegen“ mit dieser Seite als Rückweg hin und - mit ihrer Kennung - in
+  // den zweiten Schritt zurück. Ohne Person im Kopf, mit ihr nicht mehr.
+  it('bietet „Patient:in anlegen“ mit dieser Seite als Rückweg an', async () => {
+    renderWithProviders(
+      <DauerterminStartPage user={testUser(['therapist'])} />,
+      '/termine/dauertermin?datum=2027-05-12&beginn=09%3A00',
+    );
+
+    const link = await screen.findByRole('link', { name: 'Patient:in anlegen' });
+    expect(link.getAttribute('href')!.startsWith('/patienten/neu?')).toBe(true);
+    const zurueck = new URL(link.getAttribute('href')!, 'http://x').searchParams.get('zurueck');
+    expect(zurueck).toBe('/termine/dauertermin?datum=2027-05-12&beginn=09%3A00');
+  });
+
+  it('fragt mit gewählter Person nicht mehr nach einer neuen', async () => {
+    rendern(MIT_PERSON);
+    await waitFor(() => expect(fetchPatient).toHaveBeenCalled());
+    expect(screen.queryByRole('link', { name: 'Patient:in anlegen' })).toBeNull();
+  });
+
+  it('hält den Suchbegriff aus jeder Adresse heraus (ADR-011)', async () => {
+    adressen.length = 0;
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <DauerterminStartPage user={testUser(['therapist'])} />
+        <Adressprobe />
+      </>,
+      '/termine/dauertermin?datum=2027-05-12&beginn=09%3A00',
+    );
+
+    await user.type(await screen.findByLabelText('Patient:in suchen'), 'muster');
+    await user.click(screen.getByRole('button', { name: 'A–Z' }));
+    expect(screen.getByTestId('adresse')).toHaveTextContent('sort=name');
+    expect(adressen.length).toBeGreaterThan(1);
+    for (const adresse of adressen) {
+      expect(adresse).not.toContain('q=');
+      expect(adresse).not.toMatch(/muster/i);
+    }
+    const ziel = screen.getByRole('link', { name: /Mustermann, Max/ }).getAttribute('href') ?? '';
+    expect(ziel).toContain(`patient=${MAX.id}`);
+    expect(ziel).not.toContain('q=');
+    expect(ziel).not.toMatch(/muster/i);
   });
 
   it('springt bei genau einer offenen Grundlage direkt in die Serie', async () => {
