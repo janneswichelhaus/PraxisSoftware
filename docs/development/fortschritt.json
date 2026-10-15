@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-14",
+  "stand": "2026-10-15",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1082,10 +1082,11 @@
           "id": "durchsicht-2026-10-14",
           "name": "Durchsicht 14.10.: Befunde B1 bis B13 (Leistung, Haken, Liste; Einsicht in die Plattform; Spracheingabe mit Nachbildung; Oberfläche)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-10-14",
           "nachweis": "PRs #241, #242, #243, #244, BEF-151 bis BEF-163, Bericht mit Bildpaaren",
-          "vermerk": "Auftrag Jannes (14.10.2026); Sichtung per Bildpaaren im Bericht; Anbieter für die Spracheingabe offen"
+          "gesichtet_am": "2026-10-15",
+          "vermerk": "Auftrag Jannes (14.10.2026); nach dem Bericht mit Bildpaaren gemergt, alle Annahmen bestätigt; Anbieter für die Spracheingabe offen"
         }
       ]
     },
