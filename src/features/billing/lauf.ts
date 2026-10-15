@@ -36,9 +36,26 @@ export function laufstand(kandidat: Kandidat, heute: string): Laufstand {
   return kandidat.period_month < monatsanfang(heute) ? 'im_lauf' : 'laufender_monat';
 }
 
+/**
+ * ANN-544 am Entwurf: Ausgestellt wird im Lauf nur ein Entwurf, der dieselbe
+ * Regel erfüllt - nicht einer, der von Hand zu einer laufenden Verordnung oder
+ * für den laufenden Monat angelegt wurde, und keine Korrektur.
+ */
+export function entwurfImLauf(
+  entwurf: Pick<
+    Rechnung,
+    'treatment_basis_id' | 'basis_released_at' | 'period_month' | 'is_correction'
+  >,
+  heute: string,
+): boolean {
+  if (entwurf.is_correction) return false;
+  if (entwurf.treatment_basis_id) return entwurf.basis_released_at !== null;
+  return entwurf.period_month < monatsanfang(heute);
+}
+
 /** Warum eine Zeile nicht im Lauf steht - ein Wort an der Zeile, kein Warnzustand. */
 export const laufstandTexte: Partial<Record<Laufstand, string>> = {
-  nicht_freigegeben: 'Verordnung nicht freigegeben',
+  nicht_freigegeben: 'Noch nicht in die Abrechnung gestellt',
   laufender_monat: 'Monat läuft noch',
 };
 

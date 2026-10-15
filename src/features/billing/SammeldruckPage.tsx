@@ -1,6 +1,7 @@
 import { useQueries } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { fetchRechnung } from './api';
 import { Druckfuss, Rechnungsblatt } from './InvoicePrintPage';
@@ -46,7 +47,8 @@ export function SammeldruckPage() {
         <Rueckweg standard="/abrechnung" beschriftung="Zurück zu den Rechnungen" />
       </div>
       {ids.length === 0 ? (
-        <ErrorState
+        <EmptyState
+          inKarte
           title="Keine Rechnung zum Drucken."
           description="Der Druck startet nach einem Abrechnungslauf."
         />
@@ -55,11 +57,17 @@ export function SammeldruckPage() {
       ) : fehler ? (
         <ErrorState
           title="Die Rechnungen konnten nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
+          description={VERBINDUNG_PRUEFEN}
           onErneut={() => void Promise.all(blaetter.map((b) => b.refetch()))}
         />
       ) : (
         <>
+          {/* Der Knopf über den Blättern: Bei zwanzig Rechnungen stünde er
+              sonst am Ende einer langen Seite (Praxis-Review M4). */}
+          <Druckfuss
+            oben
+            beschriftung={ids.length === 1 ? 'Rechnung drucken' : `Alle ${ids.length} drucken`}
+          />
           {blaetter.map((blatt, index) =>
             blatt.data ? (
               // Ab dem zweiten Blatt eine neue Seite; am Bildschirm ein Abstand.
@@ -71,9 +79,6 @@ export function SammeldruckPage() {
               </div>
             ) : null,
           )}
-          <Druckfuss
-            beschriftung={ids.length === 1 ? 'Rechnung drucken' : `Alle ${ids.length} drucken`}
-          />
         </>
       )}
     </>

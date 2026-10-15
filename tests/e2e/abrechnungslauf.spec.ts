@@ -98,6 +98,8 @@ function nachbildung(kandidaten: Kandidat[], offen: Rechnung[] = []) {
       basis_kind: r.kandidat.treatment_basis_id ? 'follow_up' : null,
       basis_issued_on: r.kandidat.treatment_basis_id ? r.kandidat.period_month : null,
       total_count: rechnungen.length,
+      basis_released_at: r.kandidat.basis_released_at,
+      is_correction: false,
     };
   }
 
@@ -266,7 +268,7 @@ test('K13: alle fertigen Rechnungen des Monats in höchstens drei Tipps ausstell
   await page.goto(PRUEFSEITE);
   await expect(page.getByText('3 Rechnungen bereit')).toBeVisible();
   await expect(page.getByText(/Monat läuft noch/)).toBeVisible();
-  await expect(page.getByText(/Verordnung nicht freigegeben/)).toBeVisible();
+  await expect(page.getByText(/Noch nicht in die Abrechnung gestellt/)).toBeVisible();
   const start = page.getByRole('button', { name: 'Abrechnungslauf starten' });
   await mindestens44(start);
   expect(await ueberlaeuft(page)).toBe(false);
@@ -280,12 +282,13 @@ test('K13: alle fertigen Rechnungen des Monats in höchstens drei Tipps ausstell
 
   // 2. Ausstellen öffnet die Rückfrage mit Summe und Kreis.
   await z.tippe(page.getByRole('button', { name: '3 Rechnungen ausstellen' }));
-  await expect(page.getByText('3 aus dem Kreis Behandlung')).toBeVisible();
+  await expect(page.getByText('3 für Behandlung')).toBeVisible();
 
   // 3. Bestätigen: jede Rechnung einzeln.
   await z.tippe(page.getByRole('button', { name: 'Ja, 3 Rechnungen ausstellen' }));
   await expect(page.getByText(/2 Rechnungen ausgestellt/)).toBeVisible();
-  await expect(page.getByText(/Petra Probe: In der Anschrift des Empfängers fehlt/)).toBeVisible();
+  await expect(page.getByText(/In der Anschrift des Empfängers fehlt/)).toBeVisible();
+  await mindestens44(page.getByRole('link', { name: 'Zu den Stammdaten' }));
   expect(server.aufrufe.issue_invoice).toHaveLength(3);
   expect(server.aufrufe.create_invoice_draft).toHaveLength(2);
   expect(server.aufrufe.create_invoice_draft_for_basis).toHaveLength(1);

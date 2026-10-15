@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { kleinunternehmerHinweis, type Kandidat } from './api';
-import { jeKreis, laufKandidaten, laufstand } from './lauf';
+import { entwurfImLauf, jeKreis, laufKandidaten, laufstand } from './lauf';
 
 function kandidat(zusatz: Partial<Kandidat> = {}): Kandidat {
   return {
@@ -63,6 +63,31 @@ describe('Monatslauf: welche Zeile er aufnimmt (K13, ANN-544)', () => {
       therapy: 1,
       training: 1,
     });
+  });
+});
+
+describe('Monatslauf: welcher Entwurf ausgestellt wird (ANN-544)', () => {
+  const entwurf = {
+    treatment_basis_id: null,
+    basis_released_at: null,
+    period_month: '2026-09-01',
+    is_correction: false,
+  };
+
+  it('nimmt Entwürfe nach derselben Regel wie die Zeilen', () => {
+    expect(entwurfImLauf(entwurf, HEUTE)).toBe(true);
+    expect(entwurfImLauf({ ...entwurf, period_month: '2026-10-01' }, HEUTE)).toBe(false);
+    expect(entwurfImLauf({ ...entwurf, treatment_basis_id: 'b1' }, HEUTE)).toBe(false);
+    expect(
+      entwurfImLauf(
+        { ...entwurf, treatment_basis_id: 'b1', basis_released_at: '2026-10-01T08:00:00Z' },
+        HEUTE,
+      ),
+    ).toBe(true);
+  });
+
+  it('lässt eine Korrektur einzeln', () => {
+    expect(entwurfImLauf({ ...entwurf, is_correction: true }, HEUTE)).toBe(false);
   });
 });
 

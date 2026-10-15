@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -7,6 +8,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { formatEuro } from '@/lib/geld';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
@@ -20,7 +22,6 @@ import {
 } from './api';
 import { klammerText, zeitraumText } from './anzeige';
 import { Abrechnungslauf } from './Abrechnungslauf';
-import { Eintraege, Eintrag } from './Eintraege';
 import { laufstand, laufstandTexte } from './lauf';
 import { OffenePosten } from './OffenePosten';
 import { Rechnungsliste } from './Rechnungsliste';
@@ -48,6 +49,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
   const darfAusstellen = canManageInvoicing(user.roles);
   const zeitzone = user.organizationTimeZone;
   const heute = zeitzone ? todayInTimeZone(zeitzone) : null;
+  const [sammeln, setSammeln] = useState(false);
 
   const kandidaten = useQuery({
     queryKey: ['rechnungs-kandidaten'],
@@ -59,10 +61,12 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader title="Rechnungen" description="Privatrechnungen aus erfassten Leistungen." />
 
-      <OffenePosten darfBuchen={darfAusstellen} zeitzone={zeitzone} />
+      <OffenePosten darfBuchen={darfAusstellen} zeitzone={zeitzone} onSammeln={setSammeln} />
 
-      {/* Ohne Zeitzone der Praxis ist „abgeschlossener Monat“ nicht zu sagen. */}
-      {heute && kandidaten.data ? (
+      {/* Ohne Zeitzone der Praxis ist „abgeschlossener Monat“ nicht zu sagen.
+          Während der Sammelbuchung steht der Lauf zurück: eine Aufgabe, ein
+          Hauptknopf (DESIGN.md Regel 4). */}
+      {heute && kandidaten.data && !sammeln ? (
         <Abrechnungslauf
           kandidaten={kandidaten.data}
           heute={heute}
@@ -85,7 +89,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
           inKarte
         >
           {(daten) => (
-            <Eintraege beschriftung="Abzurechnende Leistungen">
+            <ListRows beschriftung="Abzurechnende Leistungen">
               {daten.map((kandidat) => (
                 <KandidatenZeile
                   key={`${kandidat.patient_id ?? kandidat.training_relationship_id}-${kandidat.treatment_basis_id ?? kandidat.period_month}-${kandidat.service_area}`}
@@ -94,7 +98,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                   darfAusstellen={darfAusstellen}
                 />
               ))}
-            </Eintraege>
+            </ListRows>
           )}
         </Abfragezustand>
       </Section>
@@ -179,53 +183,54 @@ function KandidatenZeile({
     ) : undefined;
 
   return (
-    <Eintrag
+    <ListRow
       titel={kandidat.patient_name}
       meta={meta}
       betrag={formatEuro(kandidat.total_cents, kandidat.currency)}
       aktion={aktion}
-    >
-      {storno || kandidat.has_draft || anlegen.isError ? (
-        <>
-          {/* Die Herkunft steht an der Zeile (BEF-062): Wer die Leistungen sieht,
+      darunter={
+        storno || kandidat.has_draft || anlegen.isError ? (
+          <div className="pb-4">
+            {/* Die Herkunft steht an der Zeile (BEF-062): Wer die Leistungen sieht,
           sieht auch, welche Rechnung sie ersetzen. */}
-          {storno ? (
-            <p className="text-ink-muted text-sm">
-              Aus der stornierten Rechnung{' '}
-              <Textlink to={`/abrechnung/rechnungen/${storno}`}>
-                {kandidat.cancelled_invoice_number ?? 'ohne Nummer'}
-              </Textlink>
-              {kandidat.has_draft ? '' : ' – die neue Rechnung wird ihre Korrekturrechnung.'}
-            </p>
-          ) : null}
+            {storno ? (
+              <p className="text-ink-muted text-sm">
+                Aus der stornierten Rechnung{' '}
+                <Textlink to={`/abrechnung/rechnungen/${storno}`}>
+                  {kandidat.cancelled_invoice_number ?? 'ohne Nummer'}
+                </Textlink>
+                {kandidat.has_draft ? '' : ' – die neue Rechnung wird ihre Korrekturrechnung.'}
+              </p>
+            ) : null}
 
-          {kandidat.has_draft ? (
-            <Statusmeldung className={storno ? 'mt-2' : ''}>
-              {storno
-                ? kandidat.draft_replaces_invoice_number
-                  ? // Zwei Stornos in einer Klammer: Jede bekommt ihre eigene
-                    // Korrektur, nacheinander (ANN-321).
-                    `Für diesen Zeitraum steht die Korrektur zu ${kandidat.draft_replaces_invoice_number} als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu ${kandidat.cancelled_invoice_number ?? 'der stornierten Rechnung'} erstellen.`
-                  : 'Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte ihn verwerfen; danach lässt sich hier die Korrekturrechnung erstellen.'
-                : `${
-                    kandidat.treatment_basis_id
-                      ? 'Für diese Verordnung steht bereits ein Entwurf.'
-                      : 'Für diesen Monat und Bereich steht bereits ein Entwurf.'
-                  } Diese Leistungen sind später erfasst worden; sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder verworfen ist.`}
-            </Statusmeldung>
-          ) : null}
+            {kandidat.has_draft ? (
+              <Statusmeldung className={storno ? 'mt-2' : ''}>
+                {storno
+                  ? kandidat.draft_replaces_invoice_number
+                    ? // Zwei Stornos in einer Klammer: Jede bekommt ihre eigene
+                      // Korrektur, nacheinander (ANN-321).
+                      `Für diesen Zeitraum steht die Korrektur zu ${kandidat.draft_replaces_invoice_number} als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu ${kandidat.cancelled_invoice_number ?? 'der stornierten Rechnung'} erstellen.`
+                    : 'Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte ihn verwerfen; danach lässt sich hier die Korrekturrechnung erstellen.'
+                  : `${
+                      kandidat.treatment_basis_id
+                        ? 'Für diese Verordnung steht bereits ein Entwurf.'
+                        : 'Für diesen Monat und Bereich steht bereits ein Entwurf.'
+                    } Diese Leistungen sind später erfasst worden; sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder verworfen ist.`}
+              </Statusmeldung>
+            ) : null}
 
-          {anlegen.isError ? (
-            <Statusmeldung ton="fehler" className="mt-2">
-              {/* Meldungen mit eigenem Weg sagen ihn selbst; nur eine Störung
+            {anlegen.isError ? (
+              <Statusmeldung ton="fehler" className="mt-2">
+                {/* Meldungen mit eigenem Weg sagen ihn selbst; nur eine Störung
               bekommt den Satz zur Verbindung. */}
-              {anlegen.error instanceof WegHinweis
-                ? anlegen.error.message
-                : `${anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`}
-            </Statusmeldung>
-          ) : null}
-        </>
-      ) : null}
-    </Eintrag>
+                {anlegen.error instanceof WegHinweis
+                  ? anlegen.error.message
+                  : `${anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`}
+              </Statusmeldung>
+            ) : null}
+          </div>
+        ) : undefined
+      }
+    />
   );
 }

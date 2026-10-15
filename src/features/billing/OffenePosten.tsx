@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
+import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
@@ -56,9 +57,12 @@ interface Buchungsmeldung {
 export function OffenePosten({
   darfBuchen,
   zeitzone,
+  onSammeln,
 }: {
   darfBuchen: boolean;
   zeitzone: string | null;
+  /** Die Sammelbuchung ist offen - die Seite stellt den Lauf so lange zurück. */
+  onSammeln?: (an: boolean) => void;
 }) {
   const [meldung, setMeldung] = useState<Buchungsmeldung | null>(null);
   const [mehrere, setMehrere] = useState(false);
@@ -77,6 +81,11 @@ export function OffenePosten({
     if (meldung) kasten.current?.focus();
   }, [meldung]);
 
+  function umschalten(an: boolean) {
+    setMehrere(an);
+    onSammeln?.(an);
+  }
+
   function melde(text: string, ton: Buchungsmeldung['ton'] = 'erfolg') {
     setMeldung((alt) => ({ text, ton, nummer: (alt?.nummer ?? 0) + 1 }));
   }
@@ -91,20 +100,22 @@ export function OffenePosten({
         // Ohne offene Posten erklärt die Leermeldung den Abschnitt (UX-005i).
         posten.data && posten.data.length > 0 ? postenHinweis(posten.data) : undefined
       }
-      aktion={
-        mehrereMoeglich ? (
-          <Button
-            type="button"
-            variant="quiet"
-            groesse="kompakt"
-            aria-pressed={mehrere}
-            onClick={() => setMehrere((wert) => !wert)}
-          >
-            {mehrere ? 'Einzeln buchen' : 'Mehrere buchen'}
-          </Button>
-        ) : undefined
-      }
     >
+      {/* Zwei Ansichten derselben Liste, genau eine gilt (DESIGN.md 9.9). */}
+      {mehrereMoeglich ? (
+        <div className="mb-3">
+          <Segment
+            beschriftung="Zahlungen buchen"
+            wahlen={[
+              { wert: 'einzeln', text: 'Einzeln' },
+              { wert: 'mehrere', text: 'Mehrere buchen' },
+            ]}
+            gewaehlt={mehrere ? 'mehrere' : 'einzeln'}
+            onWaehlen={(wert) => umschalten(wert === 'mehrere')}
+          />
+        </div>
+      ) : null}
+
       {meldung ? (
         <div ref={kasten} tabIndex={-1} className="mb-3 outline-none">
           <Statusmeldung ton={meldung.ton}>{meldung.text}</Statusmeldung>
@@ -128,7 +139,7 @@ export function OffenePosten({
               posten={daten}
               zeitzone={zeitzone}
               onFertig={(text, ton) => {
-                setMehrere(false);
+                umschalten(false);
                 melde(text, ton);
               }}
             />
@@ -315,8 +326,10 @@ function Sammelbuchung({
             betrag={formatEuro(eintrag.outstanding_cents, eintrag.currency)}
             status={eintrag.overdue ? <Badge ton="kritisch">Überfällig</Badge> : undefined}
             aktion={
+              // Kästchen und Wort sind ein Ziel von 44 px; vorgelesen mit der Nummer.
               <Checkbox
-                label={<span className="sr-only">{eintrag.invoice_number} bezahlt</span>}
+                label="Bezahlt"
+                aria-label={`${eintrag.invoice_number} bezahlt`}
                 checked={gewaehlt.has(eintrag.id)}
                 onChange={(event) => umschalten(eintrag.id, event.target.checked)}
               />
@@ -338,9 +351,9 @@ function Sammelbuchung({
           }}
         />
         <div>
+          {/* Der Hauptknopf dieser Ansicht; der Lauf steht so lange zurück. */}
           <Button
             type="button"
-            variant="secondary"
             disabled={auswahl.length === 0 || laeuft}
             onClick={() => void buchen()}
             className="w-full sm:w-auto"

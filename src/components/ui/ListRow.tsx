@@ -13,14 +13,18 @@ import { KnopfGroesse } from './knopfGroesse';
 export function ListRows({
   children,
   rahmen = true,
+  beschriftung,
   className = '',
 }: {
   children: ReactNode;
   rahmen?: boolean;
+  /** Name der Liste für Vorlesesoftware, wenn mehrere Listen auf der Seite stehen. */
+  beschriftung?: string;
   className?: string;
 }) {
   return (
     <ul
+      aria-label={beschriftung}
       className={`${rahmen ? 'rounded-card border-line bg-surface overflow-hidden border px-4' : ''} ${className}`.trim()}
     >
       {children}

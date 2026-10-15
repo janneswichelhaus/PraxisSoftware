@@ -170,6 +170,8 @@ const rechnungen: Rechnung[] = [
     basis_kind: 'first',
     basis_issued_on: '2026-07-01',
     total_count: 1,
+    basis_released_at: null,
+    is_correction: false,
   },
 ];
 

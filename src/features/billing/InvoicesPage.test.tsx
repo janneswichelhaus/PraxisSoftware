@@ -82,6 +82,8 @@ function rechnung(rest: Partial<BillingApi.Rechnung> = {}): BillingApi.Rechnung 
     basis_kind: null,
     basis_issued_on: null,
     total_count: 1,
+    basis_released_at: null,
+    is_correction: false,
     ...rest,
   };
 }
@@ -760,6 +762,17 @@ describe('Monatsabrechnung in einem Lauf (K13, ANN-544)', () => {
                   service_area: 'training',
                   total_cents: 7_500,
                 }),
+                // Nicht im Lauf (ANN-544): von Hand zu einer Verordnung ohne
+                // Freigabe angelegt, und eine Korrektur nach Storno.
+                rechnung({
+                  id: 'e3',
+                  status: 'draft',
+                  invoice_number: null,
+                  treatment_basis_id: 'g9',
+                  basis_kind: 'first',
+                  basis_issued_on: '2026-09-01',
+                }),
+                rechnung({ id: 'e4', status: 'draft', invoice_number: null, is_correction: true }),
               ]
             : []
           : [],
@@ -791,9 +804,7 @@ describe('Monatsabrechnung in einem Lauf (K13, ANN-544)', () => {
 
     // 2. Ausstellen öffnet die Rückfrage mit Summe und Kreisen (BEF-063).
     await nutzer.click(screen.getByRole('button', { name: '2 Rechnungen ausstellen' }));
-    expect(
-      screen.getByText('1 aus dem Kreis Behandlung, 1 aus dem Kreis Training'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('1 für Behandlung, 1 für Training')).toBeInTheDocument();
 
     // 3. Bestätigen: jede einzeln; ein Fehlschlag hält den Rest nicht auf.
     await nutzer.click(screen.getByRole('button', { name: 'Ja, 2 Rechnungen ausstellen' }));
@@ -802,9 +813,10 @@ describe('Monatsabrechnung in einem Lauf (K13, ANN-544)', () => {
     expect(
       screen.getByText(/In der Anschrift des Empfängers fehlt: Straße, PLZ/),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zum Entwurf' })).toHaveAttribute(
+    // Geht die Rechnung an die Person selbst, führt der Weg zu ihren Stammdaten.
+    expect(screen.getByRole('link', { name: 'Zu den Stammdaten' })).toHaveAttribute(
       'href',
-      '/abrechnung/rechnungen/e2',
+      '/patienten/p1/stammdaten',
     );
     expect(screen.getByRole('link', { name: 'Alle drucken' })).toHaveAttribute(
       'href',
@@ -820,7 +832,7 @@ describe('Monatsabrechnung in einem Lauf (K13, ANN-544)', () => {
 
     renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
-    expect(await screen.findByText(/Verordnung nicht freigegeben/)).toBeInTheDocument();
+    expect(await screen.findByText(/Noch nicht in die Abrechnung gestellt/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Abrechnungslauf starten' })).toBeNull();
   });
 

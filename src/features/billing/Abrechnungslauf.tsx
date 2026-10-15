@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Card } from '@/components/ui/Card';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { formatEuro } from '@/lib/geld';
 import {
@@ -23,20 +24,22 @@ import {
   type Rechnung,
 } from './api';
 import { empfaengerart, klammerText } from './anzeige';
-import { jeKreis, laufKandidaten } from './lauf';
+import { entwurfImLauf, jeKreis, laufKandidaten } from './lauf';
 
 /**
  * Die Monatsabrechnung in einem Lauf (Bereichsüberholung 4, K13: ≤ 3 Tipps).
  *
  *   1. **„Abrechnungslauf starten“** legt zu jeder fertigen Zeile aus
- *      „Abzurechnen“ den Entwurf an (welche fertig ist, sagt `laufstand`,
- *      ANN-544) und zeigt alle stehenden Entwürfe als Prüfliste: Person,
- *      Empfänger, Betrag. Jede Zeile führt zum Entwurf.
+ *      „Abzurechnen“ den Entwurf an und zeigt die fertigen Entwürfe als
+ *      Prüfliste: Person, Empfänger, Betrag. Was fertig ist, sagt `lauf.ts`
+ *      (ANN-544) - an der Zeile wie am Entwurf: Ein von Hand angelegter
+ *      Entwurf zu einer laufenden Verordnung und eine Korrektur bleiben
+ *      einzeln.
  *   2. **„n Rechnungen ausstellen“** öffnet die Rückfrage mit den Werten, die
- *      vorher niemand noch einmal ansieht (BEF-063): Anzahl, Summe, Kreise.
+ *      vorher niemand noch einmal ansieht (BEF-063): Anzahl, Summe, Nummern.
  *   3. **„Ja, …“** stellt jede Rechnung einzeln über `issue_invoice` aus. Ein
  *      Fehlschlag - etwa eine unvollständige Anschrift - hält die übrigen
- *      nicht auf; er steht danach mit dem Weg zum Entwurf da.
+ *      nicht auf; er steht danach mit dem Weg dorthin, wo es zu ergänzen ist.
  *
  * Danach „Alle drucken“: ein Blatt je Rechnung in einem Druckauftrag. Der
  * Stand ist der Server: Wer zwischendurch die Seite verlässt, findet die
@@ -47,7 +50,7 @@ import { jeKreis, laufKandidaten } from './lauf';
 interface Fehlschlag {
   name: string;
   text: string;
-  entwurfId?: string;
+  weg?: { to: string; text: string } | undefined;
 }
 
 interface Ausgestellt {
@@ -68,12 +71,28 @@ type Phase =
 /** Die Entwürfe der Praxis - derselbe Schlüsselanfang wie die Rechnungsliste. */
 const ENTWUERFE = ['rechnungen', 'lauf-entwuerfe'] as const;
 
-function anzahlText(anzahl: number): string {
-  return anzahl === 1 ? 'eine Rechnung' : `${anzahl} Rechnungen`;
-}
-
 function summe(betraege: readonly number[]): number {
   return betraege.reduce((a, b) => a + b, 0);
+}
+
+function rechnungenText(anzahl: number): string {
+  return anzahl === 1 ? 'Eine Rechnung' : `${anzahl} Rechnungen`;
+}
+
+/**
+ * Wohin ein Fehlschlag beim Ausstellen führt: Fehlt die Anschrift der Person
+ * selbst, zu ihren Stammdaten - sonst zum Entwurf, an dem der Empfänger hängt.
+ */
+function wegZu(rechnung: Rechnung, grund: unknown): Fehlschlag['weg'] {
+  if (grund instanceof AnschriftUnvollstaendig && rechnung.recipient_kind === 'self') {
+    if (rechnung.patient_id) {
+      return { to: `/patienten/${rechnung.patient_id}/stammdaten`, text: 'Zu den Stammdaten' };
+    }
+    if (rechnung.training_relationship_id) {
+      return { to: `/training/${rechnung.training_relationship_id}`, text: 'Zum Training' };
+    }
+  }
+  return { to: `/abrechnung/rechnungen/${rechnung.id}`, text: 'Zum Entwurf' };
 }
 
 export function Abrechnungslauf({
@@ -94,12 +113,16 @@ export function Abrechnungslauf({
     queryKey: ENTWUERFE,
     queryFn: () => fetchRechnungen({ filter: 'draft' }),
     retry: false,
+    // ANN-544 auch am Entwurf: nur Fertiges in den Lauf.
+    select: (liste: Rechnung[]) => liste.filter((r) => entwurfImLauf(r, heute)),
+    enabled: darfAusstellen,
   });
   // Ein Termin ohne erfasste Leistung fehlt sonst stumm im Lauf.
   const ohneLeistung = useQuery({
     queryKey: ['abrechnung-offene-termine'],
     queryFn: fetchOffeneTermine,
     retry: false,
+    enabled: darfAusstellen,
   });
 
   // Nach jedem Schritt steht der Fokus auf dem, was jetzt gilt - sonst fiele
@@ -111,9 +134,16 @@ export function Abrechnungslauf({
   if (!darfAusstellen) return null;
 
   const neu = laufKandidaten(kandidaten, heute);
-  const stehend = entwuerfe.data ?? [];
-  const bereit = neu.length + stehend.length;
-  if (phase.art === 'bereit' && bereit === 0) return null;
+  // Ohne Fertiges kein Abschnitt - es sei denn, die Entwürfe ließen sich
+  // nicht laden: Das sagt der Abschnitt, statt stumm zu fehlen.
+  if (
+    phase.art === 'bereit' &&
+    neu.length === 0 &&
+    !entwuerfe.isError &&
+    (entwuerfe.isPending || (entwuerfe.data ?? []).length === 0)
+  ) {
+    return null;
+  }
 
   async function aktualisieren() {
     await Promise.all([
@@ -168,11 +198,11 @@ export function Abrechnungslauf({
         else
           fehler.push({
             name: rechnung.patient_name,
-            entwurfId: rechnung.id,
             text:
-              grund instanceof AnschriftUnvollstaendig || grund instanceof Error
+              grund instanceof Error
                 ? grund.message
                 : 'Die Rechnung konnte nicht ausgestellt werden.',
+            weg: wegZu(rechnung, grund),
           });
       }
       setPhase({ art: 'ausstellen', fertig: index + 1, gesamt: liste.length });
@@ -186,16 +216,23 @@ export function Abrechnungslauf({
       <Card>
         <div ref={meldung} tabIndex={-1} className="outline-none">
           {phase.art === 'bereit' ? (
-            <Bereit
-              anzahl={bereit}
-              betrag={summe([
-                ...neu.map((k) => k.total_cents),
-                ...stehend.map((r) => r.total_cents),
-              ])}
-              ohneLeistung={ohneLeistung.data?.length ?? 0}
-              laedt={entwuerfe.isPending}
-              onStarten={() => void starten()}
-            />
+            <Abfragezustand
+              abfrage={entwuerfe}
+              laden="Entwürfe werden geladen …"
+              fehler="Die Entwürfe konnten nicht geladen werden."
+            >
+              {(stehend) => (
+                <Bereit
+                  anzahl={neu.length + stehend.length}
+                  betrag={summe([
+                    ...neu.map((k) => k.total_cents),
+                    ...stehend.map((r) => r.total_cents),
+                  ])}
+                  ohneLeistung={ohneLeistung.data?.length ?? 0}
+                  onStarten={() => void starten()}
+                />
+              )}
+            </Abfragezustand>
           ) : phase.art === 'anlegen' ? (
             <Statusmeldung>
               <span aria-live="polite">
@@ -203,12 +240,19 @@ export function Abrechnungslauf({
               </span>
             </Statusmeldung>
           ) : phase.art === 'pruefen' ? (
-            <Pruefliste
-              entwuerfe={entwuerfe}
-              fehler={phase.fehler}
-              onAusstellen={(liste) => ausstellen(liste)}
-              onSpaeter={() => setPhase({ art: 'bereit' })}
-            />
+            <Abfragezustand
+              abfrage={entwuerfe}
+              laden="Entwürfe werden geladen …"
+              fehler="Die Entwürfe konnten nicht geladen werden."
+            >
+              {(liste) => (
+                <Pruefliste
+                  liste={liste}
+                  fehler={phase.fehler}
+                  onAusstellen={(auswahl) => ausstellen(auswahl)}
+                />
+              )}
+            </Abfragezustand>
           ) : phase.art === 'ausstellen' ? (
             <Statusmeldung>
               <span aria-live="polite">
@@ -228,33 +272,33 @@ function Bereit({
   anzahl,
   betrag,
   ohneLeistung,
-  laedt,
   onStarten,
 }: {
   anzahl: number;
   betrag: number;
   ohneLeistung: number;
-  laedt: boolean;
   onStarten: () => void;
 }) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-ink text-liste">
-        <span className="font-semibold">
-          {anzahl === 1 ? 'Eine Rechnung bereit' : `${anzahl} Rechnungen bereit`}
-        </span>{' '}
-        · <span className="tabular-nums">{formatEuro(betrag)}</span>
+        <span className="font-semibold">{rechnungenText(anzahl)} bereit</span> ·{' '}
+        <span className="tabular-nums">{formatEuro(betrag)}</span>
       </p>
       {ohneLeistung > 0 ? (
-        <p className="text-ink-muted text-sm">
-          {ohneLeistung === 1
-            ? 'Ein Termin ist noch ohne Leistung'
-            : `${ohneLeistung} Termine sind noch ohne Leistung`}{' '}
-          – <Textlink to="/abrechnung/leistungen">erfassen</Textlink>
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="text-ink-muted text-sm">
+            {ohneLeistung === 1
+              ? 'Ein Termin ist noch ohne Leistung.'
+              : `${ohneLeistung} Termine sind noch ohne Leistung.`}
+          </p>
+          <ButtonLink to="/abrechnung/leistungen" variant="quiet" groesse="kompakt">
+            Erfassen
+          </ButtonLink>
+        </div>
       ) : null}
       <div>
-        <Button type="button" onClick={onStarten} disabled={laedt} className="w-full sm:w-auto">
+        <Button type="button" onClick={onStarten} className="w-full sm:w-auto">
           Abrechnungslauf starten
         </Button>
       </div>
@@ -263,25 +307,14 @@ function Bereit({
 }
 
 function Pruefliste({
-  entwuerfe,
+  liste,
   fehler,
   onAusstellen,
-  onSpaeter,
 }: {
-  entwuerfe: { data?: Rechnung[] | undefined; isPending: boolean; isError: boolean };
+  liste: Rechnung[];
   fehler: Fehlschlag[];
   onAusstellen: (liste: readonly Rechnung[]) => Promise<void>;
-  onSpaeter: () => void;
 }) {
-  if (entwuerfe.isPending) return <Statusmeldung>Entwürfe werden geladen …</Statusmeldung>;
-  if (entwuerfe.isError) {
-    return (
-      <Statusmeldung ton="fehler">
-        Die Entwürfe konnten nicht geladen werden. Bitte die Verbindung prüfen.
-      </Statusmeldung>
-    );
-  }
-  const liste = entwuerfe.data ?? [];
   const gesamt = summe(liste.map((r) => r.total_cents));
   const kreise = jeKreis(liste);
 
@@ -294,7 +327,7 @@ function Pruefliste({
       </Zwischentitel>
 
       {liste.length > 0 ? (
-        <ListRows rahmen={false}>
+        <ListRows rahmen={false} beschriftung="Entwürfe des Laufs">
           {liste.map((rechnung) => (
             <ListRow
               key={rechnung.id}
@@ -313,18 +346,15 @@ function Pruefliste({
 
       {fehler.length > 0 ? <Fehlschlaege fehler={fehler} /> : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        {liste.length > 0 ? (
+      {liste.length > 0 ? (
+        <div>
           <Rueckfrage
-            ausloeser={
-              liste.length === 1
-                ? 'Eine Rechnung ausstellen'
-                : `${liste.length} Rechnungen ausstellen`
-            }
+            ausloeser={`${rechnungenText(liste.length)} ausstellen`}
             ausloeserVariante="primary"
             bezeichnung="Rechnungen ausstellen – Rückfrage"
-            bestaetigen={`Ja, ${anzahlText(liste.length)} ausstellen`}
+            bestaetigen={`Ja, ${liste.length === 1 ? 'eine Rechnung' : `${liste.length} Rechnungen`} ausstellen`}
             bestaetigenLaeuft="Wird ausgestellt …"
+            abbrechen="Noch nicht ausstellen"
             onBestaetigen={() => onAusstellen(liste)}
           >
             <p className="font-medium">
@@ -332,53 +362,52 @@ function Pruefliste({
                 ? 'Diese Rechnung jetzt ausstellen?'
                 : `Diese ${liste.length} Rechnungen jetzt ausstellen?`}
             </p>
-            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-              <dt className="text-ink-muted">Summe</dt>
-              <dd className="tabular-nums">{formatEuro(gesamt)}</dd>
-              <dt className="text-ink-muted">Nummern</dt>
-              <dd>
+            <DetailList schmal>
+              <DetailRow label="Summe">{formatEuro(gesamt)}</DetailRow>
+              <DetailRow label="Rechnungsnummern">
                 {[
-                  kreise.therapy > 0 ? `${kreise.therapy} aus dem Kreis Behandlung` : null,
-                  kreise.training > 0 ? `${kreise.training} aus dem Kreis Training` : null,
+                  kreise.therapy > 0 ? `${kreise.therapy} für Behandlung` : null,
+                  kreise.training > 0 ? `${kreise.training} für Training` : null,
                 ]
                   .filter(Boolean)
                   .join(', ')}
-              </dd>
-            </dl>
+              </DetailRow>
+            </DetailList>
             <p className="mt-2">
               Danach ist jede Rechnung unveränderlich; eine Korrektur geht nur über Storno und neue
-              Rechnung.
+              Rechnung. Ohne Ausstellen bleiben die Entwürfe stehen.
             </p>
           </Rueckfrage>
-        ) : null}
-        <Button type="button" variant="quiet" onClick={onSpaeter}>
-          Später
-        </Button>
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
+/** Was nicht geklappt hat: je Person eine Zeile, der Weg als Aktion daneben. */
 function Fehlschlaege({ fehler }: { fehler: Fehlschlag[] }) {
   return (
-    <Statusmeldung ton="fehler">
-      <span className="block font-medium">
-        {fehler.length === 1 ? 'Eine Rechnung fehlt:' : `${fehler.length} Rechnungen fehlen:`}
-      </span>
-      <ul className="mt-1 flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
+      <Statusmeldung ton="fehler">
+        {fehler.length === 1 ? 'Eine Rechnung fehlt.' : `${fehler.length} Rechnungen fehlen.`}
+      </Statusmeldung>
+      <ListRows rahmen={false} beschriftung="Nicht ausgestellt">
         {fehler.map((f, index) => (
-          <li key={`${f.name}-${index}`}>
-            {f.name}: {f.text}
-            {f.entwurfId ? (
-              <>
-                {' '}
-                <Textlink to={`/abrechnung/rechnungen/${f.entwurfId}`}>Zum Entwurf</Textlink>
-              </>
-            ) : null}
-          </li>
+          <ListRow
+            key={`${f.name}-${index}`}
+            titel={f.name}
+            meta={f.text}
+            aktion={
+              f.weg ? (
+                <ButtonLink to={f.weg.to} variant="secondary">
+                  {f.weg.text}
+                </ButtonLink>
+              ) : undefined
+            }
+          />
         ))}
-      </ul>
-    </Statusmeldung>
+      </ListRows>
+    </div>
   );
 }
 
@@ -395,23 +424,27 @@ function Ergebnis({
     <div className="flex flex-col gap-4">
       {ausgestellt.length > 0 ? (
         <Statusmeldung ton="erfolg">
-          {ausgestellt.length === 1
-            ? 'Eine Rechnung ausgestellt'
-            : `${ausgestellt.length} Rechnungen ausgestellt`}{' '}
-          · {formatEuro(summe(ausgestellt.map((r) => r.betrag)))}
+          {rechnungenText(ausgestellt.length)} ausgestellt ·{' '}
+          {formatEuro(summe(ausgestellt.map((r) => r.betrag)))}
         </Statusmeldung>
       ) : null}
       {ohneStammdaten ? (
-        <Statusmeldung ton="fehler">
-          Es sind keine Praxisstammdaten erfasst; ohne sie lässt sich keine Rechnung ausstellen. Die
-          Entwürfe bleiben stehen.{' '}
-          <Textlink to="/abrechnung/stammdaten">Zu den Praxisstammdaten</Textlink>
-        </Statusmeldung>
+        <div className="flex flex-col gap-2">
+          <Statusmeldung ton="fehler">
+            Es sind keine Praxisstammdaten erfasst; ohne sie lässt sich keine Rechnung ausstellen.
+            Die Entwürfe bleiben stehen.
+          </Statusmeldung>
+          <div>
+            <ButtonLink to="/abrechnung/stammdaten" variant="secondary">
+              Zu den Praxisstammdaten
+            </ButtonLink>
+          </div>
+        </div>
       ) : null}
       {fehler.length > 0 ? <Fehlschlaege fehler={fehler} /> : null}
 
       {ausgestellt.length > 0 ? (
-        <ListRows rahmen={false}>
+        <ListRows rahmen={false} beschriftung="Ausgestellt">
           {ausgestellt.map((rechnung) => (
             <ListRow
               key={rechnung.id}

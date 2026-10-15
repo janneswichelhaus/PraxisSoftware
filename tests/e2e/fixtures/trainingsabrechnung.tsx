@@ -172,6 +172,8 @@ const rechnungen: Rechnung[] = [
     basis_kind: null,
     basis_issued_on: null,
     total_count: 2,
+    basis_released_at: null,
+    is_correction: false,
   },
   {
     id: AUSGESTELLT,
@@ -198,6 +200,8 @@ const rechnungen: Rechnung[] = [
     basis_kind: null,
     basis_issued_on: null,
     total_count: 2,
+    basis_released_at: null,
+    is_correction: false,
   },
 ];
 

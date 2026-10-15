@@ -441,17 +441,22 @@ export function Rechnungsblatt({
 export function Druckfuss({
   entwurf = false,
   beschriftung,
+  oben = false,
 }: {
   entwurf?: boolean;
   /** Ohne Angabe „Rechnung drucken“ oder am Entwurf „Entwurf drucken“. */
   beschriftung?: string;
+  /** Über den Blättern statt darunter - im Sammeldruck mit vielen Blättern. */
+  oben?: boolean;
 }) {
   return (
     <>
-      <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
+      <div
+        className={`nicht-drucken mx-auto flex max-w-[210mm] flex-col gap-3 ${oben ? 'mb-8' : 'mt-8'}`}
+      >
         <div>
           {/* Am Entwurf heißt der Knopf, was er druckt (ABR-26). */}
-          <Button type="button" onClick={() => window.print()}>
+          <Button type="button" onClick={() => window.print()} className="w-full sm:w-auto">
             {beschriftung ?? (entwurf ? 'Entwurf drucken' : 'Rechnung drucken')}
           </Button>
         </div>

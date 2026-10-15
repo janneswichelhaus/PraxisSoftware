@@ -499,6 +499,10 @@ const rechnungSchema = z.object({
   basis_issued_on: z.string().nullable().default(null),
   /** Treffer vor dem Kürzen (ABR-033, BEF-061). */
   total_count: z.number(),
+  /** K13 (ANN-544): Die Verordnung der Rechnung ist freigegeben am; sonst leer. */
+  basis_released_at: z.string().nullable().default(null),
+  /** K13: Der Entwurf ist eine Korrekturrechnung - sie bleibt einzeln. */
+  is_correction: z.boolean().default(false),
 });
 
 export type Rechnung = z.infer<typeof rechnungSchema>;
