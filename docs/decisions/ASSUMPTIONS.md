@@ -5590,3 +5590,27 @@ Recht · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Steuerberatu
 
 **Änderungspfad.** Kennzeichen je Behandlungsgrundlage (mit/ohne Verordnung): Migration an der Rechnungsposition · Aufwand `mittel`.
 
+
+### ANN-542 — Erstaufnahme geführt: eine Seite ohne eigenen Zustand, Checkliste bleibt bei zwei Punkten
+
+Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung der Bereichsüberholung „Erstaufnahme geführt“
+
+**Annahme.** `/patienten/:id/erstaufnahme` führt am ersten Besuch durch Verordnungsfoto, Anmeldebogen, Einwilligungen, Anamnesebogen und Liege und endet mit „Weiter zu Befund und Doku“. Jeder Schritt liest den Stand aus der Akte; gespeichert wird nichts Neues. Als offener Punkt in Übersicht, Kopf und Büroliste zählen weiter nur Verordnungsfoto und Anmeldebogen; ihre Pille und eine Zeile im Terminpanel führen auf die Seite.
+
+**Begründung.** Roadmap-Zeile nennt fünf Dinge; Jannes hat die Checkliste am 03.10. auf zwei begrenzt (ANN-224). Die Führung bringt die übrigen am Termin in Reihenfolge, ohne Dauermahnung.
+
+**Anker.** `erstaufnahmestand` in `src/features/intake/stand.ts`; `src/features/intake/ErstaufnahmePage.tsx`.
+
+**Änderungspfad.** Liege oder Anamnese wieder als offener Punkt: `app.intake_checklist` und `INTAKE_ITEMS` · Aufwand `klein`.
+
+### ANN-543 — Neuaufnahme am Telefon: das Seltene eingeklappt, „Weiter“ springt ins nächste Feld
+
+Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung der Bereichsüberholung „Erstaufnahme geführt“
+
+**Annahme.** Das Anlegen zeigt offen Name, Geburtsdatum, Mobil, Anschrift und Zugangshinweis; Telefon (privat), E-Mail, Einrichtung, feste Therapeut:in, Besonderheit und Bemerkung stehen hinter „Weitere Angaben“ (offen bei Fehler darin). Der Vorname hat beim Öffnen den Fokus; Enter in einem einzeiligen Feld springt ins nächste. Das Bearbeiten zeigt alles wie bisher.
+
+**Begründung.** K11 (≤ 8 Tipps) zählte je Feld einen Tipp; am Telefon fragt das Büro zuerst nach Name, Nummer und Adresse. Felder und Daten bleiben unverändert.
+
+**Anker.** Prop `kurz` in `src/features/patients/PatientMasterDataFields.tsx`; `src/lib/weiterMitEnter.ts`.
+
+**Änderungspfad.** Ein Feld wieder offen: Liste `WEITERE` · Aufwand `klein`.

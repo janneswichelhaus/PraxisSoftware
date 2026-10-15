@@ -5,10 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Entscheidungen vom 15.10. umgesetzt (eine PR, Branch `ccr-43e90fd0-8ho4pg`): Anhänge von außen
-ohne Virenprüfung (ADR-017 Fassung 6, ADR-026 abgelehnt), Übungen ohne KI-Zeichnungen mit
-Anleitung in Schritten (ANN-539), Preisblatt-Entwurf 2027 und Umsatzsteuer (ANN-541), BEF-149
-verworfen, PTV-Prüfung Teil 4b gesichert (Anfrage ruht bis 2027). #246 (Intro) ist gemergt.
+Erstaufnahme geführt (K10, K11), eine PR, Branch `ccr-248b0353-fbdcs9`: Seite
+`/patienten/:id/erstaufnahme` vom Terminpanel bis zur Doku (10 Tipps, vorher ≥ 25), Neuanlage in
+3 Tipps (vorher ≈ 12); ANN-542, ANN-543. #247 (Entscheidungen 15.10.) ist gemergt.
 
 Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
 dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
@@ -18,11 +17,10 @@ https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
 
 Vorschlag, Jannes entscheidet (Roadmap, „Bereichsüberholungen“):
 
-1. **Erstaufnahme geführt** (K10, K11).
-2. **Monatsabrechnung in einem Lauf** (K13, K14).
-3. **Übungen, zweite Runde**: Durchsicht, eigene Vorlagen, eigene Bilder und Videos.
+1. **Monatsabrechnung in einem Lauf** (K13, K14).
+2. **Übungen, zweite Runde**: Durchsicht, eigene Vorlagen, eigene Bilder und Videos.
 
-Aus der bisherigen Kette danach: ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
+Aus der bisherigen Kette danach: BEF-124 (Verordnung ohne Verlauf, Pfad A); ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
 Widerruf zu Anhängen im Training (ANN-333).
 
 ## Bei Jannes
@@ -49,5 +47,5 @@ Widerruf zu Anhängen im Training (ANN-333).
 
 ## Letzte Session
 
-15.10.2026, Branch `ccr-43e90fd0-8ho4pg`: Entscheidungen vom 15.10. **Lokal:** `git pull`,
-`supabase db reset` (zwei Migrationen: KOM-013, UEB-013).
+15.10.2026, Branch `ccr-248b0353-fbdcs9`: Erstaufnahme geführt. **Lokal:** `git pull`, keine
+Migration.
