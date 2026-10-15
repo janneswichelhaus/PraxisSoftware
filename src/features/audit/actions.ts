@@ -170,6 +170,8 @@ export const auditOperationLabels: Record<string, string> = {
   'platform_access.invited': 'Zur Plattform eingeladen',
   'platform_access.revoked': 'Plattformzugang entzogen',
   'platform_accesses.read': 'Plattformzugang angesehen',
+  // E-001: die Einsicht in die Plattform einer Person (nur owner; keine neue Aktion).
+  'platform_preview.read': 'Plattform einer Person eingesehen',
   'questionnaire_response.viewed': 'Fragebogen gelesen',
   'staff_account.invitation_revoked': 'Einladung zurückgenommen',
   'staff_account.invited': 'Zugang eingeladen',

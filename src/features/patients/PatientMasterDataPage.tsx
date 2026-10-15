@@ -570,6 +570,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           zeitzone={user.organizationTimeZone}
           praxis={user.organizationName ?? 'der Praxis'}
           beendenAmEnde
+          einsichtFuer={isOwner(user.roles) ? patient.given_name : null}
         />
       ) : null}
 

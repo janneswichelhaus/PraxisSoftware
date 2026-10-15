@@ -16,13 +16,12 @@ import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
-  ladeRechnung,
-  ladeRechnungen,
   rechnungSchluessel,
   rechnungenSchluessel,
   type Plattformzugang,
   type Rechnungsblatt,
 } from './api';
+import { usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { anJemandAnderen, grundlageZeile, positionen, zahlungsstand } from './zahlungsstand';
 
@@ -33,11 +32,12 @@ import { anJemandAnderen, grundlageZeile, positionen, zahlungsstand } from './za
  * Zeichen; eine Begleitung ohne Einwilligung bekommt vom Server nichts.
  */
 export function Rechnungen({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const bereich = bereichParameter(suche);
   const rechnungen = useQuery({
     queryKey: rechnungenSchluessel(zugang.access_id),
-    queryFn: () => ladeRechnungen(zugang.access_id),
+    queryFn: () => api.ladeRechnungen(zugang.access_id),
   });
   return (
     <>
@@ -96,6 +96,7 @@ export function Rechnungen({ zugang }: { zugang: Plattformzugang }) {
  * Bankverbindung. Drucken über den Browser, wie in der Praxis.
  */
 export function Rechnung({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const { pathname } = useLocation();
   const rechnungId = pathname.slice(pathname.lastIndexOf('/') + 1);
   const [suche] = useSearchParams();
@@ -103,7 +104,7 @@ export function Rechnung({ zugang }: { zugang: Plattformzugang }) {
   const zurueck = `${PLATTFORM_PFAD}/rechnungen${bereich ? `?${bereich}` : ''}`;
   const rechnung = useQuery({
     queryKey: rechnungSchluessel(zugang.access_id, rechnungId),
-    queryFn: () => ladeRechnung(zugang.access_id, rechnungId),
+    queryFn: () => api.ladeRechnung(zugang.access_id, rechnungId),
   });
   return (
     <>

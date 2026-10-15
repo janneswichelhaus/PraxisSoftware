@@ -19,14 +19,8 @@ import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Planblatt } from '@/features/exercise-plans/Planblatt';
 import { haeufigkeit } from '@/features/exercise-plans/dosierung';
 import { formatDate } from '@/lib/datum';
-import {
-  ladePlaene,
-  plaeneSchluessel,
-  uebungstageSetzen,
-  type EigenerPlan,
-  type PlanPosition,
-  type Plattformzugang,
-} from './api';
+import { plaeneSchluessel, type EigenerPlan, type PlanPosition, type Plattformzugang } from './api';
+import { useNurLesen, usePlattformApi } from './einsicht';
 import {
   DurchfuehrungKontext,
   abgelegteZugaenge,
@@ -50,10 +44,11 @@ import { Uebungsinhalt, type DosisZumAblesen } from './Uebungsinhalt';
  * Software (DSN-001 4.1).
  */
 export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const [suche] = useSearchParams();
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => ladePlaene(zugang.access_id),
+    queryFn: () => api.ladePlaene(zugang.access_id),
   });
   const training = zugang.relationship_kind === 'training';
   const bereich = bereichParameter(suche);
@@ -216,6 +211,8 @@ function PlanAbschnitt({
   bereich: string;
 }) {
   const [offen, setOffen] = useState<PlanPosition | null>(null);
+  // E-001: In der Einsicht werden keine Tage gewählt, nicht geübt, nicht gefragt.
+  const nurLesen = useNurLesen();
   const zuletzt = plan.recent_sessions[0]?.performed_on;
   return (
     <Section titel={plan.title}>
@@ -228,12 +225,14 @@ function PlanAbschnitt({
           Zuletzt geübt: {zuletzt === heute ? 'heute' : formatDate(zuletzt)}
         </p>
       ) : null}
-      {plan.can_choose_days ? (
+      {/* ANN-307: Die Tage kommen in der Einsicht leer - sie sieht nur die
+          Person. Dort fehlen sie ohne Satz; die Leiste sagt „nur lesen“. */}
+      {nurLesen ? null : plan.can_choose_days ? (
         <Uebungstage zugang={zugang} plan={plan} />
       ) : plan.weekdays.length > 0 ? (
         <p className="text-ink-muted">Meine Übungstage: {tageText(plan.weekdays)}</p>
       ) : null}
-      {plan.can_exercise && plan.items.length > 0 ? (
+      {plan.can_exercise && !nurLesen && plan.items.length > 0 ? (
         // UEB-010: die Durchführungsansicht (IDEA-ORG-003).
         <div className="mt-4">
           <ButtonLink
@@ -284,7 +283,7 @@ function PlanAbschnitt({
         >
           Plan als PDF
         </ButtonLink>
-        {plan.status === 'assigned' ? (
+        {plan.status === 'assigned' && !nurLesen ? (
           // KOM-001: eine Frage mit dem Plan als Bezug (IDEA-KOM-001).
           <Textlink
             alleinstehend
@@ -365,6 +364,7 @@ export function PlanblattPlattform({
   zugang: Plattformzugang;
   praxis: string;
 }) {
+  const api = usePlattformApi();
   // Die Kennung aus dem Pfad `/p/uebungen/blatt/<id>` wie bei den Terminen.
   const { pathname } = useLocation();
   const planId = pathname.slice(pathname.lastIndexOf('/') + 1);
@@ -373,7 +373,7 @@ export function PlanblattPlattform({
   const zurueck = `${PLATTFORM_PFAD}/uebungen${bereich ? `?${bereich}` : ''}`;
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => ladePlaene(zugang.access_id),
+    queryFn: () => api.ladePlaene(zugang.access_id),
   });
   const plan = plaene.data?.plans.find((p) => p.id === planId);
 
@@ -420,12 +420,13 @@ export function PlanblattPlattform({
  * zurückgenommen (ANN-305). Die Praxis sieht die Tage nicht.
  */
 function Uebungstage({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan }) {
+  const api = usePlattformApi();
   const queryClient = useQueryClient();
   const [tage, setTage] = useState<number[]>(plan.weekdays);
   const speichern = useMutation({
     // Der Reihe nach, damit der letzte Tipp auch der letzte Stand am Server ist.
     scope: { id: `tage-${plan.id}` },
-    mutationFn: (neu: number[]) => uebungstageSetzen(zugang.access_id, plan.id, neu),
+    mutationFn: (neu: number[]) => api.uebungstageSetzen(zugang.access_id, plan.id, neu),
     onMutate: (neu) => {
       const vorher = tage;
       setTage(neu);

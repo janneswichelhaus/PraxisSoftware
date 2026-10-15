@@ -9,7 +9,8 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatEuro } from '@/lib/geld';
-import { ladeDatenexport, type Datenexport as Daten, type Plattformzugang } from './api';
+import { type Datenexport as Daten, type Plattformzugang } from './api';
+import { usePlattformApi } from './einsicht';
 import { EINWILLIGUNGSTEXTE } from './einwilligungstexte';
 import { THEMA_NAME } from './nachrichtentexte';
 import { PLATTFORM_PFAD } from './pfade';
@@ -26,9 +27,10 @@ import { datum, tagLang, zeitraum } from './zeit';
  * gibt die Praxis (ADR-023 Punkt 12). Das steht vorher da.
  */
 export function Datenexport({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const [ergebnis, setErgebnis] = useState<{ daten: Daten; roh: unknown } | null>(null);
   const abrufen = useMutation({
-    mutationFn: () => ladeDatenexport(zugang.access_id),
+    mutationFn: () => api.ladeDatenexport(zugang.access_id),
     onSuccess: setErgebnis,
   });
   const fuer = zugang.access_kind === 'legal_representative' ? zugang.represented_name : null;

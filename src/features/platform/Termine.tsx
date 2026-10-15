@@ -12,18 +12,15 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 
 import {
-  ladePlaene,
-  ladeTermine,
-  ladeWuensche,
   plaeneSchluessel,
   type EigenePlaene,
   termineSchluessel,
   wuenscheSchluessel,
-  wunschZurueckziehen,
   type Plattformzugang,
   type Termin,
   type Terminwunsch,
 } from './api';
+import { TAGE_NUR_DIE_PERSON, useNurLesen, usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung, wunschText } from './terminbeschreibung';
 import { datum, kalendertag, kuenftig, tagKurz, zeitraum } from './zeit';
@@ -44,20 +41,23 @@ import { tageAb, uebungstageAm } from './uebungstage';
  * ein Termin (§8). Die Belegung anderer Personen ist nirgends zu sehen.
  */
 export function Termine({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
+  // E-001: In der Einsicht kein Wunsch, kein Ändern, kein Zurückziehen.
+  const nurLesen = useNurLesen();
   const [suche] = useSearchParams();
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
-    queryFn: () => ladeTermine(zugang.access_id),
+    queryFn: () => api.ladeTermine(zugang.access_id),
   });
   const wuensche = useQuery({
     queryKey: wuenscheSchluessel(zugang.access_id),
-    queryFn: () => ladeWuensche(zugang.access_id),
+    queryFn: () => api.ladeWuensche(zugang.access_id),
   });
   // UEB-011: die Übungstage neben den Terminen (IDEA-ORG-004). Lädt der Plan
   // nicht, bleiben die Termine - die Woche fehlt dann einfach.
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => ladePlaene(zugang.access_id),
+    queryFn: () => api.ladePlaene(zugang.access_id),
   });
   // Der gewählte Bereich reist in jeden Link mit (D6).
   const bereich = new URLSearchParams(
@@ -67,7 +67,7 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
   // Die eine Aufgabe der Seite als Hauptknopf unter den kommenden Terminen,
   // am Telefon in voller Breite und mit dem Daumen erreichbar (DESIGN.md,
   // Seitentyp „Plattform“) - nicht klein oben rechts im Kopf.
-  const wunschKnopf = (
+  const wunschKnopf = nurLesen ? null : (
     <div className="mt-6">
       <ButtonLink to={wunschPfad} groesse="normal" className="w-full sm:w-auto">
         Termin wünschen
@@ -96,7 +96,12 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
             {wuensche.data && wuensche.data.length > 0 ? (
               <Wuensche zugang={zugang} wuensche={wuensche.data} />
             ) : null}
-            {plaene.data ? <DieseWoche termine={liste} plaene={plaene.data} /> : null}
+            {plaene.data && !nurLesen ? <DieseWoche termine={liste} plaene={plaene.data} /> : null}
+            {/* ANN-307: Die Übungstage der Woche sieht nur die Person; die
+                Einsicht bekommt sie leer und sagt das, statt still zu fehlen. */}
+            {nurLesen && plaene.data?.plans.some((p) => p.status === 'assigned') ? (
+              <p className="text-ink-muted mt-8 max-w-prose">{TAGE_NUR_DIE_PERSON}</p>
+            ) : null}
             <Vergangene termine={liste} />
           </>
         )}
@@ -234,8 +239,9 @@ function Terminzeile({
   const zustand = ZUSTAND[termin.status];
   // Nur ein bestätigter künftiger Termin führt zur Seite mit Ändern und
   // Absagen (POR-010); ein offener Wunsch steht als Wort an der Zeile.
+  const nurLesen = useNurLesen();
   const aenderbar =
-    termin.status === 'confirmed' && new Date(termin.starts_at).getTime() > Date.now();
+    !nurLesen && termin.status === 'confirmed' && new Date(termin.starts_at).getTime() > Date.now();
   const wunsch =
     termin.open_request_kind === 'cancel'
       ? 'Absage angefragt'
@@ -308,9 +314,11 @@ function Wuensche({ zugang, wuensche }: { zugang: Plattformzugang; wuensche: Ter
  * sich an Ort und Stelle und braucht die volle Breite.
  */
 function Wunschzeile({ zugang, wunsch: w }: { zugang: Plattformzugang; wunsch: Terminwunsch }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const zurueckziehen = useMutation({
-    mutationFn: () => wunschZurueckziehen(zugang.access_id, w.id),
+    mutationFn: () => api.wunschZurueckziehen(zugang.access_id, w.id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) }),
   });
@@ -337,7 +345,7 @@ function Wunschzeile({ zugang, wunsch: w }: { zugang: Plattformzugang; wunsch: T
           <span className="font-semibold">Antwort der Praxis:</span> {w.answer}
         </p>
       ) : null}
-      {w.status === 'open' ? (
+      {w.status === 'open' && !nurLesen ? (
         <div className="mt-2">
           <Rueckfrage
             ausloeser="Wunsch zurückziehen"

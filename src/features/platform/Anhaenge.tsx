@@ -4,19 +4,17 @@ import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import {
-  anhangLoeschen,
-  anhangSenden,
-  einwilligungSchreiben,
-  ladeAnhang,
   nachrichtenSchluessel,
   type Anhang,
   type Nachricht,
   type Nachrichten,
   type Plattformzugang,
 } from './api';
+import { useNurLesen, usePlattformApi, usePraxiswege } from './einsicht';
 import { EINWILLIGUNGSFASSUNG, EINWILLIGUNGSTEXTE, FREIWILLIG } from './einwilligungstexte';
 import { AUFNAHMEHINWEIS, zeitmarke, type Ansicht } from './anhangtexte';
 import { Videodialog } from './Videodialog';
@@ -66,6 +64,9 @@ export function AnhaengeAbschnitt({
   ansicht: Ansicht | null;
   setAnsicht: (ansicht: Ansicht | null) => void;
 }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
+  const wege = usePraxiswege();
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<'einwilligung' | 'foto' | 'video' | null>(null);
   const [nachEinwilligung, setNachEinwilligung] = useState<'foto' | 'video'>('foto');
@@ -75,7 +76,7 @@ export function AnhaengeAbschnitt({
 
   const senden = useMutation({
     mutationFn: (eingabe: { aufnahme: Blob; art: 'photo' | 'video'; dauer: number | null }) =>
-      anhangSenden({ zugangId: zugang.access_id, nachrichtId: nachricht.id, ...eingabe }),
+      api.anhangSenden({ zugangId: zugang.access_id, nachrichtId: nachricht.id, ...eingabe }),
     onMutate: () => setMeldung(null),
     onSuccess: async () => {
       setMeldung('Ihre Aufnahme ist bei der Praxis angekommen.');
@@ -83,7 +84,7 @@ export function AnhaengeAbschnitt({
     },
   });
   const loeschen = useMutation({
-    mutationFn: (anhangId: string) => anhangLoeschen(zugang.access_id, anhangId),
+    mutationFn: (anhangId: string) => api.anhangLoeschen(zugang.access_id, anhangId),
     onSuccess: async (_, anhangId) => {
       if (ansicht?.anhangId === anhangId) setAnsicht(null);
       setMeldung('Die Aufnahme ist gelöscht.');
@@ -92,7 +93,7 @@ export function AnhaengeAbschnitt({
   });
   const einwilligen = useMutation({
     mutationFn: () =>
-      einwilligungSchreiben({
+      api.einwilligungSchreiben({
         zugangId: zugang.access_id,
         zweck: 'message_attachments',
         erteilen: true,
@@ -158,26 +159,28 @@ export function AnhaengeAbschnitt({
                   {wer(a, zugang)} · {datum(a.created_at)} · wird am {datum(a.delete_on)} gelöscht
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    setAnsicht(ansicht?.anhangId === a.id ? null : { anhangId: a.id, ab: 0 })
-                  }
-                >
-                  {ansicht?.anhangId === a.id ? 'Schließen' : 'Ansehen'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={loeschen.isPending}
-                  onClick={() => loeschen.mutate(a.id)}
-                >
-                  Löschen
-                </Button>
-              </div>
-              {ansicht?.anhangId === a.id ? (
+              {nurLesen ? null : (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      setAnsicht(ansicht?.anhangId === a.id ? null : { anhangId: a.id, ab: 0 })
+                    }
+                  >
+                    {ansicht?.anhangId === a.id ? 'Schließen' : 'Ansehen'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={loeschen.isPending}
+                    onClick={() => loeschen.mutate(a.id)}
+                  >
+                    Löschen
+                  </Button>
+                </div>
+              )}
+              {!nurLesen && ansicht?.anhangId === a.id ? (
                 <Aufnahmeansicht
                   zugangId={zugang.access_id}
                   anhang={a}
@@ -188,6 +191,13 @@ export function AnhaengeAbschnitt({
             </li>
           ))}
         </ListRows>
+      ) : null}
+      {/* E-001 (ANN-527): In der Einsicht wird nichts geöffnet - der Weg führt
+          zu dieser Rückfrage in der Praxis, wo die Aufnahmen zu sehen sind. */}
+      {nurLesen && wege && anhaenge.length > 0 ? (
+        <Textlink alleinstehend to={wege.rueckfrage(nachricht.id)} className="mt-2">
+          In den Rückfragen öffnen →
+        </Textlink>
       ) : null}
       {ungeprueft ? (
         <p className="text-ink-muted mt-2 text-sm">
@@ -300,10 +310,11 @@ export function Aufnahmeansicht({
   ab: number;
   onSchliessen: () => void;
 }) {
+  const api = usePlattformApi();
   // Kein Zwischenspeicher über die Ansicht hinaus: je Öffnen neu geladen.
   const geladen = useQuery({
     queryKey: ['platform-attachment', zugangId, anhang.id],
-    queryFn: () => ladeAnhang(zugangId, anhang.id),
+    queryFn: () => api.ladeAnhang(zugangId, anhang.id),
     gcTime: 0,
     staleTime: 0,
     retry: false,

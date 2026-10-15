@@ -16,14 +16,13 @@ import {
   AUSFALLHONORAR_SPAET,
 } from '@/lib/ausfallhonorar';
 import {
-  ladeTermine,
-  terminAendernWuenschen,
   termineSchluessel,
   wuenscheSchluessel,
   type Plattformzugang,
   type Tageszeit,
   type Termin,
 } from './api';
+import { usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung } from './terminbeschreibung';
 import { Wunschfelder } from './Wunschfelder';
@@ -42,6 +41,7 @@ const NOTIZ_MAX = 500;
  * Ein Hauptknopf je Ansicht, Abbrechen immer sichtbar (Abschnitt 7).
  */
 export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   // Die Kennung aus dem Pfad `/p/termine/<id>` - nicht aus `useParams`, damit
   // die Seite auch in einer Platzhalterroute funktioniert.
   const { pathname } = useLocation();
@@ -56,7 +56,7 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
 
   const termine = useQuery({
     queryKey: termineSchluessel(zugang.access_id),
-    queryFn: () => ladeTermine(zugang.access_id),
+    queryFn: () => api.ladeTermine(zugang.access_id),
   });
   const termin = termine.data?.find((t) => t.id === terminId);
 
@@ -70,7 +70,7 @@ export function Terminaenderung({ zugang }: { zugang: Plattformzugang }) {
 
   const senden = useMutation({
     mutationFn: (gewaehlt: 'change' | 'cancel') =>
-      terminAendernWuenschen({
+      api.terminAendernWuenschen({
         zugangId: zugang.access_id,
         terminId,
         art: gewaehlt,

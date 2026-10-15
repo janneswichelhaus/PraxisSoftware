@@ -23,7 +23,8 @@ import {
   type Ablageplan,
   type WartendeEinheit,
 } from './ablage';
-import { ladePlaene, plaeneSchluessel, type PlanPosition, type Plattformzugang } from './api';
+import { plaeneSchluessel, type PlanPosition, type Plattformzugang } from './api';
+import { usePlattformApi } from './einsicht';
 import { Notrufnummer } from './Notfallsatz';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { Uebungsinhalt } from './Uebungsinhalt';
@@ -47,6 +48,7 @@ import { Uebungsinhalt } from './Uebungsinhalt';
  * halten, soweit der Browser das kann.
  */
 export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const { pathname } = useLocation();
   const [suche] = useSearchParams();
   const navigate = useNavigate();
@@ -57,7 +59,7 @@ export function Durchfuehrung({ zugang }: { zugang: Plattformzugang }) {
   const zurueck = `${PLATTFORM_PFAD}/uebungen${bereich ? `?${bereich}` : ''}`;
   const plaene = useQuery({
     queryKey: plaeneSchluessel(zugang.access_id),
-    queryFn: () => ladePlaene(zugang.access_id),
+    queryFn: () => api.ladePlaene(zugang.access_id),
     // Die Haken stehen in der Ansicht; ein Neuladen im Hintergrund würde sie
     // mit dem Stand vom Öffnen überschreiben.
     refetchOnWindowFocus: false,

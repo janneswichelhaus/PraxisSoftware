@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
@@ -14,20 +14,23 @@ import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
   BEREICHSNAME,
   aboSchluessel,
-  begleitungBeenden,
   einstiegSchluessel,
-  ladeAbo,
-  ladeEinstieg,
-  ladeMeinePakete,
-  ladeMeineVertretungen,
-  ladeVertrag,
   paketeSchluessel,
-  ueberallAbmelden,
   vertragSchluessel,
   vertretungenSchluessel,
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
+import {
+  NurLesenKontext,
+  PlattformApiKontext,
+  PraxiswegeKontext,
+  einsichtsApi,
+  useNurLesen,
+  usePlattformApi,
+  type Einsichtsquelle,
+  type Praxiswege,
+} from './einsicht';
 import { Abo } from './Abo';
 import { Angebot } from './Angebot';
 import { Vertrag } from './Vertrag';
@@ -75,7 +78,51 @@ import { Terminwunsch } from './Terminwunsch';
  */
 export { PLATTFORM_PFAD };
 
+/**
+ * E-001: Die Einsicht der Praxis (DSN-001 D7) zeigt dasselbe Gerüst, nur
+ * lesend. Die Praxisseite gibt den einen Zugang und ihre Quelle mit, dazu die
+ * Wege in die Praxis; die Seiten bekommen daraus `einsichtsApi`,
+ * `useNurLesen()` und `usePraxiswege()` über den Kontext. Ohne `einsicht` ist
+ * es die Plattform der Person, wie bisher.
+ */
+export interface Einsicht {
+  zugangId: string;
+  quelle: Einsichtsquelle;
+  /** Wo die Praxis öffnet, was die Einsicht nicht öffnet. */
+  wege?: Praxiswege;
+}
+
 export function PlattformApp({
+  zugaenge,
+  email,
+  onAbmelden,
+  einsicht,
+}: {
+  zugaenge: Plattformzugang[];
+  email: string | undefined;
+  onAbmelden: () => void;
+  einsicht?: Einsicht;
+}) {
+  const zugangId = einsicht?.zugangId;
+  const quelle = einsicht?.quelle;
+  const api = useMemo(
+    () => (zugangId && quelle ? einsichtsApi(zugangId, quelle) : null),
+    [zugangId, quelle],
+  );
+  const geruest = <Geruest zugaenge={zugaenge} email={email} onAbmelden={onAbmelden} />;
+  if (!api) return geruest;
+  return (
+    <PlattformApiKontext.Provider value={api}>
+      <NurLesenKontext.Provider value>
+        <PraxiswegeKontext.Provider value={einsicht?.wege ?? null}>
+          {geruest}
+        </PraxiswegeKontext.Provider>
+      </NurLesenKontext.Provider>
+    </PlattformApiKontext.Provider>
+  );
+}
+
+function Geruest({
   zugaenge,
   email,
   onAbmelden,
@@ -84,6 +131,8 @@ export function PlattformApp({
   email: string | undefined;
   onAbmelden: () => void;
 }) {
+  // E-001: Seiten, die nur schreiben, gibt es in der Einsicht nicht.
+  const nurLesen = useNurLesen();
   const lesbar = zugaenge.filter((z) => z.readable);
   // POR-016 (D2, ANN-261): Einwilligungen entscheidet die Person selbst oder
   // ihre rechtliche Vertretung - die Person auch nach der Lesefrist, solange
@@ -97,11 +146,16 @@ export function PlattformApp({
   );
   const exportierbar = entscheidend.filter((z) => z.readable);
   const praxis = zugaenge[0]?.organization_name ?? '';
-  // POR-020 (ANN-267): Schriftgröße des Geräts; mindestens 18 px am Gerüst.
-  useSchriftgroesseAnwenden();
 
+  // In der Einsicht füllt das Gerüst den Rahmen der Praxisseite, nicht das Fenster.
   return (
-    <div className="plattform-schrift bg-canvas flex min-h-dvh flex-col">
+    <div
+      className={`plattform-schrift bg-canvas flex flex-col ${nurLesen ? 'min-h-full' : 'min-h-dvh'}`}
+    >
+      {/* POR-020 (ANN-267): Schriftgröße des Geräts; mindestens 18 px am
+          Gerüst. In der Einsicht gilt die Wahl der Person, nicht die dieses
+          Geräts - sie bleibt dort bei 18 px. */}
+      {nurLesen ? null : <SchriftgroesseDesGeraets />}
       <Kopf praxis={praxis} bereiche={lesbar} />
       {/* Gescheitertes Nachladen des Zugangs (BEF-046): Die Plattform bleibt
           stehen, die Zeile sagt es. */}
@@ -143,26 +197,30 @@ export function PlattformApp({
               />
             }
           />
-          <Route
-            path={`${PLATTFORM_PFAD}/termine/wunsch`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Terminwunsch zugang={z} />}
-              />
-            }
-          />
-          <Route
-            path={`${PLATTFORM_PFAD}/termine/:terminId`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Terminaenderung zugang={z} />}
-              />
-            }
-          />
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/termine/wunsch`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Terminwunsch zugang={z} />}
+                />
+              }
+            />
+          )}
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/termine/:terminId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Terminaenderung zugang={z} />}
+                />
+              }
+            />
+          )}
           {/* KOM-001: Reiter „Nachrichten" - Fragen an die Praxis. */}
           <Route
             path={`${PLATTFORM_PFAD}/nachrichten`}
@@ -174,14 +232,20 @@ export function PlattformApp({
               />
             }
           />
+          {/* E-001: In der Einsicht führt „neu“ zurück zur Übersicht - ohne
+              diese Route nähme die Nachricht darunter es als Kennung. */}
           <Route
             path={`${PLATTFORM_PFAD}/nachrichten/neu`}
             element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <NeueNachricht zugang={z} />}
-              />
+              nurLesen ? (
+                <Navigate to={PLATTFORM_PFAD} replace />
+              ) : (
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <NeueNachricht zugang={z} />}
+                />
+              )
             }
           />
           <Route
@@ -205,16 +269,18 @@ export function PlattformApp({
               />
             }
           />
-          <Route
-            path={`${PLATTFORM_PFAD}/uebungen/einheit/:planId`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Durchfuehrung zugang={z} />}
-              />
-            }
-          />
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/uebungen/einheit/:planId`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Durchfuehrung zugang={z} />}
+                />
+              }
+            />
+          )}
           <Route
             path={`${PLATTFORM_PFAD}/uebungen/blatt/:planId`}
             element={
@@ -226,16 +292,18 @@ export function PlattformApp({
             }
           />
           {/* TRK-003: Check-in und „Meine Angaben" (DSN-001 4.1). */}
-          <Route
-            path={`${PLATTFORM_PFAD}/checkin`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Checkin zugang={z} />}
-              />
-            }
-          />
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/checkin`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Checkin zugang={z} />}
+                />
+              }
+            />
+          )}
           {/* ALT-003: Gewohnheiten mit den letzten sieben Tagen (ANN-370). */}
           <Route
             path={`${PLATTFORM_PFAD}/gewohnheiten`}
@@ -257,16 +325,18 @@ export function PlattformApp({
               />
             }
           />
-          <Route
-            path={`${PLATTFORM_PFAD}/befundbogen`}
-            element={
-              <MitZugang
-                bereiche={lesbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Befundbogen zugang={z} />}
-              />
-            }
-          />
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/befundbogen`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Befundbogen zugang={z} />}
+                />
+              }
+            />
+          )}
           <Route
             path={`${PLATTFORM_PFAD}/rechnungen`}
             element={
@@ -307,16 +377,18 @@ export function PlattformApp({
               />
             }
           />
-          <Route
-            path={`${PLATTFORM_PFAD}/daten`}
-            element={
-              <MitZugang
-                bereiche={exportierbar}
-                zugaenge={zugaenge}
-                seite={(z) => <Datenexport zugang={z} />}
-              />
-            }
-          />
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/daten`}
+              element={
+                <MitZugang
+                  bereiche={exportierbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <Datenexport zugang={z} />}
+                />
+              }
+            />
+          )}
           <Route
             path={`${PLATTFORM_PFAD}/abo`}
             element={
@@ -360,10 +432,12 @@ export function PlattformApp({
               />
             }
           />
-          <Route
-            path={`${PLATTFORM_PFAD}/einstellungen`}
-            element={<Einstellungen zugaenge={lesbar} />}
-          />
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/einstellungen`}
+              element={<Einstellungen zugaenge={lesbar} />}
+            />
+          )}
           <Route
             path={`${PLATTFORM_PFAD}/ich`}
             element={
@@ -384,6 +458,12 @@ export function PlattformApp({
   );
 }
 
+/** Wendet die Schriftgröße dieses Geräts an, solange das Gerüst steht. */
+function SchriftgroesseDesGeraets() {
+  useSchriftgroesseAnwenden();
+  return null;
+}
+
 /**
  * POR-019: Steht der Einstieg für den gewählten Zugang aus, kommt er vor der
  * Übersicht - sonst die Übersicht. Lädt der Stand nicht, gilt die Übersicht:
@@ -398,14 +478,26 @@ function UebersichtOderEinstieg({
   zugang: Plattformzugang;
   eigeneBereiche: number;
 }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   const einstieg = useQuery({
     queryKey: einstiegSchluessel(zugang.access_id),
-    queryFn: () => ladeEinstieg(zugang.access_id),
+    queryFn: () => api.ladeEinstieg(zugang.access_id),
     retry: false,
   });
   if (einstieg.isPending) return null;
-  if (einstieg.data?.pending) return <Einstieg zugang={zugang} praxis={praxis} />;
-  return <Uebersicht praxis={praxis} zugang={zugang} eigeneBereiche={eigeneBereiche} />;
+  const steht = Boolean(einstieg.data?.pending);
+  // E-001: Den Einstieg bedient nur die Person - die Einsicht zeigt die
+  // Übersicht und sagt, dass er noch aussteht.
+  if (steht && !nurLesen) return <Einstieg zugang={zugang} praxis={praxis} />;
+  return (
+    <Uebersicht
+      praxis={praxis}
+      zugang={zugang}
+      eigeneBereiche={eigeneBereiche}
+      einstiegSteht={steht && nurLesen}
+    />
+  );
 }
 
 /**
@@ -587,6 +679,8 @@ function Ich({
   entscheidend: Plattformzugang[];
   onAbmelden: () => void;
 }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   // Die Person selbst und eine rechtliche Vertretung sehen, wer Zugang hat;
   // eine Begleitung nicht. Verbindlich ist der Server (manage_companions).
   const mitVertretungen = zugaenge.filter((z) => z.access_kind !== 'companion');
@@ -623,32 +717,36 @@ function Ich({
         {/* POR-020: Schriftgröße und was die Praxis eingestellt hat. */}
         <ListRows>
           <ListRow
-            to={`${PLATTFORM_PFAD}/einstellungen`}
+            // E-001: Geräteeinstellungen und Abmelden der Person gibt es in
+            // der Einsicht nicht - die Zeile steht, wie die Person sie sieht.
+            {...(nurLesen ? {} : { to: `${PLATTFORM_PFAD}/einstellungen` })}
             titel="Einstellungen"
             meta="Schrift, Benachrichtigungen, Passkey und PIN"
           />
         </ListRows>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Button onClick={onAbmelden}>Abmelden</Button>
-          <Rueckfrage
-            ausloeser="Überall abmelden"
-            ausloeserVariante="quiet"
-            bestaetigen="Überall abmelden"
-            bestaetigenLaeuft="Wird abgemeldet …"
-            fehler={fehler}
-            onBestaetigen={() =>
-              ueberallAbmelden().catch((grund: Error) => {
-                setFehler(grund.message);
-                throw grund;
-              })
-            }
-          >
-            <p>
-              Sie werden auf allen Geräten abgemeldet, auch auf diesem. Das ist richtig, wenn Sie
-              ein Telefon verloren haben.
-            </p>
-          </Rueckfrage>
-        </div>
+        {nurLesen ? null : (
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button onClick={onAbmelden}>Abmelden</Button>
+            <Rueckfrage
+              ausloeser="Überall abmelden"
+              ausloeserVariante="quiet"
+              bestaetigen="Überall abmelden"
+              bestaetigenLaeuft="Wird abgemeldet …"
+              fehler={fehler}
+              onBestaetigen={() =>
+                api.ueberallAbmelden().catch((grund: Error) => {
+                  setFehler(grund.message);
+                  throw grund;
+                })
+              }
+            >
+              <p>
+                Sie werden auf allen Geräten abgemeldet, auch auf diesem. Das ist richtig, wenn Sie
+                ein Telefon verloren haben.
+              </p>
+            </Rueckfrage>
+          </div>
+        )}
       </Section>
       <Kleingedrucktes className="mt-8">
         Ihr Zugang gehört nur Ihnen. Bitte geben Sie Adresse und Kennwort nicht weiter. Angehörige,
@@ -679,6 +777,7 @@ function IchBereich({
   lesbar: boolean;
   entscheidet: boolean;
 }) {
+  const nurLesen = useNurLesen();
   const ziel = (pfad: string) => `${PLATTFORM_PFAD}/${pfad}?${wahlSuche(z)}`;
   return (
     <Listenabschnitt titel={wahlName(z)}>
@@ -696,7 +795,8 @@ function IchBereich({
       {entscheidet ? <ListRow to={ziel('einwilligungen')} titel="Einwilligungen" /> : null}
       {/* POR-018 (ANN-261): der Export nur in der Lesezeit. */}
       {entscheidet && z.readable ? (
-        <ListRow to={ziel('daten')} titel="Meine Daten herunterladen" />
+        // E-001: Der Export steht im Protokoll und gehört der Person.
+        <ListRow {...(nurLesen ? {} : { to: ziel('daten') })} titel="Meine Daten herunterladen" />
       ) : null}
       {entscheidet && !z.readable ? (
         <ListRow titel="Meine Daten" meta="Ihre Daten bekommen Sie jetzt bei der Praxis." />
@@ -711,9 +811,10 @@ function IchBereich({
  * Zeile.
  */
 function AboZeile({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: aboSchluessel(zugang.access_id),
-    queryFn: () => ladeAbo(zugang.access_id),
+    queryFn: () => api.ladeAbo(zugang.access_id),
   });
   if (!data) return null;
   return (
@@ -744,9 +845,10 @@ function AboZeile({ zugang }: { zugang: Plattformzugang }) {
  * sieht nur, wer Rechnungen sieht; das sagt der Server.
  */
 function PaketZeile({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: paketeSchluessel(zugang.access_id),
-    queryFn: () => ladeMeinePakete(zugang.access_id),
+    queryFn: () => api.ladeMeinePakete(zugang.access_id),
   });
   const aktuell = data?.find((k) => k.state !== 'ended');
   return (
@@ -771,9 +873,10 @@ function PaketZeile({ zugang }: { zugang: Plattformzugang }) {
  * Vertrag im Konto keine Zeile.
  */
 function VertragZeile({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: vertragSchluessel(zugang.access_id),
-    queryFn: () => ladeVertrag(zugang.access_id),
+    queryFn: () => api.ladeVertrag(zugang.access_id),
   });
   if (!data) return null;
   return (
@@ -798,9 +901,10 @@ function VertragZeile({ zugang }: { zugang: Plattformzugang }) {
  * Vertretung beendet nur die Praxis.
  */
 function WerZugangHat({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+  const api = usePlattformApi();
   const { data } = useQuery({
     queryKey: vertretungenSchluessel(zugang.access_id),
-    queryFn: () => ladeMeineVertretungen(zugang.access_id),
+    queryFn: () => api.ladeMeineVertretungen(zugang.access_id),
   });
   if (!data || data.length === 0) return null;
   const titel =
@@ -825,9 +929,11 @@ function VertretungZeile({
   zugangId: string;
   vertretung: MeineVertretung;
 }) {
+  const api = usePlattformApi();
+  const nurLesen = useNurLesen();
   const queryClient = useQueryClient();
   const beenden = useMutation({
-    mutationFn: () => begleitungBeenden(zugangId, v.access_id),
+    mutationFn: () => api.begleitungBeenden(zugangId, v.access_id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: vertretungenSchluessel(zugangId) }),
   });
   const art =
@@ -845,21 +951,24 @@ function VertretungZeile({
         {v.status === 'invited' ? ' · eingeladen' : v.status === 'locked' ? ' · gesperrt' : ''}
       </p>
       {v.can_end ? (
-        <div className="mt-2">
-          <Rueckfrage
-            ausloeser="Begleitung beenden"
-            ausloeserVariante="quiet"
-            bestaetigen="Begleitung beenden"
-            bestaetigenLaeuft="Wird beendet …"
-            fehler={beenden.error?.message}
-            onBestaetigen={() => beenden.mutateAsync()}
-          >
-            <p>
-              {v.representative_name} sieht ab sofort nichts mehr. Damit widerrufen Sie Ihre
-              Einwilligung. Eine neue Begleitung richtet die Praxis ein.
-            </p>
-          </Rueckfrage>
-        </div>
+        // E-001: Beenden kann nur die Person selbst - in der Einsicht fehlt der Knopf.
+        nurLesen ? null : (
+          <div className="mt-2">
+            <Rueckfrage
+              ausloeser="Begleitung beenden"
+              ausloeserVariante="quiet"
+              bestaetigen="Begleitung beenden"
+              bestaetigenLaeuft="Wird beendet …"
+              fehler={beenden.error?.message}
+              onBestaetigen={() => beenden.mutateAsync()}
+            >
+              <p>
+                {v.representative_name} sieht ab sofort nichts mehr. Damit widerrufen Sie Ihre
+                Einwilligung. Eine neue Begleitung richtet die Praxis ein.
+              </p>
+            </Rueckfrage>
+          </div>
+        )
       ) : (
         <p className="text-ink-muted mt-1 text-sm">Beenden kann diese Vertretung nur die Praxis.</p>
       )}

@@ -7,7 +7,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import { terminWuenschen, wuenscheSchluessel, type Plattformzugang, type Tageszeit } from './api';
+import { wuenscheSchluessel, type Plattformzugang, type Tageszeit } from './api';
+import { usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
 import { Wunschfelder } from './Wunschfelder';
 
@@ -21,6 +22,7 @@ const NOTIZ_MAX = 500;
  * Praxis (§8).
  */
 export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
   const navigate = useNavigate();
   const [suche] = useSearchParams();
   const queryClient = useQueryClient();
@@ -32,7 +34,7 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
   const [pruefung, setPruefung] = useState<string | null>(null);
 
   const senden = useMutation({
-    mutationFn: () => terminWuenschen({ zugangId: zugang.access_id, tage, zeiten, notiz }),
+    mutationFn: () => api.terminWuenschen({ zugangId: zugang.access_id, tage, zeiten, notiz }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: wuenscheSchluessel(zugang.access_id) });
       void navigate(`${zurueck}${zurueck.includes('?') ? '&' : '?'}gesendet=1`, { replace: true });

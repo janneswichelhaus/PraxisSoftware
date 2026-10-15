@@ -31,6 +31,7 @@ import {
   canReadTrainingContent,
   canWriteTrainingProtocols,
   canReadExercisePlans,
+  isOwner,
   type CurrentUser,
 } from '@/features/session/types';
 import { Trainingspaket } from '@/features/billing/Trainingspaket';
@@ -297,6 +298,7 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
                     darfVerwalten={darfSchreiben}
                     zeitzone={zone}
                     praxis={user.organizationName ?? 'der Praxis'}
+                    einsichtFuer={isOwner(user.roles) ? kundin.given_name : null}
                   />
                 ) : null}
                 {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro

@@ -108,6 +108,8 @@ import { TrainingClientsPage } from '@/features/training/TrainingClientsPage';
 import { UebungenPage } from '@/features/exercises/UebungenPage';
 import { UebungPage } from '@/features/exercises/UebungPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
+import { PlattformEinsicht } from '@/features/platform-access/PlattformEinsicht';
+import { istEinsichtspfad } from '@/features/platform-access/einsicht';
 import {
   canManageAppointments,
   canManageStaffMasterData,
@@ -181,6 +183,10 @@ export function AuthenticatedRoutes({
   // Übungsbibliothek (UEB-EPIC-001): wer Übungen anleitet, in Behandlung und
   // Training; nicht das Büro (ANN-293). Verbindlich prüft der Server.
   const showExercises = canReadExerciseLibrary(user.roles);
+  // E-001 (DSN-001 D7): Die Einsicht in die Plattform einer Person steht
+  // ohne Praxisrahmen da, wie die Plattform selbst - nur für die
+  // Praxisinhaber:in. Jede andere Rolle landet unter `/p` auf der Startseite.
+  const einsicht = !gesperrt && isOwner(user.roles) && istEinsichtspfad(pathname);
 
   return (
     <VorschauProvider>
@@ -204,423 +210,441 @@ export function AuthenticatedRoutes({
             <EntwurfAbmeldewache besitzer={user.profile.id} />
           </>
         ) : null}
-        <AppShell user={user} onSignOut={onSignOut}>
-          {gesperrt ? (
-            <MdrSperre eintrag={gesperrt} />
-          ) : (
-            <Routes>
-              <Route path="/" element={<MyDayPage user={user} />} />
-              <Route path="/bereiche" element={<BereichePage user={user} />} />
-              <Route path="/vorschau/protokoll" element={<ProtokollPage />} />
-              {/* Das eigene Konto steht jeder angemeldeten Rolle offen: Kennwort,
+        {einsicht ? (
+          <PlattformEinsicht />
+        ) : (
+          <AppShell user={user} onSignOut={onSignOut}>
+            {gesperrt ? (
+              <MdrSperre eintrag={gesperrt} />
+            ) : (
+              <Routes>
+                <Route path="/" element={<MyDayPage user={user} />} />
+                <Route path="/bereiche" element={<BereichePage user={user} />} />
+                <Route path="/vorschau/protokoll" element={<ProtokollPage />} />
+                {/* Das eigene Konto steht jeder angemeldeten Rolle offen: Kennwort,
               zweiter Faktor und Sitzungen gehoeren der Person (STAFF-004). */}
-              <Route path="/mein-konto" element={<MeinKontoPage user={user} />} />
+                <Route path="/mein-konto" element={<MeinKontoPage user={user} />} />
 
-              {showDirectory ? (
-                <>
-                  {/* Offene Punkte - die Büroliste (PRX-EPIC-003): alle vier
+                {showDirectory ? (
+                  <>
+                    {/* Offene Punkte - die Büroliste (PRX-EPIC-003): alle vier
                   Praxisrollen; jede Liste prüft der Server selbst. */}
-                  <Route path="/offen" element={<OpenPointsPage user={user} />} />
-                  <Route path="/patienten" element={<PatientsListPage />} />
-                  <Route path="/patienten/neu" element={<NewPatientPage />} />
-                  {/* Die Akte ist ein Rahmen mit vier Bereichen (AKTE-000, seit
+                    <Route path="/offen" element={<OpenPointsPage user={user} />} />
+                    <Route path="/patienten" element={<PatientsListPage />} />
+                    <Route path="/patienten/neu" element={<NewPatientPage />} />
+                    {/* Die Akte ist ein Rahmen mit vier Bereichen (AKTE-000, seit
                   AKTE-007 Termine, Behandlungsgrundlagen, Doku, Stammdaten;
                   die alten Adressen leiten weiter). Der Rahmen lädt die Patient:in
                   einmal und protokolliert den Zugriff einmal; ein
                   Bereichswechsel wechselt nur den Inhalt. Die Formulare stehen
                   bewusst daneben und nicht darin: Wer tippt, soll die
                   Bereichsleiste nicht sehen (UX-009). */}
-                  <Route path="/patienten/:patientId" element={<PatientRecordLayout user={user} />}>
-                    <Route index element={<AkteEinstieg />} />
-                    {showAppointments ? (
-                      <Route path="termine" element={<PatientAppointmentsPage />} />
-                    ) : null}
-                    <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
-                    <Route path="doku" element={<PatientDokuPage />} />
-                    <Route path="doku/befund" element={<PatientBefundSeite />} />
-                    <Route path="stammdaten" element={<PatientMasterDataPage />} />
-                    {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
-                      <Route
-                        key={alt}
-                        path={alt}
-                        element={<AlterAktenbereich alt={alt as keyof typeof ALTE_AKTENBEREICHE} />}
-                      />
-                    ))}
-                  </Route>
-                  <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
-                  {/* UEB-EPIC-002: ein Übungsplan der Akte - neben dem Rahmen, wie
+                    <Route
+                      path="/patienten/:patientId"
+                      element={<PatientRecordLayout user={user} />}
+                    >
+                      <Route index element={<AkteEinstieg />} />
+                      {showAppointments ? (
+                        <Route path="termine" element={<PatientAppointmentsPage />} />
+                      ) : null}
+                      <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
+                      <Route path="doku" element={<PatientDokuPage />} />
+                      <Route path="doku/befund" element={<PatientBefundSeite />} />
+                      <Route path="stammdaten" element={<PatientMasterDataPage />} />
+                      {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
+                        <Route
+                          key={alt}
+                          path={alt}
+                          element={
+                            <AlterAktenbereich alt={alt as keyof typeof ALTE_AKTENBEREICHE} />
+                          }
+                        />
+                      ))}
+                    </Route>
+                    <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+                    {/* UEB-EPIC-002: ein Übungsplan der Akte - neben dem Rahmen, wie
                   die Formulare (UX-009). Lesen alle vier Praxisrollen, schreiben
                   therapist und team_lead (ANN-298); verbindlich prüft der Server. */}
-                  <Route path="/patienten/:patientId/plaene/:planId" element={<PlanPage />} />
-                  <Route
-                    path="/patienten/:patientId/plaene/:planId/blatt"
-                    element={<PlanblattSeite user={user} />}
-                  />
-                  {/* FRB-002b: Fragebogen erheben - ausserhalb des Rahmens (UX-009). */}
-                  <Route
-                    path="/patienten/:patientId/befund/erheben"
-                    element={<ErhebungPage user={user} />}
-                  />
-                  {/* Datenschutzinformation und Ausfallhonorar-Regel zum
+                    <Route path="/patienten/:patientId/plaene/:planId" element={<PlanPage />} />
+                    <Route
+                      path="/patienten/:patientId/plaene/:planId/blatt"
+                      element={<PlanblattSeite user={user} />}
+                    />
+                    {/* FRB-002b: Fragebogen erheben - ausserhalb des Rahmens (UX-009). */}
+                    <Route
+                      path="/patienten/:patientId/befund/erheben"
+                      element={<ErhebungPage user={user} />}
+                    />
+                    {/* Datenschutzinformation und Ausfallhonorar-Regel zum
                   Ausdrucken - ohne Patientenbezug, aber aus der Akte heraus
                   gedruckt (PAT-006). */}
-                  <Route
-                    path="/patienten/:patientId/aufnahmeblaetter"
-                    element={<AufnahmeblaetterPage user={user} />}
-                  />
-                  {/* Auskunft und Loeschverlangen stehen neben der Akte und
+                    <Route
+                      path="/patienten/:patientId/aufnahmeblaetter"
+                      element={<AufnahmeblaetterPage user={user} />}
+                    />
+                    {/* Auskunft und Loeschverlangen stehen neben der Akte und
                   nicht darin: Sie sind Vorgaenge der Praxisleitung, keine
                   Bereiche der taeglichen Arbeit (OPS-006). Nur `owner` - und
                   verbindlich pruefen das die beiden Serverfunktionen
                   (ADR-004). */}
-                  {showSecurity ? (
-                    <Route
-                      path="/patienten/:patientId/auskunft"
-                      element={<BetroffenenrechtePage />}
-                    />
-                  ) : null}
-                  {/* Eine Dublette uebernehmen: ebenfalls ein Vorgang der
+                    {showSecurity ? (
+                      <Route
+                        path="/patienten/:patientId/auskunft"
+                        element={<BetroffenenrechtePage />}
+                      />
+                    ) : null}
+                    {/* Eine Dublette uebernehmen: ebenfalls ein Vorgang der
                   Praxisleitung neben der Akte (PRX-018). Nur `owner`;
                   verbindlich prueft `merge_patients` (ADR-004). */}
-                  {showSecurity ? (
-                    <Route
-                      path="/patienten/:patientId/dublette"
-                      element={<ZusammenfuehrenPage />}
-                    />
-                  ) : null}
-                  {/* Die Verordnerkartei haengt am Arbeitsbereich Patient:innen: sie
+                    {showSecurity ? (
+                      <Route
+                        path="/patienten/:patientId/dublette"
+                        element={<ZusammenfuehrenPage />}
+                      />
+                    ) : null}
+                    {/* Die Verordnerkartei haengt am Arbeitsbereich Patient:innen: sie
                   wird ausschliesslich fuer Verordnungen gebraucht (VER-001). */}
-                  <Route path="/verordner" element={<PrescribersListPage />} />
-                  <Route path="/verordner/neu" element={<NewPrescriberPage />} />
-                  <Route
-                    path="/verordner/:prescriberId/bearbeiten"
-                    element={<EditPrescriberPage />}
-                  />
-                  {/* Verordnungen haengen an der Akte, nicht an der Verordnerkartei
+                    <Route path="/verordner" element={<PrescribersListPage />} />
+                    <Route path="/verordner/neu" element={<NewPrescriberPage />} />
+                    <Route
+                      path="/verordner/:prescriberId/bearbeiten"
+                      element={<EditPrescriberPage />}
+                    />
+                    {/* Verordnungen haengen an der Akte, nicht an der Verordnerkartei
                   (VER-003). Wer sie schreiben darf, prueft der Server. */}
-                  <Route
-                    path="/patienten/:patientId/verordnungen/neu"
-                    element={<NewTreatmentBasisPage />}
-                  />
-                  <Route
-                    path="/patienten/:patientId/verordnungen/:grundlageId/bearbeiten"
-                    element={<EditTreatmentBasisPage />}
-                  />
-                </>
-              ) : null}
+                    <Route
+                      path="/patienten/:patientId/verordnungen/neu"
+                      element={<NewTreatmentBasisPage />}
+                    />
+                    <Route
+                      path="/patienten/:patientId/verordnungen/:grundlageId/bearbeiten"
+                      element={<EditTreatmentBasisPage />}
+                    />
+                  </>
+                ) : null}
 
-              {showCalendar ? (
-                // Der Kalender auch für die Trainingsbetreuung (TRN-006): Sie
-                // sieht darin nur Trainingstermine, der Server filtert je Termin.
-                <Route path="/kalender" element={<CalendarPage user={user} />} />
-              ) : null}
-              {showAppointments ? (
-                <>
-                  {/* Tag umplanen bei einem Ausfall - aus dem Kalender heraus,
+                {showCalendar ? (
+                  // Der Kalender auch für die Trainingsbetreuung (TRN-006): Sie
+                  // sieht darin nur Trainingstermine, der Server filtert je Termin.
+                  <Route path="/kalender" element={<CalendarPage user={user} />} />
+                ) : null}
+                {showAppointments ? (
+                  <>
+                    {/* Tag umplanen bei einem Ausfall - aus dem Kalender heraus,
                   wenn Person und Tag dort feststehen (CAL-009). */}
-                  <Route path="/kalender/tag-umplanen" element={<TagUmplanenPage user={user} />} />
-                  {/* Warteliste mit Wunschzeiten (PRX-001): dieselben Rollen wie der
+                    <Route
+                      path="/kalender/tag-umplanen"
+                      element={<TagUmplanenPage user={user} />}
+                    />
+                    {/* Warteliste mit Wunschzeiten (PRX-001): dieselben Rollen wie der
                   Kalender; der Server prüft ebenso (app.can_create_appointment). */}
-                  {/* Anrufliste mit gespeichertem Stand (PRX-014): Rollen wie der
+                    {/* Anrufliste mit gespeichertem Stand (PRX-014): Rollen wie der
                   Mitteilungsvermerk; der Server prüft app.can_update_appointment. */}
-                  <Route path="/offen/anrufe" element={<CallListPage user={user} />} />
-                  <Route path="/warteliste" element={<WaitlistPage user={user} />} />
-                  <Route path="/warteliste/neu" element={<NewWaitlistEntryPage />} />
-                  <Route
-                    path="/warteliste/:entryId/bearbeiten"
-                    element={<EditWaitlistEntryPage />}
-                  />
-                  {/* Terminsuche als Vorschlagsliste (PRX-003). */}
-                  <Route
-                    path="/patienten/:patientId/plaetze"
-                    element={<SlotSearchPage user={user} />}
-                  />
-                  {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
+                    <Route path="/offen/anrufe" element={<CallListPage user={user} />} />
+                    <Route path="/warteliste" element={<WaitlistPage user={user} />} />
+                    <Route path="/warteliste/neu" element={<NewWaitlistEntryPage />} />
+                    <Route
+                      path="/warteliste/:entryId/bearbeiten"
+                      element={<EditWaitlistEntryPage />}
+                    />
+                    {/* Terminsuche als Vorschlagsliste (PRX-003). */}
+                    <Route
+                      path="/patienten/:patientId/plaetze"
+                      element={<SlotSearchPage user={user} />}
+                    />
+                    {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
                   nicht - aus dem Kalender heraus (UX-005). */}
-                  <Route path="/termine/neu" element={<NewAppointmentStartPage />} />
-                  {/* Dauertermin aus dem Kalender ohne Vorauswahl: erst die
+                    <Route path="/termine/neu" element={<NewAppointmentStartPage />} />
+                    {/* Dauertermin aus dem Kalender ohne Vorauswahl: erst die
                   Person, dann die Grundlage, dann die Serie (BEF-042). */}
-                  <Route
-                    path="/termine/dauertermin"
-                    element={<DauerterminStartPage user={user} />}
-                  />
-                  {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin.
+                    <Route
+                      path="/termine/dauertermin"
+                      element={<DauerterminStartPage user={user} />}
+                    />
+                    {/* Ein Ereignis des Praxisbetriebs - Besprechung, Teamtermin.
                   Eigener Weg, weil er weder Patient:in noch Verordnung kennt
                   (CAL-015b). */}
-                  <Route path="/termine/ereignis" element={<NewEventPage user={user} />} />
-                  {/* Dieselbe Fehlzeit ueber mehrere Wochen (CAL-021). Eigener
+                    <Route path="/termine/ereignis" element={<NewEventPage user={user} />} />
+                    {/* Dieselbe Fehlzeit ueber mehrere Wochen (CAL-021). Eigener
                   Weg neben dem einzelnen Ereignis: Er fragt zusaetzlich nach
                   Rhythmus und Anzahl und legt eine Serie an. */}
-                  <Route
-                    path="/termine/dauerfehlzeit"
-                    element={<NewEventSeriesPage user={user} />}
-                  />
-                  <Route
-                    path="/patienten/:patientId/termine/neu"
-                    element={<NewAppointmentPage user={user} />}
-                  />
-                  {/* Der Termin hat keine eigene Seite mehr (Akte entschlacken,
+                    <Route
+                      path="/termine/dauerfehlzeit"
+                      element={<NewEventSeriesPage user={user} />}
+                    />
+                    <Route
+                      path="/patienten/:patientId/termine/neu"
+                      element={<NewAppointmentPage user={user} />}
+                    />
+                    {/* Der Termin hat keine eigene Seite mehr (Akte entschlacken,
                     2026-10-03): Lesezeichen und alte Verweise führen in den
                     Kalender, der den Termin wählt. */}
-                  <Route path="/termine/:appointmentId" element={<ZumKalender />} />
-                  {/* Das ganze Ereignis - Bezeichnung, Zeit und Ort fuer alle
+                    <Route path="/termine/:appointmentId" element={<ZumKalender />} />
+                    {/* Das ganze Ereignis - Bezeichnung, Zeit und Ort fuer alle
                     Beteiligten zugleich (CAL-017). Der Weg daneben aendert
                     eine einzelne Teilnahme. */}
-                  <Route
-                    path="/termine/:appointmentId/ereignis-bearbeiten"
-                    element={<EditEventPage user={user} />}
-                  />
-                  <Route
-                    path="/termine/:appointmentId/bearbeiten"
-                    element={<EditAppointmentPage user={user} />}
-                  />
-                  {/* Terminserie aus einer Verordnung - der Einstieg steht in der
+                    <Route
+                      path="/termine/:appointmentId/ereignis-bearbeiten"
+                      element={<EditEventPage user={user} />}
+                    />
+                    <Route
+                      path="/termine/:appointmentId/bearbeiten"
+                      element={<EditAppointmentPage user={user} />}
+                    />
+                    {/* Terminserie aus einer Verordnung - der Einstieg steht in der
                   Akte an der Verordnung, weil dort das Kontingent steht
                   (CAL-007). */}
-                  <Route
-                    path="/patienten/:patientId/verordnungen/:grundlageId/serie"
-                    element={<AppointmentSeriesPage user={user} />}
-                  />
-                  {/* Ungedeckte Termine auf eine andere Grundlage uebertragen
+                    <Route
+                      path="/patienten/:patientId/verordnungen/:grundlageId/serie"
+                      element={<AppointmentSeriesPage user={user} />}
+                    />
+                    {/* Ungedeckte Termine auf eine andere Grundlage uebertragen
                   (CAL-022). Eine Seite fuer beide Einstiege aus der Akte: Das
                   Ziel steht in `?ziel=` oder wird hier gewaehlt - deshalb
                   haengt die Adresse an der Akte und nicht an einer Grundlage. */}
-                  <Route
-                    path="/patienten/:patientId/termine-uebertragen"
-                    element={<TermineUebertragenPage user={user} />}
-                  />
-                  {/* Terminzettel zum Ausdrucken - ein Blatt fuer die Patient:in
+                    <Route
+                      path="/patienten/:patientId/termine-uebertragen"
+                      element={<TermineUebertragenPage user={user} />}
+                    />
+                    {/* Terminzettel zum Ausdrucken - ein Blatt fuer die Patient:in
                   (CAL-011, IDEA-PRX-006). */}
-                  <Route
-                    path="/patienten/:patientId/terminzettel"
-                    element={<AppointmentSlipPage user={user} />}
-                  />
-                  {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
-                  <Route path="/touren" element={<TourenPage user={user} />} />
-                  <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
-                  {/* Gebietstage (PRX-002): lesen die Rollen der Terminverwaltung,
+                    <Route
+                      path="/patienten/:patientId/terminzettel"
+                      element={<AppointmentSlipPage user={user} />}
+                    />
+                    {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
+                    <Route path="/touren" element={<TourenPage user={user} />} />
+                    <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
+                    {/* Gebietstage (PRX-002): lesen die Rollen der Terminverwaltung,
                   pflegen owner, team_lead und office (Server). */}
-                  <Route path="/praxis/gebiete" element={<TerritoriesPage user={user} />} />
-                </>
-              ) : null}
+                    <Route path="/praxis/gebiete" element={<TerritoriesPage user={user} />} />
+                  </>
+                ) : null}
 
-              {showDocumentation ? (
-                <>
-                  {/* Behandlung abschliessen in einem Schritt (UX-007). */}
-                  {/* OFF-002: Tagesplan und Entwürfe des Diensttelefons. */}
-                  {ABLAGE_FUER_PRAXISKONTEN ? (
-                    <Route path="/auf-dem-geraet" element={<AufDemGeraetPage user={user} />} />
-                  ) : null}
-                  <Route
-                    path="/termine/:appointmentId/abschluss"
-                    element={<CompleteTreatmentPage user={user} />}
-                  />
-                  {/* Eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt
+                {showDocumentation ? (
+                  <>
+                    {/* Behandlung abschliessen in einem Schritt (UX-007). */}
+                    {/* OFF-002: Tagesplan und Entwürfe des Diensttelefons. */}
+                    {ABLAGE_FUER_PRAXISKONTEN ? (
+                      <Route path="/auf-dem-geraet" element={<AufDemGeraetPage user={user} />} />
+                    ) : null}
+                    <Route
+                      path="/termine/:appointmentId/abschluss"
+                      element={<CompleteTreatmentPage user={user} />}
+                    />
+                    {/* Eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt
                   6a): Der Haupteintrag wird nur noch dort geschrieben.
                   Nachtrag-Entwürfe behalten ihre eigene Adresse. */}
-                  <Route
-                    path="/termine/:appointmentId/dokumentation"
-                    element={<ZurSchreibseite />}
-                  />
-                  <Route
-                    path="/termine/:appointmentId/dokumentation/:noteId/bearbeiten"
-                    element={<TreatmentNotePage user={user} />}
-                  />
-                  <Route
-                    path="/termine/:appointmentId/dokumentation/:noteId/korrektur"
-                    element={<TreatmentNoteRevisionPage user={user} />}
-                  />
-                  <Route
-                    path="/termine/:appointmentId/dokumentation/:noteId/nachtrag"
-                    element={<TreatmentNoteAddendumPage user={user} />}
-                  />
-                  {/* Ohne Pflege bliebe die Bausteinleiste dauerhaft leer -
+                    <Route
+                      path="/termine/:appointmentId/dokumentation"
+                      element={<ZurSchreibseite />}
+                    />
+                    <Route
+                      path="/termine/:appointmentId/dokumentation/:noteId/bearbeiten"
+                      element={<TreatmentNotePage user={user} />}
+                    />
+                    <Route
+                      path="/termine/:appointmentId/dokumentation/:noteId/korrektur"
+                      element={<TreatmentNoteRevisionPage user={user} />}
+                    />
+                    <Route
+                      path="/termine/:appointmentId/dokumentation/:noteId/nachtrag"
+                      element={<TreatmentNoteAddendumPage user={user} />}
+                    />
+                    {/* Ohne Pflege bliebe die Bausteinleiste dauerhaft leer -
                   die Seite gehoert zur Story (UX-008). */}
-                  <Route path="/praxis/textbausteine" element={<TextbausteinePage user={user} />} />
-                  {/* DOK-005: Therapiebericht schreiben - ausserhalb des Rahmens
+                    <Route
+                      path="/praxis/textbausteine"
+                      element={<TextbausteinePage user={user} />}
+                    />
+                    {/* DOK-005: Therapiebericht schreiben - ausserhalb des Rahmens
                   wie jedes Formular (UX-009). */}
-                  <Route
-                    path="/patienten/:patientId/berichte/:berichtId"
-                    element={<TherapieberichtPage user={user} />}
-                  />
-                </>
-              ) : null}
+                    <Route
+                      path="/patienten/:patientId/berichte/:berichtId"
+                      element={<TherapieberichtPage user={user} />}
+                    />
+                  </>
+                ) : null}
 
-              {/* DOK-005: Das Blatt zum Drucken ist ein Lesepfad - office liest
+                {/* DOK-005: Das Blatt zum Drucken ist ein Lesepfad - office liest
               und druckt, schreibt aber nicht (ADR-004 Punkt 3). */}
-              {showHistory ? (
-                <Route
-                  path="/patienten/:patientId/berichte/:berichtId/druck"
-                  element={<TherapieberichtDruckPage user={user} />}
-                />
-              ) : null}
+                {showHistory ? (
+                  <Route
+                    path="/patienten/:patientId/berichte/:berichtId/druck"
+                    element={<TherapieberichtDruckPage user={user} />}
+                  />
+                ) : null}
 
-              {showHistory ? (
-                <Route
-                  path="/termine/:appointmentId/dokumentation/:noteId/verlauf"
-                  element={<TreatmentNoteHistoryPage user={user} />}
-                />
-              ) : null}
+                {showHistory ? (
+                  <Route
+                    path="/termine/:appointmentId/dokumentation/:noteId/verlauf"
+                    element={<TreatmentNoteHistoryPage user={user} />}
+                  />
+                ) : null}
 
-              {showOperations ? (
-                <>
-                  <Route path="/praxis/team" element={<StaffListPage user={user} />} />
-                  {/* UX-008d (BEF-064, ANN-322): Die Instrumentenbibliothek hat
+                {showOperations ? (
+                  <>
+                    <Route path="/praxis/team" element={<StaffListPage user={user} />} />
+                    {/* UX-008d (BEF-064, ANN-322): Die Instrumentenbibliothek hat
                   keinen Personenbezug und steht allen Rollen der
                   Behandlungsseite offen, wie ihr Menüpunkt. */}
-                  <Route path="/praxis/instrumente" element={<InstrumentePage />} />
-                  <Route
-                    path="/praxis/team/:staffMemberId"
-                    element={<StaffMemberDetailPage user={user} />}
-                  />
-                  <Route path="/team" element={<TeamChatPage user={user} />} />
-                  {/* KOM-002: Rückfragen aus der Behandlung (DSN-001 Abschnitt 6). */}
-                  <Route path="/rueckfragen" element={<RueckfragenPage user={user} />} />
-                  <Route path="/betrieb/flotte" element={<FleetPage user={user} />} />
-                  <Route path="/betrieb/flotte/rad/:radId" element={<BikeEditPage user={user} />} />
-                  <Route path="/betrieb/flotte/schluessel" element={<KeyPage user={user} />} />
-                  <Route path="/betrieb/flotte/checkup" element={<CheckupPage user={user} />} />
-                  <Route path="/betrieb/flotte/panne" element={<BreakdownPage />} />
-                  <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
-                  <Route path="/betrieb/zeitkonto" element={<TimeAccountPage user={user} />} />
-                  <Route
-                    path="/betrieb/erstattungen"
-                    element={<ReimbursementsPage user={user} />}
-                  />
-                </>
-              ) : null}
+                    <Route path="/praxis/instrumente" element={<InstrumentePage />} />
+                    <Route
+                      path="/praxis/team/:staffMemberId"
+                      element={<StaffMemberDetailPage user={user} />}
+                    />
+                    <Route path="/team" element={<TeamChatPage user={user} />} />
+                    {/* KOM-002: Rückfragen aus der Behandlung (DSN-001 Abschnitt 6). */}
+                    <Route path="/rueckfragen" element={<RueckfragenPage user={user} />} />
+                    <Route path="/betrieb/flotte" element={<FleetPage user={user} />} />
+                    <Route
+                      path="/betrieb/flotte/rad/:radId"
+                      element={<BikeEditPage user={user} />}
+                    />
+                    <Route path="/betrieb/flotte/schluessel" element={<KeyPage user={user} />} />
+                    <Route path="/betrieb/flotte/checkup" element={<CheckupPage user={user} />} />
+                    <Route path="/betrieb/flotte/panne" element={<BreakdownPage />} />
+                    <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
+                    <Route path="/betrieb/zeitkonto" element={<TimeAccountPage user={user} />} />
+                    <Route
+                      path="/betrieb/erstattungen"
+                      element={<ReimbursementsPage user={user} />}
+                    />
+                  </>
+                ) : null}
 
-              {showStaffWrite ? (
-                <>
-                  <Route path="/praxis/team/neu" element={<NewStaffMemberPage user={user} />} />
-                  <Route
-                    path="/praxis/team/:staffMemberId/bearbeiten"
-                    element={<EditStaffMemberPage user={user} />}
-                  />
-                </>
-              ) : null}
+                {showStaffWrite ? (
+                  <>
+                    <Route path="/praxis/team/neu" element={<NewStaffMemberPage user={user} />} />
+                    <Route
+                      path="/praxis/team/:staffMemberId/bearbeiten"
+                      element={<EditStaffMemberPage user={user} />}
+                    />
+                  </>
+                ) : null}
 
-              {showBilling ? (
-                <>
-                  <Route path="/abrechnung" element={<InvoicesPage user={user} />} />
-                  <Route
-                    path="/abrechnung/rechnungen/:invoiceId"
-                    element={<InvoiceDetailPage user={user} />}
-                  />
-                  {/* Das Rechnungsblatt zum Verschicken - eine eigene Seite,
+                {showBilling ? (
+                  <>
+                    <Route path="/abrechnung" element={<InvoicesPage user={user} />} />
+                    <Route
+                      path="/abrechnung/rechnungen/:invoiceId"
+                      element={<InvoiceDetailPage user={user} />}
+                    />
+                    {/* Das Rechnungsblatt zum Verschicken - eine eigene Seite,
                   weil ein Brief kein Bedienbildschirm ist (ABR-003b, B14
                   Weg 1). */}
-                  <Route
-                    path="/abrechnung/rechnungen/:invoiceId/druck"
-                    element={<InvoicePrintPage />}
-                  />
-                  {/* Das Stornodokument zu einer Rechnung - ein eigenes Blatt
+                    <Route
+                      path="/abrechnung/rechnungen/:invoiceId/druck"
+                      element={<InvoicePrintPage />}
+                    />
+                    {/* Das Stornodokument zu einer Rechnung - ein eigenes Blatt
                   mit eigener Nummer, das an denselben Empfaenger geht
                   (ABR-003c, ADR-009 Punkt 9). */}
-                  <Route
-                    path="/abrechnung/rechnungen/:invoiceId/storno"
-                    element={<CancellationPrintPage />}
-                  />
-                  {/* Die Zahlungserinnerung haengt an ihrer eigenen Kennung und
+                    <Route
+                      path="/abrechnung/rechnungen/:invoiceId/storno"
+                      element={<CancellationPrintPage />}
+                    />
+                    {/* Die Zahlungserinnerung haengt an ihrer eigenen Kennung und
                   nicht an der Rechnung: Es kann mehrere geben, und jede haelt
                   den Betrag ihres Tages fest (ABR-003d, ANN-080). */}
-                  <Route
-                    path="/abrechnung/erinnerungen/:reminderId"
-                    element={<ReminderPrintPage />}
-                  />
-                  <Route path="/abrechnung/leistungen" element={<ServicesPage />} />
-                  <Route path="/abrechnung/katalog" element={<CatalogPage user={user} />} />
-                  <Route
-                    path="/abrechnung/stammdaten"
-                    element={<PracticeProfilePage user={user} />}
-                  />
-                  <Route path="/abrechnung/zahlungen" element={<PaymentsPage user={user} />} />
-                  {/* Einnahmen je Leistungsart - eine lesende Seite ueber
+                    <Route
+                      path="/abrechnung/erinnerungen/:reminderId"
+                      element={<ReminderPrintPage />}
+                    />
+                    <Route path="/abrechnung/leistungen" element={<ServicesPage />} />
+                    <Route path="/abrechnung/katalog" element={<CatalogPage user={user} />} />
+                    <Route
+                      path="/abrechnung/stammdaten"
+                      element={<PracticeProfilePage user={user} />}
+                    />
+                    <Route path="/abrechnung/zahlungen" element={<PaymentsPage user={user} />} />
+                    {/* Einnahmen je Leistungsart - eine lesende Seite ueber
                   ausgestellte Dokumente und gebuchte Zahlungen, ohne
                   Personenbezug (ABR-011, ADR-009 Punkt 19). */}
-                  <Route path="/abrechnung/auswertung" element={<RevenuePage />} />
-                </>
-              ) : null}
+                    <Route path="/abrechnung/auswertung" element={<RevenuePage />} />
+                  </>
+                ) : null}
 
-              {showSecurity ? (
-                <>
-                  <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} />
-                  {/* Aufbewahrung und Loeschung stehen neben dem Auditlog: beide
+                {showSecurity ? (
+                  <>
+                    <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} />
+                    {/* Aufbewahrung und Loeschung stehen neben dem Auditlog: beide
                   sind Nachweise der Praxisleitung (LOE-002b, ADR-008). */}
-                  <Route
-                    path="/praxis/sicherheit/aufbewahrung"
-                    element={<AufbewahrungPage user={user} />}
-                  />
-                </>
-              ) : null}
-              {showStatistics ? (
-                // Kennzahlen der Praxisfuehrung (STA-EPIC-001); fuer eine Person
-                // mit Umsatzbeteiligung nur der eigene Umsatz (STA-006).
-                <Route path="/statistiken" element={<StatisticsPage user={user} />} />
-              ) : null}
-              {showExercises ? (
-                <>
-                  <Route path="/uebungen" element={<UebungenPage user={user} />} />
-                  <Route path="/uebungen/:uebungId" element={<UebungPage user={user} />} />
-                </>
-              ) : null}
-              {/* KOM-002/-003: eine Rückfrage aus Behandlung oder Training. Wer
+                    <Route
+                      path="/praxis/sicherheit/aufbewahrung"
+                      element={<AufbewahrungPage user={user} />}
+                    />
+                  </>
+                ) : null}
+                {showStatistics ? (
+                  // Kennzahlen der Praxisfuehrung (STA-EPIC-001); fuer eine Person
+                  // mit Umsatzbeteiligung nur der eigene Umsatz (STA-006).
+                  <Route path="/statistiken" element={<StatisticsPage user={user} />} />
+                ) : null}
+                {showExercises ? (
+                  <>
+                    <Route path="/uebungen" element={<UebungenPage user={user} />} />
+                    <Route path="/uebungen/:uebungId" element={<UebungPage user={user} />} />
+                  </>
+                ) : null}
+                {/* KOM-002/-003: eine Rückfrage aus Behandlung oder Training. Wer
                   welche liest, entscheidet der Server (ANN-310, ANN-311). */}
-              {showOperations || showTraining ? (
-                <Route path="/rueckfragen/:messageId" element={<RueckfragePage user={user} />} />
-              ) : null}
-              {showTraining ? (
-                <>
-                  <Route path="/training" element={<TrainingClientsPage user={user} />} />
-                  {/* KOM-003: eine Rückfrage aus dem Training (DSN-001 D1 b). */}
-                  <Route
-                    path="/training/rueckfragen/:messageId"
-                    element={<RueckfragePage user={user} />}
-                  />
-                  {canWriteTrainingClients(user.roles) ? (
-                    <Route path="/training/neu" element={<NewTrainingClientPage />} />
-                  ) : null}
-                  {/* Trainingstermine im gemeinsamen Kalender (TRN-004). */}
-                  {canWriteTrainingClients(user.roles) ? (
-                    <>
-                      <Route
-                        path="/training/termine/neu"
-                        element={<NewTrainingAppointmentPage user={user} />}
-                      />
-                      <Route
-                        path="/training/termine/:appointmentId/bearbeiten"
-                        element={<EditTrainingAppointmentPage user={user} />}
-                      />
-                    </>
-                  ) : null}
-                  <Route
-                    path="/training/termine/:appointmentId"
-                    element={<TrainingAppointmentPage user={user} />}
-                  />
-                  <Route
-                    path="/training/:relationshipId"
-                    element={<TrainingClientPage user={user} />}
-                  />
-                  {/* UEB-EPIC-002: ein Trainingsplan - owner und Trainingsbetreuung,
+                {showOperations || showTraining ? (
+                  <Route path="/rueckfragen/:messageId" element={<RueckfragePage user={user} />} />
+                ) : null}
+                {showTraining ? (
+                  <>
+                    <Route path="/training" element={<TrainingClientsPage user={user} />} />
+                    {/* KOM-003: eine Rückfrage aus dem Training (DSN-001 D1 b). */}
+                    <Route
+                      path="/training/rueckfragen/:messageId"
+                      element={<RueckfragePage user={user} />}
+                    />
+                    {canWriteTrainingClients(user.roles) ? (
+                      <Route path="/training/neu" element={<NewTrainingClientPage />} />
+                    ) : null}
+                    {/* Trainingstermine im gemeinsamen Kalender (TRN-004). */}
+                    {canWriteTrainingClients(user.roles) ? (
+                      <>
+                        <Route
+                          path="/training/termine/neu"
+                          element={<NewTrainingAppointmentPage user={user} />}
+                        />
+                        <Route
+                          path="/training/termine/:appointmentId/bearbeiten"
+                          element={<EditTrainingAppointmentPage user={user} />}
+                        />
+                      </>
+                    ) : null}
+                    <Route
+                      path="/training/termine/:appointmentId"
+                      element={<TrainingAppointmentPage user={user} />}
+                    />
+                    <Route
+                      path="/training/:relationshipId"
+                      element={<TrainingClientPage user={user} />}
+                    />
+                    {/* UEB-EPIC-002: ein Trainingsplan - owner und Trainingsbetreuung,
                   nicht das Büro (ANN-298). Verbindlich prüft der Server. */}
-                  {canReadExercisePlans(user.roles, 'training') ? (
-                    <>
-                      <Route
-                        path="/training/:relationshipId/plaene/:planId"
-                        element={<PlanPage />}
-                      />
-                      <Route
-                        path="/training/:relationshipId/plaene/:planId/blatt"
-                        element={<PlanblattSeite user={user} />}
-                      />
-                    </>
-                  ) : null}
-                </>
-              ) : null}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          )}
-        </AppShell>
+                    {canReadExercisePlans(user.roles, 'training') ? (
+                      <>
+                        <Route
+                          path="/training/:relationshipId/plaene/:planId"
+                          element={<PlanPage />}
+                        />
+                        <Route
+                          path="/training/:relationshipId/plaene/:planId/blatt"
+                          element={<PlanblattSeite user={user} />}
+                        />
+                      </>
+                    ) : null}
+                  </>
+                ) : null}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            )}
+          </AppShell>
+        )}
       </AbmeldeschutzProvider>
     </VorschauProvider>
   );

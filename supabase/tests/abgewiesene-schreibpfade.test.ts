@@ -231,6 +231,14 @@ const FAELLE: Fall[] = [
     [IRGENDEINE],
     'storage_deletion.receipted',
   ],
+  // E-001: die Einsicht in die Plattform einer Person - nur owner, die
+  // Abweisung überlebt wie bei den Schreibwegen (keine neue Aktion).
+  [
+    'platform_preview',
+    "select public.platform_preview($1::uuid, 'platform_messages', '{}'::jsonb) as daten",
+    [IRGENDEINE],
+    'platform_preview.read',
+  ],
 ];
 
 describe('Abgewiesene Schreibpfade (G6c)', () => {
@@ -244,7 +252,8 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
     // und TRN-005 Trainingstermin und Vereinbarung, seit TRN-009 das
     // Trainingsprotokoll (seit ABN-022 mit Nachtrag), seit POR-002 der Plattformzugang, seit POR-005 die
-    // Vertretung, seit AKTE-009 der Kalender ohne Zugang.
+    // Vertretung, seit AKTE-009 der Kalender ohne Zugang, seit E-001 die
+    // Einsicht in die Plattform einer Person.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`
