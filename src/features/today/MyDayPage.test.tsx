@@ -749,9 +749,8 @@ describe('Übersicht', () => {
       // Seite stehen lässt (ZST-04).
       expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
       expect(fehler).not.toHaveTextContent(/angemeldet/);
-      // Ohne Stand weder Zeitstrahl noch Tagesabschluss.
+      // Ohne Stand kein Zeitstrahl.
       expect(screen.queryByRole('heading', { name: STRAHL })).toBeNull();
-      expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
 
       fetchDayPlan.mockResolvedValue(tagesplan());
       await user.click(
@@ -932,7 +931,7 @@ describe('Übersicht', () => {
         }),
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      await screen.findByRole('heading', { level: 2, name: 'Alle Besuche erledigt' });
+      await screen.findByRole('heading', { name: STRAHL });
 
       const dokus = screen.getAllByRole('link', { name: /^Doku zum Termin um / });
       expect(dokus.map((l) => l.getAttribute('href'))).toEqual([
@@ -1101,23 +1100,13 @@ describe('Übersicht', () => {
       expect(within(karte).getByRole('link', { name: 'Termin öffnen' })).toBeInTheDocument();
     });
 
-    it('tritt am Tagesende in Tiefgruen an die Stelle von Liege und Weg', async () => {
+    it('zeigt am Tagesende keine Abschlusskarte - Morgen und der Strahl stehen gleich da (ANN-546)', async () => {
       fetchDayPlan.mockResolvedValue([
         tagesEintrag({ id: 't1', status: 'documented', documentation_status: 'final' }),
         zweiterBesuch({ status: 'completed', documentation_status: 'final' }),
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      const abschluss = (
-        await screen.findByRole('heading', { level: 2, name: 'Alle Besuche erledigt' })
-      ).closest('section')!;
-      expect(abschluss).toHaveClass('bg-surface-inverse', 'rounded-card');
-      expect(within(abschluss).getByText('Heute')).toHaveClass('text-salbei', 'font-semibold');
-      expect(
-        within(abschluss).getByText('2 von 2 Besuchen erledigt · 2 Dokus festgeschrieben'),
-      ).toBeInTheDocument();
-      // Morgen steht darunter (Morgen-Vorschau); der Kalenderlink entfällt heute.
-      expect(within(abschluss).queryByRole('link')).toBeNull();
       const vorschau = (await screen.findByRole('heading', { name: /^Morgen · / })).closest(
         'section',
       )!;
@@ -1125,12 +1114,32 @@ describe('Übersicht', () => {
         'href',
         `/?tag=${tagePlus(todayInTimeZone(ZONE), 1)}`,
       );
+      // Die Karte in Tiefgrün sagte nur, was Punkte im Kopf und Strahl schon sagen.
+      expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
+      expect(screen.queryByText('Kein Weg mehr offen')).toBeNull();
+      expect(document.querySelector('.bg-surface-inverse')).toBeNull();
+      expect(screen.getByText('2 von 2 Besuchen erledigt')).toBeInTheDocument();
 
       expect(screen.queryByText('Liege heute')).toBeNull();
       expect(screen.queryByRole('article')).toBeNull();
-      // Genau einmal - und der Tag steht darunter weiter im Strahl.
-      expect(screen.getAllByText('Alle Besuche erledigt')).toHaveLength(1);
       expect(imStrahl().getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+      // Ein Rhythmus: Morgen und der Strahl sind Geschwister mit demselben
+      // Abstand, ohne eigenen Außenabstand (Jannes, 2026-10-15).
+      const strahl = screen.getByRole('heading', { name: STRAHL }).closest('section')!;
+      expect(strahl.parentElement).toBe(vorschau.parentElement);
+      expect(vorschau.parentElement).toHaveClass('flex', 'flex-col', 'gap-8');
+      for (const abschnitt of [vorschau, strahl]) {
+        expect(abschnitt.className).not.toMatch(/(^|\s)(sm:)?m[ty]-/);
+      }
+    });
+
+    it('fuehrt auf der Uebersicht nicht mehr zu den Trainingskund:innen', async () => {
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ id: 't1' })]);
+      renderMitVorschau(<MyDayPage user={testUser(['owner'])} />);
+      await screen.findByRole('heading', { name: STRAHL });
+      // Der Weg in den Bereich steht in der Navigation.
+      expect(screen.queryByRole('link', { name: /Trainingskund/ })).toBeNull();
+      expect(document.querySelector('a[href="/training"]')).toBeNull();
     });
 
     it('fragt beim Oeffnen die Route des Tages ab und schickt nur Koordinaten und Profil (ANN-194, ADR-019 Punkt 12)', async () => {
@@ -1410,7 +1419,6 @@ describe('Übersicht', () => {
       expect(
         await screen.findByText('Heute sind Ihnen keine Besuche zugeordnet'),
       ).toBeInTheDocument();
-      expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
       expect(screen.queryByText('Liege heute')).toBeNull();
       expect(imStrahl().getByRole('link', { name: /Teambesprechung/ })).toBeInTheDocument();
     });
@@ -1423,19 +1431,16 @@ describe('Übersicht', () => {
         await screen.findByText('Heute sind Ihnen keine Besuche zugeordnet'),
       ).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: STRAHL })).toBeNull();
-      expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
     });
 
-    it('sagt „Alle Besuche erledigt" nur, wenn es Besuche gab', async () => {
+    it('nennt einen erledigten Tag mit Besuch nicht leer', async () => {
       fetchDayPlan.mockResolvedValue([
         tagesEintrag({ id: 't1', status: 'completed', documentation_status: 'final' }),
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('Alle Besuche erledigt')).toBeInTheDocument();
-      expect(
-        screen.getByText('1 von 1 Besuch erledigt · 1 Doku festgeschrieben'),
-      ).toBeInTheDocument();
+      expect(await screen.findByText('1 von 1 Besuch erledigt')).toBeInTheDocument();
+      expect(imStrahl().getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
       expect(screen.queryByText('Heute sind Ihnen keine Besuche zugeordnet')).toBeNull();
     });
 
@@ -1485,11 +1490,10 @@ describe('Übersicht', () => {
       fetchDayPlan.mockImplementation((tag: string) => Promise.resolve(tag < heute ? [] : plan));
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      // Tagesabschluss, darunter „Heute noch offen" - vor der Vorschau auf morgen.
+      // Zuerst „Heute noch offen" - vor der Vorschau auf morgen.
       const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (2)' })).closest(
         'section',
       )!;
-      expect(screen.getByText('Alle Besuche erledigt')).toBeInTheDocument();
       const vorschau = await screen.findByText(/^Morgen · /);
       expect(
         offen.compareDocumentPosition(vorschau) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -1856,7 +1860,7 @@ describe('Übersicht', () => {
       expect(screen.getByText('0 von 2 Besuchen erledigt')).toBeInTheDocument();
     });
 
-    it('sagt nach dem letzten Besuch „Kein Weg mehr offen", solange ein Haken fehlt', async () => {
+    it('nennt nach dem letzten Besuch, was noch offen ist, solange ein Haken fehlt', async () => {
       fetchDayPlan.mockResolvedValue([
         tagesEintrag({
           id: 't1',
@@ -1869,10 +1873,7 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      expect(
-        await screen.findByRole('heading', { level: 2, name: 'Kein Weg mehr offen' }),
-      ).toBeInTheDocument();
-      expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
+      expect(await screen.findByText('1 von 2 Besuchen erledigt')).toBeInTheDocument();
       // Der liegengebliebene steht unter „Heute noch offen" - zum Abschließen
       // über die Schreibseite, im Strahl mit dem Haken.
       const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).closest(
@@ -1976,7 +1977,7 @@ describe('Übersicht', () => {
       expect(within(tage[1]!).getByRole('link')).toHaveAttribute('aria-current', 'date');
     });
 
-    it('zeigt gestern, was liegen blieb, und schliesst den Tag ab', async () => {
+    it('zeigt gestern, was liegen blieb', async () => {
       const gestern = tagePlus(heute(), -1);
       fetchDayPlan.mockResolvedValue([
         tagesEintrag({ id: 't1', status: 'completed', documentation_status: 'final' }),
@@ -1984,13 +1985,6 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />, `/?tag=${gestern}`);
 
-      const abschluss = (
-        await screen.findByRole('heading', { level: 2, name: 'Kein Weg mehr offen' })
-      ).closest('section')!;
-      expect(within(abschluss).getByText('Gestern')).toBeInTheDocument();
-      expect(
-        within(abschluss).getByRole('link', { name: 'Diesen Tag im Kalender' }),
-      ).toHaveAttribute('href', `/kalender?ansicht=tag&datum=${gestern}`);
       const offen = (
         await screen.findByRole('heading', { name: 'Gestern noch offen (1)' })
       ).closest('section')!;

@@ -461,11 +461,14 @@ test('zaehlt den Weg herunter, sobald der Termin davor vorbei ist', async ({ pag
 });
 
 for (const breite of [375, 1280]) {
-  test(`schliesst den Tag in Tiefgruen ab (${breite} px)`, async ({ page }) => {
+  test(`zeigt am Tagesende morgen und den Tag ohne Abschlusskarte (${breite} px)`, async ({
+    page,
+  }) => {
     await oeffne(page, '17:00', breite, '?ansicht=abend');
 
-    const abschluss = page.getByRole('heading', { name: 'Alle Besuche erledigt' }).locator('..');
-    await expect(abschluss).toContainText('3 von 3 Besuchen erledigt · 3 Dokus festgeschrieben');
+    // ANN-546: keine Karte in Tiefgrün - die Punkte im Kopf sagen es.
+    await expect(page.getByText('Alle Besuche erledigt')).toHaveCount(0);
+    await expect(page.getByText('3 von 3 Besuchen erledigt').first()).toBeAttached();
     await expect(page.getByText('Liege heute', { exact: true })).toHaveCount(0);
     await expect(page.getByRole('article')).toHaveCount(0);
     // Darunter, was morgen kommt (Jannes, 2026-10-11): Liege und Abfahrt.
@@ -489,9 +492,9 @@ test('listet am Tagesende erst, was heute offen ist, dann morgen (Auftrag C1)', 
   page,
 }) => {
   await oeffne(page, '17:00', 375, '?ansicht=doku');
-  // B4: Solange ein Haken fehlt, ist der Tag nicht „erledigt“ - nur kein Weg
-  // mehr offen.
-  await expect(page.getByRole('heading', { name: 'Kein Weg mehr offen' })).toBeVisible();
+  // B4: Solange ein Haken fehlt, ist der Tag nicht „erledigt“; was fehlt,
+  // steht zuoberst (ANN-546: ohne Abschlusskarte darüber).
+  await expect(page.getByText('Kein Weg mehr offen')).toHaveCount(0);
   const offen = page.getByRole('heading', { name: 'Heute noch offen (2)' }).locator('../..');
   await expect(offen).toBeVisible();
   const zeilen = offen.getByRole('listitem');

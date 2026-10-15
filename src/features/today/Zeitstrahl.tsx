@@ -239,12 +239,12 @@ export function Zeitstrahl({
   const alleErledigt = vorbei.every((termin) => standVon(termin, jetzt) === 'erledigt');
 
   return (
-    <section aria-labelledby={titelId} className="mt-3 sm:mt-5">
+    <section aria-labelledby={titelId}>
       <h2
         id={titelId}
         className={
           titelSichtbar
-            ? 'text-accent tracking-label mb-3 text-xs font-semibold uppercase'
+            ? 'text-accent tracking-label mb-3 flex min-h-8 items-center text-xs font-semibold uppercase'
             : 'sr-only'
         }
       >
