@@ -2,7 +2,6 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { erzeugeVorschauzustand } from './vorschauZustand';
-import { standortvorlageKoeln } from './standortvorlage';
 
 /**
  * Die Vorschaubereiche müssen technisch von echten Vorgängen getrennt bleiben.
@@ -36,11 +35,16 @@ import { standortvorlageKoeln } from './standortvorlage';
  * — sie MÜSSEN mit dem Server sprechen. Mit dem Verzeichnis ist auch die
  * Ausnahme für den Kartenprototyp gefallen: MapLibre, Routen-, Matrix- und
  * Handoff-Aufrufe sind seitdem in **jedem** Vorschaubereich ein Fund.
+ *
+ * `src/features/fleet` ist mit **FLT-EPIC-001** entfallen: Die Radflotte
+ * liest und schreibt über ihre Serverfunktionen (Räder, Schlüssel, Check-Up,
+ * Panne, Stellen am Rad) und MUSS mit dem Server sprechen. Ihre Prüfungen zur
+ * Standortvorlage stehen seitdem unverändert in
+ * `src/features/fleet/standortvorlage.test.ts`.
  */
 
 const VORSCHAUBEREICHE = [
   'src/features/preview',
-  'src/features/fleet',
   'src/features/vacation',
   'src/features/timeaccount',
   'src/features/reimbursements',
@@ -250,7 +254,13 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
   });
 
   it('findet die Vorschaubereiche ueberhaupt', () => {
-    expect(dateien.length).toBeGreaterThan(15);
+    // Jeder genannte Bereich trägt Dateien bei - ein verschobenes oder
+    // umbenanntes Verzeichnis fiele sonst still aus der Prüfung. Seit
+    // FLT-EPIC-001 (Radflotte echt) sind es fünf Bereiche mit 15 Dateien.
+    for (const bereich of VORSCHAUBEREICHE) {
+      expect(quelldateien(bereich).length, bereich).toBeGreaterThan(0);
+    }
+    expect(dateien.length).toBeGreaterThanOrEqual(15);
   });
 
   it.each(VERBOTEN)('enthaelt keinen $grund ($muster)', ({ muster }) => {
@@ -270,7 +280,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
   it('wuerde jede Importform einer echten API tatsaechlich finden', () => {
     // Gegenprobe zu jeder Form, die der Scanner kennen muss. `beispiel` liegt
     // in einem Vorschaubereich, damit relative Pfade richtig aufgeloest werden.
-    const beispiel = 'src/features/fleet/Beispiel.tsx';
+    const beispiel = 'src/features/vacation/Beispiel.tsx';
     const pruefe = (quelltext: string) => unerlaubteImporte(beispiel, quelltext);
 
     expect(
@@ -312,7 +322,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     // der Kacheln beim Anbieter holt, gehoert in keinen Vorschaubereich.
     const imKarten =
       "import { Map } from 'maplibre-gl';\nimport { createPortal } from 'react-dom';";
-    expect(unerlaubteImporte('src/features/fleet/Beispiel.tsx', imKarten)).toEqual([
+    expect(unerlaubteImporte('src/features/vacation/Beispiel.tsx', imKarten)).toEqual([
       'maplibre-gl (nicht in der Positivliste)',
       'react-dom (nicht in der Positivliste)',
     ]);
@@ -340,7 +350,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     // Vertrag selbst ist eine reine Typdatei.
     expect(
       unerlaubteImporte(
-        'src/features/fleet/Beispiel.tsx',
+        'src/features/vacation/Beispiel.tsx',
         "import type { Coordinate } from '@/lib/location/contract';",
       ),
     ).toEqual([]);
@@ -348,7 +358,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
 
   it('laesst die Erreichbarkeitsregel nicht in die Vorschau', () => {
     const regel = "import { erreichbarkeit } from '@/features/scheduling/erreichbarkeit';";
-    expect(unerlaubteImporte('src/features/fleet/Beispiel.tsx', regel)).toEqual([
+    expect(unerlaubteImporte('src/features/vacation/Beispiel.tsx', regel)).toEqual([
       '@/features/scheduling/erreichbarkeit (nicht in der Positivliste)',
     ]);
   });
@@ -359,30 +369,6 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     const beispiel = ohneKommentare('const x = getSupabase(); // getSupabase()');
     expect(VERBOTEN.some(({ muster }) => muster.test(beispiel))).toBe(true);
     expect(ohneKommentare('// localStorage')).not.toMatch(/localStorage/);
-  });
-});
-
-describe('Standortvorlage', () => {
-  it('ist als ungeprueft gekennzeichnet', () => {
-    expect(standortvorlageKoeln.geprueft).toBe(false);
-    expect(standortvorlageKoeln.pruefhinweis).toMatch(/Tübingen/);
-  });
-
-  it('enthaelt keine betrieblichen Kontaktdaten oder Zugangscodes', () => {
-    const werte = [
-      standortvorlageKoeln.werkstatt.name,
-      standortvorlageKoeln.werkstatt.telefon,
-      standortvorlageKoeln.werkstatt.mobil,
-      standortvorlageKoeln.depot.zugangHinweis,
-    ].join(' ');
-    // Keine Telefonnummer und keine mehrstellige Zahlenfolge, die als Code
-    // gelesen werden koennte.
-    expect(werte).not.toMatch(/\d{3,}/);
-    expect(werte).toMatch(/nicht hinterlegt|nicht in der Anwendung gespeichert/);
-  });
-
-  it('benennt Zustaendigkeit als Rolle, nicht als Person', () => {
-    expect(standortvorlageKoeln.zustaendigeRolle).toBe('Teamleitung');
   });
 });
 

@@ -130,6 +130,10 @@ describe('rueckwegBeschriftung', () => {
     ['/termine/t1', 'Zurück zum Termin'],
     ['/termine/neu', 'Zurück zur Terminanlage'],
     ['/praxis/team/s1', 'Zurück zu den Mitarbeitenden'],
+    // FLT-EPIC-001: die Radflotte und ein Rad darin; Check-Up und Panne
+    // führen dorthin zurück, woher sie geöffnet wurden.
+    ['/betrieb/flotte?zustand=reparatur', 'Zurück zur Radflotte'],
+    ['/betrieb/flotte/rad/r1?bereich=verlauf', 'Zurück zum Rad'],
   ])('beschriftet %s mit %s', (pfad, erwartet) => {
     expect(rueckwegBeschriftung(pfad)).toBe(erwartet);
   });

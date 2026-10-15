@@ -78,10 +78,13 @@ import { EntwurfAbmeldewache } from '@/features/offline-documentation/EntwurfAbm
 import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
-import { BikeEditPage } from '@/features/fleet/BikeEditPage';
+import { BikePage } from '@/features/fleet/BikePage';
+import { BikeNewPage } from '@/features/fleet/BikeNewPage';
+import { DepotsPage } from '@/features/fleet/DepotsPage';
 import { KeyPage } from '@/features/fleet/KeyPage';
 import { CheckupPage } from '@/features/fleet/CheckupPage';
 import { BreakdownPage } from '@/features/fleet/BreakdownPage';
+import { WerkstattblattPage } from '@/features/fleet/WerkstattblattPage';
 import { VacationPage } from '@/features/vacation/VacationPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
@@ -504,14 +507,23 @@ export function AuthenticatedRoutes({
                     <Route path="/team" element={<TeamChatPage user={user} />} />
                     {/* KOM-002: Rückfragen aus der Behandlung (DSN-001 Abschnitt 6). */}
                     <Route path="/rueckfragen" element={<RueckfragenPage user={user} />} />
+                    {/* FLT-EPIC-001: die Radflotte, echt angebunden. Lesen dürfen
+                  alle Praxisrollen der Behandlung, Räder und Depots pflegt die
+                  Inhaber:in, freigeben und sperren auch die Teamleitung - das
+                  entscheidet der Server (BEF-066, ANN-545). */}
                     <Route path="/betrieb/flotte" element={<FleetPage user={user} />} />
+                    <Route path="/betrieb/flotte/rad/neu" element={<BikeNewPage user={user} />} />
+                    <Route path="/betrieb/flotte/rad/:radId" element={<BikePage user={user} />} />
+                    {/* Die Unterlage für die Werkstatt - ein Druckblatt wie die
+                  Rechnung (Handoff Lastenrad 3D, Vorschlag 6). */}
                     <Route
-                      path="/betrieb/flotte/rad/:radId"
-                      element={<BikeEditPage user={user} />}
+                      path="/betrieb/flotte/rad/:radId/werkstatt"
+                      element={<WerkstattblattPage user={user} />}
                     />
+                    <Route path="/betrieb/flotte/depots" element={<DepotsPage user={user} />} />
                     <Route path="/betrieb/flotte/schluessel" element={<KeyPage user={user} />} />
                     <Route path="/betrieb/flotte/checkup" element={<CheckupPage user={user} />} />
-                    <Route path="/betrieb/flotte/panne" element={<BreakdownPage />} />
+                    <Route path="/betrieb/flotte/panne" element={<BreakdownPage user={user} />} />
                     <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
                     <Route path="/betrieb/zeitkonto" element={<TimeAccountPage user={user} />} />
                     <Route

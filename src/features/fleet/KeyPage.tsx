@@ -1,156 +1,144 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { EmptyState } from '@/components/ui/Feedback';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Field } from '@/components/ui/Field';
-import { Select } from '@/components/ui/Select';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Feldgruppe } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
-import {
-  depotName,
-  radMitStandort,
-  useVorschau,
-  type Protokolleintrag,
-} from '@/features/preview/vorschauContext';
-import { vorschauId } from '@/features/preview/vorschauZustand';
-import { SimulationsMeldung } from '@/features/preview/ui';
+import { FLOTTE_SCHLUESSEL, fetchFleet, flotteSchluessel, takeKey, type Fleet } from './api';
+import { montagDerWoche } from './format';
+import { radMitStandort } from './rad';
+
+const ZUR_FLOTTE = '/betrieb/flotte';
 
 /**
- * Schlüsselentnahme.
+ * Einen Schlüssel eintragen - für sich oder für eine andere Person
+ * (FLT-EPIC-001). Den eigenen nimmt man meist mit einem Tipp an der Zeile der
+ * Radflotte; diese Seite ist für alles andere: jemand nimmt den Schlüssel für
+ * eine Kollegin mit, oder das eigene Konto hat keinen Mitarbeiterdatensatz.
  *
- * Zwei Schritte wie in der Vorlage: erst das Rad, dann die Person. Der Name
- * ist mit dem angemeldeten Konto vorbelegt - in der Vorlage war er reiner
- * Freitext, was den Schlüsselstand von einer korrekten Selbstauskunft abhängig
- * machte. Änderbar bleibt er trotzdem: jemand kann den Schlüssel für eine
- * Kollegin mitnehmen.
- *
- * **Kein Rad vorgewählt (VOR-18).** Bis dahin stand das erste Rad der Liste in
- * der Auswahl - im Demostand eines mit vergebenem Schlüssel -, und der tägliche
- * Weg begann mit einer Warnung und einem Knopf, der nicht ging. Räder mit
- * vergebenem Schlüssel stehen am Ende und sagen es vorn im Text; nach einer
- * Entnahme ist die Auswahl wieder leer. Ein Rad aus der Adresszeile
- * (`?rad=`, von der Radkarte) bleibt vorgewählt.
+ * Die Person kommt aus dem Mitarbeiterstamm, nicht als Freitext - der
+ * Schlüsselstand hinge sonst an einer richtigen Selbstauskunft. Angeboten
+ * werden nur Räder, deren Schlüssel im Tresor liegt und die nicht gesperrt
+ * sind; der Server prüft es ebenso. Kein Rad ist vorgewählt (VOR-18), außer
+ * es kommt aus der Adresszeile (`?rad=`).
  */
 export function KeyPage({ user }: { user: CurrentUser }) {
-  const { zustand, simuliere } = useVorschau();
-  const [suchparameter] = useSearchParams();
-  const [radId, setRadId] = useState(() => suchparameter.get('rad') ?? '');
-  const [name, setName] = useState(user.profile.display_name);
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
-
-  const rad = zustand.raeder.find((eintrag) => eintrag.id === radId);
-  const bereitsEntnommen = Boolean(rad?.schluesselInhaber);
-  // Stabil sortiert: Räder mit Schlüssel im Tresor zuerst, sonst wie in der Flotte.
-  const auswahl = [...zustand.raeder].sort(
-    (a, b) => Number(Boolean(a.schluesselInhaber)) - Number(Boolean(b.schluesselInhaber)),
-  );
-
-  function bestaetigen() {
-    if (!rad) return;
-    const eintrag = simuliere(
-      {
-        bereich: 'Radflotte',
-        vorgang: `Schlüssel entnommen: ${rad.name}`,
-        folgen: [
-          `Schlüsselstand auf „bei ${name.trim()}“ gesetzt`,
-          'Schlüsselverlauf des Rads ergänzt',
-        ],
-        nichtGeschehen: [
-          'Kein Vorgang gespeichert und keine Benachrichtigung versendet',
-          'Kein Zugang zu einem echten Schlüsseltresor erteilt',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        raeder: stand.raeder.map((eintragRad) =>
-          eintragRad.id === rad.id
-            ? {
-                ...eintragRad,
-                schluesselInhaber: name.trim(),
-                schluesselSeit: new Date().toISOString(),
-                schluesselverlauf: [
-                  ...eintragRad.schluesselverlauf,
-                  {
-                    id: vorschauId('schluessel'),
-                    inhaber: name.trim(),
-                    entnommen: new Date().toISOString(),
-                    zurueckgelegt: null,
-                  },
-                ],
-              }
-            : eintragRad,
-        ),
-      }),
-    );
-    setMeldung(eintrag);
-    setRadId('');
-  }
-
-  const fehlt = !rad
-    ? 'Erst ein Rad wählen.'
-    : !bereitsEntnommen && name.trim() === ''
-      ? 'Erst einen Namen eintragen.'
-      : null;
+  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const abfrage = useQuery({
+    queryKey: flotteSchluessel(montag),
+    queryFn: () => fetchFleet(montag),
+    retry: false,
+  });
 
   return (
     <>
-      <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
-      <PageHeader
-        title="Schlüssel entnehmen"
-        description="Schlüssel für ein Rad aus dem Tresor nehmen."
+      <Rueckweg standard={ZUR_FLOTTE} beschriftung="Zurück zur Radflotte" />
+      <PageHeader title="Schlüssel eintragen" />
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Radflotte wird geladen …"
+        fehler="Die Radflotte konnte nicht geladen werden."
+        inKarte
+      >
+        {(flotte) => <Eintragung flotte={flotte} />}
+      </Abfragezustand>
+    </>
+  );
+}
+
+function Eintragung({ flotte }: { flotte: Fleet }) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [parameter] = useSearchParams();
+  const frei = flotte.bikes.filter((rad) => !rad.key && !rad.block);
+  const vorgabe = parameter.get('rad');
+  const [radId, setRadId] = useState(() =>
+    vorgabe && frei.some((rad) => rad.id === vorgabe) ? vorgabe : '',
+  );
+  const [personId, setPersonId] = useState(flotte.my_staff_member_id ?? '');
+
+  const eintragen = useMutation({
+    mutationFn: () => takeKey(radId, personId === flotte.my_staff_member_id ? null : personId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: FLOTTE_SCHLUESSEL });
+      const rad = flotte.bikes.find((eintrag) => eintrag.id === radId);
+      const person =
+        personId === flotte.my_staff_member_id
+          ? 'Ihnen'
+          : (flotte.staff.find((eintrag) => eintrag.id === personId)?.name ?? 'der Person');
+      void navigate(ZUR_FLOTTE, {
+        state: { meldung: `Schlüssel von ${rad?.name ?? 'dem Rad'} bei ${person} eingetragen.` },
+      });
+    },
+  });
+
+  if (frei.length === 0) {
+    return (
+      <EmptyState
+        inKarte
+        title="Kein Schlüssel liegt im Tresor."
+        description="Alle Räder sind unterwegs oder in Reparatur."
+        aktion={
+          <ButtonLink to={ZUR_FLOTTE} variant="secondary">
+            Zur Radflotte
+          </ButtonLink>
+        }
       />
+    );
+  }
 
-      <SimulationsMeldung eintrag={meldung} />
+  const fehlt = !radId ? 'Erst ein Rad wählen.' : !personId ? 'Erst eine Person wählen.' : null;
 
-      <div className="max-w-formular flex flex-col gap-4">
+  return (
+    <div className="max-w-formular">
+      <Feldgruppe>
         <Select label="Rad" value={radId} onChange={(event) => setRadId(event.target.value)}>
           <option value="">Bitte wählen …</option>
-          {auswahl.map((eintrag) => (
-            <option key={eintrag.id} value={eintrag.id}>
-              {eintrag.schluesselInhaber
-                ? `${eintrag.name} (vergeben an ${eintrag.schluesselInhaber}) · ${depotName(zustand, eintrag, 'aktuell')}`
-                : radMitStandort(zustand, eintrag)}
+          {frei.map((rad) => (
+            <option key={rad.id} value={rad.id}>
+              {radMitStandort(rad, flotte)}
             </option>
           ))}
         </Select>
-
-        {bereitsEntnommen ? (
-          // Eine Meldung als Zeile auf Fläche, ohne Rahmen (Leitfaden L2).
-          <p className="rounded-card bg-warnung-soft text-warnung px-4 py-3 text-sm font-medium">
-            <span aria-hidden="true">! </span>
-            Der Schlüssel ist bereits bei {rad?.schluesselInhaber}. Bitte erst zurücklegen lassen
-            oder ein anderes Rad wählen.
-          </p>
-        ) : null}
-
-        <Field
-          label="Name"
-          hint="Mit dem angemeldeten Konto vorbelegt. Änderbar, falls jemand den Schlüssel für eine andere Person mitnimmt."
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-        />
-
-        {/* Gesperrt steht der Knopf gestrichelt da (BEF-069); hier ist der
-            Grund nicht offensichtlich, also sagt ein Satz, was fehlt (Handoff
-            Schrift und Knöpfe, Abschnitt 3). Ist der Schlüssel schon
-            entnommen, sagt es die Warnung darüber - kein zweiter Satz. */}
-      </div>
-      <div className="max-w-formular">
-        <Formularfuss zusatz={fehlt ? <span id="entnahme-fehlt">{fehlt}</span> : undefined}>
-          <Button
-            onClick={bestaetigen}
-            disabled={!rad || bereitsEntnommen || name.trim() === ''}
-            aria-describedby={fehlt ? 'entnahme-fehlt' : undefined}
-          >
-            Entnahme bestätigen
-          </Button>
-          <ButtonLink to="/betrieb/flotte" variant="quiet">
-            Abbrechen
-          </ButtonLink>
-        </Formularfuss>
-      </div>
-    </>
+        <Select
+          label="Schlüssel bei"
+          value={personId}
+          onChange={(event) => setPersonId(event.target.value)}
+        >
+          <option value="">Bitte wählen …</option>
+          {flotte.staff.map((person) => (
+            <option key={person.id} value={person.id}>
+              {person.id === flotte.my_staff_member_id ? `${person.name} (Sie)` : person.name}
+            </option>
+          ))}
+        </Select>
+      </Feldgruppe>
+      {eintragen.isError ? (
+        <Statusmeldung ton="fehler" className="mt-4">
+          {eintragen.error.message}
+        </Statusmeldung>
+      ) : null}
+      <Formularfuss zusatz={fehlt ? <span id="schluessel-fehlt">{fehlt}</span> : undefined}>
+        <Button
+          onClick={() => eintragen.mutate()}
+          disabled={Boolean(fehlt) || eintragen.isPending}
+          aria-describedby={fehlt ? 'schluessel-fehlt' : undefined}
+        >
+          {eintragen.isPending ? 'Wird eingetragen …' : 'Schlüssel eintragen'}
+        </Button>
+        <ButtonLink to={ZUR_FLOTTE} variant="quiet">
+          Abbrechen
+        </ButtonLink>
+      </Formularfuss>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ import type * as TreatmentBasesApiModule from '@/features/treatment-bases/api';
 import type * as RetentionApiModule from '@/features/retention/api';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
 import type * as EinsichtModule from '@/features/platform-access/einsicht';
+import type * as FleetApiModule from '@/features/fleet/api';
 import { AuthenticatedRoutes } from './AuthenticatedRoutes';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -20,6 +21,22 @@ vi.mock('@/features/auth/sessionContext', async (importOriginal) => ({
     initialising: false,
     signOut: vi.fn(),
   }),
+}));
+
+// Die Radflotte liest seit FLT-EPIC-001 vom Server; die Navigationstests
+// brauchen nur ihre leere Seite.
+vi.mock('@/features/fleet/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof FleetApiModule>()),
+  fetchFleet: () =>
+    Promise.resolve({
+      can_manage: false,
+      can_release: false,
+      my_staff_member_id: null,
+      depots: [],
+      bikes: [],
+      staff: [],
+      unavailable: [],
+    }),
 }));
 
 vi.mock('@/features/retention/api', async (importOriginal) => ({

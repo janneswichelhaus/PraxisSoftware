@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { standortvorlageKoeln } from '@/features/preview/standortvorlage';
+import { standortvorlageKoeln } from '@/features/fleet/standortvorlage';
 import {
   ablaufStarten,
   abschluss,

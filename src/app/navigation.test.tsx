@@ -182,8 +182,12 @@ describe('Arbeitsbereiche je Rolle', () => {
 
   it('kennzeichnet noch nicht angebundene Unterpunkte als Vorschau', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
+    const urlaub = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/urlaub');
+    expect(urlaub?.vorschau).toBe(true);
+    // Seit FLT-EPIC-001 echt angebunden: die Radflotte trägt keine Kennzeichnung mehr.
     const flotte = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/flotte');
-    expect(flotte?.vorschau).toBe(true);
+    expect(flotte).toBeDefined();
+    expect(flotte?.vorschau).toBeUndefined();
   });
 
   it('zeigt im Kalender keine Unterzeile; die Tour gehoert trotzdem dazu', () => {

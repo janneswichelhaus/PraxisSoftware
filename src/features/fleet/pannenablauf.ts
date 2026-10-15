@@ -1,5 +1,5 @@
-import type { Standortvorlage } from '@/features/preview/standortvorlage';
-import { transportLabel } from '@/features/preview/standortvorlage';
+import type { Standortvorlage } from '@/features/fleet/standortvorlage';
+import { transportLabel } from '@/features/fleet/standortvorlage';
 
 /**
  * Schrittstruktur des Pannenablaufs.
@@ -34,13 +34,21 @@ export type SchrittId =
   | 'vertragswerkstattReparieren'
   | 'vertragswerkstattUebergabe';
 
-export type Abschlussart =
-  | 'meldungOhneSperre'
-  | 'lokalNichtMoeglich'
-  | 'lokalRepariert'
-  | 'depotAbgestellt'
-  | 'vertragswerkstattRepariert'
-  | 'transportFortsetzung';
+/**
+ * Die Abschlüsse des Assistenten. Dieselbe Liste steht in der Datenbank
+ * (`app.fleet_breakdown_outcomes`); `supabase/tests/fleet.test.ts` hält beide
+ * gleich.
+ */
+export const ABSCHLUSSARTEN = [
+  'meldungOhneSperre',
+  'lokalNichtMoeglich',
+  'lokalRepariert',
+  'depotAbgestellt',
+  'vertragswerkstattRepariert',
+  'transportFortsetzung',
+] as const;
+
+export type Abschlussart = (typeof ABSCHLUSSARTEN)[number];
 
 export interface Abschluss {
   art: Abschlussart;

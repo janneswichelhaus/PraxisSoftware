@@ -83,8 +83,6 @@ export const GRENZEN: Record<
     'features/treatment-bases': 4,
   },
   tabellen: {
-    'features/fleet': 1,
-
     'features/statistics': 1,
 
     'features/training': 1,
