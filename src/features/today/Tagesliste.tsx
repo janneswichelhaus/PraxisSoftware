@@ -20,6 +20,7 @@ import {
 } from './api';
 import { zugangMitStockwerk } from './stockwerk';
 import { einordnung, terminName, type Wegstrecke } from './tagesstart';
+import { erstaufnahmePfad } from '@/features/intake/stand';
 
 /** Eine Pille der Karte: 36 px hoch, 14 px in 600 (Design-Handoff 2026-10-01). */
 const pille =
@@ -391,10 +392,14 @@ export function Tageskarte({
               Liege
             </span>
           ) : null}
-          {/* PRX-013: Die Pille sagt, dass etwas fehlt; was fehlt, steht in der
-              Akte - und für Vorlesesoftware gleich dabei. */}
+          {/* PRX-013: Die Pille sagt, dass etwas fehlt - für Vorlesesoftware
+              gleich mit dem, was fehlt. Seit K10 führt sie in die geführte
+              Erstaufnahme zu diesem Termin statt in die Akte. */}
           {fehlt.length > 0 && termin.patient_id ? (
-            <Link to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')} className={pillenlink}>
+            <Link
+              to={mitRueckweg(erstaufnahmePfad(termin.patient_id, termin.id), '/')}
+              className={pillenlink}
+            >
               <span
                 className={`${pille} bg-warnung-soft text-warnung group-hover:border-warnung border border-transparent transition-colors duration-120`}
               >

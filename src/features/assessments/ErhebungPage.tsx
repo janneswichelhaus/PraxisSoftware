@@ -1,6 +1,7 @@
 import { useCallback, useId, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { leseRueckweg } from '@/lib/rueckweg';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
@@ -123,7 +124,8 @@ export function Erhebung({
   });
   const ausgangslage = useRef<Ausgangslage | null>(null);
 
-  const zurueck = `/patienten/${patientId ?? ''}/doku/befund`;
+  // K10: Aus der geführten Erstaufnahme führt der Weg dorthin zurück.
+  const zurueck = leseRueckweg(suche, `/patienten/${patientId ?? ''}/doku/befund`);
   const definition = erhebbareInstrumente().find(
     (score) => score.meta.id === suche.get('instrument'),
   );
@@ -316,7 +318,8 @@ function Formular({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const zurueck = `/patienten/${patient.id}/doku/befund`;
+  const [suche] = useSearchParams();
+  const zurueck = leseRueckweg(suche, `/patienten/${patient.id}/doku/befund`);
   const folgeId = useId();
   const formular = useRef<HTMLFormElement>(null);
 

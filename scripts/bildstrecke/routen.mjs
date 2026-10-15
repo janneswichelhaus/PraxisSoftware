@@ -231,6 +231,13 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
   },
   {
+    muster: '/patienten/:patientId/erstaufnahme',
+    pfad: `${akte(max)}/erstaufnahme`,
+    bereich: 'Akte',
+    etikett: 'Erstaufnahme, geführt (K10)',
+    konten: ['therapist', 'office'],
+  },
+  {
     muster: '/verordner',
     pfad: '/verordner',
     bereich: 'Akte',

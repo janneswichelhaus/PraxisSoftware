@@ -351,7 +351,7 @@ describe('Tageskarte', () => {
       expect(screen.queryByRole('button', { name: /Liege/ })).toBeNull();
     });
 
-    it('fuehrt ueber „Erstaufnahme offen" in die Akte und sagt der Vorlesesoftware, was fehlt (PRX-013)', () => {
+    it('fuehrt ueber „Erstaufnahme offen" in die gefuehrte Erstaufnahme zum Termin und sagt der Vorlesesoftware, was fehlt (PRX-013)', () => {
       renderWithProviders(
         <Tageskarte
           termin={eintrag()}
@@ -362,7 +362,11 @@ describe('Tageskarte', () => {
       const pille = screen.getByRole('link', {
         name: 'Erstaufnahme offen: Verordnungsfoto · Anmeldebogen',
       });
-      expect(pille).toHaveAttribute('href', `/patienten/p1?zurueck=${encodeURIComponent('/')}`);
+      // K10: in die geführte Erstaufnahme, mit dem Termin für die Doku danach.
+      expect(pille).toHaveAttribute(
+        'href',
+        `/patienten/p1/erstaufnahme?termin=${eintrag().id}&zurueck=${encodeURIComponent('/')}`,
+      );
       // 36 px im Bild, 44 px zum Tippen (Design-Review R2, H1).
       expect(pille).toHaveClass('min-h-11', '-my-1');
       expect(pille.firstElementChild).toHaveClass('bg-warnung-soft', 'text-warnung', 'min-h-9');
