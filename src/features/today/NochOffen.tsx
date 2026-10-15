@@ -167,7 +167,7 @@ export function Nachzuholen({
   if (offen.length === 0) return null;
 
   return (
-    <section className="mt-6">
+    <section>
       <Disclosure inKarte kopf="betont" anzahl={offen.length} summary={<h2>Nachzuholen</h2>}>
         <ListRows rahmen={false}>
           {offen.map(({ termin, grund }) => (

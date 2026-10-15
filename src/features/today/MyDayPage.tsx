@@ -1,7 +1,6 @@
-import { Fragment, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
-import { BEGRIFFE } from '@/lib/begriffe';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -39,7 +38,6 @@ import {
 import {
   canManageAppointments,
   canReadPatientDirectory,
-  canReadTrainingClients,
   canWriteTrainingClients,
   isTherapyStaff,
   canReadTreatmentNote,
@@ -70,7 +68,6 @@ import {
   besucheDesTages,
   hausbesucheDesTages,
   bisBeginn,
-  dokuText,
   fokusDesTages,
   fortschrittText,
   liegeHeute,
@@ -84,7 +81,6 @@ import {
   wegZumBesuch,
   type Fokus,
   type NaechsterWeg,
-  type Tagesfortschritt,
 } from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
@@ -297,61 +293,6 @@ function Teamplan({
   );
 }
 
-/**
- * Der Tagesabschluss in Tiefgrün (Design-Handoff 2026-10-01, Abschnitt 5a
- * Punkt 8): Steht kein Besuch mehr aus, tritt diese Karte an die Stelle von
- * Liege-Zeile und Wegbalken - einmal, über dem Zeitstrahl.
- *
- * Sie sagt, was der Fall ist, und behauptet nicht mehr: „Alle Besuche
- * erledigt" heißt, dass jeder Besuch abgehakt ist; „Kein Weg mehr offen",
- * dass nach der Uhr niemand mehr anzufahren ist, aber noch ein Haken fehlt
- * (ANN-117 Fassung 2). Was noch offen ist, steht darunter im Zeitstrahl als
- * ausgeklappte Karte.
- */
-function Tagesabschluss({
-  fortschritt,
-  tagWort,
-  istHeute,
-  datum,
-}: {
-  fortschritt: Tagesfortschritt;
-  /** „Heute", „Gestern" … über dem Titel (ANN-234). */
-  tagWort: string;
-  istHeute: boolean;
-  datum: string;
-}) {
-  const titelId = useId();
-  const doku = dokuText(fortschritt);
-  // ANN-117 Fassung 2: Nach der Uhr ist kein Weg mehr offen; „erledigt" sagt
-  // die Karte erst, wenn auch jeder Besuch abgehakt ist.
-  const alleAbgehakt = fortschritt.erledigt === fortschritt.gesamt;
-  return (
-    <section aria-labelledby={titelId} className="bg-surface-inverse rounded-card px-4 py-4">
-      {/* Salbei ist nur auf Tiefgrün Textfarbe, und nur in 12 px und 600. */}
-      <p className="text-salbei tracking-label text-xs font-semibold uppercase">{tagWort}</p>
-      <h2 id={titelId} className="text-surface text-h3 tracking-display mt-1 font-extrabold">
-        {alleAbgehakt ? <span aria-hidden="true">✓ </span> : null}
-        {alleAbgehakt ? 'Alle Besuche erledigt' : 'Kein Weg mehr offen'}
-      </h2>
-      <p className="text-accent-soft mt-1 text-sm tabular-nums">
-        {doku ? `${fortschrittText(fortschritt)} · ${doku}` : fortschrittText(fortschritt)}
-      </p>
-      {/* Auf Tiefgrün ist der Fokusrahmen Papier, nicht Hauptfarbe. Heute
-          steht morgen darunter (Morgen-Vorschau); der Weg in den Kalender
-          bleibt für die anderen Tage. */}
-      {istHeute ? null : (
-        <Link
-          to={`/kalender?ansicht=tag&datum=${datum}`}
-          className="text-surface focus-visible:outline-surface mt-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold underline underline-offset-3"
-        >
-          Diesen Tag im Kalender
-          <Pfeil />
-        </Link>
-      )}
-    </section>
-  );
-}
-
 /** Der nächste Weg als Kachel: späteste Abfahrt, Fahrt, Puffer (`travelPlan`). */
 function alsAbfahrt(weg: NaechsterWeg): Abfahrt {
   const plan = travelPlan(weg.von.zeit, weg.bis.zeit, weg.fahrtMin);
@@ -367,7 +308,7 @@ function alsAbfahrt(weg: NaechsterWeg): Abfahrt {
 /** Leere Flächen in Zielgröße, solange die Tagesliste lädt: Liege-Zeile und Wegbalken. */
 function Ladegeruest() {
   return (
-    <>
+    <div>
       <div aria-hidden="true" className="flex flex-col gap-2">
         <div className="border-line bg-surface rounded-card h-13 border" />
         <div className="border-line bg-surface rounded-card h-30 border" />
@@ -375,7 +316,7 @@ function Ladegeruest() {
       <div className="mt-4">
         <LoadingState label="Tagesliste wird geladen …" />
       </div>
-    </>
+    </div>
   );
 }
 
@@ -391,7 +332,6 @@ function MeinTag({
   abfrage,
   sortiert,
   fokus,
-  fortschritt,
   datum,
   morgen,
   staffMemberId,
@@ -408,7 +348,6 @@ function MeinTag({
   /** Die Tagesliste nach Uhrzeit; leer, solange nichts geladen ist. */
   sortiert: readonly DayPlanEntry[];
   fokus: Fokus | null;
-  fortschritt: Tagesfortschritt;
   datum: string;
   morgen: string;
   staffMemberId: string;
@@ -908,21 +847,19 @@ function MeinTag({
   return (
     <>
       {meldung?.ton === 'ok' ? (
-        <div className="mb-4 flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <Rueckmeldung key={meldung.text} className="min-w-0 flex-1">
             {meldung.text}
           </Rueckmeldung>
           {rueckgaengig}
         </div>
       ) : meldung ? (
-        <Statusmeldung ton="fehler" className="mb-4">
-          {meldung.text}
-        </Statusmeldung>
+        <Statusmeldung ton="fehler">{meldung.text}</Statusmeldung>
       ) : null}
       {/* B7: Hat dieser Haken die Verordnung vollständig gemacht, folgt der
           Vorschlag „In die Abrechnung stellen“ (ein Tipp). */}
       {abgehakt && darfTermine ? (
-        <div className="mb-4 empty:hidden">
+        <div className="empty:hidden">
           <FreigabeNachHaken
             appointmentId={abgehakt.id}
             patientId={abgehaktJetzt?.patient_id ?? null}
@@ -935,7 +872,7 @@ function MeinTag({
           Abfrage, nicht über ein Neuladen der Seite, das den Stand verwürfe
           (ANN-021, UEB-05). */}
       {isError ? (
-        <div className="bg-warnung-soft rounded-card mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+        <div className="bg-warnung-soft rounded-card flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
           <Statusmeldung ton="warnung" className="max-w-prose">
             Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der Stand von{' '}
             {formatLocalTime(new Date(dataUpdatedAt).toISOString(), zeitzone)} Uhr – er kann
@@ -965,40 +902,40 @@ function MeinTag({
           title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`}
         />
       ) : stehtBesuchAus ? (
-        <div className="flex flex-col gap-2">
-          {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
-              mit Praxisterminen gibt es die Frage nicht. Die Abfahrt steht nur
-              mit bekannter Fahrzeit da (Jannes, 2026-10-11). */}
-          <Tageskacheln
-            liege={hausbesuche.length > 0 ? liegeHeute(sortiert, jetzt) : null}
-            abfahrt={weg ? alsAbfahrt(weg) : null}
-            tagWort={tagWort}
-          />
-          {/* Eine Nachbildung ohne Kartendienst sieht aus wie eine Fahrzeit;
-              die Seite sagt es dazu, wie die Tour (MAP-006c). */}
-          {fahrzeiten.quelle === 'nachbildung' && fahrzeiten.anfahrten.size > 0 ? (
-            <Statusmeldung ton="warnung">
-              Nachbildung ohne Kartendienst: Die Fahrzeiten sind über die Luftlinie mit 15 km/h
-              gerechnet.
-            </Statusmeldung>
-          ) : null}
+        // Liege, Abfahrt und der Strahl mit der Karte des nächsten Besuchs
+        // sind ein Abschnitt.
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col gap-2">
+            {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
+                mit Praxisterminen gibt es die Frage nicht. Die Abfahrt steht nur
+                mit bekannter Fahrzeit da (Jannes, 2026-10-11). */}
+            <Tageskacheln
+              liege={hausbesuche.length > 0 ? liegeHeute(sortiert, jetzt) : null}
+              abfahrt={weg ? alsAbfahrt(weg) : null}
+              tagWort={tagWort}
+            />
+            {/* Eine Nachbildung ohne Kartendienst sieht aus wie eine Fahrzeit;
+                die Seite sagt es dazu, wie die Tour (MAP-006c). */}
+            {fahrzeiten.quelle === 'nachbildung' && fahrzeiten.anfahrten.size > 0 ? (
+              <Statusmeldung ton="warnung">
+                Nachbildung ohne Kartendienst: Die Fahrzeiten sind über die Luftlinie mit 15 km/h
+                gerechnet.
+              </Statusmeldung>
+            ) : null}
+          </div>
+          {strahl}
         </div>
-      ) : (
-        <Tagesabschluss
-          fortschritt={fortschritt}
-          tagWort={TagesWort(datum, heute)}
-          istHeute={istHeute}
-          datum={datum}
-        />
-      )}
+      ) : null}
 
       {/* Ohne eigenen Besuch steht der heutige Strahl (Fehlzeiten) gleich unter
           dem Leerzustand - heute vor morgen (Design-Review R2, U4; ANN-482). */}
       {ohneBesuch ? strahl : null}
 
-      {/* Am Tagesende erst, was heute noch offen ist - Haken und Doku -,
-          dann was liegen geblieben ist, dann morgen (Auftrag C1, Analyse
-          Rang 13). */}
+      {/* Steht kein Besuch mehr aus, gibt es keine eigene Abschlusskarte mehr:
+          Punkte im Kopf, „noch offen" und der Strahl sagen dasselbe (Jannes,
+          2026-10-15, ANN-546). Erst, was heute noch offen ist - Haken und
+          Doku -, dann was liegen geblieben ist, dann morgen (Auftrag C1,
+          Analyse Rang 13). */}
       {!stehtBesuchAus ? (
         <NochOffen
           plan={sortiert}
@@ -1030,7 +967,7 @@ function MeinTag({
         />
       ) : null}
 
-      {ohneBesuch ? null : strahl}
+      {ohneBesuch || stehtBesuchAus ? null : strahl}
 
       {/* Liegengebliebenes der letzten Tage, unter dem eigenen Tag: Der
           nächste Weg bleibt auf dem ersten Bildschirm (Auftrag C1). */}
@@ -1189,15 +1126,18 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           Tag hat (das Büro), bleibt einspaltig: Für ihn ist der Plan des
           Teams die Hauptsache, keine Randspalte. */}
       <Zweispalter
+        // Untereinander (unter 900 px Inhaltsbreite) gilt derselbe Rhythmus
+        // wie in der Hauptspalte: 32 px zur Hauptspalte und zwischen den
+        // Karten; daneben stehen die Karten mit 16 px (Zweispalter).
         kontext={
           zweispaltig ? (
-            <>
+            <div className="@zweispaltig:gap-4 flex flex-col gap-8 [&>*]:mt-0">
               {teamplan}
               {tagesroute}
-            </>
+            </div>
           ) : null
         }
-        className={eigeneTagesliste && tagesliste.data ? 'print:hidden' : ''}
+        className={`gap-y-8 ${eigeneTagesliste && tagesliste.data ? 'print:hidden' : ''}`}
       >
         {/* Am Telefon ein kompakter Kopf (Auftrag C1): Gruß in h4, darunter
             das kurze Datum, rechts Punkte und Kurzform. So liegt der
@@ -1241,64 +1181,57 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           <Wochenleiste tag={tag} heute={heute} anzahl={() => undefined} />
         ) : null}
 
-        {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}
+        {/* Unter dem Kopf ein Rhythmus: Abschnitt zu Abschnitt 32 px
+            (DESIGN.md „Rhythmus“), gleich, welche Abschnitte der Tag gerade
+            zeigt (Jannes, 2026-10-15). Die Abschnitte bringen keinen eigenen
+            Außenabstand mit. */}
+        <div className="flex flex-col gap-8 [&>*]:mt-0">
+          {teamplanZuerst ? teamplan : null}
 
-        {eigeneTagesliste && user.staffMemberId ? (
-          <MeinTag
-            abfrage={tagesliste}
-            sortiert={sortiert}
-            fokus={fokus}
-            fortschritt={fortschritt}
-            datum={tag}
-            morgen={morgen}
-            staffMemberId={user.staffMemberId}
-            darfDokumentieren={darfDokumentieren}
-            darfDokuLesen={canReadTreatmentNote(user.roles)}
-            darfTermine={darfTermine}
-            mitBehandlung={isTherapyStaff(user.roles)}
-            zeitzone={zeitzone}
-            jetzt={jetzt}
-            heute={heute}
-            praxis={user.organizationName ?? 'Ihrer Praxis'}
-          />
-        ) : null}
+          {eigeneTagesliste && user.staffMemberId ? (
+            <MeinTag
+              abfrage={tagesliste}
+              sortiert={sortiert}
+              fokus={fokus}
+              datum={tag}
+              morgen={morgen}
+              staffMemberId={user.staffMemberId}
+              darfDokumentieren={darfDokumentieren}
+              darfDokuLesen={canReadTreatmentNote(user.roles)}
+              darfTermine={darfTermine}
+              mitBehandlung={isTherapyStaff(user.roles)}
+              zeitzone={zeitzone}
+              jetzt={jetzt}
+              heute={heute}
+              praxis={user.organizationName ?? 'Ihrer Praxis'}
+            />
+          ) : null}
 
-        {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
+          {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
               etwas fällig ist. Wer selbst unterwegs ist, sieht sie unter dem
               eigenen Tag: Liege und nächster Weg bleiben auf dem ersten
               Bildschirm (UX-EPIC-003). Ohne Fälliges steht an ihrer Stelle
               der ruhige Weg zur Büroliste - nie beide (Design-Review R2, U6). */}
-        <OpenPointsSummary
-          user={user}
-          today={heute}
-          sonst={
-            canReadPatientDirectory(user.roles) ? (
-              <p className="border-line nicht-drucken mt-8 border-t pt-3">
-                <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
-                  Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
-                  <Pfeil />
-                </Textlink>
-              </p>
-            ) : null
-          }
-        />
+          <OpenPointsSummary
+            user={user}
+            today={heute}
+            sonst={
+              canReadPatientDirectory(user.roles) ? (
+                <p className="border-line nicht-drucken border-t pt-3">
+                  <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
+                    Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
+                    <Pfeil />
+                  </Textlink>
+                </p>
+              ) : null
+            }
+          />
 
-        {teamplanZuerst && tagesroute ? <div className="mt-6">{tagesroute}</div> : null}
+          {teamplanZuerst ? tagesroute : null}
 
-        {eigeneTagesliste ? null : <div className="mt-6">{teamplan}</div>}
+          {eigeneTagesliste ? null : teamplan}
+        </div>
       </Zweispalter>
-
-      {/* TRN-EPIC-001: der Weg in den Bereich Training für die Rollen, die ihn
-          sehen - für die Trainingsbetreuung der einzige Arbeitsbereich neben
-          dieser Übersicht. */}
-      {canReadTrainingClients(user.roles) ? (
-        <p className="border-line nicht-drucken lg:max-w-spalte mt-8 border-t pt-3">
-          <Textlink alleinstehend to="/training" className="text-liste gap-1 font-medium">
-            {BEGRIFFE.trainingskundInnen}
-            <Pfeil />
-          </Textlink>
-        </p>
-      ) : null}
 
       {/* BEF-052, ANN-021 Fassung 3: Gedruckt wird nur der eigene Tag als
           Liste mit Anschrift und Rufnummer - die Bildschirmansicht trägt sie

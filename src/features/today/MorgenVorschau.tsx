@@ -77,15 +77,17 @@ export function MorgenVorschau({
       : null;
 
   return (
-    <section aria-labelledby={titelId} className="mt-8">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-4">
+    <section aria-labelledby={titelId}>
+      {/* Kopfzeile 32 px wie jeder Abschnitt (`Section`); das Tippziel von
+          „Zum Tag" bleibt 44 px und ragt über die Zeile hinaus. */}
+      <div className="mb-3 flex min-h-8 flex-wrap items-center justify-between gap-x-4">
         <h2 id={titelId} className="text-accent tracking-label text-xs font-semibold uppercase">
           Morgen · {kopfDatum(morgen)}
         </h2>
         <Textlink
           alleinstehend
           to={tagesPfad(morgen, heute)}
-          className="gap-1 text-sm font-semibold"
+          className="-my-1.5 gap-1 text-sm font-semibold"
         >
           Zum Tag <span aria-hidden="true">→</span>
         </Textlink>
@@ -96,7 +98,7 @@ export function MorgenVorschau({
         // Design-Review R2, U4).
         <EmptyState inKarte title="Morgen sind Ihnen keine Termine zugeordnet" />
       ) : (
-        <>
+        <div className="flex flex-col gap-3 sm:gap-4">
           <Tageskacheln
             liege={hausbesuche.length > 0 ? liegeHeute(plan, VOR_ALLEM) : null}
             abfahrt={abfahrt}
@@ -112,7 +114,7 @@ export function MorgenVorschau({
             anfahrten={new Map()}
             karte={null}
           />
-        </>
+        </div>
       )}
     </section>
   );
