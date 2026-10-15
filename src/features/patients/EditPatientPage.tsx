@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { weiterMitEnter } from '@/lib/weiterMitEnter';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -126,7 +127,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
       {/* UX-005e: Nur der Name - das Sternchen erklärt sich am Feld. */}
       <PageHeader title={TITEL} description={fullName(patient)} />
 
-      <form onSubmit={absenden} noValidate className="max-w-formular">
+      <form onKeyDown={weiterMitEnter} onSubmit={absenden} noValidate className="max-w-formular">
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             STAMMDATEN_REIHENFOLGE,

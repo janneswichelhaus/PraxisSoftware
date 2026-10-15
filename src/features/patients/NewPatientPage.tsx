@@ -9,6 +9,7 @@ import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Textlink } from '@/components/ui/Textlink';
 import { BEGRIFFE } from '@/lib/begriffe';
+import { weiterMitEnter } from '@/lib/weiterMitEnter';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -104,6 +105,13 @@ export function NewPatientPage() {
     },
   });
 
+  // K11: Die Aufnahme am Telefon beginnt mit dem Namen - ohne Tipp ins erste
+  // Feld (ANN-543). Die Seite hat nur diese eine Aufgabe; das Feld trägt
+  // seine Beschriftung, Vorlesesoftware sagt sie an.
+  useEffect(() => {
+    document.getElementById(stammdatenFeldId('given_name'))?.focus();
+  }, []);
+
   // Nach dem Fehlerfenster steht der Fokus wieder auf dem Knopf, mit dem es
   // weitergeht - nicht auf dem Seitenanfang, 2000 px darüber (PAT-03). Erst
   // nach dem Schließen: Solange das Fenster offen ist, ist die Seite gesperrt.
@@ -174,7 +182,12 @@ export function NewPatientPage() {
           das Sternchen erklärt sich am Feld. */}
       <PageHeader title="Patient:in anlegen" />
 
-      <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-formular">
+      <form
+        onKeyDown={weiterMitEnter}
+        onSubmit={(event) => void absenden(event)}
+        noValidate
+        className="max-w-formular"
+      >
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             STAMMDATEN_REIHENFOLGE,
@@ -192,6 +205,7 @@ export function NewPatientPage() {
           therapeutinnenStand={
             therapeuten.isPending ? 'laedt' : therapeuten.isError ? 'fehler' : 'bereit'
           }
+          kurz
         />
 
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird -

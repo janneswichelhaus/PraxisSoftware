@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -380,25 +380,54 @@ describe('NewPatientPage', () => {
 
   // PAT-07, PAT-15: Kontakt in der Reihenfolge der Anzeige, Freitexte mit
   // ihrer Grenze, derselbe Name für den Zugangshinweis.
-  it('ordnet Kontakt wie die Anzeige und begrenzt die Freitexte', () => {
+  it('zeigt am Telefon nur, was ein Hausbesuch braucht; das Seltene eingeklappt (K11)', () => {
     renderWithProviders(<NewPatientPage />);
 
-    const kontakt = ['Mobil', 'Telefon (privat)', 'E-Mail'].map((feld) =>
-      screen.getByLabelText(feld),
-    );
+    // Der Name beginnt ohne Tipp ins Feld.
+    expect(screen.getByLabelText('Vorname *')).toHaveFocus();
+    const offen = [
+      'Vorname *',
+      'Nachname *',
+      'Geburtsdatum *',
+      'Mobil',
+      'Straße',
+      'Hausnummer',
+      'PLZ',
+      'Ort',
+      'Zugangshinweis',
+    ].map((feld) => screen.getByLabelText(feld));
+    for (let i = 1; i < offen.length; i += 1) {
+      expect(
+        offen[i - 1]!.compareDocumentPosition(offen[i]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(offen[i]).toBeVisible();
+    }
+    // „Weiter“ auf der Tastatur des Telefons.
+    expect(screen.getByLabelText('Mobil')).toHaveAttribute('enterkeyhint', 'next');
+
+    // Hinter „Weitere Angaben“: zu, aber vorhanden und begrenzt.
+    const weitere = screen.getByText('Weitere Angaben').closest('details')!;
+    expect(weitere).not.toHaveAttribute('open');
+    for (const feld of ['Telefon (privat)', 'E-Mail', 'Einrichtung', 'Feste Therapeut:in']) {
+      expect(weitere).toContainElement(screen.getByLabelText(feld));
+    }
     // BEF-140: Ein drittes Telefonfeld gibt es beim Anlegen nicht mehr.
     expect(screen.queryByLabelText('Telefon (geschäftlich)')).toBeNull();
-    for (let i = 1; i < kontakt.length; i += 1) {
-      expect(
-        kontakt[i - 1]!.compareDocumentPosition(kontakt[i]!) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
-    }
     expect(screen.getByLabelText('Zugangshinweis')).toHaveAttribute('maxlength', '1000');
     expect(screen.getByLabelText('Besonderheit')).toHaveAttribute('maxlength', '1000');
     expect(screen.getByLabelText('Bemerkung')).toHaveAttribute('maxlength', '2000');
-    expect(
-      screen.getByRole('heading', { name: 'Hausbesuch und Praxisangaben' }),
-    ).toBeInTheDocument();
+  });
+
+  it('klappt „Weitere Angaben“ auf, wenn dort ein Fehler steht (K11)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewPatientPage />);
+    await user.type(screen.getByLabelText('Vorname *'), 'Nora');
+    await user.type(screen.getByLabelText('Nachname *'), 'Neuzugang');
+    fireEvent.change(screen.getByLabelText('Geburtsdatum *'), { target: { value: '1980-03-14' } });
+    fireEvent.change(screen.getByLabelText('E-Mail'), { target: { value: 'keine-adresse' } });
+    await user.click(screen.getByRole('button', { name: 'Patient:in anlegen' }));
+    expect(screen.getByText('Weitere Angaben').closest('details')).toHaveAttribute('open');
+    expect(screen.getByLabelText('E-Mail')).toBeVisible();
   });
 
   describe('Dublettenpruefung (PRX-015)', () => {
