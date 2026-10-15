@@ -22,6 +22,7 @@ import {
   mitte,
   monogrammLagen,
   verwandeln,
+  vollseitenplatz,
   zwischen,
   type Bild,
   type Lage,
@@ -44,10 +45,11 @@ import {
  * übernommen; der Takt kommt aus `requestAnimationFrame`, Kurven und Maße
  * stehen in `startbildGeometrie.ts`. Keine neue Abhängigkeit.
  *
- * **Wann**: einmal je Sitzung (`startbildMerker.ts`, ANN-243), entschieden in
- * `App.tsx`. Das Intro wartet auf nichts - Profil und Tagesliste laden
- * darunter; steht die Seite danach noch nicht, erscheint der Ladezustand wie
- * bisher.
+ * **Wann**: einmal je Tab beim Öffnen der Anwendung, vor der Anmeldung
+ * (`startbildMerker.ts`, ANN-243 Fassung 2), entschieden in `App.tsx`. Das
+ * Intro wartet auf nichts - Sitzung, Profil und Tagesliste laden darunter; es
+ * landet auf der Wortmarke der Anmeldung oder im Rahmen, je nachdem, was
+ * steht.
  *
  * **Barrierefreiheit**: Das Intro liegt in einem `aria-hidden`-Container über
  * der Seite; Vorlesesoftware bekommt die Seite sofort, der Fokus bleibt dort.
@@ -93,7 +95,15 @@ function Markenbild({
   );
 }
 
-/** Das Laufrad bzw. das O: eine Gruppe im Fenster-SVG. */
+/**
+ * Das Laufrad bzw. das O: zwei Gruppen im Fenster-SVG.
+ *
+ * Nur Speichen und Nabe drehen sich. Die Felge bleibt aufrecht: Solange sie
+ * ein Kreis ist, sieht man ihre Drehung ohnehin nicht, und sobald sie zum
+ * Oval wird, stünde sie sonst schräg - um den Winkel, den der Rollweg zufällig
+ * hinterlässt (am Handy gut 30°) - und spränge mit Bild 4 gerade (Jannes
+ * 2026-10-15, Variante B).
+ */
 function Rad({
   cx,
   cy,
@@ -104,7 +114,7 @@ function Rad({
   cx: number;
   cy: number;
   k: number;
-  /** Drehwinkel in Grad. */
+  /** Drehwinkel der Speichen in Grad. */
   drehung: number;
   /** 0 Laufrad, 1 das O. */
   verwandlung: number;
@@ -117,10 +127,11 @@ function Rad({
   const speichenlaenge = r * (1 - verwandlung);
   const nabe = MARKE_640.nabe * k * (1 - verwandlung);
   return (
-    <g transform={`translate(${cx} ${cy}) rotate(${drehung})`} fill="none" stroke="currentColor">
-      <ellipse rx={rx} ry={ry} strokeWidth={strich} />
-      {verwandlung < 1
-        ? Array.from({ length: MARKE_640.speichen }, (_, i) => {
+    <g transform={`translate(${cx} ${cy})`} fill="none" stroke="currentColor">
+      <ellipse data-felge rx={rx} ry={ry} strokeWidth={strich} />
+      {verwandlung < 1 ? (
+        <g data-speichen transform={`rotate(${drehung})`}>
+          {Array.from({ length: MARKE_640.speichen }, (_, i) => {
             const winkel = (i / MARKE_640.speichen) * Math.PI * 2;
             return (
               <line
@@ -132,15 +143,18 @@ function Rad({
                 strokeWidth={MARKE_640.radStrich * k}
               />
             );
-          })
-        : null}
-      {verwandlung < 1 ? <circle r={nabe} strokeWidth={MARKE_640.radStrich * k} /> : null}
+          })}
+          <circle r={nabe} strokeWidth={MARKE_640.radStrich * k} />
+        </g>
+      ) : null}
     </g>
   );
 }
 
 /** Die Seite blendet gestaffelt ein (`src/index.css`, `.startbild-landung`). */
 const LANDUNG_KLASSE = 'startbild-landung';
+/** Solange das Intro steht, bleibt der Landeplatz leer (`src/index.css`). */
+const LAEUFT_KLASSE = 'startbild-laeuft';
 const LANDUNG_DAUER_MS = 560 + 70 * 6;
 
 export function Startbild({
@@ -164,7 +178,7 @@ export function Startbild({
   const geraet = geraetFuer(fenster.breite);
   const [t, setT] = useState(uhrzeit ?? 0);
   const start = useRef<number | null>(null);
-  const ziel = useRef<Lage | null>(null);
+  const ziel = useRef<{ lage: Lage; rahmen: boolean } | null>(null);
   const fertig = useRef(false);
   const dauer = reduziert ? REDUZIERT_DAUER : STARTBILD_DAUER;
   // `onFertig` als Referenz: Der Takt hängt nicht an der Identität der
@@ -204,6 +218,11 @@ export function Startbild({
 
   const bild: Bild = reduziert ? (t < REDUZIERT_MARKE_AB ? 1 : t < dauer ? 5 : 6) : bildZu(t);
 
+  useEffect(() => {
+    document.documentElement.classList.add(LAEUFT_KLASSE);
+    return () => document.documentElement.classList.remove(LAEUFT_KLASSE);
+  }, []);
+
   // Die Seite blendet mit Bild 6 gestaffelt ein - als Klasse am Dokument, weil
   // die Seite unter dem Intro liegt und nichts von ihm weiß.
   useEffect(() => {
@@ -236,17 +255,24 @@ export function Startbild({
   const zentrum = mitte(geraet, fenster.breite, fenster.hoehe);
   const k = zentrum.breite / MARKE_640.breite;
 
-  // Bild 6: Landeplatz einmal messen, wenn es losgeht.
-  if (bild === 6 && ziel.current === null) ziel.current = landeplatz(geraet);
+  // Bild 6: Landeplatz einmal messen, wenn es losgeht. Steht darunter eine
+  // Vollseite (Anmeldung, Ladezustand), landet die Marke auf deren Wortmarke;
+  // sonst im Rahmen.
+  if (bild === 6 && ziel.current === null) {
+    const vollseite = vollseitenplatz();
+    ziel.current = vollseite
+      ? { lage: vollseite, rahmen: false }
+      : { lage: landeplatz(geraet), rahmen: true };
+  }
   const abgang = bild === 6 ? verwandeln(anteil(t, BILDENDE.wortmarke, BILDENDE.abgang)) : 0;
-  // Handy und Rechner: die ganze Marke wandert. Tablet: O und M wandern je
-  // für sich in die Kachel, der Rest bleibt stehen und blendet aus.
+  // Handy, Rechner und jede Vollseite: die ganze Marke wandert. Tablet mit
+  // Rahmen: O und M wandern je für sich in die Kachel, der Rest bleibt stehen
+  // und blendet aus.
+  const kachel = ziel.current?.rahmen === true && geraet === 'tablet';
+  const leiste = ziel.current?.rahmen === true && geraet === 'pc';
   const lage =
-    bild === 6 && ziel.current && geraet !== 'tablet'
-      ? zwischen(zentrum, ziel.current, abgang)
-      : zentrum;
-  const monogramm =
-    bild === 6 && ziel.current && geraet === 'tablet' ? monogrammLagen(ziel.current) : null;
+    bild === 6 && ziel.current && !kachel ? zwischen(zentrum, ziel.current.lage, abgang) : zentrum;
+  const monogramm = bild === 6 && ziel.current && kachel ? monogrammLagen(ziel.current.lage) : null;
 
   // Bild 2 und 3: das Rad.
   const oMitteX = zentrum.x + MARKE_640.oMitteX * k;
@@ -265,10 +291,10 @@ export function Startbild({
   const motionAnteil = ankommen(anteil(t, BILDENDE.speiche, BILDENDE.speiche + 0.24));
 
   // Bild 6 je Gerät.
-  const leisteX = geraet === 'pc' ? -SEITENLEISTE + SEITENLEISTE * abgang : -SEITENLEISTE;
-  const ueberTiefgruen = geraet === 'pc' && lage.x < leisteX + SEITENLEISTE;
-  const kachelSichtbar = geraet === 'tablet' ? Math.max(0, (abgang - 0.7) / 0.3) : 0;
-  const restSichtbar = geraet === 'tablet' ? 1 - Math.min(1, abgang / 0.5) : 1;
+  const leisteX = leiste ? -SEITENLEISTE + SEITENLEISTE * abgang : -SEITENLEISTE;
+  const ueberTiefgruen = leiste && lage.x < leisteX + SEITENLEISTE;
+  const kachelSichtbar = kachel ? Math.max(0, (abgang - 0.7) / 0.3) : 0;
+  const restSichtbar = kachel ? 1 - Math.min(1, abgang / 0.5) : 1;
 
   const hintergrund = bild === 6 ? 1 - abgang : 1;
 
@@ -287,7 +313,7 @@ export function Startbild({
           Manifest, deshalb kein Sprung vom Systemstart ins Intro. */}
       <div className="bg-canvas absolute inset-0" style={{ opacity: hintergrund }} />
 
-      {geraet === 'pc' && bild === 6 ? (
+      {leiste && bild === 6 ? (
         <div
           data-leiste
           className="bg-surface-inverse absolute inset-y-0 left-0"
@@ -344,7 +370,7 @@ export function Startbild({
 
       {bild === 5 ? <Markenbild kennung="voll" lage={zentrum} /> : null}
 
-      {bild === 6 && geraet !== 'tablet' ? (
+      {bild === 6 && !kachel ? (
         <Markenbild kennung="voll" lage={lage} quelle={ueberTiefgruen ? PAPIER : FARBIG} />
       ) : null}
 
@@ -354,8 +380,8 @@ export function Startbild({
             data-kachel
             className="bg-surface-inverse absolute"
             style={{
-              left: ziel.current.x,
-              top: ziel.current.y,
+              left: ziel.current.lage.x,
+              top: ziel.current.lage.y,
               width: KACHEL,
               height: KACHEL,
               borderRadius: KACHEL_RADIUS,

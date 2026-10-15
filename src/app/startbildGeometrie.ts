@@ -187,6 +187,21 @@ export function landeplatz(geraet: Geraet): Lage {
   return { x: 32, y: 32, breite: 36 * MARKE_SEITENVERHAELTNIS };
 }
 
+/**
+ * Wo die Marke landet, wenn unter dem Intro kein Rahmen steht, sondern eine
+ * Vollseite - Anmeldung, „Sitzung wird geprüft", Ladezustand (`Vollseite`,
+ * `data-startbild-ziel="vollseite"`). Das Intro läuft beim Öffnen der
+ * Anwendung, vor der Anmeldung (Jannes 2026-10-15, ANN-243 Fassung 2). Auf
+ * jedem Gerät wandert dann die ganze Marke; ohne Vollseite `null`.
+ */
+export function vollseitenplatz(): Lage | null {
+  const bilder = document.querySelectorAll<HTMLElement>('[data-startbild-ziel="vollseite"] img');
+  const rect = Array.from(bilder)
+    .map((bild) => bild.getBoundingClientRect())
+    .find((r) => r.width > 0);
+  return rect ? { x: rect.left, y: rect.top, breite: rect.width } : null;
+}
+
 /** Die Marke mittig im Fenster, in der Breite des Geräts (höchstens Fenster − 32). */
 export function mitte(geraet: Geraet, fensterbreite: number, fensterhoehe: number): Lage {
   const breite = Math.min(MARKENBREITE[geraet], fensterbreite - 32);

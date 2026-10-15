@@ -8,7 +8,11 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 Entscheidungen vom 15.10. umgesetzt (eine PR, Branch `ccr-43e90fd0-8ho4pg`): Anhänge von außen
 ohne Virenprüfung (ADR-017 Fassung 6, ADR-026 abgelehnt), Übungen ohne KI-Zeichnungen mit
 Anleitung in Schritten (ANN-539), Preisblatt-Entwurf 2027 und Umsatzsteuer (ANN-541), BEF-149
-verworfen, PTV-Prüfung Teil 4b gesichert (Anfrage ruht bis 2027). #246 (Intro) wartet auf Jannes.
+verworfen, PTV-Prüfung Teil 4b gesichert (Anfrage ruht bis 2027). #246 (Intro) ist gemergt.
+
+Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
+dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
+https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
 
 ## Danach
 
