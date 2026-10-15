@@ -10,7 +10,8 @@
  * **Zwei Schlüssel, klar getrennt.** Die Sitzung prüft der Anmeldedienst mit
  * dem Token der Person und dem öffentlichen Schlüssel. Ankündigung, Objekt
  * und Ergebnis laufen mit dem Dienstschlüssel, den nur diese Function hat:
- * Die beiden Datenbankfunktionen sind nur für `service_role` freigegeben.
+ * Die Datenbankfunktionen dazu - je Art Ankündigung und Ergebnis - sind nur
+ * für `service_role` freigegeben.
  */
 
 import type { Ankuendigung, Art, Eintrag, Ergebnis, Pruefergebnis } from './typen.ts';
@@ -109,10 +110,15 @@ export function erstelleInstanz(
               p_attachment_id: dateiId,
               p_user_id: personId,
             })
-          : await rpc('patient_file_for_verification', {
-              p_file_id: dateiId,
-              p_user_id: personId,
-            });
+          : art === 'radfoto'
+            ? await rpc('fleet_photo_for_verification', {
+                p_photo_id: dateiId,
+                p_user_id: personId,
+              })
+            : await rpc('patient_file_for_verification', {
+                p_file_id: dateiId,
+                p_user_id: personId,
+              });
       if (!antwort.ok) return antwort;
       const zeilen = Array.isArray(antwort.wert) ? (antwort.wert as Ankuendigung[]) : [];
       const zeile = zeilen[0];
@@ -147,12 +153,21 @@ export function erstelleInstanz(
               p_metadata_ok: ergebnis.metadata_ok ?? false,
               p_no_audio_ok: ergebnis.no_audio_ok ?? false,
             })
-          : await rpc('record_patient_file_verification', {
-              p_file_id: dateiId,
-              p_content_type_ok: ergebnis.content_type_ok,
-              p_checksum_ok: ergebnis.checksum_ok,
-              p_metadata_ok: ergebnis.metadata_ok,
-            });
+          : art === 'radfoto'
+            ? await rpc('record_fleet_photo_verification', {
+                p_photo_id: dateiId,
+                p_content_type_ok: ergebnis.content_type_ok,
+                p_checksum_ok: ergebnis.checksum_ok,
+                // FLT-002: Ein Foto ist immer ein JPEG; ohne Antwort auf die
+                // Metadatenfrage ist es ein Befund, keine Lücke (sonst 22023).
+                p_metadata_ok: ergebnis.metadata_ok ?? false,
+              })
+            : await rpc('record_patient_file_verification', {
+                p_file_id: dateiId,
+                p_content_type_ok: ergebnis.content_type_ok,
+                p_checksum_ok: ergebnis.checksum_ok,
+                p_metadata_ok: ergebnis.metadata_ok,
+              });
       if (!antwort.ok) return antwort;
       const wert = antwort.wert;
       return typeof wert === 'string' &&

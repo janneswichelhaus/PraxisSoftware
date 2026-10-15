@@ -59,6 +59,30 @@ describe('Abschottung der Edge Function patient-file-verify', () => {
     expect(adressen).toEqual([]);
   });
 
+  it('ruft mit dem Dienstschluessel nur die Pruefwege der drei Arten - keine Tabelle (FLT-002)', () => {
+    const quelltext = dateien.map((pfad) =>
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade aus dem eigenen Verzeichnis, nicht aus einer Eingabe.
+      ohneKommentare(readFileSync(pfad, 'utf8')),
+    );
+    const aufrufe = quelltext.flatMap((inhalt) =>
+      [...inhalt.matchAll(/\brpc\(\s*'([a-z_]+)'/g)].map((t) => t[1]),
+    );
+    // Je Art genau eine Ankündigung und ein Ergebnis: Akte, Rückfrage, Rad.
+    expect([...new Set(aufrufe)].sort()).toEqual([
+      'fleet_photo_for_verification',
+      'message_attachment_for_verification',
+      'patient_file_for_verification',
+      'record_fleet_photo_verification',
+      'record_message_attachment_verification',
+      'record_patient_file_verification',
+    ]);
+    // PostgREST nur über /rpc, nie eine Tabelle direkt.
+    const pfade = quelltext.flatMap((inhalt) =>
+      [...inhalt.matchAll(/\/rest\/v1\/[^'"`\s]*/g)].map((t) => t[0]),
+    );
+    expect([...new Set(pfade)]).toEqual(['/rest/v1/rpc/${name}']);
+  });
+
   it('protokolliert nur Kennung, Klasse und Dauer', () => {
     const typen = readFileSync(join(VERZEICHNIS, 'typen.ts'), 'utf8');
     const eintrag = typen.slice(typen.indexOf('interface Protokolleintrag'));

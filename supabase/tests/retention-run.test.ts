@@ -792,9 +792,13 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // POR-002: Regel in app.delete_due_platform_accesses und
       // app.delete_due_platform_accounts, Tests in platform-accesses.test.ts.
       'plattformzugang',
+      // FLT-001: Regel in app.delete_due_fleet_records, Tests in fleet.test.ts.
+      'radflotte_ereignis',
       // KOM-005: Regel in app.remove_message_attachments, Tests in
       // message-attachments.test.ts.
       'rueckfrageanhang',
+      // FLT-001: Regel in app.delete_due_fleet_records, Tests in fleet.test.ts.
+      'schluesselverlauf',
       // SEC-001: Regel in public.session_status (Vermerke älter als ein Tag),
       // Tests in sitzungssperre.test.ts.
       'sitzungsvermerk',

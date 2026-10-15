@@ -64,18 +64,29 @@ export function erstelleHandler({
     if (anfrage.method !== 'POST') return ende(405, 'bad_request');
     if (!instanz) return ende(503, 'not_configured');
 
-    // KOM-006 (ANN-337): entweder eine Datei der Akte oder ein Anhang an
-    // einer Rückfrage - genau eines von beiden.
+    // KOM-006 (ANN-337), FLT-002 (ANN-547): eine Datei der Akte, ein Anhang
+    // an einer Rückfrage oder ein Foto am Rad - genau eines davon.
     let art: Art = 'datei';
     try {
-      const rumpf = (await anfrage.json()) as { file_id?: unknown; attachment_id?: unknown };
+      const rumpf = (await anfrage.json()) as {
+        file_id?: unknown;
+        attachment_id?: unknown;
+        photo_id?: unknown;
+      };
       const datei = typeof rumpf.file_id === 'string' && UUID.test(rumpf.file_id);
       const anhang = typeof rumpf.attachment_id === 'string' && UUID.test(rumpf.attachment_id);
-      if (datei && !anhang && rumpf.attachment_id === undefined) {
+      const foto = typeof rumpf.photo_id === 'string' && UUID.test(rumpf.photo_id);
+      const genauEine =
+        [rumpf.file_id, rumpf.attachment_id, rumpf.photo_id].filter((k) => k !== undefined)
+          .length === 1;
+      if (genauEine && datei) {
         dateiId = rumpf.file_id as string;
-      } else if (anhang && !datei && rumpf.file_id === undefined) {
+      } else if (genauEine && anhang) {
         dateiId = rumpf.attachment_id as string;
         art = 'anhang';
+      } else if (genauEine && foto) {
+        dateiId = rumpf.photo_id as string;
+        art = 'radfoto';
       }
     } catch {
       // unten als bad_request beantwortet
@@ -97,6 +108,8 @@ export function erstelleHandler({
 
     // Zweitreview S2: Was sich nicht prüfen lässt, besteht nicht - ein
     // Fehler beim Zerlegen heißt verwerfen, nicht 500 ohne Ergebnis.
+    // Ein Foto am Rad prüft sich wie ein Patientenfoto: JPEG an der Signatur,
+    // Prüfsumme, Erlaubnisliste des Geräts (FLT-002, ANN-547).
     let ergebnis: Awaited<ReturnType<typeof pruefeInhalt>>;
     try {
       ergebnis =

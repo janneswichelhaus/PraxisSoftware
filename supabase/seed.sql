@@ -17,6 +17,10 @@
 
 -- Idempotenz: Seed kann wiederholt eingespielt werden.
 delete from public.audit_log;
+-- FLT-001: Die Radflotte zeigt auf Mitarbeitende (Schluessel, restrict) und
+-- Organisation; Stellen fallen mit Check-Up und Panne, alles mit dem Rad.
+delete from public.fleet_bikes;
+delete from public.fleet_depots;
 delete from public.invoice_items;
 delete from public.invoices;
 delete from public.invoice_recipients;
@@ -1078,3 +1082,98 @@ insert into public.platform_message_entries
    'Auf meiner letzten Rechnung steht das Paket zweimal. Ist das richtig?',
    'cafecafe-cafe-4afe-8afe-000000000001', 'self', null, '11111111-1111-4111-8111-000000000008',
    now() - interval '1 day');
+
+-- -----------------------------------------------------------------------------
+-- Radflotte (FLT-001): zwei Depots, sechs Raeder. Lastenrad 3 ist nach einer
+-- Panne gesperrt und traegt drei offene Stellen wie der Entwurf "Stellen am
+-- Rad" (Handoff Lastenrad 3D, Abschnitt 4); Lastenrad 6 ist von Hand
+-- gesperrt und steht in der Werkstatt; Lastenrad 4 steht nicht in seinem
+-- Stammdepot. Rein synthetisch, Koeln-Vorlage mit Platzhaltern.
+-- -----------------------------------------------------------------------------
+insert into public.fleet_depots (id, organization_id, name, note, created_by, updated_by) values
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000001', '22222222-2222-4222-8222-000000000001',
+   'Raddepot Nord', 'Betrieblicher Abstellort, Keller', '11111111-1111-4111-8111-000000000001',
+   '11111111-1111-4111-8111-000000000001'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000002', '22222222-2222-4222-8222-000000000001',
+   'Raddepot Süd', 'Betrieblicher Abstellort, Hof', '11111111-1111-4111-8111-000000000001',
+   '11111111-1111-4111-8111-000000000001');
+
+insert into public.fleet_bikes
+  (id, organization_id, name, home_depot_id, current_depot_id, special_location, is_spare,
+   regular_rider_id, planned_weekdays, battery, note, created_by, updated_by) values
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000011', '22222222-2222-4222-8222-000000000001', 'Lastenrad 1',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000001', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000001', null, false,
+   '55555555-5555-4555-8555-000000000002', '{1,2,4,5}', 'Akku 500 Wh', null,
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000012', '22222222-2222-4222-8222-000000000001', 'Lastenrad 2',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000001', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000001', null, false,
+   '55555555-5555-4555-8555-000000000001', '{1,2,3,4,5}', 'Akku 500 Wh', null,
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000013', '22222222-2222-4222-8222-000000000001', 'Lastenrad 3',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000001', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000001', null, false,
+   '55555555-5555-4555-8555-000000000004', '{1,3,5}', 'Akku 625 Wh', null,
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000014', '22222222-2222-4222-8222-000000000001', 'Lastenrad 4',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000002', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000001', null, false,
+   '55555555-5555-4555-8555-000000000005', '{3,4}', null, null,
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000015', '22222222-2222-4222-8222-000000000001',
+   'Lastenrad 5 (Ersatz)', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000002',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000002', null, true, null, '{}', 'Akku 500 Wh', null,
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000016', '22222222-2222-4222-8222-000000000001', 'Lastenrad 6',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000002', null, 'Vertragswerkstatt', false,
+   null, '{}', null, 'Jahresinspektion, zurück voraussichtlich Freitag.',
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001');
+
+-- Schluessel: Anna hat Lastenrad 1 seit heute frueh; gestern hatte sie es auch.
+insert into public.fleet_key_handovers
+  (id, organization_id, bike_id, holder_staff_id, taken_at, taken_by, returned_at, returned_by) values
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000061', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000011', '55555555-5555-4555-8555-000000000002',
+   now() - interval '1 day 2 hours', '11111111-1111-4111-8111-000000000002',
+   now() - interval '1 day' + interval '8 hours', '11111111-1111-4111-8111-000000000002'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000062', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000011', '55555555-5555-4555-8555-000000000002',
+   now() - interval '2 hours', '11111111-1111-4111-8111-000000000002', null, null);
+
+-- Lastenrad 3: Check-Up vor zwei Tagen (Bremse vorne Problem, Reifen hinten
+-- beobachten), Panne gestern (Riemen), seitdem gesperrt.
+insert into public.fleet_checkups (id, organization_id, bike_id, bike_type, items, note, checked_at, checked_by) values
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000021', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', 'load60_riemen',
+   '[{"key":"reifen","rating":"beobachten","note":null},{"key":"speichen","rating":"ok","note":null},{"key":"bremsen","rating":"problem","note":null},{"key":"antrieb","rating":"ok","note":null},{"key":"licht_vorne","rating":"ok","note":null},{"key":"licht_hinten","rating":"ok","note":null},{"key":"akku","rating":"ok","note":null},{"key":"schrauben_sattel","rating":"ok","note":null},{"key":"klingel","rating":"ok","note":null},{"key":"schutzbleche","rating":"ok","note":null},{"key":"staender","rating":"ok","note":null},{"key":"transportbox","rating":"ok","note":null}]',
+   null, now() - interval '2 days', '11111111-1111-4111-8111-000000000004');
+
+insert into public.fleet_breakdowns
+  (id, organization_id, bike_id, outcome, summary, remark, location_note, transport, reported_at, reported_by) values
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000031', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', 'depotAbgestellt',
+   'Ins Raddepot gebracht (Mittwoch, letzte Behandlung des Tages). Teamleitung zur Koordination informiert. Bis zur Freigabe wird Lastenrad 5 (Ersatz) genutzt.',
+   null, null, null, now() - interval '1 day', '11111111-1111-4111-8111-000000000004');
+
+insert into public.fleet_blocks (id, organization_id, bike_id, breakdown_id, reason, blocked_at, blocked_by) values
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000041', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000031', null,
+   now() - interval '1 day', '11111111-1111-4111-8111-000000000004'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000042', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000016', null, 'Jahresinspektion in der Vertragswerkstatt',
+   now() - interval '3 days', '11111111-1111-4111-8111-000000000001');
+
+insert into public.fleet_spots
+  (id, organization_id, bike_id, checkup_id, breakdown_id, bike_type, model_version, zone,
+   point_x, point_y, point_z, severity, note, created_at, created_by) values
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000051', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000021', null,
+   'load60_riemen', 1, 'bremse-vorne', 1.050, 0.310, -0.060, 'problem',
+   'Scheibe schleift beim Drehen', now() - interval '2 days', '11111111-1111-4111-8111-000000000004'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000052', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000021', null,
+   'load60_riemen', 1, 'reifen-hinten', -1.151, 0.119, 0.027, 'beobachten',
+   'Profil hinten fast abgefahren', now() - interval '2 days' + interval '1 minute',
+   '11111111-1111-4111-8111-000000000004'),
+  ('b2b2b2b2-b2b2-4b2b-8b2b-000000000053', '22222222-2222-4222-8222-000000000001',
+   'b2b2b2b2-b2b2-4b2b-8b2b-000000000013', null, 'b2b2b2b2-b2b2-4b2b-8b2b-000000000031',
+   'load60_riemen', 1, 'riemen', -0.550, 0.397, 0.090, 'problem',
+   'Riemen springt über, Spannung zu gering', now() - interval '1 day',
+   '11111111-1111-4111-8111-000000000004');

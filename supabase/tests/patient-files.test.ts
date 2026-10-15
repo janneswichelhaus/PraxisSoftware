@@ -134,10 +134,12 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
 
       // Punkt 3: ein Bucket je Datenklasse. Seit DOK-006 zwei - die Akte und
       // die Patientenfotos mit eigener Frist (Punkt 32); seit KOM-005 drei -
-      // dazu die Anhänge an Rückfragen (Punkt 60).
+      // dazu die Anhänge an Rückfragen (Punkt 60); seit FLT-002 vier - die
+      // Fotos am Rad (ANN-547).
       expect(rows.map((r) => r.id)).toEqual([
         'patientenakte',
         'patientenfotos',
+        'radflotte',
         'rueckfrageanhang',
       ]);
       for (const bucket of rows) {
@@ -151,8 +153,10 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       ]);
       // Enger als Punkt 18: nur JPEG, das der Kameradialog erzeugt.
       expect(rows[1]!.allowed_mime_types).toEqual(['image/jpeg']);
+      // FLT-002: Fotos am Rad nur als JPEG aus dem Kameradialog.
+      expect(rows[2]!.allowed_mime_types).toEqual(['image/jpeg']);
       // Punkt 63: Foto als JPEG, Video als WebM oder MP4.
-      expect(rows[2]!.allowed_mime_types.sort()).toEqual(['image/jpeg', 'video/mp4', 'video/webm']);
+      expect(rows[3]!.allowed_mime_types.sort()).toEqual(['image/jpeg', 'video/mp4', 'video/webm']);
     });
 
     it('fuehrt den Verordnungsscan als klinisch (ANN-011, ADR-017 Punkt 12)', async () => {
