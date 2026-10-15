@@ -5,8 +5,9 @@
 --    Abrechnung freigegeben ist (`basis_released_at`, ADR-009 Punkt 24,
 --    ADR-020 Punkt 9). Der Lauf auf /abrechnung nimmt eine Verordnung erst mit
 --    dieser Freigabe auf (ANN-544); welche Zeile in den Lauf kommt, entscheidet
---    die Oberflaeche an genau einer Stelle (`imLauf`). Ausgestellt wird weiter
---    nur ueber `issue_invoice` - jede Regel der Ausstellung bleibt am Server.
+--    die Oberflaeche an genau einer Stelle (`fertig` in
+--    src/features/billing/lauf.ts). Ausgestellt wird weiter nur ueber
+--    `issue_invoice` - jede Regel der Ausstellung bleibt am Server.
 --    Neu ist allein die Spalte; die Abfrage ist sonst die aus
 --    20261023100000_ux_008b_correction_path.sql.
 --    list_invoices nennt dasselbe am Entwurf und dazu, ob er eine Korrektur

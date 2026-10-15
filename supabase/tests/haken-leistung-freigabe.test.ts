@@ -599,19 +599,31 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
 
   it('nennt Freigabe und Korrekturbezug auch am Entwurf (K13, ANN-544)', async () => {
     const [a] = await vollstaendig();
-    await asUserCommitted(users.therapist, FREIGEBEN, [GRUNDLAGE]);
-    const entwurf = await entwurfMit(a, GRUNDLAGE);
     const LISTE = `select id, basis_released_at, is_correction
                      from public.list_invoices(100, 0, null, 'draft', null)`;
+    const zeile = async (id: string) =>
+      (
+        await asUser<{ id: string; basis_released_at: string | null; is_correction: boolean }>(
+          users.office,
+          LISTE,
+        )
+      ).rows.find((r) => r.id === id);
 
-    const { rows } = await asUser<{
-      id: string;
-      basis_released_at: string | null;
-      is_correction: boolean;
-    }>(users.office, LISTE);
-    const zeile = rows.find((r) => r.id === entwurf);
-    expect(zeile?.basis_released_at).not.toBeNull();
-    expect(zeile?.is_correction).toBe(false);
+    // Ein Entwurf vor der Freigabe: ohne Zeitpunkt.
+    const entwurf = await entwurfMit(a, GRUNDLAGE);
+    expect(await zeile(entwurf)).toMatchObject({ basis_released_at: null, is_correction: false });
+
+    await asUserCommitted(users.therapist, FREIGEBEN, [GRUNDLAGE]);
+    expect((await zeile(entwurf))?.basis_released_at).not.toBeNull();
+
+    // Als Korrektur gekennzeichnet (ersetzt eine Rechnung): is_correction.
+    await asPostgres('update public.invoices set replaces_invoice_id = id where id = $1', [
+      entwurf,
+    ]);
+    expect((await zeile(entwurf))?.is_correction).toBe(true);
+    await asPostgres('update public.invoices set replaces_invoice_id = null where id = $1', [
+      entwurf,
+    ]);
 
     // Ohne Abrechnungsrecht keine Zeile (ADR-013 Punkt 9 Nr. 1).
     for (const konto of [users.therapist, users.plattformErika, FREMDE_ORGANISATION.owner]) {

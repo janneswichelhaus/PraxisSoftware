@@ -501,8 +501,12 @@ const rechnungSchema = z.object({
   total_count: z.number(),
   /** K13 (ANN-544): Die Verordnung der Rechnung ist freigegeben am; sonst leer. */
   basis_released_at: z.string().nullable().default(null),
-  /** K13: Der Entwurf ist eine Korrekturrechnung - sie bleibt einzeln. */
-  is_correction: z.boolean().default(false),
+  /**
+   * K13: Der Entwurf ist eine Korrekturrechnung - sie bleibt einzeln. Fehlt
+   * die Angabe (älterer Server), gilt sie als Korrektur: lieber kein Lauf als
+   * eine Korrektur im Lauf.
+   */
+  is_correction: z.boolean().default(true),
 });
 
 export type Rechnung = z.infer<typeof rechnungSchema>;

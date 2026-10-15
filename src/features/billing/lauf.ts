@@ -26,31 +26,42 @@ function monatsanfang(tag: string): string {
   return `${tag.slice(0, 7)}-01`;
 }
 
-/** ANN-544: Nimmt der Lauf diese Zeile auf - und wenn nicht, warum nicht? */
-export function laufstand(kandidat: Kandidat, heute: string): Laufstand {
-  if (kandidat.cancelled_invoice_id) return 'korrektur';
-  if (kandidat.has_draft) return 'entwurf_steht';
-  if (kandidat.treatment_basis_id) {
-    return kandidat.basis_released_at ? 'im_lauf' : 'nicht_freigegeben';
-  }
-  return kandidat.period_month < monatsanfang(heute) ? 'im_lauf' : 'laufender_monat';
+/** Die Klammer einer Zeile oder eines Entwurfs. */
+interface Klammer {
+  treatment_basis_id: string | null;
+  basis_released_at: string | null;
+  period_month: string;
 }
 
 /**
- * ANN-544 am Entwurf: Ausgestellt wird im Lauf nur ein Entwurf, der dieselbe
- * Regel erfüllt - nicht einer, der von Hand zu einer laufenden Verordnung oder
- * für den laufenden Monat angelegt wurde, und keine Korrektur.
+ * ANN-544, die eine Stelle: Ist eine Klammer fertig? Mit Verordnung erst mit
+ * ihrer Freigabe, ohne nur ein abgeschlossener Kalendermonat.
+ */
+function fertig(klammer: Klammer, heute: string): Laufstand {
+  if (klammer.treatment_basis_id) {
+    return klammer.basis_released_at ? 'im_lauf' : 'nicht_freigegeben';
+  }
+  return klammer.period_month < monatsanfang(heute) ? 'im_lauf' : 'laufender_monat';
+}
+
+/** Nimmt der Lauf diese Zeile auf - und wenn nicht, warum nicht? */
+export function laufstand(kandidat: Kandidat, heute: string): Laufstand {
+  if (kandidat.cancelled_invoice_id) return 'korrektur';
+  if (kandidat.has_draft) return 'entwurf_steht';
+  return fertig(kandidat, heute);
+}
+
+/**
+ * Am Entwurf dieselbe Regel: Ausgestellt wird im Lauf nur ein fertiger
+ * Entwurf - nicht einer, der von Hand zu einer laufenden Verordnung oder für
+ * den laufenden Monat angelegt wurde, und keine Korrektur.
  */
 export function entwurfImLauf(
-  entwurf: Pick<
-    Rechnung,
-    'treatment_basis_id' | 'basis_released_at' | 'period_month' | 'is_correction'
-  >,
+  entwurf: Klammer & Pick<Rechnung, 'is_correction'>,
   heute: string,
 ): boolean {
   if (entwurf.is_correction) return false;
-  if (entwurf.treatment_basis_id) return entwurf.basis_released_at !== null;
-  return entwurf.period_month < monatsanfang(heute);
+  return fertig(entwurf, heute) === 'im_lauf';
 }
 
 /** Warum eine Zeile nicht im Lauf steht - ein Wort an der Zeile, kein Warnzustand. */
