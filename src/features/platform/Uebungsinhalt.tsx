@@ -16,7 +16,7 @@ export function Uebungsinhalt({ position }: { position: Ablageplan['items'][numb
     <>
       <Dosierungskacheln dosis={position} />
       {position.instruction ? (
-        <div className="mt-5">
+        <div className="mt-6">
           <Zwischentitel>So geht’s</Zwischentitel>
           <div className="mt-2">
             <Schrittliste text={position.instruction} />

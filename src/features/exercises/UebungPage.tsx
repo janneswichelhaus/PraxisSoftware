@@ -166,9 +166,10 @@ function Alltagsansicht({ uebungLaie, variante }: { uebungLaie: string; variante
       <div className="bg-surface-sunken rounded-card max-w-prose p-4">
         <p className="text-ink-muted text-sm">{uebungLaie}</p>
         <p className="text-ink text-liste font-semibold">{variante.lay_name}</p>
-        <p className={`text-ink text-liste mt-2 ${FREITEXT}`}>
-          {variante.instruction ?? 'Noch keine Kurzanleitung.'}
-        </p>
+        {/* Die Schritte wie auf der Plattform (ANN-539). */}
+        <div className="text-ink text-liste mt-2">
+          <Schrittliste text={variante.instruction} leer="Noch keine Kurzanleitung." />
+        </div>
         {variante.equipment.length > 0 ? (
           <p className="text-ink-muted mt-2 text-sm">Ausrüstung: {variante.equipment.join(', ')}</p>
         ) : null}

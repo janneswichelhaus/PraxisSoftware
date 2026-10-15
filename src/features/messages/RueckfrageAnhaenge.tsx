@@ -123,8 +123,7 @@ export function RueckfrageAnhaenge({
       </ListRows>
       {anhaenge.some((a) => !a.malware_scanned) ? (
         <Kleingedrucktes className="mt-3">
-          Testbetrieb: Aufnahmen von außen werden noch nicht auf Schadsoftware geprüft (ADR-017
-          Punkt 69).
+          Aufnahmen von außen werden nicht auf Schadsoftware geprüft (ADR-017 Fassung 6).
         </Kleingedrucktes>
       ) : null}
       <Kleingedrucktes className="mt-1">

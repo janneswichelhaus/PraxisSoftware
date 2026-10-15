@@ -1329,7 +1329,7 @@ const anhangSchema = z.object({
   author_label: z.string().nullable(),
   /** Am Server geprüft (Punkt 49); sonst „nicht serverseitig geprüft". */
   server_verified: z.boolean(),
-  /** Auf Schadsoftware geprüft (Punkt 69); bis zum Scharfschalten nie. */
+  /** Auf Schadsoftware geprüft (Punkt 69); seit ADR-017 Fassung 6 nie. */
   malware_scanned: z.boolean(),
 });
 export type Anhang = z.infer<typeof anhangSchema>;

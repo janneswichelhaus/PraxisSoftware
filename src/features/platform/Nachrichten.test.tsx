@@ -467,7 +467,7 @@ describe('Foto und Video an der Nachricht (KOM-007, ADR-017 Abschnitt L)', () =>
     expect(abschnitt).toHaveTextContent('Video, 0:12');
     expect(abschnitt).toHaveTextContent('von Ihnen');
     expect(abschnitt).toHaveTextContent('wird am 08.11.2026 gelöscht');
-    expect(abschnitt).toHaveTextContent('noch nicht auf Schadsoftware geprüft');
+    expect(abschnitt).toHaveTextContent('nicht auf Schadsoftware geprüft');
     expect(within(abschnitt).queryByRole('img')).not.toBeInTheDocument();
     expect(ladeAnhang).not.toHaveBeenCalled();
   });
