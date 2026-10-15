@@ -5586,7 +5586,7 @@ Recht · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Steuerberatu
 
 **Begründung.** UStAE 4.14.1 Abs. 4 und 5, FG Düsseldorf 1 K 2249/17 U, UStAE 1.3 Abs. 1, BFH V R 13/19, § 34a UStDV. Offen: Behandlung ohne Verordnung trägt wohl 19 %; die App kennt dafür kein eigenes Kennzeichen.
 
-**Anker.** `KLEINUNTERNEHMER_HINWEIS` in `src/features/billing/api.ts`.
+**Anker.** `app.small_business_notice()` in `supabase/migrations/20261118100000_abr_040_monatslauf.sql` (seit BEF-165 im Schnappschuss; die Konstante in `src/features/billing/hinweise.ts` ist nur Rückfall für ältere Snapshots und trägt denselben Wortlaut, ein DB-Test hält beide gleich).
 
 **Änderungspfad.** Kennzeichen je Behandlungsgrundlage (mit/ohne Verordnung): Migration an der Rechnungsposition · Aufwand `mittel`.
 
@@ -5614,3 +5614,15 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung de
 **Anker.** Prop `kurz` in `src/features/patients/PatientMasterDataFields.tsx`; `src/lib/weiterMitEnter.ts`.
 
 **Änderungspfad.** Ein Feld wieder offen: Liste `WEITERE` · Aufwand `klein`.
+
+### ANN-544 — Monatslauf: Verordnung erst mit Freigabe, sonst abgeschlossener Monat
+
+Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: Sichtung der Bereichsüberholung „Monatsabrechnung in einem Lauf“
+
+**Annahme.** Der Lauf auf `/abrechnung` legt Entwürfe nur für Zeilen an, die fertig sind: eine Verordnung erst, wenn sie in die Abrechnung gestellt ist; ohne Verordnung (Monat, Training, Abo, Ausfallhonorar) nur einen abgeschlossenen Kalendermonat. Korrekturen nach Storno bleiben einzeln. Ausgestellt werden die fertigen Entwürfe (dieselbe Regel, ohne Korrekturen) nach einer Rückfrage mit Anzahl, Summe und Kreisen; jede Rechnung einzeln über `issue_invoice`, ein Fehlschlag hält die übrigen nicht auf.
+
+**Begründung.** K13 (≤ 3 Tipps). Ohne Freigabe käme eine laufende Verordnung auf zwei Rechnungen, ohne Monatsgrenze ein Monat. Die Freigabe ist nach ADR-009 Punkt 24 keine Bedingung der einzelnen Rechnung; die bleibt im Büro möglich.
+
+**Anker.** `fertig` in `src/features/billing/lauf.ts` (für Zeilen und Entwürfe).
+
+**Änderungspfad.** Regel dort ändern · Aufwand `klein`.

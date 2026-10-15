@@ -259,7 +259,7 @@ describe('Rechnung je Behandlungsgrundlage', () => {
       GRUNDLAGE,
     ]);
     const blatt = await dokument(rows[0]!.id);
-    expect(blatt.schema_version).toBe(5);
+    expect(blatt.schema_version).toBe(6);
     expect(blatt.service_period.from < blatt.service_period.to).toBe(true);
     expect(blatt.treatment_bases).toHaveLength(1);
     expect(blatt.treatment_bases[0]!.issued_on).toBe('2026-09-08');

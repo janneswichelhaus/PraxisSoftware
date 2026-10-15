@@ -8,7 +8,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
-  KLEINUNTERNEHMER_HINWEIS,
+  kleinunternehmerHinweis,
   KeineStammdaten,
   fetchRechnung,
   steuerLabels,
@@ -185,7 +185,18 @@ function Positionstabelle({ dokument }: { dokument: Rechnungsansicht['document']
   );
 }
 
-function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
+/**
+ * Ein Blatt. Seit K13 auch im Sammeldruck (`SammeldruckPage`): dort ohne den
+ * Druckknopf je Blatt und mit Seitenumbruch davor.
+ */
+export function Rechnungsblatt({
+  ansicht,
+  einzeln = true,
+}: {
+  ansicht: Rechnungsansicht;
+  /** Im Sammeldruck `false`: kein Knopf und kein Kleingedrucktes je Blatt. */
+  einzeln?: boolean;
+}) {
   const dokument = ansicht.document;
   const entwurf = ansicht.status === 'draft';
   // ABR-032: Ab schema_version 5 Positionen mit Behandlungstagen; ältere
@@ -378,8 +389,10 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           ))}
         </ul>
 
-        {absender.small_business ? (
-          <p className="text-ink-muted print:text-ink mt-2 text-sm">{KLEINUNTERNEHMER_HINWEIS}</p>
+        {kleinunternehmerHinweis(absender) ? (
+          <p className="text-ink-muted print:text-ink mt-2 text-sm">
+            {kleinunternehmerHinweis(absender)}
+          </p>
         ) : null}
 
         {dokument.treatment_bases.length > 0 ? (
@@ -419,11 +432,32 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         </section>
       </article>
 
-      <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
+      {einzeln ? <Druckfuss entwurf={entwurf} /> : null}
+    </>
+  );
+}
+
+/** Druckknopf und Satz zur Ablage unter dem Blatt - einmal je Druckauftrag. */
+export function Druckfuss({
+  entwurf = false,
+  beschriftung,
+  oben = false,
+}: {
+  entwurf?: boolean;
+  /** Ohne Angabe „Rechnung drucken“ oder am Entwurf „Entwurf drucken“. */
+  beschriftung?: string;
+  /** Über den Blättern statt darunter - im Sammeldruck mit vielen Blättern. */
+  oben?: boolean;
+}) {
+  return (
+    <>
+      <div
+        className={`nicht-drucken mx-auto flex max-w-[210mm] flex-col gap-3 ${oben ? 'mb-8' : 'mt-8'}`}
+      >
         <div>
           {/* Am Entwurf heißt der Knopf, was er druckt (ABR-26). */}
-          <Button type="button" onClick={() => window.print()}>
-            {entwurf ? 'Entwurf drucken' : 'Rechnung drucken'}
+          <Button type="button" onClick={() => window.print()} className="w-full sm:w-auto">
+            {beschriftung ?? (entwurf ? 'Entwurf drucken' : 'Rechnung drucken')}
           </Button>
         </div>
         <Kleingedrucktes>

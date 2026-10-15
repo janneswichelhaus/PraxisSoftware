@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Erstaufnahme geführt (K10, K11), eine PR, Branch `ccr-248b0353-fbdcs9`: Seite
-`/patienten/:id/erstaufnahme` vom Terminpanel bis zur Doku (10 Tipps, vorher ≥ 25), Neuanlage in
-3 Tipps (vorher ≈ 12); ANN-542, ANN-543. #247 (Entscheidungen 15.10.) ist gemergt.
+Monatsabrechnung in einem Lauf (K13, K14), eine PR, Branch `ccr-92feaef7-zkxssj`: Lauf auf
+`/abrechnung` in 3 Tipps (vorher ≈ 15 je Rechnung), Sammeldruck, Zahlungen gesammelt buchen;
+BEF-165 erledigt; ANN-544. Erstaufnahme (#248) ist gemergt.
 
 Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
 dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
@@ -17,8 +17,7 @@ https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
 
 Vorschlag, Jannes entscheidet (Roadmap, „Bereichsüberholungen“):
 
-1. **Monatsabrechnung in einem Lauf** (K13, K14).
-2. **Übungen, zweite Runde**: Durchsicht, eigene Vorlagen, eigene Bilder und Videos.
+1. **Übungen, zweite Runde**: Durchsicht, eigene Vorlagen, eigene Bilder und Videos.
 
 Aus der bisherigen Kette danach: BEF-124 (Verordnung ohne Verlauf, Pfad A); ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
 Widerruf zu Anhängen im Training (ANN-333).
@@ -47,5 +46,5 @@ Widerruf zu Anhängen im Training (ANN-333).
 
 ## Letzte Session
 
-15.10.2026, Branch `ccr-248b0353-fbdcs9`: Erstaufnahme geführt. **Lokal:** `git pull`, keine
-Migration.
+15.10.2026, Branch `ccr-92feaef7-zkxssj`: Monatsabrechnung in einem Lauf. **Lokal:** `git pull`,
+Migration `20261118100000_abr_040_monatslauf` (`supabase db reset`).

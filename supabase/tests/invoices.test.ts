@@ -8,6 +8,7 @@ import {
   resetDatabaseOhneTermine,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { KLEINUNTERNEHMER_HINWEIS } from '../../src/features/billing/hinweise';
 
 /**
  * Die Rechnung entsteht aus Leistungen (ABR-003).
@@ -60,6 +61,7 @@ interface Dokument {
   invoice_number: string | null;
   due_on: string | null;
   document: {
+    schema_version: number;
     currency: string;
     issuer: Record<string, unknown>;
     recipient: Record<string, unknown>;
@@ -692,6 +694,30 @@ describe('Rechnung', () => {
       expect(rechnung.document.totals.tax_total_cents).toBe(0);
       expect(rechnung.document.issuer.small_business).toBe(true);
       await asPostgres('update public.practice_billing_profiles set small_business = false');
+    });
+
+    it('schreibt den Hinweis nach Par. 19 UStG beim Ausstellen ins Dokument (BEF-165)', async () => {
+      await asPostgres('update public.practice_billing_profiles set small_business = true');
+      const klein = await ausgestellt(KATALOG.selbstzahler);
+      await asPostgres('update public.practice_billing_profiles set small_business = false');
+
+      expect(klein.document.schema_version).toBe(6);
+      // Derselbe Wortlaut wie der Rueckfall fuer aeltere Snapshots im Client
+      // (ANN-541): Sonst saehen alte und neue Rechnungen verschieden aus.
+      expect(klein.document.issuer.small_business_notice).toBe(KLEINUNTERNEHMER_HINWEIS);
+
+      // Der Wortlaut steht im Schnappschuss und bleibt, wie er war - auch
+      // nachdem die Praxis umgestellt hat (ADR-009 Punkt 10).
+      const { rows } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [klein.id]);
+      expect(rows[0]!.rechnung.document.issuer.small_business_notice).toBe(
+        KLEINUNTERNEHMER_HINWEIS,
+      );
+    });
+
+    it('schreibt bei Regelbesteuerung keinen Hinweis nach Par. 19 UStG (BEF-165)', async () => {
+      const regel = await ausgestellt(KATALOG.kg);
+      expect(regel.document.schema_version).toBe(6);
+      expect(regel.document.issuer.small_business_notice).toBeNull();
     });
 
     it('scheitert ohne Praxis-Stammdaten und sagt, was fehlt', async () => {

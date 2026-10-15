@@ -121,6 +121,7 @@ const kandidaten: Kandidat[] = [
     cancelled_invoice_id: null,
     cancelled_invoice_number: null,
     draft_replaces_invoice_number: null,
+    basis_released_at: null,
   },
   {
     patient_id: null,
@@ -141,6 +142,7 @@ const kandidaten: Kandidat[] = [
     cancelled_invoice_id: null,
     cancelled_invoice_number: null,
     draft_replaces_invoice_number: null,
+    basis_released_at: null,
   },
 ];
 
@@ -170,6 +172,8 @@ const rechnungen: Rechnung[] = [
     basis_kind: null,
     basis_issued_on: null,
     total_count: 2,
+    basis_released_at: null,
+    is_correction: false,
   },
   {
     id: AUSGESTELLT,
@@ -196,6 +200,8 @@ const rechnungen: Rechnung[] = [
     basis_kind: null,
     basis_issued_on: null,
     total_count: 2,
+    basis_released_at: null,
+    is_correction: false,
   },
 ];
 
