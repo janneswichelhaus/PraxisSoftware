@@ -632,20 +632,6 @@ eingeklappt.
 
 **Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
 
-### BEF-149 — „Check-in ausgeblieben“ fehlt in der Übersicht der Praxis
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Plattform: Check-in (TRK-EPIC-001) |
-| Quelle  | Zuschnitt TRK-EPIC-001, DSN-001 Abschnitt 6 und D5 |
-| Status  | offen |
-| Berührt | Übersicht der Praxis (Offene Punkte), `app.checkin_due_on` |
-
-**Beobachtung.** DSN-001 nennt „Check-in ausgeblieben“ als organisatorischen Punkt in der Übersicht der zuständigen Person („seit 10 Tagen kein Check-in“). TRK-EPIC-001 zeigt Fälligkeit und „fällig seit …“ nur im Abschnitt „Zwischen den Terminen“ an Akte und Trainingsverhältnis; eine Liste über alle Personen gibt es nicht.
-
-**Erwartet.** Entscheiden, ob der Punkt gebraucht wird; wenn ja, Einzel-Story-Loop: Zahl der Verhältnisse, deren Check-in seit mindestens einem Takt fällig ist, je Bereich in Offene Punkte – organisatorisch, ohne Wert und ohne Bewertung (ADR-006 Punkt 11).
-
 ### BEF-150 — Ränder der Entwürfe auf dem Diensttelefon
 
 |         |   |

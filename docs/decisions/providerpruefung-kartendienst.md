@@ -1,6 +1,6 @@
 # Providerprüfung Kartendienst (MAP-001)
 
-Stand: 2026-09-22 · Gehört zu ADR-019 (Fassung 4) · Prüfkatalog nach ADR-002
+Stand: 2026-10-14 · Gehört zu ADR-019 (Fassung 5) · Prüfkatalog nach ADR-002
 Punkt 3 und `PROJECT_PRINCIPLES.md` §3.5
 
 Dieses Dokument hält fest, **was zum Kartendienst belegt ist, was nur als
@@ -54,7 +54,8 @@ bestimmt laut Auszug eine „Country Matrix" — `CONTRACT_CONFIRMATION_REQUIRED
 ### Vertrag und Datenschutz
 
 Kein einziges PTV-Vertragsdokument war abrufbar. **Alle Punkte 6 bis 12 sind
-`CONTRACT_CONFIRMATION_REQUIRED`.** Die Spalte „Hinweis" nennt, was
+`CONTRACT_CONFIRMATION_REQUIRED`.** Seit dem 2026-10-14 liegt der AVV selbst
+vor; was er zu diesen Punkten belegt, steht in Teil 4b. Die Spalte „Hinweis" nennt, was
 Suchauszüge nahelegen — als Leseanleitung für den Vertragscheck, nicht als
 Beleg.
 
@@ -164,6 +165,10 @@ Freikontingent immerhin eine belastbare Hälfte. Die offenen Fragen gehen mit
 der Nachfassanfrage an den Support und, soweit rechtlich, mit **B2** an die
 Datenschutzberatung.
 
+**Überholt am 2026-10-14:** Der AVV existiert (Version 2.0.0, Teil 4b). Die
+Aussage des Vertriebs gilt damit nicht mehr; die übrigen offenen Punkte dieser
+Tabelle bleiben offen.
+
 **Entscheidung von Jannes (2026-09-21) zum Schlüsselmodell.** Solange PTV
 keinen zweiten Schlüssel bestätigt hat, benutzt **MAP-003 denselben Schlüssel**
 wie die Kacheln, auch serverseitig. Das weicht von ADR-019 Punkt 19 ab, der
@@ -181,11 +186,92 @@ liefert Style, Sprites und Glyphen ohne Schlüssel aus und beantwortet keine
 CORS-Vorabanfrage (BEF-021). Der Style dieses Hosts bringt seine eigene
 Quellenangabe mit (BEF-022).
 
+## Teil 4b — AVV PTV liegt vor (2026-10-14)
+
+Jannes hat den Vertrag als PDF bereitgestellt: „Auftragsverarbeitungsvertrag
+PTV", **Version 2.0.0 vom 05.11.2025**, © PTV Logistics GmbH, 8 Seiten. Er ist
+vollständig gelesen und gilt hier als **belegt (Primärquelle)**; geprüft in
+zwei unabhängigen Durchgängen gegen Art. 28 DSGVO und gegen § 203 StGB. Das
+ist keine Rechtsberatung, sondern Vorarbeit für B2. Die
+Dokumente, auf die der AVV verweist (Unterverarbeiterliste, TOM,
+Datenschutzerklärung), bleiben aus der Cloud-Umgebung gesperrt.
+
+**Was er regelt.** Der AVV ist Bestandteil des Hauptvertrags und kommt bei
+einer Bestellung über die Website mit der Checkbox zustande (Ziff. 2). Der
+Kunde ist Verantwortlicher, PTV Auftragsverarbeiter (Ziff. 5, 8.2). Die
+Pflichtinhalte nach Art. 28 Abs. 3 lit. a bis h sind formal enthalten:
+
+- Weisungsbindung mit Hinweis bei rechtswidriger Weisung (4.1)
+- TOM nach Art. 32 (4.2), Vertraulichkeit des Personals (4.3)
+- Meldung von Verletzungen „unverzüglich" (4.4)
+- Unterstützung bei Betroffenenrechten und Art. 32 bis 36 (4.5, 8.4)
+- Löschung oder Rückgabe am Vertragsende (4.7)
+- Nachweise und Inspektionen, Kosten beim Kunden (6)
+- allgemeine Genehmigung von Unterverarbeitern: 14 Tage Vorlauf, Einspruch,
+  Sonderkündigung nach 30 Tagen (7.1); Haftung für Unterverarbeiter (7.2)
+- Änderungen und Ergänzungen in Textform mit ausdrücklichem Hinweis (9.3)
+
+**Was für diese Praxis fehlt.**
+
+1. **Personenbezug „für PTV" (Ziff. 1.3, 3.1).** Der AVV gilt nur für Daten,
+   die für PTV personenbezogen sind, und nennt „reine Adressdaten ohne Namen"
+   als Beispiel für Daten, die für PTV anonym sein können. Genau solche Daten
+   schickt der Adapter (ADR-019). Fallen sie nach PTVs Lesart heraus, greift
+   die Auswertung „nicht personenbezogener" Eingaben aus den
+   MyPTV-ID-Bedingungen (Hinweis, Suchauszug).
+2. **Datenarten, Betroffene, Art. 9.** Nur Beispiele, „im Ermessen des
+   Kunden"; besondere Kategorien kommen nicht vor. Für die Praxis sind
+   Wohnkoordinaten im Konto einer Physiotherapiepraxis Gesundheitsdaten
+   (EuGH C-184/20, C-21/23; Sekundärquellen).
+3. **Speicherdauer** von Anfragen, Antworten und Protokollen während der
+   Laufzeit: keine Aussage.
+4. **Eigene Zwecke** nur mittelbar ausgeschlossen (4.1); kein ausdrückliches
+   Verbot einer anonymisierten oder aggregierten Nutzung.
+5. **Ort.** Keine Zusage „nur EU/EWR"; Ziff. 8.5 erlaubt Unterverarbeiter in
+   Drittländern mit Angemessenheitsbeschluss oder Standardvertragsklauseln.
+6. **§ 203 StGB.** Ziff. 4.3 ist die Vertraulichkeit nach Art. 28 Abs. 3
+   lit. b: kein Bezug auf § 203, keine Belehrung über die Strafbarkeit; 7.2
+   gibt nur „datenschutzrechtliche Pflichten" an Unterverarbeiter weiter.
+7. **Dienste.** Der AVV ist ein Muster für alle PTV-Produkte und nennt weder
+   PTV Developer noch die OSM-APIs noch den Kachelweg.
+
+Lücken 1 bis 5 und 7 schließt eine Ergänzung nach Ziff. 9.3; eine einseitige
+Weisung nach 4.1 trägt die Festlegungen nach Art. 28 Abs. 3 Satz 1
+womöglich nicht allein. Lücke 6 braucht eine Erklärung von PTV, Vorlage das
+Bitkom-Muster von 2018 oder das Muster der LÄK Thüringen. Die Anfrage an
+`datenschutz@ptvlogistics.com` liegt seit dem 2026-10-14 als Entwurf bei
+Jannes. **Sie ruht bis 2027** (Jannes, 2026-10-15): Die Anbieterprüfungen
+laufen gesammelt vor dem Go-live-Gate (M3); mit synthetischen Daten blockiert
+das nichts.
+
+**Stand der Gate-Liste nach dem AVV**
+
+| Nr.      | Stand                                                                                                                                                                                                                         |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | teilweise: AVV liegt vor; Geltung für PTV Developer, die OSM-APIs und das Konto ist zu bestätigen                                                                                                                              |
+| 2        | erfüllt (4.1), außer der Weisungsbindung bei Übermittlungen in Drittländer                                                                                                                                                    |
+| 3        | offen: Ergänzung zu § 203 angefragt                                                                                                                                                                                            |
+| 4        | Verfahren erfüllt (7.1, 7.2); Liste für PTV Developer offen. Laut Suchauszug: Microsoft Ireland Operations Ltd. (Azure), colpari GmbH (Support), Intercom                                                                      |
+| 5        | offen                                                                                                                                                                                                                         |
+| 6        | offen: „nur EU" steht nur in Datenschutzerklärungen, nicht im Vertrag                                                                                                                                                          |
+| 7        | Abschluss per Checkbox mit dem Standard Plan; Schlüsselbindung offen. Mit hinterlegter Kreditkarte kostet ein Missbrauch des Kachelschlüssels über dem Freikontingent Geld; die Begründung der befristeten Entscheidung aus Teil 4a trägt dann nicht mehr |
+| 8, 9, 11 | vom AVV nicht berührt                                                                                                                                                                                                         |
+| 10       | offen                                                                                                                                                                                                                         |
+
+**Offen für B2:** ob namenlose Koordinaten im Konto der Praxis schon ein
+fremdes Geheimnis sind (bis dahin vorsorglich der volle Weg über § 203 Abs. 3
+Satz 2 und Abs. 4); ob eine Weisung die Festlegung nach Art. 28 Abs. 3 Satz 1
+ersetzt; die Strafbarkeit bei Beschäftigten in Irland; die
+Haftungsobergrenze aus dem Hauptvertrag (Ziff. 9.2).
+
+**Abzulegen (G14):** AVV-PDF, Nachweis der Checkbox mit Datum,
+Unterverarbeiterliste und TOM zum Abschlusstag, die Antwort von PTV.
+
 ## Teil 5 — Was vor Echtdaten offen bleibt (Gate-Liste)
 
 Diese Punkte sind das **Provider-/§203-/DSFA-Gate** aus ADR-019. Keiner
 blockiert MAP-002 bis MAP-005 mit synthetischen Daten. Alle blockieren
-MAP-006.
+MAP-006. Stand je Punkt nach dem AVV vom 05.11.2025: Teil 4b.
 
 1. DPA-Text liegt vor, nennt PTV Developer und die genutzten OSM-APIs
    (Punkt 6, 7).
