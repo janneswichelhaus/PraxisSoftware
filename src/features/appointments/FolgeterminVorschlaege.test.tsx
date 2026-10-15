@@ -675,8 +675,10 @@ describe('FolgeterminVorschlaege (Auftrag C1, ANN-477, Befund B8)', () => {
     fetchUpcomingAppointments.mockResolvedValue([
       {
         id: 'spaeter',
-        starts_at: `${NAECHSTE_WOCHE}T08:00:00.000Z`,
-        ends_at: `${NAECHSTE_WOCHE}T09:00:00.000Z`,
+        // Dieselbe Uhrzeit vor Ort wie der Termin: Dazwischen kann die
+        // Zeitumstellung liegen (BEF-169).
+        starts_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN), ZONE),
+        ends_at: zeitpunktIn(NAECHSTE_WOCHE, minuteAus(BEGINN) + 60, ZONE),
         appointment_type: 'home_visit',
         status: 'confirmed',
         staff_given_name: 'Anna',
