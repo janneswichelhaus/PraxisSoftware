@@ -2942,17 +2942,17 @@ Datenschutz · entschieden (Jannes) · 2026-10-06 · Jannes (Rückfrage UBK-017:
 
 **Änderungspfad.** Ohne Straße: die zwei Spalten in einer neuen Migration wieder entfernen und `ortDerKachel` am Hausbesuch `null` liefern lassen; der Datensparsamkeitstest nimmt sie zurück in die verbotene Liste · Aufwand `klein`.
 
-### ANN-243 — Startbild einmal je Sitzung, Merker im Sitzungsspeicher des Tabs
+### ANN-243 — Startbild einmal je Tab beim Öffnen, Merker im Sitzungsspeicher des Tabs
 
-Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Design-Runde 1, 05.10.2026: „Einmal je Sitzung, auch am Rechner volles Intro“) · erledigt · Wiedervorlage: Jannes in der Sichtung (Rahmen)
+Praxisprozess · entschieden (Jannes) · Fassung 2 2026-10-15 · Jannes: „Intro direkt nach Öffnen der Anwendung“ · erledigt
 
-**Annahme.** Das Startbild „Speiche wird O“ (Handoff Rahmen vom 2026-10-05, Abschnitt 6) läuft **einmal je Sitzung** in voller Länge (1,8 s) auf jedem Gerät: beim ersten Aufbau der angemeldeten Anwendung nach einem Kaltstart und nach jeder Anmeldung. Nie beim Neuladen, bei Navigation, beim Zurückkehren aus dem Hintergrund oder nach dem Sperrbildschirm (ADR-025). Der Merker ist ein Wahrheitswert `startbild-gezeigt` im `sessionStorage` des Tabs, gesetzt beim **Start** des Intros (ein Abbruch wiederholt nicht), gelöscht beim Wechsel der Identität im `SessionProvider` (Abmelden, Ablauf, anderes Konto). Ein neuer Tab ist ein neuer Start. Ohne Sitzung kein Intro; es folgt nach der Anmeldung. Das Intro wartet auf nichts: Profil und Tagesliste laden darunter. „Überspringen“ und ab Bild 2 ein Tipp auf die Fläche springen zum Abgang; bei `prefers-reduced-motion` steht nur die Marke 0,14 s (0,3 s gesamt). Das Intro liegt in einem `aria-hidden`-Container; der Fokus bleibt auf der Seite.
+**Annahme.** Das Startbild läuft einmal je Tab beim Öffnen, vor und unabhängig von der Anmeldung; nicht nach der Anmeldung, beim Neuladen oder nach der Sperre. Merker `startbild-gezeigt` im `sessionStorage`, gesetzt beim Start, gelöscht beim Identitätswechsel. Die Marke landet auf der Wortmarke der Vollseite, sonst im Rahmen. Nur Speichen und Nabe drehen, die Felge bleibt aufrecht.
 
-**Begründung.** Entscheidung Jannes am 2026-10-05 nach dem Entwurf auf der Leinwand (Varianten: nur am Handy, nur beim Kaltstart). `sessionStorage` statt `localStorage`: Der Wert gehört zum Tab, nicht zum Gerät, und trägt keinen Inhalt — ANN-019 (kein klinischer Inhalt im Browserspeicher) bleibt gewahrt. Ohne verfügbaren Speicher (privates Fenster, gesperrter Speicher) gilt „noch nicht gezeigt“: ein Intro zu viel ist kein Schaden, ein Fehler beim Start wäre einer. Unsicher: ob 1,8 s am Praxisrechner nach der dritten Anmeldung des Tages noch erwünscht sind — dann greift der Änderungspfad.
+**Begründung.** Das Intro ist der Start der Anwendung, nicht der Anmeldung. Kein Inhalt im Speicher (ANN-019).
 
-**Anker.** `src/lib/startbildMerker.ts` (`startbildFaellig`, `startbildVormerken`, `startbildZuruecksetzen`); `AuthenticatedApp` in `src/app/App.tsx`; `raeumen` in `src/features/auth/SessionProvider.tsx`; Baustein `src/app/Startbild.tsx` mit `src/app/startbildGeometrie.ts`; Tests `startbildMerker.test.ts`, `Startbild.test.tsx`, `tests/e2e/startbild.spec.ts`; Prüfseite `tests/e2e/fixtures/startbild.html`.
+**Anker.** `StartbildBeimOeffnen` in `src/app/App.tsx`; `src/lib/startbildMerker.ts`; `vollseitenplatz` in `src/app/startbildGeometrie.ts`.
 
-**Änderungspfad.** Nur beim Kaltstart (nicht nach jeder Anmeldung): `startbildZuruecksetzen()` aus `raeumen` herausnehmen · Aufwand `klein`. Nur am Telefon: in `AuthenticatedApp` zusätzlich `window.innerWidth < 640` prüfen · Aufwand `klein`. Ganz abschalten: den Baustein in `AuthenticatedApp` nicht mehr zeichnen · Aufwand `klein`.
+**Änderungspfad.** Wieder erst nach der Anmeldung: `StartbildBeimOeffnen` in den angemeldeten Zweig des `Gate` · `klein`.
 
 ### ANN-244 — Tableiste nach Reife: ein Bereich, der ganz Vorschau ist, bekommt keinen Platz in der Tableiste
 

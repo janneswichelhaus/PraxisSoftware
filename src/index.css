@@ -490,6 +490,19 @@ html[data-schrift='sehr-gross'] {
   .startbild-landung main > :nth-child(n + 6) {
     animation-delay: 350ms;
   }
+
+  /* Der Landeplatz bleibt leer, solange das Intro läuft: Die fliegende Marke
+     landet genau dort, und erst mit ihrem Verschwinden steht die Marke der
+     Seite da - ohne Doppelbild im Anflug (2026-10-15). Der Kopf einer
+     Vollseite blendet deshalb auch nicht gestaffelt ein, sonst stünde die
+     gelandete Marke kurz halb durchsichtig. */
+  .startbild-laeuft [data-startbild-ziel] img {
+    opacity: 0;
+  }
+
+  .startbild-landung main > [data-startbild-ziel] {
+    animation: none;
+  }
 }
 
 /* =============================================================================

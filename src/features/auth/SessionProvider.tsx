@@ -77,9 +77,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // mit (Zweitreview UX-EPIC-007, ANN-320): Er tauchte sonst nach einem
     // Kontowechsel am selben Gerät in einer Korrektur auf.
     uebergabenLeeren();
-    // Der Merker des Startbilds geht mit (RAH-009, ANN-243): Die nächste
-    // Anmeldung in diesem Tab beginnt wieder mit dem Intro - auch die eines
-    // anderen Kontos.
+    // Der Merker des Startbilds geht mit (RAH-009, ANN-243): Wer die
+    // Anwendung danach in diesem Tab neu öffnet, sieht das Intro wieder.
     startbildZuruecksetzen();
     // TRK-008 (ADR-024 Punkt 5): Die Ablage auf dem Gerät fällt beim
     // Abmelden und beim Kontowechsel - Plan, Warteschlange, Schlüssel.

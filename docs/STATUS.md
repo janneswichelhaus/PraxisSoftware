@@ -9,6 +9,10 @@ Die Durchsicht vom 14.10. (B1–B13) ist gemergt (#241 bis #244); Jannes hat all
 bestätigt (ANN-510 bis ANN-538), offen bleibt nur der Anbieter für die Spracheingabe. #245 behebt
 BEF-164 (zwei DB-Tests an der Datumsgrenze) und zieht Befunde, Annahmen und Fortschritt nach.
 
+Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
+dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
+https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
+
 ## Danach
 
 Vorschlag, Jannes entscheidet (Roadmap, „Bereichsüberholungen“):

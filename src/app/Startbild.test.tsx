@@ -11,6 +11,7 @@ import {
   landeplatz,
   mitte,
   verwandeln,
+  vollseitenplatz,
 } from './startbildGeometrie';
 import { STARTBILD_MERKER } from '@/lib/startbildMerker';
 
@@ -119,6 +120,20 @@ describe('Startbild: Cue-Tabelle und Kurven', () => {
     expect(landeplatz('handy')).toEqual({ x: 16, y: 17, breite: 63 });
     document.body.innerHTML = '';
   });
+
+  it('kennt die Wortmarke einer Vollseite als Landeplatz, sonst keinen', () => {
+    document.body.innerHTML = '';
+    expect(vollseitenplatz()).toBeNull();
+    const kopf = document.createElement('div');
+    kopf.setAttribute('data-startbild-ziel', 'vollseite');
+    const marke = document.createElement('img');
+    marke.getBoundingClientRect = () =>
+      ({ left: 120, top: 300, width: 105, height: 40 }) as DOMRect;
+    kopf.append(marke);
+    document.body.append(kopf);
+    expect(vollseitenplatz()).toEqual({ x: 120, y: 300, breite: 105 });
+    document.body.innerHTML = '';
+  });
 });
 
 describe('Startbild', () => {
@@ -164,9 +179,14 @@ describe('Startbild', () => {
     expect(rad.querySelector('circle')).not.toBeNull();
     expect(huelle.querySelector('img')).toBeNull();
 
-    // Bild 3: Speichen ziehen sich zur Nabe, die Felge wird zum O.
+    // Bild 3: Speichen ziehen sich zur Nabe, die Felge wird zum O. Nur die
+    // Speichen drehen sich; die Felge steht aufrecht, sonst stünde das Oval
+    // schräg und spränge mit Bild 4 gerade (Variante B, 2026-10-15).
     laufenLassen(0.6);
     expect(bild()).toBe('3');
+    const felge = huelle.querySelector('svg[data-rad] [data-felge]')!;
+    expect(felge.parentElement!.getAttribute('transform')).not.toContain('rotate');
+    expect(huelle.querySelector('[data-speichen]')!.getAttribute('transform')).toMatch(/^rotate\(/);
 
     // Bild 4: W und N wischen auf, MOTION fährt ein - nur als beschnittene
     // Kopien der Markendatei, nie umgefärbt.
@@ -199,6 +219,13 @@ describe('Startbild', () => {
     expect(onFertig).toHaveBeenCalledTimes(1);
   });
 
+  it('hält den Landeplatz leer, solange es steht, und gibt ihn beim Ende frei', () => {
+    const { unmount } = render(<Startbild onFertig={vi.fn()} />);
+    expect(document.documentElement.classList.contains('startbild-laeuft')).toBe(true);
+    unmount();
+    expect(document.documentElement.classList.contains('startbild-laeuft')).toBe(false);
+  });
+
   it('wechselt am Rechner auf die Papier-Fassung, sobald die Marke über Tiefgrün steht', () => {
     render(<Startbild onFertig={vi.fn()} />);
     laufenLassen(BILDENDE.abgang - 0.02);
@@ -206,6 +233,32 @@ describe('Startbild', () => {
     expect(voll.getAttribute('src')).toBe('/marke/own-motion-block-papier.svg');
     // Kein Umfärben: eine eigene Datei, kein Filter, keine Farbe am Bild.
     expect(voll.style.filter).toBe('');
+  });
+
+  it('landet über einer Vollseite auf deren Wortmarke, ohne Seitenleiste und ohne Kachel', () => {
+    for (const breite of [1280, 834]) {
+      fenster(breite, 800);
+      const kopf = document.createElement('div');
+      kopf.setAttribute('data-startbild-ziel', 'vollseite');
+      const marke = document.createElement('img');
+      marke.getBoundingClientRect = () =>
+        ({ left: 588, top: 300, width: 105, height: 40 }) as DOMRect;
+      kopf.append(marke);
+      document.body.append(kopf);
+
+      // Bis ans Ende: Das letzte Bild steht genau auf dem Landeplatz.
+      const { unmount } = render(<Startbild onFertig={vi.fn()} />);
+      laufenLassen(BILDENDE.abgang + 0.05);
+      const huelle = startbild()!;
+      expect(huelle.querySelector('[data-leiste]')).toBeNull();
+      expect(huelle.querySelector('[data-kachel]')).toBeNull();
+      const voll = huelle.querySelector<HTMLImageElement>('img[data-marke="voll"]')!;
+      expect(voll.getAttribute('src')).toBe('/marke/own-motion-block-farbig.svg');
+      expect(parseFloat(voll.style.left)).toBeCloseTo(588, 0);
+      expect(parseFloat(voll.style.width)).toBeCloseTo(105, 0);
+      unmount();
+      kopf.remove();
+    }
   });
 
   it('führt am Tablet M und O als Paar in die Kachel und blendet den Rest aus', () => {

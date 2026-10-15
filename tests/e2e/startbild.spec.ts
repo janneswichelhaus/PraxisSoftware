@@ -63,3 +63,24 @@ test('läuft von selbst durch und gibt die Seite nach 1,8 s frei', async ({ page
   // (das entscheidet die Anwendung, nicht die Prüfseite; hier nur der Wert).
   expect(await page.evaluate(() => sessionStorage.getItem('startbild-gezeigt'))).toBe('1');
 });
+
+test('läuft beim Öffnen der Anwendung über der Anmeldemaske und landet auf ihrer Marke', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto('/');
+  // Vor der Anmeldung, einmal je Tab (ANN-243 Fassung 2).
+  const intro = page.locator('[data-startbild]');
+  await expect(intro).toHaveCount(1);
+  // Der Landeplatz bleibt leer, solange das Intro steht - kein Doppelbild.
+  const marke = page.locator('[data-startbild-ziel="vollseite"] img');
+  await expect(marke).toHaveCSS('opacity', '0');
+  await expect(intro).toHaveCount(0, { timeout: 6000 });
+  await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
+  await expect(marke).toHaveCSS('opacity', '1');
+
+  // Neuladen im selben Tab: kein zweites Intro.
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
+  await expect(intro).toHaveCount(0);
+});

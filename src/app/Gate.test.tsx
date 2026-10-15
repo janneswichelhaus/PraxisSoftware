@@ -84,6 +84,25 @@ describe('Gate ohne Sitzung', () => {
     expect(screen.getByRole('heading', { name: 'Anmelden' })).toBeInTheDocument();
   });
 
+  it('zeigt das Startbild schon beim Öffnen, über der Anmeldemaske (ANN-243 Fassung 2)', () => {
+    oeffne('/');
+
+    const intro = document.querySelector('[data-startbild]');
+    expect(intro).not.toBeNull();
+    expect(intro).toHaveAttribute('aria-hidden', 'true');
+    // Die Maske steht darunter schon bereit, das Intro hält nichts an.
+    expect(screen.getByRole('heading', { name: 'Anmelden' })).toBeInTheDocument();
+    // Landeplatz: die Wortmarke der Vollseite.
+    expect(document.querySelector('[data-startbild-ziel="vollseite"] img')).not.toBeNull();
+  });
+
+  it('zeigt das Startbild nur einmal je Tab', () => {
+    window.sessionStorage.setItem('startbild-gezeigt', '1');
+    oeffne('/');
+
+    expect(document.querySelector('[data-startbild]')).toBeNull();
+  });
+
   it('führt auch eine Seite mit Patientendaten auf die Anmeldemaske, ohne sie zu erwähnen', () => {
     oeffne('/patienten');
 
