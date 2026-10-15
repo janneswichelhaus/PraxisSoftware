@@ -71,7 +71,11 @@ export function Segment<W extends string>({
 }: {
   beschriftung: string;
   wahlen: readonly Segmentwahl<W>[];
-  gewaehlt: W;
+  /**
+   * Die gewählte Ansicht. `null`, wenn gerade keine gilt - etwa am 3D-Rad,
+   * nachdem es von Hand gedreht wurde (FLT-EPIC-001).
+   */
+  gewaehlt: W | null;
   onWaehlen: (wert: W) => void;
 }) {
   return (
