@@ -8,6 +8,7 @@ import {
   resetDatabaseOhneTermine,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
+import { KLEINUNTERNEHMER_HINWEIS } from '../../src/features/billing/hinweise';
 
 /**
  * Die Rechnung entsteht aus Leistungen (ABR-003).
@@ -700,11 +701,16 @@ describe('Rechnung', () => {
       const klein = await ausgestellt(KATALOG.selbstzahler);
       await asPostgres('update public.practice_billing_profiles set small_business = false');
 
-      // Der Wortlaut steht im Schnappschuss und bleibt, wie er war - auch
-      // wenn die Praxis spaeter umstellt (ADR-009 Punkt 10).
       expect(klein.document.schema_version).toBe(6);
-      expect(klein.document.issuer.small_business_notice).toBe(
-        'Steuerbefreiung für Kleinunternehmer gemäß § 19 Abs. 1 UStG – es wird keine Umsatzsteuer berechnet.',
+      // Derselbe Wortlaut wie der Rueckfall fuer aeltere Snapshots im Client
+      // (ANN-541): Sonst saehen alte und neue Rechnungen verschieden aus.
+      expect(klein.document.issuer.small_business_notice).toBe(KLEINUNTERNEHMER_HINWEIS);
+
+      // Der Wortlaut steht im Schnappschuss und bleibt, wie er war - auch
+      // nachdem die Praxis umgestellt hat (ADR-009 Punkt 10).
+      const { rows } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [klein.id]);
+      expect(rows[0]!.rechnung.document.issuer.small_business_notice).toBe(
+        KLEINUNTERNEHMER_HINWEIS,
       );
     });
 

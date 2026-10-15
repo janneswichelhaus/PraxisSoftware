@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { KLEINUNTERNEHMER_HINWEIS } from './hinweise';
 import { getSupabase } from '@/lib/supabase';
 
 /**
@@ -68,15 +69,6 @@ export const steuerLabels: Record<KatalogPosition['tax_treatment'], string> = {
   taxable: 'Umsatzsteuerpflichtig',
   not_taxable: 'Nicht steuerbar',
 };
-
-/**
- * Der Hinweis unter der Kleinunternehmerregelung (ANN-541): Seit 2025 sind
- * die Umsätze eines Kleinunternehmers steuerfrei, und § 34a Satz 1 Nr. 5
- * UStDV verlangt die Angabe, dass die Steuerbefreiung nach § 19 Abs. 1 UStG
- * gilt. Die eine Stelle für den Wortlaut.
- */
-const KLEINUNTERNEHMER_HINWEIS =
-  'Steuerbefreiung für Kleinunternehmer gemäß § 19 Abs. 1 UStG – es wird keine Umsatzsteuer berechnet.';
 
 /**
  * Der Hinweis nach § 19 UStG auf einer Rechnung (BEF-165): Seit

@@ -5586,7 +5586,7 @@ Recht · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Steuerberatu
 
 **Begründung.** UStAE 4.14.1 Abs. 4 und 5, FG Düsseldorf 1 K 2249/17 U, UStAE 1.3 Abs. 1, BFH V R 13/19, § 34a UStDV. Offen: Behandlung ohne Verordnung trägt wohl 19 %; die App kennt dafür kein eigenes Kennzeichen.
 
-**Anker.** `KLEINUNTERNEHMER_HINWEIS` in `src/features/billing/api.ts`.
+**Anker.** `app.small_business_notice()` in `supabase/migrations/20261118100000_abr_040_monatslauf.sql` (seit BEF-165 im Schnappschuss; die Konstante in `src/features/billing/hinweise.ts` ist nur Rückfall für ältere Snapshots und trägt denselben Wortlaut, ein DB-Test hält beide gleich).
 
 **Änderungspfad.** Kennzeichen je Behandlungsgrundlage (mit/ohne Verordnung): Migration an der Rechnungsposition · Aufwand `mittel`.
 
