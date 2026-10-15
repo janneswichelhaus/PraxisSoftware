@@ -143,7 +143,7 @@ describe('Tarif und Honorarvereinbarung', () => {
       );
       await asPostgres('delete from public.service_catalog_versions where id = $1', [neu[0]!.id]);
       expect(rows[0]!.session_fee_cents).toBe(15000);
-      await asUserCommitted(users.ownerTherapist, TARIF, [KATALOG.entwurf, 14500]);
+      await asUserCommitted(users.ownerTherapist, TARIF, [KATALOG.entwurf, 13000]);
     });
   });
 

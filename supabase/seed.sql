@@ -269,7 +269,7 @@ insert into public.treatment_base_items (id, organization_id, treatment_basis_id
 -- das Honorar auf der Rechnung aufgeteilt wird (ANN-233).
 insert into public.service_catalog_versions (id, organization_id, label, valid_from, session_fee_cents) values
   ('bbbbbbbb-bbbb-4bbb-8bbb-000000000001', '22222222-2222-4222-8222-000000000001', 'Preisliste 2026', '2026-01-01', 14000),
-  ('bbbbbbbb-bbbb-4bbb-8bbb-000000000002', '22222222-2222-4222-8222-000000000001', 'Preisliste 2027 (Entwurf)', '2027-01-01', 14500);
+  ('bbbbbbbb-bbbb-4bbb-8bbb-000000000002', '22222222-2222-4222-8222-000000000001', 'Preisliste 2027 (Entwurf)', '2027-01-01', 13000);
 
 -- Seit ABR-008 traegt jede Position ihren Leistungsbereich (ADR-009 Punkt 16,
 -- ADR-021 Punkt 2). Der Bestand ist durchweg Behandlung; die eine
@@ -303,9 +303,22 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   -- pflichtig bis zur Antwort der Steuerberatung (ANN-269). Der Preis ist
   -- synthetisch, bis Jannes ihn festlegt (Blocker vor Block 5).
   ('cccccccc-cccc-4ccc-8ccc-000000000010', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 10, 'NSA',  'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  3900, 'taxable',           190, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4800, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4800, 'not_taxable',         0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000013', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 3, 'NSA',   'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  4200, 'taxable',           190, 'therapy');
+  ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4400, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      5000, 'not_taxable',         0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000013', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 3, 'NSA',   'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  4900, 'taxable',           190, 'therapy');
+
+-- Preisliste 2027 (Entwurf): Werte aus dem Marktvergleich Koeln vom
+-- 2026-10-15 (docs/product/preisblatt-entwurf.md) - vorlaeufig,
+-- Jannes legt die echten Preise kurz vor dem Start fest. Terminhonorar 130
+-- Euro je 60-Minuten-Hausbesuch (oben); die Heilmittel sind die Gewichte der
+-- Aufteilung (ANN-233), etwa das 1,5-fache des GKV-Satzes 2026.
+insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area) values
+  ('cccccccc-cccc-4ccc-8ccc-000000000018', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 6, 'KG-D',  'Krankengymnastik als Doppelbehandlung', 'treatment', 'Krankengymnastik als Doppelbehandlung',   8800, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000019', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 7, 'MT',    'Manuelle Therapie',                   'treatment',   'Manuelle Therapie',                       5300, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000020', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 8, 'MT-D',  'Manuelle Therapie als Doppelbehandlung', 'treatment', 'Manuelle Therapie als Doppelbehandlung', 10600, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000021', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 9, 'HB',    'Hausbesuchspauschale',                'treatment',   'Hausbesuch',                              3200, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000022', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 10, 'WT',   'Waermetherapie',                      'treatment',   'Waermetherapie',                          2000, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000023', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 11, 'PT',   'Personal Training (Einzelstunde)',    'treatment',   null,                                     12000, 'taxable',           190, 'training');
 
 -- ANG-005: zwei Trainingspakete je Preisliste (ADR-009 Punkt 21), steuer-
 -- pflichtig zum Regelsatz bis zur Antwort der Steuerberatung (ANN-275). Der
@@ -314,8 +327,8 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
 insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area, package_months) values
   ('cccccccc-cccc-4ccc-8ccc-000000000014', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 11, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 39000, 'taxable', 190, 'training', 3),
   ('cccccccc-cccc-4ccc-8ccc-000000000015', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 12, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 72000, 'taxable', 190, 'training', 6),
-  ('cccccccc-cccc-4ccc-8ccc-000000000016', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 4, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 41000, 'taxable', 190, 'training', 3),
-  ('cccccccc-cccc-4ccc-8ccc-000000000017', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 5, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 76000, 'taxable', 190, 'training', 6);
+  ('cccccccc-cccc-4ccc-8ccc-000000000016', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 4, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 129000, 'taxable', 190, 'training', 3),
+  ('cccccccc-cccc-4ccc-8ccc-000000000017', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 5, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 239000, 'taxable', 190, 'training', 6);
 
 update public.service_catalog_versions
    set published_at = timestamptz '2025-12-20 09:00:00+01',

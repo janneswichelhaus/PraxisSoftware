@@ -29,6 +29,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import {
+  KLEINUNTERNEHMER_HINWEIS,
   KeineStammdaten,
   bereichLabels,
   deleteEntwurf,
@@ -490,9 +491,7 @@ function Dokument({
         </ul>
 
         {dokument.issuer.small_business ? (
-          <p className="text-ink-muted mt-2 text-sm">
-            Kein Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmerregelung).
-          </p>
+          <p className="text-ink-muted mt-2 text-sm">{KLEINUNTERNEHMER_HINWEIS}</p>
         ) : null}
       </Section>
 

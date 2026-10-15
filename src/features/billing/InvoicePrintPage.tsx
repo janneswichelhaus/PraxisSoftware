@@ -7,7 +7,13 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
-import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } from './api';
+import {
+  KLEINUNTERNEHMER_HINWEIS,
+  KeineStammdaten,
+  fetchRechnung,
+  steuerLabels,
+  type Rechnungsansicht,
+} from './api';
 import {
   monatsname,
   diagnoseText,
@@ -373,9 +379,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         </ul>
 
         {absender.small_business ? (
-          <p className="text-ink-muted print:text-ink mt-2 text-sm">
-            Kein Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmerregelung).
-          </p>
+          <p className="text-ink-muted print:text-ink mt-2 text-sm">{KLEINUNTERNEHMER_HINWEIS}</p>
         ) : null}
 
         {dokument.treatment_bases.length > 0 ? (

@@ -5577,3 +5577,16 @@ Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · — · Wiedervo
 **Anker.** `app.exercise_illustration_valid` (nur `null`) in `supabase/migrations/20261117110000_ueb_013_uebungen_ohne_zeichnung.sql`; `src/components/ui/Schrittliste.tsx`.
 
 **Änderungspfad.** Eigene Fotos/Videos je Übung: Dateiart nach ADR-017 mit eigener Fassung, Anzeige über `Medienbild`, Spalten `illustration` entfernen · Aufwand `groß`.
+
+### ANN-541 — Umsatzsteuer: Heilbehandlung frei nur mit Nachweis, Training und Abo 19 %, Hinweis nach § 34a UStDV
+
+Recht · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4, G13) vor dem ersten echten Rechnungslauf
+
+**Annahme.** Heilbehandlung, Hausbesuch als Nebenleistung und Wärmetherapie sind frei nach § 4 Nr. 14 a UStG, wenn eine Verordnung den therapeutischen Zweck belegt. Ausfallhonorar ist nicht steuerbar. Abo, Personal Training und Pakete tragen 19 %. Unter § 19 lautet der Hinweis „Steuerbefreiung für Kleinunternehmer gemäß § 19 Abs. 1 UStG“.
+
+**Begründung.** UStAE 4.14.1 Abs. 4 und 5, FG Düsseldorf 1 K 2249/17 U, UStAE 1.3 Abs. 1, BFH V R 13/19, § 34a UStDV. Offen: Behandlung ohne Verordnung trägt wohl 19 %; die App kennt dafür kein eigenes Kennzeichen.
+
+**Anker.** `KLEINUNTERNEHMER_HINWEIS` in `src/features/billing/api.ts`.
+
+**Änderungspfad.** Kennzeichen je Behandlungsgrundlage (mit/ohne Verordnung): Migration an der Rechnungsposition · Aufwand `mittel`.
+
