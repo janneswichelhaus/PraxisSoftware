@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-14.
+Zuletzt aktualisiert: 2026-10-15.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -5264,7 +5264,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-14 · Jannes (Befund B4) · erl
 
 ### ANN-513 — Haken und Doku erfassen die Leistung von selbst
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Vorbelegung je Heilmittel)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-475 und ANN-140 in der Frage „wer Heilmittel bestätigt“
 
@@ -5278,7 +5278,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Vor
 
 ### ANN-514 — Stand der Grundlage an einer Stelle; freigeben, sobald nichts offen ist
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rollen der Freigabe)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Bereit ist eine Grundlage, wenn jeder Termin abgehakt und dokumentiert, abgesagt oder nicht angetroffen ist und kein Entwurf an ihm hängt; vorgeschlagen wird die Freigabe, wenn zudem alle verordneten Termine erbracht sind. Freigeben dürfen owner, therapist, team_lead und office; den Stand ohne Beträge sehen alle Praxisrollen.
 
@@ -5290,7 +5290,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rol
 
 ### ANN-515 — Nach der Freigabe sperrt der Server Doku, Zeit und Terminzahl
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Nachträge nach der Freigabe)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ist die Grundlage in der Abrechnung, weisen Trigger ab: Zeit, Zustand, Haken, Zuordnung und Mitarbeitende ihrer Termine, neue Termine, Inhalt, Korrektur und Nachtrag der Doku, Terminzahl, Bauart und Positionen. Zurückholen hebt die Sperre auf, solange keine Rechnung zur Grundlage besteht.
 
@@ -5302,7 +5302,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Nac
 
 ### ANN-516 — „Zu mahnen“: überfällig und keine Erinnerung mit laufender Frist
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Eine ausgestellte, nicht stornierte Rechnung ist zu mahnen, wenn ein Betrag offen ist, das Zahlungsziel vor heute liegt und keine Zahlungserinnerung eine Frist bis heute oder später trägt. Liste und Akte zeigen es nur owner und office (ANN-139).
 
@@ -5314,7 +5314,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-517 — Patientenliste: sortieren und zeigen statt Namenssuche ab drei Zeichen
 
-Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-430 in der Liste (das Suchfeld bleibt)
 
@@ -5328,7 +5328,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-520 — Diktat: Vorschlag nur in der Seite, Rohaudio nie gespeichert
 
-Datenschutz · offen · 2026-10-14 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Anbieter mit C6
+Datenschutz · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Anbieter mit C6
 
 **Annahme.** Die Aufnahme geht nur für die Anfrage an den Gateway und liegt sonst nur im Arbeitsspeicher der Seite, bis sie aufbereitet oder verworfen ist; Transkript und Vorschlag leben nur im Zustand der Schreibseite. Nichts davon kommt in Datenbank, Ablage, Log oder Gerätespeicher; erst „Übernehmen“ macht den Text zum Entwurf. Keine neue Datenklasse; E13 ist für den Mock-Betrieb überbrückt.
 
@@ -5340,7 +5340,7 @@ Datenschutz · offen · 2026-10-14 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-521 — Schreibseite: „Sprechen“ ist Hauptknopf, solange das Feld leer ist
 
-Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ist das Feld leer, nichts offen und keine Meldung da, ist „Sprechen“ Hauptknopf (48 px, am Telefon volle Breite über der Fußleiste), „Festschreiben“ sekundär; mit Text im Feld umgekehrt, „Sprechen“ mit Zeichen und Wort. Während Aufnahme und Vorschlag tragen „Fertig“, „Erneut senden“ oder „In die Doku übernehmen“ den Hauptknopf. Ohne Angebot des Gateways oder bei gesperrtem Mikrofon fehlt „Sprechen“.
 
@@ -5352,7 +5352,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-522 — Diktat: vier Abschnitte der Vorlage, Leeres entfällt
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Diktat wird in „Angaben der Patient:in“, „Befund“, „Behandlung“ und „Plan“ eingeordnet, in dieser Reihenfolge; was nicht vorkommt, entfällt. Im Feld steht je Abschnitt der Titel in einer Zeile, darunter der Text, dazwischen eine Leerzeile.
 
@@ -5364,7 +5364,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-523 — Diktat: höchstens fünf Minuten und 5 MiB je Aufnahme
 
-Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Technik · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Eine Aufnahme endet nach fünf Minuten von selbst, ebenso kurz vor 5 MiB; aufgenommen wird mit 64 kbit/s (fünf Minuten etwa 2,4 MB) in einem Format, das `MediaRecorder` liefert. Der Gateway nimmt höchstens 300 s gemeldete Dauer und 5 MiB an; die Tonlänge selbst misst er nicht.
 
@@ -5376,7 +5376,7 @@ Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-524 — AI Gateway: Anbieter nur per Secret, ohne stillen Rückfall
 
-Technik · offen · 2026-10-14 · — · — · Wiedervorlage: Anbieterentscheidung (C6)
+Technik · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: Anbieterentscheidung (C6)
 
 **Annahme.** Der Gateway wählt den Adapter nur über `AI_PROVIDER`; heute gibt es nur `mock`. Jeder andere oder fehlende Wert heißt „nicht eingerichtet“, nie die Nachbildung; ohne `APP_ENVIRONMENT` oder in der Produktion antwortet auch `mock` nicht. Ein echter Adapter wird nicht vorgebaut.
 
@@ -5388,7 +5388,7 @@ Technik · offen · 2026-10-14 · — · — · Wiedervorlage: Anbieterentscheid
 
 ### ANN-525 — Die Einsicht in die Plattform einer Person hat nur owner
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rolle der Einsicht)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** „So sieht … die Plattform“ (DSN-001 D7) darf nur `owner`; therapist, team_lead, office und trainer weist `platform_preview` mit `access.denied` ab.
 
@@ -5400,7 +5400,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rol
 
 ### ANN-526 — Eingesehen wird nur der eigene, aktive Zugang der Person
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Einsicht gibt es nur für den eigenen Zugang der Person im Zustand `active`; eingeladen, gesperrt, entzogen und fremde Organisation weist der Server gleich ab.
 
@@ -5412,7 +5412,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-527 — Die Einsicht listet Dokumente und Anhänge, öffnet sie aber nicht
 
-Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Datenschutz · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · Prüfpaket · Wiedervorlage: Datenschutzprüfung
 
 **Annahme.** Freigegebene Dokumente und Fotos oder Videos an Rückfragen stehen in der Einsicht in der Liste; Ansehen und Herunterladen gibt es dort nicht, ein Link führt an den Ort in der Praxis (Reiter der Akte, Rückfrage).
 
@@ -5424,7 +5424,7 @@ Datenschutz · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-528 — Die Einsicht zeigt die Sicht der Person, nicht die einer Vertretung
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht einer Vertretung)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** „So sieht … die Plattform“ steht nur am eigenen Zugang der Person; was eine Begleitung oder rechtliche Vertretung sieht, zeigt die Einsicht nicht.
 
@@ -5436,7 +5436,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-529 — Die Einsicht sperrt Schreibwege über eine nur lesende Transaktion
 
-Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Technik · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Gibt der Wächter einen Zugang für die Einsicht frei, schaltet er die Transaktion auf `read only`; die Fähigkeiten (`can_write`, `can_answer` …) bleiben, wie die Person sie hat.
 
@@ -5448,7 +5448,7 @@ Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-530 — „Passt es?“ bietet die früheste passende Zeit an, nur wenn die Gegenseite hält
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ist im Terminformular die Anfahrt zu knapp, steht darunter „Auf 16:25 verschieben“ (frühester Beginn des Servers, nur am selben Tag); bei zu knapper Weiter- oder Rückfahrt „Auf 15:40 vorziehen“ (Beginn − ⌈−Luft / Raster⌉ · Raster). Angeboten wird nur, wenn die Luft der Gegenseite danach ≥ 0 bleibt oder sie ungeprüft ist, sonst „Zwischen Termin davor und danach reicht die Zeit nicht.“; anlegen zur alten Zeit bleibt möglich.
 
@@ -5460,7 +5460,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-531 — Textbausteine: in der Leiste nur eigene, keine neuen Bausteine der Praxis
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Leiste der Schreibseite zeigt nur die eigenen Bausteine der angemeldeten Person, ohne eigene den leisen Link „Eigene Bausteine anlegen“; „+ Befund“ bleibt. Die Bausteinseite legt nur noch eigene an; vorhandene Bausteine der Praxis sieht nur owner, eingeklappt, und kann sie löschen.
 
@@ -5472,7 +5472,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-532 — Wegbalken an der Karte, am Telefon an Stelle der Minutenangabe
 
-Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Karte des nächsten Wegs und aufgeklappte Zeile tragen den schmalen Wegbalken unter dem Kicker statt „· ≈ n min“; ist das Ende davor vorbei, beginnt er jetzt (wie die Kachel). Nennt die Kachel „Abfahrt“ denselben Weg, liegt er am Telefon ohne Zahlen in der Lücke über dem Namen.
 
@@ -5484,7 +5484,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-533 — „Ausfall“ ab Beginn des Termins und nur ohne Doku
 
-Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Übersicht)
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** „Ausfall“ steht in der Übersicht an jeder Behandlung, die begonnen hat, bestätigt ist und keine Doku hat, auch keinen Entwurf: an der Zeile, aufgeklappt und an der Karte des nächsten Wegs (dort statt „Niemand öffnet?“, neu auch am Praxistermin, mit Entwurf nicht mehr). Hausbesuch: Protokoll, Gebühr erst nach drei Haken; Praxis und Video: die Rückfrage ohne Gebühr aus dem Terminfenster.
 
@@ -5496,7 +5496,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-534 — Eben angelegten Termin zurücknehmen: 15 Minuten, nur wer angelegt hat
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Frage im Bericht)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** `undo_appointment_creation` löscht einen Behandlungstermin bis 15 Minuten nach dem Anlegen – nur für die anlegende Person mit Terminrecht, solange er geplant, seither unverändert und nichts an ihm hängt (Doku, Leistung, Honorar, Mitteilung, Warteliste, Wunsch, Serie). Sieht die Person ihre Termine auf der Plattform oder sah sie sie seit dem Anlegen, fragt „Rückgängig“ nach und sagt ihn erst auf „Termin absagen“ als Praxis ab (B8). Kein Auditeintrag; das Löschjournal hält Tabelle und Kennung, `due_at` ist der Zeitpunkt des Zurücknehmens.
 
@@ -5508,7 +5508,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Fra
 
 ### ANN-535 — Folgeterminvorschläge: zu knapp fällt weg, ungeprüft bleibt
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Folgetermin)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Jeder Vorschlag wird wie „Passt es?“ geprüft (Nachbarn und Tagesränder, höchstens sechs Kandidaten). Ist eine Seite zu knapp, fällt er weg; der nächste freie Platz rückt nach, auch am selben Tag. Ohne Ergebnis (Kartendienst, Adresse) bleibt er mit „Weg ungeprüft“. Mögliche Dauer: Dauer plus Luft zur Weiterfahrt (am Tagesrand bis zur Rückfahrt), höchstens bis zum nächsten Termin jeder Art oder zur Pause, auf das Raster abgerundet.
 
@@ -5520,7 +5520,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-536 — Katalogübungen übernimmt beim Hinzufügen nur owner, einzeln
 
-Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Frage im Bericht)
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-385 für gewählte Einträge beim Hinzufügen zu einem Plan
 
@@ -5534,7 +5534,7 @@ Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Fra
 
 ### ANN-537 — Eine Vorlage zeigt ihre Übungen als Vorschau, alle vorgewählt
 
-Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-444 in der Übernahme
 
@@ -5548,7 +5548,7 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 ### ANN-538 — Der Stand eines Plans: Fassung aus der Kette, Tag der Zuweisung, wer zugewiesen hat
 
-Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-15, Durchsicht 14.10.) · erledigt · Wiedervorlage: —
 
 **Annahme.** Der Kopf zeigt „Fassung 2 · Stand 14.10.2026 · Anna Beispiel“, im Entwurf „Entwurf · zuletzt geändert … von …“ statt eines Abzeichens; die Nummer zählt der Server über `previous_plan_id`. Die Plattform zeigt „Stand“ mit dem Tag der Zuweisung, „Fassungen“ Nummer und Stand.
 
