@@ -1061,6 +1061,15 @@
           "vermerk": "Bereichsüberholung 2 der Roadmap; Sichtung per Bildstrecke im PR"
         },
         {
+          "id": "erst-epic-001",
+          "name": "Erstaufnahme geführt: eine Seite vom Terminpanel bis zur Doku (K10), Neuaufnahme am Telefon in drei Tipps (K11)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-15",
+          "nachweis": "Branch ccr-248b0353-fbdcs9, tests/e2e/authenticated/kernablaeufe.spec.ts (K10 10 Tipps, K11 3 Tipps)",
+          "vermerk": "Bereichsüberholung 3 der Roadmap; ANN-542, ANN-543; Sichtung per Bildstrecke im PR"
+        },
+        {
           "id": "ueb-012",
           "name": "UEB-012 Mitgelieferter Übungskatalog: 196 Übungen, 193 gezeichnete Figuren, 15 Vorlagen, Übernahme durch owner",
           "gewicht": 2,

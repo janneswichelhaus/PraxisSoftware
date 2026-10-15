@@ -119,6 +119,7 @@ export function rueckwegBeschriftung(pfad: string): string {
     if (/\/(doku|verlauf|befund)$/.test(ohneSuche)) return 'Zurück zur Doku';
     if (/\/(stammdaten|datenschutz|dateien)$/.test(ohneSuche)) return 'Zurück zu den Stammdaten';
     if (ohneSuche.endsWith('/terminzettel')) return 'Zurück zum Terminzettel';
+    if (ohneSuche.endsWith('/erstaufnahme')) return 'Zurück zur Erstaufnahme';
     return 'Zurück zur Akte';
   }
   if (ohneSuche === '/termine/neu') return 'Zurück zur Terminanlage';

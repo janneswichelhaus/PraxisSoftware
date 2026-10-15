@@ -10,7 +10,21 @@ import { DokumentFoto } from './DokumentFoto';
  * selbst (Kameradialog, Dateiwähler, Fotoverlustschutz) teilt es mit dem
  * Anmeldebogen: `DokumentFoto`.
  */
-export function PrescriptionPhoto({ patientId }: { patientId: string }) {
+export function PrescriptionPhoto({
+  patientId,
+  onErfolg,
+  gefuehrt = false,
+}: {
+  patientId: string;
+  /** Etwa: die Erstaufnahme nachladen, die das Foto erledigt (K10). */
+  onErfolg?: () => void;
+  /**
+   * In der geführten Erstaufnahme (K10): ohne Einleitungssatz, und „Foto
+   * verwenden“ im Kameradialog gibt das Foto schon ans Büro - wie beim
+   * Anmeldebogen, ein Tipp weniger.
+   */
+  gefuehrt?: boolean;
+}) {
   return (
     <DokumentFoto
       patientId={patientId}
@@ -24,7 +38,13 @@ export function PrescriptionPhoto({ patientId }: { patientId: string }) {
       wartetText="Noch nicht übergeben."
       speichernKnopf="Ans Büro geben"
       speichernLaeuft="Wird übergeben …"
-      einleitung="Neues Rezept dabei? Ein Foto genügt – das Büro erfasst die Grundlage daraus."
+      {...(gefuehrt
+        ? { sofort: true }
+        : {
+            einleitung:
+              'Neues Rezept dabei? Ein Foto genügt – das Büro erfasst die Grundlage daraus.',
+          })}
+      {...(onErfolg ? { onErfolg } : {})}
       erfolg={
         <>
           Das Foto liegt beim Büro unter <Textlink to="/offen">Offene Punkte</Textlink> und wartet

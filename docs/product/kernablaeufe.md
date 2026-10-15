@@ -11,7 +11,7 @@ Scorecard) und der Referenzabgleich vom 2026-10-12 (Jane, Cliniko, Physitrack, a
 Link, Auswahl, Kästchen); getippter Text steht als „+ Text“. Ein **Wechsel** ist eine neue Route
 oder App. Gemessen wird die Software per Playwright, kein Mensch (§20 bleibt unberührt). „Heute“
 ist am 2026-10-12 aus Code und Prüfseiten **gezählt**, nicht gemessen; ein Ablauftest ersetzt die
-Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag „Besuch in einem Zug“; „R2“: am 2026-10-14 nach den Restbefunden der Praxis-Prüfung.
+Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag „Besuch in einem Zug“; „R2“: am 2026-10-14 nach den Restbefunden der Praxis-Prüfung; „E3“: am 2026-10-15 nach „Erstaufnahme geführt“.
 
 | # | Ablauf (Auslöser → fertig) | Rolle, Häufigkeit | Budget | Heute | Herkunft, Vorbild |
 | --- | --- | --- | --- | --- | --- |
@@ -24,8 +24,8 @@ Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag �
 | K7 | Folgetermin für die gerade behandelte Person | Therapie, täglich | ≤ 3 Tipps, keine Tastatur | 1 nach dem Festschreiben (Vorschlag „gleiche Zeit“) – C1 | Scorecard; Jane |
 | K8 | Niemand öffnet bis zum Anlass fürs Ausfallhonorar (Protokoll nach ADR-018 bleibt) | Therapie, wöchentlich | ≤ 5 Tipps | 5 an der Karte (die Uhr zeigt die 15 Minuten, alle drei Haken von Hand) – C1 | Jane No-show |
 | K9 | Absage am Telefon annehmen (Grund, Eingang) | Büro, wöchentlich | ≤ 4 Tipps | 4 im Kalender: Kachel, Absagen, Grund, Ja (gemessen, `kernablaeufe.spec.ts`; vorher 7) – R2 | iPrax, Jane |
-| K10 | Erstaufnahme vor Ort, geführt: Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege | Therapie, wöchentlich | ≤ 15 Tipps + Felder, nichts vergessen | ≥ 25, ≥ 10 Wechsel, ohne Führung | T7, T8 |
-| K11 | Neuaufnahme am Telefon (Stammdaten, Anschrift für Hausbesuch) | Büro, wöchentlich | ≤ 8 Tipps + Felder, ≤ 90 s | ≈ 12 + 9 Felder | Scorecard |
+| K10 | Erstaufnahme vor Ort, geführt: Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege | Therapie, wöchentlich | ≤ 15 Tipps + Felder, nichts vergessen | 10 vom Terminpanel bis zur Doku, 2 Wechsel (Verordnung, Anmeldebogen, eine Einwilligung, Liege; gemessen, `kernablaeufe.spec.ts`); am Gerät je Foto 2 Tipps mehr im Kameradialog: 14; Anamnesebogen vor Ort statt vorab: 16 + Felder; vorher ≥ 25, ≥ 10 Wechsel – E3 | T7, T8 |
+| K11 | Neuaufnahme am Telefon (Stammdaten, Anschrift für Hausbesuch) | Büro, wöchentlich | ≤ 8 Tipps + Felder, ≤ 90 s | 3 + Felder über „Weiter“ (gemessen, `kernablaeufe.spec.ts`; vorher ≈ 12 + 9 Felder) – E3 | Scorecard |
 | K12 | Heimprogramm aus Vorlage zuweisen und mitgeben | Therapie, wöchentlich | ≤ 5 Tipps | 6 + 5 je Übung | Physitrack |
 | K13 | Monatsabrechnung: alle Rechnungen eines Monats ausstellen | Büro, monatlich | ≤ 3 Tipps für den Lauf | ≈ 15 je Rechnung | appointmed |
 | K14 | Offene Posten sehen, Zahlung buchen | Büro, wöchentlich | 0 Tipps bis zur Liste, ≤ 3 je Zahlung | 0 und 3 (erreicht) | Scorecard |

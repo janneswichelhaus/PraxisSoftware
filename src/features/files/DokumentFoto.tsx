@@ -142,7 +142,7 @@ export function DokumentFoto({
       className={
         alsLink
           ? 'sr-only'
-          : 'file:rounded-button file:border-line-strong file:text-accent file:mr-3 file:min-h-10 file:cursor-pointer file:border file:bg-transparent file:px-4 file:text-sm file:font-bold'
+          : 'file:rounded-button file:border-line-strong file:text-accent file:mr-3 file:min-h-11 file:cursor-pointer file:border file:bg-transparent file:px-4 file:text-sm file:font-bold'
       }
       onChange={(e) => {
         const datei = e.currentTarget.files?.[0];

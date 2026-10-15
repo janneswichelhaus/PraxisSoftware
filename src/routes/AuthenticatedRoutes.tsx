@@ -25,6 +25,7 @@ import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTre
 import { PatientBefundSeite } from '@/features/assessments/PatientBefundPage';
 import { PatientDokuPage } from '@/features/documentation/PatientDokuPage';
 import { ErhebungPage } from '@/features/assessments/ErhebungPage';
+import { ErstaufnahmePage } from '@/features/intake/ErstaufnahmePage';
 import { TherapieberichtPage } from '@/features/therapy-reports/TherapieberichtPage';
 import { TherapieberichtDruckPage } from '@/features/therapy-reports/TherapieberichtDruckPage';
 import { PrescribersListPage } from '@/features/treatment-bases/PrescribersListPage';
@@ -269,6 +270,12 @@ export function AuthenticatedRoutes({
                     <Route
                       path="/patienten/:patientId/plaene/:planId/blatt"
                       element={<PlanblattSeite user={user} />}
+                    />
+                    {/* K10: Erstaufnahme gefuehrt - ausserhalb des Rahmens wie die
+                  Erhebung; jeder Schritt prueft sein Recht auf dem Server. */}
+                    <Route
+                      path="/patienten/:patientId/erstaufnahme"
+                      element={<ErstaufnahmePage user={user} />}
                     />
                     {/* FRB-002b: Fragebogen erheben - ausserhalb des Rahmens (UX-009). */}
                     <Route

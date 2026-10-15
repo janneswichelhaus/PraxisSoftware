@@ -441,12 +441,15 @@ describe('Übersicht', () => {
       },
     ]);
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    // Die Pille sagt, dass etwas fehlt, und führt in die Akte; was fehlt,
-    // hört Vorlesesoftware gleich mit.
+    // Die Pille sagt, dass etwas fehlt, und führt in die geführte
+    // Erstaufnahme zu diesem Termin (K10); was fehlt, hört Vorlesesoftware
+    // gleich mit.
     const pille = await screen.findByRole('link', {
       name: 'Erstaufnahme offen: Verordnungsfoto · Anmeldebogen',
     });
-    expect(pille).toHaveAttribute('href', `/patienten/p1?zurueck=${encodeURIComponent('/')}`);
+    expect(pille.getAttribute('href')).toMatch(
+      /^\/patienten\/p1\/erstaufnahme\?termin=[^&]+&zurueck=%2F$/,
+    );
     expect(within(await findeKarte()).getByRole('link', { name: /Erstaufnahme offen/ })).toBe(
       pille,
     );

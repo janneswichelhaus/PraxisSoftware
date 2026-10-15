@@ -34,6 +34,10 @@ function zaehler() {
       tipps += 1;
       await ziel.click();
     },
+    /** Ein Tipp, den der Test anders auslöst - etwa der Dateiwähler. */
+    zaehle() {
+      tipps += 1;
+    },
     get tipps() {
       return tipps;
     },
@@ -111,4 +115,145 @@ test('Übung aus der Bibliothek in den Plan: zwei Tipps bis zum Plan, vier bis z
     description: `${z.tipps} Tipps bis zugewiesen (vorher ≈ 9 + Suche)`,
   });
   expect(z.tipps).toBeLessThanOrEqual(4);
+});
+
+/**
+ * Erstaufnahme geführt (K10, K11): Die Neuaufnahme am Telefon legt eine neue
+ * Person an, die Erstaufnahme führt sie danach durch Verordnung,
+ * Anmeldebogen, eine Einwilligung und die Liege bis zur Doku. Eine eigene
+ * Person je Lauf: Die Fotos erledigen die Checkliste, und eine Seed-Person
+ * bliebe danach für andere Spezifikationen erledigt.
+ */
+let neuePerson = '';
+
+/** Ein Nachname je Lauf aus Buchstaben - der Dublettenhinweis bleibt still. */
+function lauftitel(): string {
+  const buchstaben = LAUF.toString(36).replace(/[0-9]/g, (z) => 'abcdefghij'.charAt(Number(z)));
+  return `Aufnahme${buchstaben}`;
+}
+
+/** Ein kleines, gültiges JPEG statt eines Fotos - synthetisch, ohne Inhalt. */
+const BLATT = {
+  name: 'blatt.jpg',
+  mimeType: 'image/jpeg',
+  buffer: Buffer.from(
+    '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCAAwAEADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD1miiipAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigD//Z',
+    'base64',
+  ),
+};
+
+test('K11: Neuaufnahme am Telefon in höchstens acht Tipps, die Felder über „Weiter“', async ({
+  page,
+}) => {
+  await anmelden(page, KONTEN.office);
+  await page.setViewportSize(TELEFON);
+  await page.goto('/');
+
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Patienten', exact: true }));
+  await z.tippe(page.getByRole('link', { name: 'Patient:in anlegen' }));
+  // Der Name beginnt ohne Tipp ins Feld; „Weiter“ der Tastatur führt durch
+  // die Felder bis zum Zugangshinweis (Text zählt nicht als Tipp).
+  await expect(page.getByLabel('Vorname *')).toBeFocused();
+  await page.keyboard.type('Kim');
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Nachname *')).toBeFocused();
+  await page.keyboard.type(lauftitel());
+  await page.keyboard.press('Enter');
+  await page.getByLabel('Geburtsdatum *').fill('1958-04-12');
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Mobil')).toBeFocused();
+  await page.keyboard.type('0151 0000000');
+  for (const [feld, text] of [
+    ['Straße', 'Musterweg'],
+    ['Hausnummer', '7'],
+    ['PLZ', '72070'],
+    ['Ort', 'Tübingen'],
+  ] as const) {
+    await page.keyboard.press('Enter');
+    await expect(page.getByLabel(feld)).toBeFocused();
+    await page.keyboard.type(text);
+  }
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Zugangshinweis')).toBeFocused();
+  await page.keyboard.type('2. OG, Klingel Aufnahme');
+  // Das Seltene ist eingeklappt und hält niemanden auf.
+  await expect(page.getByLabel('E-Mail')).toBeHidden();
+  await z.tippe(page.getByRole('button', { name: 'Patient:in anlegen' }));
+
+  await expect(page).toHaveURL(/\/patienten\/[0-9a-f-]{36}(\/|$)/);
+  neuePerson = /\/patienten\/([0-9a-f-]{36})/.exec(page.url())?.[1] ?? '';
+  expect(neuePerson).not.toBe('');
+
+  test.info().annotations.push({ type: 'K11', description: `${z.tipps} Tipps (vorher ≈ 12)` });
+  expect(z.tipps).toBeLessThanOrEqual(8);
+});
+
+test('K10: Erstaufnahme geführt vom Termin bis zur Doku, nichts vergessen', async ({ page }) => {
+  test.skip(neuePerson === '', 'K11 hat keine Person angelegt.');
+  const tag = tagImFenster(TAGESFENSTER.kernablaeufe, LAUF, 1);
+  await anmelden(page, KONTEN.owner);
+  const id = await terminUeberOberflaeche(page, {
+    tag,
+    von: zeitImLauf(LAUF, 60),
+    patient: neuePerson,
+    standortAbwarten: true,
+  });
+  await fensterSchliessen(page);
+  await page.setViewportSize(TELEFON);
+  await page.getByRole('button', { name: 'Terminpanel schließen' }).click();
+
+  // Ausgangslage: der Termin im Kalender, die Person steht vor der Tür.
+  const z = zaehler();
+  await z.tippe(terminKachel(page, id));
+  const panel = page.locator('section[aria-labelledby="terminpanel-titel"]');
+  await expect(panel.getByText('Fehlt: Verordnungsfoto · Anmeldebogen · Liege')).toBeVisible();
+  await z.tippe(panel.getByRole('link', { name: 'Erstaufnahme' }));
+  await expect(page.getByRole('heading', { level: 1, name: 'Erstaufnahme' })).toBeVisible();
+  await expect(page.getByText(/noch 4 offen/)).toBeVisible();
+
+  // Verordnung: ohne Kamera (Prüfbrowser) über den Dateiwähler, ein Tipp
+  // wie „Foto verwenden“ im Kameradialog - das Foto geht sofort ans Büro.
+  z.zaehle();
+  await page.getByLabel('Verordnung als Datei').setInputFiles(BLATT);
+  const verordnung = page.locator('section', {
+    has: page.getByRole('heading', { name: 'Verordnung' }),
+  });
+  await expect(verordnung.getByText('Erledigt')).toBeVisible();
+
+  // Anmeldebogen: das Foto geht sofort in die Akte.
+  z.zaehle();
+  await page.getByLabel('Anmeldebogen als Datei').setInputFiles(BLATT);
+  const bogen = page.locator('section', {
+    has: page.getByRole('heading', { name: 'Anmeldebogen' }),
+  });
+  await expect(bogen.getByText('Erledigt')).toBeVisible();
+
+  // Eine Einwilligung: nichts vorbelegt, mit Rückfrage (PAT-04).
+  await z.tippe(page.getByRole('button', { name: /Kontakt per E-Mail/ }));
+  const fenster = page.getByRole('dialog', { name: 'Kontakt per E-Mail' });
+  await z.tippe(fenster.getByRole('radio', { name: 'Einwilligung erteilt' }));
+  await z.tippe(fenster.getByRole('button', { name: 'Speichern' }));
+  await z.tippe(page.getByRole('button', { name: 'Speichern' }).last());
+  await expect(page.getByText(/Vermerkt: /)).toBeVisible();
+
+  // Liege: einmal entscheiden.
+  await z.tippe(page.getByRole('button', { name: 'Liege nicht nötig' }));
+  // Offen bleibt der Anamnesebogen - mit Rückweg hierher.
+  await expect(page.getByText(/noch 1 offen/)).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Bogen erheben' })).toHaveAttribute(
+    'href',
+    /\/befund\/erheben\?instrument=anamnese.*zurueck=%2Fpatienten%2F.*%2Ferstaufnahme/,
+  );
+
+  await z.tippe(page.getByRole('link', { name: 'Weiter zu Befund und Doku' }));
+  await expect(page).toHaveURL((url) => url.pathname === `/termine/${id}/abschluss`);
+
+  // Ohne Anamnesebogen (vorab über die Plattform oder 2 Tipps + Felder)
+  // und ohne Kameradialog (ein Tipp mehr je Foto); Budget 15.
+  test.info().annotations.push({
+    type: 'K10',
+    description: `${z.tipps} Tipps bis zur Doku (vorher ≥ 25, ≥ 10 Wechsel)`,
+  });
+  expect(z.tipps).toBeLessThanOrEqual(10);
 });

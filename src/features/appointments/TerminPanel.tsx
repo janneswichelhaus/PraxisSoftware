@@ -15,6 +15,7 @@ import {
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
+import { ErstaufnahmeEinstieg } from '@/features/intake/ErstaufnahmeEinstieg';
 import { Laengenzeichen } from './Laengenzeichen';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
 import { AbsageAktion } from './TerminAktionen';
@@ -194,6 +195,19 @@ export function TerminPanel({
         <Statusmeldung ton={meldung.ton} className="mt-2">
           {meldung.text}
         </Statusmeldung>
+      ) : null}
+
+      {/* K10: Fehlt zur Person noch etwas aus der Erstaufnahme, führt eine
+          Zeile in die geführte Erstaufnahme zu diesem Termin. */}
+      {behandlung && eintrag.patient_id && eintrag.status !== 'cancelled' ? (
+        <div className="mt-3 empty:hidden">
+          <ErstaufnahmeEinstieg
+            patientId={eintrag.patient_id}
+            terminId={eintrag.id}
+            zurueck={rueckweg}
+            user={user}
+          />
+        </div>
       ) : null}
 
       {darfHaken || darfDoku ? (

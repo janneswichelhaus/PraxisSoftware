@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Field } from '@/components/ui/Field';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Select } from '@/components/ui/Select';
@@ -6,6 +7,18 @@ import type { AssignableTherapist } from '@/features/appointments/api';
 import type { StammdatenFeld } from './api';
 import { stammdatenFeldId } from './stammdatenfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
+import { Disclosure } from '@/components/ui/Card';
+
+/** Was die Anlage hinter „Weitere Angaben“ stellt (K11). */
+const WEITERE: readonly StammdatenFeld[] = [
+  'phone',
+  'phone_work',
+  'email',
+  'institution',
+  'primary_therapist_staff_member_id',
+  'special_note',
+  'remark',
+];
 
 /**
  * Eingabefelder der organisatorischen Stammdaten.
@@ -70,6 +83,7 @@ export function PatientMasterDataFields({
   therapeutinnenStand = 'bereit',
   bisherigeTherapeutin = null,
   mitGeschaeftlichemTelefon = false,
+  kurz = false,
 }: {
   werte: Record<StammdatenFeld, string>;
   fehler: Partial<Record<StammdatenFeld, string>>;
@@ -90,6 +104,11 @@ export function PatientMasterDataFields({
    * Auswahl stehen, statt still als „Keine feste Zuordnung" zu erscheinen.
    */
   bisherigeTherapeutin?: string | null;
+  /**
+   * Die Fassung der Anlage (K11): nur, was ein Hausbesuch braucht, offen;
+   * der Rest hinter „Weitere Angaben“.
+   */
+  kurz?: boolean;
 }) {
   const gewaehlt = werte.primary_therapist_staff_member_id;
   const fehltInListe =
@@ -104,232 +123,354 @@ export function PatientMasterDataFields({
         // ist, ändert, was man wählt - das bleibt.
         'Vorbelegung für die Terminplanung, kein Zugriffsrecht.';
 
+  // Jedes Feld einmal, gesetzt wird es je Fassung (K11): Die Anlage am
+  // Telefon zeigt nur, was ein Hausbesuch braucht; das Ändern alles.
+  const feld = {
+    given_name: (
+      <Field
+        label="Vorname *"
+        name="given_name"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('given_name')}
+        autoComplete="off"
+        {...OHNE_AUTOKORREKTUR}
+        maxLength={100}
+        required
+        value={werte.given_name}
+        error={fehler.given_name}
+        onChange={(event) => onChange('given_name', event.target.value)}
+      />
+    ),
+    family_name: (
+      <Field
+        label="Nachname *"
+        name="family_name"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('family_name')}
+        autoComplete="off"
+        {...OHNE_AUTOKORREKTUR}
+        maxLength={100}
+        required
+        value={werte.family_name}
+        error={fehler.family_name}
+        onChange={(event) => onChange('family_name', event.target.value)}
+      />
+    ),
+    date_of_birth: (
+      <Field
+        label="Geburtsdatum *"
+        name="date_of_birth"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('date_of_birth')}
+        type="date"
+        min="1900-01-01"
+        max={heute()}
+        required
+        value={werte.date_of_birth}
+        error={fehler.date_of_birth}
+        onChange={(event) => onChange('date_of_birth', event.target.value)}
+      />
+    ),
+    phone_mobile: (
+      <Field
+        label="Mobil"
+        name="phone_mobile"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('phone_mobile')}
+        type="tel"
+        autoComplete="off"
+        value={werte.phone_mobile}
+        error={fehler.phone_mobile}
+        onChange={(event) => onChange('phone_mobile', event.target.value)}
+      />
+    ),
+    phone: (
+      <Field
+        label="Telefon (privat)"
+        name="phone"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('phone')}
+        type="tel"
+        autoComplete="off"
+        value={werte.phone}
+        error={fehler.phone}
+        onChange={(event) => onChange('phone', event.target.value)}
+      />
+    ),
+    phone_work: (
+      <Field
+        label="Telefon (geschäftlich)"
+        name="phone_work"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('phone_work')}
+        type="tel"
+        autoComplete="off"
+        value={werte.phone_work}
+        error={fehler.phone_work}
+        onChange={(event) => onChange('phone_work', event.target.value)}
+      />
+    ),
+    email: (
+      <Field
+        label="E-Mail"
+        name="email"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('email')}
+        type="email"
+        autoComplete="off"
+        value={werte.email}
+        error={fehler.email}
+        onChange={(event) => onChange('email', event.target.value)}
+      />
+    ),
+    institution: (
+      <Field
+        label="Einrichtung"
+        name="institution"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('institution')}
+        autoComplete="off"
+        maxLength={200}
+        hint="Pflegeheim, betreutes Wohnen oder Pflegedienst."
+        value={werte.institution}
+        error={fehler.institution}
+        onChange={(event) => onChange('institution', event.target.value)}
+      />
+    ),
+    street: (
+      <Field
+        label="Straße"
+        name="street"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('street')}
+        autoComplete="off"
+        {...OHNE_AUTOKORREKTUR}
+        value={werte.street}
+        error={fehler.street}
+        onChange={(event) => onChange('street', event.target.value)}
+      />
+    ),
+    house_number: (
+      <Field
+        label="Hausnummer"
+        name="house_number"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('house_number')}
+        autoComplete="off"
+        value={werte.house_number}
+        error={fehler.house_number}
+        onChange={(event) => onChange('house_number', event.target.value)}
+      />
+    ),
+    postal_code: (
+      <Field
+        label="PLZ"
+        name="postal_code"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('postal_code')}
+        inputMode="numeric"
+        autoComplete="off"
+        value={werte.postal_code}
+        error={fehler.postal_code}
+        onChange={(event) => onChange('postal_code', event.target.value)}
+      />
+    ),
+    city: (
+      <Field
+        label="Ort"
+        name="city"
+        enterKeyHint="next"
+        feldId={stammdatenFeldId('city')}
+        autoComplete="off"
+        {...OHNE_AUTOKORREKTUR}
+        value={werte.city}
+        error={fehler.city}
+        onChange={(event) => onChange('city', event.target.value)}
+      />
+    ),
+    primary_therapist_staff_member_id: (
+      <Select
+        label="Feste Therapeut:in"
+        name="primary_therapist_staff_member_id"
+        feldId={stammdatenFeldId('primary_therapist_staff_member_id')}
+        hint={therapeutinHinweis}
+        disabled={therapeutinnenStand === 'laedt'}
+        value={gewaehlt}
+        error={fehler.primary_therapist_staff_member_id}
+        onChange={(event) => onChange('primary_therapist_staff_member_id', event.target.value)}
+      >
+        {therapeutinnenStand === 'laedt' ? (
+          // Solange die Liste lädt, steht genau das im Feld - und nicht
+          // „Keine feste Zuordnung". Der Wert bleibt der gespeicherte.
+          <option value={gewaehlt}>Wird geladen …</option>
+        ) : (
+          <>
+            <option value="">Keine feste Zuordnung</option>
+            {fehltInListe && bisherigeTherapeutin ? (
+              <option value={gewaehlt}>{bisherigeTherapeutin}</option>
+            ) : null}
+            {therapeutinnen.map((person) => (
+              <option key={person.staff_member_id} value={person.staff_member_id}>
+                {person.display_name}
+              </option>
+            ))}
+          </>
+        )}
+      </Select>
+    ),
+    home_visit_access_note: (
+      <TextArea
+        label="Zugangshinweis"
+        name="home_visit_access_note"
+        feldId={stammdatenFeldId('home_visit_access_note')}
+        rows={3}
+        maxLength={1000}
+        hint="Etage, Klingelname, Schlüssel, Hund, Abstellplatz fürs Rad."
+        value={werte.home_visit_access_note}
+        error={fehler.home_visit_access_note}
+        onChange={(event) => onChange('home_visit_access_note', event.target.value)}
+      />
+    ),
+    special_note: (
+      <TextArea
+        label="Besonderheit"
+        name="special_note"
+        feldId={stammdatenFeldId('special_note')}
+        rows={2}
+        maxLength={1000}
+        hint="Was vor dem Besuch bekannt sein muss, organisatorisch."
+        value={werte.special_note}
+        error={fehler.special_note}
+        onChange={(event) => onChange('special_note', event.target.value)}
+      />
+    ),
+    remark: (
+      <TextArea
+        label="Bemerkung"
+        name="remark"
+        feldId={stammdatenFeldId('remark')}
+        rows={3}
+        maxLength={2000}
+        value={werte.remark}
+        error={fehler.remark}
+        onChange={(event) => onChange('remark', event.target.value)}
+      />
+    ),
+  };
+
+  // Vor- und Nachname, Straße und Hausnummer, PLZ und Ort gehören zusammen
+  // und stehen ab 640 px nebeneinander (DESIGN.md, Formular).
+  const name = (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {feld.given_name}
+      {feld.family_name}
+    </div>
+  );
+  const strasse = (
+    <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+      {feld.street}
+      {feld.house_number}
+    </div>
+  );
+  const ort = (
+    <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
+      {feld.postal_code}
+      {feld.city}
+    </div>
+  );
+  // UX-005e, Sichtung 13.10.2026 (A10): wer die Angaben sieht, als
+  // Kleingedrucktes am Ende statt als Satz unter dem Titel (Regel 6).
+  const sichtbarkeit = (
+    <Kleingedrucktes className="mt-3">
+      Hausbesuch und Praxisangaben sind für Patientenzugänge nicht sichtbar.
+    </Kleingedrucktes>
+  );
+
+  // Einmal offen, bleibt offen: Ein Feld darf nicht unter dem Finger
+  // zuklappen, wenn sein Fehler beim Tippen verschwindet.
+  const [weitereOffen, setWeitereOffen] = useState(() => WEITERE.some((f) => werte[f] !== ''));
+  if (kurz && !weitereOffen && WEITERE.some((f) => fehler[f] !== undefined)) {
+    setWeitereOffen(true);
+  }
+
+  if (kurz) {
+    // K11, Neuaufnahme am Telefon (ANN-543): Name, Geburtsdatum, Mobil,
+    // Anschrift und Zugang offen; das Seltene eingeklappt (DESIGN.md
+    // Grundsatz 4). Steht dort schon etwas oder ein Fehler, ist es offen -
+    // die Fehlerzusammenfassung springt sonst in ein verborgenes Feld.
+    return (
+      <>
+        <Section titel="Person">
+          <Feldgruppe>
+            {name}
+            {feld.date_of_birth}
+            {feld.phone_mobile}
+          </Feldgruppe>
+        </Section>
+        <Section titel="Hausbesuch">
+          <Feldgruppe>
+            {strasse}
+            {ort}
+            {feld.home_visit_access_note}
+          </Feldgruppe>
+        </Section>
+        <Disclosure
+          key={weitereOffen ? 'offen' : 'zu'}
+          summary="Weitere Angaben"
+          offen={weitereOffen}
+        >
+          <Feldgruppe>
+            {feld.phone}
+            {mitGeschaeftlichemTelefon ? feld.phone_work : null}
+            {feld.email}
+            {feld.institution}
+            {feld.primary_therapist_staff_member_id}
+            {feld.special_note}
+            {feld.remark}
+          </Feldgruppe>
+        </Disclosure>
+        <Kleingedrucktes className="mt-3">
+          Zugangshinweis, feste Therapeut:in, Besonderheit und Bemerkung sind für Patientenzugänge
+          nicht sichtbar.
+        </Kleingedrucktes>
+      </>
+    );
+  }
+
   return (
     <>
       <Section titel="Person">
         <Feldgruppe>
-          {/* Vor- und Nachname gehören zusammen und stehen ab 640 px
-              nebeneinander (DESIGN.md, Formular); am Telefon untereinander. */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Vorname *"
-              name="given_name"
-              feldId={stammdatenFeldId('given_name')}
-              autoComplete="off"
-              {...OHNE_AUTOKORREKTUR}
-              maxLength={100}
-              required
-              value={werte.given_name}
-              error={fehler.given_name}
-              onChange={(event) => onChange('given_name', event.target.value)}
-            />
-            <Field
-              label="Nachname *"
-              name="family_name"
-              feldId={stammdatenFeldId('family_name')}
-              autoComplete="off"
-              {...OHNE_AUTOKORREKTUR}
-              maxLength={100}
-              required
-              value={werte.family_name}
-              error={fehler.family_name}
-              onChange={(event) => onChange('family_name', event.target.value)}
-            />
-          </div>
-          {/* Grenzen für den Wähler am Telefon (PAT-12): Er beginnt sonst beim
-              heutigen Monat und bietet Tage in der Zukunft an, die erst beim
-              Absenden scheitern. */}
-          <Field
-            label="Geburtsdatum *"
-            name="date_of_birth"
-            feldId={stammdatenFeldId('date_of_birth')}
-            type="date"
-            min="1900-01-01"
-            max={heute()}
-            required
-            value={werte.date_of_birth}
-            error={fehler.date_of_birth}
-            onChange={(event) => onChange('date_of_birth', event.target.value)}
-          />
+          {name}
+          {feld.date_of_birth}
         </Feldgruppe>
       </Section>
 
       <Section titel="Kontakt">
         <Feldgruppe>
-          <Field
-            label="Mobil"
-            name="phone_mobile"
-            feldId={stammdatenFeldId('phone_mobile')}
-            type="tel"
-            autoComplete="off"
-            value={werte.phone_mobile}
-            error={fehler.phone_mobile}
-            onChange={(event) => onChange('phone_mobile', event.target.value)}
-          />
-          <Field
-            label="Telefon (privat)"
-            name="phone"
-            feldId={stammdatenFeldId('phone')}
-            type="tel"
-            autoComplete="off"
-            value={werte.phone}
-            error={fehler.phone}
-            onChange={(event) => onChange('phone', event.target.value)}
-          />
-          {mitGeschaeftlichemTelefon ? (
-            <Field
-              label="Telefon (geschäftlich)"
-              name="phone_work"
-              feldId={stammdatenFeldId('phone_work')}
-              type="tel"
-              autoComplete="off"
-              value={werte.phone_work}
-              error={fehler.phone_work}
-              onChange={(event) => onChange('phone_work', event.target.value)}
-            />
-          ) : null}
-          <Field
-            label="E-Mail"
-            name="email"
-            feldId={stammdatenFeldId('email')}
-            type="email"
-            autoComplete="off"
-            value={werte.email}
-            error={fehler.email}
-            onChange={(event) => onChange('email', event.target.value)}
-          />
+          {feld.phone_mobile}
+          {feld.phone}
+          {mitGeschaeftlichemTelefon ? feld.phone_work : null}
+          {feld.email}
         </Feldgruppe>
       </Section>
 
       <Section titel="Adresse">
         <Feldgruppe>
-          <Field
-            label="Einrichtung"
-            name="institution"
-            feldId={stammdatenFeldId('institution')}
-            autoComplete="off"
-            maxLength={200}
-            hint="Pflegeheim, betreutes Wohnen oder Pflegedienst."
-            value={werte.institution}
-            error={fehler.institution}
-            onChange={(event) => onChange('institution', event.target.value)}
-          />
-          <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
-            <Field
-              label="Straße"
-              name="street"
-              feldId={stammdatenFeldId('street')}
-              autoComplete="off"
-              {...OHNE_AUTOKORREKTUR}
-              value={werte.street}
-              error={fehler.street}
-              onChange={(event) => onChange('street', event.target.value)}
-            />
-            <Field
-              label="Hausnummer"
-              name="house_number"
-              feldId={stammdatenFeldId('house_number')}
-              autoComplete="off"
-              value={werte.house_number}
-              error={fehler.house_number}
-              onChange={(event) => onChange('house_number', event.target.value)}
-            />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
-            <Field
-              label="PLZ"
-              name="postal_code"
-              feldId={stammdatenFeldId('postal_code')}
-              inputMode="numeric"
-              autoComplete="off"
-              value={werte.postal_code}
-              error={fehler.postal_code}
-              onChange={(event) => onChange('postal_code', event.target.value)}
-            />
-            <Field
-              label="Ort"
-              name="city"
-              feldId={stammdatenFeldId('city')}
-              autoComplete="off"
-              {...OHNE_AUTOKORREKTUR}
-              value={werte.city}
-              error={fehler.city}
-              onChange={(event) => onChange('city', event.target.value)}
-            />
-          </div>
+          {feld.institution}
+          {strasse}
+          {ort}
         </Feldgruppe>
       </Section>
 
-      {/* UX-005e: Auf das Wesentliche gekürzt - geblieben ist, was die
-          Eingabe betrifft: wer die Angaben sieht (ANN-010, ADR-004). Seit
-          der Sichtung vom 13.10.2026 (A10) als Kleingedrucktes am Ende des
-          Abschnitts statt als Satz unter dem Titel (Regel 6). */}
       <Section titel="Hausbesuch und Praxisangaben">
         <Feldgruppe>
-          <Select
-            label="Feste Therapeut:in"
-            name="primary_therapist_staff_member_id"
-            feldId={stammdatenFeldId('primary_therapist_staff_member_id')}
-            hint={therapeutinHinweis}
-            disabled={therapeutinnenStand === 'laedt'}
-            value={gewaehlt}
-            error={fehler.primary_therapist_staff_member_id}
-            onChange={(event) => onChange('primary_therapist_staff_member_id', event.target.value)}
-          >
-            {therapeutinnenStand === 'laedt' ? (
-              // Solange die Liste lädt, steht genau das im Feld - und nicht
-              // „Keine feste Zuordnung". Der Wert bleibt der gespeicherte.
-              <option value={gewaehlt}>Wird geladen …</option>
-            ) : (
-              <>
-                <option value="">Keine feste Zuordnung</option>
-                {fehltInListe && bisherigeTherapeutin ? (
-                  <option value={gewaehlt}>{bisherigeTherapeutin}</option>
-                ) : null}
-                {therapeutinnen.map((person) => (
-                  <option key={person.staff_member_id} value={person.staff_member_id}>
-                    {person.display_name}
-                  </option>
-                ))}
-              </>
-            )}
-          </Select>
-          <TextArea
-            label="Zugangshinweis"
-            name="home_visit_access_note"
-            feldId={stammdatenFeldId('home_visit_access_note')}
-            rows={3}
-            maxLength={1000}
-            hint="Etage, Klingelname, Schlüssel, Hund, Abstellplatz fürs Rad."
-            value={werte.home_visit_access_note}
-            error={fehler.home_visit_access_note}
-            onChange={(event) => onChange('home_visit_access_note', event.target.value)}
-          />
-          <TextArea
-            label="Besonderheit"
-            name="special_note"
-            feldId={stammdatenFeldId('special_note')}
-            rows={2}
-            maxLength={1000}
-            hint="Was vor dem Besuch bekannt sein muss, organisatorisch."
-            value={werte.special_note}
-            error={fehler.special_note}
-            onChange={(event) => onChange('special_note', event.target.value)}
-          />
-          <TextArea
-            label="Bemerkung"
-            name="remark"
-            feldId={stammdatenFeldId('remark')}
-            rows={3}
-            maxLength={2000}
-            value={werte.remark}
-            error={fehler.remark}
-            onChange={(event) => onChange('remark', event.target.value)}
-          />
+          {feld.primary_therapist_staff_member_id}
+          {feld.home_visit_access_note}
+          {feld.special_note}
+          {feld.remark}
         </Feldgruppe>
-        <Kleingedrucktes className="mt-3">
-          Hausbesuch und Praxisangaben sind für Patientenzugänge nicht sichtbar.
-        </Kleingedrucktes>
+        {sichtbarkeit}
       </Section>
     </>
   );
