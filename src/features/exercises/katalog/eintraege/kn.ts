@@ -3,14 +3,13 @@ import type { Katalogeintrag } from '../typen';
 /**
  * Gruppe KN: Knie - die Referenzgruppe des Katalogs (ANN-382).
  *
- * Vorbild für alle übrigen Gruppen: Anleitung in drei bis fünf ganzen Sätzen
- * in der Sie-Form, Fehler fachlich und kurz, Hinweise für die Praxis nur, wo
- * eine Vorsicht gilt. Inhalt KI-erstellt und bis zur Durchsicht durch die
- * Praxis ungeprüft (ANN-386). Keine Diagnose als Auswahlkriterium
- * (ADR-006 Punkt 10) - eine Vorsicht steht als Satz unter
- * `hinweise_praxis`. KN-05 zeigt nur die Ausgangsstellung (ANN-480), die
- * Figur hat keine Finger: im Langsitz, die Hände am Knie. Liegend erreichen
- * die Hände das Knie nur mit angehobenem Rumpf, und dann spannt das Bein an.
+ * Vorbild für alle übrigen Gruppen: Anleitung in drei bis fünf ganzen Sätzen in
+ * der Sie-Form, die erste nennt die Ausgangsstellung; Fehler fachlich und kurz,
+ * Hinweise für die Praxis nur, wo eine Vorsicht gilt. Inhalt KI-erstellt und
+ * bis zur Durchsicht durch die Praxis ungeprüft (ANN-386). Keine Diagnose als
+ * Auswahlkriterium (ADR-006 Punkt 10) - eine Vorsicht steht als Satz unter
+ * `hinweise_praxis`. Ohne Zeichnung (ANN-539): Die Anleitung erklärt die Übung
+ * allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -37,13 +36,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Steigerung über eine Gewichtsmanschette am Knöchel; die Last im Plan als Dosierung eintragen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: { knie: [8, 87], sprung: [-12, 0], fuss_flach: [false, true] },
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'KN-02',
@@ -65,13 +57,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Gesäß rutscht nach vorn, statt das Knie zu beugen.',
       'Die Ferse hebt früh ab und das Knie beugt kaum.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { knie: [80, 87] },
-      ende: { knie: [122, 87], fuss_flach: [false, true], sprung: [-5, 0] },
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'KN-03',
@@ -91,16 +76,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Bewegen Sie sich ruhig und ohne Schwung.',
     ],
     fehler: ['Der Fuß wird angehoben statt geschoben.', 'Der Oberkörper schaukelt mit.'],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { knie: [105, 87] },
-      ende: {
-        knie: [35, 87],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'KN-04',
@@ -125,13 +100,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nach Knieendoprothese keine Dauerlagerung mit Kissen unter dem Knie: Das Kissen nur für die Übung verwenden, sonst droht ein Streckdefizit.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { fuesse: ['hocker', null], fuss_flach: [false, true], sprung: [-5, 0] },
-      ende: { fuesse: ['hocker', null], fuss_flach: [false, true], sprung: [-5, 0] },
-      hilfsmittel: [{ art: 'hocker', x: 96 }],
-    },
   },
   {
     schluessel: 'KN-05',
@@ -155,13 +123,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es wird auf die Kniescheibe gedrückt, statt sie zu schieben.',
     ],
     hinweise_praxis: 'Erst nach abgeschlossener Wundheilung, nicht über der Narbe.',
-    bild: {
-      v: 1,
-      basis: 'langsitz',
-      unterlage: 'bett',
-      start: { rumpf: 10, haende: ['knie', 'knie'] },
-      ende: { rumpf: 10, haende: ['knie', 'knie'] },
-    },
   },
   {
     schluessel: 'KN-06',
@@ -185,17 +146,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Becken weicht nach hinten aus, statt das Knie zu strecken.',
     ],
     hinweise_praxis: 'Die Bandstärke als Last in der Dosierung eintragen, etwa „Theraband gelb“.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { huefte: [22, 22], knie: [34, 34], rumpf: 8 },
-      ende: {},
-      hilfsmittel: [
-        { art: 'tuerrahmen', x: 62 },
-        { art: 'band', von: 'tuerrahmen', nach: 'knie_nah' },
-      ],
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'KN-07',
@@ -219,14 +169,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie fallen nach innen.',
       'Die Fersen heben ab.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { haende: ['tisch', 'tisch'] },
-      ende: { rumpf: 22, huefte: [60, 60], knie: [52, 52], haende: ['tisch', 'tisch'] },
-      hilfsmittel: [{ art: 'tisch', x: 34 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'KN-08',
@@ -250,20 +192,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie fallen nach innen.',
       'Der Oberkörper kippt weit nach vorn.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { schulter: [80, 76], ellbogen: [4, 4] },
-      ende: {
-        sitz: 'stuhl',
-        rumpf: 34,
-        huefte: [116, 116],
-        knie: [113, 113],
-        schulter: [112, 108],
-        ellbogen: [4, 4],
-      },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'KN-09',
@@ -282,15 +210,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Halten Sie kurz und schieben Sie sich wieder nach oben.',
     ],
     fehler: ['Die Knie fallen nach innen.', 'Das Gesäß löst sich von der Wand.'],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [15, 15] },
-      ende: { huefte: [50, 50], knie: [65, 65] },
-      hilfsmittel: [{ art: 'wand', x: -8 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'KN-10',
@@ -312,15 +231,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Die Knie schieben über die Fußspitzen hinaus.', 'Die Luft wird angehalten.'],
     hinweise_praxis:
       'Die Tiefe nach Beschwerden wählen; rechtwinklig ist das Ziel, nicht der Anfang.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [30, 30] },
-      ende: { huefte: [88, 88], knie: [88, 88] },
-      hilfsmittel: [{ art: 'wand', x: -8 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'KN-11',
@@ -343,14 +253,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Knie fällt beim Hochsteigen nach innen.',
       'Das untere Bein stößt sich kräftig vom Boden ab.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { rumpf: 6, huefte: [60, 6], knie: [75, 0], fuesse: ['stufe', null] },
-      ende: { stuetze: 'ferse_nah' },
-      hilfsmittel: [{ art: 'stufe', x: -12 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'KN-12',
@@ -374,26 +276,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Standbein wird schnell gebeugt statt langsam.',
       'Das Knie des Standbeins fällt nach innen.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        huefte: [0, 24],
-        fuss_flach: [true, false],
-        sprung: [0, -5],
-        stuetze: 'ferse_nah',
-      },
-      ende: {
-        rumpf: 20,
-        huefte: [62, 48],
-        knie: [90, 0],
-        fuss_flach: [true, false],
-        sprung: [0, -10],
-        stuetze: 'ferse_nah',
-      },
-      hilfsmittel: [{ art: 'stufe', x: 14, nach: 'hinten' }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'KN-13',
@@ -417,27 +299,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper kippt nach vorn.',
       'Die Schritte sind zu kurz.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        huefte: [25, -32],
-        fuss_flach: [true, false],
-        sprung: [0, 15],
-        haende: [null, 'lehne'],
-        loesen: { winkel: 'sprung_fern', gleich: ['zehen_fern', 'ferse_nah'] },
-      },
-      ende: {
-        huefte: [80, -5],
-        knie: [90, 75],
-        fuss_flach: [true, false],
-        sprung: [0, -25],
-        haende: [null, 'lehne'],
-        loesen: { winkel: 'sprung_fern', gleich: ['zehen_fern', 'ferse_nah'] },
-      },
-      hilfsmittel: [{ art: 'stuhl', x: 6 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'KN-14',
@@ -463,20 +324,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Steigerung über eine Gewichtsmanschette am Knöchel; die Last im Plan als Dosierung eintragen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { haende: ['lehne', 'lehne'] },
-      ende: {
-        knie: [98, 0],
-        fuss_flach: [false, true],
-        sprung: [15, 0],
-        haende: ['lehne', 'lehne'],
-      },
-      hilfsmittel: [{ art: 'stuhl', x: 32 }],
-      bewegung: ['ferse_nah'],
-    },
   },
   {
     schluessel: 'KN-15',
@@ -502,15 +349,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bauchlage ist für viele Hochbetagte nicht möglich (Atmung, Herz, Endoprothese); dann die Übung im Stand wählen.',
-    bild: {
-      v: 1,
-      basis: 'bauchlage',
-      unterlage: 'matte',
-      start: {},
-      ende: { knie: [90, 0], sprung: [10, 70] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-      bewegung: ['ferse_nah'],
-    },
   },
   {
     schluessel: 'KN-16',
@@ -530,27 +368,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Halten Sie die Dehnung ruhig und atmen Sie weiter.',
     ],
     fehler: ['Der Rücken wird rund, statt aus der Hüfte nach vorn zu neigen.', 'Es wird gewippt.'],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {
-        knie: [4, 87],
-        sprung: [-15, 0],
-        fuss_flach: [false, true],
-        haende: ['oberschenkel', 'oberschenkel'],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      ende: {
-        rumpf: 32,
-        huefte: [70, 118],
-        knie: [4, 87],
-        sprung: [-15, 0],
-        fuss_flach: [false, true],
-        haende: ['knie', 'knie'],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'KN-17',
@@ -570,15 +387,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Halten Sie die Dehnung ruhig, das andere Bein bleibt auf der Unterlage liegen.',
     ],
     fehler: ['Das Knie des gehobenen Beins wird gebeugt.', 'Der Kopf hebt von der Unterlage ab.'],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'matte',
-      start: { huefte: [30, 0], schulter: [45, 45], ellbogen: [30, 30], sprung: [-5, 12] },
-      ende: { huefte: [78, 0], schulter: [75, 75], ellbogen: [25, 25], sprung: [-10, 12] },
-      hilfsmittel: [{ art: 'handtuch', von: 'zehen_nah', nach: 'hand_nah' }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'KN-18',
@@ -602,26 +410,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Hohlkreuz verstärkt sich.',
       'Das gebeugte Knie wandert nach vorn oder zur Seite.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: {
-        knie: [95, 0],
-        fuss_flach: [false, true],
-        sprung: [20, 0],
-        haende: ['fuss', 'lehne'],
-      },
-      ende: {
-        huefte: [-6, 0],
-        knie: [138, 0],
-        fuss_flach: [false, true],
-        sprung: [30, 0],
-        haende: ['fuss', 'lehne'],
-      },
-      hilfsmittel: [{ art: 'stuhl', x: 30 }],
-      bewegung: ['ferse_nah'],
-    },
   },
   {
     schluessel: 'KN-19',
@@ -645,26 +433,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Becken sinkt auf der Seite des freien Beins ab.',
       'Die Hände tragen das Gewicht.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        huefte: [0, 8],
-        knie: [0, 85],
-        fuss_flach: [true, false],
-        sprung: [0, 20],
-        haende: ['tisch', 'tisch'],
-      },
-      ende: {
-        rumpf: 20,
-        huefte: [52, 26],
-        knie: [44, 85],
-        fuss_flach: [true, false],
-        sprung: [0, 20],
-        haende: ['tisch', 'tisch'],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 34 }],
-      bewegung: ['becken'],
-    },
   },
 ];

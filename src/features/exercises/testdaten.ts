@@ -13,7 +13,6 @@ export const OHNE_KATALOG = {
   starting_position: null,
   level: null,
   default_dosage: null,
-  illustration: null,
   reviewed_at: null,
   reviewed_by_name: null,
 } as const satisfies Partial<Variante>;

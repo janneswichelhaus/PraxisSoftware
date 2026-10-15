@@ -2,24 +2,14 @@ import type { Katalogeintrag } from '../typen';
 
 /**
  * Gruppe GG: Gleichgewicht und Sturzprophylaxe (ANN-382), in Anlehnung an das
- * Otago-Übungsprogramm: Kraft- und Gleichgewichtsübungen bauen aufeinander
- * auf und beginnen mit Halt. Im Hausbesuch ist die Küchenarbeitsplatte der
- * Halt der Wahl - jede Anleitung nennt ihn, und jedes Bild zeigt ihn.
- *
- * Bilder: Steht die Person vor der Arbeitsplatte, zeigt die Seitenansicht die
- * Platte vor ihr (Hände `tisch`). Geht oder tritt sie seitlich an der Platte
- * entlang, steht die Platte hinter ihr - zwei Tische Rücken an Rücken um den
- * Anker - und die ferne Hand liegt darauf. Die Vorderansicht zeigt die Person
- * von hinten vor der Platte, beide Hände liegen auf; steht sie seitlich an
- * der Platte (GG-16), steht die Platte neben ihr. Übungen, deren Kern sich
- * nicht zeichnen lässt (Kopfdrehen, Wege am Boden, Richtungen rund um die
- * Uhr), zeigen nur die Ausgangsstellung (ANN-480): GG-13 und GG-14 im
- * Schritt wie AU-01 (GG-14 zwischen den beiden Stühlen; die Wand bei GG-13
- * läge neben der Person und fehlt), GG-16 mit der Hand auf der Platte,
- * GG-20 im Sitz vor der Wand mit dem Zettel.
+ * Otago-Übungsprogramm: Kraft- und Gleichgewichtsübungen bauen aufeinander auf
+ * und beginnen mit Halt. Im Hausbesuch ist die Küchenarbeitsplatte der Halt der
+ * Wahl - jede Anleitung nennt ihn.
  *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
- * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10).
+ * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
+ * Vorsicht steht als Satz unter `hinweise_praxis`. Ohne Zeichnung (ANN-539):
+ * Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -46,16 +36,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Steigerung von 10 auf 30 Sekunden, danach mit leichterem Halt (eine Hand, Fingerspitzen).',
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      start: { arm: [22, 22] },
-      ende: { bein: [-2.5, -2.5], arm: [22, 22] },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-    },
   },
   {
     schluessel: 'GG-02',
@@ -80,14 +60,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper weicht zur Seite aus.',
     ],
     hinweise_praxis: 'Steigerung von 10 auf 30 Sekunden, danach mit leichterem Halt.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { rumpf: 4, huefte: [4, 4], haende: ['tisch', 'tisch'] },
-      ende: { rumpf: 4, huefte: [7.5, 0.5], haende: ['tisch', 'tisch'] },
-      hilfsmittel: [{ art: 'tisch', x: 24 }],
-    },
   },
   {
     schluessel: 'GG-03',
@@ -113,14 +85,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Gelingt der Stand noch nicht ruhig, zuerst den Semitandemstand üben. Steigerung bis 30 Sekunden.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { rumpf: 6, huefte: [6, 6], haende: ['tisch', 'tisch'] },
-      ende: { rumpf: 6, huefte: [13, -1], haende: ['tisch', 'tisch'] },
-      hilfsmittel: [{ art: 'tisch', x: 26 }],
-    },
   },
   {
     schluessel: 'GG-04',
@@ -145,22 +109,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Knie des Standbeins wird durchgedrückt.',
     ],
     hinweise_praxis: 'Steigerung von 10 auf 30 Sekunden, danach mit leichterem Halt.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { rumpf: 4, huefte: [4, 4], haende: ['tisch', 'tisch'] },
-      ende: {
-        rumpf: 4,
-        huefte: [14, 4],
-        knie: [50, 0],
-        fuss_flach: [false, true],
-        sprung: [20, 0],
-        haende: ['tisch', 'tisch'],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 24 }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-05',
@@ -186,23 +134,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit Halt in Reichweite und einmal gemeinsam geübt. Ein Stuhl im Rücken ist für Ängstliche sinnvoll.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { rumpf: 4, huefte: [4, 4], haende: ['tisch', 'tisch'] },
-      ende: {
-        rumpf: 4,
-        huefte: [14, 4],
-        knie: [50, 0],
-        fuss_flach: [false, true],
-        sprung: [20, 0],
-        schulter: [32, 32],
-        ellbogen: [22, 22],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 24 }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-06',
@@ -226,14 +157,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Fersen oder die Zehen heben ab.',
       'Die Knie werden gebeugt.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { rumpf: -2, haende: ['tisch', 'tisch'] },
-      ende: { rumpf: 6, haende: ['tisch', 'tisch'] },
-      hilfsmittel: [{ art: 'tisch', x: 15 }],
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'GG-07',
@@ -257,18 +180,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Ein Fuß hebt vom Boden ab.',
       'Die Knie werden durchgedrückt.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      anker: 'knoechel_nah',
-      start: { bein: [-0.8, 6.7], arm: [22, 22] },
-      ende: { bein: [6.7, -0.8], arm: [22, 22] },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'GG-08',
@@ -292,17 +203,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Fußspitzen drehen nach außen.',
       'Der Oberkörper neigt sich in die Schrittrichtung.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      anker: 'knoechel_fern',
-      start: { arm: [22, 22] },
-      ende: { bein: [11.8, 6.7], arm: [22, 22] },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-    },
   },
   {
     schluessel: 'GG-09',
@@ -326,18 +226,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Blick geht zu den Füßen.',
       'Die Schritte werden hastig.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { huefte: [-7, 7], haende: [null, 'tisch'] },
-      ende: { huefte: [7, -7], haende: [null, 'tisch'] },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-10',
@@ -361,24 +249,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Füße schlurfen über den Boden.',
       'Die Schritte werden zu groß.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { haende: [null, 'tisch'] },
-      ende: {
-        huefte: [-20, 3],
-        knie: [10, 0],
-        fuss_flach: [false, true],
-        loesen: { winkel: 'sprung_nah', gleich: ['zehen_nah', 'ferse_fern'] },
-        haende: [null, 'tisch'],
-      },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-11',
@@ -401,23 +271,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Gesäß schiebt sich nach hinten, der Oberkörper kippt nach vorn.',
       'Die Fußspitzen sinken zwischendurch ab.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { fuss_flach: [false, false], sprung: [-30, -30], haende: [null, 'tisch'] },
-      ende: {
-        huefte: [12, -12],
-        fuss_flach: [false, false],
-        sprung: [-18, -42],
-        haende: [null, 'tisch'],
-      },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-12',
@@ -441,23 +294,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie werden stark gebeugt.',
       'Der Oberkörper kippt nach vorn.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { fuss_flach: [false, false], sprung: [25, 25], haende: [null, 'tisch'] },
-      ende: {
-        huefte: [12, -12],
-        fuss_flach: [false, false],
-        sprung: [37, 13],
-        haende: [null, 'tisch'],
-      },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-13',
@@ -484,13 +320,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Mit langsamen, kleinen Kopfdrehungen beginnen. Nimmt Schwindel deutlich zu, die Übung zurückstellen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
-      ende: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
-    },
   },
   {
     schluessel: 'GG-14',
@@ -516,17 +345,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit Halt in Reichweite und einmal gemeinsam geübt. Ein Stuhl im Rücken ist für Ängstliche sinnvoll.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
-      ende: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
-      hilfsmittel: [
-        { art: 'stuhl', x: 80 },
-        { art: 'stuhl', x: -80 },
-      ],
-    },
   },
   {
     schluessel: 'GG-15',
@@ -550,26 +368,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper kippt nach vorn.',
       'Der Schritt bleibt so klein, dass kaum Gewicht auf das vordere Bein kommt.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { haende: [null, 'tisch'] },
-      ende: {
-        huefte: [35, -18],
-        knie: [35, 25],
-        fuss_flach: [true, false],
-        sprung: [0, 20],
-        schulter: [4, -34],
-        ellbogen: [10, 78],
-        loesen: { winkel: 'sprung_fern', gleich: ['zehen_fern', 'ferse_nah'] },
-      },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-16',
@@ -595,13 +393,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit Halt in Reichweite und einmal gemeinsam geübt. Ein Stuhl im Rücken ist für Ängstliche sinnvoll.',
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      start: { haende: ['tisch', null] },
-      ende: { haende: ['tisch', null] },
-      hilfsmittel: [{ art: 'tisch', x: -40 }],
-    },
   },
   {
     schluessel: 'GG-17',
@@ -625,23 +416,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper dreht sich auf, statt nach vorn zu reichen.',
       'Die Hand an der Arbeitsplatte zieht den Körper mit.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { schulter: [90, -10], ellbogen: [4, 10], haende: [null, 'tisch'] },
-      ende: {
-        rumpf: 24,
-        huefte: [24, 24],
-        schulter: [116, -10],
-        ellbogen: [4, 10],
-        haende: [null, 'tisch'],
-      },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['hand_nah'],
-    },
   },
   {
     schluessel: 'GG-18',
@@ -667,17 +441,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit Halt in Reichweite und einmal gemeinsam geübt. Ein Stuhl im Rücken ist für Ängstliche sinnvoll. Auf glatten Fliesen eine rutschfeste Matte unterlegen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { rumpf: 4, huefte: [4, 4], haende: ['tisch', 'tisch'] },
-      ende: { rumpf: 4, huefte: [4, 4], haende: ['tisch', 'tisch'] },
-      hilfsmittel: [
-        { art: 'tisch', x: 24 },
-        { art: 'kissen', an: 'ferse_nah' },
-        { art: 'kissen', an: 'zehen_nah' },
-      ],
-    },
   },
   {
     schluessel: 'GG-19',
@@ -703,22 +466,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit Halt in Reichweite und einmal gemeinsam geübt. Ein Stuhl im Rücken ist für Ängstliche sinnvoll. Erst, wenn der Einbeinstand ohne Zusatzaufgabe sicher gelingt.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { rumpf: 4, huefte: [4, 4], haende: ['tisch', 'tisch'] },
-      ende: {
-        rumpf: 4,
-        huefte: [14, 4],
-        knie: [50, 0],
-        fuss_flach: [false, true],
-        sprung: [20, 0],
-        haende: ['tisch', 'tisch'],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 24 }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'GG-20',
@@ -744,6 +491,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Schwindelbeschwerden nur nach Befund. Die Symptome können während der Übung kurz zunehmen, das vorher erklären.',
-    bild: { v: 1, basis: 'sitz', start: {}, ende: {}, hilfsmittel: [{ art: 'wand', x: 100 }] },
   },
 ];

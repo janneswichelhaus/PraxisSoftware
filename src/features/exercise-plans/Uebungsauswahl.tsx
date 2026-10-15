@@ -18,7 +18,6 @@ import {
 import { KOERPERREGION_LABEL } from '@/features/exercises/types';
 import { useFormularschutz } from '@/features/exercises/useFormularschutz';
 import { Bibliotheksfilter } from '@/features/exercises/Bibliotheksfilter';
-import { Vorschaubild } from '@/features/exercises/Vorschaubild';
 import { dosierungKurz, type Dosis } from './dosierung';
 import { standardDosis } from './hinzufuegen';
 import { eineListe } from './uebungsliste';
@@ -28,7 +27,7 @@ import { eineListe } from './uebungsliste';
  * Abschnitt 5, Weg B).
  *
  * Ein Fenster, am Telefon von unten: Suche und Filterchips, darunter jede
- * Variante als Zeile mit Bild, Name und Standarddosierung und einem Haken.
+ * Variante als Zeile mit Name und Standarddosierung und einem Haken.
  * Mehrere wählen, dann **„n hinzufügen"** - alle in einem Zug, jede mit ihrer
  * Standarddosierung (ANN-384); die Dosierung ändert man danach an der Zeile
  * im Plan.
@@ -93,13 +92,10 @@ export function Auswahlzeile({
     <li className="border-line border-t first:border-t-0">
       <label
         htmlFor={id}
-        className={`listenzeile -mx-4 grid min-h-14 cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2 transition-colors duration-120 ${
+        className={`listenzeile -mx-4 grid min-h-14 cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-2 transition-colors duration-120 ${
           gewaehlt ? 'bg-accent-soft' : 'hover:bg-surface-sunken'
         }`}
       >
-        <span aria-hidden="true" className="block size-14 shrink-0">
-          <Vorschaubild bild={variante.illustration} name={variante.lay_name} />
-        </span>
         <span className="min-w-0">
           {/* Lange Fachnamen wie „Fußpumpe (Dorsal-/Plantarflexion)“ brechen
               bei 375 px um, statt in den Haken zu laufen (B9). */}

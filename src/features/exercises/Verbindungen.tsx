@@ -19,7 +19,6 @@ import {
 } from './api';
 import type { Ort } from './orte';
 import { ACHSEN, ACHSE_LABEL } from './types';
-import { Vorschaubild } from './Vorschaubild';
 
 /**
  * Leichter und schwerer (UEB-002, IDEA-TRN-004, IDEA-TRN-005).
@@ -60,7 +59,7 @@ function nachbarn(variante: Variante, bibliothek: Bibliothek, orte: Map<string, 
 }
 
 /**
- * Die Nachbarn als Zeilen: Bild, Name, „Leichter · Achse: Hebel“ und der Weg
+ * Die Nachbarn als Zeilen: Name, „Leichter · Achse: Hebel“ und der Weg
  * zur Variante. Owner löst eine Verbindung nach Rückfrage im Fenster.
  */
 export function VerbindungenAnzeige({
@@ -94,12 +93,6 @@ export function VerbindungenAnzeige({
           return (
             <ListRow
               key={nachbar.verbindung.id}
-              bild={
-                <Vorschaubild
-                  bild={nachbar.ort.variante.illustration}
-                  name={nachbar.ort.variante.lay_name}
-                />
-              }
               titel={name}
               meta={`${nachbar.richtung} · Achse: ${ACHSE_LABEL[nachbar.verbindung.axis]}${
                 nachbar.ort.variante.archived ? ' · archiviert' : ''

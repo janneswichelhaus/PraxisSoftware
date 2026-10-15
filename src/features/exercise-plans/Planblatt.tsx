@@ -1,5 +1,3 @@
-import type { Uebungsbild as Bild } from '@/features/exercises/bild/schema';
-import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
 import { formatDate } from '@/lib/datum';
 import { dosierungAlltag, haeufigkeit, type Dosis } from './dosierung';
 
@@ -16,9 +14,9 @@ import { dosierungAlltag, haeufigkeit, type Dosis } from './dosierung';
  * Bibliothek von heute. Kein Kopf in einem `header`: Er soll gedruckt werden
  * (`src/index.css`, UXR-001).
  *
- * Welle B (Profil „Druckblatt“): je Übung das eingefrorene Bild - Start und
- * Ende -, der Name, die Dosierung und die Anleitung in nummerierten
- * Schritten. Groß gesetzt (18 px, Überschriften 20 bis 24 px): Für ältere
+ * Welle B (Profil „Druckblatt“): je Übung der Name, die Dosierung und die
+ * Anleitung in nummerierten Schritten; eine Zeichnung gibt es nicht
+ * (ANN-539). Groß gesetzt (18 px, Überschriften 20 bis 24 px): Für ältere
  * Patient:innen im Hausbesuch ist das Papier oft das Hauptmedium. Eine Übung
  * bricht nicht über zwei Seiten.
  */
@@ -29,8 +27,6 @@ export interface BlattPosition extends Dosis {
   instruction: string | null;
   equipment: string[];
   note: string | null;
-  /** UEB-012: das beim Zuweisen eingefrorene Bild (ANN-381); ohne Bild nur Text. */
-  illustration?: Bild | null;
 }
 
 export interface BlattPlan {
@@ -85,15 +81,6 @@ export function Planblatt({
               <h3 className="text-h4 font-bold">
                 {p.position}. {p.variant_lay_name}
               </h3>
-              {p.illustration ? (
-                <div className="mt-2 max-w-[120mm]">
-                  <Uebungsbild
-                    bild={p.illustration}
-                    name={p.variant_lay_name}
-                    darstellung="start-ende"
-                  />
-                </div>
-              ) : null}
               <p className="mt-2 font-semibold">{dosierungAlltag(p)}</p>
               {anleitung.length > 1 ? (
                 <ol className="mt-2 flex list-decimal flex-col gap-1 pl-6">

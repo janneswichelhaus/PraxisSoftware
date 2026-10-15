@@ -3,15 +3,12 @@ import type { Katalogeintrag } from '../typen';
 /**
  * Gruppe BT: Bett und Frühmobilisation.
  *
- * Für die ersten Tage nach Entlassung und für Menschen, die viel liegen. Bilder
- * auf dem Bett, mit Kissen unter dem Kopf. Nur die Ausgangsstellung (ANN-480)
- * zeigen Übungen, deren Bewegung die Figur nicht zeigen kann: Kreisen
- * (BT-02), reine Anspannung ohne sichtbare Bewegung (BT-03, BT-04), das
- * Abspreizen, das nur von oben zu sehen wäre (BT-06), und der Wechsel der Lage
- * beim Drehen und Aufsetzen (BT-09, BT-10). Einseitige Übungen tragen
- * „je Seite", auch wo die Liste es nicht ausschreibt (BT-03, BT-05, BT-07).
- * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
- * (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
+ * Für die ersten Tage nach Entlassung und für Menschen, die viel liegen.
+ * Einseitige Übungen tragen „je Seite", auch wo die Liste es nicht ausschreibt
+ * (BT-03, BT-05, BT-07). Inhalt KI-erstellt und bis zur Durchsicht durch die
+ * Praxis ungeprüft (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006
+ * Punkt 10) - eine Vorsicht steht als Satz unter `hinweise_praxis`. Ohne
+ * Zeichnung (ANN-539): Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -34,15 +31,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Die Bewegung bleibt klein, die Waden arbeiten kaum.', 'Die Luft wird angehalten.'],
     hinweise_praxis:
       'In Zeiten mit viel Bettruhe auch stündlich sinnvoll; die Häufigkeit dann im Plan eintragen.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      start: { sprung: [-15, -15] },
-      ende: { sprung: [40, 40] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-      bewegung: ['zehen_nah'],
-    },
   },
   {
     schluessel: 'BT-02',
@@ -62,14 +50,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Beine bleiben dabei ruhig liegen, nur die Füße bewegen sich.',
     ],
     fehler: ['Die Kreise sind klein und eckig.', 'Das ganze Bein dreht mit.'],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'BT-03',
@@ -92,28 +72,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberschenkel bleibt locker, die Kniescheibe bewegt sich kaum.',
       'Die Luft wird angehalten.',
     ],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      // Die Fußspitze des nahen Beins ist zu sich gezogen.
-      start: {
-        huefte: [12, 0],
-        knie: [22, 0],
-        sprung: [-15, 12],
-        loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      ende: {
-        huefte: [12, 0],
-        knie: [22, 0],
-        sprung: [-15, 12],
-        loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      hilfsmittel: [
-        { art: 'kissen', an: 'kopf' },
-        { art: 'rolle', an: 'knie_nah' },
-      ],
-    },
   },
   {
     schluessel: 'BT-04',
@@ -133,14 +91,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Lassen Sie danach ganz locker und machen Sie eine kurze Pause.',
     ],
     fehler: ['Die Luft wird angehalten.', 'Der Rücken drückt sich ins Hohlkreuz.'],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'BT-05',
@@ -166,19 +116,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nach Hüftendoprothese die Beugegrenze nach OP-Bericht und ärztlicher Vorgabe beachten.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      start: {},
-      ende: {
-        huefte: [58, 0],
-        knie: [110, 0],
-        loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-      bewegung: ['ferse_nah'],
-    },
   },
   {
     schluessel: 'BT-06',
@@ -204,14 +141,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nach Hüftendoprothese: Bewegungsgrenzen nach OP-Bericht und ärztlicher Vorgabe. Beim hinteren Zugang gelten häufig für einige Wochen Grenzen bei Beugung über 90°, Adduktion über die Mittellinie und Innenrotation.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      start: { sprung: [-10, -10] },
-      ende: { sprung: [-10, -10] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'BT-07',
@@ -236,22 +165,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nach Knieendoprothese keine Dauerlagerung mit Kissen unter dem Knie: Die Rolle nur für die Übung verwenden, sonst droht ein Streckdefizit.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      start: {
-        huefte: [13, 0],
-        knie: [30, 0],
-        loesen: { winkel: 'knie_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      ende: { huefte: [13, 0], sprung: [-12, 12] },
-      hilfsmittel: [
-        { art: 'kissen', an: 'kopf' },
-        { art: 'rolle', an: 'knie_nah' },
-      ],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'BT-08',
@@ -277,15 +190,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Beugt das Knie beim Heben ab, ist die Übung noch zu schwer; dann zuerst die Kniestreckung über Rolle üben.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'bett',
-      start: { huefte: [0, 45], knie: [0, 90], sprung: [-10, 12], fuss_flach: [false, true] },
-      ende: { huefte: [30, 45], knie: [0, 90], sprung: [-10, 12], fuss_flach: [false, true] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'BT-09',
@@ -310,15 +214,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zuerst gemeinsam im Hausbesuch üben; auf genug Platz zur Bettkante achten, damit beim Drehen niemand herausfällt.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'bett',
-      // Die nahe Hand liegt auf der Brust, der Ellbogen neben dem Körper.
-      start: { schulter: [-7, 4], ellbogen: [161, 0] },
-      ende: { schulter: [-7, 4], ellbogen: [161, 0] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'BT-10',
@@ -343,13 +238,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Kreislauf beachten: Nach längerer Bettruhe vor dem Aufstehen eine Weile sitzen lassen. Zuerst gemeinsam im Hausbesuch üben.',
-    bild: {
-      v: 1,
-      basis: 'seitlage_front',
-      unterlage: 'bett',
-      start: { huefte: [45, 45], knie: [60, 60], haende: ['boden', null] },
-      ende: { huefte: [45, 45], knie: [60, 60], haende: ['boden', null] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
 ];

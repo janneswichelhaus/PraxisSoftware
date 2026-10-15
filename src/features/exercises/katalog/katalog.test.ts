@@ -1,8 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { BILD_HOECHSTENS_BYTES, bildBytes } from '../bild/schema';
-import { szene } from '../bild/szene';
 import { SCHLAGWORT_HOECHSTENS } from '../types';
 import { KATALOG, KATALOG_GRUPPEN, katalogeintrag } from '.';
 import { katalogeintragSchema, ausruestungVon, katalogvorlageSchema } from './schema';
@@ -12,7 +10,7 @@ import { KATALOG_VORLAGEN } from './vorlagen';
 /**
  * Der mitgelieferte Übungskatalog (ANN-382): Jeder Eintrag hält die Grenzen
  * der Datenbank, schreibt Deutsch mit Umlauten, nennt keine Diagnose als
- * Auswahl und zeichnet sein Bild. Der Server prüft beim Übernehmen noch
+ * Auswahl und trägt keine Zeichnung (ANN-539). Der Server prüft beim Übernehmen noch
  * einmal (`supabase/tests/exercise-catalog.test.ts`).
  */
 
@@ -82,14 +80,9 @@ describe('Übungskatalog', () => {
     },
   );
 
-  it.each(KATALOG.filter((e) => e.bild).map((e) => [e.schluessel, e] as const))(
-    '%s hat ein gültiges Bild unter 4 KB, das sich zeichnen lässt',
-    (_, e) => {
-      expect(bildBytes(e.bild)).toBeLessThanOrEqual(BILD_HOECHSTENS_BYTES);
-      const s = szene(e.bild!, 'bewegung');
-      expect(s.figur.length).toBeGreaterThan(8);
-    },
-  );
+  it('trägt keine Zeichnung - Bilder und Videos dreht die Praxis selbst (ANN-539)', () => {
+    for (const e of KATALOG) expect(Object.keys(e), e.schluessel).not.toContain('bild');
+  });
 
   it('kennt eine Bezeichnung für jedes Hilfsmittel, mit „nach Bedarf" höchstens 40 Zeichen', () => {
     for (const h of HILFSMITTEL) {

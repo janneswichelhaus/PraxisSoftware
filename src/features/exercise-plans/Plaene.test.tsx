@@ -132,7 +132,6 @@ const KN01 = variante('k1', 'Kniestreckung im Sitz', 'Im Sitz das Knie strecken'
     per_side: true,
     times_per_day: 1,
   },
-  illustration: katalogeintrag('KN-01')?.bild ?? null,
 });
 const KN02 = variante('k2', 'Kniebeugung im Sitz', 'Fuß unter den Stuhl ziehen', {
   catalog_key: 'KN-02',
@@ -1643,14 +1642,13 @@ describe('Plan als Blatt (UEB-008, ANN-303)', () => {
           variant_lay_name: 'Im Sitz das Knie strecken',
           variant_name: 'Kniestreckung im Sitz',
           instruction: 'Aufrecht sitzen.\nKnie strecken.\nLangsam ablassen.',
-          illustration: katalogeintrag('KN-01')?.bild ?? null,
           load: null,
           double_progression: false,
         }),
       ],
     });
 
-  it('druckt den Schnappschuss in Alltagssprache, mit Bild und Schritten, ohne fachliche Bezeichnung', async () => {
+  it('druckt den Schnappschuss in Alltagssprache, mit Schritten, ohne fachliche Bezeichnung', async () => {
     fetchPlan.mockResolvedValue(zugewiesen());
     const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
     const user = userEvent.setup();
@@ -1663,13 +1661,8 @@ describe('Plan als Blatt (UEB-008, ANN-303)', () => {
     expect(blatt).toHaveTextContent('Hinweis: Langsam ablassen.');
     expect(blatt).toHaveTextContent('3-mal pro Woche');
     expect(blatt).not.toHaveTextContent('Kniebeuge am Geländer');
-    // UEB-012: das eingefrorene Bild, Start und Ende, und die Anleitung in Schritten.
-    expect(
-      within(blatt).getByRole('img', { name: 'Im Sitz das Knie strecken: Ausgangsstellung' }),
-    ).toBeInTheDocument();
-    expect(
-      within(blatt).getByRole('img', { name: 'Im Sitz das Knie strecken: Endstellung' }),
-    ).toBeInTheDocument();
+    // Die Anleitung in Schritten, ohne Zeichnung (ANN-539).
+    expect(within(blatt).queryByRole('img')).not.toBeInTheDocument();
     expect(within(blatt).getByText('Knie strecken.').tagName).toBe('LI');
     await user.click(screen.getByRole('button', { name: 'Drucken oder als PDF sichern' }));
     expect(print).toHaveBeenCalled();

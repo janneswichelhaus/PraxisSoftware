@@ -4,7 +4,6 @@ import { istBenachrichtigungsart, type Benachrichtigungsart } from '@/lib/begrif
 import type { PushRegistrierung } from '@/lib/push';
 import { getSupabase } from '@/lib/supabase';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
-import { bildFeld } from '@/features/exercises/bild/schema';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { bereinigeVideo } from './videometadaten';
 
@@ -1119,8 +1118,6 @@ const planPositionSchema = z.object({
   variant_lay_name: z.string(),
   instruction: z.string().nullable(),
   equipment: z.array(z.string()),
-  /** UEB-012: das eingefrorene Übungsbild (ANN-300, ANN-381); ungültig wird es zu null. */
-  illustration: bildFeld,
   sets: z.number(),
   reps_min: z.number().nullable(),
   reps_max: z.number().nullable(),

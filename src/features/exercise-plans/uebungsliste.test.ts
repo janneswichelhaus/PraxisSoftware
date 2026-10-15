@@ -111,7 +111,6 @@ describe('alsVariante', () => {
       catalog_key: 'KN-01',
       goal: KN01.ziel,
       level: KN01.niveau,
-      illustration: KN01.bild ?? null,
     });
     // Dieselbe Standarddosierung wie nach dem Import (ANN-384).
     expect(standardDosis(v)).toEqual(

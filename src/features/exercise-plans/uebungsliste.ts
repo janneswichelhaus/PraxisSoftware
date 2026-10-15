@@ -60,7 +60,6 @@ export function alsVariante(e: Katalogeintrag): Variante {
       per_side: d.per_side ?? false,
       times_per_day: d.times_per_day ?? null,
     },
-    illustration: e.bild ?? null,
     // Ohne Prüfvermerk: ungeprüft, bis owner durchsieht (ANN-386).
     reviewed_at: null,
     reviewed_by_name: null,

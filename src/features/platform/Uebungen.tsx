@@ -8,8 +8,6 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import { Medienbild } from '@/components/ui/Medienbild';
-import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
@@ -38,8 +36,8 @@ import { Uebungsinhalt, type DosisZumAblesen } from './Uebungsinhalt';
  * Der Heimübungsplan gehört zur Behandlung und kostet nichts extra (§4.6);
  * im Training gehört der Plan zum Paket (§4.10). Gezeigt wird, was der Server
  * über den Zugang liefert: die zugewiesenen Pläne, sonst der zuletzt beendete
- * nur zum Lesen und Mitnehmen (ANN-304). Je Übung Bildplatz, Name und Dosierung,
- * auf Tipp Bild, Dosierung als Kacheln, Anleitung und Hinweis (ANN-466) -
+ * nur zum Lesen und Mitnehmen (ANN-304). Je Übung Name und Dosierung,
+ * auf Tipp Dosierung als Kacheln, Anleitung in Schritten und Hinweis (ANN-539) -
  * keine Punktzahl, keine Serie, kein Lob aus der
  * Software (DSN-001 4.1).
  */
@@ -196,8 +194,8 @@ function OhneVerbindung({
 
 /**
  * Ein Plan: Laufzeit, Übungstage, „Jetzt üben“ als der eine Hauptknopf, dann
- * die Übungen als Zeilen mit festem Bildplatz (`Medienbild vorschau`, ANN-466).
- * Eine Zeile öffnet die Übung mit Bild, Dosierung und Anleitung.
+ * die Übungen als Zeilen mit Name und Dosierung. Eine Zeile öffnet die Übung
+ * mit Dosierung und Anleitung (ANN-539).
  */
 function PlanAbschnitt({
   zugang,
@@ -260,23 +258,6 @@ function PlanAbschnitt({
           <ListRow
             key={p.id}
             onClick={() => setOffen(p)}
-            // Das Bild steht neben dem Namen; für Vorlesesoftware sagt der
-            // Name, welche Übung es ist.
-            bild={
-              <span aria-hidden="true">
-                <Medienbild vorschau alt="">
-                  {p.illustration ? (
-                    <Uebungsbild
-                      bild={p.illustration}
-                      name={p.variant_lay_name}
-                      darstellung="vorschau"
-                      dekorativ
-                      className="size-full"
-                    />
-                  ) : null}
-                </Medienbild>
-              </span>
-            }
             titel={`${p.position}. ${p.variant_lay_name}`}
             meta={dosierungKurz(p)}
           />
@@ -329,9 +310,8 @@ function dosierungKurz(p: PlanPosition & Pick<DosisZumAblesen, 'per_side'>): str
 }
 
 /**
- * Eine Übung zum Nachlesen (DESIGN.md Lücke 9.10): Bild oben, die Dosierung
- * als Kacheln, dann Anleitung, Hilfsmittel und Hinweis. Das Bild hat seinen
- * festen Platz, auch solange es noch keins gibt (ANN-466). Die Schrift der
+ * Eine Übung zum Nachlesen (DESIGN.md Lücke 9.10): die Dosierung als
+ * Kacheln, dann Anleitung, Hilfsmittel und Hinweis (ANN-539). Die Schrift der
  * Plattform gilt auch im Fenster, das außerhalb des Gerüsts gezeichnet wird.
  */
 function Uebungsfenster({
@@ -344,7 +324,7 @@ function Uebungsfenster({
   return (
     <Dialogfenster titel={position.variant_lay_name} onSchliessen={onSchliessen}>
       {/* Der Fokus steht am Anfang der Übung, nicht auf „Schließen“ am Ende:
-          Sonst öffnete das Fenster am Telefon unten, und Name und Bild lägen
+          Sonst öffnete das Fenster am Telefon unten, und Name und Dosierung lägen
           außerhalb des Blicks. */}
       <div className="plattform-schrift">
         <span data-autofocus tabIndex={-1} className="block outline-none" />

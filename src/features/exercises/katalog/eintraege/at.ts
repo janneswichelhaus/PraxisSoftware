@@ -3,21 +3,11 @@ import type { Katalogeintrag } from '../typen';
 /**
  * Gruppe AT: Atmung.
  *
- * Atemtechniken und atemerleichternde Stellungen. Die Atmung selbst - Bauch,
- * Flanken, Lippen, Luftstrom - kann die Figur nicht zeigen. Eine Bewegung
- * haben deshalb nur die Übungen, deren Stellung oder Armbewegung das
- * Wesentliche ist: AT-01 (Lage und Hände), AT-03 und AT-04 (Kutschersitz,
- * Torwartstellung), AT-06 (Armheben) und AT-07 (Seitneigung von vorn).
- * AT-02, AT-05, AT-08, AT-09, AT-10 und AT-11 zeigen nur die
- * Ausgangsstellung (ANN-480): aufrecht im Sitz, bei AT-05 von vorn mit den
- * Händen an den Flanken und locker hängenden Schultern, bei AT-11 von der
- * Seite mit den Armen vor der Brust - die Vorderansicht ließe die Unterarme
- * im Rumpf verschwinden, und die Drehung um die Längsachse zeigt keine der
- * beiden Ansichten (den Strohhalm kennt der Zeichner nicht). Die Unterarme
- * stehen dafür mit Winkeln vor der Brust: Der Griff `brust` legte die
- * Ellbogen nach hinten wie beim Rudern. Ein Atemzug zählt als Wiederholung.
- * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
- * (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
+ * Atemtechniken und atemerleichternde Stellungen. Ein Atemzug zählt als
+ * Wiederholung. Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis
+ * ungeprüft (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) -
+ * eine Vorsicht steht als Satz unter `hinweise_praxis`. Ohne Zeichnung
+ * (ANN-539): Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -44,14 +34,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Wird der Person schwindelig, einige normale Atemzüge einschieben. Später auch im Sitz üben.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'bett',
-      start: { haende: ['bauch', 'brust'] },
-      ende: { haende: ['bauch', 'brust'] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'AT-02',
@@ -77,7 +59,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei Bedarf einsetzen, etwa bei Atemnot beim Treppensteigen oder nach Anstrengung; gut kombinierbar mit Kutschersitz und Torwartstellung.',
-    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-03',
@@ -102,18 +83,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Atemerleichternde Stellung, bei Bedarf einzusetzen, etwa nach dem Treppensteigen. Startwert 2 Minuten, üblich sind 1 bis 3 Minuten.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: {
-        rumpf: 40,
-        huefte: [127, 127],
-        schulter: [30, 30],
-        ellbogen: [70, 70],
-      },
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'AT-04',
@@ -140,18 +109,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Atemerleichternde Stellung für unterwegs, bei Bedarf einzusetzen. Startwert 2 Minuten, üblich sind 1 bis 3 Minuten.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {},
-      ende: {
-        rumpf: 38,
-        huefte: [50, 50],
-        knie: [22, 22],
-        haende: ['oberschenkel', 'oberschenkel'],
-      },
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'AT-05',
@@ -176,12 +133,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Ein leichter Druck der Hände zu Beginn der Einatmung gibt eine Rückmeldung; die Fachperson kann die Hände am Anfang selbst anlegen.',
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { arm: [40, 40], ellbogen: [-110, -110] },
-      ende: { arm: [40, 40], ellbogen: [-110, -110] },
-    },
   },
   {
     schluessel: 'AT-06',
@@ -207,13 +158,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei eingeschränkter Schulterbeweglichkeit nur so weit heben, wie es schmerzfrei geht, oder einen Arm nach dem anderen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: { schulter: [165, 165], ellbogen: [6, 6] },
-      bewegung: ['hand_nah'],
-    },
   },
   {
     schluessel: 'AT-07',
@@ -240,20 +184,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei frischen Narben an Brustkorb oder Bauch die Dehnung nur nach Rücksprache mit der behandelnden Ärztin oder dem Arzt.',
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { haende: ['sitz', null] },
-      ende: {
-        rumpf: -18,
-        knie: [62, 90],
-        bein: [24, -12],
-        arm: [10, 160],
-        ellbogen: [6, 20],
-        haende: ['sitz', null],
-      },
-      bewegung: ['hand_fern'],
-    },
   },
   {
     schluessel: 'AT-08',
@@ -279,7 +209,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Ein Zyklus ist ruhiges Atmen, einige tiefere Atemzüge und ein bis zwei Huffs. Bei Blut im Auswurf, Fieber oder zunehmender Atemnot ärztlich abklären lassen.',
-    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-09',
@@ -304,7 +233,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Wird der Person schwindelig, die Übung unterbrechen und normal weiteratmen lassen.',
-    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-10',
@@ -330,7 +258,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Eigenen Strohhalm verwenden, nicht teilen. Ein dünnerer Strohhalm gibt mehr Widerstand.',
-    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'AT-11',
@@ -354,11 +281,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Drehung kommt nur aus dem Kopf.',
       'Die Luft wird angehalten.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { schulter: [28, 24], ellbogen: [145, 150] },
-      ende: { schulter: [28, 24], ellbogen: [145, 150] },
-    },
   },
 ];

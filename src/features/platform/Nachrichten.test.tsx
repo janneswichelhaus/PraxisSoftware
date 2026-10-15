@@ -155,7 +155,6 @@ beforeEach(() => {
             reps_min: 10,
             reps_max: 12,
             duration_seconds: null,
-            illustration: null,
             hold_seconds: null,
             per_side: false,
             times_per_day: null,

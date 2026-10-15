@@ -9,12 +9,13 @@ import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { Medienbild } from '@/components/ui/Medienbild';
 import { Objektkopf, Warnzeile } from '@/components/ui/Objektkopf';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Schrittliste } from '@/components/ui/Schrittliste';
+import { zeilen } from '@/components/ui/zeilen';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Tile, TileGrid } from '@/components/ui/Tile';
@@ -42,8 +43,6 @@ import {
   type Uebung,
   type Variante,
 } from './api';
-import { istAusgangsstellung } from './bild/schema';
-import { Uebungsbild } from './bild/Uebungsbild';
 import { UebungFormular, VarianteFormular } from './Formulare';
 import { AUSGANGSSTELLUNG_LABEL, NIVEAU_LABEL, ZIEL_LABEL } from './katalog/typen';
 import { variantenOrte } from './orte';
@@ -51,16 +50,16 @@ import { ungeprueft } from './suche';
 import { KOERPERREGION_LABEL } from './types';
 import { useFormularschutz } from './useFormularschutz';
 import { VerbindungFormular, VerbindungenAnzeige } from './Verbindungen';
-import { Vorschaubild } from './Vorschaubild';
 
 /**
  * Eine Übung (UEB-001; Welle B: Seitentyp „Objekt“).
  *
- * Oben der Objektkopf, darunter die Variante, die gerade gezeigt wird: das
- * Bild (Bewegung, auf Tippen abgespielt; darunter Start und Ende), die
+ * Oben der Objektkopf, darunter die Variante, die gerade gezeigt wird: die
  * Standarddosierung als Kacheln, die Anleitung in Schritten, typische Fehler
- * und die Hinweise für die Praxis. Weitere Varianten, leichter und schwerer,
- * stehen als Zeilen daneben (ab 900 px) oder darunter. Ein Sprung auf
+ * und die Hinweise für die Praxis. Eine Zeichnung gibt es nicht (ANN-539):
+ * Bilder und Videos dreht die Praxis selbst, bis dahin erklärt der Text.
+ * Weitere Varianten, leichter und schwerer, stehen als Zeilen daneben (ab
+ * 900 px) oder darunter. Ein Sprung auf
  * `#variante-…` zeigt diese Variante.
  *
  * Pflegen darf nur die Praxisinhaber:in (ANN-293); der Server prüft das, die
@@ -79,14 +78,6 @@ function ankerZiel(hash: string): string | null {
   } catch {
     return null;
   }
-}
-
-/** Zeilen eines Freitexts: die Schritte der Anleitung, die Fehler. */
-function zeilen(text: string | null): string[] {
-  return (text ?? '')
-    .split('\n')
-    .map((zeile) => zeile.trim())
-    .filter(Boolean);
 }
 
 function dauer(sekunden: number): string {
@@ -132,69 +123,14 @@ function ordnungen(variante: Variante): string | null {
   return teile.length > 0 ? teile.join(' · ') : null;
 }
 
-/**
- * Das Bild oben: Bewegung im Rahmen, abspielen auf Tippen, darunter Start und
- * Ende. Ein Bild der Ausgangsstellung steht nur einmal (ANN-480).
- */
-function Bild({ variante }: { variante: Variante }) {
-  if (!variante.illustration) return null;
-  const name = variante.lay_name;
-  const nurStellung = istAusgangsstellung(variante.illustration);
-  return (
-    <div className="max-w-formular flex flex-col gap-3">
-      <Uebungsbild
-        bild={variante.illustration}
-        name={name}
-        darstellung="bewegung"
-        animierbar
-        dekorativ
-        einfassen={(zeichnung) => (
-          <Medienbild
-            alt={
-              nurStellung
-                ? `${name}: Ausgangsstellung`
-                : `${name}: Bewegung von der Ausgangs- zur Endstellung`
-            }
-          >
-            {zeichnung}
-          </Medienbild>
-        )}
-      />
-      {nurStellung ? null : (
-        <Uebungsbild bild={variante.illustration} name={name} darstellung="start-ende" />
-      )}
-    </div>
-  );
-}
-
 /** Anleitung, Fehler, Hinweise und Ausrüstung in einer Karte (L2). */
 function Anleitung({ variante }: { variante: Variante }) {
-  const schritte = zeilen(variante.instruction);
   const fehler = zeilen(variante.common_faults);
   return (
     <Section titel="Anleitung" rahmen>
-      {schritte.length > 1 ? (
-        <ol className="flex flex-col gap-2">
-          {schritte.map((schritt, index) => (
-            <li key={index} className="text-liste text-ink flex gap-3">
-              <span
-                aria-hidden="true"
-                className="bg-accent-soft text-accent rounded-pill inline-flex size-7 shrink-0 items-center justify-center text-sm font-semibold"
-              >
-                {index + 1}
-              </span>
-              <span className="min-w-0 pt-0.5">
-                <span className="sr-only">Schritt {index + 1}: </span>
-                {schritt}
-              </span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className={`text-liste text-ink max-w-prose ${FREITEXT}`}>
-          {variante.instruction ?? 'Noch keine Anleitung.'}
-        </p>
-      )}
+      <div className="text-liste">
+        <Schrittliste text={variante.instruction} leer="Noch keine Anleitung." />
+      </div>
       {fehler.length > 0 ? (
         <>
           <Zwischentitel>Typische Fehler</Zwischentitel>
@@ -394,7 +330,6 @@ function VarianteZeile({
 }) {
   return (
     <ListRow
-      bild={<Vorschaubild bild={variante.illustration} name={variante.lay_name} />}
       titel={variante.name}
       meta={meta}
       to={`/uebungen/${uebungId}#variante-${variante.id}`}
@@ -701,8 +636,7 @@ function Inhalt({
                   </p>
                 </div>
               ) : null}
-              <Bild variante={gezeigt} />
-              {ordnung ? <p className="text-ink-muted -mt-3 text-sm">{ordnung}</p> : null}
+              {ordnung ? <p className="text-ink-muted text-sm">{ordnung}</p> : null}
               {gezeigt.default_dosage ? (
                 <Section titel="Standarddosierung">
                   <Dosierkacheln d={gezeigt.default_dosage} />
@@ -725,7 +659,7 @@ function Inhalt({
               {gezeigt.catalog_key ? (
                 <Kleingedrucktes>
                   Aus dem Übungskatalog ({gezeigt.catalog_key}, Fassung {gezeigt.catalog_version}
-                  ), Text und Bild KI-erstellt.
+                  ), Text KI-erstellt.
                   {gezeigt.reviewed_at
                     ? ` Durchgesehen am ${formatDate(gezeigt.reviewed_at.slice(0, 10))}${
                         gezeigt.reviewed_by_name ? ` von ${gezeigt.reviewed_by_name}` : ''

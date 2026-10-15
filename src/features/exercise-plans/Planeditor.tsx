@@ -57,7 +57,7 @@ import { Vorlagenvorschau, type Vorlagenwahl } from './Vorlagenvorschau';
  * Training 12.10., Abschnitt 5).
  *
  * Oben die Häufigkeit pro Woche als Zeile mit Minus und Plus (Befund B9),
- * darunter die Übungen als Zeilen mit Bild und kurzer Dosierung; ein Tipp auf
+ * darunter die Übungen als Zeilen mit kurzer Dosierung; ein Tipp auf
  * eine Zeile öffnet ihre Dosierung (Zahlschritte, Reihenfolge, entfernen).
  * Die Hauptaktion **„Übungen hinzufügen“** öffnet das Auswahlblatt, in dem
  * mehrere Übungen in einem Zug mit ihrer Standarddosierung dazukommen - aus

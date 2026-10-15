@@ -6,7 +6,6 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
-import { Vorschaubild } from '@/features/exercises/Vorschaubild';
 import { Auswahlfuss, Auswahlzeile } from './Uebungsauswahl';
 import { vorausgewaehlt, type Vorlagenzeile } from './vorlagen';
 
@@ -82,7 +81,6 @@ export function Vorlagenvorschau({
           ) : zeile.art === 'archiviert' ? (
             <ListRow
               key={zeile.schluessel}
-              bild={<Vorschaubild bild={null} name={zeile.name} />}
               titel={<span className="wrap-anywhere">{zeile.name}</span>}
               status={<Badge ton="warnung">archiviert</Badge>}
               gedaempft
@@ -93,7 +91,6 @@ export function Vorlagenvorschau({
             // Namen keinen Platz. Nicht gedämpft: Das meint Erledigtes (B9).
             <ListRow
               key={zeile.schluessel}
-              bild={<Vorschaubild bild={null} name={zeile.name} />}
               titel={<span className="wrap-anywhere">{zeile.name}</span>}
               meta={<StatusMark ton="warnung">nicht in der Bibliothek</StatusMark>}
             />

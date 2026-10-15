@@ -5,14 +5,8 @@ import type { Katalogeintrag } from '../typen';
  *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
- * Vorsicht steht als Satz unter `hinweise_praxis`.
- *
- * Nur die Ausgangsstellung (ANN-480), weil die Figur die Bewegung nicht
- * richtig zeigen kann (lieber die Stellung als ein falsches Bewegungsbild):
- * HW-01 (Nicken bei liegendem Kopf - der Kopf ist ein Kreis), HW-03, HW-06 und
- * HW-10 (Drehung des Kopfes ist nicht darstellbar). HW-06 steht in der
- * Seitenansicht, damit die Vorneigung zu sehen ist und das Bild nicht der
- * Seitneigung von HW-05 gleicht.
+ * Vorsicht steht als Satz unter `hinweise_praxis`. Ohne Zeichnung (ANN-539):
+ * Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -37,13 +31,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Halsmuskeln vorn spannen sich sichtbar an.',
       'Das Nicken ist zu kräftig; gemeint ist eine kleine, sanfte Bewegung.',
     ],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'HW-02',
@@ -67,13 +54,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Kinn wird zur Brust gezogen, statt den Kopf nach hinten zu schieben.',
       'Die Schultern ziehen mit nach oben.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { rumpf: 0, kopf: 24 },
-      ende: { rumpf: 0, kopf: 2 },
-      bewegung: ['kopf'],
-    },
   },
   {
     schluessel: 'HW-03',
@@ -97,12 +77,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Kopf neigt sich beim Drehen zur Seite oder nach vorn.',
       'Die Bewegung geht mit Schwung ans Ende.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: {},
-      ende: {},
-    },
   },
   {
     schluessel: 'HW-04',
@@ -122,13 +96,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Kommen Sie ruhig zurück zur Mitte und neigen Sie abwechselnd zu beiden Seiten.',
     ],
     fehler: ['Die Schulter wird zum Ohr hochgezogen.', 'Der Kopf dreht sich beim Neigen mit.'],
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: {},
-      ende: { kopf: 30 },
-      bewegung: ['kopf'],
-    },
   },
   {
     schluessel: 'HW-05',
@@ -152,13 +119,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Schulter der gedehnten Seite zieht nach oben.',
       'Der Kopf dreht sich, statt sich zu neigen.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { haende: ['sitz', null] },
-      ende: { kopf: 28, arm: [10, 156], ellbogen: [6, 123], haende: ['sitz', null] },
-      bewegung: ['kopf'],
-    },
   },
   {
     schluessel: 'HW-06',
@@ -182,14 +142,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Schulter der gedehnten Seite zieht nach oben.',
       'Der Rücken wird rund, statt nur den Kopf zu neigen.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      // Seitenansicht: Kinn zur Brust, die nahe (rechte) Hand hält sich an der
-      // Sitzfläche, die ferne (linke) liegt am Hinterkopf. Die Drehung steht im Text.
-      start: { rumpf: 0, kopf: 35, haende: ['sitz', 'nacken'] },
-      ende: { rumpf: 0, kopf: 35, haende: ['sitz', 'nacken'] },
-    },
   },
   {
     schluessel: 'HW-07',
@@ -215,12 +167,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Dosierung gilt je Richtung: rechts, links, Stirn und Hinterkopf. Das Bild zeigt nur die Hand an der Seite.',
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { arm: [121, 10], ellbogen: [145, 6] },
-      ende: { arm: [121, 10], ellbogen: [145, 6] },
-    },
   },
   {
     schluessel: 'HW-08',
@@ -242,13 +188,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Kinn hebt sich, der Kopf wird nach hinten überstreckt.',
       'Es wird so fest gedrückt, dass sich die Schultern anspannen oder abheben.',
     ],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-    },
   },
   {
     schluessel: 'HW-09',
@@ -274,13 +213,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Haltezeit endet, sobald das Kinn nach vorn schiebt oder der Kopf zittert; dann im Plan kürzer dosieren.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      start: { kopf: 8 },
-      ende: { kopf: 34 },
-      bewegung: ['kopf'],
-    },
   },
   {
     schluessel: 'HW-10',
@@ -307,18 +239,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur nach Befund der oberen Halswirbelsäule und nach gemeinsamem Einüben; Griff und Zugrichtung vor Ort zeigen. Bei Schwindel, Sehstörungen, Übelkeit oder Kribbeln abbrechen.',
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      // Beide Hände halten die Enden vor der Brust, die Ellbogen nah am Körper;
-      // das Handtuch liegt direkt unter dem Hinterkopf, nicht tief im Nacken.
-      start: { arm: [25, 25], ellbogen: [-155, -155] },
-      ende: { arm: [25, 25], ellbogen: [-155, -155] },
-      hilfsmittel: [
-        { art: 'handtuch', von: 'kopf', nach: 'hand_nah' },
-        { art: 'handtuch', von: 'kopf', nach: 'hand_fern' },
-      ],
-    },
   },
   {
     schluessel: 'HW-11',
@@ -344,15 +264,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Der Vierfüßlerstand ist für viele Ältere wegen Knien oder Handgelenken nicht möglich; dann eine Übung im Sitz aus derselben Gruppe wählen.',
-    bild: {
-      v: 1,
-      basis: 'vierfuessler',
-      unterlage: 'matte',
-      // Hüfte und Schulter 72,5: Oberschenkel und Arme stehen senkrecht, Knie
-      // und Hände liegen auf (die Grundstellung allein hebt sie an).
-      start: { kopf: 42, huefte: [72.5, 72.5], schulter: [72.5, 72.5] },
-      ende: { kopf: 0, huefte: [72.5, 72.5], schulter: [72.5, 72.5] },
-      bewegung: ['kopf'],
-    },
   },
 ];

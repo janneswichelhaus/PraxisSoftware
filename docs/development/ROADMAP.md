@@ -27,7 +27,7 @@ und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
 | 2 | **Restbefunde der Praxis-Prüfung** — gebaut (PR #240) | Letzten Eintrag übernehmen, Absage in 4 Tipps, Material und letzte Doku an der Karte, Übung aus der Bibliothek zuweisen | K3, K6, K9 |
 | 3 | **Erstaufnahme geführt** | Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege — nichts vergessen | K10, K11 |
 | 4 | **Monatsabrechnung in einem Lauf** | Leistungen, Rechnungen, Zahlungseingang als Sammellauf | K13, K14 |
-| 5 | **Übungen, zweite Runde** | Durchsicht des Katalogs, eigene Vorlagen, Fassung 2 der Figur | K12 |
+| 5 | **Übungen, zweite Runde** | Durchsicht des Katalogs, eigene Vorlagen; eigene Bilder und Videos der Praxis, sobald es sie gibt (Zeichnungen entfallen seit 2026-10-15, ANN-539) | K12 |
 
 Die Kette unten bleibt gültig; ihre offenen Epics (ab ALT-EPIC-002) folgen nach den
 Überholungen oder werden in die passende Überholung gezogen, wenn sie denselben Bereich

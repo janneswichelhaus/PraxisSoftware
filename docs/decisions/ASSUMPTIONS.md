@@ -4530,7 +4530,9 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
 ### ANN-381 — Ein Übungsbild ist eine Posen-Beschreibung (jsonb, Fassung 1, höchstens 4 KB), die der Code zeichnet; sie wird beim Zuweisen eingefroren
 
-Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+Technik · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-15):** keine KI-Bilder. Es gilt ANN-539; Zeichner und Posenformat sind entfernt, die Datenbank nimmt nur noch `null` an.
 
 **Annahme.** Keine Datei und keine Ablage (ADR-017 Punkt 4): Grundstellung plus Winkel; der Zeichner rechnet Bodenkontakt, Griffe und Ausschnitt. Maße und Grundstellungen gehören zur Fassung und ändern sich nur mit `v: 2`. Ungültig wird zu „kein Bild".
 
@@ -4872,7 +4874,9 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-466 — Übung auf der Plattform: fester Bildplatz, Dosierung als Kacheln
 
-Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+Oberfläche · geändert · 2026-10-15 · Jannes · — · Wiedervorlage: —
+
+**Geändert (Jannes, 2026-10-15):** Der feste Bildplatz entfällt mit den Zeichnungen (ANN-539); die Kacheln der Dosierung stehen oben, darunter die Anleitung in Schritten.
 
 **Annahme.** Jede Übung hat einen festen Bildplatz: in der Liste `Medienbild vorschau` (56 px), in Übung und Durchführung `Medienbild` 4:3, solange ohne Bild mit Platzhalter. Die Dosierung steht als höchstens vier Kacheln (Durchgänge, Wiederholungen oder Dauer, Pause, womit), Tempo und Steigerungsregel als Zeilen. Die Liste öffnet die Übung im Fenster.
 
@@ -5006,7 +5010,9 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-480 — Ein Übungsbild mit gleichem Start und Ende und ohne Bewegung zeigt die Ausgangsstellung
 
-Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+Praxisprozess · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-15):** Es gibt keine Zeichnung mehr (ANN-539).
 
 **Annahme.** Was eine Seiten- oder Frontansicht nicht zeigen kann (Drehung aus der Bildebene, Hand und Finger, Atmung, Halten), bekommt statt eines falschen Bewegungsbilds die Ausgangsstellung: richtige Grundstellung und Hilfsmittel, `start` gleich `ende`, keine `bewegung`. `Uebungsbild` zeigt sie in „Start und Ende“ und „Bewegung“ als eine Figur mit der Unterschrift „Ausgangsstellung“, ohne Knopf; die Vorschau bleibt.
 
@@ -5559,3 +5565,15 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 **Anker.** `standZeile` in `src/features/exercise-plans/fassung.ts`.
 
 **Änderungspfad.** Nummer als Spalte führen: Migration mit Datenumzug · Aufwand `mittel`.
+
+### ANN-539 — Übungen haben keine Zeichnung; die Anleitung in nummerierten Schritten erklärt sie, bis die Praxis eigene Bilder und Videos dreht
+
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · — · Wiedervorlage: wenn die ersten eigenen Bilder oder Videos vorliegen
+
+**Annahme.** Weder Katalog noch Bibliothek noch Plan tragen ein Bild. Die Übungsseite der Praxis, das Auswahlblatt, die Planzeilen, die Übung auf der Plattform und das Planblatt zeigen Dosierung, Anleitung als nummerierte Schritte (je Zeile ein Schritt, `Schrittliste`), Hilfsmittel und Hinweis. Die Spalten `illustration` bleiben leer stehen.
+
+**Begründung.** Jannes: „Ich möchte keine KI-Bilder“; er dreht Bilder und Videos selbst. Ein Platzhalter „Noch kein Bild“ an 196 Übungen wäre Lärm. Eigene Medien wären Dateien (ADR-017), kein Posenformat.
+
+**Anker.** `app.exercise_illustration_valid` (nur `null`) in `supabase/migrations/20261117110000_ueb_013_uebungen_ohne_zeichnung.sql`; `src/components/ui/Schrittliste.tsx`.
+
+**Änderungspfad.** Eigene Fotos/Videos je Übung: Dateiart nach ADR-017 mit eigener Fassung, Anzeige über `Medienbild`, Spalten `illustration` entfernen · Aufwand `groß`.

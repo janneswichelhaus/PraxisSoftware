@@ -4,7 +4,7 @@ import type { Katalogeintrag } from './katalog/typen';
 /**
  * Der mitgelieferte Katalog als eigener Teil des Builds (ANN-382): geladen
  * nur, wenn owner ihn übernehmen will oder eine Vorlage Namen braucht. Für
- * Lesende bleibt er draußen - 150 Einträge mit Bildbeschreibung.
+ * Lesende bleibt er draußen - 150 Einträge mit Anleitung.
  */
 export const KATALOG_SCHLUESSEL = ['uebungskatalog'] as const;
 
