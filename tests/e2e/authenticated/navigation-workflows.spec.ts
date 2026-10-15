@@ -92,10 +92,12 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await expect(mitarbeitende).not.toContainText('Vorschau');
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
 
-    // Gegenprobe: die Radflotte im selben Menue ist gekennzeichnete Vorschau
-    // und steht eingeklappt hinter „Vorschau" (UX-002h).
-    await expect(untermenue.getByRole('link', { name: /Radflotte/ })).toHaveCount(0);
+    // Gegenprobe: der Urlaub im selben Menue ist gekennzeichnete Vorschau
+    // und steht eingeklappt hinter „Vorschau" (UX-002h). Die Radflotte ist
+    // seit FLT-EPIC-001 echt und steht bei den angebundenen Punkten.
+    await expect(untermenue.getByRole('link', { name: 'Radflotte' })).toBeVisible();
+    await expect(untermenue.getByRole('link', { name: /Urlaub/ })).toHaveCount(0);
     await untermenue.getByRole('button', { name: /^Vorschau/ }).click();
-    await expect(untermenue.getByRole('link', { name: /Radflotte/ })).toContainText('Vorschau');
+    await expect(untermenue.getByRole('link', { name: /Urlaub/ })).toContainText('Vorschau');
   });
 });

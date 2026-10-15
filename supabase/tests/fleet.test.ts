@@ -681,8 +681,8 @@ describe('Radflotte (FLT-001)', () => {
     });
 
     it('weist unvollständige Prüfungen und fremde Bauteile ab', async () => {
-      const nurElf = JSON.stringify(JSON.parse(punkte()).slice(0, 11));
-      const vertauscht = JSON.stringify([...JSON.parse(punkte())].reverse());
+      const nurElf = JSON.stringify((JSON.parse(punkte()) as unknown[]).slice(0, 11));
+      const vertauscht = JSON.stringify([...(JSON.parse(punkte()) as unknown[])].reverse());
       const falsch = punkte().replace('"ok"', '"gut"');
       for (const [items, spots, bestaetigt] of [
         [nurElf, '[]', true],
