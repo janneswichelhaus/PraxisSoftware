@@ -187,5 +187,15 @@ verify_jwt = true
 [functions.notifications]
 verify_jwt = true
 
+# Das AI Gateway (KI-EPIC-001, ADR-005, BEF-153): Diktat zur
+# Behandlungsdokumentation. `verify_jwt` ist der Riegel der Plattform; die
+# Function prueft die Sitzung zusaetzlich selbst (sitzung.ts) und fragt die
+# Datenbank mit dem Token der Person, ob sie zu diesem Termin diktieren darf
+# (check_dictation_access). Der Anbieter steht nur im Secret AI_PROVIDER; bis
+# zur Anbieterentscheidung gibt es nur `mock`, und den nicht in der Produktion
+# (APP_ENVIRONMENT). Scharf erst nach OPS-001 (ADR-015 Punkt 20).
+[functions.ai-gateway]
+verify_jwt = true
+
 [analytics]
 enabled = false

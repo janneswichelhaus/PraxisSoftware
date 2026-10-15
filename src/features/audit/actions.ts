@@ -205,6 +205,8 @@ export const auditOperationLabels: Record<string, string> = {
   'treatment_basis.viewed': 'Behandlungsgrundlage gelesen',
   'treatment_draft_findings.viewed': 'Gesicherte Befundangaben geladen',
   'treatment_evidence.read': 'Behandlungsnachweis gelesen',
+  // KI-001: Diktat zur Behandlungsdokumentation (keine neue Aktion, ADR-010).
+  'treatment_note.dictated': 'Diktat zur Behandlungsdokumentation aufbereitet',
   'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
   'treatment_note.viewed': 'Behandlungsdokumentation gelesen',
   'waitlist.read': 'Warteliste gelesen',

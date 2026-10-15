@@ -30,6 +30,9 @@ import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
 import { Danach } from './Danach';
 import { WieZuletzt } from './WieZuletzt';
 import { useTextUebernahme } from './uebernahme';
+import { DIKTAT_TITEL, useDiktat } from './diktat';
+import { Sprechleiste, VorschlagAusAufnahme } from './Spracheingabe';
+import { useIstVerbunden } from '@/app/verbindung';
 import {
   completeTreatment,
   createTreatmentNote,
@@ -131,6 +134,10 @@ function Abschluss({
   const geaendert = textGeaendert || befund.ungesichert;
   const [vorschlagOffen, setVorschlagOffen] = useState(false);
   const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
+  // Spracheingabe (BEF-153, 6.3): nicht am Vermerk „ohne Behandlung“ - dort
+  // wird nichts behandelt, also auch nichts diktiert.
+  const diktat = useDiktat({ terminId: appointment.id, aktiv: !ohneBehandlung });
+  const verbunden = useIstVerbunden();
 
   // Der Text, wie er in diesem Augenblick im Feld steht - nicht der von
   // vorhin. Ein Schreibvorgang dauert (FIX-014).
@@ -190,6 +197,9 @@ function Abschluss({
   const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert: geaendert,
     speichern: entwurfSichern,
+    // Aufnahme und Vorschlag lassen sich nicht speichern (ADR-016 Punkt 10):
+    // Der Schutz fragt auch für sie, sichert sie aber nie.
+    nichtSicherbar: ohneBehandlung ? undefined : diktat.offen,
     kompakt: true,
     // Von selbst gesichert wird nur der Text einer Behandlung (BEF-056,
     // ANN-319). Am Vermerk „Tür geöffnet, nicht behandelt“ nicht: Ein so
@@ -274,6 +284,10 @@ function Abschluss({
    * sonst über die automatische Finalisierung (Punkt 7) in die Akte käme.
    */
   function geprueft(): boolean {
+    if (diktat.wartet) {
+      diktat.hinweisen();
+      return false;
+    }
     if (bausteine.text) {
       setVorschlagOffen(true);
       setBefundOffen(true);
@@ -290,6 +304,23 @@ function Abschluss({
   const kopfzeile = kopfzeileFuer(appointment, lage, ohneBehandlung);
   const hierher = mitRueckweg(`/termine/${appointment.id}/abschluss`, zurueck);
   const anzahlBefund = Object.keys(bausteine.auswahl).length;
+
+  // ANN-521: Solange das Feld leer ist und nichts offen ist, ist „Sprechen“
+  // der Hauptknopf der Seite (der bevorzugte Weg, BEF-153), „Festschreiben“
+  // steht sekundär daneben. Steht Text im Feld, ist „Festschreiben“ wieder
+  // Hauptknopf und „Sprechen“ sekundär. Während Aufnahme und Vorschlag trägt
+  // deren Leiste den Hauptknopf („Fertig“, „Erneut senden“, „In die Doku
+  // übernehmen“) - ein Hauptknopf je Ansicht (DESIGN.md Regel 4). Nach einer
+  // Meldung (etwa: Mikrofon gesperrt) führt der Hauptknopf nicht wieder
+  // dorthin.
+  const sprechenHaupt =
+    diktat.verfuegbar &&
+    verbunden &&
+    diktat.ruhig &&
+    diktat.meldung === undefined &&
+    wert.trim() === '' &&
+    !bausteine.text;
+  const festschreibenHaupt = !sprechenHaupt && diktat.ruhig;
 
   return (
     // Eine Fläche statt Karten (Design-Handoff 2026-10-01, Abschnitt 6a): Die
@@ -458,6 +489,14 @@ function Abschluss({
             </p>
           ) : null}
 
+          {/* Der Vorschlag aus der Aufnahme über dem Feld; erst „In die Doku
+              übernehmen“ fügt ihn ein (ANN-520). */}
+          <VorschlagAusAufnahme
+            diktat={diktat}
+            gesperrt={laeuft}
+            onUebernehmen={(text) => einfuegen(DIKTAT_TITEL, wert, text)}
+          />
+
           <label htmlFor={feldId} className="sr-only">
             Eintrag zur Behandlung
           </label>
@@ -481,7 +520,12 @@ function Abschluss({
             <Einfuegemeldung
               einfuegung={letzte && letzte.nachher === wert ? letzte : null}
               gesperrt={laeuft}
-              onRueckgaengig={rueckgaengig}
+              onRueckgaengig={() => {
+                // Zurück vor die Übernahme heißt: der Vorschlag steht wieder
+                // zum Prüfen da, statt verloren zu sein.
+                if (letzte?.titel === DIKTAT_TITEL) diktat.zurueckholen();
+                rueckgaengig();
+              }}
             />
           </div>
 
@@ -500,6 +544,9 @@ function Abschluss({
             einbettung="flaeche"
             oben={
               <>
+                {ohneBehandlung ? null : (
+                  <Sprechleiste diktat={diktat} haupt={sprechenHaupt} verbunden={verbunden} />
+                )}
                 {sicherungsstand}
                 {schutz}
               </>
@@ -521,8 +568,14 @@ function Abschluss({
               variant="quiet"
               groesse="kompakt"
               className="ml-auto"
-              disabled={laeuft || !geaendert}
+              disabled={laeuft || diktat.beschaeftigt || !geaendert}
               onClick={() => {
+                // Ein Vorschlag aus der Aufnahme lässt sich nicht sichern: Er
+                // hält den Entwurf an, bis er übernommen oder verworfen ist.
+                if (diktat.wartet) {
+                  diktat.hinweisen();
+                  return;
+                }
                 // Ein nicht übernommener Vorschlag hält den Entwurf nicht an:
                 // Er geht nicht in den Text, seine Angaben werden daneben
                 // gesichert (ABN-015).
@@ -541,7 +594,13 @@ function Abschluss({
             >
               {laeuft && !schreibtAbschluss ? 'Wird gespeichert …' : 'Entwurf'}
             </Button>
-            <Button type="submit" groesse="kompakt" disabled={laeuft} aria-describedby={folgeId}>
+            <Button
+              type="submit"
+              variant={festschreibenHaupt ? 'primary' : 'secondary'}
+              groesse="kompakt"
+              disabled={laeuft || diktat.beschaeftigt}
+              aria-describedby={folgeId}
+            >
               {schreibtAbschluss
                 ? 'Wird festgeschrieben …'
                 : ohneBehandlung

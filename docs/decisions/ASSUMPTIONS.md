@@ -5323,6 +5323,66 @@ Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Andere Vorgabe: dieser Wert · Aufwand `klein`.
 
+### ANN-520 — Diktat: Vorschlag nur in der Seite, Rohaudio nie gespeichert
+
+Datenschutz · offen · 2026-10-14 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Anbieter mit C6
+
+**Annahme.** Die Aufnahme geht nur für die Anfrage an den Gateway und liegt sonst nur im Arbeitsspeicher der Seite, bis sie aufbereitet oder verworfen ist; Transkript und Vorschlag leben nur im Zustand der Schreibseite. Nichts davon kommt in Datenbank, Ablage, Log oder Gerätespeicher; erst „Übernehmen“ macht den Text zum Entwurf. Keine neue Datenklasse; E13 ist für den Mock-Betrieb überbrückt.
+
+**Begründung.** §6.3, ADR-016 Punkt 10: Ein ungeprüfter Vorschlag darf nie in die Akte, auch nicht durch Fristablauf. Kein Eintrag in `src/app/mdr.ts`: Transkription und Einordnung deckt ADR-006 Punkt 8.
+
+**Anker.** `useDiktat` in `src/features/documentation/diktat.ts`.
+
+**Änderungspfad.** Vorschlag oder Audio aufbewahren: Tabelle mit Datenklasse und Frist, Löschlauf, DSFA · Aufwand `groß`.
+
+### ANN-521 — Schreibseite: „Sprechen“ ist Hauptknopf, solange das Feld leer ist
+
+Oberfläche · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)
+
+**Annahme.** Ist das Feld leer, nichts offen und keine Meldung da, ist „Sprechen“ Hauptknopf (48 px, am Telefon volle Breite über der Fußleiste), „Festschreiben“ sekundär; mit Text im Feld umgekehrt, „Sprechen“ mit Zeichen und Wort. Während Aufnahme und Vorschlag tragen „Fertig“, „Erneut senden“ oder „In die Doku übernehmen“ den Hauptknopf. Ohne Angebot des Gateways oder bei gesperrtem Mikrofon fehlt „Sprechen“.
+
+**Begründung.** BEF-153 will die Spracheingabe als bevorzugten, prominenten Weg; DESIGN.md Regel 4 lässt einen Hauptknopf je Ansicht. Die Übernahme ist ein Tipp mehr, weil §6.3 sie verlangt.
+
+**Anker.** `sprechenHaupt` in `src/features/documentation/CompleteTreatmentPage.tsx`.
+
+**Änderungspfad.** Andere Regel: die Bedingung und `Sprechleiste` · Aufwand `klein`.
+
+### ANN-522 — Diktat: vier Abschnitte der Vorlage, Leeres entfällt
+
+Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Sichtung Schreibseite)
+
+**Annahme.** Ein Diktat wird in „Angaben der Patient:in“, „Befund“, „Behandlung“ und „Plan“ eingeordnet, in dieser Reihenfolge; was nicht vorkommt, entfällt. Im Feld steht je Abschnitt der Titel in einer Zeile, darunter der Text, dazwischen eine Leerzeile.
+
+**Begründung.** §6.3 verlangt, die Aussage der Patient:in von der eigenen Beobachtung zu trennen; eine Vorlage gibt es noch nicht (ADR-016 lässt die Struktur offen). Die Form folgt dem Befund aus Bausteinen (ANN-130).
+
+**Anker.** `DIKTAT_ABSCHNITTE` in `src/lib/ki/gateway.ts`; die Kopie in `supabase/functions/ai-gateway/zwecke.ts` hält `vertrag.test.ts`.
+
+**Änderungspfad.** Andere Abschnitte: beide Listen und die Signalwörter der Nachbildung · Aufwand `klein`.
+
+### ANN-523 — Diktat: höchstens fünf Minuten und 5 MiB je Aufnahme
+
+Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
+
+**Annahme.** Eine Aufnahme endet nach fünf Minuten von selbst, ebenso kurz vor 5 MiB; aufgenommen wird mit 64 kbit/s (fünf Minuten etwa 2,4 MB) in einem Format, das `MediaRecorder` liefert. Der Gateway nimmt höchstens 300 s gemeldete Dauer und 5 MiB an; die Tonlänge selbst misst er nicht.
+
+**Begründung.** §6.3 verlangt ein bewusst gestartetes Nachdiktat und schließt fortlaufende Aufnahme aus; die Frist macht das zur festen Grenze. 5 MiB sind fünf Minuten bei 140 kbit/s: Puffer für Browser, die mehr nehmen; mit 64 kbit/s passen höchstens knapp elf Minuten hinein.
+
+**Anker.** `DIKTAT_HOECHSTDAUER_S` und `DIKTAT_HOECHSTBYTES` in `src/lib/ki/gateway.ts`; die Kopie in `zwecke.ts` des Gateways hält `vertrag.test.ts`.
+
+**Änderungspfad.** Andere Grenze: beide Stellen · Aufwand `klein`.
+
+### ANN-524 — AI Gateway: Anbieter nur per Secret, ohne stillen Rückfall
+
+Technik · offen · 2026-10-14 · — · — · Wiedervorlage: Anbieterentscheidung (C6)
+
+**Annahme.** Der Gateway wählt den Adapter nur über `AI_PROVIDER`; heute gibt es nur `mock`. Jeder andere oder fehlende Wert heißt „nicht eingerichtet“, nie die Nachbildung; ohne `APP_ENVIRONMENT` oder in der Produktion antwortet auch `mock` nicht. Ein echter Adapter wird nicht vorgebaut.
+
+**Begründung.** ADR-005 Punkte 5 und 8: Mock bis zur Providerentscheidung, Produktion erst nach Prüfung. Dieselbe Regel wie beim Kartendienst (ANN-090, ANN-094).
+
+**Anker.** Fehlertext `not_configured` in `src/lib/ki/gateway.ts`; die Wahl in `richteEin` in `supabase/functions/ai-gateway/auswahl.ts`.
+
+**Änderungspfad.** Anbieter nach C6: Adapter, Wert in `richteEin`, Eintrag in der Zweckliste · Aufwand `mittel`.
+
 ### ANN-525 — Die Einsicht in die Plattform einer Person hat nur owner
 
 Praxisprozess · offen · 2026-10-14 · — · — · Wiedervorlage: Jannes (Rolle der Einsicht)
@@ -5382,4 +5442,3 @@ Technik · offen · 2026-10-14 · — · — · Wiedervorlage: —
 **Anker.** `app.platform_preview_grant` (`supabase/migrations/20261113100000_e_001_plattform_einsicht.sql`).
 
 **Änderungspfad.** Zusätzlich `app.platform_access_writable` und Schreibrechte in der Einsicht auf `false`, die Projektionen fragen dann einen eigenen Helfer · Aufwand `mittel`.
-

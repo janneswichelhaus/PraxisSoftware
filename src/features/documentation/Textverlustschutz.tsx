@@ -59,6 +59,14 @@ import { useIstVerbunden } from '@/app/verbindung';
  * und „Hier bleiben", wie ANN-046 es für die Korrektur festlegt. Sätze und
  * Verhalten der Dokumentation bleiben, wie sie sind.
  *
+ * **Seit KI-EPIC-001 ein siebtes (`nichtSicherbar`):** Was außer dem Text
+ * offen ist und sich nicht speichern lässt - eine laufende Aufnahme, ein
+ * Vorschlag aus ihr -, hält Seitenwechsel, Abmelden und das Verlassen des
+ * Fensters an wie ungespeicherter Text. Gesichert wird es nie, weder von
+ * selbst noch vor der Sitzungssperre: Ein Vorschlag ist kein Entwurf (ADR-016
+ * Punkt 10). Vor der Sperre bleibt die Seite deshalb verborgen stehen
+ * (ANN-257), und die Rückfrage nennt, was beim Weitergehen verloren geht.
+ *
  * **Kein lokaler Zwischenspeicher.** Ein Entwurf, der nur im Browser läge,
  * wäre nicht gespeichert, würde aber so aussehen - genau die Situation, die
  * ADR-001 und ADR-015 Punkt 16 ausschließen. „Speichern" schreibt deshalb auf
@@ -237,12 +245,19 @@ export const EINGABETEXTE: Verlustschutztexte = {
 export function useTextverlustschutz({
   ungespeichert,
   speichern,
+  nichtSicherbar,
   texte = DOKUMENTATIONSTEXTE,
   kompakt = false,
   selbst,
 }: {
   /** Steht im Feld etwas, das noch nicht auf dem Server liegt? */
   ungespeichert: boolean;
+  /**
+   * Was außer dem Text offen ist und nie gespeichert wird, als ein Satz für
+   * die Rückfrage - etwa „Der Vorschlag aus der Aufnahme ist nicht
+   * übernommen.“ (KI-EPIC-001). `undefined`: nichts.
+   */
+  nichtSicherbar?: string | undefined;
   /**
    * Sichert den Entwurf auf dem Server und meldet, ob danach alles Getippte
    * dort liegt. Fehlt der Weg - Korrektur und Nachtrag kennen keinen
@@ -288,7 +303,10 @@ export function useTextverlustschutz({
       }
     | undefined;
 }): Textverlustschutz {
-  useVerlassenWarnung(ungespeichert);
+  // Angehalten wird für beides: ungespeicherten Text und Offenes, das sich
+  // nicht speichern lässt.
+  const halten = ungespeichert || nichtSicherbar !== undefined;
+  useVerlassenWarnung(halten);
   const verbunden = useIstVerbunden();
 
   const [fehler, setFehler] = useState<Fehlerkasten | undefined>(undefined);
@@ -301,6 +319,10 @@ export function useTextverlustschutz({
   // billiger als eine Neuanmeldung bei jedem Tastendruck.
   const ungespeichertRef = useRef(ungespeichert);
   ungespeichertRef.current = ungespeichert;
+  const haltenRef = useRef(halten);
+  haltenRef.current = halten;
+  const nichtSicherbarRef = useRef(nichtSicherbar);
+  nichtSicherbarRef.current = nichtSicherbar;
   const freigegeben = useRef(false);
   // Zwei Schreibvorgänge gleichzeitig gäbe es sonst: Der Zustand `laeuft`
   // steht erst nach dem Rendern, zwei Taps kurz hintereinander lägen davor.
@@ -329,7 +351,7 @@ export function useTextverlustschutz({
       freigegeben.current = false;
       return false;
     }
-    return ungespeichertRef.current;
+    return haltenRef.current;
   }, []);
 
   const blocker = useBlocker(anhalten);
@@ -346,7 +368,7 @@ export function useTextverlustschutz({
   // Feld steht. Sonst meldet die Kopfzeile unmittelbar ab - eine Rückfrage
   // ohne Anlass wäre nur Reibung.
   const abmelden = useAbmeldewache(() => {
-    if (!ungespeichertRef.current) return false;
+    if (!haltenRef.current) return false;
     setAbmeldenGefragt(true);
     return true;
   });
@@ -362,11 +384,13 @@ export function useTextverlustschutz({
     // gleichzeitige Schreibvorgänge legten auf der Nachtragsseite sonst zwei
     // Nachträge an (Zweitreview UX-EPIC-007).
     await laufenderVorgang.current?.catch(() => undefined);
-    if (!ungespeichertRef.current) return true;
+    // Offenes, das sich nicht speichern lässt, hält die Seite verborgen fest;
+    // ungespeicherter Text geht trotzdem als Entwurf auf den Server.
+    if (!ungespeichertRef.current) return nichtSicherbarRef.current === undefined;
     const sichern = speichernRef.current;
     if (!sichern) return false;
     try {
-      return await sichern();
+      return (await sichern()) && nichtSicherbarRef.current === undefined;
     } catch {
       return false;
     }
@@ -554,6 +578,22 @@ export function useTextverlustschutz({
   }
 
   const abmeldemodus = abmeldenGefragt && !blockiert;
+  // Ohne Offenes bleibt alles wie seit FIX-014. Ist nur Offenes da, gibt es
+  // nichts zu speichern - dann kein „Speichern und weiter“.
+  const speichernAnbieten =
+    speichern !== undefined && (ungespeichert || nichtSicherbar === undefined);
+  const zeile =
+    nichtSicherbar === undefined
+      ? abmeldemodus
+        ? 'Text noch nicht gespeichert – abmelden?'
+        : 'Text noch nicht gespeichert.'
+      : [
+          ungespeichert ? 'Text noch nicht gespeichert.' : null,
+          nichtSicherbar,
+          abmeldemodus ? 'Abmelden?' : null,
+        ]
+          .filter(Boolean)
+          .join(' ');
 
   const schutz = (
     <>
@@ -584,11 +624,7 @@ export function useTextverlustschutz({
           aria-label={texte.bezeichnung}
           className="border-line-strong bg-canvas flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-4 py-2"
         >
-          <p className="text-ink text-sm font-semibold">
-            {abmeldemodus
-              ? 'Text noch nicht gespeichert – abmelden?'
-              : 'Text noch nicht gespeichert.'}
-          </p>
+          <p className="text-ink text-sm font-semibold">{zeile}</p>
           {fehler ? (
             <Statusmeldung ton="fehler" className="basis-full">
               {fehler.text} {texte.bleibtStehen}, die Seite bleibt geöffnet
@@ -596,7 +632,7 @@ export function useTextverlustschutz({
             </Statusmeldung>
           ) : null}
           <div className="ml-auto flex flex-wrap gap-2">
-            {speichern ? (
+            {speichernAnbieten ? (
               <Button
                 type="button"
                 groesse="kompakt"
@@ -638,7 +674,11 @@ export function useTextverlustschutz({
           className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
         >
           <p className="text-ink text-sm leading-relaxed">
-            {abmeldemodus ? texte.abmelden : texte.weitergehen}
+            {nichtSicherbar !== undefined && !ungespeichert
+              ? nichtSicherbar
+              : abmeldemodus
+                ? texte.abmelden
+                : texte.weitergehen}
           </p>
           {!speichern && texte.ohneSpeichern ? (
             <p className="text-ink-muted mt-2 text-sm leading-relaxed">{texte.ohneSpeichern}</p>
@@ -652,7 +692,7 @@ export function useTextverlustschutz({
           ) : null}
 
           <div className="mt-3 flex flex-wrap gap-3">
-            {speichern ? (
+            {speichernAnbieten ? (
               <Button type="button" disabled={laeuft} onClick={speichernUndWeiter}>
                 {laeuft
                   ? 'Wird gespeichert …'
