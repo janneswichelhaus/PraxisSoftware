@@ -1,13 +1,13 @@
-# Status · Stand 2026-10-14
+# Status · Stand 2026-10-15
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-Vier PRs aus Jannes’ Durchsicht vom 14.10. (B1–B13) warten auf Jannes, in dieser Reihenfolge: #241 Leistung,
-Haken, Liste → #242 Einsicht → #243 Spracheingabe mit Nachbildung → #244 Oberfläche. Bericht mit
-Bildpaaren und fünf Fragen: https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g. PR #240 ist gemergt.
+Die Durchsicht vom 14.10. (B1–B13) ist gemergt (#241 bis #244); Jannes hat alle Annahmen dazu
+bestätigt (ANN-510 bis ANN-538), offen bleibt nur der Anbieter für die Spracheingabe. #245 behebt
+BEF-164 (zwei DB-Tests an der Datumsgrenze) und zieht Befunde, Annahmen und Fortschritt nach.
 
 Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
 dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
@@ -27,7 +27,8 @@ Aus der bisherigen Kette danach: ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem
 
 ## Bei Jannes
 
-- #241, #242, #243, #244: Bericht ansehen (~15 min), fünf Fragen beantworten, in Reihenfolge mergen.
+- Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
+  https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
 - Übungskatalog fachlich durchsehen (KI-erstellt, „ungeprüft“, ANN-386); ANN-475 bis ANN-480
   ansehen (Besuch, Ausgangsstellung).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
@@ -46,5 +47,5 @@ Aus der bisherigen Kette danach: ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem
 
 ## Letzte Session
 
-14.10.2026, Branch `ccr-d79ef3d1-5rclb1`, Restbefunde der Praxis-Prüfung. Davor PR #239. **Lokal:**
-`git pull`, `pnpm install`; keine Migration.
+15.10.2026, Branch `claude/trusting-albattani-16x2jw`: Durchsicht 14.10. (#241 bis #244) und BEF-164
+(#245). **Lokal:** `git pull`, `pnpm install`, `supabase db reset` (elf Migrationen aus #241 bis #244).
