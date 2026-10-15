@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { bildFeld } from '@/features/exercises/bild/schema';
 import type { Katalogeintrag } from '@/features/exercises/katalog/typen';
 import { ACHSEN, KOERPERREGIONEN } from '@/features/exercises/types';
 
@@ -35,8 +34,6 @@ const positionSchema = z.object({
   body_region: z.enum(KOERPERREGIONEN),
   instruction: z.string().nullable(),
   equipment: z.array(z.string()),
-  /** UEB-012: im Entwurf das Bild der Bibliothek, nach der Zuweisung das eingefrorene. */
-  illustration: bildFeld,
   variant_archived: z.boolean(),
   sets: z.number(),
   reps_min: z.number().nullable(),

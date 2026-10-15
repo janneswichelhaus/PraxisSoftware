@@ -5,17 +5,8 @@ import type { Katalogeintrag } from '../typen';
  *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
- * Vorsicht steht als Satz unter `hinweise_praxis`.
- *
- * Nur die Ausgangsstellung (ANN-480), weil die Figur die Bewegung nicht
- * richtig zeigen kann (lieber die Stellung als ein falsches Bewegungsbild):
- * BW-02 (Schulterblätter hat die Figur nicht), BW-04 (Drehung des Rumpfs),
- * BW-09 (Arme quer vor dem Körper).
- *
- * Ohne Bild (lieber kein Bild als ein falsches): BW-06. Die Frontansicht
- * verkürzt die rechtwinklig gebeugten Hüften und Knie zu gestreckt wirkenden
- * Beinen; die aufeinanderliegenden Knie, die das Becken halten, wären nicht
- * zu erkennen.
+ * Vorsicht steht als Satz unter `hinweise_praxis`. Ohne Zeichnung (ANN-539):
+ * Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -42,13 +33,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Gedacht als kurze Haltungspause mehrmals am Tag; 3-mal täglich ist nur der Startwert.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { rumpf: 6, huefte: [96, 96], wirbelsaeule: 34, kopf: -6 },
-      ende: { rumpf: 0, huefte: [90, 90], wirbelsaeule: -4 },
-      bewegung: ['kopf'],
-    },
   },
   {
     schluessel: 'BW-02',
@@ -72,12 +56,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Rücken geht ins Hohlkreuz, statt nur die Schulterblätter zu bewegen.',
       'Das Kinn schiebt sich nach vorn.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { rumpf: 0 },
-      ende: { rumpf: 0 },
-    },
   },
   {
     schluessel: 'BW-03',
@@ -103,19 +81,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nur mit standfestem Stuhl, der nicht nach hinten kippen kann; die Lehne sollte etwa bis zur Mitte des Rückens reichen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { rumpf: -6, huefte: [84, 84], haende: ['nacken', 'nacken'] },
-      ende: {
-        rumpf: -18,
-        huefte: [72, 72],
-        wirbelsaeule: -16,
-        kopf: -8,
-        haende: ['nacken', 'nacken'],
-      },
-      bewegung: ['kopf'],
-    },
   },
   {
     schluessel: 'BW-04',
@@ -139,14 +104,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper neigt sich beim Drehen zur Seite.',
       'Die Drehung wird mit Schwung ans Ende geführt.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      // Die Unterarme steigen zur Brustmitte; ganz gekreuzt bis zur
-      // Gegenschulter lässt die Frontansicht nicht zu.
-      start: { arm: [15, 15], ellbogen: [-144, -144] },
-      ende: { arm: [15, 15], ellbogen: [-144, -144] },
-    },
   },
   {
     schluessel: 'BW-05',
@@ -172,19 +129,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei Unsicherheit im Sitz einen Stuhl mit Armlehnen wählen oder seitlich sichern.',
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { haende: ['huefte', null] },
-      ende: {
-        rumpf: 15,
-        bein: [-9, 21],
-        knie: [90, 63.5],
-        arm: [10, 20],
-        haende: ['huefte', null],
-      },
-      bewegung: ['ellbogen_fern'],
-    },
   },
   {
     schluessel: 'BW-06',
@@ -235,14 +179,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Der Vierfüßlerstand ist für viele Ältere wegen Knien oder Handgelenken nicht möglich; dann eine Übung im Sitz aus derselben Gruppe wählen.',
-    bild: {
-      v: 1,
-      basis: 'vierfuessler',
-      unterlage: 'matte',
-      start: { wirbelsaeule: 34, kopf: 30, huefte: [72.5, 72.5], schulter: [72.5, 72.5] },
-      ende: { wirbelsaeule: -22, kopf: -8, huefte: [72.5, 72.5], schulter: [72.5, 72.5] },
-      bewegung: ['kopf'],
-    },
   },
   {
     schluessel: 'BW-08',
@@ -267,17 +203,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Band schnellt zurück, statt langsam nachgelassen zu werden.',
     ],
     hinweise_praxis: 'Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { rumpf: 0, schulter: [72, 68], ellbogen: [6, 6] },
-      ende: { rumpf: 0, schulter: [-24, -28], ellbogen: [100, 100] },
-      hilfsmittel: [
-        { art: 'tuerrahmen', x: 92 },
-        { art: 'band', von: 'tuerrahmen', nach: 'hand_nah' },
-      ],
-      bewegung: ['hand_nah'],
-    },
   },
   {
     schluessel: 'BW-09',
@@ -302,14 +227,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Ellbogen beugen sich stark.',
     ],
     hinweise_praxis: 'Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      // Das Band läge in der Seitenansicht als Punkt an der Hand; es steht unter
-      // den Hilfsmitteln.
-      start: { schulter: [90, 90], ellbogen: [0, 0] },
-      ende: { schulter: [90, 90], ellbogen: [0, 0] },
-    },
   },
   {
     schluessel: 'BW-10',
@@ -335,13 +252,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Erreichen die Unterarme die Wand nicht, nur so weit bewegen, wie Rücken und Kopf an der Wand bleiben.',
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      start: { arm: [88, 88], ellbogen: [88, 88] },
-      ende: { arm: [150, 150], ellbogen: [24, 24] },
-      bewegung: ['hand_nah', 'hand_fern'],
-    },
   },
   {
     schluessel: 'BW-11',
@@ -367,16 +277,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Kribbeln oder Taubheit im Arm sind kein Dehngefühl: dann die Ellbogen tiefer legen oder den Schritt verkleinern.',
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      start: { arm: [88, 88], ellbogen: [90, 90] },
-      ende: { arm: [88, 88], ellbogen: [90, 90] },
-      hilfsmittel: [
-        { art: 'tuerrahmen', x: -47 },
-        { art: 'tuerrahmen', x: 47 },
-      ],
-    },
   },
   {
     schluessel: 'BW-12',
@@ -402,14 +302,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bauchlage ist für viele Hochbetagte nicht möglich (Atmung, Herz, Endoprothese); dann im Sitz üben, etwa „Rudern mit Theraband“.',
-    bild: {
-      v: 1,
-      basis: 'bauchlage',
-      unterlage: 'matte',
-      start: { schulter: [176, 176] },
-      ende: { schulter: [192, 192] },
-      hilfsmittel: [{ art: 'kissen', an: 'becken' }],
-      bewegung: ['ellbogen_nah'],
-    },
   },
 ];

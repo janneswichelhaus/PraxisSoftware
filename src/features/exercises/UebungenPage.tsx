@@ -40,7 +40,6 @@ import {
   type Treffer,
 } from './suche';
 import { useFormularschutz } from './useFormularschutz';
-import { Vorschaubild } from './Vorschaubild';
 
 /**
  * Die Übungsbibliothek der Praxis (UEB-EPIC-001; Welle B: Seitentyp „Liste“).
@@ -61,13 +60,12 @@ function anzahlVarianten(n: number): string {
 
 function Zeile({ treffer: { uebung, varianten, variantenTreffer } }: { treffer: Treffer }) {
   const aktiv = uebung.variants.filter((variante) => !variante.archived);
-  // Bild, Ziel und Niveau von der ersten passenden Variante; eine Übung aus
+  // Ziel und Niveau von der ersten passenden Variante; eine Übung aus
   // dem Katalog hat genau eine (ANN-382).
   const erste = varianten[0] ?? aktiv[0];
   const offen = aktiv.some(ungeprueft);
   return (
     <ListRow
-      bild={<Vorschaubild bild={erste?.illustration ?? null} name={uebung.lay_name} />}
       titel={uebung.name}
       meta={
         <>
@@ -87,7 +85,7 @@ function Zeile({ treffer: { uebung, varianten, variantenTreffer } }: { treffer: 
 }
 
 /**
- * Die Meldung nach der Übernahme (ANN-385). Sie nennt Text und Bild
+ * Die Meldung nach der Übernahme (ANN-385). Sie nennt den Text
  * freiwillig „KI-erstellt“ und „ungeprüft“ (ANN-388, ANN-386).
  */
 function uebernahmeSatz(e: Uebernahme): string {
@@ -127,7 +125,7 @@ function KatalogUebernehmen({
     return (
       <Section titel="Standardbibliothek" rahmen>
         <p className="text-liste text-ink max-w-prose">
-          {katalog ? `${katalog.length} Übungen` : 'Übungen'} mit Bild, Anleitung und
+          {katalog ? `${katalog.length} Übungen` : 'Übungen'} mit Anleitung in Schritten und
           Standarddosierung – als Kopie in die Bibliothek der Praxis.
         </p>
         <div className="mt-3">
@@ -176,7 +174,7 @@ function Liste({
   );
   const gefiltert = filter.text.trim() !== '' || gesetzteFilter(filter) > 0;
   const ueber = (n: number) => (n === 1 ? '1 Übung' : `${n} Übungen`);
-  // „Weitere laden“ (DESIGN.md, Liste): 200 Zeilen mit Bild auf einmal kosten
+  // „Weitere laden“ (DESIGN.md, Liste): 200 Zeilen auf einmal kosten
   // am Telefon Zeit und Rollen; eine neue Suche beginnt wieder oben.
   const [zeigen, setZeigen] = useState(ZEILEN_JE_SEITE);
   const filtern = (neu: Filter) => {

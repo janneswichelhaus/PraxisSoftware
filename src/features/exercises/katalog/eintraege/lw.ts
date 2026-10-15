@@ -6,19 +6,8 @@ import type { Katalogeintrag } from '../typen';
  * Aufbau wie die Referenzgruppe `kn.ts`. Inhalt KI-erstellt und bis zur
  * Durchsicht durch die Praxis ungeprüft (ANN-386). Keine Diagnose als
  * Auswahlkriterium (ADR-006 Punkt 10) - eine Vorsicht steht als Satz unter
- * `hinweise_praxis`.
- *
- * Nur die Ausgangsstellung (ANN-480; lieber die Stellung als ein falsches
- * Bewegungsbild): LW-05 (die Drehung um die Längsachse zeigt die
- * Seitenansicht nicht), LW-09 (die Spannung im Bauch ist nicht zu sehen) und
- * LW-20 (Zug von der Seite und Drücken nach vorn passen in keine Ansicht
- * zugleich).
- *
- * Ohne Bild (lieber kein Bild als ein falsches): LW-17. Die Frontansicht
- * verkürzt den gebeugten Unterschenkel auf null und hängt den Fuß ans Knie -
- * das Bild zeigte den schwereren Seitstütz auf den Füßen statt auf den Knien.
- * Ein Bild erst mit einer Fassung, die den verdeckten Unterschenkel erkennbar
- * zeichnet.
+ * `hinweise_praxis`. Ohne Zeichnung (ANN-539): Die Anleitung erklärt die Übung
+ * allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -44,13 +33,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Bewegung kommt aus den Beinen statt aus dem Becken.',
       'Die Luft wird angehalten.',
     ],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      start: { wirbelsaeule: -28, kopf: 14 },
-      ende: { wirbelsaeule: 6, kopf: -3 },
-    },
   },
   {
     schluessel: 'LW-02',
@@ -73,13 +55,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Nur Kopf und Schultern bewegen sich, das Becken bleibt stehen.',
       'Beim Aufrichten entsteht ein starkes Hohlkreuz.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { rumpf: -10, huefte: [80, 80], wirbelsaeule: 50 },
-      ende: { rumpf: 3, huefte: [93, 93], wirbelsaeule: -10, kopf: -5 },
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'LW-03',
@@ -102,22 +77,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Der Kopf hebt von der Unterlage ab.', 'Es wird ruckartig gezogen.'],
     hinweise_praxis:
       'Nach Hüftendoprothese gelten die Bewegungsgrenzen des Zugangs: Beim hinteren Zugang ist eine Beugung über 90° häufig für einige Wochen nicht erlaubt, das operierte Bein dann nicht zur Brust ziehen.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      start: {},
-      ende: {
-        huefte: [122, 45],
-        knie: [118, 90],
-        fuss_flach: [false, true],
-        sprung: [35, 0],
-        schulter: [44, 44],
-        ellbogen: [2, 2],
-        haende: ['schienbein', null],
-      },
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'LW-04',
@@ -144,20 +103,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei Osteoporose keine belastete, endgradige Beugung der Wirbelsäule. Nach Hüftendoprothese mit hinterem Zugang ist eine Beugung über 90° häufig für einige Wochen nicht erlaubt.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      start: {},
-      ende: {
-        huefte: [122, 122],
-        knie: [118, 118],
-        fuss_flach: [false, false],
-        sprung: [35, 35],
-        haende: ['schienbein', 'schienbein'],
-      },
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'LW-05',
@@ -180,13 +125,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Die Knie fallen mit Schwung zur Seite.', 'Die gegenüberliegende Schulter hebt ab.'],
     hinweise_praxis:
       'Nach Hüftendoprothese mit hinterem Zugang: Sinken die Knie zur Gegenseite, gerät das operierte Bein in Adduktion und Innenrotation; das Ausmaß dann nach ärztlicher Vorgabe begrenzen.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      start: {},
-      ende: {},
-    },
   },
   {
     schluessel: 'LW-06',
@@ -211,19 +149,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei Osteoporose keine belastete, endgradige Beugung der Wirbelsäule. Nach Hüftendoprothese mit hinterem Zugang nur so weit vorneigen, dass die Hüfte nicht über 90° gebeugt wird. Bei Neigung zu Schwindel langsam aufrichten und kurz sitzen bleiben.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: {
-        rumpf: 38,
-        wirbelsaeule: 45,
-        kopf: 25,
-        huefte: [128, 128],
-        haende: ['schienbein', 'schienbein'],
-      },
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'LW-07',
@@ -250,21 +175,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bauchlage ist für viele Hochbetagte nicht möglich (Atmung, Herz, Endoprothese); dann das Beckenkippen im Sitz wählen. Strahlen Beschwerden während der Übung weiter ins Bein aus, die Übung beenden.',
-    bild: {
-      v: 1,
-      basis: 'bauchlage',
-      unterlage: 'matte',
-      start: { kopf: -7, schulter: [173, 173], ellbogen: [9, 9] },
-      ende: {
-        rumpf: 59,
-        wirbelsaeule: -20,
-        kopf: 15,
-        huefte: [-31, -31],
-        schulter: [59, 59],
-        ellbogen: [90, 90],
-      },
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'LW-08',
@@ -286,29 +196,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Die Hände rutschen mit nach hinten.', 'Es wird mit Schwung in die Dehnung gegangen.'],
     hinweise_praxis:
       'Bei Osteoporose keine belastete, endgradige Beugung der Wirbelsäule. Verlangt starke Knie- und Hüftbeugung und ist nach Knie- oder Hüftendoprothese meist nicht geeignet; ein Kissen zwischen Gesäß und Fersen verringert die Beugung.',
-    bild: {
-      v: 1,
-      basis: 'vierfuessler',
-      unterlage: 'matte',
-      start: {
-        rumpf: 75,
-        huefte: [75, 75],
-        sprung: [70, 70],
-        schulter: [75, 75],
-        loesen: { winkel: 'rumpf', gleich: ['hand_nah', 'knie_nah'] },
-      },
-      ende: {
-        rumpf: 90,
-        wirbelsaeule: 40,
-        kopf: 20,
-        huefte: [160, 160],
-        knie: [157, 157],
-        sprung: [70, 70],
-        schulter: [163, 163],
-        loesen: { winkel: 'schulter_nah', gleich: ['hand_nah', 'knie_nah'] },
-      },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'LW-09',
@@ -333,16 +220,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Becken kippt mit oder das Gesäß wird angespannt.',
       'Es wird zu kräftig angespannt.',
     ],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      // Die Hände liegen auf dem Unterbauch, die Ellbogen neben dem Körper. Von
-      // Hand gesetzt: Das Handziel `bauch` legte den Ellbogen unter den Rumpf
-      // und höbe die ganze Figur von der Matte.
-      start: { schulter: [-10, -10], ellbogen: [45, 45] },
-      ende: { schulter: [-10, -10], ellbogen: [45, 45] },
-    },
   },
   {
     schluessel: 'LW-10',
@@ -369,14 +246,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Nach Hüftendoprothese mit hinterem Zugang das Knie nur bis knapp unter 90° Beugung heben, solange die Grenze gilt.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      start: {},
-      ende: { huefte: [88, 45], knie: [90, 90], fuss_flach: [false, true], sprung: [25, 0] },
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'LW-11',
@@ -403,26 +272,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Gelingt es nicht, den Rücken ruhig zu halten, zuerst nur ein Bein bewegen und die Füße zwischendurch abstellen. Nach Hüftendoprothese mit hinterem Zugang ist die Ausgangsstellung mit 90° Hüftbeugung grenzwertig.',
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      unterlage: 'matte',
-      start: {
-        huefte: [90, 90],
-        knie: [90, 90],
-        sprung: [10, 10],
-        schulter: [90, 90],
-        ellbogen: [0, 0],
-      },
-      ende: {
-        huefte: [25, 90],
-        knie: [5, 90],
-        sprung: [10, 10],
-        schulter: [90, 165],
-        ellbogen: [0, 0],
-      },
-      bewegung: ['knoechel_nah', 'hand_fern'],
-    },
   },
   {
     schluessel: 'LW-12',
@@ -446,21 +295,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie fallen nach innen oder außen.',
       'Das Becken kippt zu einer Seite.',
     ],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      anker: 'ferse_nah',
-      start: {},
-      ende: {
-        kopf: 26,
-        huefte: [10, 10],
-        knie: [80, 80],
-        schulter: [-22, -22],
-        loesen: { winkel: 'rumpf', gleich: ['schulter', 'ferse_nah'] },
-      },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'LW-13',
@@ -485,23 +319,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es entsteht ein Hohlkreuz.',
       'Das gestreckte Bein wird höher gehoben als der andere Oberschenkel.',
     ],
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      anker: 'ferse_nah',
-      start: { huefte: [45, 45], knie: [90, 0], sprung: [0, 10], fuss_flach: [true, false] },
-      ende: {
-        kopf: 26,
-        schulter: [-22, -22],
-        huefte: [10, 10],
-        knie: [80, 0],
-        sprung: [0, 10],
-        fuss_flach: [true, false],
-        loesen: { winkel: 'rumpf', gleich: ['schulter', 'ferse_nah'] },
-      },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'LW-14',
@@ -527,27 +344,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Belastet Hand- und Kniegelenke; bei Beschwerden dort den Dead Bug in Rückenlage wählen. Zum Einstieg nur den Arm oder nur das Bein bewegen.',
-    bild: {
-      v: 1,
-      basis: 'vierfuessler',
-      unterlage: 'matte',
-      start: {
-        rumpf: 75,
-        huefte: [75, 75],
-        sprung: [70, 70],
-        schulter: [75, 75],
-        loesen: { winkel: 'rumpf', gleich: ['hand_nah', 'knie_nah'] },
-      },
-      ende: {
-        rumpf: 75,
-        huefte: [75, -15],
-        knie: [90, 0],
-        sprung: [70, 0],
-        schulter: [165, 75],
-        loesen: { winkel: 'rumpf', gleich: ['hand_fern', 'knie_nah'] },
-      },
-      bewegung: ['hand_nah', 'knoechel_fern'],
-    },
   },
   {
     schluessel: 'LW-15',
@@ -573,13 +369,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Pressatmung vermeiden, besonders bei Bluthochdruck. Die Arbeitsplatte muss fest stehen, die Schuhe rutschfest sein. Die Haltezeit von 20 auf 30 Sekunden steigern.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { rumpf: 32.7, schulter: [32.7, 32.7], ellbogen: [90, 90] },
-      ende: { rumpf: 32.7, schulter: [32.7, 32.7], ellbogen: [90, 90] },
-      hilfsmittel: [{ art: 'tisch', x: 60 }],
-    },
   },
   {
     schluessel: 'LW-16',
@@ -601,21 +390,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Das Becken hängt durch.', 'Das Gesäß ragt nach oben.', 'Die Luft wird angehalten.'],
     hinweise_praxis:
       'Bauchlage ist für viele Hochbetagte nicht möglich (Atmung, Herz, Endoprothese); dann den Unterarmstütz an der Arbeitsplatte wählen. Pressatmung vermeiden. Steigerung: auf den Zehen statt auf den Knien.',
-    bild: {
-      v: 1,
-      basis: 'bauchlage',
-      unterlage: 'matte',
-      anker: 'ellbogen_nah',
-      start: { rumpf: 59, kopf: 15, huefte: [-31, -31], schulter: [59, 59], ellbogen: [90, 90] },
-      ende: {
-        rumpf: 73,
-        kopf: 15,
-        knie: [20, 20],
-        schulter: [73, 73],
-        ellbogen: [90, 90],
-      },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'LW-17',
@@ -667,14 +441,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bauchlage ist für viele Hochbetagte nicht möglich (Atmung, Herz, Endoprothese); dann den Vierfüßler, Arm und Bein diagonal oder den Dead Bug wählen. Bei Schulterbeschwerden die Arme neben dem Körper lassen und nur das Bein heben.',
-    bild: {
-      v: 1,
-      basis: 'bauchlage',
-      unterlage: 'matte',
-      start: { kopf: -7, schulter: [180, 180], ellbogen: [0, 0] },
-      ende: { kopf: -7, schulter: [200, 180], ellbogen: [0, 0], huefte: [0, -18] },
-      bewegung: ['knoechel_fern'],
-    },
   },
   {
     schluessel: 'LW-19',
@@ -698,20 +464,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie beugen sich stark, statt das Gesäß nach hinten zu schieben.',
       'Der Kopf wird in den Nacken gelegt.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { huefte: [8, 8], knie: [10, 10], schulter: [-44, 155], ellbogen: [65, 157] },
-      ende: {
-        rumpf: 45,
-        huefte: [57, 57],
-        knie: [20, 20],
-        schulter: [-44, 155],
-        ellbogen: [65, 157],
-      },
-      hilfsmittel: [{ art: 'stab', an: 'haende' }],
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'LW-20',
@@ -737,16 +489,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“. Mehr Abstand zur Befestigung erhöht den Zug.',
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      // Beide Hände halten das Band zusammen vor dem Brustbein.
-      start: { arm: [15, 15], ellbogen: [-144, -144] },
-      ende: { arm: [15, 15], ellbogen: [-144, -144] },
-      hilfsmittel: [
-        { art: 'tuerrahmen', x: -60 },
-        { art: 'band', von: 'tuerrahmen', nach: 'hand_nah' },
-      ],
-    },
   },
 ];

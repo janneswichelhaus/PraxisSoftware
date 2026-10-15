@@ -1,43 +1,33 @@
-import { Medienbild } from '@/components/ui/Medienbild';
+import { Schrittliste } from '@/components/ui/Schrittliste';
 import { Tile, TileGrid } from '@/components/ui/Tile';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import type { Dosis } from '@/features/exercise-plans/dosierung';
-import { Uebungsbild } from '@/features/exercises/bild/Uebungsbild';
 import type { Ablageplan } from './ablage';
 
 /**
- * Eine Übung zum Ablesen (DESIGN.md Lücke 9.10): Bild oben, die Dosierung
- * als Kacheln, dann Anleitung, Hilfsmittel und Hinweis - in der Übersicht
- * („Übungen“) und in der Durchführung gleich.
- *
- * Das Bild hat seinen festen Platz (4:3, `Medienbild`, ANN-466): die
- * gezeichnete Figur aus dem eingefrorenen Plan als Bewegungsbild, auf Tippen
- * abgespielt (UEB-012, ANN-381); ohne Bild der Platzhalter „Noch kein Bild“.
+ * Eine Übung zum Ablesen (DESIGN.md Lücke 9.10): die Dosierung als Kacheln,
+ * dann die Anleitung in nummerierten Schritten, was man braucht, und der
+ * Hinweis der Fachperson - in der Übersicht („Übungen“) und in der
+ * Durchführung gleich. Eine Zeichnung gibt es nicht (ANN-539); Bilder und
+ * Videos dreht die Praxis selbst, bis dahin erklärt der Text.
  */
 export function Uebungsinhalt({ position }: { position: Ablageplan['items'][number] }) {
   return (
     <>
-      {position.illustration ? (
-        <Uebungsbild
-          bild={position.illustration}
-          name={position.variant_lay_name}
-          darstellung="bewegung"
-          animierbar
-          dekorativ
-          einfassen={(zeichnung) => (
-            <Medienbild alt={`Zeichnung der Übung „${position.variant_lay_name}“`}>
-              {zeichnung}
-            </Medienbild>
-          )}
-        />
-      ) : (
-        <Medienbild alt={`Zeichnung der Übung „${position.variant_lay_name}“`} />
-      )}
-      <div className="mt-4">
-        <Dosierungskacheln dosis={position} />
-      </div>
-      {position.instruction ? <p className="text-ink mt-4">{position.instruction}</p> : null}
+      <Dosierungskacheln dosis={position} />
+      {position.instruction ? (
+        <div className="mt-6">
+          <Zwischentitel>So geht’s</Zwischentitel>
+          <div className="mt-2">
+            <Schrittliste text={position.instruction} />
+          </div>
+        </div>
+      ) : null}
       {position.equipment.length > 0 ? (
-        <p className="text-ink-muted mt-2">Sie brauchen: {position.equipment.join(', ')}</p>
+        <p className="text-ink mt-4">
+          <span className="font-semibold">Sie brauchen: </span>
+          {position.equipment.join(', ')}
+        </p>
       ) : null}
       {position.note ? (
         <p className="text-ink mt-2">

@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { bildFeld } from '@/features/exercises/bild/schema';
 import { fachAendern, fachLesen } from '@/lib/geraeteablage';
 import {
   UebertragungAbgewiesen,
@@ -39,11 +38,9 @@ const positionSchema = z.object({
   variant_lay_name: z.string(),
   instruction: z.string().nullable(),
   equipment: z.array(z.string()),
-  // UEB-012 (Review ADR-024 Punkt 5): Bild und Dosierfelder gehören zur
-  // Durchführungsansicht. Das Bild ist eine Posen-Beschreibung ohne
-  // Personenbezug (ANN-381); ein früher abgelegter Plan ohne diese Felder
-  // bleibt lesbar (Vorgaben).
-  illustration: bildFeld,
+  // UEB-012 (Review ADR-024 Punkt 5): die Dosierfelder gehören zur
+  // Durchführungsansicht; ein früher abgelegter Plan ohne sie bleibt lesbar
+  // (Vorgaben). Ein abgelegtes Bild von früher fällt beim Lesen weg (ANN-539).
   sets: z.number(),
   reps_min: z.number().nullable(),
   reps_max: z.number().nullable(),

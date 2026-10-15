@@ -51,7 +51,7 @@ import { AUSFUEHRUNG_TEXT, uebungsanalyse, type Uebungszeile } from './uebungsan
  *
  * Welle B: Der Entwurf ist eine Arbeitsseite (`Planeditor`), der zugewiesene
  * Plan eine Objektseite - Kopf mit Laufzeit-Warnung, Laufzeit als Kacheln,
- * die Übungen als Zeilen mit Bild (fachlich oder in Alltagssprache), was die
+ * die Übungen als Zeilen (fachlich oder in Alltagssprache), was die
  * Person durchgeführt hat, und die Fassungen.
  *
  * Das Laden ist ein Blick in die Akte bzw. das Trainingsverhältnis; der

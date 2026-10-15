@@ -116,7 +116,6 @@ const bibliothek: Bibliothek = {
             per_side: true,
             times_per_day: 1,
           },
-          illustration: KN01.bild ?? null,
         },
       ],
     },

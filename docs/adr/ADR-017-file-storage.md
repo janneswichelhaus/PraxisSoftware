@@ -2,13 +2,23 @@
 
 ## Status
 
-**Angenommen, Fassung 5** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 6** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
 2026-10-09 von Jannes in der Abnahme der Annahmen entschieden (Abschnitt K);
 **Fassung 5** am 2026-10-10 bestätigt, die Fragen 23 bis 29 wie empfohlen
-(Abschnitt L).
+(Abschnitt L); **Fassung 6** am 2026-10-15 von Jannes entschieden (Umkehr der
+Punkte 29 und 69 für Anhänge an Rückfragen).
+**Fassung 6 (2026-10-15, Entscheidung Jannes).** „Ich möchte keinen Virenscanner und trotzdem
+Bilder und Videos von Patienten zulassen.“ Das ist die **Umkehr einzelner Punkte** nach der
+Fassungsregel in `README.md`: Punkt 29 verliert für Anhänge an Rückfragen (Abschnitt L) die
+MUSS-Pflicht zur Virenprüfung, Punkt 69 den Satz, nach dem ohne Prüfergebnis kein Anhang einer
+echten Person `ready` wird; Punkt 70 verliert die Bedingung „ADR zum Prüfer“. ADR-026 ist damit
+abgelehnt. Der alte Wortlaut bleibt in den Punkten lesbar. Alle übrigen Punkte bleiben stehen,
+insbesondere die Minderungen aus Punkt 69 (Aufnahme nur in der Anwendung, Signatur und Container
+am Server, Anzeige nur im Medienelement, nie ein Download) und die Kennzeichnung „nicht auf
+Schadsoftware geprüft“. Für alle anderen Uploads von außen (Punkt 30) gilt Punkt 29 unverändert.
 **Fassung 5 (2026-10-10, am selben Tag angenommen).** Anlass ist KOM-EPIC-002.
 **Abschnitt L (Punkte 59 bis 70)**: Foto und Video an einer Rückfrage auf der
 Plattform, mit eigener Einwilligung, eigener Klasse und 30 Tagen Frist; die
@@ -84,7 +94,7 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 
 2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
 2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
-2026-10-10 (Fassung 5, am selben Tag angenommen)
+2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6)
 
 ## Kontext
 
@@ -405,6 +415,10 @@ tut; Punkt 33 entscheidet es hier.
     *Vermerk 2026-10-10 (Fassung 5): Die Prüfung ist Bedingung des
     Scharfschaltens, nicht des Bauens mit synthetischen Testkonten; den
     Prüfer wählt ein eigener ADR (Punkt 69).*
+    *Vermerk 2026-10-15 (Fassung 6, Umkehr): Für Anhänge an Rückfragen
+    (Abschnitt L) entfällt die Virenprüfung — Entscheidung Jannes; sie werden
+    ohne Prüfergebnis `ready` und tragen „nicht auf Schadsoftware geprüft“.
+    Für jeden anderen Upload von außen gilt der Punkt weiter.*
 30. **Dieser ADR gibt nicht frei:** Fotos und Videos von Patient:innen
     (`IDEA-KOM-003` — eigene Einwilligung, kurze Frist, Entfernung der
     Aufnahmemetadaten), Anhänge im Teamchat (TEAM-001), Uploads aus einem
@@ -1016,12 +1030,19 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     Download.
     *Vermerk 2026-10-12: Den Prüfer schlägt [ADR-026](ADR-026-malware-scanning.md) vor
     (vorgeschlagen, W1 bis W4 offen).*
+    *Vermerk 2026-10-15 (Fassung 6, Umkehr): Fassung 5 lautete „Ohne
+    Prüfergebnis wird kein Anhang einer echten Person `ready`“ und „Den Prüfer
+    wählt ein eigener ADR“. Beides entfällt: Jannes lässt Anhänge von außen
+    ohne Virenprüfung zu, der Schalter bleibt aus, ADR-026 ist abgelehnt. Die
+    Minderungen dieses Punktes bleiben die Kompensation.*
 70. **Scharf erst nach** B2 (Einwilligung, Frist, Einordnung des Videos als
     besonders identifizierend), der DSFA mit dieser Verarbeitung (G14),
     OPS-001 (Edge Runtime für Punkt 49), OPS-003 (Sicherung des Buckets,
     Punkt 26) und dem ADR zum Prüfer (Punkt 69). Gebaut wird mit
     synthetischen Bildern und Videos aus der künstlichen Kamera von Chromium
     (Punkt 41).
+    *Vermerk 2026-10-15 (Fassung 6): „dem ADR zum Prüfer (Punkt 69)“ entfällt;
+    die übrigen Bedingungen bleiben.*
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -1578,3 +1599,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 3 | 2026-10-02 | **angenommen am selben Tag, Fragen 15 bis 22 wie empfohlen:** Abschnitt H (Punkte 43 bis 48) — drei Fotoarten, das Dokumentationsfoto gehört zur Akte (lit. h, zehn Jahre, Bucket `patientenakte`), der Widerruf wirkt nur auf Arbeitshilfen; **Umkehr von Punkt 35** für das Dokumentationsfoto (Fassungsregel, Entscheidung Jannes in der Abnahme, BEF-106). Abschnitt I (Punkte 49 bis 53) — Prüfung von Typ, Prüfsumme und Metadaten am Server in einer Edge Function, scharf mit OPS-001; sRGB vor dem Entfernen der Metadaten (BEF-105). Abschnitt J (Punkte 54 und 55) — Öffnen zeigt jede Datei in der Anwendung, Herunterladen ist ein eigener Knopf (BEF-059). Punkte 1 bis 42 bleiben stehen; Vermerke an 7, 15, 31, 32, 35, 36, 38. §5 der Prinzipien mit Version 0.20 nachgezogen |
 | 4 | 2026-10-09 | **Entschieden von Jannes in der Abnahme der Annahmen vom 2026-10-09:** Abschnitt K (Punkte 56 bis 58) — ein Foto aus der Dokumentation ist ohne Wahl ein Dokumentationsfoto, Erinnerung an Anmeldebogen und Rezept an ihrer Stelle (BEF-135); keine neue Arbeitshilfe, bestehende laufen aus, die Einwilligung zu Fotos wird nicht mehr angeboten; ein PDF öffnet im Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ, CSP `frame-src blob:` (BEF-133). Umkehr der Punkte 44 und — für PDF — 54, Vermerke an 43, 44, 54. §5 der Prinzipien mit Version 0.22 nachgezogen |
 | 5 | 2026-10-10 | **Angenommen am selben Tag, Fragen 23 bis 29 wie empfohlen:** Abschnitt L (Punkte 59 bis 70) — Foto und Video an einer Rückfrage im Nachsorge-Abo und im Training, eigene Einwilligung, Klasse `rueckfrageanhang` mit 30 Tagen, Aufnahme nur in der Anwendung ohne Ton, Antwort mit Zeitmarke ohne Bewegungsurteil, Virenprüfung als Bedingung des Scharfschaltens mit Schalter und eigenem ADR für den Prüfer. Schränkt für diese Anhänge die Punkte 14, 18, 29, 30, 37 und 42 ein, je mit Vermerk; §5 der Prinzipien mit Version 0.24 nachgezogen. Anlass: KOM-EPIC-002 |
+| 6 | 2026-10-15 | **Entschieden von Jannes:** Anhänge an Rückfragen ohne Virenprüfung. Umkehr von Punkt 29 (für Abschnitt L) und des Prüfergebnis-Satzes in Punkt 69, in Punkt 70 entfällt der ADR zum Prüfer; ADR-026 abgelehnt. Schalter `external_attachments_enabled` von selbst an (KOM-013). Alle übrigen Punkte, die Minderungen aus Punkt 69 und Punkt 29 für andere Uploads von außen bleiben |

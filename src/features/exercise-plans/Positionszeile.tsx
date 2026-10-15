@@ -1,11 +1,10 @@
 import { Badge } from '@/components/ui/Badge';
 import { ListRow } from '@/components/ui/ListRow';
-import { Vorschaubild } from '@/features/exercises/Vorschaubild';
 import type { Position } from './api';
 import { dosierungAlltag, dosierungFachlich, dosierungKurz } from './dosierung';
 
 /**
- * Eine Position als Zeile (Welle B): Vorschaubild, „1. Kniebeuge am Geländer",
+ * Eine Position als Zeile (Welle B): „1. Kniebeuge am Geländer",
  * darunter die Dosierung - kurz im Planeditor, ausführlich am zugewiesenen
  * Plan, in Alltagssprache so, wie die Person ihn liest (IDEA-QSN-002).
  *
@@ -54,12 +53,6 @@ export function Positionszeile({
   );
   return (
     <ListRow
-      bild={
-        <Vorschaubild
-          bild={position.illustration}
-          name={alltag ? position.variant_lay_name : position.variant_name}
-        />
-      }
       titel={`${position.position}. ${alltag ? position.variant_lay_name : position.variant_name}`}
       meta={meta}
       {...(position.variant_archived ? { status: <Badge ton="warnung">archiviert</Badge> } : {})}

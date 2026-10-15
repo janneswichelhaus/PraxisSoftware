@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { bildFeld } from './bild/schema';
 import { AUSGANGSSTELLUNGEN, ZIELE, type Katalogeintrag } from './katalog/typen';
 import { ACHSEN, KOERPERREGIONEN } from './types';
 
@@ -38,16 +37,15 @@ const varianteSchema = z.object({
   common_faults: z.string().nullable(),
   practice_notes: z.string().nullable(),
   archived: z.boolean(),
-  // UEB-012: Herkunft aus dem Katalog, Ordnungen, Standarddosierung, Bild und
-  // Prüfvermerk (ANN-381 bis ANN-386). Bei eigenen Varianten leer.
+  // UEB-012: Herkunft aus dem Katalog, Ordnungen, Standarddosierung und
+  // Prüfvermerk (ANN-382 bis ANN-386). Bei eigenen Varianten leer. Ein Bild
+  // gibt es nicht mehr (ANN-539).
   catalog_key: z.string().nullable().default(null),
   catalog_version: z.string().nullable().default(null),
   goal: z.enum(ZIELE).nullable().catch(null),
   starting_position: z.enum(AUSGANGSSTELLUNGEN).nullable().catch(null),
   level: z.number().int().min(1).max(3).nullable().catch(null),
   default_dosage: standarddosierungSchema.nullable().catch(null),
-  /** Ein ungültiges Bild wird zu `null` - lieber kein Bild als ein falsches. */
-  illustration: bildFeld,
   reviewed_at: z.string().nullable().default(null),
   reviewed_by_name: z.string().nullable().default(null),
 });

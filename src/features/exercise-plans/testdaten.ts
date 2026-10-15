@@ -7,7 +7,6 @@ import type { Position } from './api';
 
 /** Eine Position ohne Bild, ohne Halten, nicht je Seite, ohne Häufigkeit am Tag (ANN-384). */
 export const OHNE_ZUSATZ = {
-  illustration: null,
   hold_seconds: null,
   per_side: false,
   times_per_day: null,

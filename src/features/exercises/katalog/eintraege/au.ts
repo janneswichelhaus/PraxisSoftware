@@ -4,13 +4,12 @@ import type { Katalogeintrag } from '../typen';
  * Gruppe AU: Ausdauer.
  *
  * Gehen, Marschieren, Treppe und Bewegungstrainer - Ausdauer im Alltag der
- * Wohnung, ohne Geräte. Die Dauer ist ein vorsichtiger Startwert; ein
- * Bereich der Liste („5 bis 10 Minuten") steht als unterer Wert in der
- * Dosierung und als Spanne unter `hinweise_praxis`. AU-05 zeigt nur die
- * Ausgangsstellung (ANN-480): Den Bewegungstrainer kennt der Zeichner nicht,
- * und Radeln ohne Gerät sähe aus wie Marschieren; die Füße stehen wie auf
- * den Pedalen. Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis
- * ungeprüft (ANN-386); Vorsicht steht nur unter `hinweise_praxis`.
+ * Wohnung, ohne Geräte. Die Dauer ist ein vorsichtiger Startwert; ein Bereich
+ * der Liste („5 bis 10 Minuten") steht als unterer Wert in der Dosierung und
+ * als Spanne unter `hinweise_praxis`. Inhalt KI-erstellt und bis zur Durchsicht
+ * durch die Praxis ungeprüft (ANN-386). Keine Diagnose als Auswahlkriterium
+ * (ADR-006 Punkt 10) - eine Vorsicht steht als Satz unter `hinweise_praxis`.
+ * Ohne Zeichnung (ANN-539): Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -38,13 +37,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Intensität so wählen, dass sich die Person dabei noch unterhalten kann. Startwert 5 Minuten; die Dauer bis 10 Minuten im Plan anpassen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
-      ende: { huefte: [-12, 22], knie: [14, 4], schulter: [14, -14], ellbogen: [12, 12] },
-    },
   },
   {
     schluessel: 'AU-02',
@@ -71,13 +63,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Intensität so wählen, dass sich die Person dabei noch unterhalten kann. Startwert 20 Minuten an etwa fünf Tagen der Woche; die Dauer bis 30 Minuten im Plan anpassen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [26, -14], knie: [4, 18], schulter: [-18, 18], ellbogen: [14, 14] },
-      ende: { huefte: [-14, 26], knie: [18, 4], schulter: [18, -18], ellbogen: [14, 14] },
-    },
   },
   {
     schluessel: 'AU-03',
@@ -103,20 +88,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Intensität so wählen, dass sich die Person dabei noch unterhalten kann. Startwert 1 Minute je Durchgang; bis 2 Minuten im Plan anpassen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { schulter: [40, -10], ellbogen: [80, 80] },
-      ende: {
-        huefte: [118, 87],
-        knie: [118, 87],
-        fuss_flach: [false, true],
-        sprung: [10, 0],
-        schulter: [-10, 40],
-        ellbogen: [80, 80],
-      },
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'AU-04',
@@ -142,22 +113,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Intensität so wählen, dass sich die Person dabei noch unterhalten kann. Startwert 1 Minute je Durchgang; bis 2 Minuten im Plan anpassen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { rumpf: 12, huefte: [12, 12], haende: ['tisch', 'tisch'] },
-      ende: {
-        rumpf: 12,
-        huefte: [57, 12],
-        knie: [55, 0],
-        fuss_flach: [false, true],
-        sprung: [10, 0],
-        haende: ['tisch', 'tisch'],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 34 }],
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'AU-05',
@@ -183,12 +138,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Intensität so wählen, dass sich die Person dabei noch unterhalten kann. Startwert 10 Minuten; bis 20 Minuten im Plan anpassen. Den Widerstand des Geräts bei Bedarf als Last eintragen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { knie: [65, 100], sprung: [20, 0], fuss_flach: [false, false] },
-      ende: { knie: [65, 100], sprung: [20, 0], fuss_flach: [false, false] },
-    },
   },
   {
     schluessel: 'AU-06',
@@ -214,14 +163,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Intensität so wählen, dass sich die Person dabei noch unterhalten kann. Zuerst gemeinsam im Hausbesuch üben, mit sicherem Geländer und gutem Licht.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { rumpf: 6, huefte: [60, 6], knie: [75, 0], fuesse: ['stufe', null] },
-      ende: { stuetze: 'ferse_nah' },
-      hilfsmittel: [{ art: 'stufe', x: -12, stufen: 3 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'AU-07',
@@ -246,12 +187,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Luft wird angehalten.',
     ],
     hinweise_praxis: 'Startwert 30 Sekunden je Durchgang; bis 60 Sekunden im Plan anpassen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { schulter: [20, 20], ellbogen: [120, 120] },
-      ende: { schulter: [88, 20], ellbogen: [4, 120] },
-      bewegung: ['hand_nah'],
-    },
   },
 ];

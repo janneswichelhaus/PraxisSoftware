@@ -4,15 +4,10 @@ import type { Katalogeintrag } from '../typen';
  * Gruppe AF: Alltagsfunktionen und Transfers.
  *
  * Aufstehen, Hinsetzen, Treppe, Heben und Tragen - so, wie es im Alltag
- * vorkommt. AF-06 steht seitlich an der Arbeitsplatte wie die Gruppe GG
- * (zwei Tische Rücken an Rücken hinter der Person, die ferne Hand darauf)
- * und geht in die tiefe Hocke wie AF-07; der Gegenstand am Fuß erscheint als
- * Ball. Bei AF-09 steht statt des Stuhls ein Hocker: Der Stuhl steht im
- * Zeichner immer mit der Lehne zur Person, die Hände sollen aber von vorn
- * auf die Sitzfläche; die Anleitung nennt deshalb beide. Der Gegenstand
- * bei AF-07 erscheint als Ball, die Taschen bei AF-08 als Hanteln. Inhalt
- * KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft (ANN-386);
- * Vorsicht steht nur unter `hinweise_praxis`.
+ * vorkommt. Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis
+ * ungeprüft (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) -
+ * eine Vorsicht steht als Satz unter `hinweise_praxis`. Ohne Zeichnung
+ * (ANN-539): Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -40,19 +35,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Der Stuhl steht fest, am besten an der Wand. Ein höherer Sitz oder ein Kissen erleichtert den Anfang.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        sitz: 'stuhl',
-        rumpf: 32,
-        huefte: [120, 120],
-        knie: [100, 100],
-        haende: ['sitz', 'sitz'],
-      },
-      ende: {},
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'AF-02',
@@ -76,19 +58,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie fallen beim Aufstehen nach innen.',
       'Die Person lässt sich auf den Stuhl fallen.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        sitz: 'stuhl',
-        rumpf: 34,
-        huefte: [122, 122],
-        knie: [100, 100],
-        haende: ['brust', 'brust'],
-      },
-      ende: { haende: ['brust', 'brust'] },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'AF-03',
@@ -112,20 +81,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie fallen nach innen.',
       'Die Luft wird angehalten.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { schulter: [80, 76], ellbogen: [4, 4] },
-      ende: {
-        sitz: 'stuhl',
-        rumpf: 14,
-        huefte: [100, 100],
-        knie: [95, 95],
-        schulter: [86, 82],
-        ellbogen: [4, 4],
-      },
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'AF-04',
@@ -151,14 +106,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zuerst gemeinsam im Hausbesuch üben, mit sicherem Geländer und gutem Licht. Die Zahl der Stufen bei Bedarf als Last in der Dosierung eintragen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { rumpf: 6, huefte: [60, 6], knie: [75, 0], fuesse: ['stufe', null] },
-      ende: { stuetze: 'ferse_nah' },
-      hilfsmittel: [{ art: 'stufe', x: -12, stufen: 3 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'AF-05',
@@ -184,17 +131,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Welches Bein wie stark belastet werden darf und ob mit einer oder zwei Stützen, richtet sich nach der ärztlichen Vorgabe. Zuerst gemeinsam im Hausbesuch üben.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { rumpf: 6, huefte: [60, 6], knie: [75, 0], fuesse: ['stufe', null] },
-      ende: { stuetze: 'ferse_nah' },
-      hilfsmittel: [
-        { art: 'stufe', x: -12, stufen: 3 },
-        { art: 'gehstock', an: 'hand_fern' },
-      ],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'AF-06',
@@ -218,23 +154,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Gegenstand liegt zu weit vom Körper entfernt.',
       'Die Person kommt mit Schwung hoch.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { haende: [null, 'tisch'] },
-      ende: {
-        rumpf: 60,
-        huefte: [140, 140],
-        knie: [140, 140],
-        haende: ['boden', 'tisch'],
-      },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-        { art: 'ball', an: 'zehen_nah' },
-      ],
-      bewegung: ['hand_nah'],
-    },
   },
   {
     schluessel: 'AF-07',
@@ -260,20 +179,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei Osteoporose keine belastete, endgradige Beugung der Wirbelsäule. Das Gewicht des Gegenstands als Last in der Dosierung eintragen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        rumpf: 60,
-        huefte: [140, 140],
-        knie: [140, 140],
-        schulter: [28, 28],
-        ellbogen: [61, 61],
-      },
-      ende: { haende: ['bauch', 'bauch'] },
-      hilfsmittel: [{ art: 'ball', an: 'haende' }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'AF-08',
@@ -299,17 +204,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Das Gewicht der Taschen als Last in der Dosierung eintragen, etwa „je 2 kg“. Nur auf ebenem Weg ohne Stolperfallen.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [22, -12], knie: [4, 14], schulter: [0, 0], ellbogen: [6, 6] },
-      ende: { huefte: [-12, 22], knie: [14, 4], schulter: [0, 0], ellbogen: [6, 6] },
-      hilfsmittel: [
-        { art: 'hantel', an: 'hand_nah' },
-        { art: 'hantel', an: 'hand_fern' },
-      ],
-    },
   },
   {
     schluessel: 'AF-09',
@@ -336,21 +230,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zuerst gemeinsam im Hausbesuch üben. Den Ablauf für Stürze besprechen (Hausnotruf, Telefon in Reichweite). Ein Kissen unter den Knien schont die Kniescheiben.',
-    bild: {
-      v: 1,
-      basis: 'kniestand',
-      anker: 'knie_fern',
-      start: { rumpf: 35, huefte: [35, 35], schulter: [61, 61], ellbogen: [32, 32] },
-      ende: {
-        rumpf: 35,
-        huefte: [125, 35],
-        schulter: [61, 61],
-        ellbogen: [32, 32],
-        fuss_flach: [true, false],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'knie_fern'] },
-      },
-      hilfsmittel: [{ art: 'hocker', x: 75 }],
-      bewegung: ['knie_nah'],
-    },
   },
 ];

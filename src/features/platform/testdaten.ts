@@ -28,7 +28,6 @@ export function eigenerPlan(teil: Partial<EigenerPlan> = {}): EigenerPlan {
         variant_lay_name: 'Am Geländer in die Hocke',
         instruction: 'Festhalten.',
         equipment: ['Geländer'],
-        illustration: null,
         sets: 3,
         reps_min: 10,
         reps_max: 12,

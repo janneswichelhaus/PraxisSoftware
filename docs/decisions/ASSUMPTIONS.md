@@ -4504,7 +4504,9 @@ Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Jannes
 
 ### ANN-371 — Anhänge von außen hängen an einem Schalter je Organisation, der von selbst aus ist; nur der synthetische Seed und die Test-Umgebung schalten ihn ein
 
-Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Go-live-Vorbedingungen (ADR-007 Punkt 5); Datenschutzprüfung (B2)
+Datenschutz · entschieden (Jannes), Fassung 2 · 2026-10-15 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2), DSFA (G14)
+
+**Fassung 2 (Jannes, 2026-10-15): Standard an, ohne Virenprüfung.** „Ich möchte keinen Virenscanner und trotzdem Bilder und Videos von Patienten zulassen.“ Der Schalter bleibt, steht aber von selbst und in jeder bestehenden Organisation auf an (KOM-013); aus nur von Hand in der Datenbank. ADR-017 Fassung 6 kehrt Punkt 29 und 69 dafür um, ADR-026 ist abgelehnt. Kompensation bleiben Einwilligung, Aufnahme nur in der Anwendung, Format- und Signaturprüfung am Server, Anzeige ohne Download, 30 Tage Frist und die Kennzeichnung „nicht auf Schadsoftware geprüft“. Anker: `supabase/migrations/20261117100000_kom_013_anhaenge_ohne_virenpruefung.sql`. Der Text darunter ist Fassung 1.
 
 **Annahme.** Ob Patient:innen und Kund:innen Fotos und Videos an Rückfragen anhängen können, entscheidet die Spalte `organizations.external_attachments_enabled`, **Standard aus**. Ist sie aus, bietet die Plattform keine Aufnahme und keine Einwilligungsfrage dazu an (`can_attach` falsch), und die Vorbereitung eines Uploads wird abgewiesen – im Training wie im Nachsorge-Abo. Die Rückfrage in Worten bleibt; vorhandene Anhänge bleiben bis zu ihrer Frist sichtbar und löschbar. Eingeschaltet ist sie nur in der synthetischen Testpraxis des Seeds und – über die Migration – in einer Datenbank mit der Kennung der Test-Umgebung (ANN-100). Keine Funktion und kein Tabellenrecht ändern sie; einschalten mit echten Daten ist ein bewusster Schritt von Jannes im Go-live-Gate, erst mit einem Prüfer nach ADR-026.
 
@@ -4528,7 +4530,9 @@ Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
 
 ### ANN-381 — Ein Übungsbild ist eine Posen-Beschreibung (jsonb, Fassung 1, höchstens 4 KB), die der Code zeichnet; sie wird beim Zuweisen eingefroren
 
-Technik · offen · 2026-10-13 · — · — · Wiedervorlage: Sichtung Übungen
+Technik · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-15):** keine KI-Bilder. Es gilt ANN-539; Zeichner und Posenformat sind entfernt, die Datenbank nimmt nur noch `null` an.
 
 **Annahme.** Keine Datei und keine Ablage (ADR-017 Punkt 4): Grundstellung plus Winkel; der Zeichner rechnet Bodenkontakt, Griffe und Ausschnitt. Maße und Grundstellungen gehören zur Fassung und ändern sich nur mit `v: 2`. Ungültig wird zu „kein Bild".
 
@@ -4870,7 +4874,9 @@ Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sicht
 
 ### ANN-466 — Übung auf der Plattform: fester Bildplatz, Dosierung als Kacheln
 
-Oberfläche · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Design-Rollout)
+Oberfläche · geändert · 2026-10-15 · Jannes · — · Wiedervorlage: —
+
+**Geändert (Jannes, 2026-10-15):** Der feste Bildplatz entfällt mit den Zeichnungen (ANN-539); die Kacheln der Dosierung stehen oben, darunter die Anleitung in Schritten.
 
 **Annahme.** Jede Übung hat einen festen Bildplatz: in der Liste `Medienbild vorschau` (56 px), in Übung und Durchführung `Medienbild` 4:3, solange ohne Bild mit Platzhalter. Die Dosierung steht als höchstens vier Kacheln (Durchgänge, Wiederholungen oder Dauer, Pause, womit), Tempo und Steigerungsregel als Zeilen. Die Liste öffnet die Übung im Fenster.
 
@@ -5004,7 +5010,9 @@ Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-480 — Ein Übungsbild mit gleichem Start und Ende und ohne Bewegung zeigt die Ausgangsstellung
 
-Praxisprozess · offen · 2026-10-13 · — · — · Wiedervorlage: Jannes (Sichtung Übungen)
+Praxisprozess · verworfen · 2026-10-15 · Jannes · — · Wiedervorlage: —
+
+**Verworfen (Jannes, 2026-10-15):** Es gibt keine Zeichnung mehr (ANN-539).
 
 **Annahme.** Was eine Seiten- oder Frontansicht nicht zeigen kann (Drehung aus der Bildebene, Hand und Finger, Atmung, Halten), bekommt statt eines falschen Bewegungsbilds die Ausgangsstellung: richtige Grundstellung und Hilfsmittel, `start` gleich `ende`, keine `bewegung`. `Uebungsbild` zeigt sie in „Start und Ende“ und „Bewegung“ als eine Figur mit der Unterschrift „Ausgangsstellung“, ohne Knopf; die Vorschau bleibt.
 
@@ -5557,3 +5565,28 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes (bestätigt 2026-10-
 **Anker.** `standZeile` in `src/features/exercise-plans/fassung.ts`.
 
 **Änderungspfad.** Nummer als Spalte führen: Migration mit Datenumzug · Aufwand `mittel`.
+
+### ANN-539 — Übungen haben keine Zeichnung; die Anleitung in nummerierten Schritten erklärt sie, bis die Praxis eigene Bilder und Videos dreht
+
+Praxisprozess · entschieden (Jannes) · 2026-10-15 · Jannes · — · Wiedervorlage: wenn die ersten eigenen Bilder oder Videos vorliegen
+
+**Annahme.** Weder Katalog noch Bibliothek noch Plan tragen ein Bild. Die Übungsseite der Praxis, das Auswahlblatt, die Planzeilen, die Übung auf der Plattform und das Planblatt zeigen Dosierung, Anleitung als nummerierte Schritte (je Zeile ein Schritt, `Schrittliste`), Hilfsmittel und Hinweis. Die Spalten `illustration` bleiben leer stehen.
+
+**Begründung.** Jannes: „Ich möchte keine KI-Bilder“; er dreht Bilder und Videos selbst. Ein Platzhalter „Noch kein Bild“ an 196 Übungen wäre Lärm. Eigene Medien wären Dateien (ADR-017), kein Posenformat.
+
+**Anker.** `app.exercise_illustration_valid` (nur `null`) in `supabase/migrations/20261117110000_ueb_013_uebungen_ohne_zeichnung.sql`; `src/components/ui/Schrittliste.tsx`.
+
+**Änderungspfad.** Eigene Fotos/Videos je Übung: Dateiart nach ADR-017 mit eigener Fassung, Anzeige über `Medienbild`, Spalten `illustration` entfernen · Aufwand `groß`.
+
+### ANN-541 — Umsatzsteuer: Heilbehandlung frei nur mit Nachweis, Training und Abo 19 %, Hinweis nach § 34a UStDV
+
+Recht · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4, G13) vor dem ersten echten Rechnungslauf
+
+**Annahme.** Heilbehandlung, Hausbesuch als Nebenleistung und Wärmetherapie sind frei nach § 4 Nr. 14 a UStG, wenn eine Verordnung den therapeutischen Zweck belegt. Ausfallhonorar ist nicht steuerbar. Abo, Personal Training und Pakete tragen 19 %. Unter § 19 lautet der Hinweis „Steuerbefreiung für Kleinunternehmer gemäß § 19 Abs. 1 UStG“.
+
+**Begründung.** UStAE 4.14.1 Abs. 4 und 5, FG Düsseldorf 1 K 2249/17 U, UStAE 1.3 Abs. 1, BFH V R 13/19, § 34a UStDV. Offen: Behandlung ohne Verordnung trägt wohl 19 %; die App kennt dafür kein eigenes Kennzeichen.
+
+**Anker.** `KLEINUNTERNEHMER_HINWEIS` in `src/features/billing/api.ts`.
+
+**Änderungspfad.** Kennzeichen je Behandlungsgrundlage (mit/ohne Verordnung): Migration an der Rechnungsposition · Aufwand `mittel`.
+

@@ -306,7 +306,8 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     expect(await code(vorbereiten(erika, frage))).toBe('42501');
     // Was schon da ist, bleibt bis zu seiner Frist sichtbar.
     expect((await ansicht(tina)).messages[0]!.attachments[0]!.id).toBe(vorher.attachment_id);
-    // Eine neue Organisation hat ihn von selbst aus; niemand ändert ihn über die Anwendung.
+    // Eine neue Organisation hat ihn von selbst an (KOM-013, ADR-017 Fassung 6);
+    // niemand ändert ihn über die Anwendung.
     const fremd = await fremdeOrganisation();
     const { rows } = await asPostgres<{ an: boolean; aendern: boolean; lesen: boolean }>(
       `select o.external_attachments_enabled as an,
@@ -317,7 +318,7 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
        from public.organizations o where o.id = $1`,
       [fremd.organizationId],
     );
-    expect(rows).toEqual([{ an: false, aendern: false, lesen: false }]);
+    expect(rows).toEqual([{ an: true, aendern: false, lesen: false }]);
   });
 
   it('die Begleitung hängt nichts an und sieht nichts davon (Punkt 67)', async () => {

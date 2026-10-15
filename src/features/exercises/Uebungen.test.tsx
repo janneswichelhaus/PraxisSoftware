@@ -140,7 +140,6 @@ const STRECKUNG: Api.Uebung = {
         per_side: true,
         times_per_day: 1,
       },
-      illustration: KN01.bild ?? null,
     },
   ],
 };
@@ -209,7 +208,7 @@ beforeEach(() => {
   setzePruefvermerk.mockResolvedValue(undefined);
 });
 
-describe('UebungenPage (UEB-001, Welle B: Liste mit Bildern)', () => {
+describe('UebungenPage (UEB-001, Welle B: Liste)', () => {
   it('zeigt die Übungen mit Region, Ziel und Niveau', async () => {
     fetchBibliothek.mockResolvedValue(bibliothek(false, true));
     renderWithProviders(<UebungenPage user={testUser(['therapist'])} />);
@@ -219,8 +218,8 @@ describe('UebungenPage (UEB-001, Welle B: Liste mit Bildern)', () => {
     const katalog = screen.getByRole('link', { name: (name) => name.startsWith(KN01.name) });
     // ANN-386: leise in der Zeile, kein Abzeichen.
     expect(katalog).toHaveTextContent('Knie · Kraft · Leicht, mit Halt · ungeprüft');
-    // Ein Vorschaubild je Zeile - die Zeichnung, ohne Text für Vorlesesoftware.
-    expect(katalog.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    // Keine Zeichnung in der Zeile (ANN-539).
+    expect(katalog.querySelector('svg')).toBeNull();
   });
 
   it('legt archivierte Übungen in einen eigenen, zugeklappten Bereich', async () => {
@@ -358,23 +357,14 @@ describe('UebungenPage (UEB-001, Welle B: Liste mit Bildern)', () => {
 });
 
 describe('UebungAnsicht (UEB-001, Welle B: Objektseite)', () => {
-  it('zeigt Bild, Standarddosierung, Anleitung in Schritten, Fehler und Hinweise', async () => {
+  it('zeigt Standarddosierung, Anleitung in Schritten, Fehler und Hinweise - ohne Zeichnung', async () => {
     fetchBibliothek.mockResolvedValue(bibliothek(false, true));
     renderWithProviders(<UebungAnsicht user={testUser(['trainer'])} uebungId="u5" />);
     expect(await screen.findByRole('heading', { level: 1, name: KN01.name })).toBeInTheDocument();
     expect(screen.getByText(`${KN01.alltagsname} · Knie`)).toBeInTheDocument();
-    // Das Bild: Bewegung im Rahmen, abspielen nur auf Tippen, darunter Start und Ende.
-    expect(
-      screen.getByRole('img', {
-        name: `${KN01.alltagsname}: Bewegung von der Ausgangs- zur Endstellung`,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /Bewegung abspielen|Endstellung zeigen/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('img', { name: `${KN01.alltagsname}: Ausgangsstellung` }),
-    ).toBeInTheDocument();
+    // Keine Zeichnung (ANN-539): Bilder und Videos dreht die Praxis selbst.
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(screen.getByText(/Text KI-erstellt\./)).toBeInTheDocument();
     // Standarddosierung als Kacheln (ANN-384).
     const kacheln = screen.getByRole('heading', { name: 'Standarddosierung' }).closest('section')!;
     expect(within(kacheln).getByText('Sätze').nextSibling).toHaveTextContent('3');

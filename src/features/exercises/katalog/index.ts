@@ -21,7 +21,7 @@ import type { Gruppe, Katalogeintrag } from './typen';
  * Bibliothek (`import_exercise_catalog`, nur owner, ANN-293); ab dann ist es
  * ihre Bibliothek, und ein späterer Import überschreibt nichts.
  *
- * Inhalt und Bilder sind KI-erstellt und gelten bis zur Durchsicht durch die
+ * Der Inhalt ist KI-erstellt und gilt bis zur Durchsicht durch die
  * Praxis als ungeprüft (ANN-386): Gebaut wird mit synthetischen Daten, der
  * Einsatz bei echten Patient:innen wartet auf die Durchsicht (§15.2).
  *

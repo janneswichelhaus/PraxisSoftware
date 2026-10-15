@@ -7,18 +7,8 @@ import type { Katalogeintrag } from '../typen';
  * die Fachperson (ADR-006 Punkt 10). Wo Stand oder Gehen im Spiel ist, nennt
  * die Anleitung den Halt oder den freien Weg.
  *
- * Bilder wie in `gg.ts`: Die Arbeitsplatte steht vor der Person oder - beim
- * Gehen und in der Vorderansicht - hinter ihr. Greifen mit Gegenständen,
- * Fingerarbeit und Drehungen um die eigene Achse zeigen nur die
- * Ausgangsstellung (ANN-480): NE-05 und NE-06 aufrecht im Sitz mit den
- * Händen auf den Oberschenkeln, ohne Tisch wie die Gruppe EH - der Tisch des
- * Zeichners ist eine Arbeitsplatte (90 cm) und stünde im Sitz auf
- * Schulterhöhe; das verleitete zum Hochziehen der Schulter. Becher, Münzen
- * und Knöpfe kennt der Zeichner nicht. NE-11 steht im Schritt mit dem Stuhl
- * in Reichweite hinter der Person.
- *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
- * (ANN-386).
+ * (ANN-386). Ohne Zeichnung (ANN-539): Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -46,13 +36,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zu Beginn sichert die Fachperson oder eine angeleitete Person auf der Seite, zu der verlagert wird.',
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { rumpf: -6, kopf: 6, bein: [12, 0], knie: [70, 90], haende: ['sitz', 'sitz'] },
-      ende: { rumpf: 6, kopf: -6, bein: [0, 12], knie: [90, 70], haende: ['sitz', 'sitz'] },
-      bewegung: ['schulter'],
-    },
   },
   {
     schluessel: 'NE-02',
@@ -78,19 +61,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zu Beginn sichert die Fachperson oder eine angeleitete Person auf der Seite, zu der gegriffen wird.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { schulter: [87, 14], ellbogen: [4, 62], haende: [null, 'sitz'] },
-      ende: {
-        rumpf: 25,
-        huefte: [115, 115],
-        schulter: [120, 14],
-        ellbogen: [4, 62],
-        haende: [null, 'sitz'],
-      },
-      bewegung: ['hand_nah'],
-    },
   },
   {
     schluessel: 'NE-03',
@@ -116,14 +86,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei schmerzhafter oder instabiler Schulter nur bis Schulterhöhe und ohne Zug am Arm; die Höhe vor Ort festlegen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { haende: ['tisch', 'tisch'] },
-      ende: { schulter: [92, 92], ellbogen: [4, 4] },
-      hilfsmittel: [{ art: 'tisch', x: 40 }],
-      bewegung: ['hand_nah'],
-    },
   },
   {
     schluessel: 'NE-04',
@@ -148,14 +110,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper macht die Bewegung, der Arm bleibt fast still.',
       'Die Kreise werden klein und hastig.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { haende: ['tisch', 'tisch'] },
-      ende: { rumpf: 10, huefte: [100, 100], schulter: [90, 90], ellbogen: [4, 4] },
-      hilfsmittel: [{ art: 'tisch', x: 40 }],
-      bewegung: ['hand_nah'],
-    },
   },
   {
     schluessel: 'NE-05',
@@ -181,12 +135,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Steigerung über den Abstand, über Wasser im Becher oder über kleinere Gegenstände.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { haende: ['oberschenkel', 'oberschenkel'] },
-      ende: { haende: ['oberschenkel', 'oberschenkel'] },
-    },
   },
   {
     schluessel: 'NE-06',
@@ -212,12 +160,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Kleine Gegenstände nur, wenn kein Risiko besteht, dass sie in den Mund genommen werden; sonst größere wie Wäscheklammern wählen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { haende: ['oberschenkel', 'oberschenkel'] },
-      ende: { haende: ['oberschenkel', 'oberschenkel'] },
-    },
   },
   {
     schluessel: 'NE-07',
@@ -241,16 +183,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper lehnt sich nach hinten.',
       'Die Bewegung wird schnell und ungenau.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: {
-        knie: [22, 87],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'NE-08',
@@ -276,18 +208,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Zu Beginn gemeinsam üben; Angehörige können beim Hausbesuch angeleitet werden, seitlich zu sichern.',
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      anker: 'knoechel_nah',
-      start: { arm: [22, 22] },
-      ende: { bein: [-5.3, 11.3], arm: [22, 22] },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'NE-09',
@@ -311,25 +231,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Gewicht bleibt auf dem hinteren Bein.',
       'Der Oberkörper kippt nach vorn.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { haende: [null, 'tisch'] },
-      ende: {
-        huefte: [25, -10],
-        knie: [5, 0],
-        fuss_flach: [false, true],
-        sprung: [-15, 0],
-        loesen: { winkel: 'huefte_fern', gleich: ['ferse_nah', 'ferse_fern'] },
-        haende: [null, 'tisch'],
-      },
-      hilfsmittel: [
-        { art: 'tisch', x: 0 },
-        { art: 'tisch', x: -0.1 },
-      ],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'NE-10',
@@ -355,21 +256,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Takt als Hilfe (laut zählen, Musik). Bei Sturzgefahr zuerst mit Begleitung oder an einer Wand entlang üben.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: {},
-      ende: {
-        huefte: [25, -15],
-        knie: [5, 10],
-        sprung: [5, 20],
-        schulter: [-30, 35],
-        ellbogen: [10, 20],
-        loesen: { winkel: 'sprung_fern', gleich: ['zehen_fern', 'ferse_nah'] },
-      },
-      bewegung: ['knoechel_nah', 'hand_fern'],
-    },
   },
   {
     schluessel: 'NE-11',
@@ -395,14 +281,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Füße bleiben am Boden haften.',
     ],
     hinweise_praxis: 'Bei Sturzgefahr zuerst mit Begleitung üben.',
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'becken',
-      start: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
-      ende: { huefte: [22, -12], knie: [4, 14], schulter: [-14, 14], ellbogen: [12, 12] },
-      hilfsmittel: [{ art: 'stuhl', x: -50 }],
-    },
   },
   {
     schluessel: 'NE-12',
@@ -426,12 +304,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Rücken bleibt rund.',
       'Die Luft wird angehalten.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: {},
-      ende: { arm: [135, 135], ellbogen: [0, 0] },
-      bewegung: ['hand_nah', 'hand_fern'],
-    },
   },
 ];

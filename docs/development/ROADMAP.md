@@ -27,7 +27,7 @@ und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
 | 2 | **Restbefunde der Praxis-Prüfung** — gebaut (PR #240) | Letzten Eintrag übernehmen, Absage in 4 Tipps, Material und letzte Doku an der Karte, Übung aus der Bibliothek zuweisen | K3, K6, K9 |
 | 3 | **Erstaufnahme geführt** | Verordnungsfoto, Bogen, Einwilligungen, Befund, Liege — nichts vergessen | K10, K11 |
 | 4 | **Monatsabrechnung in einem Lauf** | Leistungen, Rechnungen, Zahlungseingang als Sammellauf | K13, K14 |
-| 5 | **Übungen, zweite Runde** | Durchsicht des Katalogs, eigene Vorlagen, Fassung 2 der Figur | K12 |
+| 5 | **Übungen, zweite Runde** | Durchsicht des Katalogs, eigene Vorlagen; eigene Bilder und Videos der Praxis, sobald es sie gibt (Zeichnungen entfallen seit 2026-10-15, ANN-539) | K12 |
 
 Die Kette unten bleibt gültig; ihre offenen Epics (ab ALT-EPIC-002) folgen nach den
 Überholungen oder werden in die passende Überholung gezogen, wenn sie denselben Bereich
@@ -881,7 +881,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
 | E | ADR-023 Plattformzugang | gesichtet | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen); Fassung 2 am selben Tag |
 | E | ADR-024 Offline und Benachrichtigungen | gesichtet | 2026-10-11 | docs/adr/ADR-024-offline-and-notifications.md | — | angenommen 2026-10-11: W1 (c) mit Freigabe ohne Netz per Passkey, W2 bis W5 wie empfohlen; Prinzipien 0.26, ADR-025 Fassung 4 |
-| E | ADR-026 Virenprüfung der Anhänge | entwurf | 2026-10-12 | docs/adr/ADR-026-malware-scanning.md | — | zurückgestellt 2026-10-12 (Jannes): vorerst keine Virenprüfung; mit echten Daten keine Anhänge von außen (ADR-017 Punkte 29, 69) |
+| E | ADR-026 Virenprüfung der Anhänge | entwurf | 2026-10-12 | docs/adr/ADR-026-malware-scanning.md | — | abgelehnt 2026-10-15 (Jannes): keine Virenprüfung; Anhänge von außen trotzdem zugelassen (ADR-017 Fassung 6) |
 | E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->

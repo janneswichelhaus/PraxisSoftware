@@ -1,4 +1,3 @@
-import type { Uebungsbild } from '../bild/schema';
 import type { Koerperregion } from '../types';
 
 /**
@@ -180,8 +179,6 @@ export interface Katalogeintrag {
   fehler: readonly string[];
   /** Vorsicht und Abgrenzung, nur zum Nachlesen - nie Filter. */
   hinweise_praxis?: string;
-  /** Die Posen-Beschreibung; fehlt sie, bleibt die Übung ohne Bild. */
-  bild?: Uebungsbild;
 }
 
 /** Eine mitgelieferte Zusammenstellung - nach Thema benannt, ohne Person. */

@@ -41,16 +41,16 @@ async function hoehe(page: Page, name: string): Promise<number> {
 
 test.describe('Übungsbibliothek', () => {
   for (const breite of [375, 1280]) {
-    test(`Liste mit Bildern, Suche und Filterchips bei ${breite} px`, async ({ page }) => {
+    test(`Liste, Suche und Filterchips bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(PRUEFSEITE);
 
       await expect(page.getByRole('heading', { level: 1, name: 'Übungen' })).toBeVisible();
       await expect(page.getByRole('link', { name: /^Kniebeuge/ })).toBeVisible();
-      // Jede Zeile ist ein Ziel von mindestens 44 px, mit Vorschaubild davor.
+      // Jede Zeile ist ein Ziel von mindestens 44 px, ohne Zeichnung (ANN-539).
       const zeile = page.getByRole('link', { name: /^Kniestreckung im Sitz/ });
       expect((await zeile.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
-      await expect(zeile.locator('svg').first()).toBeVisible();
+      await expect(zeile.locator('svg')).toHaveCount(0);
       await expect(zeile).toContainText('Knie · Kraft · Leicht, mit Halt · ungeprüft');
 
       // Suche auch ohne Umlaute.
@@ -85,30 +85,21 @@ test.describe('Übungsbibliothek', () => {
       expect(await axeVerstoesse(page)).toEqual([]);
     });
 
-    test(`Katalogübung mit Bild, Dosierung und Anleitung bei ${breite} px`, async ({ page }) => {
+    test(`Katalogübung mit Dosierung und Anleitung, ohne Zeichnung, bei ${breite} px`, async ({
+      page,
+    }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?seite=katalog&rolle=owner`);
       await expect(
         page.getByRole('heading', { level: 1, name: 'Kniestreckung im Sitz (Long Arc Quad)' }),
       ).toBeVisible();
-      await expect(
-        page.getByRole('img', {
-          name: 'Im Sitz das Knie strecken: Bewegung von der Ausgangs- zur Endstellung',
-        }),
-      ).toBeVisible();
-      await expect(
-        page.getByRole('img', { name: 'Im Sitz das Knie strecken: Ausgangsstellung' }),
-      ).toBeVisible();
+      // Keine Zeichnung (ANN-539): die Anleitung in Schritten erklärt die Übung.
+      await expect(page.locator('main').getByRole('img')).toHaveCount(0);
       await expect(page.getByText('je Seite, 3 s halten')).toBeVisible();
       await expect(page.getByText('Schritt 1:', { exact: false }).first()).toBeAttached();
       for (const name of ['Bearbeiten', 'Als durchgesehen markieren', 'Variante anlegen']) {
         expect(await hoehe(page, name)).toBeGreaterThanOrEqual(44);
       }
-      // Abspielen nur auf Tippen; bei reduzierter Bewegung der Wechsel der Stellung.
-      await page
-        .getByRole('button', { name: /Bewegung abspielen|Endstellung zeigen/ })
-        .first()
-        .click();
       for (const zusammenfassung of await page.locator('summary').all()) {
         await zusammenfassung.click();
       }

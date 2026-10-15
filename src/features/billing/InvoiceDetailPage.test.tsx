@@ -145,7 +145,9 @@ describe('InvoiceDetailPage', () => {
       '/abrechnung/rechnungen/r1',
     );
 
-    expect(await screen.findByText(/§ 19 UStG/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Steuerbefreiung für Kleinunternehmer gemäß § 19 Abs. 1 UStG/),
+    ).toBeInTheDocument();
   });
 
   it('nennt den Grund der Steuerbefreiung an der steuerfreien Gruppe (BEF-019)', async () => {

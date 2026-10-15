@@ -53,10 +53,11 @@ describe('Reiter Übungen (UEB-009)', () => {
     // Je Übung eine Zeile: Name und Dosierung in Worten (ANN-466).
     const zeile = screen.getByRole('button', { name: /1\. Am Geländer in die Hocke/ });
     expect(zeile).toHaveTextContent('3 Durchgänge · je 10 bis 12 Wiederholungen');
-    // Ein Tipp öffnet die Übung: Bildplatz, Dosierung als Kacheln, Anleitung, Hinweis.
+    // Ein Tipp öffnet die Übung: Dosierung als Kacheln, Anleitung, Hinweis -
+    // ohne Zeichnung und ohne Bildplatz (ANN-539).
     await user.click(zeile);
     const fenster = screen.getByRole('dialog', { name: 'Am Geländer in die Hocke' });
-    expect(within(fenster).getByRole('img', { name: /Noch kein Bild/ })).toBeInTheDocument();
+    expect(within(fenster).queryByRole('img')).not.toBeInTheDocument();
     const kacheln = within(fenster)
       .getAllByRole('term')
       .map((t) => `${t.textContent} ${t.nextElementSibling?.textContent}`);

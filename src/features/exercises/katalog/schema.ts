@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { BILD_HOECHSTENS_BYTES, bildBytes, uebungsbildSchema } from '../bild/schema';
 import { KOERPERREGIONEN, NAME_HOECHSTENS, TEXT_HOECHSTENS } from '../types';
 import {
   AUSGANGSSTELLUNGEN,
@@ -76,7 +75,6 @@ export const katalogeintragSchema = z
     anleitung: z.array(satz).min(3).max(5),
     fehler: z.array(satz).min(1).max(5),
     hinweise_praxis: text(TEXT_HOECHSTENS).optional(),
-    bild: uebungsbildSchema.optional(),
   })
   .strict()
   .refine(
@@ -90,11 +88,7 @@ export const katalogeintragSchema = z
   .refine((e) => {
     const alle = [...e.hilfsmittel, ...(e.hilfsmittel_optional ?? [])];
     return alle.length <= 8 && new Set(alle).size === alle.length;
-  }, 'Hilfsmittel höchstens acht, keines doppelt')
-  .refine(
-    (e) => e.bild === undefined || bildBytes(e.bild) <= BILD_HOECHSTENS_BYTES,
-    'Bild zu groß',
-  );
+  }, 'Hilfsmittel höchstens acht, keines doppelt');
 
 /** Eine mitgelieferte Zusammenstellung: Name, Ziel, Schlüssel mit optionaler Dosierung. */
 export const katalogvorlageSchema = z

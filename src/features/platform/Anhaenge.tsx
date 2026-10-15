@@ -201,7 +201,7 @@ export function AnhaengeAbschnitt({
       ) : null}
       {ungeprueft ? (
         <p className="text-ink-muted mt-2 text-sm">
-          Testbetrieb: Aufnahmen werden noch nicht auf Schadsoftware geprüft.
+          Aufnahmen werden nicht auf Schadsoftware geprüft.
         </p>
       ) : null}
 

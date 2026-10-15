@@ -5,16 +5,8 @@ import type { Katalogeintrag } from '../typen';
  *
  * Inhalt KI-erstellt und bis zur Durchsicht durch die Praxis ungeprüft
  * (ANN-386). Keine Diagnose als Auswahlkriterium (ADR-006 Punkt 10) - eine
- * Vorsicht steht als Satz unter `hinweise_praxis`.
- *
- * Übungen, die in den Zehen oder im Fußgewölbe spielen oder Kreise und
- * Buchstaben schreiben, zeigen nur die Ausgangsstellung (ANN-480): Der Fuß
- * der Linienfigur ist ein Stück. Das Handtuch bei FU-07 liegt unter der
- * Sohle (ein Handtuch vor den Zehen am Boden wäre eine neue Fassung), der
- * Ball bei FU-11 vor dem Fuß. FU-12 zeigt die Variante mit dem Handtuch wie
- * FU-09 mit dem Band: Bein vorgestreckt, Ferse am Boden, das Handtuch vom
- * Vorfuß zu den Händen. Den Fuß auf dem anderen Knie kann die Seitenansicht
- * nicht zeigen, er läge quer zur Blickrichtung.
+ * Vorsicht steht als Satz unter `hinweise_praxis`. Ohne Zeichnung (ANN-539):
+ * Die Anleitung erklärt die Übung allein.
  */
 export const EINTRAEGE: readonly Katalogeintrag[] = [
   {
@@ -39,20 +31,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Fersen fallen schnell zurück.',
       'Die Hände ziehen den Körper nach oben.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { haende: ['tisch', 'tisch'] },
-      ende: {
-        rumpf: 8,
-        huefte: [8, 8],
-        sprung: [30, 30],
-        fuss_flach: [false, false],
-        haende: ['tisch', 'tisch'],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 17 }],
-      bewegung: ['ferse_nah'],
-    },
   },
   {
     schluessel: 'FU-02',
@@ -76,27 +54,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Hände ziehen den Körper nach oben.',
       'Das Knie des Standbeins beugt sich.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        huefte: [0, 10],
-        knie: [0, 75],
-        sprung: [0, 20],
-        fuss_flach: [true, false],
-        haende: ['tisch', 'tisch'],
-      },
-      ende: {
-        rumpf: 8,
-        huefte: [8, 18],
-        knie: [0, 75],
-        sprung: [30, 20],
-        fuss_flach: [false, false],
-        haende: ['tisch', 'tisch'],
-      },
-      hilfsmittel: [{ art: 'tisch', x: 17 }],
-      bewegung: ['ferse_nah'],
-    },
   },
   {
     schluessel: 'FU-03',
@@ -116,13 +73,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     fehler: ['Die Fersen fallen schnell zurück.', 'Der Oberkörper schaukelt mit.'],
     hinweise_praxis: 'Steigerung, indem die Hände auf den Knien leicht nach unten drücken.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: { huefte: [98, 98], knie: [98, 98], sprung: [35, 35], fuss_flach: [false, false] },
-      bewegung: ['ferse_nah'],
-    },
   },
   {
     schluessel: 'FU-04',
@@ -145,14 +95,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Fußspitzen fallen schnell zurück.',
       'Die Hände ziehen den Körper nach vorn.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: { haende: ['tisch', 'tisch'] },
-      ende: { sprung: [-20, -20], fuss_flach: [false, false], haende: ['tisch', 'tisch'] },
-      hilfsmittel: [{ art: 'tisch', x: 19 }],
-      bewegung: ['zehen_nah'],
-    },
   },
   {
     schluessel: 'FU-05',
@@ -172,26 +114,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Halten Sie die Dehnung in der hinteren Wade ruhig und atmen Sie weiter.',
     ],
     fehler: ['Die hintere Ferse hebt ab.', 'Der hintere Fuß dreht nach außen.', 'Es wird gewippt.'],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        rumpf: 5,
-        huefte: [-10, 25],
-        knie: [0, 12],
-        haende: ['wand', 'wand'],
-        loesen: { winkel: 'knie_fern', gleich: ['knoechel_nah', 'knoechel_fern'] },
-      },
-      ende: {
-        rumpf: 8,
-        huefte: [-16, 36.5],
-        knie: [0, 47],
-        haende: ['wand', 'wand'],
-        loesen: { winkel: 'knie_fern', gleich: ['knoechel_nah', 'knoechel_fern'] },
-      },
-      hilfsmittel: [{ art: 'wand', x: 85 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'FU-06',
@@ -215,24 +137,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das hintere Knie bleibt gestreckt, dann dehnt sich vor allem die obere Wade.',
       'Es wird gewippt.',
     ],
-    bild: {
-      v: 1,
-      basis: 'stand',
-      start: {
-        huefte: [-10, 10],
-        haende: ['wand', 'wand'],
-        loesen: { winkel: 'huefte_fern', gleich: ['knoechel_nah', 'knoechel_fern'] },
-      },
-      ende: {
-        rumpf: 8,
-        huefte: [18, 34.7],
-        knie: [35, 26],
-        haende: ['wand', 'wand'],
-        loesen: { winkel: 'knie_fern', gleich: ['knoechel_nah', 'knoechel_fern'] },
-      },
-      hilfsmittel: [{ art: 'wand', x: 70 }],
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'FU-07',
@@ -255,13 +159,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Ferse hebt vom Boden ab.',
       'Der Fuß wird als Ganzes zurückgezogen, statt mit den Zehen zu greifen.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'handtuch', von: 'ferse_nah', nach: 'zehen_nah' }],
-    },
   },
   {
     schluessel: 'FU-08',
@@ -287,7 +184,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Bewegung ist klein und braucht meist eine gemeinsame Anleitung im Hausbesuch, anfangs mit Blick auf den Fuß.',
-    bild: { v: 1, basis: 'sitz', start: {}, ende: {} },
   },
   {
     schluessel: 'FU-09',
@@ -313,26 +209,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“. Die Wiederholungen gelten je Richtung. Für das Heben der Fußspitze das Band vorn an einem Tischbein befestigen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {
-        knie: [8, 87],
-        sprung: [-5, 0],
-        fuss_flach: [false, true],
-        haende: ['brust', 'brust'],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      ende: {
-        knie: [8, 87],
-        sprung: [35, 0],
-        fuss_flach: [false, true],
-        haende: ['brust', 'brust'],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      hilfsmittel: [{ art: 'band', von: 'zehen_nah', nach: 'hand_nah' }],
-      bewegung: ['zehen_nah'],
-    },
   },
   {
     schluessel: 'FU-10',
@@ -355,22 +231,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das ganze Bein bewegt sich mit, statt nur der Fuß.',
       'Die Buchstaben werden klein und hastig.',
     ],
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {
-        knie: [50, 87],
-        sprung: [-10, 0],
-        fuss_flach: [false, true],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      ende: {
-        knie: [50, 87],
-        sprung: [-10, 0],
-        fuss_flach: [false, true],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-    },
   },
   {
     schluessel: 'FU-11',
@@ -395,13 +255,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Bei herabgesetztem Gefühl an den Füßen den Druck vorher gemeinsam prüfen und die Haut danach ansehen.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'ball', an: 'zehen_nah' }],
-    },
   },
   {
     schluessel: 'FU-12',
@@ -424,24 +277,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     fehler: ['Es wird ruckartig gezogen.', 'Nur die große Zehe wird gezogen.'],
     hinweise_praxis:
       'Gut vor den ersten Schritten am Morgen. Das Bild zeigt die Variante mit dem Handtuch; sie braucht kein Überschlagen des Beins.',
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: {
-        knie: [15, 87],
-        sprung: [-15, 0],
-        fuss_flach: [false, true],
-        haende: ['brust', 'brust'],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      ende: {
-        knie: [15, 87],
-        sprung: [-15, 0],
-        fuss_flach: [false, true],
-        haende: ['brust', 'brust'],
-        loesen: { winkel: 'huefte_nah', gleich: ['ferse_nah', 'ferse_fern'] },
-      },
-      hilfsmittel: [{ art: 'handtuch', von: 'zehen_nah', nach: 'hand_nah' }],
-    },
   },
 ];

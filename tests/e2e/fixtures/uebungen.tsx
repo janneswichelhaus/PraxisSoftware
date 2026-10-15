@@ -67,7 +67,6 @@ const KNIEBEUGE: Uebung = {
         common_faults: 'Knie fallen nach innen; Fersen heben ab.',
         practice_notes: 'Höhe des Griffs vor Ort zeigen.',
         // UEB-012: ein Bild aus dem Katalog - Vorschau in der Liste, Start und Ende in der Übung.
-        illustration: katalogeintrag('KN-07')?.bild ?? null,
       },
     ),
     variante(
@@ -127,7 +126,6 @@ const STRECKUNG: Uebung = {
           per_side: true,
           times_per_day: 1,
         },
-        illustration: KN01.bild ?? null,
       },
     ),
   ],

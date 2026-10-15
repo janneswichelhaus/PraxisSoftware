@@ -632,20 +632,6 @@ eingeklappt.
 
 **Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
 
-### BEF-149 — „Check-in ausgeblieben“ fehlt in der Übersicht der Praxis
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Plattform: Check-in (TRK-EPIC-001) |
-| Quelle  | Zuschnitt TRK-EPIC-001, DSN-001 Abschnitt 6 und D5 |
-| Status  | offen |
-| Berührt | Übersicht der Praxis (Offene Punkte), `app.checkin_due_on` |
-
-**Beobachtung.** DSN-001 nennt „Check-in ausgeblieben“ als organisatorischen Punkt in der Übersicht der zuständigen Person („seit 10 Tagen kein Check-in“). TRK-EPIC-001 zeigt Fälligkeit und „fällig seit …“ nur im Abschnitt „Zwischen den Terminen“ an Akte und Trainingsverhältnis; eine Liste über alle Personen gibt es nicht.
-
-**Erwartet.** Entscheiden, ob der Punkt gebraucht wird; wenn ja, Einzel-Story-Loop: Zahl der Verhältnisse, deren Check-in seit mindestens einem Takt fällig ist, je Bereich in Offene Punkte – organisatorisch, ohne Wert und ohne Bewertung (ADR-006 Punkt 11).
-
 ### BEF-150 — Ränder der Entwürfe auf dem Diensttelefon
 
 |         |   |
@@ -673,3 +659,18 @@ eingeklappt.
 **Beobachtung.** Diktieren geht nicht; die Doku entsteht nur getippt oder aus Bausteinen.
 
 **Erwartet.** Spracheingabe über das AI Gateway, in Entwicklung und Test gegen eine Nachbildung; den Anbieter entscheidet Jannes (ADR-002, ADR-005).
+
+### BEF-165 — Der Hinweis nach § 19 UStG steht nicht im Schnappschuss der Rechnung
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-15 |
+| Bereich | Abrechnung: Rechnung, Ausdruck |
+| Quelle  | Zweitreview zur PR vom 2026-10-15 (Checkliste Punkt 9, Rechnungsdaten) |
+| Status  | offen |
+| Berührt | `KLEINUNTERNEHMER_HINWEIS` in `src/features/billing/api.ts`, `InvoiceDetailPage.tsx`, `InvoicePrintPage.tsx`, `app.build_invoice_document` |
+
+**Beobachtung.** Ob der Hinweis erscheint, entscheidet `issuer.small_business` aus dem Schnappschuss. Den Wortlaut setzt aber der Client. Eine neue Formulierung (zuletzt ANN-541) ändert damit auch das Bild schon ausgestellter Rechnungen. Der Befreiungsgrund nach § 4 Nr. 14 steht dagegen im Schnappschuss (ANN-082). Heute ohne Folge: Echte Rechnungen gibt es noch nicht.
+
+**Erwartet.** Vor dem ersten echten Rechnungslauf, zusammen mit der Antwort aus B4: Den Hinweis beim Ausstellen ins Dokument schreiben (wie `exemption_reason`), `schema_version` erhöhen, nur aus dem Dokument anzeigen.
+

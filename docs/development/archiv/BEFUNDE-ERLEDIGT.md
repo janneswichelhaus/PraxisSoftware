@@ -1373,3 +1373,19 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Beide Tests rechnen mit dem Tag der Praxis; keine Prüfung wird schwächer.
 
 **Umsetzung (2026-10-15).** `progress-events` liest den erwarteten Tag aus den Seed-Terminen selbst (`tagDesTermins`, in der Zeitzone der Praxis), `message-attachments` vermerkt den Widerruf mit `praxistag(0)`. Nachgestellt mit verschobener Uhr (libfaketime; Datenbank und Tests auf 0:20 Uhr Berliner Zeit): auf `main` beide rot mit den Meldungen aus der CI, mit der Korrektur 43 von 43 grün. Den Seed auf den Praxistag umzustellen, wie im Kommentar an #241 vorgeschlagen, reichte nicht: Ein Lauf über Mitternacht trennt den Aufbau des Seeds und den Test ohnehin.
+
+### BEF-149 — „Check-in ausgeblieben“ fehlt in der Übersicht der Praxis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Plattform: Check-in (TRK-EPIC-001) |
+| Quelle  | Zuschnitt TRK-EPIC-001, DSN-001 Abschnitt 6 und D5 |
+| Status  | verworfen (Jannes, 2026-10-15) |
+| Berührt | Übersicht der Praxis (Offene Punkte), `app.checkin_due_on` |
+
+**Beobachtung.** DSN-001 nennt „Check-in ausgeblieben“ als organisatorischen Punkt in der Übersicht der zuständigen Person („seit 10 Tagen kein Check-in“). TRK-EPIC-001 zeigt Fälligkeit und „fällig seit …“ nur im Abschnitt „Zwischen den Terminen“ an Akte und Trainingsverhältnis; eine Liste über alle Personen gibt es nicht.
+
+**Erwartet.** Entscheiden, ob der Punkt gebraucht wird; wenn ja, Einzel-Story-Loop: Zahl der Verhältnisse, deren Check-in seit mindestens einem Takt fällig ist, je Bereich in Offene Punkte – organisatorisch, ohne Wert und ohne Bewertung (ADR-006 Punkt 11).
+
+**Entscheidung (2026-10-15).** Jannes: „Nein“ – keine Liste „Check-in ausgeblieben“ in der Übersicht. Die Fälligkeit bleibt an Akte und Trainingsverhältnis.

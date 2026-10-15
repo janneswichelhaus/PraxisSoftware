@@ -12,7 +12,6 @@ import {
   resetDatabase,
 } from './helpers/db';
 import { praxistag } from './helpers/plaene';
-import { GRUNDSTELLUNGEN } from '@/features/exercises/bild/schema';
 import { KATALOG, katalogeintrag } from '@/features/exercises/katalog';
 import { ausruestungVon } from '@/features/exercises/katalog/schema';
 import {
@@ -103,7 +102,8 @@ async function katalogEntfernen(): Promise<void> {
 
 const KN01 = katalogeintrag('KN-01')!;
 const KN07 = katalogeintrag('KN-07')!;
-const MIT_BILD = KATALOG.filter((e) => e.bild);
+/** Eine Posen-Beschreibung, wie sie bis UEB-013 galt - heute abgewiesen (ANN-539). */
+const ALTES_BILD = { v: 1, basis: 'stand', start: {}, ende: { knie: [40, 40] } };
 
 function mit(e: Katalogeintrag, aenderung: Record<string, unknown>): Record<string, unknown> {
   return { ...e, ...aenderung };
@@ -139,21 +139,27 @@ describe('Übungskatalog im Seed (UEB-012)', () => {
     );
   });
 
-  it('hält die festen Listen in Datenbank und Oberfläche gleich (ANN-381, ANN-383)', async () => {
+  it('hält die festen Listen in Datenbank und Oberfläche gleich (ANN-383)', async () => {
     const { rows } = await asPostgres<{
       ziele: string[];
       stellungen: string[];
       hilfsmittel: object;
-      grundstellungen: string[];
     }>(
       `select app.exercise_goals() as ziele, app.exercise_starting_positions() as stellungen,
-              app.exercise_equipment_labels() as hilfsmittel,
-              app.exercise_illustration_bases() as grundstellungen`,
+              app.exercise_equipment_labels() as hilfsmittel`,
     );
     expect(rows[0]!.ziele).toEqual([...ZIELE]);
     expect(rows[0]!.stellungen).toEqual([...AUSGANGSSTELLUNGEN]);
     expect(rows[0]!.hilfsmittel).toEqual(HILFSMITTEL_LABEL);
-    expect(rows[0]!.grundstellungen).toEqual([...GRUNDSTELLUNGEN]);
+  });
+
+  it('trägt keine Zeichnung - weder Bibliothek noch Pläne (UEB-013, ANN-539)', async () => {
+    const { rows } = await asPostgres<{ anzahl: number }>(
+      `select (select count(*) from public.exercise_variants where illustration is not null)
+            + (select count(*) from public.exercise_plan_items where illustration is not null)
+              as anzahl`,
+    );
+    expect(Number(rows[0]!.anzahl)).toBe(0);
   });
 });
 
@@ -200,14 +206,11 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
         per_side: true,
         times_per_day: 1,
       },
-      illustration: KN01.bild,
+      // Keine Zeichnung mehr (ANN-539).
+      illustration: null,
       reviewed_at: null,
     });
-    // Eine Übung ohne Bild bleibt ohne Bild.
-    const ohne = KATALOG.find((e) => !e.bild)!;
-    expect(
-      (await katalogvarianten()).find((v) => v.catalog_key === ohne.schluessel)!.illustration,
-    ).toBeNull();
+    expect((await katalogvarianten()).every((v) => v.illustration === null)).toBe(true);
     // Wer übernommen hat, steht an der Zeile (ADR-010 Fassung 3).
     const { rows } = await asPostgres<{ created_by: string }>(
       `select distinct created_by from public.exercise_variants where catalog_key is not null`,
@@ -311,16 +314,11 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
   });
 
   describe('prüft am Server und übernimmt bei einem Fehler nichts (22023)', () => {
-    const gross = { ...KN01.bild, fuellung: 'a'.repeat(4100) };
     it.each([
-      ['ein zu großes Bild', [mit(KN01, { bild: gross })]],
+      // Seit UEB-013 gibt es kein Bild mehr, auch kein gültiges (ANN-539).
+      ['ein Bild', [mit(KN01, { bild: ALTES_BILD })]],
       ['ein Bild als Zeichenkette', [mit(KN01, { bild: '<svg onload="x()"/>' })]],
-      ['ein Bild einer späteren Fassung', [mit(KN01, { bild: { ...KN01.bild, v: 2 } })]],
       ['ein Bild ohne Start', [mit(KN01, { bild: { v: 1, basis: 'stand', ende: {} } })]],
-      [
-        'ein Bild mit unbekannter Grundstellung',
-        [mit(KN01, { bild: { ...KN01.bild, basis: 'kopfstand' } })],
-      ],
       ['ein unbekanntes Hilfsmittel', [mit(KN01, { hilfsmittel: ['hantelbank'] })]],
       ['ein doppeltes Hilfsmittel', [mit(KN01, { hilfsmittel: ['stuhl', 'stuhl'] })]],
       ['eine unbekannte Körperregion', [mit(KN01, { region: 'zeh' })]],
@@ -354,7 +352,7 @@ describe('Katalog übernehmen (UEB-012, ANN-385)', () => {
     it('hält die Grenzen auch an der Tabelle fest', async () => {
       await importiere(users.ownerTherapist, [KN01]);
       for (const [spalte, wert] of [
-        ['illustration', JSON.stringify(gross)],
+        ['illustration', JSON.stringify(ALTES_BILD)],
         ['illustration', '"bild"'],
         // Fehlt ein Teil, ist die Prüfung nicht "unbekannt", sondern falsch.
         ['illustration', '{"v": 1, "basis": "stand", "ende": {}}'],
@@ -536,8 +534,8 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
       hold_seconds: 3,
       per_side: true,
       times_per_day: 2,
-      // Im Entwurf das Bild der Bibliothek.
-      illustration: KN01.bild,
+      // Kein Bild, auch im Entwurf nicht (ANN-539).
+      illustration: null,
     });
     for (const [halten, mal] of [
       [0, null],
@@ -572,7 +570,7 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
     });
   });
 
-  it('friert Bild und Dosierung beim Zuweisen ein - spätere Änderungen der Bibliothek ändern den Plan nicht', async () => {
+  it('friert Dosierung und Name beim Zuweisen ein - spätere Änderungen der Bibliothek ändern den Plan nicht', async () => {
     const p = await entwurf();
     await asUserCommitted(users.therapist, POSITION, [p, kn01.id, 3, true, 2]);
     await asUserCommitted(
@@ -581,21 +579,19 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
       [p, await praxistag(42)],
     );
 
-    // Die Praxis ändert später Bild, Standarddosierung und Name der Variante.
-    const neuesBild = { v: 1, basis: 'stand', start: {}, ende: { knie: [40, 40] } };
+    // Die Praxis ändert später Standarddosierung und Name der Variante.
     await asPostgres(
       `update public.exercise_variants
-          set illustration = $2::jsonb,
-              default_dosage = '{"sets": 1, "duration_seconds": 60, "per_side": false}'::jsonb,
+          set default_dosage = '{"sets": 1, "duration_seconds": 60, "per_side": false}'::jsonb,
               name = 'Umbenannt'
         where id = $1`,
-      [kn01.id, JSON.stringify(neuesBild)],
+      [kn01.id],
     );
 
     const nachher = (await plan(p)).items[0]!;
     expect(nachher).toMatchObject({
       variant_name: KN01.name,
-      illustration: KN01.bild,
+      illustration: null,
       sets: 3,
       hold_seconds: 3,
       per_side: true,
@@ -605,9 +601,9 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
       'select illustration from public.exercise_plan_items where plan_id = $1',
       [p],
     );
-    expect(rows[0]!.illustration).toEqual(KN01.bild);
+    expect(rows[0]!.illustration).toBeNull();
 
-    // Die Plattform zeigt das eingefrorene Bild - ohne Kennung der Bibliothek.
+    // Die Plattform zeigt die eingefrorene Dosierung - ohne Kennung der Bibliothek.
     const { rows: portal } = await asUser<{
       daten: { plans: { items: Record<string, unknown>[] }[] };
     }>(users.plattformErika, 'select public.platform_exercise_plans($1::uuid) as daten', [
@@ -615,7 +611,7 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
     ]);
     const position = portal[0]!.daten.plans[0]!.items[0]!;
     expect(position).toMatchObject({
-      illustration: KN01.bild,
+      illustration: null,
       hold_seconds: 3,
       per_side: true,
       times_per_day: 2,
@@ -624,7 +620,7 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
     expect(Object.keys(position)).not.toContain('catalog_key');
   });
 
-  it('nimmt die neuen Dosierfelder in die neue Fassung mit, das Bild erst bei deren Zuweisung', async () => {
+  it('nimmt die neuen Dosierfelder in die neue Fassung mit, ohne Bild', async () => {
     const p = await entwurf();
     await asUserCommitted(users.therapist, POSITION, [p, kn01.id, 3, true, 2]);
     await asUserCommitted(
@@ -746,6 +742,5 @@ describe('Bild und Dosierung im Plan (UEB-012, ANN-300, ANN-384)', () => {
       [organizationId],
     );
     expect(rows[0]!.anzahl).toBe(0);
-    expect(MIT_BILD.length).toBeGreaterThan(0);
   });
 });

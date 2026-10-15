@@ -6,24 +6,9 @@ import type { Katalogeintrag } from '../typen';
  * Aufbau wie die Referenzgruppe `kn.ts`. Inhalt KI-erstellt und bis zur
  * Durchsicht durch die Praxis ungeprüft (ANN-386). Keine Diagnose als
  * Auswahlkriterium (ADR-006 Punkt 10): Die Bewegungsgrenzen nach
- * Hüftendoprothese je nach Zugang stehen als Satz unter `hinweise_praxis`,
- * zum Nachlesen für die Fachperson - nie als Filter oder Abgleich.
- *
- * HU-02 bleibt ohne Bild: Die Vorderansicht zeigt gebeugte Hüften und Knie
- * nur als kürzere Beine, das Bild sähe aus wie der Start von HU-01 und
- * verleitete zum Abspreizen des gestreckten Beins (ein Bild von oben wäre
- * eine neue Fassung). Nur die Ausgangsstellung (ANN-480) zeigen HU-08 (Knie
- * öffnen bei stehenden Füßen; die Hüften etwas unter 90° gezeichnet, damit
- * die Knie unter dem Rumpf erscheinen und das Band dazwischen sichtbar
- * wird), HU-16 (von vorn: Der Unterschenkel des überschlagenen Beins liegt
- * quer vor dem anderen Knie, der Fuß ragt darüber hinaus; das Vorneigen
- * steht im Text) und HU-17 (der Zug zur Gegenschulter liegt quer). HU-03
- * zeigt das Heben des unteren Beins von vorn; das obere steht mit stark
- * gebeugtem Knie als kurzes Stück steil vor dem Rumpf auf der Matte. HU-14
- * legt die Person mit dem Becken an das Ende des Betts, damit das Bein
- * herabhängen kann; im Ende sinkt vor allem der Oberschenkel, das Knie bleibt
- * gebeugt, der Fuß berührt den Boden. Die Bettkante der Anleitung liegt an
- * der Längsseite.
+ * Hüftendoprothese je nach Zugang stehen als Satz unter `hinweise_praxis`, zum
+ * Nachlesen für die Fachperson - nie als Filter oder Abgleich. Ohne Zeichnung
+ * (ANN-539): Die Anleitung erklärt die Übung allein.
  */
 
 /** Was nach Hüftendoprothese für alle Hüftübungen gilt - der erste Satz jedes Hinweises. */
@@ -55,15 +40,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Fußspitze dreht nach oben.',
     ],
     hinweise_praxis: `${TEP} Hier betrifft das vor allem den seitlichen Zugang: Abspreizen gegen die Schwerkraft ist dort oft erst nach einigen Wochen erlaubt. In den Pausen hält ein Kissen zwischen den Knien das obere Bein aus der Adduktion.`,
-    bild: {
-      v: 1,
-      basis: 'seitlage_front',
-      unterlage: 'matte',
-      start: {},
-      ende: { bein: [32, 0] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'HU-02',
@@ -110,14 +86,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     fehler: ['Das Becken kippt nach hinten.', 'Das Bein wird mit Schwung gehoben.'],
     hinweise_praxis: `${TEP} Hier: Das vor dem Körper aufgestellte obere Bein ist gebeugt und adduziert; ist es nach hinterem Zugang das operierte, die Übung erst nach Freigabe.`,
-    bild: {
-      v: 1,
-      basis: 'seitlage_front',
-      unterlage: 'matte',
-      start: { huefte: [80, 0], knie: [140, 0], bein: [-34, 0] },
-      ende: { huefte: [80, 0], knie: [140, 0], bein: [-34, -15] },
-      bewegung: ['knoechel_fern'],
-    },
   },
   {
     schluessel: 'HU-04',
@@ -143,15 +111,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Bein wird mit Schwung gehoben.',
     ],
     hinweise_praxis: `${TEP} Hier vor allem der seitliche Zugang. Steigerung über eine Gewichtsmanschette am Knöchel; die Last im Plan als Dosierung eintragen.`,
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      anker: 'knoechel_fern',
-      start: { haende: [null, 'lehne'] },
-      ende: { bein: [25, 0], haende: [null, 'lehne'] },
-      hilfsmittel: [{ art: 'stuhl', x: 28 }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'HU-05',
@@ -177,21 +136,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Bein dreht nach außen.',
     ],
     hinweise_praxis: `${TEP} Hier vor allem der vordere Zugang: das Bein nur bis knapp hinter die Senkrechte führen und nicht nach außen drehen.`,
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { haende: ['lehne', 'lehne'] },
-      ende: {
-        rumpf: 8,
-        huefte: [-20, 8],
-        sprung: [0, 0],
-        fuss_flach: [false, true],
-        haende: ['lehne', 'lehne'],
-      },
-      hilfsmittel: [{ art: 'stuhl', x: 26 }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'HU-06',
@@ -216,21 +160,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Fuß wird schnell abgesetzt.',
     ],
     hinweise_praxis: `${TEP} Hier: Beim hinteren Zugang das Knie nur bis unter 90° Beugung heben.`,
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { haende: [null, 'lehne'] },
-      ende: {
-        huefte: [75, 0],
-        knie: [85, 0],
-        sprung: [20, 0],
-        fuss_flach: [false, true],
-        haende: [null, 'lehne'],
-      },
-      hilfsmittel: [{ art: 'stuhl', x: -10 }],
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'HU-07',
@@ -254,19 +183,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Fuß fällt schnell zurück auf den Boden.',
     ],
     hinweise_praxis: `${TEP} Hier: Im Sitz ist die Hüfte schon etwa 90° gebeugt; beim hinteren Zugang ist das Knieheben im Sitz deshalb häufig für einige Wochen nicht erlaubt, dann das Knieheben im Stand wählen oder höher sitzen.`,
-    bild: {
-      v: 1,
-      basis: 'sitz',
-      start: { haende: ['sitz', 'sitz'] },
-      ende: {
-        huefte: [110, 87],
-        knie: [92, 87],
-        sprung: [10, 0],
-        fuss_flach: [false, true],
-        haende: ['sitz', 'sitz'],
-      },
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'HU-08',
@@ -291,13 +207,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Knie fallen schnell zurück.',
     ],
     hinweise_praxis: `${TEP} Hier vor allem der seitliche Zugang. Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“.`,
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { huefte: [70, 70], knie: [128, 128], bein: [10, 10] },
-      ende: { huefte: [70, 70], knie: [128, 128], bein: [10, 10] },
-      hilfsmittel: [{ art: 'band', von: 'knie_nah', nach: 'knie_fern' }],
-    },
   },
   {
     schluessel: 'HU-09',
@@ -318,13 +227,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Lassen Sie langsam locker und machen Sie eine kurze Pause.',
     ],
     fehler: ['Die Luft wird angehalten.', 'Der Oberkörper beugt sich nach vorn.'],
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: {},
-      ende: {},
-      hilfsmittel: [{ art: 'ball', an: 'knie' }],
-    },
   },
   {
     schluessel: 'HU-10',
@@ -350,15 +252,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das Knie wird gebeugt.',
     ],
     hinweise_praxis: `Bauchlage ist für viele Hochbetagte nicht möglich (Atmung, Herz, Endoprothese); dann die Hüftextension im Stand wählen. Ein flaches Kissen unter dem Bauch verhindert ein Hohlkreuz. ${TEP}`,
-    bild: {
-      v: 1,
-      basis: 'bauchlage',
-      unterlage: 'matte',
-      start: {},
-      ende: { huefte: [-16, 0] },
-      hilfsmittel: [{ art: 'kissen', an: 'kopf' }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'HU-11',
@@ -383,15 +276,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Die Fußspitzen drehen nach außen.',
     ],
     hinweise_praxis: `${TEP} Hier vor allem der seitliche Zugang. Die Bandstärke steht in der Dosierung als Last, etwa „Theraband gelb“; die Hände bleiben zur Sicherheit an der Arbeitsplatte oder in ihrer Nähe.`,
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      anker: 'knoechel_fern',
-      start: { bein: [5, 5] },
-      ende: { bein: [15, 15] },
-      hilfsmittel: [{ art: 'band', von: 'knoechel_fern', nach: 'knoechel_nah' }],
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'HU-12',
@@ -416,15 +300,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Oberkörper neigt sich weit zur Seite.',
     ],
     hinweise_praxis: `${TEP} Hier vor allem der seitliche Zugang und die erlaubte Belastung des Beins auf der Stufe.`,
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      anker: 'knoechel_nah',
-      start: { huefte: [45, 0], knie: [75, 0], bein: [10, 3] },
-      ende: { bein: [4, 3], huefte: [0, 35], knie: [0, 45], stuetze: 'ferse_nah' },
-      hilfsmittel: [{ art: 'stufe', x: 12, nach: 'hinten' }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'HU-13',
@@ -450,15 +325,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
     ],
     hinweise_praxis:
       'Belastung des Standbeins nach ärztlicher Vorgabe; nach Hüftendoprothese erst mit voller Belastungsfreigabe. Steigerung: die Hand nur noch über der Lehne halten.',
-    bild: {
-      v: 1,
-      basis: 'stand_front',
-      anker: 'knoechel_fern',
-      start: { haende: [null, 'lehne'] },
-      ende: { bein: [3, 0], huefte: [50, 0], knie: [70, 0], haende: [null, 'lehne'] },
-      hilfsmittel: [{ art: 'stuhl', x: 28 }],
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'HU-14',
@@ -482,28 +348,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das hängende Bein wird aktiv nach unten gedrückt.',
     ],
     hinweise_praxis: `${TEP} Hier: Das zur Brust gezogene Bein ist über 90° gebeugt (hinterer Zugang), das hängende in Streckung (vorderer Zugang); nach Hüftendoprothese erst nach Freigabe. Nur auf einem festen Bett; das Zurückholen des Beins vorher gemeinsam üben.`,
-    bild: {
-      v: 1,
-      basis: 'rueckenlage',
-      start: {
-        sitz: 'bett',
-        huefte: [0, 120],
-        knie: [80, 120],
-        schulter: [11, 11],
-        ellbogen: [91, 91],
-        haende: [null, 'knie'],
-      },
-      ende: {
-        sitz: 'bett',
-        huefte: [-10, 120],
-        knie: [50, 120],
-        fuss_flach: [true, false],
-        schulter: [11, 11],
-        ellbogen: [91, 91],
-        haende: [null, 'knie'],
-      },
-      bewegung: ['knie_nah'],
-    },
   },
   {
     schluessel: 'HU-15',
@@ -528,28 +372,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das vordere Knie schiebt weit über die Fußspitze.',
     ],
     hinweise_praxis: `${TEP} Hier vor allem der vordere Zugang: Die Dehnung bringt das hintere Bein in Streckung; erst nach Freigabe.`,
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: {
-        huefte: [-28, 25],
-        fuss_flach: [false, true],
-        sprung: [15, 0],
-        haende: [null, 'lehne'],
-        loesen: { winkel: 'sprung_nah', gleich: ['zehen_nah', 'ferse_fern'] },
-      },
-      ende: {
-        huefte: [-20, 51],
-        knie: [37, 62],
-        fuss_flach: [false, true],
-        sprung: [-25, 0],
-        haende: [null, 'lehne'],
-        loesen: { winkel: 'sprung_nah', gleich: ['zehen_nah', 'ferse_fern'] },
-      },
-      hilfsmittel: [{ art: 'stuhl', x: 6 }],
-      bewegung: ['becken'],
-    },
   },
   {
     schluessel: 'HU-16',
@@ -574,12 +396,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Das obere Knie wird mit der Hand nach unten gedrückt.',
     ],
     hinweise_praxis: `${TEP} Hier: Nach Hüftendoprothese erst nach ärztlicher Freigabe, denn das Vorneigen beugt die Hüfte über 90°.`,
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { bein: [-78, 6], knie: [55, 90] },
-      ende: { bein: [-78, 6], knie: [55, 90] },
-    },
   },
   {
     schluessel: 'HU-17',
@@ -605,25 +421,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Kopf hebt ab.',
     ],
     hinweise_praxis: `${TEP} Hier: Nach Hüftendoprothese erst nach ärztlicher Freigabe, denn Knie zur Gegenschulter verbindet Beugung über 90° mit Adduktion - beim hinteren Zugang die typische Luxationsstellung.`,
-    bild: {
-      v: 1,
-      basis: 'rueckenlage_angestellt',
-      unterlage: 'matte',
-      start: {
-        huefte: [95, 45],
-        knie: [100, 90],
-        fuss_flach: [false, true],
-        schulter: [41, 41],
-        ellbogen: [12, 12],
-      },
-      ende: {
-        huefte: [95, 45],
-        knie: [100, 90],
-        fuss_flach: [false, true],
-        schulter: [41, 41],
-        ellbogen: [12, 12],
-      },
-    },
   },
   {
     schluessel: 'HU-18',
@@ -648,13 +445,6 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Es wird mit Schwung geschwenkt.',
     ],
     hinweise_praxis: `${TEP} Hier: Den Fuß nach außen zu schwenken ist Innenrotation der gebeugten Hüfte, beim hinteren Zugang dann nur nach innen schwenken.`,
-    bild: {
-      v: 1,
-      basis: 'sitz_front',
-      start: { bein: [24, 6] },
-      ende: { bein: [-14, 6] },
-      bewegung: ['knoechel_nah'],
-    },
   },
   {
     schluessel: 'HU-19',
@@ -679,21 +469,5 @@ export const EINTRAEGE: readonly Katalogeintrag[] = [
       'Der Schritt ist zu kurz, das vordere Knie schiebt weit über die Fußspitze.',
     ],
     hinweise_praxis: `${TEP} Hier: Das hintere Bein kommt in Streckung (vorderer Zugang), das vordere in tiefe Beugung (hinterer Zugang); Schrittlänge und Tiefe nach Vorgabe.`,
-    bild: {
-      v: 1,
-      basis: 'stand',
-      anker: 'knoechel_fern',
-      start: { haende: [null, 'lehne'] },
-      ende: {
-        huefte: [-5, 80],
-        knie: [88, 90],
-        fuss_flach: [false, true],
-        sprung: [-45, 0],
-        haende: [null, 'lehne'],
-        loesen: { winkel: 'sprung_nah', gleich: ['zehen_nah', 'ferse_fern'] },
-      },
-      hilfsmittel: [{ art: 'stuhl', x: 6 }],
-      bewegung: ['becken'],
-    },
   },
 ];
