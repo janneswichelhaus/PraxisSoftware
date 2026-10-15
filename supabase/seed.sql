@@ -109,8 +109,8 @@ values
 -- -----------------------------------------------------------------------------
 -- time_zone ist verpflichtend und hat bewusst keinen Datenbank-Default:
 -- jede Organisation legt ihre Zeitzone ausdruecklich fest (CAL-001).
--- KOM-012 (ANN-371): Fotos und Videos an Rueckfragen nur in dieser
--- synthetischen Testpraxis; jede neue Organisation hat den Schalter aus.
+-- KOM-013 (ANN-371): Fotos und Videos an Rueckfragen sind seit 2026-10-15
+-- ueberall von selbst an; die Testpraxis nennt den Schalter ausdruecklich.
 insert into public.organizations (id, name, time_zone, external_attachments_enabled) values
   ('22222222-2222-4222-8222-000000000001', 'Test Praxis Tuebingen', 'Europe/Berlin', true);
 

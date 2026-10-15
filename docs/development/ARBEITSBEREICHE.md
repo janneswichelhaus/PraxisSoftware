@@ -20,7 +20,7 @@ Ansicht sagt das.
 | Tour | `/touren`, `/praxis/gebiete` | echt mit synthetischen Adressen; Produktivfreigabe offen (ADR-019, `LOCATION_DATA_GATE`) | `tours`, `territories` |
 | Dokumentation | `/termine/:id/abschluss`, `/termine/:id/dokumentation…`, `/praxis/textbausteine`, `/praxis/instrumente` | echt | `documentation` |
 | Training und Übungen | `/training…`, `/uebungen…` | echt | `training`, `training-offers`, `exercises`, `exercise-plans`, `checkins` |
-| Rückfragen | `/rueckfragen…`, `/training/rueckfragen/…` | echt; Anhänge von außen nur in Seed und Test-Umgebung (ADR-026 ruht) | `messages` |
+| Rückfragen | `/rueckfragen…`, `/training/rueckfragen/…` | echt; Anhänge von außen ohne Virenprüfung zugelassen (ADR-017 Fassung 6) | `messages` |
 | Abrechnung, Statistiken | `/abrechnung…`, `/statistiken` (nur `owner`) | echt; Mailversand offen (B13) | `billing`, `statistics` |
 | Organisatorisches | `/praxis/team…`, `/praxis/planung`, `/praxis/sicherheit/…`, `/mein-konto` | echt | `staff`, `audit`, `retention`, `account`, `session` |
 | Plattform (Patient:innen, Kund:innen) | `/p/…` | echt; Einladung per Mail offen (B13) | `platform`, `platform-access` |

@@ -4504,7 +4504,9 @@ Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Jannes
 
 ### ANN-371 — Anhänge von außen hängen an einem Schalter je Organisation, der von selbst aus ist; nur der synthetische Seed und die Test-Umgebung schalten ihn ein
 
-Datenschutz · offen · 2026-10-12 · — · Prüfpaket · Wiedervorlage: Go-live-Vorbedingungen (ADR-007 Punkt 5); Datenschutzprüfung (B2)
+Datenschutz · entschieden (Jannes), Fassung 2 · 2026-10-15 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2), DSFA (G14)
+
+**Fassung 2 (Jannes, 2026-10-15): Standard an, ohne Virenprüfung.** „Ich möchte keinen Virenscanner und trotzdem Bilder und Videos von Patienten zulassen.“ Der Schalter bleibt, steht aber von selbst und in jeder bestehenden Organisation auf an (KOM-013); aus nur von Hand in der Datenbank. ADR-017 Fassung 6 kehrt Punkt 29 und 69 dafür um, ADR-026 ist abgelehnt. Kompensation bleiben Einwilligung, Aufnahme nur in der Anwendung, Format- und Signaturprüfung am Server, Anzeige ohne Download, 30 Tage Frist und die Kennzeichnung „nicht auf Schadsoftware geprüft“. Anker: `supabase/migrations/20261117100000_kom_013_anhaenge_ohne_virenpruefung.sql`. Der Text darunter ist Fassung 1.
 
 **Annahme.** Ob Patient:innen und Kund:innen Fotos und Videos an Rückfragen anhängen können, entscheidet die Spalte `organizations.external_attachments_enabled`, **Standard aus**. Ist sie aus, bietet die Plattform keine Aufnahme und keine Einwilligungsfrage dazu an (`can_attach` falsch), und die Vorbereitung eines Uploads wird abgewiesen – im Training wie im Nachsorge-Abo. Die Rückfrage in Worten bleibt; vorhandene Anhänge bleiben bis zu ihrer Frist sichtbar und löschbar. Eingeschaltet ist sie nur in der synthetischen Testpraxis des Seeds und – über die Migration – in einer Datenbank mit der Kennung der Test-Umgebung (ANN-100). Keine Funktion und kein Tabellenrecht ändern sie; einschalten mit echten Daten ist ein bewusster Schritt von Jannes im Go-live-Gate, erst mit einem Prüfer nach ADR-026.
 
