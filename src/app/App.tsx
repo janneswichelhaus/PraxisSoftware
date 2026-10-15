@@ -40,27 +40,6 @@ const queryClient = new QueryClient({
   },
 });
 
-/**
- * Die angemeldete Anwendung, davor einmal je Sitzung das Startbild (RAH-009,
- * ANN-243).
- *
- * Das Intro liegt **über** der Anwendung und hält nichts an: Profil und
- * Tagesliste laden darunter weiter, und steht die Seite nach 1,8 s noch nicht,
- * erscheint der Ladezustand wie bisher. Ob es fällig ist, sagt der Merker der
- * Sitzung; ohne Sitzung kommt diese Stelle nie dran - die Anmeldemaske zeigt
- * kein Intro, es folgt nach der Anmeldung.
- */
-function AuthenticatedApp() {
-  const [startbild, setStartbild] = useState(startbildFaellig);
-  const startbildFertig = useCallback(() => setStartbild(false), []);
-  return (
-    <>
-      {startbild ? <Startbild onFertig={startbildFertig} /> : null}
-      <AngemeldeterInhalt />
-    </>
-  );
-}
-
 function AngemeldeterInhalt() {
   const { session, signOut } = useSession();
   const queryClient = useQueryClient();
@@ -313,7 +292,7 @@ function Gate() {
     <Sitzungssperre key={session.user.id} ohneNetz={ohneNetz}>
       {/* In Produktion erst Passkey und PIN (ADR-025 Fassung 2, Punkt 13). */}
       <Einrichtungspflicht>
-        <AuthenticatedApp />
+        <AngemeldeterInhalt />
       </Einrichtungspflicht>
     </Sitzungssperre>
   );
@@ -355,9 +334,26 @@ export function App() {
     <Startfehlergrenze>
       <QueryClientProvider client={queryClient}>
         <SessionProvider>
+          <StartbildBeimOeffnen />
           <RouterProvider router={router} />
         </SessionProvider>
       </QueryClientProvider>
     </Startfehlergrenze>
   );
+}
+
+/**
+ * Das Startbild beim Öffnen der Anwendung, einmal je Tab (RAH-009, ANN-243
+ * Fassung 2; Jannes 2026-10-15: „direkt nach Öffnen der Anwendung").
+ *
+ * Es liegt **über** allem, was darunter entsteht, und hält nichts an: Die
+ * Sitzung wird geprüft, die Anmeldemaske oder Profil und Tagesliste laden
+ * weiter. Deshalb steht es neben dem Router und nicht im `Gate` - ein
+ * Wechsel von „Sitzung wird geprüft" zur Anmeldung oder zur Anwendung
+ * startet es nicht neu. Nach der Anmeldung kommt es nicht noch einmal.
+ */
+function StartbildBeimOeffnen() {
+  const [startbild, setStartbild] = useState(startbildFaellig);
+  const startbildFertig = useCallback(() => setStartbild(false), []);
+  return startbild ? <Startbild onFertig={startbildFertig} /> : null;
 }

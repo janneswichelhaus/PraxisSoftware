@@ -1,12 +1,12 @@
 /**
- * Der Merker des Startbilds: einmal je Sitzung (Handoff Rahmen vom
- * 2026-10-05, Abschnitt 6; Entscheidung Jannes; ANN-243).
+ * Der Merker des Startbilds: einmal je Tab, beim Öffnen der Anwendung (Handoff
+ * Rahmen vom 2026-10-05, Abschnitt 6; Entscheidung Jannes; ANN-243 Fassung 2).
  *
  * `sessionStorage` statt `localStorage`: Der Wert lebt genau so lange wie der
  * Tab. Ein neuer Tab ist ein neuer Start und bekommt das Intro; ein Neuladen,
- * ein Seitenwechsel oder das Zurückkehren aus dem Hintergrund nicht. Beim
- * Abmelden wird er gelöscht (`SessionProvider`), damit die nächste Anmeldung
- * wieder mit dem Intro beginnt.
+ * ein Seitenwechsel, die Anmeldung oder das Zurückkehren aus dem Hintergrund
+ * nicht. Beim Abmelden wird er gelöscht (`SessionProvider`): Wer danach die
+ * Anwendung neu öffnet, sieht das Intro wieder.
  *
  * Ein Wahrheitswert, kein Inhalt: Es steht nichts über die Person, die Praxis
  * oder eine Akte darin (ANN-019 bleibt gewahrt). Ohne Speicher - privates
@@ -42,7 +42,7 @@ export function startbildVormerken(): void {
   }
 }
 
-/** Beim Abmelden: Die nächste Anmeldung beginnt wieder mit dem Intro. */
+/** Beim Abmelden: Das nächste Öffnen beginnt wieder mit dem Intro. */
 export function startbildZuruecksetzen(): void {
   try {
     speicher()?.removeItem(STARTBILD_MERKER);

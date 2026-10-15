@@ -56,7 +56,11 @@ export function Vollseite({
     <main
       className={`mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10 ${mittig ? 'text-center' : ''}`}
     >
-      <div className={`mb-8 ${mittig ? 'flex flex-col items-center' : ''}`}>
+      {/* Landeplatz des Startbilds, wenn es über dieser Seite läuft (ANN-243). */}
+      <div
+        data-startbild-ziel="vollseite"
+        className={`mb-8 ${mittig ? 'flex flex-col items-center' : ''}`}
+      >
         <Wortmarke hoehe={40} />
         {titel ? <h1 className="text-accent text-h3 mt-5 font-bold">{titel}</h1> : null}
         {einleitung ? <p className="text-ink-muted mt-2 text-sm">{einleitung}</p> : null}

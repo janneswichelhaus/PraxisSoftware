@@ -9,6 +9,10 @@ Vier PRs aus Jannes’ Durchsicht vom 14.10. (B1–B13) warten auf Jannes, in di
 Haken, Liste → #242 Einsicht → #243 Spracheingabe mit Nachbildung → #244 Oberfläche. Bericht mit
 Bildpaaren und fünf Fragen: https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g. PR #240 ist gemergt.
 
+Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
+dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
+https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
+
 ## Danach
 
 Vorschlag, Jannes entscheidet (Roadmap, „Bereichsüberholungen“):
