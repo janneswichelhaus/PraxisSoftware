@@ -131,6 +131,16 @@ test('ohne diese Einstellung pulsiert das gewählte Bauteil (Gegenprobe zu AC 10
     .toBeGreaterThanOrEqual(3);
 });
 
+test('senkrechtes Wischen über dem Rad scrollt die Seite, waagrechtes dreht es', async ({
+  page,
+}) => {
+  await bereit(page);
+  // Der Browser übernimmt senkrechtes Wischen, das Rad bekommt nur das
+  // waagrechte Ziehen: Die Fläche fängt den Daumen beim Scrollen nicht ab.
+  const rad = page.getByRole('img', { name: /3D-Modell des Lastenrads/ });
+  expect(await rad.evaluate((el) => getComputedStyle(el).touchAction)).toBe('pan-y');
+});
+
 test('Zoom und Ansichten sind Knöpfe mit 44 px und Namen (AC 9)', async ({ page }) => {
   await bereit(page);
   for (const name of ['Vergrößern', 'Verkleinern', 'Schräg', 'Rechts', 'Links', 'Hinten']) {

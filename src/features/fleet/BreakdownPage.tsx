@@ -292,8 +292,9 @@ function Pannenassistent({
     );
   }
 
-  const kicker =
-    rad && imAblauf ? `Panne melden · ${rad.name}` : 'Panne melden · Rad noch nicht ausgewählt';
+  // Vor „Weiter“ ist das Rad nur vorgewählt, nicht bestätigt - die Zeile
+  // nennt es erst danach.
+  const kicker = rad && imAblauf ? `Panne melden · ${rad.name}` : 'Panne melden';
 
   function beenden(art: Abschlussart) {
     if (!rad || melden.isPending) return;

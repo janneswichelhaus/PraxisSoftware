@@ -23,6 +23,10 @@ import type { BikeViewer } from './viewer';
  * eine Meldung da, und das Markieren geht über die Bauteil-Liste weiter, die
  * jede Seite neben dem Rad anbietet (AC 7). Das Rad ist deshalb nie der
  * einzige Weg: Bedienung ohne Ziehen und ohne Tippen auf kleine Flächen.
+ *
+ * Am Telefon scrollt senkrechtes Wischen die Seite, auch über dem Rad; nur
+ * waagrechtes Ziehen dreht es (`touch-pan-y`). Sonst finge eine Fläche fast
+ * so breit wie der Bildschirm den Daumen ab (Praxis-Review FLT-EPIC-001).
  */
 
 export interface BikeFocus {
@@ -140,7 +144,7 @@ export function BikeModel3D({
         ref={canvasRef}
         role="img"
         aria-label={`3D-Modell des Lastenrads Load 60 mit Riemen und Transportbox. ${stellen}`}
-        className="absolute inset-0 block h-full w-full cursor-grab touch-none"
+        className="absolute inset-0 block h-full w-full cursor-grab touch-pan-y"
       />
       {zustand === 'ohne' ? (
         <div className="bg-surface-sunken text-ink-muted absolute inset-0 flex items-center justify-center p-6 text-center text-sm">

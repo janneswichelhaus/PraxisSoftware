@@ -161,7 +161,9 @@ describe('Panne melden', () => {
       await screen.findByRole('heading', { name: 'Welches Rad betrifft es?' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: 'Rad' })).toHaveValue(RAD.id);
-    expect(screen.getByText('Panne melden · Rad noch nicht ausgewählt')).toBeInTheDocument();
+    // Vorgewählt ist nicht gewählt: Die Zeile über dem Titel nennt noch kein Rad.
+    expect(screen.getByText('Panne melden')).toBeInTheDocument();
+    expect(screen.queryByText(/noch nicht ausgewählt/)).toBeNull();
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     expect(await screen.findByRole('heading', { name: 'Wo ist der Schaden?' })).toBeInTheDocument();
   });

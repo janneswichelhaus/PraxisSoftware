@@ -50,7 +50,8 @@ import {
  * Portiert aus `LrViewer` im Entwurf (Handoff Lastenrad 3D, Abschnitt 5):
  * Kamera mit 30° Öffnung, Einpassen über `fitRadius`, Antippen mit höchstens
  * 6 px Bewegung und unter 700 ms, der Strahl trifft zuerst Nadeln, dann
- * Bauteile. Ziehen dreht, zwei Finger und Strg mit Mausrad zoomen. Bei
+ * Bauteile. Ziehen dreht (am Telefon nur waagrecht, senkrecht scrollt die
+ * Seite), zwei Finger und Strg mit Mausrad zoomen. Bei
  * reduzierter Bewegung kein Kameraflug und kein Pulsieren (AC 10).
  *
  * Die Lichtstärken sind gegenüber r149 mit π multipliziert: three.js rechnet
