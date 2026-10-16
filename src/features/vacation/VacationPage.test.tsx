@@ -1,246 +1,236 @@
-import { describe, expect, it } from 'vitest';
-import { getDefaultNormalizer, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderMitVorschau, testUser } from '@/test-utils';
-import { VacationPage } from './VacationPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { testUser } from '@/test-utils';
+import type * as VacationApi from './api';
+import type { EigenerAntrag } from './api';
+import { STAFF, testKonto, testOffenerAntrag, testUrlaub } from './testdaten';
 
 /**
- * Urlaub ist der Ort, an dem Personal und Planung zusammenhängen. Geprüft wird
- * deshalb vor allem, dass eine Genehmigung sagt, was sie bewirkt - und was sie
- * ausdrücklich nicht bewirkt.
+ * Die Urlaubsseite (URL-001) ersetzt die Vorschau. Geprüft wird, was jede
+ * Rolle sieht - eigene Anträge mit allem, wer im Team fehlt nur mit Name und
+ * Zeitraum, offene Anträge und Konten anderer nur für owner (BEF-066,
+ * ANN-580) - und dass Zurückziehen und Stornieren nachfragen.
  */
 
-function oeffne(rollen: Parameters<typeof testUser>[0] = ['owner']) {
-  return renderMitVorschau(<VacationPage user={testUser(rollen)} />, '/betrieb/urlaub');
+const fetchUrlaub = vi.fn();
+const withdrawLeaveRequest = vi.fn();
+const requestLeaveCancellation = vi.fn();
+
+vi.mock('./api', async (importOriginal) => {
+  const actual = await importOriginal<typeof VacationApi>();
+  return {
+    ...actual,
+    fetchUrlaub: (...a: unknown[]) => fetchUrlaub(...a) as unknown,
+    withdrawLeaveRequest: (...a: unknown[]) => withdrawLeaveRequest(...a) as unknown,
+    requestLeaveCancellation: (...a: unknown[]) => requestLeaveCancellation(...a) as unknown,
+  };
+});
+
+const { VacationPage } = await import('./VacationPage');
+
+function eigener(overrides: Partial<EigenerAntrag>): EigenerAntrag {
+  return {
+    id: 'eigen-1',
+    kind: 'leave',
+    refers_to: null,
+    starts_on: '2026-11-02',
+    ends_on: '2026-11-06',
+    days: 5,
+    message: null,
+    status: 'requested',
+    requested_at: '2026-10-10T08:00:00Z',
+    decided_at: null,
+    decided_by_name: null,
+    decision_note: null,
+    self_entered: false,
+    open_cancellation: false,
+    ...overrides,
+  };
 }
 
+function rendern(
+  rollen: Parameters<typeof testUser>[0] = ['therapist'],
+  eintrag: string | { pathname: string; state: unknown } = '/betrieb/urlaub',
+) {
+  const router = createMemoryRouter(
+    [{ path: '*', element: <VacationPage user={testUser(rollen)} /> }],
+    { initialEntries: [eintrag] },
+  );
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-16T08:00:00Z'));
+  fetchUrlaub.mockReset();
+  withdrawLeaveRequest.mockReset().mockResolvedValue(undefined);
+  requestLeaveCancellation.mockReset().mockResolvedValue('storno-1');
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('Urlaub', () => {
-  it('zeigt Leitungsrollen die offenen Anträge', () => {
-    oeffne(['owner']);
-    expect(screen.getByRole('heading', { name: /Offene Anträge \(2\)/ })).toBeInTheDocument();
+  it('zeigt der Person ihr Konto und ihre Anträge mit Stand und Grund', async () => {
+    fetchUrlaub.mockResolvedValue(
+      testUrlaub({
+        balance: testKonto({ approved: 13, requested: 5, rest: 17 }),
+        own: [
+          eigener({ id: 'a', message: 'Familienfeier' }),
+          eigener({
+            id: 'b',
+            starts_on: '2026-12-21',
+            ends_on: '2026-12-23',
+            days: 3,
+            status: 'approved',
+          }),
+          eigener({
+            id: 'c',
+            starts_on: '2027-01-11',
+            ends_on: '2027-01-15',
+            status: 'rejected',
+            decision_note: 'Zu viele zugleich weg',
+          }),
+          eigener({ id: 'd', status: 'withdrawn' }),
+        ],
+      }),
+    );
+    const { container } = rendern();
+    expect(await screen.findByRole('heading', { name: 'Mein Urlaub 2026' })).toBeInTheDocument();
+    expect(screen.getByText('17 Tage')).toBeInTheDocument();
+    expect(screen.getByText('von 30 Tagen')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Meine Anträge (3)' })).toBeInTheDocument();
+    expect(screen.getByText('Beantragt', { selector: 'span *, span' })).toBeInTheDocument();
+    expect(screen.getByText(/Grund: Zu viele zugleich weg/)).toBeInTheDocument();
+    // Die eigene Notiz sieht die Person selbst.
+    expect(screen.getByText(/Notiz: Familienfeier/)).toBeInTheDocument();
+    // Ohne Entscheidungsrecht weder offene Anträge anderer noch Konten.
+    expect(screen.queryByRole('heading', { name: /Zu entscheiden/ })).toBeNull();
+    expect(screen.queryByRole('heading', { name: /Urlaubskonten/ })).toBeNull();
+    expect(screen.getByRole('link', { name: 'Urlaub beantragen' })).toHaveAttribute(
+      'href',
+      '/betrieb/urlaub/beantragen',
+    );
+    await act(() => pruefeBarrierefreiheit(container));
   });
 
-  it('bietet einer behandelnden Rolle keine Entscheidung an', () => {
-    oeffne(['therapist']);
-    expect(screen.queryByRole('heading', { name: /Offene Anträge/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Genehmigen' })).toBeNull();
+  it('zieht einen offenen Antrag nach einer Rückfrage zurück', async () => {
+    const user = userEvent.setup();
+    fetchUrlaub.mockResolvedValue(testUrlaub({ own: [eigener({ id: 'offen-1' })] }));
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Zurückziehen' }));
+    expect(withdrawLeaveRequest).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Ja, zurückziehen' }));
+    expect(withdrawLeaveRequest).toHaveBeenCalledWith('offen-1');
   });
 
-  it('warnt bei zeitgleicher Abwesenheit anderer Personen', () => {
-    oeffne(['owner']);
-    expect(screen.getAllByText(/Zeitgleich abwesend/).length).toBeGreaterThan(0);
+  it('storniert genehmigten Urlaub vor Beginn als Antrag, laufenden nicht', async () => {
+    const user = userEvent.setup();
+    fetchUrlaub.mockResolvedValue(
+      testUrlaub({
+        own: [
+          eigener({ id: 'kuenftig', status: 'approved' }),
+          eigener({
+            id: 'laufend',
+            starts_on: '2026-10-14',
+            ends_on: '2026-10-20',
+            status: 'approved',
+          }),
+          eigener({
+            id: 'mit-storno',
+            starts_on: '2026-12-01',
+            ends_on: '2026-12-02',
+            status: 'approved',
+            open_cancellation: true,
+          }),
+        ],
+      }),
+    );
+    rendern();
+    const knoepfe = await screen.findAllByRole('button', { name: 'Stornieren' });
+    expect(knoepfe).toHaveLength(1);
+    expect(screen.getByText('Storno beantragt')).toBeInTheDocument();
+    await user.click(knoepfe[0]!);
+    await user.click(screen.getByRole('button', { name: 'Storno beantragen' }));
+    expect(requestLeaveCancellation).toHaveBeenCalledWith('kuenftig');
   });
 
-  it('nennt den Ablehnungsgrund am abgelehnten Antrag', () => {
-    oeffne(['owner']);
+  it('zeigt owner offene Anträge, die Konten je Person und „Urlaub eintragen“', async () => {
+    fetchUrlaub.mockResolvedValue(
+      testUrlaub({
+        my_staff_member_id: STAFF.jannes,
+        can_decide: true,
+        self_entered: true,
+        can_manage_entitlements: true,
+        to_decide: [testOffenerAntrag()],
+        balances: [
+          { staff_member_id: STAFF.anna, name: 'Anna Beispiel', balance: testKonto() },
+          {
+            staff_member_id: STAFF.tim,
+            name: 'Tim Teamleitung',
+            balance: testKonto({ entitlement: null, carryover: null, approved: 0, rest: null }),
+          },
+        ],
+      }),
+    );
+    rendern(['owner']);
+    expect(await screen.findByRole('heading', { name: 'Zu entscheiden (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Anna Beispiel.*2\.–13\. Nov\./ })).toHaveAttribute(
+      'href',
+      '/betrieb/urlaub/entscheiden/abababab-abab-4bab-8bab-000000000001',
+    );
+    const konten = screen
+      .getByRole('heading', { name: 'Urlaubskonten 2026 (2)' })
+      .closest('section')!;
+    expect(within(konten).getByText('Anspruch fehlt')).toBeInTheDocument();
+    expect(within(konten).getByText('12 übrig')).toBeInTheDocument();
+    expect(within(konten).getByRole('link', { name: /Tim Teamleitung/ })).toHaveAttribute(
+      'href',
+      `/betrieb/urlaub/anspruch/${STAFF.tim}`,
+    );
+    expect(screen.getByRole('link', { name: 'Urlaub eintragen' })).toBeInTheDocument();
+  });
+
+  it('klappt ein, wer im Team fehlt - nur Name und Zeitraum', async () => {
+    const user = userEvent.setup();
+    fetchUrlaub.mockResolvedValue(
+      testUrlaub({
+        team: [
+          {
+            staff_member_id: STAFF.tim,
+            name: 'Tim Teamleitung',
+            starts_on: '2026-11-05',
+            ends_on: '2026-11-06',
+          },
+        ],
+      }),
+    );
+    rendern();
+    const aufklapper = await screen.findByText('Abwesend im Team');
+    expect(screen.getByText('Tim Teamleitung')).not.toBeVisible();
+    await user.click(aufklapper);
+    expect(screen.getByText('Tim Teamleitung')).toBeVisible();
+    expect(screen.getByText('5.–6. Nov.')).toBeInTheDocument();
+  });
+
+  it('zeigt die Rückmeldung nach dem Beantragen', async () => {
+    fetchUrlaub.mockResolvedValue(testUrlaub());
+    rendern(['therapist'], {
+      pathname: '/betrieb/urlaub',
+      state: { meldung: 'Urlaub beantragt: 2.–13. Nov. (9 Urlaubstage).' },
+    });
     expect(
-      screen.getByText(/Zeitraum bereits durch zwei Abwesenheiten belegt/),
+      await screen.findByText('Urlaub beantragt: 2.–13. Nov. (9 Urlaubstage).'),
     ).toBeInTheDocument();
-  });
-
-  describe('Genehmigung', () => {
-    async function genehmige() {
-      const nutzer = userEvent.setup();
-      oeffne(['owner']);
-      await nutzer.click(screen.getAllByRole('button', { name: 'Genehmigen' })[0]!);
-      return nutzer;
-    }
-
-    it('weist vor der Entscheidung darauf hin, dass Termine nicht automatisch fallen', async () => {
-      await genehmige();
-      expect(screen.getByText(/Sie werden nicht automatisch abgesagt/)).toBeInTheDocument();
-    });
-
-    it('verbindet die Abwesenheit mit Kapazität und Radverfügbarkeit', async () => {
-      const nutzer = await genehmige();
-      await nutzer.click(screen.getByRole('button', { name: 'Genehmigung übernehmen' }));
-
-      const meldung = screen.getByRole('status');
-      expect(within(meldung).getByText(/Urlaub genehmigt/)).toBeInTheDocument();
-      expect(
-        within(meldung).getByText(/Planungskapazität dieser Person entfällt/),
-      ).toBeInTheDocument();
-      expect(
-        within(meldung).getByText(/Stammrad .* ist im Zeitraum als frei markiert/),
-      ).toBeInTheDocument();
-    });
-
-    it('behauptet keine E-Mail zur Sperrung des Terminplans', async () => {
-      const nutzer = await genehmige();
-      await nutzer.click(screen.getByRole('button', { name: 'Genehmigung übernehmen' }));
-
-      const meldung = screen.getByRole('status');
-      expect(
-        within(meldung).getByText(/Keine E-Mail zur Sperrung des Terminplans versendet/),
-      ).toBeInTheDocument();
-      expect(
-        within(meldung).getByText(/Keine bestehenden Termine abgesagt, verschoben oder vertreten/),
-      ).toBeInTheDocument();
-    });
-
-    it('nimmt den Antrag danach aus den offenen heraus', async () => {
-      const nutzer = await genehmige();
-      await nutzer.click(screen.getByRole('button', { name: 'Genehmigung übernehmen' }));
-      expect(screen.getByRole('heading', { name: /Offene Anträge \(1\)/ })).toBeInTheDocument();
-    });
-  });
-
-  describe('Ablehnung', () => {
-    it('verlangt eine Begruendung', async () => {
-      const nutzer = userEvent.setup();
-      oeffne(['owner']);
-      await nutzer.click(screen.getAllByRole('button', { name: 'Ablehnen' })[0]!);
-
-      expect(screen.getByRole('button', { name: 'Ablehnung übernehmen' })).toBeDisabled();
-      await nutzer.type(
-        screen.getByRole('textbox', { name: /Grund der Ablehnung/ }),
-        'Zeitraum belegt',
-      );
-      expect(screen.getByRole('button', { name: 'Ablehnung übernehmen' })).toBeEnabled();
-    });
-  });
-
-  describe('Antrag', () => {
-    it('rechnet die Werktage des Zeitraums aus', async () => {
-      const nutzer = userEvent.setup();
-      oeffne(['therapist']);
-      await nutzer.click(screen.getByRole('button', { name: 'Urlaub beantragen' }));
-
-      await nutzer.type(screen.getByLabelText('Von'), '2026-09-07');
-      await nutzer.type(screen.getByLabelText('Bis'), '2026-09-11');
-
-      expect(screen.getByText(/Werktage im Zeitraum: 5/)).toBeInTheDocument();
-    });
-
-    it('meldet einen Zeitraum, der vor seinem Beginn endet', async () => {
-      const nutzer = userEvent.setup();
-      oeffne(['therapist']);
-      await nutzer.click(screen.getByRole('button', { name: 'Urlaub beantragen' }));
-
-      await nutzer.type(screen.getByLabelText('Von'), '2026-09-11');
-      await nutzer.type(screen.getByLabelText('Bis'), '2026-09-07');
-
-      expect(screen.getByText(/Das Ende liegt vor dem Beginn/)).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /Antrag in die Vorschau übernehmen/ }),
-      ).toBeDisabled();
-    });
-
-    it('bindet den Zeitraumfehler an das Feld „Bis“ (VOR-15)', async () => {
-      const nutzer = userEvent.setup();
-      oeffne(['therapist']);
-      await nutzer.click(screen.getByRole('button', { name: 'Urlaub beantragen' }));
-
-      await nutzer.type(screen.getByLabelText('Von'), '2026-09-11');
-      await nutzer.type(screen.getByLabelText('Bis'), '2026-09-07');
-
-      const bis = screen.getByLabelText('Bis');
-      expect(bis).toHaveAttribute('aria-invalid', 'true');
-      expect(bis).toHaveAccessibleDescription('Das Ende liegt vor dem Beginn.');
-    });
-
-    it('rechnet den Rest vor der Datumseingabe mit dem laufenden Jahr (VOR-15)', async () => {
-      const nutzer = userEvent.setup();
-      oeffne(['therapist']);
-      // Auf der Seite steht der Rest der Demoperson zur Rolle ...
-      const aufDerSeite = /verbleibend (\d+)\s+Tage/.exec(
-        screen.getByText(/verbleibend \d+/).textContent ?? '',
-      )?.[1];
-      expect(aufDerSeite).toBeDefined();
-
-      await nutzer.click(screen.getByRole('button', { name: 'Urlaub beantragen' }));
-
-      // ... und im Formular derselbe, nicht der eines Jahres „0“.
-      const imFormular = /^Verbleibend (\d+)\s+Tage/.exec(
-        screen.getByText(/^Verbleibend \d+/).textContent ?? '',
-      )?.[1];
-      expect(imFormular).toBe(aufDerSeite);
-    });
-
-    it('behauptet beim Einreichen keine Benachrichtigung', async () => {
-      const nutzer = userEvent.setup();
-      oeffne(['therapist']);
-      await nutzer.click(screen.getByRole('button', { name: 'Urlaub beantragen' }));
-      await nutzer.type(screen.getByLabelText('Von'), '2026-11-02');
-      await nutzer.type(screen.getByLabelText('Bis'), '2026-11-06');
-      await nutzer.click(screen.getByRole('button', { name: /Antrag in die Vorschau übernehmen/ }));
-
-      const meldung = screen.getByRole('status');
-      // Die Rollen heißen wie überall (VOR-25), die Aussage bleibt dieselbe.
-      expect(
-        within(meldung).getByText(
-          /Keine Benachrichtigung an Praxisinhaber oder Teamleitung versendet/,
-        ),
-      ).toBeInTheDocument();
-      expect(within(meldung).getByText(/erst mit der Genehmigung/)).toBeInTheDocument();
-    });
-  });
-
-  describe('Übersicht', () => {
-    it('zeigt jeden offenen Antrag nur einmal mit Knoepfen (VOR-16)', () => {
-      oeffne(['owner']);
-      // Zwei offene Anträge, je ein „Genehmigen" - nicht noch einmal unter
-      // „Alle Anträge".
-      expect(screen.getAllByRole('button', { name: 'Genehmigen' })).toHaveLength(2);
-      // Wer die Knöpfe sieht, darf entscheiden - der Satz dazu ist fort (UX-005i).
-      expect(screen.queryByText(/Zur Entscheidung durch/)).toBeNull();
-    });
-
-    it('stellt die Wochenuebersicht zugeklappt hinter die eigenen Antraege (VOR-16)', () => {
-      oeffne(['therapist']);
-      const uebersicht = screen
-        .getByText('Wochenübersicht – wer wann Urlaub hat')
-        .closest('details');
-      expect(uebersicht).not.toHaveAttribute('open');
-      const meine = screen.getByRole('heading', { name: 'Meine Anträge' });
-      expect(
-        meine.compareDocumentPosition(uebersicht!) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
-    });
-
-    it('unterscheidet gleiche Vornamen im Spaltenkopf (VOR-16)', () => {
-      oeffne(['owner']);
-      const tabelle = screen.getByRole('table');
-      expect(within(tabelle).getByText('Lena Hm.')).toHaveAttribute('title', 'Lena Hartmann');
-      expect(within(tabelle).getByText('Lena Hu.')).toHaveAttribute('title', 'Lena Hartung');
-      expect(
-        within(tabelle).getByRole('columnheader', { name: 'Lena Hartmann' }),
-      ).toBeInTheDocument();
-      expect(within(tabelle).getByText('Miriam')).toBeInTheDocument();
-    });
-
-    it('macht die Tabelle per Tastatur erreichbar (VOR-02)', () => {
-      oeffne(['owner']);
-      expect(screen.getByRole('region', { name: 'Wochenübersicht Urlaub' })).toHaveAttribute(
-        'tabindex',
-        '0',
-      );
-    });
-
-    it('hebt Abwesenheiten einheitlich hervor, ohne Ampel nach Anzahl (VOR-13)', () => {
-      oeffne(['owner']);
-      const zellen = within(screen.getByRole('table')).getAllByText(/^[1-5]$/);
-      expect(zellen.length).toBeGreaterThan(0);
-      for (const zelle of zellen) {
-        expect(zelle).toHaveClass('bg-accent-soft');
-        expect(zelle).not.toHaveClass('bg-danger-soft');
-        expect(zelle).not.toHaveClass('bg-warnung-soft');
-      }
-    });
-
-    it('nutzt das Kaestchen des Systems mit 44 px Trefferflaeche (VOR-11)', () => {
-      oeffne(['owner']);
-      const kaestchen = screen.getByRole('checkbox', { name: 'Vergangene Wochen ausblenden' });
-      expect(kaestchen.closest('label')).toHaveClass('min-h-11');
-    });
-
-    it('trennt Zahl und „Tage“ nicht (VOR-24)', () => {
-      oeffne(['owner']);
-      // Ohne Zusammenfassen der Leerzeichen, sonst würde das geschützte zum
-      // gewöhnlichen.
-      const genau = { normalizer: getDefaultNormalizer({ collapseWhitespace: false }) };
-      expect(screen.getAllByText(/· 5\u00a0Tage/, genau).length).toBeGreaterThan(0);
-      expect(screen.queryAllByText(/· 5 Tage/, genau)).toHaveLength(0);
-    });
   });
 });

@@ -5,6 +5,7 @@ import { fetchOffeneScans } from '@/features/files/api';
 import { fetchRueckfragen, rueckfragenKey, type Verhaeltnisart } from '@/features/messages/api';
 import {
   canConcludePatientCare,
+  canDecideStaffRequests,
   canManageAppointments,
   canManageInvoicing,
   canManageTasks,
@@ -17,6 +18,8 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { fetchWaitlist } from '@/features/waitlist/api';
+import { fetchUrlaub, urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
+import { urlaubsfenster } from '@/features/vacation/fenster';
 import { ABO_KUENDIGUNGEN_KEY, fetchAboKuendigungen } from './aftercare-cancellations-api';
 import { CALL_LIST_KEY, fetchCallList, stillToCall } from './call-list-api';
 import { CONSENT_WITHDRAWALS_KEY, fetchConsentWithdrawals } from './consent-withdrawals-api';
@@ -63,6 +66,17 @@ export const abfragen = {
       queryFn: () => fetchPlatformRequests('open'),
       retry: false,
     }),
+  // URL-001 (ANN-576): offene Urlaubsanträge für die, die entscheiden -
+  // dieselbe Abfrage wie die Urlaubsseite, ein Schlüssel.
+  urlaub: (heute: string) => {
+    const fenster = urlaubsfenster(heute);
+    return queryOptions({
+      queryKey: urlaubSchluessel(fenster.von, fenster.bis),
+      queryFn: () => fetchUrlaub(fenster.von, fenster.bis),
+      retry: false,
+      select: (stand: Urlaubsstand) => stand.to_decide,
+    });
+  },
   aufgaben: () =>
     queryOptions({
       queryKey: [...TASKS_KEY, 'open'],
@@ -154,6 +168,7 @@ export function eingangsrechte(user: CurrentUser) {
     planBereiche,
     rueckfragen: rueckfrageBereiche.length > 0,
     terminwuensche: canManageAppointments(rollen) || canReadTrainingClients(rollen),
+    urlaubsantraege: canDecideStaffRequests(rollen),
     aufgaben: canManageTasks(rollen),
     anrufe: canManageAppointments(rollen),
     // ANG-003 und KND-004: wer Abo und Paket führt (owner, office).
@@ -204,6 +219,7 @@ export function useEingang(user: CurrentUser, today: string) {
     retry: false,
   });
   const terminwuensche = useQuery({ ...abfragen.terminwuensche(), enabled: darf.terminwuensche });
+  const urlaub = useQuery({ ...abfragen.urlaub(today), enabled: darf.urlaubsantraege });
   const aufgaben = useQuery({ ...abfragen.aufgaben(), enabled: darf.aufgaben });
   const anrufe = useQuery({ ...abfragen.anrufe(morgen), enabled: darf.anrufe });
   const trainingswiderrufe = useQuery({
@@ -243,6 +259,7 @@ export function useEingang(user: CurrentUser, today: string) {
       ).length,
     },
     { aktiv: darf.terminwuensche, ...terminwuensche, anzahl: terminwuensche.data?.length ?? 0 },
+    { aktiv: darf.urlaubsantraege, ...urlaub, anzahl: urlaub.data?.length ?? 0 },
     { aktiv: darf.aufgaben, ...aufgaben, anzahl: aufgaben.data?.length ?? 0 },
     { aktiv: darf.anrufe, ...anrufe, anzahl: anrufeOffen },
     {

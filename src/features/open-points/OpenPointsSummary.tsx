@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { fetchOffeneScans } from '@/features/files/api';
 import {
+  canDecideStaffRequests,
   canManageAppointments,
   canManageTasks,
   canReadTrainingClients,
@@ -10,7 +11,7 @@ import {
   isTherapyStaff,
   type CurrentUser,
 } from '@/features/session/types';
-import { OPEN_SCANS_KEY } from './eingang';
+import { OPEN_SCANS_KEY, abfragen } from './eingang';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from './platform-requests-api';
 import { TASKS_KEY, fetchTasks, isOverdue } from './tasks-api';
 import { fetchRueckfragen, rueckfragenKey } from '@/features/messages/api';
@@ -79,6 +80,12 @@ export function OpenPointsSummary({
     retry: false,
   });
 
+  // URL-001 (ANN-576): offene Urlaubsanträge für die, die entscheiden.
+  const urlaub = useQuery({
+    ...abfragen.urlaub(today),
+    enabled: canDecideStaffRequests(user.roles),
+  });
+
   const offen = aufgaben.data ?? [];
   const ueberfaellig = offen.filter((task) => isOverdue(task, today)).length;
   const heute = offen.filter((task) => task.due_on === today).length;
@@ -87,12 +94,14 @@ export function OpenPointsSummary({
   const offeneFragen = (rueckfragen.data ?? []).filter((z) => z.status === 'open');
   const fragen = offeneFragen.length;
   const fragenUeberfaellig = offeneFragen.filter((z) => z.overdue).length;
+  const urlaubsantraege = urlaub.data?.length ?? 0;
 
   const teile = [
     ueberfaellig > 0 ? anzahl(ueberfaellig, 'überfällige Aufgabe', 'überfällige Aufgaben') : null,
     heute > 0 ? anzahl(heute, 'Aufgabe heute fällig', 'Aufgaben heute fällig') : null,
     fotos > 0 ? anzahl(fotos, 'Verordnung zu erfassen', 'Verordnungen zu erfassen') : null,
     terminwuensche > 0 ? anzahl(terminwuensche, 'Terminwunsch', 'Terminwünsche') : null,
+    urlaubsantraege > 0 ? anzahl(urlaubsantraege, 'Urlaubsantrag', 'Urlaubsanträge') : null,
     fragen > 0
       ? `${anzahl(fragen, 'Rückfrage offen', 'Rückfragen offen')}${
           fragenUeberfaellig > 0 ? `, ${fragenUeberfaellig} überfällig` : ''
@@ -101,7 +110,9 @@ export function OpenPointsSummary({
   ].filter((teil): teil is string => teil !== null);
 
   if (teile.length === 0) {
-    const laedt = [aufgaben, scans, wuensche, rueckfragen].some((abfrage) => abfrage.isLoading);
+    const laedt = [aufgaben, scans, wuensche, rueckfragen, urlaub].some(
+      (abfrage) => abfrage.isLoading,
+    );
     return laedt ? null : sonst;
   }
 
@@ -127,7 +138,7 @@ export function OpenPointsSummary({
         aria-hidden="true"
         className="text-accent flex shrink-0 items-center gap-1.5 text-base font-bold tabular-nums"
       >
-        {ueberfaellig + heute + fotos + terminwuensche + fragen}
+        {ueberfaellig + heute + fotos + terminwuensche + urlaubsantraege + fragen}
         <span>→</span>
       </span>
     </Link>

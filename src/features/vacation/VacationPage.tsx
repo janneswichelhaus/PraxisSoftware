@@ -1,725 +1,279 @@
-import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
-import { Field } from '@/components/ui/Field';
-import { Select } from '@/components/ui/Select';
-import { TextArea } from '@/components/ui/TextArea';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { Badge, type Ton } from '@/components/ui/Badge';
-import { EmptyState } from '@/components/ui/Feedback';
-import { Formularfuss } from '@/components/ui/Formularfuss';
-import { ListRows } from '@/components/ui/ListRow';
-import { Textlink } from '@/components/ui/Textlink';
-import { KnopfGroesse } from '@/components/ui/knopfGroesse';
-import { roleLabels } from '@/components/ui/roleLabels';
-import type { CurrentUser } from '@/features/session/types';
-import { montagDerWoche, plusTage } from '@/features/preview/demodaten';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Section } from '@/components/ui/Section';
+import { Tile, TileGrid } from '@/components/ui/Tile';
+import { todayInTimeZone } from '@/features/appointments/api';
+import { isOwner, type CurrentUser } from '@/features/session/types';
 import {
-  mitarbeiterName,
-  useVorschau,
-  type Protokolleintrag,
-  type Vorschauzustand,
-} from '@/features/preview/vorschauContext';
-import { vorschauId } from '@/features/preview/vorschauZustand';
-import { darfEntscheiden, vorschauidentitaet } from '@/features/preview/identitaet';
-import { SignaturFeld } from '@/features/preview/SignaturFeld';
-import { Abschnitt, Klappbereich, SimulationsMeldung } from '@/features/preview/ui';
-import { formatDatum } from '@/features/preview/format';
-import {
-  urlaubsstatusLabels,
-  type Mitarbeitende,
-  type Urlaubsantrag,
-  type Urlaubsstatus,
-} from '@/features/preview/types';
-import {
-  ueberschneidungen,
-  urlaubskonto,
-  urlaubstageInWoche,
-  werktageImZeitraum,
-  zeitgleicheAbwesenheiten,
-} from './urlaub';
+  URLAUB_SCHLUESSEL,
+  fetchUrlaub,
+  requestLeaveCancellation,
+  urlaubSchluessel,
+  withdrawLeaveRequest,
+  type EigenerAntrag,
+  type Urlaubskonto,
+  type Urlaubsstand,
+} from './api';
+import { urlaubsfenster } from './fenster';
+import { statusAnzeige, tage, urlaubstage, zeitraumText } from './zeitraum';
 
 /**
- * Urlaub.
+ * Urlaub (URL-001, Überholung 7) - ersetzt die Vorschau.
  *
- * Übernahme aus der Team-App: Antrag, Wochenübersicht, offene Anträge,
- * Genehmigung und Ablehnung mit Begründung und Unterschrift, Überschneidungs-
- * warnung und Resturlaubsanzeige.
+ * Eine Seite für alle Rollen; was jemand sieht, entscheidet der Server
+ * (BEF-066, ANN-580): eigene Anträge mit allem, wer im Team genehmigt fehlt
+ * nur mit Name und Zeitraum ab heute, offene Anträge anderer für owner (ohne
+ * Notiz), die Urlaubskonten je Person nur für owner. Keine Summe über alle
+ * Personen (§20).
  *
- * Der wichtigste Unterschied betrifft nicht die Oberfläche: In der Vorlage
- * löste jede Genehmigung eine separate E-Mail aus, damit jemand von Hand den
- * Terminplan sperrt. Hier ist die genehmigte Abwesenheit selbst die Quelle -
- * sie wirkt unmittelbar auf Kapazität und Radverfügbarkeit. Bestehende Termine
- * im Zeitraum werden dabei ausdrücklich NICHT automatisch abgesagt oder
- * verschoben; sie werden zur Bearbeitung angezeigt.
+ * Reihenfolge: was jemand warten lässt (zu entscheiden), dann das eigene
+ * Konto und die eigenen Anträge, dann eingeklappt das Team, zuletzt für
+ * owner die Konten. Beantragen und Entscheiden sind geführte Abläufe auf
+ * eigenen Seiten (G7, G7b).
  */
-
-const statusTon: Record<Urlaubsstatus, Ton> = {
-  beantragt: 'warnung',
-  genehmigt: 'positiv',
-  abgelehnt: 'kritisch',
-};
-
-const WOCHEN_VORAUS = 14;
-
-/** Wer entscheidet - mit den Anzeigenamen der Rollen (VOR-25). */
-const ENTSCHEIDENDE = `${roleLabels.owner} oder ${roleLabels.team_lead}`;
-
-/** „10 Tage" ohne Umbruch zwischen Zahl und Einheit (VOR-24). */
-function tage(anzahl: number): string {
-  return `${anzahl}\u00a0Tage`;
-}
-
 export function VacationPage({ user }: { user: CurrentUser }) {
-  const { zustand } = useVorschau();
-  const identitaet = vorschauidentitaet(zustand, user);
-  const entscheidungsrecht = darfEntscheiden(user);
-
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
-  const [formular, setFormular] = useState(false);
-  const [entscheidung, setEntscheidung] = useState<{
-    antrag: Urlaubsantrag;
-    art: 'genehmigen' | 'ablehnen';
-  } | null>(null);
-
-  const offene = zustand.urlaub.filter((antrag) => antrag.status === 'beantragt');
-  const eigene = identitaet
-    ? zustand.urlaub.filter((antrag) => antrag.mitarbeiterId === identitaet.person.id)
-    : [];
-
-  if (formular) {
-    return (
-      <Antragsformular
-        user={user}
-        onFertig={(eintrag) => {
-          setMeldung(eintrag);
-          setFormular(false);
-        }}
-        onAbbrechen={() => setFormular(false)}
-      />
-    );
-  }
-
-  if (entscheidung) {
-    return (
-      <Entscheidungsformular
-        antrag={entscheidung.antrag}
-        art={entscheidung.art}
-        user={user}
-        onFertig={(eintrag) => {
-          setMeldung(eintrag);
-          setEntscheidung(null);
-        }}
-        onAbbrechen={() => setEntscheidung(null)}
-      />
-    );
-  }
+  const heute = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
+  const fenster = urlaubsfenster(heute);
+  const meldung = (useLocation().state as { meldung?: unknown } | null)?.meldung;
+  const abfrage = useQuery({
+    queryKey: urlaubSchluessel(fenster.von, fenster.bis),
+    queryFn: () => fetchUrlaub(fenster.von, fenster.bis),
+    retry: false,
+  });
+  const beantragen = isOwner(user.roles) ? 'Urlaub eintragen' : 'Urlaub beantragen';
 
   return (
     <>
-      {/* Ohne Satz unter dem Titel (Regel 6); „Urlaub beantragen“ kompakt im
-          Kopf (ANN-403). */}
       <PageHeader
         title="Urlaub"
-        actions={<Button onClick={() => setFormular(true)}>Urlaub beantragen</Button>}
+        actions={
+          abfrage.data?.my_staff_member_id ? (
+            <ButtonLink to="/betrieb/urlaub/beantragen">{beantragen}</ButtonLink>
+          ) : null
+        }
       />
-
-      <SimulationsMeldung eintrag={meldung} />
-
-      {entscheidungsrecht ? (
-        // Ohne „Zur Entscheidung durch …": Wer die Knöpfe sieht, darf
-        // entscheiden (UX-005i). Die Arbeit steht an jeder Zeile (L3).
-        <Abschnitt titel={`Offene Anträge (${offene.length})`}>
-          {offene.length === 0 ? (
-            <EmptyState inKarte title="Keine offenen Anträge" />
-          ) : (
-            <ListRows>
-              {offene.map((antrag) => (
-                <Antragszeile
-                  key={antrag.id}
-                  antrag={antrag}
-                  zustand={zustand}
-                  ohneStatus
-                  onGenehmigen={() => setEntscheidung({ antrag, art: 'genehmigen' })}
-                  onAblehnen={() => setEntscheidung({ antrag, art: 'ablehnen' })}
-                />
-              ))}
-            </ListRows>
-          )}
-        </Abschnitt>
-      ) : null}
-
-      {identitaet ? (
-        <Abschnitt
-          titel="Meine Anträge"
-          beschreibung={`Anträge von ${identitaet.person.name}${identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}.`}
-        >
-          <Konto personId={identitaet.person.id} />
-          {eigene.length === 0 ? (
-            <EmptyState inKarte title="Noch keine eigenen Anträge" />
-          ) : (
-            <ListRows>
-              {eigene.map((antrag) => (
-                <Antragszeile key={antrag.id} antrag={antrag} zustand={zustand} ohneName />
-              ))}
-            </ListRows>
-          )}
-        </Abschnitt>
-      ) : null}
-
-      {/* Nach den eigenen Anträgen und zugeklappt (VOR-16): Offen schob sie
-          bei 390 px rund 600 px Tabelle vor den eigenen Stand. */}
-      <Wochenuebersicht />
-
-      {/* Entschieden wird oben unter „Offene Anträge"; dieselbe Zeile mit
-          Knöpfen stand hier ein zweites Mal (VOR-16). */}
-      <Abschnitt titel="Alle Anträge">
-        <ListRows>
-          {zustand.urlaub.map((antrag) => (
-            <Antragszeile key={antrag.id} antrag={antrag} zustand={zustand} />
-          ))}
-        </ListRows>
-      </Abschnitt>
-    </>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Karten und Übersichten
-// -----------------------------------------------------------------------------
-
-/**
- * Ein Antrag als Zeile einer Liste (Welle B, B7; Leitfaden L2) statt als
- * Karte je Antrag: Name, Zeitraum und Tage, darunter Grund, Entscheidung und
- * eine zeitgleiche Abwesenheit; der Stand rechts als Abzeichen.
- *
- * Mit Genehmigen und Ablehnen stehen die Knöpfe **unter** der Zeile, nicht
- * daneben: Neben dem Namen ließen zwei Knöpfe ihm bei 375 px rund 90 px.
- * Gleiche Maße wie `ListRow` (56 px, 16/600 und 14 px Leise). Lokal gebaut;
- * eine Zeile mit Aktionen darunter fehlt in `src/components/ui`.
- */
-function Antragszeile({
-  antrag,
-  zustand,
-  ohneStatus = false,
-  ohneName = false,
-  onGenehmigen,
-  onAblehnen,
-}: {
-  antrag: Urlaubsantrag;
-  zustand: Vorschauzustand;
-  /** Unter „Offene Anträge" ist „Beantragt" der Regelfall und steht nicht dran (UX-005i). */
-  ohneStatus?: boolean;
-  /** Unter „Meine Anträge" nennt die Überschrift die Person schon (UX-005i). */
-  ohneName?: boolean;
-  onGenehmigen?: (() => void) | undefined;
-  onAblehnen?: (() => void) | undefined;
-}) {
-  const zeitgleich = zeitgleicheAbwesenheiten(zustand.urlaub, antrag, antrag.mitarbeiterId);
-  const zeitraum = `${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} · ${tage(antrag.tage)}`;
-
-  return (
-    <li className="border-line border-t py-2 first:border-t-0">
-      <div className="flex min-h-10 items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-ink text-base font-semibold">
-            {ohneName ? zeitraum : mitarbeiterName(zustand, antrag.mitarbeiterId)}
-          </p>
-          <div className="text-ink-muted text-sm">
-            {ohneName ? null : <p>{zeitraum}</p>}
-            {antrag.grund ? <p>Grund: {antrag.grund}</p> : null}
-            {antrag.status === 'abgelehnt' && antrag.ablehnungsgrund ? (
-              <p className="text-danger">Ablehnung: {antrag.ablehnungsgrund}</p>
-            ) : null}
-            {antrag.status === 'genehmigt' ? (
-              <p>
-                Genehmigt von {antrag.entschiedenVon} am {formatDatum(antrag.entschiedenAm)}
-                {antrag.unterschrift ? ' · Bestätigung liegt vor' : ''}
-              </p>
-            ) : null}
-            {zeitgleich.length > 0 ? (
-              <p className="text-warnung font-medium">
-                <span aria-hidden="true">! </span>
-                Zeitgleich abwesend:{' '}
-                {zeitgleich
-                  .map((eintrag) => mitarbeiterName(zustand, eintrag.mitarbeiterId))
-                  .join(', ')}
-              </p>
-            ) : null}
-          </div>
-        </div>
-        {ohneStatus ? null : (
-          <span className="shrink-0">
-            <Badge ton={statusTon[antrag.status]}>{urlaubsstatusLabels[antrag.status]}</Badge>
-          </span>
-        )}
-      </div>
-
-      {onGenehmigen || onAblehnen ? (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <KnopfGroesse value="kompakt">
-            {onGenehmigen ? (
-              <Button variant="secondary" onClick={onGenehmigen}>
-                Genehmigen
-              </Button>
-            ) : null}
-            {onAblehnen ? (
-              <Button variant="quiet" onClick={onAblehnen}>
-                Ablehnen
-              </Button>
-            ) : null}
-          </KnopfGroesse>
-        </div>
-      ) : null}
-    </li>
-  );
-}
-
-function Konto({ personId }: { personId: string }) {
-  const { zustand } = useVorschau();
-  const person = zustand.mitarbeitende.find((eintrag) => eintrag.id === personId);
-  if (!person) return null;
-  const jahr = Number(zustand.stichtag.slice(0, 4));
-  const konto = urlaubskonto(person, zustand.urlaub, jahr);
-
-  return (
-    <p className="text-ink-muted mb-3 text-sm">
-      Anspruch {tage(konto.anspruch)} + {konto.uebertrag} Übertrag · genehmigt {konto.genehmigt} ·
-      beantragt {konto.beantragt} ·{' '}
-      <strong className="text-ink">verbleibend {tage(konto.rest)}</strong>
-    </p>
-  );
-}
-
-/**
- * Spaltenkopf der Wochenübersicht (VOR-16).
- *
- * Der Vorname reicht, solange er eindeutig ist. Teilen ihn zwei Personen -
- * die Demodaten haben Lena Hartmann und Lena Hartung absichtlich -, kommt ein
- * Kürzel des Nachnamens dazu: sein erster Buchstabe und der erste, an dem er
- * sich von den anderen unterscheidet („Lena Hm.", „Lena Hu."). Den vollen
- * Namen trägt der Spaltenkopf für Vorlesesoftware und als Hinweis beim Zeigen.
- */
-function spaltenname(person: Mitarbeitende, alle: Mitarbeitende[]): string {
-  const [vorname = person.name, ...rest] = person.name.split(' ');
-  const nachname = rest.join(' ');
-  const andere = alle
-    .filter((eintrag) => eintrag.id !== person.id && eintrag.name.split(' ')[0] === vorname)
-    .map((eintrag) => eintrag.name.split(' ').slice(1).join(' '));
-  if (andere.length === 0 || nachname === '') return vorname;
-  const initiale = nachname.charAt(0);
-  if (andere.every((name) => name.charAt(0) !== initiale)) return `${vorname} ${initiale}.`;
-  for (let stelle = 1; stelle < nachname.length; stelle += 1) {
-    const zeichen = nachname.charAt(stelle);
-    if (andere.every((name) => name.charAt(stelle) !== zeichen)) {
-      return `${vorname} ${initiale}${zeichen}.`;
-    }
-  }
-  return person.name;
-}
-
-/**
- * Wochenübersicht: wer wann Urlaub hat.
- *
- * Zeilen sind Wochen, Spalten Personen - wie in der Vorlage. Der Umfang der
- * Abwesenheit steht als Zahl in der Zelle; die Fläche hebt jede Abwesenheit
- * gleich hervor, ohne Stufen nach Anzahl (VOR-13): Fünf Urlaubstage sind kein
- * Fehler und drei keine Warnung.
- */
-function Wochenuebersicht() {
-  const { zustand } = useVorschau();
-  const [vergangeneAusblenden, setVergangeneAusblenden] = useState(true);
-
-  const start = montagDerWoche(zustand.stichtag);
-  const wochen = Array.from({ length: WOCHEN_VORAUS }, (_, index) =>
-    plusTage(vergangeneAusblenden ? start : plusTage(start, -28), index * 7),
-  );
-
-  return (
-    <Klappbereich
-      titel="Wochenübersicht – wer wann Urlaub hat"
-      beschreibung="Zahl der genehmigten Urlaubswerktage je Woche."
-    >
-      {/* Das Kästchen des Systems mit 44 px Trefferfläche (VOR-11, RSP-13). */}
-      <div className="mb-3">
-        <Checkbox
-          label="Vergangene Wochen ausblenden"
-          checked={vergangeneAusblenden}
-          onChange={(event) => setVergangeneAusblenden(event.target.checked)}
-        />
-      </div>
-
-      {/* Per Tastatur erreichbar und benannt (VOR-02, UIK-24). */}
-      <div
-        className="-mx-4 overflow-x-auto px-4"
-        tabIndex={0}
-        role="region"
-        aria-label="Wochenübersicht Urlaub"
+      {typeof meldung === 'string' ? <Rueckmeldung className="mb-6">{meldung}</Rueckmeldung> : null}
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Urlaub wird geladen …"
+        fehler="Der Urlaub konnte nicht geladen werden."
+        inKarte
       >
-        <table className="w-full min-w-[36rem] border-separate border-spacing-1 text-sm">
-          <thead>
-            <tr>
-              <th
-                scope="col"
-                className="text-ink-muted bg-surface sticky left-0 text-left font-medium"
-              >
-                Woche
-              </th>
-              {zustand.mitarbeitende.map((person) => (
-                // Den vollen Namen trägt der Spaltenkopf als Bezeichnung, nicht
-                // als ausgeblendeter Text: Ein absolut gesetztes `sr-only`
-                // stünde außerhalb des Scrollbereichs und machte die Seite
-                // am Telefon breiter.
-                <th
-                  key={person.id}
-                  scope="col"
-                  aria-label={person.name}
-                  className="text-ink-muted font-medium"
-                >
-                  <abbr title={person.name}>{spaltenname(person, zustand.mitarbeitende)}</abbr>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {wochen.map((montag) => (
-              <tr key={montag}>
-                <th
-                  scope="row"
-                  className="text-ink bg-surface sticky left-0 pr-2 text-left font-medium whitespace-nowrap"
-                >
-                  ab {formatDatum(montag)}
-                </th>
-                {zustand.mitarbeitende.map((person) => {
-                  const anzahl = urlaubstageInWoche(zustand.urlaub, person.id, montag);
-                  return (
-                    <td key={person.id} className="text-center">
-                      <span
-                        className={`rounded-pill inline-flex min-w-9 justify-center px-2 py-1 text-xs ${
-                          anzahl === 0
-                            ? 'bg-surface-sunken text-ink-muted'
-                            : 'bg-accent-soft text-accent'
-                        }`}
-                      >
-                        {anzahl === 0 ? '–' : anzahl}
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Klappbereich>
+        {(stand) => <Inhalt stand={stand} heute={heute} />}
+      </Abfragezustand>
+    </>
   );
 }
 
-// -----------------------------------------------------------------------------
-// Antrag
-// -----------------------------------------------------------------------------
-
-function Antragsformular({
-  user,
-  onFertig,
-  onAbbrechen,
-}: {
-  user: CurrentUser;
-  onFertig: (eintrag: Protokolleintrag) => void;
-  onAbbrechen: () => void;
-}) {
-  const { zustand, simuliere } = useVorschau();
-  const identitaet = vorschauidentitaet(zustand, user);
-
-  const [mitarbeiterId, setMitarbeiterId] = useState(identitaet?.person.id ?? '');
-  const [von, setVon] = useState('');
-  const [bis, setBis] = useState('');
-  const [tageEingabe, setTageEingabe] = useState('');
-  const [grund, setGrund] = useState('');
-
-  const berechnet = von && bis ? werktageImZeitraum(von, bis) : 0;
-  const kollisionen =
-    mitarbeiterId && von && bis
-      ? ueberschneidungen(zustand.urlaub, mitarbeiterId, { von, bis })
-      : [];
-  const person = zustand.mitarbeitende.find((eintrag) => eintrag.id === mitarbeiterId);
-  // Ohne Datum gilt das laufende Jahr der Vorschau (VOR-15). Bis dahin rechnete
-  // das Konto dann mit dem Jahr 0 und zeigte zu viel Resturlaub.
-  const konto = person
-    ? urlaubskonto(person, zustand.urlaub, Number((von || zustand.stichtag).slice(0, 4)))
-    : null;
-  const endeVorBeginn = bis !== '' && von !== '' && bis < von;
-  const gueltig = mitarbeiterId !== '' && von !== '' && bis !== '' && !endeVorBeginn;
-
-  function absenden() {
-    const beantragteTage = Number(tageEingabe) || berechnet;
-    const eintrag = simuliere(
-      {
-        bereich: 'Urlaub',
-        vorgang: `Urlaub beantragt: ${mitarbeiterName(zustand, mitarbeiterId)}, ${formatDatum(von)} – ${formatDatum(bis)}`,
-        folgen: [
-          `${beantragteTage} Tage als beantragt vorgemerkt`,
-          'Der Antrag steht in der Liste der offenen Anträge',
-        ],
-        nichtGeschehen: [
-          `Keine Benachrichtigung an ${ENTSCHEIDENDE} versendet`,
-          'Keine Abwesenheit im Kalender eingetragen – das passiert erst mit der Genehmigung',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        urlaub: [
-          {
-            id: vorschauId('urlaub'),
-            mitarbeiterId,
-            von,
-            bis,
-            tage: beantragteTage,
-            grund,
-            status: 'beantragt' as const,
-            eingereichtAm: stand.stichtag,
-            entschiedenVon: '',
-            entschiedenAm: '',
-            ablehnungsgrund: '',
-            unterschrift: false,
-          },
-          ...stand.urlaub,
-        ],
-      }),
-    );
-    onFertig(eintrag);
-  }
+function Inhalt({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
+  const jahr = Number(heute.slice(0, 4));
+  const eigene = stand.own.filter(sichtbar);
 
   return (
-    <>
-      <PageHeader title="Urlaub beantragen" />
-      <div className="max-w-formular flex flex-col gap-4">
-        <Select
-          label="Person"
-          value={mitarbeiterId}
-          onChange={(event) => setMitarbeiterId(event.target.value)}
-        >
-          <option value="">– auswählen –</option>
-          {zustand.mitarbeitende.map((eintrag) => (
-            <option key={eintrag.id} value={eintrag.id}>
-              {eintrag.name}
-            </option>
+    <div className="flex flex-col gap-8">
+      {stand.can_decide && stand.to_decide.length > 0 ? (
+        <Listenabschnitt titel="Zu entscheiden" anzahl={stand.to_decide.length}>
+          {stand.to_decide.map((antrag) => (
+            <ListRow
+              key={antrag.id}
+              titel={antrag.name ?? 'Unbekannte Person'}
+              meta={`${antrag.kind === 'cancellation' ? 'Storno · ' : ''}${zeitraumText(
+                antrag.starts_on,
+                antrag.ends_on,
+                jahr,
+              )} · ${urlaubstage(antrag.days)}`}
+              to={`/betrieb/urlaub/entscheiden/${antrag.id}`}
+            />
           ))}
-        </Select>
+        </Listenabschnitt>
+      ) : null}
 
-        {konto ? (
-          <p className="text-ink-muted text-sm">
-            Verbleibend {tage(konto.rest)} (Anspruch {konto.anspruch} + Übertrag {konto.uebertrag},
-            genehmigt {konto.genehmigt}).
-          </p>
-        ) : null}
+      {stand.my_staff_member_id && stand.balance ? (
+        <Section titel={`Mein Urlaub ${stand.balance.year}`}>
+          <Konto konto={stand.balance} />
+        </Section>
+      ) : null}
 
-        <Field
-          label="Von"
-          type="date"
-          value={von}
-          onChange={(event) => setVon(event.target.value)}
-        />
-        {/* Der Zeitraumfehler steht am Feld „Bis" (VOR-15): Das Feld trägt ihn
-            dann als Beschreibung und gilt als ungültig; als loser Absatz wurde
-            er nicht vorgelesen. */}
-        <Field
-          label="Bis"
-          type="date"
-          value={bis}
-          error={endeVorBeginn ? 'Das Ende liegt vor dem Beginn.' : undefined}
-          onChange={(event) => setBis(event.target.value)}
-        />
+      {stand.my_staff_member_id ? (
+        <Listenabschnitt
+          titel="Meine Anträge"
+          anzahl={eigene.length}
+          leer={{ titel: 'Noch kein Urlaub beantragt' }}
+        >
+          {eigene.map((antrag) => (
+            <EigeneZeile
+              key={antrag.id}
+              antrag={antrag}
+              heute={heute}
+              jahr={jahr}
+              selbst={stand.self_entered}
+            />
+          ))}
+        </Listenabschnitt>
+      ) : null}
 
-        <Field
-          label="Urlaubstage"
-          type="number"
-          inputMode="numeric"
-          hint={
-            berechnet > 0
-              ? `Werktage im Zeitraum: ${berechnet}. Feiertage sind nicht berücksichtigt.`
-              : undefined
-          }
-          placeholder={berechnet > 0 ? String(berechnet) : ''}
-          value={tageEingabe}
-          onChange={(event) => setTageEingabe(event.target.value)}
-        />
+      {stand.team.length > 0 ? (
+        <Disclosure summary="Abwesend im Team" anzahl={stand.team.length} kopf="betont">
+          <Listenabschnitt titel="Genehmigter Urlaub" ebene={3}>
+            {stand.team.map((t) => (
+              <ListRow
+                key={`${t.staff_member_id}-${t.starts_on}`}
+                titel={t.name ?? 'Unbekannt'}
+                meta={zeitraumText(t.starts_on, t.ends_on, jahr)}
+              />
+            ))}
+          </Listenabschnitt>
+        </Disclosure>
+      ) : null}
 
-        {kollisionen.length > 0 ? (
-          <p className="text-warnung bg-warnung-soft rounded-card px-3 py-2 text-sm">
-            Überschneidung mit einem bestehenden Antrag:{' '}
-            {kollisionen
-              .map((antrag) => `${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)}`)
-              .join(', ')}
-          </p>
-        ) : null}
-
-        <TextArea
-          rows={3}
-          label="Grund"
-          hint="Optional. Private Gründe müssen nicht angegeben werden."
-          value={grund}
-          onChange={(event) => setGrund(event.target.value)}
-        />
-      </div>
-      <div className="max-w-formular">
-        <Formularfuss>
-          <Button onClick={absenden} disabled={!gueltig}>
-            Antrag in die Vorschau übernehmen
-          </Button>
-          <Button variant="quiet" onClick={onAbbrechen}>
-            Abbrechen
-          </Button>
-        </Formularfuss>
-      </div>
-    </>
+      {stand.can_manage_entitlements && stand.balances.length > 0 ? (
+        <Listenabschnitt titel={`Urlaubskonten ${jahr}`} anzahl={stand.balances.length}>
+          {stand.balances.map((k) => (
+            <ListRow
+              key={k.staff_member_id}
+              titel={k.name ?? 'Unbekannt'}
+              meta={kontoZeile(k.balance)}
+              status={
+                k.balance.entitlement === null ? <Badge ton="warnung">Anspruch fehlt</Badge> : null
+              }
+              betrag={k.balance.rest === null ? null : `${k.balance.rest} übrig`}
+              to={`/betrieb/urlaub/anspruch/${k.staff_member_id}`}
+            />
+          ))}
+        </Listenabschnitt>
+      ) : null}
+    </div>
   );
 }
 
-// -----------------------------------------------------------------------------
-// Entscheidung
-// -----------------------------------------------------------------------------
+/** Zurückgezogenes und erledigte Stornos stehen nicht mehr da. */
+function sichtbar(antrag: EigenerAntrag): boolean {
+  if (antrag.status === 'withdrawn') return false;
+  if (antrag.kind === 'cancellation') return antrag.status !== 'approved';
+  return true;
+}
 
-function Entscheidungsformular({
-  antrag,
-  art,
-  user,
-  onFertig,
-  onAbbrechen,
-}: {
-  antrag: Urlaubsantrag;
-  art: 'genehmigen' | 'ablehnen';
-  user: CurrentUser;
-  onFertig: (eintrag: Protokolleintrag) => void;
-  onAbbrechen: () => void;
-}) {
-  const { zustand, simuliere } = useVorschau();
-  const [entschiedenVon, setEntschiedenVon] = useState(user.profile.display_name);
-  const [ablehnungsgrund, setAblehnungsgrund] = useState('');
-  const [unterschrieben, setUnterschrieben] = useState(false);
+function kontoZeile(konto: Urlaubskonto): string {
+  const teile = [
+    konto.entitlement === null
+      ? null
+      : `Anspruch ${konto.entitlement}${konto.carryover ? ` + ${konto.carryover}` : ''}`,
+    `genehmigt ${konto.approved}`,
+    konto.requested > 0 ? `beantragt ${konto.requested}` : null,
+  ];
+  return teile.filter(Boolean).join(' · ');
+}
 
-  const person = zustand.mitarbeitende.find((eintrag) => eintrag.id === antrag.mitarbeiterId);
-  const konto = person
-    ? urlaubskonto(person, zustand.urlaub, Number(antrag.von.slice(0, 4)))
-    : null;
-  const zeitgleich = zeitgleicheAbwesenheiten(zustand.urlaub, antrag, antrag.mitarbeiterId);
-  const betroffeneRaeder = zustand.raeder.filter(
-    (rad) => rad.stammnutzerId === antrag.mitarbeiterId,
+function Konto({ konto }: { konto: Urlaubskonto }) {
+  return (
+    <TileGrid>
+      {konto.rest === null ? (
+        <Tile label="Übrig" ton="warnung" zusatz="Anspruch fehlt noch">
+          –
+        </Tile>
+      ) : (
+        <Tile
+          label="Übrig"
+          zusatz={`von ${(konto.entitlement ?? 0) + (konto.carryover ?? 0)} Tagen`}
+        >
+          {tage(konto.rest)}
+        </Tile>
+      )}
+      <Tile label="Genehmigt">{tage(konto.approved)}</Tile>
+      {konto.requested > 0 ? <Tile label="Beantragt">{tage(konto.requested)}</Tile> : null}
+    </TileGrid>
   );
+}
 
-  function bestaetigen() {
-    const name = mitarbeiterName(zustand, antrag.mitarbeiterId);
-    const folgen =
-      art === 'genehmigen'
-        ? [
-            `Abwesenheit ${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} gilt in der Vorschau als genehmigt`,
-            'Die Planungskapazität dieser Person entfällt im Zeitraum',
-            betroffeneRaeder.length > 0
-              ? `Stammrad ${betroffeneRaeder.map((rad) => rad.name).join(', ')} ist im Zeitraum als frei markiert`
-              : 'Kein Stammrad betroffen',
-          ]
-        : [`Antrag als abgelehnt vermerkt: ${ablehnungsgrund || 'ohne Angabe'}`];
+function EigeneZeile({
+  antrag,
+  heute,
+  jahr,
+  selbst,
+}: {
+  antrag: EigenerAntrag;
+  heute: string;
+  jahr: number;
+  selbst: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const neuLaden = () => queryClient.invalidateQueries({ queryKey: URLAUB_SCHLUESSEL });
+  const zurueckziehen = useMutation({
+    mutationFn: () => withdrawLeaveRequest(antrag.id),
+    onSuccess: neuLaden,
+  });
+  const stornieren = useMutation({
+    mutationFn: () => requestLeaveCancellation(antrag.id),
+    onSuccess: async () => {
+      await Promise.all([
+        neuLaden(),
+        queryClient.invalidateQueries({ queryKey: ['working-hour-exceptions'] }),
+      ]);
+    },
+  });
 
-    const eintrag = simuliere(
-      {
-        bereich: 'Urlaub',
-        vorgang: art === 'genehmigen' ? `Urlaub genehmigt: ${name}` : `Urlaub abgelehnt: ${name}`,
-        folgen,
-        nichtGeschehen: [
-          'Keine E-Mail zur Sperrung des Terminplans versendet – die genehmigte Abwesenheit ist selbst die Quelle',
-          'Keine bestehenden Termine abgesagt, verschoben oder vertreten',
-          'Keine Benachrichtigung an die betroffene Person',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        urlaub: stand.urlaub.map((eintragAntrag) =>
-          eintragAntrag.id === antrag.id
-            ? {
-                ...eintragAntrag,
-                status: art === 'genehmigen' ? ('genehmigt' as const) : ('abgelehnt' as const),
-                entschiedenVon: entschiedenVon.trim(),
-                entschiedenAm: stand.stichtag,
-                ablehnungsgrund: art === 'ablehnen' ? ablehnungsgrund : '',
-                unterschrift: unterschrieben,
-              }
-            : eintragAntrag,
-        ),
-      }),
-    );
-    onFertig(eintrag);
-  }
+  const storno = antrag.kind === 'cancellation';
+  const anzeige = statusAnzeige(antrag.status, antrag.open_cancellation);
+  const zeitraum = zeitraumText(antrag.starts_on, antrag.ends_on, jahr);
+  const stornierbar =
+    !storno &&
+    antrag.status === 'approved' &&
+    !antrag.open_cancellation &&
+    antrag.starts_on >= heute;
+
+  const meta = [
+    storno ? `Storno · ${tage(antrag.days)}` : urlaubstage(antrag.days),
+    antrag.status === 'rejected' && antrag.decision_note ? `Grund: ${antrag.decision_note}` : null,
+    antrag.message ? `Notiz: ${antrag.message}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <>
-      <PageHeader
-        title={art === 'genehmigen' ? 'Urlaub genehmigen' : 'Urlaub ablehnen'}
-        description={`${mitarbeiterName(zustand, antrag.mitarbeiterId)} · ${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} · ${tage(antrag.tage)}`}
-      />
-
-      <div className="max-w-formular flex flex-col gap-4">
-        {konto ? (
-          <p className="text-ink-muted text-sm">
-            Nach dieser Entscheidung verbleiben rechnerisch{' '}
-            {art === 'genehmigen' ? konto.rest - antrag.tage : konto.rest} von{' '}
-            {`${konto.anspruch + konto.uebertrag}\u00a0Tagen`}.
-          </p>
-        ) : null}
-
-        {zeitgleich.length > 0 ? (
-          <p className="text-warnung bg-warnung-soft rounded-card px-3 py-2 text-sm">
-            Zeitgleich bereits abwesend:{' '}
-            {zeitgleich
-              .map((eintrag) => mitarbeiterName(zustand, eintrag.mitarbeiterId))
-              .join(', ')}
-          </p>
-        ) : null}
-
-        {art === 'genehmigen' ? (
-          // Eine Zeile auf vertiefter Fläche statt eines gestrichelten Kastens
-          // (Leitfaden L2); die Aussage bleibt vollständig.
-          <p className="text-ink bg-surface-sunken rounded-card px-4 py-3 text-sm">
-            Termine im Zeitraum müssen anschließend bewusst bearbeitet werden. Sie werden nicht
-            automatisch abgesagt.{' '}
-            <Textlink to={`/kalender?ansicht=tag&datum=${antrag.von}`}>
-              Kalender ab {formatDatum(antrag.von)} öffnen
-            </Textlink>
-          </p>
-        ) : null}
-
-        <Field
-          label="Entscheidung durch"
-          value={entschiedenVon}
-          onChange={(event) => setEntschiedenVon(event.target.value)}
-        />
-
-        {art === 'ablehnen' ? (
-          <TextArea
-            rows={3}
-            label="Grund der Ablehnung"
-            placeholder="z. B. Zeitraum bereits durch zwei Abwesenheiten belegt"
-            value={ablehnungsgrund}
-            onChange={(event) => setAblehnungsgrund(event.target.value)}
-          />
-        ) : (
-          <SignaturFeld beschriftung="Bestätigung der Genehmigung" onChange={setUnterschrieben} />
-        )}
-      </div>
-      <div className="max-w-formular">
-        <Formularfuss>
-          <Button
-            onClick={bestaetigen}
-            disabled={
-              entschiedenVon.trim() === '' || (art === 'ablehnen' && ablehnungsgrund.trim() === '')
-            }
+    <ListRow
+      titel={storno ? `Storno: ${zeitraum}` : zeitraum}
+      meta={meta}
+      status={anzeige ? <Badge ton={anzeige.ton}>{anzeige.text}</Badge> : null}
+      aktion={
+        antrag.status === 'requested' ? (
+          <Rueckfrage
+            ausloeser="Zurückziehen"
+            ausloeserVariante="quiet"
+            ausloeserGroesse="kompakt"
+            bezeichnung={storno ? 'Storno zurückziehen' : 'Antrag zurückziehen'}
+            bestaetigen="Ja, zurückziehen"
+            bestaetigenLaeuft="Wird zurückgezogen …"
+            fehler={zurueckziehen.isError ? zurueckziehen.error.message : undefined}
+            onBestaetigen={() => zurueckziehen.mutateAsync()}
           >
-            {art === 'genehmigen' ? 'Genehmigung übernehmen' : 'Ablehnung übernehmen'}
-          </Button>
-          <Button variant="quiet" onClick={onAbbrechen}>
-            Abbrechen
-          </Button>
-        </Formularfuss>
-      </div>
-    </>
+            {storno ? 'Der Urlaub bleibt dann genehmigt.' : 'Der Antrag wird zurückgezogen.'}
+          </Rueckfrage>
+        ) : stornierbar ? (
+          <Rueckfrage
+            ausloeser="Stornieren"
+            ausloeserVariante="quiet"
+            ausloeserGroesse="kompakt"
+            bezeichnung="Urlaub stornieren"
+            bestaetigen={selbst ? 'Ja, stornieren' : 'Storno beantragen'}
+            bestaetigenLaeuft="Wird gesendet …"
+            fehler={stornieren.isError ? stornieren.error.message : undefined}
+            onBestaetigen={() => stornieren.mutateAsync()}
+          >
+            {selbst
+              ? 'Der Urlaub wird storniert, die Tage sind wieder frei.'
+              : 'Bis zur Entscheidung bleibt der Urlaub genehmigt.'}
+          </Rueckfrage>
+        ) : null
+      }
+    />
   );
 }
