@@ -1,6 +1,8 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useRef, type MouseEvent } from 'react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ListRow, ListRows } from './ListRow';
 import { useSeitenziel, zeileOeffnen } from './seitenUebergang';
 
 /**
@@ -49,8 +51,28 @@ describe('Zeile öffnet sich zur Seite', () => {
   it('überlässt einen Tipp mit Zusatztaste dem Browser (neuer Tab)', () => {
     const start = vi.fn();
     Object.defineProperty(document, 'startViewTransition', { value: start, configurable: true });
+    render(<Ziel pfad="/patienten" />);
     const { event, preventDefault } = tipp(document.createElement('a'), { metaKey: true });
     zeileOeffnen(event, vi.fn());
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
+  });
+
+  it('überlässt den Wechsel dem Link, wo kein Rahmen die neue Seite meldet - sonst stünde sie still', () => {
+    const start = vi.fn();
+    Object.defineProperty(document, 'startViewTransition', { value: start, configurable: true });
+    const { event, preventDefault } = tipp(document.createElement('a'));
+    zeileOeffnen(event, vi.fn());
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
+  });
+
+  it('überlässt eine Zeile, die auf derselben Seite bleibt, dem Link', () => {
+    const start = vi.fn();
+    Object.defineProperty(document, 'startViewTransition', { value: start, configurable: true });
+    render(<Ziel pfad="/betrieb/zeitkonto" />);
+    const { event, preventDefault } = tipp(document.createElement('a'));
+    zeileOeffnen(event, vi.fn(), true);
     expect(preventDefault).not.toHaveBeenCalled();
     expect(start).not.toHaveBeenCalled();
   });
@@ -98,5 +120,37 @@ describe('Zeile öffnet sich zur Seite', () => {
       vi.advanceTimersByTime(1000);
     });
     expect(seite.style.getPropertyValue('view-transition-name')).toBe('');
+  });
+});
+
+/** Eine Seite mit Rahmen wie in der Anwendung: Der Inhalt meldet die neue Seite. */
+function SeiteMitZeilen({ ziele }: { ziele: string[] }) {
+  const inhalt = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  useSeitenziel(inhalt, pathname);
+  return (
+    <main ref={inhalt}>
+      <ListRows>
+        {ziele.map((ziel) => (
+          <ListRow key={ziel} titel={`Zu ${ziel}`} to={ziel} />
+        ))}
+      </ListRows>
+    </main>
+  );
+}
+
+describe('Zeile (ListRow) mit Ziel', () => {
+  it('öffnet eine andere Seite im Übergang, einen Sprung auf derselben Seite nicht', () => {
+    const start = vi.fn();
+    Object.defineProperty(document, 'startViewTransition', { value: start, configurable: true });
+    render(
+      <MemoryRouter initialEntries={['/betrieb/zeitkonto']}>
+        <SeiteMitZeilen ziele={['/betrieb/zeitkonto?person=1', '/patienten/1']} />
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole('link', { name: 'Zu /betrieb/zeitkonto?person=1' }));
+    expect(start).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('link', { name: 'Zu /patienten/1' }));
+    expect(start).toHaveBeenCalledTimes(1);
   });
 });

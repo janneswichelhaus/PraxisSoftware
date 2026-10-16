@@ -21,6 +21,11 @@ import { useLayoutEffect, type MouseEvent, type RefObject } from 'react';
  * wechselt trotzdem. Ohne View Transitions (ältere Browser, Tests), bei
  * reduzierter Bewegung und bei einem Tipp mit Zusatztaste (neuer Tab)
  * übernimmt der Link wie bisher.
+ *
+ * Ebenso, wo niemand die neue Seite meldet - kein Rahmen mit
+ * `useSeitenziel`, etwa in der Plattform der Patient:innen - und wo die Zeile
+ * auf derselben Seite bleibt (nur andere Suchparameter oder ein Anker, etwa
+ * im Zeitkonto): Sonst stünde die Seite bis zu `MAX_WARTEN_MS` still.
  */
 const NAME = 'zeile-zur-seite';
 
@@ -35,6 +40,9 @@ const MAX_WARTEN_MS = 400;
 
 /** Gibt das neue Bild frei, sobald die neue Seite gezeichnet ist. */
 let seiteGezeichnet: (() => void) | null = null;
+
+/** Wie viele Rahmen gerade die neue Seite melden (`useSeitenziel`). */
+let ziele = 0;
 
 function benennen(element: HTMLElement): void {
   element.style.setProperty('view-transition-name', NAME);
@@ -63,9 +71,14 @@ function bewegungReduziert(): boolean {
 /**
  * Für das `onClick` des Links einer Zeile: startet den Übergang und darin den
  * Seitenwechsel (`weiter`). Wo der Übergang nicht läuft, tut es nichts - dann
- * navigiert der Link selbst.
+ * navigiert der Link selbst. `gleicheSeite`: Das Ziel hat denselben Pfad wie
+ * die Seite, auf der die Zeile steht.
  */
-export function zeileOeffnen(event: MouseEvent<HTMLAnchorElement>, weiter: () => void): void {
+export function zeileOeffnen(
+  event: MouseEvent<HTMLAnchorElement>,
+  weiter: () => void,
+  gleicheSeite = false,
+): void {
   if (
     event.defaultPrevented ||
     event.button !== 0 ||
@@ -74,7 +87,9 @@ export function zeileOeffnen(event: MouseEvent<HTMLAnchorElement>, weiter: () =>
     event.ctrlKey ||
     event.shiftKey ||
     typeof document.startViewTransition !== 'function' ||
-    bewegungReduziert()
+    bewegungReduziert() ||
+    ziele === 0 ||
+    gleicheSeite
   ) {
     return;
   }
@@ -94,6 +109,13 @@ export function zeileOeffnen(event: MouseEvent<HTMLAnchorElement>, weiter: () =>
  * Seite steht.
  */
 export function useSeitenziel(inhalt: RefObject<HTMLElement | null>, pfad: string): void {
+  useLayoutEffect(() => {
+    ziele += 1;
+    return () => {
+      ziele -= 1;
+    };
+  }, []);
+
   useLayoutEffect(() => {
     const element = inhalt.current;
     if (!element) return undefined;

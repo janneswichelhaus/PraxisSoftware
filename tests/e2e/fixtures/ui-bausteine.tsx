@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Badge } from '@/components/ui/Badge';
@@ -23,6 +23,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Section } from '@/components/ui/Section';
 import { Segment } from '@/components/ui/Segment';
 import { Select } from '@/components/ui/Select';
+import { useSeitenziel } from '@/components/ui/seitenUebergang';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Zweispalter } from '@/components/ui/Zweispalter';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
@@ -76,8 +77,13 @@ function Eintrag({ zeit, children }: { zeit: string; children: ReactNode }) {
 }
 
 export function Seite() {
+  // Wie der Rahmen der Anwendung meldet der Inhalt die neue Seite - das Ziel
+  // von „Zeile öffnet sich zur Seite“ (ANN-567, `tests/e2e/bewegung.spec.ts`).
+  const inhalt = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+  useSeitenziel(inhalt, pathname);
   return (
-    <main>
+    <main ref={inhalt}>
       <Handoff />
       <Fundament />
     </main>

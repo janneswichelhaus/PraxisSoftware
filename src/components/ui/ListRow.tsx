@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useResolvedPath } from 'react-router-dom';
 import { KnopfGroesse } from './knopfGroesse';
 import { zeileOeffnen } from './seitenUebergang';
 
@@ -208,9 +208,10 @@ export function ListRow({
 /**
  * Das Ziel einer Zeile mit `to`: ein Link, der beim Tipp in die neue Seite
  * hineinwächst (ANN-567, „Zeile öffnet sich zur Seite“, `seitenUebergang.ts`).
- * Wo der Übergang nicht läuft, navigiert der Link wie bisher. Eigene
- * Komponente, damit `useNavigate` nur dort steht, wo es einen Router gibt -
- * eine Zeile ohne Ziel braucht keinen.
+ * Wo der Übergang nicht läuft - auch, wenn die Zeile auf derselben Seite
+ * bleibt -, navigiert der Link wie bisher. Eigene Komponente, damit die
+ * Router-Hooks nur dort stehen, wo es einen Router gibt - eine Zeile ohne Ziel
+ * braucht keinen.
  */
 function Zeilenlink({
   to,
@@ -222,10 +223,12 @@ function Zeilenlink({
   children: ReactNode;
 }) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const ziel = useResolvedPath(to);
   return (
     <Link
       to={to}
-      onClick={(event) => zeileOeffnen(event, () => void navigate(to))}
+      onClick={(event) => zeileOeffnen(event, () => void navigate(to), ziel.pathname === pathname)}
       className={className}
     >
       {children}
