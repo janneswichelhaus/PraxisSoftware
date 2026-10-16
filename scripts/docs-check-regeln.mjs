@@ -216,14 +216,16 @@ export function pruefeEindeutigkeit(dateien) {
  * Wachstum. `optional` heisst: Fehlt die Datei, ist das kein Verstoss
  * (`DESIGN.md` entsteht parallel; liegt sie auf `main`, entfaellt das).
  *
- * Eine Grenze wird gesenkt, nie gehoben - `docs-check.test.mjs` haelt die
- * Werte fest.
+ * Eine Grenze wird gesenkt, nie still gehoben - `docs-check.test.mjs` haelt
+ * die Werte fest. `DESIGN.md` hat 12,5 statt 12 KB seit dem 16.10.2026, mit
+ * Freigabe von Jannes („DESIGN.md darf größer werden, wenn nötig“) für die
+ * Zeile zur Bewegung (ANN-567, PR #259).
  */
 export const OBERGRENZEN = [
   { pfad: 'CLAUDE.md', bytes: 8 * 1024 },
   { pfad: 'docs/STATUS.md', bytes: 4 * 1024 },
   { pfad: 'docs/development/ARBEITSBEREICHE.md', bytes: 8 * 1024 },
-  { pfad: 'docs/design/DESIGN.md', bytes: 12 * 1024, optional: true },
+  { pfad: 'docs/design/DESIGN.md', bytes: 12.5 * 1024, optional: true },
   { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 400 },
 ];
 

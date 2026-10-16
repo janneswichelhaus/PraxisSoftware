@@ -54,7 +54,7 @@ export function Checkbox({
         </p>
       ) : null}
       {error ? (
-        <p id={errorId} role="alert" className="text-danger ml-8 text-sm">
+        <p id={errorId} role="alert" className="feldfehler text-danger ml-8 text-sm">
           {error}
         </p>
       ) : null}

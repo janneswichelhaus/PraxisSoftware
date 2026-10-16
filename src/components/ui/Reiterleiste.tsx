@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode, type RefObject } from 'react';
 import { Link, NavLink, useLocation, useSearchParams } from 'react-router-dom';
+import { anzeigerStil, useGleitanzeiger } from './gleitanzeiger';
 import { useOffenerReiter, type Suchreiter } from './offenerReiter';
 import { rolleInsBild, useRandVerlauf, VERLAUF_FREI_PX } from './waagerechtRollen';
 
@@ -150,9 +151,12 @@ export function Suchreiterleiste<W extends string>({
   );
 }
 
-/** Pille 44 px, 15 px; der offene Reiter auf der Akzentfläche in der Hauptfarbe, 600. */
+/**
+ * Pille 44 px, 15 px; der offene Reiter auf der Akzentfläche in der Hauptfarbe, 600.
+ * `relative`, damit der Reiter über der gleitenden Pille liegt (ANN-567).
+ */
 const reiterKlassen =
-  'text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-semibold';
+  'text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste relative flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-semibold';
 
 /**
  * Die Reihe beider Leisten: Linie darüber, schmal waagerecht rollend mit
@@ -178,13 +182,26 @@ function Reiterreihe({
   }, [offen]);
   // Nach dem Rollen gemessen: Erst dann steht fest, was links und rechts fehlt.
   const rand = useRandVerlauf(liste, offen);
+  // Die Pille gleitet zum neuen Reiter (ANN-567); in Ruhe liegt sie genau
+  // dort, wo bisher die Fläche des offenen Reiters lag.
+  const { kasten, phase } = useGleitanzeiger(liste, offen);
 
   return (
     <nav aria-label={label} className="border-line relative border-t">
       <ul
         ref={liste}
-        className="flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3"
+        className={`relative flex gap-1 overflow-x-auto px-2 py-1.5 sm:flex-wrap sm:overflow-visible sm:px-3 ${kasten ? 'gleitet-pille' : ''}`}
       >
+        {/* Vor den Reitern, damit sie darüber liegen. */}
+        {kasten ? (
+          <li
+            aria-hidden="true"
+            data-gleitanzeiger=""
+            data-phase={phase}
+            className="gleitanzeiger bg-accent-soft rounded-pill"
+            style={anzeigerStil(kasten, 'flaeche')}
+          />
+        ) : null}
         {children}
       </ul>
       <Randverlauf {...rand} />

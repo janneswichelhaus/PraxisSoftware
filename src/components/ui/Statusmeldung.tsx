@@ -57,7 +57,9 @@ export function Statusmeldung({
   return (
     <p
       role={ton === 'fehler' ? 'alert' : 'status'}
-      className={`${farben[ton]} text-sm ${className}`}
+      // Erfolg, Warnung und Fehler gleiten ein (ANN-567); `neutral` steht oft
+      // dauerhaft da, etwa „3 von 12 Terminen“, und bleibt ruhig.
+      className={`${ton === 'neutral' ? '' : 'meldung-rein'} ${farben[ton]} text-sm ${className}`}
     >
       {bild ? (
         <span aria-hidden="true" className="mr-1.5">

@@ -39,7 +39,8 @@ export function Angabefeld({
 
   if (groesse.einheit) {
     return (
-      <div className="flex flex-col gap-1">
+      // `feld`: Der Titel reagiert auf den Fokus (ANN-567, `index.css`).
+      <div className="feld flex flex-col gap-1">
         <label htmlFor={name} className="text-ink text-liste font-medium">
           {groesse.frage}
         </label>

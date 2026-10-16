@@ -71,7 +71,8 @@ export function Fehlerzusammenfassung({
       ref={kasten}
       role="alert"
       tabIndex={-1}
-      className="rounded-card border-danger/25 bg-danger-soft mb-6 border px-4 py-3 outline-none"
+      // `meldung-rein`: Der Kasten gleitet ein (ANN-567).
+      className="meldung-rein rounded-card border-danger/25 bg-danger-soft mb-6 border px-4 py-3 outline-none"
     >
       <p className="text-danger text-liste font-medium">
         {anzahl === 1 ? titel.replace('diese Angaben', 'diese Angabe') : titel}

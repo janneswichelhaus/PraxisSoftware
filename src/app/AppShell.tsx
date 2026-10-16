@@ -7,6 +7,8 @@ import {
   type RefObject,
 } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { anzeigerStil, useGleitanzeiger } from '@/components/ui/gleitanzeiger';
+import { useSeitenziel } from '@/components/ui/seitenUebergang';
 import { SubNav } from '@/components/ui/SubNav';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
@@ -220,6 +222,18 @@ export function AppShell({
   const inhalt = useRef<HTMLElement>(null);
   useKopfzeilenhoehe(kopf, rahmen);
   useSeitenwechsel(inhalt);
+  // Ziel des Übergangs „Zeile öffnet sich zur Seite“ (ANN-567).
+  useSeitenziel(inhalt, pathname);
+
+  // Der Strich der Tableiste gleitet zum neuen Bereich (ANN-567). „Mehr“ ist
+  // aktiv auf der Übersicht der Bereiche und in jedem Bereich dahinter.
+  const tabliste = useRef<HTMLUListElement>(null);
+  const mehrAktiv =
+    pathname === '/bereiche' || weitere.some((bereich) => bereich.id === aktuell?.id);
+  const { kasten: tabKasten, phase: tabPhase } = useGleitanzeiger(
+    tabliste,
+    mehrAktiv ? 'mehr' : (aktuell?.id ?? ''),
+  );
 
   return (
     <div ref={rahmen} className="min-h-dvh sm:flex">
@@ -364,7 +378,7 @@ export function AppShell({
               <div
                 id="kopf-suche"
                 ref={sucheRef}
-                className={`order-3 w-full min-w-0 sm:order-2 sm:flex sm:w-auto sm:flex-1 sm:justify-center ${sucheOffen ? '' : 'max-sm:hidden'}`}
+                className={`order-3 w-full min-w-0 sm:order-2 sm:flex sm:w-auto sm:flex-1 sm:justify-center ${sucheOffen ? 'suche-oeffnet' : 'max-sm:hidden'}`}
               >
                 <div className="w-full sm:max-w-sm">
                   <Funktionssuche user={user} />
@@ -533,7 +547,7 @@ export function AppShell({
         aria-label="Arbeitsbereiche"
         className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
       >
-        <ul className="flex">
+        <ul ref={tabliste} className={`relative flex ${tabKasten ? 'gleitet-strich' : ''}`}>
           {sichtbar.map((bereich) => (
             <li key={bereich.id} className="flex-1">
               <Link
@@ -550,17 +564,22 @@ export function AppShell({
             <li className="flex-1">
               <Link
                 to="/bereiche"
-                aria-current={
-                  pathname === '/bereiche' || weitere.some((bereich) => bereich.id === aktuell?.id)
-                    ? 'page'
-                    : undefined
-                }
+                aria-current={mehrAktiv ? 'page' : undefined}
                 className={tabLink}
               >
                 {mehrSymbol}
                 Mehr
               </Link>
             </li>
+          ) : null}
+          {tabKasten ? (
+            <li
+              aria-hidden="true"
+              data-gleitanzeiger=""
+              data-phase={tabPhase}
+              className="gleitanzeiger bg-accent"
+              style={anzeigerStil(tabKasten, 'oben', 3)}
+            />
           ) : null}
         </ul>
       </nav>

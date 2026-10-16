@@ -174,7 +174,8 @@ Rahmen (`app/AppShell.tsx`), Rechnungsliste als Vorbild der `Datenliste`.
 - [01.10.](handoff-2026-10-01-praxissoftware.md): Farbtabelle (Grundton B gilt, L5); Terminseite,
   Abschnitt 6 (seit 03.10. ein Fenster, `TerminAktionen`); Kontextspalte und Kachelreihe im Kopf der
   Akte, Abschnitt 7 (entfallen; Abzeichen und `Warnzeile`); Knöpfe, Haken und Segment mit 40 px (44,
-  ANN-199); Hinweissätze unter Abschnitten (Hilfe auf Abruf).
+  ANN-199); Hinweissätze unter Abschnitten (Hilfe auf Abruf); Bewegung „kein Fade, kein Bounce“
+  (Federn und Übergänge nach ANN-567, `index.css` „Bewegung“; Hover bleibt 120 ms).
 - [05.10.](handoff-2026-10-05-rahmen.md): Fläche `#eceee8` für Startbild und Manifest (Weiß).
 - [06.10. Kalender und Tour](handoff-2026-10-06-kalender-und-tour.md): Kopfknöpfe der Tour 48 px
   bleiben bis zur Sichtung (ANN-403).

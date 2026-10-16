@@ -247,6 +247,12 @@
   --radius-image: 16px;
   --radius-pill: 999px;
 
+  /* Federn der Bewegung (ANN-567): `feder` mit sichtbarem Überschwung für
+     Anzeiger, Chips und Zeichen, `feder-weich` für Flächen, die aufgehen.
+     Als `ease-feder` und `ease-feder-weich` auch in Klassen. */
+  --ease-feder: cubic-bezier(0.3, 1.35, 0.5, 1);
+  --ease-feder-weich: cubic-bezier(0.3, 1.12, 0.5, 1);
+
   /* Bedienhöhen. Das Mindestziel bleibt 44 px (WCAG 2.5.8). */
   --spacing-bedienhoehe: 48px;
   --spacing-bedienhoehe-kompakt: 40px;
@@ -555,6 +561,318 @@ html[data-schrift='sehr-gross'] {
     transform-box: fill-box;
     transform-origin: center;
     animation: fortschritt-rad-drehen 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+
+/* =============================================================================
+   Bewegung (ANN-567): Wechseln mit Schwung, Rückmeldung flach, Zeile zur Seite
+
+   Auftrag Jannes vom 16.10.2026 (Leinwand „Verspielte Designelemente“, Seite
+   „Lebendig“): nur Gestaltung, am Inhalt ändert sich nichts. Flach wie das
+   System - keine Schatten, keine Kanten, keine doppelten Ziffern; den
+   Schwung tragen Lage, Größe, Farbe und Schriftstärke. Kurz genug, dass am
+   Lenker nichts wartet: nichts dauert länger als 0,42 s.
+
+   Bewusst außerhalb der Ebenen: Die Regeln, die eine Markierung ausblenden,
+   müssen die Klassen der Bausteine überstimmen. Bei reduzierter Bewegung
+   kürzt die Regel in der Basis jede Animation und jeden Übergang auf
+   0,01 ms (`!important` in einer Ebene schlägt alles hier). Den Inhalt
+   eines Aufklappers und die Übergänge zwischen Seiten erreicht sie nicht;
+   für sie gilt je eine eigene Regel.
+   ============================================================================= */
+
+/* Der gleitende Anzeiger (`gleitanzeiger.ts`): SubNav, Reiterleiste,
+   Tableiste. Erst dehnen über alten und neuen Eintrag, dann federn. */
+.gleitanzeiger {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  transition:
+    transform 0.32s var(--ease-feder),
+    width 0.32s var(--ease-feder),
+    height 0.32s var(--ease-feder);
+}
+
+.gleitanzeiger[data-phase='dehnen'] {
+  transition-duration: 0.12s;
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+}
+
+.gleitanzeiger[data-phase='sofort'] {
+  transition: none;
+}
+
+/* Solange der Anzeiger liegt, trägt der aktive Eintrag seine eigene
+   Markierung nicht - sonst stünde sie doppelt da. */
+.gleitet-strich [aria-current='page'] {
+  border-color: transparent;
+}
+
+.gleitet-pille [aria-current='page'] {
+  background-color: transparent;
+}
+
+/* Aufklappen mit Feder: Der Inhalt eines `<details>` geht auf, statt zu
+   springen. Wo der Browser `::details-content` nicht kennt, öffnet er wie
+   bisher. Beim Öffnen schneidet der Inhalt erst ab und gibt nach dem Aufgehen
+   frei, damit eine Auswahlliste darin nicht abgeschnitten wird.
+
+   Hier und bei allen Einblendungen unten ohne Deckkraft: Text bleibt in jedem
+   Bild der Bewegung so kräftig wie im Ruhezustand. Halb durchsichtiger Text
+   hätte für einen Augenblick zu wenig Kontrast - und eine Prüfung mit axe,
+   die gerade dann läuft, schlüge an. Die Bewegung tragen Lage, Größe und
+   Ausschnitt. */
+details {
+  interpolate-size: allow-keywords;
+}
+
+@supports selector(::details-content) {
+  details::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition:
+      block-size 0.34s var(--ease-feder-weich),
+      content-visibility 0.34s allow-discrete,
+      overflow-y 0s allow-discrete;
+  }
+
+  /* Beim Öffnen ist der Inhalt sofort da und fokussierbar - nur seine Höhe
+     geht auf. Ginge `content-visibility` mit über, wäre er im ersten Bild
+     noch verborgen, und ein Fokus gleich nach dem Öffnen ginge ins Leere. */
+  details[open]::details-content {
+    block-size: auto;
+    overflow-y: visible;
+    transition:
+      block-size 0.34s var(--ease-feder-weich),
+      overflow-y 0s 0.34s allow-discrete;
+  }
+
+  /* Die Regel in der Basis erreicht nur `::before` und `::after`, nicht
+     diesen Teil des Aufklappers - er springt hier selbst auf. */
+  @media (prefers-reduced-motion: reduce) {
+    details::details-content,
+    details[open]::details-content {
+      transition: none;
+    }
+  }
+}
+
+/* Filter, die einrasten (`Chip`): Ein Tipp lässt den Chip federn, das
+   Häkchen springt hinein. Zwei gleiche Animationen mit zwei Namen, damit
+   jeder Tipp sie neu startet; beim ersten Zeichnen federt nichts. */
+.chip-wahl[data-schwung='1'] {
+  animation: chip-rasten-1 0.34s var(--ease-feder);
+}
+
+.chip-wahl[data-schwung='2'] {
+  animation: chip-rasten-2 0.34s var(--ease-feder);
+}
+
+.chip-wahl[data-schwung] .chip-haken {
+  display: inline-block;
+  animation: chip-haken 0.32s var(--ease-feder) both;
+}
+
+@keyframes chip-rasten-1 {
+  from {
+    scale: 0.92;
+  }
+}
+
+@keyframes chip-rasten-2 {
+  from {
+    scale: 0.92;
+  }
+}
+
+@keyframes chip-haken {
+  from {
+    scale: 0.3;
+    rotate: -25deg;
+  }
+}
+
+/* Suche, die aufgeht (`Funktionssuche`): Die Trefferliste rollt aus dem
+   Feld heraus nach unten auf. */
+.suche-geht-auf {
+  /* Ohne Füllung: Nach dem Aufrollen schneidet nichts mehr ab, auch kein
+     Fokusrahmen am Rand. */
+  animation: suche-geht-auf 0.26s var(--ease-feder-weich);
+}
+
+@keyframes suche-geht-auf {
+  from {
+    translate: 0 -6px;
+    clip-path: inset(0 0 100% 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Am Telefon ist die Suche eine Lupe (BEF-039): Ein Tipp darauf lässt das
+   Feld von der Lupe her aufgehen. Ab 640 px steht das Feld immer da. */
+@media (max-width: 639.98px) {
+  .suche-oeffnet {
+    animation: suche-oeffnet 0.3s var(--ease-feder-weich);
+  }
+}
+
+@keyframes suche-oeffnet {
+  from {
+    clip-path: inset(0 0 0 82% round var(--radius-field));
+  }
+
+  to {
+    clip-path: inset(0 0 0 0 round var(--radius-field));
+  }
+}
+
+/* Felder (Rückmeldung flach): Der Fokusrahmen zieht sich mit einer Feder
+   ans Feld, der Titel des Felds wird dabei Hauptfarbe und kräftiger - ohne
+   dass sich etwas verschiebt. Eine falsche Eingabe wackelt einmal, ihr
+   Fehlertext gleitet ein. Bleibt ein Feld fehlerhaft, wackelt es beim
+   nächsten Fokus nicht noch einmal: Dieselbe Animation an derselben Stelle
+   der Liste läuft nicht neu. */
+:where(input:not([type='checkbox'], [type='radio']), textarea, select):focus-visible {
+  animation: fokus-ring 0.3s var(--ease-feder) both;
+}
+
+:where(input, textarea, select)[aria-invalid='true'] {
+  animation: feld-wackeln 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+:where(
+    input:not([type='checkbox'], [type='radio']),
+    textarea,
+    select
+  )[aria-invalid='true']:focus-visible {
+  animation:
+    feld-wackeln 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both,
+    fokus-ring 0.3s var(--ease-feder) both;
+}
+
+.feld > label {
+  transition:
+    color 0.2s ease,
+    font-weight 0.2s ease;
+}
+
+.feld:focus-within > label {
+  color: var(--color-accent);
+  font-weight: 650;
+}
+
+.feldfehler {
+  animation: einblenden 0.26s var(--ease-feder-weich) both;
+}
+
+@keyframes fokus-ring {
+  from {
+    outline-color: transparent;
+    outline-offset: 7px;
+  }
+}
+
+@keyframes feld-wackeln {
+  10%,
+  90% {
+    translate: -1px 0;
+  }
+
+  20%,
+  80% {
+    translate: 2px 0;
+  }
+
+  30%,
+  50%,
+  70% {
+    translate: -4px 0;
+  }
+
+  40%,
+  60% {
+    translate: 4px 0;
+  }
+}
+
+/* Meldungen gleiten ein (`Rueckmeldung`, `Statusmeldung`,
+   `Fehlerzusammenfassung`); das Häkchen der Rückmeldung springt nach. */
+.meldung-rein {
+  animation: meldung-rein 0.34s var(--ease-feder-weich) both;
+}
+
+.meldung-rein [data-haken] {
+  display: inline-block;
+  animation: haken-rein 0.32s 0.1s var(--ease-feder) both;
+}
+
+@keyframes meldung-rein {
+  from {
+    translate: 0 8px;
+  }
+}
+
+@keyframes einblenden {
+  from {
+    translate: 0 -4px;
+  }
+}
+
+@keyframes haken-rein {
+  from {
+    scale: 0.2;
+    rotate: -30deg;
+  }
+}
+
+/* Zeile öffnet sich zur Seite (`seitenUebergang.ts`): Die angetippte Zeile
+   wächst als weiße Fläche in den Inhalt der neuen Seite, die darin
+   aufscheint; der Rest der Seite blendet über. */
+::view-transition-group(zeile-zur-seite) {
+  overflow: clip;
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.25, 0.9, 0.3, 1);
+}
+
+::view-transition-old(zeile-zur-seite) {
+  animation: seite-raus 0.16s ease-out both;
+}
+
+::view-transition-new(zeile-zur-seite) {
+  animation: seite-rein 0.3s 0.08s ease-out both;
+}
+
+::view-transition-old(root) {
+  animation: seite-raus 0.22s ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: seite-rein 0.26s ease-out both;
+}
+
+@keyframes seite-raus {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes seite-rein {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 
