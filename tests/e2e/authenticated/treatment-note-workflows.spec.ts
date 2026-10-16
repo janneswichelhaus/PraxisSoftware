@@ -348,7 +348,9 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
 
     await abmeldenKnopf.click();
 
-    await expect(rueckfrage(page)).toContainText('Text noch nicht gespeichert – abmelden?');
+    await expect(
+      page.getByRole('dialog', { name: 'Text noch nicht gespeichert – abmelden?' }),
+    ).toBeVisible();
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
     // Die Sitzung besteht noch: Die Kopfzeile ist da, die Anmeldemaske nicht.
     await expect(abmeldenKnopf).toBeVisible();

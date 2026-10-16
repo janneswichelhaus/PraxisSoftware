@@ -137,31 +137,20 @@ function Wechselrueckfrage({
   onVerwerfen: () => void;
   onBleiben: () => void;
 }) {
-  const kasten = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    kasten.current?.querySelector('button')?.focus();
-  }, []);
-
   return (
-    <div
-      ref={kasten}
-      role="group"
-      aria-label={SCHUTZTEXTE.bezeichnung}
-      // Eine vertiefte Fläche mit Linie links wie jede Rückfrage (DESIGN.md
-      // Regel 2), keine Karte.
-      className="border-line-strong bg-surface-sunken border-l-4 py-3 pr-4 pl-4"
-    >
-      <p className="text-ink text-sm leading-relaxed">{children}</p>
-      <div className="mt-3 flex flex-wrap gap-3">
-        <Button type="button" variant="secondary" onClick={onVerwerfen}>
-          Verwerfen und wechseln
-        </Button>
-        <Button type="button" variant="quiet" onClick={onBleiben}>
-          Hier bleiben
-        </Button>
+    <Dialogfenster titel="Noch nicht gespeichert" onSchliessen={onBleiben}>
+      <div role="group" aria-label={SCHUTZTEXTE.bezeichnung}>
+        <p className="text-ink text-sm leading-relaxed">{children}</p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <Button type="button" variant="secondary" onClick={onVerwerfen}>
+            Verwerfen und wechseln
+          </Button>
+          <Button type="button" variant="quiet" data-autofocus onClick={onBleiben}>
+            Hier bleiben
+          </Button>
+        </div>
       </div>
-    </div>
+    </Dialogfenster>
   );
 }
 

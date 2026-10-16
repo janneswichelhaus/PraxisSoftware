@@ -79,6 +79,7 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 | Laden, Fehler, Veraltet, Leer         | `Abfragezustand` (Satz `VERBINDUNG_PRUEFEN`)           |
 | Nach einem Vorgang / kurze Meldung    | `Rueckmeldung` / `Statusmeldung`                       |
 | Bestätigung am Klickort / Fenster     | `Rueckfrage` / `Dialogfenster`                         |
+| Ungespeichertes vor dem Verlassen     | `useTextverlustschutz`: Fenster über gesperrter Seite  |
 | Knöpfe am Formularende / Arbeitsseite | `Formularfuss` / `Aktionsleiste`                       |
 | Haupt- und Kontextspalte              | `Zweispalter`                                          |
 | Bild, Foto                            | `Medienbild` (4:3, ganz; `vorschau` 56 × 56)           |

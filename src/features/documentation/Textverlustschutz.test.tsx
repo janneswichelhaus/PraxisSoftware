@@ -224,6 +224,28 @@ describe('Textverlustschutz: Navigation innerhalb der Anwendung', () => {
     expect(adresse()).toBe('Adresse: /dokumentation');
   });
 
+  it('fragt in einem Fenster über der gesperrten Seite; Escape heißt bleiben (ANN-566)', async () => {
+    const nutzer = userEvent.setup();
+    const speichern = vi.fn().mockResolvedValue(true);
+    renderWithProviders(<Pruefseite speichern={speichern} />, '/dokumentation');
+
+    const weg = screen.getByRole('link', { name: 'Weggehen' });
+    await nutzer.click(weg);
+
+    const fenster = screen.getByRole('dialog', { name: 'Noch nicht gespeichert' });
+    expect(fenster).toHaveAttribute('aria-modal', 'true');
+    // Die Seite darunter ist gesperrt, solange das Fenster offen ist.
+    expect(weg.closest('[inert]')).not.toBeNull();
+    expect(fenster).toContainElement(document.activeElement as HTMLElement);
+
+    await nutzer.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(weg.closest('[inert]')).toBeNull();
+    expect(adresse()).toBe('Adresse: /dokumentation');
+    expect(speichern).not.toHaveBeenCalled();
+  });
+
   it('laesst unveraenderte Inhalte ohne Rueckfrage durch', async () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<Pruefseite ungespeichert={false} />, '/dokumentation');
@@ -651,8 +673,9 @@ describe('Textverlustschutz: eigene Texte fuer Formulare ohne Dokumentation', ()
     expect(
       screen.queryByRole('button', { name: 'Speichern und weitergehen' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Verwerfen und weitergehen' })).toHaveFocus();
-    expect(screen.getByRole('button', { name: 'Hier bleiben' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Verwerfen und weitergehen' })).toBeInTheDocument();
+    // Ohne Speicherweg steht der Fokus auf dem Bleiben, nie auf dem Verwerfen (ANN-566).
+    expect(screen.getByRole('button', { name: 'Hier bleiben' })).toHaveFocus();
     expect(adresse()).toBe('Adresse: /patienten/neu');
   });
 

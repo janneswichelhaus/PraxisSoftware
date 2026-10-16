@@ -5842,3 +5842,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 **Anker.** `inhaltMitVermerk` in `src/features/documentation/api.ts`.
 
 **Änderungspfad.** Leeren Eintrag zulassen: Server-Prüfung in `create_treatment_note`/`update_treatment_note` (Migration, Pfad A) · Aufwand `mittel`.
+
+### ANN-566 — Rückfrage vor dem Verlassen als Fenster, Fokus nie auf „Verwerfen“
+
+Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
+
+**Annahme.** Die Rückfrage bei ungespeicherten Eingaben (Seitenwechsel, Abmelden, Wechsel von Tag oder Preisliste) erscheint als Fenster über der gesperrten Seite statt als Zeile oder Kasten. Escape und ein Tipp daneben heißen „bleiben“; der Fokus steht auf „Speichern und …“, ohne Speicherweg auf „Hier bleiben“, nie auf „Verwerfen“.
+
+**Begründung.** Auftrag Jannes (16.10.): sofort offensichtlich, Hintergrund deaktiviert. Folgt FIX-016 (Rückfragen als Fenster). Ein versehentliches Enter darf nichts verwerfen (§13).
+
+**Anker.** `useTextverlustschutz` in `src/features/documentation/Textverlustschutz.tsx`; `Wechselrueckfrage` in `scheduling/SchedulingPage.tsx` und `billing/CatalogPage.tsx`.
+
+**Änderungspfad.** Zurück zur Zeile: der Block `offen` in `useTextverlustschutz` · Aufwand `klein`.

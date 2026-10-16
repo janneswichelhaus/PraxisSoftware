@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Select } from '@/components/ui/Select';
@@ -400,33 +401,29 @@ function Wechselrueckfrage({
   onVerwerfen: () => void;
   onBleiben: () => void;
 }) {
-  const kasten = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Der Kasten erscheint nach einem Tipp auf die Liste; der Fokus geht mit.
-    kasten.current?.querySelector('button')?.focus();
-  }, []);
-
   return (
-    <div
-      ref={kasten}
-      role="group"
-      aria-label="Ungespeicherte Preisliste"
-      className="border-line-strong bg-surface-sunken mt-3 border-l-4 py-3 pr-4 pl-4"
-    >
-      <p className="text-ink text-sm">
-        Die Änderungen an „{bisher}“ sind noch nicht gespeichert. Beim Wechsel zu „{ziel}“ gehen sie
-        verloren.
-      </p>
-      <div className="mt-3 flex flex-wrap gap-3">
-        <Button type="button" variant="secondary" groesse="kompakt" onClick={onVerwerfen}>
-          Verwerfen und wechseln
-        </Button>
-        <Button type="button" variant="quiet" groesse="kompakt" onClick={onBleiben}>
-          Hier bleiben
-        </Button>
+    <Dialogfenster titel="Noch nicht gespeichert" onSchliessen={onBleiben}>
+      <div role="group" aria-label="Ungespeicherte Preisliste">
+        <p className="text-ink text-sm">
+          Die Änderungen an „{bisher}“ sind noch nicht gespeichert. Beim Wechsel zu „{ziel}“ gehen
+          sie verloren.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <Button type="button" variant="secondary" groesse="kompakt" onClick={onVerwerfen}>
+            Verwerfen und wechseln
+          </Button>
+          <Button
+            type="button"
+            variant="quiet"
+            groesse="kompakt"
+            data-autofocus
+            onClick={onBleiben}
+          >
+            Hier bleiben
+          </Button>
+        </div>
       </div>
-    </div>
+    </Dialogfenster>
   );
 }
 
