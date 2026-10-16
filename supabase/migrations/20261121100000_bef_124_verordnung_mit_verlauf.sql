@@ -576,8 +576,18 @@ begin
     raise exception 'treatment basis is in billing' using errcode = '55000';
   end if;
 
+  -- PRX-010 (Zweitreview): Mit der Grundlage fielen ihre klinischen Texte;
+  -- das bleibt den therapeutischen Rollen vorbehalten.
+  if not app.can_clear_treatment_basis_clinical_texts()
+     and app.treatment_basis_has_clinical_texts(p_treatment_basis_id, v_org) then
+    raise exception 'clinical texts on this treatment basis can only be cleared by treating roles'
+      using errcode = '42501';
+  end if;
+
   -- BEF-124 (ANN-562): Hing je ein Termin an der Grundlage - auch einer, der
   -- inzwischen woanders haengt -, gehoert sie zur Akte und bleibt (§ 630f BGB).
+  -- Erst nach der Rechtepruefung oben: Eine Rolle ohne Recht erfaehrt 42501,
+  -- nicht den Zustand der Grundlage.
   -- Nach der Zeilensperre geprueft: Ein Termin, der gleichzeitig an die
   -- Grundlage gehaengt wird, wartet auf sie (Fremdschluessel) und sieht danach
   -- entweder die Grundlage oder ihr Fehlen.
@@ -591,14 +601,6 @@ begin
            or a.previous_treatment_basis_id = p_treatment_basis_id)
   ) then
     raise exception 'treatment basis has appointments' using errcode = '23503';
-  end if;
-
-  -- PRX-010 (Zweitreview): Mit der Grundlage fielen ihre klinischen Texte;
-  -- das bleibt den therapeutischen Rollen vorbehalten.
-  if not app.can_clear_treatment_basis_clinical_texts()
-     and app.treatment_basis_has_clinical_texts(p_treatment_basis_id, v_org) then
-    raise exception 'clinical texts on this treatment basis can only be cleared by treating roles'
-      using errcode = '42501';
   end if;
 
   if exists (

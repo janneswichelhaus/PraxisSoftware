@@ -289,6 +289,12 @@ describe('BEF-124: Löschen nur ohne Termine', () => {
     }
   });
 
+  it('prüft erst das Recht: das Büro erfährt 42501, nicht die Termine (PRX-010)', async () => {
+    // Die Folgeverordnung des Seeds trägt klinische Texte und Termine.
+    const f = await fehler(users.office, LOESCHEN, ['88888888-8888-4888-8888-000000000002']);
+    expect(f?.code).toBe('42501');
+  });
+
   it('hält das Übertragen am Termin fest und sperrt danach das Löschen der alten Grundlage', async () => {
     const alt = await anlegen();
     const neu = await anlegen({ terminzahl: 12 });
