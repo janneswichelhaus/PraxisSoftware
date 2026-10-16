@@ -218,6 +218,16 @@ export function facetten(uebungen: readonly Uebung[]): Facetten {
  * „Knie · Kraft · Leicht, mit Halt" - Region der Übung, Ziel und Niveau der
  * Variante; was fehlt, entfällt (eigene Übungen tragen beides nicht).
  */
+/** Ordnungen des Katalogs als Zeile - Ziel · Ausgangsstellung · Niveau. */
+export function ordnungen(variante: Variante): string | null {
+  const teile = [
+    variante.goal ? ZIEL_LABEL[variante.goal] : null,
+    variante.starting_position ? AUSGANGSSTELLUNG_LABEL[variante.starting_position] : null,
+    variante.level ? NIVEAU_LABEL[variante.level as 1 | 2 | 3] : null,
+  ].filter(Boolean);
+  return teile.length > 0 ? teile.join(' · ') : null;
+}
+
 export function ordnungZeile(uebung: Uebung, variante: Variante | undefined): string {
   return [
     KOERPERREGION_LABEL[uebung.body_region],

@@ -157,6 +157,9 @@ describe('Schema-Invarianten', () => {
       'checkin_values',
       // UEB-011: die Übungstage, die die Person wählt.
       'exercise_plan_days',
+      // UEB-014: Vorlagen der Praxis und ihre Übungen.
+      'exercise_plan_templates',
+      'exercise_plan_template_items',
       // KOM-001: Rückfragen über die Plattform und ihre Einträge.
       'platform_messages',
       'platform_message_entries',

@@ -608,6 +608,9 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
         { table_name: 'exercise_plan_session_values', class_key: 'trainingsverhaeltnis' },
         { table_name: 'exercise_plan_sessions', class_key: 'patientenakte' },
         { table_name: 'exercise_plan_sessions', class_key: 'trainingsverhaeltnis' },
+        // UEB-014: Vorlagen der Praxis tragen keine Person (ANN-560).
+        { table_name: 'exercise_plan_template_items', class_key: 'betriebsdaten' },
+        { table_name: 'exercise_plan_templates', class_key: 'betriebsdaten' },
         { table_name: 'exercise_plans', class_key: 'patientenakte' },
         { table_name: 'exercise_plans', class_key: 'trainingsverhaeltnis' },
       ]);

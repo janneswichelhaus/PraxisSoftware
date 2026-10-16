@@ -5,13 +5,13 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+Übungen, zweite Runde (K12), eine PR, Branch `claude/sweet-gauss-z8te7o`: Vorlagen der Praxis
+(„Als Vorlage speichern“ am Plan, vor den mitgelieferten in „Aus Vorlage“, Seite Vorlagen), Durchsicht
+des Katalogs am Stück mit einem Tipp je Übung; ANN-560, ANN-561. Bilder und Videos offen (ANN-539).
+
 Test-Umgebung (16.10.): Die Auslieferung von #252 scheiterte zweimal am SSH-Zugang zu Uberspace,
 der die Verbindung vor dem Handshake abbrach (BEF-171); der Workflow baut sie jetzt mit bis zu
 fünf Versuchen auf (ANN-559). Bis zum nächsten grünen Lauf zeigt sie die Oberfläche von #250.
-
-Radflotte echt (FLT-EPIC-001) ist gemergt (#252): Depots, Räder, Schlüssel mit
-einem Tipp, Check-Up und Panne mit Stellen am 3D-Rad, Freigabe mit Rückfrage, Unterlage für die
-Werkstatt als PDF; BEF-049 erledigt, BEF-066 für die Flotte; ANN-550 bis ANN-558.
 
 Übersicht (15.10., Branch `claude/practical-curie-1jy88f`): Abschlusskarte in Tiefgrün und Link zu
 den Trainingskund:innen entfernt, alle Abschnitte unter dem Kopf 32 px auseinander (ANN-546).
@@ -20,7 +20,7 @@ fertig wird; nichts gespeichert (ANN-547).
 
 Monatsabrechnung in einem Lauf (K13, K14), eine PR, Branch `ccr-92feaef7-zkxssj`: Lauf auf
 `/abrechnung` in 3 Tipps (vorher ≈ 15 je Rechnung), Sammeldruck, Zahlungen gesammelt buchen;
-BEF-165 erledigt; ANN-544. Erstaufnahme (#248) ist gemergt.
+BEF-165 erledigt; ANN-544. Erstaufnahme (#248) und Radflotte (#252) sind gemergt.
 
 Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
 dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
@@ -30,16 +30,14 @@ https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
 
 Vorschlag, Jannes entscheidet (Roadmap, „Bereichsüberholungen“):
 
-1. **Übungen, zweite Runde**: Durchsicht, eigene Vorlagen, eigene Bilder und Videos.
-
-Aus der bisherigen Kette danach: BEF-124 (Verordnung ohne Verlauf, Pfad A); ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
+Die fünf Bereichsüberholungen sind gebaut. Aus der bisherigen Kette danach: BEF-124 (Verordnung ohne Verlauf, Pfad A); ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
 Widerruf zu Anhängen im Training (ANN-333).
 
 ## Bei Jannes
 
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,
   https://claude.ai/artifact/YXhSe8aGzbTbPdFJMboK2g; BEF-153); bis dahin nur die Nachbildung.
-- Übungskatalog fachlich durchsehen (Texte KI-erstellt, „ungeprüft“, ANN-386); ANN-475 bis
+- Übungskatalog fachlich durchsehen, jetzt am Stück unter `/uebungen/durchsicht` (ANN-386, ANN-561); ANN-475 bis
   ANN-479 ansehen (Besuch).
 - Reihenfolge der Bereichsüberholungen bestätigen oder ändern.
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
@@ -60,6 +58,5 @@ Widerruf zu Anhängen im Training (ANN-333).
 
 ## Letzte Session
 
-15.10.2026, Branch `ccr-658a5e25-l0njkl`: Radflotte. **Lokal:** `git pull`, `pnpm install`,
-Migrationen `20261119100000_flt_001_radflotte` und `20261119110000_flt_002_fotos_am_rad`
-(`supabase db reset`).
+16.10.2026, Branch `claude/sweet-gauss-z8te7o`: Übungen, zweite Runde. **Lokal:** `git pull`,
+Migration `20261120100000_ueb_014_eigene_vorlagen` (`supabase db reset`).

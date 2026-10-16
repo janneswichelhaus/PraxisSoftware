@@ -112,6 +112,8 @@ import { TrainingAppointmentPage } from '@/features/training/TrainingAppointment
 import { TrainingClientsPage } from '@/features/training/TrainingClientsPage';
 import { UebungenPage } from '@/features/exercises/UebungenPage';
 import { UebungPage } from '@/features/exercises/UebungPage';
+import { DurchsichtPage } from '@/features/exercises/DurchsichtPage';
+import { VorlagenPage } from '@/features/exercise-plans/VorlagenPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import { PlattformEinsicht } from '@/features/platform-access/PlattformEinsicht';
 import { istEinsichtspfad } from '@/features/platform-access/einsicht';
@@ -186,7 +188,7 @@ export function AuthenticatedRoutes({
   const showTraining = canReadTrainingClients(user.roles);
   const showCalendar = canSeeCalendar(user.roles);
   // Übungsbibliothek (UEB-EPIC-001): wer Übungen anleitet, in Behandlung und
-  // Training; nicht das Büro (ANN-293). Verbindlich prüft der Server.
+  // Training, und seit ABN-030 das Büro (BEF-137). Verbindlich prüft der Server.
   const showExercises = canReadExerciseLibrary(user.roles);
   // E-001 (DSN-001 D7): Die Einsicht in die Plattform einer Person steht
   // ohne Praxisrahmen da, wie die Plattform selbst - nur für die
@@ -607,6 +609,9 @@ export function AuthenticatedRoutes({
                 {showExercises ? (
                   <>
                     <Route path="/uebungen" element={<UebungenPage user={user} />} />
+                    {/* UEB-014/UEB-015: Vorlagen und Durchsicht des Katalogs. */}
+                    <Route path="/uebungen/vorlagen" element={<VorlagenPage user={user} />} />
+                    <Route path="/uebungen/durchsicht" element={<DurchsichtPage user={user} />} />
                     <Route path="/uebungen/:uebungId" element={<UebungPage user={user} />} />
                   </>
                 ) : null}
@@ -647,8 +652,8 @@ export function AuthenticatedRoutes({
                       path="/training/:relationshipId"
                       element={<TrainingClientPage user={user} />}
                     />
-                    {/* UEB-EPIC-002: ein Trainingsplan - owner und Trainingsbetreuung,
-                  nicht das Büro (ANN-298). Verbindlich prüft der Server. */}
+                    {/* UEB-EPIC-002: ein Trainingsplan - owner und Trainingsbetreuung, seit ABN-030
+                  lesend auch das Büro (ANN-298). Verbindlich prüft der Server. */}
                     {canReadExercisePlans(user.roles, 'training') ? (
                       <>
                         <Route

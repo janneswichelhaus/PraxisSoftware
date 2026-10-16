@@ -523,6 +523,20 @@ export const ROUTEN = Object.freeze([
     konten: ['owner', 'therapist', 'trainer'],
   },
   {
+    muster: '/uebungen/vorlagen',
+    pfad: '/uebungen/vorlagen',
+    bereich: 'Übungen und Training',
+    etikett: 'Vorlagen der Praxis',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/uebungen/durchsicht',
+    pfad: '/uebungen/durchsicht',
+    bereich: 'Übungen und Training',
+    etikett: 'Durchsicht des Katalogs',
+    konten: ['owner'],
+  },
+  {
     muster: '/uebungen/:uebungId',
     pfad: `/uebungen/${IDS.uebung}`,
     bereich: 'Übungen und Training',

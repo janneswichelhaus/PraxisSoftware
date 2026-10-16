@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-15",
+  "stand": "2026-10-16",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1080,6 +1080,15 @@
           "fertig_am": "2026-10-15",
           "nachweis": "Branch ccr-92feaef7-zkxssj, Migration 20261118100000_abr_040_monatslauf.sql, tests/e2e/abrechnungslauf.spec.ts (K13 3 Tipps), Zweitreview",
           "vermerk": "Bereichsüberholung 4 der Roadmap; ANN-544; Sichtung per Bildstrecke im PR"
+        },
+        {
+          "id": "ueb-014-015",
+          "name": "Übungen, zweite Runde: Vorlagen der Praxis (Als Vorlage speichern, Aus Vorlage, Seite Vorlagen), Durchsicht des Katalogs am Stück",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-16",
+          "nachweis": "Branch claude/sweet-gauss-z8te7o, Migration 20261120100000_ueb_014_eigene_vorlagen.sql, supabase/tests/exercise-plan-templates.test.ts, tests/e2e/plaene.spec.ts (K12 aus eigener Vorlage 5 Tipps), tests/e2e/authenticated/kernablaeufe.spec.ts (Durchsicht 1 Tipp je Übung), Zweitreview",
+          "vermerk": "Bereichsüberholung 5 der Roadmap; ANN-560, ANN-561; eigene Bilder und Videos offen (ANN-539); Sichtung per Bildstrecke im PR"
         },
         {
           "id": "ueb-012",

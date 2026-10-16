@@ -233,6 +233,8 @@ class Nachbau {
   plattform: 'keiner' | 'aktiv' = 'keiner';
   plaene = new Map<string, Argumente & { items: Argumente[] }>();
   zaehler = 0;
+  /** UEB-014: die Vorlagen der Praxis; `null` heißt, der Server ist nicht zu erreichen. */
+  vorlagen: Argumente[] | null = [];
 
   variante(id: string) {
     for (const u of this.bibliothek.exercises) {
@@ -254,6 +256,22 @@ class Nachbau {
     switch (name) {
       case 'list_exercise_library':
         return this.bibliothek;
+      case 'list_exercise_plan_templates':
+        if (this.vorlagen === null) throw new Error('nicht erreichbar');
+        return { can_create: true, templates: this.vorlagen };
+      case 'save_exercise_plan_template': {
+        const id = `vorlage-${(this.vorlagen ?? []).length + 1}`;
+        (this.vorlagen ??= []).push({
+          id,
+          name: a['p_name'],
+          goal: a['p_goal'] || null,
+          can_edit: true,
+          created_by_name: 'Anna Beispiel',
+          updated_on: HEUTE,
+          items: a['p_items'],
+        });
+        return id;
+      }
       case 'add_catalog_exercises_for_plan': {
         // Wie der Server: Vorhandenes nehmen; Fehlendes übernimmt nur owner,
         // sonst kommt es als „missing“ zurück (O-002, ANN-293).
@@ -621,4 +639,87 @@ test.describe('Ablauf Heimprogramm (K12, Welle B)', () => {
       expect(await ueberlaeuft(page)).toBe(false);
     });
   }
+
+  test('aus einer Vorlage der Praxis: 5 Tipps; als Vorlage speichern: 3 Tipps (K12, UEB-014)', async ({
+    page,
+  }) => {
+    test.slow();
+    const nachbau = await mitNachbau(page);
+    const dosis = (v: string, sets: number) => ({
+      variant_id: v,
+      sets,
+      reps_min: 10,
+      reps_max: 10,
+      duration_seconds: null,
+      hold_seconds: null,
+      per_side: true,
+      times_per_day: 2,
+      load: null,
+      tempo: null,
+      rest_seconds: null,
+      double_progression: false,
+    });
+    nachbau.vorlagen = [
+      {
+        id: 'vorlage-1',
+        name: 'Zuhause nach dem Knie',
+        goal: null,
+        can_edit: true,
+        created_by_name: 'Anna Beispiel',
+        updated_on: HEUTE,
+        items: [dosis('v-KN-01', 2), dosis('v-KN-05', 4)],
+      },
+    ];
+    const z = new Zaehler();
+    await page.goto(`${PRUEFSEITE}?seite=planbau`);
+    await z.tippe(page.getByRole('button', { name: 'Neuer Plan' }));
+    // Die Vorlage der Praxis steht vor den mitgelieferten.
+    const erste = page.getByRole('button', { name: /Vorlage der Praxis/ }).first();
+    await expect(erste).toContainText('Zuhause nach dem Knie');
+    await z.tippe(erste);
+    const vorschau = page.getByRole('dialog', { name: 'Zuhause nach dem Knie' });
+    await expect(vorschau.getByRole('checkbox')).toHaveCount(2);
+    expect(await ueberlaeuft(page)).toBe(false);
+    expect(await axeVerstoesse(page)).toEqual([]);
+    await z.tippe(vorschau.getByRole('button', { name: '2 hinzufügen' }));
+    await expect(page.getByText('2 Übungen hinzugefügt aus „Zuhause nach dem Knie“.')).toBeVisible({
+      timeout: 15_000,
+    });
+    await z.tippe(page.getByRole('button', { name: 'Zuweisen' }));
+    await z.tippe(page.getByRole('dialog').getByRole('button', { name: 'Zuweisen' }));
+    await expect(page.getByRole('status').filter({ hasText: 'Zugewiesen bis' })).toBeVisible();
+    const plan = [...nachbau.plaene.values()][0]!;
+    expect(plan.status).toBe('assigned');
+    // Mit der Dosierung der Vorlage, nicht der Standarddosierung.
+    expect(plan.items.map((i) => [i['variant_id'], i['sets'], i['times_per_day']])).toEqual([
+      ['v-KN-01', 2, 2],
+      ['v-KN-05', 4, 2],
+    ]);
+    test.info().annotations.push({ type: 'Tipps', description: `${z.tipps} Tipps (K12)` });
+    expect(z.tipps).toBe(5);
+    expect(z.eingaben).toBe(0);
+
+    // Der zugewiesene Plan wird Vorlage: Knopf, Name steht schon, Speichern.
+    const s = new Zaehler();
+    await s.tippe(page.getByRole('button', { name: 'Als Vorlage speichern' }));
+    const fenster = page.getByRole('dialog', { name: 'Als Vorlage speichern' });
+    await expect(fenster.getByRole('textbox', { name: /^Name/ })).toHaveValue(
+      'Zuhause nach dem Knie',
+    );
+    await fenster.getByRole('textbox', { name: /^Name/ }).fill('Knie, Woche 2');
+    s.eingaben += 1;
+    s.tipps += 1;
+    expect(await ueberlaeuft(page)).toBe(false);
+    await s.tippe(fenster.getByRole('button', { name: 'Speichern' }));
+    await expect(page.getByText(/Als Vorlage „Knie, Woche 2“ gespeichert/)).toBeVisible();
+    expect(nachbau.vorlagen.map((v) => v['name'])).toEqual([
+      'Zuhause nach dem Knie',
+      'Knie, Woche 2',
+    ]);
+    expect(nachbau.vorlagen[1]!['items']).toEqual([dosis('v-KN-01', 2), dosis('v-KN-05', 4)]);
+    test
+      .info()
+      .annotations.push({ type: 'Tipps', description: `Als Vorlage: ${s.tipps} Tipps, 1 Eingabe` });
+    expect(s.tipps).toBe(3);
+  });
 });

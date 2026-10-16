@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
@@ -10,6 +11,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { canReadExerciseLibrary, type CurrentUser } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import {
@@ -19,6 +21,7 @@ import {
   type Bibliothek,
   type Uebernahme,
 } from './api';
+import { offeneDurchsicht } from './durchsicht';
 import { NeueUebungFormular } from './Formulare';
 import type { Katalogeintrag } from './katalog/typen';
 import {
@@ -153,6 +156,24 @@ function KatalogUebernehmen({
         {laeuft ? 'Wird übernommen …' : 'Übernehmen'}
       </Button>
     </div>
+  );
+}
+
+/**
+ * UEB-015 (ANN-561): Solange übernommene Übungen ungeprüft sind, steht für
+ * owner eine Zeile mit dem Weg zur Durchsicht über der Liste.
+ */
+function Durchsichtszeile({ bibliothek }: { bibliothek: Bibliothek }) {
+  if (!bibliothek.can_manage) return null;
+  const offen = offeneDurchsicht(bibliothek).length;
+  if (offen === 0) return null;
+  return (
+    <Statusmeldung ton="warnung" className="mb-4">
+      {offen === 1 ? '1 Übung' : `${offen} Übungen`} aus dem Katalog noch nicht durchgesehen.{' '}
+      <Textlink alleinstehend to="/uebungen/durchsicht">
+        Durchsicht
+      </Textlink>
+    </Statusmeldung>
   );
 }
 
@@ -320,13 +341,20 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title={BEGRIFFE.uebungen}
         actions={
-          pflegen ? (
-            <Button type="button" onClick={() => setAnlegen(true)}>
-              {BEGRIFFE.uebung} anlegen
-            </Button>
-          ) : null
+          <>
+            {/* UEB-014: Vorlagen der Praxis und mitgelieferte. */}
+            <ButtonLink variant="secondary" to="/uebungen/vorlagen">
+              Vorlagen
+            </ButtonLink>
+            {pflegen ? (
+              <Button type="button" onClick={() => setAnlegen(true)}>
+                {BEGRIFFE.uebung} anlegen
+              </Button>
+            ) : null}
+          </>
         }
       />
+      {abfrage.data ? <Durchsichtszeile bibliothek={abfrage.data} /> : null}
 
       {uebernehmen.data ? (
         <Rueckmeldung key={uebernehmen.submittedAt} className="mb-4">

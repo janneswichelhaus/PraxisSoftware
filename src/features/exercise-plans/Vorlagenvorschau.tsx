@@ -5,9 +5,8 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
 import { Auswahlfuss, Auswahlzeile } from './Uebungsauswahl';
-import { vorausgewaehlt, type Vorlagenzeile } from './vorlagen';
+import { vorausgewaehlt, type Vorlage, type Vorlagenzeile } from './vorlagen';
 
 /** Eine wählbare Übung der Vorlage. */
 export type Vorlagenwahl = Extract<Vorlagenzeile, { art: 'waehlbar' }>;
@@ -34,7 +33,7 @@ export function Vorlagenvorschau({
   onHinzufuegen,
   onSchliessen,
 }: {
-  vorlage: Katalogvorlage;
+  vorlage: Vorlage;
   zeilen: readonly Vorlagenzeile[];
   /** Varianten, die schon im Plan stehen - ohne Haken, mit Wort. */
   imPlan: ReadonlySet<string>;
