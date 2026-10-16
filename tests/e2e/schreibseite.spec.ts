@@ -78,7 +78,7 @@ test('fragt beim Zurückgehen mit ungespeichertem Text in einer Zeile nach', asy
   await oeffne(page, 375, 'entwurf');
   await page.getByLabel('Eintrag zur Behandlung').fill('Geändert');
   await page.getByRole('link', { name: 'Zurück' }).click();
-  await expect(page.getByText('Text noch nicht gespeichert.')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Text noch nicht gespeichert' })).toBeVisible();
   await page.getByRole('button', { name: 'Weiterschreiben' }).click();
   await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue('Geändert');
 });

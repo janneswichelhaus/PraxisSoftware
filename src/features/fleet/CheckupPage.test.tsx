@@ -317,7 +317,7 @@ describe('Geführter Check-Up', () => {
     await act(() => router.navigate(-1));
     const frage = await screen.findByRole('group', { name: 'Ungespeicherter Check-Up' });
     expect(
-      screen.getByRole('dialog', { name: 'Check-Up noch nicht gespeichert.' }),
+      screen.getByRole('dialog', { name: 'Check-Up noch nicht gespeichert' }),
     ).toBeInTheDocument();
     await nutzer.click(within(frage).getByRole('button', { name: 'Weiter prüfen' }));
     expect(await fenster('Reifen und Luftdruck')).toBeInTheDocument();
@@ -422,7 +422,7 @@ describe('Geführter Check-Up', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Check-Up abbrechen' }));
     const frage = await screen.findByRole('group', { name: 'Ungespeicherter Check-Up' });
     expect(
-      screen.getByRole('dialog', { name: 'Check-Up noch nicht gespeichert.' }),
+      screen.getByRole('dialog', { name: 'Check-Up noch nicht gespeichert' }),
     ).toBeInTheDocument();
     expect(within(frage).getByRole('button', { name: 'Weiter prüfen' })).toBeInTheDocument();
     await nutzer.click(within(frage).getByRole('button', { name: 'Verwerfen' }));

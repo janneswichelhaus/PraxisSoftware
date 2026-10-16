@@ -625,7 +625,7 @@ describe('CompleteTreatmentPage', () => {
     ).toBeInTheDocument();
 
     // Als Zeile über der Fußleiste (Handoff 6a), mit denselben drei Wegen.
-    expect(screen.getByText('Text noch nicht gespeichert.')).toBeInTheDocument();
+    expect(screen.getByText('Text noch nicht gespeichert')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Weiterschreiben' }));
     expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Ungespeichert');
   });

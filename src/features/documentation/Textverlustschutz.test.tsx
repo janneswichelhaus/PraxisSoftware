@@ -1093,7 +1093,9 @@ describe('Textverlustschutz: Offenes, das sich nicht speichern lässt (KI-EPIC-0
     );
     await user.click(screen.getByRole('link', { name: 'Weggehen' }));
 
-    expect(screen.getByText(`Text noch nicht gespeichert. ${SATZ}`)).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Text noch nicht gespeichert' })).toHaveTextContent(
+      SATZ,
+    );
     await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
     await waitFor(() => expect(adresse()).toBe('Adresse: /woanders'));
     expect(speichern).toHaveBeenCalledTimes(1);
@@ -1110,7 +1112,7 @@ describe('Textverlustschutz: Offenes, das sich nicht speichern lässt (KI-EPIC-0
       '/dokumentation',
     );
     await user.click(screen.getByRole('button', { name: 'Abmelden' }));
-    expect(screen.getByText(`${SATZ} Abmelden?`)).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Vor dem Abmelden' })).toHaveTextContent(SATZ);
     expect(abmelden).not.toHaveBeenCalled();
   });
 
@@ -1216,7 +1218,7 @@ describe('Textverlustschutz: Abläufe mit Schritten (FLT-005)', () => {
     // Ohne Schritt davor: Das Zurück fragt mit den Sätzen des Ablaufs.
     rerender(<Pruefseite texte={CHECKUPTEXTE} kompakt />);
     await nutzer.click(screen.getByRole('button', { name: 'Browser-Zurück' }));
-    expect(screen.getByText('Check-Up noch nicht gespeichert.')).toBeInTheDocument();
+    expect(screen.getByText('Check-Up noch nicht gespeichert')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Weiterschreiben' })).toBeNull();
     await nutzer.click(screen.getByRole('button', { name: 'Weiter prüfen' }));
     expect(screen.queryByRole('group', { name: 'Ungespeicherter Check-Up' })).toBeNull();

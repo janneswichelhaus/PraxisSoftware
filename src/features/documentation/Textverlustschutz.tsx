@@ -633,15 +633,20 @@ export function useTextverlustschutz({
   // nichts zu speichern - dann kein „Speichern und weiter“.
   const speichernAnbieten =
     speichern !== undefined && (ungespeichert || nichtSicherbar === undefined);
-  const offenerText = texte.zeile?.weitergehen ?? 'Text noch nicht gespeichert.';
-  const zeile =
-    nichtSicherbar === undefined
-      ? abmeldemodus
-        ? (texte.zeile?.abmelden ?? 'Text noch nicht gespeichert – abmelden?')
-        : offenerText
-      : [ungespeichert ? offenerText : null, nichtSicherbar, abmeldemodus ? 'Abmelden?' : null]
-          .filter(Boolean)
-          .join(' ');
+  // Der Titel des Fensters: am Formular mit fester Fußleiste die gewohnte
+  // Zeile, etwa „Check-Up noch nicht gespeichert“; was sich nicht speichern
+  // lässt, steht darunter als eigener Absatz.
+  const zeile = (
+    abmeldemodus
+      ? (texte.zeile?.abmelden ?? 'Text noch nicht gespeichert – abmelden?')
+      : (texte.zeile?.weitergehen ?? 'Text noch nicht gespeichert.')
+  ).replace(/\.$/, '');
+  const titel =
+    kompakt && (ungespeichert || nichtSicherbar === undefined)
+      ? zeile
+      : abmeldemodus
+        ? 'Vor dem Abmelden'
+        : 'Noch nicht gespeichert';
 
   const schutz = (
     <>
@@ -671,9 +676,7 @@ export function useTextverlustschutz({
           „bleiben“, nie „verwerfen“. */}
       {offen ? (
         <Dialogfenster
-          // Am Formular mit fester Fußleiste die gewohnte Zeile als Titel,
-          // etwa „Check-Up noch nicht gespeichert.“
-          titel={kompakt ? zeile : 'Noch nicht gespeichert'}
+          titel={titel}
           onSchliessen={() => {
             if (!laeuft) bleiben();
           }}
