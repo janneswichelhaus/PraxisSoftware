@@ -153,9 +153,9 @@ export function Pannenfenster({
   const laeuft = melden.isPending;
   const zurueckMoeglich = !ausstehend && !laeuft && vorigeSeite(ablauf, amRad) !== null;
 
-  // Wer schon über „Wo ist der Schaden?“ hinaus ist, hat eine Panne begonnen:
-  // ✕ fragt, und die Zurückgeste geht einen Schritt zurück, statt das Fenster
-  // samt allen Angaben zu schließen.
+  // Wer schon über „Wo ist der Schaden?“ hinaus ist, hat eine Panne begonnen
+  // (ANN-586): ✕ fragt, und die Zurückgeste geht einen Schritt zurück, statt
+  // das Fenster samt allen Angaben zu schließen.
   const ungespeichert =
     ausstehend === null &&
     (!amRad ||

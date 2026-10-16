@@ -6010,3 +6010,27 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 **Anker.** `wannFehlt` und `vollstaendig` in `src/features/platform/terminablauf.ts`.
 
 **Änderungspfad.** Bedingung dort lockern · Aufwand `klein`.
+
+### ANN-586 — Panne im Fenster: wann sie begonnen ist
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Eine Panne gilt als begonnen, sobald „Wo ist der Schaden?“ verlassen oder eine Stelle markiert ist; ab dann fragt ✕ („Panne noch nicht gemeldet“), und die Zurückgeste geht einen Schritt zurück statt aus dem Fenster. Seiten, deren Hauptknopf meldet, sind Abschluss mit Linie über dem Fuß.
+
+**Begründung.** Spec G3: ✕ mit Rückfrage bei Eingaben, Zurückgeste einen Schritt; ohne angehaltene Navigation fängt der Textverlustschutz die Geste nicht ab.
+
+**Anker.** `ungespeichert` in `src/features/fleet/Pannenfenster.tsx`; `istAbschluss` in `pannenseiten.ts`.
+
+**Änderungspfad.** Bedingung an dieser Stelle · Aufwand `klein`.
+
+### ANN-587 — Schlüssel übergeben: ein Ablauf für Tresor und Hand zu Hand
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** „Schlüssel übergeben“ ist ein Ablauf für beides: aus dem Tresor eintragen und von Hand zu Hand (immer drei Schritte, mit `?rad=` ab Schritt 2). „Von“ folgt aus dem Rad und hat kein eigenes „Ändern“; ✕ schließt ohne Rückfrage, weil nur gewählt wurde. An der Zeile bleibt nur „Zurücklegen“.
+
+**Begründung.** Spec G4 (Rad → an wen → Abschluss); ein zweiter Knopf an der Zeile brach bei 375 px Name und Angaben Wort für Wort um (DESIGN.md L3).
+
+**Anker.** `src/features/fleet/schluesselablauf.ts`, `KeyPage.tsx`.
+
+**Änderungspfad.** Einstieg „Übergeben“ zusätzlich auf der Radseite · Aufwand `klein`.

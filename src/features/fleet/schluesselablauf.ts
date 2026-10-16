@@ -2,7 +2,7 @@ import type { Bike, Fleet, FleetStaff } from './api';
 import { standort } from './rad';
 
 /**
- * Schlüssel übergeben (Überholung 6, G4) ohne Oberfläche: welche Räder und
+ * Schlüssel übergeben (Überholung 6, G4, ANN-587) ohne Oberfläche: welche Räder und
  * Personen zur Wahl stehen, wo der Ablauf beginnt und welcher Vorgang am Ende
  * läuft.
  *
