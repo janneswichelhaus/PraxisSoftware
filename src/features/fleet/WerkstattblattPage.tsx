@@ -235,15 +235,17 @@ function Unterlage({
           </div>
 
           <h2 className="mt-6 text-lg font-bold">Markierte Stellen</h2>
-          {/* Feste Spalten mit Silbentrennung: Am Telefon passt die Tabelle so
-              in die Breite, auf Papier bleibt sie wie im Entwurf. */}
+          {/* Feste Spalten mit Silbentrennung. Am Telefon steht die Einstufung
+              unter dem Bauteil, und das Kästchen zum Abhaken fehlt - es gehört
+              aufs Papier. A4 ist breiter als `sm`: Gedruckt bleibt die Tabelle
+              wie im Entwurf. */}
           <table className="mt-3 w-full table-fixed border-collapse text-sm break-words hyphens-auto sm:text-base">
             <colgroup>
               <col className="w-10" />
-              <col className="w-[30%]" />
+              <col className="w-[38%] sm:w-[30%]" />
               <col />
-              <col className="w-[24%] sm:w-[18%]" />
-              <col className="w-14 sm:w-16" />
+              <col className="hidden w-[18%] sm:table-column" />
+              <col className="hidden w-16 sm:table-column" />
             </colgroup>
             <thead>
               <tr className="border-ink border-b-2 text-left text-sm">
@@ -256,10 +258,10 @@ function Unterlage({
                 <th scope="col" className="py-2 pr-2 sm:pr-3">
                   Beschreibung
                 </th>
-                <th scope="col" className="py-2 pr-2 sm:pr-3">
+                <th scope="col" className="hidden py-2 pr-2 sm:table-cell sm:pr-3">
                   Einstufung
                 </th>
-                <th scope="col" className="py-2">
+                <th scope="col" className="hidden py-2 sm:table-cell">
                   Erledigt
                 </th>
               </tr>
@@ -272,11 +274,14 @@ function Unterlage({
                   </td>
                   <td className="py-2 pr-2 sm:pr-3">
                     <span className="block font-semibold">{zoneLabel(spot.zone)}</span>
+                    <span className="block sm:hidden">{einstufungText(spot.severity)}</span>
                     <span className="text-ink-muted block text-sm">{herkunft(spot, zone)}</span>
                   </td>
                   <td className="py-2 pr-2 sm:pr-3">{spot.note ?? '–'}</td>
-                  <td className="py-2 pr-2 sm:pr-3">{einstufungText(spot.severity)}</td>
-                  <td className="py-2">
+                  <td className="hidden py-2 pr-2 sm:table-cell sm:pr-3">
+                    {einstufungText(spot.severity)}
+                  </td>
+                  <td className="hidden py-2 sm:table-cell">
                     <span
                       aria-label="Erledigt, zum Abhaken"
                       role="img"
