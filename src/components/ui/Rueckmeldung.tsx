@@ -45,12 +45,14 @@ export function Rueckmeldung({
     <div ref={zeile} tabIndex={-1} className={`outline-none ${className}`}>
       {/* Aussehen nach dem Design-Handoff vom 2026-10-01 (Abschnitt 3):
           Akzentfläche, Radius 14, innen 12/16, 15 px in 600 in der Hauptfarbe,
-          das Häkchen vorn für Vorlesesoftware ausgeblendet - der Satz sagt es. */}
+          das Häkchen vorn für Vorlesesoftware ausgeblendet - der Satz sagt es.
+          `meldung-rein`: Die Zeile gleitet ein, das Häkchen springt nach
+          (ANN-567). */}
       <p
         role="status"
-        className="bg-accent-soft text-accent rounded-card text-liste px-4 py-3 font-semibold"
+        className="meldung-rein bg-accent-soft text-accent rounded-card text-liste px-4 py-3 font-semibold"
       >
-        <span aria-hidden="true" className="mr-1.5">
+        <span aria-hidden="true" data-haken="" className="mr-1.5">
           ✓
         </span>
         {children}

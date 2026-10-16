@@ -68,7 +68,8 @@ export function Field({
   const [visible, setVisible] = useState(false);
 
   return (
-    <div className="flex flex-col gap-1.5">
+    // `feld`: Der Titel reagiert auf den Fokus (ANN-567, `index.css`).
+    <div className="feld flex flex-col gap-1.5">
       <label htmlFor={id} className="text-ink text-sm font-medium">
         {label}
       </label>
@@ -114,7 +115,7 @@ export function Field({
         ) : null}
       </div>
       {error ? (
-        <p id={errorId} className="text-danger text-sm">
+        <p id={errorId} className="feldfehler text-danger text-sm">
           {error}
         </p>
       ) : null}

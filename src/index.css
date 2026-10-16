@@ -565,7 +565,7 @@ html[data-schrift='sehr-gross'] {
 }
 
 /* =============================================================================
-   Bewegung (ANN-567): Wechseln mit Schwung
+   Bewegung (ANN-567): Wechseln mit Schwung, Rückmeldung flach
 
    Auftrag Jannes vom 16.10.2026 (Leinwand „Verspielte Designelemente“, Seite
    „Lebendig“): nur Gestaltung, am Inhalt ändert sich nichts. Flach wie das
@@ -726,6 +726,105 @@ details {
 
   to {
     clip-path: inset(0 0 0 0 round var(--radius-field));
+  }
+}
+
+/* Felder (Rückmeldung flach): Der Fokusrahmen zieht sich mit einer Feder
+   ans Feld, der Titel des Felds wird dabei Hauptfarbe und kräftiger - ohne
+   dass sich etwas verschiebt. Eine falsche Eingabe wackelt einmal, ihr
+   Fehlertext gleitet ein. Bleibt ein Feld fehlerhaft, wackelt es beim
+   nächsten Fokus nicht noch einmal: Dieselbe Animation an derselben Stelle
+   der Liste läuft nicht neu. */
+:where(input:not([type='checkbox'], [type='radio']), textarea, select):focus-visible {
+  animation: fokus-ring 0.3s var(--ease-feder) both;
+}
+
+:where(input, textarea, select)[aria-invalid='true'] {
+  animation: feld-wackeln 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+:where(
+    input:not([type='checkbox'], [type='radio']),
+    textarea,
+    select
+  )[aria-invalid='true']:focus-visible {
+  animation:
+    feld-wackeln 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both,
+    fokus-ring 0.3s var(--ease-feder) both;
+}
+
+.feld > label {
+  transition:
+    color 0.2s ease,
+    font-weight 0.2s ease;
+}
+
+.feld:focus-within > label {
+  color: var(--color-accent);
+  font-weight: 650;
+}
+
+.feldfehler {
+  animation: einblenden 0.26s var(--ease-feder-weich) both;
+}
+
+@keyframes fokus-ring {
+  from {
+    outline-color: transparent;
+    outline-offset: 7px;
+  }
+}
+
+@keyframes feld-wackeln {
+  10%,
+  90% {
+    translate: -1px 0;
+  }
+
+  20%,
+  80% {
+    translate: 2px 0;
+  }
+
+  30%,
+  50%,
+  70% {
+    translate: -4px 0;
+  }
+
+  40%,
+  60% {
+    translate: 4px 0;
+  }
+}
+
+/* Meldungen gleiten ein (`Rueckmeldung`, `Statusmeldung`,
+   `Fehlerzusammenfassung`); das Häkchen der Rückmeldung springt nach. */
+.meldung-rein {
+  animation: meldung-rein 0.34s var(--ease-feder-weich) both;
+}
+
+.meldung-rein [data-haken] {
+  display: inline-block;
+  animation: haken-rein 0.32s 0.1s var(--ease-feder) both;
+}
+
+@keyframes meldung-rein {
+  from {
+    translate: 0 8px;
+  }
+}
+
+@keyframes einblenden {
+  from {
+    translate: 0 -4px;
+  }
+}
+
+@keyframes haken-rein {
+  from {
+    scale: 0.2;
+    rotate: -30deg;
   }
 }
 
