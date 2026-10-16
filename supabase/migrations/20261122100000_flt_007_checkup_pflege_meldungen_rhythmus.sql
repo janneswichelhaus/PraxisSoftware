@@ -266,6 +266,17 @@ begin
     raise exception 'invalid checksum' using errcode = '22023';
   end if;
   if p_side is not null then
+    -- Ein abgebrochener Versuch derselben Seite (eigene, unbestaetigte Zeile
+    -- wie in discard_fleet_photo_upload) weicht dem neuen: Sonst hielte er
+    -- die Seite, bis der Aufraeumlauf ihn nach 24 Stunden verwirft - dann ist
+    -- das Fenster fuer Fotos zum Check-Up schon zu. Der Trigger schreibt den
+    -- Loeschauftrag, falls doch schon ein Objekt liegt.
+    delete from public.fleet_photos f
+     where f.checkup_id = p_checkup_id and f.side = p_side
+       and f.organization_id = v_org
+       and f.created_by = auth.uid()
+       and f.status = 'pending'
+       and f.confirmation_requested_at is null;
     if exists (
       select 1 from public.fleet_photos f
       where f.checkup_id = p_checkup_id and f.side = p_side
@@ -447,6 +458,9 @@ begin
 end;
 $$;
 
+comment on function public.list_fleet(date) is
+  'FLT-001, FLT-008, FLT-009: die Flotte in einem Aufruf - Rechte (can_manage, can_release, can_read_reports), Check-Up-Rhythmus der Praxis, Depots, Raeder, aktive Mitarbeitende und ganztaegige Abwesenheiten der Stammnutzer:innen in der Woche. Lesen nach app.can_read_fleet().';
+
 -- -----------------------------------------------------------------------------
 -- 5. Meldungen fuer den Arbeitgeber (FLT-008, ANN-569)
 -- -----------------------------------------------------------------------------
@@ -460,6 +474,7 @@ as $$
   select app.has_any_role('owner', 'team_lead')
 $$;
 
+revoke all on function app.can_read_fleet_reports() from public, anon;
 grant execute on function app.can_read_fleet_reports() to authenticated;
 
 comment on function app.can_read_fleet_reports() is

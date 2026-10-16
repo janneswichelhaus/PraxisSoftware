@@ -185,6 +185,27 @@ describe('Check-Up-Pflege und Meldungen (FLT-007 bis FLT-009)', () => {
       );
     });
 
+    it('lässt einen abgebrochenen Versuch die Seite nicht blockieren', async () => {
+      const checkup = await checkUp(users.therapist);
+      // Vorbereitet, aber nie bestätigt - etwa weil die Verbindung abriss.
+      const { rows } = await asUserCommitted<{ photo_id: string }>(users.therapist, VORBEREITEN, [
+        null,
+        checkup,
+        1000,
+        SUMME,
+        'front',
+      ]);
+      const foto = await seitenfoto(users.therapist, checkup, 'front');
+      const { rows: zeilen } = await asPostgres<{ id: string; status: string }>(
+        "select id, status from public.fleet_photos where checkup_id = $1 and side = 'front'",
+        [checkup],
+      );
+      expect(zeilen).toEqual([{ id: foto.photo_id, status: 'ready' }]);
+      expect(zeilen[0]!.id).not.toBe(rows[0]!.photo_id);
+      // Ein fertiges Foto weicht nicht.
+      expect(await code(seitenfoto(users.therapist, checkup, 'front'))).toBe('23505');
+    });
+
     it('weist eine unbekannte Seite und eine Seite an einer Stelle ab', async () => {
       const checkup = await checkUp(users.therapist);
       expect(
