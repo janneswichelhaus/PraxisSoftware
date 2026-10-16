@@ -26,10 +26,12 @@ import {
   fetchFleet,
   flotteSchluessel,
   returnKey,
+  setCheckupInterval,
   takeKey,
   type Bike,
   type Fleet,
 } from './api';
+import { RHYTHMEN, faelligAm, faelligText, faelligkeit, rhythmusText } from './rhythmus';
 import {
   WOCHENTAGE,
   formatZeitpunkt,
@@ -182,6 +184,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
           <Flotte
             flotte={flotte}
             zone={zone}
+            heute={todayInTimeZone(zone ?? 'Europe/Berlin')}
             montag={montag}
             suche={suche}
             zustand={zustand}
@@ -198,6 +201,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
 function Flotte({
   flotte,
   zone,
+  heute,
   montag,
   suche,
   zustand,
@@ -207,6 +211,7 @@ function Flotte({
 }: {
   flotte: Fleet;
   zone: string | null;
+  heute: string;
   montag: string;
   suche: string;
   zustand: Zustandsfilter;
@@ -268,6 +273,7 @@ function Flotte({
         flotte={flotte}
         abschnitt={abschnitt}
         zone={zone}
+        heute={heute}
         tage={tage}
         laeuft={schluessel.isPending && schluessel.variables.rad.id === rad.id}
         onSchluessel={(art) => {
@@ -367,7 +373,9 @@ function Flotte({
         </>
       )}
 
-      {flotte.can_manage ? <Einstellungen /> : null}
+      {flotte.can_manage ? (
+        <Einstellungen rhythmus={flotte.checkup_interval_days} onMeldung={onMeldung} />
+      ) : null}
     </>
   );
 }
@@ -387,6 +395,7 @@ function Radzeile({
   flotte,
   abschnitt,
   zone,
+  heute,
   tage,
   laeuft,
   onSchluessel,
@@ -396,6 +405,7 @@ function Radzeile({
   /** Die Überschrift des Abschnitts; `null` unter „Ihr Rad“. */
   abschnitt: string | null;
   zone: string | null;
+  heute: string;
   tage: Record<Wochentag, string>;
   laeuft: boolean;
   onSchluessel: (art: 'nehmen' | 'zuruecklegen') => void;
@@ -407,6 +417,8 @@ function Radzeile({
     (tag) => belegung(rad, tag.nr, tage[tag.nr], flotte.unavailable).wegenAbwesenheit,
   );
   const ich = flotte.my_staff_member_id;
+  // FLT-009 (ANN-570): fällig als Ausnahme mit Zeichen und Wort, sonst nichts.
+  const checkup = faelligkeit(rad, flotte.checkup_interval_days, zone);
 
   return (
     <ListRow
@@ -449,6 +461,12 @@ function Radzeile({
           ) : rad.open_spots > 0 ? (
             <span className="block">
               {rad.open_spots === 1 ? 'Eine Stelle offen' : `${rad.open_spots} Stellen offen`}
+            </span>
+          ) : null}
+          {checkup && faelligAm(checkup, heute) ? (
+            <span className="text-warnung block font-medium">
+              <span aria-hidden="true">! </span>
+              {faelligText(checkup, heute)}
             </span>
           ) : null}
           {rad.note ? <span className="block">{rad.note}</span> : null}
@@ -498,16 +516,63 @@ function Radzeile({
 // -----------------------------------------------------------------------------
 
 /**
- * Depots und die Standortvorlage des Pannenablaufs. Die Vorlage bleibt nur
- * zu lesen: Sie stammt aus Köln und ist für Tübingen ungeprüft (ANN-554,
- * §15.2); eine änderbare Betriebsanweisung setzt die geprüften Tübinger
- * Angaben voraus. Zugangscodes stehen nie in der Anwendung.
+ * Depots, der Check-Up-Rhythmus und die Standortvorlage des Pannenablaufs.
+ * Die Vorlage bleibt nur zu lesen: Sie stammt aus Köln und ist für Tübingen
+ * ungeprüft (ANN-554, §15.2); eine änderbare Betriebsanweisung setzt die
+ * geprüften Tübinger Angaben voraus. Zugangscodes stehen nie in der
+ * Anwendung.
+ *
+ * Der Rhythmus (FLT-009, ANN-570) ist kein Termin: Er sagt nur, ab wann
+ * Übersicht, Kalender und Radflotte auf einen fälligen Check-Up hinweisen.
  */
-function Einstellungen() {
+function Einstellungen({
+  rhythmus,
+  onMeldung,
+}: {
+  rhythmus: number | null;
+  onMeldung: (text: string) => void;
+}) {
   const vorlage = aktiveStandortvorlage;
+  const queryClient = useQueryClient();
+  const speichern = useMutation({
+    mutationFn: async (tage: number | null) => {
+      await setCheckupInterval(tage);
+      return tage;
+    },
+    onSuccess: async (tage) => {
+      await queryClient.invalidateQueries({ queryKey: FLOTTE_SCHLUESSEL });
+      onMeldung(
+        tage === null
+          ? 'Check-Up-Rhythmus aus: keine Hinweise mehr.'
+          : `Check-Up-Rhythmus: ${rhythmusText(tage)}.`,
+      );
+    },
+  });
+  const stufen =
+    rhythmus === null || RHYTHMEN.some((stufe) => stufe.tage === rhythmus)
+      ? RHYTHMEN
+      : [...RHYTHMEN, { tage: rhythmus, text: rhythmusText(rhythmus) }];
   return (
     <Section titel="Einstellungen">
       <div className="flex flex-col gap-2">
+        <div className="max-w-formular mb-2">
+          <Select
+            label="Check-Up-Rhythmus"
+            value={rhythmus === null ? '' : String(rhythmus)}
+            disabled={speichern.isPending}
+            error={speichern.isError ? speichern.error.message : undefined}
+            onChange={(event) =>
+              speichern.mutate(event.target.value ? Number(event.target.value) : null)
+            }
+          >
+            {stufen.map((stufe) => (
+              <option key={stufe.tage} value={stufe.tage}>
+                {stufe.text}
+              </option>
+            ))}
+            <option value="">Aus</option>
+          </Select>
+        </div>
         <Textlink to="/betrieb/flotte/depots" alleinstehend>
           Depots verwalten
         </Textlink>

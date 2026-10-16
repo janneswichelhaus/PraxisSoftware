@@ -180,6 +180,19 @@ describe('NewEventPage', () => {
     expect(screen.getByLabelText('Ende *')).toHaveValue('10:00');
   });
 
+  it('setzt den Titel aus einem vorgegebenen Zweck, nie aus freiem Text der Adresse (FLT-009)', async () => {
+    rendern('/termine/ereignis?datum=2027-05-12&beginn=07:40&ende=08:00&zweck=checkup');
+    await formularAbwarten();
+    expect(screen.getByLabelText('Bezeichnung *')).toHaveValue('Fahrrad-Check-Up');
+    expect(screen.getByLabelText('Beginn *')).toHaveValue('07:40');
+  });
+
+  it('übernimmt keinen unbekannten Zweck', async () => {
+    rendern('/termine/ereignis?datum=2027-05-12&zweck=toString');
+    await formularAbwarten();
+    expect(screen.getByLabelText('Bezeichnung *')).toHaveValue('');
+  });
+
   it('traegt das Ereignis mit allen Beteiligten ein', async () => {
     const user = userEvent.setup();
     rendern();

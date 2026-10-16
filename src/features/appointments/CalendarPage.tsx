@@ -3,6 +3,8 @@ import { useFahrwege, type Fahrweg, type FahrwegSpalte } from './fahrwege';
 import { tageslageNeuLaden } from './tageslage';
 import type { Terminort, Wegfrage } from './wegpruefung';
 import { KURZE_TERMINDAUER_MINUTEN, useLueckenfinder, type LueckenSpalte } from './lueckenfinder';
+import { CheckupKalenderhinweis } from '@/features/fleet/CheckupHinweise';
+import type { Tagesspalte } from '@/features/fleet/rhythmus';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -764,6 +766,58 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     aktiv: isTherapyStaff(user.roles),
     abMinute: bereich.von === heute && jetztMinute !== null ? jetztMinute : 0,
   });
+  // FLT-009 (ANN-570): fällige Fahrrad-Check-Ups mit einer freien Lücke -
+  // je Person und Tag im Ausschnitt dieselbe Arbeitszeit und dasselbe
+  // Belegte wie im Gitter. Nur ab heute, nur für die Praxisrollen (die
+  // Radflotte liest nur, wer behandelt oder plant).
+  const checkupSpalten = useMemo((): Tagesspalte[] => {
+    if (!zone || !isTherapyStaff(user.roles) || bereich.bis < heute) return [];
+    const paare =
+      p.ansicht === 'tag'
+        ? tagesPersonen.map((t) => ({ person: t.staff_member_id, tag: bereich.von }))
+        : wochenPerson
+          ? wochenTage.map((tag) => ({ person: wochenPerson, tag }))
+          : [];
+    return paare
+      .filter(({ tag }) => tag >= heute)
+      .map(({ person, tag }) => ({
+        person,
+        tag,
+        baender: arbeitszeitBekannt
+          ? arbeitszeitBaender(person, tag, wochenplanDaten, ausnahmenDaten)
+          : null,
+        belegt: [
+          ...eintraege
+            .filter(
+              (e) =>
+                e.staff_member_id === person &&
+                e.status !== 'cancelled' &&
+                dayKey(e.starts_at, zone) === tag,
+            )
+            .map((e) => ({
+              vonMinute: minutesOfDay(e.starts_at, zone),
+              bisMinute: minutesOfDay(e.ends_at, zone),
+            })),
+          ...belegtFuer(person, tag),
+        ],
+      }));
+    // Wie die Lücken: an den geladenen Arbeitszeiten und Belegungen.
+  }, [
+    zone,
+    user.roles,
+    bereich.von,
+    bereich.bis,
+    heute,
+    p.ansicht,
+    tagesPersonen,
+    wochenPerson,
+    wochenTage,
+    arbeitszeitBekannt,
+    wochenplanDaten,
+    ausnahmenDaten,
+    eintraege,
+    belegtDaten,
+  ]);
   const lueckenHinweis =
     p.ansicht !== 'tag'
       ? 'Freie Lücken mit Fahrweg zeigt die Tagesansicht.'
@@ -1696,6 +1750,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             .join('|')}
         />
       ) : null}
+
+      <CheckupKalenderhinweis
+        spalten={checkupSpalten}
+        heute={heute}
+        jetztMinute={jetztMinute}
+        zone={zone ?? null}
+        rueckweg={kalenderStand}
+      />
 
       {/* Der Filter aus der Akte steht sichtbar über dem Gitter und lässt sich
           mit einem Tap aufheben: Ein Kalender, der ohne erkennbaren Grund fast
