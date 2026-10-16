@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { Dialogfenster, Fenstertitel } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
+import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Medienbild } from '@/components/ui/Medienbild';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -128,8 +127,6 @@ export function CheckupFenster({
   const [fremd, setFremd] = useState<string | null>(null);
   // Was zuletzt beantwortet wurde - sichtbar auf der Seite danach.
   const [quittung, setQuittung] = useState<{ fuer: string; inhalt: ReactNode } | null>(null);
-  const [gesperrt, setGesperrt] = useState(false);
-  const sperre = useRef<number | undefined>(undefined);
   const [notiz, setNotiz] = useState('');
   const [weitereFotos, setWeitereFotos] = useState<Blob[]>([]);
   const [werbeflaechen, setWerbeflaechen] = useState<Werbeflaechen | null>(null);
@@ -139,8 +136,6 @@ export function CheckupFenster({
     auftraege: Fotoauftrag[];
     grund: string | null;
   } | null>(null);
-
-  useEffect(() => () => window.clearTimeout(sperre.current), []);
 
   const bewertet = bewertungen(antworten, stellen);
   const zurueckZiel = ausstehend ? null : vorigeSeite(seite, zurUebersicht);
@@ -240,13 +235,6 @@ export function CheckupFenster({
   // Seitenwechsel
   // ---------------------------------------------------------------------------
 
-  /** Die Fragefläche nimmt für die Dauer des Kameraflugs keinen Tipp an. */
-  function sperren() {
-    setGesperrt(true);
-    window.clearTimeout(sperre.current);
-    sperre.current = window.setTimeout(() => setGesperrt(false), TIPPSPERRE_MS);
-  }
-
   function gehe(neu: Seite) {
     setFremd(null);
     const andererOrt =
@@ -255,8 +243,9 @@ export function CheckupFenster({
       (neu.art === 'foto' && seite.art === 'foto' && neu.index !== seite.index);
     if (andererOrt) setFokus((vorher) => fokusFuer(neu, vorher.token + 1));
     if (neu.art === 'abschluss') setZurUebersicht(false);
+    // Die Tippsperre für die Dauer des Kameraflugs setzt der Baustein, sobald
+    // sich die Seite ändert (`seitenKennung`).
     setSeite(neu);
-    sperren();
   }
 
   function zurueckGehen() {
@@ -454,7 +443,6 @@ export function CheckupFenster({
     setFremd(null);
     setFokus((vorher) => fokusFuer(ziel, vorher.token + 1));
     setSeite(ziel);
-    sperren();
   }
 
   /**
@@ -539,223 +527,182 @@ export function CheckupFenster({
   const quittungHier =
     quittung && quittung.fuer === seitenSchluessel(seite) ? quittung.inhalt : null;
 
-  // Bühne und Fragefläche teilen sich die Höhe des Fensters. Auf den Fragen
-  // bekommt das Rad den Rest; im Abschluss rollt die Zusammenfassung, Haken
-  // und Speichern stehen fest darunter, und am Telefon entfällt das Rad
-  // (Praxis- und Design-Review FLT-005). Eine lange Stelle bekommt einen
-  // Rollbereich.
+  // Bühne und Fragefläche teilen sich die Höhe des Fensters (Baustein
+  // `GefuehrterAblauf`). Auf den Fragen bekommt das Rad den Rest; im
+  // Abschluss rollt die Zusammenfassung, Haken und Speichern stehen fest
+  // darunter, und am Telefon entfällt das Rad (Praxis- und Design-Review
+  // FLT-005). Eine lange Stelle bekommt einen Rollbereich.
   const abschlussZeigen = seite.art === 'abschluss' && !ausstehend;
-  const buehne = abschlussZeigen
-    ? 'hidden lg:flex lg:min-h-0 lg:flex-1'
-    : 'flex min-h-36 flex-1 lg:min-h-0';
-  const flaeche = abschlussZeigen
-    ? 'flex min-h-0 flex-1 flex-col lg:flex-none'
-    : `overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${
-        seite.art === 'weitere' && entwurf ? 'max-h-[60%] shrink-0 lg:max-h-none' : 'shrink-0'
-      }`;
 
   return (
-    <Dialogfenster
-      vollbild
+    <GefuehrterAblauf
       titel={titel}
-      beschreibung={`${bike.name} · ${bikeTypeLabels[bike.bike_type].kurz}`}
+      objekt={`${bike.name} · ${bikeTypeLabels[bike.bike_type].kurz}`}
+      schliessen="Check-Up abbrechen"
       onSchliessen={() => void navigate(zurueck)}
-      schliessenBeschriftung="Check-Up abbrechen"
-      titelImInhalt
-    >
-      <p className="sr-only" aria-live="polite">
-        {ansage}
-      </p>
-      <div className="shrink-0 px-4 pt-2">
-        <div className="flex min-h-11 items-center gap-3">
-          {zurueckZiel ? (
-            <Button variant="quiet" groesse="kompakt" onClick={zurueckGehen}>
-              ← Zurück
-            </Button>
-          ) : null}
-          <p className="text-ink-muted ml-auto text-sm">{stand.text}</p>
-        </div>
-        <ProgressBar wert={stand.wert} von={SCHRITTE} />
-      </div>
-      {/* Die Rückfrage vor dem Weggehen, gleich unter dem Kopf: dort, wo
-          „Check-Up abbrechen“ liegt, und auf jeder Seite ohne Rollen. */}
-      <div className="shrink-0">{schutz}</div>
-
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div className={`flex-col px-4 pt-3 pb-2 lg:p-4 ${buehne}`}>
-          <BikeModel3D
-            hoehe="100%"
-            ansichten={seite.art === 'abschluss' || seite.art === 'weitere'}
-            ersatz="Alle Schritte gehen auch über die Knöpfe."
-            markers={markers}
-            draft={draft}
-            activeMarkerId={entwurf?.key ?? null}
-            highlight={highlight}
-            focus={fokus}
-            hinweis={hinweis}
-            onPick={amRad}
+      seite={seitenKennung(seite)}
+      stand={{ text: stand.text, wert: stand.wert, von: SCHRITTE }}
+      onZurueck={zurueckZiel ? zurueckGehen : undefined}
+      ansage={ansage}
+      schutz={schutz}
+      buehne={
+        <BikeModel3D
+          hoehe="100%"
+          ansichten={seite.art === 'abschluss' || seite.art === 'weitere'}
+          ersatz="Alle Schritte gehen auch über die Knöpfe."
+          markers={markers}
+          draft={draft}
+          activeMarkerId={entwurf?.key ?? null}
+          highlight={highlight}
+          focus={fokus}
+          hinweis={hinweis}
+          onPick={amRad}
+        />
+      }
+      buehneAmTelefon={!abschlussZeigen}
+      flaecheKnapp={seite.art === 'weitere' && entwurf !== null}
+      abschluss={abschlussZeigen}
+      fuss={
+        abschlussZeigen ? (
+          <AbschlussFuss
+            user={user}
+            bestaetigt={bestaetigt}
+            onBestaetigt={setBestaetigt}
+            vollstaendig={werbeflaechen !== null && alleSeiten(seitenfotos)}
+            fehler={speichern.isError ? speichern.error.message : null}
+            speichert={speichern.isPending}
+            onSpeichern={() => speichern.mutate()}
           />
+        ) : undefined
+      }
+    >
+      {ausstehend ? (
+        <div className="flex flex-col gap-4">
+          <Rueckmeldung>Check-Up gespeichert.</Rueckmeldung>
+          <Statusmeldung ton="fehler">
+            {`${fotoText(ausstehend.auftraege.length)} konnte${ausstehend.auftraege.length === 1 ? '' : 'n'} nicht übertragen werden.`}
+            {ausstehend.grund ? ` ${ausstehend.grund}` : ''}
+          </Statusmeldung>
+          <Formularfuss>
+            <Button onClick={() => erneut.mutate()} disabled={erneut.isPending}>
+              {erneut.isPending ? 'Wird übertragen …' : 'Erneut versuchen'}
+            </Button>
+            <Button
+              variant="quiet"
+              onClick={() => zumRad('Check-Up gespeichert, ohne die übrigen Fotos.')}
+            >
+              Ohne diese Fotos weiter
+            </Button>
+          </Formularfuss>
         </div>
-
-        <div
-          className={`lg:border-line lg:w-96 lg:shrink-0 lg:border-l ${flaeche} ${
-            gesperrt ? 'pointer-events-none' : ''
-          }`.trim()}
-        >
-          {/* Die Überschrift unter dem Rad, direkt über den Antworten - wo der
-              Daumen ist und der Blick als Nächstes hinwill (Jannes 2026-10-16). */}
-          {abschlussZeigen ? (
-            <div className="shrink-0 px-4 pt-3 lg:pt-4">
-              <Fenstertitel />
-            </div>
-          ) : (
-            <div className="mb-3">
-              <Fenstertitel />
-            </div>
-          )}
-          {ausstehend ? (
-            <div className="flex flex-col gap-4">
-              <Rueckmeldung>Check-Up gespeichert.</Rueckmeldung>
-              <Statusmeldung ton="fehler">
-                {`${fotoText(ausstehend.auftraege.length)} konnte${ausstehend.auftraege.length === 1 ? '' : 'n'} nicht übertragen werden.`}
-                {ausstehend.grund ? ` ${ausstehend.grund}` : ''}
-              </Statusmeldung>
-              <Formularfuss>
-                <Button onClick={() => erneut.mutate()} disabled={erneut.isPending}>
-                  {erneut.isPending ? 'Wird übertragen …' : 'Erneut versuchen'}
-                </Button>
-                <Button
-                  variant="quiet"
-                  onClick={() => zumRad('Check-Up gespeichert, ohne die übrigen Fotos.')}
-                >
-                  Ohne diese Fotos weiter
-                </Button>
-              </Formularfuss>
-            </div>
-          ) : seite.art === 'punkt' ? (
-            <Punktseite
-              index={seite.index}
-              teil={seite.teil}
-              bewertung={antworten[punkt!.key] ? bewertet[punkt!.key] : undefined}
-              notizOhneStelle={
-                eigeneStellen(punkt!.key).length === 0 ? (antworten[punkt!.key]?.note ?? '') : ''
-              }
-              neueStellen={eigeneStellen(punkt!.key).map((stelle) => ({
-                stelle,
-                nummer: nummerVon(stelle.key),
-              }))}
-              quittung={quittungHier}
-              verlust={verlust(punkt!.key)}
-              erfassung={erfassung}
-              aktivNummer={aktivNummer}
-              offen={offene.filter((spot) => zoneCheckItem(spot.zone) === punkt!.key)}
-              vorlaeufig={vorlaeufig}
-              onInOrdnung={() => inOrdnung(seite.index)}
-              onAbweichung={(rating) => abweichung(seite.index, rating)}
-              onBauteil={(zone) => waehleBauteil(seite.index, zone)}
-              onOhneStelle={() => ohneStelle(seite.index)}
-              onVorlaeufig={(teil) =>
-                setVorlaeufig((vorher) => ({ rating: 'problem', note: '', ...vorher, ...teil }))
-              }
-              onWeiter={() => weiterNachWas(seite.index)}
-            />
-          ) : seite.art === 'werbung' ? (
-            <Werbungsseite
-              key="werbung"
-              quittung={quittungHier}
-              bisher={werbeflaechen}
-              onFertig={werbungFertig}
-            />
-          ) : seite.art === 'foto' ? (
-            <Fotoseite
-              key={`foto-${seite.index}`}
-              index={seite.index}
-              quittung={quittungHier}
-              foto={seitenfotos[SEITEN[seite.index]!.key] ?? null}
-              onAufnahme={(foto) => fotoAufgenommen(seite.index, foto)}
-              onWeiter={() => fotoWeiter(seite.index)}
-            />
-          ) : seite.art === 'weitere' ? (
-            entwurf ? (
-              <Entwurfsfeld
-                zustand={{
-                  ...erfassung,
-                  uebernehmen: () => {
-                    erfassung.uebernehmen();
-                    gehe(ABSCHLUSS);
-                  },
-                  verwerfen: () => {
-                    erfassung.verwerfen();
-                    gehe(ABSCHLUSS);
-                  },
-                  entfernen: () => {
-                    erfassung.entfernen();
-                    gehe(ABSCHLUSS);
-                  },
-                }}
-                entwurf={entwurf}
-                nummer={aktivNummer}
-                rahmen={false}
-                hauptknopf
-              />
-            ) : (
-              <div className="flex flex-col gap-3">
-                {/* Die Nadeln am Rad: Form und Farbe mit Wort (Regel 5). */}
-                <p className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                  <span className="inline-flex items-center gap-2">
-                    <Nadelform einstufung="problem" />
-                    <span className="text-ink">Problem</span>
-                  </span>
-                  <span className="inline-flex items-center gap-2">
-                    <Nadelform einstufung="beobachten" />
-                    <span className="text-ink">Beobachten</span>
-                  </span>
-                </p>
-                <Button className="w-full" onClick={erfassung.ohneModell} data-autofocus>
-                  Bauteil aus Liste wählen
-                </Button>
-              </div>
-            )
-          ) : (
-            <Abschluss
-              user={user}
-              bewertet={bewertet}
-              antworten={antworten}
-              stellen={stellen}
-              offene={offene}
-              nummerVon={nummerVon}
-              notiz={notiz}
-              onNotiz={setNotiz}
-              weitereFotos={weitereFotos}
-              onWeitereFotos={setWeitereFotos}
-              werbeflaechen={werbeflaechen}
-              seitenfotos={seitenfotos}
-              bestaetigt={bestaetigt}
-              onBestaetigt={setBestaetigt}
-              onAendern={aendern}
-              onStelleAendern={(key) => {
-                erfassung.bearbeite(key);
-                gehe({ art: 'weitere' });
-              }}
-              onWeitereStelle={() => gehe({ art: 'weitere' })}
-              fehler={speichern.isError ? speichern.error.message : null}
-              speichert={speichern.isPending}
-              onSpeichern={() => speichern.mutate()}
-            />
-          )}
-        </div>
-      </div>
-    </Dialogfenster>
+      ) : seite.art === 'punkt' ? (
+        <Punktseite
+          index={seite.index}
+          teil={seite.teil}
+          bewertung={antworten[punkt!.key] ? bewertet[punkt!.key] : undefined}
+          notizOhneStelle={
+            eigeneStellen(punkt!.key).length === 0 ? (antworten[punkt!.key]?.note ?? '') : ''
+          }
+          neueStellen={eigeneStellen(punkt!.key).map((stelle) => ({
+            stelle,
+            nummer: nummerVon(stelle.key),
+          }))}
+          quittung={quittungHier}
+          verlust={verlust(punkt!.key)}
+          erfassung={erfassung}
+          aktivNummer={aktivNummer}
+          offen={offene.filter((spot) => zoneCheckItem(spot.zone) === punkt!.key)}
+          vorlaeufig={vorlaeufig}
+          onInOrdnung={() => inOrdnung(seite.index)}
+          onAbweichung={(rating) => abweichung(seite.index, rating)}
+          onBauteil={(zone) => waehleBauteil(seite.index, zone)}
+          onOhneStelle={() => ohneStelle(seite.index)}
+          onVorlaeufig={(teil) =>
+            setVorlaeufig((vorher) => ({ rating: 'problem', note: '', ...vorher, ...teil }))
+          }
+          onWeiter={() => weiterNachWas(seite.index)}
+        />
+      ) : seite.art === 'werbung' ? (
+        <Werbungsseite
+          key="werbung"
+          quittung={quittungHier}
+          bisher={werbeflaechen}
+          onFertig={werbungFertig}
+        />
+      ) : seite.art === 'foto' ? (
+        <Fotoseite
+          key={`foto-${seite.index}`}
+          index={seite.index}
+          quittung={quittungHier}
+          foto={seitenfotos[SEITEN[seite.index]!.key] ?? null}
+          onAufnahme={(foto) => fotoAufgenommen(seite.index, foto)}
+          onWeiter={() => fotoWeiter(seite.index)}
+        />
+      ) : seite.art === 'weitere' ? (
+        entwurf ? (
+          <Entwurfsfeld
+            zustand={{
+              ...erfassung,
+              uebernehmen: () => {
+                erfassung.uebernehmen();
+                gehe(ABSCHLUSS);
+              },
+              verwerfen: () => {
+                erfassung.verwerfen();
+                gehe(ABSCHLUSS);
+              },
+              entfernen: () => {
+                erfassung.entfernen();
+                gehe(ABSCHLUSS);
+              },
+            }}
+            entwurf={entwurf}
+            nummer={aktivNummer}
+            rahmen={false}
+            hauptknopf
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {/* Die Nadeln am Rad: Form und Farbe mit Wort (Regel 5). */}
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="inline-flex items-center gap-2">
+                <Nadelform einstufung="problem" />
+                <span className="text-ink">Problem</span>
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <Nadelform einstufung="beobachten" />
+                <span className="text-ink">Beobachten</span>
+              </span>
+            </p>
+            <Button className="w-full" onClick={erfassung.ohneModell} data-autofocus>
+              Bauteil aus Liste wählen
+            </Button>
+          </div>
+        )
+      ) : (
+        <Abschluss
+          bewertet={bewertet}
+          antworten={antworten}
+          stellen={stellen}
+          offene={offene}
+          nummerVon={nummerVon}
+          notiz={notiz}
+          onNotiz={setNotiz}
+          weitereFotos={weitereFotos}
+          onWeitereFotos={setWeitereFotos}
+          werbeflaechen={werbeflaechen}
+          seitenfotos={seitenfotos}
+          onAendern={aendern}
+          onStelleAendern={(key) => {
+            erfassung.bearbeite(key);
+            gehe({ art: 'weitere' });
+          }}
+          onWeitereStelle={() => gehe({ art: 'weitere' })}
+        />
+      )}
+    </GefuehrterAblauf>
   );
 }
-
-/**
- * Nach jedem Seitenwechsel nimmt die Fragefläche so lange keinen Tipp an, wie
- * die Kamera fliegt (Praxis-Review FLT-005): Ein prellender Handschuh oder ein
- * ungeduldiger zweiter Tipp träfe sonst den Knopf an derselben Stelle der
- * nächsten Seite, und ein Punkt stünde ungesehen auf „In Ordnung“.
- */
-const TIPPSPERRE_MS = 700;
 
 /** Die Rückfrage vor dem Weggehen spricht vom Check-Up, nicht von „Text“. */
 const CHECKUPTEXTE: Verlustschutztexte = {
@@ -779,6 +726,18 @@ function fokusFuer(seite: Seite, token: number): BikeFocus {
   // Das ganze Rad von der Seite, die fotografiert wird.
   if (seite.art === 'foto') return { zones: ZONE_KEYS, view: SEITEN[seite.index]!.blick, token };
   return { zones: [], preset: 'schraeg', token };
+}
+
+/**
+ * Kennung jeder einzelnen Seite für den Baustein: Wechselt sie, nimmt die
+ * Fläche kurz keinen Tipp an - auch zwischen „Wo genau?“ und „Was ist
+ * aufgefallen?“ desselben Punkts.
+ */
+function seitenKennung(seite: Seite): string {
+  if (seite.art === 'punkt') {
+    return `punkt-${seite.index}-${seite.teil}${seite.teil === 'was' && seite.vonWo ? '-wo' : ''}`;
+  }
+  return seite.art === 'foto' ? `foto-${seite.index}` : seite.art;
 }
 
 /** Schlüssel einer Seite des Ablaufs - wohin eine Quittung gehört. */
@@ -1192,7 +1151,6 @@ function Fotoseite({
 }
 
 function Abschluss({
-  user,
   bewertet,
   antworten,
   stellen,
@@ -1204,16 +1162,10 @@ function Abschluss({
   onWeitereFotos,
   werbeflaechen,
   seitenfotos,
-  bestaetigt,
-  onBestaetigt,
   onAendern,
   onStelleAendern,
   onWeitereStelle,
-  fehler,
-  speichert,
-  onSpeichern,
 }: {
-  user: CurrentUser;
   bewertet: Record<CheckItemKey, CheckRating>;
   antworten: Antworten;
   stellen: readonly Stelle[];
@@ -1225,14 +1177,9 @@ function Abschluss({
   onWeitereFotos: (fotos: Blob[]) => void;
   werbeflaechen: Werbeflaechen | null;
   seitenfotos: Seitenfotos;
-  bestaetigt: boolean;
-  onBestaetigt: (an: boolean) => void;
   onAendern: (seite: Seite) => void;
   onStelleAendern: (key: string) => void;
   onWeitereStelle: () => void;
-  fehler: string | null;
-  speichert: boolean;
-  onSpeichern: () => void;
 }) {
   const abweichend = CHECK_ITEMS.map((item, index) => ({ item, index })).filter(
     ({ item }) => bewertet[item.key] !== 'ok',
@@ -1249,201 +1196,222 @@ function Abschluss({
   );
   const weitere = stellen.filter((stelle) => !ersteJePunkt.has(stelle.key));
 
+  // Die Zusammenfassung rollt im Baustein; Haken und Speichern stehen fest
+  // darunter (`AbschlussFuss`).
   return (
-    <>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-4 lg:pt-4">
-        <div className="flex flex-col gap-3">
-          {/* Der Fokus beginnt bei der Zusammenfassung, nicht beim Haken. */}
-          <div tabIndex={-1} data-autofocus className="focus:outline-none">
-            <Statusmeldung>{zusammenfassung(bewertet, stellen)}</Statusmeldung>
-          </div>
+    <div className="flex flex-col gap-3">
+      {/* Der Fokus beginnt bei der Zusammenfassung, nicht beim Haken. */}
+      <div tabIndex={-1} data-autofocus className="focus:outline-none">
+        <Statusmeldung>{zusammenfassung(bewertet, stellen)}</Statusmeldung>
+      </div>
 
-          {abweichend.length > 0 || weitere.length > 0 ? (
-            <ListRows rahmen={false} beschriftung="Auffällig">
-              {abweichend.map(({ item, index }) => {
-                const stelle = stellen.find((eintrag) => zoneCheckItem(eintrag.zone) === item.key);
-                const rating = bewertet[item.key] as Severity;
-                return (
-                  <ListRow
-                    key={item.key}
-                    zeit={
-                      stelle ? (
-                        <Nadel nummer={nummerVon(stelle.key)} einstufung={stelle.severity} />
-                      ) : undefined
-                    }
-                    titel={item.label}
-                    meta={
-                      <>
-                        <span className="block">
-                          <Einstufung einstufung={rating} />
-                          {stelle && stelle.fotos.length > 0
-                            ? ` · ${fotoZahl(stelle.fotos.length)}`
-                            : ''}
-                        </span>
-                        <span className="block">
-                          {antworten[item.key]?.note.trim() || stelle?.note.trim() || 'Ohne Notiz'}
-                        </span>
-                      </>
-                    }
-                    aktion={
-                      <Button
-                        variant="secondary"
-                        groesse="kompakt"
-                        aria-label={`${item.label} ändern`}
-                        onClick={() => onAendern(punktSeite(index))}
-                      >
-                        Ändern
-                      </Button>
-                    }
-                  />
-                );
-              })}
-              {weitere.map((stelle) => {
-                const pruefpunkt = zoneCheckItem(stelle.zone);
-                return (
-                  <ListRow
-                    key={stelle.key}
-                    zeit={<Nadel nummer={nummerVon(stelle.key)} einstufung={stelle.severity} />}
-                    titel={zoneLabel(stelle.zone)}
-                    meta={
-                      <>
-                        <span className="block">
-                          <Einstufung einstufung={stelle.severity} />
-                          {pruefpunkt
-                            ? ` · ${CHECK_ITEMS.find((item) => item.key === pruefpunkt)!.label}`
-                            : ' · weitere Stelle'}
-                          {stelle.fotos.length > 0 ? ` · ${fotoZahl(stelle.fotos.length)}` : ''}
-                        </span>
-                        <span className="block">{stelle.note.trim() || 'Ohne Notiz'}</span>
-                      </>
-                    }
-                    aktion={
-                      <Button
-                        variant="secondary"
-                        groesse="kompakt"
-                        aria-label={`Stelle ${nummerVon(stelle.key)} ändern: ${zoneLabel(stelle.zone)}`}
-                        onClick={() => onStelleAendern(stelle.key)}
-                      >
-                        Ändern
-                      </Button>
-                    }
-                  />
-                );
-              })}
-            </ListRows>
-          ) : null}
+      {abweichend.length > 0 || weitere.length > 0 ? (
+        <ListRows rahmen={false} beschriftung="Auffällig">
+          {abweichend.map(({ item, index }) => {
+            const stelle = stellen.find((eintrag) => zoneCheckItem(eintrag.zone) === item.key);
+            const rating = bewertet[item.key] as Severity;
+            return (
+              <ListRow
+                key={item.key}
+                zeit={
+                  stelle ? (
+                    <Nadel nummer={nummerVon(stelle.key)} einstufung={stelle.severity} />
+                  ) : undefined
+                }
+                titel={item.label}
+                meta={
+                  <>
+                    <span className="block">
+                      <Einstufung einstufung={rating} />
+                      {stelle && stelle.fotos.length > 0
+                        ? ` · ${fotoZahl(stelle.fotos.length)}`
+                        : ''}
+                    </span>
+                    <span className="block">
+                      {antworten[item.key]?.note.trim() || stelle?.note.trim() || 'Ohne Notiz'}
+                    </span>
+                  </>
+                }
+                aktion={
+                  <Button
+                    variant="secondary"
+                    groesse="kompakt"
+                    aria-label={`${item.label} ändern`}
+                    onClick={() => onAendern(punktSeite(index))}
+                  >
+                    Ändern
+                  </Button>
+                }
+              />
+            );
+          })}
+          {weitere.map((stelle) => {
+            const pruefpunkt = zoneCheckItem(stelle.zone);
+            return (
+              <ListRow
+                key={stelle.key}
+                zeit={<Nadel nummer={nummerVon(stelle.key)} einstufung={stelle.severity} />}
+                titel={zoneLabel(stelle.zone)}
+                meta={
+                  <>
+                    <span className="block">
+                      <Einstufung einstufung={stelle.severity} />
+                      {pruefpunkt
+                        ? ` · ${CHECK_ITEMS.find((item) => item.key === pruefpunkt)!.label}`
+                        : ' · weitere Stelle'}
+                      {stelle.fotos.length > 0 ? ` · ${fotoZahl(stelle.fotos.length)}` : ''}
+                    </span>
+                    <span className="block">{stelle.note.trim() || 'Ohne Notiz'}</span>
+                  </>
+                }
+                aktion={
+                  <Button
+                    variant="secondary"
+                    groesse="kompakt"
+                    aria-label={`Stelle ${nummerVon(stelle.key)} ändern: ${zoneLabel(stelle.zone)}`}
+                    onClick={() => onStelleAendern(stelle.key)}
+                  >
+                    Ändern
+                  </Button>
+                }
+              />
+            );
+          })}
+        </ListRows>
+      ) : null}
 
-          {inOrdnung.length > 0 ? (
-            <Disclosure summary="In Ordnung" anzahl={inOrdnung.length}>
-              <ListRows rahmen={false} beschriftung="In Ordnung">
-                {inOrdnung.map(({ item, index }) => (
-                  <ListRow
-                    key={item.key}
-                    titel={item.label}
-                    aktion={
-                      <Button
-                        variant="secondary"
-                        groesse="kompakt"
-                        aria-label={`${item.label} ändern`}
-                        onClick={() => onAendern(punktSeite(index))}
-                      >
-                        Ändern
-                      </Button>
-                    }
-                  />
-                ))}
-              </ListRows>
-            </Disclosure>
-          ) : null}
-
-          {/* Werbeflächen und die vier Seitenfotos (ANN-568), je mit „Ändern“. */}
-          <ListRows rahmen={false} beschriftung="Reinigung und Fotos">
-            <ListRow
-              titel="Werbeflächen"
-              meta={werbeflaechen ? werbeflaechenText(werbeflaechen) : 'Fehlt noch'}
-              aktion={
-                <Button
-                  variant="secondary"
-                  groesse="kompakt"
-                  aria-label="Werbeflächen ändern"
-                  onClick={() => onAendern(WERBUNG)}
-                >
-                  Ändern
-                </Button>
-              }
-            />
-            {SEITEN.map((seite, index) => (
-              <SeitenfotoZeile
-                key={seite.key}
-                titel={seite.titel}
-                foto={seitenfotos[seite.key] ?? null}
-                onAendern={() => onAendern(fotoSeite(index))}
+      {inOrdnung.length > 0 ? (
+        <Disclosure summary="In Ordnung" anzahl={inOrdnung.length}>
+          <ListRows rahmen={false} beschriftung="In Ordnung">
+            {inOrdnung.map(({ item, index }) => (
+              <ListRow
+                key={item.key}
+                titel={item.label}
+                aktion={
+                  <Button
+                    variant="secondary"
+                    groesse="kompakt"
+                    aria-label={`${item.label} ändern`}
+                    onClick={() => onAendern(punktSeite(index))}
+                  >
+                    Ändern
+                  </Button>
+                }
               />
             ))}
           </ListRows>
+        </Disclosure>
+      ) : null}
 
-          {/* Ohne 3D-Rad die einzige Stelle, an der sie stehen. */}
-          <SchonOffen offene={offene} />
-
-          {/* Selten gebraucht, deshalb zusammen eingeklappt (DESIGN.md
-              Grundsatz 4). */}
-          <Disclosure summary="Notiz, Fotos, weitere Stelle">
-            <div className="flex flex-col gap-4">
-              <div>
-                <Button variant="secondary" groesse="kompakt" onClick={onWeitereStelle}>
-                  Weitere Stelle markieren
-                </Button>
-              </div>
-              <TextArea
-                rows={3}
-                label="Notiz zum ganzen Rad"
-                placeholder="Weitere Auffälligkeiten"
-                hint="Keine Angaben zu Patient:innen."
-                maxLength={1000}
-                value={notiz}
-                onChange={(event) => onNotiz(event.target.value)}
-              />
-              <Fotovormerkung
-                fotos={weitereFotos}
-                onFotos={onWeitereFotos}
-                titel="Foto vom ganzen Rad"
-                bezug="vom ganzen Rad"
-              />
-            </div>
-          </Disclosure>
-        </div>
-      </div>
-
-      {/* Fest unter der Zusammenfassung: Haken und Speichern bleiben am
-          Telefon ohne Rollen im Bild, wie viel auch auffiel. */}
-      <div className="border-line shrink-0 border-t px-4 pt-2 pb-4">
-        <Checkbox
-          label={`Ich, ${user.profile.display_name}, habe das ganze Rad gründlich auf Sicherheit geprüft.`}
-          checked={bestaetigt}
-          onChange={(event) => onBestaetigt(event.target.checked)}
+      {/* Werbeflächen und die vier Seitenfotos (ANN-568), je mit „Ändern“. */}
+      <ListRows rahmen={false} beschriftung="Reinigung und Fotos">
+        <ListRow
+          titel="Werbeflächen"
+          meta={werbeflaechen ? werbeflaechenText(werbeflaechen) : 'Fehlt noch'}
+          aktion={
+            <Button
+              variant="secondary"
+              groesse="kompakt"
+              aria-label="Werbeflächen ändern"
+              onClick={() => onAendern(WERBUNG)}
+            >
+              Ändern
+            </Button>
+          }
         />
-        {fehler ? (
-          <Statusmeldung ton="fehler" className="mt-2">
-            {fehler}
-          </Statusmeldung>
-        ) : null}
-        {/* Der Grund für den gesperrten Knopf für Vorlesesoftware; sichtbar
-            steht der Haken gleich darüber. */}
-        {!bestaetigt ? (
-          <span id="checkup-fehlt" className="sr-only">
-            Die Bestätigung fehlt noch.
-          </span>
-        ) : null}
-        <Formularfuss dicht>
-          <Button
-            onClick={onSpeichern}
-            disabled={!bestaetigt || speichert || !werbeflaechen || !alleSeiten(seitenfotos)}
-            aria-describedby={!bestaetigt ? 'checkup-fehlt' : undefined}
-          >
-            {speichert ? 'Wird gespeichert …' : 'Check-Up speichern'}
-          </Button>
-        </Formularfuss>
-      </div>
+        {SEITEN.map((seite, index) => (
+          <SeitenfotoZeile
+            key={seite.key}
+            titel={seite.titel}
+            foto={seitenfotos[seite.key] ?? null}
+            onAendern={() => onAendern(fotoSeite(index))}
+          />
+        ))}
+      </ListRows>
+
+      {/* Ohne 3D-Rad die einzige Stelle, an der sie stehen. */}
+      <SchonOffen offene={offene} />
+
+      {/* Selten gebraucht, deshalb zusammen eingeklappt (DESIGN.md
+              Grundsatz 4). */}
+      <Disclosure summary="Notiz, Fotos, weitere Stelle">
+        <div className="flex flex-col gap-4">
+          <div>
+            <Button variant="secondary" groesse="kompakt" onClick={onWeitereStelle}>
+              Weitere Stelle markieren
+            </Button>
+          </div>
+          <TextArea
+            rows={3}
+            label="Notiz zum ganzen Rad"
+            placeholder="Weitere Auffälligkeiten"
+            hint="Keine Angaben zu Patient:innen."
+            maxLength={1000}
+            value={notiz}
+            onChange={(event) => onNotiz(event.target.value)}
+          />
+          <Fotovormerkung
+            fotos={weitereFotos}
+            onFotos={onWeitereFotos}
+            titel="Foto vom ganzen Rad"
+            bezug="vom ganzen Rad"
+          />
+        </div>
+      </Disclosure>
+    </div>
+  );
+}
+
+/**
+ * Fest unter der Zusammenfassung: Haken und Speichern bleiben am Telefon ohne
+ * Rollen im Bild, wie viel auch auffiel.
+ */
+function AbschlussFuss({
+  user,
+  bestaetigt,
+  onBestaetigt,
+  vollstaendig,
+  fehler,
+  speichert,
+  onSpeichern,
+}: {
+  user: CurrentUser;
+  bestaetigt: boolean;
+  onBestaetigt: (an: boolean) => void;
+  /** Werbeflächen und alle vier Seitenfotos sind da. */
+  vollstaendig: boolean;
+  fehler: string | null;
+  speichert: boolean;
+  onSpeichern: () => void;
+}) {
+  return (
+    <>
+      <Checkbox
+        label={`Ich, ${user.profile.display_name}, habe das ganze Rad gründlich auf Sicherheit geprüft.`}
+        checked={bestaetigt}
+        onChange={(event) => onBestaetigt(event.target.checked)}
+      />
+      {fehler ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {fehler}
+        </Statusmeldung>
+      ) : null}
+      {/* Der Grund für den gesperrten Knopf für Vorlesesoftware; sichtbar
+          steht der Haken gleich darüber. */}
+      {!bestaetigt ? (
+        <span id="checkup-fehlt" className="sr-only">
+          Die Bestätigung fehlt noch.
+        </span>
+      ) : null}
+      <Formularfuss dicht>
+        <Button
+          onClick={onSpeichern}
+          disabled={!bestaetigt || speichert || !vollstaendig}
+          aria-describedby={!bestaetigt ? 'checkup-fehlt' : undefined}
+        >
+          {speichert ? 'Wird gespeichert …' : 'Check-Up speichern'}
+        </Button>
+      </Formularfuss>
     </>
   );
 }

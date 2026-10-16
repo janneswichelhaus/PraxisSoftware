@@ -5902,3 +5902,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 **Anker.** `organizations.fleet_checkup_interval_days`; `rhythmus.ts` (`CHECKUP_DAUER_MINUTEN`), `CheckupHinweise.tsx`.
 
 **Änderungspfad.** Dauer oder Wahl der Lücke: `rhythmus.ts` · Aufwand `klein`.
+
+### ANN-572 — Geführter Ablauf als Baustein: Frage oben, Antworten im festen Fuß
+
+Technik · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Seltene, verzweigte oder einhändige Abläufe laufen im Baustein `GefuehrterAblauf`: Kopf mit Objekt und ✕, „← Zurück“, Schritt (Balken nur bei fester Zahl), je Seite eine Frage; ohne Bühne steht die Frage oben und die Antworten im festen Fuß, mit Bühne (3D-Rad) wie beim Check-Up unter ihr. Nach jedem Seitenwechsel 0,7 s keine Tipps; aus dem Abschluss geändert geht es zurück dorthin (`abfolge.ts`).
+
+**Begründung.** Auftrag Jannes (16.10.): einfach, geführt, ohne Scrollen nach dem Vorbild des Check-Ups (ANN-563). Der feste Fuß hält die Antwort am Telefon im Daumenbereich (DESIGN.md Grundsatz 1).
+
+**Anker.** `src/components/ui/GefuehrterAblauf.tsx` (`TIPPSPERRE_MS`), `src/components/ui/abfolge.ts`.
+
+**Änderungspfad.** Lage der Antworten oder Dauer der Sperre: eine Stelle im Baustein · Aufwand `klein`.

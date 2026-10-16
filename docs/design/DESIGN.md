@@ -48,9 +48,10 @@ untereinander in voller Breite).
 in der klebenden `Aktionsleiste` über der Tableiste, Hauptknopf rechts. Die Schreibseite ist eine
 Fläche ohne Karten (`einbettung="flaeche"`); andere Arbeitsseiten bleiben gewöhnliche Seiten.
 
-**Geführter Ablauf** (Check-Up): `Dialogfenster vollbild`, Kopf mit Schritt, Objekt, ✕;
-„← Zurück“, `ProgressBar`; je Seite eine Frage ohne Rollen, die Antwort führt weiter; Abschluss
-über festem `Formularfuss`. Nicht für Tägliches.
+**Geführter Ablauf** (`GefuehrterAblauf`, Folge in `abfolge.ts`): Kopf mit Objekt und ✕,
+„← Zurück“, Schritt (Balken nur bei fester Zahl); je Seite eine Frage ohne Rollen, Antworten im
+festen Fuß; Abschluss mit „Ändern“ je Angabe und einem Hauptknopf. Geführt, wenn selten, verzweigt,
+nichts vergessen werden darf oder einhändig am Rad; nicht für Tägliches im Budget.
 
 **Druckblatt** (Rechnung, Bericht, Planblatt, Tagesplan): eigenes Profil – Briefkopf, Absenderzeile,
 Tabellen und eigene Überschriften erlaubt, Bedienung `nicht-drucken`. Geprüft im Druckbild; die
