@@ -115,7 +115,11 @@ export function Planeditor({
     queryFn: fetchPraxisvorlagen,
     retry: false,
   });
-  const vorlagen = [...(praxisvorlagen.data?.templates ?? []).map(alsVorlage), ...mitgeliefert];
+  // Eine Vorlage, deren letzte Übung gelöscht wurde, hat nichts anzubieten.
+  const vorlagen = [
+    ...(praxisvorlagen.data?.templates ?? []).filter((t) => t.items.length > 0).map(alsVorlage),
+    ...mitgeliefert,
+  ];
   const bibliothek = useQuery({
     queryKey: BIBLIOTHEK_SCHLUESSEL,
     queryFn: fetchBibliothek,

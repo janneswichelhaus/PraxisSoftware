@@ -197,7 +197,16 @@ function Vorlagenfenster({
 
   return (
     <Dialogfenster titel={vorlage.name} onSchliessen={onSchliessen} breit>
-      {vorlage.goal ? <p className="text-ink-muted mb-3 text-sm">{vorlage.goal}</p> : null}
+      {/* Ziel und Stand in einer Metazeile über den Übungen. */}
+      <p className="text-ink-muted mb-3 text-sm">
+        {[
+          vorlage.goal,
+          `Stand ${formatDate(vorlage.updated_on)}`,
+          vorlage.created_by_name ? `angelegt von ${vorlage.created_by_name}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
       <ListRows>
         {zeilen.map((zeile, index) => (
           <ListRow
@@ -207,10 +216,6 @@ function Vorlagenfenster({
           />
         ))}
       </ListRows>
-      <p className="text-ink-muted mt-3 text-sm">
-        Stand {formatDate(vorlage.updated_on)}
-        {vorlage.created_by_name ? ` · angelegt von ${vorlage.created_by_name}` : ''}
-      </p>
       {vorlage.can_edit ? (
         <div className="mt-6 flex flex-wrap items-start gap-3">
           <Button

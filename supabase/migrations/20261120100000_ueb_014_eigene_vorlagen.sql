@@ -13,11 +13,12 @@
 --   public.save_exercise_plan_template    anlegen oder aendern
 --   public.delete_exercise_plan_template  loeschen
 --
--- KEIN PERSONENBEZUG (ANN-560): Eine Vorlage ist Fachwissen der Praxis wie
+-- KEIN PATIENTENBEZUG (ANN-560): Eine Vorlage ist Fachwissen der Praxis wie
 -- die Bibliothek (ANN-292) - Varianten und Dosierung, keine Person, kein
--- Plan, keine Notiz der Position, kein Leistungsbereich. Name und Ziel sind
--- Freitext; die Oberflaeche bittet um Region und Ziel statt Namen oder
--- Diagnose.
+-- Plan, keine Notiz der Position, kein Leistungsbereich. Name, Ziel, Last und
+-- Tempo sind Freitext; die Oberflaeche bittet um Region und Ziel statt Namen
+-- oder Diagnose - durchsetzen kann der Server das nicht. Wer angelegt und
+-- geaendert hat, steht wie an der Bibliothek an der Zeile (Beschaeftigtendatum).
 --
 -- KEINE AUSWAHL (ADR-006 Punkt 10): Die Liste ist nach Name sortiert, nach
 -- nichts sonst; keine Spalte verweist auf Diagnose, Befund oder Verlauf.
@@ -42,7 +43,7 @@ create table public.exercise_plan_templates (
 );
 
 comment on table public.exercise_plan_templates is
-  'UEB-014 (ANN-560): Vorlage der Praxis fuer Uebungsplaene - Name und Ziel, die Uebungen in exercise_plan_template_items. Fachwissen ohne Personenbezug wie die Bibliothek (ANN-292), fuer Behandlung und Training. Datenklasse: Betriebsdaten der Praxis OHNE Personenbezug, keine Gesundheitsdaten. Frist: bis zur Loeschung durch die Praxis. Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
+  'UEB-014 (ANN-560): Vorlage der Praxis fuer Uebungsplaene - Name und Ziel, die Uebungen in exercise_plan_template_items. Fachwissen ohne Patientenbezug wie die Bibliothek (ANN-292), fuer Behandlung und Training. Datenklasse: Betriebsdaten der Praxis OHNE Patientenbezug, keine Gesundheitsdaten; wer angelegt und geaendert hat, ist ein Beschaeftigtendatum wie an der Bibliothek. Frist: bis zur Loeschung durch die Praxis. Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
 comment on column public.exercise_plan_templates.name is
   'Name nach Region und Ziel (ANN-560), nie nach Person oder Diagnose; die Liste sortiert danach und nach nichts sonst (ADR-006 Punkt 10).';
 
@@ -97,7 +98,7 @@ create table public.exercise_plan_template_items (
 );
 
 comment on table public.exercise_plan_template_items is
-  'UEB-014 (ANN-560): die Uebungen einer Vorlage der Praxis mit Dosierung, ohne Notiz und ohne Schnappschuss. Datenklasse: Betriebsdaten der Praxis OHNE Personenbezug. Frist: faellt mit ihrer Vorlage oder ihrer Variante (on delete cascade). Kein Tabellenrecht und keine Policy (ADR-004).';
+  'UEB-014 (ANN-560): die Uebungen einer Vorlage der Praxis mit Dosierung, ohne Notiz und ohne Schnappschuss. Datenklasse: Betriebsdaten der Praxis OHNE Patientenbezug. Frist: faellt mit ihrer Vorlage oder ihrer Variante (on delete cascade). Kein Tabellenrecht und keine Policy (ADR-004).';
 
 create index exercise_plan_template_items_variant_idx
   on public.exercise_plan_template_items (variant_id);
@@ -109,7 +110,7 @@ alter table public.exercise_plan_template_items enable row level security;
 insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
 values
   ('exercise_plan_templates', 'betriebsdaten', 'keine',
-   'Vorlagen der Praxis fuer Uebungsplaene (UEB-014, ANN-560). Fachwissen ohne Personenbezug; bleiben, bis die Praxis sie loescht.',
+   'Vorlagen der Praxis fuer Uebungsplaene (UEB-014, ANN-560). Fachwissen ohne Patientenbezug, Urheber an der Zeile; bleiben, bis die Praxis sie loescht.',
    223),
   ('exercise_plan_template_items', 'betriebsdaten', 'keine',
    'Uebungen einer Vorlage der Praxis (UEB-014). Fallen mit ihrer Vorlage oder ihrer Variante (on delete cascade).',

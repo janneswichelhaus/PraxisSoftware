@@ -217,13 +217,14 @@ function Zugewiesen({
         <Positionen plan={plan} />
         {entwurf ? null : <Durchgefuehrt plan={plan} />}
         <Fassungen plan={plan} />
-        {/* UEB-014: ein Plan, der sich bewährt hat, wird Vorlage der Praxis. */}
+        {/* UEB-014: ein Plan, der sich bewährt hat, wird Vorlage der Praxis -
+            ein Block mit dem Beenden, Vorlage zuerst, Beenden zuletzt. */}
         {entwurf ? null : (
-          <div className="mt-8">
+          <div className="mt-8 flex flex-col items-start gap-2 [&>*]:mt-0">
             <AlsVorlageSpeichern plan={plan} />
+            {entscheiden ? <Beenden plan={plan} /> : null}
           </div>
         )}
-        {entscheiden ? <Beenden plan={plan} /> : null}
       </div>
     </>
   );

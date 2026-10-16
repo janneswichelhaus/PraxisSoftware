@@ -108,12 +108,25 @@ describe('DurchsichtPage (UEB-015)', () => {
     expect(screen.getByText('„Beinpendel“ als durchgesehen vermerkt.')).toBeInTheDocument();
   });
 
+  it('nimmt ein versehentliches Durchgesehen zurück; die Übung kommt wieder', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<DurchsichtPage user={testUser(['owner'])} />);
+    await screen.findByRole('heading', { name: 'Beinpendel' });
+    await user.click(screen.getByRole('button', { name: 'Durchgesehen' }));
+    await screen.findByRole('heading', { name: 'Kniestreckung' });
+    await user.click(screen.getByRole('button', { name: 'Zurücknehmen' }));
+    await waitFor(() => expect(setzePruefvermerk).toHaveBeenLastCalledWith('3', false));
+    expect(await screen.findByRole('heading', { name: 'Beinpendel' })).toBeInTheDocument();
+  });
+
   it('überspringt, ohne zu vermerken, und grenzt auf eine Region ein', async () => {
     const user = userEvent.setup();
     renderWithProviders(<DurchsichtPage user={testUser(['owner'])} />);
     await screen.findByRole('heading', { name: 'Beinpendel' });
     await user.click(screen.getByRole('button', { name: 'Überspringen' }));
     expect(await screen.findByRole('heading', { name: 'Kniestreckung' })).toBeInTheDocument();
+    // Die Region steht auf Abruf.
+    await user.click(screen.getByText('Nach Region'));
     await user.click(screen.getByRole('button', { name: /^Fuß/ }));
     expect(await screen.findByRole('heading', { name: 'Wadenheben' })).toBeInTheDocument();
     // Nur eine in der Region: nichts zu überspringen.

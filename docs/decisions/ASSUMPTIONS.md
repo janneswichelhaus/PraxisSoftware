@@ -5763,7 +5763,7 @@ Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Übungen, zweite Runde)
 
-**Annahme.** „Als Vorlage speichern“ nimmt nur Varianten und Dosierung eines Plans, nie Hinweise, Person oder Leistungsbereich; Archiviertes bleibt draußen. Anlegen darf, wer Pläne schreibt (therapist, team_lead, owner, trainer), lesen, wer die Bibliothek liest; ändern und löschen, wer sie angelegt hat, und owner. „Aus Vorlage“ zeigt sie vor den mitgelieferten.
+**Annahme.** „Als Vorlage speichern“ nimmt nur Varianten und Dosierung eines Plans, nie Hinweise, Person oder Leistungsbereich; Archiviertes bleibt draußen. Name, Ziel, Last und Tempo sind Freitext; die Bitte um Region und Ziel statt Namen kann der Server nicht durchsetzen. Anlegen darf, wer Pläne schreibt (therapist, team_lead, owner, trainer), lesen, wer die Bibliothek liest; ändern und löschen, wer sie angelegt hat, und owner. „Aus Vorlage“ zeigt sie vor den mitgelieferten.
 
 **Begründung.** Wie die Bibliothek Fachwissen ohne Personenbezug (ANN-292); nur owner anlegen zu lassen, hielte das Wissen der Therapeut:innen draußen. Betriebsdaten, Löschung durch die Praxis (ADR-008).
 

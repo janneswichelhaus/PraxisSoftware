@@ -312,6 +312,21 @@ describe('Vorlagen der Praxis (UEB-014)', () => {
       expect((await anzahl()).uebungen).toBe(1);
     });
 
+    it('ändert mit ungültigen Übungen nichts - die alten bleiben stehen', async () => {
+      const id = await anlegen();
+      await expect(
+        asUserCommitted(users.therapist, SPEICHERN, [
+          id,
+          'Knie, neu',
+          null,
+          JSON.stringify(positionen(V2, V2)),
+        ]),
+      ).rejects.toMatchObject({ code: '22023' });
+      const [vorlage] = (await liste(users.therapist)).templates;
+      expect(vorlage!.name).toBe('Knie, Hausaufgaben');
+      expect(vorlage!.items.map((i) => i.variant_id)).toEqual([V1, V2]);
+    });
+
     it('owner ändert und löscht jede Vorlage der Praxis', async () => {
       const id = await anlegen(users.therapist);
       expect((await liste(users.ownerTherapist)).templates[0]!.can_edit).toBe(true);

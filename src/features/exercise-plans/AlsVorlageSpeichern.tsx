@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
@@ -115,10 +114,7 @@ function Speichern({
           value={ziel}
           onChange={(event) => setZiel(event.target.value)}
         />
-        <Kleingedrucktes>
-          Mit kommen {anzahl} mit ihrer Dosierung, keine Hinweise zur Person. Die Vorlage steht
-          danach der ganzen Praxis zur Wahl.
-        </Kleingedrucktes>
+        <p className="text-ink-muted text-sm">{anzahl} mit Dosierung</p>
         {speichern.isError ? (
           <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
         ) : null}

@@ -1862,7 +1862,7 @@ describe('Vorlagen der Praxis (UEB-014, ANN-560)', () => {
     await user.click(await screen.findByRole('button', { name: 'Als Vorlage speichern' }));
     const fenster = await screen.findByRole('dialog', { name: 'Als Vorlage speichern' });
     expect(within(fenster).getByRole('textbox', { name: /^Name/ })).toHaveValue('Knie, Kräftigung');
-    expect(within(fenster).getByText(/Mit kommen 1 Übung mit ihrer Dosierung/)).toBeInTheDocument();
+    expect(within(fenster).getByText('1 Übung mit Dosierung')).toBeInTheDocument();
     await user.type(within(fenster).getByRole('textbox', { name: /^Ziel/ }), 'Kraft');
     await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
     await waitFor(() => expect(savePraxisvorlage).toHaveBeenCalledTimes(1));

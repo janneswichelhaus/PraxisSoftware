@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Filterchips } from '@/components/ui/Chip';
 import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
@@ -72,7 +73,8 @@ function Durchsicht({ bibliothek }: { bibliothek: Bibliothek }) {
   const [vermerkt, setVermerkt] = useState<ReadonlySet<string>>(new Set());
   const [uebersprungen, setUebersprungen] = useState<string[]>([]);
   const [region, setRegion] = useState<Koerperregion[]>([]);
-  const [zuletzt, setZuletzt] = useState<{ name: string; nr: number } | null>(null);
+  const [zuletzt, setZuletzt] = useState<Durchsichtsposten | null>(null);
+  const [nr, setNr] = useState(0);
 
   const alle = offeneDurchsicht(bibliothek).filter((p) => !vermerkt.has(p.variante.id));
   const regionen = [...new Set(alle.map((p) => p.uebung.body_region))];
@@ -81,18 +83,42 @@ function Durchsicht({ bibliothek }: { bibliothek: Bibliothek }) {
     gewaehlt.length > 0 ? alle.filter((p) => gewaehlt.includes(p.uebung.body_region)) : alle;
   const jetzt = naechster(offen, vermerkt, uebersprungen);
 
+  // Praxis-Review: Nach einem Tipp unten in der Leiste beginnt die nächste
+  // Übung oben, mit Titel und Meldung im Blick.
+  const jetztId = jetzt?.variante.id;
+  useEffect(() => {
+    if (nr > 0) window.scrollTo?.({ top: 0 });
+  }, [jetztId, nr]);
+
   const durchsehen = useMutation({
     mutationFn: (posten: Durchsichtsposten) => setzePruefvermerk(posten.variante.id, true),
     onSuccess: (_daten, posten) => {
       setVermerkt((bisher) => new Set(bisher).add(posten.variante.id));
       setUebersprungen((bisher) => bisher.filter((id) => id !== posten.variante.id));
-      setZuletzt((bisher) => ({ name: posten.uebung.name, nr: (bisher?.nr ?? 0) + 1 }));
+      setZuletzt(posten);
+      setNr((n) => n + 1);
       void queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL });
+    },
+  });
+  // Ein versehentliches „Durchgesehen“ zurücknehmen: Die Übung kommt als
+  // nächste wieder.
+  const zuruecknehmen = useMutation({
+    mutationFn: (posten: Durchsichtsposten) => setzePruefvermerk(posten.variante.id, false),
+    onSuccess: async (_daten, posten) => {
+      await queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL });
+      setVermerkt((bisher) => {
+        const neu = new Set(bisher);
+        neu.delete(posten.variante.id);
+        return neu;
+      });
+      setZuletzt(null);
+      setNr((n) => n + 1);
     },
   });
 
   const ueberspringen = (posten: Durchsichtsposten) => {
     durchsehen.reset();
+    setNr((n) => n + 1);
     setUebersprungen((bisher) => [
       ...bisher.filter((id) => id !== posten.variante.id),
       posten.variante.id,
@@ -109,27 +135,43 @@ function Durchsicht({ bibliothek }: { bibliothek: Bibliothek }) {
         <PageHeader kicker={kicker} title="Durchsicht" />
       )}
       {regionen.length > 1 ? (
+        // Seltenes eingeklappt (DESIGN.md Grundsatz 4): am Telefon steht die
+        // Übung zuerst, die Region auf Abruf.
         <div className="mb-6">
-          <Filterchips
-            beschriftung="Region"
-            mehrfach={false}
-            wahlen={regionen.map((r) => ({
-              wert: r,
-              text: `${KOERPERREGION_LABEL[r]} (${alle.filter((p) => p.uebung.body_region === r).length})`,
-            }))}
-            gewaehlt={gewaehlt}
-            onAendern={setRegion}
-          />
+          <Disclosure
+            summary={gewaehlt[0] ? `Region: ${KOERPERREGION_LABEL[gewaehlt[0]]}` : 'Nach Region'}
+            kopf="label"
+          >
+            <Filterchips
+              beschriftung="Region"
+              mehrfach={false}
+              wahlen={regionen.map((r) => ({
+                wert: r,
+                text: `${KOERPERREGION_LABEL[r]} (${alle.filter((p) => p.uebung.body_region === r).length})`,
+              }))}
+              gewaehlt={gewaehlt}
+              onAendern={setRegion}
+            />
+          </Disclosure>
         </div>
       ) : null}
       {zuletzt ? (
-        <Rueckmeldung key={zuletzt.nr} className="mb-4">
-          „{zuletzt.name}“ als durchgesehen vermerkt.
+        <Rueckmeldung key={nr} className="mb-4">
+          „{zuletzt.uebung.name}“ als durchgesehen vermerkt.{' '}
+          <Button
+            type="button"
+            variant="quiet"
+            groesse="kompakt"
+            disabled={zuruecknehmen.isPending}
+            onClick={() => zuruecknehmen.mutate(zuletzt)}
+          >
+            Zurücknehmen
+          </Button>
         </Rueckmeldung>
       ) : null}
-      {durchsehen.isError ? (
+      {(durchsehen.error ?? zuruecknehmen.error) ? (
         <Statusmeldung ton="fehler" className="mb-4">
-          {durchsehen.error.message}
+          {(durchsehen.error ?? zuruecknehmen.error)?.message}
         </Statusmeldung>
       ) : null}
 
@@ -187,15 +229,18 @@ function metazeile({ uebung, variante }: Durchsichtsposten): string {
 
 function Posten({ posten: { uebung, variante } }: { posten: Durchsichtsposten }) {
   return (
-    <div className="max-w-spalte flex flex-col gap-6 [&>section]:mt-0">
+    // Abschnitt zu Abschnitt 32 px aus `Section` (DESIGN.md, Rhythmus).
+    <div className="max-w-spalte">
       {variante.default_dosage ? (
         <Section titel="Standarddosierung">
           <Dosierkacheln d={variante.default_dosage} />
         </Section>
       ) : null}
       <Anleitung variante={variante} />
-      <Alltagsansicht uebungLaie={uebung.lay_name} variante={variante} />
-      <Kleingedrucktes>
+      <div className="mt-8">
+        <Alltagsansicht uebungLaie={uebung.lay_name} variante={variante} />
+      </div>
+      <Kleingedrucktes className="mt-8">
         Aus dem Übungskatalog ({variante.catalog_key}, Fassung {variante.catalog_version}), Text
         KI-erstellt.{' '}
         <Textlink to={`/uebungen/${uebung.id}#variante-${variante.id}`}>
