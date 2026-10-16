@@ -24,8 +24,54 @@ env:
   NODE_VERSION: '22'
 
 jobs:
-  quality:
-    name: Lint, Typecheck, Tests, Build
+  # ADR-013 Punkt 2 (Fassung 5): Ein Pull Request, der nur Dokumentation
+  # aendert, laesst Tests, Build und Datenbankpruefungen aus
+  # (scripts/nur-doku.mjs). Format, Lint, Typecheck, Dokumentation, Secret
+  # Scanning, Dependency Audit und das Migrationen-Gate laufen immer, und auf
+  # main laeuft nach dem Merge alles. Die abhaengigen Jobs fragen `!= 'true'`:
+  # Scheitert dieser Job und bleibt die Ausgabe leer, laeuft ebenfalls alles.
+  aenderungen:
+    name: Nur Dokumentation?
+    runs-on: ubuntu-latest
+    outputs:
+      nur_doku: ${{ steps.art.outputs.nur_doku }}
+    steps:
+      - uses: actions/checkout@v5
+        if: github.event_name == 'pull_request'
+        with:
+          # Der Vergleich braucht den gemeinsamen Vorfahren mit dem Zielbranch.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        if: github.event_name == 'pull_request'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
+      - name: Art der Aenderung
+        id: art
+        env:
+          EREIGNIS: ${{ github.event_name }}
+          BASIS: origin/${{ github.base_ref }}
+        run: |
+          if [ "$EREIGNIS" != pull_request ]; then
+            echo "Push auf $GITHUB_REF: alle Pruefungen laufen."
+            echo "nur_doku=false" >> "$GITHUB_OUTPUT"
+          # Die Erkennung in der Fassung des Zielbranchs: Ein Fehler, den der
+          # Pull Request in das Skript einbaut, kann ihn nicht selbst als Doku
+          # einstufen. Fehlt sie dort, laeuft alles.
+          elif git show "$BASIS:scripts/nur-doku.mjs" > "$RUNNER_TEMP/nur-doku.mjs"; then
+            node "$RUNNER_TEMP/nur-doku.mjs" "$BASIS" >> "$GITHUB_OUTPUT"
+          else
+            echo "Keine Erkennung auf $BASIS: alle Pruefungen laufen."
+            echo "nur_doku=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Lint, Typecheck und Tests laufen in zwei Jobs nebeneinander statt
+  # hintereinander (ANN-571). Pflichtcheck bleibt `quality` weiter unten
+  # unter seinem alten Namen.
+  statisch:
+    name: Format, Lint, Dokumentation, Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -52,11 +98,57 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      # Auch bei reiner Doku: Eine neue Datei darf keinen Pfad nur in der
+      # Schreibweise wiederholen (scripts/nur-doku.mjs).
+      - name: Dateinamen ohne Kollision der Schreibweise
+        run: pnpm exec vitest run --project logik src/dateinamen.test.ts
+
+  unit:
+    name: Unit-Tests und Build
+    runs-on: ubuntu-latest
+    needs: aenderungen
+    if: ${{ !cancelled() && needs.aenderungen.outputs.nur_doku != 'true' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
       - name: Unit- und Integrationstests
         run: pnpm test
 
       - name: Build
-        run: pnpm build
+        # Nur Vite: `pnpm build` ruft vorher `tsc --build --force` ueber
+        # dieselben vier tsconfig-Dateien auf, die der Typecheck im Job
+        # `statisch` schon prueft (ANN-571).
+        run: pnpm exec vite build
+
+  quality:
+    # Der Name ist der Pflichtcheck der Branch Protection (docs/DEVELOPMENT.md,
+    # "Manuelle Schritte") und bleibt deshalb unveraendert. Gruen nur, wenn
+    # die statischen Pruefungen und Tests mit Build es sind - Tests und Build
+    # duerfen nur bei reiner Dokumentation fehlen.
+    name: Lint, Typecheck, Tests, Build
+    runs-on: ubuntu-latest
+    needs: [aenderungen, statisch, unit]
+    if: ${{ always() }}
+    steps:
+      - name: Statische Pruefungen, Tests und Build gruen
+        env:
+          NUR_DOKU: ${{ needs.aenderungen.outputs.nur_doku }}
+          STATISCH: ${{ needs.statisch.result }}
+          UNIT: ${{ needs.unit.result }}
+        run: |
+          echo "Nur Dokumentation: ${NUR_DOKU:-unbekannt}, statisch: $STATISCH, Tests und Build: $UNIT"
+          test "$STATISCH" = success
+          test "$UNIT" = success || { test "$NUR_DOKU" = true && test "$UNIT" = skipped; }
 
   # Die Datenbanktests laufen in vier Teilen nebeneinander, jeder Teil mit
   # eigener Datenbank. In einem Stueck brauchten sie zuletzt 13 bis 20 Minuten
@@ -67,6 +159,8 @@ jobs:
   database-teil:
     name: Migrationen und RLS-Tests (Teil ${{ matrix.teil }}/4)
     runs-on: ubuntu-latest
+    needs: aenderungen
+    if: ${{ !cancelled() && needs.aenderungen.outputs.nur_doku != 'true' }}
     strategy:
       # Ein roter Teil bricht die anderen nicht ab: Der Lauf soll alle Befunde
       # auf einmal zeigen, nicht einen je Durchgang.
@@ -137,23 +231,28 @@ jobs:
 
   database:
     # Der Name ist der Pflichtcheck der Branch Protection (docs/DEVELOPMENT.md,
-    # "Manuelle Schritte") und bleibt deshalb unveraendert. `!cancelled()`
-    # laesst den Job auch laufen, wenn ein Teil rot ist - sonst stuende er als
-    # "uebersprungen" da, und ein uebersprungener Pflichtcheck blockiert den
-    # Merge nicht verlaesslich. Nur ein abgebrochener Lauf (neuer Push) laesst
-    # ihn aus; dann folgt ohnehin ein neuer Lauf.
+    # "Manuelle Schritte") und bleibt deshalb unveraendert. `always()` laesst
+    # den Job auch laufen, wenn ein Teil rot oder abgebrochen ist - sonst
+    # stuende er als "uebersprungen" da, und ein uebersprungener Pflichtcheck
+    # zaehlt als bestanden. Das gilt fuer alle drei Sammeljobs: Ein von Hand
+    # abgebrochener Lauf darf keinen Pflichtcheck gruen hinterlassen.
     name: Migrationen und RLS-Policies
     runs-on: ubuntu-latest
-    needs: [database-teil, migrationen]
-    if: ${{ !cancelled() }}
+    #
+    # Bei reiner Dokumentation laufen die Teile nicht; das Migrationen-Gate
+    # laeuft immer.
+    needs: [aenderungen, database-teil, migrationen]
+    if: ${{ always() }}
     steps:
       - name: Alle Teile und das Migrationen-Gate gruen
         env:
+          NUR_DOKU: ${{ needs.aenderungen.outputs.nur_doku }}
           TEILE: ${{ needs.database-teil.result }}
           MIGRATIONEN: ${{ needs.migrationen.result }}
         run: |
-          echo "Datenbanktests: $TEILE, Migrationen-Gate: $MIGRATIONEN"
-          test "$TEILE" = success && test "$MIGRATIONEN" = success
+          echo "Nur Dokumentation: ${NUR_DOKU:-unbekannt}, Datenbanktests: $TEILE, Migrationen-Gate: $MIGRATIONEN"
+          test "$MIGRATIONEN" = success
+          test "$TEILE" = success || { test "$NUR_DOKU" = true && test "$TEILE" = skipped; }
 
   security:
     name: Secret Scanning und Dependency Audit
@@ -181,8 +280,12 @@ jobs:
         run: pnpm audit --audit-level=high
 
   e2e:
+    # Bei reiner Dokumentation uebersprungen; ein uebersprungener Job zaehlt
+    # fuer die Branch Protection als bestanden.
     name: End-to-End
     runs-on: ubuntu-latest
+    needs: aenderungen
+    if: ${{ !cancelled() && needs.aenderungen.outputs.nur_doku != 'true' }}
     # Der Vite-Dev-Server bricht ohne diese Variablen beim Start der Anwendung
     # ab (src/lib/env.ts). Es sind bewusst Platzhalter ohne jeden Wert: die
     # E2E-Abdeckung prueft ausschliesslich den nicht angemeldeten Zustand, es
@@ -216,13 +319,27 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  e2e-supabase:
-    name: End-to-End hinter der Anmeldung
+  # Prueft den echten Integrationspfad: Browser -> GoTrue -> PostgREST ->
+  # SECURITY-DEFINER-RPC -> PostgreSQL. Jeder Teil startet dafuer denselben
+  # lokalen Supabase-Stack, den auch die Entwicklung benutzt. Es entsteht
+  # keine Cloudressource und es wird kein Projekt kontaktiert (ADR-015).
+  #
+  # Die Tests aendern Daten und laufen deshalb mit einem Worker. In einem
+  # Stueck brauchten sie zuletzt 16 Minuten und bestimmten die Dauer jedes
+  # Laufs (2026-10-16). Jetzt laufen drei Teile nebeneinander, jeder mit
+  # eigenem Stack aus Migrationen und Seed (ANN-571). Playwright teilt das
+  # Projekt `authenticated` dateiweise auf, weil es nicht `fullyParallel`
+  # ist; die seriellen Bloecke einer Datei bleiben zusammen. Pflichtcheck
+  # bleibt `e2e-supabase` weiter unten unter seinem alten Namen.
+  e2e-supabase-teil:
+    name: End-to-End hinter der Anmeldung (Teil ${{ matrix.teil }}/3)
     runs-on: ubuntu-latest
-    # Prueft den echten Integrationspfad: Browser -> GoTrue -> PostgREST ->
-    # SECURITY-DEFINER-RPC -> PostgreSQL. Der Job startet dafuer denselben
-    # lokalen Supabase-Stack, den auch die Entwicklung benutzt. Es entsteht
-    # keine Cloudressource und es wird kein Projekt kontaktiert (ADR-015).
+    needs: aenderungen
+    if: ${{ !cancelled() && needs.aenderungen.outputs.nur_doku != 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        teil: [1, 2, 3]
     steps:
       - uses: actions/checkout@v5
 
@@ -276,15 +393,31 @@ jobs:
         # Nur das Projekt hinter der Anmeldung: den nicht angemeldeten Zustand
         # deckt der Job "End-to-End" ab, der ohne Docker auskommt. So laeuft
         # jeder Test einmal statt zweimal.
-        run: pnpm test:e2e --project authenticated
+        run: pnpm test:e2e --project authenticated --shard=${{ matrix.teil }}/3
 
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report-supabase
+          name: playwright-report-supabase-teil-${{ matrix.teil }}
           path: playwright-report/
           retention-days: 7
 
       - name: Supabase stoppen
         if: always()
         run: supabase stop --no-backup
+
+  e2e-supabase:
+    # Der Name ist der Pflichtcheck der Branch Protection und bleibt. Gruen
+    # nur, wenn alle Teile es sind - oder bei reiner Dokumentation keiner lief.
+    name: End-to-End hinter der Anmeldung
+    runs-on: ubuntu-latest
+    needs: [aenderungen, e2e-supabase-teil]
+    if: ${{ always() }}
+    steps:
+      - name: Alle Teile gruen
+        env:
+          NUR_DOKU: ${{ needs.aenderungen.outputs.nur_doku }}
+          TEILE: ${{ needs.e2e-supabase-teil.result }}
+        run: |
+          echo "Nur Dokumentation: ${NUR_DOKU:-unbekannt}, Teile: $TEILE"
+          test "$TEILE" = success || { test "$NUR_DOKU" = true && test "$TEILE" = skipped; }

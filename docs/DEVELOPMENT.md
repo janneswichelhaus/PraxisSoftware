@@ -58,6 +58,17 @@ grün, wenn alle Teile und das Migrationen-Gate es sind;
 Lokal bleibt es ein Lauf; ein einzelner Teil lässt sich mit `--shard`
 nachstellen.
 
+Ebenso aufgeteilt (ANN-571): Die E2E-Tests hinter der Anmeldung laufen in
+drei Teilen mit je eigenem Supabase-Stack (`--shard=<n>/3`, Jobs „End-to-End
+hinter der Anmeldung (Teil n/3)“, Pflichtcheck sammelt unter dem alten
+Namen), Unit-Tests mit Build im Job „Unit-Tests und Build“ neben „Format,
+Lint, Dokumentation, Typecheck“ (Pflichtcheck „Lint, Typecheck, Tests,
+Build“). Ändert oder ergänzt ein Pull Request nur Dokumentation, entfallen
+dort Tests, Build, Datenbank- und E2E-Prüfungen (ADR-013 Punkt 2, Fassung 5;
+`scripts/nur-doku.mjs` in der Fassung des Zielbranchs); die Sammeljobs
+laufen mit `always()`, ein abgebrochener Teil macht sie rot. Auf `main`
+läuft nach dem Merge alles.
+
 `scripts/test-db.sh` sucht den Server ausschließlich unter
 `/usr/lib/postgresql/*/bin` — also auf Linux beziehungsweise in WSL. Unter
 Windows (Git Bash) läuft `pnpm db:start` deshalb nicht; dort bleibt
@@ -407,7 +418,7 @@ pnpm format:check    # Prettier - eigenes CI-Gate, nicht Teil von lint
 pnpm format          # dieselbe Prüfung, schreibend
 pnpm lint            # ESLint inkl. statischer Sicherheitsanalyse
 pnpm typecheck       # TypeScript strict
-pnpm test            # Unit-/Komponententests
+pnpm test            # Komponenten (jsdom) und reine Logik (Node, Projekt logik)
 pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
@@ -420,8 +431,13 @@ pnpm build
 pnpm preview         # den gebauten Stand lokal ausliefern
 ```
 
+Eine `.test.ts`-Datei läuft ohne DOM; braucht sie `window` oder `document`,
+steht `// @vitest-environment jsdom` in ihrer ersten Zeile. `.test.tsx` läuft
+immer mit jsdom. Playwright prüft vor der Anmeldung nur das Projekt `mobile`
+(Pixel 7); die Breiten setzt jede Spezifikation selbst (ANN-571).
+
 `pnpm docs:check` ist ein Gate nach ADR-013 (Prüfung 2.10) und läuft im Job
-„Lint, Typecheck, Tests, Build" direkt hinter dem Lint. Es prüft die
+„Format, Lint, Dokumentation, Typecheck" direkt hinter dem Lint. Es prüft die
 Obergrenzen von `CLAUDE.md` (150), `docs/STATUS.md` (60) und
 `OPEN_DECISIONS.md` (400) und im Annahmenregister höchstens 14 Zeilen **je
 Eintrag**; dass jede `ANN-NNN` des Registers einen Anker in `src/`,

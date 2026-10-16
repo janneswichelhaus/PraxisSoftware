@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+CI schneller (16.10., Branch `ccr-b69c337d-61dmv5`): E2E hinter der Anmeldung in drei Teilen,
+E2E vor der Anmeldung nur `mobile`, Unit-Tests neben Lint, reine Logik ohne jsdom (ANN-571);
+Pull Requests nur mit Doku ohne Tests und Build (ADR-013 Fassung 5).
+
 Radflotte (16.10., Branch `claude/employer-bike-checkup-access-th6fya`): Check-Up mit Überschrift
 über den Antworten, Werbeflächen und vier Seitenfotos; Meldungen aller Räder für Inhaber:in und
 Teamleitung; Check-Up-Rhythmus als Hinweis in Übersicht und Kalender (ANN-568 bis ANN-570).
