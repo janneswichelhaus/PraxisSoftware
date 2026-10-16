@@ -28,9 +28,14 @@ export const aufklappKopfKlassen =
  * Abschnitt 3): `text` ist der Bestand (14 px), `betont` dasselbe in 600 für
  * einen Titel mit Zähler, `label` der Stil eines Abschnittstitels (12 px
  * Versalien) für das, was am Rechner eine eigene Karte mit Überschrift ist.
+ *
+ * Offen steht der Kopf in Tinte und eine Stufe kräftiger; der Wechsel
+ * gleitet mit dem Aufgehen des Inhalts (ANN-567, „Aufklappen mit Feder“).
  */
 export const aufklappKoepfe = {
-  text: 'text-ink-muted hover:text-ink text-sm',
-  betont: 'text-ink-muted hover:text-ink text-sm font-semibold',
-  label: 'text-ink-muted hover:text-ink tracking-label text-xs font-semibold uppercase',
+  text: 'text-ink-muted hover:text-ink group-open:text-ink text-sm transition-[color,font-weight] duration-200 group-open:font-semibold',
+  betont:
+    'text-ink-muted hover:text-ink group-open:text-ink text-sm font-semibold transition-[color,font-weight] duration-200 group-open:font-bold',
+  label:
+    'text-ink-muted hover:text-ink group-open:text-ink tracking-label text-xs font-semibold uppercase transition-colors duration-200',
 } as const;

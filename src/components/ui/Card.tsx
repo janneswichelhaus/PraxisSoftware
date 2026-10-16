@@ -105,7 +105,8 @@ export function Aufklappzeichen({ offen }: { offen?: boolean }) {
     <span
       aria-hidden="true"
       data-aufklappzeichen=""
-      className={`inline-flex size-4 shrink-0 items-center justify-center transition-transform ${drehung} motion-reduce:transition-none`}
+      // Mit Feder: Das Zeichen dreht ein Stück über und federt zurück (ANN-567).
+      className={`ease-feder inline-flex size-4 shrink-0 items-center justify-center transition-transform duration-300 ${drehung} motion-reduce:transition-none`}
     >
       <span className="size-2 -translate-x-px rotate-45 border-t-2 border-r-2 border-current" />
     </span>

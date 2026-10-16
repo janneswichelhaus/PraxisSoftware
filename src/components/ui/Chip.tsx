@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -37,6 +37,10 @@ export function Chip(
     ),
 ) {
   const { children, className = '' } = props;
+  // Jeder Tipp auf eine Wahl lässt den Chip einrasten (ANN-567, `index.css`
+  // `chip-wahl`): 1 und 2 wechseln sich ab, damit die Animation neu startet;
+  // 0 heißt noch kein Tipp - beim ersten Zeichnen federt nichts.
+  const [schwung, setSchwung] = useState<0 | 1 | 2>(0);
   if ('to' in props) {
     return (
       <Link to={props.to} className={`${basis} ${frei} ${className}`.trim()}>
@@ -52,16 +56,21 @@ export function Chip(
     );
   }
   const gewaehlt = props.gewaehlt;
+  const onClick = props.onClick;
   return (
     <button
       type="button"
-      onClick={props.onClick}
+      onClick={() => {
+        if (gewaehlt !== undefined) setSchwung((alt) => (alt === 1 ? 2 : 1));
+        onClick();
+      }}
       disabled={props.disabled}
       {...(gewaehlt === undefined ? {} : { 'aria-pressed': gewaehlt })}
-      className={`${basis} ${gewaehlt ? gewaehlteForm : frei} disabled:text-ink-muted disabled:cursor-not-allowed disabled:border-dashed ${className}`.trim()}
+      data-schwung={schwung === 0 ? undefined : schwung}
+      className={`chip-wahl ${basis} ${gewaehlt ? gewaehlteForm : frei} disabled:text-ink-muted disabled:cursor-not-allowed disabled:border-dashed ${className}`.trim()}
     >
       {gewaehlt ? (
-        <span aria-hidden="true" className="-ml-1">
+        <span aria-hidden="true" className="chip-haken -ml-1">
           ✓
         </span>
       ) : null}

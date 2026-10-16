@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Link, matchPath, useLocation } from 'react-router-dom';
+import { anzeigerStil, useGleitanzeiger } from './gleitanzeiger';
 import { rolleInsBild } from './waagerechtRollen';
 
 export interface SubNavEintrag {
@@ -59,6 +60,8 @@ function verlaufBreiten(liste: HTMLElement): { links: number; rechts: number } {
   let restLinks = 0;
   let restRechts = 0;
   for (const eintrag of Array.from(liste.children)) {
+    // Der gleitende Unterstrich ist kein Eintrag.
+    if (eintrag.hasAttribute('data-gleitanzeiger')) continue;
     const r = eintrag.getBoundingClientRect();
     if (r.left < rahmen.left - 1 && r.right > rahmen.left + 1) restLinks = r.right - rahmen.left;
     if (r.left < rahmen.right - 1 && r.right > rahmen.right + 1) {
@@ -150,6 +153,10 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
     };
   }, [pathname, offen]);
 
+  // Der Unterstrich gleitet zum neuen Eintrag (ANN-567); in Ruhe liegt er
+  // genau dort, wo bisher der Rand des aktiven Eintrags lag.
+  const { kasten, phase } = useGleitanzeiger(liste, `${pathname}|${offen}`);
+
   if (eintraege.length < 2) return null;
 
   const echte = eintraege.filter((eintrag) => !eintrag.vorschau);
@@ -174,7 +181,10 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
       {/* Schmal: eine scrollbare Zeile, damit sie nicht die halbe Seite belegt.
           Breit: umbrechen - ein waagerecht verstecktes Menue findet auf dem
           Desktop niemand, weil es dort keine Wischgeste gibt. */}
-      <ul ref={liste} className="flex gap-1 overflow-x-auto pb-px sm:flex-wrap sm:overflow-visible">
+      <ul
+        ref={liste}
+        className={`relative flex gap-1 overflow-x-auto pb-px sm:flex-wrap sm:overflow-visible ${kasten ? 'gleitet-strich' : ''}`}
+      >
         {sichtbar.map((eintrag) => (
           <li key={eintrag.to} className="shrink-0">
             {/* Link mit eigenem `aria-current` statt NavLink: Nur so kann ein
@@ -204,6 +214,15 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
               {offen ? 'Vorschau einklappen' : `Vorschau (${vorschauen.length})`}
             </button>
           </li>
+        ) : null}
+        {kasten ? (
+          <li
+            aria-hidden="true"
+            data-gleitanzeiger=""
+            data-phase={phase}
+            className="gleitanzeiger bg-accent"
+            style={anzeigerStil(kasten, 'unten', 2)}
+          />
         ) : null}
       </ul>
       {/* Der Verlauf: von der Fläche der Seite nach durchsichtig, mit „›"

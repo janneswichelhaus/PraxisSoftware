@@ -126,6 +126,33 @@ describe('Chip (Design-Fundament)', () => {
   });
 });
 
+describe('Chip rastet ein (ANN-567)', () => {
+  it('federt erst nach einem Tipp, und jeder Tipp startet die Feder neu', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    renderWithProviders(
+      <Chip gewaehlt={false} onClick={onClick}>
+        Knie
+      </Chip>,
+    );
+    const chip = screen.getByRole('button', { name: 'Knie' });
+    expect(chip).not.toHaveAttribute('data-schwung');
+    await user.click(chip);
+    expect(chip).toHaveAttribute('data-schwung', '1');
+    await user.click(chip);
+    expect(chip).toHaveAttribute('data-schwung', '2');
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('federt nicht, wenn er nichts wählt', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Chip onClick={vi.fn()}>Weiter</Chip>);
+    const chip = screen.getByRole('button', { name: 'Weiter' });
+    await user.click(chip);
+    expect(chip).not.toHaveAttribute('data-schwung');
+  });
+});
+
 describe('Filterchips (Design-Fundament)', () => {
   function Mehrfach({ mehrfach = true }: { mehrfach?: boolean }) {
     const [gewaehlt, setGewaehlt] = useState<string[]>([]);

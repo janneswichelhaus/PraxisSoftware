@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 're
 import type { CSSProperties } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Hervorhebung } from '@/components/ui/Hervorhebung';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { canReadPatientDirectory, type CurrentUser } from '@/features/session/types';
@@ -316,7 +317,8 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
           // Ab sm: eine Liste unter dem Feld, ohne Schlagschatten (DS-001) -
           // dass sie über der Seite liegt, tragen Rand und Fläche.
           style={{ '--oben': `${unterkante}px` } as CSSProperties}
-          className="border-line-strong bg-surface sm:rounded-card fixed inset-x-0 top-[var(--oben)] bottom-0 z-50 overflow-y-auto border-t pb-20 sm:absolute sm:inset-x-0 sm:top-full sm:bottom-auto sm:mt-1 sm:max-h-104 sm:border sm:pb-0"
+          // `suche-geht-auf`: Die Liste gleitet aus dem Feld heraus (ANN-567).
+          className="suche-geht-auf border-line-strong bg-surface sm:rounded-card fixed inset-x-0 top-[var(--oben)] bottom-0 z-50 overflow-y-auto border-t pb-20 sm:absolute sm:inset-x-0 sm:top-full sm:bottom-auto sm:mt-1 sm:max-h-104 sm:border sm:pb-0"
           // Ein Tipp irgendwo in die Liste - auf eine Gruppenüberschrift, den
           // Zustandssatz - lässt den Fokus im Feld. Sonst schlösse der
           // Fokusverlust die Liste unter dem Finger.
@@ -340,6 +342,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
                       id={`${feldId}-${index}`}
                       aktiv={index === aktiv}
                       bezeichnung={funktion.bezeichnung}
+                      suche={eingabe}
                       zusatz={
                         [
                           funktion.art === 'Bereich' ? undefined : funktion.bereich,
@@ -368,6 +371,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
                       id={`${feldId}-${funktionen.length + index}`}
                       aktiv={funktionen.length + index === aktiv}
                       bezeichnung={`${patient.given_name} ${patient.family_name}`}
+                      suche={eingabe}
                       // Das Geburtsdatum unterscheidet zwei Namensgleiche -
                       // dafür steht es hier und für nichts sonst. „geb." wie
                       // im Aktenkopf und in der Patientensuche (WRT-15).
@@ -429,11 +433,14 @@ function Trefferzeile({
   bezeichnung,
   zusatz,
   abzeichen,
+  suche,
   onWaehlen,
 }: {
   id: string;
   aktiv: boolean;
   bezeichnung: string;
+  /** Was im Feld steht: Der passende Teil der Bezeichnung steht fett (ANN-567). */
+  suche: string;
   zusatz?: string | undefined;
   abzeichen?: React.ReactNode;
   onWaehlen: () => void;
@@ -454,7 +461,9 @@ function Trefferzeile({
       }}
     >
       <span className="min-w-0 flex-1">
-        <span className="text-ink text-liste block truncate font-medium">{bezeichnung}</span>
+        <span className="text-ink text-liste block truncate font-medium">
+          <Hervorhebung text={bezeichnung} suche={suche} />
+        </span>
         {zusatz ? <span className="text-ink-muted block truncate text-sm">{zusatz}</span> : null}
       </span>
       {abzeichen}
