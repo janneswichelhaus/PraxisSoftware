@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import { usePortalZiel } from './portalZiel';
@@ -48,6 +48,7 @@ export function Dialogfenster({
   vollbild = false,
   beschreibung,
   schliessenBeschriftung = 'Schließen',
+  titelImInhalt = false,
   children,
 }: {
   /** Überschrift und zugängliche Bezeichnung des Fensters. */
@@ -68,6 +69,14 @@ export function Dialogfenster({
   beschreibung?: string | undefined;
   /** Name des Schließen-Knopfs im Vollbild, etwa „Check-Up abbrechen". */
   schliessenBeschriftung?: string;
+  /**
+   * Im Vollbild steht die Überschrift im Inhalt, nicht in der Kopfzeile -
+   * beim Check-Up direkt über den Antworten, im Daumenbereich (FLT-007,
+   * Jannes 2026-10-16). Die Kopfzeile trägt dann die Beschreibung und den
+   * Knopf zum Schließen; der Inhalt setzt `Fenstertitel` an die Stelle, und
+   * das Fenster heißt weiter nach ihm.
+   */
+  titelImInhalt?: boolean;
   children: ReactNode;
 }) {
   const titelId = useId();
@@ -195,12 +204,18 @@ export function Dialogfenster({
         >
           <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
             <div className="min-w-0 flex-1">
-              <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
-                {titel}
-              </h2>
-              {beschreibung ? (
-                <p className="text-ink-muted truncate text-sm">{beschreibung}</p>
-              ) : null}
+              {titelImInhalt ? (
+                <p className="text-ink truncate font-semibold">{beschreibung}</p>
+              ) : (
+                <>
+                  <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
+                    {titel}
+                  </h2>
+                  {beschreibung ? (
+                    <p className="text-ink-muted truncate text-sm">{beschreibung}</p>
+                  ) : null}
+                </>
+              )}
             </div>
             <Symbolknopf
               beschriftung={schliessenBeschriftung}
@@ -219,7 +234,9 @@ export function Dialogfenster({
               </svg>
             </Symbolknopf>
           </div>
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          <TitelKontext.Provider value={{ id: titelId, titel }}>
+            <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          </TitelKontext.Provider>
         </div>
       </div>,
       ziel,
@@ -302,5 +319,23 @@ export function Hinweisfenster({
         </Button>
       </div>
     </Dialogfenster>
+  );
+}
+
+const TitelKontext = createContext<{ id: string; titel: string } | null>(null);
+
+/**
+ * Die Überschrift eines Vollbild-Fensters an einer Stelle im Inhalt
+ * (`titelImInhalt`): dieselbe Kennung, nach der das Fenster heißt, in der
+ * Größe einer Seitenüberschrift am Telefon. Außerhalb eines solchen Fensters
+ * zeichnet sie nichts.
+ */
+export function Fenstertitel() {
+  const kontext = useContext(TitelKontext);
+  if (!kontext) return null;
+  return (
+    <h2 id={kontext.id} className="text-ink text-h3 font-bold">
+      {kontext.titel}
+    </h2>
   );
 }

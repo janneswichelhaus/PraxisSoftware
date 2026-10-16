@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Medienbild } from '@/components/ui/Medienbild';
 import { Kameradialog } from '@/features/files/Kameradialog';
+import { useObjektadressen } from './objektadressen';
 
 /** Höchstens vier Fotos je Stelle und je Check-Up (`app.fleet_photo_limit()`). */
 export const FOTOS_JE_STELLE = 4;
@@ -84,15 +85,4 @@ export function Fotovormerkung({
       ) : null}
     </div>
   );
-}
-
-/** Objekt-Adressen für Bilder im Speicher; frei, sobald das Bild geht. */
-function useObjektadressen(fotos: readonly Blob[]): string[] {
-  const [adressen, setAdressen] = useState<string[]>([]);
-  useEffect(() => {
-    const neu = fotos.map((foto) => URL.createObjectURL(foto));
-    setAdressen(neu);
-    return () => neu.forEach((adresse) => URL.revokeObjectURL(adresse));
-  }, [fotos]);
-  return adressen;
 }
