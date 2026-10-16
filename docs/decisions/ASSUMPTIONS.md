@@ -5795,6 +5795,18 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Jannes (Dur
 
 **Änderungspfad.** Sammelvermerk je Region: eine RPC über `set_exercise_variant_reviewed` · Aufwand `mittel`.
 
+### ANN-562 — Check-Up geführt: eine Seite je Prüfpunkt, jeder Punkt bestätigt
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung des geführten Check-Ups
+
+**Annahme.** Der Check-Up läuft im Fenster Seite für Seite durch die zwölf Prüfpunkte, keiner ist auf „In Ordnung“ vorbelegt. „In Ordnung“ führt sofort weiter; „Beobachten“ und „Problem“ fragen „Wo genau?“ (am Rad, als Knopf oder ohne Stelle) und „Was ist aufgefallen?“. Die Notiz gilt für Prüfpunkt und Stelle; neu bewerten ersetzt die neue Stelle des Punkts. Notiz und Fotos zum ganzen Rad und weitere Stellen stehen im Abschluss eingeklappt.
+
+**Begründung.** Auftrag Jannes (16.10.): am 3D-Rad geführt, Seitenwechsel statt Scrollen, nach einer Angabe weiter. Ein vorbelegtes „In Ordnung“ nähme dem Durchgehen den Zweck; dafür 16 statt 4 Tipps.
+
+**Anker.** `CheckupFenster` in `src/features/fleet/CheckupFenster.tsx`; Abfolge in `checkupablauf.ts`.
+
+**Änderungspfad.** Vorbelegen: Antworten in `CheckupFenster` vorbesetzen · Aufwand `klein`.
+
 ### ANN-563 — Auslieferung: Dateien früherer Stände bleiben 7 Tage
 
 Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —

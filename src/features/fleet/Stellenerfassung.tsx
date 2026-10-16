@@ -13,13 +13,12 @@ import {
   isZoneKey,
   zoneCheckItem,
   zoneLabel,
-  type BikeMarker,
   type BikeType,
 } from './bike3d/zones';
 import type { Spot } from './api';
 import { Fotovormerkung } from './Fotovormerkung';
 import { Einstufung, Nadel } from './Nadel';
-import { nummerDerStelle, punktAmModell, type Entwurf, type Stellenzustand } from './stellen';
+import { nummerDerStelle, radBild, type Entwurf, type Stellenzustand } from './stellen';
 
 /**
  * Stellen am 3D-Rad markieren - im Check-Up und in der Pannenmeldung
@@ -53,37 +52,7 @@ export function Stellenerfassung({
   hoehe: number;
 }) {
   const { art, stellen, entwurf, hervorgehoben } = zustand;
-  const offene = bestehend.filter((spot) => spot.number !== null);
-  const aktivNummer = entwurf?.key
-    ? nummerDerStelle(
-        stellen.findIndex((stelle) => stelle.key === entwurf.key),
-        offene.length,
-      )
-    : nummerDerStelle(stellen.length, offene.length);
-
-  const markers: BikeMarker[] = [
-    ...offene.map((spot) => ({
-      id: `offen-${spot.id}`,
-      zone: spot.zone,
-      point: punktAmModell(spot, bauart),
-      severity: spot.severity,
-      number: spot.number ?? 0,
-    })),
-    ...stellen.map((stelle, index) => {
-      const quelle = entwurf?.key === stelle.key ? entwurf : stelle;
-      return {
-        id: stelle.key,
-        zone: quelle.zone,
-        point: quelle.point,
-        severity: quelle.severity,
-        number: nummerDerStelle(index, offene.length),
-      };
-    }),
-  ];
-  const draft =
-    entwurf && !entwurf.key && isZoneKey(entwurf.zone)
-      ? { zone: entwurf.zone, point: entwurf.point, number: aktivNummer }
-      : null;
+  const { offene, aktivNummer, markers, draft } = radBild(zustand, bestehend, bauart);
   const highlight = entwurf?.zone ? [entwurf.zone] : hervorgehoben ? hervorgehoben.zonen : [];
   const hinweis = entwurf
     ? 'Antippen versetzt die Nadel'
@@ -189,7 +158,7 @@ export function Stellenerfassung({
 /** Das Bauteil der offenen Stelle - es gibt immer nur eine. */
 const BAUTEIL_ID = 'stelle-bauteil';
 
-function Entwurfsfeld({
+export function Entwurfsfeld({
   zustand,
   entwurf,
   nummer,

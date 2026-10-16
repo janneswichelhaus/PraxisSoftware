@@ -28,6 +28,30 @@ function Seite({ onSchliessen }: { onSchliessen: () => void }) {
 }
 
 describe('Dialogfenster', () => {
+  it('füllt als Vollbild den Bildschirm und schließt über den Knopf in der Kopfzeile (FLT-005)', async () => {
+    const onSchliessen = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <Dialogfenster
+        titel="Bremsen"
+        onSchliessen={onSchliessen}
+        vollbild
+        schliessenBeschriftung="Check-Up abbrechen"
+      >
+        <Button type="button" data-autofocus>
+          In Ordnung
+        </Button>
+      </Dialogfenster>,
+    );
+    const fenster = screen.getByRole('dialog', { name: 'Bremsen' });
+    expect(fenster).toHaveAttribute('aria-modal', 'true');
+    expect(fenster.className).toContain('h-dvh');
+    // Der Fokus liegt auf der Antwort, nicht auf dem Schließen-Knopf davor.
+    expect(screen.getByRole('button', { name: 'In Ordnung' })).toHaveFocus();
+    await user.click(screen.getByRole('button', { name: 'Check-Up abbrechen' }));
+    expect(onSchliessen).toHaveBeenCalledTimes(1);
+  });
+
   it('ist ein benannter, modaler Dialog und setzt den Fokus hinein', () => {
     render(<Seite onSchliessen={() => undefined} />);
     const fenster = screen.getByRole('dialog', { name: 'Frage' });

@@ -9,9 +9,12 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 („Als Vorlage speichern“ am Plan, vor den mitgelieferten in „Aus Vorlage“, Seite Vorlagen), Durchsicht
 des Katalogs am Stück mit einem Tipp je Übung; ANN-560, ANN-561. Bilder und Videos offen (ANN-539).
 
-Test-Umgebung (16.10.): Die Auslieferung von #252 scheiterte zweimal am SSH-Zugang zu Uberspace,
-der die Verbindung vor dem Handshake abbrach (BEF-171); der Workflow baut sie jetzt mit bis zu
-fünf Versuchen auf (ANN-559). Bis zum nächsten grünen Lauf zeigt sie die Oberfläche von #250.
+Check-Up geführt (16.10., FLT-005/006, eine PR, Branch `ccr-658a5e25-l0njkl`): Fenster mit einer
+Seite je Prüfpunkt am 3D-Rad, „In Ordnung“ führt weiter (ANN-562); 3D-Meldung trennt „nicht
+geladen“ von „kein WebGL“; alte Dateien bleiben 7 Tage auf dem Server (BEF-172, ANN-563).
+
+Test-Umgebung: SSH-Verbindung mit bis zu fünf Versuchen (#253, ANN-559); erster Lauf danach ohne
+Abbruch, BEF-171 bleibt offen, bis weitere Läufe das bestätigen.
 
 Übersicht (15.10., Branch `claude/practical-curie-1jy88f`): Abschlusskarte in Tiefgrün und Link zu
 den Trainingskund:innen entfernt, alle Abschnitte unter dem Kopf 32 px auseinander (ANN-546).

@@ -3,6 +3,7 @@ import type { BikeFocus } from './bike3d/BikeModel3D';
 import {
   MODEL_VERSION,
   isZoneKey,
+  type BikeMarker,
   type BikePick,
   type BikeType,
   type CheckItemKey,
@@ -56,6 +57,8 @@ export interface Stellenzustand {
   uebernehmen: () => void;
   verwerfen: () => void;
   entfernen: () => void;
+  /** Nimmt neue Stellen wieder heraus - im geführten Check-Up, wenn ein Punkt neu bewertet wird. */
+  entferneStellen: (keys: readonly string[]) => void;
 }
 
 /** Einstufung in der Pannenmeldung: jede Stelle ist ein Schaden (Handoff, Vorschlag 4). */
@@ -177,6 +180,11 @@ export function useStellenerfassung({
       setStellen((vorher) => vorher.filter((eintrag) => eintrag.key !== key));
       setEntwurf(null);
     },
+    entferneStellen(keys) {
+      if (keys.length === 0) return;
+      setStellen((vorher) => vorher.filter((eintrag) => !keys.includes(eintrag.key)));
+      setEntwurf((vorher) => (vorher?.key && keys.includes(vorher.key) ? null : vorher));
+    },
   };
 }
 
@@ -191,4 +199,49 @@ export function punktAmModell(
 /** Die Nummer einer neuen Stelle: nach den schon offenen des Rads. */
 export function nummerDerStelle(index: number, bestehend: number): number {
   return bestehend + index + 1;
+}
+
+/**
+ * Was das 3D-Rad zu einer Meldung zeigt: die schon offenen Stellen mit ihrer
+ * Nummer, die neuen dahinter, die offene Stelle als neue Nadel - im Check-Up,
+ * in der Panne und im geführten Check-Up (FLT-005) dieselbe Zählung.
+ */
+export function radBild(
+  zustand: Pick<Stellenzustand, 'stellen' | 'entwurf'>,
+  bestehend: readonly Spot[],
+  bauart: BikeType,
+) {
+  const { stellen, entwurf } = zustand;
+  const offene = bestehend.filter((spot) => spot.number !== null);
+  const aktivNummer = entwurf?.key
+    ? nummerDerStelle(
+        stellen.findIndex((stelle) => stelle.key === entwurf.key),
+        offene.length,
+      )
+    : nummerDerStelle(stellen.length, offene.length);
+
+  const markers: BikeMarker[] = [
+    ...offene.map((spot) => ({
+      id: `offen-${spot.id}`,
+      zone: spot.zone,
+      point: punktAmModell(spot, bauart),
+      severity: spot.severity,
+      number: spot.number ?? 0,
+    })),
+    ...stellen.map((stelle, index) => {
+      const quelle = entwurf?.key === stelle.key ? entwurf : stelle;
+      return {
+        id: stelle.key,
+        zone: quelle.zone,
+        point: quelle.point,
+        severity: quelle.severity,
+        number: nummerDerStelle(index, offene.length),
+      };
+    }),
+  ];
+  const draft =
+    entwurf && !entwurf.key && isZoneKey(entwurf.zone)
+      ? { zone: entwurf.zone, point: entwurf.point, number: aktivNummer }
+      : null;
+  return { offene, aktivNummer, markers, draft };
 }
