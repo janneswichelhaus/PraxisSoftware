@@ -79,11 +79,7 @@ export function WerkstattblattPage({ user }: { user: CurrentUser }) {
           <>
             <Rueckweg standard={zumRad} beschriftung="Zurück zum Rad" />
             <PageHeader title="Unterlage für die Werkstatt" />
-            <EmptyState
-              inKarte
-              title="Keine offenen Stellen"
-              description="Die Unterlage zeigt die offenen Stellen eines Rads."
-            />
+            <EmptyState inKarte title="Keine offenen Stellen" />
           </>
         ) : (
           <Unterlage blatt={daten} radId={radId} zone={zone} zumRad={zumRad} />
@@ -169,19 +165,24 @@ function Unterlage({
 
   return (
     <>
-      <div className="nicht-drucken mx-auto mb-4 flex max-w-[210mm] flex-col gap-3">
-        <div className="flex flex-wrap items-start justify-between gap-x-4">
-          <Rueckweg standard={zumRad} beschriftung="Zurück zum Rad" />
-          <Button type="button" disabled={!bereit} onClick={() => window.print()}>
+      <div className="nicht-drucken mx-auto mb-8 flex max-w-[210mm] flex-col gap-3">
+        <Rueckweg standard={zumRad} beschriftung="Zurück zum Rad" />
+        <div>
+          <Button
+            type="button"
+            disabled={!bereit}
+            onClick={() => window.print()}
+            className="w-full sm:w-auto"
+          >
             {bereit ? 'Drucken oder als PDF sichern' : 'Wird vorbereitet …'}
           </Button>
         </div>
+        {/* Nur Datei und Datenfluss (DESIGN.md Regel 6): Was auf dem Blatt
+            steht, zeigt das Blatt selbst. */}
         <Kleingedrucktes>
-          Datei: {name}.pdf. Seite 1 zeigt das Rad von beiden Seiten mit allen offenen Stellen und
-          die Tabelle zum Abhaken, ab Seite 2 steht jede Stelle im Ausschnitt mit ihren Fotos. Die
-          Unterlage nennt keine Namen aus dem Team, keine Termine und keinen Pannenort. Notizen und
-          Fotos gehen unverändert mit – bitte vor dem Weitergeben auf Angaben zu Patient:innen
-          prüfen. Versendet wird nichts automatisch; Sie schicken die Datei selbst an die Werkstatt.
+          Datei: {name}.pdf. Versendet wird nichts automatisch; Sie schicken die Datei selbst an die
+          Werkstatt. Notizen und Fotos gehen unverändert mit – bitte vor dem Weitergeben auf Angaben
+          zu Patient:innen prüfen.
         </Kleingedrucktes>
         {bilder.isError ? (
           <Statusmeldung ton="warnung">
@@ -315,7 +316,7 @@ function Unterlage({
             <p className="text-ink-muted mt-1 text-base">
               Je Stelle ein Ausschnitt am Modell und die Fotos aus der Meldung.
             </p>
-            <div className="mt-5 flex flex-col gap-4">
+            <div className="mt-6 flex flex-col gap-4">
               {gruppe.map((spot) => {
                 const pruefpunkt = zoneCheckItem(spot.zone);
                 return (
@@ -338,7 +339,7 @@ function Unterlage({
                     </div>
                     <figure className="min-w-0">
                       <Ausschnitt bild={bilder.data?.ausschnitte[spot.id]} spot={spot} />
-                      <figcaption className="text-ink-muted mt-1.5 text-sm">
+                      <figcaption className="text-ink-muted mt-2 text-sm">
                         Ausschnitt am Modell
                       </figcaption>
                     </figure>
@@ -349,7 +350,7 @@ function Unterlage({
                         )}
                         nummer={spot.number}
                       />
-                      <figcaption className="text-ink-muted mt-1.5 text-sm">
+                      <figcaption className="text-ink-muted mt-2 text-sm">
                         {spot.source === 'breakdown'
                           ? 'Foto aus der Panne'
                           : 'Foto aus dem Check-Up'}
@@ -377,7 +378,11 @@ function einstufungText(einstufung: Severity): string {
   return einstufung === 'problem' ? '× Problem' : '! Beobachten';
 }
 
-/** Eine A4-Seite: am Bildschirm als Blatt, im Druck mit Seitenumbruch davor. */
+/**
+ * Eine A4-Seite. Am Bildschirm ohne Rahmen wie das Rechnungsblatt (kein
+ * Kasten im Kasten), Folgeseiten mit einer Linie davor; im Druck mit
+ * Seitenumbruch.
+ */
 function Blattseite({
   nummer,
   von,
@@ -392,8 +397,10 @@ function Blattseite({
   return (
     <section
       aria-label={`Seite ${nummer} von ${von}`}
-      className={`border-line bg-surface rounded-card mb-6 flex flex-col border p-4 sm:p-10 print:mb-0 print:border-0 print:p-0 ${
-        nummer > 1 ? 'print:break-before-page' : ''
+      className={`mb-8 flex flex-col print:mb-0 ${
+        nummer > 1
+          ? 'border-line border-t-2 pt-8 print:break-before-page print:border-0 print:pt-0'
+          : ''
       }`.trim()}
     >
       <div className="flex-1">{children}</div>
@@ -524,7 +531,7 @@ function Seitenbild({
           </>
         ) : null}
       </div>
-      <figcaption className="text-ink-muted mt-1.5 text-sm">{unterschrift}</figcaption>
+      <figcaption className="text-ink-muted mt-2 text-sm">{unterschrift}</figcaption>
     </figure>
   );
 }

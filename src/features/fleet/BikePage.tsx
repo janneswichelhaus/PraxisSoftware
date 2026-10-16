@@ -3,14 +3,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Objektkopf, Warnzeile } from '@/components/ui/Objektkopf';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Suchreiterleiste } from '@/components/ui/Reiterleiste';
 import { useOffenerReiter, type Suchreiter } from '@/components/ui/offenerReiter';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { leseMeldung } from '@/features/appointments/terminformular';
 import { leseRueckweg, mitRueckweg, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -147,6 +150,9 @@ function Rad({
   });
   const melde = (text: string) => setMeldung((vorher) => ({ text, nr: (vorher?.nr ?? 0) + 1 }));
 
+  // Die Rückfrage zur Freigabe ist ein Fenster: In der Warnzeile steht nur
+  // der Knopf (DESIGN.md, kein Kasten im Kasten).
+  const [freigabeFrage, setFreigabeFrage] = useState(false);
   const freigeben = useMutation({
     mutationFn: () => releaseBike(bike.id),
     onSuccess: async ({ resolvedSpots }) => {
@@ -156,8 +162,14 @@ function Rad({
           ? `${bike.name} freigegeben. ${resolvedSpots === 1 ? 'Die Stelle gilt' : `Die ${resolvedSpots} Stellen gelten`} als erledigt.`
           : `${bike.name} freigegeben.`,
       );
+      setFreigabeFrage(false);
     },
   });
+  function freigabeSchliessen() {
+    if (freigeben.isPending) return;
+    setFreigabeFrage(false);
+    freigeben.reset();
+  }
 
   const hier = `/betrieb/flotte/rad/${bike.id}`;
   const offeneStellen = detail.spots.filter((spot) => spot.resolved_at === null).length;
@@ -227,23 +239,14 @@ function Rad({
               <Warnzeile
                 aktion={
                   flotte.can_release ? (
-                    <Rueckfrage
-                      ausloeser="Freigeben"
-                      ausloeserGroesse="kompakt"
-                      bezeichnung={`${bike.name} freigeben – Rückfrage`}
-                      bestaetigen="Ja, freigeben"
-                      bestaetigenLaeuft="Wird freigegeben …"
-                      fehler={freigeben.isError ? freigeben.error.message : undefined}
-                      onBestaetigen={() => freigeben.mutateAsync()}
-                      onAbbrechen={() => freigeben.reset()}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      groesse="kompakt"
+                      onClick={() => setFreigabeFrage(true)}
                     >
-                      <p>
-                        {bike.name} steht danach wieder in der Planung.
-                        {offeneStellen > 0
-                          ? ` ${offeneStellen === 1 ? 'Die offene Stelle gilt' : `Die ${offeneStellen} offenen Stellen gelten`} als erledigt und ${offeneStellen === 1 ? 'bleibt' : 'bleiben'} im Verlauf.`
-                          : ''}
-                      </p>
-                    </Rueckfrage>
+                      Freigeben
+                    </Button>
                   ) : null
                 }
               >
@@ -258,6 +261,40 @@ function Rad({
         }
         reiter={<Suchreiterleiste reiter={BEREICHE} param="bereich" label="Bereiche des Rads" />}
       />
+
+      {freigabeFrage ? (
+        <Dialogfenster titel={`${bike.name} freigeben?`} onSchliessen={freigabeSchliessen}>
+          <p className="text-ink text-sm">
+            {bike.name} steht danach wieder in der Planung.
+            {offeneStellen > 0
+              ? ` ${offeneStellen === 1 ? 'Die offene Stelle gilt' : `Die ${offeneStellen} offenen Stellen gelten`} als erledigt und ${offeneStellen === 1 ? 'bleibt' : 'bleiben'} im Verlauf.`
+              : ''}
+          </p>
+          {freigeben.isError ? (
+            <Statusmeldung ton="fehler" className="mt-3">
+              {freigeben.error.message}
+            </Statusmeldung>
+          ) : null}
+          <Formularfuss>
+            <Button
+              type="button"
+              data-autofocus
+              disabled={freigeben.isPending}
+              onClick={() => freigeben.mutate()}
+            >
+              {freigeben.isPending ? 'Wird freigegeben …' : 'Ja, freigeben'}
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              disabled={freigeben.isPending}
+              onClick={freigabeSchliessen}
+            >
+              Abbrechen
+            </Button>
+          </Formularfuss>
+        </Dialogfenster>
+      ) : null}
 
       {meldung ? (
         <Rueckmeldung key={meldung.nr} className="mt-6">

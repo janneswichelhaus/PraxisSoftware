@@ -284,8 +284,9 @@ function Entwurfsfeld({
         <Button type="button" variant="secondary" disabled={!zone} onClick={zustand.uebernehmen}>
           {entwurf.key ? 'Änderung übernehmen' : 'Stelle setzen'}
         </Button>
+        {/* Nicht „Abbrechen“: Darunter steht das „Abbrechen“ der ganzen Meldung. */}
         <Button type="button" variant="quiet" onClick={zustand.verwerfen}>
-          Abbrechen
+          Verwerfen
         </Button>
         {entwurf.key ? (
           <Button type="button" variant="quiet" onClick={zustand.entfernen}>

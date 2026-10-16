@@ -29,6 +29,9 @@ import type { BikeViewer } from './viewer';
  * so breit wie der Bildschirm den Daumen ab (Praxis-Review FLT-EPIC-001).
  */
 
+/** Höhe von Hinweiszeile (oben) und Ansichtswechsel (unten) samt Abstand, in px. */
+const BEDIENRAND = 104;
+
 export interface BikeFocus {
   zones: readonly string[];
   /** Blickwinkel; ohne Angabe der des Bauteils oder ein eingepasster. */
@@ -86,6 +89,8 @@ export function BikeModel3D({
           onPick: (hit) => stand.current.onPick?.(hit),
           onHover: setHover,
           onViewChange: setAnsicht,
+          // Hinweis oben und Ansichtswechsel unten liegen über dem Bild.
+          rand: BEDIENRAND,
         });
         setZustand('bereit');
       })

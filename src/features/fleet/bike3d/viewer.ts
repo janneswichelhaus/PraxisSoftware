@@ -42,6 +42,7 @@ import {
   type ViewId,
   type ZoneView,
 } from './zones';
+import { kopfUeberSpitze, naechsteNadel, type Nadelkopf } from './nadeltreffer';
 
 /**
  * Betrachter: Kamera um das Rad, Antippen wählt ein Bauteil, Nadeln für
@@ -61,9 +62,14 @@ import {
 const DEG = Math.PI / 180;
 const BACKGROUND = 0xf4f5f7; // --color-surface-sunken
 
-export function fitRadius(aspect: number): number {
+/**
+ * Abstand, in dem das ganze Rad ins Bild passt. `freiAnteil` ist der Teil der
+ * Höhe, den keine Bedienung überdeckt: Liegt der Ansichtswechsel über dem
+ * Bild, passt das Rad zwischen Hinweis und Knöpfe statt unter sie.
+ */
+export function fitRadius(aspect: number, freiAnteil = 1): number {
   const t = Math.tan(15 * DEG);
-  return 1.12 * Math.max(1.27 / (t * aspect), 0.74 / t);
+  return 1.12 * Math.max(1.27 / (t * aspect), 0.74 / (t * freiAnteil));
 }
 
 function clamp(v: number, a: number, b: number) {
@@ -234,6 +240,8 @@ export interface ViewerOptions {
   onPick?: (hit: BikePick | null) => void;
   onHover?: (zone: string | null) => void;
   onViewChange?: (view: ViewId | null) => void;
+  /** Wie viel der Höhe die Bedienung über dem Bild überdeckt, in px. */
+  rand?: number;
 }
 
 interface Press {
@@ -319,6 +327,13 @@ export class BikeViewer {
     return this.size.w / Math.max(1, this.size.h);
   }
 
+  /** Abstand für das ganze Rad, frei von Hinweis und Ansichtswechsel. */
+  private einpassen() {
+    const h = Math.max(1, this.size.h);
+    const frei = clamp((h - (this.opts.rand ?? 0)) / h, 0.4, 1);
+    return fitRadius(this.aspect(), frei);
+  }
+
   resize(): void {
     const w = Math.max(1, this.canvas.clientWidth);
     const h = Math.max(1, this.canvas.clientHeight);
@@ -327,7 +342,7 @@ export class BikeViewer {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    if (this.orbit.auto) this.orbit.radius = fitRadius(w / h);
+    if (this.orbit.auto) this.orbit.radius = this.einpassen();
     this.scalePins();
     this.dirty = true;
   }
@@ -416,6 +431,8 @@ export class BikeViewer {
       -((y - rect.top) / rect.height) * 2 + 1,
     );
     this.raycaster.setFromCamera(ndc, this.camera);
+    const nadel = naechsteNadel(x, y, this.nadelkoepfe(rect));
+    if (nadel) return nadel;
     for (const hit of this.raycaster.intersectObjects(this.pins.children, false)) {
       const data = hit.object.userData as { markerId?: string; zone: string; point: ModelPoint };
       if (data.markerId) return { zone: data.zone, markerId: data.markerId, point: data.point };
@@ -429,6 +446,25 @@ export class BikeViewer {
       }
     }
     return null;
+  }
+
+  /** Wo die Köpfe der Nadeln am Bildschirm stehen (ohne die Nadel im Entwurf). */
+  private nadelkoepfe(rect: DOMRect): Nadelkopf<BikePick>[] {
+    const ort = new Vector3();
+    const koepfe: Nadelkopf<BikePick>[] = [];
+    for (const s of this.pins.children) {
+      const data = s.userData as { markerId?: string; zone: string; point: ModelPoint; px: number };
+      if (!data.markerId) continue;
+      s.getWorldPosition(ort).project(this.camera);
+      if (ort.z > 1) continue;
+      const spitzeY = rect.top + ((1 - ort.y) / 2) * rect.height;
+      koepfe.push({
+        x: rect.left + ((ort.x + 1) / 2) * rect.width,
+        y: spitzeY - kopfUeberSpitze(data.px * 1.25),
+        nadel: { zone: data.zone, markerId: data.markerId, point: data.point },
+      });
+    }
+    return koepfe;
   }
 
   private readonly onDown = (e: PointerEvent) => {
@@ -476,7 +512,7 @@ export class BikeViewer {
         this.opts.onViewChange?.(null);
       }
     } else if (this.pointers.size === 2 && this.pinch) {
-      const fit = fitRadius(this.aspect());
+      const fit = this.einpassen();
       this.orbit.radius = clamp(
         (this.pinch.r * this.pinch.d) / this.pinchDistance(),
         0.55,
@@ -536,7 +572,7 @@ export class BikeViewer {
       {
         theta: v.theta * DEG,
         phi: v.phi * DEG,
-        radius: fitRadius(this.aspect()),
+        radius: this.einpassen(),
         target: new Vector3(...BIKE_CENTER),
       },
       650,
@@ -552,7 +588,7 @@ export class BikeViewer {
   }
 
   zoomBy(f: number): void {
-    const fit = fitRadius(this.aspect());
+    const fit = this.einpassen();
     this.anim = null;
     this.orbit.radius = clamp(this.orbit.radius * f, 0.55, fit * 1.6);
     this.orbit.auto = false;
