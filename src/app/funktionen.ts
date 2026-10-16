@@ -344,6 +344,21 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     );
   }
 
+  // URL-001: den eigenen Urlaub beantragen - jede Praxisrolle mit
+  // Mitarbeiterdatensatz, auch die Trainingsbetreuung; owner trägt ihn direkt
+  // ein (ANN-576). Ob es gilt, entscheidet der Server.
+  if (isTherapyStaff(roles) || roles.includes('trainer')) {
+    eintraege.push({
+      id: 'vorgang-urlaub-beantragen',
+      art: 'Vorgang',
+      bezeichnung: isOwner(roles) ? 'Urlaub eintragen' : 'Urlaub beantragen',
+      ziel: '/betrieb/urlaub/beantragen',
+      bereich: isTherapyStaff(roles) ? BEREICHE.betrieb.label : BEREICHE.training.label,
+      stichworte: ['urlaub', 'urlaubsantrag', 'frei', 'abwesenheit', 'antrag'],
+      rueckweg: true,
+    });
+  }
+
   // Das eigene Konto steht jeder angemeldeten Rolle offen (STAFF-004) und ist
   // deshalb der eine Eintrag ohne Bedingung.
   eintraege.push({

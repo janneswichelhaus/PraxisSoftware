@@ -54,7 +54,7 @@ den Tipps: kein Scrollen bei 375 px** auf keiner Seite des Ablaufs.
 | G4 | Schlüssel übergeben | Therapie, Büro, wöchentlich | ≤ 3 Tipps | 3 (zwei Auswahlen, Knopf) |
 | G5 | Neue:n Mitarbeiter:in einrichten bis Einladung | Büro, selten | ≤ 8 Tipps + Felder, ein Ablauf | über drei Seiten verteilt |
 | G6 | Plattform: Termin ändern oder absagen | Patient:in, selten | ≤ 6 Tipps + Text | zwei Ebenen mit Formular |
-| G7 | Urlaub beantragen | Alle, selten | ≤ 6 Tipps | Vorschau: Formular, ≈ 7 + Felder |
+| G7 | Urlaub beantragen | Alle, selten | ≤ 6 Tipps | 5: Einstieg, erster und letzter Tag, Weiter, Absenden; Entscheiden 2 (Ablehnen 3 + Grund) |
 | G8 | Arbeitszeitänderung beantragen (einmalig oder dauerhaft) | Alle, selten | ≤ 8 Tipps + Zeiten | gibt es nicht |
 | G9 | Zeitkonto: Mehrarbeit oder Freizeitausgleich eintragen | Alle, monatlich | ≤ 6 Tipps | Vorschau: Formular, 5 Felder |
 | G10 | Erstattung beantragen (Strom oder Einkauf mit Beleg) | Alle, monatlich | ≤ 7 Tipps + Betrag | Vorschau: Formular, ≈ 8 Felder |

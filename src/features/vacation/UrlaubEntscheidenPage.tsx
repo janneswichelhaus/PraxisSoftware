@@ -232,9 +232,11 @@ function Ablauf({
                   meta={t.appointments === 1 ? '1 Termin' : `${t.appointments} Termine`}
                   {...(canManageAppointments(user.roles)
                     ? {
+                        // Zurück geht es dorthin, woher das Entscheiden kam - der
+                        // Antrag selbst ist danach nicht mehr offen.
                         to: mitRueckweg(
                           `/kalender/tag-umplanen?person=${antrag.staff_member_id}&datum=${t.on_date}`,
-                          `/betrieb/urlaub/entscheiden/${antrag.id}`,
+                          rueckweg,
                         ),
                       }
                     : {})}
