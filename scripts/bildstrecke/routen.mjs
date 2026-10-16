@@ -52,8 +52,10 @@ export const IDS = Object.freeze({
   /** Rückfrage aus der Behandlung (Erika) und aus dem Training (Tina). */
   rueckfrage: 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001',
   rueckfrageTraining: 'd1d1d1d1-d1d1-4d1d-8d1d-000000000004',
-  /** Ein Rad der Vorschau-Flotte (src/features/preview/demodaten.ts). */
-  rad: 'r1',
+  /** Lastenrad 3: nach einer Panne gesperrt, drei offene Stellen (FLT-EPIC-001). */
+  rad: 'b2b2b2b2-b2b2-4b2b-8b2b-000000000013',
+  /** Lastenrad 1: Annas Stammrad, Schlüssel bei ihr. */
+  radAnna: 'b2b2b2b2-b2b2-4b2b-8b2b-000000000011',
   /**
    * Eine wohlgeformte Kennung ohne Zeile - für Seiten, zu denen der Seed
    * nichts hat. Bewusst kein Null-UUID: Die Seiten prüfen das Format.
@@ -766,36 +768,57 @@ export const ROUTEN = Object.freeze([
     muster: '/betrieb/flotte',
     pfad: '/betrieb/flotte',
     bereich: 'Organisation',
-    etikett: 'Radflotte (Vorschau)',
+    etikett: 'Radflotte',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/flotte/rad/neu',
+    pfad: '/betrieb/flotte/rad/neu',
+    bereich: 'Organisation',
+    etikett: 'Rad hinzufügen',
     konten: ['owner'],
   },
   {
     muster: '/betrieb/flotte/rad/:radId',
     pfad: `/betrieb/flotte/rad/${IDS.rad}`,
     bereich: 'Organisation',
-    etikett: 'Rad bearbeiten (Vorschau)',
+    etikett: 'Rad: Stellen am Rad (gesperrt)',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/flotte/rad/:radId/werkstatt',
+    pfad: `/betrieb/flotte/rad/${IDS.rad}/werkstatt`,
+    bereich: 'Organisation',
+    etikett: 'Unterlage für die Werkstatt',
+    konten: ['owner'],
+  },
+  {
+    muster: '/betrieb/flotte/depots',
+    pfad: '/betrieb/flotte/depots',
+    bereich: 'Organisation',
+    etikett: 'Depots',
     konten: ['owner'],
   },
   {
     muster: '/betrieb/flotte/schluessel',
     pfad: '/betrieb/flotte/schluessel',
     bereich: 'Organisation',
-    etikett: 'Schlüssel (Vorschau)',
-    konten: ['owner'],
+    etikett: 'Schlüssel eintragen',
+    konten: ['owner', 'therapist'],
   },
   {
     muster: '/betrieb/flotte/checkup',
-    pfad: '/betrieb/flotte/checkup',
+    pfad: `/betrieb/flotte/checkup?rad=${IDS.radAnna}`,
     bereich: 'Organisation',
-    etikett: 'Rad-Check (Vorschau)',
-    konten: ['owner'],
+    etikett: 'Fahrrad-Check-Up',
+    konten: ['owner', 'therapist'],
   },
   {
     muster: '/betrieb/flotte/panne',
-    pfad: '/betrieb/flotte/panne',
+    pfad: `/betrieb/flotte/panne?rad=${IDS.radAnna}`,
     bereich: 'Organisation',
-    etikett: 'Panne melden (Vorschau)',
-    konten: ['owner'],
+    etikett: 'Panne melden: Wo ist der Schaden?',
+    konten: ['owner', 'therapist'],
   },
   {
     muster: '/betrieb/urlaub',

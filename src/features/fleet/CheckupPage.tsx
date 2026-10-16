@@ -1,318 +1,490 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Formularfuss } from '@/components/ui/Formularfuss';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
-import { Select } from '@/components/ui/Select';
-import { TextArea } from '@/components/ui/TextArea';
+import { Formularfuss } from '@/components/ui/Formularfuss';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Feldgruppe } from '@/components/ui/Section';
+import { Feldgruppe, Section } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { TextArea } from '@/components/ui/TextArea';
+import { Wahlreihe } from '@/components/ui/Wahlreihe';
+import { todayInTimeZone } from '@/features/appointments/api';
+import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import {
-  radMitStandort,
-  useVorschau,
-  type Protokolleintrag,
-} from '@/features/preview/vorschauContext';
-import { vorschauId } from '@/features/preview/vorschauZustand';
-import { SignaturFeld } from '@/features/preview/SignaturFeld';
-import { SimulationsMeldung } from '@/features/preview/ui';
-import type { Checkupbefund, Checkupbewertung, Rad } from '@/features/preview/types';
+  FLOTTE_SCHLUESSEL,
+  fetchBike,
+  fetchFleet,
+  flotteSchluessel,
+  radSchluessel,
+  recordCheckup,
+  type BikeDetail,
+  type Fleet,
+} from './api';
+import {
+  CHECK_ITEMS,
+  CHECK_ITEM_VIEWS,
+  bikeTypeLabels,
+  checkRatingLabels,
+  raiseRating,
+  ratingWithSpots,
+  zoneCheckItem,
+  zonesOfCheckItem,
+  type CheckItemKey,
+  type CheckRating,
+} from './bike3d/zones';
+import { montagDerWoche } from './format';
+import { fotoText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
+import { Fotovormerkung } from './Fotovormerkung';
+import { istMeinRad } from './rad';
+import { Radwahl } from './Radwahl';
+import { Stellenerfassung } from './Stellenerfassung';
+import { nummerDerStelle, useStellenerfassung, type Stelle } from './stellen';
 
 /**
- * Fahrrad-Check-Up.
+ * Fahrrad-Check-Up (FLT-EPIC-001, Handoff Lastenrad 3D Abschnitt 4).
  *
- * Übernommen aus der Vorlage: Radauswahl, Prüfpunkte mit drei Bewertungen,
- * Notiz je Punkt, Gesamtnotiz, Fotos, Bestätigungstext und Unterschrift.
+ * Erst das Rad, dann die Prüfung: das 3D-Rad zum Markieren, die zwölf
+ * Prüfpunkte der Bauart mit drei Bewertungen, Notiz, weitere Fotos und die
+ * Bestätigung. Die Prüfpunkte stehen wie in der Vorlage auf „In Ordnung“;
+ * getippt wird nur, was abweicht. Eine Stelle am Rad hebt die Bewertung
+ * ihres Prüfpunkts an, nie ab (ANN-555) - die Seite setzt es, der Server
+ * prüft es.
  *
- * Die Vorlage verschickte bei Problemen eine E-Mail. Das passiert hier
- * ausdrücklich nicht - der Versandweg ist eine offene Entscheidung, und ein
- * vorgetäuschter Versand wäre schlimmer als gar keiner.
+ * **Bestätigung ohne Unterschrift (ANN-553).** Wer prüft, ist angemeldet und
+ * steht am Check-Up; ein Kästchen mit dem eigenen Namen ersetzt die
+ * gezeichnete Unterschrift der Vorlage, die nichts nachwiese, was die
+ * Anmeldung nicht schon belegt.
  *
  * **Jeder Check-Up beginnt leer (VOR-03).** Das Formular lebt nur, solange es
- * zu sehen ist: Nach dem Übernehmen und beim Zurück zur Radwahl ist es fort,
- * der nächste Check-Up baut es neu auf. Bis dahin standen Bewertungen, Notizen
- * und die Bestätigung des vorigen Rads im nächsten - eine Sicherheits-
- * bestätigung für ein Rad, das niemand bestätigt hatte.
+ * zu sehen ist; ein anderes Rad baut es neu auf.
+ *
+ * Der Check-Up sperrt das Rad nicht - auch nicht mit „Problem“. Dafür ist die
+ * Pannenmeldung da, und die Teamleitung kann es von Hand sperren.
  */
-
-const bewertungen: { wert: Checkupbewertung; label: string }[] = [
-  { wert: 'ok', label: 'In Ordnung' },
-  { wert: 'beobachten', label: 'Beobachten' },
-  { wert: 'problem', label: 'Problem' },
-];
-
 export function CheckupPage({ user }: { user: CurrentUser }) {
-  const { zustand } = useVorschau();
-  const [suchparameter] = useSearchParams();
-
-  const [radId, setRadId] = useState(() => suchparameter.get('rad') ?? zustand.raeder[0]?.id ?? '');
-  const [schritt, setSchritt] = useState<'auswahl' | 'formular'>(
-    suchparameter.get('rad') ? 'formular' : 'auswahl',
-  );
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
-
-  const rad = zustand.raeder.find((eintrag) => eintrag.id === radId);
+  const [parameter, setParameter] = useSearchParams();
+  const radId = parameter.get('rad');
+  const montag = montagDerWoche(todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin'));
+  const flotte = useQuery({
+    queryKey: flotteSchluessel(montag),
+    queryFn: () => fetchFleet(montag),
+    retry: false,
+  });
+  const rad = useQuery({
+    queryKey: radSchluessel(radId ?? ''),
+    queryFn: () => fetchBike(radId ?? ''),
+    enabled: Boolean(radId),
+    retry: false,
+  });
+  const zurueck = leseRueckweg(parameter, '/betrieb/flotte');
 
   return (
     <>
       <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
-      {/* Unter dem Titel das Rad, sobald es gewählt ist - statt eines Satzes,
-          was ein Check-Up ist (Regel 6). */}
+      {/* Unter dem Titel das Rad, sobald es gewählt ist (Regel 6). */}
       <PageHeader
         title="Fahrrad-Check-Up"
-        description={schritt === 'formular' && rad ? rad.name : undefined}
+        description={
+          radId && rad.data
+            ? `${rad.data.bike.name} · ${bikeTypeLabels[rad.data.bike.bike_type].kurz}`
+            : undefined
+        }
       />
-
-      <SimulationsMeldung eintrag={meldung} />
-
-      {schritt === 'formular' && rad ? (
-        <Checkupformular
-          rad={rad}
-          user={user}
-          onUebernommen={(eintrag) => {
-            setMeldung(eintrag);
-            setSchritt('auswahl');
-          }}
-          onZurueck={() => setSchritt('auswahl')}
-        />
+      {radId ? (
+        <Abfragezustand
+          abfrage={rad}
+          laden="Rad wird geladen …"
+          fehler="Das Rad konnte nicht geladen werden."
+          inKarte
+        >
+          {(detail) => (
+            // Ein anderes Rad, ein neues Formular (VOR-03).
+            <Checkupformular key={detail.bike.id} detail={detail} user={user} zurueck={zurueck} />
+          )}
+        </Abfragezustand>
       ) : (
-        <div className="max-w-formular">
-          {/* Der Satz hilft beim Wählen und steht deshalb am Feld. */}
-          <Select
-            label="Rad"
-            hint="Die Nummer eines Rads steht am Sattelrohr, direkt unter dem Sattel."
-            value={radId}
-            onChange={(event) => setRadId(event.target.value)}
-          >
-            {zustand.raeder.map((eintrag) => (
-              <option key={eintrag.id} value={eintrag.id}>
-                {radMitStandort(zustand, eintrag)}
-              </option>
-            ))}
-          </Select>
-          <Formularfuss>
-            <Button
-              onClick={() => {
-                // Die Meldung gehörte zum vorigen Rad (VOR-03).
-                setMeldung(null);
-                setSchritt('formular');
+        <Abfragezustand
+          abfrage={flotte}
+          laden="Radflotte wird geladen …"
+          fehler="Die Radflotte konnte nicht geladen werden."
+          inKarte
+        >
+          {(daten) => (
+            <Auswahl
+              vorauswahl={
+                daten.bikes.find((eintrag) => istMeinRad(eintrag, daten.my_staff_member_id))?.id ??
+                ''
+              }
+              flotte={daten}
+              onWeiter={(id) => {
+                const neu = new URLSearchParams(parameter);
+                neu.set('rad', id);
+                setParameter(neu);
               }}
-              disabled={!rad}
-            >
-              Weiter
-            </Button>
-            <ButtonLink to="/betrieb/flotte" variant="quiet">
-              Abbrechen
-            </ButtonLink>
-          </Formularfuss>
-        </div>
+            />
+          )}
+        </Abfragezustand>
       )}
     </>
   );
 }
 
-function Checkupformular({
-  rad,
-  user,
-  onUebernommen,
-  onZurueck,
+function Auswahl({
+  flotte,
+  vorauswahl,
+  onWeiter,
 }: {
-  rad: Rad;
-  user: CurrentUser;
-  onUebernommen: (eintrag: Protokolleintrag) => void;
-  onZurueck: () => void;
+  flotte: Fleet;
+  vorauswahl: string;
+  onWeiter: (id: string) => void;
 }) {
-  const { zustand, simuliere } = useVorschau();
-
-  const [name, setName] = useState(user.profile.display_name);
-  const [befunde, setBefunde] = useState<Checkupbefund[]>(() =>
-    zustand.checkupfragen.map((frage) => ({ frage, bewertung: 'ok', notiz: '' })),
+  const [wahl, setWahl] = useState(vorauswahl);
+  return (
+    <div className="max-w-formular">
+      <Radwahl
+        flotte={flotte}
+        wert={wahl}
+        onWahl={setWahl}
+        hinweis="Die Nummer eines Rads steht am Sattelrohr, direkt unter dem Sattel."
+      />
+      <Formularfuss>
+        <Button onClick={() => onWeiter(wahl)} disabled={!wahl}>
+          Weiter
+        </Button>
+        <ButtonLink to="/betrieb/flotte" variant="quiet">
+          Abbrechen
+        </ButtonLink>
+      </Formularfuss>
+    </div>
   );
+}
+
+type Bewertungen = Record<CheckItemKey, CheckRating>;
+
+const START: Bewertungen = Object.fromEntries(
+  CHECK_ITEMS.map((item) => [item.key, 'ok']),
+) as Bewertungen;
+
+const BEWERTUNGEN = (['ok', 'beobachten', 'problem'] as const).map((wert) => ({
+  wert,
+  text: checkRatingLabels[wert],
+}));
+
+function Checkupformular({
+  detail,
+  user,
+  zurueck,
+}: {
+  detail: BikeDetail;
+  user: CurrentUser;
+  zurueck: string;
+}) {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { bike } = detail;
+  const offen = detail.spots.filter((spot) => spot.resolved_at === null);
+
+  const [bewertungen, setBewertungen] = useState<Bewertungen>(START);
+  const [notizen, setNotizen] = useState<Partial<Record<CheckItemKey, string>>>({});
   const [notiz, setNotiz] = useState('');
-  const [fotos, setFotos] = useState(0);
-  const [unterschrieben, setUnterschrieben] = useState(false);
+  const [weitereFotos, setWeitereFotos] = useState<Blob[]>([]);
+  const [bestaetigt, setBestaetigt] = useState(false);
+  // Nach dem Speichern: Fotos, die noch nicht übertragen sind.
+  const [ausstehend, setAusstehend] = useState<{
+    auftraege: Fotoauftrag[];
+    grund: string | null;
+  } | null>(null);
 
-  const probleme = befunde.filter((befund) => befund.bewertung === 'problem');
-  const beobachten = befunde.filter((befund) => befund.bewertung === 'beobachten');
+  const erfassung = useStellenerfassung({
+    art: 'checkup',
+    onGesetzt: (stelle) => {
+      const punkt = zoneCheckItem(stelle.zone);
+      if (punkt) {
+        setBewertungen((vorher) => ({
+          ...vorher,
+          [punkt]: raiseRating(vorher[punkt], stelle.severity),
+        }));
+      }
+    },
+  });
+  const { stellen } = erfassung;
 
-  function setzeBefund(index: number, aenderung: Partial<Checkupbefund>) {
-    setBefunde((aktuell) =>
-      aktuell.map((befund, position) =>
-        position === index ? { ...befund, ...aenderung } : befund,
-      ),
-    );
+  function bewerte(punkt: CheckItemKey, wert: CheckRating) {
+    // Nie unter das, was eine Stelle am Rad schon sagt (ANN-555).
+    setBewertungen((vorher) => ({ ...vorher, [punkt]: ratingWithSpots(punkt, wert, stellen) }));
   }
 
-  function speichern() {
-    const folgen = [
-      `Check-Up im Verlauf von ${rad.name} ergänzt`,
-      probleme.length > 0
-        ? `${probleme.length} Problem${probleme.length === 1 ? '' : 'e'} festgehalten: ${probleme.map((befund) => befund.frage).join(', ')}`
-        : 'Keine Probleme festgehalten',
-    ];
-    if (beobachten.length > 0) {
-      folgen.push(`Zu beobachten: ${beobachten.map((befund) => befund.frage).join(', ')}`);
-    }
+  const ungespeichert =
+    ausstehend === null &&
+    (stellen.length > 0 ||
+      erfassung.entwurf !== null ||
+      Object.values(bewertungen).some((wert) => wert !== 'ok') ||
+      Object.values(notizen).some((text) => text?.trim()) ||
+      notiz.trim() !== '' ||
+      weitereFotos.length > 0 ||
+      bestaetigt);
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert,
+    nichtSicherbar:
+      ausstehend && ausstehend.auftraege.length > 0
+        ? `${fotoText(ausstehend.auftraege.length)} sind noch nicht übertragen und gehen beim Weitergehen verloren.`
+        : undefined,
+    texte: { ...EINGABETEXTE, bezeichnung: 'Ungespeicherter Check-Up' },
+  });
 
-    const eintrag = simuliere(
-      {
-        bereich: 'Radflotte',
-        vorgang: `Check-Up erfasst: ${rad.name}`,
-        folgen,
-        nichtGeschehen: [
-          'Keine E-Mail an Werkstatt oder Praxis versendet – der Meldeweg ist noch nicht entschieden',
-          'Fotos und Unterschrift verlassen diese Sitzung nicht und werden nicht gespeichert',
-          probleme.length > 0
-            ? 'Das Rad wurde NICHT automatisch gesperrt – dafür ist der Pannenassistent zuständig'
-            : 'Kein Radstatus verändert',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        raeder: stand.raeder.map((eintragRad) =>
-          eintragRad.id === rad.id
-            ? {
-                ...eintragRad,
-                checkups: [
-                  ...eintragRad.checkups,
-                  {
-                    id: vorschauId('checkup'),
-                    zeitpunkt: new Date().toISOString(),
-                    geprueftVon: name.trim(),
-                    befunde,
-                    notiz,
-                    fotos,
-                    unterschrift: unterschrieben,
-                  },
-                ],
-              }
-            : eintragRad,
+  function zumRad(meldung: string) {
+    freigeben();
+    void navigate(`/betrieb/flotte/rad/${bike.id}?bereich=stellen`, {
+      replace: true,
+      state: { meldung },
+    });
+  }
+
+  const speichern = useMutation({
+    mutationFn: async () => {
+      const ergebnis = await recordCheckup({
+        bikeId: bike.id,
+        items: CHECK_ITEMS.map((item) => ({
+          key: item.key,
+          rating: bewertungen[item.key],
+          note: bewertungen[item.key] === 'ok' ? '' : (notizen[item.key] ?? ''),
+        })),
+        note: notiz.trim(),
+        spots: stellen.map((stelle) => ({
+          zone: stelle.zone,
+          severity: stelle.severity,
+          point: stelle.point,
+          note: stelle.note,
+        })),
+      });
+      const auftraege: Fotoauftrag[] = [
+        ...stellen.flatMap((stelle: Stelle, index) =>
+          stelle.fotos.map((foto) => ({
+            spotId: ergebnis.spotIds[index] ?? null,
+            checkupId: null,
+            foto,
+          })),
         ),
-      }),
+        ...weitereFotos.map((foto) => ({ spotId: null, checkupId: ergebnis.checkupId, foto })),
+      ].filter((auftrag) => auftrag.spotId !== null || auftrag.checkupId !== null);
+      const uebertragung = await uebertrageFotos(auftraege);
+      return { anzahl: auftraege.length, ...uebertragung };
+    },
+    onSuccess: async ({ anzahl, fehlgeschlagen, grund }) => {
+      await queryClient.invalidateQueries({ queryKey: FLOTTE_SCHLUESSEL });
+      if (fehlgeschlagen.length === 0) {
+        zumRad(
+          anzahl > 0 ? `Check-Up gespeichert, mit ${fotoText(anzahl)}.` : 'Check-Up gespeichert.',
+        );
+      } else {
+        setAusstehend({ auftraege: fehlgeschlagen, grund });
+      }
+    },
+  });
+
+  const erneut = useMutation({
+    mutationFn: () => uebertrageFotos(ausstehend?.auftraege ?? []),
+    onSuccess: async ({ fehlgeschlagen, grund }) => {
+      await queryClient.invalidateQueries({ queryKey: FLOTTE_SCHLUESSEL });
+      if (fehlgeschlagen.length === 0) zumRad('Check-Up gespeichert, Fotos übertragen.');
+      else setAusstehend({ auftraege: fehlgeschlagen, grund });
+    },
+  });
+
+  if (ausstehend) {
+    return (
+      <div className="max-w-formular flex flex-col gap-4">
+        <Rueckmeldung>Check-Up gespeichert.</Rueckmeldung>
+        <Statusmeldung ton="fehler">
+          {`${fotoText(ausstehend.auftraege.length)} konnte${ausstehend.auftraege.length === 1 ? '' : 'n'} nicht übertragen werden.`}
+          {ausstehend.grund ? ` ${ausstehend.grund}` : ''}
+        </Statusmeldung>
+        {schutz}
+        <Formularfuss>
+          <Button onClick={() => erneut.mutate()} disabled={erneut.isPending}>
+            {erneut.isPending ? 'Wird übertragen …' : 'Erneut versuchen'}
+          </Button>
+          <Button
+            variant="quiet"
+            onClick={() => zumRad('Check-Up gespeichert, ohne die übrigen Fotos.')}
+          >
+            Ohne diese Fotos weiter
+          </Button>
+        </Formularfuss>
+      </div>
     );
-    onUebernommen(eintrag);
   }
+
+  const offeneStelle = erfassung.entwurf !== null;
+  const zusammenfassung = (() => {
+    const probleme = CHECK_ITEMS.filter((item) => bewertungen[item.key] === 'problem').length;
+    const beobachten = CHECK_ITEMS.filter((item) => bewertungen[item.key] === 'beobachten').length;
+    const weitere = stellen.filter((stelle) => zoneCheckItem(stelle.zone) === null);
+    const alleProbleme =
+      probleme + weitere.filter((stelle) => stelle.severity === 'problem').length;
+    const alleBeobachten =
+      beobachten + weitere.filter((stelle) => stelle.severity === 'beobachten').length;
+    return `${alleProbleme === 1 ? '1 Problem' : `${alleProbleme} Probleme`} · ${alleBeobachten} zu beobachten · ${
+      stellen.length === 1 ? '1 Stelle' : `${stellen.length} Stellen`
+    } am Rad markiert`;
+  })();
+  const fehlt = offeneStelle
+    ? 'Eine Stelle ist noch offen. Setzen oder verwerfen Sie sie zuerst.'
+    : !bestaetigt
+      ? 'Die Bestätigung fehlt noch.'
+      : undefined;
 
   return (
-    // Feldabstand der Feldgruppe (TOK-15): 16 px wie in jedem anderen
-    // Formular, bis dahin 20 px.
     <div className="max-w-formular">
-      <Feldgruppe>
-        <Field
-          label="Prüfende Person"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
+      <Section titel="Am Rad markieren">
+        <Stellenerfassung
+          zustand={erfassung}
+          bestehend={offen}
+          bauart={bike.bike_type}
+          hoehe={340}
         />
+      </Section>
 
-        {/* Ohne Rahmen um die Gruppe (Formular, Leitfaden L2): die
-            Prüfpunkte als Zeilen mit Linie dazwischen. */}
-        <fieldset>
-          <legend className="text-ink mb-1 text-sm font-medium">Prüfpunkte</legend>
-          <ul className="border-line border-y">
-            {befunde.map((befund, index) => (
-              <li key={befund.frage} className="border-line border-t py-3 first:border-t-0">
-                <p className="text-ink text-liste">{befund.frage}</p>
-                <div
-                  role="radiogroup"
-                  aria-label={befund.frage}
-                  className="mt-2 flex flex-wrap gap-2"
-                >
-                  {bewertungen.map((option) => {
-                    const gewaehlt = befund.bewertung === option.wert;
-                    return (
-                      // Der Fokus steht auf dem ausgeblendeten Radio; sichtbar
-                      // wird er am Chip (VOR-02, UIK-06). Die Wahl trägt ein
-                      // Zeichen, nicht nur Farbe und Schriftstärke.
-                      <label
-                        key={option.wert}
-                        className={`rounded-button has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center gap-1.5 border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
-                          gewaehlt
-                            ? 'border-accent bg-accent-soft text-accent font-medium'
-                            : 'border-line-strong bg-surface text-ink-muted'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`befund-${index}`}
-                          className="sr-only"
-                          checked={gewaehlt}
-                          onChange={() => setzeBefund(index, { bewertung: option.wert })}
-                        />
-                        {gewaehlt ? <span aria-hidden="true">✓</span> : null}
-                        {option.label}
-                      </label>
-                    );
-                  })}
-                </div>
-                {befund.bewertung !== 'ok' ? (
-                  <div className="mt-2">
-                    <Field
-                      label={`Notiz zu ${befund.frage}`}
-                      placeholder="Was ist aufgefallen?"
-                      value={befund.notiz}
-                      onChange={(event) => setzeBefund(index, { notiz: event.target.value })}
-                    />
-                  </div>
-                ) : null}
+      <Section titel="Prüfpunkte">
+        {/* Ohne Rahmen um die Gruppe (Formular, Leitfaden L2): die Prüfpunkte
+            als Zeilen mit Linie dazwischen. */}
+        <ul className="border-line border-y">
+          {CHECK_ITEMS.map((item) => {
+            const wert = bewertungen[item.key];
+            const nummern = stellen
+              .map((stelle, index) => ({ stelle, nummer: nummerDerStelle(index, offen.length) }))
+              .filter(({ stelle }) => zoneCheckItem(stelle.zone) === item.key)
+              .map(({ nummer }) => nummer);
+            const imFokus =
+              erfassung.hervorgehoben?.pruefpunkt === item.key && erfassung.entwurf === null;
+            const zeigen = () =>
+              erfassung.zeigeBauteile(
+                zonesOfCheckItem(item.key),
+                CHECK_ITEM_VIEWS[item.key],
+                item.key,
+              );
+            return (
+              <li key={item.key} className="border-line border-t py-3 first:border-t-0">
+                <Wahlreihe
+                  legende={item.label}
+                  wahlen={BEWERTUNGEN}
+                  gewaehlt={wert}
+                  onWaehlen={(neu) => bewerte(item.key, neu)}
+                  zusatz={
+                    nummern.length > 0 || wert !== 'ok' ? (
+                      <div className="flex flex-col items-start gap-2">
+                        {nummern.length > 0 ? (
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="text-ink-muted text-sm">
+                              Am Rad markiert: {nummern.length === 1 ? 'Stelle' : 'Stellen'}{' '}
+                              {nummern.join(', ')}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="quiet"
+                              groesse="kompakt"
+                              onClick={zeigen}
+                            >
+                              Am Rad zeigen<span className="sr-only">: {item.label}</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            groesse="kompakt"
+                            onClick={zeigen}
+                          >
+                            Stelle am Rad markieren<span className="sr-only">: {item.label}</span>
+                          </Button>
+                        )}
+                        {imFokus ? (
+                          <p className="text-accent text-sm font-medium" role="status">
+                            Oben am Rad hervorgehoben. Tippen Sie dort auf die betroffene Stelle.
+                          </p>
+                        ) : null}
+                        {wert !== 'ok' ? (
+                          <div className="w-full">
+                            <Field
+                              label={`Notiz zu ${item.label}`}
+                              placeholder="Was ist aufgefallen?"
+                              maxLength={300}
+                              value={notizen[item.key] ?? ''}
+                              onChange={(event) =>
+                                setNotizen((vorher) => ({
+                                  ...vorher,
+                                  [item.key]: event.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : undefined
+                  }
+                />
               </li>
-            ))}
-          </ul>
-        </fieldset>
+            );
+          })}
+        </ul>
+      </Section>
 
-        <TextArea
-          rows={3}
-          label="Notiz"
-          placeholder="Weitere Auffälligkeiten"
-          value={notiz}
-          onChange={(event) => setNotiz(event.target.value)}
-        />
-
-        <div>
-          <p className="text-ink text-sm font-medium">Fotos</p>
-          <p className="text-ink-muted mb-2 text-sm">
-            In der Vorschau wird nur die Anzahl mitgeführt. Es wird nichts hochgeladen.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="secondary" onClick={() => setFotos((anzahl) => anzahl + 1)}>
-              Foto hinzufügen
-            </Button>
-            {fotos > 0 ? (
-              <>
-                <span className="text-ink-muted text-sm">
-                  {fotos} Foto{fotos === 1 ? '' : 's'} vorgemerkt
-                </span>
-                <Button variant="quiet" onClick={() => setFotos(0)}>
-                  Zurücksetzen
-                </Button>
-              </>
-            ) : null}
+      <Section titel="Abschluss">
+        <Feldgruppe>
+          <TextArea
+            rows={3}
+            label="Notiz"
+            placeholder="Weitere Auffälligkeiten"
+            hint="Keine Angaben zu Patient:innen."
+            maxLength={1000}
+            value={notiz}
+            onChange={(event) => setNotiz(event.target.value)}
+          />
+          <div>
+            <p className="text-ink mb-2 text-sm font-medium">Weitere Fotos</p>
+            <Fotovormerkung
+              fotos={weitereFotos}
+              onFotos={setWeitereFotos}
+              titel="Foto vom ganzen Rad"
+              bezug="vom ganzen Rad"
+            />
           </div>
-        </div>
+          <Checkbox
+            label={`Ich, ${user.profile.display_name}, habe das ganze Rad gründlich auf Sicherheit geprüft.`}
+            checked={bestaetigt}
+            onChange={(event) => setBestaetigt(event.target.checked)}
+          />
+          <Statusmeldung>{zusammenfassung}</Statusmeldung>
+        </Feldgruppe>
+      </Section>
 
-        <SignaturFeld
-          beschriftung="Bestätigung"
-          erklaerung="Ich bestätige, dass ich das gesamte Fahrrad gründlich auf Sicherheit geprüft habe."
-          onChange={setUnterschrieben}
-        />
-      </Feldgruppe>
-      {/* Gesperrt steht der Knopf gestrichelt da; der Satz darüber sagt, was
-          fehlt (BEF-069). */}
-      <Formularfuss
-        trenner
-        zusatz={
-          !unterschrieben
-            ? 'Die Bestätigung fehlt noch. Sie können unterschreiben oder Ihren Namen tippen.'
-            : undefined
-        }
-      >
-        <Button onClick={speichern} disabled={name.trim() === '' || !unterschrieben}>
-          Check-Up in die Vorschau übernehmen
+      {speichern.isError ? (
+        <Statusmeldung ton="fehler" className="mt-4">
+          {speichern.error.message}
+        </Statusmeldung>
+      ) : null}
+
+      {schutz}
+
+      <Formularfuss trenner zusatz={fehlt ? <span id="checkup-fehlt">{fehlt}</span> : undefined}>
+        <Button
+          onClick={() => speichern.mutate()}
+          disabled={offeneStelle || !bestaetigt || speichern.isPending}
+          aria-describedby={fehlt ? 'checkup-fehlt' : undefined}
+        >
+          {speichern.isPending ? 'Wird gespeichert …' : 'Check-Up speichern'}
         </Button>
-        <Button variant="quiet" onClick={onZurueck}>
-          Zurück
-        </Button>
+        <ButtonLink to={zurueck} variant="quiet">
+          Abbrechen
+        </ButtonLink>
       </Formularfuss>
     </div>
   );

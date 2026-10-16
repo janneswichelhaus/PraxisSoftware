@@ -1,6 +1,6 @@
 # Arbeitsbereiche: was echt ist, was Vorschau ist
 
-Stand 2026-10-12. Beantwortet zwei Fragen: **Worauf kann ich mich in der laufenden Anwendung
+Stand 2026-10-15. Beantwortet zwei Fragen: **Worauf kann ich mich in der laufenden Anwendung
 verlassen?** Und: **Wo steht schon etwas, das kein zweites Mal gebaut werden darf?** Ohne Rang
 (§21), keine Reihenfolge (die steht in [`ROADMAP.md`](ROADMAP.md)). Die ausführliche Fassung mit
 Einzelheiten je Route (Stand 26.09.) liegt in
@@ -24,12 +24,13 @@ Ansicht sagt das.
 | Abrechnung, Statistiken | `/abrechnung…`, `/statistiken` (nur `owner`) | echt; Mailversand offen (B13) | `billing`, `statistics` |
 | Organisatorisches | `/praxis/team…`, `/praxis/planung`, `/praxis/sicherheit/…`, `/mein-konto` | echt | `staff`, `audit`, `retention`, `account`, `session` |
 | Plattform (Patient:innen, Kund:innen) | `/p/…` | echt; Einladung per Mail offen (B13) | `platform`, `platform-access` |
-| **Praxisbetrieb** | `/betrieb/flotte…`, `/betrieb/urlaub`, `/betrieb/zeitkonto`, `/betrieb/erstattungen`, `/team` | **Vorschau** bis Block 8 (FLT, TEAM, URL, ZK, ERS) | `fleet`, `vacation`, `timeaccount`, `reimbursements`, `teamchat` |
+| Radflotte | `/betrieb/flotte…` | echt (FLT-EPIC-001): Depots, Räder, Schlüssel, Check-Up, Panne, Stellen am 3D-Rad, Unterlage für die Werkstatt; Tübinger Standortvorlage offen (ANN-554) | `fleet` |
+| **Praxisbetrieb** | `/betrieb/urlaub`, `/betrieb/zeitkonto`, `/betrieb/erstattungen`, `/team` | **Vorschau** bis Block 8 (TEAM, URL, ZK, ERS) | `vacation`, `timeaccount`, `reimbursements`, `teamchat` |
 | Vorschau-Protokoll | `/vorschau/protokoll` | Vorschau | `preview` |
 
 Offen bleiben in der Vorschau: Speicherfrist und Anhänge des Teamchats (§10, §18), Aufbewahrung von
-Belegen und Beschäftigtendaten (ADR-008), aggregierte Auswertungen über Beschäftigte (§20, B6) und
-die Tübinger Standortvorlage. Diese Punkte blockieren nur die echten Aktionen, nicht die Ansicht.
+Belegen und Beschäftigtendaten (ADR-008) und aggregierte Auswertungen über Beschäftigte (§20, B6).
+Diese Punkte blockieren nur die echten Aktionen, nicht die Ansicht.
 
 ## Regeln
 
@@ -47,8 +48,8 @@ die Tübinger Standortvorlage. Diese Punkte blockieren nur die echten Aktionen, 
 4. **Zustandsmeldung statt Kennzeichnung** (Jannes, 2026-09-22): Kein Banner „noch keine echte
    Speicherung“; `SimulationsMeldung` sagt nach jeder Aktion, was **nicht** passiert ist. Aussagen
    über Datenfluss, Rechtslage oder Rechengrundlage bleiben auch im echten Bereich stehen.
-5. **Radflotte:** Der Entwurf des Ersatzes (Stellen am 3D-Rad, PDF für die Werkstatt) liegt im
-   Handoff Lastenrad 3D und kommt mit FLT-EPIC-001; in der Vorschau wird nichts vorgebaut.
+5. **Radflotte:** Seit FLT-EPIC-001 (2026-10-15) echt und nicht mehr in `VORSCHAUBEREICHE`. Die
+   Urlaubsvorschau nennt noch Stammräder aus den Demodaten (BEF-168), bis URL-001 sie ersetzt.
 6. Wo die Vorschau bewusst von der Team-App-Vorlage abweicht (keine PIN, kein zweiter
    Mitarbeiterstamm, Erstattung in vier Ständen, kein vorgetäuschter Versand), steht die
    Begründung im Archiv, Abschnitt 4; sie gilt für die echten Loops weiter.

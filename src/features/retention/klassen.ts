@@ -121,7 +121,18 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   },
   betriebsdaten: {
     label: 'Betriebsdaten der Praxis',
-    beschreibung: 'Textbausteine und vergleichbare Arbeitsmittel ohne Patientenbezug.',
+    beschreibung:
+      'Textbausteine, Depots, Räder und vergleichbare Arbeitsmittel ohne Patientenbezug. Ein ausgemustertes Rad wird gelöscht, sobald sein Verlauf gelöscht ist.',
+  },
+  radflotte_ereignis: {
+    label: 'Radflotte: Check-Ups und Pannen',
+    beschreibung:
+      'Check-Ups, Pannenmeldungen, Sperren und Stellen am Rad mit ihren Fotos. Drei Jahre ab Ende des Kalenderjahres; offene Stellen und Sperren bleiben, bis das Rad freigegeben ist.',
+  },
+  schluesselverlauf: {
+    label: 'Radflotte: Schlüssel',
+    beschreibung:
+      'Wer den Schlüssel eines Rads genommen und zurückgelegt hat. 30 Tage nach der Rückgabe gelöscht; ein entnommener Schlüssel bleibt stehen.',
   },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',

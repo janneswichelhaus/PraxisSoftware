@@ -174,5 +174,5 @@ Rahmen (`app/AppShell.tsx`), Rechnungsliste als Vorbild der `Datenliste`.
 - [05.10.](handoff-2026-10-05-rahmen.md): Fläche `#eceee8` für Startbild und Manifest (Weiß).
 - [06.10. Kalender und Tour](handoff-2026-10-06-kalender-und-tour.md): Kopfknöpfe der Tour 48 px
   bleiben bis zur Sichtung (ANN-403).
-- [08.10. Lastenrad 3D](handoff-2026-10-08-lastenrad-3d.md): nicht gebaut, kein Maßstab.
+- [08.10. Lastenrad 3D](handoff-2026-10-08-lastenrad-3d.md): gebaut in FLT-EPIC-001; Nadelfarben als Token `--color-nadel-*`.
 - Kanvas „Own Motion · Praxis“ (`docs/product/kanvas/`): überholt.

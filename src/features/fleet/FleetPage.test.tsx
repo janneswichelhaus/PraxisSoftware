@@ -1,203 +1,160 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderMitVorschau, testUser } from '@/test-utils';
+import { renderWithProviders, testUser } from '@/test-utils';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { todayInTimeZone } from '@/features/appointments/api';
+import * as api from './api';
+import { montagDerWoche, plusTage } from './format';
 import { FleetPage } from './FleetPage';
+import { ANNA, TIM, testFlotte, testRad } from './testdaten';
 
-/**
- * Die Radflotte ist die umfangreichste Übernahme aus der Vorlage. Geprüft wird
- * hier vor allem, was leicht verloren geht: die geschützten Angaben, die
- * Verbindung zur Abwesenheit und die ehrliche Rückmeldung nach einer Aktion.
- */
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof api>()),
+  fetchFleet: vi.fn(),
+  takeKey: vi.fn(),
+  returnKey: vi.fn(),
+}));
 
-function oeffne(rollen: Parameters<typeof testUser>[0] = ['owner'], pfad = '/betrieb/flotte') {
-  return renderMitVorschau(<FleetPage user={testUser(rollen)} />, pfad);
+const fetchFleet = vi.mocked(api.fetchFleet);
+const takeKey = vi.mocked(api.takeKey);
+const returnKey = vi.mocked(api.returnKey);
+
+function oeffne(pfad = '/betrieb/flotte') {
+  return renderWithProviders(<FleetPage user={testUser(['therapist'])} />, pfad);
 }
 
+beforeEach(() => {
+  vi.clearAllMocks();
+  fetchFleet.mockResolvedValue(testFlotte());
+  takeKey.mockResolvedValue();
+  returnKey.mockResolvedValue();
+});
+
+/**
+ * Die Radflotte (FLT-EPIC-001): das eigene Rad zuerst, die Schlüssel mit
+ * einem Tipp an der Zeile, die Woche an der Zeile statt in einer Tabelle,
+ * Rechte vom Server.
+ */
 describe('Radflotte', () => {
-  // Der Vorschaubanner ist am 2026-09-22 gefallen; die Prüfung darauf mit ihm.
-  // Was nach einer Aktion nicht passiert ist, sagt weiter die Zustandsmeldung
-  // weiter unten — das ist die Aussage, die niemand erraten kann.
-
-  it('zeigt die Räder nach Standort gruppiert', () => {
-    oeffne();
-    expect(screen.getByRole('heading', { name: /Raddepot Nord/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Raddepot Süd/ })).toBeInTheDocument();
-  });
-
-  it('nennt den Bestand nach Status', () => {
-    oeffne();
-    expect(screen.getByText(/in Reparatur/)).toBeInTheDocument();
-    expect(screen.getByText(/8 Räder insgesamt/)).toBeInTheDocument();
-  });
-
-  it('weist ein Rad am falschen Standort ausdruecklich aus', () => {
-    oeffne();
-    expect(screen.getByText(/Steht nicht im Stammdepot/)).toBeInTheDocument();
-  });
-
-  it('zeigt den Schluesselcode nur der administrativen Praxisrolle', () => {
-    oeffne(['owner']);
-    expect(screen.getAllByText('SC-0001').length).toBeGreaterThan(0);
-  });
-
-  it('zeigt den Schluesselcode einer behandelnden Rolle nicht', () => {
-    oeffne(['therapist']);
-    expect(screen.queryByText('SC-0001')).toBeNull();
-  });
-
-  /**
-   * Ein Rad steht an zwei Stellen: als Karte in der gefilterten Liste und als
-   * Zeile in der Wochenübersicht. Die Übersicht zeigt bewusst immer alle Räder,
-   * damit die Frage „welches Rad ist am Donnerstag frei" ohne Zurücksetzen der
-   * Filter zu beantworten ist. Ein gefiltertes Rad kommt deshalb einmal vor,
-   * ein sichtbares zweimal.
-   */
-  function vorkommen(name: string): number {
-    return screen.queryAllByText(name).length;
-  }
-
-  it('filtert nach Status und laesst die Wochenuebersicht vollstaendig', async () => {
-    const nutzer = userEvent.setup();
-    oeffne();
-    await nutzer.selectOptions(screen.getByRole('combobox', { name: 'Status' }), 'reparatur');
-    expect(vorkommen('Lastenrad 4')).toBe(2);
-    expect(vorkommen('Lastenrad 1')).toBe(1);
-  });
-
-  it('filtert nach Suchbegriff', async () => {
-    const nutzer = userEvent.setup();
-    oeffne();
-    await nutzer.type(screen.getByRole('searchbox', { name: 'Suche' }), 'Lastenrad 7');
-    expect(vorkommen('Lastenrad 7')).toBe(2);
-    expect(vorkommen('Lastenrad 1')).toBe(1);
-  });
-
-  it('filtert auf Räder, die an einem bestimmten Tag frei sind', async () => {
-    const nutzer = userEvent.setup();
-    oeffne();
-    // Lastenrad 4 ist Mo-Fr belegt, Lastenrad 7 hat gar keinen Wochenplan.
-    await nutzer.selectOptions(screen.getByRole('combobox', { name: 'Freier Tag' }), 'mi');
-    expect(vorkommen('Lastenrad 7')).toBe(2);
-    expect(vorkommen('Lastenrad 4')).toBe(1);
-  });
-
-  it('meldet ehrlich, was das Zuruecklegen eines Schluessels bewirkt hat', async () => {
-    const nutzer = userEvent.setup();
-    oeffne();
-
-    // Der Knopf nennt die Handlung, nicht einen Zustand (VOR-10).
-    await nutzer.click(screen.getAllByRole('button', { name: 'Schlüssel zurücklegen' })[0]!);
-
-    const meldung = screen.getByRole('status');
-    expect(within(meldung).getByText(/Schlüssel zurückgelegt/)).toBeInTheDocument();
+  it('stellt das eigene Rad vor die Depots und nennt den Bestand', async () => {
+    const { container } = oeffne();
+    const eigenes = await screen.findByRole('heading', { name: 'Ihr Rad' });
+    expect(eigenes).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Raddepot Nord (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Raddepot Süd (1)' })).toBeInTheDocument();
     expect(
-      within(meldung).getByText(/Kein Vorgang gespeichert, keine Benachrichtigung versendet/),
+      screen.getByText('3 verfügbar · 0 im Einsatz · 1 in Reparatur · 4 Räder'),
     ).toBeInTheDocument();
-    // Die Meldung steht oben, die Aktion an einem Rad weiter unten (VOR-01).
-    expect(meldung).toHaveFocus();
+    // Die Woche an der Zeile: Stammnutzer:in mit ihren Tagen.
+    expect(screen.getByText('Anna Beispiel · Mo, Di, Do, Fr')).toBeInTheDocument();
+    await pruefeBarrierefreiheit(container);
   });
 
-  it('gibt ein gesperrtes Rad frei, ohne eine Rueckmeldung an die Werkstatt zu behaupten', async () => {
+  it('zeigt die Ausnahmen als Zeichen und Wort, den Regelfall ohne Abzeichen', async () => {
+    oeffne();
+    await screen.findByRole('heading', { name: 'Ihr Rad' });
+    // Ein Abzeichen: das gesperrte Rad (das Wort steht sonst nur im Filter).
+    expect(
+      screen.getAllByText('In Reparatur').filter((element) => element.tagName !== 'OPTION'),
+    ).toHaveLength(1);
+    expect(screen.getByText('Gehört zu Raddepot Süd.')).toBeInTheDocument();
+  });
+
+  it('nimmt den Schlüssel des eigenen Rads mit einem Tipp und sagt es', async () => {
     const nutzer = userEvent.setup();
     oeffne();
-
-    await nutzer.click(screen.getByRole('button', { name: 'Freigeben' }));
-
-    const meldung = screen.getByRole('status');
-    expect(within(meldung).getByText(/Rad freigegeben: Lastenrad 4/)).toBeInTheDocument();
-    expect(within(meldung).getByText(/Keine Rückmeldung an die Werkstatt/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Freigeben' })).toBeNull();
-  });
-
-  it('erklaert die Standortvorlage als ungeprueft und ohne Zugangscode', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['owner']);
-
-    await nutzer.click(screen.getByText(/Kontakte, Standortvorlage und Check-Up-Fragen/));
-    expect(screen.getAllByText(/für Tübingen noch zu prüfen/).length).toBeGreaterThan(0);
+    await nutzer.click(
+      await screen.findByRole('button', { name: 'Schlüssel von Lastenrad 1 nehmen' }),
+    );
+    expect(takeKey).toHaveBeenCalledWith('rad-1', null);
     expect(
-      screen.getByText(/Der Zugangscode wird nicht in der Anwendung gespeichert/),
+      await screen.findByText('Schlüssel von Lastenrad 1 bei Ihnen eingetragen.'),
     ).toBeInTheDocument();
   });
 
-  it('bietet die Standortvorlage einer behandelnden Rolle nicht an', () => {
-    oeffne(['therapist']);
-    expect(screen.queryByText(/Kontakte, Standortvorlage und Check-Up-Fragen/)).toBeNull();
-  });
-
-  it('fuehrt die Einstiege in Panne, Schluessel und Check-Up', () => {
-    oeffne();
-    expect(screen.getByRole('link', { name: 'Panne melden' })).toHaveAttribute(
-      'href',
-      '/betrieb/flotte/panne',
+  it('legt einen entnommenen Schlüssel zurück', async () => {
+    const nutzer = userEvent.setup();
+    fetchFleet.mockResolvedValue(
+      testFlotte({
+        bikes: [
+          testRad({
+            key: {
+              holder_staff_id: TIM.id,
+              holder_name: TIM.name,
+              taken_at: '2026-10-15T05:40:00Z',
+            },
+          }),
+        ],
+      }),
     );
-    expect(screen.getByRole('link', { name: 'Schlüssel entnehmen' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Fahrrad-Check-Up' })).toBeInTheDocument();
-  });
-
-  it('setzt die Einstiege als Knoepfe des Systems, die Panne ohne Sonderfarbe (VOR-12)', () => {
     oeffne();
-    for (const name of ['Panne melden', 'Schlüssel entnehmen', 'Fahrrad-Check-Up']) {
-      const link = screen.getByRole('link', { name });
-      expect(link).toHaveClass('min-h-11', 'font-bold', 'text-accent');
-      expect(link).not.toHaveClass('text-danger');
-    }
-    // Im Seitenkopf kompakt (44 px) seit dem Design-Fundament (ANN-403) - ein
-    // Hauptknopf des Systems bleibt es.
-    const hinzufuegen = screen.getByRole('link', { name: 'Rad hinzufügen' });
-    expect(hinzufuegen).toHaveClass('bg-accent', 'min-h-11', 'font-bold');
-    expect(hinzufuegen).not.toHaveClass('h-12');
-  });
-
-  it('gibt den Aktionen an der Zeile 44 px Hoehe (VOR-11)', () => {
-    oeffne();
-    // Seit Welle B eine Zeile je Rad: Die Zeile öffnet das Rad (Bearbeiten,
-    // Verläufe, Panne, Check-Up), daneben die Arbeit an der Zeile.
-    const aktionen = [
-      screen.getByRole('button', { name: 'Freigeben' }),
-      ...screen.getAllByRole('button', { name: 'Schlüssel zurücklegen' }),
-      ...screen.getAllByRole('link', { name: 'Entnehmen' }),
-    ];
-    for (const aktion of aktionen) expect(aktion).toHaveClass('min-h-11');
-    const rad = screen.getByRole('link', { name: /^Lastenrad 1/ });
-    expect(rad).toHaveAttribute('href', '/betrieb/flotte/rad/r1');
-    expect(rad).toHaveClass('min-h-14');
-  });
-
-  it('zeigt den Normalbetrieb ohne Abzeichen, die Reparatur mit (VOR-13, UX-005i)', () => {
-    oeffne();
-    // Im Einsatz zu sein ist der Regelfall und trägt kein Abzeichen mehr.
-    expect(screen.queryByText('Im Einsatz', { selector: 'span' })).toBeNull();
-    expect(screen.queryByText('Verfügbar', { selector: 'span' })).toBeNull();
-    expect(screen.getAllByText('In Reparatur', { selector: 'span' }).length).toBeGreaterThan(0);
-  });
-
-  it('zaehlt Raeder richtig (VOR-24)', () => {
-    oeffne();
-    expect(screen.queryByText(/Radräder/)).toBeNull();
-    expect(screen.getByText(/· 4 Räder$/)).toBeInTheDocument();
-    expect(screen.getByText(/· 1 Rad$/)).toBeInTheDocument();
-  });
-
-  it('nennt die Uhrzeit am Schluessel mit vierstelligem Jahr (VOR-06)', () => {
-    oeffne();
-    // Die Vorlage gibt Lastenrad 1 um 07:40 Uhr aus - in Praxiszeit.
-    expect(screen.getByText(/^seit \d{2}\.\d{2}\.\d{4}, 07:40$/)).toBeInTheDocument();
-  });
-
-  it('macht die Wochenuebersicht per Tastatur erreichbar (VOR-02)', () => {
-    oeffne();
-    expect(screen.getByRole('region', { name: 'Wochenübersicht Räder' })).toHaveAttribute(
-      'tabindex',
-      '0',
+    expect(await screen.findByText(/Schlüssel bei Tim Teamleitung/)).toBeInTheDocument();
+    await nutzer.click(
+      screen.getByRole('button', { name: 'Schlüssel von Lastenrad 1 zurücklegen' }),
     );
+    expect(returnKey).toHaveBeenCalledWith('rad-1');
+    expect(await screen.findByText('Schlüssel von Lastenrad 1 zurückgelegt.')).toBeInTheDocument();
   });
 
-  it('nennt Stammnutzer:innen gegendert (VOR-25)', () => {
+  it('bietet an einem gesperrten Rad keinen Schlüssel an', async () => {
     oeffne();
-    expect(screen.getAllByText('Stammnutzer:in').length).toBeGreaterThan(0);
-    expect(screen.queryByText('Stammnutzer')).toBeNull();
-    expect(screen.getByText('Ersatzrad')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: 'Ihr Rad' });
+    expect(screen.queryByRole('button', { name: /Schlüssel von Lastenrad 3/ })).toBeNull();
+  });
+
+  it('sagt einen Fehler des Servers in Worten', async () => {
+    const nutzer = userEvent.setup();
+    takeKey.mockRejectedValue(
+      new Error('Der Schlüssel ist schon entnommen. Bitte die Liste neu laden.'),
+    );
+    oeffne();
+    await nutzer.click(
+      await screen.findByRole('button', { name: 'Schlüssel von Lastenrad 4 nehmen' }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Der Schlüssel ist schon entnommen');
+  });
+
+  it('bietet „Rad hinzufügen“ nur an, wo der Server es annimmt (ANN-550)', async () => {
+    const { unmount } = oeffne();
+    await screen.findByRole('heading', { name: 'Ihr Rad' });
+    expect(screen.queryByRole('link', { name: 'Rad hinzufügen' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Depots verwalten' })).toBeNull();
+    unmount();
+
+    fetchFleet.mockResolvedValue(testFlotte({ can_manage: true }));
+    oeffne();
+    expect(await screen.findByRole('link', { name: 'Rad hinzufügen' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Depots verwalten' })).toBeInTheDocument();
+  });
+
+  it('findet das Rad, das am Donnerstag frei ist - auch weil die Stammnutzer:in abwesend ist', async () => {
+    const donnerstag = plusTage(montagDerWoche(todayInTimeZone('Europe/Berlin')), 3);
+    fetchFleet.mockResolvedValue(
+      testFlotte({ unavailable: [{ staff_member_id: ANNA.id, on_date: donnerstag }] }),
+    );
+    oeffne('/betrieb/flotte?frei=4');
+    // Lastenrad 1 (Anna, Do geplant, aber abwesend) und das Ersatzrad sind
+    // frei; Lastenrad 4 (Nina, Mi und Do) fährt, Lastenrad 3 ist gesperrt.
+    expect(await screen.findByText('Lastenrad 1')).toBeInTheDocument();
+    expect(screen.getByText('Diese Woche frei: Do (abwesend)')).toBeInTheDocument();
+    expect(screen.getByText('Lastenrad 5 (Ersatz)')).toBeInTheDocument();
+    expect(screen.queryByText('Lastenrad 4')).toBeNull();
+    expect(screen.queryByText('Lastenrad 3')).toBeNull();
+  });
+
+  it('filtert nach Zustand und sucht in Rad, Person und Notiz', async () => {
+    const nutzer = userEvent.setup();
+    oeffne('/betrieb/flotte?zustand=reparatur');
+    expect(await screen.findByText('Lastenrad 3')).toBeInTheDocument();
+    expect(screen.queryByText('Lastenrad 1')).toBeNull();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Filter zurücksetzen' }));
+    const suche = screen.getByRole('searchbox');
+    await nutzer.type(suche, 'Nina');
+    const liste = screen.getByRole('heading', { name: 'Raddepot Nord (1)' }).closest('section');
+    expect(liste).not.toBeNull();
+    expect(within(liste!).getByText('Lastenrad 4')).toBeInTheDocument();
+    expect(screen.queryByText('Lastenrad 1')).toBeNull();
   });
 });

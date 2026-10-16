@@ -99,12 +99,14 @@ describe('AppShell', () => {
     );
     const menue = screen.getByRole('navigation', { name: 'Bereich Organisatorisches' });
     expect(within(menue).getByRole('link', { name: 'Mitarbeitende' })).toBeInTheDocument();
-    expect(within(menue).queryByRole('link', { name: /Radflotte/ })).toBeNull();
+    // Seit FLT-EPIC-001 ist die Radflotte echt und steht bei den echten Punkten.
+    expect(within(menue).getByRole('link', { name: 'Radflotte' })).toBeInTheDocument();
+    expect(within(menue).queryByRole('link', { name: /Urlaub/ })).toBeNull();
 
-    const knopf = within(menue).getByRole('button', { name: 'Vorschau (4)' });
+    const knopf = within(menue).getByRole('button', { name: 'Vorschau (3)' });
     expect(knopf).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(knopf);
-    expect(within(menue).getByRole('link', { name: /Radflotte/ })).toBeInTheDocument();
+    expect(within(menue).getByRole('link', { name: /Urlaub/ })).toBeInTheDocument();
     expect(within(menue).getByRole('button', { name: 'Vorschau einklappen' })).toHaveAttribute(
       'aria-expanded',
       'true',

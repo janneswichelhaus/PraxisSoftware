@@ -1,77 +1,96 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderMitVorschau, testUser } from '@/test-utils';
+import { testUser } from '@/test-utils';
+import * as api from './api';
 import { KeyPage } from './KeyPage';
+import { TIM, testFlotte, testRad } from './testdaten';
+import { rendereSeite } from './testseite';
 
-/**
- * Der tägliche Weg zum Schlüssel beginnt ohne vorgewähltes Rad (VOR-18): Bis
- * dahin stand das erste Rad der Liste in der Auswahl - im Demostand eines mit
- * vergebenem Schlüssel -, und die Seite öffnete mit einer Warnung.
- */
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof api>()),
+  fetchFleet: vi.fn(),
+  takeKey: vi.fn(),
+}));
+
+const fetchFleet = vi.mocked(api.fetchFleet);
+const takeKey = vi.mocked(api.takeKey);
 
 function oeffne(pfad = '/betrieb/flotte/schluessel') {
-  return renderMitVorschau(<KeyPage user={testUser(['therapist'], 'Anna Beispiel')} />, pfad);
+  return rendereSeite(
+    '/betrieb/flotte/schluessel',
+    <KeyPage user={testUser(['therapist'])} />,
+    pfad,
+  );
 }
 
-describe('Schlüsselentnahme', () => {
-  it('beginnt ohne vorgewaehltes Rad und ohne Warnung', () => {
-    oeffne();
-    expect(screen.getByRole('combobox', { name: 'Rad' })).toHaveValue('');
-    expect(screen.queryByText(/Der Schlüssel ist bereits bei/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Entnahme bestätigen' })).toBeDisabled();
+beforeEach(() => {
+  vi.clearAllMocks();
+  const flotte = testFlotte();
+  fetchFleet.mockResolvedValue({
+    ...flotte,
+    bikes: [
+      ...flotte.bikes,
+      testRad({
+        id: 'rad-2',
+        name: 'Lastenrad 2',
+        key: { holder_staff_id: TIM.id, holder_name: TIM.name, taken_at: '2026-10-15T05:40:00Z' },
+      }),
+    ],
   });
+  takeKey.mockResolvedValue();
+});
 
-  it('sagt am gesperrten Knopf, was fehlt (BEF-069, Handoff Schrift und Knoepfe)', async () => {
-    const user = userEvent.setup();
+/**
+ * Schlüssel eintragen (FLT-EPIC-001): nur Räder mit Schlüssel im Tresor und
+ * ohne Sperre, die Person aus dem Mitarbeiterstamm, das eigene Konto
+ * vorbelegt; kein Rad vorgewählt außer aus der Adresszeile (VOR-18).
+ */
+describe('Schlüssel eintragen', () => {
+  it('bietet weder einen vergebenen Schlüssel noch ein gesperrtes Rad an', async () => {
     oeffne();
-    const knopf = screen.getByRole('button', { name: 'Entnahme bestätigen' });
-    expect(knopf).toHaveAccessibleDescription('Erst ein Rad wählen.');
-
-    const rad = screen.getByRole('combobox', { name: 'Rad' });
-    const frei = within(rad)
-      .getAllByRole('option')
-      .find(
-        (o) => o.textContent && !o.textContent.includes('vergeben') && o.getAttribute('value'),
-      )!;
-    await user.selectOptions(rad, frei);
-    await user.clear(screen.getByRole('textbox', { name: 'Name' }));
-    expect(knopf).toHaveAccessibleDescription('Erst einen Namen eintragen.');
-
-    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Anna Beispiel');
-    expect(knopf).toBeEnabled();
-    expect(knopf).not.toHaveAccessibleDescription();
-  });
-
-  it('stellt Raeder mit vergebenem Schluessel ans Ende und sagt es vorn im Text', () => {
-    oeffne();
-    const optionen = within(screen.getByRole('combobox', { name: 'Rad' }))
+    const rad = await screen.findByRole('combobox', { name: 'Rad' });
+    const angebote = within(rad)
       .getAllByRole('option')
       .map((option) => option.textContent);
-    expect(optionen.at(-2)).toBe('Lastenrad 1 (vergeben an Lena Hartmann) · Raddepot Nord');
-    expect(optionen.at(-1)).toBe(
-      'Lastenrad 5 (Ersatz) (vergeben an Aylin Özdemir) · Raddepot Nord',
+    expect(angebote).toEqual([
+      'Bitte wählen …',
+      'Lastenrad 1 · Raddepot Nord',
+      'Lastenrad 4 · Raddepot Nord',
+      'Lastenrad 5 (Ersatz) · Raddepot Süd',
+    ]);
+    expect(rad).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: 'Schlüssel bei' })).toHaveDisplayValue(
+      'Anna Beispiel (Sie)',
     );
-    expect(optionen[1]).toBe('Lastenrad 2 · Raddepot Nord');
+    expect(screen.getByRole('button', { name: 'Schlüssel eintragen' })).toBeDisabled();
   });
 
-  it('leert die Auswahl nach der Entnahme, statt erneut zu warnen', async () => {
+  it('trägt den Schlüssel für sich selbst ohne Personenangabe ein', async () => {
     const nutzer = userEvent.setup();
-    oeffne('/betrieb/flotte/schluessel?rad=r2');
-
-    await nutzer.click(screen.getByRole('button', { name: 'Entnahme bestätigen' }));
-
-    expect(screen.getByRole('status')).toHaveTextContent(/Schlüssel entnommen: Lastenrad 2/);
-    expect(screen.getByRole('combobox', { name: 'Rad' })).toHaveValue('');
-    expect(screen.queryByText(/Der Schlüssel ist bereits bei/)).toBeNull();
+    oeffne('/betrieb/flotte/schluessel?rad=rad-4');
+    expect(await screen.findByRole('combobox', { name: 'Rad' })).toHaveValue('rad-4');
+    await nutzer.click(screen.getByRole('button', { name: 'Schlüssel eintragen' }));
+    expect(takeKey).toHaveBeenCalledWith('rad-4', null);
+    expect(await screen.findByTestId('ziel-meldung')).toHaveTextContent(
+      'Schlüssel von Lastenrad 4 bei Ihnen eingetragen.',
+    );
   });
 
-  it('beschreibt, was die Seite tut, und fuehrt oben zurueck (VOR-18, VOR-21)', () => {
+  it('trägt den Schlüssel für eine Kollegin aus dem Stamm ein', async () => {
+    const nutzer = userEvent.setup();
     oeffne();
-    expect(screen.getByText('Schlüssel für ein Rad aus dem Tresor nehmen.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '← Zurück zur Radflotte' })).toHaveAttribute(
-      'href',
-      '/betrieb/flotte',
+    await nutzer.selectOptions(await screen.findByRole('combobox', { name: 'Rad' }), 'rad-5');
+    await nutzer.selectOptions(screen.getByRole('combobox', { name: 'Schlüssel bei' }), TIM.id);
+    await nutzer.click(screen.getByRole('button', { name: 'Schlüssel eintragen' }));
+    expect(takeKey).toHaveBeenCalledWith('rad-5', TIM.id);
+    expect(await screen.findByTestId('ziel-meldung')).toHaveTextContent(
+      'Schlüssel von Lastenrad 5 (Ersatz) bei Tim Teamleitung eingetragen.',
     );
+  });
+
+  it('übernimmt kein Rad aus der Adresszeile, dessen Schlüssel schon vergeben ist', async () => {
+    oeffne('/betrieb/flotte/schluessel?rad=rad-2');
+    expect(await screen.findByRole('combobox', { name: 'Rad' })).toHaveValue('');
   });
 });

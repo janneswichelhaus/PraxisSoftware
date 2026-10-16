@@ -45,8 +45,12 @@ describe('funktionskatalog', () => {
 
   it('kennzeichnet Vorschaubereiche als solche', () => {
     const katalog = funktionskatalog(testUser(['owner']));
+    const urlaub = katalog.find((eintrag) => eintrag.bezeichnung === 'Urlaub');
+    expect(urlaub?.vorschau).toBe(true);
+    // Seit FLT-EPIC-001 echt angebunden: die Radflotte trägt keine Kennzeichnung mehr.
     const radflotte = katalog.find((eintrag) => eintrag.bezeichnung === 'Radflotte');
-    expect(radflotte?.vorschau).toBe(true);
+    expect(radflotte).toBeDefined();
+    expect(radflotte?.vorschau).toBeUndefined();
     // Seit MAP-006 echt angebunden: die Touren tragen keine Kennzeichnung mehr.
     const touren = katalog.find((eintrag) => eintrag.bezeichnung === 'Touren');
     expect(touren?.vorschau).toBeUndefined();

@@ -176,6 +176,18 @@ describe('Schema-Invarianten', () => {
       // ALT-003: Gewohnheiten und ihre vermerkten Tage.
       'habits',
       'habit_marks',
+      // FLT-001: die Radflotte - Depots, Räder, Schlüssel, Check-Up, Panne,
+      // Sperre, Stellen am Rad.
+      'fleet_depots',
+      'fleet_bikes',
+      'fleet_key_handovers',
+      'fleet_checkups',
+      'fleet_breakdowns',
+      'fleet_blocks',
+      'fleet_spots',
+      // FLT-002: Fotos am Rad und ihre einmaligen Lesefreigaben.
+      'fleet_photos',
+      'fleet_photo_access_grants',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

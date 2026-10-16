@@ -8,6 +8,7 @@ import {
   canWriteTrainingClients,
   canWriteTreatmentBases,
   isOwner,
+  isTherapyStaff,
   type CurrentUser,
 } from '@/features/session/types';
 
@@ -302,6 +303,44 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       stichworte: ['personal', 'einladen', 'zugang', 'neu'],
       rueckweg: true,
     });
+  }
+
+  // FLT-EPIC-001: die drei Wege der Radflotte, die ohne ein bestimmtes Rad
+  // beginnen - wie ihre Routen für alle Praxisrollen der Behandlung. Das Rad
+  // wählt die Seite danach, das eigene vorbelegt.
+  if (isTherapyStaff(roles)) {
+    eintraege.push(
+      {
+        id: 'vorgang-panne-melden',
+        art: 'Vorgang',
+        bezeichnung: 'Panne melden',
+        hinweis: 'Lastenrad',
+        ziel: '/betrieb/flotte/panne',
+        bereich: BEREICHE.betrieb.label,
+        stichworte: ['lastenrad', 'rad', 'schaden', 'defekt', 'radflotte'],
+        rueckweg: true,
+      },
+      {
+        id: 'vorgang-fahrrad-check-up',
+        art: 'Vorgang',
+        bezeichnung: 'Fahrrad-Check-Up',
+        hinweis: 'Lastenrad',
+        ziel: '/betrieb/flotte/checkup',
+        bereich: BEREICHE.betrieb.label,
+        stichworte: ['lastenrad', 'rad', 'prüfung', 'sicherheit', 'radflotte'],
+        rueckweg: true,
+      },
+      {
+        id: 'vorgang-schluessel-eintragen',
+        art: 'Vorgang',
+        bezeichnung: 'Schlüssel eintragen',
+        hinweis: 'Lastenrad',
+        ziel: '/betrieb/flotte/schluessel',
+        bereich: BEREICHE.betrieb.label,
+        stichworte: ['lastenrad', 'rad', 'tresor', 'radflotte'],
+        rueckweg: true,
+      },
+    );
   }
 
   // Das eigene Konto steht jeder angemeldeten Rolle offen (STAFF-004) und ist

@@ -21,12 +21,14 @@ for (const breite of [375, 1280]) {
     );
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Mitarbeiter:in anlegen' })).toBeVisible();
-    await expect(menue.getByRole('link', { name: /Radflotte/ })).toHaveCount(0);
+    // Seit FLT-EPIC-001 ist die Radflotte echt und steht bei den echten Punkten.
+    await expect(menue.getByRole('link', { name: 'Radflotte' })).toHaveCount(1);
+    await expect(menue.getByRole('link', { name: /Urlaub/ })).toHaveCount(0);
 
-    const knopf = menue.getByRole('button', { name: 'Vorschau (4)' });
+    const knopf = menue.getByRole('button', { name: 'Vorschau (3)' });
     expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await knopf.click();
-    await expect(menue.getByRole('link', { name: /Radflotte/ })).toContainText('Vorschau');
+    await expect(menue.getByRole('link', { name: /Urlaub/ })).toContainText('Vorschau');
 
     const ueberlauf = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

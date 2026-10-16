@@ -122,4 +122,61 @@ describe('Instanz', () => {
       p_no_audio_ok: false,
     });
   });
+
+  it('fragt fuer ein Foto am Rad die Funktionen der Fotos, ohne Tonspurfrage (FLT-002)', async () => {
+    const f = abruf(
+      Response.json([
+        {
+          bucket_id: 'radflotte',
+          object_key: 'a/b/c',
+          mime_type: 'image/jpeg',
+          byte_size: '1234',
+          checksum_sha256: 'e'.repeat(64),
+          already_verified: false,
+        },
+      ]),
+    );
+    const ankuendigung = await erstelleInstanz(EINRICHTUNG, f).ankuendigung(
+      DATEI,
+      PERSON,
+      'radfoto',
+    );
+    expect(ankuendigung.ok && ankuendigung.wert).toMatchObject({
+      bucket_id: 'radflotte',
+      byte_size: 1234,
+    });
+    const [adresse, optionen] = f.mock.calls[0]!;
+    expect(adresse).toBe('http://127.0.0.1:54321/rest/v1/rpc/fleet_photo_for_verification');
+    expect(optionen?.headers).toMatchObject({ Authorization: 'Bearer dienst-schluessel' });
+    expect(JSON.parse(optionen?.body as string)).toEqual({ p_photo_id: DATEI, p_user_id: PERSON });
+
+    const g = abruf(Response.json('rejected'));
+    const ergebnis = await erstelleInstanz(EINRICHTUNG, g).eintragen(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: false },
+      'radfoto',
+    );
+    expect(ergebnis).toEqual({ ok: true, wert: 'rejected' });
+    expect(g.mock.calls[0]![0]).toBe(
+      'http://127.0.0.1:54321/rest/v1/rpc/record_fleet_photo_verification',
+    );
+    expect(JSON.parse(g.mock.calls[0]![1]?.body as string)).toEqual({
+      p_photo_id: DATEI,
+      p_content_type_ok: true,
+      p_checksum_ok: true,
+      p_metadata_ok: false,
+    });
+  });
+
+  it('macht beim Foto am Rad aus einer fehlenden Metadatenantwort einen Befund', async () => {
+    const f = abruf(Response.json('rejected'));
+    await erstelleInstanz(EINRICHTUNG, f).eintragen(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: null },
+      'radfoto',
+    );
+    expect(JSON.parse(f.mock.calls[0]![1]?.body as string)).toMatchObject({
+      p_metadata_ok: false,
+    });
+  });
 });

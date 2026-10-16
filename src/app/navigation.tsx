@@ -266,7 +266,13 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     });
   }
   eintraege.push(
-    { to: '/betrieb/flotte', label: 'Radflotte', vorschau: true, end: false },
+    // FLT-EPIC-001: echt angebunden, ohne Vorschau-Kennzeichen.
+    {
+      to: '/betrieb/flotte',
+      label: 'Radflotte',
+      end: false,
+      stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
+    },
     { to: '/betrieb/urlaub', label: 'Urlaub', vorschau: true },
     { to: '/betrieb/zeitkonto', label: 'Zeitkonto', vorschau: true },
     { to: '/betrieb/erstattungen', label: 'Erstattungen', vorschau: true },

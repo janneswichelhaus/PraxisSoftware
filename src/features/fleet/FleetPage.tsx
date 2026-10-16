@@ -1,357 +1,405 @@
 import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Select } from '@/components/ui/Select';
-import { Badge } from '@/components/ui/Badge';
-import { DataList, DataRow } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Filterleiste } from '@/components/ui/Filterleiste';
-import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { ListRow } from '@/components/ui/ListRow';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { SearchField } from '@/components/ui/SearchField';
-import { isOwner, type CurrentUser } from '@/features/session/types';
-import { aktiveStandortvorlage } from '@/features/preview/standortvorlage';
-import { montagDerWoche, plusTage } from '@/features/preview/demodaten';
+import { Section } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
+import { todayInTimeZone } from '@/features/appointments/api';
+import { leseMeldung } from '@/features/appointments/terminformular';
+import type { CurrentUser } from '@/features/session/types';
 import {
-  depotName,
-  hatUrlaub,
-  mitarbeiterName,
-  uebergebeneMeldung,
-  useVorschau,
-  type Protokolleintrag,
-  type Vorschauzustand,
-} from '@/features/preview/vorschauContext';
-import { vorschauId } from '@/features/preview/vorschauZustand';
-import { Abschnitt, Klappbereich, SimulationsMeldung } from '@/features/preview/ui';
-import { formatZeitpunkt } from '@/features/preview/format';
+  FLOTTE_SCHLUESSEL,
+  fetchFleet,
+  flotteSchluessel,
+  returnKey,
+  takeKey,
+  type Bike,
+  type Fleet,
+} from './api';
 import {
-  radstatusLabels,
-  wochentage,
-  wochentagLabels,
-  type Rad,
-  type Radstatus,
+  WOCHENTAGE,
+  formatZeitpunkt,
+  istWochentag,
+  montagDerWoche,
+  tageDerWoche,
+  wochentageKurz,
   type Wochentag,
-} from '@/features/preview/types';
+} from './format';
+import {
+  ausserhalbDesStammdepots,
+  belegung,
+  depotName,
+  istMeinRad,
+  radzustand,
+  radzustandLabels,
+  type Radzustand,
+} from './rad';
+import { aktiveStandortvorlage } from './standortvorlage';
 
 /**
- * Radflotte.
+ * Radflotte (FLT-EPIC-001): die Räder der Praxis nach Standort, mit Suche,
+ * Zustand und „frei am“, dem Schlüssel an jeder Zeile und den Wegen zu Panne,
+ * Check-Up und Schlüssel (DESIGN.md „Liste“).
  *
- * Übernahme der Radflotte aus der Team-App: Liste mit Suche, Status- und
- * Tagesfilter, Wochenübersicht über alle Räder, Schlüsselstand je Rad,
- * Verläufe für Schlüssel, Pannen und Check-Up sowie die Einstiege in
- * Pannenassistent, Schlüsselentnahme und Check-Up.
+ * **Ihr Rad zuerst.** Das Stammrad der angemeldeten Person - oder das, dessen
+ * Schlüssel sie hat - steht über den Depots. Den Schlüssel nimmt ein Tipp an
+ * der Zeile (Budget R1 der Spec, vorher zwei Tipps und ein Seitenwechsel);
+ * für jemand anderen geht es über „Schlüssel eintragen“.
  *
- * Zwei bewusste Abweichungen gegenüber der Vorlage:
+ * **Die Woche an der Zeile.** Die Tabelle „Wochenübersicht“ der Vorschau
+ * stand am Telefon breiter als der Bildschirm (DESIGN.md Regel 3). Dieselbe
+ * Auskunft steht jetzt an jedem Rad - die Tage der Stammnutzer:in und, wenn
+ * sie diese Woche ganztägig abwesend ist, „frei, weil abwesend“ - und der
+ * Filter „Frei am“ beantwortet „welches Rad ist am Donnerstag frei“.
  *
- *   * Der Zugriff auf geschützte Angaben (Schlüsselcode, Einstellungen) hängt
- *     an der Rolle des angemeldeten Kontos, nicht an einer im Quelltext
- *     hinterlegten PIN. Eine PIN im Browser ist keine Zugriffskontrolle.
- *   * Es gibt keine zweite Mitarbeiterverwaltung für die Auswahl der
- *     Stammnutzer:innen. Die Personen kommen aus dem gemeinsamen
- *     Mitarbeiterstamm.
+ * Wer was darf, entscheidet der Server (ANN-550); die Seite fragt nur
+ * `can_manage`, um „Rad hinzufügen“ nicht anzubieten, wo es abgewiesen würde.
  */
 
-type Statusfilter = 'alle' | Radstatus;
-type Tagesfilter = '' | Wochentag;
+type Zustandsfilter = 'alle' | Radzustand;
 
-/**
- * Tagesbelegung als Fläche (VOR-13): belegt ist der Normalfall und neutral,
- * frei ist hervorgehoben. Warn- und Erfolgsfarben bleiben echten Zuständen
- * vorbehalten; das Wort in der Zelle trägt die Bedeutung, die Fläche ergänzt.
- */
-function belegungsflaeche(belegt: boolean): string {
-  return belegt ? 'bg-surface-sunken text-ink-muted' : 'bg-accent-soft text-accent';
+const ZUSTANDSFILTER: readonly { wert: Zustandsfilter; text: string }[] = [
+  { wert: 'alle', text: 'Alle Räder' },
+  { wert: 'verfuegbar', text: radzustandLabels.verfuegbar },
+  { wert: 'einsatz', text: radzustandLabels.einsatz },
+  { wert: 'reparatur', text: radzustandLabels.reparatur },
+];
+
+function istZustandsfilter(wert: string | null): wert is Zustandsfilter {
+  return ZUSTANDSFILTER.some((eintrag) => eintrag.wert === wert);
 }
 
-/** Kalendertage der laufenden Woche, nach Wochentag. */
-function wochentagsdaten(stichtag: string): Record<Wochentag, string> {
-  const montag = montagDerWoche(stichtag);
-  return wochentage.reduce(
-    (sammlung, tag, index) => ({ ...sammlung, [tag]: plusTage(montag, index) }),
-    {} as Record<Wochentag, string>,
-  );
-}
-
-/**
- * Tatsächliche Belegung eines Rads an einem Wochentag.
- *
- * Der Wochenplan sagt, wer das Rad üblicherweise fährt. Ist diese Person
- * genehmigt abwesend, ist das Rad an dem Tag trotzdem frei - genau das macht
- * eine genehmigte Abwesenheit für die Planung nützlich.
- */
-function belegung(
-  zustand: Vorschauzustand,
-  rad: Rad,
-  tag: Wochentag,
-  daten: Record<Wochentag, string>,
-): { belegt: boolean; wegenUrlaub: boolean } {
-  const geplant = rad.wochenplan[tag] === 'belegt';
-  if (!geplant) return { belegt: false, wegenUrlaub: false };
-  const abwesend = hatUrlaub(zustand, rad.stammnutzerId, daten[tag]);
-  return { belegt: !abwesend, wegenUrlaub: abwesend };
-}
-
-function passtZurSuche(rad: Rad, stammnutzer: string, suche: string): boolean {
+function passtZurSuche(rad: Bike, suche: string): boolean {
   const nadel = suche.trim().toLowerCase();
   if (!nadel) return true;
-  return `${rad.name} ${stammnutzer} ${rad.notiz}`.toLowerCase().includes(nadel);
+  return [rad.name, rad.regular_rider?.name, rad.key?.holder_name, rad.note, rad.special_location]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+    .includes(nadel);
 }
 
 export function FleetPage({ user }: { user: CurrentUser }) {
-  const { zustand, protokoll, simuliere } = useVorschau();
-  // Der Verlaufszustand ist ungeprüft; `uebergebeneMeldung` prüft ihn.
+  const zone = user.organizationTimeZone;
+  const montag = montagDerWoche(todayInTimeZone(zone ?? 'Europe/Berlin'));
+  const abfrage = useQuery({
+    queryKey: flotteSchluessel(montag),
+    queryFn: () => fetchFleet(montag),
+    retry: false,
+  });
+
+  // Eine Aktion auf einer Unterseite - Rad gespeichert, Panne gemeldet - kommt
+  // mit ihrem Satz hierher zurück; gelesen beim ersten Zeichnen, damit ein
+  // Filter ihn nicht mit dem Verlaufszustand verliert.
   const verlaufszustand: unknown = useLocation().state;
-  const [suchparameter, setSuchparameter] = useSearchParams();
-  // Eine Aktion auf einer Unterseite - Rad speichern oder entfernen - kommt
-  // mit ihrer Zustandsmeldung hierher zurück (VOR-01). Gemerkt beim ersten
-  // Zeichnen, damit ein Filter sie nicht mit dem Verlaufszustand verliert.
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(() =>
-    uebergebeneMeldung(verlaufszustand, protokoll),
-  );
+  const [meldung, setMeldung] = useState<{ text: string; nr: number } | null>(() => {
+    const text = leseMeldung(verlaufszustand);
+    return text ? { text, nr: 1 } : null;
+  });
 
-  const suche = suchparameter.get('q') ?? '';
-  const status = (suchparameter.get('status') ?? 'alle') as Statusfilter;
-  const tag = (suchparameter.get('tag') ?? '') as Tagesfilter;
-  const darfEinstellungen = isOwner(user.roles);
+  const [parameter, setParameter] = useSearchParams();
+  const suche = parameter.get('q') ?? '';
+  const zustandRoh = parameter.get('zustand');
+  const zustand: Zustandsfilter = istZustandsfilter(zustandRoh) ? zustandRoh : 'alle';
+  const freiRoh = Number(parameter.get('frei'));
+  const frei: Wochentag | null = istWochentag(freiRoh) ? freiRoh : null;
 
-  function setzeParameter(naechste: { q?: string; status?: Statusfilter; tag?: Tagesfilter }) {
-    const parameter = new URLSearchParams();
+  function setze(naechste: { q?: string; zustand?: Zustandsfilter; frei?: Wochentag | null }) {
+    const neu = new URLSearchParams(parameter);
     const q = naechste.q ?? suche;
-    const s = naechste.status ?? status;
-    const t = naechste.tag ?? tag;
-    if (q.trim()) parameter.set('q', q);
-    if (s !== 'alle') parameter.set('status', s);
-    if (t) parameter.set('tag', t);
-    setSuchparameter(parameter, { replace: true });
-  }
-
-  const wochendaten = useMemo(() => wochentagsdaten(zustand.stichtag), [zustand.stichtag]);
-
-  const sichtbar = useMemo(
-    () =>
-      zustand.raeder.filter((rad) => {
-        if (status !== 'alle' && rad.status !== status) return false;
-        if (tag && belegung(zustand, rad, tag, wochendaten).belegt) return false;
-        return passtZurSuche(rad, mitarbeiterName(zustand, rad.stammnutzerId), suche);
-      }),
-    [zustand, status, tag, suche, wochendaten],
-  );
-
-  const zaehler = {
-    verfuegbar: zustand.raeder.filter((rad) => rad.status === 'verfuegbar').length,
-    einsatz: zustand.raeder.filter((rad) => rad.status === 'einsatz').length,
-    reparatur: zustand.raeder.filter((rad) => rad.status === 'reparatur').length,
-  };
-
-  function schluesselZurueck(rad: Rad) {
-    const eintrag = simuliere(
-      {
-        bereich: 'Radflotte',
-        vorgang: `Schlüssel zurückgelegt: ${rad.name}`,
-        folgen: ['Schlüsselstand auf „im Tresor“ gesetzt', 'Schlüsselverlauf ergänzt'],
-        nichtGeschehen: ['Kein Vorgang gespeichert, keine Benachrichtigung versendet'],
-      },
-      (stand) => ({
-        ...stand,
-        raeder: stand.raeder.map((eintragRad) =>
-          eintragRad.id === rad.id
-            ? {
-                ...eintragRad,
-                schluesselInhaber: null,
-                schluesselSeit: null,
-                schluesselverlauf: [
-                  ...eintragRad.schluesselverlauf,
-                  {
-                    id: vorschauId('schluessel'),
-                    inhaber: eintragRad.schluesselInhaber ?? 'Unbekannt',
-                    entnommen: eintragRad.schluesselSeit ?? new Date().toISOString(),
-                    zurueckgelegt: new Date().toISOString(),
-                  },
-                ],
-              }
-            : eintragRad,
-        ),
-      }),
-    );
-    setMeldung(eintrag);
-  }
-
-  function freigeben(rad: Rad) {
-    const eintrag = simuliere(
-      {
-        bereich: 'Radflotte',
-        vorgang: `Rad freigegeben: ${rad.name}`,
-        folgen: [
-          'Status auf „Verfügbar“ gesetzt',
-          'Das Rad steht in der Vorschau wieder für die Planung zur Verfügung',
-        ],
-        nichtGeschehen: [
-          'Keine Rückmeldung an die Werkstatt',
-          'Keine Ersatzradzuordnung aufgehoben',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        raeder: stand.raeder.map((eintragRad) =>
-          eintragRad.id === rad.id ? { ...eintragRad, status: 'verfuegbar' } : eintragRad,
-        ),
-      }),
-    );
-    setMeldung(eintrag);
+    const z = naechste.zustand ?? zustand;
+    const f = naechste.frei === undefined ? frei : naechste.frei;
+    if (q.trim()) neu.set('q', q);
+    else neu.delete('q');
+    if (z !== 'alle') neu.set('zustand', z);
+    else neu.delete('zustand');
+    if (f) neu.set('frei', String(f));
+    else neu.delete('frei');
+    setParameter(neu, { replace: true });
   }
 
   return (
     <>
       {/* Ohne Satz unter dem Titel (Regel 6); „Rad hinzufügen“ kompakt im
-          Kopf (ANN-403). */}
+          Kopf, nur wo der Server es annimmt (ANN-403, ANN-550). */}
       <PageHeader
         title="Radflotte"
-        actions={<ButtonLink to="/betrieb/flotte/rad/neu">Rad hinzufügen</ButtonLink>}
+        actions={
+          abfrage.data?.can_manage ? (
+            <ButtonLink to="/betrieb/flotte/rad/neu">Rad hinzufügen</ButtonLink>
+          ) : null
+        }
       />
 
-      <SimulationsMeldung eintrag={meldung} />
+      {meldung ? (
+        <Rueckmeldung key={meldung.nr} className="mb-6">
+          {meldung.text}
+        </Rueckmeldung>
+      ) : null}
 
-      {/* Seitenwechsel als ButtonLink statt eigener Klassenketten (VOR-12,
-          TOK-11): Schrift und Hauptfarbe wie jeder Knopf. Die Panne trägt
-          keine Sonderfarbe mehr - ihr Rand lag bei 2,1:1. Kompakt, 44 px wie
-          bisher: In voller Größe bräuchten die drei am Telefon eine Zeile
-          mehr vor dem ersten Rad. */}
+      {/* Die drei Wege, die ohne ein bestimmtes Rad beginnen; das Rad wählt
+          die Seite danach, das eigene vorbelegt. Kompakt, 44 px. */}
       <div className="mb-6 flex flex-wrap gap-2">
         <ButtonLink to="/betrieb/flotte/panne" variant="secondary" groesse="kompakt">
           Panne melden
         </ButtonLink>
-        <ButtonLink to="/betrieb/flotte/schluessel" variant="secondary" groesse="kompakt">
-          Schlüssel entnehmen
-        </ButtonLink>
         <ButtonLink to="/betrieb/flotte/checkup" variant="secondary" groesse="kompakt">
-          Fahrrad-Check-Up
+          Check-Up
+        </ButtonLink>
+        <ButtonLink to="/betrieb/flotte/schluessel" variant="secondary" groesse="kompakt">
+          Schlüssel eintragen
         </ButtonLink>
       </div>
 
-      {/* Suche offen, Status und freier Tag am Telefon hinter „Filter“
-          (Filterleiste, ANN-405); die Bausteine mit 48 px (TOK-13, UIK-19).
-          Darunter der Bestand als Ergebniszeile. */}
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Radflotte wird geladen …"
+        fehler="Die Radflotte konnte nicht geladen werden."
+        inKarte
+      >
+        {(flotte) => (
+          <Flotte
+            flotte={flotte}
+            zone={zone}
+            montag={montag}
+            suche={suche}
+            zustand={zustand}
+            frei={frei}
+            onFilter={setze}
+            onMeldung={(text) => setMeldung((vorher) => ({ text, nr: (vorher?.nr ?? 0) + 1 }))}
+          />
+        )}
+      </Abfragezustand>
+    </>
+  );
+}
+
+function Flotte({
+  flotte,
+  zone,
+  montag,
+  suche,
+  zustand,
+  frei,
+  onFilter,
+  onMeldung,
+}: {
+  flotte: Fleet;
+  zone: string | null;
+  montag: string;
+  suche: string;
+  zustand: Zustandsfilter;
+  frei: Wochentag | null;
+  onFilter: (naechste: { q?: string; zustand?: Zustandsfilter; frei?: Wochentag | null }) => void;
+  onMeldung: (text: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const tage = useMemo(() => tageDerWoche(montag), [montag]);
+  const ich = flotte.my_staff_member_id;
+
+  const schluessel = useMutation({
+    mutationFn: async ({ rad, art }: { rad: Bike; art: 'nehmen' | 'zuruecklegen' }) => {
+      if (art === 'nehmen') await takeKey(rad.id, null);
+      else await returnKey(rad.id);
+      return { rad, art };
+    },
+    onSuccess: async ({ rad, art }) => {
+      await queryClient.invalidateQueries({ queryKey: FLOTTE_SCHLUESSEL });
+      onMeldung(
+        art === 'nehmen'
+          ? `Schlüssel von ${rad.name} bei Ihnen eingetragen.`
+          : `Schlüssel von ${rad.name} zurückgelegt.`,
+      );
+    },
+  });
+
+  const sichtbar = flotte.bikes.filter((rad) => {
+    if (zustand !== 'alle' && radzustand(rad) !== zustand) return false;
+    if (frei) {
+      if (rad.block) return false;
+      if (belegung(rad, frei, tage[frei], flotte.unavailable).belegt) return false;
+    }
+    return passtZurSuche(rad, suche);
+  });
+
+  const zaehler = {
+    verfuegbar: flotte.bikes.filter((rad) => radzustand(rad) === 'verfuegbar').length,
+    einsatz: flotte.bikes.filter((rad) => radzustand(rad) === 'einsatz').length,
+    reparatur: flotte.bikes.filter((rad) => radzustand(rad) === 'reparatur').length,
+  };
+
+  // Ihr Rad zuerst, dann je Depot, dann die Räder an einem anderen Ort.
+  const meine = sichtbar.filter((rad) => istMeinRad(rad, ich));
+  const uebrige = sichtbar.filter((rad) => !istMeinRad(rad, ich));
+  const abschnitte = [
+    ...flotte.depots.map((depot) => ({
+      titel: depot.name,
+      raeder: uebrige.filter((rad) => rad.current_depot_id === depot.id),
+    })),
+    { titel: 'Anderer Ort', raeder: uebrige.filter((rad) => rad.current_depot_id === null) },
+  ].filter((abschnitt) => abschnitt.raeder.length > 0);
+
+  function zeile(rad: Bike, abschnitt: string | null) {
+    return (
+      <Radzeile
+        key={rad.id}
+        rad={rad}
+        flotte={flotte}
+        abschnitt={abschnitt}
+        zone={zone}
+        tage={tage}
+        laeuft={schluessel.isPending && schluessel.variables.rad.id === rad.id}
+        onSchluessel={(art) => {
+          schluessel.reset();
+          schluessel.mutate({ rad, art });
+        }}
+      />
+    );
+  }
+
+  return (
+    <>
+      {/* Suche offen, Zustand und „Frei am“ am Telefon hinter „Filter“
+          (Filterleiste, ANN-405); darunter der Bestand als Ergebniszeile. */}
       <Filterleiste
         suche={
           <SearchField
-            placeholder="Rad, Stammnutzer:in, Notiz"
+            placeholder="Rad, Person, Notiz"
             value={suche}
-            onChange={(wert) => setzeParameter({ q: wert })}
+            onChange={(wert) => onFilter({ q: wert })}
           />
         }
-        gesetzt={(status === 'alle' ? 0 : 1) + (tag ? 1 : 0)}
-        onZuruecksetzen={() => setzeParameter({ status: 'alle', tag: '' })}
+        gesetzt={(zustand === 'alle' ? 0 : 1) + (frei ? 1 : 0)}
+        onZuruecksetzen={() => onFilter({ zustand: 'alle', frei: null })}
         beschriftung="Radflotte filtern"
-        ergebnis={`${zaehler.verfuegbar} verfügbar · ${zaehler.einsatz} im Einsatz · ${zaehler.reparatur} in Reparatur · ${zustand.raeder.length} Räder insgesamt`}
+        ergebnis={`${zaehler.verfuegbar} verfügbar · ${zaehler.einsatz} im Einsatz · ${zaehler.reparatur} in Reparatur · ${flotte.bikes.length} ${flotte.bikes.length === 1 ? 'Rad' : 'Räder'}`}
       >
         <Select
-          label="Status"
-          value={status}
-          onChange={(event) => setzeParameter({ status: event.target.value as Statusfilter })}
+          label="Zustand"
+          value={zustand}
+          onChange={(event) =>
+            onFilter({
+              zustand: istZustandsfilter(event.target.value) ? event.target.value : 'alle',
+            })
+          }
         >
-          <option value="alle">Alle Status</option>
-          <option value="verfuegbar">Verfügbar</option>
-          <option value="einsatz">Im Einsatz</option>
-          <option value="reparatur">In Reparatur</option>
+          {ZUSTANDSFILTER.map((eintrag) => (
+            <option key={eintrag.wert} value={eintrag.wert}>
+              {eintrag.text}
+            </option>
+          ))}
         </Select>
         <Select
-          label="Freier Tag"
-          value={tag}
-          onChange={(event) => setzeParameter({ tag: event.target.value as Tagesfilter })}
+          label="Frei am"
+          value={frei ? String(frei) : ''}
+          onChange={(event) => {
+            const tag = Number(event.target.value);
+            onFilter({ frei: istWochentag(tag) ? tag : null });
+          }}
         >
-          <option value="">Alle Tage</option>
-          {wochentage.map((wochentag) => (
-            <option key={wochentag} value={wochentag}>
-              Nur frei: {wochentagLabels[wochentag]}
+          <option value="">Jeder Tag</option>
+          {WOCHENTAGE.map((tag) => (
+            <option key={tag.nr} value={tag.nr}>
+              {tag.lang}
             </option>
           ))}
         </Select>
       </Filterleiste>
 
-      <Wochenuebersicht />
-
-      {darfEinstellungen ? <Einstellungen /> : null}
-
-      {zustand.depots.map((depot) => {
-        const raederImDepot = sichtbar.filter((rad) => rad.depotId === depot.id);
-        if (raederImDepot.length === 0) return null;
-        return (
-          <Abschnitt
-            key={depot.id}
-            titel={depot.name}
-            beschreibung={`${depot.hinweis} · ${raederImDepot.length} ${raederImDepot.length === 1 ? 'Rad' : 'Räder'}`}
-          >
-            <ListRows>
-              {raederImDepot.map((rad) => (
-                <Radzeile
-                  key={rad.id}
-                  rad={rad}
-                  abschnitt={depot.name}
-                  zeitzone={user.organizationTimeZone}
-                  darfSchluesselcode={darfEinstellungen}
-                  onSchluesselZurueck={() => schluesselZurueck(rad)}
-                  onFreigeben={() => freigeben(rad)}
-                />
-              ))}
-            </ListRows>
-          </Abschnitt>
-        );
-      })}
-
-      {sichtbar.length === 0 ? (
-        <div className="mt-8">
-          <EmptyState inKarte title="Keine Treffer" description="Suche oder Filter anpassen." />
-        </div>
+      {schluessel.isError ? (
+        <Statusmeldung ton="fehler" className="mb-4">
+          {schluessel.error.message}
+        </Statusmeldung>
       ) : null}
+
+      {flotte.bikes.length === 0 ? (
+        <EmptyState
+          inKarte
+          title="Noch kein Rad angelegt"
+          description={flotte.can_manage ? undefined : 'Räder legt die Praxisinhaber:in an.'}
+          aktion={
+            flotte.can_manage ? (
+              <ButtonLink to="/betrieb/flotte/rad/neu" variant="secondary">
+                Rad hinzufügen
+              </ButtonLink>
+            ) : undefined
+          }
+        />
+      ) : sichtbar.length === 0 ? (
+        <EmptyState inKarte title="Keine Treffer" description="Suche oder Filter anpassen." />
+      ) : (
+        <>
+          {meine.length > 0 ? (
+            <Listenabschnitt titel={meine.length === 1 ? 'Ihr Rad' : 'Ihre Räder'}>
+              {meine.map((rad) => zeile(rad, null))}
+            </Listenabschnitt>
+          ) : null}
+          {abschnitte.map((abschnitt) => (
+            <Listenabschnitt
+              key={abschnitt.titel}
+              titel={abschnitt.titel}
+              anzahl={abschnitt.raeder.length}
+            >
+              {abschnitt.raeder.map((rad) => zeile(rad, abschnitt.titel))}
+            </Listenabschnitt>
+          ))}
+        </>
+      )}
+
+      {flotte.can_manage ? <Einstellungen /> : null}
     </>
   );
 }
 
 // -----------------------------------------------------------------------------
-// Radzeile
+// Ein Rad als Zeile
 // -----------------------------------------------------------------------------
 
 /**
- * Ein Rad als Zeile der Liste (Welle B, B7): Name, Stammnutzer:in,
- * Schlüsselstand, Akku und - für die Praxisinhaber:in - der Schlüsselcode;
- * rechts die Arbeit an der Zeile (Leitfaden L3): Schlüssel zurücklegen oder
- * entnehmen, ein Rad in Reparatur freigeben. Die Zeile selbst öffnet das Rad
- * mit Verläufen, Panne und Check-Up.
- *
- * Bis dahin stand jedes Rad als Karte mit vier Knöpfen und drei Aufklappern
- * da, die Flotte am Telefon über 4 000 px. Fachlich ändert sich nichts.
+ * Ein Rad als Zeile (Leitfaden L3): Name, Abweichungen als Zeichen und Wort,
+ * Standort nur, wenn ihn nicht schon der Abschnitt sagt, Stammnutzer:in mit
+ * ihren Tagen, der Schlüssel; rechts die Arbeit an der Zeile - Schlüssel
+ * nehmen oder zurücklegen. Die Zeile selbst öffnet das Rad.
  */
 function Radzeile({
   rad,
+  flotte,
   abschnitt,
-  zeitzone,
-  darfSchluesselcode,
-  onSchluesselZurueck,
-  onFreigeben,
+  zone,
+  tage,
+  laeuft,
+  onSchluessel,
 }: {
-  rad: Rad;
-  /** Die Überschrift des Abschnitts, in dem die Zeile steht. */
-  abschnitt: string;
-  zeitzone: string | null;
-  darfSchluesselcode: boolean;
-  onSchluesselZurueck: () => void;
-  onFreigeben: () => void;
+  rad: Bike;
+  flotte: Fleet;
+  /** Die Überschrift des Abschnitts; `null` unter „Ihr Rad“. */
+  abschnitt: string | null;
+  zone: string | null;
+  tage: Record<Wochentag, string>;
+  laeuft: boolean;
+  onSchluessel: (art: 'nehmen' | 'zuruecklegen') => void;
 }) {
-  const { zustand } = useVorschau();
-  const falschesDepot = rad.depotId !== rad.stammdepotId;
-  // Das Depot steht nur dran, wenn es nicht schon die Abschnittsüberschrift
-  // sagt (UX-005i).
-  const depot = depotName(zustand, rad, 'aktuell');
-  const stammnutzer = rad.stammnutzerId ? mitarbeiterName(zustand, rad.stammnutzerId) : '';
-  const aktuellerNutzer = rad.aktuellerNutzerId
-    ? mitarbeiterName(zustand, rad.aktuellerNutzerId)
-    : '';
-  const vertretung = Boolean(aktuellerNutzer && stammnutzer && aktuellerNutzer !== stammnutzer);
-  const ausstattung = [
-    rad.akku || null,
-    darfSchluesselcode && rad.schluesselcode ? 'code' : null,
-  ].filter(Boolean);
+  const ort = rad.current_depot_id
+    ? depotName(flotte.depots, rad.current_depot_id)
+    : (rad.special_location ?? 'Anderer Ort');
+  const freiWeilAbwesend = WOCHENTAGE.filter(
+    (tag) => belegung(rad, tag.nr, tage[tag.nr], flotte.unavailable).wegenAbwesenheit,
+  );
+  const ich = flotte.my_staff_member_id;
 
   return (
     <ListRow
@@ -359,210 +407,116 @@ function Radzeile({
       titel={rad.name}
       meta={
         <>
-          {/* Nur die Abweichung trägt ein Abzeichen: Verfügbar und im Einsatz
-              sind Normalbetrieb (VOR-13, UX-005i). Unter dem Namen statt
-              rechts daneben - dort steht die Arbeit an der Zeile. */}
-          {rad.status === 'reparatur' ? (
+          {/* Nur die Ausnahme trägt ein Abzeichen (Regel 5). */}
+          {rad.block ? (
             <span className="my-1 block">
-              <Badge ton="kritisch">{radstatusLabels[rad.status]}</Badge>
+              <Badge ton="kritisch">{radzustandLabels.reparatur}</Badge>
             </span>
           ) : null}
-          {depot !== abschnitt ? <span className="block">{depot}</span> : null}
+          {ort !== abschnitt ? <span className="block">{ort}</span> : null}
           <span className="block">
-            {rad.ersatzrad ? (
-              <span>Ersatzrad</span>
-            ) : (
-              <>
-                <span>Stammnutzer:in</span> {stammnutzer || '–'}
-              </>
-            )}
-            {vertretung || (rad.ersatzrad && aktuellerNutzer)
-              ? ` · gefahren von ${aktuellerNutzer}`
-              : ''}
+            {rad.is_spare
+              ? 'Ersatzrad'
+              : rad.regular_rider
+                ? `${rad.regular_rider.name}${rad.planned_weekdays.length > 0 ? ` · ${wochentageKurz(rad.planned_weekdays)}` : ''}`
+                : 'Ohne Stammnutzer:in'}
           </span>
-          {/* Schlüsselstand neutral (VOR-13): Ein ausgegebener Schlüssel ist
-              Alltag, keine Warnung. */}
-          <span className="block">
-            {rad.schluesselInhaber
-              ? `Schlüssel bei ${rad.schluesselInhaber}`
-              : 'Schlüssel im Tresor'}
-            {rad.schluesselSeit ? (
-              <>
-                {' · '}
-                <span>seit {formatZeitpunkt(rad.schluesselSeit, zeitzone)}</span>
-              </>
-            ) : null}
-          </span>
-          {/* Ohne Angabe keine Zeile (UX-005i). */}
-          {ausstattung.length > 0 ? (
+          {freiWeilAbwesend.length > 0 ? (
             <span className="block">
-              {rad.akku}
-              {rad.akku && darfSchluesselcode && rad.schluesselcode ? ' · ' : ''}
-              {darfSchluesselcode && rad.schluesselcode ? (
-                <>
-                  Schlüsselcode <span>{rad.schluesselcode}</span>
-                </>
-              ) : null}
+              Diese Woche frei: {freiWeilAbwesend.map((tag) => tag.kurz).join(', ')} (abwesend)
             </span>
           ) : null}
-          {rad.notiz ? <span className="block">{rad.notiz}</span> : null}
-          {falschesDepot ? (
+          {/* Ein ausgegebener Schlüssel ist Alltag, keine Warnung (VOR-13). */}
+          <span className="block">
+            {rad.key
+              ? `Schlüssel bei ${rad.key.holder_staff_id === ich ? 'Ihnen' : (rad.key.holder_name ?? 'jemandem')} · seit ${formatZeitpunkt(rad.key.taken_at, zone)}`
+              : 'Schlüssel im Tresor'}
+          </span>
+          {!rad.block && rad.open_problems > 0 ? (
             <span className="text-warnung block font-medium">
               <span aria-hidden="true">! </span>
-              Steht nicht im Stammdepot. Gehört zu {depotName(zustand, rad, 'stamm')}.
+              {rad.open_problems === 1
+                ? 'Ein Problem offen'
+                : `${rad.open_problems} Probleme offen`}
+            </span>
+          ) : rad.open_spots > 0 ? (
+            <span className="block">
+              {rad.open_spots === 1 ? 'Eine Stelle offen' : `${rad.open_spots} Stellen offen`}
+            </span>
+          ) : null}
+          {rad.note ? <span className="block">{rad.note}</span> : null}
+          {ausserhalbDesStammdepots(rad) ? (
+            <span className="text-warnung block font-medium">
+              <span aria-hidden="true">! </span>
+              Gehört zu {depotName(flotte.depots, rad.home_depot_id)}.
             </span>
           ) : null}
         </>
       }
       aktion={
-        <>
-          {rad.status === 'reparatur' ? (
-            <Button variant="secondary" onClick={onFreigeben}>
-              Freigeben
-            </Button>
-          ) : null}
-          {rad.schluesselInhaber ? (
-            // Sichtbar „Zurücklegen“, damit dem Namen am Telefon Platz bleibt;
-            // der Name des Knopfs sagt, was zurückgelegt wird.
-            <Button
-              variant="secondary"
-              aria-label="Schlüssel zurücklegen"
-              onClick={onSchluesselZurueck}
-            >
-              Zurücklegen
-            </Button>
-          ) : rad.status === 'reparatur' ? null : (
-            <ButtonLink to={`/betrieb/flotte/schluessel?rad=${rad.id}`} variant="secondary">
-              Entnehmen
-            </ButtonLink>
-          )}
-        </>
+        rad.key ? (
+          // Sichtbar „Zurücklegen“, damit dem Namen Platz bleibt; der Name
+          // des Knopfs sagt, wovon.
+          <Button
+            variant="secondary"
+            aria-label={`Schlüssel von ${rad.name} zurücklegen`}
+            disabled={laeuft}
+            onClick={() => onSchluessel('zuruecklegen')}
+          >
+            Zurücklegen
+          </Button>
+        ) : rad.block ? null : ich ? (
+          <Button
+            variant="secondary"
+            aria-label={`Schlüssel von ${rad.name} nehmen`}
+            disabled={laeuft}
+            onClick={() => onSchluessel('nehmen')}
+          >
+            Schlüssel nehmen
+          </Button>
+        ) : (
+          // Ohne eigenen Mitarbeiterdatensatz trägt der Schlüssel einen
+          // anderen Namen - die Seite fragt danach.
+          <ButtonLink to={`/betrieb/flotte/schluessel?rad=${rad.id}`} variant="secondary">
+            Eintragen
+          </ButtonLink>
+        )
       }
     />
   );
 }
 
 // -----------------------------------------------------------------------------
-// Wochenübersicht und Einstellungen
+// Einstellungen (Praxisinhaber:in)
 // -----------------------------------------------------------------------------
 
 /**
- * Wochenübersicht über alle Räder.
- *
- * Zeigt bewusst immer alle Räder, unabhängig von Suche und Filter: Die Frage
- * „welches Rad ist am Donnerstag frei" lässt sich sonst nicht beantworten,
- * ohne vorher die Filter zurückzusetzen.
- */
-function Wochenuebersicht() {
-  const { zustand } = useVorschau();
-  const wochendaten = wochentagsdaten(zustand.stichtag);
-
-  return (
-    <Klappbereich
-      titel="Wochenübersicht – wer nutzt wann welches Rad"
-      beschreibung={
-        'Zeigt alle Räder, unabhängig von Suche und Filter. „frei*“ heißt: frei, weil die ' +
-        'Stammnutzer:in abwesend ist.'
-      }
-    >
-      {/* Per Tastatur erreichbar und benannt (VOR-02, UIK-24): Am Telefon ist
-          die Tabelle breiter als der Bildschirm, und ohne Fokus ließe sich der
-          rechte Teil nur mit dem Finger verschieben. */}
-      <div
-        className="-mx-4 overflow-x-auto px-4"
-        tabIndex={0}
-        role="region"
-        aria-label="Wochenübersicht Räder"
-      >
-        <table className="w-full min-w-[34rem] border-separate border-spacing-1 text-sm">
-          <thead>
-            <tr>
-              <th
-                scope="col"
-                className="text-ink-muted bg-surface sticky left-0 text-left font-medium"
-              >
-                Rad
-              </th>
-              {wochentage.map((tag) => (
-                <th key={tag} scope="col" className="text-ink-muted font-medium">
-                  {wochentagLabels[tag]}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {zustand.raeder.map((rad) => (
-              <tr key={rad.id}>
-                <th
-                  scope="row"
-                  className="text-ink bg-surface sticky left-0 pr-2 text-left font-medium whitespace-nowrap"
-                >
-                  {rad.name}
-                </th>
-                {wochentage.map((tag) => {
-                  const stand = belegung(zustand, rad, tag, wochendaten);
-                  return (
-                    <td key={tag} className="text-center">
-                      <span
-                        className={`rounded-pill inline-flex min-w-12 justify-center px-2 py-1 text-xs ${belegungsflaeche(
-                          stand.belegt,
-                        )}`}
-                      >
-                        {stand.belegt ? 'belegt' : stand.wegenUrlaub ? 'frei*' : 'frei'}
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Klappbereich>
-  );
-}
-
-/**
- * Standortabhängige Angaben und Check-Up-Fragen.
- *
- * In der Vorlage waren diese Werte direkt änderbar. Hier werden sie zunächst
- * nur angezeigt: Sie stammen aus der Standortvorlage und sind für Tübingen
- * ungeprüft. Eine Bearbeitung, die echte Betriebsanweisungen erzeugt, braucht
- * erst die fachliche Freigabe.
+ * Depots und die Standortvorlage des Pannenablaufs. Die Vorlage bleibt nur
+ * zu lesen: Sie stammt aus Köln und ist für Tübingen ungeprüft (ANN-554,
+ * §15.2); eine änderbare Betriebsanweisung setzt die geprüften Tübinger
+ * Angaben voraus. Zugangscodes stehen nie in der Anwendung.
  */
 function Einstellungen() {
-  const { zustand } = useVorschau();
   const vorlage = aktiveStandortvorlage;
-
   return (
-    <Klappbereich
-      titel="Kontakte, Standortvorlage und Check-Up-Fragen"
-      beschreibung={vorlage.pruefhinweis}
-    >
-      <DataList>
-        <DataRow label="Werkstatt">{vorlage.werkstatt.name}</DataRow>
-        <DataRow label="Telefon">{vorlage.werkstatt.telefon}</DataRow>
-        <DataRow label="Mobil">{vorlage.werkstatt.mobil}</DataRow>
-        <DataRow label="Ruhetag">{vorlage.werkstatt.ruhetag}</DataRow>
-        <DataRow label="Depot">{vorlage.depot.bezeichnung}</DataRow>
-        <DataRow label="Depotzugang">{vorlage.depot.zugangHinweis}</DataRow>
-        <DataRow label="Zuständig bei Panne">{vorlage.zustaendigeRolle}</DataRow>
-        <DataRow label="Meldeweg">{vorlage.meldeweg}</DataRow>
-      </DataList>
-
-      <p className="text-ink mt-4 text-sm font-medium">Check-Up-Fragen</p>
-      <ol className="text-ink-muted mt-1 list-decimal space-y-0.5 pl-5 text-sm">
-        {zustand.checkupfragen.map((frage) => (
-          <li key={frage}>{frage}</li>
-        ))}
-      </ol>
-
-      <p className="text-ink-muted mt-4 text-sm">
-        Diese Angaben sind Platzhalter aus der Kölner Vorlage. Sie sind hier bewusst nicht
-        bearbeitbar: Eine änderbare Betriebsanweisung setzt voraus, dass die Tübinger Angaben
-        fachlich freigegeben sind. Zugangscodes werden grundsätzlich nicht in der Anwendung
-        hinterlegt.
-      </p>
-    </Klappbereich>
+    <Section titel="Einstellungen">
+      <div className="flex flex-col gap-2">
+        <Textlink to="/betrieb/flotte/depots" alleinstehend>
+          Depots verwalten
+        </Textlink>
+        <Disclosure summary="Standortvorlage des Pannenablaufs">
+          <p className="text-ink-muted mb-3 text-sm">{vorlage.pruefhinweis}</p>
+          <DetailList>
+            <DetailRow label="Werkstatt">{vorlage.werkstatt.name}</DetailRow>
+            <DetailRow label="Telefon">{vorlage.werkstatt.telefon}</DetailRow>
+            <DetailRow label="Ruhetag">{vorlage.werkstatt.ruhetag}</DetailRow>
+            <DetailRow label="Depot">{vorlage.depot.bezeichnung}</DetailRow>
+            <DetailRow label="Depotzugang">{vorlage.depot.zugangHinweis}</DetailRow>
+            <DetailRow label="Zuständig bei Panne">{vorlage.zustaendigeRolle}</DetailRow>
+            <DetailRow label="Meldeweg">{vorlage.meldeweg}</DetailRow>
+          </DetailList>
+        </Disclosure>
+      </div>
+    </Section>
   );
 }

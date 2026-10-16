@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { entferneMetadaten } from '../../../src/features/files/metadaten';
-import { jpegVomHandy } from '../../../src/features/files/testbilder';
+import { CHROMIUM_PNG, basis, jpegVomHandy } from '../../../src/features/files/testbilder';
 import { erstelleHandler } from './handler';
 import type { Instanz } from './instanz';
 import { sha256 } from './pruefung';
@@ -207,5 +207,66 @@ describe('patient-file-verify', () => {
       400,
     );
     expect((await lauf(instanz(), anfrage({ attachment_id: 'x' }))).status).toBe(400);
+  });
+
+  it('prueft ein Foto am Rad wie ein Patientenfoto, mit eigenen Datenbankfunktionen (FLT-002)', async () => {
+    const i = instanz({
+      ankuendigung: vi.fn(async () => ({
+        ok: true as const,
+        wert: await ankuendigung({ bucket_id: 'radflotte' }),
+      })),
+    });
+    const { status, rumpf, log } = await lauf(i, anfrage({ photo_id: DATEI }));
+    expect(status).toBe(200);
+    expect(rumpf).toEqual({ ergebnis: 'passed' });
+    expect(i.ankuendigung).toHaveBeenCalledWith(DATEI, PERSON, 'radfoto');
+    expect(i.objekt).toHaveBeenCalledWith('radflotte', SCHLUESSEL);
+    // Keine Tonspurfrage: ein Foto ist kein Video.
+    expect(i.eintragen).toHaveBeenCalledWith(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: true },
+      'radfoto',
+    );
+    expect(log).toEqual([expect.objectContaining({ dateiId: DATEI, klasse: 'passed' })]);
+  });
+
+  it('ein Foto am Rad mit Aufnahmemetadaten oder in einem anderen Format ist ein Befund (ANN-552)', async () => {
+    const handy = jpegVomHandy(6);
+    const png = basis(CHROMIUM_PNG);
+    for (const [bytes, erwartet] of [
+      [handy, { content_type_ok: true, checksum_ok: true, metadata_ok: false }],
+      [png, { content_type_ok: false, checksum_ok: true, metadata_ok: false }],
+    ] as const) {
+      const i = instanz({
+        ankuendigung: vi.fn(async () => ({
+          ok: true as const,
+          wert: await ankuendigung({
+            bucket_id: 'radflotte',
+            byte_size: bytes.length,
+            checksum_sha256: await sha256(bytes),
+          }),
+        })),
+        objekt: vi.fn().mockResolvedValue({ ok: true, wert: bytes }),
+        eintragen: vi.fn().mockResolvedValue({ ok: true, wert: 'rejected' }),
+      });
+      const { rumpf } = await lauf(i, anfrage({ photo_id: DATEI }));
+      expect(rumpf).toEqual({ ergebnis: 'rejected' });
+      expect(i.eintragen).toHaveBeenCalledWith(DATEI, erwartet, 'radfoto');
+    }
+  });
+
+  it('nimmt genau eine Kennung an: Datei, Anhang oder Foto am Rad', async () => {
+    for (const rumpf of [
+      { file_id: DATEI, photo_id: DATEI },
+      { attachment_id: DATEI, photo_id: DATEI },
+      { file_id: DATEI, attachment_id: DATEI, photo_id: DATEI },
+      { photo_id: 'x' },
+      { photo_id: 42 },
+      { photo_id: DATEI, attachment_id: null },
+    ]) {
+      const i = instanz();
+      expect((await lauf(i, anfrage(rumpf))).status, JSON.stringify(rumpf)).toBe(400);
+      expect(i.person).not.toHaveBeenCalled();
+    }
   });
 });

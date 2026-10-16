@@ -138,5 +138,8 @@ export function rueckwegBeschriftung(pfad: string): string {
   // UEB-EPIC-001: die Übungsbibliothek und eine Übung darin.
   if (ohneSuche === '/uebungen') return `Zurück zu den ${BEGRIFFE.uebungen}`;
   if (ohneSuche.startsWith('/uebungen/')) return `Zurück zur ${BEGRIFFE.uebung}`;
+  // FLT-EPIC-001: die Radflotte und ein Rad darin.
+  if (ohneSuche === '/betrieb/flotte') return 'Zurück zur Radflotte';
+  if (/^\/betrieb\/flotte\/rad\/[^/]+$/.test(ohneSuche)) return 'Zurück zum Rad';
   return 'Zurück';
 }
