@@ -14,11 +14,13 @@ vi.mock('./api', async (importOriginal) => ({
   fetchFleet: vi.fn(),
   takeKey: vi.fn(),
   returnKey: vi.fn(),
+  setCheckupInterval: vi.fn(),
 }));
 
 const fetchFleet = vi.mocked(api.fetchFleet);
 const takeKey = vi.mocked(api.takeKey);
 const returnKey = vi.mocked(api.returnKey);
+const setCheckupInterval = vi.mocked(api.setCheckupInterval);
 
 function oeffne(pfad = '/betrieb/flotte') {
   return renderWithProviders(<FleetPage user={testUser(['therapist'])} />, pfad);
@@ -156,5 +158,55 @@ describe('Radflotte', () => {
     expect(liste).not.toBeNull();
     expect(within(liste!).getByText('Lastenrad 4')).toBeInTheDocument();
     expect(screen.queryByText('Lastenrad 1')).toBeNull();
+  });
+
+  it('nennt den fälligen Check-Up als Ausnahme an der Zeile (ANN-570)', async () => {
+    const heute = todayInTimeZone('Europe/Berlin');
+    fetchFleet.mockResolvedValue(
+      testFlotte({
+        bikes: [
+          testRad({ last_checkup_at: `${plusTage(heute, -20)}T08:00:00+00:00` }),
+          testRad({
+            id: 'rad-4',
+            name: 'Lastenrad 4',
+            regular_rider: TIM,
+            last_checkup_at: `${plusTage(heute, -2)}T08:00:00+00:00`,
+          }),
+        ],
+      }),
+    );
+    oeffne();
+    await screen.findByRole('heading', { name: 'Ihr Rad' });
+    expect(screen.getAllByText(/Check-Up fällig seit/)).toHaveLength(1);
+  });
+
+  it('lässt owner den Rhythmus wählen und abschalten (ANN-570)', async () => {
+    const nutzer = userEvent.setup();
+    setCheckupInterval.mockResolvedValue();
+    fetchFleet.mockResolvedValue(testFlotte({ can_manage: true }));
+    oeffne();
+    const rhythmus = await screen.findByRole('combobox', { name: 'Check-Up-Rhythmus' });
+    expect(rhythmus).toHaveValue('14');
+    await nutzer.selectOptions(rhythmus, '21');
+    expect(setCheckupInterval).toHaveBeenCalledWith(21);
+    expect(await screen.findByText('Check-Up-Rhythmus: Alle 3 Wochen.')).toBeInTheDocument();
+    await nutzer.selectOptions(rhythmus, '');
+    expect(setCheckupInterval).toHaveBeenLastCalledWith(null);
+  });
+
+  it('bietet Rhythmus und Meldungen nur, wo der Server sie annimmt', async () => {
+    oeffne();
+    await screen.findByRole('heading', { name: 'Ihr Rad' });
+    expect(screen.queryByRole('combobox', { name: 'Check-Up-Rhythmus' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Meldungen' })).not.toBeInTheDocument();
+  });
+
+  it('führt Inhaber:in und Teamleitung zu den Meldungen (ANN-569)', async () => {
+    fetchFleet.mockResolvedValue(testFlotte({ can_read_reports: true }));
+    oeffne();
+    expect(await screen.findByRole('link', { name: 'Meldungen' })).toHaveAttribute(
+      'href',
+      '/betrieb/flotte/meldungen',
+    );
   });
 });

@@ -38,6 +38,7 @@ export function RadStellvertreter({
       <p data-testid="hinweis">{hinweis}</p>
       <p data-testid="hervorgehoben">{highlight.join(' ')}</p>
       <p data-testid="fokus">{focus ? (focus.preset ?? focus.zones.join(' ')) : ''}</p>
+      <p data-testid="blick">{focus?.view ? focus.view.join(' ') : ''}</p>
       <p data-testid="nadeln">
         {markers.map((nadel) => `${nadel.number}:${nadel.zone}:${nadel.severity}`).join(' ')}
       </p>

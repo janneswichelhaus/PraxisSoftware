@@ -85,6 +85,7 @@ import { KeyPage } from '@/features/fleet/KeyPage';
 import { CheckupPage } from '@/features/fleet/CheckupPage';
 import { BreakdownPage } from '@/features/fleet/BreakdownPage';
 import { WerkstattblattPage } from '@/features/fleet/WerkstattblattPage';
+import { MeldungenPage, MeldungPage } from '@/features/fleet/MeldungenPage';
 import { VacationPage } from '@/features/vacation/VacationPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
@@ -526,6 +527,16 @@ export function AuthenticatedRoutes({
                     <Route path="/betrieb/flotte/schluessel" element={<KeyPage user={user} />} />
                     <Route path="/betrieb/flotte/checkup" element={<CheckupPage user={user} />} />
                     <Route path="/betrieb/flotte/panne" element={<BreakdownPage user={user} />} />
+                    {/* FLT-008 (ANN-569): Check-Ups und Pannen aller Räder für
+                  Inhaber:in und Teamleitung - der Server weist alle anderen ab. */}
+                    <Route
+                      path="/betrieb/flotte/meldungen"
+                      element={<MeldungenPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/flotte/meldungen/:art/:meldungId"
+                      element={<MeldungPage user={user} />}
+                    />
                     <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
                     <Route path="/betrieb/zeitkonto" element={<TimeAccountPage user={user} />} />
                     <Route

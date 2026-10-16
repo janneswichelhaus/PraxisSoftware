@@ -998,7 +998,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-15",
           "nachweis": "FLT-001 bis FLT-004, Branch ccr-658a5e25-l0njkl, Migrationen 20261119100000_flt_001_radflotte.sql und 20261119110000_flt_002_fotos_am_rad.sql, supabase/tests/fleet.test.ts und fleet-photos.test.ts, tests/e2e/radflotte.spec.ts (R1 bis R7) und rad3d.spec.ts, Zweitreview",
-          "vermerk": "Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR"
+          "vermerk": "Auftrag Jannes (15.10.2026), ersetzt die Vorschau; ANN-550 bis ANN-558; Rad im Kalender und weitere Bauarten offen; Sichtung per Bildstrecke im PR. Nachtrag 16.10.: FLT-007 bis FLT-009 (Werbeflächen, Seitenfotos, Meldungen für den Arbeitgeber, Check-Up-Rhythmus; Migration 20261122100000, ANN-568 bis ANN-570)"
         },
         {
           "id": "team-001",

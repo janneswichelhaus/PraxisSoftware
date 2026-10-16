@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+Radflotte (16.10., Branch `claude/employer-bike-checkup-access-th6fya`): Check-Up mit Überschrift
+über den Antworten, Werbeflächen und vier Seitenfotos; Meldungen aller Räder für Inhaber:in und
+Teamleitung; Check-Up-Rhythmus als Hinweis in Übersicht und Kalender (ANN-568 bis ANN-570).
+
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
 Gestaltung, Inhalt unverändert (ANN-567).
@@ -48,5 +52,5 @@ Erstattungen; 11 Teamchat jederzeit dazwischen. Danach ALT-EPIC-002; BEF-146, -1
 
 ## Letzte Session
 
-16.10.2026, Branch `ccr-658a5e25-l0njkl`: Check-Up geführt, ohne Migration. **Lokal:** `git pull`;
-davor kam `20261121100000_bef_124_verordnung_mit_verlauf` (BEF-124, `supabase db reset`).
+16.10.2026, Branch `claude/employer-bike-checkup-access-th6fya`: Migration
+`20261122100000_flt_007_checkup_pflege_meldungen_rhythmus`. **Lokal:** `git pull`, `supabase db reset`.

@@ -56,6 +56,8 @@ export const IDS = Object.freeze({
   rad: 'b2b2b2b2-b2b2-4b2b-8b2b-000000000013',
   /** Lastenrad 1: Annas Stammrad, Schlüssel bei ihr. */
   radAnna: 'b2b2b2b2-b2b2-4b2b-8b2b-000000000011',
+  /** Panne an Lastenrad 3 (gestern, Tim) - eine Meldung für den Arbeitgeber. */
+  panne: 'b2b2b2b2-b2b2-4b2b-8b2b-000000000031',
   /**
    * Eine wohlgeformte Kennung ohne Zeile - für Seiten, zu denen der Seed
    * nichts hat. Bewusst kein Null-UUID: Die Seiten prüfen das Format.
@@ -833,6 +835,20 @@ export const ROUTEN = Object.freeze([
     bereich: 'Organisation',
     etikett: 'Panne melden: Wo ist der Schaden?',
     konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/flotte/meldungen',
+    pfad: '/betrieb/flotte/meldungen',
+    bereich: 'Organisation',
+    etikett: 'Meldungen der Radflotte',
+    konten: ['owner'],
+  },
+  {
+    muster: '/betrieb/flotte/meldungen/:art/:meldungId',
+    pfad: `/betrieb/flotte/meldungen/panne/${IDS.panne}`,
+    bereich: 'Organisation',
+    etikett: 'Meldung: Panne',
+    konten: ['owner'],
   },
   {
     muster: '/betrieb/urlaub',

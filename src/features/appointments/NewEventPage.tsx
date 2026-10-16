@@ -65,6 +65,17 @@ import {
  */
 type Feld = keyof EreignisFormValues;
 
+/**
+ * Ein vorgegebener Zweck aus einem Hinweis, als Titel der Fehlzeit - etwa der
+ * fällige Fahrrad-Check-Up aus dem Kalender (FLT-009, ANN-570). In der
+ * Adresse steht nur der Schlüssel, nie freier Text (ADR-011).
+ */
+const ZWECKE: Readonly<Record<string, string>> = { checkup: 'Fahrrad-Check-Up' };
+
+function titelZumZweck(zweck: string | null): string {
+  return zweck && Object.hasOwn(ZWECKE, zweck) ? (ZWECKE[zweck] ?? '') : '';
+}
+
 const leer: EreignisFormValues = {
   title: '',
   staff_member_ids: [],
@@ -96,6 +107,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
 
   const [werte, setWerte] = useState<EreignisFormValues>(() => ({
     ...leer,
+    title: titelZumZweck(suche.get('zweck')),
     date:
       vorbelegung.datum ??
       (user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : ''),

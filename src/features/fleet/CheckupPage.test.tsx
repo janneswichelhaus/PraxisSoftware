@@ -21,11 +21,24 @@ vi.mock('./api', async (importOriginal) => ({
   fetchFleet: vi.fn(),
   fetchBike: vi.fn(),
   recordCheckup: vi.fn(),
+  uploadFleetPhoto: vi.fn(),
+}));
+
+// Die Kamera gibt es in jsdom nicht: Der Stellvertreter löst mit einem Tipp aus.
+vi.mock('@/features/files/Kameradialog', () => ({
+  Kameradialog: ({ titel, onAufnahme }: { titel: string; onAufnahme: (foto: Blob) => void }) => (
+    <div role="group" aria-label={`Kamera: ${titel}`}>
+      <button type="button" onClick={() => onAufnahme(new Blob([titel], { type: 'image/jpeg' }))}>
+        Auslösen
+      </button>
+    </div>
+  ),
 }));
 
 const fetchFleet = vi.mocked(api.fetchFleet);
 const fetchBike = vi.mocked(api.fetchBike);
 const recordCheckup = vi.mocked(api.recordCheckup);
+const uploadFleetPhoto = vi.mocked(api.uploadFleetPhoto);
 
 const RAD = testRad();
 
@@ -66,6 +79,22 @@ async function fenster(name: string | RegExp) {
   return screen.findByRole('dialog', { name });
 }
 
+/** Nach den zwölf Punkten: Werbeflächen abgewischt, vier Seiten fotografiert (ANN-568). */
+async function reinigenUndFotografieren(nutzer: ReturnType<typeof userEvent.setup>) {
+  await nutzer.click(
+    within(await fenster('Werbeflächen abwischen')).getByRole('button', { name: 'Abgewischt' }),
+  );
+  // Jede Fotoseite öffnet die Kamera selbst.
+  for (const titel of ['Foto von links', 'Foto von vorne', 'Foto von rechts', 'Foto von hinten']) {
+    await fenster(titel);
+    await nutzer.click(
+      within(screen.getByRole('group', { name: `Kamera: ${titel}` })).getByRole('button', {
+        name: 'Auslösen',
+      }),
+    );
+  }
+}
+
 /** Beantwortet die Punkte von `von` bis vor `bis` mit „In Ordnung“. */
 async function inOrdnungBis(nutzer: ReturnType<typeof userEvent.setup>, bis: number, von = 0) {
   for (const item of CHECK_ITEMS.slice(von, bis)) {
@@ -81,6 +110,15 @@ beforeEach(() => {
     testDetail({ bike: RAD, spots: [], checkups: [], breakdowns: [], blocks: [] }),
   );
   recordCheckup.mockResolvedValue({ checkupId: 'checkup-neu', spotIds: ['stelle-neu'] });
+  uploadFleetPhoto.mockResolvedValue('foto-neu');
+  let nummer = 0;
+  vi.stubGlobal(
+    'URL',
+    Object.assign(URL, {
+      createObjectURL: () => `blob:test/${(nummer += 1)}`,
+      revokeObjectURL: () => undefined,
+    }),
+  );
 });
 
 /**
@@ -105,6 +143,7 @@ describe('Geführter Check-Up', () => {
     await pruefeBarrierefreiheit(document.body);
 
     await inOrdnungBis(nutzer, 12);
+    await reinigenUndFotografieren(nutzer);
     const abschluss = await fenster('Alles geprüft?');
     expect(
       within(abschluss).getByText('0 Probleme · 0 zu beobachten · 0 Stellen am Rad markiert'),
@@ -161,6 +200,7 @@ describe('Geführter Check-Up', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Bremse vorne antippen' }));
     await nutzer.click(within(await fenster('Bremsen')).getByRole('button', { name: 'Weiter' }));
     await inOrdnungBis(nutzer, 12, 3);
+    await reinigenUndFotografieren(nutzer);
     const abschluss = within(await fenster('Alles geprüft?'));
     expect(
       abschluss.getByText('1 Problem · 0 zu beobachten · 1 Stelle am Rad markiert'),
@@ -347,6 +387,7 @@ describe('Geführter Check-Up', () => {
     expect(screen.getByTestId('neue-nadel')).toHaveTextContent('2:motor');
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     await inOrdnungBis(nutzer, 12, 4);
+    await reinigenUndFotografieren(nutzer);
 
     // Im Abschluss stehen die schon offenen eingeklappt, auch ohne 3D-Rad.
     const abschluss = within(await fenster('Alles geprüft?'));
@@ -360,6 +401,7 @@ describe('Geführter Check-Up', () => {
     const nutzer = userEvent.setup();
     oeffne();
     await inOrdnungBis(nutzer, 12);
+    await reinigenUndFotografieren(nutzer);
     const abschluss0 = within(await fenster('Alles geprüft?'));
     await nutzer.click(abschluss0.getByText('Notiz, Fotos, weitere Stelle'));
     await nutzer.click(abschluss0.getByRole('button', { name: 'Weitere Stelle markieren' }));
@@ -385,6 +427,7 @@ describe('Geführter Check-Up', () => {
     await nutzer.type(screen.getByLabelText('Was ist aufgefallen?'), 'schleift');
     await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
     await inOrdnungBis(nutzer, 12, 3);
+    await reinigenUndFotografieren(nutzer);
 
     const abschluss = within(await fenster('Alles geprüft?'));
     const speichern = abschluss.getByRole('button', { name: 'Check-Up speichern' });
@@ -408,10 +451,22 @@ describe('Geführter Check-Up', () => {
     expect(eingabe.spots).toEqual([
       { zone: 'bremse-vorne', severity: 'problem', point: [1.05, 0.31, -0.06], note: 'schleift' },
     ]);
+    expect(eingabe.werbeflaechen).toEqual({ wert: 'wiped' });
+    // Die vier Seitenfotos gehen mit ihrer Seite an den neuen Check-Up.
+    expect(
+      uploadFleetPhoto.mock.calls.map(([auftrag]) => [auftrag.checkupId, auftrag.side]),
+    ).toEqual([
+      ['checkup-neu', 'left'],
+      ['checkup-neu', 'front'],
+      ['checkup-neu', 'right'],
+      ['checkup-neu', 'back'],
+    ]);
     expect(await screen.findByTestId('ziel')).toHaveTextContent(
       `/betrieb/flotte/rad/${RAD.id}?bereich=stellen`,
     );
-    expect(screen.getByTestId('ziel-meldung')).toHaveTextContent('Check-Up gespeichert.');
+    expect(screen.getByTestId('ziel-meldung')).toHaveTextContent(
+      'Check-Up gespeichert, mit 4 Fotos.',
+    );
   });
 
   it('schließt ohne Eingaben gleich und fragt mit Eingaben nach', async () => {
@@ -427,6 +482,94 @@ describe('Geführter Check-Up', () => {
     expect(within(frage).getByRole('button', { name: 'Weiter prüfen' })).toBeInTheDocument();
     await nutzer.click(within(frage).getByRole('button', { name: 'Verwerfen' }));
     expect(await screen.findByTestId('ziel')).toHaveTextContent('/betrieb/flotte');
+  });
+
+  it('stellt die Überschrift unter das Rad, direkt über die Antworten (Jannes 2026-10-16)', async () => {
+    oeffne();
+    const erste = await fenster('Reifen und Luftdruck');
+    const ueberschrift = within(erste).getByRole('heading', { name: 'Reifen und Luftdruck' });
+    const rad = screen.getByTestId('fokus');
+    const antwort = within(erste).getByRole('button', { name: 'In Ordnung' });
+    // In der Reihenfolge des Dokuments: Rad, Überschrift, Antwort.
+    expect(
+      rad.compareDocumentPosition(ueberschrift) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      ueberschrift.compareDocumentPosition(antwort) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('verlangt nach den zwölf Punkten die Werbeflächen, mit Grund, wenn es nicht ging (ANN-568)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 12);
+    const werbung = within(await fenster('Werbeflächen abwischen'));
+    expect(werbung.getByText('Reinigung')).toBeInTheDocument();
+    expect(werbung.getByRole('status')).toHaveTextContent('Transportbox: ✓ In Ordnung');
+    expect(screen.getByTestId('hervorgehoben')).toHaveTextContent('transportbox');
+    await pruefeBarrierefreiheit(document.body);
+    await nutzer.click(werbung.getByRole('button', { name: 'Nicht möglich' }));
+    await nutzer.click(werbung.getByRole('button', { name: 'Weiter' }));
+    expect(werbung.getByText('Bitte kurz den Grund nennen.')).toBeInTheDocument();
+    await nutzer.type(werbung.getByLabelText('Warum nicht?'), 'Kein Tuch im Depot');
+    await nutzer.click(werbung.getByRole('button', { name: 'Weiter' }));
+
+    const links = within(await fenster('Foto von links'));
+    expect(links.getByText('Foto 1 von 4')).toBeInTheDocument();
+    expect(links.getByRole('status')).toHaveTextContent(
+      'Werbeflächen: Nicht möglich: Kein Tuch im Depot',
+    );
+  });
+
+  it('verlangt ein Foto von jeder Seite; „← Zurück“ zeigt es mit „Neu aufnehmen“ (ANN-568)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 12);
+    await nutzer.click(
+      within(await fenster('Werbeflächen abwischen')).getByRole('button', { name: 'Abgewischt' }),
+    );
+    const links = within(await fenster('Foto von links'));
+    // Die Kamera ist gleich offen; abgebrochen bleibt nur „Foto aufnehmen“ - kein Weiter.
+    expect(screen.getByRole('group', { name: 'Kamera: Foto von links' })).toBeInTheDocument();
+    // Das Rad zeigt sich von links (θ 180°).
+    expect(screen.getByTestId('blick')).toHaveTextContent(/^180 82/);
+    expect(links.queryByRole('button', { name: 'Weiter' })).not.toBeInTheDocument();
+    expect(links.getByRole('button', { name: 'Foto aufnehmen' })).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Auslösen' }));
+
+    const vorne = within(await fenster('Foto von vorne'));
+    expect(vorne.getByRole('status')).toHaveTextContent('Foto von links: aufgenommen');
+    await nutzer.click(vorne.getByRole('button', { name: '← Zurück' }));
+    const wieder = within(await fenster('Foto von links'));
+    expect(wieder.getByRole('img', { name: 'Foto von links, aufgenommen' })).toBeInTheDocument();
+    // Mit Foto öffnet sich die Kamera nicht von selbst.
+    expect(screen.queryByRole('group', { name: /^Kamera/ })).not.toBeInTheDocument();
+    expect(wieder.getByRole('button', { name: 'Neu aufnehmen' })).toBeInTheDocument();
+    await nutzer.click(wieder.getByRole('button', { name: 'Weiter' }));
+    expect(await fenster('Foto von vorne')).toBeInTheDocument();
+  });
+
+  it('zeigt Werbeflächen und Seitenfotos im Abschluss, je mit „Ändern“', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 12);
+    await reinigenUndFotografieren(nutzer);
+    const abschluss = within(await fenster('Alles geprüft?'));
+    const liste = abschluss.getByRole('list', { name: 'Reinigung und Fotos' });
+    expect(liste).toHaveTextContent('WerbeflächenAbgewischt');
+    expect(within(liste).getAllByText('Aufgenommen')).toHaveLength(4);
+    await nutzer.click(abschluss.getByRole('button', { name: 'Werbeflächen ändern' }));
+    await nutzer.click(
+      within(await fenster('Werbeflächen abwischen')).getByRole('button', {
+        name: 'Nicht möglich',
+      }),
+    );
+    await nutzer.type(screen.getByLabelText('Warum nicht?'), 'Tuch leer');
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    // Zurück im Abschluss, nicht bei den Fotos.
+    expect(
+      within(await fenster('Alles geprüft?')).getByRole('list', { name: 'Reinigung und Fotos' }),
+    ).toHaveTextContent('Nicht möglich: Tuch leer');
   });
 
   it('beginnt ohne Rad mit der Wahl, das eigene vorbelegt, nie übersprungen (VOR-18)', async () => {

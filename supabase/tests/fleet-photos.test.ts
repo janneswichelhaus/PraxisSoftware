@@ -65,7 +65,7 @@ const LISTE = 'select * from public.list_fleet_photos($1::uuid)';
 const LOESCHEN = 'select public.delete_fleet_photo($1::uuid)';
 const ANKUENDIGUNG = 'select * from public.fleet_photo_for_verification($1::uuid, $2::uuid)';
 const CHECKUP =
-  'select public.record_fleet_checkup($1::uuid, $2::jsonb, $3, $4::jsonb, $5::boolean) as daten';
+  "select public.record_fleet_checkup($1::uuid, $2::jsonb, $3, $4::jsonb, $5::boolean, 'wiped', null) as daten";
 const PANNE =
   'select public.record_fleet_breakdown($1::uuid, $2, $3, $4, $5, $6, $7::jsonb) as daten';
 
@@ -988,6 +988,7 @@ describe('Fotos am Rad (FLT-002)', () => {
         'created_at',
         'id',
         'may_delete',
+        'side',
         'spot_id',
         'verified',
       ]);

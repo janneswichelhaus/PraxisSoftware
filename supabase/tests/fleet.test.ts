@@ -48,7 +48,7 @@ const RAD = `select public.get_fleet_bike($1::uuid) as daten`;
 const WERKSTATT = `select public.get_fleet_workshop_sheet($1::uuid) as daten`;
 const RAD_SPEICHERN = `select public.save_fleet_bike($1::uuid, $2, $3, $4::uuid, $5::uuid, $6, $7::boolean,
   $8::uuid, $9::smallint[], $10, $11, $12::timestamptz) as id`;
-const CHECKUP = `select public.record_fleet_checkup($1::uuid, $2::jsonb, $3, $4::jsonb, $5::boolean) as daten`;
+const CHECKUP = `select public.record_fleet_checkup($1::uuid, $2::jsonb, $3, $4::jsonb, $5::boolean, 'wiped', null) as daten`;
 const PANNE = `select public.record_fleet_breakdown($1::uuid, $2, $3, $4, $5, $6, $7::jsonb) as daten`;
 
 interface Fehler {

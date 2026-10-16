@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Dialogfenster, Fenstertitel } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Medienbild } from '@/components/ui/Medienbild';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
@@ -19,12 +20,14 @@ import {
   useTextverlustschutz,
   type Verlustschutztexte,
 } from '@/features/documentation/Textverlustschutz';
+import { Kameradialog } from '@/features/files/Kameradialog';
 import type { CurrentUser } from '@/features/session/types';
 import { FLOTTE_SCHLUESSEL, recordCheckup, type BikeDetail } from './api';
 import { BikeModel3D, type BikeFocus } from './bike3d/BikeModel3D';
 import {
   CHECK_ITEMS,
   CHECK_ITEM_VIEWS,
+  ZONE_KEYS,
   bikeTypeLabels,
   checkRatingLabels,
   isZoneKey,
@@ -40,23 +43,33 @@ import {
 import {
   ABSCHLUSS,
   BEISPIEL,
-  PRUEFPUNKTE,
+  SCHRITTE,
+  SEITEN,
   START,
+  WERBUNG,
+  alleSeiten,
   bewertungen,
   einzigesBauteil,
   fortschritt,
+  fotoSeite,
+  nachDemFoto,
   nachDerAntwort,
+  nachDerWerbung,
   punktSeite,
   vorigeSeite,
   wasSeite,
+  werbeflaechenText,
   zusammenfassung,
   type Antwort,
   type Antworten,
   type Seite,
+  type Seitenfotos,
   type Teil,
+  type Werbeflaechen,
 } from './checkupablauf';
 import { fotoText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
 import { Fotovormerkung } from './Fotovormerkung';
+import { useObjektadressen } from './objektadressen';
 import { Einstufung, Nadel, Nadelform } from './Nadel';
 import { Entwurfsfeld, SchonOffen } from './Stellenerfassung';
 import { nummerDerStelle, radBild, useStellenerfassung, type Stelle } from './stellen';
@@ -82,6 +95,11 @@ import { nummerDerStelle, radBild, useStellenerfassung, type Stelle } from './st
  * Bewertungen, Notizen, Stellen und Fotos, erst mit dem Haken. Neu ist nur,
  * dass kein Punkt mehr auf „In Ordnung“ vorbelegt ist - jeder wird bestätigt.
  * Wer einen Punkt neu bewertet, ersetzt dessen neue Stelle.
+ *
+ * Nach den zwölf Punkten (FLT-007, ANN-568): jede Werbefläche abwischen -
+ * oder sagen, warum es nicht ging - und je ein Foto von links, vorne, rechts
+ * und hinten. Die Überschrift steht unter dem Rad, direkt über den Antworten
+ * (Jannes 2026-10-16); oben bleiben Rad und „Check-Up abbrechen“.
  */
 export function CheckupFenster({
   detail,
@@ -109,15 +127,13 @@ export function CheckupFenster({
   // Ein Tipp auf ein Bauteil, das zu einem anderen Punkt gehört.
   const [fremd, setFremd] = useState<string | null>(null);
   // Was zuletzt beantwortet wurde - sichtbar auf der Seite danach.
-  const [quittung, setQuittung] = useState<{
-    fuer: number;
-    label: string;
-    rating: CheckRating;
-  } | null>(null);
+  const [quittung, setQuittung] = useState<{ fuer: string; inhalt: ReactNode } | null>(null);
   const [gesperrt, setGesperrt] = useState(false);
   const sperre = useRef<number | undefined>(undefined);
   const [notiz, setNotiz] = useState('');
   const [weitereFotos, setWeitereFotos] = useState<Blob[]>([]);
+  const [werbeflaechen, setWerbeflaechen] = useState<Werbeflaechen | null>(null);
+  const [seitenfotos, setSeitenfotos] = useState<Seitenfotos>({});
   const [bestaetigt, setBestaetigt] = useState(false);
   const [ausstehend, setAusstehend] = useState<{
     auftraege: Fotoauftrag[];
@@ -137,6 +153,8 @@ export function CheckupFenster({
       entwurf !== null ||
       notiz.trim() !== '' ||
       weitereFotos.length > 0 ||
+      werbeflaechen !== null ||
+      Object.keys(seitenfotos).length > 0 ||
       bestaetigt);
   const { freigeben, schutz } = useTextverlustschutz({
     ungespeichert,
@@ -176,6 +194,7 @@ export function CheckupFenster({
           point: stelle.point,
           note: stelle.note,
         })),
+        werbeflaechen: werbeflaechen ?? { wert: 'wiped' },
       });
       const auftraege: Fotoauftrag[] = [
         ...stellen.flatMap((stelle: Stelle, index) =>
@@ -185,6 +204,12 @@ export function CheckupFenster({
             foto,
           })),
         ),
+        ...SEITEN.flatMap((seite) => {
+          const foto = seitenfotos[seite.key];
+          return foto
+            ? [{ spotId: null, checkupId: ergebnis.checkupId, side: seite.key, foto }]
+            : [];
+        }),
         ...weitereFotos.map((foto) => ({ spotId: null, checkupId: ergebnis.checkupId, foto })),
       ].filter((auftrag) => auftrag.spotId !== null || auftrag.checkupId !== null);
       const uebertragung = await uebertrageFotos(auftraege);
@@ -226,7 +251,8 @@ export function CheckupFenster({
     setFremd(null);
     const andererOrt =
       neu.art !== seite.art ||
-      (neu.art === 'punkt' && seite.art === 'punkt' && neu.index !== seite.index);
+      (neu.art === 'punkt' && seite.art === 'punkt' && neu.index !== seite.index) ||
+      (neu.art === 'foto' && seite.art === 'foto' && neu.index !== seite.index);
     if (andererOrt) setFokus((vorher) => fokusFuer(neu, vorher.token + 1));
     if (neu.art === 'abschluss') setZurUebersicht(false);
     setSeite(neu);
@@ -264,8 +290,40 @@ export function CheckupFenster({
 
   /** Die Antwort steht, die nächste Seite sagt es. */
   function weiter(index: number, rating: CheckRating) {
-    setQuittung({ fuer: index + 1, label: CHECK_ITEMS[index]!.label, rating });
-    gehe(nachDerAntwort(index, zurUebersicht));
+    const ziel = nachDerAntwort(index, zurUebersicht);
+    setQuittung({
+      fuer: seitenSchluessel(ziel),
+      inhalt: (
+        <>
+          {CHECK_ITEMS[index]!.label}: <Bewertungswort rating={rating} />
+        </>
+      ),
+    });
+    gehe(ziel);
+  }
+
+  function werbungFertig(wert: Werbeflaechen) {
+    setWerbeflaechen(wert);
+    const ziel = nachDerWerbung(zurUebersicht);
+    setQuittung({
+      fuer: seitenSchluessel(ziel),
+      inhalt: `Werbeflächen: ${werbeflaechenText(wert)}`,
+    });
+    gehe(ziel);
+  }
+
+  /** Ein Foto steht, die nächste Seite sagt es; „← Zurück“ zeigt es wieder. */
+  function fotoAufgenommen(index: number, foto: Blob) {
+    const seiteDesRads = SEITEN[index]!;
+    setSeitenfotos((vorher) => ({ ...vorher, [seiteDesRads.key]: foto }));
+    const ziel = nachDemFoto(index, zurUebersicht);
+    setQuittung({ fuer: seitenSchluessel(ziel), inhalt: `${seiteDesRads.titel}: aufgenommen` });
+    gehe(ziel);
+  }
+
+  function fotoWeiter(index: number) {
+    setQuittung(null);
+    gehe(nachDemFoto(index, zurUebersicht));
   }
 
   function inOrdnung(index: number) {
@@ -303,7 +361,15 @@ export function CheckupFenster({
   }
 
   function amRad(treffer: BikePick | null) {
-    if (!treffer || !isZoneKey(treffer.zone) || seite.art === 'abschluss') return;
+    if (
+      !treffer ||
+      !isZoneKey(treffer.zone) ||
+      seite.art === 'abschluss' ||
+      seite.art === 'werbung' ||
+      seite.art === 'foto'
+    ) {
+      return;
+    }
     if (seite.art === 'weitere') {
       erfassung.tippen(treffer);
       return;
@@ -379,14 +445,15 @@ export function CheckupFenster({
     weiter(index, rating);
   }
 
-  function aendern(index: number) {
+  /** Aus dem Abschluss einen Schritt ändern - danach geht es dorthin zurück. */
+  function aendern(ziel: Seite) {
     setZurUebersicht(true);
     erfassung.verwerfen();
     setVorlaeufig(null);
     setQuittung(null);
     setFremd(null);
-    setFokus((vorher) => fokusFuer(punktSeite(index), vorher.token + 1));
-    setSeite(punktSeite(index));
+    setFokus((vorher) => fokusFuer(ziel, vorher.token + 1));
+    setSeite(ziel);
     sperren();
   }
 
@@ -427,9 +494,11 @@ export function CheckupFenster({
       ? seite.teil === 'was' && entwurf?.zone
         ? [entwurf.zone]
         : zonenDesPunkts
-      : entwurf?.zone
-        ? [entwurf.zone]
-        : [];
+      : seite.art === 'werbung'
+        ? ['transportbox']
+        : entwurf?.zone
+          ? [entwurf.zone]
+          : [];
   const hinweis = fremd
     ? `${zoneLabel(fremd)}: anderer Prüfpunkt`
     : seite.art === 'punkt'
@@ -444,22 +513,31 @@ export function CheckupFenster({
         ? entwurf
           ? 'Andere Stelle? Antippen'
           : 'Bauteil am Rad antippen'
-        : 'Ziehen dreht das Rad';
-  const titel =
-    seite.art === 'punkt'
+        : seite.art === 'foto'
+          ? `So ungefähr: ${SEITEN[seite.index]!.label}`
+          : 'Ziehen dreht das Rad';
+  const titel = ausstehend
+    ? 'Check-Up gespeichert'
+    : seite.art === 'punkt'
       ? punkt!.label
       : seite.art === 'weitere'
         ? 'Weitere Stelle'
-        : ausstehend
-          ? 'Check-Up gespeichert'
-          : 'Alles geprüft?';
+        : seite.art === 'werbung'
+          ? 'Werbeflächen abwischen'
+          : seite.art === 'foto'
+            ? SEITEN[seite.index]!.titel
+            : 'Alles geprüft?';
   const stand = fortschritt(seite);
   const ansage =
     seite.art === 'abschluss'
       ? `Abschluss: ${zusammenfassung(bewertet, stellen)}`
       : seite.art === 'punkt'
         ? `${stand.text}: ${titel}${seite.teil === 'wo' ? ', wo genau?' : seite.teil === 'was' ? ', was ist aufgefallen?' : ''}`
-        : titel;
+        : seite.art === 'foto'
+          ? `${stand.text}: ${titel}`
+          : titel;
+  const quittungHier =
+    quittung && quittung.fuer === seitenSchluessel(seite) ? quittung.inhalt : null;
 
   // Bühne und Fragefläche teilen sich die Höhe des Fensters. Auf den Fragen
   // bekommt das Rad den Rest; im Abschluss rollt die Zusammenfassung, Haken
@@ -483,6 +561,7 @@ export function CheckupFenster({
       beschreibung={`${bike.name} · ${bikeTypeLabels[bike.bike_type].kurz}`}
       onSchliessen={() => void navigate(zurueck)}
       schliessenBeschriftung="Check-Up abbrechen"
+      titelImInhalt
     >
       <p className="sr-only" aria-live="polite">
         {ansage}
@@ -496,7 +575,7 @@ export function CheckupFenster({
           ) : null}
           <p className="text-ink-muted ml-auto text-sm">{stand.text}</p>
         </div>
-        <ProgressBar wert={stand.wert} von={PRUEFPUNKTE} />
+        <ProgressBar wert={stand.wert} von={SCHRITTE} />
       </div>
       {/* Die Rückfrage vor dem Weggehen, gleich unter dem Kopf: dort, wo
           „Check-Up abbrechen“ liegt, und auf jeder Seite ohne Rollen. */}
@@ -506,7 +585,7 @@ export function CheckupFenster({
         <div className={`flex-col px-4 pt-3 pb-2 lg:p-4 ${buehne}`}>
           <BikeModel3D
             hoehe="100%"
-            ansichten={seite.art !== 'punkt'}
+            ansichten={seite.art === 'abschluss' || seite.art === 'weitere'}
             ersatz="Alle Schritte gehen auch über die Knöpfe."
             markers={markers}
             draft={draft}
@@ -523,6 +602,17 @@ export function CheckupFenster({
             gesperrt ? 'pointer-events-none' : ''
           }`.trim()}
         >
+          {/* Die Überschrift unter dem Rad, direkt über den Antworten - wo der
+              Daumen ist und der Blick als Nächstes hinwill (Jannes 2026-10-16). */}
+          {abschlussZeigen ? (
+            <div className="shrink-0 px-4 pt-3 lg:pt-4">
+              <Fenstertitel />
+            </div>
+          ) : (
+            <div className="mb-3">
+              <Fenstertitel />
+            </div>
+          )}
           {ausstehend ? (
             <div className="flex flex-col gap-4">
               <Rueckmeldung>Check-Up gespeichert.</Rueckmeldung>
@@ -554,7 +644,7 @@ export function CheckupFenster({
                 stelle,
                 nummer: nummerVon(stelle.key),
               }))}
-              quittung={quittung && quittung.fuer === seite.index ? quittung : null}
+              quittung={quittungHier}
               verlust={verlust(punkt!.key)}
               erfassung={erfassung}
               aktivNummer={aktivNummer}
@@ -568,6 +658,22 @@ export function CheckupFenster({
                 setVorlaeufig((vorher) => ({ rating: 'problem', note: '', ...vorher, ...teil }))
               }
               onWeiter={() => weiterNachWas(seite.index)}
+            />
+          ) : seite.art === 'werbung' ? (
+            <Werbungsseite
+              key="werbung"
+              quittung={quittungHier}
+              bisher={werbeflaechen}
+              onFertig={werbungFertig}
+            />
+          ) : seite.art === 'foto' ? (
+            <Fotoseite
+              key={`foto-${seite.index}`}
+              index={seite.index}
+              quittung={quittungHier}
+              foto={seitenfotos[SEITEN[seite.index]!.key] ?? null}
+              onAufnahme={(foto) => fotoAufgenommen(seite.index, foto)}
+              onWeiter={() => fotoWeiter(seite.index)}
             />
           ) : seite.art === 'weitere' ? (
             entwurf ? (
@@ -622,6 +728,8 @@ export function CheckupFenster({
               onNotiz={setNotiz}
               weitereFotos={weitereFotos}
               onWeitereFotos={setWeitereFotos}
+              werbeflaechen={werbeflaechen}
+              seitenfotos={seitenfotos}
               bestaetigt={bestaetigt}
               onBestaetigt={setBestaetigt}
               onAendern={aendern}
@@ -667,7 +775,15 @@ function fokusFuer(seite: Seite, token: number): BikeFocus {
     const ansicht = CHECK_ITEM_VIEWS[item.key];
     return { zones: zonesOfCheckItem(item.key), ...(ansicht ? { view: ansicht } : {}), token };
   }
+  if (seite.art === 'werbung') return { zones: ['transportbox'], token };
+  // Das ganze Rad von der Seite, die fotografiert wird.
+  if (seite.art === 'foto') return { zones: ZONE_KEYS, view: SEITEN[seite.index]!.blick, token };
   return { zones: [], preset: 'schraeg', token };
+}
+
+/** Schlüssel einer Seite des Ablaufs - wohin eine Quittung gehört. */
+function seitenSchluessel(seite: Seite): string {
+  return seite.art === 'punkt' || seite.art === 'foto' ? `${seite.art}-${seite.index}` : seite.art;
 }
 
 /** „ „Belag schleift“ mit einem Foto“ - was eine Stelle mitbringt. */
@@ -773,7 +889,7 @@ function Punktseite({
   bewertung: CheckRating | undefined;
   notizOhneStelle: string;
   neueStellen: readonly { stelle: Stelle; nummer: number }[];
-  quittung: { label: string; rating: CheckRating } | null;
+  quittung: ReactNode;
   verlust: string | null;
   erfassung: ReturnType<typeof useStellenerfassung>;
   aktivNummer: number;
@@ -809,11 +925,7 @@ function Punktseite({
       <div className="flex flex-col gap-3">
         {/* Was gerade notiert wurde: Wer zu schnell weitergetippt hat, sieht
             es hier, nicht erst im Abschluss. */}
-        {quittung ? (
-          <Statusmeldung>
-            {quittung.label}: <Bewertungswort rating={quittung.rating} />
-          </Statusmeldung>
-        ) : null}
+        {quittung ? <Statusmeldung>{quittung}</Statusmeldung> : null}
         <p className="text-ink-muted text-sm">{zonen.map((zone) => zoneLabel(zone)).join(' · ')}</p>
         {/* Schon offen aus früheren Meldungen - sie bleiben offen, bis die
             Teamleitung freigibt (ANN-555) - und was dieser Check-Up am Punkt
@@ -939,6 +1051,146 @@ function Punktseite({
   );
 }
 
+/**
+ * Werbeflächen abwischen (FLT-007, ANN-568): „Abgewischt“ führt weiter;
+ * „Nicht möglich“ fragt nach dem Grund - der Arbeitgeber sieht ihn in den
+ * Meldungen, statt dass der Check-Up an einem fehlenden Tuch hängt.
+ */
+function Werbungsseite({
+  quittung,
+  bisher,
+  onFertig,
+}: {
+  quittung: ReactNode;
+  bisher: Werbeflaechen | null;
+  onFertig: (wert: Werbeflaechen) => void;
+}) {
+  const [nichtMoeglich, setNichtMoeglich] = useState(bisher?.wert === 'not_possible');
+  const [grund, setGrund] = useState(bisher?.wert === 'not_possible' ? bisher.grund : '');
+  const [fehlt, setFehlt] = useState(false);
+
+  if (nichtMoeglich) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Field
+          label="Warum nicht?"
+          placeholder="z. B. kein Tuch im Depot"
+          hint="Keine Angaben zu Patient:innen."
+          maxLength={200}
+          value={grund}
+          error={fehlt ? 'Bitte kurz den Grund nennen.' : undefined}
+          onChange={(event) => {
+            setGrund(event.target.value);
+            setFehlt(false);
+          }}
+          data-autofocus
+        />
+        <Button
+          className="w-full"
+          onClick={() => {
+            if (!grund.trim()) setFehlt(true);
+            else onFertig({ wert: 'not_possible', grund: grund.trim() });
+          }}
+        >
+          Weiter
+        </Button>
+        <Button variant="quiet" groesse="kompakt" onClick={() => setNichtMoeglich(false)}>
+          Doch abgewischt
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {quittung ? <Statusmeldung>{quittung}</Statusmeldung> : null}
+      <p className="text-ink">
+        Jede Werbefläche mit einem Desinfektions- oder Reinigungstuch abwischen.
+      </p>
+      <Button
+        className="w-full"
+        aria-pressed={bisher?.wert === 'wiped'}
+        onClick={() => onFertig({ wert: 'wiped' })}
+        data-autofocus
+      >
+        {bisher?.wert === 'wiped' ? <span aria-hidden="true">✓ </span> : null}
+        Abgewischt
+      </Button>
+      <Button variant="secondary" className="w-full" onClick={() => setNichtMoeglich(true)}>
+        Nicht möglich
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Ein Foto von einer Seite des Rads (FLT-007, ANN-568): Pflicht, eines je
+ * Seite. Ohne Foto öffnet die Seite die Kamera gleich selbst - am Lenker mit
+ * Handschuh zählt jeder Tipp; „Foto verwenden“ führt zur nächsten Seite.
+ * „← Zurück“ zeigt das Foto wieder, mit „Neu aufnehmen“. Über den
+ * Kameradialog der Anwendung, nur im Arbeitsspeicher bis zum Speichern
+ * (ANN-552).
+ */
+function Fotoseite({
+  index,
+  quittung,
+  foto,
+  onAufnahme,
+  onWeiter,
+}: {
+  index: number;
+  quittung: ReactNode;
+  foto: Blob | null;
+  onAufnahme: (foto: Blob) => void;
+  onWeiter: () => void;
+}) {
+  const seite = SEITEN[index]!;
+  const [kamera, setKamera] = useState(() => foto === null);
+  // Eine feste Liste je Foto - sonst entstünde bei jedem Zeichnen eine neue Adresse.
+  const liste = useMemo(() => (foto ? [foto] : []), [foto]);
+  const [adresse] = useObjektadressen(liste);
+
+  return (
+    <div className="flex flex-col gap-3">
+      {quittung ? <Statusmeldung>{quittung}</Statusmeldung> : null}
+      {foto ? (
+        <>
+          <Medienbild
+            vorschau
+            einpassen="fuellen"
+            src={adresse ?? null}
+            alt={`${seite.titel}, aufgenommen`}
+          />
+          <Button className="w-full" onClick={onWeiter} data-autofocus>
+            Weiter
+          </Button>
+          <Button variant="secondary" className="w-full" onClick={() => setKamera(true)}>
+            Neu aufnehmen
+          </Button>
+        </>
+      ) : (
+        <>
+          <p className="text-ink">Das ganze Rad im Bild, keine Personen.</p>
+          <Button className="w-full" onClick={() => setKamera(true)} data-autofocus>
+            Foto aufnehmen
+          </Button>
+        </>
+      )}
+      {kamera ? (
+        <Kameradialog
+          titel={seite.titel}
+          hinweis="Nur das Rad fotografieren – keine Personen, keine Hausnummern, keine Unterlagen."
+          onAufnahme={(aufnahme) => {
+            setKamera(false);
+            onAufnahme(aufnahme);
+          }}
+          onSchliessen={() => setKamera(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 function Abschluss({
   user,
   bewertet,
@@ -950,6 +1202,8 @@ function Abschluss({
   onNotiz,
   weitereFotos,
   onWeitereFotos,
+  werbeflaechen,
+  seitenfotos,
   bestaetigt,
   onBestaetigt,
   onAendern,
@@ -969,9 +1223,11 @@ function Abschluss({
   onNotiz: (text: string) => void;
   weitereFotos: Blob[];
   onWeitereFotos: (fotos: Blob[]) => void;
+  werbeflaechen: Werbeflaechen | null;
+  seitenfotos: Seitenfotos;
   bestaetigt: boolean;
   onBestaetigt: (an: boolean) => void;
-  onAendern: (index: number) => void;
+  onAendern: (seite: Seite) => void;
   onStelleAendern: (key: string) => void;
   onWeitereStelle: () => void;
   fehler: string | null;
@@ -1034,7 +1290,7 @@ function Abschluss({
                         variant="secondary"
                         groesse="kompakt"
                         aria-label={`${item.label} ändern`}
-                        onClick={() => onAendern(index)}
+                        onClick={() => onAendern(punktSeite(index))}
                       >
                         Ändern
                       </Button>
@@ -1089,7 +1345,7 @@ function Abschluss({
                         variant="secondary"
                         groesse="kompakt"
                         aria-label={`${item.label} ändern`}
-                        onClick={() => onAendern(index)}
+                        onClick={() => onAendern(punktSeite(index))}
                       >
                         Ändern
                       </Button>
@@ -1099,6 +1355,32 @@ function Abschluss({
               </ListRows>
             </Disclosure>
           ) : null}
+
+          {/* Werbeflächen und die vier Seitenfotos (ANN-568), je mit „Ändern“. */}
+          <ListRows rahmen={false} beschriftung="Reinigung und Fotos">
+            <ListRow
+              titel="Werbeflächen"
+              meta={werbeflaechen ? werbeflaechenText(werbeflaechen) : 'Fehlt noch'}
+              aktion={
+                <Button
+                  variant="secondary"
+                  groesse="kompakt"
+                  aria-label="Werbeflächen ändern"
+                  onClick={() => onAendern(WERBUNG)}
+                >
+                  Ändern
+                </Button>
+              }
+            />
+            {SEITEN.map((seite, index) => (
+              <SeitenfotoZeile
+                key={seite.key}
+                titel={seite.titel}
+                foto={seitenfotos[seite.key] ?? null}
+                onAendern={() => onAendern(fotoSeite(index))}
+              />
+            ))}
+          </ListRows>
 
           {/* Ohne 3D-Rad die einzige Stelle, an der sie stehen. */}
           <SchonOffen offene={offene} />
@@ -1155,7 +1437,7 @@ function Abschluss({
         <Formularfuss dicht>
           <Button
             onClick={onSpeichern}
-            disabled={!bestaetigt || speichert}
+            disabled={!bestaetigt || speichert || !werbeflaechen || !alleSeiten(seitenfotos)}
             aria-describedby={!bestaetigt ? 'checkup-fehlt' : undefined}
           >
             {speichert ? 'Wird gespeichert …' : 'Check-Up speichern'}
@@ -1163,5 +1445,41 @@ function Abschluss({
         </Formularfuss>
       </div>
     </>
+  );
+}
+
+/** Ein Seitenfoto im Abschluss: klein, mit „Ändern“. */
+function SeitenfotoZeile({
+  titel,
+  foto,
+  onAendern,
+}: {
+  titel: string;
+  foto: Blob | null;
+  onAendern: () => void;
+}) {
+  // Eine feste Liste je Foto - sonst entstünde bei jedem Zeichnen eine neue Adresse.
+  const liste = useMemo(() => (foto ? [foto] : []), [foto]);
+  const [adresse] = useObjektadressen(liste);
+  return (
+    <ListRow
+      zeit={
+        foto ? (
+          <Medienbild vorschau einpassen="fuellen" src={adresse ?? null} alt={titel} />
+        ) : undefined
+      }
+      titel={titel}
+      meta={foto ? 'Aufgenommen' : 'Fehlt noch'}
+      aktion={
+        <Button
+          variant="secondary"
+          groesse="kompakt"
+          aria-label={`${titel} ändern`}
+          onClick={onAendern}
+        >
+          Ändern
+        </Button>
+      }
+    />
   );
 }

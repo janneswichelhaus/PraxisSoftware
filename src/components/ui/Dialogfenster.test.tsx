@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from './Button';
-import { Dialogfenster, Hinweisfenster } from './Dialogfenster';
+import { Dialogfenster, Fenstertitel, Hinweisfenster } from './Dialogfenster';
 
 /**
  * Das Fenster über dem Inhalt (FIX-016, ANN-058): Es darf niemandem etwas
@@ -53,6 +53,35 @@ describe('Dialogfenster', () => {
     expect(screen.getByRole('button', { name: 'In Ordnung' })).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Check-Up abbrechen' }));
     expect(onSchliessen).toHaveBeenCalledTimes(1);
+  });
+
+  it('stellt mit titelImInhalt die Überschrift in den Inhalt und benennt das Fenster nach ihr (FLT-007)', () => {
+    render(
+      <Dialogfenster
+        titel="Speichen"
+        onSchliessen={() => undefined}
+        vollbild
+        titelImInhalt
+        beschreibung="Lastenrad 1 · Load 60 · Riemenantrieb"
+      >
+        <p>Rad</p>
+        <Fenstertitel />
+        <Button type="button">In Ordnung</Button>
+      </Dialogfenster>,
+    );
+    const fenster = screen.getByRole('dialog', { name: 'Speichen' });
+    const ueberschrift = within(fenster).getByRole('heading', { name: 'Speichen' });
+    // Die Kopfzeile trägt nur noch das Rad - keine zweite Überschrift.
+    expect(within(fenster).getAllByRole('heading')).toHaveLength(1);
+    expect(screen.getByText('Rad').compareDocumentPosition(ueberschrift)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(screen.getByText('Lastenrad 1 · Load 60 · Riemenantrieb')).toBeInTheDocument();
+  });
+
+  it('zeichnet einen Fenstertitel außerhalb eines Vollbild-Fensters nicht', () => {
+    render(<Fenstertitel />);
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
   });
 
   it('ist ein benannter, modaler Dialog und setzt den Fokus hinein', () => {

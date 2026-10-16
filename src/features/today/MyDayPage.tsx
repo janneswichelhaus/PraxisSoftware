@@ -54,6 +54,7 @@ import { AnrufKnopf, AusfallKnopf, HakenRueckgaengig, SpaeterDa } from './Besuch
 import { ausfallMoeglich, dokuZiel } from './besuchswege';
 import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
+import { CheckupErinnerung } from '@/features/fleet/CheckupHinweise';
 import { Zeitstrahl } from './Zeitstrahl';
 import { Wochenleiste } from './Wochenleiste';
 import { fensterTage, kopfDatum, terminAnzahl } from './wochenfenster';
@@ -1231,6 +1232,12 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
               heute={heute}
               praxis={user.organizationName ?? 'Ihrer Praxis'}
             />
+          ) : null}
+
+          {/* FLT-009 (ANN-570): das eigene Rad braucht einen Check-Up - nur
+              ein Hinweis, kein Termin; nur heute und nur, wo etwas fällig ist. */}
+          {isTherapyStaff(user.roles) && user.staffMemberId && tag === heute ? (
+            <CheckupErinnerung heute={heute} zone={zeitzone} />
           ) : null}
 
           {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn

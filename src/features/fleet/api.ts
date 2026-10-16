@@ -6,6 +6,7 @@ import { nachSrgb } from '@/features/files/farbe';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { ABSCHLUSSARTEN, type Abschlussart } from './pannenablauf';
 import { BIKE_TYPES, type CheckRating, type ModelPoint, type Severity } from './bike3d/zones';
+import { SEITEN, type SeitenKey, type Werbeflaechen } from './checkupablauf';
 
 /**
  * Radflotte (FLT-EPIC-001): Lesen und Schreiben über die Serverfunktionen aus
@@ -72,6 +73,10 @@ export type Bike = z.infer<typeof bikeSchema>;
 const fleetSchema = z.object({
   can_manage: z.boolean(),
   can_release: z.boolean(),
+  /** FLT-008 (ANN-569): die Meldungen aller Räder - owner und team_lead. */
+  can_read_reports: z.boolean(),
+  /** FLT-009 (ANN-570): Check-Up-Rhythmus in Tagen; `null` heißt keine Hinweise. */
+  checkup_interval_days: z.number().int().nullable(),
   my_staff_member_id: z.string().nullable(),
   depots: z.array(depotSchema),
   bikes: z.array(bikeSchema),
@@ -171,15 +176,55 @@ const workshopSheetSchema = z.object({
 });
 export type WorkshopSheet = z.infer<typeof workshopSheetSchema>;
 
+const seitenSchema = z.enum(SEITEN.map((seite) => seite.key) as [SeitenKey, ...SeitenKey[]]);
+
 const photoSchema = z.object({
   id: z.string(),
   spot_id: z.string().nullable(),
   checkup_id: z.string().nullable(),
+  /** FLT-007 (ANN-568): die Seite eines Seitenfotos im Check-Up. */
+  side: seitenSchema.nullable(),
   created_at: z.string(),
   verified: z.boolean(),
   may_delete: z.boolean(),
 });
 export type FleetPhoto = z.infer<typeof photoSchema>;
+
+const reportBase = {
+  id: z.string(),
+  bike_id: z.string(),
+  bike_name: z.string(),
+  bike_type: z.enum(BIKE_TYPES),
+  at: z.string(),
+  by_name: z.string().nullable(),
+  spots: z.array(spotSchema),
+  photos: z.array(
+    z.object({ id: z.string(), spot_id: z.string().nullable(), side: seitenSchema.nullable() }),
+  ),
+};
+
+const reportSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('checkup'),
+    ...reportBase,
+    items: z.array(checkItemResultSchema),
+    note: z.string().nullable(),
+    ad_surfaces: z.enum(['wiped', 'not_possible']).nullable(),
+    ad_surfaces_note: z.string().nullable(),
+  }),
+  z.object({
+    kind: z.literal('breakdown'),
+    ...reportBase,
+    outcome: z.enum(ABSCHLUSSARTEN),
+    blocks: z.boolean(),
+    summary: z.string(),
+    remark: z.string().nullable(),
+    location_note: z.string().nullable(),
+    transport: z.enum(['carsharing', 'fahrdienst']).nullable(),
+  }),
+]);
+/** Ein Check-Up oder eine Panne in der Liste für den Arbeitgeber (FLT-008, ANN-569). */
+export type FleetReport = z.infer<typeof reportSchema>;
 
 // -----------------------------------------------------------------------------
 // Schlüssel der Abfragen
@@ -201,6 +246,10 @@ export function werkstattSchluessel(bikeId: string) {
 
 export function fotosSchluessel(bikeId: string) {
   return [...FLOTTE_SCHLUESSEL, 'fotos', bikeId] as const;
+}
+
+export function meldungenSchluessel(ab: string | null) {
+  return [...FLOTTE_SCHLUESSEL, 'meldungen', ab] as const;
 }
 
 // -----------------------------------------------------------------------------
@@ -228,6 +277,11 @@ const SAETZE: readonly (readonly [string, string])[] = [
   ],
   ['checkup needs every check item', 'Bitte alle Prüfpunkte bewerten.'],
   ['checkup must be confirmed', 'Bitte die Prüfung bestätigen.'],
+  ['ad surfaces must be wiped or explained', 'Bitte die Werbeflächen abwischen.'],
+  ['ad surfaces reason is required', 'Bitte sagen, warum die Werbeflächen nicht gingen.'],
+  ['side already has a photo', 'Für diese Seite gibt es schon ein Foto.'],
+  ['checkup interval must be between', 'Bitte zwischen 1 und 90 Tagen wählen.'],
+  ['since must lie within the last year', 'Höchstens ein Jahr zurück.'],
   ['nothing to release', 'Es gibt nichts freizugeben.'],
   ['bike is already blocked', 'Das Rad ist schon gesperrt.'],
   ['reason is required', 'Bitte einen Grund angeben.'],
@@ -285,6 +339,22 @@ export async function fetchWorkshopSheet(bikeId: string): Promise<WorkshopSheet>
 }
 
 const FOTOS_LADEN = 'Die Fotos konnten nicht geladen werden.';
+
+/** FLT-008 (ANN-569): Check-Ups und Pannen aller Räder ab `ab` (ohne Angabe 90 Tage). */
+export async function fetchFleetReports(ab: string | null): Promise<FleetReport[]> {
+  const rest = 'Die Meldungen konnten nicht geladen werden.';
+  const data = await rufe('list_fleet_reports', { p_since: ab }, rest);
+  return antwort(z.array(reportSchema), data, rest);
+}
+
+/** FLT-009 (ANN-570): Check-Up-Rhythmus der Praxis in Tagen, `null` = aus. Nur owner. */
+export async function setCheckupInterval(tage: number | null): Promise<void> {
+  await rufe(
+    'set_fleet_checkup_interval',
+    { p_days: tage },
+    'Der Rhythmus konnte nicht gespeichert werden.',
+  );
+}
 
 export async function fetchFleetPhotos(bikeId: string): Promise<FleetPhoto[]> {
   const data = await rufe('list_fleet_photos', { p_bike_id: bikeId }, FOTOS_LADEN);
@@ -406,6 +476,7 @@ export async function recordCheckup(eingabe: {
   items: { key: string; rating: CheckRating; note: string }[];
   note: string;
   spots: SpotInput[];
+  werbeflaechen: Werbeflaechen;
 }): Promise<{ checkupId: string; spotIds: string[] }> {
   const rest = 'Der Check-Up konnte nicht gespeichert werden.';
   const data = await rufe(
@@ -420,6 +491,9 @@ export async function recordCheckup(eingabe: {
       p_note: eingabe.note,
       p_spots: eingabe.spots.map((spot) => ({ ...spot, note: spot.note.trim() || null })),
       p_confirmed: true,
+      p_ad_surfaces: eingabe.werbeflaechen.wert,
+      p_ad_surfaces_note:
+        eingabe.werbeflaechen.wert === 'not_possible' ? eingabe.werbeflaechen.grund.trim() : null,
     },
     rest,
   );
@@ -522,6 +596,8 @@ export const FOTO_VERWORFEN =
 export async function uploadFleetPhoto(auftrag: {
   spotId: string | null;
   checkupId: string | null;
+  /** FLT-007: die Seite eines Seitenfotos im Check-Up. */
+  side?: SeitenKey | null;
   foto: Blob;
 }): Promise<string> {
   const grund = dateiAblehnungsgrund(auftrag.foto);
@@ -540,6 +616,7 @@ export async function uploadFleetPhoto(auftrag: {
       p_checkup_id: auftrag.checkupId,
       p_byte_size: datei.size,
       p_checksum_sha256: summe,
+      p_side: auftrag.side ?? null,
     },
     rest,
   );
