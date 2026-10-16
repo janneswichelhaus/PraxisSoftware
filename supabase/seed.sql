@@ -39,6 +39,8 @@ delete from public.exercise_plans;
 alter table public.exercise_plans      enable trigger exercise_plans_guard;
 alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
 delete from public.exercise_variant_links;
+-- UEB-014: Vorlagen der Praxis fallen vor der Bibliothek.
+delete from public.exercise_plan_templates;
 delete from public.exercise_variants;
 delete from public.exercises;
 delete from public.staff_working_hour_exceptions;
@@ -893,6 +895,18 @@ update public.exercise_plans
    set status = 'assigned', assigned_at = now() - interval '14 days', assigned_by = created_by,
        runs_from = current_date - 14, runs_until = current_date + 28, original_runs_until = current_date + 28
  where id = 'aeaeaeae-aeae-4eae-8eae-000000000002';
+
+-- Eine Vorlage der Praxis (UEB-014, ANN-560), angelegt von Anna Beispiel: nach
+-- Region und Ziel benannt, ohne Person. Faellt mit den Varianten (cascade).
+insert into public.exercise_plan_templates
+  (id, organization_id, name, goal, created_by, updated_by) values
+  ('afafafaf-afaf-4faf-8faf-000000000001', '22222222-2222-4222-8222-000000000001', 'Knie, nach dem Hausbesuch', 'Kraft und Stand im Alltag', '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002');
+
+insert into public.exercise_plan_template_items
+  (organization_id, template_id, position, variant_id, sets, reps_min, reps_max, duration_seconds, per_side, times_per_day) values
+  ('22222222-2222-4222-8222-000000000001', 'afafafaf-afaf-4faf-8faf-000000000001', 1, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'KN-07'), 3, 10, 10, null, false, 1),
+  ('22222222-2222-4222-8222-000000000001', 'afafafaf-afaf-4faf-8faf-000000000001', 2, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'FU-01'), 2, 15, 15, null, false, 2),
+  ('22222222-2222-4222-8222-000000000001', 'afafafaf-afaf-4faf-8faf-000000000001', 3, (select id from public.exercise_variants where organization_id = '22222222-2222-4222-8222-000000000001' and catalog_key = 'LW-12'), 2, null, null, 30, false, null);
 
 -- -----------------------------------------------------------------------------
 -- Arbeitszeiten (CAL-005)
