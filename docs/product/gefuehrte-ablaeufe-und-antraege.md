@@ -129,14 +129,16 @@ Mitarbeitende können heute nichts beantragen.
 1. Einmalig oder dauerhaft?
 2. Einmalig: Datum. Dauerhaft: ab welchem Datum.
 3. Die neuen Zeiten: einmalig der Tag, dauerhaft der Wochenplan; vorbelegt mit den heutigen Zeiten,
-   daneben „bisher“. Die Pause als eigener Regler (Lage, Dauer), wenn es eine gibt.
+   daneben „bisher“. Die Pause als Dauer, wenn es eine gibt (ab der beweglichen Pause unten keine
+   feste Lage mehr).
 4. Grund, wenn gewünscht.
 5. Zusammenfassung: bisher → neu, Arbeitszeit bisher → neu, betroffene Termine → Absenden.
 
 **Prüfungen** (am Gerät als Hinweis, verbindlich am Server):
 
 - **Keine Reduktion:** Arbeitszeit ohne Pausen neu ≥ bisher; einmalig für den Tag, dauerhaft für
-  die Woche (Stunden dürfen zwischen Tagen wandern). Sonst kein Absenden, mit dem Satz, dass
+  die Woche (Stunden dürfen zwischen Tagen wandern, solange die Wochensumme nicht sinkt; Jannes
+  2026-10-16). Sonst kein Absenden, mit dem Satz, dass
   weniger Stunden ein Gespräch mit der Praxisleitung sind (der Anspruch nach § 8 TzBfG bleibt davon
   unberührt; er läuft nur nicht über diesen Antrag).
 - **Pause:** nur, wenn es sie schon gibt; nicht unter die gesetzliche Mindestpause (§ 4 ArbZG:
@@ -149,17 +151,43 @@ Mitarbeitende können heute nichts beantragen.
 **ab** dem Datum — dafür braucht `staff_working_hours` eine Gültigkeit (Datenmodell im Loop,
 Pfad A). Route als Vorschlag `/betrieb/arbeitszeit`, eigener Plan auch unter Mein Konto.
 
+**Bewegliche Mittagspause** (Jannes 2026-10-16, langfristig): Die Mittagspause liegt nicht fest.
+Jede Person hat eine eigene Pausendauer je Tag; die Pause liegt **ungefähr in der Mitte** der
+Arbeitszeit, wird aber nicht auf eine Uhrzeit festgeschrieben. Folgen für das Datenmodell und die
+Oberfläche, im Loop als Spec zu klären:
+
+- **Wochenplan** je Tag als Beginn, Ende und Pausendauer statt als zwei Blöcke mit Lücke; die
+  Arbeitszeit ist Ende − Beginn − Pause. Bestehende Lücken werden zur Pausendauer übernommen.
+- **Planung:** Terminvorschläge und Slotsuche lassen um die Tagesmitte ein Fenster frei, in das die
+  Pause passt (Vorschlag: Mitte ± 1,5 Stunden); ein Termin darf dort liegen, solange die Pause im
+  Fenster noch Platz hat. Ist kein Platz mehr, fragt der Kalender wie heute außerhalb der
+  Arbeitszeit nach.
+- **Kalender:** kein fester grauer Block mehr, sondern ein blasses Pausenfenster mit der Dauer
+  („30 Min. Pause“); erst wenn Termine das Fenster füllen, zeigt er, wo die Pause noch liegen kann.
+- **Gesetz:** Mindestpause und höchstens 6 Stunden am Stück (§ 4 ArbZG) gelten weiter; die Planung
+  prüft sie gegen die Termine des Tages.
+- **Keine Erfassung**, wann die Pause tatsächlich genommen wurde (§20): Die Software plant Raum
+  für sie, sie protokolliert sie nicht.
+
+Gehört in Überholung 8, weil der Antrag dasselbe Modell ändert; ist es dafür zu groß, wird es ein
+eigener Loop direkt danach (Kalender und Slotsuche, Pfad A).
+
 ### Überholung 9: Zeitkonto (ZK-001)
 
 **Startinhalt aus der Vorschau** (`timeaccount/`): Buchungsarten „geleistet“ und „abgebaut“,
 Person, Datum, Stunden, Grund; Liste je Person mit Saldo, Detail mit Buchungen; bewusst ohne Summe
 über alle und ohne Ableitung aus dem Kalender (§20).
 
-**G9 Zeitkonto-Antrag** (Mitarbeitende): Art (Mehrarbeit eintragen, Freizeitausgleich nehmen) →
-Datum → Stunden (Schnellwahl 0,5 · 1 · 2 · eigene) → Grund → Zusammenfassung mit Saldo danach →
-Absenden. Freizeitausgleich wirkt nach Genehmigung wie ein Abwesenheitstag oder -block (wie Urlaub).
-Owner und Büro buchen weiter direkt. Ob Mehrarbeit genehmigt werden muss oder nur eingetragen wird,
-entscheidet die Spec als Annahme (Vorschlag: genehmigen, weil sie Geld oder Freizeit wert ist).
+**G9 Zeitkonto-Eintrag** (Mitarbeitende): Art (Mehrarbeit, Freizeitausgleich) → Datum → Stunden
+(Schnellwahl 0,5 · 1 · 2 · eigene) → Grund → Zusammenfassung mit Saldo danach → Eintragen.
+
+**Keine Genehmigung, aber Zurückweisen** (Jannes 2026-10-16): Ein Eintrag gilt sofort und zählt
+im Saldo. Die Praxisleitung kann ihn zurückweisen, mit Grund; er bleibt dann als „zurückgewiesen“
+sichtbar und zählt nicht mehr. Die Person sieht das an ihrem Konto. Freizeitausgleich wirkt sofort
+wie ein Abwesenheitsblock (wie Urlaub); zurückgewiesen gibt er die Zeit wieder frei, Termine darin
+werden genannt, nicht still gebucht. Wer zurückweisen darf, entscheidet die Spec (Vorschlag: owner
+und team_lead, nie beim eigenen Eintrag). Owner und Büro buchen weiter direkt. Die gemeinsame
+Antragsmechanik (Abschnitt 2) gilt hier deshalb ohne den Zustand „beantragt“.
 
 ### Überholung 10: Erstattungen (ERS-001)
 
