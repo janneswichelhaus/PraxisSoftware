@@ -331,13 +331,24 @@ jobs:
         run: node scripts/testumgebung.mjs vorbereiten dist
 
       - name: Hochladen
+        # Die Dateien unter assets/ frueherer Staende bleiben 7 Tage liegen
+        # (ANN-564, BEF-172): Eine vor der Auslieferung geoeffnete Seite laedt
+        # 3D-Rad, Karte und Werkstattbilder erst bei Bedarf nach - mit
+        # --delete allein faende sie ihre Datei nicht mehr und meldete, der
+        # Browser koenne kein 3D. Die Dateien dieses Stands gelten danach als
+        # frisch; was 7 Tage in keinem Stand mehr vorkam, faellt. Ausserhalb
+        # von assets/ loescht --delete wie bisher.
         if: steps.bereit.outputs.bereit == 'true'
         env:
           DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
           DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
         run: |
-          rsync -4 -rlz --delete --chmod=D755,F644 -e "$SSH" \
-            dist/ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:www/html/"
+          ziel="$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST"
+          rsync -4 -rlz --delete --filter='P /assets/**' --chmod=D755,F644 -e "$SSH" \
+            dist/ "$ziel:www/html/"
+          # Die Namen tragen eine Pruefsumme, keine Leerzeichen.
+          (cd dist/assets && ls -1) | $SSH "$ziel" \
+            'cd www/html/assets && xargs -r touch -c -- && find . -type f -mtime +7 -delete'
 
       - name: Ausgelieferte Seite pruefen
         # Startseite, tiefe Route, Kopfzeilen, zweite Tuer, HTTP auf HTTPS.

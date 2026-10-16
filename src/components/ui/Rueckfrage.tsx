@@ -43,6 +43,8 @@ export function Rueckfrage({
   ausloeserVariante = 'secondary',
   ausloeserGroesse = 'normal',
   ausloeserZusatz,
+  ausloeserBreit = false,
+  ausloeserAutofokus = false,
   unterDerReihe = false,
   bezeichnung,
   bestaetigen,
@@ -67,6 +69,13 @@ export function Rueckfrage({
    * 2.5.3); das Leerzeichen dazwischen setzt der Baustein wie bei „Doku“.
    */
   ausloeserZusatz?: string | undefined;
+  /** Der Auslöser in voller Breite, wie der Hauptknopf einer Frageseite (FLT-005). */
+  ausloeserBreit?: boolean;
+  /**
+   * Der Auslöser ist der Startpunkt des Fokus im `Dialogfenster`
+   * (`data-autofocus`), etwa die Antwort im geführten Check-Up.
+   */
+  ausloeserAutofokus?: boolean;
   /**
    * Der Auslöser steht in einer umbrechenden Knopfreihe: Der Kasten rückt
    * über die ganze Breite unter die übrigen Knöpfe, statt sie unter sich zu
@@ -152,6 +161,8 @@ export function Rueckfrage({
         type="button"
         variant={ausloeserVariante}
         groesse={ausloeserGroesse}
+        {...(ausloeserBreit ? { className: 'w-full' } : {})}
+        {...(ausloeserAutofokus ? { 'data-autofocus': true } : {})}
         onClick={() => {
           setGescheitert(false);
           setOffen(true);

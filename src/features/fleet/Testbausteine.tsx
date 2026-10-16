@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { leseMeldung } from '@/features/appointments/terminformular';
+import type { BikeFocus } from './bike3d/BikeModel3D';
 import type { BikeMarker, BikePick, ModelPoint } from './bike3d/zones';
 
 /** Das Ziel eines Vorgangs im Test: Pfad, Suchteil und mitgegebene Meldung. */
@@ -20,14 +21,23 @@ export function Zielanzeige() {
 export function RadStellvertreter({
   markers,
   draft,
+  highlight = [],
+  focus = null,
+  hinweis = '',
   onPick,
 }: {
   markers: readonly BikeMarker[];
   draft?: { zone: string; point: ModelPoint | null; number: number } | null;
+  highlight?: readonly string[];
+  focus?: BikeFocus | null;
+  hinweis?: string;
   onPick?: (hit: BikePick | null) => void;
 }) {
   return (
     <div data-testid="rad3d">
+      <p data-testid="hinweis">{hinweis}</p>
+      <p data-testid="hervorgehoben">{highlight.join(' ')}</p>
+      <p data-testid="fokus">{focus ? (focus.preset ?? focus.zones.join(' ')) : ''}</p>
       <p data-testid="nadeln">
         {markers.map((nadel) => `${nadel.number}:${nadel.zone}:${nadel.severity}`).join(' ')}
       </p>

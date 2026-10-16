@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Segment } from '@/components/ui/Segment';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import {
@@ -31,16 +33,27 @@ import type { BikeViewer } from './viewer';
 
 /** Höhe von Hinweiszeile (oben) und Ansichtswechsel (unten) samt Abstand, in px. */
 const BEDIENRAND = 104;
+/** Ohne Ansichtswechsel bleibt nur die Hinweiszeile oben. */
+const BEDIENRAND_OHNE_ANSICHTEN = 56;
 
 export interface BikeFocus {
+  /** Die Bauteile, zu denen die Kamera fliegt; leer mit `preset` für eine feste Ansicht. */
   zones: readonly string[];
   /** Blickwinkel; ohne Angabe der des Bauteils oder ein eingepasster. */
   view?: ZoneView;
+  /** Eine der festen Ansichten statt der Bauteile, etwa „Schräg“ für den Überblick. */
+  preset?: ViewId;
   /** Neue Zahl, neuer Flug - auch zum selben Bauteil. */
   token: number;
 }
 
-type Zustand = 'laden' | 'bereit' | 'ohne';
+/**
+ * Warum es kein 3D-Rad gibt (FLT-006, BEF-172): Das Modul kam nicht an -
+ * ohne Netz oder weil eine vor der Auslieferung geöffnete Seite eine Datei
+ * sucht, die es nicht mehr gibt -, oder der Browser hat kein WebGL 2. Nur
+ * im zweiten Fall liegt es am Browser; im ersten hilft Neuladen.
+ */
+type Zustand = 'laden' | 'bereit' | 'nichtGeladen' | 'ohneWebgl';
 
 export function BikeModel3D({
   hoehe,
@@ -50,17 +63,32 @@ export function BikeModel3D({
   highlight = [],
   focus = null,
   hinweis = 'Ziehen dreht das Rad · Antippen wählt ein Bauteil',
+  ansichten = true,
+  ersatz = 'Bauteile können Sie weiter über die Liste wählen.',
   onPick,
   onUnavailable,
 }: {
-  /** Höhe in px (Telefon 300 bis 340, Rechner 520; Handoff Abschnitt 4). */
-  hoehe: number;
+  /**
+   * Höhe in px (Telefon 300 bis 340, Rechner 520; Handoff Abschnitt 4) oder
+   * als CSS-Wert, etwa `100%` in der Bühne des geführten Check-Ups.
+   */
+  hoehe: number | string;
   markers: readonly BikeMarker[];
   draft?: { zone: string; point: ModelPoint | null; number: number } | null;
   activeMarkerId?: string | null;
   highlight?: readonly string[];
   focus?: BikeFocus | null;
   hinweis?: string;
+  /**
+   * Die festen Ansichten unten im Bild. Im geführten Check-Up (FLT-005) führt
+   * die Kamera selbst; ohne den Wechsel bleibt mehr vom Rad zu sehen.
+   */
+  ansichten?: boolean;
+  /**
+   * Der Weg ohne 3D-Rad, als Satz unter der Meldung. Ohne Angabe die
+   * Bauteil-Liste; der geführte Check-Up geht über seine Knöpfe weiter.
+   */
+  ersatz?: string;
   onPick?: (hit: BikePick | null) => void;
   /** Meldet, dass es kein 3D-Rad gibt - die Seite stellt dann die Liste nach vorn. */
   onUnavailable?: () => void;
@@ -73,34 +101,62 @@ export function BikeModel3D({
   // Die jüngsten Angaben über eine Ref: Ein neuer Rückruf oder ein neues
   // Feld mit denselben Nadeln baut den Betrachter nicht neu und setzt die
   // Nadeln nicht ein zweites Mal.
-  const stand = useRef({ markers, draft, activeMarkerId, highlight, focus, onPick, onUnavailable });
+  const stand = useRef({
+    markers,
+    draft,
+    activeMarkerId,
+    highlight,
+    focus,
+    ansichten,
+    onPick,
+    onUnavailable,
+  });
   useEffect(() => {
-    stand.current = { markers, draft, activeMarkerId, highlight, focus, onPick, onUnavailable };
+    stand.current = {
+      markers,
+      draft,
+      activeMarkerId,
+      highlight,
+      focus,
+      ansichten,
+      onPick,
+      onUnavailable,
+    };
   });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     let abgebrochen = false;
-    import('./viewer')
-      .then(({ BikeViewer }) => {
+    const ohne = (grund: Zustand) => {
+      // Die Liste trägt weiter.
+      if (abgebrochen) return;
+      setZustand(grund);
+      stand.current.onUnavailable?.();
+    };
+    import('./viewer').then(
+      ({ BikeViewer }) => {
         if (abgebrochen) return;
-        viewerRef.current = new BikeViewer(canvas, {
-          onPick: (hit) => stand.current.onPick?.(hit),
-          onHover: setHover,
-          onViewChange: setAnsicht,
-          // Hinweis oben und Ansichtswechsel unten liegen über dem Bild.
-          rand: BEDIENRAND,
-        });
+        try {
+          viewerRef.current = new BikeViewer(canvas, {
+            onPick: (hit) => stand.current.onPick?.(hit),
+            onHover: setHover,
+            onViewChange: setAnsicht,
+            // Hinweis oben und Ansichtswechsel unten liegen über dem Bild;
+            // ein Wechsel von `ansichten` passt nur den Rand an (unten).
+            rand: stand.current.ansichten ? BEDIENRAND : BEDIENRAND_OHNE_ANSICHTEN,
+          });
+        } catch {
+          // three.js braucht WebGL 2; ohne Kontext wirft der Renderer.
+          ohne('ohneWebgl');
+          return;
+        }
         setZustand('bereit');
-      })
-      .catch(() => {
-        // Kein WebGL, oder das Modul ließ sich nicht laden (ohne Netz und noch
-        // nicht im Zwischenspeicher): Die Liste trägt weiter.
-        if (abgebrochen) return;
-        setZustand('ohne');
-        stand.current.onUnavailable?.();
-      });
+      },
+      // Ohne Netz und noch nicht im Zwischenspeicher, oder die Datei des
+      // Moduls gibt es nach einer Auslieferung nicht mehr.
+      () => ohne('nichtGeladen'),
+    );
     return () => {
       abgebrochen = true;
       viewerRef.current?.dispose();
@@ -119,10 +175,18 @@ export function BikeModel3D({
     viewerRef.current?.setHighlight(stand.current.highlight);
   }, [highlightSchluessel, zustand]);
 
+  useEffect(() => {
+    viewerRef.current?.setRand(ansichten ? BEDIENRAND : BEDIENRAND_OHNE_ANSICHTEN);
+  }, [ansichten, zustand]);
+
   const focusToken = focus?.token ?? null;
   useEffect(() => {
     const ziel = stand.current.focus;
-    if (focusToken !== null && ziel && ziel.zones.length > 0 && viewerRef.current) {
+    if (focusToken === null || !ziel || !viewerRef.current) return;
+    if (ziel.preset) {
+      viewerRef.current.setView(ziel.preset);
+      setAnsicht(ziel.preset);
+    } else if (ziel.zones.length > 0) {
       viewerRef.current.focusZones(ziel.zones, ziel.view);
       setAnsicht(null);
     }
@@ -151,10 +215,23 @@ export function BikeModel3D({
         aria-label={`3D-Modell des Lastenrads Load 60 mit Riemen und Transportbox. ${stellen}`}
         className="absolute inset-0 block h-full w-full cursor-grab touch-pan-y"
       />
-      {zustand === 'ohne' ? (
-        <div className="bg-surface-sunken text-ink-muted absolute inset-0 flex items-center justify-center p-6 text-center text-sm">
-          Das 3D-Modell lässt sich in diesem Browser nicht anzeigen. Bauteile können Sie weiter über
-          die Liste wählen.
+      {/* Ohne 3D-Rad die Zustände als Bausteine (Design-Review FLT-005, B10):
+          fehlt WebGL, ist das kein Fehler, sondern ein Leerzustand; kam das
+          Modul nicht an, ist es einer - mit dem Weg hinaus. */}
+      {zustand === 'ohneWebgl' ? (
+        <div className="bg-surface-sunken absolute inset-0 flex items-center justify-center p-4">
+          <EmptyState title="Dieser Browser zeigt kein 3D (WebGL 2 fehlt)." description={ersatz} />
+        </div>
+      ) : zustand === 'nichtGeladen' ? (
+        <div className="bg-surface-sunken absolute inset-0 flex flex-col justify-center gap-3 p-4">
+          <ErrorState title="Das 3D-Modell ließ sich nicht laden." description={ersatz} />
+          {/* Neu laden holt den aktuellen Stand; ungespeicherte Eingaben
+              schützt die Seite selbst (Textverlustschutz). */}
+          <div>
+            <Button variant="secondary" groesse="kompakt" onClick={() => window.location.reload()}>
+              Neu laden
+            </Button>
+          </div>
         </div>
       ) : (
         <>
@@ -205,19 +282,21 @@ export function BikeModel3D({
               </svg>
             </Symbolknopf>
           </div>
-          <div className="pointer-events-none absolute inset-x-2 bottom-2 flex justify-center">
-            <div className="bg-surface rounded-button pointer-events-auto">
-              <Segment
-                beschriftung="Ansicht"
-                wahlen={VIEW_PRESETS.map((preset) => ({ wert: preset.id, text: preset.label }))}
-                gewaehlt={ansicht}
-                onWaehlen={(id) => {
-                  viewerRef.current?.setView(id);
-                  setAnsicht(id);
-                }}
-              />
+          {ansichten ? (
+            <div className="pointer-events-none absolute inset-x-2 bottom-2 flex justify-center">
+              <div className="bg-surface rounded-button pointer-events-auto">
+                <Segment
+                  beschriftung="Ansicht"
+                  wahlen={VIEW_PRESETS.map((preset) => ({ wert: preset.id, text: preset.label }))}
+                  gewaehlt={ansicht}
+                  onWaehlen={(id) => {
+                    viewerRef.current?.setView(id);
+                    setAnsicht(id);
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
         </>
       )}
     </div>

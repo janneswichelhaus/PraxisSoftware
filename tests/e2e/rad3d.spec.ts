@@ -3,8 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 /**
  * Das 3D-Rad im echten Browser (Handoff Lastenrad 3D, Abschnitt 5; AC 1, 7
  * und 9): Antippen trifft ein Bauteil, die Nadeln sind gezeichnet, „Am Rad
- * zeigen“ hebt das Bauteil hervor, und ohne WebGL steht eine Meldung da,
- * während die Seite weiter bedienbar bleibt. WebGL kommt aus SwiftShader,
+ * zeigen“ hebt das Bauteil hervor, und ohne WebGL oder ohne ladbares Modul
+ * steht je eine eigene Meldung da, während die Seite weiter bedienbar bleibt. WebGL kommt aus SwiftShader,
  * wie auf einem Rechner ohne Grafikkarte.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/rad3d.html';
@@ -170,7 +170,30 @@ test('ohne WebGL eine Meldung, und die Seite bleibt bedienbar (AC 7)', async ({ 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(PRUEFSEITE);
   await expect(
-    page.getByText('Das 3D-Modell lässt sich in diesem Browser nicht anzeigen.', { exact: false }),
+    page.getByText('Dieser Browser zeigt kein 3D (WebGL 2 fehlt).', { exact: false }),
   ).toBeVisible({ timeout: 20_000 });
+  // Am Browser liegt es hier; Neuladen hilft nicht und steht nicht da.
+  await expect(page.getByRole('button', { name: 'Neu laden' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Bremse vorne zeigen' })).toBeEnabled();
 });
+
+test('ohne ladbares Modul „nicht laden“ mit Neu laden, nicht der Browser (FLT-006, BEF-172)', async ({
+  page,
+}) => {
+  // Wie eine vor der Auslieferung geöffnete Seite: Die Datei des 3D-Moduls
+  // gibt es nicht mehr.
+  await page.route('**/bike3d/viewer.ts*', (route) => route.fulfill({ status: 404, body: '' }));
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(PRUEFSEITE);
+  await expect(
+    page.getByText('Das 3D-Modell ließ sich nicht laden.', { exact: false }),
+  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/WebGL/)).toHaveCount(0);
+  await mindestens44(page.getByRole('button', { name: 'Neu laden' }));
+  await expect(page.getByRole('button', { name: 'Bremse vorne zeigen' })).toBeEnabled();
+});
+
+async function mindestens44(ziel: ReturnType<Page['getByRole']>) {
+  await expect(ziel).toBeVisible();
+  expect((await ziel.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+}

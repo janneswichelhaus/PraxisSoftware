@@ -280,4 +280,4 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-10-08 (`IDEA-PRX-057`). Ältere Stände: `git log -- docs/product/`.
+Zuletzt aktualisiert: 2026-10-16 (`IDEA-PRX-058`). Ältere Stände: `git log -- docs/product/`.

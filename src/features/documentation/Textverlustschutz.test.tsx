@@ -43,6 +43,8 @@ function Pruefseite({
   texte,
   nichtSicherbar,
   kompakt = false,
+  auchSuchparameter = false,
+  schrittZurueck,
 }: {
   ungespeichert?: boolean;
   speichern?: () => Promise<boolean>;
@@ -50,6 +52,8 @@ function Pruefseite({
   texte?: Verlustschutztexte;
   nichtSicherbar?: string;
   kompakt?: boolean;
+  auchSuchparameter?: boolean;
+  schrittZurueck?: () => void;
 }) {
   const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
     ungespeichert,
@@ -57,6 +61,8 @@ function Pruefseite({
     ...(texte ? { texte } : {}),
     nichtSicherbar,
     kompakt,
+    auchSuchparameter,
+    schrittZurueck,
   });
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
@@ -1120,5 +1126,77 @@ describe('Textverlustschutz: Offenes, das sich nicht speichern lässt (KI-EPIC-0
     const [mitText] = [...angemeldet];
     await expect(mitText!()).resolves.toBe(false);
     expect(speichern).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Textverlustschutz: Abläufe mit Schritten (FLT-005)', () => {
+  const CHECKUPTEXTE: Verlustschutztexte = {
+    ...EINGABETEXTE,
+    bezeichnung: 'Ungespeicherter Check-Up',
+    zeile: {
+      weitergehen: 'Check-Up noch nicht gespeichert.',
+      abmelden: 'Check-Up noch nicht gespeichert – abmelden?',
+      bleiben: 'Weiter prüfen',
+    },
+  };
+
+  it('hält mit `auchSuchparameter` auch den Wegfall eines Parameters an', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <Pruefseite auchSuchparameter texte={CHECKUPTEXTE} />,
+      '/dokumentation?rad=1',
+    );
+
+    await nutzer.click(screen.getByRole('link', { name: 'Nur Parameter' }));
+
+    expect(screen.getByRole('group', { name: 'Ungespeicherter Check-Up' })).toBeInTheDocument();
+    expect(adresse()).toBe('Adresse: /dokumentation?rad=1');
+  });
+
+  it('geht beim Zurück des Browsers einen Schritt zurück, ohne zu fragen', async () => {
+    const nutzer = userEvent.setup();
+    const schritt = vi.fn();
+    const { rerender } = renderWithProviders(
+      <Pruefseite ungespeichert={false} />,
+      '/dokumentation',
+    );
+    await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
+
+    rerender(<Pruefseite schrittZurueck={schritt} texte={CHECKUPTEXTE} kompakt />);
+    await nutzer.click(screen.getByRole('button', { name: 'Browser-Zurück' }));
+
+    expect(schritt).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('group', { name: 'Ungespeicherter Check-Up' })).toBeNull();
+    expect(adresse()).toBe('Adresse: /woanders');
+
+    // Die Sperre ist gelöst: Das nächste Zurück wird wieder ein Schritt.
+    await nutzer.click(screen.getByRole('button', { name: 'Browser-Zurück' }));
+    expect(schritt).toHaveBeenCalledTimes(2);
+    expect(adresse()).toBe('Adresse: /woanders');
+  });
+
+  it('fragt bei jedem anderen Weggehen und auf dem ersten Schritt wie sonst', async () => {
+    const nutzer = userEvent.setup();
+    const schritt = vi.fn();
+    const { rerender } = renderWithProviders(
+      <Pruefseite schrittZurueck={schritt} texte={CHECKUPTEXTE} kompakt />,
+      '/dokumentation',
+    );
+
+    // Ein Link ist kein Zurück: Die Rückfrage kommt, der Schritt bleibt aus.
+    await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
+    expect(screen.getByRole('group', { name: 'Ungespeicherter Check-Up' })).toBeInTheDocument();
+    expect(schritt).not.toHaveBeenCalled();
+    await nutzer.click(screen.getByRole('button', { name: 'Verwerfen' }));
+    expect(adresse()).toBe('Adresse: /woanders');
+
+    // Ohne Schritt davor: Das Zurück fragt mit den Sätzen des Ablaufs.
+    rerender(<Pruefseite texte={CHECKUPTEXTE} kompakt />);
+    await nutzer.click(screen.getByRole('button', { name: 'Browser-Zurück' }));
+    expect(screen.getByText('Check-Up noch nicht gespeichert.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Weiterschreiben' })).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter prüfen' }));
+    expect(screen.queryByRole('group', { name: 'Ungespeicherter Check-Up' })).toBeNull();
+    expect(adresse()).toBe('Adresse: /woanders');
   });
 });

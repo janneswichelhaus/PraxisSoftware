@@ -1171,6 +1171,13 @@ describe('Rueckfrage', () => {
     );
   });
 
+  it('steht auf Wunsch in voller Breite und als Startpunkt des Fokus (FLT-005)', () => {
+    aufbau({ ausloeserBreit: true, ausloeserAutofokus: true });
+    const ausloeser = screen.getByRole('button', { name: 'Verordnung löschen' });
+    expect(ausloeser).toHaveClass('w-full');
+    expect(ausloeser).toHaveAttribute('data-autofocus');
+  });
+
   it('benennt den Kasten fuer Vorlesesoftware', async () => {
     const user = userEvent.setup();
     aufbau({ bezeichnung: 'Verordnung endgültig löschen' });

@@ -1498,3 +1498,15 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 | Berührt | `public.delete_treatment_basis`, `public.update_treatment_basis`, `public.transfer_appointments_to_treatment_basis`, `public.treatment_bases`; Migration `20261121100000_bef_124_verordnung_mit_verlauf.sql` |
 
 **Beobachtet:** Seit LOG-EPIC-001 steht das Ändern, Löschen und Umhängen einer Behandlungsgrundlage nicht mehr im Auditlog. Das Datenmodell hält nur den letzten Stand (`updated_by`, `updated_at`); eine gelöschte Grundlage verschwindet ganz, auch wenn Termine an ihr hingen. Den Inhalt einer Änderung hat schon das alte Auditlog nicht gehalten. **Erwartet:** Eine Verordnung ist Teil der Akte. Sobald Termine an ihr hängen, wird sie nicht mehr hart gelöscht; ihre Änderungen bleiben mit ursprünglichem Inhalt und Zeitpunkt erkennbar (§ 630f Abs. 1 BGB), etwa über eine Versionstabelle wie bei der Dokumentation (ADR-016). Zu prüfen: welche Felder fachlich änderbar bleiben müssen und ob ADR-020 dafür eine Fassung braucht. **Erledigt:** `treatment_basis_versions` hält je Änderung den Stand davor (Trigger an Grundlage und Heilmitteln, alle Schreiber), sichtbar als „Verlauf“ auf der Bearbeiten-Seite; ADR-020 braucht keine neue Fassung, weil alle Felder änderbar bleiben.
+
+### BEF-172 — Nach einer Auslieferung lädt eine offene Seite das 3D-Rad nicht und schiebt es auf den Browser
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Radflotte (3D-Rad); Auslieferung der Test-Umgebung (OPS-002a) |
+| Quelle  | Jannes in der Test-Umgebung nach #254 („Das 3D-Modell lässt sich in diesem Browser nicht anzeigen“); nachgestellt mit den Builds von #253 und #254 |
+| Status  | erledigt in FLT-005/006 (Meldung getrennt, „Neu laden“) und ANN-564 (alte Dateien bleiben 7 Tage) |
+| Berührt | `src/features/fleet/bike3d/BikeModel3D.tsx`; Schritt „Hochladen“ in `.github/workflows/test-umgebung.yml`; ADR-024 Punkt 2 |
+
+**Beobachtung.** Das 3D-Modul ist eine eigene Datei, deren Name sich mit jedem Build ändert (`viewer-DegDh5Fw.js` mit #253, `viewer-BNuvwWZ3.js` mit #254, obwohl #254 die Radflotte nicht berührte). Die Auslieferung löschte die alte sofort (`rsync --delete`); eine vorher geöffnete Seite fand sie nicht mehr, und die Seite meldete jeden Fehler gleich: Der Browser könne kein 3D. Karte und Werkstattbilder träfe es ebenso. **Erwartet:** Offene Seiten laden ihre Teile weiter; scheitert das Laden doch, steht „ließ sich nicht laden“ mit „Neu laden“ da, und nur ohne WebGL nennt die Seite den Browser.

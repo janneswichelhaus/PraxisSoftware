@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { useBlocker, type BlockerFunction } from 'react-router-dom';
+import { NavigationType, useBlocker, type BlockerFunction } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -66,6 +66,13 @@ import { useIstVerbunden } from '@/app/verbindung';
  * selbst noch vor der Sitzungssperre: Ein Vorschlag ist kein Entwurf (ADR-016
  * Punkt 10). Vor der Sperre bleibt die Seite deshalb verborgen stehen
  * (ANN-257), und die Rückfrage nennt, was beim Weitergehen verloren geht.
+ *
+ * **Seit FLT-005 ein achtes, für Abläufe mit Schritten:** Hängt die Seite
+ * an einem Suchparameter (`auchSuchparameter`, der Check-Up an `?rad=`),
+ * gilt auch dessen Wegfall als Weggehen. Und das Zurück des Browsers - am
+ * Telefon die Zurückgeste - geht dort einen Schritt zurück (`schrittZurueck`),
+ * statt die Seite samt allen Angaben zu verlassen; erst auf dem ersten
+ * Schritt fragt der Schutz wie sonst.
  *
  * **Kein lokaler Zwischenspeicher.** Ein Entwurf, der nur im Browser läge,
  * wäre nicht gespeichert, würde aber so aussehen - genau die Situation, die
@@ -208,6 +215,13 @@ export interface Verlustschutztexte {
   ohneVerbindung: string;
   /** Meldung, wenn während des Speicherns weiter eingegeben wurde. */
   weitergeschrieben: string;
+  /**
+   * Die Zeile der kompakten Rückfrage und ihr Knopf zum Bleiben, etwa
+   * „Check-Up noch nicht gespeichert.“ und „Weiter prüfen“ (FLT-005). Ohne
+   * Angabe die Sätze der Schreibseite: „Text noch nicht gespeichert.“ und
+   * „Weiterschreiben“.
+   */
+  zeile?: { weitergehen: string; abmelden: string; bleiben: string } | undefined;
 }
 
 /** Die Sätze der Behandlungsdokumentation - unverändert seit FIX-014 (ANN-046). */
@@ -249,6 +263,8 @@ export function useTextverlustschutz({
   texte = DOKUMENTATIONSTEXTE,
   kompakt = false,
   selbst,
+  auchSuchparameter = false,
+  schrittZurueck,
 }: {
   /** Steht im Feld etwas, das noch nicht auf dem Server liegt? */
   ungespeichert: boolean;
@@ -302,6 +318,17 @@ export function useTextverlustschutz({
         aussetzenBei?: (fehler: unknown) => boolean;
       }
     | undefined;
+  /**
+   * Gilt auch ein Wechsel der Suchparameter als Weggehen? Für eine Seite,
+   * deren Inhalt an einem Parameter hängt - der Check-Up an `?rad=` (FLT-005).
+   */
+  auchSuchparameter?: boolean;
+  /**
+   * Ein Ablauf mit Schritten (FLT-005): Das Zurück des Browsers geht einen
+   * Schritt zurück, ohne Rückfrage. `undefined` auf dem ersten Schritt - dann
+   * fragt der Schutz wie vor jedem Weggehen.
+   */
+  schrittZurueck?: (() => void) | undefined;
 }): Textverlustschutz {
   // Angehalten wird für beides: ungespeicherten Text und Offenes, das sich
   // nicht speichern lässt.
@@ -343,16 +370,31 @@ export function useTextverlustschutz({
   const laufenderVorgang = useRef<Promise<unknown> | null>(null);
   const selbstLaeuftRef = useRef(false);
 
-  const anhalten = useCallback<BlockerFunction>(({ currentLocation, nextLocation }) => {
-    // Ein Wechsel der Suchparameter auf derselben Seite ist kein Weggehen:
-    // Er behält das Formular und seinen Inhalt.
-    if (currentLocation.pathname === nextLocation.pathname) return false;
-    if (freigegeben.current) {
-      freigegeben.current = false;
-      return false;
-    }
-    return haltenRef.current;
-  }, []);
+  const auchSuchparameterRef = useRef(auchSuchparameter);
+  auchSuchparameterRef.current = auchSuchparameter;
+  // Kam die angehaltene Navigation aus dem Zurück des Browsers?
+  const zurueckGeste = useRef(false);
+
+  const anhalten = useCallback<BlockerFunction>(
+    ({ currentLocation, nextLocation, historyAction }) => {
+      // Ein Wechsel der Suchparameter auf derselben Seite ist kein Weggehen:
+      // Er behält das Formular und seinen Inhalt - außer die Seite hängt an
+      // ihnen (FLT-005).
+      if (
+        currentLocation.pathname === nextLocation.pathname &&
+        (!auchSuchparameterRef.current || currentLocation.search === nextLocation.search)
+      ) {
+        return false;
+      }
+      if (freigegeben.current) {
+        freigegeben.current = false;
+        return false;
+      }
+      zurueckGeste.current = historyAction === NavigationType.Pop;
+      return haltenRef.current;
+    },
+    [],
+  );
 
   const blocker = useBlocker(anhalten);
 
@@ -363,6 +405,17 @@ export function useTextverlustschutz({
   blockerRef.current = blocker;
 
   const blockiert = blocker.state === 'blocked';
+
+  // Ein Schritt zurück statt einer Rückfrage (FLT-005): Die Adresse hat der
+  // Router schon wiederhergestellt; die Seite geht zurück, die Sperre löst sich.
+  const schrittZurueckRef = useRef(schrittZurueck);
+  schrittZurueckRef.current = schrittZurueck;
+  const einSchrittZurueck = blockiert && zurueckGeste.current && schrittZurueck !== undefined;
+  useEffect(() => {
+    if (!einSchrittZurueck) return;
+    schrittZurueckRef.current?.();
+    blockerRef.current.reset?.();
+  }, [einSchrittZurueck]);
 
   // Die Wache des Abmeldeschutzes: Sie übernimmt nur, wenn wirklich etwas im
   // Feld steht. Sonst meldet die Kopfzeile unmittelbar ab - eine Rückfrage
@@ -396,7 +449,7 @@ export function useTextverlustschutz({
     }
   });
 
-  const offen = blockiert || abmeldenGefragt;
+  const offen = (blockiert && !einSchrittZurueck) || abmeldenGefragt;
   const kasten = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -582,16 +635,13 @@ export function useTextverlustschutz({
   // nichts zu speichern - dann kein „Speichern und weiter“.
   const speichernAnbieten =
     speichern !== undefined && (ungespeichert || nichtSicherbar === undefined);
+  const offenerText = texte.zeile?.weitergehen ?? 'Text noch nicht gespeichert.';
   const zeile =
     nichtSicherbar === undefined
       ? abmeldemodus
-        ? 'Text noch nicht gespeichert – abmelden?'
-        : 'Text noch nicht gespeichert.'
-      : [
-          ungespeichert ? 'Text noch nicht gespeichert.' : null,
-          nichtSicherbar,
-          abmeldemodus ? 'Abmelden?' : null,
-        ]
+        ? (texte.zeile?.abmelden ?? 'Text noch nicht gespeichert – abmelden?')
+        : offenerText
+      : [ungespeichert ? offenerText : null, nichtSicherbar, abmeldemodus ? 'Abmelden?' : null]
           .filter(Boolean)
           .join(' ');
 
@@ -662,7 +712,7 @@ export function useTextverlustschutz({
               disabled={laeuft}
               onClick={bleiben}
             >
-              Weiterschreiben
+              {texte.zeile?.bleiben ?? 'Weiterschreiben'}
             </Button>
           </div>
         </div>

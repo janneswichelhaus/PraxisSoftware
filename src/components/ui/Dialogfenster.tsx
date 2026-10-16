@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
 import { usePortalZiel } from './portalZiel';
+import { Symbolknopf } from './Symbolknopf';
 
 /**
  * Fenster über dem aktuellen Inhalt (FIX-016, ANN-058).
@@ -44,6 +45,9 @@ export function Dialogfenster({
   titel,
   onSchliessen,
   breit = false,
+  vollbild = false,
+  beschreibung,
+  schliessenBeschriftung = 'Schließen',
   children,
 }: {
   /** Überschrift und zugängliche Bezeichnung des Fensters. */
@@ -52,6 +56,18 @@ export function Dialogfenster({
   onSchliessen: () => void;
   /** Ein Arbeitsfenster mit zwei Spalten am Rechner, etwa „Daten übertragen". */
   breit?: boolean;
+  /**
+   * Ein geführter Ablauf, Seite für Seite, etwa der Check-Up am Rad
+   * (FLT-005): am Telefon über den ganzen Bildschirm, am Rechner groß in der
+   * Mitte. Die Kopfzeile trägt den Titel und einen Knopf zum Schließen - ohne
+   * Rand daneben und ohne Escape am Telefon gäbe es sonst keinen. Der Inhalt
+   * füllt den Rest und ordnet sich selbst; das Fenster scrollt nicht.
+   */
+  vollbild?: boolean;
+  /** Im Vollbild eine Zeile unter dem Titel: worum es geht, etwa das Rad (DESIGN.md Regel 6). */
+  beschreibung?: string | undefined;
+  /** Name des Schließen-Knopfs im Vollbild, etwa „Check-Up abbrechen". */
+  schliessenBeschriftung?: string;
   children: ReactNode;
 }) {
   const titelId = useId();
@@ -156,6 +172,58 @@ export function Dialogfenster({
       event.preventDefault();
       erstes.focus();
     }
+  }
+
+  if (vollbild) {
+    return createPortal(
+      <div
+        className="bg-ink/40 fixed inset-0 z-50 flex justify-center sm:items-center sm:p-8"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) schliessenRef.current();
+        }}
+      >
+        <div
+          ref={fensterRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titelId}
+          tabIndex={-1}
+          onKeyDown={tastatur}
+          // Am Telefon randlos über Kopfzeile und Tableiste, mit Platz für
+          // Kerbe und Wischleiste; ab 640 px ein Fenster mit Rand wie oben.
+          className="bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0"
+        >
+          <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
+            <div className="min-w-0 flex-1">
+              <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
+                {titel}
+              </h2>
+              {beschreibung ? (
+                <p className="text-ink-muted truncate text-sm">{beschreibung}</p>
+              ) : null}
+            </div>
+            <Symbolknopf
+              beschriftung={schliessenBeschriftung}
+              onClick={() => schliessenRef.current()}
+            >
+              <svg
+                viewBox="0 0 20 20"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M5 5l10 10M15 5L5 15" />
+              </svg>
+            </Symbolknopf>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        </div>
+      </div>,
+      ziel,
+    );
   }
 
   return createPortal(

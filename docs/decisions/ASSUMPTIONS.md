@@ -5806,3 +5806,27 @@ Recht · offen · 2026-10-16 · — · — · Wiedervorlage: Prüfpaket (§ 630f
 **Anker.** `app.record_treatment_basis_version` in `supabase/migrations/20261121100000_bef_124_verordnung_mit_verlauf.sql`.
 
 **Änderungspfad.** Weiche Löschung statt Sperre, alle Lesepfade filtern · Aufwand `mittel`.
+
+### ANN-563 — Check-Up geführt: eine Seite je Prüfpunkt, jeder Punkt bestätigt
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung des geführten Check-Ups
+
+**Annahme.** Der Check-Up führt im Fenster Seite für Seite durch die zwölf Prüfpunkte, keiner vorbelegt. „In Ordnung“ führt sofort weiter; „Beobachten“ und „Problem“ fragen „Wo genau?“ (nicht bei nur einem Bauteil) und „Was ist aufgefallen?“, gültig erst mit „Weiter“. Zurück und Zurückgeste gehen einen Schritt zurück, nach jedem Wechsel ruht die Fläche 0,7 s; „In Ordnung“ über Notiz oder Foto fragt nach. Neu bewerten ersetzt die neue Stelle.
+
+**Begründung.** Auftrag Jannes (16.10.); Praxis-Review (Doppeltipp, Fehltipp, Zurückgeste). Vorbelegt nähme dem Durchgehen den Zweck; dafür 16 statt 4 Tipps.
+
+**Anker.** `src/features/fleet/CheckupFenster.tsx`, Abfolge `checkupablauf.ts`.
+
+**Änderungspfad.** Vorbelegen, andere Ruhezeit (`TIPPSPERRE_MS`): `CheckupFenster` · Aufwand `klein`.
+
+### ANN-564 — Auslieferung: Dateien früherer Stände bleiben 7 Tage
+
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Auslieferung in die Test-Umgebung löscht unter `assets/` nichts sofort: Dateien früherer Stände bleiben, bis sie 7 Tage in keinem Stand mehr vorkamen. Außerhalb von `assets/` löscht sie wie bisher.
+
+**Begründung.** Eine neue Fassung übernimmt erst beim nächsten Start (ADR-024); bis dahin lädt eine offene Seite 3D-Rad, Karte und Werkstattbilder nach und fand sie nach einer Auslieferung nicht mehr (BEF-172). Die Dateien sind öffentlich und ohne Daten.
+
+**Anker.** Schritt „Hochladen“ in `.github/workflows/test-umgebung.yml`.
+
+**Änderungspfad.** Andere Frist: `-mtime +7` dort · Aufwand `klein`.

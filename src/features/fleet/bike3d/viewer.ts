@@ -255,6 +255,8 @@ interface Press {
 export class BikeViewer {
   private readonly canvas: HTMLCanvasElement;
   private readonly opts: ViewerOptions;
+  /** Was Hinweis und Ansichtswechsel von der Höhe überdecken, in px. */
+  private rand: number;
   private readonly renderer: WebGLRenderer;
   private readonly scene: Scene;
   private readonly bike: CargoBike;
@@ -284,6 +286,7 @@ export class BikeViewer {
   constructor(canvas: HTMLCanvasElement, opts: ViewerOptions = {}) {
     this.canvas = canvas;
     this.opts = opts;
+    this.rand = opts.rand ?? 0;
     this.reduced = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
     this.renderer = createRenderer(canvas);
     const { scene, bike } = createScene(this.renderer);
@@ -330,7 +333,7 @@ export class BikeViewer {
   /** Abstand für das ganze Rad, frei von Hinweis und Ansichtswechsel. */
   private einpassen() {
     const h = Math.max(1, this.size.h);
-    const frei = clamp((h - (this.opts.rand ?? 0)) / h, 0.4, 1);
+    const frei = clamp((h - this.rand) / h, 0.4, 1);
     return fitRadius(this.aspect(), frei);
   }
 
@@ -585,6 +588,16 @@ export class BikeViewer {
     if (!to) return;
     this.orbit.auto = false;
     this.flyTo(to, 700);
+  }
+
+  /** Der Rand ändert sich mit dem Ansichtswechsel, etwa auf „Weitere Stelle“ (FLT-005). */
+  setRand(rand: number): void {
+    if (rand === this.rand) return;
+    this.rand = rand;
+    if (this.orbit.auto) {
+      this.orbit.radius = this.einpassen();
+      this.dirty = true;
+    }
   }
 
   zoomBy(f: number): void {
