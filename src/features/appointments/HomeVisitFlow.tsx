@@ -21,7 +21,7 @@ import {
   naechsteSeite,
   niemandStand,
   type NiemandSeite,
-} from './nichtangetroffen';
+} from './niemandOeffnet';
 
 /**
  * Was der Ablauf vom Termin braucht. Die Übersicht kennt den Bearbeitungsstand

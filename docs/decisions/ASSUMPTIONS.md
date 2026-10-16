@@ -5947,9 +5947,9 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 **Begründung.** Referenzabgleich (Lieferdienste: Kontakt, dann Uhr, Abschluss erst danach): Wer früh anruft, bekommt die Tür vielleicht noch auf; 4 Tipps statt 5. ADR-018 Punkt 9 nennt die drei Schritte ohne Reihenfolge.
 
-**Anker.** `src/features/appointments/nichtangetroffen.ts`, `HomeVisitFlow.tsx`.
+**Anker.** `src/features/appointments/niemandOeffnet.ts`, `HomeVisitFlow.tsx`.
 
-**Änderungspfad.** Reihenfolge oder Begründungsweg: `nichtangetroffen.ts` · Aufwand `klein`.
+**Änderungspfad.** Reihenfolge oder Begründungsweg: `niemandOeffnet.ts` · Aufwand `klein`.
 
 ### ANN-581 — Einrichten: Wochenplan nur mit owner, die Person dafür in den Kalender
 
