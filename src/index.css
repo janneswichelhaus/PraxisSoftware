@@ -565,7 +565,7 @@ html[data-schrift='sehr-gross'] {
 }
 
 /* =============================================================================
-   Bewegung (ANN-567): Wechseln mit Schwung, Rückmeldung flach
+   Bewegung (ANN-567): Wechseln mit Schwung, Rückmeldung flach, Zeile zur Seite
 
    Auftrag Jannes vom 16.10.2026 (Leinwand „Verspielte Designelemente“, Seite
    „Lebendig“): nur Gestaltung, am Inhalt ändert sich nichts. Flach wie das
@@ -577,7 +577,8 @@ html[data-schrift='sehr-gross'] {
    müssen die Klassen der Bausteine überstimmen. Bei reduzierter Bewegung
    kürzt die Regel in der Basis jede Animation und jeden Übergang auf
    0,01 ms (`!important` in einer Ebene schlägt alles hier). Den Inhalt
-   eines Aufklappers erreicht sie nicht; für ihn gilt eine eigene Regel.
+   eines Aufklappers und die Übergänge zwischen Seiten erreicht sie nicht;
+   für sie gilt je eine eigene Regel.
    ============================================================================= */
 
 /* Der gleitende Anzeiger (`gleitanzeiger.ts`): SubNav, Reiterleiste,
@@ -825,6 +826,53 @@ details {
   from {
     scale: 0.2;
     rotate: -30deg;
+  }
+}
+
+/* Zeile öffnet sich zur Seite (`seitenUebergang.ts`): Die angetippte Zeile
+   wächst als weiße Fläche in den Inhalt der neuen Seite, die darin
+   aufscheint; der Rest der Seite blendet über. */
+::view-transition-group(zeile-zur-seite) {
+  overflow: clip;
+  border-radius: var(--radius-card);
+  background-color: var(--color-surface);
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.25, 0.9, 0.3, 1);
+}
+
+::view-transition-old(zeile-zur-seite) {
+  animation: seite-raus 0.16s ease-out both;
+}
+
+::view-transition-new(zeile-zur-seite) {
+  animation: seite-rein 0.3s 0.08s ease-out both;
+}
+
+::view-transition-old(root) {
+  animation: seite-raus 0.22s ease-out both;
+}
+
+::view-transition-new(root) {
+  animation: seite-rein 0.26s ease-out both;
+}
+
+@keyframes seite-raus {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes seite-rein {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 

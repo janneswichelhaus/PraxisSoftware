@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { KnopfGroesse } from './knopfGroesse';
+import { zeileOeffnen } from './seitenUebergang';
 
 /**
  * Die Liste um die Zeilen (Design-Handoff 2026-10-01, Abschnitt 3).
@@ -164,9 +165,9 @@ export function ListRow({
   );
 
   const zeile = to ? (
-    <Link to={to} className={ziel}>
+    <Zeilenlink to={to} className={ziel}>
       {inhalt}
-    </Link>
+    </Zeilenlink>
   ) : onClick ? (
     <button type="button" onClick={onClick} className={ziel}>
       {inhalt}
@@ -201,5 +202,33 @@ export function ListRow({
       <div className="flex items-center gap-2">{mitAktion}</div>
       {darunter}
     </li>
+  );
+}
+
+/**
+ * Das Ziel einer Zeile mit `to`: ein Link, der beim Tipp in die neue Seite
+ * hineinwächst (ANN-567, „Zeile öffnet sich zur Seite“, `seitenUebergang.ts`).
+ * Wo der Übergang nicht läuft, navigiert der Link wie bisher. Eigene
+ * Komponente, damit `useNavigate` nur dort steht, wo es einen Router gibt -
+ * eine Zeile ohne Ziel braucht keinen.
+ */
+function Zeilenlink({
+  to,
+  className,
+  children,
+}: {
+  to: string;
+  className: string;
+  children: ReactNode;
+}) {
+  const navigate = useNavigate();
+  return (
+    <Link
+      to={to}
+      onClick={(event) => zeileOeffnen(event, () => void navigate(to))}
+      className={className}
+    >
+      {children}
+    </Link>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { anzeigerStil, useGleitanzeiger } from '@/components/ui/gleitanzeiger';
+import { useSeitenziel } from '@/components/ui/seitenUebergang';
 import { SubNav } from '@/components/ui/SubNav';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
@@ -221,6 +222,8 @@ export function AppShell({
   const inhalt = useRef<HTMLElement>(null);
   useKopfzeilenhoehe(kopf, rahmen);
   useSeitenwechsel(inhalt);
+  // Ziel des Übergangs „Zeile öffnet sich zur Seite“ (ANN-567).
+  useSeitenziel(inhalt, pathname);
 
   // Der Strich der Tableiste gleitet zum neuen Bereich (ANN-567). „Mehr“ ist
   // aktiv auf der Übersicht der Bereiche und in jedem Bereich dahinter.
