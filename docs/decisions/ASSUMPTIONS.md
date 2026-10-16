@@ -5794,3 +5794,15 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Jannes (Dur
 **Anker.** `offeneDurchsicht` in `src/features/exercises/durchsicht.ts`.
 
 **Änderungspfad.** Sammelvermerk je Region: eine RPC über `set_exercise_variant_reviewed` · Aufwand `mittel`.
+
+### ANN-563 — Auslieferung: Dateien früherer Stände bleiben 7 Tage
+
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Auslieferung in die Test-Umgebung löscht unter `assets/` nichts sofort: Dateien früherer Stände bleiben, bis sie 7 Tage in keinem Stand mehr vorkamen. Außerhalb von `assets/` löscht sie wie bisher.
+
+**Begründung.** Eine neue Fassung übernimmt erst beim nächsten Start (ADR-024); bis dahin lädt eine offene Seite 3D-Rad, Karte und Werkstattbilder nach und fand sie nach einer Auslieferung nicht mehr (BEF-172). Die Dateien sind öffentlich und ohne Daten.
+
+**Anker.** Schritt „Hochladen“ in `.github/workflows/test-umgebung.yml`.
+
+**Änderungspfad.** Andere Frist: `-mtime +7` dort · Aufwand `klein`.
