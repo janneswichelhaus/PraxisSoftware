@@ -5947,7 +5947,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 **Begründung.** Referenzabgleich (Lieferdienste: Kontakt, dann Uhr, Abschluss erst danach): Wer früh anruft, bekommt die Tür vielleicht noch auf; 4 Tipps statt 5. ADR-018 Punkt 9 nennt die drei Schritte ohne Reihenfolge.
 
-**Anker.** `src/features/appointments/nichtangetroffen.ts`, `HomeVisitFlow.tsx`.
+**Anker.** `src/features/appointments/niemandOeffnet.ts`, `HomeVisitFlow.tsx`.
 
 **Änderungspfad.** Reihenfolge oder Begründungsweg: `nichtangetroffen.ts` · Aufwand `klein`.
 
@@ -6010,3 +6010,89 @@ Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.list_leave` (Projektion `to_decide`), `app.can_read_staff_leave_balances`.
 
 **Änderungspfad.** Notiz für Entscheidende öffnen: ein Feld in `to_decide` · Aufwand `klein`.
+
+**Änderungspfad.** Reihenfolge oder Begründungsweg: `niemandOeffnet.ts` · Aufwand `klein`.
+
+### ANN-581 — Einrichten: Wochenplan nur mit owner, die Person dafür in den Kalender
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Wählt owner beim Einrichten eine Vorlage, nimmt „… einrichten“ die Person zuerst in den Kalender für Behandlungen (Training bleibt aus) und speichert dann den Wochenplan Tag für Tag. office sieht die Seite nicht; Abschluss und Ergebnis nennen den Weg über die Inhaber:in.
+
+**Begründung.** `set_staff_working_hours` nimmt nur zuordenbare Personen an, das Merkmal setzt nur owner (ANN-226). Eine neue Therapeut:in soll gleich im Kalender stehen (G5).
+
+**Anker.** `kontextFuer` in `src/features/staff/einrichtung.ts`.
+
+**Änderungspfad.** office darf das Merkmal setzen (ANN-226), dann genügt `canManageWorkingHours` · Aufwand `klein`.
+
+### ANN-582 — Einrichten: Wochenplan und Rad nur, wenn die Person behandelt
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Wochenplan und Lastenrad fragt der Ablauf bei Therapeut:in oder Teamleitung und solange keine Rolle gewählt ist (office; owner „Später“). Bei Praxismanagement oder Trainingsbetreuung allein entfallen beide Seiten; eine schon gegebene Antwort schreibt dann nichts.
+
+**Begründung.** Spec G5 „falls Therapie“; Wochenpläne gibt es am Server nur für Behandelnde, die Trainingsbetreuung nutzt die Radflotte nicht (`app.can_read_fleet`).
+
+**Anker.** `behandelt` in `src/features/staff/einrichtung.ts`.
+
+**Änderungspfad.** Die Liste `BEHANDELND` · Aufwand `klein`.
+
+### ANN-583 — Plattform: Wunschtage als Wochentage
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** „Wann passt es Ihnen?“ fragt Montag bis Freitag statt 14 einzelner Daten, dazu Vormittag, Mittag, Nachmittag oder „Egal“. An den Server gehen weiter Kalendertage: jeder gewählte Wochentag unter den nächsten 14 Werktagen. Einen einzelnen Tag schreibt man in die Nachricht.
+
+**Begründung.** 14 Daten und Tageszeiten passen bei 375 × 667 in 18 px nicht auf eine Seite (G6); der Vertrag von `request_platform_appointment(_change)` bleibt, die Praxis sieht Daten wie bisher.
+
+**Anker.** `wunschtage` in `src/features/platform/terminablauf.ts`.
+
+**Änderungspfad.** Zurück zu Daten an dieser Stelle, ohne Datenänderung · Aufwand `klein`.
+
+### ANN-584 — Plattform: Fenster zeichnen in ein Ziel mit 18 px
+
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Fenster der Plattform zeichnen in ein Portalziel mit `.plattform-schrift` direkt nach dem Gerüst und innerhalb des Bereichs, den die Sitzungssperre verbirgt; die Einsicht der Praxis behält ihr Ziel.
+
+**Begründung.** Am body erbten die Fenster die 18 px nicht (gemessen 14–16 px); DESIGN.md verlangt auf der Plattform alles ≥ 18 px.
+
+**Anker.** `MitFensterZiel` in `src/features/platform/PlattformApp.tsx`.
+
+**Änderungspfad.** Ziel im Baustein `Dialogfenster` statt in der Plattform · Aufwand `klein`.
+
+### ANN-585 — Plattform: Ändern verlangt Tag und Tageszeit
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Ein Änderungswunsch geht erst weiter, wenn mindestens ein Wochentag und eine Tageszeit oder „Egal“ gewählt ist. Der Server nimmt einen Wunsch ohne Tage weiter an.
+
+**Begründung.** Ein Änderungswunsch ohne Tage lässt die Praxis raten; „Egal“ deckt den Fall „jede Tageszeit“ ab (G6).
+
+**Anker.** `wannFehlt` und `vollstaendig` in `src/features/platform/terminablauf.ts`.
+
+**Änderungspfad.** Bedingung dort lockern · Aufwand `klein`.
+
+### ANN-586 — Panne im Fenster: wann sie begonnen ist
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Eine Panne gilt als begonnen, sobald „Wo ist der Schaden?“ verlassen oder eine Stelle markiert ist; ab dann fragt ✕ („Panne noch nicht gemeldet“), und die Zurückgeste geht einen Schritt zurück statt aus dem Fenster. Seiten, deren Hauptknopf meldet, sind Abschluss mit Linie über dem Fuß.
+
+**Begründung.** Spec G3: ✕ mit Rückfrage bei Eingaben, Zurückgeste einen Schritt; ohne angehaltene Navigation fängt der Textverlustschutz die Geste nicht ab.
+
+**Anker.** `ungespeichert` in `src/features/fleet/Pannenfenster.tsx`; `istAbschluss` in `pannenseiten.ts`.
+
+**Änderungspfad.** Bedingung an dieser Stelle · Aufwand `klein`.
+
+### ANN-587 — Schlüssel übergeben: ein Ablauf für Tresor und Hand zu Hand
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** „Schlüssel übergeben“ ist ein Ablauf für beides: aus dem Tresor eintragen und von Hand zu Hand (immer drei Schritte, mit `?rad=` ab Schritt 2). „Von“ folgt aus dem Rad und hat kein eigenes „Ändern“; ✕ schließt ohne Rückfrage, weil nur gewählt wurde. An der Zeile bleibt nur „Zurücklegen“.
+
+**Begründung.** Spec G4 (Rad → an wen → Abschluss); ein zweiter Knopf an der Zeile brach bei 375 px Name und Angaben Wort für Wort um (DESIGN.md L3).
+
+**Anker.** `src/features/fleet/schluesselablauf.ts`, `KeyPage.tsx`.
+
+**Änderungspfad.** Einstieg „Übergeben“ zusätzlich auf der Radseite · Aufwand `klein`.

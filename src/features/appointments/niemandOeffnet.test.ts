@@ -6,7 +6,7 @@ import {
   minutenSekunden,
   naechsteSeite,
   niemandStand,
-} from './nichtangetroffen';
+} from './niemandOeffnet';
 
 describe('Niemand öffnet - die Folge (G1)', () => {
   it('führt vom Klingeln über den Anruf zur Wartezeit', () => {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Inhaltsflaeche } from '@/components/ui/Card';
@@ -16,6 +16,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
+import { leseMeldung } from '@/features/appointments/terminformular';
 import {
   appointmentTypeHint,
   fetchAssignableTherapists,
@@ -245,6 +246,10 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
     enabled: canManageAppointments(user.roles),
   });
   const [suche] = useSearchParams();
+  // Ein Vorgang auf einer anderen Seite kommt mit seinem Satz hierher -
+  // „Nina Neu ist eingerichtet.“ (Überholung 6, G5).
+  const verlaufszustand: unknown = useLocation().state;
+  const [meldung] = useState(() => leseMeldung(verlaufszustand));
   const behandelt = (therapeuten.data ?? []).some((t) => t.staff_member_id === staff.id);
   const zone = user.organizationTimeZone;
   // Zwei getrennte Rechte seit E10: Stammdaten pflegt auch das Office, den
@@ -314,6 +319,8 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
           ) : null
         }
       />
+
+      {meldung ? <Rueckmeldung className="mt-4">{meldung}</Rueckmeldung> : null}
 
       <div className="mt-6 min-w-0">
         {offen === 'kontakt' ? (

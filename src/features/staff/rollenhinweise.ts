@@ -28,3 +28,17 @@ export const ROLLENHINWEISE: Partial<Record<RoleKey, string>> = {
   owner:
     'Zugänge, Rollen, Protokoll, Abrechnung und Trainingskund:innen; liest alle Akten. Dokumentieren nur zusammen mit der Rolle Therapeut:in oder Teamleitung.',
 };
+
+/**
+ * Rollen, die ein Praxiszugang bekommen kann. `patient` ist ein anderes Konzept
+ * (§4.6). Die Trainingsbetreuung seit TRN-003 - verbindlich prüft
+ * `app.assert_staff_role_keys`. Dieselben bietet die Rollenwahl beim Einrichten
+ * an (`NewStaffMemberPage`, Überholung 6); deshalb hier statt am Zugang.
+ */
+export const WAEHLBARE_ROLLEN: readonly RoleKey[] = [
+  'therapist',
+  'team_lead',
+  'office',
+  'trainer',
+  'owner',
+];

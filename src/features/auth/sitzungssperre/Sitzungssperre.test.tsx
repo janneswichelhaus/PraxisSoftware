@@ -9,6 +9,7 @@ import type * as PinModul from '../appPin';
 import type { PinErgebnis } from '../appPin';
 import { useSperrsicherung } from './sperrsicherung';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { PortalZielKontext } from '@/components/ui/portalZiel';
 
 /**
  * Die Sitzungssperre der Oberfläche (SEC-002, SEC-003; ADR-025).
@@ -482,6 +483,46 @@ describe('Sitzungssperre: Befunde aus dem Zweitreview', () => {
     await warte(11_000);
     expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
     expect(screen.getByText('Kamerabild')).not.toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('verbirgt auch ein Fenster, das in ein eigenes Ziel im Inhalt zeichnet (Plattform)', async () => {
+    // Die Plattform zeichnet ihre Fenster in ein Ziel mit ihrer Schrift
+    // (Überholung 6) - es liegt im Inhalt, den die Sperre verbirgt.
+    function MitEigenemZiel() {
+      useSperrsicherung(() => Promise.resolve(false));
+      const [ziel, setZiel] = useState<HTMLDivElement | null>(null);
+      return (
+        <>
+          {ziel ? (
+            <PortalZielKontext.Provider value={ziel}>
+              <Dialogfenster titel="Wann passt es Ihnen?" onSchliessen={() => undefined}>
+                <p>Wochentage</p>
+              </Dialogfenster>
+            </PortalZielKontext.Provider>
+          ) : null}
+          <div ref={setZiel} data-testid="eigenes-ziel" />
+        </>
+      );
+    }
+    queryClient = new QueryClient();
+    ladeSperrstand.mockResolvedValueOnce(offen(30, 3000));
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Sitzungssperre>
+          <MitEigenemZiel />
+        </Sitzungssperre>
+      </QueryClientProvider>,
+    );
+    await warte();
+    const fenster = screen.getByRole('dialog', { name: 'Wann passt es Ihnen?' });
+    expect(screen.getByTestId('eigenes-ziel')).toContainElement(fenster);
+    expect(screen.getByTestId('sitzung-inhalt')).toContainElement(fenster);
+
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    await warte(11_000);
+    expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
+    expect(screen.getByText('Wochentage')).not.toBeVisible();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 

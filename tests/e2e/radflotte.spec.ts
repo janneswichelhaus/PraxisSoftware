@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import type AxeCore from 'axe-core';
 import type { Bike, BikeDetail, Fleet, Spot } from '../../src/features/fleet/api';
-import { testDetail, testFlotte } from '../../src/features/fleet/testdaten';
+import { testDetail, testFlotte, testRad } from '../../src/features/fleet/testdaten';
 
 /**
  * Die Radflotte (FLT-EPIC-001) im echten Browser bei 375 px, mit gezählten
@@ -18,10 +18,20 @@ import { testDetail, testFlotte } from '../../src/features/fleet/testdaten';
  *     (vorher 16 ohne Werbeflächen und Fotos);
  *   * **R4** Check-Up mit einer Stelle am 3D-Rad: ≤ 26 Tipps + Text (vorher
  *     17 ohne Werbeflächen und Fotos);
- *   * **R5** Panne, Rad weiter fahrbar, mit einer Stelle: ≤ 7 Tipps + Text;
+ *   * **R5** Panne, Rad weiter fahrbar, mit einer Stelle: ≤ 7 Tipps + Text,
+ *     seit Überholung 6 im Fenster des geführten Ablaufs (G3, vorher 7);
  *   * **R6** Freigabe durch die Teamleitung: ≤ 3 Tipps;
  *   * **R7** Unterlage für die Werkstatt ab dem Rad: 2 Tipps bis zum
- *     Druckdialog.
+ *     Druckdialog;
+ *   * **G3** Panne bis zur Abschlussart „Rad zurückgelassen“: 11 Tipps +
+ *     Text wie vorher, jede Seite bei 375 × 667 ohne Scrollen;
+ *   * **G4** Schlüssel von Hand zu Hand: ≤ 3 Tipps nach dem Einstieg (vorher
+ *     4 über den Tresor: zurücklegen, Rad, Person, eintragen), mit `?rad=`
+ *     ≤ 2.
+ *
+ * Je Seite der geführten Abläufe ein Bildschirmfoto nach `.tmp/screenshots/`
+ * (`b6-panne-…`, `b6-schluessel-…`; die erste und die letzte Seite auch bei
+ * 1280 px) - für die Selbstsichtung, nicht verglichen.
  *
  * Der Server ist eine kleine Nachbildung über abgefangene Anfragen; Rechte,
  * Nummern und Fristen prüft `pnpm test:db`. WebGL kommt aus SwiftShader, wie
@@ -61,9 +71,9 @@ test.use({
   permissions: ['camera'],
 });
 
-function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie') {
+function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie', weitere: Bike[] = []) {
   const start = testFlotte({ can_release: rolle === 'teamleitung' });
-  const raeder: Bike[] = start.bikes.map((rad) => ({ ...rad }));
+  const raeder: Bike[] = [...start.bikes, ...weitere].map((rad) => ({ ...rad }));
   const stellen: Spot[] = testDetail().spots.map((stelle) => ({ ...stelle }));
   const aufrufe: Record<string, Record<string, unknown>[]> = {};
   let folge = 10;
@@ -150,6 +160,17 @@ function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie') {
     return_fleet_key: (p) => {
       raeder.find((eintrag) => eintrag.id === p.p_bike_id)!.key = null;
       return null;
+    },
+    // Von Hand zu Hand (ANN-575): Der offene Vorgang endet, ein neuer beginnt.
+    hand_over_fleet_key: (p) => {
+      const rad = raeder.find((eintrag) => eintrag.id === p.p_bike_id)!;
+      const halter = String(p.p_holder_staff_id);
+      rad.key = {
+        holder_staff_id: halter,
+        holder_name: start.staff.find((person) => person.id === halter)?.name ?? null,
+        taken_at: new Date().toISOString(),
+      };
+      return 'schluessel';
     },
     record_fleet_checkup: (p) => ({
       checkup_id: 'checkup-neu',
@@ -604,25 +625,95 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
   ]);
 });
 
+/** Das Fenster eines geführten Ablaufs (Panne, Schlüssel); sein Name ist die Frage der Seite. */
+function fenster(page: Page, name: string) {
+  return page.getByRole('dialog', { name, exact: true });
+}
+
+/**
+ * Ein Bildschirmfoto der Seite bei 375 × 667, mit `breit` dazu bei 1280 px -
+ * danach wieder am Telefon (Überholung 6, Selbstsichtung).
+ */
+async function bild(page: Page, name: string, breit = false) {
+  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-375.png` });
+  if (!breit) return;
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-1280.png` });
+  await page.setViewportSize({ width: 375, height: 667 });
+}
+
+/**
+ * Eine Seite der Panne: die Frage als Name des Fensters, „Schritt n“ ohne
+ * Gesamtzahl, die Herkunft der Vorlage, kein Scrollen und jede Antwort im
+ * Fuß mindestens 44 px hoch.
+ */
+async function panneSeite(page: Page, frage: string, schritt: number, antworten: string[]) {
+  const seite = fenster(page, frage);
+  await expect(seite.getByText(`Schritt ${schritt}`, { exact: true })).toBeVisible();
+  await expect(seite.getByText('Köln-Vorlage · Für Tübingen noch zu prüfen')).toBeVisible();
+  expect(await scrolltNicht(page), `${frage} ohne Scrollen`).toBe(true);
+  for (const antwort of antworten) {
+    await mindestens44(seite.getByRole('button', { name: antwort, exact: true }));
+  }
+  return seite;
+}
+
 test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps und Text', async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   const server = nachbildung();
   await oeffne(page, server);
+  // Das kleinste übliche Telefon: 375 × 667.
+  await page.setViewportSize({ width: 375, height: 667 });
   const z = zaehler();
   await z.tippe(page.getByRole('link', { name: 'Panne melden' }));
+  // Die Radwahl bleibt eine gewöhnliche Seite, das eigene Rad vorbelegt.
+  await expect(page.getByRole('combobox', { name: 'Rad' })).toHaveValue('rad-1');
+  await bild(page, 'panne-01-rad', true);
   await z.tippe(page.getByRole('button', { name: 'Weiter' }));
-  await expect(page.getByRole('heading', { name: 'Wo ist der Schaden?' })).toBeVisible();
+
+  // „Wo ist der Schaden?“ im Fenster, das 3D-Rad als Bühne.
+  const schaden = fenster(page, 'Wo ist der Schaden?');
+  await expect(schaden.getByText('Panne melden · Lastenrad 1')).toBeVisible();
+  await expect(schaden.getByText('Schritt 1', { exact: true })).toBeVisible();
   expect(await ueberlaeuft(page)).toBe(false);
+  expect(await scrolltNicht(page), 'Wo ist der Schaden? ohne Scrollen').toBe(true);
   expect(await axeVerstoesse(page)).toEqual([]);
+  await mindestens44(schaden.getByRole('button', { name: 'Weiter' }));
+  await bild(page, 'panne-02-schaden');
 
   await z.tippeAmRad(page);
-  await page.getByLabel('Was ist passiert?').fill('Deckel klemmt');
-  await z.tippe(page.getByRole('button', { name: 'Stelle setzen' }));
-  await z.tippe(page.getByRole('button', { name: 'Weiter' }));
-  await z.tippe(page.getByRole('button', { name: 'Nein', exact: true }));
-  await expect(page.getByLabel('Was ist auffällig?')).toHaveValue('Transportbox: Deckel klemmt');
-  await z.tippe(page.getByRole('button', { name: 'Melden', exact: true }));
+  await schaden.getByLabel('Was ist passiert?').fill('Deckel klemmt');
+  // Die offene Stelle mit „Stelle setzen“ im Bild, ohne Rollen.
+  expect(await scrolltNicht(page), 'offene Stelle ohne Scrollen').toBe(true);
+  await mindestens44(schaden.getByRole('button', { name: 'Stelle setzen' }));
+  await bild(page, 'panne-03-stelle');
+  await z.tippe(schaden.getByRole('button', { name: 'Stelle setzen' }));
+  await expect(schaden.getByRole('list', { name: 'Schäden am Rad' })).toContainText(
+    'Deckel klemmt',
+  );
+  expect(await scrolltNicht(page), 'Schaden gesetzt ohne Scrollen').toBe(true);
+  // Das Rad wird nach dem Größenwechsel der Bühne neu gezeichnet; SwiftShader
+  // braucht dafür einen Moment - erst dann das Bild.
+  await page.waitForTimeout(1_000);
+  await bild(page, 'panne-04-schaden-gesetzt');
+  await z.tippe(schaden.getByRole('button', { name: 'Weiter' }));
+
+  const weiterfahrt = await panneSeite(page, 'Ist die Weiterfahrt gehindert?', 2, ['Ja', 'Nein']);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'panne-05-weiterfahrt');
+  await z.tippe(weiterfahrt.getByRole('button', { name: 'Nein', exact: true }));
+
+  const auffaellig = await panneSeite(page, 'Rad ist weiter fahrbar. Was genau ist auffällig?', 3, [
+    'Melden',
+  ]);
+  await expect(auffaellig.getByLabel('Was ist auffällig?')).toHaveValue(
+    'Transportbox: Deckel klemmt',
+  );
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'panne-06-auffaellig');
+  await z.tippe(auffaellig.getByRole('button', { name: 'Melden', exact: true }));
 
   await expect(page.getByText('Panne gemeldet. Lastenrad 1 bleibt in der Planung.')).toBeVisible({
     timeout: NACH_DEM_SPEICHERN,
@@ -630,8 +721,287 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
   expect(server.aufrufe.record_fleet_breakdown![0]).toEqual(
     expect.objectContaining({ p_outcome: 'meldungOhneSperre', p_location_note: '' }),
   );
-  test.info().annotations.push({ type: 'R5', description: `${z.tipps} Tipps + Text` });
+  test.info().annotations.push({ type: 'R5', description: `${z.tipps} Tipps + Text (vorher 7)` });
   expect(z.tipps).toBeLessThanOrEqual(7);
+});
+
+test('G3: Panne bis „Rad zurückgelassen“ in elf Tipps wie vorher, jede Seite ohne Scrollen', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const server = nachbildung();
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Panne melden' }));
+  await z.tippe(page.getByRole('button', { name: 'Weiter' }));
+  await z.tippe(fenster(page, 'Wo ist der Schaden?').getByRole('button', { name: 'Weiter' }));
+
+  // Je Frage der Vorlage eine Seite, die Antworten im festen Fuß.
+  for (const [schritt, frage, antworten, antwort, name] of [
+    [2, 'Ist die Weiterfahrt gehindert?', ['Ja', 'Nein'], 'Ja', null],
+    [3, 'Wie groß ist der Schaden?', ['Klein', 'Groß'], 'Groß', 'panne-07-groesse'],
+    [4, 'Ist heute Mittwoch?', ['Ja', 'Nein'], 'Ja', 'panne-08-ruhetag'],
+    [
+      5,
+      'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
+      ['Ja', 'Nein'],
+      'Nein',
+      'panne-09-depot',
+    ],
+  ] as const) {
+    const seite = await panneSeite(page, frage, schritt, [...antworten]);
+    if (name) await bild(page, name);
+    await z.tippe(seite.getByRole('button', { name: antwort, exact: true }));
+  }
+
+  // Der längste Schritt: Standort, Anruf, Nachricht, Akku und Liege.
+  const zuruecklassen = await panneSeite(page, 'Fahrrad zurücklassen. Wo genau steht es?', 6, [
+    'Weiter',
+  ]);
+  await zuruecklassen.getByLabel('Standort / Adresse').fill('Hinterhof Beispielweg 3');
+  await bild(page, 'panne-10-zuruecklassen');
+  await z.tippe(zuruecklassen.getByRole('button', { name: 'Weiter' }));
+
+  const fuehrerschein = await panneSeite(page, 'Haben Sie einen Autoführerschein?', 7, [
+    'Ja',
+    'Nein',
+  ]);
+  await bild(page, 'panne-11-fuehrerschein');
+  await z.tippe(fuehrerschein.getByRole('button', { name: 'Ja', exact: true }));
+  const carsharing = await panneSeite(
+    page,
+    'Ist ein Carsharing-Fahrzeug in 15 Minuten Fußweg erreichbar?',
+    8,
+    ['Ja', 'Nein'],
+  );
+  await bild(page, 'panne-12-carsharing');
+  await z.tippe(carsharing.getByRole('button', { name: 'Ja', exact: true }));
+
+  // Der Abschluss: Die Zusammenfassung darf rollen, der Knopf steht fest im Bild.
+  const abschluss = fenster(page, 'Zusammenfassung – bitte prüfen:');
+  await expect(abschluss.getByText('Schritt 9', { exact: true })).toBeVisible();
+  await expect(abschluss.getByRole('list', { name: 'Zusammenfassung' })).toContainText(
+    'Standort: Hinterhof Beispielweg 3',
+  );
+  const bestaetigen = abschluss.getByRole('button', { name: /^Bestätigen/ });
+  await expect(bestaetigen).toBeInViewport({ ratio: 1 });
+  await mindestens44(bestaetigen);
+  expect(await ueberlaeuft(page)).toBe(false);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'panne-13-zusammenfassung', true);
+  await z.tippe(bestaetigen);
+
+  await expect(
+    page.getByText(
+      'Panne gemeldet. Lastenrad 1 ist in Reparatur und steht nicht mehr in der Planung.',
+    ),
+  ).toBeVisible({ timeout: NACH_DEM_SPEICHERN });
+  expect(server.aufrufe.record_fleet_breakdown![0]).toEqual(
+    expect.objectContaining({
+      p_outcome: 'transportFortsetzung',
+      p_location_note: 'Hinterhof Beispielweg 3',
+      p_transport: 'carsharing',
+    }),
+  );
+  test.info().annotations.push({ type: 'G3', description: `${z.tipps} Tipps + Text (vorher 11)` });
+  expect(z.tipps).toBeLessThanOrEqual(11);
+});
+
+test('G3: auch die übrigen Seiten der Panne stehen bei 375 × 667 ohne Scrollen', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const server = nachbildung();
+  await oeffne(page, server, `?pfad=${encodeURIComponent('/betrieb/flotte/panne?rad=rad-1')}`);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const tippe = (frage: string, antwort: string) =>
+    fenster(page, frage).getByRole('button', { name: antwort, exact: true }).click();
+  const zurueck = (frage: string) =>
+    fenster(page, frage).getByRole('button', { name: '← Zurück' }).click();
+  await tippe('Wo ist der Schaden?', 'Weiter');
+  await tippe('Ist die Weiterfahrt gehindert?', 'Ja');
+
+  // Kleiner Schaden, Werkstatt in der Nähe, Reparatur vor Ort.
+  await tippe('Wie groß ist der Schaden?', 'Klein');
+  await panneSeite(page, 'Werkstatt in der Nähe (15–30 Minuten Fußweg)?', 4, ['Ja', 'Nein']);
+  await bild(page, 'panne-14-werkstatt-nah');
+  await tippe('Werkstatt in der Nähe (15–30 Minuten Fußweg)?', 'Ja');
+  await panneSeite(page, 'Anruf Werkstatt: Reparatur direkt vor Ort möglich?', 5, ['Ja', 'Nein']);
+  await bild(page, 'panne-15-vor-ort');
+  await tippe('Anruf Werkstatt: Reparatur direkt vor Ort möglich?', 'Ja');
+  await panneSeite(page, 'Rad vor Ort reparieren lassen.', 6, [
+    'Erledigt – Rad als „In Reparatur“ markieren',
+  ]);
+  await bild(page, 'panne-16-werkstatt-reparieren');
+
+  // „← Zurück“ dorthin, woher man kam: drei Seiten bis zur Schadensgröße.
+  await zurueck('Rad vor Ort reparieren lassen.');
+  await zurueck('Anruf Werkstatt: Reparatur direkt vor Ort möglich?');
+  await zurueck('Werkstatt in der Nähe (15–30 Minuten Fußweg)?');
+  await tippe('Wie groß ist der Schaden?', 'Groß');
+  await tippe('Ist heute Mittwoch?', 'Ja');
+  await tippe(
+    'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
+    'Ja',
+  );
+  await panneSeite(page, 'Lastenrad ins Raddepot bringen.', 6, [
+    'Rad als „In Reparatur“ markieren',
+  ]);
+  await bild(page, 'panne-17-depot-bringen');
+
+  // Kein Ruhetag: zur Vertragswerkstatt.
+  await zurueck('Lastenrad ins Raddepot bringen.');
+  await zurueck(
+    'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
+  );
+  await tippe('Ist heute Mittwoch?', 'Nein');
+  const nah = 'Vertragswerkstatt (noch nicht hinterlegt) in der Nähe (15–30 Minuten Fußweg)?';
+  await panneSeite(page, nah, 5, ['Ja', 'Nein']);
+  await bild(page, 'panne-18-vertragswerkstatt-nah');
+  await tippe(nah, 'Ja');
+  await panneSeite(page, 'Reparatur direkt vor Ort möglich?', 6, ['Ja', 'Nein']);
+  await bild(page, 'panne-19-vertragswerkstatt-kontakt');
+  await tippe('Reparatur direkt vor Ort möglich?', 'Ja');
+  await panneSeite(page, 'Reparatur durchführen lassen.', 7, [
+    'Erledigt – Rad als „In Reparatur“ markieren',
+  ]);
+  await bild(page, 'panne-20-vertragswerkstatt-reparieren');
+  await zurueck('Reparatur durchführen lassen.');
+  await tippe('Reparatur direkt vor Ort möglich?', 'Nein');
+  const uebergabe = 'Teamleitung informieren und mit dem Ersatzrad weiterarbeiten.';
+  await panneSeite(page, uebergabe, 7, ['Weiter']);
+  await bild(page, 'panne-21-uebergabe');
+  await tippe(uebergabe, 'Weiter');
+  await tippe('Haben Sie einen Autoführerschein?', 'Nein');
+
+  const abschluss = fenster(page, 'Zusammenfassung – bitte prüfen:');
+  await expect(abschluss.getByRole('list', { name: 'Zusammenfassung' })).toContainText(
+    'Vertragswerkstatt (noch nicht hinterlegt) kontaktiert – Rad übergeben',
+  );
+  await expect(abschluss.getByRole('button', { name: /^Bestätigen/ })).toBeInViewport({
+    ratio: 1,
+  });
+  await bild(page, 'panne-22-zusammenfassung-uebergabe');
+  expect(server.aufrufe.record_fleet_breakdown).toBeUndefined();
+});
+
+/** Lastenrad 2, dessen Schlüssel Anna hat (Spec Überholung 6, Szenario 4). */
+const BEI_ANNA = testRad({
+  id: 'rad-2',
+  name: 'Lastenrad 2',
+  regular_rider: null,
+  planned_weekdays: [],
+  key: {
+    holder_staff_id: 'staff-anna',
+    holder_name: 'Anna Beispiel',
+    taken_at: '2026-10-16T05:40:00+00:00',
+  },
+});
+
+test('G4: Schlüssel von Anna an Tim in drei Tipps nach dem Einstieg, in einem Vorgang', async ({
+  page,
+}) => {
+  const server = nachbildung('therapie', [BEI_ANNA]);
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.getByRole('link', { name: 'Schlüssel übergeben' }).click();
+  const z = zaehler();
+
+  const rad = fenster(page, 'Welches Rad?');
+  await expect(rad.getByText('Schritt 1 von 3', { exact: true })).toBeVisible();
+  // Räder mit Schlüssel im Tresor und bei jemandem, das gesperrte nicht.
+  await expect(rad.getByRole('list', { name: 'Räder' }).getByRole('listitem')).toHaveCount(4);
+  await expect(rad.getByRole('button', { name: /Lastenrad 3/ })).toHaveCount(0);
+  expect(await scrolltNicht(page), 'Welches Rad? ohne Scrollen').toBe(true);
+  expect(await ueberlaeuft(page)).toBe(false);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  const zeile = rad.getByRole('button', { name: /^Lastenrad 2/ });
+  await expect(zeile).toContainText('Schlüssel bei Ihnen');
+  await mindestens44(zeile);
+  await bild(page, 'schluessel-01-rad', true);
+  await z.tippe(zeile);
+
+  const person = fenster(page, 'An wen?');
+  await expect(person.getByText('Schlüssel übergeben · Lastenrad 2')).toBeVisible();
+  // Bei Anna liegt er schon - an sie geht er nicht noch einmal.
+  await expect(person.getByRole('list', { name: 'Personen' }).getByRole('listitem')).toHaveText([
+    'Nina Neu',
+    'Tim Teamleitung',
+  ]);
+  expect(await scrolltNicht(page), 'An wen? ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await mindestens44(person.getByRole('button', { name: 'Tim Teamleitung' }));
+  await bild(page, 'schluessel-02-person');
+  await z.tippe(person.getByRole('button', { name: 'Tim Teamleitung' }));
+
+  const abschluss = fenster(page, 'Alles richtig?');
+  await expect(abschluss.getByRole('list', { name: 'Übergabe' }).getByRole('listitem')).toHaveText([
+    'RadLastenrad 2Ändern',
+    'VonAnna Beispiel (Sie)',
+    'AnTim TeamleitungÄndern',
+  ]);
+  const uebergeben = abschluss.getByRole('button', {
+    name: 'Schlüssel an Tim Teamleitung übergeben',
+  });
+  await expect(uebergeben).toBeInViewport({ ratio: 1 });
+  await mindestens44(uebergeben);
+  expect(await scrolltNicht(page), 'Abschluss ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'schluessel-03-abschluss', true);
+  await z.tippe(uebergeben);
+
+  await expect(
+    page.getByText('Schlüssel von Lastenrad 2 an Tim Teamleitung übergeben.'),
+  ).toBeVisible();
+  // Ein Vorgang von Hand zu Hand, nicht über den Tresor.
+  expect(server.aufrufe.hand_over_fleet_key).toEqual([
+    { p_bike_id: 'rad-2', p_holder_staff_id: 'staff-tim' },
+  ]);
+  expect(server.aufrufe.return_fleet_key).toBeUndefined();
+  expect(server.aufrufe.take_fleet_key).toBeUndefined();
+  await expect(page.getByText(/Schlüssel bei Tim Teamleitung/).first()).toBeVisible();
+  test.info().annotations.push({
+    type: 'G4',
+    description: `${z.tipps} Tipps nach dem Einstieg (vorher 4 über den Tresor, zwei Vorgänge)`,
+  });
+  expect(z.tipps).toBeLessThanOrEqual(3);
+});
+
+test('G4: mit dem Rad aus der Adresse in zwei Tipps - der Schlüssel liegt bei einer Kollegin', async ({
+  page,
+}) => {
+  const server = nachbildung('teamleitung', [BEI_ANNA]);
+  // `?rad=` wie vom Rad aus; die Seite „Welches Rad?“ entfällt.
+  await oeffne(
+    page,
+    server,
+    `?rolle=teamleitung&pfad=${encodeURIComponent('/betrieb/flotte/schluessel?rad=rad-2')}`,
+  );
+  await page.setViewportSize({ width: 375, height: 667 });
+  const z = zaehler();
+
+  const person = fenster(page, 'An wen?');
+  await expect(person.getByText('Schritt 2 von 3', { exact: true })).toBeVisible();
+  await expect(person.getByRole('list', { name: 'Personen' }).getByRole('listitem')).toHaveText([
+    'Tim Teamleitung (Sie)',
+    'Nina Neu',
+  ]);
+  await z.tippe(person.getByRole('button', { name: 'Tim Teamleitung (Sie)' }));
+  await z.tippe(
+    fenster(page, 'Alles richtig?').getByRole('button', {
+      name: 'Schlüssel an Tim Teamleitung übergeben',
+    }),
+  );
+  await expect(page.getByText('Schlüssel von Lastenrad 2 an Sie übergeben.')).toBeVisible();
+  expect(server.aufrufe.hand_over_fleet_key).toEqual([
+    { p_bike_id: 'rad-2', p_holder_staff_id: 'staff-tim' },
+  ]);
+  test.info().annotations.push({
+    type: 'G4',
+    description: `${z.tipps} Tipps mit dem Rad aus der Adresse`,
+  });
+  expect(z.tipps).toBeLessThanOrEqual(2);
 });
 
 test('R6: Freigabe durch die Teamleitung in höchstens drei Tipps, mit Rückfrage', async ({
@@ -702,6 +1072,8 @@ test('die Seiten der Radflotte laufen bei 1280 px nicht über', async ({ page })
     '/betrieb/flotte',
     '/betrieb/flotte/rad/rad-3',
     '/betrieb/flotte/checkup?rad=rad-1',
+    '/betrieb/flotte/panne?rad=rad-1',
+    '/betrieb/flotte/schluessel',
   ]) {
     await page.goto(`${PRUEFSEITE}?pfad=${encodeURIComponent(pfad)}`);
     await expect(page.locator('h1').first()).toBeVisible();

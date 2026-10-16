@@ -4,7 +4,7 @@
  * Abschluss heraus geändert wird.
  *
  * Welche Seite auf welche folgt, weiß der einzelne Ablauf - die Verzweigung
- * ist seine reine Logik (`fleet/pannenablauf.ts`, `appointments/nichtangetroffen.ts`).
+ * ist seine reine Logik (`fleet/pannenablauf.ts`, `appointments/niemandOeffnet.ts`).
  * Hier steht nur, was jeder Ablauf gleich braucht:
  *
  *   * **Weiter** legt die Seite auf den Weg und geht zur nächsten.
