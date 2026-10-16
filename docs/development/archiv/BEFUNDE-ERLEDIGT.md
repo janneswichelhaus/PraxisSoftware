@@ -1510,3 +1510,15 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 | Berührt | `src/features/fleet/bike3d/BikeModel3D.tsx`; Schritt „Hochladen“ in `.github/workflows/test-umgebung.yml`; ADR-024 Punkt 2 |
 
 **Beobachtung.** Das 3D-Modul ist eine eigene Datei, deren Name sich mit jedem Build ändert (`viewer-DegDh5Fw.js` mit #253, `viewer-BNuvwWZ3.js` mit #254, obwohl #254 die Radflotte nicht berührte). Die Auslieferung löschte die alte sofort (`rsync --delete`); eine vorher geöffnete Seite fand sie nicht mehr, und die Seite meldete jeden Fehler gleich: Der Browser könne kein 3D. Karte und Werkstattbilder träfe es ebenso. **Erwartet:** Offene Seiten laden ihre Teile weiter; scheitert das Laden doch, steht „ließ sich nicht laden“ mit „Neu laden“ da, und nur ohne WebGL nennt die Seite den Browser.
+
+### BEF-173 — Eine Mindesthöhe von 44 px misst der Browser als 43,99998
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Tests (E2E vor der Anmeldung) |
+| Quelle  | CI-Lauf 740 auf `main`: `plaene.spec.ts:476` im ersten Versuch rot, in der Wiederholung grün |
+| Status  | erledigt am 2026-10-16 (Messwert auf Hundertstel gerundet, Grenze bleibt 44 px) |
+| Berührt | `hoehe` in `tests/e2e/plaene.spec.ts` und `tests/e2e/uebungen.spec.ts` |
+
+**Beobachtung.** `boundingBox()` lieferte 43,99998474 px für einen Link von 44 px: Bruchteile der Gerätepixel des Pixel 7. Die Wiederholung in der CI verdeckte es als „flaky“. **Erwartet.** Der Messwert wird vor dem Vergleich auf Hundertstel gerundet; ein wirklich zu kleines Ziel (43,9 px) bleibt rot.
