@@ -5859,9 +5859,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 
 Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
 
-**Annahme.** Wechseln mit Schwung, Rückmeldung flach und Zeile öffnet sich zur Seite kommen als Bewegung an vorhandene Bausteine; Inhalt und Abläufe bleiben. In Ruhe ändert sich nur, was einen Zustand zeigt: ein offener Aufklapper trägt den Titel in Tinte und kräftiger, ein Feld mit Fokus den Titel in der Hauptfarbe. Text blendet nie über Deckkraft ein; bei reduzierter Bewegung springt alles. Keine Zeitlinie, keine PIN-Punkte, kein Titel im Feld.
+**Annahme.** Wechseln mit Schwung, Rückmeldung flach und Zeile zur Seite kommen als Bewegung an vorhandene Bausteine; Inhalt und Abläufe bleiben. In Ruhe ändert sich nur, was einen Zustand zeigt: offener Aufklapper (Titel in Tinte, kräftiger), Feld mit Fokus (Titel in der Hauptfarbe). Text blendet nie über Deckkraft ein; bei reduzierter Bewegung springt alles. „Kein Fade, kein Bounce“ (Handoff 01.10.) gilt für diese Elemente nicht mehr; Hover bleibt 120 ms.
 
-**Begründung.** Auftrag Jannes (16.10.): nichts am Inhalt ändern. Halb durchsichtiger Text hätte kurz zu wenig Kontrast; ein Titel im Feld verschöbe jedes Formular.
+**Begründung.** Auftrag Jannes (16.10.); der Handoff ist Historie (`DESIGN.md`). Halb durchsichtiger Text hätte kurz zu wenig Kontrast.
 
 **Anker.** `src/index.css`, Abschnitt „Bewegung“; `gleitanzeiger.ts`, `seitenUebergang.ts` (`src/components/ui`); `tests/e2e/bewegung.spec.ts`.
 
