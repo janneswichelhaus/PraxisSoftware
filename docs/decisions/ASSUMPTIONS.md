@@ -5979,7 +5979,7 @@ Recht · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 7
 
-**Annahme.** Genehmigter Urlaub einer einplanbaren Person (Behandlung oder Training) schreibt je Tag eine Abwesenheit mit Bezug auf den Antrag; ein Storno entfernt genau diese, und die Arbeitszeiten überschreiben sie nicht. Abweichende Arbeitszeiten im Zeitraum halten die Genehmigung an. Termine im Zeitraum werden je Tag genannt, nie still abgesagt.
+**Annahme.** Genehmigter Urlaub jeder Person schreibt je Tag eine Abwesenheit mit Bezug auf den Antrag, auch wer erst später einplanbar wird; ein Storno entfernt genau diese, und die Arbeitszeiten überschreiben keinen Tag im Zeitraum. Abweichende Arbeitszeiten im Zeitraum halten die Genehmigung an. Termine werden je Tag genannt, nie still abgesagt.
 
 **Begründung.** Kalender, Slotsuche und Radflotte lesen schon diese Quelle; eine zweite wäre ein Widerspruch im Kalender. Absagen ist Sache der Person, die anruft (G2).
 
@@ -5991,7 +5991,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Genehmigte und stornierte Anträge sowie Ansprüche löscht der Lauf drei Jahre nach Ende des Kalenderjahres (Klasse `urlaub`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`urlaub_kurz`); Offenes und Urlaub mit offenem Storno nie. Storno und Abwesenheiten fallen mit (cascade). Mit Löschjournal.
+**Annahme.** Genehmigte und stornierte Anträge sowie Ansprüche löscht der Lauf drei Jahre nach Ende des Kalenderjahres (`urlaub`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`urlaub_kurz`); Offenes nie. Storno und Abwesenheiten fallen mit (cascade) - abweichend von ANN-030 für diese Zeilen. Mit Löschjournal.
 
 **Begründung.** Keine gesetzliche Frist für Urlaubsunterlagen; die Verjährung nach §§ 195, 199 BGB trägt Ansprüche auf Urlaub und Abgeltung, der Verfallshinweis (EuGH C-684/16) ist Beweismittel. Abgelehntes braucht nur Rückfragen (Art. 5 Abs. 1 lit. e DSGVO).
 
@@ -6003,7 +6003,7 @@ Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Die Notiz zum Antrag sieht nur die Person selbst, auch nicht, wer entscheidet. owner sieht am offenen Antrag Zeitraum, Tage, das Konto der Person, wer zugleich fehlt und die Termine; fremde Konten nur owner. Andere sehen von genehmigtem Urlaub nur Name und Zeitraum ab heute. Keine Summe über alle.
+**Annahme.** Die Notiz sieht nur die Person, auch nicht, wer entscheidet. owner sieht am offenen Antrag Zeitraum, Tage, Konto, wer zugleich fehlt und die Termine; fremde Konten nur owner. Andere sehen genehmigten Urlaub nur mit Name und Zeitraum ab heute; im Kalender steht er wie jede Abwesenheit, ohne Bezug, Urheber, Zeitpunkt (Spaltenrecht).
 
 **Begründung.** BEF-066, Entscheidung Jannes 2026-10-09: „im Urlaub sehen andere nur den Zeitraum, nie den Grund“, wörtlich und nach §16 restriktiv gelesen. owner pflegt die Ansprüche und trägt die Hinweispflicht (EuGH C-684/16).
 

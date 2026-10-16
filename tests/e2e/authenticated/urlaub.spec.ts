@@ -80,19 +80,23 @@ async function stehtImBild(page: Page, dialog: Locator, knopf: Locator): Promise
   expect(breit).toBe(true);
 }
 
+/**
+ * Die Abwesenheiten der Woche, wie der Kalender sie liest - ohne Bezug auf
+ * den Antrag; den sieht keine Praxisrolle (Spaltenrecht, ANN-580).
+ */
 async function abwesenheiten(
   page: Page,
   token: string,
-): Promise<{ on_date: string; leave_request_id: string | null }[]> {
+): Promise<{ on_date: string; kind: string }[]> {
   const { url, anonKey } = supabaseKonfiguration();
   const antwort = await page.request.get(
-    `${url}/rest/v1/staff_working_hour_exceptions?select=on_date,leave_request_id` +
+    `${url}/rest/v1/staff_working_hour_exceptions?select=on_date,kind` +
       `&staff_member_id=eq.${MITARBEITENDE.anna}&on_date=gte.${WOCHE.von}&on_date=lte.${WOCHE.bis}` +
       `&order=on_date`,
     { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } },
   );
   expect(antwort.status()).toBe(200);
-  return (await antwort.json()) as { on_date: string; leave_request_id: string | null }[];
+  return (await antwort.json()) as { on_date: string; kind: string }[];
 }
 
 test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (URL-001)', async ({
@@ -151,13 +155,11 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   test.info().annotations.push({ type: 'G7b', description: `${e.tipps} Tipps bis genehmigt` });
   expect(e.tipps).toBeLessThanOrEqual(2);
 
-  // Am Server: jeder Tag der Woche als Abwesenheit mit Bezug auf den Antrag.
+  // Am Server: jeder Tag der Woche als Abwesenheit, wie der Kalender sie liest.
   const token = await zugriffstoken(page.request, KONTEN.owner);
   const tage = await abwesenheiten(page, token);
   expect(tage).toHaveLength(5);
-  const antragId = tage[0]!.leave_request_id;
-  expect(antragId).not.toBeNull();
-  expect(tage.every((zeile) => zeile.leave_request_id === antragId)).toBe(true);
+  expect(tage.every((zeile) => zeile.kind === 'unavailable')).toBe(true);
 
   // Anna sieht ihn genehmigt; sie storniert, Jannes genehmigt den Storno -
   // die Tage sind wieder frei.

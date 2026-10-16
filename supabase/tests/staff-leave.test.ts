@@ -395,6 +395,59 @@ describe('Wirkung auf Arbeitszeiten und Termine (ANN-578)', () => {
     // Ein Tag außerhalb des Urlaubs bleibt frei pflegbar.
     await asUserCommitted(users.office, SETZEN, [STAFF.anna, plusTage(FREITAG, 3), true, '[]']);
     expect((await abwesenheiten(STAFF.anna)).length).toBe(5);
+    // Wer nicht darf, erfährt am Urlaubstag nichts über den Urlaub: dieselben
+    // Abweisungen wie an jedem anderen Tag, nie 55000 (ADR-013 Nr. 1).
+    const fremd = await fremdeOrganisation();
+    const tag = [STAFF.anna, plusTage(MONTAG, 1), false, '[]'];
+    expect((await fehler(fremd.owner, SETZEN, tag))?.code).toBe('P0002');
+    for (const konto of [users.therapist, users.trainer, users.patientMax, users.plattformTina]) {
+      expect((await fehler(konto, SETZEN, tag))?.code, konto).toBe('42501');
+    }
+  });
+
+  it('schützt auch einen Tag, der vor der Genehmigung von Hand abwesend stand', async () => {
+    const SETZEN = `select public.set_staff_working_hour_exception($1::uuid, $2::date, $3, $4::jsonb)`;
+    await asUserCommitted(users.office, SETZEN, [STAFF.anna, plusTage(MONTAG, 2), true, '[]']);
+    const id = await beantragt(users.therapist);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
+    for (const [abwesend, bloecke] of [
+      [false, '[]'],
+      [false, '[{"von":"09:00","bis":"12:00"}]'],
+    ] as const) {
+      expect(
+        (await fehler(users.office, SETZEN, [STAFF.anna, plusTage(MONTAG, 2), abwesend, bloecke]))
+          ?.code,
+      ).toBe('55000');
+    }
+  });
+
+  it('sperrt die Tage auch für wen, der erst später einplanbar wird', async () => {
+    const id = await beantragt(users.office);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
+    expect((await abwesenheiten(STAFF.olivia)).map((t) => t.leave_request_id)).toEqual(
+      Array(5).fill(id),
+    );
+  });
+
+  it('zeigt den Praxisrollen am Tabellenrecht keinen Bezug, Urheber oder Zeitpunkt', async () => {
+    const id = await beantragt(users.therapist);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
+    for (const konto of [users.therapist, users.office, users.teamLead, users.ownerTherapist]) {
+      for (const spalte of ['leave_request_id', 'created_by', 'created_at']) {
+        expect(
+          (await fehler(konto, `select ${spalte} from public.staff_working_hour_exceptions`))?.code,
+          `${konto} ${spalte}`,
+        ).toBe('42501');
+      }
+      // Was der Kalender liest, bleibt lesbar: ein Urlaubstag wie jede Abwesenheit.
+      const { rows } = await asUser<{ n: number }>(
+        konto,
+        `select count(*)::int as n from public.staff_working_hour_exceptions
+          where staff_member_id = $1 and on_date between $2 and $3 and kind = 'unavailable'`,
+        [STAFF.anna, MONTAG, FREITAG],
+      );
+      expect(rows[0]!.n, konto).toBe(5);
+    }
   });
 
   it('nennt nach der Genehmigung die Tage mit Terminen, ohne sie abzusagen', async () => {

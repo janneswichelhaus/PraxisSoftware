@@ -671,8 +671,25 @@ describe('CAL-005: Lesepfad der Arbeitszeiten', () => {
         order by table_name, privilege_type`,
     );
     expect(rows.map((r) => `${r.table_name}:${r.privilege_type}`)).toEqual([
-      'staff_working_hour_exceptions:SELECT',
       'staff_working_hours:SELECT',
+    ]);
+    // URL-001 (Zweitreview): Die Abweichungen nur mit den Spalten, die der
+    // Kalender liest - ohne Bezug auf einen Urlaubsantrag, Urheber und
+    // Zeitpunkt, die genau die Urlaubstage markierten.
+    const { rows: spalten } = await asPostgres<{ column_name: string; privilege_type: string }>(
+      `select column_name, privilege_type from information_schema.role_column_grants
+        where table_schema = 'public' and table_name = 'staff_working_hour_exceptions'
+          and grantee = 'authenticated'
+        order by column_name`,
+    );
+    expect(spalten.map((r) => `${r.column_name}:${r.privilege_type}`)).toEqual([
+      'ends_at:SELECT',
+      'id:SELECT',
+      'kind:SELECT',
+      'on_date:SELECT',
+      'organization_id:SELECT',
+      'staff_member_id:SELECT',
+      'starts_at:SELECT',
     ]);
   });
 

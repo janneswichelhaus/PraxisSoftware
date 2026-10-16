@@ -26,8 +26,8 @@
 --   * Tage (ANN-577): Arbeitstage nach dem Wochenplan der Person (ohne Plan
 --     Montag bis Freitag) ohne die gesetzlichen Feiertage des Bundeslands der
 --     Praxis, am Server gezählt. Nur ganze Tage.
---   * Wirkung (ANN-578): Genehmigter Urlaub einer einplanbaren Person -
---     Behandlung oder Training - sperrt jeden Tag des Zeitraums als
+--   * Wirkung (ANN-578): Genehmigter Urlaub jeder Person - auch wer erst
+--     spaeter einplanbar wird - sperrt jeden Tag des Zeitraums als
 --     Abwesenheit in den Arbeitszeiten (`staff_working_hour_exceptions`, kind
 --     'unavailable', mit Bezug auf den Antrag): dieselbe Quelle, die
 --     Kalender, Slotsuche, Trainingstermine und Radflotte schon lesen.
@@ -344,6 +344,15 @@ comment on column public.staff_working_hour_exceptions.leave_request_id is
 create index staff_working_hour_exceptions_leave_idx
   on public.staff_working_hour_exceptions (leave_request_id) where leave_request_id is not null;
 
+-- Gelesen werden die Abweichungen weiter direkt (Kalender, Planung,
+-- scheduling/api.ts), aber nur die Spalten, die der Kalender braucht: Bezug
+-- auf den Antrag, Urheber und Zeitpunkt markierten sonst genau die Tage, die
+-- Urlaub waren - fuer jede Praxisrolle und rueckwirkend (Zweitreview Runde 2,
+-- ANN-580). Ein Urlaubstag steht im Kalender wie jede Abwesenheit.
+revoke select on public.staff_working_hour_exceptions from authenticated;
+grant select (id, organization_id, staff_member_id, on_date, kind, starts_at, ends_at)
+  on public.staff_working_hour_exceptions to authenticated;
+
 -- -----------------------------------------------------------------------------
 -- 5. Datenklassen und Fristen (ADR-008, ANN-579)
 -- -----------------------------------------------------------------------------
@@ -472,14 +481,16 @@ $$;
 revoke all on function app.team_leave(uuid, uuid, date, date) from public, anon, authenticated;
 
 -- Die Wirkung eines genehmigten Urlaubs (ANN-578): je Tag eine Abwesenheit,
--- fuer jede einplanbare Person - Behandlung wie Training; Trainingstermine
--- pruefen dieselbe Quelle (create_training_appointment). Abweichende
--- Arbeitszeiten im Zeitraum halten an - die stuenden sonst still neben dem
--- Urlaub. Eine schon von Hand eingetragene Abwesenheit bleibt, wie sie ist.
--- Gesperrt wird die Person wie in set_staff_working_hour_exception, damit
--- kein Block zwischen Pruefung und Eintrag entsteht. `created_by` bleibt
--- leer: Das Tabellenrecht der Arbeitszeiten zeigte sonst jeder Praxisrolle,
--- wer genehmigt hat; der Nachweis ist `decided_by` am Antrag.
+-- fuer jede Person - auch wer heute nicht einplanbar ist: Wird sie es spaeter
+-- (Kalender, Rolle), sind die Tage schon gesperrt (Zweitreview Runde 2).
+-- Kalender, Slotsuche und Trainingstermine (create_training_appointment)
+-- pruefen dieselbe Quelle. Abweichende Arbeitszeiten im Zeitraum halten an -
+-- die stuenden sonst still neben dem Urlaub. Eine schon von Hand eingetragene
+-- Abwesenheit bleibt, wie sie ist. Gesperrt wird die Person wie in
+-- set_staff_working_hour_exception (NO KEY: Termine und Antraege derselben
+-- Person warten nicht auf den Vorgang), damit kein Block zwischen Pruefung und
+-- Eintrag entsteht. `created_by` bleibt leer; der Nachweis ist `decided_by`
+-- am Antrag.
 create function app.apply_leave(p_org uuid, p_request_id uuid)
 returns void
 language plpgsql
@@ -493,12 +504,7 @@ begin
   from public.staff_leave_requests r
   where r.id = p_request_id and r.organization_id = p_org;
 
-  if not (app.is_assignable_therapist(v_antrag.staff_member_id, p_org)
-          or app.is_assignable_trainer(v_antrag.staff_member_id, p_org)) then
-    return;
-  end if;
-
-  perform 1 from public.staff_members sm where sm.id = v_antrag.staff_member_id for update;
+  perform 1 from public.staff_members sm where sm.id = v_antrag.staff_member_id for no key update;
 
   if exists (
     select 1 from public.staff_working_hour_exceptions e
@@ -678,7 +684,7 @@ begin
 
   -- Zwei eigene Antraege fuer dieselben Tage gibt es nicht. Gesperrt wird die
   -- Person, damit zwei gleichzeitige Antraege nicht beide durchgehen.
-  perform 1 from public.staff_members sm where sm.id = v_staff for update;
+  perform 1 from public.staff_members sm where sm.id = v_staff for no key update;
   if exists (
     select 1 from public.staff_leave_requests r
     where r.organization_id = v_org and r.staff_member_id = v_staff
@@ -1059,9 +1065,9 @@ comment on function public.list_leave(date, date) is
 -- 9. Arbeitszeiten: kein Urlaubstag wird still ueberschrieben (ANN-578)
 -- -----------------------------------------------------------------------------
 -- Stand LOG-001b, dazu zwei Dinge (Zweitreview): Die Person wird gesperrt wie
--- in app.apply_leave, und ein Tag, der zu genehmigtem Urlaub gehoert, laesst
--- sich hier weder freigeben noch mit Bloecken belegen - der Urlaub bliebe
--- sonst genehmigt, die Tage aber buchbar. Erst stornieren (55000).
+-- in app.apply_leave, und ein Tag im Zeitraum eines genehmigten Urlaubs
+-- laesst sich hier weder freigeben noch mit Bloecken belegen - der Urlaub
+-- bliebe sonst genehmigt, die Tage aber buchbar. Erst stornieren (55000).
 CREATE OR REPLACE FUNCTION public.set_staff_working_hour_exception(p_staff_member_id uuid, p_date date, p_unavailable boolean, p_blocks jsonb DEFAULT '[]'::jsonb)
  RETURNS integer
  LANGUAGE plpgsql
@@ -1121,14 +1127,18 @@ begin
   end if;
 
   -- URL-001: dieselbe Sperre wie app.apply_leave, dann der Urlaubstag.
-  perform 1 from public.staff_members sm where sm.id = p_staff_member_id for update;
+  perform 1 from public.staff_members sm where sm.id = p_staff_member_id for no key update;
 
+  -- Gegen den genehmigten Urlaub, nicht gegen die Zeile: Ein Tag, der vor
+  -- der Genehmigung von Hand abwesend stand, gehoert ebenso dazu (Zweitreview
+  -- Runde 2).
   if exists (
-    select 1 from public.staff_working_hour_exceptions a
-    where a.staff_member_id = p_staff_member_id
-      and a.organization_id = v_org
-      and a.on_date = p_date
-      and a.leave_request_id is not null
+    select 1 from public.staff_leave_requests r
+    where r.organization_id = v_org
+      and r.staff_member_id = p_staff_member_id
+      and r.kind = 'leave'
+      and r.status = 'approved'
+      and p_date between r.starts_on and r.ends_on
   ) then
     raise exception 'day is part of approved leave' using errcode = '55000';
   end if;
@@ -1884,8 +1894,8 @@ declare
     'fleet_checkups',
     'fleet_breakdowns',
     'fleet_bikes',
-    -- URL-001: ein Storno faellt mit seinem Urlaub (cascade); die
-    -- Abwesenheiten in den Arbeitszeiten verlieren nur ihren Bezug (set null).
+    -- URL-001: Storno und Abwesenheiten in den Arbeitszeiten fallen mit ihrem
+    -- Urlaub (cascade).
     'staff_leave_requests',
     'staff_leave_entitlements',
     'treatment_base_items',
