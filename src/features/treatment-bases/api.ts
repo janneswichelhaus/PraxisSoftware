@@ -529,6 +529,53 @@ export async function fetchTreatmentBasis(
   return zeilen[0] ?? null;
 }
 
+// -----------------------------------------------------------------------------
+// Verlauf (BEF-124)
+// -----------------------------------------------------------------------------
+
+const fassungsInhaltSchema = z.object({
+  treatment_basis_kind: z.enum(BAUARTEN),
+  prescriber_name: z.string().nullable(),
+  issued_on: z.string(),
+  appointment_count: z.number(),
+  frequency_note: z.string().nullable(),
+  note: z.string().nullable(),
+  diagnosis: z.string().nullable(),
+  diagnosis_icd10: z.string().nullable(),
+  therapy_goal: z.string().nullable(),
+  prescriber_note: z.string().nullable(),
+  follow_up_recommendation: z.string().nullable(),
+  items: z.array(z.object({ remedy: z.string(), prescribed_quantity: z.number() })),
+});
+
+export type Fassungsinhalt = z.infer<typeof fassungsInhaltSchema>;
+
+const fassungSchema = z.object({
+  version_no: z.number(),
+  content: fassungsInhaltSchema,
+  replaced_at: z.string(),
+  replaced_by_name: z.string().nullable(),
+});
+
+export type Grundlagenfassung = z.infer<typeof fassungSchema>;
+
+/**
+ * Die früheren Stände einer Grundlage, jüngster zuerst (§ 630f BGB). Jede
+ * Fassung ist der Inhalt **vor** einer Änderung, mit Zeitpunkt und Person.
+ * Recht wie die Grundlage selbst; das Lesen gilt serverseitig als „Akte
+ * geöffnet“.
+ */
+export async function fetchTreatmentBasisVersions(
+  grundlageId: string,
+): Promise<Grundlagenfassung[]> {
+  const { data, error } = (await getSupabase().rpc('list_treatment_basis_versions', {
+    p_treatment_basis_id: grundlageId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Der Verlauf konnte nicht geladen werden.');
+  return z.array(fassungSchema).parse(data ?? []);
+}
+
 /**
  * Ein ausgewähltes Heilmittel im Formular (VER-EPIC-002).
  *
@@ -870,6 +917,12 @@ export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
     // DOK-005: Ein Bericht an die Verordner:in fällt nicht still mit.
     throw new Error(
       'An dieser Verordnung hängt ein Therapiebericht. Sie lässt sich deshalb nicht löschen; einen Entwurf können Sie vorher verwerfen.',
+    );
+  }
+  if (error?.message?.includes('treatment basis has appointments')) {
+    // BEF-124 (ANN-562): Mit Terminen gehört die Grundlage zur Akte.
+    throw new Error(
+      'An dieser Grundlage hängen Termine. Sie gehört damit zur Akte und bleibt; Änderungen stehen im Verlauf.',
     );
   }
   if (error?.message?.includes('treatment basis is in billing')) {

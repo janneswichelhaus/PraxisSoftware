@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+BEF-124 (Pfad A), Branch `claude/keen-newton-gvxlea`: Verordnung mit Verlauf (Fassung je Änderung,
+„Verlauf“ auf der Bearbeiten-Seite), Löschen nur ohne Termine, Übertragen am Termin vermerkt;
+ANN-562.
+
 Übungen, zweite Runde (K12), eine PR, Branch `claude/sweet-gauss-z8te7o`: Vorlagen der Praxis
 („Als Vorlage speichern“ am Plan, vor den mitgelieferten in „Aus Vorlage“, Seite Vorlagen), Durchsicht
 des Katalogs am Stück mit einem Tipp je Übung; ANN-560, ANN-561. Bilder und Videos offen (ANN-539).
@@ -33,7 +37,7 @@ https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
 
 Vorschlag, Jannes entscheidet (Roadmap, „Bereichsüberholungen“):
 
-Die fünf Bereichsüberholungen sind gebaut. Aus der bisherigen Kette danach: BEF-124 (Verordnung ohne Verlauf, Pfad A); ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
+Die fünf Bereichsüberholungen sind gebaut. Aus der bisherigen Kette danach: ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
 Widerruf zu Anhängen im Training (ANN-333).
 
 ## Bei Jannes
@@ -61,5 +65,5 @@ Widerruf zu Anhängen im Training (ANN-333).
 
 ## Letzte Session
 
-16.10.2026, Branch `claude/sweet-gauss-z8te7o`: Übungen, zweite Runde. **Lokal:** `git pull`,
-Migration `20261120100000_ueb_014_eigene_vorlagen` (`supabase db reset`).
+16.10.2026, Branch `claude/keen-newton-gvxlea`: BEF-124. **Lokal:** `git pull`, Migration
+`20261121100000_bef_124_verordnung_mit_verlauf` (`supabase db reset`).

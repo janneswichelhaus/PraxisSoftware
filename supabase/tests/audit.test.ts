@@ -341,6 +341,8 @@ describe('Audit-Lesepfad', () => {
       // ANG-006: die Pakete der Preisliste eines Tags (owner, office).
       'list_training_package_items',
       'list_training_protocols',
+      // BEF-124: frühere Stände einer Behandlungsgrundlage (klinisch lesen).
+      'list_treatment_basis_versions',
       'list_waitlist_entries',
       'list_waitlist_matches',
       'rate_slot_travel',

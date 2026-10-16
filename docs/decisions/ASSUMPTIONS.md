@@ -5795,6 +5795,18 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Jannes (Dur
 
 **Änderungspfad.** Sammelvermerk je Region: eine RPC über `set_exercise_variant_reviewed` · Aufwand `mittel`.
 
+### ANN-562 — Verordnung mit Verlauf: Fassung je Änderung, Löschen nur ohne Termine
+
+Recht · offen · 2026-10-16 · — · — · Wiedervorlage: Prüfpaket (§ 630f BGB)
+
+**Annahme.** Jede Änderung am Inhalt einer Grundlage (Kopf, klinische Felder, Heilmittel und Menge) hält den Stand davor mit Zeitpunkt und Person fest, höchstens eine Fassung je Speichern; genutzte Menge, Freigabe und Reihenfolge zählen nicht. Gelöscht wird nur, solange nie ein Termin an ihr hing; das Übertragen steht am Termin.
+
+**Begründung.** § 630f Abs. 1 BGB, ADR-010 Punkt 15, Muster ADR-016 Punkt 5 (BEF-124). Ohne Termine ist die Grundlage noch kein Behandlungsnachweis; die falsche Akte (Art. 16 DSGVO) bleibt so korrigierbar.
+
+**Anker.** `app.record_treatment_basis_version` in `supabase/migrations/20261121100000_bef_124_verordnung_mit_verlauf.sql`.
+
+**Änderungspfad.** Weiche Löschung statt Sperre, alle Lesepfade filtern · Aufwand `mittel`.
+
 ### ANN-563 — Check-Up geführt: eine Seite je Prüfpunkt, jeder Punkt bestätigt
 
 Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung des geführten Check-Ups

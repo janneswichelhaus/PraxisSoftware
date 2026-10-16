@@ -945,11 +945,13 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
         await wartetAufSperre(loeschenPid);
         await schreiber.query(ZURUECKNEHMEN, [a, zeitstempel]);
         await schreiber.query('commit');
-        expect(await versuch).toBeNull();
-        // In derselben Transaktion nachsehen und danach zuruecknehmen: Die
-        // Grundlage braucht der naechste Test.
-        await loeschen.query("select set_config('role', 'postgres', true)");
-        const { rows } = await loeschen.query<{
+        // Kein 40P01: Das Loeschen wartet und kommt danach bis zu seinen
+        // Pruefungen. Seit BEF-124 (ANN-562) weist es eine Grundlage mit
+        // Terminen dort ab - die Sperrreihenfolge bleibt der Gegenstand.
+        expect((await versuch)?.message).toMatch(/treatment basis has appointments/);
+        // Die abgewiesene Transaktion ist abgebrochen; nachgesehen wird danach.
+        await loeschen.query('rollback');
+        const { rows } = await asPostgres<{
           grundlage: string | null;
           haken: string | null;
           da: boolean;
@@ -959,7 +961,7 @@ describe('In die Abrechnung stellen und Sperre (B7, ANN-514, ANN-515)', () => {
              from public.appointments a where a.id = $1`,
           [a, GRUNDLAGE],
         );
-        expect(rows[0]).toEqual({ grundlage: null, haken: null, da: false });
+        expect(rows[0]).toEqual({ grundlage: GRUNDLAGE, haken: null, da: true });
       } finally {
         await schreiber.query('rollback').catch(() => undefined);
         await loeschen.query('rollback').catch(() => undefined);
