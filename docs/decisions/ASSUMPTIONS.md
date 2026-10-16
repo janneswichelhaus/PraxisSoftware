@@ -5857,12 +5857,12 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 
 ### ANN-567 — Bewegung nur als Gestaltung (Leinwand „Lebendig“)
 
-Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
+Technik · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
 
-**Annahme.** Wechseln mit Schwung, Rückmeldung flach und Zeile zur Seite kommen als Bewegung an vorhandene Bausteine; Inhalt und Abläufe bleiben. In Ruhe ändert sich nur, was einen Zustand zeigt: offener Aufklapper (Titel in Tinte, kräftiger), Feld mit Fokus (Titel in der Hauptfarbe). Text blendet nie über Deckkraft ein; bei reduzierter Bewegung springt alles. „Kein Fade, kein Bounce“ (Handoff 01.10.) gilt für diese Elemente nicht mehr; Hover bleibt 120 ms.
+**Annahme.** Wechseln mit Schwung, Rückmeldung flach und Zeile zur Seite kommen als Bewegung an vorhandene Bausteine; Inhalt und Abläufe bleiben. In Ruhe ändert sich nur, was einen Zustand zeigt: offener Aufklapper (Titel in Tinte, kräftiger), Feld mit Fokus (Titel grün). Text blendet nie über Deckkraft ein; reduziert springt alles. „Kein Fade, kein Bounce“ (Handoff 01.10.) gilt hier nicht mehr; Hover bleibt 120 ms.
 
-**Begründung.** Auftrag Jannes (16.10.); der Handoff ist Historie (`DESIGN.md`). Halb durchsichtiger Text hätte kurz zu wenig Kontrast.
+**Begründung.** Auftrag und Antworten von Jannes (16.10., PR #259); der Handoff ist Historie. Halb durchsichtiger Text hätte kurz zu wenig Kontrast.
 
-**Anker.** `src/index.css`, Abschnitt „Bewegung“; `gleitanzeiger.ts`, `seitenUebergang.ts` (`src/components/ui`); `tests/e2e/bewegung.spec.ts`.
+**Anker.** `src/index.css` „Bewegung“; `gleitanzeiger.ts`, `seitenUebergang.ts` (`src/components/ui`); `DESIGN.md`, überholte Handoffs; `tests/e2e/bewegung.spec.ts`.
 
 **Änderungspfad.** Den Abschnitt in `index.css` und die zwei Hooks entfernen · Aufwand `klein`.

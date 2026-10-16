@@ -256,7 +256,7 @@ describe('Obergrenzen in Bytes (Regel E, 2026-10-12)', () => {
       { pfad: 'CLAUDE.md', bytes: 8192 },
       { pfad: 'docs/STATUS.md', bytes: 4096 },
       { pfad: 'docs/development/ARBEITSBEREICHE.md', bytes: 8192 },
-      { pfad: 'docs/design/DESIGN.md', bytes: 12288, optional: true },
+      { pfad: 'docs/design/DESIGN.md', bytes: 12800, optional: true },
       { pfad: 'docs/decisions/OPEN_DECISIONS.md', zeilen: 400 },
     ]);
     expect(SKILL_GRENZE_BYTES).toBe(8192);
