@@ -670,6 +670,9 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
         'update public.appointments set treatment_basis_id = null where treatment_basis_id = $1',
         [VERORDNUNG_MAX],
       );
+      await asPostgres('update public.treatment_bases set had_appointments = false where id = $1', [
+        VERORDNUNG_MAX,
+      ]);
       await asUserCommitted(users.therapist, 'select public.delete_treatment_basis($1::uuid)', [
         VERORDNUNG_MAX,
       ]);

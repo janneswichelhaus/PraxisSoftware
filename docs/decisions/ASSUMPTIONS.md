@@ -5799,7 +5799,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Jannes (Dur
 
 Recht · offen · 2026-10-16 · — · — · Wiedervorlage: Prüfpaket (§ 630f BGB)
 
-**Annahme.** Jede Änderung am Inhalt einer Grundlage (Kopf, klinische Felder, Heilmittel und Menge) hält den Stand davor mit Zeitpunkt und Person fest, höchstens eine Fassung je Speichern; genutzte Menge, Freigabe und Reihenfolge zählen nicht. Gelöscht wird nur, solange kein Termin an ihr hängt oder von ihr übertragen wurde; das Übertragen steht am Termin.
+**Annahme.** Jede Änderung am Inhalt einer Grundlage (Kopf, klinische Felder, Heilmittel und Menge) hält den Stand davor mit Zeitpunkt und Person fest, höchstens eine Fassung je Speichern; genutzte Menge, Freigabe und Reihenfolge zählen nicht. Gelöscht wird nur, solange nie ein Termin an ihr hing; das Übertragen steht am Termin.
 
 **Begründung.** § 630f Abs. 1 BGB, ADR-010 Punkt 15, Muster ADR-016 Punkt 5 (BEF-124). Ohne Termine ist die Grundlage noch kein Behandlungsnachweis; die falsche Akte (Art. 16 DSGVO) bleibt so korrigierbar.
 

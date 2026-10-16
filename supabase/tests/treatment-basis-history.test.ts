@@ -322,6 +322,28 @@ describe('BEF-124: Löschen nur ohne Termine', () => {
     expect(f?.message).toMatch(/treatment basis has appointments/);
   });
 
+  it('sperrt das Löschen auch nach zwei Übertragungen hintereinander (Zweitreview)', async () => {
+    const a = await anlegen();
+    const b = await anlegen({ terminzahl: 12 });
+    const c = await anlegen({ terminzahl: 14 });
+    const termin = await terminAnlegen(a);
+    await asUserCommitted(users.office, UEBERTRAGEN, [b, [termin]]);
+    await asUserCommitted(users.office, UEBERTRAGEN, [c, [termin]]);
+
+    for (const id of [a, b]) {
+      const f = await fehler(users.therapist, LOESCHEN, [id]);
+      expect(f?.message).toMatch(/treatment basis has appointments/);
+    }
+  });
+
+  it('sperrt das Löschen auch, wenn der Termin selbst gelöscht wurde', async () => {
+    const id = await anlegen();
+    const termin = await terminAnlegen(id);
+    await asPostgres('delete from public.appointments where id = $1', [termin]);
+    const f = await fehler(users.therapist, LOESCHEN, [id]);
+    expect(f?.message).toMatch(/treatment basis has appointments/);
+  });
+
   it('vermerkt nichts, wenn der Termin schon an der Zielgrundlage hängt', async () => {
     const id = await anlegen();
     const termin = await terminAnlegen(id);

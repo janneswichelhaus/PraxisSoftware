@@ -22,9 +22,9 @@
 --      folgt den Leistungen), die Freigabe zur Abrechnung (sie hat eigene
 --      Spalten, ADR-020 Punkt 9), die Patient:in beim Zusammenfuehren und die
 --      Reihenfolge der Positionen.
---   2. LOESCHEN NUR OHNE TERMINE. Haengt ein Termin an der Grundlage - auch ein
---      abgesagter - oder wurde einer von ihr weg uebertragen, wird sie nicht
---      mehr geloescht. Aendern geht weiter, mit Verlauf. Der Fall "falsche
+--   2. LOESCHEN NUR OHNE TERMINE. Hing je ein Termin an der Grundlage - auch
+--      ein abgesagter, auch einer, der weiter uebertragen wurde -, wird sie
+--      nicht mehr geloescht (Merker `had_appointments`). Aendern geht weiter, mit Verlauf. Der Fall "falsche
 --      Akte" (Art. 16 DSGVO) bleibt, solange noch nichts an ihr haengt.
 --   3. UMHAENGEN AM TERMIN. Der Termin traegt, von welcher Grundlage er zuletzt
 --      uebertragen wurde, wann und durch wen - wie `reopened_by` (ADR-010
@@ -285,6 +285,52 @@ comment on column public.appointments.treatment_basis_transferred_by is
   'Wer ihn uebertragen hat (auth.uid()). Zweck nur der Nachweis zur Akte, nie eine Leistungskontrolle (ADR-010 Punkt 20).';
 
 -- -----------------------------------------------------------------------------
+-- 4b. Hing je ein Termin an der Grundlage?
+--
+-- `previous_treatment_basis_id` haelt nur die letzte Herkunft; nach zwei
+-- Uebertragungen (A nach B nach C) zeigte nichts mehr auf A (Zweitreview).
+-- Der Merker an der Grundlage bleibt, einmal gesetzt, und traegt die Sperre.
+-- Gesetzt wird er nur, solange er fehlt: Danach sperrt ein neuer Termin die
+-- Grundlagenzeile nicht mehr. Reihenfolge Termin, dann Grundlage - wie jeder
+-- Schreiber (Zweitreview A, Nachtrag).
+-- -----------------------------------------------------------------------------
+alter table public.treatment_bases
+  add column had_appointments boolean not null default false;
+
+comment on column public.treatment_bases.had_appointments is
+  'Hing je ein Termin an dieser Grundlage (BEF-124, ANN-562)? Einmal gesetzt, bleibt er; delete_treatment_basis weist sie dann ab. Gesetzt nur vom Trigger an appointments.';
+
+update public.treatment_bases b
+   set had_appointments = true
+ where exists (
+   select 1 from public.appointments a
+   where a.treatment_basis_id = b.id or a.previous_treatment_basis_id = b.id
+ );
+
+create function app.mark_treatment_basis_used()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  update public.treatment_bases b
+     set had_appointments = true
+   where b.id = new.treatment_basis_id
+     and not b.had_appointments;
+  return null;
+end;
+$$;
+
+revoke all on function app.mark_treatment_basis_used() from public, anon, authenticated;
+
+create trigger appointments_mark_treatment_basis_used
+  after insert or update of treatment_basis_id on public.appointments
+  for each row
+  when (new.treatment_basis_id is not null)
+  execute function app.mark_treatment_basis_used();
+
+-- -----------------------------------------------------------------------------
 -- 5. Uebertragen: Rumpf aus 20261006110100_log_001b_schreibpfade.sql, neu ist
 --    allein der Vermerk am Termin im letzten Update.
 -- -----------------------------------------------------------------------------
@@ -530,12 +576,15 @@ begin
     raise exception 'treatment basis is in billing' using errcode = '55000';
   end if;
 
-  -- BEF-124 (ANN-562): Haengt ein Termin an der Grundlage oder wurde einer
-  -- von ihr weg uebertragen, gehoert sie zur Akte und bleibt (§ 630f BGB).
+  -- BEF-124 (ANN-562): Hing je ein Termin an der Grundlage - auch einer, der
+  -- inzwischen woanders haengt -, gehoert sie zur Akte und bleibt (§ 630f BGB).
   -- Nach der Zeilensperre geprueft: Ein Termin, der gleichzeitig an die
   -- Grundlage gehaengt wird, wartet auf sie (Fremdschluessel) und sieht danach
   -- entweder die Grundlage oder ihr Fehlen.
   if exists (
+    select 1 from public.treatment_bases b
+    where b.id = p_treatment_basis_id and b.had_appointments
+  ) or exists (
     select 1 from public.appointments a
     where a.organization_id = v_org
       and (a.treatment_basis_id = p_treatment_basis_id
