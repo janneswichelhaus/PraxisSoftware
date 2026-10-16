@@ -1486,3 +1486,15 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 | Berührt | `src/features/appointments/FolgeterminVorschlaege.test.tsx` („nennt einen schon geplanten nächsten Termin mit Therapeut:in“, ANN-477) |
 
 **Beobachtung.** Der Test legt den Termin auf „heute + 2“ um 08:00 UTC und den nächsten eine Woche später ebenfalls um 08:00 UTC. Liegt die Zeitumstellung am 25.10. dazwischen, zeigt die Seite 09:00 statt 10:00 Uhr; vom 16. bis 22.10. (Berliner Tag) ist der Test deshalb rot, auf `main` ebenso. **Erwartet:** Der zweite Termin steht zur selben Uhrzeit vor Ort (`zeitpunktIn`), wie in den übrigen Tests der Datei. Behoben im selben PR, weil die CI sonst eine Woche rot ist.
+
+### BEF-172 — Nach einer Auslieferung lädt eine offene Seite das 3D-Rad nicht und schiebt es auf den Browser
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Radflotte (3D-Rad); Auslieferung der Test-Umgebung (OPS-002a) |
+| Quelle  | Jannes in der Test-Umgebung nach #254 („Das 3D-Modell lässt sich in diesem Browser nicht anzeigen“); nachgestellt mit den Builds von #253 und #254 |
+| Status  | erledigt in FLT-005/006 (Meldung getrennt, „Neu laden“) und ANN-563 (alte Dateien bleiben 7 Tage) |
+| Berührt | `src/features/fleet/bike3d/BikeModel3D.tsx`; Schritt „Hochladen“ in `.github/workflows/test-umgebung.yml`; ADR-024 Punkt 2 |
+
+**Beobachtung.** Das 3D-Modul ist eine eigene Datei, deren Name sich mit jedem Build ändert (`viewer-DegDh5Fw.js` mit #253, `viewer-BNuvwWZ3.js` mit #254, obwohl #254 die Radflotte nicht berührte). Die Auslieferung löschte die alte sofort (`rsync --delete`); eine vorher geöffnete Seite fand sie nicht mehr, und die Seite meldete jeden Fehler gleich: Der Browser könne kein 3D. Karte und Werkstattbilder träfe es ebenso. **Erwartet:** Offene Seiten laden ihre Teile weiter; scheitert das Laden doch, steht „ließ sich nicht laden“ mit „Neu laden“ da, und nur ohne WebGL nennt die Seite den Browser.
