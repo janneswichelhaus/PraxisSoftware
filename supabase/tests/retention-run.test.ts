@@ -833,6 +833,9 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // POR-009: Regel in apply_retention, Tests in platform-appointment-requests.test.ts.
       'terminwunsch',
       'trainingsverhaeltnis',
+      // URL-001: Regel in app.delete_due_staff_leave, Tests in staff-leave.test.ts.
+      'urlaub',
+      'urlaub_kurz',
       'warteliste',
       'zugangseinladung',
     ]);

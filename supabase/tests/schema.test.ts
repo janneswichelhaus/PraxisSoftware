@@ -193,6 +193,9 @@ describe('Schema-Invarianten', () => {
       // FLT-002: Fotos am Rad und ihre einmaligen Lesefreigaben.
       'fleet_photos',
       'fleet_photo_access_grants',
+      // URL-001: Urlaubsanträge und -ansprüche.
+      'staff_leave_requests',
+      'staff_leave_entitlements',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

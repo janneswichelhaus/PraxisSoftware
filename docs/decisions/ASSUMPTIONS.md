@@ -5950,3 +5950,63 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 **Anker.** `src/features/appointments/nichtangetroffen.ts`, `HomeVisitFlow.tsx`.
 
 **Änderungspfad.** Reihenfolge oder Begründungsweg: `nichtangetroffen.ts` · Aufwand `klein`.
+
+### ANN-576 — Urlaub: Antrag, Entscheidung, Storno als neuer Antrag
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 7
+
+**Annahme.** Jede Praxisrolle mit Mitarbeiterdatensatz beantragt eigenen Urlaub; owner und team_lead entscheiden, nie über den eigenen Antrag, Ablehnen nur mit Grund. owner trägt den eigenen Urlaub direkt ein (genehmigt, `self_entered`). Genehmigtes wird nur über einen Storno-Antrag mit Bezug aufgehoben, und nur vor Beginn des Urlaubs.
+
+**Begründung.** Antragsmechanik (`gefuehrte-ablaeufe-und-antraege.md` §2), §4.5. Sonst bliebe owners Antrag offen; ein laufender Urlaub gäbe beim Storno genommene Tage frei.
+
+**Anker.** `app.can_decide_staff_requests`, `public.decide_leave_request`, `public.request_leave_cancellation`.
+
+**Änderungspfad.** Kreis der Entscheidenden in der einen Funktion; Verkürzen eines laufenden Urlaubs als eigener Antrag · Aufwand `klein` bzw. `mittel`.
+
+### ANN-577 — Urlaubstage nach Wochenplan ohne Feiertage des Bundeslands
+
+Recht · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein Urlaubstag ist ein Tag mit Block im Wochenplan der Person (ohne Plan Montag bis Freitag), der kein gesetzlicher Feiertag des Bundeslands der Praxis ist (`organizations.federal_state`, BW oder NW, Voreinstellung BW). Gezählt wird am Server beim Beantragen; nur ganze Tage; ein Urlaub über den Jahreswechsel zählt je Jahr.
+
+**Begründung.** § 3 Abs. 2 BUrlG (Feiertage sind keine Werktage); Feiertage nach FeiertG NRW § 2 und Feiertagsgesetz BW; halbe Tage kennt das BUrlG nicht als Anspruch.
+
+**Anker.** `app.leave_days`, `app.is_public_holiday`; `src/features/vacation/feiertage.ts`.
+
+**Änderungspfad.** Weitere Länder oder halbe Tage: Liste und Zählung an diesen zwei Stellen · Aufwand `klein`.
+
+### ANN-578 — Genehmigter Urlaub sperrt die Tage, Termine werden genannt
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 7
+
+**Annahme.** Genehmigter Urlaub einer einplanbaren Person schreibt je Tag eine Abwesenheit (`unavailable`) mit Bezug auf den Antrag in die Arbeitszeiten; ein Storno entfernt genau diese. Abweichende Arbeitszeiten (`block`) im Zeitraum halten die Genehmigung an. Bestätigte Termine im Zeitraum werden gezählt und zum Umplanen genannt, nie still abgesagt.
+
+**Begründung.** Kalender, Slotsuche und Radflotte lesen schon diese Quelle; eine zweite wäre ein Widerspruch im Kalender. Absagen ist Sache der Person, die anruft (G2).
+
+**Anker.** `app.apply_leave`, `staff_working_hour_exceptions.leave_request_id`.
+
+**Änderungspfad.** Andere Wirkung (etwa Termine mit absagen): nur `app.apply_leave` · Aufwand `klein`.
+
+### ANN-579 — Urlaub: drei Jahre ab Jahresende, Abgelehntes ein Jahr
+
+Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Genehmigte und stornierte Anträge sowie Ansprüche löscht der Lauf drei Jahre nach Ende des Kalenderjahres (Klasse `urlaub`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`urlaub_kurz`); Offenes und Urlaub mit offenem Storno nie. Mit Löschjournal.
+
+**Begründung.** Keine gesetzliche Frist für Urlaubsunterlagen; die Verjährung nach §§ 195, 199 BGB trägt Ansprüche auf Urlaub und Abgeltung, der Verfallshinweis (EuGH C-684/16) ist Beweismittel. Abgelehntes braucht nur Rückfragen (Art. 5 Abs. 1 lit. e DSGVO).
+
+**Anker.** `retention_classes` `urlaub`, `urlaub_kurz`; `app.delete_due_staff_leave`.
+
+**Änderungspfad.** Frist im Katalog ändern · Aufwand `klein`.
+
+### ANN-580 — Urlaub: Notiz nur für die Person, fremde Konten nur owner
+
+Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Die Notiz zum Antrag sieht nur die Person selbst, auch nicht, wer entscheidet. Entscheidende sehen am offenen Antrag Person, Zeitraum, Tage, das Urlaubskonto der Person, wer zugleich fehlt und die Zahl der Termine; fremde Konten sonst nur owner. Andere sehen von genehmigtem Urlaub nur Name und Zeitraum. Keine Summe über alle.
+
+**Begründung.** BEF-066, Entscheidung Jannes 2026-10-09: „im Urlaub sehen andere nur den Zeitraum, nie den Grund“, wörtlich und nach §16 restriktiv gelesen. owner pflegt die Ansprüche und trägt die Hinweispflicht (EuGH C-684/16).
+
+**Anker.** `public.list_leave` (Projektion `to_decide`), `app.can_read_staff_leave_balances`.
+
+**Änderungspfad.** Notiz für Entscheidende öffnen: ein Feld in `to_decide` · Aufwand `klein`.
