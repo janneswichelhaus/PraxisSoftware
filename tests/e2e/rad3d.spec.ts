@@ -11,6 +11,10 @@ const PRUEFSEITE = '/tests/e2e/fixtures/rad3d.html';
 
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 test.use({
+  // Ein Bildpunkt je CSS-Pixel: SwiftShader zeichnet in Software, und bei der
+  // Dichte des Pixel 7 dauert ein Bild in der CI Sekunden. Tipps, Layout und
+  // axe hängen an CSS-Pixeln, nicht an der Dichte.
+  deviceScaleFactor: 1,
   launchOptions: {
     ...(executablePath ? { executablePath } : {}),
     args: [
@@ -51,12 +55,43 @@ test('Antippen trifft das Bauteil unter dem Finger (AC 1)', async ({ page }) => 
   );
 });
 
-/** Zwei Bilder des Rads im Abstand von 400 ms: gleich heißt, nichts bewegt sich. */
-async function steht(page: Page) {
-  const rad = page.getByRole('img', { name: /3D-Modell des Lastenrads/ });
-  const vorher = await rad.screenshot();
-  await page.waitForTimeout(400);
-  return vorher.equals(await rad.screenshot());
+/**
+ * Zählt, wie oft das Rad neu gezeichnet wird: three.js leert vor jedem Bild
+ * die Fläche. Ein Bildvergleich wartet dagegen auf ein ruhiges Element und
+ * hängt auf einem langsamen Rechner, solange das Rad pulsiert.
+ */
+async function bilderZaehlen(page: Page) {
+  await page.addInitScript(() => {
+    const fenster = window as unknown as { __bilder: number };
+    fenster.__bilder = 0;
+    for (const typ of [WebGLRenderingContext, WebGL2RenderingContext]) {
+      const prototyp = typ.prototype as unknown as {
+        clear: (this: unknown, maske: number) => void;
+      };
+      const original = prototyp.clear;
+      prototyp.clear = function (this: unknown, maske: number) {
+        fenster.__bilder += 1;
+        original.call(this, maske);
+      };
+    }
+  });
+}
+
+function bilder(page: Page) {
+  return page.evaluate(() => (window as unknown as { __bilder: number }).__bilder);
+}
+
+/** Ob das Rad binnen `frist` ms zur Ruhe kommt: zwei Sekunden ohne neues Bild. */
+async function wirdRuhig(page: Page, frist: number) {
+  const ende = Date.now() + frist;
+  let vorher = await bilder(page);
+  while (Date.now() < ende) {
+    await page.waitForTimeout(2000);
+    const jetzt = await bilder(page);
+    if (jetzt === vorher) return true;
+    vorher = jetzt;
+  }
+  return false;
 }
 
 async function transportboxWaehlen(page: Page) {
@@ -66,23 +101,34 @@ async function transportboxWaehlen(page: Page) {
 }
 
 test('bei reduzierter Bewegung kein Kameraflug und kein Pulsieren (AC 10)', async ({ page }) => {
+  test.setTimeout(90_000);
+  await bilderZaehlen(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await bereit(page);
   await transportboxWaehlen(page);
-  // Hervorgehoben, aber ruhig.
-  expect(await steht(page)).toBe(true);
-  // „Am Rad zeigen“ springt, statt zu fliegen: gleich danach steht das Bild.
+  // Hervorgehoben, aber ruhig: kein Pulsieren.
+  expect(await wirdRuhig(page, 20_000)).toBe(true);
+  // „Am Rad zeigen“ springt, statt zu fliegen: ein, zwei neue Bilder, kein Flug.
+  const vorher = await bilder(page);
   await page.getByRole('button', { name: 'Bremse vorne zeigen' }).click();
-  await page.waitForTimeout(100);
-  expect(await steht(page)).toBe(true);
+  expect(await wirdRuhig(page, 20_000)).toBe(true);
+  expect((await bilder(page)) - vorher).toBeLessThanOrEqual(3);
 });
 
 test('ohne diese Einstellung pulsiert das gewählte Bauteil (Gegenprobe zu AC 10)', async ({
   page,
 }) => {
+  test.setTimeout(90_000);
+  await bilderZaehlen(page);
   await bereit(page);
   await transportboxWaehlen(page);
-  expect(await steht(page)).toBe(false);
+  // Nach dem Antippen zeichnet das Rad ohnehin ein paar Bilder; danach zählt nur
+  // das Pulsieren.
+  await page.waitForTimeout(2000);
+  const vorher = await bilder(page);
+  await expect
+    .poll(async () => (await bilder(page)) - vorher, { timeout: 20_000 })
+    .toBeGreaterThanOrEqual(3);
 });
 
 test('Zoom und Ansichten sind Knöpfe mit 44 px und Namen (AC 9)', async ({ page }) => {

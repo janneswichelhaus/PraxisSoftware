@@ -23,10 +23,22 @@ import { testDetail, testFlotte } from '../../src/features/fleet/testdaten';
  * auf einem Rechner ohne Grafikkarte. Alles ist synthetisch.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/radflotte.html';
+
+/**
+ * Nach dem Speichern zeigt die Seite das Rad mit seinem 3D-Modell. Auf einem
+ * Rechner ohne Grafikkarte (SwiftShader, auch in der CI) baut WebGL dafür die
+ * Shader neu - das dauert dort länger als die üblichen 5 s. Gezählt werden
+ * Tipps, nicht Sekunden.
+ */
+const NACH_DEM_SPEICHERN = 20_000;
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 test.use({
+  // Ein Bildpunkt je CSS-Pixel: SwiftShader zeichnet in Software, und bei der
+  // Dichte des Pixel 7 dauert ein Bild in der CI Sekunden. Tipps, Layout und
+  // axe hängen an CSS-Pixeln, nicht an der Dichte.
+  deviceScaleFactor: 1,
   launchOptions: {
     ...(executablePath ? { executablePath } : {}),
     args: [
@@ -282,7 +294,9 @@ test('R3: Check-Up ohne Befund in höchstens vier Tipps', async ({ page }) => {
   await z.tippe(page.getByRole('button', { name: 'Weiter' }));
   await z.tippe(page.getByRole('checkbox', { name: /habe das ganze Rad/ }));
   await z.tippe(page.getByRole('button', { name: 'Check-Up speichern' }));
-  await expect(page.getByText('Check-Up gespeichert.')).toBeVisible();
+  await expect(page.getByText('Check-Up gespeichert.')).toBeVisible({
+    timeout: NACH_DEM_SPEICHERN,
+  });
   expect(server.aufrufe.record_fleet_checkup).toHaveLength(1);
   test.info().annotations.push({ type: 'R3', description: `${z.tipps} Tipps` });
   expect(z.tipps).toBeLessThanOrEqual(4);
@@ -312,7 +326,9 @@ test('R4: Check-Up mit einer Stelle am 3D-Rad in höchstens sechs Tipps und Text
   await z.tippe(page.getByRole('checkbox', { name: /habe das ganze Rad/ }));
   await z.tippe(page.getByRole('button', { name: 'Check-Up speichern' }));
 
-  await expect(page.getByText('Check-Up gespeichert.')).toBeVisible();
+  await expect(page.getByText('Check-Up gespeichert.')).toBeVisible({
+    timeout: NACH_DEM_SPEICHERN,
+  });
   const eingabe = server.aufrufe.record_fleet_checkup![0]!;
   expect(eingabe.p_spots).toEqual([
     expect.objectContaining({ zone: 'transportbox', severity: 'problem', note: 'Deckel klemmt' }),
@@ -345,7 +361,9 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
   await expect(page.getByLabel('Was ist auffällig?')).toHaveValue('Transportbox: Deckel klemmt');
   await z.tippe(page.getByRole('button', { name: 'Melden', exact: true }));
 
-  await expect(page.getByText('Panne gemeldet. Lastenrad 1 bleibt in der Planung.')).toBeVisible();
+  await expect(page.getByText('Panne gemeldet. Lastenrad 1 bleibt in der Planung.')).toBeVisible({
+    timeout: NACH_DEM_SPEICHERN,
+  });
   expect(server.aufrufe.record_fleet_breakdown![0]).toEqual(
     expect.objectContaining({ p_outcome: 'meldungOhneSperre', p_location_note: '' }),
   );
