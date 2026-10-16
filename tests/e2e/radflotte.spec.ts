@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import type AxeCore from 'axe-core';
 import type { Bike, BikeDetail, Fleet, Spot } from '../../src/features/fleet/api';
-import { testDetail, testFlotte } from '../../src/features/fleet/testdaten';
+import { testDetail, testFlotte, testRad } from '../../src/features/fleet/testdaten';
 
 /**
  * Die Radflotte (FLT-EPIC-001) im echten Browser bei 375 px, mit gezählten
@@ -24,11 +24,14 @@ import { testDetail, testFlotte } from '../../src/features/fleet/testdaten';
  *   * **R7** Unterlage für die Werkstatt ab dem Rad: 2 Tipps bis zum
  *     Druckdialog;
  *   * **G3** Panne bis zur Abschlussart „Rad zurückgelassen“: 11 Tipps +
- *     Text wie vorher, jede Seite bei 375 × 667 ohne Scrollen.
+ *     Text wie vorher, jede Seite bei 375 × 667 ohne Scrollen;
+ *   * **G4** Schlüssel von Hand zu Hand: ≤ 3 Tipps nach dem Einstieg (vorher
+ *     4 über den Tresor: zurücklegen, Rad, Person, eintragen), mit `?rad=`
+ *     ≤ 2.
  *
  * Je Seite der geführten Abläufe ein Bildschirmfoto nach `.tmp/screenshots/`
- * (`b6-panne-…`; die erste und die letzte Seite auch bei 1280 px) - für die
- * Selbstsichtung, nicht verglichen.
+ * (`b6-panne-…`, `b6-schluessel-…`; die erste und die letzte Seite auch bei
+ * 1280 px) - für die Selbstsichtung, nicht verglichen.
  *
  * Der Server ist eine kleine Nachbildung über abgefangene Anfragen; Rechte,
  * Nummern und Fristen prüft `pnpm test:db`. WebGL kommt aus SwiftShader, wie
@@ -68,9 +71,9 @@ test.use({
   permissions: ['camera'],
 });
 
-function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie') {
+function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie', weitere: Bike[] = []) {
   const start = testFlotte({ can_release: rolle === 'teamleitung' });
-  const raeder: Bike[] = start.bikes.map((rad) => ({ ...rad }));
+  const raeder: Bike[] = [...start.bikes, ...weitere].map((rad) => ({ ...rad }));
   const stellen: Spot[] = testDetail().spots.map((stelle) => ({ ...stelle }));
   const aufrufe: Record<string, Record<string, unknown>[]> = {};
   let folge = 10;
@@ -157,6 +160,17 @@ function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie') {
     return_fleet_key: (p) => {
       raeder.find((eintrag) => eintrag.id === p.p_bike_id)!.key = null;
       return null;
+    },
+    // Von Hand zu Hand (ANN-575): Der offene Vorgang endet, ein neuer beginnt.
+    hand_over_fleet_key: (p) => {
+      const rad = raeder.find((eintrag) => eintrag.id === p.p_bike_id)!;
+      const halter = String(p.p_holder_staff_id);
+      rad.key = {
+        holder_staff_id: halter,
+        holder_name: start.staff.find((person) => person.id === halter)?.name ?? null,
+        taken_at: new Date().toISOString(),
+      };
+      return 'schluessel';
     },
     record_fleet_checkup: (p) => ({
       checkup_id: 'checkup-neu',
@@ -611,7 +625,7 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
   ]);
 });
 
-/** Das Fenster eines geführten Ablaufs; sein Name ist die Frage der Seite. */
+/** Das Fenster eines geführten Ablaufs (Panne, Schlüssel); sein Name ist die Frage der Seite. */
 function fenster(page: Page, name: string) {
   return page.getByRole('dialog', { name, exact: true });
 }
@@ -872,6 +886,124 @@ test('G3: auch die übrigen Seiten der Panne stehen bei 375 × 667 ohne Scrollen
   expect(server.aufrufe.record_fleet_breakdown).toBeUndefined();
 });
 
+/** Lastenrad 2, dessen Schlüssel Anna hat (Spec Überholung 6, Szenario 4). */
+const BEI_ANNA = testRad({
+  id: 'rad-2',
+  name: 'Lastenrad 2',
+  regular_rider: null,
+  planned_weekdays: [],
+  key: {
+    holder_staff_id: 'staff-anna',
+    holder_name: 'Anna Beispiel',
+    taken_at: '2026-10-16T05:40:00+00:00',
+  },
+});
+
+test('G4: Schlüssel von Anna an Tim in drei Tipps nach dem Einstieg, in einem Vorgang', async ({
+  page,
+}) => {
+  const server = nachbildung('therapie', [BEI_ANNA]);
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.getByRole('link', { name: 'Schlüssel übergeben' }).click();
+  const z = zaehler();
+
+  const rad = fenster(page, 'Welches Rad?');
+  await expect(rad.getByText('Schritt 1 von 3', { exact: true })).toBeVisible();
+  // Räder mit Schlüssel im Tresor und bei jemandem, das gesperrte nicht.
+  await expect(rad.getByRole('list', { name: 'Räder' }).getByRole('listitem')).toHaveCount(4);
+  await expect(rad.getByRole('button', { name: /Lastenrad 3/ })).toHaveCount(0);
+  expect(await scrolltNicht(page), 'Welches Rad? ohne Scrollen').toBe(true);
+  expect(await ueberlaeuft(page)).toBe(false);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  const zeile = rad.getByRole('button', { name: /^Lastenrad 2/ });
+  await expect(zeile).toContainText('Schlüssel bei Ihnen');
+  await mindestens44(zeile);
+  await bild(page, 'schluessel-01-rad', true);
+  await z.tippe(zeile);
+
+  const person = fenster(page, 'An wen?');
+  await expect(person.getByText('Schlüssel übergeben · Lastenrad 2')).toBeVisible();
+  // Bei Anna liegt er schon - an sie geht er nicht noch einmal.
+  await expect(person.getByRole('list', { name: 'Personen' }).getByRole('listitem')).toHaveText([
+    'Nina Neu',
+    'Tim Teamleitung',
+  ]);
+  expect(await scrolltNicht(page), 'An wen? ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await mindestens44(person.getByRole('button', { name: 'Tim Teamleitung' }));
+  await bild(page, 'schluessel-02-person');
+  await z.tippe(person.getByRole('button', { name: 'Tim Teamleitung' }));
+
+  const abschluss = fenster(page, 'Alles richtig?');
+  await expect(abschluss.getByRole('list', { name: 'Übergabe' }).getByRole('listitem')).toHaveText([
+    'RadLastenrad 2Ändern',
+    'VonAnna Beispiel (Sie)',
+    'AnTim TeamleitungÄndern',
+  ]);
+  const uebergeben = abschluss.getByRole('button', {
+    name: 'Schlüssel an Tim Teamleitung übergeben',
+  });
+  await expect(uebergeben).toBeInViewport({ ratio: 1 });
+  await mindestens44(uebergeben);
+  expect(await scrolltNicht(page), 'Abschluss ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'schluessel-03-abschluss', true);
+  await z.tippe(uebergeben);
+
+  await expect(
+    page.getByText('Schlüssel von Lastenrad 2 an Tim Teamleitung übergeben.'),
+  ).toBeVisible();
+  // Ein Vorgang von Hand zu Hand, nicht über den Tresor.
+  expect(server.aufrufe.hand_over_fleet_key).toEqual([
+    { p_bike_id: 'rad-2', p_holder_staff_id: 'staff-tim' },
+  ]);
+  expect(server.aufrufe.return_fleet_key).toBeUndefined();
+  expect(server.aufrufe.take_fleet_key).toBeUndefined();
+  await expect(page.getByText(/Schlüssel bei Tim Teamleitung/).first()).toBeVisible();
+  test.info().annotations.push({
+    type: 'G4',
+    description: `${z.tipps} Tipps nach dem Einstieg (vorher 4 über den Tresor, zwei Vorgänge)`,
+  });
+  expect(z.tipps).toBeLessThanOrEqual(3);
+});
+
+test('G4: mit dem Rad aus der Adresse in zwei Tipps - der Schlüssel liegt bei einer Kollegin', async ({
+  page,
+}) => {
+  const server = nachbildung('teamleitung', [BEI_ANNA]);
+  // `?rad=` wie vom Rad aus; die Seite „Welches Rad?“ entfällt.
+  await oeffne(
+    page,
+    server,
+    `?rolle=teamleitung&pfad=${encodeURIComponent('/betrieb/flotte/schluessel?rad=rad-2')}`,
+  );
+  await page.setViewportSize({ width: 375, height: 667 });
+  const z = zaehler();
+
+  const person = fenster(page, 'An wen?');
+  await expect(person.getByText('Schritt 2 von 3', { exact: true })).toBeVisible();
+  await expect(person.getByRole('list', { name: 'Personen' }).getByRole('listitem')).toHaveText([
+    'Tim Teamleitung (Sie)',
+    'Nina Neu',
+  ]);
+  await z.tippe(person.getByRole('button', { name: 'Tim Teamleitung (Sie)' }));
+  await z.tippe(
+    fenster(page, 'Alles richtig?').getByRole('button', {
+      name: 'Schlüssel an Tim Teamleitung übergeben',
+    }),
+  );
+  await expect(page.getByText('Schlüssel von Lastenrad 2 an Sie übergeben.')).toBeVisible();
+  expect(server.aufrufe.hand_over_fleet_key).toEqual([
+    { p_bike_id: 'rad-2', p_holder_staff_id: 'staff-tim' },
+  ]);
+  test.info().annotations.push({
+    type: 'G4',
+    description: `${z.tipps} Tipps mit dem Rad aus der Adresse`,
+  });
+  expect(z.tipps).toBeLessThanOrEqual(2);
+});
+
 test('R6: Freigabe durch die Teamleitung in höchstens drei Tipps, mit Rückfrage', async ({
   page,
 }) => {
@@ -941,6 +1073,7 @@ test('die Seiten der Radflotte laufen bei 1280 px nicht über', async ({ page })
     '/betrieb/flotte/rad/rad-3',
     '/betrieb/flotte/checkup?rad=rad-1',
     '/betrieb/flotte/panne?rad=rad-1',
+    '/betrieb/flotte/schluessel',
   ]) {
     await page.goto(`${PRUEFSEITE}?pfad=${encodeURIComponent(pfad)}`);
     await expect(page.locator('h1').first()).toBeVisible();

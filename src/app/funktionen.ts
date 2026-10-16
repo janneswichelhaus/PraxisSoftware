@@ -331,13 +331,14 @@ function vorgaenge(user: CurrentUser): Funktion[] {
         rueckweg: true,
       },
       {
-        id: 'vorgang-schluessel-eintragen',
+        id: 'vorgang-schluessel-uebergeben',
         art: 'Vorgang',
-        bezeichnung: 'Schlüssel eintragen',
+        // Seit Überholung 6 (G4): aus dem Tresor oder von Hand zu Hand.
+        bezeichnung: 'Schlüssel übergeben',
         hinweis: 'Lastenrad',
         ziel: '/betrieb/flotte/schluessel',
         bereich: BEREICHE.betrieb.label,
-        stichworte: ['lastenrad', 'rad', 'tresor', 'radflotte'],
+        stichworte: ['lastenrad', 'rad', 'tresor', 'radflotte', 'eintragen', 'übergabe'],
         rueckweg: true,
       },
     );

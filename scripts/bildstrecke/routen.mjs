@@ -819,7 +819,7 @@ export const ROUTEN = Object.freeze([
     muster: '/betrieb/flotte/schluessel',
     pfad: '/betrieb/flotte/schluessel',
     bereich: 'Organisation',
-    etikett: 'Schlüssel eintragen',
+    etikett: 'Schlüssel übergeben: Welches Rad?',
     konten: ['owner', 'therapist'],
   },
   {
