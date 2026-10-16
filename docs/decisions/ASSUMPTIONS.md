@@ -5902,3 +5902,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 **Anker.** `organizations.fleet_checkup_interval_days`; `rhythmus.ts` (`CHECKUP_DAUER_MINUTEN`), `CheckupHinweise.tsx`.
 
 **Änderungspfad.** Dauer oder Wahl der Lücke: `rhythmus.ts` · Aufwand `klein`.
+
+### ANN-571 — CI in parallelen Teilen, E2E vor der Anmeldung nur am Telefon
+
+Technik · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
+
+**Annahme.** E2E hinter der Anmeldung in drei Teilen mit je eigenem Stack; Unit-Tests mit Build neben Lint und Typecheck, reine Logik ohne jsdom. Vor der Anmeldung nur noch Projekt `mobile` (Pixel 7); 13 von 52 Spezifikationen ohne eigene Desktop-Breite prüfen damit nur das Telefon.
+
+**Begründung.** Auftrag Jannes (16.10.): 20 Min. je Lauf, davon 16 im seriellen E2E-Job; 39 Spezifikationen prüften 1280 px selbst, `desktop` wiederholte sie. Kein Test entfällt.
+
+**Anker.** `.github/workflows/ci.yml` (`e2e-supabase-teil`, `statisch`, `unit`); `playwright.config.ts`, `vitest.config.ts` (`logik`); `src/werkzeugkette.test.ts`.
+
+**Änderungspfad.** Teilzahl: Matrix und `--shard` in `ci.yml` · `desktop` zurück: ein Projekt in `playwright.config.ts` · Aufwand `klein`.

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { deflateSync } from 'node:zlib';
 import { describe, expect, it, vi } from 'vitest';
 import { hatFarbprofil, nachSrgb } from './farbe';

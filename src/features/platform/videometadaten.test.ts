@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { alleBytes } from '@/features/files/metadaten';
 import { enthaelt, mp4AusSafari, webmAusChromium } from './testvideos';

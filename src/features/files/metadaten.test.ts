@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { alleBytes, bereinigeBild, entferneMetadaten, jpegSegmente, pngChunks } from './metadaten';
 import {
