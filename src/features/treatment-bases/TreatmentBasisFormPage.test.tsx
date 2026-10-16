@@ -18,6 +18,7 @@ const fetchTreatmentBasis = vi.fn();
 const createTreatmentBasis = vi.fn();
 const updateTreatmentBasis = vi.fn();
 const deleteTreatmentBasis = vi.fn();
+const fetchTreatmentBasisVersions = vi.fn();
 const navigate = vi.fn();
 const fetchPatient = vi.fn();
 const ordneScanZu = vi.fn();
@@ -57,6 +58,8 @@ vi.mock('./api', async (importOriginal) => {
     updateTreatmentBasis: (id: string, values: unknown, items: unknown) =>
       updateTreatmentBasis(id, values, items) as Promise<void>,
     deleteTreatmentBasis: (id: string) => deleteTreatmentBasis(id) as Promise<void>,
+    fetchTreatmentBasisVersions: (id: string) =>
+      fetchTreatmentBasisVersions(id) as Promise<TreatmentBasesApi.Grundlagenfassung[]>,
   };
 });
 
@@ -90,6 +93,8 @@ vi.mock('./schreibrecht', () => ({ useDarfGrundlagenSchreiben: () => darfSchreib
 
 beforeEach(() => {
   darfSchreiben = null;
+  fetchTreatmentBasisVersions.mockReset();
+  fetchTreatmentBasisVersions.mockResolvedValue([]);
 });
 
 const { EditTreatmentBasisPage, NewTreatmentBasisPage } = await import('./TreatmentBasisFormPage');
@@ -575,6 +580,70 @@ describe('EditTreatmentBasisPage', () => {
       { id: 'i1', remedy: 'Krankengymnastik', bestand: { verordnet: 10, genutzt: 7 } },
       { id: 'i2', remedy: 'Waermetherapie', bestand: { verordnet: 3, genutzt: 1 } },
     ]);
+  });
+
+  // BEF-124 (ANN-562): frühere Stände mit dem Wert vor der Änderung.
+  it('zeigt den Verlauf eingeklappt mit Zeitpunkt, Person und früherem Wert', async () => {
+    fetchTreatmentBasisVersions.mockResolvedValue([
+      {
+        version_no: 1,
+        replaced_at: '2026-06-20T12:30:00.000Z',
+        replaced_by_name: 'Olivia Office',
+        content: {
+          treatment_basis_kind: 'follow_up',
+          prescriber_name: 'Dr. med. Petra Probst',
+          issued_on: '2026-06-18',
+          appointment_count: 6,
+          frequency_note: '2x pro Woche',
+          note: 'Rezept liegt im Ordner.',
+          diagnosis: 'Synthetisch: Schulter links.',
+          diagnosis_icd10: null,
+          therapy_goal: 'Synthetisch: Ziel aus dem Bestand.',
+          prescriber_note: 'Synthetisch: Hinweis vom Rezept.',
+          follow_up_recommendation: null,
+          items: [
+            { remedy: 'Krankengymnastik', prescribed_quantity: 10 },
+            { remedy: 'Waermetherapie', prescribed_quantity: 3 },
+          ],
+        },
+      },
+    ]);
+    const user = userEvent.setup();
+    renderWithProviders(<EditTreatmentBasisPage />);
+
+    const verlauf = await screen.findByText('Verlauf');
+    expect(fetchTreatmentBasisVersions).toHaveBeenCalledWith(PRESCRIPTION_ID);
+    await user.click(verlauf);
+    expect(screen.getByText(/Geändert von Olivia Office/)).toBeInTheDocument();
+    const aenderung = screen.getByRole('region', { name: 'Änderung 1' });
+    expect(within(aenderung).getByText('Anzahl möglicher Termine')).toBeInTheDocument();
+    expect(within(aenderung).getByText('6')).toBeInTheDocument();
+    expect(within(aenderung).getByText('Synthetisch: Schulter links.')).toBeInTheDocument();
+    // Was gleich blieb, steht nicht da.
+    expect(within(aenderung).queryByText('Heilmittel')).not.toBeInTheDocument();
+  });
+
+  it('zeigt keinen Verlauf, solange die Grundlage nie geändert wurde', async () => {
+    renderWithProviders(<EditTreatmentBasisPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+    await waitFor(() => expect(fetchTreatmentBasisVersions).toHaveBeenCalled());
+    expect(screen.queryByText('Verlauf')).not.toBeInTheDocument();
+  });
+
+  it('nennt den Grund, wenn Termine an der Grundlage hängen', async () => {
+    deleteTreatmentBasis.mockRejectedValue(
+      new Error(
+        'An dieser Grundlage hängen Termine. Sie gehört damit zur Akte und bleibt; Änderungen stehen im Verlauf.',
+      ),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<EditTreatmentBasisPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+
+    await user.click(screen.getByRole('button', { name: 'Grundlage löschen' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, Grundlage löschen' }));
+    expect(await screen.findByText(/An dieser Grundlage hängen Termine/)).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('loescht erst nach der Rueckfrage', async () => {

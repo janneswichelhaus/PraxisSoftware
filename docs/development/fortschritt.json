@@ -683,6 +683,15 @@
           "vermerk": "ohne Oberfläche; der vorhandene Knopf „Erfassung zurücknehmen“ trägt jetzt auch nach einem Storno"
         },
         {
+          "id": "bef-124",
+          "name": "BEF-124 Verordnung mit Verlauf, Löschen nur ohne Termine",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-16",
+          "nachweis": "ANN-562; Migration 20261121100000, treatment-basis-history.test.ts, retention-run.test.ts; Zweitreview",
+          "vermerk": "Verlauf eingeklappt auf der Bearbeiten-Seite der Grundlage"
+        },
+        {
           "id": "bef-131",
           "name": "BEF-131 Terminwünsche ziehen beim Zusammenführen mit",
           "gewicht": 1,

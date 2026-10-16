@@ -84,6 +84,8 @@ describe('Schema-Invarianten', () => {
       'prescribers',
       'treatment_bases',
       'treatment_base_items',
+      // BEF-124: frühere Stände einer Grundlage.
+      'treatment_basis_versions',
       'treatment_text_snippets',
       'practice_targets',
       'staff_compensation_models',
