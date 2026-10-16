@@ -50,6 +50,7 @@ const RAD_SPEICHERN = `select public.save_fleet_bike($1::uuid, $2, $3, $4::uuid,
   $8::uuid, $9::smallint[], $10, $11, $12::timestamptz) as id`;
 const CHECKUP = `select public.record_fleet_checkup($1::uuid, $2::jsonb, $3, $4::jsonb, $5::boolean, 'wiped', null) as daten`;
 const PANNE = `select public.record_fleet_breakdown($1::uuid, $2, $3, $4, $5, $6, $7::jsonb) as daten`;
+const UEBERGEBEN = `select public.hand_over_fleet_key($1::uuid, $2::uuid)`;
 
 interface Fehler {
   code?: string;
@@ -188,6 +189,7 @@ describe('Radflotte (FLT-001)', () => {
           [RAD, [FLOTTE.rad1]],
           [WERKSTATT, [FLOTTE.rad3]],
           [`select public.take_fleet_key($1::uuid, null)`, [FLOTTE.rad2]],
+          [UEBERGEBEN, [FLOTTE.rad1, STAFF.tim]],
           [CHECKUP, [FLOTTE.rad2, punkte(), null, '[]', true]],
         ] as const) {
           expect((await fehler(konto, sql, [...params]))?.code, `${konto} ${sql}`).toBe('42501');
@@ -260,6 +262,7 @@ describe('Radflotte (FLT-001)', () => {
         [WERKSTATT, [FLOTTE.rad3]],
         [`select public.take_fleet_key($1::uuid, null)`, [FLOTTE.rad2]],
         [`select public.return_fleet_key($1::uuid)`, [FLOTTE.rad1]],
+        [UEBERGEBEN, [FLOTTE.rad1, fremd.staffMember]],
         [`select public.release_fleet_bike($1::uuid)`, [FLOTTE.rad3]],
         [`select public.remove_fleet_bike($1::uuid)`, [FLOTTE.rad2]],
         [`select public.save_fleet_depot($1::uuid, 'Fremd', null)`, [FLOTTE.depotNord]],
@@ -268,7 +271,11 @@ describe('Radflotte (FLT-001)', () => {
       ] as const) {
         expect((await fehler(fremd.owner, sql, [...params]))?.code, sql).toBe('P0002');
       }
-      // Ein fremdes Depot und eine fremde Mitarbeiterin lassen sich nicht zuordnen.
+      // Ein fremdes Depot und eine fremde Mitarbeiterin lassen sich nicht zuordnen -
+      // auch kein Schlüssel an sie übergeben.
+      expect((await fehler(users.office, UEBERGEBEN, [FLOTTE.rad1, fremd.staffMember]))?.code).toBe(
+        'P0002',
+      );
       expect(
         (
           await fehler(users.ownerTherapist, RAD_SPEICHERN, [
@@ -568,6 +575,47 @@ describe('Radflotte (FLT-001)', () => {
         (await fehler(users.office, `select public.take_fleet_key($1::uuid, null)`, [FLOTTE.rad3]))
           ?.code,
       ).toBe('55000');
+    });
+
+    it('übergibt einen Schlüssel von Hand zu Hand in einem Vorgang (ANN-575)', async () => {
+      // Lastenrad 1: Schlüssel bei Anna (Seed). Das Büro trägt die Übergabe an Tim ein.
+      await asUserCommitted(users.office, UEBERGEBEN, [FLOTTE.rad1, STAFF.tim]);
+      const flotte = await daten<Flotte>(users.office, LISTE, [null]);
+      expect(flotte.bikes.find((b) => b.id === FLOTTE.rad1)!.key?.holder_name).toBe(
+        'Tim Teamleitung',
+      );
+      const { rows } = await asPostgres<{
+        holder_staff_id: string;
+        returned_by: string | null;
+        taken_by: string;
+      }>(
+        `select holder_staff_id, returned_by, taken_by from public.fleet_key_handovers
+          where bike_id = $1 order by taken_at, returned_at nulls last`,
+        [FLOTTE.rad1],
+      );
+      // Der alte Vorgang endet mit dem Büro, der neue beginnt mit ihm - einer offen.
+      expect(rows.at(-2)).toMatchObject({ holder_staff_id: STAFF.anna, returned_by: users.office });
+      expect(rows.at(-1)).toMatchObject({
+        holder_staff_id: STAFF.tim,
+        returned_by: null,
+        taken_by: users.office,
+      });
+    });
+
+    it('übergibt nicht an dieselbe Person, nicht ohne Schlüssel und nicht bei gesperrtem Rad', async () => {
+      expect((await fehler(users.office, UEBERGEBEN, [FLOTTE.rad1, STAFF.anna]))?.code).toBe(
+        '55000',
+      );
+      expect((await fehler(users.office, UEBERGEBEN, [FLOTTE.rad2, STAFF.tim]))?.code).toBe(
+        '55000',
+      );
+      expect((await fehler(users.office, UEBERGEBEN, [FLOTTE.rad3, STAFF.tim]))?.code).toBe(
+        '55000',
+      );
+      expect((await fehler(users.office, UEBERGEBEN, [FLOTTE.rad1, null]))?.code).toBe('22023');
+      // Nichts hat sich bewegt: der Schlüssel liegt weiter bei Anna.
+      const flotte = await daten<Flotte>(users.office, LISTE, [null]);
+      expect(flotte.bikes.find((b) => b.id === FLOTTE.rad1)!.key?.holder_staff_id).toBe(STAFF.anna);
     });
   });
 

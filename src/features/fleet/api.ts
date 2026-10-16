@@ -259,11 +259,13 @@ export function meldungenSchluessel(ab: string | null) {
 type Fehler = { message?: string; code?: string } | null;
 
 const SAETZE: readonly (readonly [string, string])[] = [
+  ['key already with this person', 'Der Schlüssel liegt schon bei dieser Person.'],
   ['key already taken', 'Der Schlüssel ist schon entnommen. Bitte die Liste neu laden.'],
   ['bike is blocked', 'Das Rad ist gesperrt. Den Schlüssel gibt es erst nach der Freigabe.'],
   ['key is not taken', 'Der Schlüssel liegt schon im Tresor.'],
   ['key is taken', 'Erst den Schlüssel zurücklegen.'],
   ['no staff member for this account', 'Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz.'],
+  ['staff member is required', 'Bitte eine Person wählen.'],
   ['bike name already in use', 'Diesen Namen trägt schon ein Rad.'],
   ['bike name is required', 'Bitte einen Namen angeben (höchstens 60 Zeichen).'],
   ['depot name already in use', 'Dieses Depot gibt es schon.'],
@@ -444,6 +446,19 @@ export async function takeKey(bikeId: string, holderStaffId: string | null): Pro
     'take_fleet_key',
     { p_bike_id: bikeId, p_holder_staff_id: holderStaffId },
     'Der Schlüssel konnte nicht eingetragen werden.',
+  );
+}
+
+/**
+ * Übergibt einen Schlüssel, der bei jemandem liegt, in einem Vorgang an eine
+ * andere Person aus dem Mitarbeiterstamm (Überholung 6, ANN-575): Der offene
+ * Vorgang endet, ein neuer beginnt - ohne den Umweg über den Tresor.
+ */
+export async function handOverKey(bikeId: string, holderStaffId: string): Promise<void> {
+  await rufe(
+    'hand_over_fleet_key',
+    { p_bike_id: bikeId, p_holder_staff_id: holderStaffId },
+    'Der Schlüssel konnte nicht übergeben werden.',
   );
 }
 

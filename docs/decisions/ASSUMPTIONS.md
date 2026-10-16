@@ -5914,3 +5914,27 @@ Technik · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage
 **Anker.** `src/components/ui/GefuehrterAblauf.tsx` (`TIPPSPERRE_MS`), `src/components/ui/abfolge.ts`.
 
 **Änderungspfad.** Lage der Antworten oder Dauer der Sperre: eine Stelle im Baustein · Aufwand `klein`.
+
+### ANN-574 — Tag umplanen: Auswahl abwählbar, Anrufstand nur in der Adresse
+
+Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen (Kollegin übernimmt). `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab und schreibt nichts, wenn sie nicht mehr zum Tag passt. Danach je Person eine Seite mit „Erreicht“ oder „Nicht erreicht“; der Stand steht nur als Kennungen in der Adresse, nicht am Server.
+
+**Begründung.** Spec Überholung 6 (G2); ein halb umgeplanter Tag wäre schlimmer als ein gescheiterter Versuch (CAL-009). Ein Anrufprotokoll am Server wäre eine neue Datenklasse ohne Auftrag; die Adresse übersteht den Wechsel in die Telefon-App (KAL-06), nur Kennungen (ADR-011).
+
+**Anker.** `cancel_staff_day(…, p_appointment_ids)`; `cancelStaffDay` in `appointments/api.ts`; `TagUmplanenPage.tsx`.
+
+**Änderungspfad.** Anrufstand speichern: eigene Tabelle mit Frist, Pfad A · Aufwand `mittel`.
+
+### ANN-575 — Schlüssel von Hand zu Hand in einem Vorgang
+
+Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Ein Schlüssel, der bei jemandem liegt, geht über `hand_over_fleet_key` an eine andere Person aus dem Mitarbeiterstamm: Der offene Vorgang endet, ein neuer beginnt, in einer Transaktion. Dieselben Rollen wie beim Eintragen (BEF-066), nicht bei gesperrtem Rad, nicht an dieselbe Person; der Datensatz ist der Nachweis, kein Auditereignis (ADR-010).
+
+**Begründung.** Spec Überholung 6 (G4, „Schlüssel- und Radübergabe“). Bisher ging das nur über Zurücklegen und Nehmen; dazwischen stand der Schlüssel im Tresor, obwohl er von Hand zu Hand ging.
+
+**Anker.** `public.hand_over_fleet_key`; `handOverKey` in `fleet/api.ts`; `KeyPage.tsx`.
+
+**Änderungspfad.** Kreis der Rollen: `app.can_read_fleet` wie beim Nehmen · Aufwand `klein`.

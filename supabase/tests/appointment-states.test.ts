@@ -946,6 +946,69 @@ describe('Tag umplanen (CAL-009)', () => {
     ).rejects.toThrow(/staff member not found/);
   });
 
+  const MIT_AUSWAHL =
+    'select public.cancel_staff_day($1::uuid, $2::date, $3, $4::uuid[]) as anzahl';
+
+  it('sagt mit Auswahl genau die gewaehlten Termine ab, die anderen bleiben (ANN-574)', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const b = await anlegen('11:00', '12:00');
+    const c = await anlegen('13:00', '14:00');
+
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, MIT_AUSWAHL, [
+      ANNA,
+      TAG,
+      'practice_request',
+      [a.id, c.id, c.id],
+    ]);
+
+    expect(rows[0]!.anzahl).toBe(2);
+    expect(await zustand(a.id)).toBe('cancelled');
+    expect(await zustand(b.id)).toBe('confirmed');
+    expect(await zustand(c.id)).toBe('cancelled');
+  });
+
+  it('schreibt nichts, wenn die Auswahl nicht zum Tag passt', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const fertig = await anlegen('11:00', '12:00');
+    await asUserCommitted(users.office, ABSCHLIESSEN, [fertig.id, fertig.updated_at]);
+    const tim = await anlegenFuer(TIM, '09:00', '10:00');
+    const { rows: andererTag } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+      patients.max,
+      ANNA,
+      'video',
+      tagInTagen(73),
+      '09:00',
+      '10:00',
+      null,
+    ]);
+
+    // Ein abgeschlossener Termin, einer einer anderen Person, einer an einem
+    // anderen Tag und eine Kennung, die es nicht gibt: jedes Mal nichts.
+    for (const fremd of [
+      fertig.id,
+      tim.id,
+      andererTag[0]!.id,
+      '66666666-6666-4666-8666-0000000000ee',
+    ]) {
+      await expect(
+        asUser(users.office, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id, fremd]]),
+      ).rejects.toThrow(/appointment selection does not match the day/);
+    }
+    await expect(
+      asUser(users.office, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', []]),
+    ).rejects.toThrow(/appointment selection is empty/);
+    expect(await zustand(a.id)).toBe('confirmed');
+    expect(await zustand(tim.id)).toBe('confirmed');
+  });
+
+  it('weist ein Patientenkonto auch mit Auswahl ab', async () => {
+    const a = await anlegen('09:00', '10:00');
+    await expect(
+      asUser(users.patientMax, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id]]),
+    ).rejects.toThrow(/not allowed to cancel appointments/);
+    expect(await zustand(a.id)).toBe('confirmed');
+  });
+
   it('zaehlt an einem leeren Tag null und schreibt nichts', async () => {
     const vorher = await erfolgreicheAuditeintraege();
     const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
