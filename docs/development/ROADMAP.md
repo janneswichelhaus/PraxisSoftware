@@ -30,8 +30,8 @@ und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
 | 5 | **Übungen, zweite Runde** — gebaut (Branch `claude/sweet-gauss-z8te7o`) | Durchsicht des Katalogs, eigene Vorlagen; eigene Bilder und Videos der Praxis, sobald es sie gibt (Zeichnungen entfallen seit 2026-10-15, ANN-539) | K12 |
 | 6 | **Geführte Abläufe** (Jannes 2026-10-16) | Baustein `GefuehrterAblauf` aus dem Check-Up (Abfolge als reine Logik, eine Frage je Seite, Abschluss mit Korrektur); damit Ausfallhonorar, Panne, Tag umplanen, Schlüsselübergabe, Zugang einrichten, Terminwunsch und Terminänderung auf der Plattform; Erstaufnahme und Neuaufnahme nur angleichen | K8, K10, K11, G1–G6 |
 | 7 | **Urlaub** (URL-001, vorgezogen) | Antrag geführt, Genehmigung, Wirkung auf Kalender und Kapazität; gemeinsame Antragsmechanik für 8 bis 10 | G7 |
-| 8 | **Arbeitszeitänderung** (AZ-001, neu) | Antrag einmalig oder dauerhaft, nie weniger Arbeitszeit, Mittagspause verschiebbar und in der Dauer änderbar (Jannes 2026-10-16) | G8 |
-| 9 | **Zeitkonto** (ZK-001, vorgezogen) | Buchungen und Saldo je Person, Korrekturantrag geführt | G9 |
+| 8 | **Arbeitszeitänderung** (AZ-001, neu) | Antrag einmalig oder dauerhaft, nie weniger Arbeitszeit (Stunden dürfen zwischen Tagen wandern); bewegliche Mittagspause: eigene Dauer, ungefähr mittig, nicht festgeschrieben, mit Folgen für Kalender und Slotsuche (Jannes 2026-10-16) | G8 |
+| 9 | **Zeitkonto** (ZK-001, vorgezogen) | Buchungen und Saldo je Person, Eintrag geführt; keine Genehmigung, Zurückweisen mit Grund möglich (Jannes 2026-10-16) | G9 |
 | 10 | **Erstattungen** (ERS-001, vorgezogen) | Antrag geführt (Art zuerst, Belege als Dateien), Genehmigung, Auszahlung | G10 |
 | 11 | **Teamchat** (TEAM-001, vorgezogen) | Kanäle, Direktnachrichten, Threads, Erwähnungen | — |
 
