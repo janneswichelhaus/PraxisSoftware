@@ -1,20 +1,28 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { ErrorState } from '@/components/ui/Feedback';
-import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { ListRow } from '@/components/ui/ListRow';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
+import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import {
+  aendern,
+  beginne,
+  kannZurueck,
+  weiter,
+  zurueck,
+  type Abfolge,
+} from '@/components/ui/abfolge';
+import { knopfKlassen } from '@/components/ui/buttonStile';
+import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/today/api';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
@@ -22,7 +30,7 @@ import { Laengenzeichen } from './Laengenzeichen';
 import { istIsoDatum } from './calendar';
 import {
   appointmentTypeHint,
-  cancellationReasonSchema,
+  cancellationReasonLabels,
   waehlbareAbsagegruende,
   cancelStaffDay,
   fetchAssignableTherapists,
@@ -32,59 +40,50 @@ import {
   type CancellationReason,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import {
+  ABGESAGT_PARAM,
+  ersteAnrufseite,
+  leseAbgesagt,
+  leseAnrufstand,
+  mitAnrufstand,
+  naechsterAnruf,
+  seitenKennung,
+  terminDativ,
+  terminWort,
+  umplanStand,
+  type Anrufergebnis,
+  type UmplanSeite,
+} from './tagumplanen';
 
 /**
- * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004).
+ * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004), geführt seit
+ * Überholung 6 (G2, ANN-574).
  *
  * Der Anlass ist ein Ausfall am Morgen — ein Platten, ein krankes Kind. Sechs
- * Haushalte ohne Wartezimmer müssen abgesagt und angerufen werden, und beides
- * gehört auf eine Seite: erst absagen, dann der Reihe nach telefonieren.
+ * Haushalte ohne Wartezimmer müssen abgesagt und angerufen werden. Ein
+ * Fenster führt durch beides, eine Frage je Seite: Warum? → Welche Termine?
+ * (alle bestätigten vorgewählt, einzelne abwählbar, etwa wenn eine Kollegin
+ * übernimmt) → Rückfrage → je Person eine Seite mit Anrufen, „Erreicht“ oder
+ * „Nicht erreicht“ → am Ende, wer noch fehlt.
  *
  * Zwei Dinge sind bewusst so und nicht anders:
  *
  *   * Die Absage ist **ein** Vorgang und läuft serverseitig alles-oder-nichts
- *     (`cancel_staff_day`). Ein halb umgeplanter Tag wäre schlimmer als ein
- *     gescheiterter Versuch.
+ *     (`cancel_staff_day` mit der Auswahl). Ein halb umgeplanter Tag wäre
+ *     schlimmer als ein gescheiterter Versuch. Die Seite schickt die Auswahl
+ *     immer mit - auch wenn alle gewählt sind -, damit kein Termin abgesagt
+ *     wird, den niemand gesehen hat (Zweitreview Überholung 6).
  *   * Die Anrufliste liest den **bestehenden** Tagesplan-Lesepfad
  *     (`list_day_plan`, UX-001). Kein zweiter Weg zu denselben Rufnummern.
  *
- * Die Erledigt-Haken stehen nur im Arbeitsspeicher dieser Seite. Sie sind eine
- * Gedächtnisstütze für die nächste Viertelstunde, kein gespeicherter Zustand —
- * und die Seite sagt das auch.
- *
- * **Die Anrufliste selbst steht in der Adresse (KAL-06).** Nach der Absage
- * trägt die Adresse die Kennungen der eben abgesagten Termine - nur
- * Kennungen, keine Namen (ADR-011). So übersteht die Liste den Abstecher in
- * die Akte, das Zurück und ein Neuladen nach dem Wechsel in die Telefon-App,
- * und sie enthält nur diesen Vorgang: Ein Termin, den die Patient:in vorher
- * selbst abgesagt hatte, gehört nicht auf die Liste der anzurufenden.
+ * **Der Anrufstand steht in der Adresse (KAL-06, ANN-574):** die Kennungen
+ * der eben abgesagten Termine und die Antworten - nur Kennungen, keine Namen
+ * (ADR-011). So übersteht die Liste den Abstecher in die Akte, das Zurück und
+ * ein Neuladen nach dem Wechsel in die Telefon-App; gespeichert wird sie
+ * nicht.
  */
 
 const UUID_MUSTER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Parameter der Anrufliste: die Kennungen der eben abgesagten Termine. */
-const ABGESAGT_PARAM = 'abgesagt';
-
-/**
- * Die abgesagten Kennungen aus der Adresse - oder `null` vor der Absage.
- *
- * Die Kennungen filtern nur den geladenen Tagesplan und gehen nie an den
- * Server; geprüft wird deshalb nur ihre Form, und die Liste ist begrenzt.
- */
-function leseAbgesagt(suche: URLSearchParams): string[] | null {
-  const wert = suche.get(ABGESAGT_PARAM);
-  if (wert === null) return null;
-  return wert
-    .split(',')
-    .filter((kennung) => /^[\w-]{1,64}$/.test(kennung))
-    .slice(0, 100);
-}
-
-/** „1 Termin", aber „2 Termine" — eine Schaltfläche darf nicht falsch klingen. */
-function terminWort(anzahl: number): string {
-  return anzahl === 1 ? 'Termin' : 'Termine';
-}
 
 /**
  * Was „Tag umplanen" absagt.
@@ -109,67 +108,66 @@ function istAnzurufen(termin: DayPlanEntry): boolean {
   return termin.status === 'cancelled' && termin.kind === 'therapy';
 }
 
-/**
- * Eine Zeile der Anrufliste (Design-Rollout B2): Beginn vorn, der Name als
- * Weg in die Akte, die Rufnummern als Wählziele darunter, der Haken
- * „Angerufen" neben der Zeile (Leitfaden L3). Vorher eine Karte je Anruf.
- */
-function Anrufzeile({
-  termin,
-  erledigt,
-  onErledigt,
-  rueckweg,
-}: {
-  termin: DayPlanEntry;
-  erledigt: boolean;
-  onErledigt: (wert: boolean) => void;
-  /** Diese Seite samt Anrufliste - der Weg aus der Akte zurück (KAL-06). */
-  rueckweg: string;
-}) {
-  const zone = termin.organization_time_zone;
-  const nummern = rufnummern(termin);
+function name(termin: DayPlanEntry): string {
+  return `${termin.patient_given_name} ${termin.patient_family_name}`;
+}
 
+/** Die Rufnummern als Knöpfe - groß genug für den Daumen (Kontakt ist Aktion). */
+function Anrufknoepfe({ termin }: { termin: DayPlanEntry }) {
+  const nummern = rufnummern(termin);
+  if (nummern.length === 0) {
+    return <p className="text-ink-muted text-sm">Keine Rufnummer hinterlegt.</p>;
+  }
   return (
-    <ListRow
-      gedaempft={erledigt}
-      zeit={
-        <span className="inline-flex flex-col items-start gap-1">
-          {formatLocalTime(termin.starts_at, zone)}
-          {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
-          <Laengenzeichen termin={termin} knapp />
-        </span>
-      }
-      titel={
-        // Der Name ist ein Weg in die Akte - sichtbar als Link, nicht erst
-        // beim Überfahren (RSP-06, UIK-15), und mit Rückweg hierher.
-        <Textlink to={mitRueckweg(`/patienten/${termin.patient_id}`, rueckweg)}>
-          {termin.patient_given_name} {termin.patient_family_name}
-        </Textlink>
-      }
-      meta={
-        nummern.length > 0 ? (
-          <span className="flex flex-col">
-            {nummern.map((nummer) => (
-              <Textlink key={nummer.href} alleinstehend href={nummer.href}>
-                {nummer.label}: {nummer.anzeige}
-              </Textlink>
-            ))}
-          </span>
-        ) : (
-          'Keine Rufnummer hinterlegt.'
-        )
-      }
-      // Das Kästchen des Systems statt eines eigenen (KAL-24).
-      aktion={
-        <Checkbox
-          label="Angerufen"
-          checked={erledigt}
-          onChange={(e) => onErledigt(e.target.checked)}
-        />
-      }
-    />
+    <div className="flex flex-col gap-2">
+      {nummern.map((nummer) => (
+        <a
+          key={nummer.href}
+          href={nummer.href}
+          className={knopfKlassen('secondary', 'normal', 'w-full')}
+        >
+          {nummer.label} anrufen
+          <span className="tabular-nums">{nummer.anzeige}</span>
+        </a>
+      ))}
+    </div>
   );
 }
+
+/** Eine Person der Anrufliste: wann abgesagt, der Weg in die Akte, die Rufnummern. */
+function Anrufseite({
+  termin,
+  rueckweg,
+  quittung,
+}: {
+  termin: DayPlanEntry;
+  rueckweg: string;
+  /** Nach der Absage auf der ersten Seite: was eben geschah (DESIGN.md 9.14). */
+  quittung: string | null;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      {quittung ? <Statusmeldung ton="erfolg">{quittung}</Statusmeldung> : null}
+      <p className="text-ink-muted text-sm">
+        Abgesagt: {formatLocalTime(termin.starts_at, termin.organization_time_zone)} Uhr ·{' '}
+        {/* Ein Weg in die Akte, mit Rückweg hierher samt Anrufliste (RSP-06, KAL-06). */}
+        <Textlink to={mitRueckweg(`/patienten/${termin.patient_id}`, rueckweg)}>Akte</Textlink>
+      </p>
+      <Anrufknoepfe termin={termin} />
+    </div>
+  );
+}
+
+/** Die Rückfrage vor dem Weggehen spricht vom Umplanen, nicht von „Text“. */
+const UMPLANTEXTE = {
+  ...EINGABETEXTE,
+  bezeichnung: 'Noch nicht abgesagt',
+  zeile: {
+    weitergehen: 'Der Tag ist noch nicht umgeplant.',
+    abmelden: 'Der Tag ist noch nicht umgeplant – abmelden?',
+    bleiben: 'Weiter',
+  },
+};
 
 function Umplanung({
   staffMemberId,
@@ -181,13 +179,16 @@ function Umplanung({
   user: CurrentUser;
 }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [suche, setSuche] = useSearchParams();
   const ort = useLocation();
-  const [grund, setGrund] = useState('');
-  const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
-  const [erledigt, setErledigt] = useState<string[]>([]);
-  const abgesagt = leseAbgesagt(suche);
-
+  // Die eben abgesagten Kennungen, sofort - die Adresse folgt einen Augenblick
+  // später, und der neu geladene Tag ohne bestätigte Termine stünde sonst kurz
+  // als „nichts umzuplanen“ da.
+  const [eben, setEben] = useState<string[] | null>(null);
+  const abgesagt = leseAbgesagt(suche) ?? eben;
+  const anrufstand = leseAnrufstand(suche);
+  const zumKalender = leseRueckweg(suche, '/kalender');
   const darfUmplanen = canManageAppointments(user.roles);
 
   const tag = useQuery({
@@ -202,208 +203,389 @@ function Umplanung({
     retry: false,
   });
 
-  const mutation = useMutation({
-    mutationFn: (auftrag: { grund: CancellationReason; kennungen: string[] }) =>
-      cancelStaffDay(staffMemberId, datum, auftrag.grund),
-    onSuccess: async (_anzahl, auftrag) => {
-      // Die Anrufliste in die Adresse (KAL-06): Sie übersteht Zurück und
-      // Neuladen. \`replace\`: Zurück soll nicht wieder zur Absage führen.
-      setSuche(
-        (bisher) => {
-          const naechste = new URLSearchParams(bisher);
-          naechste.set(ABGESAGT_PARAM, auftrag.kennungen.join(','));
-          return naechste;
-        },
-        { replace: true },
-      );
-      // UBK-011: Tagesliste, Kalender, Tour und Fahrpuffer.
-      await tageslageNeuLaden(queryClient);
-    },
-  });
-
-  const termine = tag.data ?? [];
-  const betroffen = termine.filter(istBetroffen);
-
-  async function umplanen() {
-    const gewaehlt = cancellationReasonSchema.safeParse(grund);
-    if (!gewaehlt.success) {
-      setGrundFehler('Bitte einen Absagegrund auswählen.');
-      // Ohne den Wurf schlösse die Rückfrage sich trotz fehlender Angabe.
-      throw new Error('Absagegrund fehlt');
-    }
-    setGrundFehler(undefined);
-    // Die Kennungen VOR der Absage: genau die Termine, die diese Seite nennt.
-    await mutation.mutateAsync({ grund: gewaehlt.data, kennungen: betroffen.map((t) => t.id) });
-  }
-
-  const anzurufen = abgesagt
-    ? termine.filter((termin) => abgesagt.includes(termin.id) && istAnzurufen(termin))
-    : [];
   const person = personen.data?.find((p) => p.staff_member_id === staffMemberId);
   // Die Zeitzone der Praxis, nicht die des ersten Termins: Ein Tag ohne
   // Termine stünde sonst als „2026-09-26" da (KAL-10).
-  const zone = user.organizationTimeZone ?? termine[0]?.organization_time_zone;
+  const zone = user.organizationTimeZone ?? tag.data?.[0]?.organization_time_zone;
   const tagText = zone ? formatLocalDate(`${datum}T12:00:00Z`, zone) : datum;
-  const zumKalender = leseRueckweg(suche, '/kalender');
+  const objekt = person ? `${person.display_name} · ${tagText}` : tagText;
 
-  // Ein Formular (DESIGN.md „Formular“, Design-Review T3): oben die Liste,
-  // darunter der Absagegrund und der Formularfuss - am Telefon in voller
-  // Breite im Daumenbereich, mit „Abbrechen“ zurück in den Kalender. Bis dahin
-  // stand der Knopf kompakt rechts in der Aktionsleiste einer Arbeitsseite.
-  // Nach der Absage ist der Fuss der Weg zurück in den Kalender.
   return (
     <>
       <Rueckweg standard="/kalender" />
-
-      <PageHeader
-        title="Tag umplanen"
-        description={person ? `${person.display_name} · ${tagText}` : tagText}
-      />
-
+      <PageHeader title="Tag umplanen" description={objekt} />
       {/* Laden, Fehler und ein gescheitertes Nachladen über den Baustein
           (DESIGN.md Regel 8): Scheitert nur das Nachladen, bleibt der
-          geladene Stand stehen - samt Anrufliste und Haken (ZST-03). */}
-      {/* Eine Arbeitsspalte (DESIGN.md „Inhaltsbreiten“): Zeit, Name und der
-          Knopf der Leiste stehen am Rechner beieinander. */}
+          geladene Stand stehen - samt Anrufliste (ZST-03). */}
       <div className="max-w-spalte">
         <Abfragezustand
           abfrage={tag}
           laden="Der Tag wird geladen …"
           fehler="Der Tag konnte nicht geladen werden."
         >
-          {() =>
-            abgesagt === null ? (
-              <>
-                <Listenabschnitt
-                  titel="Diese Termine werden abgesagt"
-                  anzahl={betroffen.length}
-                  leer={{
-                    titel: 'Hier ist nichts umzuplanen.',
-                    beschreibung:
-                      'An diesem Tag steht für diese Person kein bestätigter Termin. Abgeschlossene und bereits abgesagte Termine bleiben unberührt.',
-                  }}
-                >
-                  {betroffen.map((termin) => (
-                    <ListRow
-                      key={termin.id}
-                      zeit={formatLocalTimeRange(
-                        termin.starts_at,
-                        termin.ends_at,
-                        termin.organization_time_zone,
-                      )}
-                      titel={`${termin.patient_given_name} ${termin.patient_family_name}`}
-                      // Nur eine abweichende Terminart steht dran (ANN-192).
-                      meta={appointmentTypeHint(termin.appointment_type) || undefined}
-                      status={<Laengenzeichen termin={termin} />}
-                    />
-                  ))}
-                </Listenabschnitt>
-
-                {betroffen.length > 0 ? (
-                  darfUmplanen ? (
-                    <>
-                      <div className="max-w-formular mt-6">
-                        <Select
-                          label="Absagegrund"
-                          value={grund}
-                          error={grundFehler}
-                          onChange={(e) => {
-                            setGrund(e.target.value);
-                            setGrundFehler(undefined);
-                          }}
-                        >
-                          <option value="">Bitte wählen …</option>
-                          {/* „Patient:in hat abgesagt" steht hier nicht: Der
-                            Tag wird umgeplant, weil die behandelnde Person
-                            ausfällt, und das ist praxisbedingt. Der Grund
-                            hätte für jede Patient:in des Tages innerhalb der
-                            Frist eine Ausfallgebühr vorgemerkt; seit CAL-016
-                            weist ihn auch der Server ab (ADR-018 Fassung 2
-                            Punkt 8.4). */}
-                          {waehlbareAbsagegruende(true).map(([wert, beschriftung]) => (
-                            <option key={wert} value={wert}>
-                              {beschriftung}
-                            </option>
-                          ))}
-                        </Select>
-                      </div>
-
-                      <div className="max-w-formular">
-                        <Formularfuss>
-                          <Rueckfrage
-                            ausloeser={`${betroffen.length} ${terminWort(betroffen.length)} absagen`}
-                            ausloeserVariante="primary"
-                            bezeichnung="Tag umplanen"
-                            bestaetigen="Ja, alle absagen"
-                            bestaetigenLaeuft="Wird abgesagt …"
-                            // Daneben steht „Abbrechen“ für die ganze Seite;
-                            // die Frage schließt mit eigenem Wort.
-                            abbrechen="Nicht absagen"
-                            fehler={mutation.isError ? mutation.error.message : undefined}
-                            laeuft={mutation.isPending}
-                            onAbbrechen={() => setGrundFehler(undefined)}
-                            onBestaetigen={umplanen}
-                          >
-                            Alle {betroffen.length} bestätigten {terminWort(betroffen.length)}{' '}
-                            dieses Tages werden als abgesagt geführt. Sie bleiben vollständig
-                            erhalten und geben ihre Zeiträume wieder frei. Eine Absage lässt sich
-                            nicht zurücknehmen – danach steht die Anrufliste hier.
-                          </Rueckfrage>
-                          <ButtonLink to={zumKalender} variant="quiet">
-                            Abbrechen
-                          </ButtonLink>
-                        </Formularfuss>
-                      </div>
-                    </>
-                  ) : (
-                    <Statusmeldung className="mt-4">
-                      Für das Absagen fehlt Ihrem Zugang die Berechtigung.
-                    </Statusmeldung>
-                  )
-                ) : null}
-              </>
-            ) : (
-              <>
-                {/* Die Bestätigung des Vorgangs mit dem Fokus (DESIGN.md
-                  „Rückmeldung“): Der Knopf, der ihn hatte, ist fort. */}
-                <Rueckmeldung className="mb-6">
-                  {abgesagt.length === 1
-                    ? 'Ein Termin ist abgesagt.'
-                    : `${abgesagt.length} Termine sind abgesagt.`}{' '}
-                  Jetzt anrufen.
-                </Rueckmeldung>
-
-                <Listenabschnitt titel="Anrufliste" anzahl={anzurufen.length}>
-                  {anzurufen.map((termin) => (
-                    <Anrufzeile
-                      key={termin.id}
-                      termin={termin}
-                      rueckweg={`${ort.pathname}${ort.search}`}
-                      erledigt={erledigt.includes(termin.id)}
-                      onErledigt={(wert) =>
-                        setErledigt((bisher) =>
-                          wert ? [...bisher, termin.id] : bisher.filter((id) => id !== termin.id),
-                        )
-                      }
-                    />
-                  ))}
-                </Listenabschnitt>
-
-                <Kleingedrucktes className="mt-4">
-                  Die Haken gelten nur, solange diese Seite offen ist – sie werden nicht
-                  gespeichert.
-                </Kleingedrucktes>
-
-                {/* Nach dem letzten Anruf der Weg zum freien Tag (KAL-19). */}
-                <Formularfuss>
-                  <ButtonLink to={zumKalender}>Zum Kalender</ButtonLink>
-                </Formularfuss>
-              </>
-            )
-          }
+          {(termine) => {
+            const betroffen = termine.filter(istBetroffen);
+            if (abgesagt === null && betroffen.length === 0) {
+              return (
+                <EmptyState
+                  inKarte
+                  title="Hier ist nichts umzuplanen."
+                  description="An diesem Tag steht für diese Person kein bestätigter Termin. Abgeschlossene und bereits abgesagte Termine bleiben unberührt."
+                  aktion={
+                    <ButtonLink to={zumKalender} variant="secondary">
+                      Zum Kalender
+                    </ButtonLink>
+                  }
+                />
+              );
+            }
+            if (abgesagt === null && !darfUmplanen) {
+              return (
+                <Statusmeldung>Für das Absagen fehlt Ihrem Zugang die Berechtigung.</Statusmeldung>
+              );
+            }
+            return (
+              <Ablauf
+                termine={termine}
+                betroffen={betroffen}
+                abgesagt={abgesagt}
+                anrufstand={anrufstand}
+                objekt={objekt}
+                rueckweg={`${ort.pathname}${ort.search}`}
+                onSchliessen={() => void navigate(zumKalender)}
+                zumKalender={zumKalender}
+                onAbsagen={async (grund, auswahl) => {
+                  await cancelStaffDay(staffMemberId, datum, grund, auswahl);
+                }}
+                frischAbgesagt={eben?.length ?? null}
+                onAbgesagt={async (auswahl) => {
+                  setEben(auswahl);
+                  // Die Anrufliste in die Adresse (KAL-06): Sie übersteht
+                  // Zurück und Neuladen. `replace`: Zurück soll nicht wieder
+                  // zur Absage führen.
+                  setSuche(
+                    (bisher) => {
+                      const naechste = new URLSearchParams(bisher);
+                      naechste.set(ABGESAGT_PARAM, auswahl.join(','));
+                      return naechste;
+                    },
+                    { replace: true },
+                  );
+                  // UBK-011: Tagesliste, Kalender, Tour und Fahrpuffer.
+                  await tageslageNeuLaden(queryClient);
+                }}
+                onAnrufstand={(stand) =>
+                  setSuche((bisher) => mitAnrufstand(bisher, stand), { replace: true })
+                }
+              />
+            );
+          }}
         </Abfragezustand>
       </div>
     </>
+  );
+}
+
+function Ablauf({
+  termine,
+  betroffen,
+  abgesagt,
+  anrufstand,
+  objekt,
+  rueckweg,
+  zumKalender,
+  frischAbgesagt,
+  onSchliessen,
+  onAbsagen,
+  onAbgesagt,
+  onAnrufstand,
+}: {
+  termine: readonly DayPlanEntry[];
+  betroffen: readonly DayPlanEntry[];
+  abgesagt: readonly string[] | null;
+  anrufstand: Readonly<Record<string, Anrufergebnis>>;
+  objekt: string;
+  /** Diese Seite samt Anrufliste - der Weg aus der Akte zurück (KAL-06). */
+  rueckweg: string;
+  zumKalender: string;
+  /** Wie viele eben in dieser Sitzung abgesagt wurden - für die Bestätigung. */
+  frischAbgesagt: number | null;
+  onSchliessen: () => void;
+  onAbsagen: (grund: CancellationReason, auswahl: string[]) => Promise<void>;
+  onAbgesagt: (auswahl: string[]) => Promise<void>;
+  onAnrufstand: (stand: Readonly<Record<string, Anrufergebnis>>) => void;
+}) {
+  const anzurufen = abgesagt
+    ? termine.filter((termin) => abgesagt.includes(termin.id) && istAnzurufen(termin))
+    : [];
+  const reihenfolge = anzurufen.map((termin) => termin.id);
+
+  const [abfolge, setAbfolge] = useState<Abfolge<UmplanSeite>>(() =>
+    beginne<UmplanSeite>(abgesagt ? ersteAnrufseite(reihenfolge, anrufstand) : { art: 'grund' }),
+  );
+  const [grund, setGrund] = useState<CancellationReason | null>(null);
+  // Alle bestätigten Termine sind gewählt, einzelne lassen sich abwählen.
+  const [auswahl, setAuswahl] = useState<string[]>(() => betroffen.map((termin) => termin.id));
+  const seite = abfolge.seite;
+  const imAbsagen = seite.art === 'grund' || seite.art === 'termine' || seite.art === 'absagen';
+
+  function zurueckGehen() {
+    const vorher = zurueck(abfolge);
+    if (vorher) setAbfolge(vorher);
+  }
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    // Vor der Absage geht die Wahl beim Weggehen verloren; danach steht alles
+    // in der Adresse.
+    ungespeichert: imAbsagen && grund !== null,
+    kompakt: true,
+    texte: UMPLANTEXTE,
+    schrittZurueck: kannZurueck(abfolge) ? zurueckGehen : undefined,
+  });
+
+  const absage = useMutation({
+    mutationFn: ({ gewaehlt, ids }: { gewaehlt: CancellationReason; ids: string[] }) =>
+      onAbsagen(gewaehlt, ids),
+    onSuccess: async (_leer, { ids }) => {
+      freigeben();
+      await onAbgesagt(ids);
+      // Die Anrufe beginnen von vorn, ohne Weg zurück in die Absage.
+      setAbfolge(beginne<UmplanSeite>(ids[0] ? { art: 'anruf', id: ids[0] } : { art: 'fertig' }));
+    },
+  });
+
+  function antworte(id: string, ergebnis: Anrufergebnis) {
+    const neu = { ...anrufstand, [id]: ergebnis };
+    onAnrufstand(neu);
+    const naechste = naechsterAnruf(reihenfolge, neu, id);
+    setAbfolge(
+      weiter(abfolge, naechste ? { art: 'anruf', id: naechste } : { art: 'fertig' }, !naechste),
+    );
+  }
+
+  const gewaehlt = betroffen.filter((termin) => auswahl.includes(termin.id));
+  const aktuell =
+    seite.art === 'anruf' ? anzurufen.find((termin) => termin.id === seite.id) : undefined;
+  const nichtErreicht = anzurufen.filter((termin) => anrufstand[termin.id] === 'nicht');
+  const erreicht = anzurufen.filter((termin) => anrufstand[termin.id] === 'erreicht');
+
+  const titel =
+    seite.art === 'grund'
+      ? 'Warum fällt der Tag aus?'
+      : seite.art === 'termine'
+        ? 'Welche Termine absagen?'
+        : seite.art === 'absagen'
+          ? `${gewaehlt.length} ${terminWort(gewaehlt.length)} absagen?`
+          : seite.art === 'anruf'
+            ? aktuell
+              ? `${name(aktuell)} erreicht?`
+              : 'Anrufen'
+            : nichtErreicht.length > 0
+              ? `${nichtErreicht.length} noch nicht erreicht`
+              : 'Alle angerufen';
+
+  return (
+    <GefuehrterAblauf
+      titel={titel}
+      objekt={objekt}
+      schliessen={imAbsagen ? 'Umplanen abbrechen' : 'Schließen'}
+      onSchliessen={onSchliessen}
+      seite={seitenKennung(seite)}
+      stand={umplanStand(seite, reihenfolge)}
+      onZurueck={kannZurueck(abfolge) ? zurueckGehen : undefined}
+      schutz={schutz}
+      abschluss={seite.art === 'absagen' || seite.art === 'fertig'}
+      fuss={
+        seite.art === 'grund' ? (
+          <div className="flex flex-col gap-2">
+            {/* „Patient:in hat abgesagt" steht hier nicht: Der Tag wird
+                umgeplant, weil die behandelnde Person ausfällt, und das ist
+                praxisbedingt (ADR-018 Fassung 2 Punkt 8.4, CAL-016). Keiner
+                ist vorgewählt. */}
+            {waehlbareAbsagegruende(true).map(([wert, beschriftung], index) => (
+              <Button
+                key={wert}
+                variant="secondary"
+                className="w-full"
+                onClick={() => {
+                  setGrund(wert);
+                  setAbfolge(weiter(abfolge, { art: 'termine' }, true));
+                }}
+                {...(index === 0 ? { 'data-autofocus': true } : {})}
+              >
+                {beschriftung}
+              </Button>
+            ))}
+          </div>
+        ) : seite.art === 'termine' ? (
+          <Button
+            className="w-full"
+            disabled={gewaehlt.length === 0}
+            onClick={() => setAbfolge(weiter(abfolge, { art: 'absagen' }, true))}
+          >
+            Weiter mit {gewaehlt.length} {terminDativ(gewaehlt.length)}
+          </Button>
+        ) : seite.art === 'absagen' ? (
+          <div className="flex flex-col gap-2">
+            {absage.isError ? (
+              <Statusmeldung ton="fehler">{absage.error.message}</Statusmeldung>
+            ) : null}
+            <Button
+              className="w-full"
+              disabled={absage.isPending || grund === null || gewaehlt.length === 0}
+              onClick={() =>
+                grund &&
+                absage.mutate({ gewaehlt: grund, ids: gewaehlt.map((termin) => termin.id) })
+              }
+              data-autofocus
+            >
+              {absage.isPending
+                ? 'Wird abgesagt …'
+                : `Ja, ${gewaehlt.length} ${terminWort(gewaehlt.length)} absagen`}
+            </Button>
+          </div>
+        ) : seite.art === 'anruf' ? (
+          <div className="flex flex-col gap-2">
+            <Button className="w-full" onClick={() => antworte(seite.id, 'erreicht')}>
+              Erreicht
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => antworte(seite.id, 'nicht')}
+            >
+              Nicht erreicht
+            </Button>
+          </div>
+        ) : (
+          // Nach dem letzten Anruf der Weg zum freien Tag (KAL-19).
+          <ButtonLink to={zumKalender} className="w-full" data-autofocus>
+            Zum Kalender
+          </ButtonLink>
+        )
+      }
+    >
+      {seite.art === 'termine' ? (
+        <fieldset className="flex min-w-0 flex-col gap-1">
+          <legend className="sr-only">Termine des Tages</legend>
+          {betroffen.map((termin, index) => (
+            <Checkbox
+              key={termin.id}
+              label={
+                <span className="flex flex-wrap items-center gap-x-2">
+                  <span className="tabular-nums">
+                    {formatLocalTimeRange(
+                      termin.starts_at,
+                      termin.ends_at,
+                      termin.organization_time_zone,
+                    )}
+                  </span>
+                  <span className="text-ink font-semibold">{name(termin)}</span>
+                  {/* Nur eine abweichende Terminart steht dran (ANN-192),
+                      und eine abweichende Länge (§8.1, CAL-020). */}
+                  {appointmentTypeHint(termin.appointment_type) ? (
+                    <span className="text-ink-muted">
+                      {appointmentTypeHint(termin.appointment_type)}
+                    </span>
+                  ) : null}
+                  <Laengenzeichen termin={termin} knapp />
+                </span>
+              }
+              checked={auswahl.includes(termin.id)}
+              onChange={(event) =>
+                setAuswahl((bisher) =>
+                  event.target.checked
+                    ? [...bisher, termin.id]
+                    : bisher.filter((id) => id !== termin.id),
+                )
+              }
+              {...(index === 0 ? { 'data-autofocus': true } : {})}
+            />
+          ))}
+        </fieldset>
+      ) : seite.art === 'absagen' ? (
+        <div className="flex flex-col gap-4">
+          <ListRows rahmen={false} beschriftung="Umplanung">
+            <ListRow
+              titel="Grund"
+              meta={grund ? cancellationReasonLabels[grund] : 'Fehlt noch'}
+              aktion={
+                <Button
+                  variant="secondary"
+                  groesse="kompakt"
+                  aria-label="Grund ändern"
+                  onClick={() => setAbfolge(aendern(abfolge, { art: 'grund' }))}
+                >
+                  Ändern
+                </Button>
+              }
+            />
+            <ListRow
+              titel={`${gewaehlt.length} von ${betroffen.length} ${terminDativ(betroffen.length)}`}
+              meta={gewaehlt.map((termin) => name(termin)).join(', ')}
+              aktion={
+                <Button
+                  variant="secondary"
+                  groesse="kompakt"
+                  aria-label="Termine ändern"
+                  onClick={() => setAbfolge(aendern(abfolge, { art: 'termine' }))}
+                >
+                  Ändern
+                </Button>
+              }
+            />
+          </ListRows>
+          <p className="text-ink text-sm">
+            Sie bleiben vollständig erhalten und geben ihre Zeiträume wieder frei. Eine Absage lässt
+            sich nicht zurücknehmen – danach führt die Anrufliste durch die Anrufe.
+          </p>
+        </div>
+      ) : seite.art === 'anruf' && aktuell ? (
+        <Anrufseite
+          termin={aktuell}
+          rueckweg={rueckweg}
+          quittung={
+            frischAbgesagt !== null && Object.keys(anrufstand).length === 0
+              ? frischAbgesagt === 1
+                ? 'Ein Termin ist abgesagt. Jetzt anrufen.'
+                : `${frischAbgesagt} Termine sind abgesagt. Jetzt anrufen.`
+              : null
+          }
+        />
+      ) : seite.art === 'fertig' ? (
+        <div className="flex flex-col gap-4">
+          {nichtErreicht.length > 0 ? (
+            <ListRows rahmen={false} beschriftung="Noch nicht erreicht">
+              {nichtErreicht.map((termin) => (
+                <ListRow
+                  key={termin.id}
+                  zeit={formatLocalTime(termin.starts_at, termin.organization_time_zone)}
+                  titel={name(termin)}
+                  meta={rufnummern(termin)[0]?.anzeige ?? 'Keine Rufnummer hinterlegt.'}
+                  aktion={
+                    <Button
+                      variant="secondary"
+                      groesse="kompakt"
+                      aria-label={`${name(termin)} noch einmal anrufen`}
+                      onClick={() => setAbfolge(aendern(abfolge, { art: 'anruf', id: termin.id }))}
+                    >
+                      Anrufen
+                    </Button>
+                  }
+                />
+              ))}
+            </ListRows>
+          ) : null}
+          <p className="text-ink text-sm">
+            {erreicht.length === 1 ? '1 Person erreicht' : `${erreicht.length} Personen erreicht`}
+            {anzurufen.length > 0 ? ` von ${anzurufen.length}.` : '.'}
+          </p>
+          <Kleingedrucktes>
+            Der Anrufstand steht nur in dieser Adresse und wird nicht gespeichert.
+          </Kleingedrucktes>
+        </div>
+      ) : null}
+    </GefuehrterAblauf>
   );
 }
 

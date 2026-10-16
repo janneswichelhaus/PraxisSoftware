@@ -8,12 +8,14 @@ import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
 /**
- * Tag umplanen mit Anrufliste (CAL-009).
+ * Tag umplanen mit Anrufliste (CAL-009), geführt seit Überholung 6 (G2,
+ * ANN-574).
  *
- * Geprüft wird, was die Seite verspricht und was sie bewusst nicht tut: nur
- * bestätigte Termine gehen in die Absage, der Grund ist Pflicht, und aus der
- * Absage wird unmittelbar die Anrufliste mit Wählzielen. Der Schreibpfad
- * selbst hat seine Prüfungen in `supabase/tests/appointment-states.test.ts`.
+ * Geprüft wird, was der Ablauf verspricht und was er bewusst nicht tut: nur
+ * bestätigte Termine gehen in die Absage, alle vorgewählt und abwählbar, der
+ * Grund ist Pflicht und nicht vorgewählt, abgesagt wird genau die Auswahl,
+ * und danach führt er je Person durch die Anrufe. Der Schreibpfad selbst hat
+ * seine Prüfungen in `supabase/tests/appointment-states.test.ts`.
  */
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
@@ -66,8 +68,12 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
-    cancelStaffDay: (person: string, datum: string, grund: AppointmentsApi.CancellationReason) =>
-      cancelStaffDay(person, datum, grund) as Promise<number>,
+    cancelStaffDay: (
+      person: string,
+      datum: string,
+      grund: AppointmentsApi.CancellationReason,
+      auswahl?: readonly string[],
+    ) => cancelStaffDay(person, datum, grund, auswahl) as Promise<number>,
   };
 });
 
@@ -91,6 +97,8 @@ describe('TagUmplanenPage', () => {
         id: 'termin-2',
         starts_at: `${DATUM}T09:00:00.000Z`,
         ends_at: `${DATUM}T10:00:00.000Z`,
+        patient_given_name: 'Max',
+        patient_family_name: 'Mustermann',
       }),
     ]);
     cancelStaffDay.mockResolvedValue(2);
@@ -99,13 +107,36 @@ describe('TagUmplanenPage', () => {
     ]);
   });
 
-  it('nennt Person und Tag und zaehlt die betroffenen Termine', async () => {
+  /** Das Fenster des Ablaufs; sein Name ist die Frage der Seite. */
+  function fenster(name: string | RegExp) {
+    return screen.findByRole('dialog', { name });
+  }
+
+  /** Grund wählen und zur Auswahl der Termine. */
+  async function bisZurAuswahl(user: ReturnType<typeof userEvent.setup>) {
+    const grund = await fenster('Warum fällt der Tag aus?');
+    await user.click(within(grund).getByRole('button', { name: 'Praxis hat abgesagt' }));
+    return fenster('Welche Termine absagen?');
+  }
+
+  it('nennt Person und Tag und fragt zuerst nach dem Grund - keiner vorgewählt', async () => {
     rendern();
-    expect(await screen.findByText(/Anna Beispiel/)).toBeInTheDocument();
-    expect(screen.getByText(/Diese Termine werden abgesagt \(2\)/)).toBeInTheDocument();
+    const grund = await fenster('Warum fällt der Tag aus?');
+    expect(within(grund).getByText('Anna Beispiel · Mittwoch, 12. Mai 2027')).toBeInTheDocument();
+    expect(within(grund).getByText('Schritt 1 von 3')).toBeInTheDocument();
+    // Der Ausfall einer behandelnden Person ist praxisbedingt (CAL-016, ADR-018
+    // Fassung 2 Punkt 8.4): „Patient:in hat abgesagt" steht nicht zur Wahl.
+    expect(within(grund).queryByRole('button', { name: 'Patient:in hat abgesagt' })).toBeNull();
+    for (const name of ['Praxis hat abgesagt', 'Praxis hat verlegt', 'Sonstiger Grund']) {
+      expect(within(grund).getByRole('button', { name })).not.toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+    }
   });
 
-  it('zaehlt nur bestaetigte Termine - abgeschlossene und abgesagte bleiben aussen vor', async () => {
+  it('wählt alle bestätigten Termine vor - abgeschlossene und abgesagte bleiben außen vor', async () => {
+    const user = userEvent.setup();
     fetchDayPlan.mockResolvedValue([
       eintrag({}),
       eintrag({ id: 'termin-2', status: 'completed' }),
@@ -113,16 +144,20 @@ describe('TagUmplanenPage', () => {
       eintrag({ id: 'termin-4', status: 'documented' }),
     ]);
     rendern();
-
-    expect(await screen.findByText(/Diese Termine werden abgesagt \(1\)/)).toBeInTheDocument();
+    const auswahl = await bisZurAuswahl(user);
+    const kaesten = within(auswahl).getAllByRole('checkbox');
+    expect(kaesten).toHaveLength(1);
+    expect(kaesten[0]).toBeChecked();
+    expect(within(auswahl).getByRole('button', { name: 'Weiter mit 1 Termin' })).toBeEnabled();
   });
 
   /**
    * „Tag umplanen" sagt Behandlungstermine ab; ein Ereignis des Praxisbetriebs
    * lässt `cancel_staff_day` ausdrücklich stehen (CAL-015b). Stünde es hier in
-   * der Zählung, verspräche die Vorschau eine Absage, die nicht käme.
+   * der Auswahl, verspräche sie eine Absage, die nicht käme.
    */
   it('laesst ein Ereignis des Praxisbetriebs aussen vor', async () => {
+    const user = userEvent.setup();
     fetchDayPlan.mockResolvedValue([
       eintrag({}),
       eintrag({
@@ -135,109 +170,137 @@ describe('TagUmplanenPage', () => {
       }),
     ]);
     rendern();
-
-    expect(await screen.findByText(/Diese Termine werden abgesagt \(1\)/)).toBeInTheDocument();
+    const auswahl = await bisZurAuswahl(user);
+    expect(within(auswahl).getAllByRole('checkbox')).toHaveLength(1);
     expect(screen.queryByText(/Teambesprechung/)).not.toBeInTheDocument();
   });
 
-  /**
-   * Der Ausfall einer behandelnden Person ist praxisbedingt. Seit CAL-016
-   * weist der Server „Patient:in hat abgesagt" hier ab - die Auswahl bietet
-   * ihn deshalb gar nicht erst an (ADR-018 Fassung 2 Punkt 8.4).
-   */
-  it('bietet "Patient:in hat abgesagt" nicht als Grund an', async () => {
+  it('sagt nach der Rückfrage genau die Auswahl ab - abgewählte Termine bleiben', async () => {
+    const user = userEvent.setup();
+    cancelStaffDay.mockResolvedValue(1);
     rendern();
-    await screen.findByText(/Diese Termine werden abgesagt/);
+    const auswahl = await bisZurAuswahl(user);
+    await user.click(within(auswahl).getByRole('checkbox', { name: /Max Mustermann/ }));
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 1 Termin' }));
 
-    const auswahl = screen.getByLabelText('Absagegrund');
-    expect(
-      within(auswahl).queryByRole('option', { name: 'Patient:in hat abgesagt' }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(auswahl).getByRole('option', { name: 'Praxis hat abgesagt' }),
-    ).toBeInTheDocument();
+    const rueckfrage = await fenster('1 Termin absagen?');
+    expect(within(rueckfrage).getByText('1 von 2 Terminen')).toBeInTheDocument();
+    expect(within(rueckfrage).getByText('Praxis hat abgesagt')).toBeInTheDocument();
+    // Die Folge steht vor dem Knopf, nicht dahinter.
+    expect(within(rueckfrage).getByText(/lässt sich nicht zurücknehmen/)).toBeInTheDocument();
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Ja, 1 Termin absagen' }));
+
+    await waitFor(() =>
+      expect(cancelStaffDay).toHaveBeenCalledWith(ANNA, DATUM, 'practice_request', ['termin-1']),
+    );
   });
 
-  it('sagt nichts ohne ausgewaehlten Grund ab', async () => {
+  it('schickt die Auswahl auch mit, wenn alle gewählt sind (Zweitreview Überholung 6)', async () => {
     const user = userEvent.setup();
     rendern();
-    await screen.findByText(/Diese Termine werden abgesagt/);
+    const auswahl = await bisZurAuswahl(user);
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 2 Terminen' }));
+    await user.click(
+      within(await fenster('2 Termine absagen?')).getByRole('button', {
+        name: 'Ja, 2 Termine absagen',
+      }),
+    );
+    await waitFor(() =>
+      expect(cancelStaffDay).toHaveBeenCalledWith(ANNA, DATUM, 'practice_request', [
+        'termin-1',
+        'termin-2',
+      ]),
+    );
+  });
 
-    await user.click(screen.getByRole('button', { name: '2 Termine absagen' }));
-    await user.click(screen.getByRole('button', { name: 'Ja, alle absagen' }));
+  it('lässt ohne gewählten Termin nicht weiter und kehrt aus „Ändern“ zur Rückfrage zurück', async () => {
+    const user = userEvent.setup();
+    rendern();
+    let auswahl = await bisZurAuswahl(user);
+    for (const kasten of within(auswahl).getAllByRole('checkbox')) await user.click(kasten);
+    expect(within(auswahl).getByRole('button', { name: 'Weiter mit 0 Terminen' })).toBeDisabled();
+    for (const kasten of within(auswahl).getAllByRole('checkbox')) await user.click(kasten);
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 2 Terminen' }));
 
-    expect(await screen.findByText('Bitte einen Absagegrund auswählen.')).toBeInTheDocument();
+    const rueckfrage = await fenster('2 Termine absagen?');
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Grund ändern' }));
+    await user.click(
+      within(await fenster('Warum fällt der Tag aus?')).getByRole('button', {
+        name: 'Praxis hat verlegt',
+      }),
+    );
+    // Zurück zur Rückfrage, nicht noch einmal durch die Auswahl.
+    expect(
+      within(await fenster('2 Termine absagen?')).getByText('Praxis hat verlegt'),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Termine ändern' }));
+    auswahl = await fenster('Welche Termine absagen?');
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 2 Terminen' }));
+    expect(await fenster('2 Termine absagen?')).toBeInTheDocument();
     expect(cancelStaffDay).not.toHaveBeenCalled();
   });
 
-  it('sagt nach Rueckfrage mit Person, Tag und Grund ab', async () => {
-    const user = userEvent.setup();
-    rendern();
-    await screen.findByText(/Diese Termine werden abgesagt/);
-
-    await user.selectOptions(screen.getByLabelText('Absagegrund'), 'practice_request');
-    await user.click(screen.getByRole('button', { name: '2 Termine absagen' }));
-    await user.click(screen.getByRole('button', { name: 'Ja, alle absagen' }));
-
-    await waitFor(() =>
-      expect(cancelStaffDay).toHaveBeenCalledWith(ANNA, DATUM, 'practice_request'),
-    );
-  });
-
-  it('zeigt danach die Anrufliste mit Waehlziel', async () => {
+  it('führt danach je Person durch die Anrufe und nennt am Ende, wer fehlt', async () => {
     const user = userEvent.setup();
     fetchDayPlan
-      .mockResolvedValueOnce([eintrag({}), eintrag({ id: 'termin-2' })])
+      .mockResolvedValueOnce([eintrag({}), eintrag({ id: 'termin-2', patient_given_name: 'Max' })])
       .mockResolvedValue([
         eintrag({ status: 'cancelled' }),
-        eintrag({ id: 'termin-2', status: 'cancelled' }),
+        eintrag({ id: 'termin-2', status: 'cancelled', patient_given_name: 'Max' }),
       ]);
     rendern();
-    await screen.findByText(/Diese Termine werden abgesagt/);
+    const auswahl = await bisZurAuswahl(user);
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 2 Terminen' }));
+    await user.click(
+      within(await fenster('2 Termine absagen?')).getByRole('button', {
+        name: 'Ja, 2 Termine absagen',
+      }),
+    );
 
-    await user.selectOptions(screen.getByLabelText('Absagegrund'), 'practice_request');
-    await user.click(screen.getByRole('button', { name: '2 Termine absagen' }));
-    await user.click(screen.getByRole('button', { name: 'Ja, alle absagen' }));
-
-    // Eine Erfolgsmeldung mit Zeichen (UIK-21).
-    expect(await screen.findByText(/2 Termine sind abgesagt\. Jetzt anrufen\./)).toHaveTextContent(
+    const erste = await fenster('Erika Beispiel erreicht?');
+    // Eine Erfolgsmeldung mit Zeichen (UIK-21), dann der Anruf als Knopf.
+    expect(within(erste).getByText(/2 Termine sind abgesagt\. Jetzt anrufen\./)).toHaveTextContent(
       '✓',
     );
-    const anruf = await screen.findAllByRole('link', { name: /Mobil: 0170 1234567/ });
-    expect(anruf[0]).toHaveAttribute('href', 'tel:01701234567');
-    expect(screen.getByText(/nicht gespeichert/)).toBeInTheDocument();
-    // Die Anrufliste steht in der Adresse (KAL-06): Der Weg in die Akte nimmt
-    // sie als Rückweg mit - nur Kennungen, keine Namen.
-    const name = screen.getAllByRole('link', { name: 'Erika Beispiel' })[0]!;
-    const zurueck = new URL(name.getAttribute('href')!, 'http://test').searchParams.get('zurueck');
+    expect(within(erste).getByText('Anruf 1 von 2')).toBeInTheDocument();
+    expect(within(erste).getByRole('link', { name: /Mobil anrufen/ })).toHaveAttribute(
+      'href',
+      'tel:01701234567',
+    );
+    // Der Weg in die Akte nimmt die Anrufliste als Rückweg mit - nur Kennungen,
+    // keine Namen (KAL-06, ADR-011).
+    const akte = within(erste).getByRole('link', { name: 'Akte' });
+    const zurueck = new URL(akte.getAttribute('href')!, 'http://test').searchParams.get('zurueck');
     expect(zurueck).toContain('abgesagt=termin-1%2Ctermin-2');
     expect(zurueck).not.toMatch(/Erika|Beispiel/);
-    // Nach dem letzten Anruf der Weg zum Kalender (KAL-19).
-    expect(screen.getByRole('link', { name: 'Zum Kalender' })).toHaveAttribute('href', '/kalender');
-  });
+    await user.click(within(erste).getByRole('button', { name: 'Nicht erreicht' }));
 
-  it('endet als Formular: Absagen in voller Breite, daneben Abbrechen zurück in den Kalender (T3)', async () => {
-    rendern(
-      `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zurueck=%2Fkalender%3Fansicht%3Dtag`,
+    const zweite = await fenster('Max Beispiel erreicht?');
+    await user.click(within(zweite).getByRole('button', { name: 'Erreicht' }));
+
+    const ende = await fenster('1 noch nicht erreicht');
+    expect(within(ende).getByText('Erika Beispiel')).toBeInTheDocument();
+    expect(within(ende).getByText('1 Person erreicht von 2.')).toBeInTheDocument();
+    expect(within(ende).getByText(/nicht gespeichert/)).toBeInTheDocument();
+    // Nach dem letzten Anruf der Weg zum Kalender (KAL-19).
+    expect(within(ende).getByRole('link', { name: 'Zum Kalender' })).toHaveAttribute(
+      'href',
+      '/kalender',
     );
-    const absagen = await screen.findByRole('button', { name: '2 Termine absagen' });
-    // Hauptknopf in Seitengröße (48 px), nicht kompakt wie in einer Aktionsleiste.
-    expect(absagen).toHaveClass('h-12');
-    const abbrechen = screen.getByRole('link', { name: 'Abbrechen' });
-    expect(abbrechen).toHaveAttribute('href', '/kalender?ansicht=tag');
-    // Beide im selben Formularfuss, der Hauptknopf zuerst.
-    expect(absagen.parentElement).toBe(abbrechen.parentElement);
-    expect(
-      absagen.compareDocumentPosition(abbrechen) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    // Noch einmal anrufen führt zur Person und danach zurück zum Abschluss.
+    await user.click(
+      within(ende).getByRole('button', { name: 'Erika Beispiel noch einmal anrufen' }),
+    );
+    await user.click(
+      within(await fenster('Erika Beispiel erreicht?')).getByRole('button', { name: 'Erreicht' }),
+    );
+    expect(await fenster('Alle angerufen')).toBeInTheDocument();
   });
 
   it('bietet einem Zugang ohne Terminrecht keine Absage an', async () => {
     rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}`, ['patient']);
-    await screen.findByText(/Diese Termine werden abgesagt/);
-
-    expect(screen.queryByRole('button', { name: '2 Termine absagen' })).not.toBeInTheDocument();
-    expect(screen.getByText(/fehlt Ihrem Zugang die Berechtigung/)).toBeInTheDocument();
+    expect(await screen.findByText(/fehlt Ihrem Zugang die Berechtigung/)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('sagt bei fehlender Person nichts ab, sondern verweist auf den Kalender', async () => {
@@ -261,34 +324,26 @@ describe('TagUmplanenPage', () => {
 
   // Die Seite steht nicht in src/barrierefreiheit.test.tsx: sie braucht zwei
   // gemockte Lesepfade und gehoert deshalb hierher, wo die Mocks schon stehen.
-  it('haelt die Absageansicht barrierefrei', async () => {
-    const { container } = rendern();
-    await screen.findByText(/Diese Termine werden abgesagt/);
-    await pruefeBarrierefreiheit(container);
-  });
-
-  it('haelt die Anrufliste barrierefrei - Waehlziele und Haken', async () => {
+  it('haelt Grund, Auswahl, Rückfrage und Anruf barrierefrei', async () => {
     const user = userEvent.setup();
     fetchDayPlan
       .mockResolvedValueOnce([eintrag({})])
       .mockResolvedValue([eintrag({ status: 'cancelled' })]);
     cancelStaffDay.mockResolvedValue(1);
-
-    const { container } = rendern();
-    await screen.findByText(/Diese Termine werden abgesagt/);
-    await user.selectOptions(screen.getByLabelText('Absagegrund'), 'practice_moved');
-    await user.click(screen.getByRole('button', { name: '1 Termin absagen' }));
-    await user.click(screen.getByRole('button', { name: 'Ja, alle absagen' }));
-    await screen.findByText(/Ein Termin ist abgesagt\. Jetzt anrufen\./);
-
-    await pruefeBarrierefreiheit(container);
+    rendern();
+    await fenster('Warum fällt der Tag aus?');
+    await pruefeBarrierefreiheit(document.body);
+    const auswahl = await bisZurAuswahl(user);
+    await pruefeBarrierefreiheit(document.body);
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 1 Termin' }));
+    const rueckfrage = await fenster('1 Termin absagen?');
+    await pruefeBarrierefreiheit(document.body);
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Ja, 1 Termin absagen' }));
+    await fenster('Erika Beispiel erreicht?');
+    await pruefeBarrierefreiheit(document.body);
   });
 
-  // ---------------------------------------------------------------------------
-  // UX-Review 2026-09 (UXR-004)
-  // ---------------------------------------------------------------------------
-
-  it('fuehrt die Anrufliste nur aus den eben abgesagten Kennungen der Adresse (KAL-06)', async () => {
+  it('führt die Anrufliste nur aus den eben abgesagten Kennungen der Adresse (KAL-06)', async () => {
     // termin-1 hatte die Patient:in schon vorher abgesagt - er gehört nicht auf
     // die Liste. termin-2 ist in diesem Vorgang abgesagt worden.
     fetchDayPlan.mockResolvedValue([
@@ -301,11 +356,22 @@ describe('TagUmplanenPage', () => {
     ]);
     rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-2`);
 
-    expect(await screen.findByText('Anrufliste (1)')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Erika Beispiel' })).toBeInTheDocument();
+    const anruf = await fenster('Erika Beispiel erreicht?');
+    expect(within(anruf).getByText('Anruf 1 von 1')).toBeInTheDocument();
     expect(screen.queryByText(/Frueher Abgesagt/)).toBeNull();
     // Keine zweite Absage: Die Seite steht nach dem Neuladen wieder bei der Anrufliste.
     expect(screen.queryByRole('button', { name: /absagen/ })).toBeNull();
+  });
+
+  it('beginnt nach dem Neuladen bei der ersten Person ohne Ergebnis (ANN-574)', async () => {
+    fetchDayPlan.mockResolvedValue([
+      eintrag({ status: 'cancelled' }),
+      eintrag({ id: 'termin-2', status: 'cancelled', patient_given_name: 'Max' }),
+    ]);
+    rendern(
+      `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-1,termin-2&nicht=termin-1`,
+    );
+    expect(await fenster('Max Beispiel erreicht?')).toBeInTheDocument();
   });
 
   it('nennt den Tag in der Zeitzone der Praxis, auch ohne Termine (KAL-10)', async () => {
@@ -336,22 +402,13 @@ describe('TagUmplanenPage', () => {
     expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
 
     await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await screen.findByText(/Diese Termine werden abgesagt \(2\)/)).toBeInTheDocument();
-  });
-
-  it('beschriftet die leere Wahl wie ueberall (WRT-14)', async () => {
-    rendern();
-    await screen.findByText(/Diese Termine werden abgesagt/);
-
-    expect(
-      within(screen.getByLabelText('Absagegrund')).getByRole('option', { name: 'Bitte wählen …' }),
-    ).toBeInTheDocument();
+    expect(await fenster('Warum fällt der Tag aus?')).toBeInTheDocument();
   });
 
   it('laesst die Anrufliste stehen, wenn nur das Nachladen scheitert (ZST-03)', async () => {
     fetchDayPlan.mockResolvedValue([eintrag({ status: 'cancelled' })]);
     rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-1`);
-    expect(await screen.findByText('Anrufliste (1)')).toBeInTheDocument();
+    expect(await fenster('Erika Beispiel erreicht?')).toBeInTheDocument();
 
     // Das Gerät kommt zurück, das Nachladen scheitert - der Stand bleibt.
     fetchDayPlan.mockRejectedValue(new Error('Netz'));
@@ -359,8 +416,7 @@ describe('TagUmplanenPage', () => {
 
     // Der Satz des Bausteins für einen veralteten Stand (Abfragezustand).
     expect(await screen.findByText(STAND_VERALTET)).toBeInTheDocument();
-    expect(screen.getByText('Anrufliste (1)')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Erika Beispiel' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Erika Beispiel erreicht?' })).toBeInTheDocument();
   });
 
   it('sagt an einem Tag ohne bestaetigte Termine nichts an', async () => {
@@ -368,6 +424,7 @@ describe('TagUmplanenPage', () => {
     rendern();
 
     expect(await screen.findByText('Hier ist nichts umzuplanen.')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.queryByRole('button', { name: /absagen/ })).not.toBeInTheDocument();
   });
 });

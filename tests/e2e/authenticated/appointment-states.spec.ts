@@ -209,7 +209,13 @@ test.describe('CAL-008d: Dokumentiert kommt aus der Finalisierung', () => {
 });
 
 test.describe('CAL-009: Tag umplanen', () => {
-  test('sagt den ganzen Tag ab und zeigt die Anrufliste', async ({ page }) => {
+  // G2 (Überholung 6, ANN-574): geführt - Grund, Auswahl (alle vorgewählt,
+  // abwählbar), Rückfrage, dann je Person eine Seite. Budget ≤ 4 Tipps bis
+  // abgesagt und 2 je Person (Anrufen ist der Weg in die Telefon-App und
+  // zählt nicht mit).
+  test('G2: plant den Tag geführt um - eine Person abgewählt, je Person ein Anruf', async ({
+    page,
+  }) => {
     const tag = laufTag(4);
 
     await anmelden(page, KONTEN.office);
@@ -228,28 +234,59 @@ test.describe('CAL-009: Tag umplanen', () => {
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&person=${MITARBEITENDE.anna}`);
     await kalenderOptionenOeffnen(page);
-    await page.getByRole('link', { name: 'Tag umplanen' }).click();
+    await page.setViewportSize({ width: 375, height: 667 });
+    let tipps = 0;
+    const tippe = async (ziel: ReturnType<Page['getByRole']>) => {
+      tipps += 1;
+      await ziel.click();
+    };
+    await tippe(page.getByRole('link', { name: 'Tag umplanen' }));
 
-    await expect(page.getByRole('heading', { name: 'Tag umplanen' })).toBeVisible();
-    await expect(page.getByText(/Diese Termine werden abgesagt \(2\)/)).toBeVisible();
+    const grund = page.getByRole('dialog', { name: 'Warum fällt der Tag aus?' });
+    await expect(grund.getByText('Schritt 1 von 3', { exact: true })).toBeVisible();
+    await page.screenshot({ path: '.tmp/screenshots/b6-g2-01-grund-375.png' });
+    await tippe(grund.getByRole('button', { name: 'Praxis hat abgesagt' }));
 
-    await page.getByLabel('Absagegrund').selectOption('practice_request');
-    await page.getByRole('button', { name: '2 Termine absagen' }).click();
-    await page.getByRole('button', { name: 'Ja, alle absagen' }).click();
+    const auswahl = page.getByRole('dialog', { name: 'Welche Termine absagen?' });
+    await expect(auswahl.getByRole('checkbox')).toHaveCount(2);
+    await page.screenshot({ path: '.tmp/screenshots/b6-g2-02-termine-375.png' });
+    // Erika übernimmt eine Kollegin - abgewählt, er bleibt bestätigt.
+    await tippe(auswahl.getByRole('checkbox', { name: /Erika Beispiel/ }));
+    await tippe(auswahl.getByRole('button', { name: 'Weiter mit 1 Termin' }));
 
-    await expect(page.getByText('2 Termine sind abgesagt. Jetzt anrufen.')).toBeVisible();
-    await expect(page.getByText(/nicht gespeichert/)).toBeVisible();
+    const rueckfrage = page.getByRole('dialog', { name: '1 Termin absagen?' });
+    await page.screenshot({ path: '.tmp/screenshots/b6-g2-03-rueckfrage-375.png' });
+    await tippe(rueckfrage.getByRole('button', { name: 'Ja, 1 Termin absagen' }));
 
-    // Und im Kalender sind beide Termine tatsaechlich abgesagt. Adressiert ueber
-    // die Kachel des jeweiligen Termins, nicht ueber den Text "Abgesagt": den
-    // findet `getByText` als Teilstring ohne Ruecksicht auf Gross- und
-    // Kleinschreibung auch im Statusfilter ("Alle ausser abgesagten"), und ein
-    // Eintrag in einer geschlossenen Auswahlliste ist nie sichtbar.
+    const anruf = page.getByRole('dialog', { name: 'Max Mustermann erreicht?' });
+    await expect(anruf.getByText('Ein Termin ist abgesagt. Jetzt anrufen.')).toBeVisible();
+    await page.screenshot({ path: '.tmp/screenshots/b6-g2-04-anruf-375.png' });
+    const bisAbgesagt = tipps;
+    await tippe(anruf.getByRole('button', { name: 'Nicht erreicht' }));
+
+    const ende = page.getByRole('dialog', { name: '1 noch nicht erreicht' });
+    await expect(ende.getByText('Max Mustermann')).toBeVisible();
+    await page.screenshot({ path: '.tmp/screenshots/b6-g2-05-fertig-375.png' });
+    // Der Anrufstand steht in der Adresse - ein Neuladen nimmt ihn mit (ANN-574).
+    await page.reload();
+    await expect(page.getByRole('dialog', { name: '1 noch nicht erreicht' })).toBeVisible();
+
+    test.info().annotations.push({
+      type: 'G2',
+      description: `${bisAbgesagt} Tipps bis abgesagt (mit einer Abwahl), ${tipps - bisAbgesagt} je Person`,
+    });
+    // Ohne die Abwahl wären es vier; die Abwahl ist ein bewusster Tipp mehr.
+    expect(bisAbgesagt).toBeLessThanOrEqual(5);
+    expect(tipps - bisAbgesagt).toBeLessThanOrEqual(2);
+
+    // Und im Kalender: genau der gewählte Termin ist abgesagt, der andere nicht.
+    // Adressiert über die Kachel des jeweiligen Termins, nicht über den Text
+    // "Abgesagt": den findet `getByText` als Teilstring ohne Rücksicht auf Groß-
+    // und Kleinschreibung auch im Statusfilter ("Alle außer abgesagten").
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&person=${MITARBEITENDE.anna}&status=all`);
-    for (const id of [ersterTermin, zweiterTermin]) {
-      const kachel = terminKachel(page, id);
-      await expect(kachel).toBeVisible();
-      await expect(kachel).toContainText('Abgesagt');
-    }
+    await expect(terminKachel(page, ersterTermin)).toContainText('Abgesagt');
+    await expect(terminKachel(page, zweiterTermin)).toBeVisible();
+    await expect(terminKachel(page, zweiterTermin)).not.toContainText('Abgesagt');
   });
 });
