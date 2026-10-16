@@ -460,7 +460,7 @@ function Geruest({
 }
 
 /**
- * Wohin die Fenster der Plattform zeichnen (Überholung 6, Annahme B6-P2): ein
+ * Wohin die Fenster der Plattform zeichnen (Überholung 6, ANN-584): ein
  * Ziel mit der Schrift der Plattform (`.plattform-schrift`, 18 px) direkt nach
  * dem Gerüst. Am `body` - dem Ziel ohne Angabe - erbten `Dialogfenster` und
  * der geführte Ablauf die 18 px nicht, weil ihr Portal außerhalb des Gerüsts

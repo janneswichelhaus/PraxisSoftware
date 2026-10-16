@@ -5974,3 +5974,39 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 **Anker.** `behandelt` in `src/features/staff/einrichtung.ts`.
 
 **Änderungspfad.** Die Liste `BEHANDELND` · Aufwand `klein`.
+
+### ANN-583 — Plattform: Wunschtage als Wochentage
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** „Wann passt es Ihnen?“ fragt Montag bis Freitag statt 14 einzelner Daten, dazu Vormittag, Mittag, Nachmittag oder „Egal“. An den Server gehen weiter Kalendertage: jeder gewählte Wochentag unter den nächsten 14 Werktagen. Einen einzelnen Tag schreibt man in die Nachricht.
+
+**Begründung.** 14 Daten und Tageszeiten passen bei 375 × 667 in 18 px nicht auf eine Seite (G6); der Vertrag von `request_platform_appointment(_change)` bleibt, die Praxis sieht Daten wie bisher.
+
+**Anker.** `wunschtage` in `src/features/platform/terminablauf.ts`.
+
+**Änderungspfad.** Zurück zu Daten an dieser Stelle, ohne Datenänderung · Aufwand `klein`.
+
+### ANN-584 — Plattform: Fenster zeichnen in ein Ziel mit 18 px
+
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Fenster der Plattform zeichnen in ein Portalziel mit `.plattform-schrift` direkt nach dem Gerüst und innerhalb des Bereichs, den die Sitzungssperre verbirgt; die Einsicht der Praxis behält ihr Ziel.
+
+**Begründung.** Am body erbten die Fenster die 18 px nicht (gemessen 14–16 px); DESIGN.md verlangt auf der Plattform alles ≥ 18 px.
+
+**Anker.** `MitFensterZiel` in `src/features/platform/PlattformApp.tsx`.
+
+**Änderungspfad.** Ziel im Baustein `Dialogfenster` statt in der Plattform · Aufwand `klein`.
+
+### ANN-585 — Plattform: Ändern verlangt Tag und Tageszeit
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Ein Änderungswunsch geht erst weiter, wenn mindestens ein Wochentag und eine Tageszeit oder „Egal“ gewählt ist. Der Server nimmt einen Wunsch ohne Tage weiter an.
+
+**Begründung.** Ein Änderungswunsch ohne Tage lässt die Praxis raten; „Egal“ deckt den Fall „jede Tageszeit“ ab (G6).
+
+**Anker.** `wannFehlt` und `vollstaendig` in `src/features/platform/terminablauf.ts`.
+
+**Änderungspfad.** Bedingung dort lockern · Aufwand `klein`.

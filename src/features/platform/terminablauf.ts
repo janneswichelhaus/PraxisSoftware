@@ -23,12 +23,12 @@ import { wochentagMitDatum } from './zeit';
  *   * **Wünschen** (`/p/termine/wunsch`): „Wann passt es Ihnen?“ →
  *     Zusammenfassung.
  *
- * „Wann passt es Ihnen?“ fragt Wochentage statt Daten (Annahme B6-P1):
+ * „Wann passt es Ihnen?“ fragt Wochentage statt Daten (ANN-583):
  * Vierzehn Daten und die Tageszeiten passen bei 375 × 667 in 18 px nicht auf
  * eine Seite. Der Server bekommt weiter Kalendertage, wie er sie erwartet -
  * jeden gewählten Wochentag in den nächsten 14 Werktagen (`wunschtage`),
  * höchstens 14 und keiner vor morgen. Auch beim Ändern gilt die Seite erst
- * mit Tag und Tageszeit (oder „Egal“) als beantwortet (Annahme B6-P3); der
+ * mit Tag und Tageszeit (oder „Egal“) als beantwortet (ANN-585); der
  * Server nähme einen Änderungswunsch auch ohne Tage.
  */
 
