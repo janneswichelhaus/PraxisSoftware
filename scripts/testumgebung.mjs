@@ -2,13 +2,18 @@
 /**
  * Auslieferung in die Test-Umgebung (OPS-002a).
  *
- * Drei Befehle für `.github/workflows/test-umgebung.yml`:
+ * Vier Befehle für `.github/workflows/test-umgebung.yml`:
  *
  *   node scripts/testumgebung.mjs konfiguration
  *     Prüft die Secrets, bevor irgendetwas gebaut oder hochgeladen wird:
  *     kein geheimer Supabase-Schlüssel im Browser-Bundle, Datenbank und
  *     Projekt-URL gehören zum selben Projekt, nichts zeigt auf eine lokale
  *     Datenbank.
+ *
+ *   node scripts/testumgebung.mjs verbinden <konto@host>
+ *     Baut die geteilte SSH-Verbindung zu Uberspace auf (`SSH` aus dem
+ *     Schritt „SSH einrichten“), mit neuen Versuchen, wenn der Server sie vor
+ *     der Anmeldung abbricht (BEF-171, ANN-559).
  *
  *   node scripts/testumgebung.mjs vorbereiten <dist>
  *     Legt `.htaccess` und `robots.txt` in den Auslieferungsordner.
@@ -20,6 +25,7 @@
  * Die reinen Funktionen hält `scripts/testumgebung.test.mjs` fest. Kein
  * Befehl gibt einen Schlüssel oder ein Kennwort aus.
  */
+import { spawn } from 'node:child_process';
 import dns from 'node:dns';
 import { writeFile } from 'node:fs/promises';
 import net from 'node:net';
@@ -110,6 +116,95 @@ export function pruefeKonfiguration({ supabaseUrl, anonKey, databaseUrl }) {
   }
 
   return fehler;
+}
+
+/**
+ * Pausen in Sekunden zwischen den Versuchen, die SSH-Verbindung aufzubauen:
+ * fünf Versuche in gut sieben Minuten (ANN-559). Uberspace bricht neue
+ * Verbindungen zeitweise schon vor dem Handshake ab (BEF-171).
+ */
+export const SSH_PAUSEN = [30, 60, 120, 240];
+
+/**
+ * Ob ein Fehlschlag von ssh einen neuen Versuch lohnt: nur, wenn die
+ * Verbindung vor der Anmeldung abbricht oder gar nicht zustande kommt. Ein
+ * abgewiesener Schlüssel oder ein fremder Serverschlüssel wird durch Warten
+ * nicht besser, und wiederholte Fehlanmeldungen können die Adresse sperren.
+ */
+export function sshNeuVersuchen(meldung) {
+  if (
+    /Permission denied|Host key verification failed|Too many authentication failures/i.test(meldung)
+  ) {
+    return false;
+  }
+  return /kex_exchange_identification|Connection (reset|closed|refused|timed out)|banner exchange|Network is unreachable|No route to host|Temporary failure in name resolution/i.test(
+    meldung,
+  );
+}
+
+function kurz(meldung) {
+  const zeilen = meldung
+    .split('\n')
+    .map((zeile) => zeile.trim())
+    .filter(Boolean);
+  return zeilen.length > 0 ? zeilen.join(' / ') : 'ohne Meldung';
+}
+
+const schlafen = (sekunden) => new Promise((weiter) => setTimeout(weiter, sekunden * 1000));
+
+/**
+ * Baut die Verbindung auf und versucht es nach jedem Abbruch vor der
+ * Anmeldung nach der nächsten Pause aus `pausen` neu. `versuchen` liefert
+ * `{ ok, meldung }`, `warten` wartet Sekunden; beide ersetzt der Test.
+ * Liefert, ob die Verbindung steht.
+ */
+export async function verbinde({
+  versuchen,
+  pausen = SSH_PAUSEN,
+  warten = schlafen,
+  melden = console.error,
+}) {
+  for (let nummer = 1; ; nummer += 1) {
+    const { ok, meldung } = await versuchen();
+    if (ok) {
+      if (nummer > 1) melden(`SSH-Verbindung im ${nummer}. Versuch aufgebaut.`);
+      return true;
+    }
+    if (!sshNeuVersuchen(meldung)) {
+      melden(`::error::SSH-Verbindung abgewiesen, kein neuer Versuch: ${kurz(meldung)}`);
+      return false;
+    }
+    const pause = pausen[nummer - 1];
+    if (pause === undefined) {
+      melden(
+        `::error::Keine SSH-Verbindung nach ${nummer} Versuchen: ${kurz(meldung)}. Den Zugang von einem anderen Rechner prüfen (ssh -4), dann den Workflow von Hand starten.`,
+      );
+      return false;
+    }
+    melden(
+      `::warning::SSH-Verbindung im ${nummer}. Versuch abgebrochen (${kurz(meldung)}), nächster Versuch in ${pause} s.`,
+    );
+    await warten(pause);
+  }
+}
+
+/**
+ * Ein Versuch: startet `programm` mit `argumente` und liefert, ob es mit 0
+ * endet, samt allem, was es auf stderr schreibt. Der Hintergrundprozess der
+ * geteilten Verbindung (ControlPersist) gibt stderr frei, sobald er sich
+ * löst; die Ausgabe des Befehls wird nicht gebraucht.
+ */
+export function sshVersuch(programm, argumente) {
+  return new Promise((erledigt) => {
+    const kind = spawn(programm, argumente, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let meldung = '';
+    kind.stderr.setEncoding('utf8');
+    kind.stderr.on('data', (teil) => {
+      meldung += teil;
+    });
+    kind.on('error', (fehler) => erledigt({ ok: false, meldung: fehler.message }));
+    kind.on('close', (code) => erledigt({ ok: code === 0, meldung }));
+  });
 }
 
 /**
@@ -289,6 +384,22 @@ async function main([befehl, argument]) {
     return fehler.length === 0 ? 0 : 1;
   }
 
+  if (befehl === 'verbinden' && argument) {
+    // `SSH` schreibt der Schritt „SSH einrichten“: Programm und Optionen,
+    // durch Leerzeichen getrennt, ohne Anführungszeichen. ConnectTimeout
+    // begrenzt auch Handshake und Schlüsseltausch eines Versuchs.
+    const [programm, ...optionen] = (env.SSH ?? '').split(/\s+/).filter(Boolean);
+    if (!programm) {
+      console.error('::error::SSH ist nicht eingerichtet (Schritt „SSH einrichten“).');
+      return 1;
+    }
+    const verbunden = await verbinde({
+      versuchen: () =>
+        sshVersuch(programm, [...optionen, '-o', 'ConnectTimeout=20', argument, 'true']),
+    });
+    return verbunden ? 0 : 1;
+  }
+
   if (befehl === 'vorbereiten' && argument) {
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- Auslieferungsordner aus dem Workflow, fester Dateiname.
     await writeFile(
@@ -320,7 +431,9 @@ async function main([befehl, argument]) {
     return fehler.length === 0 ? 0 : 1;
   }
 
-  console.error('Aufruf: testumgebung.mjs konfiguration | vorbereiten <dist> | pruefen <adresse>');
+  console.error(
+    'Aufruf: testumgebung.mjs konfiguration | verbinden <konto@host> | vorbereiten <dist> | pruefen <adresse>',
+  );
   return 2;
 }
 

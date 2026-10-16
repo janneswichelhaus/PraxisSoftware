@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-15
+Stand: 2026-10-16
 
 ## Zweck
 
@@ -644,3 +644,17 @@ eingeklappt.
 **Beobachtung.** Der Löschlauf schreibt fällige Dateien ins Löschjournal, `delete_patient_file` aber nicht. Nach einer Wiederherstellung käme eine einzeln gelöschte Datei zurück, etwa ein falsch zugeordnetes Foto. Die Anhänge an Rückfragen (`app.remove_message_attachments`) und seit FLT-EPIC-001 die Fotos am Rad journalisieren jede Löschung.
 
 **Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).
+
+### BEF-171 — Uberspace bricht die SSH-Verbindung der Auslieferung vor dem Handshake ab
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Betrieb: Test-Umgebung, Auslieferung (OPS-002a) |
+| Quelle  | Workflow „Test-Umgebung“, Lauf 149 nach #252, zweimal (08:23 und 09:09 Uhr) |
+| Status  | offen |
+| Berührt | `.github/workflows/test-umgebung.yml` (Schritt „Verbindung aufbauen“), `verbinde` in `scripts/testumgebung.mjs`; ANN-559 |
+
+**Beobachtung.** Build, Migrationen und Kartendienst liefen durch; die erste SSH-Verbindung zu `janus.uberspace.de` brach der Server ab, bevor ein Schlüssel geprüft wurde (`kex_exchange_identification: read: Connection reset by peer`). Ein neuer Versuch 45 Minuten später scheiterte gleich; bis zum 15.10., 23:44 Uhr, ging derselbe Ablauf. Seitdem zeigt die Test-Umgebung die Oberfläche von #250 auf der Datenbank von #252.
+
+**Erwartet.** Die Auslieferung übersteht eine kurze Drosselung (bis zu fünf Versuche, ANN-559). Hält der Abbruch an: den Zugang von einem anderen Rechner prüfen (`ssh -4`) und bei Uberspace erfragen, ob Adressen von GitHub Actions gesperrt sind.

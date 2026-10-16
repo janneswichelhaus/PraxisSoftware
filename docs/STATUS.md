@@ -1,11 +1,15 @@
-# Status · Stand 2026-10-15
+# Status · Stand 2026-10-16
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
 
-Radflotte echt (FLT-EPIC-001), eine PR, Branch `ccr-658a5e25-l0njkl`: Depots, Räder, Schlüssel mit
+Test-Umgebung (16.10.): Die Auslieferung von #252 scheiterte zweimal am SSH-Zugang zu Uberspace,
+der die Verbindung vor dem Handshake abbrach (BEF-171); der Workflow baut sie jetzt mit bis zu
+fünf Versuchen auf (ANN-559). Bis zum nächsten grünen Lauf zeigt sie die Oberfläche von #250.
+
+Radflotte echt (FLT-EPIC-001) ist gemergt (#252): Depots, Räder, Schlüssel mit
 einem Tipp, Check-Up und Panne mit Stellen am 3D-Rad, Freigabe mit Rückfrage, Unterlage für die
 Werkstatt als PDF; BEF-049 erledigt, BEF-066 für die Flotte; ANN-550 bis ANN-558.
 
