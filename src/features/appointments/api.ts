@@ -1651,10 +1651,13 @@ export function schreibfehler(error: { message?: string } | null, standard: stri
   }
   // Überholung 6 (ANN-574): Die Auswahl beim Umplanen passt nicht mehr zum
   // Tag - jemand hat inzwischen einen der Termine geändert.
-  if (error?.message?.includes('appointment selection')) {
+  if (error?.message?.includes('appointment selection does not match the day')) {
     return new Error(
       'Die Termine des Tages haben sich inzwischen geändert. Es wurde nichts abgesagt. Bitte neu laden und erneut wählen.',
     );
+  }
+  if (error?.message?.includes('appointment selection is empty')) {
+    return new Error('Bitte mindestens einen Termin wählen.');
   }
   if (error?.message?.includes('cancellation cannot be received in the future')) {
     return new Error(
@@ -1818,11 +1821,13 @@ export async function completeAppointment(
 }
 
 /**
- * Sagt alle bestätigten Termine einer Person an einem Kalendertag ab (CAL-009).
+ * Sagt die bestätigten Termine einer Person an einem Kalendertag ab (CAL-009)
+ * - alle oder genau die Auswahl (Überholung 6).
  *
- * Ein Vorgang, eine Transaktion: Entweder der ganze Tag ist umgeplant oder
+ * Ein Vorgang, eine Transaktion: Entweder ist umgeplant, was gewählt war, oder
  * keiner der Termine. Serverseitig löst das n Einzelabsagen aus — mit je
- * eigener Prüfung und eigenem Auditeintrag.
+ * eigener Prüfung; den Nachweis tragen die Termine selbst (`cancelled_by`,
+ * `cancelled_at`, ADR-010 Punkt 15).
  *
  * Gibt die Anzahl der abgesagten Termine zurück.
  */

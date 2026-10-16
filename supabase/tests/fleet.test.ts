@@ -613,6 +613,14 @@ describe('Radflotte (FLT-001)', () => {
         '55000',
       );
       expect((await fehler(users.office, UEBERGEBEN, [FLOTTE.rad1, null]))?.code).toBe('22023');
+      // Ein Rad, das gesperrt wird, während der Schlüssel bei jemandem liegt
+      // (Zweitreview Überholung 6): keine Übergabe bis zur Freigabe.
+      await asUserCommitted(users.teamLead, `select public.block_fleet_bike($1::uuid, 'Bremse')`, [
+        FLOTTE.rad1,
+      ]);
+      const gesperrt = await fehler(users.office, UEBERGEBEN, [FLOTTE.rad1, STAFF.tim]);
+      expect(gesperrt?.code).toBe('55000');
+      expect(gesperrt?.message).toMatch(/bike is blocked/);
       // Nichts hat sich bewegt: der Schlüssel liegt weiter bei Anna.
       const flotte = await daten<Flotte>(users.office, LISTE, [null]);
       expect(flotte.bikes.find((b) => b.id === FLOTTE.rad1)!.key?.holder_staff_id).toBe(STAFF.anna);

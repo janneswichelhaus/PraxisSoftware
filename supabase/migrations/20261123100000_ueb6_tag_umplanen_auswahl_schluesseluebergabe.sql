@@ -23,9 +23,10 @@
 --    zu Hand ging. Dieselben Rollen wie take_fleet_key (alle Praxisrollen der
 --    Behandlung, BEF-066); nicht bei gesperrtem Rad.
 --
--- Kein neues Auditereignis (ADR-010): Die Absage protokolliert je Termin wie
--- bisher, und die Übergabe ist selbst der Nachweis (wer, wann, an wen) in
--- fleet_key_handovers - wie take_fleet_key und return_fleet_key.
+-- Kein Auditereignis (ADR-010 Punkt 15): Das Datenmodell ist der Nachweis -
+-- je Termin cancelled_by/cancelled_at wie bei jeder Absage, und die Übergabe
+-- steht mit wer, wann und an wen in fleet_key_handovers, wie bei
+-- take_fleet_key und return_fleet_key.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -82,9 +83,14 @@ begin
   end if;
 
   -- Eine leere Auswahl sagt nichts ab - das ist kein Umplanen, sondern ein
-  -- Fehlgriff der Seite.
+  -- Fehlgriff der Seite. Eine leere Kennung passt zu keinem Termin
+  -- (Zweitreview Überholung 6).
   if p_appointment_ids is not null and cardinality(p_appointment_ids) = 0 then
     raise exception 'appointment selection is empty' using errcode = '22023';
+  end if;
+  if p_appointment_ids is not null
+     and exists (select 1 from unnest(p_appointment_ids) as x where x is null) then
+    raise exception 'appointment selection does not match the day' using errcode = '22023';
   end if;
 
   -- Zielsatz ausschliesslich in der eigenen Organisation suchen; sonst waere
@@ -155,10 +161,10 @@ begin
     raise exception 'appointment selection does not match the day' using errcode = '22023';
   end if;
 
-  -- Kein eigenes Sammelereignis: je Absage steht ein appointment.cancelled im
-  -- Auditlog, und das ist der auditpflichtige Vorgang (ADR-010, ADR-018
-  -- Punkt 5). Ein zusaetzlicher Eintrag "Tag umgeplant" wuerde dieselbe
-  -- Tatsache ein zweites Mal festhalten.
+  -- Kein Sammelereignis und kein Auditeintrag: Je Termin weisen
+  -- cancelled_by und cancelled_at die Absage nach (ADR-010 Punkt 15, seit
+  -- LOG-001b); ein Eintrag "Tag umgeplant" hielte dieselbe Tatsache ein zweites
+  -- Mal fest.
   return v_anzahl;
 end;
 $$;
@@ -167,7 +173,7 @@ revoke all on function public.cancel_staff_day(uuid, date, text, uuid[]) from pu
 grant execute on function public.cancel_staff_day(uuid, date, text, uuid[]) to authenticated;
 
 comment on function public.cancel_staff_day(uuid, date, text, uuid[]) is
-  'CAL-009, Überholung 6 (ANN-574): sagt die bestaetigten Behandlungstermine einer Person an einem Tag in einem Vorgang ab - alle oder genau die Auswahl (p_appointment_ids), die zum Tag passen muss. Praxisbedingter Grund Pflicht; Ereignisse des Praxisbetriebs bleiben. Je Termin protokolliert cancel_appointment.';
+  'CAL-009, Überholung 6 (ANN-574): sagt die bestaetigten Behandlungstermine einer Person an einem Tag in einem Vorgang ab - alle oder genau die Auswahl (p_appointment_ids), die zum Tag passen muss. Praxisbedingter Grund Pflicht; Ereignisse des Praxisbetriebs bleiben. Nachweis je Termin cancelled_by/cancelled_at, kein Auditeintrag (ADR-010 Punkt 15).';
 
 -- -----------------------------------------------------------------------------
 -- 2. hand_over_fleet_key
