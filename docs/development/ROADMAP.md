@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.13 · Stand 2026-10-12 · **in Kraft**
+Version 7.14 · Stand 2026-10-16 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -28,6 +28,19 @@ und Design laufen damit bereichsweise mit, statt als UI-003 am Ende zu stehen.
 | 3 | **Erstaufnahme geführt** — gebaut (Branch `ccr-248b0353-fbdcs9`) | Eine Seite vom Terminpanel bis zur Doku: Verordnungsfoto, Bogen, Einwilligungen, Anamnese, Liege; Neuaufnahme am Telefon in drei Tipps | K10, K11 |
 | 4 | **Monatsabrechnung in einem Lauf** — gebaut (Branch `ccr-92feaef7-zkxssj`) | Lauf aus „Abzurechnen“ mit Prüfliste und Rückfrage, Sammeldruck, Zahlungseingang gesammelt; §-19-Hinweis im Schnappschuss (BEF-165) | K13, K14 |
 | 5 | **Übungen, zweite Runde** — gebaut (Branch `claude/sweet-gauss-z8te7o`) | Durchsicht des Katalogs, eigene Vorlagen; eigene Bilder und Videos der Praxis, sobald es sie gibt (Zeichnungen entfallen seit 2026-10-15, ANN-539) | K12 |
+| 6 | **Geführte Abläufe** (Jannes 2026-10-16) | Baustein `GefuehrterAblauf` aus dem Check-Up (Abfolge als reine Logik, eine Frage je Seite, Abschluss mit Korrektur); damit Ausfallhonorar, Panne, Tag umplanen, Schlüsselübergabe, Zugang einrichten, Terminwunsch und Terminänderung auf der Plattform; Erstaufnahme und Neuaufnahme nur angleichen | K8, K10, K11, G1–G6 |
+| 7 | **Urlaub** (URL-001, vorgezogen) | Antrag geführt, Genehmigung, Wirkung auf Kalender und Kapazität; gemeinsame Antragsmechanik für 8 bis 10 | G7 |
+| 8 | **Arbeitszeitänderung** (AZ-001, neu) | Antrag einmalig oder dauerhaft, nie weniger Arbeitszeit, Mittagspause verschiebbar und in der Dauer änderbar (Jannes 2026-10-16) | G8 |
+| 9 | **Zeitkonto** (ZK-001, vorgezogen) | Buchungen und Saldo je Person, Korrekturantrag geführt | G9 |
+| 10 | **Erstattungen** (ERS-001, vorgezogen) | Antrag geführt (Art zuerst, Belege als Dateien), Genehmigung, Auszahlung | G10 |
+| 11 | **Teamchat** (TEAM-001, vorgezogen) | Kanäle, Direktnachrichten, Threads, Erwähnungen | — |
+
+**6 bis 11 vorgezogen** (Jannes 2026-10-16): Die Vorschaubereiche aus Block 8 werden jetzt
+ersetzt, je eine Session mit `/bereich`. Inhalt und Abläufe vorbereitet in
+[`../product/gefuehrte-ablaeufe-und-antraege.md`](../product/gefuehrte-ablaeufe-und-antraege.md),
+Budgets G1–G10 in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). Reihenfolge: 6
+zuerst, weil 7 bis 10 den Baustein nutzen; 7 vor 8 bis 10, weil er die Antragsmechanik legt; 11
+ist unabhängig und kann jederzeit dazwischen.
 
 Die Kette unten bleibt gültig; ihre offenen Epics (ab ALT-EPIC-002) folgen nach den
 Überholungen oder werden in die passende Überholung gezogen, wenn sie denselben Bereich
@@ -474,6 +487,8 @@ aus POR-EPIC-003, als Rechtsfrage bei B2.
 Ersetzt die Vorschaubereiche aus [`ARBEITSBEREICHE.md`](ARBEITSBEREICHE.md)
 („Praxisbetrieb") — ersetzt, nicht daneben gebaut. Beschäftigtendaten ohne
 Leistungskontrolle (§20, B6).
+**Seit 2026-10-16 vorgezogen** als Bereichsüberholungen 7 bis 11 (oben); dazu AZ-001
+(Arbeitszeitänderung).
 
 | Loop | Ergebnis | Ersetzt Vorschau | Voraussetzung |
 | --- | --- | --- | --- |
@@ -482,6 +497,7 @@ Leistungskontrolle (§20, B6).
 | **URL-001** | Urlaub mit Antrag und Genehmigung wirkt auf Kalender und Kapazität | `/betrieb/urlaub` | Beschäftigtenangaben (`IDEA-QSN-010`) als Teil des Loops |
 | **ZK-001** | Zeitkonto mit Buchungen und Saldo je Person, ohne Auswertung über Beschäftigte | `/betrieb/zeitkonto` | B6 |
 | **ERS-001** | Erstattungen von eingereicht bis ausgezahlt, Belege als Dateien | `/betrieb/erstattungen` | ADR-017; Belegfristen als Annahme (B4) |
+| **AZ-001** | Arbeitszeitänderung beantragen: einmalig oder dauerhaft, ohne Reduktion; genehmigt wirkt sie auf den Wochenplan | `/betrieb/arbeitszeit` (neu) | URL-001 (Antragsmechanik); Arbeitszeiten aus CAL-005 |
 
 ### Block 9 — Etappe 10 und Komfort
 

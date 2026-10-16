@@ -5,40 +5,19 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-BEF-124 (Pfad A), Branch `claude/keen-newton-gvxlea`: Verordnung mit Verlauf (Fassung je Änderung,
-„Verlauf“ auf der Bearbeiten-Seite), Löschen nur ohne Termine, Übertragen am Termin vermerkt;
-ANN-562.
+Branch `claude/nifty-carson-wnmatp`: Vermerk „ohne Behandlung“ ohne eigenen Eintrag (ANN-565),
+Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholungen 6 bis 11
+(`product/gefuehrte-ablaeufe-und-antraege.md`, G1–G10).
 
-Übungen, zweite Runde (K12), eine PR, Branch `claude/sweet-gauss-z8te7o`: Vorlagen der Praxis
-(„Als Vorlage speichern“ am Plan, vor den mitgelieferten in „Aus Vorlage“, Seite Vorlagen), Durchsicht
-des Katalogs am Stück mit einem Tipp je Übung; ANN-560, ANN-561. Bilder und Videos offen (ANN-539).
-
-Check-Up geführt (16.10., FLT-005/006, Branch `ccr-658a5e25-l0njkl`): eine Seite je Prüfpunkt am
-3D-Rad; nach den Reviews Zurückgeste, Doppeltipp-Ruhe, fester Abschluss, Seitentyp in
-DESIGN.md (ANN-563); 3D-Fehler als Baustein, alte Dateien 7 Tage (BEF-172, ANN-564).
-
-Test-Umgebung: SSH-Verbindung mit bis zu fünf Versuchen (#253, ANN-559); erster Lauf danach ohne
-Abbruch, BEF-171 bleibt offen, bis weitere Läufe das bestätigen.
-
-Übersicht (15.10., Branch `claude/practical-curie-1jy88f`): Abschlusskarte in Tiefgrün und Link zu
-den Trainingskund:innen entfernt, alle Abschnitte unter dem Kopf 32 px auseinander (ANN-546).
-Danach: Punkte im Kopf in zwei Hälften (Haken, Doku), Laufrad und kurze Vibration, wenn der Tag
-fertig wird; nichts gespeichert (ANN-547).
-
-Monatsabrechnung in einem Lauf (K13, K14), eine PR, Branch `ccr-92feaef7-zkxssj`: Lauf auf
-`/abrechnung` in 3 Tipps (vorher ≈ 15 je Rechnung), Sammeldruck, Zahlungen gesammelt buchen;
-BEF-165 erledigt; ANN-544. Erstaufnahme (#248) und Radflotte (#252) sind gemergt.
-
-Intro (15.10.): Startbild beim Öffnen der Anwendung statt nach der Anmeldung, O ohne Sprung (Felge
-dreht nicht mit). Branch `claude/eloquent-newton-p38ihe`, Varianten:
-https://claude.ai/artifact/En4BPeRGdaGej1PjnMP66h.
+Offen auf Branches: Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
+(`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
+(`claude/eloquent-newton-p38ihe`). Gemergt: BEF-124 (#255), Check-Up geführt (#256).
 
 ## Danach
 
-Vorschlag, Jannes entscheidet (Roadmap, „Bereichsüberholungen“):
-
-Die fünf Bereichsüberholungen sind gebaut. Aus der bisherigen Kette danach: ALT-EPIC-002; BEF-146, -147, -148, -150 vor dem Scharfschalten;
-Widerruf zu Anhängen im Training (ANN-333).
+Bereichsüberholungen 6 bis 11 (Jannes 2026-10-16), je eine Session mit `/bereich`: 6 Geführte
+Abläufe (Baustein, dann G1–G6) → 7 Urlaub → 8 Arbeitszeitänderung → 9 Zeitkonto → 10
+Erstattungen; 11 Teamchat jederzeit dazwischen. Danach ALT-EPIC-002; BEF-146, -147, -148, -150.
 
 ## Bei Jannes
 

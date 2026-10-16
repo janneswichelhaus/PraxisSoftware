@@ -38,3 +38,23 @@ Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag �
 2. Sicherheit und Recht gehen vor dem Budget: Protokolle (ADR-018), Rückfragen vor Zerstörendem,
    Einwilligungen und die MDR-Grenze (ADR-006) werden nie für einen Tipp gestrichen.
 3. Ein neuer Kernablauf kommt nur mit Jannes' Auftrag dazu; die Liste bleibt bei höchstens 15.
+
+## Geführte Abläufe und Anträge (G1–G10)
+
+Auftrag Jannes 2026-10-16, ausgeführt in den Bereichsüberholungen 6 bis 10; Abläufe in
+[`gefuehrte-ablaeufe-und-antraege.md`](gefuehrte-ablaeufe-und-antraege.md). Seltene Abläufe, deshalb
+eine eigene Liste neben den höchstens 15 Kernabläufen (Regel 3). Gezählt wie oben; **Maßstab neben
+den Tipps: kein Scrollen bei 375 px** auf keiner Seite des Ablaufs.
+
+| # | Ablauf (Auslöser → fertig) | Rolle, Häufigkeit | Budget | Heute |
+| --- | --- | --- | --- | --- |
+| G1 | Niemand öffnet → Ausfallhonorar vermerkt (= K8) | Therapie, wöchentlich | ≤ 5 Tipps | 5, eine aufgeklappte Fläche |
+| G2 | Tag umplanen: Grund → Termine absagen → alle angerufen | Büro, selten | ≤ 4 + 2 je Person | eine Seite in zwei Phasen, gezählt offen |
+| G3 | Panne am Rad → Abschlussart | Therapie, selten | Schrittzahl wie heute | eine Frage je Seite, gewöhnliche Seite |
+| G4 | Schlüssel übergeben | Therapie, Büro, wöchentlich | ≤ 3 Tipps | 3 (zwei Auswahlen, Knopf) |
+| G5 | Neue:n Mitarbeiter:in einrichten bis Einladung | Büro, selten | ≤ 8 Tipps + Felder, ein Ablauf | über drei Seiten verteilt |
+| G6 | Plattform: Termin ändern oder absagen | Patient:in, selten | ≤ 6 Tipps + Text | zwei Ebenen mit Formular |
+| G7 | Urlaub beantragen | Alle, selten | ≤ 6 Tipps | Vorschau: Formular, ≈ 7 + Felder |
+| G8 | Arbeitszeitänderung beantragen (einmalig oder dauerhaft) | Alle, selten | ≤ 8 Tipps + Zeiten | gibt es nicht |
+| G9 | Zeitkonto: Mehrarbeit oder Freizeitausgleich beantragen | Alle, monatlich | ≤ 6 Tipps | Vorschau: Formular, 5 Felder |
+| G10 | Erstattung beantragen (Strom oder Einkauf mit Beleg) | Alle, monatlich | ≤ 7 Tipps + Betrag | Vorschau: Formular, ≈ 8 Felder |

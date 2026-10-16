@@ -42,7 +42,7 @@ Abschnitte genügt `PageHeader` mit `Section`s.
 **Formular**: `Rueckweg` → `PageHeader` → `Fehlerzusammenfassung` (ab zwei Feldern) → `Section` ohne
 Rahmen mit `Feldgruppe`, alles in `max-w-formular`; zwei Felder nebeneinander nur ab 640 px und nur,
 was zusammengehört (PLZ/Ort) → `Formularfuss` (Speichern zuerst, Abbrechen leise; am Telefon
-untereinander in voller Breite). Textverlustschutz bleibt.
+untereinander in voller Breite).
 
 **Arbeitsseite** (Schreibseite, Erhebung, Trainingsprotokoll): ein langes Eingabefeld, die Knöpfe
 in der klebenden `Aktionsleiste` über der Tableiste, Hauptknopf rechts. Die Schreibseite ist eine
@@ -50,7 +50,7 @@ Fläche ohne Karten (`einbettung="flaeche"`); andere Arbeitsseiten bleiben gewö
 
 **Geführter Ablauf** (Check-Up): `Dialogfenster vollbild`, Kopf mit Schritt, Objekt, ✕;
 „← Zurück“, `ProgressBar`; je Seite eine Frage ohne Rollen, die Antwort führt weiter; Abschluss
-über festem `Formularfuss`.
+über festem `Formularfuss`. Nicht für Tägliches.
 
 **Druckblatt** (Rechnung, Bericht, Planblatt, Tagesplan): eigenes Profil – Briefkopf, Absenderzeile,
 Tabellen und eigene Überschriften erlaubt, Bedienung `nicht-drucken`. Geprüft im Druckbild; die
@@ -79,7 +79,6 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 | Laden, Fehler, Veraltet, Leer         | `Abfragezustand` (Satz `VERBINDUNG_PRUEFEN`)           |
 | Nach einem Vorgang / kurze Meldung    | `Rueckmeldung` / `Statusmeldung`                       |
 | Bestätigung am Klickort / Fenster     | `Rueckfrage` / `Dialogfenster`                         |
-| Ungespeichertes vor dem Verlassen     | `useTextverlustschutz`: Fenster über gesperrter Seite  |
 | Knöpfe am Formularende / Arbeitsseite | `Formularfuss` / `Aktionsleiste`                       |
 | Haupt- und Kontextspalte              | `Zweispalter`                                          |
 | Bild, Foto                            | `Medienbild` (4:3, ganz; `vorschau` 56 × 56)           |
