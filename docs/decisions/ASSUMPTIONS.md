@@ -5638,3 +5638,16 @@ Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiede
 **Anker.** Container `flex flex-col gap-8` in `MyDayPage` (`src/features/today/MyDayPage.tsx`).
 
 **Änderungspfad.** Karte zurück: Git-Verlauf von `Tagesabschluss` · Aufwand `klein`.
+
+### ANN-547 — Tagesfortschritt in zwei Hälften, ein Rad beim fertigen Tag
+
+Oberfläche · entschieden (Jannes) · 2026-10-15 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Für Rollen, die dokumentieren, hat jeder Punkt im Kopf zwei Hälften: links Haken, rechts Doku; voll mit ✓ erst mit beidem. Absage und „nicht angetroffen“ brauchen keine Doku. Satz: „2 von 4 abgehakt · 1 dokumentiert“. Wird der gezeigte Tag in der Sitzung fertig, rollt ein selbst gezeichnetes Laufrad einmal über die Punkte (900 ms, nicht bei reduzierter Bewegung), das Telefon vibriert kurz. Kein Speichern, kein Zählen, kein Vergleich (§20).
+
+**Begründung.** Auftrag Jannes. Die Marke wird nie gedreht (`marke/README.md`).
+
+**Anker.** `tagesfortschritt` in `src/features/today/tagesstart.ts`; `ProgressDots`.
+
+**Änderungspfad.** Ohne Rad: Effekt `feier` in `MyDayPage` · Aufwand `klein`.
+

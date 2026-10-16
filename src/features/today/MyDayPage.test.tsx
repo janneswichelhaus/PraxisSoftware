@@ -608,7 +608,7 @@ describe('Übersicht', () => {
   it('zaehlt im Kopf, was erledigt ist, und laesst Erledigtes an seiner Stelle stehen', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
     // Ein offener Besuch, ein abgeschlossener mit finalisierter Dokumentation.
-    expect(await screen.findByText('1 von 2 Besuchen erledigt')).toBeInTheDocument();
+    expect(await screen.findByText(/^1 von 2 abgehakt · /)).toBeInTheDocument();
     // Der Zeitstrahl ersetzt „Offen heute" und „Erledigt heute".
     expect(screen.queryByText(/^Offen heute/)).toBeNull();
     expect(screen.queryByText(/^Erledigt heute/)).toBeNull();
@@ -975,7 +975,7 @@ describe('Übersicht', () => {
   describe('Design-Handoff 2026-10-01: Zeitstrahl', () => {
     it('nennt das Datum lang und zeigt den Tagesfortschritt im Kopf', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      const fortschritt = await screen.findByText('1 von 2 Besuchen erledigt');
+      const fortschritt = await screen.findByText(/^1 von 2 abgehakt · /);
 
       const kopf = screen.getByRole('heading', { level: 1 }).closest('header')!;
       expect(kopf).toContainElement(fortschritt);
@@ -1118,7 +1118,7 @@ describe('Übersicht', () => {
       expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
       expect(screen.queryByText('Kein Weg mehr offen')).toBeNull();
       expect(document.querySelector('.bg-surface-inverse')).toBeNull();
-      expect(screen.getByText('2 von 2 Besuchen erledigt')).toBeInTheDocument();
+      expect(screen.getByText(/^2 von 2 abgehakt · /)).toBeInTheDocument();
 
       expect(screen.queryByText('Liege heute')).toBeNull();
       expect(screen.queryByRole('article')).toBeNull();
@@ -1131,6 +1131,78 @@ describe('Übersicht', () => {
       for (const abschnitt of [vorschau, strahl]) {
         expect(abschnitt.className).not.toMatch(/(^|\s)(sm:)?m[ty]-/);
       }
+    });
+
+    it('teilt die Punkte in Haken und Doku und laesst beim letzten Haken einmal das Rad rollen (ANN-547)', async () => {
+      // Vorbei und festgeschrieben, aber noch nicht abgehakt; der zweite ist fertig.
+      const vorher = tagesEintrag({
+        id: 't1',
+        starts_at: inMinuten(-120),
+        ends_at: inMinuten(-75),
+        documentation_status: 'final',
+      });
+      let stand: TodayApiModule.DayPlanEntry[] = [
+        vorher,
+        zweiterBesuch({
+          starts_at: inMinuten(-60),
+          ends_at: inMinuten(-15),
+          status: 'completed',
+          documentation_status: 'final',
+        }),
+      ];
+      fetchDayPlan.mockImplementation((tag: string) =>
+        Promise.resolve(tag === todayInTimeZone(ZONE) ? stand : []),
+      );
+      fetchAppointment.mockResolvedValue({ id: 't1', updated_at: '2026-10-01T06:00:00Z' });
+      completeAppointment.mockImplementation(() => {
+        stand = stand.map((t) => (t.id === 't1' ? { ...t, status: 'completed' } : t));
+        return Promise.resolve(undefined);
+      });
+      const user = userEvent.setup();
+      const { container } = renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      const satz = await screen.findByText('1 von 2 abgehakt · 2 dokumentiert');
+      const kopf = satz.closest('div')!;
+      // Links der Haken, rechts die Doku: der erste halb, der zweite voll mit ✓.
+      const [erster, zweiter] = [...kopf.querySelectorAll('[data-punkt]')];
+      expect(erster).toHaveAttribute('data-doku', 'ja');
+      expect(erster!.querySelector('[data-haelfte="haken"]')).not.toHaveClass('bg-accent');
+      expect(erster!.querySelector('[data-haelfte="doku"]')).toHaveClass('bg-accent');
+      expect(zweiter).toHaveAttribute('data-punkt', 'erledigt');
+      expect(zweiter!.querySelector('[data-zeichen="haken"]')).not.toBeNull();
+      // Geöffnet ohne fertigen Tag: kein Rad.
+      expect(container.querySelector('[data-rad]')).toBeNull();
+
+      await user.click(
+        imStrahl().getByRole('button', { name: /^Termin abschließen.*Erika Beispiel/ }),
+      );
+
+      expect(await screen.findByText('2 von 2 abgehakt · 2 dokumentiert')).toBeInTheDocument();
+      const rad = await waitFor(() => {
+        const gefunden = container.querySelector('[data-rad]');
+        expect(gefunden).not.toBeNull();
+        return gefunden!;
+      });
+      expect(rad).toHaveAttribute('aria-hidden', 'true');
+      expect(rad).toHaveClass('fortschritt-rad', 'motion-reduce:hidden');
+    });
+
+    it('feiert nicht, wenn der Tag schon fertig geoeffnet wird, und zeigt dem Buero keine Haelften', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({ id: 't1', status: 'completed', documentation_status: 'final' }),
+      ]);
+      const { container, unmount } = renderMitVorschau(
+        <MyDayPage user={testUser(['therapist'])} />,
+      );
+      await screen.findByText('1 von 1 abgehakt · 1 dokumentiert');
+      expect(container.querySelector('[data-rad]')).toBeNull();
+      unmount();
+
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ id: 't1', status: 'completed' })]);
+      const buero = renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
+      expect(await screen.findByText('1 von 1 Besuch erledigt')).toBeInTheDocument();
+      expect(buero.container.querySelector('[data-haelfte]')).toBeNull();
+      expect(buero.container.querySelector('[data-doku]')).toBeNull();
     });
 
     it('fuehrt auf der Uebersicht nicht mehr zu den Trainingskund:innen', async () => {
@@ -1390,7 +1462,7 @@ describe('Übersicht', () => {
       const { container } = renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       // Gezählt wird weiter nur der Besuch (ANN-117).
-      expect(await screen.findByText('0 von 1 Besuch erledigt')).toBeInTheDocument();
+      expect(await screen.findByText(/^0 von 1 abgehakt · /)).toBeInTheDocument();
       const spaeter = imStrahl().getByRole('link', { name: /Teambesprechung/ });
       expect(spaeter).toHaveAttribute(
         'href',
@@ -1439,7 +1511,7 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('1 von 1 Besuch erledigt')).toBeInTheDocument();
+      expect(await screen.findByText(/^1 von 1 abgehakt · /)).toBeInTheDocument();
       expect(imStrahl().getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
       expect(screen.queryByText('Heute sind Ihnen keine Besuche zugeordnet')).toBeNull();
     });
@@ -1466,7 +1538,7 @@ describe('Übersicht', () => {
       // Der besuchte steht als Zeile da und sagt, was an ihm noch offen ist.
       const besucht = zeileImStrahl(/Erika Beispiel/);
       expect(besucht).toHaveTextContent('Doku im Entwurf');
-      expect(await screen.findByText('1 von 2 Besuchen erledigt')).toBeInTheDocument();
+      expect(await screen.findByText(/^1 von 2 abgehakt · /)).toBeInTheDocument();
     });
 
     it('listet ohne ausstehenden Besuch die offene Doku vor allem anderen (Auftrag C1, UEB-04)', async () => {
@@ -1857,7 +1929,7 @@ describe('Übersicht', () => {
         imStrahl().getByRole('button', { name: /^Termin abschließen.*Erika Beispiel/ }),
       ).toBeInTheDocument();
       // Erledigt ist nur, was abgehakt ist.
-      expect(screen.getByText('0 von 2 Besuchen erledigt')).toBeInTheDocument();
+      expect(screen.getByText(/^0 von 2 abgehakt · /)).toBeInTheDocument();
     });
 
     it('nennt nach dem letzten Besuch, was noch offen ist, solange ein Haken fehlt', async () => {
@@ -1873,7 +1945,7 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      expect(await screen.findByText('1 von 2 Besuchen erledigt')).toBeInTheDocument();
+      expect(await screen.findByText(/^1 von 2 abgehakt · /)).toBeInTheDocument();
       // Der liegengebliebene steht unter „Heute noch offen" - zum Abschließen
       // über die Schreibseite, im Strahl mit dem Haken.
       const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).closest(

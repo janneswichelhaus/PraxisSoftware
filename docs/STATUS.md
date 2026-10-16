@@ -7,6 +7,8 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 Übersicht (15.10., Branch `claude/practical-curie-1jy88f`): Abschlusskarte in Tiefgrün und Link zu
 den Trainingskund:innen entfernt, alle Abschnitte unter dem Kopf 32 px auseinander (ANN-546).
+Danach: Punkte im Kopf in zwei Hälften (Haken, Doku), Laufrad und kurze Vibration, wenn der Tag
+fertig wird; nichts gespeichert (ANN-547).
 
 Monatsabrechnung in einem Lauf (K13, K14), eine PR, Branch `ccr-92feaef7-zkxssj`: Lauf auf
 `/abrechnung` in 3 Tipps (vorher ≈ 15 je Rechnung), Sammeldruck, Zahlungen gesammelt buchen;
