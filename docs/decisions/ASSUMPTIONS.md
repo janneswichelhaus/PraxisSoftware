@@ -5854,3 +5854,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 **Anker.** `useTextverlustschutz` in `src/features/documentation/Textverlustschutz.tsx`; `Wechselrueckfrage` in `scheduling/SchedulingPage.tsx` und `billing/CatalogPage.tsx`.
 
 **Änderungspfad.** Zurück zur Zeile: der Block `offen` in `useTextverlustschutz` · Aufwand `klein`.
+
+### ANN-567 — Bewegung nur als Gestaltung (Leinwand „Lebendig“)
+
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
+
+**Annahme.** Wechseln mit Schwung, Rückmeldung flach und Zeile öffnet sich zur Seite kommen als Bewegung an vorhandene Bausteine; Inhalt und Abläufe bleiben. In Ruhe ändert sich nur, was einen Zustand zeigt: ein offener Aufklapper trägt den Titel in Tinte und kräftiger, ein Feld mit Fokus den Titel in der Hauptfarbe. Text blendet nie über Deckkraft ein; bei reduzierter Bewegung springt alles. Keine Zeitlinie, keine PIN-Punkte, kein Titel im Feld.
+
+**Begründung.** Auftrag Jannes (16.10.): nichts am Inhalt ändern. Halb durchsichtiger Text hätte kurz zu wenig Kontrast; ein Titel im Feld verschöbe jedes Formular.
+
+**Anker.** `src/index.css`, Abschnitt „Bewegung“; `gleitanzeiger.ts`, `seitenUebergang.ts` (`src/components/ui`); `tests/e2e/bewegung.spec.ts`.
+
+**Änderungspfad.** Den Abschnitt in `index.css` und die zwei Hooks entfernen · Aufwand `klein`.
