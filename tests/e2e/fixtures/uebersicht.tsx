@@ -36,6 +36,9 @@ import '@/index.css';
  * mit einer noch offenen Dokumentation, `?ansicht=akte` die Stammdaten einer
  * Person mit dem Schalter für die Liege, `?ansicht=nachladefehler` die Zeile
  * nach einem gescheiterten Nachladen des Profils (BEF-046).
+ * `?ansicht=fastfertig` ist der Abend, an dem dem letzten Besuch noch der
+ * Haken fehlt; `window.tagFertig()` setzt ihn, wie es das Nachladen nach dem
+ * Haken täte (ANN-547).
  */
 const ZONE = 'Europe/Berlin';
 const STAFF = '55555555-5555-4555-8555-000000000002';
@@ -108,6 +111,13 @@ function besuch(
 /** Der Stand des Tages je Ansicht: morgens offen, abends erledigt. */
 function stand(nummer: number): Partial<DayPlanEntry> {
   if (ansicht === 'abend') return { status: 'documented', documentation_status: 'final' };
+  if (ansicht === 'fastfertig') {
+    return {
+      status: 'documented',
+      documentation_status: 'final',
+      checked_at: nummer === 3 ? null : new Date(Date.now() - 3_600_000).toISOString(),
+    };
+  }
   // Auftrag C1: der zweite oder dritte Besuch des Tages, die davor dokumentiert.
   const davor = ansicht === 'zweiter' ? 2 : ansicht === 'dritter' ? 3 : 0;
   if (nummer < davor) return { status: 'documented', documentation_status: 'final' };
@@ -291,6 +301,11 @@ const client = new QueryClient({
 // eingetragen sind (ANN-237).
 client.setQueryData(['travel-time-factor'], 1);
 client.setQueryData(['day-plan', heute, STAFF], tag);
+(window as unknown as { tagFertig: () => void }).tagFertig = () =>
+  client.setQueryData(
+    ['day-plan', heute, STAFF],
+    tag.map((termin) => ({ ...termin, checked_at: new Date().toISOString() })),
+  );
 client.setQueryData(['day-route', heute, STAFF], punkte);
 client.setQueryData(['standorte'], [standort]);
 // Mit dem Ende des Tages als letztem Punkt - wie Tour und Kalender (UBK-015).

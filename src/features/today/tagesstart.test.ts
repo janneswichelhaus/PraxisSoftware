@@ -6,6 +6,7 @@ import {
   bisBeginn,
   einordnung,
   fokusDesTages,
+  hakenUndDokuText,
   fortschrittText,
   hausbesucheDesTages,
   liegeHeute,
@@ -393,7 +394,33 @@ describe('Tagesfortschritt (Design-Handoff 2026-10-01, 5a Punkt 3)', () => {
         [eintrag({ id: 'f', um: '06:00', kind: 'internal', patient_id: null })],
         null,
       ),
-    ).toEqual({ punkte: [], erledigt: 0, gesamt: 0, dokumentiert: 0 });
+    ).toEqual({ punkte: [], doku: [], erledigt: 0, gesamt: 0, dokumentiert: 0, fertig: false });
+  });
+
+  it('ist fertig erst mit Haken und Doku an jedem Besuch (ANN-547)', () => {
+    const abgehakt = eintrag({
+      id: 'a',
+      um: '07:00',
+      status: 'completed',
+      documentation_status: 'draft',
+    });
+    const absage = eintrag({ id: 'x', um: '08:00', status: 'cancelled' });
+    const nichtDa = eintrag({ id: 'b', um: '09:00', status: 'no_show' });
+    const halb = tagesfortschritt([abgehakt, absage, nichtDa], null);
+    expect(halb.doku).toEqual([false, true, true]);
+    expect(halb.fertig).toBe(false);
+    expect(hakenUndDokuText(halb)).toBe('2 von 2 abgehakt · 0 dokumentiert');
+
+    const fest = { ...abgehakt, documentation_status: 'final' as const };
+    const ganz = tagesfortschritt([fest, absage, nichtDa], null);
+    expect(ganz.fertig).toBe(true);
+    expect(hakenUndDokuText(ganz)).toBe('2 von 2 abgehakt · 1 dokumentiert');
+
+    // Festgeschrieben, aber ohne Haken: noch nicht fertig (B4).
+    const ohneHaken = eintrag({ id: 'c', um: '10:00', status: 'documented', checked_at: null });
+    expect(tagesfortschritt([ohneHaken], null)).toMatchObject({ doku: [true], fertig: false });
+    // Nur eine Absage: nichts zu feiern.
+    expect(tagesfortschritt([absage], null).fertig).toBe(false);
   });
 });
 
