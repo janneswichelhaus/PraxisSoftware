@@ -5830,3 +5830,27 @@ Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
 **Anker.** Schritt „Hochladen“ in `.github/workflows/test-umgebung.yml`.
 
 **Änderungspfad.** Andere Frist: `-mtime +7` dort · Aufwand `klein`.
+
+### ANN-565 — Vermerk „ohne Behandlung“ braucht keinen eigenen Eintrag
+
+Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
+
+**Annahme.** Am Vermerk „Tür geöffnet, nicht behandelt“ darf das Feld leer bleiben. Dann wird der Vermerk als Satz festgeschrieben; ein eigener Text geht vor. Ohne Vermerk bleibt ein Eintrag Pflicht.
+
+**Begründung.** Auftrag Jannes (16.10.): Mit dem Vermerk gilt die Dokumentation ohne weiteren Eintrag. Der Satz statt eines leeren Eintrags hält den Eintrag in Akte, Druck und Auskunft lesbar; das Merkmal `visit_without_treatment` bleibt die Quelle, der Server bleibt bei „nie leer“.
+
+**Anker.** `inhaltMitVermerk` in `src/features/documentation/api.ts`.
+
+**Änderungspfad.** Leeren Eintrag zulassen: Server-Prüfung in `create_treatment_note`/`update_treatment_note` (Migration, Pfad A) · Aufwand `mittel`.
+
+### ANN-566 — Rückfrage vor dem Verlassen als Fenster, Fokus nie auf „Verwerfen“
+
+Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
+
+**Annahme.** Die Rückfrage bei ungespeicherten Eingaben (Seitenwechsel, Abmelden, Wechsel von Tag oder Preisliste) erscheint als Fenster über der gesperrten Seite statt als Zeile oder Kasten. Escape und ein Tipp daneben heißen „bleiben“; der Fokus steht auf „Speichern und …“, ohne Speicherweg auf „Hier bleiben“, nie auf „Verwerfen“.
+
+**Begründung.** Auftrag Jannes (16.10.): sofort offensichtlich, Hintergrund deaktiviert. Folgt FIX-016 (Rückfragen als Fenster). Ein versehentliches Enter darf nichts verwerfen (§13).
+
+**Anker.** `useTextverlustschutz` in `src/features/documentation/Textverlustschutz.tsx`; `Wechselrueckfrage` in `scheduling/SchedulingPage.tsx` und `billing/CatalogPage.tsx`.
+
+**Änderungspfad.** Zurück zur Zeile: der Block `offen` in `useTextverlustschutz` · Aufwand `klein`.

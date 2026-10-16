@@ -316,7 +316,9 @@ describe('Geführter Check-Up', () => {
     // Auf dem ersten Schritt: die Rückfrage, in den Worten des Check-Ups.
     await act(() => router.navigate(-1));
     const frage = await screen.findByRole('group', { name: 'Ungespeicherter Check-Up' });
-    expect(within(frage).getByText('Check-Up noch nicht gespeichert.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: 'Check-Up noch nicht gespeichert' }),
+    ).toBeInTheDocument();
     await nutzer.click(within(frage).getByRole('button', { name: 'Weiter prüfen' }));
     expect(await fenster('Reifen und Luftdruck')).toBeInTheDocument();
     expect(router.state.location.search).toBe(`?rad=${RAD.id}`);
@@ -419,7 +421,9 @@ describe('Geführter Check-Up', () => {
     await nutzer.click(screen.getByRole('button', { name: 'In Ordnung' }));
     await nutzer.click(screen.getByRole('button', { name: 'Check-Up abbrechen' }));
     const frage = await screen.findByRole('group', { name: 'Ungespeicherter Check-Up' });
-    expect(within(frage).getByText('Check-Up noch nicht gespeichert.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('dialog', { name: 'Check-Up noch nicht gespeichert' }),
+    ).toBeInTheDocument();
     expect(within(frage).getByRole('button', { name: 'Weiter prüfen' })).toBeInTheDocument();
     await nutzer.click(within(frage).getByRole('button', { name: 'Verwerfen' }));
     expect(await screen.findByTestId('ziel')).toHaveTextContent('/betrieb/flotte');

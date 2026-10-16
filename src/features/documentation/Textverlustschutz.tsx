@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavigationType, useBlocker, type BlockerFunction } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { useAbmeldewache } from '@/app/abmeldeschutz';
@@ -450,14 +451,11 @@ export function useTextverlustschutz({
   });
 
   const offen = (blockiert && !einSchrittZurueck) || abmeldenGefragt;
-  const kasten = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Der Kasten erscheint, ohne dass jemand ihn angetippt hat. Ohne
-    // Fokusführung stünde die Tastaturbedienung weiter auf einer Schaltfläche,
-    // die gerade nichts mehr tut - und auf einem kleinen Bildschirm bliebe der
-    // Kasten unter dem sichtbaren Bereich.
-    if (offen) kasten.current?.querySelector('button')?.focus();
+    // Den Fokus führt das Fenster (`data-autofocus`): auf „Speichern und …“,
+    // sonst auf „bleiben“ - nie auf „Verwerfen“, damit ein Enter nichts
+    // verwirft (ANN-566).
     if (!offen) setFehler(undefined);
   }, [offen]);
 
@@ -635,15 +633,20 @@ export function useTextverlustschutz({
   // nichts zu speichern - dann kein „Speichern und weiter“.
   const speichernAnbieten =
     speichern !== undefined && (ungespeichert || nichtSicherbar === undefined);
-  const offenerText = texte.zeile?.weitergehen ?? 'Text noch nicht gespeichert.';
-  const zeile =
-    nichtSicherbar === undefined
-      ? abmeldemodus
-        ? (texte.zeile?.abmelden ?? 'Text noch nicht gespeichert – abmelden?')
-        : offenerText
-      : [ungespeichert ? offenerText : null, nichtSicherbar, abmeldemodus ? 'Abmelden?' : null]
-          .filter(Boolean)
-          .join(' ');
+  // Der Titel des Fensters: am Formular mit fester Fußleiste die gewohnte
+  // Zeile, etwa „Check-Up noch nicht gespeichert“; was sich nicht speichern
+  // lässt, steht darunter als eigener Absatz.
+  const zeile = (
+    abmeldemodus
+      ? (texte.zeile?.abmelden ?? 'Text noch nicht gespeichert – abmelden?')
+      : (texte.zeile?.weitergehen ?? 'Text noch nicht gespeichert.')
+  ).replace(/\.$/, '');
+  const titel =
+    kompakt && (ungespeichert || nichtSicherbar === undefined)
+      ? zeile
+      : abmeldemodus
+        ? 'Vor dem Abmelden'
+        : 'Noch nicht gespeichert';
 
   const schutz = (
     <>
@@ -667,98 +670,68 @@ export function useTextverlustschutz({
         )
       ) : null}
 
-      {offen && kompakt ? (
-        <div
-          ref={kasten}
-          role="group"
-          aria-label={texte.bezeichnung}
-          className="border-line-strong bg-canvas flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-4 py-2"
+      {/* Die Rückfrage als Fenster über der Seite (Jannes 2026-10-16,
+          ANN-566): Der Hintergrund ist gesperrt, und niemand übersieht sie
+          am Ende einer langen Seite. Escape und ein Tipp daneben heißen
+          „bleiben“, nie „verwerfen“. */}
+      {offen ? (
+        <Dialogfenster
+          titel={titel}
+          onSchliessen={() => {
+            if (!laeuft) bleiben();
+          }}
         >
-          <p className="text-ink text-sm font-semibold">{zeile}</p>
-          {fehler ? (
-            <Statusmeldung ton="fehler" className="basis-full">
-              {fehler.text} {texte.bleibtStehen}, die Seite bleibt geöffnet
-              {abmeldemodus ? ', die Sitzung bleibt bestehen' : ''}.
-            </Statusmeldung>
-          ) : null}
-          <div className="ml-auto flex flex-wrap gap-2">
-            {speichernAnbieten ? (
+          <div role="group" aria-label={texte.bezeichnung}>
+            {ungespeichert || nichtSicherbar === undefined ? (
+              <p className="text-ink text-sm leading-relaxed">
+                {abmeldemodus ? texte.abmelden : texte.weitergehen}
+              </p>
+            ) : null}
+            {nichtSicherbar !== undefined ? (
+              <p className="text-ink mt-2 text-sm leading-relaxed first:mt-0">{nichtSicherbar}</p>
+            ) : null}
+            {!speichern && texte.ohneSpeichern ? (
+              <p className="text-ink-muted mt-2 text-sm leading-relaxed">{texte.ohneSpeichern}</p>
+            ) : null}
+
+            {fehler ? (
+              <Statusmeldung ton="fehler" className="mt-3">
+                {fehler.text} {texte.bleibtStehen}, die Seite bleibt geöffnet
+                {abmeldemodus ? ', die Sitzung bleibt bestehen' : ''}.
+              </Statusmeldung>
+            ) : null}
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              {speichernAnbieten ? (
+                <Button type="button" disabled={laeuft} data-autofocus onClick={speichernUndWeiter}>
+                  {laeuft
+                    ? 'Wird gespeichert …'
+                    : abmeldemodus
+                      ? 'Speichern und abmelden'
+                      : kompakt
+                        ? 'Speichern und weiter'
+                        : 'Speichern und weitergehen'}
+                </Button>
+              ) : null}
+              <Button type="button" variant="secondary" disabled={laeuft} onClick={weitergehen}>
+                {abmeldemodus
+                  ? 'Verwerfen und abmelden'
+                  : kompakt
+                    ? 'Verwerfen'
+                    : 'Verwerfen und weitergehen'}
+              </Button>
               <Button
                 type="button"
-                groesse="kompakt"
+                variant="quiet"
                 disabled={laeuft}
-                onClick={speichernUndWeiter}
+                data-autofocus={speichernAnbieten ? undefined : true}
+                onClick={bleiben}
               >
-                {laeuft
-                  ? 'Wird gespeichert …'
-                  : abmeldemodus
-                    ? 'Speichern und abmelden'
-                    : 'Speichern und weiter'}
+                {kompakt ? (texte.zeile?.bleiben ?? 'Weiterschreiben') : 'Hier bleiben'}
               </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="secondary"
-              groesse="kompakt"
-              disabled={laeuft}
-              onClick={weitergehen}
-            >
-              {abmeldemodus ? 'Verwerfen und abmelden' : 'Verwerfen'}
-            </Button>
-            <Button
-              type="button"
-              variant="quiet"
-              groesse="kompakt"
-              disabled={laeuft}
-              onClick={bleiben}
-            >
-              {texte.zeile?.bleiben ?? 'Weiterschreiben'}
-            </Button>
+            </div>
           </div>
-        </div>
-      ) : offen ? (
-        <div
-          ref={kasten}
-          role="group"
-          aria-label={texte.bezeichnung}
-          className="border-line-strong bg-surface-sunken rounded-card mt-4 border p-4"
-        >
-          <p className="text-ink text-sm leading-relaxed">
-            {nichtSicherbar !== undefined && !ungespeichert
-              ? nichtSicherbar
-              : abmeldemodus
-                ? texte.abmelden
-                : texte.weitergehen}
-          </p>
-          {!speichern && texte.ohneSpeichern ? (
-            <p className="text-ink-muted mt-2 text-sm leading-relaxed">{texte.ohneSpeichern}</p>
-          ) : null}
-
-          {fehler ? (
-            <Statusmeldung ton="fehler" className="mt-3">
-              {fehler.text} {texte.bleibtStehen}, die Seite bleibt geöffnet
-              {abmeldemodus ? ', die Sitzung bleibt bestehen' : ''}.
-            </Statusmeldung>
-          ) : null}
-
-          <div className="mt-3 flex flex-wrap gap-3">
-            {speichernAnbieten ? (
-              <Button type="button" disabled={laeuft} onClick={speichernUndWeiter}>
-                {laeuft
-                  ? 'Wird gespeichert …'
-                  : abmeldemodus
-                    ? 'Speichern und abmelden'
-                    : 'Speichern und weitergehen'}
-              </Button>
-            ) : null}
-            <Button type="button" variant="secondary" disabled={laeuft} onClick={weitergehen}>
-              {abmeldemodus ? 'Verwerfen und abmelden' : 'Verwerfen und weitergehen'}
-            </Button>
-            <Button type="button" variant="quiet" disabled={laeuft} onClick={bleiben}>
-              Hier bleiben
-            </Button>
-          </div>
-        </div>
+        </Dialogfenster>
       ) : null}
     </>
   );

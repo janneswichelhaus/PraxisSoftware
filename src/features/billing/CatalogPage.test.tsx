@@ -499,7 +499,8 @@ describe('CatalogPage', () => {
 
       const frage = screen.getByRole('group', { name: 'Ungespeicherte Preisliste' });
       expect(frage).toHaveTextContent(/Änderungen an „Entwurf 2027“ sind noch nicht gespeichert/);
-      expect(within(frage).getByRole('button', { name: 'Verwerfen und wechseln' })).toHaveFocus();
+      // Im Fenster steht der Fokus auf dem Bleiben: Enter verwirft nichts (ANN-566).
+      expect(within(frage).getByRole('button', { name: 'Hier bleiben' })).toHaveFocus();
 
       // Hier bleiben: Der Entwurf steht mit der Eingabe da.
       await nutzer.click(within(frage).getByRole('button', { name: 'Hier bleiben' }));

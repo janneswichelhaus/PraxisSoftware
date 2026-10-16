@@ -611,7 +611,7 @@ describe('TreatmentNotePage', () => {
     // Die Rückfrage stellt seit FIX-011 der Navigationsschutz: dieselbe Zeile
     // für den Pfeil im Kopf, das Hauptmenü, den Patientenwechsel und das
     // Zurück des Browsers - über der Aktionsleiste, wie auf der Schreibseite.
-    expect(await screen.findByText('Text noch nicht gespeichert.')).toBeInTheDocument();
+    expect(await screen.findByText('Text noch nicht gespeichert')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Weiterschreiben' }));
     expect(feld()).toHaveValue('Noch nicht gespeichert.');

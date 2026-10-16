@@ -25,7 +25,7 @@ Ansicht sagt das.
 | Organisatorisches | `/praxis/team…`, `/praxis/planung`, `/praxis/sicherheit/…`, `/mein-konto` | echt | `staff`, `audit`, `retention`, `account`, `session` |
 | Plattform (Patient:innen, Kund:innen) | `/p/…` | echt; Einladung per Mail offen (B13) | `platform`, `platform-access` |
 | Radflotte | `/betrieb/flotte…` | echt (FLT-EPIC-001): Depots, Räder, Schlüssel, Check-Up, Panne, Stellen am 3D-Rad, Unterlage für die Werkstatt; Tübinger Standortvorlage offen (ANN-554) | `fleet` |
-| **Praxisbetrieb** | `/betrieb/urlaub`, `/betrieb/zeitkonto`, `/betrieb/erstattungen`, `/team` | **Vorschau** bis Block 8 (TEAM, URL, ZK, ERS) | `vacation`, `timeaccount`, `reimbursements`, `teamchat` |
+| **Praxisbetrieb** | `/betrieb/urlaub`, `/betrieb/zeitkonto`, `/betrieb/erstattungen`, `/team` | **Vorschau** bis zu den Bereichsüberholungen 7 bis 11 (vorgezogen 2026-10-16: URL, ZK, ERS, TEAM; dazu AZ-001) | `vacation`, `timeaccount`, `reimbursements`, `teamchat` |
 | Vorschau-Protokoll | `/vorschau/protokoll` | Vorschau | `preview` |
 
 Offen bleiben in der Vorschau: Speicherfrist und Anhänge des Teamchats (§10, §18), Aufbewahrung von
