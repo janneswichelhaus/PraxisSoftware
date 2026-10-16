@@ -354,6 +354,30 @@ describe('Loeschlauf: klinische Patientenakte', () => {
     ).toBe(0);
   });
 
+  it('loescht die frueheren Staende der Behandlungsgrundlagen mit der Akte (BEF-124)', async () => {
+    // Eine Aenderung ausserhalb einer Anmeldung schreibt ebenfalls eine Fassung.
+    const { rows } = await asPostgres<{ id: string }>(
+      `update public.treatment_bases set appointment_count = appointment_count + 1
+        where patient_id = $1
+        returning id::text as id`,
+      [patients.max],
+    );
+    const grundlagen = rows.map((r) => r.id);
+    const FASSUNGEN =
+      'select count(*) from public.treatment_basis_versions where treatment_basis_id = any($1::uuid[])';
+    expect(await anzahl(FASSUNGEN, [grundlagen])).toBe(grundlagen.length);
+    await abgeschlossenVor(patients.max, 11);
+
+    await lauf();
+
+    expect(await anzahl(FASSUNGEN, [grundlagen])).toBe(0);
+    expect(
+      await anzahl('select count(*) from public.treatment_bases where id = any($1::uuid[])', [
+        grundlagen,
+      ]),
+    ).toBe(0);
+  });
+
   it('loescht die Person, wenn keine andere Rolle mehr auf sie zeigt', async () => {
     await abgeschlossenVor(patients.petra, 11);
 

@@ -24,6 +24,7 @@ import {
 } from '@/features/documentation/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import { ordneScanZu } from '@/features/files/api';
+import { GrundlagenVerlauf } from './GrundlagenVerlauf';
 import { ScanBesideForm } from './ScanBesideForm';
 import { TreatmentBasisFormFields } from './TreatmentBasisFormFields';
 import { GRUNDLAGE_BESCHRIFTUNG, GRUNDLAGE_REIHENFOLGE, grundlageFeldId } from './grundlagenfelder';
@@ -239,7 +240,10 @@ function GrundlagenFormular({
     },
     onSuccess: async ({ id, scanFehler: fehlerBeimZuordnen }) => {
       await akteAuffrischen();
-      if (bestand) await queryClient.invalidateQueries({ queryKey: ['treatment-basis', id] });
+      if (bestand) {
+        await queryClient.invalidateQueries({ queryKey: ['treatment-basis', id] });
+        await queryClient.invalidateQueries({ queryKey: ['treatment-basis-versions', id] });
+      }
       await queryClient.invalidateQueries({ queryKey: ['open-points'] });
       await queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
       // Gespeichert: Der eigene Weg zurück ist kein Verlust (ANN-046).
@@ -475,6 +479,9 @@ function GrundlagenFormular({
         </form>
       </div>
 
+      {/* BEF-124: frühere Stände, eingeklappt; ohne Änderung nichts. */}
+      {bestand ? <GrundlagenVerlauf grundlage={bestand} /> : null}
+
       {/* Löschen ist der Weg für eine Grundlage, die in der falschen Akte
           gelandet ist (Art. 16 DSGVO). Bewusst mit Rückfrage und außerhalb des
           Formulars, damit kein versehentliches Absenden sie auslöst. Scheitert
@@ -493,9 +500,8 @@ function GrundlagenFormular({
             laeuft={loeschen.isPending}
             onBestaetigen={() => loeschen.mutateAsync()}
           >
-            Die Grundlage wird endgültig entfernt, samt ihren Heilmitteln. Für eine falsch
-            zugeordnete Grundlage ist das der richtige Weg; für eine abgelaufene nicht – sie gehört
-            in die Akte.
+            Die Grundlage wird endgültig entfernt, samt ihren Heilmitteln und ihrem Verlauf. Das
+            geht nur, solange keine Termine an ihr hängen – für eine falsch zugeordnete Grundlage.
           </Rueckfrage>
         </div>
       ) : null}

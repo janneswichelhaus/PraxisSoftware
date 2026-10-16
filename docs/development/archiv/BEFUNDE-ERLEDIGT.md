@@ -1486,3 +1486,15 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 | Berührt | `src/features/appointments/FolgeterminVorschlaege.test.tsx` („nennt einen schon geplanten nächsten Termin mit Therapeut:in“, ANN-477) |
 
 **Beobachtung.** Der Test legt den Termin auf „heute + 2“ um 08:00 UTC und den nächsten eine Woche später ebenfalls um 08:00 UTC. Liegt die Zeitumstellung am 25.10. dazwischen, zeigt die Seite 09:00 statt 10:00 Uhr; vom 16. bis 22.10. (Berliner Tag) ist der Test deshalb rot, auf `main` ebenso. **Erwartet:** Der zweite Termin steht zur selben Uhrzeit vor Ort (`zeitpunktIn`), wie in den übrigen Tests der Datei. Behoben im selben PR, weil die CI sonst eine Woche rot ist.
+
+### BEF-124 — Eine Verordnung kann hart gelöscht und ohne Verlauf geändert werden
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-03 |
+| Bereich | Behandlungsgrundlage, Akte, § 630f BGB |
+| Quelle  | LOG-EPIC-001, Inventur der Protokollierung (Vorgabe Jannes, 2026-10-03) |
+| Status  | erledigt am 2026-10-16 (Versionstabelle, Löschsperre bei Terminen, Übertragen am Termin; ANN-562) |
+| Berührt | `public.delete_treatment_basis`, `public.update_treatment_basis`, `public.transfer_appointments_to_treatment_basis`, `public.treatment_bases`; Migration `20261121100000_bef_124_verordnung_mit_verlauf.sql` |
+
+**Beobachtet:** Seit LOG-EPIC-001 steht das Ändern, Löschen und Umhängen einer Behandlungsgrundlage nicht mehr im Auditlog. Das Datenmodell hält nur den letzten Stand (`updated_by`, `updated_at`); eine gelöschte Grundlage verschwindet ganz, auch wenn Termine an ihr hingen. Den Inhalt einer Änderung hat schon das alte Auditlog nicht gehalten. **Erwartet:** Eine Verordnung ist Teil der Akte. Sobald Termine an ihr hängen, wird sie nicht mehr hart gelöscht; ihre Änderungen bleiben mit ursprünglichem Inhalt und Zeitpunkt erkennbar (§ 630f Abs. 1 BGB), etwa über eine Versionstabelle wie bei der Dokumentation (ADR-016). Zu prüfen: welche Felder fachlich änderbar bleiben müssen und ob ADR-020 dafür eine Fassung braucht. **Erledigt:** `treatment_basis_versions` hält je Änderung den Stand davor (Trigger an Grundlage und Heilmitteln, alle Schreiber), sichtbar als „Verlauf“ auf der Bearbeiten-Seite; ADR-020 braucht keine neue Fassung, weil alle Felder änderbar bleiben.

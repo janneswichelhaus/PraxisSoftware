@@ -665,6 +665,11 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
 
     it('nimmt die Datei mit, wenn ihre Verordnung faellt', async () => {
       const datei = await abgelegteDatei(users.therapist);
+      // BEF-124: Mit Terminen bleibt eine Grundlage; hier geht es um die Datei.
+      await asPostgres(
+        'update public.appointments set treatment_basis_id = null where treatment_basis_id = $1',
+        [VERORDNUNG_MAX],
+      );
       await asUserCommitted(users.therapist, 'select public.delete_treatment_basis($1::uuid)', [
         VERORDNUNG_MAX,
       ]);

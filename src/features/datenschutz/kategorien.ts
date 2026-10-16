@@ -57,6 +57,10 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Positionen der Behandlungsgrundlagen',
     beschreibung: 'Die verordneten Heilmittel mit Menge und Verbrauch.',
   },
+  treatment_basis_versions: {
+    label: 'Frühere Stände der Behandlungsgrundlagen',
+    beschreibung: 'Was vor jeder Änderung auf einer Grundlage stand, mit Zeitpunkt und Person.',
+  },
   treatment_notes: {
     label: 'Behandlungsdokumentation',
     beschreibung: 'Die Dokumentation je Termin in ihrer geltenden Fassung.',

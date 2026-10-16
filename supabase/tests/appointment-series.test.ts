@@ -503,26 +503,22 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
       expect(rows[0]?.treatment_basis_id).toBeNull();
     });
 
-    it('loest den Verweis, statt die Loeschung der Verordnung zu blockieren', async () => {
-      // VER-003 laesst eine falsch erfasste Verordnung loeschen (ADR-008
-      // Punkt 10). Die Termine haben trotzdem stattgefunden.
+    it('behaelt die Verordnung samt Verweis, sobald Termine an ihr haengen (BEF-124)', async () => {
+      // Bis BEF-124 fiel die Verordnung und die Termine verloren ihren
+      // Verweis. Seit ANN-562 gehoert sie mit Terminen zur Akte.
       await anlegenCommitted(users.office, woechentlich(2));
-      await asUserCommitted(
-        users.ownerTherapist,
-        'select public.delete_treatment_basis($1::uuid)',
-        [VERORDNUNG.maxOffen],
-      );
+      await expect(
+        asUser(users.ownerTherapist, 'select public.delete_treatment_basis($1::uuid)', [
+          VERORDNUNG.maxOffen,
+        ]),
+      ).rejects.toThrow(/treatment basis has appointments/);
 
       const { rows } = await asPostgres<{ treatment_basis_id: string | null }>(
         'select treatment_basis_id from public.appointments',
       );
       expect(rows).toHaveLength(2);
-      expect(rows.every((r) => r.treatment_basis_id === null)).toBe(true);
-
-      // Die Loeschung ist committet und wuerde den folgenden Tests die
-      // Verordnung wegnehmen.
-      await resetDatabase();
-    }, 120_000);
+      expect(rows.every((r) => r.treatment_basis_id === VERORDNUNG.maxOffen)).toBe(true);
+    });
 
     it('steht authenticated nicht zum Schreiben offen', async () => {
       await anlegenCommitted(users.office, woechentlich(1));
