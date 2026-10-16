@@ -163,6 +163,13 @@ export function FleetPage({ user }: { user: CurrentUser }) {
         <ButtonLink to="/betrieb/flotte/schluessel" variant="secondary" groesse="kompakt">
           Schlüssel eintragen
         </ButtonLink>
+        {/* FLT-008 (ANN-569): Check-Ups und Pannen aller Räder - nur, wo der
+            Server sie liefert (Inhaber:in, Teamleitung). */}
+        {abfrage.data?.can_read_reports ? (
+          <ButtonLink to="/betrieb/flotte/meldungen" variant="secondary" groesse="kompakt">
+            Meldungen
+          </ButtonLink>
+        ) : null}
       </div>
 
       <Abfragezustand

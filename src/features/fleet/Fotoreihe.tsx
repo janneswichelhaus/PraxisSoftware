@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Dateiansicht } from '@/features/files/Dateiansicht';
-import { FLOTTE_SCHLUESSEL, deleteFleetPhoto, loadFleetPhoto, type FleetPhoto } from './api';
+import { FLOTTE_SCHLUESSEL, deleteFleetPhoto, loadFleetPhoto } from './api';
+import { SEITEN, type SeitenKey } from './checkupablauf';
 
 /**
  * Die Fotos einer Stelle oder eines Check-Ups (ANN-552): je ein Knopf
@@ -12,15 +13,24 @@ import { FLOTTE_SCHLUESSEL, deleteFleetPhoto, loadFleetPhoto, type FleetPhoto } 
  * Seite, nicht auf das Gerät, über eine einmalige Freigabe (ADR-017 Punkt 54
  * sinngemäß). Löschen darf, wer es aufgenommen hat (am selben Tag), und die
  * Praxisinhaber:in; der Server entscheidet (`may_delete`).
+ *
+ * Ein Seitenfoto aus dem Check-Up heißt nach seiner Seite, „Linke Seite“
+ * (FLT-007, ANN-568); die übrigen zählen „Foto 1“, „Foto 2“ weiter.
  */
-export function Fotoreihe({ fotos, bezug }: { fotos: readonly FleetPhoto[]; bezug: string }) {
+export function Fotoreihe({
+  fotos,
+  bezug,
+}: {
+  fotos: readonly { id: string; side?: SeitenKey | null; may_delete?: boolean }[];
+  bezug: string;
+}) {
   const queryClient = useQueryClient();
-  const [offen, setOffen] = useState<{ id: string; nummer: number; bild: Blob } | null>(null);
+  const [offen, setOffen] = useState<{ id: string; name: string; bild: Blob } | null>(null);
 
   const laden = useMutation({
-    mutationFn: async ({ id, nummer }: { id: string; nummer: number }) => ({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => ({
       id,
-      nummer,
+      name,
       bild: await loadFleetPhoto(id),
     }),
     onSuccess: (ergebnis) => setOffen(ergebnis),
@@ -36,11 +46,20 @@ export function Fotoreihe({ fotos, bezug }: { fotos: readonly FleetPhoto[]; bezu
 
   if (fotos.length === 0) return null;
   const offenesFoto = offen ? fotos.find((foto) => foto.id === offen.id) : undefined;
+  // Seitenfotos in der Reihenfolge des Gangs ums Rad, dann die übrigen.
+  const reihe = [
+    ...SEITEN.flatMap((seite) =>
+      fotos.filter((foto) => foto.side === seite.key).map((foto) => ({ foto, name: seite.label })),
+    ),
+    ...fotos
+      .filter((foto) => !foto.side)
+      .map((foto, index) => ({ foto, name: `Foto ${index + 1}` })),
+  ];
 
   return (
     <div className="pb-3">
       <div className="flex flex-wrap gap-2">
-        {fotos.map((foto, index) => (
+        {reihe.map(({ foto, name }) => (
           <Button
             key={foto.id}
             type="button"
@@ -49,13 +68,10 @@ export function Fotoreihe({ fotos, bezug }: { fotos: readonly FleetPhoto[]; bezu
             disabled={laden.isPending}
             aria-pressed={offen?.id === foto.id}
             onClick={() =>
-              offen?.id === foto.id
-                ? setOffen(null)
-                : laden.mutate({ id: foto.id, nummer: index + 1 })
+              offen?.id === foto.id ? setOffen(null) : laden.mutate({ id: foto.id, name })
             }
           >
-            Foto {index + 1}
-            <span className="sr-only"> {bezug}</span>
+            {name} <span className="sr-only">{bezug}</span>
           </Button>
         ))}
       </div>
@@ -68,7 +84,7 @@ export function Fotoreihe({ fotos, bezug }: { fotos: readonly FleetPhoto[]; bezu
         <>
           <Dateiansicht
             bild={offen.bild}
-            name={`Foto ${offen.nummer} ${bezug}`}
+            name={`${offen.name} ${bezug}`}
             onSchliessen={() => setOffen(null)}
           />
           {offenesFoto?.may_delete ? (
@@ -76,7 +92,7 @@ export function Fotoreihe({ fotos, bezug }: { fotos: readonly FleetPhoto[]; bezu
               <Rueckfrage
                 ausloeser="Foto löschen"
                 ausloeserVariante="quiet"
-                bezeichnung={`Foto ${offen.nummer} ${bezug} löschen – Rückfrage`}
+                bezeichnung={`${offen.name} ${bezug} löschen – Rückfrage`}
                 bestaetigen="Ja, Foto löschen"
                 bestaetigenLaeuft="Wird gelöscht …"
                 fehler={loeschen.isError ? loeschen.error.message : undefined}
