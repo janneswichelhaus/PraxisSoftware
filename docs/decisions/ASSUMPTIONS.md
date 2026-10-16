@@ -5938,3 +5938,15 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 **Anker.** `public.hand_over_fleet_key`; `handOverKey` in `fleet/api.ts`; `KeyPage.tsx`.
 
 **Änderungspfad.** Kreis der Rollen: `app.can_read_fleet` wie beim Nehmen · Aufwand `klein`.
+
+### ANN-573 — Niemand öffnet: erst anrufen, dann die Uhr abwarten
+
+Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** „Niemand öffnet?“ führt in einem Fenster durch drei Seiten: geklingelt → angerufen (Rufnummer als Knopf; „Erreicht“ schließt ohne Vermerk) → 15 Minuten gewartet mit der Uhr ab dem ersten Tipp. Vermerkt wird erst nach 15 Minuten oder mit dem Haken „Schon vorher 15 Minuten gewartet“; gespeichert wird wie bisher nur `record_no_show` mit bestätigtem Protokoll. Die beiden anderen Fälle stehen auf der ersten Seite.
+
+**Begründung.** Referenzabgleich (Lieferdienste: Kontakt, dann Uhr, Abschluss erst danach): Wer früh anruft, bekommt die Tür vielleicht noch auf; 4 Tipps statt 5. ADR-018 Punkt 9 nennt die drei Schritte ohne Reihenfolge.
+
+**Anker.** `src/features/appointments/nichtangetroffen.ts`, `HomeVisitFlow.tsx`.
+
+**Änderungspfad.** Reihenfolge oder Begründungsweg: `nichtangetroffen.ts` · Aufwand `klein`.

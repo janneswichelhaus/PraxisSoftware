@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module';
+import type AxeCore from 'axe-core';
 import {
   expect,
   test,
@@ -431,6 +433,8 @@ function nachbildung() {
       stand.abgeschlossen = false;
       return BESUCH_1;
     },
+    // G1 (ANN-573): Der Vermerk geht wie bisher über record_no_show.
+    record_no_show: () => null,
   };
 
   async function beantworte(route: Route) {
@@ -988,3 +992,87 @@ for (const [breite, hoehe] of [
     expect(ueberlauf).toBe(false);
   });
 }
+
+const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
+
+async function axeVerstoesse(page: Page): Promise<string[]> {
+  await page.addScriptTag({ path: AXE });
+  return page.evaluate(async () => {
+    const axe = (window as unknown as { axe: typeof AxeCore }).axe;
+    const ergebnis = await axe.run(document, {
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+    });
+    return ergebnis.violations.map(
+      (v) => `${v.id}: ${v.help} – ${v.nodes.map((n) => n.html.slice(0, 80)).join(' | ')}`,
+    );
+  });
+}
+
+/** Keine Fläche im Fenster rollt (Maßstab der geführten Abläufe, kernablaeufe.md). */
+async function fensterOhneScrollen(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const fenster = document.querySelector<HTMLElement>('[role="dialog"]');
+    if (!fenster) return false;
+    const flaechen = [fenster, ...fenster.querySelectorAll<HTMLElement>('.overflow-y-auto')];
+    return flaechen.every((flaeche) => flaeche.scrollHeight <= flaeche.clientHeight + 1);
+  });
+}
+
+// G1 (Überholung 6, ANN-573): „Niemand öffnet“ als geführter Ablauf - eine
+// Frage je Seite, die Uhr auf der letzten. Budget ≤ 5 Tipps (vorher 5 an
+// einer aufgeklappten Fläche mit drei Haken); der Anruf selbst ist der Weg in
+// die Telefon-App und zählt nicht.
+test('G1: niemand öffnet – vermerkt in höchstens fünf Tipps, jede Seite ohne Scrollen (ANN-573)', async ({
+  page,
+  context,
+}) => {
+  const t = await aufTelefon(page, context);
+  await page.clock.setFixedTime(um('09:05'));
+  await page.goto(PRUEFSEITE);
+  const karte = page.getByRole('article');
+  await t.tippe(karte.getByRole('button', { name: /^Ausfall/ }));
+
+  const geklingelt = page.getByRole('dialog', { name: 'An der Tür geklingelt?' });
+  await expect(geklingelt.getByText('Schritt 1 von 3', { exact: true })).toBeVisible();
+  expect(await fensterOhneScrollen(page), 'geklingelt ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await page.screenshot({ path: '.tmp/screenshots/b6-g1-01-geklingelt-375.png' });
+  const ja = geklingelt.getByRole('button', { name: 'Ja, geklingelt' });
+  expect((await ja.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await t.tippe(ja);
+
+  const angerufen = page.getByRole('dialog', { name: 'Angerufen?' });
+  await expect(angerufen.getByRole('link', { name: /Mobil anrufen/ })).toHaveAttribute(
+    'href',
+    /^tel:/,
+  );
+  expect(await fensterOhneScrollen(page), 'angerufen ohne Scrollen').toBe(true);
+  await page.screenshot({ path: '.tmp/screenshots/b6-g1-02-angerufen-375.png' });
+  await t.tippe(angerufen.getByRole('button', { name: 'Angerufen, niemand erreicht' }));
+
+  const gewartet = page.getByRole('dialog', { name: '15 Minuten gewartet?' });
+  await expect(gewartet.getByRole('timer')).toHaveText(/^Gewartet 0:00 von 15:00$/);
+  const vermerken = gewartet.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' });
+  await expect(vermerken).toBeDisabled();
+  expect(await fensterOhneScrollen(page), 'gewartet ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await page.screenshot({ path: '.tmp/screenshots/b6-g1-03-gewartet-375.png' });
+
+  // Die Viertelstunde vergeht - die Uhr läuft ab dem ersten Tipp (ANN-479).
+  await page.clock.setFixedTime(um('09:21'));
+  await expect(gewartet.getByRole('timer')).toHaveText('15 Minuten um');
+  await expect(vermerken).toBeEnabled();
+  await page.screenshot({ path: '.tmp/screenshots/b6-g1-04-um-375.png' });
+  await t.tippe(vermerken);
+  await expect(
+    page.getByText('Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.'),
+  ).toBeVisible();
+
+  test.info().annotations.push({ type: 'G1', description: `${t.tipps} Tipps (vorher 5)` });
+  expect(t.tipps).toBeLessThanOrEqual(5);
+  expect(t.server.aufrufe.record_no_show).toHaveLength(1);
+  expect(t.server.aufrufe.record_no_show![0]).toMatchObject({
+    p_appointment_id: BESUCH_1,
+    p_protocol_confirmed: true,
+  });
+});

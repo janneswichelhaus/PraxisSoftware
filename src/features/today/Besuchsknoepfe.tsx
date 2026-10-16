@@ -122,9 +122,9 @@ export function SpaeterDa({ termin, praxis }: { termin: DayPlanEntry; praxis: st
  * Jannes nennt ihn „Ausfall“, er passt an jede Terminart und in die schmale
  * Zeile, und das Feld darunter führt durch die Fälle (ADR-018 Punkt 9.3).
  *
- * Am Hausbesuch das Protokoll - geklingelt, 15 Minuten gewartet, angerufen;
- * das Ausfallhonorar erst nach allen drei Haken -, an der Tür mit der Uhr
- * (ANN-479). Am Praxis- und Videotermin dieselbe Rückfrage ohne Gebühr wie
+ * Am Hausbesuch das Protokoll im geführten Fenster - geklingelt, angerufen,
+ * 15 Minuten gewartet mit der Uhr; das Ausfallhonorar erst nach allen drei
+ * Schritten (ANN-479, ANN-573). Am Praxis- und Videotermin dieselbe Rückfrage ohne Gebühr wie
  * im Terminfenster (`NichtAngetroffenAktion`, ANN-055); sie öffnet sich unter
  * den Knöpfen der Reihe. An der Zeile leise, an der Karte mit Rahmen.
  *
@@ -165,8 +165,6 @@ export function AusfallKnopf({
       ausloeser="Ausfall"
       ausloeserVariante={variante}
       ausloeserZusatz={zusatz}
-      mitUhr={ort === 'tuer'}
-      inKarte={ort !== 'zeile'}
       wege={{
         ohneBehandlung: mitRueckweg(`/termine/${termin.id}/abschluss?ohne-behandlung=1`, '/'),
         absagen: mitRueckweg(kalenderZumTermin(termin.id), '/'),

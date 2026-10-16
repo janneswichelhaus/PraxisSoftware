@@ -1,12 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import type * as AppointmentsApi from './api';
 import type * as TodayApi from '@/features/today/api';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testAppointment } from '@/test-utils';
+import { TIPPSPERRE_MS } from '@/components/ui/GefuehrterAblauf';
 import { HomeVisitFlow } from './HomeVisitFlow';
 
 const recordNoShow = vi.fn();
 const fetchAppointment = vi.fn();
+const fetchDayPlan = vi.fn();
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof AppointmentsApi>()),
   recordNoShow: (...args: unknown[]) => recordNoShow(...args) as Promise<void>,
@@ -15,7 +18,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 vi.mock('@/features/today/api', async (importOriginal) => ({
   ...(await importOriginal<typeof TodayApi>()),
-  fetchDayPlan: () => Promise.resolve([]),
+  fetchDayPlan: (...args: unknown[]) => fetchDayPlan(...args) as Promise<TodayApi.DayPlanEntry[]>,
 }));
 
 const termin = testAppointment({ appointment_type: 'home_visit' });
@@ -28,102 +31,172 @@ const ausDerUebersicht = {
   organization_time_zone: termin.organization_time_zone,
 };
 
-describe('HomeVisitFlow an der Karte der Übersicht (Auftrag C1)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    recordNoShow.mockReset();
-    recordNoShow.mockResolvedValue(undefined);
-    fetchAppointment.mockReset();
-    fetchAppointment.mockResolvedValue(termin);
+/** Das Fenster des Ablaufs; sein Name ist die Frage der Seite. */
+function fenster(name: string) {
+  return screen.getByRole('dialog', { name });
+}
+
+/** Nach jedem Seitenwechsel nimmt die Fläche kurz keinen Tipp an (ANN-572). */
+async function tippsperreAbwarten() {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(TIPPSPERRE_MS + 50);
   });
-  afterEach(() => {
-    vi.useRealTimers();
+}
+
+/** Geklingelt und angerufen - danach steht die Wartezeit offen. */
+async function bisZurWartezeit() {
+  fireEvent.click(
+    within(fenster('An der Tür geklingelt?')).getByRole('button', { name: 'Ja, geklingelt' }),
+  );
+  await tippsperreAbwarten();
+  fireEvent.click(
+    within(fenster('Angerufen?')).getByRole('button', { name: 'Angerufen, niemand erreicht' }),
+  );
+  await tippsperreAbwarten();
+  return fenster('15 Minuten gewartet?');
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  recordNoShow.mockReset();
+  recordNoShow.mockResolvedValue(undefined);
+  fetchAppointment.mockReset();
+  fetchAppointment.mockResolvedValue(termin);
+  fetchDayPlan.mockReset();
+  fetchDayPlan.mockResolvedValue([]);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('Niemand öffnet - geführt (G1, ANN-573)', () => {
+  it('führt eine Frage je Seite: geklingelt, angerufen, gewartet', async () => {
+    renderWithProviders(<HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
+    const erste = fenster('An der Tür geklingelt?');
+    expect(within(erste).getByText('Schritt 1 von 3')).toBeInTheDocument();
+    expect(within(erste).queryByRole('button', { name: '← Zurück' })).toBeNull();
+    await pruefeBarrierefreiheit(document.body);
+
+    const wartezeit = await bisZurWartezeit();
+    expect(within(wartezeit).getByText('Schritt 3 von 3')).toBeInTheDocument();
+    expect(within(wartezeit).getByRole('timer')).toHaveTextContent(/^Gewartet 0:0\d von 15:00$/);
+    await pruefeBarrierefreiheit(document.body);
   });
 
-  it('zeigt die 15-Minuten-Uhr ab dem Tipp und lässt „gewartet" von Hand bestätigen (ANN-479)', async () => {
-    renderWithProviders(
-      <HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} mitUhr inKarte />,
-    );
+  it('vermerkt erst nach 15 Minuten - die Uhr läuft ab dem ersten Tipp (ANN-479)', async () => {
+    renderWithProviders(<HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
-    expect(screen.getByRole('timer')).toHaveTextContent('Gewartet 0:00 von 15:00');
-    const gewartet = screen.getByRole('checkbox', { name: '15 Minuten vor Ort gewartet' });
-    expect(gewartet).not.toBeChecked();
+    const wartezeit = await bisZurWartezeit();
+    const vermerken = within(wartezeit).getByRole('button', { name: /nicht angetroffen/ });
+    expect(vermerken).toBeDisabled();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
     });
-    expect(screen.getByRole('timer')).toHaveTextContent('Gewartet 5:00 von 15:00');
-    expect(gewartet).not.toBeChecked();
+    expect(within(wartezeit).getByRole('timer')).toHaveTextContent(/^Gewartet 5:0\d von 15:00$/);
+    expect(vermerken).toBeDisabled();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
     });
-    expect(screen.getByRole('timer')).toHaveTextContent('15 Minuten um – bitte bestätigen');
-    // Die Uhr hakt nicht selbst: Aus dem Haken entsteht eine Forderung (ADR-018 Punkt 9).
-    expect(gewartet).not.toBeChecked();
-    fireEvent.click(gewartet);
-    expect(gewartet).toBeChecked();
-    // Klingeln und Anrufen bestätigt weiter die Person selbst - ohne sie kein Vermerk.
-    fireEvent.click(screen.getByRole('button', { name: /nicht angetroffen/ }));
-    expect(
-      await screen.findByText('Bitte alle drei Schritte des Protokolls bestätigen.'),
-    ).toBeVisible();
-    expect(recordNoShow).not.toHaveBeenCalled();
+    expect(within(wartezeit).getByRole('timer')).toHaveTextContent('15 Minuten um');
+    expect(within(wartezeit).getByRole('button', { name: /nicht angetroffen/ })).toBeEnabled();
   });
 
-  it('liest den Bearbeitungsstand unmittelbar vor dem Vermerk', async () => {
+  it('vermerkt vorher nur mit „schon vorher gewartet“ und liest den Stand unmittelbar davor', async () => {
     const melden = vi.fn();
-    renderWithProviders(
-      <HomeVisitFlow appointment={ausDerUebersicht} melden={melden} mitUhr inKarte />,
-    );
+    renderWithProviders(<HomeVisitFlow appointment={ausDerUebersicht} melden={melden} />);
     fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
-    for (const name of [
-      'An der Tür geklingelt',
-      '15 Minuten vor Ort gewartet',
-      'Telefonisch angerufen',
-    ]) {
-      fireEvent.click(screen.getByRole('checkbox', { name }));
-    }
-    fireEvent.click(screen.getByRole('button', { name: /nicht angetroffen/ }));
+    const wartezeit = await bisZurWartezeit();
+    fireEvent.click(
+      within(wartezeit).getByRole('checkbox', { name: 'Schon vorher 15 Minuten gewartet' }),
+    );
+    fireEvent.click(within(wartezeit).getByRole('button', { name: /nicht angetroffen/ }));
     await vi.waitFor(() => expect(recordNoShow).toHaveBeenCalledTimes(1));
     expect(fetchAppointment).toHaveBeenCalledWith(termin.id);
     expect(recordNoShow).toHaveBeenCalledWith(termin.id, termin.updated_at, true);
-    await vi.waitFor(() => expect(melden).toHaveBeenCalled());
+    await vi.waitFor(() =>
+      expect(melden).toHaveBeenCalledWith(
+        'Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.',
+      ),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('führt in der Übersicht über Wege statt über Knöpfe des Terminfensters', () => {
+  it('lässt die Uhr weiterlaufen, wenn das Fenster zwischendurch zugeht', async () => {
+    renderWithProviders(<HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
+    fireEvent.click(
+      within(fenster('An der Tür geklingelt?')).getByRole('button', { name: 'Abbrechen' }),
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16 * 60 * 1000);
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
+    const wartezeit = await bisZurWartezeit();
+    expect(within(wartezeit).getByRole('timer')).toHaveTextContent('15 Minuten um');
+  });
+
+  it('bietet die Rufnummer als Knopf und „erreicht“ schließt ohne Vermerk', async () => {
+    fetchDayPlan.mockResolvedValue([
+      {
+        id: termin.id,
+        patient_phone_mobile: '+49 160 0000005',
+        patient_phone: null,
+      },
+    ]);
+    renderWithProviders(<HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
+    fireEvent.click(
+      within(fenster('An der Tür geklingelt?')).getByRole('button', { name: 'Ja, geklingelt' }),
+    );
+    await tippsperreAbwarten();
+    const anruf = within(fenster('Angerufen?'));
+    expect(await anruf.findByRole('link', { name: /Mobil anrufen/ })).toHaveAttribute(
+      'href',
+      'tel:+491600000005',
+    );
+    fireEvent.click(anruf.getByRole('button', { name: 'Erreicht – Besuch findet statt' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(recordNoShow).not.toHaveBeenCalled();
+  });
+
+  it('führt mit „← Zurück“ einen Schritt zurück', async () => {
+    renderWithProviders(<HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
+    fireEvent.click(
+      within(fenster('An der Tür geklingelt?')).getByRole('button', { name: 'Ja, geklingelt' }),
+    );
+    await tippsperreAbwarten();
+    fireEvent.click(within(fenster('Angerufen?')).getByRole('button', { name: '← Zurück' }));
+    expect(fenster('An der Tür geklingelt?')).toBeInTheDocument();
+  });
+
+  it('führt in der Übersicht über Wege zu den beiden anderen Fällen (ADR-018 Punkt 9.3)', () => {
     renderWithProviders(
       <HomeVisitFlow
         appointment={ausDerUebersicht}
         melden={() => undefined}
-        inKarte
         wege={{ ohneBehandlung: '/ohne', absagen: '/absagen' }}
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
-    expect(screen.getByRole('link', { name: 'Ohne Behandlung festhalten' })).toHaveAttribute(
+    const erste = within(fenster('An der Tür geklingelt?'));
+    expect(erste.getByRole('link', { name: 'Ohne Behandlung festhalten' })).toHaveAttribute(
       'href',
       '/ohne',
     );
-    expect(screen.getByRole('link', { name: '„Termin absagen“' })).toHaveAttribute(
+    expect(erste.getByRole('link', { name: '„Termin absagen“' })).toHaveAttribute(
       'href',
       '/absagen',
     );
-    expect(screen.queryByText(/Dann oben/)).toBeNull();
-    // Ohne `mitUhr` keine Uhr - so im Terminfenster.
-    expect(screen.queryByRole('timer')).toBeNull();
   });
 });
 
 describe('„Ausfall“ in der Übersicht (B12)', () => {
-  beforeEach(() => {
-    recordNoShow.mockReset();
-    recordNoShow.mockResolvedValue(undefined);
-    fetchAppointment.mockReset();
-    fetchAppointment.mockResolvedValue(termin);
-  });
-
-  it('heißt am Hausbesuch „Ausfall“, leise an der Zeile, und führt durch dasselbe Protokoll', () => {
+  it('heißt am Hausbesuch „Ausfall“, leise an der Zeile, und öffnet denselben Ablauf', () => {
     renderWithProviders(
       <HomeVisitFlow
         appointment={ausDerUebersicht}
@@ -136,15 +209,11 @@ describe('„Ausfall“ in der Übersicht (B12)', () => {
     expect(knopf.className).not.toContain('border-line-strong');
     expect(knopf).toHaveClass('min-h-11');
     fireEvent.click(knopf);
-    const feld = screen.getByRole('region', { name: 'Ausfall' });
-    expect(feld).toHaveClass('w-full', 'order-last');
-    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-    fireEvent.click(screen.getByRole('button', { name: /nicht angetroffen/ }));
-    expect(screen.getByText('Bitte alle drei Schritte des Protokolls bestätigen.')).toBeVisible();
+    expect(fenster('An der Tür geklingelt?')).toBeInTheDocument();
     expect(recordNoShow).not.toHaveBeenCalled();
   });
 
-  it('nennt Vorlesesoftware an Knopf und Feld, wessen Termin es ist - das Wort zuerst', () => {
+  it('nennt Vorlesesoftware am Knopf, wessen Termin es ist - das Wort zuerst', () => {
     renderWithProviders(
       <HomeVisitFlow
         appointment={ausDerUebersicht}
@@ -153,12 +222,8 @@ describe('„Ausfall“ in der Übersicht (B12)', () => {
         ausloeserZusatz="für Erika Beispiel um 10:00 Uhr"
       />,
     );
-    const knopf = screen.getByRole('button', { name: 'Ausfall für Erika Beispiel um 10:00 Uhr' });
+    screen.getByRole('button', { name: 'Ausfall für Erika Beispiel um 10:00 Uhr' });
     // Zu sehen ist nur das Wort; der Zusatz steht für Vorlesesoftware.
     expect(screen.getByText('für Erika Beispiel um 10:00 Uhr')).toHaveClass('sr-only');
-    fireEvent.click(knopf);
-    expect(
-      screen.getByRole('region', { name: 'Ausfall für Erika Beispiel um 10:00 Uhr' }),
-    ).toBeInTheDocument();
   });
 });

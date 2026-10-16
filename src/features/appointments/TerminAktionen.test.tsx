@@ -636,7 +636,9 @@ describe('TerminAktionenDialog', () => {
       rendern(['therapist']);
 
       const knopf = await screen.findByRole('button', { name: 'Niemand öffnet?' });
-      expect(knopf).toHaveAttribute('aria-expanded', 'false');
+      // Seit Überholung 6 öffnet der Knopf ein Fenster mit einer Frage je Seite.
+      expect(knopf).toHaveAttribute('aria-haspopup', 'dialog');
+      expect(screen.queryByRole('dialog', { name: 'An der Tür geklingelt?' })).toBeNull();
       // Ein Hauptknopf (BEF-055): „Doku“, daneben „Abhaken“ (B4: getrennt
       // von der Doku), „Niemand öffnet?“ und „Ohne Behandlung“.
       const abschluss = screen.getByRole('group', { name: 'Abschluss' });
@@ -662,25 +664,29 @@ describe('TerminAktionenDialog', () => {
       rendern(['therapist']);
 
       await ablaufOeffnen(user);
-      expect(screen.getByRole('button', { name: 'Niemand öffnet?' })).toHaveAttribute(
-        'aria-expanded',
-        'true',
-      );
-      const ablauf = screen.getByRole('region', { name: 'Niemand öffnet?' });
-      // In der Reihenfolge, in der es vor der Tür passiert.
+      // In der Reihenfolge, in der es vor der Tür passiert: klingeln, anrufen,
+      // die Viertelstunde abwarten (ANN-573) - je eine Seite.
+      const erste = screen.getByRole('dialog', { name: 'An der Tür geklingelt?' });
+      // Die beiden anderen Szenarien mit ihrer Folge (ADR-018 Punkt 9).
+      expect(within(erste).getByText(/ohne Ausfallhonorar/)).toBeInTheDocument();
+      expect(within(erste).getByText(/Vorher abgesagt\?/)).toBeInTheDocument();
+      await user.click(within(erste).getByRole('button', { name: 'Ja, geklingelt' }));
+      const zweite = await screen.findByRole('dialog', { name: 'Angerufen?' });
+      await user.click(within(zweite).getByRole('button', { name: 'Angerufen, niemand erreicht' }));
+      const dritte = await screen.findByRole('dialog', { name: '15 Minuten gewartet?' });
       expect(
-        within(ablauf)
-          .getAllByRole('checkbox')
-          .map((kasten) => kasten.closest('label')?.textContent?.trim()),
-      ).toEqual(['An der Tür geklingelt', '15 Minuten vor Ort gewartet', 'Telefonisch angerufen']);
+        within(dritte)
+          .getAllByRole('listitem')
+          .map((zeile) => zeile.textContent),
+      ).toEqual([
+        expect.stringContaining('An der Tür geklingelt'),
+        expect.stringContaining('Angerufen, niemand erreicht'),
+        expect.stringContaining('15 Minuten gewartet'),
+      ]);
 
       // Dasselbe Wort wie auf Rechnung, Katalog und Blatt für Patient:innen
       // (TER-10), derselbe Zustand wie am Knopf (WRT-B01).
-      expect(within(ablauf).getByText(/löst ein Ausfallhonorar aus/)).toBeInTheDocument();
-      // Alle drei Szenarien bleiben genannt (ADR-018 Punkt 9); der Weg ohne
-      // Behandlung steht seit Zyklus 3 in der Leiste darüber.
-      expect(within(ablauf).getByText(/ohne Ausfallhonorar/)).toBeInTheDocument();
-      expect(within(ablauf).getByText(/Vorher abgesagt\?/)).toBeInTheDocument();
+      expect(within(dritte).getByText(/löst ein Ausfallhonorar aus/)).toBeInTheDocument();
       expect(screen.queryByText(/Ausfallgebühr/)).not.toBeInTheDocument();
       expect(screen.queryByText(/nicht wahrgenommen/)).not.toBeInTheDocument();
       // Keine Technikwörter im Hinweis (WRT-03, TER-22).
@@ -697,7 +703,8 @@ describe('TerminAktionenDialog', () => {
       expect(fetchDayPlan).not.toHaveBeenCalled();
 
       await ablaufOeffnen(user);
-      const anruf = await screen.findByRole('link', { name: /Mobil\s*\+49 160 0000005/ });
+      await user.click(screen.getByRole('button', { name: 'Ja, geklingelt' }));
+      const anruf = await screen.findByRole('link', { name: /Mobil anrufen\s*\+49 160 0000005/ });
       expect(anruf).toHaveAttribute('href', 'tel:+491600000005');
       // Gelesen wird der Tag des Termins bei seiner behandelnden Person.
       expect(fetchDayPlan).toHaveBeenCalledWith('2027-05-12', hausbesuch.staff_member_id);
@@ -710,6 +717,7 @@ describe('TerminAktionenDialog', () => {
       rendern(['therapist']);
 
       await ablaufOeffnen(user);
+      await user.click(screen.getByRole('button', { name: 'Ja, geklingelt' }));
       expect(await screen.findByText(/Keine Rufnummer hinterlegt/)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Zu den Stammdaten' })).toHaveAttribute(
         'href',
@@ -723,9 +731,9 @@ describe('TerminAktionenDialog', () => {
       rendern(['therapist']);
 
       await ablaufOeffnen(user);
-      await user.click(screen.getByLabelText('An der Tür geklingelt'));
-      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
-      await user.click(screen.getByLabelText('Telefonisch angerufen'));
+      await user.click(screen.getByRole('button', { name: 'Ja, geklingelt' }));
+      await user.click(await screen.findByRole('button', { name: 'Angerufen, niemand erreicht' }));
+      await user.click(await screen.findByLabelText('Schon vorher 15 Minuten gewartet'));
       await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       await waitFor(() =>
@@ -733,23 +741,22 @@ describe('TerminAktionenDialog', () => {
       );
     });
 
-    it('schreibt nichts, solange ein Protokollschritt fehlt', async () => {
+    it('schreibt nichts, solange die Viertelstunde fehlt', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
       const user = userEvent.setup();
       rendern(['therapist']);
 
       await ablaufOeffnen(user);
-      await user.click(screen.getByLabelText('An der Tür geklingelt'));
-      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
-      await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
-
-      expect(
-        await screen.findByText('Bitte alle drei Schritte des Protokolls bestätigen.'),
-      ).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Ja, geklingelt' }));
+      await user.click(await screen.findByRole('button', { name: 'Angerufen, niemand erreicht' }));
+      const vermerken = await screen.findByRole('button', {
+        name: 'Als „nicht angetroffen“ vermerken',
+      });
+      // Gesperrt, bis die Uhr um ist oder „schon vorher gewartet“ angegeben ist.
+      expect(vermerken).toBeDisabled();
+      await user.click(vermerken);
       expect(recordNoShow).not.toHaveBeenCalled();
-      // Der Ablauf bleibt offen: Wer die fehlende Angabe nachtragen will,
-      // findet sie noch vor.
-      expect(screen.getByLabelText('Telefonisch angerufen')).toBeInTheDocument();
+      expect(screen.getByRole('timer')).toHaveTextContent(/^Gewartet \d+:\d\d von 15:00$/);
     });
 
     it('zeigt am vermerkten Hausbesuch Protokoll und Gebuehrenanlass', async () => {
@@ -801,9 +808,15 @@ describe('TerminAktionenDialog', () => {
       const { container } = rendern(['therapist']);
 
       await ablaufOeffnen(user);
+      await pruefeBarrierefreiheit(document.body);
+      await user.click(screen.getByRole('button', { name: 'Ja, geklingelt' }));
       await screen.findByRole('link', { name: /Mobil/ });
-
-      await pruefeBarrierefreiheit(container);
+      await pruefeBarrierefreiheit(document.body);
+      await user.click(screen.getByRole('button', { name: 'Angerufen, niemand erreicht' }));
+      await screen.findByRole('timer');
+      // Das Fenster liegt als Portal am body, der Termin darunter bleibt geprüft.
+      await pruefeBarrierefreiheit(document.body);
+      expect(container).toBeInTheDocument();
     });
   });
 
@@ -1724,13 +1737,9 @@ describe('TerminAktionenDialog', () => {
       rendern(['therapist']);
 
       await user.click(await screen.findByRole('button', { name: 'Niemand öffnet?' }));
-      for (const schritt of [
-        'An der Tür geklingelt',
-        '15 Minuten vor Ort gewartet',
-        'Telefonisch angerufen',
-      ]) {
-        await user.click(screen.getByLabelText(schritt));
-      }
+      await user.click(screen.getByRole('button', { name: 'Ja, geklingelt' }));
+      await user.click(await screen.findByRole('button', { name: 'Angerufen, niemand erreicht' }));
+      await user.click(await screen.findByLabelText('Schon vorher 15 Minuten gewartet'));
       await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       expect(
