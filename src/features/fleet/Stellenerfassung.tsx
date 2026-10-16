@@ -31,6 +31,11 @@ import { nummerDerStelle, radBild, type Entwurf, type Stellenzustand } from './s
  * Stelle an - Pflicht, nicht Komfort: Bedienung ohne Ziehen und ohne Tippen
  * auf kleine Flächen, und ohne WebGL.
  *
+ * Seit Überholung 6 (G3) im Fenster des geführten Ablaufs: das Rad als Bühne
+ * (`Stellenbuehne`), darunter die offene Stelle oder die Liste der Schäden
+ * (`Stellenflaeche`). Der geführte Check-Up setzt sich dieselben Teile selbst
+ * zusammen (`Entwurfsfeld`, `SchonOffen`).
+ *
  * Gespeichert wird der Punkt in Modellkoordinaten (ANN-555). Nummeriert wird
  * über alle offenen Stellen des Rads: Die schon offenen stehen mit ihrer
  * Nummer am Rad, die neuen zählen weiter - dieselbe Nummer danach an der
@@ -39,20 +44,19 @@ import { nummerDerStelle, radBild, type Entwurf, type Stellenzustand } from './s
  * Freigabe erledigt (ANN-555).
  */
 
-export function Stellenerfassung({
+/** Das 3D-Rad als Bühne: Antippen setzt eine Nadel oder versetzt die offene. */
+export function Stellenbuehne({
   zustand,
   bestehend,
   bauart,
-  hoehe,
 }: {
   zustand: Stellenzustand;
   /** Die offenen Stellen des Rads aus früheren Meldungen, mit ihrer Nummer. */
   bestehend: readonly Spot[];
   bauart: BikeType;
-  hoehe: number;
 }) {
-  const { art, stellen, entwurf, hervorgehoben } = zustand;
-  const { offene, aktivNummer, markers, draft } = radBild(zustand, bestehend, bauart);
+  const { entwurf, hervorgehoben } = zustand;
+  const { markers, draft } = radBild(zustand, bestehend, bauart);
   const highlight = entwurf?.zone ? [entwurf.zone] : hervorgehoben ? hervorgehoben.zonen : [];
   const hinweis = entwurf
     ? 'Antippen versetzt die Nadel'
@@ -61,32 +65,57 @@ export function Stellenerfassung({
       : 'Ziehen dreht · Antippen markiert';
 
   return (
-    <div className="flex flex-col gap-4">
-      <div ref={zustand.rahmen}>
-        <BikeModel3D
-          hoehe={hoehe}
-          markers={markers}
-          draft={draft}
-          activeMarkerId={entwurf?.key ?? null}
-          highlight={highlight}
-          focus={zustand.fokus}
-          hinweis={hinweis}
-          onPick={zustand.tippen}
-        />
-      </div>
+    <BikeModel3D
+      hoehe="100%"
+      markers={markers}
+      draft={draft}
+      activeMarkerId={entwurf?.key ?? null}
+      highlight={highlight}
+      focus={zustand.fokus}
+      hinweis={hinweis}
+      onPick={zustand.tippen}
+    />
+  );
+}
 
-      {entwurf ? (
-        <Entwurfsfeld zustand={zustand} entwurf={entwurf} nummer={aktivNummer} />
-      ) : (
-        <div>
-          <Button type="button" variant="secondary" onClick={zustand.ohneModell}>
-            Bauteil aus Liste wählen
-          </Button>
-        </div>
-      )}
+/**
+ * Unter der Bühne: die offene Stelle mit „Stelle setzen“ als Hauptknopf -
+ * oder die neuen Stellen mit „Ändern“, der Weg ohne 3D-Rad und die schon
+ * offenen. Ohne Rahmen: Das Fenster ist schon die Fläche (kein Kasten im
+ * Kasten).
+ */
+export function Stellenflaeche({
+  zustand,
+  bestehend,
+  bauart,
+}: {
+  zustand: Stellenzustand;
+  bestehend: readonly Spot[];
+  bauart: BikeType;
+}) {
+  const { art, stellen, entwurf } = zustand;
+  const { offene, aktivNummer } = radBild(zustand, bestehend, bauart);
 
+  if (entwurf) {
+    return (
+      <Entwurfsfeld
+        zustand={zustand}
+        entwurf={entwurf}
+        nummer={aktivNummer}
+        rahmen={false}
+        hauptknopf
+        knapp
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
       {stellen.length > 0 ? (
-        <ListRows beschriftung={art === 'panne' ? 'Schäden am Rad' : 'Markierte Stellen'}>
+        <ListRows
+          rahmen={false}
+          beschriftung={art === 'panne' ? 'Schäden am Rad' : 'Markierte Stellen'}
+        >
           {stellen.map((stelle, index) => {
             const nummer = nummerDerStelle(index, offene.length);
             const pruefpunkt = zoneCheckItem(stelle.zone);
@@ -118,7 +147,6 @@ export function Stellenerfassung({
                     type="button"
                     variant="secondary"
                     aria-label={`Stelle ${nummer} ändern: ${zoneLabel(stelle.zone)}`}
-                    disabled={entwurf !== null}
                     onClick={() => zustand.bearbeite(stelle.key)}
                   >
                     Ändern
@@ -129,6 +157,10 @@ export function Stellenerfassung({
           })}
         </ListRows>
       ) : null}
+
+      <Button type="button" variant="secondary" className="w-full" onClick={zustand.ohneModell}>
+        Bauteil aus Liste wählen
+      </Button>
 
       <SchonOffen offene={offene} />
     </div>
@@ -174,6 +206,7 @@ export function Entwurfsfeld({
   nummer,
   rahmen = true,
   hauptknopf = false,
+  knapp = false,
 }: {
   zustand: Stellenzustand;
   entwurf: Entwurf;
@@ -182,6 +215,13 @@ export function Entwurfsfeld({
   rahmen?: boolean;
   /** „Stelle setzen“ als Hauptknopf - dort, wo die Stelle die ganze Seite ist. */
   hauptknopf?: boolean;
+  /**
+   * Knapp, unter dem Rad im Fenster der Panne (Überholung 6, G3): Ein am Rad
+   * getipptes Bauteil steht im Titel der Stelle, ein anderes ist ein Tipp aufs
+   * Rad. Die Liste der Bauteile steht nur ohne Punkt am Rad - über „Bauteil aus
+   * Liste wählen“ geöffnet. So bleibt „Stelle setzen“ am Telefon im Bild.
+   */
+  knapp?: boolean;
 }) {
   const { art } = zustand;
   const zone = isZoneKey(entwurf.zone) ? BIKE_ZONES[entwurf.zone] : null;
@@ -196,6 +236,7 @@ export function Entwurfsfeld({
 
   // Geöffnet über die Liste oder die Tastatur: der Fokus auf das Bauteil.
   const offenVonListe = entwurf.zone === '';
+  const mitListe = !knapp || entwurf.point === null;
   useEffect(() => {
     if (offenVonListe) document.getElementById(BAUTEIL_ID)?.focus();
   }, [offenVonListe]);
@@ -204,7 +245,7 @@ export function Entwurfsfeld({
     <div
       role="group"
       aria-labelledby="stelle-titel"
-      className={`flex flex-col gap-4 ${rahmen ? 'rounded-card border-line bg-surface border p-4' : ''}`.trim()}
+      className={`flex flex-col ${knapp ? 'gap-3' : 'gap-4'} ${rahmen ? 'rounded-card border-line bg-surface border p-4' : ''}`.trim()}
     >
       <div className="flex items-start gap-3">
         <Nadel nummer={nummer} einstufung={entwurf.severity} neu={!entwurf.key} />
@@ -216,23 +257,25 @@ export function Entwurfsfeld({
         </div>
       </div>
 
-      <Select
-        feldId={BAUTEIL_ID}
-        label="Bauteil"
-        value={entwurf.zone}
-        onChange={(event) => zustand.aendere({ zone: event.target.value })}
-      >
-        <option value="">Bauteil wählen</option>
-        {ZONE_GROUPS.map((gruppe) => (
-          <optgroup key={gruppe.label} label={gruppe.label}>
-            {gruppe.zones.map((key) => (
-              <option key={key} value={key}>
-                {BIKE_ZONES[key].label}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </Select>
+      {mitListe ? (
+        <Select
+          feldId={BAUTEIL_ID}
+          label="Bauteil"
+          value={entwurf.zone}
+          onChange={(event) => zustand.aendere({ zone: event.target.value })}
+        >
+          <option value="">Bauteil wählen</option>
+          {ZONE_GROUPS.map((gruppe) => (
+            <optgroup key={gruppe.label} label={gruppe.label}>
+              {gruppe.zones.map((key) => (
+                <option key={key} value={key}>
+                  {BIKE_ZONES[key].label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
+      ) : null}
 
       {art === 'checkup' ? (
         <Wahlreihe
@@ -256,7 +299,7 @@ export function Entwurfsfeld({
       />
 
       <div>
-        <p className="text-ink mb-2 text-sm font-medium">Fotos zur Stelle</p>
+        {knapp ? null : <p className="text-ink mb-2 text-sm font-medium">Fotos zur Stelle</p>}
         <Fotovormerkung
           fotos={entwurf.fotos}
           onFotos={(fotos) => zustand.aendere({ fotos })}

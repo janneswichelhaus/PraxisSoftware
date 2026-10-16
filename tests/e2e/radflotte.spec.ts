@@ -18,10 +18,17 @@ import { testDetail, testFlotte } from '../../src/features/fleet/testdaten';
  *     (vorher 16 ohne Werbeflächen und Fotos);
  *   * **R4** Check-Up mit einer Stelle am 3D-Rad: ≤ 26 Tipps + Text (vorher
  *     17 ohne Werbeflächen und Fotos);
- *   * **R5** Panne, Rad weiter fahrbar, mit einer Stelle: ≤ 7 Tipps + Text;
+ *   * **R5** Panne, Rad weiter fahrbar, mit einer Stelle: ≤ 7 Tipps + Text,
+ *     seit Überholung 6 im Fenster des geführten Ablaufs (G3, vorher 7);
  *   * **R6** Freigabe durch die Teamleitung: ≤ 3 Tipps;
  *   * **R7** Unterlage für die Werkstatt ab dem Rad: 2 Tipps bis zum
- *     Druckdialog.
+ *     Druckdialog;
+ *   * **G3** Panne bis zur Abschlussart „Rad zurückgelassen“: 11 Tipps +
+ *     Text wie vorher, jede Seite bei 375 × 667 ohne Scrollen.
+ *
+ * Je Seite der geführten Abläufe ein Bildschirmfoto nach `.tmp/screenshots/`
+ * (`b6-panne-…`; die erste und die letzte Seite auch bei 1280 px) - für die
+ * Selbstsichtung, nicht verglichen.
  *
  * Der Server ist eine kleine Nachbildung über abgefangene Anfragen; Rechte,
  * Nummern und Fristen prüft `pnpm test:db`. WebGL kommt aus SwiftShader, wie
@@ -604,25 +611,95 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
   ]);
 });
 
+/** Das Fenster eines geführten Ablaufs; sein Name ist die Frage der Seite. */
+function fenster(page: Page, name: string) {
+  return page.getByRole('dialog', { name, exact: true });
+}
+
+/**
+ * Ein Bildschirmfoto der Seite bei 375 × 667, mit `breit` dazu bei 1280 px -
+ * danach wieder am Telefon (Überholung 6, Selbstsichtung).
+ */
+async function bild(page: Page, name: string, breit = false) {
+  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-375.png` });
+  if (!breit) return;
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.screenshot({ path: `.tmp/screenshots/b6-${name}-1280.png` });
+  await page.setViewportSize({ width: 375, height: 667 });
+}
+
+/**
+ * Eine Seite der Panne: die Frage als Name des Fensters, „Schritt n“ ohne
+ * Gesamtzahl, die Herkunft der Vorlage, kein Scrollen und jede Antwort im
+ * Fuß mindestens 44 px hoch.
+ */
+async function panneSeite(page: Page, frage: string, schritt: number, antworten: string[]) {
+  const seite = fenster(page, frage);
+  await expect(seite.getByText(`Schritt ${schritt}`, { exact: true })).toBeVisible();
+  await expect(seite.getByText('Köln-Vorlage · Für Tübingen noch zu prüfen')).toBeVisible();
+  expect(await scrolltNicht(page), `${frage} ohne Scrollen`).toBe(true);
+  for (const antwort of antworten) {
+    await mindestens44(seite.getByRole('button', { name: antwort, exact: true }));
+  }
+  return seite;
+}
+
 test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps und Text', async ({
   page,
 }) => {
+  test.setTimeout(90_000);
   const server = nachbildung();
   await oeffne(page, server);
+  // Das kleinste übliche Telefon: 375 × 667.
+  await page.setViewportSize({ width: 375, height: 667 });
   const z = zaehler();
   await z.tippe(page.getByRole('link', { name: 'Panne melden' }));
+  // Die Radwahl bleibt eine gewöhnliche Seite, das eigene Rad vorbelegt.
+  await expect(page.getByRole('combobox', { name: 'Rad' })).toHaveValue('rad-1');
+  await bild(page, 'panne-01-rad', true);
   await z.tippe(page.getByRole('button', { name: 'Weiter' }));
-  await expect(page.getByRole('heading', { name: 'Wo ist der Schaden?' })).toBeVisible();
+
+  // „Wo ist der Schaden?“ im Fenster, das 3D-Rad als Bühne.
+  const schaden = fenster(page, 'Wo ist der Schaden?');
+  await expect(schaden.getByText('Panne melden · Lastenrad 1')).toBeVisible();
+  await expect(schaden.getByText('Schritt 1', { exact: true })).toBeVisible();
   expect(await ueberlaeuft(page)).toBe(false);
+  expect(await scrolltNicht(page), 'Wo ist der Schaden? ohne Scrollen').toBe(true);
   expect(await axeVerstoesse(page)).toEqual([]);
+  await mindestens44(schaden.getByRole('button', { name: 'Weiter' }));
+  await bild(page, 'panne-02-schaden');
 
   await z.tippeAmRad(page);
-  await page.getByLabel('Was ist passiert?').fill('Deckel klemmt');
-  await z.tippe(page.getByRole('button', { name: 'Stelle setzen' }));
-  await z.tippe(page.getByRole('button', { name: 'Weiter' }));
-  await z.tippe(page.getByRole('button', { name: 'Nein', exact: true }));
-  await expect(page.getByLabel('Was ist auffällig?')).toHaveValue('Transportbox: Deckel klemmt');
-  await z.tippe(page.getByRole('button', { name: 'Melden', exact: true }));
+  await schaden.getByLabel('Was ist passiert?').fill('Deckel klemmt');
+  // Die offene Stelle mit „Stelle setzen“ im Bild, ohne Rollen.
+  expect(await scrolltNicht(page), 'offene Stelle ohne Scrollen').toBe(true);
+  await mindestens44(schaden.getByRole('button', { name: 'Stelle setzen' }));
+  await bild(page, 'panne-03-stelle');
+  await z.tippe(schaden.getByRole('button', { name: 'Stelle setzen' }));
+  await expect(schaden.getByRole('list', { name: 'Schäden am Rad' })).toContainText(
+    'Deckel klemmt',
+  );
+  expect(await scrolltNicht(page), 'Schaden gesetzt ohne Scrollen').toBe(true);
+  // Das Rad wird nach dem Größenwechsel der Bühne neu gezeichnet; SwiftShader
+  // braucht dafür einen Moment - erst dann das Bild.
+  await page.waitForTimeout(1_000);
+  await bild(page, 'panne-04-schaden-gesetzt');
+  await z.tippe(schaden.getByRole('button', { name: 'Weiter' }));
+
+  const weiterfahrt = await panneSeite(page, 'Ist die Weiterfahrt gehindert?', 2, ['Ja', 'Nein']);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'panne-05-weiterfahrt');
+  await z.tippe(weiterfahrt.getByRole('button', { name: 'Nein', exact: true }));
+
+  const auffaellig = await panneSeite(page, 'Rad ist weiter fahrbar. Was genau ist auffällig?', 3, [
+    'Melden',
+  ]);
+  await expect(auffaellig.getByLabel('Was ist auffällig?')).toHaveValue(
+    'Transportbox: Deckel klemmt',
+  );
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'panne-06-auffaellig');
+  await z.tippe(auffaellig.getByRole('button', { name: 'Melden', exact: true }));
 
   await expect(page.getByText('Panne gemeldet. Lastenrad 1 bleibt in der Planung.')).toBeVisible({
     timeout: NACH_DEM_SPEICHERN,
@@ -630,8 +707,169 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
   expect(server.aufrufe.record_fleet_breakdown![0]).toEqual(
     expect.objectContaining({ p_outcome: 'meldungOhneSperre', p_location_note: '' }),
   );
-  test.info().annotations.push({ type: 'R5', description: `${z.tipps} Tipps + Text` });
+  test.info().annotations.push({ type: 'R5', description: `${z.tipps} Tipps + Text (vorher 7)` });
   expect(z.tipps).toBeLessThanOrEqual(7);
+});
+
+test('G3: Panne bis „Rad zurückgelassen“ in elf Tipps wie vorher, jede Seite ohne Scrollen', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const server = nachbildung();
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Panne melden' }));
+  await z.tippe(page.getByRole('button', { name: 'Weiter' }));
+  await z.tippe(fenster(page, 'Wo ist der Schaden?').getByRole('button', { name: 'Weiter' }));
+
+  // Je Frage der Vorlage eine Seite, die Antworten im festen Fuß.
+  for (const [schritt, frage, antworten, antwort, name] of [
+    [2, 'Ist die Weiterfahrt gehindert?', ['Ja', 'Nein'], 'Ja', null],
+    [3, 'Wie groß ist der Schaden?', ['Klein', 'Groß'], 'Groß', 'panne-07-groesse'],
+    [4, 'Ist heute Mittwoch?', ['Ja', 'Nein'], 'Ja', 'panne-08-ruhetag'],
+    [
+      5,
+      'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
+      ['Ja', 'Nein'],
+      'Nein',
+      'panne-09-depot',
+    ],
+  ] as const) {
+    const seite = await panneSeite(page, frage, schritt, [...antworten]);
+    if (name) await bild(page, name);
+    await z.tippe(seite.getByRole('button', { name: antwort, exact: true }));
+  }
+
+  // Der längste Schritt: Standort, Anruf, Nachricht, Akku und Liege.
+  const zuruecklassen = await panneSeite(page, 'Fahrrad zurücklassen. Wo genau steht es?', 6, [
+    'Weiter',
+  ]);
+  await zuruecklassen.getByLabel('Standort / Adresse').fill('Hinterhof Beispielweg 3');
+  await bild(page, 'panne-10-zuruecklassen');
+  await z.tippe(zuruecklassen.getByRole('button', { name: 'Weiter' }));
+
+  const fuehrerschein = await panneSeite(page, 'Haben Sie einen Autoführerschein?', 7, [
+    'Ja',
+    'Nein',
+  ]);
+  await bild(page, 'panne-11-fuehrerschein');
+  await z.tippe(fuehrerschein.getByRole('button', { name: 'Ja', exact: true }));
+  const carsharing = await panneSeite(
+    page,
+    'Ist ein Carsharing-Fahrzeug in 15 Minuten Fußweg erreichbar?',
+    8,
+    ['Ja', 'Nein'],
+  );
+  await bild(page, 'panne-12-carsharing');
+  await z.tippe(carsharing.getByRole('button', { name: 'Ja', exact: true }));
+
+  // Der Abschluss: Die Zusammenfassung darf rollen, der Knopf steht fest im Bild.
+  const abschluss = fenster(page, 'Zusammenfassung – bitte prüfen:');
+  await expect(abschluss.getByText('Schritt 9', { exact: true })).toBeVisible();
+  await expect(abschluss.getByRole('list', { name: 'Zusammenfassung' })).toContainText(
+    'Standort: Hinterhof Beispielweg 3',
+  );
+  const bestaetigen = abschluss.getByRole('button', { name: /^Bestätigen/ });
+  await expect(bestaetigen).toBeInViewport({ ratio: 1 });
+  await mindestens44(bestaetigen);
+  expect(await ueberlaeuft(page)).toBe(false);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'panne-13-zusammenfassung', true);
+  await z.tippe(bestaetigen);
+
+  await expect(
+    page.getByText(
+      'Panne gemeldet. Lastenrad 1 ist in Reparatur und steht nicht mehr in der Planung.',
+    ),
+  ).toBeVisible({ timeout: NACH_DEM_SPEICHERN });
+  expect(server.aufrufe.record_fleet_breakdown![0]).toEqual(
+    expect.objectContaining({
+      p_outcome: 'transportFortsetzung',
+      p_location_note: 'Hinterhof Beispielweg 3',
+      p_transport: 'carsharing',
+    }),
+  );
+  test.info().annotations.push({ type: 'G3', description: `${z.tipps} Tipps + Text (vorher 11)` });
+  expect(z.tipps).toBeLessThanOrEqual(11);
+});
+
+test('G3: auch die übrigen Seiten der Panne stehen bei 375 × 667 ohne Scrollen', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const server = nachbildung();
+  await oeffne(page, server, `?pfad=${encodeURIComponent('/betrieb/flotte/panne?rad=rad-1')}`);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const tippe = (frage: string, antwort: string) =>
+    fenster(page, frage).getByRole('button', { name: antwort, exact: true }).click();
+  const zurueck = (frage: string) =>
+    fenster(page, frage).getByRole('button', { name: '← Zurück' }).click();
+  await tippe('Wo ist der Schaden?', 'Weiter');
+  await tippe('Ist die Weiterfahrt gehindert?', 'Ja');
+
+  // Kleiner Schaden, Werkstatt in der Nähe, Reparatur vor Ort.
+  await tippe('Wie groß ist der Schaden?', 'Klein');
+  await panneSeite(page, 'Werkstatt in der Nähe (15–30 Minuten Fußweg)?', 4, ['Ja', 'Nein']);
+  await bild(page, 'panne-14-werkstatt-nah');
+  await tippe('Werkstatt in der Nähe (15–30 Minuten Fußweg)?', 'Ja');
+  await panneSeite(page, 'Anruf Werkstatt: Reparatur direkt vor Ort möglich?', 5, ['Ja', 'Nein']);
+  await bild(page, 'panne-15-vor-ort');
+  await tippe('Anruf Werkstatt: Reparatur direkt vor Ort möglich?', 'Ja');
+  await panneSeite(page, 'Rad vor Ort reparieren lassen.', 6, [
+    'Erledigt – Rad als „In Reparatur“ markieren',
+  ]);
+  await bild(page, 'panne-16-werkstatt-reparieren');
+
+  // „← Zurück“ dorthin, woher man kam: drei Seiten bis zur Schadensgröße.
+  await zurueck('Rad vor Ort reparieren lassen.');
+  await zurueck('Anruf Werkstatt: Reparatur direkt vor Ort möglich?');
+  await zurueck('Werkstatt in der Nähe (15–30 Minuten Fußweg)?');
+  await tippe('Wie groß ist der Schaden?', 'Groß');
+  await tippe('Ist heute Mittwoch?', 'Ja');
+  await tippe(
+    'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
+    'Ja',
+  );
+  await panneSeite(page, 'Lastenrad ins Raddepot bringen.', 6, [
+    'Rad als „In Reparatur“ markieren',
+  ]);
+  await bild(page, 'panne-17-depot-bringen');
+
+  // Kein Ruhetag: zur Vertragswerkstatt.
+  await zurueck('Lastenrad ins Raddepot bringen.');
+  await zurueck(
+    'War das die letzte Behandlung am Tag und ist das Raddepot 15–30 Minuten entfernt?',
+  );
+  await tippe('Ist heute Mittwoch?', 'Nein');
+  const nah = 'Vertragswerkstatt (noch nicht hinterlegt) in der Nähe (15–30 Minuten Fußweg)?';
+  await panneSeite(page, nah, 5, ['Ja', 'Nein']);
+  await bild(page, 'panne-18-vertragswerkstatt-nah');
+  await tippe(nah, 'Ja');
+  await panneSeite(page, 'Reparatur direkt vor Ort möglich?', 6, ['Ja', 'Nein']);
+  await bild(page, 'panne-19-vertragswerkstatt-kontakt');
+  await tippe('Reparatur direkt vor Ort möglich?', 'Ja');
+  await panneSeite(page, 'Reparatur durchführen lassen.', 7, [
+    'Erledigt – Rad als „In Reparatur“ markieren',
+  ]);
+  await bild(page, 'panne-20-vertragswerkstatt-reparieren');
+  await zurueck('Reparatur durchführen lassen.');
+  await tippe('Reparatur direkt vor Ort möglich?', 'Nein');
+  const uebergabe = 'Teamleitung informieren und mit dem Ersatzrad weiterarbeiten.';
+  await panneSeite(page, uebergabe, 7, ['Weiter']);
+  await bild(page, 'panne-21-uebergabe');
+  await tippe(uebergabe, 'Weiter');
+  await tippe('Haben Sie einen Autoführerschein?', 'Nein');
+
+  const abschluss = fenster(page, 'Zusammenfassung – bitte prüfen:');
+  await expect(abschluss.getByRole('list', { name: 'Zusammenfassung' })).toContainText(
+    'Vertragswerkstatt (noch nicht hinterlegt) kontaktiert – Rad übergeben',
+  );
+  await expect(abschluss.getByRole('button', { name: /^Bestätigen/ })).toBeInViewport({
+    ratio: 1,
+  });
+  await bild(page, 'panne-22-zusammenfassung-uebergabe');
+  expect(server.aufrufe.record_fleet_breakdown).toBeUndefined();
 });
 
 test('R6: Freigabe durch die Teamleitung in höchstens drei Tipps, mit Rückfrage', async ({
@@ -702,6 +940,7 @@ test('die Seiten der Radflotte laufen bei 1280 px nicht über', async ({ page })
     '/betrieb/flotte',
     '/betrieb/flotte/rad/rad-3',
     '/betrieb/flotte/checkup?rad=rad-1',
+    '/betrieb/flotte/panne?rad=rad-1',
   ]) {
     await page.goto(`${PRUEFSEITE}?pfad=${encodeURIComponent(pfad)}`);
     await expect(page.locator('h1').first()).toBeVisible();
