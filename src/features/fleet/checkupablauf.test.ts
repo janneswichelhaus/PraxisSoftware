@@ -13,7 +13,7 @@ import {
 } from './checkupablauf';
 import { CHECK_ITEMS } from './bike3d/zones';
 
-/** Der geführte Check-Up ohne Oberfläche (FLT-005, ANN-562). */
+/** Der geführte Check-Up ohne Oberfläche (FLT-005, ANN-563). */
 describe('Ablauf des geführten Check-Ups', () => {
   it('geht nach jeder Antwort zum nächsten Punkt und nach dem zwölften zum Abschluss', () => {
     expect(PRUEFPUNKTE).toBe(12);

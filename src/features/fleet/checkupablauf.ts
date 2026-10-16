@@ -8,7 +8,7 @@ import {
 } from './bike3d/zones';
 
 /**
- * Der geführte Check-Up (FLT-005, ANN-562) ohne Oberfläche: welche Seite nach
+ * Der geführte Check-Up (FLT-005, ANN-563) ohne Oberfläche: welche Seite nach
  * welcher kommt, was „← Zurück“ heißt und was am Ende gespeichert wird.
  *
  * Eine Seite je Prüfpunkt in der Reihenfolge der Bauart. „In Ordnung“ führt

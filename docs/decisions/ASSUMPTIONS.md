@@ -5795,7 +5795,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Jannes (Dur
 
 **Änderungspfad.** Sammelvermerk je Region: eine RPC über `set_exercise_variant_reviewed` · Aufwand `mittel`.
 
-### ANN-562 — Check-Up geführt: eine Seite je Prüfpunkt, jeder Punkt bestätigt
+### ANN-563 — Check-Up geführt: eine Seite je Prüfpunkt, jeder Punkt bestätigt
 
 Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung des geführten Check-Ups
 
@@ -5807,7 +5807,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 **Änderungspfad.** Vorbelegen: Antworten in `CheckupFenster` vorbesetzen · Aufwand `klein`.
 
-### ANN-563 — Auslieferung: Dateien früherer Stände bleiben 7 Tage
+### ANN-564 — Auslieferung: Dateien früherer Stände bleiben 7 Tage
 
 Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
 

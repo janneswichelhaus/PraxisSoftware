@@ -1494,7 +1494,7 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 | Datum   | 2026-10-16 |
 | Bereich | Radflotte (3D-Rad); Auslieferung der Test-Umgebung (OPS-002a) |
 | Quelle  | Jannes in der Test-Umgebung nach #254 („Das 3D-Modell lässt sich in diesem Browser nicht anzeigen“); nachgestellt mit den Builds von #253 und #254 |
-| Status  | erledigt in FLT-005/006 (Meldung getrennt, „Neu laden“) und ANN-563 (alte Dateien bleiben 7 Tage) |
+| Status  | erledigt in FLT-005/006 (Meldung getrennt, „Neu laden“) und ANN-564 (alte Dateien bleiben 7 Tage) |
 | Berührt | `src/features/fleet/bike3d/BikeModel3D.tsx`; Schritt „Hochladen“ in `.github/workflows/test-umgebung.yml`; ADR-024 Punkt 2 |
 
 **Beobachtung.** Das 3D-Modul ist eine eigene Datei, deren Name sich mit jedem Build ändert (`viewer-DegDh5Fw.js` mit #253, `viewer-BNuvwWZ3.js` mit #254, obwohl #254 die Radflotte nicht berührte). Die Auslieferung löschte die alte sofort (`rsync --delete`); eine vorher geöffnete Seite fand sie nicht mehr, und die Seite meldete jeden Fehler gleich: Der Browser könne kein 3D. Karte und Werkstattbilder träfe es ebenso. **Erwartet:** Offene Seiten laden ihre Teile weiter; scheitert das Laden doch, steht „ließ sich nicht laden“ mit „Neu laden“ da, und nur ohne WebGL nennt die Seite den Browser.

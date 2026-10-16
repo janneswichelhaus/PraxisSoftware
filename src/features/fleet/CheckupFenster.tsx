@@ -52,7 +52,7 @@ import { Entwurfsfeld } from './Stellenerfassung';
 import { nummerDerStelle, radBild, useStellenerfassung, type Stelle } from './stellen';
 
 /**
- * Der geführte Check-Up am 3D-Rad (FLT-005, ANN-562): ein Fenster, eine Seite
+ * Der geführte Check-Up am 3D-Rad (FLT-005, ANN-563): ein Fenster, eine Seite
  * je Prüfpunkt, kein Scrollen.
  *
  * Oben das Rad - es fliegt zu den Bauteilen des Punkts und hebt sie hervor -,

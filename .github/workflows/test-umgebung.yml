@@ -332,7 +332,7 @@ jobs:
 
       - name: Hochladen
         # Die Dateien unter assets/ frueherer Staende bleiben 7 Tage liegen
-        # (ANN-563, BEF-172): Eine vor der Auslieferung geoeffnete Seite laedt
+        # (ANN-564, BEF-172): Eine vor der Auslieferung geoeffnete Seite laedt
         # 3D-Rad, Karte und Werkstattbilder erst bei Bedarf nach - mit
         # --delete allein faende sie ihre Datei nicht mehr und meldete, der
         # Browser koenne kein 3D. Die Dateien dieses Stands gelten danach als

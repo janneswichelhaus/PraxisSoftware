@@ -10,8 +10,8 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 des Katalogs am Stück mit einem Tipp je Übung; ANN-560, ANN-561. Bilder und Videos offen (ANN-539).
 
 Check-Up geführt (16.10., FLT-005/006, eine PR, Branch `ccr-658a5e25-l0njkl`): Fenster mit einer
-Seite je Prüfpunkt am 3D-Rad, „In Ordnung“ führt weiter (ANN-562); 3D-Meldung trennt „nicht
-geladen“ von „kein WebGL“; alte Dateien bleiben 7 Tage auf dem Server (BEF-172, ANN-563).
+Seite je Prüfpunkt am 3D-Rad, „In Ordnung“ führt weiter (ANN-563); 3D-Meldung trennt „nicht
+geladen“ von „kein WebGL“; alte Dateien bleiben 7 Tage auf dem Server (BEF-172, ANN-564).
 
 Test-Umgebung: SSH-Verbindung mit bis zu fünf Versuchen (#253, ANN-559); erster Lauf danach ohne
 Abbruch, BEF-171 bleibt offen, bis weitere Läufe das bestätigen.
