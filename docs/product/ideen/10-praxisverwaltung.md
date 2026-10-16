@@ -1458,3 +1458,22 @@ Anwendung; das Rad nie als Bild neben der Wortmarke.
 
 **Offen.** Handoff, Abschnitt 7: weitere Bauarten, Unterschrift im Check-Up,
 Rollen, Fristen, Ablage der Fotos, offene Stellen beim nächsten Check-Up.
+
+### IDEA-PRX-058 — Aus dem Check-Up gleich Panne melden oder das Rad sperren lassen
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Praxis-Review des geführten Check-Ups (FLT-005), 2026-10-16 |
+| Berührt | FLT-EPIC-001, FLT-005; Pannenmeldung, Sperre durch die Teamleitung; ANN-563 |
+
+**Idee.** Steht im Check-Up „Problem“ an Bremsen, Licht oder Klingel, bietet
+der Abschluss gleich „Panne melden“ an – mit den Stellen aus dem Check-Up –
+oder schlägt der Teamleitung vor, das Rad zu sperren.
+
+**Warum.** Heute sperrt der Check-Up das Rad nie, auch nicht mit „Problem“;
+wer am Morgen eine schleifende Bremse findet, meldet die Panne getrennt und
+tippt die Stelle ein zweites Mal.
+
+**Vorsicht.** Sperren bleibt bei der Teamleitung; der Check-Up darf das nicht
+nebenbei umgehen. Nicht vorbauen.

@@ -36,6 +36,7 @@ describe('Dialogfenster', () => {
         titel="Bremsen"
         onSchliessen={onSchliessen}
         vollbild
+        beschreibung="Lastenrad 1 · Load 60 · Riemenantrieb"
         schliessenBeschriftung="Check-Up abbrechen"
       >
         <Button type="button" data-autofocus>
@@ -46,6 +47,8 @@ describe('Dialogfenster', () => {
     const fenster = screen.getByRole('dialog', { name: 'Bremsen' });
     expect(fenster).toHaveAttribute('aria-modal', 'true');
     expect(fenster.className).toContain('h-dvh');
+    // Unter dem Titel, worum es geht - der Titel allein bleibt der Name.
+    expect(screen.getByText('Lastenrad 1 · Load 60 · Riemenantrieb')).toBeInTheDocument();
     // Der Fokus liegt auf der Antwort, nicht auf dem Schließen-Knopf davor.
     expect(screen.getByRole('button', { name: 'In Ordnung' })).toHaveFocus();
     await user.click(screen.getByRole('button', { name: 'Check-Up abbrechen' }));

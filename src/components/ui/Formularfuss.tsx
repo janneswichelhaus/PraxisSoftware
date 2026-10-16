@@ -14,7 +14,8 @@ import type { ReactNode } from 'react';
  *     Hauptknopf liegt im Daumenbereich und ist nicht zu verfehlen. Ab 640 px
  *     nebeneinander, so breit wie ihr Text.
  *   * 32 px Abstand zum letzten Feld; mit `trenner` eine Linie darüber (nach
- *     langen Bögen).
+ *     langen Bögen); `dicht` 8 px - im festen Fuß eines Fensters, über dem
+ *     schon eine Linie steht (geführter Check-Up, FLT-005).
  *   * `zusatz`: ein Satz über den Knöpfen, der sagt, was der Hauptknopf
  *     bewirkt („Schreibt den Eintrag als Version 1 fest …“) - nur, wenn die
  *     Folge nicht offensichtlich ist.
@@ -25,13 +26,15 @@ export function Formularfuss({
   children,
   zusatz,
   trenner = false,
+  dicht = false,
 }: {
   children: ReactNode;
   zusatz?: ReactNode;
   trenner?: boolean;
+  dicht?: boolean;
 }) {
   return (
-    <div className={trenner ? 'border-line mt-8 border-t pt-6' : 'mt-8'}>
+    <div className={trenner ? 'border-line mt-8 border-t pt-6' : dicht ? 'mt-2' : 'mt-8'}>
       {zusatz ? <div className="text-ink-muted mb-3 max-w-prose text-sm">{zusatz}</div> : null}
       <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:flex-wrap sm:items-center sm:*:w-auto">
         {children}

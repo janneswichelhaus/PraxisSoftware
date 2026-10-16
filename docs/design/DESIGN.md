@@ -1,8 +1,8 @@
 # DESIGN – so sieht eine Seite dieser App aus
 
-Stand 12.10.2026. **Die einzige Seitenrezeptur.** Jede neue oder umgebaute Seite folgt ihr (Leitfaden
-[L6](leitfaden-schlank.md)). Maßstab sind die abgenommenen Seiten (Übersicht, Akte, Termin-Fenster,
-Schreibseite, Kalender, Tour, Rahmen); die Handoffs bleiben Historie. Werte stehen in
+Stand 16.10.2026. **Die einzige Seitenrezeptur.** Jede neue oder umgebaute Seite folgt ihr (Leitfaden
+[L6](leitfaden-schlank.md)). Maßstab sind die abgenommenen Referenzseiten (unten);
+die Handoffs bleiben Historie. Werte stehen in
 [`src/index.css`](../../src/index.css), Bausteine in [`src/components/ui`](../../src/components/ui),
 vorgeführt in [`ui-bausteine.html`](../../tests/e2e/fixtures/ui-bausteine.html).
 
@@ -48,6 +48,10 @@ untereinander in voller Breite). Textverlustschutz bleibt.
 in der klebenden `Aktionsleiste` über der Tableiste, Hauptknopf rechts. Die Schreibseite ist eine
 Fläche ohne Karten (`einbettung="flaeche"`); andere Arbeitsseiten bleiben gewöhnliche Seiten.
 
+**Geführter Ablauf** (Check-Up): `Dialogfenster vollbild`, Kopf mit Schritt, Objekt, ✕;
+„← Zurück“, `ProgressBar`; je Seite eine Frage ohne Rollen, die Antwort führt weiter; Abschluss
+über festem `Formularfuss`.
+
 **Druckblatt** (Rechnung, Bericht, Planblatt, Tagesplan): eigenes Profil – Briefkopf, Absenderzeile,
 Tabellen und eigene Überschriften erlaubt, Bedienung `nicht-drucken`. Geprüft im Druckbild; die
 Ratsche zählt dort weder Überschriften noch Tabellen.
@@ -58,28 +62,28 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 
 ## Welcher Baustein wann
 
-| Situation                                | Baustein                                                  |
-| ---------------------------------------- | --------------------------------------------------------- |
-| Kopf einer Seite                         | `PageHeader` (Aktionen ohne Angabe kompakt, ANN-403)      |
-| Kopf eines Objekts mit Bereichen         | `Objektkopf` + `Reiterleiste`, `Warnzeile`                |
-| Abschnitt / Überschrift im Block         | `Section` (`rahmen` für Auskunft) / `Zwischentitel`       |
-| Sammlung gleichartiger Dinge             | `ListRows` + `ListRow` (`bild`, `betrag`, `aktion`)       |
-| Abschnitt, der eine Liste ist            | `Listenabschnitt` (Titel, Zahl, Leerzustand in der Karte) |
-| Vergleichen, Beträge in Spalten          | `Datenliste`                                              |
-| 2–4 herausgehobene Angaben               | `TileGrid` + `Tile`                                       |
-| Beschriftete Angaben                     | `DetailList` / `DetailRow`                                |
-| Seltenes, Archiv, Hilfe auf Abruf        | `Disclosure`                                              |
-| Suche und Filter über einer Liste        | `Filterleiste` mit `SearchField`, `Select`, `Filterchips` |
-| 2–4 Ansichten, genau eine gilt           | `Segment`                                                 |
-| Sprungziel, Filterwert                   | `Chip` / `Filterchips`                                    |
-| Laden, Fehler, Veraltet, Leer            | `Abfragezustand` (Satz `VERBINDUNG_PRUEFEN`)              |
-| Bestätigung nach Vorgang / kurze Meldung | `Rueckmeldung` / `Statusmeldung`                          |
-| Bestätigung am Klickort / Fenster        | `Rueckfrage` / `Dialogfenster`                            |
-| Knöpfe am Formularende / Arbeitsseite    | `Formularfuss` / `Aktionsleiste`                          |
-| Haupt- und Kontextspalte                 | `Zweispalter`                                             |
-| Bild, Foto                               | `Medienbild` (4:3, ganz; `vorschau` 56 × 56)              |
-| Handlung, Seitenwechsel, Symbol, Link    | `Button`, `ButtonLink`, `Symbolknopf`, `Textlink`         |
-| Rechtssatz am Seitenende                 | `Kleingedrucktes`                                         |
+| Situation                             | Baustein                                               |
+| ------------------------------------- | ------------------------------------------------------ |
+| Kopf einer Seite                      | `PageHeader` (Aktionen ohne Angabe kompakt, ANN-403)   |
+| Kopf eines Objekts mit Bereichen      | `Objektkopf` + `Reiterleiste`, `Warnzeile`             |
+| Abschnitt / Überschrift im Block      | `Section` (`rahmen` für Auskunft) / `Zwischentitel`    |
+| Sammlung gleichartiger Dinge          | `ListRows` + `ListRow` (`bild`, `betrag`, `aktion`)    |
+| Abschnitt, der eine Liste ist         | `Listenabschnitt` (Titel, Zahl, Leerzustand)           |
+| Vergleichen, Beträge in Spalten       | `Datenliste`                                           |
+| 2–4 herausgehobene Angaben            | `TileGrid` + `Tile`                                    |
+| Beschriftete Angaben                  | `DetailList` / `DetailRow`                             |
+| Seltenes, Archiv, Hilfe auf Abruf     | `Disclosure`                                           |
+| Suche und Filter über einer Liste     | `Filterleiste`: `SearchField`, `Select`, `Filterchips` |
+| 2–4 Ansichten, genau eine gilt        | `Segment`                                              |
+| Sprungziel, Filterwert                | `Chip` / `Filterchips`                                 |
+| Laden, Fehler, Veraltet, Leer         | `Abfragezustand` (Satz `VERBINDUNG_PRUEFEN`)           |
+| Nach einem Vorgang / kurze Meldung    | `Rueckmeldung` / `Statusmeldung`                       |
+| Bestätigung am Klickort / Fenster     | `Rueckfrage` / `Dialogfenster`                         |
+| Knöpfe am Formularende / Arbeitsseite | `Formularfuss` / `Aktionsleiste`                       |
+| Haupt- und Kontextspalte              | `Zweispalter`                                          |
+| Bild, Foto                            | `Medienbild` (4:3, ganz; `vorschau` 56 × 56)           |
+| Handlung, Seitenwechsel, Symbol, Link | `Button`, `ButtonLink`, `Symbolknopf`, `Textlink`      |
+| Rechtssatz am Seitenende              | `Kleingedrucktes`                                      |
 
 ## Regeln
 

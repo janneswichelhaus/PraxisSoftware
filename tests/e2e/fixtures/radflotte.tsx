@@ -82,6 +82,9 @@ const router = createMemoryRouter(
 // Die gegangenen Wege für die Zählung im Test.
 const wege: string[] = [router.state.location.pathname];
 (window as unknown as { __wege: string[] }).__wege = wege;
+// Das Zurück des Browsers - am Telefon die Geste - für den Speicher-Router der
+// Prüfseite; `history.back()` verließe sie ganz.
+(window as unknown as { __zurueck: () => Promise<void> }).__zurueck = () => router.navigate(-1);
 router.subscribe((stand) => {
   const weg = `${stand.location.pathname}${stand.location.search}`;
   if (wege[wege.length - 1] !== weg) wege.push(weg);

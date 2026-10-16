@@ -85,6 +85,18 @@ describe('Formularfuss (Design-Fundament, Lücke 9.5)', () => {
       expect.arrayContaining(['border-t', 'border-line', 'pt-6', 'mt-8']),
     );
   });
+
+  it('rückt im festen Fuß eines Fensters dicht an die Zeile darüber (FLT-005)', () => {
+    renderWithProviders(
+      <Formularfuss dicht>
+        <Button type="button">Check-Up speichern</Button>
+      </Formularfuss>,
+    );
+    const fuss = screen.getByRole('button', { name: 'Check-Up speichern' }).parentElement!
+      .parentElement;
+    expect(klassenVon(fuss)).toContain('mt-2');
+    expect(klassenVon(fuss)).not.toContain('mt-8');
+  });
 });
 
 describe('Aktionsleiste (Design-Fundament, aus der Schreibseite)', () => {

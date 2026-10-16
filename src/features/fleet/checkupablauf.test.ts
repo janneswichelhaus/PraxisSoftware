@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   ABSCHLUSS,
+  BEISPIEL,
   PRUEFPUNKTE,
   START,
   allesBeantwortet,
   bewertungen,
+  einzigesBauteil,
   fortschritt,
   nachDerAntwort,
   punktSeite,
   vorigeSeite,
+  wasSeite,
   zusammenfassung,
 } from './checkupablauf';
 import { CHECK_ITEMS } from './bike3d/zones';
@@ -28,8 +31,10 @@ describe('Ablauf des geführten Check-Ups', () => {
     expect(vorigeSeite(punktSeite(3), true)).toEqual(ABSCHLUSS);
   });
 
-  it('führt „← Zurück“ erst durch die Fragen des Punkts, dann zum vorigen Punkt', () => {
-    expect(vorigeSeite(punktSeite(4, 'was'), false)).toEqual(punktSeite(4, 'wo'));
+  it('führt „← Zurück“ dorthin, woher man kam, dann zum vorigen Punkt', () => {
+    expect(vorigeSeite(wasSeite(4, true), false)).toEqual(punktSeite(4, 'wo'));
+    // Über das Rad oder ohne Wahl des Bauteils gekommen: zurück zur Frage.
+    expect(vorigeSeite(wasSeite(4, false), false)).toEqual(punktSeite(4));
     expect(vorigeSeite(punktSeite(4, 'wo'), false)).toEqual(punktSeite(4));
     expect(vorigeSeite(punktSeite(4), false)).toEqual(punktSeite(3));
     expect(vorigeSeite(START, false)).toBeNull();
@@ -63,6 +68,18 @@ describe('Ablauf des geführten Check-Ups', () => {
         { zone: 'rahmen', severity: 'problem' },
       ]),
     ).toBe('2 Probleme · 1 zu beobachten · 3 Stellen am Rad markiert');
+  });
+
+  it('fragt „Wo genau?“ nur bei Punkten mit mehreren Bauteilen', () => {
+    expect(einzigesBauteil('transportbox')).toBe('transportbox');
+    expect(einzigesBauteil('schrauben_sattel')).toBe('sattel');
+    expect(einzigesBauteil('bremsen')).toBeNull();
+    expect(CHECK_ITEMS.filter((item) => einzigesBauteil(item.key) !== null)).toHaveLength(7);
+  });
+
+  it('hat für jeden Punkt ein eigenes Beispiel', () => {
+    for (const item of CHECK_ITEMS) expect(BEISPIEL[item.key]).toMatch(/^z\. B\. /);
+    expect(new Set(Object.values(BEISPIEL)).size).toBe(PRUEFPUNKTE);
   });
 
   it('erkennt, wenn noch ein Punkt fehlt', () => {

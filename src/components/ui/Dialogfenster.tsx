@@ -46,6 +46,7 @@ export function Dialogfenster({
   onSchliessen,
   breit = false,
   vollbild = false,
+  beschreibung,
   schliessenBeschriftung = 'Schließen',
   children,
 }: {
@@ -63,6 +64,8 @@ export function Dialogfenster({
    * füllt den Rest und ordnet sich selbst; das Fenster scrollt nicht.
    */
   vollbild?: boolean;
+  /** Im Vollbild eine Zeile unter dem Titel: worum es geht, etwa das Rad (DESIGN.md Regel 6). */
+  beschreibung?: string | undefined;
   /** Name des Schließen-Knopfs im Vollbild, etwa „Check-Up abbrechen". */
   schliessenBeschriftung?: string;
   children: ReactNode;
@@ -190,10 +193,15 @@ export function Dialogfenster({
           // Kerbe und Wischleiste; ab 640 px ein Fenster mit Rand wie oben.
           className="bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0"
         >
-          <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b pr-2 pl-4">
-            <h2 id={titelId} className="text-ink text-h4 min-w-0 flex-1 truncate font-bold">
-              {titel}
-            </h2>
+          <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
+            <div className="min-w-0 flex-1">
+              <h2 id={titelId} className="text-ink text-h4 truncate font-bold">
+                {titel}
+              </h2>
+              {beschreibung ? (
+                <p className="text-ink-muted truncate text-sm">{beschreibung}</p>
+              ) : null}
+            </div>
             <Symbolknopf
               beschriftung={schliessenBeschriftung}
               onClick={() => schliessenRef.current()}

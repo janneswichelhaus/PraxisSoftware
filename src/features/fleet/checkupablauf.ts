@@ -2,9 +2,11 @@ import {
   CHECK_ITEMS,
   ratingWithSpots,
   zoneCheckItem,
+  zonesOfCheckItem,
   type CheckItemKey,
   type CheckRating,
   type Severity,
+  type ZoneKey,
 } from './bike3d/zones';
 
 /**
@@ -13,14 +15,17 @@ import {
  *
  * Eine Seite je Prüfpunkt in der Reihenfolge der Bauart. „In Ordnung“ führt
  * gleich zum nächsten; „Beobachten“ und „Problem“ fragen erst „Wo genau?“ und
- * dann „Was ist aufgefallen?“. Nach dem zwölften Punkt kommt der Abschluss.
- * Wer aus dem Abschluss einen Punkt ändert, landet danach wieder dort.
+ * dann „Was ist aufgefallen?“ - bei einem Punkt mit nur einem Bauteil gleich
+ * das Zweite. Nach dem zwölften Punkt kommt der Abschluss. Wer aus dem
+ * Abschluss einen Punkt ändert, landet danach wieder dort.
  */
 
 export type Teil = 'bewerten' | 'wo' | 'was';
 
 export type Seite =
-  | { art: 'punkt'; index: number; teil: Teil }
+  | { art: 'punkt'; index: number; teil: 'bewerten' | 'wo' }
+  /** `vonWo`: über „Wo genau?“ gekommen, sonst über die Frage oder das Rad. */
+  | { art: 'punkt'; index: number; teil: 'was'; vonWo: boolean }
   | { art: 'abschluss' }
   /** Eine Stelle ohne eigenen Prüfpunkt, aus dem Abschluss heraus. */
   | { art: 'weitere' };
@@ -38,9 +43,40 @@ export const START: Seite = { art: 'punkt', index: 0, teil: 'bewerten' };
 
 export const ABSCHLUSS: Seite = { art: 'abschluss' };
 
-export function punktSeite(index: number, teil: Teil = 'bewerten'): Seite {
+export function punktSeite(index: number, teil: 'bewerten' | 'wo' = 'bewerten'): Seite {
   return { art: 'punkt', index, teil };
 }
+
+/** „Was ist aufgefallen?“ zu einem Punkt. */
+export function wasSeite(index: number, vonWo: boolean): Seite {
+  return { art: 'punkt', index, teil: 'was', vonWo };
+}
+
+/**
+ * Das Bauteil eines Punkts, der nur eines hat - Licht vorne und hinten, Akku,
+ * Sattel, Klingel, Ständer, Transportbox. Dort fragt der Ablauf nicht „Wo
+ * genau?“: Die Stelle sitzt gleich am Bauteil (Praxis-Review FLT-005, ANN-563).
+ */
+export function einzigesBauteil(key: CheckItemKey): ZoneKey | null {
+  const zonen = zonesOfCheckItem(key);
+  return zonen.length === 1 ? zonen[0]! : null;
+}
+
+/** Das Beispiel im Feld „Was ist aufgefallen?“, je Punkt ein eigenes. */
+export const BEISPIEL: Record<CheckItemKey, string> = {
+  reifen: 'z. B. Profil abgefahren',
+  speichen: 'z. B. Speiche locker',
+  bremsen: 'z. B. Belag schleift',
+  antrieb: 'z. B. Riemen locker',
+  licht_vorne: 'z. B. Licht flackert',
+  licht_hinten: 'z. B. Rücklicht aus',
+  akku: 'z. B. lädt nicht voll',
+  schrauben_sattel: 'z. B. Sattel wackelt',
+  klingel: 'z. B. Klingel klemmt',
+  schutzbleche: 'z. B. Schutzblech schleift',
+  staender: 'z. B. Ständer kippt',
+  transportbox: 'z. B. Deckel klemmt',
+};
 
 /** Wohin es nach der Antwort auf einen Punkt geht. */
 export function nachDerAntwort(index: number, zurUebersicht: boolean): Seite {
@@ -48,11 +84,15 @@ export function nachDerAntwort(index: number, zurUebersicht: boolean): Seite {
   return punktSeite(index + 1);
 }
 
-/** „← Zurück“; `null` auf der ersten Seite. */
+/**
+ * „← Zurück“ - auch die Zurückgeste des Telefons -, dorthin, woher man kam:
+ * Nach einem Tipp aufs Rad führt es zur Frage, nicht auf ein „Wo genau?“,
+ * das nie zu sehen war (Praxis-Review FLT-005). `null` auf der ersten Seite.
+ */
 export function vorigeSeite(seite: Seite, zurUebersicht: boolean): Seite | null {
   if (seite.art === 'weitere') return ABSCHLUSS;
   if (seite.art === 'abschluss') return punktSeite(PRUEFPUNKTE - 1);
-  if (seite.teil === 'was') return punktSeite(seite.index, 'wo');
+  if (seite.teil === 'was') return punktSeite(seite.index, seite.vonWo ? 'wo' : 'bewerten');
   if (seite.teil === 'wo') return punktSeite(seite.index);
   if (zurUebersicht) return ABSCHLUSS;
   return seite.index > 0 ? punktSeite(seite.index - 1) : null;

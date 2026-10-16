@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import * as api from './api';
 import { CHECK_ITEMS } from './bike3d/zones';
 import { CheckupPage } from './CheckupPage';
+import { Zielanzeige } from './Testbausteine';
 import { testDetail, testFlotte, testRad, testStelle } from './testdaten';
 import { rendereSeite } from './testseite';
 
@@ -32,6 +35,30 @@ function oeffne(pfad = `/betrieb/flotte/checkup?rad=${RAD.id}`) {
     <CheckupPage user={testUser(['therapist'])} />,
     pfad,
   );
+}
+
+/**
+ * Wie `oeffne`, aber mit der Radwahl davor im Verlauf und dem Router in der
+ * Hand: So drückt ein Test das Zurück des Browsers - am Telefon die Geste.
+ */
+function oeffneMitVerlauf() {
+  const router = createMemoryRouter(
+    [
+      { path: '/betrieb/flotte/checkup', element: <CheckupPage user={testUser(['therapist'])} /> },
+      { path: '*', element: <Zielanzeige /> },
+    ],
+    {
+      initialEntries: ['/betrieb/flotte/checkup', `/betrieb/flotte/checkup?rad=${RAD.id}`],
+      initialIndex: 1,
+    },
+  );
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  return router;
 }
 
 /** Das Fenster des geführten Check-Ups; sein Name ist die Frage der Seite. */
@@ -66,7 +93,9 @@ describe('Geführter Check-Up', () => {
     const nutzer = userEvent.setup();
     oeffne();
     const erste = await fenster('Reifen und Luftdruck');
-    expect(within(erste).getByText(`Prüfpunkt 1 von 12 · ${RAD.name}`)).toBeInTheDocument();
+    expect(within(erste).getByText('Prüfpunkt 1 von 12')).toBeInTheDocument();
+    // Unter dem Titel das Rad mit Bauart (Regel 6), wie vorher im Seitenkopf.
+    expect(within(erste).getByText(`${RAD.name} · Load 60 · Riemenantrieb`)).toBeInTheDocument();
     // Das Rad schaut auf die Bauteile des Punkts und hebt sie hervor.
     expect(screen.getByTestId('fokus')).toHaveTextContent('reifen-vorne reifen-hinten');
     expect(screen.getByTestId('hervorgehoben')).toHaveTextContent('reifen-vorne reifen-hinten');
@@ -153,14 +182,14 @@ describe('Geführter Check-Up', () => {
     expect(screen.getByTestId('nadeln')).toHaveTextContent('');
   });
 
-  it('führt mit „← Zurück“ durch die Fragen und zum vorigen Punkt', async () => {
+  it('führt mit „← Zurück“ dorthin, woher man kam; erst „Weiter“ macht die Antwort gültig', async () => {
     const nutzer = userEvent.setup();
     oeffne();
     await inOrdnungBis(nutzer, 1);
     const speichen = within(await fenster('Speichen'));
     await nutzer.click(speichen.getByRole('button', { name: 'Beobachten' }));
     await nutzer.click(
-      within(await fenster('Speichen')).getByRole('button', { name: 'Ohne genaue Stelle weiter' }),
+      within(await fenster('Speichen')).getByRole('button', { name: 'Ohne genaue Stelle' }),
     );
     const was = within(await fenster('Speichen'));
     expect(was.getByText('Ohne genaue Stelle am Rad')).toBeInTheDocument();
@@ -169,12 +198,128 @@ describe('Geführter Check-Up', () => {
       within(await fenster('Speichen')).getByRole('group', { name: /Wo genau\?/ }),
     ).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: '← Zurück' }));
+    // Ohne „Weiter“ gilt „Beobachten“ nicht.
+    expect(
+      within(await fenster('Speichen')).getByRole('button', { name: 'Beobachten' }),
+    ).toHaveAttribute('aria-pressed', 'false');
     await nutzer.click(screen.getByRole('button', { name: '← Zurück' }));
     const reifen = within(await fenster('Reifen und Luftdruck'));
     expect(reifen.getByRole('button', { name: 'In Ordnung' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+  });
+
+  it('führt nach einem Tipp aufs Rad mit „← Zurück“ zur Frage, ohne Stelle und ohne Antwort', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 2);
+    await fenster('Bremsen');
+    await nutzer.click(screen.getByRole('button', { name: 'Bremse vorne antippen' }));
+    expect(screen.getByTestId('neue-nadel')).toHaveTextContent('1:bremse-vorne');
+    await nutzer.click(within(await fenster('Bremsen')).getByRole('button', { name: '← Zurück' }));
+    const bremsen = within(await fenster('Bremsen'));
+    expect(bremsen.queryByRole('group', { name: /Wo genau\?/ })).not.toBeInTheDocument();
+    expect(bremsen.getByRole('button', { name: 'Problem' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByTestId('neue-nadel')).toHaveTextContent('');
+  });
+
+  it('fragt bei einem Punkt mit nur einem Bauteil nicht „Wo genau?“', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 4);
+    await nutzer.click(
+      within(await fenster('Licht vorne')).getByRole('button', { name: 'Problem' }),
+    );
+    const was = within(await fenster('Licht vorne'));
+    expect(was.queryByRole('group', { name: /Wo genau\?/ })).not.toBeInTheDocument();
+    expect(screen.getByTestId('neue-nadel')).toHaveTextContent('1:licht-vorne');
+    // Das Beispiel passt zum Punkt.
+    expect(was.getByLabelText('Was ist aufgefallen?')).toHaveAttribute(
+      'placeholder',
+      'z. B. Licht flackert',
+    );
+    await nutzer.click(was.getByRole('button', { name: '← Zurück' }));
+    expect(
+      within(await fenster('Licht vorne')).getByRole('button', { name: 'In Ordnung' }),
+    ).toBeInTheDocument();
+  });
+
+  it('bietet auf „Wo genau?“ „Doch in Ordnung“ und sagt auf der nächsten Seite, was notiert ist', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 2);
+    await nutzer.click(within(await fenster('Bremsen')).getByRole('button', { name: 'Problem' }));
+    await nutzer.click(
+      within(await fenster('Bremsen')).getByRole('button', { name: 'Doch in Ordnung' }),
+    );
+    const antrieb = within(await fenster('Riemen und Antrieb'));
+    expect(antrieb.getByRole('status')).toHaveTextContent('Bremsen: ✓ In Ordnung');
+  });
+
+  it('fragt, bevor „In Ordnung“ eine Stelle mit Notiz verwirft, und zeigt sie an ihrem Punkt', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 2);
+    await nutzer.click(screen.getByRole('button', { name: 'Bremse vorne antippen' }));
+    await nutzer.type(screen.getByLabelText('Was ist aufgefallen?'), 'Belag schleift');
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    await nutzer.click(
+      within(await fenster('Riemen und Antrieb')).getByRole('button', { name: '← Zurück' }),
+    );
+
+    const bremsen = within(await fenster('Bremsen'));
+    expect(bremsen.getByText(/Neu: Belag schleift/).closest('p')).toHaveTextContent(
+      '× Problem · Neu: Belag schleift',
+    );
+    await nutzer.click(bremsen.getByRole('button', { name: 'In Ordnung' }));
+    expect(bremsen.getByText('Stelle 1 „Belag schleift“ verwerfen?')).toBeInTheDocument();
+    await nutzer.click(bremsen.getByRole('button', { name: 'Behalten' }));
+    expect(screen.getByTestId('nadeln')).toHaveTextContent('1:bremse-vorne:problem');
+
+    await nutzer.click(bremsen.getByRole('button', { name: 'In Ordnung' }));
+    await nutzer.click(bremsen.getByRole('button', { name: 'Verwerfen' }));
+    expect(await fenster('Riemen und Antrieb')).toBeInTheDocument();
+    expect(screen.getByTestId('nadeln')).toHaveTextContent('');
+  });
+
+  it('nimmt nach jedem Seitenwechsel kurz keinen Tipp an (Doppeltipp)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 1);
+    const knopf = within(await fenster('Speichen')).getByRole('button', { name: 'In Ordnung' });
+    expect(knopf.closest('.pointer-events-none')).not.toBeNull();
+    await waitFor(() => expect(knopf.closest('.pointer-events-none')).toBeNull(), {
+      timeout: 2000,
+    });
+  });
+
+  it('geht mit dem Zurück des Browsers einen Schritt zurück und fragt erst auf dem ersten', async () => {
+    const nutzer = userEvent.setup();
+    const router = oeffneMitVerlauf();
+    await nutzer.click(
+      within(await fenster('Reifen und Luftdruck')).getByRole('button', { name: 'In Ordnung' }),
+    );
+    await fenster('Speichen');
+
+    await act(() => router.navigate(-1));
+    const reifen = within(await fenster('Reifen und Luftdruck'));
+    expect(reifen.getByRole('button', { name: 'In Ordnung' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(screen.queryByRole('group', { name: 'Ungespeicherter Check-Up' })).toBeNull();
+
+    // Auf dem ersten Schritt: die Rückfrage, in den Worten des Check-Ups.
+    await act(() => router.navigate(-1));
+    const frage = await screen.findByRole('group', { name: 'Ungespeicherter Check-Up' });
+    expect(within(frage).getByText('Check-Up noch nicht gespeichert.')).toBeInTheDocument();
+    await nutzer.click(within(frage).getByRole('button', { name: 'Weiter prüfen' }));
+    expect(await fenster('Reifen und Luftdruck')).toBeInTheDocument();
+    expect(router.state.location.search).toBe(`?rad=${RAD.id}`);
   });
 
   it('zeigt schon offene Stellen am Punkt und zählt neue danach weiter (ANN-555)', async () => {
@@ -189,12 +334,24 @@ describe('Geführter Check-Up', () => {
     expect(await screen.findByTestId('nadeln')).toHaveTextContent('1:riemen:problem');
     await inOrdnungBis(nutzer, 3);
     const antrieb = within(await fenster('Riemen und Antrieb'));
-    expect(antrieb.getByText('Schon offen: springt über')).toBeInTheDocument();
+    // Mit Nadel und Wort (Regel 5).
+    expect(antrieb.getByText(/Schon offen: springt über/).closest('p')).toHaveTextContent(
+      '× Problem · Schon offen: springt über',
+    );
     await nutzer.click(antrieb.getByRole('button', { name: 'Problem' }));
     await nutzer.click(
       within(await fenster('Riemen und Antrieb')).getByRole('button', { name: 'Motor' }),
     );
     expect(screen.getByTestId('neue-nadel')).toHaveTextContent('2:motor');
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    await inOrdnungBis(nutzer, 12, 4);
+
+    // Im Abschluss stehen die schon offenen eingeklappt, auch ohne 3D-Rad.
+    const abschluss = within(await fenster('Alles geprüft?'));
+    await nutzer.click(abschluss.getByText('Schon offen am Rad'));
+    expect(abschluss.getByRole('list', { name: 'Schon offen am Rad' })).toHaveTextContent(
+      'springt über',
+    );
   });
 
   it('markiert im Abschluss eine weitere Stelle ohne Prüfpunkt', async () => {
@@ -262,6 +419,8 @@ describe('Geführter Check-Up', () => {
     await nutzer.click(screen.getByRole('button', { name: 'In Ordnung' }));
     await nutzer.click(screen.getByRole('button', { name: 'Check-Up abbrechen' }));
     const frage = await screen.findByRole('group', { name: 'Ungespeicherter Check-Up' });
+    expect(within(frage).getByText('Check-Up noch nicht gespeichert.')).toBeInTheDocument();
+    expect(within(frage).getByRole('button', { name: 'Weiter prüfen' })).toBeInTheDocument();
     await nutzer.click(within(frage).getByRole('button', { name: 'Verwerfen' }));
     expect(await screen.findByTestId('ziel')).toHaveTextContent('/betrieb/flotte');
   });

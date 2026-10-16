@@ -130,28 +130,38 @@ export function Stellenerfassung({
         </ListRows>
       ) : null}
 
-      {offene.length > 0 ? (
-        <Disclosure summary="Schon offen am Rad" anzahl={offene.length}>
-          <ListRows rahmen={false} beschriftung="Schon offen am Rad">
-            {offene.map((spot) => (
-              <ListRow
-                key={spot.id}
-                zeit={<Nadel nummer={spot.number ?? 0} einstufung={spot.severity} />}
-                titel={zoneLabel(spot.zone)}
-                meta={
-                  <>
-                    <span className="block">
-                      <Einstufung einstufung={spot.severity} />
-                    </span>
-                    {spot.note ? <span className="block">{spot.note}</span> : null}
-                  </>
-                }
-              />
-            ))}
-          </ListRows>
-        </Disclosure>
-      ) : null}
+      <SchonOffen offene={offene} />
     </div>
+  );
+}
+
+/**
+ * Die offenen Stellen des Rads aus früheren Meldungen, eingeklappt - in der
+ * Pannenmeldung und im Abschluss des Check-Ups. Ohne 3D-Rad die einzige
+ * Stelle, an der sie stehen (Design-Review FLT-005, B8).
+ */
+export function SchonOffen({ offene }: { offene: readonly Spot[] }) {
+  if (offene.length === 0) return null;
+  return (
+    <Disclosure summary="Schon offen am Rad" anzahl={offene.length}>
+      <ListRows rahmen={false} beschriftung="Schon offen am Rad">
+        {offene.map((spot) => (
+          <ListRow
+            key={spot.id}
+            zeit={<Nadel nummer={spot.number ?? 0} einstufung={spot.severity} />}
+            titel={zoneLabel(spot.zone)}
+            meta={
+              <>
+                <span className="block">
+                  <Einstufung einstufung={spot.severity} />
+                </span>
+                {spot.note ? <span className="block">{spot.note}</span> : null}
+              </>
+            }
+          />
+        ))}
+      </ListRows>
+    </Disclosure>
   );
 }
 
@@ -162,10 +172,16 @@ export function Entwurfsfeld({
   zustand,
   entwurf,
   nummer,
+  rahmen = true,
+  hauptknopf = false,
 }: {
   zustand: Stellenzustand;
   entwurf: Entwurf;
   nummer: number;
+  /** Als Karte unter dem Rad; im Fenster des Check-Ups ohne (kein Kasten im Kasten). */
+  rahmen?: boolean;
+  /** „Stelle setzen“ als Hauptknopf - dort, wo die Stelle die ganze Seite ist. */
+  hauptknopf?: boolean;
 }) {
   const { art } = zustand;
   const zone = isZoneKey(entwurf.zone) ? BIKE_ZONES[entwurf.zone] : null;
@@ -188,7 +204,7 @@ export function Entwurfsfeld({
     <div
       role="group"
       aria-labelledby="stelle-titel"
-      className="rounded-card border-line bg-surface flex flex-col gap-4 border p-4"
+      className={`flex flex-col gap-4 ${rahmen ? 'rounded-card border-line bg-surface border p-4' : ''}`.trim()}
     >
       <div className="flex items-start gap-3">
         <Nadel nummer={nummer} einstufung={entwurf.severity} neu={!entwurf.key} />
@@ -250,7 +266,12 @@ export function Entwurfsfeld({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Button type="button" variant="secondary" disabled={!zone} onClick={zustand.uebernehmen}>
+        <Button
+          type="button"
+          variant={hauptknopf ? 'primary' : 'secondary'}
+          disabled={!zone}
+          onClick={zustand.uebernehmen}
+        >
           {entwurf.key ? 'Änderung übernehmen' : 'Stelle setzen'}
         </Button>
         {/* Nicht „Abbrechen“: Darunter steht das „Abbrechen“ der ganzen Meldung. */}

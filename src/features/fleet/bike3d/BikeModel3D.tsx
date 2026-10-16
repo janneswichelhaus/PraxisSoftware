@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Segment } from '@/components/ui/Segment';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import {
@@ -63,6 +64,7 @@ export function BikeModel3D({
   focus = null,
   hinweis = 'Ziehen dreht das Rad · Antippen wählt ein Bauteil',
   ansichten = true,
+  ersatz = 'Bauteile können Sie weiter über die Liste wählen.',
   onPick,
   onUnavailable,
 }: {
@@ -82,6 +84,11 @@ export function BikeModel3D({
    * die Kamera selbst; ohne den Wechsel bleibt mehr vom Rad zu sehen.
    */
   ansichten?: boolean;
+  /**
+   * Der Weg ohne 3D-Rad, als Satz unter der Meldung. Ohne Angabe die
+   * Bauteil-Liste; der geführte Check-Up geht über seine Knöpfe weiter.
+   */
+  ersatz?: string;
   onPick?: (hit: BikePick | null) => void;
   /** Meldet, dass es kein 3D-Rad gibt - die Seite stellt dann die Liste nach vorn. */
   onUnavailable?: () => void;
@@ -136,7 +143,7 @@ export function BikeModel3D({
             onHover: setHover,
             onViewChange: setAnsicht,
             // Hinweis oben und Ansichtswechsel unten liegen über dem Bild;
-            // `ansichten` gilt ab dem Aufbau, ein Wechsel baut nicht neu.
+            // ein Wechsel von `ansichten` passt nur den Rand an (unten).
             rand: stand.current.ansichten ? BEDIENRAND : BEDIENRAND_OHNE_ANSICHTEN,
           });
         } catch {
@@ -167,6 +174,10 @@ export function BikeModel3D({
   useEffect(() => {
     viewerRef.current?.setHighlight(stand.current.highlight);
   }, [highlightSchluessel, zustand]);
+
+  useEffect(() => {
+    viewerRef.current?.setRand(ansichten ? BEDIENRAND : BEDIENRAND_OHNE_ANSICHTEN);
+  }, [ansichten, zustand]);
 
   const focusToken = focus?.token ?? null;
   useEffect(() => {
@@ -204,21 +215,23 @@ export function BikeModel3D({
         aria-label={`3D-Modell des Lastenrads Load 60 mit Riemen und Transportbox. ${stellen}`}
         className="absolute inset-0 block h-full w-full cursor-grab touch-pan-y"
       />
+      {/* Ohne 3D-Rad die Zustände als Bausteine (Design-Review FLT-005, B10):
+          fehlt WebGL, ist das kein Fehler, sondern ein Leerzustand; kam das
+          Modul nicht an, ist es einer - mit dem Weg hinaus. */}
       {zustand === 'ohneWebgl' ? (
-        <div className="bg-surface-sunken text-ink-muted absolute inset-0 flex items-center justify-center p-6 text-center text-sm">
-          Dieser Browser zeigt kein 3D (WebGL 2 fehlt). Bauteile können Sie weiter über die Liste
-          wählen.
+        <div className="bg-surface-sunken absolute inset-0 flex items-center justify-center p-4">
+          <EmptyState title="Dieser Browser zeigt kein 3D (WebGL 2 fehlt)." description={ersatz} />
         </div>
       ) : zustand === 'nichtGeladen' ? (
-        <div className="bg-surface-sunken text-ink-muted absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-sm">
-          <p>
-            Das 3D-Modell ließ sich nicht laden. Bauteile können Sie weiter über die Liste wählen.
-          </p>
+        <div className="bg-surface-sunken absolute inset-0 flex flex-col justify-center gap-3 p-4">
+          <ErrorState title="Das 3D-Modell ließ sich nicht laden." description={ersatz} />
           {/* Neu laden holt den aktuellen Stand; ungespeicherte Eingaben
               schützt die Seite selbst (Textverlustschutz). */}
-          <Button variant="secondary" groesse="kompakt" onClick={() => window.location.reload()}>
-            Neu laden
-          </Button>
+          <div>
+            <Button variant="secondary" groesse="kompakt" onClick={() => window.location.reload()}>
+              Neu laden
+            </Button>
+          </div>
         </div>
       ) : (
         <>

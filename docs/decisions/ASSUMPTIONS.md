@@ -5811,13 +5811,13 @@ Recht · offen · 2026-10-16 · — · — · Wiedervorlage: Prüfpaket (§ 630f
 
 Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung des geführten Check-Ups
 
-**Annahme.** Der Check-Up läuft im Fenster Seite für Seite durch die zwölf Prüfpunkte, keiner ist auf „In Ordnung“ vorbelegt. „In Ordnung“ führt sofort weiter; „Beobachten“ und „Problem“ fragen „Wo genau?“ (am Rad, als Knopf oder ohne Stelle) und „Was ist aufgefallen?“. Die Notiz gilt für Prüfpunkt und Stelle; neu bewerten ersetzt die neue Stelle des Punkts. Notiz und Fotos zum ganzen Rad und weitere Stellen stehen im Abschluss eingeklappt.
+**Annahme.** Der Check-Up führt im Fenster Seite für Seite durch die zwölf Prüfpunkte, keiner vorbelegt. „In Ordnung“ führt sofort weiter; „Beobachten“ und „Problem“ fragen „Wo genau?“ (nicht bei nur einem Bauteil) und „Was ist aufgefallen?“, gültig erst mit „Weiter“. Zurück und Zurückgeste gehen einen Schritt zurück, nach jedem Wechsel ruht die Fläche 0,7 s; „In Ordnung“ über Notiz oder Foto fragt nach. Neu bewerten ersetzt die neue Stelle.
 
-**Begründung.** Auftrag Jannes (16.10.): am 3D-Rad geführt, Seitenwechsel statt Scrollen, nach einer Angabe weiter. Ein vorbelegtes „In Ordnung“ nähme dem Durchgehen den Zweck; dafür 16 statt 4 Tipps.
+**Begründung.** Auftrag Jannes (16.10.); Praxis-Review (Doppeltipp, Fehltipp, Zurückgeste). Vorbelegt nähme dem Durchgehen den Zweck; dafür 16 statt 4 Tipps.
 
-**Anker.** `CheckupFenster` in `src/features/fleet/CheckupFenster.tsx`; Abfolge in `checkupablauf.ts`.
+**Anker.** `src/features/fleet/CheckupFenster.tsx`, Abfolge `checkupablauf.ts`.
 
-**Änderungspfad.** Vorbelegen: Antworten in `CheckupFenster` vorbesetzen · Aufwand `klein`.
+**Änderungspfad.** Vorbelegen, andere Ruhezeit (`TIPPSPERRE_MS`): `CheckupFenster` · Aufwand `klein`.
 
 ### ANN-564 — Auslieferung: Dateien früherer Stände bleiben 7 Tage
 
