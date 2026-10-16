@@ -344,7 +344,7 @@ Marke vorsieht.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Bereich | Organisatorisches → Vorschau: Zeitkonto (`/betrieb/zeitkonto`), Erstattungen (`/betrieb/erstattungen`), Urlaub (`/betrieb/urlaub`), Radflotte (`/betrieb/flotte`)                                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs VOR-14, VOR-22                                                                                                                                                                                                                                                                                                  |
-| Status  | entschieden 2026-10-09 (Jannes); Radflotte erledigt in FLT-EPIC-001 (2026-10-15, über RLS und `app.can_manage_fleet`); eingeplant in URL-001, ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Status  | entschieden 2026-10-09 (Jannes); Radflotte erledigt in FLT-EPIC-001 (2026-10-15, über RLS und `app.can_manage_fleet`); Urlaub erledigt in URL-001 (2026-10-16, Funktionen ohne Tabellenrecht, ANN-580); eingeplant in ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Berührt | `src/features/timeaccount/TimeAccountPage.tsx` (Z. 77, 96), `src/features/reimbursements/ReimbursementsPage.tsx` (Z. 68, 254, 337), `src/features/vacation/VacationPage.tsx` (Z. 158, 214, 490), `src/features/fleet/FleetPage.tsx` (Z. 193–229, 343), `src/features/fleet/BikeEditPage.tsx` (Z. 294); §4.3, §4.5, §16, §20; B6; ANN-024; ADR-004; Roadmap Block 8 (FLT-EPIC-001, URL-001, ZK-001, ERS-001) |
 
 **Beobachtung.** Als therapist angemeldet: „Saldo über alle Personen: −3,25 h“
@@ -604,20 +604,6 @@ eingeklappt.
 **Beobachtung.** Die Dateien der Akte tragen nach dem Abgleich mit dem Speicher `object_missing` und sagen das in der Liste. Die Fotos am Rad kennen das Kennzeichen nicht; ein verlorenes Foto steht in der Fotoreihe wie jedes andere und meldet erst beim Öffnen einen Fehler.
 
 **Erwartet.** Derselbe Abgleich und dasselbe Kennzeichen wie bei den Dateien der Akte; die Fotoreihe sagt, dass das Foto fehlt. Pfad A (Dateien).
-
-### BEF-168 — Die Urlaubsvorschau nennt Stammräder aus den Demodaten
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-15 |
-| Bereich | Urlaub (`/betrieb/urlaub`, Vorschau) |
-| Quelle  | FLT-EPIC-001, Durchsicht der übrigen Vorschauen |
-| Status  | eingeplant in URL-001 |
-| Berührt | `src/features/vacation/VacationPage.tsx` (`betroffeneRaeder`), `src/features/preview/demodaten.ts` (`demoRaeder`) |
-
-**Beobachtung.** Die Radflotte ist echt; die Urlaubsvorschau meldet nach „Genehmigen“ aber „Stammrad Lastenrad 2 ist im Zeitraum als frei markiert“ aus den acht Rädern der Demodaten, die mit der echten Flotte nichts gemein haben.
-
-**Erwartet.** Mit URL-001 entfällt der Satz: Die echte Radflotte liest ganztägige Abwesenheiten schon selbst und zeigt das Rad an diesen Tagen frei („Diese Woche frei: Do (abwesend)“).
 
 ### BEF-170 — Einzeln gelöschte Dateien der Akte fehlen im Löschjournal
 
