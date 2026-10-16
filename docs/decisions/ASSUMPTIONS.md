@@ -5905,7 +5905,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 
 ### ANN-572 — Geführter Ablauf als Baustein: Frage oben, Antworten im festen Fuß
 
-Technik · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** Seltene, verzweigte oder einhändige Abläufe laufen im Baustein `GefuehrterAblauf`: Kopf mit Objekt und ✕, „← Zurück“, Schritt (Balken nur bei fester Zahl), je Seite eine Frage; ohne Bühne steht die Frage oben und die Antworten im festen Fuß, mit Bühne (3D-Rad) wie beim Check-Up unter ihr. Nach jedem Seitenwechsel 0,7 s keine Tipps; aus dem Abschluss geändert geht es zurück dorthin (`abfolge.ts`).
 
@@ -5917,7 +5917,7 @@ Technik · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage
 
 ### ANN-574 — Tag umplanen: Auswahl abwählbar, Anrufstand nur in der Adresse
 
-Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen (Kollegin übernimmt). `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab und schreibt nichts, wenn sie nicht mehr zum Tag passt. Danach je Person eine Seite mit „Erreicht“ oder „Nicht erreicht“; der Stand steht nur als Kennungen in der Adresse, nicht am Server.
 
@@ -5929,7 +5929,7 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 
 ### ANN-575 — Schlüssel von Hand zu Hand in einem Vorgang
 
-Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** Ein Schlüssel, der bei jemandem liegt, geht über `hand_over_fleet_key` an eine andere Person aus dem Mitarbeiterstamm: Der offene Vorgang endet, ein neuer beginnt, in einer Transaktion. Dieselben Rollen wie beim Eintragen (BEF-066), nicht bei gesperrtem Rad, nicht an dieselbe Person; der Datensatz ist der Nachweis, kein Auditereignis (ADR-010).
 
@@ -5941,7 +5941,7 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 
 ### ANN-573 — Niemand öffnet: erst anrufen, dann die Uhr abwarten
 
-Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** „Niemand öffnet?“ führt in einem Fenster durch drei Seiten: geklingelt → angerufen (Rufnummer als Knopf; „Erreicht“ schließt ohne Vermerk) → 15 Minuten gewartet mit der Uhr ab dem ersten Tipp. Vermerkt wird erst nach 15 Minuten oder mit dem Haken „Schon vorher 15 Minuten gewartet“; gespeichert wird wie bisher nur `record_no_show` mit bestätigtem Protokoll. Die beiden anderen Fälle stehen auf der ersten Seite.
 
@@ -5955,9 +5955,9 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 
 Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 7
 
-**Annahme.** Jede Praxisrolle mit Mitarbeiterdatensatz beantragt eigenen Urlaub; owner und team_lead entscheiden, nie über den eigenen Antrag, Ablehnen nur mit Grund. owner trägt den eigenen Urlaub direkt ein (genehmigt, `self_entered`). Genehmigtes wird nur über einen Storno-Antrag mit Bezug aufgehoben, und nur vor Beginn des Urlaubs.
+**Annahme.** Jede Praxisrolle mit Mitarbeiterdatensatz beantragt eigenen Urlaub; owner entscheidet, nie über den eigenen Antrag, Ablehnen nur mit Grund, und trägt den eigenen Urlaub direkt ein (genehmigt, `self_entered`). Die Teamleitung entscheidet nicht. Genehmigtes hebt nur ein Storno-Antrag mit Bezug auf, und nur vor Beginn.
 
-**Begründung.** Antragsmechanik (`gefuehrte-ablaeufe-und-antraege.md` §2), §4.5. Sonst bliebe owners Antrag offen; ein laufender Urlaub gäbe beim Storno genommene Tage frei.
+**Begründung.** BEF-066: gewählt ist Option 2; „team_lead bearbeitet Urlaubsanträge“ stand in Option 3 (§4.5 nur mögliches Zusatzrecht, §16). Ein laufender Urlaub gäbe beim Storno genommene Tage frei.
 
 **Anker.** `app.can_decide_staff_requests`, `public.decide_leave_request`, `public.request_leave_cancellation`.
 
@@ -5979,11 +5979,11 @@ Recht · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 7
 
-**Annahme.** Genehmigter Urlaub einer einplanbaren Person schreibt je Tag eine Abwesenheit (`unavailable`) mit Bezug auf den Antrag in die Arbeitszeiten; ein Storno entfernt genau diese. Abweichende Arbeitszeiten (`block`) im Zeitraum halten die Genehmigung an. Bestätigte Termine im Zeitraum werden gezählt und zum Umplanen genannt, nie still abgesagt.
+**Annahme.** Genehmigter Urlaub einer einplanbaren Person (Behandlung oder Training) schreibt je Tag eine Abwesenheit mit Bezug auf den Antrag; ein Storno entfernt genau diese, und die Arbeitszeiten überschreiben sie nicht. Abweichende Arbeitszeiten im Zeitraum halten die Genehmigung an. Termine im Zeitraum werden je Tag genannt, nie still abgesagt.
 
 **Begründung.** Kalender, Slotsuche und Radflotte lesen schon diese Quelle; eine zweite wäre ein Widerspruch im Kalender. Absagen ist Sache der Person, die anruft (G2).
 
-**Anker.** `app.apply_leave`, `staff_working_hour_exceptions.leave_request_id`.
+**Anker.** `app.apply_leave`, `staff_working_hour_exceptions.leave_request_id`, `set_staff_working_hour_exception`.
 
 **Änderungspfad.** Andere Wirkung (etwa Termine mit absagen): nur `app.apply_leave` · Aufwand `klein`.
 
@@ -5991,7 +5991,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Genehmigte und stornierte Anträge sowie Ansprüche löscht der Lauf drei Jahre nach Ende des Kalenderjahres (Klasse `urlaub`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`urlaub_kurz`); Offenes und Urlaub mit offenem Storno nie. Mit Löschjournal.
+**Annahme.** Genehmigte und stornierte Anträge sowie Ansprüche löscht der Lauf drei Jahre nach Ende des Kalenderjahres (Klasse `urlaub`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`urlaub_kurz`); Offenes und Urlaub mit offenem Storno nie. Storno und Abwesenheiten fallen mit (cascade). Mit Löschjournal.
 
 **Begründung.** Keine gesetzliche Frist für Urlaubsunterlagen; die Verjährung nach §§ 195, 199 BGB trägt Ansprüche auf Urlaub und Abgeltung, der Verfallshinweis (EuGH C-684/16) ist Beweismittel. Abgelehntes braucht nur Rückfragen (Art. 5 Abs. 1 lit. e DSGVO).
 
@@ -6003,7 +6003,7 @@ Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Die Notiz zum Antrag sieht nur die Person selbst, auch nicht, wer entscheidet. Entscheidende sehen am offenen Antrag Person, Zeitraum, Tage, das Urlaubskonto der Person, wer zugleich fehlt und die Zahl der Termine; fremde Konten sonst nur owner. Andere sehen von genehmigtem Urlaub nur Name und Zeitraum. Keine Summe über alle.
+**Annahme.** Die Notiz zum Antrag sieht nur die Person selbst, auch nicht, wer entscheidet. owner sieht am offenen Antrag Zeitraum, Tage, das Konto der Person, wer zugleich fehlt und die Termine; fremde Konten nur owner. Andere sehen von genehmigtem Urlaub nur Name und Zeitraum ab heute. Keine Summe über alle.
 
 **Begründung.** BEF-066, Entscheidung Jannes 2026-10-09: „im Urlaub sehen andere nur den Zeitraum, nie den Grund“, wörtlich und nach §16 restriktiv gelesen. owner pflegt die Ansprüche und trägt die Hinweispflicht (EuGH C-684/16).
 

@@ -22,7 +22,9 @@ import {
  * Punkt 15).
  */
 
-const { users, organizationId } = SEED;
+const { users, organizationId, patients } = SEED;
+
+const PRAXIS = '33333333-3333-4333-8333-000000000001';
 
 const STAFF = {
   jannes: '55555555-5555-4555-8555-000000000001',
@@ -204,6 +206,12 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
   it('lässt nur die Person ihren offenen Antrag zurückziehen', async () => {
     const id = await beantragt(users.therapist);
     expect((await fehler(users.office, ZURUECKZIEHEN, [id]))?.code).toBe('P0002');
+    // Und stornieren lässt sich nur der eigene genehmigte Urlaub.
+    const genehmigt = await beantragt(users.therapist, plusTage(FREITAG, 3), plusTage(FREITAG, 3));
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [genehmigt, true, null]);
+    for (const konto of [users.office, users.teamLead]) {
+      expect((await fehler(konto, STORNIEREN, [genehmigt, null]))?.code, konto).toBe('P0002');
+    }
     await asUserCommitted(users.therapist, ZURUECKZIEHEN, [id]);
     expect((await antrag(id)).status).toBe('withdrawn');
     expect((await fehler(users.therapist, ZURUECKZIEHEN, [id]))?.code).toBe('P0002');
@@ -214,12 +222,12 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
     const { rows: vorher } = await asPostgres<{ n: number }>(
       'select count(*)::int as n from public.audit_log',
     );
-    const { rows } = await asUserCommitted<{ daten: { status: string; appointments: number } }>(
+    const { rows } = await asUserCommitted<{ daten: Record<string, unknown> }>(
       users.ownerTherapist,
       ENTSCHEIDEN,
       [id, true, null],
     );
-    expect(rows[0]!.daten).toEqual({ status: 'approved', appointments: 0 });
+    expect(rows[0]!.daten).toEqual({ status: 'approved', appointments: 0, appointment_days: [] });
     expect((await antrag(id)).status).toBe('approved');
     // Jeder Tag des Zeitraums, auch der Feiertag (abwesend ist abwesend).
     const tage = await abwesenheiten(STAFF.anna);
@@ -233,10 +241,10 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
 
   it('lehnt nur mit Grund ab und zeigt ihn der Person', async () => {
     const id = await beantragt(users.therapist);
-    expect((await fehler(users.teamLead, ENTSCHEIDEN, [id, false, '  ']))?.message).toMatch(
+    expect((await fehler(users.ownerTherapist, ENTSCHEIDEN, [id, false, '  ']))?.message).toMatch(
       /needs a reason/,
     );
-    await asUserCommitted(users.teamLead, ENTSCHEIDEN, [id, false, 'Zu viele zugleich weg']);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, false, 'Zu viele zugleich weg']);
     const liste = await daten<Liste>(users.therapist, LISTE, [MONTAG, FREITAG]);
     expect(liste.own[0]).toMatchObject({
       id,
@@ -248,9 +256,22 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
 
   it('entscheidet nie über den eigenen Antrag; owner trägt den eigenen ein', async () => {
     const tim = await beantragt(users.teamLead);
+    // Die Teamleitung entscheidet nicht - auch nicht den eigenen (BEF-066 Option 2).
     expect((await fehler(users.teamLead, ENTSCHEIDEN, [tim, true, null]))?.code).toBe('42501');
     await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [tim, true, null]);
     expect((await antrag(tim)).status).toBe('approved');
+
+    // Ein offener Antrag von owner - etwa aus der Zeit vor der Rolle - bleibt
+    // für owner selbst gesperrt.
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.staff_leave_requests
+         (organization_id, staff_member_id, starts_on, ends_on, days, status, requested_by)
+       values ($1, $2, $3, $3, 1, 'requested', $4) returning id`,
+      [organizationId, STAFF.jannes, plusTage(FREITAG, 21), users.ownerTherapist],
+    );
+    expect(
+      (await fehler(users.ownerTherapist, ENTSCHEIDEN, [rows[0]!.id, true, null]))?.message,
+    ).toMatch(/own request/);
 
     const eigener = await beantragt(users.ownerTherapist);
     expect(await antrag(eigener)).toMatchObject({
@@ -277,7 +298,7 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
     const storno = rows[0]!.id;
     expect((await antrag(id)).status).toBe('approved');
     expect((await fehler(users.therapist, STORNIEREN, [id, null]))?.code).toBe('55000');
-    await asUserCommitted(users.teamLead, ENTSCHEIDEN, [storno, true, null]);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [storno, true, null]);
     expect((await antrag(id)).status).toBe('cancelled');
     expect((await antrag(storno)).status).toBe('approved');
     expect(await abwesenheiten(STAFF.anna)).toEqual([]);
@@ -311,10 +332,14 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
        values ($1, $2, 'cancellation', $3, $4, ($4::date + 7), 5, 'requested', $5) returning id`,
       [organizationId, STAFF.anna, rows[0]!.id, gestern, users.therapist],
     );
-    expect((await fehler(users.teamLead, ENTSCHEIDEN, [storno[0]!.id, true, null]))?.code).toBe(
-      '55000',
-    );
-    await asUserCommitted(users.teamLead, ENTSCHEIDEN, [storno[0]!.id, false, 'Hat begonnen']);
+    expect(
+      (await fehler(users.ownerTherapist, ENTSCHEIDEN, [storno[0]!.id, true, null]))?.code,
+    ).toBe('55000');
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [
+      storno[0]!.id,
+      false,
+      'Hat begonnen',
+    ]);
     expect((await antrag(rows[0]!.id)).status).toBe('approved');
   });
 
@@ -333,22 +358,105 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
   });
 });
 
+describe('Wirkung auf Arbeitszeiten und Termine (ANN-578)', () => {
+  it('sperrt auch die Tage einer Trainingsbetreuung für Trainingstermine', async () => {
+    const id = await beantragt(users.trainer);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
+    expect((await abwesenheiten(STAFF.tom)).map((t) => t.leave_request_id)).toEqual(
+      Array(5).fill(id),
+    );
+    const termin = await fehler(
+      users.trainer,
+      `select public.create_training_appointment($1::uuid, $2::uuid, 'video', $3::date,
+         '10:00', '11:00', null, false, null, false)`,
+      [SEED.trainingRelationships.tina, STAFF.tom, plusTage(MONTAG, 2)],
+    );
+    expect(termin?.message).toMatch(/outside_working_hours/);
+  });
+
+  it('lässt einen Urlaubstag in den Arbeitszeiten nicht überschreiben, bis storniert ist', async () => {
+    const id = await beantragt(users.therapist);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
+    const SETZEN = `select public.set_staff_working_hour_exception($1::uuid, $2::date, $3, $4::jsonb)`;
+    for (const [abwesend, bloecke] of [
+      [false, '[]'],
+      [false, '[{"von":"09:00","bis":"12:00"}]'],
+      [true, '[]'],
+    ] as const) {
+      const f = await fehler(users.office, SETZEN, [
+        STAFF.anna,
+        plusTage(MONTAG, 1),
+        abwesend,
+        bloecke,
+      ]);
+      expect(f?.code).toBe('55000');
+      expect(f?.message).toMatch(/approved leave/);
+    }
+    // Ein Tag außerhalb des Urlaubs bleibt frei pflegbar.
+    await asUserCommitted(users.office, SETZEN, [STAFF.anna, plusTage(FREITAG, 3), true, '[]']);
+    expect((await abwesenheiten(STAFF.anna)).length).toBe(5);
+  });
+
+  it('nennt nach der Genehmigung die Tage mit Terminen, ohne sie abzusagen', async () => {
+    const termin = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, location_id, appointment_type, status,
+         starts_at, ends_at, kind
+       ) values ($1, $2, $3, $4, 'practice', 'confirmed',
+         ($5::date + time '10:00') at time zone 'Europe/Berlin',
+         ($5::date + time '11:00') at time zone 'Europe/Berlin', 'therapy')
+       returning id`,
+      [organizationId, patients.erika, STAFF.anna, PRAXIS, plusTage(MONTAG, 1)],
+    );
+    const id = await beantragt(users.therapist);
+    const { rows } = await asUserCommitted<{
+      daten: {
+        appointments: number;
+        appointment_days: { on_date: string; appointments: number }[];
+      };
+    }>(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
+    expect(rows[0]!.daten.appointments).toBe(1);
+    expect(rows[0]!.daten.appointment_days).toEqual([
+      { on_date: plusTage(MONTAG, 1), appointments: 1 },
+    ]);
+    const { rows: stand } = await asPostgres<{ status: string }>(
+      'select status from public.appointments where id = $1',
+      [termin.rows[0]!.id],
+    );
+    expect(stand[0]!.status).toBe('confirmed');
+  });
+
+  it('schreibt die Abwesenheit ohne das Konto der entscheidenden Person', async () => {
+    const id = await beantragt(users.therapist);
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
+    const { rows } = await asPostgres<{ n: number }>(
+      `select count(*)::int as n from public.staff_working_hour_exceptions
+        where leave_request_id = $1 and created_by is not null`,
+      [id],
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+});
+
 describe('Sichtbarkeit nach BEF-066 (ANN-580)', () => {
   it('zeigt die Notiz nur der Person, anderen nur Name und Zeitraum genehmigten Urlaubs', async () => {
     const offen = await beantragt(users.therapist, MONTAG, MONTAG, 'Hochzeit der Schwester');
     const tim = await beantragt(users.teamLead, plusTage(MONTAG, 1), plusTage(MONTAG, 2), 'Umzug');
     await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [tim, true, null]);
 
-    // Wer entscheidet, sieht den offenen Antrag mit Konto und Terminen, aber
-    // nie die Notiz („nie den Grund“).
-    const leitung = await daten<Liste>(users.teamLead, LISTE, [MONTAG, FREITAG]);
-    expect(leitung.to_decide.map((a) => a.id)).toEqual([offen]);
-    expect(leitung.to_decide[0]).not.toHaveProperty('message');
-    expect(leitung.to_decide[0]).toMatchObject({ appointments: 0 });
-    expect(leitung.to_decide[0]!.balance).toMatchObject({ requested: 1 });
-    expect(JSON.stringify(leitung)).not.toMatch(/Hochzeit/);
+    // Wer entscheidet (owner), sieht den offenen Antrag mit Konto und
+    // Terminen, aber nie die Notiz („nie den Grund“).
     const inhaber = await daten<Liste>(users.ownerTherapist, LISTE, [MONTAG, FREITAG]);
+    expect(inhaber.to_decide.map((a) => a.id)).toEqual([offen]);
+    expect(inhaber.to_decide[0]).not.toHaveProperty('message');
+    expect(inhaber.to_decide[0]).toMatchObject({ appointments: 0 });
+    expect(inhaber.to_decide[0]!.balance).toMatchObject({ requested: 1 });
     expect(JSON.stringify(inhaber)).not.toMatch(/Hochzeit|Umzug/);
+    // Die Teamleitung entscheidet nicht und sieht keine offenen Anträge anderer.
+    const leitung = await daten<Liste>(users.teamLead, LISTE, [MONTAG, FREITAG]);
+    expect(leitung.can_decide).toBe(false);
+    expect(leitung.to_decide).toEqual([]);
+    expect(JSON.stringify(leitung)).not.toMatch(/Hochzeit/);
 
     const buero = await daten<Liste>(users.office, LISTE, [MONTAG, FREITAG]);
     expect(buero.can_decide).toBe(false);
@@ -390,6 +498,24 @@ describe('Sichtbarkeit nach BEF-066 (ANN-580)', () => {
     const liste = await daten<Liste>(users.therapist, LISTE, [MONTAG, FREITAG]);
     expect(liste.balance).toMatchObject({ entitlement: 30, approved: 1, requested: 2, rest: 31 });
   });
+
+  it('zeigt Urlaub anderer nur ab heute - kein Verlauf über die Kolleg:innen', async () => {
+    const vorJahr = new Date().getUTCFullYear() - 1;
+    await asPostgres(
+      `insert into public.staff_leave_requests
+         (organization_id, staff_member_id, starts_on, ends_on, days, status, requested_by,
+          decided_by, decided_at)
+       values ($1, $2, $3, $3, 1, 'approved', $4, $5, now())`,
+      [organizationId, STAFF.tim, `${vorJahr}-07-01`, users.teamLead, users.ownerTherapist],
+    );
+    const fenster = [`${vorJahr}-01-01`, `${vorJahr}-12-31`];
+    for (const konto of [users.therapist, users.office, users.teamLead, users.trainer]) {
+      expect((await daten<Liste>(konto, LISTE, fenster)).team, konto).toEqual([]);
+    }
+    // owner pflegt die Konten und sieht auch Vergangenes.
+    const inhaber = await daten<Liste>(users.ownerTherapist, LISTE, fenster);
+    expect(inhaber.team.map((t) => t.staff_member_id)).toEqual([STAFF.tim]);
+  });
 });
 
 describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
@@ -411,8 +537,8 @@ describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
   });
 
   it('lässt Rollen ohne Recht weder entscheiden noch Ansprüche eintragen', async () => {
-    const id = await beantragt(users.teamLead);
-    for (const konto of [users.therapist, users.office, users.trainer]) {
+    const id = await beantragt(users.therapist);
+    for (const konto of [users.teamLead, users.office, users.trainer]) {
       expect((await fehler(konto, ENTSCHEIDEN, [id, true, null]))?.code, konto).toBe('42501');
     }
     for (const konto of [users.therapist, users.office, users.teamLead, users.trainer]) {
@@ -422,9 +548,18 @@ describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
 
   it('zeigt der fremden Organisation nichts und lässt sie nichts entscheiden (ADR-003)', async () => {
     const id = await beantragt(users.therapist, MONTAG, FREITAG, 'Privat');
+    const genehmigt = await beantragt(users.teamLead, plusTage(FREITAG, 3), plusTage(FREITAG, 3));
+    await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [genehmigt, true, null]);
     const fremd = await fremdeOrganisation();
     expect((await fehler(fremd.owner, ENTSCHEIDEN, [id, true, null]))?.code).toBe('P0002');
     expect((await fehler(fremd.owner, ZURUECKZIEHEN, [id]))?.code).toBe('P0002');
+    expect((await fehler(fremd.owner, STORNIEREN, [genehmigt, null]))?.code).toBe('P0002');
+    // Die Vorschau der fremden Praxis kennt unseren Urlaub nicht.
+    const vorschau = await daten<{ team: unknown[] }>(fremd.owner, VORSCHAU, [
+      MONTAG,
+      plusTage(FREITAG, 3),
+    ]);
+    expect(vorschau.team).toEqual([]);
     const liste = await daten<Liste>(fremd.owner, LISTE, [MONTAG, FREITAG]);
     expect(liste.to_decide).toEqual([]);
     expect(liste.team).toEqual([]);
@@ -521,6 +656,47 @@ describe('Löschlauf (ANN-579, ADR-013 Nr. 4)', () => {
       { target_table: 'staff_leave_requests', retention_class: 'urlaub' },
       { target_table: 'staff_leave_requests', retention_class: 'urlaub_kurz' },
     ]);
+  });
+
+  it('nimmt Storno und Abwesenheiten eines fälligen Urlaubs mit (cascade)', async () => {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.staff_leave_requests
+         (organization_id, staff_member_id, starts_on, ends_on, days, status, requested_by,
+          requested_at, decided_by, decided_at)
+       values ($1, $2, '2019-06-03', '2019-06-04', 2, 'cancelled', $3, '2019-05-01', $4, '2019-05-02')
+       returning id`,
+      [organizationId, STAFF.anna, users.therapist, users.ownerTherapist],
+    );
+    const urlaub = rows[0]!.id;
+    await asPostgres(
+      `insert into public.staff_leave_requests
+         (organization_id, staff_member_id, kind, refers_to, starts_on, ends_on, days, status,
+          requested_by, requested_at, decided_by, decided_at)
+       values ($1, $2, 'cancellation', $3, '2019-06-03', '2019-06-04', 2, 'approved', $4,
+               '2019-05-10', $5, '2019-05-11')`,
+      [organizationId, STAFF.anna, urlaub, users.therapist, users.ownerTherapist],
+    );
+    await asPostgres(
+      `insert into public.staff_working_hour_exceptions
+         (organization_id, staff_member_id, on_date, kind, leave_request_id)
+       values ($1, $2, '2019-06-03', 'unavailable', $3), ($1, $2, '2019-06-05', 'unavailable', null)`,
+      [organizationId, STAFF.anna, urlaub],
+    );
+
+    await asPostgres('select public.apply_retention()');
+
+    const { rows: rest } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.staff_leave_requests where staff_member_id = $1',
+      [STAFF.anna],
+    );
+    expect(rest[0]!.n).toBe(0);
+    const { rows: tage } = await asPostgres<{ on_date: string }>(
+      `select to_char(on_date, 'YYYY-MM-DD') as on_date from public.staff_working_hour_exceptions
+        where staff_member_id = $1 and on_date < '2020-01-01'`,
+      [STAFF.anna],
+    );
+    // Die von Hand eingetragene Abwesenheit bleibt, die aus dem Urlaub fällt mit.
+    expect(tage.map((t) => t.on_date)).toEqual(['2019-06-05']);
   });
 
   it('löscht nach einer Wiederherstellung erneut (ADR-012)', async () => {

@@ -103,6 +103,12 @@ export async function fetchWorkingHourExceptions(
 }
 
 function schreibfehler(error: { message?: string } | null, standard: string): Error {
+  // URL-001 (ANN-578): ein Tag aus genehmigtem Urlaub - erst stornieren.
+  if (error?.message?.includes('part of approved leave')) {
+    return new Error(
+      'An diesem Tag hat die Person genehmigten Urlaub. Ändern geht erst nach einem Storno des Urlaubs.',
+    );
+  }
   if (error?.message?.includes('overlap')) {
     return new Error('Die Zeitblöcke überschneiden sich. Bitte die Zeiten anpassen.');
   }

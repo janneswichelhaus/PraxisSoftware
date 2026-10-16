@@ -8,31 +8,38 @@
 --     geändert: Ein Storno ist ein neuer Antrag mit Bezug (`kind`
 --     'cancellation', `refers_to`); genehmigt, wird das Original
 --     „storniert“, und seine Tage sind wieder frei.
---   * Entscheiden owner und team_lead, nie über den eigenen Antrag. Den
---     eigenen Urlaub trägt owner direkt ein (gilt als genehmigt, ANN-576).
+--   * Entscheidet owner, nie über den eigenen Antrag; den eigenen Urlaub
+--     trägt owner direkt ein (gilt als genehmigt, ANN-576). Die Teamleitung
+--     entscheidet nicht: „team_lead bearbeitet Urlaubsanträge“ war Option 3
+--     von BEF-066, gewählt ist Option 2 (Zweitreview, §16). Geöffnet wird an
+--     einer Stelle (`app.can_decide_staff_requests`).
 --   * Sichtbarkeit nach BEF-066 (Jannes 2026-10-09, ANN-580): Eigenes sieht
 --     jede Person ganz, auch die Notiz zum Antrag - die sieht sonst niemand,
 --     auch nicht, wer entscheidet („nie den Grund“). Am offenen Antrag sehen
 --     die Entscheidenden Person, Zeitraum, Tage, das Urlaubskonto der Person,
 --     wer zugleich fehlt und wie viele Termine im Zeitraum liegen. Fremde
 --     Urlaubskonten sonst nur owner (Ansprüche pflegen, Hinweispflicht).
---     Andere sehen von genehmigtem Urlaub nur Name und Zeitraum. Keine Summe
---     über alle Personen (§20). Kein Tabellenrecht - gelesen und geschrieben
+--     Andere sehen von genehmigtem Urlaub nur Name und Zeitraum, und das ab
+--     heute - kein Verlauf über die Kolleg:innen. Keine Summe über alle
+--     Personen (§20). Kein Tabellenrecht - gelesen und geschrieben
 --     wird nur über die Funktionen unten (ADR-004).
 --   * Tage (ANN-577): Arbeitstage nach dem Wochenplan der Person (ohne Plan
 --     Montag bis Freitag) ohne die gesetzlichen Feiertage des Bundeslands der
 --     Praxis, am Server gezählt. Nur ganze Tage.
---   * Wirkung (ANN-578): Genehmigter Urlaub einer einplanbaren Person sperrt
---     jeden Tag des Zeitraums als Abwesenheit in den Arbeitszeiten
---     (`staff_working_hour_exceptions`, kind 'unavailable', mit Bezug auf den
---     Antrag) - dieselbe Quelle, die Kalender, Slotsuche und Radflotte schon
---     lesen. Abweichende Arbeitszeiten (`block`) im Zeitraum halten die
---     Genehmigung an; Termine werden nie still abgesagt, sondern genannt.
+--   * Wirkung (ANN-578): Genehmigter Urlaub einer einplanbaren Person -
+--     Behandlung oder Training - sperrt jeden Tag des Zeitraums als
+--     Abwesenheit in den Arbeitszeiten (`staff_working_hour_exceptions`, kind
+--     'unavailable', mit Bezug auf den Antrag): dieselbe Quelle, die
+--     Kalender, Slotsuche, Trainingstermine und Radflotte schon lesen.
+--     Abweichende Arbeitszeiten (`block`) im Zeitraum halten die Genehmigung
+--     an, und umgekehrt überschreibt `set_staff_working_hour_exception` keinen
+--     Urlaubstag mehr. Termine werden nie still abgesagt, sondern genannt.
 --   * Nachweis ist das Datenmodell (ADR-010 Punkt 15): beantragt von/am,
 --     entschieden von/am, Grund. Kein Auditeintrag.
 --   * Fristen (ADR-008, ANN-579): genehmigte und stornierte Anträge sowie
 --     Ansprüche drei Jahre ab Ende des Urlaubsjahres; abgelehnte und
---     zurückgezogene ein Jahr nach ihrem Ende. Löschlauf mit Journal.
+--     zurückgezogene ein Jahr nach ihrem Ende. Löschlauf mit Journal; die
+--     Abwesenheiten eines Urlaubs fallen mit ihm (cascade).
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -198,7 +205,7 @@ revoke all on function app.own_staff_member(uuid) from public, anon, authenticat
 comment on function app.own_staff_member(uuid) is
   'URL-001: der Mitarbeiterdatensatz des angemeldeten Kontos in der Praxis - oder null (Patienten- und Plattformkonten haben keinen).';
 
--- Wer Antraege entscheidet: owner und team_lead (ANN-576); wer fremde
+-- Wer Antraege entscheidet: owner (ANN-576, BEF-066 Option 2); wer fremde
 -- Urlaubskonten ausserhalb eines offenen Antrags sieht: owner (ANN-580).
 create function app.can_decide_staff_requests()
 returns boolean
@@ -207,7 +214,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select app.has_any_role('owner', 'team_lead')
+  select app.has_any_role('owner')
 $$;
 
 create function app.can_read_staff_leave_balances()
@@ -239,7 +246,7 @@ grant execute on function app.can_read_staff_leave_balances() to authenticated;
 grant execute on function app.can_request_leave() to authenticated;
 
 comment on function app.can_decide_staff_requests() is
-  'URL-001 (ANN-576): Wer Antraege der Mitarbeitenden entscheidet - owner und team_lead, nie den eigenen.';
+  'URL-001 (ANN-576): Wer Antraege der Mitarbeitenden entscheidet - owner, nie den eigenen (BEF-066 Option 2). Die eine Stelle fuer die Regel.';
 comment on function app.can_read_staff_leave_balances() is
   'URL-001 (ANN-580, BEF-066): Wer fremde Urlaubskonten ausserhalb eines offenen Antrags liest - owner (pflegt die Ansprueche, Hinweispflicht). Die eine Stelle fuer die Regel.';
 comment on function app.can_request_leave() is
@@ -324,13 +331,15 @@ alter table public.staff_leave_requests enable row level security;
 
 -- Die Abwesenheit, die ein genehmigter Urlaub in die Arbeitszeiten schreibt,
 -- kennt ihren Antrag: Ein Storno entfernt genau diese Zeilen, eine von Hand
--- eingetragene bleibt (ANN-578).
+-- eingetragene bleibt (ANN-578). Faellt der Antrag nach seiner Frist, fallen
+-- seine Tage mit (cascade, ANN-579) - sie stuenden sonst unbefristet als
+-- Abwesenheit der Person da (Zweitreview).
 alter table public.staff_working_hour_exceptions
   add column leave_request_id uuid
-    references public.staff_leave_requests (id) on delete set null;
+    references public.staff_leave_requests (id) on delete cascade;
 
 comment on column public.staff_working_hour_exceptions.leave_request_id is
-  'URL-001 (ANN-578): Abwesenheit aus einem genehmigten Urlaubsantrag. Ein Storno entfernt genau diese Zeilen; von Hand eingetragene tragen null.';
+  'URL-001 (ANN-578): Abwesenheit aus einem genehmigten Urlaubsantrag. Ein Storno entfernt genau diese Zeilen, die Frist des Antrags loescht sie mit (cascade); von Hand eingetragene tragen null.';
 
 create index staff_working_hour_exceptions_leave_idx
   on public.staff_working_hour_exceptions (leave_request_id) where leave_request_id is not null;
@@ -358,7 +367,10 @@ values
    223),
   ('staff_leave_entitlements', 'urlaub', 'automatisch',
    'Urlaubsansprueche je Person und Jahr (URL-001): drei Jahre ab Ende des Jahres (ANN-579).',
-   222);
+   222),
+  ('staff_working_hour_exceptions', 'urlaub', 'ueber_elterndatensatz',
+   'Abwesenheiten aus genehmigtem Urlaub (URL-001, leave_request_id): fallen mit ihrem Antrag (cascade, ANN-579). Von Hand eingetragene Abweichungen bleiben Beschaeftigtendaten ohne Loeschweg.',
+   224);
 
 -- -----------------------------------------------------------------------------
 -- 6. Hilfen: Name, Urlaubskonto, Wirkung
@@ -460,9 +472,14 @@ $$;
 revoke all on function app.team_leave(uuid, uuid, date, date) from public, anon, authenticated;
 
 -- Die Wirkung eines genehmigten Urlaubs (ANN-578): je Tag eine Abwesenheit,
--- nur fuer einplanbare Personen. Abweichende Arbeitszeiten im Zeitraum
--- halten an - die stuenden sonst still neben dem Urlaub. Eine schon von Hand
--- eingetragene Abwesenheit bleibt, wie sie ist.
+-- fuer jede einplanbare Person - Behandlung wie Training; Trainingstermine
+-- pruefen dieselbe Quelle (create_training_appointment). Abweichende
+-- Arbeitszeiten im Zeitraum halten an - die stuenden sonst still neben dem
+-- Urlaub. Eine schon von Hand eingetragene Abwesenheit bleibt, wie sie ist.
+-- Gesperrt wird die Person wie in set_staff_working_hour_exception, damit
+-- kein Block zwischen Pruefung und Eintrag entsteht. `created_by` bleibt
+-- leer: Das Tabellenrecht der Arbeitszeiten zeigte sonst jeder Praxisrolle,
+-- wer genehmigt hat; der Nachweis ist `decided_by` am Antrag.
 create function app.apply_leave(p_org uuid, p_request_id uuid)
 returns void
 language plpgsql
@@ -476,9 +493,12 @@ begin
   from public.staff_leave_requests r
   where r.id = p_request_id and r.organization_id = p_org;
 
-  if not app.is_assignable_therapist(v_antrag.staff_member_id, p_org) then
+  if not (app.is_assignable_therapist(v_antrag.staff_member_id, p_org)
+          or app.is_assignable_trainer(v_antrag.staff_member_id, p_org)) then
     return;
   end if;
+
+  perform 1 from public.staff_members sm where sm.id = v_antrag.staff_member_id for update;
 
   if exists (
     select 1 from public.staff_working_hour_exceptions e
@@ -492,7 +512,7 @@ begin
 
   insert into public.staff_working_hour_exceptions
     (organization_id, staff_member_id, on_date, kind, created_by, leave_request_id)
-  select p_org, v_antrag.staff_member_id, d::date, 'unavailable', auth.uid(), p_request_id
+  select p_org, v_antrag.staff_member_id, d::date, 'unavailable', null, p_request_id
   from generate_series(v_antrag.starts_on, v_antrag.ends_on, interval '1 day') as d
   where not exists (
     select 1 from public.staff_working_hour_exceptions e
@@ -525,6 +545,32 @@ as $$
 $$;
 
 revoke all on function app.appointments_in_leave(uuid, uuid, date, date) from public, anon, authenticated;
+
+-- Dieselben Termine je Tag (Ortszeit der Praxis): Nach der Genehmigung steht
+-- jeder Tag mit dem Weg zu „Tag umplanen“ da.
+create function app.appointment_days_in_leave(p_org uuid, p_staff_member_id uuid, p_from date, p_to date)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('on_date', t.tag, 'appointments', t.anzahl)
+                            order by t.tag), '[]'::jsonb)
+  from (
+    select (a.starts_at at time zone o.time_zone)::date as tag, count(*)::integer as anzahl
+    from public.appointments a
+    join public.organizations o on o.id = a.organization_id
+    where a.organization_id = p_org
+      and a.staff_member_id = p_staff_member_id
+      and a.status = 'confirmed'
+      and a.starts_at >= (p_from::timestamp at time zone o.time_zone)
+      and a.starts_at < ((p_to + 1)::timestamp at time zone o.time_zone)
+    group by 1
+  ) t
+$$;
+
+revoke all on function app.appointment_days_in_leave(uuid, uuid, date, date) from public, anon, authenticated;
 
 -- Ein Zeitraum, wie ihn ein Antrag tragen darf: Ende nicht vor dem Beginn,
 -- hoechstens 93 Tage, nicht in der Vergangenheit (Ortszeit der Praxis).
@@ -817,7 +863,7 @@ begin
     update public.staff_leave_requests
        set status = 'rejected', decided_by = auth.uid(), decided_at = now(), decision_note = v_text
      where id = v_antrag.id;
-    return jsonb_build_object('status', 'rejected', 'appointments', 0);
+    return jsonb_build_object('status', 'rejected', 'appointments', 0, 'appointment_days', '[]'::jsonb);
   end if;
 
   if v_antrag.kind = 'leave' then
@@ -837,6 +883,8 @@ begin
     return jsonb_build_object(
       'status', 'approved',
       'appointments', app.appointments_in_leave(
+        v_org, v_antrag.staff_member_id, v_antrag.starts_on, v_antrag.ends_on),
+      'appointment_days', app.appointment_days_in_leave(
         v_org, v_antrag.staff_member_id, v_antrag.starts_on, v_antrag.ends_on)
     );
   end if;
@@ -855,7 +903,7 @@ begin
      set status = 'cancelled'
    where id = v_antrag.refers_to and status = 'approved';
   delete from public.staff_working_hour_exceptions e where e.leave_request_id = v_antrag.refers_to;
-  return jsonb_build_object('status', 'approved', 'appointments', 0);
+  return jsonb_build_object('status', 'approved', 'appointments', 0, 'appointment_days', '[]'::jsonb);
 end;
 $$;
 
@@ -863,7 +911,7 @@ revoke all on function public.decide_leave_request(uuid, boolean, text) from pub
 grant execute on function public.decide_leave_request(uuid, boolean, text) to authenticated;
 
 comment on function public.decide_leave_request(uuid, boolean, text) is
-  'URL-001 (ANN-576, ANN-578): owner und team_lead entscheiden einen offenen Antrag, nie den eigenen. Ablehnen nur mit Grund. Genehmigter Urlaub sperrt seine Tage in den Arbeitszeiten; ein genehmigter Storno hebt Urlaub und Sperre auf. Antwort: Zustand und Zahl der bestaetigten Termine im Zeitraum.';
+  'URL-001 (ANN-576, ANN-578): owner entscheidet einen offenen Antrag, nie den eigenen. Ablehnen nur mit Grund. Genehmigter Urlaub sperrt seine Tage in den Arbeitszeiten; ein genehmigter Storno hebt Urlaub und Sperre auf. Antwort: Zustand, Zahl der bestaetigten Termine im Zeitraum und je Tag (zum Umplanen).';
 
 create function public.set_leave_entitlement(
   p_staff_member_id uuid,
@@ -923,6 +971,8 @@ declare
   v_jahr     integer;
   v_entsch   boolean;
   v_konten   boolean;
+  v_heute    date;
+  v_land     text;
 begin
   v_org := app.staff_request_org(app.can_request_leave(), 'not allowed to read leave');
   if p_from is null or p_to is null or p_to < p_from or p_to - p_from > 400 then
@@ -932,12 +982,16 @@ begin
   v_jahr := extract(year from p_from)::integer;
   v_entsch := app.can_decide_staff_requests();
   v_konten := app.can_read_staff_leave_balances();
+  select (now() at time zone o.time_zone)::date, o.federal_state into v_heute, v_land
+  from public.organizations o where o.id = v_org;
 
   return jsonb_build_object(
     'my_staff_member_id', v_staff,
     'can_decide', v_entsch,
     'self_entered', app.has_any_role('owner'),
     'can_manage_entitlements', app.can_manage_staff_employment(),
+    -- Fuer die Feiertage im Kalender beim Beantragen (ANN-577).
+    'federal_state', v_land,
     'balance', case when v_staff is null then null else app.leave_balance(v_org, v_staff, v_jahr) end,
     -- Eigene Antraege mit allem, auch der Nachricht und der Entscheidung.
     'own', coalesce((
@@ -974,8 +1028,13 @@ begin
       where r.organization_id = v_org and r.status = 'requested'
         and r.staff_member_id is distinct from v_staff
     ), '[]'::jsonb) end,
-    -- Fuer alle: genehmigter Urlaub anderer im Fenster - nur Name und Zeitraum.
-    'team', app.team_leave(v_org, v_staff, p_from, p_to),
+    -- Fuer alle: genehmigter Urlaub anderer im Fenster - nur Name und
+    -- Zeitraum, und nur ab heute: kein Verlauf ueber die Kolleg:innen
+    -- (Zweitreview). owner pflegt die Konten und sieht auch Vergangenes.
+    'team', app.team_leave(
+      v_org, v_staff,
+      case when app.has_any_role('owner') then p_from else greatest(p_from, v_heute) end,
+      p_to),
     -- Fremde Urlaubskonten nur fuer owner (ANN-580), je Person, ohne Summe.
     'balances', case when not v_konten then '[]'::jsonb else coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -994,10 +1053,177 @@ revoke all on function public.list_leave(date, date) from public, anon;
 grant execute on function public.list_leave(date, date) to authenticated;
 
 comment on function public.list_leave(date, date) is
-  'URL-001: Urlaub in einem Aufruf - eigene Antraege mit Notiz und Konto ganz; fuer owner und team_lead die offenen Antraege anderer mit Konto, ohne Notiz; fuer alle genehmigter Urlaub anderer nur mit Name und Zeitraum; fremde Konten nur owner (BEF-066, ANN-580). Ohne Summe ueber alle (PROJECT_PRINCIPLES.md 20).';
+  'URL-001: Urlaub in einem Aufruf - eigene Antraege mit Notiz und Konto ganz; fuer owner die offenen Antraege anderer mit Konto, ohne Notiz; fuer alle genehmigter Urlaub anderer nur mit Name und Zeitraum ab heute; fremde Konten nur owner (BEF-066, ANN-580). Ohne Summe ueber alle (PROJECT_PRINCIPLES.md 20).';
 
 -- -----------------------------------------------------------------------------
--- 9. Loeschlauf (ADR-008, ANN-579)
+-- 9. Arbeitszeiten: kein Urlaubstag wird still ueberschrieben (ANN-578)
+-- -----------------------------------------------------------------------------
+-- Stand LOG-001b, dazu zwei Dinge (Zweitreview): Die Person wird gesperrt wie
+-- in app.apply_leave, und ein Tag, der zu genehmigtem Urlaub gehoert, laesst
+-- sich hier weder freigeben noch mit Bloecken belegen - der Urlaub bliebe
+-- sonst genehmigt, die Tage aber buchbar. Erst stornieren (55000).
+CREATE OR REPLACE FUNCTION public.set_staff_working_hour_exception(p_staff_member_id uuid, p_date date, p_unavailable boolean, p_blocks jsonb DEFAULT '[]'::jsonb)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_actor    uuid;
+  v_org      uuid;
+  v_tz       text;
+  v_abwesend boolean;
+  v_alt      jsonb;
+  v_neu      jsonb;
+  v_alt_ids  uuid[];
+  v_neu_ids  uuid[];
+  v_aktion   text;
+  v_art      text;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_manage_working_hours() then
+    raise exception 'not allowed to manage working hours' using errcode = '42501';
+  end if;
+
+  v_org := app.current_organization_id();
+  if v_org is null then
+    raise exception 'not allowed to manage working hours' using errcode = '42501';
+  end if;
+
+  select o.time_zone into v_tz
+  from public.organizations o
+  where o.id = v_org;
+
+  if v_tz is null then
+    raise exception 'organization has no time zone' using errcode = '22023';
+  end if;
+
+  if p_date is null then
+    raise exception 'date is required' using errcode = '22023';
+  end if;
+
+  if not app.is_assignable_therapist(p_staff_member_id, v_org) then
+    raise exception 'staff member not assignable' using errcode = 'P0002';
+  end if;
+
+  if p_blocks is null or jsonb_typeof(p_blocks) <> 'array' then
+    raise exception 'blocks must be an array' using errcode = '22023';
+  end if;
+
+  v_abwesend := coalesce(p_unavailable, false);
+
+  if v_abwesend and jsonb_array_length(p_blocks) > 0 then
+    raise exception 'an unavailable day cannot have blocks' using errcode = '22023';
+  end if;
+
+  -- URL-001: dieselbe Sperre wie app.apply_leave, dann der Urlaubstag.
+  perform 1 from public.staff_members sm where sm.id = p_staff_member_id for update;
+
+  if exists (
+    select 1 from public.staff_working_hour_exceptions a
+    where a.staff_member_id = p_staff_member_id
+      and a.organization_id = v_org
+      and a.on_date = p_date
+      and a.leave_request_id is not null
+  ) then
+    raise exception 'day is part of approved leave' using errcode = '55000';
+  end if;
+
+  select coalesce(
+           jsonb_agg(
+             jsonb_build_array(a.kind, a.starts_at::text, a.ends_at::text)
+             order by a.kind, a.starts_at nulls first
+           ),
+           '[]'::jsonb
+         ),
+         coalesce(array_agg(a.id order by a.kind, a.starts_at nulls first), '{}'::uuid[])
+    into v_alt, v_alt_ids
+  from public.staff_working_hour_exceptions a
+  where a.staff_member_id = p_staff_member_id
+    and a.organization_id = v_org
+    and a.on_date = p_date;
+
+  if v_abwesend then
+    v_neu := jsonb_build_array(jsonb_build_array('unavailable', null, null));
+  else
+    begin
+      select coalesce(
+               jsonb_agg(jsonb_build_array('block', w.von::text, w.bis::text) order by w.von),
+               '[]'::jsonb
+             )
+        into v_neu
+      from (
+        select (b ->> 'von')::time as von, (b ->> 'bis')::time as bis
+        from jsonb_array_elements(p_blocks) as b
+      ) w;
+    exception
+      when invalid_datetime_format or datetime_field_overflow
+           or invalid_text_representation then
+        raise exception 'working hour block is invalid' using errcode = '22023';
+    end;
+  end if;
+
+  if v_alt = v_neu then
+    return jsonb_array_length(v_alt);
+  end if;
+
+  delete from public.staff_working_hour_exceptions
+   where staff_member_id = p_staff_member_id
+     and organization_id = v_org
+     and on_date = p_date;
+
+  if v_abwesend then
+    with eingefuegt as (
+      insert into public.staff_working_hour_exceptions (
+        organization_id, staff_member_id, on_date, kind, created_by
+      )
+      values (v_org, p_staff_member_id, p_date, 'unavailable', v_actor)
+      returning id
+    )
+    select coalesce(array_agg(id), '{}'::uuid[]) into v_neu_ids from eingefuegt;
+  else
+    begin
+      with eingefuegt as (
+        insert into public.staff_working_hour_exceptions (
+          organization_id, staff_member_id, on_date, kind, starts_at, ends_at, created_by
+        )
+        select v_org, p_staff_member_id, p_date, 'block',
+               (b ->> 'von')::time, (b ->> 'bis')::time, v_actor
+        from jsonb_array_elements(p_blocks) as b
+        returning id
+      )
+      select coalesce(array_agg(id), '{}'::uuid[]) into v_neu_ids from eingefuegt;
+    exception
+      when exclusion_violation then
+        raise exception 'working hours overlap' using errcode = '23P01';
+      when check_violation or not_null_violation
+           or invalid_datetime_format or datetime_field_overflow then
+        raise exception 'working hour block is invalid' using errcode = '22023';
+    end;
+  end if;
+
+  v_aktion := app.working_hour_action(
+    jsonb_array_length(v_alt), jsonb_array_length(v_neu)
+  );
+
+  -- Art der organisatorischen Aktion, nicht ihre Uhrzeiten.
+  v_art := case
+             when v_aktion = 'removed' then null
+             when v_abwesend then 'unavailable'
+             else 'block'
+           end;
+
+
+  return jsonb_array_length(v_neu);
+end;
+$function$;
+
+-- -----------------------------------------------------------------------------
+-- 10. Loeschlauf (ADR-008, ANN-579)
 -- -----------------------------------------------------------------------------
 create function app.delete_due_staff_leave(p_org uuid, p_time_zone text, p_run uuid)
 returns integer
