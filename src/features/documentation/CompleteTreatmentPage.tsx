@@ -37,6 +37,8 @@ import {
   completeTreatment,
   createTreatmentNote,
   inhaltFehler,
+  inhaltMitVermerk,
+  VERMERK_OHNE_BEHANDLUNG,
   istDauerhafterSchreibfehler,
   wieGespeichert,
   updateTreatmentNote,
@@ -247,7 +249,7 @@ function Abschluss({
     try {
       await completeTreatment(
         appointment.id,
-        wertRef.current,
+        ohneBehandlung ? inhaltMitVermerk(wertRef.current) : wertRef.current,
         appointment.updated_at,
         note?.updated_at ?? null,
         ohneBehandlung,
@@ -293,7 +295,9 @@ function Abschluss({
       setBefundOffen(true);
       return false;
     }
-    const meldung = inhaltFehler(wert);
+    // Am Vermerk darf das Feld leer bleiben; dann steht der Vermerk im
+    // Eintrag (ANN-565).
+    const meldung = inhaltFehler(ohneBehandlung ? inhaltMitVermerk(wert) : wert);
     setFehler(meldung);
     return meldung === undefined;
   }
@@ -434,8 +438,7 @@ function Abschluss({
           {ohneBehandlung ? (
             <p className="bg-warnung-soft text-warnung shrink-0 px-4 py-2 text-sm">
               <span aria-hidden="true">! </span>
-              Vermerk: Tür geöffnet, Behandlung auf Angabe der Patient:in nicht durchgeführt. Kein
-              Ausfallhonorar.
+              Vermerk: {VERMERK_OHNE_BEHANDLUNG} Kein Ausfallhonorar. Ein Eintrag ist nicht nötig.
             </p>
           ) : null}
 
@@ -512,6 +515,7 @@ function Abschluss({
             // Während des Festschreibens unveränderlich: Was festgeschrieben
             // wird, muss genau das sein, was auf dem Bildschirm stand (FIX-014).
             readOnly={schreibtAbschluss}
+            placeholder={ohneBehandlung ? 'Anmerkung, wenn nötig' : undefined}
             className="text-ink placeholder:text-ink-muted min-h-40 w-full flex-1 resize-none border-0 bg-transparent px-4 py-3.5 text-base leading-[1.55] focus:outline-none focus-visible:outline-none"
             onChange={(event) => {
               setEntwurf(event.target.value);
@@ -542,7 +546,7 @@ function Abschluss({
           </p>
 
           {/* Fußleiste: bleibt beim Scrollen stehen, am Telefon über der
-              Tableiste. Fehler und Rückfrage des Schutzes stehen als Zeile
+              Tableiste. Fehler des Schutzes stehen als Zeile
               darüber (ANN-046). */}
           <Aktionsleiste
             einbettung="flaeche"

@@ -412,6 +412,23 @@ export function wieGespeichert(text: string): string {
   return text.replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '');
 }
 
+/**
+ * Der Pflichtvermerk aus Hausbesuch-Szenario 1 als Satz (CAL-018).
+ *
+ * Am Vermerk „ohne Behandlung“ ist kein eigener Eintrag nötig (ANN-565):
+ * Bleibt das Feld leer, wird dieser Satz festgeschrieben. Das Merkmal
+ * `visit_without_treatment` bleibt die Quelle; der Satz macht den Eintrag in
+ * Akte, Druck und Auskunft ohne das Merkmal lesbar, und der Server bleibt bei
+ * „nie leer“.
+ */
+export const VERMERK_OHNE_BEHANDLUNG =
+  'Tür geöffnet, Behandlung auf Angabe der Patient:in nicht durchgeführt.';
+
+/** Was am Vermerk festgeschrieben wird: der eigene Text, sonst der Vermerk. */
+export function inhaltMitVermerk(content: string): string {
+  return content.trim().length === 0 ? VERMERK_OHNE_BEHANDLUNG : content;
+}
+
 /** Höchstlänge des Freitexts. Muss zur Prüfung in der Datenbank passen. */
 export const MAX_ZEICHEN = 20_000;
 

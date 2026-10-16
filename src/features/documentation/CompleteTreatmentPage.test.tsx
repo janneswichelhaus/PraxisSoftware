@@ -973,6 +973,34 @@ describe('CompleteTreatmentPage', () => {
       );
     });
 
+    it('schreibt den Vermerk ohne eigenen Eintrag fest (ANN-565)', async () => {
+      const user = userEvent.setup();
+      rendern(['therapist'], '?ohne-behandlung=1');
+
+      await user.click(await screen.findByRole('button', { name: 'Mit Vermerk festschreiben' }));
+
+      await waitFor(() =>
+        expect(completeTreatment).toHaveBeenCalledWith(
+          TERMIN_ID,
+          'Tür geöffnet, Behandlung auf Angabe der Patient:in nicht durchgeführt.',
+          termin.updated_at,
+          null,
+          true,
+        ),
+      );
+      expect(screen.queryByText(/darf nicht leer sein/)).not.toBeInTheDocument();
+    });
+
+    it('verlangt ohne Vermerk weiter einen Eintrag', async () => {
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await user.click(await screen.findByRole('button', { name: 'Festschreiben' }));
+
+      expect(await screen.findByText(/darf nicht leer sein/)).toBeInTheDocument();
+      expect(completeTreatment).not.toHaveBeenCalled();
+    });
+
     it('nimmt den Vermerk an einem Praxistermin nicht an (ANN-055)', async () => {
       fetchAppointment.mockResolvedValue({
         ...termin,
