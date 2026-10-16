@@ -185,7 +185,7 @@ create table public.fleet_photo_access_grants (
 );
 
 comment on table public.fleet_photo_access_grants is
-  'FLT-002: einmalige, personengebundene Freigabe fuer genau einen Verweis auf ein Foto am Rad (ANN-052). Verbraucht beim ersten Zugriff, verfaellt nach 30 Sekunden. Keine Schluessel, keine Namen.';
+  'FLT-002: einmalige, personengebundene Freigabe fuer genau einen Verweis auf ein Foto am Rad (ANN-052). Verbraucht beim ersten Zugriff, verfaellt nach 30 Sekunden; abgelaufene loescht public.discard_stale_fleet_photo_uploads taeglich. Keine Schluessel, keine Namen. Datenklasse radflotte_ereignis, faellt spaetestens mit dem Foto (cascade).';
 
 create index fleet_photo_access_grants_photo_idx on public.fleet_photo_access_grants (photo_id);
 create index fleet_photo_access_grants_expiry_idx
@@ -383,8 +383,8 @@ grant execute on function public.discard_fleet_photo_upload(uuid) to authenticat
 comment on function public.discard_fleet_photo_upload(uuid) is
   'FLT-002 (ADR-017 Punkt 7): verwirft die eigene, nicht bestaetigte Zeile nach einem abgebrochenen Upload.';
 
--- Nach 24 Stunden unbestaetigt: verworfen (ADR-017 Punkt 7). Aufraeumen,
--- keine Frist.
+-- Nach 24 Stunden unbestaetigt: verworfen (ADR-017 Punkt 7). Dazu die
+-- abgelaufenen Lesefreigaben. Aufraeumen, keine Frist.
 create function public.discard_stale_fleet_photo_uploads()
 returns integer
 language plpgsql
@@ -398,6 +398,10 @@ begin
    where status = 'pending'
      and created_at < now() - interval '24 hours';
   get diagnostics v_anzahl = row_count;
+  -- Abgelaufene, nicht verbrauchte Lesefreigaben: Sie hielten sonst fest, wer
+  -- wann welches Foto oeffnen wollte (PROJECT_PRINCIPLES.md 20). Gezaehlt
+  -- werden weiter nur die verworfenen Uploads.
+  delete from public.fleet_photo_access_grants where expires_at <= now();
   return v_anzahl;
 end;
 $$;
@@ -544,8 +548,14 @@ begin
     raise exception 'not allowed to delete this photo' using errcode = '42501';
   end if;
   -- Der Trigger schreibt den Loeschauftrag; ordered_by ist dort auth.uid()
-  -- (LOG-EPIC-001).
+  -- (LOG-EPIC-001). Das Loeschjournal haelt die Loeschung fest, damit sie
+  -- nach einer Wiederherstellung erneut greift (ADR-008 Punkt 8, ADR-017
+  -- Punkt 26) - etwa wenn doch eine Person im Bild war.
   delete from public.fleet_photos where id = v_foto.id;
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  values (v_foto.organization_id, extensions.gen_random_uuid(), 'fleet_photos', v_foto.id,
+          'radflotte_ereignis', now());
 end;
 $$;
 
@@ -553,7 +563,7 @@ revoke all on function public.delete_fleet_photo(uuid) from public, anon;
 grant execute on function public.delete_fleet_photo(uuid) to authenticated;
 
 comment on function public.delete_fleet_photo(uuid) is
-  'FLT-002: Foto am Rad loeschen - die aufnehmende Person am Tag der Aufnahme, owner jederzeit. Nachweis am Loeschauftrag (ordered_by).';
+  'FLT-002: Foto am Rad loeschen - die aufnehmende Person am Tag der Aufnahme, owner jederzeit. Nachweis am Loeschauftrag (ordered_by); das Loeschjournal haelt die Loeschung ueber eine Wiederherstellung (ADR-008 Punkt 8).';
 
 -- -----------------------------------------------------------------------------
 -- 8. RLS auf storage.objects fuer den neuen Bucket (ADR-017 Punkt 11)
@@ -723,8 +733,13 @@ begin
     return 'passed';
   end if;
 
-  -- Punkt 52: Befund heisst verwerfen; der Trigger schreibt den Loeschauftrag.
+  -- Punkt 52: Befund heisst verwerfen; der Trigger schreibt den Loeschauftrag,
+  -- das Loeschjournal haelt es ueber eine Wiederherstellung (Punkt 26).
   delete from public.fleet_photos where id = p_photo_id;
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  values (v_foto.organization_id, extensions.gen_random_uuid(), 'fleet_photos', v_foto.id,
+          'radflotte_ereignis', now());
   return 'rejected';
 end;
 $$;

@@ -121,7 +121,8 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   },
   betriebsdaten: {
     label: 'Betriebsdaten der Praxis',
-    beschreibung: 'Textbausteine und vergleichbare Arbeitsmittel ohne Patientenbezug.',
+    beschreibung:
+      'Textbausteine, Depots, Räder und vergleichbare Arbeitsmittel ohne Patientenbezug. Ein ausgemustertes Rad wird gelöscht, sobald sein Verlauf gelöscht ist.',
   },
   radflotte_ereignis: {
     label: 'Radflotte: Check-Ups und Pannen',

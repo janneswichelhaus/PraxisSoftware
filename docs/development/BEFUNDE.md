@@ -596,12 +596,12 @@ eingeklappt.
 | Datum   | 2026-10-15 |
 | Bereich | Radflotte (`/betrieb/flotte…`), Löschlauf |
 | Quelle  | FLT-EPIC-001, Bau des Löschlaufs `app.delete_due_fleet_records` |
-| Status  | offen |
+| Status  | offen; Bedingung vor dem Scharfschalten |
 | Berührt | `supabase/migrations/20261119100000_flt_001_radflotte.sql` (Abschnitt 22); ANN-551, ANN-033; ADR-008 |
 
 **Beobachtung.** Check-Ups, Pannen und Sperren fallen drei Jahre nach dem Ereignis von selbst; eine Löschsperre gibt es nur an der Akte (ANN-033). Ist ein Unfall mit einem Rad länger streitig, fiele der Nachweis der Pflege.
 
-**Erwartet.** Eine Löschsperre je Rad mit Grund, gesetzt von `owner`, die der Löschlauf beachtet; bis dahin sichert die Praxis die Unterlage für die Werkstatt als PDF. Pfad A (Löschpfad).
+**Erwartet.** Eine Löschsperre je Rad mit Grund, gesetzt von `owner`, die der Löschlauf beachtet. Bis dahin lässt sich eine fällige Löschung nicht anhalten; die Unterlage für die Werkstatt ersetzt das nicht, sie zeigt nur offene Stellen. Bedingung vor dem Scharfschalten, Pfad A (Löschpfad).
 
 ### BEF-167 — Fotos am Rad: Ein verlorenes Objekt fällt erst beim Öffnen auf
 
@@ -630,3 +630,17 @@ eingeklappt.
 **Beobachtung.** Die Radflotte ist echt; die Urlaubsvorschau meldet nach „Genehmigen“ aber „Stammrad Lastenrad 2 ist im Zeitraum als frei markiert“ aus den acht Rädern der Demodaten, die mit der echten Flotte nichts gemein haben.
 
 **Erwartet.** Mit URL-001 entfällt der Satz: Die echte Radflotte liest ganztägige Abwesenheiten schon selbst und zeigt das Rad an diesen Tagen frei („Diese Woche frei: Do (abwesend)“).
+
+### BEF-170 — Einzeln gelöschte Dateien der Akte fehlen im Löschjournal
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Akte, Dateien (`delete_patient_file`); Wiederherstellung |
+| Quelle  | Zweitreview FLT-EPIC-001 (Subagent), Vergleich mit den Fotos am Rad |
+| Status  | offen |
+| Berührt | `supabase/migrations/20261006110100_log_001b_schreibpfade.sql` (`delete_patient_file`), `reapply_deletion_journal`; ADR-008 Punkt 8, ADR-017 Punkt 26 |
+
+**Beobachtung.** Der Löschlauf schreibt fällige Dateien ins Löschjournal, `delete_patient_file` aber nicht. Nach einer Wiederherstellung käme eine einzeln gelöschte Datei zurück, etwa ein falsch zugeordnetes Foto. Die Anhänge an Rückfragen (`app.remove_message_attachments`) und seit FLT-EPIC-001 die Fotos am Rad journalisieren jede Löschung.
+
+**Erwartet.** Ein Journaleintrag `patient_files` in `delete_patient_file`, dazu ein Test mit Wiederherstellung wie in `fleet-photos.test.ts` („Löschjournal“). Pfad A (Löschpfad).

@@ -830,18 +830,7 @@ describe('Radflotte (FLT-001)', () => {
       expect(await ort(FLOTTE.rad2)).toEqual([null]);
 
       // Ausmustern: Das Rad hat einen Verlauf und wird archiviert, der Ort geht.
-      await asUserCommitted(users.teamLead, `select public.release_fleet_bike($1::uuid)`, [
-        FLOTTE.rad4,
-      ]);
-      await asUserCommitted(users.therapist, PANNE, [
-        FLOTTE.rad4,
-        'meldungOhneSperre',
-        'Weiterfahrt möglich: Klingel klemmt',
-        null,
-        'Vor der Praxis',
-        null,
-        '[]',
-      ]);
+      expect(await ort(FLOTTE.rad4)).toEqual(['Hinterhof Beispielweg 3']);
       expect(
         (
           await asUserCommitted<{ ergebnis: string }>(
@@ -852,6 +841,38 @@ describe('Radflotte (FLT-001)', () => {
         ).rows[0]!.ergebnis,
       ).toBe('archived');
       expect((await ort(FLOTTE.rad4)).every((wert) => wert === null)).toBe(true);
+    });
+
+    it('nimmt einen Ort nur zum zurückgelassenen Rad an, das gesperrt wird (ANN-558)', async () => {
+      // Sonst bliebe der Ort ohne Sperre stehen, und keine Freigabe leerte ihn.
+      for (const abschluss of ['meldungOhneSperre', 'depotAbgestellt', 'lokalRepariert']) {
+        expect(
+          (
+            await fehler(users.therapist, PANNE, [
+              FLOTTE.rad2,
+              abschluss,
+              'Text',
+              null,
+              'Vor der Praxis',
+              null,
+              '[]',
+            ])
+          )?.code,
+          abschluss,
+        ).toBe('22023');
+      }
+      // Ein leerer Ort ist kein Ort.
+      expect(
+        await fehler(users.therapist, PANNE, [
+          FLOTTE.rad2,
+          'meldungOhneSperre',
+          'Weiterfahrt möglich: Klingel klemmt',
+          null,
+          '   ',
+          null,
+          '[]',
+        ]),
+      ).toBeNull();
     });
 
     it('sperrt von Hand mit Grund und nicht doppelt', async () => {
@@ -1010,7 +1031,7 @@ describe('Radflotte (FLT-001)', () => {
       expect(await vorhanden('fleet_spots', 'b2b2b2b2-b2b2-4b2b-8b2b-000000000051')).toBe(false);
       expect(await journal('b2b2b2b2-b2b2-4b2b-8b2b-000000000021')).toEqual(['radflotte_ereignis']);
       expect(await journal('b2b2b2b2-b2b2-4b2b-8b2b-000000000041')).toEqual(['radflotte_ereignis']);
-      // Das Rad selbst bleibt (Betriebsdaten, keine automatische Löschung).
+      // Das Rad selbst bleibt: Es ist in der Flotte, nicht ausgemustert.
       expect(await vorhanden('fleet_bikes', FLOTTE.rad3)).toBe(true);
 
       // Auditeintrag des Laufs mit dem Zähler der Radflotte, ohne Kennungen.
@@ -1019,6 +1040,57 @@ describe('Radflotte (FLT-001)', () => {
          order by occurred_at desc limit 1`,
       );
       expect(rows[0]!.context.radflotte).toBe(4);
+    });
+
+    it('löscht ein ausgemustertes Rad, sobald sein Verlauf gefallen ist, auch nach einer Wiederherstellung (ANN-557)', async () => {
+      // Lastenrad 3 hat Check-Up, Panne, Sperre und Stellen: Es wird ausgemustert.
+      expect(
+        (
+          await asUserCommitted<{ ergebnis: string }>(
+            users.ownerTherapist,
+            `select public.remove_fleet_bike($1::uuid) as ergebnis`,
+            [FLOTTE.rad3],
+          )
+        ).rows[0]!.ergebnis,
+      ).toBe('archived');
+      // Solange der Verlauf in seiner Frist ist, bleibt auch das Rad.
+      await asPostgres('select public.apply_retention()');
+      expect(await vorhanden('fleet_bikes', FLOTTE.rad3)).toBe(true);
+
+      // Fünf Jahre später fallen Verlauf und Rad im selben Lauf.
+      await asPostgres(
+        `update public.fleet_checkups set checked_at = now() - interval '5 years' where bike_id = $1`,
+        [FLOTTE.rad3],
+      );
+      await asPostgres(
+        `update public.fleet_breakdowns set reported_at = now() - interval '5 years' where bike_id = $1`,
+        [FLOTTE.rad3],
+      );
+      await asPostgres(
+        `update public.fleet_blocks set blocked_at = now() - interval '6 years',
+                released_at = now() - interval '5 years'
+         where bike_id = $1`,
+        [FLOTTE.rad3],
+      );
+      const { rows: gesichert } = await asPostgres<{ rad: unknown }>(
+        `select to_jsonb(r) as rad from public.fleet_bikes r where id = $1`,
+        [FLOTTE.rad3],
+      );
+      await asPostgres('select public.apply_retention()');
+      expect(await vorhanden('fleet_bikes', FLOTTE.rad3)).toBe(false);
+      expect(await journal(FLOTTE.rad3)).toEqual(['betriebsdaten']);
+      // Räder in der Flotte bleiben, auch ohne jeden Verlauf.
+      expect(await vorhanden('fleet_bikes', FLOTTE.rad5)).toBe(true);
+      expect(await vorhanden('fleet_bikes', FLOTTE.rad2)).toBe(true);
+
+      // Ein Restore bringt das Rad zurück; das Journal zieht nach.
+      await asPostgres(
+        `insert into public.fleet_bikes
+         select * from jsonb_populate_record(null::public.fleet_bikes, $1::jsonb)`,
+        [JSON.stringify(gesichert[0]!.rad)],
+      );
+      await asPostgres('select public.reapply_deletion_journal()');
+      expect(await vorhanden('fleet_bikes', FLOTTE.rad3)).toBe(false);
     });
 
     it('lässt Jüngeres stehen und löscht nach einer Wiederherstellung erneut', async () => {

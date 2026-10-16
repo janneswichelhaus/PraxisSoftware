@@ -391,7 +391,7 @@ create table public.fleet_bikes (
 );
 
 comment on table public.fleet_bikes is
-  'FLT-001: ein Rad der Flotte mit Bauart, Stammdepot, Standort, Stammnutzer:in und Wochenplan. Kein Statusfeld: "In Reparatur" ist eine offene Sperre, "im Einsatz" ein entnommener Schluessel (ANN-557). Kein Schluesselcode (ANN-554). Datenklasse: Betriebsdaten der Praxis; Personenbezug nur ueber die Stammnutzer:in, die beim Ausmustern faellt. Frist: bis zur Loeschung durch die Praxis. Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
+  'FLT-001: ein Rad der Flotte mit Bauart, Stammdepot, Standort, Stammnutzer:in und Wochenplan. Kein Statusfeld: "In Reparatur" ist eine offene Sperre, "im Einsatz" ein entnommener Schluessel (ANN-557). Kein Schluesselcode (ANN-554). Datenklasse: Betriebsdaten der Praxis; Personenbezug nur ueber die Stammnutzer:in, die beim Ausmustern faellt. Frist: in der Flotte bis zur Loeschung durch die Praxis; ausgemustert, bis der Verlauf nach seinen Fristen gefallen ist (Loeschlauf, ANN-557). Kein Tabellenrecht und keine Policy: erreichbar nur ueber die Funktionen (ADR-004).';
 comment on column public.fleet_bikes.planned_weekdays is
   'Wochenplan der Stammnutzer:in: 1 = Montag bis 7 = Sonntag. An den uebrigen Tagen fuer andere planbar.';
 
@@ -629,8 +629,8 @@ values
   ('fleet_depots', 'betriebsdaten', 'keine',
    'Raddepots (FLT-001). Betriebliche Orte ohne Personenbezug; bleiben, bis die Praxis das Depot entfernt. Ein Depot mit Raedern laesst sich nicht entfernen (FK restrict).',
    214),
-  ('fleet_bikes', 'betriebsdaten', 'keine',
-   'Raeder der Flotte (FLT-001). Bleiben, bis die Praxis sie entfernt; mit Verlauf wird ein Rad ausgemustert, die Stammnutzer:in faellt dabei (ANN-557). Der Verlauf faellt nach seiner eigenen Frist.',
+  ('fleet_bikes', 'betriebsdaten', 'automatisch',
+   'Raeder der Flotte (FLT-001). Bleiben, bis die Praxis sie entfernt; mit Verlauf wird ein Rad ausgemustert, die Stammnutzer:in faellt dabei (ANN-557). Automatisch faellt nur ein ausgemustertes Rad, sobald sein Verlauf nach dessen Fristen gefallen ist.',
    215),
   ('fleet_key_handovers', 'schluesselverlauf', 'automatisch',
    'Schluesselstand (FLT-001): 30 Tage nach der Rueckgabe; offen nie (ANN-551). Faellt frueher mit dem Rad (cascade).',
@@ -1271,7 +1271,7 @@ revoke all on function public.remove_fleet_bike(uuid) from public, anon;
 grant execute on function public.remove_fleet_bike(uuid) to authenticated;
 
 comment on function public.remove_fleet_bike(uuid) is
-  'FLT-001 (ANN-557): Rad entfernen. Ohne Verlauf geloescht, mit Verlauf ausgemustert - aus der Flotte, offene Sperre und Stellen erledigt, Stammnutzer:in entfernt, Verlauf bis zum Ende seiner Frist. Nur owner (BEF-066).';
+  'FLT-001 (ANN-557): Rad entfernen. Ohne Verlauf geloescht, mit Verlauf ausgemustert - aus der Flotte, offene Sperre und Stellen erledigt, Stammnutzer:in entfernt, Verlauf bis zum Ende seiner Frist; danach faellt das Rad im Loeschlauf. Nur owner (BEF-066).';
 
 -- -----------------------------------------------------------------------------
 -- 17. Schluessel nehmen und zuruecklegen (alle Praxisrollen der Behandlung)
@@ -1587,6 +1587,12 @@ begin
   if p_transport is not null and p_transport not in ('carsharing', 'fahrdienst') then
     raise exception 'unknown transport' using errcode = '22023';
   end if;
+  -- ANN-558: Ein Ort gehoert nur zum zurueckgelassenen Rad, und dieser
+  -- Abschluss sperrt - die Freigabe leert ihn also wieder.
+  if app.fleet_text(p_location_note, 200, 'location note') is not null
+     and p_outcome <> 'transportFortsetzung' then
+    raise exception 'location note only for a bike left behind' using errcode = '22023';
+  end if;
 
   insert into public.fleet_breakdowns (
     organization_id, bike_id, outcome, summary, remark, location_note, transport, reported_by
@@ -1722,9 +1728,10 @@ comment on function public.release_fleet_bike(uuid) is
 -- Eine Funktion fuer die ganze Radflotte, aufgerufen aus apply_retention -
 -- wie die Fotos der Akte (app.delete_due_patient_photos). Reihenfolge:
 -- Schluessel, Sperren, dann Check-Ups und Pannen (deren Stellen und Fotos
--- fallen per cascade). Kein Legal Hold: Loeschsperren stehen heute an der
--- Akte (ANN-033); ein Rad kennt keine. Wer eine Loeschung anhalten muss,
--- sichert vorher die Unterlage fuer die Werkstatt (ANN-551, BEF-166).
+-- fallen per cascade), zuletzt ausgemusterte Raeder ohne Verlauf. Kein Legal
+-- Hold: Loeschsperren stehen heute an der Akte (ANN-033); ein Rad kennt
+-- keine, und eine faellige Loeschung laesst sich bis BEF-166 nicht anhalten
+-- (ANN-551). BEF-166 ist deshalb Bedingung vor dem Scharfschalten.
 -- -----------------------------------------------------------------------------
 create function app.delete_due_fleet_records(p_org uuid, p_time_zone text, p_run uuid)
 returns integer
@@ -1846,6 +1853,27 @@ begin
   get diagnostics v_teil = row_count;
   v_anzahl := v_anzahl + v_teil;
 
+  -- Ausgemusterte Raeder (ANN-557): Ist ihr Verlauf nach seinen Fristen
+  -- gefallen, faellt auch das Rad - ausgemustert heisst nicht dauerhaft
+  -- ausgeblendet (ADR-008 Punkt 10). Ein Rad in der Flotte bleibt, bis die
+  -- Praxis es entfernt.
+  with geloescht as (
+    delete from public.fleet_bikes r
+    where r.organization_id = p_org
+      and r.archived_at is not null
+      and not exists (select 1 from public.fleet_checkups c where c.bike_id = r.id)
+      and not exists (select 1 from public.fleet_breakdowns d where d.bike_id = r.id)
+      and not exists (select 1 from public.fleet_blocks b where b.bike_id = r.id)
+      and not exists (select 1 from public.fleet_key_handovers k where k.bike_id = r.id)
+    returning r.id, r.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run, 'fleet_bikes', g.id, 'betriebsdaten', now()
+  from geloescht g;
+  get diagnostics v_teil = row_count;
+  v_anzahl := v_anzahl + v_teil;
+
   return v_anzahl;
 end;
 $$;
@@ -1853,7 +1881,7 @@ $$;
 revoke all on function app.delete_due_fleet_records(uuid, text, uuid) from public, anon, authenticated;
 
 comment on function app.delete_due_fleet_records(uuid, text, uuid) is
-  'FLT-001 (ANN-551): Loeschlauf der Radflotte - Schluessel 30 Tage nach der Rueckgabe, Sperren, Check-Ups und Pannen drei Jahre ab Ende des Kalenderjahres; offene nie. Schreibt das Loeschjournal. Aufgerufen aus public.apply_retention().';
+  'FLT-001 (ANN-551): Loeschlauf der Radflotte - Schluessel 30 Tage nach der Rueckgabe, Sperren, Check-Ups und Pannen drei Jahre ab Ende des Kalenderjahres; offene nie. Danach ausgemusterte Raeder ohne Verlauf (ANN-557). Schreibt das Loeschjournal. Aufgerufen aus public.apply_retention().';
 
 -- -----------------------------------------------------------------------------
 -- 23. Der Loeschlauf ruft die Radflotte auf (ADR-008, ANN-551)
@@ -2407,12 +2435,15 @@ declare
     -- (cascade); seine Eintraege fallen mit ihm.
     'platform_messages',
     -- FLT-001: die Radflotte haengt an keiner Akte. Schluessel und Sperren
-    -- vor den Pannen (eine Sperre zeigt auf ihre Panne, set null); Stellen
-    -- und Fotos fallen mit Check-Up und Panne (cascade).
+    -- vor den Pannen (eine Sperre zeigt auf ihre Panne, set null); einzeln
+    -- geloeschte Fotos vor Check-Up und Panne, deren Stellen und uebrige
+    -- Fotos mit ihnen fallen (cascade); das ausgemusterte Rad zuletzt.
     'fleet_key_handovers',
     'fleet_blocks',
+    'fleet_photos',
     'fleet_checkups',
     'fleet_breakdowns',
+    'fleet_bikes',
     'treatment_base_items',
     'treatment_bases',
     'appointments',

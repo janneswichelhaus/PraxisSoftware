@@ -233,6 +233,15 @@ async function fotos(): Promise<string[]> {
 }
 
 /** Die offenen Löschaufträge im Bucket der Fotos am Rad. */
+/** Einzeln gelöschte Fotos im Löschjournal (ADR-008 Punkt 8). */
+async function journal(): Promise<string[]> {
+  const { rows } = await asPostgres<{ target_id: string }>(
+    `select target_id from public.deletion_journal
+     where target_table = 'fleet_photos' and retention_class = 'radflotte_ereignis'`,
+  );
+  return rows.map((r) => r.target_id);
+}
+
 async function auftraege(): Promise<{ object_key: string; ordered_by: string | null }[]> {
   const { rows } = await asPostgres<{ object_key: string; ordered_by: string | null }>(
     `select object_key, ordered_by from public.storage_deletion_orders
@@ -462,6 +471,7 @@ describe('Fotos am Rad (FLT-002)', () => {
         users.ownerTherapist,
         users.office,
         users.trainer,
+        users.patientMax,
         users.plattformTina,
       ]) {
         expect(await meldung(hochladen(konto, v)), konto).toContain('row-level security');
@@ -706,6 +716,10 @@ describe('Fotos am Rad (FLT-002)', () => {
         );
         expect((await auftraege()).every((a) => a.ordered_by === null)).toBe(true);
         expect(await auditAnzahl()).toBe(audit);
+        // Verworfen bleibt verworfen, auch nach einer Wiederherstellung.
+        expect((await journal()).sort()).toEqual(
+          [typ.photo_id, summe.photo_id, metadaten.photo_id].sort(),
+        );
       } finally {
         await schalter(false);
       }
@@ -898,6 +912,15 @@ describe('Fotos am Rad (FLT-002)', () => {
         'select user_id from public.fleet_photo_access_grants',
       );
       expect(rows).toEqual([{ user_id: users.office }]);
+
+      // Ohne weiteres Ausstellen räumt der tägliche Lauf auf: Eine abgelaufene
+      // Freigabe hielte sonst fest, wer wann ein Foto öffnen wollte (§20).
+      await asPostgres(
+        `update public.fleet_photo_access_grants
+            set created_at = now() - interval '1 minute', expires_at = now() - interval '30 seconds'`,
+      );
+      await asPostgres('select public.discard_stale_fleet_photo_uploads()');
+      expect((await asPostgres('select 1 from public.fleet_photo_access_grants')).rows).toEqual([]);
     });
 
     it('jede Praxisrolle der Behandlung liest; Trainingsbetreuung, Patienten-, Plattformkonto und Anonyme nicht', async () => {
@@ -1099,6 +1122,15 @@ describe('Fotos am Rad (FLT-002)', () => {
         [offen[0]!.id],
       );
       expect(geholt).toEqual([{ bucket_id: 'radflotte', object_key: v.object_key }]);
+      // Auch mit offener Freigabe entfernt kein anderes Konto das Objekt: weder
+      // die fremde Praxis noch ein Patienten- oder Plattformkonto.
+      const fremd = await fremdeOrganisation();
+      for (const konto of [fremd.owner, users.patientMax, users.plattformTina]) {
+        expect(
+          (await asStorageApi(konto, OPERATION, ENTFERNEN, [v.object_key])).rows,
+          konto,
+        ).toEqual([]);
+      }
       // Die Löschfreigabe öffnet das Objekt nicht zum Ansehen.
       expect(await signieren(users.ownerTherapist, v.object_key)).toBe(0);
       expect(
@@ -1115,6 +1147,37 @@ describe('Fotos am Rad (FLT-002)', () => {
         "select name from storage.objects where bucket_id = 'radflotte'",
       );
       expect(objekte).toEqual([{ name: bleibt.object_key }]);
+      expect(await fotos()).toEqual([bleibt.photo_id]);
+    });
+  });
+
+  describe('Löschjournal (ADR-008 Punkt 8, ADR-017 Punkt 26)', () => {
+    it('ein gelöschtes Foto kommt mit einer Wiederherstellung nicht zurück', async () => {
+      const { stelle } = await checkUp(users.teamLead);
+      const bleibt = await fotografieren(users.teamLead, { spot: stelle });
+      const v = await fotografieren(users.teamLead, { spot: stelle });
+      const { rows: gesichert } = await asPostgres<{ foto: unknown }>(
+        'select to_jsonb(f) as foto from public.fleet_photos f where id = $1',
+        [v.photo_id],
+      );
+
+      // Etwa weil doch eine Person im Bild war.
+      await asUserCommitted(users.teamLead, LOESCHEN, [v.photo_id]);
+      expect(await journal()).toEqual([v.photo_id]);
+
+      // Ein Restore bringt die Zeile zurück; das Journal zieht nach.
+      await asPostgres(
+        `insert into public.fleet_photos
+           (id, organization_id, bike_id, spot_id, checkup_id, mime_type, byte_size,
+            checksum_sha256, status, confirmation_requested_at, confirmed_at, verified_at,
+            created_by, created_at)
+         select id, organization_id, bike_id, spot_id, checkup_id, mime_type, byte_size,
+                checksum_sha256, status, confirmation_requested_at, confirmed_at, verified_at,
+                created_by, created_at
+         from jsonb_populate_record(null::public.fleet_photos, $1::jsonb)`,
+        [JSON.stringify(gesichert[0]!.foto)],
+      );
+      await asPostgres('select public.reapply_deletion_journal()');
       expect(await fotos()).toEqual([bleibt.photo_id]);
     });
   });

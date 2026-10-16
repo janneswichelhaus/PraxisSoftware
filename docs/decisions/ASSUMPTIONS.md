@@ -5727,7 +5727,7 @@ Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
-**Annahme.** „In Reparatur“ ist eine offene Sperre, „Im Einsatz“ ein genommener Schlüssel, sonst „Verfügbar“; kein Statusfeld am Rad. „Rad entfernen“ löscht ein Rad ohne Verlauf und mustert eines mit Verlauf aus: aus der Flotte, Stammnutzer:in entfernt, Verlauf bis zum Ende seiner Frist.
+**Annahme.** „In Reparatur“ ist eine offene Sperre, „Im Einsatz“ ein genommener Schlüssel, sonst „Verfügbar“; kein Statusfeld am Rad. „Rad entfernen“ löscht ein Rad ohne Verlauf und mustert eines mit Verlauf aus: aus der Flotte, Stammnutzer:in entfernt; ist der Verlauf nach seiner Frist gefallen, löscht der Löschlauf auch das Rad.
 
 **Begründung.** Ein Statusfeld neben Sperre und Schlüssel wäre eine zweite Wahrheit (`ARBEITSBEREICHE.md`, Regel 1); Löschen mit Verlauf nähme den Nachweis aus ANN-551.
 
@@ -5739,7 +5739,7 @@ Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Wo ein zurückgelassenes Rad steht, ist Freitext (bis 200 Zeichen) an der Pannenmeldung. Er geht an keinen Dienst, nicht in die Unterlage für die Werkstatt und nicht in die Zusammenfassung und wird mit der Freigabe oder dem Ausmustern des Rads geleert.
+**Annahme.** Wo ein zurückgelassenes Rad steht, ist Freitext (bis 200 Zeichen) an der Pannenmeldung, nur bei diesem Abschluss (der Server weist ihn sonst ab). Er geht an keinen Dienst, nicht in die Unterlage für die Werkstatt und nicht in die Zusammenfassung und wird mit der Freigabe oder dem Ausmustern des Rads geleert.
 
 **Begründung.** Der Ort liegt oft vor dem Haus einer Patientin und trüge so nebenbei einen Patientenbezug (ADR-019); gebraucht wird er nur, bis das Rad abgeholt ist.
 

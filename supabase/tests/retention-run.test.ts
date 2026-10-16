@@ -783,6 +783,9 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // KOM-009: Regel in public.purge_notification_deliveries (eigener
       // Zeitplan), Tests in benachrichtigungen.test.ts.
       'benachrichtigung',
+      // FLT-001: nur ausgemusterte Räder ohne Verlauf (ANN-557); Regel in
+      // app.delete_due_fleet_records, Tests in fleet.test.ts.
+      'betriebsdaten',
       'loeschauftrag',
       'loeschjournal',
       'patientenakte',
