@@ -47,7 +47,7 @@ export function kontextFuer(rollen: readonly RoleKey[]): Kontext {
   const zugang = canManageStaffAccounts(rollen);
   return {
     zugang,
-    // Annahme (Überholung 6, G5): Arbeitszeiten nimmt `set_staff_working_hours`
+    // ANN-581 (Überholung 6, G5): Arbeitszeiten nimmt `set_staff_working_hours`
     // nur für eine zuordenbare Person an (`app.is_assignable_therapist`). Eine
     // neue Person ist das erst, wenn owner sie in den Kalender nimmt (ANN-226)
     // oder wenn sie ihre Einladung angenommen hat. Die Seite sieht deshalb nur,
@@ -105,7 +105,7 @@ export function freieRaeder(flotte: Pick<Fleet, 'bikes'>): Fleet['bikes'] {
 const BEHANDELND: readonly RoleKey[] = ['therapist', 'team_lead'];
 
 /**
- * Behandelt die neue Person? Ohne gewählte Rolle (office fragt nicht danach,
+ * Behandelt die neue Person (ANN-582)? Ohne gewählte Rolle (office fragt nicht danach,
  * owner hat „Später“ gewählt) wie eine Therapeut:in: Arbeitszeiten und Rad
  * werden gefragt, statt still zu entfallen. Mit Rollen nur, wenn eine
  * behandelnde dabei ist - Praxismanagement und Trainingsbetreuung haben keinen

@@ -5905,7 +5905,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervo
 
 ### ANN-572 — Geführter Ablauf als Baustein: Frage oben, Antworten im festen Fuß
 
-Technik · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** Seltene, verzweigte oder einhändige Abläufe laufen im Baustein `GefuehrterAblauf`: Kopf mit Objekt und ✕, „← Zurück“, Schritt (Balken nur bei fester Zahl), je Seite eine Frage; ohne Bühne steht die Frage oben und die Antworten im festen Fuß, mit Bühne (3D-Rad) wie beim Check-Up unter ihr. Nach jedem Seitenwechsel 0,7 s keine Tipps; aus dem Abschluss geändert geht es zurück dorthin (`abfolge.ts`).
 
@@ -5917,7 +5917,7 @@ Technik · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage
 
 ### ANN-574 — Tag umplanen: Auswahl abwählbar, Anrufstand nur in der Adresse
 
-Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen (Kollegin übernimmt). `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab und schreibt nichts, wenn sie nicht mehr zum Tag passt. Danach je Person eine Seite mit „Erreicht“ oder „Nicht erreicht“; der Stand steht nur als Kennungen in der Adresse, nicht am Server.
 
@@ -5929,7 +5929,7 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 
 ### ANN-575 — Schlüssel von Hand zu Hand in einem Vorgang
 
-Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** Ein Schlüssel, der bei jemandem liegt, geht über `hand_over_fleet_key` an eine andere Person aus dem Mitarbeiterstamm: Der offene Vorgang endet, ein neuer beginnt, in einer Transaktion. Dieselben Rollen wie beim Eintragen (BEF-066), nicht bei gesperrtem Rad, nicht an dieselbe Person; der Datensatz ist der Nachweis, kein Auditereignis (ADR-010).
 
@@ -5941,7 +5941,7 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 
 ### ANN-573 — Niemand öffnet: erst anrufen, dann die Uhr abwarten
 
-Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
 
 **Annahme.** „Niemand öffnet?“ führt in einem Fenster durch drei Seiten: geklingelt → angerufen (Rufnummer als Knopf; „Erreicht“ schließt ohne Vermerk) → 15 Minuten gewartet mit der Uhr ab dem ersten Tipp. Vermerkt wird erst nach 15 Minuten oder mit dem Haken „Schon vorher 15 Minuten gewartet“; gespeichert wird wie bisher nur `record_no_show` mit bestätigtem Protokoll. Die beiden anderen Fälle stehen auf der ersten Seite.
 
@@ -5950,3 +5950,27 @@ Praxisprozess · offen · 2026-10-16 · Claude (Überholung 6) · — · Wiederv
 **Anker.** `src/features/appointments/nichtangetroffen.ts`, `HomeVisitFlow.tsx`.
 
 **Änderungspfad.** Reihenfolge oder Begründungsweg: `nichtangetroffen.ts` · Aufwand `klein`.
+
+### ANN-581 — Einrichten: Wochenplan nur mit owner, die Person dafür in den Kalender
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Wählt owner beim Einrichten eine Vorlage, nimmt „… einrichten“ die Person zuerst in den Kalender für Behandlungen (Training bleibt aus) und speichert dann den Wochenplan Tag für Tag. office sieht die Seite nicht; Abschluss und Ergebnis nennen den Weg über die Inhaber:in.
+
+**Begründung.** `set_staff_working_hours` nimmt nur zuordenbare Personen an, das Merkmal setzt nur owner (ANN-226). Eine neue Therapeut:in soll gleich im Kalender stehen (G5).
+
+**Anker.** `kontextFuer` in `src/features/staff/einrichtung.ts`.
+
+**Änderungspfad.** office darf das Merkmal setzen (ANN-226), dann genügt `canManageWorkingHours` · Aufwand `klein`.
+
+### ANN-582 — Einrichten: Wochenplan und Rad nur, wenn die Person behandelt
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+
+**Annahme.** Wochenplan und Lastenrad fragt der Ablauf bei Therapeut:in oder Teamleitung und solange keine Rolle gewählt ist (office; owner „Später“). Bei Praxismanagement oder Trainingsbetreuung allein entfallen beide Seiten; eine schon gegebene Antwort schreibt dann nichts.
+
+**Begründung.** Spec G5 „falls Therapie“; Wochenpläne gibt es am Server nur für Behandelnde, die Trainingsbetreuung nutzt die Radflotte nicht (`app.can_read_fleet`).
+
+**Anker.** `behandelt` in `src/features/staff/einrichtung.ts`.
+
+**Änderungspfad.** Die Liste `BEHANDELND` · Aufwand `klein`.
