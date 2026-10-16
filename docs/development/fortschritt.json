@@ -1100,6 +1100,15 @@
           "vermerk": "Bereichsüberholung 5 der Roadmap; ANN-560, ANN-561; eigene Bilder und Videos offen (ANN-539); Sichtung per Bildstrecke im PR"
         },
         {
+          "id": "gef-epic-001",
+          "name": "Geführte Abläufe: Baustein GefuehrterAblauf, Niemand öffnet (G1), Tag umplanen (G2), Panne (G3), Schlüssel übergeben (G4), Mitarbeiter:in einrichten (G5), Plattform-Termin (G6)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-16",
+          "nachweis": "Branch ccr-350340fc-pnh5ti, Migration 20261123100000_ueb6_tag_umplanen_auswahl_schluesseluebergabe.sql, supabase/tests/appointment-states.test.ts und fleet.test.ts, tests/e2e/besuch.spec.ts, radflotte.spec.ts, einrichten.spec.ts, plattform-termine.spec.ts, authenticated/appointment-states.spec.ts und mitarbeiter-einrichten.spec.ts, Zweitreview",
+          "vermerk": "Bereichsüberholung 6 der Roadmap (Auftrag Jannes 16.10.2026); ANN-572 bis ANN-575, ANN-581 bis ANN-587; Sichtung per Bildstrecke im PR"
+        },
+        {
           "id": "ueb-012",
           "name": "UEB-012 Mitgelieferter Übungskatalog: 196 Übungen, 193 gezeichnete Figuren, 15 Vorlagen, Übernahme durch owner",
           "gewicht": 2,
