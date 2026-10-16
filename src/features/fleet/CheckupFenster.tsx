@@ -1125,9 +1125,11 @@ function Werbungsseite({
 
 /**
  * Ein Foto von einer Seite des Rads (FLT-007, ANN-568): Pflicht, eines je
- * Seite. Nach dem Auslösen geht es gleich zur nächsten Seite; „← Zurück“
- * zeigt das Foto wieder, mit „Neu aufnehmen“. Über den Kameradialog der
- * Anwendung, nur im Arbeitsspeicher bis zum Speichern (ANN-552).
+ * Seite. Ohne Foto öffnet die Seite die Kamera gleich selbst - am Lenker mit
+ * Handschuh zählt jeder Tipp; „Foto verwenden“ führt zur nächsten Seite.
+ * „← Zurück“ zeigt das Foto wieder, mit „Neu aufnehmen“. Über den
+ * Kameradialog der Anwendung, nur im Arbeitsspeicher bis zum Speichern
+ * (ANN-552).
  */
 function Fotoseite({
   index,
@@ -1143,7 +1145,7 @@ function Fotoseite({
   onWeiter: () => void;
 }) {
   const seite = SEITEN[index]!;
-  const [kamera, setKamera] = useState(false);
+  const [kamera, setKamera] = useState(() => foto === null);
   // Eine feste Liste je Foto - sonst entstünde bei jedem Zeichnen eine neue Adresse.
   const liste = useMemo(() => (foto ? [foto] : []), [foto]);
   const [adresse] = useObjektadressen(liste);

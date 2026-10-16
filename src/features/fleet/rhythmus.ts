@@ -56,9 +56,9 @@ export function faelligAm(f: Faelligkeit | null, tag: string): boolean {
   return f !== null && (f.ab === null || f.ab <= tag);
 }
 
-/** „Noch nie geprüft“, „fällig seit 12.10.2026“, „fällig ab 20.10.2026“. */
+/** „Check-Up fällig, noch nie geprüft“, „fällig seit 12.10.2026“, „fällig ab 20.10.2026“. */
 export function faelligText(f: Faelligkeit, heute: string): string {
-  if (f.ab === null) return 'Noch nie geprüft';
+  if (f.ab === null) return 'Check-Up fällig, noch nie geprüft';
   const tag = formatTag(`${f.ab}T12:00:00Z`, 'UTC');
   if (f.ab === heute) return 'Check-Up heute fällig';
   return f.ab < heute ? `Check-Up fällig seit ${tag}` : `Check-Up fällig ab ${tag}`;

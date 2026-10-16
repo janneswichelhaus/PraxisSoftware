@@ -11,11 +11,13 @@ import { testDetail, testFlotte } from '../../src/features/fleet/testdaten';
  *   * **R1** Schlüssel des eigenen Rads nehmen: 1 Tipp ab der Radflotte
  *     (vorher 2 Tipps und ein Seitenwechsel);
  *   * **R2** Schlüssel zurücklegen: 1 Tipp (vorher 1);
- *   * **R3** Check-Up ohne Befund: ≤ 16 Tipps ab der Radflotte - geführt,
+ *   * **R3** Check-Up ohne Befund: ≤ 25 Tipps ab der Radflotte - geführt,
  *     jeder der zwölf Prüfpunkte wird bestätigt (FLT-005; vorher 4 mit
- *     vorbelegtem „In Ordnung“);
- *   * **R4** Check-Up mit einer Stelle am 3D-Rad: ≤ 17 Tipps + Text (vorher
- *     6 + Text);
+ *     vorbelegtem „In Ordnung“), dazu seit FLT-007 (ANN-568) „Abgewischt“
+ *     für die Werbeflächen und je Seite „Auslösen“ und „Foto verwenden“
+ *     (vorher 16 ohne Werbeflächen und Fotos);
+ *   * **R4** Check-Up mit einer Stelle am 3D-Rad: ≤ 26 Tipps + Text (vorher
+ *     17 ohne Werbeflächen und Fotos);
  *   * **R5** Panne, Rad weiter fahrbar, mit einer Stelle: ≤ 7 Tipps + Text;
  *   * **R6** Freigabe durch die Teamleitung: ≤ 3 Tipps;
  *   * **R7** Unterlage für die Werkstatt ab dem Rad: 2 Tipps bis zum
@@ -50,8 +52,13 @@ test.use({
       '--enable-unsafe-swiftshader',
       '--use-angle=swiftshader',
       '--ignore-gpu-blocklist',
+      // Künstliche Kamera mit Testbild für die Seitenfotos (FLT-007), Freigabe
+      // ohne Rückfrage - wie in fotos.spec.ts.
+      '--use-fake-device-for-media-stream',
+      '--use-fake-ui-for-media-stream',
     ],
   },
+  permissions: ['camera'],
 });
 
 function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie') {
@@ -148,6 +155,18 @@ function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie') {
       checkup_id: 'checkup-neu',
       spot_ids: neueStellen(String(p.p_bike_id), 'checkup', p),
     }),
+    // Fotos (ANN-552): vorbereiten, ablegen, bestätigen - ohne Prüfung am Server.
+    prepare_fleet_photo_upload: (p) => {
+      const id = `foto-${(aufrufe.prepare_fleet_photo_upload ?? []).length}`;
+      return [
+        {
+          photo_id: id,
+          bucket_id: 'radflotte',
+          object_key: `org/${String(p.p_checkup_id ?? p.p_spot_id)}/${id}`,
+        },
+      ];
+    },
+    confirm_fleet_photo_upload: () => null,
     record_fleet_breakdown: (p) => {
       const ids = neueStellen(String(p.p_bike_id), 'breakdown', p);
       const sperrt = p.p_outcome !== 'meldungOhneSperre';
@@ -263,6 +282,11 @@ async function axeVerstoesse(page: Page): Promise<string[]> {
 async function oeffne(page: Page, server: ReturnType<typeof nachbildung>, suche = '') {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.route('**/rest/v1/**', (route) => server.beantworte(route));
+  // Die Ablage nimmt jedes Foto an; die Prüfung am Server gibt es hier nicht.
+  await page.route('**/storage/v1/**', (route) =>
+    route.fulfill({ json: { Key: 'radflotte/foto', Id: 'objekt' } }),
+  );
+  await page.route('**/functions/v1/**', (route) => route.fulfill({ status: 404, json: {} }));
   await page.goto(`${PRUEFSEITE}${suche}`);
 }
 
@@ -321,7 +345,35 @@ async function festImBild(abschluss: Locator) {
   });
 }
 
-test('R3: geführter Check-Up ohne Befund in höchstens 16 Tipps, jede Seite ohne Scrollen', async ({
+/**
+ * Nach den zwölf Punkten (FLT-007, ANN-568): „Abgewischt“, dann je Seite die
+ * Kamera - sie öffnet sich selbst - mit „Auslösen“ und „Foto verwenden“.
+ */
+async function reinigenUndFotografieren(page: Page, z: ReturnType<typeof zaehler>) {
+  const werbung = checkupFenster(page, 'Werbeflächen abwischen');
+  await expect(werbung.getByText('Reinigung', { exact: true })).toBeVisible();
+  expect(await scrolltNicht(page), 'Werbeflächen ohne Scrollen').toBe(true);
+  await mindestens44(werbung.getByRole('button', { name: 'Abgewischt' }));
+  await z.tippe(werbung.getByRole('button', { name: 'Abgewischt' }));
+  for (const [index, titel] of [
+    'Foto von links',
+    'Foto von vorne',
+    'Foto von rechts',
+    'Foto von hinten',
+  ].entries()) {
+    await expect(
+      checkupFenster(page, titel).getByText(`Foto ${index + 1} von 4`, { exact: true }),
+    ).toBeVisible();
+    const kamera = page.getByRole('dialog', { name: titel }).last();
+    await expect
+      .poll(() => page.evaluate(() => document.querySelector('video')?.videoWidth ?? 0))
+      .toBeGreaterThan(0);
+    await z.tippe(kamera.getByRole('button', { name: 'Auslösen' }));
+    await z.tippe(kamera.getByRole('button', { name: 'Foto verwenden' }));
+  }
+}
+
+test('R3: geführter Check-Up ohne Befund in höchstens 25 Tipps, jede Seite ohne Scrollen', async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -361,6 +413,7 @@ test('R3: geführter Check-Up ohne Befund in höchstens 16 Tipps, jede Seite ohn
     }
     await z.tippe(seite.getByRole('button', { name: 'In Ordnung' }));
   }
+  await reinigenUndFotografieren(page, z);
 
   const abschluss = checkupFenster(page, 'Alles geprüft?');
   await expect(
@@ -372,21 +425,30 @@ test('R3: geführter Check-Up ohne Befund in höchstens 16 Tipps, jede Seite ohn
   expect(await axeVerstoesse(page)).toEqual([]);
   await z.tippe(abschluss.getByRole('checkbox', { name: /habe das ganze Rad/ }));
   await z.tippe(abschluss.getByRole('button', { name: 'Check-Up speichern' }));
-  await expect(page.getByText('Check-Up gespeichert.')).toBeVisible({
+  await expect(page.getByText('Check-Up gespeichert, mit 4 Fotos.')).toBeVisible({
     timeout: NACH_DEM_SPEICHERN,
   });
   const eingabe = server.aufrufe.record_fleet_checkup![0]!;
   expect((eingabe.p_items as { rating: string }[]).map((item) => item.rating)).toEqual(
     Array(12).fill('ok'),
   );
+  expect(eingabe.p_ad_surfaces).toBe('wiped');
+  expect(server.aufrufe.prepare_fleet_photo_upload!.map((p) => [p.p_checkup_id, p.p_side])).toEqual(
+    [
+      ['checkup-neu', 'left'],
+      ['checkup-neu', 'front'],
+      ['checkup-neu', 'right'],
+      ['checkup-neu', 'back'],
+    ],
+  );
   test.info().annotations.push({
     type: 'R3',
-    description: `${z.tipps} Tipps (vorher 4 mit vorbelegtem „In Ordnung“)`,
+    description: `${z.tipps} Tipps (vorher 16 ohne Werbeflächen und Fotos)`,
   });
-  expect(z.tipps).toBeLessThanOrEqual(16);
+  expect(z.tipps).toBeLessThanOrEqual(25);
 });
 
-test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 17 Tipps und Text', async ({
+test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 26 Tipps und Text', async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -427,6 +489,7 @@ test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 17 Tipps 
   expect(await axeVerstoesse(page)).toEqual([]);
   await box.getByLabel('Was ist aufgefallen?').fill('Deckel klemmt');
   await z.tippe(box.getByRole('button', { name: 'Weiter' }));
+  await reinigenUndFotografieren(page, z);
 
   const abschluss = checkupFenster(page, 'Alles geprüft?');
   await expect(
@@ -436,7 +499,7 @@ test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 17 Tipps 
   await z.tippe(abschluss.getByRole('checkbox', { name: /habe das ganze Rad/ }));
   await z.tippe(abschluss.getByRole('button', { name: 'Check-Up speichern' }));
 
-  await expect(page.getByText('Check-Up gespeichert.')).toBeVisible({
+  await expect(page.getByText('Check-Up gespeichert, mit 4 Fotos.')).toBeVisible({
     timeout: NACH_DEM_SPEICHERN,
   });
   const eingabe = server.aufrufe.record_fleet_checkup![0]!;
@@ -446,8 +509,11 @@ test('R4: geführter Check-Up mit einer Stelle am 3D-Rad in höchstens 17 Tipps 
   await expect(
     page.getByRole('button', { name: 'Stelle 1 am Rad zeigen: Transportbox' }),
   ).toBeVisible();
-  test.info().annotations.push({ type: 'R4', description: `${z.tipps} Tipps + Text` });
-  expect(z.tipps).toBeLessThanOrEqual(17);
+  test.info().annotations.push({
+    type: 'R4',
+    description: `${z.tipps} Tipps + Text (vorher 17 ohne Werbeflächen und Fotos)`,
+  });
+  expect(z.tipps).toBeLessThanOrEqual(26);
 });
 
 test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frage, fester Abschluss', async ({
@@ -507,6 +573,7 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
   await box.getByLabel('Was ist aufgefallen?').fill('Deckel klemmt');
   expect(await scrolltNicht(page)).toBe(true);
   await box.getByRole('button', { name: 'Weiter' }).click();
+  await reinigenUndFotografieren(page, zaehler());
 
   const abschluss = checkupFenster(page, 'Alles geprüft?');
   await expect(
@@ -523,7 +590,7 @@ test('Check-Up mit zwei Befunden bei 375 × 667: Zurückgeste, Bauteil ohne Frag
 
   await abschluss.getByRole('checkbox', { name: /habe das ganze Rad/ }).click();
   await abschluss.getByRole('button', { name: 'Check-Up speichern' }).click();
-  await expect(page.getByText('Check-Up gespeichert.')).toBeVisible({
+  await expect(page.getByText('Check-Up gespeichert, mit 4 Fotos.')).toBeVisible({
     timeout: NACH_DEM_SPEICHERN,
   });
   const eingabe = server.aufrufe.record_fleet_checkup![0]!;

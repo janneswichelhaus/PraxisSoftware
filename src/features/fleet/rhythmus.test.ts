@@ -39,7 +39,7 @@ describe('Check-Up-Rhythmus', () => {
     expect(faelligText({ ab: '2026-10-12' }, '2026-10-16')).toBe('Check-Up fällig seit 12.10.2026');
     expect(faelligText({ ab: '2026-10-16' }, '2026-10-16')).toBe('Check-Up heute fällig');
     expect(faelligText({ ab: '2026-10-20' }, '2026-10-16')).toBe('Check-Up fällig ab 20.10.2026');
-    expect(faelligText({ ab: null }, '2026-10-16')).toBe('Noch nie geprüft');
+    expect(faelligText({ ab: null }, '2026-10-16')).toBe('Check-Up fällig, noch nie geprüft');
     expect(rhythmusText(14)).toBe('Alle 2 Wochen');
     expect(rhythmusText(10)).toBe('Alle 10 Tage');
     expect(rhythmusText(null)).toBe('Aus');

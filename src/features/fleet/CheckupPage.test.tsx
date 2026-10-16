@@ -84,10 +84,9 @@ async function reinigenUndFotografieren(nutzer: ReturnType<typeof userEvent.setu
   await nutzer.click(
     within(await fenster('Werbeflächen abwischen')).getByRole('button', { name: 'Abgewischt' }),
   );
+  // Jede Fotoseite öffnet die Kamera selbst.
   for (const titel of ['Foto von links', 'Foto von vorne', 'Foto von rechts', 'Foto von hinten']) {
-    await nutzer.click(
-      within(await fenster(titel)).getByRole('button', { name: 'Foto aufnehmen' }),
-    );
+    await fenster(titel);
     await nutzer.click(
       within(screen.getByRole('group', { name: `Kamera: ${titel}` })).getByRole('button', {
         name: 'Auslösen',
@@ -530,11 +529,12 @@ describe('Geführter Check-Up', () => {
       within(await fenster('Werbeflächen abwischen')).getByRole('button', { name: 'Abgewischt' }),
     );
     const links = within(await fenster('Foto von links'));
-    // Ohne Foto kein Weiter - nur „Foto aufnehmen“.
-    expect(links.queryByRole('button', { name: 'Weiter' })).not.toBeInTheDocument();
+    // Die Kamera ist gleich offen; abgebrochen bleibt nur „Foto aufnehmen“ - kein Weiter.
+    expect(screen.getByRole('group', { name: 'Kamera: Foto von links' })).toBeInTheDocument();
     // Das Rad zeigt sich von links (θ 180°).
     expect(screen.getByTestId('blick')).toHaveTextContent(/^180 82/);
-    await nutzer.click(links.getByRole('button', { name: 'Foto aufnehmen' }));
+    expect(links.queryByRole('button', { name: 'Weiter' })).not.toBeInTheDocument();
+    expect(links.getByRole('button', { name: 'Foto aufnehmen' })).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Auslösen' }));
 
     const vorne = within(await fenster('Foto von vorne'));
@@ -542,6 +542,8 @@ describe('Geführter Check-Up', () => {
     await nutzer.click(vorne.getByRole('button', { name: '← Zurück' }));
     const wieder = within(await fenster('Foto von links'));
     expect(wieder.getByRole('img', { name: 'Foto von links, aufgenommen' })).toBeInTheDocument();
+    // Mit Foto öffnet sich die Kamera nicht von selbst.
+    expect(screen.queryByRole('group', { name: /^Kamera/ })).not.toBeInTheDocument();
     expect(wieder.getByRole('button', { name: 'Neu aufnehmen' })).toBeInTheDocument();
     await nutzer.click(wieder.getByRole('button', { name: 'Weiter' }));
     expect(await fenster('Foto von vorne')).toBeInTheDocument();
