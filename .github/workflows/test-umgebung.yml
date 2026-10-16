@@ -275,6 +275,20 @@ jobs:
           # "kex_exchange_identification: Connection reset by peer" ab.
           echo "SSH=ssh -4 -i $HOME/.ssh/deploy -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/deploy_known_hosts -o ControlMaster=auto -o ControlPath=$HOME/.ssh/deploy-%C -o ControlPersist=300" >> "$GITHUB_ENV"
 
+      - name: Verbindung aufbauen
+        # Die eine geteilte Verbindung von oben, mit neuen Versuchen: Am
+        # 2026-10-16 brach Uberspace sie zweimal hintereinander schon vor dem
+        # Handshake ab ("kex_exchange_identification: read: Connection reset
+        # by peer", BEF-171). Bis zu fuenf Versuche, 30 s bis 4 min
+        # auseinander (ANN-559); Zweite Tuer und Hochladen laufen danach ueber
+        # diese Verbindung. Ein abgewiesener Schluessel oder ein fremder
+        # Serverschluessel bricht sofort ab - Warten hilft dort nicht.
+        if: steps.bereit.outputs.bereit == 'true'
+        env:
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+        run: node scripts/testumgebung.mjs verbinden "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST"
+
       - name: Zweite Tuer
         if: steps.bereit.outputs.bereit == 'true'
         env:

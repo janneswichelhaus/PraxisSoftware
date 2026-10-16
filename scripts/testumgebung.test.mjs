@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   KARTENDIENST_HOSTS,
+  SSH_PAUSEN,
   TIEFE_ROUTE,
   htaccess,
   inhaltsrichtlinie,
@@ -9,6 +10,9 @@ import {
   pruefeAuslieferung,
   pruefeKonfiguration,
   robotsTxt,
+  sshNeuVersuchen,
+  sshVersuch,
+  verbinde,
 } from './testumgebung.mjs';
 
 /**
@@ -261,5 +265,106 @@ describe('pruefeAuslieferung', () => {
       abrufen,
     });
     expect(fehler).toEqual(['Zweite Tür: ohne Kennwort Status 200 statt 401.']);
+  });
+});
+
+// Wörtlich aus dem gescheiterten Lauf vom 2026-10-16 (BEF-171), mit einer
+// Adresse aus dem Dokumentationsbereich.
+const ABBRUCH =
+  'kex_exchange_identification: read: Connection reset by peer\nConnection reset by 192.0.2.10 port 22\n';
+const ABGEWIESEN = 'konto@host.example: Permission denied (publickey).\n';
+
+describe('sshNeuVersuchen', () => {
+  it('versucht es neu, wenn die Verbindung vor der Anmeldung abbricht oder ausbleibt', () => {
+    expect(sshNeuVersuchen(ABBRUCH)).toBe(true);
+    expect(sshNeuVersuchen('kex_exchange_identification: Connection closed by remote host')).toBe(
+      true,
+    );
+    expect(sshNeuVersuchen('ssh: connect to host 192.0.2.10 port 22: Connection timed out')).toBe(
+      true,
+    );
+    expect(sshNeuVersuchen('ssh: connect to host 192.0.2.10 port 22: Connection refused')).toBe(
+      true,
+    );
+  });
+
+  it('nicht bei abgewiesenem Schlüssel, fremdem Serverschlüssel oder ohne Meldung', () => {
+    expect(sshNeuVersuchen(ABGEWIESEN)).toBe(false);
+    expect(sshNeuVersuchen('Host key verification failed.\n')).toBe(false);
+    // Auch wenn der Server danach die Verbindung schließt: Die Anmeldung ist das Problem.
+    expect(sshNeuVersuchen(`${ABGEWIESEN}Connection closed by 192.0.2.10 port 22\n`)).toBe(false);
+    expect(sshNeuVersuchen('')).toBe(false);
+  });
+});
+
+describe('verbinde', () => {
+  function ablauf(...ergebnisse) {
+    const pausen = [];
+    const meldungen = [];
+    let versuche = 0;
+    const optionen = {
+      versuchen: async () => ergebnisse[Math.min(versuche++, ergebnisse.length - 1)],
+      warten: async (sekunden) => {
+        pausen.push(sekunden);
+      },
+      melden: (meldung) => meldungen.push(meldung),
+    };
+    return { optionen, pausen, meldungen, versuche: () => versuche };
+  }
+  const GEHT = { ok: true, meldung: '' };
+  const BRICHT_AB = { ok: false, meldung: ABBRUCH };
+
+  it('verbindet beim ersten Versuch ohne Pause und ohne Meldung', async () => {
+    const { optionen, pausen, meldungen, versuche } = ablauf(GEHT);
+    expect(await verbinde(optionen)).toBe(true);
+    expect([versuche(), pausen, meldungen]).toEqual([1, [], []]);
+  });
+
+  it('versucht es nach einem Abbruch mit wachsender Pause neu (BEF-171)', async () => {
+    const { optionen, pausen, meldungen, versuche } = ablauf(BRICHT_AB, BRICHT_AB, GEHT);
+    expect(await verbinde(optionen)).toBe(true);
+    expect(versuche()).toBe(3);
+    expect(pausen).toEqual([30, 60]);
+    expect(meldungen).toEqual([
+      '::warning::SSH-Verbindung im 1. Versuch abgebrochen (kex_exchange_identification: read: Connection reset by peer / Connection reset by 192.0.2.10 port 22), nächster Versuch in 30 s.',
+      expect.stringMatching(/^::warning::SSH-Verbindung im 2\. Versuch abgebrochen .* in 60 s\.$/),
+      'SSH-Verbindung im 3. Versuch aufgebaut.',
+    ]);
+  });
+
+  it('gibt nach fünf Versuchen in gut sieben Minuten auf (ANN-559)', async () => {
+    const { optionen, pausen, meldungen, versuche } = ablauf(BRICHT_AB);
+    expect(await verbinde(optionen)).toBe(false);
+    expect(versuche()).toBe(5);
+    expect(pausen).toEqual(SSH_PAUSEN);
+    expect(SSH_PAUSEN.reduce((summe, pause) => summe + pause, 0)).toBe(450);
+    expect(meldungen.at(-1)).toMatch(/^::error::Keine SSH-Verbindung nach 5 Versuchen: /);
+  });
+
+  it('versucht es bei abgewiesenem Schlüssel nicht neu', async () => {
+    const { optionen, pausen, meldungen, versuche } = ablauf({ ok: false, meldung: ABGEWIESEN });
+    expect(await verbinde(optionen)).toBe(false);
+    expect([versuche(), pausen]).toEqual([1, []]);
+    expect(meldungen).toEqual([
+      '::error::SSH-Verbindung abgewiesen, kein neuer Versuch: konto@host.example: Permission denied (publickey).',
+    ]);
+  });
+});
+
+describe('sshVersuch', () => {
+  // Node steht für ssh: ein echter Prozess mit Rückgabewert und stderr.
+  it('liefert den Erfolg und die Meldung auf stderr eines Prozesses', async () => {
+    expect(await sshVersuch(process.execPath, ['-e', ''])).toEqual({ ok: true, meldung: '' });
+    const skript = `process.stderr.write(${JSON.stringify(ABBRUCH)}); process.exit(255)`;
+    expect(await sshVersuch(process.execPath, ['-e', skript])).toEqual({
+      ok: false,
+      meldung: ABBRUCH,
+    });
+  });
+
+  it('meldet ein fehlendes Programm als Fehlschlag ohne neuen Versuch', async () => {
+    const ergebnis = await sshVersuch('/gibt/es/nicht/ssh', []);
+    expect(ergebnis.ok).toBe(false);
+    expect(sshNeuVersuchen(ergebnis.meldung)).toBe(false);
   });
 });
