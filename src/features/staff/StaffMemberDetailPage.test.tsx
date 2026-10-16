@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -89,6 +91,29 @@ describe('StaffMemberDetailPage', () => {
   // zu tun ist - anrufen, schreiben, nachsehen wann sie arbeitet.
   // ---------------------------------------------------------------------------
   describe('Kontakt und Planung', () => {
+    it('zeigt die Rückmeldung eines Vorgangs, der hierher führte (Überholung 6, G5)', async () => {
+      // So kommt man nach „… einrichten“ hierher: mit dem Satz im Verlauf.
+      function NachDemEinrichten() {
+        const navigate = useNavigate();
+        const zustand: unknown = useLocation().state;
+        const einmal = useRef(false);
+        useEffect(() => {
+          if (einmal.current) return;
+          einmal.current = true;
+          void navigate(`/praxis/team/${STAFF_ID}`, {
+            replace: true,
+            state: { meldung: 'Anna Beispiel ist eingerichtet.' },
+          });
+        }, [navigate]);
+        return zustand ? <StaffMemberDetailPage user={testUser(['owner'])} /> : null;
+      }
+      renderWithProviders(<NachDemEinrichten />);
+      const meldung = await screen.findByText('Anna Beispiel ist eingerichtet.', undefined, {
+        timeout: 5000,
+      });
+      expect(meldung).toHaveAttribute('role', 'status');
+    });
+
     it('bietet Diensttelefon und dienstliche E-Mail als Weg an', async () => {
       renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
       // Der erste Test einer Datei zahlt das erste Zeichnen; unter Last dauert

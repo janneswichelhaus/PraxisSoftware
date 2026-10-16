@@ -172,6 +172,23 @@ describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
     expect(screen.queryByText(/Details aus der Datenbank/)).not.toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
   });
+
+  it('sagt, wenn die Standorte fehlen, statt nur „kein fester Standort" anzubieten (ORG-14)', async () => {
+    // Bis Überholung 6 stand diese Prüfung an der Anlage. Den Hauptstandort
+    // fragt seitdem nur noch das Bearbeiten ab - die Prüfung zieht mit.
+    fetchLocations.mockRejectedValue(new Error('kaputt'));
+    fetchStaffMember.mockResolvedValue({
+      ...anna,
+      primary_location_id: null,
+      primary_location_name: null,
+    });
+    renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
+
+    expect(
+      await screen.findByText('Die Standorte konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
