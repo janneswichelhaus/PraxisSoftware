@@ -5759,6 +5759,18 @@ Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Länger aufbewahren: Leeren in `release_fleet_bike` streichen · Aufwand `klein`.
 
+### ANN-559 — Auslieferung: SSH-Verbindung mit bis zu fünf Versuchen
+
+Technik · offen · 2026-10-16 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Test-Umgebung baut ihre eine SSH-Verbindung zu Uberspace mit bis zu fünf Versuchen auf, 30, 60, 120 und 240 s auseinander, jeder höchstens 20 s. Neu versucht wird nur, wenn die Verbindung vor der Anmeldung abbricht oder ausbleibt; ein abgewiesener Schlüssel oder ein fremder Serverschlüssel endet sofort rot.
+
+**Begründung.** Auftrag Jannes (16.10.) nach zwei Abbrüchen vor dem Handshake (BEF-171). Gut sieben Minuten überbrücken eine kurze Drosselung; wiederholte Fehlanmeldungen könnten die Adresse sperren.
+
+**Anker.** Schritt „Verbindung aufbauen“ in `.github/workflows/test-umgebung.yml`; Zahl und Pausen in `SSH_PAUSEN` (`scripts/testumgebung.mjs`).
+
+**Änderungspfad.** Ohne neue Versuche: den Schritt streichen, dann baut „Zweite Tuer“ die Verbindung auf; andere Pausen: `SSH_PAUSEN` · Aufwand `klein`.
+
 ### ANN-560 — Vorlagen der Praxis: ohne Person, für alle Planrollen, ändern nur, wer sie angelegt hat, und owner
 
 Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Übungen, zweite Runde)
