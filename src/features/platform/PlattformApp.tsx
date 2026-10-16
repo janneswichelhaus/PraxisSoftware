@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
 import { Button } from '@/components/ui/Button';
+import { PortalZielKontext } from '@/components/ui/portalZiel';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
@@ -110,7 +111,7 @@ export function PlattformApp({
     [zugangId, quelle],
   );
   const geruest = <Geruest zugaenge={zugaenge} email={email} onAbmelden={onAbmelden} />;
-  if (!api) return geruest;
+  if (!api) return <MitFensterZiel>{geruest}</MitFensterZiel>;
   return (
     <PlattformApiKontext.Provider value={api}>
       <NurLesenKontext.Provider value>
@@ -455,6 +456,28 @@ function Geruest({
       </main>
       <Reiterleiste bereiche={lesbar} />
     </div>
+  );
+}
+
+/**
+ * Wohin die Fenster der Plattform zeichnen (Überholung 6, Annahme B6-P2): ein
+ * Ziel mit der Schrift der Plattform (`.plattform-schrift`, 18 px) direkt nach
+ * dem Gerüst. Am `body` - dem Ziel ohne Angabe - erbten `Dialogfenster` und
+ * der geführte Ablauf die 18 px nicht, weil ihr Portal außerhalb des Gerüsts
+ * liegt. Das Ziel bleibt innerhalb dessen, was die Sitzungssperre verbirgt.
+ * Die Seiten zeichnen erst, wenn es steht: Ein Fenster, das beim ersten
+ * Zeichnen schon offen ist, zöge sonst um. Die Einsicht der Praxis behält
+ * ihr Ziel - ihre Fenster liegen über der Praxisseite.
+ */
+function MitFensterZiel({ children }: { children: ReactNode }) {
+  const [ziel, setZiel] = useState<HTMLDivElement | null>(null);
+  return (
+    <>
+      {ziel ? (
+        <PortalZielKontext.Provider value={ziel}>{children}</PortalZielKontext.Provider>
+      ) : null}
+      <div ref={setZiel} className="plattform-schrift" data-testid="plattform-fenster" />
+    </>
   );
 }
 

@@ -180,6 +180,15 @@ describe('PlattformApp', () => {
     expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
   });
 
+  it('zeichnet Fenster in der Schrift der Plattform, nicht am Rand der Seite (Überholung 6)', async () => {
+    zeige([BEHANDLUNG], '/p/termine/wunsch?bereich=treatment');
+    const fenster = await screen.findByRole('dialog', { name: 'Wann passt es Ihnen?' });
+    // Am `body` erbte das Fenster die 18 px des Gerüsts nicht.
+    const ziel = screen.getByTestId('plattform-fenster');
+    expect(ziel).toHaveClass('plattform-schrift');
+    expect(ziel).toContainElement(fenster);
+  });
+
   it('kennt keine Praxisbegriffe', async () => {
     const { container } = zeige([BEHANDLUNG, TRAINING]);
     await screen.findByRole('heading', { name: 'Guten Tag' });

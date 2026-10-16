@@ -79,10 +79,16 @@ import '@/index.css';
  * Assessments der Trainingsseite. Seit ALT-EPIC-001 `checkin-alltag`
  * (Schlafdauer, Schmerzmittel bei Bedarf, Belastung außerhalb der Übungen),
  * `gewohnheiten` (die Seite der Person) und in `zwischen` die Gewohnheiten
- * der Praxisseite. Die Daten liegen vorab im Cache;
- * gesprochen wird mit keinem Server. Alles ist synthetisch.
+ * der Praxisseite. Seit Überholung 6 (G6) `termin-absagen` und
+ * `termin-aendern` (der geführte Ablauf mit `?art=`), und `&kurzfristig`
+ * legt den Hausbesuch in weniger als 24 Stunden (`late_notice`). Die Daten
+ * liegen vorab im Cache; gesprochen wird mit keinem Server - was eine Seite
+ * sendet, beantwortet der Test über abgefangene Anfragen. Alles ist
+ * synthetisch.
  */
-const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
+const parameter = new URLSearchParams(window.location.search);
+const seite = parameter.get('seite') ?? 'abschnitt';
+const kurzfristig = parameter.has('kurzfristig');
 
 const MAX = '66666666-6666-4666-8666-000000000001';
 
@@ -250,12 +256,15 @@ function inTagen(tage: number, stunde: number, minute = 0): string {
   d.setHours(stunde, minute, 0, 0);
   return d.toISOString();
 }
+function inStunden(stunden: number): string {
+  return new Date(Date.now() + stunden * 60 * 60 * 1000).toISOString();
+}
 const TERMIN_HAUSBESUCH = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000000f1';
 const termine: Termin[] = [
   {
     id: TERMIN_HAUSBESUCH,
-    starts_at: inTagen(3, 9, 30),
-    ends_at: inTagen(3, 10, 30),
+    starts_at: kurzfristig ? inStunden(20) : inTagen(3, 9, 30),
+    ends_at: kurzfristig ? inStunden(21) : inTagen(3, 10, 30),
     appointment_type: 'home_visit',
     status: 'confirmed',
     staff_name: 'Anna Beispiel',
@@ -264,7 +273,8 @@ const termine: Termin[] = [
     visit_house_number: '7',
     visit_postal_code: '72072',
     visit_city: 'Tuebingen',
-    late_notice: false,
+    // Gerechnet hat das in der Anwendung der Server (ADR-018 Punkt 8).
+    late_notice: kurzfristig,
     open_request_kind: null,
   },
   {
@@ -1002,6 +1012,8 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'termine':
     case 'wunsch':
     case 'termin':
+    case 'termin-absagen':
+    case 'termin-aendern':
     case 'rechnungen':
     case 'rechnung':
     case 'dokumente':
@@ -1032,6 +1044,8 @@ function inhalt(): { pfad: string; element: ReactNode } {
         termine: '/p/termine?bereich=treatment',
         wunsch: '/p/termine/wunsch?bereich=treatment',
         termin: `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
+        'termin-absagen': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment&art=cancel`,
+        'termin-aendern': `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment&art=change`,
         rechnungen: '/p/rechnungen?bereich=treatment',
         rechnung: `/p/rechnungen/${RECHNUNG}?bereich=treatment`,
         dokumente: '/p/dokumente?bereich=treatment',
