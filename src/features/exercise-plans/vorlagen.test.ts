@@ -7,7 +7,13 @@ import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
 import { KATALOG_VORLAGEN } from '@/features/exercises/katalog/vorlagen';
 import { OHNE_KATALOG } from '@/features/exercises/testdaten';
 import { OHNE_STANDARD } from './hinzufuegen';
-import { vorausgewaehlt, vorlagenListe, vorlagenZeilen, type Vorlagenzeile } from './vorlagen';
+import {
+  alsVorlage,
+  vorausgewaehlt,
+  vorlagenListe,
+  vorlagenZeilen,
+  type Vorlagenzeile,
+} from './vorlagen';
 
 /**
  * „Aus Vorlage" (Welle B): Vorlagenliste und Übernahme über den
@@ -205,5 +211,51 @@ describe('Vorschau einer Vorlage (Befund B9, ANN-537)', () => {
     // Zwei Parameter, keine Person (ADR-006 Punkt 10).
     expect(vorausgewaehlt.length).toBe(2);
     expect(vorlagenZeilen.length).toBe(3);
+  });
+});
+
+describe('Vorlagen der Praxis (UEB-014, ANN-560)', () => {
+  const dosis = {
+    sets: 2,
+    reps_min: 10,
+    reps_max: 10,
+    duration_seconds: null,
+    hold_seconds: 3,
+    per_side: true,
+    times_per_day: null,
+    load: null,
+    tempo: null,
+    rest_seconds: null,
+    double_progression: false,
+  };
+  const eigene = alsVorlage({
+    id: 't1',
+    name: 'Zuhause',
+    goal: null,
+    can_edit: true,
+    created_by_name: null,
+    updated_on: '2026-10-15',
+    items: [
+      { variant_id: 'b', ...dosis },
+      { variant_id: 'a', ...dosis, sets: 4 },
+      { variant_id: 'weg', ...dosis },
+    ],
+  });
+
+  it('steht vor den mitgelieferten, je nach Name', () => {
+    const liste = vorlagenListe([{ ...VORLAGE, name: 'Atmung' }, eigene]);
+    expect(liste.map((v) => v.name)).toEqual(['Zuhause', 'Atmung']);
+  });
+
+  it('findet ihre Übungen über die Variante, mit der gespeicherten Dosierung', () => {
+    const z = vorlagenZeilen(eigene, BIBLIOTHEK, []);
+    expect(z.map((zeile) => [zeile.schluessel, zeile.art])).toEqual([
+      ['b', 'waehlbar'],
+      ['a', 'waehlbar'],
+    ]);
+    const [b, a] = z as Extract<Vorlagenzeile, { art: 'waehlbar' }>[];
+    expect(b!.dosis).toMatchObject({ sets: 2, hold_seconds: 3, per_side: true });
+    expect(a!.dosis.sets).toBe(4);
+    expect(a!.eintrag).toBeUndefined();
   });
 });

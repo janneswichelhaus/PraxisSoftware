@@ -475,3 +475,121 @@ export async function fetchFaellige(): Promise<Faellige | null> {
   if (error) throw new Error(satz);
   return antwort(faelligSchema.nullable(), data ?? null, satz);
 }
+
+// -----------------------------------------------------------------------------
+// Vorlagen der Praxis (UEB-014, ANN-560)
+// -----------------------------------------------------------------------------
+
+const vorlagenUebungSchema = z.object({
+  variant_id: z.string(),
+  sets: z.number(),
+  reps_min: z.number().nullable(),
+  reps_max: z.number().nullable(),
+  duration_seconds: z.number().nullable(),
+  hold_seconds: z.number().nullable(),
+  per_side: z.boolean(),
+  times_per_day: z.number().nullable(),
+  load: z.string().nullable(),
+  tempo: z.string().nullable(),
+  rest_seconds: z.number().nullable(),
+  double_progression: z.boolean(),
+});
+
+export type VorlagenUebung = z.infer<typeof vorlagenUebungSchema>;
+
+const praxisvorlagenSchema = z.object({
+  /** Darf die Person Vorlagen anlegen (wer Pläne schreibt, ANN-560)? */
+  can_create: z.boolean(),
+  templates: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      goal: z.string().nullable(),
+      /** Wer sie angelegt hat, und owner. */
+      can_edit: z.boolean(),
+      created_by_name: z.string().nullable(),
+      updated_on: z.string(),
+      items: z.array(vorlagenUebungSchema),
+    }),
+  ),
+});
+
+export type Praxisvorlagen = z.infer<typeof praxisvorlagenSchema>;
+export type Praxisvorlage = Praxisvorlagen['templates'][number];
+
+export const PRAXISVORLAGEN_SCHLUESSEL = ['praxisvorlagen'] as const;
+
+/**
+ * Wie `meldung`, für die Vorlagen der Praxis. Was hier nicht steht, wird zu
+ * `rest`.
+ */
+function vorlagenMeldung(error: Fehler, rest: string): Error {
+  const text = error?.message ?? '';
+  const saetze: [string, string][] = [
+    ['not allowed', 'Diese Vorlage dürfen Sie nicht ändern.'],
+    ['template not found', 'Die Vorlage gibt es nicht mehr.'],
+    ['name is required', 'Bitte einen Namen angeben.'],
+    ['name is too long', 'Der Name ist zu lang (höchstens 80 Zeichen).'],
+    ['goal is too long', 'Das Ziel ist zu lang (höchstens 200 Zeichen).'],
+    ['already exists', 'Eine Vorlage mit diesem Namen gibt es schon.'],
+    ['at least one exercise', 'Eine Vorlage braucht mindestens eine Übung.'],
+    ['at most 30', 'Eine Vorlage hat höchstens 30 Übungen.'],
+    ['not in the library', 'Eine Übung steht nicht mehr in der Bibliothek.'],
+    ['appears twice', 'Eine Übung steht doppelt im Plan.'],
+    ['dosage is invalid', 'Die Dosierung einer Übung passt nicht.'],
+  ];
+  const treffer = saetze.find(([schluessel]) => text.includes(schluessel));
+  return new Error(treffer ? treffer[1] : rest);
+}
+
+async function rufeVorlagen(
+  funktion: string,
+  argumente: Record<string, unknown>,
+  rest: string,
+): Promise<unknown> {
+  const { data, error } = (await getSupabase().rpc(funktion, argumente)) as {
+    data: unknown;
+    error: Fehler;
+  };
+  if (error) throw vorlagenMeldung(error, rest);
+  return data;
+}
+
+/** Die Vorlagen der Praxis, nach Name - nach nichts sonst (ADR-006 Punkt 10). */
+export async function fetchPraxisvorlagen(): Promise<Praxisvorlagen> {
+  const rest = 'Die Vorlagen der Praxis konnten nicht geladen werden.';
+  const data = await rufeVorlagen('list_exercise_plan_templates', {}, rest);
+  return antwort(praxisvorlagenSchema, data, rest);
+}
+
+/**
+ * Legt eine Vorlage an (ohne `id`) oder ändert sie. `uebungen` ersetzt die
+ * Übungen; ohne sie bleiben sie stehen (nur Name und Ziel).
+ */
+export async function savePraxisvorlage(eingabe: {
+  id: string | null;
+  name: string;
+  ziel: string;
+  uebungen?: readonly VorlagenUebung[];
+}): Promise<string> {
+  const rest = 'Die Vorlage konnte nicht gespeichert werden.';
+  const data = await rufeVorlagen(
+    'save_exercise_plan_template',
+    {
+      p_template_id: eingabe.id,
+      p_name: eingabe.name,
+      p_goal: eingabe.ziel,
+      p_items: eingabe.uebungen ?? null,
+    },
+    rest,
+  );
+  return antwort(z.string(), data, rest);
+}
+
+export async function deletePraxisvorlage(id: string): Promise<void> {
+  await rufeVorlagen(
+    'delete_exercise_plan_template',
+    { p_template_id: id },
+    'Die Vorlage konnte nicht gelöscht werden.',
+  );
+}

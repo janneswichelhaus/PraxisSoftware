@@ -12,8 +12,8 @@ import type { Katalogvorlage } from './typen';
  * Anlehnung an Otago, Rücken, Nacken, Schulter, Atmung, neurologischer Alltag).
  * Die Namen nennen Region und Ziel, keine Diagnose; jede Übung kommt mit ihrer
  * Standarddosierung, die Fachperson passt den Planentwurf an. Vorlagen der
- * Praxis selbst („Als Vorlage speichern“) kennt die Datenbank noch nicht; sie
- * bräuchten eine eigene Migration.
+ * Praxis selbst („Als Vorlage speichern“) liegen in der Datenbank (UEB-014,
+ * ANN-560) und stehen in „Aus Vorlage“ vor diesen.
  */
 export const KATALOG_VORLAGEN: readonly Katalogvorlage[] = [
   {

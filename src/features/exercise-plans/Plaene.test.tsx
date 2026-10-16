@@ -35,6 +35,8 @@ const saveVariante = vi.fn();
 const addCatalogExercises = vi.fn();
 const ladeKatalog = vi.fn();
 const getPlatformAccess = vi.fn();
+const fetchPraxisvorlagen = vi.fn();
+const savePraxisvorlage = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof Api>();
@@ -55,6 +57,8 @@ vi.mock('./api', async (importOriginal) => {
     fetchFaellige: () => fetchFaellige() as Promise<Api.Faellige | null>,
     addCatalogExercises: (...a: unknown[]) =>
       addCatalogExercises(...a) as Promise<Api.KatalogUebernahme>,
+    fetchPraxisvorlagen: () => fetchPraxisvorlagen() as Promise<Api.Praxisvorlagen>,
+    savePraxisvorlage: (...a: unknown[]) => savePraxisvorlage(...a) as Promise<string>,
   };
 });
 
@@ -360,9 +364,14 @@ beforeEach(() => {
     addCatalogExercises,
     ladeKatalog,
     getPlatformAccess,
+    fetchPraxisvorlagen,
+    savePraxisvorlage,
   ]) {
     f.mockReset();
   }
+  // UEB-014: ohne eigene Vorlagen, anlegen darf die Person.
+  fetchPraxisvorlagen.mockResolvedValue({ can_create: true, templates: [] });
+  savePraxisvorlage.mockResolvedValue('vorlage-neu');
   // Ohne Zugang liefert der Server eine leere Zeile; `null` steht für dasselbe.
   getPlatformAccess.mockResolvedValue(null);
   ladeKatalog.mockResolvedValue(
@@ -1749,5 +1758,160 @@ describe('Durchgeführt (UEB-010)', () => {
     planseite();
     await screen.findByRole('heading', { name: 'Heimprogramm Knie' });
     expect(screen.queryByText('Durchgeführt')).not.toBeInTheDocument();
+  });
+});
+
+describe('Vorlagen der Praxis (UEB-014, ANN-560)', () => {
+  const EIGENE: Api.Praxisvorlagen = {
+    can_create: true,
+    templates: [
+      {
+        id: 't1',
+        name: 'Zuhause nach dem Knie',
+        goal: null,
+        can_edit: true,
+        created_by_name: 'Anna Beispiel',
+        updated_on: '2026-10-15',
+        items: [
+          {
+            variant_id: 'v3',
+            sets: 2,
+            reps_min: 15,
+            reps_max: 15,
+            duration_seconds: null,
+            hold_seconds: null,
+            per_side: false,
+            times_per_day: 1,
+            load: 'Theraband gelb',
+            tempo: null,
+            rest_seconds: null,
+            double_progression: false,
+          },
+          {
+            variant_id: 'k4',
+            sets: 1,
+            reps_min: 10,
+            reps_max: 10,
+            duration_seconds: null,
+            hold_seconds: null,
+            per_side: false,
+            times_per_day: null,
+            load: null,
+            tempo: null,
+            rest_seconds: null,
+            double_progression: false,
+          },
+        ],
+      },
+    ],
+  };
+
+  it('zeigt die Vorlagen der Praxis vor den mitgelieferten und fügt mit ihrer Dosierung hinzu', async () => {
+    const user = userEvent.setup();
+    fetchPraxisvorlagen.mockResolvedValue(EIGENE);
+    fetchPlan.mockResolvedValue(plan({ items: [], title: 'Übungsplan' }));
+    planseite(VORLAGEN);
+    await screen.findByRole('button', { name: /^Zuhause nach dem Knie/ });
+    const zeilen = screen
+      .getAllByRole('button')
+      .filter((k) => /Übung(en)? ·|· \d+ Übung/.test(k.textContent ?? ''))
+      .map((k) => k.textContent);
+    expect(zeilen).toEqual([
+      'Zuhause nach dem KnieVorlage der Praxis · 2 Übungen',
+      'Arme im Sitz1 Übung · Kraft der Arme',
+      'Knie im Sitz4 Übungen · Kraft und Beweglichkeit im Sitz',
+    ]);
+    await user.click(screen.getByRole('button', { name: /^Zuhause nach dem Knie/ }));
+    const vorschau = await screen.findByRole('dialog', { name: 'Zuhause nach dem Knie' });
+    // Der Katalog wird für eine Vorlage der Praxis nicht gebraucht.
+    expect(ladeKatalog).not.toHaveBeenCalled();
+    // Archiviert seit dem Speichern: ohne Haken, mit Wort.
+    expect(within(vorschau).getAllByRole('checkbox')).toHaveLength(1);
+    expect(within(vorschau).getByText('archiviert')).toBeInTheDocument();
+    await user.click(within(vorschau).getByRole('button', { name: '1 hinzufügen' }));
+    await waitFor(() => expect(savePosition).toHaveBeenCalledTimes(1));
+    expect(savePosition).toHaveBeenCalledWith(
+      expect.objectContaining({
+        planId: 'p1',
+        variantId: 'v3',
+        saetze: 2,
+        wdhVon: 15,
+        wdhBis: 15,
+        last: 'Theraband gelb',
+        amTag: 1,
+      }),
+    );
+    expect(addCatalogExercises).not.toHaveBeenCalled();
+  });
+
+  it('speichert die Übungen eines Plans als Vorlage - ohne Hinweise und ohne Archiviertes', async () => {
+    const user = userEvent.setup();
+    fetchPlan.mockResolvedValue(
+      plan({
+        status: 'assigned',
+        title: 'Knie, Kräftigung',
+        runs_from: '2026-10-07',
+        runs_until: '2026-11-04',
+        items: [
+          position({ note: 'Nur mit Begleitung.' }),
+          position({ id: 'i2', position: 2, variant_id: 'v9', variant_archived: true }),
+        ],
+      }),
+    );
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Als Vorlage speichern' }));
+    const fenster = await screen.findByRole('dialog', { name: 'Als Vorlage speichern' });
+    expect(within(fenster).getByRole('textbox', { name: /^Name/ })).toHaveValue('Knie, Kräftigung');
+    expect(within(fenster).getByText(/Mit kommen 1 Übung mit ihrer Dosierung/)).toBeInTheDocument();
+    await user.type(within(fenster).getByRole('textbox', { name: /^Ziel/ }), 'Kraft');
+    await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
+    await waitFor(() => expect(savePraxisvorlage).toHaveBeenCalledTimes(1));
+    const [eingabe] = savePraxisvorlage.mock.calls[0] as [Record<string, unknown>];
+    expect(eingabe).toEqual({
+      id: null,
+      name: 'Knie, Kräftigung',
+      ziel: 'Kraft',
+      uebungen: [
+        {
+          variant_id: 'v1',
+          sets: 3,
+          reps_min: 8,
+          reps_max: 12,
+          duration_seconds: null,
+          hold_seconds: null,
+          per_side: false,
+          times_per_day: null,
+          load: '5 kg',
+          tempo: null,
+          rest_seconds: 60,
+          double_progression: true,
+        },
+      ],
+    });
+    expect(JSON.stringify(eingabe)).not.toContain('Begleitung');
+    expect(
+      await screen.findByText(/Als Vorlage „Knie, Kräftigung“ gespeichert/),
+    ).toBeInTheDocument();
+  });
+
+  it('lässt den Standardtitel nicht als Namen stehen und verlangt einen Namen', async () => {
+    const user = userEvent.setup();
+    fetchPlan.mockResolvedValue(plan({ title: 'Übungsplan' }));
+    planseite();
+    await user.click(await screen.findByRole('button', { name: 'Als Vorlage speichern' }));
+    const fenster = await screen.findByRole('dialog', { name: 'Als Vorlage speichern' });
+    expect(within(fenster).getByRole('textbox', { name: /^Name/ })).toHaveValue('');
+    await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
+    expect(await within(fenster).findByText('Bitte einen Namen angeben.')).toBeInTheDocument();
+    expect(savePraxisvorlage).not.toHaveBeenCalled();
+  });
+
+  it('bietet das Speichern nicht an, wer keine Vorlagen anlegt', async () => {
+    fetchPraxisvorlagen.mockResolvedValue({ can_create: false, templates: [] });
+    fetchPlan.mockResolvedValue(plan({ status: 'assigned', can_write: false }));
+    planseite();
+    expect((await screen.findAllByText(/Kniebeuge am Geländer/)).length).toBeGreaterThan(0);
+    await waitFor(() => expect(fetchPraxisvorlagen).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Als Vorlage speichern' })).toBeNull();
   });
 });

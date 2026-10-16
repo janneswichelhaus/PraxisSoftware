@@ -36,6 +36,7 @@ import {
   type Einheit,
   type Plan,
 } from './api';
+import { AlsVorlageSpeichern } from './AlsVorlageSpeichern';
 import { schrittZeilen, vorigePosition } from './fassung';
 import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE, tagPlus } from './laufzeit';
 import { Fassungen } from './Fassungen';
@@ -216,6 +217,12 @@ function Zugewiesen({
         <Positionen plan={plan} />
         {entwurf ? null : <Durchgefuehrt plan={plan} />}
         <Fassungen plan={plan} />
+        {/* UEB-014: ein Plan, der sich bewährt hat, wird Vorlage der Praxis. */}
+        {entwurf ? null : (
+          <div className="mt-8">
+            <AlsVorlageSpeichern plan={plan} />
+          </div>
+        )}
         {entscheiden ? <Beenden plan={plan} /> : null}
       </div>
     </>

@@ -1,11 +1,10 @@
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
-import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
-import { vorlagenListe } from './vorlagen';
+import { vorlagenListe, type Vorlage } from './vorlagen';
 
 /**
- * „Aus Vorlage" (Welle B): die mitgelieferten Zusammenstellungen als Zeilen,
- * nach Name. Ein Tipp öffnet die Vorschau der Vorlage mit ihren Übungen
+ * „Aus Vorlage" (Welle B): die Vorlagen der Praxis (UEB-014) und die
+ * mitgelieferten Zusammenstellungen als Zeilen, je nach Name. Ein Tipp öffnet die Vorschau der Vorlage mit ihren Übungen
  * (Befund B9, `Vorlagenvorschau`); im leeren Entwurf stehen dieselben Zeilen
  * gleich auf der Seite.
  *
@@ -18,8 +17,8 @@ export function Vorlagenauswahl({
   onWaehlen,
   onSchliessen,
 }: {
-  vorlagen: readonly Katalogvorlage[];
-  onWaehlen: (vorlage: Katalogvorlage) => void;
+  vorlagen: readonly Vorlage[];
+  onWaehlen: (vorlage: Vorlage) => void;
   onSchliessen: () => void;
 }) {
   return (
@@ -38,13 +37,19 @@ export function VorlageZeile({
   vorlage,
   onWaehlen,
 }: {
-  vorlage: Katalogvorlage;
-  onWaehlen: (vorlage: Katalogvorlage) => void;
+  vorlage: Vorlage;
+  onWaehlen: (vorlage: Vorlage) => void;
 }) {
   return (
     <ListRow
       titel={vorlage.name}
-      meta={`${vorlage.uebungen.length === 1 ? '1 Übung' : `${vorlage.uebungen.length} Übungen`} · ${vorlage.ziel}`}
+      meta={[
+        vorlage.praxis ? 'Vorlage der Praxis' : null,
+        vorlage.uebungen.length === 1 ? '1 Übung' : `${vorlage.uebungen.length} Übungen`,
+        vorlage.ziel || null,
+      ]
+        .filter(Boolean)
+        .join(' · ')}
       onClick={() => onWaehlen(vorlage)}
     />
   );

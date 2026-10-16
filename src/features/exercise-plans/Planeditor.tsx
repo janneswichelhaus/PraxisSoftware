@@ -12,21 +12,23 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Bibliothek } from '@/features/exercises/api';
-import type { Katalogvorlage } from '@/features/exercises/katalog/typen';
 import { KATALOG_SCHLUESSEL, ladeKatalog } from '@/features/exercises/katalogLaden';
 import { formatDate } from '@/lib/datum';
 import {
   PLAENE_SCHLUESSEL,
+  PRAXISVORLAGEN_SCHLUESSEL,
   addCatalogExercises,
   assignPlan,
   deletePosition,
   discardPlan,
+  fetchPraxisvorlagen,
   movePosition,
   savePosition,
   verhaeltnisPfad,
   type Plan,
   type PositionEingabe,
 } from './api';
+import { AlsVorlageSpeichern } from './AlsVorlageSpeichern';
 import { Fassungen } from './Fassungen';
 import { schrittZeilen, standardTitel, vorigePosition } from './fassung';
 import { kopfdatenScope, speichereKopfdaten } from './kopfdaten';
@@ -49,7 +51,13 @@ import { Uebungsauswahl, type Gewaehlt } from './Uebungsauswahl';
 import { nurImKatalog } from './uebungsliste';
 import { VorlageZeile, Vorlagenauswahl } from './Vorlagenauswahl';
 import { Wochenhaeufigkeit } from './Wochenhaeufigkeit';
-import { VorlagenKontext, vorlagenListe, vorlagenZeilen } from './vorlagen';
+import {
+  VorlagenKontext,
+  alsVorlage,
+  vorlagenListe,
+  vorlagenZeilen,
+  type Vorlage,
+} from './vorlagen';
 import { Vorlagenvorschau, type Vorlagenwahl } from './Vorlagenvorschau';
 
 /**
@@ -76,7 +84,7 @@ import { Vorlagenvorschau, type Vorlagenwahl } from './Vorlagenvorschau';
 type Fenster =
   | { art: 'auswahl' }
   | { art: 'vorlage' }
-  | { art: 'vorschau'; vorlage: Katalogvorlage }
+  | { art: 'vorschau'; vorlage: Vorlage }
   | { art: 'kopf' }
   | { art: 'zuweisen' }
   | { art: 'position'; id: string };
@@ -99,7 +107,15 @@ export function Planeditor({
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const vorlagen = useContext(VorlagenKontext);
+  const mitgeliefert = useContext(VorlagenKontext);
+  // UEB-014: die Vorlagen der Praxis vor den mitgelieferten. Lassen sie sich
+  // nicht laden, bleiben die mitgelieferten.
+  const praxisvorlagen = useQuery({
+    queryKey: PRAXISVORLAGEN_SCHLUESSEL,
+    queryFn: fetchPraxisvorlagen,
+    retry: false,
+  });
+  const vorlagen = [...(praxisvorlagen.data?.templates ?? []).map(alsVorlage), ...mitgeliefert];
   const bibliothek = useQuery({
     queryKey: BIBLIOTHEK_SCHLUESSEL,
     queryFn: fetchBibliothek,
@@ -116,7 +132,7 @@ export function Planeditor({
     queryFn: ladeKatalog,
     staleTime: Infinity,
     retry: false,
-    enabled: fenster?.art === 'auswahl' || fenster?.art === 'vorschau',
+    enabled: fenster?.art === 'auswahl' || (fenster?.art === 'vorschau' && !fenster.vorlage.praxis),
   });
 
   const melde = (
@@ -222,7 +238,7 @@ export function Planeditor({
    * Die gewählten Übungen einer Vorlage hinzufügen, mit der Dosierung der
    * Vorlage; was der Praxis fehlt, übernimmt der Server still.
    */
-  async function ausVorlage(vorlage: Katalogvorlage, gewaehlt: Vorlagenwahl[]) {
+  async function ausVorlage(vorlage: Vorlage, gewaehlt: Vorlagenwahl[]) {
     const leer = plan.items.length === 0;
     const antwort = await waehlen(
       gewaehlt.map((z) => ({ variante: z.variante, dosis: z.dosis, eintrag: z.eintrag })),
@@ -263,7 +279,7 @@ export function Planeditor({
     fenster?.art === 'position' ? plan.items.find((p) => p.id === fenster.id) : undefined;
   const mitVorlagen = vorlagen.length > 0;
   const leer = plan.items.length === 0;
-  const zurVorschau = (vorlage: Katalogvorlage) => {
+  const zurVorschau = (vorlage: Vorlage) => {
     setAuswahlFehler(null);
     setFenster({ art: 'vorschau', vorlage });
   };
@@ -353,7 +369,8 @@ export function Planeditor({
 
       <Fassungen plan={plan} />
 
-      <div className="mt-8 mb-4">
+      <div className="mt-8 mb-4 flex flex-col items-start gap-2">
+        <AlsVorlageSpeichern plan={plan} />
         <Rueckfrage
           ausloeser="Entwurf verwerfen"
           ausloeserVariante="quiet"
@@ -421,7 +438,7 @@ export function Planeditor({
         />
       ) : null}
       {fenster?.art === 'vorschau' && b ? (
-        katalog.isPending ? (
+        katalog.isPending && !fenster.vorlage.praxis ? (
           <Dialogfenster titel={fenster.vorlage.name} onSchliessen={() => setFenster(null)}>
             <LoadingState label="Übungen werden geladen …" />
           </Dialogfenster>
@@ -429,7 +446,7 @@ export function Planeditor({
           <Vorlagenvorschau
             vorlage={fenster.vorlage}
             zeilen={vorlagenZeilen(fenster.vorlage, b, katalog.data ?? [], b.can_manage)}
-            katalogFehlt={katalog.isError}
+            katalogFehlt={katalog.isError && !fenster.vorlage.praxis}
             imPlan={imPlan}
             laeuft={laeuft}
             fehler={auswahlFehler}
