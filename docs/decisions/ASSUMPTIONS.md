@@ -5869,7 +5869,7 @@ Technik · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage:
 
 ### ANN-568 — Check-Up: Werbeflächen abwischen und ein Foto je Seite
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung des Check-Ups am Gerät
+Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
 
 **Annahme.** Nach den zwölf Prüfpunkten wischt die prüfende Person jede Werbefläche mit Desinfektions- oder Reinigungstuch ab („Abgewischt“) oder nennt den Grund („Nicht möglich“), dann je ein Foto links, vorne, rechts, hinten; die Kamera öffnet sich selbst. Ohne beides kein Speichern; der Server verlangt die Werbeflächen, die Fotos folgen wie alle Fotos nach dem Speichern (24 h, je Seite eines). Die Überschrift steht unter dem Rad über den Antworten.
 
@@ -5881,7 +5881,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-569 — Meldungen der Flotte für Inhaber:in und Teamleitung
 
-Datenschutz · offen · 2026-10-16 · — · — · Wiedervorlage: Datenschutzprüfung (§20)
+Datenschutz · entschieden (Jannes) · 2026-10-16 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (§20)
 
 **Annahme.** owner und team_lead lesen alle Check-Ups und Pannen aller Räder in einer Liste (bis ein Jahr, 500), mit Prüfpunkten, Werbeflächen, Seitenfotos, Stellen und dem Namen am Ereignis. Filter nach Art, Rad, Zeitraum, nie nach Person; keine Zählung je Person.
 
@@ -5893,7 +5893,7 @@ Datenschutz · offen · 2026-10-16 · — · — · Wiedervorlage: Datenschutzpr
 
 ### ANN-570 — Check-Up-Rhythmus als Hinweis, nie als Termin
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung Kalender und Übersicht
+Praxisprozess · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage: —
 
 **Annahme.** owner wählt den Rhythmus (Voreinstellung 14 Tage, 1–90, aus). Fällig ist ein Rad am Tag des letzten Check-Ups plus Rhythmus, ohne Check-Up sofort, gesperrt nie. Die Übersicht erinnert die Stammnutzer:in oder wer den Schlüssel hat; der Kalender schlägt die früheste freie Lücke von 20 Minuten an einem Radtag ohne Termine vor und füllt die Fehlzeit „Fahrrad-Check-Up“ vor; eingetragen wird nur auf Klick.
 
