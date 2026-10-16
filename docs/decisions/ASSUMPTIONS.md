@@ -5699,11 +5699,11 @@ Praxisprozess · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Eigene Vorlage pflegen: Tabelle und Formular · Aufwand `mittel`.
 
-### ANN-555 — Stellen am Rad: Punkt im Modell, Nummer je Meldung, Freigabe erledigt sie
+### ANN-555 — Stellen am Rad: Punkt im Modell, Nummer je Rad, Freigabe erledigt sie
 
 Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
-**Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und den Punkt in Modellkoordinaten mit der Fassung des Modells; bei anderer Fassung zeigt die Nadel die Bauteilmitte. Nummeriert wird je Meldung in der Reihenfolge des Setzens. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
+**Annahme.** Eine Stelle trägt Bauteil, Einstufung, Notiz und den Punkt in Modellkoordinaten mit der Fassung des Modells; bei anderer Fassung zeigt die Nadel die Bauteilmitte. Die offenen Stellen eines Rads sind über alle Meldungen in der Reihenfolge des Setzens nummeriert, erledigte ohne Nummer. Eine Stelle hebt ihren Prüfpunkt an, nie ab. Die Freigabe erledigt alle offenen Stellen; ein neuer Check-Up übernimmt keine, er zeigt sie unter „Schon offen am Rad“.
 
 **Begründung.** Handoff Lastenrad 3D, AC 2 und 3, Abschnitt 7 (offene Stellen beim nächsten Check-Up).
 
@@ -5739,7 +5739,7 @@ Technik · offen · 2026-10-15 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Wo ein zurückgelassenes Rad steht, ist Freitext (bis 120 Zeichen) an der Pannenmeldung. Er geht an keinen Dienst, nicht in die Unterlage für die Werkstatt und nicht in die Zusammenfassung und wird mit der Freigabe oder dem Ausmustern des Rads geleert.
+**Annahme.** Wo ein zurückgelassenes Rad steht, ist Freitext (bis 200 Zeichen) an der Pannenmeldung. Er geht an keinen Dienst, nicht in die Unterlage für die Werkstatt und nicht in die Zusammenfassung und wird mit der Freigabe oder dem Ausmustern des Rads geleert.
 
 **Begründung.** Der Ort liegt oft vor dem Haus einer Patientin und trüge so nebenbei einen Patientenbezug (ADR-019); gebraucht wird er nur, bis das Rad abgeholt ist.
 

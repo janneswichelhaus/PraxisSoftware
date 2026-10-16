@@ -51,6 +51,40 @@ test('Antippen trifft das Bauteil unter dem Finger (AC 1)', async ({ page }) => 
   );
 });
 
+/** Zwei Bilder des Rads im Abstand von 400 ms: gleich heißt, nichts bewegt sich. */
+async function steht(page: Page) {
+  const rad = page.getByRole('img', { name: /3D-Modell des Lastenrads/ });
+  const vorher = await rad.screenshot();
+  await page.waitForTimeout(400);
+  return vorher.equals(await rad.screenshot());
+}
+
+async function transportboxWaehlen(page: Page) {
+  const box = (await page.getByRole('img', { name: /3D-Modell des Lastenrads/ }).boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.6, box.y + box.height * 0.45);
+  await expect(page.getByTestId('treffer')).toHaveText('transportbox');
+}
+
+test('bei reduzierter Bewegung kein Kameraflug und kein Pulsieren (AC 10)', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await bereit(page);
+  await transportboxWaehlen(page);
+  // Hervorgehoben, aber ruhig.
+  expect(await steht(page)).toBe(true);
+  // „Am Rad zeigen“ springt, statt zu fliegen: gleich danach steht das Bild.
+  await page.getByRole('button', { name: 'Bremse vorne zeigen' }).click();
+  await page.waitForTimeout(100);
+  expect(await steht(page)).toBe(true);
+});
+
+test('ohne diese Einstellung pulsiert das gewählte Bauteil (Gegenprobe zu AC 10)', async ({
+  page,
+}) => {
+  await bereit(page);
+  await transportboxWaehlen(page);
+  expect(await steht(page)).toBe(false);
+});
+
 test('Zoom und Ansichten sind Knöpfe mit 44 px und Namen (AC 9)', async ({ page }) => {
   await bereit(page);
   for (const name of ['Vergrößern', 'Verkleinern', 'Schräg', 'Rechts', 'Links', 'Hinten']) {
