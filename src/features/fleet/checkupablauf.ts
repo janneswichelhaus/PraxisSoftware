@@ -16,8 +16,10 @@ import {
  * Eine Seite je Prüfpunkt in der Reihenfolge der Bauart. „In Ordnung“ führt
  * gleich zum nächsten; „Beobachten“ und „Problem“ fragen erst „Wo genau?“ und
  * dann „Was ist aufgefallen?“ - bei einem Punkt mit nur einem Bauteil gleich
- * das Zweite. Nach dem zwölften Punkt kommt der Abschluss. Wer aus dem
- * Abschluss einen Punkt ändert, landet danach wieder dort.
+ * das Zweite. Nach dem zwölften Punkt werden die Werbeflächen abgewischt und
+ * das Rad von allen vier Seiten fotografiert (FLT-007, ANN-568), dann kommt
+ * der Abschluss. Wer aus dem Abschluss einen Schritt ändert, landet danach
+ * wieder dort.
  */
 
 export type Teil = 'bewerten' | 'wo' | 'was';
@@ -26,6 +28,10 @@ export type Seite =
   | { art: 'punkt'; index: number; teil: 'bewerten' | 'wo' }
   /** `vonWo`: über „Wo genau?“ gekommen, sonst über die Frage oder das Rad. */
   | { art: 'punkt'; index: number; teil: 'was'; vonWo: boolean }
+  /** Jede Werbefläche mit einem Desinfektions- oder Reinigungstuch abwischen. */
+  | { art: 'werbung' }
+  /** Ein Foto von einer Seite des Rads; `index` in `SEITEN`. */
+  | { art: 'foto'; index: number }
   | { art: 'abschluss' }
   /** Eine Stelle ohne eigenen Prüfpunkt, aus dem Abschluss heraus. */
   | { art: 'weitere' };
@@ -38,6 +44,35 @@ export interface Antwort {
 export type Antworten = Partial<Record<CheckItemKey, Antwort>>;
 
 export const PRUEFPUNKTE = CHECK_ITEMS.length;
+
+/**
+ * Die vier Seiten für die Fotos, in der Reihenfolge eines Gangs ums Rad
+ * (ANN-568). Die Schlüssel stehen so in der Datenbank
+ * (`app.fleet_photo_sides`, `supabase/tests/fleet-pflege.test.ts`); `blick`
+ * ist der Blickwinkel des 3D-Rads (θ, φ in Grad, eingepasst).
+ */
+export const SEITEN = [
+  { key: 'left', label: 'Linke Seite', titel: 'Foto von links', blick: [180, 82, null] },
+  { key: 'front', label: 'Vorne', titel: 'Foto von vorne', blick: [90, 80, null] },
+  { key: 'right', label: 'Rechte Seite', titel: 'Foto von rechts', blick: [0, 82, null] },
+  { key: 'back', label: 'Hinten', titel: 'Foto von hinten', blick: [-90, 80, null] },
+] as const;
+
+export type SeitenKey = (typeof SEITEN)[number]['key'];
+
+export type Seitenfotos = Partial<Record<SeitenKey, Blob>>;
+
+/** Die Werbeflächen: abgewischt - oder nicht möglich, mit Grund (ANN-568). */
+export type Werbeflaechen = { wert: 'wiped' } | { wert: 'not_possible'; grund: string };
+
+/** Alle Schritte bis zum Abschluss: zwölf Punkte, Werbeflächen, vier Fotos. */
+export const SCHRITTE = PRUEFPUNKTE + 1 + SEITEN.length;
+
+export const WERBUNG: Seite = { art: 'werbung' };
+
+export function fotoSeite(index: number): Seite {
+  return { art: 'foto', index };
+}
 
 export const START: Seite = { art: 'punkt', index: 0, teil: 'bewerten' };
 
@@ -80,8 +115,20 @@ export const BEISPIEL: Record<CheckItemKey, string> = {
 
 /** Wohin es nach der Antwort auf einen Punkt geht. */
 export function nachDerAntwort(index: number, zurUebersicht: boolean): Seite {
-  if (zurUebersicht || index >= PRUEFPUNKTE - 1) return ABSCHLUSS;
+  if (zurUebersicht) return ABSCHLUSS;
+  if (index >= PRUEFPUNKTE - 1) return WERBUNG;
   return punktSeite(index + 1);
+}
+
+/** Nach den Werbeflächen: das erste Foto, aus dem Abschluss heraus zurück dorthin. */
+export function nachDerWerbung(zurUebersicht: boolean): Seite {
+  return zurUebersicht ? ABSCHLUSS : fotoSeite(0);
+}
+
+/** Nach einem Foto das nächste, nach dem letzten der Abschluss. */
+export function nachDemFoto(index: number, zurUebersicht: boolean): Seite {
+  if (zurUebersicht || index >= SEITEN.length - 1) return ABSCHLUSS;
+  return fotoSeite(index + 1);
 }
 
 /**
@@ -91,19 +138,41 @@ export function nachDerAntwort(index: number, zurUebersicht: boolean): Seite {
  */
 export function vorigeSeite(seite: Seite, zurUebersicht: boolean): Seite | null {
   if (seite.art === 'weitere') return ABSCHLUSS;
-  if (seite.art === 'abschluss') return punktSeite(PRUEFPUNKTE - 1);
+  if (seite.art === 'abschluss') return fotoSeite(SEITEN.length - 1);
+  if (seite.art === 'werbung') return zurUebersicht ? ABSCHLUSS : punktSeite(PRUEFPUNKTE - 1);
+  if (seite.art === 'foto') {
+    if (zurUebersicht) return ABSCHLUSS;
+    return seite.index > 0 ? fotoSeite(seite.index - 1) : WERBUNG;
+  }
   if (seite.teil === 'was') return punktSeite(seite.index, seite.vonWo ? 'wo' : 'bewerten');
   if (seite.teil === 'wo') return punktSeite(seite.index);
   if (zurUebersicht) return ABSCHLUSS;
   return seite.index > 0 ? punktSeite(seite.index - 1) : null;
 }
 
-/** „Prüfpunkt 3 von 12“ und der Stand für den Balken. */
+/** „Prüfpunkt 3 von 12“, „Foto 2 von 4“ und der Stand für den Balken (von `SCHRITTE`). */
 export function fortschritt(seite: Seite): { text: string; wert: number } {
   if (seite.art === 'punkt') {
     return { text: `Prüfpunkt ${seite.index + 1} von ${PRUEFPUNKTE}`, wert: seite.index + 1 };
   }
-  return { text: 'Abschluss', wert: PRUEFPUNKTE };
+  if (seite.art === 'werbung') return { text: 'Reinigung', wert: PRUEFPUNKTE + 1 };
+  if (seite.art === 'foto') {
+    return {
+      text: `Foto ${seite.index + 1} von ${SEITEN.length}`,
+      wert: PRUEFPUNKTE + 2 + seite.index,
+    };
+  }
+  return { text: 'Abschluss', wert: SCHRITTE };
+}
+
+/** Ob alle vier Seiten ein Foto haben. */
+export function alleSeiten(fotos: Seitenfotos): boolean {
+  return SEITEN.every((seite) => fotos[seite.key] !== undefined);
+}
+
+/** „Abgewischt“ oder „Nicht möglich: Kein Tuch im Depot“. */
+export function werbeflaechenText(werbung: Werbeflaechen): string {
+  return werbung.wert === 'wiped' ? 'Abgewischt' : `Nicht möglich: ${werbung.grund.trim()}`;
 }
 
 /**

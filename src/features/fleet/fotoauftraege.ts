@@ -1,9 +1,12 @@
 import { uploadFleetPhoto } from './api';
+import type { SeitenKey } from './checkupablauf';
 
 /** Ein Foto, das nach dem Speichern einer Meldung an seine Stelle oder den Check-Up geht. */
 export interface Fotoauftrag {
   spotId: string | null;
   checkupId: string | null;
+  /** Ein Seitenfoto im Check-Up (FLT-007, ANN-568); sonst keins. */
+  side?: SeitenKey | null;
   foto: Blob;
 }
 
