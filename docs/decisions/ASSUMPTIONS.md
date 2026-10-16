@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-15.
+Zuletzt aktualisiert: 2026-10-16.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -5758,3 +5758,27 @@ Datenschutz · offen · 2026-10-15 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Spalte `location_note` in `public.fleet_breakdowns` (`supabase/migrations/20261119100000_flt_001_radflotte.sql`).
 
 **Änderungspfad.** Länger aufbewahren: Leeren in `release_fleet_bike` streichen · Aufwand `klein`.
+
+### ANN-560 — Vorlagen der Praxis: ohne Person, für alle Planrollen, ändern nur, wer sie angelegt hat, und owner
+
+Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Übungen, zweite Runde)
+
+**Annahme.** „Als Vorlage speichern“ nimmt nur Varianten und Dosierung eines Plans, nie Hinweise, Person oder Leistungsbereich; Archiviertes bleibt draußen. Anlegen darf, wer Pläne schreibt (therapist, team_lead, owner, trainer), lesen, wer die Bibliothek liest; ändern und löschen, wer sie angelegt hat, und owner. „Aus Vorlage“ zeigt sie vor den mitgelieferten.
+
+**Begründung.** Wie die Bibliothek Fachwissen ohne Personenbezug (ANN-292); nur owner anlegen zu lassen, hielte das Wissen der Therapeut:innen draußen. Betriebsdaten, Löschung durch die Praxis (ADR-008).
+
+**Anker.** `app.can_write_exercise_plan_templates` in `supabase/migrations/20261120100000_ueb_014_eigene_vorlagen.sql`.
+
+**Änderungspfad.** Nur owner legt an: die Funktion auf `app.can_manage_exercise_library()` setzen · Aufwand `klein`.
+
+### ANN-561 — Durchsicht des Katalogs am Stück, nach Region, ein Tipp je Übung
+
+Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Jannes (Durchsicht)
+
+**Annahme.** Unter `/uebungen/durchsicht` zeigt die App owner jede übernommene, ungeprüfte und nicht archivierte Übung einzeln nach Region und Bezeichnung; „Durchgesehen“ setzt den Prüfvermerk (ANN-386) und zeigt die nächste, „Überspringen“ stellt sie hinten an, die Region grenzt auf eine Gruppe ein. Es gibt keinen Vermerk für viele auf einmal.
+
+**Begründung.** ANN-386 verlangt, dass Jannes jede Übung ansieht; ein Sammelvermerk lüde zum Abhaken ohne Lesen ein (§ 630c BGB). Vorher: suchen, öffnen, vermerken, zurück je Übung.
+
+**Anker.** `offeneDurchsicht` in `src/features/exercises/durchsicht.ts`.
+
+**Änderungspfad.** Sammelvermerk je Region: eine RPC über `set_exercise_variant_reviewed` · Aufwand `mittel`.

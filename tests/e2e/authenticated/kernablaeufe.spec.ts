@@ -87,7 +87,8 @@ test('Übung aus der Bibliothek in den Plan: zwei Tipps bis zum Plan, vier bis z
   await page.setViewportSize(TELEFON);
   await page.goto('/uebungen');
   // Ausgangslage: die Übung ist gefunden und offen.
-  await page.locator('main a[href^="/uebungen/"]').first().click();
+  // Die erste Übung der Liste - nicht „Vorlagen“ oder „Durchsicht“ im Kopf.
+  await page.locator('main li a[href^="/uebungen/"]').first().click();
   const titel = (await page.getByRole('heading', { level: 1 }).textContent())?.trim() ?? '';
   expect(titel).not.toBe('');
 
@@ -256,4 +257,68 @@ test('K10: Erstaufnahme geführt vom Termin bis zur Doku, nichts vergessen', asy
     description: `${z.tipps} Tipps bis zur Doku (vorher ≥ 25, ≥ 10 Wechsel)`,
   });
   expect(z.tipps).toBeLessThanOrEqual(10);
+});
+
+test('Durchsicht des Katalogs: ein Tipp je Übung (UEB-015, ANN-561)', async ({ page }) => {
+  await anmelden(page, KONTEN.owner);
+  await page.setViewportSize(TELEFON);
+  await page.goto('/uebungen');
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Durchsicht' }));
+  await expect(page).toHaveURL((url) => url.pathname === '/uebungen/durchsicht');
+  const kicker = page.getByText(/^Durchsicht · noch \d+$/);
+  const vorher = Number((await kicker.textContent())?.match(/\d+/)?.[0]);
+  const erste = (await page.getByRole('heading', { level: 1 }).textContent())?.trim() ?? '';
+  expect(vorher).toBeGreaterThan(1);
+
+  const vorTipps = z.tipps;
+  await z.tippe(page.getByRole('button', { name: 'Durchgesehen' }));
+  await expect(page.getByText(`„${erste}“ als durchgesehen vermerkt.`)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).not.toHaveText(erste);
+  await expect(kicker).toHaveText(`Durchsicht · noch ${vorher - 1}`);
+  expect(z.tipps - vorTipps).toBe(1);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+
+  // Der Vermerk steht am Server: Die Übungsseite nennt ihn.
+  await page.goto('/uebungen');
+  await page.getByRole('searchbox').fill(erste);
+  await page.locator('main li a').filter({ hasText: erste }).first().click();
+  await expect(page.getByText(/Durchgesehen am/)).toBeVisible();
+  test.info().annotations.push({
+    type: 'Durchsicht',
+    description: '1 Tipp je Übung (vorher: Übung suchen, öffnen, vermerken, zurück)',
+  });
+});
+
+test('Als Vorlage speichern und in der Liste der Vorlagen finden (UEB-014, ANN-560)', async ({
+  page,
+}) => {
+  await anmelden(page, KONTEN.therapist);
+  await page.setViewportSize(TELEFON);
+  await page.goto(`/patienten/${PATIENTEN.erika}/plaene/aeaeaeae-aeae-4eae-8eae-000000000001`);
+  const name = `Knie, Lauf ${LAUF}`;
+  const z = zaehler();
+  await z.tippe(page.getByRole('button', { name: 'Als Vorlage speichern' }));
+  const fenster = page.getByRole('dialog', { name: 'Als Vorlage speichern' });
+  await fenster.getByRole('textbox', { name: /^Name/ }).fill(name);
+  z.zaehle();
+  await z.tippe(fenster.getByRole('button', { name: 'Speichern' }));
+  await expect(
+    page.getByText(`Als Vorlage „${name}“ gespeichert.`, { exact: false }),
+  ).toBeVisible();
+  expect(z.tipps).toBe(3);
+
+  await page.goto('/uebungen/vorlagen');
+  await page.getByRole('button').filter({ hasText: name }).click();
+  const vorlage = page.getByRole('dialog', { name });
+  // Die drei Übungen des Plans, ohne seine Hinweise.
+  await expect(vorlage.getByRole('listitem')).toHaveCount(3);
+  await expect(vorlage.getByText('Langsam runter, zügig hoch.')).toHaveCount(0);
+  await vorlage.getByRole('button', { name: 'Vorlage löschen' }).click();
+  await page.getByRole('button', { name: 'Ja, löschen' }).click();
+  await expect(page.getByText(`Vorlage „${name}“ gelöscht.`)).toBeVisible();
 });
