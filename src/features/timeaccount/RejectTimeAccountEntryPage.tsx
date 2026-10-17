@@ -82,16 +82,17 @@ export function RejectTimeAccountEntryPage() {
           return (
             <>
               <PageHeader title="Eintrag zurückweisen" />
+              {/* Zurückgewiesen, zurückgenommen, unbekannt oder nicht
+                  zurückzuweisen - die Seite unterscheidet das nicht. */}
               <EmptyState
                 inKarte
-                title="Nichts mehr zurückzuweisen"
-                description="Der Eintrag ist schon zurückgewiesen oder zurückgenommen."
+                title="Nichts zurückzuweisen"
+                aktion={
+                  <ButtonLink to={returnTo} variant="secondary">
+                    Zurück
+                  </ButtonLink>
+                }
               />
-              <div className="mt-4">
-                <ButtonLink to={returnTo} variant="secondary">
-                  Zurück
-                </ButtonLink>
-              </div>
             </>
           );
         }

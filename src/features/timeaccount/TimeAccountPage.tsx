@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -102,7 +103,9 @@ function Content({
     : [];
 
   return (
-    <div className="flex flex-col gap-8">
+    // Abschnitt zu Abschnitt 32 px: der Abstand der Spalte, nicht dazu der
+    // eigene Rand jedes Abschnitts (Design-Review Überholung 7).
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
       {account ? (
         <>
           <Section titel={own ? 'Mein Saldo' : 'Saldo'}>
@@ -198,23 +201,30 @@ function EntryRow({
       betrag={signedHours(entry.minutes)}
       gedaempft={rejected}
       status={rejected ? <Badge ton="kritisch">Zurückgewiesen</Badge> : null}
-      aktion={
+      darunter={
         entry.can_withdraw ? (
-          <Rueckfrage
-            ausloeser="Zurücknehmen"
-            ausloeserVariante="quiet"
-            ausloeserGroesse="kompakt"
-            bezeichnung="Eintrag zurücknehmen"
-            bestaetigen="Ja, zurücknehmen"
-            bestaetigenLaeuft="Wird zurückgenommen …"
-            fehler={withdraw.isError ? withdraw.error.message : undefined}
-            onBestaetigen={() => withdraw.mutateAsync()}
-          >
-            {entry.kind === 'time_off'
-              ? 'Der Saldo zählt ihn nicht mehr; die Zeit ist wieder Arbeitszeit.'
-              : 'Der Saldo zählt ihn nicht mehr.'}
-          </Rueckfrage>
-        ) : entry.can_reject ? (
+          // Unter der Zeile in voller Breite: in der Zeile bräche die
+          // Rückfrage bei 375 px (Design-Review Überholung 7).
+          <BelowRow>
+            <Rueckfrage
+              ausloeser="Zurücknehmen"
+              ausloeserVariante="quiet"
+              ausloeserGroesse="kompakt"
+              bezeichnung="Eintrag zurücknehmen"
+              bestaetigen="Ja, zurücknehmen"
+              bestaetigenLaeuft="Wird zurückgenommen …"
+              fehler={withdraw.isError ? withdraw.error.message : undefined}
+              onBestaetigen={() => withdraw.mutateAsync()}
+            >
+              {entry.kind === 'time_off'
+                ? 'Der Saldo zählt ihn nicht mehr; die Zeit ist wieder Arbeitszeit.'
+                : 'Der Saldo zählt ihn nicht mehr.'}
+            </Rueckfrage>
+          </BelowRow>
+        ) : undefined
+      }
+      aktion={
+        entry.can_reject ? (
           <ButtonLink
             variant="secondary"
             groesse="kompakt"
@@ -229,4 +239,8 @@ function EntryRow({
       }
     />
   );
+}
+
+function BelowRow({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">{children}</div>;
 }

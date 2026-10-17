@@ -19,7 +19,7 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { monatPlus, monatsBeginn, tagePlus } from '@/features/appointments/calendar';
+import { monatsBeginn, tagePlus } from '@/features/appointments/calendar';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
@@ -123,6 +123,9 @@ function Flow({
   const [flow, setFlow] = useState<Abfolge<Page>>(() => beginne<Page>('kind'));
   const [kind, setKind] = useState<EntryKind | null>(null);
   const [onDate, setOnDate] = useState<string | null>(null);
+  // Der Monat der Datumsseite: ein Monat je Seite, ‹ › blättert (Design-Review
+  // Überholung 7).
+  const [month, setMonth] = useState(() => monatsBeginn(today));
   const [von, setVon] = useState('');
   const [bis, setBis] = useState('');
   const [hours, setHours] = useState('');
@@ -223,12 +226,6 @@ function Flow({
   });
 
   const span = kind ? dateWindow(kind, today) : null;
-  const months: string[] = [];
-  if (span) {
-    for (let month = monatsBeginn(span.from); month <= span.to; month = monatPlus(month, 1)) {
-      months.push(month);
-    }
-  }
 
   const objekt = own ? 'Ins Zeitkonto eintragen' : `Zeitkonto von ${name}`;
   const step = { kind: 1, date: 2, times: 3, summary: 4, done: 4 }[page];
@@ -350,20 +347,16 @@ function Flow({
           )
         }
       >
-        <div className="flex flex-col gap-6">
-          {months.map((month) => (
-            <Monatsblatt
-              key={month}
-              monat={month}
-              heute={today}
-              ab={span.from}
-              bis={span.to}
-              fokus={onDate ?? (kind === 'overtime' ? undefined : today)}
-              angabe={(value) => ({ wahl: value === onDate ? 'rand' : undefined })}
-              onWaehlen={choose}
-            />
-          ))}
-        </div>
+        <Monatsblatt
+          monat={month}
+          heute={today}
+          ab={span.from}
+          bis={span.to}
+          fokus={onDate?.startsWith(month.slice(0, 7)) ? onDate : undefined}
+          angabe={(value) => ({ wahl: value === onDate ? 'rand' : undefined })}
+          onWaehlen={choose}
+          onMonat={setMonth}
+        />
       </GefuehrterAblauf>
     );
   }

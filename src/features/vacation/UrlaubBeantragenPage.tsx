@@ -141,9 +141,10 @@ function hindernis(vorschau: Urlaubsvorschau, selbst: boolean): string | null {
   if (vorschau.days === 0) return 'In diesem Zeitraum liegt kein Arbeitstag.';
   // Nur wer selbst einträgt, hält hier an; sonst hält das Genehmigen an.
   if (selbst && vorschau.exception_days.length > 0) {
-    return `Abweichende Arbeitszeiten am ${vorschau.exception_days
+    // Seit ZK-001 zählt auch ein Freizeitausgleich dazu - der steht im Zeitkonto.
+    return `Abweichende Arbeitszeiten oder Freizeitausgleich am ${vorschau.exception_days
       .map(tagKurz)
-      .join(', ')} – erst in der Planung ändern.`;
+      .join(', ')} – erst in Planung oder Zeitkonto ändern.`;
   }
   return null;
 }

@@ -108,7 +108,8 @@ describe('RejectTimeAccountEntryPage', () => {
       konto(testEntry({ can_reject: false, can_withdraw: false })),
     );
     rendern();
-    expect(await screen.findByText('Nichts mehr zurückzuweisen')).toBeInTheDocument();
+    expect(await screen.findByText('Nichts zurückzuweisen')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zurück' })).toBeInTheDocument();
     expect(rejectEntry).not.toHaveBeenCalled();
   });
 });

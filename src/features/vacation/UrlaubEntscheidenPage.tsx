@@ -297,7 +297,7 @@ function Ablauf({
           {abweichend.length > 0 ? (
             <>
               <Statusmeldung ton="fehler">
-                {`Abweichende Arbeitszeiten am ${abweichend.map(tagKurz).join(', ')} – erst in der Planung ändern, dann genehmigen.`}
+                {`Abweichende Arbeitszeiten oder Freizeitausgleich am ${abweichend.map(tagKurz).join(', ')} – erst in Planung oder Zeitkonto ändern, dann genehmigen.`}
               </Statusmeldung>
               <ButtonLink
                 variant="secondary"

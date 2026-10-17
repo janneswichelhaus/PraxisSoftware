@@ -46,11 +46,14 @@ function letzterArbeitstag(): string {
   return tag;
 }
 
-/** Ein Donnerstag zwei bis sieben Wochen voraus - je Lauf ein anderer. */
+/**
+ * Ein Donnerstag zwei bis vier Wochen voraus - je Lauf ein anderer, höchstens
+ * einen Monat weiter: So viel blättert man für einen Freizeitausgleich.
+ */
 function donnerstag(): string {
   let tag = plusTage(HEUTE, 1);
   while (wochentag(tag) !== 4) tag = plusTage(tag, 1);
-  return plusTage(tag, 7 * (1 + (LAUF % 6)));
+  return plusTage(tag, 7 * (1 + (LAUF % 3)));
 }
 
 const ARBEITSTAG = letzterArbeitstag();
@@ -71,6 +74,39 @@ function zaehler() {
 
 function tag(dialog: Locator, datum: string): Locator {
   return dialog.getByRole('button', { name: TAGESNAME.format(new Date(`${datum}T00:00:00Z`)) });
+}
+
+const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** Blättert das Monatsblatt zum Monat des Tages; jeder Tipp zählt mit. */
+async function blaettereZu(
+  dialog: Locator,
+  datum: string,
+  tippe: (ziel: Locator) => Promise<void>,
+): Promise<void> {
+  const monat = dialog.getByRole('group', {
+    name: MONATSNAME.format(new Date(`${datum}T00:00:00Z`)),
+  });
+  const richtung = datum < HEUTE ? 'Vorheriger Monat' : 'Nächster Monat';
+  for (let i = 0; i < 14 && !(await monat.isVisible()); i += 1) {
+    await tippe(dialog.getByRole('button', { name: richtung }));
+  }
+  await expect(monat).toBeVisible();
+}
+
+/** Keine Fläche im Fenster rollt - je Seite eine Frage ohne Rollen (DESIGN.md). */
+async function rolltNicht(dialog: Locator): Promise<void> {
+  const rollend = await dialog.evaluate(
+    (fenster) =>
+      [fenster, ...fenster.querySelectorAll('*')]
+        .filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY))
+        .filter((el) => el.scrollHeight > el.clientHeight + 1).length,
+  );
+  expect(rollend).toBe(0);
 }
 
 /** Die Seite läuft nicht in die Breite; Frage und Fuß stehen im Bild. */
@@ -118,16 +154,18 @@ test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', a
 
   const datum = page.getByRole('dialog', { name: 'An welchem Tag?' });
   await expect(datum).toBeVisible();
+  await rolltNicht(datum);
   await page.screenshot({ path: '.tmp/screenshots/b9-g9-02-tag-375.png' });
   // Werktags „Heute“, am Samstag „Gestern“, sonst der Freitag im Kalender -
-  // je ein Tipp.
-  await t.tippe(
-    ARBEITSTAG === HEUTE
-      ? datum.getByRole('button', { name: 'Heute' })
-      : ARBEITSTAG === plusTage(HEUTE, -1)
-        ? datum.getByRole('button', { name: 'Gestern' })
-        : tag(datum, ARBEITSTAG),
-  );
+  // je ein Tipp (am Monatsanfang dazu einer zurück).
+  if (ARBEITSTAG === HEUTE) {
+    await t.tippe(datum.getByRole('button', { name: 'Heute' }));
+  } else if (ARBEITSTAG === plusTage(HEUTE, -1)) {
+    await t.tippe(datum.getByRole('button', { name: 'Gestern' }));
+  } else {
+    await blaettereZu(datum, ARBEITSTAG, (ziel) => t.tippe(ziel));
+    await t.tippe(tag(datum, ARBEITSTAG));
+  }
 
   const zeiten = page.getByRole('dialog', { name: 'Von wann bis wann?' });
   await expect(zeiten.getByText(/Plan: 08:00–12:00, 13:00–18:00/)).toBeVisible();
@@ -180,7 +218,10 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
       .getByRole('dialog', { name: 'Was tragen Sie ein?' })
       .getByRole('button', { name: 'Freizeitausgleich' }),
   );
-  await t.tippe(tag(page.getByRole('dialog', { name: 'An welchem Tag?' }), DONNERSTAG));
+  const tagSeite = page.getByRole('dialog', { name: 'An welchem Tag?' });
+  await rolltNicht(tagSeite);
+  await blaettereZu(tagSeite, DONNERSTAG, (ziel) => t.tippe(ziel));
+  await t.tippe(tag(tagSeite, DONNERSTAG));
   const zeiten = page.getByRole('dialog', { name: 'Welche Zeit nehmen Sie frei?' });
   const frueher = zeiten.getByRole('button', { name: '2 Std. früher gehen: 16:00–18:00' });
   await stehtImBild(page, zeiten, frueher);

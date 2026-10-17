@@ -991,6 +991,24 @@ begin
 end;
 $$;
 
+-- Stand URL-001, dazu der Freizeitausgleich: Entscheidungsseite und eigene
+-- Vorschau nennen auch seine Tage vorher, denn an ihnen hält die Genehmigung
+-- ebenso an.
+create or replace function app.exception_days_in_leave(p_org uuid, p_staff_member_id uuid, p_from date, p_to date)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(distinct e.on_date order by e.on_date), '[]'::jsonb)
+  from public.staff_working_hour_exceptions e
+  where e.organization_id = p_org
+    and e.staff_member_id = p_staff_member_id
+    and (e.kind = 'block' or e.time_account_entry_id is not null)
+    and e.on_date between p_from and p_to
+$$;
+
 -- Stand AZ-001, dazu der Freizeitausgleich: Eine einmalige Änderung ersetzt
 -- ihn nicht still.
 create or replace function app.working_time_baseline(p_org uuid, p_staff_member_id uuid, p_kind text, p_on_date date)

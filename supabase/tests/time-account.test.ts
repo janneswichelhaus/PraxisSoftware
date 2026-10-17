@@ -541,6 +541,13 @@ describe('Freizeitausgleich in den Arbeitszeiten (ANN-595)', () => {
       'select public.request_leave($1::date, $2::date, $3) as id',
       [ganz, ganz, null],
     );
+    // Die Entscheidungsseite nennt den Tag schon vorher (URL-001 Runde 2).
+    const offen = await daten<{ to_decide: { id: string; exception_days: string[] }[] }>(
+      users.ownerTherapist,
+      'select public.list_leave($1::date, $2::date) as daten',
+      [HEUTE, plusTage(HEUTE, 60)],
+    );
+    expect(offen.to_decide.find((a) => a.id === rows[0]!.id)?.exception_days).toEqual([ganz]);
     const urlaub = await fehler(
       users.ownerTherapist,
       'select public.decide_leave_request($1::uuid, $2::boolean, $3) as daten',
