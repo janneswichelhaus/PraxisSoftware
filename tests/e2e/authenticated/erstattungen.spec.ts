@@ -182,7 +182,8 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await t.tippe(weiter);
 
   const abschluss = page.getByRole('dialog', { name: 'Einkauf beantragen?' });
-  await expect(abschluss.getByText(ZWECK)).toBeVisible();
+  // Genau die Zeile: „Entfernen“ trägt den Zweck für Vorlesesoftware mit.
+  await expect(abschluss.getByText(ZWECK, { exact: true })).toBeVisible();
   await expect(abschluss.getByText(`Auszahlung auf ${MASKIERT}`)).toBeVisible();
   const absenden = abschluss.getByRole('button', { name: 'Einkauf beantragen' });
   await expect(absenden).toBeInViewport();
