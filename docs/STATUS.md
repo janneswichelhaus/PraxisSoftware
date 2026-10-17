@@ -5,10 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Überholung 8 (17.10., Branch `ccr-350340fc-pnh5ti-arbeitszeit`, auf 7 und 6): Arbeitszeitänderung
-einmalig oder dauerhaft (G8, 5 bzw. 7 Tipps), nie weniger Stunden, ArbZG am Server; Wochenplan in
-Fassungen (`20261125100000`); ANN-588 bis ANN-592. Darunter 7 Urlaub (`…-urlaub`) und 6 Geführte
-Abläufe (`ccr-350340fc-pnh5ti`), je eine PR.
+Überholung 9 (17.10., Branch `ccr-350340fc-pnh5ti-zeitkonto`, auf 8, 7, 6, je eine PR): Zeitkonto
+echt – Mehrarbeit und Freizeitausgleich mit Beginn und Ende (G9, 5 Tipps), Zurückweisen mit Grund,
+Fristen mit Übertrag (`20261126100000`); ANN-593 bis ANN-597, Löschsperre offen (BEF-178).
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur

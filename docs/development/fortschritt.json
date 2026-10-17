@@ -1026,9 +1026,12 @@
         },
         {
           "id": "zk-001",
-          "name": "ZK-001 Zeitkonto",
+          "name": "ZK-001 Zeitkonto: Mehrarbeit und Freizeitausgleich mit Beginn und Ende geführt eintragen (G9), Zurückweisen mit Grund (G9b), Konten je Person für owner und Büro, Freizeitausgleich als Abweichung in den Arbeitszeiten",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-17",
+          "nachweis": "Branch ccr-350340fc-pnh5ti-zeitkonto, Migration 20261126100000_zk_001_zeitkonto.sql, supabase/tests/time-account.test.ts, src/features/timeaccount/*.test.ts(x), tests/e2e/authenticated/zeitkonto.spec.ts, Zweitreview in zwei Runden",
+          "vermerk": "Bereichsüberholung 9 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-593 bis ANN-597; Fristen mit Übertrag; Löschsperre für Beschäftigtendaten offen (BEF-178); Sichtung per Bildstrecke im PR"
         },
         {
           "id": "ers-001",
