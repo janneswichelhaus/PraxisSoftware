@@ -89,6 +89,7 @@ import { MeldungenPage, MeldungPage } from '@/features/fleet/MeldungenPage';
 import { AnspruchPage } from '@/features/vacation/AnspruchPage';
 import { UrlaubBeantragenPage } from '@/features/vacation/UrlaubBeantragenPage';
 import { UrlaubEntscheidenPage } from '@/features/vacation/UrlaubEntscheidenPage';
+import { UrlaubTerminePage } from '@/features/vacation/UrlaubTerminePage';
 import { VacationPage } from '@/features/vacation/VacationPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
@@ -651,6 +652,12 @@ export function AuthenticatedRoutes({
                     <Route
                       path="/betrieb/urlaub/anspruch/:staffMemberId"
                       element={<AnspruchPage user={user} />}
+                    />
+                    {/* Die Termine eines geltenden Urlaubs, bis alle umgeplant
+                      sind - sehen darf sie, wer Termine sieht (Server). */}
+                    <Route
+                      path="/betrieb/urlaub/termine"
+                      element={<UrlaubTerminePage user={user} />}
                     />
                   </>
                 ) : null}

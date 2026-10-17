@@ -188,12 +188,13 @@ export async function fetchUrlaub(von: string, bis: string): Promise<Urlaubsstan
   return antwort(urlaubSchema, data, LADEN);
 }
 
-const VORSCHAU = 'Die Urlaubstage konnten nicht gezählt werden.';
+/** Der Satz, wenn das Zählen ohne Antwort des Servers scheitert (Funkloch). */
+export const VORSCHAU_FEHLER = 'Die Urlaubstage konnten nicht gezählt werden.';
 
 /** Was ein Antrag für den Zeitraum ergäbe - am Server gezählt (ANN-577). */
 export async function previewLeave(von: string, bis: string): Promise<Urlaubsvorschau> {
-  const data = await rufe('preview_leave', { p_starts_on: von, p_ends_on: bis }, VORSCHAU);
-  return antwort(vorschauSchema, data, VORSCHAU);
+  const data = await rufe('preview_leave', { p_starts_on: von, p_ends_on: bis }, VORSCHAU_FEHLER);
+  return antwort(vorschauSchema, data, VORSCHAU_FEHLER);
 }
 
 // -----------------------------------------------------------------------------

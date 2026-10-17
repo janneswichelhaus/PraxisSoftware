@@ -14,11 +14,13 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
+import { RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import { Listenfehler, NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
@@ -1298,6 +1300,10 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
+      {/* Wer aus einem Antrag kommt (URL-001: abweichende Arbeitszeiten vor
+          dem Genehmigen), hat den Weg zurück; sonst ist die Seite ein Ziel
+          der Navigation und braucht keinen. */}
+      {suche.has(RUECKWEG_PARAM) ? <Rueckweg standard="/praxis/planung" /> : null}
       {/* Eine Zeile (DESIGN.md Regel 6); die Praxiseinstellungen nennt ihr
           Aufklapper selbst. */}
       <PageHeader
