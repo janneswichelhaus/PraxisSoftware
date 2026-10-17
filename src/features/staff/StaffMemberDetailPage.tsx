@@ -345,11 +345,11 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
                       Woche im Kalender
                     </Textlink>
                     <Textlink
-                      to={`/praxis/planung?person=${staff.id}`}
+                      to={`/betrieb/arbeitszeit?person=${staff.id}`}
                       alleinstehend
                       className="text-sm"
                     >
-                      {BEGRIFFE.arbeitszeiten}
+                      Arbeitszeit
                     </Textlink>
                   </span>
                 </DetailRow>

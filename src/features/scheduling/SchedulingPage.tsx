@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -12,13 +11,10 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
-import { RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import { dateLong } from '@/features/working-time/format';
 import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
@@ -1050,7 +1046,28 @@ function EntfernenFenster({
 // Seite
 // -----------------------------------------------------------------------------
 
-export function SchedulingPage({ user }: { user: CurrentUser }) {
+/**
+ * Die Arbeitszeit je Person (ORG-003): Personenwahl, Wochenplan und
+ * Abweichungen - für owner, Teamleitung und Büro bearbeitbar, für die übrigen
+ * lesbar. Seit ORG-003 ohne eigene Seite: Sie steht auf „Arbeitszeit"
+ * (`WorkingTimePage`) unter Team, zusammen mit dem eigenen Plan und den
+ * eigenen Anträgen. Bis dahin gab es zwei Bereiche für Arbeitszeiten - die
+ * Planung je Person und die eigene Arbeitszeit -, acht Reiter auseinander.
+ *
+ * `eigenerPlan` ersetzt den Wochenplan, wenn die eigene Person gewählt ist
+ * und nicht gepflegt werden darf (der eigene Plan mit Stunden und
+ * Wochensumme); `eigenesDanach` steht unter den Abweichungen, wenn die
+ * eigene Person gewählt ist (künftige Fassung, eigene Anträge).
+ */
+export function ArbeitszeitJePerson({
+  user,
+  eigenerPlan,
+  eigenesDanach,
+}: {
+  user: CurrentUser;
+  eigenerPlan?: ReactNode;
+  eigenesDanach?: ReactNode;
+}) {
   const darfPflegen = canManageWorkingHours(user.roles);
   const zone = user.organizationTimeZone;
   const heute = zone ? todayInTimeZone(zone) : undefined;
@@ -1120,17 +1137,6 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      {/* Wer aus einem Antrag kommt (URL-001: abweichende Arbeitszeiten vor
-          dem Genehmigen), hat den Weg zurück; sonst ist die Seite ein Ziel
-          der Navigation und braucht keinen. */}
-      {suche.has(RUECKWEG_PARAM) ? <Rueckweg standard="/praxis/planung" /> : null}
-      {/* Eine Zeile (DESIGN.md Regel 6); die Praxiseinstellungen nennt ihr
-          Aufklapper selbst. */}
-      <PageHeader
-        title={BEGRIFFE.arbeitszeiten}
-        description="Wochenplan und Abweichungen je Person."
-      />
-
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError && !therapeuten.data ? (
         <ErrorState
@@ -1159,7 +1165,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
         <>
           <div className="max-w-formular mb-8 flex flex-col gap-4">
             <Select
-              label="Behandelnde Person"
+              label="Person"
               feldId="planung-person"
               value={person}
               onChange={(e) => personWaehlen(e.target.value)}
@@ -1198,15 +1204,19 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
           {person ? (
             <>
-              <Wochenplan
-                key={`plan-${person}`}
-                staffMemberId={person}
-                darfPflegen={darfPflegen}
-                heute={heute ?? ''}
-                tag={tag}
-                onTag={setTag}
-                onUngespeichert={setPlanOffen}
-              />
+              {person === user.staffMemberId && !darfPflegen && eigenerPlan ? (
+                eigenerPlan
+              ) : (
+                <Wochenplan
+                  key={`plan-${person}`}
+                  staffMemberId={person}
+                  darfPflegen={darfPflegen}
+                  heute={heute ?? ''}
+                  tag={tag}
+                  onTag={setTag}
+                  onUngespeichert={setPlanOffen}
+                />
+              )}
               <Abweichungen
                 key={`abweichung-${person}`}
                 staffMemberId={person}
@@ -1214,6 +1224,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
                 heute={heute}
                 onUngespeichert={setAbweichungOffen}
               />
+              {person === user.staffMemberId ? eigenesDanach : null}
             </>
           ) : null}
         </>

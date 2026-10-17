@@ -414,7 +414,7 @@ function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; us
                 freigeben();
                 void navigate(
                   mitRueckweg(
-                    `/praxis/planung?person=${stand.my_staff_member_id}`,
+                    `/betrieb/arbeitszeit?person=${stand.my_staff_member_id}`,
                     mitRueckweg(
                       `/betrieb/urlaub/beantragen?von=${wahl.von}&bis=${wahl.bis}`,
                       rueckweg,

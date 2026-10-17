@@ -246,7 +246,7 @@ describe('UrlaubEntscheidenPage', () => {
     expect(fuss.indexOf('Genehmigen')).toBeLessThan(fuss.indexOf('Ablehnen'));
     const link = within(seite).getByRole('link', { name: 'Zu den Arbeitszeiten' });
     const ziel = new URL(link.getAttribute('href')!, 'http://praxis.test');
-    expect(ziel.pathname).toBe('/praxis/planung');
+    expect(ziel.pathname).toBe('/betrieb/arbeitszeit');
     expect(ziel.searchParams.get('person')).toBe(STAFF.anna);
     expect(ziel.searchParams.get('zurueck')).toBe(
       `/betrieb/urlaub/entscheiden/${ANTRAG.id}?zurueck=%2Fbetrieb%2Furlaub`,

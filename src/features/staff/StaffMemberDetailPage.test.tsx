@@ -137,9 +137,9 @@ describe('StaffMemberDetailPage', () => {
       const kalender = await screen.findByRole('link', { name: 'Woche im Kalender' });
       expect(kalender.getAttribute('href')).toContain(`person=${STAFF_ID}`);
       expect(kalender.getAttribute('href')).toContain('ansicht=woche');
-      expect(screen.getByRole('link', { name: 'Arbeitszeiten' })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: 'Arbeitszeit' })).toHaveAttribute(
         'href',
-        `/praxis/planung?person=${STAFF_ID}`,
+        `/betrieb/arbeitszeit?person=${STAFF_ID}`,
       );
     });
 
@@ -150,7 +150,7 @@ describe('StaffMemberDetailPage', () => {
 
       await waitFor(() => expect(fetchAssignableTherapists).toHaveBeenCalled());
       expect(screen.queryByRole('link', { name: 'Woche im Kalender' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Arbeitszeiten' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Arbeitszeit' })).not.toBeInTheDocument();
       expect(
         await screen.findByText(
           /Nicht für Termine zuordenbar – dafür braucht die Person einen Zugang/,

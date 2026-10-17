@@ -55,11 +55,11 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   };
 });
 
-const { SchedulingPage } = await import('./SchedulingPage');
+const { ArbeitszeitJePerson } = await import('./SchedulingPage');
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['office'], anzeigename?: string) {
   return renderWithProviders(
-    <SchedulingPage user={testUser(rollen, anzeigename)} />,
+    <ArbeitszeitJePerson user={testUser(rollen, anzeigename)} />,
     '/praxis/planung',
   );
 }
@@ -85,12 +85,12 @@ function MitWegHinaus() {
     <>
       <p>Adresse: {pathname}</p>
       <Link to="/woanders">Weggehen</Link>
-      <SchedulingPage user={testUser(['office'])} />
+      <ArbeitszeitJePerson user={testUser(['office'])} />
     </>
   );
 }
 
-describe('SchedulingPage', () => {
+describe('ArbeitszeitJePerson (ORG-003)', () => {
   beforeEach(() => {
     fetchWorkingHours.mockReset();
     fetchWorkingHourExceptions.mockReset();
@@ -116,17 +116,6 @@ describe('SchedulingPage', () => {
     saveWorkingHours.mockResolvedValue(undefined);
     saveWorkingHourException.mockResolvedValue(undefined);
     saveAppointmentGrid.mockResolvedValue(undefined);
-  });
-
-  it('heisst wie ihr Menuepunkt (ORG-07)', async () => {
-    rendern();
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Arbeitszeiten' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Planung' })).not.toBeInTheDocument();
-    // Die Praxiseinstellungen sieht nur owner - die Beschreibung nennt sie
-    // auch nur dort.
-    expect(screen.queryByText(/Praxisraster, Dokumentationsfrist/)).not.toBeInTheDocument();
   });
 
   describe('Wochenplan', () => {
@@ -165,7 +154,7 @@ describe('SchedulingPage', () => {
       rendern();
       await screen.findByText('08:00–12:00, 13:00–18:00');
 
-      await user.selectOptions(screen.getByLabelText('Behandelnde Person'), TIM);
+      await user.selectOptions(screen.getByLabelText('Person'), TIM);
 
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
       expect(screen.queryByText('08:00–12:00, 13:00–18:00')).not.toBeInTheDocument();
@@ -297,7 +286,7 @@ describe('SchedulingPage', () => {
       rendern(['therapist', 'team_lead'], 'Tim Teamleitung');
       await wochenplanAbwarten();
 
-      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(TIM);
+      expect(screen.getByLabelText('Person')).toHaveValue(TIM);
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
     });
 
@@ -489,15 +478,15 @@ describe('SchedulingPage', () => {
 
       await user.clear(screen.getByLabelText('Block 1 von'));
       await user.type(screen.getByLabelText('Block 1 von'), '07:00');
-      await user.selectOptions(screen.getByLabelText('Behandelnde Person'), TIM);
+      await user.selectOptions(screen.getByLabelText('Person'), TIM);
 
       expect(
         screen.getByText(/Arbeitszeiten von Anna Beispiel sind noch nicht gespeichert/),
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(ANNA);
+      expect(screen.getByLabelText('Person')).toHaveValue(ANNA);
 
       await user.click(screen.getByRole('button', { name: 'Verwerfen und wechseln' }));
-      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(TIM);
+      expect(screen.getByLabelText('Person')).toHaveValue(TIM);
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
     });
 
@@ -817,18 +806,6 @@ describe('SchedulingPage', () => {
     await wochenplanAbwarten();
     expect(screen.getByText(/Europe\/Berlin/)).toBeInTheDocument();
     expect(screen.getByText(/keine Arbeitszeiterfassung/)).toBeInTheDocument();
-  });
-
-  it('führt zurück zum Antrag, wenn ein Urlaub an abweichenden Zeiten anhielt (URL-001)', async () => {
-    renderWithProviders(
-      <SchedulingPage user={testUser(['owner'])} />,
-      '/praxis/planung?person=s1&zurueck=%2Fbetrieb%2Furlaub%2Fentscheiden%2Fa1',
-    );
-    await wochenplanAbwarten();
-    expect(screen.getByRole('link', { name: '← Zurück zum Antrag' })).toHaveAttribute(
-      'href',
-      '/betrieb/urlaub/entscheiden/a1',
-    );
   });
 
   it('zeigt ohne Rückweg in der Adresse keinen', async () => {

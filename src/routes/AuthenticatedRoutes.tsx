@@ -61,7 +61,6 @@ import { SlotSearchPage } from '@/features/slot-search/SlotSearchPage';
 import { EditWaitlistEntryPage, NewWaitlistEntryPage } from '@/features/waitlist/WaitlistFormPage';
 import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
-import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
 import { StaffListPage } from '@/features/staff/StaffListPage';
 import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
 import { EditStaffMemberPage } from '@/features/staff/EditStaffMemberPage';
@@ -445,7 +444,9 @@ export function AuthenticatedRoutes({
                     />
                     {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
                     <Route path="/touren" element={<TourenPage user={user} />} />
-                    <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
+                    {/* ORG-003: Die Planung je Person steht auf „Arbeitszeit";
+                      die alte Adresse führt mit Person und Rückweg dorthin. */}
+                    <Route path="/praxis/planung" element={<ZurArbeitszeit />} />
                     {/* Gebietstage (PRX-002): lesen die Rollen der Terminverwaltung,
                   pflegen owner, team_lead und office (Server). */}
                     <Route path="/praxis/gebiete" element={<TerritoriesPage user={user} />} />
@@ -796,4 +797,10 @@ function ZurSchreibseite() {
 function ZumKalender() {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   return <Navigate replace to={kalenderZumTermin(appointmentId ?? '')} />;
+}
+
+/** Die alte Planung (`/praxis/planung`) mit ihrem Suchteil auf „Arbeitszeit" (ORG-003). */
+function ZurArbeitszeit() {
+  const { search } = useLocation();
+  return <Navigate replace to={`/betrieb/arbeitszeit${search}`} />;
 }

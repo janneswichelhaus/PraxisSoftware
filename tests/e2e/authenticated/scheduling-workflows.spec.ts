@@ -59,8 +59,12 @@ async function terminFormular(
 test.describe('CAL-005: Praxisraster', () => {
   test('zeigt die Rastereinstellung nur owner', async ({ page }) => {
     await anmelden(page, KONTEN.office);
-    await page.goto('/praxis/planung');
+    // Seit ORG-002 stehen die Einstellungen auf einer eigenen Seite, nur owner.
+    await page.goto('/betrieb/arbeitszeit');
     await expect(page.getByRole('heading', { name: 'Wochenplan' })).toBeVisible();
+    await expect(page.getByLabel('Minutenraster')).toHaveCount(0);
+    await page.goto('/praxis/einstellungen');
+    await expect(page.getByRole('heading', { name: 'Kein Zugang' })).toBeVisible();
     await expect(page.getByLabel('Minutenraster')).toHaveCount(0);
   });
 
@@ -120,7 +124,9 @@ test.describe('CAL-005: Praxisraster', () => {
 test.describe('CAL-005: Arbeitszeiten', () => {
   test('zeigt den Wochenplan aus dem Seed', async ({ page }) => {
     await anmelden(page, KONTEN.office);
+    // Die alte Adresse führt seit ORG-003 auf „Arbeitszeit".
     await page.goto('/praxis/planung');
+    await expect(page).toHaveURL(/\/betrieb\/arbeitszeit$/);
 
     await expect(page.getByRole('heading', { name: 'Wochenplan' })).toBeVisible();
     await expect(page.getByText('08:00–12:00, 13:00–18:00').first()).toBeVisible();
@@ -128,11 +134,14 @@ test.describe('CAL-005: Arbeitszeiten', () => {
 
   test('laesst therapist lesen, aber nicht pflegen', async ({ page }) => {
     await anmelden(page, KONTEN.therapist);
-    await page.goto('/praxis/planung');
+    await page.goto('/betrieb/arbeitszeit');
 
+    // Der eigene Plan mit Stunden; den einer Kollegin liest sie nur.
     await expect(page.getByText('08:00–12:00, 13:00–18:00').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Montag speichern' })).toHaveCount(0);
+    await page.getByLabel('Person').selectOption({ label: 'Tim Teamleitung' });
     await expect(page.getByText(/fehlt Ihrem Zugang die Berechtigung/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Montag speichern' })).toHaveCount(0);
   });
 
   test('weist therapist auch an der Schnittstelle ab', async ({ request }) => {

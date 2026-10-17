@@ -409,13 +409,6 @@ export const ROUTEN = Object.freeze([
     konten: ['owner', 'therapist'],
   },
   {
-    muster: '/praxis/planung',
-    pfad: '/praxis/planung',
-    bereich: 'Tour und Planung',
-    etikett: 'Dienstplan und Planung',
-    konten: ['owner', 'office'],
-  },
-  {
     muster: '/praxis/gebiete',
     pfad: '/praxis/gebiete',
     bereich: 'Tour und Planung',
@@ -1245,6 +1238,10 @@ export const ROUTEN = Object.freeze([
 
 /** Routen, die bewusst kein Bild bekommen - mit Grund. */
 export const AUSGENOMMEN = Object.freeze([
+  {
+    muster: '/praxis/planung',
+    grund: 'Alte Adresse der Planung: leitet seit ORG-003 auf /betrieb/arbeitszeit um.',
+  },
   {
     muster: '*',
     grund: 'Auffangroute: leitet auf die Startseite um (Praxis „/“, Plattform „/p“).',

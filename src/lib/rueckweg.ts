@@ -126,7 +126,7 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/termine/dauertermin') return `Zurück zum ${BEGRIFFE.dauertermin}`;
   if (ohneSuche.startsWith('/termine/')) return 'Zurück zum Termin';
   if (ohneSuche.startsWith('/praxis/team')) return 'Zurück zu den Mitarbeitenden';
-  if (ohneSuche === '/praxis/planung') return `Zurück zu den ${BEGRIFFE.arbeitszeiten}`;
+  if (ohneSuche === '/betrieb/arbeitszeit') return 'Zurück zur Arbeitszeit';
   if (ohneSuche.startsWith('/verordner')) return `Zurück zu den ${BEGRIFFE.verordnerInnen}`;
   if (ohneSuche === '/abrechnung') return 'Zurück zu den Rechnungen';
   if (ohneSuche === '/abrechnung/zahlungen') return 'Zurück zu den Zahlungen';
