@@ -30,8 +30,8 @@ describe('funktionskatalog', () => {
       'Kalender',
       'Patient:innen',
       'Training',
-      'Kommunikation',
-      'Organisatorisches',
+      'Nachrichten',
+      'Organisation',
       'Abrechnung',
       'Statistiken',
     ]);
@@ -197,7 +197,7 @@ describe('sucheFunktionen', () => {
     expect(bezeichnungen(sucheFunktionen(katalog, 'passwort'))).toContain('Mein Konto');
     expect(bezeichnungen(sucheFunktionen(katalog, 'ausfall'))).toContain('Tag umplanen');
     // Die Kurzform aus der Tableiste ist der zweite Name derselben Sache.
-    expect(bezeichnungen(sucheFunktionen(katalog, 'nachrichten'))).toContain('Kommunikation');
+    expect(bezeichnungen(sucheFunktionen(katalog, 'nachrichten'))).toContain('Nachrichten');
   });
 
   it('findet das Wort am Anfang eines späteren Wortes', () => {
@@ -216,18 +216,19 @@ describe('sucheFunktionen', () => {
   it('findet Seiten unter dem, was auf ihnen steht (ORG-07)', () => {
     // Bis UXR-002 fanden „Audit", „Frist" oder „Löschung" nichts, obwohl es
     // die Seiten gibt - der Katalog kannte nur die Menünamen.
-    // Seit RAH-005 heißt der Menüpunkt „Sicherheit und Aufbewahrung"; die
-    // Aufbewahrung findet die Suche weiter als eigene Seite.
+    // Seit ORG-001 sind Protokoll, Aufbewahrung, Einstellungen und
+    // Arbeitszeit Ansichten unter Praxis und Team - die Suche findet sie
+    // unter ihrem Namen und unter dem, was auf ihnen steht.
     for (const [begriff, seite] of [
-      ['audit', 'Sicherheit und Aufbewahrung'],
-      ['protokoll', 'Sicherheit und Aufbewahrung'],
-      ['sicherheit', 'Sicherheit und Aufbewahrung'],
-      ['frist', 'Arbeitszeiten'],
-      ['raster', 'Arbeitszeiten'],
-      ['startort', 'Arbeitszeiten'],
-      ['planung', 'Arbeitszeiten'],
-      ['loschung', 'Aufbewahrung und Löschung'],
-      ['Löschsperre', 'Aufbewahrung und Löschung'],
+      ['audit', 'Protokoll'],
+      ['protokoll', 'Protokoll'],
+      ['sicherheit', 'Protokoll'],
+      ['frist', 'Einstellungen'],
+      ['raster', 'Einstellungen'],
+      ['startort', 'Einstellungen'],
+      ['planung', 'Arbeitszeit'],
+      ['loschung', 'Aufbewahrung'],
+      ['Löschsperre', 'Aufbewahrung'],
     ] as const) {
       expect(bezeichnungen(sucheFunktionen(katalog, begriff)), begriff).toContain(seite);
     }
@@ -235,8 +236,8 @@ describe('sucheFunktionen', () => {
 
   it('verspricht einer Rolle keine Einstellung, die sie auf der Seite nicht sieht', () => {
     const therapeutin = funktionskatalog(testUser(['therapist']));
-    expect(bezeichnungen(sucheFunktionen(therapeutin, 'frist'))).not.toContain('Arbeitszeiten');
-    expect(bezeichnungen(sucheFunktionen(therapeutin, 'planung'))).toContain('Arbeitszeiten');
+    expect(bezeichnungen(sucheFunktionen(therapeutin, 'frist'))).not.toContain('Einstellungen');
+    expect(bezeichnungen(sucheFunktionen(therapeutin, 'planung'))).toContain('Arbeitszeit');
   });
 
   it('nennt den Menüpunkt des Leistungskatalogs wie seine Seite (ABR-26)', () => {

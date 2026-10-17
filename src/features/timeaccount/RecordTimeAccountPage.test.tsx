@@ -10,10 +10,11 @@ import { PREVIEW_ERROR } from './api';
 import { TIM, testPreview, testTimeAccount } from './testdata';
 
 /**
- * Ins Zeitkonto eintragen, geführt (G9, ZK-001): Budget ≤ 6 Tipps - Mehrarbeit
- * von heute mit Schnellwahl 5 (mit dem Einstieg), Freizeitausgleich am Plan
- * des Tages ebenso. Was nicht geht, sagt die Vorschau des Servers vor dem
- * Eintragen (ANN-593).
+ * Ins Zeitkonto eintragen, geführt (G9, ZK-001): Budget ≤ 6 Tipps -
+ * Überstunden von heute ab Dienstende 5 (mit dem Einstieg; jede andere Dauer
+ * ein Zug am Regler mehr, ANN-606), Freizeitausgleich am Plan des Tages
+ * ebenso. Was nicht geht, sagt die Vorschau des Servers vor dem Eintragen
+ * (ANN-593).
  */
 
 const fetchTimeAccount = vi.fn();
@@ -78,12 +79,12 @@ beforeEach(() => {
           ? testPreview()
           : input.kind === 'time_off'
             ? testPreview({ minutes: -120, balance_after: -30, appointments: 2 })
-            : testPreview({ minutes: 45, balance_after: 135 }),
+            : testPreview({ minutes: 30, balance_after: 120 }),
       ),
     );
   recordEntry
     .mockReset()
-    .mockResolvedValue({ id: 'neu-1', minutes: 45, balance_minutes: 135, appointments: 0 });
+    .mockResolvedValue({ id: 'neu-1', minutes: 30, balance_minutes: 120, appointments: 0 });
 });
 
 afterEach(() => {
@@ -91,7 +92,7 @@ afterEach(() => {
 });
 
 describe('RecordTimeAccountPage', () => {
-  it('trägt Mehrarbeit von heute in vier Tipps ein - mit dem Einstieg fünf', async () => {
+  it('trägt Überstunden von heute ab Dienstende in vier Tipps ein - mit dem Einstieg fünf', async () => {
     const nutzer = userEvent.setup();
     rendern();
     let tipps = 0;
@@ -104,25 +105,30 @@ describe('RecordTimeAccountPage', () => {
     // Je Seite eine Frage, kein Erklärsatz (Design-Review Überholung 9).
     expect(within(art).getByText('Schritt 1 von 4')).toBeInTheDocument();
     expect(within(art).queryByText(/gilt sofort/)).toBeNull();
-    // Eine Korrektur im eigenen Konto bucht nur owner.
-    expect(within(art).queryByRole('button', { name: 'Korrektur' })).toBeNull();
-    await tippe(within(art).getByRole('button', { name: 'Mehrarbeit' }));
+    // Minusstunden im eigenen Konto bucht nur owner.
+    expect(within(art).queryByRole('button', { name: 'Minusstunden' })).toBeNull();
+    expect(within(art).queryByRole('button', { name: 'Mehrarbeit' })).toBeNull();
+    await tippe(within(art).getByRole('button', { name: 'Überstunden' }));
 
     const datum = screen.getByRole('dialog', { name: 'An welchem Tag?' });
-    // Mehrarbeit nie im Voraus: morgen ist gesperrt.
+    // Überstunden nie im Voraus: morgen ist gesperrt.
     expect(tag(datum, 'Samstag, 17. Oktober 2026')).toBeDisabled();
     await tippe(within(datum).getByRole('button', { name: 'Heute' }));
 
-    const zeiten = await screen.findByRole('dialog', { name: 'Von wann bis wann?' });
-    // Die Schnellwahl ab Dienstende ist die Antwort der Seite - im Fuß.
-    const schnellwahl = await within(zeiten).findByRole('group', { name: 'Ab 18:00' });
-    expect(within(schnellwahl).getAllByRole('button')).toHaveLength(6);
-    await tippe(within(schnellwahl).getByRole('button', { name: '+0:45: 18:00–18:45' }));
+    const zeiten = await screen.findByRole('dialog', { name: 'Wie lange?' });
+    // Beginn am Dienstende, die Dauer am Regler (30 min vorgestellt), das
+    // Ende darunter (ANN-606).
+    expect(await within(zeiten).findByLabelText('Beginn')).toHaveValue('18:00');
+    const regler = within(zeiten).getByRole('slider', { name: 'Dauer' });
+    expect(regler).toHaveAttribute('aria-valuetext', '30 Minuten');
+    expect(within(zeiten).getByText('18:00–18:30')).toBeInTheDocument();
+    expect(within(zeiten).queryByLabelText('Ende')).toBeNull();
+    await tippe(within(zeiten).getByRole('button', { name: 'Weiter' }));
 
     const abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
-    expect(await within(abschluss).findByText('Saldo danach +2:15 Std.')).toBeInTheDocument();
+    expect(await within(abschluss).findByText('Saldo danach +2:00 Std.')).toBeInTheDocument();
     expect(within(abschluss).getByText('Der Eintrag gilt sofort.')).toBeInTheDocument();
-    expect(within(abschluss).getByText(/18:00–18:45 · \+0:45/)).toBeInTheDocument();
+    expect(within(abschluss).getByText(/18:00–18:30 · \+0:30/)).toBeInTheDocument();
     await pruefeBarrierefreiheit(document.body);
     await tippe(within(abschluss).getByRole('button', { name: 'Eintragen' }));
 
@@ -131,15 +137,81 @@ describe('RecordTimeAccountPage', () => {
       kind: 'overtime',
       onDate: '2026-10-16',
       von: '18:00',
-      bis: '18:45',
+      bis: '18:30',
       minutes: null,
       note: null,
     });
     expect(
-      await screen.findByText(/^Ziel \/betrieb\/zeitkonto: Eingetragen: Mehrarbeit/),
+      await screen.findByText(/^Ziel \/betrieb\/zeitkonto: Eingetragen: Überstunden/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Saldo \+2:15/)).toBeInTheDocument();
+    expect(screen.getByText(/Saldo \+2:00/)).toBeInTheDocument();
     expect(tipps).toBe(4);
+  });
+
+  it('stellt die Dauer am Regler, den Beginn von Hand - das Ende folgt (ANN-606)', async () => {
+    const nutzer = userEvent.setup();
+    rendern();
+    await nutzer.click(
+      within(await screen.findByRole('dialog', { name: 'Was tragen Sie ein?' })).getByRole(
+        'button',
+        { name: 'Überstunden' },
+      ),
+    );
+    await nutzer.click(
+      within(screen.getByRole('dialog', { name: 'An welchem Tag?' })).getByRole('button', {
+        name: 'Gestern',
+      }),
+    );
+    const zeiten = await screen.findByRole('dialog', { name: 'Wie lange?' });
+    const beginn = await within(zeiten).findByLabelText('Beginn');
+    const regler = within(zeiten).getByRole('slider', { name: 'Dauer' });
+    // Ein Zug: 1 h 15 min - Minuten und Stunden ohne Umschalten.
+    fireEvent.change(regler, { target: { value: '12' } });
+    expect(within(zeiten).getByText('18:00–19:15')).toBeInTheDocument();
+    await nutzer.click(within(zeiten).getByRole('button', { name: '5 Minuten mehr' }));
+    expect(within(zeiten).getByText('18:00–19:20')).toBeInTheDocument();
+    fireEvent.change(beginn, { target: { value: '06:30' } });
+    expect(within(zeiten).getByText('06:30–07:50')).toBeInTheDocument();
+    // Nie über Mitternacht: ab 23:00 reicht der Regler eine Stunde.
+    fireEvent.change(beginn, { target: { value: '23:00' } });
+    expect(within(zeiten).getByText('23:00–24:00')).toBeInTheDocument();
+    expect(regler).toHaveAttribute('aria-valuetext', '1 Stunde');
+    fireEvent.change(beginn, { target: { value: '17:00' } });
+    await nutzer.click(within(zeiten).getByRole('button', { name: 'Weiter' }));
+    await nutzer.click(
+      await within(screen.getByRole('dialog', { name: 'Eintragen?' })).findByRole('button', {
+        name: 'Eintragen',
+      }),
+    );
+    expect(recordEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'overtime',
+        onDate: '2026-10-15',
+        von: '17:00',
+        bis: '18:20',
+        minutes: null,
+      }),
+    );
+  });
+
+  it('beginnt Überstunden an einem freien Tag um 08:00', async () => {
+    const nutzer = userEvent.setup();
+    previewEntry.mockResolvedValue(testPreview({ day: { kind: 'plan', blocks: [] } }));
+    rendern();
+    await nutzer.click(
+      within(await screen.findByRole('dialog', { name: 'Was tragen Sie ein?' })).getByRole(
+        'button',
+        { name: 'Überstunden' },
+      ),
+    );
+    await nutzer.click(
+      within(screen.getByRole('dialog', { name: 'An welchem Tag?' })).getByRole('button', {
+        name: 'Heute',
+      }),
+    );
+    const zeiten = await screen.findByRole('dialog', { name: 'Wie lange?' });
+    expect(await within(zeiten).findByLabelText('Beginn')).toHaveValue('08:00');
+    expect(within(zeiten).getByText('08:00–08:30')).toBeInTheDocument();
   });
 
   it('ein Fehler der Vorschau ist nie „keine Termine“ - mit „Erneut versuchen“ (Regel 8)', async () => {
@@ -198,7 +270,7 @@ describe('RecordTimeAccountPage', () => {
     await nutzer.click(
       within(await screen.findByRole('dialog', { name: 'Was tragen Sie ein?' })).getByRole(
         'button',
-        { name: 'Mehrarbeit' },
+        { name: 'Überstunden' },
       ),
     );
     await nutzer.click(
@@ -206,14 +278,14 @@ describe('RecordTimeAccountPage', () => {
         name: 'Heute',
       }),
     );
-    const zeiten = await screen.findByRole('dialog', { name: 'Von wann bis wann?' });
+    const zeiten = await screen.findByRole('dialog', { name: 'Wie lange?' });
     expect(
       await within(zeiten).findByText('Der Tag konnte nicht geladen werden.'),
     ).toBeInTheDocument();
     expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeDisabled();
     await nutzer.click(within(zeiten).getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await within(zeiten).findByRole('group', { name: 'Ab 18:00' })).toBeInTheDocument();
-    expect(within(zeiten).getByLabelText('Beginn')).toBeInTheDocument();
+    expect(await within(zeiten).findByLabelText('Beginn')).toHaveValue('18:00');
+    expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeEnabled();
   });
 
   it('nimmt Freizeitausgleich am Plan des Tages und nennt danach die Termine darin', async () => {
@@ -274,7 +346,7 @@ describe('RecordTimeAccountPage', () => {
     await nutzer.click(
       within(await screen.findByRole('dialog', { name: 'Was tragen Sie ein?' })).getByRole(
         'button',
-        { name: 'Mehrarbeit' },
+        { name: 'Überstunden' },
       ),
     );
     await nutzer.click(
@@ -282,15 +354,19 @@ describe('RecordTimeAccountPage', () => {
         name: 'Gestern',
       }),
     );
-    const zeiten = await screen.findByRole('dialog', { name: 'Von wann bis wann?' });
-    fireEvent.change(within(zeiten).getByLabelText('Beginn'), { target: { value: '17:00' } });
-    fireEvent.change(within(zeiten).getByLabelText('Ende'), { target: { value: '18:00' } });
+    const zeiten = await screen.findByRole('dialog', { name: 'Wie lange?' });
+    fireEvent.change(await within(zeiten).findByLabelText('Beginn'), {
+      target: { value: '17:00' },
+    });
+    fireEvent.change(within(zeiten).getByRole('slider', { name: 'Dauer' }), {
+      target: { value: '11' },
+    });
     await nutzer.click(within(zeiten).getByRole('button', { name: 'Weiter' }));
     const abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
     // Der Grund, keine Bestätigung (Praxis-Review Überholung 9).
     expect(
       await within(abschluss).findByText(
-        'Die Zeit liegt in der Arbeitszeit – Mehrarbeit nur davor oder danach.',
+        'Die Zeit liegt in der Arbeitszeit – Überstunden nur davor oder danach.',
       ),
     ).toBeInTheDocument();
     expect(within(abschluss).getByRole('button', { name: 'Eintragen' })).toBeDisabled();
@@ -311,24 +387,28 @@ describe('RecordTimeAccountPage', () => {
     await nutzer.click(
       within(
         await screen.findByRole('dialog', { name: 'Was tragen Sie für Tim Teamleitung ein?' }),
-      ).getByRole('button', { name: 'Mehrarbeit' }),
+      ).getByRole('button', { name: 'Überstunden' }),
     );
     await nutzer.click(
       within(screen.getByRole('dialog', { name: 'An welchem Tag?' })).getByRole('button', {
         name: 'Gestern',
       }),
     );
-    const zeiten = await screen.findByRole('dialog', { name: 'Von wann bis wann?' });
+    const zeiten = await screen.findByRole('dialog', { name: 'Wie lange?' });
     expect(previewEntry).toHaveBeenCalledWith(
       expect.objectContaining({ staffMemberId: TIM, onDate: '2026-10-15', von: null }),
     );
     expect(await within(zeiten).findByText('Do., 15. Okt.')).toBeInTheDocument();
-    expect(within(zeiten).queryByRole('group', { name: 'Schnellwahl' })).toBeNull();
     expect(within(zeiten).queryByText(/Plan:/)).toBeNull();
-    expect(within(zeiten).getByLabelText('Beginn')).toBeInTheDocument();
+    // Ohne Plan kein Beginn vorbelegt - von Hand, dann erst weiter.
+    expect(within(zeiten).getByLabelText('Beginn')).toHaveValue('');
+    expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeDisabled();
+    fireEvent.change(within(zeiten).getByLabelText('Beginn'), { target: { value: '18:30' } });
+    expect(within(zeiten).getByText('18:30–19:00')).toBeInTheDocument();
+    expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeEnabled();
   });
 
-  it('lässt das Büro für eine andere Person eine Korrektur mit Grund buchen', async () => {
+  it('lässt das Büro für eine andere Person Minusstunden mit Grund buchen - nur abziehen (ANN-606)', async () => {
     const nutzer = userEvent.setup();
     fetchTimeAccount.mockResolvedValue(
       testTimeAccount({
@@ -337,11 +417,11 @@ describe('RecordTimeAccountPage', () => {
         account: { staff_member_id: TIM, name: 'Tim Teamleitung', balance_minutes: 0, entries: [] },
       }),
     );
-    previewEntry.mockResolvedValue(testPreview({ minutes: 750, balance_after: 750 }));
+    previewEntry.mockResolvedValue(testPreview({ minutes: -90, balance_after: -90 }));
     recordEntry.mockResolvedValue({
       id: 'neu-3',
-      minutes: 750,
-      balance_minutes: 750,
+      minutes: -90,
+      balance_minutes: -90,
       appointments: 0,
     });
     rendern(['office'], `?person=${TIM}`);
@@ -349,16 +429,21 @@ describe('RecordTimeAccountPage', () => {
     const art = await screen.findByRole('dialog', {
       name: 'Was tragen Sie für Tim Teamleitung ein?',
     });
-    await nutzer.click(within(art).getByRole('button', { name: 'Korrektur' }));
-    // Stunden und Grund je auf einer Seite - vier Schritte wie jeder Weg
-    // (Design-Review Überholung 9).
-    const stunden = screen.getByRole('dialog', { name: 'Wie viele Stunden?' });
+    expect(within(art).queryByRole('button', { name: 'Korrektur' })).toBeNull();
+    await nutzer.click(within(art).getByRole('button', { name: 'Minusstunden' }));
+    // Dauer und Grund je auf einer Seite - vier Schritte wie jeder Weg
+    // (Design-Review Überholung 9); die Dauer am Regler, ohne Vorzeichen.
+    const stunden = screen.getByRole('dialog', { name: 'Wie viele Minusstunden?' });
     expect(within(stunden).getByText('Schritt 2 von 4')).toBeInTheDocument();
-    const weiter = within(stunden).getByRole('button', { name: 'Weiter' });
-    expect(weiter).toBeDisabled();
-    await nutzer.type(within(stunden).getByLabelText(/^Stunden/), '12:30');
-    await nutzer.click(weiter);
-    const grund = screen.getByRole('dialog', { name: 'Warum die Korrektur?' });
+    const regler = within(stunden).getByRole('slider', { name: 'Minusstunden' });
+    expect(regler).toHaveAttribute('aria-valuetext', '30 Minuten');
+    expect(within(stunden).getByText('Saldo danach −0:30 Std.')).toBeInTheDocument();
+    // 1 h 30 min: Viertelstunden über einer Stunde.
+    fireEvent.change(regler, { target: { value: '13' } });
+    expect(regler).toHaveAttribute('aria-valuetext', '1 Stunde 30 Minuten');
+    expect(within(stunden).getByText('Saldo danach −1:30 Std.')).toBeInTheDocument();
+    await nutzer.click(within(stunden).getByRole('button', { name: 'Weiter' }));
+    const grund = screen.getByRole('dialog', { name: 'Warum die Minusstunden?' });
     expect(within(grund).getByText('Schritt 3 von 4')).toBeInTheDocument();
     // Ohne Grund geht es nicht weiter.
     const weiterGrund = within(grund).getByRole('button', { name: 'Weiter' });
@@ -366,15 +451,19 @@ describe('RecordTimeAccountPage', () => {
     await nutzer.type(within(grund).getByLabelText('Grund'), 'Übertrag aus der Stundenliste');
     await nutzer.click(weiterGrund);
     let abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
-    expect(within(abschluss).getByText('+12:30 Std.')).toBeInTheDocument();
+    expect(within(abschluss).getByText('−1:30 Std.')).toBeInTheDocument();
     expect(within(abschluss).getByRole('button', { name: 'Grund ändern' })).toBeInTheDocument();
-    // „Ändern“ an den Stunden führt mit Grund direkt zurück zum Abschluss
-    // (Design-Review Überholung 9, Runde 2).
-    await nutzer.click(within(abschluss).getByRole('button', { name: 'Stunden ändern' }));
-    const wieder = screen.getByRole('dialog', { name: 'Wie viele Stunden?' });
+    // „Ändern“ an der Dauer führt mit Grund direkt zurück zum Abschluss
+    // (Design-Review Überholung 9, Runde 2); der Regler steht noch.
+    await nutzer.click(within(abschluss).getByRole('button', { name: 'Minusstunden ändern' }));
+    const wieder = screen.getByRole('dialog', { name: 'Wie viele Minusstunden?' });
+    expect(within(wieder).getByRole('slider', { name: 'Minusstunden' })).toHaveAttribute(
+      'aria-valuetext',
+      '1 Stunde 30 Minuten',
+    );
     await nutzer.click(within(wieder).getByRole('button', { name: 'Weiter' }));
     abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
-    expect(screen.queryByRole('dialog', { name: 'Warum die Korrektur?' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Warum die Minusstunden?' })).toBeNull();
     await nutzer.click(await within(abschluss).findByRole('button', { name: 'Eintragen' }));
     expect(recordEntry).toHaveBeenCalledWith({
       staffMemberId: TIM,
@@ -382,7 +471,7 @@ describe('RecordTimeAccountPage', () => {
       onDate: '2026-10-16',
       von: null,
       bis: null,
-      minutes: 750,
+      minutes: -90,
       note: 'Übertrag aus der Stundenliste',
     });
     expect(

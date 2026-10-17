@@ -11,7 +11,6 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { roleLabels } from '@/components/ui/roleLabels';
 import {
@@ -24,7 +23,6 @@ import {
 } from '@/components/ui/abfolge';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
-import { MinusSymbol, PlusSymbol } from '@/features/exercise-plans/Zahlschritt';
 import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import { useKamera } from '@/features/files/kamera';
@@ -47,9 +45,8 @@ import {
 import { BelowRow } from './BelowRow';
 import { REIMBURSEMENTS_HOME } from './paths';
 import {
-  daysInMonth,
-  electricityCents,
-  electricityFormula,
+  electricityHoursFormula,
+  hoursText,
   ibanValid,
   monthLong,
   monthShort,
@@ -60,9 +57,11 @@ import {
 /**
  * Erstattung beantragen, geführt (G10, ERS-001, Budget ≤ 7 Tipps + Betrag):
  *
- *   * **Ladestrom** (6): „Erstattung beantragen“ → Ladestrom → Monat (der
- *     jüngste freie im Fuß) → Arbeitstage (vorgeschlagen aus dem Wochenplan,
- *     änderbar) → Erklärung als Haken → Absenden.
+ *   * **Ladestrom** (5, ORG-008): „Erstattung beantragen“ → Ladestrom → Monat
+ *     (der jüngste freie im Fuß) → „zu Hause geladen“ als Haken → Absenden.
+ *     Stunden und Betrag rechnet der Server aus dem Wochenplan und den Werten
+ *     der Praxis; die Zusammenfassung nennt die Rechnung. Aus dem Vorschlag im
+ *     Eingang (`?monat=`) beginnt der Ablauf an der Zusammenfassung (3).
  *   * **Einkauf** (7 und Betrag): „Erstattung beantragen“ → Einkauf → Beleg
  *     fotografieren → Auslösen → Foto verwenden → Betrag und wofür, Weiter →
  *     Absenden; „Weiterer Beleg“ für den nächsten.
@@ -75,7 +74,10 @@ import {
  * genehmigt (ANN-598).
  */
 
-type Page = 'kind' | 'month' | 'days' | 'receipt' | 'item' | 'account' | 'summary';
+type Page = 'kind' | 'month' | 'receipt' | 'item' | 'account' | 'summary';
+
+/** Der vorgewählte Monat aus dem Eingang (ORG-008), siehe `requestElectricityPath`. */
+const MONTH_PARAM = 'monat';
 
 interface Item {
   localId: string;
@@ -133,11 +135,36 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
   const selfEntered = state.can_decide;
   const storedAccount = state.person?.account ?? null;
 
-  const [flow, setFlow] = useState<Abfolge<Page>>(() => beginne<Page>('kind'));
-  const [kind, setKind] = useState<'electricity' | 'purchase' | null>(null);
-  const [month, setMonth] = useState<string | null>(null);
-  const [days, setDays] = useState<string>('');
-  const [daysFor, setDaysFor] = useState<string | null>(null);
+  const requested = new Set(
+    (state.person?.reimbursements ?? [])
+      .filter(
+        (r) => r.kind === 'electricity' && ['requested', 'approved', 'paid'].includes(r.status),
+      )
+      .map((r) => r.period_month),
+  );
+
+  // Aus dem Vorschlag im Eingang: Ladestrom und Monat sind gewählt, der
+  // Ablauf beginnt mit dem Konto oder der Zusammenfassung; „Zurück“ führt
+  // zur Wahl des Monats.
+  const [preset] = useState(() => {
+    const wanted = search.get(MONTH_PARAM);
+    return wanted && selectableMonths(today).includes(wanted) && !requested.has(wanted)
+      ? wanted
+      : null;
+  });
+  const [flow, setFlow] = useState<Abfolge<Page>>(() =>
+    preset
+      ? {
+          seite: storedAccount === null ? 'account' : 'summary',
+          verlauf: ['kind', 'month'],
+          rueckkehr: null,
+        }
+      : beginne<Page>('kind'),
+  );
+  const [kind, setKind] = useState<'electricity' | 'purchase' | null>(
+    preset ? 'electricity' : null,
+  );
+  const [month, setMonth] = useState<string | null>(preset);
   const [items, setItems] = useState<Item[]>([]);
   const [current, setCurrent] = useState<string | null>(null);
   const [iban, setIban] = useState('');
@@ -154,14 +181,6 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
   const previews = useRef<string[]>([]);
   useEffect(() => () => previews.current.forEach((url) => URL.revokeObjectURL(url)), []);
 
-  const requested = new Set(
-    (state.person?.reimbursements ?? [])
-      .filter(
-        (r) => r.kind === 'electricity' && ['requested', 'approved', 'paid'].includes(r.status),
-      )
-      .map((r) => r.period_month),
-  );
-
   const preview = useQuery({
     queryKey: [...REIMBURSEMENTS_KEY, 'preview', month],
     queryFn: () => previewElectricity(month!),
@@ -169,14 +188,6 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     retry: false,
     staleTime: 60_000,
   });
-  // Der Vorschlag füllt das Feld einmal je Monat; danach gilt, was getippt ist.
-  useEffect(() => {
-    if (preview.data && daysFor !== preview.data.month) {
-      setDays(String(preview.data.suggested_days));
-      setDaysFor(preview.data.month);
-    }
-  }, [preview.data, daysFor]);
-
   const back = () => {
     const previous = zurueck(flow);
     if (previous) setFlow(previous);
@@ -197,10 +208,6 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     ? `${normalizeIban(iban).slice(0, 4)} •••• ${normalizeIban(iban).slice(-4)}`
     : (storedAccount?.iban_masked ?? null);
 
-  const dayCount = Number.parseInt(days, 10);
-  const maxDays = month ? daysInMonth(month) : 31;
-  const daysOk = Number.isInteger(dayCount) && dayCount >= 1 && dayCount <= maxDays;
-
   const readyItems = items.filter((item) => item.upload === 'done' && item.receiptId);
   const itemCents = (item: Item) => parseEuroZuCent(item.amount);
   const itemOk = (item: Item) => {
@@ -215,7 +222,6 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
       if (kind === 'electricity') {
         return submitElectricity({
           month: month!,
-          workingDays: dayCount,
           declared,
           iban: ibanToSend,
         });
@@ -306,7 +312,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
   };
 
   const pages =
-    (kind === 'purchase' ? ['kind', 'receipt', 'item'] : ['kind', 'month', 'days']).length +
+    (kind === 'purchase' ? ['kind', 'receipt', 'item'] : ['kind', 'month']).length +
     (accountNeeded ? 1 : 0) +
     1;
   const step =
@@ -314,7 +320,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
       ? 1
       : page === 'month' || page === 'receipt'
         ? 2
-        : page === 'days' || page === 'item'
+        : page === 'item'
           ? 3
           : page === 'account'
             ? pages - 1
@@ -393,7 +399,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
       // Die Erklärung gilt dem Monat: Ein anderer Monat braucht sie neu.
       if (m !== month) setDeclared(false);
       setMonth(m);
-      setFlow((f) => weiter(f, 'days', m === month && daysOk));
+      toAccountOrSummary();
     };
     return (
       <GefuehrterAblauf
@@ -438,90 +444,6 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
             </div>
           ))}
         </div>
-      </GefuehrterAblauf>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  if (page === 'days' && month) {
-    return (
-      <GefuehrterAblauf
-        {...common}
-        titel={`Wie viele Arbeitstage im ${monthLong(month).split(' ')[0]}?`}
-        fuss={
-          <Button
-            className="w-full"
-            disabled={!daysOk || !preview.data || preview.data.already_requested}
-            onClick={toAccountOrSummary}
-          >
-            Weiter
-          </Button>
-        }
-      >
-        <Abfragezustand
-          abfrage={preview}
-          laden="Arbeitstage werden gezählt …"
-          fehler={PREVIEW_ERROR}
-          endgueltig={{
-            wenn: (failure) => failure instanceof Error && failure.message !== PREVIEW_ERROR,
-            titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
-          }}
-        >
-          {(data) =>
-            data.already_requested ? (
-              <Statusmeldung ton="fehler">
-                Für diesen Monat ist Ladestrom schon beantragt.
-              </Statusmeldung>
-            ) : (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-end gap-2">
-                  {/* Auch aus einer leeren oder zu großen Zahl heraus: „+“ beginnt
-                      bei 1, „−“ führt in den Monat zurück. */}
-                  <Symbolknopf
-                    beschriftung="Ein Tag weniger"
-                    variant="secondary"
-                    groesse="gross"
-                    disabled={!Number.isInteger(dayCount) || dayCount <= 1}
-                    onClick={() => setDays(String(Math.min(dayCount - 1, maxDays)))}
-                  >
-                    <MinusSymbol />
-                  </Symbolknopf>
-                  <div className="min-w-0 flex-1">
-                    <Field
-                      label="Arbeitstage"
-                      inputMode="numeric"
-                      value={days}
-                      error={days !== '' && !daysOk ? `1 bis ${maxDays} Tage` : undefined}
-                      onChange={(e) => setDays(e.target.value.replace(/\D/g, '').slice(0, 2))}
-                    />
-                  </div>
-                  <Symbolknopf
-                    beschriftung="Ein Tag mehr"
-                    variant="secondary"
-                    groesse="gross"
-                    disabled={Number.isInteger(dayCount) && dayCount >= maxDays}
-                    onClick={() =>
-                      setDays(String(Number.isInteger(dayCount) ? Math.max(dayCount + 1, 1) : 1))
-                    }
-                  >
-                    <PlusSymbol />
-                  </Symbolknopf>
-                </div>
-                <p className="text-ink-muted text-sm">
-                  {`Vorschlag ${data.suggested_days}: Ihr Wochenplan ohne Feiertage, Urlaub und Abwesenheit.`}
-                </p>
-                {daysOk ? (
-                  <p className="text-ink">
-                    {`${electricityFormula(dayCount, data.wh_per_day, data.cents_per_kwh)} = `}
-                    <strong>
-                      {formatEuro(electricityCents(dayCount, data.wh_per_day, data.cents_per_kwh))}
-                    </strong>
-                  </p>
-                ) : null}
-              </div>
-            )
-          }
-        </Abfragezustand>
       </GefuehrterAblauf>
     );
   }
@@ -688,8 +610,14 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
       : selfEntered
         ? 'Einkauf eintragen'
         : 'Einkauf beantragen';
+  const offer = preview.data;
   const electricityReady =
-    kind === 'electricity' && month !== null && daysOk && !!preview.data && declared;
+    kind === 'electricity' &&
+    month !== null &&
+    !!offer &&
+    !offer.already_requested &&
+    offer.amount_cents >= 1 &&
+    declared;
   const purchaseReady =
     kind === 'purchase' &&
     items.length > 0 &&
@@ -723,7 +651,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     >
       <div className="flex flex-col gap-4">
         <ListRows rahmen={false} beschriftung="Erstattung">
-          {kind === 'electricity' && month && preview.data ? (
+          {kind === 'electricity' && month ? (
             <>
               {/* Je Angabe ein „Ändern“ (Design-Review Überholung 10). */}
               <ListRow
@@ -739,30 +667,24 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                   </Button>
                 }
               />
-              <ListRow
-                titel={`${dayCount} Arbeitstage`}
-                aktion={
-                  <Button
-                    variant="secondary"
-                    groesse="kompakt"
-                    aria-label="Ändern: Arbeitstage"
-                    onClick={() => setFlow((f) => aendern(f, 'days'))}
-                  >
-                    Ändern
-                  </Button>
-                }
-              />
-              <ListRow
-                titel="Betrag"
-                meta={electricityFormula(
-                  dayCount,
-                  preview.data.wh_per_day,
-                  preview.data.cents_per_kwh,
-                )}
-                betrag={formatEuro(
-                  electricityCents(dayCount, preview.data.wh_per_day, preview.data.cents_per_kwh),
-                )}
-              />
+              {offer ? (
+                <>
+                  <ListRow
+                    titel={`${hoursText(offer.working_minutes)} Arbeitszeit`}
+                    meta="Wochenplan ohne Feiertage, Urlaub und Abwesenheit"
+                  />
+                  <ListRow
+                    titel="Betrag"
+                    meta={electricityHoursFormula(
+                      offer.working_minutes,
+                      offer.km_per_hour,
+                      offer.wh_per_km,
+                      offer.cents_per_kwh,
+                    )}
+                    betrag={formatEuro(offer.amount_cents)}
+                  />
+                </>
+              ) : null}
             </>
           ) : null}
           {kind === 'purchase'
@@ -848,12 +770,36 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
           </div>
         ) : null}
         {kind === 'electricity' ? (
-          // Die Erklärung als Haken der angemeldeten Person (ANN-553, ANN-599).
-          <Checkbox
-            label="Ich habe das Lastenrad in diesem Monat zu Hause geladen; der Strom wurde mir nicht anders erstattet."
-            checked={declared}
-            onChange={(e) => setDeclared(e.target.checked)}
-          />
+          <Abfragezustand
+            abfrage={preview}
+            laden="Ladestrom wird berechnet …"
+            fehler={PREVIEW_ERROR}
+            endgueltig={{
+              wenn: (failure) => failure instanceof Error && failure.message !== PREVIEW_ERROR,
+              titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
+            }}
+          >
+            {(data) =>
+              data.already_requested ? (
+                <Statusmeldung ton="fehler">
+                  Für diesen Monat ist Ladestrom schon beantragt.
+                </Statusmeldung>
+              ) : data.amount_cents < 1 ? (
+                <Statusmeldung ton="fehler">
+                  In diesem Monat sind keine Arbeitsstunden geplant – es gibt nichts zu erstatten.
+                </Statusmeldung>
+              ) : (
+                // Die Erklärung als Haken der angemeldeten Person (ANN-553):
+                // eine Wahl im Ablauf, keine gespeicherte Ortsangabe (ORG-008).
+                <Checkbox
+                  label="Ich habe das Lastenrad in diesem Monat zu Hause geladen; der Strom wurde mir nicht anders erstattet."
+                  hint="Im Depot lädt die Praxis selbst – dann gibt es nichts zu erstatten."
+                  checked={declared}
+                  onChange={(e) => setDeclared(e.target.checked)}
+                />
+              )
+            }
+          </Abfragezustand>
         ) : null}
       </div>
     </GefuehrterAblauf>

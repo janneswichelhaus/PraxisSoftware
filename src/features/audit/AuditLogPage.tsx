@@ -13,7 +13,6 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Listenfehler, NachladeHinweis } from '@/components/ui/Rueckmeldung';
-import { SicherheitReiter } from './SicherheitReiter';
 import {
   AUDIT_ACTION_GROUPS,
   auditActionLabels,
@@ -277,11 +276,9 @@ export function AuditLogPage() {
 
   return (
     <>
-      {/* Der Titel ist das Wort des Reiters (ORG-07): bis UXR-011 öffnete
-          „Sicherheit" eine Seite namens „Audit". Seit RAH-005 heißt der
-          Menüpunkt „Sicherheit und Aufbewahrung" und führt hierher; die
-          Aufbewahrung ist der zweite Reiter. */}
-      <SicherheitReiter />
+      {/* Der Titel ist das Wort der Ansicht (ORG-07): Seit ORG-001 steht das
+          Protokoll unter Praxis neben Einstellungen und Aufbewahrung; die
+          Pillen zeichnet die Hülle (`Ansichtsleiste`). */}
       <PageHeader
         title="Protokoll"
         description="Protokollierte Zugriffe und sicherheitsrelevante Vorgänge dieser Praxis."

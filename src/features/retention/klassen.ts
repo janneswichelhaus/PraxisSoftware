@@ -174,6 +174,16 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Abgelehnte und zurückgezogene Erstattungen mit ihren Belegen. Ein Jahr nach der Entscheidung oder dem Zurückziehen.',
   },
+  rueckmeldung: {
+    label: 'Rückmeldungen von Beschäftigten',
+    beschreibung:
+      'Barometer und Rückmeldungen an die Praxisleitung, mit und ohne Namen. Zwölf Monate ab Ende des Monats der Abgabe, dann endgültig gelöscht.',
+  },
+  rueckmeldung_teilnahme: {
+    label: 'Teilnahme am Barometer',
+    beschreibung:
+      'Nur, dass eine Person das Barometer eines Monats abgegeben hat - damit der Hinweis verschwindet. Fällt nach dem Monat.',
+  },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',
     beschreibung: 'Organisation und Standorte.',

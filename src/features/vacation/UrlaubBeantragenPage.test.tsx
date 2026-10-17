@@ -391,7 +391,7 @@ describe('UrlaubBeantragenPage', () => {
     // Die Wahl reist im Rückweg mit - ohne Rückfrage zum Verwerfen.
     await user.click(within(abschluss).getByRole('button', { name: 'Zu den Arbeitszeiten' }));
     const ziel = new URL(
-      (await screen.findByText(/^Ziel \/praxis\/planung/)).textContent
+      (await screen.findByText(/^Ziel \/betrieb\/arbeitszeit/)).textContent
         .replace(/^Ziel /, '')
         .replace(/:\s*$/, ''),
       'http://praxis.test',

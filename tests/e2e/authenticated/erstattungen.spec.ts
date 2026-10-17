@@ -8,8 +8,9 @@ import { KONTEN, anmelden, rpcAufrufen, zugriffstoken } from './helpers';
  * gestubbt.
  *
  * Anna hinterlegt ihre IBAN (die Beispiel-IBAN aus ISO 13616), beantragt
- * Ladestrom für den jüngsten freien Monat (Budget 6 Tipps) und zieht ihn
- * zurück - so finden spätere Läufe den Monat wieder frei. Dann ein Einkauf
+ * Ladestrom für den jüngsten freien Monat (5 Tipps; aus dem Vorschlag im
+ * Eingang 3, ORG-008) und zieht ihn zurück - so finden spätere Läufe den
+ * Monat wieder frei. Dann ein Einkauf
  * mit Beleg als Datei (ohne Kamera im Prüfbrowser; Budget 7 Tipps und der
  * Betrag). Jannes genehmigt ihn aus Offene Punkte (2 Tipps) und vermerkt die
  * Auszahlung mit voller IBAN (2 Tipps). Olivia (Büro) sieht ihn bei Anna mit
@@ -82,7 +83,28 @@ test('Anna hinterlegt ihre IBAN; danach steht sie maskiert da (ANN-601)', async 
   await expect(page.getByText(IBAN)).toHaveCount(0);
 });
 
-test('G10: Anna beantragt Ladestrom in sechs Tipps und zieht ihn zurück (ERS-001)', async ({
+/** Zieht den eben beantragten Ladestrom zurück - der Monat ist für spätere Läufe frei. */
+async function zurueckziehen(page: Page, meldung: Locator): Promise<void> {
+  const monatsname = /Ladestrom (\S+ \d{4}) beantragt/.exec(
+    (await meldung.textContent()) ?? '',
+  )![1]!;
+  await page.goto('/betrieb/erstattungen');
+  const zeile = page
+    .getByRole('listitem')
+    .filter({ hasText: `Ladestrom ${monatsname}` })
+    .filter({ has: page.getByRole('button', { name: 'Zurückziehen' }) })
+    .first();
+  await zeile.getByRole('button', { name: 'Zurückziehen' }).click();
+  await page.getByRole('button', { name: 'Ja, zurückziehen' }).click();
+  await expect(
+    page
+      .getByRole('listitem')
+      .filter({ hasText: `Ladestrom ${monatsname}` })
+      .filter({ has: page.getByRole('button', { name: 'Zurückziehen' }) }),
+  ).toHaveCount(0);
+}
+
+test('G10: Anna beantragt Ladestrom in fünf Tipps und zieht ihn zurück (ORG-008)', async ({
   page,
 }) => {
   await page.setViewportSize(TELEFON);
@@ -102,16 +124,9 @@ test('G10: Anna beantragt Ladestrom in sechs Tipps und zieht ihn zurück (ERS-00
   const frei = monat.getByRole('button', { name: /^\S+ \d{4}$/, disabled: false }).first();
   await t.tippe(frei);
 
-  const tage = page.getByRole('dialog', { name: /^Wie viele Arbeitstage im / });
-  const feld = tage.getByLabel('Arbeitstage');
-  await expect(feld).not.toHaveValue('');
-  // Ohne Wochenplan im Monat schlägt der Server null Tage vor - getippt, kein Tipp.
-  if ((await feld.inputValue()) === '0') await feld.fill('18');
-  await expect(tage.getByText(/ × 0,5 kWh × 0,37\s€ = /)).toBeVisible();
-  await bild(page, 'b10-g10-04-tage-375');
-  await t.tippe(tage.getByRole('button', { name: 'Weiter' }));
-
+  // Stunden und Betrag rechnet der Server aus Annas Wochenplan (ORG-008).
   const abschluss = page.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+  await expect(abschluss.getByText(/ h × 6 km\/h × 18 Wh\/km × 0,37\s€\/kWh/)).toBeVisible();
   await expect(abschluss.getByText(`Auszahlung auf ${MASKIERT}`)).toBeVisible();
   const absenden = abschluss.getByRole('button', { name: 'Ladestrom beantragen' });
   await expect(absenden).toBeDisabled();
@@ -126,25 +141,37 @@ test('G10: Anna beantragt Ladestrom in sechs Tipps und zieht ihn zurück (ERS-00
   await expect(meldung).toBeVisible();
   await bild(page, 'b10-g10-06-beantragt-375');
   test.info().annotations.push({ type: 'G10 Strom', description: `${t.tipps} Tipps` });
-  expect(t.tipps).toBeLessThanOrEqual(6);
+  expect(t.tipps).toBeLessThanOrEqual(5);
 
-  // Aufräumen: Anna zieht ihn zurück - der Monat ist für spätere Läufe frei.
-  const monatsname = /Ladestrom (\S+ \d{4}) beantragt/.exec(
-    (await meldung.textContent()) ?? '',
-  )![1]!;
-  const zeile = page
+  await zurueckziehen(page, meldung);
+});
+
+test('G10 aus dem Eingang: der Vorschlag führt in drei Tipps zum Antrag (ORG-008)', async ({
+  page,
+}) => {
+  await page.setViewportSize(TELEFON);
+  await anmelden(page, KONTEN.therapist);
+  await page.goto('/betrieb');
+
+  const t = zaehler();
+  const vorschlag = page
     .getByRole('listitem')
-    .filter({ hasText: `Ladestrom ${monatsname}` })
-    .filter({ has: page.getByRole('button', { name: 'Zurückziehen' }) })
+    .filter({ hasText: /^Ladestrom \S+ \d{4}/ })
     .first();
-  await zeile.getByRole('button', { name: 'Zurückziehen' }).click();
-  await page.getByRole('button', { name: 'Ja, zurückziehen' }).click();
-  await expect(
-    page
-      .getByRole('listitem')
-      .filter({ hasText: `Ladestrom ${monatsname}` })
-      .filter({ has: page.getByRole('button', { name: 'Zurückziehen' }) }),
-  ).toHaveCount(0);
+  await expect(vorschlag).toBeVisible();
+  await bild(page, 'b10-g10-07-eingang-vorschlag-375');
+  await t.tippe(vorschlag.getByRole('link', { name: /^Beantragen/ }));
+
+  const abschluss = page.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+  await t.tippe(abschluss.getByRole('checkbox'));
+  await t.tippe(abschluss.getByRole('button', { name: 'Ladestrom beantragen' }));
+
+  const meldung = page.getByText(/Ladestrom (\S+ \d{4}) beantragt: \d+,\d{2}\s€\./);
+  await expect(meldung).toBeVisible();
+  test.info().annotations.push({ type: 'G10 Strom (Eingang)', description: `${t.tipps} Tipps` });
+  expect(t.tipps).toBeLessThanOrEqual(3);
+
+  await zurueckziehen(page, meldung);
 });
 
 test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und zahlt aus (ERS-001)', async ({

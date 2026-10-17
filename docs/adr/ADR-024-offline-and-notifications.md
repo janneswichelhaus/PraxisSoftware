@@ -2,7 +2,7 @@
 
 ## Status
 
-**Angenommen** (2026-10-11, Jannes). **W1 anders als empfohlen: (c)** — „Bei Konkurrenten wie
+**Angenommen** (2026-10-11, Jannes). **Fassung 2** (2026-10-17, Jannes): Punkt 12 nimmt Rückmeldungen nach `PROJECT_PRINCIPLES.md` 0.27, §20.2 aus; alles Übrige gilt unverändert. **W1 anders als empfohlen: (c)** — „Bei Konkurrenten wie
 iPrax ist eine Dokumentation ohne Empfang möglich. Ich möchte diese Funktion auch haben.“ Dazu die
 Freigabe ohne Netz per Passkey (Punkt 9), auf Rückfrage gewählt. **W2 bis W5 wie empfohlen.** Die
 Punkte folgen aus §2.2, §3.4, §3.5, §10, §13, §18, §20 und den ADRs 001, 002, 008, 010, 011, 015,
@@ -213,6 +213,10 @@ lokal und in der Test-Umgebung in ein Postfach bzw. eine Liste zu, die die Tests
 die Praxis tun soll (neue Rückfrage, Terminwunsch, überschrittene Antwortzeit, Kündigung),
 erscheint in den Offenen Punkten mit Zähler. Es gibt keine Mail und keinen Push an Mitarbeitende,
 keine Lesebestätigung und keine Auswertung, wer wann reagiert hat (§20).
+**Ausgenommen (Fassung 2) sind Rückmeldungen nach §20.2:** Wer namentlich antwortet, gibt selbst zu
+erkennen, dass und in welchem Monat er geantwortet hat. Eine Liste, wer nicht geantwortet hat, gibt
+es weiterhin nicht. Der Hinweis auf das Barometer erscheint in der Anwendung, auch als Fenster zu
+passenden Zeitpunkten (ANN-603), nie als Push oder Mail.
 
 **13. Ein geschlossener Katalog, kein freier Text.** Jede Art von Benachrichtigung steht in einem
 Katalog an einer Stelle, mit festem Text, den erlaubten Wegen und der Angabe, ob Ruhezeiten

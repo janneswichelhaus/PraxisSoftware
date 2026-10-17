@@ -39,7 +39,7 @@ import {
   STATUS_LABEL,
   STATUS_SIGN,
   STATUS_TONE,
-  electricityFormula,
+  electricityFormulaOf,
   reimbursementTitle,
 } from './rules';
 
@@ -215,17 +215,7 @@ function ReimbursementRow({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: REIMBURSEMENTS_KEY }),
   });
   const done = r.status === 'rejected' || r.status === 'withdrawn';
-  const meta = [
-    r.kind === 'electricity' &&
-    r.working_days !== null &&
-    r.energy_wh_per_day !== null &&
-    r.rate_cents_per_kwh !== null
-      ? electricityFormula(r.working_days, r.energy_wh_per_day, r.rate_cents_per_kwh)
-      : null,
-    statusLine(r, timeZone),
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = [electricityFormulaOf(r), statusLine(r, timeZone)].filter(Boolean).join(' · ');
   const withdrawable = own && r.status === 'requested';
 
   return (

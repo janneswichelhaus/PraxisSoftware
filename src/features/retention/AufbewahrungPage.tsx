@@ -38,7 +38,6 @@ import {
   useVerwaisteVormerken,
 } from '@/features/files/dateien';
 import { aktenortDerDatei } from '@/features/files/dokumentarten';
-import { SicherheitReiter } from '@/features/audit/SicherheitReiter';
 import type { CurrentUser } from '@/features/session/types';
 
 /**
@@ -724,9 +723,8 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      {/* Zweiter Reiter unter „Sicherheit und Aufbewahrung" (RAH-005). Ohne
-          Satz unter dem Titel: Die Abschnitte sagen selbst, was sie sind. */}
-      <SicherheitReiter />
+      {/* Ansicht unter Praxis (ORG-001). Ohne Satz unter dem Titel: Die
+          Abschnitte sagen selbst, was sie sind. */}
       <PageHeader title="Aufbewahrung und Löschung" />
 
       <ZuTun user={user} />

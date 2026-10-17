@@ -46,6 +46,9 @@ const reimbursementSchema = z.object({
   period_month: z.string().nullable(),
   working_days: z.number().int().nullable(),
   energy_wh_per_day: z.number().int().nullable(),
+  working_minutes: z.number().int().nullable(),
+  km_per_hour: z.number().int().nullable(),
+  wh_per_km: z.number().int().nullable(),
   rate_cents_per_kwh: z.number().int().nullable(),
   amount_cents: z.number().int(),
   status: z.enum(REIMBURSEMENT_STATUS),
@@ -68,8 +71,6 @@ const overviewSchema = z.object({
   my_staff_member_id: z.string().nullable(),
   can_decide: z.boolean(),
   can_read_all: z.boolean(),
-  wh_per_day: z.number().int(),
-  cents_per_kwh: z.number().int(),
   person: z
     .object({
       staff_member_id: z.string(),
@@ -88,13 +89,34 @@ export type Overview = z.infer<typeof overviewSchema>;
 
 const electricityPreviewSchema = z.object({
   month: z.string(),
-  days_in_month: z.number().int(),
-  suggested_days: z.number().int(),
-  wh_per_day: z.number().int(),
+  working_minutes: z.number().int(),
+  km_per_hour: z.number().int(),
+  wh_per_km: z.number().int(),
   cents_per_kwh: z.number().int(),
+  amount_cents: z.number().int(),
   already_requested: z.boolean(),
 });
 export type ElectricityPreview = z.infer<typeof electricityPreviewSchema>;
+
+const electricitySuggestionSchema = z.object({
+  month: z.string(),
+  working_minutes: z.number().int(),
+  amount_cents: z.number().int(),
+});
+export type ElectricitySuggestion = z.infer<typeof electricitySuggestionSchema>;
+
+const electricitySettingsSchema = z.object({
+  electricity_cents_per_kwh: z.number().int(),
+  electricity_wh_per_km: z.number().int(),
+  electricity_km_per_hour: z.number().int(),
+});
+
+/** Die Werte der Praxis für den Ladestrom (ORG-008). */
+export interface ElectricitySettings {
+  centsPerKwh: number;
+  whPerKm: number;
+  kmPerHour: number;
+}
 
 const submittedSchema = z.object({
   id: z.string(),
@@ -120,8 +142,12 @@ const SENTENCES: readonly (readonly [string, string])[] = [
   ['payout account missing', 'Bitte zuerst die IBAN für die Auszahlung angeben.'],
   ['month already requested', 'Für diesen Monat ist Ladestrom schon beantragt.'],
   ['month not allowed', 'Ladestrom geht für einen der letzten zwölf abgeschlossenen Monate.'],
-  ['working days out of range', 'So viele Tage hat der Monat nicht.'],
-  ['declaration missing', 'Bitte die Erklärung bestätigen.'],
+  [
+    'no planned working hours',
+    'In diesem Monat sind keine Arbeitsstunden geplant – es gibt nichts zu erstatten.',
+  ],
+  ['declaration missing', 'Ladestrom gibt es nur, wenn zu Hause geladen wurde.'],
+  ['electricity settings out of range', 'Bitte die Werte in den angegebenen Grenzen eintragen.'],
   [
     'too many receipts',
     'Schon zehn Belege ohne Antrag – nicht abgesendete fallen nach einem Tag weg.',
@@ -177,12 +203,55 @@ export async function fetchReimbursements(staffMemberId: string | null): Promise
 }
 
 /** Der Satz, wenn der Vorschlag ohne Antwort des Servers nicht kommt (Funkloch). */
-export const PREVIEW_ERROR = 'Die Arbeitstage konnten nicht gezählt werden.';
+export const PREVIEW_ERROR = 'Die Arbeitsstunden konnten nicht gezählt werden.';
 
-/** Vorschlag der Arbeitstage eines Monats, Ladung und Satz (ANN-599). */
+/**
+ * Ladestrom eines Monats (ORG-008): geplante Arbeitsminuten, die Werte der
+ * Praxis und der Betrag - gerechnet am Server.
+ */
 export async function previewElectricity(month: string): Promise<ElectricityPreview> {
   const data = await call('preview_electricity_reimbursement', { p_month: month }, PREVIEW_ERROR);
   return antwort(electricityPreviewSchema, data, PREVIEW_ERROR);
+}
+
+export const SUGGESTIONS_KEY = [...REIMBURSEMENTS_KEY, 'suggestions'] as const;
+
+/** Die abgeschlossenen Monate ohne Ladestrom-Antrag, mit Betrag - für den Eingang. */
+export async function fetchElectricitySuggestions(): Promise<ElectricitySuggestion[]> {
+  const fallback = 'Der Ladestrom konnte nicht berechnet werden.';
+  const data = await call('electricity_suggestions', {}, fallback);
+  return antwort(z.array(electricitySuggestionSchema), data ?? [], fallback);
+}
+
+export const ELECTRICITY_SETTINGS_KEY = ['electricity-settings'] as const;
+
+/** Die Werte der eigenen Praxis - RLS liefert Praxiskonten genau die eigene Organisation. */
+export async function fetchElectricitySettings(): Promise<ElectricitySettings> {
+  const fallback = 'Die Werte für den Ladestrom konnten nicht geladen werden.';
+  const { data, error } = await getSupabase()
+    .from('organizations')
+    .select('electricity_cents_per_kwh, electricity_wh_per_km, electricity_km_per_hour')
+    .maybeSingle();
+  if (error || !data) throw new Error(fallback);
+  const row = antwort(electricitySettingsSchema, data, fallback);
+  return {
+    centsPerKwh: row.electricity_cents_per_kwh,
+    whPerKm: row.electricity_wh_per_km,
+    kmPerHour: row.electricity_km_per_hour,
+  };
+}
+
+/** Verbindlich prüft `set_electricity_settings`: nur owner, Werte in ihren Grenzen. */
+export async function saveElectricitySettings(settings: ElectricitySettings): Promise<void> {
+  await call(
+    'set_electricity_settings',
+    {
+      p_cents_per_kwh: settings.centsPerKwh,
+      p_wh_per_km: settings.whPerKm,
+      p_km_per_hour: settings.kmPerHour,
+    },
+    'Die Werte für den Ladestrom konnten nicht gespeichert werden.',
+  );
 }
 
 export const PAYOUT_ERROR = 'Die Angaben zur Auszahlung konnten nicht geladen werden.';
@@ -209,8 +278,7 @@ export async function savePayoutAccount(iban: string): Promise<PayoutAccount> {
 
 export async function submitElectricity(input: {
   month: string;
-  workingDays: number;
-  /** Der Haken der Erklärung (ANN-599) - der Server prüft ihn selbst. */
+  /** Der Haken „zu Hause geladen“ - der Server prüft ihn selbst. */
   declared: boolean;
   iban: string | null;
 }): Promise<Submitted> {
@@ -219,7 +287,6 @@ export async function submitElectricity(input: {
     'submit_electricity_reimbursement',
     {
       p_month: input.month,
-      p_working_days: input.workingDays,
       p_declared: input.declared,
       p_iban: input.iban,
     },

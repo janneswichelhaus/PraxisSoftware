@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { BereichePage } from './BereichePage';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -13,19 +13,32 @@ import { renderWithProviders, testUser } from '@/test-utils';
  * Protokoll steht jeder Rolle offen.
  */
 describe('BereichePage', () => {
-  it('zeigt alle Bereiche der Rolle in Seitenleisten-Reihenfolge, die Kommunikation eingeschlossen', () => {
+  it('zeigt alle Bereiche der Rolle in Seitenleisten-Reihenfolge, die Nachrichten eingeschlossen', () => {
     renderWithProviders(<BereichePage user={testUser(['therapist'])} />, '/bereiche');
     const liste = screen.getByRole('list');
-    const namen = Array.from(liste.querySelectorAll('a')).map(
-      (link) => link.querySelector('.font-medium')?.textContent,
-    );
+    const namen = Array.from(liste.querySelectorAll('a'))
+      .map((link) => link.querySelector('.font-medium')?.textContent)
+      .filter(Boolean);
     expect(namen).toEqual([
       'Übersicht',
       'Kalender',
       'Patient:innen',
-      'Kommunikation',
-      'Organisatorisches',
+      'Nachrichten',
+      'Organisation',
     ]);
+  });
+
+  it('führt von „Mehr" direkt in die Reiter eines Bereichs (ORG-001)', () => {
+    renderWithProviders(<BereichePage user={testUser(['owner'])} />, '/bereiche');
+    const seiten = screen.getByRole('navigation', { name: 'Organisation: Seiten' });
+    expect(within(seiten).getByRole('link', { name: 'Team' })).toHaveAttribute(
+      'href',
+      '/praxis/team',
+    );
+    expect(within(seiten).getByRole('link', { name: 'Radflotte' })).toHaveAttribute(
+      'href',
+      '/betrieb/flotte',
+    );
   });
 
   it('sagt, was Vorschauen tun, und führt jede Rolle zum Vorschau-Protokoll', () => {

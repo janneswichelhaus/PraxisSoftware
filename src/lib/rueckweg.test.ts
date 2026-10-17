@@ -163,8 +163,8 @@ describe('rueckwegBeschriftung', () => {
     ['/abrechnung', 'Zurück zu den Rechnungen'],
     ['/abrechnung/zahlungen', 'Zurück zu den Zahlungen'],
     ['/abrechnung/leistungen', 'Zurück zu den Leistungen'],
-    ['/praxis/planung', 'Zurück zu den Arbeitszeiten'],
-    ['/team', 'Zurück zur Kommunikation'],
+    ['/betrieb/arbeitszeit', 'Zurück zur Arbeitszeit'],
+    ['/team', 'Zurück zu den Nachrichten'],
     ['/mein-konto', 'Zurück zu „Mein Konto“'],
   ])('beschriftet %s mit %s (UXR-002)', (pfad, erwartet) => {
     expect(rueckwegBeschriftung(pfad)).toBe(erwartet);

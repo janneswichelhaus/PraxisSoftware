@@ -58,11 +58,12 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
       /^Übersicht/,
       /^Kalender/,
       /^Patient:innen/,
-      /^Kommunikation/,
-      /^Organisatorisches/,
+      /^Nachrichten/,
+      /^Organisation/,
       /^Abrechnung/,
     ]) {
-      await expect(uebersicht.getByRole('link', { name: bereich })).toBeVisible();
+      // Die Karte des Bereichs - darunter stehen seit ORG-001 seine Reiter.
+      await expect(uebersicht.getByRole('link', { name: bereich }).first()).toBeVisible();
     }
   });
 
@@ -70,8 +71,8 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await anmelden(page, KONTEN.owner);
 
     // Die Seiten mit den meisten nebeneinanderliegenden Elementen: die
-    // Bereichsuebersicht, das laengste Untermenue (Organisatorisches, mit
-    // offener Vorschau) und der Kalender.
+    // Bereichsuebersicht, Organisation mit Reitern und Ansichten und der
+    // Kalender.
     for (const pfad of ['/', '/bereiche', '/praxis/team', '/betrieb/flotte', '/kalender']) {
       await page.goto(pfad);
       await expect(page.getByRole('main')).toBeVisible();
@@ -79,28 +80,25 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     }
   });
 
-  test('fuehrt die angebundene Mitarbeiterverwaltung unter Organisatorisches', async ({ page }) => {
+  test('fuehrt die Mitarbeiterverwaltung unter Organisation → Team (ORG-001)', async ({ page }) => {
     await anmelden(page, KONTEN.owner);
     await page.goto('/praxis/team');
 
-    // Das Untermenue gehoert zum Bereich Organisatorisches, und
-    // „Mitarbeitende" ist darin der angebundene Punkt - nicht als Vorschau
-    // gekennzeichnet.
-    const untermenue = page.getByRole('navigation', { name: 'Bereich Organisatorisches' });
-    const mitarbeitende = untermenue.getByRole('link', { name: 'Mitarbeitende' });
-    await expect(mitarbeitende).toHaveAttribute('aria-current', 'page');
-    await expect(mitarbeitende).not.toContainText('Vorschau');
+    // Fünf Reiter, Team offen; darunter die Ansichten mit Mitarbeitenden.
+    const untermenue = page.getByRole('navigation', { name: 'Bereich Organisation' });
+    await expect(untermenue.getByRole('link', { name: 'Team', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    const ansichten = page.getByRole('navigation', { name: 'Ansichten' });
+    await expect(ansichten.getByRole('link', { name: 'Mitarbeitende' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
-
-    // Radflotte, Urlaub, Arbeitszeit, Zeitkonto und Erstattungen sind echt
-    // (FLT-EPIC-001, URL-001, AZ-001, ZK-001, ERS-001) und stehen bei den
-    // angebundenen Punkten; der Bereich hat keine Vorschau mehr.
-    for (const name of ['Radflotte', 'Urlaub', 'Arbeitszeit', 'Zeitkonto', 'Erstattungen']) {
-      const punkt = untermenue.getByRole('link', { name, exact: true });
-      await expect(punkt).toBeVisible();
-      await expect(punkt).not.toContainText('Vorschau');
+    for (const name of ['Arbeitszeit', 'Urlaub', 'Zeitkonto', 'Erstattungen']) {
+      await expect(ansichten.getByRole('link', { name, exact: true })).toBeVisible();
     }
-    await expect(untermenue.getByRole('button', { name: /^Vorschau/ })).toHaveCount(0);
     await expect(untermenue.getByText('Vorschau')).toHaveCount(0);
   });
 });

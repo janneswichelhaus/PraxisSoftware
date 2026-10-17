@@ -14,14 +14,15 @@ import {
  * echten Stack bei 375 × 667 - Browser → GoTrue → PostgREST →
  * SECURITY-DEFINER-Funktionen, nichts gestubbt.
  *
- * Mehrarbeit: Anna trägt die Zeit nach Dienstende des letzten Arbeitstags ein
- * (Budget ≤ 6 Tipps, Ziel 5) und nimmt sie danach zurück. Freizeitausgleich:
+ * Überstunden: Anna trägt 30 Minuten ab Dienstende des letzten Arbeitstags ein
+ * (Budget ≤ 6 Tipps, Ziel 5; Dauer am Regler, ANN-606) und nimmt sie danach
+ * zurück. Freizeitausgleich:
  * Anna nimmt an einem Donnerstag zwei Stunden früher frei; am Server steht der
  * Tag als Abweichung mit den übrigen Blöcken; von zwei Terminen des Tages
  * wählt „Tag umplanen“ nur den in der freien Zeit vor. Jannes weist den
  * Freizeitausgleich aus Annas Konto mit Grund zurück (3 Tipps und der Grund),
- * die Zeit ist wieder Arbeitszeit. Olivia (Büro) bucht für Tim eine Korrektur
- * mit Grund (Budget ≤ 6 Tipps) und nimmt sie zurück. Zurückgewiesenes,
+ * die Zeit ist wieder Arbeitszeit. Olivia (Büro) bucht für Tim Minusstunden
+ * am Regler mit Grund (Budget ≤ 6 Tipps) und nimmt sie zurück. Zurückgewiesenes,
  * Zurückgenommenes und die abgesagten Termine sperren spätere Läufe nicht.
  * Ausschließlich synthetische Seed-Konten.
  */
@@ -159,7 +160,9 @@ async function abweichungen(
   }[];
 }
 
-test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', async ({ page }) => {
+test('G9: Anna trägt Überstunden ab Dienstende in fünf Tipps ein (ZK-001, ANN-606)', async ({
+  page,
+}) => {
   await page.setViewportSize(TELEFON);
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/zeitkonto');
@@ -171,7 +174,7 @@ test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', a
   const art = page.getByRole('dialog', { name: 'Was tragen Sie ein?' });
   await expect(art).toBeVisible();
   await bild(page, 'b9-g9-01-art-375');
-  await t.tippe(art.getByRole('button', { name: 'Mehrarbeit' }));
+  await t.tippe(art.getByRole('button', { name: 'Überstunden' }));
 
   const datum = page.getByRole('dialog', { name: 'An welchem Tag?' });
   await expect(datum).toBeVisible();
@@ -188,12 +191,19 @@ test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', a
     await t.tippe(tag(datum, ARBEITSTAG));
   }
 
-  const zeiten = page.getByRole('dialog', { name: 'Von wann bis wann?' });
+  // Beginn am Dienstende, die Dauer am Regler im Fuß (30 min vorgestellt).
+  const zeiten = page.getByRole('dialog', { name: 'Wie lange?' });
   await expect(zeiten.getByText(/Plan: 08:00–12:00, 13:00–18:00/)).toBeVisible();
-  const schnellwahl = zeiten.getByRole('button', { name: '+0:45: 18:00–18:45' });
-  await stehtImBild(page, zeiten, schnellwahl);
+  await expect(zeiten.getByLabel('Beginn')).toHaveValue('18:00');
+  const regler = zeiten.getByRole('slider', { name: 'Dauer' });
+  await expect(regler).toHaveAttribute('aria-valuetext', '30 Minuten');
+  await expect(zeiten.getByText('18:00–18:30')).toBeVisible();
+  const weiter = zeiten.getByRole('button', { name: 'Weiter' });
+  await stehtImBild(page, zeiten, regler);
+  await stehtImBild(page, zeiten, weiter);
+  await rolltNicht(zeiten);
   await bild(page, 'b9-g9-03-zeiten-375');
-  await t.tippe(schnellwahl);
+  await t.tippe(weiter);
 
   const abschluss = page.getByRole('dialog', { name: 'Eintragen?' });
   const eintragen = abschluss.getByRole('button', { name: 'Eintragen' });
@@ -205,23 +215,23 @@ test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', a
   // Die Bestätigung beginnt mit dem ausgeblendeten Häkchen - gesucht wird in der
   // Statuszeile, nicht am Textanfang.
   await expect(
-    page.getByRole('status').filter({ hasText: /Eingetragen: Mehrarbeit .*18:00–18:45/ }),
+    page.getByRole('status').filter({ hasText: /Eingetragen: Überstunden .*18:00–18:30/ }),
   ).toBeVisible();
   await bild(page, 'b9-g9-05-eingetragen-375');
   test.info().annotations.push({ type: 'G9', description: `${t.tipps} Tipps bis eingetragen` });
   expect(t.tipps).toBeLessThanOrEqual(6);
 
-  // Aufräumen: Anna nimmt die Mehrarbeit zurück - sie zählt nicht mehr.
+  // Aufräumen: Anna nimmt die Überstunden zurück - sie zählen nicht mehr.
   const eintraege = page
     .locator('section')
     .filter({ has: page.getByRole('heading', { name: /^Einträge/ }) });
-  const zeile = eintraege.getByRole('listitem').filter({ hasText: '18:00–18:45' }).first();
+  const zeile = eintraege.getByRole('listitem').filter({ hasText: '18:00–18:30' }).first();
   await zeile.getByRole('button', { name: 'Zurücknehmen' }).click();
   await page.getByRole('button', { name: 'Ja, zurücknehmen' }).click();
   await expect(
     eintraege
       .getByRole('listitem')
-      .filter({ hasText: '18:00–18:45' })
+      .filter({ hasText: '18:00–18:30' })
       .filter({
         has: page.getByRole('button', { name: 'Zurücknehmen' }),
       }),
@@ -369,7 +379,7 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   await inhaber.close();
 });
 
-test('G9 Korrektur: Olivia (Büro) bucht für Tim mit Grund und nimmt sie zurück (ZK-001)', async ({
+test('G9 Minusstunden: Olivia (Büro) bucht für Tim mit Grund und nimmt sie zurück (ZK-001)', async ({
   page,
 }) => {
   test.setTimeout(120_000);
@@ -389,36 +399,39 @@ test('G9 Korrektur: Olivia (Büro) bucht für Tim mit Grund und nimmt sie zurüc
   await t.tippe(
     page
       .getByRole('dialog', { name: 'Was tragen Sie für Tim Teamleitung ein?' })
-      .getByRole('button', { name: 'Korrektur' }),
+      .getByRole('button', { name: 'Minusstunden' }),
   );
-  // Stunden und Grund je auf einer Seite (Design-Review Überholung 9).
-  const stunden = page.getByRole('dialog', { name: 'Wie viele Stunden?' });
-  await stunden.getByLabel(/^Stunden/).fill('1:30');
+  // Dauer und Grund je auf einer Seite (Design-Review Überholung 9); die
+  // Dauer am Regler, Bild auf eine Stunde weiter (ANN-606).
+  const stunden = page.getByRole('dialog', { name: 'Wie viele Minusstunden?' });
+  const regler = stunden.getByRole('slider', { name: 'Minusstunden' });
+  await regler.press('PageUp');
+  await expect(regler).toHaveAttribute('aria-valuetext', '1 Stunde 30 Minuten');
   await rolltNicht(stunden);
   await bild(page, 'b9-g9k-01-stunden-375');
   await t.tippe(stunden.getByRole('button', { name: 'Weiter' }));
-  const grund = page.getByRole('dialog', { name: 'Warum die Korrektur?' });
+  const grund = page.getByRole('dialog', { name: 'Warum die Minusstunden?' });
   const text = `Stundenliste September (Lauf ${LAUF})`;
   await grund.getByLabel('Grund').fill(text);
   await bild(page, 'b9-g9k-02-grund-375');
   await t.tippe(grund.getByRole('button', { name: 'Weiter' }));
   const abschluss = page.getByRole('dialog', { name: 'Eintragen?' });
-  await expect(abschluss.getByText('+1:30 Std.', { exact: true })).toBeVisible();
+  await expect(abschluss.getByText('−1:30 Std.', { exact: true })).toBeVisible();
   await expect(abschluss.getByText(text)).toBeVisible();
   await rolltNicht(abschluss);
   await bild(page, 'b9-g9k-03-zusammenfassung-375');
   await t.tippe(abschluss.getByRole('button', { name: 'Eintragen' }));
   await expect(
-    page.getByRole('status').filter({ hasText: /Eingetragen: Korrektur .*\(\+1:30\sStd\.\)/ }),
+    page.getByRole('status').filter({ hasText: /Eingetragen: Minusstunden .*\(−1:30\sStd\.\)/ }),
   ).toBeVisible();
   await bild(page, 'b9-g9k-04-eingetragen-375');
   test.info().annotations.push({
-    type: 'G9 Korrektur',
-    description: `${t.tipps} Tipps, dazu Stunden und Grund`,
+    type: 'G9 Minusstunden',
+    description: `${t.tipps} Tipps, dazu Regler und Grund`,
   });
   expect(t.tipps).toBeLessThanOrEqual(6);
 
-  // Aufräumen: Olivia nimmt die Korrektur zurück - sie zählt nicht mehr.
+  // Aufräumen: Olivia nimmt die Minusstunden zurück - sie zählen nicht mehr.
   const zeile = page.getByRole('listitem').filter({ hasText: text });
   await zeile.getByRole('button', { name: 'Zurücknehmen' }).click();
   await page.getByRole('button', { name: 'Ja, zurücknehmen' }).click();

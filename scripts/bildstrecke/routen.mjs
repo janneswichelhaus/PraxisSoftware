@@ -409,13 +409,6 @@ export const ROUTEN = Object.freeze([
     konten: ['owner', 'therapist'],
   },
   {
-    muster: '/praxis/planung',
-    pfad: '/praxis/planung',
-    bereich: 'Tour und Planung',
-    etikett: 'Dienstplan und Planung',
-    konten: ['owner', 'office'],
-  },
-  {
     muster: '/praxis/gebiete',
     pfad: '/praxis/gebiete',
     bereich: 'Tour und Planung',
@@ -851,6 +844,45 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
   },
   // URL-001: Urlaub ist echt angebunden - die Seite je Rolle, Beantragen
+  // ORG-001/-004: Eingang von Organisation und die Wahl eines neuen Antrags.
+  {
+    muster: '/betrieb',
+    pfad: '/betrieb',
+    bereich: 'Organisation',
+    etikett: 'Eingang',
+    konten: ['owner', 'office', 'therapist', 'trainer'],
+  },
+  {
+    muster: '/betrieb/neu',
+    pfad: '/betrieb/neu',
+    bereich: 'Organisation',
+    etikett: 'Neuer Antrag',
+    konten: ['owner', 'trainer'],
+  },
+  // ORG-006: Barometer (Beschäftigte: der Ablauf, owner: die Praxissumme) und
+  // Rückmeldung an die Praxisleitung (Beschäftigte: schreiben, owner: Liste).
+  {
+    muster: '/betrieb/barometer',
+    pfad: '/betrieb/barometer',
+    bereich: 'Organisation',
+    etikett: 'Barometer',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/rueckmeldung',
+    pfad: '/betrieb/rueckmeldung',
+    bereich: 'Organisation',
+    etikett: 'Rückmeldung an die Praxisleitung',
+    konten: ['owner', 'therapist'],
+  },
+  // ORG-002: die Einstellungen der Praxis, nur owner.
+  {
+    muster: '/praxis/einstellungen',
+    pfad: '/praxis/einstellungen',
+    bereich: 'Organisation',
+    etikett: 'Einstellungen der Praxis',
+    konten: ['owner'],
+  },
   // (G7), Entscheiden (G7b) und der Anspruch je Person.
   {
     muster: '/betrieb/urlaub',
@@ -1222,6 +1254,10 @@ export const ROUTEN = Object.freeze([
 
 /** Routen, die bewusst kein Bild bekommen - mit Grund. */
 export const AUSGENOMMEN = Object.freeze([
+  {
+    muster: '/praxis/planung',
+    grund: 'Alte Adresse der Planung: leitet seit ORG-003 auf /betrieb/arbeitszeit um.',
+  },
   {
     muster: '*',
     grund: 'Auffangroute: leitet auf die Startseite um (Praxis „/“, Plattform „/p“).',

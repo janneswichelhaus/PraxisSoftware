@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { renderWithProviders, testUser } from '@/test-utils';
 import type * as WorkingTimeApi from './api';
+import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as SchedulingApi from '@/features/scheduling/api';
 import { testOpenRequest, testOwnRequest, testWeek, testWorkingTime } from './testdata';
 
 /**
@@ -21,6 +23,32 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchWorkingTime: (...a: unknown[]) => fetchWorkingTime(...a) as unknown,
     withdrawRequest: (...a: unknown[]) => withdrawRequest(...a) as unknown,
+  };
+});
+
+// ORG-003: Die Seite trägt seit der Zusammenlegung auch die Planung je
+// Person; deren Abfragen stehen hier still.
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchAssignableTherapists: () =>
+      Promise.resolve([
+        { staff_member_id: '55555555-5555-4555-8555-000000000002', display_name: 'Anna Beispiel' },
+        {
+          staff_member_id: '55555555-5555-4555-8555-000000000004',
+          display_name: 'Tim Teamleitung',
+        },
+      ]),
+    todayInTimeZone: () => '2026-11-12',
+  };
+});
+vi.mock('@/features/scheduling/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof SchedulingApi>();
+  return {
+    ...actual,
+    fetchWorkingHours: () => Promise.resolve([]),
+    fetchWorkingHourExceptions: () => Promise.resolve([]),
   };
 });
 
@@ -118,8 +146,27 @@ describe('WorkingTimePage', () => {
         plan: { has_plan: false, current: testWeek(), next_from: null, next: null },
       }),
     );
-    renderWithProviders(<WorkingTimePage user={testUser(['office'])} />);
+    renderWithProviders(<WorkingTimePage user={testUser(['therapist'])} />);
     expect(await screen.findByText('Noch kein Wochenplan')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Änderung beantragen' })).toBeNull();
+  });
+
+  it('trägt die Planung je Person: Personenwahl, eigene Person vorgewählt (ORG-003)', async () => {
+    renderWithProviders(<WorkingTimePage user={testUser(['therapist'])} />);
+    const wahl = await screen.findByLabelText('Person');
+    expect(wahl).toHaveValue('55555555-5555-4555-8555-000000000002');
+    expect(within(wahl).getByRole('option', { name: 'Tim Teamleitung' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Mein Wochenplan' })).toBeInTheDocument();
+  });
+
+  it('führt zurück zum Antrag, wenn ein Urlaub an abweichenden Zeiten anhielt (URL-001)', async () => {
+    renderWithProviders(
+      <WorkingTimePage user={testUser(['owner'])} />,
+      '/betrieb/arbeitszeit?person=s1&zurueck=%2Fbetrieb%2Furlaub%2Fentscheiden%2Fa1',
+    );
+    expect(await screen.findByRole('link', { name: '← Zurück zum Antrag' })).toHaveAttribute(
+      'href',
+      '/betrieb/urlaub/entscheiden/a1',
+    );
   });
 });

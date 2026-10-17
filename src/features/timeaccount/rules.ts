@@ -3,8 +3,9 @@ import { toMinutes, toTime, type Block } from '@/features/working-time/rules';
 
 /**
  * Regeln des Zeitkontos am Gerät (ZK-001): dieselben Fristen wie am Server
- * (ANN-593, `app.time_account_check`), die Schnellwahl der Zeiten und der
- * Saldo als Text. Was zählt, rechnet der Server; die Seite rechnet vorher
+ * (ANN-593, `app.time_account_check`), die Vorschläge der Zeiten und der
+ * Saldo als Text. In der Oberfläche heißen `overtime` „Überstunden“ und
+ * `correction` „Minusstunden“ (ORG-007, ANN-606); die Kennungen bleiben. Was zählt, rechnet der Server; die Seite rechnet vorher
  * nach, damit niemand erst nach dem Eintragen erfährt, was nicht geht.
  */
 
@@ -13,9 +14,9 @@ export type EntryKind = 'overtime' | 'time_off' | 'correction';
 export type AccountEntryKind = EntryKind | 'carryover';
 
 export const KIND_TITLE: Record<AccountEntryKind, string> = {
-  overtime: 'Mehrarbeit',
+  overtime: 'Überstunden',
   time_off: 'Freizeitausgleich',
-  correction: 'Korrektur',
+  correction: 'Minusstunden',
   carryover: 'Übertrag',
 };
 
@@ -50,15 +51,15 @@ export function problemText(problem: Problem, kind: EntryKind): string {
   switch (problem) {
     case 'date_out_of_range':
       return kind === 'overtime'
-        ? 'Mehrarbeit lässt sich bis 31 Tage zurück eintragen, nicht im Voraus.'
+        ? 'Überstunden lassen sich bis 31 Tage zurück eintragen, nicht im Voraus.'
         : kind === 'time_off'
           ? 'Freizeitausgleich geht bis 31 Tage zurück und höchstens ein Jahr voraus.'
-          : 'Korrekturen gehen bis ein Jahr zurück, nicht im Voraus.';
+          : 'Minusstunden gehen bis ein Jahr zurück, nicht im Voraus.';
     case 'times_invalid':
       return 'Bitte Beginn vor Ende angeben.';
     case 'overlaps_working_hours':
       // Der Grund, nicht eine Bestätigung (Praxis-Review Überholung 9).
-      return 'Die Zeit liegt in der Arbeitszeit – Mehrarbeit nur davor oder danach.';
+      return 'Die Zeit liegt in der Arbeitszeit – Überstunden nur davor oder danach.';
     case 'leave':
       return 'An diesem Tag ist Urlaub.';
     case 'absent':
@@ -72,7 +73,8 @@ export function problemText(problem: Problem, kind: EntryKind): string {
     case 'overlaps_entry':
       return 'In dieser Zeit steht schon ein Eintrag.';
     case 'correction_invalid':
-      return 'Bitte Stunden (nicht 0) und einen Grund angeben.';
+      // Minusstunden ziehen nur ab (ANN-606).
+      return 'Minusstunden ziehen nur ab – bitte eine Dauer und einen Grund angeben.';
   }
 }
 
@@ -104,18 +106,43 @@ function dayStart(blocks: readonly Block[]): number | null {
   return starts.length > 0 ? Math.min(...starts) : null;
 }
 
-/** Mehrarbeit ab Dienstende: viertel, halbe, ganze Stunden (Spezifikation G9). */
-const OVERTIME_STEPS = [15, 30, 45, 60, 90, 120] as const;
+/**
+ * Überstunden beginnen vorbelegt am Dienstende des Tages laut Plan (wie die
+ * frühere Schnellwahl „ab Dienstende“); an einem freien Tag um 08:00. Der
+ * Beginn bleibt änderbar, die Dauer stellt der Regler (ANN-606).
+ */
+export const FREE_DAY_START = '08:00';
 
-export function overtimeChoices(blocks: readonly Block[]): TimeChoice[] {
+export function overtimeStart(blocks: readonly Block[]): string {
   const end = dayEnd(blocks);
-  if (end === null) return [];
-  return OVERTIME_STEPS.filter((step) => end + step <= 24 * 60).map((step) => ({
-    label: `+${Math.floor(step / 60)}:${String(step % 60).padStart(2, '0')}`,
-    von: toTime(end),
-    bis: toTime(end + step),
-  }));
+  return end === null ? FREE_DAY_START : toTime(end);
 }
+
+/** Überstunden am Regler: 30 Minuten vorgestellt, höchstens 6 Stunden. */
+export const OVERTIME_DEFAULT = 30;
+export const OVERTIME_MAX = 6 * 60;
+
+/**
+ * Das Höchste am Regler ab `von`: sechs Stunden, aber nicht über Mitternacht -
+ * ein Eintrag liegt an einem Tag (`app.time_account_check`). Was das
+ * Arbeitszeitgesetz sonst verlangt, prüft der Server nicht und der Regler
+ * auch nicht.
+ */
+export function overtimeMax(von: string): number {
+  const start = toMinutes(von);
+  if (start === null) return OVERTIME_MAX;
+  return Math.max(5, Math.min(OVERTIME_MAX, 24 * 60 - start));
+}
+
+/** Das Ende von Überstunden: Beginn plus Dauer; leer ohne lesbaren Beginn. */
+export function overtimeEnd(von: string, minutes: number): string {
+  const start = toMinutes(von);
+  return start === null ? '' : toTime(start + minutes);
+}
+
+/** Minusstunden am Regler: 30 Minuten vorgestellt, höchstens 10 Stunden. */
+export const CORRECTION_DEFAULT = 30;
+export const CORRECTION_MAX = 10 * 60;
 
 /**
  * Wo Termine an einem Tag mit Freizeitausgleich bleiben können: alles außer
@@ -150,32 +177,4 @@ export function timeOffChoices(blocks: readonly Block[]): TimeChoice[] {
   }
   choices.push({ label: 'Ganzer Tag', von: toTime(start), bis: toTime(end) });
   return choices;
-}
-
-/**
- * Stunden einer Korrektur, wie man sie tippt: „12:30“, „-2“, „1,5“, „+0:45“.
- * Liefert Minuten oder `null`, wenn die Angabe nicht zu lesen ist.
- */
-export function parseHours(input: string): number | null {
-  let text = input.trim().replace('−', '-').replace(',', '.');
-  let sign = 1;
-  if (text.startsWith('-') || text.startsWith('+')) {
-    if (text.startsWith('-')) sign = -1;
-    text = text.slice(1);
-  }
-  const [whole = '', rest, extra] = text.includes(':') ? text.split(':') : text.split('.');
-  if (extra !== undefined || !/^\d{1,4}$/.test(whole)) return null;
-  let minutes = 0;
-  if (rest !== undefined) {
-    if (text.includes(':')) {
-      if (!/^[0-5]\d$/.test(rest)) return null;
-      minutes = Number(rest);
-    } else {
-      if (!/^\d{1,2}$/.test(rest)) return null;
-      minutes = Math.round(Number(`0.${rest}`) * 60);
-    }
-  }
-  const total = Number(whole) * 60 + minutes;
-  if (total === 0 || total > 60000) return null;
-  return sign * total;
 }

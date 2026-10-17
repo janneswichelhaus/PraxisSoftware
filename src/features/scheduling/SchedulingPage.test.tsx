@@ -55,11 +55,11 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   };
 });
 
-const { SchedulingPage } = await import('./SchedulingPage');
+const { ArbeitszeitJePerson } = await import('./SchedulingPage');
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['office'], anzeigename?: string) {
   return renderWithProviders(
-    <SchedulingPage user={testUser(rollen, anzeigename)} />,
+    <ArbeitszeitJePerson user={testUser(rollen, anzeigename)} />,
     '/praxis/planung',
   );
 }
@@ -85,12 +85,12 @@ function MitWegHinaus() {
     <>
       <p>Adresse: {pathname}</p>
       <Link to="/woanders">Weggehen</Link>
-      <SchedulingPage user={testUser(['office'])} />
+      <ArbeitszeitJePerson user={testUser(['office'])} />
     </>
   );
 }
 
-describe('SchedulingPage', () => {
+describe('ArbeitszeitJePerson (ORG-003)', () => {
   beforeEach(() => {
     fetchWorkingHours.mockReset();
     fetchWorkingHourExceptions.mockReset();
@@ -116,170 +116,6 @@ describe('SchedulingPage', () => {
     saveWorkingHours.mockResolvedValue(undefined);
     saveWorkingHourException.mockResolvedValue(undefined);
     saveAppointmentGrid.mockResolvedValue(undefined);
-  });
-
-  it('heisst wie ihr Menuepunkt (ORG-07)', async () => {
-    rendern();
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Arbeitszeiten' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Planung' })).not.toBeInTheDocument();
-    // Die Praxiseinstellungen sieht nur owner - die Beschreibung nennt sie
-    // auch nur dort.
-    expect(screen.queryByText(/Praxisraster, Dokumentationsfrist/)).not.toBeInTheDocument();
-  });
-
-  it('stellt die Praxiseinstellungen geschlossen unter den Wochenplan (RAH-006)', async () => {
-    const user = userEvent.setup();
-    rendern(['owner']);
-    const wochenplan = await wochenplanAbwarten();
-
-    // Ein Aufklapper in Karte, Kopf als Abschnittstitel, Zusatz rechts; zu
-    // beim Oeffnen der Seite. Darin Raster, Frist, Startort, Garage und
-    // Fahrzeitfaktor mit ihren bisherigen Formularen.
-    const kopf = screen.getByText('Praxiseinstellungen');
-    const aufklapper = kopf.closest('details')!;
-    expect(aufklapper).not.toBeNull();
-    expect(aufklapper.open).toBe(false);
-    expect(aufklapper.className).toContain('rounded-card');
-    expect(kopf.closest('summary')).toHaveTextContent('Raster · Frist · Startort');
-    expect(within(aufklapper).getByLabelText('Minutenraster')).toBeInTheDocument();
-    expect(within(aufklapper).getByLabelText('Frist')).toBeInTheDocument();
-    expect(within(aufklapper).getByRole('heading', { name: 'Praxisraster' })).toBeInTheDocument();
-    // Unter dem Wochenplan, nicht mehr darueber.
-    expect(
-      wochenplan.compareDocumentPosition(aufklapper) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-
-    await user.click(kopf);
-    expect(aufklapper.open).toBe(true);
-  });
-
-  it('zeigt anderen Rollen keine Praxiseinstellungen', async () => {
-    rendern(['office']);
-    await wochenplanAbwarten();
-    expect(screen.queryByText('Praxiseinstellungen')).not.toBeInTheDocument();
-  });
-
-  describe('Praxisraster', () => {
-    it('bietet owner die drei zulaessigen Werte an', async () => {
-      rendern(['owner']);
-      const auswahl = await screen.findByLabelText('Minutenraster');
-      const werte = Array.from(auswahl.querySelectorAll('option')).map((o) => o.textContent);
-      expect(werte).toEqual(['5 Minuten', '10 Minuten', '15 Minuten']);
-    });
-
-    it('zeigt den aktuellen Wert der Praxis', async () => {
-      rendern(['owner']);
-      expect(await screen.findByLabelText('Minutenraster')).toHaveValue('5');
-    });
-
-    it('speichert den gewaehlten Wert', async () => {
-      const user = userEvent.setup();
-      rendern(['owner']);
-      await screen.findByLabelText('Minutenraster');
-
-      await user.selectOptions(screen.getByLabelText('Minutenraster'), '15');
-      await user.click(screen.getByRole('button', { name: 'Raster speichern' }));
-
-      await waitFor(() => expect(saveAppointmentGrid).toHaveBeenCalledWith(15));
-      expect(await screen.findByText('Das Praxisraster ist gespeichert.')).toBeInTheDocument();
-    });
-
-    it.each([['therapist'], ['team_lead'], ['office']] as const)(
-      'zeigt %s die Rastereinstellung nicht',
-      async (rolle) => {
-        rendern([rolle]);
-        await wochenplanAbwarten();
-        expect(screen.queryByLabelText('Minutenraster')).not.toBeInTheDocument();
-      },
-    );
-  });
-
-  describe('Dokumentationsfrist (DOK-004)', () => {
-    it('zeigt owner die gespeicherte Frist mit den Stufen', async () => {
-      fetchDocumentationDeadline.mockResolvedValue(3);
-      rendern(['owner']);
-
-      const auswahl = await screen.findByLabelText('Frist');
-      await waitFor(() => expect(auswahl).toHaveValue('3'));
-      const werte = Array.from(auswahl.querySelectorAll('option')).map((o) => o.textContent);
-      expect(werte).toEqual([
-        'Ende des Behandlungstages',
-        'Ende des Folgetages',
-        'Ende des 2. Tages nach der Behandlung',
-        'Ende des 3. Tages nach der Behandlung',
-        'Ende des 7. Tages nach der Behandlung',
-        'Ende des 14. Tages nach der Behandlung',
-      ]);
-      expect(fetchDocumentationDeadline).toHaveBeenCalledWith(
-        '22222222-2222-4222-8222-000000000001',
-      );
-    });
-
-    it('zeigt einen gespeicherten Wert ausserhalb der Stufen trotzdem an', async () => {
-      fetchDocumentationDeadline.mockResolvedValue(5);
-      rendern(['owner']);
-
-      const auswahl = await screen.findByLabelText('Frist');
-      await waitFor(() => expect(auswahl).toHaveValue('5'));
-      expect(auswahl).toHaveTextContent('Ende des 5. Tages nach der Behandlung');
-    });
-
-    it('speichert die gewaehlte Frist', async () => {
-      const user = userEvent.setup();
-      rendern(['owner']);
-      const auswahl = await screen.findByLabelText('Frist');
-      await waitFor(() => expect(auswahl).toHaveValue('1'));
-
-      await user.selectOptions(auswahl, '0');
-      await user.click(screen.getByRole('button', { name: 'Frist speichern' }));
-
-      await waitFor(() => expect(saveDocumentationDeadline).toHaveBeenCalledWith(0));
-      expect(await screen.findByRole('status')).toHaveTextContent('Die Frist ist gespeichert.');
-    });
-
-    it('meldet einen Fehler beim Speichern ohne interne Details, mit dem naechsten Schritt', async () => {
-      const user = userEvent.setup();
-      saveDocumentationDeadline.mockRejectedValue(
-        new Error('Die Dokumentationsfrist konnte nicht gespeichert werden.'),
-      );
-      rendern(['owner']);
-      await waitFor(() => expect(screen.getByLabelText('Frist')).toHaveValue('1'));
-
-      await user.click(screen.getByRole('button', { name: 'Frist speichern' }));
-
-      const meldung = await screen.findByText(
-        /Die Dokumentationsfrist konnte nicht gespeichert werden\./,
-      );
-      expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut speichern.');
-    });
-
-    it('sperrt Auswahl und Speichern, solange die Frist nicht geladen ist (ORG-14)', async () => {
-      // Bis UXR-011 stand nach einem Ladefehler die Voreinstellung im Feld,
-      // und ein Tipp auf „Frist speichern" haette die Frist der Praxis damit
-      // ueberschrieben.
-      fetchDocumentationDeadline.mockRejectedValue(new Error('kaputt'));
-      rendern(['owner']);
-
-      expect(
-        await screen.findByText(/Die Dokumentationsfrist konnte nicht geladen werden/),
-      ).toBeInTheDocument();
-      const auswahl = screen.getByLabelText('Frist');
-      expect(auswahl).toBeDisabled();
-      expect(auswahl).toHaveTextContent('Nicht geladen');
-      expect(screen.getByRole('button', { name: 'Frist speichern' })).toBeDisabled();
-    });
-
-    it.each([['therapist'], ['team_lead'], ['office']] as const)(
-      'zeigt %s die Frist nicht und fragt sie nicht ab',
-      async (rolle) => {
-        rendern([rolle]);
-        await wochenplanAbwarten();
-        expect(screen.queryByLabelText('Frist')).not.toBeInTheDocument();
-        expect(fetchDocumentationDeadline).not.toHaveBeenCalled();
-      },
-    );
   });
 
   describe('Wochenplan', () => {
@@ -318,7 +154,7 @@ describe('SchedulingPage', () => {
       rendern();
       await screen.findByText('08:00–12:00, 13:00–18:00');
 
-      await user.selectOptions(screen.getByLabelText('Behandelnde Person'), TIM);
+      await user.selectOptions(screen.getByLabelText('Person'), TIM);
 
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
       expect(screen.queryByText('08:00–12:00, 13:00–18:00')).not.toBeInTheDocument();
@@ -450,7 +286,7 @@ describe('SchedulingPage', () => {
       rendern(['therapist', 'team_lead'], 'Tim Teamleitung');
       await wochenplanAbwarten();
 
-      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(TIM);
+      expect(screen.getByLabelText('Person')).toHaveValue(TIM);
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
     });
 
@@ -642,15 +478,15 @@ describe('SchedulingPage', () => {
 
       await user.clear(screen.getByLabelText('Block 1 von'));
       await user.type(screen.getByLabelText('Block 1 von'), '07:00');
-      await user.selectOptions(screen.getByLabelText('Behandelnde Person'), TIM);
+      await user.selectOptions(screen.getByLabelText('Person'), TIM);
 
       expect(
         screen.getByText(/Arbeitszeiten von Anna Beispiel sind noch nicht gespeichert/),
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(ANNA);
+      expect(screen.getByLabelText('Person')).toHaveValue(ANNA);
 
       await user.click(screen.getByRole('button', { name: 'Verwerfen und wechseln' }));
-      expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(TIM);
+      expect(screen.getByLabelText('Person')).toHaveValue(TIM);
       expect(await screen.findByText('10:00–16:00')).toBeInTheDocument();
     });
 
@@ -970,18 +806,6 @@ describe('SchedulingPage', () => {
     await wochenplanAbwarten();
     expect(screen.getByText(/Europe\/Berlin/)).toBeInTheDocument();
     expect(screen.getByText(/keine Arbeitszeiterfassung/)).toBeInTheDocument();
-  });
-
-  it('führt zurück zum Antrag, wenn ein Urlaub an abweichenden Zeiten anhielt (URL-001)', async () => {
-    renderWithProviders(
-      <SchedulingPage user={testUser(['owner'])} />,
-      '/praxis/planung?person=s1&zurueck=%2Fbetrieb%2Furlaub%2Fentscheiden%2Fa1',
-    );
-    await wochenplanAbwarten();
-    expect(screen.getByRole('link', { name: '← Zurück zum Antrag' })).toHaveAttribute(
-      'href',
-      '/betrieb/urlaub/entscheiden/a1',
-    );
   });
 
   it('zeigt ohne Rückweg in der Adresse keinen', async () => {

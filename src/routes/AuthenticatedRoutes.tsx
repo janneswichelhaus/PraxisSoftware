@@ -1,5 +1,11 @@
+import { EingangPage } from '@/features/organisation/EingangPage';
+import { NeuerAntragPage } from '@/features/organisation/NeuerAntragPage';
+import { BarometerPage } from '@/features/feedback/BarometerPage';
+import { RueckmeldungPage } from '@/features/feedback/RueckmeldungPage';
+import { PraxisEinstellungenPage } from '@/features/practice-settings/PraxisEinstellungenPage';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
+import { KeinZugang } from '@/app/KeinZugang';
 import { BereichePage } from '@/app/BereichePage';
 import { MdrSperre } from '@/app/MdrSperre';
 import { mdrSperre } from '@/app/mdr';
@@ -57,7 +63,6 @@ import { SlotSearchPage } from '@/features/slot-search/SlotSearchPage';
 import { EditWaitlistEntryPage, NewWaitlistEntryPage } from '@/features/waitlist/WaitlistFormPage';
 import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
-import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
 import { StaffListPage } from '@/features/staff/StaffListPage';
 import { NewStaffMemberPage } from '@/features/staff/NewStaffMemberPage';
 import { EditStaffMemberPage } from '@/features/staff/EditStaffMemberPage';
@@ -441,7 +446,9 @@ export function AuthenticatedRoutes({
                     />
                     {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
                     <Route path="/touren" element={<TourenPage user={user} />} />
-                    <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
+                    {/* ORG-003: Die Planung je Person steht auf „Arbeitszeit";
+                      die alte Adresse führt mit Person und Rückweg dorthin. */}
+                    <Route path="/praxis/planung" element={<ZurArbeitszeit />} />
                     {/* Gebietstage (PRX-002): lesen die Rollen der Terminverwaltung,
                   pflegen owner, team_lead und office (Server). */}
                     <Route path="/praxis/gebiete" element={<TerritoriesPage user={user} />} />
@@ -610,6 +617,11 @@ export function AuthenticatedRoutes({
 
                 {showSecurity ? (
                   <>
+                    {/* ORG-002: die Einstellungen der Praxis, eigene Ansicht unter Praxis. */}
+                    <Route
+                      path="/praxis/einstellungen"
+                      element={<PraxisEinstellungenPage user={user} />}
+                    />
                     <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} />
                     {/* Aufbewahrung und Loeschung stehen neben dem Auditlog: beide
                   sind Nachweise der Praxisleitung (LOE-002b, ADR-008). */}
@@ -644,6 +656,18 @@ export function AuthenticatedRoutes({
                   (BEF-066, ANN-576, ANN-580). */}
                 {showOperations || showTraining ? (
                   <>
+                    {/* ORG-001/-004: Eingang von Organisation und der eine
+                      Einstieg in jeden neuen Antrag (ANN-604). */}
+                    <Route path="/betrieb" element={<EingangPage user={user} />} />
+                    <Route path="/betrieb/neu" element={<NeuerAntragPage user={user} />} />
+                    {/* ORG-006 (§20.2): Barometer und Rückmeldung an die
+                      Praxisleitung - abgeben jede Praxisrolle außer owner,
+                      lesen nur owner; der Server prüft beides. */}
+                    <Route path="/betrieb/barometer" element={<BarometerPage user={user} />} />
+                    <Route
+                      path="/betrieb/rueckmeldung"
+                      element={<RueckmeldungPage user={user} />}
+                    />
                     <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
                     <Route
                       path="/betrieb/urlaub/beantragen"
@@ -758,7 +782,7 @@ export function AuthenticatedRoutes({
                     ) : null}
                   </>
                 ) : null}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<KeinZugang user={user} />} />
               </Routes>
             )}
           </AppShell>
@@ -783,4 +807,10 @@ function ZurSchreibseite() {
 function ZumKalender() {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   return <Navigate replace to={kalenderZumTermin(appointmentId ?? '')} />;
+}
+
+/** Die alte Planung (`/praxis/planung`) mit ihrem Suchteil auf „Arbeitszeit" (ORG-003). */
+function ZurArbeitszeit() {
+  const { search } = useLocation();
+  return <Navigate replace to={`/betrieb/arbeitszeit${search}`} />;
 }

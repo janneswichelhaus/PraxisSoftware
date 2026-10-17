@@ -125,8 +125,8 @@ describe('TimeAccountPage', () => {
     const eintraege = (await screen.findByRole('heading', { name: /^Einträge/ })).closest(
       'section',
     )!;
-    expect(within(eintraege).getByText('Mehrarbeit · Do., 15. Okt.')).toBeInTheDocument();
-    expect(within(eintraege).getByText('Mehrarbeit · Di., 30. Dez. 2025')).toBeInTheDocument();
+    expect(within(eintraege).getByText('Überstunden · Do., 15. Okt.')).toBeInTheDocument();
+    expect(within(eintraege).getByText('Überstunden · Di., 30. Dez. 2025')).toBeInTheDocument();
     const uebertrag = within(eintraege).getByText('Übertrag aus 2022').closest('li')!;
     expect(uebertrag).toHaveTextContent('+0:15 Std.');
     expect(within(uebertrag).queryByRole('button')).toBeNull();

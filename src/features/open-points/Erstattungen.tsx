@@ -17,7 +17,7 @@ import { abfragen } from './eingang';
  * offenen Antrag steht hier nichts; geht das Laden schief, sagt es die Gruppe
  * wie ihre Nachbarn.
  */
-export function Erstattungen() {
+export function Erstattungen({ rueckweg = '/offen' }: { rueckweg?: string }) {
   const { data, isError, refetch } = useQuery(abfragen.erstattungen());
   if (isError && !data) {
     return (
@@ -41,7 +41,7 @@ export function Erstattungen() {
               titel={r.name ?? 'Unbekannte Person'}
               meta={reimbursementTitle(r)}
               betrag={formatEuro(r.amount_cents)}
-              to={mitRueckweg(decidePath(r.id), '/offen')}
+              to={mitRueckweg(decidePath(r.id), rueckweg)}
             />
           ))}
         </Listenabschnitt>
@@ -54,7 +54,7 @@ export function Erstattungen() {
               titel={r.name ?? 'Unbekannte Person'}
               meta={[reimbursementTitle(r), r.iban_masked].filter(Boolean).join(' · ')}
               betrag={formatEuro(r.amount_cents)}
-              to={mitRueckweg(payPath(r.id), '/offen')}
+              to={mitRueckweg(payPath(r.id), rueckweg)}
             />
           ))}
         </Listenabschnitt>

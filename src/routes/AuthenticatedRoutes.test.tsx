@@ -119,6 +119,16 @@ const FLOTTE = '/betrieb/flotte';
  * ausliefert — mit denselben Rollen und denselben Mocks wie jede andere Route
  * daneben.
  */
+
+/**
+ * Wo eine Rolle auf einer Seite ohne Zugang landet (ORG-001): Mitarbeitende
+ * lesen „Kein Zugang" mit dem Weg zur Übersicht, ein Patientenkonto geht
+ * still zur Übersicht.
+ */
+function ohneZugang(role: string): RegExp {
+  return role === 'patient' ? /Guten/ : /^Kein Zugang$/;
+}
+
 describe('MDR-Riegel (ANN-089)', () => {
   const GESPERRT = '/training/ki-analyse';
 
@@ -183,7 +193,7 @@ describe('AuthenticatedRoutes', () => {
         AUDIT,
       );
       expect(screen.queryByRole('heading', { name: AUDITTITEL })).toBeNull();
-      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: ohneZugang(role) })).toBeInTheDocument();
     },
   );
 
@@ -207,7 +217,7 @@ describe('AuthenticatedRoutes', () => {
         <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
         AUSKUNFT,
       );
-      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: ohneZugang(role) })).toBeInTheDocument();
       expect(screen.queryByRole('alert')).toBeNull();
     },
   );
@@ -230,7 +240,7 @@ describe('AuthenticatedRoutes', () => {
         AUFBEWAHRUNG,
       );
       expect(screen.queryByRole('heading', { name: 'Aufbewahrung und Löschung' })).toBeNull();
-      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: ohneZugang(role) })).toBeInTheDocument();
     },
   );
 
@@ -295,9 +305,7 @@ describe('AuthenticatedRoutes', () => {
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
       FLOTTE,
     );
-    expect(
-      screen.getAllByRole('link', { name: 'Sicherheit und Aufbewahrung' }).length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Praxis' }).length).toBeGreaterThan(0);
   });
 
   it('haelt ein Patientenkonto aus den Betriebsbereichen heraus', async () => {
@@ -419,7 +427,7 @@ describe('AuthenticatedRoutes', () => {
           <AuthenticatedRoutes user={testUser([role], 'Olivia Office')} onSignOut={vi.fn()} />,
           TERMIN_DOKUMENTATION,
         );
-        expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: ohneZugang(role) })).toBeInTheDocument();
       },
     );
   });
@@ -452,7 +460,7 @@ describe('AuthenticatedRoutes', () => {
         <AuthenticatedRoutes user={testUser([role], 'Olivia Office')} onSignOut={vi.fn()} />,
         pfad,
       );
-      expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: ohneZugang(role) })).toBeInTheDocument();
     });
 
     // Praxisleitung und - seit E15 - office lesen die Akte, ohne selbst zu

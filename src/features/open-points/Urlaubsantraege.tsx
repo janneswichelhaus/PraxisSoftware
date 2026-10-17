@@ -15,7 +15,14 @@ import { abfragen } from './eingang';
  * Antrag steht hier nichts; geht das Laden schief, sagt es die Gruppe wie
  * ihre Nachbarn, statt still zu fehlen (Design-Review).
  */
-export function Urlaubsantraege({ heute }: { heute: string }) {
+export function Urlaubsantraege({
+  heute,
+  rueckweg = '/offen',
+}: {
+  heute: string;
+  /** Wohin „Zurück“ aus dem Entscheiden führt - Offene Punkte oder Eingang (ORG-004). */
+  rueckweg?: string;
+}) {
   const { data, isError, refetch } = useQuery(abfragen.urlaub(heute));
   if (isError && !data) {
     return (
@@ -41,7 +48,7 @@ export function Urlaubsantraege({ heute }: { heute: string }) {
             antrag.ends_on,
             jahr,
           )} · ${urlaubstage(antrag.days)}`}
-          to={mitRueckweg(`/betrieb/urlaub/entscheiden/${antrag.id}`, '/offen')}
+          to={mitRueckweg(`/betrieb/urlaub/entscheiden/${antrag.id}`, rueckweg)}
         />
       ))}
     </Listenabschnitt>

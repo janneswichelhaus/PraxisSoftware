@@ -9,7 +9,9 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import { anzeigerStil, useGleitanzeiger } from '@/components/ui/gleitanzeiger';
 import { useSeitenziel } from '@/components/ui/seitenUebergang';
+import { Ansichtsleiste } from '@/components/ui/Ansichtsleiste';
 import { SubNav } from '@/components/ui/SubNav';
+import { istAktiv } from '@/components/ui/subnavAktiv';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
@@ -19,6 +21,7 @@ import {
   aktiverBereich,
   arbeitsbereiche,
   istRandlos,
+  leistenvorrang,
   mehrSymbol,
   tableiste,
   zeigtUnterleiste,
@@ -203,7 +206,10 @@ export function AppShell({
   };
   const bereiche = arbeitsbereiche(user);
   const aktuell = aktiverBereich(bereiche, pathname);
-  const { sichtbar, weitere } = tableiste(bereiche);
+  const { sichtbar, weitere } = tableiste(bereiche, leistenvorrang(user.roles));
+  // Die Ansichten unter dem offenen Reiter (ORG-001): Pillen unter der SubNav.
+  const ansichten =
+    aktuell?.unterpunkte.find((punkt) => istAktiv(punkt, pathname))?.ansichten ?? [];
   const aufKonto = pathname === '/mein-konto';
   /**
    * Am Telefon ist die Suche eine Lupe neben „Konto" (BEF-039, ANN-109): Das
@@ -538,6 +544,9 @@ export function AppShell({
               eintraege={aktuell.unterpunkte}
               label={`Bereich ${aktuell.label}`}
             />
+          ) : null}
+          {ansichten.length > 1 && zeigtUnterleiste(pathname) ? (
+            <Ansichtsleiste eintraege={ansichten} />
           ) : null}
           {children}
         </main>

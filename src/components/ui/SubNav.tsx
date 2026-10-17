@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import { Link, matchPath, useLocation } from 'react-router-dom';
+import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { istAktiv, liegtUnter } from './subnavAktiv';
 import { anzeigerStil, useGleitanzeiger } from './gleitanzeiger';
 import { rolleInsBild } from './waagerechtRollen';
 
@@ -77,16 +78,6 @@ function verlaufBreiten(liste: HTMLElement): { links: number; rechts: number } {
 
 const eintragKlassen =
   'text-ink-muted hover:text-ink -mb-px flex min-h-11 items-center gap-1.5 border-b-2 border-transparent px-3 text-liste whitespace-nowrap transition-colors';
-
-/** Liegt `pathname` auf `pfad` oder darunter? */
-function liegtUnter(pfad: string, pathname: string): boolean {
-  return matchPath({ path: pfad, end: false }, pathname) !== null;
-}
-
-function istAktiv(eintrag: SubNavEintrag, pathname: string): boolean {
-  if (matchPath({ path: eintrag.to, end: eintrag.end ?? true }, pathname)) return true;
-  return (eintrag.pfade ?? []).some((pfad) => liegtUnter(pfad, pathname));
-}
 
 /**
  * Navigation innerhalb eines Arbeitsbereichs.
@@ -233,11 +224,9 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
           (`verlaufBreiten`, R2 neu3) - die Breite ist gemessen, kein
           Gestaltungswert. Das erste Drittel deckt ganz (`from-30%`): Ein
           Buchstabenrest neben dem Pfeil sah sonst aus wie ein verdrucktes
-          Zeichen. Rein dekorativ - was
-          dahinter liegt, erreicht man durch Rollen, und Vorlesesoftware liest
-          die ganze Liste. Am Rand der Leiste, also im Innenabstand des `nav`,
-          und nicht klickbar, damit der letzte sichtbare Eintrag darunter
-          weiter zu treffen ist. Von der Fläche (`canvas`), nicht von Weiß:
+          Zeichen. Seit ORG-001 ist der
+          Pfeil ein Knopf (`Weiterknopf`, 44 px am Rand), der Verlauf selbst
+          bleibt nicht klickbar; Vorlesesoftware liest die ganze Liste. Von der Fläche (`canvas`), nicht von Weiß:
           Darauf steht die Leiste. */}
       {verlauf.links > 0 ? (
         <span
@@ -246,7 +235,7 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
           className="from-canvas text-line-strong pointer-events-none absolute inset-y-0 left-4 flex items-center justify-start bg-linear-to-r from-30% to-transparent pl-1 text-xl sm:hidden"
           style={{ width: `${verlauf.links}px` }}
         >
-          ‹
+          <Weiterknopf richtung="links" liste={liste} />
         </span>
       ) : null}
       {verlauf.rechts > 0 ? (
@@ -256,9 +245,43 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
           className="from-canvas text-line-strong pointer-events-none absolute inset-y-0 right-4 flex items-center justify-end bg-linear-to-l from-30% to-transparent pr-1 text-xl sm:hidden"
           style={{ width: `${verlauf.rechts}px` }}
         >
-          ›
+          <Weiterknopf richtung="rechts" liste={liste} />
         </span>
       ) : null}
     </nav>
+  );
+}
+
+/**
+ * Der Pfeil im Verlauf als Knopf (Praxis-Review ORG-001): Am Lenker mit
+ * Handschuh ist Wischen in der obersten Zeile kaum möglich - ein Tipp auf „›"
+ * rollt die Leiste um eine halbe Breite weiter. 44 px breit am Rand; für
+ * Vorlesesoftware und Tastatur ohne Bedeutung (die Liste steht ganz da),
+ * deshalb aus der Tab-Folge genommen.
+ */
+export function Weiterknopf({
+  richtung,
+  liste,
+}: {
+  richtung: 'links' | 'rechts';
+  liste: RefObject<HTMLElement | null>;
+}) {
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      data-weiter={richtung}
+      onClick={() => {
+        const element = liste.current;
+        if (!element) return;
+        const schritt = Math.round(element.clientWidth / 2) * (richtung === 'links' ? -1 : 1);
+        element.scrollBy({ left: schritt, behavior: 'smooth' });
+      }}
+      className={`pointer-events-auto absolute inset-y-0 flex w-11 items-center ${
+        richtung === 'links' ? 'left-0 justify-start pl-1' : 'right-0 justify-end pr-1'
+      }`}
+    >
+      {richtung === 'links' ? '‹' : '›'}
+    </button>
   );
 }

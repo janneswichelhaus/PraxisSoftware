@@ -430,7 +430,7 @@ function Standzeichen({ stand }: { stand: Stand }) {
 interface Weg {
   to: string;
   label: string;
-  /** Wohin, für Vorlesesoftware: „Arbeitszeiten: Planung“. */
+  /** Wohin, für Vorlesesoftware: „Arbeitszeiten: Arbeitszeit“. */
   beschriftung: string;
 }
 
@@ -462,7 +462,7 @@ export function Ergebnisliste({
     switch (art) {
       case 'arbeitszeit': {
         const ausgang = ausgaenge.arbeitszeit;
-        const planung = zu(`/praxis/planung?person=${staffId}`, 'Planung');
+        const planung = zu(`/betrieb/arbeitszeit?person=${staffId}`, 'Arbeitszeit');
         // Ohne Kalender kein Wochenplan (ANN-226) - dorthin zuerst.
         const einsatz = zu(`${person}?bereich=einsatz`, 'Einsatz');
         if (stand === 'offen') return { text: offenText(art, kontext), weg: null };
