@@ -41,7 +41,7 @@ import {
 import { ersatzradName } from './rad';
 import { Stellenbuehne, Stellenflaeche } from './Stellenerfassung';
 import { useStellenerfassung, type Stelle } from './stellen';
-import { aktiveStandortvorlage } from './standortvorlage';
+import { aktiveStandortvorlage, werkstattRufnummern } from './standortvorlage';
 
 /**
  * Die Panne im Fenster des geführten Ablaufs (Überholung 6, G3; vorher eine
@@ -450,6 +450,7 @@ function Schrittinhalt({
   onAendern: (ziel: SchrittId | 'schaden') => void;
 }) {
   const vorlage = aktiveStandortvorlage;
+  const rufnummern = werkstattRufnummern(vorlage.werkstatt);
   const anfang = fokus === 'anfang';
   const heuteName = wochentagNamen[new Date().getDay()] ?? '';
 
@@ -524,18 +525,20 @@ function Schrittinhalt({
           <Field
             label="Standort / Adresse"
             placeholder="Wo genau steht das Rad?"
-            hint="Nur für das Team, nicht für die Werkstatt. Wird mit der Freigabe des Rads gelöscht."
+            hint="Nur für das Team; wird mit der Freigabe gelöscht."
             maxLength={200}
             value={ablauf.standort}
             onChange={(event) =>
               setAblauf((aktuell) => ({ ...aktuell, standort: event.target.value }))
             }
           />
-          {/* Fließend statt mit Umbruch und ein Absatz statt zwei: So steht
-              der längste Schritt bei 375 × 667 ohne Rollen. */}
+          {/* Fließend statt mit Umbruch, ein Absatz statt zwei, ohne Zeile
+              für fehlende Rufnummern und ein einzeiliger Feldhinweis: So
+              steht der längste Schritt bei 375 × 667 mit Luft ohne Rollen -
+              auch mit Schriften, die eine Zeile früher umbrechen (CI). */}
           <Hinweiskasten>
-            Standort telefonisch an {vorlage.werkstatt.name} durchgeben. Telefon:{' '}
-            {vorlage.werkstatt.telefon} · Mobil: {vorlage.werkstatt.mobil}
+            Standort telefonisch an {vorlage.werkstatt.name} durchgeben.
+            {rufnummern ? ` ${rufnummern}` : null}
           </Hinweiskasten>
           <p className="text-ink text-liste">
             Zusätzlich kurze Nachricht an die {vorlage.zustaendigeRolle} über {vorlage.meldeweg}.{' '}
