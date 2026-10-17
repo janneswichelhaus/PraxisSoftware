@@ -154,6 +154,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Abgelehnte und zurückgezogene Anträge auf Änderung der Arbeitszeit. Ein Jahr nach der Entscheidung oder dem Zurückziehen; offene bleiben.',
   },
+  zeitkonto_kurz: {
+    label: 'Zeitkonto: zurückgewiesen und zurückgenommen',
+    beschreibung:
+      'Zurückgewiesene und zurückgenommene Einträge im Zeitkonto. Ein Jahr nach der Zurückweisung oder Rücknahme; gültige Einträge bleiben, solange der Saldo sie braucht.',
+  },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',
     beschreibung: 'Organisation und Standorte.',

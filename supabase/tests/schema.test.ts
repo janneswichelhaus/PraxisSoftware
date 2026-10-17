@@ -198,6 +198,8 @@ describe('Schema-Invarianten', () => {
       'staff_leave_entitlements',
       // AZ-001: Anträge auf Änderung der Arbeitszeit.
       'staff_working_time_requests',
+      // ZK-001: Einträge im Zeitkonto.
+      'staff_time_account_entries',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
