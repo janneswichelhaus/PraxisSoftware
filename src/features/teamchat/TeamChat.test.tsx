@@ -17,6 +17,8 @@ import type { Kanal, Nachricht } from './api';
  */
 
 const fetchKanaele = vi.fn();
+const fetchAktivitaet = vi.fn();
+const fetchThreads = vi.fn();
 const fetchNachrichten = vi.fn();
 const fetchPersonen = vi.fn();
 const sucheNachrichten = vi.fn();
@@ -30,6 +32,8 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     fetchKanaele: () => fetchKanaele() as unknown,
+    fetchAktivitaet: () => fetchAktivitaet() as unknown,
+    fetchThreads: () => fetchThreads() as unknown,
     fetchNachrichten: (...a: unknown[]) => fetchNachrichten(...a) as unknown,
     fetchPersonen: () => fetchPersonen() as unknown,
     sucheNachrichten: (...a: unknown[]) => sucheNachrichten(...a) as unknown,
@@ -45,6 +49,8 @@ const { GespraechPage } = await import('./GespraechPage');
 const { ThreadPage } = await import('./ThreadPage');
 const { NeuPage } = await import('./NeuPage');
 const { FlottenNachrichtenPage } = await import('./FlottenNachrichtenPage');
+const { FuerDichPage } = await import('./FuerDichPage');
+const { ThreadsPage } = await import('./ThreadsPage');
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
@@ -103,6 +109,7 @@ function nachricht(overrides: Partial<Nachricht>): Nachricht {
     mentions: [],
     own: false,
     new_replies: 0,
+    unread: false,
     mentioned_in_new_replies: false,
     ...overrides,
   };
@@ -117,6 +124,8 @@ function zeige(
     [
       { path: '/team', element: <TeamChatPage user={user} /> },
       { path: '/team/neu', element: <NeuPage user={user} /> },
+      { path: '/team/threads', element: <ThreadsPage user={user} /> },
+      { path: '/fuer-dich', element: <FuerDichPage user={user} /> },
       { path: '/team/:kanalId', element: <GespraechPage user={user} /> },
       { path: '/team/:kanalId/:threadId', element: <ThreadPage user={user} /> },
       { path: '/betrieb/flotte/nachrichten', element: <FlottenNachrichtenPage user={user} /> },
@@ -138,6 +147,8 @@ function zeige(
 
 beforeEach(() => {
   fetchKanaele.mockReset().mockResolvedValue(KANAELE);
+  fetchAktivitaet.mockReset().mockResolvedValue([]);
+  fetchThreads.mockReset().mockResolvedValue([]);
   fetchNachrichten.mockReset().mockResolvedValue([]);
   fetchPersonen.mockReset().mockResolvedValue([
     { staff_member_id: TIM, name: 'Tim Teamleitung' },
@@ -153,13 +164,15 @@ beforeEach(() => {
 describe('Teamchat: Gesprächsliste', () => {
   it('stellt Ungelesenes nach oben, zählt Erwähnungen und klappt das Archiv ein', async () => {
     zeige('/team');
-    const titel = await screen.findByRole('heading', { name: 'Gespräche' });
+    const titel = await screen.findByRole('heading', { name: 'Kanäle' });
     const zeilen = within(titel.closest('section')!).getAllByRole('link');
     expect(zeilen.map((z) => z.textContent)).toEqual([
       expect.stringContaining('# Flotte'),
       expect.stringContaining('# Allgemein'),
-      expect.stringContaining('Tim Teamleitung'),
     ]);
+    const direkt = screen.getByRole('heading', { name: 'Direktnachrichten' }).closest('section')!;
+    expect(within(direkt).getByRole('link', { name: /Tim Teamleitung/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Threads' })).toHaveAttribute('href', '/team/threads');
     expect(within(zeilen[0]!).getByText('1 für dich')).toBeInTheDocument();
     expect(zeilen[0]).toHaveAttribute('href', '/team/k-flotte');
     expect(screen.getByText('Archiv')).toBeInTheDocument();
@@ -179,7 +192,7 @@ describe('Teamchat: Gesprächsliste', () => {
     ]);
     const nutzer = userEvent.setup();
     zeige('/team');
-    await screen.findByRole('heading', { name: 'Gespräche' });
+    await screen.findByRole('heading', { name: 'Kanäle' });
     await nutzer.type(screen.getByRole('searchbox', { name: 'In Nachrichten suchen' }), 'Schlü');
     const treffer = await screen.findByRole('link', { name: /Schlüssel liegt im Büro/ });
     expect(treffer).toHaveAttribute('href', '/team/k-flotte/wurzel?nachricht=antwort');
@@ -292,6 +305,60 @@ describe('Teamchat: Gespräch und Thread', () => {
   });
 });
 
+describe('Für dich und Threads wie bei Slack (ANN-614)', () => {
+  it('zeigt Erwähnungen und Antworten mit Neuem und führt in den Thread', async () => {
+    fetchAktivitaet.mockResolvedValue([
+      {
+        id: 'antwort',
+        channel_id: 'k-flotte',
+        channel_kind: 'channel',
+        parent_id: 'wurzel',
+        author_name: 'Tim Teamleitung',
+        body: 'Rad 2 ist frei.',
+        created_at: '2026-10-17T07:00:00Z',
+        reason: 'mention',
+        unread: true,
+      },
+    ]);
+    zeige('/fuer-dich');
+    const zeile = await screen.findByRole('link', { name: /Rad 2 ist frei/ });
+    expect(zeile).toHaveAttribute('href', '/team/k-flotte/wurzel?nachricht=antwort');
+    expect(within(zeile).getByText(/^Erwähnung · # Flotte · Tim Teamleitung/)).toBeInTheDocument();
+    expect(within(zeile).getByText('Neu')).toBeInTheDocument();
+  });
+
+  it('sammelt Threads, denen man folgt, mit neuen Antworten', async () => {
+    fetchThreads.mockResolvedValue([
+      {
+        id: 'wurzel',
+        channel_id: 'k-rad',
+        channel_kind: 'fleet',
+        author_name: 'Anna Beispiel',
+        body: 'Kette Rad 3',
+        removed_kind: null,
+        reply_count: 3,
+        last_reply_at: '2026-10-17T07:00:00Z',
+        new_replies: 2,
+      },
+    ]);
+    zeige('/team/threads');
+    const zeile = await screen.findByRole('link', { name: /Kette Rad 3/ });
+    expect(zeile).toHaveAttribute('href', '/betrieb/flotte/nachrichten/wurzel');
+    expect(within(zeile).getByText('2 neu')).toBeInTheDocument();
+  });
+
+  it('zieht im Gespräch Tagestrenner und die Linie „Neu“', async () => {
+    fetchNachrichten.mockResolvedValue([
+      nachricht({ id: 'alt', created_at: '2026-10-13T07:00:00Z', body: 'Alt' }),
+      nachricht({ id: 'neu', created_at: new Date().toISOString(), body: 'Frisch', unread: true }),
+    ]);
+    zeige('/team/k-allgemein');
+    await screen.findByText('Frisch');
+    expect(screen.getByText('Heute')).toBeInTheDocument();
+    expect(screen.getByText('Neu')).toBeInTheDocument();
+  });
+});
+
 describe('Nachrichten der Radflotte (ANN-613)', () => {
   it('stehen nicht im Teamchat, sondern in der Radflotte, mit Threads dort', async () => {
     fetchNachrichten.mockResolvedValue([nachricht({ id: 'panne', reply_count: 1 })]);
@@ -310,7 +377,7 @@ describe('Nachrichten der Radflotte (ANN-613)', () => {
 
   it('fehlen in der Gesprächsliste des Teamchats', async () => {
     zeige('/team');
-    await screen.findByRole('heading', { name: 'Gespräche' });
+    await screen.findByRole('heading', { name: 'Kanäle' });
     expect(screen.queryByText('Nachrichten der Radflotte')).toBeNull();
   });
 });

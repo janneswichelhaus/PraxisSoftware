@@ -17,7 +17,7 @@ import {
   type Nachricht,
 } from './api';
 import { NACHRICHT_MAX, erwaehnte } from './erwaehnung';
-import { nachrichtenzeit } from './zeit';
+import { nachrichtentag, nachrichtenzeit, tagestrenner } from './zeit';
 
 /**
  * Die Nachrichten eines Gesprächs oder Threads, die älteste oben, eine Linie
@@ -64,11 +64,25 @@ export function Nachrichtenliste({
       });
     }
   }
+  // Die Linie „Neu“ steht vor der ersten ungelesenen Nachricht, wie sie beim
+  // Öffnen war - sie wandert nicht, wenn der Kanal danach als gelesen gilt.
+  const neuAb = useRef<string | null | undefined>(undefined);
+  if (neuAb.current === undefined && nachrichten.length > 0) {
+    neuAb.current = nachrichten.find((n) => n.unread)?.id ?? null;
+  }
   return (
     <Verlauf beschriftung="Nachrichten">
-      {nachrichten.map((nachricht) => (
+      {nachrichten.map((nachricht, index) => (
         <Zeile
           key={nachricht.id}
+          tag={
+            index === 0 ||
+            nachrichtentag(nachricht.created_at, zeitzone) !==
+              nachrichtentag(nachrichten[index - 1]!.created_at, zeitzone)
+              ? tagestrenner(nachricht.created_at, zeitzone)
+              : null
+          }
+          neu={neuAb.current === nachricht.id}
           marke={marken.current.get(nachricht.id)}
           nachricht={nachricht}
           zeitzone={zeitzone}
@@ -84,6 +98,8 @@ export function Nachrichtenliste({
 }
 
 function Zeile({
+  tag,
+  neu,
   marke,
   nachricht,
   zeitzone,
@@ -93,6 +109,10 @@ function Zeile({
   hervorgehoben,
   gesperrt,
 }: {
+  /** Tagestrenner über der Nachricht, wenn ein neuer Tag beginnt. */
+  tag: string | null;
+  /** Die erste ungelesene Nachricht: die Linie „Neu“ darüber. */
+  neu: boolean;
   marke: { neu: number; fuerMich: boolean } | undefined;
   nachricht: Nachricht;
   zeitzone: string;
@@ -110,6 +130,10 @@ function Zeile({
 
   return (
     <Verlaufseintrag id={`nachricht-${nachricht.id}`} hervorgehoben={hervorgehoben}>
+      {tag ? <p className="text-ink-muted mb-2 text-sm font-semibold">{tag}</p> : null}
+      {neu ? (
+        <p className="border-accent text-accent mb-2 border-t-2 pt-1 text-sm font-semibold">Neu</p>
+      ) : null}
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-ink-muted text-sm">

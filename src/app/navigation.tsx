@@ -464,47 +464,42 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   // Kommunikation und Organisatorisches zeigen Daten, die der Server nur den
   // Rollen der Behandlungsseite gibt (`app.is_staff()`). Ein reines
   // Trainingskonto sieht Übersicht, Kalender und Training (TRN-003, TRN-006).
-  // TEAM-001: Den Teamchat hat jede Praxisrolle (ANN-611); die Rückfragen
-  // nur die Behandlungsseite. Die Trainingsbetreuung öffnet den Bereich
-  // deshalb direkt auf dem Teamchat.
-  if (isStaff(roles) && !isTherapyStaff(roles)) {
+  // Nachrichten wie bei Slack (ANN-614): Der Bereich öffnet auf dem Teamchat,
+  // daneben „Für dich“ (Erwähnungen und Antworten) und - nur für die
+  // Behandlungsseite - die Rückfragen der Patient:innen, getrennt vom
+  // Teamchat (§10). Den Teamchat hat jede Praxisrolle (ANN-611).
+  if (isStaff(roles)) {
+    const nachrichten: Unterpunkt[] = [
+      {
+        to: '/team',
+        label: 'Teamchat',
+        end: false,
+        stichworte: ['Kanäle', 'Direktnachricht', 'Threads', 'Team'],
+      },
+      {
+        to: '/fuer-dich',
+        label: 'Für dich',
+        end: false,
+        stichworte: ['Erwähnungen', 'Antworten', 'Aktivität'],
+      },
+      ...(isTherapyStaff(roles)
+        ? [
+            {
+              to: '/rueckfragen',
+              label: 'Rückfragen',
+              end: false,
+              stichworte: ['Nachrichten', 'Fragen von Patient:innen', 'Plattform'],
+            },
+          ]
+        : []),
+    ];
     bereiche.push({
       id: 'team',
       ...BEREICHE.team,
       to: '/team',
-      pfade: ['/team'],
+      pfade: nachrichten.map((punkt) => punkt.to),
       icon: symbole.team,
-      unterpunkte: [{ to: '/team', label: 'Teamchat', end: false }],
-    });
-  }
-  if (isTherapyStaff(roles)) {
-    bereiche.push({
-      id: 'team',
-      ...BEREICHE.team,
-      // KOM-002 (ANN-314): Der Bereich oeffnet auf den Rueckfragen. Seit
-      // TEAM-001 ist auch der Teamchat echt (keine Vorschau mehr).
-      to: '/rueckfragen',
-      pfade: ['/rueckfragen', '/team'],
-      icon: symbole.team,
-      // Kein Unterpunkt „Verzeichnis": wer im Team ist und wie man die Person
-      // erreicht, steht in der echten Mitarbeiterverwaltung unter
-      // Organisatorisches
-      // (STAFF-001). Ein zweites, synthetisches Verzeichnis daneben waere eine
-      // vorgetaeuschte Funktion.
-      unterpunkte: [
-        {
-          to: '/rueckfragen',
-          label: 'Rückfragen',
-          end: false,
-          stichworte: ['Nachrichten', 'Fragen von Patient:innen', 'Plattform'],
-        },
-        {
-          to: '/team',
-          label: 'Teamchat',
-          end: false,
-          stichworte: ['Kanäle', 'Direktnachricht', 'Team', 'Flotte', 'Vertretungen'],
-        },
-      ],
+      unterpunkte: nachrichten,
     });
   }
 

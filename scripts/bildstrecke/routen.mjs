@@ -661,6 +661,20 @@ export const ROUTEN = Object.freeze([
     konten: ['owner', 'therapist', 'trainer'],
   },
   {
+    muster: '/team/threads',
+    pfad: '/team/threads',
+    bereich: 'Eingang',
+    etikett: 'Teamchat: Threads',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/fuer-dich',
+    pfad: '/fuer-dich',
+    bereich: 'Eingang',
+    etikett: 'Nachrichten: Für dich',
+    konten: ['owner', 'therapist', 'trainer'],
+  },
+  {
     muster: '/team/neu',
     pfad: '/team/neu',
     bereich: 'Eingang',

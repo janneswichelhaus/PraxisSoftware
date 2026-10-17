@@ -420,6 +420,60 @@ describe('Teamchat: das Gespräch der Radflotte (ANN-613)', () => {
   });
 });
 
+describe('Teamchat: Für dich und Threads (ANN-614)', () => {
+  const AKTIVITAET = 'select * from public.list_team_activity()';
+  const THREADS = 'select * from public.list_team_threads()';
+
+  it('zeigt Erwähnungen und Antworten in eigenen Threads, nie fremde Direktnachrichten', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const frage = await senden(users.therapist, allgemein.id, 'Wer hat Rad 2?');
+    await senden(users.office, allgemein.id, 'Ich', frage);
+    await senden(users.teamLead, allgemein.id, 'Anna, kurz melden', null, [STAFF.anna]);
+    await senden(users.teamLead, allgemein.id, 'Ohne Bezug zu Anna');
+    const dm = await direkt(users.office, STAFF.tim);
+    await senden(users.office, dm, 'Privat an Tim', null, [STAFF.anna]);
+
+    const { rows } = await asUser<{ body: string; reason: string; unread: boolean }>(
+      users.therapist,
+      AKTIVITAET,
+    );
+    expect(rows.map((r) => [r.body, r.reason, r.unread])).toEqual([
+      ['Anna, kurz melden', 'mention', true],
+      ['Ich', 'reply', true],
+    ]);
+    // Wer nicht folgt, bekommt die Antwort nicht.
+    const beiTom = await asUser<{ body: string }>(users.trainer, AKTIVITAET);
+    expect(beiTom.rows).toEqual([]);
+  });
+
+  it('listet Threads, denen man folgt, die mit Neuem zuerst', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const mitAnna = await senden(users.teamLead, allgemein.id, 'Thread mit Anna');
+    await senden(users.therapist, allgemein.id, 'Annas Antwort', mitAnna);
+    const eigener = await senden(users.therapist, allgemein.id, 'Eigener Thread');
+    await senden(users.office, allgemein.id, 'Antwort darauf', eigener);
+    const fremder = await senden(users.teamLead, allgemein.id, 'Fremder Thread');
+    await senden(users.office, allgemein.id, 'Antwort ohne Anna', fremder);
+
+    const { rows } = await asUser<{ id: string; new_replies: number; reply_count: number }>(
+      users.therapist,
+      THREADS,
+    );
+    expect(rows.map((r) => [r.id, r.new_replies])).toEqual([
+      [eigener, 1],
+      [mitAnna, 0],
+    ]);
+  });
+
+  it('zeigt der Trainingsbetreuung nichts aus dem Gespräch der Radflotte', async () => {
+    const flotte = (await kanaele(users.therapist)).find((k) => k.kind === 'fleet')!;
+    const frage = await senden(users.therapist, flotte.id, 'Rad 3?', null, [STAFF.tom]);
+    await senden(users.office, flotte.id, 'Steht im Depot', frage);
+    expect((await asUser(users.trainer, AKTIVITAET)).rows).toEqual([]);
+    expect((await asUser(users.trainer, THREADS)).rows).toEqual([]);
+  });
+});
+
 describe('Teamchat: Direktnachrichten', () => {
   it('lesen nur die zwei Beteiligten - auch owner nicht', async () => {
     const id = await direkt(users.therapist, STAFF.olivia);

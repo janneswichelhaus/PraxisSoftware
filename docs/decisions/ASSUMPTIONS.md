@@ -6422,3 +6422,15 @@ Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wie
 **Anker.** `team_channels.kind = 'fleet'`, `app.team_staff_reads_fleet`.
 
 **Änderungspfad.** Je Rad: Spalte `bike_id` und ein Gespräch je Rad auf der Radseite · Aufwand `mittel`.
+
+### ANN-614 — Nachrichten aufgebaut wie Slack
+
+Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Der Bereich Nachrichten öffnet auf dem Teamchat (löst die Öffnung auf den Rückfragen aus ANN-314 ab). Reiter: Teamchat (Home: Kanäle, dann Direktnachrichten, Ungelesenes fett und zuerst; Kurzweg „Threads“), „Für dich“ (Erwähnungen und Antworten in Threads, denen man folgt) und Rückfragen (getrennt, §10). Im Gespräch Tagestrenner und eine Linie „Neu“. Man folgt einem Thread, wenn man ihn begonnen, darin geantwortet hat oder erwähnt ist. Nicht übernommen: Präsenz, „gesehen von“, Push, Anhänge, Reaktionen, Gruppen-Direktnachrichten, „Für später“.
+
+**Begründung.** Jannes 2026-10-17: „ähnlich wie Slack“; Slack mobil: Home, DMs, Activity; Threads-Sammelansicht (Slack-Hilfe). Ausgelassenes nach §20, ADR-017, ADR-024.
+
+**Anker.** `public.list_team_activity`, `public.list_team_threads`, Bereich `team` in `src/app/navigation.tsx`.
+
+**Änderungspfad.** Weitere Slack-Teile (Später, Gruppen-DM): je eine Funktion und Seite · Aufwand `mittel`.

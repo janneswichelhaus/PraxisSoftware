@@ -111,9 +111,11 @@ import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage
 import { RequestReimbursementPage } from '@/features/reimbursements/RequestReimbursementPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { FlottenNachrichtenPage } from '@/features/teamchat/FlottenNachrichtenPage';
+import { FuerDichPage } from '@/features/teamchat/FuerDichPage';
 import { GespraechPage } from '@/features/teamchat/GespraechPage';
 import { NeuPage } from '@/features/teamchat/NeuPage';
 import { ThreadPage } from '@/features/teamchat/ThreadPage';
+import { ThreadsPage } from '@/features/teamchat/ThreadsPage';
 import { RueckfragePage, RueckfragenPage } from '@/features/messages/RueckfragenPage';
 import { TourenPage } from '@/features/tours/TourenPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
@@ -526,6 +528,8 @@ export function AuthenticatedRoutes({
                   <>
                     <Route path="/team" element={<TeamChatPage user={user} />} />
                     <Route path="/team/neu" element={<NeuPage user={user} />} />
+                    <Route path="/team/threads" element={<ThreadsPage user={user} />} />
+                    <Route path="/fuer-dich" element={<FuerDichPage user={user} />} />
                     <Route path="/team/:kanalId" element={<GespraechPage user={user} />} />
                     <Route path="/team/:kanalId/:threadId" element={<ThreadPage user={user} />} />
                   </>

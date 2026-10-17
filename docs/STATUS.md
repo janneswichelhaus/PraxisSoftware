@@ -6,9 +6,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 Überholung 11 Teamchat (17.10., Branch `claude/modest-turing-i5qgn9`): Kanäle, Direktnachrichten,
-Threads, Erwähnungen, Suche, eigener Lesestand ohne Lesebestätigung; Löschung je Nachricht nach 12
+Threads, Erwähnungen, Suche, aufgebaut wie Slack (Für dich, Threads), eigener Lesestand ohne Lesebestätigung; Löschung je Nachricht nach 12
 Monaten (ADR-008 Fassung 5); keine Startkanäle, Nachrichten der Radflotte in der Radflotte; Migration
-`20261204100000`; ANN-609 bis ANN-613. Davor gemergt: Organisation (#267).
+`20261204100000`; ANN-609 bis ANN-614. Davor gemergt: Organisation (#267).
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur

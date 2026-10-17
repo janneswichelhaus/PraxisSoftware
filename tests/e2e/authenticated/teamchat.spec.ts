@@ -93,7 +93,12 @@ test('erwähnt mit @ und einem Tipp; die Erwähnte sieht „für dich“', async
   await zumTeamchat(andere, KONTEN.office);
   await expect(andere.getByRole('link', { name: `# ${KANAL}` })).toContainText('für dich');
   await andere.getByRole('link', { name: `# ${KANAL}` }).click();
-  await expect(andere.getByText('Für dich')).toBeVisible();
+  await expect(
+    andere.getByRole('list', { name: 'Nachrichten' }).getByText('Für dich'),
+  ).toBeVisible();
+  // Wie die Aktivität bei Slack (ANN-614): die Erwähnung auch unter „Für dich“.
+  await andere.goto('/fuer-dich');
+  await expect(andere.getByRole('link').filter({ hasText: `Olivia Office ${LAUF}` })).toBeVisible();
   await andere.close();
 });
 

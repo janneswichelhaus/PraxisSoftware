@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { erwaehnte } from './erwaehnung';
-import { nachrichtenzeit } from './zeit';
+import { nachrichtenzeit, tagestrenner } from './zeit';
 
 describe('nachrichtenzeit', () => {
   const jetzt = new Date('2026-10-17T12:00:00Z');
@@ -27,5 +27,16 @@ describe('erwaehnte', () => {
   it('nimmt nur, wer noch mit @ im Text steht', () => {
     expect(erwaehnte('@Tim Teamleitung bitte', team)).toEqual(['t']);
     expect(erwaehnte('Tim Teamleitung ohne at', team)).toEqual([]);
+  });
+});
+
+describe('tagestrenner', () => {
+  const jetzt = new Date('2026-10-17T12:00:00Z');
+  it('nennt heute, gestern und sonst den Wochentag', () => {
+    expect(tagestrenner('2026-10-17T07:00:00Z', 'Europe/Berlin', jetzt)).toBe('Heute');
+    expect(tagestrenner('2026-10-16T07:00:00Z', 'Europe/Berlin', jetzt)).toBe('Gestern');
+    expect(tagestrenner('2026-10-13T07:00:00Z', 'Europe/Berlin', jetzt)).toBe(
+      'Dienstag, 13. Oktober',
+    );
   });
 });

@@ -176,12 +176,20 @@ describe('Arbeitsbereiche je Rolle', () => {
   it('fuehrt kein zweites, synthetisches Teamverzeichnis', () => {
     // KOM-002 (ANN-314): Rückfragen und, seit TEAM-001 echt, der Teamchat -
     // kein Verzeichnis neben der Mitarbeiterverwaltung.
+    // ANN-614: wie bei Slack öffnet der Bereich auf dem Teamchat.
     const team = bereicheFuer(['owner']).find((bereich) => bereich.id === 'team');
-    expect(team?.to).toBe('/rueckfragen');
+    expect(team?.to).toBe('/team');
     expect(team?.unterpunkte.map((punkt) => [punkt.to, Boolean(punkt.vorschau)])).toEqual([
-      ['/rueckfragen', false],
       ['/team', false],
+      ['/fuer-dich', false],
+      ['/rueckfragen', false],
     ]);
+    // Die Trainingsbetreuung hat keine Rückfragen der Behandlung.
+    expect(
+      bereicheFuer(['trainer'])
+        .find((bereich) => bereich.id === 'team')
+        ?.unterpunkte.map((punkt) => punkt.to),
+    ).toEqual(['/team', '/fuer-dich']);
   });
 
   it('zeigt Einstellungen, Protokoll und Aufbewahrung nur der Praxisleitung', () => {

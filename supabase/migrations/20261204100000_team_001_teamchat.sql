@@ -442,7 +442,9 @@ returns table (
   -- anderer und ob sie darin erwähnt ist - damit eine Erwähnung im Thread
   -- am Thread sichtbar bleibt (Praxis-Review TEAM-001).
   new_replies    integer,
-  mentioned_in_new_replies boolean
+  mentioned_in_new_replies boolean,
+  -- Für die Linie „Neu“ im Gespräch: nach dem eigenen Lesestand, nicht eigen.
+  unread         boolean
 )
 language plpgsql
 stable
@@ -483,7 +485,9 @@ begin
          exists (select 1 from public.team_messages r
                  join public.team_message_mentions mm
                    on mm.message_id = r.id and mm.staff_member_id = v_staff
-                 where r.parent_id = m.id and r.removed_at is null and r.created_at > v_seit)
+                 where r.parent_id = m.id and r.removed_at is null and r.created_at > v_seit),
+         m.removed_at is null and m.created_at > v_seit
+           and m.author_staff_member_id is distinct from v_staff
   from (
     select x.*
     from public.team_messages x
@@ -561,6 +565,123 @@ begin
     and strpos(lower(m.body), lower(v_nadel)) > 0
   order by m.created_at desc
   limit 30;
+end;
+$$;
+
+
+-- Für dich (Aktivität, wie Slack, ANN-614): Erwähnungen der Person und
+-- Antworten in Threads, denen sie folgt - begonnen, geantwortet oder darin
+-- erwähnt. Nur aus lesbaren Gesprächen, die neuesten 50; „neu“ nach dem
+-- eigenen Lesestand. Keine Auskunft über andere.
+create function app.team_follows_thread(p_root uuid, p_staff uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.team_messages t
+    where (t.id = p_root or t.parent_id = p_root)
+      and (t.author_staff_member_id = p_staff
+           or exists (select 1 from public.team_message_mentions mm
+                      where mm.message_id = t.id and mm.staff_member_id = p_staff))
+  )
+$$;
+
+revoke all on function app.team_follows_thread(uuid, uuid) from public, anon, authenticated;
+
+create function public.list_team_activity()
+returns table (
+  id           uuid,
+  channel_id   uuid,
+  channel_kind text,
+  parent_id    uuid,
+  author_name  text,
+  body         text,
+  created_at   timestamptz,
+  reason       text,
+  unread       boolean
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_org   uuid;
+  v_staff uuid;
+begin
+  select o_org, o_staff into v_org, v_staff from app.teamchat_member();
+
+  return query
+  select m.id, m.channel_id, c.kind, m.parent_id,
+         app.team_staff_name(m.author_staff_member_id), m.body, m.created_at,
+         case when exists (select 1 from public.team_message_mentions mm
+                           where mm.message_id = m.id and mm.staff_member_id = v_staff)
+              then 'mention' else 'reply' end,
+         m.created_at > coalesce(rs.read_up_to, '-infinity'::timestamptz)
+  from public.team_messages m
+  join public.team_channels c on c.id = m.channel_id
+  left join public.team_read_states rs on rs.channel_id = m.channel_id and rs.staff_member_id = v_staff
+  where m.organization_id = v_org and m.removed_at is null
+    and m.author_staff_member_id is distinct from v_staff
+    and app.team_channel_readable(m.channel_id, v_org, v_staff)
+    and (exists (select 1 from public.team_message_mentions mm
+                 where mm.message_id = m.id and mm.staff_member_id = v_staff)
+         or (m.parent_id is not null and app.team_follows_thread(m.parent_id, v_staff)))
+  order by m.created_at desc
+  limit 50;
+end;
+$$;
+
+-- Threads (wie Slack, ANN-614): alle Threads, denen die Person folgt, die mit
+-- neuen Antworten zuerst, dann nach der letzten Antwort.
+create function public.list_team_threads()
+returns table (
+  id            uuid,
+  channel_id    uuid,
+  channel_kind  text,
+  author_name   text,
+  body          text,
+  removed_kind  text,
+  reply_count   integer,
+  last_reply_at timestamptz,
+  new_replies   integer
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_org   uuid;
+  v_staff uuid;
+begin
+  select o_org, o_staff into v_org, v_staff from app.teamchat_member();
+
+  return query
+  select x.id, x.channel_id, x.kind, x.author_name, x.body, x.removed_kind,
+         x.reply_count, x.last_reply_at, x.new_replies
+  from (
+    select m.id, m.channel_id, c.kind,
+           app.team_staff_name(m.author_staff_member_id) as author_name, m.body, m.removed_kind,
+           (select count(*)::integer from public.team_messages r where r.parent_id = m.id) as reply_count,
+           (select max(r.created_at) from public.team_messages r where r.parent_id = m.id) as last_reply_at,
+           (select count(*)::integer from public.team_messages r
+            where r.parent_id = m.id and r.removed_at is null
+              and r.author_staff_member_id is distinct from v_staff
+              and r.created_at > coalesce(rs.read_up_to, '-infinity'::timestamptz)) as new_replies
+    from public.team_messages m
+    join public.team_channels c on c.id = m.channel_id
+    left join public.team_read_states rs on rs.channel_id = m.channel_id and rs.staff_member_id = v_staff
+    where m.organization_id = v_org and m.parent_id is null
+      and exists (select 1 from public.team_messages r where r.parent_id = m.id)
+      and app.team_channel_readable(m.channel_id, v_org, v_staff)
+      and app.team_follows_thread(m.id, v_staff)
+  ) x
+  order by (x.new_replies > 0) desc, x.last_reply_at desc
+  limit 50;
 end;
 $$;
 
@@ -920,6 +1041,8 @@ revoke all on function public.list_team_channels() from public, anon;
 revoke all on function public.list_team_messages(uuid, uuid, timestamptz, integer) from public, anon;
 revoke all on function public.list_team_people() from public, anon;
 revoke all on function public.search_team_messages(text) from public, anon;
+revoke all on function public.list_team_activity() from public, anon;
+revoke all on function public.list_team_threads() from public, anon;
 revoke all on function public.post_team_message(uuid, uuid, text, uuid[]) from public, anon;
 revoke all on function public.edit_team_message(uuid, text, uuid[]) from public, anon;
 revoke all on function public.delete_team_message(uuid) from public, anon;
@@ -933,6 +1056,8 @@ grant execute on function public.list_team_channels() to authenticated;
 grant execute on function public.list_team_messages(uuid, uuid, timestamptz, integer) to authenticated;
 grant execute on function public.list_team_people() to authenticated;
 grant execute on function public.search_team_messages(text) to authenticated;
+grant execute on function public.list_team_activity() to authenticated;
+grant execute on function public.list_team_threads() to authenticated;
 grant execute on function public.post_team_message(uuid, uuid, text, uuid[]) to authenticated;
 grant execute on function public.edit_team_message(uuid, text, uuid[]) to authenticated;
 grant execute on function public.delete_team_message(uuid) to authenticated;

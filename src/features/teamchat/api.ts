@@ -51,6 +51,8 @@ const nachrichtSchema = z.object({
   new_replies: z.number().int(),
   /** Ob die Person in diesen neuen Antworten erwähnt ist. */
   mentioned_in_new_replies: z.boolean(),
+  /** Nach dem eigenen Lesestand und nicht eigen - für die Linie „Neu“. */
+  unread: z.boolean(),
 });
 export type Nachricht = z.infer<typeof nachrichtSchema>;
 
@@ -66,6 +68,32 @@ const trefferSchema = z.object({
   created_at: z.string(),
 });
 export type Treffer = z.infer<typeof trefferSchema>;
+
+const aktivitaetSchema = z.object({
+  id: z.string(),
+  channel_id: z.string(),
+  channel_kind: z.enum(['channel', 'direct', 'fleet']),
+  parent_id: z.string().nullable(),
+  author_name: z.string().nullable(),
+  body: z.string(),
+  created_at: z.string(),
+  reason: z.enum(['mention', 'reply']),
+  unread: z.boolean(),
+});
+export type Aktivitaet = z.infer<typeof aktivitaetSchema>;
+
+const threadSchema = z.object({
+  id: z.string(),
+  channel_id: z.string(),
+  channel_kind: z.enum(['channel', 'direct', 'fleet']),
+  author_name: z.string().nullable(),
+  body: z.string().nullable(),
+  removed_kind: z.enum(['author', 'owner', 'retention']).nullable(),
+  reply_count: z.number().int(),
+  last_reply_at: z.string().nullable(),
+  new_replies: z.number().int(),
+});
+export type ThreadUeberblick = z.infer<typeof threadSchema>;
 
 // -----------------------------------------------------------------------------
 // Fehler in festen Sätzen - nie mit dem Text der Nachricht
@@ -112,6 +140,9 @@ export function nachrichtenKey(kanalId: string, threadId: string | null = null) 
   return [...TEAMCHAT_KEY, 'nachrichten', kanalId, threadId] as const;
 }
 
+export const AKTIVITAET_KEY = [...TEAMCHAT_KEY, 'aktivitaet'] as const;
+export const THREADS_KEY = [...TEAMCHAT_KEY, 'threads'] as const;
+
 export function sucheKey(suche: string) {
   return [...TEAMCHAT_KEY, 'suche', suche] as const;
 }
@@ -157,6 +188,22 @@ const SUCHEN = 'Die Suche hat nicht geklappt.';
 export async function sucheNachrichten(suche: string): Promise<Treffer[]> {
   const data = await rufe('search_team_messages', { p_query: suche }, SUCHEN);
   return antwort(z.array(trefferSchema), data, SUCHEN);
+}
+
+const LADEN_AKTIVITAET = '„Für dich“ konnte nicht geladen werden.';
+
+/** Erwähnungen und Antworten in Threads, denen man folgt (ANN-614). */
+export async function fetchAktivitaet(): Promise<Aktivitaet[]> {
+  const data = await rufe('list_team_activity', {}, LADEN_AKTIVITAET);
+  return antwort(z.array(aktivitaetSchema), data, LADEN_AKTIVITAET);
+}
+
+const LADEN_THREADS = 'Die Threads konnten nicht geladen werden.';
+
+/** Threads, denen man folgt, die mit Neuem zuerst (ANN-614). */
+export async function fetchThreads(): Promise<ThreadUeberblick[]> {
+  const data = await rufe('list_team_threads', {}, LADEN_THREADS);
+  return antwort(z.array(threadSchema), data, LADEN_THREADS);
 }
 
 // -----------------------------------------------------------------------------

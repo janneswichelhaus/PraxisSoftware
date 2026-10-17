@@ -51,9 +51,14 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title="Teamchat"
         actions={
-          <ButtonLink to="/team/neu" groesse="kompakt">
-            Neu
-          </ButtonLink>
+          <>
+            <ButtonLink to="/team/threads" variant="secondary" groesse="kompakt">
+              Threads
+            </ButtonLink>
+            <ButtonLink to="/team/neu" groesse="kompakt">
+              Neu
+            </ButtonLink>
+          </>
         }
       />
       <Filterleiste
@@ -112,33 +117,51 @@ function Gespraeche({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: TEAMCHAT_KEY }),
   });
 
+  const kanaeleAktiv = aktiv.filter((kanal) => kanal.kind === 'channel');
+  const direkt = aktiv.filter((kanal) => kanal.kind === 'direct');
+  const allesGelesenKnopf = ungelesen ? (
+    <Button
+      variant="quiet"
+      groesse="kompakt"
+      disabled={allesGelesen.isPending}
+      onClick={() => allesGelesen.mutate()}
+    >
+      Alle gelesen
+    </Button>
+  ) : undefined;
+
+  // Wie die Seitenleiste bei Slack (ANN-614): Kanäle, dann Direktnachrichten,
+  // in beiden Ungelesenes fett und zuerst.
   return (
     <>
-      <Listenabschnitt
-        titel="Gespräche"
-        leer={{
-          titel: 'Noch kein Gespräch',
-          beschreibung: darfKanal
-            ? 'Unter „Neu“ legst du einen Kanal an oder schreibst jemandem direkt.'
-            : 'Unter „Neu“ schreibst du jemandem direkt.',
-        }}
-        aktion={
-          ungelesen ? (
-            <Button
-              variant="quiet"
-              groesse="kompakt"
-              disabled={allesGelesen.isPending}
-              onClick={() => allesGelesen.mutate()}
-            >
-              Alle gelesen
-            </Button>
-          ) : undefined
-        }
-      >
-        {aktiv.map((kanal) => (
-          <Gespraechszeile key={kanal.id} kanal={kanal} zeitzone={zeitzone} />
-        ))}
-      </Listenabschnitt>
+      {aktiv.length === 0 ? (
+        <Listenabschnitt
+          titel="Gespräche"
+          leer={{
+            titel: 'Noch kein Gespräch',
+            beschreibung: darfKanal
+              ? 'Unter „Neu“ legst du einen Kanal an oder schreibst jemandem direkt.'
+              : 'Unter „Neu“ schreibst du jemandem direkt.',
+          }}
+        />
+      ) : null}
+      {kanaeleAktiv.length > 0 ? (
+        <Listenabschnitt titel="Kanäle" aktion={allesGelesenKnopf}>
+          {kanaeleAktiv.map((kanal) => (
+            <Gespraechszeile key={kanal.id} kanal={kanal} zeitzone={zeitzone} />
+          ))}
+        </Listenabschnitt>
+      ) : null}
+      {direkt.length > 0 ? (
+        <Listenabschnitt
+          titel="Direktnachrichten"
+          aktion={kanaeleAktiv.length === 0 ? allesGelesenKnopf : undefined}
+        >
+          {direkt.map((kanal) => (
+            <Gespraechszeile key={kanal.id} kanal={kanal} zeitzone={zeitzone} />
+          ))}
+        </Listenabschnitt>
+      ) : null}
       {archiviert.length > 0 ? (
         <Disclosure summary="Archiv" anzahl={archiviert.length}>
           <ListRows beschriftung="Archivierte Kanäle">
@@ -156,13 +179,13 @@ function Gespraechszeile({ kanal, zeitzone }: { kanal: Kanal; zeitzone: string }
   const meta =
     kanal.kind === 'direct'
       ? kanal.partner_active === false
-        ? 'Direktnachricht · nicht mehr im Team'
-        : 'Direktnachricht'
+        ? 'Nicht mehr im Team'
+        : undefined
       : (kanal.description ?? undefined);
   return (
     <ListRow
       to={gespraechPfad(kanal)}
-      titel={kanalTitel(kanal)}
+      titel={kanal.unread > 0 ? <strong>{kanalTitel(kanal)}</strong> : kanalTitel(kanal)}
       meta={meta}
       zeit={kanal.last_message_at ? nachrichtenzeit(kanal.last_message_at, zeitzone) : undefined}
       status={
