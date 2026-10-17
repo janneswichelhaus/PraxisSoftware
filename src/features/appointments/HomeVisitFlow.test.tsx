@@ -233,10 +233,7 @@ describe('Niemand öffnet - geführt (G1, ANN-573)', () => {
       'href',
       '/ohne',
     );
-    expect(erste.getByRole('link', { name: '„Termin absagen“' })).toHaveAttribute(
-      'href',
-      '/absagen',
-    );
+    expect(erste.getByRole('link', { name: 'Termin absagen' })).toHaveAttribute('href', '/absagen');
   });
 });
 

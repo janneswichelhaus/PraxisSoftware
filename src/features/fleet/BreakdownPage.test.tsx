@@ -133,9 +133,7 @@ describe('Panne melden', () => {
     expect(within(frage).getByText('Schritt 2')).toBeInTheDocument();
     expect(within(frage).getByRole('button', { name: 'Ja' })).toHaveFocus();
     // Die Herkunft der Vorlage bleibt sichtbar, in einer Zeile.
-    expect(
-      within(frage).getByText('Köln-Vorlage · Für Tübingen noch zu prüfen'),
-    ).toBeInTheDocument();
+    expect(within(frage).getByText('Für Tübingen noch zu prüfen.')).toBeInTheDocument();
     await pruefeBarrierefreiheit(document.body);
     // Zurück führt vor die erste Frage der Vorlage.
     await nutzer.click(within(frage).getByRole('button', { name: '← Zurück' }));
@@ -260,9 +258,20 @@ describe('Panne melden', () => {
     expect(zusammenfassung.getByRole('list', { name: 'Zusammenfassung' })).toHaveTextContent(
       'Standort: Hinterhof Beispielweg 3',
     );
-    // Der Fokus beginnt oben in der Zusammenfassung, nicht auf dem Knopf.
-    expect(zusammenfassung.getByText('Standort: Hinterhof Beispielweg 3')).toHaveFocus();
-    await nutzer.click(zusammenfassung.getByRole('button', { name: /Bestätigen/ }));
+    // Der Fokus beginnt oben in der Zusammenfassung, nicht auf dem Knopf -
+    // beim Schaden, der ersten Angabe mit „Ändern“ (Design-Review Überholung 6).
+    expect(zusammenfassung.getByText(/^Schaden: /)).toHaveFocus();
+    expect(zusammenfassung.getByRole('button', { name: 'Standort ändern' })).toBeInTheDocument();
+    expect(zusammenfassung.getByRole('button', { name: 'Weiterfahrt ändern' })).toBeInTheDocument();
+    // „Ändern“ am Schaden führt ans Rad, „Weiter“ von dort zurück zur
+    // Zusammenfassung - mit allen Angaben.
+    await nutzer.click(zusammenfassung.getByRole('button', { name: 'Schaden ändern' }));
+    await nutzer.click(
+      within(await fenster('Wo ist der Schaden?')).getByRole('button', { name: 'Weiter' }),
+    );
+    const wieder = within(await fenster('Zusammenfassung – bitte prüfen:'));
+    expect(wieder.getByText('Standort: Hinterhof Beispielweg 3')).toBeInTheDocument();
+    await nutzer.click(wieder.getByRole('button', { name: /Bestätigen/ }));
 
     const eingabe = recordBreakdown.mock.calls[0]![0];
     expect(eingabe.outcome).toBe('transportFortsetzung');

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
@@ -278,21 +279,29 @@ function NiemandOeffnetFenster({
         // Die beiden anderen Fälle, je mit ihrer Folge (ADR-018 Punkt 9). Der
         // dritte - vorher abgesagt - bleibt als eine Zeile mit dem Weg; die
         // 24-Stunden-Regel erklärt die Absage-Rückfrage selbst (ANN-198).
-        <div className="text-ink-muted flex flex-col gap-2 text-sm">
-          <p>
-            Tür geöffnet, aber keine Behandlung?{' '}
+        // Die Wege stehen für sich mit 44 px Tippziel (DESIGN.md Grundsatz 3),
+        // nicht im Satz.
+        <div className="text-ink flex flex-col gap-3 text-sm">
+          <div>
+            <p>Tür geöffnet, aber keine Behandlung? Ohne Ausfallhonorar:</p>
             {wege ? (
-              <Textlink to={wege.ohneBehandlung}>Ohne Behandlung festhalten</Textlink>
+              <Textlink alleinstehend to={wege.ohneBehandlung}>
+                Ohne Behandlung festhalten
+              </Textlink>
             ) : (
-              '„Ohne Behandlung“ am Termin'
-            )}{' '}
-            – ohne Ausfallhonorar.
-          </p>
-          <p>
-            Vorher abgesagt? Dann{' '}
-            {wege ? <Textlink to={wege.absagen}>„Termin absagen“</Textlink> : '„Termin absagen“'} am
-            Termin.
-          </p>
+              <p>„Ohne Behandlung“ am Termin.</p>
+            )}
+          </div>
+          <div>
+            <p>Vorher abgesagt?</p>
+            {wege ? (
+              <Textlink alleinstehend to={wege.absagen}>
+                Termin absagen
+              </Textlink>
+            ) : (
+              <p>„Termin absagen“ am Termin.</p>
+            )}
+          </div>
         </div>
       ) : seite === 'angerufen' ? (
         <Rufnummern appointment={appointment} />
@@ -305,7 +314,14 @@ function NiemandOeffnetFenster({
             <ListRow
               titel="15 Minuten gewartet"
               status={
-                darf ? <Erledigt /> : <span className="text-ink-muted text-sm">Uhr läuft</span>
+                darf ? (
+                  <Erledigt />
+                ) : (
+                  // Zeichen und Wort (DESIGN.md Regel 5), wie „wartet“ am Abzeichen.
+                  <span className="text-ink-muted text-sm">
+                    <span aria-hidden="true">{STATUSZEICHEN.wartet} </span>Uhr läuft
+                  </span>
+                )
               }
             />
           </ListRows>

@@ -165,7 +165,7 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
       ) : (
         <div className="flex flex-col gap-3">
           <Zusammenfassungsanfang />
-          <ListRows>
+          <ListRows rahmen={false}>
             <Wannzeile
               wann={wann}
               werktage={werktage}
