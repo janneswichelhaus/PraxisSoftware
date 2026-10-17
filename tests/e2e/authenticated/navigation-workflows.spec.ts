@@ -62,7 +62,8 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
       /^Organisation/,
       /^Abrechnung/,
     ]) {
-      await expect(uebersicht.getByRole('link', { name: bereich })).toBeVisible();
+      // Die Karte des Bereichs - darunter stehen seit ORG-001 seine Reiter.
+      await expect(uebersicht.getByRole('link', { name: bereich }).first()).toBeVisible();
     }
   });
 
