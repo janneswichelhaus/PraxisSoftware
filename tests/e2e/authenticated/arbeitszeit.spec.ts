@@ -94,6 +94,12 @@ async function rolltNicht(dialog: Locator): Promise<void> {
 
 /** Bildschirmfoto im ruhenden Stand: nach der Tippsperre und dem Aufgehen des Fensters. */
 async function bild(seite: Page, name: string): Promise<void> {
+  // Erst wenn das Startbild die Seite freigegeben hat (Praxis-Review: Bild 00
+  // zeigte es statt der Seite).
+  await seite
+    .locator('[data-startbild]')
+    .waitFor({ state: 'detached', timeout: 6_000 })
+    .catch(() => undefined);
   await seite.waitForTimeout(800);
   await seite.screenshot({ path: `.tmp/screenshots/${name}.png` });
 }
@@ -229,16 +235,20 @@ test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)
   // Ein Wochenplan beginnt am Monatsersten: Schnellwahl statt Blättern.
   const abWann = page.getByRole('dialog', { name: 'Ab wann?' });
   await rolltNicht(abWann);
+  await bild(page, 'b8-g8-05a-ab-wann-375');
   await t.tippe(abWann.getByRole('button', { name: /^Ab \S+, 1\. / }).first());
 
-  const woche = page.getByRole('dialog', { name: /^Ihr Wochenplan ab / });
-  await expect(woche.getByRole('button', { name: 'Dienstag ändern' })).toBeVisible();
+  const woche = page.getByRole('dialog', { name: /^Wochenplan ab / });
+  await expect(woche.getByRole('button', { name: /^Dienstag / })).toBeVisible();
+  // Sieben Tage und der Fuß ohne Rollen (Design-Review Überholung 8).
+  await rolltNicht(woche);
   await bild(page, 'b8-g8-05-woche-375');
-  await t.tippe(woche.getByRole('button', { name: 'Dienstag ändern' }));
+  await t.tippe(woche.getByRole('button', { name: /^Dienstag / }));
   const dienstagSeite = page.getByRole('dialog', { name: /^Dienstags ab / });
   await dienstagSeite.getByLabel('Pause ab').fill('12:30');
   const uebernehmen = dienstagSeite.getByRole('button', { name: 'Übernehmen' });
   await stehtImBild(page, dienstagSeite, uebernehmen);
+  await rolltNicht(dienstagSeite);
   await bild(page, 'b8-g8-06-dienstag-375');
   await t.tippe(uebernehmen);
   await t.tippe(woche.getByRole('button', { name: 'Weiter' }));

@@ -48,6 +48,16 @@ export const PROBLEM_TEXT: Record<Problem, string> = {
     'Weniger als 11 Stunden Ruhe bis zum nächsten Arbeitstag (§ 5 ArbZG).',
 };
 
+/** Kurz an der Zeile eines Tages im Wochenplan - als Zeichen und Wort (Regel 5). */
+export const PROBLEM_SHORT: Record<Problem, string> = {
+  invalid_block: 'Zeit unvollständig',
+  overlap: 'Zeiten überschneiden sich',
+  more_than_ten_hours: 'über 10 Std.',
+  break_too_short: 'Pause zu kurz',
+  more_than_six_hours_in_a_row: 'über 6 Std. am Stück',
+  rest_shorter_than_eleven_hours: 'unter 11 Std. Ruhe zum nächsten Tag',
+};
+
 export const LIMITS = {
   /** § 3 ArbZG: höchstens 10 Stunden am Tag. */
   dayMax: 10 * 60,
@@ -154,16 +164,17 @@ export function restMinutes(day: readonly Block[], nextDay: readonly Block[]): n
   return 24 * 60 - a[a.length - 1]!.bis + b[0]!.von;
 }
 
+/** Was gegen einen Tag der Woche spricht: der Tag selbst und die Ruhe bis zum nächsten. */
+export function weekDayProblems(week: Week, day: (typeof WEEKDAYS)[number]): Problem[] {
+  const found = dayProblems(week[day] ?? []);
+  const next = WEEKDAYS[(WEEKDAYS.indexOf(day) + 1) % 7]!;
+  const rest = restMinutes(week[day] ?? [], week[next] ?? []);
+  return rest !== null && rest < LIMITS.rest ? [...found, 'rest_shorter_than_eleven_hours'] : found;
+}
+
 /** Was gegen eine Woche spricht: ihre Tage und die Ruhe von Tag zu Tag, auch Sonntag zu Montag. */
 export function weekProblems(week: Week): Problem[] {
-  const found = new Set<Problem>();
-  WEEKDAYS.forEach((day, index) => {
-    for (const problem of dayProblems(week[day] ?? [])) found.add(problem);
-    const next = WEEKDAYS[(index + 1) % 7]!;
-    const rest = restMinutes(week[day] ?? [], week[next] ?? []);
-    if (rest !== null && rest < LIMITS.rest) found.add('rest_shorter_than_eleven_hours');
-  });
-  return [...found];
+  return [...new Set(WEEKDAYS.flatMap((day) => weekDayProblems(week, day)))];
 }
 
 /** „9:00 Std.“ - Arbeitszeit lesbar. */

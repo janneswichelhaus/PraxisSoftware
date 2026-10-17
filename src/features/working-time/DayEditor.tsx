@@ -4,37 +4,44 @@ import { Select } from '@/components/ui/Select';
 import {
   BREAK_CHOICES,
   FREE_DAY,
+  formFromBlocks,
   needsBreak,
   suggestedEnd,
   withBreak,
   withoutBreak,
   type DayForm,
 } from './dayForm';
+import { workMinutes, type Block } from './rules';
 
 /**
  * Ein Tag zum Ändern (G8, ANN-592): Beginn und Ende, dazu - wenn es sie gibt -
  * die Pause mit Lage und Dauer. „Pause einfügen“ erscheint erst, wenn der Tag
- * über 6 Stunden geht; kürzt eine längere Pause die Arbeitszeit, steht der
- * Vorschlag für das spätere Ende da, übernommen auf Tipp.
+ * über 6 Stunden geht; kürzt eine längere Pause als bisher die Arbeitszeit,
+ * steht der Vorschlag für das spätere Ende da, übernommen auf Tipp. Ein
+ * früherer Schluss ist kein Anlass dafür - der Vorschlag nähme ihn zurück
+ * (Praxis-Review Überholung 8).
  *
- * `freiMoeglich` nur im Wochenplan: Dort dürfen Stunden zwischen den Tagen
- * wandern, ein Tag kann frei werden oder dazukommen.
+ * `freeAllowed` nur im Wochenplan: Dort dürfen Stunden zwischen den Tagen
+ * wandern, ein Tag kann frei werden oder dazukommen. „Tag frei“ steht leise
+ * am Ende, getrennt von der Pause; „Arbeitszeit eintragen“ bringt danach die
+ * bisherigen Zeiten des Tages zurück.
  */
 export function DayEditor({
   id,
   form,
-  previousMinutes,
+  previous,
   freeAllowed,
   onChange,
 }: {
   /** Vorsilbe für die Feldkennungen. */
   id: string;
   form: DayForm;
-  /** Was dieser Tag bisher an Arbeit hatte - für den Vorschlag zum Ende. */
-  previousMinutes: number;
+  /** Der Tag bisher - für den Vorschlag zum Ende und „Arbeitszeit eintragen“. */
+  previous: readonly Block[];
   freeAllowed: boolean;
   onChange: (form: DayForm) => void;
 }) {
+  const previousForm = previous.length > 0 ? formFromBlocks(previous) : null;
   const free = form.start === '' && form.end === '' && form.breakStart === null;
   if (free) {
     return (
@@ -45,7 +52,14 @@ export function DayEditor({
           className="w-full"
           data-autofocus
           onClick={() =>
-            onChange({ start: '08:00', end: '12:00', breakStart: null, breakMinutes: null })
+            onChange(
+              previousForm ?? {
+                start: '08:00',
+                end: '12:00',
+                breakStart: null,
+                breakMinutes: null,
+              },
+            )
           }
         >
           Arbeitszeit eintragen
@@ -54,7 +68,10 @@ export function DayEditor({
     );
   }
 
-  const later = suggestedEnd(form, previousMinutes);
+  const later =
+    (form.breakMinutes ?? 0) > (previousForm?.breakMinutes ?? 0)
+      ? suggestedEnd(form, workMinutes(previous))
+      : null;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-3">
@@ -76,28 +93,35 @@ export function DayEditor({
       </div>
 
       {form.breakStart !== null ? (
-        <div className="grid grid-cols-2 gap-3">
-          <Field
-            label="Pause ab"
-            feldId={`${id}-pause`}
-            type="time"
-            value={form.breakStart}
-            onChange={(e) => onChange({ ...form, breakStart: e.target.value })}
-          />
-          <Select
-            label="Dauer der Pause"
-            feldId={`${id}-dauer`}
-            value={String(form.breakMinutes ?? 30)}
-            onChange={(e) => onChange({ ...form, breakMinutes: Number(e.target.value) })}
-          >
-            {[...new Set([...BREAK_CHOICES, form.breakMinutes ?? 30])]
-              .sort((a, b) => a - b)
-              .map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {minutes} Minuten
-                </option>
-              ))}
-          </Select>
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="Pause ab"
+              feldId={`${id}-pause`}
+              type="time"
+              value={form.breakStart}
+              onChange={(e) => onChange({ ...form, breakStart: e.target.value })}
+            />
+            <Select
+              label="Dauer der Pause"
+              feldId={`${id}-dauer`}
+              value={String(form.breakMinutes ?? 30)}
+              onChange={(e) => onChange({ ...form, breakMinutes: Number(e.target.value) })}
+            >
+              {[...new Set([...BREAK_CHOICES, form.breakMinutes ?? 30])]
+                .sort((a, b) => a - b)
+                .map((minutes) => (
+                  <option key={minutes} value={minutes}>
+                    {minutes} Minuten
+                  </option>
+                ))}
+            </Select>
+          </div>
+          <div className="flex justify-end">
+            <Button variant="quiet" groesse="kompakt" onClick={() => onChange(withoutBreak(form))}>
+              Pause entfernen
+            </Button>
+          </div>
         </div>
       ) : null}
 
@@ -123,18 +147,13 @@ export function DayEditor({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {form.breakStart !== null ? (
-          <Button variant="quiet" groesse="kompakt" onClick={() => onChange(withoutBreak(form))}>
-            Pause entfernen
-          </Button>
-        ) : null}
-        {freeAllowed ? (
+      {freeAllowed ? (
+        <div className="border-line border-t pt-4">
           <Button variant="quiet" groesse="kompakt" onClick={() => onChange({ ...FREE_DAY })}>
             Tag frei
           </Button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

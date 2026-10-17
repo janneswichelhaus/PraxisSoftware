@@ -6,7 +6,7 @@ import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-do
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import type * as WorkingTimeApi from './api';
-import { PREVIEW_ERROR } from './api';
+import { BASELINE_ERROR, PREVIEW_ERROR } from './api';
 import { ANNAS_TAG, testWeek, testWorkingTime } from './testdata';
 
 /**
@@ -226,9 +226,9 @@ describe('RequestWorkingTimePage', () => {
     tipps += 1;
 
     const woche = await screen.findByRole('dialog', {
-      name: 'Ihr Wochenplan ab Dienstag, 1. Dezember',
+      name: 'Wochenplan ab 1. Dezember',
     });
-    await user.click(await within(woche).findByRole('button', { name: 'Dienstag ändern' }));
+    await user.click(await within(woche).findByRole('button', { name: /^Dienstag / }));
     tipps += 1;
     const dienstag = await screen.findByRole('dialog', { name: 'Dienstags ab 1. Dezember' });
     zeit(dienstag, 'Pause ab', '12:30');
@@ -236,13 +236,11 @@ describe('RequestWorkingTimePage', () => {
     tipps += 1;
 
     const zurueck = await screen.findByRole('dialog', {
-      name: 'Ihr Wochenplan ab Dienstag, 1. Dezember',
+      name: 'Wochenplan ab 1. Dezember',
     });
-    expect(
-      within(zurueck).getByText(
-        '08:00–12:30, 13:30–18:00 · 9:00 Std. · bisher 08:00–12:00, 13:00–18:00 · 9:00 Std.',
-      ),
-    ).toBeInTheDocument();
+    const geaendert = within(zurueck).getByRole('button', { name: /^Dienstag / });
+    expect(geaendert).toHaveTextContent('Dienstag 08:00–12:30, 13:30–18:00');
+    expect(within(geaendert).getByText('geändert')).toBeInTheDocument();
     await user.click(within(zurueck).getByRole('button', { name: 'Weiter' }));
     tipps += 1;
 
@@ -252,6 +250,10 @@ describe('RequestWorkingTimePage', () => {
     ).toBeInTheDocument();
     expect(
       await within(abschluss).findByText('2 Termine außerhalb der neuen Zeiten'),
+    ).toBeInTheDocument();
+    // Je Tag die Zahl; umplanen wird nach dem Genehmigen die Praxisleitung.
+    expect(
+      within(abschluss).getByText('1. Dez.: 2 · plant die Praxisleitung nach dem Genehmigen um'),
     ).toBeInTheDocument();
     await user.click(within(abschluss).getByRole('button', { name: 'Änderung beantragen' }));
     tipps += 1;
@@ -358,9 +360,9 @@ describe('RequestWorkingTimePage', () => {
       }),
     );
     const woche = await screen.findByRole('dialog', {
-      name: 'Ihr Wochenplan ab Dienstag, 1. Dezember',
+      name: 'Wochenplan ab 1. Dezember',
     });
-    await user.click(await within(woche).findByRole('button', { name: 'Dienstag ändern' }));
+    await user.click(await within(woche).findByRole('button', { name: /^Dienstag / }));
     zeit(
       await screen.findByRole('dialog', { name: 'Dienstags ab 1. Dezember' }),
       'Pause ab',
@@ -368,9 +370,10 @@ describe('RequestWorkingTimePage', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
     await user.click(
-      within(
-        await screen.findByRole('dialog', { name: 'Ihr Wochenplan ab Dienstag, 1. Dezember' }),
-      ).getByRole('button', { name: 'Weiter' }),
+      within(await screen.findByRole('dialog', { name: 'Wochenplan ab 1. Dezember' })).getByRole(
+        'button',
+        { name: 'Weiter' },
+      ),
     );
 
     const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
@@ -386,6 +389,105 @@ describe('RequestWorkingTimePage', () => {
     expect(within(wieder).getByText('Noch nichts geändert.')).toBeInTheDocument();
     expect(within(wieder).getByRole('button', { name: 'Änderung beantragen' })).toBeDisabled();
     expect(within(wieder).queryByText('Termine werden geprüft …')).toBeNull();
+  });
+
+  it('lädt die bisherigen Zeiten nach einem Funkloch mit „Erneut versuchen“ (Regel 8)', async () => {
+    const user = userEvent.setup();
+    fetchBaseline.mockRejectedValueOnce(new Error(BASELINE_ERROR));
+    rendern();
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Einen Tag' },
+      ),
+    );
+    await user.click(
+      tag(
+        await screen.findByRole('dialog', { name: 'An welchem Tag?' }),
+        'Dienstag, 20. Oktober 2026',
+      ),
+    );
+    const zeiten = await screen.findByRole('dialog', {
+      name: 'Ihre Zeiten am Dienstag, 20. Oktober',
+    });
+    expect(await within(zeiten).findByText(BASELINE_ERROR)).toBeInTheDocument();
+    expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeDisabled();
+    await user.click(within(zeiten).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await within(zeiten).findByText(/^Bisher:/)).toBeInTheDocument();
+    expect(within(zeiten).getByLabelText('Beginn')).toHaveValue('08:00');
+  });
+
+  it('schlägt bei einem früheren Schluss kein späteres Ende vor', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Einen Tag' },
+      ),
+    );
+    await user.click(
+      tag(
+        await screen.findByRole('dialog', { name: 'An welchem Tag?' }),
+        'Dienstag, 20. Oktober 2026',
+      ),
+    );
+    const zeiten = await screen.findByRole('dialog', {
+      name: 'Ihre Zeiten am Dienstag, 20. Oktober',
+    });
+    await within(zeiten).findByText(/^Bisher:/);
+    zeit(zeiten, 'Ende', '17:00');
+    // Der Vorschlag nähme den früheren Schluss zurück; es zählt der Grund.
+    expect(within(zeiten).queryByRole('button', { name: /^Ende auf/ })).toBeNull();
+    expect(within(zeiten).queryByText(/längeren Pause/)).toBeNull();
+    expect(
+      within(zeiten).getByText(/Weniger Stunden laufen nicht über diesen Antrag/),
+    ).toBeInTheDocument();
+  });
+
+  it('nennt den Verstoß an der Zeile des Tages und bringt nach „Tag frei“ die bisherigen Zeiten zurück', async () => {
+    const user = userEvent.setup();
+    // Samstags zehn Stunden ohne Pause - schon im bisherigen Plan.
+    fetchBaseline.mockImplementation((kind: string) =>
+      Promise.resolve(
+        kind === 'once'
+          ? { previous: ANNAS_TAG, previous_minutes: 540, self_entered: false }
+          : {
+              previous: testWeek({ 6: [{ von: '09:00', bis: '19:00' }] }),
+              previous_minutes: 55 * 60,
+              self_entered: false,
+            },
+      ),
+    );
+    rendern();
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Den Wochenplan ab einem Datum' },
+      ),
+    );
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Ab wann?' })).getByRole('button', {
+        name: 'Ab Dienstag, 1. Dezember',
+      }),
+    );
+    const woche = await screen.findByRole('dialog', {
+      name: 'Wochenplan ab 1. Dezember',
+    });
+    const samstag = await within(woche).findByRole('button', { name: /^Samstag / });
+    expect(within(samstag).getByText('Pause zu kurz')).toBeInTheDocument();
+    // Der Fuß nennt den Tag kurz, als Statusmeldung.
+    expect(within(woche).getByText('Samstag: Pause zu kurz')).toBeInTheDocument();
+    expect(within(woche).getByRole('button', { name: 'Weiter' })).toBeDisabled();
+
+    await user.click(within(woche).getByRole('button', { name: /^Dienstag / }));
+    const dienstag = await screen.findByRole('dialog', { name: 'Dienstags ab 1. Dezember' });
+    await user.click(within(dienstag).getByRole('button', { name: 'Tag frei' }));
+    expect(within(dienstag).getByText('An diesem Tag frei.')).toBeInTheDocument();
+    await user.click(within(dienstag).getByRole('button', { name: 'Arbeitszeit eintragen' }));
+    expect(within(dienstag).getByLabelText('Beginn')).toHaveValue('08:00');
+    expect(within(dienstag).getByLabelText('Ende')).toHaveValue('18:00');
+    expect(within(dienstag).getByLabelText('Pause ab')).toHaveValue('12:00');
   });
 
   it('owner trägt die eigene Änderung ein', async () => {
