@@ -173,6 +173,15 @@ describe('TimeAccountPage', () => {
     expect(screen.queryByText(/Summe|Gesamt|alle Personen/)).toBeNull();
   });
 
+  it('nennt ohne weitere Personen einen Leerzustand statt einer leeren Liste (Regel 8)', async () => {
+    fetchTimeAccount.mockResolvedValue(testTimeAccount({ can_book_others: true, accounts: [] }));
+    rendern();
+    const konten = (await screen.findByRole('heading', { name: /^Zeitkonten/ })).closest(
+      'section',
+    )!;
+    expect(within(konten).getByText('Keine weiteren Zeitkonten')).toBeInTheDocument();
+  });
+
   it('öffnet das Konto einer Person mit Rückweg, Eintragen und Zurückweisen', async () => {
     fetchTimeAccount.mockResolvedValue(
       testTimeAccount({

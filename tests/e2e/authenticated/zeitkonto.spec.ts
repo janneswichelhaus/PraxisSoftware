@@ -1,5 +1,13 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { KONTEN, MITARBEITENDE, anmelden, supabaseKonfiguration, zugriffstoken } from './helpers';
+import {
+  KONTEN,
+  MITARBEITENDE,
+  PATIENTEN,
+  anmelden,
+  rpcAufrufen,
+  supabaseKonfiguration,
+  zugriffstoken,
+} from './helpers';
 
 /**
  * G9 „Ins Zeitkonto eintragen“ und G9b „zurückweisen“ (ZK-001) gegen den
@@ -9,9 +17,12 @@ import { KONTEN, MITARBEITENDE, anmelden, supabaseKonfiguration, zugriffstoken }
  * Mehrarbeit: Anna trägt die Zeit nach Dienstende des letzten Arbeitstags ein
  * (Budget ≤ 6 Tipps, Ziel 5) und nimmt sie danach zurück. Freizeitausgleich:
  * Anna nimmt an einem Donnerstag zwei Stunden früher frei; am Server steht der
- * Tag als Abweichung mit den übrigen Blöcken. Jannes weist ihn aus Annas Konto
- * mit Grund zurück (3 Tipps und der Grund), die Zeit ist wieder Arbeitszeit.
- * Zurückgewiesenes und Zurückgenommenes sperrt spätere Läufe nicht.
+ * Tag als Abweichung mit den übrigen Blöcken; von zwei Terminen des Tages
+ * wählt „Tag umplanen“ nur den in der freien Zeit vor. Jannes weist den
+ * Freizeitausgleich aus Annas Konto mit Grund zurück (3 Tipps und der Grund),
+ * die Zeit ist wieder Arbeitszeit. Olivia (Büro) bucht für Tim eine Korrektur
+ * mit Grund (Budget ≤ 6 Tipps) und nimmt sie zurück. Zurückgewiesenes,
+ * Zurückgenommenes und die abgesagten Termine sperren spätere Läufe nicht.
  * Ausschließlich synthetische Seed-Konten.
  */
 test.describe.configure({ mode: 'serial' });
@@ -221,7 +232,29 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   page,
   browser,
 }) => {
+  // Termine anlegen, eintragen, umplanen, zurückweisen - länger als ein Ablauf.
+  test.setTimeout(120_000);
   await page.setViewportSize(TELEFON);
+  // Zwei Termine Annas an diesem Donnerstag: einer vor der freien Zeit, einer
+  // darin - über die RPC, damit dieser Test die Terminmaske nicht mitprüft.
+  const token = await zugriffstoken(page.request, KONTEN.owner);
+  for (const [patient, von, bis] of [
+    [PATIENTEN.erika, '10:15', '11:00'],
+    [PATIENTEN.max, '16:30', '17:15'],
+  ] as const) {
+    const angelegt = await rpcAufrufen(page.request, token, 'create_appointment', {
+      p_patient_id: patient,
+      p_staff_member_id: MITARBEITENDE.anna,
+      p_appointment_type: 'video',
+      p_date: DONNERSTAG,
+      p_start_time: von,
+      p_end_time: bis,
+      p_location_id: null,
+      p_allow_outside_working_hours: false,
+    });
+    expect(angelegt.status(), `Vorbereitung: Termin ${von}`).toBe(200);
+  }
+
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/zeitkonto');
 
@@ -245,19 +278,43 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   await expect(abschluss.getByText(/−2:00\sStd\./).first()).toBeVisible();
   await bild(page, 'b9-g9-07-zusammenfassung-freizeit-375');
   await t.tippe(abschluss.getByRole('button', { name: 'Eintragen' }));
-  // Liegen Termine in der freien Zeit, nennt der Abschluss sie zum Umplanen.
+  // Der Termin in der freien Zeit steht zum Umplanen da.
   const fertig = page.getByRole('dialog', { name: 'Eingetragen' });
-  const meldung = page.getByRole('status').filter({ hasText: /Eingetragen: Freizeitausgleich/ });
-  await expect(fertig.or(meldung)).toBeVisible();
-  if (await fertig.isVisible()) {
-    await bild(page, 'b9-g9-08-termine-375');
-    await fertig.getByRole('button', { name: 'Fertig' }).click();
-  }
+  await expect(fertig.getByRole('heading', { name: /^Termine umplanen/ })).toBeVisible();
+  await bild(page, 'b9-g9-08-termine-375');
   test.info().annotations.push({ type: 'G9 Freizeit', description: `${t.tipps} Tipps` });
   expect(t.tipps).toBeLessThanOrEqual(6);
 
+  // „Tag umplanen“ mit der Arbeitszeit danach: vorgewählt ist nur der Termin
+  // in der freien Zeit, nicht der ganze Tag (Praxis-Review Überholung 9).
+  const umplanen = fertig.getByRole('link', { name: /^Tag umplanen/ });
+  await expect(umplanen).toHaveAttribute('href', /zeiten=08:00-12:00,13:00-16:00/);
+  await umplanen.click();
+  await page
+    .getByRole('dialog', { name: 'Warum fallen die Termine aus?' })
+    .getByRole('button', { name: 'Praxis hat abgesagt' })
+    .click();
+  const auswahl = page.getByRole('dialog', { name: 'Welche Termine absagen?' });
+  const frei = auswahl.getByRole('checkbox', { name: /16:30–17:15/ });
+  const davor = auswahl.getByRole('checkbox', { name: /10:15–11:00/ });
+  await expect(frei).toBeChecked();
+  await expect(davor).not.toBeChecked();
+  await bild(page, 'b9-g9-09-tag-umplanen-375');
+  // Aufräumen über denselben Weg: genau diese beiden absagen, sonst nichts.
+  for (const kasten of await auswahl.getByRole('checkbox', { checked: true }).all()) {
+    await kasten.uncheck();
+  }
+  await frei.check();
+  await davor.check();
+  await auswahl.getByRole('button', { name: 'Weiter mit 2 Terminen' }).click();
+  await page
+    .getByRole('dialog', { name: '2 Termine absagen?' })
+    .getByRole('button', { name: 'Ja, 2 Termine absagen' })
+    .click();
+  await expect(page.getByRole('dialog', { name: / erreicht\?$/ })).toBeVisible();
+  await page.goto('/betrieb/zeitkonto');
+
   // Am Server: die übrigen Blöcke des Tages als Abweichung.
-  const token = await zugriffstoken(page.request, KONTEN.owner);
   expect(await abweichungen(page, token)).toEqual([
     { kind: 'block', starts_at: '08:00:00', ends_at: '12:00:00' },
     { kind: 'block', starts_at: '13:00:00', ends_at: '16:00:00' },
@@ -310,4 +367,65 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   await expect(zurueckgewiesen).toContainText(/Zurückgewiesen von .+: Teamsitzung/);
   await bild(page, 'b9-g9b-04-anna-sieht-375');
   await inhaber.close();
+});
+
+test('G9 Korrektur: Olivia (Büro) bucht für Tim mit Grund und nimmt sie zurück (ZK-001)', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize(TELEFON);
+  await anmelden(page, KONTEN.office);
+  await page.goto('/betrieb/zeitkonto');
+
+  const t = zaehler();
+  const konten = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: /^Zeitkonten/ }) });
+  await t.tippe(konten.getByRole('link', { name: /Tim Teamleitung/ }));
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Zeitkonto von Tim Teamleitung' }),
+  ).toBeVisible();
+  await t.tippe(page.getByRole('link', { name: 'Eintragen' }));
+  await t.tippe(
+    page
+      .getByRole('dialog', { name: 'Was tragen Sie für Tim Teamleitung ein?' })
+      .getByRole('button', { name: 'Korrektur' }),
+  );
+  // Stunden und Grund je auf einer Seite (Design-Review Überholung 9).
+  const stunden = page.getByRole('dialog', { name: 'Wie viele Stunden?' });
+  await stunden.getByLabel(/^Stunden/).fill('1:30');
+  await rolltNicht(stunden);
+  await bild(page, 'b9-g9k-01-stunden-375');
+  await t.tippe(stunden.getByRole('button', { name: 'Weiter' }));
+  const grund = page.getByRole('dialog', { name: 'Warum die Korrektur?' });
+  const text = `Stundenliste September (Lauf ${LAUF})`;
+  await grund.getByLabel('Grund').fill(text);
+  await bild(page, 'b9-g9k-02-grund-375');
+  await t.tippe(grund.getByRole('button', { name: 'Weiter' }));
+  const abschluss = page.getByRole('dialog', { name: 'Eintragen?' });
+  await expect(abschluss.getByText('+1:30 Std.', { exact: true })).toBeVisible();
+  await expect(abschluss.getByText(text)).toBeVisible();
+  await rolltNicht(abschluss);
+  await bild(page, 'b9-g9k-03-zusammenfassung-375');
+  await t.tippe(abschluss.getByRole('button', { name: 'Eintragen' }));
+  await expect(
+    page.getByRole('status').filter({ hasText: /Eingetragen: Korrektur .*\(\+1:30\sStd\.\)/ }),
+  ).toBeVisible();
+  await bild(page, 'b9-g9k-04-eingetragen-375');
+  test.info().annotations.push({
+    type: 'G9 Korrektur',
+    description: `${t.tipps} Tipps, dazu Stunden und Grund`,
+  });
+  expect(t.tipps).toBeLessThanOrEqual(6);
+
+  // Aufräumen: Olivia nimmt die Korrektur zurück - sie zählt nicht mehr.
+  const zeile = page.getByRole('listitem').filter({ hasText: text });
+  await zeile.getByRole('button', { name: 'Zurücknehmen' }).click();
+  await page.getByRole('button', { name: 'Ja, zurücknehmen' }).click();
+  await expect(
+    page
+      .getByRole('listitem')
+      .filter({ hasText: text })
+      .filter({ has: page.getByRole('button', { name: 'Zurücknehmen' }) }),
+  ).toHaveCount(0);
 });

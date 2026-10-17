@@ -302,7 +302,7 @@ function Ablauf({
         <div className="flex flex-col gap-2">
           {abweichend.length > 0 ? (
             <Statusmeldung ton="fehler">
-              {`Abweichende Arbeitszeiten oder Freizeitausgleich am ${abweichend.map(tagKurz).join(', ')} – erst in Planung oder Zeitkonto ändern, dann genehmigen.`}
+              {`Abweichende Arbeitszeiten oder Freizeitausgleich am ${abweichend.map(tagKurz).join(', ')} – erst in der Planung ändern oder im Zeitkonto zurückweisen, dann genehmigen.`}
             </Statusmeldung>
           ) : null}
           {entscheiden.isError ? (

@@ -43,6 +43,7 @@ import {
   dateWindow,
   overtimeChoices,
   parseHours,
+  remainingBlocks,
   signedHours,
   timeOffChoices,
   type EntryKind,
@@ -57,12 +58,22 @@ import { PERSON_PARAM, entryDate, personPath } from './paths';
  * gilt sofort (ANN-593); der Grund ist freiwillig.
  *
  * owner und Büro tragen auf dieselbe Weise für andere ein (`?person=…`) und
- * buchen dort auch Korrekturen - Stunden mit Grund, ohne Lage; im eigenen
- * Konto bucht nur owner eine Korrektur (ANN-594). Was nicht geht, sagt die
- * Vorschau des Servers, bevor eingetragen wird.
+ * buchen dort auch Korrekturen - Stunden, dann der Grund auf eigener Seite,
+ * ohne Lage; im eigenen Konto bucht nur owner eine Korrektur (ANN-594). Jeder
+ * Weg hat vier Schritte. Was nicht geht, sagt die Vorschau des Servers, bevor
+ * eingetragen wird.
  */
 
-type Page = 'kind' | 'date' | 'times' | 'summary' | 'done';
+type Page = 'kind' | 'date' | 'times' | 'reason' | 'summary' | 'done';
+
+/** Vier Schritte auf jedem Weg - eine Korrektur fragt statt des Tages den Grund. */
+const STEP: Record<'dated' | 'correction', Record<Page, number>> = {
+  dated: { kind: 1, date: 2, times: 3, reason: 3, summary: 4, done: 4 },
+  correction: { kind: 1, date: 2, times: 2, reason: 3, summary: 4, done: 4 },
+};
+
+/** Der Tag der Zeitenseite - ohne ihn keine Schnellwahl und kein Grund. */
+const DAY_ERROR = 'Der Tag konnte nicht geladen werden.';
 
 const RECORD_TEXTS = {
   ...EINGABETEXTE,
@@ -230,7 +241,7 @@ function Flow({
   const span = kind ? dateWindow(kind, today) : null;
 
   const objekt = own ? 'Ins Zeitkonto eintragen' : `Zeitkonto von ${name}`;
-  const step = { kind: 1, date: 2, times: 3, summary: 4, done: 4 }[page];
+  const step = STEP[kind === 'correction' ? 'correction' : 'dated'][page];
   const common = {
     objekt,
     schliessen: 'Schließen',
@@ -262,7 +273,20 @@ function Flow({
           </Statusmeldung>
           <DaysToReschedule
             staffMemberId={account?.staff_member_id ?? ''}
-            days={onDate ? [{ on_date: onDate, appointments: result.appointments }] : []}
+            // Mit der Arbeitszeit danach: „Tag umplanen“ wählt nur die Termine
+            // in der freien Zeit vor, nicht den ganzen Tag (Praxis-Review
+            // Überholung 9). Ohne Plan des Tages bleibt es beim ganzen Tag.
+            days={
+              onDate
+                ? [
+                    {
+                      on_date: onDate,
+                      appointments: result.appointments,
+                      ...(blocks ? { zeiten: remainingBlocks(blocks, von, bis) } : {}),
+                    },
+                  ]
+                : []
+            }
             user={user}
             returnTo={returnTo}
           />
@@ -305,12 +329,7 @@ function Flow({
             ))}
           </div>
         }
-      >
-        <p className="text-ink text-liste">
-          Ein Eintrag gilt sofort und zählt im Saldo
-          {account ? ` – jetzt ${signedHours(account.balance_minutes)}` : ''}.
-        </p>
-      </GefuehrterAblauf>
+      />
     );
   }
 
@@ -373,30 +392,21 @@ function Flow({
           fuss={
             <Button
               className="w-full"
-              disabled={minutes === null || note.trim() === ''}
-              onClick={() => setFlow(weiter(flow, 'summary', true))}
+              disabled={minutes === null}
+              onClick={() => setFlow(weiter(flow, 'reason'))}
             >
               Weiter
             </Button>
           }
         >
-          <div className="flex flex-col gap-4">
-            <Field
-              label="Stunden – mit Minus, wenn sie abgehen"
-              placeholder="z. B. 12:30 oder -2:00"
-              inputMode="text"
-              value={hours}
-              data-autofocus
-              onChange={(e) => setHours(e.target.value)}
-            />
-            <TextArea
-              label="Grund – Pflicht bei einer Korrektur"
-              value={note}
-              maxLength={500}
-              rows={3}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
+          <Field
+            label="Stunden – mit Minus, wenn sie abgehen"
+            placeholder="z. B. 12:30 oder -2:00"
+            inputMode="text"
+            value={hours}
+            data-autofocus
+            onChange={(e) => setHours(e.target.value)}
+          />
         </GefuehrterAblauf>
       );
     }
@@ -408,23 +418,46 @@ function Flow({
     };
     const dayReason =
       day.data && kind ? (problemSentences(day.data.problems, kind)[0] ?? null) : null;
+    // Die Schnellwahl ist die Antwort dieser Seite: im festen Fuß und 48 px hoch
+    // (Design- und Praxis-Review Überholung 9); von Hand über Beginn und Ende.
+    const quick = day.data && dayReason === null ? choices : [];
+    const quickTitle = kind === 'overtime' && quick[0] ? `Ab ${quick[0].von}` : 'Schnellwahl';
     return (
       <GefuehrterAblauf
         {...common}
         titel={kind === 'overtime' ? 'Von wann bis wann?' : 'Welche Zeit nehmen Sie frei?'}
         fuss={
           <div className="flex flex-col gap-2">
-            {day.isError ? (
-              <Statusmeldung ton="fehler">
-                {day.error instanceof Error
-                  ? day.error.message
-                  : 'Der Tag konnte nicht geladen werden.'}
-              </Statusmeldung>
-            ) : null}
             {dayReason ? <Statusmeldung ton="fehler">{dayReason}</Statusmeldung> : null}
+            {quick.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {kind === 'overtime' ? (
+                  <p className="text-ink-muted text-sm" aria-hidden="true">
+                    {quickTitle}
+                  </p>
+                ) : null}
+                <div
+                  role="group"
+                  aria-label={quickTitle}
+                  className={`grid gap-2 ${kind === 'overtime' ? 'grid-cols-3' : 'grid-cols-2'}`}
+                >
+                  {quick.map((choice) => (
+                    <Button
+                      key={choice.label}
+                      variant="secondary"
+                      className="w-full"
+                      aria-label={`${choice.label}: ${choice.von}–${choice.bis}`}
+                      onClick={() => pick(choice)}
+                    >
+                      {choice.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <Button
               className="w-full"
-              disabled={!timesSet || dayReason !== null}
+              disabled={!day.data || !timesSet || dayReason !== null}
               onClick={() => setFlow(weiter(flow, 'summary', true))}
             >
               Weiter
@@ -432,47 +465,72 @@ function Flow({
           </div>
         }
       >
-        <div className="flex flex-col gap-4">
-          <p className="text-ink-muted text-sm">
-            {when}
-            {day.isPending
-              ? ' · Tag wird geladen …'
-              : blocks !== null
-                ? ` · Plan: ${blocksText(blocks)}`
-                : ''}
-          </p>
-          {choices.length > 0 && dayReason === null ? (
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Schnellwahl">
-              {choices.map((choice) => (
-                <Button
-                  key={choice.label}
-                  variant="secondary"
-                  groesse="kompakt"
-                  aria-label={`${choice.label}: ${choice.von}–${choice.bis}`}
-                  onClick={() => pick(choice)}
-                >
-                  {choice.label}
-                </Button>
-              ))}
+        {/* Laden und Funkloch des Tages über den Baustein (Regel 8, Design-Review
+            Überholung 9) - mit „Erneut versuchen“, ohne die Wahl zu verlieren. */}
+        <Abfragezustand
+          abfrage={day}
+          laden="Der Tag wird geladen …"
+          fehler={DAY_ERROR}
+          endgueltig={{
+            wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
+            titel: day.error instanceof Error ? day.error.message : DAY_ERROR,
+          }}
+        >
+          {() => (
+            <div className="flex flex-col gap-4">
+              <p className="text-ink-muted text-sm">
+                {when}
+                {blocks !== null ? ` · Plan: ${blocksText(blocks)}` : ''}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="Beginn"
+                  type="time"
+                  step={300}
+                  value={von}
+                  onChange={(e) => setVon(e.target.value)}
+                />
+                <Field
+                  label="Ende"
+                  type="time"
+                  step={300}
+                  value={bis}
+                  onChange={(e) => setBis(e.target.value)}
+                />
+              </div>
             </div>
-          ) : null}
-          <div className="grid grid-cols-2 gap-3">
-            <Field
-              label="Beginn"
-              type="time"
-              step={300}
-              value={von}
-              onChange={(e) => setVon(e.target.value)}
-            />
-            <Field
-              label="Ende"
-              type="time"
-              step={300}
-              value={bis}
-              onChange={(e) => setBis(e.target.value)}
-            />
-          </div>
-        </div>
+          )}
+        </Abfragezustand>
+      </GefuehrterAblauf>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Der Grund einer Korrektur: eine Frage auf eigener Seite, wie beim
+  // Zurückweisen (Design-Review Überholung 9).
+  if (page === 'reason') {
+    return (
+      <GefuehrterAblauf
+        {...common}
+        titel="Warum die Korrektur?"
+        fuss={
+          <Button
+            className="w-full"
+            disabled={note.trim() === ''}
+            onClick={() => setFlow(weiter(flow, 'summary', true))}
+          >
+            Weiter
+          </Button>
+        }
+      >
+        <TextArea
+          label="Grund"
+          value={note}
+          maxLength={500}
+          rows={3}
+          data-autofocus
+          onChange={(e) => setNote(e.target.value)}
+        />
       </GefuehrterAblauf>
     );
   }
@@ -522,6 +580,7 @@ function Flow({
           />
           <ListRow
             titel={after == null ? 'Saldo danach –' : `Saldo danach ${signedHours(after)}`}
+            meta="Der Eintrag gilt sofort."
           />
           {kind === 'time_off' ? (
             <ListRow
@@ -534,7 +593,20 @@ function Flow({
             />
           ) : null}
           {kind === 'correction' && note.trim() !== '' ? (
-            <ListRow titel="Grund" meta={note.trim()} />
+            <ListRow
+              titel="Grund"
+              meta={note.trim()}
+              aktion={
+                <Button
+                  variant="secondary"
+                  groesse="kompakt"
+                  aria-label="Grund ändern"
+                  onClick={() => setFlow(aendern(flow, 'reason'))}
+                >
+                  Ändern
+                </Button>
+              }
+            />
           ) : null}
         </ListRows>
         {kind === 'correction' ? null : (
