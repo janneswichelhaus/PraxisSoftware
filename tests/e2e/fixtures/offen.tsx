@@ -28,6 +28,8 @@ import { ABO_KUENDIGUNGEN_KEY } from '@/features/open-points/aftercare-cancellat
 import { CONSENT_WITHDRAWALS_KEY } from '@/features/open-points/consent-withdrawals-api';
 import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
+import { urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
+import { urlaubsfenster } from '@/features/vacation/fenster';
 import type { WaitlistEntry } from '@/features/waitlist/api';
 import '@/index.css';
 
@@ -410,6 +412,47 @@ client.setQueryData(rueckfragenKey(null, null, false), [
     record_assigned_at: null,
   },
 ] satisfies Rueckfragezeile[]);
+// URL-001: ein offener Urlaubsantrag von Anna - die Gruppe „Urlaubsanträge“.
+const fenster = urlaubsfenster(HEUTE);
+client.setQueryData(urlaubSchluessel(fenster.von, fenster.bis), {
+  my_staff_member_id: nutzer.staffMemberId,
+  can_decide: true,
+  self_entered: true,
+  can_manage_entitlements: true,
+  federal_state: 'BW',
+  balance: null,
+  own: [],
+  to_decide:
+    ansicht === 'leer'
+      ? []
+      : [
+          {
+            id: 'abababab-abab-4bab-8bab-000000000001',
+            kind: 'leave',
+            refers_to: null,
+            staff_member_id: ANNA,
+            name: 'Anna Beispiel',
+            starts_on: tagPlus(30),
+            ends_on: tagPlus(39),
+            days: 8,
+            days_following_year: 0,
+            requested_at: `${HEUTE}T07:30:00Z`,
+            balance: {
+              year: Number(tagPlus(30).slice(0, 4)),
+              entitlement: 30,
+              carryover: 0,
+              approved: 0,
+              requested: 8,
+              rest: 30,
+            },
+            team: [],
+            appointments: 0,
+            exception_days: [],
+          },
+        ],
+  team: [],
+  balances: [],
+} satisfies Urlaubsstand);
 // Ohne Widerruf, Kündigung und auslaufenden Plan: Diese Gruppen fehlen.
 client.setQueryData(CONSENT_WITHDRAWALS_KEY, []);
 client.setQueryData(ABO_KUENDIGUNGEN_KEY, []);
