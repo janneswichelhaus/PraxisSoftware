@@ -45,6 +45,37 @@ const ZURUECKWEISEN = 'select public.reject_time_account_entry($1::uuid, $2) as 
 const KONTO = 'select public.list_time_account($1::uuid) as daten';
 const ABGEDECKT =
   'select app.is_within_working_hours($1::uuid, $2::uuid, $3::date, $4::time, $5::time) as ja';
+const AENDERUNG_BEANTRAGEN =
+  'select public.request_working_time_change($1, $2::date, $3::jsonb, $4) as id';
+const AENDERUNG_ENTSCHEIDEN =
+  'select public.decide_working_time_request($1::uuid, $2::boolean, $3) as daten';
+const WOCHENTAG_PFLEGEN = 'select public.set_staff_working_hours($1, $2::smallint, $3::jsonb)';
+
+interface Block {
+  von: string;
+  bis: string;
+}
+
+/** Annas Tag im Seed: 08:00-12:00 und 13:00-18:00. */
+const ANNAS_TAG: Block[] = [
+  { von: '08:00', bis: '12:00' },
+  { von: '13:00', bis: '18:00' },
+];
+
+/** Gleich lang, mit späterer Pause. */
+const SPAETE_PAUSE: Block[] = [
+  { von: '08:00', bis: '12:30' },
+  { von: '13:30', bis: '18:00' },
+];
+
+/** Annas Woche (Montag bis Freitag), ein Tag ersetzt. */
+function woche(tag: number, bloecke: Block[]): Record<string, Block[]> {
+  const ergebnis: Record<string, Block[]> = {};
+  for (let t = 1; t <= 7; t += 1) {
+    ergebnis[String(t)] = t === tag ? bloecke : t <= 5 ? ANNAS_TAG : [];
+  }
+  return ergebnis;
+}
 
 interface Fehler {
   code?: string;
@@ -112,6 +143,13 @@ function werktagNach(tage: number): string {
   let tag = plusTage(HEUTE, tage);
   while (wochentag(tag) > 5) tag = plusTage(tag, 1);
   return tag;
+}
+
+/** Der erste Tag ab `tag` (einschließlich) mit diesem Wochentag. */
+function naechster(tag: string, gesucht: number): string {
+  let d = tag;
+  while (wochentag(d) !== gesucht) d = plusTage(d, 1);
+  return d;
 }
 
 /** Ein Samstag in der Zukunft - Anna hat dort keine Arbeitszeit. */
@@ -495,6 +533,78 @@ describe('Freizeitausgleich in den Arbeitszeiten (ANN-595)', () => {
     );
     expect(urlaub).toMatchObject({ code: '55000', message: 'working hours exception in period' });
   });
+
+  it('hält eine einmalige Änderung an, die vor dem Freizeitausgleich beantragt war', async () => {
+    const tag = werktagNach(8);
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, AENDERUNG_BEANTRAGEN, [
+      'once',
+      tag,
+      JSON.stringify([
+        { von: '07:00', bis: '12:00' },
+        { von: '13:00', bis: '17:00' },
+      ]),
+      null,
+    ]);
+    // Solange beantragt, gilt der Wochenplan - der Freizeitausgleich geht.
+    await eingetragen(users.therapist, null, 'time_off', tag, '16:00', '18:00');
+    expect(
+      await fehler(users.ownerTherapist, AENDERUNG_ENTSCHEIDEN, [rows[0]!.id, true, null]),
+    ).toMatchObject({ code: '55000', message: 'day has time off in lieu' });
+    expect(await abweichungen(STAFF.anna, tag)).toEqual([
+      { kind: 'block', von: '08:00', bis: '12:00' },
+      { kind: 'block', von: '13:00', bis: '16:00' },
+    ]);
+  });
+
+  it('schützt den Tag vor einem neuen Wochenplan - in der Planung und beantragt (Zweitreview B4)', async () => {
+    const tag = werktagNach(8);
+    const tagWoche = wochentag(tag);
+    const andererWochentag = tagWoche === 5 ? 1 : tagWoche + 1;
+    await eingetragen(users.therapist, null, 'time_off', tag, '16:00', '18:00');
+
+    // In der Planung: nicht der Wochentag des Freizeitausgleichs, ein anderer schon.
+    const pflegen = (wtag: number) =>
+      fehler(users.office, WOCHENTAG_PFLEGEN, [STAFF.anna, wtag, JSON.stringify(SPAETE_PAUSE)]);
+    expect(await pflegen(tagWoche)).toMatchObject({
+      code: '55000',
+      message: 'day has time off in lieu',
+    });
+    expect(await pflegen(andererWochentag)).toBeNull();
+
+    // Beantragt ab morgen: ebenso.
+    const morgen = plusTage(HEUTE, 1);
+    const beantragen = (wtag: number) =>
+      fehler(users.therapist, AENDERUNG_BEANTRAGEN, [
+        'permanent',
+        morgen,
+        JSON.stringify(woche(wtag, SPAETE_PAUSE)),
+        null,
+      ]);
+    expect(await beantragen(tagWoche)).toMatchObject({
+      code: '55000',
+      message: 'day has time off in lieu',
+    });
+    expect(await beantragen(andererWochentag)).toBeNull();
+
+    // Vor dem Freizeitausgleich beantragt, danach genehmigt: hält an.
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, AENDERUNG_BEANTRAGEN, [
+      'permanent',
+      morgen,
+      JSON.stringify(woche(andererWochentag, SPAETE_PAUSE)),
+      null,
+    ]);
+    await eingetragen(
+      users.therapist,
+      null,
+      'time_off',
+      naechster(plusTage(tag, 1), andererWochentag),
+      '16:00',
+      '18:00',
+    );
+    expect(
+      await fehler(users.ownerTherapist, AENDERUNG_ENTSCHEIDEN, [rows[0]!.id, true, null]),
+    ).toMatchObject({ code: '55000', message: 'day has time off in lieu' });
+  });
 });
 
 describe('Zurücknehmen und zurückweisen (ANN-594)', () => {
@@ -737,6 +847,40 @@ describe('Für andere eintragen (ANN-594)', () => {
       ).toBe('P0002');
     }
   });
+
+  it('nimmt eine Buchung für andere nur zurück, solange das Recht dazu besteht (Zweitreview B5)', async () => {
+    const fuerTim = await eingetragen(
+      users.office,
+      STAFF.tim,
+      'overtime',
+      werktagVorHeute(),
+      '18:00',
+      '19:00',
+    );
+    const korrektur = await eingetragen(
+      users.office,
+      STAFF.tim,
+      'correction',
+      HEUTE,
+      null,
+      null,
+      30,
+      'Übertrag',
+    );
+    // Olivia wechselt vom Büro in die Therapie: Ihr Konto bleibt, das Recht
+    // für andere nicht.
+    await asPostgres(
+      `update public.user_roles set role_key = 'therapist'
+        where user_id = $1 and organization_id = $2 and role_key = 'office'`,
+      [users.office, organizationId],
+    );
+    for (const id of [fuerTim.id, korrektur.id]) {
+      expect((await fehler(users.office, ZURUECKNEHMEN, [id]))?.code, id).toBe('P0002');
+    }
+    const olivia = await konto(users.office);
+    expect(olivia.can_book_others).toBe(false);
+    expect((await konto(users.ownerTherapist, STAFF.tim)).account?.balance_minutes).toBe(90);
+  });
 });
 
 describe('Sichtbarkeit (ANN-596, BEF-066 Option 2 mit Büro)', () => {
@@ -784,9 +928,63 @@ describe('Sichtbarkeit (ANN-596, BEF-066 Option 2 mit Büro)', () => {
       [users.trainer, STAFF.anna],
     ] as const) {
       expect((await fehler(k, KONTO, [fuer]))?.code, k).toBe('P0002');
+      // Auch die Vorschau verrät über eine andere Person nichts (Zweitreview B3).
+      expect(
+        (await fehler(k, VORSCHAU, [fuer, 'time_off', werktagNach(8), null, null, null]))?.code,
+        k,
+      ).toBe('P0002');
     }
     const tom = await konto(users.trainer);
     expect(tom.account?.staff_member_id).toBe(STAFF.tom);
+  });
+
+  it('nennt in der Vorschau fremder Konten keinen Urlaub und keine früheren Zeiten (Zweitreview B1)', async () => {
+    const urlaub = werktagVorHeute();
+    let frueher = plusTage(urlaub, -1);
+    while (wochentag(frueher) > 5) frueher = plusTage(frueher, -1);
+    await asPostgres(
+      `insert into public.staff_leave_requests
+         (organization_id, staff_member_id, starts_on, ends_on, days, status, requested_by, decided_by, decided_at)
+       values ($1, $2, $3, $3, 1, 'approved', $4, $5, now())`,
+      [organizationId, STAFF.anna, urlaub, users.therapist, users.ownerTherapist],
+    );
+    type Vorschau = { day: { kind: string; blocks: unknown[] | null } | null; problems: string[] };
+    const vorschau = (k: string, fuer: string | null, art: string, tag: string) =>
+      daten<Vorschau>(k, VORSCHAU, [fuer, art, tag, null, null, null]);
+
+    // Das Büro sieht den Urlaub einer anderen Person wie im Kalender als
+    // Abwesenheit, owner als Urlaub, Anna selbst ebenso.
+    expect(await vorschau(users.office, STAFF.anna, 'time_off', urlaub)).toMatchObject({
+      day: { kind: 'unavailable', blocks: null },
+      problems: ['absent'],
+    });
+    expect(await vorschau(users.ownerTherapist, STAFF.anna, 'time_off', urlaub)).toMatchObject({
+      day: { kind: 'leave', blocks: null },
+      problems: ['leave'],
+    });
+    expect(await vorschau(users.therapist, null, 'time_off', urlaub)).toMatchObject({
+      day: { kind: 'leave', blocks: [] },
+      problems: ['leave'],
+    });
+
+    // Frühere Zeiten liest nur der Server - für andere vor heute ohne Blöcke.
+    expect((await vorschau(users.office, STAFF.anna, 'overtime', frueher)).day).toEqual({
+      kind: 'plan',
+      blocks: null,
+    });
+    expect((await vorschau(users.therapist, null, 'overtime', frueher)).day?.blocks).toEqual(
+      ANNAS_TAG,
+    );
+    expect((await vorschau(users.office, STAFF.anna, 'time_off', werktagNach(8))).day).toEqual({
+      kind: 'plan',
+      blocks: ANNAS_TAG,
+    });
+
+    // Außerhalb des Fensters und bei einer Korrektur gibt es keinen Tag.
+    expect(
+      await vorschau(users.office, STAFF.anna, 'overtime', plusTage(HEUTE, -60)),
+    ).toMatchObject({ day: null, problems: ['date_out_of_range'] });
+    expect((await vorschau(users.office, STAFF.anna, 'correction', urlaub)).day).toBeNull();
   });
 
   it('gibt kein Tabellenrecht; den Bezug der Abweichung liest niemand', async () => {
@@ -843,6 +1041,18 @@ describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
     expect((await fehler(fremd.owner, KONTO, [STAFF.anna]))?.code).toBe('P0002');
     expect(
       (
+        await fehler(fremd.owner, VORSCHAU, [
+          STAFF.anna,
+          'overtime',
+          werktagVorHeute(),
+          null,
+          null,
+          null,
+        ])
+      )?.code,
+    ).toBe('P0002');
+    expect(
+      (
         await fehler(fremd.owner, EINTRAGEN, [
           STAFF.anna,
           'overtime',
@@ -861,13 +1071,94 @@ describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
 });
 
 describe('Fristen (ANN-597, ADR-008)', () => {
-  it('löscht zurückgewiesene und zurückgenommene nach einem Jahr; gültige bleiben', async () => {
+  /** Annas Einträge nach Datum: Art, Datum, Minuten, Zustand. */
+  async function eintraege() {
+    const { rows } = await asPostgres<{
+      kind: string;
+      tag: string;
+      minutes: number;
+      status: string;
+    }>(
+      `select kind, to_char(on_date, 'YYYY-MM-DD') as tag, minutes, status
+         from public.staff_time_account_entries where staff_member_id = $1
+        order by on_date, kind`,
+      [STAFF.anna],
+    );
+    return rows;
+  }
+
+  async function saldo() {
+    const { rows } = await asPostgres<{ n: number }>(
+      'select app.time_account_balance($1, $2) as n',
+      [organizationId, STAFF.anna],
+    );
+    return rows[0]!.n;
+  }
+
+  it('löscht gültige drei Jahre ab Jahresende - ihr Saldo bleibt als Übertrag', async () => {
+    const vorjahr = `${Number(HEUTE.slice(0, 4)) - 1}-06-04`;
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.staff_time_account_entries
+         (organization_id, staff_member_id, kind, on_date, starts_at, ends_at, minutes, note,
+          status, entered_by, entered_at)
+       values
+         ($1, $2, 'overtime', '2019-06-04', '18:00', '19:00', 60, null, 'valid', $3, '2019-06-04'),
+         ($1, $2, 'time_off', '2019-06-11', '16:00', '18:00', -120, null, 'valid', $3, '2019-06-11'),
+         ($1, $2, 'correction', '2019-12-20', null, null, 45, 'Stundenliste', 'valid', $3, '2019-12-20'),
+         ($1, $2, 'overtime', $4::date, '18:00', '19:00', 60, null, 'valid', $3, $4::date)
+       returning id`,
+      [organizationId, STAFF.anna, users.therapist, vorjahr],
+    );
+    // Der Freizeitausgleich von damals mit seiner Abweichung.
+    await asPostgres(
+      `insert into public.staff_working_hour_exceptions
+         (organization_id, staff_member_id, on_date, kind, starts_at, ends_at, time_account_entry_id)
+       values ($1, $2, '2019-06-11', 'block', '08:00', '16:00', $3)`,
+      [organizationId, STAFF.anna, rows[1]!.id],
+    );
+    expect(await saldo()).toBe(45);
+
+    await asPostgres('select public.apply_retention()');
+    expect(await eintraege()).toEqual([
+      { kind: 'carryover', tag: '2019-12-31', minutes: -15, status: 'valid' },
+      { kind: 'overtime', tag: vorjahr, minutes: 60, status: 'valid' },
+    ]);
+    expect(await saldo()).toBe(45);
+    expect(await abweichungen(STAFF.anna, '2019-06-11')).toEqual([]);
+    const { rows: journal } = await asPostgres<{ retention_class: string; n: number }>(
+      `select retention_class, count(*)::int as n from public.deletion_journal
+        where target_table = 'staff_time_account_entries' group by retention_class`,
+    );
+    expect(journal).toEqual([{ retention_class: 'zeitkonto', n: 3 }]);
+
+    // Ein zweiter Lauf ändert nichts; den Übertrag weist niemand zurück und
+    // nimmt niemand zurück.
+    await asPostgres('select public.apply_retention()');
+    expect(await saldo()).toBe(45);
+    const stand = await konto(users.ownerTherapist, STAFF.anna);
+    const uebertrag = stand.account?.entries.find((e) => e.kind === 'carryover');
+    expect(uebertrag).toEqual(
+      expect.objectContaining({
+        on_date: '2019-12-31',
+        minutes: -15,
+        starts_at: null,
+        note: null,
+        entered_by_name: null,
+        can_withdraw: false,
+        can_reject: false,
+      }),
+    );
+    expect((await fehler(users.ownerTherapist, ZURUECKWEISEN, [uebertrag!.id, 'Nein']))?.code).toBe(
+      'P0002',
+    );
+  });
+
+  it('löscht zurückgewiesene und zurückgenommene nach einem Jahr', async () => {
     await asPostgres(
       `insert into public.staff_time_account_entries
          (organization_id, staff_member_id, kind, on_date, starts_at, ends_at, minutes, status,
           entered_by, entered_at, rejected_by, rejected_at, rejection_note, withdrawn_at)
        values
-         ($1, $2, 'overtime', '2019-06-04', '18:00', '19:00', 60, 'valid', $3, '2019-06-04', null, null, null, null),
          ($1, $2, 'overtime', '2019-06-05', '18:00', '19:00', 60, 'rejected', $3, '2019-06-05', $4,
           now() - interval '400 days', 'Nein', null),
          ($1, $2, 'overtime', '2019-06-06', '18:00', '19:00', 60, 'withdrawn', $3, '2019-06-06', null, null,
@@ -877,11 +1168,10 @@ describe('Fristen (ANN-597, ADR-008)', () => {
       [organizationId, STAFF.anna, users.therapist, users.ownerTherapist],
     );
     await asPostgres('select public.apply_retention()');
-    const { rows } = await asPostgres<{ status: string }>(
-      `select status from public.staff_time_account_entries where staff_member_id = $1 order by on_date`,
-      [STAFF.anna],
-    );
-    expect(rows.map((r) => r.status)).toEqual(['valid', 'rejected']);
+    // Nicht gezählte Einträge hinterlassen keinen Übertrag.
+    expect(await eintraege()).toEqual([
+      { kind: 'overtime', tag: '2019-06-07', minutes: 60, status: 'rejected' },
+    ]);
     const { rows: journal } = await asPostgres<{ retention_class: string; n: number }>(
       `select retention_class, count(*)::int as n from public.deletion_journal
         where target_table = 'staff_time_account_entries' group by retention_class`,
@@ -895,7 +1185,8 @@ describe('Fristen (ANN-597, ADR-008)', () => {
          (organization_id, staff_member_id, kind, on_date, starts_at, ends_at, minutes, status,
           entered_by, entered_at, withdrawn_at)
        values ($1, $2, 'overtime', '2019-06-06', '18:00', '19:00', 60, 'withdrawn', $3, '2019-06-06',
-               now() - interval '400 days')
+               now() - interval '400 days'),
+              ($1, $2, 'overtime', '2019-06-04', '18:00', '19:30', 90, 'valid', $3, '2019-06-04', null)
        returning id, to_jsonb(staff_time_account_entries.*) as zeile`,
       [organizationId, STAFF.anna, users.therapist],
     );
@@ -903,18 +1194,29 @@ describe('Fristen (ANN-597, ADR-008)', () => {
     const zaehle = async () =>
       (
         await asPostgres<{ n: number }>(
-          'select count(*)::int as n from public.staff_time_account_entries where id = $1',
-          [rows[0]!.id],
+          'select count(*)::int as n from public.staff_time_account_entries where id = any($1::uuid[])',
+          [rows.map((r) => r.id)],
         )
       ).rows[0]!.n;
     expect(await zaehle()).toBe(0);
-    await asPostgres(
-      `insert into public.staff_time_account_entries
-       select * from jsonb_populate_record(null::public.staff_time_account_entries, $1::jsonb)`,
-      [JSON.stringify(rows[0]!.zeile)],
-    );
-    expect(await zaehle()).toBe(1);
+    expect(await saldo()).toBe(90);
+
+    // Der Stand vor dem Lauf kommt zurück: beide Einträge, noch kein Übertrag.
+    await asPostgres(`delete from public.staff_time_account_entries where kind = 'carryover'`);
+    for (const r of rows) {
+      await asPostgres(
+        `insert into public.staff_time_account_entries
+         select * from jsonb_populate_record(null::public.staff_time_account_entries, $1::jsonb)`,
+        [JSON.stringify(r.zeile)],
+      );
+    }
+    expect(await zaehle()).toBe(2);
     await asPostgres('select public.reapply_deletion_journal()');
     expect(await zaehle()).toBe(0);
+    // Der Übertrag entsteht dabei neu und genau einmal.
+    expect(await eintraege()).toEqual([
+      { kind: 'carryover', tag: '2019-12-31', minutes: 90, status: 'valid' },
+    ]);
+    expect(await saldo()).toBe(90);
   });
 });

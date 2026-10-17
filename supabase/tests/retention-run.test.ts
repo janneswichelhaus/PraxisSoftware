@@ -843,6 +843,7 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       'warteliste',
       // ZK-001: Regel in app.delete_due_time_account_entries, Tests in
       // time-account.test.ts.
+      'zeitkonto',
       'zeitkonto_kurz',
       'zugangseinladung',
     ]);

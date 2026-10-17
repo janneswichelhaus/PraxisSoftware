@@ -154,10 +154,15 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Abgelehnte und zurückgezogene Anträge auf Änderung der Arbeitszeit. Ein Jahr nach der Entscheidung oder dem Zurückziehen; offene bleiben.',
   },
+  zeitkonto: {
+    label: 'Zeitkonto',
+    beschreibung:
+      'Mehrarbeit, Freizeitausgleich und Korrekturen im Zeitkonto. Drei Jahre ab Ende des Jahres ihres Datums; ihr Saldo bleibt als Übertrag des Jahres stehen.',
+  },
   zeitkonto_kurz: {
     label: 'Zeitkonto: zurückgewiesen und zurückgenommen',
     beschreibung:
-      'Zurückgewiesene und zurückgenommene Einträge im Zeitkonto. Ein Jahr nach der Zurückweisung oder Rücknahme; gültige Einträge bleiben, solange der Saldo sie braucht.',
+      'Zurückgewiesene und zurückgenommene Einträge im Zeitkonto. Ein Jahr nach der Zurückweisung oder Rücknahme.',
   },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',

@@ -9,7 +9,9 @@
 -- als Abweichung in den Arbeitszeiten: Die übrigen Blöcke des Tages bleiben,
 -- die freie Zeit ist nicht buchbar; zurückgewiesen oder zurückgenommen fällt
 -- die Abweichung (ANN-595). Sichtbarkeit nach BEF-066 Option 2 mit Büro
--- (ANN-596), Fristen ANN-597.
+-- (ANN-596). Fristen nach der Spezifikation: gültige Einträge drei Jahre ab
+-- Ende ihres Jahres, ihr Saldo bleibt als Übertrag stehen; zurückgewiesene
+-- und zurückgenommene ein Jahr (ANN-597).
 --
 -- Nur über SECURITY-DEFINER-Funktionen, kein Tabellenrecht (ADR-004). Kein
 -- Auditeintrag: eingetragen von/am, zurückgewiesen von/am und Grund stehen
@@ -62,19 +64,23 @@ create table public.staff_time_account_entries (
   organization_id   uuid not null references public.organizations (id) on delete restrict,
   staff_member_id   uuid not null references public.staff_members (id) on delete restrict,
   -- 'overtime' Mehrarbeit (+), 'time_off' Freizeitausgleich (-), 'correction'
-  -- Korrektur (+/-, owner und Büro, ohne Lage: kein Arbeitszeitnachweis).
-  kind              text not null check (kind in ('overtime', 'time_off', 'correction')),
+  -- Korrektur (+/-, owner und Büro, ohne Lage: kein Arbeitszeitnachweis),
+  -- 'carryover' der Saldo der nach ihrer Frist gelöschten Einträge eines
+  -- Jahres (ANN-597, nur der Löschlauf schreibt ihn).
+  kind              text not null check (kind in ('overtime', 'time_off', 'correction', 'carryover')),
   on_date           date not null,
   -- Ortszeit der Praxis; Mehrarbeit und Freizeitausgleich immer mit Lage
   -- (ANN-593, EuGH C-55/18).
   starts_at         time,
   ends_at           time,
   -- Wirkung auf den Saldo in Minuten, am Server berechnet.
-  minutes           integer not null check (minutes <> 0 and minutes between -60000 and 60000),
+  minutes           integer not null
+                      check ((minutes <> 0 or kind = 'carryover') and minutes between -1000000 and 1000000),
   -- Grund der Person; bei einer Korrektur Pflicht.
   note              text check (note is null or length(note) between 1 and 500),
   status            text not null default 'valid' check (status in ('valid', 'rejected', 'withdrawn')),
-  entered_by        uuid not null,
+  -- Leer nur beim Übertrag: den schreibt der Löschlauf, keine Person.
+  entered_by        uuid,
   entered_at        timestamptz not null default now(),
   -- Von owner oder Büro für eine andere Person eingetragen.
   entered_for_other boolean not null default false,
@@ -83,11 +89,18 @@ create table public.staff_time_account_entries (
   rejection_note    text check (rejection_note is null or length(rejection_note) between 1 and 500),
   withdrawn_at      timestamptz,
   constraint staff_time_account_entries_times check (
-    (kind = 'correction' and starts_at is null and ends_at is null and note is not null)
-    or (kind <> 'correction' and starts_at is not null and ends_at is not null and starts_at < ends_at)
+    (kind in ('correction', 'carryover') and starts_at is null and ends_at is null
+     and (kind = 'carryover' or note is not null))
+    or (kind in ('overtime', 'time_off') and starts_at is not null and ends_at is not null
+        and starts_at < ends_at)
   ),
   constraint staff_time_account_entries_sign check (
-    kind = 'correction' or (kind = 'overtime' and minutes > 0) or (kind = 'time_off' and minutes < 0)
+    kind in ('correction', 'carryover') or (kind = 'overtime' and minutes > 0)
+    or (kind = 'time_off' and minutes < 0)
+  ),
+  constraint staff_time_account_entries_carryover check (
+    (kind = 'carryover') = (entered_by is null)
+    and (kind <> 'carryover' or (status = 'valid' and not entered_for_other))
   ),
   constraint staff_time_account_entries_rejected check (
     (status = 'rejected') = (rejected_at is not null and rejected_by is not null and rejection_note is not null)
@@ -98,14 +111,18 @@ create table public.staff_time_account_entries (
     staff_member_id with =,
     on_date with =,
     app.timerange(starts_at, ends_at, '[)') with &&
-  ) where (status = 'valid' and kind <> 'correction')
+  ) where (status = 'valid' and kind in ('overtime', 'time_off'))
 );
 
 comment on table public.staff_time_account_entries is
-  'ZK-001 (ANN-593 bis ANN-597): Einträge im Zeitkonto - Mehrarbeit und Freizeitausgleich mit Datum, Beginn und Ende, Korrekturen durch owner und Büro. Gelten sofort; zurückgewiesen (owner, mit Grund) oder zurückgenommen zählen sie nicht. Eingetragen von/am, zurückgewiesen von/am und Grund sind der Nachweis (ADR-010 Punkt 15). Gültige Einträge: Beschäftigtendaten ohne Frist (der Saldo braucht sie, ANN-030); zurückgewiesene und zurückgenommene: zeitkonto_kurz. Kein Tabellenrecht.';
+  'ZK-001 (ANN-593 bis ANN-597): Einträge im Zeitkonto - Mehrarbeit und Freizeitausgleich mit Datum, Beginn und Ende, Korrekturen durch owner und Büro, Überträge des Löschlaufs. Gelten sofort; zurückgewiesen (owner, mit Grund) oder zurückgenommen zählen sie nicht. Eingetragen von/am, zurückgewiesen von/am und Grund sind der Nachweis (ADR-010 Punkt 15). Datenklassen zeitkonto (gültige: drei Jahre ab Ende des Jahres, der Saldo bleibt als Übertrag) und zeitkonto_kurz (zurückgewiesene und zurückgenommene: ein Jahr); Überträge bleiben Beschäftigtendaten (ANN-030). Kein Tabellenrecht.';
 
 create index staff_time_account_entries_staff_idx
   on public.staff_time_account_entries (organization_id, staff_member_id, on_date);
+-- Je Person und Jahr ein Übertrag (sein Datum ist der 31. Dezember).
+create unique index staff_time_account_entries_one_carryover
+  on public.staff_time_account_entries (staff_member_id, on_date)
+  where kind = 'carryover';
 
 revoke all on public.staff_time_account_entries from anon, authenticated;
 alter table public.staff_time_account_entries enable row level security;
@@ -131,18 +148,57 @@ create index staff_working_hour_exceptions_time_account_idx
 insert into public.retention_classes
   (key, basis, legal_reference, anchor, retention_interval, assumption_key, note, sort_order)
 values
+  ('zeitkonto', 'intern', 'Par. 195, 199 BGB; Par. 16 Abs. 2 ArbZG', 'calendar_year_end', interval '3 years',
+   'ANN-597',
+   'Gültige Einträge im Zeitkonto: drei Jahre ab Ende des Kalenderjahres ihres Datums - die Verjährung von Ansprüchen auf Ausgleich oder Vergütung; Par. 16 Abs. 2 ArbZG verlangt mindestens zwei Jahre. Ihr Saldo bleibt als Übertrag des Jahres stehen.',
+   97),
   ('zeitkonto_kurz', 'intern', null, 'case_closed', interval '1 year', 'ANN-597',
-   'Zurückgewiesene und zurückgenommene Einträge im Zeitkonto: ein Jahr nach Zurückweisung bzw. Rücknahme. Genug für Rückfragen, ohne Verlauf über die Person (PROJECT_PRINCIPLES.md 20). Gültige Einträge bleiben Beschäftigtendaten (ANN-030): Der Saldo braucht sie.',
-   97);
+   'Zurückgewiesene und zurückgenommene Einträge im Zeitkonto: ein Jahr nach Zurückweisung bzw. Rücknahme. Genug für Rückfragen, ohne Verlauf über die Person (PROJECT_PRINCIPLES.md 20).',
+   98);
 
 insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
 values
-  ('staff_time_account_entries', 'beschaeftigtendaten', 'keine',
-   'Gültige Einträge im Zeitkonto (ZK-001): Der Saldo ist ihre Summe; Frist offen wie die übrigen Beschäftigtendaten (ANN-030, ANN-597).',
+  ('staff_time_account_entries', 'zeitkonto', 'automatisch',
+   'Gültige Einträge im Zeitkonto (ZK-001): drei Jahre ab Ende des Jahres ihres Datums; ihr Saldo bleibt als Übertrag (ANN-597).',
    228),
   ('staff_time_account_entries', 'zeitkonto_kurz', 'automatisch',
    'Zurückgewiesene und zurückgenommene Einträge im Zeitkonto (ZK-001): ein Jahr nach ihrem Ende (ANN-597).',
-   229);
+   229),
+  ('staff_time_account_entries', 'beschaeftigtendaten', 'keine',
+   'Überträge im Zeitkonto (ZK-001, kind carryover): der Saldo gelöschter Einträge je Jahr, ohne Lage und Grund; Frist offen wie die übrigen Beschäftigtendaten (ANN-030, ANN-597).',
+   230),
+  ('staff_working_hour_exceptions', 'zeitkonto', 'ueber_elterndatensatz',
+   'Abweichungen aus einem Freizeitausgleich (ZK-001, time_account_entry_id): fallen mit ihrem Eintrag - zurückgewiesen, zurückgenommen oder nach seiner Frist (cascade, ANN-595, ANN-597).',
+   231);
+
+-- Fällt ein gültiger Eintrag nach seiner Frist, bleibt sein Saldo als Übertrag
+-- seines Jahres stehen (ANN-597, Zweitreview B2). Der Trigger hängt am
+-- Löschen selbst: So stimmt der Saldo nach dem Lauf und ebenso, wenn
+-- public.reapply_deletion_journal() nach einem Restore erneut löscht.
+create function app.carry_over_time_account_entry()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into public.staff_time_account_entries
+    (organization_id, staff_member_id, kind, on_date, minutes, status, entered_by)
+  values (old.organization_id, old.staff_member_id, 'carryover',
+          make_date(extract(year from old.on_date)::integer, 12, 31), old.minutes, 'valid', null)
+  on conflict (staff_member_id, on_date) where kind = 'carryover'
+  do update set minutes = public.staff_time_account_entries.minutes + excluded.minutes;
+  return old;
+end;
+$$;
+
+revoke all on function app.carry_over_time_account_entry() from public, anon, authenticated;
+
+create trigger staff_time_account_entries_carry_over
+  before delete on public.staff_time_account_entries
+  for each row
+  when (old.status = 'valid' and old.kind <> 'carryover')
+  execute function app.carry_over_time_account_entry();
 
 -- -----------------------------------------------------------------------------
 -- 4. Hilfen: Saldo, wessen Konto, was ein Eintrag bewirkt
@@ -240,15 +296,17 @@ begin
   end if;
   select (now() at time zone o.time_zone)::date into v_heute
   from public.organizations o where o.id = p_org;
-  v_tag := app.effective_day(p_org, p_staff_member_id, p_on_date);
 
+  -- Außerhalb des Fensters gibt es keinen Tag (Zweitreview B1): Sonst ließe
+  -- sich über die Vorschau jedes Datum einer Person abfragen.
   if (p_kind = 'overtime' and (p_on_date < v_heute - 31 or p_on_date > v_heute))
      or (p_kind = 'time_off' and (p_on_date < v_heute - 31 or p_on_date > v_heute + 365))
      or (p_kind = 'correction' and (p_on_date < v_heute - 366 or p_on_date > v_heute)) then
-    v_probleme := array_append(v_probleme, 'date_out_of_range');
+    return jsonb_build_object('day', null, 'minutes', null, 'problems', jsonb_build_array('date_out_of_range'),
+                              'remaining', v_rest, 'appointments', v_termine);
   end if;
 
-  -- Eine Korrektur ohne Lage; ihren Grund verlangt das Eintragen.
+  -- Eine Korrektur ohne Lage und ohne Tag; ihren Grund verlangt das Eintragen.
   if p_kind = 'correction' then
     if p_minutes is not null then
       if p_minutes = 0 or p_minutes not between -60000 and 60000 then
@@ -257,9 +315,11 @@ begin
         v_minuten := p_minutes;
       end if;
     end if;
-    return jsonb_build_object('day', v_tag, 'minutes', v_minuten, 'problems', to_jsonb(v_probleme),
+    return jsonb_build_object('day', null, 'minutes', v_minuten, 'problems', to_jsonb(v_probleme),
                               'remaining', v_rest, 'appointments', v_termine);
   end if;
+
+  v_tag := app.effective_day(p_org, p_staff_member_id, p_on_date);
 
   select range_agg(app.timerange((b ->> 'von')::time, (b ->> 'bis')::time, '[)'))
     into v_plan
@@ -330,7 +390,7 @@ begin
   if exists (
     select 1 from public.staff_time_account_entries e
     where e.organization_id = p_org and e.staff_member_id = p_staff_member_id
-      and e.on_date = p_on_date and e.status = 'valid' and e.kind <> 'correction'
+      and e.on_date = p_on_date and e.status = 'valid' and e.kind in ('overtime', 'time_off')
       and app.timerange(e.starts_at, e.ends_at, '[)') && v_bereich
   ) then
     v_probleme := array_append(v_probleme, 'overlaps_entry');
@@ -343,6 +403,43 @@ $$;
 
 revoke all on function app.time_account_check(uuid, uuid, text, date, time, time, integer)
   from public, anon, authenticated;
+
+-- Was die Prüfung über das Konto einer anderen Person preisgibt (Zweitreview
+-- B1): Urlaub sieht außer owner niemand als Urlaub, sondern wie im Kalender
+-- als Abwesenheit (ANN-580); frühere Fassungen des Wochenplans liest nur der
+-- Server (ANN-589) - vor heute ohne Blöcke.
+create function app.time_account_foreign_view(p_check jsonb, p_org uuid, p_on_date date)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_sicht jsonb := p_check;
+  v_heute date;
+begin
+  select (now() at time zone o.time_zone)::date into v_heute
+  from public.organizations o where o.id = p_org;
+  if not app.can_read_staff_leave_balances() then
+    if v_sicht -> 'day' ->> 'kind' = 'leave' then
+      v_sicht := jsonb_set(v_sicht, '{day,kind}', to_jsonb('unavailable'::text));
+    end if;
+    v_sicht := jsonb_set(v_sicht, '{problems}', (
+      select coalesce(jsonb_agg(case when p.wert = 'leave' then 'absent' else p.wert end order by p.n),
+                      '[]'::jsonb)
+      from jsonb_array_elements_text(v_sicht -> 'problems') with ordinality as p (wert, n)
+    ));
+  end if;
+  if p_on_date < v_heute and jsonb_typeof(v_sicht -> 'day') = 'object' then
+    v_sicht := jsonb_set(v_sicht, '{day,blocks}', 'null'::jsonb);
+    v_sicht := jsonb_set(v_sicht, '{remaining}', '[]'::jsonb);
+  end if;
+  return v_sicht;
+end;
+$$;
+
+revoke all on function app.time_account_foreign_view(jsonb, uuid, date) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 5. Vorschau, eintragen, zurücknehmen, zurückweisen
@@ -368,6 +465,9 @@ begin
   v_org := app.staff_request_org(app.can_keep_time_account(), 'not allowed to keep a time account');
   v_staff := app.time_account_target(v_org, p_staff_member_id);
   v_pruef := app.time_account_check(v_org, v_staff, p_kind, p_on_date, p_starts_at, p_ends_at, p_minutes);
+  if v_staff is distinct from app.own_staff_member(v_org) then
+    v_pruef := app.time_account_foreign_view(v_pruef, v_org, p_on_date);
+  end if;
   v_saldo := app.time_account_balance(v_org, v_staff);
   return v_pruef || jsonb_build_object(
     'balance_minutes', v_saldo,
@@ -423,7 +523,8 @@ begin
     raise exception 'time account rule: correction_invalid' using errcode = '22023';
   end if;
   v_pruef := app.time_account_check(v_org, v_staff, p_kind, p_on_date, p_starts_at, p_ends_at, p_minutes);
-  v_problem := v_pruef -> 'problems' ->> 0;
+  v_problem := case when v_andere then app.time_account_foreign_view(v_pruef, v_org, p_on_date)
+                    else v_pruef end -> 'problems' ->> 0;
   if v_problem is not null then
     raise exception 'time account rule: %', v_problem
       using errcode = case
@@ -504,6 +605,9 @@ begin
     and e.status = 'valid'
     and e.entered_by = auth.uid()
     and (e.kind <> 'time_off' or e.on_date > (now() at time zone o.time_zone)::date)
+    -- Wer für andere gebucht hat, nimmt das nur zurück, solange er es noch
+    -- darf (Zweitreview B5).
+    and (not (e.entered_for_other or e.kind = 'correction') or app.can_book_time_accounts())
   for update of e;
   if not found then
     raise exception 'time account entry not found' using errcode = 'P0002';
@@ -520,7 +624,7 @@ revoke all on function public.withdraw_time_account_entry(uuid) from public, ano
 grant execute on function public.withdraw_time_account_entry(uuid) to authenticated;
 
 comment on function public.withdraw_time_account_entry(uuid) is
-  'ZK-001 (ANN-594): die eigene Eingabe zurücknehmen, solange sie gilt; einen Freizeitausgleich nur vor seinem Tag. Fremde, entschiedene und unbekannte Einträge sind nicht zu unterscheiden.';
+  'ZK-001 (ANN-594): die eigene Eingabe zurücknehmen, solange sie gilt; einen Freizeitausgleich nur vor seinem Tag, eine Buchung für andere oder eine Korrektur nur mit dem Recht dazu. Fremde, entschiedene und unbekannte Einträge sind nicht zu unterscheiden.';
 
 -- Zurückweisen: owner mit Grund, nie im eigenen Konto. Der Eintrag bleibt
 -- sichtbar und zählt nicht; ein Freizeitausgleich gibt die Zeit wieder als
@@ -546,6 +650,7 @@ begin
   select e.id, e.staff_member_id, e.kind into v_eintrag
   from public.staff_time_account_entries e
   where e.id = p_entry_id and e.organization_id = v_org and e.status = 'valid'
+    and e.kind <> 'carryover'
   for update;
   if not found then
     raise exception 'time account entry not found' using errcode = 'P0002';
@@ -622,9 +727,13 @@ begin
                  'rejected_by_name', app.account_display_name(e.rejected_by),
                  'rejection_note', e.rejection_note,
                  'withdrawn_at', e.withdrawn_at,
-                 'can_withdraw', e.status = 'valid' and e.entered_by = auth.uid()
-                                 and (e.kind <> 'time_off' or e.on_date > v_heute),
-                 'can_reject', v_owner and e.status = 'valid' and e.staff_member_id is distinct from v_eigen
+                 -- Ein Übertrag hat niemanden, der ihn eingetragen hat.
+                 'can_withdraw', coalesce(e.status = 'valid' and e.entered_by = auth.uid()
+                                 and (e.kind <> 'time_off' or e.on_date > v_heute)
+                                 and (not (e.entered_for_other or e.kind = 'correction') or v_andere),
+                                 false),
+                 'can_reject', v_owner and e.status = 'valid' and e.kind <> 'carryover'
+                               and e.staff_member_id is distinct from v_eigen
                ) order by e.on_date desc, e.starts_at desc nulls last, e.entered_at desc), '[]'::jsonb)
         from public.staff_time_account_entries e
         where e.organization_id = v_org and e.staff_member_id = v_ziel
@@ -938,6 +1047,221 @@ begin
 end;
 $$;
 
+-- Stand AZ-001, dazu der Freizeitausgleich: ebenso wenig ein neuer Wochenplan
+-- ab seinem Datum (Zweitreview B4).
+create or replace function app.assert_working_time_change(
+  p_org uuid, p_staff_member_id uuid, p_kind text, p_on_date date, p_blocks jsonb, p_errcode text
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_bisher   jsonb;
+  v_minuten  integer;
+  v_probleme text[];
+begin
+  v_bisher := app.working_time_baseline(p_org, p_staff_member_id, p_kind, p_on_date);
+  if p_blocks = v_bisher -> 'blocks' then
+    raise exception 'working time unchanged' using errcode = p_errcode;
+  end if;
+  -- ZK-001 (Zweitreview B4): Ein neuer Wochenplan ändert keinen Tag mit
+  -- Freizeitausgleich ab seinem Datum still - der Eintrag rechnet mit den
+  -- bisherigen Zeiten. Erst zurückweisen oder zurücknehmen (55000, ANN-595).
+  if p_kind = 'permanent' and exists (
+    select 1 from public.staff_time_account_entries e
+    where e.organization_id = p_org and e.staff_member_id = p_staff_member_id
+      and e.kind = 'time_off' and e.status = 'valid' and e.on_date >= p_on_date
+      and p_blocks -> extract(isodow from e.on_date)::text
+          is distinct from v_bisher -> 'blocks' -> extract(isodow from e.on_date)::text
+  ) then
+    raise exception 'day has time off in lieu' using errcode = '55000';
+  end if;
+  v_minuten := app.working_time_minutes(p_kind, p_blocks);
+  if v_minuten < (v_bisher ->> 'minutes')::integer then
+    raise exception 'working time would be reduced' using errcode = p_errcode;
+  end if;
+  v_probleme := app.working_time_problems(p_org, p_staff_member_id, p_kind, p_on_date, p_blocks);
+  if cardinality(v_probleme) > 0 then
+    raise exception 'working time rule: %', array_to_string(v_probleme, ', ') using errcode = p_errcode;
+  end if;
+  return v_bisher || jsonb_build_object('new_minutes', v_minuten);
+end;
+$$;
+
+-- Stand AZ-001, dazu der Freizeitausgleich: auch die Pflege in der Planung
+-- nicht (Zweitreview B4).
+CREATE OR REPLACE FUNCTION public.set_staff_working_hours(p_staff_member_id uuid, p_weekday smallint, p_blocks jsonb)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_actor    uuid;
+  v_org      uuid;
+  v_tz       text;
+  v_heute    date;
+  v_ab       date;
+  v_bis      date;
+  v_alt      jsonb;
+  v_neu      jsonb;
+  v_alt_ids  uuid[];
+  v_neu_ids  uuid[];
+  v_aktion   text;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_manage_working_hours() then
+    raise exception 'not allowed to manage working hours' using errcode = '42501';
+  end if;
+
+  v_org := app.current_organization_id();
+  if v_org is null then
+    raise exception 'not allowed to manage working hours' using errcode = '42501';
+  end if;
+
+  -- Arbeitszeiten sind Ortszeiten. Ohne hinterlegte Praxiszeitzone waeren sie
+  -- nicht auswertbar; dieselbe Vorbedingung gilt an allen Schreibpfaden mit
+  -- Zeitbezug (CAL-001).
+  select o.time_zone into v_tz
+  from public.organizations o
+  where o.id = v_org;
+
+  if v_tz is null then
+    raise exception 'organization has no time zone' using errcode = '22023';
+  end if;
+
+  if p_weekday is null or p_weekday not between 1 and 7 then
+    raise exception 'weekday must be between 1 and 7' using errcode = '22023';
+  end if;
+
+  -- Fremde und unbekannte Personen sind ununterscheidbar.
+  if not app.is_assignable_therapist(p_staff_member_id, v_org) then
+    raise exception 'staff member not assignable' using errcode = 'P0002';
+  end if;
+
+  if p_blocks is null or jsonb_typeof(p_blocks) <> 'array' then
+    raise exception 'blocks must be an array' using errcode = '22023';
+  end if;
+
+  -- AZ-001: dieselbe Sperre wie app.apply_working_time_change.
+  perform 1 from public.staff_members sm where sm.id = p_staff_member_id for no key update;
+
+  -- Die heute gueltige Fassung und ihre Grenzen (ANN-589).
+  v_heute := (now() at time zone v_tz)::date;
+  select h.valid_from, h.valid_until into v_ab, v_bis
+  from public.staff_working_hours h
+  where h.staff_member_id = p_staff_member_id
+    and h.organization_id = v_org
+    and daterange(h.valid_from, h.valid_until, '[]') @> v_heute
+  limit 1;
+  if not found then
+    select max(h.valid_until) + 1 into v_ab
+    from public.staff_working_hours h
+    where h.staff_member_id = p_staff_member_id and h.organization_id = v_org
+      and h.valid_until < v_heute;
+    select min(h.valid_from) - 1 into v_bis
+    from public.staff_working_hours h
+    where h.staff_member_id = p_staff_member_id and h.organization_id = v_org
+      and h.valid_from > v_heute;
+  end if;
+
+  -- Bestehender Stand, normalisiert und sortiert - Grundlage fuer die
+  -- No-op-Erkennung und fuer die Art des Vorgangs.
+  select coalesce(
+           jsonb_agg(jsonb_build_array(h.starts_at::text, h.ends_at::text) order by h.starts_at),
+           '[]'::jsonb
+         ),
+         coalesce(array_agg(h.id order by h.starts_at), '{}'::uuid[])
+    into v_alt, v_alt_ids
+  from public.staff_working_hours h
+  where h.staff_member_id = p_staff_member_id
+    and h.organization_id = v_org
+    and h.weekday = p_weekday
+    and daterange(h.valid_from, h.valid_until, '[]') @> v_heute;
+
+  begin
+    select coalesce(
+             jsonb_agg(jsonb_build_array(w.von::text, w.bis::text) order by w.von),
+             '[]'::jsonb
+           )
+      into v_neu
+    from (
+      select (b ->> 'von')::time as von, (b ->> 'bis')::time as bis
+      from jsonb_array_elements(p_blocks) as b
+    ) w;
+  exception
+    -- Unbrauchbare Zeitangaben im Array sind ein Eingabefehler, kein interner
+    -- Fehler. Bewusst nur diese Faelle - ein `when others` wuerde echte
+    -- Stoerungen verschlucken.
+    when invalid_datetime_format or datetime_field_overflow
+         or invalid_text_representation then
+      raise exception 'working hour block is invalid' using errcode = '22023';
+  end;
+
+  -- Speichern ohne tatsaechliche Aenderung ist kein Vorgang: weder
+  -- Schreibzugriff noch Auditeintrag.
+  if v_alt = v_neu then
+    return jsonb_array_length(v_alt);
+  end if;
+
+  -- ZK-001 (Zweitreview B4): Ein Freizeitausgleich ab heute an diesem
+  -- Wochentag rechnet mit den bisherigen Zeiten - erst zurückweisen oder
+  -- zurücknehmen (55000, ANN-595).
+  if exists (
+    select 1 from public.staff_time_account_entries e
+    where e.organization_id = v_org and e.staff_member_id = p_staff_member_id
+      and e.kind = 'time_off' and e.status = 'valid'
+      and e.on_date >= v_heute and (v_bis is null or e.on_date <= v_bis)
+      and extract(isodow from e.on_date) = p_weekday
+  ) then
+    raise exception 'day has time off in lieu' using errcode = '55000';
+  end if;
+
+  delete from public.staff_working_hours
+   where staff_member_id = p_staff_member_id
+     and organization_id = v_org
+     and weekday = p_weekday
+     and daterange(valid_from, valid_until, '[]') @> v_heute;
+
+  begin
+    with eingefuegt as (
+      insert into public.staff_working_hours (
+        organization_id, staff_member_id, weekday, starts_at, ends_at, created_by,
+        valid_from, valid_until
+      )
+      select v_org, p_staff_member_id, p_weekday,
+             (b ->> 'von')::time, (b ->> 'bis')::time, v_actor, v_ab, v_bis
+      from jsonb_array_elements(p_blocks) as b
+      returning id
+    )
+    select coalesce(array_agg(id), '{}'::uuid[]) into v_neu_ids from eingefuegt;
+  exception
+    when exclusion_violation then
+      raise exception 'working hours overlap' using errcode = '23P01';
+    when check_violation or not_null_violation
+         or invalid_datetime_format or datetime_field_overflow then
+      raise exception 'working hour block is invalid' using errcode = '22023';
+  end;
+
+  v_aktion := app.working_hour_action(
+    jsonb_array_length(v_alt), jsonb_array_length(v_neu)
+  );
+
+
+  return jsonb_array_length(v_neu);
+end;
+$function$;
+
+comment on function public.set_staff_working_hours(uuid, smallint, jsonb) is
+  'Ersetzt einen Wochentag der heute gueltigen Fassung des Wochenplans (CAL-005, AZ-001 ANN-589). Eine kuenftige Fassung aus einem genehmigten Antrag bleibt unberuehrt. Ein leeres Array loescht den Tag. Nicht, solange ab heute ein Freizeitausgleich an dem Wochentag gilt (ZK-001, ANN-595).';
+
 -- -----------------------------------------------------------------------------
 -- 8. Löschlauf (ADR-008, ANN-597)
 -- -----------------------------------------------------------------------------
@@ -948,10 +1272,36 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_anzahl integer;
+  v_anzahl integer := 0;
+  v_teil   integer;
 begin
-  -- Zurückgewiesen und zurückgenommen: ein Jahr nach ihrem Ende. Gültige
-  -- bleiben Beschäftigtendaten (ANN-030) - der Saldo ist ihre Summe.
+  -- Gültige: drei Jahre ab Ende des Jahres ihres Datums. Ihr Saldo bleibt als
+  -- Übertrag des Jahres stehen (app.carry_over_time_account_entry); ihre
+  -- Abweichung fällt mit (cascade). Überträge bleiben (ANN-030).
+  with faellig as (
+    select e.id, e.organization_id,
+           app.retention_due_at(
+             make_date(extract(year from e.on_date)::integer, 12, 31),
+             app.retention_interval('zeitkonto'),
+             p_time_zone
+           ) as due_at
+    from public.staff_time_account_entries e
+    where e.organization_id = p_org and e.status = 'valid' and e.kind <> 'carryover'
+  ),
+  geloescht as (
+    delete from public.staff_time_account_entries e
+    using faellig f
+    where e.id = f.id and f.due_at <= now()
+    returning e.id, e.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run, 'staff_time_account_entries', g.id, 'zeitkonto', f.due_at
+  from geloescht g join faellig f on f.id = g.id;
+  get diagnostics v_teil = row_count;
+  v_anzahl := v_anzahl + v_teil;
+
+  -- Zurückgewiesen und zurückgenommen: ein Jahr nach ihrem Ende.
   with faellig as (
     select e.id, e.organization_id,
            app.retention_due_at(
@@ -972,7 +1322,9 @@ begin
     (organization_id, run_id, target_table, target_id, retention_class, due_at)
   select g.organization_id, p_run, 'staff_time_account_entries', g.id, 'zeitkonto_kurz', f.due_at
   from geloescht g join faellig f on f.id = g.id;
-  get diagnostics v_anzahl = row_count;
+  get diagnostics v_teil = row_count;
+  v_anzahl := v_anzahl + v_teil;
+
   return v_anzahl;
 end;
 $$;
@@ -980,7 +1332,7 @@ $$;
 revoke all on function app.delete_due_time_account_entries(uuid, text, uuid) from public, anon, authenticated;
 
 comment on function app.delete_due_time_account_entries(uuid, text, uuid) is
-  'ZK-001 (ANN-597): löscht zurückgewiesene und zurückgenommene Einträge im Zeitkonto ein Jahr nach ihrem Ende, mit Eintrag im Löschjournal. Aufgerufen aus public.apply_retention().';
+  'ZK-001 (ANN-597): löscht gültige Einträge im Zeitkonto drei Jahre ab Ende ihres Jahres (ihr Saldo bleibt als Übertrag), zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende - mit Eintrag im Löschjournal. Aufgerufen aus public.apply_retention().';
 
 -- Der Lauf ruft das Zeitkonto mit auf - sonst unverändert (Stand AZ-001).
 CREATE OR REPLACE FUNCTION public.apply_retention()
@@ -1412,9 +1764,9 @@ begin
     v_arbeitszeit := app.delete_due_working_time_requests(v_org.id, v_org.time_zone, v_run);
 
     -- -------------------------------------------------------------------
-    -- ZK-001 (ANN-597): Zeitkonto - zurückgewiesene und zurückgenommene
-    -- Einträge ein Jahr nach ihrem Ende; gültige bleiben (der Saldo braucht
-    -- sie). Ohne Patientenbezug, ohne Legal Hold.
+    -- ZK-001 (ANN-597): Zeitkonto - gültige Einträge drei Jahre ab Ende
+    -- ihres Jahres, ihr Saldo bleibt als Übertrag; zurückgewiesene und
+    -- zurückgenommene ein Jahr nach ihrem Ende. Ohne Patientenbezug.
     -- -------------------------------------------------------------------
     v_zeitkonto := app.delete_due_time_account_entries(v_org.id, v_org.time_zone, v_run);
 

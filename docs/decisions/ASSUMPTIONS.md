@@ -6195,7 +6195,7 @@ Praxisprozess · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sich
 
 Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 9
 
-**Annahme.** Freizeitausgleich nur an einem Tag nach Wochenplan (nicht im Urlaub, nicht an einem Tag mit Abwesenheit oder geänderten Zeiten) und innerhalb seiner Arbeitszeit; gezählt wird die Arbeitszeit darin. Es bleiben die übrigen Blöcke als Abweichung, ganztägig eine Abwesenheit; Termine darin werden genannt. Solange er gilt, ändern Planung, einmalige Arbeitszeitänderung und Urlaub den Tag nicht (erst zurückweisen oder zurücknehmen).
+**Annahme.** Freizeitausgleich nur an einem Tag nach Wochenplan (nicht im Urlaub, nicht an einem Tag mit Abwesenheit oder geänderten Zeiten) und innerhalb seiner Arbeitszeit; gezählt wird die Arbeitszeit darin. Es bleiben die übrigen Blöcke als Abweichung, ganztägig eine Abwesenheit; Termine darin werden genannt. Solange er gilt, ändern Planung (Abweichung oder Wochenplan), Arbeitszeitänderung und Urlaub den Tag nicht (erst zurückweisen oder zurücknehmen).
 
 **Begründung.** Spezifikation: frei wie eine Abwesenheit, zurückgewiesen wieder Arbeitszeit; sonst zählte ein Tag doppelt.
 
@@ -6219,10 +6219,10 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Gültige Einträge bleiben Beschäftigtendaten ohne Frist (ANN-030), denn der Saldo ist ihre Summe; zurückgewiesene und zurückgenommene löscht der Lauf ein Jahr nach ihrem Ende (`zeitkonto_kurz`), mit Journal und erneutem Löschen nach einem Restore. Die Abweichung eines Freizeitausgleichs fällt mit ihm.
+**Annahme.** Gültige Einträge löscht der Lauf drei Jahre ab Ende des Jahres ihres Datums (`zeitkonto`); ihr Saldo bleibt als Übertrag des Jahres stehen – eine Zeile je Person und Jahr, ohne Lage und Grund, Frist offen (ANN-030) –, der Saldo ändert sich nicht. Zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende (`zeitkonto_kurz`). Journal und erneutes Löschen nach einem Restore; die Abweichung eines Freizeitausgleichs fällt mit ihm.
 
-**Begründung.** Abweichend von der Spezifikation (drei Jahre ab Jahresende): Löschte der Lauf gültige Einträge, änderte er den Saldo. § 16 Abs. 2 ArbZG verlangt mindestens zwei Jahre.
+**Begründung.** Spezifikation: drei Jahre ab Jahresende (Verjährung, §§ 195, 199 BGB); § 16 Abs. 2 ArbZG verlangt mindestens zwei. Der Übertrag entsteht beim Löschen selbst, auch beim Nachziehen nach einem Restore.
 
-**Anker.** `app.delete_due_time_account_entries`, `retention_classes` `zeitkonto_kurz`.
+**Anker.** `app.delete_due_time_account_entries`, `app.carry_over_time_account_entry`.
 
-**Änderungspfad.** Monatsabschluss mit Übertrag, danach eine Frist für gültige Einträge · Aufwand `mittel`.
+**Änderungspfad.** Überträge mit dem Austritt befristen: eine Regel im Lauf · Aufwand `klein`.
