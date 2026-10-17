@@ -5949,7 +5949,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 **Anker.** `src/features/appointments/niemandOeffnet.ts`, `HomeVisitFlow.tsx`.
 
-**Änderungspfad.** Reihenfolge oder Begründungsweg: `nichtangetroffen.ts` · Aufwand `klein`.
+**Änderungspfad.** Reihenfolge oder Begründungsweg: `niemandOeffnet.ts` · Aufwand `klein`.
 
 ### ANN-576 — Urlaub: Antrag, Entscheidung, Storno als neuer Antrag
 
@@ -6010,8 +6010,6 @@ Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.list_leave` (Projektion `to_decide`), `app.can_read_staff_leave_balances`.
 
 **Änderungspfad.** Notiz für Entscheidende öffnen: ein Feld in `to_decide` · Aufwand `klein`.
-
-**Änderungspfad.** Reihenfolge oder Begründungsweg: `niemandOeffnet.ts` · Aufwand `klein`.
 
 ### ANN-581 — Einrichten: Wochenplan nur mit owner, die Person dafür in den Kalender
 
