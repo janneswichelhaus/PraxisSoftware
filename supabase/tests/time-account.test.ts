@@ -502,6 +502,21 @@ describe('Freizeitausgleich in den Arbeitszeiten (ANN-595)', () => {
       [STAFF.anna, tag, JSON.stringify([{ von: '08:00', bis: '12:00' }])],
     );
     expect(planung).toMatchObject({ code: '55000', message: 'day has time off in lieu' });
+    // Unverändert Gespeichertes geht durch und verrät nichts (Zweitreview Runde 2).
+    expect(
+      await fehler(
+        users.teamLead,
+        'select public.set_staff_working_hour_exception($1, $2::date, false, $3::jsonb)',
+        [
+          STAFF.anna,
+          tag,
+          JSON.stringify([
+            { von: '08:00', bis: '12:00' },
+            { von: '13:00', bis: '16:00' },
+          ]),
+        ],
+      ),
+    ).toBeNull();
 
     const aenderung = await fehler(
       users.therapist,
@@ -585,6 +600,15 @@ describe('Freizeitausgleich in den Arbeitszeiten (ANN-595)', () => {
       message: 'day has time off in lieu',
     });
     expect(await beantragen(andererWochentag)).toBeNull();
+    // Die Vorschau nennt den Grund schon vorher (Zweitreview Runde 2).
+    const vorschau = (wtag: number) =>
+      daten<{ problems: string[] }>(
+        users.therapist,
+        'select public.preview_working_time_change($1, $2::date, $3::jsonb) as daten',
+        ['permanent', morgen, JSON.stringify(woche(wtag, SPAETE_PAUSE))],
+      );
+    expect((await vorschau(tagWoche)).problems).toContain('time_off_in_lieu');
+    expect((await vorschau(andererWochentag)).problems).not.toContain('time_off_in_lieu');
 
     // Vor dem Freizeitausgleich beantragt, danach genehmigt: hält an.
     const { rows } = await asUserCommitted<{ id: string }>(users.therapist, AENDERUNG_BEANTRAGEN, [
@@ -1151,6 +1175,9 @@ describe('Fristen (ANN-597, ADR-008)', () => {
     expect((await fehler(users.ownerTherapist, ZURUECKWEISEN, [uebertrag!.id, 'Nein']))?.code).toBe(
       'P0002',
     );
+    for (const k of [users.therapist, users.office, users.ownerTherapist]) {
+      expect((await fehler(k, ZURUECKNEHMEN, [uebertrag!.id]))?.code, k).toBe('P0002');
+    }
   });
 
   it('löscht zurückgewiesene und zurückgenommene nach einem Jahr', async () => {

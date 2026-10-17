@@ -74,8 +74,11 @@ create table public.staff_time_account_entries (
   starts_at         time,
   ends_at           time,
   -- Wirkung auf den Saldo in Minuten, am Server berechnet.
+  -- Der Übertrag ohne Grenze: Er ist die Summe eines Jahres, und eine Grenze
+  -- hielte sonst den ganzen Löschlauf an (Zweitreview Runde 2).
   minutes           integer not null
-                      check ((minutes <> 0 or kind = 'carryover') and minutes between -1000000 and 1000000),
+                      check ((minutes <> 0 or kind = 'carryover')
+                             and (kind = 'carryover' or minutes between -1000000 and 1000000)),
   -- Grund der Person; bei einer Korrektur Pflicht.
   note              text check (note is null or length(note) between 1 and 500),
   status            text not null default 'valid' check (status in ('valid', 'rejected', 'withdrawn')),
@@ -845,19 +848,6 @@ begin
     raise exception 'day is part of approved leave' using errcode = '55000';
   end if;
 
-  -- ZK-001: ebenso ein Tag mit Freizeitausgleich - der Eintrag zählte sonst
-  -- weiter im Saldo, die freie Zeit wäre aber wieder Arbeitszeit. Erst
-  -- zurückweisen oder zurücknehmen (55000, ANN-595).
-  if exists (
-    select 1 from public.staff_working_hour_exceptions a
-    where a.organization_id = v_org
-      and a.staff_member_id = p_staff_member_id
-      and a.on_date = p_date
-      and a.time_account_entry_id is not null
-  ) then
-    raise exception 'day has time off in lieu' using errcode = '55000';
-  end if;
-
   select coalesce(
            jsonb_agg(
              jsonb_build_array(a.kind, a.starts_at::text, a.ends_at::text)
@@ -894,6 +884,20 @@ begin
 
   if v_alt = v_neu then
     return jsonb_array_length(v_alt);
+  end if;
+
+  -- ZK-001: ebenso ein Tag mit Freizeitausgleich - der Eintrag zählte sonst
+  -- weiter im Saldo, die freie Zeit wäre aber wieder Arbeitszeit. Erst
+  -- zurückweisen oder zurücknehmen (55000, ANN-595). Erst nach dem Vergleich:
+  -- Unverändert Gespeichertes verrät nichts (Zweitreview Runde 2).
+  if exists (
+    select 1 from public.staff_working_hour_exceptions a
+    where a.organization_id = v_org
+      and a.staff_member_id = p_staff_member_id
+      and a.on_date = p_date
+      and a.time_account_entry_id is not null
+  ) then
+    raise exception 'day has time off in lieu' using errcode = '55000';
   end if;
 
   delete from public.staff_working_hour_exceptions
@@ -1047,6 +1051,29 @@ begin
 end;
 $$;
 
+-- Ob ein neuer Wochenplan ab einem Datum einen Wochentag ändert, an dem ab
+-- dort ein Freizeitausgleich gilt (Zweitreview B4) - für Prüfung und Vorschau.
+create function app.time_off_on_changed_weekdays(
+  p_org uuid, p_staff_member_id uuid, p_on_date date, p_blocks jsonb, p_previous jsonb
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.staff_time_account_entries e
+    where e.organization_id = p_org and e.staff_member_id = p_staff_member_id
+      and e.kind = 'time_off' and e.status = 'valid' and e.on_date >= p_on_date
+      and p_blocks -> extract(isodow from e.on_date)::text
+          is distinct from p_previous -> extract(isodow from e.on_date)::text
+  )
+$$;
+
+revoke all on function app.time_off_on_changed_weekdays(uuid, uuid, date, jsonb, jsonb)
+  from public, anon, authenticated;
+
 -- Stand AZ-001, dazu der Freizeitausgleich: ebenso wenig ein neuer Wochenplan
 -- ab seinem Datum (Zweitreview B4).
 create or replace function app.assert_working_time_change(
@@ -1070,12 +1097,8 @@ begin
   -- ZK-001 (Zweitreview B4): Ein neuer Wochenplan ändert keinen Tag mit
   -- Freizeitausgleich ab seinem Datum still - der Eintrag rechnet mit den
   -- bisherigen Zeiten. Erst zurückweisen oder zurücknehmen (55000, ANN-595).
-  if p_kind = 'permanent' and exists (
-    select 1 from public.staff_time_account_entries e
-    where e.organization_id = p_org and e.staff_member_id = p_staff_member_id
-      and e.kind = 'time_off' and e.status = 'valid' and e.on_date >= p_on_date
-      and p_blocks -> extract(isodow from e.on_date)::text
-          is distinct from v_bisher -> 'blocks' -> extract(isodow from e.on_date)::text
+  if p_kind = 'permanent' and app.time_off_on_changed_weekdays(
+    p_org, p_staff_member_id, p_on_date, p_blocks, v_bisher -> 'blocks'
   ) then
     raise exception 'day has time off in lieu' using errcode = '55000';
   end if;
@@ -1088,6 +1111,55 @@ begin
     raise exception 'working time rule: %', array_to_string(v_probleme, ', ') using errcode = p_errcode;
   end if;
   return v_bisher || jsonb_build_object('new_minutes', v_minuten);
+end;
+$$;
+
+-- Stand AZ-001, dazu der Freizeitausgleich als Grund in der Vorschau.
+create or replace function public.preview_working_time_change(p_kind text, p_on_date date, p_blocks jsonb default null)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_org     uuid;
+  v_staff   uuid;
+  v_bisher  jsonb;
+  v_neu     jsonb;
+  v_minuten integer;
+begin
+  v_org := app.staff_request_org(app.can_request_working_time(), 'not allowed to request working time');
+  v_staff := app.own_staff_member(v_org);
+  if v_staff is null then
+    raise exception 'no staff member for this account' using errcode = '22023';
+  end if;
+  perform app.assert_working_time_date(v_org, p_kind, p_on_date);
+  v_bisher := app.working_time_baseline(v_org, v_staff, p_kind, p_on_date);
+  if p_blocks is null then
+    return jsonb_build_object(
+      'previous', v_bisher -> 'blocks',
+      'previous_minutes', (v_bisher ->> 'minutes')::integer,
+      'self_entered', app.has_any_role('owner')
+    );
+  end if;
+  v_neu := app.working_time_normalize(p_kind, p_blocks);
+  v_minuten := app.working_time_minutes(p_kind, v_neu);
+  return jsonb_build_object(
+    'previous', v_bisher -> 'blocks',
+    'previous_minutes', (v_bisher ->> 'minutes')::integer,
+    'new_minutes', v_minuten,
+    'unchanged', v_neu = v_bisher -> 'blocks',
+    'reduced', v_minuten < (v_bisher ->> 'minutes')::integer,
+    -- ZK-001: Hielte das Beantragen an einem Freizeitausgleich an, steht der
+    -- Grund schon hier (Zweitreview Runde 2).
+    'problems', to_jsonb(app.working_time_problems(v_org, v_staff, p_kind, p_on_date, v_neu)
+                         || case when p_kind = 'permanent' and app.time_off_on_changed_weekdays(
+                                   v_org, v_staff, p_on_date, v_neu, v_bisher -> 'blocks')
+                                 then array['time_off_in_lieu'] else '{}'::text[] end),
+    'appointment_days', app.appointments_outside_working_time(v_org, v_staff, p_kind, p_on_date, v_neu),
+    'self_entered', app.has_any_role('owner')
+  );
 end;
 $$;
 
@@ -1289,9 +1361,12 @@ begin
     where e.organization_id = p_org and e.status = 'valid' and e.kind <> 'carryover'
   ),
   geloescht as (
+    -- Erneut geprüft: Wird ein Eintrag während des Laufs zurückgewiesen
+    -- oder zurückgenommen, fällt er hier nicht als gültiger (Zweitreview
+    -- Runde 2).
     delete from public.staff_time_account_entries e
     using faellig f
-    where e.id = f.id and f.due_at <= now()
+    where e.id = f.id and f.due_at <= now() and e.status = 'valid'
     returning e.id, e.organization_id
   )
   insert into public.deletion_journal

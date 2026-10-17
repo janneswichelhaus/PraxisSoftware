@@ -6207,7 +6207,7 @@ Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung d
 
 Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Jede Person sieht ihr Konto mit allen Einträgen und Gründen. owner und Büro sehen die Konten aller je Person, auch die Gründe – ohne Summe über alle. Teamleitung, Therapie und Trainingsbetreuung sehen nur ihr eigenes. Der Bezug einer Abweichung auf den Eintrag ist nicht lesbar.
+**Annahme.** Jede Person sieht ihr Konto mit allen Einträgen und Gründen. owner und Büro sehen die Konten aller je Person, auch die Gründe – ohne Summe über alle. Teamleitung, Therapie und Trainingsbetreuung sehen nur ihr eigenes. Der Bezug einer Abweichung auf den Eintrag ist nicht lesbar; wer plant, erfährt ihn nur, wenn eine Änderung daran anhält. Wer für andere bucht, kann aus Minuten und Gründen der Vorschau die Zeiten der letzten 31 Tage erschließen.
 
 **Begründung.** BEF-066, Entscheidung Jannes 2026-10-09 (Option 2 mit Büro); keine Auswertung über Beschäftigte (PROJECT_PRINCIPLES.md 20).
 
@@ -6219,9 +6219,9 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Gültige Einträge löscht der Lauf drei Jahre ab Ende des Jahres ihres Datums (`zeitkonto`); ihr Saldo bleibt als Übertrag des Jahres stehen – eine Zeile je Person und Jahr, ohne Lage und Grund, Frist offen (ANN-030) –, der Saldo ändert sich nicht. Zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende (`zeitkonto_kurz`). Journal und erneutes Löschen nach einem Restore; die Abweichung eines Freizeitausgleichs fällt mit ihm.
+**Annahme.** Gültige Einträge löscht der Lauf drei Jahre ab Ende ihres Jahres (`zeitkonto`); ihr Saldo bleibt als Übertrag je Person und Jahr stehen, ohne Lage und Grund, Frist offen (ANN-030). Zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende (`zeitkonto_kurz`). Journal und erneutes Löschen nach einem Restore; die Abweichung fällt mit. Eine Löschsperre gibt es nur für Akten (ANN-033, BEF-178).
 
-**Begründung.** Spezifikation: drei Jahre ab Jahresende (Verjährung, §§ 195, 199 BGB); § 16 Abs. 2 ArbZG verlangt mindestens zwei. Der Übertrag entsteht beim Löschen selbst, auch beim Nachziehen nach einem Restore.
+**Begründung.** Spezifikation: drei Jahre ab Jahresende (§§ 195, 199 BGB); § 16 Abs. 2 ArbZG verlangt mindestens zwei. Der Übertrag entsteht beim Löschen selbst, auch beim Nachziehen.
 
 **Anker.** `app.delete_due_time_account_entries`, `app.carry_over_time_account_entry`.
 
