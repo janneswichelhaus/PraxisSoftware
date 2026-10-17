@@ -189,9 +189,19 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await expect(absenden).toBeInViewport();
   await bild(page, 'b10-g10-09-zusammenfassung-einkauf-375');
   await t.tippe(absenden);
-  await expect(
-    page.getByText('Einkauf beantragt: 12,90\u00a0€. Es entscheidet: Praxisinhaber.'),
-  ).toBeVisible();
+  // Bleibt der Abschluss offen oder fehlt die Bestätigung, nennt der Fehler,
+  // was dort stand - in der CI rot, lokal grün, ohne Bericht in der Session.
+  const text = async (bereich: Locator) =>
+    ((await bereich.innerText().catch(() => '')) || '–').replace(/\s+/g, ' ').slice(0, 500);
+  await abschluss.waitFor({ state: 'hidden', timeout: 15_000 }).catch(async () => {
+    throw new Error(`Der Abschluss blieb offen: ${await text(abschluss)}`);
+  });
+  await page
+    .getByText('Einkauf beantragt: 12,90\u00a0€. Es entscheidet: Praxisinhaber.')
+    .waitFor({ timeout: 10_000 })
+    .catch(async () => {
+      throw new Error(`Keine Bestätigung auf ${page.url()}: ${await text(page.locator('main'))}`);
+    });
   test.info().annotations.push({ type: 'G10 Einkauf', description: `${t.tipps} Tipps` });
   expect(t.tipps).toBeLessThanOrEqual(7);
 
