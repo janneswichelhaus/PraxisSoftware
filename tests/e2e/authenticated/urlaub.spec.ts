@@ -70,6 +70,12 @@ function tag(dialog: Locator, datum: string): Locator {
   return dialog.getByRole('button', { name });
 }
 
+/** Bildschirmfoto im ruhenden Stand: nach der Tippsperre und dem Aufgehen des Fensters. */
+async function bild(seite: Page, name: string): Promise<void> {
+  await seite.waitForTimeout(800);
+  await seite.screenshot({ path: `.tmp/screenshots/${name}.png` });
+}
+
 /** Die Seite läuft nicht in die Breite; Frage und Fuß stehen im Bild. */
 async function stehtImBild(page: Page, dialog: Locator, knopf: Locator): Promise<void> {
   await expect(dialog.getByRole('heading').first()).toBeInViewport();
@@ -114,7 +120,7 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   // Beim Öffnen stehen Frage und Fuß im Bild. Darunter rollen zwölf Monate;
   // ist die Woche weit voraus, rollt die Frage mit, der Fuß bleibt stehen.
   await stehtImBild(page, kalender, weiter);
-  await page.screenshot({ path: '.tmp/screenshots/b7-g7-01-kalender-375.png' });
+  await bild(page, 'b7-g7-01-kalender-375');
   await t.tippe(tag(kalender, WOCHE.von));
   await t.tippe(tag(kalender, WOCHE.bis));
   // Die Tage zählt der Server: Montag bis Freitag ohne Feiertag. Zwischen
@@ -122,13 +128,13 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   await expect(kalender.getByText(/\d+\sUrlaubstag/)).toBeVisible();
   await expect(weiter).toBeEnabled();
   await expect(weiter).toBeInViewport();
-  await page.screenshot({ path: '.tmp/screenshots/b7-g7-02-gewaehlt-375.png' });
+  await bild(page, 'b7-g7-02-gewaehlt-375');
   await t.tippe(weiter);
 
   const abschluss = page.getByRole('dialog', { name: 'Urlaub beantragen?' });
   const absenden = abschluss.getByRole('button', { name: 'Urlaub beantragen' });
   await stehtImBild(page, abschluss, absenden);
-  await page.screenshot({ path: '.tmp/screenshots/b7-g7-03-zusammenfassung-375.png' });
+  await bild(page, 'b7-g7-03-zusammenfassung-375');
   await t.tippe(absenden);
   // Die Rückmeldung trägt vorn das Häkchen (für Vorlesesoftware ausgeblendet).
   await expect(page.getByRole('status').filter({ hasText: 'Urlaub beantragt:' })).toBeVisible();
@@ -152,11 +158,11 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   await expect(entscheiden.getByText(/Notiz/)).toHaveCount(0);
   const genehmigen = entscheiden.getByRole('button', { name: 'Genehmigen' });
   await stehtImBild(inhaber, entscheiden, genehmigen);
-  await inhaber.screenshot({ path: '.tmp/screenshots/b7-g7b-01-entscheiden-375.png' });
+  await bild(inhaber, 'b7-g7b-01-entscheiden-375');
   await e.tippe(genehmigen);
   const fertig = inhaber.getByRole('dialog', { name: 'Genehmigt' });
   await expect(fertig.getByText(/ist genehmigt/)).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b7-g7b-02-genehmigt-375.png' });
+  await bild(inhaber, 'b7-g7b-02-genehmigt-375');
   test.info().annotations.push({ type: 'G7b', description: `${e.tipps} Tipps bis genehmigt` });
   expect(e.tipps).toBeLessThanOrEqual(2);
 
