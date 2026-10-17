@@ -209,6 +209,11 @@ describe('Schema-Invarianten', () => {
       'staff_feedback',
       'staff_feedback_participations',
       'staff_feedback_blocks',
+      'team_channels',
+      'team_channel_members',
+      'team_messages',
+      'team_message_mentions',
+      'team_read_states',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

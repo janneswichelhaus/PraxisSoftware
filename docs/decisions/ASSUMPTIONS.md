@@ -6362,3 +6362,39 @@ Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wie
 **Anker.** `public.submit_staff_feedback_message`.
 
 **Änderungspfad.** Länge oder Empfänger: dort · Aufwand `klein`.
+
+### ANN-609 — Teamchat: kein Lesen über andere, nur der eigene Stand
+
+Datenschutz · offen · 2026-10-17 · Claude · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Keine Lesebestätigung, kein Online-Status, kein „zuletzt gesehen“, keine Tipp-Anzeige. Der Lesestand je Person und Gespräch ist die Zeit der neuesten gesehenen Nachricht, nicht die des Lesens, und dient nur den eigenen Zählern; niemand sonst liest ihn, auch owner nicht. Direktnachrichten lesen nur die zwei Beteiligten. Bearbeiten ohne Verlauf, nur die Marke „bearbeitet“.
+
+**Begründung.** §20; ADR-024 Punkt 12 (keine Lesebestätigung, Wertung übertragen); BAG 1 ABR 7/15 (zuordenbare Zeitstempel als Verhaltensdaten); Art. 5 Abs. 1 lit. c DSGVO. Unsicher: ob die Praxis „gesehen“ vermisst.
+
+**Anker.** `public.team_read_states`, `app.team_channel_readable` (`20261204100000_team_001_teamchat.sql`).
+
+**Änderungspfad.** Freiwilliges „Gesehen“ als eigene Handlung: Tabelle und Knopf · Aufwand `mittel`, mit ADR-Änderung.
+
+### ANN-610 — Teamchat: zwölf Monate je Nachricht, Anker im Thread
+
+Datenschutz · offen · 2026-10-17 · Claude · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jede Nachricht fällt zwölf Monate ab ihrem Tag, endgültig und mit Journal. Laufen an einer fälligen Ausgangsnachricht noch Antworten, fallen Text, Verfasser:in und Erwähnungen; die Zeile bleibt als Anker ohne Inhalt, bis die letzte Antwort fällt. Eigenes Löschen ist endgültig, mit Antworten derselbe Anker. Leere Direktnachrichten fallen zwölf Monate nach Beginn; Kanäle bleiben. Nachrichten Ausgeschiedener folgen derselben Frist.
+
+**Begründung.** ADR-008 Fassung 5 (12 Monate rollierend, §10); §18 (kein Soft-Delete); Art. 5 Abs. 1 lit. e DSGVO: eine neue Antwort hält alten Inhalt nicht am Leben. Unsicher: ob Direktnachrichten nach einem Austritt früher fallen sollen.
+
+**Anker.** `app.delete_due_team_messages`, `public.retention_classes` (`teamchat`).
+
+**Änderungspfad.** Frist: `update` der Klasse · Aufwand `klein`; eigene Frist nach Austritt: Regel im Löschlauf · Aufwand `mittel`.
+
+### ANN-611 — Teamchat: wer teilnimmt, wer Kanäle führt, wer entfernt
+
+Praxisprozess · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Teilnehmen kann jede Praxisrolle mit aktivem Mitarbeiterdatensatz, auch die Trainingsbetreuung. Offene Kanäle sieht die ganze Praxis; anlegen und archivieren owner und Teamleitung, „Allgemein“ bleibt offen. Startkanäle: Allgemein, Flotte, Vertretungen. owner entfernt fremde Nachrichten nur in offenen Kanälen (Anker „von der Praxisleitung entfernt“, `removed_by` als Nachweis, kein Audit). Keine privaten Kanäle, kein @alle.
+
+**Begründung.** §10 (Kanäle, Direktnachrichten); 3–8 Personen brauchen Übersicht; ADR-010 Punkt 15 und 17; Referenzabgleich (Slack: Admin löscht fremde).
+
+**Anker.** `app.can_use_teamchat`, `app.can_manage_team_channels`, `public.delete_team_message`.
+
+**Änderungspfad.** Weitere Rolle oder alle legen an: eine Funktion · Aufwand `klein`.
