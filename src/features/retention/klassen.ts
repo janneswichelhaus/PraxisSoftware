@@ -134,6 +134,16 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Wer den Schlüssel eines Rads genommen und zurückgelegt hat. 30 Tage nach der Rückgabe gelöscht; ein entnommener Schlüssel bleibt stehen.',
   },
+  urlaub: {
+    label: 'Urlaub',
+    beschreibung:
+      'Genehmigte und stornierte Urlaubsanträge und die Urlaubsansprüche je Jahr. Drei Jahre ab Ende des Urlaubsjahres; solange ein Storno offen ist, bleibt der Antrag.',
+  },
+  urlaub_kurz: {
+    label: 'Urlaub: abgelehnt und zurückgezogen',
+    beschreibung:
+      'Abgelehnte und zurückgezogene Urlaubsanträge und Stornos. Ein Jahr nach der Entscheidung oder dem Zurückziehen; offene bleiben.',
+  },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',
     beschreibung: 'Organisation und Standorte.',

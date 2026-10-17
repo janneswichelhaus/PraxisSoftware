@@ -344,7 +344,7 @@ Marke vorsieht.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Bereich | Organisatorisches → Vorschau: Zeitkonto (`/betrieb/zeitkonto`), Erstattungen (`/betrieb/erstattungen`), Urlaub (`/betrieb/urlaub`), Radflotte (`/betrieb/flotte`)                                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs VOR-14, VOR-22                                                                                                                                                                                                                                                                                                  |
-| Status  | entschieden 2026-10-09 (Jannes); Radflotte erledigt in FLT-EPIC-001 (2026-10-15, über RLS und `app.can_manage_fleet`); eingeplant in URL-001, ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Status  | entschieden 2026-10-09 (Jannes); Radflotte erledigt in FLT-EPIC-001 (2026-10-15, über RLS und `app.can_manage_fleet`); Urlaub erledigt in URL-001 (2026-10-16, Funktionen ohne Tabellenrecht, ANN-580); eingeplant in ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Berührt | `src/features/timeaccount/TimeAccountPage.tsx` (Z. 77, 96), `src/features/reimbursements/ReimbursementsPage.tsx` (Z. 68, 254, 337), `src/features/vacation/VacationPage.tsx` (Z. 158, 214, 490), `src/features/fleet/FleetPage.tsx` (Z. 193–229, 343), `src/features/fleet/BikeEditPage.tsx` (Z. 294); §4.3, §4.5, §16, §20; B6; ANN-024; ADR-004; Roadmap Block 8 (FLT-EPIC-001, URL-001, ZK-001, ERS-001) |
 
 **Beobachtung.** Als therapist angemeldet: „Saldo über alle Personen: −3,25 h“
@@ -605,20 +605,6 @@ eingeklappt.
 
 **Erwartet.** Derselbe Abgleich und dasselbe Kennzeichen wie bei den Dateien der Akte; die Fotoreihe sagt, dass das Foto fehlt. Pfad A (Dateien).
 
-### BEF-168 — Die Urlaubsvorschau nennt Stammräder aus den Demodaten
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-15 |
-| Bereich | Urlaub (`/betrieb/urlaub`, Vorschau) |
-| Quelle  | FLT-EPIC-001, Durchsicht der übrigen Vorschauen |
-| Status  | eingeplant in URL-001 |
-| Berührt | `src/features/vacation/VacationPage.tsx` (`betroffeneRaeder`), `src/features/preview/demodaten.ts` (`demoRaeder`) |
-
-**Beobachtung.** Die Radflotte ist echt; die Urlaubsvorschau meldet nach „Genehmigen“ aber „Stammrad Lastenrad 2 ist im Zeitraum als frei markiert“ aus den acht Rädern der Demodaten, die mit der echten Flotte nichts gemein haben.
-
-**Erwartet.** Mit URL-001 entfällt der Satz: Die echte Radflotte liest ganztägige Abwesenheiten schon selbst und zeigt das Rad an diesen Tagen frei („Diese Woche frei: Do (abwesend)“).
-
 ### BEF-170 — Einzeln gelöschte Dateien der Akte fehlen im Löschjournal
 
 |         |   |
@@ -674,3 +660,17 @@ eingeklappt.
 **Beobachtung.** (1) „Rad zurücklassen“ verlangt den Anruf bei der Werkstatt (Platzhalter „noch nicht hinterlegt“, fest in der Köln-Vorlage) und eine Nachricht im Team-Kanal „Flotte“, den es nicht gibt; die Zusammenfassung lässt beides als erledigt bestätigen. (2) „Ist heute Mittwoch?“ fragt, was die App weiß („Heute ist Freitag.“). (3) „Panne melden“ und „Schlüssel übergeben“ beginnen nur auf der Radflotte, drei Tipps vom Rad entfernt. (4) Die Zusammenfassung der Panne rollt bei 375 × 667; der Satz zum Ersatzrad steht nur dort, nicht in der Meldung danach. (5) G1 Seite „Angerufen?“: der Anrufknopf oben, „Erreicht – Besuch findet statt“ im Daumenbereich direkt unter der Antwort. (6) Zwei Bedingungen in einer Ja/Nein-Frage (Depot), Titel und Kasten wiederholen sich (Reparieren).
 
 **Erwartet.** Mit der Tübinger Vorlage (ANN-554): Werkstatt und Teamleitung als Anrufknopf, die Ruhetagsfrage aus dem Datum, „Panne melden“ an der Karte des nächsten Wegs, die Zusammenfassung kürzer und das Ersatzrad in der Meldung; bei G1 der Anruf als Hauptknopf.
+
+### BEF-178 — Beschäftigtendaten werden automatisch gelöscht, eine Löschsperre gibt es nur für Patientenakten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Aufbewahrung und Löschung (ADR-008), Urlaub, Arbeitszeit, Zeitkonto |
+| Quelle  | Zweitreview der Überholung 9 (ZK-001), gilt seit Überholung 7 |
+| Status  | offen – Entscheidung Jannes |
+| Berührt | `app.delete_due_staff_leave` (URL-001), `app.delete_due_working_time_requests` (AZ-001), `app.delete_due_time_account_entries` (ZK-001), `public.legal_holds` |
+
+**Beobachtung.** ANN-033 lässt die Löschsperre nur für Patientenakten zu, weil es für Beschäftigtendaten keine automatische Löschung gab. Seit URL-001 löscht der Lauf Urlaubsanträge und -ansprüche, seit AZ-001 Arbeitszeitänderungen, mit ZK-001 auch gültige Zeitkonto-Einträge – jeweils an der Verjährungsgrenze, an der ein laufender Streit sie bräuchte. ADR-008 Punkt 7 verlangt, dass eine Sperre automatische Löschung während laufender Vorgänge verhindert.
+
+**Erwartet.** Änderungspfad von ANN-033: Gegenstand `staff_member` zulassen (owner setzt und hebt auf wie bei Akten) und in den drei Löschregeln `app.under_legal_hold(…, 'staff_member', …)` prüfen. Das schreibt Auditeinträge zu einem neuen Gegenstand und braucht deshalb Jannes' Freigabe (ADR-010, Label `freigabe-audit`); bis dahin nichts gebaut. Genehmigtes und Gültiges fällt frühestens Anfang 2030.

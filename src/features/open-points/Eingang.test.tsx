@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import type { OffenerScan } from '@/features/files/api';
 import type { Rueckfragezeile } from '@/features/messages/api';
 import type { Patienteneintrag } from '@/features/patients/uebersicht';
 import type { CareWithoutConclusion } from './reminders-api';
+import type { Urlaubsstand } from '@/features/vacation/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -75,6 +76,25 @@ vi.mock('@/features/waitlist/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchWaitlist: leer,
 }));
+const fetchUrlaub = vi.fn<() => Promise<Urlaubsstand>>();
+vi.mock('@/features/vacation/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchUrlaub: () => fetchUrlaub(),
+}));
+
+/** Der Urlaub ohne offene Anträge - jeder Test füllt `to_decide`, wenn er sie braucht. */
+const URLAUB_LEER: Urlaubsstand = {
+  my_staff_member_id: '55555555-5555-4555-8555-000000000001',
+  can_decide: true,
+  self_entered: true,
+  can_manage_entitlements: true,
+  federal_state: 'BW',
+  balance: null,
+  own: [],
+  to_decide: [],
+  team: [],
+  balances: [],
+};
 
 const { OpenPointsPage } = await import('./OpenPointsPage');
 
@@ -112,6 +132,7 @@ beforeEach(() => {
   fetchPatientOverview.mockResolvedValue([]);
   fetchConsentWithdrawals.mockResolvedValue([]);
   fetchCareWithoutConclusion.mockResolvedValue([]);
+  fetchUrlaub.mockResolvedValue(URLAUB_LEER);
 });
 
 /** Die Überschriften der sichtbaren Gruppen, in ihrer Reihenfolge. */
@@ -209,6 +230,62 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
     expect(await screen.findByText('Nichts offen')).toBeInTheDocument();
     await waitFor(() => expect(fetchConsentWithdrawals).toHaveBeenCalledTimes(1));
+  });
+
+  it('sagt es, wenn die Urlaubsanträge nicht laden, statt still zu fehlen (URL-001)', async () => {
+    fetchUrlaub.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    const gruppe = (await screen.findByRole('heading', { name: 'Urlaubsanträge' })).closest(
+      'section',
+    )!;
+    expect(
+      within(gruppe).getByText('Die Urlaubsanträge konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
+  it('zeigt owner die offenen Urlaubsanträge mit dem Weg zum Entscheiden (URL-001)', async () => {
+    fetchUrlaub.mockResolvedValue({
+      ...URLAUB_LEER,
+      to_decide: [
+        {
+          id: 'abababab-abab-4bab-8bab-000000000001',
+          kind: 'leave',
+          refers_to: null,
+          staff_member_id: '55555555-5555-4555-8555-000000000002',
+          name: 'Anna Beispiel',
+          starts_on: '2027-08-02',
+          ends_on: '2027-08-13',
+          days: 10,
+          days_following_year: 0,
+          requested_at: '2026-10-12T08:00:00Z',
+          balance: {
+            year: 2027,
+            entitlement: 30,
+            carryover: 0,
+            approved: 0,
+            requested: 10,
+            rest: 30,
+          },
+          team: [],
+          appointments: 3,
+          exception_days: [],
+        },
+      ],
+    });
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    expect(await screen.findByRole('heading', { name: /Urlaubsanträge/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Anna Beispiel/ })).toHaveAttribute(
+      'href',
+      '/betrieb/urlaub/entscheiden/abababab-abab-4bab-8bab-000000000001?zurueck=%2Foffen',
+    );
+    expect(fetchUrlaub).toHaveBeenCalledTimes(1);
+  });
+
+  it('fragt den Urlaub nur für die ab, die entscheiden', async () => {
+    renderWithProviders(<OpenPointsPage user={testUser(['team_lead'])} />, '/offen');
+    await screen.findByText('Nichts offen');
+    expect(fetchUrlaub).not.toHaveBeenCalled();
   });
 
   it('lädt jede Liste nur einmal, obwohl Seite und Gruppe sie lesen', async () => {

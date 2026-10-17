@@ -86,6 +86,10 @@ import { CheckupPage } from '@/features/fleet/CheckupPage';
 import { BreakdownPage } from '@/features/fleet/BreakdownPage';
 import { WerkstattblattPage } from '@/features/fleet/WerkstattblattPage';
 import { MeldungenPage, MeldungPage } from '@/features/fleet/MeldungenPage';
+import { AnspruchPage } from '@/features/vacation/AnspruchPage';
+import { UrlaubBeantragenPage } from '@/features/vacation/UrlaubBeantragenPage';
+import { UrlaubEntscheidenPage } from '@/features/vacation/UrlaubEntscheidenPage';
+import { UrlaubTerminePage } from '@/features/vacation/UrlaubTerminePage';
 import { VacationPage } from '@/features/vacation/VacationPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
@@ -537,7 +541,6 @@ export function AuthenticatedRoutes({
                       path="/betrieb/flotte/meldungen/:art/:meldungId"
                       element={<MeldungPage user={user} />}
                     />
-                    <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
                     <Route path="/betrieb/zeitkonto" element={<TimeAccountPage user={user} />} />
                     <Route
                       path="/betrieb/erstattungen"
@@ -630,6 +633,33 @@ export function AuthenticatedRoutes({
                   welche liest, entscheidet der Server (ANN-310, ANN-311). */}
                 {showOperations || showTraining ? (
                   <Route path="/rueckfragen/:messageId" element={<RueckfragePage user={user} />} />
+                ) : null}
+                {/* URL-001: Urlaub für jede Praxisrolle mit Mitarbeiterdatensatz,
+                  auch die Trainingsbetreuung. Was jemand sieht und darf -
+                  beantragen, entscheiden, Ansprüche -, entscheidet der Server
+                  (BEF-066, ANN-576, ANN-580). */}
+                {showOperations || showTraining ? (
+                  <>
+                    <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
+                    <Route
+                      path="/betrieb/urlaub/beantragen"
+                      element={<UrlaubBeantragenPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/urlaub/entscheiden/:antragId"
+                      element={<UrlaubEntscheidenPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/urlaub/anspruch/:staffMemberId"
+                      element={<AnspruchPage user={user} />}
+                    />
+                    {/* Die Termine eines geltenden Urlaubs, bis alle umgeplant
+                      sind - sehen darf sie, wer Termine sieht (Server). */}
+                    <Route
+                      path="/betrieb/urlaub/termine"
+                      element={<UrlaubTerminePage user={user} />}
+                    />
+                  </>
                 ) : null}
                 {showTraining ? (
                   <>

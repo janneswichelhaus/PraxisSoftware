@@ -83,6 +83,7 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 | Knöpfe am Formularende / Arbeitsseite | `Formularfuss` / `Aktionsleiste`                       |
 | Haupt- und Kontextspalte              | `Zweispalter`                                          |
 | Bild, Foto                            | `Medienbild` (4:3, ganz; `vorschau` 56 × 56)           |
+| Tag oder Zeitraum wählen              | `Monatsblatt` (44 px je Tag, ein Monat je Seite, ‹ ›)  |
 | Handlung, Seitenwechsel, Symbol, Link | `Button`, `ButtonLink`, `Symbolknopf`, `Textlink`      |
 | Rechtssatz am Seitenende              | `Kleingedrucktes`                                      |
 

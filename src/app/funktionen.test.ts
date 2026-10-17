@@ -45,8 +45,19 @@ describe('funktionskatalog', () => {
 
   it('kennzeichnet Vorschaubereiche als solche', () => {
     const katalog = funktionskatalog(testUser(['owner']));
+    const zeitkonto = katalog.find((eintrag) => eintrag.bezeichnung === 'Zeitkonto');
+    expect(zeitkonto?.vorschau).toBe(true);
+    // Seit URL-001 echt angebunden: der Urlaub trägt keine Kennzeichnung mehr,
+    // und „Urlaub eintragen“ ist ein Vorgang.
     const urlaub = katalog.find((eintrag) => eintrag.bezeichnung === 'Urlaub');
-    expect(urlaub?.vorschau).toBe(true);
+    expect(urlaub).toBeDefined();
+    expect(urlaub?.vorschau).toBeUndefined();
+    expect(katalog.find((eintrag) => eintrag.bezeichnung === 'Urlaub eintragen')?.ziel).toBe(
+      '/betrieb/urlaub/beantragen',
+    );
+    expect(
+      funktionskatalog(testUser(['trainer'])).find((e) => e.bezeichnung === 'Urlaub beantragen'),
+    ).toBeDefined();
     // Seit FLT-EPIC-001 echt angebunden: die Radflotte trägt keine Kennzeichnung mehr.
     const radflotte = katalog.find((eintrag) => eintrag.bezeichnung === 'Radflotte');
     expect(radflotte).toBeDefined();

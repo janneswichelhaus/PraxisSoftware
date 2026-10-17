@@ -182,8 +182,12 @@ describe('Arbeitsbereiche je Rolle', () => {
 
   it('kennzeichnet noch nicht angebundene Unterpunkte als Vorschau', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
+    const zeitkonto = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/zeitkonto');
+    expect(zeitkonto?.vorschau).toBe(true);
+    // Seit URL-001 echt angebunden: der Urlaub trägt keine Kennzeichnung mehr.
     const urlaub = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/urlaub');
-    expect(urlaub?.vorschau).toBe(true);
+    expect(urlaub).toBeDefined();
+    expect(urlaub?.vorschau).toBeUndefined();
     // Seit FLT-EPIC-001 echt angebunden: die Radflotte trägt keine Kennzeichnung mehr.
     const flotte = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/flotte');
     expect(flotte).toBeDefined();
@@ -221,6 +225,20 @@ describe('Arbeitsbereiche je Rolle', () => {
       .find((bereich) => bereich.id === 'betrieb')
       ?.unterpunkte.map((punkt) => punkt.to);
     expect(punkte).toContain('/praxis/planung');
+  });
+
+  it('führt die Trainingsbetreuung über Training zum eigenen Urlaub (URL-001)', () => {
+    const imTraining = (roles: RoleKey[]) =>
+      bereicheFuer(roles)
+        .find((bereich) => bereich.id === 'training')
+        ?.unterpunkte.some((punkt) => punkt.to === '/betrieb/urlaub');
+    expect(imTraining(['trainer'])).toBe(true);
+    expect(aktiverBereich(bereicheFuer(['trainer']), '/betrieb/urlaub/beantragen')?.id).toBe(
+      'training',
+    );
+    // Wer Organisatorisches sieht, findet ihn dort - ein Pfad, ein Bereich.
+    expect(imTraining(['owner'])).toBe(false);
+    expect(aktiverBereich(bereicheFuer(['owner']), '/betrieb/urlaub')?.id).toBe('betrieb');
   });
 
   it('ordnet die Arbeitszeiten dem Organisatorischen zu und nicht dem Kalender', () => {

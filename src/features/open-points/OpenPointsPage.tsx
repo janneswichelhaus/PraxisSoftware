@@ -16,6 +16,7 @@ import { OpenIntakes } from './OpenIntakes';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
 import { AufgabeAnlegen, ErledigteAufgaben, Tasks } from './Tasks';
 import { PlatformRequests } from './PlatformRequests';
+import { Urlaubsantraege } from './Urlaubsantraege';
 import { WaitlistReview } from './WaitlistReview';
 import { useEingang } from './eingang';
 import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
@@ -29,6 +30,7 @@ const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  *
  * Hier läuft zusammen, was sonst liegen bliebe: Rückfragen mit ihrer
  * Antwortfrist (KOM-002), Terminwünsche von der Plattform (POR-011),
+ * Urlaubsanträge für die, die entscheiden (URL-001),
  * Aufgaben und Wiedervorlagen, die Anrufe für morgen, Widerrufe und
  * Kündigungen über die Plattform (POR-016, KND-004, ANG-003), Verordnungen,
  * die nur als Foto da sind, offene Erstaufnahmen, Verordnungen, die bald
@@ -107,6 +109,7 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
       <div hidden={laedt}>
         {darf.rueckfragen ? <OffeneRueckfragen bereiche={darf.rueckfrageBereiche} /> : null}
         {darf.terminwuensche ? <PlatformRequests timeZone={timeZone} /> : null}
+        {darf.urlaubsantraege ? <Urlaubsantraege heute={today} /> : null}
         {darf.aufgaben ? <Tasks today={today} onMeldung={melde} /> : null}
         {darf.anrufe ? <CallsSummary today={today} /> : null}
         {darf.trainingswiderrufe ? <TrainingWithdrawals /> : null}

@@ -36,6 +36,10 @@ import { erzeugeVorschauzustand } from './vorschauZustand';
  * Ausnahme für den Kartenprototyp gefallen: MapLibre, Routen-, Matrix- und
  * Handoff-Aufrufe sind seitdem in **jedem** Vorschaubereich ein Fund.
  *
+ * `src/features/vacation` ist mit **URL-001** entfallen: Urlaub wird über
+ * seine Serverfunktionen beantragt, entschieden und gezählt und MUSS mit dem
+ * Server sprechen.
+ *
  * `src/features/fleet` ist mit **FLT-EPIC-001** entfallen: Die Radflotte
  * liest und schreibt über ihre Serverfunktionen (Räder, Schlüssel, Check-Up,
  * Panne, Stellen am Rad) und MUSS mit dem Server sprechen. Ihre Prüfungen zur
@@ -45,7 +49,6 @@ import { erzeugeVorschauzustand } from './vorschauZustand';
 
 const VORSCHAUBEREICHE = [
   'src/features/preview',
-  'src/features/vacation',
   'src/features/timeaccount',
   'src/features/reimbursements',
   'src/features/teamchat',
@@ -256,11 +259,11 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
   it('findet die Vorschaubereiche ueberhaupt', () => {
     // Jeder genannte Bereich trägt Dateien bei - ein verschobenes oder
     // umbenanntes Verzeichnis fiele sonst still aus der Prüfung. Seit
-    // FLT-EPIC-001 (Radflotte echt) sind es fünf Bereiche mit 15 Dateien.
+    // URL-001 (Urlaub echt) sind es vier Bereiche mit 13 Dateien.
     for (const bereich of VORSCHAUBEREICHE) {
       expect(quelldateien(bereich).length, bereich).toBeGreaterThan(0);
     }
-    expect(dateien.length).toBeGreaterThanOrEqual(15);
+    expect(dateien.length).toBeGreaterThanOrEqual(13);
   });
 
   it.each(VERBOTEN)('enthaelt keinen $grund ($muster)', ({ muster }) => {
@@ -280,7 +283,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
   it('wuerde jede Importform einer echten API tatsaechlich finden', () => {
     // Gegenprobe zu jeder Form, die der Scanner kennen muss. `beispiel` liegt
     // in einem Vorschaubereich, damit relative Pfade richtig aufgeloest werden.
-    const beispiel = 'src/features/vacation/Beispiel.tsx';
+    const beispiel = 'src/features/timeaccount/Beispiel.tsx';
     const pruefe = (quelltext: string) => unerlaubteImporte(beispiel, quelltext);
 
     expect(
@@ -322,7 +325,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     // der Kacheln beim Anbieter holt, gehoert in keinen Vorschaubereich.
     const imKarten =
       "import { Map } from 'maplibre-gl';\nimport { createPortal } from 'react-dom';";
-    expect(unerlaubteImporte('src/features/vacation/Beispiel.tsx', imKarten)).toEqual([
+    expect(unerlaubteImporte('src/features/timeaccount/Beispiel.tsx', imKarten)).toEqual([
       'maplibre-gl (nicht in der Positivliste)',
       'react-dom (nicht in der Positivliste)',
     ]);
@@ -350,7 +353,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     // Vertrag selbst ist eine reine Typdatei.
     expect(
       unerlaubteImporte(
-        'src/features/vacation/Beispiel.tsx',
+        'src/features/timeaccount/Beispiel.tsx',
         "import type { Coordinate } from '@/lib/location/contract';",
       ),
     ).toEqual([]);
@@ -358,7 +361,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
 
   it('laesst die Erreichbarkeitsregel nicht in die Vorschau', () => {
     const regel = "import { erreichbarkeit } from '@/features/scheduling/erreichbarkeit';";
-    expect(unerlaubteImporte('src/features/vacation/Beispiel.tsx', regel)).toEqual([
+    expect(unerlaubteImporte('src/features/timeaccount/Beispiel.tsx', regel)).toEqual([
       '@/features/scheduling/erreichbarkeit (nicht in der Positivliste)',
     ]);
   });

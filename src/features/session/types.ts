@@ -363,6 +363,15 @@ export function canManageInvoicing(roles: readonly RoleKey[]): boolean {
 }
 
 /** Administrative Praxisberechtigung (PROJECT_PRINCIPLES.md 4.1). */
+/**
+ * Wer Anträge der Mitarbeitenden entscheidet - Urlaub zuerst (URL-001,
+ * ANN-576): owner, nie den eigenen; die Teamleitung nicht (BEF-066 Option 2).
+ * Steuert nur die Darstellung; verbindlich ist app.can_decide_staff_requests().
+ */
+export function canDecideStaffRequests(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
 export function isOwner(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');
 }

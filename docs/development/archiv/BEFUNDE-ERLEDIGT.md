@@ -1511,6 +1511,20 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 
 **Beobachtung.** Das 3D-Modul ist eine eigene Datei, deren Name sich mit jedem Build ändert (`viewer-DegDh5Fw.js` mit #253, `viewer-BNuvwWZ3.js` mit #254, obwohl #254 die Radflotte nicht berührte). Die Auslieferung löschte die alte sofort (`rsync --delete`); eine vorher geöffnete Seite fand sie nicht mehr, und die Seite meldete jeden Fehler gleich: Der Browser könne kein 3D. Karte und Werkstattbilder träfe es ebenso. **Erwartet:** Offene Seiten laden ihre Teile weiter; scheitert das Laden doch, steht „ließ sich nicht laden“ mit „Neu laden“ da, und nur ohne WebGL nennt die Seite den Browser.
 
+### BEF-168 — Die Urlaubsvorschau nennt Stammräder aus den Demodaten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-15 |
+| Bereich | Urlaub (`/betrieb/urlaub`, Vorschau) |
+| Quelle  | FLT-EPIC-001, Durchsicht der übrigen Vorschauen |
+| Status  | erledigt in URL-001 (2026-10-16): die Vorschau ist ersetzt; die Radflotte liest genehmigten Urlaub als Abwesenheit (ANN-578) |
+| Berührt | `src/features/vacation/VacationPage.tsx` (`betroffeneRaeder`), `src/features/preview/demodaten.ts` (`demoRaeder`) |
+
+**Beobachtung.** Die Radflotte ist echt; die Urlaubsvorschau meldet nach „Genehmigen“ aber „Stammrad Lastenrad 2 ist im Zeitraum als frei markiert“ aus den acht Rädern der Demodaten, die mit der echten Flotte nichts gemein haben.
+
+**Erwartet.** Mit URL-001 entfällt der Satz: Die echte Radflotte liest ganztägige Abwesenheiten schon selbst und zeigt das Rad an diesen Tagen frei („Diese Woche frei: Do (abwesend)“).
+
 ### BEF-173 — Eine Mindesthöhe von 44 px misst der Browser als 43,99998
 
 |         |   |

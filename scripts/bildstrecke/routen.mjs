@@ -850,12 +850,46 @@ export const ROUTEN = Object.freeze([
     etikett: 'Meldung: Panne',
     konten: ['owner'],
   },
+  // URL-001: Urlaub ist echt angebunden - die Seite je Rolle, Beantragen
+  // (G7), Entscheiden (G7b) und der Anspruch je Person.
   {
     muster: '/betrieb/urlaub',
     pfad: '/betrieb/urlaub',
     bereich: 'Organisation',
-    etikett: 'Urlaub (Vorschau)',
+    etikett: 'Urlaub',
+    konten: ['owner', 'therapist', 'trainer'],
+  },
+  {
+    muster: '/betrieb/urlaub/beantragen',
+    pfad: '/betrieb/urlaub/beantragen',
+    bereich: 'Organisation',
+    etikett: 'Urlaub beantragen (Kalender)',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/urlaub/entscheiden/:antragId',
+    pfad: '/betrieb/urlaub/entscheiden/abababab-abab-4bab-8bab-000000000001',
+    bereich: 'Organisation',
+    etikett: 'Urlaubsantrag entscheiden',
     konten: ['owner'],
+    ohneDaten:
+      'Der Seed hat keinen Urlaubsantrag; der Ablauf steht in authenticated/urlaub.spec.ts.',
+  },
+  {
+    muster: '/betrieb/urlaub/anspruch/:staffMemberId',
+    pfad: `/betrieb/urlaub/anspruch/${IDS.anna}`,
+    bereich: 'Organisation',
+    etikett: 'Urlaubsanspruch (Anna)',
+    konten: ['owner'],
+  },
+  {
+    muster: '/betrieb/urlaub/termine',
+    pfad: `/betrieb/urlaub/termine?person=${IDS.anna}&von=2026-12-14&bis=2026-12-18`,
+    bereich: 'Organisation',
+    etikett: 'Termine im Urlaub (Anna)',
+    konten: ['owner'],
+    ohneDaten:
+      'Der Seed hat keinen genehmigten Urlaub mit Terminen; die Liste prüfen UrlaubTerminePage.test.tsx und urlaub.spec.ts.',
   },
   {
     muster: '/betrieb/zeitkonto',

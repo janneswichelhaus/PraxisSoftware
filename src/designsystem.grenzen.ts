@@ -86,8 +86,6 @@ export const GRENZEN: Record<
     'features/statistics': 1,
 
     'features/training': 1,
-
-    'features/vacation': 1,
   },
   ueberschriften: {
     app: 1,

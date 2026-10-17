@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-16",
+  "stand": "2026-10-17",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -1008,9 +1008,12 @@
         },
         {
           "id": "url-001",
-          "name": "URL-001 Urlaub",
+          "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-17",
+          "nachweis": "Branch ccr-350340fc-pnh5ti-urlaub, Migration 20261124100000_url_001_urlaub_antraege.sql, supabase/tests/staff-leave.test.ts, scheduling-rules.test.ts, tests/e2e/authenticated/urlaub.spec.ts, Zweitreview in zwei Runden",
+          "vermerk": "Bereichsüberholung 7 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; gemeinsame Antragsmechanik für 8 bis 10; ANN-576 bis ANN-580; Sichtung per Bildstrecke im PR"
         },
         {
           "id": "zk-001",

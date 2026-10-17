@@ -193,6 +193,9 @@ const symbole = {
 // Bereiche
 // -----------------------------------------------------------------------------
 
+/** Wie die Funktionssuche den Urlaub findet (URL-001). */
+const URLAUB_STICHWORTE = ['Urlaubsantrag', 'Abwesenheit', 'Urlaubskonto', 'Urlaubsanspruch'];
+
 function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
   // Die angebundenen Punkte stehen vorn, die gekennzeichneten Vorschauen
   // dahinter. Wer hier etwas erledigen will, trifft zuerst auf das, was
@@ -273,7 +276,8 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
       end: false,
       stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
     },
-    { to: '/betrieb/urlaub', label: 'Urlaub', vorschau: true },
+    // URL-001: echt angebunden - Antrag, Entscheidung, Konto.
+    { to: '/betrieb/urlaub', label: 'Urlaub', end: false, stichworte: URLAUB_STICHWORTE },
     { to: '/betrieb/zeitkonto', label: 'Zeitkonto', vorschau: true },
     { to: '/betrieb/erstattungen', label: 'Erstattungen', vorschau: true },
   );
@@ -343,23 +347,45 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
     // hat - die Trainingsbetreuung ohne Behandlungsrolle -, findet sie hier
     // (UEB-EPIC-001). Ein Pfad gehört immer zu genau einem Bereich.
     const uebungenHier = canReadExerciseLibrary(roles) && !isTherapyStaff(roles);
+    // URL-001: Wer nur im Training arbeitet, sieht Organisatorisches nicht und
+    // findet den eigenen Urlaub deshalb hier - wie die Übungen.
+    const urlaubHier = !isTherapyStaff(roles);
     bereiche.push({
       id: 'training',
       ...BEREICHE.training,
       to: '/training',
-      pfade: uebungenHier ? ['/training', '/uebungen'] : ['/training'],
+      pfade: [
+        '/training',
+        ...(uebungenHier ? ['/uebungen'] : []),
+        ...(urlaubHier ? ['/betrieb/urlaub'] : []),
+      ],
       icon: symbole.training,
-      unterpunkte: uebungenHier
-        ? [
-            { to: '/training', label: BEGRIFFE.trainingskundInnen, end: false },
-            {
-              to: '/uebungen',
-              label: BEGRIFFE.uebungen,
-              end: false,
-              stichworte: ['Übungsbibliothek', BEGRIFFE.varianten, 'Übung'],
-            },
-          ]
-        : [],
+      unterpunkte:
+        uebungenHier || urlaubHier
+          ? [
+              { to: '/training', label: BEGRIFFE.trainingskundInnen, end: false },
+              ...(uebungenHier
+                ? [
+                    {
+                      to: '/uebungen',
+                      label: BEGRIFFE.uebungen,
+                      end: false,
+                      stichworte: ['Übungsbibliothek', BEGRIFFE.varianten, 'Übung'],
+                    },
+                  ]
+                : []),
+              ...(urlaubHier
+                ? [
+                    {
+                      to: '/betrieb/urlaub',
+                      label: 'Urlaub',
+                      end: false,
+                      stichworte: URLAUB_STICHWORTE,
+                    },
+                  ]
+                : []),
+            ]
+          : [],
     });
   }
 
