@@ -51,15 +51,9 @@ function urlaubswoche(): { von: string; bis: string } {
 
 const WOCHE = urlaubswoche();
 
-const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-
-/** Der Name einer Monatskachel, „Juli 2027“ (`monatLang`). */
+/** Der Name einer Monatskachel, „Juli 2027“: sichtbares Wort und Jahr (WCAG 2.5.3). */
 function monatsKachel(datum: string): string {
-  return MONATSNAME.format(new Date(`${datum.slice(0, 7)}-01T00:00:00Z`));
+  return `${MONAT_KURZ[Number(datum.slice(5, 7)) - 1]} ${datum.slice(0, 4)}`;
 }
 
 /** Monatsnamen wie in den Zeilen (Kurzform des Duden). */
@@ -160,6 +154,53 @@ async function abwesenheiten(
   expect(antwort.status()).toBe(200);
   return (await antwort.json()) as { on_date: string; kind: string }[];
 }
+
+/**
+ * Die wählbaren Monate mit sechs Wochenreihen (Montag zuerst) - die höchsten
+ * Kalenderseiten; ab Oktober 2026 sind es November, Mai und August.
+ */
+function sechsWochenMonate(): string[] {
+  const heute = new Date();
+  const monate: string[] = [];
+  for (let i = 0; i < 13; i += 1) {
+    const erster = new Date(Date.UTC(heute.getUTCFullYear(), heute.getUTCMonth() + i, 1));
+    const versatz = (erster.getUTCDay() + 6) % 7;
+    const tage = new Date(
+      Date.UTC(erster.getUTCFullYear(), erster.getUTCMonth() + 1, 0),
+    ).getUTCDate();
+    if (Math.ceil((versatz + tage) / 7) === 6) monate.push(iso(erster));
+  }
+  return monate;
+}
+
+test('G7: Monate mit sechs Wochen rollen nicht, auch nicht mit Feiertagen (Design-Review)', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const monate = sechsWochenMonate();
+  expect(monate.length).toBeGreaterThan(0);
+  await page.setViewportSize(TELEFON);
+  await anmelden(page, KONTEN.therapist);
+  await page.goto('/betrieb/urlaub/beantragen');
+  const heute = iso(new Date());
+  for (const [i, monat] of monate.entries()) {
+    const auswahl = page.getByRole('dialog', { name: 'Ab welchem Monat?' });
+    await auswahl.getByRole('button', { name: monatsKachel(monat) }).click();
+    const beginn = page.getByRole('dialog', { name: 'Erster Urlaubstag?' });
+    await stehtImBild(page, beginn, tag(beginn, monatsende(monat)));
+    await rolltNicht(beginn);
+    if (i === 0) await bild(page, 'b7-g7-02b-beginn-sechs-wochen-375');
+    await tag(beginn, monat < heute ? heute : monat).click();
+    const ende = page.getByRole('dialog', { name: 'Letzter Urlaubstag?' });
+    await stehtImBild(page, ende, ende.getByRole('button', { name: '3 Wochen' }));
+    await expect(tag(ende, monatsende(monat))).toBeInViewport();
+    await rolltNicht(ende);
+    if (i === 0) await bild(page, 'b7-g7-03b-ende-sechs-wochen-375');
+    // Zurück durch den Ablauf zur Monatswahl.
+    await ende.getByRole('button', { name: '← Zurück' }).click();
+    await beginn.getByRole('button', { name: '← Zurück' }).click();
+  }
+});
 
 test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (URL-001)', async ({
   page,

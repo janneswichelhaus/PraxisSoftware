@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test';
 const PRUEFSEITE = '/tests/e2e/fixtures/organisation.html';
 
 for (const breite of [375, 1280]) {
-  test(`öffnet auf den Mitarbeitenden, Vorschauen eingeklappt (${breite} px)`, async ({ page }) => {
+  test(`öffnet auf den Mitarbeitenden, die Vorschau mit Marke (${breite} px)`, async ({ page }) => {
     await page.setViewportSize({ width: breite, height: 800 });
     await page.goto(PRUEFSEITE);
 
@@ -21,14 +21,20 @@ for (const breite of [375, 1280]) {
     );
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Mitarbeiter:in anlegen' })).toBeVisible();
-    // Seit FLT-EPIC-001 ist die Radflotte echt und steht bei den echten Punkten.
+    // Seit FLT-EPIC-001 ist die Radflotte echt, seit URL-001 der Urlaub, seit
+    // AZ-001 die Arbeitszeit, seit ZK-001 das Zeitkonto - sie stehen bei den
+    // echten Punkten.
     await expect(menue.getByRole('link', { name: 'Radflotte' })).toHaveCount(1);
-    await expect(menue.getByRole('link', { name: /Urlaub/ })).toHaveCount(0);
+    await expect(menue.getByRole('link', { name: 'Urlaub' })).toHaveCount(1);
+    await expect(menue.getByRole('link', { name: 'Arbeitszeit', exact: true })).toHaveCount(1);
+    await expect(menue.getByRole('link', { name: 'Zeitkonto' })).toHaveCount(1);
 
-    const knopf = menue.getByRole('button', { name: 'Vorschau (3)' });
-    expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await knopf.click();
-    await expect(menue.getByRole('link', { name: /Urlaub/ })).toContainText('Vorschau');
+    // Eine einzelne Vorschau steht offen mit ihrer Marke (ANN-493) - ohne
+    // Knopf „Vorschau“, mit demselben Tippziel von 44 px.
+    await expect(menue.getByRole('button', { name: /^Vorschau/ })).toHaveCount(0);
+    const vorschau = menue.getByRole('link', { name: /Erstattungen/ });
+    await expect(vorschau).toContainText('Vorschau');
+    expect((await vorschau.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
     const ueberlauf = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

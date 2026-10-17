@@ -37,6 +37,8 @@ test.describe('Offene Punkte', () => {
     expect(gruppen).toEqual([
       'Rückfragen von der Plattform (1)',
       'Terminwünsche (2)',
+      'Urlaubsanträge (1)',
+      'Arbeitszeitänderungen (1)',
       'Aufgaben (3)',
       'Anrufe für morgen (2)',
       'Verordnungen zu erfassen (1)',

@@ -971,4 +971,22 @@ describe('SchedulingPage', () => {
     expect(screen.getByText(/Europe\/Berlin/)).toBeInTheDocument();
     expect(screen.getByText(/keine Arbeitszeiterfassung/)).toBeInTheDocument();
   });
+
+  it('führt zurück zum Antrag, wenn ein Urlaub an abweichenden Zeiten anhielt (URL-001)', async () => {
+    renderWithProviders(
+      <SchedulingPage user={testUser(['owner'])} />,
+      '/praxis/planung?person=s1&zurueck=%2Fbetrieb%2Furlaub%2Fentscheiden%2Fa1',
+    );
+    await wochenplanAbwarten();
+    expect(screen.getByRole('link', { name: '← Zurück zum Antrag' })).toHaveAttribute(
+      'href',
+      '/betrieb/urlaub/entscheiden/a1',
+    );
+  });
+
+  it('zeigt ohne Rückweg in der Adresse keinen', async () => {
+    rendern();
+    await wochenplanAbwarten();
+    expect(screen.queryByRole('link', { name: /^← Zurück/ })).toBeNull();
+  });
 });
