@@ -1,4 +1,4 @@
-import { useId, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { useId, type ReactNode, type Ref, type TextareaHTMLAttributes } from 'react';
 
 interface TextAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'> {
   label: string;
@@ -12,6 +12,13 @@ interface TextAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>
    * `useId` erzeugte ist es nicht. Ohne Angabe bleibt alles wie bisher.
    */
   feldId?: string | undefined;
+  /** Für den Fokus nach einer Auswahl, etwa einer Erwähnung (TEAM-001). */
+  ref?: Ref<HTMLTextAreaElement>;
+  /**
+   * Beschriftung nur für Vorlesesoftware - für ein Feld, dessen Zweck die
+   * Umgebung zeigt, etwa die Eingabe eines Gesprächs (TEAM-001).
+   */
+  labelVersteckt?: boolean;
 }
 
 /**
@@ -22,7 +29,15 @@ interface TextAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>
  * Feld vorlesen. Die Schriftgröße bleibt bei 16 px - kleinere Werte lassen
  * iOS beim Fokussieren hineinzoomen.
  */
-export function TextArea({ label, hint, error, feldId, className = '', ...props }: TextAreaProps) {
+export function TextArea({
+  label,
+  hint,
+  error,
+  feldId,
+  labelVersteckt = false,
+  className = '',
+  ...props
+}: TextAreaProps) {
   const erzeugt = useId();
   const id = feldId ?? erzeugt;
   const hintId = hint ? `${id}-hint` : undefined;
@@ -32,7 +47,7 @@ export function TextArea({ label, hint, error, feldId, className = '', ...props 
   return (
     // `feld`: Der Titel reagiert auf den Fokus (ANN-567, `index.css`).
     <div className="feld flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-ink text-sm font-medium">
+      <label htmlFor={id} className={labelVersteckt ? 'sr-only' : 'text-ink text-sm font-medium'}>
         {label}
       </label>
       {hint ? (

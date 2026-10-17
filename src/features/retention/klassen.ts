@@ -184,6 +184,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Nur, dass eine Person das Barometer eines Monats abgegeben hat - damit der Hinweis verschwindet. Fällt nach dem Monat.',
   },
+  teamchat: {
+    label: 'Teamchat',
+    beschreibung:
+      'Nachrichten in Kanälen und Direktnachrichten. Zwölf Monate ab ihrem Tag, dann endgültig gelöscht; Dauerhaftes gehört in den Fachprozess.',
+  },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',
     beschreibung: 'Organisation und Standorte.',

@@ -841,6 +841,8 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // SEC-001: Regel in public.session_status (Vermerke älter als ein Tag),
       // Tests in sitzungssperre.test.ts.
       'sitzungsvermerk',
+      // TEAM-001: Regel in app.delete_due_team_messages, Tests in teamchat.test.ts.
+      'teamchat',
       'termin_ohne_nachweis',
       // POR-009: Regel in apply_retention, Tests in platform-appointment-requests.test.ts.
       'terminwunsch',

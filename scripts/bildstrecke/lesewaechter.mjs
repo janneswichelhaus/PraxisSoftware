@@ -29,6 +29,9 @@ const LESENDE_RPC_EINZELN = new Set([
   'reimbursement_payout_details',
   // ORG-008: die Vorschläge für den Ladestrom im Eingang - `stable`, nur lesend.
   'electricity_suggestions',
+  // TEAM-001: Das Öffnen eines Gesprächs zieht nur den eigenen Lesestand vor
+  // (ANN-609) - wie das Öffnen einer Akte ein Lesen, kein Schreiben.
+  'mark_team_channel_read',
 ]);
 // Namen, die wie Lesen aussehen, aber schreiben.
 const SCHREIBEND_TROTZ_NAME = /^platform_(accesses_take_back_deletion|invitation_)/;

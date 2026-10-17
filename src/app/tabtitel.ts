@@ -66,7 +66,7 @@ const REGELN: readonly [RegExp, TabName][] = [
   [/^\/abrechnung(\/|$)/, 'Abrechnung'],
   [/^\/statistiken(\/|$)/, 'Statistiken'],
   [/^\/(praxis|betrieb|uebungen)(\/|$)/, 'Organisation'],
-  [/^\/(team|rueckfragen)(\/|$)/, 'Nachrichten'],
+  [/^\/(team|rueckfragen|fuer-dich)(\/|$)/, 'Nachrichten'],
   [/^\/training(\/|$)/, 'Training'],
   [/^\/mein-konto$/, 'Mein Konto'],
   [/^\/bereiche$/, 'Alle Bereiche'],

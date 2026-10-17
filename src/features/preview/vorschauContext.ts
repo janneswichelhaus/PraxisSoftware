@@ -2,10 +2,8 @@ import { createContext, useContext } from 'react';
 import type {
   Depot,
   ErbrachteLeistung,
-  Kanal,
   Katalogleistung,
   Mitarbeitende,
-  Nachricht,
   Rad,
   Rechnung,
   Urlaubsantrag,
@@ -26,8 +24,6 @@ export interface Vorschauzustand {
   raeder: Rad[];
   mitarbeitende: Mitarbeitende[];
   urlaub: Urlaubsantrag[];
-  kanaele: Kanal[];
-  nachrichten: Nachricht[];
   katalog: Katalogleistung[];
   leistungen: ErbrachteLeistung[];
   rechnungen: Rechnung[];

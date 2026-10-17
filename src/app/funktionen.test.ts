@@ -43,10 +43,12 @@ describe('funktionskatalog', () => {
     expect(bezeichnungen(katalog).filter((name) => name === 'Patient:innen')).toHaveLength(1);
   });
 
-  it('kennzeichnet Vorschaubereiche als solche', () => {
+  it('kennzeichnet echt angebundene Bereiche nicht als Vorschau', () => {
     const katalog = funktionskatalog(testUser(['owner']));
+    // Seit TEAM-001 ist der Teamchat echt angebunden (Überholung 11).
     const teamchat = katalog.find((eintrag) => eintrag.bezeichnung === 'Teamchat');
-    expect(teamchat?.vorschau).toBe(true);
+    expect(teamchat).toBeDefined();
+    expect(teamchat?.vorschau).toBeUndefined();
     // Seit ERS-001 echt angebunden: die Erstattungen tragen keine
     // Kennzeichnung mehr, und „Erstattung beantragen“ ist ein Vorgang - auch
     // im Training.

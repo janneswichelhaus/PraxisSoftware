@@ -269,11 +269,36 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
 
   // FLT-EPIC-001: Lesen alle Rollen der Behandlungsseite.
   if (behandlungsseite) {
+    // ANN-613: Nachrichten über Räder, Schlüssel und Pannen stehen in der
+    // Radflotte, nicht als Kanal im Teamchat.
+    const flottenAnsichten: Ansicht[] = [
+      {
+        to: '/betrieb/flotte',
+        label: 'Räder',
+        end: true,
+        pfade: [
+          '/betrieb/flotte/rad',
+          '/betrieb/flotte/depots',
+          '/betrieb/flotte/schluessel',
+          '/betrieb/flotte/checkup',
+          '/betrieb/flotte/panne',
+          '/betrieb/flotte/meldungen',
+        ],
+        stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
+      },
+      {
+        to: '/betrieb/flotte/nachrichten',
+        label: 'Nachrichten',
+        end: false,
+        stichworte: ['Nachrichten der Radflotte', 'Rad', 'Panne besprechen'],
+      },
+    ];
     eintraege.push({
       to: '/betrieb/flotte',
       label: 'Radflotte',
       end: false,
       stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
+      ansichten: flottenAnsichten,
     });
   }
 
@@ -439,31 +464,42 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   // Kommunikation und Organisatorisches zeigen Daten, die der Server nur den
   // Rollen der Behandlungsseite gibt (`app.is_staff()`). Ein reines
   // Trainingskonto sieht Übersicht, Kalender und Training (TRN-003, TRN-006).
-  if (isTherapyStaff(roles)) {
+  // Nachrichten wie bei Slack (ANN-614): Der Bereich öffnet auf dem Teamchat,
+  // daneben „Für dich“ (Erwähnungen und Antworten) und - nur für die
+  // Behandlungsseite - die Rückfragen der Patient:innen, getrennt vom
+  // Teamchat (§10). Den Teamchat hat jede Praxisrolle (ANN-611).
+  if (isStaff(roles)) {
+    const nachrichten: Unterpunkt[] = [
+      {
+        to: '/team',
+        label: 'Teamchat',
+        end: false,
+        stichworte: ['Kanäle', 'Direktnachricht', 'Threads', 'Team'],
+      },
+      {
+        to: '/fuer-dich',
+        label: 'Für dich',
+        end: false,
+        stichworte: ['Erwähnungen', 'Antworten', 'Aktivität'],
+      },
+      ...(isTherapyStaff(roles)
+        ? [
+            {
+              to: '/rueckfragen',
+              label: 'Rückfragen',
+              end: false,
+              stichworte: ['Nachrichten', 'Fragen von Patient:innen', 'Plattform'],
+            },
+          ]
+        : []),
+    ];
     bereiche.push({
       id: 'team',
       ...BEREICHE.team,
-      // KOM-002 (ANN-314): Der Bereich oeffnet auf den Rueckfragen, dem
-      // ersten Punkt, der wirklich wirkt. Seitdem ist er nicht mehr ganz
-      // Vorschau und steht am Telefon wieder in der Leiste; der Teamchat
-      // speichert weiter nichts (ANN-112) und bleibt als Vorschau gekennzeichnet.
-      to: '/rueckfragen',
-      pfade: ['/rueckfragen', '/team'],
+      to: '/team',
+      pfade: nachrichten.map((punkt) => punkt.to),
       icon: symbole.team,
-      // Kein Unterpunkt „Verzeichnis": wer im Team ist und wie man die Person
-      // erreicht, steht in der echten Mitarbeiterverwaltung unter
-      // Organisatorisches
-      // (STAFF-001). Ein zweites, synthetisches Verzeichnis daneben waere eine
-      // vorgetaeuschte Funktion.
-      unterpunkte: [
-        {
-          to: '/rueckfragen',
-          label: 'Rückfragen',
-          end: false,
-          stichworte: ['Nachrichten', 'Fragen von Patient:innen', 'Plattform'],
-        },
-        { to: '/team', label: 'Teamchat', vorschau: true },
-      ],
+      unterpunkte: nachrichten,
     });
   }
 

@@ -611,6 +611,8 @@ Marke vorsieht.
 
 **Erwartet.** Mit der Tübinger Vorlage (ANN-554): Werkstatt und Teamleitung als Anrufknopf, die Ruhetagsfrage aus dem Datum, „Panne melden“ an der Karte des nächsten Wegs, die Zusammenfassung kürzer und das Ersatzrad in der Meldung; bei G1 der Anruf als Hauptknopf.
 
+**Vermerk TEAM-001 (2026-10-17).** Statt eines Team-Kanals „Flotte“ hat die Radflotte jetzt die Ansicht „Nachrichten“ (ANN-613); die Panne kann darauf verweisen. Der Rest bleibt offen.
+
 ### BEF-177 — Urheber und Zeitpunkt des Wochenplans stehen jeder Praxisrolle offen
 
 |         |   |

@@ -6362,3 +6362,75 @@ Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wie
 **Anker.** `public.submit_staff_feedback_message`.
 
 **Änderungspfad.** Länge oder Empfänger: dort · Aufwand `klein`.
+
+### ANN-609 — Teamchat: kein Lesen über andere, nur der eigene Stand
+
+Datenschutz · offen · 2026-10-17 · Claude · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Keine Lesebestätigung, kein Online-Status, kein „zuletzt gesehen“, keine Tipp-Anzeige. Der Lesestand je Person und Gespräch ist die Zeit der neuesten gesehenen Nachricht, nicht die des Lesens, und dient nur den eigenen Zählern; niemand sonst liest ihn, auch owner nicht, und er fällt mit dem Ausscheiden. Direktnachrichten lesen nur die zwei Beteiligten. Bearbeiten ohne Verlauf, nur die Marke „bearbeitet“.
+
+**Begründung.** §20; ADR-024 Punkt 12 (keine Lesebestätigung, Wertung übertragen); BAG 1 ABR 7/15 (zuordenbare Zeitstempel als Verhaltensdaten); Art. 5 Abs. 1 lit. c DSGVO. Unsicher: ob die Praxis „gesehen“ vermisst.
+
+**Anker.** `public.team_read_states`, `app.team_channel_readable` (`20261204100000_team_001_teamchat.sql`).
+
+**Änderungspfad.** Freiwilliges „Gesehen“ als eigene Handlung: Tabelle und Knopf · Aufwand `mittel`, mit ADR-Änderung.
+
+### ANN-610 — Teamchat: zwölf Monate je Nachricht, Anker im Thread
+
+Datenschutz · offen · 2026-10-17 · Claude · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jede Nachricht fällt zwölf Monate ab ihrem Tag, endgültig und mit Journal. Laufen an einer fälligen Ausgangsnachricht noch Antworten, fallen Text, Verfasser:in und Erwähnungen; die Zeile bleibt als Anker ohne Inhalt, bis die letzte Antwort fällt. Eigenes Löschen ist endgültig, mit Antworten derselbe Anker. Leere Direktnachrichten fallen zwölf Monate nach Beginn; Kanäle bleiben. Nachrichten Ausgeschiedener folgen derselben Frist.
+
+**Begründung.** ADR-008 Fassung 5 (12 Monate rollierend, §10); §18 (kein Soft-Delete); Art. 5 Abs. 1 lit. e DSGVO: eine neue Antwort hält alten Inhalt nicht am Leben. Unsicher: ob Direktnachrichten nach einem Austritt früher fallen sollen.
+
+**Anker.** `app.delete_due_team_messages`, `public.retention_classes` (`teamchat`).
+
+**Änderungspfad.** Frist: `update` der Klasse · Aufwand `klein`; eigene Frist nach Austritt: Regel im Löschlauf · Aufwand `mittel`.
+
+### ANN-611 — Teamchat: wer teilnimmt, wer Kanäle führt, wer entfernt
+
+Praxisprozess · offen · 2026-10-17 · Claude, Kanäle Jannes · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Teilnehmen kann jede Praxisrolle mit aktivem Mitarbeiterdatensatz, auch die Trainingsbetreuung. Offene Kanäle sieht die ganze Praxis; anlegen und archivieren owner und Teamleitung. Es gibt keine Startkanäle – die Praxis richtet ihre Kanäle selbst ein (Jannes 2026-10-17). owner entfernt fremde Nachrichten nur in offenen Kanälen und im Gespräch der Radflotte (Anker „von der Praxisleitung entfernt“, `removed_by` als Nachweis, kein Audit). Keine privaten Kanäle, kein @alle.
+
+**Begründung.** §10 (Kanäle, Direktnachrichten); 3–8 Personen brauchen Übersicht; ADR-010 Punkt 15 und 17; Referenzabgleich (Slack: Admin löscht fremde).
+
+**Anker.** `app.can_use_teamchat`, `app.can_manage_team_channels`, `app.create_team_fleet_channel`, `public.delete_team_message`.
+
+**Änderungspfad.** Weitere Rolle oder alle legen an: eine Funktion · Aufwand `klein`.
+
+### ANN-612 — Teamchat: Nachsehen statt Zustellen, Entwurf nur im Speicher
+
+Technik · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Eine offene Liste, ein Gespräch oder ein Thread sieht alle 20 Sekunden beim Server nach; es gibt keine Push-Zustellung und keine Echtzeitverbindung. Ein Entwurf bleibt je Gespräch nur im Arbeitsspeicher der Sitzung, nicht auf dem Gerät. Ohne Anhänge, Reaktionen, Stummschalten und Vorgangsbezug in dieser Stufe.
+
+**Begründung.** ADR-024 regelt Benachrichtigungen des Teamchats nicht (eigener ADR nötig); ADR-017 Punkt 30 gibt Anhänge nicht frei; eine Echtzeitverbindung wäre ein neuer Dienstweg (ADR-002). Bei 3–8 Personen genügt Nachsehen.
+
+**Anker.** `NACHSEHEN_MS` in `src/features/teamchat/api.ts`.
+
+**Änderungspfad.** Echtzeit: Supabase Realtime mit Prüfung gegen ADR-002 · Aufwand `mittel`; Push: ADR-024 ändern · Aufwand `groß`.
+
+### ANN-613 — Nachrichten zu Rädern stehen in der Radflotte
+
+Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Statt eines Kanals „Flotte“ im Teamchat hat die Radflotte eine Ansicht „Nachrichten“: ein Gespräch je Praxis mit Threads, Erwähnungen und derselben Löschfrist wie der Teamchat. Lesen und schreiben, die die Radflotte lesen (owner, therapist, team_lead, office); die Trainingsbetreuung nicht. Es entsteht mit der Praxis, lässt sich nicht archivieren; owner entfernt dort wie in offenen Kanälen. Kein Gespräch je Rad.
+
+**Begründung.** Jannes 2026-10-17: „Es wird keinen Channel für das Rad brauchen. Dafür gibt es schon den anderen Bereich“; Rechte wie `app.can_read_fleet` (FLT-001). Ein Gespräch je Rad wäre die feinere, aber teurere Variante (Frage im PR).
+
+**Anker.** `team_channels.kind = 'fleet'`, `app.team_staff_reads_fleet`.
+
+**Änderungspfad.** Je Rad: Spalte `bike_id` und ein Gespräch je Rad auf der Radseite · Aufwand `mittel`.
+
+### ANN-614 — Nachrichten aufgebaut wie Slack
+
+Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Der Bereich Nachrichten öffnet auf dem Teamchat (löst die Öffnung auf den Rückfragen aus ANN-314 ab). Reiter: Teamchat (Home: Kanäle, dann Direktnachrichten, Ungelesenes fett und zuerst; Kurzweg „Threads“), „Für dich“ (Erwähnungen und Antworten in Threads, denen man folgt) und Rückfragen (getrennt, §10). Im Gespräch Tagestrenner und eine Linie „Neu“. Man folgt einem Thread, wenn man ihn begonnen, darin geantwortet hat oder erwähnt ist. Nicht übernommen: Präsenz, „gesehen von“, Push, Anhänge, Reaktionen, Gruppen-Direktnachrichten, „Für später“.
+
+**Begründung.** Jannes 2026-10-17: „ähnlich wie Slack“; Slack mobil: Home, DMs, Activity; Threads-Sammelansicht (Slack-Hilfe). Ausgelassenes nach §20, ADR-017, ADR-024.
+
+**Anker.** `public.list_team_activity`, `public.list_team_threads`, Bereich `team` in `src/app/navigation.tsx`.
+
+**Änderungspfad.** Weitere Slack-Teile (Später, Gruppen-DM): je eine Funktion und Seite · Aufwand `mittel`.

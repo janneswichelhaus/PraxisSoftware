@@ -2,7 +2,8 @@
 
 ## Status
 
-Angenommen — **Fassung 4** (2026-10-17): Rückmeldungen von Beschäftigten
+Angenommen — **Fassung 5** (2026-10-17): Die rollierende Löschung des
+Teamchats (Punkt 12 neu). Fassung 4 (2026-10-17): Rückmeldungen von Beschäftigten
 (§20.2) als eigene Datenklasse im Retention Schedule. Fassung 3 (2026-10-14): Der Fristanker der klinischen
 Akte (Punkt 11 neu, Befund B1). Fassung 2 (2026-10-03): Die Fristen des
 Auditlogs, des Löschjournals und der Löschaufträge im Retention Schedule
@@ -10,7 +11,7 @@ Auditlogs, des Löschjournals und der Löschaufträge im Retention Schedule
 
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-10-03 · Fassung 3: 2026-10-14 · Fassung 4: 2026-10-17
+2026-08-28 · Fassung 2: 2026-10-03 · Fassung 3: 2026-10-14 · Fassung 4: 2026-10-17 · Fassung 5: 2026-10-17
 
 ## Kontext
 
@@ -71,6 +72,14 @@ gehört zu den Vorbedingungen des Produktivstarts.
     nicht. Rechnungen sind kein Teil des Ankers: Sie halten über ihre eigene
     Frist (Punkt 5). Der Projektinhaber hat festgelegt, dass die Frist ein
     Datum auch ohne ausdrücklichen Abschluss braucht (B1); Umsetzung ANN-511.
+12. *(Fassung 5)* **Der Teamchat wird je Nachricht gelöscht**, zwölf Monate
+    ab ihrem Tag, endgültig und mit Eintrag im Löschjournal. Eine neue
+    Antwort verlängert keine ältere Nachricht. Hängen an einer fälligen
+    Ausgangsnachricht noch laufende Antworten, fallen Text, Verfasser:in und
+    Erwähnungen; die Zeile bleibt ohne Inhalt als Anker des Threads, bis die
+    letzte Antwort fällt. Ein solcher Anker ist kein Soft-Delete (Punkt 10),
+    weil nichts Personenbezogenes mehr darin steht. Was dauerhaft gelten
+    soll, gehört in den Fachprozess (§10); Umsetzung ANN-610.
 
 ### Initialer Retention Schedule
 
@@ -92,7 +101,7 @@ gehört zu den Vorbedingungen des Produktivstarts.
 | Normale Authentifizierungs- und Securitylogs | initial 12 Monate | interne Initialentscheidung |
 | Löschjournal (Fassung 2) | 60 Tage ab der Löschung (Backups 30 Tage, ADR-012) | abgeleitet |
 | Quittierte Löschaufträge der Ablage (Fassung 2) | 3 Jahre ab der Quittung; offene nie | interne Entscheidung |
-| Interner Teamchat | initial rollierend 12 Monate; dauerhaft relevante Inhalte MÜSSEN in den dafür vorgesehenen Fachprozess übernommen werden | interne Initialentscheidung |
+| Interner Teamchat (Fassung 5: Punkt 12) | initial rollierend 12 Monate je Nachricht ab ihrem Tag; dauerhaft relevante Inhalte MÜSSEN in den dafür vorgesehenen Fachprozess übernommen werden | interne Initialentscheidung |
 | Rückmeldungen von Beschäftigten (Fassung 4, §20.2) | 12 Monate ab Ende des Monats der Abgabe; endgültig gelöscht, kein Soft-Delete | interne Entscheidung |
 
 **Fristen ohne unmittelbare gesetzliche Vorgabe sind interne
@@ -170,7 +179,8 @@ Verankerung im Code und Änderungspfad.
   beziehen — insbesondere bei einer Aufbewahrung von 3 Jahren gegenüber 10
   Jahren Patientenakte?
 - Wie wird der interne Teamchat rollierend gelöscht, ohne dass fachlich
-  relevante Inhalte verloren gehen (§10, §13)?
+  relevante Inhalte verloren gehen (§10, §13)? *Beantwortet mit Punkt 12
+  (Fassung 5): je Nachricht; was bleiben soll, gehört in den Fachprozess.*
 - Welche Fristen ändern sich nach der Validierung im DSFA-Prozess, und wie
   wird diese Änderung nachgezogen?
 - Wie werden Dateien und Anhänge behandelt, die in mehreren Kontexten
@@ -184,3 +194,5 @@ Verankerung im Code und Änderungspfad.
 | 1 | 2026-08-28 | Angenommen. |
 | 2 | 2026-10-03 | Retention Schedule (LOG-EPIC-001): Auditlog in zwei Fristen (12 Monate Lesen und Sicherheit, 3 Jahre übrige), Löschjournal 60 Tage, quittierte Löschaufträge 3 Jahre; ein Legal Hold hält jeden Auditeintrag seiner Akte ([ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3). Übrige Punkte unverändert. |
 | 3 | 2026-10-14 | Punkt 11 neu (B1): Fristanker der klinischen Akte aus letzter Behandlung, letzter Leistung und ausdrücklichem Abschluss; keine Frist, solange ein Behandlungstermin bevorsteht. Beantwortet die Folgefrage zum „Abschluss der Behandlung". Übrige Punkte unverändert. |
+| 4 | 2026-10-17 | Datenklasse „Rückmeldungen von Beschäftigten“ (ORG-006, §20.2, ANN-607): 12 Monate ab Ende des Monats der Abgabe. Übrige Punkte unverändert. |
+| 5 | 2026-10-17 | Punkt 12 neu (TEAM-001, ANN-610): rollierende Löschung des Teamchats je Nachricht; Anker ohne Inhalt im Thread; beantwortet die Folgefrage dazu. Übrige Punkte unverändert. |

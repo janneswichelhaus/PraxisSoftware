@@ -160,39 +160,6 @@ export interface Urlaubsantrag {
 }
 
 // -----------------------------------------------------------------------------
-// Teamkommunikation
-// -----------------------------------------------------------------------------
-
-export type Vorgangsart = 'termin' | 'tour' | 'panne' | 'urlaub';
-
-export interface Vorgangsbezug {
-  art: Vorgangsart;
-  /** Anzeigetext. Ein Link erweitert keine Berechtigung. */
-  label: string;
-}
-
-export interface Kanal {
-  id: string;
-  name: string;
-  beschreibung: string;
-  art: 'kanal' | 'direkt';
-  mitgliedIds: string[];
-}
-
-export interface Nachricht {
-  id: string;
-  kanalId: string;
-  autorId: string;
-  zeitpunkt: string;
-  text: string;
-  /** Bei Antworten: die ID der Ausgangsnachricht. */
-  threadVon: string | null;
-  erwaehnungen: string[];
-  bezug: Vorgangsbezug | null;
-  gelesen: boolean;
-}
-
-// -----------------------------------------------------------------------------
 // Abrechnung
 // -----------------------------------------------------------------------------
 

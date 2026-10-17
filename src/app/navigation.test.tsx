@@ -156,15 +156,15 @@ describe('Arbeitsbereiche je Rolle', () => {
   });
 
   it('stellt in jedem Bereich die angebundenen Punkte vor die Vorschau', () => {
-    // Seit ERS-001 hat Organisatorisches keine Vorschau mehr; die Regel gilt
-    // weiter überall, wo eine steht (Kommunikation: der Teamchat).
+    // Seit ERS-001 hat Organisatorisches keine Vorschau mehr, seit TEAM-001
+    // auch die Kommunikation nicht; die Regel gilt weiter, wo eine entsteht.
     const bereiche = bereicheFuer(['owner']);
     const betrieb = bereiche.find((bereich) => bereich.id === 'betrieb');
     expect(betrieb?.unterpunkte.filter((punkt) => punkt.vorschau)).toEqual([]);
     const mitVorschau = bereiche.filter((bereich) =>
       bereich.unterpunkte.some((punkt) => punkt.vorschau),
     );
-    expect(mitVorschau.length).toBeGreaterThan(0);
+    expect(mitVorschau).toEqual([]);
     for (const bereich of mitVorschau) {
       const punkte = bereich.unterpunkte;
       const ersteVorschau = punkte.findIndex((punkt) => punkt.vorschau);
@@ -174,14 +174,22 @@ describe('Arbeitsbereiche je Rolle', () => {
   });
 
   it('fuehrt kein zweites, synthetisches Teamverzeichnis', () => {
-    // KOM-002 (ANN-314): Rückfragen und der Teamchat als Vorschau - kein
-    // Verzeichnis neben der Mitarbeiterverwaltung.
+    // KOM-002 (ANN-314): Rückfragen und, seit TEAM-001 echt, der Teamchat -
+    // kein Verzeichnis neben der Mitarbeiterverwaltung.
+    // ANN-614: wie bei Slack öffnet der Bereich auf dem Teamchat.
     const team = bereicheFuer(['owner']).find((bereich) => bereich.id === 'team');
-    expect(team?.to).toBe('/rueckfragen');
+    expect(team?.to).toBe('/team');
     expect(team?.unterpunkte.map((punkt) => [punkt.to, Boolean(punkt.vorschau)])).toEqual([
+      ['/team', false],
+      ['/fuer-dich', false],
       ['/rueckfragen', false],
-      ['/team', true],
     ]);
+    // Die Trainingsbetreuung hat keine Rückfragen der Behandlung.
+    expect(
+      bereicheFuer(['trainer'])
+        .find((bereich) => bereich.id === 'team')
+        ?.unterpunkte.map((punkt) => punkt.to),
+    ).toEqual(['/team', '/fuer-dich']);
   });
 
   it('zeigt Einstellungen, Protokoll und Aufbewahrung nur der Praxisleitung', () => {
@@ -252,11 +260,13 @@ describe('Arbeitsbereiche je Rolle', () => {
     }
   });
 
-  it('zeigt einem reinen Trainingskonto Übersicht, Kalender, Training und Organisation', () => {
+  it('zeigt einem reinen Trainingskonto Übersicht, Kalender, Training, Teamchat und Organisation', () => {
     // Seit TRN-003: Mitarbeitende und Kommunikation zeigen Daten, die der
     // Server nur der Behandlungsseite gibt (`app.is_staff()`). Organisation
     // seit ORG-001 mit dem, was die Trainingsbetreuung selbst betrifft.
-    expect(ids(['trainer'])).toEqual(['heute', 'termine', 'training', 'betrieb']);
+    // Seit TEAM-001 dazu die Nachrichten - nur mit dem Teamchat (ANN-611).
+    expect(ids(['trainer'])).toEqual(['heute', 'termine', 'training', 'team', 'betrieb']);
+    expect(bereicheFuer(['trainer']).find((b) => b.id === 'team')?.to).toBe('/team');
     // Wer beide Rollen hat, sieht beides - Häufung, kein Schluss (§4.8).
     expect(ids(['therapist', 'trainer'])).toEqual(
       expect.arrayContaining(['patienten', 'training', 'betrieb']),

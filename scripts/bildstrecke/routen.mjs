@@ -63,6 +63,14 @@ export const IDS = Object.freeze({
    * nichts hat. Bewusst kein Null-UUID: Die Seiten prüfen das Format.
    */
   ohne: '0b0b0b0b-0b0b-4b0b-8b0b-0b0b0b0b0b0b',
+  /** TEAM-001: Kanal Allgemein mit Thread (reicher Seed, praxiswoche.sql). */
+  kanalAllgemein: '7e7e7e7e-7e7e-4e7e-8e7e-000000000001',
+  /** Die Bitte um Belege als Ausgangsnachricht mit einer Antwort. */
+  threadBelege: '7e7e7e7e-7e7e-4e7e-8e7e-000000000101',
+  /** ANN-613: die Panne an Rad 3 im Gespräch der Radflotte, mit einer Antwort. */
+  threadPanne: '7e7e7e7e-7e7e-4e7e-8e7e-000000000201',
+  /** Direktnachricht Jannes – Anna. */
+  direktAnna: '7e7e7e7e-7e7e-4e7e-8e7e-000000000004',
 });
 
 /** Reihenfolge der Bereiche im Kontaktbogen - grob nach den Design-Batches. */
@@ -649,7 +657,42 @@ export const ROUTEN = Object.freeze([
     muster: '/team',
     pfad: '/team',
     bereich: 'Eingang',
-    etikett: 'Teamchat (Vorschau)',
+    etikett: 'Teamchat',
+    konten: ['owner', 'therapist', 'trainer'],
+  },
+  {
+    muster: '/team/threads',
+    pfad: '/team/threads',
+    bereich: 'Eingang',
+    etikett: 'Teamchat: Threads',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/fuer-dich',
+    pfad: '/fuer-dich',
+    bereich: 'Eingang',
+    etikett: 'Nachrichten: Für dich',
+    konten: ['owner', 'therapist', 'trainer'],
+  },
+  {
+    muster: '/team/neu',
+    pfad: '/team/neu',
+    bereich: 'Eingang',
+    etikett: 'Teamchat: neue Nachricht',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/team/:kanalId',
+    pfad: `/team/${IDS.kanalAllgemein}`,
+    bereich: 'Eingang',
+    etikett: 'Teamchat: Kanal Allgemein',
+    konten: ['owner', 'therapist', 'trainer'],
+  },
+  {
+    muster: '/team/:kanalId/:threadId',
+    pfad: `/team/${IDS.kanalAllgemein}/${IDS.threadBelege}`,
+    bereich: 'Eingang',
+    etikett: 'Teamchat: Antworten zu den Belegen',
     konten: ['owner', 'therapist'],
   },
 
@@ -778,6 +821,20 @@ export const ROUTEN = Object.freeze([
     pfad: '/betrieb/flotte',
     bereich: 'Organisation',
     etikett: 'Radflotte',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/flotte/nachrichten',
+    pfad: '/betrieb/flotte/nachrichten',
+    bereich: 'Organisation',
+    etikett: 'Radflotte: Nachrichten',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/flotte/nachrichten/:threadId',
+    pfad: `/betrieb/flotte/nachrichten/${IDS.threadPanne}`,
+    bereich: 'Organisation',
+    etikett: 'Radflotte: Antworten zur Panne',
     konten: ['owner', 'therapist'],
   },
   {
