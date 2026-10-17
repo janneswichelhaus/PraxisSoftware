@@ -182,8 +182,12 @@ describe('Arbeitsbereiche je Rolle', () => {
 
   it('kennzeichnet noch nicht angebundene Unterpunkte als Vorschau', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
+    const erstattungen = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/erstattungen');
+    expect(erstattungen?.vorschau).toBe(true);
+    // Seit ZK-001 echt angebunden: das Zeitkonto trägt keine Kennzeichnung mehr.
     const zeitkonto = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/zeitkonto');
-    expect(zeitkonto?.vorschau).toBe(true);
+    expect(zeitkonto).toBeDefined();
+    expect(zeitkonto?.vorschau).toBeUndefined();
     // Seit URL-001 echt angebunden: der Urlaub trägt keine Kennzeichnung mehr.
     const urlaub = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/urlaub');
     expect(urlaub).toBeDefined();

@@ -10,7 +10,6 @@ import {
   demoRechnungen,
   demoUrlaub,
   demoZahlungen,
-  demoZeitbuchungen,
   demoCheckupfragen,
   tagesschluessel,
 } from './demodaten';
@@ -30,7 +29,6 @@ export function erzeugeVorschauzustand(heute = new Date()): Vorschauzustand {
     raeder: demoRaeder(stichtag),
     mitarbeitende: demoMitarbeitende,
     urlaub: demoUrlaub(stichtag),
-    zeitbuchungen: demoZeitbuchungen(stichtag),
     erstattungen: demoErstattungen(stichtag),
     kanaele: demoKanaele,
     nachrichten: demoNachrichten(stichtag),

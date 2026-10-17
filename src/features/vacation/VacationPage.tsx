@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -24,6 +23,7 @@ import {
   type Urlaubskonto,
   type Urlaubsstand,
 } from './api';
+import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { urlaubsfenster } from './fenster';
 import { statusAnzeige, tage, urlaubstage, zeitraumText } from './zeitraum';
 
@@ -44,7 +44,8 @@ import { statusAnzeige, tage, urlaubstage, zeitraumText } from './zeitraum';
 export function VacationPage({ user }: { user: CurrentUser }) {
   const heute = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
   const fenster = urlaubsfenster(heute);
-  const meldung = (useLocation().state as { meldung?: unknown } | null)?.meldung;
+  // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder.
+  const { meldung } = useMeldungAusVerlauf();
   const abfrage = useQuery({
     queryKey: urlaubSchluessel(fenster.von, fenster.bis),
     queryFn: () => fetchUrlaub(fenster.von, fenster.bis),
@@ -62,7 +63,11 @@ export function VacationPage({ user }: { user: CurrentUser }) {
           ) : null
         }
       />
-      {typeof meldung === 'string' ? <Rueckmeldung className="mb-6">{meldung}</Rueckmeldung> : null}
+      {meldung ? (
+        <Rueckmeldung key={meldung.schluessel} className="mb-6">
+          {meldung.text}
+        </Rueckmeldung>
+      ) : null}
       <Abfragezustand
         abfrage={abfrage}
         laden="Urlaub wird geladen …"

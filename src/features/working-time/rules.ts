@@ -27,7 +27,9 @@ export const WEEKDAYS = ['1', '2', '3', '4', '5', '6', '7'] as const;
 
 /**
  * Was gegen einen Tag spricht. Die vier gesetzlichen Gründe tragen dieselben
- * Kennungen wie am Server, damit Gerät und Server dieselben Sätze zeigen.
+ * Kennungen wie am Server, damit Gerät und Server dieselben Sätze zeigen;
+ * einen Freizeitausgleich am geänderten Wochentag kennt nur der Server
+ * (ZK-001, ANN-595).
  */
 export type Problem =
   | 'invalid_block'
@@ -35,7 +37,8 @@ export type Problem =
   | 'more_than_ten_hours'
   | 'break_too_short'
   | 'more_than_six_hours_in_a_row'
-  | 'rest_shorter_than_eleven_hours';
+  | 'rest_shorter_than_eleven_hours'
+  | 'time_off_in_lieu';
 
 export const PROBLEM_TEXT: Record<Problem, string> = {
   invalid_block: 'Eine Zeit ist unvollständig oder endet vor ihrem Beginn.',
@@ -46,6 +49,8 @@ export const PROBLEM_TEXT: Record<Problem, string> = {
   more_than_six_hours_in_a_row: 'Mehr als 6 Stunden am Stück ohne Pause (§ 4 ArbZG).',
   rest_shorter_than_eleven_hours:
     'Weniger als 11 Stunden Ruhe bis zum nächsten Arbeitstag (§ 5 ArbZG).',
+  time_off_in_lieu:
+    'An einem geänderten Wochentag steht ab dem Datum ein Freizeitausgleich – erst ihn zurücknehmen.',
 };
 
 /** Kurz an der Zeile eines Tages im Wochenplan - als Zeichen und Wort (Regel 5). */
@@ -56,6 +61,7 @@ export const PROBLEM_SHORT: Record<Problem, string> = {
   break_too_short: 'Pause zu kurz',
   more_than_six_hours_in_a_row: 'über 6 Std. am Stück',
   rest_shorter_than_eleven_hours: 'unter 11 Std. Ruhe zum nächsten Tag',
+  time_off_in_lieu: 'Freizeitausgleich am Tag',
 };
 
 export const LIMITS = {

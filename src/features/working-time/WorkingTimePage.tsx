@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -18,6 +17,7 @@ import {
   type OwnRequest,
   type WorkingTime,
 } from './api';
+import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { WeekRows } from './WeekRows';
 import { changeTitle, dateLong, minutesChange, statusDisplay } from './format';
 
@@ -35,7 +35,8 @@ import { changeTitle, dateLong, minutesChange, statusDisplay } from './format';
  * auf eigenen Seiten (G8, G8b).
  */
 export function WorkingTimePage({ user }: { user: CurrentUser }) {
-  const notice = (useLocation().state as { meldung?: unknown } | null)?.meldung;
+  // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder.
+  const { meldung: notice } = useMeldungAusVerlauf();
   const query = useQuery({ queryKey: WORKING_TIME_KEY, queryFn: fetchWorkingTime, retry: false });
   const action = isOwner(user.roles) ? 'Änderung eintragen' : 'Änderung beantragen';
 
@@ -49,7 +50,11 @@ export function WorkingTimePage({ user }: { user: CurrentUser }) {
           ) : null
         }
       />
-      {typeof notice === 'string' ? <Rueckmeldung className="mb-6">{notice}</Rueckmeldung> : null}
+      {notice ? (
+        <Rueckmeldung key={notice.schluessel} className="mb-6">
+          {notice.text}
+        </Rueckmeldung>
+      ) : null}
       <Abfragezustand
         abfrage={query}
         laden="Arbeitszeit wird geladen …"

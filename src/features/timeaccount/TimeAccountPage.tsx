@@ -1,313 +1,269 @@
-import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
-import { Field } from '@/components/ui/Field';
-import { Select } from '@/components/ui/Select';
-import { TextArea } from '@/components/ui/TextArea';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
-import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { ListRow } from '@/components/ui/ListRow';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Section } from '@/components/ui/Section';
 import { Tile, TileGrid } from '@/components/ui/Tile';
+import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
+import { useMeldungAusVerlauf } from '@/lib/meldung';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
-  mitarbeiterName,
-  useVorschau,
-  type Protokolleintrag,
-} from '@/features/preview/vorschauContext';
-import { vorschauId } from '@/features/preview/vorschauZustand';
-import { vorschauidentitaet } from '@/features/preview/identitaet';
-import { Abschnitt, SimulationsMeldung } from '@/features/preview/ui';
-import { formatDatum, formatStunden } from '@/features/preview/format';
-import type { Buchungsart, Zeitbuchung } from '@/features/preview/types';
+  TIME_ACCOUNT_KEY,
+  fetchTimeAccount,
+  timeAccountKey,
+  withdrawEntry,
+  type Entry,
+  type TimeAccount,
+} from './api';
+import { PERSON_PARAM, TIME_ACCOUNT_HOME, entryDate, personPath } from './paths';
+import { KIND_TITLE, signedHours } from './rules';
 
 /**
- * Zeitkonto.
+ * Zeitkonto (ZK-001, Überholung 9).
  *
- * Übernahme der Überstundenerfassung: Buchungen für geleistete und abgebaute
- * Stunden mit Datum, Begründung und laufendem Saldo je Person.
+ * Eine Seite für alle Rollen; was jemand sieht, entscheidet der Server
+ * (ANN-596): das eigene Konto mit Saldo und allen Einträgen, für owner und
+ * Büro dazu die Konten aller je Person - ohne Summe über alle (§20). Die Zeile
+ * einer Person öffnet ihr Konto auf derselben Route (`?person=…`).
  *
- * Bewusst ein eigenes Konto und keine Ableitung aus dem Kalender: geplante
- * Behandlungsstunden sind keine tatsächlich geleistete Arbeitszeit. Eine
- * Vermischung wäre arbeitsrechtlich falsch und würde Tourendaten zur
- * Leistungskontrolle machen (PROJECT_PRINCIPLES.md 20).
- *
- * Seit Welle B (B7) Liste und Detail: je Person eine Zeile mit ihrem Saldo,
- * die Zeile öffnet ihre Buchungen (`?person=…`, dieselbe Route).
+ * Bewusst ein eigenes Konto und keine Ableitung aus Kalender oder Touren:
+ * geplante Behandlungsstunden sind keine geleistete Arbeitszeit (§20).
+ * Eintragen und Zurückweisen sind geführte Abläufe auf eigenen Seiten (G9,
+ * G9b).
  */
-
-/** Der Suchparameter der geöffneten Person. */
-const PERSON_PARAM = 'person';
 
 export function TimeAccountPage({ user }: { user: CurrentUser }) {
-  const { zustand } = useVorschau();
-  const identitaet = vorschauidentitaet(zustand, user);
-  const [formular, setFormular] = useState(false);
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
-  const [suche] = useSearchParams();
-  const geoeffnet = suche.get(PERSON_PARAM);
-
-  const saldenNachPerson = zustand.mitarbeitende.map((person) => {
-    const buchungen = zustand.zeitbuchungen
-      .filter((buchung) => buchung.mitarbeiterId === person.id)
-      .sort((a, b) => b.datum.localeCompare(a.datum));
-    const saldo = buchungen.reduce(
-      (summe, buchung) =>
-        summe + (buchung.art === 'geleistet' ? buchung.stunden : -buchung.stunden),
-      0,
-    );
-    return { person, buchungen, saldo };
+  const [search] = useSearchParams();
+  const today = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
+  const person = search.get(PERSON_PARAM);
+  // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder.
+  const { meldung: notice, verwerfen } = useMeldungAusVerlauf();
+  const query = useQuery({
+    queryKey: timeAccountKey(person),
+    queryFn: () => fetchTimeAccount(person),
+    retry: false,
   });
-
-  // Das eigene Konto steht einmal: vorn in der Liste und als „(Sie)“ markiert
-  // (VOR-16). Bis dahin stand es oben über die volle Breite und in der Liste
-  // ein zweites Mal. Wem es in der Vorschau gehört, sagt der Satz darüber.
-  const eigeneId = identitaet?.person.id ?? null;
-  const reihenfolge = [...saldenNachPerson].sort(
-    (a, b) => Number(b.person.id === eigeneId) - Number(a.person.id === eigeneId),
-  );
-
-  if (formular) {
-    return (
-      <Buchungsformular
-        user={user}
-        onFertig={(eintrag) => {
-          setMeldung(eintrag);
-          setFormular(false);
-        }}
-        onAbbrechen={() => setFormular(false)}
-      />
-    );
-  }
-
-  const auswahl = geoeffnet
-    ? saldenNachPerson.find((eintrag) => eintrag.person.id === geoeffnet)
-    : undefined;
-  if (geoeffnet) {
-    return (
-      <Personenkonto eintrag={auswahl} eigene={auswahl ? auswahl.person.id === eigeneId : false} />
-    );
-  }
+  const own = !person || person === query.data?.my_staff_member_id;
+  const name = query.data?.account?.name ?? 'Unbekannte Person';
+  const here = personPath(own ? null : person);
+  const recordTo = own
+    ? `${TIME_ACCOUNT_HOME}/eintragen`
+    : `${TIME_ACCOUNT_HOME}/eintragen?${PERSON_PARAM}=${person}`;
 
   return (
     <>
-      {/* Ohne Satz unter dem Titel (Regel 6); „Stunden eintragen“ kompakt im
-          Kopf (ANN-403). */}
+      {own ? null : (
+        <Rueckweg standard={TIME_ACCOUNT_HOME} beschriftung="Zurück zu den Zeitkonten" />
+      )}
       <PageHeader
-        title="Zeitkonto"
-        actions={<Button onClick={() => setFormular(true)}>Stunden eintragen</Button>}
+        title={own ? 'Zeitkonto' : `Zeitkonto von ${name}`}
+        actions={
+          query.data?.account ? (
+            <ButtonLink to={mitRueckweg(recordTo, here)}>Eintragen</ButtonLink>
+          ) : null
+        }
       />
-
-      <SimulationsMeldung eintrag={meldung} />
-
-      {/* Kein Saldo über alle Personen: Eine Summe fremder Zeitkonten
-          bewertet niemanden und beantwortet keine Frage (UX-005i, §20). */}
-      <Abschnitt
-        titel="Alle Zeitkonten"
-        {...(identitaet
-          ? {
-              beschreibung: `Ihr Zeitkonto in der Vorschau ist das von ${identitaet.person.name}${identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}, markiert mit „(Sie)“.`,
-            }
-          : {})}
+      {notice ? (
+        <Rueckmeldung key={notice.schluessel} className="mb-6">
+          {notice.text}
+        </Rueckmeldung>
+      ) : null}
+      <Abfragezustand
+        abfrage={query}
+        laden="Zeitkonto wird geladen …"
+        fehler="Das Zeitkonto konnte nicht geladen werden."
+        inKarte
       >
-        <ListRows>
-          {reihenfolge.map((eintrag) => (
-            <ListRow
-              key={eintrag.person.id}
-              to={`/betrieb/zeitkonto?${PERSON_PARAM}=${encodeURIComponent(eintrag.person.id)}`}
-              // Ohne Rollenzeile: Fürs Zeitkonto zählt die Person, nicht ihre
-              // Rolle (UX-005i).
-              titel={`${eintrag.person.name}${eintrag.person.id === eigeneId ? ' (Sie)' : ''}`}
-              meta={buchungenText(eintrag.buchungen.length)}
-              // Der Saldo als Zahl, ohne ✓ oder × (VOR-13): Minusstunden sind
-              // keine Verfehlung, und das Zeitkonto bewertet niemanden (§20).
-              status={<Badge ton="neutral">{formatStunden(eintrag.saldo)}</Badge>}
-            />
-          ))}
-        </ListRows>
-      </Abschnitt>
+        {(state) => (
+          <Content state={state} own={own} here={here} today={today} onChanged={verwerfen} />
+        )}
+      </Abfragezustand>
     </>
   );
 }
 
-/** „3 Buchungen“, „1 Buchung“, „Keine Buchungen“. */
-function buchungenText(anzahl: number): string {
-  if (anzahl === 0) return 'Keine Buchungen';
-  return anzahl === 1 ? '1 Buchung' : `${anzahl} Buchungen`;
-}
-
-/**
- * Das Zeitkonto einer Person: Saldo und Buchungen (Welle B, B7). Dieselben
- * Angaben, die bis dahin im Aufklapper der Karte standen.
- */
-function Personenkonto({
-  eintrag,
-  eigene,
+function Content({
+  state,
+  own,
+  here,
+  today,
+  onChanged,
 }: {
-  eintrag:
-    { person: { id: string; name: string }; buchungen: Zeitbuchung[]; saldo: number } | undefined;
-  eigene: boolean;
+  state: TimeAccount;
+  own: boolean;
+  here: string;
+  today: string;
+  /** Ein Vorgang auf der Seite hat die Bestätigung oben überholt. */
+  onChanged: () => void;
 }) {
+  const account = state.account;
+  const entries = account?.entries.filter((entry) => entry.status !== 'withdrawn') ?? [];
+  // Die Konten der anderen nur auf der eigenen Seite - je Person, ohne Summe.
+  const others = own
+    ? state.accounts.filter((a) => a.staff_member_id !== state.my_staff_member_id)
+    : [];
+
   return (
-    <>
-      <Rueckweg standard="/betrieb/zeitkonto" beschriftung="Zurück zu den Zeitkonten" />
-      {eintrag ? (
+    // Abschnitt zu Abschnitt 32 px: der Abstand der Spalte, nicht dazu der
+    // eigene Rand jedes Abschnitts (Design-Review Überholung 7).
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
+      {account ? (
         <>
-          <PageHeader
-            kicker="Zeitkonto"
-            title={`${eintrag.person.name}${eigene ? ' (Sie)' : ''}`}
-          />
-          {/* Der Saldo als Zahl, ohne Wertung (VOR-13, §20). */}
-          <TileGrid spalte="kachel">
-            <Tile label="Saldo">{formatStunden(eintrag.saldo)}</Tile>
-          </TileGrid>
-          <div className="mt-8">
-            <Listenabschnitt
-              titel="Buchungen"
-              anzahl={eintrag.buchungen.length}
-              leer={{ titel: 'Keine Buchungen' }}
-            >
-              {eintrag.buchungen.map((buchung) => (
-                <ListRow
-                  key={buchung.id}
-                  titel={formatDatum(buchung.datum)}
-                  meta={buchung.grund || undefined}
-                  betrag={`${buchung.art === 'geleistet' ? '+' : '−'}${buchung.stunden} h`}
-                />
-              ))}
-            </Listenabschnitt>
-          </div>
+          <Section titel={own ? 'Mein Saldo' : 'Saldo'}>
+            <TileGrid>
+              <Tile label="Saldo">{signedHours(account.balance_minutes)}</Tile>
+            </TileGrid>
+          </Section>
+          <Listenabschnitt
+            titel="Einträge"
+            anzahl={entries.length}
+            leer={{ titel: 'Noch nichts eingetragen' }}
+          >
+            {entries.map((entry) => (
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                staffMemberId={account.staff_member_id}
+                here={here}
+                today={today}
+                onChanged={onChanged}
+              />
+            ))}
+          </Listenabschnitt>
         </>
       ) : (
-        <>
-          <PageHeader title="Zeitkonto" />
-          <EmptyState
-            inKarte
-            title="Diese Person gibt es in der Vorschau nicht."
-            description="Der Vorschaustand wird bei jedem Neuladen zurückgesetzt. Bitte die Person in der Liste neu wählen."
-          />
-        </>
+        <EmptyState
+          inKarte
+          title="Kein eigenes Zeitkonto"
+          description="Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz."
+        />
       )}
-    </>
+
+      {state.can_book_others && own ? (
+        <Listenabschnitt
+          titel="Zeitkonten"
+          anzahl={others.length}
+          leer={{ titel: 'Keine weiteren Zeitkonten' }}
+        >
+          {others.map((a) => (
+            <ListRow
+              key={a.staff_member_id}
+              titel={a.name ?? 'Unbekannte Person'}
+              betrag={signedHours(a.balance_minutes)}
+              to={personPath(a.staff_member_id)}
+            />
+          ))}
+        </Listenabschnitt>
+      ) : null}
+    </div>
   );
 }
 
-function Buchungsformular({
-  user,
-  onFertig,
-  onAbbrechen,
+function EntryRow({
+  entry,
+  staffMemberId,
+  here,
+  today,
+  onChanged,
 }: {
-  user: CurrentUser;
-  onFertig: (eintrag: Protokolleintrag) => void;
-  onAbbrechen: () => void;
+  entry: Entry;
+  staffMemberId: string;
+  here: string;
+  today: string;
+  onChanged: () => void;
 }) {
-  const { zustand, simuliere } = useVorschau();
-  const identitaet = vorschauidentitaet(zustand, user);
-
-  const [mitarbeiterId, setMitarbeiterId] = useState(identitaet?.person.id ?? '');
-  const [art, setArt] = useState<Buchungsart>('geleistet');
-  const [datum, setDatum] = useState(zustand.stichtag);
-  const [stunden, setStunden] = useState('');
-  const [grund, setGrund] = useState('');
-
-  const stundenZahl = Number(stunden.replace(',', '.'));
-  const gueltig = mitarbeiterId !== '' && datum !== '' && stundenZahl > 0;
-
-  function absenden() {
-    const eintrag = simuliere(
-      {
-        bereich: 'Zeitkonto',
-        vorgang: `${art === 'geleistet' ? 'Geleistete' : 'Abgebaute'} Stunden erfasst: ${mitarbeiterName(zustand, mitarbeiterId)}, ${stundenZahl} h`,
-        folgen: [
-          `Saldo in der Vorschau um ${art === 'geleistet' ? '+' : '−'}${stundenZahl} h verändert`,
-        ],
-        nichtGeschehen: [
-          'Nichts gespeichert und keine Lohnabrechnung angestoßen',
-          'Keine Verbindung zum Dienstplan oder zu Terminen hergestellt',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        zeitbuchungen: [
-          {
-            id: vorschauId('zeit'),
-            mitarbeiterId,
-            art,
-            datum,
-            stunden: stundenZahl,
-            grund,
-          },
-          ...stand.zeitbuchungen,
-        ],
-      }),
-    );
-    onFertig(eintrag);
-  }
+  const queryClient = useQueryClient();
+  const withdraw = useMutation({
+    mutationFn: () => withdrawEntry(entry.id),
+    onSuccess: async () => {
+      // Die Bestätigung oben nennt einen Saldo, der jetzt nicht mehr gilt
+      // (Praxis-Review Überholung 9, Runde 2).
+      onChanged();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: TIME_ACCOUNT_KEY }),
+        // Ein Freizeitausgleich gibt die Zeit wieder als Arbeitszeit frei.
+        queryClient.invalidateQueries({ queryKey: ['working-hour-exceptions'] }),
+      ]);
+    },
+  });
+  const rejected = entry.status === 'rejected';
+  const meta = [
+    entry.starts_at && entry.ends_at ? `${entry.starts_at}–${entry.ends_at}` : null,
+    entry.note,
+    entry.entered_by_name ? `eingetragen von ${entry.entered_by_name}` : null,
+    rejected && entry.rejection_note
+      ? `Zurückgewiesen${entry.rejected_by_name ? ` von ${entry.rejected_by_name}` : ''}: ${
+          entry.rejection_note
+        }`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <>
-      <PageHeader title="Stunden eintragen" />
-      <div className="max-w-formular flex flex-col gap-4">
-        <Select
-          label="Person"
-          value={mitarbeiterId}
-          onChange={(event) => setMitarbeiterId(event.target.value)}
-        >
-          <option value="">– auswählen –</option>
-          {zustand.mitarbeitende.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Art der Buchung"
-          value={art}
-          onChange={(event) => setArt(event.target.value as Buchungsart)}
-        >
-          <option value="geleistet">Geleistet (Saldo steigt)</option>
-          <option value="abgebaut">Abgebaut (Saldo sinkt)</option>
-        </Select>
-
-        <Field
-          label="Datum"
-          type="date"
-          value={datum}
-          onChange={(event) => setDatum(event.target.value)}
-        />
-
-        <Field
-          label="Stunden"
-          inputMode="decimal"
-          placeholder="z. B. 2,5"
-          value={stunden}
-          onChange={(event) => setStunden(event.target.value)}
-        />
-
-        {/* Ein Feld, ein Name - gleich welche Art (VOR-25). */}
-        <TextArea
-          rows={3}
-          label="Grund"
-          hint="Optional."
-          placeholder="z. B. Vertretung Hausbesuche"
-          value={grund}
-          onChange={(event) => setGrund(event.target.value)}
-        />
-      </div>
-      <div className="max-w-formular">
-        <Formularfuss>
-          <Button onClick={absenden} disabled={!gueltig}>
-            Buchung in die Vorschau übernehmen
-          </Button>
-          <Button variant="quiet" onClick={onAbbrechen}>
-            Abbrechen
-          </Button>
-        </Formularfuss>
-      </div>
-    </>
+    <ListRow
+      titel={
+        // Der Übertrag steht für die gelöschten Einträge eines Jahres (ANN-597).
+        entry.kind === 'carryover'
+          ? `${KIND_TITLE.carryover} aus ${entry.on_date.slice(0, 4)}`
+          : `${KIND_TITLE[entry.kind]} · ${entryDate(entry.on_date, today)}`
+      }
+      meta={meta}
+      betrag={signedHours(entry.minutes)}
+      gedaempft={rejected}
+      status={rejected ? <Badge ton="kritisch">Zurückgewiesen</Badge> : null}
+      darunter={
+        entry.can_withdraw || entry.can_reject ? (
+          // Unter der Zeile in voller Breite: in der Zeile bräche die
+          // Rückfrage bei 375 px (Design-Review Überholung 7). Zurückweisen ist
+          // selten und folgenreich - leise am Ende wie Zurücknehmen
+          // (Design-Review Überholung 9, DESIGN.md 9.16).
+          <BelowRow>
+            {entry.can_reject ? (
+              <ButtonLink
+                variant="quiet"
+                groesse="kompakt"
+                to={mitRueckweg(
+                  `${TIME_ACCOUNT_HOME}/zurueckweisen/${entry.id}?${PERSON_PARAM}=${staffMemberId}`,
+                  here,
+                )}
+              >
+                Zurückweisen
+              </ButtonLink>
+            ) : null}
+            {entry.can_withdraw ? (
+              <Rueckfrage
+                ausloeser="Zurücknehmen"
+                ausloeserVariante="quiet"
+                ausloeserGroesse="kompakt"
+                bezeichnung="Eintrag zurücknehmen"
+                bestaetigen="Ja, zurücknehmen"
+                bestaetigenLaeuft="Wird zurückgenommen …"
+                fehler={withdraw.isError ? withdraw.error.message : undefined}
+                onBestaetigen={() => withdraw.mutateAsync()}
+              >
+                {entry.kind === 'time_off'
+                  ? 'Der Saldo zählt ihn nicht mehr; die Zeit ist wieder Arbeitszeit.'
+                  : 'Der Saldo zählt ihn nicht mehr.'}
+              </Rueckfrage>
+            ) : null}
+          </BelowRow>
+        ) : undefined
+      }
+    />
   );
+}
+
+function BelowRow({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">{children}</div>;
 }

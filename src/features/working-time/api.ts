@@ -125,6 +125,10 @@ const SENTENCES: readonly (readonly [string, string])[] = [
     'Bitte ein Datum ab morgen und höchstens ein Jahr voraus wählen.',
   ],
   ['day is part of approved leave', 'An diesem Tag ist genehmigter Urlaub.'],
+  [
+    'day has time off in lieu',
+    'An diesem Tag steht ein Freizeitausgleich im Zeitkonto – erst ihn zurücknehmen.',
+  ],
   ['day is marked absent', 'An diesem Tag ist eine Abwesenheit eingetragen.'],
   ['later working plan exists', 'Ab einem späteren Datum gilt schon ein neuer Wochenplan.'],
   ['no working plan', 'Sie haben noch keinen Wochenplan – den legt die Praxisleitung an.'],

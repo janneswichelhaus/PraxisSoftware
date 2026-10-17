@@ -122,7 +122,8 @@ describe('TagUmplanenPage', () => {
   it('nennt Person und Tag und fragt zuerst nach dem Grund - keiner vorgewählt', async () => {
     rendern();
     const grund = await fenster('Warum fällt der Tag aus?');
-    expect(within(grund).getByText('Anna Beispiel · Mittwoch, 12. Mai 2027')).toBeInTheDocument();
+    // Im Kopf des Fensters das kurze Datum vorn (Design-Review Überholung 9, Runde 2).
+    expect(within(grund).getByText('Mi., 12. Mai · Anna Beispiel')).toBeInTheDocument();
     expect(within(grund).getByText('Schritt 1 von 3')).toBeInTheDocument();
     // Der Ausfall einer behandelnden Person ist praxisbedingt (CAL-016, ADR-018
     // Fassung 2 Punkt 8.4): „Patient:in hat abgesagt" steht nicht zur Wahl.
@@ -149,6 +150,32 @@ describe('TagUmplanenPage', () => {
     expect(kaesten).toHaveLength(1);
     expect(kaesten[0]).toBeChecked();
     expect(within(auswahl).getByRole('button', { name: 'Weiter mit 1 Termin' })).toBeEnabled();
+  });
+
+  it('wählt nach einer Teiländerung nur die Termine außerhalb der Arbeitszeit vor (Praxis-Review Überholung 9)', async () => {
+    const user = userEvent.setup();
+    // Ortszeit im Mai: termin-1 09:00–10:00, termin-2 11:00–12:00; nach der
+    // Änderung arbeitet Anna 11:00–13:00 - nur termin-1 fällt heraus.
+    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zeiten=11:00-13:00`);
+    const grund = await fenster('Warum fallen die Termine aus?');
+    await user.click(within(grund).getByRole('button', { name: 'Praxis hat abgesagt' }));
+    const auswahl = await fenster('Welche Termine absagen?');
+    const [erster, zweiter] = within(auswahl).getAllByRole('checkbox');
+    expect(erster).toBeChecked();
+    expect(zweiter).not.toBeChecked();
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 1 Termin' }));
+    const rueckfrage = await fenster('1 Termin absagen?');
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Ja, 1 Termin absagen' }));
+    await waitFor(() =>
+      expect(cancelStaffDay).toHaveBeenCalledWith(ANNA, DATUM, 'practice_request', ['termin-1']),
+    );
+  });
+
+  it('wählt bei einer ungültigen Angabe der Zeiten den ganzen Tag vor', async () => {
+    const user = userEvent.setup();
+    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zeiten=11-13`);
+    const auswahl = await bisZurAuswahl(user);
+    for (const kasten of within(auswahl).getAllByRole('checkbox')) expect(kasten).toBeChecked();
   });
 
   /**

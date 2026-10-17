@@ -3,7 +3,8 @@
  * Oberfläche.
  *
  * Zwei Teile: Erst wird abgesagt - Grund, Auswahl der Termine (alle
- * vorgewählt, abwählbar), Rückfrage -, dann wird angerufen, eine Person je
+ * vorgewählt, nach einer Teiländerung nur die außerhalb der Arbeitszeit;
+ * abwählbar), Rückfrage -, dann wird angerufen, eine Person je
  * Seite mit „Erreicht“ oder „Nicht erreicht“, am Ende steht, wer noch fehlt.
  *
  * Der Anrufstand liegt nur in der Adresse, als Kennungen ohne Namen
@@ -37,6 +38,65 @@ function kennungen(wert: string | null): string[] {
     .split(',')
     .filter((kennung) => /^[\w-]{1,64}$/.test(kennung))
     .slice(0, HOECHSTENS);
+}
+
+/** Eine Spanne der Arbeitszeit in Ortszeit, „08:00“ bis „12:00“. */
+export interface Zeitspanne {
+  von: string;
+  bis: string;
+}
+
+/**
+ * Parameter der Zeiten des Tages, in denen Termine bleiben können, nach einer
+ * Teiländerung: nach einer Arbeitszeitänderung die neue Arbeitszeit, nach
+ * einem Freizeitausgleich alles außer der freien Zeit - etwa
+ * `zeiten=08:00-12:30,13:30-18:00`. Nur Uhrzeiten, keine Namen (ADR-011).
+ */
+export const ZEITEN_PARAM = 'zeiten';
+const SPANNE = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
+
+/**
+ * Die Zeiten, in denen Termine an diesem Tag bleiben können, wenn „Tag
+ * umplanen“ nach einer Teiländerung kommt (genehmigte Arbeitszeitänderung,
+ * Freizeitausgleich): Vorgewählt sind dann nur die Termine außerhalb
+ * (Praxis-Review Überholung 9). Ohne den Parameter oder mit einer ungültigen
+ * Angabe fällt der ganze Tag aus wie bisher; eine leere Liste heißt: keine
+ * Zeit mehr an dem Tag.
+ */
+export function leseZeiten(suche: URLSearchParams): Zeitspanne[] | null {
+  const wert = suche.get(ZEITEN_PARAM);
+  if (wert === null) return null;
+  const teile = wert.split(',').filter((teil) => teil !== '');
+  if (teile.length > 6 || !teile.every((teil) => SPANNE.test(teil))) return null;
+  return teile.map((teil) => {
+    const [von = '', bis = ''] = teil.split('-');
+    return { von, bis };
+  });
+}
+
+/** `08:00-12:00,13:00-16:00` - die Spannen für die Adresse. */
+export function zeitenText(spannen: readonly Zeitspanne[]): string {
+  return spannen.map((spanne) => `${spanne.von}-${spanne.bis}`).join(',');
+}
+
+/** Die Adresse von „Tag umplanen“ für eine Person und einen Tag, ohne Rückweg. */
+export function tagUmplanenAdresse(
+  person: string,
+  datum: string,
+  zeiten?: readonly Zeitspanne[],
+): string {
+  return `/kalender/tag-umplanen?person=${person}&datum=${datum}${
+    zeiten ? `&${ZEITEN_PARAM}=${zeitenText(zeiten)}` : ''
+  }`;
+}
+
+/** Ob ein Termin (Beginn und Ende in Ortszeit) ganz in einer der Spannen liegt. */
+export function liegtInZeiten(
+  beginn: string,
+  ende: string,
+  spannen: readonly Zeitspanne[],
+): boolean {
+  return spannen.some((spanne) => spanne.von <= beginn && ende <= spanne.bis);
 }
 
 /**

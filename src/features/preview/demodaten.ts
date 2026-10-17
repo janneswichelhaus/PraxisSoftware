@@ -25,7 +25,6 @@ import type {
   Rechnung,
   Urlaubsantrag,
   Zahlung,
-  Zeitbuchung,
 } from './types';
 
 // -----------------------------------------------------------------------------
@@ -498,67 +497,6 @@ export function demoUrlaub(heute: string): Urlaubsantrag[] {
       entschiedenAm: plusTage(heute, -9),
       ablehnungsgrund: '',
       unterschrift: true,
-    },
-  ];
-}
-
-export function demoZeitbuchungen(heute: string): Zeitbuchung[] {
-  return [
-    {
-      id: 'z1',
-      mitarbeiterId: 'm3',
-      art: 'geleistet',
-      datum: plusTage(heute, -12),
-      stunden: 2.5,
-      grund: 'Vertretung Hausbesuche',
-    },
-    {
-      id: 'z2',
-      mitarbeiterId: 'm3',
-      art: 'abgebaut',
-      datum: plusTage(heute, -5),
-      stunden: 4,
-      grund: '',
-    },
-    {
-      id: 'z3',
-      mitarbeiterId: 'm4',
-      art: 'geleistet',
-      datum: plusTage(heute, -8),
-      stunden: 1.5,
-      grund: 'Später Hausbesuch',
-    },
-    {
-      id: 'z4',
-      mitarbeiterId: 'm5',
-      art: 'geleistet',
-      datum: plusTage(heute, -3),
-      stunden: 3,
-      grund: 'Teamabend',
-    },
-    {
-      id: 'z5',
-      mitarbeiterId: 'm5',
-      art: 'geleistet',
-      datum: plusTage(heute, -1),
-      stunden: 1,
-      grund: '',
-    },
-    {
-      id: 'z6',
-      mitarbeiterId: 'm7',
-      art: 'abgebaut',
-      datum: plusTage(heute, -2),
-      stunden: 8,
-      grund: 'Brückentag',
-    },
-    {
-      id: 'z7',
-      mitarbeiterId: 'm6',
-      art: 'geleistet',
-      datum: plusTage(heute, -6),
-      stunden: 0.75,
-      grund: 'Übergabe',
     },
   ];
 }

@@ -100,8 +100,3 @@ export function formatMonat(monat: string): string {
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(Number(treffer[1]), Number(treffer[2]) - 1, 1)));
 }
-
-export function formatStunden(stunden: number): string {
-  const vorzeichen = stunden > 0 ? '+' : '';
-  return `${vorzeichen}${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(stunden)} h`;
-}

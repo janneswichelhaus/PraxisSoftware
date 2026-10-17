@@ -6166,3 +6166,63 @@ Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: Sichtung de
 **Anker.** `src/features/working-time/dayForm.ts`.
 
 **Änderungspfad.** Mehr als eine Pause je Tag: Blöcke statt Felder · Aufwand `mittel`.
+
+### ANN-593 — Zeitkonto: Einträge mit Beginn und Ende, gelten sofort
+
+Recht · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 9
+
+**Annahme.** Mehrarbeit und Freizeitausgleich stehen mit Datum, Beginn und Ende im Zeitkonto und gelten sofort, ohne Antrag. Mehrarbeit bis 31 Tage zurück, nie voraus, und nur außerhalb der Arbeitszeit des Tages (an einem freien Tag ganz); Freizeitausgleich 31 Tage zurück bis ein Jahr voraus. Gezählt wird in Minuten am Server.
+
+**Begründung.** Festlegung Jannes 2026-10-16 (kein Antrag, Zurückweisen möglich); Stunden ohne Lage genügen der Aufzeichnung nicht (EuGH C-55/18, BAG 1 ABR 22/21); clockin lässt bis 31 Tage nachtragen.
+
+**Anker.** `app.time_account_check`, `src/features/timeaccount/rules.ts`.
+
+**Änderungspfad.** Fristen an beiden Ankern · Aufwand `klein`.
+
+### ANN-594 — Zeitkonto: Zurückweisen, Zurücknehmen, Buchen für andere
+
+Praxisprozess · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 9
+
+**Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich nur vor seinem Tag. owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
+
+**Begründung.** BEF-066 Option 2 mit Büro; Entscheiden wie ANN-576. Genommene Zeit soll niemand durch Zurücknehmen zurückholen.
+
+**Anker.** `public.reject_time_account_entry`, `public.withdraw_time_account_entry`.
+
+**Änderungspfad.** Teamleitung weist zurück: `app.can_decide_staff_requests` · Aufwand `klein`.
+
+### ANN-595 — Zeitkonto: Freizeitausgleich als Abweichung in den Arbeitszeiten
+
+Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 9
+
+**Annahme.** Freizeitausgleich nur an einem Tag nach Wochenplan (nicht im Urlaub, nicht an einem Tag mit Abwesenheit oder geänderten Zeiten) und innerhalb seiner Arbeitszeit; gezählt wird die Arbeitszeit darin. Es bleiben die übrigen Blöcke als Abweichung, ganztägig eine Abwesenheit; Termine darin werden genannt. Solange er gilt, ändern Planung (Abweichung oder Wochenplan), Arbeitszeitänderung und Urlaub den Tag nicht (erst zurückweisen oder zurücknehmen).
+
+**Begründung.** Spezifikation: frei wie eine Abwesenheit, zurückgewiesen wieder Arbeitszeit; sonst zählte ein Tag doppelt.
+
+**Anker.** `public.record_time_account_entry`, `public.set_staff_working_hour_exception`.
+
+**Änderungspfad.** Mehrere Freizeitausgleiche an einem Tag: Abweichung je Eintrag neu berechnen · Aufwand `mittel`.
+
+### ANN-596 — Zeitkonto: wer welches Konto sieht
+
+Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jede Person sieht ihr Konto mit allen Einträgen und Gründen. owner und Büro sehen die Konten aller je Person, auch die Gründe – ohne Summe über alle. Teamleitung, Therapie und Trainingsbetreuung sehen nur ihr eigenes. Der Bezug einer Abweichung auf den Eintrag ist nicht lesbar; wer plant, erfährt ihn nur, wenn eine Änderung daran anhält. Wer für andere bucht, kann aus Minuten und Gründen der Vorschau die Zeiten der letzten 31 Tage erschließen.
+
+**Begründung.** BEF-066, Entscheidung Jannes 2026-10-09 (Option 2 mit Büro); keine Auswertung über Beschäftigte (PROJECT_PRINCIPLES.md 20).
+
+**Anker.** `public.list_time_account`, `app.can_book_time_accounts`.
+
+**Änderungspfad.** Gründe nur für owner: ein Feld in `list_time_account` · Aufwand `klein`.
+
+### ANN-597 — Zeitkonto: Fristen
+
+Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Gültige Einträge löscht der Lauf drei Jahre ab Ende ihres Jahres (`zeitkonto`); ihr Saldo bleibt als Übertrag je Person und Jahr stehen, ohne Lage und Grund, Frist offen (ANN-030). Zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende (`zeitkonto_kurz`). Journal und erneutes Löschen nach einem Restore; die Abweichung fällt mit. Eine Löschsperre gibt es nur für Akten (ANN-033, BEF-178).
+
+**Begründung.** Spezifikation: drei Jahre ab Jahresende (§§ 195, 199 BGB); § 16 Abs. 2 ArbZG verlangt mindestens zwei. Der Übertrag entsteht beim Löschen selbst, auch beim Nachziehen.
+
+**Anker.** `app.delete_due_time_account_entries`, `app.carry_over_time_account_entry`.
+
+**Änderungspfad.** Überträge mit dem Austritt befristen: eine Regel im Lauf · Aufwand `klein`.

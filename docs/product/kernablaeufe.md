@@ -56,5 +56,5 @@ den Tipps: kein Scrollen bei 375 px** auf keiner Seite des Ablaufs. „Heute“ 
 | G6 | Plattform: Termin ändern oder absagen | Patient:in, selten | ≤ 6 Tipps + Text | Absagen 4, Ändern 6 + Text, im Fenster in 18 px |
 | G7 | Urlaub beantragen | Alle, selten | ≤ 6 Tipps | 5: Einstieg, Monat, erster Tag, letzter Tag (oder Dauer), Absenden; über das Monatsende 6; Entscheiden 2 (Ablehnen 3 + Grund) |
 | G8 | Arbeitszeitänderung beantragen (einmalig oder dauerhaft) | Alle, selten | ≤ 8 Tipps + Zeiten | einmalig 5 + Zeiten (+1 je Monat voraus), dauerhaft 7 + Zeiten ab einem Monatsersten (+2 je weiterer Tag); Entscheiden 2 (Ablehnen 3 + Grund) |
-| G9 | Zeitkonto: Mehrarbeit oder Freizeitausgleich eintragen | Alle, monatlich | ≤ 6 Tipps | Vorschau: Formular, 5 Felder |
+| G9 | Zeitkonto: Mehrarbeit oder Freizeitausgleich eintragen | Alle, monatlich | ≤ 6 Tipps | Mehrarbeit 5: Einstieg, Art, Heute, Schnellwahl ab Dienstende (im Fuß), Eintragen; Freizeitausgleich 5 (+1 je Monat voraus), danach „Tag umplanen“ nur mit den Terminen in der freien Zeit; Korrektur durch das Büro 6 + Stunden und Grund; Zurückweisen 3 + Grund |
 | G10 | Erstattung beantragen (Strom oder Einkauf mit Beleg) | Alle, monatlich | ≤ 7 Tipps + Betrag | Vorschau: Formular, ≈ 8 Felder |

@@ -128,6 +128,13 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
       'An diesem Tag hat die Person genehmigten Urlaub. Ändern geht erst nach einem Storno des Urlaubs.',
     );
   }
+  // ZK-001 (ANN-595): ein Tag mit Freizeitausgleich - erst zurückweisen oder
+  // zurücknehmen.
+  if (error?.message?.includes('time off in lieu')) {
+    return new Error(
+      'An diesem Tag steht ein Freizeitausgleich im Zeitkonto. Ändern geht erst, wenn er zurückgewiesen oder zurückgenommen ist.',
+    );
+  }
   if (error?.message?.includes('overlap')) {
     return new Error('Die Zeitblöcke überschneiden sich. Bitte die Zeiten anpassen.');
   }

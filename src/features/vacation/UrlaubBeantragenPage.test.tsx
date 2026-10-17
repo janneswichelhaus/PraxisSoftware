@@ -378,7 +378,7 @@ describe('UrlaubBeantragenPage', () => {
     const abschluss = await screen.findByRole('dialog', { name: 'Urlaub eintragen?' });
     expect(
       await within(abschluss).findByText(
-        'Abweichende Arbeitszeiten am 3. Nov. – erst in der Planung ändern.',
+        'Abweichende Arbeitszeiten oder Freizeitausgleich am 3. Nov. – erst in der Planung ändern oder im Zeitkonto zurücknehmen.',
       ),
     ).toBeInTheDocument();
     expect(within(abschluss).getByRole('button', { name: 'Urlaub eintragen' })).toBeDisabled();

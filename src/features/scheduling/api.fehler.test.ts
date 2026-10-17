@@ -24,6 +24,16 @@ describe('saveWorkingHourException', () => {
     ).rejects.toThrow('An diesem Tag hat die Person genehmigten Urlaub.');
   });
 
+  it('nennt den Freizeitausgleich, wenn der Tag einen trägt (ZK-001)', async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'day has time off in lieu', code: '55000' },
+    });
+    await expect(
+      saveWorkingHourException('55555555-5555-4555-8555-000000000002', '2027-05-04', false, []),
+    ).rejects.toThrow('An diesem Tag steht ein Freizeitausgleich im Zeitkonto.');
+  });
+
   it('bleibt sonst beim allgemeinen Satz', async () => {
     rpc.mockResolvedValueOnce({ data: null, error: { message: 'kaputt' } });
     await expect(
