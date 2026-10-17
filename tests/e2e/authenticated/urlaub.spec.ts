@@ -110,15 +110,18 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   const t = zaehler();
   await t.tippe(page.getByRole('link', { name: 'Urlaub beantragen' }));
   const kalender = page.getByRole('dialog', { name: 'Welche Tage?' });
-  await expect(kalender).toBeVisible();
+  const weiter = kalender.getByRole('button', { name: 'Weiter' });
+  // Beim Öffnen stehen Frage und Fuß im Bild. Darunter rollen zwölf Monate;
+  // ist die Woche weit voraus, rollt die Frage mit, der Fuß bleibt stehen.
+  await stehtImBild(page, kalender, weiter);
   await page.screenshot({ path: '.tmp/screenshots/b7-g7-01-kalender-375.png' });
   await t.tippe(tag(kalender, WOCHE.von));
   await t.tippe(tag(kalender, WOCHE.bis));
-  // Die Tage zählt der Server: Montag bis Freitag ohne Feiertag.
-  await expect(kalender.getByText(/\d+ Urlaubstag/)).toBeVisible();
-  const weiter = kalender.getByRole('button', { name: 'Weiter' });
+  // Die Tage zählt der Server: Montag bis Freitag ohne Feiertag. Zwischen
+  // Zahl und Wort steht ein geschütztes Leerzeichen (`urlaubstage`).
+  await expect(kalender.getByText(/\d+\sUrlaubstag/)).toBeVisible();
   await expect(weiter).toBeEnabled();
-  await stehtImBild(page, kalender, weiter);
+  await expect(weiter).toBeInViewport();
   await page.screenshot({ path: '.tmp/screenshots/b7-g7-02-gewaehlt-375.png' });
   await t.tippe(weiter);
 
@@ -127,8 +130,10 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   await stehtImBild(page, abschluss, absenden);
   await page.screenshot({ path: '.tmp/screenshots/b7-g7-03-zusammenfassung-375.png' });
   await t.tippe(absenden);
-  await expect(page.getByText(/^Urlaub beantragt:/)).toBeVisible();
-  await expect(page.getByText('Beantragt', { exact: true })).toBeVisible();
+  // Die Rückmeldung trägt vorn das Häkchen (für Vorlesesoftware ausgeblendet).
+  await expect(page.getByRole('status').filter({ hasText: 'Urlaub beantragt:' })).toBeVisible();
+  // Der Zustand steht als Abzeichen mit Zeichen und Wort an der Zeile.
+  await expect(page.getByRole('listitem').filter({ hasText: 'Beantragt' }).first()).toBeVisible();
   test.info().annotations.push({ type: 'G7', description: `${t.tipps} Tipps bis beantragt` });
   expect(t.tipps).toBeLessThanOrEqual(6);
 
@@ -164,7 +169,7 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   // Anna sieht ihn genehmigt; sie storniert, Jannes genehmigt den Storno -
   // die Tage sind wieder frei.
   await page.reload();
-  await expect(page.getByText('Genehmigt', { exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Genehmigt' }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Stornieren' }).click();
   await page.getByRole('button', { name: 'Storno beantragen' }).click();
   await expect(page.getByText('Storno beantragt')).toBeVisible();
