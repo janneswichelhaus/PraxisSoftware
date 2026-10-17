@@ -3,12 +3,15 @@ import {
   ersteAnrufseite,
   leseAbgesagt,
   leseAnrufstand,
+  leseZeiten,
+  liegtInZeiten,
   mitAnrufstand,
   naechsterAnruf,
   seitenKennung,
   terminDativ,
   terminWort,
   umplanStand,
+  zeitenText,
 } from './tagumplanen';
 
 describe('Tag umplanen - die Folge (G2, ANN-574)', () => {
@@ -16,6 +19,32 @@ describe('Tag umplanen - die Folge (G2, ANN-574)', () => {
     expect(leseAbgesagt(new URLSearchParams(''))).toBeNull();
     expect(leseAbgesagt(new URLSearchParams('abgesagt='))).toEqual([]);
     expect(leseAbgesagt(new URLSearchParams('abgesagt=a,b,<x>,c'))).toEqual(['a', 'b', 'c']);
+  });
+
+  it('liest die Arbeitszeit nach einer Teiländerung nur in ihrer Form (Praxis-Review Überholung 9)', () => {
+    expect(leseZeiten(new URLSearchParams(''))).toBeNull();
+    expect(leseZeiten(new URLSearchParams('zeiten='))).toEqual([]);
+    const zeiten = leseZeiten(new URLSearchParams('zeiten=08:00-12:00,13:00-16:00'));
+    expect(zeiten).toEqual([
+      { von: '08:00', bis: '12:00' },
+      { von: '13:00', bis: '16:00' },
+    ]);
+    expect(zeitenText(zeiten!)).toBe('08:00-12:00,13:00-16:00');
+    // Eine ungültige Angabe gilt als keine: der ganze Tag wie bisher.
+    expect(leseZeiten(new URLSearchParams('zeiten=8-12'))).toBeNull();
+    expect(leseZeiten(new URLSearchParams('zeiten=08:00-12:00,<x>'))).toBeNull();
+  });
+
+  it('nennt einen Termin in der Arbeitszeit nur, wenn er ganz darin liegt', () => {
+    const zeiten = [
+      { von: '08:00', bis: '12:00' },
+      { von: '13:00', bis: '16:00' },
+    ];
+    expect(liegtInZeiten('09:00', '10:00', zeiten)).toBe(true);
+    expect(liegtInZeiten('13:00', '16:00', zeiten)).toBe(true);
+    expect(liegtInZeiten('15:30', '16:30', zeiten)).toBe(false);
+    expect(liegtInZeiten('16:30', '17:30', zeiten)).toBe(false);
+    expect(liegtInZeiten('09:00', '10:00', [])).toBe(false);
   });
 
   it('hält den Anrufstand in der Adresse und lässt den Rest stehen', () => {

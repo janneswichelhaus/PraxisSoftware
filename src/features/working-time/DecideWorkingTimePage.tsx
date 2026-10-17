@@ -23,7 +23,14 @@ import {
   type Decision,
   type OpenRequest,
 } from './api';
-import { WEEKDAY_NAME, changeTitle, changedWeekdays, dayText, minutesChange } from './format';
+import {
+  WEEKDAY_NAME,
+  changeTitle,
+  changedWeekdays,
+  dayText,
+  isoWeekday,
+  minutesChange,
+} from './format';
 
 /**
  * Über eine Arbeitszeitänderung entscheiden (G8b, AZ-001): je Antrag eine
@@ -199,7 +206,15 @@ function Flow({
           {approved ? (
             <DaysToReschedule
               staffMemberId={request.staff_member_id}
-              days={result.appointment_days}
+              // Je Tag die neue Arbeitszeit: „Tag umplanen“ wählt nur die
+              // Termine außerhalb vor, nicht den ganzen Tag.
+              days={result.appointment_days.map((day) => ({
+                ...day,
+                zeiten:
+                  request.kind === 'once'
+                    ? request.blocks
+                    : (request.blocks[isoWeekday(day.on_date)] ?? []),
+              }))}
               user={user}
               returnTo={returnTo}
             />
