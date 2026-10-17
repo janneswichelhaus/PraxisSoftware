@@ -5,6 +5,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -14,14 +15,41 @@ import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import {
   URLAUB_SCHLUESSEL,
   fetchUrlaub,
   setLeaveEntitlement,
   urlaubSchluessel,
   type FremdesKonto,
+  type Urlaubskonto,
 } from './api';
 import { urlaubsfenster } from './fenster';
+
+type Feld = 'tage' | 'uebertrag';
+const FELDER: readonly Feld[] = ['tage', 'uebertrag'];
+const BESCHRIFTUNG: Record<Feld, string> = {
+  tage: 'Urlaubstage im Jahr',
+  uebertrag: 'Übertrag aus dem Vorjahr',
+};
+const feldId = (feld: Feld) => `anspruch-${feld}`;
+
+/** Ganze Tage von 0 bis 60, wie der Server sie annimmt. */
+function tagesfehler(wert: string, pflicht: boolean): string | undefined {
+  if (wert.trim() === '') return pflicht ? 'Bitte die Tage angeben.' : undefined;
+  const zahl = Number(wert);
+  return Number.isInteger(zahl) && zahl >= 0 && zahl <= 60
+    ? undefined
+    : 'Bitte zwischen 0 und 60 Tagen.';
+}
+
+/** Was für ein Jahr schon eingetragen ist - zum Vorbelegen. */
+function vorbelegt(konto: Urlaubskonto | null): { tage: string; uebertrag: string } {
+  return {
+    tage: konto?.entitlement == null ? '' : String(konto.entitlement),
+    uebertrag: String(konto?.carryover ?? 0),
+  };
+}
 
 /**
  * Urlaubsanspruch einer Person eintragen (URL-001): Tage im Jahr und
@@ -83,26 +111,21 @@ function Formular({ konto, jahr }: { konto: FremdesKonto; jahr: number }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [gewaehltesJahr, setGewaehltesJahr] = useState(String(jahr));
-  // Bekannt ist der Anspruch des laufenden Jahres; das nächste beginnt leer.
-  const bekannt = gewaehltesJahr === String(konto.balance.year);
-  const [tage, setTage] = useState(
-    bekannt && konto.balance.entitlement !== null ? String(konto.balance.entitlement) : '',
-  );
-  const [uebertrag, setUebertrag] = useState(
-    bekannt && konto.balance.carryover !== null ? String(konto.balance.carryover) : '0',
-  );
+  // Beide Jahre sind bekannt: Ein vorab eingetragener Anspruch fürs Folgejahr
+  // wird vorbelegt, nicht leer überschrieben (Design- und Praxis-Review).
+  const kontoFuer = (wert: string): Urlaubskonto | null =>
+    wert === String(konto.balance.year)
+      ? konto.balance
+      : wert === String(konto.next_balance.year)
+        ? konto.next_balance
+        : null;
+  const [tage, setTage] = useState(() => vorbelegt(kontoFuer(String(jahr))).tage);
+  const [uebertrag, setUebertrag] = useState(() => vorbelegt(kontoFuer(String(jahr))).uebertrag);
+  const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
   const name = konto.name ?? 'Unbekannte Person';
 
   const tageZahl = Number(tage);
   const uebertragZahl = Number(uebertrag === '' ? '0' : uebertrag);
-  const gueltig =
-    tage.trim() !== '' &&
-    Number.isInteger(tageZahl) &&
-    tageZahl >= 0 &&
-    tageZahl <= 60 &&
-    Number.isInteger(uebertragZahl) &&
-    uebertragZahl >= 0 &&
-    uebertragZahl <= 60;
 
   const speichern = useMutation({
     mutationFn: () =>
@@ -126,12 +149,22 @@ function Formular({ konto, jahr }: { konto: FremdesKonto; jahr: number }) {
 
   function absenden(event: FormEvent) {
     event.preventDefault();
-    if (gueltig) speichern.mutate();
+    if (speichern.isPending) return;
+    // Jedes Feld für sich; die Zusammenfassung nennt, was fehlt.
+    const gefunden: Partial<Record<Feld, string>> = {};
+    const fehlerTage = tagesfehler(tage, true);
+    const fehlerUebertrag = tagesfehler(uebertrag, false);
+    if (fehlerTage) gefunden.tage = fehlerTage;
+    if (fehlerUebertrag) gefunden.uebertrag = fehlerUebertrag;
+    setFehler(gefunden);
+    if (gefunden.tage || gefunden.uebertrag) return;
+    speichern.mutate();
   }
 
   return (
     <form onSubmit={absenden} noValidate className="max-w-formular">
       <PageHeader title="Urlaubsanspruch" description={name} />
+      <Fehlerzusammenfassung fehler={alsFormularfehler(FELDER, BESCHRIFTUNG, fehler, feldId)} />
       <Section titel="Jahr">
         <Segment
           beschriftung="Jahr"
@@ -142,30 +175,44 @@ function Formular({ konto, jahr }: { konto: FremdesKonto; jahr: number }) {
           gewaehlt={gewaehltesJahr}
           onWaehlen={(wert) => {
             setGewaehltesJahr(wert);
-            if (wert !== String(konto.balance.year)) {
-              setTage('');
-              setUebertrag('0');
-            } else {
-              setTage(konto.balance.entitlement === null ? '' : String(konto.balance.entitlement));
-              setUebertrag(String(konto.balance.carryover ?? 0));
-            }
+            const belegt = vorbelegt(kontoFuer(wert));
+            setTage(belegt.tage);
+            setUebertrag(belegt.uebertrag);
+            setFehler({});
           }}
         />
       </Section>
       <Section titel="Tage">
         <Feldgruppe>
           <Field
-            label="Urlaubstage im Jahr"
+            label={BESCHRIFTUNG.tage}
+            feldId={feldId('tage')}
             inputMode="numeric"
             value={tage}
-            onChange={(e) => setTage(e.target.value.replace(/\D/g, ''))}
-            error={tage !== '' && !gueltig ? 'Bitte zwischen 0 und 60 Tagen.' : undefined}
+            onChange={(e) => {
+              setTage(e.target.value.replace(/\D/g, ''));
+              setFehler((bisher) => {
+                const neu = { ...bisher };
+                delete neu.tage;
+                return neu;
+              });
+            }}
+            error={fehler.tage}
           />
           <Field
-            label="Übertrag aus dem Vorjahr"
+            label={BESCHRIFTUNG.uebertrag}
+            feldId={feldId('uebertrag')}
             inputMode="numeric"
             value={uebertrag}
-            onChange={(e) => setUebertrag(e.target.value.replace(/\D/g, ''))}
+            onChange={(e) => {
+              setUebertrag(e.target.value.replace(/\D/g, ''));
+              setFehler((bisher) => {
+                const neu = { ...bisher };
+                delete neu.uebertrag;
+                return neu;
+              });
+            }}
+            error={fehler.uebertrag}
           />
         </Feldgruppe>
       </Section>
@@ -177,7 +224,7 @@ function Formular({ konto, jahr }: { konto: FremdesKonto; jahr: number }) {
         </Statusmeldung>
       ) : null}
       <Formularfuss>
-        <Button type="submit" disabled={!gueltig || speichern.isPending}>
+        <Button type="submit" disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird gespeichert …' : 'Anspruch speichern'}
         </Button>
         <ButtonLink to={ZUM_URLAUB} variant="quiet">

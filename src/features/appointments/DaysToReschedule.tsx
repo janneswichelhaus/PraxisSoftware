@@ -1,5 +1,6 @@
-import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { ListRow } from '@/components/ui/ListRow';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';
 
@@ -13,10 +14,13 @@ const DAY = new Intl.DateTimeFormat('de-DE', {
 
 /**
  * Die Tage mit Terminen, die nach einer Entscheidung umzuplanen sind - nach
- * genehmigtem Urlaub (URL-001, ANN-578) und nach einer Arbeitszeitänderung
- * (AZ-001, ANN-590). Abgesagt wird hier nichts: Jeder Tag führt, wer Termine
- * verwaltet, zu „Tag umplanen“ (G2) für die Person; zurück geht es dorthin,
- * woher das Entscheiden kam - der Antrag selbst ist danach nicht mehr offen.
+ * genehmigtem oder selbst eingetragenem Urlaub (URL-001, ANN-578). Abgesagt
+ * wird hier nichts: Wer Termine verwaltet, kommt je Tag mit „Tag umplanen“
+ * (G2) zu den Terminen der Person; zurück geht es dorthin, woher das
+ * Entscheiden kam - der Antrag selbst ist danach nicht mehr offen.
+ *
+ * Steht im Fenster eines geführten Ablaufs: deshalb ein Zwischentitel und
+ * eine Liste ohne Rahmen, kein Kasten im Kasten (DESIGN.md Regel 2).
  */
 export function DaysToReschedule({
   staffMemberId,
@@ -31,23 +35,37 @@ export function DaysToReschedule({
 }) {
   if (days.length === 0) return null;
   const count = days.reduce((sum, day) => sum + day.appointments, 0);
+  const canPlan = canManageAppointments(user.roles);
   return (
-    <Listenabschnitt titel="Termine umplanen" anzahl={count} ebene={3}>
-      {days.map((day) => (
-        <ListRow
-          key={day.on_date}
-          titel={DAY.format(new Date(`${day.on_date}T00:00:00Z`))}
-          meta={day.appointments === 1 ? '1 Termin' : `${day.appointments} Termine`}
-          {...(canManageAppointments(user.roles)
-            ? {
-                to: mitRueckweg(
-                  `/kalender/tag-umplanen?person=${staffMemberId}&datum=${day.on_date}`,
-                  returnTo,
-                ),
+    <div>
+      <Zwischentitel>{`Termine umplanen (${count})`}</Zwischentitel>
+      <ListRows rahmen={false} beschriftung="Termine umplanen">
+        {days.map((day) => {
+          const label = DAY.format(new Date(`${day.on_date}T00:00:00Z`));
+          return (
+            <ListRow
+              key={day.on_date}
+              titel={label}
+              meta={day.appointments === 1 ? '1 Termin' : `${day.appointments} Termine`}
+              aktion={
+                canPlan ? (
+                  <ButtonLink
+                    variant="secondary"
+                    groesse="kompakt"
+                    aria-label={`${label} umplanen`}
+                    to={mitRueckweg(
+                      `/kalender/tag-umplanen?person=${staffMemberId}&datum=${day.on_date}`,
+                      returnTo,
+                    )}
+                  >
+                    Tag umplanen
+                  </ButtonLink>
+                ) : undefined
               }
-            : {})}
-        />
-      ))}
-    </Listenabschnitt>
+            />
+          );
+        })}
+      </ListRows>
+    </div>
   );
 }

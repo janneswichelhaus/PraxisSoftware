@@ -7,7 +7,7 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import type * as VacationApi from './api';
 import type { EigenerAntrag } from './api';
-import { STAFF, testKonto, testOffenerAntrag, testUrlaub } from './testdaten';
+import { STAFF, testFremdesKonto, testKonto, testOffenerAntrag, testUrlaub } from './testdaten';
 
 /**
  * Die Urlaubsseite (URL-001) ersetzt die Vorschau. Geprüft wird, was jede
@@ -174,12 +174,12 @@ describe('Urlaub', () => {
         can_manage_entitlements: true,
         to_decide: [testOffenerAntrag()],
         balances: [
-          { staff_member_id: STAFF.anna, name: 'Anna Beispiel', balance: testKonto() },
-          {
+          testFremdesKonto(),
+          testFremdesKonto({
             staff_member_id: STAFF.tim,
             name: 'Tim Teamleitung',
             balance: testKonto({ entitlement: null, carryover: null, approved: 0, rest: null }),
-          },
+          }),
         ],
       }),
     );

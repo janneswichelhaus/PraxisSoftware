@@ -115,10 +115,16 @@ describe('UrlaubEntscheidenPage', () => {
     const fertig = await screen.findByRole('dialog', { name: 'Genehmigt' });
     expect(
       within(fertig).getByText(
-        'Anna Beispiels Urlaub 2.–13. Nov. ist genehmigt. Die Tage sind im Kalender gesperrt.',
+        'Urlaub von Anna Beispiel, 2.–13. Nov., ist genehmigt. Die Tage sind im Kalender gesperrt.',
       ),
     ).toBeInTheDocument();
-    const umplanen = within(fertig).getByRole('link', { name: /^Dienstag, 3\. November/ });
+    // Ohne Kasten im Fenster: Zwischentitel und je Tag „Tag umplanen“.
+    expect(
+      within(fertig).getByRole('heading', { name: 'Termine umplanen (3)' }),
+    ).toBeInTheDocument();
+    expect(within(fertig).getAllByRole('link', { name: /umplanen$/ })).toHaveLength(2);
+    const umplanen = within(fertig).getByRole('link', { name: 'Dienstag, 3. November umplanen' });
+    expect(umplanen).toHaveTextContent('Tag umplanen');
     expect(
       umplanen
         .getAttribute('href')
@@ -180,19 +186,61 @@ describe('UrlaubEntscheidenPage', () => {
     expect(within(seite).queryByText(/Termine im Zeitraum/)).toBeNull();
   });
 
-  it('sagt es, wenn nichts mehr zu entscheiden ist', async () => {
+  it('sagt es, wenn kein offener Antrag da ist - mit dem Weg zurück in der Karte', async () => {
     fetchUrlaub.mockResolvedValue(testUrlaub({ can_decide: true, to_decide: [] }));
     rendern();
-    expect(await screen.findByText('Nichts mehr zu entscheiden')).toBeInTheDocument();
+    expect(await screen.findByText('Kein offener Antrag')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zurück' })).toHaveAttribute('href', '/betrieb/urlaub');
+  });
+
+  it('zieht über den Jahreswechsel nur die Tage des Beginnjahrs ab (Praxis-Review)', async () => {
+    fetchUrlaub.mockResolvedValue(
+      testUrlaub({
+        can_decide: true,
+        to_decide: [
+          testOffenerAntrag({
+            starts_on: '2026-12-28',
+            ends_on: '2027-01-08',
+            days: 8,
+            days_following_year: 4,
+            balance: testKonto({ requested: 4 }),
+          }),
+        ],
+      }),
+    );
+    rendern();
+    const seite = await screen.findByRole('dialog', { name: 'Urlaub genehmigen?' });
+    // Rest 12, im Jahr 2026 gehen 4 der 8 Tage ab.
+    expect(within(seite).getByText('Danach 8 von 30 Tagen übrig')).toBeInTheDocument();
+    expect(within(seite).queryByText(/weitere beantragt/)).toBeNull();
+  });
+
+  it('nennt abweichende Arbeitszeiten vor dem Genehmigen und den Weg zur Planung', async () => {
+    fetchUrlaub.mockResolvedValue(
+      testUrlaub({
+        can_decide: true,
+        to_decide: [testOffenerAntrag({ exception_days: ['2026-11-03'] })],
+      }),
+    );
+    rendern();
+    const seite = await screen.findByRole('dialog', { name: 'Urlaub genehmigen?' });
+    expect(
+      within(seite).getByText(
+        'Abweichende Arbeitszeiten am 3. Nov. – erst in der Planung ändern, dann genehmigen.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(seite).getByRole('button', { name: 'Genehmigen' })).toBeDisabled();
+    expect(within(seite).getByRole('button', { name: 'Ablehnen' })).toBeEnabled();
+    expect(within(seite).getByRole('link', { name: 'Zur Planung' })).toHaveAttribute(
+      'href',
+      `/praxis/planung?person=${STAFF.anna}`,
+    );
   });
 
   it('zeigt einen Fehler des Servers und bleibt auf der Seite', async () => {
     const user = userEvent.setup();
     decideLeaveRequest.mockRejectedValue(
-      new Error(
-        'Im Zeitraum stehen abweichende Arbeitszeiten. Bitte erst dort ändern, dann genehmigen.',
-      ),
+      new Error('Im Zeitraum stehen abweichende Arbeitszeiten. Bitte erst in der Planung ändern.'),
     );
     rendern();
     const seite = await screen.findByRole('dialog', { name: 'Urlaub genehmigen?' });

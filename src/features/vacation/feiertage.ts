@@ -69,3 +69,18 @@ export function feiertag(tag: string, land: Bundesland): string | null {
   const jahr = Number(tag.slice(0, 4));
   return feiertage(jahr, land).find((eintrag) => eintrag.tag === tag)?.name ?? null;
 }
+
+/** Die Feiertage von `von` bis `bis` (einschließlich), nach Datum. */
+export function feiertageZwischen(
+  von: string,
+  bis: string,
+  land: Bundesland,
+): { tag: string; name: string }[] {
+  const jahre: number[] = [];
+  for (let jahr = Number(von.slice(0, 4)); jahr <= Number(bis.slice(0, 4)); jahr += 1) {
+    jahre.push(jahr);
+  }
+  return jahre
+    .flatMap((jahr) => feiertage(jahr, land))
+    .filter((eintrag) => von <= eintrag.tag && eintrag.tag <= bis);
+}

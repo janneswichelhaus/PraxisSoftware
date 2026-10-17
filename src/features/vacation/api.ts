@@ -26,6 +26,9 @@ const kontoSchema = z.object({
 });
 export type Urlaubskonto = z.infer<typeof kontoSchema>;
 
+const terminTagSchema = z.object({ on_date: z.string(), appointments: z.number().int() });
+export type Termintag = z.infer<typeof terminTagSchema>;
+
 const teamSchema = z.object({
   staff_member_id: z.string(),
   name: z.string().nullable(),
@@ -70,10 +73,14 @@ const offenerSchema = z.object({
   starts_on: z.string(),
   ends_on: z.string(),
   days: z.number().int(),
+  /** Davon im Jahr nach dem Beginn - das Konto des Beginnjahrs zählt sie nicht. */
+  days_following_year: z.number().int(),
   requested_at: z.string(),
   balance: kontoSchema,
   team: z.array(teamSchema),
   appointments: z.number().int(),
+  /** Tage mit abweichenden Arbeitszeiten: An ihnen hält das Genehmigen an. */
+  exception_days: z.array(z.string()),
 });
 export type OffenerAntrag = z.infer<typeof offenerSchema>;
 
@@ -81,6 +88,8 @@ const fremdesKontoSchema = z.object({
   staff_member_id: z.string(),
   name: z.string().nullable(),
   balance: kontoSchema,
+  /** Das Konto des Folgejahrs - mit einem vorab eingetragenen Anspruch. */
+  next_balance: kontoSchema,
 });
 export type FremdesKonto = z.infer<typeof fremdesKontoSchema>;
 
@@ -105,11 +114,12 @@ const vorschauSchema = z.object({
   overlaps_own: z.boolean(),
   team: z.array(teamSchema),
   self_entered: z.boolean(),
+  /** Eigene Termine je Tag - wer selbst einträgt, plant sie danach um. */
+  appointment_days: z.array(terminTagSchema),
+  /** Tage mit abweichenden Arbeitszeiten im Zeitraum. */
+  exception_days: z.array(z.string()),
 });
 export type Urlaubsvorschau = z.infer<typeof vorschauSchema>;
-
-const terminTagSchema = z.object({ on_date: z.string(), appointments: z.number().int() });
-export type Termintag = z.infer<typeof terminTagSchema>;
 
 const entscheidungSchema = z.object({
   status: z.enum(['approved', 'rejected']),
@@ -133,7 +143,7 @@ const SAETZE: readonly (readonly [string, string])[] = [
   ['cancellation already requested', 'Ein Storno für diesen Urlaub ist schon beantragt.'],
   [
     'working hours exception in period',
-    'Im Zeitraum stehen abweichende Arbeitszeiten. Bitte erst dort ändern, dann genehmigen.',
+    'Im Zeitraum stehen abweichende Arbeitszeiten. Bitte erst in der Planung ändern.',
   ],
   ['rejection needs a reason', 'Bitte einen Grund für die Ablehnung angeben.'],
   ['not allowed to decide own request', 'Über den eigenen Antrag entscheidet jemand anderes.'],

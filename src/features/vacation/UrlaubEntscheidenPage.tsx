@@ -14,7 +14,7 @@ import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/component
 import { formatLocalDate, todayInTimeZone } from '@/features/appointments/api';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
-import { type CurrentUser } from '@/features/session/types';
+import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
   URLAUB_SCHLUESSEL,
@@ -25,7 +25,7 @@ import {
   type OffenerAntrag,
 } from './api';
 import { urlaubsfenster } from './fenster';
-import { tage, urlaubstage, zeitraumText } from './zeitraum';
+import { tagKurz, tage, urlaubstage, zeitraumText } from './zeitraum';
 
 /**
  * Über einen Urlaubsantrag entscheiden (G7b, URL-001): je Antrag eine Seite
@@ -100,19 +100,20 @@ export function UrlaubEntscheidenPage({ user }: { user: CurrentUser }) {
       {(stand) => {
         const antrag = stand.to_decide.find((a) => a.id === antragId);
         if (!antrag) {
+          // Entschieden, zurückgezogen, unbekannt oder nicht zu entscheiden -
+          // die Seite unterscheidet das nicht (PROJECT_PRINCIPLES.md 13).
           return (
             <>
               <PageHeader title="Urlaubsantrag" />
               <EmptyState
                 inKarte
-                title="Nichts mehr zu entscheiden"
-                description="Der Antrag ist schon entschieden oder zurückgezogen."
+                title="Kein offener Antrag"
+                aktion={
+                  <ButtonLink to={rueckweg} variant="secondary">
+                    Zurück
+                  </ButtonLink>
+                }
               />
-              <div className="mt-4">
-                <ButtonLink to={rueckweg} variant="secondary">
-                  Zurück
-                </ButtonLink>
-              </div>
             </>
           );
         }
@@ -209,10 +210,11 @@ function Ablauf({
       >
         <div className="flex flex-col gap-6">
           <Statusmeldung ton="erfolg">
+            {/* Ohne Genitiv: „Lukas Schulzs“ ginge schief (Design-Review). */}
             {genehmigt
               ? storno
-                ? `${name}s Urlaub ${zeitraum} ist storniert. Die Tage sind wieder frei.`
-                : `${name}s Urlaub ${zeitraum} ist genehmigt. Die Tage sind im Kalender gesperrt.`
+                ? `Urlaub von ${name}, ${zeitraum}, ist storniert. Die Tage sind wieder frei.`
+                : `Urlaub von ${name}, ${zeitraum}, ist genehmigt. Die Tage sind im Kalender gesperrt.`
               : `${name} sieht die Ablehnung mit Ihrem Grund.`}
           </Statusmeldung>
           {genehmigt ? (
@@ -273,9 +275,13 @@ function Ablauf({
   const konto = antrag.balance;
   const anspruch = konto.entitlement === null ? null : konto.entitlement + (konto.carryover ?? 0);
   const imJahr = Number(antrag.starts_on.slice(0, 4)) === konto.year;
-  // Ein Storno gibt die Tage zurück, ein Urlaub nimmt sie (im Jahr des Beginns).
+  // Ein Storno gibt die Tage zurück, ein Urlaub nimmt sie - das Konto des
+  // Beginnjahrs nur dessen Tage, nicht die im Jahr danach (Praxis-Review).
+  const tageImJahr = antrag.days - antrag.days_following_year;
   const danach =
-    konto.rest === null ? null : storno ? konto.rest + antrag.days : konto.rest - antrag.days;
+    konto.rest === null ? null : storno ? konto.rest + tageImJahr : konto.rest - tageImJahr;
+  // An abweichenden Arbeitszeiten hält das Genehmigen an: vorher nennen.
+  const abweichend = antrag.exception_days;
 
   return (
     <GefuehrterAblauf
@@ -288,6 +294,20 @@ function Ablauf({
       abschluss
       fuss={
         <div className="flex flex-col gap-2">
+          {abweichend.length > 0 ? (
+            <>
+              <Statusmeldung ton="fehler">
+                {`Abweichende Arbeitszeiten am ${abweichend.map(tagKurz).join(', ')} – erst in der Planung ändern, dann genehmigen.`}
+              </Statusmeldung>
+              <ButtonLink
+                variant="secondary"
+                className="w-full"
+                to={`/praxis/planung?person=${antrag.staff_member_id}`}
+              >
+                Zur Planung
+              </ButtonLink>
+            </>
+          ) : null}
           {entscheiden.isError ? (
             <Statusmeldung ton="fehler">
               {entscheiden.error instanceof Error
@@ -297,7 +317,7 @@ function Ablauf({
           ) : null}
           <Button
             className="w-full"
-            disabled={entscheiden.isPending}
+            disabled={entscheiden.isPending || abweichend.length > 0}
             onClick={() => entscheiden.mutate(true)}
           >
             {entscheiden.isPending
@@ -333,8 +353,8 @@ function Ablauf({
                 : `Danach ${danach} von ${anspruch} Tagen übrig`
             }
             meta={
-              konto.requested > (storno ? 0 : antrag.days)
-                ? `Dazu ${konto.requested - (storno ? 0 : antrag.days)} weitere beantragt`
+              konto.requested > (storno ? 0 : tageImJahr)
+                ? `Dazu ${konto.requested - (storno ? 0 : tageImJahr)} weitere beantragt`
                 : undefined
             }
           />

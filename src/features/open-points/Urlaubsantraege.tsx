@@ -1,6 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
+import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
+import { Section } from '@/components/ui/Section';
+import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { urlaubstage, zeitraumText } from '@/features/vacation/zeitraum';
 import { abfragen } from './eingang';
@@ -9,10 +12,22 @@ import { abfragen } from './eingang';
  * „Urlaubsanträge“ in Offene Punkte (URL-001): was owner zu entscheiden hat,
  * je Antrag eine Zeile zum geführten Entscheiden (G7b).
  * Ohne Notiz - die sieht nur die Person (BEF-066, ANN-580). Ohne offenen
- * Antrag steht hier nichts.
+ * Antrag steht hier nichts; geht das Laden schief, sagt es die Gruppe wie
+ * ihre Nachbarn, statt still zu fehlen (Design-Review).
  */
 export function Urlaubsantraege({ heute }: { heute: string }) {
-  const { data } = useQuery(abfragen.urlaub(heute));
+  const { data, isError, refetch } = useQuery(abfragen.urlaub(heute));
+  if (isError && !data) {
+    return (
+      <Section titel="Urlaubsanträge">
+        <ErrorState
+          title="Die Urlaubsanträge konnten nicht geladen werden."
+          description={VERBINDUNG_PRUEFEN}
+          onErneut={() => refetch()}
+        />
+      </Section>
+    );
+  }
   if (!data || data.length === 0) return null;
   const jahr = Number(heute.slice(0, 4));
   return (

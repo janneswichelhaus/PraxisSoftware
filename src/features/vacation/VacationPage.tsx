@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -79,7 +80,9 @@ function Inhalt({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
   const eigene = stand.own.filter(sichtbar);
 
   return (
-    <div className="flex flex-col gap-8">
+    // Abschnitt zu Abschnitt 32 px: der Abstand der Spalte, nicht dazu der
+    // eigene Rand jedes Abschnitts (Design-Review, DESIGN.md Rhythmus).
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
       {stand.can_decide && stand.to_decide.length > 0 ? (
         <Listenabschnitt titel="Zu entscheiden" anzahl={stand.to_decide.length}>
           {stand.to_decide.map((antrag) => (
@@ -153,6 +156,15 @@ function Inhalt({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
       ) : null}
     </div>
   );
+}
+
+/**
+ * Die Rückfrage einer Zeile steht darunter in voller Breite: In der Zeile
+ * neben Zeitraum und Abzeichen bräche sie bei 375 px (Design-Review).
+ */
+function unterDerZeile(inhalt: ReactNode): ReactNode {
+  if (inhalt === null) return null;
+  return <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">{inhalt}</div>;
 }
 
 /** Zurückgezogenes und erledigte Stornos stehen nicht mehr da. */
@@ -243,7 +255,7 @@ function EigeneZeile({
       titel={storno ? `Storno: ${zeitraum}` : zeitraum}
       meta={meta}
       status={anzeige ? <Badge ton={anzeige.ton}>{anzeige.text}</Badge> : null}
-      aktion={
+      darunter={unterDerZeile(
         antrag.status === 'requested' ? (
           <Rueckfrage
             ausloeser="Zurückziehen"
@@ -272,8 +284,8 @@ function EigeneZeile({
               ? 'Der Urlaub wird storniert, die Tage sind wieder frei.'
               : 'Bis zur Entscheidung bleibt der Urlaub genehmigt.'}
           </Rueckfrage>
-        ) : null
-      }
+        ) : null,
+      )}
     />
   );
 }

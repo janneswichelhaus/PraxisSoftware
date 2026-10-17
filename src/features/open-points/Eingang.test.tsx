@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import type { OffenerScan } from '@/features/files/api';
 import type { Rueckfragezeile } from '@/features/messages/api';
 import type { Patienteneintrag } from '@/features/patients/uebersicht';
@@ -251,6 +251,18 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     await waitFor(() => expect(fetchConsentWithdrawals).toHaveBeenCalledTimes(1));
   });
 
+  it('sagt es, wenn die Urlaubsanträge nicht laden, statt still zu fehlen (URL-001)', async () => {
+    fetchUrlaub.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    const gruppe = (await screen.findByRole('heading', { name: 'Urlaubsanträge' })).closest(
+      'section',
+    )!;
+    expect(
+      within(gruppe).getByText('Die Urlaubsanträge konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
   it('zeigt owner die offenen Urlaubsanträge mit dem Weg zum Entscheiden (URL-001)', async () => {
     fetchUrlaub.mockResolvedValue({
       ...URLAUB_LEER,
@@ -264,6 +276,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
           starts_on: '2027-08-02',
           ends_on: '2027-08-13',
           days: 10,
+          days_following_year: 0,
           requested_at: '2026-10-12T08:00:00Z',
           balance: {
             year: 2027,
@@ -275,6 +288,7 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
           },
           team: [],
           appointments: 3,
+          exception_days: [],
         },
       ],
     });
