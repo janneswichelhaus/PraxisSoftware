@@ -204,6 +204,9 @@ ausgezahlt.
 
 - **Strom:** Zeitraum (Monate) → Arbeitstage (Vorschlag aus dem eigenen Wochenplan abzüglich Urlaub,
   änderbar; keine Ableitung aus Touren) → Erklärung bestätigen → Zusammenfassung mit Betrag.
+  **Seit ORG-008 (ANN-605):** Monat → Zusammenfassung mit geplanten Stunden × km je Stunde × Wh/km ×
+  ct/kWh (Werte der Praxis, nur owner) → Haken „zu Hause geladen“; der Eingang schlägt jeden
+  offenen Monat fertig gerechnet vor.
 - **Einkauf:** Beleg fotografieren (Kamera der App, ADR-017) → Betrag → wofür → weiterer Beleg? →
   Zusammenfassung mit Summe.
 

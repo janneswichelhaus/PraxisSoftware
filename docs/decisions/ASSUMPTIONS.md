@@ -6241,17 +6241,17 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 ### ANN-599 — Ladestrom: ein Monat, Arbeitstage, fester Satz
 
-Praxisprozess · geändert · 2026-10-17 · Jannes · erledigt · Wiedervorlage: Umsetzung in Überholung 10 (#266)
+Praxisprozess · geändert · 2026-10-17 · Jannes · erledigt · Wiedervorlage: keine — umgesetzt als ANN-605 (ORG-008)
+
+**Ablösung.** abgelöst durch ANN-605 (Jannes, 2026-10-17: Ladung und Satz als Einstellung der Praxis für owner statt im Code; der Antrag hält sie fest). Gestellte Anträge behalten Tage, Ladung und Satz.
 
 **Annahme.** Ladestrom je abgeschlossenem Kalendermonat, höchstens zwölf zurück, einmal je Person und Monat; Arbeitstage bis zur Zahl der Tage des Monats, vorgeschlagen aus dem Wochenplan ohne Feiertage und ganztägige Abwesenheit. Betrag = Tage × 0,5 kWh × 37 ct, auf Cent gerundet; Ladung und Satz stehen am Antrag. Die Erklärung ist ein Haken (wie ANN-553).
 
 **Begründung.** Werte der Vorlage, eine betriebliche Regel, keine Vorgabe; kein Bezug auf Touren (PROJECT_PRINCIPLES.md 20).
 
-**Anker.** `app.electricity_wh_per_day`, `app.electricity_cents_per_kwh`.
+**Anker.** `app.electricity_wh_per_day`, `app.electricity_cents_per_kwh` (bis ORG-008, `20261127100000_ers_001_erstattungen.sql`).
 
 **Änderungspfad.** Satz in den Praxiseinstellungen pflegen: Spalte und Feld · Aufwand `mittel`.
-
-**Geändert (Jannes, 2026-10-17).** Ladung und Satz als Einstellung der Praxis für owner statt im Code; der Antrag hält beide fest. Umsetzung offen (Überholung 10).
 
 ### ANN-600 — Einkauf: Belege als Dateien
 
@@ -6312,3 +6312,17 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 **Anker.** `app.time_account_check`, `src/features/timeaccount/rules.ts`.
 
 **Änderungspfad.** Höchstdauer: `OVERTIME_MAX`, `CORRECTION_MAX` · Aufwand `klein`.
+
+### ANN-605 — Ladestrom: geplante Stunden, Werte der Praxis
+
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-599
+
+**Annahme.** Ladestrom = geplante Arbeitsstunden des Monats (Wochenplan in Fassungen mit Abweichungen, ohne Feiertage und ganztägige Abwesenheit; nicht änderbar) × km je Arbeitsstunde × Wh/km bei höchster Stufe × ct/kWh, kaufmännisch auf Cent. Die drei Werte pflegt nur owner (Vorbelegung 6 km, 18 Wh/km, 37 ct); der Antrag hält alle fest. Der Eingang schlägt jeden offenen Monat vor; „zu Hause geladen“ bleibt ein Haken.
+
+**Begründung.** Auftrag Jannes 2026-10-17; keine Kilometer aus Touren (PROJECT_PRINCIPLES.md 20, ADR-019 Punkt 17).
+
+**Anker.** `app.electricity_amount_cents`.
+
+**Änderungspfad.** Stunden von der Person korrigierbar: Parameter und Feld im Ablauf · Aufwand `mittel`.

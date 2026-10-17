@@ -16,6 +16,7 @@ import {
   saveDocumentationDeadline,
 } from '@/features/documentation/api';
 import { BenachrichtigungsSchalter } from '@/features/platform-access/BenachrichtigungsSchalter';
+import { LadestromEinstellung } from '@/features/reimbursements/LadestromEinstellung';
 import {
   RASTER_WERTE,
   istRasterWert,
@@ -33,7 +34,7 @@ import { GarageEinstellung, StartortEinstellung } from '@/features/tours/Startor
  * 2.400 px tief: Raster, Frist, Startort, Garage, Fahrzeitfaktor und die
  * Benachrichtigungen an Patient:innen hatten mit Arbeitszeit nichts zu tun.
  * Jetzt sind sie die erste Ansicht unter Praxis: Termine und Dokumentation,
- * Touren, Benachrichtigungen. Die Formulare selbst sind unverändert;
+ * Touren, Ladestrom (ORG-008), Benachrichtigungen. Die Formulare selbst sind unverändert;
  * verbindlich prüft der Server (ADR-004).
  */
 export function PraxisEinstellungenPage({ user }: { user: CurrentUser }) {
@@ -49,6 +50,11 @@ export function PraxisEinstellungenPage({ user }: { user: CurrentUser }) {
         <GarageEinstellung />
         {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
         <FahrzeitfaktorEinstellung />
+      </div>
+
+      <div className="mt-10 space-y-8">
+        {/* ORG-008: Strompreis, Verbrauch und Strecke je Stunde für den Ladestrom. */}
+        <LadestromEinstellung />
       </div>
 
       <div className="mt-10 space-y-8">

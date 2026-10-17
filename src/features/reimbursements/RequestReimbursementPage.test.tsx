@@ -9,8 +9,9 @@ import type * as ReimbursementsApi from './api';
 import { testOverview, testPreview, testReimbursement } from './testdata';
 
 /**
- * Erstattung beantragen, geführt (G10, ERS-001): Ladestrom 6 Tipps mit dem
- * Einstieg (Ladestrom, Monat, Weiter, Haken, Absenden), Einkauf 7 und der
+ * Erstattung beantragen, geführt (G10, ERS-001, ORG-008): Ladestrom 5 Tipps
+ * mit dem Einstieg (Ladestrom, Monat, Haken, Absenden) - Stunden und Betrag
+ * rechnet der Server -, aus dem Vorschlag im Eingang 3; Einkauf 7 und der
  * Betrag (mit der Kamera der App: fotografieren, auslösen, verwenden). Ohne
  * Kamera im Prüfbrowser nimmt der Einkauf den Dateiwähler.
  */
@@ -47,7 +48,10 @@ function Ziel() {
   );
 }
 
-function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
+function rendern(
+  rollen: Parameters<typeof testUser>[0] = ['therapist'],
+  adresse = '/betrieb/erstattungen/beantragen',
+) {
   const router = createMemoryRouter(
     [
       {
@@ -56,7 +60,7 @@ function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
       },
       { path: '*', element: <Ziel /> },
     ],
-    { initialEntries: ['/betrieb/erstattungen/beantragen'] },
+    { initialEntries: [adresse] },
   );
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   return render(
@@ -79,7 +83,7 @@ beforeEach(() => {
   previewElectricity.mockReset().mockResolvedValue(testPreview());
   submitElectricity
     .mockReset()
-    .mockResolvedValue({ id: 'neu', status: 'requested', amount_cents: 333 });
+    .mockResolvedValue({ id: 'neu', status: 'requested', amount_cents: 639 });
   submitPurchase
     .mockReset()
     .mockResolvedValue({ id: 'neu', status: 'requested', amount_cents: 1739 });
@@ -92,7 +96,7 @@ afterEach(() => {
 });
 
 describe('RequestReimbursementPage', () => {
-  it('beantragt Ladestrom in fünf Tipps - mit dem Einstieg sechs', async () => {
+  it('beantragt Ladestrom in vier Tipps - mit dem Einstieg fünf', async () => {
     const user = userEvent.setup();
     rendern();
     let tipps = 1; // „Erstattung beantragen“ auf der Übersicht
@@ -116,18 +120,23 @@ describe('RequestReimbursementPage', () => {
     await tippe(within(monat).getByRole('button', { name: 'September 2026' }));
     expect(previewElectricity).toHaveBeenCalledWith('2026-09-01');
 
-    const tage = await screen.findByRole('dialog', { name: 'Wie viele Arbeitstage im September?' });
-    // Der Vorschlag steht schon im Feld, die Rechnung darunter.
-    expect(await within(tage).findByDisplayValue('18')).toBeInTheDocument();
-    expect(within(tage).getByText(/18 × 0,5 kWh × 0,37 €/)).toBeInTheDocument();
-    await tippe(within(tage).getByRole('button', { name: 'Weiter' }));
-
+    // Kein Schritt für die Stunden: Der Server rechnet, der Abschluss nennt die Rechnung.
     const abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+    expect(within(abschluss).getByText('Schritt 3 von 3')).toBeInTheDocument();
     expect(within(abschluss).getByText('September 2026')).toBeInTheDocument();
-    expect(within(abschluss).getByText('3,33 €')).toBeInTheDocument();
+    expect(await within(abschluss).findByText('160 h Arbeitszeit')).toBeInTheDocument();
+    expect(
+      within(abschluss).getByText('160 h × 6 km/h × 18 Wh/km × 0,37 €/kWh'),
+    ).toBeInTheDocument();
+    expect(within(abschluss).getByText('6,39 €')).toBeInTheDocument();
     expect(within(abschluss).getByText('Auszahlung auf DE89 •••• 3000')).toBeInTheDocument();
+    expect(
+      within(abschluss).getByText(
+        'Im Depot lädt die Praxis selbst – dann gibt es nichts zu erstatten.',
+      ),
+    ).toBeInTheDocument();
     const absenden = within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' });
-    // Ohne Erklärung nicht.
+    // Ohne „zu Hause geladen“ nicht.
     expect(absenden).toBeDisabled();
     await tippe(within(abschluss).getByRole('checkbox'));
     await act(() => pruefeBarrierefreiheit(abschluss));
@@ -135,51 +144,79 @@ describe('RequestReimbursementPage', () => {
 
     expect(submitElectricity).toHaveBeenCalledWith({
       month: '2026-09-01',
-      workingDays: 18,
       declared: true,
       iban: null,
     });
     expect(
       await screen.findByText(
-        'Ziel /betrieb/erstattungen: Ladestrom September 2026 beantragt: 3,33 €. Es entscheidet: Praxisinhaber.',
+        'Ziel /betrieb/erstattungen: Ladestrom September 2026 beantragt: 6,39 €. Es entscheidet: Praxisinhaber.',
       ),
     ).toBeInTheDocument();
-    expect(tipps).toBe(6);
+    expect(tipps).toBe(5);
   });
 
-  it('lässt die Tage ändern und rechnet mit', async () => {
+  it('beginnt aus dem Vorschlag im Eingang an der Zusammenfassung - drei Tipps (ORG-008)', async () => {
     const user = userEvent.setup();
+    rendern(['therapist'], '/betrieb/erstattungen/beantragen?monat=2026-08-01&zurueck=%2Fbetrieb');
+    let tipps = 1; // „Beantragen“ im Eingang
+    const abschluss = await screen.findByRole('dialog', { name: 'Ladestrom beantragen?' });
+    expect(within(abschluss).getByText('August 2026')).toBeInTheDocument();
+    expect(previewElectricity).toHaveBeenCalledWith('2026-08-01');
+    tipps += 1;
+    await user.click(await within(abschluss).findByRole('checkbox'));
+    tipps += 1;
+    await user.click(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' }));
+    expect(submitElectricity).toHaveBeenCalledWith({
+      month: '2026-08-01',
+      declared: true,
+      iban: null,
+    });
+    expect(
+      await screen.findByText(/^Ziel \/betrieb: Ladestrom August 2026 beantragt/),
+    ).toBeInTheDocument();
+    expect(tipps).toBe(3);
+  });
+
+  it('führt aus dem Vorschlag mit „Zurück“ zur Wahl des Monats', async () => {
+    const user = userEvent.setup();
+    rendern(['therapist'], '/betrieb/erstattungen/beantragen?monat=2026-08-01');
+    await screen.findByRole('dialog', { name: 'Ladestrom beantragen?' });
+    await user.click(screen.getByRole('button', { name: /Zurück/ }));
+    expect(screen.getByRole('dialog', { name: 'Für welchen Monat?' })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['schon beantragt', '2026-09-01'],
+    ['der laufende', '2026-10-01'],
+    ['kein Monatserster', '2026-09-15'],
+  ])('nimmt einen Monat aus der Adresse nicht an: %s', async (_, monat) => {
+    fetchReimbursements.mockResolvedValue(
+      testOverview({
+        person: {
+          ...testOverview().person!,
+          reimbursements: [testReimbursement({ period_month: '2026-09-01', status: 'approved' })],
+        },
+      }),
+    );
+    rendern(['therapist'], `/betrieb/erstattungen/beantragen?monat=${monat}`);
+    expect(await screen.findByRole('dialog', { name: 'Was erstatten?' })).toBeInTheDocument();
+    expect(previewElectricity).not.toHaveBeenCalled();
+  });
+
+  it('sagt, wenn im Monat keine Arbeitsstunden geplant sind - Absenden bleibt gesperrt', async () => {
+    const user = userEvent.setup();
+    previewElectricity.mockResolvedValue(testPreview({ working_minutes: 0, amount_cents: 0 }));
     rendern();
     await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
     await user.click(screen.getByRole('button', { name: 'Sept. 2026' }));
-    const tage = await screen.findByRole('dialog', { name: /Arbeitstage/ });
-    await within(tage).findByDisplayValue('18');
-    await user.click(within(tage).getByRole('button', { name: 'Ein Tag weniger' }));
-    expect(within(tage).getByText(/17 × 0,5 kWh/)).toBeInTheDocument();
-    // 17 × 0,5 × 37 = 314,5 Cent: aufgerundet wie am Server.
-    expect(within(tage).getByText('3,15 €')).toBeInTheDocument();
-    const feld = within(tage).getByLabelText('Arbeitstage');
-    fireEvent.change(feld, { target: { value: '31' } });
-    expect(within(tage).getByText('1 bis 30 Tage')).toBeInTheDocument();
-    expect(within(tage).getByRole('button', { name: 'Weiter' })).toBeDisabled();
-    // Aus einer zu großen Zahl führt „−“ in den Monat zurück.
-    expect(within(tage).getByRole('button', { name: 'Ein Tag mehr' })).toBeDisabled();
-    await user.click(within(tage).getByRole('button', { name: 'Ein Tag weniger' }));
-    expect(feld).toHaveValue('30');
-  });
-
-  it('führt ohne Vorschlag mit „+“ auf einen Tag', async () => {
-    const user = userEvent.setup();
-    previewElectricity.mockResolvedValue(testPreview({ suggested_days: 0 }));
-    rendern();
-    await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
-    await user.click(screen.getByRole('button', { name: 'Sept. 2026' }));
-    const tage = await screen.findByRole('dialog', { name: /Arbeitstage/ });
-    await within(tage).findByDisplayValue('0');
-    expect(within(tage).getByRole('button', { name: 'Ein Tag weniger' })).toBeDisabled();
-    await user.click(within(tage).getByRole('button', { name: 'Ein Tag mehr' }));
-    expect(within(tage).getByLabelText('Arbeitstage')).toHaveValue('1');
-    expect(within(tage).getByRole('button', { name: 'Weiter' })).toBeEnabled();
+    const abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+    expect(
+      await within(abschluss).findByText(
+        'In diesem Monat sind keine Arbeitsstunden geplant – es gibt nichts zu erstatten.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(abschluss).queryByRole('checkbox')).toBeNull();
+    expect(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' })).toBeDisabled();
   });
 
   it('sperrt einen Monat, für den schon Ladestrom beantragt ist', async () => {
@@ -211,10 +248,9 @@ describe('RequestReimbursementPage', () => {
     rendern();
     await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
     await user.click(screen.getByRole('button', { name: 'Sept. 2026' }));
-    await user.click(await screen.findByRole('button', { name: 'Weiter' }));
 
     const konto = screen.getByRole('dialog', { name: 'Auf welches Konto?' });
-    expect(within(konto).getByText('Schritt 4 von 5')).toBeInTheDocument();
+    expect(within(konto).getByText('Schritt 3 von 4')).toBeInTheDocument();
     const feld = within(konto).getByLabelText('IBAN');
     await user.type(feld, 'DE89 3704 0044 0532 0130 01');
     fireEvent.blur(feld);
@@ -228,30 +264,29 @@ describe('RequestReimbursementPage', () => {
 
     const abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
     expect(within(abschluss).getByText('Auszahlung auf DE89 •••• 3000')).toBeInTheDocument();
-    await user.click(within(abschluss).getByRole('checkbox'));
+    await user.click(await within(abschluss).findByRole('checkbox'));
     await user.click(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' }));
     expect(submitElectricity).toHaveBeenCalledWith({
       month: '2026-09-01',
-      workingDays: 18,
       declared: true,
       iban: 'DE89370400440532013000',
     });
   });
 
-  it('bietet im Funkloch beim Zählen einen neuen Versuch an', async () => {
+  it('bietet im Funkloch beim Rechnen einen neuen Versuch an', async () => {
     const user = userEvent.setup();
     previewElectricity.mockRejectedValueOnce(
-      new Error('Die Arbeitstage konnten nicht gezählt werden.'),
+      new Error('Die Arbeitsstunden konnten nicht gezählt werden.'),
     );
     rendern();
     await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
     await user.click(screen.getByRole('button', { name: 'Sept. 2026' }));
-    const tage = await screen.findByRole('dialog', { name: /Arbeitstage/ });
+    const abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
     expect(
-      await within(tage).findByText('Die Arbeitstage konnten nicht gezählt werden.'),
+      await within(abschluss).findByText('Die Arbeitsstunden konnten nicht gezählt werden.'),
     ).toBeInTheDocument();
-    await user.click(within(tage).getByRole('button', { name: 'Erneut versuchen' }));
-    expect(await within(tage).findByDisplayValue('18')).toBeInTheDocument();
+    await user.click(within(abschluss).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await within(abschluss).findByText('6,39 €')).toBeInTheDocument();
   });
 
   it('beantragt einen Einkauf mit zwei Belegen - Betrag und Zweck je Beleg', async () => {
@@ -377,25 +412,25 @@ describe('RequestReimbursementPage', () => {
   it('ändert im Abschluss den Monat - die Erklärung gilt dem neuen Monat neu (Design-Review)', async () => {
     const user = userEvent.setup();
     previewElectricity.mockImplementation((month: string) =>
-      Promise.resolve(testPreview({ month, suggested_days: month === '2026-08-01' ? 15 : 18 })),
+      Promise.resolve(
+        month === '2026-08-01'
+          ? testPreview({ month, working_minutes: 7_200, amount_cents: 479 })
+          : testPreview({ month }),
+      ),
     );
     rendern();
     await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
     await user.click(screen.getByRole('button', { name: 'September 2026' }));
-    await user.click(await screen.findByRole('button', { name: 'Weiter' }));
     let abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
-    await user.click(within(abschluss).getByRole('checkbox'));
+    await user.click(await within(abschluss).findByRole('checkbox'));
 
     await user.click(within(abschluss).getByRole('button', { name: 'Ändern: Monat' }));
     await user.click(screen.getByRole('button', { name: 'Aug. 2026' }));
-    const tage = await screen.findByRole('dialog', { name: 'Wie viele Arbeitstage im August?' });
-    // Der Vorschlag des neuen Monats steht im Feld.
-    expect(await within(tage).findByDisplayValue('15')).toBeInTheDocument();
-    await user.click(within(tage).getByRole('button', { name: 'Weiter' }));
 
     abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
     expect(within(abschluss).getByText('August 2026')).toBeInTheDocument();
-    expect(within(abschluss).getByText('15 Arbeitstage')).toBeInTheDocument();
+    expect(await within(abschluss).findByText('120 h Arbeitszeit')).toBeInTheDocument();
+    expect(within(abschluss).getByText('4,79 €')).toBeInTheDocument();
     expect(within(abschluss).getByRole('checkbox')).not.toBeChecked();
     expect(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' })).toBeDisabled();
   });
@@ -405,9 +440,8 @@ describe('RequestReimbursementPage', () => {
     rendern();
     await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
     await user.click(screen.getByRole('button', { name: 'September 2026' }));
-    await user.click(await screen.findByRole('button', { name: 'Weiter' }));
     const abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
-    await user.click(within(abschluss).getByRole('checkbox'));
+    await user.click(await within(abschluss).findByRole('checkbox'));
     await user.click(within(abschluss).getByRole('button', { name: 'Ändern: Monat' }));
     await user.click(screen.getByRole('button', { name: 'Sept. 2026' }));
     const wieder = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
@@ -499,20 +533,19 @@ describe('RequestReimbursementPage', () => {
   it('lässt owner eintragen - es gilt als genehmigt', async () => {
     const user = userEvent.setup();
     fetchReimbursements.mockResolvedValue(testOverview({ can_decide: true, can_read_all: true }));
-    submitElectricity.mockResolvedValue({ id: 'neu', status: 'approved', amount_cents: 333 });
+    submitElectricity.mockResolvedValue({ id: 'neu', status: 'approved', amount_cents: 639 });
     rendern(['owner']);
     expect(
       await screen.findByText('Sie tragen selbst ein; es gilt sofort als genehmigt.'),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ladestrom für das Lastenrad' }));
     await user.click(screen.getByRole('button', { name: 'Sept. 2026' }));
-    await user.click(await screen.findByRole('button', { name: 'Weiter' }));
     const abschluss = screen.getByRole('dialog', { name: 'Ladestrom eintragen?' });
-    await user.click(within(abschluss).getByRole('checkbox'));
+    await user.click(await within(abschluss).findByRole('checkbox'));
     await user.click(within(abschluss).getByRole('button', { name: 'Ladestrom eintragen' }));
     expect(
       await screen.findByText(
-        'Ziel /betrieb/erstattungen: Ladestrom September 2026 eingetragen: 3,33 €. Er gilt als genehmigt.',
+        'Ziel /betrieb/erstattungen: Ladestrom September 2026 eingetragen: 6,39 €. Er gilt als genehmigt.',
       ),
     ).toBeInTheDocument();
   });

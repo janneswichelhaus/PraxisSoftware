@@ -6,8 +6,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 Überholung 10 (17.10., PR #266 gegen `main`): Erstattungen echt – Ladestrom (G10, 6 Tipps), Einkauf
-mit Beleg, Genehmigen und Auszahlen getrennt (G10b, je 2), IBAN maskiert. Folge-PR: Ladung und Satz als
-Einstellung (ANN-599), Runde 2 der Prüfungen, Kameratest; eigene Aufträge BEF-178 bis BEF-180.
+mit Beleg, Genehmigen und Auszahlen getrennt (G10b, je 2), IBAN maskiert. ORG-008 (Branch `worktree-agent-af136bf89beb6e754`): Ladestrom
+über geplante Stunden × Werte der Praxis (owner, Einstellungen), Vorschlag im Eingang, G10 5 bzw. 3 Tipps (ANN-605).
+Offen: Runde 2 der Prüfungen, Kameratest; eigene Aufträge BEF-178 bis BEF-180.
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur

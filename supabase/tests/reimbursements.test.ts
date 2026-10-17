@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { electricityCentsFromMinutes } from '@/features/reimbursements/rules';
 import { feiertag } from '@/features/vacation/feiertage';
 import {
   SEED,
@@ -20,7 +21,9 @@ import { gleichzeitig } from './helpers/gleichzeitig';
  *
  * Geprüft werden Zustände und Rechte (beantragen nur für sich, entscheiden
  * und auszahlen owner, nie den eigenen Antrag eines anderen Kontos), die
- * Rechnung des Ladestroms, die Belege als Dateien nach ADR-017 sinngemäß
+ * Rechnung des Ladestroms über die geplanten Stunden mit den Werten der
+ * Praxis, gesetzt nur von owner, gleich gerechnet wie im Browser, alte
+ * Anträge mit ihren Werten, die Vorschläge im Eingang (ORG-008), die Belege als Dateien nach ADR-017 sinngemäß
  * (zwei Phasen, unveränderlich, Lesefreigabe, Löschauftrag, Prüfung am
  * Server), die IBAN maskiert und voll nur beim Auszahlen, die Sichtbarkeit
  * nach BEF-066 Option 2 mit Büro, die Negativfälle aus ADR-013 Punkt 9 Nr. 1
@@ -53,8 +56,9 @@ const GROESSE = 54_321;
 
 const KONTO = 'select public.set_own_payout_account($1) as daten';
 const VORSCHAU = 'select public.preview_electricity_reimbursement($1::date) as daten';
-const STROM =
-  'select public.submit_electricity_reimbursement($1::date, $2::integer, $3::boolean, $4) as daten';
+const STROM = 'select public.submit_electricity_reimbursement($1::date, $2::boolean, $3) as daten';
+const VORSCHLAEGE = 'select public.electricity_suggestions() as daten';
+const EINSTELLEN = 'select public.set_electricity_settings($1::integer, $2::integer, $3::integer)';
 const VORBEREITEN = 'select * from public.prepare_reimbursement_receipt_upload($1, $2::bigint, $3)';
 const BESTAETIGEN = 'select public.confirm_reimbursement_receipt_upload($1::uuid)';
 const VERWERFEN = 'select public.discard_reimbursement_receipt($1::uuid)';
@@ -81,6 +85,11 @@ interface Antrag {
   kind: 'electricity' | 'purchase';
   period_month: string | null;
   working_days: number | null;
+  energy_wh_per_day: number | null;
+  working_minutes: number | null;
+  km_per_hour: number | null;
+  wh_per_km: number | null;
+  rate_cents_per_kwh: number | null;
   amount_cents: number;
   status: string;
   self_entered: boolean;
@@ -92,8 +101,6 @@ interface Liste {
   my_staff_member_id: string | null;
   can_decide: boolean;
   can_read_all: boolean;
-  wh_per_day: number;
-  cents_per_kwh: number;
   person: {
     staff_member_id: string;
     name: string | null;
@@ -145,16 +152,35 @@ async function kontoHinterlegen(konto: string, iban: string): Promise<void> {
   await asUserCommitted(konto, KONTO, [iban]);
 }
 
+/** Annas geplante Minuten im Seed: je Werktag 08-12 und 13-18 Uhr, neun Stunden. */
+function annasMinuten(ersterTag: string): number {
+  return werktage(ersterTag).length * 540;
+}
+
+/** Was Annas Ladestrom eines Monats ergibt - gerechnet mit der Funktion des Browsers. */
+function annasBetrag(ersterTag: string, kmh = 6, whkm = 18, ct = 37): number {
+  return electricityCentsFromMinutes(annasMinuten(ersterTag), kmh, whkm, ct);
+}
+
 async function strom(
   konto: string,
   ersterTag: string,
-  tage: number,
   iban: string | null = null,
 ): Promise<{ id: string; status: string; amount_cents: number }> {
   const { rows } = await asUserCommitted<{
     daten: { id: string; status: string; amount_cents: number };
-  }>(konto, STROM, [ersterTag, tage, true, iban]);
+  }>(konto, STROM, [ersterTag, true, iban]);
   return rows[0]!.daten;
+}
+
+async function einstellungen(org: string = organizationId) {
+  const { rows } = await asPostgres<{ ct: number; whkm: number; kmh: number }>(
+    `select electricity_cents_per_kwh as ct, electricity_wh_per_km as whkm,
+            electricity_km_per_hour as kmh
+       from public.organizations where id = $1`,
+    [org],
+  );
+  return rows[0];
 }
 
 async function vorbereiten(
@@ -291,23 +317,24 @@ describe('Erstattungen (ERS-001)', () => {
            from pg_proc p join pg_namespace n on n.oid = p.pronamespace
           where (n.nspname = 'public' and p.proname in (
                   'set_own_payout_account', 'preview_electricity_reimbursement',
-                  'submit_electricity_reimbursement', 'prepare_reimbursement_receipt_upload',
+                  'submit_electricity_reimbursement', 'electricity_suggestions',
+                  'set_electricity_settings', 'prepare_reimbursement_receipt_upload',
                   'confirm_reimbursement_receipt_upload', 'discard_reimbursement_receipt',
                   'submit_purchase_reimbursement', 'withdraw_reimbursement', 'decide_reimbursement',
                   'reimbursement_payout_details', 'mark_reimbursement_paid', 'list_reimbursements',
                   'issue_reimbursement_receipt_link'))
           order by 1`,
       );
-      expect(rows).toHaveLength(13);
+      expect(rows).toHaveLength(15);
       expect(rows.every((r) => r.auth && !r.anon)).toBe(true);
 
       const { rows: hilfen } = await asPostgres<{ name: string; auth: boolean }>(
         `select p.proname as name, has_function_privilege('authenticated', p.oid, 'execute') as auth
            from pg_proc p join pg_namespace n on n.oid = p.pronamespace
           where n.nspname = 'app' and p.proname in (
-                  'reimbursement_receipt_limit', 'electricity_wh_per_day',
-                  'electricity_cents_per_kwh', 'mask_iban', 'assert_electricity_month',
-                  'reimbursement_working_days', 'store_payout_account', 'payout_account_view',
+                  'reimbursement_receipt_limit', 'electricity_amount_cents',
+                  'electricity_offer', 'mask_iban', 'assert_electricity_month',
+                  'reimbursement_working_minutes', 'store_payout_account', 'payout_account_view',
                   'reimbursement_view', 'reimbursement_start', 'own_pending_reimbursement_receipt',
                   'may_pay_reimbursement', 'delete_due_reimbursements',
                   'staff_reimbursement_receipts_guard',
@@ -402,12 +429,12 @@ describe('Erstattungen (ERS-001)', () => {
     });
   });
 
-  describe('Ladestrom (ANN-599)', () => {
-    it('schlägt die Arbeitstage nach Wochenplan vor - ohne Feiertage und ganztägige Abwesenheit', async () => {
+  describe('Ladestrom (ANN-599, ORG-008)', () => {
+    it('rechnet die geplanten Stunden nach Wochenplan - ohne Feiertage und ganztägige Abwesenheit', async () => {
       const letzter = await monat(1);
       const tage = werktage(letzter);
-      // Ein ganztägig abwesender Werktag zählt nicht; eine Abweichung mit
-      // anderen Zeiten schon.
+      // Ein ganztägig abwesender Werktag zählt nicht; eine Abweichung zählt
+      // mit ihren eigenen Zeiten (08:00 bis 12:00 statt neun Stunden).
       await asPostgres(
         `insert into public.staff_working_hour_exceptions
            (organization_id, staff_member_id, on_date, kind) values ($1, $2, $3, 'unavailable')`,
@@ -419,29 +446,60 @@ describe('Erstattungen (ERS-001)', () => {
          values ($1, $2, $3, 'block', '08:00', '12:00')`,
         [organizationId, STAFF.anna, tage[1]],
       );
+      const minuten = (tage.length - 2) * 540 + 240;
       const { rows } = await asUser<{ daten: Record<string, unknown> }>(users.therapist, VORSCHAU, [
         letzter,
       ]);
       expect(rows[0]!.daten).toEqual({
         month: letzter,
-        days_in_month: tageImMonat(letzter),
-        suggested_days: tage.length - 1,
-        wh_per_day: 500,
+        working_minutes: minuten,
+        km_per_hour: 6,
+        wh_per_km: 18,
         cents_per_kwh: 37,
+        // Server und Browser rechnen gleich.
+        amount_cents: electricityCentsFromMinutes(minuten, 6, 18, 37),
         already_requested: false,
       });
     });
 
-    it('rechnet Tage × 0,5 kWh × 37 ct, hält Ladung und Satz fest und wartet auf owner', async () => {
+    it('rechnet am Server wie im Browser - auch an den Rundungsgrenzen', async () => {
+      const faelle: [number, number, number, number][] = [
+        [9_600, 6, 18, 37],
+        [150, 6, 18, 37],
+        [150, 10, 10, 30],
+        [1, 1, 1, 1],
+        [30_000, 1, 1, 1],
+        [29_999, 1, 1, 1],
+        [44_640, 30, 100, 200],
+        [10_335, 7, 23, 41],
+      ];
+      for (const [minuten, kmh, whkm, ct] of faelle) {
+        const { rows } = await asPostgres<{ c: number }>(
+          'select app.electricity_amount_cents($1, $2, $3, $4) as c',
+          [minuten, kmh, whkm, ct],
+        );
+        expect(rows[0]!.c, `${minuten} × ${kmh} × ${whkm} × ${ct}`).toBe(
+          electricityCentsFromMinutes(minuten, kmh, whkm, ct),
+        );
+      }
+      // 30 000 Minuten × 1 × 1 × 1 = 0,5 Cent: kaufmännisch auf, knapp darunter ab.
+      expect(electricityCentsFromMinutes(30_000, 1, 1, 1)).toBe(1);
+      expect(electricityCentsFromMinutes(29_999, 1, 1, 1)).toBe(0);
+    });
+
+    it('beantragt mit den Werten der Praxis, hält sie fest und wartet auf owner', async () => {
       await kontoHinterlegen(users.therapist, IBAN.anna);
       const letzter = await monat(1);
-      const ergebnisStrom = await strom(users.therapist, letzter, 18);
-      // 18 × 0,5 kWh × 37 ct = 333 ct.
-      expect(ergebnisStrom).toMatchObject({ status: 'requested', amount_cents: 333 });
+      const ergebnisStrom = await strom(users.therapist, letzter);
+      expect(ergebnisStrom).toMatchObject({
+        status: 'requested',
+        amount_cents: annasBetrag(letzter),
+      });
       const { rows } = await asPostgres(
         `select staff_member_id, kind, period_month::text, working_days, energy_wh_per_day,
-                rate_cents_per_kwh, amount_cents, status, requested_by, self_entered,
-                declared_at is not null as erklaert, decided_by
+                working_minutes, km_per_hour, wh_per_km, rate_cents_per_kwh, amount_cents,
+                status, requested_by, self_entered, declared_at is not null as erklaert,
+                decided_by
            from public.staff_reimbursements where id = $1`,
         [ergebnisStrom.id],
       );
@@ -450,10 +508,13 @@ describe('Erstattungen (ERS-001)', () => {
           staff_member_id: STAFF.anna,
           kind: 'electricity',
           period_month: letzter,
-          working_days: 18,
-          energy_wh_per_day: 500,
+          working_days: null,
+          energy_wh_per_day: null,
+          working_minutes: annasMinuten(letzter),
+          km_per_hour: 6,
+          wh_per_km: 18,
           rate_cents_per_kwh: 37,
-          amount_cents: 333,
+          amount_cents: annasBetrag(letzter),
           status: 'requested',
           requested_by: users.therapist,
           self_entered: false,
@@ -461,62 +522,83 @@ describe('Erstattungen (ERS-001)', () => {
           decided_by: null,
         },
       ]);
-      // Ein halber Cent rundet auf: 17 × 0,5 × 37 = 314,5.
-      expect((await strom(users.therapist, await monat(2), 17)).amount_cents).toBe(315);
+      const antraege = (await liste(users.therapist)).person?.reimbursements ?? [];
+      expect(antraege[0]).toMatchObject({
+        working_minutes: annasMinuten(letzter),
+        km_per_hour: 6,
+        wh_per_km: 18,
+        rate_cents_per_kwh: 37,
+      });
     });
 
     it('nimmt nur die zwölf abgeschlossenen Monate vor dem laufenden', async () => {
       await kontoHinterlegen(users.therapist, IBAN.anna);
-      const versuch = (tag: string) =>
-        meldung(asUser(users.therapist, STROM, [tag, 1, true, null]));
+      const versuch = (tag: string) => meldung(asUser(users.therapist, STROM, [tag, true, null]));
       expect(await versuch(await monat(0))).toBe('month not allowed');
       expect(await versuch(await monat(13))).toBe('month not allowed');
       const zwoelf = await monat(12);
       expect(await versuch(`${zwoelf.slice(0, 8)}02`)).toBe('month not allowed');
-      expect(await code(asUser(users.therapist, STROM, [zwoelf, 1, true, null]))).toBe(
-        'kein Fehler',
-      );
+      expect(await code(asUser(users.therapist, STROM, [zwoelf, true, null]))).toBe('kein Fehler');
       expect(await meldung(asUser(users.therapist, VORSCHAU, [await monat(0)]))).toBe(
         'month not allowed',
       );
     });
 
-    it('verlangt Tage im Monat, die Erklärung und ein Konto', async () => {
+    it('verlangt den Haken „zu Hause geladen“ und ein Konto', async () => {
       const letzter = await monat(1);
-      expect(await meldung(asUser(users.therapist, STROM, [letzter, 5, true, null]))).toBe(
+      expect(await meldung(asUser(users.therapist, STROM, [letzter, true, null]))).toBe(
         'payout account missing',
       );
       await kontoHinterlegen(users.therapist, IBAN.anna);
-      expect(await meldung(asUser(users.therapist, STROM, [letzter, 0, true, null]))).toBe(
-        'working days out of range',
-      );
-      expect(
-        await meldung(
-          asUser(users.therapist, STROM, [letzter, tageImMonat(letzter) + 1, true, null]),
-        ),
-      ).toBe('working days out of range');
-      expect(await meldung(asUser(users.therapist, STROM, [letzter, 5, false, null]))).toBe(
+      expect(await meldung(asUser(users.therapist, STROM, [letzter, false, null]))).toBe(
         'declaration missing',
       );
-      expect(await meldung(asUser(users.therapist, STROM, [letzter, 5, null, null]))).toBe(
+      expect(await meldung(asUser(users.therapist, STROM, [letzter, null, null]))).toBe(
         'declaration missing',
+      );
+    });
+
+    it('weist einen Monat ohne geplante Stunden ab - ohne Wochenplan gibt es nichts', async () => {
+      // Olivia (Büro) hat im Seed keinen Wochenplan.
+      await kontoHinterlegen(users.office, IBAN.olivia);
+      const letzter = await monat(1);
+      expect(await meldung(asUser(users.office, STROM, [letzter, true, null]))).toBe(
+        'no planned working hours',
+      );
+      const { rows } = await asUser<{ daten: { working_minutes: number; amount_cents: number } }>(
+        users.office,
+        VORSCHAU,
+        [letzter],
+      );
+      expect(rows[0]!.daten).toMatchObject({ working_minutes: 0, amount_cents: 0 });
+      // Ganz abwesend: Anna einen Monat lang im Urlaub.
+      await kontoHinterlegen(users.therapist, IBAN.anna);
+      for (const tag of werktage(letzter)) {
+        await asPostgres(
+          `insert into public.staff_working_hour_exceptions
+             (organization_id, staff_member_id, on_date, kind) values ($1, $2, $3, 'unavailable')`,
+          [organizationId, STAFF.anna, tag],
+        );
+      }
+      expect(await meldung(asUser(users.therapist, STROM, [letzter, true, null]))).toBe(
+        'no planned working hours',
       );
     });
 
     it('nimmt die IBAN gleich mit und prüft sie', async () => {
       const letzter = await monat(1);
-      expect(await meldung(asUser(users.therapist, STROM, [letzter, 5, true, IBAN.falsch]))).toBe(
+      expect(await meldung(asUser(users.therapist, STROM, [letzter, true, IBAN.falsch]))).toBe(
         'invalid iban',
       );
-      await strom(users.therapist, letzter, 5, IBAN.anna);
+      await strom(users.therapist, letzter, IBAN.anna);
       expect((await liste(users.therapist)).person?.account?.iban_masked).toBe('DE89 •••• 3000');
     });
 
     it('nimmt je Person und Monat einen Antrag - nach dem Zurückziehen wieder', async () => {
       await kontoHinterlegen(users.therapist, IBAN.anna);
       const letzter = await monat(1);
-      const erster = await strom(users.therapist, letzter, 18);
-      expect(await code(asUser(users.therapist, STROM, [letzter, 17, true, null]))).toBe('23505');
+      const erster = await strom(users.therapist, letzter);
+      expect(await code(asUser(users.therapist, STROM, [letzter, true, null]))).toBe('23505');
       const { rows } = await asUser<{ daten: { already_requested: boolean } }>(
         users.therapist,
         VORSCHAU,
@@ -524,15 +606,15 @@ describe('Erstattungen (ERS-001)', () => {
       );
       expect(rows[0]!.daten.already_requested).toBe(true);
       await asUserCommitted(users.therapist, ZURUECKZIEHEN, [erster.id]);
-      expect((await strom(users.therapist, letzter, 17)).status).toBe('requested');
+      expect((await strom(users.therapist, letzter)).status).toBe('requested');
       // Eine andere Person denselben Monat: unabhängig.
       await kontoHinterlegen(users.teamLead, IBAN.olivia);
-      expect((await strom(users.teamLead, letzter, 18)).status).toBe('requested');
+      expect((await strom(users.teamLead, letzter)).status).toBe('requested');
     });
 
     it('lässt owner den eigenen eintragen - er gilt als genehmigt', async () => {
       await kontoHinterlegen(users.ownerTherapist, IBAN.jannes);
-      const eigen = await strom(users.ownerTherapist, await monat(1), 20);
+      const eigen = await strom(users.ownerTherapist, await monat(1));
       expect(eigen.status).toBe('approved');
       expect(await antrag(eigen.id)).toMatchObject({
         status: 'approved',
@@ -544,10 +626,244 @@ describe('Erstattungen (ERS-001)', () => {
     it('weist Rollen ohne Mitarbeiterdatensatz-Weg und andere Konten ab', async () => {
       const letzter = await monat(1);
       expect(await code(asUser(users.patientMax, VORSCHAU, [letzter]))).toBe('42501');
-      expect(await code(asUser(users.plattformErika, STROM, [letzter, 5, true, IBAN.anna]))).toBe(
+      expect(await code(asUser(users.plattformErika, STROM, [letzter, true, IBAN.anna]))).toBe(
         '42501',
       );
       expect(await code(asUser(null, VORSCHAU, [letzter]))).toBe('42501');
+      expect(await code(asAnon(STROM, [letzter, true, null]))).toBe('42501');
+    });
+
+    it('hält die Rechnung auch am Tisch fest - für jeden Weg', async () => {
+      const letzter = await monat(1);
+      const einfuegen = (spalten: string, werte: string) =>
+        code(
+          asPostgres(
+            `insert into public.staff_reimbursements
+               (organization_id, staff_member_id, kind, period_month, declared_at, status,
+                requested_by, ${spalten})
+             values ($1, $2, 'electricity', $3, now(), 'requested', $4, ${werte})`,
+            [organizationId, STAFF.anna, letzter, users.therapist],
+          ),
+        );
+      // Falscher Betrag.
+      expect(
+        await einfuegen(
+          'working_minutes, km_per_hour, wh_per_km, rate_cents_per_kwh, amount_cents',
+          '9600, 6, 18, 37, 640',
+        ),
+      ).toBe('23514');
+      // Beide Formen zugleich.
+      expect(
+        await einfuegen(
+          'working_days, energy_wh_per_day, working_minutes, km_per_hour, wh_per_km, rate_cents_per_kwh, amount_cents',
+          '18, 500, 9600, 6, 18, 37, 333',
+        ),
+      ).toBe('23514');
+      // Strecke außerhalb der Grenzen.
+      expect(
+        await einfuegen(
+          'working_minutes, km_per_hour, wh_per_km, rate_cents_per_kwh, amount_cents',
+          '9600, 31, 18, 37, 3304',
+        ),
+      ).toBe('23514');
+      expect(
+        await einfuegen(
+          'working_minutes, km_per_hour, wh_per_km, rate_cents_per_kwh, amount_cents',
+          '9600, 6, 18, 37, 639',
+        ),
+      ).toBe('kein Fehler');
+    });
+  });
+
+  describe('Ladestrom als Einstellung der Praxis (ORG-008)', () => {
+    it('steht ohne Zutun auf 37 ct/kWh, 18 Wh/km und 6 km je Stunde', async () => {
+      expect(await einstellungen()).toEqual({ ct: 37, whkm: 18, kmh: 6 });
+    });
+
+    it('setzt owner, ohne Auditeintrag - neue Anträge rechnen damit', async () => {
+      const vorher = await auditAnzahl();
+      const { rows } = await asUserCommitted<{ set_electricity_settings: unknown }>(
+        users.ownerTherapist,
+        EINSTELLEN,
+        [40, 20, 8],
+      );
+      expect(rows[0]!.set_electricity_settings).toEqual({
+        cents_per_kwh: 40,
+        wh_per_km: 20,
+        km_per_hour: 8,
+      });
+      expect(await einstellungen()).toEqual({ ct: 40, whkm: 20, kmh: 8 });
+      expect(await auditAnzahl()).toBe(vorher);
+
+      await kontoHinterlegen(users.therapist, IBAN.anna);
+      const letzter = await monat(1);
+      const neu = await strom(users.therapist, letzter);
+      expect(neu.amount_cents).toBe(annasBetrag(letzter, 8, 20, 40));
+      const { rows: antraege } = await asPostgres(
+        'select km_per_hour, wh_per_km, rate_cents_per_kwh from public.staff_reimbursements where id = $1',
+        [neu.id],
+      );
+      expect(antraege).toEqual([{ km_per_hour: 8, wh_per_km: 20, rate_cents_per_kwh: 40 }]);
+    });
+
+    it.each([
+      [0, 18, 6],
+      [201, 18, 6],
+      [37, 0, 6],
+      [37, 101, 6],
+      [37, 18, 0],
+      [37, 18, 31],
+      [null, 18, 6],
+      [37, null, 6],
+      [37, 18, null],
+    ])('weist %s ct, %s Wh/km, %s km ab', async (ct, whkm, kmh) => {
+      expect(await code(asUser(users.ownerTherapist, EINSTELLEN, [ct, whkm, kmh]))).toBe('22023');
+      expect(await einstellungen()).toEqual({ ct: 37, whkm: 18, kmh: 6 });
+    });
+
+    it('hält die Grenzen auch am direkten Schreibweg (Check-Constraint)', async () => {
+      for (const spalte of [
+        'electricity_cents_per_kwh = 0',
+        'electricity_wh_per_km = 101',
+        'electricity_km_per_hour = 31',
+      ]) {
+        expect(
+          await code(
+            asPostgres(`update public.organizations set ${spalte} where id = $1`, [organizationId]),
+          ),
+          spalte,
+        ).toBe('23514');
+      }
+    });
+
+    it.each([
+      ['therapist', users.therapist],
+      ['office', users.office],
+      ['team_lead', users.teamLead],
+      ['trainer', users.trainer],
+      ['das Patientenkonto', users.patientMax],
+      ['ein Plattformkonto', users.plattformTina],
+      ['ohne Sitzung', null],
+    ])('weist %s ab', async (_, konto) => {
+      expect(await code(asUser(konto, EINSTELLEN, [40, 20, 8]))).toBe('42501');
+      expect(await einstellungen()).toEqual({ ct: 37, whkm: 18, kmh: 6 });
+    });
+
+    it('weist Unangemeldete am anon-Schlüssel ab', async () => {
+      expect(await code(asAnon(EINSTELLEN, [40, 20, 8]))).toBe('42501');
+    });
+
+    it('ändert nur die eigene Praxis und zeigt die Werte nur Praxiskonten der eigenen', async () => {
+      const fremd = await fremdeOrganisation();
+      await asUserCommitted(fremd.owner, EINSTELLEN, [30, 25, 10]);
+      expect(await einstellungen(fremd.organizationId)).toEqual({ ct: 30, whkm: 25, kmh: 10 });
+      expect(await einstellungen()).toEqual({ ct: 37, whkm: 18, kmh: 6 });
+
+      const LESEN =
+        'select id, electricity_cents_per_kwh, electricity_wh_per_km, electricity_km_per_hour from public.organizations';
+      const eigene = await asUser<{ id: string }>(users.therapist, LESEN);
+      expect(eigene.rows.map((r) => r.id)).toEqual([organizationId]);
+      for (const konto of [users.patientMax, users.plattformTina]) {
+        expect((await asUser(konto, LESEN)).rows).toEqual([]);
+      }
+    });
+
+    it('lässt einen gestellten Antrag bei seinen Werten - auch einen vor ORG-008', async () => {
+      await kontoHinterlegen(users.therapist, IBAN.anna);
+      // Ein Antrag nach der alten Regel: 18 Tage × 0,5 kWh × 37 ct = 333 ct.
+      const { rows } = await asPostgres<{ id: string }>(
+        `insert into public.staff_reimbursements
+           (organization_id, staff_member_id, kind, period_month, working_days, energy_wh_per_day,
+            rate_cents_per_kwh, declared_at, amount_cents, status, requested_by)
+         values ($1, $2, 'electricity', $3, 18, 500, 37, now(), 333, 'requested', $4)
+         returning id`,
+        [organizationId, STAFF.anna, await monat(2), users.therapist],
+      );
+      const alt = rows[0]!.id;
+      const neu = await strom(users.therapist, await monat(1));
+
+      await asUserCommitted(users.ownerTherapist, EINSTELLEN, [45, 25, 9]);
+
+      const antraege = (await liste(users.therapist)).person?.reimbursements ?? [];
+      expect(antraege.find((r) => r.id === alt)).toMatchObject({
+        working_days: 18,
+        energy_wh_per_day: 500,
+        working_minutes: null,
+        km_per_hour: null,
+        wh_per_km: null,
+        rate_cents_per_kwh: 37,
+        amount_cents: 333,
+      });
+      expect(antraege.find((r) => r.id === neu.id)).toMatchObject({
+        working_minutes: annasMinuten(await monat(1)),
+        km_per_hour: 6,
+        wh_per_km: 18,
+        rate_cents_per_kwh: 37,
+        amount_cents: annasBetrag(await monat(1)),
+      });
+      // Genehmigen und Auszahlen prüfen die Bedingung erneut - beide Formen halten.
+      await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [alt, true, null]);
+      await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [neu.id, true, null]);
+      expect((await antrag(alt))?.amount_cents).toBe(333);
+      expect((await antrag(neu.id))?.amount_cents).toBe(annasBetrag(await monat(1)));
+    });
+  });
+
+  describe('Vorschläge im Eingang (ORG-008)', () => {
+    async function vorschlaege(konto: string | null) {
+      const { rows } = await asUser<{
+        daten: { month: string; working_minutes: number; amount_cents: number }[];
+      }>(konto, VORSCHLAEGE);
+      return rows[0]!.daten;
+    }
+
+    it('schlägt jeden der zwölf abgeschlossenen Monate ohne Antrag mit Betrag vor, den jüngsten zuerst', async () => {
+      const liste12 = await vorschlaege(users.therapist);
+      const monate = await Promise.all(Array.from({ length: 12 }, (_, i) => monat(i + 1)));
+      expect(liste12.map((v) => v.month)).toEqual(monate);
+      for (const v of liste12) {
+        expect(v).toEqual({
+          month: v.month,
+          working_minutes: annasMinuten(v.month),
+          amount_cents: annasBetrag(v.month),
+        });
+      }
+    });
+
+    it('lässt einen beantragten Monat weg - nach dem Zurückziehen ist er wieder da', async () => {
+      await kontoHinterlegen(users.therapist, IBAN.anna);
+      const letzter = await monat(1);
+      const id = (await strom(users.therapist, letzter)).id;
+      expect((await vorschlaege(users.therapist)).map((v) => v.month)).not.toContain(letzter);
+      expect(await vorschlaege(users.therapist)).toHaveLength(11);
+      await asUserCommitted(users.therapist, ZURUECKZIEHEN, [id]);
+      expect((await vorschlaege(users.therapist))[0]!.month).toBe(letzter);
+    });
+
+    it('nennt nur die eigene Person - ein anderer Antrag ändert nichts, ohne Wochenplan nichts', async () => {
+      await kontoHinterlegen(users.teamLead, IBAN.olivia);
+      await strom(users.teamLead, await monat(1));
+      expect(await vorschlaege(users.therapist)).toHaveLength(12);
+      expect(await vorschlaege(users.teamLead)).toHaveLength(11);
+      // Olivia (Büro) hat keinen Wochenplan: nichts zu erstatten.
+      expect(await vorschlaege(users.office)).toEqual([]);
+      // Eine andere Praxis sieht nur ihre eigene Person.
+      const fremd = await fremdeOrganisation();
+      const fremde = await vorschlaege(fremd.owner);
+      expect(JSON.stringify(fremde)).not.toContain(STAFF.anna);
+    });
+
+    it('rechnet mit den Werten der Praxis', async () => {
+      await asUserCommitted(users.ownerTherapist, EINSTELLEN, [40, 20, 8]);
+      const [juengster] = await vorschlaege(users.therapist);
+      expect(juengster!.amount_cents).toBe(annasBetrag(juengster!.month, 8, 20, 40));
+    });
+
+    it('weist Konten ohne Praxisrolle, Plattformkonten und Unangemeldete ab', async () => {
+      expect(await code(asUser(users.patientMax, VORSCHLAEGE))).toBe('42501');
+      expect(await code(asUser(users.plattformTina, VORSCHLAEGE))).toBe('42501');
+      expect(await code(asUser(null, VORSCHLAEGE))).toBe('42501');
+      expect(await code(asAnon(VORSCHLAEGE))).toBe('42501');
     });
   });
 
@@ -828,7 +1144,7 @@ describe('Erstattungen (ERS-001)', () => {
   describe('Zurückziehen, entscheiden, auszahlen (ANN-598)', () => {
     async function annasStrom(): Promise<string> {
       await kontoHinterlegen(users.therapist, IBAN.anna);
-      return (await strom(users.therapist, await monat(1), 18)).id;
+      return (await strom(users.therapist, await monat(1))).id;
     }
 
     it('lässt die Person zurückziehen, solange beantragt ist', async () => {
@@ -904,7 +1220,7 @@ describe('Erstattungen (ERS-001)', () => {
       }>(users.ownerTherapist, AUSZAHLUNG, [id]);
       expect(rows[0]!.daten).toMatchObject({
         iban: IBAN.anna,
-        amount_cents: 333,
+        amount_cents: annasBetrag(await monat(1)),
         name: 'Anna Beispiel',
       });
       expect(rows[0]!.daten.account_since).toBeTruthy();
@@ -939,7 +1255,7 @@ describe('Erstattungen (ERS-001)', () => {
 
     it('lässt owner den selbst eingetragenen auszahlen, nie einen eigenen eines anderen Kontos', async () => {
       await kontoHinterlegen(users.ownerTherapist, IBAN.jannes);
-      const eigen = await strom(users.ownerTherapist, await monat(1), 20);
+      const eigen = await strom(users.ownerTherapist, await monat(1));
       expect((await asUser(users.ownerTherapist, AUSZAHLUNG, [eigen.id])).rows).toHaveLength(1);
       await asUserCommitted(users.ownerTherapist, AUSGEZAHLT, [eigen.id]);
       expect((await antrag(eigen.id))?.status).toBe('paid');
@@ -985,14 +1301,14 @@ describe('Erstattungen (ERS-001)', () => {
     async function belegtePraxis() {
       await kontoHinterlegen(users.therapist, IBAN.anna);
       await kontoHinterlegen(users.teamLead, IBAN.olivia);
-      const stromAnna = (await strom(users.therapist, await monat(1), 18)).id;
+      const stromAnna = (await strom(users.therapist, await monat(1))).id;
       const v = await beleg(users.therapist);
       const einkaufAnna = (
         await einkauf(users.therapist, [
           { receipt_id: v.receipt_id, amount_cents: 1290, purpose: 'Massageöl' },
         ])
       ).id;
-      const stromTim = (await strom(users.teamLead, await monat(1), 15)).id;
+      const stromTim = (await strom(users.teamLead, await monat(1))).id;
       await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [stromTim, true, null]);
       return { stromAnna, einkaufAnna, stromTim, beleg: v };
     }
@@ -1004,8 +1320,6 @@ describe('Erstattungen (ERS-001)', () => {
         my_staff_member_id: STAFF.anna,
         can_decide: false,
         can_read_all: false,
-        wh_per_day: 500,
-        cents_per_kwh: 37,
         to_decide: [],
         to_pay: [],
         people: [],
@@ -1116,7 +1430,7 @@ describe('Erstattungen (ERS-001)', () => {
           { receipt_id: v.receipt_id, amount_cents: 1290, purpose: 'Massageöl' },
         ])
       ).id;
-      const jung = (await strom(users.therapist, await monat(1), 18)).id;
+      const jung = (await strom(users.therapist, await monat(1))).id;
       for (const id of [alt, jung]) {
         await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [id, true, null]);
         await asUserCommitted(users.ownerTherapist, AUSGEZAHLT, [id]);
@@ -1147,10 +1461,10 @@ describe('Erstattungen (ERS-001)', () => {
 
     it('löscht abgelehnte und zurückgezogene nach einem Jahr, beantragte und genehmigte nie', async () => {
       await kontoHinterlegen(users.therapist, IBAN.anna);
-      const abgelehnt = (await strom(users.therapist, await monat(1), 18)).id;
-      const zurueck = (await strom(users.therapist, await monat(2), 18)).id;
-      const beantragt = (await strom(users.therapist, await monat(3), 18)).id;
-      const genehmigt = (await strom(users.therapist, await monat(4), 18)).id;
+      const abgelehnt = (await strom(users.therapist, await monat(1))).id;
+      const zurueck = (await strom(users.therapist, await monat(2))).id;
+      const beantragt = (await strom(users.therapist, await monat(3))).id;
+      const genehmigt = (await strom(users.therapist, await monat(4))).id;
       await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [abgelehnt, false, 'Doppelt']);
       await asUserCommitted(users.therapist, ZURUECKZIEHEN, [zurueck]);
       await asUserCommitted(users.ownerTherapist, ENTSCHEIDEN, [genehmigt, true, null]);
@@ -1176,7 +1490,7 @@ describe('Erstattungen (ERS-001)', () => {
 
     it('löscht nach einer Wiederherstellung erneut', async () => {
       await kontoHinterlegen(users.therapist, IBAN.anna);
-      const id = (await strom(users.therapist, await monat(1), 18)).id;
+      const id = (await strom(users.therapist, await monat(1))).id;
       await asUserCommitted(users.therapist, ZURUECKZIEHEN, [id]);
       await verlege(id, { withdrawn_at: "now() - interval '13 months'" });
       const { rows: vorher } = await asPostgres<Record<string, unknown>>(

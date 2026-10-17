@@ -1043,6 +1043,15 @@
           "vermerk": "Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten offen (BEF-178); Sichtung per Bildstrecke im PR"
         },
         {
+          "id": "org-008",
+          "name": "ORG-008 Ladestrom automatisch: geplante Arbeitsstunden × km je Stunde × Wh/km × ct/kWh, Werte als Einstellung der Praxis für owner, Vorschlag je offenem Monat im Eingang",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-17",
+          "nachweis": "Branch worktree-agent-af136bf89beb6e754, Migration 20261202100000_org_008_ladestrom.sql, supabase/tests/reimbursements.test.ts, src/features/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts",
+          "vermerk": "Auftrag Jannes 17.10.2026; ANN-605 löst ANN-599 ab, gestellte Anträge behalten ihre Werte; keine Kilometer aus Touren (§20, ADR-019 Punkt 17); Zweitreview (ADR-013 Nr. 8) vor dem Merge offen"
+        },
+        {
           "id": "ki-epic-001",
           "name": "KI-EPIC-001 Gateway und Sprachdokumentation",
           "gewicht": 2,

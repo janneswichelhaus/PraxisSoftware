@@ -53,6 +53,8 @@ describe('PraxisEinstellungenPage (ORG-002)', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Praxisraster' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Automatische Finalisierung' })).toBeInTheDocument();
+    // ORG-008: der Ladestrom als eigener Abschnitt.
+    expect(screen.getByRole('heading', { name: 'Ladestrom' })).toBeInTheDocument();
     expect(screen.getByLabelText('Minutenraster').closest('details')).toBeNull();
   });
 
