@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -13,13 +14,18 @@ import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Tex
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
 import { dayKey, fetchAppointment, formatLocalTime, recordNoShow, type Appointment } from './api';
 import {
+  AUSFALL_PARAMETER,
   FRAGE,
   WARTEZEIT_MS,
+  ausfallAusAdresse,
+  ausfallInAdresse,
   darfVermerken,
+  folgeBis,
   gewartet,
   minutenSekunden,
   naechsteSeite,
   niemandStand,
+  type AusfallStand,
   type NiemandSeite,
 } from './niemandOeffnet';
 
@@ -136,27 +142,39 @@ const VERMERKTEXTE = {
 function NiemandOeffnetFenster({
   appointment,
   seit,
+  startSeite,
   wege,
+  onSeite,
   onVermerkt,
   onSchliessen,
 }: {
   appointment: NiemandOeffnetTermin;
   seit: number;
+  /** Nach einem Neuladen die Seite aus der Adresse, sonst das Klingeln. */
+  startSeite: NiemandSeite;
   wege?: { ohneBehandlung: string; absagen: string } | undefined;
+  onSeite: (seite: NiemandSeite) => void;
   onVermerkt: () => void;
   onSchliessen: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [abfolge, setAbfolge] = useState<Abfolge<NiemandSeite>>(() =>
-    beginne<NiemandSeite>('geklingelt'),
-  );
+  const [abfolge, setAbfolge] = useState<Abfolge<NiemandSeite>>(() => {
+    // Die Folge bis zur gespeicherten Seite, damit „← Zurück“ weiter führt.
+    const [erste = 'geklingelt', ...rest] = folgeBis(startSeite);
+    return rest.reduce((stand, naechste) => weiter(stand, naechste), beginne(erste));
+  });
   const [um, setUm] = useState(false);
   const [schonVorher, setSchonVorher] = useState(false);
   const seite = abfolge.seite;
 
+  function wechseln(neu: Abfolge<NiemandSeite>) {
+    setAbfolge(neu);
+    onSeite(neu.seite);
+  }
+
   function zurueckGehen() {
     const vorher = zurueck(abfolge);
-    if (vorher) setAbfolge(vorher);
+    if (vorher) wechseln(vorher);
   }
 
   const { freigeben, schutz } = useTextverlustschutz({
@@ -188,7 +206,7 @@ function NiemandOeffnetFenster({
 
   function bestaetigt() {
     const naechste = naechsteSeite(seite);
-    if (naechste) setAbfolge(weiter(abfolge, naechste));
+    if (naechste) wechseln(weiter(abfolge, naechste));
   }
 
   const darf = darfVermerken(um, schonVorher);
@@ -320,7 +338,10 @@ function Erledigt() {
  * daneben; dieser Knopf öffnet den Ablauf für den Fall, dass niemand aufmacht.
  * Seit Überholung 6 ein Fenster mit einer Frage je Seite statt einer
  * aufgeklappten Fläche mit drei Haken (ANN-573); die Uhr läuft ab dem ersten
- * Tipp und bleibt stehen, wenn das Fenster zwischendurch zugeht.
+ * Tipp und läuft weiter, wenn das Fenster zwischendurch zugeht. Uhrstart und
+ * offene Seite stehen in der Adresse (`ausfallAusAdresse`): Lädt das Telefon
+ * die App nach dem Anruf neu, führt der nächste Tipp zurück auf dieselbe Seite
+ * mit derselben Uhr (Praxis-Review Überholung 6).
  *
  * Vermerkt wird mit allen drei Schritten (Pflichtangabe nach ADR-018 Punkt 9);
  * ein Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen. Verbindlich
@@ -355,10 +376,23 @@ export function HomeVisitFlow({
    */
   wege?: { ohneBehandlung: string; absagen: string };
 }) {
-  const [offen, setOffen] = useState(false);
+  const [suche, setSuche] = useSearchParams();
   // Die Uhr beginnt mit dem ersten Tipp und läuft weiter, wenn das Fenster
-  // zwischendurch zugeht (ANN-479).
-  const [seit, setSeit] = useState<number | null>(null);
+  // zwischendurch zugeht (ANN-479) - auch über ein Neuladen hinweg.
+  const gemerkt = ausfallAusAdresse(suche.get(AUSFALL_PARAMETER), appointment.id);
+  const [offen, setOffen] = useState<{ seit: number; seite: NiemandSeite } | null>(null);
+
+  function merken(stand: AusfallStand | null) {
+    setSuche(
+      (bisher) => {
+        const naechste = new URLSearchParams(bisher);
+        if (stand) naechste.set(AUSFALL_PARAMETER, ausfallInAdresse(appointment.id, stand));
+        else naechste.delete(AUSFALL_PARAMETER);
+        return naechste;
+      },
+      { replace: true },
+    );
+  }
 
   return (
     <>
@@ -368,8 +402,12 @@ export function HomeVisitFlow({
         groesse="kompakt"
         aria-haspopup="dialog"
         onClick={() => {
-          setSeit((bisher) => bisher ?? Date.now());
-          setOffen(true);
+          const stand = {
+            seit: gemerkt?.seit ?? Date.now(),
+            seite: gemerkt?.seite ?? 'geklingelt',
+          };
+          merken(stand);
+          setOffen(stand);
         }}
       >
         {ausloeser}
@@ -381,14 +419,21 @@ export function HomeVisitFlow({
         ) : null}
       </Button>
 
-      {offen && seit !== null ? (
+      {offen ? (
         <NiemandOeffnetFenster
           appointment={appointment}
-          seit={seit}
+          seit={offen.seit}
+          startSeite={offen.seite}
           wege={wege}
-          onSchliessen={() => setOffen(false)}
+          onSeite={(seite) => merken({ seit: offen.seit, seite })}
+          onSchliessen={() => {
+            // Die Uhr bleibt, die Seite nicht: Wer abbricht, klingelt neu.
+            merken({ seit: offen.seit, seite: null });
+            setOffen(null);
+          }}
           onVermerkt={() => {
-            setOffen(false);
+            merken(null);
+            setOffen(null);
             melden('Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.');
           }}
         />

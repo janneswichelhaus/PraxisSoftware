@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import { useLocation } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as TodayApi from '@/features/today/api';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
@@ -161,6 +162,50 @@ describe('Niemand öffnet - geführt (G1, ANN-573)', () => {
     fireEvent.click(anruf.getByRole('button', { name: 'Erreicht – Besuch findet statt' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(recordNoShow).not.toHaveBeenCalled();
+  });
+
+  it('übersteht ein Neuladen: Uhr und Seite stehen in der Adresse (Praxis-Review Überholung 6)', async () => {
+    function Adresse() {
+      return <output data-testid="adresse">{useLocation().search}</output>;
+    }
+    const erst = renderWithProviders(
+      <>
+        <HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} />
+        <Adresse />
+      </>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
+    fireEvent.click(
+      within(fenster('An der Tür geklingelt?')).getByRole('button', { name: 'Ja, geklingelt' }),
+    );
+    await tippsperreAbwarten();
+    const adresse = screen.getByTestId('adresse').textContent ?? '';
+    // Nur Kennung, Uhrstart und Seite - kein Name (ADR-011).
+    expect(adresse).toMatch(/^\?ausfall=[0-9a-f-]{36}\.\d+\.angerufen$/);
+    expect(adresse.startsWith(`?ausfall=${termin.id}.`)).toBe(true);
+    erst.unmount();
+
+    // Das Telefon lädt die App nach dem Anruf neu; 16 Minuten sind vergangen.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(16 * 60 * 1000);
+    });
+    renderWithProviders(
+      <HomeVisitFlow appointment={ausDerUebersicht} melden={() => undefined} />,
+      `/${adresse}`,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Niemand öffnet?' }));
+    const anruf = fenster('Angerufen?');
+    fireEvent.click(within(anruf).getByRole('button', { name: 'Angerufen, niemand erreicht' }));
+    await tippsperreAbwarten();
+    expect(within(fenster('15 Minuten gewartet?')).getByRole('timer')).toHaveTextContent(
+      '15 Minuten um',
+    );
+    // Der Weg zurück reicht bis zum Klingeln.
+    fireEvent.click(
+      within(fenster('15 Minuten gewartet?')).getByRole('button', { name: '← Zurück' }),
+    );
+    fireEvent.click(within(fenster('Angerufen?')).getByRole('button', { name: '← Zurück' }));
+    expect(fenster('An der Tür geklingelt?')).toBeInTheDocument();
   });
 
   it('führt mit „← Zurück“ einen Schritt zurück', async () => {
