@@ -25,6 +25,8 @@ const LESENDE_RPC_EINZELN = new Set([
   // Lesen, nicht Schreiben. Der Druckvermerk eines Berichts dagegen gehoert
   // zum Druckknopf (log_therapy_report_export) und bleibt angehalten.
   'log_patient_record_view',
+  // Auszahlen zeigt owner die volle IBAN (ANN-601) - `stable`, nur lesend.
+  'reimbursement_payout_details',
 ]);
 // Namen, die wie Lesen aussehen, aber schreiben.
 const SCHREIBEND_TROTZ_NAME = /^platform_(accesses_take_back_deletion|invitation_)/;

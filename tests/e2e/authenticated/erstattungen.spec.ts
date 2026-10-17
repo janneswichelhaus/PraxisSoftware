@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { KONTEN, anmelden, rpcAufrufen, zugriffstoken } from './helpers';
 
 /**
@@ -34,6 +34,16 @@ const BELEG = {
   ),
 };
 
+/** Bildschirmfoto im ruhenden Stand: nach dem Startbild und der Tippsperre (wie Überholung 8). */
+async function bild(seite: Page, name: string): Promise<void> {
+  await seite
+    .locator('[data-startbild]')
+    .waitFor({ state: 'detached', timeout: 6_000 })
+    .catch(() => undefined);
+  await seite.waitForTimeout(800);
+  await seite.screenshot({ path: `.tmp/screenshots/${name}.png` });
+}
+
 function zaehler() {
   let tipps = 0;
   return {
@@ -56,7 +66,7 @@ test('Anna hinterlegt ihre IBAN; danach steht sie maskiert da (ANN-601)', async 
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/erstattungen');
   await expect(page.getByRole('heading', { level: 1, name: 'Erstattungen' })).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-00-erstattungen-375.png' });
+  await bild(page, 'b10-g10-00-erstattungen-375');
 
   await page.getByRole('link', { name: /^(Hinterlegen|Ändern): IBAN$/ }).click();
   const konto = page.getByRole('dialog', { name: 'Auf welches Konto?' });
@@ -65,7 +75,7 @@ test('Anna hinterlegt ihre IBAN; danach steht sie maskiert da (ANN-601)', async 
   await konto.getByLabel('IBAN').fill('DE89 3704 0044 0532 0130 01');
   await expect(speichern).toBeDisabled();
   await konto.getByLabel('IBAN').fill(IBAN);
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-01-iban-375.png' });
+  await bild(page, 'b10-g10-01-iban-375');
   await speichern.click();
   await expect(page.getByText(`IBAN gespeichert: ${MASKIERT}.`)).toBeVisible();
   await expect(page.getByText(`Auf ${MASKIERT}`)).toBeVisible();
@@ -83,12 +93,12 @@ test('G10: Anna beantragt Ladestrom in sechs Tipps und zieht ihn zurück (ERS-00
   await t.tippe(page.getByRole('link', { name: 'Erstattung beantragen' }).first());
   const art = page.getByRole('dialog', { name: 'Was erstatten?' });
   await expect(art.getByText('Es entscheidet: Praxisinhaber.')).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-02-art-375.png' });
+  await bild(page, 'b10-g10-02-art-375');
   await t.tippe(art.getByRole('button', { name: 'Ladestrom für das Lastenrad' }));
 
   // Der jüngste Monat ohne Antrag; beantragte stehen gesperrt mit Haken.
   const monat = page.getByRole('dialog', { name: 'Für welchen Monat?' });
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-03-monat-375.png' });
+  await bild(page, 'b10-g10-03-monat-375');
   const frei = monat.getByRole('button', { name: /^\S+ \d{4}$/, disabled: false }).first();
   await t.tippe(frei);
 
@@ -98,7 +108,7 @@ test('G10: Anna beantragt Ladestrom in sechs Tipps und zieht ihn zurück (ERS-00
   // Ohne Wochenplan im Monat schlägt der Server null Tage vor - getippt, kein Tipp.
   if ((await feld.inputValue()) === '0') await feld.fill('18');
   await expect(tage.getByText(/ × 0,5 kWh × 0,37\s€ = /)).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-04-tage-375.png' });
+  await bild(page, 'b10-g10-04-tage-375');
   await t.tippe(tage.getByRole('button', { name: 'Weiter' }));
 
   const abschluss = page.getByRole('dialog', { name: 'Ladestrom beantragen?' });
@@ -107,14 +117,14 @@ test('G10: Anna beantragt Ladestrom in sechs Tipps und zieht ihn zurück (ERS-00
   await expect(absenden).toBeDisabled();
   await t.tippe(abschluss.getByRole('checkbox'));
   await expect(absenden).toBeInViewport();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-05-zusammenfassung-375.png' });
+  await bild(page, 'b10-g10-05-zusammenfassung-375');
   await t.tippe(absenden);
 
   const meldung = page.getByText(
     /Ladestrom (\S+ \d{4}) beantragt: \d+,\d{2}\s€\. Es entscheidet: Praxisinhaber\./,
   );
   await expect(meldung).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-06-beantragt-375.png' });
+  await bild(page, 'b10-g10-06-beantragt-375');
   test.info().annotations.push({ type: 'G10 Strom', description: `${t.tipps} Tipps` });
   expect(t.tipps).toBeLessThanOrEqual(6);
 
@@ -154,7 +164,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   );
   const beleg = page.getByRole('dialog', { name: 'Beleg?' });
   await expect(beleg).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-07-beleg-375.png' });
+  await bild(page, 'b10-g10-07-beleg-375');
   // Ohne Kamera im Prüfbrowser über den Dateiwähler - ein Tipp wie
   // „Foto verwenden“ im Kameradialog.
   t.zaehle();
@@ -166,7 +176,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await posten.getByLabel('Wofür?').fill(ZWECK);
   const weiter = posten.getByRole('button', { name: 'Weiter' });
   await expect(weiter).toBeEnabled();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-08-betrag-375.png' });
+  await bild(page, 'b10-g10-08-betrag-375');
   await t.tippe(weiter);
 
   const abschluss = page.getByRole('dialog', { name: 'Einkauf beantragen?' });
@@ -174,7 +184,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await expect(abschluss.getByText(`Auszahlung auf ${MASKIERT}`)).toBeVisible();
   const absenden = abschluss.getByRole('button', { name: 'Einkauf beantragen' });
   await expect(absenden).toBeInViewport();
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-09-zusammenfassung-einkauf-375.png' });
+  await bild(page, 'b10-g10-09-zusammenfassung-einkauf-375');
   await t.tippe(absenden);
   await expect(
     page.getByText('Einkauf beantragt: 12,90\u00a0€. Es entscheidet: Praxisinhaber.'),
@@ -191,7 +201,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
     .locator('section')
     .filter({ has: inhaber.getByRole('heading', { name: /^Erstattungen/ }) });
   await expect(offen).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b10-g10b-00-offen-375.png' });
+  await bild(inhaber, 'b10-g10b-00-offen-375');
   await e.tippe(offen.getByRole('link', { name: ZWECK }));
   const entscheiden = inhaber.getByRole('dialog', { name: 'Erstattung genehmigen?' });
   // Den Beleg ansehen - über eine einmalige Freigabe, nicht gezählt.
@@ -199,7 +209,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
     .getByRole('button', { name: `${ZWECK}: Beleg über 12,90\u00a0€ ansehen` })
     .click();
   await expect(entscheiden.getByRole('img', { name: /^Beleg: Massageöl/ })).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b10-g10b-01-entscheiden-375.png' });
+  await bild(inhaber, 'b10-g10b-01-entscheiden-375');
   await e.tippe(entscheiden.getByRole('button', { name: 'Genehmigen' }));
   const genehmigt = inhaber.getByRole('dialog', { name: 'Genehmigt' });
   await expect(
@@ -207,7 +217,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
       'Erstattung für Anna Beispiel genehmigt: 12,90\u00a0€. Noch nicht ausgezahlt.',
     ),
   ).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b10-g10b-02-genehmigt-375.png' });
+  await bild(inhaber, 'b10-g10b-02-genehmigt-375');
   test.info().annotations.push({ type: 'G10b Genehmigen', description: `${e.tipps} Tipps` });
   expect(e.tipps).toBeLessThanOrEqual(2);
   await genehmigt.getByRole('button', { name: 'Fertig' }).click();
@@ -221,13 +231,13 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   const zahlen = inhaber.getByRole('dialog', { name: 'Ausgezahlt?' });
   await expect(zahlen.getByText(IBAN)).toBeVisible();
   await expect(zahlen.getByText('12,90\u00a0€')).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b10-g10b-03-auszahlen-375.png' });
+  await bild(inhaber, 'b10-g10b-03-auszahlen-375');
   await z.tippe(zahlen.getByRole('button', { name: 'Ausgezahlt' }));
   const vermerkt = inhaber.getByRole('dialog', { name: 'Vermerkt' });
   await expect(
     vermerkt.getByText('Auszahlung an Anna Beispiel vermerkt: 12,90\u00a0€.'),
   ).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b10-g10b-04-vermerkt-375.png' });
+  await bild(inhaber, 'b10-g10b-04-vermerkt-375');
   test.info().annotations.push({ type: 'G10b Auszahlen', description: `${z.tipps} Tipps` });
   expect(z.tipps).toBeLessThanOrEqual(2);
   await inhaber.close();
@@ -236,7 +246,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await page.reload();
   const eigene = page.getByRole('listitem').filter({ hasText: ZWECK }).first();
   await expect(eigene).toContainText('Ausgezahlt');
-  await page.screenshot({ path: '.tmp/screenshots/b10-g10-10-ausgezahlt-375.png' });
+  await bild(page, 'b10-g10-10-ausgezahlt-375');
 
   // Olivia (Büro) sieht ihn bei Anna, die IBAN nur maskiert, ohne Entscheiden.
   const buero = await browser.newPage({ viewport: TELEFON });
@@ -256,7 +266,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await expect(buero.getByText(`Auf ${MASKIERT}`)).toBeVisible();
   await expect(buero.getByText(IBAN)).toHaveCount(0);
   await expect(buero.getByRole('button', { name: 'Genehmigen' })).toHaveCount(0);
-  await buero.screenshot({ path: '.tmp/screenshots/b10-g10b-05-buero-anna-375.png' });
+  await bild(buero, 'b10-g10b-05-buero-anna-375');
 
   // Die volle IBAN verweigert der Server dem Büro - nicht nur die Oberfläche.
   const token = await zugriffstoken(buero.request, KONTEN.office);
