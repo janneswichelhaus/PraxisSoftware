@@ -151,6 +151,8 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   page,
   browser,
 }) => {
+  // Drei Personen nacheinander: Antrag, Entscheidung und Auszahlung, Büro.
+  test.setTimeout(120_000);
   await page.setViewportSize(TELEFON);
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/erstattungen');

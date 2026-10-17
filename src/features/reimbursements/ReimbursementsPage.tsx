@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -13,6 +13,7 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import { formatEuro } from '@/lib/geld';
+import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   LOAD_ERROR,
@@ -52,7 +53,8 @@ import { STATUS_LABEL, STATUS_TONE, electricityFormula, reimbursementTitle } fro
 export function ReimbursementsPage({ user }: { user: CurrentUser }) {
   const [search] = useSearchParams();
   const person = search.get(PERSON_PARAM);
-  const notice = (useLocation().state as { meldung?: unknown } | null)?.meldung;
+  // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder (Überholung 9).
+  const notice = useMeldungAusVerlauf();
   const query = useQuery({
     queryKey: reimbursementsKey(person),
     queryFn: () => fetchReimbursements(person),
@@ -77,7 +79,11 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
           ) : null
         }
       />
-      {typeof notice === 'string' ? <Rueckmeldung className="mb-6">{notice}</Rueckmeldung> : null}
+      {notice ? (
+        <Rueckmeldung key={notice.schluessel} className="mb-6">
+          {notice.text}
+        </Rueckmeldung>
+      ) : null}
       <Abfragezustand
         abfrage={query}
         laden="Erstattungen werden geladen …"
