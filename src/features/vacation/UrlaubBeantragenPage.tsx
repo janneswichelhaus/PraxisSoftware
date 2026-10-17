@@ -3,12 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { roleLabels } from '@/components/ui/roleLabels';
 import {
   aendern,
@@ -18,7 +20,9 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
+import { monatPlus, monatsBeginn, tagePlus } from '@/features/appointments/calendar';
 import { todayInTimeZone } from '@/features/appointments/api';
+import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
@@ -31,34 +35,39 @@ import {
   type Urlaubsstand,
   type Urlaubsvorschau,
 } from './api';
-import { Zeitraumkalender, type EigenerZeitraum } from './Zeitraumkalender';
+import { MONATE_VORAUS, Zeitraumkalender, type EigenerZeitraum } from './Zeitraumkalender';
+import { feiertageZwischen, type Bundesland } from './feiertage';
 import { urlaubsfenster } from './fenster';
 import {
   KEINE_WAHL,
+  monatKurz,
+  monatLang,
+  tagKurz,
   urlaubstage,
   vollstaendig,
-  waehleTag,
   zeitraumText,
   type Zeitraumwahl,
 } from './zeitraum';
 
 /**
  * Urlaub beantragen, geführt (G7, URL-001, Budget ≤ 6 Tipps, Ziel 5):
- * „Urlaub beantragen“ → erster Tag → letzter Tag → Weiter → Absenden.
+ * „Urlaub beantragen“ → Monat → erster Tag → letzter Tag (oder „1 Woche“,
+ * „2 Wochen“ …) → Absenden. Je Seite eine Frage, keine rollt: ein Monat je
+ * Kalenderseite, ‹ › zum Nachbarmonat (Design-Review Überholung 7).
  *
- * Seite 1 ist der Kalender. Sobald der Zeitraum steht, zählt der Server die
- * Urlaubstage nach dem Wochenplan ohne Feiertage (ANN-577) und die Zeile im
- * Fuß nennt sie samt Rest - ein Zeitraum ohne Arbeitstag oder über eigenem
- * Urlaub kommt gar nicht erst weiter. Seite 2 fasst zusammen: Zeitraum
- * (ändern), Tage, was danach übrig ist, wer zur selben Zeit fehlt (nur Name
- * und Zeitraum, BEF-066) und wer entscheidet. Die Notiz ist eingeklappt und
- * nur für die Person selbst (ANN-580).
+ * Steht der Zeitraum, zählt der Server die Urlaubstage nach dem Wochenplan
+ * ohne Feiertage (ANN-577). Die Zusammenfassung nennt Zeitraum (ändern),
+ * Tage samt Feiertagen darin, was danach übrig ist, wer zur selben Zeit
+ * fehlt (nur Name und Zeitraum, BEF-066) und wer entscheidet. Die Notiz ist
+ * eingeklappt und nur für die Person selbst (ANN-580).
  *
- * owner trägt den eigenen Urlaub direkt ein (ANN-576): dieselben Seiten,
- * der Hauptknopf heißt „Urlaub eintragen“.
+ * owner trägt den eigenen Urlaub direkt ein (ANN-576): dieselben Seiten, der
+ * Hauptknopf heißt „Urlaub eintragen“. Weil er sofort gilt, nennt die
+ * Zusammenfassung vorher Tage mit abweichenden Arbeitszeiten (dort hielte
+ * er an) und danach die Tage mit Terminen zum Umplanen (ANN-578).
  */
 
-type Seite = 'zeitraum' | 'abschluss';
+type Seite = 'monat' | 'beginn' | 'ende' | 'abschluss' | 'fertig';
 
 const URLAUBTEXTE = {
   ...EINGABETEXTE,
@@ -69,6 +78,20 @@ const URLAUBTEXTE = {
     bleiben: 'Weiter',
   },
 };
+
+/**
+ * Die Dauer ab dem ersten Tag als Schnellwahl auf der letzten Kalenderseite -
+ * eine Reihe, damit auch ein Monat mit sechs Wochen ohne Rollen ins Bild
+ * passt. Ein einzelner Tag ist der erste Tag noch einmal.
+ */
+const DAUERN = [
+  { text: '1 Woche', tage: 6 },
+  { text: '2 Wochen', tage: 13 },
+  { text: '3 Wochen', tage: 20 },
+] as const;
+
+/** Höchstens 93 Tage trägt ein Antrag (Server: `app.assert_leave_period`). */
+const LAENGSTENS = 92;
 
 export function UrlaubBeantragenPage({ user }: { user: CurrentUser }) {
   const heute = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
@@ -91,7 +114,7 @@ export function UrlaubBeantragenPage({ user }: { user: CurrentUser }) {
         </>
       )}
     >
-      {(stand) => <Antrag stand={stand} heute={heute} />}
+      {(stand) => <Antrag stand={stand} heute={heute} user={user} />}
     </Abfragezustand>
   );
 }
@@ -106,71 +129,41 @@ function eigeneZeitraeume(stand: Urlaubsstand): EigenerZeitraum[] {
     }));
 }
 
-/** Die Zeile im Fuß des Kalenders: was gewählt ist und was der Server zählt. */
-function Wahlzeile({
-  wahl,
-  vorschau,
-  jahr,
-}: {
-  wahl: Zeitraumwahl;
-  vorschau: { data?: Urlaubsvorschau | undefined; isError: boolean; error: unknown };
-  jahr: number;
-}) {
-  if (!wahl.von) return <>Ersten Urlaubstag wählen.</>;
-  if (!wahl.bis) return <>Ab {zeitraumText(wahl.von, wahl.von, jahr)} – letzten Tag wählen.</>;
-  const zeitraum = zeitraumText(wahl.von, wahl.bis, jahr);
-  if (vorschau.isError) {
-    return (
-      <>
-        {zeitraum} ·{' '}
-        <span className="text-danger">
-          {vorschau.error instanceof Error ? vorschau.error.message : 'Nicht gezählt.'}
-        </span>
-      </>
-    );
-  }
-  if (!vorschau.data) return <>{zeitraum} · Tage werden gezählt …</>;
-  if (vorschau.data.overlaps_own) {
-    return (
-      <>
-        {zeitraum} · <span className="text-danger">überschneidet sich mit Ihrem Urlaub</span>
-      </>
-    );
-  }
-  if (vorschau.data.days === 0) {
-    return (
-      <>
-        {zeitraum} · <span className="text-danger">kein Arbeitstag</span>
-      </>
-    );
-  }
-  const rest = restDanach(vorschau.data);
-  return (
-    <>
-      {zeitraum} · <strong>{urlaubstage(vorschau.data.days)}</strong>
-      {rest === null ? null : <> · danach {rest} übrig</>}
-    </>
-  );
-}
-
 /** Was im Jahr des Beginns danach übrig bleibt; ohne Anspruch `null`. */
 function restDanach(vorschau: Urlaubsvorschau): number | null {
   if (vorschau.balance.rest === null) return null;
   return vorschau.balance.rest - (vorschau.days - vorschau.days_following_year);
 }
 
-function Antrag({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
+/** Was gegen den Zeitraum spricht - im Fuß über dem Hauptknopf. */
+function hindernis(vorschau: Urlaubsvorschau, selbst: boolean): string | null {
+  if (vorschau.overlaps_own) return 'Der Zeitraum überschneidet sich mit Ihrem Urlaub.';
+  if (vorschau.days === 0) return 'In diesem Zeitraum liegt kein Arbeitstag.';
+  // Nur wer selbst einträgt, hält hier an; sonst hält das Genehmigen an.
+  if (selbst && vorschau.exception_days.length > 0) {
+    return `Abweichende Arbeitszeiten am ${vorschau.exception_days
+      .map(tagKurz)
+      .join(', ')} – erst in der Planung ändern.`;
+  }
+  return null;
+}
+
+function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; user: CurrentUser }) {
   const navigate = useNavigate();
   const [suche] = useSearchParams();
   const rueckweg = leseRueckweg(suche, '/betrieb/urlaub');
   const queryClient = useQueryClient();
   const jahr = Number(heute.slice(0, 4));
   const selbst = stand.self_entered;
+  const ersterMonat = monatsBeginn(heute);
+  const letzterTag = tagePlus(monatPlus(ersterMonat, MONATE_VORAUS), -1);
 
-  const [abfolge, setAbfolge] = useState<Abfolge<Seite>>(() => beginne<Seite>('zeitraum'));
+  const [abfolge, setAbfolge] = useState<Abfolge<Seite>>(() => beginne<Seite>('monat'));
+  const [monat, setMonat] = useState(ersterMonat);
   const [wahl, setWahl] = useState<Zeitraumwahl>(KEINE_WAHL);
   const [notiz, setNotiz] = useState('');
-  const seite = abfolge.seite;
+  const [eingetragen, setEingetragen] = useState(false);
+  const seite = eingetragen ? 'fertig' : abfolge.seite;
 
   const komplett = vollstaendig(wahl);
   const vorschau = useQuery({
@@ -181,7 +174,8 @@ function Antrag({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
     staleTime: 60_000,
   });
   const ergebnis = komplett ? vorschau.data : undefined;
-  const kannWeiter = !!ergebnis && ergebnis.days > 0 && !ergebnis.overlaps_own;
+  const grund = ergebnis ? hindernis(ergebnis, selbst) : null;
+  const kannAbsenden = !!ergebnis && grund === null;
 
   const zurueckGehen = () => {
     const vorher = zurueck(abfolge);
@@ -189,11 +183,14 @@ function Antrag({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
   };
 
   const { freigeben, schutz } = useTextverlustschutz({
-    ungespeichert: komplett || notiz.trim() !== '',
+    ungespeichert: seite !== 'fertig' && (wahl.von !== null || notiz.trim() !== ''),
     kompakt: true,
     texte: URLAUBTEXTE,
-    schrittZurueck: kannZurueck(abfolge) ? zurueckGehen : undefined,
+    schrittZurueck: seite !== 'fertig' && kannZurueck(abfolge) ? zurueckGehen : undefined,
   });
+
+  const zeitraum = komplett ? zeitraumText(wahl.von, wahl.bis, jahr) : '';
+  const tageText = ergebnis ? ` (${urlaubstage(ergebnis.days)})` : '';
 
   const absenden = useMutation({
     mutationFn: () =>
@@ -204,9 +201,16 @@ function Antrag({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
       }),
     onSuccess: async () => {
       freigeben();
-      await queryClient.invalidateQueries({ queryKey: URLAUB_SCHLUESSEL });
-      const zeitraum = zeitraumText(wahl.von!, wahl.bis!, jahr);
-      const tageText = ergebnis ? ` (${urlaubstage(ergebnis.days)})` : '';
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: URLAUB_SCHLUESSEL }),
+        // Selbst eingetragener Urlaub sperrt die Tage sofort (ANN-578).
+        queryClient.invalidateQueries({ queryKey: ['working-hour-exceptions'] }),
+      ]);
+      // Eigener Urlaub mit Terminen: die Tage zum Umplanen, statt still zurück.
+      if (selbst && ergebnis && ergebnis.appointment_days.length > 0) {
+        setEingetragen(true);
+        return;
+      }
       void navigate(rueckweg, {
         state: {
           meldung: selbst
@@ -218,75 +222,195 @@ function Antrag({ stand, heute }: { stand: Urlaubsstand; heute: string }) {
   });
 
   const hauptknopf = selbst ? 'Urlaub eintragen' : 'Urlaub beantragen';
+  const schritt = { monat: 1, beginn: 2, ende: 3, abschluss: 4, fertig: 4 }[seite];
+  const gemeinsam = {
+    objekt: hauptknopf,
+    schliessen: 'Schließen',
+    onSchliessen: () => void navigate(rueckweg),
+    seite,
+    stand: { text: `Schritt ${schritt} von 4`, wert: schritt, von: 4 },
+    onZurueck: seite !== 'fertig' && kannZurueck(abfolge) ? zurueckGehen : undefined,
+    schutz,
+  };
 
-  return (
-    <GefuehrterAblauf
-      titel={seite === 'zeitraum' ? 'Welche Tage?' : `${hauptknopf}?`}
-      objekt={hauptknopf}
-      schliessen="Schließen"
-      onSchliessen={() => void navigate(rueckweg)}
-      seite={seite}
-      stand={{
-        text: `Schritt ${seite === 'zeitraum' ? 1 : 2} von 2`,
-        wert: seite === 'zeitraum' ? 1 : 2,
-        von: 2,
-      }}
-      onZurueck={kannZurueck(abfolge) ? zurueckGehen : undefined}
-      schutz={schutz}
-      abschluss={seite === 'abschluss'}
-      fuss={
-        seite === 'zeitraum' ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-ink text-sm" aria-live="polite">
-              <Wahlzeile wahl={wahl} vorschau={vorschau} jahr={jahr} />
-            </p>
-            <Button
-              className="w-full"
-              disabled={!kannWeiter}
-              onClick={() => setAbfolge(weiter(abfolge, 'abschluss', true))}
+  // ---------------------------------------------------------------------------
+  if (seite === 'fertig' && ergebnis && stand.my_staff_member_id) {
+    return (
+      <GefuehrterAblauf
+        {...gemeinsam}
+        titel="Eingetragen"
+        abschluss
+        fuss={
+          <Button className="w-full" data-autofocus onClick={() => void navigate(rueckweg)}>
+            Fertig
+          </Button>
+        }
+      >
+        <div className="flex flex-col gap-6">
+          <Statusmeldung ton="erfolg">
+            {`Urlaub eingetragen: ${zeitraum}${tageText}. Die Tage sind im Kalender gesperrt.`}
+          </Statusmeldung>
+          <DaysToReschedule
+            staffMemberId={stand.my_staff_member_id}
+            days={ergebnis.appointment_days}
+            user={user}
+            returnTo={rueckweg}
+          />
+        </div>
+      </GefuehrterAblauf>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  if (seite === 'monat') {
+    const monate = Array.from({ length: MONATE_VORAUS }, (_, i) => monatPlus(ersterMonat, i));
+    const jahre = [...new Set(monate.map((m) => m.slice(0, 4)))];
+    return (
+      <GefuehrterAblauf {...gemeinsam} titel="Ab welchem Monat?">
+        <div className="flex flex-col gap-2">
+          {jahre.map((j) => (
+            <div key={j} role="group" aria-labelledby={`urlaub-jahr-${j}`}>
+              <Zwischentitel id={`urlaub-jahr-${j}`}>{j}</Zwischentitel>
+              <div className="grid grid-cols-3 gap-2">
+                {monate
+                  .filter((m) => m.startsWith(j))
+                  .map((m) => (
+                    <Button
+                      key={m}
+                      variant={wahl.von?.startsWith(m.slice(0, 7)) ? 'primary' : 'secondary'}
+                      className="w-full"
+                      aria-label={monatLang(m)}
+                      {...(m === ersterMonat ? { 'data-autofocus': true } : {})}
+                      onClick={() => {
+                        setMonat(m);
+                        setAbfolge(weiter(abfolge, 'beginn'));
+                      }}
+                    >
+                      {monatKurz(m)}
+                    </Button>
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </GefuehrterAblauf>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  if (seite === 'beginn' || seite === 'ende') {
+    const beginn = seite === 'beginn';
+    const von = wahl.von;
+    const waehleEnde = (tag: string) => {
+      setWahl({ von, bis: tag });
+      setAbfolge(weiter(abfolge, 'abschluss', true));
+    };
+    return (
+      <GefuehrterAblauf
+        {...gemeinsam}
+        titel={beginn ? 'Erster Urlaubstag?' : 'Letzter Urlaubstag?'}
+        fuss={
+          beginn || von === null ? undefined : (
+            <div
+              className="grid grid-cols-3 gap-2"
+              role="group"
+              aria-label="Dauer ab dem ersten Tag"
             >
-              Weiter
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {absenden.isError ? (
-              <Statusmeldung ton="fehler">
-                {absenden.error instanceof Error
-                  ? absenden.error.message
-                  : 'Der Urlaub konnte nicht beantragt werden.'}
-              </Statusmeldung>
-            ) : null}
-            <Button
-              className="w-full"
-              disabled={absenden.isPending || !kannWeiter}
-              onClick={() => absenden.mutate()}
-            >
-              {absenden.isPending ? 'Wird gesendet …' : hauptknopf}
-            </Button>
-          </div>
-        )
-      }
-    >
-      {seite === 'zeitraum' ? (
+              {DAUERN.map((d) => (
+                <Button
+                  key={d.text}
+                  variant="secondary"
+                  groesse="kompakt"
+                  className="w-full"
+                  onClick={() => waehleEnde(tagePlus(von, d.tage))}
+                >
+                  {d.text}
+                </Button>
+              ))}
+            </div>
+          )
+        }
+      >
         <Zeitraumkalender
+          monat={monat}
           heute={heute}
+          ab={beginn || von === null ? heute : von}
+          bis={beginn || von === null ? letzterTag : tagePlus(von, LAENGSTENS)}
           land={stand.federal_state}
           wahl={wahl}
           eigene={eigeneZeitraeume(stand)}
-          onWaehlen={(tag) => setWahl((bisher) => waehleTag(bisher, tag))}
+          onMonat={setMonat}
+          onWaehlen={(tag) => {
+            if (beginn) {
+              setWahl({ von: tag, bis: null });
+              setMonat(monatsBeginn(tag));
+              setAbfolge(weiter(abfolge, 'ende'));
+            } else {
+              waehleEnde(tag);
+            }
+          }}
         />
-      ) : ergebnis && komplett ? (
+      </GefuehrterAblauf>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  return (
+    <GefuehrterAblauf
+      {...gemeinsam}
+      titel={`${hauptknopf}?`}
+      abschluss
+      fuss={
+        <div className="flex flex-col gap-2">
+          {vorschau.isError ? (
+            <Statusmeldung ton="fehler">
+              {vorschau.error instanceof Error ? vorschau.error.message : 'Nicht gezählt.'}
+            </Statusmeldung>
+          ) : null}
+          {grund ? <Statusmeldung ton="fehler">{grund}</Statusmeldung> : null}
+          {absenden.isError ? (
+            <Statusmeldung ton="fehler">
+              {absenden.error instanceof Error
+                ? absenden.error.message
+                : 'Der Urlaub konnte nicht beantragt werden.'}
+            </Statusmeldung>
+          ) : null}
+          {selbst && ergebnis && ergebnis.exception_days.length > 0 && stand.my_staff_member_id ? (
+            <ButtonLink
+              variant="secondary"
+              className="w-full"
+              to={`/praxis/planung?person=${stand.my_staff_member_id}`}
+            >
+              Zur Planung
+            </ButtonLink>
+          ) : null}
+          <Button
+            className="w-full"
+            disabled={absenden.isPending || !kannAbsenden}
+            onClick={() => absenden.mutate()}
+          >
+            {absenden.isPending ? 'Wird gesendet …' : hauptknopf}
+          </Button>
+        </div>
+      }
+    >
+      {ergebnis && komplett ? (
         <Zusammenfassung
           wahl={wahl}
           ergebnis={ergebnis}
           jahr={jahr}
+          land={stand.federal_state}
           selbst={selbst}
           notiz={notiz}
           onNotiz={setNotiz}
-          onAendern={() => setAbfolge(aendern(abfolge, 'zeitraum'))}
+          onAendern={() => {
+            setMonat(monatsBeginn(wahl.von));
+            setAbfolge(aendern(abfolge, 'beginn'));
+          }}
         />
-      ) : null}
+      ) : vorschau.isError ? null : (
+        <p className="text-ink-muted text-sm">Tage werden gezählt …</p>
+      )}
     </GefuehrterAblauf>
   );
 }
@@ -295,6 +419,7 @@ function Zusammenfassung({
   wahl,
   ergebnis,
   jahr,
+  land,
   selbst,
   notiz,
   onNotiz,
@@ -303,6 +428,7 @@ function Zusammenfassung({
   wahl: { von: string; bis: string };
   ergebnis: Urlaubsvorschau;
   jahr: number;
+  land: Bundesland;
   selbst: boolean;
   notiz: string;
   onNotiz: (text: string) => void;
@@ -312,16 +438,20 @@ function Zusammenfassung({
   const konto = ergebnis.balance;
   const anspruch = konto.entitlement === null ? null : konto.entitlement + (konto.carryover ?? 0);
   const folgejahr = ergebnis.days_following_year;
+  // Warum weniger Urlaubstage als Werktage: die Feiertage beim Namen (Regel 5).
+  const feiertage = feiertageZwischen(wahl.von, wahl.bis, land);
+  const termine = ergebnis.appointment_days.reduce((summe, t) => summe + t.appointments, 0);
   return (
     <div className="flex flex-col gap-4">
       <ListRows rahmen={false} beschriftung="Urlaub">
         <ListRow
           titel={zeitraumText(wahl.von, wahl.bis, jahr)}
-          meta={
+          meta={[
             folgejahr > 0
               ? `${urlaubstage(ergebnis.days)}, davon ${folgejahr} im Jahr ${Number(wahl.bis.slice(0, 4))}`
-              : urlaubstage(ergebnis.days)
-          }
+              : urlaubstage(ergebnis.days),
+            ...feiertage.map((f) => `${f.name} zählt nicht`),
+          ].join(' · ')}
           aktion={
             <Button
               variant="secondary"
@@ -358,6 +488,12 @@ function Zusammenfassung({
                   .join(', ')
           }
         />
+        {selbst && termine > 0 ? (
+          <ListRow
+            titel={`${termine} ${termine === 1 ? 'Termin' : 'Termine'} im Zeitraum`}
+            meta="Nach dem Eintragen umplanen"
+          />
+        ) : null}
         <ListRow
           titel={selbst ? 'Sie tragen den Urlaub selbst ein' : 'Entscheidet'}
           meta={selbst ? 'Er gilt sofort als genehmigt.' : roleLabels.owner}

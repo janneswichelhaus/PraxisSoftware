@@ -16,8 +16,9 @@
 --   * Sichtbarkeit nach BEF-066 (Jannes 2026-10-09, ANN-580): Eigenes sieht
 --     jede Person ganz, auch die Notiz zum Antrag - die sieht sonst niemand,
 --     auch nicht, wer entscheidet („nie den Grund“). Am offenen Antrag sehen
---     die Entscheidenden Person, Zeitraum, Tage, das Urlaubskonto der Person,
---     wer zugleich fehlt und wie viele Termine im Zeitraum liegen. Fremde
+--     die Entscheidenden Person, Zeitraum, Tage (auch die im Folgejahr), das
+--     Urlaubskonto der Person, wer zugleich fehlt, wie viele Termine im
+--     Zeitraum liegen und die Tage mit abweichenden Arbeitszeiten. Fremde
 --     Urlaubskonten sonst nur owner (Ansprüche pflegen, Hinweispflicht).
 --     Andere sehen von genehmigtem Urlaub nur Name und Zeitraum, und das ab
 --     heute - kein Verlauf über die Kolleg:innen. Keine Summe über alle
@@ -578,6 +579,27 @@ $$;
 
 revoke all on function app.appointment_days_in_leave(uuid, uuid, date, date) from public, anon, authenticated;
 
+-- Die Tage mit abweichenden Arbeitszeiten im Zeitraum: An ihnen haelt eine
+-- Genehmigung an (app.apply_leave). Genannt werden sie vorher - beim
+-- Entscheiden und beim eigenen Eintragen -, damit niemand erst nach dem Tipp
+-- erfaehrt, wo er zuerst aendern muss (Praxis-Review).
+create function app.exception_days_in_leave(p_org uuid, p_staff_member_id uuid, p_from date, p_to date)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(distinct e.on_date order by e.on_date), '[]'::jsonb)
+  from public.staff_working_hour_exceptions e
+  where e.organization_id = p_org
+    and e.staff_member_id = p_staff_member_id
+    and e.kind = 'block'
+    and e.on_date between p_from and p_to
+$$;
+
+revoke all on function app.exception_days_in_leave(uuid, uuid, date, date) from public, anon, authenticated;
+
 -- Ein Zeitraum, wie ihn ein Antrag tragen darf: Ende nicht vor dem Beginn,
 -- hoechstens 93 Tage, nicht in der Vergangenheit (Ortszeit der Praxis).
 create function app.assert_leave_period(p_org uuid, p_starts_on date, p_ends_on date)
@@ -645,7 +667,11 @@ begin
         and r.starts_on <= p_ends_on and r.ends_on >= p_starts_on
     ),
     'team', app.team_leave(v_org, v_staff, p_starts_on, p_ends_on),
-    'self_entered', app.has_any_role('owner')
+    'self_entered', app.has_any_role('owner'),
+    -- Eigene Termine und abweichende Arbeitszeiten im Zeitraum: Wer selbst
+    -- eintraegt, plant danach um bzw. aendert vorher (ANN-578).
+    'appointment_days', app.appointment_days_in_leave(v_org, v_staff, p_starts_on, p_ends_on),
+    'exception_days', app.exception_days_in_leave(v_org, v_staff, p_starts_on, p_ends_on)
   );
 end;
 $$;
@@ -654,7 +680,7 @@ revoke all on function public.preview_leave(date, date) from public, anon;
 grant execute on function public.preview_leave(date, date) to authenticated;
 
 comment on function public.preview_leave(date, date) is
-  'URL-001: was ein Urlaubsantrag fuer die eigene Person ergaebe - Tage (am Server gezaehlt), Konto, ob er sich mit einem eigenen ueberschneidet, und wer zur selben Zeit genehmigt fehlt (nur Name und Zeitraum).';
+  'URL-001: was ein Urlaubsantrag fuer die eigene Person ergaebe - Tage (am Server gezaehlt), Konto, ob er sich mit einem eigenen ueberschneidet, wer zur selben Zeit genehmigt fehlt (nur Name und Zeitraum), die eigenen Termine je Tag und die Tage mit abweichenden Arbeitszeiten im Zeitraum.';
 
 create function public.request_leave(p_starts_on date, p_ends_on date, p_message text)
 returns uuid
@@ -1023,12 +1049,17 @@ begin
                'staff_member_id', r.staff_member_id,
                'name', app.staff_display_name(r.staff_member_id),
                'starts_on', r.starts_on, 'ends_on', r.ends_on, 'days', r.days,
+               -- Das Konto des Beginnjahrs zaehlt nur dessen Tage.
+               'days_following_year', r.days_following_year,
                -- Ohne die Notiz: die sieht nur die Person (BEF-066, ANN-580).
                'requested_at', r.requested_at,
                'balance', app.leave_balance(v_org, r.staff_member_id,
                                             extract(year from r.starts_on)::integer),
                'team', app.team_leave(v_org, r.staff_member_id, r.starts_on, r.ends_on),
-               'appointments', app.appointments_in_leave(v_org, r.staff_member_id, r.starts_on, r.ends_on)
+               'appointments', app.appointments_in_leave(v_org, r.staff_member_id, r.starts_on, r.ends_on),
+               'exception_days', case when r.kind = 'leave' then
+                 app.exception_days_in_leave(v_org, r.staff_member_id, r.starts_on, r.ends_on)
+                 else '[]'::jsonb end
              ) order by r.requested_at)
       from public.staff_leave_requests r
       where r.organization_id = v_org and r.status = 'requested'
@@ -1046,7 +1077,10 @@ begin
       select jsonb_agg(jsonb_build_object(
                'staff_member_id', sm.id,
                'name', app.staff_display_name(sm.id),
-               'balance', app.leave_balance(v_org, sm.id, v_jahr)
+               'balance', app.leave_balance(v_org, sm.id, v_jahr),
+               -- Den Anspruch des Folgejahrs traegt owner vorab ein; die
+               -- Seite belegt ihn damit vor, statt ihn leer zu ueberschreiben.
+               'next_balance', app.leave_balance(v_org, sm.id, v_jahr + 1)
              ) order by app.staff_display_name(sm.id))
       from public.staff_members sm
       where sm.organization_id = v_org and sm.employment_status = 'active'
@@ -1059,7 +1093,7 @@ revoke all on function public.list_leave(date, date) from public, anon;
 grant execute on function public.list_leave(date, date) to authenticated;
 
 comment on function public.list_leave(date, date) is
-  'URL-001: Urlaub in einem Aufruf - eigene Antraege mit Notiz und Konto ganz; fuer owner die offenen Antraege anderer mit Konto, ohne Notiz; fuer alle genehmigter Urlaub anderer nur mit Name und Zeitraum ab heute; fremde Konten nur owner (BEF-066, ANN-580). Ohne Summe ueber alle (PROJECT_PRINCIPLES.md 20).';
+  'URL-001: Urlaub in einem Aufruf - eigene Antraege mit Notiz und Konto ganz; fuer owner die offenen Antraege anderer mit Konto, Tagen im Folgejahr und den Tagen mit abweichenden Arbeitszeiten, ohne Notiz; fuer alle genehmigter Urlaub anderer nur mit Name und Zeitraum ab heute; fremde Konten (laufendes und Folgejahr) nur owner (BEF-066, ANN-580). Ohne Summe ueber alle (PROJECT_PRINCIPLES.md 20).';
 
 -- -----------------------------------------------------------------------------
 -- 9. Arbeitszeiten: kein Urlaubstag wird still ueberschrieben (ANN-578)

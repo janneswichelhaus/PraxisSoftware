@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -92,8 +92,8 @@ const REQUEST_TEXTS = {
   },
 };
 
-/** Wie viele Monate ab dem laufenden der Kalender zeigt. */
-const MONTHS_AHEAD = 13;
+/** Wie weit voraus ein Datum reicht (Server: `app.assert_working_time_date`). */
+const DAYS_AHEAD = 400;
 
 export function RequestWorkingTimePage({ user }: { user: CurrentUser }) {
   const query = useQuery({ queryKey: WORKING_TIME_KEY, queryFn: fetchWorkingTime, retry: false });
@@ -134,6 +134,8 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
   const queryClient = useQueryClient();
   const self = state.self_entered;
   const tomorrow = tagePlus(today, 1);
+  // Der Monat der Datumsseite: anfangs der von morgen, danach der des Tages.
+  const [month, setMonth] = useState(() => monatsBeginn(tomorrow));
 
   const [flow, setFlow] = useState<Abfolge<Page>>(() => beginne<Page>({ art: 'kind' }));
   const [kind, setKind] = useState<ChangeKind | null>(null);
@@ -232,11 +234,6 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
     },
   });
 
-  const months = useMemo(() => {
-    const first = monatsBeginn(today);
-    return Array.from({ length: MONTHS_AHEAD }, (_, i) => monatPlus(first, i));
-  }, [today]);
-
   function updateDraft(change: Partial<Omit<Draft, 'key'>>) {
     if (!current) return;
     setDraft({ ...current, ...change });
@@ -305,27 +302,52 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
         {...common}
         titel={kind === 'once' ? 'An welchem Tag?' : 'Ab wann?'}
         fuss={
-          <p className="text-ink text-sm" aria-live="polite">
-            {onDate ? `Gewählt: ${dateLong(onDate)}` : 'Frühestens ab morgen.'}
-          </p>
+          kind === 'permanent' ? (
+            // Ein Wochenplan beginnt meist am Monatsersten: die nächsten zwei
+            // als Schnellwahl, damit kein Blättern das Budget sprengt (G8 ≤ 8).
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label="Ab dem Monatsersten">
+              {[1, 2].map((n) => {
+                const first = monatPlus(monatsBeginn(today), n);
+                return (
+                  <Button
+                    key={first}
+                    variant="secondary"
+                    groesse="kompakt"
+                    className="w-full"
+                    aria-label={`Ab ${dateLong(first)}`}
+                    onClick={() => {
+                      setOnDate(first);
+                      setMonth(first);
+                      setFlow(weiter(flow, { art: 'times' }));
+                    }}
+                  >
+                    {`Ab ${dateDayMonth(first)}`}
+                  </Button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-ink text-sm" aria-live="polite">
+              {onDate ? `Gewählt: ${dateLong(onDate)}` : 'Frühestens ab morgen.'}
+            </p>
+          )
         }
       >
-        <div className="flex flex-col gap-6">
-          {months.map((month) => (
-            <Monatsblatt
-              key={month}
-              monat={month}
-              heute={today}
-              ab={tomorrow}
-              fokus={onDate ?? tomorrow}
-              angabe={(day) => ({ wahl: day === onDate ? 'rand' : undefined })}
-              onWaehlen={(day) => {
-                setOnDate(day);
-                setFlow(weiter(flow, { art: 'times' }));
-              }}
-            />
-          ))}
-        </div>
+        {/* Ein Monat je Seite mit ‹ › - die Seite rollt nicht (Design-Review
+            Überholung 7). */}
+        <Monatsblatt
+          monat={month}
+          heute={today}
+          ab={tomorrow}
+          bis={tagePlus(today, DAYS_AHEAD)}
+          fokus={onDate?.startsWith(month.slice(0, 7)) ? onDate : undefined}
+          angabe={(day) => ({ wahl: day === onDate ? 'rand' : undefined })}
+          onMonat={setMonth}
+          onWaehlen={(day) => {
+            setOnDate(day);
+            setFlow(weiter(flow, { art: 'times' }));
+          }}
+        />
       </GefuehrterAblauf>
     );
   }

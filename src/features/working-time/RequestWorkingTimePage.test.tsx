@@ -214,8 +214,11 @@ describe('RequestWorkingTimePage', () => {
       ),
     );
     tipps += 1;
+    // Der Monatserste ist eine Schnellwahl - kein Blättern bis Dezember.
     await user.click(
-      tag(await screen.findByRole('dialog', { name: 'Ab wann?' }), 'Dienstag, 1. Dezember 2026'),
+      within(await screen.findByRole('dialog', { name: 'Ab wann?' })).getByRole('button', {
+        name: 'Ab Dienstag, 1. Dezember',
+      }),
     );
     tipps += 1;
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -66,7 +67,9 @@ function Content({ state }: { state: WorkingTime }) {
   const plan = state.plan;
 
   return (
-    <div className="flex flex-col gap-8">
+    // Abschnitt zu Abschnitt 32 px: der Abstand der Spalte, nicht dazu der
+    // eigene Rand jedes Abschnitts (Design-Review Überholung 7).
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
       {state.can_decide && state.to_decide.length > 0 ? (
         <Listenabschnitt titel="Zu entscheiden" anzahl={state.to_decide.length}>
           {state.to_decide.map((request) => (
@@ -139,22 +142,30 @@ function OwnRow({ request }: { request: OwnRequest }) {
       titel={changeTitle(request.kind, request.on_date)}
       meta={meta}
       status={<Badge ton={display.ton}>{display.text}</Badge>}
-      aktion={
+      darunter={
         request.status === 'requested' ? (
-          <Rueckfrage
-            ausloeser="Zurückziehen"
-            ausloeserVariante="quiet"
-            ausloeserGroesse="kompakt"
-            bezeichnung="Antrag zurückziehen"
-            bestaetigen="Ja, zurückziehen"
-            bestaetigenLaeuft="Wird zurückgezogen …"
-            fehler={withdraw.isError ? withdraw.error.message : undefined}
-            onBestaetigen={() => withdraw.mutateAsync()}
-          >
-            Die bisherige Arbeitszeit bleibt.
-          </Rueckfrage>
-        ) : null
+          // Unter der Zeile in voller Breite: in der Zeile bräche die
+          // Rückfrage bei 375 px (Design-Review Überholung 7).
+          <BelowRow>
+            <Rueckfrage
+              ausloeser="Zurückziehen"
+              ausloeserVariante="quiet"
+              ausloeserGroesse="kompakt"
+              bezeichnung="Antrag zurückziehen"
+              bestaetigen="Ja, zurückziehen"
+              bestaetigenLaeuft="Wird zurückgezogen …"
+              fehler={withdraw.isError ? withdraw.error.message : undefined}
+              onBestaetigen={() => withdraw.mutateAsync()}
+            >
+              Die bisherige Arbeitszeit bleibt.
+            </Rueckfrage>
+          </BelowRow>
+        ) : undefined
       }
     />
   );
+}
+
+function BelowRow({ children }: { children: ReactNode }) {
+  return <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">{children}</div>;
 }

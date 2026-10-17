@@ -60,6 +60,44 @@ function tag(dialog: Locator, datum: string): Locator {
   return dialog.getByRole('button', { name: TAGESNAME.format(new Date(`${datum}T00:00:00Z`)) });
 }
 
+const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** Blättert das Monatsblatt bis zum Monat des Tages; jeder Tipp zählt mit. */
+async function blaettereZu(
+  dialog: Locator,
+  datum: string,
+  tippe: (ziel: Locator) => Promise<void>,
+): Promise<void> {
+  const monat = dialog.getByRole('group', {
+    name: MONATSNAME.format(new Date(`${datum}T00:00:00Z`)),
+  });
+  for (let i = 0; i < 14 && !(await monat.isVisible()); i += 1) {
+    await tippe(dialog.getByRole('button', { name: 'Nächster Monat' }));
+  }
+  await expect(monat).toBeVisible();
+}
+
+/** Keine Fläche im Fenster rollt - je Seite eine Frage ohne Rollen (DESIGN.md). */
+async function rolltNicht(dialog: Locator): Promise<void> {
+  const rollend = await dialog.evaluate(
+    (fenster) =>
+      [fenster, ...fenster.querySelectorAll('*')]
+        .filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY))
+        .filter((el) => el.scrollHeight > el.clientHeight + 1).length,
+  );
+  expect(rollend).toBe(0);
+}
+
+/** Bildschirmfoto im ruhenden Stand: nach der Tippsperre und dem Aufgehen des Fensters. */
+async function bild(seite: Page, name: string): Promise<void> {
+  await seite.waitForTimeout(800);
+  await seite.screenshot({ path: `.tmp/screenshots/${name}.png` });
+}
+
 /** Die Seite läuft nicht in die Breite; Frage und Fuß stehen im Bild. */
 async function stehtImBild(page: Page, dialog: Locator, knopf: Locator): Promise<void> {
   await expect(dialog.getByRole('heading').first()).toBeInViewport();
@@ -93,18 +131,21 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/arbeitszeit');
   await expect(page.getByRole('heading', { name: 'Mein Wochenplan' })).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-00-arbeitszeit-375.png' });
+  await bild(page, 'b8-g8-00-arbeitszeit-375');
 
   const t = zaehler();
   await t.tippe(page.getByRole('link', { name: 'Änderung beantragen' }));
   const art = page.getByRole('dialog', { name: 'Was möchten Sie ändern?' });
   await expect(art).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-01-art-375.png' });
+  await bild(page, 'b8-g8-01-art-375');
   await t.tippe(art.getByRole('button', { name: 'Einen Tag' }));
 
   const datum = page.getByRole('dialog', { name: 'An welchem Tag?' });
   await expect(datum).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-02-tag-375.png' });
+  // Ein Monat je Seite: Der Dienstag liegt einen oder zwei Monate voraus.
+  await rolltNicht(datum);
+  await bild(page, 'b8-g8-02-tag-375');
+  await blaettereZu(datum, DIENSTAG, (ziel) => t.tippe(ziel));
   await t.tippe(tag(datum, DIENSTAG));
 
   const zeiten = page.getByRole('dialog', { name: /^Ihre Zeiten am / });
@@ -114,7 +155,7 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   const weiter = zeiten.getByRole('button', { name: 'Weiter' });
   await expect(weiter).toBeEnabled();
   await stehtImBild(page, zeiten, weiter);
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-03-zeiten-375.png' });
+  await bild(page, 'b8-g8-03-zeiten-375');
   await t.tippe(weiter);
 
   const abschluss = page.getByRole('dialog', { name: 'Änderung beantragen?' });
@@ -122,10 +163,11 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   await expect(abschluss.getByText(/außerhalb der neuen Zeiten/)).toBeVisible();
   await expect(absenden).toBeEnabled();
   await stehtImBild(page, abschluss, absenden);
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-04-zusammenfassung-375.png' });
+  await bild(page, 'b8-g8-04-zusammenfassung-375');
   await t.tippe(absenden);
-  await expect(page.getByText(/^Änderung beantragt:/)).toBeVisible();
-  await expect(page.getByText('Beantragt', { exact: true })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Änderung beantragt:' })).toBeVisible();
+  // Der Zustand steht als Abzeichen mit Zeichen und Wort an der Zeile.
+  await expect(page.getByRole('listitem').filter({ hasText: 'Beantragt' }).first()).toBeVisible();
   test.info().annotations.push({ type: 'G8', description: `${t.tipps} Tipps bis beantragt` });
   expect(t.tipps).toBeLessThanOrEqual(8);
 
@@ -142,11 +184,11 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   const genehmigen = entscheiden.getByRole('button', { name: 'Genehmigen' });
   await expect(entscheiden.getByText('07:00–12:00, 13:00–17:00 · 9:00 Std.')).toBeVisible();
   await stehtImBild(inhaber, entscheiden, genehmigen);
-  await inhaber.screenshot({ path: '.tmp/screenshots/b8-g8b-01-entscheiden-375.png' });
+  await bild(inhaber, 'b8-g8b-01-entscheiden-375');
   await e.tippe(genehmigen);
   const fertig = inhaber.getByRole('dialog', { name: 'Genehmigt' });
   await expect(fertig.getByText(/Arbeitszeit ist geändert/)).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b8-g8b-02-genehmigt-375.png' });
+  await bild(inhaber, 'b8-g8b-02-genehmigt-375');
   test.info().annotations.push({ type: 'G8b', description: `${e.tipps} Tipps bis genehmigt` });
   expect(e.tipps).toBeLessThanOrEqual(2);
 
@@ -183,17 +225,20 @@ test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)
       .getByRole('dialog', { name: 'Was möchten Sie ändern?' })
       .getByRole('button', { name: 'Den Wochenplan ab einem Datum' }),
   );
-  await t.tippe(tag(page.getByRole('dialog', { name: 'Ab wann?' }), DIENSTAG));
+  // Ein Wochenplan beginnt am Monatsersten: Schnellwahl statt Blättern.
+  const abWann = page.getByRole('dialog', { name: 'Ab wann?' });
+  await rolltNicht(abWann);
+  await t.tippe(abWann.getByRole('button', { name: /^Ab \S+, 1\. / }).first());
 
   const woche = page.getByRole('dialog', { name: /^Ihr Wochenplan ab / });
   await expect(woche.getByRole('button', { name: 'Dienstag ändern' })).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-05-woche-375.png' });
+  await bild(page, 'b8-g8-05-woche-375');
   await t.tippe(woche.getByRole('button', { name: 'Dienstag ändern' }));
   const dienstagSeite = page.getByRole('dialog', { name: /^Dienstags ab / });
   await dienstagSeite.getByLabel('Pause ab').fill('12:30');
   const uebernehmen = dienstagSeite.getByRole('button', { name: 'Übernehmen' });
   await stehtImBild(page, dienstagSeite, uebernehmen);
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-06-dienstag-375.png' });
+  await bild(page, 'b8-g8-06-dienstag-375');
   await t.tippe(uebernehmen);
   await t.tippe(woche.getByRole('button', { name: 'Weiter' }));
 
@@ -201,14 +246,14 @@ test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)
   await expect(abschluss.getByText(/^Dienstag: 08:00–12:30, 13:30–18:00/)).toBeVisible();
   const absenden = abschluss.getByRole('button', { name: 'Änderung beantragen' });
   await expect(absenden).toBeEnabled();
-  await page.screenshot({ path: '.tmp/screenshots/b8-g8-07-zusammenfassung-woche-375.png' });
+  await bild(page, 'b8-g8-07-zusammenfassung-woche-375');
   await t.tippe(absenden);
-  await expect(page.getByText(/^Änderung beantragt:/)).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Änderung beantragt:' })).toBeVisible();
   test.info().annotations.push({ type: 'G8 dauerhaft', description: `${t.tipps} Tipps` });
   expect(t.tipps).toBeLessThanOrEqual(8);
 
   // Aufräumen: Anna zieht den Antrag zurück - der Plan bleibt, wie er ist.
   await page.getByRole('button', { name: 'Zurückziehen' }).first().click();
   await page.getByRole('button', { name: 'Ja, zurückziehen' }).click();
-  await expect(page.getByText('Beantragt', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('listitem').filter({ hasText: 'Beantragt' })).toHaveCount(0);
 });

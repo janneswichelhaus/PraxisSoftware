@@ -112,9 +112,19 @@ interface Liste {
   can_decide: boolean;
   balance: { entitlement: number | null; approved: number; requested: number; rest: number | null };
   own: { id: string; status: string; message: string | null }[];
-  to_decide: { id: string; balance: Record<string, unknown>; appointments: number }[];
+  to_decide: {
+    id: string;
+    balance: Record<string, unknown>;
+    appointments: number;
+    days_following_year: number;
+    exception_days: string[];
+  }[];
   team: Record<string, unknown>[];
-  balances: { staff_member_id: string }[];
+  balances: {
+    staff_member_id: string;
+    balance: { year: number; entitlement: number | null };
+    next_balance: { year: number; entitlement: number | null; carryover: number | null };
+  }[];
 }
 
 beforeEach(resetDatabase);
@@ -180,6 +190,11 @@ describe('Feiertage und Urlaubstage (ANN-577)', () => {
     );
     expect(vorschau.days_following_year).toBe(folgejahr.rows[0]!.n);
     expect(vorschau.days).toBeGreaterThan(vorschau.days_following_year);
+    // Wer entscheidet, sieht dieselbe Teilung - das Konto des Beginnjahrs
+    // zählt nur dessen Tage (Praxis-Review).
+    await beantragt(users.therapist, `${JAHR}-12-28`, `${JAHR + 1}-01-08`);
+    const inhaber = await daten<Liste>(users.ownerTherapist, LISTE, [MONTAG, FREITAG]);
+    expect(inhaber.to_decide[0]!.days_following_year).toBe(vorschau.days_following_year);
   });
 });
 
@@ -355,6 +370,19 @@ describe('Beantragen, zurückziehen, entscheiden (ANN-576)', () => {
       /working hours exception in period/,
     );
     expect((await antrag(id)).status).toBe('requested');
+    // Den Tag nennen Entscheidungsseite und Vorschau schon vorher.
+    const inhaber = await daten<Liste>(users.ownerTherapist, LISTE, [MONTAG, FREITAG]);
+    expect(inhaber.to_decide[0]!.exception_days).toEqual([plusTage(MONTAG, 1)]);
+    const vorschau = await daten<{ exception_days: string[] }>(users.therapist, VORSCHAU, [
+      MONTAG,
+      FREITAG,
+    ]);
+    expect(vorschau.exception_days).toEqual([plusTage(MONTAG, 1)]);
+    // Die Vorschau kennt nur die eigene Person: Annas Tag sieht niemand sonst.
+    for (const k of [users.office, users.teamLead, users.ownerTherapist]) {
+      const fremd = await daten<{ exception_days: string[] }>(k, VORSCHAU, [MONTAG, FREITAG]);
+      expect(fremd.exception_days, k).toEqual([]);
+    }
   });
 });
 
@@ -461,6 +489,16 @@ describe('Wirkung auf Arbeitszeiten und Termine (ANN-578)', () => {
        returning id`,
       [organizationId, patients.erika, STAFF.anna, PRAXIS, plusTage(MONTAG, 1)],
     );
+    // Die eigene Vorschau nennt die Tage schon - für wen selbst einträgt.
+    const vorschau = await daten<{ appointment_days: unknown[] }>(users.therapist, VORSCHAU, [
+      MONTAG,
+      FREITAG,
+    ]);
+    expect(vorschau.appointment_days).toEqual([{ on_date: plusTage(MONTAG, 1), appointments: 1 }]);
+    for (const k of [users.office, users.teamLead, users.ownerTherapist]) {
+      const fremd = await daten<{ appointment_days: unknown[] }>(k, VORSCHAU, [MONTAG, FREITAG]);
+      expect(fremd.appointment_days, k).toEqual([]);
+    }
     const id = await beantragt(users.therapist);
     const { rows } = await asUserCommitted<{
       daten: {
@@ -552,6 +590,20 @@ describe('Sichtbarkeit nach BEF-066 (ANN-580)', () => {
     expect(liste.balance).toMatchObject({ entitlement: 30, approved: 1, requested: 2, rest: 31 });
   });
 
+  it('zeigt owner auch den schon eingetragenen Anspruch des Folgejahrs', async () => {
+    await asUserCommitted(users.ownerTherapist, ANSPRUCH, [STAFF.anna, JAHR + 1, 28, 3]);
+    const inhaber = await daten<Liste>(users.ownerTherapist, LISTE, [MONTAG, FREITAG]);
+    const anna = inhaber.balances.find((b) => b.staff_member_id === STAFF.anna)!;
+    expect(anna.balance).toMatchObject({ year: JAHR, entitlement: null });
+    expect(anna.next_balance).toMatchObject({ year: JAHR + 1, entitlement: 28, carryover: 3 });
+    // Fremde Konten - auch des Folgejahrs - und offene Anträge sieht sonst niemand.
+    for (const k of [users.teamLead, users.office, users.therapist, users.trainer]) {
+      const liste = await daten<Liste>(k, LISTE, [MONTAG, FREITAG]);
+      expect(liste.balances, k).toEqual([]);
+      expect(liste.to_decide, k).toEqual([]);
+    }
+  });
+
   it('zeigt Urlaub anderer nur ab heute - kein Verlauf über die Kolleg:innen', async () => {
     const vorJahr = new Date().getUTCFullYear() - 1;
     await asPostgres(
@@ -622,6 +674,32 @@ describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
       (await fehler(users.ownerTherapist, ANSPRUCH, [fremd.staffMember, JAHR, 30, 0]))?.code,
     ).toBe('P0002');
     expect((await fehler(fremd.owner, ANSPRUCH, [STAFF.anna, JAHR, 30, 0]))?.code).toBe('P0002');
+  });
+
+  it('gibt keiner Rolle Ausführungsrecht auf die Hilfen mit Organisation und Person', async () => {
+    // Sie nehmen Organisation und Person entgegen und wären sonst ein Orakel
+    // über fremde Praxen (Zweitreview Runde 2).
+    const hilfen = [
+      'app.leave_days(uuid, uuid, date, date)',
+      'app.leave_balance(uuid, uuid, integer)',
+      'app.team_leave(uuid, uuid, date, date)',
+      'app.apply_leave(uuid, uuid)',
+      'app.appointments_in_leave(uuid, uuid, date, date)',
+      'app.appointment_days_in_leave(uuid, uuid, date, date)',
+      'app.exception_days_in_leave(uuid, uuid, date, date)',
+      'app.own_staff_member(uuid)',
+      'app.staff_display_name(uuid)',
+      'app.delete_due_staff_leave(uuid, text, uuid)',
+    ];
+    for (const rolle of ['authenticated', 'anon']) {
+      for (const hilfe of hilfen) {
+        const { rows } = await asPostgres<{ erlaubt: boolean }>(
+          `select has_function_privilege($1, $2, 'EXECUTE') as erlaubt`,
+          [rolle, hilfe],
+        );
+        expect(rows[0]!.erlaubt, `${rolle} ${hilfe}`).toBe(false);
+      }
+    }
   });
 
   it('gibt keiner Rolle Tabellenrecht - nur die Funktionen (ADR-004)', async () => {

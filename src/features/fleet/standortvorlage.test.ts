@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { standortvorlageKoeln } from './standortvorlage';
+import { standortvorlageKoeln, werkstattRufnummern } from './standortvorlage';
 
 /**
  * Die Standortvorlage des Pannenablaufs (bis FLT-EPIC-001 in
@@ -24,6 +24,20 @@ describe('Standortvorlage', () => {
     // gelesen werden koennte.
     expect(werte).not.toMatch(/\d{3,}/);
     expect(werte).toMatch(/nicht hinterlegt|nicht in der Anwendung gespeichert/);
+  });
+
+  it('nennt Rufnummern erst, wenn eine hinterlegt ist', () => {
+    expect(werkstattRufnummern(standortvorlageKoeln.werkstatt)).toBeNull();
+    expect(
+      werkstattRufnummern({ ...standortvorlageKoeln.werkstatt, telefon: '07071 000000' }),
+    ).toBe('Telefon: 07071 000000');
+    expect(
+      werkstattRufnummern({
+        ...standortvorlageKoeln.werkstatt,
+        telefon: '07071 000000',
+        mobil: '0170 0000000',
+      }),
+    ).toBe('Telefon: 07071 000000 · Mobil: 0170 0000000');
   });
 
   it('benennt Zustaendigkeit als Rolle, nicht als Person', () => {
