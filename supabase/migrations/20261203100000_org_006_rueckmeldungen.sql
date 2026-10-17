@@ -177,6 +177,10 @@ create table public.staff_feedback_blocks (
   kind            text not null check (kind in ('barometer', 'message')),
   from_month      date not null check (extract(day from from_month) = 1),
   to_month        date not null check (extract(day from to_month) = 1),
+  -- Wie viele anonyme Antworten der Block beim Schließen hatte. Fehlt später
+  -- eine (gelöscht nach der Frist), zeigt die Summe nichts mehr - sonst
+  -- verriete die Differenz den gelöschten Monat (Nachprüfung, N1).
+  answers         integer not null check (answers >= 5),
   unique (organization_id, kind, from_month),
   check (to_month >= from_month)
 );
@@ -205,6 +209,9 @@ values
   ('staff_feedback', 'rueckmeldung', 'automatisch',
    'Rückmeldungen von Beschäftigten (ORG-006): zwölf Monate ab Ende des Monats der Abgabe, endgültig gelöscht, mit Eintrag im Löschjournal (ANN-607).',
    237),
+  ('staff_feedback_blocks', 'rueckmeldung', 'automatisch',
+   'Geschlossene Zeiträume der Praxissumme (ORG-006): ohne Personenbezug; fallen mit dem Ablauf ihres letzten Monats, ohne Journal (ANN-607).',
+   239),
   ('staff_feedback_participations', 'rueckmeldung_teilnahme', 'automatisch',
    'Teilnahme am Barometer (ORG-006): fällt nach ihrem Monat im nächsten Lauf; ohne Journal, damit keine Zahl der Teilnehmenden je Monat entsteht (ANN-607).',
    238);
@@ -304,6 +311,24 @@ begin
     case when p_named then now() end,
     p_mood, p_tours, p_team, v_easier, v_more
   );
+
+  -- Ohne Namen: alle anonymen Barometer dieses Monats neu schreiben, in
+  -- zufälliger Reihenfolge (Nachprüfung zu Befund 1). Dann teilt die neue
+  -- Marke ihre Transaktion mit allen Antworten des Monats, nicht mit einer.
+  if not p_named then
+    with alt as (
+      delete from public.staff_feedback f
+      where f.organization_id = v_wer.o_org and f.kind = 'barometer'
+        and f.staff_member_id is null and f.month = v_monat
+      returning f.organization_id, f.month, f.mood, f.tours, f.team, f.easier_text, f.more_text
+    )
+    insert into public.staff_feedback
+      (organization_id, kind, month, mood, tours, team, easier_text, more_text)
+    select a.organization_id, 'barometer', a.month, a.mood, a.tours, a.team,
+           a.easier_text, a.more_text
+    from alt a
+    order by random();
+  end if;
 
   return jsonb_build_object('month', v_monat, 'named', p_named);
 end;
@@ -463,11 +488,11 @@ revoke all on function app.staff_feedback_threshold() from public, anon, authent
 -- Monat, bis fünf Antworten beisammen sind; dann ist der Block zu und der
 -- nächste beginnt. Kein Monat gehört zu zwei Blöcken, ein Block ändert sich
 -- nie. Der laufende Monat zählt nie: Sonst ließe sich eine einzelne neue
--- Antwort als Differenz zweier Abrufe lesen (ANN-607). Spannt ein offener
--- Block mehr als zwölf Monate, rückt sein Beginn nach - diese Monate waren nie
--- gezeigt. Liefert Beginn und Ende des jüngsten Blocks der letzten zwölf
--- Monate, sonst null.
-create function app.staff_feedback_window(p_org uuid, p_kind text, out o_von date, out o_bis date)
+-- Antwort als Differenz zweier Abrufe lesen (ANN-607). Liefert Beginn, Ende
+-- und Antwortzahl des jüngsten Blocks der letzten zwölf Monate, sonst null.
+create function app.staff_feedback_window(
+  p_org uuid, p_kind text, out o_von date, out o_bis date, out o_antworten integer
+)
 language plpgsql
 volatile
 security definer
@@ -482,6 +507,9 @@ declare
   v_n       integer := 0;
   v_schwelle integer := (app.staff_feedback_threshold()).o_answers;
 begin
+  -- Zwei gleichzeitige Abrufe schließen einen Block nur einmal (N4).
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('staff_feedback_blocks:' || p_org || ':' || p_kind, 0));
+
   select (max(b.to_month) + interval '1 month')::date into v_start
   from public.staff_feedback_blocks b
   where b.organization_id = p_org and b.kind = p_kind;
@@ -491,22 +519,17 @@ begin
     where f.organization_id = p_org and f.kind = p_kind and f.staff_member_id is null;
   end if;
   if v_start is not null then
+    -- Höchstens zwölf Monate zurück: Ältere waren nie gezeigt.
     v_start := greatest(v_start, v_grenze);
     v_m := v_start;
     while v_m <= v_letzter loop
-      -- Mehr als zwölf Monate offen: der älteste fällt heraus (nie gezeigt).
-      while v_m >= (v_start + interval '12 months')::date loop
-        v_n := v_n - (select count(*) from public.staff_feedback f
-                      where f.organization_id = p_org and f.kind = p_kind
-                        and f.staff_member_id is null and f.month = v_start);
-        v_start := (v_start + interval '1 month')::date;
-      end loop;
       v_n := v_n + (select count(*) from public.staff_feedback f
                     where f.organization_id = p_org and f.kind = p_kind
                       and f.staff_member_id is null and f.month = v_m);
       if v_n >= v_schwelle then
-        insert into public.staff_feedback_blocks (organization_id, kind, from_month, to_month)
-        values (p_org, p_kind, v_start, v_m);
+        insert into public.staff_feedback_blocks (organization_id, kind, from_month, to_month, answers)
+        values (p_org, p_kind, v_start, v_m, v_n)
+        on conflict (organization_id, kind, from_month) do nothing;
         v_start := (v_m + interval '1 month')::date;
         v_n := 0;
       end if;
@@ -514,7 +537,7 @@ begin
     end loop;
   end if;
 
-  select b.from_month, b.to_month into o_von, o_bis
+  select b.from_month, b.to_month, b.answers into o_von, o_bis, o_antworten
   from public.staff_feedback_blocks b
   where b.organization_id = p_org and b.kind = p_kind and b.to_month >= v_grenze
   order by b.to_month desc
@@ -563,6 +586,7 @@ declare
   v_org     uuid;
   v_von     date;
   v_bis     date;
+  v_soll    integer;
   v_baro    jsonb := jsonb_build_object('status', 'too_few');
   v_nachr   jsonb := jsonb_build_object('status', 'too_few');
 begin
@@ -570,7 +594,8 @@ begin
   if app.staff_feedback_eligible_count(v_org) < (app.staff_feedback_threshold()).o_eligible then
     return jsonb_build_object('barometer', v_baro, 'messages', v_nachr);
   end if;
-  select o_von, o_bis into v_von, v_bis from app.staff_feedback_window(v_org, 'barometer');
+  select o_von, o_bis, o_antworten into v_von, v_bis, v_soll
+  from app.staff_feedback_window(v_org, 'barometer');
   if v_von is not null then
     select jsonb_build_object(
              'status', 'ready',
@@ -589,14 +614,15 @@ begin
     from public.staff_feedback f
     where f.organization_id = v_org and f.kind = 'barometer' and f.staff_member_id is null
       and f.month between v_von and v_bis;
-    -- Liegt ein Teil des Blocks schon hinter der Frist, kann er unter die
-    -- Schwelle fallen: dann nichts.
-    if (v_baro ->> 'answers')::integer < (app.staff_feedback_threshold()).o_answers then
+    -- Liegt ein Teil des Blocks schon hinter der Frist, fehlen Antworten:
+    -- dann nichts - die Differenz verriete den gelöschten Monat (N1).
+    if (v_baro ->> 'answers')::integer <> v_soll then
       v_baro := jsonb_build_object('status', 'too_few');
     end if;
   end if;
 
-  select o_von, o_bis into v_von, v_bis from app.staff_feedback_window(v_org, 'message');
+  select o_von, o_bis, o_antworten into v_von, v_bis, v_soll
+  from app.staff_feedback_window(v_org, 'message');
   if v_von is not null then
     select jsonb_build_object(
              'status', 'ready',
@@ -609,7 +635,7 @@ begin
     from public.staff_feedback f
     where f.organization_id = v_org and f.kind = 'message' and f.staff_member_id is null
       and f.month between v_von and v_bis;
-    if (v_nachr ->> 'answers')::integer < (app.staff_feedback_threshold()).o_answers then
+    if (v_nachr ->> 'answers')::integer <> v_soll then
       v_nachr := jsonb_build_object('status', 'too_few');
     end if;
   end if;
@@ -1423,6 +1449,19 @@ begin
       v_gesamt := v_gesamt + array_length(v_geloescht, 1);
     end if;
   end loop;
+
+  -- ORG-006 (Nachprüfung N2): Anonyme Rückmeldungen schreibt der Lauf mit
+  -- neuer Kennung neu - ein älteres Backup trägt andere Kennungen als das
+  -- Journal. Was nach dem Restore über der Frist liegt, fällt hier nach der
+  -- Regel selbst, nicht erst im nächsten Lauf.
+  delete from public.staff_feedback f
+  using public.organizations o
+  where o.id = f.organization_id
+    and app.retention_due_at(
+          (f.month + interval '1 month' - interval '1 day')::date,
+          app.retention_interval('rueckmeldung'),
+          o.time_zone
+        ) <= now();
 
   -- Die Wiederanwendung weist deletion_journal.reapplied_at nach (LOG-EPIC-001).
 

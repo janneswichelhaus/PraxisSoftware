@@ -268,6 +268,27 @@ describe('Rückmeldungen: wer abgibt', () => {
     expect(await daten<unknown[]>(users.ownerTherapist, NAMENTLICH)).toEqual([]);
   });
 
+  it('schreibt bei jeder anonymen Abgabe alle anonymen Antworten des Monats neu (Nachprüfung zu Befund 1)', async () => {
+    await abgeben(users.therapist, [false, 5, null, null, null, null]);
+    await abgeben(users.teamLead, [false, 6, null, null, null, null]);
+    const { rows } = await asPostgres<{ x: string }>(
+      `select distinct xmin::text as x from public.staff_feedback
+       where staff_member_id is null and month = $1::date`,
+      [MONAT],
+    );
+    // Beide Antworten tragen die Transaktion der zweiten Abgabe - die erste
+    // Marke führt zu keiner von ihnen.
+    expect(rows).toHaveLength(1);
+    expect(
+      await anzahl(
+        `select count(*) as n from public.staff_feedback f
+         join public.staff_feedback_participations p on p.xmin = f.xmin
+         where p.staff_member_id = $1`,
+        [STAFF.anna],
+      ),
+    ).toBe(0);
+  });
+
   it('lässt das Barometer einmal je Person und Monat zu, mit oder ohne Namen', async () => {
     await abgeben(users.therapist, [true, 5, 5, 5, null, null]);
     for (const named of [true, false]) {
@@ -392,7 +413,11 @@ describe('Rückmeldungen: wer liest', () => {
   });
 
   it('gibt keiner Anwendungsrolle ein Tabellenrecht', async () => {
-    for (const tabelle of ['staff_feedback', 'staff_feedback_participations']) {
+    for (const tabelle of [
+      'staff_feedback',
+      'staff_feedback_participations',
+      'staff_feedback_blocks',
+    ]) {
       for (const konto of [users.ownerTherapist, users.therapist]) {
         await expect(asUser(konto, `select * from public.${tabelle}`)).rejects.toThrow(
           /permission denied/i,
@@ -534,6 +559,24 @@ describe('Rückmeldungen: Schwelle 3/5 und Zusammenfassen über Monate (ANN-607)
       { von: await monatVor(3), bis: await monatVor(2) },
       { von: await monatVor(1), bis: await monatVor(1) },
     ]);
+  });
+
+  it('zeigt einen Block nicht mehr, sobald ihm Antworten fehlen (Nachprüfung N1)', async () => {
+    const { rows: geschlossen } = await asUserCommitted<{ daten: Summe }>(
+      users.ownerTherapist,
+      SUMME,
+    );
+    expect(geschlossen[0]!.daten.barometer.status).toBe('too_few');
+    await anonymeBarometer(await monatVor(3), [1]);
+    await anonymeBarometer(await monatVor(2), [5, 5, 5, 5, 5]);
+    const { rows } = await asUserCommitted<{ daten: Summe }>(users.ownerTherapist, SUMME);
+    expect(rows[0]!.daten.barometer).toMatchObject({ status: 'ready', answers: 6 });
+    // Der älteste Monat fällt (wie nach der Frist): Die Summe aus fünf
+    // verriete per Differenz die eine Antwort - sie zeigt nichts.
+    await asPostgres(`delete from public.staff_feedback where month = $1::date`, [
+      await monatVor(3),
+    ]);
+    expect((await summe()).barometer).toEqual({ status: 'too_few' });
   });
 
   it('nimmt höchstens zwölf Monate und nie den laufenden', async () => {
@@ -688,6 +731,29 @@ describe('Rückmeldungen: Löschlauf (ADR-008 Fassung 4, ANN-607)', () => {
         `select count(*) as n from public.staff_feedback f
          join public.staff_feedback_participations p on p.xmin = f.xmin`,
       ),
+    ).toBe(0);
+  });
+
+  it('löscht Blöcke mit ihrem letzten Monat und nach einem Restore auch neu geschriebene Antworten (N2, N3)', async () => {
+    await asPostgres(
+      `insert into public.staff_feedback_blocks (organization_id, kind, from_month, to_month, answers)
+       values ($1, 'barometer', $2::date, $2::date, 5), ($1, 'barometer', $3::date, $3::date, 5)`,
+      [organizationId, await monatVor(14), await monatVor(11)],
+    );
+    await asPostgres('select public.apply_retention()');
+    const { rows } = await asPostgres<{ m: string }>(
+      `select to_char(from_month, 'YYYY-MM-DD') as m from public.staff_feedback_blocks`,
+    );
+    expect(rows.map((r) => r.m)).toEqual([await monatVor(11)]);
+    // Ein Backup mit einer anonymen Antwort, die der Lauf seitdem unter neuer
+    // Kennung schrieb und dann löschte: Das Journal kennt ihre Kennung nicht,
+    // die Regel greift trotzdem beim Wiederanwenden.
+    await anonymeBarometer(await monatVor(14), [5]);
+    await asPostgres('select public.reapply_deletion_journal()');
+    expect(
+      await anzahl(`select count(*) as n from public.staff_feedback where month = $1::date`, [
+        await monatVor(14),
+      ]),
     ).toBe(0);
   });
 
