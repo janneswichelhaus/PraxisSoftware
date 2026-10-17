@@ -6326,3 +6326,27 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 **Anker.** `app.electricity_amount_cents`.
 
 **Änderungspfad.** Stunden von der Person korrigierbar: Parameter und Feld im Ablauf · Aufwand `mittel`.
+
+### ANN-607 — Barometer: Fragen, Schwelle, Frist
+
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Ohne Namen nur Monat, keine Person, keine Uhrzeit; Teilnahme als eigene Marke. owner sieht ohne Namen nur die Summe ab drei möglichen Teilnehmenden und fünf Antworten, aus abgeschlossenen Monaten rückwärts zusammengefasst (höchstens zwölf), je Frage ab fünf. Löschung zwölf Monate ab Monatsende, Marken nach dem Monat.
+
+**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; laufender Monat ausgenommen gegen Differenzen.
+
+**Anker.** `app.staff_feedback_threshold`.
+
+**Änderungspfad.** Schwelle dort, Fragen `fragen.ts` · Aufwand `klein`.
+
+### ANN-608 — Rückmeldung an die Praxisleitung
+
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jederzeit ein Freitext (bis 2000 Zeichen) an owner, je Abgabe mit oder ohne Namen, zwei gleichwertige Knöpfe; Einstieg im Eingang und unter „Neuer Antrag“, nicht für owner. Mit Namen einzeln mit Monat; ohne Namen nur gemischt ab fünf (ANN-607). Kein Auditeintrag, der Text nie in Fehlern.
+
+**Begründung.** §20.2: niedrige Hürde für Beschwerden; ADR-010 Punkt 17, ADR-011.
+
+**Anker.** `public.submit_staff_feedback_message`.
+
+**Änderungspfad.** Länge oder Empfänger: dort · Aufwand `klein`.

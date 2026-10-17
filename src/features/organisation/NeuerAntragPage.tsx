@@ -1,7 +1,8 @@
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { isTherapyStaff, type CurrentUser } from '@/features/session/types';
+import { isOwner, isTherapyStaff, type CurrentUser } from '@/features/session/types';
+import { RUECKMELDUNG_PFAD } from '@/features/feedback/inhalt';
 import { REQUEST_PATH } from '@/features/reimbursements/paths';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { EINGANG, NEUER_ANTRAG } from './pfade';
@@ -41,6 +42,16 @@ export function NeuerAntragPage({ user }: { user: CurrentUser }) {
           { titel: 'Check-Up', meta: 'Lastenrad prüfen', to: '/betrieb/flotte/checkup' },
         ]
       : []),
+    // ORG-006 (ANN-608): owner nimmt nicht teil - die Rückmeldung geht an ihn.
+    ...(isOwner(user.roles)
+      ? []
+      : [
+          {
+            titel: 'Rückmeldung an die Praxisleitung',
+            meta: 'Mit oder ohne Namen',
+            to: RUECKMELDUNG_PFAD,
+          },
+        ]),
   ];
 
   return (

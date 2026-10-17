@@ -1,5 +1,7 @@
 import { EingangPage } from '@/features/organisation/EingangPage';
 import { NeuerAntragPage } from '@/features/organisation/NeuerAntragPage';
+import { BarometerPage } from '@/features/feedback/BarometerPage';
+import { RueckmeldungPage } from '@/features/feedback/RueckmeldungPage';
 import { PraxisEinstellungenPage } from '@/features/practice-settings/PraxisEinstellungenPage';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
@@ -658,6 +660,14 @@ export function AuthenticatedRoutes({
                       Einstieg in jeden neuen Antrag (ANN-604). */}
                     <Route path="/betrieb" element={<EingangPage user={user} />} />
                     <Route path="/betrieb/neu" element={<NeuerAntragPage user={user} />} />
+                    {/* ORG-006 (§20.2): Barometer und Rückmeldung an die
+                      Praxisleitung - abgeben jede Praxisrolle außer owner,
+                      lesen nur owner; der Server prüft beides. */}
+                    <Route path="/betrieb/barometer" element={<BarometerPage user={user} />} />
+                    <Route
+                      path="/betrieb/rueckmeldung"
+                      element={<RueckmeldungPage user={user} />}
+                    />
                     <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
                     <Route
                       path="/betrieb/urlaub/beantragen"

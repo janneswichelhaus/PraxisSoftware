@@ -9,6 +9,7 @@ import { RaederMitProblem } from '@/features/open-points/RaederMitProblem';
 import { Urlaubsantraege } from '@/features/open-points/Urlaubsantraege';
 import { eingangsrechte } from '@/features/open-points/eingang';
 import { LadestromVorschlaege } from '@/features/reimbursements/LadestromVorschlaege';
+import { RueckmeldungenImEingang } from '@/features/feedback/RueckmeldungenImEingang';
 import { isTherapyStaff, type CurrentUser } from '@/features/session/types';
 import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { MeineAntraege } from './MeineAntraege';
@@ -52,6 +53,9 @@ export function EingangPage({ user }: { user: CurrentUser }) {
       {flotte ? <CheckupErinnerung heute={heute} zone={zone} /> : null}
       {darf.raeder ? <RaederMitProblem /> : null}
       <LadestromVorschlaege rueckweg={EINGANG} />
+      {/* ORG-006: Barometer und Rückmeldung an die Praxisleitung; für owner
+          die namentlichen Rückmeldungen (§20.2). */}
+      <RueckmeldungenImEingang />
       <MeineAntraege heute={heute} />
     </>
   );

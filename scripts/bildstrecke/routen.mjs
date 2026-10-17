@@ -859,6 +859,22 @@ export const ROUTEN = Object.freeze([
     etikett: 'Neuer Antrag',
     konten: ['owner', 'trainer'],
   },
+  // ORG-006: Barometer (Beschäftigte: der Ablauf, owner: die Praxissumme) und
+  // Rückmeldung an die Praxisleitung (Beschäftigte: schreiben, owner: Liste).
+  {
+    muster: '/betrieb/barometer',
+    pfad: '/betrieb/barometer',
+    bereich: 'Organisation',
+    etikett: 'Barometer',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/rueckmeldung',
+    pfad: '/betrieb/rueckmeldung',
+    bereich: 'Organisation',
+    etikett: 'Rückmeldung an die Praxisleitung',
+    konten: ['owner', 'therapist'],
+  },
   // ORG-002: die Einstellungen der Praxis, nur owner.
   {
     muster: '/praxis/einstellungen',
