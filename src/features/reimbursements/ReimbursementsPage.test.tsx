@@ -211,7 +211,7 @@ describe('ReimbursementsPage', () => {
     );
     rendern(['office'], `/betrieb/erstattungen?person=${ANNA}`);
     expect(
-      await screen.findByText(/Betrag sieht nur die Person selbst und wer entscheidet/),
+      await screen.findByText(/sehen den Betrag nur die Person selbst und wer entscheidet/),
     ).toBeInTheDocument();
     expect(screen.queryByText(/km/)).toBeNull();
     expect(screen.queryByText(/€/)).toBeNull();

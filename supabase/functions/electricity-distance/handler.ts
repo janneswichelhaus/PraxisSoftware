@@ -98,7 +98,9 @@ export function createHandler({
     if (task.kind === 'preview')
       return reply({ ok: true, value: { km }, quelle: adapter.quelle }, 200);
 
-    const recorded = await instance.record(task.reimbursementId, account.value, km);
+    // Der Monat geht mit: Die Datenbank trägt nur am Antrag genau dieses
+    // Monats ein (Zweitreview).
+    const recorded = await instance.record(task.reimbursementId, account.value, task.month, km);
     if (!recorded.ok) {
       return failure(recorded.reason === 'refused' ? 'not_allowed' : 'unavailable');
     }

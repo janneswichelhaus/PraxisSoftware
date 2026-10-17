@@ -38,6 +38,7 @@ export interface Instance {
   readonly record: (
     reimbursementId: string,
     accountId: string,
+    month: string,
     km: number,
   ) => Promise<Result<Recorded>>;
 }
@@ -145,10 +146,15 @@ export function createInstance(
       return days === null ? { ok: false, reason: 'unavailable' } : { ok: true, value: days };
     },
 
-    async record(reimbursementId, accountId, km) {
+    async record(reimbursementId, accountId, month, km) {
       const result = await rpc(
         'record_electricity_tour_distance',
-        { p_reimbursement_id: reimbursementId, p_account_id: accountId, p_km: km },
+        {
+          p_reimbursement_id: reimbursementId,
+          p_account_id: accountId,
+          p_month: month,
+          p_km: km,
+        },
         { Authorization: `Bearer ${service}`, apikey: service },
       );
       if (!result.ok) return result;

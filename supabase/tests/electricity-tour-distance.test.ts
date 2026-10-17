@@ -36,7 +36,7 @@ const IBAN_JANNES = 'DE75512108001245126199';
 const PUNKTE = 'select public.electricity_tour_points($1::date) as daten';
 const STROM = 'select public.submit_electricity_reimbursement($1::date, $2::boolean, $3) as daten';
 const EINTRAGEN =
-  'select public.record_electricity_tour_distance($1::uuid, $2::uuid, $3::integer) as daten';
+  'select public.record_electricity_tour_distance($1::uuid, $2::uuid, $3::date, $4::integer) as daten';
 const ENTSCHEIDEN = 'select public.decide_reimbursement($1::uuid, $2::boolean, $3) as daten';
 const LISTE = 'select public.list_reimbursements($1::uuid) as daten';
 
@@ -133,10 +133,10 @@ async function strom(
   return rows[0]!.daten;
 }
 
-async function eintragen(id: string, konto: string, km: number) {
+async function eintragen(id: string, konto: string, km: number, m?: string) {
   const { rows } = await asServiceRole<{
     daten: { id: string; tour_km: number; amount_cents: number };
-  }>(EINTRAGEN, [id, konto, km]);
+  }>(EINTRAGEN, [id, konto, m ?? (await monat(1)), km]);
   return rows[0]!.daten;
 }
 
@@ -284,7 +284,7 @@ describe('Ladestrom aus Touren (BEF-181)', () => {
         },
         { name: 'electricity_tour_points(date)', auth: true, anon: false, dienst: false },
         {
-          name: 'record_electricity_tour_distance(uuid,uuid,integer)',
+          name: 'record_electricity_tour_distance(uuid,uuid,date,integer)',
           auth: false,
           anon: false,
           dienst: true,
@@ -295,10 +295,12 @@ describe('Ladestrom aus Touren (BEF-181)', () => {
     it('lässt die Person die Summe nicht selbst setzen', async () => {
       const m = await monat(1);
       const { id } = await strom(users.therapist, m);
-      expect(await code(asUser(users.therapist, EINTRAGEN, [id, users.therapist, 9999]))).toBe(
+      expect(
+        await code(asUser(users.therapist, EINTRAGEN, [id, users.therapist, await monat(1), 9999])),
+      ).toBe('42501');
+      expect(await code(asAnon(EINTRAGEN, [id, users.therapist, await monat(1), 9999]))).toBe(
         '42501',
       );
-      expect(await code(asAnon(EINTRAGEN, [id, users.therapist, 9999]))).toBe('42501');
       expect((await antrag(id)).tour_km).toBeNull();
     });
 
@@ -333,6 +335,12 @@ describe('Ladestrom aus Touren (BEF-181)', () => {
       const { id } = await strom(users.therapist, await monat(1));
       expect(await code(eintragen(id, users.ownerTherapist, 100))).toBe('P0002');
       expect(await code(eintragen(id, users.office, 100))).toBe('P0002');
+      expect((await antrag(id)).tour_km).toBeNull();
+    });
+
+    it('trägt die Kilometer nur am Antrag des Monats ein, dessen Touren gerechnet wurden', async () => {
+      const { id } = await strom(users.therapist, await monat(1));
+      expect(await code(eintragen(id, users.therapist, 900, await monat(2)))).toBe('P0002');
       expect((await antrag(id)).tour_km).toBeNull();
     });
 

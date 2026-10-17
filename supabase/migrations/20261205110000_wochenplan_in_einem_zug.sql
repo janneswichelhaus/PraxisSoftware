@@ -24,6 +24,7 @@ as $$
 declare
   v_tag    jsonb;
   v_nr     smallint;
+  v_schon  smallint[] := '{}';
   v_anzahl integer := 0;
   v_state  text;
   v_text   text;
@@ -35,11 +36,6 @@ begin
      or jsonb_array_length(p_days) not between 1 and 7 then
     raise exception 'days must be an array of one to seven weekdays' using errcode = '22023';
   end if;
-  -- Jeder Wochentag höchstens einmal: Sonst entschiede die Reihenfolge.
-  if (select count(distinct d ->> 'weekday') from jsonb_array_elements(p_days) as d)
-     <> jsonb_array_length(p_days) then
-    raise exception 'weekday given twice' using errcode = '22023';
-  end if;
 
   for v_tag in select d from jsonb_array_elements(p_days) as d loop
     begin
@@ -48,6 +44,12 @@ begin
       when invalid_text_representation or numeric_value_out_of_range then
         raise exception 'weekday must be between 1 and 7' using errcode = '22023';
     end;
+    -- Jeder Wochentag höchstens einmal, verglichen nach dem Umwandeln ("01"
+    -- ist 1; Zweitreview): Sonst entschiede die Reihenfolge.
+    if v_nr = any (v_schon) then
+      raise exception 'weekday given twice' using errcode = '22023';
+    end if;
+    v_schon := v_schon || v_nr;
     begin
       perform public.set_staff_working_hours(p_staff_member_id, v_nr, v_tag -> 'blocks');
     exception

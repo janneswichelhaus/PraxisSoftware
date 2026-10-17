@@ -10,6 +10,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
@@ -533,8 +534,9 @@ function Wochenplan({
             {stand.offen.length > 0 ? (
               // Ein Speichern für die ganze Woche: Einen Tag leert man, indem
               // man seine Blöcke entfernt; was das bedeutet, sagt die
-              // Rückfrage beim Speichern (ANN-435).
-              <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
+              // Rückfrage beim Speichern (ANN-435). „Verwerfen“ schließt alle
+              // geöffneten Tage ohne zu speichern (Design-Review).
+              <Formularfuss dicht>
                 {geleert.length > 0 && !halbeVorhanden ? (
                   <Rueckfrage
                     ausloeser="Wochenplan speichern"
@@ -561,7 +563,18 @@ function Wochenplan({
                     {mutation.isPending ? 'Wird gespeichert …' : 'Wochenplan speichern'}
                   </Button>
                 )}
-              </div>
+                <Button
+                  type="button"
+                  variant="quiet"
+                  disabled={mutation.isPending}
+                  onClick={() => {
+                    mutation.reset();
+                    setStand((vorher) => ({ ...FRISCHER_STAND, meldung: vorher.meldung }));
+                  }}
+                >
+                  {ungespeichert ? 'Änderungen verwerfen' : 'Schließen'}
+                </Button>
+              </Formularfuss>
             ) : null}
           </>
         ) : (

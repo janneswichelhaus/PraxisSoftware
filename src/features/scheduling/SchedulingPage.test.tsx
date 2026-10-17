@@ -210,6 +210,35 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       expect(screen.queryByLabelText('Mittwoch, Block 1 von')).toBeNull();
     });
 
+    it('verwirft die Änderungen aller geöffneten Tage und schließt sie (Design-Review)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await wochenplanAbwarten();
+
+      await bearbeiten(user, 'Montag');
+      await user.clear(screen.getByLabelText('Montag, Block 1 von'));
+      await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:00');
+      await bearbeiten(user, 'Dienstag');
+      await user.click(screen.getByRole('button', { name: 'Änderungen verwerfen' }));
+
+      expect(screen.queryByLabelText('Montag, Block 1 von')).toBeNull();
+      expect(screen.queryByLabelText('Dienstag, Block 1 von')).toBeNull();
+      expect(
+        within(tageszeile('Montag')).getByText('08:00–12:00, 13:00–18:00'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Wochenplan speichern' })).toBeNull();
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
+    });
+
+    it('schließt einen unveränderten Tag wieder', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await wochenplanAbwarten();
+      await bearbeiten(user, 'Freitag');
+      await user.click(screen.getByRole('button', { name: 'Schließen' }));
+      expect(screen.queryByLabelText('Freitag, Block 1 von')).toBeNull();
+    });
+
     it('lässt das Speichern gesperrt, solange nichts geändert ist', async () => {
       const user = userEvent.setup();
       rendern();

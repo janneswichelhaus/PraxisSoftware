@@ -222,15 +222,18 @@ comment on function public.electricity_tour_points(date) is
 -- -----------------------------------------------------------------------------
 -- 4. Eintragen - nur die Function mit ihrem Dienstschlüssel
 -- -----------------------------------------------------------------------------
--- ANN-615: Die Function nennt das Konto, das sie beim Anmeldedienst geprüft hat, und
--- den Antrag, den die Person gerade gestellt hat. Eingetragen wird nur, wenn
--- alles zusammenpasst: Ladestrom nach ORG-008, von diesem Konto für die
+-- ANN-615: Die Function nennt das Konto, das sie beim Anmeldedienst geprüft hat,
+-- den Antrag, den die Person gerade gestellt hat, und den Monat, dessen Touren
+-- sie gerechnet hat. Eingetragen wird nur, wenn alles zusammenpasst:
+-- Ladestrom nach ORG-008 für genau diesen Monat (Zweitreview: sonst hinge
+-- ein tourenreicher Monat an einem anderen Antrag), von diesem Konto für die
 -- eigene Person beantragt, noch ohne Kilometer, höchstens zehn Minuten alt,
 -- beantragt oder selbst eingetragen und noch nicht ausgezahlt. Sonst bleibt
 -- der Antrag, wie er ist.
 create function public.record_electricity_tour_distance(
   p_reimbursement_id uuid,
   p_account_id       uuid,
+  p_month            date,
   p_km               integer
 )
 returns jsonb
@@ -254,6 +257,7 @@ begin
   if not found
      or v_antrag.kind <> 'electricity'
      or v_antrag.requested_by is distinct from p_account_id
+     or v_antrag.period_month is distinct from p_month
      or v_antrag.working_minutes is null
      or v_antrag.tour_km is not null
      or v_antrag.requested_at < now() - interval '10 minutes'
@@ -287,10 +291,10 @@ begin
 end;
 $$;
 
-revoke all on function public.record_electricity_tour_distance(uuid, uuid, integer) from public, anon, authenticated;
-grant execute on function public.record_electricity_tour_distance(uuid, uuid, integer) to service_role;
+revoke all on function public.record_electricity_tour_distance(uuid, uuid, date, integer) from public, anon, authenticated;
+grant execute on function public.record_electricity_tour_distance(uuid, uuid, date, integer) to service_role;
 
-comment on function public.record_electricity_tour_distance(uuid, uuid, integer) is
+comment on function public.record_electricity_tour_distance(uuid, uuid, date, integer) is
   'BEF-181 (ADR-019 Fassung 6): trägt die Monatssumme der geplanten Tourstrecke am eben gestellten eigenen Ladestrom-Antrag ein und rechnet den Betrag neu (km × Wh/km × ct/kWh). Nur service_role (Edge Function electricity-distance); einmal, binnen zehn Minuten, vor einer Entscheidung durch andere. Ohne Auditeintrag (ADR-010 Fassung 3).';
 
 -- -----------------------------------------------------------------------------

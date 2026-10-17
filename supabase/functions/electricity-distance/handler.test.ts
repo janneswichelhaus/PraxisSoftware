@@ -19,7 +19,7 @@ const TAG = [
 
 interface Protokoll {
   punkte: { authorization: string; month: string }[];
-  eingetragen: { id: string; konto: string; km: number }[];
+  eingetragen: { id: string; konto: string; monat: string; km: number }[];
 }
 
 function instanz(
@@ -36,8 +36,8 @@ function instanz(
       protokoll.punkte.push({ authorization, month });
       return Promise.resolve(opts.punkte ?? { ok: true, value: [TAG] });
     },
-    record: (id, konto, km) => {
-      protokoll.eingetragen.push({ id, konto, km });
+    record: (id, konto, monat, km) => {
+      protokoll.eingetragen.push({ id, konto, monat, km });
       return Promise.resolve(opts.eintragen ?? { ok: true, value: { km, amountCents: 999 } });
     },
   };
@@ -141,7 +141,9 @@ describe('electricity-distance', () => {
       value: { km: 21, amountCents: 999 },
       quelle: 'nachbildung',
     });
-    expect(protokoll.eingetragen).toEqual([{ id: ANTRAG, konto: KONTO, km: 21 }]);
+    expect(protokoll.eingetragen).toEqual([
+      { id: ANTRAG, konto: KONTO, monat: '2026-09-01', km: 21 },
+    ]);
   });
 
   it('trägt ohne Tour oder ohne Ergebnis nichts ein und sagt km: null', async () => {

@@ -243,9 +243,11 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
           iban: ibanToSend,
         });
         // Der Server rechnet die Touren neu und trägt die Summe ein; ohne
-        // Ergebnis bleibt der Betrag nach Stunden.
+        // Ergebnis bleibt der Betrag nach Stunden - und die Meldung sagt es,
+        // wenn die Zusammenfassung Kilometer gezeigt hatte (Praxis-Review).
         const recorded = await recordTourDistance(month!, submitted.id);
-        return recorded ? { ...submitted, amount_cents: recorded.amountCents } : submitted;
+        if (recorded) return { ...submitted, amount_cents: recorded.amountCents };
+        return { ...submitted, nachStunden: (tour.data ?? null) !== null };
       }
       return submitPurchase({
         items: readyItems.map((item) => ({
@@ -260,12 +262,16 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
       freigeben();
       await queryClient.invalidateQueries({ queryKey: REIMBURSEMENTS_KEY });
       const what = kind === 'electricity' && month ? `Ladestrom ${monthLong(month)}` : 'Einkauf';
+      const basis =
+        'nachStunden' in result && result.nachStunden
+          ? ' Die Strecke der Touren war nicht erreichbar – gerechnet nach Arbeitszeit.'
+          : '';
       void navigate(returnTo, {
         state: {
           meldung:
             result.status === 'approved'
-              ? `${what} eingetragen: ${formatEuro(result.amount_cents)}. Er gilt als genehmigt.`
-              : `${what} beantragt: ${formatEuro(result.amount_cents)}. Es entscheidet: ${roleLabels.owner}.`,
+              ? `${what} eingetragen: ${formatEuro(result.amount_cents)}. Er gilt als genehmigt.${basis}`
+              : `${what} beantragt: ${formatEuro(result.amount_cents)}. Es entscheidet: ${roleLabels.owner}.${basis}`,
         },
       });
     },
@@ -696,11 +702,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                 <>
                   <ListRow
                     titel={`${tourKm.km} km geplante Touren`}
-                    meta={
-                      tourKm.source === 'nachbildung'
-                        ? 'Summe der Routen je Tag · Nachbildung ohne Kartendienst'
-                        : 'Summe der Routen je Tag'
-                    }
+                    meta="Summe der Touren je Tag"
                   />
                   <ListRow
                     titel="Betrag"
@@ -811,6 +813,14 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
               Weiterer Beleg
             </Button>
           </div>
+        ) : null}
+        {kind === 'electricity' && tourKm?.source === 'nachbildung' ? (
+          // Wie Tour und Übersicht: Ohne Kartendienst sagt es eine Meldung
+          // mit Zeichen (Design-Review), nicht die graue Metazeile.
+          <Statusmeldung ton="warnung">
+            Nachbildung ohne Kartendienst: Die Strecke ist die Luftlinie zwischen den Stopps, keine
+            gefahrene Strecke.
+          </Statusmeldung>
         ) : null}
         {kind === 'electricity' ? (
           <Abfragezustand

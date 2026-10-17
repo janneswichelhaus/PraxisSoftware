@@ -127,7 +127,7 @@ describe('record', () => {
       SETUP,
       abrufen([json({ id: ANTRAG, tour_km: 412, amount_cents: 274 })], aufrufe),
     );
-    expect(await instanz.record(ANTRAG, KONTO, 412)).toEqual({
+    expect(await instanz.record(ANTRAG, KONTO, '2026-09-01', 412)).toEqual({
       ok: true,
       value: { km: 412, amountCents: 274 },
     });
@@ -138,12 +138,16 @@ describe('record', () => {
     expect(JSON.parse(aufrufe[0]!.init.body as string)).toEqual({
       p_reimbursement_id: ANTRAG,
       p_account_id: KONTO,
+      p_month: '2026-09-01',
       p_km: 412,
     });
   });
 
   it('meldet einen nicht passenden Antrag als abgewiesen', async () => {
     const instanz = createInstance(SETUP, abrufen([json({ code: 'P0002' }, 404)]));
-    expect(await instanz.record(ANTRAG, KONTO, 412)).toEqual({ ok: false, reason: 'refused' });
+    expect(await instanz.record(ANTRAG, KONTO, '2026-09-01', 412)).toEqual({
+      ok: false,
+      reason: 'refused',
+    });
   });
 });

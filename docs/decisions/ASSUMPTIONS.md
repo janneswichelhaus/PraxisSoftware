@@ -6439,13 +6439,13 @@ Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wie
 
 Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
-**Annahme.** Die Kilometer rechnet die Edge Function `electricity-distance`: Wegpunkte holt sie mit dem Token der Person, die Summe trägt sie mit eigenem Dienstschlüssel ein (`record_electricity_tour_distance`, nur `service_role`) – einmal, binnen zehn Minuten nach dem Beantragen, vor einer Entscheidung durch andere. Ohne Ergebnis bleibt der Wert je Stunde.
+**Annahme.** Die Kilometer rechnet die Edge Function `electricity-distance`: Wegpunkte holt sie mit dem Token der Person, die Summe trägt sie mit eigenem Dienstschlüssel ein (`record_electricity_tour_distance`, nur `service_role`) – nur am Antrag desselben Monats, einmal, binnen zehn Minuten, vor fremder Entscheidung. Ohne Ergebnis bleibt der Wert je Stunde. Den Aufruf löst der Browser aus; wer ihn auslässt, behält den Stundenwert – owner sieht die Grundlage.
 
-**Begründung.** ADR-019 Fassung 6 verlangt, dass der Server rechnet; die Datenbank erreicht den Kartendienst nicht, und `location-provider` schreibt nichts (Punkt 16). Vorbild: `patient-file-verify`.
+**Begründung.** ADR-019 Fassung 6: Der Server rechnet; die Datenbank erreicht den Kartendienst nicht, `location-provider` schreibt nichts (Punkt 16).
 
 **Anker.** `public.record_electricity_tour_distance`.
 
-**Änderungspfad.** Rechnen schon beim Absenden in der Datenbank (`pg_net`) oder per Zeitplan: Function und Funktion ersetzen · Aufwand `mittel`.
+**Änderungspfad.** Der Server löst selbst aus (`pg_net` beim Absenden oder Zeitplan), Stundenwert nur noch ohne Kartendienst: Function und Funktion ersetzen · Aufwand `mittel`.
 
 ### ANN-616 — Büro sieht bei Anträgen aus Touren weder Kilometer noch Betrag
 

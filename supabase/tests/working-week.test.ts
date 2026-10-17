@@ -119,6 +119,22 @@ describe('set_staff_working_week', () => {
       '22023',
     );
     expect((await fehler(speichern(users.office, [tag(2), tag(2)]))).code).toBe('22023');
+    // Derselbe Tag in anderer Schreibweise ist derselbe Tag.
+    const vorher = await plan();
+    expect(
+      (
+        await fehler(
+          asUser(users.office, WOCHE, [
+            ANNA,
+            JSON.stringify([
+              { weekday: 2, blocks: [] },
+              { weekday: '02', blocks: [{ von: '09:00', bis: '10:00' }] },
+            ]),
+          ]),
+        )
+      ).code,
+    ).toBe('22023');
+    expect(await plan()).toEqual(vorher);
     const f = await fehler(speichern(users.office, [tag(9)]));
     expect(f.code).toBe('22023');
     expect(f.hint).toBe('weekday 9');

@@ -172,7 +172,8 @@ describe('RequestReimbursementPage', () => {
     const abschluss = await screen.findByRole('dialog', { name: 'Ladestrom beantragen?' });
     expect(previewTourDistance).toHaveBeenCalledWith('2026-09-01');
     expect(await within(abschluss).findByText('412 km geplante Touren')).toBeInTheDocument();
-    expect(within(abschluss).getByText('Summe der Routen je Tag')).toBeInTheDocument();
+    expect(within(abschluss).getByText('Summe der Touren je Tag')).toBeInTheDocument();
+    expect(within(abschluss).queryByText(/Nachbildung/)).toBeNull();
     expect(within(abschluss).getByText('412 km × 18 Wh/km × 0,37 €/kWh')).toBeInTheDocument();
     // 412 × 18 × 37 / 1000 = 274,392 ct.
     expect(within(abschluss).getByText('2,74 €')).toBeInTheDocument();
@@ -193,11 +194,13 @@ describe('RequestReimbursementPage', () => {
     rendern(['therapist'], '/betrieb/erstattungen/beantragen?monat=2026-09-01');
     const abschluss = await screen.findByRole('dialog', { name: 'Ladestrom beantragen?' });
     expect(
-      await within(abschluss).findByText('Summe der Routen je Tag · Nachbildung ohne Kartendienst'),
+      await within(abschluss).findByText(
+        /^Nachbildung ohne Kartendienst: Die Strecke ist die Luftlinie/,
+      ),
     ).toBeInTheDocument();
   });
 
-  it('bleibt beim Betrag nach Stunden, wenn der Server nichts einträgt', async () => {
+  it('bleibt beim Betrag nach Stunden, wenn der Server nichts einträgt - und sagt es', async () => {
     const user = userEvent.setup();
     previewTourDistance.mockResolvedValue({ km: 412, source: 'anbieter' });
     rendern(['therapist'], '/betrieb/erstattungen/beantragen?monat=2026-09-01');
@@ -205,7 +208,9 @@ describe('RequestReimbursementPage', () => {
     await user.click(await within(abschluss).findByRole('checkbox'));
     await user.click(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' }));
     expect(
-      await screen.findByText(/Ladestrom September 2026 beantragt: 6,39 €\./),
+      await screen.findByText(
+        /Ladestrom September 2026 beantragt: 6,39 €\. .*Die Strecke der Touren war nicht erreichbar – gerechnet nach Arbeitszeit\./,
+      ),
     ).toBeInTheDocument();
   });
 
