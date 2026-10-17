@@ -202,6 +202,17 @@ export function supabaseKonfiguration(): SupabaseKonfiguration {
 
 /** Meldet über die echte Anmeldemaske an - GoTrue, kein Stub. */
 export async function anmelden(page: Page, email: string): Promise<void> {
+  // Das Fenster „Hinweise zwischendurch“ (ORG-005, ANN-603) legte sich sonst
+  // über die Übersicht. Es gilt als schon an drei Tagen gezeigt - für diesen
+  // und den vorigen Monat; geprüft wird es in seinen Komponententests.
+  await page.addInitScript(() => {
+    const heute = new Date();
+    for (const versatz of [0, -1]) {
+      const monat = new Date(Date.UTC(heute.getUTCFullYear(), heute.getUTCMonth() + versatz, 1));
+      const schluessel = `praxis.hinweis.barometer-${monat.toISOString().slice(0, 7)}`;
+      window.localStorage.setItem(schluessel, 'e2e-1,e2e-2,e2e-3');
+    }
+  });
   await page.goto('/');
   // Der Kennwortweg liegt zugeklappt hinter „Testkonten" (ADR-025 Punkt 15).
   await page.getByText('Testkonten', { exact: true }).click();
