@@ -883,6 +883,15 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
   },
   {
+    muster: '/betrieb/urlaub/termine',
+    pfad: `/betrieb/urlaub/termine?person=${IDS.anna}&von=2026-12-14&bis=2026-12-18`,
+    bereich: 'Organisation',
+    etikett: 'Termine im Urlaub (Anna)',
+    konten: ['owner'],
+    ohneDaten:
+      'Der Seed hat keinen genehmigten Urlaub mit Terminen; die Liste prüfen UrlaubTerminePage.test.tsx und urlaub.spec.ts.',
+  },
+  {
     muster: '/betrieb/zeitkonto',
     pfad: '/betrieb/zeitkonto',
     bereich: 'Organisation',
