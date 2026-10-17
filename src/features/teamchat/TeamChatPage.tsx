@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
@@ -102,6 +102,10 @@ function Gespraeche({ kanaele, zeitzone }: { kanaele: Kanal[]; zeitzone: string 
     <>
       <Listenabschnitt
         titel="Gespräche"
+        leer={{
+          titel: 'Noch kein Gespräch',
+          beschreibung: 'Mit „Neu“ schreibst du jemandem direkt.',
+        }}
         aktion={
           ungelesen ? (
             <Button
@@ -147,11 +151,12 @@ function Gespraechszeile({ kanal, zeitzone }: { kanal: Kanal; zeitzone: string }
       zeit={kanal.last_message_at ? nachrichtenzeit(kanal.last_message_at, zeitzone) : undefined}
       status={
         kanal.mentions > 0 ? (
-          <Badge ton="akzent" eigenesZeichen="@">
-            {kanal.unread} neu, für dich
+          <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.erwaehnt}>
+            {kanal.mentions === 1 ? '1 für dich' : `${kanal.mentions} für dich`}
+            {kanal.unread > kanal.mentions ? `, ${kanal.unread} neu` : ''}
           </Badge>
         ) : kanal.unread > 0 ? (
-          <Badge ton="akzent" eigenesZeichen="●">
+          <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.neu}>
             {kanal.unread} neu
           </Badge>
         ) : undefined

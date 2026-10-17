@@ -2,7 +2,9 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
 import { PERSONEN_KEY, TEAMCHAT_KEY, fetchPersonen, sendeNachricht, type Person } from './api';
@@ -101,13 +103,11 @@ export function Eingabe({
               </ListRows>
             ) : null}
             {senden.isError ? (
-              <p role="alert" className="text-danger text-sm">
-                {senden.error.message}
-              </p>
+              <Statusmeldung ton="fehler">{senden.error.message}</Statusmeldung>
             ) : null}
-            <p className="text-ink-muted text-kleingedruckt">
+            <Kleingedrucktes>
               Befunde und Diagnosen gehören in die Akte, nicht hierher.
-            </p>
+            </Kleingedrucktes>
           </div>
         }
       >
@@ -128,7 +128,7 @@ export function Eingabe({
             value={text}
             maxLength={NACHRICHT_MAX}
             rows={zeilen}
-            className="resize-none py-2.5"
+            className="resize-none"
             onChange={(e) => aendern(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) absenden();

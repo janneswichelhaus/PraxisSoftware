@@ -100,6 +100,8 @@ function nachricht(overrides: Partial<Nachricht>): Nachricht {
     last_reply_at: null,
     mentions: [],
     own: false,
+    new_replies: 0,
+    mentioned_in_new_replies: false,
     ...overrides,
   };
 }
@@ -151,7 +153,7 @@ describe('Teamchat: Gesprächsliste', () => {
       expect.stringContaining('# Allgemein'),
       expect.stringContaining('Tim Teamleitung'),
     ]);
-    expect(within(zeilen[0]!).getByText('2 neu, für dich')).toBeInTheDocument();
+    expect(within(zeilen[0]!).getByText('1 für dich, 2 neu')).toBeInTheDocument();
     expect(zeilen[0]).toHaveAttribute('href', '/team/k-flotte');
     expect(screen.getByText('Archiv')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Alle gelesen' })).toBeInTheDocument();
@@ -192,6 +194,16 @@ describe('Teamchat: Gespräch und Thread', () => {
     );
     await vi.waitFor(() => expect(markiereGelesen).toHaveBeenCalledWith('k-flotte'));
     expect(screen.queryByText(/gelesen von|gesehen|online/i)).toBeNull();
+  });
+
+  it('markiert einen Thread mit neuer Erwähnung, auch nachdem der Kanal gelesen ist', async () => {
+    fetchNachrichten
+      .mockResolvedValueOnce([
+        nachricht({ reply_count: 2, new_replies: 1, mentioned_in_new_replies: true }),
+      ])
+      .mockResolvedValue([nachricht({ reply_count: 2 })]);
+    zeige('/team/k-flotte');
+    expect(await screen.findByText('Für dich')).toBeInTheDocument();
   });
 
   it('sendet mit einer Erwähnung: @, Person, Senden', async () => {

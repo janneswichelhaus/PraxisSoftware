@@ -154,21 +154,39 @@ function Archivieren({ kanal }: { kanal: Kanal }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: TEAMCHAT_KEY }),
   });
   if (kanal.name === 'Allgemein') return null;
+  // Wieder öffnen ist harmlos und braucht keine Rückfrage (Praxis-Review).
+  if (kanal.archived) {
+    return (
+      <div className="mt-8 mb-4">
+        <Button
+          variant="quiet"
+          groesse="kompakt"
+          disabled={umschalten.isPending}
+          onClick={() => umschalten.mutate()}
+        >
+          Wieder öffnen
+        </Button>
+        {umschalten.isError ? (
+          <p role="alert" className="text-danger text-sm">
+            {umschalten.error.message}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <div className="mt-8 mb-4">
       <Rueckfrage
-        ausloeser={kanal.archived ? 'Wieder öffnen' : 'Kanal archivieren'}
+        ausloeser="Kanal archivieren"
         ausloeserVariante="quiet"
         ausloeserGroesse="kompakt"
-        bezeichnung={kanal.archived ? 'Kanal wieder öffnen' : 'Kanal archivieren'}
-        bestaetigen={kanal.archived ? 'Ja, wieder öffnen' : 'Ja, archivieren'}
+        bezeichnung="Kanal archivieren"
+        bestaetigen="Ja, archivieren"
         bestaetigenLaeuft="Wird gespeichert …"
         fehler={umschalten.isError ? umschalten.error.message : undefined}
         onBestaetigen={() => umschalten.mutateAsync()}
       >
-        {kanal.archived
-          ? 'Alle können wieder schreiben.'
-          : 'Der Kanal bleibt lesbar, nimmt aber keine Nachrichten mehr an. Die Löschfrist läuft weiter.'}
+        Der Kanal bleibt lesbar, nimmt aber keine Nachrichten mehr an. Die Löschfrist läuft weiter.
       </Rueckfrage>
     </div>
   );

@@ -13,6 +13,7 @@ import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Verlauf, Verlaufseintrag } from '@/components/ui/Verlauf';
 import { formatDate } from '@/lib/datum';
 import { formatLocalTime } from '@/features/appointments/api';
 import { isOwner, type CurrentUser } from '@/features/session/types';
@@ -211,9 +212,9 @@ function Vorgang({
       />
       <Section titel="Verlauf">
         <Inhaltsflaeche>
-          <ol aria-label="Verlauf">
+          <Verlauf beschriftung="Verlauf">
             {data.entries.map((e) => (
-              <li key={e.id} className="border-line border-t py-3 first:border-t-0">
+              <Verlaufseintrag key={e.id}>
                 {/* Die Praxis antwortet eingerückt mit Linie in der
                     Hauptfarbe - wer spricht, sagt der Name davor. */}
                 <div
@@ -251,9 +252,9 @@ function Vorgang({
                     )
                   ) : null}
                 </div>
-              </li>
+              </Verlaufseintrag>
             ))}
-          </ol>
+          </Verlauf>
         </Inhaltsflaeche>
         {data.status === 'closed' && data.closed_at ? (
           <p className="text-ink-muted mt-3 text-sm">

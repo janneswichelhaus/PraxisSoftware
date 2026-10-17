@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Badge } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
+import { Verlauf, Verlaufseintrag } from '@/components/ui/Verlauf';
 import {
   PERSONEN_KEY,
   TEAMCHAT_KEY,
@@ -50,11 +51,25 @@ export function Nachrichtenliste({
   /** Archiviert: nichts mehr ändern. */
   gesperrt: boolean;
 }) {
+  // Neue Antworten und Erwähnungen in Threads bleiben markiert, solange das
+  // Gespräch offen ist - auch wenn der Kanal inzwischen als gelesen gilt
+  // (Praxis-Review TEAM-001).
+  const marken = useRef(new Map<string, { neu: number; fuerMich: boolean }>());
+  for (const n of nachrichten) {
+    if (n.new_replies > 0 || n.mentioned_in_new_replies) {
+      const bisher = marken.current.get(n.id);
+      marken.current.set(n.id, {
+        neu: Math.max(bisher?.neu ?? 0, n.new_replies),
+        fuerMich: (bisher?.fuerMich ?? false) || n.mentioned_in_new_replies,
+      });
+    }
+  }
   return (
-    <ol aria-label="Nachrichten" className="flex flex-col">
+    <Verlauf beschriftung="Nachrichten">
       {nachrichten.map((nachricht) => (
         <Zeile
           key={nachricht.id}
+          marke={marken.current.get(nachricht.id)}
           nachricht={nachricht}
           zeitzone={zeitzone}
           fuerMich={eigeneId !== null && nachricht.mentions.includes(eigeneId)}
@@ -64,11 +79,12 @@ export function Nachrichtenliste({
           gesperrt={gesperrt}
         />
       ))}
-    </ol>
+    </Verlauf>
   );
 }
 
 function Zeile({
+  marke,
   nachricht,
   zeitzone,
   fuerMich,
@@ -77,6 +93,7 @@ function Zeile({
   hervorgehoben,
   gesperrt,
 }: {
+  marke: { neu: number; fuerMich: boolean } | undefined;
   nachricht: Nachricht;
   zeitzone: string;
   fuerMich: boolean;
@@ -92,12 +109,7 @@ function Zeile({
   const entfernbar = darfEntfernen && !leer && !gesperrt;
 
   return (
-    <li
-      id={`nachricht-${nachricht.id}`}
-      className={`border-line border-t py-3 first:border-t-0 ${
-        hervorgehoben ? 'bg-accent-soft -mx-4 px-4' : ''
-      }`}
-    >
+    <Verlaufseintrag id={`nachricht-${nachricht.id}`} hervorgehoben={hervorgehoben}>
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-ink-muted text-sm">
@@ -109,7 +121,7 @@ function Zeile({
           </p>
           {fuerMich && !leer ? (
             <p className="mt-1">
-              <Badge ton="akzent" eigenesZeichen="@">
+              <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.erwaehnt}>
                 Für dich
               </Badge>
             </p>
@@ -155,7 +167,7 @@ function Zeile({
         </div>
       ) : null}
       {threadPfad && (nachricht.reply_count > 0 || !gesperrt) ? (
-        <div className="mt-1">
+        <div className="mt-1 flex flex-wrap items-center gap-2">
           <ButtonLink to={threadPfad(nachricht)} variant="quiet" groesse="kompakt">
             {nachricht.reply_count === 0
               ? 'Antworten'
@@ -163,9 +175,18 @@ function Zeile({
                 ? `1 Antwort${nachricht.last_reply_at ? ` · ${nachrichtenzeit(nachricht.last_reply_at, zeitzone)}` : ''}`
                 : `${nachricht.reply_count} Antworten${nachricht.last_reply_at ? ` · ${nachrichtenzeit(nachricht.last_reply_at, zeitzone)}` : ''}`}
           </ButtonLink>
+          {marke?.fuerMich ? (
+            <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.erwaehnt}>
+              Für dich
+            </Badge>
+          ) : marke && marke.neu > 0 ? (
+            <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.neu}>
+              {marke.neu} neu
+            </Badge>
+          ) : null}
         </div>
       ) : null}
-    </li>
+    </Verlaufseintrag>
   );
 }
 

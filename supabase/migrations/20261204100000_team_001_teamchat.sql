@@ -409,7 +409,12 @@ returns table (
   reply_count    integer,
   last_reply_at  timestamptz,
   mentions       uuid[],
-  own            boolean
+  own            boolean,
+  -- Nur für die Person selbst, aus ihrem eigenen Lesestand: neue Antworten
+  -- anderer und ob sie darin erwähnt ist - damit eine Erwähnung im Thread
+  -- am Thread sichtbar bleibt (Praxis-Review TEAM-001).
+  new_replies    integer,
+  mentioned_in_new_replies boolean
 )
 language plpgsql
 stable
@@ -419,11 +424,15 @@ as $$
 declare
   v_org   uuid;
   v_staff uuid;
+  v_seit  timestamptz;
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
   if not app.team_channel_readable(p_channel, v_org, v_staff) then
     raise exception 'team channel not found' using errcode = 'P0002';
   end if;
+  select coalesce(max(rs.read_up_to), '-infinity'::timestamptz) into v_seit
+  from public.team_read_states rs
+  where rs.channel_id = p_channel and rs.staff_member_id = v_staff;
   if p_parent is not null and not exists (
     select 1 from public.team_messages m
     where m.id = p_parent and m.channel_id = p_channel and m.parent_id is null
@@ -439,7 +448,14 @@ begin
          (select max(r.created_at) from public.team_messages r where r.parent_id = m.id),
          coalesce((select array_agg(mm.staff_member_id order by mm.staff_member_id)
                    from public.team_message_mentions mm where mm.message_id = m.id), '{}'::uuid[]),
-         m.author_staff_member_id = v_staff
+         m.author_staff_member_id = v_staff,
+         (select count(*)::integer from public.team_messages r
+          where r.parent_id = m.id and r.removed_at is null and r.created_at > v_seit
+            and r.author_staff_member_id is distinct from v_staff),
+         exists (select 1 from public.team_messages r
+                 join public.team_message_mentions mm
+                   on mm.message_id = r.id and mm.staff_member_id = v_staff
+                 where r.parent_id = m.id and r.removed_at is null and r.created_at > v_seit)
   from (
     select x.*
     from public.team_messages x

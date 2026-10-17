@@ -38,6 +38,8 @@ const zeichen: Partial<Record<Ton, string>> = {
  *   * `abgelehnt` - bewusst nicht („Abgelehnt am …“), wie „× Abgesagt“.
  *   * `unbekannt` - nicht geprüft („Fahrweg nicht geprüft“).
  *   * `antwort` - eine Antwort liegt vor („beantwortet“).
+ *   * `neu` - noch nicht gesehen („2 neu“, TEAM-001).
+ *   * `erwaehnt` - die Person ist gemeint („für dich“, TEAM-001).
  *
  * Kein „○“: In der Schrift der Anwendung las es sich als großes O.
  */
@@ -47,6 +49,8 @@ export const STATUSZEICHEN = {
   abgelehnt: '×',
   unbekannt: '?',
   antwort: '↩',
+  neu: '●',
+  erwaehnt: '@',
 } as const;
 
 /**

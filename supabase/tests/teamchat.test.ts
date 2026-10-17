@@ -273,6 +273,18 @@ describe('Teamchat: Kanäle, Threads und Erwähnungen', () => {
       allgemein.id,
     ]);
     expect(await kanal(users.teamLead, 'Allgemein')).toMatchObject({ unread: 0, mentions: 0 });
+    // Eine Erwähnung in einem Thread zeigt der Kanal an der Ausgangsnachricht
+    // - bis zum eigenen Lesen (Praxis-Review).
+    const frage = (await nachrichten(users.teamLead, allgemein.id))[0]!.id;
+    await senden(users.office, allgemein.id, 'Ja, liegt im Büro', frage, [STAFF.anna]);
+    const beiAnna = (
+      await asUser<{ new_replies: number; mentioned_in_new_replies: boolean }>(
+        users.therapist,
+        NACHRICHTEN,
+        [allgemein.id, null],
+      )
+    ).rows[0];
+    expect(beiAnna).toMatchObject({ new_replies: 1, mentioned_in_new_replies: true });
     // Olivias Stand bleibt, wie er ist - es gibt keine gemeinsame Lesemarke.
     expect(await kanal(users.office, 'Allgemein')).toMatchObject({ unread: 1 });
     await asUserCommitted(users.office, 'select public.mark_all_team_channels_read()');

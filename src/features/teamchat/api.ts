@@ -47,6 +47,10 @@ const nachrichtSchema = z.object({
   last_reply_at: z.string().nullable(),
   mentions: z.array(z.string()),
   own: z.boolean(),
+  /** Neue Antworten anderer seit dem eigenen Lesestand (nur Ausgangsnachrichten). */
+  new_replies: z.number().int(),
+  /** Ob die Person in diesen neuen Antworten erwähnt ist. */
+  mentioned_in_new_replies: z.boolean(),
 });
 export type Nachricht = z.infer<typeof nachrichtSchema>;
 
