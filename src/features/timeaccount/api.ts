@@ -167,7 +167,8 @@ export async function fetchTimeAccount(staffMemberId: string | null): Promise<Ti
   return antwort(timeAccountSchema, data, LOAD);
 }
 
-const PREVIEW = 'Der Eintrag konnte nicht geprüft werden.';
+/** Der Satz, wenn die Vorschau ohne Antwort des Servers nicht lädt. */
+export const PREVIEW_ERROR = 'Der Eintrag konnte nicht geprüft werden.';
 
 /** Der Tag und - mit Zeiten - Minuten, Saldo danach, Gründe, Termine. */
 export async function previewEntry(input: {
@@ -188,10 +189,10 @@ export async function previewEntry(input: {
       p_ends_at: input.bis,
       p_minutes: input.minutes,
     },
-    PREVIEW,
+    PREVIEW_ERROR,
     input.kind,
   );
-  return antwort(previewSchema, data, PREVIEW);
+  return antwort(previewSchema, data, PREVIEW_ERROR);
 }
 
 // -----------------------------------------------------------------------------
