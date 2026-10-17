@@ -16,10 +16,8 @@ import { ortszeitAlsZeitpunkt } from './format';
 import type {
   Depot,
   ErbrachteLeistung,
-  Kanal,
   Katalogleistung,
   Mitarbeitende,
-  Nachricht,
   Rad,
   Rechnung,
   Urlaubsantrag,
@@ -496,97 +494,6 @@ export function demoUrlaub(heute: string): Urlaubsantrag[] {
       entschiedenAm: plusTage(heute, -9),
       ablehnungsgrund: '',
       unterschrift: true,
-    },
-  ];
-}
-
-export const demoKanaele: Kanal[] = [
-  {
-    id: 'k1',
-    name: 'Allgemein',
-    beschreibung: 'Organisatorisches für das ganze Team. Keine klinischen Inhalte.',
-    art: 'kanal',
-    mitgliedIds: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
-  },
-  {
-    id: 'k2',
-    name: 'Flotte',
-    beschreibung: 'Räder, Schlüssel, Pannen und Wartung.',
-    art: 'kanal',
-    mitgliedIds: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
-  },
-  {
-    id: 'k3',
-    name: 'Vertretungen',
-    beschreibung: 'Kurzfristige Einsatzänderungen. Keine Diagnosen, keine Freitexte aus der Akte.',
-    art: 'kanal',
-    mitgliedIds: ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7'],
-  },
-  {
-    id: 'k4',
-    name: 'Nadja Wolf',
-    beschreibung: 'Direktnachricht',
-    art: 'direkt',
-    mitgliedIds: ['m2'],
-  },
-];
-
-export function demoNachrichten(heute: string): Nachricht[] {
-  return [
-    {
-      id: 'n1',
-      kanalId: 'k2',
-      autorId: 'm6',
-      zeitpunkt: zeitpunkt(plusTage(heute, -1), '14:12'),
-      text: 'Lastenrad 4 hat unterwegs die Kette verloren. Meldung ist im Pannenassistenten erfasst.',
-      threadVon: null,
-      erwaehnungen: [],
-      bezug: { art: 'panne', label: 'Panne Lastenrad 4' },
-      gelesen: true,
-    },
-    {
-      id: 'n2',
-      kanalId: 'k2',
-      autorId: 'm2',
-      zeitpunkt: zeitpunkt(plusTage(heute, -1), '14:31'),
-      text: 'Danke. Ersatzrad ist dir zugeordnet, das gesperrte Rad bleibt bis zur Freigabe raus.',
-      threadVon: 'n1',
-      erwaehnungen: ['m6'],
-      bezug: null,
-      gelesen: true,
-    },
-    {
-      id: 'n3',
-      kanalId: 'k3',
-      autorId: 'm7',
-      zeitpunkt: zeitpunkt(heute, '08:05'),
-      text: 'Für den Nachmittag suche ich noch eine Vertretung für zwei Hausbesuche.',
-      threadVon: null,
-      erwaehnungen: [],
-      bezug: { art: 'tour', label: 'Tour Nachmittag' },
-      gelesen: false,
-    },
-    {
-      id: 'n4',
-      kanalId: 'k1',
-      autorId: 'm1',
-      zeitpunkt: zeitpunkt(plusTage(heute, -2), '17:40'),
-      text: 'Die Belege für den Monat bitte bis Freitag einreichen.',
-      threadVon: null,
-      erwaehnungen: [],
-      bezug: null,
-      gelesen: true,
-    },
-    {
-      id: 'n5',
-      kanalId: 'k4',
-      autorId: 'm2',
-      zeitpunkt: zeitpunkt(heute, '09:15'),
-      text: 'Kannst du morgen den ersten Besuch übernehmen? Ich melde mich gleich zur Übergabe.',
-      threadVon: null,
-      erwaehnungen: [],
-      bezug: { art: 'termin', label: 'Besuch morgen 08:30' },
-      gelesen: false,
     },
   ];
 }

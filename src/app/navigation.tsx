@@ -439,14 +439,25 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   // Kommunikation und Organisatorisches zeigen Daten, die der Server nur den
   // Rollen der Behandlungsseite gibt (`app.is_staff()`). Ein reines
   // Trainingskonto sieht Übersicht, Kalender und Training (TRN-003, TRN-006).
+  // TEAM-001: Den Teamchat hat jede Praxisrolle (ANN-611); die Rückfragen
+  // nur die Behandlungsseite. Die Trainingsbetreuung öffnet den Bereich
+  // deshalb direkt auf dem Teamchat.
+  if (isStaff(roles) && !isTherapyStaff(roles)) {
+    bereiche.push({
+      id: 'team',
+      ...BEREICHE.team,
+      to: '/team',
+      pfade: ['/team'],
+      icon: symbole.team,
+      unterpunkte: [{ to: '/team', label: 'Teamchat', end: false }],
+    });
+  }
   if (isTherapyStaff(roles)) {
     bereiche.push({
       id: 'team',
       ...BEREICHE.team,
-      // KOM-002 (ANN-314): Der Bereich oeffnet auf den Rueckfragen, dem
-      // ersten Punkt, der wirklich wirkt. Seitdem ist er nicht mehr ganz
-      // Vorschau und steht am Telefon wieder in der Leiste; der Teamchat
-      // speichert weiter nichts (ANN-112) und bleibt als Vorschau gekennzeichnet.
+      // KOM-002 (ANN-314): Der Bereich oeffnet auf den Rueckfragen. Seit
+      // TEAM-001 ist auch der Teamchat echt (keine Vorschau mehr).
       to: '/rueckfragen',
       pfade: ['/rueckfragen', '/team'],
       icon: symbole.team,
@@ -462,7 +473,12 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
           end: false,
           stichworte: ['Nachrichten', 'Fragen von Patient:innen', 'Plattform'],
         },
-        { to: '/team', label: 'Teamchat', vorschau: true },
+        {
+          to: '/team',
+          label: 'Teamchat',
+          end: false,
+          stichworte: ['Kanäle', 'Direktnachricht', 'Team', 'Flotte', 'Vertretungen'],
+        },
       ],
     });
   }

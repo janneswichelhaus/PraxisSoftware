@@ -88,3 +88,79 @@ select
 from termine
 join public.patient_contact_details as kontakt on kontakt.patient_id = termine.patient_id
 on conflict (id) do nothing;
+
+-- -----------------------------------------------------------------------------
+-- TEAM-001: der Teamchat mit ein paar Absprachen - synthetisch, ohne
+-- Patientenbezug. Die Startkanäle bekommen feste Kennungen, damit die
+-- Bildstrecke sie öffnen kann (scripts/bildstrecke/routen.mjs).
+-- -----------------------------------------------------------------------------
+update public.team_channels
+set id = case name
+  when 'Allgemein' then '7e7e7e7e-7e7e-4e7e-8e7e-000000000001'::uuid
+  when 'Flotte' then '7e7e7e7e-7e7e-4e7e-8e7e-000000000002'::uuid
+  else '7e7e7e7e-7e7e-4e7e-8e7e-000000000003'::uuid
+end
+where organization_id = '22222222-2222-4222-8222-000000000001'
+  and kind = 'channel' and name in ('Allgemein', 'Flotte', 'Vertretungen')
+  and not exists (select 1 from public.team_messages m where m.channel_id = team_channels.id);
+
+insert into public.team_channels (id, organization_id, kind, created_at)
+values ('7e7e7e7e-7e7e-4e7e-8e7e-000000000004', '22222222-2222-4222-8222-000000000001', 'direct',
+        now() - interval '3 days')
+on conflict (id) do nothing;
+
+insert into public.team_channel_members (organization_id, channel_id, staff_member_id)
+values
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000004',
+   '55555555-5555-4555-8555-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000004',
+   '55555555-5555-4555-8555-000000000002')
+on conflict do nothing;
+
+insert into public.team_messages
+  (id, organization_id, channel_id, parent_id, author_staff_member_id, body, created_at)
+values
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000101', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000001', null, '55555555-5555-4555-8555-000000000001',
+   'Die Belege für den Monat bitte bis Freitag einreichen.', now() - interval '2 days 3 hours'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000102', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000001', null, '55555555-5555-4555-8555-000000000003',
+   '@Tim Teamleitung die neuen Druckerpatronen sind da, sie liegen im Büro.', now() - interval '50 minutes'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000201', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000002', null, '55555555-5555-4555-8555-000000000002',
+   'Lastenrad 3 hat unterwegs die Kette verloren. Panne ist gemeldet, das Rad steht im Depot Süd.',
+   now() - interval '1 day 2 hours'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000202', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000002', '7e7e7e7e-7e7e-4e7e-8e7e-000000000201',
+   '55555555-5555-4555-8555-000000000004',
+   '@Anna Beispiel danke. Ich schaue morgen früh drauf, nimm bis dahin Rad 2.',
+   now() - interval '1 day 1 hour'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000203', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000002', null, '55555555-5555-4555-8555-000000000006',
+   'Wer hat den Schlüssel für Depot Nord? Er hängt nicht am Brett.', now() - interval '35 minutes'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000301', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000003', null, '55555555-5555-4555-8555-000000000004',
+   'Für den Nachmittag suche ich eine Vertretung für zwei Hausbesuche in der Weststadt.',
+   now() - interval '25 minutes'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000401', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000004', null, '55555555-5555-4555-8555-000000000002',
+   'Kannst du heute Nachmittag kurz telefonieren? Es geht um meinen Wochenplan.',
+   now() - interval '15 minutes')
+on conflict (id) do nothing;
+
+insert into public.team_message_mentions (organization_id, message_id, staff_member_id)
+values
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000102',
+   '55555555-5555-4555-8555-000000000004'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000202',
+   '55555555-5555-4555-8555-000000000002')
+on conflict do nothing;
+
+-- Den eigenen Stand für das, was man selbst geschrieben hat - wie nach dem
+-- Senden in der Anwendung.
+insert into public.team_read_states (organization_id, channel_id, staff_member_id, read_up_to)
+select m.organization_id, m.channel_id, m.author_staff_member_id, max(m.created_at)
+from public.team_messages m
+where m.organization_id = '22222222-2222-4222-8222-000000000001'
+group by m.organization_id, m.channel_id, m.author_staff_member_id
+on conflict (channel_id, staff_member_id) do nothing;

@@ -47,7 +47,8 @@ import { erzeugeVorschauzustand } from './vorschauZustand';
  * `src/features/fleet/standortvorlage.test.ts`.
  */
 
-const VORSCHAUBEREICHE = ['src/features/preview', 'src/features/teamchat'];
+// Der Teamchat ist seit TEAM-001 echt angebunden und kein Vorschaubereich mehr.
+const VORSCHAUBEREICHE = ['src/features/preview'];
 
 /**
  * Dateien in einem Vorschauverzeichnis, die keine Vorschau mehr sind.
@@ -254,11 +255,11 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
   it('findet die Vorschaubereiche ueberhaupt', () => {
     // Jeder genannte Bereich trägt Dateien bei - ein verschobenes oder
     // umbenanntes Verzeichnis fiele sonst still aus der Prüfung. Seit
-    // ERS-001 (Erstattungen echt) sind es zwei Bereiche mit 11 Dateien.
+    // TEAM-001 (Teamchat echt) ist es ein Bereich mit 10 Dateien.
     for (const bereich of VORSCHAUBEREICHE) {
       expect(quelldateien(bereich).length, bereich).toBeGreaterThan(0);
     }
-    expect(dateien.length).toBeGreaterThanOrEqual(11);
+    expect(dateien.length).toBeGreaterThanOrEqual(10);
   });
 
   it.each(VERBOTEN)('enthaelt keinen $grund ($muster)', ({ muster }) => {
@@ -278,7 +279,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
   it('wuerde jede Importform einer echten API tatsaechlich finden', () => {
     // Gegenprobe zu jeder Form, die der Scanner kennen muss. `beispiel` liegt
     // in einem Vorschaubereich, damit relative Pfade richtig aufgeloest werden.
-    const beispiel = 'src/features/teamchat/Beispiel.tsx';
+    const beispiel = 'src/features/preview/Beispiel.tsx';
     const pruefe = (quelltext: string) => unerlaubteImporte(beispiel, quelltext);
 
     expect(
@@ -320,7 +321,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     // der Kacheln beim Anbieter holt, gehoert in keinen Vorschaubereich.
     const imKarten =
       "import { Map } from 'maplibre-gl';\nimport { createPortal } from 'react-dom';";
-    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', imKarten)).toEqual([
+    expect(unerlaubteImporte('src/features/preview/Beispiel.tsx', imKarten)).toEqual([
       'maplibre-gl (nicht in der Positivliste)',
       'react-dom (nicht in der Positivliste)',
     ]);
@@ -338,7 +339,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     // Route, Matrix und Geocoding rechnet der Anbieter auf Anfrage des eigenen
     // Servers (ADR-019 Punkt 15); der Handoff oeffnet eine fremde App mit
     // einem Ziel (Punkt 20 bis 23). Nichts davon gehoert in eine Vorschau.
-    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', quelltext)).toEqual([
+    expect(unerlaubteImporte('src/features/preview/Beispiel.tsx', quelltext)).toEqual([
       `${modul} (spricht mit einem Server oder einer fremden App)`,
     ]);
   });
@@ -348,7 +349,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
     // Vertrag selbst ist eine reine Typdatei.
     expect(
       unerlaubteImporte(
-        'src/features/teamchat/Beispiel.tsx',
+        'src/features/preview/Beispiel.tsx',
         "import type { Coordinate } from '@/lib/location/contract';",
       ),
     ).toEqual([]);
@@ -356,7 +357,7 @@ describe('Trennung von Vorschau und echten Vorgängen', () => {
 
   it('laesst die Erreichbarkeitsregel nicht in die Vorschau', () => {
     const regel = "import { erreichbarkeit } from '@/features/scheduling/erreichbarkeit';";
-    expect(unerlaubteImporte('src/features/teamchat/Beispiel.tsx', regel)).toEqual([
+    expect(unerlaubteImporte('src/features/preview/Beispiel.tsx', regel)).toEqual([
       '@/features/scheduling/erreichbarkeit (nicht in der Positivliste)',
     ]);
   });

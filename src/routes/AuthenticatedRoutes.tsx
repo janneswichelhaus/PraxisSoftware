@@ -110,6 +110,9 @@ import { PayoutAccountPage } from '@/features/reimbursements/PayoutAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { RequestReimbursementPage } from '@/features/reimbursements/RequestReimbursementPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
+import { GespraechPage } from '@/features/teamchat/GespraechPage';
+import { NeuPage } from '@/features/teamchat/NeuPage';
+import { ThreadPage } from '@/features/teamchat/ThreadPage';
 import { RueckfragePage, RueckfragenPage } from '@/features/messages/RueckfragenPage';
 import { TourenPage } from '@/features/tours/TourenPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
@@ -516,6 +519,17 @@ export function AuthenticatedRoutes({
                   />
                 ) : null}
 
+                {/* TEAM-001: der Teamchat für jede Praxisrolle, auch die
+              Trainingsbetreuung (ANN-611); wer liest, entscheidet der Server. */}
+                {isStaff(user.roles) ? (
+                  <>
+                    <Route path="/team" element={<TeamChatPage user={user} />} />
+                    <Route path="/team/neu" element={<NeuPage user={user} />} />
+                    <Route path="/team/:kanalId" element={<GespraechPage user={user} />} />
+                    <Route path="/team/:kanalId/:threadId" element={<ThreadPage user={user} />} />
+                  </>
+                ) : null}
+
                 {showOperations ? (
                   <>
                     <Route path="/praxis/team" element={<StaffListPage user={user} />} />
@@ -527,7 +541,6 @@ export function AuthenticatedRoutes({
                       path="/praxis/team/:staffMemberId"
                       element={<StaffMemberDetailPage user={user} />}
                     />
-                    <Route path="/team" element={<TeamChatPage user={user} />} />
                     {/* KOM-002: Rückfragen aus der Behandlung (DSN-001 Abschnitt 6). */}
                     <Route path="/rueckfragen" element={<RueckfragenPage user={user} />} />
                     {/* FLT-EPIC-001: die Radflotte, echt angebunden. Lesen dürfen

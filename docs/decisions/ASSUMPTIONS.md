@@ -6398,3 +6398,15 @@ Praxisprozess · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung
 **Anker.** `app.can_use_teamchat`, `app.can_manage_team_channels`, `public.delete_team_message`.
 
 **Änderungspfad.** Weitere Rolle oder alle legen an: eine Funktion · Aufwand `klein`.
+
+### ANN-612 — Teamchat: Nachsehen statt Zustellen, Entwurf nur im Speicher
+
+Technik · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Eine offene Liste, ein Gespräch oder ein Thread sieht alle 20 Sekunden beim Server nach; es gibt keine Push-Zustellung und keine Echtzeitverbindung. Ein Entwurf bleibt je Gespräch nur im Arbeitsspeicher der Sitzung, nicht auf dem Gerät. Ohne Anhänge, Reaktionen, Stummschalten und Vorgangsbezug in dieser Stufe.
+
+**Begründung.** ADR-024 regelt Benachrichtigungen des Teamchats nicht (eigener ADR nötig); ADR-017 Punkt 30 gibt Anhänge nicht frei; eine Echtzeitverbindung wäre ein neuer Dienstweg (ADR-002). Bei 3–8 Personen genügt Nachsehen.
+
+**Anker.** `NACHSEHEN_MS` in `src/features/teamchat/api.ts`.
+
+**Änderungspfad.** Echtzeit: Supabase Realtime mit Prüfung gegen ADR-002 · Aufwand `mittel`; Push: ADR-024 ändern · Aufwand `groß`.
