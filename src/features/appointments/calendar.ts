@@ -647,6 +647,9 @@ export interface Arbeitsblock {
   weekday: number;
   starts_at: string;
   ends_at: string;
+  /** AZ-001 (ANN-589): Fassung des Wochenplans; leer heißt seit jeher bzw. offen. */
+  valid_from?: string | null | undefined;
+  valid_until?: string | null | undefined;
 }
 
 export interface Arbeitsausnahme {
@@ -689,8 +692,15 @@ export function arbeitszeitBaender(
   }
 
   const wochentag = isoWochentag(tag);
+  // Die Fassung des Tages (AZ-001): dieselbe Regel wie `giltAm` und der Server.
   return wochenplan
-    .filter((w) => w.staff_member_id === staffMemberId && w.weekday === wochentag)
+    .filter(
+      (w) =>
+        w.staff_member_id === staffMemberId &&
+        w.weekday === wochentag &&
+        (!w.valid_from || w.valid_from <= tag) &&
+        (!w.valid_until || w.valid_until >= tag),
+    )
     .map((w) => ({ vonMinute: zeitZuMinute(w.starts_at), bisMinute: zeitZuMinute(w.ends_at) }))
     .sort((a, b) => a.vonMinute - b.vonMinute);
 }

@@ -799,6 +799,10 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
     );
     expect(rows.map((r) => r.class_key)).toEqual([
       'anrufstand',
+      // AZ-001: Regel in app.delete_due_working_time_requests, Tests in
+      // working-time-requests.test.ts.
+      'arbeitszeit',
+      'arbeitszeit_kurz',
       'auditlog',
       // LOG-EPIC-001: Lese- und Sicherheitsereignisse, eigene Frist; Regel und
       // Tests in apply_retention bzw. audit-fristen.test.ts.

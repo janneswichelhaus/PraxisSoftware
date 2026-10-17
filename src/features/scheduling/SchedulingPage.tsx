@@ -20,6 +20,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
+import { dateLong } from '@/features/working-time/format';
 import { Listenfehler, NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
   EINGABETEXTE,
@@ -497,12 +498,15 @@ interface Wochenauftrag {
 function Wochenplan({
   staffMemberId,
   darfPflegen,
+  heute,
   tag,
   onTag,
   onUngespeichert,
 }: {
   staffMemberId: string;
   darfPflegen: boolean;
+  /** Gepflegt wird die Fassung, die heute gilt (AZ-001, ANN-589). */
+  heute: string;
   tag: Wochentag;
   onTag: (tag: Wochentag) => void;
   onUngespeichert: (ungespeichert: boolean) => void;
@@ -526,7 +530,14 @@ function Wochenplan({
   datenstandRef.current = zeiten.dataUpdatedAt;
 
   const daten = zeiten.data ?? [];
-  const geladen = wochenBloecke(daten, staffMemberId, tag);
+  const geladen = wochenBloecke(daten, staffMemberId, tag, heute);
+  // Eine schon genehmigte künftige Fassung (AZ-001): Sie steht als Hinweis da,
+  // gepflegt wird hier der Plan bis dahin.
+  const kuenftigAb =
+    daten
+      .filter((w) => w.staff_member_id === staffMemberId && w.valid_from && w.valid_from > heute)
+      .map((w) => w.valid_from!)
+      .sort()[0] ?? null;
   const referenz =
     stand.gesichert && stand.gesichert.stand === zeiten.dataUpdatedAt
       ? stand.gesichert.bloecke
@@ -635,6 +646,12 @@ function Wochenplan({
           onErneut={() => void zeiten.refetch()}
         />
       ) : null}
+      {kuenftigAb ? (
+        <Statusmeldung ton="neutral" className="mb-4">
+          Ab {dateLong(kuenftigAb)} gilt ein geänderter Wochenplan (genehmigte Änderung). Hier
+          gepflegt wird der Plan bis dahin.
+        </Statusmeldung>
+      ) : null}
 
       {/* Übersicht links, Bearbeitung rechts, sobald Platz ist (ORG-29): Bis
           UXR-011 lagen Tag und Uhrzeit bei 1440 px rund 900 px auseinander. */}
@@ -648,7 +665,9 @@ function Wochenplan({
               <ListRow
                 key={w}
                 titel={<span aria-current={offen ? 'true' : undefined}>{wochentagLabels[w]}</span>}
-                meta={bloeckeText(w === tag ? referenz : wochenBloecke(daten, staffMemberId, w))}
+                meta={bloeckeText(
+                  w === tag ? referenz : wochenBloecke(daten, staffMemberId, w, heute),
+                )}
                 status={
                   offen ? (
                     <span className="text-accent text-sm font-semibold">Wird bearbeitet</span>
@@ -1376,6 +1395,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
                 key={`plan-${person}`}
                 staffMemberId={person}
                 darfPflegen={darfPflegen}
+                heute={heute ?? ''}
                 tag={tag}
                 onTag={setTag}
                 onUngespeichert={setPlanOffen}
@@ -1433,8 +1453,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
       <Kleingedrucktes className="mt-10">
         Alle Zeiten gelten in der Zeitzone der Praxis{zone ? ` (${zone})` : ''}. Arbeitszeiten sind
-        organisatorische Angaben zur Planung – keine Arbeitszeiterfassung und keine
-        Urlaubsverwaltung.
+        organisatorische Angaben zur Planung – keine Arbeitszeiterfassung.
       </Kleingedrucktes>
     </>
   );

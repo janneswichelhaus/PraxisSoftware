@@ -48,9 +48,28 @@ const workingHourSchema = z.object({
   weekday: z.number(),
   starts_at: zeitSchema,
   ends_at: zeitSchema,
+  // AZ-001 (ANN-589): Fassung des Wochenplans; leer heißt seit jeher bzw. offen.
+  valid_from: z.string().nullable().optional(),
+  valid_until: z.string().nullable().optional(),
 });
 
 export type WorkingHour = z.infer<typeof workingHourSchema>;
+
+/**
+ * Ob eine Zeile des Wochenplans an einem Kalendertag gilt (AZ-001, ANN-589):
+ * Jede Fassung hat einen ersten und einen letzten Tag, leer heißt offen.
+ * Dieselbe Regel wie `daterange(valid_from, valid_until, '[]') @> tag` am
+ * Server.
+ */
+export function giltAm(
+  zeile: { valid_from?: string | null | undefined; valid_until?: string | null | undefined },
+  tag: string,
+): boolean {
+  return (
+    (!zeile.valid_from || zeile.valid_from <= tag) &&
+    (!zeile.valid_until || zeile.valid_until >= tag)
+  );
+}
 
 const exceptionSchema = z.object({
   id: z.string(),
@@ -72,7 +91,7 @@ export interface Zeitblock {
 export async function fetchWorkingHours(): Promise<WorkingHour[]> {
   const { data, error } = await getSupabase()
     .from('staff_working_hours')
-    .select('id, staff_member_id, weekday, starts_at, ends_at')
+    .select('id, staff_member_id, weekday, starts_at, ends_at, valid_from, valid_until')
     .order('weekday')
     .order('starts_at');
 
@@ -172,14 +191,18 @@ export function bloeckeText(bloecke: readonly Zeitblock[]): string {
   return bloecke.map((b) => `${b.von}–${b.bis}`).join(', ');
 }
 
-/** Blöcke einer Person an einem Wochentag, aufsteigend nach Beginn. */
+/**
+ * Blöcke einer Person an einem Wochentag, aufsteigend nach Beginn - aus der
+ * Fassung, die an `tag` gilt (ANN-589; die Planung pflegt die von heute).
+ */
 export function wochenBloecke(
   alle: readonly WorkingHour[],
   staffMemberId: string,
   weekday: Wochentag,
+  tag: string,
 ): Zeitblock[] {
   return alle
-    .filter((w) => w.staff_member_id === staffMemberId && w.weekday === weekday)
+    .filter((w) => w.staff_member_id === staffMemberId && w.weekday === weekday && giltAm(w, tag))
     .map((w) => ({ von: w.starts_at, bis: w.ends_at }))
     .sort((a, b) => a.von.localeCompare(b.von));
 }
