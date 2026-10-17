@@ -20,8 +20,8 @@
 -- Antworten noch laufen, verliert Text, Verfasser:in und Erwähnungen und
 -- bleibt als inhaltsloser Anker, bis die letzte Antwort fällt. Eigenes Löschen
 -- ist echtes Löschen; nur mit Antworten bleibt derselbe Anker. owner entfernt
--- fremde Nachrichten in offenen Kanälen (versehentliche Patientendaten), nie
--- in Direktnachrichten.
+-- fremde Nachrichten in offenen Kanälen und im Gespräch der Radflotte
+-- (versehentliche Patientendaten), nie in Direktnachrichten.
 --
 -- Nur über SECURITY-DEFINER-Funktionen, kein Tabellenrecht (ADR-004). KEIN
 -- Auditeintrag (ADR-010 Punkt 17); das Datenmodell ist der Nachweis
@@ -135,7 +135,7 @@ create unique index team_channels_fleet_unique
 create index team_channels_organization_id_idx on public.team_channels (organization_id);
 
 comment on table public.team_channels is
-  'TEAM-001: Gespräche des Teamchats - offene Kanäle (alle Teilnehmenden der Praxis) und Direktnachrichten (genau zwei Personen, team_channel_members). Datenklasse teamchat (ANN-610).';
+  'TEAM-001: Gespräche des Teamchats - offene Kanäle (alle Teilnehmenden der Praxis), Direktnachrichten (genau zwei Personen, team_channel_members) und das eine Gespräch der Radflotte (wer die Flotte liest, ANN-613). Datenklasse teamchat (ANN-610).';
 comment on column public.team_channels.archived_at is
   'Archiviert: nur noch lesbar, keine neuen Nachrichten. Hält keine Löschung auf.';
 
@@ -252,7 +252,7 @@ values
    'Erwähnungen (TEAM-001): fallen mit ihrer Nachricht oder deren Inhalt (cascade).',
    241),
   ('team_channels', 'teamchat', 'automatisch',
-   'Gespräche (TEAM-001): offene Kanäle bleiben, bis die Praxis sie löscht; Direktnachrichten ohne Nachricht fallen zwölf Monate nach ihrem Beginn, mit Eintrag im Löschjournal (ANN-610).',
+   'Gespräche (TEAM-001): offene Kanäle und das Gespräch der Radflotte bleiben, solange die Praxis sie führt; Direktnachrichten ohne Nachricht fallen zwölf Monate nach ihrem Beginn, mit Eintrag im Löschjournal (ANN-610).',
    242),
   ('team_channel_members', 'teamchat', 'automatisch',
    'Beteiligte einer Direktnachricht (TEAM-001): fallen mit ihr (cascade).',
@@ -302,8 +302,8 @@ select app.create_team_fleet_channel(o.id) from public.organizations o;
 -- -----------------------------------------------------------------------------
 -- 5. Lesen
 -- -----------------------------------------------------------------------------
--- Ob die Person das Gespräch liest: offener Kanal der Praxis oder eigene
--- Direktnachricht.
+-- Ob die Person das Gespräch liest: offener Kanal der Praxis, das Gespräch
+-- der Radflotte (wer die Flotte liest, ANN-613) oder eigene Direktnachricht.
 -- Wer die Radflotte liest (wie app.can_read_fleet, FLT-001), hier für eine
 -- beliebige Person - für Erwähnungen und das Gespräch der Flotte.
 create function app.team_staff_reads_fleet(p_org uuid, p_staff uuid)
@@ -321,7 +321,7 @@ as $$
     join public.user_roles ur
       on ur.user_id = up.id and ur.organization_id = sm.organization_id
      and ur.role_key in ('owner', 'therapist', 'team_lead', 'office')
-    where sm.id = p_staff and sm.organization_id = p_org
+    where sm.id = p_staff and sm.organization_id = p_org and sm.employment_status = 'active'
   )
 $$;
 
@@ -339,8 +339,10 @@ as $$
     where c.id = p_channel and c.organization_id = p_org
       and (c.kind = 'channel'
            or (c.kind = 'fleet' and app.team_staff_reads_fleet(p_org, p_staff))
-           or exists (select 1 from public.team_channel_members m
-                      where m.channel_id = c.id and m.staff_member_id = p_staff))
+           -- Mitglieder zählen nur bei Direktnachrichten (Zweitreview R3).
+           or (c.kind = 'direct'
+               and exists (select 1 from public.team_channel_members m
+                           where m.channel_id = c.id and m.staff_member_id = p_staff)))
   )
 $$;
 
@@ -713,7 +715,8 @@ $$;
 
 -- Löschen: die eigene Nachricht endgültig; hängen Antworten daran, bleibt sie
 -- ohne Inhalt als Anker. owner entfernt fremde Nachrichten in offenen Kanälen
--- und hinterlässt immer den Anker „von der Praxisleitung entfernt“.
+-- und im Gespräch der Radflotte und hinterlässt immer den Anker „von der
+-- Praxisleitung entfernt“.
 create function public.delete_team_message(p_message uuid)
 returns void
 language plpgsql

@@ -6391,7 +6391,7 @@ Datenschutz · offen · 2026-10-17 · Claude · Prüfpaket · Wiedervorlage: Dat
 
 Praxisprozess · offen · 2026-10-17 · Claude, Kanäle Jannes · — · Wiedervorlage: Sichtung Teamchat
 
-**Annahme.** Teilnehmen kann jede Praxisrolle mit aktivem Mitarbeiterdatensatz, auch die Trainingsbetreuung. Offene Kanäle sieht die ganze Praxis; anlegen und archivieren owner und Teamleitung. Es gibt keine Startkanäle – die Praxis richtet ihre Kanäle selbst ein (Jannes 2026-10-17). owner entfernt fremde Nachrichten nur in offenen Kanälen (Anker „von der Praxisleitung entfernt“, `removed_by` als Nachweis, kein Audit). Keine privaten Kanäle, kein @alle.
+**Annahme.** Teilnehmen kann jede Praxisrolle mit aktivem Mitarbeiterdatensatz, auch die Trainingsbetreuung. Offene Kanäle sieht die ganze Praxis; anlegen und archivieren owner und Teamleitung. Es gibt keine Startkanäle – die Praxis richtet ihre Kanäle selbst ein (Jannes 2026-10-17). owner entfernt fremde Nachrichten nur in offenen Kanälen und im Gespräch der Radflotte (Anker „von der Praxisleitung entfernt“, `removed_by` als Nachweis, kein Audit). Keine privaten Kanäle, kein @alle.
 
 **Begründung.** §10 (Kanäle, Direktnachrichten); 3–8 Personen brauchen Übersicht; ADR-010 Punkt 15 und 17; Referenzabgleich (Slack: Admin löscht fremde).
 

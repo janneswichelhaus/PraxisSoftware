@@ -188,19 +188,22 @@ describe('Teamchat: wer teilnimmt', () => {
     const fremd = await fremdeOrganisation();
     const allgemein = await kanal(users.therapist, 'Allgemein');
     const n = await senden(users.therapist, allgemein.id, 'Unser Text');
-    const fremdFlotte = (await kanaele(fremd.owner)).find((k) => k.kind === 'fleet')!;
+    const fremdesGespraech = (await kanaele(fremd.owner)).find((k) => k.kind === 'fleet')!;
     for (const [sql, params] of [
       ['select public.edit_team_message($1, $2, $3::uuid[])', [n, 'Fremd', []]],
       ['select public.delete_team_message($1)', [n]],
       ['select public.mark_team_channel_read($1)', [allgemein.id]],
-      [NACHRICHTEN, [fremdFlotte.id, n]],
+      // Eine Ausgangsnachricht aus einer anderen Praxis ist kein Thread hier.
+      [NACHRICHTEN, [fremdesGespraech.id, n]],
     ] as const) {
       expect((await fehler(fremd.owner, sql, [...params]))?.code).toBe('P0002');
     }
     // Eine Ausgangsnachricht aus einem anderen Kanal ist kein Thread hier.
-    const flotte = await kanal(users.therapist, 'Vertretungen');
-    expect((await fehler(users.therapist, NACHRICHTEN, [flotte.id, n]))?.code).toBe('P0002');
-    expect((await fehler(users.therapist, SENDEN, [flotte.id, n, 'x', []]))?.code).toBe('P0002');
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    expect((await fehler(users.therapist, NACHRICHTEN, [vertretungen.id, n]))?.code).toBe('P0002');
+    expect((await fehler(users.therapist, SENDEN, [vertretungen.id, n, 'x', []]))?.code).toBe(
+      'P0002',
+    );
   });
 
   it('nimmt Ausgeschiedene heraus: kein Zugang, keine Erwähnung, keine Direktnachricht', async () => {
@@ -242,11 +245,11 @@ describe('Teamchat: wer teilnimmt', () => {
 
 describe('Teamchat: Kanäle, Threads und Erwähnungen', () => {
   it('zeigt eine Nachricht allen im Kanal, die Antwort im Thread', async () => {
-    const flotte = await kanal(users.therapist, 'Vertretungen');
-    const frage = await senden(users.therapist, flotte.id, 'Kette an Rad 4 springt ab.');
-    await senden(users.teamLead, flotte.id, 'Ich schaue morgen drauf.', frage);
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    const frage = await senden(users.therapist, vertretungen.id, 'Kette an Rad 4 springt ab.');
+    await senden(users.teamLead, vertretungen.id, 'Ich schaue morgen drauf.', frage);
 
-    const imKanal = await nachrichten(users.trainer, flotte.id);
+    const imKanal = await nachrichten(users.trainer, vertretungen.id);
     expect(imKanal).toHaveLength(1);
     expect(imKanal[0]).toMatchObject({
       id: frage,
@@ -255,15 +258,15 @@ describe('Teamchat: Kanäle, Threads und Erwähnungen', () => {
       reply_count: 1,
       own: false,
     });
-    const thread = await nachrichten(users.office, flotte.id, frage);
+    const thread = await nachrichten(users.office, vertretungen.id, frage);
     expect(thread.map((n) => n.body)).toEqual([
       'Kette an Rad 4 springt ab.',
       'Ich schaue morgen drauf.',
     ]);
     // Eine Antwort auf eine Antwort gibt es nicht.
-    expect((await fehler(users.office, SENDEN, [flotte.id, thread[1]!.id, 'x', []]))?.code).toBe(
-      'P0002',
-    );
+    expect(
+      (await fehler(users.office, SENDEN, [vertretungen.id, thread[1]!.id, 'x', []]))?.code,
+    ).toBe('P0002');
   });
 
   it('zählt Ungelesenes und Erwähnungen nur für die Person selbst', async () => {
@@ -377,6 +380,29 @@ describe('Teamchat: das Gespräch der Radflotte (ANN-613)', () => {
       'Kette',
     ]);
     expect(treffer.rows).toEqual([]);
+    const nachricht = (await nachrichten(users.therapist, id))[0]!.id;
+    for (const [sql, params] of [
+      ['select public.mark_team_channel_read($1)', [id]],
+      ['select public.delete_team_message($1)', [nachricht]],
+    ] as const) {
+      expect((await fehler(users.trainer, sql, [...params]))?.code).toBe('P0002');
+    }
+
+    // Eine fremde Praxis sieht das Gespräch unserer Radflotte nicht.
+    const fremd = await fremdeOrganisation();
+    expect((await kanaele(fremd.owner)).map((k) => k.id)).not.toContain(id);
+    for (const [sql, params] of [
+      [NACHRICHTEN, [id, null]],
+      [SENDEN, [id, null, 'x', []]],
+      ['select public.mark_team_channel_read($1)', [id]],
+      ['select public.delete_team_message($1)', [nachricht]],
+    ] as const) {
+      expect((await fehler(fremd.owner, sql, [...params]))?.code).toBe('P0002');
+    }
+    const fremdeSuche = await asUser(fremd.owner, 'select * from public.search_team_messages($1)', [
+      'Kette',
+    ]);
+    expect(fremdeSuche.rows).toEqual([]);
   });
 
   it('lässt owner dort entfernen und niemanden archivieren', async () => {
@@ -498,8 +524,8 @@ describe('Teamchat: bearbeiten, löschen, entfernen, archivieren', () => {
   });
 
   it('lässt nur owner fremde Nachrichten in offenen Kanälen entfernen', async () => {
-    const flotte = await kanal(users.therapist, 'Vertretungen');
-    const n = await senden(users.therapist, flotte.id, 'Versehentlich ein Name');
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    const n = await senden(users.therapist, vertretungen.id, 'Versehentlich ein Name');
     for (const konto of [users.teamLead, users.office, users.trainer]) {
       expect((await fehler(konto, 'select public.delete_team_message($1)', [n]))?.code).toBe(
         '42501',
@@ -519,7 +545,7 @@ describe('Teamchat: bearbeiten, löschen, entfernen, archivieren', () => {
       removed_kind: 'owner',
       removed_by_staff_member_id: STAFF.jannes,
     });
-    expect((await nachrichten(users.office, flotte.id))[0]).toMatchObject({
+    expect((await nachrichten(users.office, vertretungen.id))[0]).toMatchObject({
       author_name: null,
       removed_kind: 'owner',
     });
@@ -536,13 +562,17 @@ describe('Teamchat: bearbeiten, löschen, entfernen, archivieren', () => {
   });
 
   it('archiviert durch owner und Teamleitung; danach nur noch lesbar', async () => {
-    const flotte = await kanal(users.therapist, 'Vertretungen');
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
     const archivieren = 'select public.set_team_channel_archived($1, $2)';
-    expect((await fehler(users.therapist, archivieren, [flotte.id, true]))?.code).toBe('42501');
-    await asUserCommitted(users.teamLead, archivieren, [flotte.id, true]);
+    expect((await fehler(users.therapist, archivieren, [vertretungen.id, true]))?.code).toBe(
+      '42501',
+    );
+    await asUserCommitted(users.teamLead, archivieren, [vertretungen.id, true]);
     expect(await kanal(users.trainer, 'Vertretungen')).toMatchObject({ archived: true });
-    expect((await fehler(users.trainer, SENDEN, [flotte.id, null, 'x', []]))?.code).toBe('22023');
-    await asUserCommitted(users.ownerTherapist, archivieren, [flotte.id, false]);
+    expect((await fehler(users.trainer, SENDEN, [vertretungen.id, null, 'x', []]))?.code).toBe(
+      '22023',
+    );
+    await asUserCommitted(users.ownerTherapist, archivieren, [vertretungen.id, false]);
     expect(await kanal(users.trainer, 'Vertretungen')).toMatchObject({ archived: false });
   });
 
