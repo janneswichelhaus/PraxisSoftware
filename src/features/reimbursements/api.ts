@@ -122,7 +122,10 @@ const SENTENCES: readonly (readonly [string, string])[] = [
   ['month not allowed', 'Ladestrom geht für einen der letzten zwölf abgeschlossenen Monate.'],
   ['working days out of range', 'So viele Tage hat der Monat nicht.'],
   ['declaration missing', 'Bitte die Erklärung bestätigen.'],
-  ['too many receipts', 'Höchstens zehn Belege je Erstattung.'],
+  [
+    'too many receipts',
+    'Schon zehn Belege ohne Antrag – nicht abgesendete fallen nach einem Tag weg.',
+  ],
   ['one to ten receipts', 'Ein bis zehn Belege je Erstattung.'],
   ['receipt item is invalid', 'Bitte je Beleg einen Betrag bis 1.000 € und wofür angeben.'],
   ['receipt not found', 'Dieser Beleg ist nicht mehr da – bitte noch einmal fotografieren.'],
@@ -206,6 +209,8 @@ export async function savePayoutAccount(iban: string): Promise<PayoutAccount> {
 export async function submitElectricity(input: {
   month: string;
   workingDays: number;
+  /** Der Haken der Erklärung (ANN-599) - der Server prüft ihn selbst. */
+  declared: boolean;
   iban: string | null;
 }): Promise<Submitted> {
   const fallback = 'Der Ladestrom konnte nicht beantragt werden.';
@@ -214,9 +219,7 @@ export async function submitElectricity(input: {
     {
       p_month: input.month,
       p_working_days: input.workingDays,
-      // Die Erklärung ist der Haken auf der Zusammenfassung (ANN-599); ohne
-      // ihn lässt die Seite nicht absenden.
-      p_declared: true,
+      p_declared: input.declared,
       p_iban: input.iban,
     },
     fallback,

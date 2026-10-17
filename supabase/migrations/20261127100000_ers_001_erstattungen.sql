@@ -790,7 +790,15 @@ declare
 begin
   perform app.staff_request_org(app.can_request_reimbursements(), 'not allowed to request reimbursements');
   v_beleg := app.own_pending_reimbursement_receipt(p_receipt_id);
-  perform 1 from public.staff_reimbursement_receipts b where b.id = v_beleg.id for update;
+  -- Zweitreview Runde 2: sperren und dabei den Zustand erneut prüfen - ein
+  -- gleichzeitig verworfener oder geprüfter Beleg meldet keinen Erfolg.
+  perform 1 from public.staff_reimbursement_receipts b
+   where b.id = v_beleg.id and b.status = 'pending' and b.confirmation_requested_at is null
+     and b.reimbursement_id is null
+   for update;
+  if not found then
+    raise exception 'receipt not found' using errcode = 'P0002';
+  end if;
 
   select o.metadata into v_metadata
   from storage.objects o
@@ -961,6 +969,9 @@ begin
   -- noch nicht zugeordnete Belege; fremde und verworfene sehen gleich aus.
   perform 1 from public.staff_reimbursement_receipts b
    where b.id in (select receipt_id from erstattung_posten)
+     and b.organization_id = v_start.organization_id
+     and b.created_by = auth.uid()
+   order by b.id
    for update;
   select array_agg(b.id) into v_ids
   from public.staff_reimbursement_receipts b

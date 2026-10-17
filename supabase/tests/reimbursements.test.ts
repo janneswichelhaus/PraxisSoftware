@@ -1346,6 +1346,26 @@ describe('Erstattungen (ERS-001)', () => {
         (await asPostgres('select 1 from public.staff_reimbursement_receipt_access_grants')).rows,
       ).toEqual([]);
     });
+
+    it('öffnet ein Objekt nur der Person mit ihrer eigenen Freigabe (Zweitreview Runde 2)', async () => {
+      const v = await beleg(users.therapist);
+      await asUserCommitted(users.therapist, VERWEIS, [v.receipt_id]);
+      const fremd = await fremdeOrganisation();
+      // Andere Praxis, Patienten- und Plattformkonto: nichts, auch mit Annas
+      // offener Freigabe.
+      expect(await signieren(fremd.owner, v.object_key)).toBe(0);
+      expect(await signieren(users.patientMax, v.object_key)).toBe(0);
+      expect(await signieren(users.plattformTina, v.object_key)).toBe(0);
+      // Tim hat eine Freigabe für seinen eigenen Beleg - sie öffnet Annas nicht.
+      const tim = await beleg(users.teamLead);
+      await asUserCommitted(users.teamLead, VERWEIS, [tim.receipt_id]);
+      expect(await signieren(users.teamLead, v.object_key)).toBe(0);
+      expect(await signieren(users.teamLead, tim.object_key)).toBe(1);
+      expect(await signieren(users.therapist, v.object_key)).toBe(1);
+      // Freigaben stellen Patienten- und Plattformkonten gar nicht erst aus.
+      expect(await code(asUser(users.patientMax, VERWEIS, [v.receipt_id]))).toBe('42501');
+      expect(await code(asUser(users.plattformTina, VERWEIS, [v.receipt_id]))).toBe('42501');
+    });
   });
 
   describe('Gleichzeitig (Zweitreview)', () => {
@@ -1367,6 +1387,19 @@ describe('Erstattungen (ERS-001)', () => {
       );
       expect(fehler?.message).toBe('receipt not found');
       expect((await asPostgres('select 1 from public.staff_reimbursements')).rows).toEqual([]);
+    });
+
+    it('bestätigt keinen Beleg, der gleichzeitig verworfen wird (Zweitreview Runde 2)', async () => {
+      const v = await vorbereiten(users.therapist);
+      await hochladen(users.therapist, v, GROESSE);
+      const fehler = await gleichzeitig(
+        { konto: users.therapist, sql: VERWERFEN, params: [v.receipt_id] },
+        { konto: users.therapist, sql: BESTAETIGEN, params: [v.receipt_id] },
+      );
+      expect(fehler?.message).toBe('receipt not found');
+      expect((await asPostgres('select 1 from public.staff_reimbursement_receipts')).rows).toEqual(
+        [],
+      );
     });
   });
 

@@ -138,6 +138,9 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
   const [declared, setDeclared] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  // Belege, die während ihrer Übertragung entfernt wurden: Kommt die Kennung
+  // danach, wird der Beleg gleich verworfen (Zweitreview Runde 2).
+  const removedDuringUpload = useRef(new Set<string>());
   const page = flow.seite;
 
   // Vorschaubilder der Belege freigeben, wenn die Seite geht.
@@ -203,7 +206,12 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     mutationFn: async () => {
       const ibanToSend = ibanEntered ? normalizeIban(iban) : null;
       if (kind === 'electricity') {
-        return submitElectricity({ month: month!, workingDays: dayCount, iban: ibanToSend });
+        return submitElectricity({
+          month: month!,
+          workingDays: dayCount,
+          declared,
+          iban: ibanToSend,
+        });
       }
       return submitPurchase({
         items: readyItems.map((item) => ({
@@ -258,7 +266,13 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
       );
     update({ upload: 'running', error: null });
     uploadReceipt(file).then(
-      (receiptId) => update({ receiptId, upload: 'done' }),
+      (receiptId) => {
+        if (removedDuringUpload.current.has(localId)) {
+          void discardReceipt(receiptId).catch(() => undefined);
+          return;
+        }
+        update({ receiptId, upload: 'done' });
+      },
       (failure: unknown) =>
         update({
           upload: 'failed',
@@ -275,6 +289,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     setItems((all) => all.filter((i) => i.localId !== localId));
     // Nur ein Beleg ohne Antrag; fällt das aus, räumt der tägliche Lauf auf.
     if (item?.receiptId) void discardReceipt(item.receiptId).catch(() => undefined);
+    else if (item?.upload === 'running') removedDuringUpload.current.add(localId);
   }
 
   const toAccountOrSummary = () => {

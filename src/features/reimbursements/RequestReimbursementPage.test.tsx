@@ -131,6 +131,7 @@ describe('RequestReimbursementPage', () => {
     expect(submitElectricity).toHaveBeenCalledWith({
       month: '2026-09-01',
       workingDays: 18,
+      declared: true,
       iban: null,
     });
     expect(
@@ -227,6 +228,7 @@ describe('RequestReimbursementPage', () => {
     expect(submitElectricity).toHaveBeenCalledWith({
       month: '2026-09-01',
       workingDays: 18,
+      declared: true,
       iban: 'DE89370400440532013000',
     });
   });
@@ -311,6 +313,37 @@ describe('RequestReimbursementPage', () => {
     await user.click(within(abschluss).getByRole('button', { name: 'Entfernen: Tape' }));
     expect(discardReceipt).toHaveBeenCalledWith('beleg-neu');
     expect(within(abschluss).getByRole('button', { name: 'Einkauf beantragen' })).toBeDisabled();
+  });
+
+  it('verwirft einen Beleg, der während seiner Übertragung entfernt wurde (Zweitreview)', async () => {
+    const user = userEvent.setup();
+    let fertig: (id: string) => void = () => undefined;
+    uploadReceipt
+      .mockResolvedValueOnce('beleg-neu')
+      .mockImplementationOnce(() => new Promise<string>((resolve) => (fertig = resolve)));
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Einkauf mit Beleg' }));
+    await user.upload(screen.getByLabelText('Beleg wählen'), datei());
+    const posten = screen.getByRole('dialog', { name: 'Wie viel und wofür?' });
+    await user.type(within(posten).getByLabelText('Betrag in €'), '5');
+    await user.type(within(posten).getByLabelText('Wofür?'), 'Tape');
+    await user.click(await within(posten).findByRole('button', { name: 'Weiter' }));
+    // Ein zweiter Beleg, noch in der Übertragung - zurück zur Zusammenfassung.
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Einkauf beantragen?' })).getByRole('button', {
+        name: 'Weiterer Beleg',
+      }),
+    );
+    await user.upload(screen.getByLabelText('Beleg wählen'), datei('zwei.jpg'));
+    await user.click(screen.getByRole('button', { name: /Zurück/ }));
+    await user.click(screen.getByRole('button', { name: /Zurück/ }));
+    const abschluss = await screen.findByRole('dialog', { name: 'Einkauf beantragen?' });
+    expect(within(abschluss).getByText('wird übertragen …')).toBeInTheDocument();
+    await user.click(within(abschluss).getByRole('button', { name: 'Entfernen: Beleg' }));
+    expect(discardReceipt).not.toHaveBeenCalled();
+    await act(() => Promise.resolve(fertig('beleg-spaet')));
+    expect(discardReceipt).toHaveBeenCalledWith('beleg-spaet');
+    expect(within(abschluss).queryByText('wird übertragen …')).toBeNull();
   });
 
   it('nennt einen gescheiterten Upload und überträgt erneut', async () => {
