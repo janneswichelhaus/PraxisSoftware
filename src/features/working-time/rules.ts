@@ -61,6 +61,7 @@ export const PROBLEM_SHORT: Record<Problem, string> = {
   break_too_short: 'Pause zu kurz',
   more_than_six_hours_in_a_row: 'über 6 Std. am Stück',
   rest_shorter_than_eleven_hours: 'unter 11 Std. Ruhe zum nächsten Tag',
+  time_off_in_lieu: 'Freizeitausgleich am Tag',
 };
 
 export const LIMITS = {
