@@ -21,10 +21,11 @@ for (const breite of [375, 1280]) {
     );
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Mitarbeiter:in anlegen' })).toBeVisible();
-    // Seit FLT-EPIC-001 ist die Radflotte echt, seit URL-001 der Urlaub - beide
-    // stehen bei den echten Punkten.
+    // Seit FLT-EPIC-001 ist die Radflotte echt, seit URL-001 der Urlaub, seit
+    // AZ-001 die Arbeitszeit - sie stehen bei den echten Punkten.
     await expect(menue.getByRole('link', { name: 'Radflotte' })).toHaveCount(1);
     await expect(menue.getByRole('link', { name: 'Urlaub' })).toHaveCount(1);
+    await expect(menue.getByRole('link', { name: 'Arbeitszeit', exact: true })).toHaveCount(1);
     await expect(menue.getByRole('link', { name: /Zeitkonto/ })).toHaveCount(0);
 
     const knopf = menue.getByRole('button', { name: 'Vorschau (2)' });
