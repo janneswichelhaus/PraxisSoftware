@@ -47,7 +47,7 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
   const today = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
   const person = search.get(PERSON_PARAM);
   // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder.
-  const notice = useMeldungAusVerlauf();
+  const { meldung: notice, verwerfen } = useMeldungAusVerlauf();
   const query = useQuery({
     queryKey: timeAccountKey(person),
     queryFn: () => fetchTimeAccount(person),
@@ -84,7 +84,9 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
         fehler="Das Zeitkonto konnte nicht geladen werden."
         inKarte
       >
-        {(state) => <Content state={state} own={own} here={here} today={today} />}
+        {(state) => (
+          <Content state={state} own={own} here={here} today={today} onChanged={verwerfen} />
+        )}
       </Abfragezustand>
     </>
   );
@@ -95,11 +97,14 @@ function Content({
   own,
   here,
   today,
+  onChanged,
 }: {
   state: TimeAccount;
   own: boolean;
   here: string;
   today: string;
+  /** Ein Vorgang auf der Seite hat die Bestätigung oben überholt. */
+  onChanged: () => void;
 }) {
   const account = state.account;
   const entries = account?.entries.filter((entry) => entry.status !== 'withdrawn') ?? [];
@@ -131,6 +136,7 @@ function Content({
                 staffMemberId={account.staff_member_id}
                 here={here}
                 today={today}
+                onChanged={onChanged}
               />
             ))}
           </Listenabschnitt>
@@ -168,16 +174,21 @@ function EntryRow({
   staffMemberId,
   here,
   today,
+  onChanged,
 }: {
   entry: Entry;
   staffMemberId: string;
   here: string;
   today: string;
+  onChanged: () => void;
 }) {
   const queryClient = useQueryClient();
   const withdraw = useMutation({
     mutationFn: () => withdrawEntry(entry.id),
     onSuccess: async () => {
+      // Die Bestätigung oben nennt einen Saldo, der jetzt nicht mehr gilt
+      // (Praxis-Review Überholung 9, Runde 2).
+      onChanged();
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: TIME_ACCOUNT_KEY }),
         // Ein Freizeitausgleich gibt die Zeit wieder als Arbeitszeit frei.

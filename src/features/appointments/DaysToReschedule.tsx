@@ -4,7 +4,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { ZEITEN_PARAM, zeitenText, type Zeitspanne } from './tagumplanen';
+import { tagUmplanenAdresse, type Zeitspanne } from './tagumplanen';
 
 /** „Dienstag, 3. November“ - der Tag, der umzuplanen ist. */
 const DAY = new Intl.DateTimeFormat('de-DE', {
@@ -22,8 +22,9 @@ const DAY = new Intl.DateTimeFormat('de-DE', {
  * Urlaub“, die die übrigen Tage neu zählt (Praxis-Review Überholung 7).
  *
  * Ändert sich nur ein Teil des Tages (Arbeitszeit, Freizeitausgleich), trägt
- * der Tag die Arbeitszeit danach (`zeiten`): „Tag umplanen“ wählt dann nur die
- * Termine außerhalb vor, nicht den ganzen Tag (Praxis-Review Überholung 9).
+ * der Tag die Zeiten, in denen Termine bleiben können (`zeiten`): „Tag
+ * umplanen“ wählt dann nur die Termine außerhalb vor, nicht den ganzen Tag
+ * (Praxis-Review Überholung 9).
  *
  * Im Fenster eines geführten Ablaufs ein Zwischentitel und eine Liste ohne
  * Rahmen, kein Kasten im Kasten (DESIGN.md Regel 2); auf einer Seite
@@ -63,12 +64,7 @@ export function DaysToReschedule({
               variant="secondary"
               groesse="kompakt"
               aria-label={`Tag umplanen: ${label}`}
-              to={mitRueckweg(
-                `/kalender/tag-umplanen?person=${staffMemberId}&datum=${day.on_date}${
-                  day.zeiten ? `&${ZEITEN_PARAM}=${zeitenText(day.zeiten)}` : ''
-                }`,
-                returnTo,
-              )}
+              to={mitRueckweg(tagUmplanenAdresse(staffMemberId, day.on_date, day.zeiten), returnTo)}
             >
               Tag umplanen
             </ButtonLink>

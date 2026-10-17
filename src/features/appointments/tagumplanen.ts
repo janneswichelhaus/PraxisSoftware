@@ -47,18 +47,21 @@ export interface Zeitspanne {
 }
 
 /**
- * Parameter der Arbeitszeit des Tages nach einer Teiländerung, etwa
- * `zeiten=08:00-12:00,13:00-16:00`. Nur Uhrzeiten, keine Namen (ADR-011).
+ * Parameter der Zeiten des Tages, in denen Termine bleiben können, nach einer
+ * Teiländerung: nach einer Arbeitszeitänderung die neue Arbeitszeit, nach
+ * einem Freizeitausgleich alles außer der freien Zeit - etwa
+ * `zeiten=08:00-12:30,13:30-18:00`. Nur Uhrzeiten, keine Namen (ADR-011).
  */
 export const ZEITEN_PARAM = 'zeiten';
 const SPANNE = /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/;
 
 /**
- * Die Arbeitszeit der Person an diesem Tag, wenn „Tag umplanen“ nach einer
- * Teiländerung kommt (genehmigte Arbeitszeitänderung, Freizeitausgleich):
- * Vorgewählt sind dann nur die Termine außerhalb (Praxis-Review Überholung 9).
- * Ohne den Parameter oder mit einer ungültigen Angabe fällt der ganze Tag aus
- * wie bisher; eine leere Liste heißt: keine Arbeitszeit mehr an dem Tag.
+ * Die Zeiten, in denen Termine an diesem Tag bleiben können, wenn „Tag
+ * umplanen“ nach einer Teiländerung kommt (genehmigte Arbeitszeitänderung,
+ * Freizeitausgleich): Vorgewählt sind dann nur die Termine außerhalb
+ * (Praxis-Review Überholung 9). Ohne den Parameter oder mit einer ungültigen
+ * Angabe fällt der ganze Tag aus wie bisher; eine leere Liste heißt: keine
+ * Zeit mehr an dem Tag.
  */
 export function leseZeiten(suche: URLSearchParams): Zeitspanne[] | null {
   const wert = suche.get(ZEITEN_PARAM);
@@ -74,6 +77,17 @@ export function leseZeiten(suche: URLSearchParams): Zeitspanne[] | null {
 /** `08:00-12:00,13:00-16:00` - die Spannen für die Adresse. */
 export function zeitenText(spannen: readonly Zeitspanne[]): string {
   return spannen.map((spanne) => `${spanne.von}-${spanne.bis}`).join(',');
+}
+
+/** Die Adresse von „Tag umplanen“ für eine Person und einen Tag, ohne Rückweg. */
+export function tagUmplanenAdresse(
+  person: string,
+  datum: string,
+  zeiten?: readonly Zeitspanne[],
+): string {
+  return `/kalender/tag-umplanen?person=${person}&datum=${datum}${
+    zeiten ? `&${ZEITEN_PARAM}=${zeitenText(zeiten)}` : ''
+  }`;
 }
 
 /** Ob ein Termin (Beginn und Ende in Ortszeit) ganz in einer der Spannen liegt. */

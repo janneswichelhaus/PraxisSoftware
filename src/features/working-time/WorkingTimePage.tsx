@@ -36,7 +36,7 @@ import { changeTitle, dateLong, minutesChange, statusDisplay } from './format';
  */
 export function WorkingTimePage({ user }: { user: CurrentUser }) {
   // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder.
-  const notice = useMeldungAusVerlauf();
+  const { meldung: notice } = useMeldungAusVerlauf();
   const query = useQuery({ queryKey: WORKING_TIME_KEY, queryFn: fetchWorkingTime, retry: false });
   const action = isOwner(user.roles) ? 'Änderung eintragen' : 'Änderung beantragen';
 

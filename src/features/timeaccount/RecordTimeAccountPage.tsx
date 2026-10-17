@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
@@ -22,10 +23,11 @@ import {
 import { monatsBeginn, tagePlus } from '@/features/appointments/calendar';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
+import { tagUmplanenAdresse } from '@/features/appointments/tagumplanen';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
-import { isOwner, type CurrentUser } from '@/features/session/types';
+import { canManageAppointments, isOwner, type CurrentUser } from '@/features/session/types';
 import { blocksText } from '@/features/working-time/rules';
-import { leseRueckweg } from '@/lib/rueckweg';
+import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   PREVIEW_ERROR,
   TIME_ACCOUNT_KEY,
@@ -43,7 +45,7 @@ import {
   dateWindow,
   overtimeChoices,
   parseHours,
-  remainingBlocks,
+  outsideWindow,
   signedHours,
   timeOffChoices,
   type EntryKind,
@@ -254,15 +256,44 @@ function Flow({
 
   // ---------------------------------------------------------------------------
   if (page === 'done' && result) {
+    // Liegen Termine in der freien Zeit, ist „Tag umplanen“ der nächste Schritt:
+    // der Hauptknopf im Fuß, „Fertig“ leise darunter (Praxis-Review
+    // Überholung 9, Runde 2). Vorgewählt sind dort genau diese Termine.
+    const reschedule =
+      kind === 'time_off' &&
+      onDate &&
+      account &&
+      result.appointments > 0 &&
+      canManageAppointments(user.roles)
+        ? mitRueckweg(
+            tagUmplanenAdresse(account.staff_member_id, onDate, outsideWindow(von, bis)),
+            returnTo,
+          )
+        : null;
     return (
       <GefuehrterAblauf
         {...common}
         titel="Eingetragen"
         abschluss
         fuss={
-          <Button className="w-full" data-autofocus onClick={() => void navigate(returnTo)}>
-            Fertig
-          </Button>
+          reschedule ? (
+            <div className="flex flex-col gap-2">
+              <ButtonLink className="w-full" data-autofocus to={reschedule}>
+                Tag umplanen
+              </ButtonLink>
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => void navigate(returnTo)}
+              >
+                Fertig
+              </Button>
+            </div>
+          ) : (
+            <Button className="w-full" data-autofocus onClick={() => void navigate(returnTo)}>
+              Fertig
+            </Button>
+          )
         }
       >
         <div className="flex flex-col gap-6">
@@ -271,25 +302,33 @@ function Flow({
               result.balance_minutes,
             )}`}
           </Statusmeldung>
-          <DaysToReschedule
-            staffMemberId={account?.staff_member_id ?? ''}
-            // Mit der Arbeitszeit danach: „Tag umplanen“ wählt nur die Termine
-            // in der freien Zeit vor, nicht den ganzen Tag (Praxis-Review
-            // Überholung 9). Ohne Plan des Tages bleibt es beim ganzen Tag.
-            days={
-              onDate
-                ? [
-                    {
-                      on_date: onDate,
-                      appointments: result.appointments,
-                      ...(blocks ? { zeiten: remainingBlocks(blocks, von, bis) } : {}),
-                    },
-                  ]
-                : []
-            }
-            user={user}
-            returnTo={returnTo}
-          />
+          {reschedule ? (
+            <ListRows rahmen={false} beschriftung="Termine in der freien Zeit">
+              <ListRow
+                titel={`${result.appointments} ${
+                  result.appointments === 1 ? 'Termin' : 'Termine'
+                } in der freien Zeit`}
+                meta={`${when}, ${range}`}
+              />
+            </ListRows>
+          ) : (
+            <DaysToReschedule
+              staffMemberId={account?.staff_member_id ?? ''}
+              days={
+                onDate
+                  ? [
+                      {
+                        on_date: onDate,
+                        appointments: result.appointments,
+                        zeiten: outsideWindow(von, bis),
+                      },
+                    ]
+                  : []
+              }
+              user={user}
+              returnTo={returnTo}
+            />
+          )}
         </div>
       </GefuehrterAblauf>
     );
@@ -393,7 +432,9 @@ function Flow({
             <Button
               className="w-full"
               disabled={minutes === null}
-              onClick={() => setFlow(weiter(flow, 'reason'))}
+              // Aus „Ändern“ mit Grund zurück zum Abschluss (Design-Review
+              // Überholung 9, Runde 2).
+              onClick={() => setFlow(weiter(flow, 'reason', note.trim() !== ''))}
             >
               Weiter
             </Button>
