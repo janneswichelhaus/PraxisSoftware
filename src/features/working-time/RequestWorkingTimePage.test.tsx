@@ -1,0 +1,337 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { testUser } from '@/test-utils';
+import type * as WorkingTimeApi from './api';
+import { ANNAS_TAG, testWeek, testWorkingTime } from './testdata';
+
+/**
+ * Arbeitszeitänderung beantragen, geführt (G8, AZ-001): Budget ≤ 8 Tipps und
+ * die Zeiten - einmalig 5, dauerhaft mit einem Wochentag 7. Was nicht geht,
+ * sagt die Seite vor dem Absenden (ANN-588).
+ */
+
+const fetchWorkingTime = vi.fn();
+const fetchBaseline = vi.fn();
+const previewChange = vi.fn();
+const requestChange = vi.fn();
+
+vi.mock('./api', async (importOriginal) => {
+  const actual = await importOriginal<typeof WorkingTimeApi>();
+  return {
+    ...actual,
+    fetchWorkingTime: (...a: unknown[]) => fetchWorkingTime(...a) as unknown,
+    fetchBaseline: (...a: unknown[]) => fetchBaseline(...a) as unknown,
+    previewChange: (...a: unknown[]) => previewChange(...a) as unknown,
+    requestChange: (...a: unknown[]) => requestChange(...a) as unknown,
+  };
+});
+
+const { RequestWorkingTimePage } = await import('./RequestWorkingTimePage');
+
+function Ziel() {
+  const ort = useLocation();
+  const zustand = ort.state as { meldung?: string } | null;
+  return (
+    <p>
+      Ziel {ort.pathname}: {zustand?.meldung ?? ''}
+    </p>
+  );
+}
+
+function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/betrieb/arbeitszeit/beantragen',
+        element: <RequestWorkingTimePage user={testUser(rollen)} />,
+      },
+      { path: '*', element: <Ziel /> },
+    ],
+    { initialEntries: ['/betrieb/arbeitszeit/beantragen'] },
+  );
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+}
+
+function tag(fenster: HTMLElement, name: string) {
+  return within(fenster).getByRole('button', { name: (n) => n.startsWith(name) });
+}
+
+function zeit(fenster: HTMLElement, label: string, wert: string) {
+  fireEvent.change(within(fenster).getByLabelText(label), { target: { value: wert } });
+}
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-16T08:00:00Z'));
+  fetchWorkingTime.mockReset().mockResolvedValue(testWorkingTime());
+  fetchBaseline
+    .mockReset()
+    .mockImplementation((kind: string) =>
+      Promise.resolve(
+        kind === 'once'
+          ? { previous: ANNAS_TAG, previous_minutes: 540, self_entered: false }
+          : { previous: testWeek(), previous_minutes: 45 * 60, self_entered: false },
+      ),
+    );
+  previewChange.mockReset().mockResolvedValue({
+    previous: ANNAS_TAG,
+    previous_minutes: 540,
+    new_minutes: 540,
+    unchanged: false,
+    reduced: false,
+    problems: [],
+    appointment_days: [],
+    self_entered: false,
+  });
+  requestChange.mockReset().mockResolvedValue('neu-1');
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('RequestWorkingTimePage', () => {
+  it('ändert einen Tag in vier Tipps und den Zeiten', async () => {
+    const user = userEvent.setup();
+    rendern();
+    let tipps = 0;
+    const art = await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' });
+    expect(within(art).getByText('Schritt 1 von 4')).toBeInTheDocument();
+    await pruefeBarrierefreiheit(document.body);
+    await user.click(within(art).getByRole('button', { name: 'Einen Tag' }));
+    tipps += 1;
+
+    const datum = await screen.findByRole('dialog', { name: 'An welchem Tag?' });
+    // Heute geht nicht - frühestens morgen (ANN-588).
+    expect(tag(datum, 'Freitag, 16. Oktober 2026')).toBeDisabled();
+    await user.click(tag(datum, 'Dienstag, 20. Oktober 2026'));
+    tipps += 1;
+
+    const zeiten = await screen.findByRole('dialog', {
+      name: 'Ihre Zeiten am Dienstag, 20. Oktober',
+    });
+    expect(fetchBaseline).toHaveBeenCalledWith('once', '2026-10-20');
+    expect(
+      await within(zeiten).findByText('Bisher: 08:00–12:00, 13:00–18:00 · 9:00 Std.'),
+    ).toBeInTheDocument();
+    const weiter = within(zeiten).getByRole('button', { name: 'Weiter' });
+    // Unverändert geht nicht weiter.
+    expect(weiter).toBeDisabled();
+    zeit(zeiten, 'Beginn', '07:00');
+    zeit(zeiten, 'Ende', '17:00');
+    expect(within(zeiten).getByText('9:00 Std., gleich wie bisher')).toBeInTheDocument();
+    await user.click(weiter);
+    tipps += 1;
+
+    const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
+    expect(within(abschluss).getByText('Einmalig: Dienstag, 20. Oktober')).toBeInTheDocument();
+    expect(within(abschluss).getByText('07:00–12:00, 13:00–17:00 · 9:00 Std.')).toBeInTheDocument();
+    expect(
+      await within(abschluss).findByText('Keine Termine außerhalb der neuen Zeiten'),
+    ).toBeInTheDocument();
+    expect(within(abschluss).getByText('Praxisinhaber')).toBeInTheDocument();
+    await pruefeBarrierefreiheit(document.body);
+    await user.click(within(abschluss).getByRole('button', { name: 'Änderung beantragen' }));
+    tipps += 1;
+
+    expect(requestChange).toHaveBeenCalledWith({
+      kind: 'once',
+      onDate: '2026-10-20',
+      blocks: [
+        { von: '07:00', bis: '12:00' },
+        { von: '13:00', bis: '17:00' },
+      ],
+      message: null,
+    });
+    expect(
+      await screen.findByText(
+        'Ziel /betrieb/arbeitszeit: Änderung beantragt: Einmalig: Dienstag, 20. Oktober. Es entscheidet: Praxisinhaber.',
+      ),
+    ).toBeInTheDocument();
+    // Mit dem Einstieg „Änderung beantragen“ fünf und die Zeiten - Budget G8 ≤ 8.
+    expect(tipps + 1).toBeLessThanOrEqual(8);
+  });
+
+  it('lässt weniger Stunden nicht weiter und nennt den Grund (ANN-588)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Einen Tag' },
+      ),
+    );
+    await user.click(
+      tag(
+        await screen.findByRole('dialog', { name: 'An welchem Tag?' }),
+        'Dienstag, 20. Oktober 2026',
+      ),
+    );
+    const zeiten = await screen.findByRole('dialog', {
+      name: 'Ihre Zeiten am Dienstag, 20. Oktober',
+    });
+    await within(zeiten).findByText(/^Bisher:/);
+    zeit(zeiten, 'Ende', '17:00');
+    expect(
+      within(zeiten).getByText(/Weniger Stunden laufen nicht über diesen Antrag/),
+    ).toBeInTheDocument();
+    expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeDisabled();
+    // Eine längere Pause kürzt die Arbeitszeit - der Ablauf schlägt das spätere Ende vor.
+    zeit(zeiten, 'Ende', '18:00');
+    fireEvent.change(within(zeiten).getByLabelText('Dauer der Pause'), { target: { value: '90' } });
+    await user.click(within(zeiten).getByRole('button', { name: 'Ende auf 18:30 setzen' }));
+    expect(within(zeiten).getByLabelText('Ende')).toHaveValue('18:30');
+    expect(within(zeiten).getByRole('button', { name: 'Weiter' })).toBeEnabled();
+  });
+
+  it('ändert einen Wochentag im Wochenplan ab einem Datum in sechs Tipps', async () => {
+    const user = userEvent.setup();
+    previewChange.mockResolvedValue({
+      previous: testWeek(),
+      previous_minutes: 45 * 60,
+      new_minutes: 45 * 60,
+      unchanged: false,
+      reduced: false,
+      problems: [],
+      appointment_days: [{ on_date: '2026-12-01', appointments: 2 }],
+      self_entered: false,
+    });
+    rendern();
+    let tipps = 0;
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Den Wochenplan ab einem Datum' },
+      ),
+    );
+    tipps += 1;
+    await user.click(
+      tag(await screen.findByRole('dialog', { name: 'Ab wann?' }), 'Dienstag, 1. Dezember 2026'),
+    );
+    tipps += 1;
+
+    const woche = await screen.findByRole('dialog', {
+      name: 'Ihr Wochenplan ab Dienstag, 1. Dezember',
+    });
+    await user.click(await within(woche).findByRole('button', { name: 'Dienstag ändern' }));
+    tipps += 1;
+    const dienstag = await screen.findByRole('dialog', { name: 'Dienstags ab 1. Dezember' });
+    zeit(dienstag, 'Pause ab', '12:30');
+    await user.click(within(dienstag).getByRole('button', { name: 'Übernehmen' }));
+    tipps += 1;
+
+    const zurueck = await screen.findByRole('dialog', {
+      name: 'Ihr Wochenplan ab Dienstag, 1. Dezember',
+    });
+    expect(
+      within(zurueck).getByText(
+        '08:00–12:30, 13:30–18:00 · 9:00 Std. · bisher 08:00–12:00, 13:00–18:00 · 9:00 Std.',
+      ),
+    ).toBeInTheDocument();
+    await user.click(within(zurueck).getByRole('button', { name: 'Weiter' }));
+    tipps += 1;
+
+    const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
+    expect(
+      within(abschluss).getByText('Dienstag: 08:00–12:30, 13:30–18:00 · 9:00 Std.'),
+    ).toBeInTheDocument();
+    expect(
+      await within(abschluss).findByText('2 Termine außerhalb der neuen Zeiten'),
+    ).toBeInTheDocument();
+    await user.click(within(abschluss).getByRole('button', { name: 'Änderung beantragen' }));
+    tipps += 1;
+    expect(requestChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'permanent',
+        onDate: '2026-12-01',
+        blocks: testWeek({
+          2: [
+            { von: '08:00', bis: '12:30' },
+            { von: '13:30', bis: '18:00' },
+          ],
+        }),
+      }),
+    );
+    // Mit dem Einstieg sieben - Budget G8 ≤ 8.
+    expect(tipps + 1).toBeLessThanOrEqual(8);
+  });
+
+  it('sperrt das Absenden, wenn der Server einen Grund nennt (Ruhe zum Nachbartag)', async () => {
+    const user = userEvent.setup();
+    previewChange.mockResolvedValue({
+      previous: ANNAS_TAG,
+      previous_minutes: 540,
+      new_minutes: 540,
+      unchanged: false,
+      reduced: false,
+      problems: ['rest_shorter_than_eleven_hours'],
+      appointment_days: [],
+      self_entered: false,
+    });
+    rendern();
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Einen Tag' },
+      ),
+    );
+    await user.click(
+      tag(
+        await screen.findByRole('dialog', { name: 'An welchem Tag?' }),
+        'Dienstag, 20. Oktober 2026',
+      ),
+    );
+    const zeiten = await screen.findByRole('dialog', {
+      name: 'Ihre Zeiten am Dienstag, 20. Oktober',
+    });
+    await within(zeiten).findByText(/^Bisher:/);
+    zeit(zeiten, 'Beginn', '06:00');
+    zeit(zeiten, 'Ende', '16:00');
+    await user.click(within(zeiten).getByRole('button', { name: 'Weiter' }));
+    const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
+    expect(await within(abschluss).findByText(/Weniger als 11 Stunden Ruhe/)).toBeInTheDocument();
+    expect(within(abschluss).getByRole('button', { name: 'Änderung beantragen' })).toBeDisabled();
+  });
+
+  it('owner trägt die eigene Änderung ein', async () => {
+    const user = userEvent.setup();
+    fetchWorkingTime.mockResolvedValue(testWorkingTime({ self_entered: true, can_decide: true }));
+    rendern(['owner']);
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Einen Tag' },
+      ),
+    );
+    await user.click(
+      tag(
+        await screen.findByRole('dialog', { name: 'An welchem Tag?' }),
+        'Dienstag, 20. Oktober 2026',
+      ),
+    );
+    const zeiten = await screen.findByRole('dialog', {
+      name: 'Ihre Zeiten am Dienstag, 20. Oktober',
+    });
+    await within(zeiten).findByText(/^Bisher:/);
+    zeit(zeiten, 'Beginn', '07:30');
+    zeit(zeiten, 'Ende', '17:30');
+    await user.click(within(zeiten).getByRole('button', { name: 'Weiter' }));
+    const abschluss = await screen.findByRole('dialog', { name: 'Änderung eintragen?' });
+    expect(within(abschluss).getByText('Sie tragen die Änderung selbst ein')).toBeInTheDocument();
+    await user.click(await within(abschluss).findByRole('button', { name: 'Änderung eintragen' }));
+    expect(
+      await screen.findByText(
+        'Ziel /betrieb/arbeitszeit: Änderung eingetragen: Einmalig: Dienstag, 20. Oktober.',
+      ),
+    ).toBeInTheDocument();
+  });
+});

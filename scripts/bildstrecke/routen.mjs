@@ -882,6 +882,30 @@ export const ROUTEN = Object.freeze([
     etikett: 'Urlaubsanspruch (Anna)',
     konten: ['owner'],
   },
+  // AZ-001: Arbeitszeit - die Seite je Rolle, Beantragen (G8) und
+  // Entscheiden (G8b).
+  {
+    muster: '/betrieb/arbeitszeit',
+    pfad: '/betrieb/arbeitszeit',
+    bereich: 'Organisation',
+    etikett: 'Arbeitszeit',
+    konten: ['owner', 'therapist', 'trainer'],
+  },
+  {
+    muster: '/betrieb/arbeitszeit/beantragen',
+    pfad: '/betrieb/arbeitszeit/beantragen',
+    bereich: 'Organisation',
+    etikett: 'Arbeitszeitänderung beantragen',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/arbeitszeit/entscheiden/:requestId',
+    pfad: '/betrieb/arbeitszeit/entscheiden/abababab-abab-4bab-8bab-000000000001',
+    bereich: 'Organisation',
+    etikett: 'Arbeitszeitänderung entscheiden',
+    konten: ['owner'],
+    ohneDaten: 'Der Seed hat keinen Antrag; der Ablauf steht in authenticated/arbeitszeit.spec.ts.',
+  },
   {
     muster: '/betrieb/zeitkonto',
     pfad: '/betrieb/zeitkonto',

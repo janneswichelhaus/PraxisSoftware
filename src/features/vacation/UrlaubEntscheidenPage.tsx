@@ -6,16 +6,16 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
-import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
 import { formatLocalDate, todayInTimeZone } from '@/features/appointments/api';
+import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
-import { canManageAppointments, type CurrentUser } from '@/features/session/types';
-import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
+import { type CurrentUser } from '@/features/session/types';
+import { leseRueckweg } from '@/lib/rueckweg';
 import {
   URLAUB_SCHLUESSEL,
   decideLeaveRequest,
@@ -53,14 +53,6 @@ const ABLEHNTEXTE = {
     bleiben: 'Weiter',
   },
 };
-
-/** „Dienstag, 3. November“ - der Tag, der umzuplanen ist. */
-const TAG = new Intl.DateTimeFormat('de-DE', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'UTC',
-});
 
 export function UrlaubEntscheidenPage({ user }: { user: CurrentUser }) {
   const { antragId } = useParams();
@@ -223,26 +215,13 @@ function Ablauf({
                 : `${name}s Urlaub ${zeitraum} ist genehmigt. Die Tage sind im Kalender gesperrt.`
               : `${name} sieht die Ablehnung mit Ihrem Grund.`}
           </Statusmeldung>
-          {genehmigt && ergebnis.appointment_days.length > 0 ? (
-            <Listenabschnitt titel="Termine umplanen" anzahl={ergebnis.appointments} ebene={3}>
-              {ergebnis.appointment_days.map((t) => (
-                <ListRow
-                  key={t.on_date}
-                  titel={TAG.format(new Date(`${t.on_date}T00:00:00Z`))}
-                  meta={t.appointments === 1 ? '1 Termin' : `${t.appointments} Termine`}
-                  {...(canManageAppointments(user.roles)
-                    ? {
-                        // Zurück geht es dorthin, woher das Entscheiden kam - der
-                        // Antrag selbst ist danach nicht mehr offen.
-                        to: mitRueckweg(
-                          `/kalender/tag-umplanen?person=${antrag.staff_member_id}&datum=${t.on_date}`,
-                          rueckweg,
-                        ),
-                      }
-                    : {})}
-                />
-              ))}
-            </Listenabschnitt>
+          {genehmigt ? (
+            <DaysToReschedule
+              staffMemberId={antrag.staff_member_id}
+              days={ergebnis.appointment_days}
+              user={user}
+              returnTo={rueckweg}
+            />
           ) : null}
         </div>
       </GefuehrterAblauf>

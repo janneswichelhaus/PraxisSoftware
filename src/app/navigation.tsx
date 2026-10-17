@@ -196,6 +196,9 @@ const symbole = {
 /** Wie die Funktionssuche den Urlaub findet (URL-001). */
 const URLAUB_STICHWORTE = ['Urlaubsantrag', 'Abwesenheit', 'Urlaubskonto', 'Urlaubsanspruch'];
 
+/** Wie die Funktionssuche die Arbeitszeit findet (AZ-001). */
+const ARBEITSZEIT_STICHWORTE = ['Wochenplan', 'Arbeitszeitänderung', 'Mittagspause', 'Stunden'];
+
 function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
   // Die angebundenen Punkte stehen vorn, die gekennzeichneten Vorschauen
   // dahinter. Wer hier etwas erledigen will, trifft zuerst auf das, was
@@ -278,6 +281,13 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     },
     // URL-001: echt angebunden - Antrag, Entscheidung, Konto.
     { to: '/betrieb/urlaub', label: 'Urlaub', end: false, stichworte: URLAUB_STICHWORTE },
+    // AZ-001: der eigene Wochenplan und Anträge auf eine Änderung.
+    {
+      to: '/betrieb/arbeitszeit',
+      label: 'Arbeitszeit',
+      end: false,
+      stichworte: ARBEITSZEIT_STICHWORTE,
+    },
     { to: '/betrieb/zeitkonto', label: 'Zeitkonto', vorschau: true },
     { to: '/betrieb/erstattungen', label: 'Erstattungen', vorschau: true },
   );
@@ -357,7 +367,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       pfade: [
         '/training',
         ...(uebungenHier ? ['/uebungen'] : []),
-        ...(urlaubHier ? ['/betrieb/urlaub'] : []),
+        ...(urlaubHier ? ['/betrieb/urlaub', '/betrieb/arbeitszeit'] : []),
       ],
       icon: symbole.training,
       unterpunkte:
@@ -381,6 +391,12 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
                       label: 'Urlaub',
                       end: false,
                       stichworte: URLAUB_STICHWORTE,
+                    },
+                    {
+                      to: '/betrieb/arbeitszeit',
+                      label: 'Arbeitszeit',
+                      end: false,
+                      stichworte: ARBEITSZEIT_STICHWORTE,
                     },
                   ]
                 : []),
