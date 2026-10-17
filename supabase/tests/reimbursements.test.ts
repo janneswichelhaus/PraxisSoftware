@@ -12,6 +12,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
  * Erstattungen (ERS-001, Überholung 10): Ladestrom je Monat und Einkauf mit
@@ -54,8 +55,7 @@ const KONTO = 'select public.set_own_payout_account($1) as daten';
 const VORSCHAU = 'select public.preview_electricity_reimbursement($1::date) as daten';
 const STROM =
   'select public.submit_electricity_reimbursement($1::date, $2::integer, $3::boolean, $4) as daten';
-const VORBEREITEN =
-  'select * from public.prepare_reimbursement_receipt_upload($1, $2::bigint, $3)';
+const VORBEREITEN = 'select * from public.prepare_reimbursement_receipt_upload($1, $2::bigint, $3)';
 const BESTAETIGEN = 'select public.confirm_reimbursement_receipt_upload($1::uuid)';
 const VERWERFEN = 'select public.discard_reimbursement_receipt($1::uuid)';
 const EINKAUF = 'select public.submit_purchase_reimbursement($1::jsonb, $2) as daten';
@@ -348,9 +348,9 @@ describe('Erstattungen (ERS-001)', () => {
       expect(
         await code(asUser(users.ownerTherapist, 'select * from public.staff_payout_accounts')),
       ).toBe('42501');
-      expect(
-        await code(asUser(users.office, 'select * from public.staff_reimbursements')),
-      ).toBe('42501');
+      expect(await code(asUser(users.office, 'select * from public.staff_reimbursements'))).toBe(
+        '42501',
+      );
     });
   });
 
@@ -491,7 +491,9 @@ describe('Erstattungen (ERS-001)', () => {
         'working days out of range',
       );
       expect(
-        await meldung(asUser(users.therapist, STROM, [letzter, tageImMonat(letzter) + 1, true, null])),
+        await meldung(
+          asUser(users.therapist, STROM, [letzter, tageImMonat(letzter) + 1, true, null]),
+        ),
       ).toBe('working days out of range');
       expect(await meldung(asUser(users.therapist, STROM, [letzter, 5, false, null]))).toBe(
         'declaration missing',
@@ -693,15 +695,15 @@ describe('Erstattungen (ERS-001)', () => {
       await einkauf(users.therapist, [
         { receipt_id: v.receipt_id, amount_cents: 1290, purpose: 'Massageöl' },
       ]);
-      expect(
-        (await asServiceRole(ANKUENDIGUNG, [v.receipt_id, users.therapist])).rows,
-      ).toEqual([]);
+      expect((await asServiceRole(ANKUENDIGUNG, [v.receipt_id, users.therapist])).rows).toEqual([]);
       // Ein zugeordneter Beleg wird nicht mehr verworfen.
       expect(await ergebnis(v.receipt_id, false, false, false)).toBe('not_found');
       expect(
-        (await asPostgres('select 1 from public.staff_reimbursement_receipts where id = $1', [
-          v.receipt_id,
-        ])).rows,
+        (
+          await asPostgres('select 1 from public.staff_reimbursement_receipts where id = $1', [
+            v.receipt_id,
+          ])
+        ).rows,
       ).toHaveLength(1);
     });
 
@@ -807,9 +809,7 @@ describe('Erstattungen (ERS-001)', () => {
       expect(await versuch([{ ...gut, amount_cents: 100_001 }])).toBe('receipt item is invalid');
       expect(await versuch([{ ...gut, amount_cents: '12,90' }])).toBe('receipt item is invalid');
       expect(await versuch([{ ...gut, purpose: '  ' }])).toBe('receipt item is invalid');
-      expect(await versuch([{ ...gut, purpose: 'x'.repeat(201) }])).toBe(
-        'receipt item is invalid',
-      );
+      expect(await versuch([{ ...gut, purpose: 'x'.repeat(201) }])).toBe('receipt item is invalid');
       expect(await versuch([{ ...gut, receipt_id: 'kein-uuid' }])).toBe('receipt item is invalid');
       expect(await versuch([gut, gut])).toBe('receipt item is invalid');
       expect(await versuch([gut])).toBe('kein Fehler');
@@ -910,8 +910,9 @@ describe('Erstattungen (ERS-001)', () => {
       expect(rows[0]!.daten.account_since).toBeTruthy();
       // Die Listen tragen sie für niemanden voll.
       for (const konto of [users.ownerTherapist, users.office, users.therapist]) {
-        expect(JSON.stringify(await liste(konto, konto === users.therapist ? null : STAFF.anna)))
-          .not.toContain(IBAN.anna);
+        expect(
+          JSON.stringify(await liste(konto, konto === users.therapist ? null : STAFF.anna)),
+        ).not.toContain(IBAN.anna);
       }
     });
 
@@ -1015,7 +1016,11 @@ describe('Erstattungen (ERS-001)', () => {
       );
       const einkaufZeile = sicht.person?.reimbursements.find((r) => r.id === einkaufAnna);
       expect(einkaufZeile?.receipts).toEqual([
-        expect.objectContaining({ amount_cents: 1290, purpose: 'Massageöl', mime_type: 'image/jpeg' }),
+        expect.objectContaining({
+          amount_cents: 1290,
+          purpose: 'Massageöl',
+          mime_type: 'image/jpeg',
+        }),
       ]);
       expect(JSON.stringify(sicht)).not.toContain('object_key');
       // Fremde Personen gibt es für sie nicht.
@@ -1045,7 +1050,11 @@ describe('Erstattungen (ERS-001)', () => {
       expect(sicht.can_decide).toBe(true);
       expect(sicht.to_decide.map((r) => r.id).sort()).toEqual([stromAnna, einkaufAnna].sort());
       expect(sicht.to_pay).toEqual([
-        expect.objectContaining({ id: stromTim, iban_masked: 'DE02 •••• 2051', status: 'approved' }),
+        expect.objectContaining({
+          id: stromTim,
+          iban_masked: 'DE02 •••• 2051',
+          status: 'approved',
+        }),
       ]);
     });
 
@@ -1053,10 +1062,12 @@ describe('Erstattungen (ERS-001)', () => {
       const { beleg: v } = await belegtePraxis();
       const offen = await beleg(users.therapist);
       // Die Person: ihren zugeordneten und ihren noch offenen.
-      expect((await asUserCommitted(users.therapist, VERWEIS, [v.receipt_id])).rows).toHaveLength(1);
-      expect((await asUserCommitted(users.therapist, VERWEIS, [offen.receipt_id])).rows).toHaveLength(
+      expect((await asUserCommitted(users.therapist, VERWEIS, [v.receipt_id])).rows).toHaveLength(
         1,
       );
+      expect(
+        (await asUserCommitted(users.therapist, VERWEIS, [offen.receipt_id])).rows,
+      ).toHaveLength(1);
       // Büro und owner: nur zugeordnete; andere Rollen nichts.
       expect((await asUserCommitted(users.office, VERWEIS, [v.receipt_id])).rows).toHaveLength(1);
       expect(await code(asUser(users.office, VERWEIS, [offen.receipt_id]))).toBe('P0002');
@@ -1120,9 +1131,11 @@ describe('Erstattungen (ERS-001)', () => {
       );
       expect(rows.map((r) => r.id)).toEqual([jung]);
       expect(
-        (await asPostgres('select 1 from public.staff_reimbursement_receipts where id = $1', [
-          v.receipt_id,
-        ])).rows,
+        (
+          await asPostgres('select 1 from public.staff_reimbursement_receipts where id = $1', [
+            v.receipt_id,
+          ])
+        ).rows,
       ).toEqual([]);
       expect(await auftraege()).toEqual([v.object_key]);
       const { rows: journal } = await asPostgres<{ target_id: string; retention_class: string }>(
@@ -1183,6 +1196,218 @@ describe('Erstattungen (ERS-001)', () => {
       expect(
         (await asPostgres('select 1 from public.staff_reimbursements where id = $1', [id])).rows,
       ).toEqual([]);
+    });
+  });
+
+  describe('Ablage und Löschaufträge (ADR-017 Punkte 8, 11, 25)', () => {
+    /** Liest das Objekt mit der RLS des Kontos, wie die Storage-API beim Signieren. */
+    async function signieren(konto: string, objectKey: string): Promise<number> {
+      const { rows } = await asStorageApi<{ n: number }>(
+        konto,
+        'storage.object.sign',
+        `select count(*)::integer as n from storage.objects
+          where bucket_id = 'erstattungsbelege' and name = $1`,
+        [objectKey],
+      );
+      return rows[0]!.n;
+    }
+
+    it('lässt nicht hochladen: nach 24 Stunden, aus einer anderen Praxis, als Patienten- oder Plattformkonto', async () => {
+      const alt = await vorbereiten(users.therapist);
+      await belegVor(alt.receipt_id, '25 hours');
+      expect(await meldung(hochladen(users.therapist, alt))).toContain('row-level security');
+
+      const v = await vorbereiten(users.therapist);
+      const fremd = await fremdeOrganisation();
+      for (const konto of [fremd.owner, users.patientMax, users.plattformTina, users.office]) {
+        expect(await meldung(hochladen(konto, v)), konto).toContain('row-level security');
+      }
+      // Bestätigt ist bestätigt: kein zweites Objekt unter demselben Schlüssel.
+      await hochladen(users.therapist, v);
+      await asUserCommitted(users.therapist, BESTAETIGEN, [v.receipt_id]);
+      expect(await meldung(hochladen(users.therapist, v))).not.toBe('kein Fehler');
+    });
+
+    it('kein Überschreiben und kein direktes Löschen am Objektspeicher', async () => {
+      const v = await beleg(users.therapist);
+      const { rows } = await asUser<{ id: string }>(
+        users.therapist,
+        `update storage.objects set metadata = jsonb_build_object('size', 1)
+          where bucket_id = 'erstattungsbelege' and name = $1 returning id`,
+        [v.object_key],
+      ).catch(() => ({ rows: [] as { id: string }[] }));
+      expect(rows).toEqual([]);
+      // Ohne Löschauftrag löscht niemand das Objekt - auch owner nicht.
+      for (const konto of [users.therapist, users.ownerTherapist]) {
+        await asStorageApi(
+          konto,
+          'storage.object.delete',
+          "delete from storage.objects where bucket_id = 'erstattungsbelege' and name = $1",
+          [v.object_key],
+        );
+      }
+      const { rows: objekt } = await asPostgres<{ size: string }>(
+        `select metadata ->> 'size' as size from storage.objects
+          where bucket_id = 'erstattungsbelege' and name = $1`,
+        [v.object_key],
+      );
+      expect(objekt).toEqual([{ size: String(GROESSE) }]);
+    });
+
+    it('der Auftrag lässt sich ausführen und quittieren - nur owner, nur gegen die Löschfreigabe', async () => {
+      const ENTFERNEN =
+        "delete from storage.objects where bucket_id = 'erstattungsbelege' and name = $1 returning id";
+      const OPERATION = 'storage.object.delete_many';
+      const bleibt = await beleg(users.therapist);
+      const v = await beleg(users.therapist);
+      // Solange die Zeile steht, entfernt niemand das Objekt.
+      expect(
+        (await asStorageApi(users.ownerTherapist, OPERATION, ENTFERNEN, [bleibt.object_key])).rows,
+      ).toEqual([]);
+
+      await asUserCommitted(users.therapist, VERWERFEN, [v.receipt_id]);
+      const { rows: offen } = await asUser<{ id: string; bucket_id: string }>(
+        users.ownerTherapist,
+        'select id, bucket_id from public.list_storage_deletion_orders()',
+      );
+      expect(offen.map((o) => o.bucket_id)).toEqual(['erstattungsbelege']);
+      for (const konto of [users.therapist, users.ownerTherapist]) {
+        expect(
+          (await asStorageApi(konto, OPERATION, ENTFERNEN, [v.object_key])).rows,
+          konto,
+        ).toEqual([]);
+      }
+      const { rows: geholt } = await asUserCommitted(
+        users.ownerTherapist,
+        'select * from public.claim_storage_deletion_order($1::uuid)',
+        [offen[0]!.id],
+      );
+      expect(geholt).toEqual([{ bucket_id: 'erstattungsbelege', object_key: v.object_key }]);
+      // Auch mit offener Freigabe entfernt kein anderes Konto das Objekt.
+      const fremd = await fremdeOrganisation();
+      for (const konto of [fremd.owner, users.patientMax, users.plattformTina, users.office]) {
+        expect(
+          (await asStorageApi(konto, OPERATION, ENTFERNEN, [v.object_key])).rows,
+          konto,
+        ).toEqual([]);
+      }
+      // Die Löschfreigabe öffnet das Objekt nicht zum Ansehen.
+      expect(await signieren(users.ownerTherapist, v.object_key)).toBe(0);
+      expect(
+        (await asStorageApi(users.ownerTherapist, OPERATION, ENTFERNEN, [v.object_key])).rows,
+      ).toHaveLength(1);
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.receipt_storage_deletion_order($1::uuid)',
+        [offen[0]!.id],
+      );
+      expect(await auftraege()).toEqual([]);
+    });
+  });
+
+  describe('Lesefreigaben (ANN-052)', () => {
+    async function signieren(konto: string, objectKey: string): Promise<number> {
+      const { rows } = await asStorageApi<{ n: number }>(
+        konto,
+        'storage.object.sign',
+        `select count(*)::integer as n from storage.objects
+          where bucket_id = 'erstattungsbelege' and name = $1`,
+        [objectKey],
+      );
+      return rows[0]!.n;
+    }
+
+    it('eine abgelaufene Freigabe öffnet nichts; das Aufräumen entfernt sie, und sie fällt mit dem Beleg', async () => {
+      const v = await beleg(users.therapist);
+      await asUserCommitted(users.therapist, VERWEIS, [v.receipt_id]);
+      await asPostgres(
+        `update public.staff_reimbursement_receipt_access_grants
+            set created_at = now() - interval '1 minute', expires_at = now() - interval '30 seconds'`,
+      );
+      expect(await signieren(users.therapist, v.object_key)).toBe(0);
+      // Beim nächsten Ausstellen fällt die abgelaufene weg.
+      await asUserCommitted(users.therapist, VERWEIS, [v.receipt_id]);
+      expect(
+        (await asPostgres('select 1 from public.staff_reimbursement_receipt_access_grants')).rows,
+      ).toHaveLength(1);
+      // Ohne weiteres Ausstellen räumt der tägliche Lauf auf (§20).
+      await asPostgres(
+        `update public.staff_reimbursement_receipt_access_grants
+            set created_at = now() - interval '1 minute', expires_at = now() - interval '30 seconds'`,
+      );
+      await asPostgres('select public.discard_stale_reimbursement_receipts()');
+      expect(
+        (await asPostgres('select 1 from public.staff_reimbursement_receipt_access_grants')).rows,
+      ).toEqual([]);
+      // Eine offene Freigabe fällt mit ihrem Beleg (cascade).
+      await asUserCommitted(users.therapist, VERWEIS, [v.receipt_id]);
+      await asUserCommitted(users.therapist, VERWERFEN, [v.receipt_id]);
+      expect(
+        (await asPostgres('select 1 from public.staff_reimbursement_receipt_access_grants')).rows,
+      ).toEqual([]);
+    });
+  });
+
+  describe('Gleichzeitig (Zweitreview)', () => {
+    it('ordnet keinen Beleg zu, der gleichzeitig verworfen wird - der Betrag bleibt gedeckt', async () => {
+      await kontoHinterlegen(users.therapist, IBAN.anna);
+      const v = await beleg(users.therapist);
+      const fehler = await gleichzeitig(
+        { konto: users.therapist, sql: VERWERFEN, params: [v.receipt_id] },
+        {
+          konto: users.therapist,
+          sql: EINKAUF,
+          params: [
+            JSON.stringify([
+              { receipt_id: v.receipt_id, amount_cents: 1290, purpose: 'Massageöl' },
+            ]),
+            null,
+          ],
+        },
+      );
+      expect(fehler?.message).toBe('receipt not found');
+      expect((await asPostgres('select 1 from public.staff_reimbursements')).rows).toEqual([]);
+    });
+  });
+
+  describe('Löschjournal der Belege (ADR-008 Punkt 8)', () => {
+    it('führt verworfene, aufgeräumte und abgewiesene Belege und löscht sie nach einer Wiederherstellung erneut', async () => {
+      const verworfen = await beleg(users.therapist);
+      const alt = await beleg(users.therapist);
+      const abgewiesen = await beleg(users.therapist);
+      const sicherung = await asPostgres<Record<string, unknown>>(
+        `select * from public.staff_reimbursement_receipts order by id`,
+      );
+      await asUserCommitted(users.therapist, VERWERFEN, [verworfen.receipt_id]);
+      await belegVor(alt.receipt_id, '25 hours');
+      await asPostgres('select public.discard_stale_reimbursement_receipts()');
+      expect(await ergebnis(abgewiesen.receipt_id, false, true, true)).toBe('rejected');
+
+      const { rows: journal } = await asPostgres<{ target_id: string; retention_class: string }>(
+        `select target_id, retention_class from public.deletion_journal
+          where target_table = 'staff_reimbursement_receipts' order by target_id`,
+      );
+      expect(journal).toEqual(
+        [verworfen.receipt_id, alt.receipt_id, abgewiesen.receipt_id]
+          .sort()
+          .map((id) => ({ target_id: id, retention_class: 'erstattung' })),
+      );
+
+      // Die Sicherung bringt die Zeilen zurück - ohne den Wächter, wie ein Restore.
+      await asPostgres(
+        `insert into public.staff_reimbursement_receipts
+           (id, organization_id, staff_member_id, mime_type, byte_size, checksum_sha256, status,
+            confirmed_at, created_by, created_at)
+         select (r ->> 'id')::uuid, (r ->> 'organization_id')::uuid, (r ->> 'staff_member_id')::uuid,
+                r ->> 'mime_type', (r ->> 'byte_size')::bigint, r ->> 'checksum_sha256', r ->> 'status',
+                (r ->> 'confirmed_at')::timestamptz, (r ->> 'created_by')::uuid, now()
+           from jsonb_array_elements($1::jsonb) as r`,
+        [JSON.stringify(sicherung.rows)],
+      );
+      await asPostgres('select public.reapply_deletion_journal()');
+      expect((await asPostgres('select 1 from public.staff_reimbursement_receipts')).rows).toEqual(
+        [],
+      );
     });
   });
 

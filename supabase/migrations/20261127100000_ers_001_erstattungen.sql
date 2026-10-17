@@ -837,7 +837,8 @@ declare
   v_id  uuid;
 begin
   v_org := app.staff_request_org(app.can_request_reimbursements(), 'not allowed to request reimbursements');
-  -- Der Trigger schreibt den Löschauftrag, falls schon ein Objekt liegt.
+  -- Der Trigger schreibt den Löschauftrag, falls schon ein Objekt liegt; das
+  -- Journal hält die Löschung über eine Wiederherstellung (ADR-008 Punkt 8).
   delete from public.staff_reimbursement_receipts b
    where b.id = p_receipt_id and b.organization_id = v_org and b.created_by = auth.uid()
      and b.reimbursement_id is null
@@ -845,6 +846,10 @@ begin
   if v_id is null then
     raise exception 'receipt not found' using errcode = 'P0002';
   end if;
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  values (v_org, extensions.gen_random_uuid(), 'staff_reimbursement_receipts', v_id,
+          'erstattung', now());
 end;
 $$;
 
@@ -852,7 +857,7 @@ revoke all on function public.discard_reimbursement_receipt(uuid) from public, a
 grant execute on function public.discard_reimbursement_receipt(uuid) to authenticated;
 
 comment on function public.discard_reimbursement_receipt(uuid) is
-  'ERS-001 (ADR-017 Punkt 7): verwirft einen eigenen Beleg, der noch keinem Antrag zugeordnet ist.';
+  'ERS-001 (ADR-017 Punkt 7): verwirft einen eigenen Beleg, der noch keinem Antrag zugeordnet ist - mit Löschauftrag für das Objekt und Eintrag im Löschjournal (ADR-008 Punkt 8).';
 
 -- Nach einem Tag ohne Antrag verworfen (ANN-600), dazu die abgelaufenen
 -- Lesefreigaben. Aufräumen, keine Frist.
@@ -865,9 +870,19 @@ as $$
 declare
   v_anzahl integer;
 begin
-  delete from public.staff_reimbursement_receipts
-   where reimbursement_id is null
-     and created_at < now() - interval '24 hours';
+  -- Mit Journal: Nach einer Wiederherstellung fallen sie erneut (ADR-008
+  -- Punkt 8), statt bis zum nächsten Lauf wieder zuordenbar zu sein.
+  with geloescht as (
+    delete from public.staff_reimbursement_receipts
+     where reimbursement_id is null
+       and created_at < now() - interval '24 hours'
+    returning id, organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, extensions.gen_random_uuid(), 'staff_reimbursement_receipts', g.id,
+         'erstattung', now()
+  from geloescht g;
   get diagnostics v_anzahl = row_count;
   -- Abgelaufene, nicht verbrauchte Lesefreigaben hielten sonst fest, wer
   -- wann welchen Beleg öffnen wollte (PROJECT_PRINCIPLES.md 20).
@@ -940,8 +955,13 @@ begin
     raise exception 'receipt item is invalid' using errcode = '22023';
   end if;
 
-  -- Nur eigene, fertige, noch nicht zugeordnete Belege - gesperrt, damit
-  -- keiner zweimal zugeordnet wird. Fremde und verworfene sehen gleich aus.
+  -- Erst sperren, dann wählen (Zweitreview): Wartet die Sperre auf ein
+  -- gleichzeitiges Verwerfen, Aufräumen oder Zuordnen, sieht die Auswahl
+  -- danach mit neuem Schnappschuss, was davon übrig ist. Nur eigene, fertige,
+  -- noch nicht zugeordnete Belege; fremde und verworfene sehen gleich aus.
+  perform 1 from public.staff_reimbursement_receipts b
+   where b.id in (select receipt_id from erstattung_posten)
+   for update;
   select array_agg(b.id) into v_ids
   from public.staff_reimbursement_receipts b
   where b.id in (select receipt_id from erstattung_posten)
@@ -951,12 +971,7 @@ begin
     and b.reimbursement_id is null
     and b.status = 'ready'
     and b.created_at > now() - interval '24 hours';
-  perform 1 from public.staff_reimbursement_receipts b where b.id = any (v_ids) for update;
-  if coalesce(array_length(v_ids, 1), 0) <> jsonb_array_length(p_items)
-     or exists (
-       select 1 from public.staff_reimbursement_receipts b
-       where b.id = any (v_ids) and b.reimbursement_id is not null
-     ) then
+  if coalesce(array_length(v_ids, 1), 0) <> jsonb_array_length(p_items) then
     raise exception 'receipt not found' using errcode = 'P0002';
   end if;
 
@@ -974,11 +989,16 @@ begin
   )
   returning id into v_id;
 
+  -- Jede Zuordnung muss treffen; sonst fällt der ganze Antrag zurück - ein
+  -- Betrag ohne seinen Beleg entsteht nie (ANN-600).
   for v_posten in select * from erstattung_posten loop
     update public.staff_reimbursement_receipts
        set reimbursement_id = v_id, amount_cents = v_posten.amount_cents,
            purpose = v_posten.purpose, attached_at = now()
-     where id = v_posten.receipt_id;
+     where id = v_posten.receipt_id and reimbursement_id is null;
+    if not found then
+      raise exception 'receipt not found' using errcode = 'P0002';
+    end if;
   end loop;
 
   return jsonb_build_object('id', v_id, 'status', v_status, 'amount_cents', v_summe);
@@ -1473,10 +1493,13 @@ begin
     return 'passed';
   end if;
 
-  -- Punkt 52: Befund heißt verwerfen; der Trigger schreibt den Löschauftrag.
-  -- Kein Journal: Ein Beleg ohne Antrag fällt nach einer Wiederherstellung
-  -- ohnehin nach einem Tag (public.discard_stale_reimbursement_receipts).
+  -- Punkt 52: Befund heißt verwerfen; der Trigger schreibt den Löschauftrag,
+  -- das Journal hält es über eine Wiederherstellung (Punkt 26).
   delete from public.staff_reimbursement_receipts where id = p_receipt_id;
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  values (v_beleg.organization_id, extensions.gen_random_uuid(), 'staff_reimbursement_receipts',
+          v_beleg.id, 'erstattung', now());
   return 'rejected';
 end;
 $$;
@@ -2162,8 +2185,10 @@ declare
     -- ZK-001: ein Eintrag im Zeitkonto; seine Abweichung faellt mit ihm
     -- (cascade).
     'staff_time_account_entries',
-    -- ERS-001: eine Erstattung; ihre Belege fallen mit ihr (cascade), deren
-    -- Objekte über den Löschauftrag.
+    -- ERS-001: einzeln verworfene Belege vor ihrem Antrag; eine Erstattung
+    -- nimmt ihre übrigen Belege mit (cascade), deren Objekte über den
+    -- Löschauftrag.
+    'staff_reimbursement_receipts',
     'staff_reimbursements',
     'treatment_base_items',
     'treatment_bases',
