@@ -283,7 +283,7 @@ function NiemandOeffnetFenster({
         // nicht im Satz.
         <div className="text-ink flex flex-col gap-3 text-sm">
           <div>
-            <p>Tür geöffnet, aber keine Behandlung? Ohne Ausfallhonorar:</p>
+            <p>Tür geöffnet, aber keine Behandlung? Dann ohne Ausfallhonorar:</p>
             {wege ? (
               <Textlink alleinstehend to={wege.ohneBehandlung}>
                 Ohne Behandlung festhalten
