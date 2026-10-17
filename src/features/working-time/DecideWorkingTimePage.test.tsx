@@ -94,6 +94,9 @@ describe('DecideWorkingTimePage', () => {
     expect(umplanen.getAttribute('href')).toContain(
       '/kalender/tag-umplanen?person=55555555-5555-4555-8555-000000000002&datum=2026-12-01',
     );
+    // Mit der neuen Arbeitszeit des Dienstags: „Tag umplanen“ wählt nur die
+    // Termine außerhalb vor, nicht den ganzen Tag (Praxis-Review Überholung 9).
+    expect(umplanen.getAttribute('href')).toContain('&zeiten=08:00-12:30,13:30-18:00');
   });
 
   it('lehnt nur mit Grund ab', async () => {

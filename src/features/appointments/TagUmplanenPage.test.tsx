@@ -151,6 +151,32 @@ describe('TagUmplanenPage', () => {
     expect(within(auswahl).getByRole('button', { name: 'Weiter mit 1 Termin' })).toBeEnabled();
   });
 
+  it('wählt nach einer Teiländerung nur die Termine außerhalb der Arbeitszeit vor (Praxis-Review Überholung 9)', async () => {
+    const user = userEvent.setup();
+    // Ortszeit im Mai: termin-1 09:00–10:00, termin-2 11:00–12:00; nach der
+    // Änderung arbeitet Anna 11:00–13:00 - nur termin-1 fällt heraus.
+    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zeiten=11:00-13:00`);
+    const grund = await fenster('Warum fallen die Termine aus?');
+    await user.click(within(grund).getByRole('button', { name: 'Praxis hat abgesagt' }));
+    const auswahl = await fenster('Welche Termine absagen?');
+    const [erster, zweiter] = within(auswahl).getAllByRole('checkbox');
+    expect(erster).toBeChecked();
+    expect(zweiter).not.toBeChecked();
+    await user.click(within(auswahl).getByRole('button', { name: 'Weiter mit 1 Termin' }));
+    const rueckfrage = await fenster('1 Termin absagen?');
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Ja, 1 Termin absagen' }));
+    await waitFor(() =>
+      expect(cancelStaffDay).toHaveBeenCalledWith(ANNA, DATUM, 'practice_request', ['termin-1']),
+    );
+  });
+
+  it('wählt bei einer ungültigen Angabe der Zeiten den ganzen Tag vor', async () => {
+    const user = userEvent.setup();
+    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zeiten=11-13`);
+    const auswahl = await bisZurAuswahl(user);
+    for (const kasten of within(auswahl).getAllByRole('checkbox')) expect(kasten).toBeChecked();
+  });
+
   /**
    * „Tag umplanen" sagt Behandlungstermine ab; ein Ereignis des Praxisbetriebs
    * lässt `cancel_staff_day` ausdrücklich stehen (CAL-015b). Stünde es hier in
