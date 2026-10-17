@@ -110,6 +110,7 @@ import { PayoutAccountPage } from '@/features/reimbursements/PayoutAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { RequestReimbursementPage } from '@/features/reimbursements/RequestReimbursementPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
+import { FlottenNachrichtenPage } from '@/features/teamchat/FlottenNachrichtenPage';
 import { GespraechPage } from '@/features/teamchat/GespraechPage';
 import { NeuPage } from '@/features/teamchat/NeuPage';
 import { ThreadPage } from '@/features/teamchat/ThreadPage';
@@ -560,6 +561,15 @@ export function AuthenticatedRoutes({
                     <Route path="/betrieb/flotte/schluessel" element={<KeyPage user={user} />} />
                     <Route path="/betrieb/flotte/checkup" element={<CheckupPage user={user} />} />
                     <Route path="/betrieb/flotte/panne" element={<BreakdownPage user={user} />} />
+                    {/* ANN-613: das Gespräch der Radflotte (TEAM-001). */}
+                    <Route
+                      path="/betrieb/flotte/nachrichten"
+                      element={<FlottenNachrichtenPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/flotte/nachrichten/:threadId"
+                      element={<FlottenNachrichtenPage user={user} />}
+                    />
                     {/* FLT-008 (ANN-569): Check-Ups und Pannen aller Räder für
                   Inhaber:in und Teamleitung - der Server weist alle anderen ab. */}
                     <Route

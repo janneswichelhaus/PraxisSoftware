@@ -6389,13 +6389,13 @@ Datenschutz · offen · 2026-10-17 · Claude · Prüfpaket · Wiedervorlage: Dat
 
 ### ANN-611 — Teamchat: wer teilnimmt, wer Kanäle führt, wer entfernt
 
-Praxisprozess · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung Teamchat
+Praxisprozess · offen · 2026-10-17 · Claude, Kanäle Jannes · — · Wiedervorlage: Sichtung Teamchat
 
-**Annahme.** Teilnehmen kann jede Praxisrolle mit aktivem Mitarbeiterdatensatz, auch die Trainingsbetreuung. Offene Kanäle sieht die ganze Praxis; anlegen und archivieren owner und Teamleitung, „Allgemein“ bleibt offen. Startkanäle: Allgemein, Flotte, Vertretungen. owner entfernt fremde Nachrichten nur in offenen Kanälen (Anker „von der Praxisleitung entfernt“, `removed_by` als Nachweis, kein Audit). Keine privaten Kanäle, kein @alle.
+**Annahme.** Teilnehmen kann jede Praxisrolle mit aktivem Mitarbeiterdatensatz, auch die Trainingsbetreuung. Offene Kanäle sieht die ganze Praxis; anlegen und archivieren owner und Teamleitung. Es gibt keine Startkanäle – die Praxis richtet ihre Kanäle selbst ein (Jannes 2026-10-17). owner entfernt fremde Nachrichten nur in offenen Kanälen (Anker „von der Praxisleitung entfernt“, `removed_by` als Nachweis, kein Audit). Keine privaten Kanäle, kein @alle.
 
 **Begründung.** §10 (Kanäle, Direktnachrichten); 3–8 Personen brauchen Übersicht; ADR-010 Punkt 15 und 17; Referenzabgleich (Slack: Admin löscht fremde).
 
-**Anker.** `app.can_use_teamchat`, `app.can_manage_team_channels`, `public.delete_team_message`.
+**Anker.** `app.can_use_teamchat`, `app.can_manage_team_channels`, `app.create_team_fleet_channel`, `public.delete_team_message`.
 
 **Änderungspfad.** Weitere Rolle oder alle legen an: eine Funktion · Aufwand `klein`.
 
@@ -6410,3 +6410,15 @@ Technik · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung Teamc
 **Anker.** `NACHSEHEN_MS` in `src/features/teamchat/api.ts`.
 
 **Änderungspfad.** Echtzeit: Supabase Realtime mit Prüfung gegen ADR-002 · Aufwand `mittel`; Push: ADR-024 ändern · Aufwand `groß`.
+
+### ANN-613 — Nachrichten zu Rädern stehen in der Radflotte
+
+Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Statt eines Kanals „Flotte“ im Teamchat hat die Radflotte eine Ansicht „Nachrichten“: ein Gespräch je Praxis mit Threads, Erwähnungen und derselben Löschfrist wie der Teamchat. Lesen und schreiben, die die Radflotte lesen (owner, therapist, team_lead, office); die Trainingsbetreuung nicht. Es entsteht mit der Praxis, lässt sich nicht archivieren; owner entfernt dort wie in offenen Kanälen. Kein Gespräch je Rad.
+
+**Begründung.** Jannes 2026-10-17: „Es wird keinen Channel für das Rad brauchen. Dafür gibt es schon den anderen Bereich“; Rechte wie `app.can_read_fleet` (FLT-001). Ein Gespräch je Rad wäre die feinere, aber teurere Variante (Frage im PR).
+
+**Anker.** `team_channels.kind = 'fleet'`, `app.team_staff_reads_fleet`.
+
+**Änderungspfad.** Je Rad: Spalte `bike_id` und ein Gespräch je Rad auf der Radseite · Aufwand `mittel`.

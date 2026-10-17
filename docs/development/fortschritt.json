@@ -1007,7 +1007,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-17",
           "nachweis": "Branch claude/modest-turing-i5qgn9, Migration 20261204100000_team_001_teamchat.sql, supabase/tests/teamchat.test.ts, src/features/teamchat/*.test.ts(x), tests/e2e/authenticated/teamchat.spec.ts, Zweitreview in zwei Runden",
-          "vermerk": "Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-612; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen"
+          "vermerk": "Überholung 11 (Auftrag Jannes 17.10.2026), ersetzt die Vorschau; ADR-008 Fassung 5 Punkt 12; ANN-609 bis ANN-613; keine Startkanäle (Jannes), Nachrichten der Radflotte in der Radflotte; Anhänge (ADR-017 Punkt 30), Push (ADR-024) und Vorgangsbezug offen"
         },
         {
           "id": "url-001",

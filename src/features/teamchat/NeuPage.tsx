@@ -29,7 +29,7 @@ export function NeuPage({ user }: { user: CurrentUser }) {
     mutationFn: (staffMemberId: string) => oeffneDirekt(staffMemberId),
     onSuccess: async (id) => {
       await queryClient.invalidateQueries({ queryKey: TEAMCHAT_KEY });
-      void navigate(gespraechPfad(id));
+      void navigate(gespraechPfad({ id, kind: 'direct' }));
     },
   });
   const darfKanal = user.roles.some((r) => r === 'owner' || r === 'team_lead');
@@ -76,7 +76,7 @@ function KanalAnlegen() {
     mutationFn: () => legeKanalAn({ name, beschreibung }),
     onSuccess: async (id) => {
       await queryClient.invalidateQueries({ queryKey: TEAMCHAT_KEY });
-      void navigate(gespraechPfad(id));
+      void navigate(gespraechPfad({ id, kind: 'channel' }));
     },
   });
 

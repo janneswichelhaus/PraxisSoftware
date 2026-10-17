@@ -91,18 +91,24 @@ on conflict (id) do nothing;
 
 -- -----------------------------------------------------------------------------
 -- TEAM-001: der Teamchat mit ein paar Absprachen - synthetisch, ohne
--- Patientenbezug. Die Startkanäle bekommen feste Kennungen, damit die
--- Bildstrecke sie öffnen kann (scripts/bildstrecke/routen.mjs).
+-- Patientenbezug. Feste Kennungen, damit die Bildstrecke die Gespräche öffnen
+-- kann (scripts/bildstrecke/routen.mjs).
 -- -----------------------------------------------------------------------------
+-- Kanäle legt die Praxis selbst an (ANN-611); für die Testumgebung zwei als
+-- Beispiel. Das Gespräch der Radflotte entsteht mit der Praxis und bekommt
+-- hier nur eine feste Kennung.
 update public.team_channels
-set id = case name
-  when 'Allgemein' then '7e7e7e7e-7e7e-4e7e-8e7e-000000000001'::uuid
-  when 'Flotte' then '7e7e7e7e-7e7e-4e7e-8e7e-000000000002'::uuid
-  else '7e7e7e7e-7e7e-4e7e-8e7e-000000000003'::uuid
-end
-where organization_id = '22222222-2222-4222-8222-000000000001'
-  and kind = 'channel' and name in ('Allgemein', 'Flotte', 'Vertretungen')
+set id = '7e7e7e7e-7e7e-4e7e-8e7e-000000000002'
+where organization_id = '22222222-2222-4222-8222-000000000001' and kind = 'fleet'
   and not exists (select 1 from public.team_messages m where m.channel_id = team_channels.id);
+
+insert into public.team_channels (id, organization_id, kind, name, description)
+values
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000001', '22222222-2222-4222-8222-000000000001', 'channel',
+   'Allgemein', 'Organisatorisches für das ganze Team.'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000003', '22222222-2222-4222-8222-000000000001', 'channel',
+   'Vertretungen', 'Kurzfristige Einsatzänderungen.')
+on conflict do nothing;
 
 insert into public.team_channels (id, organization_id, kind, created_at)
 values ('7e7e7e7e-7e7e-4e7e-8e7e-000000000004', '22222222-2222-4222-8222-000000000001', 'direct',
@@ -126,6 +132,10 @@ values
   ('7e7e7e7e-7e7e-4e7e-8e7e-000000000102', '22222222-2222-4222-8222-000000000001',
    '7e7e7e7e-7e7e-4e7e-8e7e-000000000001', null, '55555555-5555-4555-8555-000000000003',
    '@Tim Teamleitung die neuen Druckerpatronen sind da, sie liegen im Büro.', now() - interval '50 minutes'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000103', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000101',
+   '55555555-5555-4555-8555-000000000003',
+   'Die Tankbelege von der Tour am Dienstag reiche ich morgen nach.', now() - interval '2 days 1 hour'),
   ('7e7e7e7e-7e7e-4e7e-8e7e-000000000201', '22222222-2222-4222-8222-000000000001',
    '7e7e7e7e-7e7e-4e7e-8e7e-000000000002', null, '55555555-5555-4555-8555-000000000002',
    'Lastenrad 3 hat unterwegs die Kette verloren. Panne ist gemeldet, das Rad steht im Depot Süd.',

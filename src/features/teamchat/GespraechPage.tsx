@@ -62,7 +62,8 @@ export function GespraechPage({ user }: { user: CurrentUser }) {
   );
 }
 
-function Gespraech({ user, kanal }: { user: CurrentUser; kanal: Kanal }) {
+/** Ein Gespräch - im Teamchat und, als Gespräch der Flotte, in der Radflotte. */
+export function Gespraech({ user, kanal }: { user: CurrentUser; kanal: Kanal }) {
   const [suche] = useSearchParams();
   const [aeltere, setAeltere] = useState<Nachricht[]>([]);
   const [keineAelteren, setKeineAelteren] = useState(false);
@@ -127,7 +128,7 @@ function Gespraech({ user, kanal }: { user: CurrentUser; kanal: Kanal }) {
                 nachrichten={[...aeltere, ...daten]}
                 zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'}
                 eigeneId={user.staffMemberId ?? null}
-                threadPfad={(n) => threadPfad(kanal.id, n.id)}
+                threadPfad={(n) => threadPfad(kanal, n.id)}
                 darfEntfernen={kanal.kind === 'channel' && isOwner(user.roles)}
                 hervorheben={suche.get('nachricht')}
                 gesperrt={gesperrt !== null}
@@ -153,7 +154,6 @@ function Archivieren({ kanal }: { kanal: Kanal }) {
     mutationFn: () => archiviereKanal(kanal.id, !kanal.archived),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: TEAMCHAT_KEY }),
   });
-  if (kanal.name === 'Allgemein') return null;
   // Wieder öffnen ist harmlos und braucht keine Rückfrage (Praxis-Review).
   if (kanal.archived) {
     return (

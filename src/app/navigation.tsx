@@ -269,11 +269,36 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
 
   // FLT-EPIC-001: Lesen alle Rollen der Behandlungsseite.
   if (behandlungsseite) {
+    // ANN-613: Nachrichten über Räder, Schlüssel und Pannen stehen in der
+    // Radflotte, nicht als Kanal im Teamchat.
+    const flottenAnsichten: Ansicht[] = [
+      {
+        to: '/betrieb/flotte',
+        label: 'Räder',
+        end: true,
+        pfade: [
+          '/betrieb/flotte/rad',
+          '/betrieb/flotte/depots',
+          '/betrieb/flotte/schluessel',
+          '/betrieb/flotte/checkup',
+          '/betrieb/flotte/panne',
+          '/betrieb/flotte/meldungen',
+        ],
+        stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
+      },
+      {
+        to: '/betrieb/flotte/nachrichten',
+        label: 'Nachrichten',
+        end: false,
+        stichworte: ['Nachrichten der Radflotte', 'Rad', 'Panne besprechen'],
+      },
+    ];
     eintraege.push({
       to: '/betrieb/flotte',
       label: 'Radflotte',
       end: false,
       stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
+      ansichten: flottenAnsichten,
     });
   }
 

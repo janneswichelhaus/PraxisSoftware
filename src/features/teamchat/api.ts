@@ -21,7 +21,7 @@ import { getSupabase } from '@/lib/supabase';
 
 const kanalSchema = z.object({
   id: z.string(),
-  kind: z.enum(['channel', 'direct']),
+  kind: z.enum(['channel', 'direct', 'fleet']),
   name: z.string().nullable(),
   description: z.string().nullable(),
   archived: z.boolean(),
@@ -242,6 +242,7 @@ export async function archiviereKanal(kanalId: string, archiviert: boolean): Pro
 /** Wie ein Gespräch heißt: der Kanalname mit #, sonst die andere Person. */
 export function kanalTitel(kanal: Pick<Kanal, 'kind' | 'name' | 'partner_name'>): string {
   if (kanal.kind === 'channel') return `# ${kanal.name ?? ''}`;
+  if (kanal.kind === 'fleet') return 'Nachrichten der Radflotte';
   return kanal.partner_name ?? 'Direktnachricht';
 }
 
@@ -259,11 +260,12 @@ export function ohneInhalt(nachricht: Pick<Nachricht, 'removed_kind'>): string {
 
 /**
  * Gesprächsliste in der Reihenfolge des Arbeitstags: Ungelesenes zuerst, dann
- * offene Kanäle nach Namen (Allgemein vorn), dann Direktnachrichten nach der
- * letzten Nachricht; Archiviertes getrennt.
+ * offene Kanäle nach Namen, dann Direktnachrichten nach der letzten
+ * Nachricht; Archiviertes getrennt. Kanäle richtet die Praxis selbst ein
+ * (ANN-611).
  */
 export function ordneKanaele(kanaele: readonly Kanal[]): { aktiv: Kanal[]; archiviert: Kanal[] } {
-  const rang = (k: Kanal) => (k.kind === 'channel' ? (k.name === 'Allgemein' ? 0 : 1) : 2);
+  const rang = (k: Kanal) => (k.kind === 'channel' ? 0 : 1);
   const aktiv = kanaele
     .filter((k) => !k.archived)
     .sort((a, b) => {

@@ -15,6 +15,8 @@ test.describe.configure({ mode: 'serial', timeout: 60_000 });
 
 const LAUF = Date.now();
 const TELEFON = { width: 375, height: 812 };
+/** Kanäle legt die Praxis selbst an (ANN-611) - dieser Lauf seinen eigenen. */
+const KANAL = `Absprachen ${LAUF}`;
 
 function zaehler() {
   let tipps = 0;
@@ -36,11 +38,20 @@ async function zumTeamchat(page: Page, konto: string): Promise<void> {
   await expect(page.getByRole('heading', { level: 1, name: 'Teamchat' })).toBeVisible();
 }
 
+test('legt als Praxisleitung einen Kanal an', async ({ page }) => {
+  await zumTeamchat(page, KONTEN.owner);
+  await page.getByRole('link', { name: 'Neu', exact: true }).click();
+  await page.getByText('Kanal anlegen', { exact: true }).first().click();
+  await page.getByRole('textbox', { name: 'Name' }).fill(KANAL);
+  await page.getByRole('button', { name: 'Kanal anlegen' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: `# ${KANAL}` })).toBeVisible();
+});
+
 test('schreibt in einen Kanal in zwei Tipps und antwortet im Thread in zwei', async ({ page }) => {
   await zumTeamchat(page, KONTEN.therapist);
   const z = zaehler();
-  await z.tippe(page.getByRole('link', { name: /# Flotte/ }));
-  await page.getByRole('textbox', { name: 'Nachricht an # Flotte' }).fill(`Kette Rad 2 ${LAUF}`);
+  await z.tippe(page.getByRole('link', { name: `# ${KANAL}` }));
+  await page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` }).fill(`Kette Rad 2 ${LAUF}`);
   await z.tippe(page.getByRole('button', { name: 'Senden' }));
   await expect(page.getByText(`Kette Rad 2 ${LAUF}`)).toBeVisible();
   expect(z.tipps).toBeLessThanOrEqual(2);
@@ -68,22 +79,20 @@ test('schreibt in einen Kanal in zwei Tipps und antwortet im Thread in zwei', as
 
 test('erwähnt mit @ und einem Tipp; die Erwähnte sieht „für dich“', async ({ page, browser }) => {
   await zumTeamchat(page, KONTEN.therapist);
-  await page.getByRole('link', { name: /# Allgemein/ }).click();
-  await page.getByRole('textbox', { name: 'Nachricht an # Allgemein' }).fill('Bitte melden ');
+  await page.getByRole('link', { name: `# ${KANAL}` }).click();
+  await page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` }).fill('Bitte melden ');
   const z = zaehler();
   await z.tippe(page.getByRole('button', { name: 'Jemanden erwähnen' }));
   await z.tippe(page.getByRole('button', { name: 'Olivia Office' }));
   expect(z.tipps).toBe(2);
-  await page
-    .getByRole('textbox', { name: 'Nachricht an # Allgemein' })
-    .pressSequentially(`${LAUF}`);
+  await page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` }).pressSequentially(`${LAUF}`);
   await page.getByRole('button', { name: 'Senden' }).click();
   await expect(page.getByText(`@Olivia Office ${LAUF}`)).toBeVisible();
 
   const andere = await browser.newPage();
   await zumTeamchat(andere, KONTEN.office);
-  await expect(andere.getByRole('link', { name: /# Allgemein.*für dich/ })).toBeVisible();
-  await andere.getByRole('link', { name: /# Allgemein/ }).click();
+  await expect(andere.getByRole('link', { name: `# ${KANAL}` })).toContainText('für dich');
+  await andere.getByRole('link', { name: `# ${KANAL}` }).click();
   await expect(andere.getByText('Für dich')).toBeVisible();
   await andere.close();
 });
@@ -119,4 +128,26 @@ test('findet ein Wort und öffnet den Treffer in zwei Tipps', async ({ page }) =
   await expect(page.getByRole('heading', { level: 1, name: 'Antworten' })).toBeVisible();
   await expect(page.getByText(`Kette Rad 2 ${LAUF}`)).toBeVisible();
   expect(z.tipps).toBeLessThanOrEqual(2);
+});
+
+test('bespricht Räder in der Radflotte, nicht im Teamchat (ANN-613)', async ({ page }) => {
+  await anmelden(page, KONTEN.therapist);
+  await page.setViewportSize(TELEFON);
+  await page.goto('/betrieb/flotte');
+  await page
+    .getByRole('navigation', { name: 'Ansichten' })
+    .getByRole('link', { name: 'Nachrichten' })
+    .click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Nachrichten der Radflotte' }),
+  ).toBeVisible();
+  await page
+    .getByRole('textbox', { name: 'Nachricht an Nachrichten der Radflotte' })
+    .fill(`Schlüssel Depot Nord ${LAUF}`);
+  await page.getByRole('button', { name: 'Senden' }).click();
+  await expect(page.getByText(`Schlüssel Depot Nord ${LAUF}`)).toBeVisible();
+
+  await page.goto('/team');
+  await expect(page.getByRole('heading', { level: 1, name: 'Teamchat' })).toBeVisible();
+  await expect(page.getByText('Nachrichten der Radflotte')).toHaveCount(0);
 });

@@ -81,7 +81,11 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
           fehler="Die Gespräche konnten nicht geladen werden."
         >
           {(daten) => (
-            <Gespraeche kanaele={daten} zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'} />
+            <Gespraeche
+              kanaele={daten}
+              zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'}
+              darfKanal={user.roles.some((r) => r === 'owner' || r === 'team_lead')}
+            />
           )}
         </Abfragezustand>
       )}
@@ -89,9 +93,19 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
   );
 }
 
-function Gespraeche({ kanaele, zeitzone }: { kanaele: Kanal[]; zeitzone: string }) {
+function Gespraeche({
+  kanaele,
+  zeitzone,
+  darfKanal,
+}: {
+  kanaele: Kanal[];
+  zeitzone: string;
+  /** owner und Teamleitung legen Kanäle an (ANN-611). */
+  darfKanal: boolean;
+}) {
   const queryClient = useQueryClient();
-  const { aktiv, archiviert } = ordneKanaele(kanaele);
+  // Das Gespräch der Radflotte steht in der Radflotte (ANN-613).
+  const { aktiv, archiviert } = ordneKanaele(kanaele.filter((k) => k.kind !== 'fleet'));
   const ungelesen = aktiv.some((kanal) => kanal.unread > 0);
   const allesGelesen = useMutation({
     mutationFn: markiereAllesGelesen,
@@ -104,7 +118,9 @@ function Gespraeche({ kanaele, zeitzone }: { kanaele: Kanal[]; zeitzone: string 
         titel="Gespräche"
         leer={{
           titel: 'Noch kein Gespräch',
-          beschreibung: 'Mit „Neu“ schreibst du jemandem direkt.',
+          beschreibung: darfKanal
+            ? 'Unter „Neu“ legst du einen Kanal an oder schreibst jemandem direkt.'
+            : 'Unter „Neu“ schreibst du jemandem direkt.',
         }}
         aktion={
           ungelesen ? (
@@ -145,15 +161,14 @@ function Gespraechszeile({ kanal, zeitzone }: { kanal: Kanal; zeitzone: string }
       : (kanal.description ?? undefined);
   return (
     <ListRow
-      to={gespraechPfad(kanal.id)}
+      to={gespraechPfad(kanal)}
       titel={kanalTitel(kanal)}
       meta={meta}
       zeit={kanal.last_message_at ? nachrichtenzeit(kanal.last_message_at, zeitzone) : undefined}
       status={
         kanal.mentions > 0 ? (
           <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.erwaehnt}>
-            {kanal.mentions === 1 ? '1 für dich' : `${kanal.mentions} für dich`}
-            {kanal.unread > kanal.mentions ? `, ${kanal.unread} neu` : ''}
+            {kanal.mentions} für dich
           </Badge>
         ) : kanal.unread > 0 ? (
           <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.neu}>
@@ -182,6 +197,7 @@ function Suchtreffer({
     const kanal = kanaele?.find((k) => k.id === kanalId);
     return kanal ? kanalTitel(kanal) : 'Gespräch';
   };
+  const art = (kanalId: string) => kanaele?.find((k) => k.id === kanalId)?.kind ?? 'channel';
   return (
     <Abfragezustand
       abfrage={treffer}
@@ -198,7 +214,11 @@ function Suchtreffer({
           {daten.map((t) => (
             <ListRow
               key={t.id}
-              to={threadPfad(t.channel_id, t.parent_id ?? t.id, t.id)}
+              to={threadPfad(
+                { id: t.channel_id, kind: art(t.channel_id) },
+                t.parent_id ?? t.id,
+                t.id,
+              )}
               titel={t.body}
               meta={`${titel(t.channel_id)} · ${t.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(t.created_at, zeitzone)}`}
             />

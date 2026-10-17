@@ -24,7 +24,7 @@ Ansicht sagt das.
 | Abrechnung, Statistiken | `/abrechnung…`, `/statistiken` (nur `owner`) | echt; Mailversand offen (B13) | `billing`, `statistics` |
 | Organisatorisches | `/praxis/team…`, `/praxis/planung`, `/praxis/sicherheit/…`, `/mein-konto` | echt | `staff`, `audit`, `retention`, `account`, `session` |
 | Plattform (Patient:innen, Kund:innen) | `/p/…` | echt; Einladung per Mail offen (B13) | `platform`, `platform-access` |
-| Radflotte | `/betrieb/flotte…` | echt (FLT-EPIC-001): Depots, Räder, Schlüssel, Check-Up, Panne, Stellen am 3D-Rad, Unterlage für die Werkstatt; Tübinger Standortvorlage offen (ANN-554) | `fleet` |
+| Radflotte | `/betrieb/flotte…` | echt (FLT-EPIC-001): Depots, Räder, Schlüssel, Check-Up, Panne, Stellen am 3D-Rad, Unterlage für die Werkstatt, Nachrichten der Flotte (ANN-613); Tübinger Standortvorlage offen (ANN-554) | `fleet`, `teamchat` |
 | Teamchat | `/team…` | echt seit Überholung 11 (TEAM-001): Kanäle, Direktnachrichten, Threads, Erwähnungen, Suche; keine Anhänge (ADR-017 Punkt 30), keine Push-Zustellung (ADR-024) | `teamchat` |
 | Vorschau-Protokoll | `/vorschau/protokoll` | Vorschau | `preview` |
 

@@ -113,7 +113,10 @@ revoke all on function app.teamchat_participant(uuid, uuid) from public, anon, a
 create table public.team_channels (
   id              uuid primary key default extensions.gen_random_uuid(),
   organization_id uuid not null references public.organizations (id) on delete cascade,
-  kind            text not null check (kind in ('channel', 'direct')),
+  -- fleet: das eine Gespräch der Radflotte je Praxis - es steht in der
+  -- Radflotte, nicht im Teamchat, und lesen es, die die Flotte lesen
+  -- (Jannes 2026-10-17, ANN-613).
+  kind            text not null check (kind in ('channel', 'direct', 'fleet')),
   -- Nur offene Kanäle tragen Namen und Beschreibung; eine Direktnachricht
   -- heißt wie die andere Person.
   name            text check (name is null or length(name) between 1 and 40),
@@ -127,6 +130,8 @@ create table public.team_channels (
 
 create unique index team_channels_name_unique
   on public.team_channels (organization_id, lower(name)) where kind = 'channel';
+create unique index team_channels_fleet_unique
+  on public.team_channels (organization_id) where kind = 'fleet';
 create index team_channels_organization_id_idx on public.team_channels (organization_id);
 
 comment on table public.team_channels is
@@ -226,7 +231,7 @@ alter table public.team_read_states enable row level security;
 revoke all on public.team_channels, public.team_channel_members, public.team_messages,
   public.team_message_mentions, public.team_read_states from public, anon, authenticated;
 -- Fällt eine Praxis, fällt ihr Teamchat mit (cascade): Er hat keine
--- Aufbewahrungspflicht, und die Startkanäle entstehen mit jeder Praxis.
+-- Aufbewahrungspflicht, und das Gespräch der Radflotte entsteht mit jeder Praxis.
 
 -- -----------------------------------------------------------------------------
 -- 3. Datenklasse und Frist (ADR-008 Fassung 5, ANN-610)
@@ -257,25 +262,22 @@ values
    244);
 
 -- -----------------------------------------------------------------------------
--- 4. Startkanäle (Startinhalt, BEF-176 „Kanal Flotte“)
+-- 4. Das Gespräch der Radflotte - Kanäle legt die Praxis selbst an
+--    (Jannes 2026-10-17, ANN-611)
 -- -----------------------------------------------------------------------------
-create function app.create_default_team_channels(p_org uuid)
+create function app.create_team_fleet_channel(p_org uuid)
 returns void
 language sql
 security definer
 set search_path = ''
 as $$
-  insert into public.team_channels (organization_id, kind, name, description)
-  select p_org, 'channel', k.name, k.description
-  from (values
-    ('Allgemein', 'Organisatorisches für das ganze Team.'),
-    ('Flotte', 'Räder, Schlüssel, Pannen und Wartung.'),
-    ('Vertretungen', 'Kurzfristige Einsatzänderungen und Vertretungen.')
-  ) as k (name, description)
-  on conflict do nothing
+  -- Räder, Schlüssel und Pannen bespricht die Radflotte selbst (ANN-613).
+  insert into public.team_channels (organization_id, kind)
+  values (p_org, 'fleet')
+  on conflict do nothing;
 $$;
 
-revoke all on function app.create_default_team_channels(uuid) from public, anon, authenticated;
+revoke all on function app.create_team_fleet_channel(uuid) from public, anon, authenticated;
 
 create function app.team_channels_for_new_organization()
 returns trigger
@@ -284,7 +286,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  perform app.create_default_team_channels(new.id);
+  perform app.create_team_fleet_channel(new.id);
   return new;
 end;
 $$;
@@ -295,13 +297,36 @@ create trigger organizations_default_team_channels
   after insert on public.organizations
   for each row execute function app.team_channels_for_new_organization();
 
-select app.create_default_team_channels(o.id) from public.organizations o;
+select app.create_team_fleet_channel(o.id) from public.organizations o;
 
 -- -----------------------------------------------------------------------------
 -- 5. Lesen
 -- -----------------------------------------------------------------------------
 -- Ob die Person das Gespräch liest: offener Kanal der Praxis oder eigene
 -- Direktnachricht.
+-- Wer die Radflotte liest (wie app.can_read_fleet, FLT-001), hier für eine
+-- beliebige Person - für Erwähnungen und das Gespräch der Flotte.
+create function app.team_staff_reads_fleet(p_org uuid, p_staff uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.staff_members sm
+    join public.user_profiles up
+      on up.person_id = sm.person_id and up.organization_id = sm.organization_id and up.is_active
+    join public.user_roles ur
+      on ur.user_id = up.id and ur.organization_id = sm.organization_id
+     and ur.role_key in ('owner', 'therapist', 'team_lead', 'office')
+    where sm.id = p_staff and sm.organization_id = p_org
+  )
+$$;
+
+revoke all on function app.team_staff_reads_fleet(uuid, uuid) from public, anon, authenticated;
+
 create function app.team_channel_readable(p_channel uuid, p_org uuid, p_staff uuid)
 returns boolean
 language sql
@@ -313,6 +338,7 @@ as $$
     select 1 from public.team_channels c
     where c.id = p_channel and c.organization_id = p_org
       and (c.kind = 'channel'
+           or (c.kind = 'fleet' and app.team_staff_reads_fleet(p_org, p_staff))
            or exists (select 1 from public.team_channel_members m
                       where m.channel_id = c.id and m.staff_member_id = p_staff))
   )
@@ -715,7 +741,7 @@ begin
     v_kind := 'author';
   elsif app.has_any_role('owner')
         and exists (select 1 from public.team_channels c
-                    where c.id = v_m.channel_id and c.kind = 'channel') then
+                    where c.id = v_m.channel_id and c.kind in ('channel', 'fleet')) then
     v_kind := 'owner';
   else
     raise exception 'not allowed to delete this team message' using errcode = '42501';
@@ -860,7 +886,7 @@ begin
 end;
 $$;
 
--- Archivieren und zurückholen (owner, Teamleitung). Allgemein bleibt offen.
+-- Archivieren und zurückholen (owner, Teamleitung).
 create function public.set_team_channel_archived(p_channel uuid, p_archived boolean)
 returns void
 language plpgsql
@@ -877,8 +903,7 @@ begin
   end if;
   update public.team_channels c
      set archived_at = case when p_archived then coalesce(c.archived_at, now()) end
-   where c.id = p_channel and c.organization_id = v_org and c.kind = 'channel'
-     and not (p_archived and c.name = 'Allgemein');
+   where c.id = p_channel and c.organization_id = v_org and c.kind = 'channel';
   if not found then
     raise exception 'team channel not found' using errcode = 'P0002';
   end if;

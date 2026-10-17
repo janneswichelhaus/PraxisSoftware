@@ -34,7 +34,7 @@ export function ThreadPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <Rueckweg
-        standard={gespraechPfad(kanalId)}
+        standard={kanal ? gespraechPfad(kanal) : '/team'}
         beschriftung={kanal ? `Zurück zu ${kanalTitel(kanal)}` : 'Zurück zum Gespräch'}
       />
       <Abfragezustand
@@ -57,7 +57,16 @@ export function ThreadPage({ user }: { user: CurrentUser }) {
   );
 }
 
-function Thread({ user, kanal, threadId }: { user: CurrentUser; kanal: Kanal; threadId: string }) {
+/** Ein Thread - im Teamchat und im Gespräch der Radflotte. */
+export function Thread({
+  user,
+  kanal,
+  threadId,
+}: {
+  user: CurrentUser;
+  kanal: Kanal;
+  threadId: string;
+}) {
   const [suche] = useSearchParams();
   const hervorheben = suche.get('nachricht');
   const nachrichten = useQuery({

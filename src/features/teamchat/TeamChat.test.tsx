@@ -44,6 +44,7 @@ const { TeamChatPage } = await import('./TeamChatPage');
 const { GespraechPage } = await import('./GespraechPage');
 const { ThreadPage } = await import('./ThreadPage');
 const { NeuPage } = await import('./NeuPage');
+const { FlottenNachrichtenPage } = await import('./FlottenNachrichtenPage');
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
@@ -84,6 +85,7 @@ const KANAELE: Kanal[] = [
     partner_active: true,
   }),
   kanal({ id: 'k-alt', name: 'Sommerfest', archived: true }),
+  kanal({ id: 'k-rad', kind: 'fleet', name: null, description: null, unread: 4 }),
 ];
 
 function nachricht(overrides: Partial<Nachricht>): Nachricht {
@@ -117,6 +119,11 @@ function zeige(
       { path: '/team/neu', element: <NeuPage user={user} /> },
       { path: '/team/:kanalId', element: <GespraechPage user={user} /> },
       { path: '/team/:kanalId/:threadId', element: <ThreadPage user={user} /> },
+      { path: '/betrieb/flotte/nachrichten', element: <FlottenNachrichtenPage user={user} /> },
+      {
+        path: '/betrieb/flotte/nachrichten/:threadId',
+        element: <FlottenNachrichtenPage user={user} />,
+      },
     ],
     { initialEntries: [pfad] },
   );
@@ -153,7 +160,7 @@ describe('Teamchat: Gesprächsliste', () => {
       expect.stringContaining('# Allgemein'),
       expect.stringContaining('Tim Teamleitung'),
     ]);
-    expect(within(zeilen[0]!).getByText('1 für dich, 2 neu')).toBeInTheDocument();
+    expect(within(zeilen[0]!).getByText('1 für dich')).toBeInTheDocument();
     expect(zeilen[0]).toHaveAttribute('href', '/team/k-flotte');
     expect(screen.getByText('Archiv')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Alle gelesen' })).toBeInTheDocument();
@@ -282,6 +289,29 @@ describe('Teamchat: Gespräch und Thread', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Weitere Aktionen zur Nachricht' }));
     expect(screen.queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Entfernen' })).toBeInTheDocument();
+  });
+});
+
+describe('Nachrichten der Radflotte (ANN-613)', () => {
+  it('stehen nicht im Teamchat, sondern in der Radflotte, mit Threads dort', async () => {
+    fetchNachrichten.mockResolvedValue([nachricht({ id: 'panne', reply_count: 1 })]);
+    zeige('/betrieb/flotte/nachrichten');
+    expect(
+      await screen.findByRole('heading', { name: 'Nachrichten der Radflotte' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /^1 Antwort/ })).toHaveAttribute(
+      'href',
+      '/betrieb/flotte/nachrichten/panne',
+    );
+    expect(
+      screen.getByRole('textbox', { name: 'Nachricht an Nachrichten der Radflotte' }),
+    ).toBeInTheDocument();
+  });
+
+  it('fehlen in der Gesprächsliste des Teamchats', async () => {
+    zeige('/team');
+    await screen.findByRole('heading', { name: 'Gespräche' });
+    expect(screen.queryByText('Nachrichten der Radflotte')).toBeNull();
   });
 });
 
