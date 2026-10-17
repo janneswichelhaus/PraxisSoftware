@@ -26,6 +26,7 @@ import type { CurrentUser } from '@/features/session/types';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { DayEditor } from './DayEditor';
 import {
+  PREVIEW_ERROR,
   REDUCTION_TEXT,
   WORKING_TIME_KEY,
   fetchBaseline,
@@ -495,8 +496,98 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
   // ---------------------------------------------------------------------------
   // Zusammenfassung
   const changedDays = kind === 'permanent' && newWeek ? changedWeekdays(previousWeek, newWeek) : [];
-  const appointmentDays = preview.data?.appointment_days ?? [];
-  const appointments = appointmentDays.reduce((sum, d) => sum + d.appointments, 0);
+  // Zurück aus „Ändern“ kann die Änderung wieder unvollständig sein - dann
+  // sagt der Fuß, warum der Knopf ruht, statt still zu warten.
+  const localReasons = complete ? [] : reasons.length > 0 ? reasons : ['Noch nichts geändert.'];
+
+  /** Die Zeilen der Zusammenfassung; die Termine erst mit der Vorschau. */
+  const summary = (appointments: number | null) => (
+    <div className="flex flex-col gap-4">
+      <ListRows rahmen={false} beschriftung="Änderung">
+        <ListRow
+          titel={kind && onDate ? changeTitle(kind, onDate) : ''}
+          aktion={
+            <Button
+              variant="secondary"
+              groesse="kompakt"
+              aria-label="Datum ändern"
+              onClick={() => setFlow(aendern(flow, { art: 'date' }))}
+            >
+              Ändern
+            </Button>
+          }
+        />
+        {kind === 'once' && newDay ? (
+          <ListRow
+            titel={dayText(newDay)}
+            meta={`bisher ${dayText(previousDay)}`}
+            aktion={
+              <Button
+                variant="secondary"
+                groesse="kompakt"
+                aria-label="Zeiten ändern"
+                onClick={() => setFlow(aendern(flow, { art: 'times' }))}
+              >
+                Ändern
+              </Button>
+            }
+          />
+        ) : null}
+        {changedDays.map((day) => (
+          <ListRow
+            key={day}
+            titel={`${WEEKDAY_NAME[day]}: ${dayText(newWeek?.[day] ?? [])}`}
+            meta={`bisher ${dayText(previousWeek[day] ?? [])}`}
+            aktion={
+              <Button
+                variant="secondary"
+                groesse="kompakt"
+                aria-label={`${WEEKDAY_NAME[day]} ändern`}
+                onClick={() => setFlow(aendern(flow, { art: 'day', day }))}
+              >
+                Ändern
+              </Button>
+            }
+          />
+        ))}
+        <ListRow
+          titel={kind === 'once' ? 'Arbeitszeit am Tag' : 'Arbeitszeit in der Woche'}
+          meta={
+            previous && minutes !== null
+              ? minutesChange(previous.previous_minutes, minutes)
+              : undefined
+          }
+        />
+        {appointments === null ? null : (
+          <ListRow
+            titel={
+              appointments === 0
+                ? 'Keine Termine außerhalb der neuen Zeiten'
+                : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
+            }
+            meta={appointments === 0 ? undefined : 'Nach dem Genehmigen umplanen'}
+          />
+        )}
+        <ListRow
+          titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
+          meta={
+            self
+              ? `Sie gilt ${kind === 'once' ? 'für den Tag' : 'ab dem Datum'} sofort.`
+              : roleLabels.owner
+          }
+        />
+      </ListRows>
+      <Disclosure summary="Grund angeben" offen={message !== ''}>
+        <TextArea
+          label="Grund – für die Praxisleitung, freiwillig"
+          value={message}
+          maxLength={500}
+          rows={3}
+          onChange={(e) => setMessage(e.target.value)}
+        />
+      </Disclosure>
+    </div>
+  );
 
   return (
     <GefuehrterAblauf
@@ -515,6 +606,9 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
           {serverReasons.length > 0 ? (
             <Statusmeldung ton="fehler">{serverReasons.join(' ')}</Statusmeldung>
           ) : null}
+          {localReasons.length > 0 ? (
+            <Statusmeldung ton="fehler">{localReasons.join(' ')}</Statusmeldung>
+          ) : null}
           <Button
             className="w-full"
             disabled={submit.isPending || !complete || !preview.data || serverReasons.length > 0}
@@ -525,91 +619,23 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
         </div>
       }
     >
-      <div className="flex flex-col gap-4">
-        <ListRows rahmen={false} beschriftung="Änderung">
-          <ListRow
-            titel={kind && onDate ? changeTitle(kind, onDate) : ''}
-            aktion={
-              <Button
-                variant="secondary"
-                groesse="kompakt"
-                aria-label="Datum ändern"
-                onClick={() => setFlow(aendern(flow, { art: 'date' }))}
-              >
-                Ändern
-              </Button>
-            }
-          />
-          {kind === 'once' && newDay ? (
-            <ListRow
-              titel={dayText(newDay)}
-              meta={`bisher ${dayText(previousDay)}`}
-              aktion={
-                <Button
-                  variant="secondary"
-                  groesse="kompakt"
-                  aria-label="Zeiten ändern"
-                  onClick={() => setFlow(aendern(flow, { art: 'times' }))}
-                >
-                  Ändern
-                </Button>
-              }
-            />
-          ) : null}
-          {changedDays.map((day) => (
-            <ListRow
-              key={day}
-              titel={`${WEEKDAY_NAME[day]}: ${dayText(newWeek?.[day] ?? [])}`}
-              meta={`bisher ${dayText(previousWeek[day] ?? [])}`}
-              aktion={
-                <Button
-                  variant="secondary"
-                  groesse="kompakt"
-                  aria-label={`${WEEKDAY_NAME[day]} ändern`}
-                  onClick={() => setFlow(aendern(flow, { art: 'day', day }))}
-                >
-                  Ändern
-                </Button>
-              }
-            />
-          ))}
-          <ListRow
-            titel={kind === 'once' ? 'Arbeitszeit am Tag' : 'Arbeitszeit in der Woche'}
-            meta={
-              previous && minutes !== null
-                ? minutesChange(previous.previous_minutes, minutes)
-                : undefined
-            }
-          />
-          <ListRow
-            titel={
-              preview.isPending
-                ? 'Termine werden geprüft …'
-                : appointments === 0
-                  ? 'Keine Termine außerhalb der neuen Zeiten'
-                  : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
-            }
-            meta={appointments === 0 ? undefined : 'Nach dem Genehmigen umplanen'}
-          />
-          <ListRow
-            titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
-            meta={
-              self
-                ? `Sie gilt ${kind === 'once' ? 'für den Tag' : 'ab dem Datum'} sofort.`
-                : roleLabels.owner
-            }
-          />
-        </ListRows>
-        <Disclosure summary="Grund angeben" offen={message !== ''}>
-          <TextArea
-            label="Grund – für die Praxisleitung, freiwillig"
-            value={message}
-            maxLength={500}
-            rows={3}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-        </Disclosure>
-      </div>
+      {/* Laden, Funkloch und Abweisung der Vorschau über den Baustein (Regel 8):
+          ein Fehler ist nie „keine Termine außerhalb“. */}
+      {complete ? (
+        <Abfragezustand
+          abfrage={preview}
+          laden="Termine werden geprüft …"
+          fehler={PREVIEW_ERROR}
+          endgueltig={{
+            wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
+            titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
+          }}
+        >
+          {(data) => summary(data.appointment_days.reduce((sum, d) => sum + d.appointments, 0))}
+        </Abfragezustand>
+      ) : (
+        summary(null)
+      )}
     </GefuehrterAblauf>
   );
 }
