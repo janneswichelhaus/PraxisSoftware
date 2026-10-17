@@ -46,16 +46,20 @@ describe('PraxisEinstellungenPage (ORG-002)', () => {
     saveAppointmentGrid.mockResolvedValue(undefined);
   });
 
-  it('heißt wie ihre Ansicht und zeigt die Einstellungen offen, nicht im Aufklapper', async () => {
+  it('heißt wie ihre Ansicht und gliedert die Einstellungen in vier eingeklappte Gruppen', async () => {
     rendern();
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Einstellungen' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Praxisraster' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Automatische Finalisierung' })).toBeInTheDocument();
-    // ORG-008: der Ladestrom als eigener Abschnitt.
-    expect(screen.getByRole('heading', { name: 'Ladestrom' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Minutenraster').closest('details')).toBeNull();
+    const gruppen = Array.from(document.querySelectorAll('details'));
+    expect(gruppen.map((gruppe) => gruppe.querySelector('summary')?.textContent)).toEqual([
+      'Termine und Dokumentation',
+      'Touren',
+      'Ladestrom',
+      'Benachrichtigungen an Patient:innen',
+    ]);
+    expect(gruppen.every((gruppe) => !gruppe.open)).toBe(true);
+    expect(screen.getByLabelText('Minutenraster').closest('details')).toBe(gruppen[0]);
   });
 
   describe('Praxisraster', () => {

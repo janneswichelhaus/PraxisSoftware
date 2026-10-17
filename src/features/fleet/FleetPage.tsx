@@ -14,7 +14,6 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { SearchField } from '@/components/ui/SearchField';
-import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
@@ -556,7 +555,8 @@ function Einstellungen({
       ? RHYTHMEN
       : [...RHYTHMEN, { tage: rhythmus, text: rhythmusText(rhythmus) }];
   return (
-    <Section titel="Einstellungen">
+    // Selten geändert, deshalb eingeklappt (Design-Review ORG-001, Grundsatz 4).
+    <Disclosure inKarte kopf="betont" summary="Einstellungen der Flotte">
       <div className="flex flex-col gap-2">
         <div className="max-w-formular mb-2">
           <Select
@@ -592,6 +592,6 @@ function Einstellungen({
           </DetailList>
         </Disclosure>
       </div>
-    </Section>
+    </Disclosure>
   );
 }

@@ -59,8 +59,10 @@ describe('LadestromVorschlaege', () => {
   it('sagt es, wenn der Ladestrom nicht berechnet werden konnte', async () => {
     fetchElectricitySuggestions.mockRejectedValue(new Error('kaputt'));
     renderWithProviders(<LadestromVorschlaege rueckweg="/betrieb" />);
+    // Eine Zeile mit neuem Versuch, kein Kasten (Praxis-Review ORG-008).
     expect(
-      await screen.findByText('Der Ladestrom konnte nicht berechnet werden.'),
+      await screen.findByText(/Der Ladestrom ließ sich gerade nicht berechnen\./),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Erneut/ })).toBeInTheDocument();
   });
 });

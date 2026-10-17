@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -33,33 +34,40 @@ import { GarageEinstellung, StartortEinstellung } from '@/features/tours/Startor
  * Bis ORG-002 standen sie eingeklappt unter „Arbeitszeiten", am Telefon rund
  * 2.400 px tief: Raster, Frist, Startort, Garage, Fahrzeitfaktor und die
  * Benachrichtigungen an Patient:innen hatten mit Arbeitszeit nichts zu tun.
- * Jetzt sind sie die erste Ansicht unter Praxis: Termine und Dokumentation,
- * Touren, Ladestrom (ORG-008), Benachrichtigungen. Die Formulare selbst sind unverändert;
- * verbindlich prüft der Server (ADR-004).
+ * Jetzt sind sie die erste Ansicht unter Praxis, in vier eingeklappten
+ * Gruppen: Termine und Dokumentation, Touren, Ladestrom (ORG-008),
+ * Benachrichtigungen. Die Formulare selbst sind unverändert; verbindlich
+ * prüft der Server (ADR-004).
  */
 export function PraxisEinstellungenPage({ user }: { user: CurrentUser }) {
+  // Vier Gruppen, eingeklappt (Design-Review ORG-002, Grundsatz 4): Was sich
+  // im Jahr ein paarmal ändert, stand offen 3.600 px lang untereinander, mit
+  // fünf Hauptknöpfen in einer Ansicht. Offen ist immer nur, was man öffnet.
   return (
     <>
       <PageHeader title="Einstellungen" />
-      <RasterEinstellung aktuell={user.appointmentGridMinutes} />
-      <FristEinstellung organizationId={user.profile.organization_id} />
-
-      <div className="mt-10 space-y-8">
-        <StartortEinstellung />
-        {/* UBK-015: Beginn und Ende der Tour, getrennt vom Ort der Praxistermine. */}
-        <GarageEinstellung />
-        {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
-        <FahrzeitfaktorEinstellung />
-      </div>
-
-      <div className="mt-10 space-y-8">
-        {/* ORG-008: Strompreis, Verbrauch und Strecke je Stunde für den Ladestrom. */}
-        <LadestromEinstellung />
-      </div>
-
-      <div className="mt-10 space-y-8">
-        {/* KOM-011: Arten der Benachrichtigung für alle abschalten (ADR-024 Punkt 15). */}
-        <BenachrichtigungsSchalter />
+      <div className="flex flex-col gap-4">
+        <Disclosure inKarte kopf="betont" summary="Termine und Dokumentation">
+          <RasterEinstellung aktuell={user.appointmentGridMinutes} />
+          <FristEinstellung organizationId={user.profile.organization_id} />
+        </Disclosure>
+        <Disclosure inKarte kopf="betont" summary="Touren">
+          <div className="flex flex-col gap-8">
+            <StartortEinstellung />
+            {/* UBK-015: Beginn und Ende der Tour, getrennt vom Ort der Praxistermine. */}
+            <GarageEinstellung />
+            {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
+            <FahrzeitfaktorEinstellung />
+          </div>
+        </Disclosure>
+        <Disclosure inKarte kopf="betont" summary="Ladestrom">
+          {/* ORG-008: Strompreis, Verbrauch und Strecke je Stunde. */}
+          <LadestromEinstellung />
+        </Disclosure>
+        <Disclosure inKarte kopf="betont" summary="Benachrichtigungen an Patient:innen">
+          {/* KOM-011: Arten der Benachrichtigung für alle abschalten (ADR-024 Punkt 15). */}
+          <BenachrichtigungsSchalter />
+        </Disclosure>
       </div>
     </>
   );

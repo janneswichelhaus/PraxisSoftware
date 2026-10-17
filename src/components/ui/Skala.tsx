@@ -7,8 +7,10 @@ import { Button } from './Button';
  * „9 richtig gut“) im Knopf - ohne Legende daneben, die man suchen müsste.
  *
  * Der Tipp ist die Antwort: `onWaehlen` führt im geführten Ablauf weiter.
- * Nichts ist vorbelegt; ein gewählter Wert (beim Zurückkommen) trägt die
- * Hauptfarbe und `aria-pressed` - Zeichen und Wort, nicht nur Farbe.
+ * Nichts ist vorbelegt - auch nicht durch den Fokus: Kein Knopf trägt
+ * `data-autofocus`, sonst sähe die 1 in der Sonne wie gewählt aus
+ * (Praxis-Review ORG-006). Ein gewählter Wert (beim Zurückkommen) trägt die
+ * Hauptfarbe, ein „✓“ und `aria-pressed` - nicht nur Farbe.
  */
 export function Skala({
   beschriftung,
@@ -40,10 +42,10 @@ export function Skala({
             aria-pressed={an}
             aria-label={wort ? `${zahl} – ${wort}` : String(zahl)}
             className="w-full flex-col gap-0 py-2"
-            {...(zahl === 1 ? { 'data-autofocus': true } : {})}
             onClick={() => onWaehlen(zahl)}
           >
             <span aria-hidden="true" className="text-xl tabular-nums">
+              {an ? '✓ ' : ''}
               {zahl}
             </span>
             {wort ? (

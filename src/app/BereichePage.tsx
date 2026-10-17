@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Textlink } from '@/components/ui/Textlink';
 import { textlinkKlassen } from '@/components/ui/buttonStile';
 import type { CurrentUser } from '@/features/session/types';
 import { arbeitsbereiche } from './navigation';
@@ -39,16 +40,12 @@ export function BereichePage({ user }: { user: CurrentUser }) {
             {bereich.unterpunkte.length > 1 ? (
               <nav
                 aria-label={`${bereich.label}: Seiten`}
-                className="-mt-1 flex flex-wrap gap-1 pb-3 pl-8"
+                className="-mt-1 flex flex-wrap gap-x-2 pb-3 pl-6"
               >
                 {bereich.unterpunkte.map((punkt) => (
-                  <Link
-                    key={punkt.to}
-                    to={punkt.to}
-                    className="text-accent hover:bg-surface-sunken rounded-pill text-liste flex min-h-11 items-center px-3"
-                  >
+                  <Textlink key={punkt.to} to={punkt.to} alleinstehend className="px-2">
                     {punkt.label}
-                  </Link>
+                  </Textlink>
                 ))}
               </nav>
             ) : null}

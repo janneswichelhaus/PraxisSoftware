@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Listenfehler } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { SUGGESTIONS_KEY, fetchElectricitySuggestions } from './api';
@@ -30,13 +29,14 @@ export function LadestromVorschlaege({ rueckweg }: { rueckweg: string }) {
     retry: false,
     staleTime: 5 * 60_000,
   });
+  // Ein Vorschlag ist kein Alarm (Praxis-Review ORG-008): Ohne Netz steht
+  // eine leise Zeile mit „Erneut versuchen“ da, kein roter Kasten.
   if (isError && !data) {
     return (
       <Section titel="Ladestrom">
-        <ErrorState
-          title="Der Ladestrom konnte nicht berechnet werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => refetch()}
+        <Listenfehler
+          text="Der Ladestrom ließ sich gerade nicht berechnen."
+          onErneut={() => void refetch()}
         />
       </Section>
     );
