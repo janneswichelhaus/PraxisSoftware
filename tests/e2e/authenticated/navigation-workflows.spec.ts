@@ -92,16 +92,17 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await expect(mitarbeitende).not.toContainText('Vorschau');
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
 
-    // Gegenprobe: das Zeitkonto im selben Menue ist gekennzeichnete Vorschau
-    // und steht eingeklappt hinter „Vorschau" (UX-002h). Radflotte und
-    // Urlaub sind echt (FLT-EPIC-001, URL-001) und stehen bei den
-    // angebundenen Punkten.
-    await expect(untermenue.getByRole('link', { name: 'Radflotte' })).toBeVisible();
-    const urlaub = untermenue.getByRole('link', { name: 'Urlaub' });
-    await expect(urlaub).toBeVisible();
-    await expect(urlaub).not.toContainText('Vorschau');
-    await expect(untermenue.getByRole('link', { name: /Zeitkonto/ })).toHaveCount(0);
-    await untermenue.getByRole('button', { name: /^Vorschau/ }).click();
-    await expect(untermenue.getByRole('link', { name: /Zeitkonto/ })).toContainText('Vorschau');
+    // Radflotte, Urlaub, Arbeitszeit und Zeitkonto sind echt (FLT-EPIC-001,
+    // URL-001, AZ-001, ZK-001) und stehen bei den angebundenen Punkten.
+    for (const name of ['Radflotte', 'Urlaub', 'Arbeitszeit', 'Zeitkonto']) {
+      const punkt = untermenue.getByRole('link', { name, exact: true });
+      await expect(punkt).toBeVisible();
+      await expect(punkt).not.toContainText('Vorschau');
+    }
+    // Gegenprobe: die Erstattungen im selben Menue sind gekennzeichnete
+    // Vorschau; als einzige stehen sie offen mit ihrer Marke, ohne Knopf
+    // „Vorschau" (ANN-493).
+    await expect(untermenue.getByRole('button', { name: /^Vorschau/ })).toHaveCount(0);
+    await expect(untermenue.getByRole('link', { name: /Erstattungen/ })).toContainText('Vorschau');
   });
 });

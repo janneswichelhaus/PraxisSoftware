@@ -138,6 +138,8 @@ describe('RequestWorkingTimePage', () => {
       await within(abschluss).findByText('Einmalig: Dienstag, 20. Oktober'),
     ).toBeInTheDocument();
     expect(within(abschluss).getByText('07:00–12:00, 13:00–17:00')).toBeInTheDocument();
+    // Die Stunden stehen an der Zeile des Datums - eine Zeile weniger im Abschluss.
+    expect(within(abschluss).getByText('Am Tag 9:00 Std., gleich wie bisher')).toBeInTheDocument();
     expect(
       await within(abschluss).findByText('Keine Termine außerhalb der neuen Zeiten'),
     ).toBeInTheDocument();
@@ -205,7 +207,13 @@ describe('RequestWorkingTimePage', () => {
       unchanged: false,
       reduced: false,
       problems: [],
-      appointment_days: [{ on_date: '2026-12-01', appointments: 2 }],
+      appointment_days: [
+        { on_date: '2026-12-01', appointments: 2 },
+        { on_date: '2026-12-08', appointments: 1 },
+        { on_date: '2026-12-15', appointments: 1 },
+        { on_date: '2026-12-22', appointments: 1 },
+        { on_date: '2026-12-29', appointments: 1 },
+      ],
       self_entered: false,
     });
     rendern();
@@ -249,11 +257,17 @@ describe('RequestWorkingTimePage', () => {
       await within(abschluss).findByText('Dienstag 08:00–12:30, 13:30–18:00'),
     ).toBeInTheDocument();
     expect(
-      await within(abschluss).findByText('2 Termine außerhalb der neuen Zeiten'),
+      within(abschluss).getByText('In der Woche 45:00 Std., gleich wie bisher'),
     ).toBeInTheDocument();
-    // Je Tag die Zahl; umplanen wird nach dem Genehmigen die Praxisleitung.
     expect(
-      within(abschluss).getByText('1. Dez.: 2 · plant die Praxisleitung nach dem Genehmigen um'),
+      await within(abschluss).findByText('6 Termine außerhalb der neuen Zeiten'),
+    ).toBeInTheDocument();
+    // Je Tag die Zahl, ab dem vierten Tag nur noch die Zahl der Tage - die Zeile
+    // bleibt kurz, der Abschluss rollt nicht; umplanen wird die Praxisleitung.
+    expect(
+      within(abschluss).getByText(
+        '1. Dez.: 2 · 8. Dez.: 1 · 15. Dez.: 1 · 2 weitere Tage · plant die Praxisleitung nach dem Genehmigen um',
+      ),
     ).toBeInTheDocument();
     await user.click(within(abschluss).getByRole('button', { name: 'Änderung beantragen' }));
     tipps += 1;

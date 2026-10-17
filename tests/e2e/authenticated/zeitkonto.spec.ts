@@ -109,6 +109,16 @@ async function rolltNicht(dialog: Locator): Promise<void> {
   expect(rollend).toBe(0);
 }
 
+/** Bildschirmfoto im ruhenden Stand: nach dem Startbild und der Tippsperre (wie Überholung 8). */
+async function bild(seite: Page, name: string): Promise<void> {
+  await seite
+    .locator('[data-startbild]')
+    .waitFor({ state: 'detached', timeout: 6_000 })
+    .catch(() => undefined);
+  await seite.waitForTimeout(800);
+  await seite.screenshot({ path: `.tmp/screenshots/${name}.png` });
+}
+
 /** Die Seite läuft nicht in die Breite; Frage und Fuß stehen im Bild. */
 async function stehtImBild(page: Page, dialog: Locator, knopf: Locator): Promise<void> {
   await expect(dialog.getByRole('heading').first()).toBeInViewport();
@@ -143,19 +153,19 @@ test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', a
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/zeitkonto');
   await expect(page.getByRole('heading', { level: 1, name: 'Zeitkonto' })).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-00-zeitkonto-375.png' });
+  await bild(page, 'b9-g9-00-zeitkonto-375');
 
   const t = zaehler();
   await t.tippe(page.getByRole('link', { name: 'Eintragen' }));
   const art = page.getByRole('dialog', { name: 'Was tragen Sie ein?' });
   await expect(art).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-01-art-375.png' });
+  await bild(page, 'b9-g9-01-art-375');
   await t.tippe(art.getByRole('button', { name: 'Mehrarbeit' }));
 
   const datum = page.getByRole('dialog', { name: 'An welchem Tag?' });
   await expect(datum).toBeVisible();
   await rolltNicht(datum);
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-02-tag-375.png' });
+  await bild(page, 'b9-g9-02-tag-375');
   // Werktags „Heute“, am Samstag „Gestern“, sonst der Freitag im Kalender -
   // je ein Tipp (am Monatsanfang dazu einer zurück).
   if (ARBEITSTAG === HEUTE) {
@@ -171,7 +181,7 @@ test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', a
   await expect(zeiten.getByText(/Plan: 08:00–12:00, 13:00–18:00/)).toBeVisible();
   const schnellwahl = zeiten.getByRole('button', { name: '+0:45: 18:00–18:45' });
   await stehtImBild(page, zeiten, schnellwahl);
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-03-zeiten-375.png' });
+  await bild(page, 'b9-g9-03-zeiten-375');
   await t.tippe(schnellwahl);
 
   const abschluss = page.getByRole('dialog', { name: 'Eintragen?' });
@@ -179,10 +189,14 @@ test('G9: Anna trägt Mehrarbeit nach Dienstende in fünf Tipps ein (ZK-001)', a
   await expect(abschluss.getByText(/^Saldo danach /)).toBeVisible();
   await expect(eintragen).toBeEnabled();
   await stehtImBild(page, abschluss, eintragen);
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-04-zusammenfassung-375.png' });
+  await bild(page, 'b9-g9-04-zusammenfassung-375');
   await t.tippe(eintragen);
-  await expect(page.getByText(/^Eingetragen: Mehrarbeit .*18:00–18:45/)).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-05-eingetragen-375.png' });
+  // Die Bestätigung beginnt mit dem ausgeblendeten Häkchen - gesucht wird in der
+  // Statuszeile, nicht am Textanfang.
+  await expect(
+    page.getByRole('status').filter({ hasText: /Eingetragen: Mehrarbeit .*18:00–18:45/ }),
+  ).toBeVisible();
+  await bild(page, 'b9-g9-05-eingetragen-375');
   test.info().annotations.push({ type: 'G9', description: `${t.tipps} Tipps bis eingetragen` });
   expect(t.tipps).toBeLessThanOrEqual(6);
 
@@ -225,18 +239,18 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   const zeiten = page.getByRole('dialog', { name: 'Welche Zeit nehmen Sie frei?' });
   const frueher = zeiten.getByRole('button', { name: '2 Std. früher gehen: 16:00–18:00' });
   await stehtImBild(page, zeiten, frueher);
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-06-freizeit-375.png' });
+  await bild(page, 'b9-g9-06-freizeit-375');
   await t.tippe(frueher);
   const abschluss = page.getByRole('dialog', { name: 'Eintragen?' });
   await expect(abschluss.getByText(/−2:00\sStd\./).first()).toBeVisible();
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9-07-zusammenfassung-freizeit-375.png' });
+  await bild(page, 'b9-g9-07-zusammenfassung-freizeit-375');
   await t.tippe(abschluss.getByRole('button', { name: 'Eintragen' }));
   // Liegen Termine in der freien Zeit, nennt der Abschluss sie zum Umplanen.
   const fertig = page.getByRole('dialog', { name: 'Eingetragen' });
-  const meldung = page.getByText(/^Eingetragen: Freizeitausgleich/);
+  const meldung = page.getByRole('status').filter({ hasText: /Eingetragen: Freizeitausgleich/ });
   await expect(fertig.or(meldung)).toBeVisible();
   if (await fertig.isVisible()) {
-    await page.screenshot({ path: '.tmp/screenshots/b9-g9-08-termine-375.png' });
+    await bild(page, 'b9-g9-08-termine-375');
     await fertig.getByRole('button', { name: 'Fertig' }).click();
   }
   test.info().annotations.push({ type: 'G9 Freizeit', description: `${t.tipps} Tipps` });
@@ -260,7 +274,7 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   await expect(
     inhaber.getByRole('heading', { level: 1, name: 'Zeitkonto von Anna Beispiel' }),
   ).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b9-g9b-00-konto-anna-375.png' });
+  await bild(inhaber, 'b9-g9b-00-konto-anna-375');
 
   const e = zaehler();
   const zeile = inhaber
@@ -272,17 +286,17 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   const eintrag = inhaber.getByRole('dialog', { name: 'Eintrag zurückweisen?' });
   const weiter = eintrag.getByRole('button', { name: 'Zurückweisen' });
   await stehtImBild(inhaber, eintrag, weiter);
-  await inhaber.screenshot({ path: '.tmp/screenshots/b9-g9b-01-eintrag-375.png' });
+  await bild(inhaber, 'b9-g9b-01-eintrag-375');
   await e.tippe(weiter);
   const grund = inhaber.getByRole('dialog', { name: 'Warum nicht?' });
   await grund.getByLabel(/^Grund/).fill(`Teamsitzung (Lauf ${LAUF})`);
   const zurueckweisen = grund.getByRole('button', { name: 'Zurückweisen' });
   await stehtImBild(inhaber, grund, zurueckweisen);
-  await inhaber.screenshot({ path: '.tmp/screenshots/b9-g9b-02-grund-375.png' });
+  await bild(inhaber, 'b9-g9b-02-grund-375');
   await e.tippe(zurueckweisen);
   const erledigt = inhaber.getByRole('dialog', { name: 'Zurückgewiesen' });
   await expect(erledigt.getByText(/Die Zeit ist wieder Arbeitszeit\./)).toBeVisible();
-  await inhaber.screenshot({ path: '.tmp/screenshots/b9-g9b-03-zurueckgewiesen-375.png' });
+  await bild(inhaber, 'b9-g9b-03-zurueckgewiesen-375');
   test.info().annotations.push({ type: 'G9b', description: `${e.tipps} Tipps und der Grund` });
   expect(e.tipps).toBeLessThanOrEqual(3);
 
@@ -294,6 +308,6 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
     .filter({ hasText: `Teamsitzung (Lauf ${LAUF})` });
   await expect(zurueckgewiesen).toHaveCount(1);
   await expect(zurueckgewiesen).toContainText(/Zurückgewiesen von .+: Teamsitzung/);
-  await page.screenshot({ path: '.tmp/screenshots/b9-g9b-04-anna-sieht-375.png' });
+  await bild(page, 'b9-g9b-04-anna-sieht-375');
   await inhaber.close();
 });
