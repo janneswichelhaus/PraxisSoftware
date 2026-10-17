@@ -154,7 +154,11 @@ function OwnRow({ request }: { request: OwnRequest }) {
     <ListRow
       titel={changeTitle(request.kind, request.on_date)}
       meta={meta}
-      status={<Badge ton={display.ton}>{display.text}</Badge>}
+      status={
+        <Badge ton={display.ton} eigenesZeichen={display.zeichen}>
+          {display.text}
+        </Badge>
+      }
       darunter={
         request.status === 'requested' ? (
           // Unter der Zeile in voller Breite: in der Zeile bräche die

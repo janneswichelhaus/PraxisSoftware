@@ -168,6 +168,50 @@ describe('Instanz', () => {
     });
   });
 
+  it('ruft für einen Beleg die Funktionen der Erstattungen, ein PDF ohne Metadatenfrage (ERS-001)', async () => {
+    const f = abruf(
+      Response.json([
+        {
+          bucket_id: 'erstattungsbelege',
+          object_key: 'a/b/c',
+          mime_type: 'application/pdf',
+          byte_size: '99',
+          checksum_sha256: 'e'.repeat(64),
+          already_verified: false,
+        },
+      ]),
+    );
+    const ankuendigung = await erstelleInstanz(EINRICHTUNG, f).ankuendigung(DATEI, PERSON, 'beleg');
+    expect(ankuendigung.ok && ankuendigung.wert).toMatchObject({
+      bucket_id: 'erstattungsbelege',
+      byte_size: 99,
+    });
+    expect(f.mock.calls[0]![0]).toBe(
+      'http://127.0.0.1:54321/rest/v1/rpc/reimbursement_receipt_for_verification',
+    );
+    expect(JSON.parse(f.mock.calls[0]![1]?.body as string)).toEqual({
+      p_receipt_id: DATEI,
+      p_user_id: PERSON,
+    });
+
+    const g = abruf(Response.json('passed'));
+    const ergebnis = await erstelleInstanz(EINRICHTUNG, g).eintragen(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: null },
+      'beleg',
+    );
+    expect(ergebnis).toEqual({ ok: true, wert: 'passed' });
+    expect(g.mock.calls[0]![0]).toBe(
+      'http://127.0.0.1:54321/rest/v1/rpc/record_reimbursement_receipt_verification',
+    );
+    expect(JSON.parse(g.mock.calls[0]![1]?.body as string)).toEqual({
+      p_receipt_id: DATEI,
+      p_content_type_ok: true,
+      p_checksum_ok: true,
+      p_metadata_ok: null,
+    });
+  });
+
   it('macht beim Foto am Rad aus einer fehlenden Metadatenantwort einen Befund', async () => {
     const f = abruf(Response.json('rejected'));
     await erstelleInstanz(EINRICHTUNG, f).eintragen(

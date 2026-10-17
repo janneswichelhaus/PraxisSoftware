@@ -259,7 +259,13 @@ function EigeneZeile({
     <ListRow
       titel={storno ? `Storno: ${zeitraum}` : zeitraum}
       meta={meta}
-      status={anzeige ? <Badge ton={anzeige.ton}>{anzeige.text}</Badge> : null}
+      status={
+        anzeige ? (
+          <Badge ton={anzeige.ton} eigenesZeichen={anzeige.zeichen}>
+            {anzeige.text}
+          </Badge>
+        ) : null
+      }
       darunter={unterDerZeile(
         antrag.status === 'requested' ? (
           <Rueckfrage

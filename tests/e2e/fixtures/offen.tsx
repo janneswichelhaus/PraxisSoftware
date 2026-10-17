@@ -31,6 +31,11 @@ import type { StaffMember } from '@/features/staff/api';
 import { urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
 import { urlaubsfenster } from '@/features/vacation/fenster';
 import { WORKING_TIME_KEY, type WorkingTime } from '@/features/working-time/api';
+import {
+  reimbursementsKey,
+  type Overview,
+  type Reimbursement,
+} from '@/features/reimbursements/api';
 import type { WaitlistEntry } from '@/features/waitlist/api';
 import '@/index.css';
 
@@ -490,6 +495,71 @@ client.setQueryData(WORKING_TIME_KEY, {
           },
         ],
 } satisfies WorkingTime);
+// ERS-001: Annas Ladestrom zu entscheiden, Tims genehmigter Einkauf
+// auszuzahlen - die Gruppen „Erstattungen“ und „Auszuzahlen“.
+function erstattung(teil: Partial<Reimbursement>): Reimbursement {
+  return {
+    id: 'erstattung-1',
+    staff_member_id: ANNA,
+    name: 'Anna Beispiel',
+    kind: 'electricity',
+    period_month: `${tagPlus(-40).slice(0, 7)}-01`,
+    working_days: 18,
+    energy_wh_per_day: 500,
+    rate_cents_per_kwh: 37,
+    amount_cents: 333,
+    status: 'requested',
+    self_entered: false,
+    requested_at: `${HEUTE}T07:15:00Z`,
+    decided_at: null,
+    decided_by_name: null,
+    decision_note: null,
+    withdrawn_at: null,
+    paid_at: null,
+    paid_by_name: null,
+    receipts: [],
+    ...teil,
+  };
+}
+client.setQueryData(reimbursementsKey(null), {
+  my_staff_member_id: nutzer.staffMemberId,
+  can_decide: true,
+  can_read_all: true,
+  wh_per_day: 500,
+  cents_per_kwh: 37,
+  person: null,
+  to_decide: ansicht === 'leer' ? [] : [erstattung({})],
+  to_pay:
+    ansicht === 'leer'
+      ? []
+      : [
+          {
+            ...erstattung({
+              id: 'erstattung-2',
+              staff_member_id: '55555555-5555-4555-8555-000000000004',
+              name: 'Tim Teamleitung',
+              kind: 'purchase',
+              period_month: null,
+              working_days: null,
+              energy_wh_per_day: null,
+              rate_cents_per_kwh: null,
+              amount_cents: 1290,
+              status: 'approved',
+              receipts: [
+                {
+                  id: 'beleg-1',
+                  amount_cents: 1290,
+                  purpose: 'Massageöl',
+                  mime_type: 'image/jpeg',
+                  verified: true,
+                },
+              ],
+            }),
+            iban_masked: 'DE02 •••• 2051',
+          },
+        ],
+  people: [],
+} satisfies Overview);
 // Ohne Widerruf, Kündigung und auslaufenden Plan: Diese Gruppen fehlen.
 client.setQueryData(CONSENT_WITHDRAWALS_KEY, []);
 client.setQueryData(ABO_KUENDIGUNGEN_KEY, []);

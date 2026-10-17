@@ -26,11 +26,12 @@ export interface Pruefergebnis {
 }
 
 /**
- * Was geprüft wird (ANN-337, ANN-552): eine Datei der Akte (`file_id`), ein
- * Anhang an einer Rückfrage (`attachment_id`) oder ein Foto am Rad
- * (`photo_id`, FLT-002) - derselbe Ablauf, je eigene Datenbankfunktionen.
+ * Was geprüft wird (ANN-337, ANN-552, ANN-600): eine Datei der Akte
+ * (`file_id`), ein Anhang an einer Rückfrage (`attachment_id`), ein Foto am
+ * Rad (`photo_id`, FLT-002) oder ein Beleg einer Erstattung (`receipt_id`,
+ * ERS-001) - derselbe Ablauf, je eigene Datenbankfunktionen.
  */
-export type Art = 'datei' | 'anhang' | 'radfoto';
+export type Art = 'datei' | 'anhang' | 'radfoto' | 'beleg';
 
 /** Was `record_patient_file_verification` zurückgibt. */
 /** `held`: Befund unter Legal Hold - nichts verworfen, nur protokolliert. */

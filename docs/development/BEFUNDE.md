@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-16
+Stand: 2026-10-17
 
 ## Zweck
 
@@ -337,56 +337,6 @@ nie ein klinischer Inhalt.
 einem Titel je Route. „Own Motion“ bleibt als Zusatz, wie ANN-023 es für die
 Marke vorsieht.
 
-### BEF-066 — Vorschauen des Praxisbetriebs: Jede Rolle sieht Salden, IBAN und Urlaubsgründe aller und darf Räder anlegen und entfernen
-
-|         |                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Bereich | Organisatorisches → Vorschau: Zeitkonto (`/betrieb/zeitkonto`), Erstattungen (`/betrieb/erstattungen`), Urlaub (`/betrieb/urlaub`), Radflotte (`/betrieb/flotte`)                                                                                                                                                                                                                                           |
-| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs VOR-14, VOR-22                                                                                                                                                                                                                                                                                                  |
-| Status  | entschieden 2026-10-09 (Jannes); Radflotte erledigt in FLT-EPIC-001 (2026-10-15, über RLS und `app.can_manage_fleet`); Urlaub erledigt in URL-001 (2026-10-16, Funktionen ohne Tabellenrecht, ANN-580); eingeplant in ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
-| Berührt | `src/features/timeaccount/TimeAccountPage.tsx` (Z. 77, 96), `src/features/reimbursements/ReimbursementsPage.tsx` (Z. 68, 254, 337), `src/features/vacation/VacationPage.tsx` (Z. 158, 214, 490), `src/features/fleet/FleetPage.tsx` (Z. 193–229, 343), `src/features/fleet/BikeEditPage.tsx` (Z. 294); §4.3, §4.5, §16, §20; B6; ANN-024; ADR-004; Roadmap Block 8 (FLT-EPIC-001, URL-001, ZK-001, ERS-001) |
-
-**Beobachtung.** Als therapist angemeldet: „Saldo über alle Personen: −3,25 h“
-und „Alle Zeitkonten“ mit dem Saldo jeder Person; jede Erstattungskarte mit
-voller IBAN, die „Historie je Person“ mit allen Beträgen; unter „Alle Anträge“
-im Urlaub „Grund: Familienurlaub“ und „Grund: Umzug“ — während das Formular sagt
-„Private Gründe müssen nicht angegeben werden.“ In der Radflotte ist „Rad
-hinzufügen“ für jede Rolle der Hauptknopf, Bearbeiten und „Rad entfernen“ stehen
-allen offen; die Alltagswege Schlüssel, Panne und Check-Up sind nachrangig, und
-die erste Radkarte beginnt bei 390 px erst bei rund 830 px. Privatangaben
-Beschäftigter liest heute nur owner (§4.3, ANN-024) — eine Bankverbindung ist
-von derselben Art. Die Daten sind synthetisch, die Vorschau speichert nichts;
-sie ist aber das Vorbild der Loops, die sie in Block 8 ersetzen.
-
-**Frage an Jannes.** Wer sieht in Zeitkonto, Erstattungen und Urlaub die
-Einträge anderer, und wer verwaltet die Räder?
-
-**Optionen.**
-
-1. **Wie die Vorschau:** Alle sehen alles, alle dürfen alles. Folge:
-   Überstunden, Bankverbindung und private Gründe liegen im Team offen; eine
-   Summe über alle Personen ist eine Auswertung über Beschäftigte, die B6 und
-   §20 eng begrenzen.
-2. **Eng (§16):** Eigenes sieht jede Person; Fremdes in Zeitkonto und
-   Erstattungen nur owner; im Urlaub sehen andere nur den Zeitraum, nie den
-   Grund; die IBAN nur maskiert („DE02 •••• 01“); keine Summe über alle
-   Personen. Räder anlegen und entfernen nur owner, Schlüssel, Panne und
-   Check-Up alle. Verbindlich über RLS (ADR-004). Folge: später zu öffnen ist
-   billig; jede Öffnung ist eine eigene Rollenentscheidung.
-3. **Wie 2, mit den Zusatzrechten aus §4.3 und §4.5 gleich vergeben:** office
-   sieht die Belege der Erstattungen, team_lead bearbeitet Urlaubsanträge und
-   teilt Räder zu. Folge: näher an einer größeren Praxis, mehr Sichtbarkeit von
-   Anfang an.
-
-**Empfehlung.** Option 2, als Vorgabe in den Zuschnitt von FLT-EPIC-001,
-URL-001, ZK-001 und ERS-001; die Vorschau selbst wird nicht umgebaut, sondern
-ersetzt. Dort auch: der Hauptknopf nach Rolle (Behandelnde „Schlüssel
-entnehmen“, „Rad hinzufügen“ nachrangig für owner), Suche und Filter
-eingeklappt.
-
-**Entscheidung (Jannes, 2026-10-09).** Option 2 mit Büro: Eigenes sieht jede Person; Fremdes in Zeitkonto und Erstattungen sehen owner und Büro; im Urlaub sehen andere nur den Zeitraum, nie den Grund; IBAN maskiert; keine Summe über alle Personen; Räder anlegen und entfernen nur owner, Schlüssel, Panne und Check-up alle. Verbindlich über RLS; Vorgabe für den Zuschnitt der genannten Loops.
-
 ### BEF-082 — Sechzehn Lesepfade verlieren ihren Abweisungseintrag hinter PostgREST
 
 |         |   |
@@ -680,9 +630,35 @@ eingeklappt.
 | Datum   | 2026-10-17 |
 | Bereich | Aufbewahrung und Löschung (ADR-008), Urlaub, Arbeitszeit, Zeitkonto |
 | Quelle  | Zweitreview der Überholung 9 (ZK-001), gilt seit Überholung 7 |
-| Status  | offen – Entscheidung Jannes |
+| Status  | eingeplant: eigener Auftrag (Pfad A), Entscheidung Jannes 2026-10-17 |
 | Berührt | `app.delete_due_staff_leave` (URL-001), `app.delete_due_working_time_requests` (AZ-001), `app.delete_due_time_account_entries` (ZK-001), `public.legal_holds` |
 
 **Beobachtung.** ANN-033 lässt die Löschsperre nur für Patientenakten zu, weil es für Beschäftigtendaten keine automatische Löschung gab. Seit URL-001 löscht der Lauf Urlaubsanträge und -ansprüche, seit AZ-001 Arbeitszeitänderungen, mit ZK-001 auch gültige Zeitkonto-Einträge – jeweils an der Verjährungsgrenze, an der ein laufender Streit sie bräuchte. ADR-008 Punkt 7 verlangt, dass eine Sperre automatische Löschung während laufender Vorgänge verhindert.
 
 **Erwartet.** Änderungspfad von ANN-033: Gegenstand `staff_member` zulassen (owner setzt und hebt auf wie bei Akten) und in den drei Löschregeln `app.under_legal_hold(…, 'staff_member', …)` prüfen. Das schreibt Auditeinträge zu einem neuen Gegenstand und braucht deshalb Jannes' Freigabe (ADR-010, Label `freigabe-audit`); bis dahin nichts gebaut. Genehmigtes und Gültiges fällt frühestens Anfang 2030.
+
+**Entscheidung (Jannes, 2026-10-17).** Wie empfohlen: ein eigener kleiner Pfad-A-Auftrag für Urlaub, Arbeitszeit, Zeitkonto und Erstattungen zusammen; die Auditeinträge zum neuen Gegenstand brauchen an dessen PR weiter das Label `freigabe-audit`.
+
+### BEF-179 — Zeitkonto: Eine Zurückweisung erreicht die Person nicht von selbst
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Zeitkonto (`/betrieb/zeitkonto`), Übersicht „Noch offen“ |
+| Quelle  | Praxis-Review der Überholung 9 (ZK-001), Frage an Jannes |
+| Status  | eingeplant: Folge-Story im Zeitkonto, Entscheidung Jannes 2026-10-17 |
+| Berührt | `list_time_account`, `src/features/today/NochOffen.tsx` |
+
+**Beobachtung.** Weist owner einen Freizeitausgleich zurück, ist die Zeit sofort wieder Arbeitszeit; die Person sieht das nur, wenn sie ins Zeitkonto schaut. **Erwartet.** Ein zurückgewiesener Eintrag mit kommendem Tag steht bei der Person unter „Noch offen“ in der Übersicht, bis der Tag vorbei ist – ohne Benachrichtigung, Push bleibt aus.
+
+### BEF-180 — Zeitkonto: Ein Freizeitausgleich für heute lässt sich nicht zurücknehmen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Zeitkonto (`/betrieb/zeitkonto`) |
+| Quelle  | Praxis-Review der Überholung 9 (ZK-001), Runde 2 |
+| Status  | eingeplant: eigener kleiner Auftrag (Pfad A), Entscheidung Jannes 2026-10-17 |
+| Berührt | `public.withdraw_time_account_entry` und `can_withdraw` in `list_time_account` (`20261126100000_zk_001_zeitkonto.sql`), `TimeAccountPage.tsx` |
+
+**Beobachtung.** Zurücknehmen geht beim Freizeitausgleich nur vor seinem Tag (`on_date > heute`); wer heute doch bleibt, kann den Eintrag für heute nicht zurücknehmen. **Erwartet.** Zurücknehmen auch am Tag selbst, solange die freie Zeit noch nicht begonnen hat; die Abweichung im Kalender fällt mit dem Eintrag. Pfad A: Prüfung am Server, Negativtests.

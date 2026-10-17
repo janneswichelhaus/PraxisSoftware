@@ -100,14 +100,14 @@ describe('AppShell', () => {
     const menue = screen.getByRole('navigation', { name: 'Bereich Organisatorisches' });
     expect(within(menue).getByRole('link', { name: 'Mitarbeitende' })).toBeInTheDocument();
     // Seit FLT-EPIC-001 ist die Radflotte echt und steht bei den echten
-    // Punkten, seit URL-001 auch der Urlaub, seit ZK-001 das Zeitkonto.
+    // Punkten, seit URL-001 auch der Urlaub, seit ZK-001 das Zeitkonto, seit
+    // ERS-001 die Erstattungen - ohne Vorschau-Marke und ohne „Vorschau (n)“.
     expect(within(menue).getByRole('link', { name: 'Radflotte' })).toBeInTheDocument();
     expect(within(menue).getByRole('link', { name: 'Urlaub' })).toBeInTheDocument();
     expect(within(menue).getByRole('link', { name: 'Zeitkonto' })).toBeInTheDocument();
-    // Seit ZK-001 bleibt eine Vorschau: Sie steht offen mit ihrer Marke statt
-    // hinter „Vorschau (1)“ (ANN-493); das Einklappen ab zwei prüft
-    // SubNav.test.tsx.
-    expect(within(menue).getByRole('link', { name: /Erstattungen/ })).toHaveTextContent('Vorschau');
+    expect(within(menue).getByRole('link', { name: 'Erstattungen' })).not.toHaveTextContent(
+      'Vorschau',
+    );
     expect(within(menue).queryByRole('button', { name: /^Vorschau/ })).toBeNull();
   });
 

@@ -1,812 +1,295 @@
-import { useState } from 'react';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
-import { Field } from '@/components/ui/Field';
-import { Select } from '@/components/ui/Select';
-import { TextArea } from '@/components/ui/TextArea';
-import { Badge, type Ton } from '@/components/ui/Badge';
-import { DataList, DataRow, Disclosure } from '@/components/ui/Card';
-import { Datenliste, type Datenspalte } from '@/components/ui/Datenliste';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Badge } from '@/components/ui/Badge';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
-import { Filterleiste } from '@/components/ui/Filterleiste';
-import { Formularfuss } from '@/components/ui/Formularfuss';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { roleLabels } from '@/components/ui/roleLabels';
+import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import type { CurrentUser } from '@/features/session/types';
+import { formatEuro } from '@/lib/geld';
+import { useMeldungAusVerlauf } from '@/lib/meldung';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
-  mitarbeiterName,
-  useVorschau,
-  type Protokolleintrag,
-} from '@/features/preview/vorschauContext';
-import { vorschauId } from '@/features/preview/vorschauZustand';
-import { darfEntscheiden, vorschauidentitaet } from '@/features/preview/identitaet';
-import { SignaturFeld } from '@/features/preview/SignaturFeld';
-import { SimulationsMeldung } from '@/features/preview/ui';
-import { formatDatum, formatEuro, formatMonat, parseEuroZuCent } from '@/features/preview/format';
+  LOAD_ERROR,
+  REIMBURSEMENTS_KEY,
+  fetchReimbursements,
+  reimbursementsKey,
+  withdrawReimbursement,
+  type Overview,
+  type Reimbursement,
+} from './api';
 import {
-  erstattungsstandLabels,
-  type Erstattung,
-  type Erstattungsart,
-  type Erstattungsstand,
-} from '@/features/preview/types';
+  ACCOUNT_PATH,
+  PERSON_PARAM,
+  REIMBURSEMENTS_HOME,
+  REQUEST_PATH,
+  dateOf,
+  decidePath,
+  payPath,
+  personPath,
+} from './paths';
+import { BelowRow } from './BelowRow';
+import { ReceiptRow } from './ReceiptRow';
+import {
+  STATUS_LABEL,
+  STATUS_SIGN,
+  STATUS_TONE,
+  electricityFormula,
+  reimbursementTitle,
+} from './rules';
 
 /**
- * Erstattungen.
+ * Erstattungen (ERS-001, Überholung 10).
  *
- * Übernahme aus der Team-App: Strom- und Einkaufserstattung, IBAN, Zeitraum,
- * Arbeitstage mit Berechnung, Positionen mit Summe, Belege, Erklärung,
- * Unterschrift, Historie je Person und Bearbeitungsstände.
+ * Eine Seite für alle Rollen; was jemand sieht, entscheidet der Server
+ * (ANN-598): die eigenen Anträge mit Zustand und das Konto (IBAN maskiert,
+ * ANN-601); für owner dazu, was zu entscheiden und was auszuzahlen ist; für
+ * owner und Büro die Personen mit Erstattungen - je Person, ohne Summe über
+ * alle (§20). Die Zeile einer Person öffnet ihre Erstattungen auf derselben
+ * Route (`?person=…`).
  *
- * Eine bewusste Abweichung: Die Vorlage kennt nur „offen" und „erstattet".
- * Einreichen, Entscheiden und tatsächliches Auszahlen sind aber verschiedene
- * Vorgänge - „genehmigt" heißt nicht „ausgezahlt". Der Ablauf hier trennt
- * sie, weil die zusammengefasste Variante genau den Fehler begünstigt, den
- * eine Erstattungsprüfung verhindern soll.
+ * Beantragen, Entscheiden und Auszahlen sind geführte Abläufe auf eigenen
+ * Seiten (G10, G10b). Genehmigt heißt nicht ausgezahlt: Die Zeile sagt es.
  */
-
-const standTon: Record<Erstattungsstand, Ton> = {
-  eingereicht: 'warnung',
-  genehmigt: 'positiv',
-  abgelehnt: 'kritisch',
-  ausgezahlt: 'positiv',
-};
-
-/** Eine Akkuladung je Arbeitstag, wie in der Vorlage. */
-const KWH_PRO_ARBEITSTAG = 0.5;
-
-function betragCent(erstattung: Erstattung, stromsatzCent: number): number {
-  if (erstattung.art === 'strom') {
-    return Math.round(erstattung.arbeitstage * KWH_PRO_ARBEITSTAG * stromsatzCent);
-  }
-  return erstattung.positionen.reduce((summe, position) => summe + position.betragCent, 0);
-}
-
 export function ReimbursementsPage({ user }: { user: CurrentUser }) {
-  const { zustand, simuliere } = useVorschau();
-  const identitaet = vorschauidentitaet(zustand, user);
-  const entscheidungsrecht = darfEntscheiden(user);
-
-  const [formular, setFormular] = useState(false);
-  const [filter, setFilter] = useState<'alle' | Erstattungsstand>('alle');
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
-
-  const sichtbar = zustand.erstattungen.filter(
-    (erstattung) => filter === 'alle' || erstattung.stand === filter,
-  );
-  const offenCent = zustand.erstattungen
-    .filter((erstattung) => erstattung.stand !== 'ausgezahlt' && erstattung.stand !== 'abgelehnt')
-    .reduce((summe, erstattung) => summe + betragCent(erstattung, zustand.stromsatzCent), 0);
-
-  function entscheiden(erstattung: Erstattung, neuerStand: Erstattungsstand, grund = '') {
-    const name = mitarbeiterName(zustand, erstattung.mitarbeiterId);
-    const folgenText: Record<Erstattungsstand, string[]> = {
-      eingereicht: ['Antrag wieder als eingereicht geführt'],
-      genehmigt: [
-        `Antrag von ${name} als genehmigt vermerkt`,
-        'Die Auszahlung ist damit ausdrücklich noch nicht erfolgt',
-      ],
-      abgelehnt: [`Antrag von ${name} abgelehnt: ${grund || 'ohne Angabe'}`],
-      ausgezahlt: [
-        `Auszahlung an ${name} vermerkt`,
-        'Der Vorgang gilt in der Vorschau als abgeschlossen',
-      ],
-    };
-
-    const eintrag = simuliere(
-      {
-        bereich: 'Erstattungen',
-        vorgang: `${erstattungsstandLabels[neuerStand]}: ${name}`,
-        folgen: folgenText[neuerStand],
-        nichtGeschehen: [
-          'Keine Überweisung ausgelöst und keine Buchhaltung informiert',
-          'Keine Benachrichtigung an die einreichende Person',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        erstattungen: stand.erstattungen.map((eintragErstattung) =>
-          eintragErstattung.id === erstattung.id
-            ? {
-                ...eintragErstattung,
-                stand: neuerStand,
-                entschiedenVon:
-                  neuerStand === 'genehmigt' || neuerStand === 'abgelehnt'
-                    ? user.profile.display_name
-                    : eintragErstattung.entschiedenVon,
-                entschiedenAm:
-                  neuerStand === 'genehmigt' || neuerStand === 'abgelehnt'
-                    ? stand.stichtag
-                    : eintragErstattung.entschiedenAm,
-                ausgezahltAm: neuerStand === 'ausgezahlt' ? stand.stichtag : '',
-                ablehnungsgrund: neuerStand === 'abgelehnt' ? grund : '',
-              }
-            : eintragErstattung,
-        ),
-      }),
-    );
-    setMeldung(eintrag);
-  }
-
-  if (formular) {
-    return (
-      <Erstattungsformular
-        user={user}
-        onFertig={(eintrag) => {
-          setMeldung(eintrag);
-          setFormular(false);
-        }}
-        onAbbrechen={() => setFormular(false)}
-      />
-    );
-  }
+  const [search] = useSearchParams();
+  const person = search.get(PERSON_PARAM);
+  // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder (Überholung 9).
+  const { meldung: notice } = useMeldungAusVerlauf();
+  const query = useQuery({
+    queryKey: reimbursementsKey(person),
+    queryFn: () => fetchReimbursements(person),
+    retry: false,
+  });
+  const own = !person || person === query.data?.my_staff_member_id;
+  const name = query.data?.person?.name ?? 'Unbekannte Person';
+  const timeZone = user.organizationTimeZone ?? 'Europe/Berlin';
 
   return (
     <>
-      <PageHeader
-        title="Erstattungen"
-        description="Stromkosten der Diensträder und Einkäufe."
-        actions={<Button onClick={() => setFormular(true)}>Erstattung einreichen</Button>}
-      />
-
-      <SimulationsMeldung eintrag={meldung} />
-
-      {/* Wem „(Sie)" gehört, steht dabei (VOR-07): In der Vorschau ist das
-          angemeldete Konto einer Demoperson zugeordnet, und ohne diesen Satz
-          markierte „(ich)" scheinbar eine fremde Person. Nur, wenn eine
-          Zeile so markiert ist - sonst erklärte der Satz nichts, was zu sehen
-          ist (R2-neu3); wer einreicht, wählt das Formular. */}
-      {identitaet &&
-      zustand.erstattungen.some(
-        (erstattung) => erstattung.mitarbeiterId === identitaet.person.id,
-      ) ? (
-        <p className="text-ink-muted mb-4 max-w-prose text-sm">
-          Ihre Erstattungen in der Vorschau sind die von {identitaet.person.name}
-          {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}, markiert mit „(Sie)“.
-        </p>
-      ) : null}
-
-      {/* Der Filter am Telefon hinter „Filter“, die offene Summe als Zeile
-          über der Liste (DESIGN.md „Liste“, ANN-405). */}
-      <Filterleiste
-        beschriftung="Erstattungen filtern"
-        gesetzt={filter === 'alle' ? 0 : 1}
-        onZuruecksetzen={() => setFilter('alle')}
-        ergebnis={
-          <>
-            Offene Erstattungen: <strong className="text-ink">{formatEuro(offenCent)}</strong>
-          </>
-        }
-      >
-        <Select
-          label="Bearbeitungsstand"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value as 'alle' | Erstattungsstand)}
-        >
-          <option value="alle">Alle</option>
-          {(Object.keys(erstattungsstandLabels) as Erstattungsstand[]).map((stand) => (
-            <option key={stand} value={stand}>
-              {erstattungsstandLabels[stand]}
-            </option>
-          ))}
-        </Select>
-      </Filterleiste>
-
-      {sichtbar.length === 0 ? (
-        <EmptyState inKarte title="Keine Einträge" />
-      ) : (
-        // Die Anträge als Datenliste (DESIGN.md „Datenliste“, vorher eine
-        // Karte je Antrag): ab 1024 px Spalten, darunter je Antrag eine Zeile
-        // mit Betrag oben rechts.
-        <Datenliste
-          beschriftung="Erstattungen"
-          zeilen={sichtbar}
-          schluessel={(erstattung) => erstattung.id}
-          spalten={erstattungsspalten({
-            eigene: identitaet?.person.id ?? null,
-            entscheidungsrecht,
-            onEntscheiden: entscheiden,
-          })}
-        />
+      {own ? null : (
+        <Rueckweg standard={REIMBURSEMENTS_HOME} beschriftung="Zurück zu den Erstattungen" />
       )}
-
-      <div className="mt-8 flex flex-col gap-3">
-        <Historie />
-
-        <Disclosure summary="Berechnung der Stromerstattung" inKarte>
-          <DataList>
-            <DataRow label="Ladung je Arbeitstag">{KWH_PRO_ARBEITSTAG} kWh</DataRow>
-            <DataRow label="Satz je kWh">{formatEuro(zustand.stromsatzCent)}</DataRow>
-            <DataRow label="Formel">Arbeitstage × 0,5 kWh × Satz</DataRow>
-          </DataList>
-          {/* Ehrlich über die Herkunft der Zahl (Vorschau): keine Vorgabe. */}
-          <Kleingedrucktes className="mt-3">
-            Die Pauschale stammt aus der Vorlage und ist eine betriebliche Regel, kein allgemein
-            gültiger Verbrauchswert und keine rechtliche Vorgabe. Sie muss für diesen Betrieb
-            gesondert entschieden werden.
-          </Kleingedrucktes>
-        </Disclosure>
-      </div>
+      <PageHeader
+        title={own ? 'Erstattungen' : `Erstattungen von ${name}`}
+        actions={
+          own && query.data?.my_staff_member_id ? (
+            <ButtonLink to={mitRueckweg(REQUEST_PATH, REIMBURSEMENTS_HOME)}>
+              Erstattung beantragen
+            </ButtonLink>
+          ) : null
+        }
+      />
+      {notice ? (
+        <Rueckmeldung key={notice.schluessel} className="mb-6">
+          {notice.text}
+        </Rueckmeldung>
+      ) : null}
+      <Abfragezustand
+        abfrage={query}
+        laden="Erstattungen werden geladen …"
+        fehler={LOAD_ERROR}
+        inKarte
+      >
+        {(state) => <Content state={state} own={own} timeZone={timeZone} />}
+      </Abfragezustand>
     </>
   );
 }
 
-interface Zeilenkontext {
-  /** Die Demoperson des angemeldeten Kontos, markiert mit „(Sie)". */
-  eigene: string | null;
-  entscheidungsrecht: boolean;
-  onEntscheiden: (erstattung: Erstattung, stand: Erstattungsstand, grund?: string) => void;
-}
-
-/**
- * Die Spalten eines Antrags: wer und was, der Stand als Zeichen und Wort, die
- * Einzelheiten samt Entscheidung an Ort und Stelle (Leitfaden L3), der
- * Betrag.
- */
-function erstattungsspalten(kontext: Zeilenkontext): Datenspalte<Erstattung>[] {
-  return [
-    {
-      titel: 'Antrag',
-      breite: '14rem',
-      telefon: 'kopf',
-      inhalt: (erstattung) => <Antragskopf erstattung={erstattung} eigene={kontext.eigene} />,
-    },
-    {
-      titel: 'Stand',
-      breite: '9rem',
-      inhalt: (erstattung) => (
-        <Badge ton={standTon[erstattung.stand]}>{erstattungsstandLabels[erstattung.stand]}</Badge>
-      ),
-    },
-    {
-      titel: 'Einzelheiten',
-      inhalt: (erstattung) => (
-        <Einzelheiten
-          erstattung={erstattung}
-          entscheidungsrecht={kontext.entscheidungsrecht}
-          onEntscheiden={kontext.onEntscheiden}
-        />
-      ),
-    },
-    {
-      titel: 'Betrag',
-      breite: '7rem',
-      rechts: true,
-      telefon: 'ende',
-      inhalt: (erstattung) => <Antragsbetrag erstattung={erstattung} />,
-    },
-  ];
-}
-
-function Antragskopf({ erstattung, eigene }: { erstattung: Erstattung; eigene: string | null }) {
-  const { zustand } = useVorschau();
-  return (
-    <span className="block">
-      <span className="text-ink text-liste block font-semibold">
-        {mitarbeiterName(zustand, erstattung.mitarbeiterId)}
-        {eigene === erstattung.mitarbeiterId ? ' (Sie)' : ''}
-      </span>
-      <span className="text-ink-muted block text-sm">
-        {erstattung.art === 'strom' ? 'Stromkosten' : 'Einkauf'} ·{' '}
-        {formatDatum(erstattung.eingereichtAm)}
-      </span>
-    </span>
-  );
-}
-
-function Antragsbetrag({ erstattung }: { erstattung: Erstattung }) {
-  const { zustand } = useVorschau();
-  return formatEuro(betragCent(erstattung, zustand.stromsatzCent));
-}
-
-/**
- * Was den Antrag ausmacht, was mit ihm geschehen ist - und die Entscheidung.
- * Die Aktionen nur, wo es etwas zu entscheiden gibt (VOR-24).
- */
-function Einzelheiten({
-  erstattung,
-  entscheidungsrecht,
-  onEntscheiden,
-}: {
-  erstattung: Erstattung;
-  entscheidungsrecht: boolean;
-  onEntscheiden: (erstattung: Erstattung, stand: Erstattungsstand, grund?: string) => void;
-}) {
-  const [ablehnung, setAblehnung] = useState('');
-  const [ablehnenOffen, setAblehnenOffen] = useState(false);
-  const hatAktion =
-    entscheidungsrecht && (erstattung.stand === 'eingereicht' || erstattung.stand === 'genehmigt');
-
-  // In einer Zeile: der Zeitraum ausgeschrieben statt als Wert des
-  // Eingabefelds („2026-08", VOR-24), keine Zeile „Positionen: N" - die
-  // Positionen stehen darunter (UX-005i).
-  const angaben = [
-    erstattung.art === 'strom'
-      ? `${formatMonat(erstattung.zeitraumVon)}${
-          erstattung.zeitraumBis && erstattung.zeitraumBis !== erstattung.zeitraumVon
-            ? ` – ${formatMonat(erstattung.zeitraumBis)}`
-            : ''
-        }`
-      : null,
-    erstattung.art === 'strom' ? `${erstattung.arbeitstage} Arbeitstage` : null,
-    erstattung.belege > 0
-      ? `${erstattung.belege} ${erstattung.belege === 1 ? 'Beleg' : 'Belege'}`
-      : null,
-  ].filter(Boolean);
+function Content({ state, own, timeZone }: { state: Overview; own: boolean; timeZone: string }) {
+  const reimbursements = state.person?.reimbursements ?? [];
+  const account = state.person?.account ?? null;
 
   return (
-    <div className="flex flex-col gap-1">
-      {angaben.length > 0 ? <p className="text-ink-muted">{angaben.join(' · ')}</p> : null}
-
-      {erstattung.positionen.length > 0 ? (
-        <ul className="text-ink-muted space-y-0.5">
-          {erstattung.positionen.map((position) => (
-            <li key={position.id} className="flex justify-between gap-3">
-              <span className="min-w-0 truncate">{position.bezeichnung}</span>
-              <span className="shrink-0 tabular-nums">{formatEuro(position.betragCent)}</span>
-            </li>
+    // Abschnitt zu Abschnitt 32 px: der Abstand der Spalte, nicht dazu der
+    // eigene Rand jedes Abschnitts (Design-Review Überholung 7).
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
+      {own && state.can_decide && state.to_decide.length > 0 ? (
+        <Listenabschnitt titel="Zu entscheiden" anzahl={state.to_decide.length}>
+          {state.to_decide.map((r) => (
+            <ListRow
+              key={r.id}
+              titel={r.name ?? 'Unbekannte Person'}
+              meta={`${reimbursementTitle(r)} · beantragt am ${dateOf(r.requested_at, timeZone)}`}
+              betrag={formatEuro(r.amount_cents)}
+              to={mitRueckweg(decidePath(r.id), REIMBURSEMENTS_HOME)}
+            />
           ))}
-        </ul>
+        </Listenabschnitt>
       ) : null}
 
-      {/* Die IBAN nur, wenn sie gebraucht wird: zur Auszahlung eines
-            genehmigten Antrags (UX-005i). */}
-      {erstattung.stand === 'genehmigt' ? (
-        <p className="text-ink-muted">
-          IBAN <span className="text-ink tabular-nums">{erstattung.iban}</span>
-        </p>
+      {own && state.can_decide && state.to_pay.length > 0 ? (
+        <Listenabschnitt titel="Auszuzahlen" anzahl={state.to_pay.length}>
+          {state.to_pay.map((r) => (
+            <ListRow
+              key={r.id}
+              titel={r.name ?? 'Unbekannte Person'}
+              meta={[reimbursementTitle(r), r.iban_masked].filter(Boolean).join(' · ')}
+              betrag={formatEuro(r.amount_cents)}
+              to={mitRueckweg(payPath(r.id), REIMBURSEMENTS_HOME)}
+            />
+          ))}
+        </Listenabschnitt>
       ) : null}
 
-      {erstattung.notiz ? <p className="text-ink-muted">{erstattung.notiz}</p> : null}
+      {state.person ? (
+        <Listenabschnitt
+          titel={own ? 'Meine Erstattungen' : 'Erstattungen'}
+          anzahl={reimbursements.length}
+          leer={{
+            titel: 'Noch keine Erstattung',
+            aktion: own ? (
+              <ButtonLink variant="secondary" to={mitRueckweg(REQUEST_PATH, REIMBURSEMENTS_HOME)}>
+                Erstattung beantragen
+              </ButtonLink>
+            ) : undefined,
+          }}
+        >
+          {reimbursements.map((r) => (
+            <ReimbursementRow key={r.id} reimbursement={r} own={own} timeZone={timeZone} />
+          ))}
+        </Listenabschnitt>
+      ) : (
+        <EmptyState
+          inKarte
+          title="Keine eigenen Erstattungen"
+          description="Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz."
+        />
+      )}
 
-      {erstattung.stand === 'abgelehnt' && erstattung.ablehnungsgrund ? (
-        <p className="text-danger">Ablehnung: {erstattung.ablehnungsgrund}</p>
-      ) : null}
-      {/* „Genehmigt" heißt nicht „ausgezahlt" - der Satz sagt es an jedem
-            genehmigten Antrag (Abweichung von der Vorlage, siehe oben). */}
-      {erstattung.stand === 'genehmigt' ? (
-        <p className="text-ink-muted">
-          Genehmigt von {erstattung.entschiedenVon} am {formatDatum(erstattung.entschiedenAm)}. Noch
-          nicht ausgezahlt.
-        </p>
-      ) : null}
-      {erstattung.stand === 'ausgezahlt' ? (
-        <p className="text-ink-muted">Ausgezahlt am {formatDatum(erstattung.ausgezahltAm)}.</p>
-      ) : null}
-
-      {hatAktion ? (
-        <div className="mt-1">
-          {erstattung.stand === 'eingereicht' ? (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="secondary"
-                groesse="kompakt"
-                onClick={() => onEntscheiden(erstattung, 'genehmigt')}
-              >
-                Genehmigen
-              </Button>
-              <Button
-                variant="quiet"
-                groesse="kompakt"
-                aria-expanded={ablehnenOffen}
-                onClick={() => setAblehnenOffen((offen) => !offen)}
-              >
-                Ablehnen
-              </Button>
-            </div>
-          ) : null}
-          {erstattung.stand === 'genehmigt' ? (
-            <Button
-              variant="secondary"
-              groesse="kompakt"
-              onClick={() => onEntscheiden(erstattung, 'ausgezahlt')}
-            >
-              Auszahlung vermerken
-            </Button>
-          ) : null}
-          {ablehnenOffen ? (
-            <div className="max-w-formular mt-3 flex flex-col gap-2">
-              <TextArea
-                rows={3}
-                label="Grund der Ablehnung"
-                value={ablehnung}
-                onChange={(event) => setAblehnung(event.target.value)}
-              />
-              <div>
-                <Button
+      {state.person && (own || account) ? (
+        <Listenabschnitt titel="Auszahlung">
+          <ListRow
+            titel={account ? `Auf ${account.iban_masked}` : 'Noch keine IBAN hinterlegt'}
+            meta={account ? `hinterlegt am ${dateOf(account.since, timeZone)}` : undefined}
+            aktion={
+              own ? (
+                <ButtonLink
                   variant="secondary"
                   groesse="kompakt"
-                  disabled={ablehnung.trim() === ''}
-                  onClick={() => {
-                    onEntscheiden(erstattung, 'abgelehnt', ablehnung.trim());
-                    setAblehnenOffen(false);
-                    setAblehnung('');
-                  }}
+                  aria-label={account ? 'Ändern: IBAN' : 'Hinterlegen: IBAN'}
+                  to={mitRueckweg(ACCOUNT_PATH, REIMBURSEMENTS_HOME)}
                 >
-                  Ablehnung übernehmen
-                </Button>
-              </div>
-            </div>
-          ) : null}
-        </div>
+                  {account ? 'Ändern' : 'Hinterlegen'}
+                </ButtonLink>
+              ) : null
+            }
+          />
+        </Listenabschnitt>
+      ) : null}
+
+      {own && state.can_read_all && state.people.length > 0 ? (
+        <Listenabschnitt titel="Personen" anzahl={state.people.length}>
+          {state.people.map((p) => (
+            <ListRow
+              key={p.staff_member_id}
+              titel={p.name ?? 'Unbekannte Person'}
+              meta={p.open === 0 ? 'nichts offen' : p.open === 1 ? '1 offen' : `${p.open} offen`}
+              to={personPath(p.staff_member_id)}
+            />
+          ))}
+        </Listenabschnitt>
       ) : null}
     </div>
   );
 }
 
-/** Historie je Person - praktisch, um doppelte Einreichungen zu erkennen. */
-function Historie() {
-  const { zustand } = useVorschau();
+function ReimbursementRow({
+  reimbursement: r,
+  own,
+  timeZone,
+}: {
+  reimbursement: Reimbursement;
+  own: boolean;
+  timeZone: string;
+}) {
+  const queryClient = useQueryClient();
+  const withdraw = useMutation({
+    mutationFn: () => withdrawReimbursement(r.id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: REIMBURSEMENTS_KEY }),
+  });
+  const done = r.status === 'rejected' || r.status === 'withdrawn';
+  const meta = [
+    r.kind === 'electricity' &&
+    r.working_days !== null &&
+    r.energy_wh_per_day !== null &&
+    r.rate_cents_per_kwh !== null
+      ? electricityFormula(r.working_days, r.energy_wh_per_day, r.rate_cents_per_kwh)
+      : null,
+    statusLine(r, timeZone),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const withdrawable = own && r.status === 'requested';
 
   return (
-    <Disclosure summary="Historie je Person" inKarte>
-      {zustand.mitarbeitende.map((person) => {
-        const eintraege = zustand.erstattungen.filter(
-          (erstattung) => erstattung.mitarbeiterId === person.id,
-        );
-        if (eintraege.length === 0) return null;
-        return (
-          <div key={person.id} className="border-line border-t py-2 first:border-t-0">
-            <p className="text-ink text-sm font-medium">{person.name}</p>
-            <ul className="text-ink-muted space-y-0.5 text-sm">
-              {eintraege.map((erstattung) => (
-                <li key={erstattung.id} className="flex flex-wrap items-center gap-2">
-                  <span>
-                    {erstattung.art === 'strom' ? 'Strom' : 'Einkauf'} ·{' '}
-                    {formatDatum(erstattung.eingereichtAm)} ·{' '}
-                    {formatEuro(betragCent(erstattung, zustand.stromsatzCent))}
-                  </span>
-                  <Badge ton={standTon[erstattung.stand]}>
-                    {erstattungsstandLabels[erstattung.stand]}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })}
-    </Disclosure>
+    <ListRow
+      titel={reimbursementTitle(r)}
+      meta={meta}
+      betrag={formatEuro(r.amount_cents)}
+      gedaempft={done}
+      status={
+        <Badge ton={STATUS_TONE[r.status]} eigenesZeichen={STATUS_SIGN[r.status]}>
+          {STATUS_LABEL[r.status]}
+        </Badge>
+      }
+      darunter={
+        r.receipts.length > 0 || withdrawable ? (
+          <>
+            {r.receipts.length > 0 ? <ReceiptRow receipts={r.receipts} /> : null}
+            {withdrawable ? (
+              <BelowRow>
+                <Rueckfrage
+                  ausloeser="Zurückziehen"
+                  ausloeserVariante="quiet"
+                  ausloeserGroesse="kompakt"
+                  bezeichnung="Erstattung zurückziehen"
+                  bestaetigen="Ja, zurückziehen"
+                  bestaetigenLaeuft="Wird zurückgezogen …"
+                  fehler={withdraw.isError ? withdraw.error.message : undefined}
+                  onBestaetigen={() => withdraw.mutateAsync()}
+                >
+                  Sie bleibt ein Jahr als zurückgezogen sichtbar.
+                </Rueckfrage>
+              </BelowRow>
+            ) : null}
+          </>
+        ) : undefined
+      }
+    />
   );
 }
-
-// -----------------------------------------------------------------------------
-// Formular
-// -----------------------------------------------------------------------------
 
 /**
- * Eine Position, solange sie eingetippt wird.
- *
- * Der Betrag bleibt als Text im Zustand, bis das Formular abgesendet wird. Ein
- * bei jedem Tastendruck nach Cent und zurück gerechnetes Feld springt beim
- * Tippen: „12," wäre schon 12,00 € und das Komma verschwunden.
+ * Was mit dem Antrag geschehen ist und wann - genehmigt heißt nicht
+ * ausgezahlt. Das Datum des Antrags bleibt neben dem der Entscheidung stehen
+ * (Design-Review Überholung 10).
  */
-interface Positionsentwurf {
-  id: string;
-  bezeichnung: string;
-  betrag: string;
-}
-
-function Erstattungsformular({
-  user,
-  onFertig,
-  onAbbrechen,
-}: {
-  user: CurrentUser;
-  onFertig: (eintrag: Protokolleintrag) => void;
-  onAbbrechen: () => void;
-}) {
-  const { zustand, simuliere } = useVorschau();
-  const identitaet = vorschauidentitaet(zustand, user);
-
-  const [art, setArt] = useState<Erstattungsart>('strom');
-  const [mitarbeiterId, setMitarbeiterId] = useState(identitaet?.person.id ?? '');
-  const [iban, setIban] = useState('');
-  // Geprüft wird die IBAN erst, wenn das Feld verlassen wurde (VOR-17): Beim
-  // Tippen stand nach „DE" sofort ein Fehler am Feld, bis mindestens 14
-  // Zeichen da waren.
-  const [ibanVerlassen, setIbanVerlassen] = useState(false);
-  const [zeitraumVon, setZeitraumVon] = useState(zustand.stichtag.slice(0, 7));
-  const [zeitraumBis, setZeitraumBis] = useState(zustand.stichtag.slice(0, 7));
-  const [arbeitstage, setArbeitstage] = useState('');
-  const [positionen, setPositionen] = useState<Positionsentwurf[]>([]);
-  const [belege, setBelege] = useState(0);
-  const [notiz, setNotiz] = useState('');
-  const [unterschrieben, setUnterschrieben] = useState(false);
-
-  const tage = Number(arbeitstage) || 0;
-  const stromBetrag = Math.round(tage * KWH_PRO_ARBEITSTAG * zustand.stromsatzCent);
-  const einkaufBetrag = positionen.reduce(
-    (summe, position) => summe + (parseEuroZuCent(position.betrag) ?? 0),
-    0,
-  );
-  const betrag = art === 'strom' ? stromBetrag : einkaufBetrag;
-
-  const ibanKurz = iban.replace(/\s/g, '');
-  const ibanPlausibel = ibanKurz.length === 0 || /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/i.test(ibanKurz);
-  const ibanFehler =
-    ibanVerlassen && !ibanPlausibel
-      ? 'Bitte prüfen Sie die IBAN: zwei Buchstaben, zwei Prüfziffern, dann die Kontonummer (z. B. DE02 1001 …).'
-      : undefined;
-  const gueltig =
-    mitarbeiterId !== '' &&
-    ibanKurz.length > 0 &&
-    ibanPlausibel &&
-    (art === 'strom' ? tage > 0 && unterschrieben : positionen.length > 0);
-
-  function absenden() {
-    const eintrag = simuliere(
-      {
-        bereich: 'Erstattungen',
-        vorgang: `Erstattung eingereicht: ${mitarbeiterName(zustand, mitarbeiterId)}, ${formatEuro(betrag)}`,
-        folgen: [
-          'Antrag mit dem Stand „Eingereicht“ in der Liste',
-          // Die Rollen mit ihren Anzeigenamen (VOR-25).
-          `Er erscheint bei ${roleLabels.owner} und ${roleLabels.team_lead} zur Entscheidung`,
-        ],
-        nichtGeschehen: [
-          'Kein PDF erzeugt und nichts an die Buchhaltung versendet',
-          'Belegfotos und Unterschrift verlassen diese Sitzung nicht',
-          'Keine Auszahlung veranlasst',
-        ],
-      },
-      (stand) => ({
-        ...stand,
-        erstattungen: [
-          {
-            id: vorschauId('erstattung'),
-            mitarbeiterId,
-            art,
-            iban: iban.trim(),
-            zeitraumVon: art === 'strom' ? zeitraumVon : '',
-            zeitraumBis: art === 'strom' ? zeitraumBis : '',
-            arbeitstage: art === 'strom' ? tage : 0,
-            positionen:
-              art === 'einkauf'
-                ? positionen.map((position) => ({
-                    id: position.id,
-                    bezeichnung: position.bezeichnung,
-                    betragCent: parseEuroZuCent(position.betrag) ?? 0,
-                  }))
-                : [],
-            belege,
-            notiz,
-            unterschrift: unterschrieben,
-            stand: 'eingereicht' as const,
-            eingereichtAm: stand.stichtag,
-            entschiedenVon: '',
-            entschiedenAm: '',
-            ausgezahltAm: '',
-            ablehnungsgrund: '',
-          },
-          ...stand.erstattungen,
-        ],
-      }),
-    );
-    onFertig(eintrag);
+function statusLine(r: Reimbursement, timeZone: string): string {
+  const requested = dateOf(r.requested_at, timeZone);
+  const on = (timestamp: string | null) => dateOf(timestamp ?? r.requested_at, timeZone);
+  switch (r.status) {
+    case 'requested':
+      return `beantragt am ${requested}`;
+    case 'approved':
+      return r.self_entered
+        ? `selbst eingetragen am ${requested}, noch nicht ausgezahlt`
+        : `beantragt am ${requested} · genehmigt am ${on(r.decided_at)}${
+            r.decided_by_name ? ` von ${r.decided_by_name}` : ''
+          }, noch nicht ausgezahlt`;
+    case 'rejected':
+      return `beantragt am ${requested} · abgelehnt am ${on(r.decided_at)}: ${
+        r.decision_note ?? 'ohne Grund'
+      }`;
+    case 'withdrawn':
+      return `beantragt am ${requested} · zurückgezogen am ${on(r.withdrawn_at)}`;
+    case 'paid':
+      return `beantragt am ${requested} · ausgezahlt am ${on(r.paid_at)}`;
   }
-
-  return (
-    <>
-      <PageHeader title="Erstattung einreichen" />
-      <div className="max-w-formular flex flex-col gap-4">
-        <div>
-          <p className="text-ink mb-2 text-sm font-medium">Art der Erstattung</p>
-          <div role="radiogroup" aria-label="Art der Erstattung" className="flex flex-wrap gap-2">
-            {(
-              [
-                { wert: 'strom', label: 'Stromkosten' },
-                { wert: 'einkauf', label: 'Einkauf' },
-              ] as const
-            ).map((option) => (
-              // Fokus sichtbar am Chip statt am ausgeblendeten Radio, die Wahl
-              // mit Zeichen statt nur mit Farbe (VOR-02, UIK-06).
-              <label
-                key={option.wert}
-                className={`rounded-button text-liste has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center gap-1.5 border px-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
-                  art === option.wert
-                    ? 'border-accent bg-accent-soft text-accent font-medium'
-                    : 'border-line-strong bg-surface text-ink-muted'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="erstattungsart"
-                  className="sr-only"
-                  checked={art === option.wert}
-                  onChange={() => setArt(option.wert)}
-                />
-                {art === option.wert ? <span aria-hidden="true">✓</span> : null}
-                {option.label}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <Select
-          label="Person"
-          value={mitarbeiterId}
-          onChange={(event) => setMitarbeiterId(event.target.value)}
-        >
-          <option value="">– auswählen –</option>
-          {zustand.mitarbeitende.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </Select>
-
-        {/* Großbuchstaben, keine Autokorrektur und keine Vorschläge: Am
-            Telefon kann die Autokorrektur die IBAN beim Tippen verändern
-            (VOR-17). */}
-        <Field
-          label="IBAN"
-          placeholder="DE02 1234 5678 0000 1234 00"
-          hint="Es wird nichts gespeichert und nichts überwiesen."
-          error={ibanFehler}
-          value={iban}
-          autoCapitalize="characters"
-          autoCorrect="off"
-          spellCheck={false}
-          autoComplete="off"
-          onBlur={() => setIbanVerlassen(true)}
-          onChange={(event) => setIban(event.target.value)}
-        />
-
-        {art === 'strom' ? (
-          <>
-            <Field
-              label="Zeitraum von"
-              type="month"
-              value={zeitraumVon}
-              onChange={(event) => setZeitraumVon(event.target.value)}
-            />
-            <Field
-              label="Zeitraum bis"
-              type="month"
-              value={zeitraumBis}
-              onChange={(event) => setZeitraumBis(event.target.value)}
-            />
-            <Field
-              label="Arbeitstage im Zeitraum"
-              type="number"
-              inputMode="numeric"
-              hint={`Ein Arbeitstag entspricht einer Akkuladung von ${KWH_PRO_ARBEITSTAG} kWh.`}
-              value={arbeitstage}
-              onChange={(event) => setArbeitstage(event.target.value)}
-            />
-            <p className="text-ink-muted text-sm">
-              Ergibt {formatEuro(stromBetrag)} bei {formatEuro(zustand.stromsatzCent)} je kWh.
-            </p>
-            <SignaturFeld
-              beschriftung="Erklärung"
-              erklaerung="Ich versichere, dass die geltend gemachten Stromkosten tatsächlich für das Laden des betrieblichen E-Bikes entstanden sind und mir nicht anderweitig erstattet wurden."
-              onChange={setUnterschrieben}
-            />
-          </>
-        ) : (
-          <>
-            {/* Eine Gruppe mit Namen statt eines Kastens (L2); die Felder
-                einer Position stehen am Telefon untereinander, ab 640 px in
-                einer Reihe (DESIGN.md „Formular“). */}
-            <fieldset className="min-w-0">
-              <legend className="sr-only">Positionen</legend>
-              <Zwischentitel>Positionen</Zwischentitel>
-              {positionen.length === 0 ? (
-                <p className="text-ink-muted text-sm">Noch keine Position erfasst.</p>
-              ) : (
-                <ul className="flex flex-col gap-4">
-                  {positionen.map((position, index) => (
-                    <li
-                      key={position.id}
-                      className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_auto]"
-                    >
-                      <div className="min-w-0">
-                        <Field
-                          label={`Position ${index + 1}`}
-                          placeholder="Was wurde gekauft?"
-                          value={position.bezeichnung}
-                          onChange={(event) =>
-                            setPositionen((aktuell) =>
-                              aktuell.map((eintrag) =>
-                                eintrag.id === position.id
-                                  ? { ...eintrag, bezeichnung: event.target.value }
-                                  : eintrag,
-                              ),
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Field
-                          label="Betrag in €"
-                          inputMode="decimal"
-                          placeholder="0,00"
-                          value={position.betrag}
-                          onChange={(event) =>
-                            setPositionen((aktuell) =>
-                              aktuell.map((eintrag) =>
-                                eintrag.id === position.id
-                                  ? { ...eintrag, betrag: event.target.value }
-                                  : eintrag,
-                              ),
-                            )
-                          }
-                        />
-                      </div>
-                      <div>
-                        <Button
-                          variant="quiet"
-                          groesse="kompakt"
-                          onClick={() =>
-                            setPositionen((aktuell) =>
-                              aktuell.filter((eintrag) => eintrag.id !== position.id),
-                            )
-                          }
-                        >
-                          Entfernen
-                        </Button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <Button
-                  variant="secondary"
-                  groesse="kompakt"
-                  onClick={() =>
-                    setPositionen((aktuell) => [
-                      ...aktuell,
-                      { id: vorschauId('position'), bezeichnung: '', betrag: '' },
-                    ])
-                  }
-                >
-                  Position hinzufügen
-                </Button>
-                <span className="text-ink-muted text-sm">
-                  Gesamt: <strong className="text-ink">{formatEuro(einkaufBetrag)}</strong>
-                </span>
-              </div>
-            </fieldset>
-
-            <div>
-              <p className="text-ink text-sm font-medium">Beleg</p>
-              <p className="text-ink-muted mb-2 text-sm">
-                Beleg gut lesbar fotografieren: gerade halten, ausreichend Licht, alle Beträge und
-                der Händlername müssen erkennbar sein. In der Vorschau wird nur die Anzahl
-                mitgeführt, es wird nichts hochgeladen.
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button variant="secondary" onClick={() => setBelege((anzahl) => anzahl + 1)}>
-                  Beleg hinzufügen
-                </Button>
-                {belege > 0 ? (
-                  <span className="text-ink-muted text-sm">
-                    {belege} Beleg{belege === 1 ? '' : 'e'} vorgemerkt
-                  </span>
-                ) : null}
-              </div>
-            </div>
-          </>
-        )}
-
-        <TextArea
-          rows={3}
-          label="Notiz"
-          hint="Optional."
-          value={notiz}
-          onChange={(event) => setNotiz(event.target.value)}
-        />
-
-        <Formularfuss trenner>
-          <Button onClick={absenden} disabled={!gueltig}>
-            Einreichen (Vorschau)
-          </Button>
-          <Button variant="quiet" onClick={onAbbrechen}>
-            Abbrechen
-          </Button>
-        </Formularfuss>
-      </div>
-    </>
-  );
 }

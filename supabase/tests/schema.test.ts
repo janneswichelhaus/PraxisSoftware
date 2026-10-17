@@ -200,6 +200,11 @@ describe('Schema-Invarianten', () => {
       'staff_working_time_requests',
       // ZK-001: Einträge im Zeitkonto.
       'staff_time_account_entries',
+      // ERS-001: Erstattungen, ihre Belege, Lesefreigaben und die IBAN.
+      'staff_reimbursements',
+      'staff_reimbursement_receipts',
+      'staff_reimbursement_receipt_access_grants',
+      'staff_payout_accounts',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

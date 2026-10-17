@@ -1,257 +1,189 @@
-import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { renderMitVorschau, testUser } from '@/test-utils';
-import { ReimbursementsPage } from './ReimbursementsPage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { testUser } from '@/test-utils';
+import type * as ReimbursementsApi from './api';
+import { ANNA, TIM, testOverview, testPurchase, testReimbursement } from './testdata';
 
 /**
- * Der wichtigste Unterschied zur Vorlage: Einreichen, Genehmigen und Auszahlen
- * sind drei Vorgänge und nicht ein gemeinsamer Status. Genau das wird hier
- * geprüft - eine Genehmigung darf nicht wie eine Auszahlung aussehen.
+ * Erstattungen (ERS-001): die eigenen mit Zustand als Zeichen und Wort und
+ * maskierter IBAN; für owner zu entscheiden und auszuzahlen; für owner und
+ * Büro die Personen, ohne Summe über alle (ANN-598, ANN-601).
  */
 
-function oeffne(rollen: Parameters<typeof testUser>[0] = ['owner']) {
-  return renderMitVorschau(<ReimbursementsPage user={testUser(rollen)} />, '/betrieb/erstattungen');
+const fetchReimbursements = vi.fn();
+const withdrawReimbursement = vi.fn();
+
+vi.mock('./api', async (importOriginal) => {
+  const actual = await importOriginal<typeof ReimbursementsApi>();
+  return {
+    ...actual,
+    fetchReimbursements: (...a: unknown[]) => fetchReimbursements(...a) as unknown,
+    withdrawReimbursement: (...a: unknown[]) => withdrawReimbursement(...a) as unknown,
+  };
+});
+
+const { ReimbursementsPage } = await import('./ReimbursementsPage');
+
+function rendern(
+  rollen: Parameters<typeof testUser>[0] = ['therapist'],
+  pfad = '/betrieb/erstattungen',
+) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[pfad]}>
+        <ReimbursementsPage user={testUser(rollen)} />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
-describe('Erstattungen', () => {
-  it('unterscheidet die vier Bearbeitungsstände', () => {
-    oeffne();
-    for (const stand of ['Eingereicht', 'Genehmigt', 'Abgelehnt', 'Ausgezahlt']) {
-      expect(screen.getAllByText(stand).length).toBeGreaterThan(0);
-    }
-  });
+const ANNAS = testOverview({
+  person: {
+    ...testOverview().person!,
+    reimbursements: [
+      testReimbursement(),
+      testPurchase({
+        status: 'approved',
+        decided_at: '2026-10-05T09:00:00Z',
+        decided_by_name: 'Jannes Test',
+      }),
+      testReimbursement({
+        id: 'erstattung-4',
+        period_month: '2026-08-01',
+        status: 'rejected',
+        decided_at: '2026-10-06T09:00:00Z',
+        decision_note: 'Monat schon erstattet',
+      }),
+      testReimbursement({
+        id: 'erstattung-5',
+        period_month: '2026-07-01',
+        status: 'paid',
+        paid_at: '2026-08-05T10:00:00Z',
+      }),
+      testReimbursement({
+        id: 'erstattung-7',
+        period_month: '2026-06-01',
+        status: 'withdrawn',
+        withdrawn_at: '2026-10-03T08:00:00Z',
+      }),
+    ],
+  },
+});
 
-  it('sagt am genehmigten Antrag ausdruecklich, dass noch nicht ausgezahlt wurde', () => {
-    oeffne();
-    expect(screen.getByText(/Noch nicht ausgezahlt/)).toBeInTheDocument();
-  });
+beforeEach(() => {
+  fetchReimbursements.mockReset().mockResolvedValue(ANNAS);
+  withdrawReimbursement.mockReset().mockResolvedValue(undefined);
+});
 
-  it('macht aus einer Genehmigung keine Ueberweisung', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['owner']);
-
-    await nutzer.click(screen.getByRole('button', { name: 'Genehmigen' }));
-
-    const meldung = screen.getByRole('status');
-    expect(
-      within(meldung).getByText(/Auszahlung ist damit ausdrücklich noch nicht erfolgt/),
-    ).toBeInTheDocument();
-    expect(
-      within(meldung).getByText(/Keine Überweisung ausgelöst und keine Buchhaltung informiert/),
-    ).toBeInTheDocument();
-  });
-
-  it('bietet die Auszahlung erst nach der Genehmigung an', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['owner']);
-
-    // Genau ein Antrag steht auf "Genehmigt" - der eingereichte noch nicht.
-    expect(screen.getAllByRole('button', { name: 'Auszahlung vermerken' })).toHaveLength(1);
-
-    await nutzer.click(screen.getByRole('button', { name: 'Genehmigen' }));
-    expect(screen.getAllByRole('button', { name: 'Auszahlung vermerken' })).toHaveLength(2);
-  });
-
-  it('bietet einer behandelnden Rolle keine Entscheidung an', () => {
-    oeffne(['therapist']);
-    expect(screen.queryByRole('button', { name: 'Genehmigen' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Auszahlung vermerken' })).toBeNull();
-  });
-
-  it('rechnet die Stromerstattung nachvollziehbar aus Arbeitstagen', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-
-    await nutzer.type(screen.getByRole('textbox', { name: 'IBAN' }), 'DE02100100100000000001');
-    await nutzer.type(screen.getByRole('spinbutton', { name: /Arbeitstage/ }), '20');
-
-    // 20 Arbeitstage x 0,5 kWh x 0,37 EUR = 3,70 EUR
-    expect(screen.getByText(/Ergibt 3,70/)).toBeInTheDocument();
-  });
-
-  it('meldet eine unplausible IBAN, ohne sie zu akzeptieren', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    await nutzer.type(screen.getByRole('textbox', { name: 'IBAN' }), 'keine-iban');
-    // Geprüft wird beim Verlassen des Felds (VOR-17).
-    await nutzer.tab();
-
-    // Die Meldung sagt, was zu tun ist.
-    expect(screen.getByRole('textbox', { name: 'IBAN' })).toHaveAccessibleDescription(
-      /Bitte prüfen Sie die IBAN: zwei Buchstaben, zwei Prüfziffern, dann die Kontonummer/,
+describe('ReimbursementsPage', () => {
+  it('zeigt die eigenen Erstattungen mit Zustand und Daten - genehmigt heißt nicht ausgezahlt', async () => {
+    rendern();
+    const liste = (await screen.findByRole('heading', { name: /Meine Erstattungen/ })).closest(
+      'section',
+    )!;
+    const zeilen = within(liste).getAllByRole('listitem');
+    expect(zeilen).toHaveLength(5);
+    expect(zeilen[0]).toHaveTextContent('Ladestrom September 2026');
+    expect(zeilen[0]).toHaveTextContent('Beantragt');
+    // Antrag und Entscheidung je mit Datum (Design-Review Überholung 10).
+    expect(zeilen[1]).toHaveTextContent(
+      'beantragt am 2. Okt. 2026 · genehmigt am 5. Okt. 2026 von Jannes Test, noch nicht ausgezahlt',
     );
-    expect(screen.getByRole('button', { name: /Einreichen/ })).toBeDisabled();
-  });
-
-  it('zeigt waehrend des Tippens noch keinen Fehler an der IBAN (VOR-17)', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    const iban = screen.getByRole('textbox', { name: 'IBAN' });
-
-    await nutzer.type(iban, 'DE');
-
-    expect(iban).not.toHaveAttribute('aria-invalid');
-    expect(screen.queryByText(/Bitte prüfen Sie die IBAN/)).toBeNull();
-  });
-
-  it('schaltet an der IBAN Großschreibung ein und Korrektur und Vorschläge aus (VOR-17)', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    const iban = screen.getByRole('textbox', { name: 'IBAN' });
-    expect(iban).toHaveAttribute('autocapitalize', 'characters');
-    expect(iban).toHaveAttribute('autocorrect', 'off');
-    expect(iban).toHaveAttribute('spellcheck', 'false');
-    expect(iban).toHaveAttribute('autocomplete', 'off');
-  });
-
-  it('zeigt den Fokus an den Chips der Art und die Wahl mit Zeichen (VOR-02)', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    const einkauf = screen.getByRole('radio', { name: 'Einkauf' });
-    expect(einkauf.closest('label')).toHaveClass(
-      'has-[:focus-visible]:outline-2',
-      'has-[:focus-visible]:outline-accent',
+    // Der Betrag je Beleg steht sichtbar am Beleg.
+    expect(within(zeilen[1]!).getByRole('button', { name: /^Massageöl, 12,90/ })).toHaveTextContent(
+      'Massageöl · 12,90 €',
     );
-
-    await nutzer.click(einkauf);
-    expect(einkauf.closest('label')).toHaveTextContent('✓Einkauf');
+    expect(zeilen[2]).toHaveTextContent(
+      'beantragt am 2. Okt. 2026 · abgelehnt am 6. Okt. 2026: Monat schon erstattet',
+    );
+    expect(zeilen[3]).toHaveTextContent('ausgezahlt am 5. Aug. 2026');
+    // Zeichen und Wort auch ohne eigenen Ton (Regel 5).
+    expect(zeilen[4]).toHaveTextContent('×Zurückgezogen');
+    expect(zeilen[4]).toHaveTextContent('zurückgezogen am 3. Okt. 2026');
+    expect(screen.getByText('Auf DE89 •••• 3000')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ändern: IBAN' })).toHaveAttribute(
+      'href',
+      '/betrieb/erstattungen/konto?zurueck=%2Fbetrieb%2Ferstattungen',
+    );
+    expect(screen.getAllByRole('link', { name: 'Erstattung beantragen' })[0]).toHaveAttribute(
+      'href',
+      '/betrieb/erstattungen/beantragen?zurueck=%2Fbetrieb%2Ferstattungen',
+    );
+    await act(() => pruefeBarrierefreiheit(document.body));
   });
 
-  it('verlangt fuer die Stromerstattung die Erklaerung', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    await nutzer.type(screen.getByRole('textbox', { name: 'IBAN' }), 'DE02100100100000000001');
-    await nutzer.type(screen.getByRole('spinbutton', { name: /Arbeitstage/ }), '20');
-
-    expect(screen.getByRole('button', { name: /Einreichen/ })).toBeDisabled();
-    await nutzer.type(screen.getByRole('textbox', { name: /Namen tippen/ }), 'Anna Beispiel');
-    expect(screen.getByRole('button', { name: /Einreichen/ })).toBeEnabled();
+  it('zieht einen beantragten Antrag nach Rückfrage zurück', async () => {
+    const user = userEvent.setup();
+    rendern();
+    const liste = (await screen.findByRole('heading', { name: /Meine Erstattungen/ })).closest(
+      'section',
+    )!;
+    // Nur der beantragte trägt das Zurückziehen.
+    expect(within(liste).getAllByRole('button', { name: 'Zurückziehen' })).toHaveLength(1);
+    await user.click(within(liste).getByRole('button', { name: 'Zurückziehen' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, zurückziehen' }));
+    expect(withdrawReimbursement).toHaveBeenCalledWith('erstattung-1');
   });
 
-  it('summiert die Positionen einer Einkaufserstattung', async () => {
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    await nutzer.click(screen.getByRole('radio', { name: 'Einkauf' }));
-    await nutzer.click(screen.getByRole('button', { name: 'Position hinzufügen' }));
-
-    const betrag = screen.getByRole('textbox', { name: 'Betrag in €' });
-    await nutzer.clear(betrag);
-    await nutzer.type(betrag, '12,50');
-
-    expect(screen.getByText(/Gesamt:/).textContent).toContain('12,50');
+  it('zeigt owner, was zu entscheiden und was auszuzahlen ist', async () => {
+    fetchReimbursements.mockResolvedValue(
+      testOverview({
+        can_decide: true,
+        can_read_all: true,
+        to_decide: [testPurchase({ staff_member_id: TIM, name: 'Tim Teamleitung' })],
+        to_pay: [
+          {
+            ...testReimbursement({
+              id: 'erstattung-6',
+              staff_member_id: TIM,
+              name: 'Tim Teamleitung',
+              status: 'approved',
+            }),
+            iban_masked: 'DE02 •••• 2051',
+          },
+        ],
+        people: [{ staff_member_id: TIM, name: 'Tim Teamleitung', open: 2 }],
+      }),
+    );
+    rendern(['owner']);
+    const entscheiden = (await screen.findByRole('heading', { name: /Zu entscheiden/ })).closest(
+      'section',
+    )!;
+    expect(within(entscheiden).getByRole('link', { name: /Tim Teamleitung/ })).toHaveAttribute(
+      'href',
+      '/betrieb/erstattungen/entscheiden/erstattung-2?zurueck=%2Fbetrieb%2Ferstattungen',
+    );
+    const auszahlen = screen.getByRole('heading', { name: /Auszuzahlen/ }).closest('section')!;
+    expect(within(auszahlen).getByText(/DE02 •••• 2051/)).toBeInTheDocument();
+    const personen = screen.getByRole('heading', { name: /Personen/ }).closest('section')!;
+    expect(within(personen).getByRole('link', { name: /Tim Teamleitung/ })).toHaveAttribute(
+      'href',
+      `/betrieb/erstattungen?person=${TIM}`,
+    );
+    expect(within(personen).getByText('2 offen')).toBeInTheDocument();
   });
 
-  it('rechnet Betraege wie der Rest der Anwendung (R3-018)', async () => {
-    // Der Vorschaubereich hatte einen eigenen Geldparser mit abweichender
-    // Semantik: '1e3' wurde als 1000 Euro gelesen und '1,005' auf 1,00
-    // abgerundet statt auf 1,01. Gerechnet wird jetzt mit parseEuroZuCent -
-    // derselben Funktion wie in der Abrechnung.
-    const nutzer = userEvent.setup();
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    await nutzer.click(screen.getByRole('radio', { name: 'Einkauf' }));
-    await nutzer.click(screen.getByRole('button', { name: 'Position hinzufügen' }));
-
-    const betrag = screen.getByRole('textbox', { name: 'Betrag in €' });
-
-    await nutzer.clear(betrag);
-    await nutzer.type(betrag, '1e3');
-    expect(screen.getByText(/Gesamt:/).textContent).not.toContain('1.000,00');
-
-    await nutzer.clear(betrag);
-    await nutzer.type(betrag, '1,005');
-    expect(screen.getByText(/Gesamt:/).textContent).toContain('0,00');
-  });
-
-  it('behauptet beim Einreichen weder PDF noch Versand', async () => {
-    // Ohne Pause zwischen den Tasten: rund 40 Anschläge liefen unter Last an
-    // die Zeitgrenze von 5 s.
-    const nutzer = userEvent.setup({ delay: null });
-    oeffne(['therapist']);
-    await nutzer.click(screen.getByRole('button', { name: 'Erstattung einreichen' }));
-    await nutzer.type(screen.getByRole('textbox', { name: 'IBAN' }), 'DE02100100100000000001');
-    await nutzer.type(screen.getByRole('spinbutton', { name: /Arbeitstage/ }), '20');
-    await nutzer.type(screen.getByRole('textbox', { name: /Namen tippen/ }), 'Anna Beispiel');
-    await nutzer.click(screen.getByRole('button', { name: /Einreichen/ }));
-
-    const meldung = screen.getByRole('status');
+  it('zeigt Büro die Erstattungen einer Person - ohne Ändern und Zurückziehen', async () => {
+    fetchReimbursements.mockResolvedValue({
+      ...ANNAS,
+      my_staff_member_id: 'buero',
+      can_read_all: true,
+    });
+    rendern(['office'], `/betrieb/erstattungen?person=${ANNA}`);
     expect(
-      within(meldung).getByText(/Kein PDF erzeugt und nichts an die Buchhaltung versendet/),
+      await screen.findByRole('heading', { name: 'Erstattungen von Anna Beispiel' }),
     ).toBeInTheDocument();
-    expect(within(meldung).getByText(/Keine Auszahlung veranlasst/)).toBeInTheDocument();
-    // Die Rollen mit ihren Anzeigenamen (VOR-25).
+    expect(fetchReimbursements).toHaveBeenCalledWith(ANNA);
+    expect(screen.getByText('Auf DE89 •••• 3000')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zurückziehen' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /IBAN/ })).toBeNull();
     expect(
-      within(meldung).getByText(/Er erscheint bei Praxisinhaber und Teamleitung zur Entscheidung/),
+      screen.getByRole('button', { name: /^Massageöl, 12,90\s€: Beleg ansehen$/ }),
     ).toBeInTheDocument();
-  });
-
-  it('nennt die Strompauschale als betriebliche Regel und nicht als Vorgabe', async () => {
-    const nutzer = userEvent.setup();
-    oeffne();
-    await nutzer.click(screen.getByText(/Berechnung der Stromerstattung/));
-    expect(
-      screen.getByText(/betriebliche Regel, kein allgemein gültiger Verbrauchswert/),
-    ).toBeInTheDocument();
-  });
-
-  it('benennt, wessen Erstattungen „(Sie)“ traegt (VOR-07)', () => {
-    oeffne(['therapist']);
-    expect(
-      screen.getByText(
-        'Ihre Erstattungen in der Vorschau sind die von Lena Hartmann (Demoperson zur Rolle), markiert mit „(Sie)“.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Lena Hartmann (Sie)')).toBeInTheDocument();
-    expect(screen.queryByText(/\(ich\)/)).toBeNull();
-  });
-
-  it('verspricht keine Markierung, wenn die Demoperson nichts eingereicht hat', () => {
-    // Das Konto der Praxisinhaberin gehört in der Vorschau zu Miriam Falk -
-    // ohne eigene Erstattung. Dann steht kein Satz über „(Sie)“ da, und
-    // keine Zeile trägt die Markierung (R2-neu3).
-    oeffne(['owner']);
-    expect(screen.getByRole('heading', { level: 1, name: 'Erstattungen' })).toBeInTheDocument();
-    expect(screen.queryByText(/Ihre Erstattungen in der Vorschau/)).toBeNull();
-    expect(screen.queryByText(/markiert mit/)).toBeNull();
-    expect(screen.queryByText(/\(Sie\)$/)).toBeNull();
-  });
-
-  it('schreibt den Zeitraum als Monat aus (VOR-24)', () => {
-    oeffne();
-    const zeitraeume = screen.getAllByText(/^[A-ZÄÖÜ][a-zäöü]+ \d{4}/);
-    expect(zeitraeume.length).toBeGreaterThan(0);
-    expect(screen.queryByText(/^\d{4}-\d{2}/)).toBeNull();
-  });
-
-  it('zeigt die Aktionszone nur an Antraegen mit Aktion (VOR-24)', () => {
-    oeffne(['owner']);
-    for (const stand of ['Ausgezahlt', 'Abgelehnt']) {
-      // Das erste Abzeichen steht an der Karte; die Historie folgt darunter.
-      const karte = screen.getAllByText(stand, { selector: 'span' })[0]!.closest('.rounded-card');
-      expect(karte).not.toBeNull();
-      expect(karte?.querySelector('.border-t.pt-3')).toBeNull();
-    }
-  });
-
-  it('filtert ueber die Auswahl des Systems (TOK-13, UIK-19)', async () => {
-    const nutzer = userEvent.setup();
-    oeffne();
-    const filter = screen.getByRole('combobox', { name: 'Bearbeitungsstand' });
-    expect(filter).toHaveClass('h-12');
-
-    await nutzer.selectOptions(filter, 'abgelehnt');
-    // Namen in der Liste der Anträge (seit dem Design-Rollout B6 Zeilen statt
-    // Karten); die Historie darunter nennt weiter alle.
-    const liste = screen.getByRole('list', { name: 'Erstattungen' });
-    expect(within(liste).queryByText('Tobias Krenz')).toBeNull();
-    expect(within(liste).getByText('Aylin Özdemir')).toBeInTheDocument();
   });
 });

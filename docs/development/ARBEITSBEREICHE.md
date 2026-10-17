@@ -1,6 +1,6 @@
 # Arbeitsbereiche: was echt ist, was Vorschau ist
 
-Stand 2026-10-15. Beantwortet zwei Fragen: **Worauf kann ich mich in der laufenden Anwendung
+Stand 2026-10-17. Beantwortet zwei Fragen: **Worauf kann ich mich in der laufenden Anwendung
 verlassen?** Und: **Wo steht schon etwas, das kein zweites Mal gebaut werden darf?** Ohne Rang
 (§21), keine Reihenfolge (die steht in [`ROADMAP.md`](ROADMAP.md)). Die ausführliche Fassung mit
 Einzelheiten je Route (Stand 26.09.) liegt in
@@ -25,12 +25,14 @@ Ansicht sagt das.
 | Organisatorisches | `/praxis/team…`, `/praxis/planung`, `/praxis/sicherheit/…`, `/mein-konto` | echt | `staff`, `audit`, `retention`, `account`, `session` |
 | Plattform (Patient:innen, Kund:innen) | `/p/…` | echt; Einladung per Mail offen (B13) | `platform`, `platform-access` |
 | Radflotte | `/betrieb/flotte…` | echt (FLT-EPIC-001): Depots, Räder, Schlüssel, Check-Up, Panne, Stellen am 3D-Rad, Unterlage für die Werkstatt; Tübinger Standortvorlage offen (ANN-554) | `fleet` |
-| **Praxisbetrieb** | `/betrieb/erstattungen`, `/team` | **Vorschau** bis zu den Bereichsüberholungen 10 und 11 (vorgezogen 2026-10-16: ERS, TEAM); Urlaub seit Überholung 7, Zeitkonto seit 9 echt | `reimbursements`, `teamchat` |
+| **Praxisbetrieb** | `/team` | **Vorschau** bis zur Bereichsüberholung 11 (vorgezogen 2026-10-16: TEAM); Urlaub seit Überholung 7, Zeitkonto seit 9, Erstattungen seit 10 echt (`/betrieb/erstattungen`, `reimbursements`) | `teamchat` |
 | Vorschau-Protokoll | `/vorschau/protokoll` | Vorschau | `preview` |
 
-Offen bleiben in der Vorschau: Speicherfrist und Anhänge des Teamchats (§10, §18), Aufbewahrung von
-Belegen und Beschäftigtendaten (ADR-008) und aggregierte Auswertungen über Beschäftigte (§20, B6).
-Diese Punkte blockieren nur die echten Aktionen, nicht die Ansicht.
+Offen bleiben in der Vorschau: Speicherfrist und Anhänge des Teamchats (§10, §18) und aggregierte
+Auswertungen über Beschäftigte (§20, B6). Diese Punkte blockieren nur die echten Aktionen, nicht die
+Ansicht. Fristen für Urlaub, Arbeitszeit, Zeitkonto und Erstattungen stehen seit den Überholungen 7
+bis 10 fest (ANN-579, ANN-591, ANN-597, ANN-602); offen ist die Löschsperre für Beschäftigtendaten
+(BEF-178).
 
 ## Regeln
 

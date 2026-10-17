@@ -940,12 +940,46 @@ export const ROUTEN = Object.freeze([
     ohneDaten:
       'Der Seed hat keinen Eintrag im Zeitkonto; der Ablauf steht in authenticated/zeitkonto.spec.ts.',
   },
+  // ERS-001: Erstattungen - die Seite je Rolle (owner und Büro sehen alle),
+  // Beantragen (G10), Entscheiden und Auszahlen (G10b), die IBAN.
   {
     muster: '/betrieb/erstattungen',
     pfad: '/betrieb/erstattungen',
     bereich: 'Organisation',
-    etikett: 'Erstattungen (Vorschau)',
+    etikett: 'Erstattungen',
+    konten: ['owner', 'therapist', 'office'],
+  },
+  {
+    muster: '/betrieb/erstattungen/beantragen',
+    pfad: '/betrieb/erstattungen/beantragen',
+    bereich: 'Organisation',
+    etikett: 'Erstattung beantragen',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/erstattungen/entscheiden/:reimbursementId',
+    pfad: '/betrieb/erstattungen/entscheiden/abababab-abab-4bab-8bab-000000000001',
+    bereich: 'Organisation',
+    etikett: 'Erstattung entscheiden',
     konten: ['owner'],
+    ohneDaten:
+      'Der Seed hat keine Erstattung; der Ablauf steht in authenticated/erstattungen.spec.ts.',
+  },
+  {
+    muster: '/betrieb/erstattungen/auszahlen/:reimbursementId',
+    pfad: '/betrieb/erstattungen/auszahlen/abababab-abab-4bab-8bab-000000000001',
+    bereich: 'Organisation',
+    etikett: 'Erstattung auszahlen',
+    konten: ['owner'],
+    ohneDaten:
+      'Der Seed hat keine Erstattung; der Ablauf steht in authenticated/erstattungen.spec.ts.',
+  },
+  {
+    muster: '/betrieb/erstattungen/konto',
+    pfad: '/betrieb/erstattungen/konto',
+    bereich: 'Organisation',
+    etikett: 'IBAN für Erstattungen',
+    konten: ['owner', 'therapist'],
   },
   {
     muster: '/praxis/sicherheit/audit',

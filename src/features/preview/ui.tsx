@@ -74,8 +74,8 @@ export function SimulationsMeldung({ eintrag }: { eintrag: Protokolleintrag | nu
  * Seit Welle B (B7) der `Section` des Systems - Abschnittstitel als Label
  * (12 px Versalien), ein Satz darunter, eine Aktion rechts. Bis dahin stand
  * hier eine eigene Überschrift in 17 px, die es sonst nirgends gab
- * (DESIGN.md, Regel 1). Die Schnittstelle bleibt, damit Flotte, Urlaub,
- * Zeitkonto und Erstattungen unverändert aufrufen.
+ * (DESIGN.md, Regel 1). Die Schnittstelle bleibt für die übrigen
+ * Vorschauseiten.
  */
 export function Abschnitt({
   titel,
