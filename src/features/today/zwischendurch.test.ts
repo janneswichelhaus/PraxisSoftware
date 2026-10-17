@@ -98,6 +98,16 @@ describe('Merker im Browser', () => {
     expect(window.localStorage.length).toBe(1);
   });
 
+  it('erscheint an höchstens drei Tagen je Hinweis - kein Nachfassen (§20.2, ANN-603)', () => {
+    for (const tag of ['2026-10-05', '2026-10-12', '2026-10-19']) {
+      expect(heuteSchonGezeigt('barometer-2026-10', tag)).toBe(false);
+      merkeGezeigt('barometer-2026-10', tag);
+    }
+    expect(heuteSchonGezeigt('barometer-2026-10', '2026-10-26')).toBe(true);
+    // Der nächste Monat ist ein neuer Hinweis.
+    expect(heuteSchonGezeigt('barometer-2026-11', '2026-11-02')).toBe(false);
+  });
+
   it('kommt ohne Speicher aus', () => {
     const original = Object.getOwnPropertyDescriptor(window, 'localStorage');
     Object.defineProperty(window, 'localStorage', {

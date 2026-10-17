@@ -1,8 +1,8 @@
 /**
  * Hinweise zwischendurch (ORG-005, ANN-603): ein kleiner, allgemeiner
  * Mechanismus der Übersicht. Ein Hinweis erscheint als Fenster mit „Jetzt“
- * und „Später“ - aber nur zu einem passenden Zeitpunkt, und höchstens einmal
- * am Tag. Erster Nutzer ist das Barometer (ORG-006).
+ * und „Später“ - aber nur zu einem passenden Zeitpunkt, höchstens einmal
+ * am Tag und an höchstens drei Tagen je Hinweis. Erster Nutzer ist das Barometer (ORG-006).
  *
  * Nichts davon geht an den Server und nichts wird gezählt (§20): Der Merker,
  * dass ein Hinweis heute schon zu sehen war, liegt nur im Browser dieses
@@ -12,6 +12,14 @@
 
 /** Wie weit der nächste eigene Termin mindestens entfernt sein muss. */
 export const ABSTAND_MINUTEN = 20;
+
+/**
+ * An wie vielen Tagen ein Hinweis höchstens erscheint (ANN-603). Der
+ * Schlüssel des Barometers trägt den Monat - also höchstens dreimal im Monat.
+ * Mehr wäre ein Nachfassen bei denen, die noch nicht geantwortet haben, das
+ * §20.2 Nr. 2 ausschließt.
+ */
+export const HOECHSTENS_TAGE = 3;
 
 /** Ein eigener Termin des Tages, so wie die Tagesliste ihn liefert. */
 export interface EigenerTermin {
@@ -81,28 +89,37 @@ export interface Hinweis {
 
 const PRAEFIX = 'praxis.hinweis.';
 
-/** Der Tag, an dem der Hinweis zuletzt erschien - oder `null`. */
-function zuletzt(schluessel: string): string | null {
+/** Die Tage, an denen der Hinweis erschien (höchstens {@link HOECHSTENS_TAGE}). */
+function tage(schluessel: string): string[] {
   try {
-    return window.localStorage.getItem(`${PRAEFIX}${schluessel}`);
+    const wert = window.localStorage.getItem(`${PRAEFIX}${schluessel}`);
+    return wert ? wert.split(',') : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-/** Ob der Hinweis heute schon zu sehen war (Merker nur auf diesem Gerät). */
+/**
+ * Ob der Hinweis jetzt nicht mehr erscheint: heute schon zu sehen, oder schon
+ * an {@link HOECHSTENS_TAGE} Tagen (Merker nur auf diesem Gerät).
+ */
 export function heuteSchonGezeigt(schluessel: string, heute: string): boolean {
-  return zuletzt(schluessel) === heute;
+  const gezeigt = tage(schluessel);
+  return gezeigt.includes(heute) || gezeigt.length >= HOECHSTENS_TAGE;
 }
 
 /**
- * Merkt sich, dass der Hinweis heute erschien. Ein Eintrag je Hinweis, der Tag
- * als Wert - kein Verlauf. Geht der Speicher nicht (privater Modus), erscheint
- * der Hinweis eben beim nächsten Öffnen noch einmal.
+ * Merkt sich, dass der Hinweis heute erschien. Ein Eintrag je Hinweis mit den
+ * Tagen als Wert, nur so viele, wie die Grenze braucht. Geht der Speicher nicht
+ * (privater Modus), erscheint der Hinweis eben beim nächsten Öffnen noch einmal.
  */
 export function merkeGezeigt(schluessel: string, heute: string): void {
+  const gezeigt = tage(schluessel).filter((tag) => tag !== heute);
   try {
-    window.localStorage.setItem(`${PRAEFIX}${schluessel}`, heute);
+    window.localStorage.setItem(
+      `${PRAEFIX}${schluessel}`,
+      [...gezeigt, heute].slice(-HOECHSTENS_TAGE).join(','),
+    );
   } catch {
     // Ohne Speicher kein Merker - nichts weiter.
   }

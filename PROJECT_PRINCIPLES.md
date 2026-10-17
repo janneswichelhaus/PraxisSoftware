@@ -1617,7 +1617,9 @@ die Leistungs- oder Verhaltenskontrolle; der Satz oben gilt unverändert.
 1. Die Person entscheidet **bei jeder Abgabe**, ob sie mit oder ohne Namen
    sendet. Beides ist gleich leicht; nichts ist vorbelegt.
 2. Die Teilnahme ist freiwillig. Wer nicht antwortet, wird NICHT gelistet und
-   NICHT erinnert; daraus folgt nichts.
+   NICHT erinnert; daraus folgt nichts. Der Hinweis in der Anwendung, der allen
+   gleich und an höchstens drei Tagen im Monat erscheint (ANN-603), ist kein
+   Erinnern in diesem Sinn.
 3. Die Antworten sieht nur die Praxisleitung (`owner`). Sie gehen in keine
    Bewertung, keine Rangfolge und keine Personalentscheidung ein. Einen
    Verlauf von Werten je Person als Kurve oder Kennzahl gibt es NICHT; eine

@@ -12,7 +12,7 @@ Entscheidung des Projektinhabers vom **2026-10-17**: offene Kommunikation und ei
 für Beschwerden. **§20.2 neu** — Beschäftigte dürfen der Praxisleitung Rückmeldungen geben, auch
 mit Namen (monatliches Barometer, „Rückmeldung an die Praxisleitung“). Die Person wählt bei jeder
 Abgabe; freiwillig, keine Liste der Fehlenden, nur `owner` liest, kein Verlauf je Person, anonym
-nur als Praxissumme ab drei Beschäftigten und fünf Antworten, eigene Datenklasse. Der Satz gegen
+nur als Praxissumme ab drei Beschäftigten und fünf Antworten, eigene Datenklasse. Der Hinweis in der Anwendung an höchstens drei Tagen im Monat gilt nicht als Erinnern (ANN-603). Der Satz gegen
 Leistungs- und Verhaltenskontrolle bleibt unverändert. Rang 2 dazu: ADR-024 Fassung 2 (Punkt 12),
 ADR-008 Fassung 4. Empfohlen war die anonyme Fassung allein; Jannes hat die namentliche Abgabe
 ausdrücklich gewollt.

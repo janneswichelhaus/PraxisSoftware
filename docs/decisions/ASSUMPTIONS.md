@@ -6293,7 +6293,7 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 
 Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Ergänzt ANN-058: Die Übersicht zeigt einen Hinweis als Fenster („Jetzt“, „Später“) nur beim Öffnen, höchstens einmal am Tag je Hinweis, nicht während eines eigenen Termins und nicht, wenn der nächste eigene Termin näher als 20 Minuten ist; nach dem letzten Termin als Tagesabschluss. Eine Führung in der App gibt es nicht (ADR-019). Der Merker liegt nur im Browser.
+**Annahme.** Ergänzt ANN-058: Die Übersicht zeigt einen Hinweis als Fenster („Jetzt“, „Später“) nur beim Öffnen, höchstens einmal am Tag und an höchstens drei Tagen je Hinweis (beim Barometer also je Monat), nicht während eines eigenen Termins und nicht, wenn der nächste eigene Termin näher als 20 Minuten ist; nach dem letzten Termin als Tagesabschluss. Eine Führung in der App gibt es nicht (ADR-019). Der Merker liegt nur im Browser.
 
 **Begründung.** §20: nichts an den Server, keine Zählung; ADR-024 Punkt 12 Fassung 2.
 
