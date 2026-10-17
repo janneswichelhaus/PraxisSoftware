@@ -178,8 +178,12 @@ eigener Loop direkt danach (Kalender und Slotsuche, Pfad A).
 Person, Datum, Stunden, Grund; Liste je Person mit Saldo, Detail mit Buchungen; bewusst ohne Summe
 über alle und ohne Ableitung aus dem Kalender (§20).
 
-**G9 Zeitkonto-Eintrag** (Mitarbeitende): Art (Mehrarbeit, Freizeitausgleich) → Datum → Stunden
+**G9 Zeitkonto-Eintrag** (Mitarbeitende): Art (Überstunden, Freizeitausgleich) → Datum → Stunden
 (Schnellwahl 0,5 · 1 · 2 · eigene) → Grund → Zusammenfassung mit Saldo danach → Eintragen.
+Seit ORG-007 (Jannes 2026-10-17, ANN-606): Mehrarbeit heißt „Überstunden“, die Korrektur
+„Minusstunden“ und zieht nur ab; die Dauer von Überstunden und Minusstunden stellt ein Regler
+(5 min bis 1 h in 5-Minuten-Schritten, darüber in Viertelstunden, dazu „−5“ und „+5“), der Beginn
+der Überstunden steht am Dienstende.
 
 **Keine Genehmigung, aber Zurückweisen** (Jannes 2026-10-16): Ein Eintrag gilt sofort und zählt
 im Saldo. Die Praxisleitung kann ihn zurückweisen, mit Grund; er bleibt dann als „zurückgewiesen“

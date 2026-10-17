@@ -208,7 +208,7 @@ const URLAUB_STICHWORTE = ['Urlaubsantrag', 'Abwesenheit', 'Urlaubskonto', 'Urla
 
 /** Wie die Funktionssuche die Arbeitszeit findet (AZ-001). */
 const ARBEITSZEIT_STICHWORTE = ['Wochenplan', 'Arbeitszeitänderung', 'Mittagspause', 'Stunden'];
-const ZEITKONTO_STICHWORTE = ['Überstunden', 'Mehrarbeit', 'Freizeitausgleich', 'Saldo'];
+const ZEITKONTO_STICHWORTE = ['Überstunden', 'Minusstunden', 'Freizeitausgleich', 'Saldo'];
 const ERSTATTUNG_STICHWORTE = ['Ladestrom', 'Strom', 'Einkauf', 'Beleg', 'Auslagen', 'IBAN'];
 
 /**

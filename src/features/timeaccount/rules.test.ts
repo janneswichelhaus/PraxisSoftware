@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   dateWindow,
-  overtimeChoices,
-  parseHours,
   outsideWindow,
+  overtimeEnd,
+  overtimeMax,
+  overtimeStart,
   problemText,
   signedHours,
   timeOffChoices,
@@ -30,23 +31,19 @@ describe('Zeitkonto rechnen (ZK-001, ANN-593)', () => {
     });
   });
 
-  it('bietet Mehrarbeit ab Dienstende an, an einem freien Tag nichts', () => {
-    expect(overtimeChoices(ANNAS_TAG).map((c) => `${c.label} ${c.von}-${c.bis}`)).toEqual([
-      '+0:15 18:00-18:15',
-      '+0:30 18:00-18:30',
-      '+0:45 18:00-18:45',
-      '+1:00 18:00-19:00',
-      '+1:30 18:00-19:30',
-      '+2:00 18:00-20:00',
-    ]);
-    expect(overtimeChoices([])).toEqual([]);
-    // Nie über Mitternacht.
-    expect(overtimeChoices([{ von: '15:00', bis: '23:00' }]).map((c) => c.bis)).toEqual([
-      '23:15',
-      '23:30',
-      '23:45',
-      '24:00',
-    ]);
+  it('beginnt Überstunden am Dienstende, an einem freien Tag um 08:00 (ANN-606)', () => {
+    expect(overtimeStart(ANNAS_TAG)).toBe('18:00');
+    expect(overtimeStart([])).toBe('08:00');
+    expect(overtimeEnd('18:00', 75)).toBe('19:15');
+    expect(overtimeEnd('', 75)).toBe('');
+  });
+
+  it('reicht mit dem Regler höchstens sechs Stunden und nie über Mitternacht', () => {
+    expect(overtimeMax('08:00')).toBe(360);
+    expect(overtimeMax('21:00')).toBe(180);
+    expect(overtimeMax('23:45')).toBe(15);
+    expect(overtimeMax('')).toBe(360);
+    expect(overtimeEnd('21:00', overtimeMax('21:00'))).toBe('24:00');
   });
 
   it('bietet Freizeitausgleich am Plan des Tages an', () => {
@@ -59,21 +56,11 @@ describe('Zeitkonto rechnen (ZK-001, ANN-593)', () => {
     expect(timeOffChoices([])).toEqual([]);
   });
 
-  it('liest Stunden einer Korrektur, wie man sie tippt', () => {
-    expect(parseHours('12:30')).toBe(750);
-    expect(parseHours('+0:45')).toBe(45);
-    expect(parseHours('-2')).toBe(-120);
-    expect(parseHours('−1,5')).toBe(-90);
-    expect(parseHours('1.25')).toBe(75);
-    for (const falsch of ['', '0', '0:00', 'zwei', '1:75', '1001:00']) {
-      expect(parseHours(falsch), falsch).toBeNull();
-    }
-  });
-
   it('nennt die Frist je Art', () => {
     expect(problemText('date_out_of_range', 'overtime')).toMatch(/nicht im Voraus/);
     expect(problemText('date_out_of_range', 'time_off')).toMatch(/ein Jahr voraus/);
     expect(problemText('overlaps_working_hours', 'overtime')).toMatch(/nur davor oder danach/);
+    expect(problemText('correction_invalid', 'correction')).toMatch(/^Minusstunden ziehen nur ab/);
   });
 
   it('lässt Termine nur außerhalb der freien Zeit stehen (Praxis-Review Überholung 9, Runde 2)', () => {

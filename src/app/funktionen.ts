@@ -370,7 +370,7 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       stichworte: ['arbeitszeit', 'wochenplan', 'mittagspause', 'pause', 'stunden', 'antrag'],
       rueckweg: true,
     });
-    // ZK-001: Mehrarbeit oder Freizeitausgleich eintragen - gilt sofort
+    // ZK-001: Überstunden oder Freizeitausgleich eintragen - gilt sofort
     // (ANN-593); was zulässig ist, prüft der Server.
     eintraege.push({
       id: 'vorgang-zeitkonto-eintragen',
@@ -378,7 +378,7 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       bezeichnung: 'Ins Zeitkonto eintragen',
       ziel: '/betrieb/zeitkonto/eintragen',
       bereich: isTherapyStaff(roles) ? BEREICHE.betrieb.label : BEREICHE.training.label,
-      stichworte: ['zeitkonto', 'überstunden', 'mehrarbeit', 'freizeitausgleich', 'saldo'],
+      stichworte: ['zeitkonto', 'überstunden', 'minusstunden', 'freizeitausgleich', 'saldo'],
       rueckweg: true,
     });
     // ERS-001: Ladestrom oder Einkauf zur Erstattung - geführt, entschieden

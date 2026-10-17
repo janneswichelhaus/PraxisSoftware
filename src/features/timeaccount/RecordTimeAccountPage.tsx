@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
+import { Dauerregler } from '@/components/ui/Dauerregler';
 import { Field } from '@/components/ui/Field';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
@@ -41,11 +42,15 @@ import {
   type TimeAccount,
 } from './api';
 import {
+  CORRECTION_DEFAULT,
+  CORRECTION_MAX,
   KIND_TITLE,
+  OVERTIME_DEFAULT,
   dateWindow,
-  overtimeChoices,
-  parseHours,
   outsideWindow,
+  overtimeEnd,
+  overtimeMax,
+  overtimeStart,
   signedHours,
   timeOffChoices,
   type EntryKind,
@@ -54,21 +59,23 @@ import { PERSON_PARAM, entryDate, personPath } from './paths';
 
 /**
  * Ins Zeitkonto eintragen, geführt (G9, ZK-001, Budget ≤ 6 Tipps):
- * „Eintragen“ → Mehrarbeit oder Freizeitausgleich → Tag → Zeiten aus der
- * Schnellwahl (Mehrarbeit ab Dienstende, Freizeitausgleich am Plan des Tages)
- * oder von Hand → Zusammenfassung mit Saldo danach → Eintragen. Ein Eintrag
- * gilt sofort (ANN-593); der Grund ist freiwillig.
+ * „Eintragen“ → Überstunden oder Freizeitausgleich → Tag → Zeiten
+ * (Überstunden: Beginn am Dienstende vorbelegt, die Dauer am Regler;
+ * Freizeitausgleich aus der Schnellwahl am Plan des Tages oder von Hand) →
+ * Zusammenfassung mit Saldo danach → Eintragen. Ein Eintrag gilt sofort
+ * (ANN-593); der Grund ist freiwillig.
  *
  * owner und Büro tragen auf dieselbe Weise für andere ein (`?person=…`) und
- * buchen dort auch Korrekturen - Stunden, dann der Grund auf eigener Seite,
- * ohne Lage; im eigenen Konto bucht nur owner eine Korrektur (ANN-594). Jeder
- * Weg hat vier Schritte. Was nicht geht, sagt die Vorschau des Servers, bevor
- * eingetragen wird.
+ * buchen dort auch Minusstunden (`correction`) - die Dauer am Regler, dann
+ * der Grund auf eigener Seite, ohne Lage; im eigenen Konto bucht nur owner
+ * Minusstunden (ANN-594). Minusstunden ziehen nur ab; Zeit, die dazukommt,
+ * sind Überstunden mit Lage (ANN-606). Jeder Weg hat vier Schritte. Was nicht
+ * geht, sagt die Vorschau des Servers, bevor eingetragen wird.
  */
 
 type Page = 'kind' | 'date' | 'times' | 'reason' | 'summary' | 'done';
 
-/** Vier Schritte auf jedem Weg - eine Korrektur fragt statt des Tages den Grund. */
+/** Vier Schritte auf jedem Weg - Minusstunden fragen statt des Tages den Grund. */
 const STEP: Record<'dated' | 'correction', Record<Page, number>> = {
   dated: { kind: 1, date: 2, times: 3, reason: 3, summary: 4, done: 4 },
   correction: { kind: 1, date: 2, times: 2, reason: 3, summary: 4, done: 4 },
@@ -132,7 +139,7 @@ function Flow({
   const returnTo = leseRueckweg(search, personPath(own ? null : person));
   const staffMemberId = own ? null : person;
   const name = account?.name ?? 'Unbekannte Person';
-  // Korrekturen: für andere owner und Büro, im eigenen Konto nur owner.
+  // Minusstunden: für andere owner und Büro, im eigenen Konto nur owner.
   const corrections = state.can_book_others && (!own || isOwner(user.roles));
 
   const [flow, setFlow] = useState<Abfolge<Page>>(() => beginne<Page>('kind'));
@@ -141,14 +148,16 @@ function Flow({
   // Der Monat der Datumsseite: ein Monat je Seite, ‹ › blättert (Design-Review
   // Überholung 7).
   const [month, setMonth] = useState(() => monatsBeginn(today));
+  // Beginn und Ende eines Freizeitausgleichs.
   const [von, setVon] = useState('');
   const [bis, setBis] = useState('');
-  const [hours, setHours] = useState('');
+  // Überstunden: Beginn (`null` heißt vorbelegt am Dienstende) und die Dauer
+  // am Regler; Minusstunden nur die Dauer (ANN-606).
+  const [overtimeFrom, setOvertimeFrom] = useState<string | null>(null);
+  const [duration, setDuration] = useState(OVERTIME_DEFAULT);
   const [note, setNote] = useState('');
   const [result, setResult] = useState<Recorded | null>(null);
   const page = result ? 'done' : flow.seite;
-  const minutes = kind === 'correction' ? parseHours(hours) : null;
-  const timesSet = kind === 'correction' ? minutes !== null : von !== '' && bis !== '';
 
   // Der Tag: Plan, Abweichung, Urlaub - für die Schnellwahl.
   const day = useQuery({
@@ -165,27 +174,30 @@ function Flow({
     enabled: kind !== null && kind !== 'correction' && onDate !== null,
     retry: false,
   });
-  // Ohne Blöcke (eine andere Person vor heute) keine Schnellwahl, nur von Hand.
+  // Ohne Blöcke (eine andere Person vor heute) keine Vorschläge, nur von Hand.
   const blocks = day.data?.day?.blocks ?? null;
-  const choices =
-    blocks === null
-      ? []
-      : kind === 'overtime'
-        ? overtimeChoices(blocks)
-        : kind === 'time_off'
-          ? timeOffChoices(blocks)
-          : [];
+  const choices = blocks !== null && kind === 'time_off' ? timeOffChoices(blocks) : [];
+
+  // Überstunden ab Dienstende - der Beginn bleibt änderbar; das Ende folgt
+  // aus der Dauer, nie über Mitternacht (ANN-606).
+  const start =
+    kind === 'overtime' ? (overtimeFrom ?? (blocks === null ? '' : overtimeStart(blocks))) : von;
+  const overtime = kind === 'overtime' ? Math.min(duration, overtimeMax(start)) : duration;
+  const end = kind === 'overtime' ? overtimeEnd(start, overtime) : bis;
+  // Minusstunden ziehen nur ab.
+  const minutes = kind === 'correction' ? -duration : null;
+  const timesSet = kind === 'correction' || (start !== '' && end !== '');
 
   // Was der Eintrag ergäbe: Minuten, Saldo danach, Gründe, Termine.
   const preview = useQuery({
-    queryKey: [...TIME_ACCOUNT_KEY, 'preview', staffMemberId, kind, onDate, von, bis, minutes],
+    queryKey: [...TIME_ACCOUNT_KEY, 'preview', staffMemberId, kind, onDate, start, end, minutes],
     queryFn: () =>
       previewEntry({
         staffMemberId,
         kind: kind!,
         onDate: onDate!,
-        von: kind === 'correction' ? null : von,
-        bis: kind === 'correction' ? null : bis,
+        von: kind === 'correction' ? null : start,
+        bis: kind === 'correction' ? null : end,
         minutes,
       }),
     enabled: page === 'summary' && kind !== null && onDate !== null && timesSet,
@@ -207,7 +219,7 @@ function Flow({
 
   const what = kind ? KIND_TITLE[kind] : '';
   const when = onDate ? entryDate(onDate) : '';
-  const range = kind === 'correction' ? null : `${von}–${bis}`;
+  const range = kind === 'correction' ? null : `${start}–${end}`;
 
   const submit = useMutation({
     mutationFn: () =>
@@ -215,8 +227,8 @@ function Flow({
         staffMemberId,
         kind: kind!,
         onDate: onDate!,
-        von: kind === 'correction' ? null : von,
-        bis: kind === 'correction' ? null : bis,
+        von: kind === 'correction' ? null : start,
+        bis: kind === 'correction' ? null : end,
         minutes,
         note: note.trim() === '' ? null : note.trim(),
       }),
@@ -337,9 +349,9 @@ function Flow({
   // ---------------------------------------------------------------------------
   if (page === 'kind') {
     const kinds: [EntryKind, string][] = [
-      ['overtime', 'Mehrarbeit'],
-      ['time_off', 'Freizeitausgleich'],
-      ...(corrections ? ([['correction', 'Korrektur']] as [EntryKind, string][]) : []),
+      ['overtime', KIND_TITLE.overtime],
+      ['time_off', KIND_TITLE.time_off],
+      ...(corrections ? ([['correction', KIND_TITLE.correction]] as [EntryKind, string][]) : []),
     ];
     return (
       <GefuehrterAblauf
@@ -358,6 +370,8 @@ function Flow({
                     setOnDate(value === 'correction' ? today : null);
                     setVon('');
                     setBis('');
+                    setOvertimeFrom(null);
+                    setDuration(value === 'correction' ? CORRECTION_DEFAULT : OVERTIME_DEFAULT);
                   }
                   setKind(value);
                   setFlow(weiter(flow, value === 'correction' ? 'times' : 'date'));
@@ -378,6 +392,7 @@ function Flow({
       if (value !== onDate) {
         setVon('');
         setBis('');
+        setOvertimeFrom(null);
       }
       setOnDate(value);
       setFlow(weiter(flow, 'times'));
@@ -423,31 +438,107 @@ function Flow({
 
   // ---------------------------------------------------------------------------
   if (page === 'times') {
+    // Minusstunden: nur die Dauer, am Regler im festen Fuß - der Daumen
+    // erreicht ihn unten (ORG-007, ANN-606).
     if (kind === 'correction') {
+      const balance = account?.balance_minutes;
       return (
         <GefuehrterAblauf
           {...common}
-          titel="Wie viele Stunden?"
+          titel="Wie viele Minusstunden?"
           fuss={
-            <Button
-              className="w-full"
-              disabled={minutes === null}
-              // Aus „Ändern“ mit Grund zurück zum Abschluss (Design-Review
-              // Überholung 9, Runde 2).
-              onClick={() => setFlow(weiter(flow, 'reason', note.trim() !== ''))}
-            >
-              Weiter
-            </Button>
+            <div className="flex flex-col gap-6">
+              <Dauerregler
+                beschriftung="Minusstunden"
+                wert={duration}
+                onAendern={setDuration}
+                max={CORRECTION_MAX}
+                zusatz={
+                  balance === undefined
+                    ? undefined
+                    : `Saldo danach ${signedHours(balance - duration)}`
+                }
+                autofokus
+              />
+              <Button
+                className="w-full"
+                // Aus „Ändern“ mit Grund zurück zum Abschluss (Design-Review
+                // Überholung 9, Runde 2).
+                onClick={() => setFlow(weiter(flow, 'reason', note.trim() !== ''))}
+              >
+                Weiter
+              </Button>
+            </div>
+          }
+        />
+      );
+    }
+
+    const dayReason =
+      day.data && kind ? (problemSentences(day.data.problems, kind)[0] ?? null) : null;
+    const dayLine = (
+      <p className="text-ink-muted text-sm">
+        {when}
+        {blocks !== null ? ` · Plan: ${blocksText(blocks)}` : ''}
+      </p>
+    );
+    // Laden und Funkloch des Tages über den Baustein (Regel 8, Design-Review
+    // Überholung 9) - mit „Erneut versuchen“, ohne die Wahl zu verlieren.
+    const dayState = (fields: ReactNode) => (
+      <Abfragezustand
+        abfrage={day}
+        laden="Der Tag wird geladen …"
+        fehler={DAY_ERROR}
+        endgueltig={{
+          wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
+          titel: day.error instanceof Error ? day.error.message : DAY_ERROR,
+        }}
+      >
+        {() => (
+          <div className="flex flex-col gap-4">
+            {dayLine}
+            <div className="grid grid-cols-2 gap-3">{fields}</div>
+          </div>
+        )}
+      </Abfragezustand>
+    );
+
+    // Überstunden: Beginn vorbelegt am Dienstende, die Dauer am Regler im
+    // festen Fuß, das Ende darunter (ORG-007, ANN-606).
+    if (kind === 'overtime') {
+      return (
+        <GefuehrterAblauf
+          {...common}
+          titel="Wie lange?"
+          fuss={
+            <div className="flex flex-col gap-6">
+              {dayReason ? <Statusmeldung ton="fehler">{dayReason}</Statusmeldung> : null}
+              <Dauerregler
+                beschriftung="Dauer"
+                wert={overtime}
+                onAendern={setDuration}
+                max={overtimeMax(start)}
+                zusatz={end === '' ? undefined : `${start}–${end}`}
+              />
+              <Button
+                className="w-full"
+                disabled={!day.data || !timesSet || dayReason !== null}
+                onClick={() => setFlow(weiter(flow, 'summary', true))}
+              >
+                Weiter
+              </Button>
+            </div>
           }
         >
-          <Field
-            label="Stunden – mit Minus, wenn sie abgehen"
-            placeholder="z. B. 12:30 oder -2:00"
-            inputMode="text"
-            value={hours}
-            data-autofocus
-            onChange={(e) => setHours(e.target.value)}
-          />
+          {dayState(
+            <Field
+              label="Beginn"
+              type="time"
+              step={300}
+              value={start}
+              onChange={(e) => setOvertimeFrom(e.target.value)}
+            />,
+          )}
         </GefuehrterAblauf>
       );
     }
@@ -457,43 +548,31 @@ function Flow({
       setBis(choice.bis);
       setFlow(weiter(flow, 'summary', true));
     };
-    const dayReason =
-      day.data && kind ? (problemSentences(day.data.problems, kind)[0] ?? null) : null;
     // Die Schnellwahl ist die Antwort dieser Seite: im festen Fuß und 48 px hoch
     // (Design- und Praxis-Review Überholung 9); von Hand über Beginn und Ende.
+    // Ohne Regler: Freizeitausgleich hängt am Plan des Tages, die Schnellwahl
+    // trifft ihn mit einem Tipp (ANN-606).
     const quick = day.data && dayReason === null ? choices : [];
-    const quickTitle = kind === 'overtime' && quick[0] ? `Ab ${quick[0].von}` : 'Schnellwahl';
     return (
       <GefuehrterAblauf
         {...common}
-        titel={kind === 'overtime' ? 'Von wann bis wann?' : 'Welche Zeit nehmen Sie frei?'}
+        titel="Welche Zeit nehmen Sie frei?"
         fuss={
           <div className="flex flex-col gap-2">
             {dayReason ? <Statusmeldung ton="fehler">{dayReason}</Statusmeldung> : null}
             {quick.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {kind === 'overtime' ? (
-                  <p className="text-ink-muted text-sm" aria-hidden="true">
-                    {quickTitle}
-                  </p>
-                ) : null}
-                <div
-                  role="group"
-                  aria-label={quickTitle}
-                  className={`grid gap-2 ${kind === 'overtime' ? 'grid-cols-3' : 'grid-cols-2'}`}
-                >
-                  {quick.map((choice) => (
-                    <Button
-                      key={choice.label}
-                      variant="secondary"
-                      className="w-full"
-                      aria-label={`${choice.label}: ${choice.von}–${choice.bis}`}
-                      onClick={() => pick(choice)}
-                    >
-                      {choice.label}
-                    </Button>
-                  ))}
-                </div>
+              <div role="group" aria-label="Schnellwahl" className="grid grid-cols-2 gap-2">
+                {quick.map((choice) => (
+                  <Button
+                    key={choice.label}
+                    variant="secondary"
+                    className="w-full"
+                    aria-label={`${choice.label}: ${choice.von}–${choice.bis}`}
+                    onClick={() => pick(choice)}
+                  >
+                    {choice.label}
+                  </Button>
+                ))}
               </div>
             ) : null}
             <Button
@@ -506,54 +585,36 @@ function Flow({
           </div>
         }
       >
-        {/* Laden und Funkloch des Tages über den Baustein (Regel 8, Design-Review
-            Überholung 9) - mit „Erneut versuchen“, ohne die Wahl zu verlieren. */}
-        <Abfragezustand
-          abfrage={day}
-          laden="Der Tag wird geladen …"
-          fehler={DAY_ERROR}
-          endgueltig={{
-            wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
-            titel: day.error instanceof Error ? day.error.message : DAY_ERROR,
-          }}
-        >
-          {() => (
-            <div className="flex flex-col gap-4">
-              <p className="text-ink-muted text-sm">
-                {when}
-                {blocks !== null ? ` · Plan: ${blocksText(blocks)}` : ''}
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="Beginn"
-                  type="time"
-                  step={300}
-                  value={von}
-                  onChange={(e) => setVon(e.target.value)}
-                />
-                <Field
-                  label="Ende"
-                  type="time"
-                  step={300}
-                  value={bis}
-                  onChange={(e) => setBis(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-        </Abfragezustand>
+        {dayState(
+          <>
+            <Field
+              label="Beginn"
+              type="time"
+              step={300}
+              value={von}
+              onChange={(e) => setVon(e.target.value)}
+            />
+            <Field
+              label="Ende"
+              type="time"
+              step={300}
+              value={bis}
+              onChange={(e) => setBis(e.target.value)}
+            />
+          </>,
+        )}
       </GefuehrterAblauf>
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Der Grund einer Korrektur: eine Frage auf eigener Seite, wie beim
+  // Der Grund der Minusstunden: eine Frage auf eigener Seite, wie beim
   // Zurückweisen (Design-Review Überholung 9).
   if (page === 'reason') {
     return (
       <GefuehrterAblauf
         {...common}
-        titel="Warum die Korrektur?"
+        titel="Warum die Minusstunden?"
         fuss={
           <Button
             className="w-full"
@@ -603,16 +664,14 @@ function Flow({
           <ListRow
             titel={
               kind === 'correction'
-                ? minutes === null
-                  ? ''
-                  : signedHours(minutes)
+                ? signedHours(minutes ?? 0)
                 : `${range}${data.minutes != null ? ` · ${signedHours(data.minutes)}` : ''}`
             }
             aktion={
               <Button
                 variant="secondary"
                 groesse="kompakt"
-                aria-label={kind === 'correction' ? 'Stunden ändern' : 'Zeiten ändern'}
+                aria-label={kind === 'correction' ? 'Minusstunden ändern' : 'Zeiten ändern'}
                 onClick={() => setFlow(aendern(flow, 'times'))}
               >
                 Ändern

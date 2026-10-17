@@ -6300,3 +6300,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 **Anker.** `betriebUnterpunkte` und `leistenvorrang` in `src/app/navigation.tsx`.
 
 **Änderungspfad.** Andere Aufteilung oder Leiste: die zwei Funktionen · Aufwand `klein`.
+
+### ANN-606 — Zeitkonto: Überstunden und Minusstunden am Regler
+
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** In der Oberfläche heißen Mehrarbeit „Überstunden“ und Korrektur „Minusstunden“ (Kennungen bleiben). Minusstunden ziehen nur ab; Plus-Zeit nur als Überstunden mit Lage. Überstunden beginnen am Dienstende laut Plan (frei: 08:00), die Dauer stellt ein Regler (5 min bis 6 h, nie über Mitternacht), das Ende folgt. Freizeitausgleich bleibt bei der Schnellwahl.
+
+**Begründung.** Auftrag Jannes 2026-10-17 („nicht simpel genug“); Stunden ohne Lage genügen der Aufzeichnung nicht (ANN-593). Ältere Korrekturen mit Plus bleiben.
+
+**Anker.** `app.time_account_check`, `src/features/timeaccount/rules.ts`.
+
+**Änderungspfad.** Höchstdauer: `OVERTIME_MAX`, `CORRECTION_MAX` · Aufwand `klein`.
