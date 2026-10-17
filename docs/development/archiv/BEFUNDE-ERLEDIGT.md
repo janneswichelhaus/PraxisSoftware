@@ -1524,3 +1524,27 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 **Beobachtung.** Die Radflotte ist echt; die Urlaubsvorschau meldet nach „Genehmigen“ aber „Stammrad Lastenrad 2 ist im Zeitraum als frei markiert“ aus den acht Rädern der Demodaten, die mit der echten Flotte nichts gemein haben.
 
 **Erwartet.** Mit URL-001 entfällt der Satz: Die echte Radflotte liest ganztägige Abwesenheiten schon selbst und zeigt das Rad an diesen Tagen frei („Diese Woche frei: Do (abwesend)“).
+
+### BEF-173 — Eine Mindesthöhe von 44 px misst der Browser als 43,99998
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Tests (E2E vor der Anmeldung) |
+| Quelle  | CI-Lauf 740 auf `main`: `plaene.spec.ts:476` im ersten Versuch rot, in der Wiederholung grün |
+| Status  | erledigt am 2026-10-16 (Messwert auf Hundertstel gerundet, Grenze bleibt 44 px) |
+| Berührt | `hoehe` in `tests/e2e/plaene.spec.ts` und `tests/e2e/uebungen.spec.ts` |
+
+**Beobachtung.** `boundingBox()` lieferte 43,99998474 px für einen Link von 44 px: Bruchteile der Gerätepixel des Pixel 7. Die Wiederholung in der CI verdeckte es als „flaky“. **Erwartet.** Der Messwert wird vor dem Vergleich auf Hundertstel gerundet; ein wirklich zu kleines Ziel (43,9 px) bleibt rot.
+
+### BEF-174 — Ein Test der Akte hing an Uhrzeit und Reihenfolge der Spezifikationen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Tests (E2E hinter der Anmeldung) |
+| Quelle  | Aufteilung in drei Teile (ANN-571): `patient-record.spec.ts:269` am Abend auf frischem Stack rot |
+| Status  | erledigt am 2026-10-16 (vergangene Termine aufgeklappt) |
+| Berührt | `tests/e2e/authenticated/patient-record.spec.ts` |
+
+**Beobachtung.** Der Test erwartete „Ohne Behandlungsgrundlage“ unter den kommenden Terminen von Erika. Ihr Seed-Termin liegt heute um 10:30 Uhr; danach gab es solche Termine nur, weil Spezifikationen aus `appointment-*` sie vorher angelegt hatten. Im seriellen Lauf fiel das nicht auf. **Erwartet.** Der Test gilt zu jeder Uhrzeit und in jeder Reihenfolge: Er klappt die vergangenen Termine auf, die gleich gruppiert sind.

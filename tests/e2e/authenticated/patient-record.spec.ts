@@ -271,6 +271,11 @@ test.describe('CAL-022 / AKTE-006: Gruppierung und Uebertragung', () => {
     await page.goto(`/patienten/${PATIENTEN.erika}/termine`);
 
     await expect(page.getByRole('heading', { name: 'Kommende Termine' })).toBeVisible();
+    // Erikas Termin im Seed liegt heute um 10:30 Uhr: am Nachmittag ist er
+    // vergangen, und kommende Termine ohne Grundlage gab es dann nur, wenn
+    // eine andere Spezifikation vorher welche angelegt hatte (BEF-174).
+    // Beide Listen gruppieren gleich; die vergangene wird aufgeklappt.
+    await page.getByRole('heading', { name: 'Vergangene Termine' }).click();
     await expect(
       page.getByRole('heading', { name: 'Ohne Behandlungsgrundlage' }).first(),
     ).toBeVisible();

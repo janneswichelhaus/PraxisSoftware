@@ -52,12 +52,13 @@ describe('Node-Fassung', () => {
   });
 });
 
-describe('Datenbanktests in der CI', () => {
-  // Seit 2026-10-10 laufen die Datenbanktests in Teilen nebeneinander. Der
-  // Pflichtcheck der Branch Protection heißt weiter „Migrationen und
-  // RLS-Policies“ und sammelt die Teile ein. Rutscht ein Teil aus der Matrix
-  // oder prüft der Sammeljob ein Ergebnis nicht, liefe ein Teil der Tests
-  // nie - und der Pflichtcheck wäre trotzdem grün.
+describe('Aufgeteilte Jobs in der CI', () => {
+  // Seit 2026-10-10 laufen die Datenbanktests in Teilen nebeneinander, seit
+  // 2026-10-16 auch die E2E-Tests hinter der Anmeldung und Tests neben Lint
+  // (ANN-571). Die Pflichtchecks der Branch Protection behalten ihre Namen
+  // und sammeln die Teile ein. Rutscht ein Teil aus der Matrix oder prüft der
+  // Sammeljob ein Ergebnis nicht, liefe ein Teil der Tests nie - und der
+  // Pflichtcheck wäre trotzdem grün.
   const ci = readFileSync(join(stamm, '.github/workflows/ci.yml'), 'utf8');
 
   /** Der Abschnitt eines Jobs: von seiner Kopfzeile bis zum nächsten Job. */
@@ -69,31 +70,96 @@ describe('Datenbanktests in der CI', () => {
     return ende === -1 ? rest : rest.slice(0, ende + 1);
   }
 
-  it('teilt in so viele Teile, wie die Matrix startet', () => {
-    const teile = job('database-teil');
+  /** Bei reiner Doku übersprungen, sonst immer - auch wenn die Erkennung scheitert. */
+  const NUR_OHNE_DOKU = "if: ${{ !cancelled() && needs.aenderungen.outputs.nur_doku != 'true' }}";
+  const SKIP_NUR_BEI_DOKU = (ergebnis: string) =>
+    `test "$${ergebnis}" = success || { test "$NUR_DOKU" = true && test "$${ergebnis}" = skipped; }`;
+
+  it.each([
+    ['database-teil', /--shard=\$\{\{ matrix\.teil \}\}\/(\d+)/],
+    ['e2e-supabase-teil', /--project authenticated --shard=\$\{\{ matrix\.teil \}\}\/(\d+)/],
+  ])('%s teilt in so viele Teile, wie die Matrix startet', (id, shard) => {
+    const teile = job(id);
     const matrix = (/teil: \[([\d, ]+)\]/.exec(teile)?.[1] ?? '')
       .split(',')
       .map((t) => Number(t.trim()));
-    const anzahl = Number(/--shard=\$\{\{ matrix\.teil \}\}\/(\d+)/.exec(teile)?.[1]);
+    const anzahl = Number(shard.exec(teile)?.[1]);
     expect(anzahl).toBeGreaterThan(1);
     expect(matrix).toEqual(Array.from({ length: anzahl }, (_, i) => i + 1));
     expect(teile).toContain(`(Teil \${{ matrix.teil }}/${anzahl})`);
     expect(teile).toContain('fail-fast: false');
   });
 
-  it('hält den Pflichtcheck unter seinem Namen und macht ihn nur mit allen Teilen grün', () => {
+  it('hält „Migrationen und RLS-Policies“ unter seinem Namen und grün nur mit allen Teilen', () => {
     const sammel = job('database');
     expect(sammel).toContain('name: Migrationen und RLS-Policies');
-    expect(sammel).toContain('needs: [database-teil, migrationen]');
-    expect(sammel).toContain('if: ${{ !cancelled() }}');
+    expect(sammel).toContain('needs: [aenderungen, database-teil, migrationen]');
+    expect(sammel).toContain('if: ${{ always() }}');
     expect(sammel).toContain('TEILE: ${{ needs.database-teil.result }}');
     expect(sammel).toContain('MIGRATIONEN: ${{ needs.migrationen.result }}');
-    expect(sammel).toContain('test "$TEILE" = success && test "$MIGRATIONEN" = success');
+    expect(sammel).toContain('test "$MIGRATIONEN" = success\n');
+    expect(sammel).toContain(SKIP_NUR_BEI_DOKU('TEILE'));
+  });
+
+  it('hält „End-to-End hinter der Anmeldung“ unter seinem Namen und grün nur mit allen Teilen', () => {
+    const sammel = job('e2e-supabase');
+    expect(sammel).toContain('name: End-to-End hinter der Anmeldung\n');
+    expect(sammel).toContain('needs: [aenderungen, e2e-supabase-teil]');
+    expect(sammel).toContain('if: ${{ always() }}');
+    expect(sammel).toContain('TEILE: ${{ needs.e2e-supabase-teil.result }}');
+    expect(sammel).toContain(SKIP_NUR_BEI_DOKU('TEILE'));
+  });
+
+  it('hält „Lint, Typecheck, Tests, Build“ unter seinem Namen; Lint und Typecheck laufen immer', () => {
+    const sammel = job('quality');
+    expect(sammel).toContain('name: Lint, Typecheck, Tests, Build');
+    expect(sammel).toContain('needs: [aenderungen, statisch, unit]');
+    expect(sammel).toContain('if: ${{ always() }}');
+    expect(sammel).toContain('test "$STATISCH" = success\n');
+    expect(sammel).toContain(SKIP_NUR_BEI_DOKU('UNIT'));
+
+    const statisch = job('statisch');
+    for (const befehl of ['pnpm format:check', 'pnpm lint', 'pnpm docs:check', 'pnpm typecheck']) {
+      expect(statisch).toContain(`run: ${befehl}`);
+    }
+    expect(statisch).not.toContain('needs:');
+    const unit = job('unit');
+    expect(unit).toContain('run: pnpm test\n');
+    expect(unit).toContain('run: pnpm exec vite build');
+  });
+
+  it('überspringt bei reiner Dokumentation nur Tests, Build, Datenbank und E2E (ADR-013 Fassung 5)', () => {
+    for (const id of ['unit', 'database-teil', 'e2e', 'e2e-supabase-teil']) {
+      expect(job(id), id).toContain('needs: aenderungen\n');
+      expect(job(id), id).toContain(NUR_OHNE_DOKU);
+    }
+    for (const id of ['statisch', 'migrationen', 'security']) {
+      expect(job(id), id).not.toContain('aenderungen');
+    }
+    // Nur im Pull Request; auf main läuft nach dem Merge alles.
+    const erkennung = job('aenderungen');
+    expect(erkennung).toContain('if [ "$EREIGNIS" != pull_request ]; then');
+    expect(erkennung).toContain('echo "nur_doku=false" >> "$GITHUB_OUTPUT"');
+    // In der Fassung des Zielbranchs, nicht in der des Pull Requests.
+    expect(erkennung).toContain(
+      'git show "$BASIS:scripts/nur-doku.mjs" > "$RUNNER_TEMP/nur-doku.mjs"',
+    );
+    expect(erkennung).toContain('node "$RUNNER_TEMP/nur-doku.mjs" "$BASIS"');
+    expect(job('statisch')).toContain('src/dateinamen.test.ts');
   });
 
   it('prüft die ausgelieferten Migrationen gegen die ganze Geschichte', () => {
     const gate = job('migrationen');
     expect(gate).toContain('fetch-depth: 0');
     expect(gate).toContain('node scripts/migrationen-check.mjs "$BASIS"');
+  });
+});
+
+describe('Testprojekte', () => {
+  it('führt mit `pnpm test` Komponenten und reine Logik aus', () => {
+    const paket = JSON.parse(readFileSync(join(stamm, 'package.json'), 'utf8')) as {
+      scripts?: Record<string, string>;
+    };
+    expect(paket.scripts?.test).toBe('vitest run --project unit --project logik');
   });
 });

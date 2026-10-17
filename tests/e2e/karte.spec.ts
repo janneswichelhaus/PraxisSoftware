@@ -10,9 +10,9 @@ import { expect, test, type Page } from '@playwright/test';
  * `fixtures/karte.html` - dieselbe Komponente, dieselben Stopps, ein Style
  * ohne Netz.
  *
- * Sie läuft in beiden Projekten der Konfiguration: `desktop` (1280 px) und
- * `mobile` (Pixel 7, 412 px); zusätzlich wird 375 px ausdrücklich geprüft,
- * weil das die schmalste Größe der Oberflächen-Checkliste ist.
+ * Sie läuft im Projekt `mobile` (Pixel 7, 412 px; seit ANN-571 das einzige
+ * vor der Anmeldung); zusätzlich wird 375 px ausdrücklich geprüft, weil das
+ * die schmalste Größe der Oberflächen-Checkliste ist.
  *
  * Was sie **nicht** zeigt: dass die Kacheln des Anbieters ankommen. Dafür
  * braucht es den Schlüssel, und der liegt nur lokal (docs/sichtung).

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
 import { entferneMetadaten } from '../../../src/features/files/metadaten';
 import { CHROMIUM_PNG, basis, jpegVomHandy } from '../../../src/features/files/testbilder';

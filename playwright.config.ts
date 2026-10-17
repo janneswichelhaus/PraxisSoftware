@@ -56,8 +56,15 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: { baseURL, trace: 'on-first-retry', launchOptions },
   projects: [
+    /**
+     * Ein Gerät für alles vor der Anmeldung: das Telefon (375 px zuerst).
+     * 39 von 52 Spezifikationen setzen ihre Breiten selbst, meist 375 und
+     * 1280 px; ein zweites Projekt „desktop“ prüfte sie nur ein zweites Mal
+     * (ANN-571). Die übrigen 13 prüfen nur noch das Telefon; wo eine
+     * Desktop-Breite zählt, setzt die Spezifikation sie selbst. Was nur mit
+     * Touch geht, prüft der Test über `hasTouch`.
+     */
     { name: 'mobile', testIgnore: HINTER_ANMELDUNG, use: { ...devices['Pixel 7'] } },
-    { name: 'desktop', testIgnore: HINTER_ANMELDUNG, use: { ...devices['Desktop Chrome'] } },
     ...(mitSupabase
       ? [
           {
