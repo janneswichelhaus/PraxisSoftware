@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Überholung Organisation (17.10., Branch `claude/modest-turing-i5qgn9`): fünf Reiter, eine Arbeitszeit,
-Einstellungen, Eingang mit „Neuer Antrag“, Barometer und Rückmeldung (§20.2), Dauerregler, Ladestrom
-automatisch; Migrationen `20261201`–`20261203…`; ANN-603 bis ANN-608. Davor gemergt: 6 bis 10 (#262–#266).
+Überholung 11 Teamchat (17.10., Branch `claude/modest-turing-i5qgn9`): Kanäle, Direktnachrichten,
+Threads, Erwähnungen, Suche, eigener Lesestand ohne Lesebestätigung; Löschung je Nachricht nach 12
+Monaten (ADR-008 Fassung 5); Migration `20261204100000`; ANN-609 bis ANN-612. Davor gemergt: Organisation (#267).
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
@@ -24,9 +24,8 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Bereichsüberholungen 6 bis 11 (Jannes 2026-10-16), je eine Session mit `/bereich`: 6 Geführte
-Abläufe (Baustein, dann G1–G6) → 7 Urlaub → 8 Arbeitszeitänderung → 9 Zeitkonto → 10
-Erstattungen; 11 Teamchat jederzeit dazwischen. Danach ALT-EPIC-002; BEF-146, -147, -148, -150.
+Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes BEF-181 (Kilometer aus Touren) mit
+„Wochenplan in einem Zug“, dann ALT-EPIC-002; BEF-146, -147, -148, -150.
 
 ## Bei Jannes
 
