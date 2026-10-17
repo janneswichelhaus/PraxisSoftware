@@ -9,7 +9,8 @@
 // lesendem Namen (sie protokollieren hoechstens den Zugriff, ADR-010) und das
 // Signieren oder Auflisten von Dateien. Alles andere - jede andere RPC, jedes
 // Schreiben in eine Tabelle, ein Upload, eine Edge Function ausser dem
-// Kartendienst - gilt als Schreiben.
+// Kartendienst und der Vorschau des Ladestroms aus Touren - gilt als
+// Schreiben.
 // -----------------------------------------------------------------------------
 
 /** Die Pfade des Supabase-Gateways, die der Waechter ueberhaupt ansieht. */
@@ -38,6 +39,8 @@ const SCHREIBEND_TROTZ_NAME = /^platform_(accesses_take_back_deletion|invitation
 const ANMELDUNG = new Set(['/auth/v1/token', '/auth/v1/passkeys/authentication/options']);
 const DATEIEN_LESEN = /^\/storage\/v1\/object\/(sign|list)\//;
 const KARTENDIENST = /^\/functions\/v1\/location-provider(\/|$)/;
+// BEF-181: Die Vorschau rechnet nur; `record` traegt ein und bleibt angehalten.
+const LADESTROM_VORSCHAU = /^\/functions\/v1\/electricity-distance\/preview\/?$/;
 
 /**
  * `null`, wenn die Anfrage lesend ist; sonst eine kurze Beschreibung der
@@ -56,6 +59,7 @@ export function schreibanfrage(methode, adresse) {
   }
   if (DATEIEN_LESEN.test(pfad)) return null;
   if (KARTENDIENST.test(pfad)) return null;
+  if (LADESTROM_VORSCHAU.test(pfad)) return null;
   return `${methode} ${pfad}`;
 }
 

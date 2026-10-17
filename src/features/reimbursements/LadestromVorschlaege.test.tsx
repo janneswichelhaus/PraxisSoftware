@@ -32,9 +32,9 @@ describe('LadestromVorschlaege', () => {
   it('zeigt je Monat den Betrag und führt mit vorgewähltem Monat in den Antrag', async () => {
     const { container } = renderWithProviders(<LadestromVorschlaege rueckweg="/betrieb" />);
     expect(await screen.findByText('Ladestrom September 2026')).toBeInTheDocument();
-    expect(screen.getByText('160 h Arbeitszeit')).toBeInTheDocument();
+    expect(screen.getByText('Schätzung nach 160 h Arbeitszeit')).toBeInTheDocument();
     expect(screen.getByText('6,39 €')).toBeInTheDocument();
-    expect(screen.getByText('120,5 h Arbeitszeit')).toBeInTheDocument();
+    expect(screen.getByText('Schätzung nach 120,5 h Arbeitszeit')).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'Beantragen: Ladestrom September 2026' }),
     ).toHaveAttribute(

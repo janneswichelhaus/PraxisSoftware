@@ -13,14 +13,16 @@ import { hoursText, monthLong } from './rules';
 
 /**
  * Ladestrom im Eingang (ORG-008): je abgeschlossenem Monat, für den die
- * angemeldete Person noch keinen Ladestrom beantragt hat, der fertig
- * gerechnete Betrag - geplante Arbeitsstunden × Strecke × Verbrauch × Satz,
+ * angemeldete Person noch keinen Ladestrom beantragt hat, ein geschätzter
+ * Betrag - geplante Arbeitsstunden × Strecke je Stunde × Verbrauch × Satz,
  * gerechnet am Server. „Beantragen“ öffnet G10 an der Zusammenfassung; dort
- * bleiben der Haken „zu Hause geladen“ und das Absenden.
+ * rechnet der Server den Betrag aus den Kilometern der geplanten Touren
+ * (BEF-181) und bleiben der Haken „zu Hause geladen“ und das Absenden.
  *
- * Nur die eigene Person, keine Summe über alle, kein Bezug auf Touren oder
- * Kilometer aus der Planung (PROJECT_PRINCIPLES.md 20). Ohne Vorschlag steht
- * hier nichts.
+ * Hier werden keine Touren gerechnet: Zwölf Monate je Öffnen des Eingangs
+ * wären hunderte Routen beim Kartendienst. Nur die eigene Person, keine
+ * Summe über alle (PROJECT_PRINCIPLES.md 20). Ohne Vorschlag steht hier
+ * nichts.
  */
 export function LadestromVorschlaege({ rueckweg }: { rueckweg: string }) {
   const { data, isError, refetch } = useQuery({
@@ -52,7 +54,7 @@ export function LadestromVorschlaege({ rueckweg }: { rueckweg: string }) {
       <ListRow
         key={vorschlag.month}
         titel={titel}
-        meta={`${hoursText(vorschlag.working_minutes)} Arbeitszeit`}
+        meta={`Schätzung nach ${hoursText(vorschlag.working_minutes)} Arbeitszeit`}
         betrag={formatEuro(vorschlag.amount_cents)}
         aktion={
           <ButtonLink

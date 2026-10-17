@@ -6434,3 +6434,39 @@ Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wie
 **Anker.** `public.list_team_activity`, `public.list_team_threads`, Bereich `team` in `src/app/navigation.tsx`.
 
 **Änderungspfad.** Weitere Slack-Teile (Später, Gruppen-DM): je eine Funktion und Seite · Aufwand `mittel`.
+
+### ANN-615 — Ladestrom aus Touren: rechnen und eintragen in einer eigenen Function
+
+Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Kilometer rechnet die Edge Function `electricity-distance`: Wegpunkte holt sie mit dem Token der Person, die Summe trägt sie mit eigenem Dienstschlüssel ein (`record_electricity_tour_distance`, nur `service_role`) – einmal, binnen zehn Minuten nach dem Beantragen, vor einer Entscheidung durch andere. Ohne Ergebnis bleibt der Wert je Stunde.
+
+**Begründung.** ADR-019 Fassung 6 verlangt, dass der Server rechnet; die Datenbank erreicht den Kartendienst nicht, und `location-provider` schreibt nichts (Punkt 16). Vorbild: `patient-file-verify`.
+
+**Anker.** `public.record_electricity_tour_distance`.
+
+**Änderungspfad.** Rechnen schon beim Absenden in der Datenbank (`pg_net`) oder per Zeitplan: Function und Funktion ersetzen · Aufwand `mittel`.
+
+### ANN-616 — Büro sieht bei Anträgen aus Touren weder Kilometer noch Betrag
+
+Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** Die Monatssumme sehen nur die Person und owner. Das Büro sieht einen Antrag aus Touren mit Monat und Zustand, aber ohne Kilometer, Betrag, Verbrauch und Satz, weil der Betrag mit den Werten der Praxis die Kilometer verriete. Anträge nach Stunden bleiben wie bisher.
+
+**Begründung.** ADR-019 Fassung 6 (Rang 2) geht ANN-598 (Büro sieht alle Erstattungen, Rang 4) vor; Art. 5 Abs. 1 lit. c DSGVO, §26 BDSG.
+
+**Anker.** `app.reimbursement_view(public.staff_reimbursements, boolean)`.
+
+**Änderungspfad.** Büro sieht den Betrag: Tiefe in `list_reimbursements` auf `v_alle` stellen, dazu eine neue Fassung von ADR-019 · Aufwand `klein`.
+
+### ANN-617 — Was als gefahrene Tour zählt
+
+Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Annahme.** Gezählt wird je Tag die Tour der Tagesroute: Garage oder Startort des ersten Standorts, alle nicht abgesagten Behandlungs- und Trainingstermine mit Ort (auch „nicht angetroffen“), zurück. Ein Termin ohne Koordinate fehlt; die Summe wird auf ganze km gerundet; scheitert eine Route, gibt es keine Summe. Der Eingang zeigt weiter die Schätzung nach Stunden.
+
+**Begründung.** Dieselbe Regel wie Karte und Fahrzeiten (ANN-240); zwölf Monate im Eingang wären hunderte Routen je Öffnen.
+
+**Anker.** `app.electricity_tour_days`.
+
+**Änderungspfad.** Andere Tour (etwa ohne Rückweg): nur diese Funktion · Aufwand `klein`.

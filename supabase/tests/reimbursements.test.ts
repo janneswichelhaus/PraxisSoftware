@@ -340,7 +340,8 @@ describe('Erstattungen (ERS-001)', () => {
                   'staff_reimbursement_receipts_guard',
                   'order_reimbursement_receipt_object_deletion')`,
       );
-      expect(hilfen).toHaveLength(15);
+      // reimbursement_view zweimal: mit und ohne Tiefe (BEF-181, ANN-616).
+      expect(hilfen).toHaveLength(16);
       expect(hilfen.filter((r) => r.auth)).toEqual([]);
     });
 

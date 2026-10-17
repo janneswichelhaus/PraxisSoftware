@@ -186,4 +186,52 @@ describe('ReimbursementsPage', () => {
       screen.getByRole('button', { name: /^Massageöl, 12,90\s€: Beleg ansehen$/ }),
     ).toBeInTheDocument();
   });
+
+  it('zeigt Büro bei einem Antrag aus Touren weder Kilometer noch Betrag (ANN-616)', async () => {
+    fetchReimbursements.mockResolvedValue(
+      testOverview({
+        my_staff_member_id: 'buero',
+        can_read_all: true,
+        person: {
+          staff_member_id: ANNA,
+          name: 'Anna Beispiel',
+          account: null,
+          reimbursements: [
+            {
+              ...testReimbursement({
+                km_per_hour: null,
+                wh_per_km: null,
+                rate_cents_per_kwh: null,
+              }),
+              amount_cents: null,
+            },
+          ],
+        },
+      }),
+    );
+    rendern(['office'], `/betrieb/erstattungen?person=${ANNA}`);
+    expect(
+      await screen.findByText(/Betrag sieht nur die Person selbst und wer entscheidet/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/km/)).toBeNull();
+    expect(screen.queryByText(/€/)).toBeNull();
+  });
+
+  it('nennt der Person die Rechnung aus den Kilometern ihrer Touren (BEF-181)', async () => {
+    fetchReimbursements.mockResolvedValue(
+      testOverview({
+        person: {
+          staff_member_id: ANNA,
+          name: 'Anna Beispiel',
+          account: null,
+          reimbursements: [
+            testReimbursement({ km_per_hour: null, tour_km: 412, amount_cents: 274 }),
+          ],
+        },
+      }),
+    );
+    rendern();
+    expect(await screen.findByText(/412 km × 18 Wh\/km × 0,37\s€\/kWh/)).toBeInTheDocument();
+    expect(screen.getByText('2,74 €')).toBeInTheDocument();
+  });
 });

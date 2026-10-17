@@ -21,7 +21,7 @@ import {
   reimbursementsKey,
   withdrawReimbursement,
   type Overview,
-  type Reimbursement,
+  type PersonReimbursement,
 } from './api';
 import {
   ACCOUNT_PATH,
@@ -205,7 +205,7 @@ function ReimbursementRow({
   own,
   timeZone,
 }: {
-  reimbursement: Reimbursement;
+  reimbursement: PersonReimbursement;
   own: boolean;
   timeZone: string;
 }) {
@@ -215,14 +215,19 @@ function ReimbursementRow({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: REIMBURSEMENTS_KEY }),
   });
   const done = r.status === 'rejected' || r.status === 'withdrawn';
-  const meta = [electricityFormulaOf(r), statusLine(r, timeZone)].filter(Boolean).join(' · ');
+  // ANN-616: Beim Büro fehlt der Betrag eines Antrags aus Touren - er verriete die Kilometer.
+  const hidden =
+    r.amount_cents === null ? 'Betrag sieht nur die Person selbst und wer entscheidet' : null;
+  const meta = [electricityFormulaOf(r), hidden, statusLine(r, timeZone)]
+    .filter(Boolean)
+    .join(' · ');
   const withdrawable = own && r.status === 'requested';
 
   return (
     <ListRow
       titel={reimbursementTitle(r)}
       meta={meta}
-      betrag={formatEuro(r.amount_cents)}
+      betrag={r.amount_cents === null ? undefined : formatEuro(r.amount_cents)}
       gedaempft={done}
       status={
         <Badge ton={STATUS_TONE[r.status]} eigenesZeichen={STATUS_SIGN[r.status]}>
@@ -261,7 +266,7 @@ function ReimbursementRow({
  * ausgezahlt. Das Datum des Antrags bleibt neben dem der Entscheidung stehen
  * (Design-Review Überholung 10).
  */
-function statusLine(r: Reimbursement, timeZone: string): string {
+function statusLine(r: PersonReimbursement, timeZone: string): string {
   const requested = dateOf(r.requested_at, timeZone);
   const on = (timestamp: string | null) => dateOf(timestamp ?? r.requested_at, timeZone);
   switch (r.status) {

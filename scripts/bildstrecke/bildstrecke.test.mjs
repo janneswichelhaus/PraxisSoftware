@@ -184,12 +184,16 @@ describe('Lesewächter', () => {
     expect(schreibanfrage('POST', `${api}/auth/v1/token?grant_type=password`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/storage/v1/object/sign/patient-files/a.png`)).toBeNull();
     expect(schreibanfrage('POST', `${api}/functions/v1/location-provider`)).toBeNull();
+    expect(schreibanfrage('POST', `${api}/functions/v1/electricity-distance/preview`)).toBeNull();
     // Der Entwicklungsserver der Anwendung ist nicht gemeint.
     expect(schreibanfrage('POST', 'http://127.0.0.1:5190/@vite/client')).toBeNull();
   });
 
   it('hält Schreiben an', () => {
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/create_task`)).toBe('rpc create_task');
+    expect(schreibanfrage('POST', `${api}/functions/v1/electricity-distance/record`)).toBe(
+      'POST /functions/v1/electricity-distance/record',
+    );
     expect(schreibanfrage('POST', `${api}/rest/v1/rpc/save_treatment_note`)).toBe(
       'rpc save_treatment_note',
     );
