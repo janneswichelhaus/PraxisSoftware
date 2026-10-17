@@ -6,6 +6,7 @@ import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-do
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import type * as TimeAccountApi from './api';
+import { PREVIEW_ERROR } from './api';
 import { TIM, testPreview, testTimeAccount } from './testdata';
 
 /**
@@ -133,6 +134,48 @@ describe('RecordTimeAccountPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Saldo \+2:15/)).toBeInTheDocument();
     expect(tipps).toBe(4);
+  });
+
+  it('ein Fehler der Vorschau ist nie „keine Termine“ - mit „Erneut versuchen“ (Regel 8)', async () => {
+    const nutzer = userEvent.setup();
+    let fehler = true;
+    previewEntry.mockImplementation((input: { von: string | null }) => {
+      if (input.von !== null && fehler) {
+        fehler = false;
+        return Promise.reject(new Error(PREVIEW_ERROR));
+      }
+      return Promise.resolve(
+        input.von === null
+          ? testPreview()
+          : testPreview({ minutes: -120, balance_after: -30, appointments: 0 }),
+      );
+    });
+    rendern();
+    await nutzer.click(
+      within(await screen.findByRole('dialog', { name: 'Was tragen Sie ein?' })).getByRole(
+        'button',
+        { name: 'Freizeitausgleich' },
+      ),
+    );
+    await nutzer.click(
+      tag(screen.getByRole('dialog', { name: 'An welchem Tag?' }), 'Dienstag, 20. Oktober 2026'),
+    );
+    const zeiten = await screen.findByRole('dialog', { name: 'Welche Zeit nehmen Sie frei?' });
+    await nutzer.click(
+      await within(zeiten).findByRole('button', { name: /^2 Std\. früher gehen/ }),
+    );
+
+    const abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
+    expect(await within(abschluss).findByText(PREVIEW_ERROR)).toBeInTheDocument();
+    expect(within(abschluss).queryByText(/Keine Termine/)).toBeNull();
+    expect(within(abschluss).queryByText(/^Saldo danach/)).toBeNull();
+    expect(within(abschluss).getByRole('button', { name: 'Eintragen' })).toBeDisabled();
+    await nutzer.click(within(abschluss).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(
+      await within(abschluss).findByText('Keine Termine in der freien Zeit'),
+    ).toBeInTheDocument();
+    expect(within(abschluss).getByText('Saldo danach −0:30 Std.')).toBeInTheDocument();
+    expect(within(abschluss).getByRole('button', { name: 'Eintragen' })).toBeEnabled();
   });
 
   it('nimmt Freizeitausgleich am Plan des Tages und nennt danach die Termine darin', async () => {

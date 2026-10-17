@@ -27,12 +27,14 @@ import { isOwner, type CurrentUser } from '@/features/session/types';
 import { blocksText } from '@/features/working-time/rules';
 import { leseRueckweg } from '@/lib/rueckweg';
 import {
+  PREVIEW_ERROR,
   TIME_ACCOUNT_KEY,
   fetchTimeAccount,
   previewEntry,
   problemSentences,
   recordEntry,
   timeAccountKey,
+  type EntryPreview,
   type Recorded,
   type TimeAccount,
 } from './api';
@@ -477,40 +479,11 @@ function Flow({
 
   // ---------------------------------------------------------------------------
   // Zusammenfassung
-  const after = preview.data?.balance_after;
-  const appointments = preview.data?.appointments ?? 0;
-  return (
-    <GefuehrterAblauf
-      {...common}
-      titel="Eintragen?"
-      abschluss
-      fuss={
-        <div className="flex flex-col gap-2">
-          {submit.isError ? (
-            <Statusmeldung ton="fehler">
-              {submit.error instanceof Error
-                ? submit.error.message
-                : 'Der Eintrag konnte nicht gespeichert werden.'}
-            </Statusmeldung>
-          ) : null}
-          {preview.isError ? (
-            <Statusmeldung ton="fehler">
-              {preview.error instanceof Error ? preview.error.message : 'Nicht geprüft.'}
-            </Statusmeldung>
-          ) : null}
-          {reasons.length > 0 ? (
-            <Statusmeldung ton="fehler">{reasons.join(' ')}</Statusmeldung>
-          ) : null}
-          <Button
-            className="w-full"
-            disabled={submit.isPending || !preview.data || reasons.length > 0}
-            onClick={() => submit.mutate()}
-          >
-            {submit.isPending ? 'Wird eingetragen …' : 'Eintragen'}
-          </Button>
-        </div>
-      }
-    >
+  /** Die Zeilen der Zusammenfassung - erst mit der Vorschau des Servers. */
+  const summary = (data: EntryPreview) => {
+    const after = data.balance_after;
+    const appointments = data.appointments ?? 0;
+    return (
       <div className="flex flex-col gap-4">
         <ListRows rahmen={false} beschriftung="Eintrag">
           <ListRow
@@ -534,7 +507,7 @@ function Flow({
                 ? minutes === null
                   ? ''
                   : signedHours(minutes)
-                : `${range}${preview.data?.minutes != null ? ` · ${signedHours(preview.data.minutes)}` : ''}`
+                : `${range}${data.minutes != null ? ` · ${signedHours(data.minutes)}` : ''}`
             }
             aktion={
               <Button
@@ -548,22 +521,14 @@ function Flow({
             }
           />
           <ListRow
-            titel={
-              preview.isPending
-                ? 'Saldo wird berechnet …'
-                : after == null
-                  ? 'Saldo danach –'
-                  : `Saldo danach ${signedHours(after)}`
-            }
+            titel={after == null ? 'Saldo danach –' : `Saldo danach ${signedHours(after)}`}
           />
           {kind === 'time_off' ? (
             <ListRow
               titel={
-                preview.isPending
-                  ? 'Termine werden geprüft …'
-                  : appointments === 0
-                    ? 'Keine Termine in der freien Zeit'
-                    : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} in der freien Zeit`
+                appointments === 0
+                  ? 'Keine Termine in der freien Zeit'
+                  : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} in der freien Zeit`
               }
               meta={appointments === 0 ? undefined : 'Danach umplanen'}
             />
@@ -584,6 +549,49 @@ function Flow({
           </Disclosure>
         )}
       </div>
+    );
+  };
+
+  return (
+    <GefuehrterAblauf
+      {...common}
+      titel="Eintragen?"
+      abschluss
+      fuss={
+        <div className="flex flex-col gap-2">
+          {submit.isError ? (
+            <Statusmeldung ton="fehler">
+              {submit.error instanceof Error
+                ? submit.error.message
+                : 'Der Eintrag konnte nicht gespeichert werden.'}
+            </Statusmeldung>
+          ) : null}
+          {reasons.length > 0 ? (
+            <Statusmeldung ton="fehler">{reasons.join(' ')}</Statusmeldung>
+          ) : null}
+          <Button
+            className="w-full"
+            disabled={submit.isPending || !preview.data || reasons.length > 0}
+            onClick={() => submit.mutate()}
+          >
+            {submit.isPending ? 'Wird eingetragen …' : 'Eintragen'}
+          </Button>
+        </div>
+      }
+    >
+      {/* Laden, Funkloch und Abweisung der Vorschau über den Baustein (Regel 8):
+          ein Fehler ist nie „keine Termine“ oder ein leerer Saldo. */}
+      <Abfragezustand
+        abfrage={preview}
+        laden="Saldo wird berechnet …"
+        fehler={PREVIEW_ERROR}
+        endgueltig={{
+          wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
+          titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
+        }}
+      >
+        {(data) => summary(data)}
+      </Abfragezustand>
     </GefuehrterAblauf>
   );
 }
