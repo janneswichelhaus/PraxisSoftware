@@ -86,7 +86,15 @@ function Content({ state }: { state: WorkingTime }) {
         </Listenabschnitt>
       ) : null}
 
-      {plan === null ? null : plan.has_plan ? (
+      {plan === null ? (
+        // Ein Konto ohne Mitarbeiterdatensatz: kein Plan, keine Anträge - die
+        // Seite sagt es, statt leer zu bleiben (Design-Review Überholung 8).
+        <EmptyState
+          inKarte
+          title="Keine eigene Arbeitszeit"
+          description="Zu Ihrem Konto gibt es keinen Mitarbeiterdatensatz."
+        />
+      ) : plan.has_plan ? (
         <>
           <Listenabschnitt titel="Mein Wochenplan">
             <WeekRows week={plan.current} />

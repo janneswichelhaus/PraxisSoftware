@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
@@ -23,9 +24,11 @@ import { monatPlus, monatsBeginn, tagePlus } from '@/features/appointments/calen
 import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
+import { tagKurz } from '@/features/vacation/zeitraum';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { DayEditor } from './DayEditor';
 import {
+  BASELINE_ERROR,
   PREVIEW_ERROR,
   REDUCTION_TEXT,
   WORKING_TIME_KEY,
@@ -48,10 +51,13 @@ import {
   minutesChange,
 } from './format';
 import {
+  PROBLEM_SHORT,
   PROBLEM_TEXT,
   WEEKDAYS,
+  blocksText,
   dayProblems,
   sameBlocks,
+  weekDayProblems,
   weekMinutes,
   weekProblems,
   workMinutes,
@@ -290,9 +296,7 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
             ))}
           </div>
         }
-      >
-        <p className="text-ink text-liste">Weniger Stunden laufen nicht über diesen Antrag.</p>
-      </GefuehrterAblauf>
+      />
     );
   }
 
@@ -313,7 +317,6 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
                   <Button
                     key={first}
                     variant="secondary"
-                    groesse="kompakt"
                     className="w-full"
                     aria-label={`Ab ${dateLong(first)}`}
                     onClick={() => {
@@ -356,20 +359,31 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
   // ---------------------------------------------------------------------------
   if (page.art === 'times' || page.art === 'day') {
     const loading = baseline.isPending || !current;
+    // Der Grund als Statusmeldung (Regel 5). Am Wochenplan kurz und mit dem
+    // Tag, den seine Zeile schon nennt - sieben Tage und der Fuß passen so
+    // ohne Rollen auf 375 × 667 (Design-Review Überholung 8).
+    const weekPage = page.art === 'times' && kind === 'permanent';
+    const problemDay =
+      weekPage && newWeek
+        ? WEEKDAYS.find((day) => weekDayProblems(newWeek, day).length > 0)
+        : undefined;
+    const reason =
+      problemDay && newWeek
+        ? `${WEEKDAY_NAME[problemDay]}: ${PROBLEM_SHORT[weekDayProblems(newWeek, problemDay)[0]!]}`
+        : weekPage && previous && minutes !== null && minutes < previous.previous_minutes
+          ? `Weniger als bisher: ${minutesChange(previous.previous_minutes, minutes)}`
+          : reasons[0];
     const footer = (
       <div className="flex flex-col gap-2">
-        {baseline.isError ? (
-          <Statusmeldung ton="fehler">
-            {baseline.error instanceof Error ? baseline.error.message : 'Nicht geprüft.'}
-          </Statusmeldung>
-        ) : null}
-        {page.art === 'times' && previous && minutes !== null ? (
+        {page.art === 'times' && previous && minutes !== null && !(weekPage && reason) ? (
           <p className="text-ink text-sm" aria-live="polite">
             {kind === 'once' ? 'Arbeitszeit' : 'In der Woche'}{' '}
             <strong>{minutesChange(previous.previous_minutes, minutes)}</strong>
-            {reasons.length > 0 ? <span className="text-danger"> · {reasons[0]}</span> : null}
             {reasons.length === 0 && unchanged ? ' · noch nichts geändert' : null}
           </p>
+        ) : null}
+        {page.art === 'times' && reason ? (
+          <Statusmeldung ton="fehler">{reason}</Statusmeldung>
         ) : null}
         {page.art === 'day' ? (
           <Button
@@ -408,7 +422,7 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
               <DayEditor
                 id={`tag-${day}`}
                 form={form}
-                previousMinutes={workMinutes(before)}
+                previous={before}
                 freeAllowed
                 onChange={(next) => {
                   const nextBlocks = blocksFromForm(next);
@@ -436,59 +450,72 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
         titel={
           kind === 'once'
             ? `Ihre Zeiten am ${onDate ? dateLong(onDate) : ''}`
-            : `Ihr Wochenplan ab ${onDate ? dateLong(onDate) : ''}`
+            : `Wochenplan ab ${onDate ? dateDayMonth(onDate) : ''}`
         }
         fuss={footer}
       >
-        {loading || !current ? (
-          <p className="text-ink-muted text-sm">Bisherige Zeiten werden geladen …</p>
-        ) : kind === 'once' ? (
-          <div className="flex flex-col gap-4">
-            <p className="text-ink-muted text-sm">Bisher: {dayText(previousDay)}</p>
-            {current.day ? (
-              <DayEditor
-                id="tag"
-                form={current.day}
-                previousMinutes={workMinutes(previousDay)}
-                freeAllowed={false}
-                onChange={(next) => updateDraft({ day: next })}
-              />
+        {/* Laden, Funkloch und Abweisung der bisherigen Zeiten über den Baustein
+            (Regel 8): mit „Erneut versuchen“ auf derselben Seite, Art und Tag
+            bleiben stehen (Praxis-Review Überholung 8). */}
+        <Abfragezustand
+          abfrage={baseline}
+          laden="Bisherige Zeiten werden geladen …"
+          fehler={BASELINE_ERROR}
+          endgueltig={{
+            wenn: (error) => error instanceof Error && error.message !== BASELINE_ERROR,
+            titel: baseline.error instanceof Error ? baseline.error.message : BASELINE_ERROR,
+          }}
+        >
+          {() =>
+            !current ? null : kind === 'once' ? (
+              <div className="flex flex-col gap-4">
+                <p className="text-ink-muted text-sm">Bisher: {dayText(previousDay)}</p>
+                {current.day ? (
+                  <DayEditor
+                    id="tag"
+                    form={current.day}
+                    previous={previousDay}
+                    freeAllowed={false}
+                    onChange={(next) => updateDraft({ day: next })}
+                  />
+                ) : (
+                  <p className="text-ink text-liste">
+                    Dieser Tag hat mehr als eine Pause – ihn ändert die Praxisleitung in der
+                    Planung.
+                  </p>
+                )}
+              </div>
             ) : (
-              <p className="text-ink text-liste">
-                Dieser Tag hat mehr als eine Pause – ihn ändert die Praxisleitung in der Planung.
-              </p>
-            )}
-          </div>
-        ) : (
-          <ListRows rahmen={false} beschriftung="Wochenplan">
-            {WEEKDAYS.map((day) => {
-              const dayBlocks = current.week[day] ?? [];
-              const changed = !sameBlocks(dayBlocks, previousWeek[day] ?? []);
-              return (
-                <ListRow
-                  key={day}
-                  titel={WEEKDAY_NAME[day]}
-                  meta={
-                    changed
-                      ? `${dayText(dayBlocks)} · bisher ${dayText(previousWeek[day] ?? [])}`
-                      : dayText(dayBlocks)
-                  }
-                  gedaempft={dayBlocks.length === 0}
-                  aktion={
-                    <Button
-                      variant="secondary"
-                      groesse="kompakt"
-                      aria-label={`${WEEKDAY_NAME[day]} ändern`}
+              <ListRows rahmen={false} beschriftung="Wochenplan">
+                {WEEKDAYS.map((day) => {
+                  const dayBlocks = current.week[day] ?? [];
+                  const changed = !sameBlocks(dayBlocks, previousWeek[day] ?? []);
+                  // Was gegen den Tag spricht, steht an seiner Zeile - auch an
+                  // einem unveränderten (Praxis-Review Überholung 8).
+                  const problem = weekDayProblems(current.week, day)[0];
+                  return (
+                    // Die ganze Zeile ist das Ziel, einzeilig und dicht: sieben
+                    // Tage ohne Rollen (Design- und Praxis-Review Überholung 8).
+                    <ListRow
+                      key={day}
+                      dicht
+                      titel={`${WEEKDAY_NAME[day]} ${blocksText(dayBlocks)}`}
+                      status={
+                        problem ? (
+                          <Badge ton="kritisch">{PROBLEM_SHORT[problem]}</Badge>
+                        ) : changed ? (
+                          <Badge ton="akzent">geändert</Badge>
+                        ) : undefined
+                      }
+                      gedaempft={dayBlocks.length === 0}
                       onClick={() => setFlow(weiter(flow, { art: 'day', day }))}
-                    >
-                      Ändern
-                    </Button>
-                  }
-                />
-              );
-            })}
-          </ListRows>
-        )}
+                    />
+                  );
+                })}
+              </ListRows>
+            )
+          }
+        </Abfragezustand>
       </GefuehrterAblauf>
     );
   }
@@ -500,94 +527,34 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
   // sagt der Fuß, warum der Knopf ruht, statt still zu warten.
   const localReasons = complete ? [] : reasons.length > 0 ? reasons : ['Noch nichts geändert.'];
 
-  /** Die Zeilen der Zusammenfassung; die Termine erst mit der Vorschau. */
-  const summary = (appointments: number | null) => (
-    <div className="flex flex-col gap-4">
-      <ListRows rahmen={false} beschriftung="Änderung">
-        <ListRow
-          titel={kind && onDate ? changeTitle(kind, onDate) : ''}
-          aktion={
-            <Button
-              variant="secondary"
-              groesse="kompakt"
-              aria-label="Datum ändern"
-              onClick={() => setFlow(aendern(flow, { art: 'date' }))}
-            >
-              Ändern
-            </Button>
-          }
-        />
-        {kind === 'once' && newDay ? (
-          <ListRow
-            titel={dayText(newDay)}
-            meta={`bisher ${dayText(previousDay)}`}
-            aktion={
-              <Button
-                variant="secondary"
-                groesse="kompakt"
-                aria-label="Zeiten ändern"
-                onClick={() => setFlow(aendern(flow, { art: 'times' }))}
-              >
-                Ändern
-              </Button>
-            }
-          />
-        ) : null}
-        {changedDays.map((day) => (
-          <ListRow
-            key={day}
-            titel={`${WEEKDAY_NAME[day]}: ${dayText(newWeek?.[day] ?? [])}`}
-            meta={`bisher ${dayText(previousWeek[day] ?? [])}`}
-            aktion={
-              <Button
-                variant="secondary"
-                groesse="kompakt"
-                aria-label={`${WEEKDAY_NAME[day]} ändern`}
-                onClick={() => setFlow(aendern(flow, { art: 'day', day }))}
-              >
-                Ändern
-              </Button>
-            }
-          />
-        ))}
-        <ListRow
-          titel={kind === 'once' ? 'Arbeitszeit am Tag' : 'Arbeitszeit in der Woche'}
-          meta={
-            previous && minutes !== null
-              ? minutesChange(previous.previous_minutes, minutes)
-              : undefined
-          }
-        />
-        {appointments === null ? null : (
-          <ListRow
-            titel={
-              appointments === 0
-                ? 'Keine Termine außerhalb der neuen Zeiten'
-                : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
-            }
-            meta={appointments === 0 ? undefined : 'Nach dem Genehmigen umplanen'}
-          />
-        )}
-        <ListRow
-          titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
-          meta={
-            self
-              ? `Sie gilt ${kind === 'once' ? 'für den Tag' : 'ab dem Datum'} sofort.`
-              : roleLabels.owner
-          }
-        />
-      </ListRows>
-      <Disclosure summary="Grund angeben" offen={message !== ''}>
-        <TextArea
-          label="Grund – für die Praxisleitung, freiwillig"
-          value={message}
-          maxLength={500}
-          rows={3}
-          onChange={(e) => setMessage(e.target.value)}
-        />
-      </Disclosure>
-    </div>
-  );
+  /**
+   * Die Termine außerhalb der neuen Zeiten - erst mit der Vorschau des Servers.
+   * Je Tag die Zahl; umplanen wird, wer genehmigt (Praxis-Review Überholung 8).
+   */
+  const appointmentsRow = (days: readonly { on_date: string; appointments: number }[]) => {
+    const appointments = days.reduce((sum, d) => sum + d.appointments, 0);
+    return (
+      <ListRow
+        titel={
+          appointments === 0
+            ? 'Keine Termine außerhalb der neuen Zeiten'
+            : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
+        }
+        meta={
+          appointments === 0
+            ? undefined
+            : `${days
+                .filter((d) => d.appointments > 0)
+                .map((d) => `${tagKurz(d.on_date)}: ${d.appointments}`)
+                .join(' · ')} · ${
+                self
+                  ? 'nach dem Eintragen umplanen'
+                  : 'plant die Praxisleitung nach dem Genehmigen um'
+              }`
+        }
+      />
+    );
+  };
 
   return (
     <GefuehrterAblauf
@@ -619,23 +586,105 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
         </div>
       }
     >
-      {/* Laden, Funkloch und Abweisung der Vorschau über den Baustein (Regel 8):
-          ein Fehler ist nie „keine Termine außerhalb“. */}
-      {complete ? (
-        <Abfragezustand
-          abfrage={preview}
-          laden="Termine werden geprüft …"
-          fehler={PREVIEW_ERROR}
-          endgueltig={{
-            wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
-            titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
-          }}
-        >
-          {(data) => summary(data.appointment_days.reduce((sum, d) => sum + d.appointments, 0))}
-        </Abfragezustand>
-      ) : (
-        summary(null)
-      )}
+      {/* Was am Gerät feststeht, bleibt mit „Ändern“ stehen; die Termine kommen mit
+          der Vorschau in dieselbe Liste. Laden, Funkloch und Abweisung der
+          Vorschau zeigt der Baustein darunter (Regel 8, Design-Review
+          Überholung 8) - ein Fehler ist nie „keine Termine außerhalb“. */}
+      <div className="flex flex-col gap-4">
+        <ListRows rahmen={false} beschriftung="Änderung">
+          <ListRow
+            titel={
+              kind === 'permanent' && onDate
+                ? `Wochenplan ab ${dateDayMonth(onDate)}`
+                : kind && onDate
+                  ? changeTitle(kind, onDate)
+                  : ''
+            }
+            aktion={
+              <Button
+                variant="secondary"
+                groesse="kompakt"
+                aria-label="Datum ändern"
+                onClick={() => setFlow(aendern(flow, { art: 'date' }))}
+              >
+                Ändern
+              </Button>
+            }
+          />
+          {kind === 'once' && newDay ? (
+            <ListRow
+              titel={blocksText(newDay)}
+              meta={`bisher ${blocksText(previousDay)}`}
+              aktion={
+                <Button
+                  variant="secondary"
+                  groesse="kompakt"
+                  aria-label="Zeiten ändern"
+                  onClick={() => setFlow(aendern(flow, { art: 'times' }))}
+                >
+                  Ändern
+                </Button>
+              }
+            />
+          ) : null}
+          {changedDays.map((day) => (
+            <ListRow
+              key={day}
+              titel={`${WEEKDAY_NAME[day]} ${blocksText(newWeek?.[day] ?? [])}`}
+              meta={`bisher ${blocksText(previousWeek[day] ?? [])}`}
+              aktion={
+                <Button
+                  variant="secondary"
+                  groesse="kompakt"
+                  aria-label={`${WEEKDAY_NAME[day]} ändern`}
+                  onClick={() => setFlow(aendern(flow, { art: 'day', day }))}
+                >
+                  Ändern
+                </Button>
+              }
+            />
+          ))}
+          <ListRow
+            titel={kind === 'once' ? 'Arbeitszeit am Tag' : 'Arbeitszeit in der Woche'}
+            meta={
+              previous && minutes !== null
+                ? minutesChange(previous.previous_minutes, minutes)
+                : undefined
+            }
+          />
+          {complete && preview.data ? appointmentsRow(preview.data.appointment_days) : null}
+          <ListRow
+            titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
+            meta={
+              self
+                ? `Sie gilt ${kind === 'once' ? 'für den Tag' : 'ab dem Datum'} sofort.`
+                : roleLabels.owner
+            }
+          />
+        </ListRows>
+        {complete ? (
+          <Abfragezustand
+            abfrage={preview}
+            laden="Termine werden geprüft …"
+            fehler={PREVIEW_ERROR}
+            endgueltig={{
+              wenn: (error) => error instanceof Error && error.message !== PREVIEW_ERROR,
+              titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
+            }}
+          >
+            {() => null}
+          </Abfragezustand>
+        ) : null}
+        <Disclosure summary="Grund angeben" offen={message !== ''}>
+          <TextArea
+            label="Grund – für die Praxisleitung, freiwillig"
+            value={message}
+            maxLength={500}
+            rows={3}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </Disclosure>
+      </div>
     </GefuehrterAblauf>
   );
 }

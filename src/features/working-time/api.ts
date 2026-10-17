@@ -200,8 +200,11 @@ export async function fetchWorkingTime(): Promise<WorkingTime> {
   return antwort(workingTimeSchema, data, LOAD);
 }
 
-/** Der Satz, wenn Grundlage oder Vorschau ohne Antwort des Servers nicht laden. */
+/** Der Satz, wenn die Vorschau ohne Antwort des Servers nicht lädt. */
 export const PREVIEW_ERROR = 'Die Arbeitszeit konnte nicht geprüft werden.';
+
+/** Der Satz, wenn die bisherigen Zeiten ohne Antwort des Servers nicht laden. */
+export const BASELINE_ERROR = 'Die bisherigen Zeiten konnten nicht geladen werden.';
 
 export type ChangeKind = 'once' | 'permanent';
 
@@ -213,9 +216,9 @@ export async function fetchBaseline(
   const data = await call(
     'preview_working_time_change',
     { p_kind: kind, p_on_date: onDate, p_blocks: null },
-    PREVIEW_ERROR,
+    BASELINE_ERROR,
   );
-  return antwort(baselineSchema, data, PREVIEW_ERROR);
+  return antwort(baselineSchema, data, BASELINE_ERROR);
 }
 
 /** Was die neuen Zeiten ergäben: Minuten, Gründe dagegen, Termine außerhalb. */
