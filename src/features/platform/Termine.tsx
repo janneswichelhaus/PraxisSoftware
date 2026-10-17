@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Badge, type Ton } from '@/components/ui/Badge';
+import { Badge, STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Disclosure } from '@/components/ui/Card';
@@ -265,7 +265,10 @@ function Terminzeile({
         zustand ? (
           <Badge ton={zustand.ton}>{zustand.wort}</Badge>
         ) : wunsch ? (
-          <Badge ton="akzent">{wunsch}</Badge>
+          // Ein offener Wunsch wartet auf die Praxis: Zeichen und Wort (Regel 5).
+          <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.wartet}>
+            {wunsch}
+          </Badge>
         ) : undefined
       }
       gedaempft={gedaempft || termin.status === 'cancelled'}

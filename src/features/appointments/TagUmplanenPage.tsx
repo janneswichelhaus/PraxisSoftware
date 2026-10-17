@@ -148,11 +148,16 @@ function Anrufseite({
   return (
     <div className="flex flex-col gap-4">
       {quittung ? <Statusmeldung ton="erfolg">{quittung}</Statusmeldung> : null}
-      <p className="text-ink-muted text-sm">
-        Abgesagt: {formatLocalTime(termin.starts_at, termin.organization_time_zone)} Uhr ·{' '}
-        {/* Ein Weg in die Akte, mit Rückweg hierher samt Anrufliste (RSP-06, KAL-06). */}
-        <Textlink to={mitRueckweg(`/patienten/${termin.patient_id}`, rueckweg)}>Akte</Textlink>
-      </p>
+      <div className="flex flex-wrap items-center gap-x-3">
+        <p className="text-ink-muted text-sm">
+          Abgesagt: {formatLocalTime(termin.starts_at, termin.organization_time_zone)} Uhr
+        </p>
+        {/* Ein Weg in die Akte, mit Rückweg hierher samt Anrufliste (RSP-06,
+            KAL-06) - für sich mit 44 px Tippziel (DESIGN.md Grundsatz 3). */}
+        <Textlink alleinstehend to={mitRueckweg(`/patienten/${termin.patient_id}`, rueckweg)}>
+          Akte
+        </Textlink>
+      </div>
       <Anrufknoepfe termin={termin} />
     </div>
   );
@@ -230,7 +235,7 @@ function Umplanung({
                 <EmptyState
                   inKarte
                   title="Hier ist nichts umzuplanen."
-                  description="An diesem Tag steht für diese Person kein bestätigter Termin. Abgeschlossene und bereits abgesagte Termine bleiben unberührt."
+                  description="An diesem Tag steht für diese Person kein bestätigter Termin."
                   aktion={
                     <ButtonLink to={zumKalender} variant="secondary">
                       Zum Kalender
@@ -535,10 +540,7 @@ function Ablauf({
               }
             />
           </ListRows>
-          <p className="text-ink text-sm">
-            Sie bleiben vollständig erhalten und geben ihre Zeiträume wieder frei. Eine Absage lässt
-            sich nicht zurücknehmen – danach führt die Anrufliste durch die Anrufe.
-          </p>
+          <p className="text-ink text-sm">Eine Absage lässt sich nicht zurücknehmen.</p>
         </div>
       ) : seite.art === 'anruf' && aktuell ? (
         <Anrufseite

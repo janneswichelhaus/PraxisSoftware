@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
@@ -22,9 +23,12 @@ import {
   ablaufStarten,
   abschluss,
   frage,
-  zusammenfassungspunkte,
+  gehe,
+  zusammenfassungszeilen,
   type Ablaufzustand,
   type Abschlussart,
+  type SchrittId,
+  type Zusammenfassungszeile,
 } from './pannenablauf';
 import {
   fussknoepfe,
@@ -195,6 +199,16 @@ export function Pannenfenster({
     else setAblauf(ziel);
   }
 
+  /**
+   * „Ändern“ aus der Zusammenfassung: der Schaden am Rad - „Weiter“ führt von
+   * dort zurück zur Zusammenfassung -, sonst der Schritt der Angabe.
+   */
+  function aendern(ziel: SchrittId | 'schaden') {
+    melden.reset();
+    if (ziel === 'schaden') setAmRad(true);
+    else setAblauf((aktuell) => gehe(aktuell, ziel));
+  }
+
   function wirke(knopf: Fussknopf) {
     if (laeuft) return;
     const { wirkung } = knopf;
@@ -332,13 +346,22 @@ export function Pannenfenster({
           setAblauf={setAblauf}
           riss={antriebsriss[bike.bike_type]}
           ersatzrad={ersatzrad}
-          vorbelegt={stellen.length > 0}
           fokus={fokus}
-          punkte={zusammenfassungspunkte({ vorlage, ersatzrad, zustand: ablauf })}
+          zeilen={zusammenfassungszeilen({ vorlage, ersatzrad, zustand: ablauf })}
+          schaden={
+            stellen.length === 0
+              ? 'Schaden: keine Stelle markiert'
+              : `Schaden: ${stellen.map((stelle) => stelle.note.trim() || zoneLabel(stelle.zone)).join(' · ')}`
+          }
+          onAendern={aendern}
         />
-        {/* Die Herkunft der Vorlage, knapp: Sie ist für Tübingen ungeprüft
+        {/* Die Herkunft der Vorlage als Abzeichen mit Zeichen und ein kurzer
+            Satz (DESIGN.md Regel 5, R2-O1): Sie ist für Tübingen ungeprüft
             (§15.2, ANN-554). */}
-        <Kleingedrucktes>{`${vorlage.herkunft}-Vorlage · Für Tübingen noch zu prüfen`}</Kleingedrucktes>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge ton="warnung">{`${vorlage.herkunft}-Vorlage`}</Badge>
+          <span className="text-ink-muted text-sm">Für Tübingen noch zu prüfen.</span>
+        </div>
       </div>
     </GefuehrterAblauf>
   );
@@ -398,24 +421,33 @@ function Hinweiskasten({ anfang = false, children }: { anfang?: boolean; childre
   );
 }
 
+/** Wofür „Ändern“ in der Zusammenfassung steht - für Vorlesesoftware. */
+const AENDERN_NAME: Partial<Record<SchrittId | 'schaden', string>> = {
+  schaden: 'Schaden',
+  radZuruecklassen: 'Standort',
+  fuehrerschein: 'Weiterfahrt',
+};
+
 /** Hinweise und Texte eines Schritts, unter der Frage. */
 function Schrittinhalt({
   ablauf,
   setAblauf,
   riss,
   ersatzrad,
-  vorbelegt,
   fokus,
-  punkte,
+  zeilen,
+  schaden,
+  onAendern,
 }: {
   ablauf: Ablaufzustand;
   setAblauf: (aktualisierung: (aktuell: Ablaufzustand) => Ablaufzustand) => void;
   riss: string;
   ersatzrad: string;
-  /** Stammt der Text aus markierten Stellen? */
-  vorbelegt: boolean;
   fokus: Fokus;
-  punkte: string[];
+  zeilen: Zusammenfassungszeile[];
+  /** Die markierten Stellen als eine Zeile, mit „Ändern“ am Rad. */
+  schaden: string;
+  onAendern: (ziel: SchrittId | 'schaden') => void;
 }) {
   const vorlage = aktiveStandortvorlage;
   const anfang = fokus === 'anfang';
@@ -431,7 +463,6 @@ function Schrittinhalt({
             rows={3}
             label="Was ist auffällig?"
             placeholder="z. B. Klingel klemmt, Licht flackert"
-            hint={vorbelegt ? 'Aus den markierten Stellen. Sie können den Text ändern.' : undefined}
             maxLength={900}
             value={ablauf.freitext}
             onChange={(event) =>
@@ -471,10 +502,7 @@ function Schrittinhalt({
     case 'depotBringen':
       return (
         <div className="flex flex-col gap-3">
-          <Hinweiskasten anfang={anfang}>
-            {vorlage.depot.bezeichnung}: {vorlage.depot.zugangHinweis}
-          </Hinweiskasten>
-          <p className="text-ink text-liste">
+          <p {...(anfang ? ANFANG : {})} className="text-ink text-liste focus:outline-none">
             {vorlage.zustaendigeRolle} kurz über den Schaden informieren, damit die Reparatur
             koordiniert werden kann.
           </p>
@@ -482,6 +510,11 @@ function Schrittinhalt({
             Bis auf Weiteres bitte <strong>{ersatzrad}</strong> nutzen – so lange, bis das defekte
             Rad wieder freigegeben ist.
           </p>
+          {/* Wie mit dem Zugangscode umgegangen wird, als Kleingedrucktes
+              (DESIGN.md Regel 6), nicht als Anweisung im Kasten. */}
+          <Kleingedrucktes>
+            {vorlage.depot.bezeichnung}: {vorlage.depot.zugangHinweis}
+          </Kleingedrucktes>
         </div>
       );
 
@@ -513,19 +546,37 @@ function Schrittinhalt({
       );
 
     case 'zusammenfassung':
+      // Je Angabe ein „Ändern“ (DESIGN.md „Geführter Ablauf“): der Schaden
+      // zuerst, dann die Zeilen der Vorlage.
       return (
         <ListRows rahmen={false} beschriftung="Zusammenfassung">
-          {punkte.map((punkt, index) => (
+          {[
+            { text: schaden, ziel: 'schaden' as const },
+            ...zeilen.map((z) => ({ text: z.text, ziel: z.aendern })),
+          ].map((zeile, index) => (
             <ListRow
-              key={punkt}
+              key={zeile.text}
               titel={
                 index === 0 && anfang ? (
                   <span {...ANFANG} className="focus:outline-none">
-                    {punkt}
+                    {zeile.text}
                   </span>
                 ) : (
-                  punkt
+                  zeile.text
                 )
+              }
+              aktion={
+                zeile.ziel ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    groesse="kompakt"
+                    aria-label={`${AENDERN_NAME[zeile.ziel]} ändern`}
+                    onClick={() => onAendern(zeile.ziel!)}
+                  >
+                    Ändern
+                  </Button>
+                ) : undefined
               }
             />
           ))}

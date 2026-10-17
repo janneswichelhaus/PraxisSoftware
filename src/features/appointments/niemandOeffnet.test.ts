@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   WARTEZEIT_MS,
+  ausfallAusAdresse,
+  ausfallInAdresse,
   darfVermerken,
+  folgeBis,
   gewartet,
   minutenSekunden,
   naechsteSeite,
@@ -30,5 +33,23 @@ describe('Niemand öffnet - die Folge (G1)', () => {
     expect(darfVermerken(false, false)).toBe(false);
     expect(darfVermerken(true, false)).toBe(true);
     expect(darfVermerken(false, true)).toBe(true);
+  });
+
+  it('hält Uhr und Seite in der Adresse - nur für diesen Termin, nur Kennung und Zeit', () => {
+    const id = '0b4f3a52-6a51-4c43-9d25-0d1f7f6a1c11';
+    const wert = ausfallInAdresse(id, { seit: 1_760_000_000_000, seite: 'angerufen' });
+    expect(wert).toBe(`${id}.1760000000000.angerufen`);
+    expect(ausfallAusAdresse(wert, id)).toEqual({ seit: 1_760_000_000_000, seite: 'angerufen' });
+    // Nach dem Abbrechen bleibt die Uhr, die Seite nicht (ANN-479).
+    expect(ausfallAusAdresse(ausfallInAdresse(id, { seit: 5, seite: null }), id)).toEqual({
+      seit: 5,
+      seite: null,
+    });
+    expect(ausfallAusAdresse(wert, '1b4f3a52-6a51-4c43-9d25-0d1f7f6a1c11')).toBeNull();
+    expect(ausfallAusAdresse(`${id}.abc`, id)).toBeNull();
+    expect(ausfallAusAdresse(`${id}.12.unbekannt`, id)).toEqual({ seit: 12, seite: null });
+    expect(ausfallAusAdresse(null, id)).toBeNull();
+    expect(folgeBis('gewartet')).toEqual(['geklingelt', 'angerufen', 'gewartet']);
+    expect(folgeBis('geklingelt')).toEqual(['geklingelt']);
   });
 });

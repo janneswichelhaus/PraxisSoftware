@@ -650,7 +650,7 @@ async function bild(page: Page, name: string, breit = false) {
 async function panneSeite(page: Page, frage: string, schritt: number, antworten: string[]) {
   const seite = fenster(page, frage);
   await expect(seite.getByText(`Schritt ${schritt}`, { exact: true })).toBeVisible();
-  await expect(seite.getByText('Köln-Vorlage · Für Tübingen noch zu prüfen')).toBeVisible();
+  await expect(seite.getByText('Für Tübingen noch zu prüfen.')).toBeVisible();
   expect(await scrolltNicht(page), `${frage} ohne Scrollen`).toBe(true);
   for (const antwort of antworten) {
     await mindestens44(seite.getByRole('button', { name: antwort, exact: true }));

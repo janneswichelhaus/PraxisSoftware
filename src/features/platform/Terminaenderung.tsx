@@ -314,7 +314,7 @@ function Aenderungsablauf({
     >
       {seite === 'art' ? (
         // Derselbe Termin, wie er in der Liste stand.
-        <ListRows>
+        <ListRows rahmen={false}>
           <ListRow
             zeit={<Terminzeit termin={termin} />}
             titel={beschreibung}
@@ -334,7 +334,7 @@ function Aenderungsablauf({
       ) : (
         <div className="flex flex-col gap-3">
           <Zusammenfassungsanfang />
-          <ListRows>
+          <ListRows rahmen={false}>
             {/* Der Wunsch an seinem Termin, Tag über Uhrzeit wie in der
                 Liste - „Ändern“ führt zurück zu „Was möchten Sie?“. */}
             <Angabe

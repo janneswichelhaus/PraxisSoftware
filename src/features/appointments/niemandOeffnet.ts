@@ -58,3 +58,43 @@ export function gewartet(seit: number, jetzt: number): { vergangen: number; um: 
 export function darfVermerken(um: boolean, schonVorher: boolean): boolean {
   return um || schonVorher;
 }
+
+/**
+ * Der Stand in der Adresse (Praxis-Review Überholung 6, wie G2 und ANN-574):
+ * `ausfall=<Termin>.<Uhrstart>[.<Seite>]` - nur Kennung, Zeit und Seite,
+ * keine Namen (ADR-011). So übersteht die Uhr ein Neuladen nach dem Wechsel
+ * in die Telefon-App; gespeichert wird nichts. Die Seite steht nur, solange
+ * das Fenster offen ist: Wer abbricht, beginnt beim nächsten Mal wieder mit
+ * dem Klingeln, die Uhr läuft weiter (ANN-479).
+ */
+export const AUSFALL_PARAMETER = 'ausfall';
+
+export interface AusfallStand {
+  seit: number;
+  seite: NiemandSeite | null;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Der Stand für diesen Termin; `null`, wenn die Adresse keinen für ihn trägt. */
+export function ausfallAusAdresse(wert: string | null, terminId: string): AusfallStand | null {
+  if (!wert) return null;
+  const [id, seitText, seite] = wert.split('.');
+  if (!id || !UUID.test(id) || id !== terminId || !seitText || !/^\d{1,15}$/.test(seitText)) {
+    return null;
+  }
+  return {
+    seit: Number(seitText),
+    seite: FOLGE.find((s) => s === seite) ?? null,
+  };
+}
+
+/** Der Wert für die Adresse. */
+export function ausfallInAdresse(terminId: string, stand: AusfallStand): string {
+  return [terminId, String(stand.seit), ...(stand.seite ? [stand.seite] : [])].join('.');
+}
+
+/** Die Folge bis zu einer Seite - damit „← Zurück“ nach dem Neuladen weiter geht. */
+export function folgeBis(seite: NiemandSeite): NiemandSeite[] {
+  return FOLGE.slice(0, FOLGE.indexOf(seite) + 1);
+}

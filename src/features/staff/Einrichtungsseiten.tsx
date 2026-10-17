@@ -170,7 +170,7 @@ export function Vorlagenwahl({
   return (
     <>
       <Fokusanfang>Vorlagen für den Wochenplan</Fokusanfang>
-      <ListRows beschriftung="Vorlagen für den Wochenplan">
+      <ListRows rahmen={false} beschriftung="Vorlagen für den Wochenplan">
         {ARBEITSZEITVORLAGEN.map((vorlage) => (
           <ListRow
             key={vorlage.key}
@@ -215,7 +215,7 @@ export function Radliste({
         inKarte
       >
         {(daten) => (
-          <ListRows beschriftung="Räder mit Schlüssel im Tresor">
+          <ListRows rahmen={false} beschriftung="Räder mit Schlüssel im Tresor">
             {freieRaeder(daten).map((rad) => (
               <ListRow
                 key={rad.id}
@@ -337,7 +337,7 @@ export function Abschlussliste({
   return (
     <div className="flex flex-col gap-4">
       <Fokusanfang>Angaben</Fokusanfang>
-      <ListRows beschriftung="Angaben">
+      <ListRows rahmen={false} beschriftung="Angaben">
         <ListRow
           titel={vollerName(person)}
           meta={kontakt || 'Ohne dienstlichen Kontakt'}
@@ -398,7 +398,7 @@ export function Abschlussliste({
       {offen.length > 0 ? (
         <div>
           <Zwischentitel>Danach noch offen</Zwischentitel>
-          <ListRows beschriftung="Danach noch offen">
+          <ListRows rahmen={false} beschriftung="Danach noch offen">
             {offen.map((schritt) => (
               <ListRow
                 key={schritt.art}
@@ -533,7 +533,7 @@ export function Ergebnisliste({
   return (
     <div className="flex flex-col gap-4">
       <Fokusanfang>Schritte</Fokusanfang>
-      <ListRows beschriftung="Schritte">
+      <ListRows rahmen={false} beschriftung="Schritte">
         {schritte.map((schritt) => {
           const { text, weg } = zeile(schritt.art, schritt.stand);
           return (
