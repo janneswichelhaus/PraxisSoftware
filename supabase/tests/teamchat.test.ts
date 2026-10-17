@@ -465,6 +465,72 @@ describe('Teamchat: Für dich und Threads (ANN-614)', () => {
     ]);
   });
 
+  it('filtert nach Lesbarkeit, auch wenn Erwähnung und Thread schon bestehen (Zweitreview R4)', async () => {
+    // Eine Erwähnung in einer fremden Direktnachricht, an der Anwendung vorbei.
+    const dm = await direkt(users.office, STAFF.tim);
+    const privat = await senden(users.office, dm, 'Privat an Tim');
+    await asPostgres(
+      `insert into public.team_message_mentions (organization_id, message_id, staff_member_id)
+       values ($1, $2, $3)`,
+      [organizationId, privat, STAFF.anna],
+    );
+    // Ein Thread in der Radflotte, dann verliert Anna das Leserecht der Flotte.
+    const flotte = (await kanaele(users.therapist)).find((k) => k.kind === 'fleet')!;
+    const frage = await senden(users.therapist, flotte.id, 'Rad 3?');
+    await senden(users.office, flotte.id, 'Steht im Depot', frage, [STAFF.anna]);
+    await asPostgres(
+      `update public.user_roles set role_key = 'trainer' where user_id = $1 and role_key = 'therapist'`,
+      [users.therapist],
+    );
+    expect((await asUser(users.therapist, AKTIVITAET)).rows).toEqual([]);
+    expect((await asUser(users.therapist, THREADS)).rows).toEqual([]);
+  });
+
+  it('weist Konten ohne Praxisrolle ab und zeigt einer fremden Praxis nichts', async () => {
+    for (const sql of [AKTIVITAET, THREADS]) {
+      for (const konto of [users.patientMax, users.plattformTina]) {
+        expect((await fehler(konto, sql))?.code).toBe('42501');
+      }
+      expect((await fehler(null, sql))?.code).toBe('42501');
+      await expect(asAnon(sql)).rejects.toThrow();
+    }
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const frage = await senden(users.therapist, allgemein.id, 'Frage');
+    await senden(users.office, allgemein.id, 'Antwort', frage);
+    const fremd = await fremdeOrganisation();
+    expect((await asUser(fremd.owner, AKTIVITAET)).rows).toEqual([]);
+    expect((await asUser(fremd.owner, THREADS)).rows).toEqual([]);
+  });
+
+  it('ändert „neu“ nicht, wenn eine andere Person liest (§20)', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    await senden(users.office, allgemein.id, 'Für Anna', null, [STAFF.anna]);
+    await asUserCommitted(users.teamLead, 'select public.mark_team_channel_read($1)', [
+      allgemein.id,
+    ]);
+    const aktivitaet = await asUser<{ unread: boolean }>(users.therapist, AKTIVITAET);
+    expect(aktivitaet.rows).toEqual([expect.objectContaining({ unread: true })]);
+    const liste = await asUser<{ unread: boolean }>(users.therapist, NACHRICHTEN, [
+      allgemein.id,
+      null,
+    ]);
+    expect(liste.rows).toEqual([expect.objectContaining({ unread: true })]);
+  });
+
+  it('zeigt eine entfernte Ausgangsnachricht in Threads ohne Text und Namen', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const frage = await senden(users.office, allgemein.id, 'Versehentlich ein Name');
+    await senden(users.therapist, allgemein.id, 'Antwort', frage);
+    await asUserCommitted(users.ownerTherapist, 'select public.delete_team_message($1)', [frage]);
+    const { rows } = await asUser<{ body: string | null; author_name: string | null }>(
+      users.therapist,
+      THREADS,
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({ body: null, author_name: null, removed_kind: 'owner' }),
+    ]);
+  });
+
   it('zeigt der Trainingsbetreuung nichts aus dem Gespräch der Radflotte', async () => {
     const flotte = (await kanaele(users.therapist)).find((k) => k.kind === 'fleet')!;
     const frage = await senden(users.therapist, flotte.id, 'Rad 3?', null, [STAFF.tom]);
