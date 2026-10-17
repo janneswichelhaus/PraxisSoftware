@@ -1,9 +1,13 @@
-# Status · Stand 2026-10-16
+# Status · Stand 2026-10-17
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
+
+Überholung 7 (17.10., Branch `ccr-350340fc-pnh5ti-urlaub`, auf 6): Urlaub echt statt Vorschau –
+beantragen (G7, 5 Tipps), entscheiden durch owner (G7b, 2), Storno, Anspruch; genehmigter Urlaub
+sperrt die Tage; Migration `20261124100000`; ANN-576 bis ANN-580; darauf gestapelt 8 bis 10.
 
 Überholung 6 (16.10., Branch `ccr-350340fc-pnh5ti`): Baustein „Geführter Ablauf“, G1 bis G6 geführt
 (Niemand öffnet, Tag umplanen, Panne, Schlüssel übergeben, Einrichten, Plattform-Termin); Migration
