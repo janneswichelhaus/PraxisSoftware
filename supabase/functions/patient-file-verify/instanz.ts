@@ -115,10 +115,15 @@ export function erstelleInstanz(
                 p_photo_id: dateiId,
                 p_user_id: personId,
               })
-            : await rpc('patient_file_for_verification', {
-                p_file_id: dateiId,
-                p_user_id: personId,
-              });
+            : art === 'beleg'
+              ? await rpc('reimbursement_receipt_for_verification', {
+                  p_receipt_id: dateiId,
+                  p_user_id: personId,
+                })
+              : await rpc('patient_file_for_verification', {
+                  p_file_id: dateiId,
+                  p_user_id: personId,
+                });
       if (!antwort.ok) return antwort;
       const zeilen = Array.isArray(antwort.wert) ? (antwort.wert as Ankuendigung[]) : [];
       const zeile = zeilen[0];
@@ -162,12 +167,20 @@ export function erstelleInstanz(
                 // Metadatenfrage ist es ein Befund, keine Lücke (sonst 22023).
                 p_metadata_ok: ergebnis.metadata_ok ?? false,
               })
-            : await rpc('record_patient_file_verification', {
-                p_file_id: dateiId,
-                p_content_type_ok: ergebnis.content_type_ok,
-                p_checksum_ok: ergebnis.checksum_ok,
-                p_metadata_ok: ergebnis.metadata_ok,
-              });
+            : art === 'beleg'
+              ? await rpc('record_reimbursement_receipt_verification', {
+                  p_receipt_id: dateiId,
+                  p_content_type_ok: ergebnis.content_type_ok,
+                  p_checksum_ok: ergebnis.checksum_ok,
+                  // Wie die Akte: bei einem PDF keine Metadatenfrage (null).
+                  p_metadata_ok: ergebnis.metadata_ok,
+                })
+              : await rpc('record_patient_file_verification', {
+                  p_file_id: dateiId,
+                  p_content_type_ok: ergebnis.content_type_ok,
+                  p_checksum_ok: ergebnis.checksum_ok,
+                  p_metadata_ok: ergebnis.metadata_ok,
+                });
       if (!antwort.ok) return antwort;
       const wert = antwort.wert;
       return typeof wert === 'string' &&

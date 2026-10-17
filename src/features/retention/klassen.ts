@@ -164,6 +164,16 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Zurückgewiesene und zurückgenommene Einträge im Zeitkonto. Ein Jahr nach der Zurückweisung oder Rücknahme.',
   },
+  erstattung: {
+    label: 'Erstattungen',
+    beschreibung:
+      'Ausgezahlte Erstattungen mit ihren Belegen. Acht Jahre ab Ende des Jahres der Auszahlung (Buchungsbelege, § 147 AO); beantragte und genehmigte bleiben.',
+  },
+  erstattung_kurz: {
+    label: 'Erstattungen: abgelehnt und zurückgezogen',
+    beschreibung:
+      'Abgelehnte und zurückgezogene Erstattungen mit ihren Belegen. Ein Jahr nach der Entscheidung oder dem Zurückziehen.',
+  },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',
     beschreibung: 'Organisation und Standorte.',

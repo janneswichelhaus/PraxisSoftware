@@ -256,7 +256,35 @@ describe('patient-file-verify', () => {
     }
   });
 
-  it('nimmt genau eine Kennung an: Datei, Anhang oder Foto am Rad', async () => {
+  it('prueft einen Beleg wie eine Datei der Akte, mit eigenen Datenbankfunktionen (ERS-001)', async () => {
+    const pdf = new TextEncoder().encode('%PDF-1.7\n1 0 obj<<>>endobj\n%%EOF');
+    for (const [mime, bytes, erwartet] of [
+      ['image/jpeg', BILD, { content_type_ok: true, checksum_ok: true, metadata_ok: true }],
+      // Ein PDF bekommt keine Metadatenfrage (Punkt 49) - wie in der Akte.
+      ['application/pdf', pdf, { content_type_ok: true, checksum_ok: true, metadata_ok: null }],
+    ] as const) {
+      const i = instanz({
+        ankuendigung: vi.fn(async () => ({
+          ok: true as const,
+          wert: await ankuendigung({
+            bucket_id: 'erstattungsbelege',
+            mime_type: mime,
+            byte_size: bytes.length,
+            checksum_sha256: await sha256(bytes),
+          }),
+        })),
+        objekt: vi.fn().mockResolvedValue({ ok: true, wert: bytes }),
+      });
+      const { status, rumpf } = await lauf(i, anfrage({ receipt_id: DATEI }));
+      expect(status).toBe(200);
+      expect(rumpf).toEqual({ ergebnis: 'passed' });
+      expect(i.ankuendigung).toHaveBeenCalledWith(DATEI, PERSON, 'beleg');
+      expect(i.objekt).toHaveBeenCalledWith('erstattungsbelege', SCHLUESSEL);
+      expect(i.eintragen).toHaveBeenCalledWith(DATEI, erwartet, 'beleg');
+    }
+  });
+
+  it('nimmt genau eine Kennung an: Datei, Anhang, Foto am Rad oder Beleg', async () => {
     for (const rumpf of [
       { file_id: DATEI, photo_id: DATEI },
       { attachment_id: DATEI, photo_id: DATEI },
@@ -264,6 +292,10 @@ describe('patient-file-verify', () => {
       { photo_id: 'x' },
       { photo_id: 42 },
       { photo_id: DATEI, attachment_id: null },
+      { receipt_id: DATEI, photo_id: DATEI },
+      { receipt_id: DATEI, file_id: DATEI },
+      { receipt_id: 'x' },
+      { receipt_id: DATEI, attachment_id: null },
     ]) {
       const i = instanz();
       expect((await lauf(i, anfrage(rumpf))).status, JSON.stringify(rumpf)).toBe(400);

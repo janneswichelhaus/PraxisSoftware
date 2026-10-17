@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-16.
+Zuletzt aktualisiert: 2026-10-17.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -6226,3 +6226,63 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.delete_due_time_account_entries`, `app.carry_over_time_account_entry`.
 
 **Änderungspfad.** Überträge mit dem Austritt befristen: eine Regel im Lauf · Aufwand `klein`.
+
+### ANN-598 — Erstattungen: Zustände und Rechte
+
+Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Annahme.** Beantragt → genehmigt oder abgelehnt (Grund) → ausgezahlt; zurückziehen kann die Person, solange beantragt. owner entscheidet und vermerkt die Auszahlung, nie den eigenen Antrag eines anderen Kontos; eigene trägt owner ein, sie gelten als genehmigt. Jede Person beantragt nur für sich; owner und Büro sehen alle je Person, das Büro entscheidet und zahlt nicht.
+
+**Begründung.** Spezifikation Überholung 10; Entscheiden wie Urlaub (ANN-576), Sichtbarkeit nach BEF-066 Option 2 mit Büro. Genehmigt ist nicht ausgezahlt.
+
+**Anker.** `app.may_pay_reimbursement`, `app.can_read_all_reimbursements`.
+
+**Änderungspfad.** Büro zahlt aus: `app.may_pay_reimbursement` · Aufwand `klein`.
+
+### ANN-599 — Ladestrom: ein Monat, Arbeitstage, fester Satz
+
+Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Annahme.** Ladestrom je abgeschlossenem Kalendermonat, höchstens zwölf zurück, einmal je Person und Monat; Arbeitstage bis zur Zahl der Tage des Monats, vorgeschlagen aus dem Wochenplan ohne Feiertage und ganztägige Abwesenheit. Betrag = Tage × 0,5 kWh × 37 ct, auf Cent gerundet; Ladung und Satz stehen am Antrag. Die Erklärung ist ein Haken (wie ANN-553).
+
+**Begründung.** Werte der Vorlage, eine betriebliche Regel, keine Vorgabe; kein Bezug auf Touren (PROJECT_PRINCIPLES.md 20).
+
+**Anker.** `app.electricity_wh_per_day`, `app.electricity_cents_per_kwh`.
+
+**Änderungspfad.** Satz in den Praxiseinstellungen pflegen: Spalte und Feld · Aufwand `mittel`.
+
+### ANN-600 — Einkauf: Belege als Dateien
+
+Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
+
+**Annahme.** Ein bis zehn Belege je Antrag, je Beleg Betrag (0,01 bis 1 000 €) und Zweck (bis 200 Zeichen); JPEG, PNG oder PDF bis 10 MB im Bucket `erstattungsbelege`, zweiphasig wie die Fotos am Rad. Ein Beleg liegt bis zum Absenden ohne Antrag bei der Person und fällt nach einem Tag; Kamera der App und Dateiwahl (für PDF-Rechnungen).
+
+**Begründung.** ADR-017 sinngemäß wie ANN-552; ein Beleg ist kein Datum einer Patientin, daher auch die Dateiwahl.
+
+**Anker.** `public.prepare_reimbursement_receipt_upload`, `app.reimbursement_receipt_limit`.
+
+**Änderungspfad.** Mehr Belege: `app.reimbursement_receipt_limit` · Aufwand `klein`.
+
+### ANN-601 — Erstattungen: IBAN je Person
+
+Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jede Person hinterlegt eine IBAN (Prüfziffer am Server, ISO 13616), ohne eigenen Kontoinhaber. Sie erscheint maskiert („DE89 •••• 3000“) für die Person, owner und Büro; voll nur beim Auszahlen eines genehmigten Antrags für owner, mit dem Tag der Hinterlegung.
+
+**Begründung.** Art. 5 Abs. 1 lit. c, Art. 25 DSGVO (Datenminimierung, Voreinstellung); § 26 BDSG. Der Tag zeigt owner eine frisch geänderte IBAN vor der Überweisung.
+
+**Anker.** `public.reimbursement_payout_details`, `app.mask_iban`.
+
+**Änderungspfad.** Abweichender Kontoinhaber: Spalte und Feld · Aufwand `klein`.
+
+### ANN-602 — Erstattungen: Fristen
+
+Recht · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ausgezahlte Anträge mit Belegen löscht der Lauf acht Jahre ab Ende des Jahres der Auszahlung (`erstattung`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`erstattung_kurz`); beantragte und genehmigte bleiben. Journal und erneutes Löschen nach einem Restore; die IBAN bleibt Beschäftigtendatum (ANN-030). Eine Löschsperre gibt es nur für Akten (BEF-178).
+
+**Begründung.** § 147 Abs. 1 Nr. 4, Abs. 3 AO: Buchungsbelege acht Jahre (seit 2025); unsicher, ob die Praxis die Belege zusätzlich in der Buchhaltung aufbewahrt.
+
+**Anker.** `app.delete_due_reimbursements`.
+
+**Änderungspfad.** Zehn Jahre: Intervall der Klasse `erstattung` · Aufwand `klein`.
