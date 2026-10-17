@@ -111,6 +111,19 @@ export const standortvorlageKoeln: Standortvorlage = {
 /** Aktuell verwendete Vorlage. Der Wechsel auf Tübingen ist ein Datenwechsel. */
 export const aktiveStandortvorlage = standortvorlageKoeln;
 
+/**
+ * Die Rufnummern der Werkstatt als eine Angabe - `null`, solange keine
+ * hinterlegt ist: Dann nennt der Schritt nur die Werkstatt, statt zweimal
+ * „noch nicht hinterlegt“ zu wiederholen.
+ */
+export function werkstattRufnummern(werkstatt: Werkstatt): string | null {
+  const nummern = [
+    werkstatt.telefon === PLATZHALTER ? null : `Telefon: ${werkstatt.telefon}`,
+    werkstatt.mobil === PLATZHALTER ? null : `Mobil: ${werkstatt.mobil}`,
+  ].filter((nummer): nummer is string => nummer !== null);
+  return nummern.length > 0 ? nummern.join(' · ') : null;
+}
+
 export function transportLabel(vorlage: Standortvorlage, id: string): string {
   return vorlage.transport.find((option) => option.id === id)?.label ?? id;
 }

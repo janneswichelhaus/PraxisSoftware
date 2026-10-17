@@ -297,27 +297,47 @@ export function abschluss(art: Abschlussart, kontext: Abschlusskontext): Abschlu
   }
 }
 
-/** Punkte der Zusammenfassung vor dem Abschluss. */
-export function zusammenfassungspunkte(kontext: Abschlusskontext): string[] {
+/**
+ * Eine Zeile der Zusammenfassung. Ist sie eine Angabe - der Standort, die
+ * Weiterfahrt -, führt „Ändern“ auf ihren Schritt (DESIGN.md „Geführter
+ * Ablauf“, Design-Review Überholung 6); Erledigtes und Folgen haben keins.
+ */
+export interface Zusammenfassungszeile {
+  text: string;
+  aendern?: SchrittId;
+}
+
+/** Die Zeilen der Zusammenfassung vor dem Abschluss. */
+export function zusammenfassungszeilen(kontext: Abschlusskontext): Zusammenfassungszeile[] {
   const { vorlage, ersatzrad, zustand } = kontext;
-  const transport = zustand.transport
-    ? transportLabel(vorlage, zustand.transport)
-    : 'Weiterfahrt noch offen';
+  const transport: Zusammenfassungszeile = {
+    text: zustand.transport ? transportLabel(vorlage, zustand.transport) : 'Weiterfahrt noch offen',
+    aendern: 'fuehrerschein',
+  };
+  const ersatz = `Ab dem nächsten Werktag ${ersatzrad} nutzen, bis die ${vorlage.zustaendigeRolle} das Rad wieder freigibt`;
 
   if (zustand.herkunft === 'uebergabe') {
     return [
-      `${vorlage.werkstatt.name} kontaktiert – Rad übergeben`,
+      { text: `${vorlage.werkstatt.name} kontaktiert – Rad übergeben` },
       transport,
-      `Ab dem nächsten Werktag ${ersatzrad} nutzen, bis die ${vorlage.zustaendigeRolle} das Rad wieder freigibt`,
+      { text: ersatz },
     ];
   }
 
   return [
-    `Standort: ${zustand.standort.trim() || '– nicht angegeben –'}`,
-    `Werkstatt informiert: ${vorlage.werkstatt.name}`,
-    `${vorlage.zustaendigeRolle} über ${vorlage.meldeweg} informiert`,
-    `${vorlage.mitnehmen.join(' und ')} entfernt, Rad angekettet`,
+    {
+      text: `Standort: ${zustand.standort.trim() || '– nicht angegeben –'}`,
+      aendern: 'radZuruecklassen',
+    },
+    { text: `Werkstatt informiert: ${vorlage.werkstatt.name}` },
+    { text: `${vorlage.zustaendigeRolle} über ${vorlage.meldeweg} informiert` },
+    { text: `${vorlage.mitnehmen.join(' und ')} entfernt, Rad angekettet` },
     transport,
-    `Ab dem nächsten Werktag ${ersatzrad} nutzen, bis die ${vorlage.zustaendigeRolle} das Rad wieder freigibt`,
+    { text: ersatz },
   ];
+}
+
+/** Die Zeilen als Text. */
+export function zusammenfassungspunkte(kontext: Abschlusskontext): string[] {
+  return zusammenfassungszeilen(kontext).map((zeile) => zeile.text);
 }

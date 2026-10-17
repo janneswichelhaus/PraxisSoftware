@@ -646,3 +646,31 @@ eingeklappt.
 **Beobachtung.** Build, Migrationen und Kartendienst liefen durch; die erste SSH-Verbindung zu `janus.uberspace.de` brach der Server ab, bevor ein Schlüssel geprüft wurde (`kex_exchange_identification: read: Connection reset by peer`). Ein neuer Versuch 45 Minuten später scheiterte gleich; bis zum 15.10., 23:44 Uhr, ging derselbe Ablauf. Seitdem zeigt die Test-Umgebung die Oberfläche von #250 auf der Datenbank von #252.
 
 **Erwartet.** Die Auslieferung übersteht eine kurze Drosselung (bis zu fünf Versuche, ANN-559). Hält der Abbruch an: den Zugang von einem anderen Rechner prüfen (`ssh -4`) und bei Uberspace erfragen, ob Adressen von GitHub Actions gesperrt sind.
+
+### BEF-175 — Geführter Ablauf: Fokus rollt die Frage weg, Rollfläche ohne Tastaturweg, `inert` nur am body
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-16 |
+| Bereich | Baustein `GefuehrterAblauf` / `Dialogfenster` (alle geführten Abläufe der Überholung 6) |
+| Quelle  | Oberflächen-Agenten der Überholung 6 (G3 bis G6), Playwright bei 375 × 667 und axe |
+| Status  | offen |
+| Berührt | `src/components/ui/Dialogfenster.tsx`, `src/components/ui/GefuehrterAblauf.tsx`, `src/components/ui/ListRow.tsx`, `src/features/documentation/Textverlustschutz.tsx` |
+
+**Beobachtung.** (1) Das Fenster fokussiert `[data-autofocus]` ohne `preventScroll`: Ein hohes Fokusziel (Liste, Zusammenfassung) rollt die Frage aus dem Bild; Panne, Einrichten und Plattform helfen sich mit einem kleinen Fokusanker. (2) Die rollende Fläche einer Abschlussseite ohne Bedienelement ist per Tastatur nicht erreichbar (axe `scrollable-region-focusable`); die Abläufe setzen selbst `tabIndex={0}`. (3) `inert` greift nur, wenn der Schleier direkt am body hängt - nicht im Ziel der Sitzungssperre (in Produktion also für alle Fenster) und nicht im Plattformziel (ANN-584); aria-modal, Fokuskreis und Schleier bleiben. (4) `ListRow` nimmt kein `data-autofocus` an. (5) Die Zurückgeste geht im Textverlustschutz nur dann einen Schritt zurück, wenn etwas als ungespeichert gilt. Dazu: „ein Foto sind noch nicht übertragen“ in der Rückfrage von Panne und Check-Up.
+
+**Erwartet.** Ein eigener Auftrag am Baustein: Fokus mit `preventScroll` oder auf die Frage, `tabIndex` an der Rollfläche des Bausteins, `inert` auch für Portalziele, danach die Umgehungen in den Abläufen entfernen; Grammatik der Rückfrage. Aus dem Design-Review dazu: freie Maße im Baustein (`max-h-[60%]`, `lg:w-96`) als Tokens, der `tel:`-Knopf (zweimal von Hand in G1 und G2) als Baustein in `src/components/ui`, Laden und Fehler der Rufnummer über `Abfragezustand`.
+
+### BEF-176 — Panne und Einstiege am Lastenrad: Platzhalter statt Anruf, Frage nach dem Wochentag, Weg zur Radflotte
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Radflotte (G3, G4), Hausbesuch (G1) |
+| Quelle  | Praxis- und Design-Review der Überholung 6 |
+| Status  | offen |
+| Berührt | `src/features/fleet/standortvorlage.ts`, `src/features/fleet/Pannenfenster.tsx`, `src/features/fleet/FleetPage.tsx`, `src/features/appointments/HomeVisitFlow.tsx` |
+
+**Beobachtung.** (1) „Rad zurücklassen“ verlangt den Anruf bei der Werkstatt (Platzhalter „noch nicht hinterlegt“, fest in der Köln-Vorlage) und eine Nachricht im Team-Kanal „Flotte“, den es nicht gibt; die Zusammenfassung lässt beides als erledigt bestätigen. (2) „Ist heute Mittwoch?“ fragt, was die App weiß („Heute ist Freitag.“). (3) „Panne melden“ und „Schlüssel übergeben“ beginnen nur auf der Radflotte, drei Tipps vom Rad entfernt. (4) Die Zusammenfassung der Panne rollt bei 375 × 667; der Satz zum Ersatzrad steht nur dort, nicht in der Meldung danach. (5) G1 Seite „Angerufen?“: der Anrufknopf oben, „Erreicht – Besuch findet statt“ im Daumenbereich direkt unter der Antwort. (6) Zwei Bedingungen in einer Ja/Nein-Frage (Depot), Titel und Kasten wiederholen sich (Reparieren).
+
+**Erwartet.** Mit der Tübinger Vorlage (ANN-554): Werkstatt und Teamleitung als Anrufknopf, die Ruhetagsfrage aus dem Datum, „Panne melden“ an der Karte des nächsten Wegs, die Zusammenfassung kürzer und das Ersatzrad in der Meldung; bei G1 der Anruf als Hauptknopf.

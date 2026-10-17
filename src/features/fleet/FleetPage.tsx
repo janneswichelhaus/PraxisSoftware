@@ -60,7 +60,8 @@ import { aktiveStandortvorlage } from './standortvorlage';
  * **Ihr Rad zuerst.** Das Stammrad der angemeldeten Person - oder das, dessen
  * Schlüssel sie hat - steht über den Depots. Den Schlüssel nimmt ein Tipp an
  * der Zeile (Budget R1 der Spec, vorher zwei Tipps und ein Seitenwechsel);
- * für jemand anderen geht es über „Schlüssel eintragen“.
+ * für jemand anderen und von Hand zu Hand geht es über „Schlüssel übergeben“
+ * (Überholung 6, G4).
  *
  * **Die Woche an der Zeile.** Die Tabelle „Wochenübersicht“ der Vorschau
  * stand am Telefon breiter als der Bildschirm (DESIGN.md Regel 3). Dieselbe
@@ -163,7 +164,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
           Check-Up
         </ButtonLink>
         <ButtonLink to="/betrieb/flotte/schluessel" variant="secondary" groesse="kompakt">
-          Schlüssel eintragen
+          Schlüssel übergeben
         </ButtonLink>
         {/* FLT-008 (ANN-569): Check-Ups und Pannen aller Räder - nur, wo der
             Server sie liefert (Inhaber:in, Teamleitung). */}
@@ -481,7 +482,9 @@ function Radzeile({
       aktion={
         rad.key ? (
           // Sichtbar „Zurücklegen“, damit dem Namen Platz bleibt; der Name
-          // des Knopfs sagt, wovon.
+          // des Knopfs sagt, wovon. Von Hand zu Hand geht es über „Schlüssel
+          // übergeben“ oben - ein zweiter Knopf ließe dem Namen am Telefon
+          // keinen Platz (Überholung 6, G4).
           <Button
             variant="secondary"
             aria-label={`Schlüssel von ${rad.name} zurücklegen`}

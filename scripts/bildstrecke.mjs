@@ -323,7 +323,12 @@ async function oeffnen(sitzung, pfad) {
 function messen() {
   const doc = document.documentElement;
   const sichtbar = (el) => Boolean(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-  const haupt = document.querySelector('main') ?? document.body;
+  // Ein geführter Ablauf steht im Fenster über der Seite, außerhalb von
+  // `main` (Überholung 6): Dann zählt das offene Fenster als Inhalt.
+  const haupt =
+    document.querySelector('[role="dialog"][aria-modal="true"]') ??
+    document.querySelector('main') ??
+    document.body;
   const text = (haupt.innerText ?? '').replace(/\s+/g, ' ').trim();
   const zeile = (el) =>
     (el.innerText ?? '')

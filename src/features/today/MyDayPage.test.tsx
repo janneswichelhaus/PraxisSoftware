@@ -2276,36 +2276,33 @@ describe('Übersicht', () => {
       ).toBeInTheDocument();
     });
 
-    it('führt am Hausbesuch durch das Protokoll - die Gebühr erst nach allen drei Haken', async () => {
+    it('führt am Hausbesuch durch das Protokoll - die Gebühr erst nach allen drei Schritten', async () => {
       fetchDayPlan.mockResolvedValue([anna, tagesEintrag({ id: 't1' })]);
       const user = userEvent.setup();
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       const eintrag = await eintragVon(/Anna Ausfall/);
 
+      // Seit Überholung 6 ein Fenster mit einer Frage je Seite (ANN-573).
       await user.click(within(eintrag).getByRole('button', { name: AUSFALL }));
-      const feld = within(eintrag).getByRole('region', {
-        name: `Ausfall für Anna Ausfall um ${uhr(anna.starts_at)} Uhr`,
-      });
-      // An der Zeile ohne Uhr - die gehört an die Tür (ANN-479).
-      expect(within(feld).queryByRole('timer')).toBeNull();
+      const erste = screen.getByRole('dialog', { name: 'An der Tür geklingelt?' });
       // Die anderen Fälle führen aus der Übersicht, nicht auf Knöpfe des Terminfensters.
       expect(
-        within(feld).getByRole('link', { name: 'Ohne Behandlung festhalten' }),
+        within(erste).getByRole('link', { name: 'Ohne Behandlung festhalten' }),
       ).toHaveAttribute(
         'href',
         expect.stringMatching(/^\/termine\/a\/abschluss\?ohne-behandlung=1/),
       );
 
-      const vermerken = within(feld).getByRole('button', { name: /nicht angetroffen/ });
-      await user.click(within(feld).getByRole('checkbox', { name: 'An der Tür geklingelt' }));
-      await user.click(within(feld).getByRole('checkbox', { name: '15 Minuten vor Ort gewartet' }));
+      await user.click(within(erste).getByRole('button', { name: 'Ja, geklingelt' }));
+      await user.click(await screen.findByRole('button', { name: 'Angerufen, niemand erreicht' }));
+      const vermerken = await screen.findByRole('button', { name: /nicht angetroffen/ });
+      // Die Uhr läuft; vor der Viertelstunde wird nichts vermerkt.
+      expect(screen.getByRole('timer')).toBeInTheDocument();
+      expect(vermerken).toBeDisabled();
       await user.click(vermerken);
-      expect(
-        within(feld).getByText('Bitte alle drei Schritte des Protokolls bestätigen.'),
-      ).toBeInTheDocument();
       expect(recordNoShow).not.toHaveBeenCalled();
 
-      await user.click(within(feld).getByRole('checkbox', { name: 'Telefonisch angerufen' }));
+      await user.click(screen.getByRole('checkbox', { name: 'Schon vorher 15 Minuten gewartet' }));
       await user.click(vermerken);
       // Den Stand liest der Ablauf unmittelbar vorher - die Tagesliste kennt ihn nicht.
       await waitFor(() =>
@@ -2364,21 +2361,22 @@ describe('Übersicht', () => {
       const user = userEvent.setup();
       const { unmount } = renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      // An der Tür: derselbe Name, mit Rahmen und der Uhr.
+      // An der Tür: derselbe Name, mit Rahmen; er öffnet das Fenster.
       const karte = await findeKarte();
       const tuer = within(karte).getByRole('button', { name: AUSFALL });
       expect(tuer.className).toContain('border-line-strong');
       await user.click(tuer);
-      expect(within(karte).getByRole('timer')).toBeInTheDocument();
+      const fenster = screen.getByRole('dialog', { name: 'An der Tür geklingelt?' });
+      await user.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
 
-      // Aufgeklappt: in der Karte, mit Rahmen, ohne Uhr.
+      // Aufgeklappt: in der Karte, mit Rahmen.
       await user.click(zeileImStrahl(/Anna Ausfall/));
       const karten = screen.getAllByRole('article');
       const annasKarte = karten.find((k) => within(k).queryByText('Anna Ausfall'))!;
       const knopf = within(annasKarte).getByRole('button', { name: AUSFALL });
       expect(knopf.className).toContain('border-line-strong');
       await user.click(knopf);
-      expect(within(annasKarte).queryByRole('timer')).toBeNull();
+      expect(screen.getByRole('dialog', { name: 'An der Tür geklingelt?' })).toBeInTheDocument();
       unmount();
 
       // Mit einem Entwurf steht an der Tür kein Ausfall: Der Server wiese ihn ab.

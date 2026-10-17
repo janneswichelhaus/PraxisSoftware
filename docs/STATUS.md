@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+Überholung 6 (16.10., Branch `ccr-350340fc-pnh5ti`): Baustein „Geführter Ablauf“, G1 bis G6 geführt
+(Niemand öffnet, Tag umplanen, Panne, Schlüssel übergeben, Einrichten, Plattform-Termin); Migration
+`20261123100000`; ANN-572 bis ANN-575, ANN-581 bis ANN-587; darauf gestapelt Überholung 7 (Urlaub).
+
 CI schneller (16.10., Branch `ccr-b69c337d-61dmv5`): E2E hinter der Anmeldung in drei Teilen,
 E2E vor der Anmeldung nur `mobile`, Unit-Tests neben Lint, reine Logik ohne jsdom (ANN-571);
 Pull Requests nur mit Doku ohne Tests und Build (ADR-013 Fassung 5).
@@ -56,5 +60,5 @@ Erstattungen; 11 Teamchat jederzeit dazwischen. Danach ALT-EPIC-002; BEF-146, -1
 
 ## Letzte Session
 
-16.10.2026, Branch `claude/employer-bike-checkup-access-th6fya`: Migration
-`20261122100000_flt_007_checkup_pflege_meldungen_rhythmus`. **Lokal:** `git pull`, `supabase db reset`.
+16.10.2026, Branch `ccr-350340fc-pnh5ti`: Migration
+`20261123100000_ueb6_tag_umplanen_auswahl_schluesseluebergabe`. **Lokal:** `git pull`, `supabase db reset`.

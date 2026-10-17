@@ -44,16 +44,16 @@ Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag �
 Auftrag Jannes 2026-10-16, ausgeführt in den Bereichsüberholungen 6 bis 10; Abläufe in
 [`gefuehrte-ablaeufe-und-antraege.md`](gefuehrte-ablaeufe-und-antraege.md). Seltene Abläufe, deshalb
 eine eigene Liste neben den höchstens 15 Kernabläufen (Regel 3). Gezählt wie oben; **Maßstab neben
-den Tipps: kein Scrollen bei 375 px** auf keiner Seite des Ablaufs.
+den Tipps: kein Scrollen bei 375 px** auf keiner Seite des Ablaufs. „Heute“ für G1 bis G6 nach Überholung 6.
 
 | # | Ablauf (Auslöser → fertig) | Rolle, Häufigkeit | Budget | Heute |
 | --- | --- | --- | --- | --- |
-| G1 | Niemand öffnet → Ausfallhonorar vermerkt (= K8) | Therapie, wöchentlich | ≤ 5 Tipps | 5, eine aufgeklappte Fläche |
-| G2 | Tag umplanen: Grund → Termine absagen → alle angerufen | Büro, selten | ≤ 4 + 2 je Person | eine Seite in zwei Phasen, gezählt offen |
-| G3 | Panne am Rad → Abschlussart | Therapie, selten | Schrittzahl wie heute | eine Frage je Seite, gewöhnliche Seite |
-| G4 | Schlüssel übergeben | Therapie, Büro, wöchentlich | ≤ 3 Tipps | 3 (zwei Auswahlen, Knopf) |
-| G5 | Neue:n Mitarbeiter:in einrichten bis Einladung | Büro, selten | ≤ 8 Tipps + Felder, ein Ablauf | über drei Seiten verteilt |
-| G6 | Plattform: Termin ändern oder absagen | Patient:in, selten | ≤ 6 Tipps + Text | zwei Ebenen mit Formular |
+| G1 | Niemand öffnet → Ausfallhonorar vermerkt (= K8) | Therapie, wöchentlich | ≤ 5 Tipps | 4, geführt: geklingelt → angerufen → gewartet (Uhr) |
+| G2 | Tag umplanen: Grund → Termine absagen → alle angerufen | Büro, selten | ≤ 4 + 2 je Person | ab Kalender 5 bis abgesagt (mit „Ansicht und Filter“, +1 je Abwahl), 1 je Person, geführt |
+| G3 | Panne am Rad → Abschlussart | Therapie, selten | Schrittzahl wie heute | wie vorher (7 + Text, 11 + Text), im Fenster mit 3D-Rad |
+| G4 | Schlüssel übergeben | Therapie, Büro, wöchentlich | ≤ 3 Tipps | 3, auch von Hand zu Hand in einem Vorgang (mit Rad 2) |
+| G5 | Neue:n Mitarbeiter:in einrichten bis Einladung | Büro, selten | ≤ 8 Tipps + Felder, ein Ablauf | owner 8 + 3 Felder, office 4, ein Ablauf |
+| G6 | Plattform: Termin ändern oder absagen | Patient:in, selten | ≤ 6 Tipps + Text | Absagen 4, Ändern 6 + Text, im Fenster in 18 px |
 | G7 | Urlaub beantragen | Alle, selten | ≤ 6 Tipps | Vorschau: Formular, ≈ 7 + Felder |
 | G8 | Arbeitszeitänderung beantragen (einmalig oder dauerhaft) | Alle, selten | ≤ 8 Tipps + Zeiten | gibt es nicht |
 | G9 | Zeitkonto: Mehrarbeit oder Freizeitausgleich eintragen | Alle, monatlich | ≤ 6 Tipps | Vorschau: Formular, 5 Felder |

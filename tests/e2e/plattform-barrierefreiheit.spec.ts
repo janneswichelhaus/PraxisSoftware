@@ -21,13 +21,21 @@ import type AxeCore from 'axe-core';
 const PRUEFSEITE = '/tests/e2e/fixtures/plattform.html';
 const AXE = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
-/** Jede Ansicht der Plattform, die die Prüfseite kennt, mit einem Merkmal. */
-const ANSICHTEN: { seite: string; merkmal: RegExp | string }[] = [
+/**
+ * Jede Ansicht der Plattform, die die Prüfseite kennt, mit einem Merkmal: der
+ * Seitentitel, bei einem geführten Ablauf (`fenster`) der Name des Fensters.
+ */
+const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] = [
   { seite: 'geruest', merkmal: 'Guten Tag' },
   { seite: 'einstieg', merkmal: 'Willkommen' },
   { seite: 'termine', merkmal: 'Termine' },
-  { seite: 'wunsch', merkmal: 'Termin wünschen' },
-  { seite: 'termin', merkmal: /\d{4}/ },
+  // Überholung 6 (G6): Wünschen, Ändern und Absagen sind geführte Abläufe im
+  // Fenster - geprüft wird die erste Seite und die nach `?art=`; die übrigen
+  // Seiten prüft `plattform-termine.spec.ts` im Ablauf.
+  { seite: 'wunsch', merkmal: 'Wann passt es Ihnen?', fenster: true },
+  { seite: 'termin', merkmal: 'Was möchten Sie?', fenster: true },
+  { seite: 'termin-absagen', merkmal: 'Ausfallhonorar', fenster: true },
+  { seite: 'termin-aendern', merkmal: 'Wann passt es Ihnen?', fenster: true },
   { seite: 'rechnungen', merkmal: 'Rechnungen' },
   { seite: 'rechnung', merkmal: 'Rechnung RG-2026-0007' },
   { seite: 'dokumente', merkmal: 'Dokumente' },
@@ -53,9 +61,13 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string }[] = [
   { seite: 'vertrag', merkmal: 'Trainingsvertrag' },
 ];
 
-async function oeffne(page: Page, seite: string, merkmal: RegExp | string) {
+async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenster = false) {
   await page.goto(`${PRUEFSEITE}?seite=${seite}`);
-  await expect(page.getByRole('heading', { level: 1, name: merkmal }).first()).toBeVisible();
+  await expect(
+    fenster
+      ? page.getByRole('dialog', { name: merkmal })
+      : page.getByRole('heading', { level: 1, name: merkmal }).first(),
+  ).toBeVisible();
 }
 
 async function ueberlaeuft(page: Page): Promise<boolean> {
@@ -82,12 +94,16 @@ async function kleineSchrift(page: Page): Promise<string[]> {
   });
 }
 
-/** Bedienelemente unter 44 px Höhe; ein Kästchen zählt mit seiner Zeile. */
+/**
+ * Bedienelemente unter 44 px Höhe; ein Kästchen zählt mit seiner Zeile. Dazu
+ * alles in einem Fenster - es liegt außerhalb von `main`.
+ */
 async function kleineZiele(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const funde: string[] = [];
     for (const el of document.querySelectorAll<HTMLElement>(
-      'main a, main button, main input, main select, main textarea, header a, header button, nav a',
+      'main a, main button, main input, main select, main textarea, header a, header button, nav a, ' +
+        '[role="dialog"] a, [role="dialog"] button, [role="dialog"] input, [role="dialog"] select, [role="dialog"] textarea',
     )) {
       const ziel = el.matches('input[type="radio"], input[type="checkbox"]')
         ? (el.closest('label') ?? el)
@@ -118,10 +134,10 @@ async function axeVerstoesse(page: Page): Promise<string[]> {
 }
 
 test.describe('Plattform für 78-Jährige (POR-020, DSN-001 Abschnitt 7)', () => {
-  for (const { seite, merkmal } of ANSICHTEN) {
+  for (const { seite, merkmal, fenster } of ANSICHTEN) {
     test(`${seite}: Schrift, Ziele, Kontrast und Beschriftung bei 375 px`, async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 900 });
-      await oeffne(page, seite, merkmal);
+      await oeffne(page, seite, merkmal, fenster);
       expect(await kleineSchrift(page), 'Schrift unter 18 px').toEqual([]);
       expect(await kleineZiele(page), 'Ziele unter 44 px').toEqual([]);
       expect(await axeVerstoesse(page), 'axe').toEqual([]);
@@ -130,7 +146,7 @@ test.describe('Plattform für 78-Jährige (POR-020, DSN-001 Abschnitt 7)', () =>
 
     test(`${seite}: bei 200 % Vergrößerung kein waagerechtes Scrollen`, async ({ page }) => {
       await page.setViewportSize({ width: 188, height: 900 });
-      await oeffne(page, seite, merkmal);
+      await oeffne(page, seite, merkmal, fenster);
       expect(await ueberlaeuft(page)).toBe(false);
     });
   }

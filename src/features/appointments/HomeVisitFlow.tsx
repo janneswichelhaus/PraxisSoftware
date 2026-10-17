@@ -1,13 +1,34 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
+import { knopfKlassen } from '@/components/ui/buttonStile';
+import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
-import { dayKey, fetchAppointment, recordNoShow, type Appointment } from './api';
+import { dayKey, fetchAppointment, formatLocalTime, recordNoShow, type Appointment } from './api';
+import {
+  AUSFALL_PARAMETER,
+  FRAGE,
+  WARTEZEIT_MS,
+  ausfallAusAdresse,
+  ausfallInAdresse,
+  darfVermerken,
+  folgeBis,
+  gewartet,
+  minutenSekunden,
+  naechsteSeite,
+  niemandStand,
+  type AusfallStand,
+  type NiemandSeite,
+} from './niemandOeffnet';
 
 /**
  * Was der Ablauf vom Termin braucht. Die Übersicht kennt den Bearbeitungsstand
@@ -17,59 +38,16 @@ import { dayKey, fetchAppointment, recordNoShow, type Appointment } from './api'
 export type NiemandOeffnetTermin = Pick<
   Appointment,
   'id' | 'patient_id' | 'staff_member_id' | 'starts_at' | 'organization_time_zone'
-> & { updated_at?: string };
-
-/** Wie lange vor Ort gewartet wird (ADR-018 Punkt 9, Schritt 2). */
-const WARTEZEIT_MS = 15 * 60 * 1000;
-
-function minutenSekunden(ms: number): string {
-  const sekunden = Math.floor(ms / 1000);
-  return `${Math.floor(sekunden / 60)}:${String(sekunden % 60).padStart(2, '0')}`;
-}
+> & {
+  updated_at?: string;
+  /** Wessen Tür: der Kopf des Fensters nennt die Person (DESIGN.md Regel 6). */
+  patient_given_name?: string | null;
+  patient_family_name?: string | null;
+};
 
 /**
- * Die sichtbare 15-Minuten-Uhr an der Tür (Auftrag C1, Analyse „Alltag
- * unterwegs“ Rang 9). Sie läuft ab dem Tipp auf „Niemand öffnet?“ und sagt
- * nach Ablauf „bitte bestätigen“ (ANN-479). Angehakt wird von Hand: Die Uhr
- * startet erst mit dem Tipp, nicht bei der Ankunft, und aus dem Haken
- * entsteht eine Forderung gegen die Patientin (ADR-018 Punkt 9,
- * Zweitreview).
- */
-function Wartezeit({ seit }: { seit: number }) {
-  const [jetzt, setJetzt] = useState(() => Date.now());
-  useEffect(() => {
-    const takt = window.setInterval(() => setJetzt(Date.now()), 1000);
-    return () => window.clearInterval(takt);
-  }, []);
-  const vergangen = Math.min(WARTEZEIT_MS, Math.max(0, jetzt - seit));
-  const abgelaufen = vergangen >= WARTEZEIT_MS;
-  return (
-    <div className="mb-2 ml-8">
-      <p role="timer" className="text-ink text-sm font-semibold tabular-nums">
-        {abgelaufen
-          ? '15 Minuten um – bitte bestätigen'
-          : `Gewartet ${minutenSekunden(vergangen)} von 15:00`}
-      </p>
-      <ProgressBar wert={vergangen} von={WARTEZEIT_MS} />
-    </div>
-  );
-}
-
-/**
- * Das Protokoll aus Hausbesuch-Szenario 2 (CAL-018, ADR-018 Fassung 3
- * Punkt 9), in der Reihenfolge, in der es vor der Tür abläuft: klingeln,
- * warten, anrufen. Drei Schritte, die nur gemeinsam gelten - und die
- * deshalb einzeln bestätigt werden, denn aus ihnen entsteht eine Forderung
- * gegen eine Patientin.
- */
-const PROTOKOLLSCHRITTE = [
-  { id: 'geklingelt', label: 'An der Tür geklingelt' },
-  { id: 'gewartet', label: '15 Minuten vor Ort gewartet' },
-  { id: 'angerufen', label: 'Telefonisch angerufen' },
-] as const;
-
-/**
- * Die Rufnummern der Patient:in für den dritten Schritt (UX-005b).
+ * Die Rufnummern der Patient:in für den Anruf (UX-005b), groß genug für den
+ * Daumen vor der Tür.
  *
  * Der Termin selbst trägt keine Rufnummer - die Sicht ist organisatorisch
  * knapp gehalten. Die Tagesliste (`list_day_plan`, UX-001) hat sie, und zwar
@@ -86,102 +64,127 @@ function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
   });
 
   if (isPending) {
-    return <span className="text-ink-muted text-sm">Rufnummer wird geladen …</span>;
+    return <p className="text-ink-muted text-sm">Rufnummer wird geladen …</p>;
   }
   const eintrag = data?.find((termin) => termin.id === appointment.id);
   const nummern = eintrag ? rufnummern(eintrag) : [];
   if (isError || nummern.length === 0) {
     return (
-      <span className="text-ink-muted text-sm">
+      <p className="text-ink-muted text-sm">
         {isError ? 'Die Rufnummer konnte nicht geladen werden. ' : 'Keine Rufnummer hinterlegt. '}
         {appointment.patient_id ? (
           <Textlink to={`/patienten/${appointment.patient_id}/stammdaten`}>
             Zu den Stammdaten
           </Textlink>
         ) : null}
-      </span>
+      </p>
     );
   }
   return (
-    <span className="flex flex-wrap gap-2">
-      {nummern.map((nummer) => (
-        <a key={nummer.label} href={nummer.href} className={kartenAktionKlassen()}>
-          <span className="text-ink-muted">{nummer.label}</span>
+    <div className="flex flex-col gap-2">
+      {nummern.map((nummer, index) => (
+        <a
+          key={nummer.label}
+          href={nummer.href}
+          className={knopfKlassen('secondary', 'normal', 'w-full')}
+          {...(index === 0 ? { 'data-autofocus': true } : {})}
+        >
+          {nummer.label} anrufen
           <span className="tabular-nums">{nummer.anzeige}</span>
         </a>
       ))}
-    </span>
+    </div>
   );
 }
 
 /**
- * „Niemand öffnet?" - der geführte Ablauf am Hausbesuch (UX-005b, CAL-018).
- *
- * ADR-018 Fassung 3 Punkt 9 verlangt, dass die Oberfläche **erklärend** durch
- * die Szenarien führt: welcher Fall vorliegt, was daraus folgt, welche Angabe
- * fehlt. Bis UX-005b stand dafür ein Kasten mit vier Fällen samt Erklärung
- * offen auf jeder Hausbesuchsseite - auch dann, wenn die Tür wie fast immer
- * aufging. Jannes: „Der gesamte Block kann erstmal minimiert werden. Ein
- * Button könnte genügen. Dahinter ein Flussdiagramm, das durch die Schritte
- * führt."
- *
- * Genau das: Der Regelfall ist der Hauptknopf „Dokumentieren und abschließen"
- * daneben. Dieser Knopf öffnet den Ablauf für den Fall, dass niemand
- * aufmacht - drei Schritte in ihrer Reihenfolge, die Rufnummer beim dritten,
- * dann der Vermerk mit seiner Folge. Darunter die beiden anderen Fälle mit je
- * einem Satz: die geöffnete Tür ohne Behandlung und die Absage vorher.
- *
- * Der Vermerk verlangt alle drei Schritte (Pflichtangabe nach ADR-018 Punkt
- * 9); ohne sie schreibt die Seite nichts und sagt, was fehlt. Eine weitere
- * Rückfrage gibt es nicht mehr: Die drei Haken sind die Bestätigung, und ein
- * Irrtum lässt sich über „Termin wieder öffnen" zurücknehmen. Verbindlich
- * prüft der Server (`record_no_show`, ADR-004).
+ * Die sichtbare 15-Minuten-Uhr (Auftrag C1, Analyse „Alltag unterwegs“
+ * Rang 9). Sie läuft ab dem Tipp auf „Niemand öffnet?“ und sagt nach Ablauf,
+ * dass die Zeit um ist (ANN-479). Die Uhr startet erst mit dem Tipp, nicht bei
+ * der Ankunft - wer schon vorher gewartet hat, sagt es ausdrücklich.
  */
-export function HomeVisitFlow({
+function Wartezeit({ seit, onUm }: { seit: number; onUm: (um: boolean) => void }) {
+  const [jetzt, setJetzt] = useState(() => Date.now());
+  useEffect(() => {
+    const takt = window.setInterval(() => setJetzt(Date.now()), 1000);
+    return () => window.clearInterval(takt);
+  }, []);
+  const { vergangen, um } = gewartet(seit, jetzt);
+  useEffect(() => onUm(um), [um, onUm]);
+  return (
+    <div>
+      <p role="timer" className="text-ink text-liste font-semibold tabular-nums">
+        {um ? '15 Minuten um' : `Gewartet ${minutenSekunden(vergangen)} von 15:00`}
+      </p>
+      <ProgressBar wert={vergangen} von={WARTEZEIT_MS} />
+    </div>
+  );
+}
+
+/** Die Rückfrage vor dem Weggehen spricht vom Vermerk, nicht von „Text“. */
+const VERMERKTEXTE = {
+  ...EINGABETEXTE,
+  bezeichnung: 'Noch nicht vermerkt',
+  zeile: {
+    weitergehen: 'Noch nicht als „nicht angetroffen“ vermerkt.',
+    abmelden: 'Noch nicht vermerkt – abmelden?',
+    bleiben: 'Weiter',
+  },
+};
+
+/**
+ * Das Fenster des Ablaufs: drei Seiten, eine Frage je Seite (ANN-573).
+ * Geklingelt → angerufen (Rufnummer als Knopf) → gewartet: dort läuft die
+ * Uhr, und erst nach 15 Minuten - oder mit „schon vorher gewartet“ - wird
+ * vermerkt. Die beiden anderen Fälle stehen auf der ersten Seite (ADR-018
+ * Punkt 9.3): Wer vor der Tür steht, hat sie vor sich; die Frage ist nur, was
+ * dahinter passiert ist.
+ */
+function NiemandOeffnetFenster({
   appointment,
-  melden,
-  mitUhr = false,
+  seit,
+  startSeite,
   wege,
-  inKarte = false,
-  ausloeser = 'Niemand öffnet?',
-  ausloeserVariante = 'secondary',
-  ausloeserZusatz,
+  onSeite,
+  onVermerkt,
+  onSchliessen,
 }: {
   appointment: NiemandOeffnetTermin;
-  melden: (text: string) => void;
-  /**
-   * Der Name des Einstiegs - in der Übersicht „Ausfall“ an Zeile und Karte
-   * (B12), im Terminfenster „Niemand öffnet?“.
-   */
-  ausloeser?: string;
-  /** An der Zeile der Übersicht leise, an Karte und Terminfenster mit Rahmen. */
-  ausloeserVariante?: 'secondary' | 'quiet';
-  /**
-   * Für Vorlesesoftware hinter dem sichtbaren Wort, an Knopf und Feld: wessen
-   * Termin („für Erika Beispiel um 10:00 Uhr“). In der Übersicht stehen
-   * mehrere „Ausfall“ untereinander (UEB-10).
-   */
-  ausloeserZusatz?: string | undefined;
-  /** Die 15-Minuten-Uhr an Schritt 2 - an der Karte der Übersicht (Auftrag C1). */
-  mitUhr?: boolean;
-  /**
-   * Die beiden anderen Fälle als Wege, wo die Seite sie nicht selbst trägt
-   * (die Übersicht): ohne Angabe verweisen die Sätze auf die Knöpfe des
-   * Terminfensters („oben“, „am Seitenende“).
-   */
-  wege?: { ohneBehandlung: string; absagen: string };
-  /**
-   * In einer Karte (die Tageskarte der Übersicht): durch eine Linie
-   * abgesetzt statt als zweiter Kasten (DESIGN.md Regel 2).
-   */
-  inKarte?: boolean;
+  seit: number;
+  /** Nach einem Neuladen die Seite aus der Adresse, sonst das Klingeln. */
+  startSeite: NiemandSeite;
+  wege?: { ohneBehandlung: string; absagen: string } | undefined;
+  onSeite: (seite: NiemandSeite) => void;
+  onVermerkt: () => void;
+  onSchliessen: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [offen, setOffen] = useState(false);
-  const [seit, setSeit] = useState<number | null>(null);
-  const [schritte, setSchritte] = useState<Record<string, boolean>>({});
-  const [fehler, setFehler] = useState<string | undefined>(undefined);
-  const bereichId = useId();
+  const [abfolge, setAbfolge] = useState<Abfolge<NiemandSeite>>(() => {
+    // Die Folge bis zur gespeicherten Seite, damit „← Zurück“ weiter führt.
+    const [erste = 'geklingelt', ...rest] = folgeBis(startSeite);
+    return rest.reduce((stand, naechste) => weiter(stand, naechste), beginne(erste));
+  });
+  const [um, setUm] = useState(false);
+  const [schonVorher, setSchonVorher] = useState(false);
+  const seite = abfolge.seite;
+
+  function wechseln(neu: Abfolge<NiemandSeite>) {
+    setAbfolge(neu);
+    onSeite(neu.seite);
+  }
+
+  function zurueckGehen() {
+    const vorher = zurueck(abfolge);
+    if (vorher) wechseln(vorher);
+  }
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    // Bestätigtes geht beim Weggehen verloren - auf der ersten Seite nichts.
+    ungespeichert: kannZurueck(abfolge),
+    kompakt: true,
+    texte: VERMERKTEXTE,
+    schrittZurueck: kannZurueck(abfolge) ? zurueckGehen : undefined,
+  });
 
   const vermerken = useMutation({
     mutationFn: async () => {
@@ -197,18 +200,214 @@ export function HomeVisitFlow({
       for (const queryKey of [['appointment', appointment.id], ['appointments'], ['day-plan']]) {
         void queryClient.invalidateQueries({ queryKey });
       }
-      melden('Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.');
+      freigeben();
+      onVermerkt();
     },
   });
 
-  function absenden() {
-    if (!PROTOKOLLSCHRITTE.every((schritt) => schritte[schritt.id])) {
-      setFehler('Bitte alle drei Schritte des Protokolls bestätigen.');
-      return;
-    }
-    setFehler(undefined);
-    if (vermerken.isPending) return;
-    vermerken.mutate();
+  function bestaetigt() {
+    const naechste = naechsteSeite(seite);
+    if (naechste) wechseln(weiter(abfolge, naechste));
+  }
+
+  const darf = darfVermerken(um, schonVorher);
+  const uhrzeit = formatLocalTime(appointment.starts_at, appointment.organization_time_zone);
+  const name = [appointment.patient_given_name, appointment.patient_family_name]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <GefuehrterAblauf
+      titel={FRAGE[seite]}
+      objekt={`${name || 'Hausbesuch'} · ${uhrzeit} Uhr`}
+      schliessen="Abbrechen"
+      onSchliessen={onSchliessen}
+      seite={seite}
+      stand={niemandStand(seite)}
+      onZurueck={kannZurueck(abfolge) ? zurueckGehen : undefined}
+      schutz={schutz}
+      abschluss={seite === 'gewartet'}
+      fuss={
+        seite === 'geklingelt' ? (
+          <Button className="w-full" onClick={bestaetigt} data-autofocus>
+            Ja, geklingelt
+          </Button>
+        ) : seite === 'angerufen' ? (
+          <div className="flex flex-col gap-2">
+            <Button className="w-full" onClick={bestaetigt}>
+              Angerufen, niemand erreicht
+            </Button>
+            {/* Geht doch jemand ran, findet der Besuch statt: zurück zur Tür. */}
+            <Button variant="quiet" className="w-full" onClick={onSchliessen}>
+              Erreicht – Besuch findet statt
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {!um ? (
+              <Checkbox
+                label="Schon vorher 15 Minuten gewartet"
+                checked={schonVorher}
+                onChange={(event) => setSchonVorher(event.target.checked)}
+                // Solange die Uhr läuft, ist der Knopf gesperrt; der Fokus
+                // beginnt beim Haken, der ihn öffnen kann.
+                data-autofocus
+              />
+            ) : null}
+            {vermerken.isError ? (
+              <Statusmeldung ton="fehler">{vermerken.error.message}</Statusmeldung>
+            ) : null}
+            {!darf ? (
+              <span id="vermerk-wartet" className="sr-only">
+                Die 15 Minuten sind noch nicht um.
+              </span>
+            ) : null}
+            <Button
+              className="w-full"
+              disabled={!darf || vermerken.isPending}
+              aria-describedby={!darf ? 'vermerk-wartet' : undefined}
+              onClick={() => vermerken.mutate()}
+              {...(um ? { 'data-autofocus': true } : {})}
+            >
+              {vermerken.isPending ? 'Wird vermerkt …' : 'Als „nicht angetroffen“ vermerken'}
+            </Button>
+          </div>
+        )
+      }
+    >
+      {seite === 'geklingelt' ? (
+        // Die beiden anderen Fälle, je mit ihrer Folge (ADR-018 Punkt 9). Der
+        // dritte - vorher abgesagt - bleibt als eine Zeile mit dem Weg; die
+        // 24-Stunden-Regel erklärt die Absage-Rückfrage selbst (ANN-198).
+        // Die Wege stehen für sich mit 44 px Tippziel (DESIGN.md Grundsatz 3),
+        // nicht im Satz.
+        <div className="text-ink flex flex-col gap-3 text-sm">
+          <div>
+            <p>Tür geöffnet, aber keine Behandlung? Dann ohne Ausfallhonorar:</p>
+            {wege ? (
+              <Textlink alleinstehend to={wege.ohneBehandlung}>
+                Ohne Behandlung festhalten
+              </Textlink>
+            ) : (
+              <p>„Ohne Behandlung“ am Termin.</p>
+            )}
+          </div>
+          <div>
+            <p>Vorher abgesagt?</p>
+            {wege ? (
+              <Textlink alleinstehend to={wege.absagen}>
+                Termin absagen
+              </Textlink>
+            ) : (
+              <p>„Termin absagen“ am Termin.</p>
+            )}
+          </div>
+        </div>
+      ) : seite === 'angerufen' ? (
+        <Rufnummern appointment={appointment} />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <Wartezeit seit={seit} onUm={setUm} />
+          <ListRows rahmen={false} beschriftung="Protokoll">
+            <ListRow titel="An der Tür geklingelt" status={<Erledigt />} />
+            <ListRow titel="Angerufen, niemand erreicht" status={<Erledigt />} />
+            <ListRow
+              titel="15 Minuten gewartet"
+              status={
+                darf ? (
+                  <Erledigt />
+                ) : (
+                  // Zeichen und Wort (DESIGN.md Regel 5), wie „wartet“ am Abzeichen.
+                  <span className="text-ink-muted text-sm">
+                    <span aria-hidden="true">{STATUSZEICHEN.wartet} </span>Uhr läuft
+                  </span>
+                )
+              }
+            />
+          </ListRows>
+          <p className="text-ink text-sm">
+            Danach gilt der Termin als „nicht angetroffen“ und löst ein Ausfallhonorar aus. Ein
+            Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen.
+          </p>
+        </div>
+      )}
+    </GefuehrterAblauf>
+  );
+}
+
+/** Ein bestätigter Schritt als Zeichen und Wort (DESIGN.md Regel 5). */
+function Erledigt() {
+  return (
+    <span className="text-positiv text-sm font-medium">
+      <span aria-hidden="true">✓ </span>Bestätigt
+    </span>
+  );
+}
+
+/**
+ * „Niemand öffnet?“ - der geführte Ablauf am Hausbesuch (UX-005b, CAL-018,
+ * Überholung 6).
+ *
+ * ADR-018 Fassung 3 Punkt 9 verlangt, dass die Oberfläche **erklärend** durch
+ * die Szenarien führt: welcher Fall vorliegt, was daraus folgt, welche Angabe
+ * fehlt. Der Regelfall ist der Hauptknopf „Dokumentieren und abschließen“
+ * daneben; dieser Knopf öffnet den Ablauf für den Fall, dass niemand aufmacht.
+ * Seit Überholung 6 ein Fenster mit einer Frage je Seite statt einer
+ * aufgeklappten Fläche mit drei Haken (ANN-573); die Uhr läuft ab dem ersten
+ * Tipp und läuft weiter, wenn das Fenster zwischendurch zugeht. Uhrstart und
+ * offene Seite stehen in der Adresse (`ausfallAusAdresse`): Lädt das Telefon
+ * die App nach dem Anruf neu, führt der nächste Tipp zurück auf dieselbe Seite
+ * mit derselben Uhr (Praxis-Review Überholung 6).
+ *
+ * Vermerkt wird mit allen drei Schritten (Pflichtangabe nach ADR-018 Punkt 9);
+ * ein Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen. Verbindlich
+ * prüft der Server (`record_no_show`, ADR-004).
+ */
+export function HomeVisitFlow({
+  appointment,
+  melden,
+  wege,
+  ausloeser = 'Niemand öffnet?',
+  ausloeserVariante = 'secondary',
+  ausloeserZusatz,
+}: {
+  appointment: NiemandOeffnetTermin;
+  melden: (text: string) => void;
+  /**
+   * Der Name des Einstiegs - in der Übersicht „Ausfall“ an Zeile und Karte
+   * (B12), im Terminfenster „Niemand öffnet?“.
+   */
+  ausloeser?: string;
+  /** An der Zeile der Übersicht leise, an Karte und Terminfenster mit Rahmen. */
+  ausloeserVariante?: 'secondary' | 'quiet';
+  /**
+   * Für Vorlesesoftware hinter dem sichtbaren Wort: wessen Termin („für Erika
+   * Beispiel um 10:00 Uhr“). In der Übersicht stehen mehrere „Ausfall“
+   * untereinander (UEB-10).
+   */
+  ausloeserZusatz?: string | undefined;
+  /**
+   * Die beiden anderen Fälle als Wege, wo die Seite sie nicht selbst trägt
+   * (die Übersicht); ohne Angabe nennen die Sätze die Knöpfe am Termin.
+   */
+  wege?: { ohneBehandlung: string; absagen: string };
+}) {
+  const [suche, setSuche] = useSearchParams();
+  // Die Uhr beginnt mit dem ersten Tipp und läuft weiter, wenn das Fenster
+  // zwischendurch zugeht (ANN-479) - auch über ein Neuladen hinweg.
+  const gemerkt = ausfallAusAdresse(suche.get(AUSFALL_PARAMETER), appointment.id);
+  const [offen, setOffen] = useState<{ seit: number; seite: NiemandSeite } | null>(null);
+
+  function merken(stand: AusfallStand | null) {
+    setSuche(
+      (bisher) => {
+        const naechste = new URLSearchParams(bisher);
+        if (stand) naechste.set(AUSFALL_PARAMETER, ausfallInAdresse(appointment.id, stand));
+        else naechste.delete(AUSFALL_PARAMETER);
+        return naechste;
+      },
+      { replace: true },
+    );
   }
 
   return (
@@ -217,11 +416,14 @@ export function HomeVisitFlow({
         type="button"
         variant={ausloeserVariante}
         groesse="kompakt"
-        aria-expanded={offen}
-        aria-controls={bereichId}
+        aria-haspopup="dialog"
         onClick={() => {
-          setOffen((bisher) => !bisher);
-          setSeit((bisher) => bisher ?? Date.now());
+          const stand = {
+            seit: gemerkt?.seit ?? Date.now(),
+            seite: gemerkt?.seite ?? 'geklingelt',
+          };
+          merken(stand);
+          setOffen(stand);
         }}
       >
         {ausloeser}
@@ -234,118 +436,23 @@ export function HomeVisitFlow({
       </Button>
 
       {offen ? (
-        <section
-          id={bereichId}
-          aria-label={ausloeserZusatz ? `${ausloeser} ${ausloeserZusatz}` : ausloeser}
-          // Ein Kasten wie die Rückfrage: eine Karte, keine Schaltfläche
-          // (DS-001), über die ganze Breite unter der Knopfreihe; 16 innen
-          // wie die Rückfrage seit dem Design-Handoff vom 2026-10-01.
-          className={
-            inKarte
-              ? 'border-line order-last w-full border-t pt-3'
-              : 'border-line-strong bg-surface-sunken rounded-card order-last w-full border p-4'
-          }
-        >
-          <p className="text-ink text-sm">
-            Drei Schritte, jeder bestätigt. Danach gilt der Termin als „nicht angetroffen“ und löst
-            ein Ausfallhonorar aus.
-          </p>
-
-          {/* Die Schritte als Reihe: Nummer, Schritt, Haken. Die Nummer ist
-              Bild, die Reihenfolge steht in der Liste selbst. */}
-          <ol className="mt-3 flex flex-col gap-1">
-            {PROTOKOLLSCHRITTE.map((schritt, index) => (
-              <li key={schritt.id} className="flex items-start gap-3">
-                <span
-                  aria-hidden="true"
-                  className="bg-accent text-surface rounded-pill mt-2.5 inline-flex size-6 shrink-0 items-center justify-center text-xs font-bold"
-                >
-                  {index + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <Checkbox
-                    label={schritt.label}
-                    checked={schritte[schritt.id] ?? false}
-                    onChange={(e) => {
-                      setSchritte((bisher) => ({ ...bisher, [schritt.id]: e.target.checked }));
-                      setFehler(undefined);
-                    }}
-                  />
-                  {schritt.id === 'gewartet' && mitUhr && seit !== null ? (
-                    <Wartezeit seit={seit} />
-                  ) : null}
-                  {schritt.id === 'angerufen' ? (
-                    <div className="mb-2 ml-8">
-                      <Rufnummern appointment={appointment} />
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          {fehler ? (
-            <Statusmeldung ton="fehler" className="mt-2">
-              {fehler}
-            </Statusmeldung>
-          ) : vermerken.isError ? (
-            <Statusmeldung ton="fehler" className="mt-2">
-              {vermerken.error.message}
-            </Statusmeldung>
-          ) : null}
-
-          {/* Ohne den Satz „Keine Behandlung … Wird unter Abrechnung →
-              Leistungen erfasst.": gestrichen im Design-Handoff vom 2026-10-01
-              (Abschnitt 1). Die Folge steht schon im Satz über den Schritten. */}
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            {/* Der Knopf darf in der schmalen Spalte umbrechen - in der Karte
-                wie an einer Zeile der Übersicht (B12); breit bleibt er 48 px. */}
-            <Button
-              type="button"
-              disabled={vermerken.isPending}
-              onClick={absenden}
-              className={inKarte ? 'h-auto min-h-12 py-2 text-left' : 'h-auto min-h-12 py-2'}
-            >
-              {vermerken.isPending ? 'Wird vermerkt …' : 'Als „nicht angetroffen“ vermerken'}
-            </Button>
-          </div>
-
-          {/* Die beiden anderen Fälle, je mit ihrer Folge (ADR-018 Punkt 9):
-              Wer hier steht, hat die Tür vor sich - die Frage ist nur, was
-              dahinter passiert ist. */}
-          <div className="border-line mt-4 border-t pt-3">
-            {/* Der Weg selbst steht seit Zyklus 3 als „Ohne Behandlung" in der
-                Aktionsleiste (Design-Handoff 2026-10-01, Abschnitt 6); hier
-                bleibt der Fall genannt, damit der Ablauf durch alle drei
-                Szenarien führt (ADR-018 Punkt 9). */}
-            {wege ? (
-              <p className="text-ink-muted max-w-prose text-sm">
-                Tür geöffnet, aber keine Behandlung?{' '}
-                <Textlink to={wege.ohneBehandlung}>Ohne Behandlung festhalten</Textlink> – ohne
-                Ausfallhonorar.
-              </p>
-            ) : (
-              <p className="text-ink-muted max-w-prose text-sm">
-                Tür geöffnet, aber keine Behandlung? Dann oben „Ohne Behandlung“ – ohne
-                Ausfallhonorar.
-              </p>
-            )}
-            {/* Der dritte Fall bleibt als eine Zeile (ANN-198): Der Handoff
-                strich den Satz, ADR-018 Punkt 9.3 verlangt aber, dass die
-                Oberfläche durch alle drei Szenarien führt. Die 24-Stunden-Regel
-                erklärt die Absage-Rückfrage selbst. */}
-            {wege ? (
-              <p className="text-ink-muted mt-1 max-w-prose text-sm">
-                Vorher abgesagt? Dann am Termin{' '}
-                <Textlink to={wege.absagen}>„Termin absagen“</Textlink>.
-              </p>
-            ) : (
-              <p className="text-ink-muted mt-1 max-w-prose text-sm">
-                Vorher abgesagt? Dann am Seitenende „Termin absagen“.
-              </p>
-            )}
-          </div>
-        </section>
+        <NiemandOeffnetFenster
+          appointment={appointment}
+          seit={offen.seit}
+          startSeite={offen.seite}
+          wege={wege}
+          onSeite={(seite) => merken({ seit: offen.seit, seite })}
+          onSchliessen={() => {
+            // Die Uhr bleibt, die Seite nicht: Wer abbricht, klingelt neu.
+            merken({ seit: offen.seit, seite: null });
+            setOffen(null);
+          }}
+          onVermerkt={() => {
+            merken(null);
+            setOffen(null);
+            melden('Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.');
+          }}
+        />
       ) : null}
     </>
   );

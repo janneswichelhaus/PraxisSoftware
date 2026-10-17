@@ -35,14 +35,8 @@ import {
 } from './konto-api';
 import type { StaffMember } from './api';
 import { fullName } from '@/features/patients/api';
-import { ROLLENHINWEISE } from './rollenhinweise';
-
-/**
- * Rollen, die ein Praxiszugang bekommen kann. `patient` ist ein anderes Konzept
- * (§4.6). Die Trainingsbetreuung seit TRN-003 - verbindlich prüft
- * `app.assert_staff_role_keys`.
- */
-const WAEHLBARE_ROLLEN: RoleKey[] = ['therapist', 'team_lead', 'office', 'trainer', 'owner'];
+import { ROLLENHINWEISE, WAEHLBARE_ROLLEN } from './rollenhinweise';
+import { problemTexte } from './zugangstexte';
 
 /** Was nach einem gescheiterten Vorgang zu tun ist (WRT-01). */
 const ERNEUT = VERBINDUNG_PRUEFEN;
@@ -53,13 +47,6 @@ function formatiereDatum(wert: string): string {
   return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(datum);
 }
 
-const problemTexte: Record<string, string> = {
-  account_already_exists: 'Für diese Person besteht bereits ein Zugang.',
-  email_already_in_use: 'Diese E-Mail-Adresse gehört bereits zu einem Zugang dieser Praxis.',
-  bereits_eingeladen: 'Für diese Person steht bereits eine Einladung offen.',
-  unbekannt: `Die Einladung konnte nicht angelegt werden. ${ERNEUT}`,
-};
-
 /**
  * Die drei Antworten des Anmeldedienstes auf eine Anmeldemail (ORG-10, R3-008).
  *
@@ -68,7 +55,7 @@ const problemTexte: Record<string, string> = {
  * nicht, ob eine Mail hinausging - auch nicht, wenn der Dienst nicht erreichbar
  * war.
  */
-function Zustellmeldung({ zustellung, email }: { zustellung: Zustellung; email: string }) {
+export function Zustellmeldung({ zustellung, email }: { zustellung: Zustellung; email: string }) {
   if (zustellung === 'gesendet') {
     return (
       <Statusmeldung ton="erfolg" className="mt-3">

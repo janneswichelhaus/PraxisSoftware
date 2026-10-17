@@ -38,12 +38,42 @@ function laufTag(versatz = 0): string {
   return tagImFenster(TAGESFENSTER.staff, LAUF, versatz);
 }
 
-async function anlegenUeberOberflaeche(page: Page, vorname: string): Promise<string> {
+/**
+ * Legt über die Oberfläche an - seit Überholung 6 der geführte Ablauf
+ * „Neue:n Mitarbeiter:in einrichten“ (G5). Hier zählt nur das Anlegen: Name
+ * und Kontakt, alles Weitere „Später“. Dann entsteht wie bisher weder ein
+ * Zugang noch ein Wochenplan noch ein Schlüssel; den ganzen Ablauf prüft
+ * `mitarbeiter-einrichten.spec.ts`. Rolle und Wochenplan fragt er nur owner.
+ */
+async function anlegenUeberOberflaeche(
+  page: Page,
+  vorname: string,
+  als: 'owner' | 'office' = 'owner',
+): Promise<string> {
   await page.goto('/praxis/team/neu');
-  await page.getByLabel('Vorname *').fill(vorname);
-  await page.getByLabel('Nachname *').fill('Testperson');
-  await page.getByLabel('Dienstliche E-Mail').fill(`${vorname.toLowerCase()}@praxis.invalid`);
-  await page.getByRole('button', { name: 'Mitarbeiter:in anlegen' }).click();
+  const person = page.getByRole('dialog', { name: 'Wer kommt ins Team?' });
+  await person.getByLabel('Vorname *').fill(vorname);
+  await person.getByLabel('Nachname *').fill('Testperson');
+  await person.getByLabel('Dienstliche E-Mail').fill(`${vorname.toLowerCase()}@praxis.invalid`);
+  await person.getByRole('button', { name: 'Weiter' }).click();
+  if (als === 'owner') {
+    await page
+      .getByRole('dialog', { name: 'Welche Rolle?' })
+      .getByRole('button', { name: 'Später', exact: true })
+      .click();
+    await page
+      .getByRole('dialog', { name: `Wann arbeitet ${vorname}?` })
+      .getByRole('button', { name: 'Später festlegen' })
+      .click();
+  }
+  await page
+    .getByRole('dialog', { name: `Fährt ${vorname} ein Lastenrad?` })
+    .getByRole('button', { name: 'Später', exact: true })
+    .click();
+  await page
+    .getByRole('dialog', { name: 'Alles richtig?' })
+    .getByRole('button', { name: `${vorname} einrichten` })
+    .click();
   await expect(page).toHaveURL(/\/praxis\/team\/[0-9a-f-]{36}$/);
   return page.url().split('/').pop()!;
 }
@@ -244,7 +274,7 @@ test.describe('STAFF-001: Durchsetzung am Server', () => {
     await expect(page.getByRole('link', { name: 'Mitarbeiter:in anlegen' })).toBeVisible();
 
     const vorname = name('Office');
-    const staffId = await anlegenUeberOberflaeche(page, vorname);
+    const staffId = await anlegenUeberOberflaeche(page, vorname, 'office');
     await expect(page.getByRole('heading', { name: `${vorname} Testperson` })).toBeVisible();
 
     // Die anderen beiden Bereiche bleiben zu - schon in der Oberflaeche.

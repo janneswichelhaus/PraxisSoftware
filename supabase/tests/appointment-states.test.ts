@@ -5,6 +5,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
@@ -944,6 +945,122 @@ describe('Tag umplanen (CAL-009)', () => {
         'practice_request',
       ]),
     ).rejects.toThrow(/staff member not found/);
+  });
+
+  const MIT_AUSWAHL =
+    'select public.cancel_staff_day($1::uuid, $2::date, $3, $4::uuid[]) as anzahl';
+
+  it('sagt mit Auswahl genau die gewaehlten Termine ab, die anderen bleiben (ANN-574)', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const b = await anlegen('11:00', '12:00');
+    const c = await anlegen('13:00', '14:00');
+
+    const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, MIT_AUSWAHL, [
+      ANNA,
+      TAG,
+      'practice_request',
+      [a.id, c.id, c.id],
+    ]);
+
+    expect(rows[0]!.anzahl).toBe(2);
+    expect(await zustand(a.id)).toBe('cancelled');
+    expect(await zustand(b.id)).toBe('confirmed');
+    expect(await zustand(c.id)).toBe('cancelled');
+  });
+
+  it('schreibt nichts, wenn die Auswahl nicht zum Tag passt', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const fertig = await anlegen('11:00', '12:00');
+    await asUserCommitted(users.office, ABSCHLIESSEN, [fertig.id, fertig.updated_at]);
+    const tim = await anlegenFuer(TIM, '09:00', '10:00');
+    const { rows: andererTag } = await asUserCommitted<{ id: string }>(users.office, ANLEGEN, [
+      patients.max,
+      ANNA,
+      'video',
+      tagInTagen(73),
+      '09:00',
+      '10:00',
+      null,
+    ]);
+
+    // Ein abgeschlossener Termin, einer einer anderen Person, einer an einem
+    // anderen Tag und eine Kennung, die es nicht gibt: jedes Mal nichts.
+    for (const fremd of [
+      fertig.id,
+      tim.id,
+      andererTag[0]!.id,
+      '66666666-6666-4666-8666-0000000000ee',
+    ]) {
+      await expect(
+        asUser(users.office, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id, fremd]]),
+      ).rejects.toThrow(/appointment selection does not match the day/);
+    }
+    await expect(
+      asUser(users.office, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', []]),
+    ).rejects.toThrow(/appointment selection is empty/);
+    // Eine leere Kennung passt zu keinem Termin - auch nicht neben einer gültigen.
+    await expect(
+      asUser(users.office, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id, null]]),
+    ).rejects.toThrow(/appointment selection does not match the day/);
+    expect(await zustand(a.id)).toBe('confirmed');
+    expect(await zustand(tim.id)).toBe('confirmed');
+  });
+
+  it('nimmt keinen Termin einer fremden Organisation und keinen Trainingstermin in die Auswahl (ADR-013 Nr. 1)', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const f = await fremdeOrganisation();
+    // Ein vorhandener Termin der fremden Organisation am selben Tag.
+    const { rows: fremd } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (organization_id, patient_id, staff_member_id,
+         appointment_type, status, starts_at, ends_at)
+       values ($1, $2, $3, 'video', 'confirmed',
+               ($4::date + time '11:00') at time zone 'Europe/Berlin',
+               ($4::date + time '12:00') at time zone 'Europe/Berlin') returning id`,
+      [f.organizationId, f.patient, f.staffMember, TAG],
+    );
+    // Ein Trainingstermin derselben Person am selben Tag (anderer Leistungsbereich, §4.8).
+    const { rows: training } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (organization_id, training_relationship_id, staff_member_id,
+         location_id, appointment_type, status, starts_at, ends_at, kind)
+       values ($1, $2, $3, $4, 'practice', 'confirmed',
+               ($5::date + time '15:00') at time zone 'Europe/Berlin',
+               ($5::date + time '16:00') at time zone 'Europe/Berlin', 'training') returning id`,
+      [
+        SEED.organizationId,
+        SEED.trainingRelationships.erika,
+        ANNA,
+        '33333333-3333-4333-8333-000000000001',
+        TAG,
+      ],
+    );
+
+    // Dieselbe Meldung wie für eine Kennung, die es nicht gibt: kein Orakel.
+    for (const unpassend of [fremd[0]!.id, training[0]!.id]) {
+      await expect(
+        asUser(users.office, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id, unpassend]]),
+      ).rejects.toThrow(/appointment selection does not match the day/);
+    }
+    expect(await zustand(a.id)).toBe('confirmed');
+    expect(await zustand(fremd[0]!.id)).toBe('confirmed');
+    expect(await zustand(training[0]!.id)).toBe('confirmed');
+
+    // Die fremde Organisation erreicht weder die Person noch den Termin.
+    await expect(
+      asUser(f.owner, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id]]),
+    ).rejects.toThrow(/staff member not found/);
+    // Eine Rolle ohne Recht zum Absagen ebenso wenig.
+    await expect(
+      asUser(users.trainer, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id]]),
+    ).rejects.toThrow(/not allowed to cancel appointments/);
+    expect(await zustand(a.id)).toBe('confirmed');
+  });
+
+  it('weist ein Patientenkonto auch mit Auswahl ab', async () => {
+    const a = await anlegen('09:00', '10:00');
+    await expect(
+      asUser(users.patientMax, MIT_AUSWAHL, [ANNA, TAG, 'practice_request', [a.id]]),
+    ).rejects.toThrow(/not allowed to cancel appointments/);
+    expect(await zustand(a.id)).toBe('confirmed');
   });
 
   it('zaehlt an einem leeren Tag null und schreibt nichts', async () => {

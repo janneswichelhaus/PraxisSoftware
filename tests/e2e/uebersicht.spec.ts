@@ -220,16 +220,21 @@ test('klappt eine spätere Zeile mit Navigation, Anruf und Doku auf (Auftrag C1)
   await expect(zeile).toBeFocused();
 });
 
-test('zeigt „Ausfall" an der laufenden Karte mit der 15-Minuten-Uhr (Auftrag C1, B12)', async ({
+test('öffnet „Ausfall" an der laufenden Karte als Fenster mit der 15-Minuten-Uhr (Auftrag C1, B12, ANN-573)', async ({
   page,
 }) => {
   await oeffne(page, '08:40', 375);
   const karte = page.getByRole('article');
   await karte.getByRole('button', { name: 'Ausfall' }).click();
-  await expect(karte.getByRole('timer')).toHaveText(/^Gewartet \d+:\d\d von 15:00$/);
-  const vermerken = karte.getByRole('button', { name: /nicht angetroffen/ });
+  const erste = page.getByRole('dialog', { name: 'An der Tür geklingelt?' });
+  await expect(erste.getByRole('link', { name: 'Ohne Behandlung festhalten' })).toBeVisible();
+  await erste.getByRole('button', { name: 'Ja, geklingelt' }).click();
+  const zweite = page.getByRole('dialog', { name: 'Angerufen?' });
+  await zweite.getByRole('button', { name: 'Angerufen, niemand erreicht' }).click();
+  const dritte = page.getByRole('dialog', { name: '15 Minuten gewartet?' });
+  await expect(dritte.getByRole('timer')).toHaveText(/^Gewartet \d+:\d\d von 15:00$/);
+  const vermerken = dritte.getByRole('button', { name: /nicht angetroffen/ });
   expect((await vermerken.boundingBox())!.height).toBeGreaterThanOrEqual(48);
-  await expect(karte.getByRole('link', { name: 'Ohne Behandlung festhalten' })).toBeVisible();
   await ohneUeberlauf(page);
 });
 
@@ -278,19 +283,14 @@ for (const breite of [375, 1280]) {
       expect(a!.y).toBeLessThan(z!.y + z!.height);
     }
 
-    // Das Protokoll öffnet sich unter der Zeile über die ganze Breite.
+    // Das Protokoll öffnet sich als Fenster, eine Frage je Seite (ANN-573),
+    // mit dem Namen der Person im Kopf.
     await ausfall.click();
-    const feld = max.getByRole('region', {
-      name: 'Ausfall für Max Mustermann um 10:00 Uhr',
-      exact: true,
-    });
-    await expect(feld.getByRole('checkbox')).toHaveCount(3);
-    const inhalt = (await max.locator(':scope > div').boundingBox())!;
-    const f = (await feld.boundingBox())!;
-    expect(f.width).toBeGreaterThanOrEqual(inhalt.width - 1);
-    expect(f.y).toBeGreaterThan(a!.y + a!.height);
-    const vermerken = feld.getByRole('button', { name: /nicht angetroffen/ });
-    expect((await vermerken.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const fenster = page.getByRole('dialog', { name: 'An der Tür geklingelt?' });
+    await expect(fenster.getByText('Max Mustermann · 10:00 Uhr')).toBeVisible();
+    const ja = fenster.getByRole('button', { name: 'Ja, geklingelt' });
+    expect((await ja.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    expect((await ja.boundingBox())!.width).toBeGreaterThan(breite < 640 ? 300 : 200);
     await ohneUeberlauf(page);
   });
 }

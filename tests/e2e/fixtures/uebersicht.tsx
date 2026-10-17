@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
 import { NachladefehlerContext } from '@/app/nachladefehler';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
@@ -422,39 +422,51 @@ const patient: Patient = {
   take_along_items: ['Theraband', 'Kinesiotape'],
 };
 
+// Ein Datenrouter wie in der Anwendung (FIX-010): Der geführte Ablauf „Niemand
+// öffnet“ hält Seitenwechsel über `useBlocker` an (Überholung 6, ANN-573).
+const router = createMemoryRouter(
+  [
+    {
+      path: '*',
+      element: (
+        // `?ansicht=nachladefehler`: das Profil ließ sich nicht aktualisieren,
+        // die Übersicht bleibt stehen (BEF-046).
+        <NachladefehlerContext.Provider
+          value={
+            ansicht === 'nachladefehler'
+              ? {
+                  satz: 'Ihr Profil ließ sich gerade nicht aktualisieren.',
+                  erneut: () => new Promise((fertig) => setTimeout(fertig, 800)),
+                }
+              : null
+          }
+        >
+          <VorschauProvider>
+            <AppShell user={nutzer} onSignOut={() => undefined}>
+              {ansicht === 'akte' ? (
+                <Stammdaten patient={patient} user={nutzer} />
+              ) : (
+                <MyDayPage user={nutzer} />
+              )}
+            </AppShell>
+          </VorschauProvider>
+        </NachladefehlerContext.Provider>
+      ),
+    },
+  ],
+  {
+    initialEntries: [
+      ansicht === 'akte'
+        ? `/patienten/${patient.id}/stammdaten`
+        : ansicht === 'morgen'
+          ? `/?tag=${morgen}`
+          : '/',
+    ],
+  },
+);
+
 createRoot(document.getElementById('wurzel')!).render(
   <QueryClientProvider client={client}>
-    <MemoryRouter
-      initialEntries={[
-        ansicht === 'akte'
-          ? `/patienten/${patient.id}/stammdaten`
-          : ansicht === 'morgen'
-            ? `/?tag=${morgen}`
-            : '/',
-      ]}
-    >
-      {/* `?ansicht=nachladefehler`: das Profil ließ sich nicht aktualisieren,
-          die Übersicht bleibt stehen (BEF-046). */}
-      <NachladefehlerContext.Provider
-        value={
-          ansicht === 'nachladefehler'
-            ? {
-                satz: 'Ihr Profil ließ sich gerade nicht aktualisieren.',
-                erneut: () => new Promise((fertig) => setTimeout(fertig, 800)),
-              }
-            : null
-        }
-      >
-        <VorschauProvider>
-          <AppShell user={nutzer} onSignOut={() => undefined}>
-            {ansicht === 'akte' ? (
-              <Stammdaten patient={patient} user={nutzer} />
-            ) : (
-              <MyDayPage user={nutzer} />
-            )}
-          </AppShell>
-        </VorschauProvider>
-      </NachladefehlerContext.Provider>
-    </MemoryRouter>
+    <RouterProvider router={router} />
   </QueryClientProvider>,
 );

@@ -1,5 +1,5 @@
 import { TAGESZEIT_NAME, type Termin, type Terminwunsch } from './api';
-import { wochentagMitDatum } from './zeit';
+import { tagKurz, uhrzeit, wochentagMitDatum } from './zeit';
 
 /** Was auf der Zeile steht: Art und wer kommt (Titel), Ort (Nebenzeile). */
 export function terminBeschreibung(t: Termin): { titel: string; ort: string | null } {
@@ -17,6 +17,20 @@ export function terminBeschreibung(t: Termin): { titel: string; ort: string | nu
     return { titel: `Videotermin mit ${wer}`, ort: null };
   }
   return { titel: `In der Praxis bei ${wer}`, ort: t.location_name };
+}
+
+const ART_KURZ: Record<Termin['appointment_type'], string> = {
+  home_visit: 'Hausbesuch',
+  practice: 'Praxistermin',
+  video: 'Videotermin',
+};
+
+/**
+ * Der Termin in einer Zeile für den Kopf eines Fensters: „Mo., 19.10 · 09:30 ·
+ * Hausbesuch“ - Tag, Uhrzeit und Art, kurz genug für 375 px in 18 px.
+ */
+export function terminKurz(t: Termin): string {
+  return `${tagKurz(t.starts_at)} · ${uhrzeit(t.starts_at)} · ${ART_KURZ[t.appointment_type]}`;
 }
 
 /** Was die Person gewünscht hat, in einem Satz. */
