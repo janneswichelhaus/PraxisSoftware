@@ -199,6 +199,7 @@ const URLAUB_STICHWORTE = ['Urlaubsantrag', 'Abwesenheit', 'Urlaubskonto', 'Urla
 /** Wie die Funktionssuche die Arbeitszeit findet (AZ-001). */
 const ARBEITSZEIT_STICHWORTE = ['Wochenplan', 'Arbeitszeitänderung', 'Mittagspause', 'Stunden'];
 const ZEITKONTO_STICHWORTE = ['Überstunden', 'Mehrarbeit', 'Freizeitausgleich', 'Saldo'];
+const ERSTATTUNG_STICHWORTE = ['Ladestrom', 'Strom', 'Einkauf', 'Beleg', 'Auslagen', 'IBAN'];
 
 function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
   // Die angebundenen Punkte stehen vorn, die gekennzeichneten Vorschauen
@@ -296,7 +297,13 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
       end: false,
       stichworte: ZEITKONTO_STICHWORTE,
     },
-    { to: '/betrieb/erstattungen', label: 'Erstattungen', vorschau: true },
+    // ERS-001: echt angebunden - Ladestrom und Einkauf, Entscheiden, Auszahlen.
+    {
+      to: '/betrieb/erstattungen',
+      label: 'Erstattungen',
+      end: false,
+      stichworte: ERSTATTUNG_STICHWORTE,
+    },
   );
   return eintraege;
 }
@@ -374,7 +381,14 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       pfade: [
         '/training',
         ...(uebungenHier ? ['/uebungen'] : []),
-        ...(urlaubHier ? ['/betrieb/urlaub', '/betrieb/arbeitszeit', '/betrieb/zeitkonto'] : []),
+        ...(urlaubHier
+          ? [
+              '/betrieb/urlaub',
+              '/betrieb/arbeitszeit',
+              '/betrieb/zeitkonto',
+              '/betrieb/erstattungen',
+            ]
+          : []),
       ],
       icon: symbole.training,
       unterpunkte:
@@ -410,6 +424,12 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
                       label: 'Zeitkonto',
                       end: false,
                       stichworte: ZEITKONTO_STICHWORTE,
+                    },
+                    {
+                      to: '/betrieb/erstattungen',
+                      label: 'Erstattungen',
+                      end: false,
+                      stichworte: ERSTATTUNG_STICHWORTE,
                     },
                   ]
                 : []),

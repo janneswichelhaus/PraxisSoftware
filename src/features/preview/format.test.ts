@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMonat, formatZeitpunkt, ortszeitAlsZeitpunkt } from './format';
+import { formatZeitpunkt, ortszeitAlsZeitpunkt } from './format';
 import { erzeugeVorschauzustand } from './vorschauZustand';
 
 /**
@@ -56,17 +56,5 @@ describe('Zeitpunkte der synthetischen Daten', () => {
     const rad = zustand.raeder.find((eintrag) => eintrag.id === 'r5');
     const rueckgabe = Date.parse('2026-09-27T06:57:00Z');
     expect(Date.parse(rad?.schluesselSeit ?? '')).toBeLessThan(rueckgabe);
-  });
-});
-
-describe('formatMonat', () => {
-  it('schreibt einen Monat aus, statt ihn roh zu zeigen (VOR-24)', () => {
-    expect(formatMonat('2026-08')).toBe('August 2026');
-    expect(formatMonat('2025-12')).toBe('Dezember 2025');
-  });
-
-  it('laesst Leeres und Unlesbares stehen', () => {
-    expect(formatMonat('')).toBe('');
-    expect(formatMonat('August')).toBe('August');
   });
 });

@@ -1,5 +1,4 @@
 import {
-  demoErstattungen,
   demoDepots,
   demoKanaele,
   demoKatalog,
@@ -29,7 +28,6 @@ export function erzeugeVorschauzustand(heute = new Date()): Vorschauzustand {
     raeder: demoRaeder(stichtag),
     mitarbeitende: demoMitarbeitende,
     urlaub: demoUrlaub(stichtag),
-    erstattungen: demoErstattungen(stichtag),
     kanaele: demoKanaele,
     nachrichten: demoNachrichten(stichtag),
     katalog: demoKatalog,
@@ -37,7 +35,6 @@ export function erzeugeVorschauzustand(heute = new Date()): Vorschauzustand {
     rechnungen: demoRechnungen(stichtag),
     zahlungen: demoZahlungen(stichtag),
     checkupfragen: demoCheckupfragen,
-    stromsatzCent: 37,
     stichtag,
   };
 }

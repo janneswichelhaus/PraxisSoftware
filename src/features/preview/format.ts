@@ -84,19 +84,3 @@ function versatzMs(ms: number, zeitzone: string): number {
   );
   return alsUtc - Math.floor(ms / 1000) * 1000;
 }
-
-/**
- * Monat aus einem `<input type="month">` („2026-08") als „August 2026" (VOR-24).
- *
- * Gerechnet über UTC: ein Monat ist ein Kalenderwert wie ein Tag, kein
- * Zeitpunkt. Was nicht dem Format entspricht, bleibt unverändert stehen.
- */
-export function formatMonat(monat: string): string {
-  const treffer = /^(\d{4})-(\d{2})$/.exec(monat);
-  if (!treffer) return monat;
-  return new Intl.DateTimeFormat('de-DE', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(Number(treffer[1]), Number(treffer[2]) - 1, 1)));
-}

@@ -6,6 +6,8 @@ import type { Patienteneintrag } from '@/features/patients/uebersicht';
 import type { CareWithoutConclusion } from './reminders-api';
 import type { Urlaubsstand } from '@/features/vacation/api';
 import type { WorkingTime } from '@/features/working-time/api';
+import type { Overview } from '@/features/reimbursements/api';
+import { TIM, testOverview, testReimbursement } from '@/features/reimbursements/testdata';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -89,6 +91,12 @@ vi.mock('@/features/working-time/api', async (importOriginal) => ({
   fetchWorkingTime: () => fetchWorkingTime(),
 }));
 
+const fetchReimbursements = vi.fn<() => Promise<Overview>>();
+vi.mock('@/features/reimbursements/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchReimbursements: () => fetchReimbursements(),
+}));
+
 /** Die Arbeitszeit ohne offene Anträge (AZ-001). */
 const ARBEITSZEIT_LEER: WorkingTime = {
   my_staff_member_id: '55555555-5555-4555-8555-000000000001',
@@ -152,6 +160,7 @@ beforeEach(() => {
   fetchCareWithoutConclusion.mockResolvedValue([]);
   fetchUrlaub.mockResolvedValue(URLAUB_LEER);
   fetchWorkingTime.mockResolvedValue(ARBEITSZEIT_LEER);
+  fetchReimbursements.mockResolvedValue(testOverview({ can_decide: true, can_read_all: true }));
 });
 
 /** Die Überschriften der sichtbaren Gruppen, in ihrer Reihenfolge. */
@@ -317,6 +326,60 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     renderWithProviders(<OpenPointsPage user={testUser(['team_lead'])} />, '/offen');
     await screen.findByText('Nichts offen');
     expect(fetchUrlaub).not.toHaveBeenCalled();
+  });
+
+  it('zeigt owner offene und auszuzahlende Erstattungen mit dem Weg dorthin (ERS-001)', async () => {
+    fetchReimbursements.mockResolvedValue(
+      testOverview({
+        can_decide: true,
+        can_read_all: true,
+        to_decide: [testReimbursement()],
+        to_pay: [
+          {
+            ...testReimbursement({
+              id: 'erstattung-3',
+              staff_member_id: TIM,
+              name: 'Tim Teamleitung',
+              status: 'approved',
+            }),
+            iban_masked: 'DE02 •••• 2051',
+          },
+        ],
+      }),
+    );
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    expect(await screen.findByRole('heading', { name: 'Erstattungen (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Anna Beispiel/ })).toHaveAttribute(
+      'href',
+      '/betrieb/erstattungen/entscheiden/erstattung-1?zurueck=%2Foffen',
+    );
+    const auszahlen = screen.getByRole('heading', { name: 'Auszuzahlen (1)' }).closest('section')!;
+    expect(within(auszahlen).getByText(/DE02 •••• 2051/)).toBeInTheDocument();
+    expect(within(auszahlen).getByRole('link', { name: /Tim Teamleitung/ })).toHaveAttribute(
+      'href',
+      '/betrieb/erstattungen/auszahlen/erstattung-3?zurueck=%2Foffen',
+    );
+    expect(screen.queryByText('Nichts offen')).toBeNull();
+    expect(fetchReimbursements).toHaveBeenCalledTimes(1);
+  });
+
+  it('sagt es, wenn die Erstattungen nicht laden (ERS-001)', async () => {
+    fetchReimbursements.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    const gruppe = (await screen.findByRole('heading', { name: 'Erstattungen' })).closest(
+      'section',
+    )!;
+    expect(
+      within(gruppe).getByText('Die Erstattungen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+    expect(screen.queryByText('Nichts offen')).toBeNull();
+  });
+
+  it('fragt die Erstattungen nur für die ab, die entscheiden (ERS-001)', async () => {
+    renderWithProviders(<OpenPointsPage user={testUser(['office'])} />, '/offen');
+    await screen.findByText('Nichts offen');
+    expect(fetchReimbursements).not.toHaveBeenCalled();
   });
 
   it('lädt jede Liste nur einmal, obwohl Seite und Gruppe sie lesen', async () => {

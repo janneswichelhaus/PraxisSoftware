@@ -160,58 +160,6 @@ export interface Urlaubsantrag {
 }
 
 // -----------------------------------------------------------------------------
-// Erstattungen
-// -----------------------------------------------------------------------------
-
-export type Erstattungsart = 'strom' | 'einkauf';
-
-/**
- * Bearbeitungsstände einer Erstattung.
- *
- * Bewusst feiner als die Vorlage, die nur „offen" und „erstattet" kennt:
- * Einreichen, Entscheiden und tatsächliches Auszahlen sind verschiedene
- * Vorgänge und dürfen nicht denselben Status teilen.
- */
-export type Erstattungsstand = 'eingereicht' | 'genehmigt' | 'abgelehnt' | 'ausgezahlt';
-
-export const erstattungsstandLabels: Record<Erstattungsstand, string> = {
-  eingereicht: 'Eingereicht',
-  genehmigt: 'Genehmigt',
-  abgelehnt: 'Abgelehnt',
-  ausgezahlt: 'Ausgezahlt',
-};
-
-export interface Erstattungsposition {
-  id: string;
-  bezeichnung: string;
-  /** Betrag in Cent - Geldwerte niemals als Gleitkommazahl (ADR-014). */
-  betragCent: number;
-}
-
-export interface Erstattung {
-  id: string;
-  mitarbeiterId: string;
-  art: Erstattungsart;
-  iban: string;
-  /** Nur bei Strom: Monat `YYYY-MM`. */
-  zeitraumVon: string;
-  zeitraumBis: string;
-  arbeitstage: number;
-  /** Nur bei Einkauf. */
-  positionen: Erstattungsposition[];
-  /** Anzahl angehängter Belege. Die Bilder verlassen die Vorschau nicht. */
-  belege: number;
-  notiz: string;
-  unterschrift: boolean;
-  stand: Erstattungsstand;
-  eingereichtAm: string;
-  entschiedenVon: string;
-  entschiedenAm: string;
-  ausgezahltAm: string;
-  ablehnungsgrund: string;
-}
-
-// -----------------------------------------------------------------------------
 // Teamkommunikation
 // -----------------------------------------------------------------------------
 

@@ -152,12 +152,22 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(instrumente(['trainer'])).toBeUndefined();
   });
 
-  it('stellt der Vorschau unter Organisatorisches die angebundenen Punkte voran', () => {
-    const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
-    const punkte = betrieb?.unterpunkte ?? [];
-    const ersteVorschau = punkte.findIndex((punkt) => punkt.vorschau);
-    const letzteEchte = punkte.map((punkt) => Boolean(punkt.vorschau)).lastIndexOf(false);
-    expect(ersteVorschau).toBeGreaterThan(letzteEchte);
+  it('stellt in jedem Bereich die angebundenen Punkte vor die Vorschau', () => {
+    // Seit ERS-001 hat Organisatorisches keine Vorschau mehr; die Regel gilt
+    // weiter überall, wo eine steht (Kommunikation: der Teamchat).
+    const bereiche = bereicheFuer(['owner']);
+    const betrieb = bereiche.find((bereich) => bereich.id === 'betrieb');
+    expect(betrieb?.unterpunkte.filter((punkt) => punkt.vorschau)).toEqual([]);
+    const mitVorschau = bereiche.filter((bereich) =>
+      bereich.unterpunkte.some((punkt) => punkt.vorschau),
+    );
+    expect(mitVorschau.length).toBeGreaterThan(0);
+    for (const bereich of mitVorschau) {
+      const punkte = bereich.unterpunkte;
+      const ersteVorschau = punkte.findIndex((punkt) => punkt.vorschau);
+      const letzteEchte = punkte.map((punkt) => Boolean(punkt.vorschau)).lastIndexOf(false);
+      expect(ersteVorschau, bereich.id).toBeGreaterThan(letzteEchte);
+    }
   });
 
   it('fuehrt kein zweites, synthetisches Teamverzeichnis', () => {
@@ -182,8 +192,10 @@ describe('Arbeitsbereiche je Rolle', () => {
 
   it('kennzeichnet noch nicht angebundene Unterpunkte als Vorschau', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
+    // Seit ERS-001 echt angebunden: die Erstattungen tragen keine Kennzeichnung mehr.
     const erstattungen = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/erstattungen');
-    expect(erstattungen?.vorschau).toBe(true);
+    expect(erstattungen).toBeDefined();
+    expect(erstattungen?.vorschau).toBeUndefined();
     // Seit ZK-001 echt angebunden: das Zeitkonto trägt keine Kennzeichnung mehr.
     const zeitkonto = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/zeitkonto');
     expect(zeitkonto).toBeDefined();

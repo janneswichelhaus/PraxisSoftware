@@ -381,6 +381,17 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       stichworte: ['zeitkonto', 'überstunden', 'mehrarbeit', 'freizeitausgleich', 'saldo'],
       rueckweg: true,
     });
+    // ERS-001: Ladestrom oder Einkauf zur Erstattung - geführt, entschieden
+    // von owner (ANN-598).
+    eintraege.push({
+      id: 'vorgang-erstattung-beantragen',
+      art: 'Vorgang',
+      bezeichnung: 'Erstattung beantragen',
+      ziel: '/betrieb/erstattungen/beantragen',
+      bereich: isTherapyStaff(roles) ? BEREICHE.betrieb.label : BEREICHE.training.label,
+      stichworte: ['erstattung', 'ladestrom', 'strom', 'einkauf', 'beleg', 'auslagen'],
+      rueckweg: true,
+    });
   }
 
   // Das eigene Konto steht jeder angemeldeten Rolle offen (STAFF-004) und ist

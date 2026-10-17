@@ -2,7 +2,6 @@ import { createContext, useContext } from 'react';
 import type {
   Depot,
   ErbrachteLeistung,
-  Erstattung,
   Kanal,
   Katalogleistung,
   Mitarbeitende,
@@ -27,7 +26,6 @@ export interface Vorschauzustand {
   raeder: Rad[];
   mitarbeitende: Mitarbeitende[];
   urlaub: Urlaubsantrag[];
-  erstattungen: Erstattung[];
   kanaele: Kanal[];
   nachrichten: Nachricht[];
   katalog: Katalogleistung[];
@@ -35,8 +33,6 @@ export interface Vorschauzustand {
   rechnungen: Rechnung[];
   zahlungen: Zahlung[];
   checkupfragen: string[];
-  /** Erstattungssatz je Kilowattstunde in Cent. */
-  stromsatzCent: number;
   /** Stichtag, auf den die synthetischen Daten gerechnet wurden. */
   stichtag: string;
 }

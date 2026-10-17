@@ -45,8 +45,18 @@ describe('funktionskatalog', () => {
 
   it('kennzeichnet Vorschaubereiche als solche', () => {
     const katalog = funktionskatalog(testUser(['owner']));
+    const teamchat = katalog.find((eintrag) => eintrag.bezeichnung === 'Teamchat');
+    expect(teamchat?.vorschau).toBe(true);
+    // Seit ERS-001 echt angebunden: die Erstattungen tragen keine
+    // Kennzeichnung mehr, und „Erstattung beantragen“ ist ein Vorgang - auch
+    // im Training.
     const erstattungen = katalog.find((eintrag) => eintrag.bezeichnung === 'Erstattungen');
-    expect(erstattungen?.vorschau).toBe(true);
+    expect(erstattungen).toBeDefined();
+    expect(erstattungen?.vorschau).toBeUndefined();
+    expect(
+      funktionskatalog(testUser(['trainer'])).find((e) => e.bezeichnung === 'Erstattung beantragen')
+        ?.ziel,
+    ).toBe('/betrieb/erstattungen/beantragen');
     // Seit ZK-001 echt angebunden: das Zeitkonto trägt keine Kennzeichnung mehr,
     // und „Ins Zeitkonto eintragen“ ist ein Vorgang - auch im Training.
     const zeitkonto = katalog.find((eintrag) => eintrag.bezeichnung === 'Zeitkonto');

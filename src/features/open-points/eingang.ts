@@ -21,6 +21,11 @@ import { fetchWaitlist } from '@/features/waitlist/api';
 import { fetchUrlaub, urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
 import { urlaubsfenster } from '@/features/vacation/fenster';
 import { WORKING_TIME_KEY, fetchWorkingTime, type WorkingTime } from '@/features/working-time/api';
+import {
+  fetchReimbursements,
+  reimbursementsKey,
+  type Overview,
+} from '@/features/reimbursements/api';
 import { ABO_KUENDIGUNGEN_KEY, fetchAboKuendigungen } from './aftercare-cancellations-api';
 import { CALL_LIST_KEY, fetchCallList, stillToCall } from './call-list-api';
 import { CONSENT_WITHDRAWALS_KEY, fetchConsentWithdrawals } from './consent-withdrawals-api';
@@ -86,6 +91,15 @@ export const abfragen = {
       queryFn: fetchWorkingTime,
       retry: false,
       select: (stand: WorkingTime) => stand.to_decide,
+    }),
+  // ERS-001 (ANN-598): was owner zu entscheiden und auszuzahlen hat -
+  // dieselbe Abfrage wie die Seite Erstattungen.
+  erstattungen: () =>
+    queryOptions({
+      queryKey: reimbursementsKey(null),
+      queryFn: () => fetchReimbursements(null),
+      retry: false,
+      select: (stand: Overview) => ({ toDecide: stand.to_decide, toPay: stand.to_pay }),
     }),
   aufgaben: () =>
     queryOptions({
@@ -180,6 +194,7 @@ export function eingangsrechte(user: CurrentUser) {
     terminwuensche: canManageAppointments(rollen) || canReadTrainingClients(rollen),
     urlaubsantraege: canDecideStaffRequests(rollen),
     arbeitszeitantraege: canDecideStaffRequests(rollen),
+    erstattungen: canDecideStaffRequests(rollen),
     aufgaben: canManageTasks(rollen),
     anrufe: canManageAppointments(rollen),
     // ANG-003 und KND-004: wer Abo und Paket führt (owner, office).
@@ -232,6 +247,7 @@ export function useEingang(user: CurrentUser, today: string) {
   const terminwuensche = useQuery({ ...abfragen.terminwuensche(), enabled: darf.terminwuensche });
   const urlaub = useQuery({ ...abfragen.urlaub(today), enabled: darf.urlaubsantraege });
   const arbeitszeit = useQuery({ ...abfragen.arbeitszeit(), enabled: darf.arbeitszeitantraege });
+  const erstattungen = useQuery({ ...abfragen.erstattungen(), enabled: darf.erstattungen });
   const aufgaben = useQuery({ ...abfragen.aufgaben(), enabled: darf.aufgaben });
   const anrufe = useQuery({ ...abfragen.anrufe(morgen), enabled: darf.anrufe });
   const trainingswiderrufe = useQuery({
@@ -276,6 +292,11 @@ export function useEingang(user: CurrentUser, today: string) {
       aktiv: darf.arbeitszeitantraege,
       ...arbeitszeit,
       anzahl: arbeitszeit.data?.length ?? 0,
+    },
+    {
+      aktiv: darf.erstattungen,
+      ...erstattungen,
+      anzahl: (erstattungen.data?.toDecide.length ?? 0) + (erstattungen.data?.toPay.length ?? 0),
     },
     { aktiv: darf.aufgaben, ...aufgaben, anzahl: aufgaben.data?.length ?? 0 },
     { aktiv: darf.anrufe, ...anrufe, anzahl: anrufeOffen },

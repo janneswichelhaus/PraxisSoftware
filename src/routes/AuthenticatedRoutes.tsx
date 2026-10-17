@@ -98,7 +98,11 @@ import { RejectTimeAccountEntryPage } from '@/features/timeaccount/RejectTimeAcc
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
 import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
+import { DecideReimbursementPage } from '@/features/reimbursements/DecideReimbursementPage';
+import { PayReimbursementPage } from '@/features/reimbursements/PayReimbursementPage';
+import { PayoutAccountPage } from '@/features/reimbursements/PayoutAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
+import { RequestReimbursementPage } from '@/features/reimbursements/RequestReimbursementPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { RueckfragePage, RueckfragenPage } from '@/features/messages/RueckfragenPage';
 import { TourenPage } from '@/features/tours/TourenPage';
@@ -545,10 +549,6 @@ export function AuthenticatedRoutes({
                       path="/betrieb/flotte/meldungen/:art/:meldungId"
                       element={<MeldungPage user={user} />}
                     />
-                    <Route
-                      path="/betrieb/erstattungen"
-                      element={<ReimbursementsPage user={user} />}
-                    />
                   </>
                 ) : null}
 
@@ -680,6 +680,27 @@ export function AuthenticatedRoutes({
                       path="/betrieb/zeitkonto/zurueckweisen/:entryId"
                       element={<RejectTimeAccountEntryPage />}
                     />
+                    {/* ERS-001: Erstattungen - beantragen jede Praxisrolle mit
+                      Mitarbeiterdatensatz für sich, entscheiden und auszahlen
+                      owner, alle sehen owner und Büro (ANN-598); der Server
+                      prüft alles. */}
+                    <Route
+                      path="/betrieb/erstattungen"
+                      element={<ReimbursementsPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/erstattungen/beantragen"
+                      element={<RequestReimbursementPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/erstattungen/entscheiden/:reimbursementId"
+                      element={<DecideReimbursementPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/erstattungen/auszahlen/:reimbursementId"
+                      element={<PayReimbursementPage user={user} />}
+                    />
+                    <Route path="/betrieb/erstattungen/konto" element={<PayoutAccountPage />} />
                   </>
                 ) : null}
                 {showTraining ? (
