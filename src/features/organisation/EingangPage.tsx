@@ -1,13 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { todayInTimeZone } from '@/features/appointments/api';
-import { fetchFleet, flotteSchluessel } from '@/features/fleet/api';
 import { CheckupErinnerung } from '@/features/fleet/CheckupHinweise';
 import { Arbeitszeitantraege } from '@/features/open-points/Arbeitszeitantraege';
 import { Erstattungen } from '@/features/open-points/Erstattungen';
+import { RaederMitProblem } from '@/features/open-points/RaederMitProblem';
 import { Urlaubsantraege } from '@/features/open-points/Urlaubsantraege';
 import { eingangsrechte } from '@/features/open-points/eingang';
 import { isTherapyStaff, type CurrentUser } from '@/features/session/types';
@@ -42,41 +39,8 @@ export function EingangPage({ user }: { user: CurrentUser }) {
       {darf.arbeitszeitantraege ? <Arbeitszeitantraege rueckweg={EINGANG} /> : null}
       {darf.erstattungen ? <Erstattungen rueckweg={EINGANG} /> : null}
       {flotte ? <CheckupErinnerung heute={heute} zone={zone} /> : null}
-      {flotte ? <RaederMitProblem /> : null}
+      {darf.raeder ? <RaederMitProblem /> : null}
       <MeineAntraege heute={heute} />
     </>
-  );
-}
-
-/**
- * Räder, die gesperrt sind oder ein offenes Problem haben - für die, die sie
- * freigeben dürfen (owner, Teamleitung; `can_release`). Dieselbe Abfrage wie
- * die Radflotte; ohne solches Rad steht hier nichts.
- */
-function RaederMitProblem() {
-  const { data } = useQuery({
-    queryKey: flotteSchluessel(null),
-    queryFn: () => fetchFleet(null),
-    retry: false,
-    staleTime: 5 * 60_000,
-  });
-  if (!data?.can_release) return null;
-  const raeder = data.bikes.filter((rad) => rad.block !== null || rad.open_problems > 0);
-  if (raeder.length === 0) return null;
-  return (
-    <Listenabschnitt titel="Räder mit Problem" anzahl={raeder.length}>
-      {raeder.map((rad) => (
-        <ListRow
-          key={rad.id}
-          titel={rad.name}
-          meta={
-            rad.block
-              ? `Gesperrt${rad.block.reason ? ` · ${rad.block.reason}` : ''}`
-              : `${rad.open_problems} ${rad.open_problems === 1 ? 'offenes Problem' : 'offene Probleme'}`
-          }
-          to={`/betrieb/flotte/rad/${rad.id}`}
-        />
-      ))}
-    </Listenabschnitt>
   );
 }

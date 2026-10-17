@@ -10,13 +10,18 @@ import { urlaubsfenster } from '@/features/vacation/fenster';
 import { urlaubstage, zeitraumText } from '@/features/vacation/zeitraum';
 import { WORKING_TIME_KEY, fetchWorkingTime } from '@/features/working-time/api';
 import { changeTitle } from '@/features/working-time/format';
+import { fetchTimeAccount, timeAccountKey } from '@/features/timeaccount/api';
+import { TIME_ACCOUNT_HOME } from '@/features/timeaccount/paths';
+import { dateLong } from '@/features/working-time/format';
 import { formatEuro } from '@/lib/geld';
+
+const TON = { Beantragt: 'neutral', Genehmigt: 'positiv', Zurückgewiesen: 'warnung' } as const;
 
 interface Zeile {
   key: string;
   titel: string;
   meta: string;
-  status: 'Beantragt' | 'Genehmigt';
+  status: 'Beantragt' | 'Genehmigt' | 'Zurückgewiesen';
   betrag?: string;
   to: string;
 }
@@ -26,7 +31,8 @@ interface Zeile {
  * beantragte Arbeitszeitänderung, eine Erstattung, die noch nicht ausgezahlt
  * ist. Dieselben Abfragen wie die Seiten Urlaub, Arbeitszeit und
  * Erstattungen - die Zeile führt dorthin. Erledigtes steht auf diesen Seiten,
- * nicht hier.
+ * nicht hier. Dazu ein zurückgewiesener Eintrag im Zeitkonto, solange sein Tag
+ * noch kommt (BEF-179) - ohne Benachrichtigung.
  */
 export function MeineAntraege({ heute }: { heute: string }) {
   const fenster = urlaubsfenster(heute);
@@ -43,6 +49,12 @@ export function MeineAntraege({ heute }: { heute: string }) {
   const erstattungen = useQuery({
     queryKey: reimbursementsKey(null),
     queryFn: () => fetchReimbursements(null),
+    retry: false,
+  });
+
+  const zeitkonto = useQuery({
+    queryKey: timeAccountKey(null),
+    queryFn: () => fetchTimeAccount(null),
     retry: false,
   });
 
@@ -76,6 +88,22 @@ export function MeineAntraege({ heute }: { heute: string }) {
         betrag: formatEuro(antrag.amount_cents),
         to: REIMBURSEMENTS_HOME,
       })),
+    // BEF-179: Ein zurückgewiesener Zeitkonto-Eintrag, dessen Tag noch kommt,
+    // steht hier, bis der Tag vorbei ist - die Zeit ist wieder Arbeitszeit.
+    ...(zeitkonto.data?.account?.entries ?? [])
+      .filter((eintrag) => eintrag.status === 'rejected' && eintrag.on_date >= heute)
+      .map((eintrag) => ({
+        key: `zeitkonto-${eintrag.id}`,
+        titel: eintrag.kind === 'time_off' ? 'Freizeitausgleich' : 'Zeitkonto',
+        meta: [
+          dateLong(eintrag.on_date),
+          eintrag.rejection_note ? `Grund: ${eintrag.rejection_note}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        status: 'Zurückgewiesen' as const,
+        to: TIME_ACCOUNT_HOME,
+      })),
   ];
 
   return (
@@ -90,9 +118,7 @@ export function MeineAntraege({ heute }: { heute: string }) {
           titel={zeile.titel}
           meta={zeile.meta}
           betrag={zeile.betrag}
-          status={
-            <Badge ton={zeile.status === 'Genehmigt' ? 'positiv' : 'neutral'}>{zeile.status}</Badge>
-          }
+          status={<Badge ton={TON[zeile.status]}>{zeile.status}</Badge>}
           to={zeile.to}
         />
       ))}

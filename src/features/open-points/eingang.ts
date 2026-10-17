@@ -18,6 +18,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { fetchWaitlist } from '@/features/waitlist/api';
+import { fetchFleet, flotteSchluessel, type Fleet } from '@/features/fleet/api';
 import { fetchUrlaub, urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
 import { urlaubsfenster } from '@/features/vacation/fenster';
 import { WORKING_TIME_KEY, fetchWorkingTime, type WorkingTime } from '@/features/working-time/api';
@@ -100,6 +101,20 @@ export const abfragen = {
       queryFn: () => fetchReimbursements(null),
       retry: false,
       select: (stand: Overview) => ({ toDecide: stand.to_decide, toPay: stand.to_pay }),
+    }),
+  // ORG-004: Räder, die gesperrt sind oder ein offenes Problem haben - für
+  // die, die freigeben dürfen (`can_release`, owner und Teamleitung).
+  // Dieselbe Abfrage wie die Radflotte, ein Schlüssel.
+  raeder: () =>
+    queryOptions({
+      queryKey: flotteSchluessel(null),
+      queryFn: () => fetchFleet(null),
+      retry: false,
+      staleTime: 5 * 60_000,
+      select: (flotte: Fleet) =>
+        flotte.can_release
+          ? flotte.bikes.filter((rad) => rad.block !== null || rad.open_problems > 0)
+          : [],
     }),
   aufgaben: () =>
     queryOptions({
@@ -195,6 +210,7 @@ export function eingangsrechte(user: CurrentUser) {
     urlaubsantraege: canDecideStaffRequests(rollen),
     arbeitszeitantraege: canDecideStaffRequests(rollen),
     erstattungen: canDecideStaffRequests(rollen),
+    raeder: isTherapyStaff(rollen),
     aufgaben: canManageTasks(rollen),
     anrufe: canManageAppointments(rollen),
     // ANG-003 und KND-004: wer Abo und Paket führt (owner, office).
@@ -248,6 +264,7 @@ export function useEingang(user: CurrentUser, today: string) {
   const urlaub = useQuery({ ...abfragen.urlaub(today), enabled: darf.urlaubsantraege });
   const arbeitszeit = useQuery({ ...abfragen.arbeitszeit(), enabled: darf.arbeitszeitantraege });
   const erstattungen = useQuery({ ...abfragen.erstattungen(), enabled: darf.erstattungen });
+  const raeder = useQuery({ ...abfragen.raeder(), enabled: darf.raeder });
   const aufgaben = useQuery({ ...abfragen.aufgaben(), enabled: darf.aufgaben });
   const anrufe = useQuery({ ...abfragen.anrufe(morgen), enabled: darf.anrufe });
   const trainingswiderrufe = useQuery({
@@ -298,6 +315,7 @@ export function useEingang(user: CurrentUser, today: string) {
       ...erstattungen,
       anzahl: (erstattungen.data?.toDecide.length ?? 0) + (erstattungen.data?.toPay.length ?? 0),
     },
+    { aktiv: darf.raeder, ...raeder, anzahl: raeder.data?.length ?? 0 },
     { aktiv: darf.aufgaben, ...aufgaben, anzahl: aufgaben.data?.length ?? 0 },
     { aktiv: darf.anrufe, ...anrufe, anzahl: anrufeOffen },
     {
