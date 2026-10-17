@@ -5,10 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Überholung 10 (17.10., PR #266 gegen `main`): Erstattungen echt – Ladestrom (G10, 6 Tipps), Einkauf
-mit Beleg, Genehmigen und Auszahlen getrennt (G10b, je 2), IBAN maskiert. ORG-008 (Branch `worktree-agent-af136bf89beb6e754`): Ladestrom
-über geplante Stunden × Werte der Praxis (owner, Einstellungen), Vorschlag im Eingang, G10 5 bzw. 3 Tipps (ANN-605).
-Offen: Runde 2 der Prüfungen, Kameratest; eigene Aufträge BEF-178 bis BEF-180.
+Überholung Organisation (17.10., Branch `claude/modest-turing-i5qgn9`): fünf Reiter, eine Arbeitszeit,
+Einstellungen, Eingang mit „Neuer Antrag“, Barometer und Rückmeldung (§20.2), Dauerregler, Ladestrom
+automatisch; Migrationen `20261201`–`20261203…`; ANN-603 bis ANN-608. Davor gemergt: 6 bis 10 (#262–#266).
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
