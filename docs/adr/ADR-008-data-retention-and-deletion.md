@@ -2,14 +2,15 @@
 
 ## Status
 
-Angenommen — **Fassung 3** (2026-10-14): Der Fristanker der klinischen
+Angenommen — **Fassung 4** (2026-10-17): Rückmeldungen von Beschäftigten
+(§20.2) als eigene Datenklasse im Retention Schedule. Fassung 3 (2026-10-14): Der Fristanker der klinischen
 Akte (Punkt 11 neu, Befund B1). Fassung 2 (2026-10-03): Die Fristen des
 Auditlogs, des Löschjournals und der Löschaufträge im Retention Schedule
 (LOG-EPIC-001). Alles Übrige gilt unverändert.
 
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-10-03 · Fassung 3: 2026-10-14
+2026-08-28 · Fassung 2: 2026-10-03 · Fassung 3: 2026-10-14 · Fassung 4: 2026-10-17
 
 ## Kontext
 
@@ -92,6 +93,7 @@ gehört zu den Vorbedingungen des Produktivstarts.
 | Löschjournal (Fassung 2) | 60 Tage ab der Löschung (Backups 30 Tage, ADR-012) | abgeleitet |
 | Quittierte Löschaufträge der Ablage (Fassung 2) | 3 Jahre ab der Quittung; offene nie | interne Entscheidung |
 | Interner Teamchat | initial rollierend 12 Monate; dauerhaft relevante Inhalte MÜSSEN in den dafür vorgesehenen Fachprozess übernommen werden | interne Initialentscheidung |
+| Rückmeldungen von Beschäftigten (Fassung 4, §20.2) | 12 Monate ab Ende des Monats der Abgabe; endgültig gelöscht, kein Soft-Delete | interne Entscheidung |
 
 **Fristen ohne unmittelbare gesetzliche Vorgabe sind interne
 Initialentscheidungen und müssen vor Produktivstart im

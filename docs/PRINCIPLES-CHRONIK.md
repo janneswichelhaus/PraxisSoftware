@@ -6,6 +6,17 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.27
+
+Entscheidung des Projektinhabers vom **2026-10-17**: offene Kommunikation und eine niedrige Hürde
+für Beschwerden. **§20.2 neu** — Beschäftigte dürfen der Praxisleitung Rückmeldungen geben, auch
+mit Namen (monatliches Barometer, „Rückmeldung an die Praxisleitung“). Die Person wählt bei jeder
+Abgabe; freiwillig, keine Liste der Fehlenden, nur `owner` liest, kein Verlauf je Person, anonym
+nur als Praxissumme ab drei Beschäftigten und fünf Antworten, eigene Datenklasse. Der Satz gegen
+Leistungs- und Verhaltenskontrolle bleibt unverändert. Rang 2 dazu: ADR-024 Fassung 2 (Punkt 12),
+ADR-008 Fassung 4. Empfohlen war die anonyme Fassung allein; Jannes hat die namentliche Abgabe
+ausdrücklich gewollt.
+
 ### Änderungsvermerk 0.26
 
 Entscheidung des Projektinhabers vom **2026-10-11**: Dokumentation ohne Empfang wie bei anderen
