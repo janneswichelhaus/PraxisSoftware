@@ -6015,7 +6015,7 @@ Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Die Notiz sieht nur die Person, auch nicht, wer entscheidet. owner sieht am offenen Antrag Zeitraum, Tage, Konto, wer zugleich fehlt und die Termine; fremde Konten nur owner. Andere sehen genehmigten Urlaub nur mit Name und Zeitraum ab heute; im Kalender steht er wie jede Abwesenheit, ohne Bezug, Urheber, Zeitpunkt (Spaltenrecht).
+**Annahme.** Die Notiz sieht nur die Person, auch nicht, wer entscheidet. owner sieht am offenen Antrag Zeitraum, Tage, Konto, wer zugleich fehlt, die Termine und die Tage mit abweichenden Arbeitszeiten; fremde Konten (auch des Folgejahrs) nur owner. Andere sehen genehmigten Urlaub nur mit Name und Zeitraum ab heute; im Kalender steht er wie jede Abwesenheit, ohne Bezug, Urheber, Zeitpunkt (Spaltenrecht).
 
 **Begründung.** BEF-066, Entscheidung Jannes 2026-10-09: „im Urlaub sehen andere nur den Zeitraum, nie den Grund“, wörtlich und nach §16 restriktiv gelesen. owner pflegt die Ansprüche und trägt die Hinweispflicht (EuGH C-684/16).
 
