@@ -647,7 +647,7 @@ eingeklappt.
 
 **Erwartet.** Die Auslieferung übersteht eine kurze Drosselung (bis zu fünf Versuche, ANN-559). Hält der Abbruch an: den Zugang von einem anderen Rechner prüfen (`ssh -4`) und bei Uberspace erfragen, ob Adressen von GitHub Actions gesperrt sind.
 
-### BEF-173 — Geführter Ablauf: Fokus rollt die Frage weg, Rollfläche ohne Tastaturweg, `inert` nur am body
+### BEF-175 — Geführter Ablauf: Fokus rollt die Frage weg, Rollfläche ohne Tastaturweg, `inert` nur am body
 
 |         |   |
 | ------- | - |
@@ -661,7 +661,7 @@ eingeklappt.
 
 **Erwartet.** Ein eigener Auftrag am Baustein: Fokus mit `preventScroll` oder auf die Frage, `tabIndex` an der Rollfläche des Bausteins, `inert` auch für Portalziele, danach die Umgehungen in den Abläufen entfernen; Grammatik der Rückfrage. Aus dem Design-Review dazu: freie Maße im Baustein (`max-h-[60%]`, `lg:w-96`) als Tokens, der `tel:`-Knopf (zweimal von Hand in G1 und G2) als Baustein in `src/components/ui`, Laden und Fehler der Rufnummer über `Abfragezustand`.
 
-### BEF-174 — Panne und Einstiege am Lastenrad: Platzhalter statt Anruf, Frage nach dem Wochentag, Weg zur Radflotte
+### BEF-176 — Panne und Einstiege am Lastenrad: Platzhalter statt Anruf, Frage nach dem Wochentag, Weg zur Radflotte
 
 |         |   |
 | ------- | - |

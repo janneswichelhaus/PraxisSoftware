@@ -4,6 +4,12 @@
 
 **Angenommen** (2026-08-28).
 
+**Fassung 5 (2026-10-16)** — Punkt 2 nennt eine Ausnahme für Pull Requests,
+die nur Dokumentation ändern: Sie bestehen die Prüfungen, die Text lesen;
+Tests, Build und Datenbankprüfungen laufen nach dem Merge auf `main`.
+Entschieden von Jannes (2026-10-16), Anlass: CI-Läufe von 20 Minuten auch für
+reine Doku. Alle übrigen Punkte gelten unverändert.
+
 **Fassung 4 (2026-09-23)** — Punkt 9 Nr. 1 nennt zwei weitere Pflicht-Negativfälle:
 fremde Person (Patient:in oder Kund:in sieht nur sich selbst) und anderer
 Leistungsbereich (§4.8). Die Plattform öffnet die Anwendung für Menschen
@@ -20,7 +26,8 @@ die Review-Checkliste fest, die Punkt 8 seit Fassung 1 verlangt.
 
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-09-15 · Fassung 4: 2026-09-23
+2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-09-15 · Fassung 4: 2026-09-23 ·
+Fassung 5: 2026-10-16
 
 ## Kontext
 
@@ -67,6 +74,17 @@ Dieser ADR schließt den offenen Punkt E7.
      toten relativen Verweise. Dieselbe Begründung wie bei den übrigen
      Prüfungen: Eine Regel, die nur im Kopf existiert, wird unter Zeitdruck
      gebrochen — eine Obergrenze, die niemand misst, ist keine.
+
+   **Reine Dokumentation** (Fassung 5): Ändert oder ergänzt ein Pull Request
+   nur Markdown unter `docs/` oder im Wurzelverzeichnis, das kein Test liest,
+   und löscht nichts (`scripts/nur-doku.mjs`, in der Fassung des
+   Zielbranchs), laufen im Pull Request Format/Lint mit
+   statischer Sicherheitsanalyse, Typecheck, Dokumentationsprüfung, Secret
+   Scanning, Dependency Scan und das Migrationen-Gate. Automatisierte Tests,
+   Build sowie Datenbank- und RLS-Tests entfallen dort, weil sich keine ihrer
+   Eingaben ändert; nach dem Merge laufen sie auf `main` wie bei jeder
+   Änderung. Im Zweifel — die Erkennung scheitert, eine Datei passt nicht —
+   läuft alles.
 3. Der **`main`-Branch wird geschützt**.
 4. **Force Push auf `main` ist nicht erlaubt.**
 5. **Fehlgeschlagene verpflichtende CI-Checks blockieren den regulären Merge.**
@@ -211,7 +229,8 @@ Dieser ADR schließt den offenen Punkt E7.
   technisch dargestellt — Tag, Release, geprüfter Commit?
 - Wie wird die menschliche Freigabe nachgewiesen und aufbewahrt?
 - Wie werden die verpflichtenden Prüfungen schnell genug gehalten, damit sie
-  nicht umgangen werden?
+  nicht umgangen werden? *Teilweise beantwortet: aufgeteilte Jobs (ANN-571)
+  und Fassung 5 für reine Dokumentation.*
 - Wer darf die Branch-Protection-Regeln ändern, und ist diese Änderung nach
   ADR-010 auditpflichtig?
 - Wie werden Datenbankmigrationen getestet, ohne Produktionsdaten zu
@@ -225,3 +244,4 @@ Dieser ADR schließt den offenen Punkt E7.
 | 2 | 2026-09-13 | Punkt 9 neu: Definition „kritische Änderung" (§12 plus technische Auslöser) und die zehn Punkte der Review-Checkliste, die Punkt 8 seit Fassung 1 verlangt; Nr. 8 verlangt den Zweitreview in frischem Kontext vor dem Merge. Erledigungsvermerke in Konsequenzen, Abgrenzung und Folgefragen. Punkte 1 bis 8 unverändert. Anlass: Docs-Session „Dokumentations-Audit", Graph-Engineering-Workflow. |
 | 3 | 2026-09-15 | Punkt 2: Dokumentationsprüfung als zehnte Pflichtprüfung; Punkt 9 Nr. 8: Merge durch den Projektinhaber statt Auto-Merge. |
 | 4 | 2026-09-23 | Punkt 9 Nr. 1: Negativfälle „fremde Person" und „anderer Leistungsbereich". Übrige Punkte unverändert. |
+| 5 | 2026-10-16 | Punkt 2: Pull Requests nur mit Dokumentation ohne Tests, Build und Datenbankprüfungen; auf `main` läuft nach dem Merge alles. Entschieden von Jannes. |

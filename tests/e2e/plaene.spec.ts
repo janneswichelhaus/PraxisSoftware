@@ -44,7 +44,9 @@ async function axeVerstoesse(page: Page): Promise<string[]> {
 
 async function hoehe(knopf: Locator): Promise<number> {
   await expect(knopf).toBeVisible();
-  return (await knopf.boundingBox())?.height ?? 0;
+  // Auf Hundertstel gerundet: Der Browser misst 44 px mitunter als
+  // 43,99998 (Bruchteile der Gerätepixel). Die Grenze bleibt 44 px.
+  return Math.round(((await knopf.boundingBox())?.height ?? 0) * 100) / 100;
 }
 
 test.describe('Übungspläne', () => {
