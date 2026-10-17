@@ -60,6 +60,38 @@ function tag(dialog: Locator, datum: string): Locator {
   return dialog.getByRole('button', { name: TAGESNAME.format(new Date(`${datum}T00:00:00Z`)) });
 }
 
+const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** Blättert das Monatsblatt bis zum Monat des Tages; jeder Tipp zählt mit. */
+async function blaettereZu(
+  dialog: Locator,
+  datum: string,
+  tippe: (ziel: Locator) => Promise<void>,
+): Promise<void> {
+  const monat = dialog.getByRole('group', {
+    name: MONATSNAME.format(new Date(`${datum}T00:00:00Z`)),
+  });
+  for (let i = 0; i < 14 && !(await monat.isVisible()); i += 1) {
+    await tippe(dialog.getByRole('button', { name: 'Nächster Monat' }));
+  }
+  await expect(monat).toBeVisible();
+}
+
+/** Keine Fläche im Fenster rollt - je Seite eine Frage ohne Rollen (DESIGN.md). */
+async function rolltNicht(dialog: Locator): Promise<void> {
+  const rollend = await dialog.evaluate(
+    (fenster) =>
+      [fenster, ...fenster.querySelectorAll('*')]
+        .filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY))
+        .filter((el) => el.scrollHeight > el.clientHeight + 1).length,
+  );
+  expect(rollend).toBe(0);
+}
+
 /** Bildschirmfoto im ruhenden Stand: nach der Tippsperre und dem Aufgehen des Fensters. */
 async function bild(seite: Page, name: string): Promise<void> {
   await seite.waitForTimeout(800);
@@ -110,7 +142,10 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
 
   const datum = page.getByRole('dialog', { name: 'An welchem Tag?' });
   await expect(datum).toBeVisible();
+  // Ein Monat je Seite: Der Dienstag liegt einen oder zwei Monate voraus.
+  await rolltNicht(datum);
   await bild(page, 'b8-g8-02-tag-375');
+  await blaettereZu(datum, DIENSTAG, (ziel) => t.tippe(ziel));
   await t.tippe(tag(datum, DIENSTAG));
 
   const zeiten = page.getByRole('dialog', { name: /^Ihre Zeiten am / });
@@ -190,7 +225,10 @@ test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)
       .getByRole('dialog', { name: 'Was möchten Sie ändern?' })
       .getByRole('button', { name: 'Den Wochenplan ab einem Datum' }),
   );
-  await t.tippe(tag(page.getByRole('dialog', { name: 'Ab wann?' }), DIENSTAG));
+  // Ein Wochenplan beginnt am Monatsersten: Schnellwahl statt Blättern.
+  const abWann = page.getByRole('dialog', { name: 'Ab wann?' });
+  await rolltNicht(abWann);
+  await t.tippe(abWann.getByRole('button', { name: /^Ab \S+, 1\. / }).first());
 
   const woche = page.getByRole('dialog', { name: /^Ihr Wochenplan ab / });
   await expect(woche.getByRole('button', { name: 'Dienstag ändern' })).toBeVisible();

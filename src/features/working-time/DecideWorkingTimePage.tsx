@@ -89,16 +89,17 @@ export function DecideWorkingTimePage({ user }: { user: CurrentUser }) {
           return (
             <>
               <PageHeader title="Arbeitszeitänderung" />
+              {/* Entschieden, zurückgezogen, unbekannt oder nicht zu
+                  entscheiden - die Seite unterscheidet das nicht. */}
               <EmptyState
                 inKarte
-                title="Nichts mehr zu entscheiden"
-                description="Der Antrag ist schon entschieden oder zurückgezogen."
+                title="Kein offener Antrag"
+                aktion={
+                  <ButtonLink to={returnTo} variant="secondary">
+                    Zurück
+                  </ButtonLink>
+                }
               />
-              <div className="mt-4">
-                <ButtonLink to={returnTo} variant="secondary">
-                  Zurück
-                </ButtonLink>
-              </div>
             </>
           );
         }
@@ -192,7 +193,7 @@ function Flow({
         <div className="flex flex-col gap-6">
           <Statusmeldung ton="erfolg">
             {approved
-              ? `${name}s Arbeitszeit ist geändert: ${what}.`
+              ? `Arbeitszeit von ${name} ist geändert: ${what}.`
               : `${name} sieht die Ablehnung mit Ihrem Grund.`}
           </Statusmeldung>
           {approved ? (

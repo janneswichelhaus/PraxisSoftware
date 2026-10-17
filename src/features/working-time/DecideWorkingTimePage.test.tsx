@@ -87,7 +87,7 @@ describe('DecideWorkingTimePage', () => {
     const fertig = await screen.findByRole('dialog', { name: 'Genehmigt' });
     expect(
       within(fertig).getByText(
-        'Anna Beispiels Arbeitszeit ist geändert: Wochenplan ab Dienstag, 1. Dezember.',
+        'Arbeitszeit von Anna Beispiel ist geändert: Wochenplan ab Dienstag, 1. Dezember.',
       ),
     ).toBeInTheDocument();
     const umplanen = within(fertig).getByRole('link', { name: /Dienstag, 1. Dezember/ });
@@ -121,6 +121,6 @@ describe('DecideWorkingTimePage', () => {
   it('sagt, wenn nichts mehr zu entscheiden ist', async () => {
     fetchWorkingTime.mockResolvedValue(testWorkingTime({ can_decide: true, to_decide: [] }));
     rendern();
-    expect(await screen.findByText('Nichts mehr zu entscheiden')).toBeInTheDocument();
+    expect(await screen.findByText('Kein offener Antrag')).toBeInTheDocument();
   });
 });

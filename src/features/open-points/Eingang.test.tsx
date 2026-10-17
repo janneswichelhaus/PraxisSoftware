@@ -251,6 +251,18 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     await waitFor(() => expect(fetchConsentWithdrawals).toHaveBeenCalledTimes(1));
   });
 
+  it('sagt es, wenn die Arbeitszeitänderungen nicht laden (AZ-001)', async () => {
+    fetchWorkingTime.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    const gruppe = (await screen.findByRole('heading', { name: 'Arbeitszeitänderungen' })).closest(
+      'section',
+    )!;
+    expect(
+      within(gruppe).getByText('Die Arbeitszeitänderungen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
   it('sagt es, wenn die Urlaubsanträge nicht laden, statt still zu fehlen (URL-001)', async () => {
     fetchUrlaub.mockRejectedValue(new Error('Netz'));
     renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
