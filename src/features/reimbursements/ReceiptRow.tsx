@@ -45,8 +45,11 @@ export function ReceiptRow({ receipts }: { receipts: readonly Receipt[] }) {
                 open?.id === receipt.id ? setOpen(null) : load.mutate({ id: receipt.id, name })
               }
             >
-              {receipt.purpose}
-              <span className="font-normal tabular-nums">{`\u00a0· ${amount}`}</span>
+              {/* Ein Text, der als Ganzes umbricht; der Betrag bleibt beisammen. */}
+              <span>
+                {receipt.purpose}
+                <span className="font-normal whitespace-nowrap tabular-nums">{`\u00a0· ${amount}`}</span>
+              </span>
             </Button>
           );
         })}
