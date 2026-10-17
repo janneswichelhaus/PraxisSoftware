@@ -122,14 +122,20 @@ describe('UrlaubEntscheidenPage', () => {
     expect(
       within(fertig).getByRole('heading', { name: 'Termine umplanen (3)' }),
     ).toBeInTheDocument();
-    expect(within(fertig).getAllByRole('link', { name: /umplanen$/ })).toHaveLength(2);
-    const umplanen = within(fertig).getByRole('link', { name: 'Dienstag, 3. November umplanen' });
+    expect(within(fertig).getAllByRole('link', { name: /^Tag umplanen: / })).toHaveLength(2);
+    const umplanen = within(fertig).getByRole('link', {
+      name: 'Tag umplanen: Dienstag, 3. November',
+    });
     expect(umplanen).toHaveTextContent('Tag umplanen');
-    expect(
-      umplanen
-        .getAttribute('href')
-        ?.startsWith(`/kalender/tag-umplanen?person=${STAFF.anna}&datum=2026-11-03`),
-    ).toBe(true);
+    const ziel = new URL(umplanen.getAttribute('href')!, 'http://praxis.test');
+    expect(ziel.pathname).toBe('/kalender/tag-umplanen');
+    expect(ziel.searchParams.get('person')).toBe(STAFF.anna);
+    expect(ziel.searchParams.get('datum')).toBe('2026-11-03');
+    // Nach dem ersten Tag zurück auf die Termine im Urlaub, nicht nach /offen:
+    // Dort stünden die übrigen Tage nicht mehr (Praxis-Review).
+    expect(ziel.searchParams.get('zurueck')).toBe(
+      `/betrieb/urlaub/termine?person=${STAFF.anna}&von=2026-11-02&bis=2026-11-13&zurueck=%2Foffen`,
+    );
     await act(() => pruefeBarrierefreiheit(fertig));
     await user.click(within(fertig).getByRole('button', { name: 'Fertig' }));
     expect(await screen.findByText('Ziel /offen')).toBeInTheDocument();
@@ -210,7 +216,8 @@ describe('UrlaubEntscheidenPage', () => {
     );
     rendern();
     const seite = await screen.findByRole('dialog', { name: 'Urlaub genehmigen?' });
-    // Rest 12, im Jahr 2026 gehen 4 der 8 Tage ab.
+    // Rest 12, im Jahr 2026 gehen 4 der 8 Tage ab - die übrigen stehen dabei.
+    expect(within(seite).getByText('8 Urlaubstage, davon 4 im Jahr 2027')).toBeInTheDocument();
     expect(within(seite).getByText('Danach 8 von 30 Tagen übrig')).toBeInTheDocument();
     expect(within(seite).queryByText(/weitere beantragt/)).toBeNull();
   });
@@ -231,10 +238,23 @@ describe('UrlaubEntscheidenPage', () => {
     ).toBeInTheDocument();
     expect(within(seite).getByRole('button', { name: 'Genehmigen' })).toBeDisabled();
     expect(within(seite).getByRole('button', { name: 'Ablehnen' })).toBeEnabled();
-    expect(within(seite).getByRole('link', { name: 'Zur Planung' })).toHaveAttribute(
-      'href',
-      `/praxis/planung?person=${STAFF.anna}`,
+    // Primär vor sekundär (Regel 4), der Name wie die Zielseite, zurück zum Antrag.
+    const fuss = within(seite)
+      .getAllByRole('button')
+      .concat(within(seite).getAllByRole('link'))
+      .map((k) => k.textContent);
+    expect(fuss.indexOf('Genehmigen')).toBeLessThan(fuss.indexOf('Ablehnen'));
+    const link = within(seite).getByRole('link', { name: 'Zu den Arbeitszeiten' });
+    const ziel = new URL(link.getAttribute('href')!, 'http://praxis.test');
+    expect(ziel.pathname).toBe('/praxis/planung');
+    expect(ziel.searchParams.get('person')).toBe(STAFF.anna);
+    expect(ziel.searchParams.get('zurueck')).toBe(
+      `/betrieb/urlaub/entscheiden/${ANTRAG.id}?zurueck=%2Fbetrieb%2Furlaub`,
     );
+    expect(
+      link.compareDocumentPosition(within(seite).getByRole('button', { name: 'Genehmigen' })) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
   });
 
   it('zeigt einen Fehler des Servers und bleibt auf der Seite', async () => {

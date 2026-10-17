@@ -134,6 +134,14 @@ describe('rueckwegBeschriftung', () => {
     // führen dorthin zurück, woher sie geöffnet wurden.
     ['/betrieb/flotte?zustand=reparatur', 'Zurück zur Radflotte'],
     ['/betrieb/flotte/rad/r1?bereich=verlauf', 'Zurück zum Rad'],
+    // URL-001: von den Arbeitszeiten zurück zum Antrag oder in den Ablauf,
+    // von „Tag umplanen“ zurück zu den Terminen im Urlaub.
+    ['/betrieb/urlaub/entscheiden/a1?zurueck=%2Foffen', 'Zurück zum Antrag'],
+    ['/betrieb/urlaub/beantragen?von=2026-11-02&bis=2026-11-13', 'Zurück zum Urlaub'],
+    [
+      '/betrieb/urlaub/termine?person=s1&von=2026-11-02&bis=2026-11-13',
+      'Zurück zu den Terminen im Urlaub',
+    ],
   ])('beschriftet %s mit %s', (pfad, erwartet) => {
     expect(rueckwegBeschriftung(pfad)).toBe(erwartet);
   });

@@ -15,7 +15,7 @@ import { formatLocalDate, todayInTimeZone } from '@/features/appointments/api';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
-import { leseRueckweg } from '@/lib/rueckweg';
+import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   URLAUB_SCHLUESSEL,
   decideLeaveRequest,
@@ -25,6 +25,7 @@ import {
   type OffenerAntrag,
 } from './api';
 import { urlaubsfenster } from './fenster';
+import { terminePfad } from './termine';
 import { tagKurz, tage, urlaubstage, zeitraumText } from './zeitraum';
 
 /**
@@ -222,7 +223,12 @@ function Ablauf({
               staffMemberId={antrag.staff_member_id}
               days={ergebnis.appointment_days}
               user={user}
-              returnTo={rueckweg}
+              returnTo={terminePfad(
+                antrag.staff_member_id,
+                antrag.starts_on,
+                antrag.ends_on,
+                rueckweg,
+              )}
             />
           ) : null}
         </div>
@@ -295,18 +301,9 @@ function Ablauf({
       fuss={
         <div className="flex flex-col gap-2">
           {abweichend.length > 0 ? (
-            <>
-              <Statusmeldung ton="fehler">
-                {`Abweichende Arbeitszeiten am ${abweichend.map(tagKurz).join(', ')} – erst in der Planung ändern, dann genehmigen.`}
-              </Statusmeldung>
-              <ButtonLink
-                variant="secondary"
-                className="w-full"
-                to={`/praxis/planung?person=${antrag.staff_member_id}`}
-              >
-                Zur Planung
-              </ButtonLink>
-            </>
+            <Statusmeldung ton="fehler">
+              {`Abweichende Arbeitszeiten am ${abweichend.map(tagKurz).join(', ')} – erst in der Planung ändern, dann genehmigen.`}
+            </Statusmeldung>
           ) : null}
           {entscheiden.isError ? (
             <Statusmeldung ton="fehler">
@@ -326,6 +323,19 @@ function Ablauf({
                 ? 'Storno genehmigen'
                 : 'Genehmigen'}
           </Button>
+          {/* Primär vor sekundär (Regel 4); zurück geht es zu diesem Antrag. */}
+          {abweichend.length > 0 ? (
+            <ButtonLink
+              variant="secondary"
+              className="w-full"
+              to={mitRueckweg(
+                `/praxis/planung?person=${antrag.staff_member_id}`,
+                mitRueckweg(`/betrieb/urlaub/entscheiden/${antrag.id}`, rueckweg),
+              )}
+            >
+              Zu den Arbeitszeiten
+            </ButtonLink>
+          ) : null}
           <Button
             variant="secondary"
             className="w-full"
@@ -343,7 +353,13 @@ function Ablauf({
       <ListRows rahmen={false} beschriftung="Antrag">
         <ListRow
           titel={zeitraum}
-          meta={storno ? `Storno · ${tage(antrag.days)} wieder frei` : urlaubstage(antrag.days)}
+          meta={
+            storno
+              ? `Storno · ${tage(antrag.days)} wieder frei`
+              : antrag.days_following_year > 0
+                ? `${urlaubstage(antrag.days)}, davon ${antrag.days_following_year} im Jahr ${Number(antrag.ends_on.slice(0, 4))}`
+                : urlaubstage(antrag.days)
+          }
         />
         {imJahr ? (
           <ListRow
