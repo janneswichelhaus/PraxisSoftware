@@ -218,6 +218,18 @@ function Umplanung({
   const zone = user.organizationTimeZone ?? tag.data?.[0]?.organization_time_zone;
   const tagText = zone ? formatLocalDate(`${datum}T12:00:00Z`, zone) : datum;
   const objekt = person ? `${person.display_name} · ${tagText}` : tagText;
+  // Der Kopf des Fensters hat eine Zeile: das kurze Datum vorn, damit es bei
+  // 375 px auch neben einem langen Namen stehen bleibt (Design-Review
+  // Überholung 9, Runde 2).
+  const tagKurzText = zone
+    ? new Intl.DateTimeFormat('de-DE', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        timeZone: zone,
+      }).format(new Date(`${datum}T12:00:00Z`))
+    : datum;
+  const fensterObjekt = person ? `${tagKurzText} · ${person.display_name}` : tagKurzText;
 
   return (
     <>
@@ -260,7 +272,7 @@ function Umplanung({
                 zeiten={zeiten}
                 abgesagt={abgesagt}
                 anrufstand={anrufstand}
-                objekt={objekt}
+                objekt={fensterObjekt}
                 rueckweg={`${ort.pathname}${ort.search}`}
                 onSchliessen={() => void navigate(zumKalender)}
                 zumKalender={zumKalender}

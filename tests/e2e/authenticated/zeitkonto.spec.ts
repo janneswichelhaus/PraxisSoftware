@@ -280,15 +280,15 @@ test('G9 Freizeitausgleich und G9b: Anna nimmt frei, Jannes weist mit Grund zur�
   await t.tippe(abschluss.getByRole('button', { name: 'Eintragen' }));
   // Der Termin in der freien Zeit steht zum Umplanen da.
   const fertig = page.getByRole('dialog', { name: 'Eingetragen' });
-  await expect(fertig.getByRole('heading', { name: /^Termine umplanen/ })).toBeVisible();
+  await expect(fertig.getByText('1 Termin in der freien Zeit')).toBeVisible();
   await bild(page, 'b9-g9-08-termine-375');
   test.info().annotations.push({ type: 'G9 Freizeit', description: `${t.tipps} Tipps` });
   expect(t.tipps).toBeLessThanOrEqual(6);
 
-  // „Tag umplanen“ mit der Arbeitszeit danach: vorgewählt ist nur der Termin
-  // in der freien Zeit, nicht der ganze Tag (Praxis-Review Überholung 9).
-  const umplanen = fertig.getByRole('link', { name: /^Tag umplanen/ });
-  await expect(umplanen).toHaveAttribute('href', /zeiten=08:00-12:00,13:00-16:00/);
+  // „Tag umplanen“ ist der Hauptknopf; vorgewählt ist dort nur der Termin in
+  // der freien Zeit, nicht der ganze Tag (Praxis-Review Überholung 9).
+  const umplanen = fertig.getByRole('link', { name: 'Tag umplanen' });
+  await expect(umplanen).toHaveAttribute('href', /zeiten=00:00-16:00,18:00-23:59/);
   await umplanen.click();
   await page
     .getByRole('dialog', { name: 'Warum fallen die Termine aus?' })

@@ -133,6 +133,8 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   page,
   browser,
 }) => {
+  // Zwei Personen nacheinander - länger als ein Ablauf (wie Urlaub und Zeitkonto).
+  test.setTimeout(120_000);
   await page.setViewportSize(TELEFON);
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/arbeitszeit');
@@ -223,6 +225,8 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
 test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)', async ({
   page,
 }) => {
+  // Zwei Personen nacheinander - länger als ein Ablauf (wie Urlaub und Zeitkonto).
+  test.setTimeout(120_000);
   await page.setViewportSize(TELEFON);
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/arbeitszeit');

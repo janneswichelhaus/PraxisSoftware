@@ -3,8 +3,8 @@ import {
   dateWindow,
   overtimeChoices,
   parseHours,
+  outsideWindow,
   problemText,
-  remainingBlocks,
   signedHours,
   timeOffChoices,
 } from './rules';
@@ -76,24 +76,11 @@ describe('Zeitkonto rechnen (ZK-001, ANN-593)', () => {
     expect(problemText('overlaps_working_hours', 'overtime')).toMatch(/nur davor oder danach/);
   });
 
-  it('nimmt die freie Zeit aus dem Plan des Tages (Praxis-Review Überholung 9)', () => {
-    const plan = [
-      { von: '08:00', bis: '12:00' },
-      { von: '13:00', bis: '18:00' },
-    ];
-    expect(remainingBlocks(plan, '16:00', '18:00')).toEqual([
-      { von: '08:00', bis: '12:00' },
-      { von: '13:00', bis: '16:00' },
+  it('lässt Termine nur außerhalb der freien Zeit stehen (Praxis-Review Überholung 9, Runde 2)', () => {
+    expect(outsideWindow('16:00', '18:00')).toEqual([
+      { von: '00:00', bis: '16:00' },
+      { von: '18:00', bis: '23:59' },
     ]);
-    expect(remainingBlocks(plan, '08:00', '09:00')).toEqual([
-      { von: '09:00', bis: '12:00' },
-      { von: '13:00', bis: '18:00' },
-    ]);
-    expect(remainingBlocks(plan, '10:00', '11:00')).toEqual([
-      { von: '08:00', bis: '10:00' },
-      { von: '11:00', bis: '12:00' },
-      { von: '13:00', bis: '18:00' },
-    ]);
-    expect(remainingBlocks(plan, '08:00', '18:00')).toEqual([]);
+    expect(outsideWindow('00:00', '10:00')).toEqual([{ von: '10:00', bis: '23:59' }]);
   });
 });

@@ -45,7 +45,7 @@ export function VacationPage({ user }: { user: CurrentUser }) {
   const heute = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
   const fenster = urlaubsfenster(heute);
   // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder.
-  const meldung = useMeldungAusVerlauf();
+  const { meldung } = useMeldungAusVerlauf();
   const abfrage = useQuery({
     queryKey: urlaubSchluessel(fenster.von, fenster.bis),
     queryFn: () => fetchUrlaub(fenster.von, fenster.bis),

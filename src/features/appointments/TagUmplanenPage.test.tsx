@@ -122,7 +122,8 @@ describe('TagUmplanenPage', () => {
   it('nennt Person und Tag und fragt zuerst nach dem Grund - keiner vorgewählt', async () => {
     rendern();
     const grund = await fenster('Warum fällt der Tag aus?');
-    expect(within(grund).getByText('Anna Beispiel · Mittwoch, 12. Mai 2027')).toBeInTheDocument();
+    // Im Kopf des Fensters das kurze Datum vorn (Design-Review Überholung 9, Runde 2).
+    expect(within(grund).getByText('Mi., 12. Mai · Anna Beispiel')).toBeInTheDocument();
     expect(within(grund).getByText('Schritt 1 von 3')).toBeInTheDocument();
     // Der Ausfall einer behandelnden Person ist praxisbedingt (CAL-016, ADR-018
     // Fassung 2 Punkt 8.4): „Patient:in hat abgesagt" steht nicht zur Wahl.

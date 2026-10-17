@@ -118,23 +118,16 @@ export function overtimeChoices(blocks: readonly Block[]): TimeChoice[] {
 }
 
 /**
- * Die Arbeitszeit des Tages nach einem Freizeitausgleich: die Blöcke des Plans
- * ohne die freie Zeit. „Tag umplanen“ wählt damit nur die Termine darin vor
- * (Praxis-Review Überholung 9).
+ * Wo Termine an einem Tag mit Freizeitausgleich bleiben können: alles außer
+ * der freien Zeit. „Tag umplanen“ wählt damit genau die Termine darin vor -
+ * wie der Server sie zählt -, keinen in der Mittagspause oder vor Dienstbeginn
+ * (Praxis-Review Überholung 9, Runde 2).
  */
-export function remainingBlocks(blocks: readonly Block[], von: string, bis: string): Block[] {
-  const start = toMinutes(von);
-  const end = toMinutes(bis);
-  if (start === null || end === null) return [...blocks];
-  return blocks.flatMap((block) => {
-    const a = toMinutes(block.von);
-    const b = toMinutes(block.bis);
-    if (a === null || b === null || b <= start || end <= a) return [block];
-    return [
-      ...(a < start ? [{ von: block.von, bis: toTime(start) }] : []),
-      ...(end < b ? [{ von: toTime(end), bis: block.bis }] : []),
-    ];
-  });
+export function outsideWindow(von: string, bis: string): Block[] {
+  return [
+    ...(von > '00:00' ? [{ von: '00:00', bis: von }] : []),
+    ...(bis < '23:59' ? [{ von: bis, bis: '23:59' }] : []),
+  ];
 }
 
 /** Freizeitausgleich am Plan des Tages: früher gehen, später kommen, ganzer Tag. */

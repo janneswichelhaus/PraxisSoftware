@@ -252,14 +252,13 @@ describe('RecordTimeAccountPage', () => {
       }),
     );
     const fertig = await screen.findByRole('dialog', { name: 'Eingetragen' });
-    expect(within(fertig).getByRole('heading', { name: /^Termine umplanen/ })).toBeInTheDocument();
-    // „Tag umplanen“ mit der Arbeitszeit danach: vorgewählt werden nur die
-    // Termine in der freien Zeit (Praxis-Review Überholung 9).
-    expect(
-      within(fertig)
-        .getByRole('link', { name: /^Tag umplanen/ })
-        .getAttribute('href'),
-    ).toContain('&zeiten=08:00-12:00,13:00-16:00');
+    expect(within(fertig).getByText('2 Termine in der freien Zeit')).toBeInTheDocument();
+    // „Tag umplanen“ ist der nächste Schritt - Hauptknopf im Fuß, „Fertig“
+    // leise; vorgewählt sind dort genau die Termine in der freien Zeit
+    // (Praxis-Review Überholung 9, Runde 2).
+    const umplanen = within(fertig).getByRole('link', { name: 'Tag umplanen' });
+    expect(umplanen.getAttribute('href')).toContain('&zeiten=00:00-16:00,18:00-23:59');
+    expect(within(fertig).getByRole('button', { name: 'Fertig' })).toBeInTheDocument();
   });
 
   it('sperrt das Eintragen, wenn der Server einen Grund nennt', async () => {
@@ -366,9 +365,16 @@ describe('RecordTimeAccountPage', () => {
     expect(weiterGrund).toBeDisabled();
     await nutzer.type(within(grund).getByLabelText('Grund'), 'Übertrag aus der Stundenliste');
     await nutzer.click(weiterGrund);
-    const abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
+    let abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
     expect(within(abschluss).getByText('+12:30 Std.')).toBeInTheDocument();
     expect(within(abschluss).getByRole('button', { name: 'Grund ändern' })).toBeInTheDocument();
+    // „Ändern“ an den Stunden führt mit Grund direkt zurück zum Abschluss
+    // (Design-Review Überholung 9, Runde 2).
+    await nutzer.click(within(abschluss).getByRole('button', { name: 'Stunden ändern' }));
+    const wieder = screen.getByRole('dialog', { name: 'Wie viele Stunden?' });
+    await nutzer.click(within(wieder).getByRole('button', { name: 'Weiter' }));
+    abschluss = screen.getByRole('dialog', { name: 'Eintragen?' });
+    expect(screen.queryByRole('dialog', { name: 'Warum die Korrektur?' })).toBeNull();
     await nutzer.click(await within(abschluss).findByRole('button', { name: 'Eintragen' }));
     expect(recordEntry).toHaveBeenCalledWith({
       staffMemberId: TIM,
