@@ -847,10 +847,10 @@ describe('Erstattungen (ERS-001)', () => {
       expect(await vorschlaege(users.teamLead)).toHaveLength(11);
       // Olivia (Büro) hat keinen Wochenplan: nichts zu erstatten.
       expect(await vorschlaege(users.office)).toEqual([]);
-      // Eine andere Praxis sieht nur ihre eigene Person.
+      // Eine andere Praxis bekommt nur Vorschläge ihrer eigenen Person - deren
+      // owner hat keinen Wochenplan, also keinen (nicht Annas zwölf Monate).
       const fremd = await fremdeOrganisation();
-      const fremde = await vorschlaege(fremd.owner);
-      expect(JSON.stringify(fremde)).not.toContain(STAFF.anna);
+      expect(await vorschlaege(fremd.owner)).toEqual([]);
     });
 
     it('rechnet mit den Werten der Praxis', async () => {

@@ -197,6 +197,10 @@ alter table public.staff_reimbursements
   add column km_per_hour     smallint,
   add column wh_per_km       smallint;
 
+comment on column public.staff_reimbursements.km_per_hour is
+  'ORG-008: Strecke je Arbeitsstunde (km) der Praxis beim Beantragen; ein Pauschalwert, nie aus Touren (ANN-605).';
+comment on column public.staff_reimbursements.wh_per_km is
+  'ORG-008: Verbrauch bei höchster Unterstützungsstufe (Wh/km) der Praxis beim Beantragen (ANN-605).';
 comment on column public.staff_reimbursements.working_minutes is
   'ORG-008: geplante Arbeitsminuten des Monats beim Beantragen (Wochenplan ohne Feiertage und ganztägige Abwesenheit). Anträge vor ORG-008 tragen stattdessen working_days und energy_wh_per_day.';
 

@@ -6321,7 +6321,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 **Annahme.** Ladestrom = geplante Arbeitsstunden des Monats (Wochenplan in Fassungen mit Abweichungen, ohne Feiertage und ganztägige Abwesenheit; nicht änderbar) × km je Arbeitsstunde × Wh/km bei höchster Stufe × ct/kWh, kaufmännisch auf Cent. Die drei Werte pflegt nur owner (Vorbelegung 6 km, 18 Wh/km, 37 ct); der Antrag hält alle fest. Der Eingang schlägt jeden offenen Monat vor; „zu Hause geladen“ bleibt ein Haken.
 
-**Begründung.** Auftrag Jannes 2026-10-17; keine Kilometer aus Touren (PROJECT_PRINCIPLES.md 20, ADR-019 Punkt 17).
+**Begründung.** Auftrag Jannes 2026-10-17; Kilometer aus Touren erlaubt erst ADR-019 Fassung 6, umgesetzt in BEF-181 – bis dahin der Pauschalwert.
 
 **Anker.** `app.electricity_amount_cents`.
 
