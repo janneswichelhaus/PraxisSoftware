@@ -89,6 +89,7 @@ import { MeldungenPage, MeldungPage } from '@/features/fleet/MeldungenPage';
 import { AnspruchPage } from '@/features/vacation/AnspruchPage';
 import { UrlaubBeantragenPage } from '@/features/vacation/UrlaubBeantragenPage';
 import { UrlaubEntscheidenPage } from '@/features/vacation/UrlaubEntscheidenPage';
+import { UrlaubTerminePage } from '@/features/vacation/UrlaubTerminePage';
 import { VacationPage } from '@/features/vacation/VacationPage';
 import { DecideWorkingTimePage } from '@/features/working-time/DecideWorkingTimePage';
 import { RequestWorkingTimePage } from '@/features/working-time/RequestWorkingTimePage';
@@ -655,6 +656,12 @@ export function AuthenticatedRoutes({
                     <Route
                       path="/betrieb/urlaub/anspruch/:staffMemberId"
                       element={<AnspruchPage user={user} />}
+                    />
+                    {/* Die Termine eines geltenden Urlaubs, bis alle umgeplant
+                      sind - sehen darf sie, wer Termine sieht (Server). */}
+                    <Route
+                      path="/betrieb/urlaub/termine"
+                      element={<UrlaubTerminePage user={user} />}
                     />
                     {/* AZ-001: Arbeitszeitänderung wie der Urlaub - beantragen
                       jede Praxisrolle mit Wochenplan, entscheiden owner

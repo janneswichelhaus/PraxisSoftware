@@ -6,6 +6,7 @@ import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-do
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import type * as WorkingTimeApi from './api';
+import { PREVIEW_ERROR } from './api';
 import { ANNAS_TAG, testWeek, testWorkingTime } from './testdata';
 
 /**
@@ -133,7 +134,9 @@ describe('RequestWorkingTimePage', () => {
     tipps += 1;
 
     const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
-    expect(within(abschluss).getByText('Einmalig: Dienstag, 20. Oktober')).toBeInTheDocument();
+    expect(
+      await within(abschluss).findByText('Einmalig: Dienstag, 20. Oktober'),
+    ).toBeInTheDocument();
     expect(within(abschluss).getByText('07:00–12:00, 13:00–17:00 · 9:00 Std.')).toBeInTheDocument();
     expect(
       await within(abschluss).findByText('Keine Termine außerhalb der neuen Zeiten'),
@@ -245,7 +248,7 @@ describe('RequestWorkingTimePage', () => {
 
     const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
     expect(
-      within(abschluss).getByText('Dienstag: 08:00–12:30, 13:30–18:00 · 9:00 Std.'),
+      await within(abschluss).findByText('Dienstag: 08:00–12:30, 13:30–18:00 · 9:00 Std.'),
     ).toBeInTheDocument();
     expect(
       await within(abschluss).findByText('2 Termine außerhalb der neuen Zeiten'),
@@ -305,6 +308,86 @@ describe('RequestWorkingTimePage', () => {
     expect(within(abschluss).getByRole('button', { name: 'Änderung beantragen' })).toBeDisabled();
   });
 
+  it('ein Fehler der Vorschau ist nie „keine Termine“ - mit „Erneut versuchen“ (Regel 8)', async () => {
+    const user = userEvent.setup();
+    previewChange.mockRejectedValueOnce(new Error(PREVIEW_ERROR));
+    rendern();
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Einen Tag' },
+      ),
+    );
+    await user.click(
+      tag(
+        await screen.findByRole('dialog', { name: 'An welchem Tag?' }),
+        'Dienstag, 20. Oktober 2026',
+      ),
+    );
+    const zeiten = await screen.findByRole('dialog', {
+      name: 'Ihre Zeiten am Dienstag, 20. Oktober',
+    });
+    await within(zeiten).findByText(/^Bisher:/);
+    zeit(zeiten, 'Beginn', '07:00');
+    zeit(zeiten, 'Ende', '17:00');
+    await user.click(within(zeiten).getByRole('button', { name: 'Weiter' }));
+
+    const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
+    expect(await within(abschluss).findByText(PREVIEW_ERROR)).toBeInTheDocument();
+    expect(within(abschluss).queryByText(/Keine Termine/)).toBeNull();
+    expect(within(abschluss).getByRole('button', { name: 'Änderung beantragen' })).toBeDisabled();
+    await user.click(within(abschluss).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(
+      await within(abschluss).findByText('Keine Termine außerhalb der neuen Zeiten'),
+    ).toBeInTheDocument();
+    expect(within(abschluss).getByRole('button', { name: 'Änderung beantragen' })).toBeEnabled();
+  });
+
+  it('sagt im Abschluss, warum der Knopf ruht, wenn „Ändern“ die Änderung zurücknimmt', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Was möchten Sie ändern?' })).getByRole(
+        'button',
+        { name: 'Den Wochenplan ab einem Datum' },
+      ),
+    );
+    await user.click(
+      within(await screen.findByRole('dialog', { name: 'Ab wann?' })).getByRole('button', {
+        name: 'Ab Dienstag, 1. Dezember',
+      }),
+    );
+    const woche = await screen.findByRole('dialog', {
+      name: 'Ihr Wochenplan ab Dienstag, 1. Dezember',
+    });
+    await user.click(await within(woche).findByRole('button', { name: 'Dienstag ändern' }));
+    zeit(
+      await screen.findByRole('dialog', { name: 'Dienstags ab 1. Dezember' }),
+      'Pause ab',
+      '12:30',
+    );
+    await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
+    await user.click(
+      within(
+        await screen.findByRole('dialog', { name: 'Ihr Wochenplan ab Dienstag, 1. Dezember' }),
+      ).getByRole('button', { name: 'Weiter' }),
+    );
+
+    const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
+    await user.click(await within(abschluss).findByRole('button', { name: 'Dienstag ändern' }));
+    zeit(
+      await screen.findByRole('dialog', { name: 'Dienstags ab 1. Dezember' }),
+      'Pause ab',
+      '12:00',
+    );
+    await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
+
+    const wieder = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
+    expect(within(wieder).getByText('Noch nichts geändert.')).toBeInTheDocument();
+    expect(within(wieder).getByRole('button', { name: 'Änderung beantragen' })).toBeDisabled();
+    expect(within(wieder).queryByText('Termine werden geprüft …')).toBeNull();
+  });
+
   it('owner trägt die eigene Änderung ein', async () => {
     const user = userEvent.setup();
     fetchWorkingTime.mockResolvedValue(testWorkingTime({ self_entered: true, can_decide: true }));
@@ -329,7 +412,9 @@ describe('RequestWorkingTimePage', () => {
     zeit(zeiten, 'Ende', '17:30');
     await user.click(within(zeiten).getByRole('button', { name: 'Weiter' }));
     const abschluss = await screen.findByRole('dialog', { name: 'Änderung eintragen?' });
-    expect(within(abschluss).getByText('Sie tragen die Änderung selbst ein')).toBeInTheDocument();
+    expect(
+      await within(abschluss).findByText('Sie tragen die Änderung selbst ein'),
+    ).toBeInTheDocument();
     await user.click(await within(abschluss).findByRole('button', { name: 'Änderung eintragen' }));
     expect(
       await screen.findByText(

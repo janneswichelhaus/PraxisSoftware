@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
@@ -20,14 +19,15 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { monatPlus, monatsBeginn, tagePlus } from '@/features/appointments/calendar';
+import { istIsoDatum, monatPlus, monatsBeginn, tagePlus } from '@/features/appointments/calendar';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { DaysToReschedule } from '@/features/appointments/DaysToReschedule';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import type { CurrentUser } from '@/features/session/types';
-import { leseRueckweg } from '@/lib/rueckweg';
+import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   URLAUB_SCHLUESSEL,
+  VORSCHAU_FEHLER,
   fetchUrlaub,
   previewLeave,
   requestLeave,
@@ -38,10 +38,10 @@ import {
 import { MONATE_VORAUS, Zeitraumkalender, type EigenerZeitraum } from './Zeitraumkalender';
 import { feiertageZwischen, type Bundesland } from './feiertage';
 import { urlaubsfenster } from './fenster';
+import { terminePfad } from './termine';
 import {
   KEINE_WAHL,
   monatKurz,
-  monatLang,
   tagKurz,
   urlaubstage,
   vollstaendig,
@@ -129,6 +129,22 @@ function eigeneZeitraeume(stand: Urlaubsstand): EigenerZeitraum[] {
     }));
 }
 
+/**
+ * Die Wahl aus der Adresse (`?von=…&bis=…`) - nur ein Zeitraum, den der
+ * Kalender selbst anböte: ab heute, höchstens 93 Tage, im wählbaren Fenster.
+ */
+function wahlAusAdresse(
+  suche: URLSearchParams,
+  heute: string,
+  letzterTag: string,
+): { von: string; bis: string } | null {
+  const von = suche.get('von');
+  const bis = suche.get('bis');
+  if (!istIsoDatum(von) || !istIsoDatum(bis)) return null;
+  if (von < heute || bis < von || bis > tagePlus(von, LAENGSTENS) || bis > letzterTag) return null;
+  return { von, bis };
+}
+
 /** Was im Jahr des Beginns danach übrig bleibt; ohne Anspruch `null`. */
 function restDanach(vorschau: Urlaubsvorschau): number | null {
   if (vorschau.balance.rest === null) return null;
@@ -159,9 +175,16 @@ function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; us
   const ersterMonat = monatsBeginn(heute);
   const letzterTag = tagePlus(monatPlus(ersterMonat, MONATE_VORAUS), -1);
 
-  const [abfolge, setAbfolge] = useState<Abfolge<Seite>>(() => beginne<Seite>('monat'));
-  const [monat, setMonat] = useState(ersterMonat);
-  const [wahl, setWahl] = useState<Zeitraumwahl>(KEINE_WAHL);
+  // Zurück von den Arbeitszeiten (eigener Eintrag mit abweichenden Zeiten):
+  // die Wahl kommt aus der Adresse, der Ablauf steht wieder auf dem Abschluss.
+  const [vorgabe] = useState(() => wahlAusAdresse(suche, heute, letzterTag));
+  const [abfolge, setAbfolge] = useState<Abfolge<Seite>>(() =>
+    vorgabe
+      ? weiter(weiter(weiter(beginne<Seite>('monat'), 'beginn'), 'ende'), 'abschluss')
+      : beginne<Seite>('monat'),
+  );
+  const [monat, setMonat] = useState(vorgabe ? monatsBeginn(vorgabe.von) : ersterMonat);
+  const [wahl, setWahl] = useState<Zeitraumwahl>(vorgabe ?? KEINE_WAHL);
   const [notiz, setNotiz] = useState('');
   const [eingetragen, setEingetragen] = useState(false);
   const seite = eingetragen ? 'fertig' : abfolge.seite;
@@ -255,7 +278,7 @@ function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; us
             staffMemberId={stand.my_staff_member_id}
             days={ergebnis.appointment_days}
             user={user}
-            returnTo={rueckweg}
+            returnTo={terminePfad(stand.my_staff_member_id, wahl.von!, wahl.bis!, rueckweg)}
           />
         </div>
       </GefuehrterAblauf>
@@ -276,11 +299,14 @@ function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; us
                 {monate
                   .filter((m) => m.startsWith(j))
                   .map((m) => (
+                    // Der Name beginnt mit dem sichtbaren Wort (WCAG 2.5.3),
+                    // die Wahl steht auch für Vorlesesoftware da.
                     <Button
                       key={m}
                       variant={wahl.von?.startsWith(m.slice(0, 7)) ? 'primary' : 'secondary'}
                       className="w-full"
-                      aria-label={monatLang(m)}
+                      aria-label={`${monatKurz(m)} ${j}`}
+                      aria-pressed={wahl.von?.startsWith(m.slice(0, 7)) ?? false}
                       {...(m === ersterMonat ? { 'data-autofocus': true } : {})}
                       onClick={() => {
                         setMonat(m);
@@ -363,11 +389,6 @@ function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; us
       abschluss
       fuss={
         <div className="flex flex-col gap-2">
-          {vorschau.isError ? (
-            <Statusmeldung ton="fehler">
-              {vorschau.error instanceof Error ? vorschau.error.message : 'Nicht gezählt.'}
-            </Statusmeldung>
-          ) : null}
           {grund ? <Statusmeldung ton="fehler">{grund}</Statusmeldung> : null}
           {absenden.isError ? (
             <Statusmeldung ton="fehler">
@@ -376,15 +397,6 @@ function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; us
                 : 'Der Urlaub konnte nicht beantragt werden.'}
             </Statusmeldung>
           ) : null}
-          {selbst && ergebnis && ergebnis.exception_days.length > 0 && stand.my_staff_member_id ? (
-            <ButtonLink
-              variant="secondary"
-              className="w-full"
-              to={`/praxis/planung?person=${stand.my_staff_member_id}`}
-            >
-              Zur Planung
-            </ButtonLink>
-          ) : null}
           <Button
             className="w-full"
             disabled={absenden.isPending || !kannAbsenden}
@@ -392,26 +404,60 @@ function Antrag({ stand, heute, user }: { stand: Urlaubsstand; heute: string; us
           >
             {absenden.isPending ? 'Wird gesendet …' : hauptknopf}
           </Button>
+          {/* Primär vor sekundär (Regel 4). Die Wahl reist im Rückweg mit
+              und ist danach wieder da - deshalb hält der Schutz hier nicht an. */}
+          {selbst && ergebnis && ergebnis.exception_days.length > 0 && stand.my_staff_member_id ? (
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                freigeben();
+                void navigate(
+                  mitRueckweg(
+                    `/praxis/planung?person=${stand.my_staff_member_id}`,
+                    mitRueckweg(
+                      `/betrieb/urlaub/beantragen?von=${wahl.von}&bis=${wahl.bis}`,
+                      rueckweg,
+                    ),
+                  ),
+                );
+              }}
+            >
+              Zu den Arbeitszeiten
+            </Button>
+          ) : null}
         </div>
       }
     >
-      {ergebnis && komplett ? (
-        <Zusammenfassung
-          wahl={wahl}
-          ergebnis={ergebnis}
-          jahr={jahr}
-          land={stand.federal_state}
-          selbst={selbst}
-          notiz={notiz}
-          onNotiz={setNotiz}
-          onAendern={() => {
-            setMonat(monatsBeginn(wahl.von));
-            setAbfolge(aendern(abfolge, 'beginn'));
+      {/* Laden, Funkloch und Abweisung über den Baustein (Regel 8): mit
+          „Erneut versuchen“, statt still auf denselben Tag zu warten. */}
+      {komplett ? (
+        <Abfragezustand
+          abfrage={vorschau}
+          laden="Urlaubstage werden gezählt …"
+          fehler={VORSCHAU_FEHLER}
+          endgueltig={{
+            wenn: (fehler) => fehler instanceof Error && fehler.message !== VORSCHAU_FEHLER,
+            titel: vorschau.error instanceof Error ? vorschau.error.message : VORSCHAU_FEHLER,
           }}
-        />
-      ) : vorschau.isError ? null : (
-        <p className="text-ink-muted text-sm">Tage werden gezählt …</p>
-      )}
+        >
+          {(daten) => (
+            <Zusammenfassung
+              wahl={wahl}
+              ergebnis={daten}
+              jahr={jahr}
+              land={stand.federal_state}
+              selbst={selbst}
+              notiz={notiz}
+              onNotiz={setNotiz}
+              onAendern={() => {
+                setMonat(monatsBeginn(wahl.von));
+                setAbfolge(aendern(abfolge, 'beginn'));
+              }}
+            />
+          )}
+        </Abfragezustand>
+      ) : null}
     </GefuehrterAblauf>
   );
 }
