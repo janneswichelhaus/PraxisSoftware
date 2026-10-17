@@ -26,6 +26,8 @@ import { FAELLIG_SCHLUESSEL } from '@/features/exercise-plans/api';
 import { rueckfragenKey, type Rueckfragezeile } from '@/features/messages/api';
 import { ABO_KUENDIGUNGEN_KEY } from '@/features/open-points/aftercare-cancellations-api';
 import { CONSENT_WITHDRAWALS_KEY } from '@/features/open-points/consent-withdrawals-api';
+import { flotteSchluessel } from '@/features/fleet/api';
+import { testFlotte } from '@/features/fleet/testdaten';
 import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
 import { urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
@@ -562,6 +564,8 @@ client.setQueryData(reimbursementsKey(null), {
         ],
   people: [],
 } satisfies Overview);
+// ORG-004: Ohne Rad mit Problem fehlt „Räder mit Problem“.
+client.setQueryData(flotteSchluessel(null), testFlotte({ bikes: [] }));
 // Ohne Widerruf, Kündigung und auslaufenden Plan: Diese Gruppen fehlen.
 client.setQueryData(CONSENT_WITHDRAWALS_KEY, []);
 client.setQueryData(ABO_KUENDIGUNGEN_KEY, []);
