@@ -6231,7 +6231,7 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
-**Annahme.** Beantragt → genehmigt oder abgelehnt (Grund) → ausgezahlt; zurückziehen kann die Person, solange beantragt. owner entscheidet und vermerkt die Auszahlung, nie den eigenen Antrag eines anderen Kontos; eigene trägt owner ein, sie gelten als genehmigt. Jede Person beantragt nur für sich; owner und Büro sehen alle je Person, das Büro entscheidet und zahlt nicht.
+**Annahme.** Beantragt → genehmigt oder abgelehnt (Grund) → ausgezahlt; zurückziehen kann die Person, solange beantragt. owner entscheidet über die Anträge anderer, nie über einen eigenen, und vermerkt ihre Auszahlung; eigene trägt owner ein – sie gelten als genehmigt, die Auszahlung vermerkt owner selbst. Jede Person beantragt nur für sich; owner und Büro sehen alle je Person, das Büro entscheidet und zahlt nicht.
 
 **Begründung.** Spezifikation Überholung 10; Entscheiden wie Urlaub (ANN-576), Sichtbarkeit nach BEF-066 Option 2 mit Büro. Genehmigt ist nicht ausgezahlt.
 

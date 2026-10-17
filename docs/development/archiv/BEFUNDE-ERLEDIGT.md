@@ -1548,3 +1548,53 @@ zu klicken. Den Pannenweg mit einem Tipp von der Übersicht baut FLT-EPIC-001.
 | Berührt | `tests/e2e/authenticated/patient-record.spec.ts` |
 
 **Beobachtung.** Der Test erwartete „Ohne Behandlungsgrundlage“ unter den kommenden Terminen von Erika. Ihr Seed-Termin liegt heute um 10:30 Uhr; danach gab es solche Termine nur, weil Spezifikationen aus `appointment-*` sie vorher angelegt hatten. Im seriellen Lauf fiel das nicht auf. **Erwartet.** Der Test gilt zu jeder Uhrzeit und in jeder Reihenfolge: Er klappt die vergangenen Termine auf, die gleich gruppiert sind.
+
+### BEF-066 — Vorschauen des Praxisbetriebs: Jede Rolle sieht Salden, IBAN und Urlaubsgründe aller und darf Räder anlegen und entfernen
+
+|         |                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Bereich | Organisatorisches → Vorschau: Zeitkonto (`/betrieb/zeitkonto`), Erstattungen (`/betrieb/erstattungen`), Urlaub (`/betrieb/urlaub`), Radflotte (`/betrieb/flotte`)                                                                                                                                                                                                                                           |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs VOR-14, VOR-22                                                                                                                                                                                                                                                                                                  |
+| Status  | entschieden 2026-10-09 (Jannes); Radflotte erledigt in FLT-EPIC-001 (2026-10-15, über RLS und `app.can_manage_fleet`); Urlaub erledigt in URL-001 (2026-10-16, Funktionen ohne Tabellenrecht, ANN-580); Zeitkonto erledigt in ZK-001 (2026-10-17, Konten je Person für owner und Büro, keine Summe über alle); Erstattungen erledigt in ERS-001 (2026-10-17, Funktionen ohne Tabellenrecht, IBAN maskiert, voll nur in der Auszahlung für owner, ANN-598, ANN-601)                                                                                                                                                                                                         |
+| Berührt | `src/features/timeaccount/TimeAccountPage.tsx` (Z. 77, 96), `src/features/reimbursements/ReimbursementsPage.tsx` (Z. 68, 254, 337), `src/features/vacation/VacationPage.tsx` (Z. 158, 214, 490), `src/features/fleet/FleetPage.tsx` (Z. 193–229, 343), `src/features/fleet/BikeEditPage.tsx` (Z. 294); §4.3, §4.5, §16, §20; B6; ANN-024; ADR-004; Roadmap Block 8 (FLT-EPIC-001, URL-001, ZK-001, ERS-001) |
+
+**Beobachtung.** Als therapist angemeldet: „Saldo über alle Personen: −3,25 h“
+und „Alle Zeitkonten“ mit dem Saldo jeder Person; jede Erstattungskarte mit
+voller IBAN, die „Historie je Person“ mit allen Beträgen; unter „Alle Anträge“
+im Urlaub „Grund: Familienurlaub“ und „Grund: Umzug“ — während das Formular sagt
+„Private Gründe müssen nicht angegeben werden.“ In der Radflotte ist „Rad
+hinzufügen“ für jede Rolle der Hauptknopf, Bearbeiten und „Rad entfernen“ stehen
+allen offen; die Alltagswege Schlüssel, Panne und Check-Up sind nachrangig, und
+die erste Radkarte beginnt bei 390 px erst bei rund 830 px. Privatangaben
+Beschäftigter liest heute nur owner (§4.3, ANN-024) — eine Bankverbindung ist
+von derselben Art. Die Daten sind synthetisch, die Vorschau speichert nichts;
+sie ist aber das Vorbild der Loops, die sie in Block 8 ersetzen.
+
+**Frage an Jannes.** Wer sieht in Zeitkonto, Erstattungen und Urlaub die
+Einträge anderer, und wer verwaltet die Räder?
+
+**Optionen.**
+
+1. **Wie die Vorschau:** Alle sehen alles, alle dürfen alles. Folge:
+   Überstunden, Bankverbindung und private Gründe liegen im Team offen; eine
+   Summe über alle Personen ist eine Auswertung über Beschäftigte, die B6 und
+   §20 eng begrenzen.
+2. **Eng (§16):** Eigenes sieht jede Person; Fremdes in Zeitkonto und
+   Erstattungen nur owner; im Urlaub sehen andere nur den Zeitraum, nie den
+   Grund; die IBAN nur maskiert („DE02 •••• 01“); keine Summe über alle
+   Personen. Räder anlegen und entfernen nur owner, Schlüssel, Panne und
+   Check-Up alle. Verbindlich über RLS (ADR-004). Folge: später zu öffnen ist
+   billig; jede Öffnung ist eine eigene Rollenentscheidung.
+3. **Wie 2, mit den Zusatzrechten aus §4.3 und §4.5 gleich vergeben:** office
+   sieht die Belege der Erstattungen, team_lead bearbeitet Urlaubsanträge und
+   teilt Räder zu. Folge: näher an einer größeren Praxis, mehr Sichtbarkeit von
+   Anfang an.
+
+**Empfehlung.** Option 2, als Vorgabe in den Zuschnitt von FLT-EPIC-001,
+URL-001, ZK-001 und ERS-001; die Vorschau selbst wird nicht umgebaut, sondern
+ersetzt. Dort auch: der Hauptknopf nach Rolle (Behandelnde „Schlüssel
+entnehmen“, „Rad hinzufügen“ nachrangig für owner), Suche und Filter
+eingeklappt.
+
+**Entscheidung (Jannes, 2026-10-09).** Option 2 mit Büro: Eigenes sieht jede Person; Fremdes in Zeitkonto und Erstattungen sehen owner und Büro; im Urlaub sehen andere nur den Zeitraum, nie den Grund; IBAN maskiert; keine Summe über alle Personen; Räder anlegen und entfernen nur owner, Schlüssel, Panne und Check-up alle. Verbindlich über RLS; Vorgabe für den Zuschnitt der genannten Loops.

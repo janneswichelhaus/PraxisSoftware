@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Überholung 9 (17.10., Branch `ccr-350340fc-pnh5ti-zeitkonto`, auf 8, 7, 6, je eine PR): Zeitkonto
-echt – Mehrarbeit und Freizeitausgleich mit Beginn und Ende (G9, 5 Tipps), Zurückweisen mit Grund,
-Fristen mit Übertrag (`20261126100000`); ANN-593 bis ANN-597, Löschsperre offen (BEF-178).
+Überholung 10 (17.10., Branch `…-erstattungen`, auf 9 bis 6, je eine PR): Erstattungen echt –
+Ladestrom je Monat (G10, 6 Tipps), Einkauf mit Beleg, Genehmigen und Auszahlen getrennt (G10b, je 2),
+IBAN maskiert (`20261127100000`); ANN-598 bis ANN-602, Löschsperre offen (BEF-178).
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur

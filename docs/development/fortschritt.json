@@ -1035,9 +1035,12 @@
         },
         {
           "id": "ers-001",
-          "name": "ERS-001 Erstattungen",
+          "name": "ERS-001 Erstattungen: Ladestrom je Monat und Einkauf mit Belegen geführt beantragen (G10), Genehmigen oder Ablehnen mit Grund und Auszahlen getrennt (G10b), IBAN maskiert, voll nur in der Auszahlung für owner",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-17",
+          "nachweis": "Branch ccr-350340fc-pnh5ti-erstattungen, Migration 20261127100000_ers_001_erstattungen.sql, supabase/tests/reimbursements.test.ts, src/features/reimbursements/*.test.ts(x), tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview",
+          "vermerk": "Bereichsüberholung 10 der Roadmap (Auftrag Jannes 16.10.2026), ersetzt die Vorschau; ANN-598 bis ANN-602; Belege im Bucket erstattungsbelege mit nachgelagerter Prüfung; Löschsperre für Beschäftigtendaten offen (BEF-178); Sichtung per Bildstrecke im PR"
         },
         {
           "id": "ki-epic-001",
