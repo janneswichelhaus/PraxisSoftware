@@ -534,27 +534,25 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
   const appointmentsRow = (days: readonly { on_date: string; appointments: number }[]) => {
     const appointments = days.reduce((sum, d) => sum + d.appointments, 0);
     return (
-      <ListRows rahmen={false} beschriftung="Termine">
-        <ListRow
-          titel={
-            appointments === 0
-              ? 'Keine Termine außerhalb der neuen Zeiten'
-              : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
-          }
-          meta={
-            appointments === 0
-              ? undefined
-              : `${days
-                  .filter((d) => d.appointments > 0)
-                  .map((d) => `${tagKurz(d.on_date)}: ${d.appointments}`)
-                  .join(' · ')} · ${
-                  self
-                    ? 'nach dem Eintragen umplanen'
-                    : 'plant die Praxisleitung nach dem Genehmigen um'
-                }`
-          }
-        />
-      </ListRows>
+      <ListRow
+        titel={
+          appointments === 0
+            ? 'Keine Termine außerhalb der neuen Zeiten'
+            : `${appointments} ${appointments === 1 ? 'Termin' : 'Termine'} außerhalb der neuen Zeiten`
+        }
+        meta={
+          appointments === 0
+            ? undefined
+            : `${days
+                .filter((d) => d.appointments > 0)
+                .map((d) => `${tagKurz(d.on_date)}: ${d.appointments}`)
+                .join(' · ')} · ${
+                self
+                  ? 'nach dem Eintragen umplanen'
+                  : 'plant die Praxisleitung nach dem Genehmigen um'
+              }`
+        }
+      />
     );
   };
 
@@ -588,13 +586,20 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
         </div>
       }
     >
-      {/* Was am Gerät feststeht, bleibt mit „Ändern“ stehen; Laden, Funkloch und
-          Abweisung der Vorschau zeigt der Baustein nur für die Termine (Regel 8,
-          Design-Review Überholung 8) - ein Fehler ist nie „keine Termine außerhalb“. */}
+      {/* Was am Gerät feststeht, bleibt mit „Ändern“ stehen; die Termine kommen mit
+          der Vorschau in dieselbe Liste. Laden, Funkloch und Abweisung der
+          Vorschau zeigt der Baustein darunter (Regel 8, Design-Review
+          Überholung 8) - ein Fehler ist nie „keine Termine außerhalb“. */}
       <div className="flex flex-col gap-4">
         <ListRows rahmen={false} beschriftung="Änderung">
           <ListRow
-            titel={kind && onDate ? changeTitle(kind, onDate) : ''}
+            titel={
+              kind === 'permanent' && onDate
+                ? `Wochenplan ab ${dateDayMonth(onDate)}`
+                : kind && onDate
+                  ? changeTitle(kind, onDate)
+                  : ''
+            }
             aktion={
               <Button
                 variant="secondary"
@@ -608,8 +613,8 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
           />
           {kind === 'once' && newDay ? (
             <ListRow
-              titel={dayText(newDay)}
-              meta={`bisher ${dayText(previousDay)}`}
+              titel={blocksText(newDay)}
+              meta={`bisher ${blocksText(previousDay)}`}
               aktion={
                 <Button
                   variant="secondary"
@@ -625,8 +630,8 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
           {changedDays.map((day) => (
             <ListRow
               key={day}
-              titel={`${WEEKDAY_NAME[day]}: ${dayText(newWeek?.[day] ?? [])}`}
-              meta={`bisher ${dayText(previousWeek[day] ?? [])}`}
+              titel={`${WEEKDAY_NAME[day]} ${blocksText(newWeek?.[day] ?? [])}`}
+              meta={`bisher ${blocksText(previousWeek[day] ?? [])}`}
               aktion={
                 <Button
                   variant="secondary"
@@ -647,6 +652,7 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
                 : undefined
             }
           />
+          {complete && preview.data ? appointmentsRow(preview.data.appointment_days) : null}
           <ListRow
             titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
             meta={
@@ -666,7 +672,7 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
               titel: preview.error instanceof Error ? preview.error.message : PREVIEW_ERROR,
             }}
           >
-            {(data) => appointmentsRow(data.appointment_days)}
+            {() => null}
           </Abfragezustand>
         ) : null}
         <Disclosure summary="Grund angeben" offen={message !== ''}>

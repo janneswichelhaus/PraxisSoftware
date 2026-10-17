@@ -137,7 +137,7 @@ describe('RequestWorkingTimePage', () => {
     expect(
       await within(abschluss).findByText('Einmalig: Dienstag, 20. Oktober'),
     ).toBeInTheDocument();
-    expect(within(abschluss).getByText('07:00–12:00, 13:00–17:00 · 9:00 Std.')).toBeInTheDocument();
+    expect(within(abschluss).getByText('07:00–12:00, 13:00–17:00')).toBeInTheDocument();
     expect(
       await within(abschluss).findByText('Keine Termine außerhalb der neuen Zeiten'),
     ).toBeInTheDocument();
@@ -246,7 +246,7 @@ describe('RequestWorkingTimePage', () => {
 
     const abschluss = await screen.findByRole('dialog', { name: 'Änderung beantragen?' });
     expect(
-      await within(abschluss).findByText('Dienstag: 08:00–12:30, 13:30–18:00 · 9:00 Std.'),
+      await within(abschluss).findByText('Dienstag 08:00–12:30, 13:30–18:00'),
     ).toBeInTheDocument();
     expect(
       await within(abschluss).findByText('2 Termine außerhalb der neuen Zeiten'),

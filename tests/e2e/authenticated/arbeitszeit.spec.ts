@@ -169,6 +169,8 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   await expect(abschluss.getByText(/außerhalb der neuen Zeiten/)).toBeVisible();
   await expect(absenden).toBeEnabled();
   await stehtImBild(page, abschluss, absenden);
+  // Auch der Abschluss rollt nicht: Angaben, Termine und „Grund angeben“.
+  await rolltNicht(abschluss);
   await bild(page, 'b8-g8-04-zusammenfassung-375');
   await t.tippe(absenden);
   await expect(page.getByRole('status').filter({ hasText: 'Änderung beantragt:' })).toBeVisible();
@@ -254,7 +256,9 @@ test('G8 dauerhaft: Anna verschiebt dienstags die Pause in sieben Tipps (AZ-001)
   await t.tippe(woche.getByRole('button', { name: 'Weiter' }));
 
   const abschluss = page.getByRole('dialog', { name: 'Änderung beantragen?' });
-  await expect(abschluss.getByText(/^Dienstag: 08:00–12:30, 13:30–18:00/)).toBeVisible();
+  await expect(abschluss.getByText(/^Dienstag 08:00–12:30, 13:30–18:00/)).toBeVisible();
+  await expect(abschluss.getByText(/außerhalb der neuen Zeiten/)).toBeVisible();
+  await rolltNicht(abschluss);
   const absenden = abschluss.getByRole('button', { name: 'Änderung beantragen' });
   await expect(absenden).toBeEnabled();
   await bild(page, 'b8-g8-07-zusammenfassung-woche-375');
