@@ -630,9 +630,35 @@ Marke vorsieht.
 | Datum   | 2026-10-17 |
 | Bereich | Aufbewahrung und Löschung (ADR-008), Urlaub, Arbeitszeit, Zeitkonto |
 | Quelle  | Zweitreview der Überholung 9 (ZK-001), gilt seit Überholung 7 |
-| Status  | offen – Entscheidung Jannes |
+| Status  | eingeplant: eigener Auftrag (Pfad A), Entscheidung Jannes 2026-10-17 |
 | Berührt | `app.delete_due_staff_leave` (URL-001), `app.delete_due_working_time_requests` (AZ-001), `app.delete_due_time_account_entries` (ZK-001), `public.legal_holds` |
 
 **Beobachtung.** ANN-033 lässt die Löschsperre nur für Patientenakten zu, weil es für Beschäftigtendaten keine automatische Löschung gab. Seit URL-001 löscht der Lauf Urlaubsanträge und -ansprüche, seit AZ-001 Arbeitszeitänderungen, mit ZK-001 auch gültige Zeitkonto-Einträge – jeweils an der Verjährungsgrenze, an der ein laufender Streit sie bräuchte. ADR-008 Punkt 7 verlangt, dass eine Sperre automatische Löschung während laufender Vorgänge verhindert.
 
 **Erwartet.** Änderungspfad von ANN-033: Gegenstand `staff_member` zulassen (owner setzt und hebt auf wie bei Akten) und in den drei Löschregeln `app.under_legal_hold(…, 'staff_member', …)` prüfen. Das schreibt Auditeinträge zu einem neuen Gegenstand und braucht deshalb Jannes' Freigabe (ADR-010, Label `freigabe-audit`); bis dahin nichts gebaut. Genehmigtes und Gültiges fällt frühestens Anfang 2030.
+
+**Entscheidung (Jannes, 2026-10-17).** Wie empfohlen: ein eigener kleiner Pfad-A-Auftrag für Urlaub, Arbeitszeit, Zeitkonto und Erstattungen zusammen; die Auditeinträge zum neuen Gegenstand brauchen an dessen PR weiter das Label `freigabe-audit`.
+
+### BEF-179 — Zeitkonto: Eine Zurückweisung erreicht die Person nicht von selbst
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Zeitkonto (`/betrieb/zeitkonto`), Übersicht „Noch offen“ |
+| Quelle  | Praxis-Review der Überholung 9 (ZK-001), Frage an Jannes |
+| Status  | eingeplant: Folge-Story im Zeitkonto, Entscheidung Jannes 2026-10-17 |
+| Berührt | `list_time_account`, `src/features/today/NochOffen.tsx` |
+
+**Beobachtung.** Weist owner einen Freizeitausgleich zurück, ist die Zeit sofort wieder Arbeitszeit; die Person sieht das nur, wenn sie ins Zeitkonto schaut. **Erwartet.** Ein zurückgewiesener Eintrag mit kommendem Tag steht bei der Person unter „Noch offen“ in der Übersicht, bis der Tag vorbei ist – ohne Benachrichtigung, Push bleibt aus.
+
+### BEF-180 — Zeitkonto: Ein Freizeitausgleich für heute lässt sich nicht zurücknehmen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Zeitkonto (`/betrieb/zeitkonto`) |
+| Quelle  | Praxis-Review der Überholung 9 (ZK-001), Runde 2 |
+| Status  | eingeplant: eigener kleiner Auftrag (Pfad A), Entscheidung Jannes 2026-10-17 |
+| Berührt | `public.withdraw_time_account_entry` und `can_withdraw` in `list_time_account` (`20261126100000_zk_001_zeitkonto.sql`), `TimeAccountPage.tsx` |
+
+**Beobachtung.** Zurücknehmen geht beim Freizeitausgleich nur vor seinem Tag (`on_date > heute`); wer heute doch bleibt, kann den Eintrag für heute nicht zurücknehmen. **Erwartet.** Zurücknehmen auch am Tag selbst, solange die freie Zeit noch nicht begonnen hat; die Abweichung im Kalender fällt mit dem Eintrag. Pfad A: Prüfung am Server, Negativtests.

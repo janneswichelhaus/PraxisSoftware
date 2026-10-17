@@ -5917,7 +5917,7 @@ Technik · entschieden (Jannes) · 2026-10-16 · Jannes · — · Wiedervorlage:
 
 ### ANN-572 — Geführter Ablauf als Baustein: Frage oben, Antworten im festen Fuß
 
-Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Seltene, verzweigte oder einhändige Abläufe laufen im Baustein `GefuehrterAblauf`: Kopf mit Objekt und ✕, „← Zurück“, Schritt (Balken nur bei fester Zahl), je Seite eine Frage; ohne Bühne steht die Frage oben und die Antworten im festen Fuß, mit Bühne (3D-Rad) wie beim Check-Up unter ihr. Nach jedem Seitenwechsel 0,7 s keine Tipps; aus dem Abschluss geändert geht es zurück dorthin (`abfolge.ts`).
 
@@ -5929,7 +5929,7 @@ Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Übe
 
 ### ANN-574 — Tag umplanen: Auswahl abwählbar, Anrufstand nur in der Adresse
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** „Tag umplanen“ wählt alle bestätigten Behandlungstermine des Tages vor; einzelne lassen sich abwählen (Kollegin übernimmt). `cancel_staff_day` sagt genau die Auswahl in einem Vorgang ab und schreibt nichts, wenn sie nicht mehr zum Tag passt. Danach je Person eine Seite mit „Erreicht“ oder „Nicht erreicht“; der Stand steht nur als Kennungen in der Adresse, nicht am Server.
 
@@ -5941,7 +5941,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-575 — Schlüssel von Hand zu Hand in einem Vorgang
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Schlüssel, der bei jemandem liegt, geht über `hand_over_fleet_key` an eine andere Person aus dem Mitarbeiterstamm: Der offene Vorgang endet, ein neuer beginnt, in einer Transaktion. Dieselben Rollen wie beim Eintragen (BEF-066), nicht bei gesperrtem Rad, nicht an dieselbe Person; der Datensatz ist der Nachweis, kein Auditereignis (ADR-010).
 
@@ -5953,7 +5953,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-573 — Niemand öffnet: erst anrufen, dann die Uhr abwarten
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** „Niemand öffnet?“ führt in einem Fenster durch drei Seiten: geklingelt → angerufen (Rufnummer als Knopf; „Erreicht“ schließt ohne Vermerk) → 15 Minuten gewartet mit der Uhr ab dem ersten Tipp. Vermerkt wird erst nach 15 Minuten oder mit dem Haken „Schon vorher 15 Minuten gewartet“; gespeichert wird wie bisher nur `record_no_show` mit bestätigtem Protokoll. Die beiden anderen Fälle stehen auf der ersten Seite.
 
@@ -5965,7 +5965,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-576 — Urlaub: Antrag, Entscheidung, Storno als neuer Antrag
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 7
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Jede Praxisrolle mit Mitarbeiterdatensatz beantragt eigenen Urlaub; owner entscheidet, nie über den eigenen Antrag, Ablehnen nur mit Grund, und trägt den eigenen Urlaub direkt ein (genehmigt, `self_entered`). Die Teamleitung entscheidet nicht. Genehmigtes hebt nur ein Storno-Antrag mit Bezug auf, und nur vor Beginn.
 
@@ -5977,7 +5977,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-577 — Urlaubstage nach Wochenplan ohne Feiertage des Bundeslands
 
-Recht · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Ein Urlaubstag ist ein Tag mit Block im Wochenplan der Person (ohne Plan Montag bis Freitag), der kein gesetzlicher Feiertag des Bundeslands der Praxis ist (`organizations.federal_state`, BW oder NW, Voreinstellung BW). Gezählt wird am Server beim Beantragen; nur ganze Tage; ein Urlaub über den Jahreswechsel zählt je Jahr.
 
@@ -5989,7 +5989,7 @@ Recht · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-578 — Genehmigter Urlaub sperrt die Tage, Termine werden genannt
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 7
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Genehmigter Urlaub jeder Person schreibt je Tag eine Abwesenheit mit Bezug auf den Antrag, auch wer erst später einplanbar wird; ein Storno entfernt genau diese, und die Arbeitszeiten überschreiben keinen Tag im Zeitraum. Abweichende Arbeitszeiten im Zeitraum halten die Genehmigung an. Termine werden je Tag genannt, nie still abgesagt.
 
@@ -6001,7 +6001,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-579 — Urlaub: drei Jahre ab Jahresende, Abgelehntes ein Jahr
 
-Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Genehmigte und stornierte Anträge sowie Ansprüche löscht der Lauf drei Jahre nach Ende des Kalenderjahres (`urlaub`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`urlaub_kurz`); Offenes nie. Storno und Abwesenheiten fallen mit (cascade) - abweichend von ANN-030 für diese Zeilen. Mit Löschjournal.
 
@@ -6013,7 +6013,7 @@ Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-580 — Urlaub: Notiz nur für die Person, fremde Konten nur owner
 
-Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Die Notiz sieht nur die Person, auch nicht, wer entscheidet. owner sieht am offenen Antrag Zeitraum, Tage, Konto, wer zugleich fehlt, die Termine und die Tage mit abweichenden Arbeitszeiten; fremde Konten (auch des Folgejahrs) nur owner. Andere sehen genehmigten Urlaub nur mit Name und Zeitraum ab heute; im Kalender steht er wie jede Abwesenheit, ohne Bezug, Urheber, Zeitpunkt (Spaltenrecht).
 
@@ -6025,7 +6025,7 @@ Datenschutz · offen · 2026-10-16 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-581 — Einrichten: Wochenplan nur mit owner, die Person dafür in den Kalender
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Wählt owner beim Einrichten eine Vorlage, nimmt „… einrichten“ die Person zuerst in den Kalender für Behandlungen (Training bleibt aus) und speichert dann den Wochenplan Tag für Tag. office sieht die Seite nicht; Abschluss und Ergebnis nennen den Weg über die Inhaber:in.
 
@@ -6037,7 +6037,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-582 — Einrichten: Wochenplan und Rad nur, wenn die Person behandelt
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Wochenplan und Lastenrad fragt der Ablauf bei Therapeut:in oder Teamleitung und solange keine Rolle gewählt ist (office; owner „Später“). Bei Praxismanagement oder Trainingsbetreuung allein entfallen beide Seiten; eine schon gegebene Antwort schreibt dann nichts.
 
@@ -6049,7 +6049,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-583 — Plattform: Wunschtage als Wochentage
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** „Wann passt es Ihnen?“ fragt Montag bis Freitag statt 14 einzelner Daten, dazu Vormittag, Mittag, Nachmittag oder „Egal“. An den Server gehen weiter Kalendertage: jeder gewählte Wochentag unter den nächsten 14 Werktagen. Einen einzelnen Tag schreibt man in die Nachricht.
 
@@ -6061,7 +6061,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-584 — Plattform: Fenster zeichnen in ein Ziel mit 18 px
 
-Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Fenster der Plattform zeichnen in ein Portalziel mit `.plattform-schrift` direkt nach dem Gerüst und innerhalb des Bereichs, den die Sitzungssperre verbirgt; die Einsicht der Praxis behält ihr Ziel.
 
@@ -6073,7 +6073,7 @@ Technik · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Übe
 
 ### ANN-585 — Plattform: Ändern verlangt Tag und Tageszeit
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Änderungswunsch geht erst weiter, wenn mindestens ein Wochentag und eine Tageszeit oder „Egal“ gewählt ist. Der Server nimmt einen Wunsch ohne Tage weiter an.
 
@@ -6085,7 +6085,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-586 — Panne im Fenster: wann sie begonnen ist
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Eine Panne gilt als begonnen, sobald „Wo ist der Schaden?“ verlassen oder eine Stelle markiert ist; ab dann fragt ✕ („Panne noch nicht gemeldet“), und die Zurückgeste geht einen Schritt zurück statt aus dem Fenster. Seiten, deren Hauptknopf meldet, sind Abschluss mit Linie über dem Fuß.
 
@@ -6097,7 +6097,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-587 — Schlüssel übergeben: ein Ablauf für Tresor und Hand zu Hand
 
-Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung der Überholung 6
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** „Schlüssel übergeben“ ist ein Ablauf für beides: aus dem Tresor eintragen und von Hand zu Hand (immer drei Schritte, mit `?rad=` ab Schritt 2). „Von“ folgt aus dem Rad und hat kein eigenes „Ändern“; ✕ schließt ohne Rückfrage, weil nur gewählt wurde. An der Zeile bleibt nur „Zurücklegen“.
 
@@ -6109,7 +6109,7 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-588 — Arbeitszeitänderung: nie weniger Stunden, Grenzen des Arbeitszeitgesetzes, nicht rückwirkend
 
-Recht · offen · 2026-10-17 · — · — · Wiedervorlage: Sichtung der Überholung 8
+Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Ein Antrag sinkt nie unter die bisherige Arbeitszeit ohne Pausen: einmalig am Tag, dauerhaft in der Woche (Stunden wandern zwischen Tagen). Geprüft am Gerät und am Server, beim Beantragen und Genehmigen: höchstens 10 Stunden am Tag (§ 3 ArbZG), Pause 30 Minuten über 6 und 45 über 9 Stunden, Abschnitte ab 15 Minuten, höchstens 6 Stunden am Stück (§ 4), 11 Stunden Ruhe zu den Nachbartagen (§ 5). Frühestens morgen.
 
@@ -6121,7 +6121,7 @@ Recht · offen · 2026-10-17 · — · — · Wiedervorlage: Sichtung der Überh
 
 ### ANN-589 — Wochenplan in Fassungen mit Gültigkeit ab einem Datum
 
-Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 8
+Technik · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** `staff_working_hours` trägt `valid_from`/`valid_until`; je Tag gilt genau eine Fassung (am Schema erzwungen). Eine genehmigte dauerhafte Änderung beendet die laufende am Vortag. Die Planung pflegt die heute gültige Fassung; eine künftige zeigt sie nur an. Beendete Fassungen liest nur der Server (RLS ab heute).
 
@@ -6133,7 +6133,7 @@ Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung d
 
 ### ANN-590 — Arbeitszeitänderung: Zustände wie Urlaub, Grund für die Praxisleitung
 
-Praxisprozess · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 8
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** beantragt → genehmigt oder abgelehnt (Grund Pflicht), zurückgezogen solange offen; kein Storno. owner entscheidet, nie den eigenen, und trägt die eigene direkt ein. Der freiwillige Grund geht an die Praxisleitung: Ihn sehen die Person und owner. Beantragen nur mit Wochenplan; einmalig nicht an Urlaubs- oder Abwesenheitstagen; Termine außerhalb werden genannt. Genehmigt wird nur gegen den Plan, gegen den beantragt wurde; hat er sich geändert, bleibt Ablehnen.
 
@@ -6145,7 +6145,7 @@ Praxisprozess · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sich
 
 ### ANN-591 — Arbeitszeitänderung: Fristen
 
-Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Genehmigte Anträge drei Jahre ab Ende des Jahres ihres Datums (`arbeitszeit`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`arbeitszeit_kurz`), offene nie; Journal und Restore. Die Abweichung einer einmaligen Änderung fällt mit ihrem Antrag (cascade). Beendete Fassungen bleiben Wochenplan (Frist offen, ANN-030), lesbar nur für den Server.
 
@@ -6157,7 +6157,7 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-592 — Arbeitszeitänderung: Pause im Formular
 
-Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: Sichtung der Überholung 8
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Tag mit Pause zeigt Beginn, Pause ab, Pausendauer und Ende; ohne Pause nur Beginn und Ende, „Pause einfügen“ erst, wenn der Tag über 6 Stunden geht. Wird die Pause länger, schlägt der Ablauf ein späteres Ende vor, damit die Arbeitszeit bleibt.
 
@@ -6169,7 +6169,7 @@ Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: Sichtung de
 
 ### ANN-593 — Zeitkonto: Einträge mit Beginn und Ende, gelten sofort
 
-Recht · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 9
+Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Mehrarbeit und Freizeitausgleich stehen mit Datum, Beginn und Ende im Zeitkonto und gelten sofort, ohne Antrag. Mehrarbeit bis 31 Tage zurück, nie voraus, und nur außerhalb der Arbeitszeit des Tages (an einem freien Tag ganz); Freizeitausgleich 31 Tage zurück bis ein Jahr voraus. Gezählt wird in Minuten am Server.
 
@@ -6181,7 +6181,7 @@ Recht · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der
 
 ### ANN-594 — Zeitkonto: Zurückweisen, Zurücknehmen, Buchen für andere
 
-Praxisprozess · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 9
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** owner weist einen Eintrag mit Grund zurück, nie im eigenen Konto; er bleibt sichtbar und zählt nicht. Zurücknehmen kann, wer eingetragen hat, solange er gilt – einen Freizeitausgleich nur vor seinem Tag. owner und Büro tragen für andere ein und buchen Korrekturen (Minuten mit Grund, ohne Lage); im eigenen Konto bucht nur owner eine Korrektur. Die Teamleitung entscheidet nicht.
 
@@ -6193,7 +6193,7 @@ Praxisprozess · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sich
 
 ### ANN-595 — Zeitkonto: Freizeitausgleich als Abweichung in den Arbeitszeiten
 
-Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 9
+Technik · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Freizeitausgleich nur an einem Tag nach Wochenplan (nicht im Urlaub, nicht an einem Tag mit Abwesenheit oder geänderten Zeiten) und innerhalb seiner Arbeitszeit; gezählt wird die Arbeitszeit darin. Es bleiben die übrigen Blöcke als Abweichung, ganztägig eine Abwesenheit; Termine darin werden genannt. Solange er gilt, ändern Planung (Abweichung oder Wochenplan), Arbeitszeitänderung und Urlaub den Tag nicht (erst zurückweisen oder zurücknehmen).
 
@@ -6205,7 +6205,7 @@ Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung d
 
 ### ANN-596 — Zeitkonto: wer welches Konto sieht
 
-Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Jede Person sieht ihr Konto mit allen Einträgen und Gründen. owner und Büro sehen die Konten aller je Person, auch die Gründe – ohne Summe über alle. Teamleitung, Therapie und Trainingsbetreuung sehen nur ihr eigenes. Der Bezug einer Abweichung auf den Eintrag ist nicht lesbar; wer plant, erfährt ihn nur, wenn eine Änderung daran anhält. Wer für andere bucht, kann aus Minuten und Gründen der Vorschau die Zeiten der letzten 31 Tage erschließen.
 
@@ -6217,7 +6217,7 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-597 — Zeitkonto: Fristen
 
-Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Gültige Einträge löscht der Lauf drei Jahre ab Ende ihres Jahres (`zeitkonto`); ihr Saldo bleibt als Übertrag je Person und Jahr stehen, ohne Lage und Grund, Frist offen (ANN-030). Zurückgewiesene und zurückgenommene ein Jahr nach ihrem Ende (`zeitkonto_kurz`). Journal und erneutes Löschen nach einem Restore; die Abweichung fällt mit. Eine Löschsperre gibt es nur für Akten (ANN-033, BEF-178).
 
