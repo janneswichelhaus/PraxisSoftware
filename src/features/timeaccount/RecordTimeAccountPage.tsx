@@ -221,7 +221,7 @@ function Flow({
         state: {
           meldung: `Eingetragen: ${what} ${when}${range ? `, ${range}` : ''} (${signedHours(
             answer.minutes,
-          )}). Saldo ${signedHours(answer.balance_minutes)}.`,
+          )}). Saldo ${signedHours(answer.balance_minutes)}`,
         },
       });
     },
@@ -258,7 +258,7 @@ function Flow({
           <Statusmeldung ton="erfolg">
             {`${what} ${when}, ${range} (${signedHours(result.minutes)}). Saldo ${signedHours(
               result.balance_minutes,
-            )}.`}
+            )}`}
           </Statusmeldung>
           <DaysToReschedule
             staffMemberId={account?.staff_member_id ?? ''}
