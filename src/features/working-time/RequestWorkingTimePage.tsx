@@ -134,6 +134,26 @@ function draftBlocks(form: DayForm | null, fallback: readonly Block[]): Block[] 
   return form === null ? [...fallback] : blocksFromForm(form);
 }
 
+/** Wie viele Tage mit Terminen außerhalb der Abschluss einzeln nennt. */
+const NAMED_DAYS = 3;
+
+/**
+ * „1. Dez.: 2 · 8. Dez.: 1 · 2 weitere Tage“ - je Tag die Zahl, ab dem vierten
+ * Tag nur noch, wie viele es sind: Die Zeile bleibt kurz, der Abschluss rollt
+ * bei 375 × 667 nicht (DESIGN.md, geführter Ablauf).
+ */
+function appointmentDaysText(days: readonly { on_date: string; appointments: number }[]): string {
+  const withAppointments = days.filter((d) => d.appointments > 0);
+  const named = withAppointments
+    .slice(0, NAMED_DAYS)
+    .map((d) => `${tagKurz(d.on_date)}: ${d.appointments}`);
+  const rest = withAppointments.length - named.length;
+  return [
+    ...named,
+    ...(rest > 0 ? [`${rest} ${rest === 1 ? 'weiterer Tag' : 'weitere Tage'}`] : []),
+  ].join(' · ');
+}
+
 function Flow({ state, today }: { state: WorkingTime; today: string }) {
   const navigate = useNavigate();
   const [search] = useSearchParams();
@@ -543,10 +563,7 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
         meta={
           appointments === 0
             ? undefined
-            : `${days
-                .filter((d) => d.appointments > 0)
-                .map((d) => `${tagKurz(d.on_date)}: ${d.appointments}`)
-                .join(' · ')} · ${
+            : `${appointmentDaysText(days)} · ${
                 self
                   ? 'nach dem Eintragen umplanen'
                   : 'plant die Praxisleitung nach dem Genehmigen um'
@@ -592,6 +609,8 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
           Überholung 8) - ein Fehler ist nie „keine Termine außerhalb“. */}
       <div className="flex flex-col gap-4">
         <ListRows rahmen={false} beschriftung="Änderung">
+          {/* Die Stunden stehen an der Zeile des Datums - eine Zeile weniger, damit
+              der Abschluss auch mit Terminen außerhalb nicht rollt. */}
           <ListRow
             titel={
               kind === 'permanent' && onDate
@@ -599,6 +618,14 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
                 : kind && onDate
                   ? changeTitle(kind, onDate)
                   : ''
+            }
+            meta={
+              previous && minutes !== null
+                ? `${kind === 'once' ? 'Am Tag' : 'In der Woche'} ${minutesChange(
+                    previous.previous_minutes,
+                    minutes,
+                  )}`
+                : undefined
             }
             aktion={
               <Button
@@ -644,14 +671,6 @@ function Flow({ state, today }: { state: WorkingTime; today: string }) {
               }
             />
           ))}
-          <ListRow
-            titel={kind === 'once' ? 'Arbeitszeit am Tag' : 'Arbeitszeit in der Woche'}
-            meta={
-              previous && minutes !== null
-                ? minutesChange(previous.previous_minutes, minutes)
-                : undefined
-            }
-          />
           {complete && preview.data ? appointmentsRow(preview.data.appointment_days) : null}
           <ListRow
             titel={self ? 'Sie tragen die Änderung selbst ein' : 'Entscheidet'}
