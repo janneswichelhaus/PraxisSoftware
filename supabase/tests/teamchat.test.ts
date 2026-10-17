@@ -161,7 +161,36 @@ describe('Teamchat: wer teilnimmt', () => {
       expect((await fehler(users.ownerTherapist, `select * from public.${tabelle}`))?.code).toBe(
         '42501',
       );
+      // Auch TRUNCATE, das RLS nicht erfasst (Zweitreview TEAM-001). Die
+      // Testdatenbank vergibt neuen Tabellen keine Rechte von selbst; die
+      // Migration entzieht sie ausdrücklich für Supabase.
+      const { rows } = await asPostgres<{ recht: boolean }>(
+        `select bool_or(has_table_privilege(r, $1, p)) as recht
+         from unnest(array['anon', 'authenticated']) r,
+              unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']) p`,
+        [`public.${tabelle}`],
+      );
+      expect(rows[0]!.recht).toBe(false);
     }
+  });
+
+  it('weist Bearbeiten, Löschen und Lesen über fremde Praxen und fremde Gespräche ab', async () => {
+    const fremd = await fremdeOrganisation();
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const n = await senden(users.therapist, allgemein.id, 'Unser Text');
+    const fremdAllgemein = (await kanaele(fremd.owner)).find((k) => k.name === 'Allgemein')!;
+    for (const [sql, params] of [
+      ['select public.edit_team_message($1, $2, $3::uuid[])', [n, 'Fremd', []]],
+      ['select public.delete_team_message($1)', [n]],
+      ['select public.mark_team_channel_read($1)', [allgemein.id]],
+      [NACHRICHTEN, [fremdAllgemein.id, n]],
+    ] as const) {
+      expect((await fehler(fremd.owner, sql, [...params]))?.code).toBe('P0002');
+    }
+    // Eine Ausgangsnachricht aus einem anderen Kanal ist kein Thread hier.
+    const flotte = await kanal(users.therapist, 'Flotte');
+    expect((await fehler(users.therapist, NACHRICHTEN, [flotte.id, n]))?.code).toBe('P0002');
+    expect((await fehler(users.therapist, SENDEN, [flotte.id, n, 'x', []]))?.code).toBe('P0002');
   });
 
   it('nimmt Ausgeschiedene heraus: kein Zugang, keine Erwähnung, keine Direktnachricht', async () => {
@@ -455,6 +484,53 @@ describe('Teamchat: bearbeiten, löschen, entfernen, archivieren', () => {
   });
 });
 
+describe('Teamchat: Restore nach eigenem Löschen und Entfernen (ADR-008 Punkt 8)', () => {
+  it('bringt gelöschte und entfernte Texte nach einem Restore nicht zurück', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const allein = await senden(users.therapist, allgemein.id, 'Vertippt');
+    const versehentlich = await senden(users.office, allgemein.id, 'Name einer Patientin');
+    await senden(users.teamLead, allgemein.id, 'Antwort', versehentlich);
+    await asUserCommitted(users.therapist, 'select public.delete_team_message($1)', [allein]);
+    await asUserCommitted(users.ownerTherapist, 'select public.delete_team_message($1)', [
+      versehentlich,
+    ]);
+
+    const journal = await asPostgres<{ target_table: string; target_id: string }>(
+      `select target_table, target_id from public.deletion_journal
+       where retention_class = 'teamchat' order by target_table`,
+    );
+    expect(journal.rows).toEqual([
+      { target_table: 'team_message_contents', target_id: versehentlich },
+      { target_table: 'team_messages', target_id: allein },
+    ]);
+
+    // Restore: beide Stände kommen zurück.
+    await asPostgres(
+      `insert into public.team_messages (id, organization_id, channel_id, author_staff_member_id, body)
+       values ($1, $2, $3, $4, 'Vertippt')`,
+      [allein, organizationId, allgemein.id, STAFF.anna],
+    );
+    await asPostgres(
+      `update public.team_messages
+         set body = 'Name einer Patientin', removed_at = null, removed_kind = null,
+             removed_by_staff_member_id = null
+       where id = $1`,
+      [versehentlich],
+    );
+    await asPostgres('select public.reapply_deletion_journal()');
+
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [allein]),
+    ).toBe(0);
+    const { rows } = await asPostgres<{ body: string | null; antworten: string }>(
+      `select m.body, (select count(*) from public.team_messages r where r.parent_id = m.id) as antworten
+       from public.team_messages m where m.id = $1`,
+      [versehentlich],
+    );
+    expect(rows[0]).toEqual({ body: null, antworten: '1' });
+  });
+});
+
 describe('Teamchat: Löschlauf (ANN-610)', () => {
   async function alt(id: string, monate: number): Promise<void> {
     await asPostgres(
@@ -531,6 +607,40 @@ describe('Teamchat: Löschlauf (ANN-610)', () => {
         [wurzel, antwortNeu],
       ]),
     ).toBe(0);
+  });
+
+  it('räumt verwaiste Anker und den Lesestand Ausgeschiedener ab', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const wurzel = await senden(users.therapist, allgemein.id, 'Frage');
+    const antwort = await senden(users.office, allgemein.id, 'Antwort', wurzel);
+    await asUserCommitted(users.therapist, 'select public.delete_team_message($1)', [wurzel]);
+    await asUserCommitted(users.office, 'select public.delete_team_message($1)', [antwort]);
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [wurzel]),
+    ).toBe(1);
+
+    await asUserCommitted(users.teamLead, 'select public.mark_team_channel_read($1)', [
+      allgemein.id,
+    ]);
+    await asPostgres(
+      `update public.staff_members set employment_status = 'inactive' where id = $1`,
+      [STAFF.tim],
+    );
+    await asPostgres('select public.apply_retention()');
+
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [wurzel]),
+    ).toBe(0);
+    expect(
+      await anzahl('select count(*) n from public.team_read_states where staff_member_id = $1', [
+        STAFF.tim,
+      ]),
+    ).toBe(0);
+    expect(
+      await anzahl('select count(*) n from public.team_read_states where staff_member_id = $1', [
+        STAFF.anna,
+      ]),
+    ).toBe(1);
   });
 
   it('wendet nach einem Restore die Löschung und den Anker erneut an', async () => {

@@ -220,9 +220,13 @@ alter table public.team_messages enable row level security;
 alter table public.team_message_mentions enable row level security;
 alter table public.team_read_states enable row level security;
 -- Bewusst keine Policy und kein Tabellenrecht: Zugriff nur über die
--- Funktionen unten (ADR-004, Defense in Depth). Fällt eine Praxis, fällt ihr
--- Teamchat mit (cascade): Er hat keine Aufbewahrungspflicht, und die
--- Startkanäle entstehen mit jeder Praxis.
+-- Funktionen unten (ADR-004, Defense in Depth). Supabase vergibt neuen
+-- Tabellen in public alle Rechte an anon und authenticated - hier ausdrücklich
+-- entzogen, auch TRUNCATE, das RLS nicht erfasst (Zweitreview TEAM-001).
+revoke all on public.team_channels, public.team_channel_members, public.team_messages,
+  public.team_message_mentions, public.team_read_states from public, anon, authenticated;
+-- Fällt eine Praxis, fällt ihr Teamchat mit (cascade): Er hat keine
+-- Aufbewahrungspflicht, und die Startkanäle entstehen mit jeder Praxis.
 
 -- -----------------------------------------------------------------------------
 -- 3. Datenklasse und Frist (ADR-008 Fassung 5, ANN-610)
@@ -445,7 +449,9 @@ begin
                     and (p_before is null or x.created_at < p_before)
                else x.id = p_parent or x.parent_id = p_parent end
     order by x.created_at desc
-    limit case when p_parent is null then least(greatest(coalesce(p_limit, 50), 1), 100) else 500 end
+    -- Im Thread ohne Grenze: Sonst fiele bei sehr vielen Antworten die
+    -- Ausgangsnachricht heraus (Zweitreview TEAM-001).
+    limit case when p_parent is null then least(greatest(coalesce(p_limit, 50), 1), 100) end
   ) m
   order by m.created_at;
 end;
@@ -680,8 +686,11 @@ declare
   v_antwort boolean;
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
+  -- for update: Eine gleichzeitig eingehende Antwort wartet, bis hier
+  -- entschieden ist - sonst nähme das Löschen sie über cascade mit.
   select * into v_m from public.team_messages
-   where id = p_message and organization_id = v_org and removed_at is null;
+   where id = p_message and organization_id = v_org and removed_at is null
+   for update;
   if v_m.id is null or not app.team_channel_readable(v_m.channel_id, v_org, v_staff) then
     raise exception 'team message not found' using errcode = 'P0002';
   end if;
@@ -697,6 +706,15 @@ begin
   end if;
 
   v_antwort := exists (select 1 from public.team_messages r where r.parent_id = v_m.id);
+  -- Ins Löschjournal, damit ein Restore den Text nicht zurückbringt (ADR-008
+  -- Punkt 8): die ganze Zeile oder nur ihren Inhalt (`team_message_contents`,
+  -- reapply leert dann statt zu löschen).
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  values (v_org, extensions.gen_random_uuid(),
+          case when v_kind = 'author' and not v_antwort then 'team_messages'
+               else 'team_message_contents' end,
+          v_m.id, 'teamchat', now());
   if v_kind = 'author' and not v_antwort then
     delete from public.team_messages where id = v_m.id;
   else
@@ -929,6 +947,29 @@ begin
   from geloescht g join faellig x on x.id = g.id;
   get diagnostics v_teil = row_count;
   v_anzahl := v_anzahl + v_teil;
+
+  -- Anker ohne Inhalt, an denen keine Antwort mehr hängt: Sie haben ihren
+  -- Zweck verloren und fallen sofort (ANN-610).
+  with geloescht as (
+    delete from public.team_messages m
+    where m.organization_id = p_org and m.parent_id is null and m.removed_at is not null
+      and not exists (select 1 from public.team_messages r where r.parent_id = m.id)
+    returning m.id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select p_org, p_run, 'team_messages', g.id, 'teamchat', now()
+  from geloescht g;
+  get diagnostics v_teil = row_count;
+  v_anzahl := v_anzahl + v_teil;
+
+  -- Der Lesestand Ausgeschiedener: Er dient nur den eigenen Zählern und
+  -- fällt mit dem Ausscheiden (ANN-609, Zweitreview TEAM-001). Ohne Journal -
+  -- die Regel greift nach einem Restore im nächsten Lauf ebenso.
+  delete from public.team_read_states rs
+  using public.staff_members sm
+  where rs.organization_id = p_org and sm.id = rs.staff_member_id
+    and sm.employment_status <> 'active';
 
   -- Fällige Ausgangsnachrichten mit laufenden Antworten: Inhalt, Verfasser:in
   -- und Erwähnungen fallen, die Zeile bleibt als Anker. Zählt nicht als
@@ -1613,8 +1654,10 @@ declare
     'staff_reimbursements',
     -- ORG-006: Rückmeldungen von Beschäftigten hängen an keiner anderen Zeile.
     'staff_feedback',
-    -- TEAM-001: Nachrichten vor ihren Gesprächen; Antworten, Erwähnungen
-    -- und Lesestand fallen mit (cascade).
+    -- TEAM-001: erst geleerte Inhalte (die Zeile bleibt als Anker), dann
+    -- Nachrichten vor ihren Gesprächen; Antworten, Erwähnungen und Lesestand
+    -- fallen mit (cascade).
+    'team_message_contents',
     'team_messages',
     'team_channels',
     'treatment_base_items',
@@ -1690,6 +1733,19 @@ begin
       where j.target_table = 'auth_users'
         and j.target_id = any (v_ids);
       v_geloescht := null;
+    -- TEAM-001: Nur der Inhalt fiel (Anker mit Antworten) - leeren, nicht
+    -- löschen, sonst nähme cascade die Antworten mit. Wer entfernt hat, steht
+    -- nach einem Restore nicht mehr fest; der Anker heißt dann „gelöscht“.
+    elsif v_tabelle = 'team_message_contents' then
+      delete from public.team_message_mentions where message_id = any (v_ids);
+      with g as (
+        update public.team_messages
+           set body = null, edited_at = null, removed_at = coalesce(removed_at, now()),
+               removed_kind = coalesce(removed_kind, 'author')
+         where id = any (v_ids) and body is not null
+        returning id
+      )
+      select array_agg(id) into v_geloescht from g;
     else
     -- Tabellenname aus der festen Liste oben, nie aus Benutzereingabe;
     -- die Kennungen gehen als Parameter, nicht als Text.

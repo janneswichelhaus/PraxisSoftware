@@ -6367,7 +6367,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wie
 
 Datenschutz · offen · 2026-10-17 · Claude · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Keine Lesebestätigung, kein Online-Status, kein „zuletzt gesehen“, keine Tipp-Anzeige. Der Lesestand je Person und Gespräch ist die Zeit der neuesten gesehenen Nachricht, nicht die des Lesens, und dient nur den eigenen Zählern; niemand sonst liest ihn, auch owner nicht. Direktnachrichten lesen nur die zwei Beteiligten. Bearbeiten ohne Verlauf, nur die Marke „bearbeitet“.
+**Annahme.** Keine Lesebestätigung, kein Online-Status, kein „zuletzt gesehen“, keine Tipp-Anzeige. Der Lesestand je Person und Gespräch ist die Zeit der neuesten gesehenen Nachricht, nicht die des Lesens, und dient nur den eigenen Zählern; niemand sonst liest ihn, auch owner nicht, und er fällt mit dem Ausscheiden. Direktnachrichten lesen nur die zwei Beteiligten. Bearbeiten ohne Verlauf, nur die Marke „bearbeitet“.
 
 **Begründung.** §20; ADR-024 Punkt 12 (keine Lesebestätigung, Wertung übertragen); BAG 1 ABR 7/15 (zuordenbare Zeitstempel als Verhaltensdaten); Art. 5 Abs. 1 lit. c DSGVO. Unsicher: ob die Praxis „gesehen“ vermisst.
 
