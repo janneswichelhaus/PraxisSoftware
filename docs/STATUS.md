@@ -13,14 +13,6 @@ sperrt die Tage; Migration `20261124100000`; ANN-576 bis ANN-580; darauf gestape
 (Niemand öffnet, Tag umplanen, Panne, Schlüssel übergeben, Einrichten, Plattform-Termin); Migration
 `20261123100000`; ANN-572 bis ANN-575, ANN-581 bis ANN-587; darauf gestapelt Überholung 7 (Urlaub).
 
-CI schneller (16.10., Branch `ccr-b69c337d-61dmv5`): E2E hinter der Anmeldung in drei Teilen,
-E2E vor der Anmeldung nur `mobile`, Unit-Tests neben Lint, reine Logik ohne jsdom (ANN-571);
-Pull Requests nur mit Doku ohne Tests und Build (ADR-013 Fassung 5).
-
-Radflotte (16.10., Branch `claude/employer-bike-checkup-access-th6fya`): Check-Up mit Überschrift
-über den Antworten, Werbeflächen und vier Seitenfotos; Meldungen aller Räder für Inhaber:in und
-Teamleitung; Check-Up-Rhythmus als Hinweis in Übersicht und Kalender (ANN-568 bis ANN-570).
-
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
 Gestaltung, Inhalt unverändert (ANN-567).
@@ -31,7 +23,8 @@ Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholung
 
 Offen auf Branches: Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
 (`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
-(`claude/eloquent-newton-p38ihe`). Gemergt: BEF-124 (#255), Check-Up geführt (#256).
+(`claude/eloquent-newton-p38ihe`). Gemergt: BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
+Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
