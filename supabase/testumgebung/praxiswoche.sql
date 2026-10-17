@@ -146,7 +146,7 @@ values
    '@Anna Beispiel danke. Ich schaue morgen früh drauf, nimm bis dahin Rad 2.',
    now() - interval '1 day 1 hour'),
   ('7e7e7e7e-7e7e-4e7e-8e7e-000000000203', '22222222-2222-4222-8222-000000000001',
-   '7e7e7e7e-7e7e-4e7e-8e7e-000000000002', null, '55555555-5555-4555-8555-000000000006',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000002', null, '55555555-5555-4555-8555-000000000003',
    'Wer hat den Schlüssel für Depot Nord? Er hängt nicht am Brett.', now() - interval '35 minutes'),
   ('7e7e7e7e-7e7e-4e7e-8e7e-000000000301', '22222222-2222-4222-8222-000000000001',
    '7e7e7e7e-7e7e-4e7e-8e7e-000000000003', null, '55555555-5555-4555-8555-000000000004',
