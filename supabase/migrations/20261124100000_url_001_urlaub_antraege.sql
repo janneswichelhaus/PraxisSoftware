@@ -16,8 +16,9 @@
 --   * Sichtbarkeit nach BEF-066 (Jannes 2026-10-09, ANN-580): Eigenes sieht
 --     jede Person ganz, auch die Notiz zum Antrag - die sieht sonst niemand,
 --     auch nicht, wer entscheidet („nie den Grund“). Am offenen Antrag sehen
---     die Entscheidenden Person, Zeitraum, Tage, das Urlaubskonto der Person,
---     wer zugleich fehlt und wie viele Termine im Zeitraum liegen. Fremde
+--     die Entscheidenden Person, Zeitraum, Tage (auch die im Folgejahr), das
+--     Urlaubskonto der Person, wer zugleich fehlt, wie viele Termine im
+--     Zeitraum liegen und die Tage mit abweichenden Arbeitszeiten. Fremde
 --     Urlaubskonten sonst nur owner (Ansprüche pflegen, Hinweispflicht).
 --     Andere sehen von genehmigtem Urlaub nur Name und Zeitraum, und das ab
 --     heute - kein Verlauf über die Kolleg:innen. Keine Summe über alle
@@ -1092,7 +1093,7 @@ revoke all on function public.list_leave(date, date) from public, anon;
 grant execute on function public.list_leave(date, date) to authenticated;
 
 comment on function public.list_leave(date, date) is
-  'URL-001: Urlaub in einem Aufruf - eigene Antraege mit Notiz und Konto ganz; fuer owner die offenen Antraege anderer mit Konto, ohne Notiz; fuer alle genehmigter Urlaub anderer nur mit Name und Zeitraum ab heute; fremde Konten nur owner (BEF-066, ANN-580). Ohne Summe ueber alle (PROJECT_PRINCIPLES.md 20).';
+  'URL-001: Urlaub in einem Aufruf - eigene Antraege mit Notiz und Konto ganz; fuer owner die offenen Antraege anderer mit Konto, Tagen im Folgejahr und den Tagen mit abweichenden Arbeitszeiten, ohne Notiz; fuer alle genehmigter Urlaub anderer nur mit Name und Zeitraum ab heute; fremde Konten (laufendes und Folgejahr) nur owner (BEF-066, ANN-580). Ohne Summe ueber alle (PROJECT_PRINCIPLES.md 20).';
 
 -- -----------------------------------------------------------------------------
 -- 9. Arbeitszeiten: kein Urlaubstag wird still ueberschrieben (ANN-578)
