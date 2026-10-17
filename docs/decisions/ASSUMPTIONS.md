@@ -6343,9 +6343,9 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Ohne Namen nur Monat, keine Person, keine Uhrzeit; Teilnahme als eigene Marke. owner sieht ohne Namen nur die Summe ab drei möglichen Teilnehmenden und fünf Antworten, aus abgeschlossenen Monaten rückwärts zusammengefasst (höchstens zwölf), je Frage ab fünf. Löschung zwölf Monate ab Monatsende, Marken nach dem Monat.
+**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Ohne Namen nur Monat, keine Person, keine Uhrzeit; Teilnahme als eigene Marke. owner sieht ohne Namen nur die Summe ab drei möglichen Teilnehmenden und fünf Antworten, in festen, nie überlappenden Blöcken abgeschlossener Monate (höchstens zwölf), je Frage ab fünf. Der Löschlauf schreibt Antworten abgeschlossener Monate neu; im laufenden Monat bliebe eine Verknüpfung nur an den Rechten vorbei. Gezählt werden Antworten, nicht Personen.
 
-**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; laufender Monat ausgenommen gegen Differenzen.
+**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; Zweitreview ORG-006 (Differenzen, Transaktionsspur).
 
 **Anker.** `app.staff_feedback_threshold`.
 

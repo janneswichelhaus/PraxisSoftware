@@ -93,6 +93,29 @@ async function anonymeBarometer(monat: string, werte: number[], text?: string): 
   }
 }
 
+/** Drei Beschäftigte in der fremden Praxis, damit ihre Summe überhaupt rechnet. */
+async function fremdeBeschaeftigte(org: string): Promise<void> {
+  for (const n of ['c1', 'c2', 'c3']) {
+    await asPostgres(`
+      insert into auth.users (id, email, aud, role)
+        values ('11111111-1111-4111-8111-0000000000${n}', '${n}@fremd.invalid', 'authenticated', 'authenticated')
+        on conflict (id) do nothing;
+      insert into public.persons (id, organization_id, given_name, family_name)
+        values ('44444444-4444-4444-8444-0000000000${n}', '${org}', 'Fremd', '${n}')
+        on conflict (id) do nothing;
+      insert into public.staff_members (id, organization_id, person_id)
+        values ('55555555-5555-4555-8555-0000000000${n}', '${org}', '44444444-4444-4444-8444-0000000000${n}')
+        on conflict (id) do nothing;
+      insert into public.user_profiles (id, organization_id, person_id, display_name)
+        values ('11111111-1111-4111-8111-0000000000${n}', '${org}', '44444444-4444-4444-8444-0000000000${n}', 'Fremd ${n}')
+        on conflict (id) do nothing;
+      insert into public.user_roles (user_id, organization_id, role_key)
+        values ('11111111-1111-4111-8111-0000000000${n}', '${org}', 'therapist')
+        on conflict do nothing;
+    `);
+  }
+}
+
 async function anonymeNachrichten(monat: string, texte: string[]): Promise<void> {
   for (const text of texte) {
     await asPostgres(
@@ -291,6 +314,20 @@ describe('Rückmeldungen: wer abgibt', () => {
     expect(await anzahl('select count(*) as n from public.staff_feedback_participations')).toBe(0);
   });
 
+  it('nimmt nichts von ausgeschiedenen Beschäftigten an', async () => {
+    await asPostgres(
+      `update public.staff_members set employment_status = 'inactive' where id = $1`,
+      [STAFF.anna],
+    );
+    expect(
+      (await fehler(users.therapist, BAROMETER, [false, 5, null, null, null, null]))?.code,
+    ).toBe('42501');
+    expect((await fehler(users.therapist, NACHRICHT, [false, 'Hallo']))?.code).toBe('42501');
+    await asPostgres(`update public.staff_members set employment_status = 'active' where id = $1`, [
+      STAFF.anna,
+    ]);
+  });
+
   it('schreibt keinen Auditeintrag', async () => {
     const vorher = await anzahl('select count(*) as n from public.audit_log');
     await abgeben(users.therapist, [false, 5, null, null, 'Text', null]);
@@ -378,10 +415,22 @@ describe('Rückmeldungen: wer liest', () => {
     await anonymeBarometer(await monatVor(1), [5, 5, 5, 5, 5]);
     const fremd = await fremdeOrganisation();
     expect(await daten<unknown[]>(fremd.owner, NAMENTLICH)).toEqual([]);
-    // Die fremde Praxis hat keine Beschäftigten, die teilnehmen können.
-    const summe = await daten<Summe>(fremd.owner, SUMME);
-    expect(summe.barometer.status).toBe('too_few');
-    expect(summe.messages.status).toBe('too_few');
+    // Mit drei Beschäftigten rechnet die fremde Praxis - aber nur mit ihren
+    // eigenen Antworten (Zweitreview ORG-006, Befund 5).
+    await fremdeBeschaeftigte(fremd.organizationId);
+    const leer = await daten<Summe>(fremd.owner, SUMME);
+    expect(leer.barometer.status).toBe('too_few');
+    expect(leer.messages.status).toBe('too_few');
+    for (let i = 0; i < 5; i += 1) {
+      await asPostgres(
+        `insert into public.staff_feedback (organization_id, kind, month, mood)
+         values ($1, 'barometer', $2::date, 1)`,
+        [fremd.organizationId, await monatVor(1)],
+      );
+    }
+    const eigene = await daten<Summe>(fremd.owner, SUMME);
+    expect(eigene.barometer).toMatchObject({ status: 'ready', answers: 5 });
+    expect(eigene.barometer.mood?.distribution).toEqual([5, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
 });
 
@@ -444,6 +493,47 @@ describe('Rückmeldungen: Schwelle 3/5 und Zusammenfassen über Monate (ANN-607)
       to_month: await monatVor(1),
       answers: 5,
     });
+  });
+
+  it('schließt feste Blöcke, die sich nie überlappen (Zweitreview ORG-006, Befund 2)', async () => {
+    // Wie in der Anwendung: Der Abruf speichert geschlossene Blöcke.
+    async function summeGespeichert(): Promise<Summe> {
+      const { rows } = await asUserCommitted<{ daten: Summe }>(users.ownerTherapist, SUMME);
+      return rows[0]!.daten;
+    }
+    // Vier im ältesten, eine im nächsten Monat: der erste Block.
+    await anonymeBarometer(await monatVor(3), [1, 1, 1, 1]);
+    await anonymeBarometer(await monatVor(2), [2]);
+    expect((await summeGespeichert()).barometer).toMatchObject({
+      status: 'ready',
+      from_month: await monatVor(3),
+      to_month: await monatVor(2),
+      answers: 5,
+    });
+    // Vier im Monat danach: Der Block bleibt, wie er war - ein gleitendes
+    // Fenster zeigte jetzt die Monate -2 und -1, und die Differenz verriete
+    // die einzelne Antwort aus Monat -2.
+    await anonymeBarometer(await monatVor(1), [3, 3, 3, 3]);
+    expect((await summeGespeichert()).barometer).toMatchObject({
+      from_month: await monatVor(3),
+      to_month: await monatVor(2),
+      answers: 5,
+    });
+    // Eine fünfte: ein neuer Block nur aus Monat -1.
+    await anonymeBarometer(await monatVor(1), [3]);
+    expect((await summeGespeichert()).barometer).toMatchObject({
+      from_month: await monatVor(1),
+      to_month: await monatVor(1),
+      answers: 5,
+    });
+    const { rows } = await asPostgres<{ von: string; bis: string }>(
+      `select to_char(from_month, 'YYYY-MM-DD') as von, to_char(to_month, 'YYYY-MM-DD') as bis
+       from public.staff_feedback_blocks where kind = 'barometer' order by from_month`,
+    );
+    expect(rows).toEqual([
+      { von: await monatVor(3), bis: await monatVor(2) },
+      { von: await monatVor(1), bis: await monatVor(1) },
+    ]);
   });
 
   it('nimmt höchstens zwölf Monate und nie den laufenden', async () => {
@@ -556,6 +646,48 @@ describe('Rückmeldungen: Löschlauf (ADR-008 Fassung 4, ANN-607)', () => {
       await anzahl('select count(*) as n from public.staff_feedback where id = $1', [
         geloeschteIds[0],
       ]),
+    ).toBe(0);
+  });
+
+  it('schreibt anonyme Antworten abgeschlossener Monate neu - keine Spur zur Marke (Zweitreview, Befund 1)', async () => {
+    // Marke und Antwort in einer Transaktion, wie beim Abgeben: dasselbe xmin.
+    await asPostgres(
+      `with marke as (
+         insert into public.staff_feedback_participations (organization_id, staff_member_id, month)
+         values ($1, $2, $3::date) returning 1
+       )
+       insert into public.staff_feedback (organization_id, kind, month, mood)
+       select $1, 'barometer', $3::date, 5 from marke`,
+      [organizationId, STAFF.anna, await monatVor(1)],
+    );
+    const vorher = (
+      await asPostgres<{ id: string; x: string }>(
+        `select id, xmin::text as x from public.staff_feedback where staff_member_id is null`,
+      )
+    ).rows[0]!;
+    expect(
+      await anzahl(
+        `select count(*) as n from public.staff_feedback_participations where xmin::text = $1`,
+        [vorher.x],
+      ),
+    ).toBe(1);
+
+    await asPostgres('select public.apply_retention()');
+
+    const nachher = (
+      await asPostgres<{ id: string; x: string; mood: number }>(
+        `select id, xmin::text as x, mood from public.staff_feedback where staff_member_id is null`,
+      )
+    ).rows;
+    expect(nachher).toHaveLength(1);
+    expect(nachher[0]!.mood).toBe(5);
+    expect(nachher[0]!.id).not.toBe(vorher.id);
+    expect(nachher[0]!.x).not.toBe(vorher.x);
+    expect(
+      await anzahl(
+        `select count(*) as n from public.staff_feedback f
+         join public.staff_feedback_participations p on p.xmin = f.xmin`,
+      ),
     ).toBe(0);
   });
 
