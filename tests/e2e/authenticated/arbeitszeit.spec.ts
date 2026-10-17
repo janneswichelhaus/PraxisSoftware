@@ -187,7 +187,8 @@ test('G8 einmalig: Anna ändert einen Tag in fünf Tipps, Jannes genehmigt in zw
   await bild(inhaber, 'b8-g8b-01-entscheiden-375');
   await e.tippe(genehmigen);
   const fertig = inhaber.getByRole('dialog', { name: 'Genehmigt' });
-  await expect(fertig.getByText(/Arbeitszeit ist geändert/)).toBeVisible();
+  // Ohne Genitiv (Design-Review): „Arbeitszeit von Anna Beispiel ist geändert: …“.
+  await expect(fertig.getByText(/Arbeitszeit von Anna Beispiel ist geändert: /)).toBeVisible();
   await bild(inhaber, 'b8-g8b-02-genehmigt-375');
   test.info().annotations.push({ type: 'G8b', description: `${e.tipps} Tipps bis genehmigt` });
   expect(e.tipps).toBeLessThanOrEqual(2);
