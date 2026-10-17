@@ -63,16 +63,14 @@ function rendern(pfad = `/betrieb/urlaub/entscheiden/${ANTRAG.id}`) {
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-16T08:00:00Z'));
-  fetchUrlaub
-    .mockReset()
-    .mockResolvedValue(
-      testUrlaub({
-        can_decide: true,
-        self_entered: true,
-        my_staff_member_id: STAFF.jannes,
-        to_decide: [ANTRAG],
-      }),
-    );
+  fetchUrlaub.mockReset().mockResolvedValue(
+    testUrlaub({
+      can_decide: true,
+      self_entered: true,
+      my_staff_member_id: STAFF.jannes,
+      to_decide: [ANTRAG],
+    }),
+  );
   decideLeaveRequest.mockReset().mockResolvedValue({
     status: 'approved',
     appointments: 3,
