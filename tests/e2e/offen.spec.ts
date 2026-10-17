@@ -39,6 +39,8 @@ test.describe('Offene Punkte', () => {
       'Terminwünsche (2)',
       'Urlaubsanträge (1)',
       'Arbeitszeitänderungen (1)',
+      'Erstattungen (1)',
+      'Auszuzahlen (1)',
       'Aufgaben (3)',
       'Anrufe für morgen (2)',
       'Verordnungen zu erfassen (1)',
