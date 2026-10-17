@@ -32,6 +32,12 @@ begin
   if auth.uid() is null then
     raise exception 'not authenticated' using errcode = '42501';
   end if;
+  -- Erst das Recht, dann die Eingabe: Wer nicht pflegen darf, erfährt nichts
+  -- über die Form (ADR-023 Punkt 21). Je Tag prüft set_staff_working_hours
+  -- dasselbe noch einmal.
+  if not app.can_manage_working_hours() or app.current_organization_id() is null then
+    raise exception 'not allowed to manage working hours' using errcode = '42501';
+  end if;
   if p_days is null or jsonb_typeof(p_days) <> 'array'
      or jsonb_array_length(p_days) not between 1 and 7 then
     raise exception 'days must be an array of one to seven weekdays' using errcode = '22023';

@@ -98,7 +98,8 @@ describe('set_staff_working_week', () => {
     const vorher = await plan();
     const f = await fehler(speichern(users.therapist, [{ weekday: 2, blocks: [] }]));
     expect(f.code).toBe('42501');
-    expect(f.hint).toBe('weekday 2');
+    // Ohne Recht keine Auskunft über die Eingabe - auch nicht bei leerer Liste.
+    expect((await fehler(speichern(users.therapist, []))).code).toBe('42501');
     expect(await plan()).toEqual(vorher);
   });
 
