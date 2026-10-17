@@ -207,9 +207,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await e.tippe(offen.getByRole('link', { name: ZWECK }));
   const entscheiden = inhaber.getByRole('dialog', { name: 'Erstattung genehmigen?' });
   // Den Beleg ansehen - über eine einmalige Freigabe, nicht gezählt.
-  await entscheiden
-    .getByRole('button', { name: `${ZWECK}: Beleg über 12,90\u00a0€ ansehen` })
-    .click();
+  await entscheiden.getByRole('button', { name: `${ZWECK}, 12,90\u00a0€: Beleg ansehen` }).click();
   await expect(entscheiden.getByRole('img', { name: /^Beleg: Massageöl/ })).toBeVisible();
   await bild(inhaber, 'b10-g10b-01-entscheiden-375');
   await e.tippe(entscheiden.getByRole('button', { name: 'Genehmigen' }));

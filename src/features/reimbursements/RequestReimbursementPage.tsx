@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { roleLabels } from '@/components/ui/roleLabels';
 import {
@@ -21,6 +24,7 @@ import {
 } from '@/components/ui/abfolge';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { MinusSymbol, PlusSymbol } from '@/features/exercise-plans/Zahlschritt';
 import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import { useKamera } from '@/features/files/kamera';
@@ -40,6 +44,7 @@ import {
   uploadReceipt,
   type Overview,
 } from './api';
+import { BelowRow } from './BelowRow';
 import { REIMBURSEMENTS_HOME } from './paths';
 import {
   daysInMonth,
@@ -55,17 +60,19 @@ import {
 /**
  * Erstattung beantragen, geführt (G10, ERS-001, Budget ≤ 7 Tipps + Betrag):
  *
- *   * **Ladestrom** (6): „Erstattung beantragen“ → Ladestrom → Monat →
- *     Arbeitstage (vorgeschlagen aus dem Wochenplan, änderbar) → Erklärung
- *     als Haken → Absenden.
+ *   * **Ladestrom** (6): „Erstattung beantragen“ → Ladestrom → Monat (der
+ *     jüngste freie im Fuß) → Arbeitstage (vorgeschlagen aus dem Wochenplan,
+ *     änderbar) → Erklärung als Haken → Absenden.
  *   * **Einkauf** (7 und Betrag): „Erstattung beantragen“ → Einkauf → Beleg
  *     fotografieren → Auslösen → Foto verwenden → Betrag und wofür, Weiter →
  *     Absenden; „Weiterer Beleg“ für den nächsten.
  *
  * Je Seite eine Frage, die Antworten im festen Fuß. Ohne hinterlegte IBAN
  * fragt eine Seite mehr nach dem Konto (ANN-601). Der Beleg lädt hoch,
- * während die Person Betrag und Zweck tippt; er gehört bis zum Absenden
- * keinem Antrag (ANN-600). owner trägt ein, es gilt als genehmigt (ANN-598).
+ * während die Person Betrag und Zweck tippt und weitergeht - nur das
+ * Absenden wartet auf ihn (Praxis-Review Überholung 10, Funkloch); er gehört
+ * bis zum Absenden keinem Antrag (ANN-600). owner trägt ein, es gilt als
+ * genehmigt (ANN-598).
  */
 
 type Page = 'kind' | 'month' | 'days' | 'receipt' | 'item' | 'account' | 'summary';
@@ -379,8 +386,27 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
   if (page === 'month') {
     const months = selectableMonths(today);
     const years = [...new Set(months.map((m) => m.slice(0, 4)))];
+    // Der jüngste freie Monat ist die Antwort im Fuß, die übrigen stehen
+    // darüber (Design- und Praxis-Review Überholung 10).
+    const newest = months.find((m) => !requested.has(m)) ?? null;
+    const pick = (m: string) => {
+      // Die Erklärung gilt dem Monat: Ein anderer Monat braucht sie neu.
+      if (m !== month) setDeclared(false);
+      setMonth(m);
+      setFlow((f) => weiter(f, 'days', m === month && daysOk));
+    };
     return (
-      <GefuehrterAblauf {...common} titel="Für welchen Monat?">
+      <GefuehrterAblauf
+        {...common}
+        titel="Für welchen Monat?"
+        fuss={
+          newest ? (
+            <Button className="w-full" data-autofocus onClick={() => pick(newest)}>
+              {monthLong(newest)}
+            </Button>
+          ) : undefined
+        }
+      >
         <div className="flex flex-col gap-2">
           {years.map((year) => (
             <div key={year} role="group" aria-labelledby={`strom-jahr-${year}`}>
@@ -388,7 +414,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
               <div className="grid grid-cols-3 gap-2">
                 {months
                   .filter((m) => m.startsWith(year))
-                  .map((m, index) => {
+                  .map((m) => {
                     const done = requested.has(m);
                     return (
                       <Button
@@ -399,11 +425,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                         // Der Name beginnt mit dem sichtbaren Wort (WCAG 2.5.3).
                         aria-label={`${monthShort(m)} ${year}${done ? ', schon beantragt' : ''}`}
                         aria-pressed={month === m}
-                        {...(index === 0 && year === years[0] ? { 'data-autofocus': true } : {})}
-                        onClick={() => {
-                          setMonth(m);
-                          setFlow((f) => weiter(f, 'days'));
-                        }}
+                        onClick={() => pick(m)}
                       >
                         <span className="flex flex-col items-center leading-tight">
                           {monthShort(m)}
@@ -455,14 +477,15 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                 <div className="flex items-end gap-2">
                   {/* Auch aus einer leeren oder zu großen Zahl heraus: „+“ beginnt
                       bei 1, „−“ führt in den Monat zurück. */}
-                  <Button
+                  <Symbolknopf
+                    beschriftung="Ein Tag weniger"
                     variant="secondary"
-                    aria-label="Ein Tag weniger"
+                    groesse="gross"
                     disabled={!Number.isInteger(dayCount) || dayCount <= 1}
                     onClick={() => setDays(String(Math.min(dayCount - 1, maxDays)))}
                   >
-                    −
-                  </Button>
+                    <MinusSymbol />
+                  </Symbolknopf>
                   <div className="min-w-0 flex-1">
                     <Field
                       label="Arbeitstage"
@@ -472,16 +495,17 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                       onChange={(e) => setDays(e.target.value.replace(/\D/g, '').slice(0, 2))}
                     />
                   </div>
-                  <Button
+                  <Symbolknopf
+                    beschriftung="Ein Tag mehr"
                     variant="secondary"
-                    aria-label="Ein Tag mehr"
+                    groesse="gross"
                     disabled={Number.isInteger(dayCount) && dayCount >= maxDays}
                     onClick={() =>
                       setDays(String(Number.isInteger(dayCount) ? Math.max(dayCount + 1, 1) : 1))
                     }
                   >
-                    +
-                  </Button>
+                    <PlusSymbol />
+                  </Symbolknopf>
                 </div>
                 <p className="text-ink-muted text-sm">
                   {`Vorschlag ${data.suggested_days}: Ihr Wochenplan ohne Feiertage, Urlaub und Abwesenheit.`}
@@ -504,6 +528,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
 
   // ---------------------------------------------------------------------------
   if (page === 'receipt') {
+    const fileLabel = camera === 'vorhanden' ? 'Beleg als Datei' : 'Beleg wählen';
     return (
       <>
         <GefuehrterAblauf
@@ -516,33 +541,33 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                   Beleg fotografieren
                 </Button>
               ) : null}
-              <label
-                className={`rounded-button text-liste has-[:focus-visible]:outline-accent inline-flex min-h-12 w-full cursor-pointer items-center justify-center border px-5 font-bold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
-                  camera === 'vorhanden'
-                    ? 'border-line-strong text-accent bg-transparent'
-                    : 'bg-accent text-surface border-transparent'
-                }`}
+              {/* Ein Knopf des Systems öffnet die Dateiwahl; das Feld selbst
+                  bleibt unsichtbar, wie am Foto der Akte (Design-Review
+                  Überholung 10). */}
+              <Button
+                variant={camera === 'vorhanden' ? 'secondary' : 'primary'}
+                className="w-full"
+                {...(camera === 'vorhanden' ? {} : { 'data-autofocus': true })}
+                onClick={() => fileInput.current?.click()}
               >
-                {camera === 'vorhanden' ? 'Beleg als Datei' : 'Beleg wählen'}
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept={DATEI_ACCEPT}
-                  className="sr-only"
-                  onChange={(e) => {
-                    const file = e.currentTarget.files?.[0];
-                    e.currentTarget.value = '';
-                    if (file) startUpload(file);
-                  }}
-                />
-              </label>
+                {fileLabel}
+              </Button>
+              <input
+                ref={fileInput}
+                type="file"
+                accept={DATEI_ACCEPT}
+                aria-label={fileLabel}
+                tabIndex={-1}
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.currentTarget.files?.[0];
+                  e.currentTarget.value = '';
+                  if (file) startUpload(file);
+                }}
+              />
             </div>
           }
-        >
-          <p className="text-ink-muted text-sm">
-            Ein Foto mit der Kamera der App oder ein PDF, etwa die Rechnung eines Onlineshops.
-          </p>
-        </GefuehrterAblauf>
+        />
         {cameraDialog}
       </>
     );
@@ -576,12 +601,9 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                 </Button>
               </>
             ) : null}
-            <Button
-              className="w-full"
-              disabled={!itemOk(item) || item.upload !== 'done'}
-              onClick={toAccountOrSummary}
-            >
-              {item.upload === 'running' ? 'Beleg wird übertragen …' : 'Weiter'}
+            {/* Weiter wartet nicht auf die Übertragung - erst das Absenden. */}
+            <Button className="w-full" disabled={!itemOk(item)} onClick={toAccountOrSummary}>
+              Weiter
             </Button>
           </div>
         }
@@ -673,6 +695,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     items.length > 0 &&
     items.every((i) => itemOk(i) && i.upload === 'done' && i.receiptId);
   const ready = accountReady && (electricityReady || purchaseReady);
+  const uploading = kind === 'purchase' && items.some((i) => i.upload === 'running');
 
   return (
     <GefuehrterAblauf
@@ -693,7 +716,7 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
             disabled={!ready || submit.isPending}
             onClick={() => submit.mutate()}
           >
-            {submit.isPending ? 'Wird gesendet …' : action}
+            {submit.isPending ? 'Wird gesendet …' : uploading ? 'Beleg wird übertragen …' : action}
           </Button>
         </div>
       }
@@ -702,9 +725,22 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
         <ListRows rahmen={false} beschriftung="Erstattung">
           {kind === 'electricity' && month && preview.data ? (
             <>
+              {/* Je Angabe ein „Ändern“ (Design-Review Überholung 10). */}
               <ListRow
                 titel={monthLong(month)}
-                meta={`${dayCount} Arbeitstage`}
+                aktion={
+                  <Button
+                    variant="secondary"
+                    groesse="kompakt"
+                    aria-label="Ändern: Monat"
+                    onClick={() => setFlow((f) => aendern(f, 'month'))}
+                  >
+                    Ändern
+                  </Button>
+                }
+              />
+              <ListRow
+                titel={`${dayCount} Arbeitstage`}
                 aktion={
                   <Button
                     variant="secondary"
@@ -730,24 +766,58 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
             </>
           ) : null}
           {kind === 'purchase'
-            ? items.map((i) => (
-                <ListRow
-                  key={i.localId}
-                  titel={i.purpose.trim() || 'Ohne Zweck'}
-                  meta={i.upload === 'done' ? (i.preview ? 'Foto' : 'PDF') : 'wird übertragen …'}
-                  betrag={formatEuro(itemCents(i) ?? 0)}
-                  aktion={
-                    <Button
-                      variant="quiet"
-                      groesse="kompakt"
-                      aria-label={`Entfernen: ${i.purpose.trim() || 'Beleg'}`}
-                      onClick={() => removeItem(i.localId)}
-                    >
-                      Entfernen
-                    </Button>
-                  }
-                />
-              ))
+            ? items.map((i) => {
+                const label = i.purpose.trim() || 'Beleg';
+                return (
+                  <ListRow
+                    key={i.localId}
+                    titel={i.purpose.trim() || 'Ohne Zweck'}
+                    meta={i.upload === 'running' ? 'wird übertragen …' : i.preview ? 'Foto' : 'PDF'}
+                    betrag={formatEuro(itemCents(i) ?? 0)}
+                    status={
+                      i.upload === 'failed' ? <Badge ton="kritisch">Nicht übertragen</Badge> : null
+                    }
+                    aktion={
+                      <Button
+                        variant="secondary"
+                        groesse="kompakt"
+                        aria-label={`Ändern: ${label}`}
+                        onClick={() => {
+                          setCurrent(i.localId);
+                          setFlow((f) => aendern(f, 'item'));
+                        }}
+                      >
+                        Ändern
+                      </Button>
+                    }
+                    darunter={
+                      // Leise am Ende, mit Rückfrage (DESIGN.md 9.16).
+                      <BelowRow>
+                        {i.upload === 'failed' ? (
+                          <Button
+                            variant="secondary"
+                            groesse="kompakt"
+                            onClick={() => runUpload(i.localId, i.file)}
+                          >
+                            Erneut übertragen
+                          </Button>
+                        ) : null}
+                        <Rueckfrage
+                          ausloeser="Entfernen"
+                          ausloeserVariante="quiet"
+                          ausloeserGroesse="kompakt"
+                          ausloeserZusatz={`– ${label}`}
+                          bezeichnung={`${label} entfernen`}
+                          bestaetigen="Ja, entfernen"
+                          onBestaetigen={() => removeItem(i.localId)}
+                        >
+                          {`Den Beleg „${label}“ verwerfen?`}
+                        </Rueckfrage>
+                      </BelowRow>
+                    }
+                  />
+                );
+              })
             : null}
           {kind === 'purchase' && items.length > 1 ? (
             <ListRow titel="Summe" betrag={formatEuro(sum)} />

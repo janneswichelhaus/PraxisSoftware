@@ -7,10 +7,11 @@ import { formatEuro } from '@/lib/geld';
 import { loadReceipt, type Receipt } from './api';
 
 /**
- * Die Belege eines Einkaufs (ANN-600): je ein Knopf mit Zweck und Betrag;
- * erst ein Tippen lädt den Beleg - in den Speicher der Seite, nicht auf das
- * Gerät, über eine einmalige Freigabe (ADR-017 Punkt 54 sinngemäß). Gezeigt
- * wird er wie eine Datei der Akte, ein PDF im eigenen Rahmen.
+ * Die Belege eines Einkaufs (ANN-600): je ein Knopf mit Zweck und Betrag,
+ * beides sichtbar (Design-Review Überholung 10); erst ein Tippen lädt den
+ * Beleg - in den Speicher der Seite, nicht auf das Gerät, über eine
+ * einmalige Freigabe (ADR-017 Punkt 54 sinngemäß). Gezeigt wird er wie eine
+ * Datei der Akte, ein PDF im eigenen Rahmen.
  */
 export function ReceiptRow({ receipts }: { receipts: readonly Receipt[] }) {
   const [open, setOpen] = useState<{ id: string; name: string; file: Blob } | null>(null);
@@ -28,7 +29,8 @@ export function ReceiptRow({ receipts }: { receipts: readonly Receipt[] }) {
     <div className="pb-3">
       <div className="flex flex-wrap gap-2">
         {receipts.map((receipt) => {
-          const name = `Beleg: ${receipt.purpose}, ${formatEuro(receipt.amount_cents)}`;
+          const amount = formatEuro(receipt.amount_cents);
+          const name = `Beleg: ${receipt.purpose}, ${amount}`;
           return (
             <Button
               key={receipt.id}
@@ -37,13 +39,14 @@ export function ReceiptRow({ receipts }: { receipts: readonly Receipt[] }) {
               groesse="kompakt"
               disabled={load.isPending}
               aria-pressed={open?.id === receipt.id}
-              // Der Name beginnt mit dem sichtbaren Wort (WCAG 2.5.3, UEB-10).
-              aria-label={`${receipt.purpose}: Beleg über ${formatEuro(receipt.amount_cents)} ansehen`}
+              // Der Name beginnt mit dem sichtbaren Text (WCAG 2.5.3, UEB-10).
+              aria-label={`${receipt.purpose}, ${amount}: Beleg ansehen`}
               onClick={() =>
                 open?.id === receipt.id ? setOpen(null) : load.mutate({ id: receipt.id, name })
               }
             >
               {receipt.purpose}
+              <span className="font-normal tabular-nums">{`\u00a0· ${amount}`}</span>
             </Button>
           );
         })}

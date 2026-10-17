@@ -1,4 +1,4 @@
-import type { Ton } from '@/components/ui/Badge';
+import { STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
 import { tagePlus } from '@/features/appointments/calendar';
 import type { Antragsstatus } from './api';
 
@@ -133,11 +133,15 @@ export function tage(anzahl: number): string {
   return `${anzahl}\u00a0${anzahl === 1 ? 'Tag' : 'Tage'}`;
 }
 
-/** Der Stand eines eigenen Antrags als Wort und Ton (Status = Zeichen + Wort). */
+/**
+ * Der Stand eines eigenen Antrags als Wort und Ton (Status = Zeichen + Wort);
+ * ein Zustand ohne eigenen Ton bringt sein Zeichen mit: „× Zurückgezogen“ wie
+ * „× Abgesagt“ (Design-Review Überholung 10).
+ */
 export function statusAnzeige(
   status: Antragsstatus,
   stornoOffen: boolean,
-): { text: string; ton: Ton } | null {
+): { text: string; ton: Ton; zeichen?: string } | null {
   if (stornoOffen) return { text: 'Storno beantragt', ton: 'warnung' };
   switch (status) {
     case 'requested':
@@ -147,8 +151,8 @@ export function statusAnzeige(
     case 'rejected':
       return { text: 'Abgelehnt', ton: 'kritisch' };
     case 'withdrawn':
-      return { text: 'Zurückgezogen', ton: 'neutral' };
+      return { text: 'Zurückgezogen', ton: 'neutral', zeichen: STATUSZEICHEN.abgelehnt };
     case 'cancelled':
-      return { text: 'Storniert', ton: 'neutral' };
+      return { text: 'Storniert', ton: 'neutral', zeichen: STATUSZEICHEN.abgelehnt };
   }
 }

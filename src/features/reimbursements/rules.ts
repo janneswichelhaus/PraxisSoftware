@@ -1,4 +1,4 @@
-import type { Ton } from '@/components/ui/Badge';
+import { STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
 import { monatKurz } from '@/features/vacation/zeitraum';
 import { formatEuro } from '@/lib/geld';
 import type { Reimbursement, ReimbursementStatus } from './api';
@@ -98,6 +98,14 @@ export const STATUS_TONE: Record<ReimbursementStatus, Ton> = {
   rejected: 'kritisch',
   withdrawn: 'neutral',
   paid: 'positiv',
+};
+
+/**
+ * Das Zeichen eines Zustands ohne eigenen Ton: „× Zurückgezogen“ wie
+ * „× Abgesagt“ - bewusst nicht (Design-Review Überholung 10, Regel 5).
+ */
+export const STATUS_SIGN: Partial<Record<ReimbursementStatus, string>> = {
+  withdrawn: STATUSZEICHEN.abgelehnt,
 };
 
 /** „Ladestrom September 2026“ oder „Einkauf: Massageöl, Tape“. */

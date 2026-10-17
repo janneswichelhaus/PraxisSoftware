@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { GefuehrterAblauf } from '@/components/ui/GefuehrterAblauf';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -11,7 +12,13 @@ import { ibanInGruppen } from '@/features/billing/anzeige';
 import type { CurrentUser } from '@/features/session/types';
 import { formatEuro } from '@/lib/geld';
 import { leseRueckweg } from '@/lib/rueckweg';
-import { REIMBURSEMENTS_KEY, fetchPayoutDetails, markPaid, type PayoutDetails } from './api';
+import {
+  PAYOUT_ERROR,
+  REIMBURSEMENTS_KEY,
+  fetchPayoutDetails,
+  markPaid,
+  type PayoutDetails,
+} from './api';
 import { REIMBURSEMENTS_HOME, dateOf } from './paths';
 import { reimbursementTitle } from './rules';
 
@@ -21,8 +28,6 @@ import { reimbursementTitle } from './rules';
  * volle IBAN und seit wann sie hinterlegt ist (ANN-601: nur hier, nur für
  * owner, nur zu einem genehmigten Antrag) und einen Verwendungszweck.
  */
-
-const ENDGUELTIG = 'Diese Erstattung ist nicht (mehr) zum Auszahlen offen.';
 
 export function PayReimbursementPage({ user }: { user: CurrentUser }) {
   const { reimbursementId } = useParams();
@@ -41,11 +46,18 @@ export function PayReimbursementPage({ user }: { user: CurrentUser }) {
     <Abfragezustand
       abfrage={query}
       laden="Auszahlung wird geladen …"
-      fehler="Die Angaben zur Auszahlung konnten nicht geladen werden."
+      fehler={PAYOUT_ERROR}
+      // Was der Server abweist - nicht mehr offen, nicht (mehr) da, nicht
+      // erlaubt -, behebt kein neuer Versuch (Design-Review Überholung 10).
       endgueltig={{
-        wenn: (failure) => failure instanceof Error && failure.message === ENDGUELTIG,
-        titel: ENDGUELTIG,
+        wenn: (failure) => failure instanceof Error && failure.message !== PAYOUT_ERROR,
+        titel: query.error instanceof Error ? query.error.message : PAYOUT_ERROR,
       }}
+      ausweg={
+        <ButtonLink variant="secondary" className="mt-4" to={returnTo}>
+          Zurück
+        </ButtonLink>
+      }
       rahmen={(zustand) => (
         <>
           <PageHeader title="Auszahlen" />

@@ -47,11 +47,16 @@ const ANNAS = testOverview({
     ...testOverview().person!,
     reimbursements: [
       testReimbursement(),
-      testPurchase({ status: 'approved', decided_by_name: 'Jannes Test' }),
+      testPurchase({
+        status: 'approved',
+        decided_at: '2026-10-05T09:00:00Z',
+        decided_by_name: 'Jannes Test',
+      }),
       testReimbursement({
         id: 'erstattung-4',
         period_month: '2026-08-01',
         status: 'rejected',
+        decided_at: '2026-10-06T09:00:00Z',
         decision_note: 'Monat schon erstattet',
       }),
       testReimbursement({
@@ -59,6 +64,12 @@ const ANNAS = testOverview({
         period_month: '2026-07-01',
         status: 'paid',
         paid_at: '2026-08-05T10:00:00Z',
+      }),
+      testReimbursement({
+        id: 'erstattung-7',
+        period_month: '2026-06-01',
+        status: 'withdrawn',
+        withdrawn_at: '2026-10-03T08:00:00Z',
       }),
     ],
   },
@@ -70,18 +81,30 @@ beforeEach(() => {
 });
 
 describe('ReimbursementsPage', () => {
-  it('zeigt die eigenen Erstattungen mit Zustand - genehmigt heißt nicht ausgezahlt', async () => {
+  it('zeigt die eigenen Erstattungen mit Zustand und Daten - genehmigt heißt nicht ausgezahlt', async () => {
     rendern();
     const liste = (await screen.findByRole('heading', { name: /Meine Erstattungen/ })).closest(
       'section',
     )!;
     const zeilen = within(liste).getAllByRole('listitem');
-    expect(zeilen).toHaveLength(4);
+    expect(zeilen).toHaveLength(5);
     expect(zeilen[0]).toHaveTextContent('Ladestrom September 2026');
     expect(zeilen[0]).toHaveTextContent('Beantragt');
-    expect(zeilen[1]).toHaveTextContent('genehmigt von Jannes Test, noch nicht ausgezahlt');
-    expect(zeilen[2]).toHaveTextContent('abgelehnt: Monat schon erstattet');
+    // Antrag und Entscheidung je mit Datum (Design-Review Überholung 10).
+    expect(zeilen[1]).toHaveTextContent(
+      'beantragt am 2. Okt. 2026 · genehmigt am 5. Okt. 2026 von Jannes Test, noch nicht ausgezahlt',
+    );
+    // Der Betrag je Beleg steht sichtbar am Beleg.
+    expect(within(zeilen[1]!).getByRole('button', { name: /^Massageöl, 12,90/ })).toHaveTextContent(
+      'Massageöl · 12,90 €',
+    );
+    expect(zeilen[2]).toHaveTextContent(
+      'beantragt am 2. Okt. 2026 · abgelehnt am 6. Okt. 2026: Monat schon erstattet',
+    );
     expect(zeilen[3]).toHaveTextContent('ausgezahlt am 5. Aug. 2026');
+    // Zeichen und Wort auch ohne eigenen Ton (Regel 5).
+    expect(zeilen[4]).toHaveTextContent('×Zurückgezogen');
+    expect(zeilen[4]).toHaveTextContent('zurückgezogen am 3. Okt. 2026');
     expect(screen.getByText('Auf DE89 •••• 3000')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ändern: IBAN' })).toHaveAttribute(
       'href',
@@ -160,7 +183,7 @@ describe('ReimbursementsPage', () => {
     expect(screen.queryByRole('button', { name: 'Zurückziehen' })).toBeNull();
     expect(screen.queryByRole('link', { name: /IBAN/ })).toBeNull();
     expect(
-      screen.getByRole('button', { name: /^Massageöl: Beleg über 12,90\s€ ansehen$/ }),
+      screen.getByRole('button', { name: /^Massageöl, 12,90\s€: Beleg ansehen$/ }),
     ).toBeInTheDocument();
   });
 });

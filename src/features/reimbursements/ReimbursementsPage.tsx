@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
@@ -34,8 +33,15 @@ import {
   payPath,
   personPath,
 } from './paths';
+import { BelowRow } from './BelowRow';
 import { ReceiptRow } from './ReceiptRow';
-import { STATUS_LABEL, STATUS_TONE, electricityFormula, reimbursementTitle } from './rules';
+import {
+  STATUS_LABEL,
+  STATUS_SIGN,
+  STATUS_TONE,
+  electricityFormula,
+  reimbursementTitle,
+} from './rules';
 
 /**
  * Erstattungen (ERS-001, Überholung 10).
@@ -54,7 +60,7 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
   const [search] = useSearchParams();
   const person = search.get(PERSON_PARAM);
   // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder (Überholung 9).
-  const notice = useMeldungAusVerlauf();
+  const { meldung: notice } = useMeldungAusVerlauf();
   const query = useQuery({
     queryKey: reimbursementsKey(person),
     queryFn: () => fetchReimbursements(person),
@@ -228,14 +234,16 @@ function ReimbursementRow({
       meta={meta}
       betrag={formatEuro(r.amount_cents)}
       gedaempft={done}
-      status={<Badge ton={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>}
+      status={
+        <Badge ton={STATUS_TONE[r.status]} eigenesZeichen={STATUS_SIGN[r.status]}>
+          {STATUS_LABEL[r.status]}
+        </Badge>
+      }
       darunter={
         r.receipts.length > 0 || withdrawable ? (
           <>
             {r.receipts.length > 0 ? <ReceiptRow receipts={r.receipts} /> : null}
             {withdrawable ? (
-              // Unter der Zeile in voller Breite: in der Zeile bräche die
-              // Rückfrage bei 375 px (Design-Review Überholung 7).
               <BelowRow>
                 <Rueckfrage
                   ausloeser="Zurückziehen"
@@ -258,24 +266,30 @@ function ReimbursementRow({
   );
 }
 
-/** Was mit dem Antrag geschehen ist - genehmigt heißt nicht ausgezahlt. */
+/**
+ * Was mit dem Antrag geschehen ist und wann - genehmigt heißt nicht
+ * ausgezahlt. Das Datum des Antrags bleibt neben dem der Entscheidung stehen
+ * (Design-Review Überholung 10).
+ */
 function statusLine(r: Reimbursement, timeZone: string): string {
+  const requested = dateOf(r.requested_at, timeZone);
+  const on = (timestamp: string | null) => dateOf(timestamp ?? r.requested_at, timeZone);
   switch (r.status) {
     case 'requested':
-      return `beantragt am ${dateOf(r.requested_at, timeZone)}`;
+      return `beantragt am ${requested}`;
     case 'approved':
       return r.self_entered
-        ? 'selbst eingetragen, noch nicht ausgezahlt'
-        : `genehmigt${r.decided_by_name ? ` von ${r.decided_by_name}` : ''}, noch nicht ausgezahlt`;
+        ? `selbst eingetragen am ${requested}, noch nicht ausgezahlt`
+        : `beantragt am ${requested} · genehmigt am ${on(r.decided_at)}${
+            r.decided_by_name ? ` von ${r.decided_by_name}` : ''
+          }, noch nicht ausgezahlt`;
     case 'rejected':
-      return `abgelehnt: ${r.decision_note ?? 'ohne Grund'}`;
+      return `beantragt am ${requested} · abgelehnt am ${on(r.decided_at)}: ${
+        r.decision_note ?? 'ohne Grund'
+      }`;
     case 'withdrawn':
-      return `zurückgezogen am ${dateOf(r.withdrawn_at ?? r.requested_at, timeZone)}`;
+      return `beantragt am ${requested} · zurückgezogen am ${on(r.withdrawn_at)}`;
     case 'paid':
-      return `ausgezahlt am ${dateOf(r.paid_at ?? r.requested_at, timeZone)}`;
+      return `beantragt am ${requested} · ausgezahlt am ${on(r.paid_at)}`;
   }
-}
-
-function BelowRow({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">{children}</div>;
 }

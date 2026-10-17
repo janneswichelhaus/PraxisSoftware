@@ -102,7 +102,7 @@ describe('DecideReimbursementPage', () => {
     const seite = await screen.findByRole('dialog', { name: 'Erstattung genehmigen?' });
     expect(within(seite).getByText('Einkauf: Massageöl')).toBeInTheDocument();
     expect(
-      within(seite).getByRole('button', { name: /^Massageöl: Beleg über 12,90\s€ ansehen$/ }),
+      within(seite).getByRole('button', { name: /^Massageöl, 12,90\s€: Beleg ansehen$/ }),
     ).toBeInTheDocument();
   });
 

@@ -1,4 +1,4 @@
-import type { Ton } from '@/components/ui/Badge';
+import { STATUSZEICHEN, type Ton } from '@/components/ui/Badge';
 import type { ChangeKind, RequestStatus } from './api';
 import { WEEKDAYS, blocksText, hoursText, workMinutes, type Block, type Week } from './rules';
 
@@ -64,7 +64,8 @@ export function changedWeekdays(previous: Week, next: Week): (typeof WEEKDAYS)[n
   return WEEKDAYS.filter((day) => blocksText(previous[day] ?? []) !== blocksText(next[day] ?? []));
 }
 
-export function statusDisplay(status: RequestStatus): { text: string; ton: Ton } {
+/** Wie beim Urlaub: „× Zurückgezogen“ bringt sein Zeichen mit (Design-Review Überholung 10). */
+export function statusDisplay(status: RequestStatus): { text: string; ton: Ton; zeichen?: string } {
   switch (status) {
     case 'requested':
       return { text: 'Beantragt', ton: 'warnung' };
@@ -73,6 +74,6 @@ export function statusDisplay(status: RequestStatus): { text: string; ton: Ton }
     case 'rejected':
       return { text: 'Abgelehnt', ton: 'kritisch' };
     case 'withdrawn':
-      return { text: 'Zurückgezogen', ton: 'neutral' };
+      return { text: 'Zurückgezogen', ton: 'neutral', zeichen: STATUSZEICHEN.abgelehnt };
   }
 }

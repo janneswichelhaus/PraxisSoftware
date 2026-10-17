@@ -185,15 +185,16 @@ export async function previewElectricity(month: string): Promise<ElectricityPrev
   return antwort(electricityPreviewSchema, data, PREVIEW_ERROR);
 }
 
+export const PAYOUT_ERROR = 'Die Angaben zur Auszahlung konnten nicht geladen werden.';
+
 /** Für owner: die volle IBAN zu einem genehmigten Antrag (ANN-601). */
 export async function fetchPayoutDetails(reimbursementId: string): Promise<PayoutDetails> {
-  const fallback = 'Die Angaben zur Auszahlung konnten nicht geladen werden.';
   const data = await call(
     'reimbursement_payout_details',
     { p_reimbursement_id: reimbursementId },
-    fallback,
+    PAYOUT_ERROR,
   );
-  return antwort(payoutSchema, data, fallback);
+  return antwort(payoutSchema, data, PAYOUT_ERROR);
 }
 
 // -----------------------------------------------------------------------------

@@ -87,4 +87,25 @@ describe('PayReimbursementPage', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
   });
+
+  it('nennt eine Erstattung, die es nicht mehr gibt, endgültig - mit dem Weg zurück (Design-Review)', async () => {
+    const user = userEvent.setup();
+    // `reimbursement not found` (P0002) - kein Verbindungsfehler.
+    fetchPayoutDetails.mockRejectedValue(new Error('Diese Erstattung gibt es nicht mehr.'));
+    rendern();
+    expect(await screen.findByText('Diese Erstattung gibt es nicht mehr.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
+    await user.click(screen.getByRole('link', { name: 'Zurück' }));
+    expect(await screen.findByText('Ziel /offen')).toBeInTheDocument();
+  });
+
+  it('bietet im Funkloch einen neuen Versuch an', async () => {
+    const user = userEvent.setup();
+    fetchPayoutDetails
+      .mockRejectedValueOnce(new Error('Die Angaben zur Auszahlung konnten nicht geladen werden.'))
+      .mockResolvedValueOnce(testPayout());
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByRole('dialog', { name: 'Ausgezahlt?' })).toBeInTheDocument();
+  });
 });

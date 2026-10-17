@@ -106,9 +106,14 @@ describe('RequestReimbursementPage', () => {
     await tippe(within(art).getByRole('button', { name: 'Ladestrom für das Lastenrad' }));
 
     const monat = screen.getByRole('dialog', { name: 'Für welchen Monat?' });
-    // Die zwölf abgeschlossenen Monate vor dem laufenden, der jüngste zuerst.
-    expect(within(monat).getAllByRole('button', { name: /^\S+ 202[56]/ })).toHaveLength(12);
-    await tippe(within(monat).getByRole('button', { name: 'Sept. 2026' }));
+    // Die zwölf abgeschlossenen Monate vor dem laufenden, der jüngste zuerst;
+    // der jüngste freie ist die Antwort im Fuß (Design- und Praxis-Review).
+    const kacheln = within(monat)
+      .getAllByRole('group')
+      .flatMap((jahr) => within(jahr).getAllByRole('button'));
+    expect(kacheln).toHaveLength(12);
+    expect(kacheln[0]).toHaveAccessibleName('Sept. 2026');
+    await tippe(within(monat).getByRole('button', { name: 'September 2026' }));
     expect(previewElectricity).toHaveBeenCalledWith('2026-09-01');
 
     const tage = await screen.findByRole('dialog', { name: 'Wie viele Arbeitstage im September?' });
@@ -310,7 +315,10 @@ describe('RequestReimbursementPage', () => {
     await user.type(within(posten).getByLabelText('Wofür?'), 'Tape');
     await user.click(await within(posten).findByRole('button', { name: 'Weiter' }));
     const abschluss = screen.getByRole('dialog', { name: 'Einkauf beantragen?' });
-    await user.click(within(abschluss).getByRole('button', { name: 'Entfernen: Tape' }));
+    // Leise und mit Rückfrage (Design- und Praxis-Review Überholung 10).
+    await user.click(within(abschluss).getByRole('button', { name: 'Entfernen – Tape' }));
+    expect(discardReceipt).not.toHaveBeenCalled();
+    await user.click(within(abschluss).getByRole('button', { name: 'Ja, entfernen' }));
     expect(discardReceipt).toHaveBeenCalledWith('beleg-neu');
     expect(within(abschluss).getByRole('button', { name: 'Einkauf beantragen' })).toBeDisabled();
   });
@@ -339,7 +347,8 @@ describe('RequestReimbursementPage', () => {
     await user.click(screen.getByRole('button', { name: /Zurück/ }));
     const abschluss = await screen.findByRole('dialog', { name: 'Einkauf beantragen?' });
     expect(within(abschluss).getByText('wird übertragen …')).toBeInTheDocument();
-    await user.click(within(abschluss).getByRole('button', { name: 'Entfernen: Beleg' }));
+    await user.click(within(abschluss).getByRole('button', { name: 'Entfernen – Beleg' }));
+    await user.click(within(abschluss).getByRole('button', { name: 'Ja, entfernen' }));
     expect(discardReceipt).not.toHaveBeenCalled();
     await act(() => Promise.resolve(fertig('beleg-spaet')));
     expect(discardReceipt).toHaveBeenCalledWith('beleg-spaet');
@@ -363,6 +372,128 @@ describe('RequestReimbursementPage', () => {
     await user.type(within(posten).getByLabelText('Betrag in €'), '5');
     await user.type(within(posten).getByLabelText('Wofür?'), 'Tape');
     expect(await within(posten).findByRole('button', { name: 'Weiter' })).toBeEnabled();
+  });
+
+  it('ändert im Abschluss den Monat - die Erklärung gilt dem neuen Monat neu (Design-Review)', async () => {
+    const user = userEvent.setup();
+    previewElectricity.mockImplementation((month: string) =>
+      Promise.resolve(testPreview({ month, suggested_days: month === '2026-08-01' ? 15 : 18 })),
+    );
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
+    await user.click(screen.getByRole('button', { name: 'September 2026' }));
+    await user.click(await screen.findByRole('button', { name: 'Weiter' }));
+    let abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+    await user.click(within(abschluss).getByRole('checkbox'));
+
+    await user.click(within(abschluss).getByRole('button', { name: 'Ändern: Monat' }));
+    await user.click(screen.getByRole('button', { name: 'Aug. 2026' }));
+    const tage = await screen.findByRole('dialog', { name: 'Wie viele Arbeitstage im August?' });
+    // Der Vorschlag des neuen Monats steht im Feld.
+    expect(await within(tage).findByDisplayValue('15')).toBeInTheDocument();
+    await user.click(within(tage).getByRole('button', { name: 'Weiter' }));
+
+    abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+    expect(within(abschluss).getByText('August 2026')).toBeInTheDocument();
+    expect(within(abschluss).getByText('15 Arbeitstage')).toBeInTheDocument();
+    expect(within(abschluss).getByRole('checkbox')).not.toBeChecked();
+    expect(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' })).toBeDisabled();
+  });
+
+  it('kehrt beim selben Monat ohne Umweg in den Abschluss zurück', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Ladestrom für das Lastenrad' }));
+    await user.click(screen.getByRole('button', { name: 'September 2026' }));
+    await user.click(await screen.findByRole('button', { name: 'Weiter' }));
+    const abschluss = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+    await user.click(within(abschluss).getByRole('checkbox'));
+    await user.click(within(abschluss).getByRole('button', { name: 'Ändern: Monat' }));
+    await user.click(screen.getByRole('button', { name: 'Sept. 2026' }));
+    const wieder = screen.getByRole('dialog', { name: 'Ladestrom beantragen?' });
+    expect(within(wieder).getByRole('checkbox')).toBeChecked();
+  });
+
+  it('ändert Betrag und Zweck eines Belegs aus dem Abschluss (Design-Review)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Einkauf mit Beleg' }));
+    await user.upload(screen.getByLabelText('Beleg wählen'), datei());
+    let posten = screen.getByRole('dialog', { name: 'Wie viel und wofür?' });
+    await user.type(within(posten).getByLabelText('Betrag in €'), '5');
+    await user.type(within(posten).getByLabelText('Wofür?'), 'Tape');
+    await user.click(within(posten).getByRole('button', { name: 'Weiter' }));
+
+    let abschluss = screen.getByRole('dialog', { name: 'Einkauf beantragen?' });
+    await user.click(within(abschluss).getByRole('button', { name: 'Ändern: Tape' }));
+    posten = screen.getByRole('dialog', { name: 'Wie viel und wofür?' });
+    expect(within(posten).getByLabelText('Wofür?')).toHaveValue('Tape');
+    await user.clear(within(posten).getByLabelText('Betrag in €'));
+    await user.type(within(posten).getByLabelText('Betrag in €'), '6,50');
+    await user.click(within(posten).getByRole('button', { name: 'Weiter' }));
+
+    abschluss = screen.getByRole('dialog', { name: 'Einkauf beantragen?' });
+    expect(within(abschluss).getByText('6,50 €')).toBeInTheDocument();
+    await user.click(within(abschluss).getByRole('button', { name: 'Einkauf beantragen' }));
+    expect(submitPurchase).toHaveBeenCalledWith({
+      items: [{ receiptId: 'beleg-neu', amountCents: 650, purpose: 'Tape' }],
+      iban: null,
+    });
+  });
+
+  it('geht im Funkloch schon weiter - nur das Absenden wartet auf den Beleg (Praxis-Review)', async () => {
+    const user = userEvent.setup();
+    let fertig: (id: string) => void = () => undefined;
+    uploadReceipt.mockImplementationOnce(
+      () => new Promise<string>((resolve) => (fertig = resolve)),
+    );
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Einkauf mit Beleg' }));
+    await user.upload(screen.getByLabelText('Beleg wählen'), datei());
+    const posten = screen.getByRole('dialog', { name: 'Wie viel und wofür?' });
+    await user.type(within(posten).getByLabelText('Betrag in €'), '5');
+    await user.type(within(posten).getByLabelText('Wofür?'), 'Tape');
+    await user.click(within(posten).getByRole('button', { name: 'Weiter' }));
+
+    const abschluss = screen.getByRole('dialog', { name: 'Einkauf beantragen?' });
+    expect(within(abschluss).getByText('wird übertragen …')).toBeInTheDocument();
+    expect(
+      within(abschluss).getByRole('button', { name: 'Beleg wird übertragen …' }),
+    ).toBeDisabled();
+    await act(() => Promise.resolve(fertig('beleg-spaet')));
+    await user.click(within(abschluss).getByRole('button', { name: 'Einkauf beantragen' }));
+    expect(submitPurchase).toHaveBeenCalledWith({
+      items: [{ receiptId: 'beleg-spaet', amountCents: 500, purpose: 'Tape' }],
+      iban: null,
+    });
+  });
+
+  it('nennt einen gescheiterten Beleg im Abschluss und überträgt ihn dort erneut', async () => {
+    const user = userEvent.setup();
+    let scheitern: (fehler: Error) => void = () => undefined;
+    uploadReceipt
+      .mockImplementationOnce(() => new Promise<string>((_, reject) => (scheitern = reject)))
+      .mockResolvedValueOnce('beleg-zwei');
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Einkauf mit Beleg' }));
+    await user.upload(screen.getByLabelText('Beleg wählen'), datei());
+    const posten = screen.getByRole('dialog', { name: 'Wie viel und wofür?' });
+    await user.type(within(posten).getByLabelText('Betrag in €'), '5');
+    await user.type(within(posten).getByLabelText('Wofür?'), 'Tape');
+    await user.click(within(posten).getByRole('button', { name: 'Weiter' }));
+    await act(() =>
+      Promise.resolve(scheitern(new Error('Der Beleg konnte nicht übertragen werden.'))),
+    );
+
+    const abschluss = screen.getByRole('dialog', { name: 'Einkauf beantragen?' });
+    expect(within(abschluss).getByText('Nicht übertragen')).toBeInTheDocument();
+    expect(within(abschluss).getByRole('button', { name: 'Einkauf beantragen' })).toBeDisabled();
+    await user.click(within(abschluss).getByRole('button', { name: 'Erneut übertragen' }));
+    expect(uploadReceipt).toHaveBeenCalledTimes(2);
+    expect(
+      await within(abschluss).findByRole('button', { name: 'Einkauf beantragen' }),
+    ).toBeEnabled();
+    expect(within(abschluss).queryByText('Nicht übertragen')).toBeNull();
   });
 
   it('lässt owner eintragen - es gilt als genehmigt', async () => {
