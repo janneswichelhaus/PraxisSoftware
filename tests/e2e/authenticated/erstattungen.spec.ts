@@ -190,7 +190,7 @@ test('G10 Einkauf und G10b: Anna reicht einen Beleg ein, Jannes genehmigt und za
   await bild(page, 'b10-g10-09-zusammenfassung-einkauf-375');
   await t.tippe(absenden);
   // Bleibt der Abschluss offen oder fehlt die Bestätigung, nennt der Fehler,
-  // was dort stand - in der CI rot, lokal grün, ohne Bericht in der Session.
+  // was dort stand - etwa die Meldung des Servers im Fuß.
   const text = async (bereich: Locator) =>
     ((await bereich.innerText().catch(() => '')) || '–').replace(/\s+/g, ' ').slice(0, 500);
   await abschluss.waitFor({ state: 'hidden', timeout: 15_000 }).catch(async () => {

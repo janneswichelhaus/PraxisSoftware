@@ -945,7 +945,9 @@ begin
     create temporary table if not exists erstattung_posten (
       receipt_id uuid, amount_cents integer, purpose text
     ) on commit drop;
-    delete from erstattung_posten;
+    -- Mit WHERE: Über PostgREST lädt Supabase `safeupdate`, das ein DELETE
+    -- ohne WHERE abweist (in der CI über die Oberfläche gefunden, ERS-001).
+    delete from erstattung_posten where true;
     insert into erstattung_posten (receipt_id, amount_cents, purpose)
     select (p ->> 'receipt_id')::uuid, (p ->> 'amount_cents')::integer,
            nullif(btrim(p ->> 'purpose'), '')
