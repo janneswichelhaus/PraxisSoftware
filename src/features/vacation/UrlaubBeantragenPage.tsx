@@ -160,7 +160,7 @@ function hindernis(vorschau: Urlaubsvorschau, selbst: boolean): string | null {
     // Seit ZK-001 zählt auch ein Freizeitausgleich dazu - der steht im Zeitkonto.
     return `Abweichende Arbeitszeiten oder Freizeitausgleich am ${vorschau.exception_days
       .map(tagKurz)
-      .join(', ')} – erst in Planung oder Zeitkonto ändern.`;
+      .join(', ')} – erst in der Planung ändern oder im Zeitkonto zurücknehmen.`;
   }
   return null;
 }

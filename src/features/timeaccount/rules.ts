@@ -57,7 +57,8 @@ export function problemText(problem: Problem, kind: EntryKind): string {
     case 'times_invalid':
       return 'Bitte Beginn vor Ende angeben.';
     case 'overlaps_working_hours':
-      return 'Mehrarbeit liegt außerhalb Ihrer Arbeitszeit – die Zeit darin zählt schon.';
+      // Der Grund, nicht eine Bestätigung (Praxis-Review Überholung 9).
+      return 'Die Zeit liegt in der Arbeitszeit – Mehrarbeit nur davor oder danach.';
     case 'leave':
       return 'An diesem Tag ist Urlaub.';
     case 'absent':
@@ -114,6 +115,26 @@ export function overtimeChoices(blocks: readonly Block[]): TimeChoice[] {
     von: toTime(end),
     bis: toTime(end + step),
   }));
+}
+
+/**
+ * Die Arbeitszeit des Tages nach einem Freizeitausgleich: die Blöcke des Plans
+ * ohne die freie Zeit. „Tag umplanen“ wählt damit nur die Termine darin vor
+ * (Praxis-Review Überholung 9).
+ */
+export function remainingBlocks(blocks: readonly Block[], von: string, bis: string): Block[] {
+  const start = toMinutes(von);
+  const end = toMinutes(bis);
+  if (start === null || end === null) return [...blocks];
+  return blocks.flatMap((block) => {
+    const a = toMinutes(block.von);
+    const b = toMinutes(block.bis);
+    if (a === null || b === null || b <= start || end <= a) return [block];
+    return [
+      ...(a < start ? [{ von: block.von, bis: toTime(start) }] : []),
+      ...(end < b ? [{ von: toTime(end), bis: block.bis }] : []),
+    ];
+  });
 }
 
 /** Freizeitausgleich am Plan des Tages: früher gehen, später kommen, ganzer Tag. */

@@ -45,6 +45,8 @@ import {
   ersteAnrufseite,
   leseAbgesagt,
   leseAnrufstand,
+  leseZeiten,
+  liegtInZeiten,
   mitAnrufstand,
   naechsterAnruf,
   seitenKennung,
@@ -53,6 +55,7 @@ import {
   umplanStand,
   type Anrufergebnis,
   type UmplanSeite,
+  type Zeitspanne,
 } from './tagumplanen';
 
 /**
@@ -192,6 +195,7 @@ function Umplanung({
   // als „nichts umzuplanen“ da.
   const [eben, setEben] = useState<string[] | null>(null);
   const abgesagt = leseAbgesagt(suche) ?? eben;
+  const zeiten = leseZeiten(suche);
   const anrufstand = leseAnrufstand(suche);
   const zumKalender = leseRueckweg(suche, '/kalender');
   const darfUmplanen = canManageAppointments(user.roles);
@@ -253,6 +257,7 @@ function Umplanung({
               <Ablauf
                 termine={termine}
                 betroffen={betroffen}
+                zeiten={zeiten}
                 abgesagt={abgesagt}
                 anrufstand={anrufstand}
                 objekt={objekt}
@@ -294,6 +299,7 @@ function Umplanung({
 function Ablauf({
   termine,
   betroffen,
+  zeiten,
   abgesagt,
   anrufstand,
   objekt,
@@ -307,6 +313,8 @@ function Ablauf({
 }: {
   termine: readonly DayPlanEntry[];
   betroffen: readonly DayPlanEntry[];
+  /** Die Arbeitszeit des Tages nach einer Teiländerung - `null`: der ganze Tag. */
+  zeiten: readonly Zeitspanne[] | null;
   abgesagt: readonly string[] | null;
   anrufstand: Readonly<Record<string, Anrufergebnis>>;
   objekt: string;
@@ -329,8 +337,22 @@ function Ablauf({
     beginne<UmplanSeite>(abgesagt ? ersteAnrufseite(reihenfolge, anrufstand) : { art: 'grund' }),
   );
   const [grund, setGrund] = useState<CancellationReason | null>(null);
-  // Alle bestätigten Termine sind gewählt, einzelne lassen sich abwählen.
-  const [auswahl, setAuswahl] = useState<string[]>(() => betroffen.map((termin) => termin.id));
+  // Alle bestätigten Termine sind gewählt - nach einer Teiländerung nur die,
+  // die nicht ganz in der Arbeitszeit des Tages liegen (Praxis-Review
+  // Überholung 9); einzelne lassen sich ab- und zuwählen.
+  const [auswahl, setAuswahl] = useState<string[]>(() =>
+    betroffen
+      .filter(
+        (termin) =>
+          zeiten === null ||
+          !liegtInZeiten(
+            formatLocalTime(termin.starts_at, termin.organization_time_zone),
+            formatLocalTime(termin.ends_at, termin.organization_time_zone),
+            zeiten,
+          ),
+      )
+      .map((termin) => termin.id),
+  );
   const seite = abfolge.seite;
   const imAbsagen = seite.art === 'grund' || seite.art === 'termine' || seite.art === 'absagen';
 
@@ -376,7 +398,9 @@ function Ablauf({
 
   const titel =
     seite.art === 'grund'
-      ? 'Warum fällt der Tag aus?'
+      ? zeiten === null
+        ? 'Warum fällt der Tag aus?'
+        : 'Warum fallen die Termine aus?'
       : seite.art === 'termine'
         ? 'Welche Termine absagen?'
         : seite.art === 'absagen'

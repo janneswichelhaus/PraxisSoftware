@@ -141,7 +141,9 @@ function Done({
       }
     >
       <Statusmeldung ton="erfolg">
-        {`${entryText(entry)} zählt nicht mehr. ${name} sieht Ihren Grund.${
+        {/* Wo die Person den Grund sieht - eine Mitteilung gibt es nicht (Praxis-Review
+            Überholung 9). */}
+        {`${entryText(entry)} zählt nicht mehr. ${name} sieht den Grund im Zeitkonto.${
           result.freed ? ' Die Zeit ist wieder Arbeitszeit.' : ''
         }`}
       </Statusmeldung>

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -15,6 +15,7 @@ import { Section } from '@/components/ui/Section';
 import { Tile, TileGrid } from '@/components/ui/Tile';
 import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
+import { useMeldungAusVerlauf } from '@/lib/meldung';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   TIME_ACCOUNT_KEY,
@@ -45,7 +46,8 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
   const [search] = useSearchParams();
   const today = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
   const person = search.get(PERSON_PARAM);
-  const notice = (useLocation().state as { meldung?: unknown } | null)?.meldung;
+  // Die Bestätigung einmal - nach Neuladen oder „Zurück“ nicht wieder.
+  const notice = useMeldungAusVerlauf();
   const query = useQuery({
     queryKey: timeAccountKey(person),
     queryFn: () => fetchTimeAccount(person),
@@ -71,7 +73,11 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
           ) : null
         }
       />
-      {typeof notice === 'string' ? <Rueckmeldung className="mb-6">{notice}</Rueckmeldung> : null}
+      {notice ? (
+        <Rueckmeldung key={notice.schluessel} className="mb-6">
+          {notice.text}
+        </Rueckmeldung>
+      ) : null}
       <Abfragezustand
         abfrage={query}
         laden="Zeitkonto wird geladen …"
@@ -138,7 +144,11 @@ function Content({
       )}
 
       {state.can_book_others && own ? (
-        <Listenabschnitt titel="Zeitkonten" anzahl={others.length}>
+        <Listenabschnitt
+          titel="Zeitkonten"
+          anzahl={others.length}
+          leer={{ titel: 'Keine weiteren Zeitkonten' }}
+        >
           {others.map((a) => (
             <ListRow
               key={a.staff_member_id}
@@ -202,40 +212,42 @@ function EntryRow({
       gedaempft={rejected}
       status={rejected ? <Badge ton="kritisch">Zurückgewiesen</Badge> : null}
       darunter={
-        entry.can_withdraw ? (
+        entry.can_withdraw || entry.can_reject ? (
           // Unter der Zeile in voller Breite: in der Zeile bräche die
-          // Rückfrage bei 375 px (Design-Review Überholung 7).
+          // Rückfrage bei 375 px (Design-Review Überholung 7). Zurückweisen ist
+          // selten und folgenreich - leise am Ende wie Zurücknehmen
+          // (Design-Review Überholung 9, DESIGN.md 9.16).
           <BelowRow>
-            <Rueckfrage
-              ausloeser="Zurücknehmen"
-              ausloeserVariante="quiet"
-              ausloeserGroesse="kompakt"
-              bezeichnung="Eintrag zurücknehmen"
-              bestaetigen="Ja, zurücknehmen"
-              bestaetigenLaeuft="Wird zurückgenommen …"
-              fehler={withdraw.isError ? withdraw.error.message : undefined}
-              onBestaetigen={() => withdraw.mutateAsync()}
-            >
-              {entry.kind === 'time_off'
-                ? 'Der Saldo zählt ihn nicht mehr; die Zeit ist wieder Arbeitszeit.'
-                : 'Der Saldo zählt ihn nicht mehr.'}
-            </Rueckfrage>
+            {entry.can_reject ? (
+              <ButtonLink
+                variant="quiet"
+                groesse="kompakt"
+                to={mitRueckweg(
+                  `${TIME_ACCOUNT_HOME}/zurueckweisen/${entry.id}?${PERSON_PARAM}=${staffMemberId}`,
+                  here,
+                )}
+              >
+                Zurückweisen
+              </ButtonLink>
+            ) : null}
+            {entry.can_withdraw ? (
+              <Rueckfrage
+                ausloeser="Zurücknehmen"
+                ausloeserVariante="quiet"
+                ausloeserGroesse="kompakt"
+                bezeichnung="Eintrag zurücknehmen"
+                bestaetigen="Ja, zurücknehmen"
+                bestaetigenLaeuft="Wird zurückgenommen …"
+                fehler={withdraw.isError ? withdraw.error.message : undefined}
+                onBestaetigen={() => withdraw.mutateAsync()}
+              >
+                {entry.kind === 'time_off'
+                  ? 'Der Saldo zählt ihn nicht mehr; die Zeit ist wieder Arbeitszeit.'
+                  : 'Der Saldo zählt ihn nicht mehr.'}
+              </Rueckfrage>
+            ) : null}
           </BelowRow>
         ) : undefined
-      }
-      aktion={
-        entry.can_reject ? (
-          <ButtonLink
-            variant="secondary"
-            groesse="kompakt"
-            to={mitRueckweg(
-              `${TIME_ACCOUNT_HOME}/zurueckweisen/${entry.id}?${PERSON_PARAM}=${staffMemberId}`,
-              here,
-            )}
-          >
-            Zurückweisen
-          </ButtonLink>
-        ) : null
       }
     />
   );
