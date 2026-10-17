@@ -1,4 +1,10 @@
-import type { OffenerAntrag, Urlaubskonto, Urlaubsstand, Urlaubsvorschau } from './api';
+import type {
+  FremdesKonto,
+  OffenerAntrag,
+  Urlaubskonto,
+  Urlaubsstand,
+  Urlaubsvorschau,
+} from './api';
 
 /**
  * Synthetische Antworten der Urlaubsfunktionen für Komponententests
@@ -23,6 +29,24 @@ export function testKonto(overrides: Partial<Urlaubskonto> = {}): Urlaubskonto {
   };
 }
 
+/** Ein fremdes Konto für owner: laufendes Jahr und Folgejahr (noch ohne Anspruch). */
+export function testFremdesKonto(overrides: Partial<FremdesKonto> = {}): FremdesKonto {
+  return {
+    staff_member_id: STAFF.anna,
+    name: 'Anna Beispiel',
+    balance: testKonto(),
+    next_balance: testKonto({
+      year: 2027,
+      entitlement: null,
+      carryover: null,
+      approved: 0,
+      requested: 0,
+      rest: null,
+    }),
+    ...overrides,
+  };
+}
+
 export function testOffenerAntrag(overrides: Partial<OffenerAntrag> = {}): OffenerAntrag {
   return {
     id: 'abababab-abab-4bab-8bab-000000000001',
@@ -33,10 +57,12 @@ export function testOffenerAntrag(overrides: Partial<OffenerAntrag> = {}): Offen
     starts_on: '2026-11-02',
     ends_on: '2026-11-13',
     days: 10,
+    days_following_year: 0,
     requested_at: '2026-10-12T08:00:00Z',
     balance: testKonto({ requested: 10 }),
     team: [],
     appointments: 3,
+    exception_days: [],
     ...overrides,
   };
 }
@@ -72,6 +98,8 @@ export function testVorschau(overrides: Partial<Urlaubsvorschau> = {}): Urlaubsv
       },
     ],
     self_entered: false,
+    appointment_days: [],
+    exception_days: [],
     ...overrides,
   };
 }

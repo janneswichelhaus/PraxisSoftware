@@ -14,7 +14,8 @@ import {
  * DEFINER-Funktionen, nichts gestubbt.
  *
  * Anna beantragt eine Woche (Budget ≤ 6 Tipps, Ziel 5: „Urlaub beantragen“,
- * erster Tag, letzter Tag, Weiter, Absenden); Jannes genehmigt aus „Offene
+ * Monat, erster Tag, letzter Tag, Absenden - liegt der Freitag im nächsten
+ * Monat, ein Blättern dazu); keine Seite rollt. Jannes genehmigt aus „Offene
  * Punkte“ (Genehmigen 2 Tipps). Danach am Server: die Tage stehen als
  * Abwesenheit mit Bezug auf den Antrag in den Arbeitszeiten (ANN-578). Am
  * Ende storniert Anna, Jannes genehmigt den Storno, und die Tage sind wieder
@@ -49,6 +50,50 @@ function urlaubswoche(): { von: string; bis: string } {
 }
 
 const WOCHE = urlaubswoche();
+
+const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** Der Name einer Monatskachel, „Juli 2027“ (`monatLang`). */
+function monatsKachel(datum: string): string {
+  return MONATSNAME.format(new Date(`${datum.slice(0, 7)}-01T00:00:00Z`));
+}
+
+/** Monatsnamen wie in den Zeilen (Kurzform des Duden). */
+const MONAT_KURZ = [
+  'Jan.',
+  'Feb.',
+  'März',
+  'Apr.',
+  'Mai',
+  'Juni',
+  'Juli',
+  'Aug.',
+  'Sept.',
+  'Okt.',
+  'Nov.',
+  'Dez.',
+] as const;
+
+/** Der Zeitraum, wie die Zeile ihn schreibt (`zeitraumText`, ohne laufendes Jahr). */
+function zeitraumZeile(von: string, bis: string): string {
+  const jahr = (datum: string) =>
+    datum.slice(0, 4) === String(new Date().getUTCFullYear()) ? '' : ` ${datum.slice(0, 4)}`;
+  const tagMonat = (datum: string) =>
+    `${Number(datum.slice(8, 10))}. ${MONAT_KURZ[Number(datum.slice(5, 7)) - 1]}`;
+  if (von.slice(0, 7) === bis.slice(0, 7)) {
+    return `${Number(von.slice(8, 10))}.–${tagMonat(bis)}${jahr(bis)}`;
+  }
+  return `${tagMonat(von)} – ${tagMonat(bis)}${jahr(bis)}`;
+}
+
+/** Der letzte Tag des Monats - steht er im Bild, rollt das Blatt nicht. */
+function monatsende(datum: string): string {
+  return iso(new Date(Date.UTC(Number(datum.slice(0, 4)), Number(datum.slice(5, 7)), 0)));
+}
 
 function zaehler() {
   let tipps = 0;
@@ -86,6 +131,17 @@ async function stehtImBild(page: Page, dialog: Locator, knopf: Locator): Promise
   expect(breit).toBe(true);
 }
 
+/** Keine Fläche im Fenster rollt - je Seite eine Frage ohne Rollen (DESIGN.md). */
+async function rolltNicht(dialog: Locator): Promise<void> {
+  const rollend = await dialog.evaluate(
+    (fenster) =>
+      [fenster, ...fenster.querySelectorAll('*')]
+        .filter((el) => ['auto', 'scroll'].includes(getComputedStyle(el).overflowY))
+        .filter((el) => el.scrollHeight > el.clientHeight + 1).length,
+  );
+  expect(rollend).toBe(0);
+}
+
 /**
  * Die Abwesenheiten der Woche, wie der Kalender sie liest - ohne Bezug auf
  * den Antrag; den sieht keine Praxisrolle (Spaltenrecht, ANN-580).
@@ -109,32 +165,48 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   page,
   browser,
 }) => {
+  // Zwei Personen, vier Kalenderseiten und der Storno am Ende - länger als
+  // die 30 Sekunden eines einzelnen Ablaufs.
+  test.setTimeout(120_000);
   await page.setViewportSize(TELEFON);
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/urlaub');
 
   const t = zaehler();
   await t.tippe(page.getByRole('link', { name: 'Urlaub beantragen' }));
-  const kalender = page.getByRole('dialog', { name: 'Welche Tage?' });
-  const weiter = kalender.getByRole('button', { name: 'Weiter' });
-  // Beim Öffnen stehen Frage und Fuß im Bild. Darunter rollen zwölf Monate;
-  // ist die Woche weit voraus, rollt die Frage mit, der Fuß bleibt stehen.
-  await stehtImBild(page, kalender, weiter);
-  await bild(page, 'b7-g7-01-kalender-375');
-  await t.tippe(tag(kalender, WOCHE.von));
-  await t.tippe(tag(kalender, WOCHE.bis));
-  // Die Tage zählt der Server: Montag bis Freitag ohne Feiertag. Zwischen
-  // Zahl und Wort steht ein geschütztes Leerzeichen (`urlaubstage`).
-  await expect(kalender.getByText(/\d+\sUrlaubstag/)).toBeVisible();
-  await expect(weiter).toBeEnabled();
-  await expect(weiter).toBeInViewport();
-  await bild(page, 'b7-g7-02-gewaehlt-375');
-  await t.tippe(weiter);
+  const monate = page.getByRole('dialog', { name: 'Ab welchem Monat?' });
+  const kachel = monate.getByRole('button', { name: monatsKachel(WOCHE.von) });
+  // Alle dreizehn Monate stehen ohne Rollen im Bild.
+  await stehtImBild(page, monate, monate.getByRole('button').last());
+  await rolltNicht(monate);
+  await bild(page, 'b7-g7-01-monat-375');
+  await t.tippe(kachel);
+
+  // Je Kalenderseite ein Monat: Frage, letzter Tag des Monats und Fuß im Bild.
+  const beginn = page.getByRole('dialog', { name: 'Erster Urlaubstag?' });
+  await stehtImBild(page, beginn, tag(beginn, monatsende(WOCHE.von)));
+  await rolltNicht(beginn);
+  await bild(page, 'b7-g7-02-beginn-375');
+  await t.tippe(tag(beginn, WOCHE.von));
+
+  const ende = page.getByRole('dialog', { name: 'Letzter Urlaubstag?' });
+  await stehtImBild(page, ende, ende.getByRole('button', { name: '3 Wochen' }));
+  await expect(tag(ende, monatsende(WOCHE.von))).toBeInViewport();
+  await rolltNicht(ende);
+  await bild(page, 'b7-g7-03-ende-375');
+  if (WOCHE.bis.slice(0, 7) !== WOCHE.von.slice(0, 7)) {
+    await t.tippe(ende.getByRole('button', { name: 'Nächster Monat' }));
+  }
+  await t.tippe(tag(ende, WOCHE.bis));
 
   const abschluss = page.getByRole('dialog', { name: 'Urlaub beantragen?' });
   const absenden = abschluss.getByRole('button', { name: 'Urlaub beantragen' });
+  // Die Tage zählt der Server: Montag bis Freitag ohne Feiertag. Zwischen
+  // Zahl und Wort steht ein geschütztes Leerzeichen (`urlaubstage`).
+  await expect(abschluss.getByText(/\d+\sUrlaubstag/)).toBeVisible();
+  await expect(absenden).toBeEnabled();
   await stehtImBild(page, abschluss, absenden);
-  await bild(page, 'b7-g7-03-zusammenfassung-375');
+  await bild(page, 'b7-g7-04-zusammenfassung-375');
   await t.tippe(absenden);
   // Die Rückmeldung trägt vorn das Häkchen (für Vorlesesoftware ausgeblendet).
   await expect(page.getByRole('status').filter({ hasText: 'Urlaub beantragt:' })).toBeVisible();
@@ -175,9 +247,17 @@ test('G7: Anna beantragt eine Woche in fünf Tipps, Jannes genehmigt in zwei (UR
   // Anna sieht ihn genehmigt; sie storniert, Jannes genehmigt den Storno -
   // die Tage sind wieder frei.
   await page.reload();
-  await expect(page.getByRole('listitem').filter({ hasText: 'Genehmigt' }).first()).toBeVisible();
-  await page.getByRole('button', { name: 'Stornieren' }).click();
-  await page.getByRole('button', { name: 'Storno beantragen' }).click();
+  const zeile = page
+    .getByRole('listitem')
+    .filter({ hasText: zeitraumZeile(WOCHE.von, WOCHE.bis) })
+    .filter({ hasText: 'Genehmigt' });
+  await expect(zeile).toBeVisible();
+  // Die Rückfrage öffnet unter der Zeile in voller Breite (Design-Review).
+  await zeile.getByRole('button', { name: 'Stornieren' }).click();
+  const bestaetigen = zeile.getByRole('button', { name: 'Storno beantragen' });
+  await expect(bestaetigen).toBeInViewport();
+  await bild(page, 'b7-g7-05-storno-rueckfrage-375');
+  await bestaetigen.click();
   await expect(page.getByText('Storno beantragt')).toBeVisible();
   const liste = await rpcAufrufen(page.request, token, 'list_leave', {
     p_from: WOCHE.von,

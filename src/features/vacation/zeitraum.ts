@@ -85,6 +85,28 @@ function teile(tag: string) {
   return { tag: d.getUTCDate(), monat: MONAT_KURZ[d.getUTCMonth()]!, jahr: d.getUTCFullYear() };
 }
 
+/** „Okt.“ - ein Monat als Kachel beim Wählen (das Jahr steht darüber). */
+export function monatKurz(monat: string): string {
+  return teile(monat).monat;
+}
+
+const MONATSNAME = new Intl.DateTimeFormat('de-DE', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+/** „Oktober 2026“ - der Name einer Monatskachel für Vorlesesoftware. */
+export function monatLang(monat: string): string {
+  return MONATSNAME.format(new Date(`${monat}T00:00:00Z`));
+}
+
+/** „3. Okt.“ - ein Tag im laufenden Monat, etwa ein Feiertag. */
+export function tagKurz(tag: string): string {
+  const t = teile(tag);
+  return `${t.tag}. ${t.monat}`;
+}
+
 /**
  * „4.–15. Aug. 2027“, „28. Dez. 2027 – 8. Jan. 2028“, ein Tag: „4. Aug. 2027“.
  * Ohne Jahr, wenn es das laufende ist (`ohneJahr`).
