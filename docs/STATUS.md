@@ -6,8 +6,8 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 ## Jetzt
 
 Überholung 10 (17.10., Entwurfs-PR #266 gegen `main`): Erstattungen echt – Ladestrom (G10, 6 Tipps),
-Einkauf mit Beleg, Genehmigen und Auszahlen getrennt (G10b, je 2), IBAN maskiert. Offen: Ladung und Satz
-als Einstellung (ANN-599), Volllauf, E2E, Bildstrecke, Runde 2, Kameratest; BEF-178 bis 180 eingeplant.
+Einkauf mit Beleg, Genehmigen und Auszahlen getrennt (G10b, je 2), IBAN maskiert; CI grün. Offen: Ladung
+und Satz als Einstellung (ANN-599), Bildstrecke und Runde 2 nach Runde 1, Kameratest; BEF-178 bis 180.
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
