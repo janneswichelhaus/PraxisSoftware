@@ -1064,6 +1064,24 @@
           "vermerk": "Auftrag Jannes 17.10.2026; ANN-605 löst ANN-599 ab, gestellte Anträge behalten ihre Werte; Kilometer aus Touren nach ADR-019 Fassung 6 als BEF-181"
         },
         {
+          "id": "bef-181",
+          "name": "BEF-181 Ladestrom aus den Kilometern der geplanten Touren: Edge Function rechnet beim Beantragen die Routen je Tag, nur die Monatssumme am Antrag, Büro ohne Kilometer und Betrag",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-17",
+          "nachweis": "Branch ccr-0d8db4ad-3ufjj1, Migration 20261205100000_bef_181_ladestrom_aus_touren.sql, supabase/tests/electricity-tour-distance.test.ts, supabase/functions/electricity-distance/*.test.ts, tests/e2e/authenticated/erstattungen.spec.ts, Zweitreview",
+          "vermerk": "ADR-019 Fassung 6; ANN-615 bis ANN-617; ohne Gate (Punkt 9) bleibt der Wert je Stunde"
+        },
+        {
+          "id": "wochenplan-in-einem-zug",
+          "name": "Wochenplan in einem Zug: geänderte Tage unter ihrer Zeile öffnen, mit einem Knopf speichern, alle oder keiner",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-17",
+          "nachweis": "Branch ccr-0d8db4ad-3ufjj1, Migration 20261205110000_wochenplan_in_einem_zug.sql, supabase/tests/working-week.test.ts, src/features/scheduling/SchedulingPage.test.tsx, tests/e2e/authenticated/scheduling-workflows.spec.ts",
+          "vermerk": "Praxis-Review der Überholung Organisation (PR #267, Frage 2)"
+        },
+        {
           "id": "ki-epic-001",
           "name": "KI-EPIC-001 Gateway und Sprachdokumentation",
           "gewicht": 2,

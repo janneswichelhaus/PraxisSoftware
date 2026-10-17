@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
+Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
+Büro ohne Kilometer und Betrag; ANN-615 bis ANN-617); Wochenplan mit einem Knopf, alle oder keiner.
+
 Überholung 11 Teamchat (17.10., Branch `claude/modest-turing-i5qgn9`): Kanäle, Direktnachrichten,
 Threads, Erwähnungen, Suche, aufgebaut wie Slack (Für dich, Threads), eigener Lesestand ohne Lesebestätigung; Löschung je Nachricht nach 12
 Monaten (ADR-008 Fassung 5); keine Startkanäle, Nachrichten der Radflotte in der Radflotte; Migration
@@ -25,8 +29,7 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes BEF-181 (Kilometer aus Touren) mit
-„Wochenplan in einem Zug“, dann ALT-EPIC-002; BEF-146, -147, -148, -150.
+Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes ALT-EPIC-002; BEF-146, -147, -148, -150.
 
 ## Bei Jannes
 
@@ -53,5 +56,6 @@ Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes BEF-181 (Kilometer aus
 
 ## Letzte Session
 
-16.10.2026, Branch `ccr-350340fc-pnh5ti`: Migration
-`20261123100000_ueb6_tag_umplanen_auswahl_schluesseluebergabe`. **Lokal:** `git pull`, `supabase db reset`.
+17.10.2026, Branch `ccr-0d8db4ad-3ufjj1`: Migrationen `20261205100000_bef_181_ladestrom_aus_touren` und
+`20261205110000_wochenplan_in_einem_zug`, neue Edge Function `electricity-distance`. **Lokal:** `git pull`,
+`supabase db reset`.

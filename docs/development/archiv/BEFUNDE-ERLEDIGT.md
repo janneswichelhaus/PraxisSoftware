@@ -1598,3 +1598,15 @@ entnehmen“, „Rad hinzufügen“ nachrangig für owner), Suche und Filter
 eingeklappt.
 
 **Entscheidung (Jannes, 2026-10-09).** Option 2 mit Büro: Eigenes sieht jede Person; Fremdes in Zeitkonto und Erstattungen sehen owner und Büro; im Urlaub sehen andere nur den Zeitraum, nie den Grund; IBAN maskiert; keine Summe über alle Personen; Räder anlegen und entfernen nur owner, Schlüssel, Panne und Check-up alle. Verbindlich über RLS; Vorgabe für den Zuschnitt der genannten Loops.
+
+### BEF-181 — Ladestrom: Kilometer aus den geplanten Touren statt km je Stunde
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Erstattungen, Ladestrom (`/betrieb/erstattungen`, Eingang) |
+| Quelle  | Überholung Organisation, Entscheidung Jannes 2026-10-17 (Variante A) |
+| Status  | erledigt 2026-10-17 (BEF-181): Edge Function `electricity-distance`, Monatssumme `tour_km` am Antrag, Büro ohne km und Betrag (ANN-615 bis ANN-617) |
+| Berührt | `app.electricity_amount_cents` (ANN-605), Tagesroute (`map_006b`), Adapter des Kartendienstes |
+
+**Beobachtung.** Der Ladestrom rechnet mit einem festen Wert „km je Arbeitsstunde“ (ANN-605). **Erwartet.** Beim Beantragen eines abgeschlossenen Monats berechnet der Server die geplanten Tourstrecken der eigenen Person neu und hält nur die Monatssumme am Antrag fest – keine Tageswerte, keine Routen (ADR-019 Fassung 6, Punkte 16 und 17). Bis zum Gate aus ADR-019 Punkt 9 nur mit synthetischen Adressen; ohne Ergebnis bleibt der Wert je Stunde.
