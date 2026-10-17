@@ -661,6 +661,18 @@ eingeklappt.
 
 **Erwartet.** Mit der Tübinger Vorlage (ANN-554): Werkstatt und Teamleitung als Anrufknopf, die Ruhetagsfrage aus dem Datum, „Panne melden“ an der Karte des nächsten Wegs, die Zusammenfassung kürzer und das Ersatzrad in der Meldung; bei G1 der Anruf als Hauptknopf.
 
+### BEF-177 — Urheber und Zeitpunkt des Wochenplans stehen jeder Praxisrolle offen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Arbeitszeit, Planung (`staff_working_hours`) |
+| Quelle  | Zweitreview der Überholung 8 (AZ-001) |
+| Status  | offen (Vorschlag) |
+| Berührt | `supabase/migrations/20260830120100_working_hours.sql` (Tabellenrecht), `src/features/scheduling/api.ts` |
+
+**Beobachtung.** Der Wochenplan ist mit Tabellenrecht lesbar (seit CAL-005), also auch `created_by` und `created_at`. Seit den Fassungen (ANN-589) zeigt das, wer eine genehmigte dauerhafte Änderung eingetragen hat und wann – jeder Praxisrolle, solange die Fassung gilt. Die Abweichungen haben dafür seit URL-001 ein Spaltenrecht (ANN-580). **Erwartet.** Wie bei den Abweichungen nur die Spalten, die Kalender und Planung brauchen (`id`, `organization_id`, `staff_member_id`, `weekday`, `starts_at`, `ends_at`, `valid_from`, `valid_until`); Pfad A, eine Migration mit Negativtest.
+
 ### BEF-178 — Beschäftigtendaten werden automatisch gelöscht, eine Löschsperre gibt es nur für Patientenakten
 
 |         |   |

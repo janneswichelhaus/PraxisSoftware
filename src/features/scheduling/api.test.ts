@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bloeckeText, istRasterWert, wochenBloecke, type WorkingHour } from './api';
+import { bloeckeText, giltAm, istRasterWert, wochenBloecke, type WorkingHour } from './api';
 
 /**
  * Reine Aufbereitung der Arbeitszeiten (CAL-005).
@@ -41,6 +41,9 @@ describe('istRasterWert', () => {
   });
 });
 
+/** Ein Tag, an dem der Plan ohne Fassung gilt. */
+const HEUTE = '2026-10-17';
+
 describe('wochenBloecke', () => {
   const zeiten: WorkingHour[] = [
     zeit(ANNA, 1, '13:00', '18:00'),
@@ -50,22 +53,36 @@ describe('wochenBloecke', () => {
   ];
 
   it('liefert nur die Bloecke der gefragten Person und des Wochentags', () => {
-    expect(wochenBloecke(zeiten, ANNA, 1)).toEqual([
+    expect(wochenBloecke(zeiten, ANNA, 1, HEUTE)).toEqual([
       { von: '08:00', bis: '12:00' },
       { von: '13:00', bis: '18:00' },
     ]);
   });
 
   it('sortiert nach Beginn, unabhaengig von der Reihenfolge der Daten', () => {
-    expect(wochenBloecke(zeiten, ANNA, 1).map((b) => b.von)).toEqual(['08:00', '13:00']);
+    expect(wochenBloecke(zeiten, ANNA, 1, HEUTE).map((b) => b.von)).toEqual(['08:00', '13:00']);
   });
 
   it('liefert fuer einen Wochentag ohne Eintrag eine leere Liste', () => {
-    expect(wochenBloecke(zeiten, ANNA, 6)).toEqual([]);
+    expect(wochenBloecke(zeiten, ANNA, 6, HEUTE)).toEqual([]);
   });
 
   it('vermischt zwei Personen nicht', () => {
-    expect(wochenBloecke(zeiten, TIM, 1)).toEqual([{ von: '10:00', bis: '16:00' }]);
+    expect(wochenBloecke(zeiten, TIM, 1, HEUTE)).toEqual([{ von: '10:00', bis: '16:00' }]);
+  });
+
+  it('nimmt die Fassung, die am Tag gilt (AZ-001, ANN-589)', () => {
+    const fassungen: WorkingHour[] = [
+      { ...zeit(ANNA, 1, '08:00', '12:00'), valid_until: '2026-11-30' },
+      { ...zeit(ANNA, 1, '07:00', '13:00'), valid_from: '2026-12-01' },
+    ];
+    expect(wochenBloecke(fassungen, ANNA, 1, '2026-11-30')).toEqual([
+      { von: '08:00', bis: '12:00' },
+    ]);
+    expect(wochenBloecke(fassungen, ANNA, 1, '2026-12-01')).toEqual([
+      { von: '07:00', bis: '13:00' },
+    ]);
+    expect(giltAm({ valid_from: null, valid_until: null }, '2026-12-01')).toBe(true);
   });
 });
 

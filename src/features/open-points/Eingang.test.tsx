@@ -5,6 +5,7 @@ import type { Rueckfragezeile } from '@/features/messages/api';
 import type { Patienteneintrag } from '@/features/patients/uebersicht';
 import type { CareWithoutConclusion } from './reminders-api';
 import type { Urlaubsstand } from '@/features/vacation/api';
+import type { WorkingTime } from '@/features/working-time/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -82,6 +83,23 @@ vi.mock('@/features/vacation/api', async (importOriginal) => ({
   fetchUrlaub: () => fetchUrlaub(),
 }));
 
+const fetchWorkingTime = vi.fn<() => Promise<WorkingTime>>();
+vi.mock('@/features/working-time/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchWorkingTime: () => fetchWorkingTime(),
+}));
+
+/** Die Arbeitszeit ohne offene Anträge (AZ-001). */
+const ARBEITSZEIT_LEER: WorkingTime = {
+  my_staff_member_id: '55555555-5555-4555-8555-000000000001',
+  can_decide: true,
+  self_entered: true,
+  today: '2026-10-12',
+  plan: null,
+  own: [],
+  to_decide: [],
+};
+
 /** Der Urlaub ohne offene Anträge - jeder Test füllt `to_decide`, wenn er sie braucht. */
 const URLAUB_LEER: Urlaubsstand = {
   my_staff_member_id: '55555555-5555-4555-8555-000000000001',
@@ -133,6 +151,7 @@ beforeEach(() => {
   fetchConsentWithdrawals.mockResolvedValue([]);
   fetchCareWithoutConclusion.mockResolvedValue([]);
   fetchUrlaub.mockResolvedValue(URLAUB_LEER);
+  fetchWorkingTime.mockResolvedValue(ARBEITSZEIT_LEER);
 });
 
 /** Die Überschriften der sichtbaren Gruppen, in ihrer Reihenfolge. */
@@ -230,6 +249,18 @@ describe('Offene Punkte als ein Eingang (ANN-450)', () => {
     renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
     expect(await screen.findByText('Nichts offen')).toBeInTheDocument();
     await waitFor(() => expect(fetchConsentWithdrawals).toHaveBeenCalledTimes(1));
+  });
+
+  it('sagt es, wenn die Arbeitszeitänderungen nicht laden (AZ-001)', async () => {
+    fetchWorkingTime.mockRejectedValue(new Error('Netz'));
+    renderWithProviders(<OpenPointsPage user={testUser(['owner', 'therapist'])} />, '/offen');
+    const gruppe = (await screen.findByRole('heading', { name: 'Arbeitszeitänderungen' })).closest(
+      'section',
+    )!;
+    expect(
+      within(gruppe).getByText('Die Arbeitszeitänderungen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 
   it('sagt es, wenn die Urlaubsanträge nicht laden, statt still zu fehlen (URL-001)', async () => {

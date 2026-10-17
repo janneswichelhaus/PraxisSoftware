@@ -85,6 +85,11 @@ export function OpenPointsSummary({
     ...abfragen.urlaub(today),
     enabled: canDecideStaffRequests(user.roles),
   });
+  // AZ-001 (ANN-590): offene Arbeitszeitänderungen für dieselben.
+  const arbeitszeit = useQuery({
+    ...abfragen.arbeitszeit(),
+    enabled: canDecideStaffRequests(user.roles),
+  });
 
   const offen = aufgaben.data ?? [];
   const ueberfaellig = offen.filter((task) => isOverdue(task, today)).length;
@@ -95,6 +100,7 @@ export function OpenPointsSummary({
   const fragen = offeneFragen.length;
   const fragenUeberfaellig = offeneFragen.filter((z) => z.overdue).length;
   const urlaubsantraege = urlaub.data?.length ?? 0;
+  const arbeitszeitantraege = arbeitszeit.data?.length ?? 0;
 
   const teile = [
     ueberfaellig > 0 ? anzahl(ueberfaellig, 'überfällige Aufgabe', 'überfällige Aufgaben') : null,
@@ -102,6 +108,9 @@ export function OpenPointsSummary({
     fotos > 0 ? anzahl(fotos, 'Verordnung zu erfassen', 'Verordnungen zu erfassen') : null,
     terminwuensche > 0 ? anzahl(terminwuensche, 'Terminwunsch', 'Terminwünsche') : null,
     urlaubsantraege > 0 ? anzahl(urlaubsantraege, 'Urlaubsantrag', 'Urlaubsanträge') : null,
+    arbeitszeitantraege > 0
+      ? anzahl(arbeitszeitantraege, 'Arbeitszeitänderung', 'Arbeitszeitänderungen')
+      : null,
     fragen > 0
       ? `${anzahl(fragen, 'Rückfrage offen', 'Rückfragen offen')}${
           fragenUeberfaellig > 0 ? `, ${fragenUeberfaellig} überfällig` : ''
@@ -110,7 +119,7 @@ export function OpenPointsSummary({
   ].filter((teil): teil is string => teil !== null);
 
   if (teile.length === 0) {
-    const laedt = [aufgaben, scans, wuensche, rueckfragen, urlaub].some(
+    const laedt = [aufgaben, scans, wuensche, rueckfragen, urlaub, arbeitszeit].some(
       (abfrage) => abfrage.isLoading,
     );
     return laedt ? null : sonst;
@@ -138,7 +147,13 @@ export function OpenPointsSummary({
         aria-hidden="true"
         className="text-accent flex shrink-0 items-center gap-1.5 text-base font-bold tabular-nums"
       >
-        {ueberfaellig + heute + fotos + terminwuensche + urlaubsantraege + fragen}
+        {ueberfaellig +
+          heute +
+          fotos +
+          terminwuensche +
+          urlaubsantraege +
+          arbeitszeitantraege +
+          fragen}
         <span>→</span>
       </span>
     </Link>

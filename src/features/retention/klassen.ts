@@ -144,6 +144,16 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Abgelehnte und zurückgezogene Urlaubsanträge und Stornos. Ein Jahr nach der Entscheidung oder dem Zurückziehen; offene bleiben.',
   },
+  arbeitszeit: {
+    label: 'Arbeitszeitänderungen',
+    beschreibung:
+      'Genehmigte Anträge auf Änderung der eigenen Arbeitszeit. Drei Jahre ab Ende des Jahres, in dem die Änderung wirkt; der Wochenplan selbst bleibt.',
+  },
+  arbeitszeit_kurz: {
+    label: 'Arbeitszeitänderungen: abgelehnt und zurückgezogen',
+    beschreibung:
+      'Abgelehnte und zurückgezogene Anträge auf Änderung der Arbeitszeit. Ein Jahr nach der Entscheidung oder dem Zurückziehen; offene bleiben.',
+  },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',
     beschreibung: 'Organisation und Standorte.',

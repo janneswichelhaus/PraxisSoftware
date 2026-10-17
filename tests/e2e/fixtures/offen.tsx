@@ -30,6 +30,7 @@ import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
 import { urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
 import { urlaubsfenster } from '@/features/vacation/fenster';
+import { WORKING_TIME_KEY, type WorkingTime } from '@/features/working-time/api';
 import type { WaitlistEntry } from '@/features/waitlist/api';
 import '@/index.css';
 
@@ -453,6 +454,42 @@ client.setQueryData(urlaubSchluessel(fenster.von, fenster.bis), {
   team: [],
   balances: [],
 } satisfies Urlaubsstand);
+// AZ-001: eine offene Arbeitszeitänderung von Anna - die Gruppe
+// „Arbeitszeitänderungen“.
+const vormittag = [
+  { von: '08:00', bis: '12:00' },
+  { von: '13:00', bis: '18:00' },
+];
+client.setQueryData(WORKING_TIME_KEY, {
+  my_staff_member_id: nutzer.staffMemberId,
+  can_decide: true,
+  self_entered: true,
+  today: HEUTE,
+  plan: null,
+  own: [],
+  to_decide:
+    ansicht === 'leer'
+      ? []
+      : [
+          {
+            id: 'abababab-abab-4bab-8bab-000000000002',
+            kind: 'once',
+            on_date: tagPlus(12),
+            staff_member_id: ANNA,
+            name: 'Anna Beispiel',
+            blocks: [
+              { von: '07:00', bis: '12:00' },
+              { von: '13:00', bis: '17:00' },
+            ],
+            previous_blocks: vormittag,
+            previous_minutes: 540,
+            new_minutes: 540,
+            message: null,
+            requested_at: `${HEUTE}T07:45:00Z`,
+            appointment_days: [],
+          },
+        ],
+} satisfies WorkingTime);
 // Ohne Widerruf, Kündigung und auslaufenden Plan: Diese Gruppen fehlen.
 client.setQueryData(CONSENT_WITHDRAWALS_KEY, []);
 client.setQueryData(ABO_KUENDIGUNGEN_KEY, []);

@@ -357,6 +357,19 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       stichworte: ['urlaub', 'urlaubsantrag', 'frei', 'abwesenheit', 'antrag'],
       rueckweg: true,
     });
+    // AZ-001: die eigene Arbeitszeit ändern - ob es einen Wochenplan gibt und
+    // was zulässig ist, prüft der Server (ANN-588, ANN-590).
+    eintraege.push({
+      id: 'vorgang-arbeitszeit-aendern',
+      art: 'Vorgang',
+      bezeichnung: isOwner(roles)
+        ? 'Arbeitszeitänderung eintragen'
+        : 'Arbeitszeitänderung beantragen',
+      ziel: '/betrieb/arbeitszeit/beantragen',
+      bereich: isTherapyStaff(roles) ? BEREICHE.betrieb.label : BEREICHE.training.label,
+      stichworte: ['arbeitszeit', 'wochenplan', 'mittagspause', 'pause', 'stunden', 'antrag'],
+      rueckweg: true,
+    });
   }
 
   // Das eigene Konto steht jeder angemeldeten Rolle offen (STAFF-004) und ist

@@ -91,6 +91,9 @@ import { UrlaubBeantragenPage } from '@/features/vacation/UrlaubBeantragenPage';
 import { UrlaubEntscheidenPage } from '@/features/vacation/UrlaubEntscheidenPage';
 import { UrlaubTerminePage } from '@/features/vacation/UrlaubTerminePage';
 import { VacationPage } from '@/features/vacation/VacationPage';
+import { DecideWorkingTimePage } from '@/features/working-time/DecideWorkingTimePage';
+import { RequestWorkingTimePage } from '@/features/working-time/RequestWorkingTimePage';
+import { WorkingTimePage } from '@/features/working-time/WorkingTimePage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
 import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
@@ -658,6 +661,18 @@ export function AuthenticatedRoutes({
                     <Route
                       path="/betrieb/urlaub/termine"
                       element={<UrlaubTerminePage user={user} />}
+                    />
+                    {/* AZ-001: Arbeitszeitänderung wie der Urlaub - beantragen
+                      jede Praxisrolle mit Wochenplan, entscheiden owner
+                      (ANN-590); der Server prüft beides. */}
+                    <Route path="/betrieb/arbeitszeit" element={<WorkingTimePage user={user} />} />
+                    <Route
+                      path="/betrieb/arbeitszeit/beantragen"
+                      element={<RequestWorkingTimePage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/arbeitszeit/entscheiden/:requestId"
+                      element={<DecideWorkingTimePage user={user} />}
                     />
                   </>
                 ) : null}

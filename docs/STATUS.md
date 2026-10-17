@@ -5,13 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Überholung 7 (17.10., Branch `ccr-350340fc-pnh5ti-urlaub`, auf 6): Urlaub echt statt Vorschau –
-beantragen (G7, 5 Tipps), entscheiden durch owner (G7b, 2), Storno, Anspruch; genehmigter Urlaub
-sperrt die Tage; Migration `20261124100000`; ANN-576 bis ANN-580; darauf gestapelt 8 bis 10.
-
-Überholung 6 (16.10., Branch `ccr-350340fc-pnh5ti`): Baustein „Geführter Ablauf“, G1 bis G6 geführt
-(Niemand öffnet, Tag umplanen, Panne, Schlüssel übergeben, Einrichten, Plattform-Termin); Migration
-`20261123100000`; ANN-572 bis ANN-575, ANN-581 bis ANN-587; darauf gestapelt Überholung 7 (Urlaub).
+Überholung 8 (17.10., Branch `ccr-350340fc-pnh5ti-arbeitszeit`, auf 7 und 6): Arbeitszeitänderung
+einmalig oder dauerhaft (G8, 5 bzw. 7 Tipps), nie weniger Stunden, ArbZG am Server; Wochenplan in
+Fassungen (`20261125100000`); ANN-588 bis ANN-592. Darunter 7 Urlaub (`…-urlaub`) und 6 Geführte
+Abläufe (`ccr-350340fc-pnh5ti`), je eine PR.
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur

@@ -6106,3 +6106,63 @@ Praxisprozess · offen · 2026-10-16 · — · — · Wiedervorlage: Sichtung de
 **Anker.** `src/features/fleet/schluesselablauf.ts`, `KeyPage.tsx`.
 
 **Änderungspfad.** Einstieg „Übergeben“ zusätzlich auf der Radseite · Aufwand `klein`.
+
+### ANN-588 — Arbeitszeitänderung: nie weniger Stunden, Grenzen des Arbeitszeitgesetzes, nicht rückwirkend
+
+Recht · offen · 2026-10-17 · — · — · Wiedervorlage: Sichtung der Überholung 8
+
+**Annahme.** Ein Antrag sinkt nie unter die bisherige Arbeitszeit ohne Pausen: einmalig am Tag, dauerhaft in der Woche (Stunden wandern zwischen Tagen). Geprüft am Gerät und am Server, beim Beantragen und Genehmigen: höchstens 10 Stunden am Tag (§ 3 ArbZG), Pause 30 Minuten über 6 und 45 über 9 Stunden, Abschnitte ab 15 Minuten, höchstens 6 Stunden am Stück (§ 4), 11 Stunden Ruhe zu den Nachbartagen (§ 5). Frühestens morgen.
+
+**Begründung.** Festlegung Jannes 2026-10-16; § 5 Abs. 2 (Pflege) gilt für eine Physiopraxis nicht, deshalb 11 Stunden. Weniger Stunden sind ein Gespräch, kein Antrag.
+
+**Anker.** `app.working_time_problems`, `src/features/working-time/rules.ts` (`LIMITS`).
+
+**Änderungspfad.** Grenzen in beiden Ankern · Aufwand `klein`.
+
+### ANN-589 — Wochenplan in Fassungen mit Gültigkeit ab einem Datum
+
+Technik · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 8
+
+**Annahme.** `staff_working_hours` trägt `valid_from`/`valid_until`; je Tag gilt genau eine Fassung (am Schema erzwungen). Eine genehmigte dauerhafte Änderung beendet die laufende am Vortag. Die Planung pflegt die heute gültige Fassung; eine künftige zeigt sie nur an. Beendete Fassungen liest nur der Server (RLS ab heute).
+
+**Begründung.** Ein Plan „ab Datum“ braucht eine Gültigkeit (Referenz: Personio, Factorial). Ohne Leseregel stünde der Verlauf jeder Kollegin offen (§16).
+
+**Anker.** Policy `staff_working_hours_select_staff_only`, `public.set_staff_working_hours`, `giltAm` in `scheduling/api.ts`.
+
+**Änderungspfad.** Künftige Fassung in der Planung bearbeiten: ein Datum an `set_staff_working_hours` · Aufwand `mittel`.
+
+### ANN-590 — Arbeitszeitänderung: Zustände wie Urlaub, Grund für die Praxisleitung
+
+Praxisprozess · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Sichtung der Überholung 8
+
+**Annahme.** beantragt → genehmigt oder abgelehnt (Grund Pflicht), zurückgezogen solange offen; kein Storno. owner entscheidet, nie den eigenen, und trägt die eigene direkt ein. Der freiwillige Grund geht an die Praxisleitung: Ihn sehen die Person und owner. Beantragen nur mit Wochenplan; einmalig nicht an Urlaubs- oder Abwesenheitstagen; Termine außerhalb werden genannt. Genehmigt wird nur gegen den Plan, gegen den beantragt wurde; hat er sich geändert, bleibt Ablehnen.
+
+**Begründung.** Antragsmechanik aus URL-001 (ANN-576); BEF-066 beschränkt nur den Urlaub.
+
+**Anker.** `public.decide_working_time_request`, `public.list_working_time` (`to_decide`).
+
+**Änderungspfad.** Grund nur für die Person: ein Feld in `to_decide` · Aufwand `klein`.
+
+### ANN-591 — Arbeitszeitänderung: Fristen
+
+Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Genehmigte Anträge drei Jahre ab Ende des Jahres ihres Datums (`arbeitszeit`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`arbeitszeit_kurz`), offene nie; Journal und Restore. Die Abweichung einer einmaligen Änderung fällt mit ihrem Antrag (cascade). Beendete Fassungen bleiben Wochenplan (Frist offen, ANN-030), lesbar nur für den Server.
+
+**Begründung.** Wie Urlaub (ANN-579): Verjährung nach §§ 195, 199 BGB; keine Aufbewahrungspflicht.
+
+**Anker.** `app.delete_due_working_time_requests`, `retention_classes` `arbeitszeit`.
+
+**Änderungspfad.** Frist in `retention_classes` · Aufwand `klein`.
+
+### ANN-592 — Arbeitszeitänderung: Pause im Formular
+
+Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: Sichtung der Überholung 8
+
+**Annahme.** Ein Tag mit Pause zeigt Beginn, Pause ab, Pausendauer und Ende; ohne Pause nur Beginn und Ende, „Pause einfügen“ erst, wenn der Tag über 6 Stunden geht. Wird die Pause länger, schlägt der Ablauf ein späteres Ende vor, damit die Arbeitszeit bleibt.
+
+**Begründung.** Produktbeschreibung AZ-001: Pause nur, wenn es sie gibt, verschiebbar und in der Dauer änderbar; über 6 Stunden verlangt § 4 ArbZG sie.
+
+**Anker.** `src/features/working-time/dayForm.ts`.
+
+**Änderungspfad.** Mehr als eine Pause je Tag: Blöcke statt Felder · Aufwand `mittel`.

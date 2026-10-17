@@ -196,6 +196,8 @@ describe('Schema-Invarianten', () => {
       // URL-001: Urlaubsanträge und -ansprüche.
       'staff_leave_requests',
       'staff_leave_entitlements',
+      // AZ-001: Anträge auf Änderung der Arbeitszeit.
+      'staff_working_time_requests',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
