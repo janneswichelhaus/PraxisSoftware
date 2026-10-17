@@ -253,7 +253,7 @@ values
    'Beteiligte einer Direktnachricht (TEAM-001): fallen mit ihr (cascade).',
    243),
   ('team_read_states', 'teamchat', 'automatisch',
-   'Eigener Lesestand (TEAM-001): fällt mit dem Gespräch (cascade).',
+   'Eigener Lesestand (TEAM-001): fällt mit dem Gespräch (cascade) und mit dem Ausscheiden der Person (ANN-609).',
    244);
 
 -- -----------------------------------------------------------------------------
@@ -709,18 +709,24 @@ begin
   -- Ins Löschjournal, damit ein Restore den Text nicht zurückbringt (ADR-008
   -- Punkt 8): die ganze Zeile oder nur ihren Inhalt (`team_message_contents`,
   -- reapply leert dann statt zu löschen).
+  -- Tageweise gebündelt (Zweitreview N4): eine Lauf-Kennung je Praxis und
+  -- Tag, Tag statt Uhrzeit - sonst stünde jede einzelne Löschung, auch in
+  -- fremden Direktnachrichten, sekundengenau im Nachweis der Praxisleitung.
   insert into public.deletion_journal
-    (organization_id, run_id, target_table, target_id, retention_class, due_at)
-  values (v_org, extensions.gen_random_uuid(),
+    (organization_id, run_id, target_table, target_id, retention_class, due_at, deleted_at)
+  values (v_org, md5('team_manual:' || v_org::text || ':' || current_date::text)::uuid,
           case when v_kind = 'author' and not v_antwort then 'team_messages'
                else 'team_message_contents' end,
-          v_m.id, 'teamchat', now());
+          v_m.id, 'teamchat', date_trunc('day', now()), date_trunc('day', now()));
   if v_kind = 'author' and not v_antwort then
     delete from public.team_messages where id = v_m.id;
   else
     delete from public.team_message_mentions where message_id = v_m.id;
+    -- Der Anker trägt keinen Namen mehr: Niemand sieht, wessen Nachricht
+    -- gelöscht oder entfernt wurde (ADR-008 Punkt 12, Zweitreview N2).
     update public.team_messages
-       set body = null, edited_at = null, removed_at = now(), removed_kind = v_kind,
+       set body = null, edited_at = null, author_staff_member_id = null,
+           removed_at = now(), removed_kind = v_kind,
            removed_by_staff_member_id = case when v_kind = 'owner' then v_staff end
      where id = v_m.id;
   end if;
@@ -926,6 +932,14 @@ begin
   get diagnostics v_teil = row_count;
   v_anzahl := v_anzahl + v_teil;
 
+  -- Ausgangsnachrichten erst sperren, dann prüfen (Zweitreview TEAM-001,
+  -- N3): Eine Antwort, die nach dem Sperren eingeht, wartet und scheitert
+  -- danach am Fremdschlüssel; eine vorher bestätigte sieht die nächste
+  -- Anweisung. So nimmt cascade keine neue Antwort still mit.
+  perform 1 from public.team_messages m
+  where m.organization_id = p_org and m.parent_id is null
+  for update;
+
   -- Ausgangsnachrichten, an denen keine Antwort mehr hängt (auch Anker).
   with faellig as (
     select m.id,
@@ -949,10 +963,13 @@ begin
   v_anzahl := v_anzahl + v_teil;
 
   -- Anker ohne Inhalt, an denen keine Antwort mehr hängt: Sie haben ihren
-  -- Zweck verloren und fallen sofort (ANN-610).
+  -- Zweck verloren und fallen im nächsten Lauf (ANN-610). Nicht der Anker
+  -- einer Entfernung durch owner - er ist der Nachweis (`removed_by`,
+  -- ADR-010 Punkt 15) und fällt erst mit seiner Frist.
   with geloescht as (
     delete from public.team_messages m
     where m.organization_id = p_org and m.parent_id is null and m.removed_at is not null
+      and m.removed_kind is distinct from 'owner'
       and not exists (select 1 from public.team_messages r where r.parent_id = m.id)
     returning m.id
   )
@@ -1740,7 +1757,8 @@ begin
       delete from public.team_message_mentions where message_id = any (v_ids);
       with g as (
         update public.team_messages
-           set body = null, edited_at = null, removed_at = coalesce(removed_at, now()),
+           set body = null, edited_at = null, author_staff_member_id = null,
+               removed_at = coalesce(removed_at, now()),
                removed_kind = coalesce(removed_kind, 'author')
          where id = any (v_ids) and body is not null
         returning id

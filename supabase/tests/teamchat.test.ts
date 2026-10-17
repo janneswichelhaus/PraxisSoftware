@@ -418,6 +418,8 @@ describe('Teamchat: bearbeiten, löschen, entfernen, archivieren', () => {
     const anker = (await nachrichten(users.office, allgemein.id)).find((n) => n.id === mitAntwort);
     expect(anker).toMatchObject({
       body: null,
+      author_name: null,
+      author_staff_member_id: null,
       removed_kind: 'author',
       reply_count: 1,
       mentions: [],
@@ -449,6 +451,20 @@ describe('Teamchat: bearbeiten, löschen, entfernen, archivieren', () => {
       removed_kind: 'owner',
       removed_by_staff_member_id: STAFF.jannes,
     });
+    expect((await nachrichten(users.office, flotte.id))[0]).toMatchObject({
+      author_name: null,
+      removed_kind: 'owner',
+    });
+    // Der Nachweis bleibt über den nächsten Lauf hinaus stehen (N1).
+    await asPostgres('select public.apply_retention()');
+    expect(await anzahl('select count(*) n from public.team_messages where id = $1', [n])).toBe(1);
+    // Händisches Löschen steht tageweise im Journal, ohne Uhrzeit (N4).
+    const { rows: journal } = await asPostgres<{ mitternacht: boolean }>(
+      `select deleted_at = date_trunc('day', deleted_at) as mitternacht
+       from public.deletion_journal where target_id = $1`,
+      [n],
+    );
+    expect(journal).toEqual([{ mitternacht: true }]);
   });
 
   it('archiviert durch owner und Teamleitung; danach nur noch lesbar', async () => {
