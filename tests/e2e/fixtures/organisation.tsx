@@ -12,11 +12,11 @@ import '@/index.css';
 /**
  * Einstieg der Prüfseite aus `organisation.html` (UX-EPIC-002, UX-002h).
  *
- * „Organisatorisches → Mitarbeitende" mit Rahmen, Untermenü und Tableiste —
- * mit erfundenen Personen, ohne Server. `?rolle=trainer` zeigt den Rahmen, wie
- * trainer ihn sieht - seit TRN-003 ohne Organisatorisches (BEF-034).
- * `?seite=benachrichtigungen` zeigt den Schalter der Praxis für
- * Benachrichtigungen aus den Praxiseinstellungen (KOM-011), eine Art aus.
+ * „Organisation → Team → Mitarbeitende" mit Rahmen, Reitern, Ansichten und
+ * Tableiste — mit erfundenen Personen, ohne Server. `?rolle=trainer` zeigt
+ * den Rahmen, wie trainer ihn sieht - seit ORG-001 mit Organisation, ohne
+ * Mitarbeiterliste. `?seite=benachrichtigungen` zeigt den Schalter der Praxis
+ * für Benachrichtigungen aus den Einstellungen (KOM-011), eine Art aus.
  */
 const parameter = new URLSearchParams(window.location.search);
 const rolle = (parameter.get('rolle') ?? 'owner') as RoleKey;
@@ -77,7 +77,7 @@ client.setQueryData(SCHALTER_SCHLUESSEL, ['plan_assigned']);
 createRoot(document.getElementById('wurzel')!).render(
   <QueryClientProvider client={client}>
     <MemoryRouter
-      initialEntries={[seite === 'benachrichtigungen' ? '/praxis/planung' : '/praxis/team']}
+      initialEntries={[seite === 'benachrichtigungen' ? '/praxis/einstellungen' : '/praxis/team']}
     >
       <AppShell user={nutzer} onSignOut={() => undefined}>
         {seite === 'benachrichtigungen' ? (

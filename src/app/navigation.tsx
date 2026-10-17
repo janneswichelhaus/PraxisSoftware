@@ -77,6 +77,16 @@ export interface Arbeitsbereich {
  */
 export interface Unterpunkt extends SubNavEintrag {
   stichworte?: readonly string[];
+  /**
+   * Die Ansichten unter dem Reiter, als Pillen unter der `SubNav`
+   * (`Ansichtsleiste`, ORG-001). Ab zwei Einträgen sichtbar.
+   */
+  ansichten?: readonly Ansicht[];
+}
+
+/** Eine Ansicht unter einem Reiter, mit den Wörtern für die Suche. */
+export interface Ansicht extends SubNavEintrag {
+  stichworte?: readonly string[];
 }
 
 // -----------------------------------------------------------------------------
@@ -201,110 +211,157 @@ const ARBEITSZEIT_STICHWORTE = ['Wochenplan', 'Arbeitszeitänderung', 'Mittagspa
 const ZEITKONTO_STICHWORTE = ['Überstunden', 'Mehrarbeit', 'Freizeitausgleich', 'Saldo'];
 const ERSTATTUNG_STICHWORTE = ['Ladestrom', 'Strom', 'Einkauf', 'Beleg', 'Auslagen', 'IBAN'];
 
+/**
+ * Die fünf Reiter von Organisation (ORG-001, ANN-604).
+ *
+ * Bis ORG-001 standen hier elf gleichrangige Punkte - Personal, Planung,
+ * Fachbibliotheken, Sicherheit und Radflotte nebeneinander; am Telefon passten
+ * drei davon auf den Bildschirm. Jetzt sind es höchstens fünf, nach der Frage,
+ * mit der man kommt: Was ist zu tun (Eingang), wer arbeitet wann (Team), wie
+ * steht die Flotte (Radflotte), was weiß die Praxis (Bibliothek), wie ist sie
+ * eingestellt (Praxis). Was zu einem Reiter gehört, wechselt darunter in der
+ * `Ansichtsleiste` - dieselben Adressen wie zuvor, damit Lesezeichen gelten.
+ *
+ * Die Reiter heißen für alle Rollen gleich; welche Ansichten darunter stehen,
+ * hängt an der Rolle. Verbindlich prüft der Server (ADR-004).
+ */
 function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
-  // Die angebundenen Punkte stehen vorn, die gekennzeichneten Vorschauen
-  // dahinter. Wer hier etwas erledigen will, trifft zuerst auf das, was
-  // tatsaechlich wirkt.
-  //
-  // Die Mitarbeiterverwaltung ist fuer alle Praxisrollen lesbar; Anlegen und
-  // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001).
-  // Eine zweite, vorgetaeuschte Personalakte daneben gibt es bewusst nicht.
+  const behandlungsseite = isTherapyStaff(roles);
   const eintraege: Unterpunkt[] = [
-    { to: '/praxis/team', label: BEGRIFFE.mitarbeitende, end: false },
-  ];
-  // Arbeitszeiten gehoeren zur Terminverwaltung; ihre Route steht unter
-  // derselben Bedingung. trainer landete sonst ohne Aufruf wieder auf `/`
-  // (BEF-034).
-  if (canManageAppointments(roles)) {
-    eintraege.push({
-      to: '/praxis/planung',
-      label: BEGRIFFE.arbeitszeiten,
-      // Praxisraster, Frist und Startort stehen auf derselben Seite, aber nur
-      // für owner (ORG-07). Anderen Rollen führte die Suche sonst zu
-      // Einstellungen, die sie dort nicht finden.
-      stichworte: isOwner(roles)
-        ? ['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']
-        : ['Planung'],
-    });
-    // Gebietstage (PRX-002): eine Praxisregel für Hausbesuche, gepflegt wie
-    // die Arbeitszeiten.
-    eintraege.push({
-      to: '/praxis/gebiete',
-      label: 'Gebietstage',
-      stichworte: ['Gebiet', 'Postleitzahl', 'Stadtteil', 'Tour'],
-    });
-  }
-  // Textbausteine sind ein Werkzeug der Dokumentation, gepflegt wird es aber
-  // wie eine Praxiseinstellung - deshalb hier und nicht bei den Patient:innen
-  // (UX-008). Wer nicht dokumentiert, braucht den Punkt nicht.
-  if (canWriteTreatmentNote(roles)) {
-    eintraege.push({ to: '/praxis/textbausteine', label: 'Textbausteine' });
-  }
-  // Die Instrumentenbibliothek zum Nachlesen (FRB-010): Produktinhalt ohne
-  // Personenbezug. Seit UX-008d für alle Rollen dieses Bereichs - auch die
-  // Praxisleitung, die erheben darf, und das Büro, das mitliest (BEF-064,
-  // BEF-137, ANN-322).
-  eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
-  // Die Übungsbibliothek (UEB-EPIC-001): Fachwissen der Praxis ohne
-  // Personenbezug, gebraucht von denen, die Übungen anleiten; das Büro liest
-  // mit (ANN-293, BEF-137). Eine Trainingsbetreuung ohne Behandlungsrolle
-  // findet sie im Training.
-  if (canReadExerciseLibrary(roles)) {
-    eintraege.push({
-      to: '/uebungen',
-      label: BEGRIFFE.uebungen,
-      end: false,
-      stichworte: ['Übungsbibliothek', BEGRIFFE.varianten, 'Heimübung', 'Übung'],
-    });
-  }
-  if (isOwner(roles)) {
-    // Protokoll und Aufbewahrung sind **ein** Punkt (Handoff Rahmen vom
-    // 2026-10-05, RAH-005): Beides sind Nachweise der Praxisleitung, keine
-    // Arbeitsvorräte (LOE-002b, ADR-008), und zwei Punkte dafür machten das
-    // Untermenü am Telefon um einen Bildschirm länger. Der Punkt öffnet das
-    // Protokoll; die Aufbewahrung ist dort der zweite Reiter
-    // (`SicherheitReiter`), die Routen bleiben. `pfade`: aktiv auf beiden
-    // Seiten. Die alten Wörter - Audit, Protokoll, Löschung - findet die
-    // Suche weiter (ORG-07).
-    eintraege.push({
-      to: '/praxis/sicherheit/audit',
-      label: 'Sicherheit und Aufbewahrung',
-      pfade: ['/praxis/sicherheit'],
-      stichworte: ['Audit', 'Zugriffe', 'Sicherheit', 'Protokoll', 'Löschung', 'Löschsperre'],
-    });
-  }
-  eintraege.push(
-    // FLT-EPIC-001: echt angebunden, ohne Vorschau-Kennzeichen.
     {
-      to: '/betrieb/flotte',
-      label: 'Radflotte',
-      end: false,
-      stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
+      to: '/betrieb',
+      label: 'Eingang',
+      pfade: ['/betrieb/rueckmeldung', '/betrieb/barometer'],
+      stichworte: ['Anträge', 'Offene Anträge', 'Zu entscheiden', 'Meldungen', 'Rückmeldung'],
     },
-    // URL-001: echt angebunden - Antrag, Entscheidung, Konto.
-    { to: '/betrieb/urlaub', label: 'Urlaub', end: false, stichworte: URLAUB_STICHWORTE },
-    // AZ-001: der eigene Wochenplan und Anträge auf eine Änderung.
+  ];
+
+  // Team: die Menschen und ihre Zeiten. Wer die Mitarbeiterliste nicht lesen
+  // darf (die Trainingsbetreuung, `app.is_staff()`), landet bei den eigenen
+  // Arbeitszeiten.
+  const teamAnsichten: Ansicht[] = [
+    ...(behandlungsseite
+      ? [{ to: '/praxis/team', label: BEGRIFFE.mitarbeitende, end: false }]
+      : []),
     {
       to: '/betrieb/arbeitszeit',
       label: 'Arbeitszeit',
       end: false,
-      stichworte: ARBEITSZEIT_STICHWORTE,
+      pfade: ['/praxis/planung'],
+      stichworte: [...ARBEITSZEIT_STICHWORTE, 'Arbeitszeiten', 'Planung', 'Abweichung'],
     },
-    // ZK-001: echt angebunden - Mehrarbeit und Freizeitausgleich, Saldo.
-    {
-      to: '/betrieb/zeitkonto',
-      label: 'Zeitkonto',
-      end: false,
-      stichworte: ZEITKONTO_STICHWORTE,
-    },
-    // ERS-001: echt angebunden - Ladestrom und Einkauf, Entscheiden, Auszahlen.
+    { to: '/betrieb/urlaub', label: 'Urlaub', end: false, stichworte: URLAUB_STICHWORTE },
+    { to: '/betrieb/zeitkonto', label: 'Zeitkonto', end: false, stichworte: ZEITKONTO_STICHWORTE },
     {
       to: '/betrieb/erstattungen',
       label: 'Erstattungen',
       end: false,
       stichworte: ERSTATTUNG_STICHWORTE,
     },
-  );
+  ];
+  eintraege.push({
+    to: teamAnsichten[0]!.to,
+    label: 'Team',
+    end: false,
+    pfade: teamAnsichten.flatMap((ansicht) => [ansicht.to, ...(ansicht.pfade ?? [])]),
+    ansichten: teamAnsichten,
+  });
+
+  // FLT-EPIC-001: Lesen alle Rollen der Behandlungsseite.
+  if (behandlungsseite) {
+    eintraege.push({
+      to: '/betrieb/flotte',
+      label: 'Radflotte',
+      end: false,
+      stichworte: ['Lastenrad', 'Schlüssel', 'Panne', 'Check-Up', 'Werkstatt'],
+    });
+  }
+
+  // Bibliothek: Fachwissen der Praxis ohne Personenbezug - Übungen
+  // (UEB-EPIC-001), Instrumente (FRB-010, UX-008d) und Textbausteine (UX-008,
+  // nur wer dokumentiert).
+  const bibliothek: Ansicht[] = [
+    ...(canReadExerciseLibrary(roles)
+      ? [
+          {
+            to: '/uebungen',
+            label: BEGRIFFE.uebungen,
+            end: false,
+            stichworte: ['Übungsbibliothek', BEGRIFFE.varianten, 'Heimübung', 'Übung'],
+          },
+        ]
+      : []),
+    ...(behandlungsseite ? [{ to: '/praxis/instrumente', label: 'Instrumente' }] : []),
+    ...(canWriteTreatmentNote(roles)
+      ? [{ to: '/praxis/textbausteine', label: 'Textbausteine' }]
+      : []),
+  ];
+  if (bibliothek.length > 0) {
+    eintraege.push({
+      to: bibliothek[0]!.to,
+      label: 'Bibliothek',
+      end: false,
+      pfade: bibliothek.map((ansicht) => ansicht.to),
+      ansichten: bibliothek,
+      stichworte: ['Übungsbibliothek', 'Übung'],
+    });
+  }
+
+  // Praxis: die Einstellungen der Praxis (owner), die Gebietstage als
+  // Praxisregel für Hausbesuche (PRX-002, gelesen von der Terminverwaltung)
+  // und die Nachweise Protokoll und Aufbewahrung (owner, RAH-005).
+  const praxis: Ansicht[] = [
+    ...(isOwner(roles)
+      ? [
+          {
+            to: '/praxis/einstellungen',
+            label: 'Einstellungen',
+            stichworte: [
+              'Praxiseinstellungen',
+              'Praxisraster',
+              'Dokumentationsfrist',
+              'Frist',
+              'Startort',
+              'Garage',
+              'Fahrzeitfaktor',
+              'Benachrichtigungen',
+            ],
+          },
+        ]
+      : []),
+    ...(canManageAppointments(roles)
+      ? [
+          {
+            to: '/praxis/gebiete',
+            label: 'Gebietstage',
+            stichworte: ['Gebiet', 'Postleitzahl', 'Stadtteil', 'Tour'],
+          },
+        ]
+      : []),
+    ...(isOwner(roles)
+      ? [
+          {
+            to: '/praxis/sicherheit/audit',
+            label: BEGRIFFE.protokoll,
+            stichworte: ['Audit', 'Zugriffe', 'Sicherheit'],
+          },
+          {
+            to: '/praxis/sicherheit/aufbewahrung',
+            label: 'Aufbewahrung',
+            stichworte: ['Löschung', 'Löschsperre', 'Aufbewahrung und Löschung'],
+          },
+        ]
+      : []),
+  ];
+  if (praxis.length > 0) {
+    eintraege.push({
+      to: praxis[0]!.to,
+      label: 'Praxis',
+      end: false,
+      pfade: [...praxis.map((ansicht) => ansicht.to), '/praxis/sicherheit'],
+      ansichten: praxis,
+    });
+  }
   return eintraege;
 }
 
@@ -366,75 +423,16 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   // Training (TRN-EPIC-001): owner, Trainingsbetreuung und Büro. therapist
   // und team_lead nicht - der offene Zugriff auf alle Akten gilt innerhalb der
   // Behandlung (ADR-021 Punkt 6). Der Server liefert ihnen ohnehin nichts.
+  // Übungen, Urlaub und Arbeitszeit der Trainingsbetreuung stehen seit
+  // ORG-001 unter Organisation wie bei allen anderen (ANN-604).
   if (canReadTrainingClients(roles)) {
-    // Die Übungsbibliothek gehört zu Organisatorisches; wer dort keinen Zugang
-    // hat - die Trainingsbetreuung ohne Behandlungsrolle -, findet sie hier
-    // (UEB-EPIC-001). Ein Pfad gehört immer zu genau einem Bereich.
-    const uebungenHier = canReadExerciseLibrary(roles) && !isTherapyStaff(roles);
-    // URL-001: Wer nur im Training arbeitet, sieht Organisatorisches nicht und
-    // findet den eigenen Urlaub deshalb hier - wie die Übungen.
-    const urlaubHier = !isTherapyStaff(roles);
     bereiche.push({
       id: 'training',
       ...BEREICHE.training,
       to: '/training',
-      pfade: [
-        '/training',
-        ...(uebungenHier ? ['/uebungen'] : []),
-        ...(urlaubHier
-          ? [
-              '/betrieb/urlaub',
-              '/betrieb/arbeitszeit',
-              '/betrieb/zeitkonto',
-              '/betrieb/erstattungen',
-            ]
-          : []),
-      ],
+      pfade: ['/training'],
       icon: symbole.training,
-      unterpunkte:
-        uebungenHier || urlaubHier
-          ? [
-              { to: '/training', label: BEGRIFFE.trainingskundInnen, end: false },
-              ...(uebungenHier
-                ? [
-                    {
-                      to: '/uebungen',
-                      label: BEGRIFFE.uebungen,
-                      end: false,
-                      stichworte: ['Übungsbibliothek', BEGRIFFE.varianten, 'Übung'],
-                    },
-                  ]
-                : []),
-              ...(urlaubHier
-                ? [
-                    {
-                      to: '/betrieb/urlaub',
-                      label: 'Urlaub',
-                      end: false,
-                      stichworte: URLAUB_STICHWORTE,
-                    },
-                    {
-                      to: '/betrieb/arbeitszeit',
-                      label: 'Arbeitszeit',
-                      end: false,
-                      stichworte: ARBEITSZEIT_STICHWORTE,
-                    },
-                    {
-                      to: '/betrieb/zeitkonto',
-                      label: 'Zeitkonto',
-                      end: false,
-                      stichworte: ZEITKONTO_STICHWORTE,
-                    },
-                    {
-                      to: '/betrieb/erstattungen',
-                      label: 'Erstattungen',
-                      end: false,
-                      stichworte: ERSTATTUNG_STICHWORTE,
-                    },
-                  ]
-                : []),
-            ]
-          : [],
+      unterpunkte: [],
     });
   }
 
@@ -467,13 +465,16 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
         { to: '/team', label: 'Teamchat', vorschau: true },
       ],
     });
+  }
 
+  // Organisation für jede Praxisrolle (ORG-001): Die Trainingsbetreuung sieht
+  // dort ihren Eingang, ihre Zeiten und die Übungen; was sie nicht lesen
+  // darf, steht für sie nicht da.
+  if (isStaff(roles)) {
     bereiche.push({
       id: 'betrieb',
       ...BEREICHE.betrieb,
-      // Der Bereich oeffnet auf dem ersten Punkt, der wirklich wirkt, nicht
-      // auf einer Vorschau (ANN-112, Bedienprinzipien).
-      to: '/praxis/team',
+      to: '/betrieb',
       pfade: canReadExerciseLibrary(roles)
         ? ['/betrieb', '/praxis', '/uebungen']
         : ['/betrieb', '/praxis'],
@@ -597,7 +598,10 @@ export function aktiverBereich(
  * wenn alles ohne „Mehr" passt und nichts Vorschau ist, bleibt die Leiste,
  * wie sie ist (ein Patienten- oder Trainingskonto).
  */
-export function tableiste(bereiche: Arbeitsbereich[]): {
+export function tableiste(
+  bereiche: Arbeitsbereich[],
+  vorrang: readonly string[] = [],
+): {
   sichtbar: Arbeitsbereich[];
   weitere: Arbeitsbereich[];
 } {
@@ -605,6 +609,25 @@ export function tableiste(bereiche: Arbeitsbereich[]): {
   if (reife.length === bereiche.length && bereiche.length <= 5) {
     return { sichtbar: bereiche, weitere: [] };
   }
-  const sichtbar = reife.slice(0, 4);
+  // Zuerst die Bereiche mit Vorrang, dann die übrigen; angezeigt werden die
+  // vier in Seitenleisten-Reihenfolge.
+  const gewaehlt = [
+    ...reife.filter((bereich) => vorrang.includes(bereich.id)),
+    ...reife.filter((bereich) => !vorrang.includes(bereich.id)),
+  ].slice(0, 4);
+  const sichtbar = reife.filter((bereich) => gewaehlt.includes(bereich));
   return { sichtbar, weitere: bereiche.filter((bereich) => !sichtbar.includes(bereich)) };
+}
+
+/**
+ * Welche Bereiche am Telefon in die Leiste gehören (ORG-001, ANN-604).
+ *
+ * Die Praxisleitung braucht Organisation öfter als das Training - Anträge,
+ * Team und Flotte -, das Büro die Abrechnung. Alle anderen Rollen nehmen die
+ * ersten vier in Seitenleisten-Reihenfolge.
+ */
+export function leistenvorrang(roles: readonly RoleKey[]): readonly string[] {
+  if (isOwner(roles)) return ['heute', 'termine', 'patienten', 'betrieb'];
+  if (roles.includes('office')) return ['heute', 'termine', 'patienten', 'abrechnung'];
+  return [];
 }

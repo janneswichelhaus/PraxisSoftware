@@ -454,6 +454,18 @@ export function funktionskatalog(user: CurrentUser): Funktion[] {
         ...(punkt.stichworte ? { stichworte: punkt.stichworte } : {}),
         ...(punkt.vorschau ? { vorschau: true } : {}),
       });
+      // Die Ansichten unter dem Reiter sind eigene Seiten (ORG-001): „Urlaub",
+      // „Einstellungen", „Protokoll" findet die Suche unter ihrem Namen.
+      for (const ansicht of punkt.ansichten ?? []) {
+        katalog.push({
+          id: `ansicht-${bereich.id}-${ansicht.to}`,
+          art: 'Seite',
+          bezeichnung: ansicht.label,
+          ziel: ansicht.to,
+          bereich: `${bereich.label} · ${punkt.label}`,
+          ...(ansicht.stichworte ? { stichworte: ansicht.stichworte } : {}),
+        });
+      }
     }
   }
 

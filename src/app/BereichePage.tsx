@@ -33,6 +33,25 @@ export function BereichePage({ user }: { user: CurrentUser }) {
                 <span className="text-ink-muted mt-0.5 block text-sm">{bereich.leitfrage}</span>
               </span>
             </Link>
+            {/* Die Reiter des Bereichs zum direkten Sprung (ORG-001): Bis
+                dahin führte „Mehr" nur auf den Einstieg, und bis zu Urlaub
+                oder Radflotte waren es drei Schritte und ein Wischen. */}
+            {bereich.unterpunkte.length > 1 ? (
+              <nav
+                aria-label={`${bereich.label}: Seiten`}
+                className="-mt-1 flex flex-wrap gap-1 pb-3 pl-8"
+              >
+                {bereich.unterpunkte.map((punkt) => (
+                  <Link
+                    key={punkt.to}
+                    to={punkt.to}
+                    className="text-accent hover:bg-surface-sunken rounded-pill text-liste flex min-h-11 items-center px-3"
+                  >
+                    {punkt.label}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
           </li>
         ))}
       </ul>

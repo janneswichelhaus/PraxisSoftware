@@ -37,14 +37,14 @@ export const BEREICHE = {
     leitfrage: 'Was gehört zur Versorgung dieser Person?',
   },
   team: {
-    label: 'Kommunikation',
+    label: 'Nachrichten',
     kurz: 'Nachrichten',
     leitfrage: 'Mit wem muss ich etwas klären?',
   },
   betrieb: {
-    label: 'Organisatorisches',
+    label: 'Organisation',
     kurz: 'Organisation',
-    leitfrage: 'Welche Voraussetzungen und Anträge sind zu bearbeiten?',
+    leitfrage: 'Was ist im Team, an den Rädern und in der Praxis zu tun?',
   },
   abrechnung: {
     label: 'Abrechnung',

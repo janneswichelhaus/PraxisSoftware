@@ -851,6 +851,29 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
   },
   // URL-001: Urlaub ist echt angebunden - die Seite je Rolle, Beantragen
+  // ORG-001/-004: Eingang von Organisation und die Wahl eines neuen Antrags.
+  {
+    muster: '/betrieb',
+    pfad: '/betrieb',
+    bereich: 'Organisation',
+    etikett: 'Eingang',
+    konten: ['owner', 'office', 'therapist', 'trainer'],
+  },
+  {
+    muster: '/betrieb/neu',
+    pfad: '/betrieb/neu',
+    bereich: 'Organisation',
+    etikett: 'Neuer Antrag',
+    konten: ['owner', 'trainer'],
+  },
+  // ORG-002: die Einstellungen der Praxis, nur owner.
+  {
+    muster: '/praxis/einstellungen',
+    pfad: '/praxis/einstellungen',
+    bereich: 'Organisation',
+    etikett: 'Einstellungen der Praxis',
+    konten: ['owner'],
+  },
   // (G7), Entscheiden (G7b) und der Anspruch je Person.
   {
     muster: '/betrieb/urlaub',

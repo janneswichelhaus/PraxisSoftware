@@ -6288,3 +6288,15 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 **Anker.** `app.delete_due_reimbursements`.
 
 **Änderungspfad.** Zehn Jahre: Intervall der Klasse `erstattung` · Aufwand `klein`.
+
+### ANN-604 — Organisation: fünf Reiter, Ansichten darunter, Leiste je Rolle
+
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Organisation hat für jede Praxisrolle dieselben Reiter Eingang, Team, Radflotte, Bibliothek und Praxis (nur, was die Rolle liest); was zu einem Reiter gehört, wechselt darunter als Ansicht. Die Trainingsbetreuung bekommt Organisation; am Telefon steht bei owner Organisation statt Training, beim Büro die Abrechnung. Eine Seite ohne Zugang sagt „Kein Zugang“ statt still umzuleiten.
+
+**Begründung.** Auftrag Jannes 2026-10-17: elf Reiter waren unübersichtlich, zwei Arbeitszeitbereiche, Einstellungen am Ende der Arbeitszeiten.
+
+**Anker.** `betriebUnterpunkte` und `leistenvorrang` in `src/app/navigation.tsx`.
+
+**Änderungspfad.** Andere Aufteilung oder Leiste: die zwei Funktionen · Aufwand `klein`.

@@ -3,9 +3,11 @@ import { testUser } from '@/test-utils';
 import type { SubNavEintrag } from '@/components/ui/SubNav';
 import type { RoleKey } from '@/features/session/types';
 import {
+  type Ansicht,
   aktiverBereich,
   arbeitsbereiche,
   canSeeBilling,
+  leistenvorrang,
   tableiste,
   zeigtUnterleiste,
 } from './navigation';
@@ -23,6 +25,14 @@ function bereicheFuer(roles: RoleKey[]) {
 
 function ids(roles: RoleKey[]): string[] {
   return bereicheFuer(roles).map((bereich) => bereich.id);
+}
+
+/** Eine Ansicht unter einem Reiter von Organisation (ORG-001). */
+function ansicht(roles: RoleKey[], reiter: string, to: string): Ansicht | undefined {
+  return bereicheFuer(roles)
+    .find((bereich) => bereich.id === 'betrieb')
+    ?.unterpunkte.find((punkt) => punkt.label === reiter)
+    ?.ansichten?.find((eintrag) => eintrag.to === to);
 }
 
 describe('Arbeitsbereiche je Rolle', () => {
@@ -67,8 +77,8 @@ describe('Arbeitsbereiche je Rolle', () => {
       termine: 'Kalender',
       patienten: 'Patient:innen',
       training: 'Training',
-      team: 'Kommunikation',
-      betrieb: 'Organisatorisches',
+      team: 'Nachrichten',
+      betrieb: 'Organisation',
       abrechnung: 'Abrechnung',
       statistik: 'Statistiken',
     });
@@ -77,9 +87,8 @@ describe('Arbeitsbereiche je Rolle', () => {
   it('kuerzt fuer die Tableiste nur, wo die volle Bezeichnung nicht passt', () => {
     // Bei 360 px bleiben je Ziel 72 px fuer die Beschriftung (seit Runde 2
     // ohne seitlichen Innenabstand, 12 px). Gemessen in Hanken Grotesk passt
-    // "Organisation" (69 px in 12/600); "Kommunikation" und
-    // "Organisatorisches" passen nicht und wuerden die Seite waagerecht
-    // scrollen lassen. Das Mass selbst prueft tests/e2e/tableiste.spec.ts im
+    // "Organisation" (69 px in 12/600); seit ORG-001 heißen beide Bereiche
+    // auch in der Seitenleiste so wie in der Tableiste. Das Mass selbst prueft tests/e2e/tableiste.spec.ts im
     // Browser - jsdom kennt keine Breiten.
     const kurzformen = Object.fromEntries(
       bereicheFuer(['owner']).map((bereich) => [bereich.id, bereich.kurz]),
@@ -123,10 +132,9 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(canSeeBilling(['therapist', 'team_lead'])).toBe(false);
   });
 
-  it('fuehrt die Mitarbeiterverwaltung fuer alle Praxisrollen unter Organisatorisches', () => {
+  it('fuehrt die Mitarbeiterverwaltung fuer alle Praxisrollen unter Organisation → Team', () => {
     function mitarbeitende(roles: RoleKey[]): SubNavEintrag | undefined {
-      const betrieb = bereicheFuer(roles).find((bereich) => bereich.id === 'betrieb');
-      return betrieb?.unterpunkte.find((punkt) => punkt.to === '/praxis/team');
+      return ansicht(roles, 'Team', '/praxis/team');
     }
     // Die Liste ist fuer alle Praxisrollen lesbar (STAFF-001); ueber das
     // Schreiben entscheidet die Seite und - verbindlich - der Server.
@@ -138,18 +146,13 @@ describe('Arbeitsbereiche je Rolle', () => {
   });
 
   it('fuehrt die Instrumente fuer alle Rollen der Behandlungsseite (BEF-064, ANN-322)', () => {
-    function instrumente(roles: RoleKey[]): SubNavEintrag | undefined {
-      const betrieb = bereicheFuer(roles).find((bereich) => bereich.id === 'betrieb');
-      return betrieb?.unterpunkte.find((punkt) => punkt.to === '/praxis/instrumente');
-    }
     // Bis UX-008d nur, wer dokumentiert - die Praxisleitung erhob Bögen,
-    // fand aber Wortlaut und Lizenz nicht.
+    // fand aber Wortlaut und Lizenz nicht. Seit ORG-001 unter Bibliothek.
     for (const rolle of ['owner', 'team_lead', 'therapist', 'office'] as RoleKey[]) {
-      expect(instrumente([rolle])).toBeDefined();
+      expect(ansicht([rolle], 'Bibliothek', '/praxis/instrumente'), rolle).toBeDefined();
     }
-    // Die Trainingsbetreuung ohne Behandlungsrolle hat keinen Bereich
-    // Organisatorisches.
-    expect(instrumente(['trainer'])).toBeUndefined();
+    // Die Trainingsbetreuung liest die Instrumente nicht (Server).
+    expect(ansicht(['trainer'], 'Bibliothek', '/praxis/instrumente')).toBeUndefined();
   });
 
   it('stellt in jedem Bereich die angebundenen Punkte vor die Vorschau', () => {
@@ -181,33 +184,57 @@ describe('Arbeitsbereiche je Rolle', () => {
     ]);
   });
 
-  it('zeigt den Sicherheitsbereich nur der administrativen Praxisrolle', () => {
-    function sicherheitSichtbar(roles: RoleKey[]): boolean {
-      const betrieb = bereicheFuer(roles).find((bereich) => bereich.id === 'betrieb');
-      return Boolean(betrieb?.unterpunkte.some((punkt) => punkt.to === '/praxis/sicherheit/audit'));
+  it('zeigt Einstellungen, Protokoll und Aufbewahrung nur der Praxisleitung', () => {
+    for (const to of ['/praxis/einstellungen', '/praxis/sicherheit/audit']) {
+      expect(ansicht(['owner'], 'Praxis', to), to).toBeDefined();
+      expect(ansicht(['team_lead'], 'Praxis', to), to).toBeUndefined();
     }
-    expect(sicherheitSichtbar(['owner'])).toBe(true);
-    expect(sicherheitSichtbar(['team_lead'])).toBe(false);
+    // Die Gebietstage lesen alle, die Termine verwalten (PRX-002).
+    expect(ansicht(['therapist'], 'Praxis', '/praxis/gebiete')).toBeDefined();
   });
 
-  it('kennzeichnet noch nicht angebundene Unterpunkte als Vorschau', () => {
-    const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
-    // Seit ERS-001 echt angebunden: die Erstattungen tragen keine Kennzeichnung mehr.
-    const erstattungen = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/erstattungen');
-    expect(erstattungen).toBeDefined();
-    expect(erstattungen?.vorschau).toBeUndefined();
-    // Seit ZK-001 echt angebunden: das Zeitkonto trägt keine Kennzeichnung mehr.
-    const zeitkonto = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/zeitkonto');
-    expect(zeitkonto).toBeDefined();
-    expect(zeitkonto?.vorschau).toBeUndefined();
-    // Seit URL-001 echt angebunden: der Urlaub trägt keine Kennzeichnung mehr.
-    const urlaub = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/urlaub');
-    expect(urlaub).toBeDefined();
-    expect(urlaub?.vorschau).toBeUndefined();
-    // Seit FLT-EPIC-001 echt angebunden: die Radflotte trägt keine Kennzeichnung mehr.
-    const flotte = betrieb?.unterpunkte.find((punkt) => punkt.to === '/betrieb/flotte');
-    expect(flotte).toBeDefined();
-    expect(flotte?.vorschau).toBeUndefined();
+  it('führt Organisation mit höchstens fünf Reitern (ORG-001, ANN-604)', () => {
+    const reiter = (roles: RoleKey[]) =>
+      bereicheFuer(roles)
+        .find((bereich) => bereich.id === 'betrieb')
+        ?.unterpunkte.map((punkt) => punkt.label);
+    expect(reiter(['owner'])).toEqual(['Eingang', 'Team', 'Radflotte', 'Bibliothek', 'Praxis']);
+    expect(reiter(['office'])).toEqual(['Eingang', 'Team', 'Radflotte', 'Bibliothek', 'Praxis']);
+    expect(reiter(['therapist'])).toEqual(['Eingang', 'Team', 'Radflotte', 'Bibliothek', 'Praxis']);
+    expect(reiter(['trainer'])).toEqual(['Eingang', 'Team', 'Bibliothek']);
+    // Keine Vorschau mehr in Organisation; alles ist angebunden.
+    for (const rolle of ['owner', 'office', 'therapist', 'trainer'] as RoleKey[]) {
+      const betrieb = bereicheFuer([rolle]).find((bereich) => bereich.id === 'betrieb');
+      expect(
+        betrieb?.unterpunkte.some((punkt) => punkt.vorschau),
+        rolle,
+      ).toBe(false);
+    }
+  });
+
+  it('führt unter Team die Zeiten jeder Person, eigene wie fremde (ORG-003)', () => {
+    const ansichten = (roles: RoleKey[]) =>
+      bereicheFuer(roles)
+        .find((bereich) => bereich.id === 'betrieb')
+        ?.unterpunkte.find((punkt) => punkt.label === 'Team')
+        ?.ansichten?.map((eintrag) => eintrag.to);
+    expect(ansichten(['owner'])).toEqual([
+      '/praxis/team',
+      '/betrieb/arbeitszeit',
+      '/betrieb/urlaub',
+      '/betrieb/zeitkonto',
+      '/betrieb/erstattungen',
+    ]);
+    // Die Trainingsbetreuung liest die Mitarbeiterliste nicht.
+    expect(ansichten(['trainer'])).toEqual([
+      '/betrieb/arbeitszeit',
+      '/betrieb/urlaub',
+      '/betrieb/zeitkonto',
+      '/betrieb/erstattungen',
+    ]);
+    // Eine Arbeitszeit: die alte Adresse der Planung gehört zur selben Ansicht.
+    const bereiche = bereicheFuer(['owner']);
+    expect(aktiverBereich(bereiche, '/praxis/planung')?.id).toBe('betrieb');
   });
 
   it('zeigt im Kalender keine Unterzeile; die Tour gehoert trotzdem dazu', () => {
@@ -217,49 +244,27 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(aktiverBereich(bereiche, '/touren')?.id).toBe('termine');
   });
 
-  it('oeffnet Organisatorisches auf den Mitarbeitenden, nicht auf einer Vorschau', () => {
-    // ANN-112: Der Einstieg ist der erste Punkt, der wirklich wirkt.
-    for (const rolle of ['owner', 'therapist', 'office'] as RoleKey[]) {
+  it('oeffnet Organisation auf dem Eingang (ORG-004)', () => {
+    for (const rolle of ['owner', 'therapist', 'office', 'trainer'] as RoleKey[]) {
       const betrieb = bereicheFuer([rolle]).find((bereich) => bereich.id === 'betrieb');
-      expect(betrieb?.to).toBe('/praxis/team');
-      const einstieg = betrieb?.unterpunkte.find((punkt) => punkt.to === betrieb.to);
-      expect(einstieg?.vorschau).toBeUndefined();
+      expect(betrieb?.to, rolle).toBe('/betrieb');
+      expect(betrieb?.unterpunkte[0]?.label, rolle).toBe('Eingang');
     }
   });
 
-  it('zeigt einem reinen Trainingskonto Übersicht, Kalender und Training (TRN-003, TRN-006)', () => {
-    // Seit TRN-003: Mitarbeitende, Kommunikation und Organisatorisches zeigen
-    // Daten, die der Server nur der Behandlungsseite gibt (`app.is_staff()`).
-    // Bis dahin sah trainer dort leere Listen (BEF-034). Den Kalender seit
-    // TRN-006 - mit den Trainingsterminen und sonst nichts.
-    expect(ids(['trainer'])).toEqual(['heute', 'termine', 'training']);
+  it('zeigt einem reinen Trainingskonto Übersicht, Kalender, Training und Organisation', () => {
+    // Seit TRN-003: Mitarbeitende und Kommunikation zeigen Daten, die der
+    // Server nur der Behandlungsseite gibt (`app.is_staff()`). Organisation
+    // seit ORG-001 mit dem, was die Trainingsbetreuung selbst betrifft.
+    expect(ids(['trainer'])).toEqual(['heute', 'termine', 'training', 'betrieb']);
     // Wer beide Rollen hat, sieht beides - Häufung, kein Schluss (§4.8).
     expect(ids(['therapist', 'trainer'])).toEqual(
       expect.arrayContaining(['patienten', 'training', 'betrieb']),
     );
-    const punkte = bereicheFuer(['therapist'])
-      .find((bereich) => bereich.id === 'betrieb')
-      ?.unterpunkte.map((punkt) => punkt.to);
-    expect(punkte).toContain('/praxis/planung');
-  });
-
-  it('führt die Trainingsbetreuung über Training zum eigenen Urlaub (URL-001)', () => {
-    const imTraining = (roles: RoleKey[]) =>
-      bereicheFuer(roles)
-        .find((bereich) => bereich.id === 'training')
-        ?.unterpunkte.some((punkt) => punkt.to === '/betrieb/urlaub');
-    expect(imTraining(['trainer'])).toBe(true);
+    // Urlaub und Arbeitszeit stehen nicht mehr im Training.
     expect(aktiverBereich(bereicheFuer(['trainer']), '/betrieb/urlaub/beantragen')?.id).toBe(
-      'training',
+      'betrieb',
     );
-    // Wer Organisatorisches sieht, findet ihn dort - ein Pfad, ein Bereich.
-    expect(imTraining(['owner'])).toBe(false);
-    expect(aktiverBereich(bereicheFuer(['owner']), '/betrieb/urlaub')?.id).toBe('betrieb');
-  });
-
-  it('ordnet die Arbeitszeiten dem Organisatorischen zu und nicht dem Kalender', () => {
-    const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
-    expect(betrieb?.unterpunkte.map((punkt) => punkt.to)).toContain('/praxis/planung');
   });
 
   it('führt die Übungen genau einem Bereich zu, auch dem Büro (UEB-001, ANN-293, BEF-137)', () => {
@@ -276,10 +281,9 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(bereichDerUebungen(['therapist'])).toBe('betrieb');
     expect(bereichDerUebungen(['team_lead'])).toBe('betrieb');
     expect(bereichDerUebungen(['therapist', 'trainer'])).toBe('betrieb');
-    // Die Trainingsbetreuung hat kein Organisatorisches - sie findet die
-    // Bibliothek im Training.
-    expect(bereichDerUebungen(['trainer'])).toBe('training');
-    // Das Büro liest mit (ABN-030, BEF-137) - unter Organisatorisches.
+    // Seit ORG-001 auch die Trainingsbetreuung unter Organisation → Bibliothek.
+    expect(bereichDerUebungen(['trainer'])).toBe('betrieb');
+    // Das Büro liest mit (ABN-030, BEF-137) - unter Organisation.
     expect(bereichDerUebungen(['office'])).toBe('betrieb');
   });
 });
@@ -306,36 +310,22 @@ describe('Untermenü auf Detailseiten (UXR-002)', () => {
 
   it('nennt Menüpunkte wie die Seiten, die sie öffnen (ABR-26, ORG-07)', () => {
     expect(punkt(['owner'], 'abrechnung', '/abrechnung/katalog')?.label).toBe('Leistungskatalog');
-    // Seit RAH-005 ein Punkt für Protokoll und Aufbewahrung; die Seite dahinter
-    // heißt weiter „Protokoll", der Reiter nennt sie so.
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe(
-      'Sicherheit und Aufbewahrung',
-    );
-    expect(punkt(['owner'], 'betrieb', '/praxis/planung')?.label).toBe('Arbeitszeiten');
+    expect(ansicht(['owner'], 'Praxis', '/praxis/sicherheit/audit')?.label).toBe('Protokoll');
+    expect(ansicht(['owner'], 'Team', '/betrieb/arbeitszeit')?.label).toBe('Arbeitszeit');
   });
 
   it('gibt der Suche die Wörter mit, die auf den Seiten stehen (ORG-07)', () => {
-    expect(punkt(['owner'], 'betrieb', '/praxis/planung')?.stichworte).toEqual(
-      expect.arrayContaining(['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']),
+    expect(ansicht(['owner'], 'Praxis', '/praxis/einstellungen')?.stichworte).toEqual(
+      expect.arrayContaining(['Praxisraster', 'Dokumentationsfrist', 'Startort']),
     );
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.stichworte).toEqual(
-      expect.arrayContaining(['Audit', 'Zugriffe', 'Sicherheit', 'Protokoll', 'Löschung']),
+    expect(ansicht(['owner'], 'Praxis', '/praxis/sicherheit/audit')?.stichworte).toEqual(
+      expect.arrayContaining(['Audit', 'Zugriffe', 'Sicherheit']),
     );
   });
 
-  it('führt Protokoll und Aufbewahrung als einen Punkt, aktiv auf beiden Seiten (RAH-005)', () => {
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/aufbewahrung')).toBeUndefined();
-    const sicherheit = punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit');
-    expect(sicherheit?.pfade).toEqual(['/praxis/sicherheit']);
-    const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
-    expect(
-      betrieb?.unterpunkte.filter((eintrag) => eintrag.to.startsWith('/praxis/sicherheit')),
-    ).toHaveLength(1);
-  });
-
-  it('verspricht Raster, Frist und Startort nur der Rolle, die sie auf der Seite sieht', () => {
+  it('verspricht Raster, Frist und Startort nur der Rolle, die sie sieht', () => {
     for (const rolle of ['therapist', 'team_lead', 'office'] as RoleKey[]) {
-      expect(punkt([rolle], 'betrieb', '/praxis/planung')?.stichworte, rolle).toEqual(['Planung']);
+      expect(ansicht([rolle], 'Praxis', '/praxis/einstellungen'), rolle).toBeUndefined();
     }
   });
 });
@@ -358,6 +348,9 @@ describe('aktiverBereich', () => {
     ['/betrieb/flotte', 'betrieb'],
     ['/betrieb/flotte/panne', 'betrieb'],
     ['/praxis/planung', 'betrieb'],
+    ['/praxis/einstellungen', 'betrieb'],
+    ['/betrieb', 'betrieb'],
+    ['/betrieb/neu', 'betrieb'],
     ['/praxis/sicherheit/audit', 'betrieb'],
     ['/abrechnung/zahlungen', 'abrechnung'],
   ])('ordnet %s dem Bereich %s zu', (pfad, erwartet) => {
@@ -456,6 +449,32 @@ describe('tableiste (BEF-049, Option 2: Reife vor Reihenfolge)', () => {
       'statistik',
     ]);
     expect(weitere.length).toBe(alle.length - 4);
+  });
+
+  it('gibt der Praxisleitung Organisation und dem Büro die Abrechnung in die Leiste (ORG-001)', () => {
+    const owner = tableiste(bereicheFuer(['owner']), leistenvorrang(['owner']));
+    expect(owner.sichtbar.map((bereich) => bereich.id)).toEqual([
+      'heute',
+      'termine',
+      'patienten',
+      'betrieb',
+    ]);
+    expect(owner.weitere.map((bereich) => bereich.id)).toEqual([
+      'training',
+      'team',
+      'abrechnung',
+      'statistik',
+    ]);
+    const buero = tableiste(bereicheFuer(['office']), leistenvorrang(['office']));
+    expect(buero.sichtbar.map((bereich) => bereich.id)).toEqual([
+      'heute',
+      'termine',
+      'patienten',
+      'abrechnung',
+    ]);
+    // Die Trainingsbetreuung hat vier Bereiche - alle in der Leiste.
+    const trainer = tableiste(bereicheFuer(['trainer']), leistenvorrang(['trainer']));
+    expect(trainer.weitere).toEqual([]);
   });
 
   it('laesst die Seitenleiste und die Bereichsuebersicht unberuehrt', () => {

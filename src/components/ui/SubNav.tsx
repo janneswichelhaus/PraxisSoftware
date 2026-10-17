@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Link, matchPath, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { istAktiv, liegtUnter } from './subnavAktiv';
 import { anzeigerStil, useGleitanzeiger } from './gleitanzeiger';
 import { rolleInsBild } from './waagerechtRollen';
 
@@ -77,16 +78,6 @@ function verlaufBreiten(liste: HTMLElement): { links: number; rechts: number } {
 
 const eintragKlassen =
   'text-ink-muted hover:text-ink -mb-px flex min-h-11 items-center gap-1.5 border-b-2 border-transparent px-3 text-liste whitespace-nowrap transition-colors';
-
-/** Liegt `pathname` auf `pfad` oder darunter? */
-function liegtUnter(pfad: string, pathname: string): boolean {
-  return matchPath({ path: pfad, end: false }, pathname) !== null;
-}
-
-function istAktiv(eintrag: SubNavEintrag, pathname: string): boolean {
-  if (matchPath({ path: eintrag.to, end: eintrag.end ?? true }, pathname)) return true;
-  return (eintrag.pfade ?? []).some((pfad) => liegtUnter(pfad, pathname));
-}
 
 /**
  * Navigation innerhalb eines Arbeitsbereichs.

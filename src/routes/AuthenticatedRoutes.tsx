@@ -1,5 +1,9 @@
+import { EingangPage } from '@/features/organisation/EingangPage';
+import { NeuerAntragPage } from '@/features/organisation/NeuerAntragPage';
+import { PraxisEinstellungenPage } from '@/features/practice-settings/PraxisEinstellungenPage';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
+import { KeinZugang } from '@/app/KeinZugang';
 import { BereichePage } from '@/app/BereichePage';
 import { MdrSperre } from '@/app/MdrSperre';
 import { mdrSperre } from '@/app/mdr';
@@ -610,6 +614,11 @@ export function AuthenticatedRoutes({
 
                 {showSecurity ? (
                   <>
+                    {/* ORG-002: die Einstellungen der Praxis, eigene Ansicht unter Praxis. */}
+                    <Route
+                      path="/praxis/einstellungen"
+                      element={<PraxisEinstellungenPage user={user} />}
+                    />
                     <Route path="/praxis/sicherheit/audit" element={<AuditLogPage />} />
                     {/* Aufbewahrung und Loeschung stehen neben dem Auditlog: beide
                   sind Nachweise der Praxisleitung (LOE-002b, ADR-008). */}
@@ -644,6 +653,10 @@ export function AuthenticatedRoutes({
                   (BEF-066, ANN-576, ANN-580). */}
                 {showOperations || showTraining ? (
                   <>
+                    {/* ORG-001/-004: Eingang von Organisation und der eine
+                      Einstieg in jeden neuen Antrag (ANN-604). */}
+                    <Route path="/betrieb" element={<EingangPage user={user} />} />
+                    <Route path="/betrieb/neu" element={<NeuerAntragPage user={user} />} />
                     <Route path="/betrieb/urlaub" element={<VacationPage user={user} />} />
                     <Route
                       path="/betrieb/urlaub/beantragen"
@@ -758,7 +771,7 @@ export function AuthenticatedRoutes({
                     ) : null}
                   </>
                 ) : null}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<KeinZugang user={user} />} />
               </Routes>
             )}
           </AppShell>
