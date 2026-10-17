@@ -6229,7 +6229,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wie
 
 ### ANN-598 — Erstattungen: Zustände und Rechte
 
-Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Beantragt → genehmigt oder abgelehnt (Grund) → ausgezahlt; zurückziehen kann die Person, solange beantragt. owner entscheidet über die Anträge anderer, nie über einen eigenen, und vermerkt ihre Auszahlung; eigene trägt owner ein – sie gelten als genehmigt, die Auszahlung vermerkt owner selbst. Jede Person beantragt nur für sich; owner und Büro sehen alle je Person, das Büro entscheidet und zahlt nicht.
 
@@ -6241,7 +6241,7 @@ Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
 ### ANN-599 — Ladestrom: ein Monat, Arbeitstage, fester Satz
 
-Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
+Praxisprozess · geändert · 2026-10-17 · Jannes · erledigt · Wiedervorlage: Umsetzung in Überholung 10 (#266)
 
 **Annahme.** Ladestrom je abgeschlossenem Kalendermonat, höchstens zwölf zurück, einmal je Person und Monat; Arbeitstage bis zur Zahl der Tage des Monats, vorgeschlagen aus dem Wochenplan ohne Feiertage und ganztägige Abwesenheit. Betrag = Tage × 0,5 kWh × 37 ct, auf Cent gerundet; Ladung und Satz stehen am Antrag. Die Erklärung ist ein Haken (wie ANN-553).
 
@@ -6251,9 +6251,11 @@ Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Satz in den Praxiseinstellungen pflegen: Spalte und Feld · Aufwand `mittel`.
 
+**Geändert (Jannes, 2026-10-17).** Ladung und Satz als Einstellung der Praxis für owner statt im Code; der Antrag hält beide fest. Umsetzung offen (Überholung 10).
+
 ### ANN-600 — Einkauf: Belege als Dateien
 
-Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
+Technik · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein bis zehn Belege je Antrag, je Beleg Betrag (0,01 bis 1 000 €) und Zweck (bis 200 Zeichen); JPEG, PNG oder PDF bis 10 MB im Bucket `erstattungsbelege`, zweiphasig wie die Fotos am Rad. Ein Beleg liegt bis zum Absenden ohne Antrag bei der Person und fällt nach einem Tag; Kamera der App und Dateiwahl (für PDF-Rechnungen).
 
@@ -6265,7 +6267,7 @@ Technik · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
 ### ANN-601 — Erstattungen: IBAN je Person
 
-Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Jede Person hinterlegt eine IBAN (Prüfziffer am Server, ISO 13616), ohne eigenen Kontoinhaber. Sie erscheint maskiert („DE89 •••• 3000“) für die Person, owner und Büro; voll nur beim Auszahlen eines genehmigten Antrags für owner, mit dem Tag der Hinterlegung.
 
@@ -6277,7 +6279,7 @@ Datenschutz · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-602 — Erstattungen: Fristen
 
-Recht · offen · 2026-10-17 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Ausgezahlte Anträge mit Belegen löscht der Lauf acht Jahre ab Ende des Jahres der Auszahlung (`erstattung`), abgelehnte und zurückgezogene ein Jahr nach ihrem Ende (`erstattung_kurz`); beantragte und genehmigte bleiben. Journal und erneutes Löschen nach einem Restore; die IBAN bleibt Beschäftigtendatum (ANN-030). Eine Löschsperre gibt es nur für Akten (BEF-178).
 
