@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
-import { ListRow } from '@/components/ui/ListRow';
+import { Disclosure } from '@/components/ui/Card';
+import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { formatEuro } from '@/lib/geld';
@@ -41,30 +42,45 @@ export function LadestromVorschlaege({ rueckweg }: { rueckweg: string }) {
     );
   }
   if (!data || data.length === 0) return null;
+  // Der jüngste Monat steht offen da, die übrigen eingeklappt: Bis zu zwölf
+  // Zeilen drückten sonst alles andere im Eingang aus dem Bild (Sichtung
+  // ORG-008, 375 px).
+  const [neuester, ...weitere] = data;
+  const zeile = (vorschlag: (typeof data)[number]) => {
+    const titel = `Ladestrom ${monthLong(vorschlag.month)}`;
+    return (
+      <ListRow
+        key={vorschlag.month}
+        titel={titel}
+        meta={`${hoursText(vorschlag.working_minutes)} Arbeitszeit`}
+        betrag={formatEuro(vorschlag.amount_cents)}
+        aktion={
+          <ButtonLink
+            variant="secondary"
+            groesse="kompakt"
+            // Der Name beginnt mit dem sichtbaren Wort (WCAG 2.5.3).
+            aria-label={`Beantragen: ${titel}`}
+            to={mitRueckweg(requestElectricityPath(vorschlag.month), rueckweg)}
+          >
+            Beantragen
+          </ButtonLink>
+        }
+      />
+    );
+  };
   return (
-    <Listenabschnitt titel="Ladestrom" anzahl={data.length}>
-      {data.map((vorschlag) => {
-        const titel = `Ladestrom ${monthLong(vorschlag.month)}`;
-        return (
-          <ListRow
-            key={vorschlag.month}
-            titel={titel}
-            meta={`${hoursText(vorschlag.working_minutes)} Arbeitszeit`}
-            betrag={formatEuro(vorschlag.amount_cents)}
-            aktion={
-              <ButtonLink
-                variant="secondary"
-                groesse="kompakt"
-                // Der Name beginnt mit dem sichtbaren Wort (WCAG 2.5.3).
-                aria-label={`Beantragen: ${titel}`}
-                to={mitRueckweg(requestElectricityPath(vorschlag.month), rueckweg)}
-              >
-                Beantragen
-              </ButtonLink>
-            }
-          />
-        );
-      })}
+    <Listenabschnitt
+      titel="Ladestrom"
+      anzahl={data.length}
+      mehr={
+        weitere.length > 0 ? (
+          <Disclosure summary="Weitere Monate" anzahl={weitere.length}>
+            <ListRows>{weitere.map(zeile)}</ListRows>
+          </Disclosure>
+        ) : undefined
+      }
+    >
+      {neuester ? zeile(neuester) : null}
     </Listenabschnitt>
   );
 }

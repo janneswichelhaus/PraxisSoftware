@@ -27,6 +27,8 @@ const LESENDE_RPC_EINZELN = new Set([
   'log_patient_record_view',
   // Auszahlen zeigt owner die volle IBAN (ANN-601) - `stable`, nur lesend.
   'reimbursement_payout_details',
+  // ORG-008: die Vorschläge für den Ladestrom im Eingang - `stable`, nur lesend.
+  'electricity_suggestions',
 ]);
 // Namen, die wie Lesen aussehen, aber schreiben.
 const SCHREIBEND_TROTZ_NAME = /^platform_(accesses_take_back_deletion|invitation_)/;
