@@ -62,7 +62,7 @@ describe('PayReimbursementPage', () => {
     const seite = await screen.findByRole('dialog', { name: 'Ausgezahlt?' });
     expect(fetchPayoutDetails).toHaveBeenCalledWith('erstattung-3');
     expect(within(seite).getByText('Tim Teamleitung')).toBeInTheDocument();
-    expect(within(seite).getByText('3,33 €')).toBeInTheDocument();
+    expect(within(seite).getByText('6,39 €')).toBeInTheDocument();
     expect(within(seite).getByText('DE02 1203 0000 0000 2020 51')).toBeInTheDocument();
     expect(within(seite).getByText('IBAN, hinterlegt am 14. Okt. 2026')).toBeInTheDocument();
     expect(within(seite).getByText('Erstattung Ladestrom September 2026')).toBeInTheDocument();
@@ -71,7 +71,7 @@ describe('PayReimbursementPage', () => {
     expect(markPaid).toHaveBeenCalledWith('erstattung-3');
     const fertig = await screen.findByRole('dialog', { name: 'Vermerkt' });
     expect(
-      within(fertig).getByText('Auszahlung an Tim Teamleitung vermerkt: 3,33 €.'),
+      within(fertig).getByText('Auszahlung an Tim Teamleitung vermerkt: 6,39 €.'),
     ).toBeInTheDocument();
     await user.click(within(fertig).getByRole('button', { name: 'Fertig' }));
     expect(await screen.findByText('Ziel /offen')).toBeInTheDocument();

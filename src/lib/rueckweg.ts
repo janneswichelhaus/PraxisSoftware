@@ -126,12 +126,12 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/termine/dauertermin') return `Zurück zum ${BEGRIFFE.dauertermin}`;
   if (ohneSuche.startsWith('/termine/')) return 'Zurück zum Termin';
   if (ohneSuche.startsWith('/praxis/team')) return 'Zurück zu den Mitarbeitenden';
-  if (ohneSuche === '/praxis/planung') return `Zurück zu den ${BEGRIFFE.arbeitszeiten}`;
+  if (ohneSuche === '/betrieb/arbeitszeit') return 'Zurück zur Arbeitszeit';
   if (ohneSuche.startsWith('/verordner')) return `Zurück zu den ${BEGRIFFE.verordnerInnen}`;
   if (ohneSuche === '/abrechnung') return 'Zurück zu den Rechnungen';
   if (ohneSuche === '/abrechnung/zahlungen') return 'Zurück zu den Zahlungen';
   if (ohneSuche === '/abrechnung/leistungen') return 'Zurück zu den Leistungen';
-  if (ohneSuche === '/team') return `Zurück zur ${BEREICHE.team.label}`;
+  if (ohneSuche === '/team') return 'Zurück zu den Nachrichten';
   if (ohneSuche === '/mein-konto') return 'Zurück zu „Mein Konto“';
   if (ohneSuche === '/training') return `Zurück zu den ${BEGRIFFE.trainingskundInnen}`;
   if (ohneSuche.startsWith('/training/')) return `Zurück zur ${BEGRIFFE.trainingskundIn}`;

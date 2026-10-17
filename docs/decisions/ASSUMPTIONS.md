@@ -6241,17 +6241,17 @@ Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wie
 
 ### ANN-599 — Ladestrom: ein Monat, Arbeitstage, fester Satz
 
-Praxisprozess · geändert · 2026-10-17 · Jannes · erledigt · Wiedervorlage: Umsetzung in Überholung 10 (#266)
+Praxisprozess · geändert · 2026-10-17 · Jannes · erledigt · Wiedervorlage: keine — umgesetzt als ANN-605 (ORG-008)
+
+**Ablösung.** abgelöst durch ANN-605 (Jannes, 2026-10-17: Ladung und Satz als Einstellung der Praxis für owner statt im Code; der Antrag hält sie fest). Gestellte Anträge behalten Tage, Ladung und Satz.
 
 **Annahme.** Ladestrom je abgeschlossenem Kalendermonat, höchstens zwölf zurück, einmal je Person und Monat; Arbeitstage bis zur Zahl der Tage des Monats, vorgeschlagen aus dem Wochenplan ohne Feiertage und ganztägige Abwesenheit. Betrag = Tage × 0,5 kWh × 37 ct, auf Cent gerundet; Ladung und Satz stehen am Antrag. Die Erklärung ist ein Haken (wie ANN-553).
 
 **Begründung.** Werte der Vorlage, eine betriebliche Regel, keine Vorgabe; kein Bezug auf Touren (PROJECT_PRINCIPLES.md 20).
 
-**Anker.** `app.electricity_wh_per_day`, `app.electricity_cents_per_kwh`.
+**Anker.** `app.electricity_wh_per_day`, `app.electricity_cents_per_kwh` (bis ORG-008, `20261127100000_ers_001_erstattungen.sql`).
 
 **Änderungspfad.** Satz in den Praxiseinstellungen pflegen: Spalte und Feld · Aufwand `mittel`.
-
-**Geändert (Jannes, 2026-10-17).** Ladung und Satz als Einstellung der Praxis für owner statt im Code; der Antrag hält beide fest. Umsetzung offen (Überholung 10).
 
 ### ANN-600 — Einkauf: Belege als Dateien
 
@@ -6288,3 +6288,77 @@ Recht · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervor
 **Anker.** `app.delete_due_reimbursements`.
 
 **Änderungspfad.** Zehn Jahre: Intervall der Klasse `erstattung` · Aufwand `klein`.
+
+### ANN-603 — Hinweise zwischendurch: ein Fenster zu passenden Zeitpunkten
+
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ergänzt ANN-058: Die Übersicht zeigt einen Hinweis als Fenster („Jetzt“, „Später“) nur beim Öffnen, höchstens einmal am Tag und an höchstens drei Tagen je Hinweis (beim Barometer also je Monat), nicht während eines eigenen Termins und nicht, wenn der nächste eigene Termin näher als 20 Minuten ist; nach dem letzten Termin als Tagesabschluss. Eine Führung in der App gibt es nicht (ADR-019). Der Merker liegt nur im Browser.
+
+**Begründung.** §20: nichts an den Server, keine Zählung; ADR-024 Punkt 12 Fassung 2.
+
+**Anker.** `passenderZeitpunkt` in `src/features/today/zwischendurch.ts`.
+
+**Änderungspfad.** Abstand oder Häufigkeit: dort · Aufwand `klein`.
+
+### ANN-604 — Organisation: fünf Reiter, Ansichten darunter, Leiste je Rolle
+
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** Organisation hat für jede Praxisrolle dieselben Reiter Eingang, Team, Radflotte, Bibliothek und Praxis (nur, was die Rolle liest); was zu einem Reiter gehört, wechselt darunter als Ansicht. Die Trainingsbetreuung bekommt Organisation; am Telefon steht bei owner Organisation statt Training, beim Büro die Abrechnung. Eine Seite ohne Zugang sagt „Kein Zugang“ statt still umzuleiten.
+
+**Begründung.** Auftrag Jannes 2026-10-17: elf Reiter waren unübersichtlich, zwei Arbeitszeitbereiche, Einstellungen am Ende der Arbeitszeiten.
+
+**Anker.** `betriebUnterpunkte` und `leistenvorrang` in `src/app/navigation.tsx`.
+
+**Änderungspfad.** Andere Aufteilung oder Leiste: die zwei Funktionen · Aufwand `klein`.
+
+### ANN-606 — Zeitkonto: Überstunden und Minusstunden am Regler
+
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+
+**Annahme.** In der Oberfläche heißen Mehrarbeit „Überstunden“ und Korrektur „Minusstunden“ (Kennungen bleiben). Minusstunden ziehen nur ab; Plus-Zeit nur als Überstunden mit Lage. Überstunden beginnen am Dienstende laut Plan (frei: 08:00), die Dauer stellt ein Regler (5 min bis 6 h, nie über Mitternacht), das Ende folgt. Freizeitausgleich bleibt bei der Schnellwahl.
+
+**Begründung.** Auftrag Jannes 2026-10-17 („nicht simpel genug“); Stunden ohne Lage genügen der Aufzeichnung nicht (ANN-593). Ältere Korrekturen mit Plus bleiben.
+
+**Anker.** `app.time_account_check`, `src/features/timeaccount/rules.ts`.
+
+**Änderungspfad.** Höchstdauer: `OVERTIME_MAX`, `CORRECTION_MAX` · Aufwand `klein`.
+
+### ANN-605 — Ladestrom: geplante Stunden, Werte der Praxis
+
+Praxisprozess · entschieden (Jannes) · 2026-10-17 · Jannes · erledigt · Wiedervorlage: —
+
+**Ablösung.** ersetzt ANN-599
+
+**Annahme.** Ladestrom = geplante Arbeitsstunden des Monats (Wochenplan in Fassungen mit Abweichungen, ohne Feiertage und ganztägige Abwesenheit; nicht änderbar) × km je Arbeitsstunde × Wh/km bei höchster Stufe × ct/kWh, kaufmännisch auf Cent. Die drei Werte pflegt nur owner (Vorbelegung 6 km, 18 Wh/km, 37 ct); der Antrag hält alle fest. Der Eingang schlägt jeden offenen Monat vor; „zu Hause geladen“ bleibt ein Haken.
+
+**Begründung.** Auftrag Jannes 2026-10-17; Kilometer aus Touren erlaubt erst ADR-019 Fassung 6, umgesetzt in BEF-181 – bis dahin der Pauschalwert.
+
+**Anker.** `app.electricity_amount_cents`.
+
+**Änderungspfad.** Stunden von der Person korrigierbar: Parameter und Feld im Ablauf · Aufwand `mittel`.
+
+### ANN-607 — Barometer: Fragen, Schwelle, Frist
+
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Monatlich drei Skalen 1–9 (Stimmung, Touren und Fahrzeiten, Miteinander) und zwei Freitexte, alle freiwillig, Anrede „du“; nie owner. Ohne Namen nur Monat, keine Person, keine Uhrzeit; Teilnahme als eigene Marke. owner sieht ohne Namen nur die Summe ab drei möglichen Teilnehmenden und fünf Antworten, in festen, nie überlappenden Blöcken abgeschlossener Monate (höchstens zwölf), je Frage ab fünf. Jede anonyme Abgabe und der Löschlauf schreiben die Antworten neu; bis VACUUM und in Backups (30 Tage) bleiben alte Zeilen an den Rechten vorbei lesbar (DSFA). Gezählt werden Antworten, nicht Personen.
+
+**Begründung.** §20.2; Art. 88 DSGVO, § 26 BDSG; Zweitreview ORG-006 (Differenzen, Transaktionsspur).
+
+**Anker.** `app.staff_feedback_threshold`.
+
+**Änderungspfad.** Schwelle dort, Fragen `fragen.ts` · Aufwand `klein`.
+
+### ANN-608 — Rückmeldung an die Praxisleitung
+
+Datenschutz · entschieden (Jannes) · 2026-10-17 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Jederzeit ein Freitext (bis 2000 Zeichen) an owner, je Abgabe mit oder ohne Namen, zwei gleichwertige Knöpfe; Einstieg im Eingang und unter „Neuer Antrag“, nicht für owner. Mit Namen einzeln mit Monat; ohne Namen nur gemischt ab fünf (ANN-607). Kein Auditeintrag, der Text nie in Fehlern.
+
+**Begründung.** §20.2: niedrige Hürde für Beschwerden; ADR-010 Punkt 17, ADR-011.
+
+**Anker.** `public.submit_staff_feedback_message`.
+
+**Änderungspfad.** Länge oder Empfänger: dort · Aufwand `klein`.

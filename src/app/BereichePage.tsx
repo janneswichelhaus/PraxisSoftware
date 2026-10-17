@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Textlink } from '@/components/ui/Textlink';
 import { textlinkKlassen } from '@/components/ui/buttonStile';
 import type { CurrentUser } from '@/features/session/types';
 import { arbeitsbereiche } from './navigation';
@@ -33,6 +34,21 @@ export function BereichePage({ user }: { user: CurrentUser }) {
                 <span className="text-ink-muted mt-0.5 block text-sm">{bereich.leitfrage}</span>
               </span>
             </Link>
+            {/* Die Reiter des Bereichs zum direkten Sprung (ORG-001): Bis
+                dahin führte „Mehr" nur auf den Einstieg, und bis zu Urlaub
+                oder Radflotte waren es drei Schritte und ein Wischen. */}
+            {bereich.unterpunkte.length > 1 ? (
+              <nav
+                aria-label={`${bereich.label}: Seiten`}
+                className="-mt-1 flex flex-wrap gap-x-2 pb-3 pl-6"
+              >
+                {bereich.unterpunkte.map((punkt) => (
+                  <Textlink key={punkt.to} to={punkt.to} alleinstehend className="px-2">
+                    {punkt.label}
+                  </Textlink>
+                ))}
+              </nav>
+            ) : null}
           </li>
         ))}
       </ul>

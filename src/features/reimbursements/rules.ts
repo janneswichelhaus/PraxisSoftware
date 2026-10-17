@@ -11,8 +11,8 @@ import type { Reimbursement, ReimbursementStatus } from './api';
  */
 
 /**
- * Tage × Ladung × Satz in Cent, kaufmännisch auf ganze Cent - dieselbe
- * Rechnung wie die Bedingung an der Tabelle (ANN-599).
+ * Tage × Ladung × Satz in Cent, kaufmännisch auf ganze Cent - die Rechnung
+ * der Anträge vor ORG-008 (ANN-599); sie behalten ihre Werte.
  */
 export function electricityCents(days: number, whPerDay: number, centsPerKwh: number): number {
   return Math.floor((days * whPerDay * centsPerKwh + 500) / 1000);
@@ -22,6 +22,66 @@ export function electricityCents(days: number, whPerDay: number, centsPerKwh: nu
 export function electricityFormula(days: number, whPerDay: number, centsPerKwh: number): string {
   const kwh = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 }).format(whPerDay / 1000);
   return `${days} × ${kwh} kWh × ${formatEuro(centsPerKwh)}`;
+}
+
+/**
+ * Seit ORG-008: geplante Minuten × Strecke je Stunde × Verbrauch × Satz in
+ * Cent, kaufmännisch auf ganze Cent - dieselbe Rechnung wie
+ * `app.electricity_amount_cents` und die Bedingung an der Tabelle.
+ * (Minuten/60 · km · Wh / 1000) kWh · ct = Minuten · km · Wh · ct / 60 000.
+ */
+export function electricityCentsFromMinutes(
+  minutes: number,
+  kmPerHour: number,
+  whPerKm: number,
+  centsPerKwh: number,
+): number {
+  return Math.floor((minutes * kmPerHour * whPerKm * centsPerKwh + 30_000) / 60_000);
+}
+
+const DEZIMAL = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+
+/** „160 h“ oder „157,5 h“ aus Minuten. */
+export function hoursText(minutes: number): string {
+  return `${DEZIMAL.format(minutes / 60)} h`;
+}
+
+/** „160 h × 6 km/h × 18 Wh/km × 0,37 €/kWh“ - die Rechnung, wie der Antrag sie nennt. */
+export function electricityHoursFormula(
+  minutes: number,
+  kmPerHour: number,
+  whPerKm: number,
+  centsPerKwh: number,
+): string {
+  return `${hoursText(minutes)} × ${kmPerHour} km/h × ${whPerKm} Wh/km × ${formatEuro(centsPerKwh)}/kWh`;
+}
+
+/** Die Rechnung eines Antrags - in der Form, in der er gestellt wurde; sonst `undefined`. */
+export function electricityFormulaOf(
+  r: Pick<
+    Reimbursement,
+    | 'kind'
+    | 'working_days'
+    | 'energy_wh_per_day'
+    | 'working_minutes'
+    | 'km_per_hour'
+    | 'wh_per_km'
+    | 'rate_cents_per_kwh'
+  >,
+): string | undefined {
+  if (r.kind !== 'electricity' || r.rate_cents_per_kwh === null) return undefined;
+  if (r.working_minutes !== null && r.km_per_hour !== null && r.wh_per_km !== null) {
+    return electricityHoursFormula(
+      r.working_minutes,
+      r.km_per_hour,
+      r.wh_per_km,
+      r.rate_cents_per_kwh,
+    );
+  }
+  if (r.working_days !== null && r.energy_wh_per_day !== null) {
+    return electricityFormula(r.working_days, r.energy_wh_per_day, r.rate_cents_per_kwh);
+  }
+  return undefined;
 }
 
 /**

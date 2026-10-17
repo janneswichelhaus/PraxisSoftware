@@ -63,52 +63,56 @@ describe('AppShell', () => {
     expect(screen.getAllByRole('link', { name: 'Übersicht' }).length).toBeGreaterThan(0);
   });
 
-  it('haelt Organisatorisches und Kommunikation von einem Patientenkonto fern', () => {
+  it('haelt Organisation und Nachrichten von einem Patientenkonto fern', () => {
     renderWithProviders(
       <AppShell user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()}>
         <p>Inhalt</p>
       </AppShell>,
     );
-    expect(screen.queryByRole('link', { name: 'Organisatorisches' })).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Kommunikation' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Organisation' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Nachrichten' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Abrechnung' })).toBeNull();
   });
 
-  it('zeigt das Untermenue des aktiven Arbeitsbereichs', () => {
+  it('zeigt das Untermenue des aktiven Arbeitsbereichs und darunter die Ansichten (ORG-001)', () => {
     renderWithProviders(
       <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
         <p>Inhalt</p>
       </AppShell>,
       '/betrieb/urlaub',
     );
-    // Bereichsintern, nicht global: die Unterpunkte gehoeren zu
-    // "Organisatorisches".
+    // Bereichsintern, nicht global: die Reiter gehoeren zu „Organisation".
+    const menue = screen.getByRole('navigation', { name: 'Bereich Organisation' });
     expect(
-      screen.getByRole('navigation', { name: 'Bereich Organisatorisches' }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Radflotte/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Arbeitszeiten' })).toBeInTheDocument();
+      within(menue)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Eingang', 'Team', 'Radflotte', 'Bibliothek', 'Praxis']);
+    expect(within(menue).getByRole('link', { name: 'Team' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    // Unter dem offenen Reiter: die Ansichten als Pillen, Urlaub gewählt.
+    const ansichten = screen.getByRole('navigation', { name: 'Ansichten' });
+    expect(
+      within(ansichten)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Mitarbeitende', 'Arbeitszeit', 'Urlaub', 'Zeitkonto', 'Erstattungen']);
+    expect(within(ansichten).getByRole('link', { name: 'Urlaub' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
-  it('zeigt die eine verbliebene Vorschau offen mit ihrer Marke (UX-002h, ANN-493)', () => {
+  it('zeigt keine Ansichtsleiste unter einem Reiter mit nur einer Seite', () => {
     renderWithProviders(
       <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
         <p>Inhalt</p>
       </AppShell>,
-      '/praxis/team',
+      '/betrieb',
     );
-    const menue = screen.getByRole('navigation', { name: 'Bereich Organisatorisches' });
-    expect(within(menue).getByRole('link', { name: 'Mitarbeitende' })).toBeInTheDocument();
-    // Seit FLT-EPIC-001 ist die Radflotte echt und steht bei den echten
-    // Punkten, seit URL-001 auch der Urlaub, seit ZK-001 das Zeitkonto, seit
-    // ERS-001 die Erstattungen - ohne Vorschau-Marke und ohne „Vorschau (n)“.
-    expect(within(menue).getByRole('link', { name: 'Radflotte' })).toBeInTheDocument();
-    expect(within(menue).getByRole('link', { name: 'Urlaub' })).toBeInTheDocument();
-    expect(within(menue).getByRole('link', { name: 'Zeitkonto' })).toBeInTheDocument();
-    expect(within(menue).getByRole('link', { name: 'Erstattungen' })).not.toHaveTextContent(
-      'Vorschau',
-    );
-    expect(within(menue).queryByRole('button', { name: /^Vorschau/ })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Ansichten' })).toBeNull();
   });
 
   it('zeigt kein Untermenue eines anderen Bereichs', () => {
@@ -118,7 +122,7 @@ describe('AppShell', () => {
       </AppShell>,
       '/patienten',
     );
-    expect(screen.queryByRole('navigation', { name: 'Bereich Organisatorisches' })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Bereich Organisation' })).toBeNull();
   });
 
   it('markiert den Arbeitsbereich, nicht nur seine Einstiegsseite', () => {
@@ -128,7 +132,7 @@ describe('AppShell', () => {
       </AppShell>,
       '/betrieb/erstattungen',
     );
-    const betrieb = screen.getAllByRole('link', { name: 'Organisatorisches' });
+    const betrieb = screen.getAllByRole('link', { name: 'Organisation' });
     expect(betrieb.some((link) => link.getAttribute('aria-current') === 'page')).toBe(true);
   });
 
@@ -320,7 +324,7 @@ describe('AppShell: Orientierung (UXR-002)', () => {
     expect(aktiv.className).not.toMatch(/shadow|ring-/);
   });
 
-  it('stellt die Kommunikation seit den Rückfragen wieder in die Leiste (ANN-314)', () => {
+  it('stellt die Nachrichten seit den Rückfragen wieder in die Leiste (ANN-314)', () => {
     renderWithProviders(
       <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
         <p>Inhalt</p>
@@ -340,7 +344,7 @@ describe('AppShell: Orientierung (UXR-002)', () => {
       'page',
     );
     const seite = screen.getAllByRole('navigation', { name: 'Arbeitsbereiche' })[0]!;
-    expect(within(seite).getByRole('link', { name: 'Kommunikation' })).toHaveAttribute(
+    expect(within(seite).getByRole('link', { name: 'Nachrichten' })).toHaveAttribute(
       'aria-current',
       'page',
     );

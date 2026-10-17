@@ -25,7 +25,7 @@ import {
 } from './api';
 import { REIMBURSEMENTS_HOME, dateOf, payPath } from './paths';
 import { ReceiptRow } from './ReceiptRow';
-import { electricityFormula, reimbursementTitle } from './rules';
+import { electricityFormulaOf, reimbursementTitle } from './rules';
 
 /**
  * Über eine Erstattung entscheiden (G10b, ERS-001): Genehmigen zwei Tipps
@@ -254,12 +254,8 @@ function Decide({
         <ListRow
           titel={reimbursementTitle(r)}
           meta={
-            r.kind === 'electricity' &&
-            r.working_days !== null &&
-            r.energy_wh_per_day !== null &&
-            r.rate_cents_per_kwh !== null
-              ? electricityFormula(r.working_days, r.energy_wh_per_day, r.rate_cents_per_kwh)
-              : `${r.receipts.length} ${r.receipts.length === 1 ? 'Beleg' : 'Belege'}`
+            electricityFormulaOf(r) ??
+            `${r.receipts.length} ${r.receipts.length === 1 ? 'Beleg' : 'Belege'}`
           }
           betrag={formatEuro(r.amount_cents)}
           darunter={r.receipts.length > 0 ? <ReceiptRow receipts={r.receipts} /> : undefined}

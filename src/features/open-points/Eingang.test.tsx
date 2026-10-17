@@ -8,6 +8,7 @@ import type { Urlaubsstand } from '@/features/vacation/api';
 import type { WorkingTime } from '@/features/working-time/api';
 import type { Overview } from '@/features/reimbursements/api';
 import { TIM, testOverview, testReimbursement } from '@/features/reimbursements/testdata';
+import { testFlotte } from '@/features/fleet/testdaten';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 /**
@@ -95,6 +96,12 @@ const fetchReimbursements = vi.fn<() => Promise<Overview>>();
 vi.mock('@/features/reimbursements/api', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   fetchReimbursements: () => fetchReimbursements(),
+}));
+
+// ORG-004: Räder mit Problem - ohne Freigaberecht und ohne Problem leer.
+vi.mock('@/features/fleet/api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchFleet: () => Promise.resolve(testFlotte({ can_release: false })),
 }));
 
 /** Die Arbeitszeit ohne offene Anträge (AZ-001). */

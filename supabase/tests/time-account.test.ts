@@ -789,7 +789,7 @@ describe('Für andere eintragen (ANN-594)', () => {
     expect(durchOwner.minutes).toBe(-120);
   });
 
-  it('bucht Korrekturen mit Grund - owner und Büro, das Büro nie im eigenen Konto', async () => {
+  it('bucht Minusstunden mit Grund - owner und Büro, das Büro nie im eigenen Konto', async () => {
     const tag = HEUTE;
     const korrektur = await eingetragen(
       users.office,
@@ -798,10 +798,10 @@ describe('Für andere eintragen (ANN-594)', () => {
       tag,
       null,
       null,
-      750,
+      -750,
       'Übertrag aus der Stundenliste',
     );
-    expect(korrektur.balance_minutes).toBe(750);
+    expect(korrektur.balance_minutes).toBe(-750);
     const minus = await eingetragen(
       users.ownerTherapist,
       STAFF.tim,
@@ -812,7 +812,7 @@ describe('Für andere eintragen (ANN-594)', () => {
       -30,
       'Doppelt eingetragen',
     );
-    expect(minus.balance_minutes).toBe(720);
+    expect(minus.balance_minutes).toBe(-780);
 
     const ohneGrund = await fehler(users.office, EINTRAGEN, [
       STAFF.tim,
@@ -820,7 +820,7 @@ describe('Für andere eintragen (ANN-594)', () => {
       tag,
       null,
       null,
-      60,
+      -60,
       null,
     ]);
     expect(ohneGrund).toMatchObject({
@@ -848,7 +848,7 @@ describe('Für andere eintragen (ANN-594)', () => {
       [users.office, STAFF.olivia],
     ] as const) {
       expect(
-        (await fehler(k, EINTRAGEN, [fuer, 'correction', tag, null, null, 60, 'Ich']))?.code,
+        (await fehler(k, EINTRAGEN, [fuer, 'correction', tag, null, null, -60, 'Ich']))?.code,
         k,
       ).toBe('42501');
     }
@@ -859,10 +859,40 @@ describe('Für andere eintragen (ANN-594)', () => {
       tag,
       null,
       null,
-      60,
+      -60,
       'Übertrag',
     );
-    expect(eigen.balance_minutes).toBe(60);
+    expect(eigen.balance_minutes).toBe(-60);
+  });
+
+  it('weist Minusstunden mit Plus ab - Plus-Zeit nur als Überstunden mit Lage (ANN-606)', async () => {
+    const tag = HEUTE;
+    for (const k of [users.office, users.ownerTherapist]) {
+      expect(
+        await fehler(k, EINTRAGEN, [STAFF.tim, 'correction', tag, null, null, 45, 'Plus']),
+        k,
+      ).toMatchObject({ code: '22023', message: 'time account rule: correction_invalid' });
+    }
+    // Die Vorschau nennt denselben Grund, bevor eingetragen wird.
+    const vorschau = await daten<{ minutes: number | null; problems: string[] }>(
+      users.office,
+      VORSCHAU,
+      [STAFF.tim, 'correction', tag, null, null, 45],
+    );
+    expect(vorschau).toMatchObject({ minutes: null, problems: ['correction_invalid'] });
+    expect(
+      (
+        await daten<{ minutes: number | null; problems: string[] }>(users.office, VORSCHAU, [
+          STAFF.tim,
+          'correction',
+          tag,
+          null,
+          null,
+          -45,
+        ])
+      ).minutes,
+    ).toBe(-45);
+    expect((await konto(users.office, STAFF.tim)).account?.balance_minutes).toBe(0);
   });
 
   it('lässt die anderen Rollen nicht für andere eintragen', async () => {
@@ -895,7 +925,7 @@ describe('Für andere eintragen (ANN-594)', () => {
       HEUTE,
       null,
       null,
-      30,
+      -30,
       'Übertrag',
     );
     // Olivia wechselt vom Büro in die Therapie: Ihr Konto bleibt, das Recht
@@ -910,7 +940,7 @@ describe('Für andere eintragen (ANN-594)', () => {
     }
     const olivia = await konto(users.office);
     expect(olivia.can_book_others).toBe(false);
-    expect((await konto(users.ownerTherapist, STAFF.tim)).account?.balance_minutes).toBe(90);
+    expect((await konto(users.ownerTherapist, STAFF.tim)).account?.balance_minutes).toBe(30);
   });
 });
 

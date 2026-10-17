@@ -18,6 +18,7 @@ import { AufgabeAnlegen, ErledigteAufgaben, Tasks } from './Tasks';
 import { PlatformRequests } from './PlatformRequests';
 import { Arbeitszeitantraege } from './Arbeitszeitantraege';
 import { Erstattungen } from './Erstattungen';
+import { RaederMitProblem } from './RaederMitProblem';
 import { Urlaubsantraege } from './Urlaubsantraege';
 import { WaitlistReview } from './WaitlistReview';
 import { useEingang } from './eingang';
@@ -114,6 +115,7 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {darf.urlaubsantraege ? <Urlaubsantraege heute={today} /> : null}
         {darf.arbeitszeitantraege ? <Arbeitszeitantraege /> : null}
         {darf.erstattungen ? <Erstattungen /> : null}
+        {darf.raeder ? <RaederMitProblem /> : null}
         {darf.aufgaben ? <Tasks today={today} onMeldung={melde} /> : null}
         {darf.anrufe ? <CallsSummary today={today} /> : null}
         {darf.trainingswiderrufe ? <TrainingWithdrawals /> : null}

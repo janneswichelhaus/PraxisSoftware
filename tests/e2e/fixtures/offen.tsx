@@ -26,6 +26,8 @@ import { FAELLIG_SCHLUESSEL } from '@/features/exercise-plans/api';
 import { rueckfragenKey, type Rueckfragezeile } from '@/features/messages/api';
 import { ABO_KUENDIGUNGEN_KEY } from '@/features/open-points/aftercare-cancellations-api';
 import { CONSENT_WITHDRAWALS_KEY } from '@/features/open-points/consent-withdrawals-api';
+import { flotteSchluessel } from '@/features/fleet/api';
+import { testFlotte } from '@/features/fleet/testdaten';
 import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
 import { urlaubSchluessel, type Urlaubsstand } from '@/features/vacation/api';
@@ -504,10 +506,13 @@ function erstattung(teil: Partial<Reimbursement>): Reimbursement {
     name: 'Anna Beispiel',
     kind: 'electricity',
     period_month: `${tagPlus(-40).slice(0, 7)}-01`,
-    working_days: 18,
-    energy_wh_per_day: 500,
+    working_days: null,
+    energy_wh_per_day: null,
+    working_minutes: 9_600,
+    km_per_hour: 6,
+    wh_per_km: 18,
     rate_cents_per_kwh: 37,
-    amount_cents: 333,
+    amount_cents: 639,
     status: 'requested',
     self_entered: false,
     requested_at: `${HEUTE}T07:15:00Z`,
@@ -525,8 +530,6 @@ client.setQueryData(reimbursementsKey(null), {
   my_staff_member_id: nutzer.staffMemberId,
   can_decide: true,
   can_read_all: true,
-  wh_per_day: 500,
-  cents_per_kwh: 37,
   person: null,
   to_decide: ansicht === 'leer' ? [] : [erstattung({})],
   to_pay:
@@ -540,8 +543,9 @@ client.setQueryData(reimbursementsKey(null), {
               name: 'Tim Teamleitung',
               kind: 'purchase',
               period_month: null,
-              working_days: null,
-              energy_wh_per_day: null,
+              working_minutes: null,
+              km_per_hour: null,
+              wh_per_km: null,
               rate_cents_per_kwh: null,
               amount_cents: 1290,
               status: 'approved',
@@ -560,6 +564,8 @@ client.setQueryData(reimbursementsKey(null), {
         ],
   people: [],
 } satisfies Overview);
+// ORG-004: Ohne Rad mit Problem fehlt „Räder mit Problem“.
+client.setQueryData(flotteSchluessel(null), testFlotte({ bikes: [] }));
 // Ohne Widerruf, Kündigung und auslaufenden Plan: Diese Gruppen fehlen.
 client.setQueryData(CONSENT_WITHDRAWALS_KEY, []);
 client.setQueryData(ABO_KUENDIGUNGEN_KEY, []);

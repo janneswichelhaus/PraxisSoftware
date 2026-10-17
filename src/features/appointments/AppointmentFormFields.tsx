@@ -536,8 +536,8 @@ export function ArbeitszeitRueckfrage({
           </p>
           <Kleingedrucktes className="mt-2">
             Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls
-            als außerhalb. {BEGRIFFE.arbeitszeiten} pflegen Sie unter {BEREICHE.betrieb.label} →{' '}
-            {BEGRIFFE.arbeitszeiten}.
+            als außerhalb. {BEGRIFFE.arbeitszeiten} pflegen Sie unter {BEREICHE.betrieb.label} →
+            Team → Arbeitszeit.
           </Kleingedrucktes>
         </>
       ) : null}

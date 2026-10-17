@@ -66,6 +66,13 @@ export async function anmelden(seite, basis, kontoName) {
   if (!adresse) {
     throw new Error(`Unbekanntes Konto "${kontoName}". Bekannt: ${[...KONTEN.keys()].join(', ')}`);
   }
+  // Ohne WebAuthn öffnet sich das Passkey-Fenster nicht von selbst; im
+  // Headless-Chromium hinge die Anmeldeseite sonst auf „Wird geprüft …" und
+  // gäbe „Testkonten" nie frei.
+  await seite.addInitScript(() => {
+    // eslint-disable-next-line no-undef -- laeuft im Browser, nicht in Node
+    delete window.PublicKeyCredential;
+  });
   await seite.goto(basis + '/', { waitUntil: 'networkidle', timeout: 30_000 });
   // Der Kennwortweg liegt zugeklappt hinter „Testkonten" (ADR-025 Punkt 15),
   // wie in tests/e2e/authenticated/helpers.ts.

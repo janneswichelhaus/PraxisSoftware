@@ -274,15 +274,9 @@ describe('AufbewahrungPage', () => {
 
     expect(await screen.findByText('1 Datensatz')).toBeInTheDocument();
     expect(screen.getByText('12 Datensätze')).toBeInTheDocument();
-    // Die Klasse heisst im Journal „Protokoll" - nicht zu verwechseln mit dem
-    // Reiter desselben Namens im Kopf der Seite (RAH-005).
-    expect(screen.getAllByText('Protokoll').filter((el) => el.closest('a') === null)).toHaveLength(
-      1,
-    );
-    expect(screen.getByRole('link', { name: 'Protokoll' })).toHaveAttribute(
-      'href',
-      '/praxis/sicherheit/audit',
-    );
+    // Die Klasse heisst im Journal „Protokoll"; die Ansicht desselben Namens
+    // zeichnet seit ORG-001 die Hülle (`Ansichtsleiste`), nicht die Seite.
+    expect(screen.getAllByText('Protokoll')).toHaveLength(1);
   });
 
   it('haelt die Seite barrierefrei - mit Sperre und mit Loeschjournal', async () => {

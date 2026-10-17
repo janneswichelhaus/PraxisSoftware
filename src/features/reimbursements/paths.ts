@@ -9,6 +9,11 @@ export const PERSON_PARAM = 'person';
 export const REQUEST_PATH = `${REIMBURSEMENTS_HOME}/beantragen`;
 export const ACCOUNT_PATH = `${REIMBURSEMENTS_HOME}/konto`;
 
+/** Ladestrom eines Monats beantragen, Monat vorgewählt (ORG-008) - `month` als `YYYY-MM-01`. */
+export function requestElectricityPath(month: string): string {
+  return `${REQUEST_PATH}?monat=${month}`;
+}
+
 export function decidePath(reimbursementId: string): string {
   return `${REIMBURSEMENTS_HOME}/entscheiden/${reimbursementId}`;
 }

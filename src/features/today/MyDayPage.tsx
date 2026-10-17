@@ -88,6 +88,8 @@ import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 import { OpenPointsSummary } from '@/features/open-points/OpenPointsSummary';
 import { OPEN_INTAKES_KEY, fetchOpenIntakes } from '@/features/open-points/intake-api';
+import { useBarometerHinweise } from '@/features/feedback/barometerHinweis';
+import { HinweisZwischendurch } from './HinweisZwischendurch';
 
 /**
  * Übersicht - der persönliche Einstieg.
@@ -1096,6 +1098,12 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   const teamplanZuerst = eigeneTagesliste && !darfDokumentieren;
   const zweispaltig = eigeneTagesliste && !teamplanZuerst;
 
+  // ORG-005 (ANN-603): Hinweise zwischendurch - als Fenster, nur zu einem
+  // passenden Zeitpunkt nach den eigenen Terminen, die die Seite ohnehin lädt.
+  // Wer keine eigene Tagesliste hat (das Büro), hat keinen Termin im Weg.
+  const hinweise = useBarometerHinweise(praxisrolle);
+  const hinweisTermine = eigeneTagesliste ? (tagesliste.data ?? null) : [];
+
   if (!praxisrolle) {
     // UEB-08: Der Satz sagt, wozu der Zugang heute dient, und nennt den Weg
     // für alles andere - ohne ein Portal zu versprechen, das erst mit DSN-001
@@ -1212,6 +1220,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             (DESIGN.md „Rhythmus“), gleich, welche Abschnitte der Tag gerade
             zeigt (Jannes, 2026-10-15). Die Abschnitte bringen keinen eigenen
             Außenabstand mit. */}
+        {tag === heute ? (
+          <HinweisZwischendurch hinweise={hinweise} termine={hinweisTermine} heute={heute} />
+        ) : null}
+
         <div className="flex flex-col gap-8 [&>*]:mt-0">
           {teamplanZuerst ? teamplan : null}
 

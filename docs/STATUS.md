@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Überholung 10 (17.10., PR #266 gegen `main`): Erstattungen echt – Ladestrom (G10, 6 Tipps), Einkauf
-mit Beleg, Genehmigen und Auszahlen getrennt (G10b, je 2), IBAN maskiert. Folge-PR: Ladung und Satz als
-Einstellung (ANN-599), Runde 2 der Prüfungen, Kameratest; eigene Aufträge BEF-178 bis BEF-180.
+Überholung Organisation (17.10., Branch `claude/modest-turing-i5qgn9`): fünf Reiter, eine Arbeitszeit,
+Einstellungen, Eingang mit „Neuer Antrag“, Barometer und Rückmeldung (§20.2), Dauerregler, Ladestrom
+automatisch; Migrationen `20261201`–`20261203…`; ANN-603 bis ANN-608. Davor gemergt: 6 bis 10 (#262–#266).
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
@@ -43,8 +43,8 @@ Erstattungen; 11 Teamchat jederzeit dazwischen. Danach ALT-EPIC-002; BEF-146, -1
 - Preise: Entwurf 2027 steht (`product/preisblatt-entwurf.md`), echte Preise kurz vor dem Start;
   G13 Umsatzsteuer vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.
 - Bilder zu den Tests für FRB-EPIC-005.
-- LOG-EPIC-001: Check „Aktionen des Auditlogs“ in die Branch Protection, Label `freigabe-audit`;
-  AV-Verträge Supabase und PTV; Nachweis `apply_retention()` per pg_cron; Backupfrist ≤ 30 Tage.
+- LOG-EPIC-001: AV-Verträge Supabase und PTV; Nachweis `apply_retention()` per pg_cron;
+  Backupfrist ≤ 30 Tage.
 - G6c lokal prüfen (ANN-115): Schreibpfad als `therapist` → 403 und Protokolleintrag.
 - Vor dem Scharfschalten: Push-Secrets erst mit OPS-001; Gerätevorgabe Diensttelefone (ADR-024
   Punkt 6).

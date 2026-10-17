@@ -769,6 +769,58 @@ details {
   animation: einblenden 0.26s var(--ease-feder-weich) both;
 }
 
+/* Der Dauerregler (`ui/Dauerregler.tsx`, ORG-007): eine 48 px hohe Spur zum
+   Greifen, darin eine Linie von 8 px - gefüllt in der Hauptfarbe bis zum
+   Daumen (`--fuellung`), dahinter `line-strong`. Der Daumen 32 px, Papier mit
+   Rand in der Hauptfarbe, ohne Schatten. `pan-y`: Wer waagrecht zieht,
+   stellt; senkrecht rollt die Seite weiter. */
+.dauerregler {
+  appearance: none;
+  height: 48px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.dauerregler::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--color-accent) var(--fuellung, 0%),
+    var(--color-line-strong) var(--fuellung, 0%)
+  );
+}
+
+.dauerregler::-moz-range-track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    to right,
+    var(--color-accent) var(--fuellung, 0%),
+    var(--color-line-strong) var(--fuellung, 0%)
+  );
+}
+
+.dauerregler::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -12px;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-accent);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.dauerregler::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-accent);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
 @keyframes fokus-ring {
   from {
     outline-color: transparent;

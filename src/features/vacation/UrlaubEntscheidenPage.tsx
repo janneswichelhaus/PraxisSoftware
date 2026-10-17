@@ -329,7 +329,7 @@ function Ablauf({
               variant="secondary"
               className="w-full"
               to={mitRueckweg(
-                `/praxis/planung?person=${antrag.staff_member_id}`,
+                `/betrieb/arbeitszeit?person=${antrag.staff_member_id}`,
                 mitRueckweg(`/betrieb/urlaub/entscheiden/${antrag.id}`, rueckweg),
               )}
             >

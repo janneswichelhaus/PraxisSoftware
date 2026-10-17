@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
   electricityCents,
+  electricityCentsFromMinutes,
   electricityFormula,
+  electricityFormulaOf,
+  electricityHoursFormula,
+  hoursText,
   ibanValid,
   normalizeIban,
   reimbursementTitle,
   selectableMonths,
 } from './rules';
+import { testOldElectricity, testPurchase, testReimbursement } from './testdata';
 
 describe('Regeln der Erstattungen (ERS-001)', () => {
   it('rechnet den Ladestrom auf Cent wie die Bedingung am Server (ANN-599)', () => {
@@ -15,6 +20,31 @@ describe('Regeln der Erstattungen (ERS-001)', () => {
     expect(electricityCents(17, 500, 37)).toBe(315);
     expect(electricityCents(1, 500, 37)).toBe(19);
     expect(electricityFormula(18, 500, 37)).toBe('18 × 0,5 kWh × 0,37\u00a0€');
+  });
+
+  it('rechnet seit ORG-008 Stunden × km/h × Wh/km × ct auf Cent wie app.electricity_amount_cents', () => {
+    // 160 h × 6 km × 18 Wh = 17,28 kWh × 37 ct = 639,36 ct.
+    expect(electricityCentsFromMinutes(9_600, 6, 18, 37)).toBe(639);
+    // 2,5 h × 6 km × 18 Wh = 0,27 kWh × 37 ct = 9,99 ct; 2,5 h × 10 × 10 × 30 = 7,5 ct: aufgerundet.
+    expect(electricityCentsFromMinutes(150, 6, 18, 37)).toBe(10);
+    expect(electricityCentsFromMinutes(150, 10, 10, 30)).toBe(8);
+    expect(electricityCentsFromMinutes(0, 6, 18, 37)).toBe(0);
+    // Die Grenzen der Einstellung: 31 Tage rund um die Uhr bleiben weit unter 2^53.
+    expect(electricityCentsFromMinutes(44_640, 30, 100, 200)).toBe(446_400);
+    expect(hoursText(9_600)).toBe('160 h');
+    expect(hoursText(7_230)).toBe('120,5 h');
+    expect(hoursText(7_235)).toBe('120,58 h');
+    expect(electricityHoursFormula(9_600, 6, 18, 37)).toBe(
+      '160 h × 6 km/h × 18 Wh/km × 0,37 €/kWh',
+    );
+  });
+
+  it('nennt die Rechnung eines Antrags in der Form, in der er gestellt wurde', () => {
+    expect(electricityFormulaOf(testReimbursement())).toBe(
+      '160 h × 6 km/h × 18 Wh/km × 0,37 €/kWh',
+    );
+    expect(electricityFormulaOf(testOldElectricity())).toBe('18 × 0,5 kWh × 0,37 €');
+    expect(electricityFormulaOf(testPurchase())).toBeUndefined();
   });
 
   it('bietet die zwölf abgeschlossenen Monate vor dem laufenden, den jüngsten zuerst', () => {

@@ -14,7 +14,7 @@ import { abfragen } from './eingang';
  * Antrag steht hier nichts; geht das Laden schief, sagt es die Gruppe wie
  * ihre Nachbarn (Design-Review Überholung 7).
  */
-export function Arbeitszeitantraege() {
+export function Arbeitszeitantraege({ rueckweg = '/offen' }: { rueckweg?: string }) {
   const { data, isError, refetch } = useQuery(abfragen.arbeitszeit());
   if (isError && !data) {
     return (
@@ -38,7 +38,7 @@ export function Arbeitszeitantraege() {
             antrag.previous_minutes,
             antrag.new_minutes,
           )}`}
-          to={mitRueckweg(`/betrieb/arbeitszeit/entscheiden/${antrag.id}`, '/offen')}
+          to={mitRueckweg(`/betrieb/arbeitszeit/entscheiden/${antrag.id}`, rueckweg)}
         />
       ))}
     </Listenabschnitt>

@@ -442,10 +442,9 @@ describe('NewStaffMemberPage: Neue:n Mitarbeiter:in einrichten (G5)', { timeout:
       'href',
       '/betrieb/flotte/rad/rad-4?bereich=angaben',
     );
-    expect(within(ergebnis).getByRole('link', { name: 'Arbeitszeiten: Planung' })).toHaveAttribute(
-      'href',
-      `/praxis/planung?person=${NEU}`,
-    );
+    expect(
+      within(ergebnis).getByRole('link', { name: 'Arbeitszeiten: Arbeitszeit' }),
+    ).toHaveAttribute('href', `/betrieb/arbeitszeit?person=${NEU}`);
     expect(within(ergebnis).getByRole('link', { name: 'Zur Mitarbeiterseite' })).toHaveAttribute(
       'href',
       `/praxis/team/${NEU}`,

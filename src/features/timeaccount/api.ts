@@ -65,7 +65,7 @@ export type TimeAccount = z.infer<typeof timeAccountSchema>;
 
 // Für eine andere Person vor heute ohne Blöcke: Frühere Fassungen des
 // Wochenplans liest nur der Server (ANN-589). Außerhalb des Fensters und bei
-// einer Korrektur gibt es keinen Tag.
+// Minusstunden gibt es keinen Tag.
 const daySchema = z.object({
   kind: z.enum(['plan', 'leave', 'unavailable', 'exception']),
   blocks: z.array(blockSchema).nullable(),
@@ -106,7 +106,7 @@ const SENTENCES: readonly (readonly [string, string])[] = [
   ],
   [
     'not allowed to book corrections',
-    'Korrekturen buchen Praxisinhaber und Büro, im eigenen Konto nur der Praxisinhaber.',
+    'Minusstunden buchen Praxisinhaber und Büro, im eigenen Konto nur der Praxisinhaber.',
   ],
   [
     'time account entry not found',

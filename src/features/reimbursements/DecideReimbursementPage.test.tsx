@@ -6,7 +6,7 @@ import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-do
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
 import type * as ReimbursementsApi from './api';
-import { testOverview, testPurchase, testReimbursement } from './testdata';
+import { testOldElectricity, testOverview, testPurchase, testReimbursement } from './testdata';
 
 /**
  * Über eine Erstattung entscheiden (G10b, ERS-001): Genehmigen zwei Tipps
@@ -73,8 +73,8 @@ describe('DecideReimbursementPage', () => {
     const seite = await screen.findByRole('dialog', { name: 'Erstattung genehmigen?' });
     expect(within(seite).getByText('Erstattung von Anna Beispiel')).toBeInTheDocument();
     expect(within(seite).getByText('Ladestrom September 2026')).toBeInTheDocument();
-    expect(within(seite).getByText('18 × 0,5 kWh × 0,37 €')).toBeInTheDocument();
-    expect(within(seite).getByText('3,33 €')).toBeInTheDocument();
+    expect(within(seite).getByText('160 h × 6 km/h × 18 Wh/km × 0,37 €/kWh')).toBeInTheDocument();
+    expect(within(seite).getByText('6,39 €')).toBeInTheDocument();
     await act(() => pruefeBarrierefreiheit(seite));
     await user.click(within(seite).getByRole('button', { name: 'Genehmigen' }));
     expect(decideReimbursement).toHaveBeenCalledWith({
@@ -86,7 +86,7 @@ describe('DecideReimbursementPage', () => {
     const fertig = await screen.findByRole('dialog', { name: 'Genehmigt' });
     expect(
       within(fertig).getByText(
-        'Erstattung für Anna Beispiel genehmigt: 3,33 €. Noch nicht ausgezahlt.',
+        'Erstattung für Anna Beispiel genehmigt: 6,39 €. Noch nicht ausgezahlt.',
       ),
     ).toBeInTheDocument();
     expect(within(fertig).getByRole('link', { name: 'Jetzt auszahlen' })).toHaveAttribute(
@@ -95,6 +95,17 @@ describe('DecideReimbursementPage', () => {
     );
     await user.click(within(fertig).getByRole('button', { name: 'Fertig' }));
     expect(await screen.findByText('Ziel /offen')).toBeInTheDocument();
+  });
+
+  it('zeigt einen Ladestrom vor ORG-008 mit seinen Tagen, seiner Ladung und seinem Satz', async () => {
+    fetchReimbursements.mockResolvedValue(
+      testOverview({ can_decide: true, to_decide: [testOldElectricity()] }),
+    );
+    rendern('/betrieb/erstattungen/entscheiden/erstattung-alt');
+    const seite = await screen.findByRole('dialog', { name: 'Erstattung genehmigen?' });
+    expect(within(seite).getByText('Ladestrom August 2026')).toBeInTheDocument();
+    expect(within(seite).getByText('18 × 0,5 kWh × 0,37 €')).toBeInTheDocument();
+    expect(within(seite).getByText('3,33 €')).toBeInTheDocument();
   });
 
   it('zeigt die Belege eines Einkaufs zum Ansehen', async () => {

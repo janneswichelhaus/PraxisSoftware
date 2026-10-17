@@ -1,58 +1,38 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Disclosure } from '@/components/ui/Card';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
-import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
-import { RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import { dateLong } from '@/features/working-time/format';
-import { Listenfehler, NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
+import { NachladeHinweis, Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
   type Verlustschutztexte,
 } from '@/features/documentation/Textverlustschutz';
-import { canManageWorkingHours, isOwner, type CurrentUser } from '@/features/session/types';
+import { canManageWorkingHours, type CurrentUser } from '@/features/session/types';
 import {
-  FRIST_VOREINSTELLUNG,
-  FRIST_WERTE,
-  fetchDocumentationDeadline,
-  fristLabel,
-  saveDocumentationDeadline,
-} from '@/features/documentation/api';
-import { FahrzeitfaktorEinstellung } from '@/features/tours/FahrzeitfaktorEinstellung';
-import { BenachrichtigungsSchalter } from '@/features/platform-access/BenachrichtigungsSchalter';
-import { GarageEinstellung, StartortEinstellung } from '@/features/tours/StartortEinstellung';
-import {
-  RASTER_WERTE,
   WOCHENTAGE,
   bloeckeText,
   fetchWorkingHourExceptions,
   fetchWorkingHours,
-  istRasterWert,
-  saveAppointmentGrid,
   saveWorkingHourException,
   saveWorkingHours,
   wochenBloecke,
   wochentagLabels,
-  type RasterWert,
   type Wochentag,
   type Zeitblock,
 } from './api';
@@ -154,188 +134,6 @@ function Wechselrueckfrage({
         </div>
       </div>
     </Dialogfenster>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Praxisraster
-// -----------------------------------------------------------------------------
-
-function RasterEinstellung({ aktuell }: { aktuell: number | null }) {
-  const queryClient = useQueryClient();
-  const [wert, setWert] = useState<RasterWert>(istRasterWert(aktuell) ? aktuell : 5);
-  const [gespeichert, setGespeichert] = useState(false);
-
-  useEffect(() => {
-    if (istRasterWert(aktuell)) setWert(aktuell);
-  }, [aktuell]);
-
-  const mutation = useMutation({
-    mutationFn: () => saveAppointmentGrid(wert),
-    onSuccess: () => {
-      setGespeichert(true);
-      // Das Raster steckt in den Sitzungsdaten und steuert die Eingabefelder.
-      // Die Meldung wartet nicht auf das Nachladen (ZST-B01): Gespeichert ist
-      // es, sobald der Server es bestätigt.
-      void queryClient.invalidateQueries({ queryKey: ['current-user'] });
-    },
-  });
-
-  return (
-    // Kein Erklärsatz unter dem Titel (DESIGN.md Regel 6); was eine Änderung
-    // bewirkt, steht knapp als Kleingedrucktes am Feld.
-    <Section titel="Praxisraster">
-      <div className="max-w-formular">
-        <Select
-          label="Minutenraster"
-          value={String(wert)}
-          onChange={(e) => {
-            const gewaehlt = Number(e.target.value);
-            if (istRasterWert(gewaehlt)) setWert(gewaehlt);
-            setGespeichert(false);
-          }}
-        >
-          {RASTER_WERTE.map((m) => (
-            <option key={m} value={m}>
-              {m} Minuten
-            </option>
-          ))}
-        </Select>
-        <Kleingedrucktes className="mt-2">
-          Gilt für die ganze Praxis. Bestehende Termine außerhalb des Rasters bleiben erhalten.
-        </Kleingedrucktes>
-      </div>
-
-      {mutation.isError ? (
-        <Statusmeldung ton="fehler" className="mt-3">
-          {mutation.error.message} {ERNEUT_SPEICHERN}
-        </Statusmeldung>
-      ) : null}
-      {gespeichert && !mutation.isPending && !mutation.isError ? (
-        <Statusmeldung ton="erfolg" className="mt-3">
-          Das Praxisraster ist gespeichert.
-        </Statusmeldung>
-      ) : null}
-
-      <Formularfuss>
-        <Button type="button" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-          {mutation.isPending ? 'Wird gespeichert …' : 'Raster speichern'}
-        </Button>
-      </Formularfuss>
-    </Section>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Frist der automatischen Finalisierung (DOK-004)
-// -----------------------------------------------------------------------------
-
-/**
- * Die Frist steht neben dem Praxisraster, weil beides Grundeinstellungen der
- * Praxis sind, die nur owner setzt (PROJECT_PRINCIPLES.md 4.1). Verbindlich
- * prüft `set_documentation_deadline`.
- *
- * **Ohne geladene Frist keine Auswahl (ORG-14, ZST-09).** Bis UXR-011 zeigte
- * das Feld nach einem Ladefehler die Voreinstellung, und „Frist speichern"
- * blieb bedienbar - ein Tipp hätte die unbekannte Frist der Praxis mit der
- * Voreinstellung überschrieben. Solange der Wert fehlt, sagt das Feld das und
- * ist gesperrt.
- */
-function FristEinstellung({ organizationId }: { organizationId: string }) {
-  const queryClient = useQueryClient();
-  const [wert, setWert] = useState<number>(FRIST_VOREINSTELLUNG);
-  const [gespeichert, setGespeichert] = useState(false);
-
-  const frist = useQuery({
-    queryKey: ['documentation-deadline', organizationId],
-    queryFn: () => fetchDocumentationDeadline(organizationId),
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (frist.data !== undefined) setWert(frist.data);
-  }, [frist.data]);
-
-  const mutation = useMutation({
-    mutationFn: () => saveDocumentationDeadline(wert),
-    onSuccess: () => {
-      setGespeichert(true);
-      void queryClient.invalidateQueries({ queryKey: ['documentation-deadline'] });
-    },
-  });
-
-  const geladen = frist.data !== undefined;
-
-  // Ein gespeicherter Wert außerhalb der Stufen bleibt sichtbar und wählbar.
-  const werte = FRIST_WERTE.includes(wert as (typeof FRIST_WERTE)[number])
-    ? [...FRIST_WERTE]
-    : [...FRIST_WERTE, wert].sort((a, b) => a - b);
-
-  return (
-    // Was die Frist bewirkt, trägt Rechtsfunktion (ADR-016: Finalisierung
-    // macht den Entwurf zum Bestandteil der Akte) - deshalb bleibt der Satz,
-    // als Kleingedrucktes am Feld statt als Erklärsatz unter dem Titel.
-    <Section titel="Automatische Finalisierung">
-      <div className="max-w-formular">
-        <Select
-          label="Frist"
-          value={String(wert)}
-          disabled={!geladen}
-          onChange={(e) => {
-            setWert(Number(e.target.value));
-            setGespeichert(false);
-          }}
-        >
-          {geladen ? (
-            werte.map((tage) => (
-              <option key={tage} value={tage}>
-                {fristLabel(tage)}
-              </option>
-            ))
-          ) : (
-            // Solange die Frist fehlt, steht genau das im Feld - und nicht
-            // die Voreinstellung, die wie der Wert der Praxis aussähe.
-            <option value={wert}>{frist.isError ? 'Nicht geladen' : 'Wird geladen …'}</option>
-          )}
-        </Select>
-        <Kleingedrucktes className="mt-2">
-          Ein Entwurf der Behandlungsdokumentation wird nach Ablauf dieser Frist automatisch
-          finalisiert und ist ab dann Bestandteil der Akte. Die Frist zählt in Kalendertagen der
-          Praxiszeitzone ab dem Behandlungstag; später angelegte Einträge und Nachträge bekommen sie
-          ab ihrer Anlage.
-        </Kleingedrucktes>
-      </div>
-
-      {frist.isError && !geladen ? (
-        <div className="mt-3">
-          <Listenfehler
-            text="Die Dokumentationsfrist konnte nicht geladen werden. Bis dahin lässt sie sich nicht ändern."
-            onErneut={() => void frist.refetch()}
-          />
-        </div>
-      ) : null}
-
-      {mutation.isError ? (
-        <Statusmeldung ton="fehler" className="mt-3">
-          {mutation.error.message} {ERNEUT_SPEICHERN}
-        </Statusmeldung>
-      ) : null}
-      {gespeichert && !mutation.isPending && !mutation.isError ? (
-        <Statusmeldung ton="erfolg" className="mt-3">
-          Die Frist ist gespeichert.
-        </Statusmeldung>
-      ) : null}
-
-      <Formularfuss>
-        <Button
-          type="button"
-          disabled={mutation.isPending || !geladen}
-          onClick={() => mutation.mutate()}
-        >
-          {mutation.isPending ? 'Wird gespeichert …' : 'Frist speichern'}
-        </Button>
-      </Formularfuss>
-    </Section>
   );
 }
 
@@ -1248,9 +1046,29 @@ function EntfernenFenster({
 // Seite
 // -----------------------------------------------------------------------------
 
-export function SchedulingPage({ user }: { user: CurrentUser }) {
+/**
+ * Die Arbeitszeit je Person (ORG-003): Personenwahl, Wochenplan und
+ * Abweichungen - für owner, Teamleitung und Büro bearbeitbar, für die übrigen
+ * lesbar. Seit ORG-003 ohne eigene Seite: Sie steht auf „Arbeitszeit"
+ * (`WorkingTimePage`) unter Team, zusammen mit dem eigenen Plan und den
+ * eigenen Anträgen. Bis dahin gab es zwei Bereiche für Arbeitszeiten - die
+ * Planung je Person und die eigene Arbeitszeit -, acht Reiter auseinander.
+ *
+ * `eigenerPlan` ersetzt den Wochenplan, wenn die eigene Person gewählt ist
+ * und nicht gepflegt werden darf (der eigene Plan mit Stunden und
+ * Wochensumme); `eigenesDanach` steht unter den Abweichungen, wenn die
+ * eigene Person gewählt ist (künftige Fassung, eigene Anträge).
+ */
+export function ArbeitszeitJePerson({
+  user,
+  eigenerPlan,
+  eigenesDanach,
+}: {
+  user: CurrentUser;
+  eigenerPlan?: ReactNode;
+  eigenesDanach?: ReactNode;
+}) {
   const darfPflegen = canManageWorkingHours(user.roles);
-  const darfRaster = isOwner(user.roles);
   const zone = user.organizationTimeZone;
   const heute = zone ? todayInTimeZone(zone) : undefined;
 
@@ -1319,17 +1137,6 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      {/* Wer aus einem Antrag kommt (URL-001: abweichende Arbeitszeiten vor
-          dem Genehmigen), hat den Weg zurück; sonst ist die Seite ein Ziel
-          der Navigation und braucht keinen. */}
-      {suche.has(RUECKWEG_PARAM) ? <Rueckweg standard="/praxis/planung" /> : null}
-      {/* Eine Zeile (DESIGN.md Regel 6); die Praxiseinstellungen nennt ihr
-          Aufklapper selbst. */}
-      <PageHeader
-        title={BEGRIFFE.arbeitszeiten}
-        description="Wochenplan und Abweichungen je Person."
-      />
-
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError && !therapeuten.data ? (
         <ErrorState
@@ -1345,7 +1152,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
           title="Noch keine behandelnde Person"
           description="Arbeitszeiten gibt es für Personen mit Zugang und der Rolle Therapeut:in oder Teamleitung."
           aktion={
-            darfRaster ? (
+            darfPflegen ? (
               <ButtonLink to="/praxis/team" variant="secondary">
                 Zu den Mitarbeitenden
               </ButtonLink>
@@ -1358,7 +1165,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
         <>
           <div className="max-w-formular mb-8 flex flex-col gap-4">
             <Select
-              label="Behandelnde Person"
+              label="Person"
               feldId="planung-person"
               value={person}
               onChange={(e) => personWaehlen(e.target.value)}
@@ -1397,15 +1204,19 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
 
           {person ? (
             <>
-              <Wochenplan
-                key={`plan-${person}`}
-                staffMemberId={person}
-                darfPflegen={darfPflegen}
-                heute={heute ?? ''}
-                tag={tag}
-                onTag={setTag}
-                onUngespeichert={setPlanOffen}
-              />
+              {person === user.staffMemberId && !darfPflegen && eigenerPlan ? (
+                eigenerPlan
+              ) : (
+                <Wochenplan
+                  key={`plan-${person}`}
+                  staffMemberId={person}
+                  darfPflegen={darfPflegen}
+                  heute={heute ?? ''}
+                  tag={tag}
+                  onTag={setTag}
+                  onUngespeichert={setPlanOffen}
+                />
+              )}
               <Abweichungen
                 key={`abweichung-${person}`}
                 staffMemberId={person}
@@ -1413,48 +1224,10 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
                 heute={heute}
                 onUngespeichert={setAbweichungOffen}
               />
+              {person === user.staffMemberId ? eigenesDanach : null}
             </>
           ) : null}
         </>
-      ) : null}
-
-      {/* Die Einstellungen der Praxis - Raster, Frist, Startort, Garage,
-          Fahrzeitfaktor - stehen seit dem Handoff Rahmen vom 2026-10-05
-          (RAH-006) **unter** dem Wochenplan in einem geschlossenen Aufklapper:
-          Bis dahin schoben fünf Formulare, die sich im Jahr ein paarmal ändern,
-          die Arbeitszeiten, derentwegen man kommt, am Telefon um mehr als
-          einen Bildschirm nach unten. Der Weg „Arbeitszeiten" aus dem
-          Mitarbeiterdatensatz landet damit beim Wochenplan der Person. Die
-          Formulare selbst sind unverändert, nur owner sieht sie. */}
-      {darfRaster ? (
-        <div className="mt-10">
-          <Disclosure
-            kopf="label"
-            inKarte
-            summary={
-              <>
-                Praxiseinstellungen
-                {/* Am Telefon brach die Aufzählung neben dem Titel in drei Zeilen
-                    um; dort genügt der Titel (Design-Rollout B2). */}
-                <span className="text-ink-muted ml-auto hidden text-sm font-normal tracking-normal normal-case sm:inline">
-                  Raster · Frist · Startort · Benachrichtigungen
-                </span>
-              </>
-            }
-          >
-            <RasterEinstellung aktuell={user.appointmentGridMinutes} />
-            <FristEinstellung organizationId={user.profile.organization_id} />
-            <div className="mt-8 space-y-8">
-              <StartortEinstellung />
-              {/* UBK-015: Beginn und Ende der Tour, getrennt vom Ort der Praxistermine. */}
-              <GarageEinstellung />
-              {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
-              <FahrzeitfaktorEinstellung />
-              {/* KOM-011: Arten der Benachrichtigung für alle abschalten (ADR-024 Punkt 15). */}
-              <BenachrichtigungsSchalter />
-            </div>
-          </Disclosure>
-        </div>
       ) : null}
 
       <Kleingedrucktes className="mt-10">
