@@ -660,3 +660,15 @@ eingeklappt.
 **Beobachtung.** (1) „Rad zurücklassen“ verlangt den Anruf bei der Werkstatt (Platzhalter „noch nicht hinterlegt“, fest in der Köln-Vorlage) und eine Nachricht im Team-Kanal „Flotte“, den es nicht gibt; die Zusammenfassung lässt beides als erledigt bestätigen. (2) „Ist heute Mittwoch?“ fragt, was die App weiß („Heute ist Freitag.“). (3) „Panne melden“ und „Schlüssel übergeben“ beginnen nur auf der Radflotte, drei Tipps vom Rad entfernt. (4) Die Zusammenfassung der Panne rollt bei 375 × 667; der Satz zum Ersatzrad steht nur dort, nicht in der Meldung danach. (5) G1 Seite „Angerufen?“: der Anrufknopf oben, „Erreicht – Besuch findet statt“ im Daumenbereich direkt unter der Antwort. (6) Zwei Bedingungen in einer Ja/Nein-Frage (Depot), Titel und Kasten wiederholen sich (Reparieren).
 
 **Erwartet.** Mit der Tübinger Vorlage (ANN-554): Werkstatt und Teamleitung als Anrufknopf, die Ruhetagsfrage aus dem Datum, „Panne melden“ an der Karte des nächsten Wegs, die Zusammenfassung kürzer und das Ersatzrad in der Meldung; bei G1 der Anruf als Hauptknopf.
+
+### BEF-177 — Urheber und Zeitpunkt des Wochenplans stehen jeder Praxisrolle offen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Arbeitszeit, Planung (`staff_working_hours`) |
+| Quelle  | Zweitreview der Überholung 8 (AZ-001) |
+| Status  | offen (Vorschlag) |
+| Berührt | `supabase/migrations/20260830120100_working_hours.sql` (Tabellenrecht), `src/features/scheduling/api.ts` |
+
+**Beobachtung.** Der Wochenplan ist mit Tabellenrecht lesbar (seit CAL-005), also auch `created_by` und `created_at`. Seit den Fassungen (ANN-589) zeigt das, wer eine genehmigte dauerhafte Änderung eingetragen hat und wann – jeder Praxisrolle, solange die Fassung gilt. Die Abweichungen haben dafür seit URL-001 ein Spaltenrecht (ANN-580). **Erwartet.** Wie bei den Abweichungen nur die Spalten, die Kalender und Planung brauchen (`id`, `organization_id`, `staff_member_id`, `weekday`, `starts_at`, `ends_at`, `valid_from`, `valid_until`); Pfad A, eine Migration mit Negativtest.
