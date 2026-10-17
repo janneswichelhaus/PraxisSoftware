@@ -92,17 +92,15 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     await expect(mitarbeitende).not.toContainText('Vorschau');
     await expect(page.getByRole('heading', { name: 'Mitarbeitende' })).toBeVisible();
 
-    // Radflotte, Urlaub, Arbeitszeit und Zeitkonto sind echt (FLT-EPIC-001,
-    // URL-001, AZ-001, ZK-001) und stehen bei den angebundenen Punkten.
-    for (const name of ['Radflotte', 'Urlaub', 'Arbeitszeit', 'Zeitkonto']) {
+    // Radflotte, Urlaub, Arbeitszeit, Zeitkonto und Erstattungen sind echt
+    // (FLT-EPIC-001, URL-001, AZ-001, ZK-001, ERS-001) und stehen bei den
+    // angebundenen Punkten; der Bereich hat keine Vorschau mehr.
+    for (const name of ['Radflotte', 'Urlaub', 'Arbeitszeit', 'Zeitkonto', 'Erstattungen']) {
       const punkt = untermenue.getByRole('link', { name, exact: true });
       await expect(punkt).toBeVisible();
       await expect(punkt).not.toContainText('Vorschau');
     }
-    // Gegenprobe: die Erstattungen im selben Menue sind gekennzeichnete
-    // Vorschau; als einzige stehen sie offen mit ihrer Marke, ohne Knopf
-    // „Vorschau" (ANN-493).
     await expect(untermenue.getByRole('button', { name: /^Vorschau/ })).toHaveCount(0);
-    await expect(untermenue.getByRole('link', { name: /Erstattungen/ })).toContainText('Vorschau');
+    await expect(untermenue.getByText('Vorschau')).toHaveCount(0);
   });
 });
