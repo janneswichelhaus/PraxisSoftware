@@ -228,7 +228,7 @@ gehört dann hierher und in
 
 ## MAP-004 — Fahrzeitmatrix
 
-Prüfschritte zu **MAP-004a/b/c**. Grundlage: ADR-019 Fassung 5, Punkt 12, 13,
+Prüfschritte zu **MAP-004a/b/c**. Grundlage: ADR-019 Fassung 6, Punkt 12, 13,
 15, 16, 19 und 24 (Fassungen 4 und 5 lassen diese Punkte unverändert; Fassung 5 ergänzt Abschnitt G); die
 Erreichbarkeitsregel zusätzlich `PROJECT_PRINCIPLES.md` §6.2 und ADR-005
 Punkt 6.
@@ -323,7 +323,7 @@ ist deshalb der erste.
 
 ## MAP-005 — Navigations-Handoff
 
-Prüfschritte zu **MAP-005a/b/c**. Grundlage: ADR-019 Fassung 5, Punkt 20
+Prüfschritte zu **MAP-005a/b/c**. Grundlage: ADR-019 Fassung 6, Punkt 20
 bis 24 (seit Fassung 4 unverändert), und **ANN-018**.
 
 **Dieser Loop bringt keine Migration, keinen geänderten Seed und keine neue

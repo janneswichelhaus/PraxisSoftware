@@ -662,3 +662,15 @@ Marke vorsieht.
 | Berührt | `public.withdraw_time_account_entry` und `can_withdraw` in `list_time_account` (`20261126100000_zk_001_zeitkonto.sql`), `TimeAccountPage.tsx` |
 
 **Beobachtung.** Zurücknehmen geht beim Freizeitausgleich nur vor seinem Tag (`on_date > heute`); wer heute doch bleibt, kann den Eintrag für heute nicht zurücknehmen. **Erwartet.** Zurücknehmen auch am Tag selbst, solange die freie Zeit noch nicht begonnen hat; die Abweichung im Kalender fällt mit dem Eintrag. Pfad A: Prüfung am Server, Negativtests.
+
+### BEF-181 — Ladestrom: Kilometer aus den geplanten Touren statt km je Stunde
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-17 |
+| Bereich | Erstattungen, Ladestrom (`/betrieb/erstattungen`, Eingang) |
+| Quelle  | Überholung Organisation, Entscheidung Jannes 2026-10-17 (Variante A) |
+| Status  | eingeplant: eigene Story nach ORG-008 (Pfad A), Regel steht in ADR-019 Fassung 6 |
+| Berührt | `app.electricity_amount_cents` (ANN-605), Tagesroute (`map_006b`), Adapter des Kartendienstes |
+
+**Beobachtung.** Der Ladestrom rechnet mit einem festen Wert „km je Arbeitsstunde“ (ANN-605). **Erwartet.** Beim Beantragen eines abgeschlossenen Monats berechnet der Server die geplanten Tourstrecken der eigenen Person neu und hält nur die Monatssumme am Antrag fest – keine Tageswerte, keine Routen (ADR-019 Fassung 6, Punkte 16 und 17). Bis zum Gate aus ADR-019 Punkt 9 nur mit synthetischen Adressen; ohne Ergebnis bleibt der Wert je Stunde.
