@@ -90,7 +90,7 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'Arbeitszeiten' })).toBeInTheDocument();
   });
 
-  it('klappt die Vorschauen hinter die echten Punkte ein (UX-002h)', () => {
+  it('zeigt die eine verbliebene Vorschau offen mit ihrer Marke (UX-002h, ANN-493)', () => {
     renderWithProviders(
       <AppShell user={testUser(['owner'])} onSignOut={vi.fn()}>
         <p>Inhalt</p>
@@ -100,19 +100,15 @@ describe('AppShell', () => {
     const menue = screen.getByRole('navigation', { name: 'Bereich Organisatorisches' });
     expect(within(menue).getByRole('link', { name: 'Mitarbeitende' })).toBeInTheDocument();
     // Seit FLT-EPIC-001 ist die Radflotte echt und steht bei den echten
-    // Punkten, seit URL-001 auch der Urlaub.
+    // Punkten, seit URL-001 auch der Urlaub, seit ZK-001 das Zeitkonto.
     expect(within(menue).getByRole('link', { name: 'Radflotte' })).toBeInTheDocument();
     expect(within(menue).getByRole('link', { name: 'Urlaub' })).toBeInTheDocument();
-    expect(within(menue).queryByRole('link', { name: /Zeitkonto/ })).toBeNull();
-
-    const knopf = within(menue).getByRole('button', { name: 'Vorschau (2)' });
-    expect(knopf).toHaveAttribute('aria-expanded', 'false');
-    fireEvent.click(knopf);
-    expect(within(menue).getByRole('link', { name: /Zeitkonto/ })).toBeInTheDocument();
-    expect(within(menue).getByRole('button', { name: 'Vorschau einklappen' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    expect(within(menue).getByRole('link', { name: 'Zeitkonto' })).toBeInTheDocument();
+    // Seit ZK-001 bleibt eine Vorschau: Sie steht offen mit ihrer Marke statt
+    // hinter „Vorschau (1)“ (ANN-493); das Einklappen ab zwei prüft
+    // SubNav.test.tsx.
+    expect(within(menue).getByRole('link', { name: /Erstattungen/ })).toHaveTextContent('Vorschau');
+    expect(within(menue).queryByRole('button', { name: /^Vorschau/ })).toBeNull();
   });
 
   it('zeigt kein Untermenue eines anderen Bereichs', () => {

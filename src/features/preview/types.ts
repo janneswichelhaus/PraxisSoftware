@@ -160,21 +160,6 @@ export interface Urlaubsantrag {
 }
 
 // -----------------------------------------------------------------------------
-// Zeitkonto
-// -----------------------------------------------------------------------------
-
-export type Buchungsart = 'geleistet' | 'abgebaut';
-
-export interface Zeitbuchung {
-  id: string;
-  mitarbeiterId: string;
-  art: Buchungsart;
-  datum: string;
-  stunden: number;
-  grund: string;
-}
-
-// -----------------------------------------------------------------------------
 // Erstattungen
 // -----------------------------------------------------------------------------
 

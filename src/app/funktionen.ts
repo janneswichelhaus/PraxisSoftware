@@ -370,6 +370,17 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       stichworte: ['arbeitszeit', 'wochenplan', 'mittagspause', 'pause', 'stunden', 'antrag'],
       rueckweg: true,
     });
+    // ZK-001: Mehrarbeit oder Freizeitausgleich eintragen - gilt sofort
+    // (ANN-593); was zulässig ist, prüft der Server.
+    eintraege.push({
+      id: 'vorgang-zeitkonto-eintragen',
+      art: 'Vorgang',
+      bezeichnung: 'Ins Zeitkonto eintragen',
+      ziel: '/betrieb/zeitkonto/eintragen',
+      bereich: isTherapyStaff(roles) ? BEREICHE.betrieb.label : BEREICHE.training.label,
+      stichworte: ['zeitkonto', 'überstunden', 'mehrarbeit', 'freizeitausgleich', 'saldo'],
+      rueckweg: true,
+    });
   }
 
   // Das eigene Konto steht jeder angemeldeten Rolle offen (STAFF-004) und ist

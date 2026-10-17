@@ -11,7 +11,6 @@ import type {
   Rechnung,
   Urlaubsantrag,
   Zahlung,
-  Zeitbuchung,
 } from './types';
 
 /**
@@ -28,7 +27,6 @@ export interface Vorschauzustand {
   raeder: Rad[];
   mitarbeitende: Mitarbeitende[];
   urlaub: Urlaubsantrag[];
-  zeitbuchungen: Zeitbuchung[];
   erstattungen: Erstattung[];
   kanaele: Kanal[];
   nachrichten: Nachricht[];

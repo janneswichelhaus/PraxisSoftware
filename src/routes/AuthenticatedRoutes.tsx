@@ -93,6 +93,8 @@ import { VacationPage } from '@/features/vacation/VacationPage';
 import { DecideWorkingTimePage } from '@/features/working-time/DecideWorkingTimePage';
 import { RequestWorkingTimePage } from '@/features/working-time/RequestWorkingTimePage';
 import { WorkingTimePage } from '@/features/working-time/WorkingTimePage';
+import { RecordTimeAccountPage } from '@/features/timeaccount/RecordTimeAccountPage';
+import { RejectTimeAccountEntryPage } from '@/features/timeaccount/RejectTimeAccountEntryPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
 import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
@@ -543,7 +545,6 @@ export function AuthenticatedRoutes({
                       path="/betrieb/flotte/meldungen/:art/:meldungId"
                       element={<MeldungPage user={user} />}
                     />
-                    <Route path="/betrieb/zeitkonto" element={<TimeAccountPage user={user} />} />
                     <Route
                       path="/betrieb/erstattungen"
                       element={<ReimbursementsPage user={user} />}
@@ -666,6 +667,18 @@ export function AuthenticatedRoutes({
                     <Route
                       path="/betrieb/arbeitszeit/entscheiden/:requestId"
                       element={<DecideWorkingTimePage user={user} />}
+                    />
+                    {/* ZK-001: Zeitkonto - eintragen jede Praxisrolle mit
+                      Mitarbeiterdatensatz, für andere owner und Büro,
+                      zurückweisen owner (ANN-594); der Server prüft alles. */}
+                    <Route path="/betrieb/zeitkonto" element={<TimeAccountPage user={user} />} />
+                    <Route
+                      path="/betrieb/zeitkonto/eintragen"
+                      element={<RecordTimeAccountPage user={user} />}
+                    />
+                    <Route
+                      path="/betrieb/zeitkonto/zurueckweisen/:entryId"
+                      element={<RejectTimeAccountEntryPage />}
                     />
                   </>
                 ) : null}

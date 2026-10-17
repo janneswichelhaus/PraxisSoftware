@@ -198,6 +198,7 @@ const URLAUB_STICHWORTE = ['Urlaubsantrag', 'Abwesenheit', 'Urlaubskonto', 'Urla
 
 /** Wie die Funktionssuche die Arbeitszeit findet (AZ-001). */
 const ARBEITSZEIT_STICHWORTE = ['Wochenplan', 'Arbeitszeitänderung', 'Mittagspause', 'Stunden'];
+const ZEITKONTO_STICHWORTE = ['Überstunden', 'Mehrarbeit', 'Freizeitausgleich', 'Saldo'];
 
 function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
   // Die angebundenen Punkte stehen vorn, die gekennzeichneten Vorschauen
@@ -288,7 +289,13 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
       end: false,
       stichworte: ARBEITSZEIT_STICHWORTE,
     },
-    { to: '/betrieb/zeitkonto', label: 'Zeitkonto', vorschau: true },
+    // ZK-001: echt angebunden - Mehrarbeit und Freizeitausgleich, Saldo.
+    {
+      to: '/betrieb/zeitkonto',
+      label: 'Zeitkonto',
+      end: false,
+      stichworte: ZEITKONTO_STICHWORTE,
+    },
     { to: '/betrieb/erstattungen', label: 'Erstattungen', vorschau: true },
   );
   return eintraege;
@@ -367,7 +374,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       pfade: [
         '/training',
         ...(uebungenHier ? ['/uebungen'] : []),
-        ...(urlaubHier ? ['/betrieb/urlaub', '/betrieb/arbeitszeit'] : []),
+        ...(urlaubHier ? ['/betrieb/urlaub', '/betrieb/arbeitszeit', '/betrieb/zeitkonto'] : []),
       ],
       icon: symbole.training,
       unterpunkte:
@@ -397,6 +404,12 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
                       label: 'Arbeitszeit',
                       end: false,
                       stichworte: ARBEITSZEIT_STICHWORTE,
+                    },
+                    {
+                      to: '/betrieb/zeitkonto',
+                      label: 'Zeitkonto',
+                      end: false,
+                      stichworte: ZEITKONTO_STICHWORTE,
                     },
                   ]
                 : []),

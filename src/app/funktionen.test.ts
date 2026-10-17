@@ -45,8 +45,18 @@ describe('funktionskatalog', () => {
 
   it('kennzeichnet Vorschaubereiche als solche', () => {
     const katalog = funktionskatalog(testUser(['owner']));
+    const erstattungen = katalog.find((eintrag) => eintrag.bezeichnung === 'Erstattungen');
+    expect(erstattungen?.vorschau).toBe(true);
+    // Seit ZK-001 echt angebunden: das Zeitkonto trägt keine Kennzeichnung mehr,
+    // und „Ins Zeitkonto eintragen“ ist ein Vorgang - auch im Training.
     const zeitkonto = katalog.find((eintrag) => eintrag.bezeichnung === 'Zeitkonto');
-    expect(zeitkonto?.vorschau).toBe(true);
+    expect(zeitkonto).toBeDefined();
+    expect(zeitkonto?.vorschau).toBeUndefined();
+    expect(
+      funktionskatalog(testUser(['trainer'])).find(
+        (e) => e.bezeichnung === 'Ins Zeitkonto eintragen',
+      )?.ziel,
+    ).toBe('/betrieb/zeitkonto/eintragen');
     // Seit URL-001 echt angebunden: der Urlaub trägt keine Kennzeichnung mehr,
     // und „Urlaub eintragen“ ist ein Vorgang.
     const urlaub = katalog.find((eintrag) => eintrag.bezeichnung === 'Urlaub');

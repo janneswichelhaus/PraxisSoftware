@@ -58,6 +58,7 @@ export function Monatsblatt({
   monat,
   heute,
   ab,
+  bis,
   fokus,
   angabe,
   onWaehlen,
@@ -67,6 +68,8 @@ export function Monatsblatt({
   heute: string;
   /** Erster wählbarer Tag; davor gesperrt. */
   ab: string;
+  /** Letzter wählbarer Tag; danach gesperrt (ohne Angabe: keiner). */
+  bis?: string | undefined;
   /** Dieser Tag bekommt `data-autofocus`. */
   fokus?: string | undefined;
   angabe: (tag: string) => Tagesangabe;
@@ -84,7 +87,7 @@ export function Monatsblatt({
         ))}
         {monatsfelder(monat).map((tag, i) => {
           if (tag === null) return <span key={`leer-${i}`} aria-hidden="true" />;
-          const gesperrt = tag < ab;
+          const gesperrt = tag < ab || (bis !== undefined && tag > bis);
           const a = angabe(tag);
           const rand = a.wahl === 'rand';
           const ansage = [

@@ -906,12 +906,30 @@ export const ROUTEN = Object.freeze([
     konten: ['owner'],
     ohneDaten: 'Der Seed hat keinen Antrag; der Ablauf steht in authenticated/arbeitszeit.spec.ts.',
   },
+  // ZK-001: Zeitkonto - die Seite je Rolle (das Büro bucht für andere),
+  // Eintragen (G9) und Zurückweisen (G9b).
   {
     muster: '/betrieb/zeitkonto',
     pfad: '/betrieb/zeitkonto',
     bereich: 'Organisation',
-    etikett: 'Zeitkonto (Vorschau)',
+    etikett: 'Zeitkonto',
+    konten: ['owner', 'therapist', 'office', 'trainer'],
+  },
+  {
+    muster: '/betrieb/zeitkonto/eintragen',
+    pfad: '/betrieb/zeitkonto/eintragen',
+    bereich: 'Organisation',
+    etikett: 'Ins Zeitkonto eintragen',
+    konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/betrieb/zeitkonto/zurueckweisen/:entryId',
+    pfad: '/betrieb/zeitkonto/zurueckweisen/abababab-abab-4bab-8bab-000000000001',
+    bereich: 'Organisation',
+    etikett: 'Zeitkonto: Eintrag zurückweisen',
     konten: ['owner'],
+    ohneDaten:
+      'Der Seed hat keinen Eintrag im Zeitkonto; der Ablauf steht in authenticated/zeitkonto.spec.ts.',
   },
   {
     muster: '/betrieb/erstattungen',
