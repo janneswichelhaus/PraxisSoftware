@@ -1060,6 +1060,24 @@
           "vermerk": "Etappe E4 (Frage 1 aus PR #272, Jannes 18.10.2026: wie empfohlen, ohne Virenprüfung); ADR-017 Fassung 8 Abschnitt M vorgeschlagen (Bestätigungsfragen 30 bis 32); ANN-652, ANN-653; scharf erst nach OPS-001 und OPS-003 (Punkt 81); Clips bleiben aus (Punkt 71)"
         },
         {
+          "id": "team-004",
+          "name": "TEAM-004 Sprachnachrichten im Teamchat: aufnehmen in der App (höchstens zwei Minuten, sichtbar), nur Ton ohne Angaben, abspielen ohne Herunterladen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-18",
+          "nachweis": "PR #273, Migration 20261213100000_team_004_sprachnachrichten.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/video.test.ts, src/features/platform/videometadaten.test.ts, src/features/teamchat/sprachnachricht.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (künstliches Mikrofon), Zweitreview in drei Runden",
+          "vermerk": "Antwort auf Frage 4 der PR #273 (Jannes 18.10.2026: Sprachnachrichten ermöglichen); ADR-017 Fassung 9 Abschnitt N vorgeschlagen (Bestätigungsfragen 33, 34), Mikrofon der eigenen Herkunft freigegeben; ANN-655; keine Transkription, kein Video; scharf erst nach OPS-001 und OPS-003 (Punkt 87)"
+        },
+        {
+          "id": "team-005",
+          "name": "TEAM-005 Senden, während Anhänge hochladen: Nachricht wartet sichtbar im Ausgang und geht von selbst, Bearbeiten holt Text und Anhänge zurück",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-18",
+          "nachweis": "PR #273, src/features/teamchat/ausgang.ts, entwurfsanhaenge.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (zähes Netz), Zweitreview",
+          "vermerk": "Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33)"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

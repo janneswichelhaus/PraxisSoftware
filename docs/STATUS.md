@@ -13,9 +13,9 @@ BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Lade
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
 Büro ohne Kilometer und Betrag; ANN-615 bis ANN-617); Wochenplan mit einem Knopf, alle oder keiner.
 
-Teamchat-Anhänge (18.10., PR #273, TEAM-003, E4): Fotos und PDF bis fünf je Nachricht, im Fenster
-ohne Herunterladen, Dateien je Gespräch, ohne Virenprüfung (ADR-017 Fassung 7; Abschnitt M als
-Fassung 8 vorgeschlagen, Fragen 30–32); ANN-652, ANN-653; dazu die Antworten 2–5 aus #272.
+Teamchat-Anhänge (18.10., PR #273, TEAM-003 bis -005): Fotos und PDF bis fünf je Nachricht, ohne
+Herunterladen und Virenprüfung; Sprachnachrichten bis zwei Minuten (ADR-017 Fassung 9, Fragen 33,
+34: Mikrofon der eigenen Herkunft frei); Senden während des Hochladens; ANN-652 bis ANN-655.
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
