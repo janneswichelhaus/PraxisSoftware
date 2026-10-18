@@ -82,8 +82,7 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 | Bestätigung am Klickort / Fenster     | `Rueckfrage` / `Dialogfenster`                         |
 | Knöpfe am Formularende / Arbeitsseite | `Formularfuss` / `Aktionsleiste`                       |
 | Haupt- und Kontextspalte              | `Zweispalter`                                          |
-| Kopf einer Nebenspalte (Thread)       | `Spaltenkopf` (h2, Aktionen kompakt)                   |
-| Zahl an einem Ziel der Navigation     | `Zaehlmarke` (Name mit Wort: „3 neu“)                  |
+| Kopf der Nebenspalte, Zahl am Menü    | `Spaltenkopf` (h2), `Zaehlmarke` (Name: „3 neu“)       |
 | Bild, Foto                            | `Medienbild` (4:3, ganz; `vorschau` 56 × 56)           |
 | Tag oder Zeitraum wählen              | `Monatsblatt` (44 px je Tag, ein Monat je Seite, ‹ ›)  |
 | Handlung, Seitenwechsel, Symbol, Link | `Button`, `ButtonLink`, `Symbolknopf`, `Textlink`      |

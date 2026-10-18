@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { gesperrtSatz, istFett, kanalTitel, ordneKanaele, type Kanal, type Nachricht } from './api';
 import { aufgabeAus, NOTIZ_MAX, TITEL_MAX } from './aufgabe';
 import { entwuerfeLeeren, entwuerfeVon, entwurfLesen, entwurfSetzen } from './entwuerfe';
-import { alleErwaehnt, angefangeneErwaehnung, erwaehnte, passendePersonen } from './erwaehnung';
+import {
+  alleErwaehnt,
+  angefangeneErwaehnung,
+  erwaehnte,
+  passendePersonen,
+  vervollstaendigeErwaehnungen,
+} from './erwaehnung';
 import { flaechenhoehe, MINDESTHOEHE_PX, spaltenFuer } from './flaeche';
 import { anriss, auszeichnung, bloecke, ohneFormatierung } from './formatierung';
 import { nachrichtKennung } from './kennung';
@@ -78,6 +84,23 @@ describe('Erwähnungen (ANN-647)', () => {
     ]);
     expect(passendePersonen(personen, 'Tim Teamleitung ')).toEqual([]);
     expect(passendePersonen(personen, '')).toHaveLength(3);
+  });
+  it('macht ein eindeutiges „@Vorname“ zum ganzen Namen - sonst nichts', () => {
+    const hier = [{ name: 'Olivia Office' }, { name: 'Tim Teamleitung' }, { name: 'Tina Test' }];
+    expect(vervollstaendigeErwaehnungen('@Olivia bitte Schlüssel holen', hier)).toBe(
+      '@Olivia Office bitte Schlüssel holen',
+    );
+    expect(vervollstaendigeErwaehnungen('Danke @olivia!', hier)).toBe('Danke @Olivia Office!');
+    // Schon ganz, kein Treffer, @alle und eine Mailadresse bleiben.
+    expect(vervollstaendigeErwaehnungen('@Olivia Office, danke', hier)).toBe(
+      '@Olivia Office, danke',
+    );
+    expect(vervollstaendigeErwaehnungen('@Paula kommt', hier)).toBe('@Paula kommt');
+    expect(vervollstaendigeErwaehnungen('@alle Teamtreffen', hier)).toBe('@alle Teamtreffen');
+    expect(vervollstaendigeErwaehnungen('info@praxis.de', hier)).toBe('info@praxis.de');
+    // Zwei mit demselben Vornamen: nicht raten.
+    const doppelt = [...hier, { name: 'Olivia Zweite' }];
+    expect(vervollstaendigeErwaehnungen('@Olivia bitte', doppelt)).toBe('@Olivia bitte');
   });
   it('kennt @alle nur, wo mehr als zwei lesen', () => {
     expect(alleErwaehnt('@alle Teamtreffen', 'channel')).toBe(true);

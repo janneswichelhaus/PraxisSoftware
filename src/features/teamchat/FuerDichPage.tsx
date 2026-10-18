@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { ListRow } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { CurrentUser } from '@/features/session/types';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -57,6 +58,7 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <PageHeader title="Für dich" />
+      {abhaken.isError ? <Statusmeldung ton="fehler">{abhaken.error.message}</Statusmeldung> : null}
       {/* Hier ist jede Erinnerung fällig - der Regelfall trägt kein Abzeichen
           (Regel 5), und der Text behält bei 375 px seinen Platz. */}
       <Abfragezustand

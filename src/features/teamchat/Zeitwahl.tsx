@@ -3,6 +3,7 @@ import { todayInTimeZone } from '@/features/appointments/api';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { freieZeit, type Zeitvorschlag } from './zeit';
@@ -75,9 +76,14 @@ export function Zeitwahl({
             />
           </div>
           {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
-          <Button type="submit" disabled={!frei || laeuft}>
-            {laeuft ? 'Wird gespeichert …' : bestaetigen}
-          </Button>
+          <Formularfuss dicht>
+            <Button type="submit" disabled={!frei || laeuft}>
+              {laeuft ? 'Wird gespeichert …' : bestaetigen}
+            </Button>
+            <Button type="button" variant="quiet" onClick={onSchliessen}>
+              Abbrechen
+            </Button>
+          </Formularfuss>
         </form>
       </div>
     </Dialogfenster>

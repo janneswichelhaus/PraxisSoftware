@@ -10,8 +10,10 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchField } from '@/components/ui/SearchField';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { CurrentUser } from '@/features/session/types';
 import {
+  GESPRAECHE_HALTEN_MS,
   KANAELE_KEY,
   NACHSEHEN_MS,
   TEAMCHAT_KEY,
@@ -53,6 +55,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
     queryKey: KANAELE_KEY,
     queryFn: fetchKanaele,
     refetchInterval: NACHSEHEN_MS,
+    gcTime: GESPRAECHE_HALTEN_MS,
   });
   const zaehler = useQuery({
     queryKey: ZAEHLER_KEY,
@@ -105,6 +108,11 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
         {telefon ? null : neu}
       </div>
 
+      {allesGelesen.isError ? (
+        <Statusmeldung ton="fehler" className="mt-4">
+          {allesGelesen.error.message}
+        </Statusmeldung>
+      ) : null}
       <ListRows beschriftung="Ansichten" className="mt-4">
         <ListRow
           dicht={!telefon}
@@ -128,7 +136,10 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
             z && z.reminders_due > 0 ? (
               <Badge ton="warnung">{z.reminders_due} fällig</Badge>
             ) : z && z.saved_open > 0 ? (
-              <span className="text-ink-muted text-sm tabular-nums">{z.saved_open}</span>
+              <span className="text-ink-muted text-sm tabular-nums">
+                {z.saved_open}
+                <span className="sr-only"> offen</span>
+              </span>
             ) : undefined
           }
         />
@@ -141,6 +152,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
             entwuerfe.length + (z?.scheduled ?? 0) > 0 ? (
               <span className="text-ink-muted text-sm tabular-nums">
                 {entwuerfe.length + (z?.scheduled ?? 0)}
+                <span className="sr-only"> offen</span>
               </span>
             ) : undefined
           }

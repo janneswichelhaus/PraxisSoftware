@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
-import { KANAELE_KEY, NACHSEHEN_MS, fetchKanaele } from './api';
+import { GESPRAECHE_HALTEN_MS, KANAELE_KEY, NACHSEHEN_MS, fetchKanaele } from './api';
 import { Gespraechsflaeche } from './Gespraechsflaeche';
 import { NEU, TEAMCHAT } from './pfade';
 import { useTeamchat } from './rahmen';
@@ -22,6 +22,7 @@ export function TeamChatPage() {
     queryKey: KANAELE_KEY,
     queryFn: fetchKanaele,
     refetchInterval: NACHSEHEN_MS,
+    gcTime: GESPRAECHE_HALTEN_MS,
   });
 
   return (

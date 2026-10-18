@@ -80,6 +80,7 @@ import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { PraxisAblage } from '@/features/offline-documentation/PraxisAblage';
 import { AufDemGeraetPage } from '@/features/offline-documentation/AufDemGeraetPage';
 import { EntwurfAbmeldewache } from '@/features/offline-documentation/EntwurfAbmeldewache';
+import { AusgangAbmeldewache } from '@/features/teamchat/AusgangAbmeldewache';
 import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
@@ -242,6 +243,8 @@ export function AuthenticatedRoutes({
         {/* Ein Abstecher-Entwurf geht beim Abmelden nur nach Rückfrage
             verloren (ABN-019, BEF-110). */}
         <AbstecherAbmeldewache userId={user.profile.id} />
+        {/* TEAM-002: ungesendete Nachrichten des Teamchats nur nach Rückfrage verwerfen. */}
+        <AusgangAbmeldewache kontoId={user.profile.id} />
         {/* OFF-EPIC-001: Tagesplan und Entwürfe auf dem Diensttelefon (ADR-024 Punkt 6). */}
         {ABLAGE_FUER_PRAXISKONTEN && canWriteTreatmentNote(user.roles) ? (
           <>

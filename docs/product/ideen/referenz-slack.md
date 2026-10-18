@@ -34,15 +34,15 @@ Entscheidung, die ihn aufheben würde.
 | Bearbeiten, Löschen | endgültig, Marke (S) | ja | + ↑ bearbeitet die letzte | Verlauf früherer Fassungen nie (ANN-609, ADR-010) |
 | Entwürfe | automatisch, Ansicht (S) | je Gespräch im Speicher, nicht kontogebunden | je Konto und Gespräch, Ansicht „Entwürfe“, beim Abmelden fort | geräteübergreifend nein (ANN-612, §15.1 datensparsam) |
 | Später senden | planen, ändern, abbrechen (S) | nein | ja, 1 min bis 30 Tage | – |
-| Ungelesen | fett, Zahl bei DM/Erwähnung, Linie (S) | teils | „n neu“ auch an Kanälen (DESIGN.md Regel 5 statt nur fett), gelesen bis Gezeigtes, ab hier ungelesen, Sprung | Lesebestätigung nie (ANN-609, ADR-024 P. 12) |
+| Ungelesen | fett, Zahl bei DM/Erwähnung, Linie (S) | teils | „n neu“ auch an Kanälen (DESIGN.md Regel 5 statt nur fett), gelesen bis Gezeigtes, ab hier ungelesen, Sprung | Lesebestätigung nie (ANN-609, §20) |
 | Ungelesen-Sammelansicht | „Aufholen“ (S) | nein | nein | ADR-014; Liste mit Ungelesenem oben und „Alle gelesen“ genügt |
 | Suche | Operatoren in/from/during (S) | Wort, 30 Treffer | + Gespräch, Person nur mit Wort, Zeitraum; Treffer an der Stelle, zurück in die Treffer | Person ohne Wort nein (§20, ANN-651); Dateien-Suche entfällt mit den Dateien |
-| Für später, Erinnerung | privat, Erinnerung (S) | nein (ANN-614) | ja, Erinnerung in der App | Push nein (ADR-024 P. 12) |
+| Für später, Erinnerung | privat, Erinnerung (S) | nein (ANN-614) | ja, Erinnerung in der App | Push nein (wie Benachrichtigung) |
 | Anheften | 100 je Kanal (S) | nein | ja, 50 | – |
 | Lesezeichen/Reiter | je Gespräch (S) | nein | nein | ADR-014; Anheften und Beschreibung genügen |
 | Abschnitte, Favoriten | eigene Abschnitte bezahlt, Stern (S) | nein | Favoriten oben | eigene Abschnitte nein (ADR-014) |
 | Stummschalten, Stufen | alle/Erwähnungen/stumm (N) | nein | ja, je Gespräch | – |
-| Benachrichtigung | Push, Mail, Nicht stören (S) | Liste in der App | Zähler am Bereich, „Für dich“, Erinnerungen | **Push/Mail an Beschäftigte: ADR-024 Punkt 12 (W4) schließt aus** – Entscheidung Jannes nötig |
+| Benachrichtigung | Push, Mail, Nicht stören (S) | Liste in der App | Zähler am Bereich, „Für dich“, Erinnerungen | **Push/Mail: ADR-024 nimmt die Teamkommunikation aus; sein Grund (W4, §20) spricht dagegen** – Entscheidung Jannes, eigener ADR |
 | Aktivität | Erwähnungen, Threads, Reaktionen (S) | Erwähnungen, Antworten | + Erinnerungen | Reaktionen nicht (ANN-644, §20) |
 | Präsenz, Tippen, „gesehen“ | automatisch (S) | nein | nein | §20, ANN-609 – bewusst nie |
 | Dateien, Anhänge | hochladen, Vorschau (S) | nein | **nein** | **Konflikt: §10 nennt „Anhängen“ (Rang 1); ADR-017 Punkte 30/42 geben Teamchat-Anhänge nicht frei** – Entscheidung Jannes: ADR-017 um einen Abschnitt ergänzen |
@@ -63,5 +63,5 @@ Entscheidung, die ihn aufheben würde.
 | E2 Chatfläche | Desktop: Gespräche, Gespräch, Threadspalte; mobil: Wechsel, Eingabe über der Tastatur; Zähler am Bereich | E1 | TEAM-002 |
 | E3 Slack-Kern | private Kanäle, Gruppen, auch im Kanal, Planen, Reaktionen, Formatierung, Anheften, Für später, Stufen, Favoriten, @alle, Suche mit Filtern, Als Aufgabe | E1, E2 | TEAM-002 |
 | E4 Dateien | Anhänge, Dateien je Gespräch, Clips | Entscheidung ADR-017 | offen |
-| E5 Benachrichtigung außerhalb der App | Push, Mail, Ruhezeiten | Entscheidung ADR-024 Punkt 12 | offen |
+| E5 Benachrichtigung außerhalb der App | Push, Mail, Ruhezeiten | eigener ADR (ADR-024 nimmt den Teamchat aus) | offen |
 | E6 Weiteres | Huddles, KI, Canvas, Workflows, Apps | eigener ADR je Thema | offen |

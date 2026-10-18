@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -9,6 +8,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
+import { Textlink } from '@/components/ui/Textlink';
 import {
   GEPLANT_KEY,
   TEAMCHAT_KEY,
@@ -27,6 +27,7 @@ import {
   angefangeneErwaehnung,
   erwaehnte,
   passendePersonen,
+  vervollstaendigeErwaehnungen,
 } from './erwaehnung';
 import { ENTWUERFE } from './pfade';
 import { Uhr } from './Zeichen';
@@ -145,7 +146,7 @@ export function Eingabe({
 
   function absenden(e?: FormEvent, um: string | null = null) {
     e?.preventDefault();
-    const inhalt = text.trim();
+    const inhalt = vervollstaendigeErwaehnungen(text.trim(), andere);
     if (!inhalt) return;
     const auftrag: Sendeauftrag = {
       id: neueKennung(),
@@ -264,8 +265,8 @@ export function Eingabe({
         className="bg-surface border-line shrink-0 border-t px-4 pt-2 pb-2 sm:px-6"
       >
         {namenOffen ? (
-          <div className="mb-2 max-h-56 overflow-y-auto">
-            <ListRows beschriftung="Erwähnen">
+          <div className="rounded-card border-line bg-surface mb-2 max-h-56 overflow-y-auto border px-4">
+            <ListRows beschriftung="Erwähnen" rahmen={false}>
               {zeigePersonen.map((person) => (
                 <ListRow
                   key={person.staff_member_id}
@@ -305,16 +306,14 @@ export function Eingabe({
             </div>
           ) : planEintrag?.zustand === 'wartet' ? (
             <Statusmeldung ton="warnung">
-              Kein Netz – wird geplant, sobald Empfang da ist.
+              Kein Netz – wird geplant, sobald Empfang da ist und die App läuft.
             </Statusmeldung>
           ) : planEintrag ? (
             <Statusmeldung>Wird geplant …</Statusmeldung>
           ) : (
             <Statusmeldung ton="erfolg">
               Geplant für {geplantFuer(geplant.um, zeitzone)} ·{' '}
-              <Link to={ENTWUERFE} className="underline">
-                Ansehen
-              </Link>
+              <Textlink to={ENTWUERFE}>Ansehen</Textlink>
             </Statusmeldung>
           )
         ) : null}

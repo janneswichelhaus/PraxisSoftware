@@ -223,10 +223,14 @@ test('sendet im Funkloch, sobald wieder Netz da ist - genau einmal (ANN-641)', a
   await context.setOffline(true);
   await feld.fill(`Im Funkloch ${LAUF}`);
   await page.getByRole('button', { name: 'Senden', exact: true }).click();
-  await expect(page.getByText('Kein Netz – wird gesendet, sobald Empfang da ist.')).toBeVisible();
+  await expect(
+    page.getByText('Kein Netz – wird gesendet, sobald Empfang da ist und die App läuft.'),
+  ).toBeVisible();
   await expect(feld).toHaveValue('');
   await context.setOffline(false);
-  await expect(page.getByText('Kein Netz – wird gesendet, sobald Empfang da ist.')).toHaveCount(0, {
+  await expect(
+    page.getByText('Kein Netz – wird gesendet, sobald Empfang da ist und die App läuft.'),
+  ).toHaveCount(0, {
     timeout: 20_000,
   });
   await page.reload();

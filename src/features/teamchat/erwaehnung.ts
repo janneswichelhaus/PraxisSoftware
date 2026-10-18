@@ -56,6 +56,33 @@ export function passendePersonen<T extends { name: string }>(
   });
 }
 
+/**
+ * Ein ausgeschriebenes „@Vorname“ wird beim Senden zum ganzen Namen, wenn
+ * genau eine Person hier so heißt - wie Slack einen eindeutigen Namen
+ * auflöst. Sonst bleibt es Text. Bis zur Praxis-Sichtung TEAM-002 ging
+ * „@Olivia bitte …“ ohne Erwähnung hinaus, sobald die Namensliste zu war.
+ */
+export function vervollstaendigeErwaehnungen(
+  text: string,
+  personen: readonly { name: string }[],
+): string {
+  const klein = (wort: string) => wort.toLocaleLowerCase('de');
+  return text.replace(
+    /(^|\s)@([\p{L}\p{N}][\p{L}\p{N}-]*)/gu,
+    (treffer, davor: string, wort: string, an: number) => {
+      const ab = klein(text.slice(an + davor.length + 1));
+      // Steht der ganze Name schon da, bleibt alles, wie es ist.
+      const ganz = personen.some((p) => {
+        const name = klein(p.name);
+        return ab.startsWith(name) && !WORTZEICHEN.test(ab.charAt(name.length));
+      });
+      if (ganz) return treffer;
+      const passend = personen.filter((p) => klein(p.name.split(/\s+/)[0] ?? '') === klein(wort));
+      return passend.length === 1 ? `${davor}@${passend[0]!.name}` : treffer;
+    },
+  );
+}
+
 /** @alle gibt es dort, wo mehr als zwei lesen (ANN-647). */
 export function alleMoeglich(art: Gespraechsart): boolean {
   return art === 'channel' || art === 'private' || art === 'fleet' || art === 'group';

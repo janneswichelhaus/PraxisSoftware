@@ -261,36 +261,51 @@ function Hinzufuegen({ kanalId, vorhanden }: { kanalId: string; vorhanden: reado
     },
   });
   const frei = (personen.data ?? []).filter((p) => !vorhanden.includes(p.staff_member_id));
-  if (frei.length === 0) return null;
+  if (personen.isSuccess && frei.length === 0) return null;
   return (
     <section aria-label="Personen hinzufügen" className="flex flex-col gap-3">
       <Zwischentitel>Personen hinzufügen</Zwischentitel>
-      {frei.map((p) => (
-        <Checkbox
-          key={p.staff_member_id}
-          label={p.name}
-          checked={gewaehlt.includes(p.staff_member_id)}
-          onChange={(e) =>
-            setGewaehlt(
-              e.target.checked
-                ? [...gewaehlt, p.staff_member_id]
-                : gewaehlt.filter((id) => id !== p.staff_member_id),
-            )
-          }
-        />
-      ))}
-      {holen.isError ? <Statusmeldung ton="fehler">{holen.error.message}</Statusmeldung> : null}
-      <Kleingedrucktes>Wer dazukommt, liest auch, was vorher geschrieben wurde.</Kleingedrucktes>
-      <div>
-        <Button
-          variant="secondary"
-          groesse="kompakt"
-          disabled={gewaehlt.length === 0 || holen.isPending}
-          onClick={() => holen.mutate()}
-        >
-          {holen.isPending ? 'Wird hinzugefügt …' : 'Hinzufügen'}
-        </Button>
-      </div>
+      {/* Laden und Fehler über den Baustein - die Auswahl verschwindet nicht still (Regel 8). */}
+      <Abfragezustand
+        abfrage={personen}
+        laden="Das Team wird geladen …"
+        fehler="Das Team konnte nicht geladen werden."
+      >
+        {() => (
+          <>
+            {frei.map((p) => (
+              <Checkbox
+                key={p.staff_member_id}
+                label={p.name}
+                checked={gewaehlt.includes(p.staff_member_id)}
+                onChange={(e) =>
+                  setGewaehlt(
+                    e.target.checked
+                      ? [...gewaehlt, p.staff_member_id]
+                      : gewaehlt.filter((id) => id !== p.staff_member_id),
+                  )
+                }
+              />
+            ))}
+            {holen.isError ? (
+              <Statusmeldung ton="fehler">{holen.error.message}</Statusmeldung>
+            ) : null}
+            <Kleingedrucktes>
+              Wer dazukommt, liest auch, was vorher geschrieben wurde.
+            </Kleingedrucktes>
+            <div>
+              <Button
+                variant="secondary"
+                groesse="kompakt"
+                disabled={gewaehlt.length === 0 || holen.isPending}
+                onClick={() => holen.mutate()}
+              >
+                {holen.isPending ? 'Wird hinzugefügt …' : 'Hinzufügen'}
+              </Button>
+            </div>
+          </>
+        )}
+      </Abfragezustand>
     </section>
   );
 }

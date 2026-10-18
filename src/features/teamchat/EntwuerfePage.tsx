@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -61,7 +62,7 @@ export function EntwuerfePage() {
         anzahl={entwuerfe.length}
         leer={{
           titel: 'Kein Entwurf',
-          beschreibung: 'Was du anfängst und nicht sendest, steht hier, bis du dich abmeldest.',
+          beschreibung: 'Was du anfängst und nicht sendest, steht hier, solange die App läuft.',
         }}
       >
         {entwuerfe.map((e) => {
@@ -204,6 +205,13 @@ function GeplantFenster({
             <ListRow dicht titel="Löschen" onClick={() => setAnsicht('loeschen')} />
           </ListRows>
         )}
+        {ansicht === 'liste' ? (
+          <Formularfuss dicht>
+            <Button variant="secondary" onClick={onSchliessen}>
+              Schließen
+            </Button>
+          </Formularfuss>
+        ) : null}
       </div>
     </Dialogfenster>
   );

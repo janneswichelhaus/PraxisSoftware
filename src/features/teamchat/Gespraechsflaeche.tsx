@@ -160,7 +160,7 @@ export function Gespraechsflaeche({
           aria-label="Thread"
           className={
             nebeneinander
-              ? 'border-line w-threadspalte flex max-w-[45%] shrink-0 flex-col border-l'
+              ? 'border-line w-threadspalte flex shrink-0 flex-col border-l'
               : 'flex min-w-0 flex-1 flex-col'
           }
         >

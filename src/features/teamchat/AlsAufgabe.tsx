@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
@@ -8,6 +7,7 @@ import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
+import { Textlink } from '@/components/ui/Textlink';
 import { TASKS_KEY, createTask } from '@/features/open-points/tasks-api';
 import { NOTIZ_MAX, TITEL_MAX, aufgabeAus } from './aufgabe';
 
@@ -61,9 +61,9 @@ export function AlsAufgabe({
           <Statusmeldung ton="erfolg">Die Aufgabe steht in den Offenen Punkten.</Statusmeldung>
           <Formularfuss>
             <Button onClick={onSchliessen}>Fertig</Button>
-            <Link to="/offen" className="text-accent inline-flex min-h-11 items-center underline">
+            <Textlink to="/offen" alleinstehend>
               Zu den Offenen Punkten
-            </Link>
+            </Textlink>
           </Formularfuss>
         </div>
       ) : (

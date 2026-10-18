@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { EmptyState } from '@/components/ui/Feedback';
 import type { CurrentUser } from '@/features/session/types';
-import { KANAELE_KEY, NACHSEHEN_MS, fetchKanaele } from './api';
+import { GESPRAECHE_HALTEN_MS, KANAELE_KEY, NACHSEHEN_MS, fetchKanaele } from './api';
 import { useChatflaeche, useSpalten } from './flaeche';
 import { Gespraechsflaeche } from './Gespraechsflaeche';
 import { Rand } from './Rand';
@@ -26,6 +26,7 @@ export function FlottenNachrichtenPage({ user }: { user: CurrentUser }) {
     queryKey: KANAELE_KEY,
     queryFn: fetchKanaele,
     refetchInterval: NACHSEHEN_MS,
+    gcTime: GESPRAECHE_HALTEN_MS,
   });
   const kanal = kanaele.data?.find((k) => k.kind === 'fleet');
 

@@ -247,6 +247,13 @@ export function Nachrichtenaktionen({
               })}
             </div>
           ) : null}
+          {/* Der Ausweg aus einem Fehltipp im Daumenbereich - das Fenster hat
+              sonst nur Escape und den Tipp daneben (Praxis-Sichtung). */}
+          <Formularfuss dicht>
+            <Button variant="secondary" onClick={onSchliessen}>
+              Schließen
+            </Button>
+          </Formularfuss>
         </div>
       )}
     </Dialogfenster>

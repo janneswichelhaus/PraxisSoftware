@@ -440,6 +440,24 @@ describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
     );
   });
 
+  it('macht ein eindeutiges „@Vorname“ beim Senden zur Erwähnung (Praxis-Sichtung, Runde 2)', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await screen.findByRole('button', { name: 'Jemanden erwähnen' });
+    // Die Namensliste schließt beim Weiterschreiben; gesendet wird trotzdem mit Erwähnung.
+    await nutzer.type(feld, '@Tim bitte Schlüssel holen');
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: '@Tim Teamleitung bitte Schlüssel holen',
+          erwaehnt: [TIM],
+        }),
+      ),
+    );
+  });
+
   it('hält eine Nachricht ohne Netz im Ausgang und sendet sie mit derselben Kennung erneut', async () => {
     api.sendeNachricht
       .mockRejectedValueOnce(new TeamchatFehler('Kein Netz', true))
@@ -477,6 +495,14 @@ describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Bearbeiten' }));
     expect(feld).toHaveValue('Wichtig');
     expect(screen.queryByText(/Nicht gesendet/)).toBeNull();
+
+    // Verwerfen fragt nach (DESIGN.md 9.16) - der Text ist danach fort.
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Verwerfen' }));
+    expect(screen.getByText(/Nicht gesendet/)).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
+    expect(screen.queryByText(/Nicht gesendet/)).toBeNull();
+    expect(screen.queryByText('Wichtig')).toBeNull();
   });
 
   it('plant eine Nachricht; eine Ablehnung steht mit dem Weg zurück ins Feld da (ANN-643)', async () => {
@@ -607,6 +633,15 @@ describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
     });
     await nutzer.click(daumen);
     await vi.waitFor(() => expect(api.reagiere).toHaveBeenCalledWith('n1', 'daumen'));
+
+    // Ohne Netz scheitert der Tipp nicht still (Praxis-Sichtung, Runde 2).
+    api.reagiere.mockRejectedValueOnce(
+      new TeamchatFehler('Kein Netz – nicht angekommen. Bitte gleich noch einmal.', true),
+    );
+    await nutzer.click(daumen);
+    expect(
+      await screen.findByText('Kein Netz – nicht angekommen. Bitte gleich noch einmal.'),
+    ).toBeInTheDocument();
   });
 
   it('stellt die Stufe der Benachrichtigung in den Details ein', async () => {

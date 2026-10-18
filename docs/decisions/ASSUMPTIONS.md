@@ -6563,9 +6563,9 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
-**Annahme.** Das Gerät vergibt jeder Nachricht eine Kennung (ADR-024 Punkt 7); die Kennung der Nachricht leitet der Server aus Person und Gerätekennung ab (SHA-256, 128 Bit), das Gerät rechnet gleich. Wiederholen nach einem Funkloch verdoppelt nichts, Gelöschtes kommt nicht zurück, eine fremde Kennung trifft nie eine fremde Zeile. Geblättert wird über (Zeit, Kennung) zurück, vorwärts und um eine Stelle. Der Ausgang wartet im Arbeitsspeicher und sendet beim nächsten Netz erneut.
+**Annahme.** Das Gerät vergibt jeder Nachricht eine Kennung (Muster von ADR-024 Punkt 7); die Kennung der Nachricht leitet der Server aus Person und Gerätekennung ab (SHA-256, 128 Bit), das Gerät rechnet gleich. Wiederholen nach einem Funkloch verdoppelt nichts, Gelöschtes kommt nicht zurück, eine fremde Kennung trifft nie eine fremde Zeile. Geblättert wird über (Zeit, Kennung). Der Ausgang wartet im Arbeitsspeicher und sendet beim nächsten Netz, solange die App läuft; Abmelden fragt vorher.
 
-**Begründung.** ADR-024 Punkt 7 und Punkt 4; Zweitreview TEAM-002 (Befund 2); gleiche Zeitstempel bei Seeds und Wiederherstellung.
+**Begründung.** ADR-024 nimmt die Teamkommunikation aus, sein Punkt 7 dient als Muster; Zweitreview TEAM-002; gleiche Zeitstempel bei Seeds und Wiederherstellung.
 
 **Anker.** `app.team_message_key`, `src/features/teamchat/kennung.ts`, `public.list_team_messages`.
 
@@ -6623,21 +6623,21 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Gemerktes sieht nur die Person selbst; eine Erinnerung (eine Minute bis 90 Tage) erscheint in der App und im Zähler, nie als Push. Erledigtes bleibt abrufbar. Wann gemerkt oder erledigt wurde, wird nicht gespeichert. Es verlängert die Frist der Nachricht nicht und fällt mit ihr, beim Verlassen und mit dem Ausscheiden.
+**Annahme.** Gemerktes sieht nur die Person selbst; eine Erinnerung (eine Minute bis 90 Tage) erscheint in der App und im Zähler, kein Push. Erledigtes bleibt abrufbar. Wann gemerkt oder erledigt wurde, wird nicht gespeichert. Es verlängert die Frist der Nachricht nicht und fällt mit ihr, beim Verlassen und mit dem Ausscheiden.
 
-**Begründung.** ADR-024 Punkt 12; §18; Slack „Später“/To-dos (Suchauszug). Aufgaben der Praxis bleiben in den Offenen Punkten.
+**Begründung.** §18, §20 und der Gedanke von ADR-024 W4 (den Teamchat regelt der ADR nicht); Slack „Später“/To-dos (Suchauszug). Aufgaben der Praxis bleiben in den Offenen Punkten.
 
 **Anker.** `public.team_saved_messages`, `public.list_team_saved`.
 
-**Änderungspfad.** Push für Erinnerungen: ADR-024 ändern · Aufwand `groß`.
+**Änderungspfad.** Push für Erinnerungen: eigener ADR zur Teamkommunikation · Aufwand `groß`.
 
 ### ANN-647 — Teamchat: Benachrichtigung in der App, Stufen je Gespräch, @alle
 
 Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
-**Annahme.** Der Zähler an „Nachrichten“ zählt neue Direkt- und Gruppennachrichten, Erwähnungen und fällige Erinnerungen. Je Gespräch: alle, nur Erwähnungen oder stumm (Erwähnungen zählen weiter) und Favorit. @alle erwähnt, wer das Gespräch liest; ein @hier gibt es ohne Präsenz nicht. Kein Push, keine Mail (ADR-024 Punkt 12).
+**Annahme.** Der Zähler an „Nachrichten“ zählt neue Direkt- und Gruppennachrichten, Erwähnungen und fällige Erinnerungen. Je Gespräch: alle, nur Erwähnungen oder stumm (Erwähnungen zählen weiter) und Favorit. @alle erwähnt, wer das Gespräch liest; ein @hier gibt es ohne Präsenz nicht. Kein Push, keine Mail: ADR-024 nimmt die Teamkommunikation aus, sein Grund (W4, §20) gilt sinngemäß.
 
-**Begründung.** §10 „Benachrichtigungen“, ADR-024 Punkt 12 (W4); Slack: stumm zeigt Erwähnungen weiter (Suchauszug, nachgeprüft).
+**Begründung.** §10 „Benachrichtigungen“, §20, ADR-024 W4 sinngemäß; Slack: stumm zeigt Erwähnungen weiter (Suchauszug, nachgeprüft).
 
 **Anker.** `public.get_team_chat_summary`, `public.team_channel_settings`.
 

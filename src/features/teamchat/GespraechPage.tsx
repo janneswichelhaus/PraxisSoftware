@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
-import { KANAELE_KEY, NACHSEHEN_MS, fetchKanaele } from './api';
+import { GESPRAECHE_HALTEN_MS, KANAELE_KEY, NACHSEHEN_MS, fetchKanaele } from './api';
 import { Gespraechsflaeche } from './Gespraechsflaeche';
 import { TEAMCHAT } from './pfade';
 import { useTeamchat } from './rahmen';
@@ -24,6 +24,7 @@ export function GespraechPage() {
     queryKey: KANAELE_KEY,
     queryFn: fetchKanaele,
     refetchInterval: NACHSEHEN_MS,
+    gcTime: GESPRAECHE_HALTEN_MS,
   });
   const kanal = kanaele.data?.find((k) => k.id === kanalId && k.kind !== 'fleet');
 

@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Chip } from '@/components/ui/Chip';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
+import { Textlink } from '@/components/ui/Textlink';
 import { Verlaufseintrag } from '@/components/ui/Verlauf';
 import {
   REAKTIONEN,
@@ -130,9 +131,9 @@ export function NachrichtZeile({
           {kopf}
           {nachricht.also_in_channel && zumThread ? (
             <p className="text-ink-muted mt-1 text-sm">
-              <Link to={zumThread} className="text-accent underline">
+              <Textlink to={zumThread}>
                 Antwort an {nachricht.root_author_name ?? 'ein ehemaliges Teammitglied'}
-              </Link>
+              </Textlink>
               {nachricht.root_body ? (
                 <span className="italic">
                   {' '}
@@ -176,6 +177,11 @@ export function NachrichtZeile({
         ) : null}
       </div>
 
+      {reagieren.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {reagieren.error.message}
+        </Statusmeldung>
+      ) : null}
       {nachricht.reactions.length > 0 ? (
         <div role="group" aria-label="Reaktionen" className="mt-2 flex flex-wrap gap-1.5">
           {nachricht.reactions.map((r) => {
@@ -227,8 +233,10 @@ export function NachrichtZeile({
             <Statusmeldung>Wird gesendet …</Statusmeldung>
           ) : ausgang.zustand === 'wartet' ? (
             <>
+              {/* Der Ausgang liegt im Arbeitsspeicher (ANN-641): Er sendet, solange
+                  die App läuft; das Abmelden fragt vorher (`AusgangAbmeldewache`). */}
               <Statusmeldung ton="warnung">
-                Kein Netz – wird gesendet, sobald Empfang da ist.
+                Kein Netz – wird gesendet, sobald Empfang da ist und die App läuft.
               </Statusmeldung>
               <Button variant="quiet" groesse="kompakt" onClick={onErneut}>
                 Jetzt versuchen
@@ -242,9 +250,16 @@ export function NachrichtZeile({
               <Button variant="quiet" groesse="kompakt" onClick={onZurueckInsFeld}>
                 Bearbeiten
               </Button>
-              <Button variant="quiet" groesse="kompakt" onClick={onVerwerfen}>
-                Verwerfen
-              </Button>
+              {/* Ungesendeter Text ist danach fort - nur mit Rückfrage (DESIGN.md 9.16). */}
+              <Rueckfrage
+                ausloeser="Verwerfen"
+                ausloeserVariante="quiet"
+                ausloeserGroesse="kompakt"
+                bestaetigen="Ja, verwerfen"
+                onBestaetigen={() => onVerwerfen?.()}
+              >
+                Der Text ist danach fort.
+              </Rueckfrage>
             </>
           )}
         </div>
