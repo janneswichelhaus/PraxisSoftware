@@ -20,7 +20,14 @@ import {
 } from './api';
 import { ausgangEntfernen, einreihen, useAusgang } from './ausgang';
 import { entwurfSetzen, useEntwurf } from './entwuerfe';
-import { NACHRICHT_MAX, alleErwaehnt, alleMoeglich, erwaehnte } from './erwaehnung';
+import {
+  NACHRICHT_MAX,
+  alleErwaehnt,
+  alleMoeglich,
+  angefangeneErwaehnung,
+  erwaehnte,
+  passendePersonen,
+} from './erwaehnung';
 import { ENTWUERFE } from './pfade';
 import { Uhr } from './Zeichen';
 import { Zeitwahl } from './Zeitwahl';
@@ -68,6 +75,9 @@ const FORMATE = [
  * * **Enter** sendet am Rechner, Umschalt+Enter macht eine neue Zeile; am
  *   Telefon sendet nur der Knopf. Strg/⌘+Enter sendet überall. ↑ im leeren
  *   Feld bearbeitet die letzte eigene Nachricht.
+ * * **Erwähnen** über „@“ in der Reihe oder getippt: Ein „@“ am Wortanfang
+ *   öffnet die Namen, jeder Buchstabe grenzt ein, ein Tipp setzt den ganzen
+ *   Namen (am Rechner auch Enter oder Tab den ersten).
  */
 export function Eingabe({
   kontoId,
@@ -94,6 +104,8 @@ export function Eingabe({
   const feld = useRef<HTMLTextAreaElement>(null);
   const text = useEntwurf(kontoId, kanal.id, threadId);
   const [werkzeug, setWerkzeug] = useState<'erwaehnen' | 'format' | null>(null);
+  // Ein getipptes „@…“ vor der Schreibmarke.
+  const [anfrage, setAnfrage] = useState<{ von: number; wort: string } | null>(null);
   const [planen, setPlanen] = useState(false);
   const [auchImKanal, setAuchImKanal] = useState(false);
   // Die zuletzt geplante Nachricht: ihr Zustand im Ausgang, danach „Geplant für …“.
@@ -112,6 +124,18 @@ export function Eingabe({
     [mitglieder.data],
   );
   const beschriftung = threadId ? 'Antwort' : `Nachricht an ${kanalTitel(kanal)}`;
+  const mitAlle = alleMoeglich(kanal.kind);
+  const andere = personen.filter((p) => p.staff_member_id !== eigeneId);
+  // Gilt nur, solange das „@…“ noch so im Feld steht.
+  const getippt =
+    anfrage && text.slice(anfrage.von, anfrage.von + anfrage.wort.length + 1) === `@${anfrage.wort}`
+      ? {
+          alle: mitAlle && 'alle'.startsWith(anfrage.wort.toLocaleLowerCase('de')),
+          personen: passendePersonen(andere, anfrage.wort),
+        }
+      : null;
+  const namenOffen =
+    werkzeug === 'erwaehnen' || (getippt !== null && (getippt.alle || getippt.personen.length > 0));
 
   // Wer zurückkommt, findet den Entwurf; wer wechselt, nimmt nichts mit -
   // das Feld liest nur den Entwurf seiner Stelle (`useEntwurf`).
@@ -139,6 +163,7 @@ export function Eingabe({
     });
     aendern('');
     setWerkzeug(null);
+    setAnfrage(null);
     setAuchImKanal(false);
     setGeplant(um ? { id: auftrag.id, um } : null);
     if (!um) onGesendet?.();
@@ -146,10 +171,29 @@ export function Eingabe({
   }
 
   function erwaehnen(name: string) {
+    setWerkzeug(null);
+    setAnfrage(null);
+    if (getippt && anfrage) {
+      // Das getippte „@…“ wird zum ganzen Namen, die Schreibmarke steht dahinter.
+      const vorher = text.slice(0, anfrage.von);
+      const nachher = text.slice(anfrage.von + anfrage.wort.length + 1).replace(/^ /, '');
+      const eingesetzt = `@${name} `;
+      aendern(`${vorher}${eingesetzt}${nachher}`);
+      const marke = vorher.length + eingesetzt.length;
+      requestAnimationFrame(() => {
+        feld.current?.focus();
+        feld.current?.setSelectionRange(marke, marke);
+      });
+      return;
+    }
     const davor = text === '' || /\s$/.test(text) ? '' : ' ';
     aendern(`${text}${davor}@${name} `);
-    setWerkzeug(null);
     feld.current?.focus();
+  }
+
+  /** Liest das „@…“ vor der Schreibmarke - nach jeder Eingabe und jedem Versetzen. */
+  function schreibmarke(el: HTMLTextAreaElement) {
+    setAnfrage(angefangeneErwaehnung(el.value, el.selectionStart));
   }
 
   function auszeichnen(zeichen: string) {
@@ -174,6 +218,21 @@ export function Eingabe({
   }
 
   function taste(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (anfrage && getippt && werkzeug !== 'erwaehnen' && namenOffen) {
+      // Erst Personen, „@alle“ nur, wenn es allein passt - und nie auf ein bloßes „@“.
+      const erster = getippt.personen[0]?.name ?? (getippt.alle ? 'alle' : undefined);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setAnfrage(null);
+        return;
+      }
+      const waehlt = e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey && enterSendet());
+      if (erster && anfrage.wort !== '' && waehlt) {
+        e.preventDefault();
+        erwaehnen(erster);
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey || enterSendet())) {
       e.preventDefault();
       absenden();
@@ -195,7 +254,8 @@ export function Eingabe({
 
   // Das Feld wächst mit dem Text bis sechs Zeilen; darüber rollt es.
   const zeilen = Math.min(6, Math.max(1, text.split('\n').length));
-  const mitAlle = alleMoeglich(kanal.kind);
+  const zeigeAlle = werkzeug === 'erwaehnen' ? mitAlle : (getippt?.alle ?? false);
+  const zeigePersonen = werkzeug === 'erwaehnen' ? andere : (getippt?.personen ?? []);
   return (
     <>
       <form
@@ -203,10 +263,18 @@ export function Eingabe({
         aria-label={beschriftung}
         className="bg-surface border-line shrink-0 border-t px-4 pt-2 pb-2 sm:px-6"
       >
-        {werkzeug === 'erwaehnen' ? (
+        {namenOffen ? (
           <div className="mb-2 max-h-56 overflow-y-auto">
             <ListRows beschriftung="Erwähnen">
-              {mitAlle ? (
+              {zeigePersonen.map((person) => (
+                <ListRow
+                  key={person.staff_member_id}
+                  dicht
+                  titel={person.name}
+                  onClick={() => erwaehnen(person.name)}
+                />
+              ))}
+              {zeigeAlle ? (
                 <ListRow
                   dicht
                   titel="@alle"
@@ -214,16 +282,6 @@ export function Eingabe({
                   onClick={() => erwaehnen('alle')}
                 />
               ) : null}
-              {personen
-                .filter((p) => p.staff_member_id !== eigeneId)
-                .map((person) => (
-                  <ListRow
-                    key={person.staff_member_id}
-                    dicht
-                    titel={person.name}
-                    onClick={() => erwaehnen(person.name)}
-                  />
-                ))}
             </ListRows>
           </div>
         ) : null}
@@ -271,8 +329,10 @@ export function Eingabe({
           className="resize-none"
           onChange={(e) => {
             aendern(e.target.value);
+            schreibmarke(e.target);
             if (geplant && !planEintrag) setGeplant(null);
           }}
+          onSelect={(e) => schreibmarke(e.currentTarget)}
           onKeyDown={taste}
         />
         {werkzeug === 'format' ? (

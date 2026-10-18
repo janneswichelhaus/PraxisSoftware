@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { gesperrtSatz, istFett, kanalTitel, ordneKanaele, type Kanal, type Nachricht } from './api';
 import { aufgabeAus, NOTIZ_MAX, TITEL_MAX } from './aufgabe';
 import { entwuerfeLeeren, entwuerfeVon, entwurfLesen, entwurfSetzen } from './entwuerfe';
-import { alleErwaehnt, erwaehnte } from './erwaehnung';
+import { alleErwaehnt, angefangeneErwaehnung, erwaehnte, passendePersonen } from './erwaehnung';
 import { flaechenhoehe, MINDESTHOEHE_PX, spaltenFuer } from './flaeche';
-import { auszeichnung, bloecke, ohneFormatierung } from './formatierung';
+import { anriss, auszeichnung, bloecke, ohneFormatierung } from './formatierung';
 import { nachrichtKennung } from './kennung';
 import { sucheMoeglich, LEERE_SUCHE } from './suche';
 import { flach, zeitVergleich } from './verlauf';
@@ -38,6 +38,14 @@ describe('Formatierung (ANN-649)', () => {
     ]);
   });
 
+  it('kürzt ein Zitat am Wortende und zeigt, dass mehr da war', () => {
+    expect(anriss('Kurz und gut', 80)).toBe('Kurz und gut');
+    expect(anriss('Wer hat den Schlüssel für das Depot Nord, das Rad steht', 40)).toBe(
+      'Wer hat den Schlüssel für das Depot …',
+    );
+    expect(anriss('x'.repeat(50), 10)).toBe(`${'x'.repeat(10)} …`);
+  });
+
   it('nimmt für Listenzeilen die Zeichen heraus', () => {
     expect(ohneFormatierung('*Wichtig:* `Rad 3` _heute_\n> bitte ~nicht~')).toBe(
       'Wichtig: Rad 3 heute bitte nicht',
@@ -53,6 +61,23 @@ describe('Erwähnungen (ANN-647)', () => {
   it('erwähnt nur das ganze Wort - @Tina ist nicht @Tim', () => {
     expect(erwaehnte('@Tina kommst du?', team)).toEqual(['ti']);
     expect(erwaehnte('@Tim, @Tina', team)).toEqual(['t', 'ti']);
+  });
+  it('erkennt ein getipptes „@“ nur am Wortanfang und grenzt mit jedem Buchstaben ein', () => {
+    expect(angefangeneErwaehnung('Hallo @Ol', 9)).toEqual({ von: 6, wort: 'Ol' });
+    expect(angefangeneErwaehnung('@', 1)).toEqual({ von: 0, wort: '' });
+    // Eine Mailadresse ist keine Erwähnung, eine neue Zeile beendet sie.
+    expect(angefangeneErwaehnung('info@praxis', 11)).toBeNull();
+    expect(angefangeneErwaehnung('@Tim\nweiter', 11)).toBeNull();
+    // Es zählt, was vor der Schreibmarke steht.
+    expect(angefangeneErwaehnung('@Ti und mehr', 3)).toEqual({ von: 0, wort: 'Ti' });
+    const personen = [{ name: 'Olivia Office' }, { name: 'Tim Teamleitung' }, { name: 'Tina' }];
+    expect(passendePersonen(personen, 'off')).toEqual([{ name: 'Olivia Office' }]);
+    expect(passendePersonen(personen, 'TI')).toEqual([
+      { name: 'Tim Teamleitung' },
+      { name: 'Tina' },
+    ]);
+    expect(passendePersonen(personen, 'Tim Teamleitung ')).toEqual([]);
+    expect(passendePersonen(personen, '')).toHaveLength(3);
   });
   it('kennt @alle nur, wo mehr als zwei lesen', () => {
     expect(alleErwaehnt('@alle Teamtreffen', 'channel')).toBe(true);

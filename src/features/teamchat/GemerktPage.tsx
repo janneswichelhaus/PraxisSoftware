@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Segment } from '@/components/ui/Segment';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   GEMERKT_KEY,
   KANAELE_KEY,
@@ -20,7 +21,7 @@ import {
   kanalTitel,
 } from './api';
 import { ohneFormatierung } from './formatierung';
-import { TEAMCHAT, stellePfad } from './pfade';
+import { GEMERKT, TEAMCHAT, stellePfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
 import { geplantFuer, nachrichtenzeit } from './zeit';
@@ -95,22 +96,22 @@ export function GemerktPage() {
             {daten.map((g) => (
               <ListRow
                 key={g.id}
-                to={stellePfad({ id: g.channel_id, kind: g.channel_kind }, g)}
+                to={mitRueckweg(stellePfad({ id: g.channel_id, kind: g.channel_kind }, g), GEMERKT)}
                 gedaempft={g.done}
                 titel={<span className="line-clamp-2">{ohneFormatierung(g.body)}</span>}
-                meta={`${titel(g.channel_id)} · ${g.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(
-                  g.created_at,
-                  zeitzone,
-                )}`}
-                status={
-                  g.due ? (
-                    <Badge ton="warnung">Fällig</Badge>
-                  ) : g.remind_at && !g.done ? (
-                    <span className="text-ink-muted text-sm">
-                      Erinnerung {geplantFuer(g.remind_at, zeitzone)}
-                    </span>
-                  ) : undefined
-                }
+                meta={[
+                  // Die Erinnerung steht in der Nebenzeile: rechts bleibt nur
+                  // „Fällig“, damit der Text bei 375 px lesbar bleibt.
+                  g.remind_at && !g.done && !g.due
+                    ? `Erinnerung ${geplantFuer(g.remind_at, zeitzone)}`
+                    : null,
+                  titel(g.channel_id),
+                  g.author_name ?? 'Ehemaliges Teammitglied',
+                  nachrichtenzeit(g.created_at, zeitzone),
+                ]
+                  .filter((teil) => teil !== null)
+                  .join(' · ')}
+                status={g.due ? <Badge ton="warnung">Fällig</Badge> : undefined}
                 aktion={
                   <Button
                     variant="quiet"

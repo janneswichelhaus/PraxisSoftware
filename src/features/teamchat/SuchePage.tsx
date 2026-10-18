@@ -4,12 +4,14 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Filterleiste } from '@/components/ui/Filterleiste';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   KANAELE_KEY,
   PERSONEN_KEY,
@@ -22,7 +24,7 @@ import {
   type Suchfilter,
 } from './api';
 import { ohneFormatierung } from './formatierung';
-import { TEAMCHAT, stellePfad } from './pfade';
+import { SUCHE, TEAMCHAT, stellePfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
 import { LEERE_SUCHE, sucheMoeglich, sucheSetzen, useSuche } from './suche';
@@ -123,9 +125,12 @@ export function SuchePage() {
             onChange={(e) => setEntwurf({ ...entwurf, ab: e.target.value || null })}
           />
         </Filterleiste>
-        <Button type="submit" disabled={!sucheMoeglich(entwurf)}>
-          Suchen
-        </Button>
+        {/* Am Telefon in voller Breite (Grundsatz 1, `Formularfuss`). */}
+        <Formularfuss dicht>
+          <Button type="submit" disabled={!sucheMoeglich(entwurf)}>
+            Suchen
+          </Button>
+        </Formularfuss>
       </form>
 
       {sucheMoeglich(filter) ? (
@@ -145,7 +150,10 @@ export function SuchePage() {
                 {daten.map((t) => (
                   <ListRow
                     key={t.id}
-                    to={stellePfad({ id: t.channel_id, kind: t.channel_kind }, t)}
+                    to={mitRueckweg(
+                      stellePfad({ id: t.channel_id, kind: t.channel_kind }, t),
+                      SUCHE,
+                    )}
                     titel={<span className="line-clamp-2">{ohneFormatierung(t.body)}</span>}
                     meta={`${titel(t.channel_id)} · ${t.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(
                       t.created_at,

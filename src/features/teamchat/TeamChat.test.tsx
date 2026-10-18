@@ -257,6 +257,22 @@ describe('Teamchat: Gespräche (ANN-647)', () => {
     expect(screen.queryByText('Nachrichten der Radflotte')).toBeNull();
   });
 
+  it('zeigt Neues mit Zeichen und Wort, nicht nur fett - Stummes ohne Zahl (DESIGN.md Regel 5)', async () => {
+    api.fetchKanaele.mockResolvedValue([
+      kanal({ id: 'k-vertretung', name: 'Vertretungen', unread: 3 }),
+      kanal({ id: 'k-sport', name: 'Sportgruppe', unread: 5, notify: 'none' }),
+      kanal({ id: 'k-ruhig', name: 'Ruhig', unread: 2, notify: 'mentions' }),
+    ]);
+    zeige('/team');
+    const vertretung = await screen.findByRole('link', { name: /# Vertretungen/ });
+    expect(within(vertretung).getByText('3 neu')).toBeInTheDocument();
+    const sport = screen.getByRole('link', { name: /# Sportgruppe/ });
+    expect(within(sport).queryByText(/neu/)).toBeNull();
+    expect(within(sport).getByText('Stumm')).toBeInTheDocument();
+    // „Nur Erwähnungen“ zählt im Kanal nur Erwähnungen.
+    expect(within(screen.getByRole('link', { name: /# Ruhig/ })).queryByText(/neu/)).toBeNull();
+  });
+
   it('sucht aus der Liste: Wort, Enter, Treffer an seiner Stelle - ohne Wort in der Adresse', async () => {
     api.sucheNachrichten.mockResolvedValue([
       {
@@ -277,7 +293,10 @@ describe('Teamchat: Gespräche (ANN-647)', () => {
       'Schlü{Enter}',
     );
     const treffer = await screen.findByRole('link', { name: /Schlüssel liegt im Büro/ });
-    expect(treffer).toHaveAttribute('href', '/team/k-planung/wurzel?nachricht=antwort');
+    expect(treffer).toHaveAttribute(
+      'href',
+      '/team/k-planung/wurzel?nachricht=antwort&zurueck=%2Fteam%2Fsuche',
+    );
     expect(router.state.location.pathname).toBe('/team/suche');
     expect(router.state.location.search).toBe('');
     expect(api.sucheNachrichten).toHaveBeenCalledWith({
@@ -286,6 +305,17 @@ describe('Teamchat: Gespräche (ANN-647)', () => {
       personId: null,
       ab: null,
     });
+
+    // Vom Treffer führt der Pfeil zurück in die Treffer, nicht zur Liste der
+    // Gespräche - der nächste Treffer ist einen Tipp entfernt (Praxis-Sichtung).
+    await nutzer.click(treffer);
+    const zurueck = await screen.findByRole('link', { name: 'Zurück zur Suche' });
+    expect(zurueck).toHaveAttribute('href', '/team/suche');
+    await nutzer.click(zurueck);
+    expect(
+      await screen.findByRole('link', { name: /Schlüssel liegt im Büro/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'In Nachrichten suchen' })).toHaveValue('Schlü');
   });
 
   it('lässt nach einer Person nur mit Suchwort suchen (ANN-651)', async () => {
@@ -380,6 +410,34 @@ describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
       ),
     );
     expect(feld).toHaveValue('');
+  });
+
+  it('öffnet die Namen auch bei getipptem „@“ und setzt den ganzen Namen ein (Praxis-Sichtung)', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await screen.findByRole('button', { name: 'Jemanden erwähnen' });
+    await nutzer.type(feld, 'Hallo @te');
+    // „te“ passt zum zweiten Wort von „Tim Teamleitung“; @alle nicht.
+    const namen = await screen.findByRole('list', { name: 'Erwähnen' });
+    expect(within(namen).queryByRole('button', { name: /@alle/ })).toBeNull();
+    await nutzer.click(within(namen).getByRole('button', { name: 'Tim Teamleitung' }));
+    expect(feld).toHaveValue('Hallo @Tim Teamleitung ');
+    expect(screen.queryByRole('list', { name: 'Erwähnen' })).toBeNull();
+    await nutzer.type(feld, 'kommst du?');
+    // Ein „@“ ohne passenden Namen öffnet nichts.
+    await nutzer.type(feld, ' @xy');
+    expect(screen.queryByRole('list', { name: 'Erwähnen' })).toBeNull();
+    await nutzer.clear(feld);
+    await nutzer.type(feld, '@ti{Tab}');
+    expect(feld).toHaveValue('@Tim Teamleitung ');
+    await nutzer.type(feld, 'kommst du?');
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({ text: '@Tim Teamleitung kommst du?', erwaehnt: [TIM] }),
+      ),
+    );
   });
 
   it('hält eine Nachricht ohne Netz im Ausgang und sendet sie mit derselben Kennung erneut', async () => {
@@ -588,7 +646,10 @@ describe('Teamchat: Ansichten neben den Gesprächen', () => {
     ]);
     zeige('/team/threads');
     const zeile = await screen.findByRole('link', { name: /Kette Rad 3/ });
-    expect(zeile).toHaveAttribute('href', '/betrieb/flotte/nachrichten/wurzel');
+    expect(zeile).toHaveAttribute(
+      'href',
+      '/betrieb/flotte/nachrichten/wurzel?zurueck=%2Fteam%2Fthreads',
+    );
     expect(within(zeile).getByText('2 neu')).toBeInTheDocument();
   });
 
@@ -606,12 +667,31 @@ describe('Teamchat: Ansichten neben den Gesprächen', () => {
         done: false,
         due: true,
       },
+      {
+        id: 'g2',
+        channel_id: 'k-allgemein',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_name: 'Olivia Office',
+        body: 'Die Belegliste',
+        created_at: '2026-10-16T10:07:00Z',
+        remind_at: '2099-10-19T13:07:00Z',
+        done: false,
+        due: false,
+      },
     ]);
     const nutzer = userEvent.setup();
     zeige('/team/gemerkt');
     const zeile = await screen.findByRole('link', { name: /Belege bis Freitag/ });
-    expect(zeile).toHaveAttribute('href', '/team/k-planung?nachricht=g1');
+    expect(zeile).toHaveAttribute('href', '/team/k-planung?nachricht=g1&zurueck=%2Fteam%2Fgemerkt');
     expect(within(zeile).getByText('Fällig')).toBeInTheDocument();
+    // Eine kommende Erinnerung steht in der Nebenzeile, nicht rechts neben
+    // dem Text - sonst bleibt bei 375 px vom Text nur „Die Bel…“.
+    const spaeter = screen.getByRole('link', { name: /Die Belegliste/ });
+    expect(
+      within(spaeter).getByText(/^Erinnerung .* · # Allgemein · Olivia Office · /),
+    ).toBeInTheDocument();
+    expect(within(spaeter).queryByText('Fällig')).toBeNull();
     await nutzer.click(within(zeile.closest('li')!).getByRole('button', { name: 'Erledigt' }));
     await vi.waitFor(() =>
       expect(api.aendereGemerkt).toHaveBeenCalledWith('g1', { erledigt: true }),
@@ -642,6 +722,12 @@ describe('Teamchat: Ansichten neben den Gesprächen', () => {
     await nutzer.click(await screen.findByRole('button', { name: /Teamtreffen 8 Uhr/ }));
     await nutzer.click(screen.getByRole('button', { name: 'Jetzt senden' }));
     await vi.waitFor(() => expect(api.planeNeu).toHaveBeenCalledWith('p1', null));
+
+    // Verwerfen fragt nach - ungesendeter Text ist danach fort (DESIGN.md 9.16).
+    await nutzer.click(screen.getByRole('button', { name: 'Verwerfen Entwurf in # Planung' }));
+    expect(screen.getByRole('link', { name: /Noch offen/ })).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
+    await vi.waitFor(() => expect(screen.queryByRole('link', { name: /Noch offen/ })).toBeNull());
   });
 
   it('öffnet eine Direktnachricht in einem Tipp; Kanäle legt nur die Leitung an', async () => {
@@ -716,9 +802,23 @@ describe('Für dich (ANN-614, ANN-646)', () => {
     zeige('/fuer-dich');
     expect(await screen.findByRole('heading', { name: /Erinnerungen/ })).toBeInTheDocument();
     const zeile = await screen.findByRole('link', { name: /Rad 2 ist frei/ });
-    expect(zeile).toHaveAttribute('href', '/team/k-planung/wurzel?nachricht=antwort');
+    expect(zeile).toHaveAttribute(
+      'href',
+      '/team/k-planung/wurzel?nachricht=antwort&zurueck=%2Ffuer-dich',
+    );
     expect(within(zeile).getByText(/^Erwähnung · # Planung · Tim Teamleitung/)).toBeInTheDocument();
     expect(within(zeile).getByText('Neu')).toBeInTheDocument();
+  });
+});
+
+describe('Für dich ohne Netz (DESIGN.md Regel 8)', () => {
+  it('sagt, wenn die Erinnerungen nicht laden - nie „Nichts für dich“', async () => {
+    api.fetchGemerkt.mockRejectedValue(new Error('aus'));
+    zeige('/fuer-dich');
+    expect(
+      await screen.findByText('Die Erinnerungen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Nichts für dich')).toBeNull();
   });
 });
 

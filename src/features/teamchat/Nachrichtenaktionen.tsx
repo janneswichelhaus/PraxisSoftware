@@ -32,9 +32,11 @@ import { erinnerungsvorschlaege, nachrichtenzeit } from './zeit';
  * kein Wischen: Beides trägt in der Halterung nicht (Referenzabgleich
  * TEAM-001).
  *
- * Oben die Reaktionen in einem Tipp, darunter wer reagiert hat, dann die
- * Handlungen: antworten, folgen, für später, erinnern, anheften, ab hier
- * ungelesen, als Aufgabe, bearbeiten, löschen. Zerstörendes fragt nach.
+ * Oben die Handlungen: antworten, folgen, für später, erinnern, anheften, ab
+ * hier ungelesen, als Aufgabe, bearbeiten, löschen. Darunter, wer reagiert
+ * hat, und ganz unten im Daumenbereich die Reaktionen in einem Tipp - das
+ * Häufigste (DESIGN.md, Grundsatz 1; Praxis-Sichtung TEAM-002). Zerstörendes
+ * fragt nach.
  */
 export function Nachrichtenaktionen({
   user,
@@ -132,50 +134,7 @@ export function Nachrichtenaktionen({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {!leer && !gesperrt ? (
-            <div
-              role="group"
-              aria-label="Reagieren"
-              className="grid grid-cols-4 gap-1 sm:grid-cols-8"
-            >
-              {REAKTIONEN.map((r) => {
-                const eigene = nachricht.reactions.some(
-                  (x) => x.reaction === r.schluessel && x.own,
-                );
-                return (
-                  <Symbolknopf
-                    key={r.schluessel}
-                    beschriftung={r.name}
-                    variant={eigene ? 'primary' : 'quiet'}
-                    aria-pressed={eigene}
-                    disabled={tun.isPending}
-                    onClick={() => tun.mutate(() => reagiere(nachricht.id, r.schluessel))}
-                  >
-                    <span className="text-xl leading-none">{r.zeichen}</span>
-                  </Symbolknopf>
-                );
-              })}
-            </div>
-          ) : null}
-          {nachricht.reactions.length > 0 ? (
-            <ul
-              aria-label="Wer reagiert hat"
-              className="text-ink-muted flex flex-col gap-1 text-sm"
-            >
-              {nachricht.reactions.map((r) => {
-                const art = REAKTIONEN.find((x) => x.schluessel === r.reaction);
-                return (
-                  <li key={r.reaction}>
-                    <span aria-hidden="true">{art?.zeichen}</span>{' '}
-                    <span className="sr-only">{art?.name}: </span>
-                    {r.names.join(', ')}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-          {tun.isError ? <Statusmeldung ton="fehler">{tun.error.message}</Statusmeldung> : null}
-          <ListRows beschriftung="Handlungen">
+          <ListRows beschriftung="Handlungen" rahmen={false}>
             {threadPfad && wurzel ? (
               <ListRow
                 dicht
@@ -210,7 +169,7 @@ export function Nachrichtenaktionen({
             {!leer && !gesperrt ? (
               <ListRow
                 dicht
-                titel={nachricht.pinned ? 'Lösen' : 'Anheften'}
+                titel={nachricht.pinned ? 'Nicht mehr anheften' : 'Anheften'}
                 onClick={() => tun.mutate(() => hefteAn(nachricht.id, !nachricht.pinned))}
               />
             ) : null}
@@ -245,6 +204,49 @@ export function Nachrichtenaktionen({
               />
             ) : null}
           </ListRows>
+          {nachricht.reactions.length > 0 ? (
+            <ul
+              aria-label="Wer reagiert hat"
+              className="text-ink-muted flex flex-col gap-1 text-sm"
+            >
+              {nachricht.reactions.map((r) => {
+                const art = REAKTIONEN.find((x) => x.schluessel === r.reaction);
+                return (
+                  <li key={r.reaction}>
+                    <span aria-hidden="true">{art?.zeichen}</span>{' '}
+                    <span className="sr-only">{art?.name}: </span>
+                    {r.names.join(', ')}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+          {tun.isError ? <Statusmeldung ton="fehler">{tun.error.message}</Statusmeldung> : null}
+          {!leer && !gesperrt ? (
+            <div
+              role="group"
+              aria-label="Reagieren"
+              className="grid grid-cols-4 gap-1 sm:grid-cols-8"
+            >
+              {REAKTIONEN.map((r) => {
+                const eigene = nachricht.reactions.some(
+                  (x) => x.reaction === r.schluessel && x.own,
+                );
+                return (
+                  <Symbolknopf
+                    key={r.schluessel}
+                    beschriftung={r.name}
+                    variant={eigene ? 'primary' : 'quiet'}
+                    aria-pressed={eigene}
+                    disabled={tun.isPending}
+                    onClick={() => tun.mutate(() => reagiere(nachricht.id, r.schluessel))}
+                  >
+                    <span className="text-xl leading-none">{r.zeichen}</span>
+                  </Symbolknopf>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       )}
     </Dialogfenster>

@@ -125,3 +125,12 @@ export function ohneFormatierung(text: string): string {
   }
   return ergebnis.replace(/\s+/g, ' ').trim();
 }
+
+/** Höchstens `laenge` Zeichen, am Wortende gekürzt und mit „…“, wenn mehr da war. */
+export function anriss(text: string, laenge: number): string {
+  const glatt = text.replace(/\s+/g, ' ').trim();
+  if (glatt.length <= laenge) return glatt;
+  const kurz = glatt.slice(0, laenge);
+  const wortende = kurz.lastIndexOf(' ');
+  return `${(wortende > laenge / 2 ? kurz.slice(0, wortende) : kurz).trimEnd()} …`;
+}

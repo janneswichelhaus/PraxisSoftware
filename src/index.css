@@ -283,6 +283,11 @@
   /* Breite der beschrifteten Symbolspalte zwischen 640 und 1023 px, bisher
      72 px ohne Beschriftung (Variante 2b, Jannes 2026-10-05). */
   --spacing-symbolspalte: 84px;
+  /* Die Chatfläche des Teamchats (TEAM-002, ANN-648): links die Gespräche,
+     rechts neben dem Gespräch der Thread - so breit wie Slacks Seitenleiste
+     und Threadspalte. Die Threadspalte nimmt höchstens 45 % der Fläche. */
+  --spacing-gespraechsspalte: 18rem;
+  --spacing-threadspalte: 24rem;
 
   /* Innenabstand einer Kachel: 12 oben und unten, 14 an den Seiten
      (Design-Handoff 2026-10-01, Abschnitt 2, dort als ein Wert „12px 14px"

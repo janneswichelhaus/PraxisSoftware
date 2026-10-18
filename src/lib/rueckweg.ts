@@ -133,6 +133,8 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/abrechnung/leistungen') return 'Zurück zu den Leistungen';
   if (ohneSuche === '/team') return 'Zurück zum Teamchat';
   if (ohneSuche === '/team/threads') return 'Zurück zu den Threads';
+  if (ohneSuche === '/team/suche') return 'Zurück zur Suche';
+  if (ohneSuche === '/team/gemerkt') return 'Zurück zu „Für später“';
   if (ohneSuche === '/fuer-dich') return 'Zurück zu „Für dich“';
   if (ohneSuche.startsWith('/team/')) return 'Zurück zum Gespräch';
   if (ohneSuche === '/mein-konto') return 'Zurück zu „Mein Konto“';

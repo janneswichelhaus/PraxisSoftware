@@ -82,6 +82,8 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 | Bestätigung am Klickort / Fenster     | `Rueckfrage` / `Dialogfenster`                         |
 | Knöpfe am Formularende / Arbeitsseite | `Formularfuss` / `Aktionsleiste`                       |
 | Haupt- und Kontextspalte              | `Zweispalter`                                          |
+| Kopf einer Nebenspalte (Thread)       | `Spaltenkopf` (h2, Aktionen kompakt)                   |
+| Zahl an einem Ziel der Navigation     | `Zaehlmarke` (Name mit Wort: „3 neu“)                  |
 | Bild, Foto                            | `Medienbild` (4:3, ganz; `vorschau` 56 × 56)           |
 | Tag oder Zeitraum wählen              | `Monatsblatt` (44 px je Tag, ein Monat je Seite, ‹ ›)  |
 | Handlung, Seitenwechsel, Symbol, Link | `Button`, `ButtonLink`, `Symbolknopf`, `Textlink`      |
@@ -90,7 +92,7 @@ eine Aufgabe je Seite; `plattform-barrierefreiheit.spec.ts` wacht.
 ## Regeln
 
 1. **Überschriften nur über Bausteine:** `PageHeader`/`Objektkopf` (h1), `Section` (h2/h3),
-   `Zwischentitel` (h3/h4). Kein `<h2 className=…>`.
+   `Spaltenkopf` (h2), `Zwischentitel` (h3/h4). Kein `<h2 className=…>`.
 2. **Kein Kasten im Kasten.** Gruppen in einer Karte trennt ein `Zwischentitel` oder eine Linie;
    Meldungen sind Zeilen (Fläche oder Linie links).
 3. **Listen nur über `ListRow`/`Listenabschnitt`, Tabellen nur über `Datenliste`.** Kein

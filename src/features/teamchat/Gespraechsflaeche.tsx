@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spaltenkopf } from '@/components/ui/Spaltenkopf';
 import type { CurrentUser } from '@/features/session/types';
+import { RUECKWEG_PARAM, istInternerPfad, rueckwegBeschriftung } from '@/lib/rueckweg';
 import { gesperrtSatz, kanalTitel, type Kanal } from './api';
 import { Details } from './Details';
 import { Eingabe } from './Eingabe';
 import type { Spalten } from './flaeche';
-import { gespraechPfad, threadPfad } from './pfade';
+import { TEAMCHAT, gespraechPfad, threadPfad } from './pfade';
 import { merkeOffen } from './speicher';
 import { Verlaufsansicht, type Verlaufssteuerung } from './Verlaufsansicht';
 import { Kreuz, Schloss, Zurueck } from './Zeichen';
@@ -38,6 +40,11 @@ function unterzeile(kanal: Kanal): string {
  * Slack), darunter **an seiner Stelle** mit dem Weg zurück. Gespräch und
  * Thread haben je ihren eigenen Verlauf, Lesestand, Entwurf und Scrollstand;
  * beide stehen unter eigenem Schlüssel, nichts wandert beim Wechsel mit.
+ *
+ * Wer aus der Suche, „Für später“, „Für dich“ oder den Threads an eine Stelle
+ * springt, bringt den Rückweg in der Adresse mit (`?zurueck=`, UX-012): Der
+ * Pfeil führt dorthin zurück, auch aus der Radflotte, statt zur Liste der
+ * Gespräche - der nächste Treffer ist dann einen Tipp entfernt.
  */
 export function Gespraechsflaeche({
   user,
@@ -63,6 +70,9 @@ export function Gespraechsflaeche({
   const gespraech = useRef<Verlaufssteuerung>(null);
   const thread = useRef<Verlaufssteuerung>(null);
   const [details, setDetails] = useState(false);
+  const [adresse] = useSearchParams();
+  const herkunft = adresse.get(RUECKWEG_PARAM);
+  const von = istInternerPfad(herkunft) ? herkunft : null;
   const nebeneinander = spalten === 3;
   const zeigeGespraech = threadId === null || nebeneinander;
 
@@ -98,7 +108,17 @@ export function Gespraechsflaeche({
       {zeigeGespraech ? (
         <section aria-label={kanalTitel(kanal)} className="flex min-w-0 flex-1 flex-col">
           <div className="border-line bg-surface flex shrink-0 items-start gap-1 border-b px-4 pt-3 sm:px-6">
-            {spalten === 1 ? zurueckKnopf(zurueck, 'Zurück zu den Gesprächen') : null}
+            {spalten === 1
+              ? von
+                ? zurueckKnopf(von, rueckwegBeschriftung(von))
+                : zurueckKnopf(
+                    zurueck,
+                    // Aus der Radflotte geht es in die Radflotte, nicht zu den Gesprächen.
+                    zurueck === TEAMCHAT
+                      ? 'Zurück zu den Gesprächen'
+                      : rueckwegBeschriftung(zurueck),
+                  )
+              : null}
             <div className="min-w-0 flex-1">
               <PageHeader
                 kompakt
@@ -140,7 +160,7 @@ export function Gespraechsflaeche({
           aria-label="Thread"
           className={
             nebeneinander
-              ? 'border-line flex w-96 max-w-[45%] shrink-0 flex-col border-l'
+              ? 'border-line w-threadspalte flex max-w-[45%] shrink-0 flex-col border-l'
               : 'flex min-w-0 flex-1 flex-col'
           }
         >
@@ -161,7 +181,9 @@ export function Gespraechsflaeche({
             />
           ) : (
             <div className="border-line bg-surface flex shrink-0 items-start gap-1 border-b px-4 pt-3 sm:px-6">
-              {zurueckKnopf(gespraechPfad(kanal), `Zurück zu ${kanalTitel(kanal)}`)}
+              {von
+                ? zurueckKnopf(von, rueckwegBeschriftung(von))
+                : zurueckKnopf(gespraechPfad(kanal), `Zurück zu ${kanalTitel(kanal)}`)}
               <div className="min-w-0 flex-1">
                 <PageHeader kompakt title="Thread" description={kanalTitel(kanal)} />
               </div>

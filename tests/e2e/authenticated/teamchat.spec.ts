@@ -205,6 +205,9 @@ test('findet ein Wort und öffnet den Treffer in zwei Tipps', async ({ page }) =
   expect(z.tipps).toBeLessThanOrEqual(2);
   // Der Suchbegriff steht nicht in der Adresse (ADR-011).
   expect(page.url()).not.toContain('Rad');
+  // Ein Tipp zurück in die Treffer - der nächste ist dann einen Tipp entfernt.
+  await page.getByRole('link', { name: 'Zurück zur Suche' }).click();
+  await expect(page.getByRole('link', { name: `Nimm Rad 1 ${LAUF}` })).toBeVisible();
 });
 
 test('sendet im Funkloch, sobald wieder Netz da ist - genau einmal (ANN-641)', async ({
@@ -253,6 +256,52 @@ test('nimmt beim Kontowechsel keinen Entwurf mit', async ({ page }) => {
   await expect(page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` })).toHaveValue('');
   await page.goto('/team/entwuerfe');
   await expect(page.getByText(`Halb fertig ${LAUF}`)).toHaveCount(0);
+});
+
+test('steht beim Zurückkommen dort, wo man war - auch nach einem Thread (ANN-648)', async ({
+  page,
+}) => {
+  await zumTeamchat(page, KONTEN.therapist);
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  const feld = page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` });
+  // Genug Verlauf zum Rollen; Strg+Enter sendet auch am Telefon.
+  for (let i = 1; i <= 12; i += 1) {
+    await feld.fill(`Zeile ${i} ${LAUF}`);
+    await feld.press('Control+Enter');
+    await expect(page.getByText(`Zeile ${i} ${LAUF}`)).toBeVisible();
+  }
+  const zeile = page.locator('[data-nachricht]').filter({ hasText: `Zeile 4 ${LAUF}` });
+  // Nach dem Senden rollt der Verlauf sanft ans Ende; erst wenn das steht,
+  // „Zeile 4“ an den oberen Rand holen.
+  let oben = 0;
+  await expect(async () => {
+    await zeile.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    const erst = (await zeile.boundingBox())!.y;
+    await page.waitForTimeout(300);
+    oben = (await zeile.boundingBox())!.y;
+    expect(oben).toBe(erst);
+  }).toPass();
+
+  async function stehtWieVorher() {
+    await expect(async () => {
+      expect(Math.abs((await zeile.boundingBox())!.y - oben)).toBeLessThanOrEqual(4);
+    }).toPass();
+  }
+
+  // Zur Liste und zurück.
+  await page.getByRole('link', { name: 'Zurück zu den Gesprächen' }).click();
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  await stehtWieVorher();
+
+  // In einen Thread und zurück - am Telefon ersetzt er das Gespräch.
+  await zeile.getByRole('link', { name: 'Antworten' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Thread' })).toBeVisible();
+  await page.getByRole('link', { name: `Zurück zu # ${KANAL}` }).click();
+  await stehtWieVorher();
 });
 
 test('hält die Eingabe über der Tastatur erreichbar', async ({ page }) => {

@@ -32,7 +32,7 @@ export function TeamchatRahmen({ user }: { user: CurrentUser }) {
           aria-label="Gespräche"
           className={
             nebeneinander
-              ? 'border-line w-72 shrink-0 overflow-y-auto overscroll-contain border-r'
+              ? 'border-line w-gespraechsspalte shrink-0 overflow-y-auto overscroll-contain border-r'
               : 'min-w-0 flex-1 overflow-y-auto overscroll-contain'
           }
         >

@@ -38,10 +38,12 @@ import { Schloss } from './Zeichen';
  * oben die Suche und „Neu“, darunter Threads, Für später und Entwürfe, dann
  * Favoriten, Kanäle und Direktnachrichten, Archiviertes eingeklappt.
  *
- * Fett steht, was nach der eigenen Stufe zählt (ANN-647); Erwähnungen tragen
- * „für dich“, Direkt- und Gruppennachrichten die Zahl der neuen. Kanäle legen
- * owner und Teamleitung an, das prüft der Server; „Neu“ steht allen offen
- * (Direkt- und Gruppennachrichten).
+ * Was nach der eigenen Stufe zählt (ANN-647), trägt Zeichen und Wort
+ * (DESIGN.md Regel 5): Erwähnungen „für dich“, sonst „n neu“ - nicht nur
+ * fette Schrift wie bei Slack, die in der Sonne nicht trägt. Am Telefon ist
+ * die Liste die Seite (Zeilen 56 px), daneben eine schmale Spalte (`dicht`).
+ * Kanäle legen owner und Teamleitung an, das prüft der Server; „Neu“ steht
+ * allen offen (Direkt- und Gruppennachrichten).
  */
 export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten: Spalten }) {
   const navigate = useNavigate();
@@ -63,6 +65,8 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
     onSuccess: () => queryClient.invalidateQueries({ queryKey: TEAMCHAT_KEY }),
   });
   const gewaehlt = useMatch(`${TEAMCHAT}/:kanalId/*`)?.params.kanalId ?? null;
+  // Rechts steht die Suche mit ihrem eigenen Feld - kein zweites daneben.
+  const sucheOffen = useMatch(SUCHE) !== null;
   const telefon = spalten === 1;
 
   function suchen(e: FormEvent) {
@@ -74,8 +78,9 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
   }
 
   const z = zaehler.data;
+  // Neben einem Gespräch ist „Senden“ der Hauptknopf (Regel 4).
   const neu = (
-    <ButtonLink to={NEU} groesse="kompakt">
+    <ButtonLink to={NEU} groesse="kompakt" variant={telefon ? 'primary' : 'secondary'}>
       Neu
     </ButtonLink>
   );
@@ -84,21 +89,25 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
     <div className={telefon ? 'px-4 pt-4 pb-6 sm:px-6' : 'px-4 pt-4 pb-6'}>
       {telefon ? <PageHeader title="Teamchat" actions={neu} /> : null}
       <div className="flex items-end gap-2">
-        <form role="search" onSubmit={suchen} className="min-w-0 flex-1">
-          <SearchField
-            label="In Nachrichten suchen"
-            placeholder="Suchen"
-            maxLength={100}
-            value={suche}
-            onChange={setSuche}
-          />
-        </form>
+        {sucheOffen && !telefon ? (
+          <div className="min-w-0 flex-1" />
+        ) : (
+          <form role="search" onSubmit={suchen} className="min-w-0 flex-1">
+            <SearchField
+              label="In Nachrichten suchen"
+              placeholder="Suchen"
+              maxLength={100}
+              value={suche}
+              onChange={setSuche}
+            />
+          </form>
+        )}
         {telefon ? null : neu}
       </div>
 
       <ListRows beschriftung="Ansichten" className="mt-4">
         <ListRow
-          dicht
+          dicht={!telefon}
           to={THREADS}
           uebergang={telefon}
           titel="Threads"
@@ -111,7 +120,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
           }
         />
         <ListRow
-          dicht
+          dicht={!telefon}
           to={GEMERKT}
           uebergang={telefon}
           titel="Für später"
@@ -124,7 +133,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
           }
         />
         <ListRow
-          dicht
+          dicht={!telefon}
           to={ENTWUERFE}
           uebergang={telefon}
           titel="Entwürfe und Geplantes"
@@ -154,7 +163,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
               key={kanal.id}
               kanal={kanal}
               aktiv={kanal.id === offen}
-              uebergang={telefon}
+              telefon={telefon}
             />
           );
           return (
@@ -206,14 +215,14 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
 function Gespraechszeile({
   kanal,
   aktiv,
-  uebergang,
+  telefon,
 }: {
   kanal: Kanal;
   aktiv: boolean;
-  uebergang: boolean;
+  /** Am Telefon ist die Liste die Seite; daneben eine schmale Spalte. */
+  telefon: boolean;
 }) {
-  const fett = istFett(kanal);
-  const nachricht = kanal.kind === 'direct' || kanal.kind === 'group';
+  const zaehlt = istFett(kanal);
   const meta =
     kanal.kind === 'direct' && kanal.partner_active === false
       ? 'Nicht mehr im Team'
@@ -222,11 +231,10 @@ function Gespraechszeile({
         : undefined;
   return (
     <ListRow
-      dicht
+      dicht={!telefon}
       to={gespraechPfad(kanal)}
       aktiv={aktiv}
-      uebergang={uebergang}
-      gedaempft={!fett}
+      uebergang={telefon}
       titel={
         <span className="inline-flex max-w-full min-w-0 items-center gap-1.5">
           {kanal.kind === 'private' ? <Schloss /> : null}
@@ -239,7 +247,7 @@ function Gespraechszeile({
           <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.erwaehnt}>
             {kanal.mentions} für dich
           </Badge>
-        ) : nachricht && kanal.unread > 0 && kanal.notify !== 'none' ? (
+        ) : zaehlt && kanal.unread > 0 ? (
           <Badge ton="akzent" eigenesZeichen={STATUSZEICHEN.neu}>
             {kanal.unread} neu
           </Badge>

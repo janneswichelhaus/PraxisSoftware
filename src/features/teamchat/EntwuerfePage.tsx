@@ -6,9 +6,9 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import {
   GEPLANT_KEY,
   KANAELE_KEY,
@@ -26,7 +26,6 @@ import { ohneFormatierung } from './formatierung';
 import { TEAMCHAT, gespraechPfad, threadPfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
-import { Kreuz } from './Zeichen';
 import { Zeitwahl } from './Zeitwahl';
 import { geplantFuer, planvorschlaege } from './zeit';
 
@@ -75,12 +74,17 @@ export function EntwuerfePage() {
               titel={<span className="line-clamp-2">{ohneFormatierung(e.text)}</span>}
               meta={e.threadId ? `Antwort im Thread · ${ort}` : ort}
               aktion={
-                <Symbolknopf
-                  beschriftung="Entwurf verwerfen"
-                  onClick={() => entwurfSetzen(kontoId, e.kanalId, e.threadId, '')}
+                // Ungesendeter Text ist ohne Rückfrage fort (DESIGN.md 9.16).
+                <Rueckfrage
+                  ausloeser="Verwerfen"
+                  ausloeserVariante="quiet"
+                  ausloeserGroesse="kompakt"
+                  ausloeserZusatz={`Entwurf ${e.threadId ? 'im Thread in' : 'in'} ${ort}`}
+                  bestaetigen="Ja, verwerfen"
+                  onBestaetigen={() => entwurfSetzen(kontoId, e.kanalId, e.threadId, '')}
                 >
-                  <Kreuz />
-                </Symbolknopf>
+                  Der Text ist danach fort.
+                </Rueckfrage>
               }
             />
           );
@@ -190,7 +194,7 @@ function GeplantFenster({
             </div>
           </div>
         ) : (
-          <ListRows beschriftung="Handlungen">
+          <ListRows beschriftung="Handlungen" rahmen={false}>
             <ListRow
               dicht
               titel="Jetzt senden"

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
@@ -54,9 +55,10 @@ const STUFEN: readonly { wert: Stufe; text: string }[] = [
  * Die Angaben zu einem Gespräch (TEAM-002) - ein Fenster über „Details“ im
  * Kopf: wer liest, die eigene Benachrichtigungsstufe und der Favorit
  * (ANN-647), Angeheftetes (ANN-645), Mitglieder privater Kanäle (ANN-642),
- * Name und Beschreibung. Archivieren und Verlassen leise am Ende, mit
- * Rückfrage (DESIGN.md Regel 10). Was jemand darf, prüft der Server; hier
- * steht nur, was angeboten wird.
+ * Name und Beschreibung (eingeklappt, selten). Archivieren und Verlassen
+ * leise am Ende, mit Rückfrage (DESIGN.md Regel 10), darunter „Schließen“ im
+ * Daumenbereich. Was jemand darf, prüft der Server; hier steht nur, was
+ * angeboten wird.
  */
 export function Details({
   kanal,
@@ -94,7 +96,9 @@ export function Details({
       vollbild
       onSchliessen={onSchliessen}
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 py-4 sm:px-6">
+      {/* 32 px von Abschnitt zu Abschnitt: der Abstand der Spalte, ohne den
+          eigenen der `Section` dazu (wie im `Zweispalter`). */}
+      <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-4 py-4 sm:px-6 [&>section]:mt-0">
         {kanal.description ? <p className="text-ink text-liste">{kanal.description}</p> : null}
 
         <section aria-label="Benachrichtigung" className="flex flex-col gap-3">
@@ -113,9 +117,12 @@ export function Details({
           {einstellen.isError ? (
             <Statusmeldung ton="fehler">{einstellen.error.message}</Statusmeldung>
           ) : null}
-          <Kleingedrucktes>
-            Stumm zählt nur noch, wo du erwähnt bist. Andere sehen nichts davon.
-          </Kleingedrucktes>
+          <Disclosure summary="So geht’s">
+            <p className="text-ink-muted max-w-prose text-sm">
+              „Erwähnungen“ und „Stumm“ zählen nur noch, wo du erwähnt bist. Andere sehen nichts
+              davon.
+            </p>
+          </Disclosure>
         </section>
 
         <Abfragezustand
@@ -127,6 +134,7 @@ export function Details({
             <Listenabschnitt
               titel="Angeheftet"
               anzahl={daten.length}
+              rahmen={false}
               leer={{ titel: 'Nichts angeheftet' }}
             >
               {daten.map((a) => (
@@ -154,6 +162,7 @@ export function Details({
             <Listenabschnitt
               titel={mitMitgliedern ? 'Mitglieder' : 'Wer liest'}
               anzahl={daten.length}
+              rahmen={false}
             >
               {daten.map((m) => (
                 <ListRow
@@ -200,6 +209,11 @@ export function Details({
             />
           ) : null}
         </div>
+        <Formularfuss dicht>
+          <Button variant="secondary" onClick={onSchliessen}>
+            Schließen
+          </Button>
+        </Formularfuss>
       </div>
     </Dialogfenster>
   );
@@ -294,31 +308,36 @@ function Umbenennen({ kanal }: { kanal: Kanal }) {
     if (name.trim()) speichern.mutate();
   }
   return (
-    <form onSubmit={absenden} aria-label="Name und Beschreibung" className="flex flex-col gap-3">
-      <Zwischentitel>Name und Beschreibung</Zwischentitel>
-      <Field
-        label="Name"
-        value={name}
-        maxLength={40}
-        required
-        onChange={(e) => setName(e.target.value)}
-      />
-      <Field
-        label="Worum es geht"
-        value={beschreibung}
-        maxLength={200}
-        onChange={(e) => setBeschreibung(e.target.value)}
-      />
-      {speichern.isError ? (
-        <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
-      ) : null}
-      {speichern.isSuccess ? <Statusmeldung ton="erfolg">Gespeichert.</Statusmeldung> : null}
-      <Formularfuss>
-        <Button type="submit" variant="secondary" disabled={!name.trim() || speichern.isPending}>
-          {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
-        </Button>
-      </Formularfuss>
-    </form>
+    <Disclosure summary="Name und Beschreibung">
+      <form
+        onSubmit={absenden}
+        aria-label="Name und Beschreibung"
+        className="flex flex-col gap-3 pt-2"
+      >
+        <Field
+          label="Name"
+          value={name}
+          maxLength={40}
+          required
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Field
+          label="Worum es geht"
+          value={beschreibung}
+          maxLength={200}
+          onChange={(e) => setBeschreibung(e.target.value)}
+        />
+        {speichern.isError ? (
+          <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
+        ) : null}
+        {speichern.isSuccess ? <Statusmeldung ton="erfolg">Gespeichert.</Statusmeldung> : null}
+        <Formularfuss>
+          <Button type="submit" variant="secondary" disabled={!name.trim() || speichern.isPending}>
+            {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
+          </Button>
+        </Formularfuss>
+      </form>
+    </Disclosure>
   );
 }
 

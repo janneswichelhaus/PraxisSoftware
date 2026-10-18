@@ -2,6 +2,7 @@ import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } f
 import { useQuery } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/Feedback';
 import { Verlauf } from '@/components/ui/Verlauf';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchMitglieder, mitgliederKey, type Kanal, type Nachricht } from './api';
@@ -204,7 +205,7 @@ export function Verlaufsansicht({
                   </div>
                 ) : null}
                 {nachrichten.length === 0 ? (
-                  <p className="text-ink-muted text-liste py-6">Noch keine Nachricht.</p>
+                  <EmptyState title="Noch keine Nachricht" />
                 ) : (
                   <Verlauf beschriftung={threadId ? 'Antworten' : 'Nachrichten'}>
                     {nachrichten.map((n, index) => {

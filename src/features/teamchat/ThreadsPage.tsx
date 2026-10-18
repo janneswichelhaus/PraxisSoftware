@@ -5,6 +5,7 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   KANAELE_KEY,
   NACHSEHEN_MS,
@@ -15,7 +16,7 @@ import {
   ohneInhalt,
 } from './api';
 import { ohneFormatierung } from './formatierung';
-import { TEAMCHAT, threadPfad } from './pfade';
+import { TEAMCHAT, THREADS, threadPfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
 import { nachrichtenzeit } from './zeit';
@@ -62,7 +63,10 @@ export function ThreadsPage() {
             {daten.map((t) => (
               <ListRow
                 key={t.id}
-                to={threadPfad({ id: t.channel_id, kind: t.channel_kind }, t.id)}
+                to={mitRueckweg(
+                  threadPfad({ id: t.channel_id, kind: t.channel_kind }, t.id),
+                  THREADS,
+                )}
                 gedaempft={t.new_replies === 0}
                 titel={
                   <span className="line-clamp-2">

@@ -167,6 +167,11 @@ describe('rueckwegBeschriftung', () => {
     // TEAM-001: der Teamchat und ein Gespräch darin.
     ['/team', 'Zurück zum Teamchat'],
     ['/team/k1', 'Zurück zum Gespräch'],
+    // TEAM-002: zurück an die Liste, aus der man an eine Stelle sprang.
+    ['/team/suche', 'Zurück zur Suche'],
+    ['/team/gemerkt', 'Zurück zu „Für später“'],
+    ['/team/threads', 'Zurück zu den Threads'],
+    ['/fuer-dich', 'Zurück zu „Für dich“'],
     ['/mein-konto', 'Zurück zu „Mein Konto“'],
   ])('beschriftet %s mit %s (UXR-002)', (pfad, erwartet) => {
     expect(rueckwegBeschriftung(pfad)).toBe(erwartet);

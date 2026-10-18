@@ -236,7 +236,12 @@ export class TeamchatFehler extends Error {
   }
 }
 
-const KEIN_NETZ = 'Kein Netz – es wird gesendet, sobald wieder Empfang da ist.';
+/**
+ * Ohne Netz kommt keine Handlung an. Nachrichten holt der Ausgang nach und
+ * sagt das an der Nachricht selbst (`ausgang.ts`); reagieren, merken,
+ * abhaken, ein Gespräch öffnen holt niemand nach - dort steht, was stimmt.
+ */
+const KEIN_NETZ = 'Kein Netz – nicht angekommen. Bitte gleich noch einmal.';
 
 function satz(error: ServerError, status: number, ersatz: string): TeamchatFehler {
   // Status 0: Die Anfrage hat den Server nie erreicht; 5xx und 408/429: Er war

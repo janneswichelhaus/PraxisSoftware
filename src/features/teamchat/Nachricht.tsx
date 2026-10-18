@@ -22,7 +22,7 @@ import {
 import type { Ausgangseintrag } from './ausgang';
 import { NACHRICHT_MAX, alleErwaehnt, erwaehnte } from './erwaehnung';
 import { FormatierterText } from './format';
-import { ohneFormatierung } from './formatierung';
+import { anriss, ohneFormatierung } from './formatierung';
 import { Lesezeichen, Nadel } from './Zeichen';
 import { nachrichtenzeit } from './zeit';
 
@@ -136,7 +136,7 @@ export function NachrichtZeile({
               {nachricht.root_body ? (
                 <span className="italic">
                   {' '}
-                  „{ohneFormatierung(nachricht.root_body).slice(0, 80)}“
+                  „{anriss(ohneFormatierung(nachricht.root_body), 80)}“
                 </span>
               ) : null}
             </p>

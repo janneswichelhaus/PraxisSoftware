@@ -6,6 +6,7 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import type { CurrentUser } from '@/features/session/types';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   AKTIVITAET_KEY,
   GEMERKT_KEY,
@@ -19,7 +20,7 @@ import {
   kanalTitel,
 } from './api';
 import { ohneFormatierung } from './formatierung';
-import { stellePfad } from './pfade';
+import { FUER_DICH, stellePfad } from './pfade';
 import { nachrichtenzeit } from './zeit';
 
 /**
@@ -56,34 +57,46 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <PageHeader title="Für dich" />
-      {faellig.length > 0 ? (
-        <Listenabschnitt titel="Erinnerungen" anzahl={faellig.length}>
-          {faellig.map((g) => (
-            <ListRow
-              key={g.id}
-              to={stellePfad({ id: g.channel_id, kind: g.channel_kind }, g)}
-              titel={<span className="line-clamp-2">{ohneFormatierung(g.body)}</span>}
-              meta={`${titel(g.channel_id)} · ${g.author_name ?? 'Ehemaliges Teammitglied'}`}
-              status={<Badge ton="warnung">Fällig</Badge>}
-              aktion={
-                <Button
-                  variant="quiet"
-                  disabled={abhaken.isPending}
-                  onClick={() => abhaken.mutate(g.id)}
-                >
-                  Erledigt
-                </Button>
-              }
-            />
-          ))}
-        </Listenabschnitt>
-      ) : null}
+      {/* Hier ist jede Erinnerung fällig - der Regelfall trägt kein Abzeichen
+          (Regel 5), und der Text behält bei 375 px seinen Platz. */}
+      <Abfragezustand
+        abfrage={gemerkt}
+        laden="Erinnerungen werden geladen …"
+        fehler="Die Erinnerungen konnten nicht geladen werden."
+      >
+        {() =>
+          faellig.length > 0 ? (
+            <Listenabschnitt titel="Erinnerungen" anzahl={faellig.length}>
+              {faellig.map((g) => (
+                <ListRow
+                  key={g.id}
+                  to={mitRueckweg(
+                    stellePfad({ id: g.channel_id, kind: g.channel_kind }, g),
+                    FUER_DICH,
+                  )}
+                  titel={<span className="line-clamp-2">{ohneFormatierung(g.body)}</span>}
+                  meta={`${titel(g.channel_id)} · ${g.author_name ?? 'Ehemaliges Teammitglied'}`}
+                  aktion={
+                    <Button
+                      variant="quiet"
+                      disabled={abhaken.isPending}
+                      onClick={() => abhaken.mutate(g.id)}
+                    >
+                      Erledigt
+                    </Button>
+                  }
+                />
+              ))}
+            </Listenabschnitt>
+          ) : null
+        }
+      </Abfragezustand>
       <Abfragezustand
         abfrage={aktivitaet}
         laden="„Für dich“ wird geladen …"
         fehler="„Für dich“ konnte nicht geladen werden."
         leer={{
-          wenn: (daten) => daten.length === 0 && faellig.length === 0,
+          wenn: (daten) => daten.length === 0 && gemerkt.isSuccess && faellig.length === 0,
           titel: 'Nichts für dich',
           beschreibung:
             'Hier stehen Erwähnungen, Antworten in deinen Threads und fällige Erinnerungen.',
@@ -95,7 +108,10 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
               {daten.map((eintrag) => (
                 <ListRow
                   key={eintrag.id}
-                  to={stellePfad({ id: eintrag.channel_id, kind: eintrag.channel_kind }, eintrag)}
+                  to={mitRueckweg(
+                    stellePfad({ id: eintrag.channel_id, kind: eintrag.channel_kind }, eintrag),
+                    FUER_DICH,
+                  )}
                   gedaempft={!eintrag.unread}
                   titel={<span className="line-clamp-2">{ohneFormatierung(eintrag.body)}</span>}
                   meta={`${eintrag.reason === 'mention' ? 'Erwähnung' : 'Antwort'} · ${titel(
