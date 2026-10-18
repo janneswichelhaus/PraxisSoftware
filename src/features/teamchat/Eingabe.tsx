@@ -392,6 +392,17 @@ export function Eingabe({
           onSelect={(e) => schreibmarke(e.currentTarget)}
           onKeyDown={taste}
         />
+        {threadId ? (
+          // Eine eigene Zeile wie bei Slack: neben @, Aa und der Büroklammer
+          // bräche das Wort bei 375 px um, und „Senden“ steht wie im Kanal.
+          <div className="mt-1">
+            <Checkbox
+              label="Auch im Gespräch"
+              checked={auchImKanal}
+              onChange={(e) => setAuchImKanal(e.target.checked)}
+            />
+          </div>
+        ) : null}
         {werkzeug === 'anhaengen' ? (
           <div role="group" aria-label="Anhängen" className="mt-2 flex flex-wrap gap-2">
             <Button
@@ -488,15 +499,7 @@ export function Eingabe({
           >
             <Bueroklammer />
           </Symbolknopf>
-          {threadId ? (
-            <div className="ml-1 min-w-0">
-              <Checkbox
-                label="Auch im Gespräch"
-                checked={auchImKanal}
-                onChange={(e) => setAuchImKanal(e.target.checked)}
-              />
-            </div>
-          ) : (
+          {threadId ? null : (
             <Symbolknopf
               beschriftung="Später senden"
               disabled={!text.trim() || hatAnhaenge}

@@ -13,9 +13,9 @@ BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Lade
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
 Büro ohne Kilometer und Betrag; ANN-615 bis ANN-617); Wochenplan mit einem Knopf, alle oder keiner.
 
-Teamchat wie Slack gemergt (18.10., #272, TEAM-002): Fragen 2–5 wie empfohlen (ANN-642, -647, -651;
-E5, E6 zurückgestellt); keine Virenprüfung in der gesamten Anwendung (ADR-017 Fassung 7, ADR-026).
-Offen bei Jannes: Frage 1, Fotos und PDF im Teamchat ohne Virenprüfung (E4, ADR-017 Punkt 30).
+Teamchat-Anhänge (18.10., Branch `claude/epic-cerf-vq8hz1`, TEAM-003, E4): Fotos und PDF bis fünf je
+Nachricht, Dateien je Gespräch, ohne Virenprüfung (ADR-017 Fassung 7; Abschnitt M als Fassung 8
+vorgeschlagen, Fragen 30–32); ANN-652, ANN-653. Davor gemergt: #272 (TEAM-002), Fragen 2–5.
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
