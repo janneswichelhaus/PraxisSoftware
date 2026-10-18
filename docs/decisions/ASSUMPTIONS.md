@@ -6573,7 +6573,7 @@ Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 ### ANN-642 — Teamchat: private Kanäle und Gruppennachrichten
 
-Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Private Kanäle und Gruppennachrichten (drei bis neun Personen) lesen nur ihre Mitglieder, auch owner nicht. Private Kanäle legen owner und Teamleitung an; jedes Mitglied holt weitere dazu (sie lesen den Verlauf), verwaltende Mitglieder nehmen heraus, benennen um, archivieren. Wer geht, verliert den eigenen Stand; ist kein aktives Mitglied mehr dabei, fällt der Kanal mit Journal. Eindeutig sind nur Namen offener Kanäle, damit kein Name einen privaten Kanal verrät. Kein Umwandeln.
 
@@ -6582,6 +6582,8 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.team_channel_readable`, `app.team_channel_manageable`, `public.leave_team_channel`.
 
 **Änderungspfad.** Alle legen an: `app.can_manage_team_channels` · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 4): Private Kanäle legen owner und Teamleitung an. Bleibt im Prüfpaket.
 
 ### ANN-643 — Teamchat: Antworten auch im Kanal, später senden
 
@@ -6633,7 +6635,7 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-647 — Teamchat: Benachrichtigung in der App, Stufen je Gespräch, @alle
 
-Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · erledigt · Wiedervorlage: —
 
 **Annahme.** Der Zähler an „Nachrichten“ zählt neue Direkt- und Gruppennachrichten, Erwähnungen und fällige Erinnerungen. Je Gespräch: alle, nur Erwähnungen oder stumm (Erwähnungen zählen weiter) und Favorit. @alle erwähnt, wer das Gespräch liest; ein @hier gibt es ohne Präsenz nicht. Kein Push, keine Mail: ADR-024 nimmt die Teamkommunikation aus, sein Grund (W4, §20) gilt sinngemäß.
 
@@ -6642,6 +6644,8 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 **Anker.** `public.get_team_chat_summary`, `public.team_channel_settings`.
 
 **Änderungspfad.** Andere Zählweise: nur `get_team_chat_summary` · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-18).** Bestätigt (PR #272, Frage 2): Keine Mitteilung außerhalb der App. Zeigt der Alltag Bedarf, folgt ein eigener ADR – nur Direkt- und Gruppennachrichten und Erwähnungen, mit Ruhezeit außerhalb der Arbeitszeit.
 
 ### ANN-648 — Teamchat: Chatfläche mit Gesprächsliste, Threadspalte und Tastatur
 
@@ -6681,7 +6685,7 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 ### ANN-651 — Teamchat: Suche mit Filtern, die Person nur mit Suchwort
 
-Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Die Suche findet in allen lesbaren Gesprächen ein Wort ab zwei Zeichen und filtert nach Gespräch, Person und Zeitraum. Ohne Suchwort geht nur der Blick in ein Gespräch, wie Hochblättern; nach einer Person nur mit Suchwort. Das ist eine Hürde, keine Sperre: Mit einem häufigen Wort und Zeiträumen lässt sich trotzdem vieles einer Person finden. Ob der Personenfilter bleibt, entscheidet die Datenschutzprüfung. Suchwörter stehen in keiner Adresse und keinem Log.
 
@@ -6690,3 +6694,5 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Prüfung am Anfang von `public.search_team_messages`.
 
 **Änderungspfad.** Ohne Personenfilter: `p_author` und das Feld „Von“ entfernen · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 5); ob „Von“ bleibt, entscheidet die Datenschutzprüfung. Bleibt im Prüfpaket.
