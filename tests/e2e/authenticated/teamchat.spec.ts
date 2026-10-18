@@ -67,7 +67,7 @@ test('legt als Praxisleitung einen offenen und einen privaten Kanal an', async (
   await page.getByRole('checkbox', { name: 'Privat – nur Mitglieder lesen' }).check();
   await page.getByRole('checkbox', { name: 'Olivia Office' }).check();
   await page.getByRole('button', { name: 'Kanal anlegen' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: new RegExp(PRIVAT) })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: PRIVAT })).toBeVisible();
   await page.getByRole('textbox', { name: `Nachricht an # ${PRIVAT}` }).fill(`Dienstplan ${LAUF}`);
   await page.getByRole('button', { name: 'Senden', exact: true }).click();
   await expect(page.getByText(`Dienstplan ${LAUF}`)).toBeVisible();
@@ -122,7 +122,7 @@ test('reagiert in zwei Tipps und merkt sich eine Nachricht für später', async 
   await page.getByRole('dialog').getByRole('button', { name: 'Für später merken' }).click();
   await expect(nachricht.getByText('Für später')).toBeVisible();
   await page.goto('/team/gemerkt');
-  await expect(page.getByRole('link', { name: new RegExp(`Kette Rad 2 ${LAUF}`) })).toBeVisible();
+  await expect(page.getByRole('link', { name: `Kette Rad 2 ${LAUF}` })).toBeVisible();
 });
 
 test('erwähnt mit @ und einem Tipp; die Erwähnte sieht „für dich“', async ({ page, browser }) => {
@@ -181,11 +181,11 @@ test('beginnt eine Direktnachricht in drei Tipps, die Dritte weder sehen noch fi
 
 test('zeigt den privaten Kanal nur seinen Mitgliedern (ANN-642)', async ({ page, browser }) => {
   await zumTeamchat(page, KONTEN.office);
-  await expect(gespraeche(page).getByRole('link', { name: new RegExp(PRIVAT) })).toBeVisible();
+  await expect(gespraeche(page).getByRole('link', { name: PRIVAT })).toBeVisible();
 
   const andere = await browser.newPage();
   await zumTeamchat(andere, KONTEN.therapist);
-  await expect(gespraeche(andere).getByRole('link', { name: new RegExp(PRIVAT) })).toHaveCount(0);
+  await expect(gespraeche(andere).getByRole('link', { name: PRIVAT })).toHaveCount(0);
   await andere.getByRole('searchbox', { name: 'In Nachrichten suchen' }).fill(`Dienstplan ${LAUF}`);
   await andere.getByRole('searchbox', { name: 'In Nachrichten suchen' }).press('Enter');
   await expect(andere.getByText('Nichts gefunden')).toBeVisible();
@@ -199,7 +199,7 @@ test('findet ein Wort und öffnet den Treffer in zwei Tipps', async ({ page }) =
   await z.tippe(feld);
   await feld.fill(`Rad 1 ${LAUF}`);
   await feld.press('Enter');
-  await z.tippe(page.getByRole('link', { name: new RegExp(`Nimm Rad 1 ${LAUF}`) }));
+  await z.tippe(page.getByRole('link', { name: `Nimm Rad 1 ${LAUF}` }));
   await expect(page.getByRole('heading', { level: 1, name: 'Thread' })).toBeVisible();
   await expect(page.getByText(`Kette Rad 2 ${LAUF}`)).toBeVisible();
   expect(z.tipps).toBeLessThanOrEqual(2);
