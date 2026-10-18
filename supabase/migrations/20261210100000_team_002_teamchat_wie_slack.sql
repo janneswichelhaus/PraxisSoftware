@@ -822,10 +822,12 @@ begin
                     array_agg(app.team_staff_name(r.staff_member_id)
                               order by app.team_staff_name(r.staff_member_id)) as namen
              from public.team_message_reactions r
-             where r.message_id = m.id
+             -- Am leeren Anker nichts, auch nach einem Rennen mit dem Entfernen.
+             where r.message_id = m.id and m.removed_at is null
              group by r.reaction
            ) x), '[]'::jsonb),
-         exists (select 1 from public.team_message_pins p where p.message_id = m.id),
+         m.removed_at is null
+           and exists (select 1 from public.team_message_pins p where p.message_id = m.id),
          exists (select 1 from public.team_saved_messages s
                  where s.message_id = m.id and s.staff_member_id = v_staff),
          case when m.also_in_channel then app.team_staff_name(w.author_staff_member_id) end,
@@ -1271,6 +1273,10 @@ begin
     end if;
   end if;
 
+  -- Prüfen und Einfügen sehen denselben Kanal: Herausnehmen, Verlassen und
+  -- Archivieren sperren ihn zum Ändern und warten so auf das Senden - oder
+  -- umgekehrt (Zweitreview TEAM-002, Runde 3, Befund 2).
+  perform 1 from public.team_channels c where c.id = p_channel and c.organization_id = v_org for share;
   if not app.team_channel_readable(p_channel, v_org, v_staff) then
     raise exception 'team channel not found' using errcode = 'P0002';
   end if;
@@ -1329,11 +1335,10 @@ begin
   end if;
   perform app.set_team_mentions(v_id, v_erwaehnt);
 
+  -- Senden zieht keinen Lesestand vor: Eigenes ist nie neu, und was andere
+  -- inzwischen schrieben, gilt erst als gelesen, wenn die Ansicht es gezeigt
+  -- hat (ANN-640; Zweitreview TEAM-002, Runde 3, Befund 5).
   if p_parent is null then
-    -- Eine geplante Nachricht zieht den eigenen Stand nicht vor.
-    if p_send_at is null then
-      perform app.team_mark_channel_read(p_channel, v_org, v_staff, v_zeit);
-    end if;
     -- Wer beginnt oder erwähnt ist, folgt dem Thread ab hier.
     perform app.team_follow_thread(v_id, v_staff, v_zeit);
     perform app.team_follow_thread(v_id, mm.staff_member_id, v_zeit)
@@ -1342,10 +1347,6 @@ begin
     v_seit := (select max(m.created_at) from public.team_messages m
                where (m.id = p_parent or m.parent_id = p_parent) and m.created_at < v_zeit);
     perform app.team_follow_thread(p_parent, v_staff, v_zeit);
-    perform app.team_mark_thread_read(p_parent, v_staff, v_zeit);
-    if coalesce(p_also_in_channel, false) then
-      perform app.team_mark_channel_read(p_channel, v_org, v_staff, v_zeit);
-    end if;
     -- Erwähnte folgen; was vor der Erwähnung kam, gilt für sie als gesehen.
     perform app.team_follow_thread(p_parent, mm.staff_member_id, v_seit)
     from public.team_message_mentions mm where mm.message_id = v_id;
@@ -1880,6 +1881,8 @@ begin
   if p_staff_member is null or p_staff_member = v_staff then
     raise exception 'leave the channel instead' using errcode = '22023';
   end if;
+  -- Wie Verlassen und Archivieren: Ein gleichzeitiges Senden wartet (Befund 2).
+  perform 1 from public.team_channels where id = p_channel for update;
   delete from public.team_channel_members
   where channel_id = p_channel and staff_member_id = p_staff_member;
   if not found then
@@ -2019,7 +2022,9 @@ begin
   end if;
   -- Gleichzeitiges Anheften: die Grenze gilt für beide.
   perform 1 from public.team_channels where id = v_m.channel_id for update;
-  if (select count(*) from public.team_message_pins p where p.channel_id = v_m.channel_id) >= 50
+  if (select count(*) from public.team_message_pins p
+      join public.team_messages pm on pm.id = p.message_id
+      where p.channel_id = v_m.channel_id and pm.removed_at is null) >= 50
      and not exists (select 1 from public.team_message_pins p where p.message_id = p_message) then
     raise exception 'at most 50 pinned messages' using errcode = '22023';
   end if;
@@ -2290,7 +2295,10 @@ begin
     where m.organization_id = p_org and m.created_at > now()
       and (m.author_staff_member_id is null
            or not app.teamchat_participant(p_org, m.author_staff_member_id)
-           or not app.team_channel_readable(m.channel_id, p_org, m.author_staff_member_id))
+           or not app.team_channel_readable(m.channel_id, p_org, m.author_staff_member_id)
+           -- Archiviert: auch, was ein Rennen mit dem Archivieren überstand.
+           or exists (select 1 from public.team_channels c
+                      where c.id = m.channel_id and c.archived_at is not null))
     returning m.id
   )
   insert into public.deletion_journal

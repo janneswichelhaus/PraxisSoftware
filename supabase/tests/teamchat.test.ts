@@ -851,9 +851,11 @@ describe('Teamchat: Löschlauf (ANN-610)', () => {
       await anzahl('select count(*) n from public.team_messages where id = $1', [wurzel]),
     ).toBe(1);
 
-    await asUserCommitted(users.teamLead, 'select public.mark_team_channel_read($1)', [
-      allgemein.id,
-    ]);
+    // Beide haben gelesen; Senden allein legt seit TEAM-002 keinen Stand an
+    // (ANN-640) - der Stand der Aktiven bleibt, der Ausgeschiedener fällt.
+    for (const konto of [users.therapist, users.teamLead]) {
+      await asUserCommitted(konto, 'select public.mark_team_channel_read($1)', [allgemein.id]);
+    }
     await asPostgres(
       `update public.staff_members set employment_status = 'inactive' where id = $1`,
       [STAFF.tim],

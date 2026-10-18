@@ -243,10 +243,26 @@ export class TeamchatFehler extends Error {
  */
 const KEIN_NETZ = 'Kein Netz – nicht angekommen. Bitte gleich noch einmal.';
 
+/**
+ * SQLSTATE-Klassen, die kein Urteil über die Anfrage sind: Verbindung (08),
+ * Serialisierung und Verklemmung (40001, 40P01), Ressourcen (53), Eingriff
+ * des Betriebs (57). Ein anderer Code ist eine Antwort der Datenbank - auch
+ * wenn PostgREST sie als HTTP 500 schickt, etwa P0002 „nicht gefunden“
+ * (Zweitreview TEAM-002, Runde 3).
+ */
+const VORUEBERGEHEND = /^(08|53|57)|^40001$|^40P01$/;
+
 function satz(error: ServerError, status: number, ersatz: string): TeamchatFehler {
-  // Status 0: Die Anfrage hat den Server nie erreicht; 5xx und 408/429: Er war
-  // gerade nicht bereit. Beides ist kein Urteil über die Nachricht.
-  const netz = status === 0 || status === 408 || status === 429 || status >= 500;
+  // Status 0: Die Anfrage hat den Server nie erreicht; 408/429 und 5xx ohne
+  // Antwort der Datenbank: Er war gerade nicht bereit. Beides ist kein Urteil
+  // über die Nachricht - der Ausgang versucht es dann wieder.
+  const code = error?.code ?? '';
+  const netz =
+    status === 0 ||
+    status === 408 ||
+    status === 429 ||
+    VORUEBERGEHEND.test(code) ||
+    (status >= 500 && !/^[0-9A-Z]{5}$/.test(code));
   if (netz) return new TeamchatFehler(KEIN_NETZ, true);
   const text = error?.message ?? '';
   const treffer = SAETZE.find(([schluessel]) => text.includes(schluessel));
@@ -307,6 +323,16 @@ export function sucheKey(lauf: number) {
 export const NACHSEHEN_MS = 20_000;
 export const GESPRAECH_MS = 10_000;
 export const ZAEHLER_MS = 30_000;
+
+/**
+ * Die Liste der Gespräche bleibt einen Arbeitstag im Arbeitsspeicher, nicht
+ * nur die üblichen fünf Minuten: Wer im Funkloch den Teamchat öffnet, findet
+ * Liste, Gespräch und Eingabe und kann in den Ausgang schreiben
+ * (Praxis-Sichtung TEAM-002). Nichts davon liegt auf dem Gerät; beim
+ * Kontowechsel räumt der `SessionProvider` ab. Von mehreren Abfragen desselben
+ * Schlüssels gilt die längste Haltezeit.
+ */
+export const GESPRAECHE_HALTEN_MS = 12 * 3_600_000;
 
 // -----------------------------------------------------------------------------
 // Lesen

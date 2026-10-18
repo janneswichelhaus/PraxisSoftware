@@ -937,6 +937,14 @@ describe('Teamchat: Rechte an den neuen Wegen (ADR-013 Punkt 9 Nr. 1)', () => {
       ['select public.remove_team_channel_member($1, $2)', [allgemein.id, STAFF.tom]],
       ['select public.leave_team_channel($1)', [allgemein.id]],
       ['select public.reschedule_team_message($1)', [n]],
+      // Neu angelegte Signaturen und geänderte Wege (Zweitreview Runde 3, Befund 4).
+      [SENDEN, [allgemein.id, null, 'X', [], false, false, null]],
+      [NACHRICHTEN, [allgemein.id, null]],
+      [SUCHE, ['Hallo', null, null, null, null]],
+      ['select public.edit_team_message($1, $2, $3::uuid[], $4::boolean)', [n, 'Neu', [], false]],
+      ['select public.delete_team_message($1)', [n]],
+      ['select public.mark_all_team_channels_read()', []],
+      ['select public.set_team_channel_archived($1, true)', [allgemein.id]],
     ] as const;
     for (const [sql, params] of wege) {
       for (const konto of [users.patientMax, users.plattformTina]) {
@@ -1016,6 +1024,22 @@ describe('Teamchat: Rechte an den neuen Wegen (ADR-013 Punkt 9 Nr. 1)', () => {
       );
       expect(rows[0]?.erlaubt, name).toBe(false);
     }
+    // Alle internen Helfer des Teamchats, nicht nur diese drei - etwa
+    // app.team_view liefert Nachrichten ohne jede Prüfung (Runde 3, Befund 4).
+    const { rows: offen } = await asPostgres<{ name: string }>(
+      `select distinct p.proname as name
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace,
+            unnest(array['anon', 'authenticated']) r
+       where n.nspname = 'app' and p.proname like '%team%'
+         and has_function_privilege(r, p.oid, 'EXECUTE')`,
+    );
+    expect(offen.map((z) => z.name)).toEqual([]);
+    expect(
+      await anzahl(
+        `select count(*) n from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+         where n.nspname = 'app' and p.proname like '%team%'`,
+      ),
+    ).toBeGreaterThanOrEqual(20);
     expect(
       (
         await fehler(users.ownerTherapist, 'select app.team_drop_scheduled($1, $2, null)', [
@@ -1280,5 +1304,76 @@ describe('Teamchat: Löschpfad der neuen Tabellen (ADR-008 Punkt 12)', () => {
         [id],
       ),
     ).toBe(1);
+  });
+});
+
+describe('Teamchat: Rennen und Lesestand beim Senden (Zweitreview TEAM-002, Runde 3)', () => {
+  it('lässt Geplantes in einem archivierten Gespräch mit dem täglichen Lauf fallen', async () => {
+    // Ein Rennen mit dem Archivieren nachgestellt: Die geplante Nachricht
+    // landet nach dem sofortigen Fallenlassen (Befund 2).
+    const { rows: zeit } = await asPostgres<{ t: string }>(
+      `select (now() + interval '2 hours')::text as t`,
+    );
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    const geplant = await senden(users.therapist, vertretungen.id, 'Anna plant', {
+      um: zeit[0]!.t,
+    });
+    await asPostgres('update public.team_channels set archived_at = now() where id = $1', [
+      vertretungen.id,
+    ]);
+    await asPostgres('select public.apply_retention()');
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [geplant]),
+    ).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) n from public.deletion_journal
+         where target_table = 'team_messages' and target_id = $1`,
+        [geplant],
+      ),
+    ).toBe(1);
+  });
+
+  it('zeigt am leeren Anker weder Reaktionen noch „angeheftet“ (Befund 3)', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const wurzel = await senden(users.therapist, allgemein.id, 'Wer hat Rad 2?');
+    await senden(users.office, allgemein.id, 'Ich', { parent: wurzel });
+    await asUserCommitted(users.therapist, 'select public.delete_team_message($1)', [wurzel]);
+    // Reaktion und Anheften, die ein Rennen mit dem Entfernen überstanden.
+    await asPostgres(
+      `insert into public.team_message_reactions (organization_id, message_id, staff_member_id, reaction)
+       values ($1, $2, $3, 'daumen')`,
+      [organizationId, wurzel, STAFF.olivia],
+    );
+    await asPostgres(
+      `insert into public.team_message_pins (organization_id, channel_id, message_id)
+       values ($1, $2, $3)`,
+      [organizationId, allgemein.id, wurzel],
+    );
+    const anker = (await nachrichten(users.office, allgemein.id)).find((m) => m.id === wurzel)!;
+    expect(anker.body).toBeNull();
+    expect(anker.reactions).toEqual([]);
+    expect(anker.pinned).toBe(false);
+    expect(
+      (await asUser(users.office, 'select * from public.list_team_pins($1)', [allgemein.id])).rows,
+    ).toEqual([]);
+  });
+
+  it('zieht beim Senden keinen Lesestand vor - Ungezeigtes anderer bleibt neu (ANN-640)', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const wurzel = await senden(users.therapist, allgemein.id, 'Wer übernimmt Frau B.?');
+    await asUserCommitted(users.therapist, 'select public.mark_team_channel_read($1, null)', [
+      allgemein.id,
+    ]);
+    // Olivia schreibt; Anna sendet, bevor ihre Ansicht es gezeigt hat.
+    await senden(users.office, allgemein.id, 'Ich nicht, ich bin im Büro.');
+    await senden(users.office, allgemein.id, 'Tim vielleicht', { parent: wurzel });
+    await senden(users.therapist, allgemein.id, 'Dann frage ich Tim.');
+    expect((await kanal(users.therapist, 'Allgemein')).unread).toBe(1);
+    await senden(users.therapist, allgemein.id, 'Danke', { parent: wurzel });
+    const imGespraech = (await nachrichten(users.therapist, allgemein.id)).find(
+      (m) => m.id === wurzel,
+    )!;
+    expect(imGespraech.new_replies).toBe(1);
   });
 });

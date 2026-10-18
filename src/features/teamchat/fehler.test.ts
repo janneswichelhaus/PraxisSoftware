@@ -46,6 +46,26 @@ describe('Ohne Netz', () => {
     expect(fehler.message).toMatch(/noch einmal/);
   });
 
+  it('nimmt eine Antwort der Datenbank als Ablehnung, auch als HTTP 500 (P0002)', async () => {
+    // PostgREST schickt P0002 und andere P0-Codes als 500; der Ausgang darf
+    // eine abgelehnte Nachricht nicht ohne Ende als „kein Netz“ wiederholen.
+    rpc.mockResolvedValue({
+      data: null,
+      error: { message: 'team message not found', code: 'P0002' },
+      status: 500,
+    });
+    const fehler = await fehlerVon(vorgaenge[0]!);
+    expect(fehler.netz).toBe(false);
+    expect(fehler.message).toBe('Das Gespräch oder die Nachricht gibt es nicht mehr.');
+  });
+
+  it('wiederholt bei Verbindungs- und Verklemmungsfehlern der Datenbank', async () => {
+    for (const code of ['08006', '40001', '40P01', '53300', '57014']) {
+      rpc.mockResolvedValue({ data: null, error: { message: 'x', code }, status: 500 });
+      expect((await fehlerVon(vorgaenge[0]!)).netz).toBe(true);
+    }
+  });
+
   it('nennt eine Ablehnung des Servers als solche', async () => {
     rpc.mockResolvedValue({ data: null, error: { message: 'not allowed' }, status: 403 });
     const fehler = await fehlerVon(vorgaenge[0]!);
