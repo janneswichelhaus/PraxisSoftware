@@ -1052,11 +1052,11 @@
         },
         {
           "id": "team-003",
-          "name": "TEAM-003 Anhänge im Teamchat: Fotos und PDF bis fünf je Nachricht, Anzeigen im eigenen Rahmen ohne Herunterladen, Dateien je Gespräch, gelöscht mit der Nachricht",
+          "name": "TEAM-003 Anhänge im Teamchat: Fotos und PDF bis fünf je Nachricht, Anzeigen im Fenster ohne Herunterladen, Dateien je Gespräch, gelöscht mit der Nachricht",
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-18",
-          "nachweis": "Branch claude/epic-cerf-vq8hz1, Migration 20261212100000_team_003_teamchat_anhaenge.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/*.test.ts, src/features/teamchat/anhaenge.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (16 Abläufe), Zweitreview",
+          "nachweis": "PR #273, Migration 20261212100000_team_003_teamchat_anhaenge.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/*.test.ts, src/features/teamchat/entwurfsanhaenge.test.ts, fehler.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (17 Abläufe), Zweitreview in drei Runden, Design- und Praxis-Review",
           "vermerk": "Etappe E4 (Frage 1 aus PR #272, Jannes 18.10.2026: wie empfohlen, ohne Virenprüfung); ADR-017 Fassung 8 Abschnitt M vorgeschlagen (Bestätigungsfragen 30 bis 32); ANN-652, ANN-653; scharf erst nach OPS-001 und OPS-003 (Punkt 81); Clips bleiben aus (Punkt 71)"
         },
         {
