@@ -120,6 +120,19 @@ function gespraeche(page: Page): Locator {
   return page.getByRole('navigation', { name: 'Gespräche' });
 }
 
+/**
+ * Öffnet einen Kanal aus der Liste und wartet, bis er mit seiner Adresse
+ * dasteht. Am Rechner zeigt `/team` vorher schon ein Gespräch; ein Tipp, der
+ * noch dort landet, gehörte nicht zum gewählten (CI, Teil 3/3).
+ */
+async function kanalOeffnen(page: Page, kanal: string): Promise<void> {
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${kanal}` })
+    .click();
+  await expect(page).toHaveURL(/\/team\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole('textbox', { name: `Nachricht an # ${kanal}` })).toBeVisible();
+}
+
 /** Die Anhänge im Entwurf - in der Eingabe, nicht in einer Nachricht. */
 function entwurfsanhaenge(page: Page): Locator {
   return page.locator('form').getByRole('list', { name: 'Anhänge', exact: true });
@@ -436,9 +449,7 @@ test('hält die Eingabe über der Tastatur erreichbar', async ({ page }) => {
 
 test('zeigt am Rechner Gespräch und Thread nebeneinander', async ({ page }) => {
   await zumTeamchat(page, KONTEN.therapist, RECHNER);
-  await gespraeche(page)
-    .getByRole('link', { name: `# ${KANAL}` })
-    .click();
+  await kanalOeffnen(page, KANAL);
   const nachricht = page.getByRole('listitem').filter({ hasText: `Kette Rad 2 ${LAUF}` });
   await nachricht.getByRole('link', { name: /^1 Antwort/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: `# ${KANAL}` })).toBeVisible();
@@ -571,9 +582,7 @@ test('öffnet einen Anhang im Fenster und findet ihn unter Dateien (ADR-017 Punk
     });
   });
   await zumTeamchat(page, KONTEN.office, RECHNER);
-  await gespraeche(page)
-    .getByRole('link', { name: `# ${KANAL}` })
-    .click();
+  await kanalOeffnen(page, KANAL);
   const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Neuer Plan ${LAUF}` });
   await nachricht.getByRole('button', { name: /Kette Rad 2.*Foto/ }).click();
   const foto = page.getByRole('dialog', { name: `Kette Rad 2 ${LAUF}.png` });
@@ -767,9 +776,7 @@ test('verwirft nach Rückfrage und lässt beim Verlassen kein Mikrofon offen (TE
 }) => {
   await spurenMerken(page);
   await zumTeamchat(page, KONTEN.therapist, RECHNER);
-  await gespraeche(page)
-    .getByRole('link', { name: `# ${KANAL}` })
-    .click();
+  await kanalOeffnen(page, KANAL);
   const aufnehmen = page.getByRole('button', { name: 'Sprachnachricht aufnehmen' });
   const laeuft = page
     .locator('form')
@@ -792,10 +799,7 @@ test('verwirft nach Rückfrage und lässt beim Verlassen kein Mikrofon offen (TE
     .click();
   await expect(page.getByRole('heading', { level: 1, name: 'Threads' })).toBeVisible();
   await expect.poll(() => spuren(page)).toEqual({ bekommen: 2, laufen: 0 });
-  await gespraeche(page)
-    .getByRole('link', { name: `# ${KANAL}` })
-    .click();
-  await expect(page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` })).toBeVisible();
+  await kanalOeffnen(page, KANAL);
   await expect(entwurfsanhaenge(page)).toHaveCount(0);
 });
 

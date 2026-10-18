@@ -68,7 +68,6 @@ vi.mock('./api', async (importOriginal) => {
 });
 
 const { TeamchatRahmen } = await import('./TeamchatRahmen');
-const { TeamChatPage } = await import('./TeamChatPage');
 const { GespraechPage } = await import('./GespraechPage');
 const { NeuPage } = await import('./NeuPage');
 const { ThreadsPage } = await import('./ThreadsPage');
@@ -182,7 +181,7 @@ function zeige(pfad: string, user: CurrentUser = konto(), sicherungen?: Set<Sich
         path: '/team',
         element: <TeamchatRahmen user={user} />,
         children: [
-          { index: true, element: <TeamChatPage /> },
+          { index: true, element: <GespraechPage /> },
           { path: 'neu', element: <NeuPage /> },
           { path: 'threads', element: <ThreadsPage /> },
           { path: 'gemerkt', element: <GemerktPage /> },
@@ -1315,6 +1314,34 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
         }),
       ),
     );
+  });
+
+  it('läuft am Rechner weiter, wenn man das offene Gespräch in der Liste antippt', async () => {
+    // Am Rechner zeigt `/team` gleich ein Gespräch; der Tipp darauf in der
+    // Liste wechselt nur die Adresse. Baute React die Fläche dabei neu auf,
+    // ging die Aufnahme verloren - in der CI ein wackeliger Ablauftest.
+    const breite = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1280 });
+    const laeuft = () =>
+      screen.queryAllByRole('status').some((s) => /^Aufnahme \d/.test(s.textContent ?? ''));
+    try {
+      const nutzer = userEvent.setup();
+      zeige('/team');
+      await screen.findByRole('textbox', { name: 'Nachricht an # Planung' });
+      await nutzer.click(screen.getByRole('button', SPRACHE));
+      await vi.waitFor(() => expect(laeuft()).toBe(true));
+
+      await nutzer.click(
+        within(screen.getByRole('navigation', { name: 'Gespräche' })).getByRole('link', {
+          name: /# Planung/,
+        }),
+      );
+      expect(screen.getByRole('textbox', { name: 'Nachricht an # Planung' })).toBeInTheDocument();
+      expect(laeuft()).toBe(true);
+      expect(aufnahme.mikrofon.spuren.some((spur) => spur.beendet)).toBe(false);
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: breite });
+    }
   });
 
   it('endet nach zwei Minuten von selbst und hängt an, was da ist (Punkt 83)', async () => {

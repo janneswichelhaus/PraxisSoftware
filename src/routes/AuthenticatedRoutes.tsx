@@ -116,7 +116,6 @@ import { PayReimbursementPage } from '@/features/reimbursements/PayReimbursement
 import { PayoutAccountPage } from '@/features/reimbursements/PayoutAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { RequestReimbursementPage } from '@/features/reimbursements/RequestReimbursementPage';
-import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { TeamchatRahmen } from '@/features/teamchat/TeamchatRahmen';
 import { FlottenNachrichtenPage } from '@/features/teamchat/FlottenNachrichtenPage';
 import { FuerDichPage } from '@/features/teamchat/FuerDichPage';
@@ -565,7 +564,10 @@ export function AuthenticatedRoutes({
                 {isStaff(user.roles) ? (
                   <>
                     <Route path="/team" element={<TeamchatRahmen user={user} />}>
-                      <Route index element={<TeamChatPage />} />
+                      {/* `/team` und ein Gespräch: dieselbe Seite an derselben
+                        Stelle, wie Gespräch und Thread unten - der Tipp auf
+                        das schon offene Gespräch baut nichts neu auf. */}
+                      <Route index element={<GespraechPage />} />
                       <Route path="neu" element={<NeuPage />} />
                       <Route path="threads" element={<ThreadsPage />} />
                       <Route path="gemerkt" element={<GemerktPage />} />
