@@ -910,6 +910,7 @@ function positionsMeta(position: {
   return [
     bereichLabels[position.service_area],
     position.item_kind === 'absence_fee' ? artLabels.absence_fee : null,
+    position.item_kind === 'nutrition_counselling' ? artLabels.nutrition_counselling : null,
     position.item_kind === 'training_package'
       ? `${artLabels.training_package}, ${monateText(position.package_months ?? 0)}`
       : null,
@@ -1124,6 +1125,14 @@ function Positionsformular({
                           tax_rate_permille: STEUERSATZ_VORGABE,
                         }
                       : {}),
+                    // ERN-003 (ANN-622): voreingestellt steuerpflichtig zum
+                    // Regelsatz, bis G13 entscheidet - änderbar (ADR-027 Punkt 15).
+                    ...(art === 'nutrition_counselling'
+                      ? {
+                          tax_treatment: 'taxable' as const,
+                          tax_rate_permille: STEUERSATZ_VORGABE,
+                        }
+                      : {}),
                   });
                   onVerlassen('item_kind');
                 }}
@@ -1132,6 +1141,7 @@ function Positionsformular({
                 <option value="absence_fee">{artLabels.absence_fee}</option>
                 <option value="aftercare_month">{artLabels.aftercare_month}</option>
                 <option value="training_package">{artLabels.training_package}</option>
+                <option value="nutrition_counselling">{artLabels.nutrition_counselling}</option>
               </Select>
             </div>
             {zeile.item_kind === 'training_package' ? (

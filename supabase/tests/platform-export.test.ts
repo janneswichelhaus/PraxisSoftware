@@ -94,6 +94,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
         'checkins',
         // ALT-003: die eigenen Gewohnheiten mit vermerkten Tagen.
         'habits',
+        // ERN-002: die eigene Ernährungsberatung, ohne Notizen der Beratung.
+        'nutrition',
       ].sort(),
     );
     expect(Object.keys(daten.person as object).sort()).toEqual(

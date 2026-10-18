@@ -24,6 +24,7 @@ Endpreise in Euro. Bei steuerpflichtigen Positionen ist die Umsatzsteuer enthalt
 | Personal Training                         | 60 Minuten bei der Person                     | 120            | 19 %                            |
 | Trainingspaket 3 Monate                   | 12 Einheiten à 60 Minuten, Plattform          | 1.290          | 19 %                            |
 | Trainingspaket 6 Monate                   | 24 Einheiten à 60 Minuten, Plattform          | 2.390          | 19 %                            |
+| Ernährungsberatung ³                      | 45 Minuten, je Bereich eine Position          | 75             | 19 % ³                          |
 
 ¹ Steuerfrei nur mit Nachweis des therapeutischen Zwecks, in der Regel einer ärztlichen
 Verordnung. Ohne Verordnung (Direktzugang) gilt nach FG Düsseldorf 1 K 2249/17 U und den
@@ -32,6 +33,9 @@ Diagnose (ANN-541).
 ² Seit ADR-009 Punkt 22 kostet ein Behandlungstermin das Terminhonorar. Die Heilmittelpreise
 teilen es auf der Rechnung nur auf (ANN-233). Als Gewichte dienen etwa das 1,5-fache des GKV-Satzes
 2026.
+³ ADR-027 Punkt 15: keine Heilbehandlung, voraussichtlich steuerpflichtig; bis G13 mit der
+Steuerberatung (B4) ist 19 % nur voreingestellt (ANN-622). Der Preis ist ein Platzhalter ohne
+Marktvergleich.
 
 ## Woher die Zahlen kommen
 

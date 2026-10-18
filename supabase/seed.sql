@@ -336,6 +336,15 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   ('cccccccc-cccc-4ccc-8ccc-000000000016', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 4, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 129000, 'taxable', 190, 'training', 3),
   ('cccccccc-cccc-4ccc-8ccc-000000000017', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 5, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 239000, 'taxable', 190, 'training', 6);
 
+-- ERN-003 (ADR-027 Punkt 15, ANN-622): die Ernährungsberatung je Bereich - die
+-- Rechnung trägt genau einen. Voreingestellt steuerpflichtig zum Regelsatz,
+-- bis die Steuerberatung entscheidet (G13, B4). Preise synthetisch.
+insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area) values
+  ('cccccccc-cccc-4ccc-8ccc-000000000024', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 13, 'ERN',   'Ernährungsberatung (Sitzung)',          'nutrition_counselling', null,  6000, 'taxable', 190, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000025', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 14, 'ERN-T', 'Ernährungsberatung im Training (Sitzung)', 'nutrition_counselling', null,  6000, 'taxable', 190, 'training'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000026', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 12, 'ERN',   'Ernährungsberatung (Sitzung)',          'nutrition_counselling', null,  7500, 'taxable', 190, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000027', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 13, 'ERN-T', 'Ernährungsberatung im Training (Sitzung)', 'nutrition_counselling', null,  7500, 'taxable', 190, 'training');
+
 update public.service_catalog_versions
    set published_at = timestamptz '2025-12-20 09:00:00+01',
        published_by = '11111111-1111-4111-8111-000000000001'
@@ -1191,3 +1200,36 @@ insert into public.fleet_spots
    'load60_riemen', 1, 'riemen', -0.550, 0.397, 0.090, 'problem',
    'Riemen springt über, Spannung zu gering', now() - interval '1 day',
    '11111111-1111-4111-8111-000000000004');
+
+-- -----------------------------------------------------------------------------
+-- Ernährungsberatung (ERN-001, ADR-027) - rein synthetisch
+--
+-- Erika hat eine laufende Beratung an ihrer Akte: Einwilligung vom Papier,
+-- drei Gewichte, Ziel abnehmen. Ihr Trainingsverhältnis hat keine - dort
+-- sieht die Plattform nichts davon (§4.8). Tina und Max haben keine; an ihnen
+-- legt der Ablauftest ein Profil an.
+-- -----------------------------------------------------------------------------
+insert into public.nutrition_profiles
+  (id, organization_id, relationship_kind, relationship_id, patient_id, started_on, height_cm,
+   formula_sex, activity_pal, goal, target_weight_kg, target_weight_source, notes, created_by,
+   updated_by) values
+  ('f0f0f0f0-f0f0-4f0f-8f0f-000000000001', '22222222-2222-4222-8222-000000000001', 'treatment',
+   '66666666-6666-4666-8666-000000000002', '66666666-6666-4666-8666-000000000002',
+   current_date - 21, 168, 'female', 1.4, 'lose', 68.0, 'counsellor',
+   'Frühstück fällt oft aus; abends warm.', '11111111-1111-4111-8111-000000000001',
+   '11111111-1111-4111-8111-000000000001');
+
+insert into public.nutrition_consent_records
+  (organization_id, profile_id, record_kind, occurred_on, recorded_at, recorded_by) values
+  ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+   'consent_granted', current_date - 21, now() - interval '21 days',
+   '11111111-1111-4111-8111-000000000001');
+
+insert into public.nutrition_weight_entries
+  (organization_id, profile_id, measured_on, weight_kg, source, recorded_by) values
+  ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+   current_date - 21, 74.6, 'practice', '11111111-1111-4111-8111-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+   current_date - 14, 74.1, 'practice', '11111111-1111-4111-8111-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+   current_date - 7, 73.5, 'practice', '11111111-1111-4111-8111-000000000001');

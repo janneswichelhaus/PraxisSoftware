@@ -43,7 +43,13 @@ export const katalogPositionSchema = z.object({
   sort_order: z.number(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
+  item_kind: z.enum([
+    'treatment',
+    'absence_fee',
+    'aftercare_month',
+    'training_package',
+    'nutrition_counselling',
+  ]),
   remedy: z.string().nullable(),
   unit_price_cents: z.number(),
   currency: z.string(),
@@ -91,6 +97,8 @@ export const artLabels: Record<KatalogPosition['item_kind'], string> = {
   aftercare_month: 'Nachsorge-Abo (Monat)',
   // ANG-005: das Trainingspaket nach Zeitraum (ADR-009 Punkt 21).
   training_package: 'Trainingspaket',
+  // ERN-003: die Ernährungsberatung, je Bereich eine Position (ADR-027 Punkt 15).
+  nutrition_counselling: 'Ernährungsberatung',
 };
 
 /** ANG-005: eine Laufzeit in Monaten, ausgeschrieben („1 Monat", „3 Monate"). */
@@ -622,7 +630,13 @@ const dokumentSchema = z.object({
       performed_on: z.string(),
       code: z.string(),
       label: z.string(),
-      item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
+      item_kind: z.enum([
+        'treatment',
+        'absence_fee',
+        'aftercare_month',
+        'training_package',
+        'nutrition_counselling',
+      ]),
       quantity: z.number(),
       unit_price_cents: z.number(),
       line_total_cents: z.number(),
@@ -1167,7 +1181,13 @@ const vorschlagSchema = z.object({
   catalog_item_id: z.string(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
+  item_kind: z.enum([
+    'treatment',
+    'absence_fee',
+    'aftercare_month',
+    'training_package',
+    'nutrition_counselling',
+  ]),
   unit_price_cents: z.number(),
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
@@ -1206,7 +1226,13 @@ const leistungSchema = z.object({
   performed_on: z.string(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
+  item_kind: z.enum([
+    'treatment',
+    'absence_fee',
+    'aftercare_month',
+    'training_package',
+    'nutrition_counselling',
+  ]),
   quantity: z.number(),
   unit_price_cents: z.number(),
   currency: z.string(),

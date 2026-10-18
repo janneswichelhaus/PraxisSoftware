@@ -186,6 +186,35 @@ export const ROUTEN = Object.freeze([
     etikett: 'Akte – Stammdaten',
     konten: ['owner', 'office'],
   },
+  // ERN-001: die Ernährungsberatung, nur owner (ADR-027 Punkt 4).
+  {
+    muster: '/patienten/:patientId/ernaehrung',
+    pfad: `${akte(erika)}/ernaehrung`,
+    bereich: 'Akte',
+    etikett: 'Akte – Ernährung',
+    konten: ['owner'],
+  },
+  {
+    muster: '/patienten/:patientId/ernaehrung/neu',
+    pfad: `${akte(max)}/ernaehrung/neu`,
+    bereich: 'Akte',
+    etikett: 'Ernährungsberatung anlegen',
+    konten: ['owner'],
+  },
+  {
+    muster: '/patienten/:patientId/ernaehrung/bearbeiten',
+    pfad: `${akte(erika)}/ernaehrung/bearbeiten`,
+    bereich: 'Akte',
+    etikett: 'Ernährungsprofil ändern',
+    konten: ['owner'],
+  },
+  {
+    muster: '/patienten/:patientId/ernaehrung/zielwerte',
+    pfad: `${akte(erika)}/ernaehrung/zielwerte`,
+    bereich: 'Akte',
+    etikett: 'Zielwerte anpassen',
+    konten: ['owner'],
+  },
   {
     muster: '/patienten/:patientId/verlauf',
     pfad: `${akte(erika)}/verlauf`,
@@ -584,6 +613,30 @@ export const ROUTEN = Object.freeze([
     bereich: 'Übungen und Training',
     etikett: 'Trainingskund:in (Tina)',
     konten: ['owner', 'trainer'],
+  },
+  // ERN-001: die Formulare der Ernährungsberatung im Training (Tina hat keine).
+  {
+    muster: '/training/:relationshipId/ernaehrung/neu',
+    pfad: `/training/${IDS.trainingTina}/ernaehrung/neu`,
+    bereich: 'Übungen und Training',
+    etikett: 'Ernährungsberatung anlegen (Training)',
+    konten: ['owner'],
+  },
+  {
+    muster: '/training/:relationshipId/ernaehrung/bearbeiten',
+    pfad: `/training/${IDS.trainingTina}/ernaehrung/bearbeiten`,
+    bereich: 'Übungen und Training',
+    etikett: 'Ernährungsprofil ändern (Training)',
+    konten: ['owner'],
+    ohneDaten: 'Tina hat im Seed keine Ernährungsberatung.',
+  },
+  {
+    muster: '/training/:relationshipId/ernaehrung/zielwerte',
+    pfad: `/training/${IDS.trainingTina}/ernaehrung/zielwerte`,
+    bereich: 'Übungen und Training',
+    etikett: 'Zielwerte anpassen (Training)',
+    konten: ['owner'],
+    ohneDaten: 'Tina hat im Seed keine Ernährungsberatung.',
   },
   {
     muster: '/training/:relationshipId/plaene/:planId',
@@ -1200,6 +1253,14 @@ export const ROUTEN = Object.freeze([
     pfad: '/p/gewohnheiten?bereich=treatment',
     bereich: 'Plattform',
     etikett: 'Plattform – Gewohnheiten',
+    konten: ['plattform'],
+  },
+  // ERN-002: die eigene Ernährungsberatung (Seed: Erikas Akte); die Begleitung sieht nichts.
+  {
+    muster: '/p/ernaehrung',
+    pfad: '/p/ernaehrung?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Ernährung',
     konten: ['plattform'],
   },
   {

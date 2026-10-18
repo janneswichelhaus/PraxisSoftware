@@ -258,7 +258,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     // AKTE-007: genau vier Bereiche. Verlauf und Befund sind die Doku,
     // Datenschutz ist der Anmeldebogen in den Stammdaten, „Dateien" gibt es
     // nicht mehr.
-    it.each([['therapist'], ['office'], ['owner'], ['team_lead']] as const)(
+    it.each([['therapist'], ['office'], ['team_lead']] as const)(
       'fuehrt fuer %s genau vier Bereiche in fester Reihenfolge',
       async (rolle) => {
         akteRendern([rolle]);
@@ -273,6 +273,22 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         ]);
       },
     );
+
+    // ERN-001 (ANN-620): die Fähigkeit „Ernährungsberatung“ trägt allein owner
+    // (ADR-027 Punkt 4) - nur dort steht „Ernährung“ vor den Stammdaten.
+    it('fuehrt fuer owner dazu die Ernaehrung vor den Stammdaten', async () => {
+      akteRendern(['owner']);
+
+      const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
+      const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
+      expect(eintraege.map((link) => link.textContent)).toEqual([
+        'Termine',
+        'Doku',
+        'Behandlungsgrundlagen',
+        'Ernährung',
+        'Stammdaten',
+      ]);
+    });
 
     it.each([
       ['verlauf', '/doku', ''],

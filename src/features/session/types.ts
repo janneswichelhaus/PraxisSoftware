@@ -372,6 +372,16 @@ export function canDecideStaffRequests(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');
 }
 
+/**
+ * Die Fähigkeit „Ernährungsberatung“ (ERN-001, ADR-027 Punkt 4): zunächst
+ * allein owner - weder Büro noch Therapie noch Trainingsbetreuung, auch nicht
+ * am eigenen Verhältnis. Steuert nur die Darstellung; verbindlich ist
+ * app.can_counsel_nutrition().
+ */
+export function canCounselNutrition(roles: readonly RoleKey[]): boolean {
+  return roles.includes('owner');
+}
+
 export function isOwner(roles: readonly RoleKey[]): boolean {
   return roles.includes('owner');
 }

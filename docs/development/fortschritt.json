@@ -983,7 +983,9 @@
           "id": "ern-epic-001",
           "name": "ERN-EPIC-001 Ernährung: Profil und Bedarf",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-18",
+          "nachweis": "ERN-001 bis ERN-003, Zweitreview"
         },
         {
           "id": "ern-epic-002",

@@ -814,6 +814,9 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // FLT-001: nur ausgemusterte Räder ohne Verlauf (ANN-557); Regel in
       // app.delete_due_fleet_records, Tests in fleet.test.ts.
       'betriebsdaten',
+      // ERN-001: Regel in app.delete_due_nutrition_profiles, Tests in
+      // nutrition.test.ts.
+      'ernaehrungsberatung',
       // ERS-001: Regel in app.delete_due_reimbursements, Tests in
       // reimbursements.test.ts.
       'erstattung',

@@ -221,6 +221,10 @@ describe('Schema-Invarianten', () => {
       'team_messages',
       'team_message_mentions',
       'team_read_states',
+      // ERN-001: Ernährungsprofil, Einwilligung und Gewicht.
+      'nutrition_profiles',
+      'nutrition_consent_records',
+      'nutrition_weight_entries',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

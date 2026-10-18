@@ -83,6 +83,12 @@ import { EntwurfAbmeldewache } from '@/features/offline-documentation/EntwurfAbm
 import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servicePhone';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
+import { AkteErnaehrung } from '@/features/nutrition/ErnaehrungReiter';
+import {
+  ProfilAendernSeite,
+  ProfilAnlegenSeite,
+  ZielwerteSeite,
+} from '@/features/nutrition/ProfilFormular';
 import { BikePage } from '@/features/fleet/BikePage';
 import { BikeNewPage } from '@/features/fleet/BikeNewPage';
 import { DepotsPage } from '@/features/fleet/DepotsPage';
@@ -157,6 +163,7 @@ import {
   canWriteTrainingClients,
   canWriteTreatmentNote,
   isOwner,
+  canCounselNutrition,
   isStaff,
   isTherapyStaff,
   type CurrentUser,
@@ -196,6 +203,8 @@ export function AuthenticatedRoutes({
   const gesperrt = mdrSperre(pathname);
   const showDirectory = canReadPatientDirectory(user.roles);
   const showSecurity = isOwner(user.roles);
+  // ERN-001: die Fähigkeit „Ernährungsberatung“ (ADR-027 Punkt 4).
+  const showNutrition = canCounselNutrition(user.roles);
   const showAppointments = canManageAppointments(user.roles);
   // Wie die Navigation: die Bereiche mit Daten der Behandlungsseite, nicht
   // für ein reines Trainingskonto (TRN-003).
@@ -286,6 +295,11 @@ export function AuthenticatedRoutes({
                       <Route path="doku" element={<PatientDokuPage />} />
                       <Route path="doku/befund" element={<PatientBefundSeite />} />
                       <Route path="stammdaten" element={<PatientMasterDataPage />} />
+                      {/* ERN-001: Ernährung nur für die Fähigkeit „Ernährungsberatung“;
+                    verbindlich prüft der Server (ADR-027 Punkt 4). */}
+                      {showNutrition ? (
+                        <Route path="ernaehrung" element={<AkteErnaehrung />} />
+                      ) : null}
                       {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
                         <Route
                           key={alt}
@@ -297,6 +311,23 @@ export function AuthenticatedRoutes({
                       ))}
                     </Route>
                     <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+                    {/* ERN-001: die Formulare der Ernährungsberatung neben dem Rahmen (UX-009). */}
+                    {showNutrition ? (
+                      <>
+                        <Route
+                          path="/patienten/:patientId/ernaehrung/neu"
+                          element={<ProfilAnlegenSeite art="treatment" user={user} />}
+                        />
+                        <Route
+                          path="/patienten/:patientId/ernaehrung/bearbeiten"
+                          element={<ProfilAendernSeite art="treatment" user={user} />}
+                        />
+                        <Route
+                          path="/patienten/:patientId/ernaehrung/zielwerte"
+                          element={<ZielwerteSeite art="treatment" />}
+                        />
+                      </>
+                    ) : null}
                     {/* UEB-EPIC-002: ein Übungsplan der Akte - neben dem Rahmen, wie
                   die Formulare (UX-009). Lesen alle vier Praxisrollen, schreiben
                   therapist und team_lead (ANN-298); verbindlich prüft der Server. */}
@@ -805,6 +836,23 @@ export function AuthenticatedRoutes({
                       path="/training/:relationshipId"
                       element={<TrainingClientPage user={user} />}
                     />
+                    {/* ERN-001: die Formulare der Ernährungsberatung im Training. */}
+                    {showNutrition ? (
+                      <>
+                        <Route
+                          path="/training/:relationshipId/ernaehrung/neu"
+                          element={<ProfilAnlegenSeite art="training" user={user} />}
+                        />
+                        <Route
+                          path="/training/:relationshipId/ernaehrung/bearbeiten"
+                          element={<ProfilAendernSeite art="training" user={user} />}
+                        />
+                        <Route
+                          path="/training/:relationshipId/ernaehrung/zielwerte"
+                          element={<ZielwerteSeite art="training" />}
+                        />
+                      </>
+                    ) : null}
                     {/* UEB-EPIC-002: ein Trainingsplan - owner und Trainingsbetreuung, seit ABN-030
                   lesend auch das Büro (ANN-298). Verbindlich prüft der Server. */}
                     {canReadExercisePlans(user.roles, 'training') ? (
