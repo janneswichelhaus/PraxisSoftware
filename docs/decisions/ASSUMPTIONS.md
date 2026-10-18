@@ -6506,3 +6506,15 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 **Anker.** `aktenBereiche` in `src/features/patients/akte.ts`; Reiter in `TrainingClientPage.tsx`.
 
 **Änderungspfad.** Abschnitt statt Reiter: zwei Stellen und die Routen · Aufwand `klein`.
+
+### ANN-621 — Gewicht und Beratung auf der Plattform
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Die Person trägt ihr Gewicht für heute ein; je Tag gilt ein Gewicht, der jüngste Eintrag ersetzt den des Tages, auch einen der Beratung, und nennt, wer eingetragen hat. Die Plattform zeigt nur die laufende Beratung; nach ihrem Ende verschwindet sie dort, bleibt im Export. Die Einsicht der Praxis zeigt die Ernährung nicht.
+
+**Begründung.** ADR-027 Punkt 5 (Verlauf), Punkt 2 (Ende durch die Beratung); klassische Tracker führen ein Gewicht je Tag.
+
+**Anker.** `public.record_platform_nutrition_weight`.
+
+**Änderungspfad.** Mehrere Gewichte je Tag: Constraint und diese Funktion · Aufwand `klein`.

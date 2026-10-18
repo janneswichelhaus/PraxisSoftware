@@ -21,7 +21,8 @@ import {
  * Öffnen von Akte bzw. Trainingsverhältnis im Protokoll.
  */
 
-export type Verhaeltnisart = 'treatment' | 'training';
+export type { Verhaeltnisart } from './eingabe';
+import type { Verhaeltnisart } from './eingabe';
 
 const profilSchema = z.object({
   id: z.string(),

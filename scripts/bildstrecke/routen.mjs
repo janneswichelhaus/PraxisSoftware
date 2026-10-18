@@ -1230,6 +1230,14 @@ export const ROUTEN = Object.freeze([
     etikett: 'Plattform – Gewohnheiten',
     konten: ['plattform'],
   },
+  // ERN-002: die eigene Ernährungsberatung (Seed: Erikas Akte); die Begleitung sieht nichts.
+  {
+    muster: '/p/ernaehrung',
+    pfad: '/p/ernaehrung?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Ernährung',
+    konten: ['plattform'],
+  },
   {
     muster: '/p/angaben',
     pfad: '/p/angaben?bereich=treatment',

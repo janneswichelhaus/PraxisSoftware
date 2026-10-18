@@ -111,3 +111,11 @@ export function einwilligungVon(
     ? `auf der Plattform von ${vertretung} (rechtliche Vertretung)`
     : 'auf der Plattform von der Person selbst';
 }
+
+/**
+ * Der Wortlaut der Einwilligung „Ernährungsberatung“ auf der Plattform
+ * (ADR-027 Punkt 3) - Fassung wie `app.platform_consent_wording_version()`.
+ * Geprüft wird er mit den übrigen Einwilligungstexten in B2.
+ */
+export const ERNAEHRUNG_EINWILLIGUNG =
+  'Ich willige ein, dass die Praxis meine Angaben zu Ernährung und Körpergewicht – Profil, Zielwerte, Gewicht und Tagebuch – für die Ernährungsberatung verarbeitet (Art. 9 Abs. 2 lit. a DSGVO). Die Einwilligung ist freiwillig und jederzeit widerrufbar. Nach einem Widerruf wird nichts mehr eingetragen; was mit den bisherigen Angaben geschieht, klärt die Praxis mit mir.';

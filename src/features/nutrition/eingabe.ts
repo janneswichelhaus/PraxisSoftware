@@ -1,4 +1,5 @@
-import type { Verhaeltnisart } from './api';
+/** Akte oder Trainingsverhältnis (ADR-021). */
+export type Verhaeltnisart = 'treatment' | 'training';
 
 /** „72,5“ und „72.5“ gelten beide; leer heißt keine Angabe. */
 export function leseZahl(text: string): number | null {

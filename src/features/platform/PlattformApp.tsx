@@ -15,6 +15,7 @@ import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
   BEREICHSNAME,
   aboSchluessel,
+  ernaehrungSchluessel,
   einstiegSchluessel,
   paketeSchluessel,
   vertragSchluessel,
@@ -39,6 +40,8 @@ import { Paket } from './Paket';
 import { Befundbogen } from './Befundbogen';
 import { Checkin, MeineAngaben } from './Checkin';
 import { Gewohnheiten } from './Gewohnheiten';
+import { Ernaehrung } from './Ernaehrung';
+import { zahl as zahlDeutsch } from '@/features/nutrition/texte';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
 import { Einstieg } from './Einstieg';
@@ -313,6 +316,18 @@ function Geruest({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Gewohnheiten zugang={z} />}
+              />
+            }
+          />
+          {/* ERN-002: die eigene Ernährungsberatung (ADR-027) - ohne Beratung oder
+              für eine Begleitung gibt der Server nichts. */}
+          <Route
+            path={`${PLATTFORM_PFAD}/ernaehrung`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Ernaehrung zugang={z} />}
               />
             }
           />
@@ -812,6 +827,8 @@ function IchBereich({
       {lesbar ? <ListRow to={ziel('angaben')} titel="Antworten aus dem Check-in" /> : null}
       {/* ALT-003: die eigenen Gewohnheiten, auch ohne Kachel erreichbar. */}
       {lesbar ? <ListRow to={ziel('gewohnheiten')} titel="Gewohnheiten" /> : null}
+      {/* ERN-002: nur mit laufender Beratung - die Zeile fragt den Server. */}
+      {lesbar && z.access_kind !== 'companion' ? <ErnaehrungZeile zugang={z} /> : null}
       {lesbar && z.relationship_kind === 'treatment' ? <AboZeile zugang={z} /> : null}
       {lesbar && z.relationship_kind === 'training' ? <PaketZeile zugang={z} /> : null}
       {lesbar && z.relationship_kind === 'training' ? <VertragZeile zugang={z} /> : null}
@@ -825,6 +842,28 @@ function IchBereich({
         <ListRow titel="Meine Daten" meta="Ihre Daten bekommen Sie jetzt bei der Praxis." />
       ) : null}
     </Listenabschnitt>
+  );
+}
+
+/**
+ * Die Ernährungsberatung unter „Ich" (ERN-002): nur, wenn eine läuft und der
+ * Zugang sie sehen darf; sonst keine Zeile.
+ */
+function ErnaehrungZeile({ zugang }: { zugang: Plattformzugang }) {
+  const api = usePlattformApi();
+  const { data } = useQuery({
+    queryKey: ernaehrungSchluessel(zugang.access_id),
+    queryFn: () => api.ladeErnaehrung(zugang.access_id),
+    retry: false,
+  });
+  if (!data) return null;
+  const z = data.profile.targets;
+  return (
+    <ListRow
+      to={`${PLATTFORM_PFAD}/ernaehrung?${wahlSuche(zugang)}`}
+      titel="Ernährung"
+      meta={z.status === 'ok' ? `Energie am Tag: ${zahlDeutsch(z.energy.kcal)} kcal` : undefined}
+    />
   );
 }
 

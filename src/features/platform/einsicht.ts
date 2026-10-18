@@ -132,6 +132,11 @@ export type PlattformApi = Pick<
   | 'ladeGewohnheiten'
   | 'gewohnheitVermerken'
   | 'gewohnheitPausieren'
+  | 'ladeErnaehrung'
+  | 'ernaehrungGewichtEintragen'
+  | 'ernaehrungZielgewichtSetzen'
+  | 'ernaehrungTagebuchSchalten'
+  | 'ernaehrungEinwilligen'
 >;
 
 /** Endet jeden schreibenden Weg der Einsicht - ohne Netz, ohne Vorarbeit. */
@@ -196,6 +201,13 @@ export function einsichtsApi(zugangId: string, quelle: Einsichtsquelle): Plattfo
     checkinAbsenden: gesperrt,
     gewohnheitVermerken: gesperrt,
     gewohnheitPausieren: gesperrt,
+    // ERN-002: Die Ernährung liest die Einsicht nicht - in der Praxis liest
+    // sie nur die Beratung (ADR-027 Punkt 4), und das an ihrem eigenen Ort.
+    ladeErnaehrung: gesperrt,
+    ernaehrungGewichtEintragen: gesperrt,
+    ernaehrungZielgewichtSetzen: gesperrt,
+    ernaehrungTagebuchSchalten: gesperrt,
+    ernaehrungEinwilligen: gesperrt,
   };
 }
 
