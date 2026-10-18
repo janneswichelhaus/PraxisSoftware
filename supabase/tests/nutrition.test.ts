@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
  * Ernährungsprofil in der Praxis (ERN-001, ADR-027 Abschnitt A, ADR-021
@@ -747,5 +748,34 @@ describe('Ernährungsprofil: Zusammenführen (ERN-001)', () => {
         [id],
       ),
     ).toBe(vorher);
+  });
+});
+
+/** Zusammenführen neben einem gleichzeitigen Anlegen: dieselbe Sperre je Person. */
+describe('Ernährungsprofil: Zusammenführen neben dem Anlegen (ERN-001)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    await asPostgres('delete from public.nutrition_profiles');
+  }, 120_000);
+
+  it('wartet auf das Anlegen bei der bleibenden Person und sperrt dann', async () => {
+    // Maxens Profil zöge zu Erika; währenddessen legt die Beratung eines an
+    // Erikas Trainingsverhältnis an. Das Zusammenführen wartet auf diese
+    // Sperre und sieht danach zwei laufende Profile (ADR-027 Punkt 1).
+    await anlegen('treatment', patients.max);
+    const ergebnis = await gleichzeitig(
+      {
+        konto: users.ownerTherapist,
+        sql: ANLEGEN,
+        params: parameter('training', trainingRelationships.erika, await heute()),
+      },
+      {
+        konto: users.ownerTherapist,
+        sql: 'select public.merge_patients($1::uuid, $2::uuid)',
+        params: [patients.max, patients.erika],
+      },
+    );
+    expect(ergebnis?.code).toBe('22023');
+    expect(ergebnis?.message).toContain('nutrition_profile_overlap');
   });
 });

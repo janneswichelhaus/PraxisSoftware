@@ -572,7 +572,7 @@ values
 insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
 values
   ('nutrition_profiles', 'ernaehrungsberatung', 'automatisch',
-   'Ernährungsprofil (ERN-001): drei Jahre nach seinem Ende endgültig gelöscht, mit Eintrag im Löschjournal; mit dem Verhältnis früher (cascade). Ein Legal Hold an der Akte hält (ANN-619).',
+   'Ernährungsprofil (ERN-001): drei Jahre nach seinem Ende endgültig gelöscht, mit Eintrag im Löschjournal; mit dem Verhältnis früher (cascade, am Trainingsverhältnis auch mit der Teillöschung unter Belegfrist). Ein Legal Hold an der Akte hält (ANN-619).',
    241),
   ('nutrition_consent_records', 'ernaehrungsberatung', 'ueber_elterndatensatz',
    'Einwilligung "Ernährungsberatung" (ERN-001): fällt mit ihrem Profil; der Nachweis wird so lange gebraucht wie die Angaben, die auf ihr beruhen.',
@@ -3069,7 +3069,9 @@ begin
   for update;
   -- ERN-001: dieselbe Sperre je Person wie beim Anlegen eines
   -- Ernaehrungsprofils - zwischen Plan und Umzug entsteht so keine zweite
-  -- laufende Beratung der bleibenden Person (ADR-027 Punkt 1).
+  -- laufende Beratung der bleibenden Person (ADR-027 Punkt 1). NACH den
+  -- Zeilensperren, wie dort: Das Anlegen sperrt erst die Zeile seines
+  -- Verhaeltnisses, dann die Person - dieselbe Reihenfolge verklemmt nicht.
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('nutrition:' || p.person_id::text, 0))
   from public.patients p
