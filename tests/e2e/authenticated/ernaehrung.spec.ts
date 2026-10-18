@@ -46,7 +46,7 @@ test('Profil an der Akte in höchstens vier Tipps plus Felder, Zielwerte mit Rec
   await page.getByText('Abnehmen', { exact: true }).click();
   await z.tippe(page.getByRole('button', { name: 'Profil anlegen' }));
 
-  await expect(page).toHaveURL(new RegExp(`/patienten/${PATIENTEN.max}/ernaehrung$`));
+  await expect(page).toHaveURL((url) => url.pathname === `/patienten/${PATIENTEN.max}/ernaehrung`);
   await expect(page.getByRole('heading', { name: 'Zielwerte' })).toBeVisible();
   test.info().annotations.push({ type: 'ERN-EPIC-001', description: `${z.tipps} Tipps + Felder` });
   expect(z.tipps).toBeLessThanOrEqual(4);

@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Ernährungsberatung geplant (18.10., Branch `claude/modest-brown-7b15rr`, nur Doku): ADR-027, Prinzipien
-0.28 (§4.11), ADR-006 Fassung 4 (Formeln), ADR-008 Fassung 6, ADR-021 Fassung 4; ALT-EPIC-002 ersetzt
-durch ERN-EPIC-001 bis -006.
+ERN-EPIC-001 Ernährung, Profil und Bedarf (18.10., Branch `claude/admiring-ride-acixsl`): Profil an Akte
+oder Training nur für owner, eigene Einwilligung, Zielwerte mit Rechenweg und Überschreibung, Gewicht,
+Plattform mit Tagebuch-Schalter, Position „Ernährungsberatung“; Datenklasse 3 Jahre; ANN-618 bis ANN-622.
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -33,7 +33,7 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes ERN-EPIC-001 bis -003 (je `/feature-loop`), dann eine Politurrunde; BEF-146, -147, -148, -150.
+ERN-EPIC-002 und -003 (je `/feature-loop`), dann eine Politurrunde; BEF-146, -147, -148, -150.
 
 ## Bei Jannes
 
@@ -60,6 +60,6 @@ Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes ERN-EPIC-001 bis -003 
 
 ## Letzte Session
 
-17.10.2026, Branch `ccr-0d8db4ad-3ufjj1`: Migrationen `20261205100000_bef_181_ladestrom_aus_touren` und
-`20261205110000_wochenplan_in_einem_zug`, neue Edge Function `electricity-distance`. **Lokal:** `git pull`,
-`supabase db reset`.
+18.10.2026, Branch `claude/admiring-ride-acixsl`: Migrationen `20261206100000_ern_001_ernaehrungsprofil`,
+`20261206110000_ern_002_plattform_ernaehrung`, `20261206120000_ern_003_katalogposition`. **Lokal:**
+`git pull`, `supabase db reset`.
