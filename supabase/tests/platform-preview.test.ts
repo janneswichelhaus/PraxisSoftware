@@ -492,6 +492,28 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     params: () => [E],
     gelingtDerPerson: true,
   },
+  // ERN-002: die Ernährung an Erikas Akte (Seed: laufend, mit Einwilligung).
+  record_platform_nutrition_weight: {
+    sql: `select public.record_platform_nutrition_weight($1::uuid,
+            (now() at time zone 'Europe/Berlin')::date, 72.4)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  set_platform_nutrition_target_weight: {
+    sql: 'select public.set_platform_nutrition_target_weight($1::uuid, 66)',
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  set_platform_nutrition_diary: {
+    sql: 'select public.set_platform_nutrition_diary($1::uuid, true)',
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  record_platform_nutrition_consent: {
+    sql: 'select public.record_platform_nutrition_consent($1::uuid, false, $2)',
+    params: (_v, f) => [E, f],
+    gelingtDerPerson: true,
+  },
 };
 
 /**
@@ -508,6 +530,8 @@ const KEIN_SCHREIBWEG_DER_PERSON: Readonly<Record<string, string>> = {
   revoke_platform_access: 'Praxisseite, eigene Rollenprüfung',
   renew_platform_representation_code: 'Praxisseite, eigene Rollenprüfung',
   record_companion_consent_withdrawn: 'Praxisseite, eigene Rollenprüfung',
+  platform_nutrition:
+    'lesend, aber nicht in der Einsicht: die Ernährung liest in der Praxis nur die Beratung (ERN-002, ADR-027 Punkt 4)',
 };
 
 describe('Einsicht der Praxisinhaber:in (E-001)', () => {

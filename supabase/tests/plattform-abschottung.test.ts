@@ -114,6 +114,18 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Tag einer eigenen Gewohnheit vermerken (ALT-003); ohne Recht checkin abgewiesen (42501), Negativfälle in habits.test.ts',
   'public.pause_platform_habit':
     'Eigene Gewohnheit pausieren (ALT-003); ohne Recht checkin abgewiesen (42501), Negativfälle in habits.test.ts',
+  // ERN-002: Ernährung auf der Plattform - Recht nutrition (Person, rechtliche
+  // Vertretung, nie die Begleitung); Negativfälle in platform-nutrition.test.ts.
+  'public.platform_nutrition':
+    'Eigene laufende Ernährungsberatung (ERN-002); ohne Recht null, Negativfälle in platform-nutrition.test.ts',
+  'public.record_platform_nutrition_weight':
+    'Eigenes Gewicht eintragen (ERN-002); ohne Recht abgewiesen (42501)',
+  'public.set_platform_nutrition_target_weight':
+    'Eigenes Zielgewicht wählen (ERN-002); ohne Recht abgewiesen (42501)',
+  'public.set_platform_nutrition_diary':
+    'Eigenes Tagebuch ein- und ausschalten (ERN-002); ohne Recht abgewiesen (42501)',
+  'public.record_platform_nutrition_consent':
+    'Einwilligung Ernährungsberatung erteilen oder widerrufen (ERN-002); ohne Recht abgewiesen (42501)',
   'public.finish_platform_exercise_session':
     'Einheit beenden (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.

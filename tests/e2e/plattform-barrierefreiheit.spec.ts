@@ -59,6 +59,8 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string; fenster?: true }[] =
   { seite: 'angebot-wartet', merkmal: 'Training nach Ihrer Behandlung' },
   { seite: 'angebot-uebersicht', merkmal: 'Guten Tag' },
   { seite: 'vertrag', merkmal: 'Trainingsvertrag' },
+  // ERN-002: Ernährung mit Gewicht, Zielwerten und den eingeklappten Einstellungen.
+  { seite: 'ernaehrung', merkmal: 'Ernährung' },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string, fenster = false) {

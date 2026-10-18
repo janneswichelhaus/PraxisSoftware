@@ -170,6 +170,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Die mit der Praxis vereinbarten Gewohnheiten mit Auslöser und Ort, ob pausiert oder beendet, und die Tage, an denen die Person sie vermerkt hat.',
   },
+  nutrition_profiles: {
+    label: 'Ernährungsberatung',
+    beschreibung:
+      'Ernährungsprofil mit Körperdaten, Ziel, Zielwerten samt Rechenweg, Notizen der Beratung, Einwilligung mit Verlauf und Gewichtsverlauf.',
+  },
   platform_messages: {
     label: 'Nachrichten über die Plattform',
     beschreibung:

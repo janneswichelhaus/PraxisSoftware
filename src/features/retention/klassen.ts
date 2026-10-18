@@ -189,6 +189,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Nachrichten in Kanälen und Direktnachrichten. Zwölf Monate ab ihrem Tag, dann endgültig gelöscht; Dauerhaftes gehört in den Fachprozess.',
   },
+  ernaehrungsberatung: {
+    label: 'Ernährungsberatung',
+    beschreibung:
+      'Ernährungsprofil mit Einwilligung, Zielwerten und Gewicht. Eigene Frist neben Akte und Training: drei Jahre nach dem Ende der Beratung.',
+  },
   stammdaten_praxis: {
     label: 'Praxisstammdaten',
     beschreibung: 'Organisation und Standorte.',
@@ -213,6 +218,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
 export const ANKER_TEXTE: Record<string, string> = {
   care_concluded: 'ab Abschluss der Versorgung',
   contract_ended: 'ab Ende des Vertrages',
+  counselling_ended: 'ab Ende der Beratung',
   calendar_year_end: 'ab Ende des Kalenderjahres',
   event_time: 'ab dem Ereignis',
   case_closed: 'ab Abschluss des Vorgangs',

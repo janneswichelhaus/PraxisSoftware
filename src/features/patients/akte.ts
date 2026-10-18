@@ -1,5 +1,6 @@
 import { useOutletContext } from 'react-router-dom';
 import {
+  canCounselNutrition,
   canManageAppointments,
   canReadTreatmentBases,
   canReadTreatmentNote,
@@ -43,7 +44,8 @@ export const EINWILLIGUNGEN_ANKER = 'einwilligungen';
 
 /**
  * Die Bereiche der Akte in der Reihenfolge des Arbeitstags - genau vier
- * (AKTE-007, Jannes 2026-10-03).
+ * (AKTE-007, Jannes 2026-10-03); mit der Fähigkeit „Ernährungsberatung“
+ * fünf (ANN-620, Jannes 2026-10-18).
  *
  * Termine zuerst, weil dort gearbeitet wird. Stammdaten zuletzt, weil sie sich
  * am seltensten ändern - sie sind die Auskunft, die man einmal bei der
@@ -83,6 +85,11 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
     // Der Bereich zeigt beide Bauarten, deshalb steht hier das Oberwort
     // (ADR-020 Punkt 7). Das Adressfragment bleibt `verordnungen` (ANN-062).
     bereiche.push({ to: `${basis}/verordnungen`, label: 'Behandlungsgrundlagen' });
+  }
+  // ERN-001 (ANN-620): Ernährung nur für die Fähigkeit „Ernährungsberatung“
+  // (owner) - für alle anderen Rollen bleibt es bei den vier Bereichen.
+  if (canCounselNutrition(user.roles)) {
+    bereiche.push({ to: `${basis}/ernaehrung`, label: 'Ernährung' });
   }
   bereiche.push({ to: `${basis}/stammdaten`, label: 'Stammdaten' });
 

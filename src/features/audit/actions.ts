@@ -158,6 +158,8 @@ export const auditOperationLabels: Record<string, string> = {
   'invoicing.read': 'Abrechnung gelesen',
   'legal_hold.placed': 'Löschsperre gesetzt',
   'legal_hold.released': 'Löschsperre aufgehoben',
+  // ERN-001: Abweisung des Ernährungsprofils (keine neue Aktion, ADR-027 Punkt 4).
+  'nutrition.read': 'Ernährungsberatung gelesen',
   'legal_holds.read': 'Löschsperren gelesen',
   'patient.merged': 'Dublette in die Akte übernommen',
   'patient_course_event.viewed': 'Ereignisse im Verlauf gelesen',

@@ -34,9 +34,12 @@ export function ConsentWithdrawals() {
 }
 
 function personPfad(w: ConsentWithdrawal): string | null {
-  if (w.relationship_kind === 'treatment' && w.patient_id) return `/patienten/${w.patient_id}`;
+  // ERN-002: ein Widerruf der Ernährungsberatung führt in ihren Reiter.
+  const ernaehrung = w.purpose === 'nutrition_counselling';
+  if (w.relationship_kind === 'treatment' && w.patient_id)
+    return `/patienten/${w.patient_id}${ernaehrung ? '/ernaehrung' : ''}`;
   if (w.relationship_kind === 'training' && w.training_relationship_id)
-    return `/training/${w.training_relationship_id}`;
+    return `/training/${w.training_relationship_id}${ernaehrung ? '?bereich=ernaehrung' : ''}`;
   return null;
 }
 

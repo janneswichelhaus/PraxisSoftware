@@ -5,6 +5,7 @@ import type { PushRegistrierung } from '@/lib/push';
 import { getSupabase } from '@/lib/supabase';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
+import { GESCHLECHTER, ZIELE, zielwerteSchema } from '@/features/nutrition/zielwerte';
 import { bereinigeVideo } from './videometadaten';
 
 /**
@@ -1828,4 +1829,139 @@ export async function gewohnheitPausieren(
     p_paused: pausiert,
   })) as { error: { message?: string } | null };
   if (error) throw gewohnheitsfehler(error.message);
+}
+
+// -----------------------------------------------------------------------------
+// ERN-002: Ernährung (ADR-027) - die eigene laufende Beratung, Gewicht,
+// Zielgewicht, Tagebuch und Einwilligung. Die Begleitung bekommt nichts
+// (Recht nutrition); gerechnet hat der Server (`app.nutrition_calculation`).
+// -----------------------------------------------------------------------------
+
+const eigeneErnaehrungSchema = z.object({
+  today: z.string(),
+  can_write: z.boolean(),
+  can_grant: z.boolean(),
+  wording_version: z.string(),
+  target_weight_floor_kg: z.number(),
+  profile: z.object({
+    started_on: z.string(),
+    ended_on: z.string().nullable(),
+    height_cm: z.number(),
+    formula_sex: z.enum(GESCHLECHTER),
+    body_fat_percent: z.number().nullable(),
+    activity_pal: z.number(),
+    goal: z.enum(ZIELE),
+    target_weight_kg: z.number().nullable(),
+    target_weight_source: z.enum(['counsellor', 'person']).nullable(),
+    diary_enabled: z.boolean(),
+    diary_changed_at: z.string().nullable(),
+    consent: z
+      .object({
+        state: z.enum(['granted', 'withdrawn']),
+        occurred_on: z.string(),
+        source: z.enum(['practice', 'platform']),
+      })
+      .nullable(),
+    weights: z.array(
+      z.object({
+        measured_on: z.string(),
+        weight_kg: z.number(),
+        source: z.enum(['practice', 'platform']),
+      }),
+    ),
+    targets: zielwerteSchema,
+  }),
+});
+
+export type EigeneErnaehrung = z.infer<typeof eigeneErnaehrungSchema>;
+
+export function ernaehrungSchluessel(zugangId: string) {
+  return ['platform-nutrition', zugangId] as const;
+}
+
+/** Die eigene laufende Beratung; `null` heißt: keine oder ohne Recht. */
+export async function ladeErnaehrung(
+  zugangId: string,
+  verbindung: Verbindung = DIREKT,
+): Promise<EigeneErnaehrung | null> {
+  const satz = 'Ihre Ernährung konnte nicht geladen werden.';
+  const ergebnis = await verbindung.rpc('platform_nutrition', { p_access_id: zugangId });
+  if (ergebnis.error) throw new Error(satz);
+  const daten = ergebnis.data as { profile?: unknown } | null;
+  if (daten === null || daten.profile === null || daten.profile === undefined) return null;
+  return antwort(eigeneErnaehrungSchema, daten, satz);
+}
+
+function ernaehrungsfehler(meldung: string | undefined): Error {
+  const m = meldung ?? '';
+  if (m.includes('below floor'))
+    return new Error('Dieses Zielgewicht liegt unter der Grenze. Bitte ein höheres wählen.');
+  if (m.includes('future')) return new Error('Das Datum liegt in der Zukunft.');
+  if (m.includes('before')) return new Error('Das Datum liegt vor dem Beginn der Beratung.');
+  if (m.includes('check constraint') || m.includes('violates'))
+    return new Error('Bitte das Gewicht in kg angeben, zwischen 20 und 350.');
+  if (m.includes('not found')) return new Error('Ihre Praxis hat die Beratung beendet.');
+  if (m.includes('wording outdated'))
+    return new Error('Der Text der Einwilligung hat sich geändert. Bitte die Seite neu laden.');
+  if (m.includes('consent') || m.includes('not allowed'))
+    return new Error('Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.');
+  return new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+/** Ein Fehler des Servers als Satz für die Person. */
+function ernaehrungsergebnis(antwort: { error: { message?: string } | null }): void {
+  if (antwort.error) throw ernaehrungsfehler(antwort.error.message);
+}
+
+/** Das eigene Gewicht eintragen, eines je Tag (ADR-027 Punkt 5). */
+export async function ernaehrungGewichtEintragen(
+  zugangId: string,
+  tag: string,
+  gewicht: number,
+): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('record_platform_nutrition_weight', {
+      p_access_id: zugangId,
+      p_measured_on: tag,
+      p_weight_kg: gewicht,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Das Zielgewicht wählen; `null` nimmt es zurück (ADR-027 Punkt 21). */
+export async function ernaehrungZielgewichtSetzen(
+  zugangId: string,
+  zielgewicht: number | null,
+): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('set_platform_nutrition_target_weight', {
+      p_access_id: zugangId,
+      p_target_weight_kg: zielgewicht,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Das Tagebuch ein- oder ausschalten (ADR-027 Punkt 2). */
+export async function ernaehrungTagebuchSchalten(zugangId: string, an: boolean): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('set_platform_nutrition_diary', {
+      p_access_id: zugangId,
+      p_enabled: an,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Die Einwilligung „Ernährungsberatung“ erteilen oder widerrufen (ADR-027 Punkt 3). */
+export async function ernaehrungEinwilligen(
+  zugangId: string,
+  erteilen: boolean,
+  fassung: string,
+): Promise<void> {
+  ernaehrungsergebnis(
+    (await getSupabase().rpc('record_platform_nutrition_consent', {
+      p_access_id: zugangId,
+      p_grant: erteilen,
+      p_wording_version: fassung,
+    })) as { error: { message?: string } | null },
+  );
 }

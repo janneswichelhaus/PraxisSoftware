@@ -8,7 +8,7 @@ Ablaufrunden ([`../development/archiv/OPTIMIERUNG.md`](../development/archiv/OPT
 Scorecard) und der Referenzabgleich vom 2026-10-12 (Jane, Cliniko, Physitrack, appointmed, iPrax).
 
 **Zählweise.** Bei 375 px auf synthetischen Seed-Daten. Ein **Tipp** ist eine Berührung (Knopf,
-Link, Auswahl, Kästchen); getippter Text steht als „+ Text“. Ein **Wechsel** ist eine neue Route
+Link, Auswahl, Kästchen); getippter Text steht als „+ Text“. **Seit 2026-10-18** (Jannes, ERN-EPIC-001): Steht im Budget „+ Felder“, zählt jede Angabe in einem Formular als Feld – Text, Auswahl, Kästchen, Wahlreihe; Tipps sind der Weg zum Formular und das Absenden. Ältere Werte sind strenger gezählt und bleiben gültig. Ein **Wechsel** ist eine neue Route
 oder App. Gemessen wird die Software per Playwright, kein Mensch (§20 bleibt unberührt). „Heute“
 ist am 2026-10-12 aus Code und Prüfseiten **gezählt**, nicht gemessen; ein Ablauftest ersetzt die
 Zahl, sobald es ihn gibt. „C1“: nachgezogen am 2026-10-13 nach dem Auftrag „Besuch in einem Zug“; „R2“: am 2026-10-14 nach den Restbefunden der Praxis-Prüfung; „E3“: am 2026-10-15 nach „Erstaufnahme geführt“; „M4“: am 2026-10-15 nach „Monatsabrechnung in einem Lauf“.
