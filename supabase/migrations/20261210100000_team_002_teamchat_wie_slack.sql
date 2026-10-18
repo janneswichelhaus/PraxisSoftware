@@ -466,12 +466,14 @@ as $$
 $$;
 
 -- Ungesendete, geplante Nachrichten (ANN-643) fallen, sobald sie nicht mehr
--- erscheinen dürfen: wenn ihre Verfasser:in das Gespräch verlässt, daraus
--- genommen wird oder ausscheidet, und mit dem Archivieren des Gesprächs.
--- Sonst erschienen sie später, und niemand könnte sie mehr löschen
--- (Zweitreview TEAM-002, Befund 1). Ins Löschjournal wie das eigene Löschen,
--- damit ein Restore sie nicht zurückbringt. Ohne Gespräch: in allen; ohne
--- Person: von allen.
+-- erscheinen dürfen: wenn ihre Verfasser:in das Gespräch verlässt oder daraus
+-- genommen wird und mit dem Archivieren des Gesprächs - sofort. Sonst
+-- erschienen sie später, und niemand könnte sie mehr löschen (Zweitreview
+-- TEAM-002, Befund 1). Ins Löschjournal wie das eigene Löschen, damit ein
+-- Restore sie nicht zurückbringt. Ohne Gespräch: in allen; ohne Person: von
+-- allen. Prüft selbst nichts - nur für Aufrufer, die geprüft haben; kein
+-- Recht für Anwendungsrollen. Was mit dem Ausscheiden oder einer Sperre
+-- fällt, räumt der tägliche Lauf ab (`app.delete_due_team_messages`).
 create function app.team_drop_scheduled(p_org uuid, p_channel uuid, p_staff uuid)
 returns void
 language plpgsql
@@ -2276,13 +2278,27 @@ begin
   using public.staff_members sm
   where cs.organization_id = p_org and sm.id = cs.staff_member_id
     and sm.employment_status <> 'active';
-  -- Noch nicht Gesendetes Ausgeschiedener erscheint nicht mehr (Befund 1 des
-  -- Zweitreviews) - mit Journal, über `app.team_drop_scheduled`.
-  perform app.team_drop_scheduled(p_org, null, sm.id)
-  from public.staff_members sm
-  where sm.organization_id = p_org and sm.employment_status <> 'active'
-    and exists (select 1 from public.team_messages m
-                where m.author_staff_member_id = sm.id and m.created_at > now());
+  -- Noch nicht Gesendetes erscheint nicht mehr, wenn die Verfasser:in nicht
+  -- mehr teilnimmt (Ausscheiden, gesperrtes Konto, entzogene Rolle) oder das
+  -- Gespräch nicht mehr liest (die Radflotte nach einem Rollenwechsel) -
+  -- Zweitreview TEAM-002, Befund 1 beider Runden. Mit Journal unter diesem
+  -- Lauf. Verlassen, Herausnehmen und Archivieren wirken sofort
+  -- (`app.team_drop_scheduled`); was zwischen Sperre und Lauf fällig wird,
+  -- erscheint (ANN-643).
+  with geloescht as (
+    delete from public.team_messages m
+    where m.organization_id = p_org and m.created_at > now()
+      and (m.author_staff_member_id is null
+           or not app.teamchat_participant(p_org, m.author_staff_member_id)
+           or not app.team_channel_readable(m.channel_id, p_org, m.author_staff_member_id))
+    returning m.id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select p_org, p_run, 'team_messages', g.id, 'teamchat', now()
+  from geloescht g;
+  get diagnostics v_teil = row_count;
+  v_anzahl := v_anzahl + v_teil;
 
   -- Fällige Ausgangsnachrichten mit laufenden Antworten werden Anker.
   perform app.strip_due_team_anchors(p_org, p_time_zone);

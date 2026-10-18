@@ -406,9 +406,7 @@ describe('Teamchat: Zustellung ohne Doppel (ANN-641, ADR-024 Punkt 7)', () => {
     const id = await senden(users.therapist, allgemein.id, 'Versehen', null, [], KENNUNG);
     await asUserCommitted(users.therapist, 'select public.delete_team_message($1)', [id]);
     expect(await senden(users.therapist, allgemein.id, 'Versehen', null, [], KENNUNG)).toBe(id);
-    expect(await anzahl('select count(*) n from public.team_messages where id = $1', [id])).toBe(
-      0,
-    );
+    expect(await anzahl('select count(*) n from public.team_messages where id = $1', [id])).toBe(0);
 
     // Mit Antwort bleibt ein Anker ohne Verfasser:in - die Wiederholung bleibt still.
     const ZWEITE = 'c0ffee00-0000-4000-8000-000000000002';

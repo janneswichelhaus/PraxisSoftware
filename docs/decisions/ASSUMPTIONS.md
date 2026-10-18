@@ -6517,7 +6517,7 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
-**Annahme.** Eine Antwort kann zusätzlich im Gespräch stehen. Ausgangsnachrichten lassen sich eine Minute bis 30 Tage im Voraus planen; bis dahin sieht sie nur, wer sie verfasst hat, unter „Geplant“, und eine Änderung davor trägt keine Marke. Antworten werden nicht geplant. Verlässt die Person das Gespräch, wird herausgenommen oder scheidet aus, oder wird es archiviert, fallen ihre geplanten Nachrichten dort mit Journal.
+**Annahme.** Eine Antwort kann zusätzlich im Gespräch stehen. Ausgangsnachrichten lassen sich eine Minute bis 30 Tage im Voraus planen; bis dahin sieht sie nur, wer sie verfasst hat, unter „Geplant“, und eine Änderung davor trägt keine Marke. Antworten werden nicht geplant. Verlassen, Herausnehmen und Archivieren lassen geplante Nachrichten dort sofort fallen, Ausscheiden, Kontosperre und Rollenwechsel mit dem nächsten täglichen Lauf – was davor fällig wird, erscheint. Immer mit Journal.
 
 **Begründung.** Schont die freie Zeit im Team (§20); Slack plant bis 120 Tage (Suchauszug).
 
@@ -6577,10 +6577,10 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Die Suche findet in allen lesbaren Gesprächen ein Wort ab zwei Zeichen und filtert nach Gespräch, Person und Zeitraum. Ohne Suchwort geht nur der Blick in ein Gespräch, wie Hochblättern; nach einer Person wird nur mit Suchwort gefiltert. Geplantes und Entferntes findet niemand, Suchwörter stehen in keiner Adresse und keinem Log.
+**Annahme.** Die Suche findet in allen lesbaren Gesprächen ein Wort ab zwei Zeichen und filtert nach Gespräch, Person und Zeitraum. Ohne Suchwort geht nur der Blick in ein Gespräch, wie Hochblättern; nach einer Person nur mit Suchwort. Das ist eine Hürde, keine Sperre: Mit einem häufigen Wort und Zeiträumen lässt sich trotzdem vieles einer Person finden. Ob der Personenfilter bleibt, entscheidet die Datenschutzprüfung. Suchwörter stehen in keiner Adresse und keinem Log.
 
-**Begründung.** §20: „alles von Anna im Oktober“ wäre eine Liste ihres Verhaltens, keine Suche nach einer Sache; Zweitreview TEAM-002 (Punkt 6); ADR-011. Slack sucht auch nur mit Personenfilter (Suchauszug) – bewusst enger.
+**Begründung.** §20: „alles von Anna im Oktober“ wäre eine Liste ihres Verhaltens, keine Suche nach einer Sache; Zweitreview TEAM-002 (Runden 1 und 2); ADR-011.
 
 **Anker.** Prüfung am Anfang von `public.search_team_messages`.
 
-**Änderungspfad.** Personenfilter ohne Wort: diese Prüfung, mit Datenschutzprüfung · Aufwand `klein`.
+**Änderungspfad.** Ohne Personenfilter: `p_author` und das Feld „Von“ entfernen · Aufwand `klein`.

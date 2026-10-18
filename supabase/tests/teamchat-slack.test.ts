@@ -226,9 +226,9 @@ describe('Teamchat: private Kanäle (ANN-642)', () => {
     // abgelehnter Name, dass es ihn gibt (Zweitreview TEAM-002, Befund 5).
     const geheim = await privaterKanal(users.teamLead, 'allgemein', []);
     await privaterKanal(users.ownerTherapist, 'Allgemein', []);
-    expect((await fehler(users.ownerTherapist, KANAL_ANLEGEN, ['ALLGEMEIN', null, false, []]))?.code).toBe(
-      '23505',
-    );
+    expect(
+      (await fehler(users.ownerTherapist, KANAL_ANLEGEN, ['ALLGEMEIN', null, false, []]))?.code,
+    ).toBe('23505');
     const offen = (
       await asUserCommitted<{ id: string }>(users.ownerTherapist, KANAL_ANLEGEN, [
         'Planung',
@@ -246,9 +246,22 @@ describe('Teamchat: private Kanäle (ANN-642)', () => {
       'Planung neu',
     ]);
     expect(
-      (await fehler(users.teamLead, 'select public.update_team_channel($1, $2)', [offen, 'Vertretungen']))
-        ?.code,
+      (
+        await fehler(users.teamLead, 'select public.update_team_channel($1, $2)', [
+          offen,
+          'Vertretungen',
+        ])
+      )?.code,
     ).toBe('23505');
+    // Andersherum: owner gehört nicht dazu und darf einen offenen Kanal wie
+    // einen privaten nennen - anlegen und umbenennen (Runde 2, Befund 3).
+    await privaterKanal(users.teamLead, 'Geheimrunde', []);
+    await privaterKanal(users.teamLead, 'Zweite Runde', []);
+    await asUserCommitted(users.ownerTherapist, KANAL_ANLEGEN, ['geheimrunde', null, false, []]);
+    await asUserCommitted(users.ownerTherapist, 'select public.update_team_channel($1, $2)', [
+      offen,
+      'Zweite Runde',
+    ]);
     // Unbekannte fallen still weg; wer anlegt, gehört dazu.
     const id = await privaterKanal(users.ownerTherapist, 'Leitung', [
       STAFF.tim,
@@ -397,9 +410,33 @@ describe('Teamchat: private Kanäle (ANN-642)', () => {
     });
     expect(await gespraech(users.teamLead, id)).toMatchObject({ manageable: true });
 
+    // Archivieren nimmt geplante Nachrichten mit - aber nur durch wen, der
+    // verwalten darf (Zweitreview TEAM-002, Runde 2).
+    const { rows: zeit } = await asPostgres<{ t: string }>(
+      `select (now() + interval '2 hours')::text as t`,
+    );
+    const geplant = await senden(users.therapist, id, 'Anna plant', { um: zeit[0]!.t });
+    expect(
+      (await fehler(users.therapist, 'select public.set_team_channel_archived($1, true)', [id]))
+        ?.code,
+    ).toBe('42501');
+    expect(
+      (
+        await fehler(users.ownerTherapist, 'select public.set_team_channel_archived($1, true)', [
+          id,
+        ])
+      )?.code,
+    ).toBe('P0002');
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [geplant]),
+    ).toBe(1);
+
     await asUserCommitted(users.teamLead, 'select public.set_team_channel_archived($1, true)', [
       id,
     ]);
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [geplant]),
+    ).toBe(0);
     expect(
       (await fehler(users.therapist, SENDEN, [id, null, 'x', [], false, false, null]))?.code,
     ).toBe('22023');
@@ -847,7 +884,13 @@ describe('Teamchat: Suche mit Filtern', () => {
     ]);
     expect(
       (
-        await asUser<{ id: string }>(users.office, SUCHE, ['licht', allgemein.id, STAFF.tim, null, null])
+        await asUser<{ id: string }>(users.office, SUCHE, [
+          'licht',
+          allgemein.id,
+          STAFF.tim,
+          null,
+          null,
+        ])
       ).rows.map((r) => r.id),
     ).toEqual([tim]);
     // Ohne Wort: ein Gespräch ansehen ja, eine Person und alles ohne Ort nein -
@@ -953,6 +996,37 @@ describe('Teamchat: Rechte an den neuen Wegen (ADR-013 Punkt 9 Nr. 1)', () => {
       );
       expect(rows[0]!.recht).toBe(false);
     }
+  });
+
+  it('hält die internen Helfer verschlossen - sie löschen und leiten ab, ohne selbst zu prüfen', async () => {
+    // app.team_drop_scheduled löscht fremde geplante Nachrichten einer Praxis;
+    // ihr einziger Schutz ist der Entzug (Zweitreview TEAM-002, Runde 2).
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const { rows: zeit } = await asPostgres<{ t: string }>(
+      `select (now() + interval '2 hours')::text as t`,
+    );
+    const geplant = await senden(users.office, allgemein.id, 'Geplant', { um: zeit[0]!.t });
+    for (const name of ['team_drop_scheduled', 'team_message_key', 'team_forget_channel']) {
+      const { rows } = await asPostgres<{ erlaubt: boolean }>(
+        `select bool_or(has_function_privilege(r, p.oid, 'EXECUTE')) as erlaubt
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace,
+              unnest(array['anon', 'authenticated']) r
+         where n.nspname = 'app' and p.proname = $1`,
+        [name],
+      );
+      expect(rows[0]?.erlaubt, name).toBe(false);
+    }
+    expect(
+      (
+        await fehler(users.ownerTherapist, 'select app.team_drop_scheduled($1, $2, null)', [
+          organizationId,
+          allgemein.id,
+        ])
+      )?.code,
+    ).toBe('42501');
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [geplant]),
+    ).toBe(1);
   });
 
   it('schreibt keinen Auditeintrag (ADR-010 Punkt 17)', async () => {
@@ -1098,9 +1172,9 @@ describe('Teamchat: Löschpfad der neuen Tabellen (ADR-008 Punkt 12)', () => {
         ),
       ).toBe(1);
     }
-    expect(await anzahl('select count(*) n from public.team_messages where id = $1', [bleibt])).toBe(
-      1,
-    );
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [bleibt]),
+    ).toBe(1);
 
     // Restore: Die Wiederanwendung nimmt sie wieder heraus.
     await asPostgres(
@@ -1113,6 +1187,54 @@ describe('Teamchat: Löschpfad der neuen Tabellen (ADR-008 Punkt 12)', () => {
     expect(
       await anzahl('select count(*) n from public.team_messages where id = $1', [verlassen]),
     ).toBe(0);
+  });
+
+  it('lässt Geplantes gesperrter Konten und nach einem Rollenwechsel mit dem Lauf fallen', async () => {
+    const { rows: zeit } = await asPostgres<{ t: string }>(
+      `select (now() + interval '2 hours')::text as t`,
+    );
+    const um = zeit[0]!.t;
+    const direkt = (
+      await asUserCommitted<{ id: string }>(
+        users.office,
+        'select public.open_team_direct($1) as id',
+        [STAFF.tim],
+      )
+    ).rows[0]!.id;
+    const flotte = (await kanaele(users.therapist)).find((k) => k.kind === 'fleet')!;
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const gesperrt = await senden(users.office, direkt, 'Olivia plant', { um });
+    const rollenwechsel = await senden(users.therapist, flotte.id, 'Anna plant', { um });
+    const bleibt = await senden(users.teamLead, allgemein.id, 'Tim plant', { um });
+
+    // Konto gesperrt (wie set_staff_account_active) - ein kompromittiertes
+    // Konto hinterlässt nichts, was später erscheint (Runde 2, Befund 1).
+    await asPostgres('update public.user_profiles set is_active = false where id = $1', [
+      users.office,
+    ]);
+    // Anna wird Trainingsbetreuung und liest die Radflotte nicht mehr.
+    await asPostgres(
+      `update public.user_roles set role_key = 'trainer' where user_id = $1 and role_key = 'therapist'`,
+      [users.therapist],
+    );
+    await asPostgres('select public.apply_retention()');
+
+    for (const id of [gesperrt, rollenwechsel]) {
+      expect(await anzahl('select count(*) n from public.team_messages where id = $1', [id])).toBe(
+        0,
+      );
+      expect(
+        await anzahl(
+          `select count(*) n from public.deletion_journal
+           where target_table = 'team_messages' and target_id = $1
+             and run_id is distinct from md5('team_manual:' || organization_id::text || ':' || current_date::text)::uuid`,
+          [id],
+        ),
+      ).toBe(1);
+    }
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [bleibt]),
+    ).toBe(1);
   });
 
   it('löscht einen privaten Kanal, sobald kein aktives Mitglied mehr dabei ist', async () => {
