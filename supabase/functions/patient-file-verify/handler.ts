@@ -64,9 +64,9 @@ export function erstelleHandler({
     if (anfrage.method !== 'POST') return ende(405, 'bad_request');
     if (!instanz) return ende(503, 'not_configured');
 
-    // KOM-006 (ANN-337), FLT-002 (ANN-552), ERS-001 (ANN-600): eine Datei
-    // der Akte, ein Anhang an einer Rückfrage, ein Foto am Rad oder ein Beleg
-    // einer Erstattung - genau eines davon.
+    // KOM-006 (ANN-337), FLT-002 (ANN-552), ERS-001 (ANN-600), TEAM-003:
+    // eine Datei der Akte, ein Anhang an einer Rückfrage, ein Foto am Rad,
+    // ein Beleg einer Erstattung oder ein Anhang im Teamchat - genau eines.
     let art: Art = 'datei';
     try {
       const rumpf = (await anfrage.json()) as {
@@ -74,15 +74,22 @@ export function erstelleHandler({
         attachment_id?: unknown;
         photo_id?: unknown;
         receipt_id?: unknown;
+        team_attachment_id?: unknown;
       };
       const datei = typeof rumpf.file_id === 'string' && UUID.test(rumpf.file_id);
       const anhang = typeof rumpf.attachment_id === 'string' && UUID.test(rumpf.attachment_id);
       const foto = typeof rumpf.photo_id === 'string' && UUID.test(rumpf.photo_id);
       const beleg = typeof rumpf.receipt_id === 'string' && UUID.test(rumpf.receipt_id);
+      const teamanhang =
+        typeof rumpf.team_attachment_id === 'string' && UUID.test(rumpf.team_attachment_id);
       const genauEine =
-        [rumpf.file_id, rumpf.attachment_id, rumpf.photo_id, rumpf.receipt_id].filter(
-          (k) => k !== undefined,
-        ).length === 1;
+        [
+          rumpf.file_id,
+          rumpf.attachment_id,
+          rumpf.photo_id,
+          rumpf.receipt_id,
+          rumpf.team_attachment_id,
+        ].filter((k) => k !== undefined).length === 1;
       if (genauEine && datei) {
         dateiId = rumpf.file_id as string;
       } else if (genauEine && anhang) {
@@ -94,6 +101,9 @@ export function erstelleHandler({
       } else if (genauEine && beleg) {
         dateiId = rumpf.receipt_id as string;
         art = 'beleg';
+      } else if (genauEine && teamanhang) {
+        dateiId = rumpf.team_attachment_id as string;
+        art = 'teamanhang';
       }
     } catch {
       // unten als bad_request beantwortet
@@ -116,8 +126,9 @@ export function erstelleHandler({
     // Zweitreview S2: Was sich nicht prüfen lässt, besteht nicht - ein
     // Fehler beim Zerlegen heißt verwerfen, nicht 500 ohne Ergebnis.
     // Ein Foto am Rad prüft sich wie ein Patientenfoto: JPEG an der Signatur,
-    // Prüfsumme, Erlaubnisliste des Geräts (FLT-002, ANN-552); ein Beleg wie
-    // eine Datei der Akte - JPEG, PNG oder PDF (ERS-001, ANN-600).
+    // Prüfsumme, Erlaubnisliste des Geräts (FLT-002, ANN-552); ein Beleg und
+    // ein Anhang im Teamchat wie eine Datei der Akte - JPEG, PNG oder PDF
+    // (ERS-001, ANN-600; TEAM-003).
     let ergebnis: Awaited<ReturnType<typeof pruefeInhalt>>;
     try {
       ergebnis =

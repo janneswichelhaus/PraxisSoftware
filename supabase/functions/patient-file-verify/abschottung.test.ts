@@ -59,7 +59,7 @@ describe('Abschottung der Edge Function patient-file-verify', () => {
     expect(adressen).toEqual([]);
   });
 
-  it('ruft mit dem Dienstschluessel nur die Pruefwege der vier Arten - keine Tabelle (FLT-002, ERS-001)', () => {
+  it('ruft mit dem Dienstschluessel nur die Pruefwege der fuenf Arten - keine Tabelle (FLT-002, ERS-001, TEAM-003)', () => {
     const quelltext = dateien.map((pfad) =>
       // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade aus dem eigenen Verzeichnis, nicht aus einer Eingabe.
       ohneKommentare(readFileSync(pfad, 'utf8')),
@@ -68,7 +68,7 @@ describe('Abschottung der Edge Function patient-file-verify', () => {
       [...inhalt.matchAll(/\brpc\(\s*'([a-z_]+)'/g)].map((t) => t[1]),
     );
     // Je Art genau eine Ankündigung und ein Ergebnis: Akte, Rückfrage, Rad,
-    // Beleg.
+    // Beleg, Anhang im Teamchat.
     expect([...new Set(aufrufe)].sort()).toEqual([
       'fleet_photo_for_verification',
       'message_attachment_for_verification',
@@ -77,7 +77,9 @@ describe('Abschottung der Edge Function patient-file-verify', () => {
       'record_message_attachment_verification',
       'record_patient_file_verification',
       'record_reimbursement_receipt_verification',
+      'record_team_attachment_verification',
       'reimbursement_receipt_for_verification',
+      'team_attachment_for_verification',
     ]);
     // PostgREST nur über /rpc, nie eine Tabelle direkt.
     const pfade = quelltext.flatMap((inhalt) =>

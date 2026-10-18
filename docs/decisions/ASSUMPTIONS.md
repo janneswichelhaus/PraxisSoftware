@@ -6696,3 +6696,27 @@ Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026)
 **Änderungspfad.** Ohne Personenfilter: `p_author` und das Feld „Von“ entfernen · Aufwand `klein`.
 
 **Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 5); ob „Von“ bleibt, entscheidet die Datenschutzprüfung. Bleibt im Prüfpaket.
+
+### ANN-652 — Teamchat: ungesendete Anhänge fallen nach 24 Stunden, ohne Journal
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen sofort, sonst nach 24 Stunden - mit Löschauftrag für das Objekt, ohne Eintrag im Löschjournal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
+
+**Begründung.** ADR-017 Punkte 7 und 73; wie KOM-005 an Rückfragen. Nach einem Restore ist ein solcher Anhang weder bindbar noch lesbar und fällt im nächsten Lauf (ADR-008 Punkt 8 sinngemäß). Gesendete fallen über das Journal ihrer Nachricht.
+
+**Anker.** `public.discard_stale_team_attachments`, `public.discard_team_attachment`.
+
+**Änderungspfad.** Mit Journal: beide Funktionen schreiben es, `public.reapply_deletion_journal` bekommt die Tabelle · Aufwand `klein`.
+
+### ANN-653 — Teamchat: Nachricht nur mit Anhängen
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Mit Anhängen darf der Text leer sein - ein Foto vom Rad geht ohne Worte. Ohne Anhang bleibt eine leere Nachricht abgewiesen. In Listen steht dann „Anhang“ statt eines Textes.
+
+**Begründung.** Slack sendet Dateien ohne Text; am Lenker spart das einen Schritt. Leer heißt `''`, `null` bleibt der fehlende Inhalt (TEAM-001).
+
+**Anker.** `app.team_message_body`.
+
+**Änderungspfad.** Text immer Pflicht: den zweiten Fall in `app.team_message_body` streichen · Aufwand `klein`.

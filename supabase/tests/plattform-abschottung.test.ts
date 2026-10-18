@@ -150,6 +150,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
   'app.fleet_photo_bucket': 'Konstante',
   // ERS-001: der Bucket der Belege der Erstattungen (ANN-600).
   'app.reimbursement_receipt_bucket': 'Konstante',
+  // TEAM-003: der Bucket der Anhänge im Teamchat (ADR-017 Punkt 73).
+  'app.chat_attachment_bucket': 'Konstante',
   'app.patient_search_min_length': 'Konstante',
   'app.retention_interval': 'Frist einer Datenklasse aus dem Katalog, ohne Personenbezug',
   'app.timemultirange': 'Wertkonstruktor',

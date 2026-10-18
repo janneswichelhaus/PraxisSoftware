@@ -120,10 +120,15 @@ export function erstelleInstanz(
                   p_receipt_id: dateiId,
                   p_user_id: personId,
                 })
-              : await rpc('patient_file_for_verification', {
-                  p_file_id: dateiId,
-                  p_user_id: personId,
-                });
+              : art === 'teamanhang'
+                ? await rpc('team_attachment_for_verification', {
+                    p_attachment_id: dateiId,
+                    p_user_id: personId,
+                  })
+                : await rpc('patient_file_for_verification', {
+                    p_file_id: dateiId,
+                    p_user_id: personId,
+                  });
       if (!antwort.ok) return antwort;
       const zeilen = Array.isArray(antwort.wert) ? (antwort.wert as Ankuendigung[]) : [];
       const zeile = zeilen[0];
@@ -175,12 +180,20 @@ export function erstelleInstanz(
                   // Wie die Akte: bei einem PDF keine Metadatenfrage (null).
                   p_metadata_ok: ergebnis.metadata_ok,
                 })
-              : await rpc('record_patient_file_verification', {
-                  p_file_id: dateiId,
-                  p_content_type_ok: ergebnis.content_type_ok,
-                  p_checksum_ok: ergebnis.checksum_ok,
-                  p_metadata_ok: ergebnis.metadata_ok,
-                });
+              : art === 'teamanhang'
+                ? await rpc('record_team_attachment_verification', {
+                    p_attachment_id: dateiId,
+                    p_content_type_ok: ergebnis.content_type_ok,
+                    p_checksum_ok: ergebnis.checksum_ok,
+                    // Wie die Akte: bei einem PDF keine Metadatenfrage (null).
+                    p_metadata_ok: ergebnis.metadata_ok,
+                  })
+                : await rpc('record_patient_file_verification', {
+                    p_file_id: dateiId,
+                    p_content_type_ok: ergebnis.content_type_ok,
+                    p_checksum_ok: ergebnis.checksum_ok,
+                    p_metadata_ok: ergebnis.metadata_ok,
+                  });
       if (!antwort.ok) return antwort;
       const wert = antwort.wert;
       return typeof wert === 'string' &&

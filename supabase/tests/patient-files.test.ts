@@ -136,13 +136,15 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       // die Patientenfotos mit eigener Frist (Punkt 32); seit KOM-005 drei -
       // dazu die Anhänge an Rückfragen (Punkt 60); seit FLT-002 vier - die
       // Fotos am Rad (ANN-552); seit ERS-001 fünf - die Belege der
-      // Erstattungen (ANN-600).
+      // Erstattungen (ANN-600); seit TEAM-003 sechs - die Anhänge im
+      // Teamchat (Punkt 73).
       expect(rows.map((r) => r.id)).toEqual([
         'erstattungsbelege',
         'patientenakte',
         'patientenfotos',
         'radflotte',
         'rueckfrageanhang',
+        'teamchat',
       ]);
       for (const bucket of rows) {
         expect(bucket.public).toBe(false);
@@ -159,6 +161,8 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(typen('radflotte')).toEqual(['image/jpeg']);
       // Punkt 63: Foto als JPEG, Video als WebM oder MP4.
       expect(typen('rueckfrageanhang')).toEqual(['image/jpeg', 'video/mp4', 'video/webm']);
+      // TEAM-003 (Punkt 71): Fotos und PDF, wie die Akte.
+      expect(typen('teamchat')).toEqual(['application/pdf', 'image/jpeg', 'image/png']);
     });
 
     it('fuehrt den Verordnungsscan als klinisch (ANN-011, ADR-017 Punkt 12)', async () => {

@@ -284,7 +284,34 @@ describe('patient-file-verify', () => {
     }
   });
 
-  it('nimmt genau eine Kennung an: Datei, Anhang, Foto am Rad oder Beleg', async () => {
+  it('prueft einen Anhang im Teamchat wie eine Datei der Akte, mit eigenen Datenbankfunktionen (TEAM-003)', async () => {
+    const pdf = new TextEncoder().encode('%PDF-1.7\n1 0 obj<<>>endobj\n%%EOF');
+    for (const [mime, bytes, erwartet] of [
+      ['image/jpeg', BILD, { content_type_ok: true, checksum_ok: true, metadata_ok: true }],
+      ['application/pdf', pdf, { content_type_ok: true, checksum_ok: true, metadata_ok: null }],
+    ] as const) {
+      const i = instanz({
+        ankuendigung: vi.fn(async () => ({
+          ok: true as const,
+          wert: await ankuendigung({
+            bucket_id: 'teamchat',
+            mime_type: mime,
+            byte_size: bytes.length,
+            checksum_sha256: await sha256(bytes),
+          }),
+        })),
+        objekt: vi.fn().mockResolvedValue({ ok: true, wert: bytes }),
+      });
+      const { status, rumpf } = await lauf(i, anfrage({ team_attachment_id: DATEI }));
+      expect(status).toBe(200);
+      expect(rumpf).toEqual({ ergebnis: 'passed' });
+      expect(i.ankuendigung).toHaveBeenCalledWith(DATEI, PERSON, 'teamanhang');
+      expect(i.objekt).toHaveBeenCalledWith('teamchat', SCHLUESSEL);
+      expect(i.eintragen).toHaveBeenCalledWith(DATEI, erwartet, 'teamanhang');
+    }
+  });
+
+  it('nimmt genau eine Kennung an: Datei, Anhang, Foto am Rad, Beleg oder Anhang im Teamchat', async () => {
     for (const rumpf of [
       { file_id: DATEI, photo_id: DATEI },
       { attachment_id: DATEI, photo_id: DATEI },
@@ -296,6 +323,10 @@ describe('patient-file-verify', () => {
       { receipt_id: DATEI, file_id: DATEI },
       { receipt_id: 'x' },
       { receipt_id: DATEI, attachment_id: null },
+      { team_attachment_id: DATEI, receipt_id: DATEI },
+      { team_attachment_id: DATEI, attachment_id: DATEI },
+      { team_attachment_id: 'x' },
+      { team_attachment_id: DATEI, file_id: null },
     ]) {
       const i = instanz();
       expect((await lauf(i, anfrage(rumpf))).status, JSON.stringify(rumpf)).toBe(400);
