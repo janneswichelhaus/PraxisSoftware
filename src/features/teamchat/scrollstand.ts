@@ -63,6 +63,23 @@ export function useScrollstand({
   const [neuUnten, setNeuUnten] = useState(0);
   const amEndeRef = useRef(true);
   const erster = useRef(true);
+  // Die oberste sichtbare Nachricht, laufend gemerkt: Beim Abbauen ist der
+  // Verlauf schon aus dem Dokument gelöst und misst überall 0 - dann fand
+  // der Stand die älteste Nachricht statt der gezeigten (Ablauftest).
+  const anker = useRef<Stand>('ende');
+  const merken = useCallback(() => {
+    const el = behaelter.current;
+    if (!el) return;
+    if (amEndeRef.current) {
+      anker.current = 'ende';
+      return;
+    }
+    const oben = [...el.querySelectorAll<HTMLElement>('[data-nachricht]')].find(
+      (n) => obenIn(el, n) >= -1,
+    );
+    const id = oben?.dataset.nachricht;
+    if (oben && id) anker.current = { id, abstand: obenIn(el, oben) };
+  }, [behaelter]);
   const vorher = useRef<{ aelteste: string | null; neueste: string | null; hoehe: number }>({
     aelteste: null,
     neueste: null,
@@ -82,30 +99,31 @@ export function useScrollstand({
     [behaelter],
   );
 
-  // Beim Rollen: unten oder nicht; beim Verlassen den Stand merken.
+  // Beim Rollen: unten oder nicht, und die oberste Nachricht merken (einmal
+  // je Bild); beim Verlassen gilt der zuletzt gemerkte Stand.
   useEffect(() => {
     const el = behaelter.current;
     if (!el) return;
+    let bild = 0;
     const rollen = () => {
       const ende = el.scrollHeight - el.scrollTop - el.clientHeight < UNTEN_PX;
       amEndeRef.current = ende;
       setAmEnde(ende);
       if (ende) setNeuUnten(0);
+      if (!bild) {
+        bild = requestAnimationFrame(() => {
+          bild = 0;
+          merken();
+        });
+      }
     };
     el.addEventListener('scroll', rollen, { passive: true });
     return () => {
       el.removeEventListener('scroll', rollen);
-      if (amEndeRef.current) {
-        staende.set(schluessel, 'ende');
-        return;
-      }
-      const oben = [...el.querySelectorAll<HTMLElement>('[data-nachricht]')].find(
-        (n) => obenIn(el, n) >= -1,
-      );
-      const id = oben?.dataset.nachricht;
-      if (oben && id) staende.set(schluessel, { id, abstand: obenIn(el, oben) });
+      if (bild) cancelAnimationFrame(bild);
+      staende.set(schluessel, anker.current);
     };
-  }, [behaelter, schluessel]);
+  }, [behaelter, schluessel, merken]);
 
   const kette = ids.join('|');
   useLayoutEffect(() => {
@@ -131,6 +149,7 @@ export function useScrollstand({
       const ende = el.scrollHeight - el.scrollTop - el.clientHeight < UNTEN_PX;
       amEndeRef.current = ende;
       setAmEnde(ende);
+      merken();
     } else {
       const v = vorher.current;
       if (v.aelteste && aelteste !== v.aelteste && ids.includes(v.aelteste)) {
@@ -148,7 +167,7 @@ export function useScrollstand({
     }
     vorher.current = { aelteste, neueste, hoehe: el.scrollHeight };
     // `kette` steht für `ids`: neu nur, wenn sich die Folge ändert.
-  }, [kette, behaelter, schluessel, neuAb, sprungZu]);
+  }, [kette, behaelter, schluessel, neuAb, sprungZu, merken]);
 
   // Wächst der Inhalt ohne neue Nachricht (Reaktion, Bearbeitung), bleibt
   // unten, wer unten war.

@@ -191,7 +191,8 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
               </Listenabschnitt>
               <Listenabschnitt
                 titel="Direktnachrichten"
-                leer={{ titel: 'Noch keine Direktnachricht', aktion: neu }}
+                // „Neu“ steht schon oben - ein Hauptknopf je Ansicht (Regel 4).
+                leer={{ titel: 'Noch keine Direktnachricht' }}
               >
                 {direkt.map(zeile)}
               </Listenabschnitt>
