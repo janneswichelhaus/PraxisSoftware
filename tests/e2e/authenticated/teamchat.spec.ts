@@ -2,12 +2,13 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { KONTEN, anmelden } from './helpers';
 
 /**
- * Teamchat (TEAM-001, TEAM-002) gegen den echten Stack - mehrere Konten, bei
- * 375 px mit gezählten Tipps, dazu der Rechner bei 1280 px.
+ * Teamchat (TEAM-001 bis TEAM-003) gegen den echten Stack - mehrere Konten,
+ * bei 375 px mit gezählten Tipps, dazu der Rechner bei 1280 px.
  *
  * Gezählt werden Tipps ohne getippten Text, gegen die Budgets der Spec
  * (Referenzabgleich Slack: Senden 2, Antworten 2, Erwähnen +2, Direktnachricht
- * 3, Treffer öffnen 2, Reagieren 2). Ausgangslage ist jeweils der Teamchat
+ * 3, Treffer öffnen 2, Reagieren 2, Foto oder PDF senden 4 und die Auswahl im
+ * Dateiwähler). Ausgangslage ist jeweils der Teamchat
  * (`/team`). Wer was liest, prüfen `supabase/tests/teamchat*.test.ts` am
  * Server; hier der Weg in der Oberfläche, Zustellung im Funkloch und die
  * Entwürfe beim Kontowechsel.
@@ -22,12 +23,73 @@ const RECHNER = { width: 1280, height: 800 };
 const KANAL = `Absprachen ${LAUF}`;
 const PRIVAT = `Leitungsrunde ${LAUF}`;
 
+/**
+ * Synthetische Anhänge (TEAM-003): ein PDF mit einer Zeile Text, das Foto
+ * malt der Browser (`testfoto`). Der lange Name prüft das Kürzen bei 375 px.
+ */
+const PLAN = {
+  name: `Dienstplan KW 43 mit einem recht langen Dateinamen ${LAUF}.pdf`,
+  mimeType: 'application/pdf',
+  buffer: Buffer.from(
+    [
+      '%PDF-1.4',
+      '1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj',
+      '2 0 obj <</Type /Pages /Kids [3 0 R] /Count 1>> endobj',
+      '3 0 obj <</Type /Page /Parent 2 0 R /MediaBox [0 0 300 120] /Contents 4 0 R',
+      '/Resources <</Font <</F1 5 0 R>>>>>> endobj',
+      '4 0 obj <</Length 52>> stream',
+      'BT /F1 16 Tf 24 56 Td (Dienstplan KW 43, Test) Tj ET',
+      'endstream endobj',
+      '5 0 obj <</Type /Font /Subtype /Type1 /BaseFont /Helvetica>> endobj',
+      'trailer <</Root 1 0 R>>',
+      '%%EOF',
+      '',
+    ].join('\n'),
+  ),
+};
+
+/** Ein Foto ohne Kamera: Farbflächen aus dem Canvas des Browsers, als PNG. */
+async function testfoto(page: Page, name: string) {
+  const daten = await page.evaluate(() => {
+    const leinwand = document.createElement('canvas');
+    leinwand.width = 320;
+    leinwand.height = 200;
+    const stift = leinwand.getContext('2d')!;
+    stift.fillStyle = '#2f6f68';
+    stift.fillRect(0, 0, 320, 200);
+    stift.fillStyle = '#f2c14e';
+    stift.fillRect(40, 60, 240, 80);
+    return leinwand.toDataURL('image/png').split(',')[1]!;
+  });
+  return { name, mimeType: 'image/png', buffer: Buffer.from(daten, 'base64') };
+}
+
+/**
+ * Ob das Gerät eine Kamera meldet - die Büroklammer bietet dann Foto und
+ * Datei zur Wahl, sonst gleich den Dateiwähler. Ohne das hinge es am
+ * Prüfbrowser.
+ */
+async function kameraMelden(page: Page, vorhanden: boolean): Promise<void> {
+  await page.addInitScript((mitKamera) => {
+    navigator.mediaDevices.enumerateDevices = () =>
+      Promise.resolve(
+        mitKamera
+          ? [{ kind: 'videoinput', deviceId: '', groupId: '', label: '' } as MediaDeviceInfo]
+          : [],
+      );
+  }, vorhanden);
+}
+
 function zaehler() {
   let tipps = 0;
   return {
     async tippe(ziel: Locator) {
       tipps += 1;
       await ziel.click();
+    },
+    /** Ein Tipp außerhalb der Seite - die Auswahl im Dateiwähler. */
+    zaehle() {
+      tipps += 1;
     },
     get tipps() {
       return tipps;
@@ -369,4 +431,138 @@ test('bespricht Räder in der Radflotte, nicht im Teamchat (ANN-613)', async ({ 
   await page.goto('/team');
   await expect(page.getByRole('heading', { level: 1, name: 'Teamchat' })).toBeVisible();
   await expect(page.getByText('Nachrichten der Radflotte')).toHaveCount(0);
+});
+
+test('hängt ein Foto und ein PDF an und sendet sie in vier Tipps und der Auswahl (TEAM-003)', async ({
+  page,
+}) => {
+  // Am Telefon gibt es eine Kamera: Die Büroklammer fragt dann, Foto oder Datei.
+  await kameraMelden(page, true);
+  await zumTeamchat(page, KONTEN.therapist);
+  const foto = await testfoto(page, `Kette Rad 2 ${LAUF}.png`);
+  const z = zaehler();
+  await z.tippe(gespraeche(page).getByRole('link', { name: `# ${KANAL}` }));
+  await z.tippe(page.getByRole('button', { name: 'Anhängen', exact: true }));
+  const waehler = page.waitForEvent('filechooser');
+  await z.tippe(
+    page
+      .getByRole('group', { name: 'Anhängen', exact: true })
+      .getByRole('button', { name: 'Foto oder PDF wählen' }),
+  );
+  z.zaehle();
+  await (await waehler).setFiles([foto, PLAN]);
+
+  // Beide laden hoch, während geschrieben wird; gesendet wird erst danach.
+  const entwurf = page.getByRole('list', { name: 'Anhänge', exact: true });
+  await expect(entwurf.getByRole('listitem')).toHaveCount(2);
+  await page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` }).fill(`Neuer Plan ${LAUF}`);
+  await expect(entwurf.getByText('Lädt', { exact: true })).toHaveCount(0, { timeout: 20_000 });
+  await expect(entwurf.getByRole('alert')).toHaveCount(0);
+  await ohneQuerrollen(page);
+  await z.tippe(page.getByRole('button', { name: 'Senden', exact: true }));
+
+  const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Neuer Plan ${LAUF}` });
+  const anhaenge = nachricht.getByRole('group', { name: 'Anhänge', exact: true });
+  await expect(anhaenge.getByRole('button')).toHaveCount(2);
+  await expect(anhaenge.getByRole('button', { name: /Dienstplan KW 43.*PDF/ })).toBeVisible();
+  await expect(anhaenge.getByRole('button', { name: /Kette Rad 2.*Foto/ })).toBeVisible();
+  await expect(entwurf).toHaveCount(0);
+  expect(z.tipps).toBeLessThanOrEqual(5);
+  // Kein Vorschaubild in der Zeile (ADR-017 Punkt 77), kein Querrollen.
+  await expect(nachricht.locator('img')).toHaveCount(0);
+  await ohneQuerrollen(page);
+  for (const knopf of await anhaenge.getByRole('button').all()) {
+    expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test('öffnet einen Anhang im eigenen Rahmen und findet ihn unter Dateien (ADR-017 Punkte 77, 80)', async ({
+  page,
+}) => {
+  await zumTeamchat(page, KONTEN.office, RECHNER);
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Neuer Plan ${LAUF}` });
+  await nachricht.getByRole('button', { name: /Kette Rad 2.*Foto/ }).click();
+  await expect(
+    nachricht.getByRole('region', { name: `Ansicht: Kette Rad 2 ${LAUF}.png` }).getByRole('img'),
+  ).toBeVisible();
+  await nachricht.getByRole('button', { name: 'Schließen' }).click();
+  await nachricht.getByRole('button', { name: /Dienstplan KW 43.*PDF/ }).click();
+  const rahmen = nachricht.locator(`iframe[title="${PLAN.name}"]`);
+  await expect(rahmen).toBeVisible();
+  // Ohne die Leiste des Betrachters mit Herunterladen und Drucken.
+  await expect(rahmen).toHaveAttribute('src', /#toolbar=0$/);
+  // Herunterladen gibt es nicht - nur Schließen.
+  await expect(nachricht.getByRole('button', { name: /Herunterladen/ })).toHaveCount(0);
+  await expect(nachricht.getByRole('link', { name: /Herunterladen/ })).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Details', exact: true }).click();
+  const details = page.getByRole('dialog', { name: `# ${KANAL}` });
+  await expect(details.getByRole('heading', { name: /^Dateien/ })).toBeVisible();
+  await expect(details.getByText(PLAN.name)).toBeVisible();
+  await expect(details.getByText(`Kette Rad 2 ${LAUF}.png`)).toBeVisible();
+  await expect(details.getByText(/^PDF · .* · Anna Beispiel/)).toBeVisible();
+  await ohneQuerrollen(page);
+});
+
+test('antwortet im Thread nur mit einer Datei; die Liste sagt „Anhang“ (ANN-653)', async ({
+  page,
+  browser,
+}) => {
+  await zumTeamchat(page, KONTEN.office);
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  await page
+    .getByRole('textbox', { name: `Nachricht an # ${KANAL}` })
+    .fill(`Schloss Rad 3 klemmt ${LAUF}`);
+  await page.getByRole('button', { name: 'Senden', exact: true }).click();
+  await expect(page.getByText(`Schloss Rad 3 klemmt ${LAUF}`)).toBeVisible();
+
+  const therapie = await browser.newPage();
+  // Ohne Kamera öffnet die Büroklammer gleich den Dateiwähler.
+  await kameraMelden(therapie, false);
+  await zumTeamchat(therapie, KONTEN.therapist);
+  await gespraeche(therapie)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  await therapie
+    .locator('[data-nachricht]')
+    .filter({ hasText: `Schloss Rad 3 klemmt ${LAUF}` })
+    .getByRole('link', { name: 'Antworten' })
+    .click();
+  await expect(therapie.getByRole('heading', { level: 1, name: 'Thread' })).toBeVisible();
+  const senden = therapie.getByRole('button', { name: 'Senden', exact: true });
+  await expect(senden).toBeDisabled();
+  const waehler = therapie.waitForEvent('filechooser');
+  await therapie.getByRole('button', { name: 'Anhängen', exact: true }).click();
+  const foto = await testfoto(therapie, `Schloss ${LAUF}.png`);
+  const ueberzaehlig = { ...PLAN, name: `Falsche Datei ${LAUF}.pdf` };
+  await (await waehler).setFiles([foto, ueberzaehlig]);
+  // Vor dem Senden lässt sich ein Anhang wieder entfernen - auch am Server.
+  await therapie
+    .getByRole('button', { name: `Anhang entfernen: Falsche Datei ${LAUF}.pdf` })
+    .click();
+  const entwurf = therapie.getByRole('list', { name: 'Anhänge', exact: true });
+  await expect(entwurf.getByRole('listitem')).toHaveCount(1);
+  await expect(senden).toBeEnabled({ timeout: 20_000 });
+  await senden.click();
+  const antwort = therapie.locator('[data-nachricht]').filter({
+    has: therapie.getByRole('button', { name: `Schloss ${LAUF}.png` }),
+  });
+  await expect(antwort).toHaveCount(1);
+  await expect(therapie.getByText(`Falsche Datei ${LAUF}.pdf`)).toHaveCount(0);
+  await therapie.close();
+
+  // Die Antwort ohne Text erscheint unter „Für dich“ als „Anhang“.
+  await page.goto('/fuer-dich');
+  await expect(
+    page
+      .getByRole('link')
+      .filter({ hasText: 'Anhang' })
+      .filter({ hasText: 'Anna Beispiel' })
+      .first(),
+  ).toBeVisible();
 });

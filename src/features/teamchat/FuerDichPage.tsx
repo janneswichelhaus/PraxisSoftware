@@ -20,7 +20,7 @@ import {
   fetchKanaele,
   kanalTitel,
 } from './api';
-import { ohneFormatierung } from './formatierung';
+import { vorschau } from './formatierung';
 import { FUER_DICH, stellePfad } from './pfade';
 import { nachrichtenzeit } from './zeit';
 
@@ -76,7 +76,7 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
                     stellePfad({ id: g.channel_id, kind: g.channel_kind }, g),
                     FUER_DICH,
                   )}
-                  titel={<span className="line-clamp-2">{ohneFormatierung(g.body)}</span>}
+                  titel={<span className="line-clamp-2">{vorschau(g.body)}</span>}
                   meta={`${titel(g.channel_id)} · ${g.author_name ?? 'Ehemaliges Teammitglied'}`}
                   aktion={
                     <Button
@@ -115,7 +115,7 @@ export function FuerDichPage({ user }: { user: CurrentUser }) {
                     FUER_DICH,
                   )}
                   gedaempft={!eintrag.unread}
-                  titel={<span className="line-clamp-2">{ohneFormatierung(eintrag.body)}</span>}
+                  titel={<span className="line-clamp-2">{vorschau(eintrag.body)}</span>}
                   meta={`${eintrag.reason === 'mention' ? 'Erwähnung' : 'Antwort'} · ${titel(
                     eintrag.channel_id,
                   )} · ${eintrag.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(

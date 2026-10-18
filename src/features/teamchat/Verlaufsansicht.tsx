@@ -50,6 +50,7 @@ function alsNachricht(e: Ausgangseintrag, eigeneId: string | null, name: string 
     saved: false,
     root_author_name: null,
     root_body: null,
+    attachments: [...e.anhaenge],
   };
 }
 

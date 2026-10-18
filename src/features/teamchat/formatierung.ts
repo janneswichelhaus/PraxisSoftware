@@ -126,6 +126,14 @@ export function ohneFormatierung(text: string): string {
   return ergebnis.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Eine Zeile für Listen: der Text ohne Formatierung - und „Anhang“, wo eine
+ * Nachricht nur Anhänge trägt (ANN-653).
+ */
+export function vorschau(text: string): string {
+  return ohneFormatierung(text) || 'Anhang';
+}
+
 /** Höchstens `laenge` Zeichen, am Wortende gekürzt und mit „…“, wenn mehr da war. */
 export function anriss(text: string, laenge: number): string {
   const glatt = text.replace(/\s+/g, ' ').trim();

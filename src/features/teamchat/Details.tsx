@@ -33,7 +33,8 @@ import {
   type Kanal,
   type Stufe,
 } from './api';
-import { ohneFormatierung } from './formatierung';
+import { DateienDesGespraechs } from './Anhaenge';
+import { vorschau } from './formatierung';
 import { TEAMCHAT, stellePfad } from './pfade';
 import { nachrichtenzeit } from './zeit';
 
@@ -141,7 +142,7 @@ export function Details({
                 <ListRow
                   key={a.id}
                   dicht
-                  titel={ohneFormatierung(a.body)}
+                  titel={vorschau(a.body)}
                   meta={`${a.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(a.created_at, zeitzone)}`}
                   onClick={() => {
                     onSchliessen();
@@ -152,6 +153,8 @@ export function Details({
             </Listenabschnitt>
           )}
         </Abfragezustand>
+
+        <DateienDesGespraechs kanalId={kanal.id} zeitzone={zeitzone} />
 
         <Abfragezustand
           abfrage={mitglieder}

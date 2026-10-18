@@ -20,6 +20,7 @@ import {
   type Nachricht,
   type Person,
 } from './api';
+import { AnhangKnoepfe } from './Anhaenge';
 import type { Ausgangseintrag } from './ausgang';
 import { NACHRICHT_MAX, alleErwaehnt, erwaehnte } from './erwaehnung';
 import { FormatierterText } from './format';
@@ -160,7 +161,7 @@ export function NachrichtZeile({
             />
           ) : leer ? (
             <p className="text-liste text-ink-muted mt-1 italic">{ohneInhalt(nachricht)}</p>
-          ) : (
+          ) : nachricht.body === '' ? null : (
             <div className="mt-1">
               <FormatierterText
                 text={nachricht.body ?? ''}
@@ -169,6 +170,8 @@ export function NachrichtZeile({
               />
             </div>
           )}
+          {/* TEAM-003: Anhänge ohne Vorschau; im Ausgang noch nicht zu öffnen. */}
+          <AnhangKnoepfe anhaenge={nachricht.attachments} aktiv={!ausgang} />
         </div>
         {!ausgang && !bearbeiten ? (
           <Symbolknopf beschriftung={`Handlungen zur Nachricht von ${name}`} onClick={onAktionen}>
@@ -281,6 +284,8 @@ function Bearbeiten({
 }) {
   const queryClient = useQueryClient();
   const [text, setText] = useState(nachricht.body ?? '');
+  // Mit Anhängen darf der Text leer werden (ANN-653).
+  const mitAnhang = nachricht.attachments.length > 0;
   const speichern = useMutation({
     mutationFn: () =>
       bearbeiteNachricht({
@@ -299,7 +304,7 @@ function Bearbeiten({
       className="mt-2 flex flex-col gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (text.trim()) speichern.mutate();
+        if (text.trim() || mitAnhang) speichern.mutate();
       }}
     >
       <TextArea
@@ -315,7 +320,11 @@ function Bearbeiten({
         }}
       />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" groesse="kompakt" disabled={!text.trim() || speichern.isPending}>
+        <Button
+          type="submit"
+          groesse="kompakt"
+          disabled={(!text.trim() && !mitAnhang) || speichern.isPending}
+        >
           {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
         <Button variant="quiet" groesse="kompakt" onClick={onFertig}>

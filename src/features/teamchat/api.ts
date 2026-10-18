@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from '@/features/files/dokumentarten';
+import { nachSrgb } from '@/features/files/farbe';
+import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 
@@ -76,6 +79,18 @@ const reaktionSchema = z.object({
 });
 export type Reaktion = z.infer<typeof reaktionSchema>;
 
+/**
+ * Ein Anhang an einer Nachricht (TEAM-003, ADR-017 Abschnitt M): Kennung,
+ * Name, Art und Größe - ohne Objektschlüssel und ohne Vorschau (Punkt 77).
+ */
+const anhangSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  mime_type: z.string(),
+  byte_size: z.number(),
+});
+export type Anhang = z.infer<typeof anhangSchema>;
+
 const nachrichtSchema = z.object({
   id: z.string(),
   parent_id: z.string().nullable(),
@@ -105,6 +120,8 @@ const nachrichtSchema = z.object({
   /** An einer Antwort „auch im Kanal“: worauf sie antwortet. */
   root_author_name: z.string().nullable(),
   root_body: z.string().nullable(),
+  /** TEAM-003: Anhänge in der Reihenfolge des Sendens; am Anker leer. */
+  attachments: z.array(anhangSchema).default([]),
 });
 export type Nachricht = z.infer<typeof nachrichtSchema>;
 
@@ -218,6 +235,16 @@ const SAETZE: readonly (readonly [string, string])[] = [
   ['at most 50 pinned', 'Höchstens 50 angeheftete Nachrichten je Gespräch.'],
   ['only a reply can', 'Nur eine Antwort kann zusätzlich im Gespräch stehen.'],
   ['leave the channel instead', 'Selbst gehst du über „Kanal verlassen“.'],
+  // TEAM-003: Anhänge - vor dem allgemeinen „not found“.
+  ['too many attachments', 'Höchstens fünf Anhänge je Nachricht.'],
+  ['too many unsent attachments', 'Zu viele Anhänge warten. Erst senden oder entfernen.'],
+  ['a scheduled message has no attachments', 'Eine Nachricht mit Anhang lässt sich nicht planen.'],
+  ['team attachment not found', 'Ein Anhang ist nicht mehr da. Bitte entfernen und neu anhängen.'],
+  ['unsupported media type', 'Nur Fotos (JPEG, PNG) und PDF.'],
+  ['file too large or empty', 'Höchstens 10 MB je Datei.'],
+  ['invalid file name', 'Der Dateiname passt nicht. Bitte umbenennen.'],
+  ['object was not uploaded', 'Die Datei kam nicht an. Bitte noch einmal.'],
+  ['does not match the announced', 'Die Datei kam nicht vollständig an. Bitte noch einmal.'],
   ['not found', 'Das Gespräch oder die Nachricht gibt es nicht mehr.'],
   ['not allowed', 'Dafür fehlt die Berechtigung.'],
 ];
@@ -493,6 +520,11 @@ export interface Sendeauftrag {
   auchImKanal: boolean;
   /** Später senden (ANN-643): ISO-Zeit oder `null`. */
   um: string | null;
+  /**
+   * TEAM-003: schon hochgeladene und bestätigte Anhänge - nur ihre Kennungen
+   * gehen zum Server, Name und Größe zeigen sie im Ausgang an.
+   */
+  anhaenge: readonly Anhang[];
 }
 
 export async function sendeNachricht(auftrag: Sendeauftrag): Promise<string> {
@@ -508,10 +540,193 @@ export async function sendeNachricht(auftrag: Sendeauftrag): Promise<string> {
       p_mention_all: auftrag.alle,
       p_also_in_channel: auftrag.auchImKanal,
       p_send_at: auftrag.um,
+      p_attachments: auftrag.anhaenge.map((a) => a.id),
     },
     ersatz,
   );
   return antwort(z.string(), data, ersatz);
+}
+
+// -----------------------------------------------------------------------------
+// Anhänge (TEAM-003, ADR-017 Abschnitt M): derselbe Weg wie die Belege
+// -----------------------------------------------------------------------------
+
+/** Höchstens so viele Anhänge je Nachricht (ADR-017 Punkt 71) - wie am Server. */
+export const ANHAENGE_MAX = 5;
+
+async function pruefsumme(datei: Blob): Promise<string> {
+  const bytes = await alleBytes(datei);
+  const hash = await crypto.subtle.digest('SHA-256', bytes as BufferSource);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+const vorbereitetSchema = z.object({
+  attachment_id: z.string(),
+  bucket_id: z.string(),
+  object_key: z.string(),
+});
+
+/** Was die Person liest, wenn der Server einen Anhang verwirft (ADR-017 Punkt 52). */
+export const ANHANG_VERWORFEN =
+  'Der Anhang wurde bei der Prüfung am Server verworfen. Bitte neu anhängen.';
+
+const NICHT_UEBERTRAGEN = 'Nicht hochgeladen – kein Netz? Bitte noch einmal.';
+
+/**
+ * Einen Anhang hochladen - bevor die Nachricht hinausgeht (ADR-017 Punkte 7
+ * und 74): Format und Inhalt prüfen, Farbe nach sRGB, Metadaten eines Fotos
+ * verlustfrei entfernen (Punkte 34 und 53), Prüfsumme der bereinigten Bytes,
+ * dann (a) vorbereiten, (b) hochladen, (c) bestätigen und die Prüfung am
+ * Server. Scheitert (b) oder (c), wird der Anhang verworfen. `netz` am
+ * Fehler heißt: ein neuer Versuch kann gelingen - ein falsches Format nicht.
+ * Die Bytes liegen bis dahin nur im Arbeitsspeicher; ohne Netz gibt es keinen
+ * Anhang (Punkt 33).
+ */
+export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string): Promise<Anhang> {
+  const grund = dateiAblehnungsgrund(datei);
+  if (grund) throw new TeamchatFehler(grund, false);
+  const inhaltsgrund = await dateiInhaltAblehnungsgrund(datei);
+  if (inhaltsgrund) throw new TeamchatFehler(inhaltsgrund, false);
+  const sauber = await bereinigeBild(await nachSrgb(datei));
+  const summe = await pruefsumme(sauber);
+
+  const ersatz = 'Der Anhang konnte nicht angenommen werden.';
+  const data = await rufe(
+    'prepare_team_attachment_upload',
+    {
+      p_channel: kanalId,
+      p_mime_type: sauber.type,
+      p_byte_size: sauber.size,
+      p_checksum_sha256: summe,
+      p_name: name,
+    },
+    ersatz,
+  );
+  const vorbereitet = antwort(z.array(vorbereitetSchema), data ?? [], ersatz)[0];
+  if (!vorbereitet) throw new TeamchatFehler(ersatz, false);
+
+  try {
+    // ADR-017 Punkte 8 und 16: kein Überschreiben, kein Zwischenspeicher.
+    let hochgeladen: { error: unknown };
+    try {
+      hochgeladen = await getSupabase()
+        .storage.from(vorbereitet.bucket_id)
+        .upload(vorbereitet.object_key, sauber, {
+          contentType: sauber.type,
+          cacheControl: '0',
+          upsert: false,
+        });
+    } catch {
+      throw new TeamchatFehler(NICHT_UEBERTRAGEN, true);
+    }
+    if (hochgeladen.error) throw new TeamchatFehler(NICHT_UEBERTRAGEN, true);
+    await rufe(
+      'confirm_team_attachment_upload',
+      { p_attachment_id: vorbereitet.attachment_id },
+      'Die Datei kam nicht vollständig an. Bitte noch einmal.',
+    );
+  } catch (ursache) {
+    try {
+      await getSupabase().rpc('discard_team_attachment', {
+        p_attachment_id: vorbereitet.attachment_id,
+      });
+    } catch {
+      // Der ursprüngliche Grund ist die Meldung; der tägliche Lauf räumt auf.
+    }
+    throw ursache instanceof TeamchatFehler ? ursache : new TeamchatFehler(NICHT_UEBERTRAGEN, true);
+  }
+
+  if ((await pruefeAmServer(vorbereitet.attachment_id)) === 'rejected') {
+    throw new TeamchatFehler(ANHANG_VERWORFEN, false);
+  }
+  return { id: vorbereitet.attachment_id, name, mime_type: sauber.type, byte_size: sauber.size };
+}
+
+/** Prüfung am Inhalt (Edge Function `patient-file-verify`); ohne Function kein Fehler. */
+async function pruefeAmServer(anhangId: string): Promise<string | null> {
+  try {
+    const { data, error } = (await getSupabase().functions.invoke<unknown>('patient-file-verify', {
+      body: { team_attachment_id: anhangId },
+    })) as { data: unknown; error: unknown };
+    if (error) return null;
+    const ergebnis = z.object({ ergebnis: z.string() }).safeParse(data);
+    return ergebnis.success ? ergebnis.data.ergebnis : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Einen eigenen, noch nicht gesendeten Anhang verwerfen. */
+export async function verwirfAnhang(anhangId: string): Promise<void> {
+  await rufe(
+    'discard_team_attachment',
+    { p_attachment_id: anhangId },
+    'Der Anhang konnte nicht verworfen werden.',
+  );
+}
+
+/** Gültigkeit eines signierten Verweises in Sekunden (ADR-017 Punkt 15). */
+const VERWEIS_SEKUNDEN = 60;
+
+/**
+ * Einen gesendeten Anhang zum Ansehen laden - in den Speicher der Seite,
+ * nicht auf das Gerät (ADR-017 Punkte 54 und 77): erst die einmalige
+ * Freigabe, dann der Verweis, dann `fetch` ohne Zwischenspeicher. Der
+ * Verweis verlässt diese Funktion nicht.
+ */
+export async function ladeAnhang(anhangId: string): Promise<Blob> {
+  const ersatz = 'Der Anhang konnte nicht geöffnet werden.';
+  const data = await rufe('issue_team_attachment_link', { p_attachment_id: anhangId }, ersatz);
+  const freigabe = antwort(
+    z.array(z.object({ bucket_id: z.string(), object_key: z.string(), mime_type: z.string() })),
+    data ?? [],
+    ersatz,
+  )[0];
+  if (!freigabe) throw new TeamchatFehler(ersatz, false);
+  let adresse: string | undefined;
+  try {
+    const { data: signiert, error } = await getSupabase()
+      .storage.from(freigabe.bucket_id)
+      .createSignedUrl(freigabe.object_key, VERWEIS_SEKUNDEN);
+    if (error) throw error;
+    adresse = signiert?.signedUrl;
+  } catch {
+    throw new TeamchatFehler(KEIN_NETZ, true);
+  }
+  if (!adresse) throw new TeamchatFehler('Der Anhang fehlt in der Ablage.', false);
+  let geladen: Response;
+  try {
+    geladen = await fetch(adresse, { cache: 'no-store' });
+  } catch {
+    throw new TeamchatFehler(KEIN_NETZ, true);
+  }
+  if (!geladen.ok) throw new TeamchatFehler('Der Anhang konnte nicht geladen werden.', false);
+  return new Blob([await geladen.arrayBuffer()], { type: freigabe.mime_type });
+}
+
+const dateiSchema = z.object({
+  id: z.string(),
+  message_id: z.string(),
+  parent_id: z.string().nullable(),
+  display_name: z.string(),
+  mime_type: z.string(),
+  byte_size: z.number(),
+  created_at: z.string(),
+  author_name: z.string().nullable(),
+});
+export type Datei = z.infer<typeof dateiSchema>;
+
+export function dateienKey(kanalId: string) {
+  return [...TEAMCHAT_KEY, 'dateien', kanalId] as const;
+}
+
+/** Dateien je Gespräch (ADR-017 Punkt 80): die neuesten zuerst. */
+export async function fetchDateien(kanalId: string): Promise<Datei[]> {
+  const ersatz = 'Die Dateien konnten nicht geladen werden.';
+  const data = await rufe('list_team_channel_attachments', { p_channel: kanalId }, ersatz);
+  return antwort(z.array(dateiSchema), data ?? [], ersatz);
 }
 
 export async function bearbeiteNachricht(input: {

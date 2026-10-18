@@ -48,6 +48,7 @@ async function ohneNetzGesendet() {
     threadId: null,
     text: 'Bin 10 Minuten später',
     erwaehnt: [],
+    anhaenge: [],
     alle: false,
     auchImKanal: false,
     um: null,

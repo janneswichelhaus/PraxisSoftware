@@ -31,6 +31,10 @@ const api = {
   fetchGemerkt: vi.fn(),
   fetchGeplant: vi.fn(),
   fetchAngeheftet: vi.fn(),
+  fetchDateien: vi.fn(),
+  ladeAnhangHoch: vi.fn(),
+  verwirfAnhang: vi.fn(),
+  ladeAnhang: vi.fn(),
   sucheNachrichten: vi.fn(),
   sendeNachricht: vi.fn(),
   markiereGelesen: vi.fn(),
@@ -144,6 +148,7 @@ function nachricht(overrides: Partial<Nachricht>): Nachricht {
     saved: false,
     root_author_name: null,
     root_body: null,
+    attachments: [],
     ...overrides,
   };
 }
@@ -217,6 +222,8 @@ beforeEach(() => {
   api.fetchGemerkt.mockResolvedValue([]);
   api.fetchGeplant.mockResolvedValue([]);
   api.fetchAngeheftet.mockResolvedValue([]);
+  api.fetchDateien.mockResolvedValue([]);
+  api.verwirfAnhang.mockResolvedValue(undefined);
   api.sucheNachrichten.mockResolvedValue([]);
   api.sendeNachricht.mockImplementation((auftrag: { id: string }) => Promise.resolve(auftrag.id));
   api.markiereGelesen.mockResolvedValue(undefined);
@@ -904,5 +911,169 @@ describe('Nachrichten der Radflotte (ANN-613)', () => {
     expect(
       screen.getByRole('textbox', { name: 'Nachricht an Nachrichten der Radflotte' }),
     ).toBeInTheDocument();
+  });
+});
+
+describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn(() => 'blob:vorschau');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  const pdf = () => new File(['%PDF-1.7'], 'Dienstplan.pdf', { type: 'application/pdf' });
+  const foto = (name = 'Speiche.png') => new File(['png'], name, { type: 'image/png' });
+
+  it('hängt eine Datei in zwei Tipps an und sendet sie ohne Text mit - planen geht dann nicht', async () => {
+    const nutzer = userEvent.setup();
+    api.ladeAnhangHoch.mockResolvedValue({
+      id: 'a1',
+      name: 'Dienstplan.pdf',
+      mime_type: 'application/pdf',
+      byte_size: 2048,
+    });
+    zeige('/team/k-allgemein');
+    await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
+
+    await nutzer.upload(screen.getByLabelText('Foto oder PDF anhängen'), pdf());
+    expect(await screen.findByText('PDF · 2 KB')).toBeInTheDocument();
+    expect(api.ladeAnhangHoch).toHaveBeenCalledWith(
+      'k-allgemein',
+      expect.any(File),
+      'Dienstplan.pdf',
+    );
+    expect(screen.getByRole('button', { name: 'Später senden' })).toBeDisabled();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: '',
+          um: null,
+          anhaenge: [expect.objectContaining({ id: 'a1', name: 'Dienstplan.pdf' })],
+        }),
+      ),
+    );
+    expect(screen.queryByText('PDF · 2 KB')).toBeNull();
+  });
+
+  it('sendet erst, wenn alle Anhänge oben sind - ohne Netz mit „Noch einmal“, entfernt auch am Server', async () => {
+    const nutzer = userEvent.setup();
+    let fertig: (wert: unknown) => void = () => undefined;
+    api.ladeAnhangHoch
+      .mockReturnValueOnce(new Promise((aufloesen) => (fertig = aufloesen)))
+      .mockRejectedValueOnce(
+        new TeamchatFehler('Nicht hochgeladen – kein Netz? Bitte noch einmal.', true),
+      )
+      .mockResolvedValueOnce({
+        id: 'a3',
+        name: 'Reifen.png',
+        mime_type: 'image/png',
+        byte_size: 4096,
+      });
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, 'Schaden am Rad');
+    await nutzer.upload(screen.getByLabelText('Foto oder PDF anhängen'), foto());
+    expect(await screen.findByText('Lädt')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
+    fertig({ id: 'a2', name: 'Speiche.png', mime_type: 'image/png', byte_size: 3072 });
+    expect(await screen.findByText('Foto · 3 KB')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Speiche.png' })).toHaveAttribute(
+      'src',
+      'blob:vorschau',
+    );
+    expect(screen.getByRole('button', { name: 'Senden' })).toBeEnabled();
+
+    await nutzer.upload(screen.getByLabelText('Foto oder PDF anhängen'), foto('Reifen.png'));
+    // Der Grund steht in voller Länge unter der Zeile, nicht gekürzt daneben.
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Nicht hochgeladen – kein Netz? Bitte noch einmal.',
+    );
+    expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
+    await nutzer.click(screen.getByRole('button', { name: 'Noch einmal' }));
+    expect(await screen.findByText('Foto · 4 KB')).toBeInTheDocument();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Anhang entfernen: Speiche.png' }));
+    await vi.waitFor(() => expect(api.verwirfAnhang).toHaveBeenCalledWith('a2'));
+    expect(screen.queryByText('Foto · 3 KB')).toBeNull();
+  });
+
+  it('nimmt höchstens fünf Anhänge je Nachricht', async () => {
+    const nutzer = userEvent.setup();
+    api.ladeAnhangHoch.mockImplementation((_kanal: string, datei: File, name: string) =>
+      Promise.resolve({ id: name, name, mime_type: datei.type, byte_size: 1024 }),
+    );
+    zeige('/team/k-allgemein');
+    await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.upload(
+      screen.getByLabelText('Foto oder PDF anhängen'),
+      [1, 2, 3, 4, 5, 6].map((n) => foto(`Bild ${n}.png`)),
+    );
+    expect(await screen.findByText('Höchstens 5 Anhänge je Nachricht.')).toBeInTheDocument();
+    expect(api.ladeAnhangHoch).toHaveBeenCalledTimes(5);
+    expect(screen.getByRole('button', { name: 'Anhängen' })).toBeDisabled();
+  });
+
+  it('zeigt Anhänge einer Nachricht ohne Vorschaubild und öffnet erst auf Tipp, ohne Herunterladen', async () => {
+    const nutzer = userEvent.setup();
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({
+        body: '',
+        attachments: [
+          { id: 'x1', name: 'Speiche.jpg', mime_type: 'image/jpeg', byte_size: 3072 },
+          { id: 'x2', name: 'Plan.pdf', mime_type: 'application/pdf', byte_size: 1024 },
+        ],
+      }),
+    ]);
+    api.ladeAnhang.mockImplementation((id: string) =>
+      Promise.resolve(
+        id === 'x2'
+          ? new Blob(['%PDF-1.4'], { type: 'application/pdf' })
+          : new Blob(['jpg'], { type: 'image/jpeg' }),
+      ),
+    );
+    zeige('/team/k-planung');
+    const knopf = await screen.findByRole('button', { name: /Speiche\.jpg/ });
+    expect(knopf).toHaveTextContent('Foto, 3 KB');
+    expect(screen.getByRole('button', { name: /Plan\.pdf/ })).toHaveTextContent('PDF, 1 KB');
+    expect(screen.queryByRole('img', { name: 'Speiche.jpg' })).toBeNull();
+    expect(api.ladeAnhang).not.toHaveBeenCalled();
+
+    await nutzer.click(knopf);
+    expect(await screen.findByRole('img', { name: 'Speiche.jpg' })).toBeInTheDocument();
+    expect(api.ladeAnhang).toHaveBeenCalledWith('x1');
+    expect(screen.queryByText(/herunterladen/i)).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Schließen' }));
+    expect(screen.queryByRole('img', { name: 'Speiche.jpg' })).toBeNull();
+
+    // Ein PDF im Rahmen ohne die Leiste des Betrachters (Herunterladen, Drucken).
+    await nutzer.click(screen.getByRole('button', { name: /Plan\.pdf/ }));
+    expect(await screen.findByTitle('Plan.pdf')).toHaveAttribute(
+      'src',
+      expect.stringMatching(/#toolbar=0$/),
+    );
+  });
+
+  it('listet die Dateien des Gesprächs in den Details', async () => {
+    const nutzer = userEvent.setup();
+    api.fetchDateien.mockResolvedValue([
+      {
+        id: 'd1',
+        message_id: 'n1',
+        parent_id: null,
+        display_name: 'Dienstplan.pdf',
+        mime_type: 'application/pdf',
+        byte_size: 245760,
+        created_at: '2026-10-17T07:00:00+00:00',
+        author_name: 'Tim Teamleitung',
+      },
+    ]);
+    zeige('/team/k-allgemein');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    expect(await screen.findByRole('heading', { name: /^Dateien/ })).toBeInTheDocument();
+    expect(await screen.findByText('Dienstplan.pdf')).toBeInTheDocument();
+    expect(screen.getByText(/^PDF · 240 KB · Tim Teamleitung · /)).toBeInTheDocument();
+    expect(api.fetchDateien).toHaveBeenCalledWith('k-allgemein');
   });
 });

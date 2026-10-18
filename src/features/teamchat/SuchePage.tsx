@@ -23,7 +23,7 @@ import {
   sucheNachrichten,
   type Suchfilter,
 } from './api';
-import { ohneFormatierung } from './formatierung';
+import { vorschau } from './formatierung';
 import { SUCHE, TEAMCHAT, stellePfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
@@ -154,7 +154,7 @@ export function SuchePage() {
                       stellePfad({ id: t.channel_id, kind: t.channel_kind }, t),
                       SUCHE,
                     )}
-                    titel={<span className="line-clamp-2">{ohneFormatierung(t.body)}</span>}
+                    titel={<span className="line-clamp-2">{vorschau(t.body)}</span>}
                     meta={`${titel(t.channel_id)} · ${t.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(
                       t.created_at,
                       zeitzone,
