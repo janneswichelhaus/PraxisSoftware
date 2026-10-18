@@ -74,18 +74,21 @@ export function EntwuerfePage() {
               to={k ? (e.threadId ? threadPfad(k, e.threadId) : gespraechPfad(k)) : TEAMCHAT}
               titel={<span className="line-clamp-2">{ohneFormatierung(e.text)}</span>}
               meta={e.threadId ? `Antwort im Thread · ${ort}` : ort}
-              aktion={
-                // Ungesendeter Text ist ohne Rückfrage fort (DESIGN.md 9.16).
-                <Rueckfrage
-                  ausloeser="Verwerfen"
-                  ausloeserVariante="quiet"
-                  ausloeserGroesse="kompakt"
-                  ausloeserZusatz={`Entwurf ${e.threadId ? 'im Thread in' : 'in'} ${ort}`}
-                  bestaetigen="Ja, verwerfen"
-                  onBestaetigen={() => entwurfSetzen(kontoId, e.kanalId, e.threadId, '')}
-                >
-                  Der Text ist danach fort.
-                </Rueckfrage>
+              darunter={
+                // Ungesendeter Text ist ohne Rückfrage fort (DESIGN.md 9.16) - unter
+                // der Zeile, in ihr bräche der Kasten bei 375 px (wie im Zeitkonto).
+                <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">
+                  <Rueckfrage
+                    ausloeser="Verwerfen"
+                    ausloeserVariante="quiet"
+                    ausloeserGroesse="kompakt"
+                    ausloeserZusatz={`Entwurf ${e.threadId ? 'im Thread in' : 'in'} ${ort}`}
+                    bestaetigen="Ja, verwerfen"
+                    onBestaetigen={() => entwurfSetzen(kontoId, e.kanalId, e.threadId, '')}
+                  >
+                    Der Text ist danach fort.
+                  </Rueckfrage>
+                </div>
               }
             />
           );

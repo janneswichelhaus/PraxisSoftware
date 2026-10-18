@@ -349,7 +349,7 @@ export function AppShell({
             steht der Hinweis über der Kopfzeile und schiebt sie hinunter; die
             Messung der Suche in `Funktionssuche.tsx` gilt unverändert. */}
         <div ref={kopf} className="sticky top-0 z-30">
-          <Verbindungsanzeige />
+          <Verbindungsanzeige imChat={chat} />
           {/* Gescheitertes Nachladen des Profils (BEF-046): dieselbe Stelle,
               damit der Hinweis mit der Kopfzeile klebt. */}
           <Profilhinweis />

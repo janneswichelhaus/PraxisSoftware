@@ -170,16 +170,19 @@ export function Details({
                   dicht
                   titel={m.staff_member_id === eigeneId ? `${m.name} (du)` : m.name}
                   meta={m.active ? undefined : 'Nicht mehr im Team'}
-                  aktion={
+                  darunter={
+                    // Unter der Zeile: in ihr bräche die Rückfrage bei 375 px.
                     privat &&
                     kanal.manageable &&
                     m.staff_member_id !== eigeneId &&
                     !kanal.archived ? (
-                      <Herausnehmen
-                        kanalId={kanal.id}
-                        staffMemberId={m.staff_member_id}
-                        name={m.name}
-                      />
+                      <div className="flex flex-wrap items-center justify-end gap-x-3 pb-2">
+                        <Herausnehmen
+                          kanalId={kanal.id}
+                          staffMemberId={m.staff_member_id}
+                          name={m.name}
+                        />
+                      </div>
                     ) : undefined
                   }
                 />

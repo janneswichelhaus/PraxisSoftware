@@ -23,7 +23,7 @@ import { useIstVerbunden } from './verbindung';
  * Server erreichbar ist — er sagt nur, was das Gerät meldet.
  */
 
-export function Verbindungsanzeige() {
+export function Verbindungsanzeige({ imChat = false }: { imChat?: boolean }) {
   const verbunden = useIstVerbunden();
 
   // Im Normalfall steht hier nichts Sichtbares. Eine dauerhafte
@@ -49,9 +49,12 @@ export function Verbindungsanzeige() {
             <span aria-hidden="true" className="mr-1.5 font-semibold">
               !
             </span>
-            <strong className="font-semibold">Keine Verbindung.</strong> Änderungen lassen sich
-            gerade nicht speichern. Bitte den Text im Feld stehen lassen, bis die Verbindung zurück
-            ist.
+            <strong className="font-semibold">Keine Verbindung.</strong>{' '}
+            {/* Im Teamchat wartet eine Nachricht im Ausgang (TEAM-002, ANN-641) -
+                „Text im Feld stehen lassen“ stimmte dort nicht. */}
+            {imChat
+              ? 'Nachrichten warten und gehen beim nächsten Empfang hinaus, solange die App läuft.'
+              : 'Änderungen lassen sich gerade nicht speichern. Bitte den Text im Feld stehen lassen, bis die Verbindung zurück ist.'}
           </span>
         </div>
       )}
