@@ -6493,11 +6493,11 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
-**Annahme.** Jede Nachricht trägt eine Kennung, die das Gerät vergibt (ADR-024 Punkt 7); Wiederholen nach einem Funkloch verdoppelt nichts, eine fremde Kennung antwortet wie eine unbekannte. Geblättert wird über (Zeit, Kennung) zurück, vorwärts und um eine Stelle. Der Ausgang wartet im Arbeitsspeicher und sendet beim nächsten Netz erneut; nichts liegt auf dem Gerät.
+**Annahme.** Das Gerät vergibt jeder Nachricht eine Kennung (ADR-024 Punkt 7); die Kennung der Nachricht leitet der Server aus Person und Gerätekennung ab (SHA-256, 128 Bit), das Gerät rechnet gleich. Wiederholen nach einem Funkloch verdoppelt nichts, Gelöschtes kommt nicht zurück, eine fremde Kennung trifft nie eine fremde Zeile. Geblättert wird über (Zeit, Kennung) zurück, vorwärts und um eine Stelle. Der Ausgang wartet im Arbeitsspeicher und sendet beim nächsten Netz erneut.
 
-**Begründung.** ADR-024 Punkt 7 und Punkt 4 (Nachricht nur online); gleiche Zeitstempel kommen bei Seeds und Wiederherstellung vor.
+**Begründung.** ADR-024 Punkt 7 und Punkt 4; Zweitreview TEAM-002 (Befund 2); gleiche Zeitstempel bei Seeds und Wiederherstellung.
 
-**Anker.** `p_id` in `public.post_team_message`, `public.list_team_messages`.
+**Anker.** `app.team_message_key`, `src/features/teamchat/kennung.ts`, `public.list_team_messages`.
 
 **Änderungspfad.** Ausgang über ein Neuladen hinaus: Ablage nach ADR-024 Abschnitt B · Aufwand `mittel`, mit ADR-Änderung.
 
@@ -6505,7 +6505,7 @@ Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Private Kanäle und Gruppennachrichten (drei bis neun Personen) lesen nur ihre Mitglieder, auch owner nicht. Private Kanäle legen owner und Teamleitung an; jedes Mitglied holt weitere dazu (sie lesen den Verlauf), verwaltende Mitglieder nehmen heraus, benennen um, archivieren. Wer geht, verliert den eigenen Stand; geht das letzte Mitglied, fällt der Kanal mit Journal. Kein Umwandeln in einen offenen Kanal.
+**Annahme.** Private Kanäle und Gruppennachrichten (drei bis neun Personen) lesen nur ihre Mitglieder, auch owner nicht. Private Kanäle legen owner und Teamleitung an; jedes Mitglied holt weitere dazu (sie lesen den Verlauf), verwaltende Mitglieder nehmen heraus, benennen um, archivieren. Wer geht, verliert den eigenen Stand; ist kein aktives Mitglied mehr dabei, fällt der Kanal mit Journal. Eindeutig sind nur Namen offener Kanäle, damit kein Name einen privaten Kanal verrät. Kein Umwandeln.
 
 **Begründung.** §20, ANN-609, ANN-611; Art. 5 Abs. 1 lit. c DSGVO; Slack-Hilfe (Suchauszug): privat nur per Einladung, Gruppen bis neun.
 
@@ -6517,7 +6517,7 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
-**Annahme.** Eine Antwort kann zusätzlich im Gespräch stehen. Ausgangsnachrichten lassen sich eine Minute bis 30 Tage im Voraus planen; bis dahin sieht sie nur, wer sie verfasst hat, unter „Geplant“, und eine Änderung davor trägt keine Marke. Antworten werden nicht geplant.
+**Annahme.** Eine Antwort kann zusätzlich im Gespräch stehen. Ausgangsnachrichten lassen sich eine Minute bis 30 Tage im Voraus planen; bis dahin sieht sie nur, wer sie verfasst hat, unter „Geplant“, und eine Änderung davor trägt keine Marke. Antworten werden nicht geplant. Verlässt die Person das Gespräch, wird herausgenommen oder scheidet aus, oder wird es archiviert, fallen ihre geplanten Nachrichten dort mit Journal.
 
 **Begründung.** Schont die freie Zeit im Team (§20); Slack plant bis 120 Tage (Suchauszug).
 
@@ -6553,7 +6553,7 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Gemerktes sieht nur die Person selbst; eine Erinnerung (eine Minute bis 90 Tage) erscheint in der App und im Zähler, nie als Push. Erledigtes bleibt abrufbar. Es verlängert die Frist der Nachricht nicht und fällt mit ihr, beim Verlassen und mit dem Ausscheiden.
+**Annahme.** Gemerktes sieht nur die Person selbst; eine Erinnerung (eine Minute bis 90 Tage) erscheint in der App und im Zähler, nie als Push. Erledigtes bleibt abrufbar. Wann gemerkt oder erledigt wurde, wird nicht gespeichert. Es verlängert die Frist der Nachricht nicht und fällt mit ihr, beim Verlassen und mit dem Ausscheiden.
 
 **Begründung.** ADR-024 Punkt 12; §18; Slack „Später“/To-dos (Suchauszug). Aufgaben der Praxis bleiben in den Offenen Punkten.
 
@@ -6572,3 +6572,15 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 **Anker.** `public.get_team_chat_summary`, `public.team_channel_settings`.
 
 **Änderungspfad.** Andere Zählweise: nur `get_team_chat_summary` · Aufwand `klein`.
+
+### ANN-651 — Teamchat: Suche mit Filtern, die Person nur mit Suchwort
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Die Suche findet in allen lesbaren Gesprächen ein Wort ab zwei Zeichen und filtert nach Gespräch, Person und Zeitraum. Ohne Suchwort geht nur der Blick in ein Gespräch, wie Hochblättern; nach einer Person wird nur mit Suchwort gefiltert. Geplantes und Entferntes findet niemand, Suchwörter stehen in keiner Adresse und keinem Log.
+
+**Begründung.** §20: „alles von Anna im Oktober“ wäre eine Liste ihres Verhaltens, keine Suche nach einer Sache; Zweitreview TEAM-002 (Punkt 6); ADR-011. Slack sucht auch nur mit Personenfilter (Suchauszug) – bewusst enger.
+
+**Anker.** Prüfung am Anfang von `public.search_team_messages`.
+
+**Änderungspfad.** Personenfilter ohne Wort: diese Prüfung, mit Datenschutzprüfung · Aufwand `klein`.

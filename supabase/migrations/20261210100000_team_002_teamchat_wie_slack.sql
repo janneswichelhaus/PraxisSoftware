@@ -20,8 +20,9 @@
 --   * Gelesen nur bis zur gezeigten Nachricht (`p_up_to`): Was zwischen dem
 --     Laden und dem Markieren eintrifft, bleibt neu.
 --   * Senden mit einer Kennung des Geräts (`p_id`, ADR-024 Punkt 7): zweimal
---     gesendet ist einmal gespeichert; eine fremde Kennung antwortet wie eine
---     unbekannte.
+--     gesendet ist einmal gespeichert. Die Kennung der Nachricht leitet der
+--     Server aus Person und Gerätekennung ab (`app.team_message_key`) - eine
+--     fremde Kennung trifft so nie eine fremde Zeile und verrät nichts.
 --   * Blättern mit Cursor (Zeit, Kennung) zurück, vorwärts und um eine Stelle
 --     herum - ohne Lücke und ohne Doppel, auch bei gleicher Zeit.
 --   * Behoben: Am Anker ohne Verfasser:in war `own` leer statt falsch.
@@ -33,8 +34,9 @@
 --   * Reaktionen aus einer festen Auswahl, Anheften, „Für später“ mit
 --     Erinnerung in der App, je Gespräch „alle“, „nur Erwähnungen“ oder
 --     „stumm“ und Favoriten, @alle in Kanälen;
---   * Suche mit Filtern (Gespräch, Person, Zeitraum) und ein Zähler für die
---     Navigation - Benachrichtigung in der App, kein Push (ADR-024 Punkt 12).
+--   * Suche mit Filtern (Gespräch, Person nur mit Suchwort, Zeitraum; ANN-651)
+--     und ein Zähler für die Navigation - Benachrichtigung in der App, kein
+--     Push (ADR-024 Punkt 12).
 --
 -- `public.apply_retention` und `public.reapply_deletion_journal` bleiben
 -- unverändert: Jede neue Tabelle hängt an Nachricht oder Gespräch (cascade),
@@ -58,10 +60,10 @@ alter table public.team_channels
   add constraint team_channels_direct
     check (kind in ('channel', 'private') or (description is null and archived_at is null));
 
--- Ein Name gilt für offene und private Kanäle zusammen (wie Slack).
-drop index public.team_channels_name_unique;
-create unique index team_channels_name_unique
-  on public.team_channels (organization_id, lower(name)) where kind in ('channel', 'private');
+-- Eindeutig sind Namen nur unter offenen Kanälen - der Index aus TEAM-001
+-- bleibt. Ein privater Kanal verrät seinen Namen nicht dadurch, dass ein
+-- offener oder ein anderer privater nicht so heißen dürfte (Zweitreview
+-- TEAM-002, Befund 5; ANN-642).
 
 comment on table public.team_channels is
   'TEAM-001, TEAM-002: Gespräche des Teamchats - offene Kanäle (alle Teilnehmenden der Praxis), private Kanäle und Gruppennachrichten (nur ihre Mitglieder, team_channel_members, ANN-642), Direktnachrichten (genau zwei Personen) und das eine Gespräch der Radflotte (wer die Flotte liest, ANN-613). Datenklasse teamchat (ANN-610).';
@@ -176,9 +178,10 @@ create table public.team_saved_messages (
   organization_id uuid not null references public.organizations (id) on delete cascade,
   message_id      uuid not null references public.team_messages (id) on delete cascade,
   staff_member_id uuid not null references public.staff_members (id) on delete cascade,
-  saved_at        timestamptz not null default now(),
+  -- Die Zeit der Erinnerung wählt die Person selbst. Wann sie gemerkt oder
+  -- erledigt hat, steht nirgends - wie bei Reaktionen (ANN-644, ANN-646).
   remind_at       timestamptz,
-  done_at         timestamptz,
+  done            boolean not null default false,
   unique (message_id, staff_member_id)
 );
 
@@ -233,6 +236,15 @@ values
   ('team_channel_settings', 'teamchat', 'automatisch',
    'Einstellungen je Gespräch (TEAM-002): fallen mit dem Gespräch (cascade), beim Verlassen und mit dem Ausscheiden (ANN-647).',
    249);
+
+-- Die Einträge aus TEAM-001 kennen nur Direktnachrichten (Befund 3 des
+-- Zweitreviews).
+update public.retention_assignments
+   set scope_note = 'Gespräche (TEAM-001, TEAM-002): offene Kanäle und das Gespräch der Radflotte bleiben, solange die Praxis sie führt; Direkt- und Gruppennachrichten ohne Nachricht fallen zwölf Monate nach ihrem Beginn; private Kanäle fallen, sobald kein aktives Mitglied mehr dabei ist - jeweils mit Eintrag im Löschjournal (ANN-610, ANN-642).'
+ where table_name = 'team_channels';
+update public.retention_assignments
+   set scope_note = 'Mitglieder von Direkt- und Gruppennachrichten und privaten Kanälen (TEAM-001, TEAM-002): fallen mit dem Gespräch (cascade) und beim Verlassen oder Herausnehmen (ANN-642).'
+ where table_name = 'team_channel_members';
 
 -- Fällt der Inhalt einer Nachricht (eigenes Löschen mit Antworten, Entfernen,
 -- Frist, Wiederanwendung nach einem Restore), fällt alles, was an ihm hängt:
@@ -436,16 +448,69 @@ as $$
     and app.team_channel_readable(m.channel_id, p_org, p_staff)
 $$;
 
+-- Die Kennung einer Nachricht aus der Kennung des Geräts (ADR-024 Punkt 7,
+-- ANN-641): abgeleitet aus Person und Gerätekennung, 128 Bit aus SHA-256.
+-- Zweimal gesendet trifft dieselbe Zeile; eine Kennung, die jemand anderem
+-- gehört, trifft nie dessen Zeile - so verrät der Server nichts, auch nicht,
+-- ob es sie gibt (Zweitreview TEAM-002, Befund 2). Das Gerät rechnet dieselbe
+-- Ableitung (`src/features/teamchat/kennung.ts`), um seine Nachricht im
+-- Verlauf wiederzuerkennen.
+create function app.team_message_key(p_staff uuid, p_device uuid)
+returns uuid
+language sql
+immutable
+set search_path = ''
+as $$
+  select encode(substring(sha256(convert_to(p_staff::text || ':' || p_device::text, 'UTF8'))
+                          from 1 for 16), 'hex')::uuid
+$$;
+
+-- Ungesendete, geplante Nachrichten (ANN-643) fallen, sobald sie nicht mehr
+-- erscheinen dürfen: wenn ihre Verfasser:in das Gespräch verlässt, daraus
+-- genommen wird oder ausscheidet, und mit dem Archivieren des Gesprächs.
+-- Sonst erschienen sie später, und niemand könnte sie mehr löschen
+-- (Zweitreview TEAM-002, Befund 1). Ins Löschjournal wie das eigene Löschen,
+-- damit ein Restore sie nicht zurückbringt. Ohne Gespräch: in allen; ohne
+-- Person: von allen.
+create function app.team_drop_scheduled(p_org uuid, p_channel uuid, p_staff uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_ids uuid[];
+begin
+  select coalesce(array_agg(m.id), '{}'::uuid[]) into v_ids
+  from public.team_messages m
+  where m.organization_id = p_org and m.created_at > now()
+    and (p_channel is null or m.channel_id = p_channel)
+    and (p_staff is null or m.author_staff_member_id = p_staff);
+  if cardinality(v_ids) = 0 then
+    return;
+  end if;
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at, deleted_at)
+  select p_org, md5('team_manual:' || p_org::text || ':' || current_date::text)::uuid,
+         'team_messages', x.id, 'teamchat', date_trunc('day', now()), date_trunc('day', now())
+  from unnest(v_ids) as x (id);
+  delete from public.team_messages where id = any (v_ids);
+end;
+$$;
+
 -- Was eine Person verlässt oder verliert, nimmt ihren eigenen Stand mit:
 -- Lesestand, Stand an Threads, Einstellungen und „Für später“ in diesem
--- Gespräch. Ihre Nachrichten und Reaktionen bleiben - sie gehören allen, die
--- das Gespräch lesen.
+-- Gespräch, dazu ihre noch nicht gesendeten Nachrichten dort. Was sie
+-- geschrieben hat, und ihre Reaktionen bleiben - sie gehören allen, die das
+-- Gespräch lesen.
 create function app.team_forget_channel(p_channel uuid, p_staff uuid)
 returns void
 language sql
 security definer
 set search_path = ''
 as $$
+  select app.team_drop_scheduled(c.organization_id, p_channel, p_staff)
+  from public.team_channels c where c.id = p_channel;
   delete from public.team_read_states where channel_id = p_channel and staff_member_id = p_staff;
   delete from public.team_thread_states ts
   using public.team_messages m
@@ -504,6 +569,8 @@ revoke all on function app.team_mark_channel_read(uuid, uuid, uuid, timestamptz)
 revoke all on function app.team_mark_thread_read(uuid, uuid, timestamptz) from public, anon, authenticated;
 revoke all on function app.team_view(uuid, uuid) from public, anon, authenticated;
 revoke all on function app.team_readable_message(uuid, uuid, uuid) from public, anon, authenticated;
+revoke all on function app.team_message_key(uuid, uuid) from public, anon, authenticated;
+revoke all on function app.team_drop_scheduled(uuid, uuid, uuid) from public, anon, authenticated;
 revoke all on function app.team_forget_channel(uuid, uuid) from public, anon, authenticated;
 revoke all on function app.team_channel_name(text, text) from public, anon, authenticated;
 revoke all on function app.team_channel_manageable(uuid, uuid, uuid) from public, anon, authenticated;
@@ -811,9 +878,12 @@ $$;
 
 drop function public.search_team_messages(text);
 
--- Suche in allen lesbaren Gesprächen, die neuesten 50 zuerst. Ein Wort mit
--- mindestens zwei Zeichen oder ein Filter: Gespräch, Person, Zeitraum (Tage in
--- der Zeitzone der Praxis). Geplantes findet niemand, Entferntes auch nicht.
+-- Suche in allen lesbaren Gesprächen, die neuesten 50 zuerst; dazu Filter nach
+-- Gespräch, Person und Zeitraum (Tage in der Zeitzone der Praxis). Ohne
+-- Suchwort nur im einen Gespräch - wie Hochblättern. **Die Person filtert nur
+-- mit Suchwort** (ANN-651, §20): „alles von Anna im Oktober“ wäre eine Liste
+-- ihres Verhaltens, keine Suche nach einer Sache. Geplantes findet niemand,
+-- Entferntes auch nicht.
 create function public.search_team_messages(
   p_query   text default null,
   p_channel uuid default null,
@@ -843,7 +913,8 @@ declare
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
   if length(v_nadel) > 100
-     or (length(v_nadel) < 2 and (v_nadel <> '' or (p_channel is null and p_author is null))) then
+     or (v_nadel <> '' and length(v_nadel) < 2)
+     or (v_nadel = '' and (p_channel is null or p_author is not null)) then
     raise exception 'search needs two to 100 characters' using errcode = '22023';
   end if;
   select coalesce(o.time_zone, 'Europe/Berlin') into v_zone
@@ -1000,7 +1071,8 @@ end;
 $$;
 
 -- „Für später“ der Person - offen (`p_done` falsch) oder erledigt; nur aus
--- Gesprächen, die sie noch liest. Fällige Erinnerungen zuerst.
+-- Gesprächen, die sie noch liest. Fällige Erinnerungen zuerst, dann nach der
+-- nächsten Erinnerung, dann die neuesten Nachrichten.
 create function public.list_team_saved(p_done boolean default false)
 returns table (
   id           uuid,
@@ -1010,7 +1082,6 @@ returns table (
   author_name  text,
   body         text,
   created_at   timestamptz,
-  saved_at     timestamptz,
   remind_at    timestamptz,
   done         boolean,
   due          boolean
@@ -1028,17 +1099,17 @@ begin
 
   return query
   select m.id, m.channel_id, c.kind, m.parent_id, app.team_staff_name(m.author_staff_member_id),
-         m.body, m.created_at, s.saved_at, s.remind_at, s.done_at is not null,
-         s.done_at is null and s.remind_at is not null and s.remind_at <= now()
+         m.body, m.created_at, s.remind_at, s.done,
+         not s.done and s.remind_at is not null and s.remind_at <= now()
   from public.team_saved_messages s
   join public.team_messages m on m.id = s.message_id
   join public.team_channels c on c.id = m.channel_id
   where s.staff_member_id = v_staff and s.organization_id = v_org
-    and (s.done_at is not null) = coalesce(p_done, false)
+    and s.done = coalesce(p_done, false)
     and m.removed_at is null and m.created_at <= now()
     and app.team_channel_readable(m.channel_id, v_org, v_staff)
-  order by (s.done_at is null and s.remind_at is not null and s.remind_at <= now()) desc,
-           s.remind_at nulls last, s.saved_at desc, m.id
+  order by (not s.done and s.remind_at is not null and s.remind_at <= now()) desc,
+           s.remind_at nulls last, m.created_at desc, m.id
   limit 200;
 end;
 $$;
@@ -1137,10 +1208,12 @@ $$;
 drop function public.post_team_message(uuid, uuid, text, uuid[]);
 
 -- Senden.
---   * `p_id` vergibt das Gerät (ADR-024 Punkt 7, ANN-641): Eine bekannte
---     Kennung derselben Person im selben Gespräch und Thread liefert die
---     Nachricht zurück, ohne sie zu verdoppeln; eine schon gelöschte legt
---     nichts neu an; jede andere antwortet wie eine unbekannte.
+--   * `p_id` vergibt das Gerät (ADR-024 Punkt 7, ANN-641); die Nachricht heißt
+--     `app.team_message_key(Person, p_id)`. Dieselbe Kennung derselben Person
+--     am selben Ort liefert die Nachricht zurück, ohne sie zu verdoppeln -
+--     vor jeder weiteren Prüfung, denn kam sie an und ging nur die Antwort
+--     verloren, ist das ein Erfolg. Eine schon gelöschte legt nichts neu an.
+--     Fremde Zeilen trifft die Ableitung nicht.
 --   * `p_mention_all` (@alle, ANN-647): erwähnt alle, die das Gespräch lesen.
 --   * `p_also_in_channel`: eine Antwort steht zusätzlich im Gespräch.
 --   * `p_send_at` (ANN-643): eine Ausgangsnachricht erscheint erst dann -
@@ -1167,6 +1240,7 @@ declare
   v_channel   public.team_channels%rowtype;
   v_vorhanden public.team_messages%rowtype;
   v_id        uuid;
+  v_neu       uuid;
   v_zeit      timestamptz;
   v_seit      timestamptz;
   v_erwaehnt  uuid[];
@@ -1174,21 +1248,24 @@ begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
   v_text := app.team_message_text(p_body);
 
-  if p_id is not null then
-    select * into v_vorhanden from public.team_messages where id = p_id;
+  if p_id is null then
+    v_id := extensions.gen_random_uuid();
+  else
+    -- Eine Zeile mit dieser Kennung kann nur die eigene sein - als Nachricht
+    -- oder als Anker, nachdem die Person sie mit Antworten gelöscht hat.
+    v_id := app.team_message_key(v_staff, p_id);
+    select * into v_vorhanden from public.team_messages where id = v_id;
     if v_vorhanden.id is not null then
-      if v_vorhanden.organization_id = v_org and v_vorhanden.channel_id = p_channel
-         and v_vorhanden.author_staff_member_id = v_staff
-         and v_vorhanden.parent_id is not distinct from p_parent then
-        return p_id;
+      if v_vorhanden.channel_id = p_channel and v_vorhanden.parent_id is not distinct from p_parent then
+        return v_id;
       end if;
-      raise exception 'team message not found' using errcode = 'P0002';
+      raise exception 'message id is already used' using errcode = '22023';
     end if;
     -- Eine Wiederholung nach dem eigenen Löschen bringt nichts zurück.
     if exists (select 1 from public.deletion_journal j
-               where j.organization_id = v_org and j.target_id = p_id
+               where j.organization_id = v_org and j.target_id = v_id
                  and j.target_table in ('team_messages', 'team_message_contents')) then
-      return p_id;
+      return v_id;
     end if;
   end if;
 
@@ -1227,20 +1304,18 @@ begin
 
   insert into public.team_messages
     (id, organization_id, channel_id, parent_id, author_staff_member_id, body, also_in_channel, created_at)
-  values (coalesce(p_id, extensions.gen_random_uuid()), v_org, p_channel, p_parent, v_staff, v_text,
+  values (v_id, v_org, p_channel, p_parent, v_staff, v_text,
           coalesce(p_also_in_channel, false), coalesce(p_send_at, now()))
   on conflict (id) do nothing
-  returning id, created_at into v_id, v_zeit;
+  returning id, created_at into v_neu, v_zeit;
 
-  if v_id is null then
+  if v_neu is null then
     -- Gleichzeitig mit derselben Kennung: Die andere Anfrage hat angelegt.
-    select * into v_vorhanden from public.team_messages where id = p_id;
-    if v_vorhanden.organization_id = v_org and v_vorhanden.channel_id = p_channel
-       and v_vorhanden.author_staff_member_id = v_staff
-       and v_vorhanden.parent_id is not distinct from p_parent then
-      return p_id;
+    select * into v_vorhanden from public.team_messages where id = v_id;
+    if v_vorhanden.channel_id = p_channel and v_vorhanden.parent_id is not distinct from p_parent then
+      return v_id;
     end if;
-    raise exception 'team message not found' using errcode = 'P0002';
+    raise exception 'message id is already used' using errcode = '22023';
   end if;
 
   -- @alle: alle, die das Gespräch lesen; set_team_mentions prüft jede Person.
@@ -1614,9 +1689,11 @@ begin
     raise exception 'not allowed to manage team channels' using errcode = '42501';
   end if;
   v_name := app.team_channel_name(p_name, p_description);
-  if exists (select 1 from public.team_channels c
-             where c.organization_id = v_org and c.kind in ('channel', 'private')
-               and lower(c.name) = lower(v_name)) then
+  -- Eindeutig nur unter offenen Kanälen (Befund 5 des Zweitreviews).
+  if not coalesce(p_private, false) and exists (
+    select 1 from public.team_channels c
+    where c.organization_id = v_org and c.kind = 'channel' and lower(c.name) = lower(v_name)
+  ) then
     raise exception 'channel name is taken' using errcode = '23505';
   end if;
   insert into public.team_channels (organization_id, kind, name, description)
@@ -1654,9 +1731,10 @@ begin
     raise exception 'team channel not found' using errcode = 'P0002';
   end if;
   v_name := app.team_channel_name(p_name, p_description);
-  if exists (select 1 from public.team_channels c
-             where c.organization_id = v_org and c.kind in ('channel', 'private')
-               and lower(c.name) = lower(v_name) and c.id <> p_channel) then
+  if exists (select 1 from public.team_channels x where x.id = p_channel and x.kind = 'channel')
+     and exists (select 1 from public.team_channels c
+                 where c.organization_id = v_org and c.kind = 'channel'
+                   and lower(c.name) = lower(v_name) and c.id <> p_channel) then
     raise exception 'channel name is taken' using errcode = '23505';
   end if;
   update public.team_channels
@@ -1665,7 +1743,9 @@ begin
 end;
 $$;
 
--- Archivieren und zurückholen (wer verwalten darf).
+-- Archivieren und zurückholen (wer verwalten darf). Ins Archiv geht nichts
+-- mehr hinein: Noch nicht gesendete Nachrichten fallen dabei (Befund 1 des
+-- Zweitreviews, ANN-643).
 create or replace function public.set_team_channel_archived(p_channel uuid, p_archived boolean)
 returns void
 language plpgsql
@@ -1686,6 +1766,9 @@ begin
   update public.team_channels c
      set archived_at = case when p_archived then coalesce(c.archived_at, now()) end
    where c.id = p_channel;
+  if p_archived then
+    perform app.team_drop_scheduled(v_org, p_channel, null);
+  end if;
 end;
 $$;
 
@@ -1969,7 +2052,7 @@ begin
   insert into public.team_saved_messages (organization_id, message_id, staff_member_id, remind_at)
   values (v_org, p_message, v_staff, p_remind_at)
   on conflict (message_id, staff_member_id)
-  do update set remind_at = excluded.remind_at, done_at = null;
+  do update set remind_at = excluded.remind_at, done = false;
 end;
 $$;
 
@@ -1996,8 +2079,7 @@ begin
     raise exception 'reminder must be one minute to 90 days ahead' using errcode = '22023';
   end if;
   update public.team_saved_messages s
-     set done_at = case when p_done is null then s.done_at
-                        when p_done then coalesce(s.done_at, now()) end,
+     set done = coalesce(p_done, s.done),
          remind_at = case when coalesce(p_clear_reminder, false) then null
                           else coalesce(p_remind_at, s.remind_at) end
    where s.message_id = p_message and s.staff_member_id = v_staff and s.organization_id = v_org;
@@ -2194,12 +2276,20 @@ begin
   using public.staff_members sm
   where cs.organization_id = p_org and sm.id = cs.staff_member_id
     and sm.employment_status <> 'active';
+  -- Noch nicht Gesendetes Ausgeschiedener erscheint nicht mehr (Befund 1 des
+  -- Zweitreviews) - mit Journal, über `app.team_drop_scheduled`.
+  perform app.team_drop_scheduled(p_org, null, sm.id)
+  from public.staff_members sm
+  where sm.organization_id = p_org and sm.employment_status <> 'active'
+    and exists (select 1 from public.team_messages m
+                where m.author_staff_member_id = sm.id and m.created_at > now());
 
   -- Fällige Ausgangsnachrichten mit laufenden Antworten werden Anker.
   perform app.strip_due_team_anchors(p_org, p_time_zone);
 
   -- Direkt- und Gruppennachrichten ohne jede Nachricht, zwölf Monate nach
-  -- ihrem Beginn; private Kanäle ohne Mitglied sofort - sie liest niemand mehr.
+  -- ihrem Beginn; private Kanäle ohne aktives Mitglied sofort - sie liest
+  -- niemand mehr, auch owner nicht (Befund 3 des Zweitreviews).
   with faellig as (
     select c.id,
            case when c.kind = 'private' then now()
@@ -2211,7 +2301,9 @@ begin
       and ((c.kind in ('direct', 'group')
             and not exists (select 1 from public.team_messages m where m.channel_id = c.id))
            or (c.kind = 'private'
-               and not exists (select 1 from public.team_channel_members m where m.channel_id = c.id)))
+               and not exists (select 1 from public.team_channel_members m
+                               join public.staff_members sm on sm.id = m.staff_member_id
+                               where m.channel_id = c.id and sm.employment_status = 'active')))
   ),
   geloescht as (
     delete from public.team_channels c

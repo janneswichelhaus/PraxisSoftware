@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { nachrichtKennung } from '@/features/teamchat/kennung';
 import {
   SEED,
   asAnon,
@@ -334,7 +335,7 @@ describe('Teamchat: Folgen (ANN-640)', () => {
 describe('Teamchat: Zustellung ohne Doppel (ANN-641, ADR-024 Punkt 7)', () => {
   const KENNUNG = 'c0ffee00-0000-4000-8000-000000000001';
 
-  it('speichert zweimal Gesendetes einmal', async () => {
+  it('speichert zweimal Gesendetes einmal - unter der Kennung, die auch das Gerät ableitet', async () => {
     const allgemein = await kanal(users.therapist, 'Allgemein');
     const erst = await senden(users.therapist, allgemein.id, 'Rad 2 ist frei', null, [], KENNUNG);
     const nochmal = await senden(
@@ -345,8 +346,9 @@ describe('Teamchat: Zustellung ohne Doppel (ANN-641, ADR-024 Punkt 7)', () => {
       [],
       KENNUNG,
     );
-    expect(erst).toBe(KENNUNG);
-    expect(nochmal).toBe(KENNUNG);
+    expect(nochmal).toBe(erst);
+    // Server und Gerät leiten gleich ab (`kennung.ts`, `app.team_message_key`).
+    expect(erst).toBe(await nachrichtKennung(STAFF.anna, KENNUNG));
     expect(
       await anzahl('select count(*) n from public.team_messages where channel_id = $1', [
         allgemein.id,
@@ -354,40 +356,77 @@ describe('Teamchat: Zustellung ohne Doppel (ANN-641, ADR-024 Punkt 7)', () => {
     ).toBe(1);
   });
 
-  it('antwortet auf eine fremde Kennung wie auf eine unbekannte', async () => {
+  it('lässt eine fremde Kennung nichts treffen und verrät nicht, ob es sie gibt', async () => {
     const allgemein = await kanal(users.therapist, 'Allgemein');
-    const vertretungen = await kanal(users.therapist, 'Vertretungen');
-    await senden(users.therapist, allgemein.id, 'Original', null, [], KENNUNG);
-    for (const [konto, kanalId, parent] of [
-      [users.office, allgemein.id, null],
-      [users.therapist, vertretungen.id, null],
-      [users.therapist, allgemein.id, KENNUNG],
-    ] as const) {
-      const f = await fehler(konto, SENDEN, [kanalId, parent, 'Fremd', [], KENNUNG]);
-      expect(f?.code).toBe('P0002');
-      expect(f?.message).not.toContain('Original');
-    }
+    const original = await senden(users.therapist, allgemein.id, 'Original', null, [], KENNUNG);
+    const UNBEKANNT = 'c0ffee00-0000-4000-8000-0000000000aa';
     const fremd = await fremdeOrganisation();
     const fremdesGespraech = (await kanaele(fremd.owner)).find((k) => k.kind === 'fleet')!;
-    expect(
-      (await fehler(fremd.owner, SENDEN, [fremdesGespraech.id, null, 'x', [], KENNUNG]))?.code,
-    ).toBe('P0002');
+    // Dieselbe Gerätekennung, die Kennung der Nachricht selbst und eine
+    // unbekannte - bei einer anderen Person und in einer anderen Praxis
+    // entsteht jedes Mal eine eigene Nachricht, gleich wie bei der unbekannten
+    // (ADR-024 Punkt 7, Zweitreview TEAM-002 Befund 2).
+    for (const [konto, kanalId, staff] of [
+      [users.office, allgemein.id, STAFF.olivia],
+      [fremd.owner, fremdesGespraech.id, null],
+    ] as const) {
+      for (const kennung of [KENNUNG, original, UNBEKANNT]) {
+        const id = await senden(konto, kanalId, 'Eigene', null, [], kennung);
+        expect(id).not.toBe(original);
+        if (staff) expect(id).toBe(await nachrichtKennung(staff, kennung));
+      }
+    }
+    // In ein Gespräch, das er nicht liest, dieselbe Antwort für alle drei.
+    const leitung = (
+      await asUserCommitted<{ id: string }>(
+        users.teamLead,
+        "select public.create_team_channel('Leitung', null, true, '{}') as id",
+      )
+    ).rows[0]!.id;
+    const antworten = new Set<string>();
+    for (const kennung of [KENNUNG, original, UNBEKANNT]) {
+      const f = await fehler(users.trainer, SENDEN, [leitung, null, 'x', [], kennung]);
+      antworten.add(`${f?.code} ${f?.message}`);
+    }
+    expect([...antworten]).toEqual(['P0002 team channel not found']);
     const { rows } = await asPostgres<{ body: string }>(
       'select body from public.team_messages where id = $1',
-      [KENNUNG],
+      [original],
     );
     expect(rows).toEqual([{ body: 'Original' }]);
+    // Die eigene Kennung an anderer Stelle: abgelehnt, ohne Text.
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    const f = await fehler(users.therapist, SENDEN, [vertretungen.id, null, 'Fremd', [], KENNUNG]);
+    expect(f?.code).toBe('22023');
+    expect(f?.message).not.toContain('Original');
   });
 
-  it('bringt eine schon gelöschte Nachricht durch eine Wiederholung nicht zurück', async () => {
+  it('bringt eine schon gelöschte Nachricht durch eine Wiederholung nicht zurück, auch nicht als Anker', async () => {
     const allgemein = await kanal(users.therapist, 'Allgemein');
-    await senden(users.therapist, allgemein.id, 'Versehen', null, [], KENNUNG);
-    await asUserCommitted(users.therapist, 'select public.delete_team_message($1)', [KENNUNG]);
-    expect(await senden(users.therapist, allgemein.id, 'Versehen', null, [], KENNUNG)).toBe(
-      KENNUNG,
+    const id = await senden(users.therapist, allgemein.id, 'Versehen', null, [], KENNUNG);
+    await asUserCommitted(users.therapist, 'select public.delete_team_message($1)', [id]);
+    expect(await senden(users.therapist, allgemein.id, 'Versehen', null, [], KENNUNG)).toBe(id);
+    expect(await anzahl('select count(*) n from public.team_messages where id = $1', [id])).toBe(
+      0,
+    );
+
+    // Mit Antwort bleibt ein Anker ohne Verfasser:in - die Wiederholung bleibt still.
+    const ZWEITE = 'c0ffee00-0000-4000-8000-000000000002';
+    const frage = await senden(users.therapist, allgemein.id, 'Mit Antwort', null, [], ZWEITE);
+    await senden(users.office, allgemein.id, 'Antwort', frage);
+    await asUserCommitted(users.therapist, 'select public.delete_team_message($1)', [frage]);
+    expect(await senden(users.therapist, allgemein.id, 'Mit Antwort', null, [], ZWEITE)).toBe(
+      frage,
     );
     expect(
-      await anzahl('select count(*) n from public.team_messages where id = $1', [KENNUNG]),
+      await anzahl(
+        `select count(*) n from public.team_messages where id = $1 and body is null
+           and author_staff_member_id is null`,
+        [frage],
+      ),
+    ).toBe(1);
+    expect(
+      await anzahl("select count(*) n from public.team_messages where body = 'Mit Antwort'"),
     ).toBe(0);
   });
 });

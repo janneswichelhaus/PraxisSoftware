@@ -217,13 +217,38 @@ describe('Teamchat: private Kanäle (ANN-642)', () => {
     expect(await zaehler(users.ownerTherapist)).toMatchObject({ badge: 0 });
   });
 
-  it('legen nur owner und Teamleitung an; ein Name gilt für offene und private Kanäle', async () => {
+  it('legen nur owner und Teamleitung an; ihr Name verrät nichts', async () => {
     expect(
       (await fehler(users.therapist, KANAL_ANLEGEN, ['Unter uns', null, true, []]))?.code,
     ).toBe('42501');
-    expect((await fehler(users.teamLead, KANAL_ANLEGEN, ['allgemein', null, true, []]))?.code).toBe(
+    // Eindeutig sind nur offene Kanäle: Ein privater Kanal darf wie ein
+    // offener oder ein anderer privater heißen - sonst verriete ein
+    // abgelehnter Name, dass es ihn gibt (Zweitreview TEAM-002, Befund 5).
+    const geheim = await privaterKanal(users.teamLead, 'allgemein', []);
+    await privaterKanal(users.ownerTherapist, 'Allgemein', []);
+    expect((await fehler(users.ownerTherapist, KANAL_ANLEGEN, ['ALLGEMEIN', null, false, []]))?.code).toBe(
       '23505',
     );
+    const offen = (
+      await asUserCommitted<{ id: string }>(users.ownerTherapist, KANAL_ANLEGEN, [
+        'Planung',
+        null,
+        false,
+        [],
+      ])
+    ).rows[0]!.id;
+    await asUserCommitted(users.teamLead, 'select public.update_team_channel($1, $2)', [
+      geheim,
+      'Planung',
+    ]);
+    await asUserCommitted(users.teamLead, 'select public.update_team_channel($1, $2)', [
+      offen,
+      'Planung neu',
+    ]);
+    expect(
+      (await fehler(users.teamLead, 'select public.update_team_channel($1, $2)', [offen, 'Vertretungen']))
+        ?.code,
+    ).toBe('23505');
     // Unbekannte fallen still weg; wer anlegt, gehört dazu.
     const id = await privaterKanal(users.ownerTherapist, 'Leitung', [
       STAFF.tim,
@@ -482,13 +507,29 @@ describe('Teamchat: auch im Kanal und später senden (ANN-643)', () => {
     expect(
       (await asUser(users.therapist, 'select * from public.list_team_scheduled()')).rows,
     ).toEqual([]);
-    // Fremde ändern und löschen sie nicht - sie wissen nichts von ihr.
-    for (const sql of [
-      'select public.reschedule_team_message($1)',
-      'select public.delete_team_message($1)',
-      "select public.toggle_team_reaction($1, 'daumen')",
-    ]) {
-      expect((await fehler(users.teamLead, sql, [geplant]))?.code).toBe('P0002');
+    // Fremde ändern und löschen sie nicht, antworten nicht und öffnen keinen
+    // Thread - sie wissen nichts von ihr. Auch die Erwähnte nicht, obwohl sie
+    // dem Thread schon folgt (Zweitreview TEAM-002, Punkt 1).
+    for (const konto of [users.teamLead, users.therapist]) {
+      for (const [sql, params] of [
+        ['select public.reschedule_team_message($1)', [geplant]],
+        ['select public.delete_team_message($1)', [geplant]],
+        ["select public.toggle_team_reaction($1, 'daumen')", [geplant]],
+        [ANHEFTEN, [geplant, true]],
+        [MERKEN, [geplant, null]],
+        ['select public.post_team_message($1::uuid, $2::uuid, $3)', [allgemein.id, geplant, 'Ja']],
+        [NACHRICHTEN, [allgemein.id, geplant]],
+        [
+          'select * from public.list_team_messages($1::uuid, null, null, null, null, null, $2::uuid)',
+          [allgemein.id, geplant],
+        ],
+        ['select public.set_team_thread_following($1, true)', [geplant]],
+        ['select public.mark_team_unread($1)', [geplant]],
+        ['select public.mark_team_thread_read($1, null)', [geplant]],
+      ] as const) {
+        expect((await fehler(konto, sql, [...params]))?.code).toBe('P0002');
+      }
+      expect((await asUser(konto, 'select * from public.list_team_threads()')).rows).toEqual([]);
     }
     // Vor der Zeit bearbeitet: ohne Marke.
     await asUserCommitted(
@@ -677,6 +718,15 @@ describe('Teamchat: Für später (ANN-646)', () => {
       `select (now() + interval '91 days')::text as t`,
     );
     expect((await fehler(users.therapist, MERKEN, [n, weit[0]!.t]))?.code).toBe('22023');
+
+    // Wann jemand gemerkt oder erledigt hat, steht nirgends - nur die selbst
+    // gewählte Erinnerung (ANN-646, Zweitreview TEAM-002 Befund 4).
+    const { rows: spalten } = await asPostgres<{ column_name: string }>(
+      `select column_name from information_schema.columns
+       where table_schema = 'public' and table_name = 'team_saved_messages'
+         and data_type like 'timestamp%'`,
+    );
+    expect(spalten.map((s) => s.column_name)).toEqual(['remind_at']);
   });
 
   it('zeigt Gemerktes aus einem Gespräch nicht mehr, das man nicht mehr liest', async () => {
@@ -765,7 +815,7 @@ describe('Teamchat: Einstellungen je Gespräch, @alle und Zähler (ANN-647)', ()
 });
 
 describe('Teamchat: Suche mit Filtern', () => {
-  it('filtert nach Gespräch, Person und Zeitraum; ohne Wort braucht sie einen Filter', async () => {
+  it('filtert nach Gespräch, Person und Zeitraum; ohne Wort nur im Gespräch, nie nach Person (ANN-651)', async () => {
     const allgemein = await kanal(users.therapist, 'Allgemein');
     const vertretungen = await kanal(users.therapist, 'Vertretungen');
     await senden(users.therapist, allgemein.id, 'Rad 2 Kette');
@@ -791,24 +841,29 @@ describe('Teamchat: Suche mit Filtern', () => {
     const { rows: tag } = await asPostgres<{ d: string }>(
       `select ((now() - interval '7 days') at time zone 'Europe/Berlin')::date::text as d`,
     );
-    expect(await suche([null, null, STAFF.tim, tag[0]!.d, null])).toEqual([
+    expect(await suche(['rad', null, STAFF.tim, tag[0]!.d, null])).toEqual([
       'Rad 4 Bremse',
       'Rad 3 Licht',
     ]);
     expect(
       (
-        await asUser<{ id: string }>(users.office, SUCHE, [
-          null,
-          allgemein.id,
-          STAFF.tim,
-          null,
-          null,
-        ])
+        await asUser<{ id: string }>(users.office, SUCHE, ['licht', allgemein.id, STAFF.tim, null, null])
       ).rows.map((r) => r.id),
     ).toEqual([tim]);
-    expect((await fehler(users.office, SUCHE, [null, null, null, tag[0]!.d, null]))?.code).toBe(
-      '22023',
-    );
+    // Ohne Wort: ein Gespräch ansehen ja, eine Person und alles ohne Ort nein -
+    // „alles von Tim“ wäre eine Liste seines Verhaltens (§20).
+    expect(await suche([null, allgemein.id, null, null, null])).toEqual([
+      'Rad 3 Licht',
+      'Rad 2 Kette',
+    ]);
+    for (const params of [
+      [null, null, null, tag[0]!.d, null],
+      [null, null, STAFF.tim, null, null],
+      [null, allgemein.id, STAFF.tim, null, null],
+      ['r', allgemein.id, null, null, null],
+    ]) {
+      expect((await fehler(users.office, SUCHE, params))?.code).toBe('22023');
+    }
   });
 });
 
@@ -854,6 +909,7 @@ describe('Teamchat: Rechte an den neuen Wegen (ADR-013 Punkt 9 Nr. 1)', () => {
     const n = await senden(users.therapist, allgemein.id, 'Hallo');
     await asUserCommitted(users.therapist, MERKEN, [n, null]);
     await asUserCommitted(users.office, ANHEFTEN, [n, true]);
+    const leitung = await privaterKanal(users.teamLead, 'Leitung', [STAFF.anna]);
     const fremd = await fremdeOrganisation();
     expect(await zaehler(fremd.owner)).toMatchObject({ badge: 0, saved_open: 0 });
     expect((await asUser(fremd.owner, 'select * from public.list_team_saved()')).rows).toEqual([]);
@@ -864,9 +920,18 @@ describe('Teamchat: Rechte an den neuen Wegen (ADR-013 Punkt 9 Nr. 1)', () => {
       ['select public.update_team_channel($1, $2)', [allgemein.id, 'Fremd']],
       ['select public.set_team_channel_archived($1, true)', [allgemein.id]],
       ['select public.update_team_saved($1, true)', [n]],
+      // Die Mitgliederwege eines privaten Kanals (Zweitreview TEAM-002, Punkt 1).
+      ['select public.add_team_channel_members($1, $2::uuid[])', [leitung, [STAFF.olivia]]],
+      ['select public.remove_team_channel_member($1, $2)', [leitung, STAFF.anna]],
+      ['select public.leave_team_channel($1)', [leitung]],
     ] as const) {
       expect((await fehler(fremd.owner, sql, [...params]))?.code).toBe('P0002');
     }
+    expect(
+      await anzahl('select count(*) n from public.team_channel_members where channel_id = $1', [
+        leitung,
+      ]),
+    ).toBe(2);
     expect((await fehler(fremd.owner, GRUPPE, [[STAFF.olivia, STAFF.tim]]))?.code).toBe('22023');
   });
 
@@ -989,6 +1054,94 @@ describe('Teamchat: Löschpfad der neuen Tabellen (ADR-008 Punkt 12)', () => {
         n,
       ]),
     ).toBe(0);
+  });
+
+  it('lässt Ungesendetes nicht erscheinen, wenn die Verfasser:in geht, herausgenommen wird oder ausscheidet, und nicht im Archiv', async () => {
+    const { rows: zeit } = await asPostgres<{ t: string }>(
+      `select (now() + interval '2 hours')::text as t`,
+    );
+    const um = zeit[0]!.t;
+    const leitung = await privaterKanal(users.teamLead, 'Leitung', [STAFF.anna, STAFF.olivia]);
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    const verlassen = await senden(users.therapist, leitung, 'Anna plant', { um });
+    const genommen = await senden(users.office, leitung, 'Olivia plant', { um });
+    const archiviert = await senden(users.office, allgemein.id, 'Vor dem Archiv', { um });
+    const ausgeschieden = await senden(users.trainer, vertretungen.id, 'Tom plant', { um });
+    const bleibt = await senden(users.teamLead, vertretungen.id, 'Tim plant', { um });
+
+    await asUserCommitted(users.therapist, 'select public.leave_team_channel($1)', [leitung]);
+    await asUserCommitted(users.teamLead, 'select public.remove_team_channel_member($1, $2)', [
+      leitung,
+      STAFF.olivia,
+    ]);
+    await asUserCommitted(
+      users.ownerTherapist,
+      'select public.set_team_channel_archived($1, true)',
+      [allgemein.id],
+    );
+    await asPostgres(
+      `update public.staff_members set employment_status = 'inactive' where id = $1`,
+      [STAFF.tom],
+    );
+    await asPostgres('select public.apply_retention()');
+
+    for (const id of [verlassen, genommen, archiviert, ausgeschieden]) {
+      expect(await anzahl('select count(*) n from public.team_messages where id = $1', [id])).toBe(
+        0,
+      );
+      expect(
+        await anzahl(
+          `select count(*) n from public.deletion_journal
+           where target_table = 'team_messages' and target_id = $1`,
+          [id],
+        ),
+      ).toBe(1);
+    }
+    expect(await anzahl('select count(*) n from public.team_messages where id = $1', [bleibt])).toBe(
+      1,
+    );
+
+    // Restore: Die Wiederanwendung nimmt sie wieder heraus.
+    await asPostgres(
+      `insert into public.team_messages
+         (id, organization_id, channel_id, author_staff_member_id, body, created_at)
+       values ($1, $2, $3, $4, 'Anna plant', now() + interval '2 hours')`,
+      [verlassen, organizationId, leitung, STAFF.anna],
+    );
+    await asPostgres('select public.reapply_deletion_journal()');
+    expect(
+      await anzahl('select count(*) n from public.team_messages where id = $1', [verlassen]),
+    ).toBe(0);
+  });
+
+  it('löscht einen privaten Kanal, sobald kein aktives Mitglied mehr dabei ist', async () => {
+    const id = await privaterKanal(users.teamLead, 'Abschied', [STAFF.tom]);
+    await senden(users.trainer, id, 'Letzter Tag');
+    await asPostgres(
+      `update public.staff_members set employment_status = 'inactive' where id = $1`,
+      [STAFF.tom],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await anzahl('select count(*) n from public.team_channels where id = $1', [id])).toBe(1);
+
+    await asPostgres(
+      `update public.staff_members set employment_status = 'inactive' where id = $1`,
+      [STAFF.tim],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await anzahl('select count(*) n from public.team_channels where id = $1', [id])).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) n from public.deletion_journal
+         where target_table = 'team_channels' and target_id = $1`,
+        [id],
+      ),
+    ).toBe(1);
+    const { rows } = await asPostgres<{ scope_note: string }>(
+      `select scope_note from public.retention_assignments where table_name = 'team_channels'`,
+    );
+    expect(rows[0]!.scope_note).toContain('private Kanäle');
   });
 
   it('löscht leere Gruppennachrichten nach zwölf Monaten, mit Journal', async () => {
