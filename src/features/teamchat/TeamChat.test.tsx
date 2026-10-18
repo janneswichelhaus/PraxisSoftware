@@ -79,6 +79,7 @@ const { FuerDichPage } = await import('./FuerDichPage');
 const { FlottenNachrichtenPage } = await import('./FlottenNachrichtenPage');
 const { TeamchatFehler } = await import('./api');
 const { teamchatLeeren } = await import('./speicher');
+const { anhaengen: entwurfAnhaengen } = await import('./entwurfsanhaenge');
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
@@ -990,6 +991,7 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
       expect.any(File),
       'Dienstplan.pdf',
       undefined,
+      expect.any(AbortSignal),
     );
     expect(screen.getByRole('button', { name: 'Später senden' })).toBeDisabled();
 
@@ -1300,6 +1302,7 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
       expect.any(Blob),
       expect.stringMatching(/^Sprachnachricht \d{2}\.\d{2}\., \d{2}:\d{2}$/),
       42,
+      expect.any(AbortSignal),
     );
     expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true);
 
@@ -1327,6 +1330,7 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
       expect.any(Blob),
       expect.stringMatching(/^Sprachnachricht /),
       120,
+      expect.any(AbortSignal),
     );
     expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true);
   });
@@ -1386,6 +1390,7 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
       expect.any(Blob),
       expect.stringMatching(/^Sprachnachricht /),
       12,
+      expect.any(AbortSignal),
     );
   });
 
@@ -1407,7 +1412,57 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
       expect.any(Blob),
       expect.stringMatching(/^Sprachnachricht /),
       9,
+      expect.any(AbortSignal),
     );
+  });
+
+  it('hängt die Aufnahme auch an, wenn der Entwurf inzwischen voll ist (Zweitreview TEAM-005)', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    await nutzer.click(await screen.findByRole('button', SPRACHE));
+    expect(await screen.findByRole('status')).toHaveTextContent('Aufnahme');
+    // Etwa „Bearbeiten“ an einer wartenden Nachricht füllt den Entwurf.
+    act(() => {
+      entwurfAnhaengen(
+        'profil-anna',
+        'k-allgemein',
+        null,
+        [1, 2, 3, 4, 5].map((n) => ({
+          datei: new Blob(['x'], { type: 'application/pdf' }),
+          name: `${n}.pdf`,
+        })),
+      );
+    });
+    jetzt += 5_000;
+    await nutzer.click(screen.getByRole('button', { name: 'Fertig' }));
+    await vi.waitFor(() =>
+      expect(api.ladeAnhangHoch).toHaveBeenCalledWith(
+        'k-allgemein',
+        expect.any(Blob),
+        expect.stringMatching(/^Sprachnachricht /),
+        5,
+        expect.any(AbortSignal),
+      ),
+    );
+    expect(
+      screen.getByText('Höchstens 5 Anhänge je Nachricht – bitte entfernen, was zu viel ist.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
+  });
+
+  it('nimmt nicht auf, solange ein Fenster offen ist', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    // jsdom kennt `inert` nicht - der Tipp käme im Browser gar nicht an.
+    await nutzer.click(screen.getByRole('button', SPRACHE));
+    await vi.waitFor(() => {
+      expect(aufnahme.mikrofon.spuren).toHaveLength(1);
+      expect(aufnahme.mikrofon.spuren[0]!.beendet).toBe(true);
+    });
+    expect(screen.queryByText(/^Aufnahme \d/)).toBeNull();
+    expect(api.ladeAnhangHoch).not.toHaveBeenCalled();
   });
 
   it('lässt die Sperre nicht warten, wenn „Verwerfen“ schon unterwegs ist', async () => {
@@ -1603,11 +1658,8 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
     zeige('/team/k-allgemein');
     await mitAnhangSenden(nutzer, 'Kette ab');
     scheitern(new TeamchatFehler('Nicht hochgeladen – kein Netz? Bitte noch einmal.', true));
-    expect(
-      await screen.findByText(
-        'Kein Netz – wird gesendet, sobald Empfang da ist und die App läuft.',
-      ),
-    ).toBeInTheDocument();
+    // Kein Versprechen, dass es von selbst geht (Zweitreview TEAM-005).
+    expect(await screen.findByText('Anhang nicht hochgeladen – kein Netz?')).toBeInTheDocument();
     expect(api.sendeNachricht).not.toHaveBeenCalled();
 
     await nutzer.click(screen.getByRole('button', { name: 'Jetzt versuchen' }));
@@ -1631,9 +1683,7 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
       ),
     );
     expect(
-      await screen.findByText(
-        'Nicht gesendet: Speiche.png: Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.',
-      ),
+      await screen.findByText('Nicht gesendet: „Speiche.png“ ließ sich nicht hochladen.'),
     ).toBeInTheDocument();
     expect(api.sendeNachricht).not.toHaveBeenCalled();
 
@@ -1645,6 +1695,50 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
     expect(entwurf.getByRole('button', { name: 'Senden' })).toBeDisabled();
     await nutzer.click(entwurf.getByRole('button', { name: 'Anhang entfernen: Speiche.png' }));
     expect(entwurf.getByRole('button', { name: 'Senden' })).toBeEnabled();
+  });
+
+  it('holt eine wartende Nachricht mit „Bearbeiten“ zurück - der Anhang lädt im Entwurf weiter', async () => {
+    const nutzer = userEvent.setup();
+    let fertig: (wert: unknown) => void = () => undefined;
+    api.ladeAnhangHoch.mockReturnValueOnce(new Promise((aufloesen) => (fertig = aufloesen)));
+    zeige('/team/k-allgemein');
+    const feld = await mitAnhangSenden(nutzer, 'Doch noch etwas');
+    expect(await screen.findByText('Lädt Anhänge hoch …')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+    expect(feld).toHaveValue('Doch noch etwas');
+    expect(screen.queryByText('Lädt Anhänge hoch …')).toBeNull();
+    await act(async () => {
+      fertig(oben('a6', 'Speiche.png'));
+      await new Promise((weiter) => setTimeout(weiter, 50));
+    });
+    expect(screen.getByText('Foto · 3 KB')).toBeInTheDocument();
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
+  });
+
+  it('sendet nach dem Abmelden nichts - auch keine wartende Nachricht, und bricht das Hochladen ab', async () => {
+    // Zweitreview TEAM-005, Befund 1: kein Versuch unter der nächsten Sitzung.
+    const nutzer = userEvent.setup();
+    let fertig: (wert: unknown) => void = () => undefined;
+    api.ladeAnhangHoch.mockReturnValueOnce(new Promise((aufloesen) => (fertig = aufloesen)));
+    zeige('/team/k-allgemein');
+    await mitAnhangSenden(nutzer, 'Gleich da');
+    expect(await screen.findByText('Lädt Anhänge hoch …')).toBeInTheDocument();
+    act(() => teamchatLeeren());
+    const [, , , , signal] = api.ladeAnhangHoch.mock.calls[0] as [
+      string,
+      Blob,
+      string,
+      number | undefined,
+      AbortSignal,
+    ];
+    expect(signal.aborted).toBe(true);
+    await act(async () => {
+      fertig(oben('a7', 'Speiche.png'));
+      await new Promise((weiter) => setTimeout(weiter, 50));
+    });
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
+    // Was doch noch oben ankam, fällt am Server.
+    expect(api.verwirfAnhang).toHaveBeenCalledWith('a7');
   });
 
   it('verwirft nach einer Ablehnung des Servers Nachricht und Anhang - den auch am Server', async () => {

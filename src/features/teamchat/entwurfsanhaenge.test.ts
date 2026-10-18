@@ -66,7 +66,13 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     expect(anhaengeVon('anna', 'k1', 't1').map((a) => a.name)).toEqual(['Antwort.pdf']);
     expect(anhaengeVon('anna', 'k2', null)).toEqual([]);
     // Ohne Dauer: keine Sprachnachricht (TEAM-004).
-    expect(ladeAnhangHoch).toHaveBeenCalledWith('k1', expect.any(Blob), 'Plan.pdf', undefined);
+    expect(ladeAnhangHoch).toHaveBeenCalledWith(
+      'k1',
+      expect.any(Blob),
+      'Plan.pdf',
+      undefined,
+      expect.any(AbortSignal),
+    );
   });
 
   it('nimmt höchstens fünf und meldet, wie viele darüber lagen', () => {
@@ -203,6 +209,17 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     }
   });
 
+  it('bricht das Hochladen ab, wenn der Anhang fällt - entfernt oder beim Abmelden (Zweitreview TEAM-005)', () => {
+    ladeAnhangHoch.mockReturnValue(new Promise(() => undefined));
+    anhaengen('anna', 'k1', null, [datei('a.pdf'), datei('b.pdf')]);
+    const signale = ladeAnhangHoch.mock.calls.map((aufruf) => aufruf[4] as AbortSignal);
+    expect(signale.map((s) => s.aborted)).toEqual([false, false]);
+    anhangEntfernen(anhaengeVon('anna', 'k1', null)[0]!.lokalId);
+    expect(signale.map((s) => s.aborted)).toEqual([true, false]);
+    anhaengeLeeren();
+    expect(signale.map((s) => s.aborted)).toEqual([true, true]);
+  });
+
   it('räumt beim Abmelden alles ab', () => {
     anhaengen('anna', 'k1', null, [datei('a.pdf')]);
     anhaengen('tim', 'k2', null, [datei('b.pdf')]);
@@ -235,7 +252,13 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     const ton = new Blob(['ton'], { type: 'audio/webm' });
     anhaengen('anna', 'k1', null, [{ datei: ton, name: 'Sprachnachricht', dauer: 41.6 }]);
     await vi.waitFor(() => expect(anhaengeVon('anna', 'k1', null)[0]?.zustand).toBe('bereit'));
-    expect(ladeAnhangHoch).toHaveBeenCalledWith('k1', ton, 'Sprachnachricht', 41.6);
+    expect(ladeAnhangHoch).toHaveBeenCalledWith(
+      'k1',
+      ton,
+      'Sprachnachricht',
+      41.6,
+      expect.any(AbortSignal),
+    );
     expect(anhaengeVon('anna', 'k1', null)[0]).toMatchObject({
       dauer: 41.6,
       mime: 'audio/webm',

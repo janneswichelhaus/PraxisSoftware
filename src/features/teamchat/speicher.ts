@@ -14,8 +14,10 @@ import { sucheLeeren } from './suche';
  */
 export function teamchatLeeren(): void {
   entwuerfeLeeren();
-  anhaengeLeeren();
+  // Erst der Ausgang: Fielen zuerst die Anhänge, versuchte eine wartende
+  // Nachricht noch zu senden - unter der nächsten Sitzung (Zweitreview TEAM-005).
   ausgangLeeren();
+  anhaengeLeeren();
   scrollstaendeLeeren();
   sucheLeeren();
   zuletzt = null;

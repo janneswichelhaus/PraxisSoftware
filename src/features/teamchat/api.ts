@@ -610,6 +610,17 @@ function speicherfehler(fehler: unknown): TeamchatFehler {
 export const FALSCHE_DATEI =
   'Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.';
 
+/** Der Anhang fiel während des Hochladens - entfernt, abgemeldet, Konto gewechselt. */
+export const ABGEBROCHEN = 'Das Hochladen ist abgebrochen.';
+
+/**
+ * Nach dem Abmelden oder einem Kontowechsel ginge der nächste Schritt unter
+ * einer anderen Sitzung hinaus - er unterbleibt (Zweitreview TEAM-005).
+ */
+function weiterOderAbbrechen(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new TeamchatFehler(ABGEBROCHEN, false);
+}
+
 /** Eine Aufnahme, die nicht reiner Ton ist (Punkt 84). */
 export const FALSCHE_AUFNAHME =
   'Diese Aufnahme lässt sich nicht senden. Bitte entfernen und neu aufnehmen.';
@@ -634,6 +645,7 @@ export async function ladeAnhangHoch(
   datei: Blob,
   name: string,
   dauerS?: number,
+  signal?: AbortSignal,
 ): Promise<Anhang> {
   const dauer = dauerS !== undefined && tontyp(datei.type) !== null ? dauerSekunden(dauerS) : null;
   let sauber: Blob;
@@ -652,6 +664,7 @@ export async function ladeAnhangHoch(
     sauber = await bereinigeBild(await nachSrgb(datei));
   }
   const summe = await pruefsumme(sauber);
+  weiterOderAbbrechen(signal);
 
   const ersatz = 'Der Anhang konnte nicht angenommen werden.';
   let data: unknown;
@@ -681,6 +694,7 @@ export async function ladeAnhangHoch(
 
   try {
     // ADR-017 Punkte 8 und 16: kein Überschreiben, kein Zwischenspeicher.
+    weiterOderAbbrechen(signal);
     let hochgeladen: { error: unknown };
     try {
       hochgeladen = await getSupabase()
@@ -694,6 +708,7 @@ export async function ladeAnhangHoch(
       throw new TeamchatFehler(NICHT_UEBERTRAGEN, true);
     }
     if (hochgeladen.error) throw speicherfehler(hochgeladen.error);
+    weiterOderAbbrechen(signal);
     await rufe(
       'confirm_team_attachment_upload',
       { p_attachment_id: vorbereitet.attachment_id },

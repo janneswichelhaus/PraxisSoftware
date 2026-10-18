@@ -70,9 +70,10 @@ export interface WebmOptionen {
   tagsOhneLaenge?: boolean;
   /**
    * Eine Bildspur in einem Cluster unbekannter Länge innerhalb der Spuren -
-   * ein Versteck, wenn unbekannte Länge nicht nur auf der Segmentebene gilt.
+   * ein Versteck, wenn unbekannte Länge nicht nur auf der Segmentebene gilt;
+   * mit `'segment'` dazu in einem Segment fester Länge verschachtelt.
    */
-  versteckteBildspur?: boolean;
+  versteckteBildspur?: boolean | 'segment';
 }
 
 /**
@@ -109,9 +110,13 @@ export function webmAusChromium(optionen: WebmOptionen = {}): Uint8Array {
     [...el(0xd7, [2]), ...el(0x73c5, [2]), ...el(0x83, [2]), ...el(0x86, text('A_OPUS'))],
     8,
   );
-  const versteck = optionen.versteckteBildspur
-    ? [...kennung(0x1f43b675), ...UNBEKANNT, ...bild]
-    : [];
+  const cluster0 = [...kennung(0x1f43b675), ...UNBEKANNT, ...bild];
+  const versteck =
+    optionen.versteckteBildspur === 'segment'
+      ? el(0x18538067, cluster0)
+      : optionen.versteckteBildspur
+        ? cluster0
+        : [];
   const spuren = el(
     0x1654ae6b,
     [...(optionen.bild === false ? [] : bild), ...(optionen.ton ? ton : []), ...versteck],

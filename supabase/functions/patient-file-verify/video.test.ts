@@ -138,10 +138,14 @@ describe('Sprachnachricht am Server (TEAM-004, ADR-017 Punkt 84)', () => {
         'audio/webm',
       ).lesbar,
     ).toBe(false);
-    expect(
-      pruefeTon(webmAusChromium({ bild: false, ton: true, versteckteBildspur: true }), 'audio/webm')
-        .lesbar,
-    ).toBe(false);
+    for (const versteck of [true, 'segment'] as const) {
+      expect(
+        pruefeTon(
+          webmAusChromium({ bild: false, ton: true, versteckteBildspur: versteck }),
+          'audio/webm',
+        ).lesbar,
+      ).toBe(false);
+    }
   });
 
   it('ohne Tonspur, mit falschem Typ oder abgeschnitten: nicht lesbar', () => {

@@ -115,6 +115,16 @@ function vorschau(a: Entwurfsanhang): Anhang {
  */
 function anhaengeBereit(id: string, eintrag: Ausgangseintrag): readonly Anhang[] | null {
   const gebunden = anhaengeDerNachricht(id);
+  if (gebunden.length === 0 && eintrag.zustand === 'laedt') {
+    // Die Anhänge sind fort: Ohne sie geht sie nie - und nie mit der Vorschau.
+    speicher.set(id, {
+      ...eintrag,
+      zustand: 'abgelehnt',
+      fehler: 'Die Anhänge sind nicht mehr da.',
+      anhaengeOhneNetz: false,
+    });
+    return null;
+  }
   if (gebunden.length === 0) return eintrag.anhaenge;
   const anhaenge = gebunden.map(vorschau);
   const gescheitert = gebunden.find((a) => a.zustand === 'fehler' && !a.erneut);
@@ -123,7 +133,8 @@ function anhaengeBereit(id: string, eintrag: Ausgangseintrag): readonly Anhang[]
       ...eintrag,
       anhaenge,
       zustand: 'abgelehnt',
-      fehler: `${gescheitert.name}: ${gescheitert.fehler ?? 'Der Anhang konnte nicht hochgeladen werden.'}`,
+      // Der genaue Grund steht nach „Bearbeiten“ am Anhang im Entwurf.
+      fehler: `„${gescheitert.name}“ ließ sich nicht hochladen.`,
       anhaengeOhneNetz: false,
     });
     return null;

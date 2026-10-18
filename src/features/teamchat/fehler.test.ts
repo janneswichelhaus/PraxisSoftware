@@ -25,8 +25,15 @@ vi.mock('@/features/files/metadaten', async (importOriginal) => ({
   alleBytes: async (datei: Blob) => new Uint8Array(await datei.arrayBuffer()),
 }));
 
-const { FALSCHE_AUFNAHME, TeamchatFehler, aendereGemerkt, ladeAnhangHoch, merke, reagiere } =
-  await import('./api');
+const {
+  ABGEBROCHEN,
+  FALSCHE_AUFNAHME,
+  TeamchatFehler,
+  aendereGemerkt,
+  ladeAnhangHoch,
+  merke,
+  reagiere,
+} = await import('./api');
 
 const vorgaenge = [
   () => reagiere('n-1', 'daumen'),
@@ -181,5 +188,46 @@ describe('Hochladen einer Sprachnachricht (TEAM-004, ADR-017 Punkt 84)', () => {
     expect(fehler.netz).toBe(false);
     expect(fehler.message).toBe(FALSCHE_AUFNAHME);
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe('Abbruch des Hochladens (Zweitreview TEAM-005)', () => {
+  const pdf = () => new Blob(['%PDF-1.4\n'], { type: 'application/pdf' });
+
+  it('geht abgebrochen keinen Schritt mehr zum Server', async () => {
+    rpc.mockReset();
+    upload.mockReset();
+    const abbruch = new AbortController();
+    abbruch.abort();
+    const fehler = await fehlerVon(() =>
+      ladeAnhangHoch('kanal', pdf(), 'Plan.pdf', undefined, abbruch.signal),
+    );
+    expect(fehler.message).toBe(ABGEBROCHEN);
+    expect(fehler.netz).toBe(false);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('lädt nach dem Vorbereiten nicht mehr hoch und verwirft, was vorbereitet war', async () => {
+    rpc.mockReset();
+    upload.mockReset();
+    const abbruch = new AbortController();
+    rpc
+      .mockImplementationOnce(() => {
+        // Während das Vorbereiten läuft, fällt der Anhang.
+        abbruch.abort();
+        return Promise.resolve({
+          data: [{ attachment_id: 'a1', bucket_id: 'teamchat', object_key: 'org/kanal/a1' }],
+          error: null,
+          status: 200,
+        });
+      })
+      .mockResolvedValue({ data: null, error: null, status: 204 });
+    const fehler = await fehlerVon(() =>
+      ladeAnhangHoch('kanal', pdf(), 'Plan.pdf', undefined, abbruch.signal),
+    );
+    expect(fehler.message).toBe(ABGEBROCHEN);
+    expect(upload).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledWith('discard_team_attachment', { p_attachment_id: 'a1' });
   });
 });

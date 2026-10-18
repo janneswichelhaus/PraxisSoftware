@@ -168,17 +168,22 @@ export function Eingabe({
   const aufnahme = useAufnahme({
     hoechstdauerS: SPRACHNACHRICHT_HOECHSTDAUER_S,
     onFertig: ({ audio, dauerS }) => {
-      anhaengenAusWahl([
-        {
-          datei: audio,
-          name: aufnahmeName(
-            'Sprachnachricht',
-            zeitzone,
-            entwurfsanhaenge.map((a) => a.name),
-          ),
-          dauer: dauerS,
-        },
-      ]);
+      // Ohne Grenze: Füllte „Bearbeiten“ den Entwurf während der Aufnahme,
+      // ginge sie sonst verloren (Zweitreview TEAM-005).
+      anhaengenAusWahl(
+        [
+          {
+            datei: audio,
+            name: aufnahmeName(
+              'Sprachnachricht',
+              zeitzone,
+              entwurfsanhaenge.map((a) => a.name),
+            ),
+            dauer: dauerS,
+          },
+        ],
+        Number.POSITIVE_INFINITY,
+      );
     },
     onFehler: (fehler) => setAnhangHinweis(AUFNAHMEFEHLER[fehler]),
   });
@@ -298,10 +303,13 @@ export function Eingabe({
   }
 
   /** Gewählte oder aufgenommene Dateien an den Entwurf - höchstens fünf (ADR-017 Punkt 71). */
-  function anhaengenAusWahl(neue: readonly { datei: Blob; name: string; dauer?: number }[]) {
+  function anhaengenAusWahl(
+    neue: readonly { datei: Blob; name: string; dauer?: number }[],
+    grenze = ANHAENGE_MAX,
+  ) {
     setWerkzeug(null);
     if (neue.length === 0) return;
-    const uebrig = anhaengen(kontoId, kanal.id, threadId, neue);
+    const uebrig = anhaengen(kontoId, kanal.id, threadId, neue, grenze);
     setAnhangHinweis(uebrig > 0 ? `Höchstens ${ANHAENGE_MAX} Anhänge je Nachricht.` : null);
   }
 

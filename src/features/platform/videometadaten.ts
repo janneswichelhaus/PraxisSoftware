@@ -172,6 +172,9 @@ function bereinigeWebm(bytes: Uint8Array): Spuren {
         continue;
       }
       if (e.ende > bis) return false;
+      // Ein Segment gibt es nur auf oberster Ebene - verschachtelt öffnete es
+      // wieder Cluster ohne Länge (Zweitreview TEAM-005).
+      if (e.id === EBML.segment && eltern !== 0) return false;
       if (e.id === EBML.trackType) {
         let typ = 0;
         for (let i = e.daten; i < e.ende; i += 1) typ = typ * 256 + bytes[i]!;

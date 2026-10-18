@@ -234,10 +234,27 @@ export function NachrichtZeile({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {ausgang.zustand === 'sendet' ? (
             <Statusmeldung>Wird gesendet …</Statusmeldung>
-          ) : ausgang.zustand === 'laedt' && !ausgang.anhaengeOhneNetz ? (
-            // Die Anhänge laden noch; danach geht sie von selbst (ANN-654).
-            <Statusmeldung>Lädt Anhänge hoch …</Statusmeldung>
-          ) : ausgang.zustand === 'wartet' || ausgang.zustand === 'laedt' ? (
+          ) : ausgang.zustand === 'laedt' ? (
+            <>
+              {ausgang.anhaengeOhneNetz ? (
+                <>
+                  {/* Kein Versprechen: Von selbst versucht es ein Anhang nur eine
+                      Weile und mit dem Netz (Zweitreview TEAM-005). */}
+                  <Statusmeldung ton="warnung">Anhang nicht hochgeladen – kein Netz?</Statusmeldung>
+                  <Button type="button" variant="quiet" groesse="kompakt" onClick={onErneut}>
+                    Jetzt versuchen
+                  </Button>
+                </>
+              ) : (
+                // Die Anhänge laden noch; danach geht sie von selbst (ANN-654).
+                <Statusmeldung>Lädt Anhänge hoch …</Statusmeldung>
+              )}
+              {/* Noch nicht beim Server: Zurück ins Feld geht ohne Doppel. */}
+              <Button type="button" variant="quiet" groesse="kompakt" onClick={onZurueckInsFeld}>
+                Bearbeiten
+              </Button>
+            </>
+          ) : ausgang.zustand === 'wartet' ? (
             <>
               {/* Der Ausgang liegt im Arbeitsspeicher (ANN-641): Er sendet, solange
                   die App läuft; das Abmelden fragt vorher (`AusgangAbmeldewache`). */}

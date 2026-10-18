@@ -55,8 +55,12 @@ export interface Entwurfsanhang {
 const speicher = new Map<string, Entwurfsanhang>();
 /** Die Datei selbst, für einen neuen Versuch - nie außerhalb dieses Moduls. */
 const dateien = new Map<string, Blob>();
-/** Was gerade hochlädt - ein zweiter Versuch derselben Datei wartet nicht daneben. */
-const laufend = new Set<string>();
+/**
+ * Was gerade hochlädt, mit seinem Abbruch - ein zweiter Versuch derselben
+ * Datei wartet nicht daneben. Fällt ein Anhang (Entfernen, Abmelden,
+ * Kontowechsel), unterbleibt der nächste Schritt (Zweitreview TEAM-005).
+ */
+const laufend = new Map<string, AbortController>();
 const beobachter = new Set<() => void>();
 let stand = 0;
 let takt: ReturnType<typeof setInterval> | null = null;
@@ -181,7 +185,8 @@ async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
   const eintrag = speicher.get(lokalId);
   const datei = dateien.get(lokalId);
   if (!eintrag || !datei || laufend.has(lokalId)) return;
-  laufend.add(lokalId);
+  const abbruch = new AbortController();
+  laufend.set(lokalId, abbruch);
   speicher.set(lokalId, {
     ...eintrag,
     zustand: 'laedt',
@@ -196,6 +201,7 @@ async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
       datei,
       eintrag.name,
       eintrag.dauer ?? undefined,
+      abbruch.signal,
     );
     const jetzt = speicher.get(lokalId);
     if (!jetzt) {
@@ -215,7 +221,7 @@ async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
       erneut: ursache instanceof TeamchatFehler ? ursache.netz : true,
     });
   } finally {
-    laufend.delete(lokalId);
+    if (laufend.get(lokalId) === abbruch) laufend.delete(lokalId);
     melden();
   }
 }
@@ -223,16 +229,18 @@ async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
 /**
  * Hängt Dateien an den Entwurf und lädt sie hoch - eine Sprachnachricht mit
  * ihrer Dauer (`dauer`). Liefert, wie viele über der Grenze von fünf liegen
- * und deshalb nicht angehängt sind.
+ * und deshalb nicht angehängt sind. Eine Aufnahme hängt auch darüber an
+ * (`grenze`): Sonst wäre sie fort; „Senden“ wartet dann, bis entfernt ist.
  */
 export function anhaengen(
   kontoId: string,
   kanalId: string,
   threadId: string | null,
   neue: readonly { datei: Blob; name: string; dauer?: number }[],
+  grenze: number = ANHAENGE_MAX,
 ): number {
   anmelden();
-  const frei = ANHAENGE_MAX - anhaengeVon(kontoId, kanalId, threadId).length;
+  const frei = grenze - anhaengeVon(kontoId, kanalId, threadId).length;
   const angenommen = neue.slice(0, Math.max(0, frei));
   for (const { datei, name, dauer } of angenommen) {
     const lokalId = crypto.randomUUID();
@@ -270,6 +278,7 @@ export function anhangErneut(lokalId: string): void {
 }
 
 function freigeben(eintrag: Entwurfsanhang) {
+  laufend.get(eintrag.lokalId)?.abort();
   if (eintrag.vorschau) URL.revokeObjectURL(eintrag.vorschau);
   dateien.delete(eintrag.lokalId);
   speicher.delete(eintrag.lokalId);

@@ -138,6 +138,7 @@ describe('Sprachnachricht ohne Angaben (TEAM-004, ADR-017 Punkt 84)', () => {
     for (const daten of [
       webmAusChromium({ bild: false, ton: true, cluster: 2, tagsOhneLaenge: true }),
       webmAusChromium({ bild: false, ton: true, versteckteBildspur: true }),
+      webmAusChromium({ bild: false, ton: true, versteckteBildspur: 'segment' }),
     ]) {
       expect(await ablehnen(daten, 'audio/webm')).toEqual({ ok: false, grund: 'format' });
     }

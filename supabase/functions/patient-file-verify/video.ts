@@ -194,6 +194,9 @@ export function durchlaufeWebm(
         continue;
       }
       if (e.ende > bis) return null;
+      // Ein Segment gibt es nur auf oberster Ebene - verschachtelt öffnete es
+      // wieder Cluster ohne Länge (Zweitreview TEAM-005).
+      if (e.id === EBML.segment && eltern !== 0) return null;
       besuche(e, eltern);
       if (BEHAELTER.has(e.id) && bereich(e.daten, e.ende, e.id, tiefe + 1) === null) return null;
       pos = e.ende;
