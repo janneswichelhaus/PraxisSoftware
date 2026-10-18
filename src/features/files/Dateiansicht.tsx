@@ -18,14 +18,11 @@ export function Dateiansicht({
   bild,
   name,
   onSchliessen,
-  ohneLeiste = false,
   ref,
 }: {
   bild: Blob;
   name: string;
   onSchliessen: () => void;
-  /** Ein PDF ohne die Leiste des Browsers (`PdfRahmen`) - wo es kein Herunterladen gibt. */
-  ohneLeiste?: boolean;
   /** Wohin der Fokus nach dem Laden geht. */
   ref?: Ref<HTMLElement>;
 }) {
@@ -42,7 +39,7 @@ export function Dateiansicht({
   return (
     <section ref={ref} tabIndex={-1} aria-label={`Ansicht: ${name}`} className="mt-3 outline-none">
       {istPdf(bild) ? (
-        <PdfRahmen daten={bild} titel={name} ohneLeiste={ohneLeiste} />
+        <PdfRahmen daten={bild} titel={name} />
       ) : adresse ? (
         <img
           src={adresse}

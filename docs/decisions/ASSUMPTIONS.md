@@ -6697,17 +6697,17 @@ Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026)
 
 **Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 5); ob „Von“ bleibt, entscheidet die Datenschutzprüfung. Bleibt im Prüfpaket.
 
-### ANN-652 — Teamchat: ungesendete Anhänge fallen nach 24 Stunden, ohne Journal
+### ANN-652 — Teamchat: ungesendete Anhänge fallen beim Verwerfen mit Journal, nach 24 Stunden ohne
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen sofort, sonst nach 24 Stunden - mit Löschauftrag für das Objekt, ohne Eintrag im Löschjournal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
+**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort - mit Löschauftrag und Eintrag im Löschjournal -, sonst im täglichen Lauf nach 24 Stunden ohne Journal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
 
-**Begründung.** ADR-017 Punkte 7 und 73; wie KOM-005 an Rückfragen. Nach einem Restore ist ein solcher Anhang weder bindbar noch lesbar und fällt im nächsten Lauf (ADR-008 Punkt 8 sinngemäß). Gesendete fallen über das Journal ihrer Nachricht.
+**Begründung.** ADR-017 Punkte 7, 52 und 73; ADR-008 Punkt 8: Ohne Journal käme ein verworfener, jüngerer Anhang mit einem Restore bindbar zurück (Zweitreview TEAM-003, wie ERS-001). Was der Lauf verwirft, ist nach einem Restore älter als 24 Stunden, weder bindbar noch lesbar und fällt im nächsten Lauf. Gesendete fallen über das Journal ihrer Nachricht.
 
-**Anker.** `public.discard_stale_team_attachments`, `public.discard_team_attachment`.
+**Anker.** `public.discard_team_attachment`, `public.discard_stale_team_attachments`.
 
-**Änderungspfad.** Mit Journal: beide Funktionen schreiben es, `public.reapply_deletion_journal` bekommt die Tabelle · Aufwand `klein`.
+**Änderungspfad.** Auch der Lauf schreibt das Journal (eine Einfügung wie in ERS-001) · Aufwand `klein`.
 
 ### ANN-653 — Teamchat: Nachricht nur mit Anhängen
 

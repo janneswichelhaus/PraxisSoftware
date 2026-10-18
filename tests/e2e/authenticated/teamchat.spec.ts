@@ -8,13 +8,23 @@ import { KONTEN, anmelden } from './helpers';
  * Gezählt werden Tipps ohne getippten Text, gegen die Budgets der Spec
  * (Referenzabgleich Slack: Senden 2, Antworten 2, Erwähnen +2, Direktnachricht
  * 3, Treffer öffnen 2, Reagieren 2, Foto oder PDF senden 4 und die Auswahl im
- * Dateiwähler). Ausgangslage ist jeweils der Teamchat
+ * Dateiwähler, Foto mit der Kamera der App 6). Ausgangslage ist jeweils der Teamchat
  * (`/team`). Wer was liest, prüfen `supabase/tests/teamchat*.test.ts` am
  * Server; hier der Weg in der Oberfläche, Zustellung im Funkloch und die
  * Entwürfe beim Kontowechsel.
  */
 // Zwei Anmeldungen je Ablauf brauchen mehr als die üblichen 30 Sekunden.
 test.describe.configure({ mode: 'serial', timeout: 90_000 });
+
+// Die künstliche Kamera von Chromium für „Foto aufnehmen“ (TEAM-003, wie
+// `radflotte.spec.ts`); die übrigen Abläufe berührt sie nicht.
+const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
+test.use({
+  launchOptions: {
+    ...(executablePath ? { executablePath } : {}),
+    args: ['--no-sandbox', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+  },
+});
 
 const LAUF = Date.now();
 const TELEFON = { width: 375, height: 812 };
@@ -106,6 +116,11 @@ async function zumTeamchat(page: Page, konto: string, groesse = TELEFON): Promis
 
 function gespraeche(page: Page): Locator {
   return page.getByRole('navigation', { name: 'Gespräche' });
+}
+
+/** Die Anhänge im Entwurf - in der Eingabe, nicht in einer Nachricht. */
+function entwurfsanhaenge(page: Page): Locator {
+  return page.locator('form').getByRole('list', { name: 'Anhänge', exact: true });
 }
 
 async function ohneQuerrollen(page: Page): Promise<void> {
@@ -453,7 +468,7 @@ test('hängt ein Foto und ein PDF an und sendet sie in vier Tipps und der Auswah
   await (await waehler).setFiles([foto, PLAN]);
 
   // Beide laden hoch, während geschrieben wird; gesendet wird erst danach.
-  const entwurf = page.getByRole('list', { name: 'Anhänge', exact: true });
+  const entwurf = entwurfsanhaenge(page);
   await expect(entwurf.getByRole('listitem')).toHaveCount(2);
   await page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` }).fill(`Neuer Plan ${LAUF}`);
   await expect(entwurf.getByText('Lädt', { exact: true })).toHaveCount(0, { timeout: 20_000 });
@@ -462,21 +477,57 @@ test('hängt ein Foto und ein PDF an und sendet sie in vier Tipps und der Auswah
   await z.tippe(page.getByRole('button', { name: 'Senden', exact: true }));
 
   const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Neuer Plan ${LAUF}` });
-  const anhaenge = nachricht.getByRole('group', { name: 'Anhänge', exact: true });
+  const anhaenge = nachricht.getByRole('list', { name: 'Anhänge', exact: true });
   await expect(anhaenge.getByRole('button')).toHaveCount(2);
   await expect(anhaenge.getByRole('button', { name: /Dienstplan KW 43.*PDF/ })).toBeVisible();
   await expect(anhaenge.getByRole('button', { name: /Kette Rad 2.*Foto/ })).toBeVisible();
   await expect(entwurf).toHaveCount(0);
   expect(z.tipps).toBeLessThanOrEqual(5);
-  // Kein Vorschaubild in der Zeile (ADR-017 Punkt 77), kein Querrollen.
+  // Kein Vorschaubild in der Zeile (ADR-017 Punkt 77), dafür die Kennzeichnung
+  // ohne scharfe Prüfung (Punkt 51); kein Querrollen.
   await expect(nachricht.locator('img')).toHaveCount(0);
+  await expect(anhaenge.getByText(/nicht serverseitig geprüft/)).toHaveCount(2);
   await ohneQuerrollen(page);
   for (const knopf of await anhaenge.getByRole('button').all()) {
     expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
 });
 
-test('öffnet einen Anhang im eigenen Rahmen und findet ihn unter Dateien (ADR-017 Punkte 77, 80)', async ({
+test('nimmt ein Foto mit der Kamera der App auf und sendet es in sechs Tipps (TEAM-003)', async ({
+  page,
+}) => {
+  await zumTeamchat(page, KONTEN.therapist);
+  const z = zaehler();
+  await z.tippe(gespraeche(page).getByRole('link', { name: `# ${KANAL}` }));
+  await z.tippe(page.getByRole('button', { name: 'Anhängen', exact: true }));
+  await z.tippe(
+    page
+      .getByRole('group', { name: 'Anhängen', exact: true })
+      .getByRole('button', { name: 'Foto aufnehmen' }),
+  );
+  const kamera = page.getByRole('dialog', { name: 'Foto anhängen' });
+  await expect(
+    kamera.getByText('Keine Fotos von Patient:innen und keine Befunde – die gehören in die Akte.'),
+  ).toBeVisible();
+  const ausloesen = kamera.getByRole('button', { name: 'Auslösen' });
+  await expect(ausloesen).toBeEnabled({ timeout: 20_000 });
+  await z.tippe(ausloesen);
+  await z.tippe(kamera.getByRole('button', { name: 'Foto verwenden' }));
+
+  // Das Foto heißt nach Tag und Uhrzeit; es lädt, während geschrieben wird.
+  const entwurf = entwurfsanhaenge(page);
+  await expect(entwurf.getByText(/^Foto \d\d\.\d\d\., \d\d:\d\d$/)).toBeVisible();
+  await expect(entwurf.getByText('Lädt', { exact: true })).toHaveCount(0, { timeout: 20_000 });
+  await page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` }).fill(`Speiche ${LAUF}`);
+  await z.tippe(page.getByRole('button', { name: 'Senden', exact: true }));
+  const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Speiche ${LAUF}` });
+  await expect(
+    nachricht.getByRole('list', { name: 'Anhänge', exact: true }).getByRole('button'),
+  ).toHaveCount(1);
+  expect(z.tipps).toBeLessThanOrEqual(6);
+});
+
+test('öffnet einen Anhang im Fenster und findet ihn unter Dateien (ADR-017 Punkte 77, 80)', async ({
   page,
 }) => {
   await zumTeamchat(page, KONTEN.office, RECHNER);
@@ -485,18 +536,22 @@ test('öffnet einen Anhang im eigenen Rahmen und findet ihn unter Dateien (ADR-0
     .click();
   const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Neuer Plan ${LAUF}` });
   await nachricht.getByRole('button', { name: /Kette Rad 2.*Foto/ }).click();
-  await expect(
-    nachricht.getByRole('region', { name: `Ansicht: Kette Rad 2 ${LAUF}.png` }).getByRole('img'),
-  ).toBeVisible();
-  await nachricht.getByRole('button', { name: 'Schließen' }).click();
+  const foto = page.getByRole('dialog', { name: `Kette Rad 2 ${LAUF}.png` });
+  await expect(foto.getByRole('img', { name: `Kette Rad 2 ${LAUF}.png` })).toBeVisible();
+  await foto.getByRole('button', { name: 'Schließen' }).last().click();
+  await expect(foto).toHaveCount(0);
+
   await nachricht.getByRole('button', { name: /Dienstplan KW 43.*PDF/ }).click();
-  const rahmen = nachricht.locator(`iframe[title="${PLAN.name}"]`);
+  const plan = page.getByRole('dialog', { name: PLAN.name });
+  const rahmen = plan.locator(`iframe[title="${PLAN.name}"]`);
   await expect(rahmen).toBeVisible();
   // Ohne die Leiste des Betrachters mit Herunterladen und Drucken.
   await expect(rahmen).toHaveAttribute('src', /#toolbar=0$/);
-  // Herunterladen gibt es nicht - nur Schließen.
-  await expect(nachricht.getByRole('button', { name: /Herunterladen/ })).toHaveCount(0);
-  await expect(nachricht.getByRole('link', { name: /Herunterladen/ })).toHaveCount(0);
+  // Herunterladen gibt es nicht - nur Schließen, ganz im Bild.
+  await expect(plan.getByRole('button', { name: /Herunterladen/ })).toHaveCount(0);
+  await expect(plan.getByRole('link', { name: /Herunterladen/ })).toHaveCount(0);
+  await expect(plan.getByRole('button', { name: 'Schließen' }).last()).toBeInViewport();
+  await plan.getByRole('button', { name: 'Schließen' }).last().click();
 
   await page.getByRole('button', { name: 'Details', exact: true }).click();
   const details = page.getByRole('dialog', { name: `# ${KANAL}` });
@@ -504,6 +559,9 @@ test('öffnet einen Anhang im eigenen Rahmen und findet ihn unter Dateien (ADR-0
   await expect(details.getByText(PLAN.name)).toBeVisible();
   await expect(details.getByText(`Kette Rad 2 ${LAUF}.png`)).toBeVisible();
   await expect(details.getByText(/^PDF · .* · Anna Beispiel/)).toBeVisible();
+  // Aus den Details öffnet dasselbe Fenster.
+  await details.getByRole('button', { name: /Dienstplan KW 43/ }).click();
+  await expect(page.getByRole('dialog', { name: PLAN.name }).locator('iframe')).toBeVisible();
   await ohneQuerrollen(page);
 });
 
@@ -545,7 +603,7 @@ test('antwortet im Thread nur mit einer Datei; die Liste sagt „Anhang“ (ANN-
   await therapie
     .getByRole('button', { name: `Anhang entfernen: Falsche Datei ${LAUF}.pdf` })
     .click();
-  const entwurf = therapie.getByRole('list', { name: 'Anhänge', exact: true });
+  const entwurf = entwurfsanhaenge(therapie);
   await expect(entwurf.getByRole('listitem')).toHaveCount(1);
   await expect(senden).toBeEnabled({ timeout: 20_000 });
   await senden.click();

@@ -88,6 +88,8 @@ const anhangSchema = z.object({
   name: z.string(),
   mime_type: z.string(),
   byte_size: z.number(),
+  /** Am Server geprüft (ADR-017 Punkt 51) - sonst „nicht serverseitig geprüft“. */
+  verified: z.boolean(),
 });
 export type Anhang = z.infer<typeof anhangSchema>;
 
@@ -574,6 +576,10 @@ export const ANHANG_VERWORFEN =
 
 const NICHT_UEBERTRAGEN = 'Nicht hochgeladen – kein Netz? Bitte noch einmal.';
 
+/** Eine Datei, deren Inhalt nicht zu ihrer Art passt - etwa umbenannt. */
+export const FALSCHE_DATEI =
+  'Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.';
+
 /**
  * Einen Anhang hochladen - bevor die Nachricht hinausgeht (ADR-017 Punkte 7
  * und 74): Format und Inhalt prüfen, Farbe nach sRGB, Metadaten eines Fotos
@@ -587,8 +593,8 @@ const NICHT_UEBERTRAGEN = 'Nicht hochgeladen – kein Netz? Bitte noch einmal.';
 export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string): Promise<Anhang> {
   const grund = dateiAblehnungsgrund(datei);
   if (grund) throw new TeamchatFehler(grund, false);
-  const inhaltsgrund = await dateiInhaltAblehnungsgrund(datei);
-  if (inhaltsgrund) throw new TeamchatFehler(inhaltsgrund, false);
+  // Im Teamchat ohne Formatnamen: was zu tun ist (Praxis-Review TEAM-003).
+  if (await dateiInhaltAblehnungsgrund(datei)) throw new TeamchatFehler(FALSCHE_DATEI, false);
   const sauber = await bereinigeBild(await nachSrgb(datei));
   const summe = await pruefsumme(sauber);
 
@@ -638,10 +644,15 @@ export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string)
     throw ursache instanceof TeamchatFehler ? ursache : new TeamchatFehler(NICHT_UEBERTRAGEN, true);
   }
 
-  if ((await pruefeAmServer(vorbereitet.attachment_id)) === 'rejected') {
-    throw new TeamchatFehler(ANHANG_VERWORFEN, false);
-  }
-  return { id: vorbereitet.attachment_id, name, mime_type: sauber.type, byte_size: sauber.size };
+  const pruefung = await pruefeAmServer(vorbereitet.attachment_id);
+  if (pruefung === 'rejected') throw new TeamchatFehler(ANHANG_VERWORFEN, false);
+  return {
+    id: vorbereitet.attachment_id,
+    name,
+    mime_type: sauber.type,
+    byte_size: sauber.size,
+    verified: pruefung === 'passed' || pruefung === 'already_verified',
+  };
 }
 
 /** Prüfung am Inhalt (Edge Function `patient-file-verify`); ohne Function kein Fehler. */
@@ -715,8 +726,12 @@ const dateiSchema = z.object({
   byte_size: z.number(),
   created_at: z.string(),
   author_name: z.string().nullable(),
+  verified: z.boolean(),
 });
 export type Datei = z.infer<typeof dateiSchema>;
+
+/** So viele Dateien holt „Dateien“ in den Details höchstens - die neuesten (Server: 200). */
+export const DATEIEN_HOECHSTENS = 200;
 
 export function dateienKey(kanalId: string) {
   return [...TEAMCHAT_KEY, 'dateien', kanalId] as const;
@@ -725,7 +740,11 @@ export function dateienKey(kanalId: string) {
 /** Dateien je Gespräch (ADR-017 Punkt 80): die neuesten zuerst. */
 export async function fetchDateien(kanalId: string): Promise<Datei[]> {
   const ersatz = 'Die Dateien konnten nicht geladen werden.';
-  const data = await rufe('list_team_channel_attachments', { p_channel: kanalId }, ersatz);
+  const data = await rufe(
+    'list_team_channel_attachments',
+    { p_channel: kanalId, p_limit: DATEIEN_HOECHSTENS },
+    ersatz,
+  );
   return antwort(z.array(dateiSchema), data ?? [], ersatz);
 }
 

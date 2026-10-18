@@ -20,11 +20,13 @@ const {
   anhaengeAbgeben,
   anhaengeLeeren,
   anhaengeVon,
+  anhaengeWiederholen,
   anhaengen,
   anhangEntfernen,
   anhangErneut,
   anhangName,
-} = await import('./anhaenge');
+  fotoName,
+} = await import('./entwurfsanhaenge');
 
 const datei = (name: string, typ = 'application/pdf') => ({
   datei: new Blob(['x'], { type: typ }),
@@ -123,12 +125,33 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     await vi.waitFor(() => expect(anhaengeVon('anna', 'k1', null)[0]?.zustand).toBe('bereit'));
   });
 
+  it('versucht es von selbst noch einmal - mit dem Netz und im Takt wie der Ausgang', async () => {
+    ladeAnhangHoch.mockRejectedValueOnce(
+      new TeamchatFehler('Nicht hochgeladen – kein Netz? Bitte noch einmal.', true),
+    );
+    anhaengen('anna', 'k1', null, [datei('funkloch.pdf')]);
+    await vi.waitFor(() => expect(anhaengeVon('anna', 'k1', null)[0]?.zustand).toBe('fehler'));
+    // Das rufen das Ereignis „online“ und der Takt von 15 Sekunden auf.
+    anhaengeWiederholen();
+    await vi.waitFor(() => expect(anhaengeVon('anna', 'k1', null)[0]?.zustand).toBe('bereit'));
+    expect(ladeAnhangHoch).toHaveBeenCalledTimes(2);
+  });
+
   it('räumt beim Abmelden alles ab', () => {
     anhaengen('anna', 'k1', null, [datei('a.pdf')]);
     anhaengen('tim', 'k2', null, [datei('b.pdf')]);
     anhaengeLeeren();
     expect(anhaengeVon('anna', 'k1', null)).toEqual([]);
     expect(anhaengeVon('tim', 'k2', null)).toEqual([]);
+  });
+
+  it('zählt Fotos aus derselben Minute, damit sie sich ohne Vorschaubild unterscheiden', () => {
+    const jetzt = new Date('2026-10-18T17:34:20Z');
+    expect(fotoName('Europe/Berlin', [], jetzt)).toBe('Foto 18.10., 19:34');
+    expect(fotoName('Europe/Berlin', ['Foto 18.10., 19:34'], jetzt)).toBe('Foto 18.10., 19:34 (2)');
+    expect(fotoName('Europe/Berlin', ['Foto 18.10., 19:34', 'Foto 18.10., 19:34 (2)'], jetzt)).toBe(
+      'Foto 18.10., 19:34 (3)',
+    );
   });
 
   it('nimmt den Namen ohne Steuerzeichen, höchstens 120 Zeichen', () => {

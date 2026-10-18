@@ -20,7 +20,7 @@ import {
   type Nachricht,
   type Person,
 } from './api';
-import { AnhangKnoepfe } from './Anhaenge';
+import { AnhangZeilen } from './Anhaenge';
 import type { Ausgangseintrag } from './ausgang';
 import { NACHRICHT_MAX, alleErwaehnt, erwaehnte } from './erwaehnung';
 import { FormatierterText } from './format';
@@ -171,7 +171,7 @@ export function NachrichtZeile({
             </div>
           )}
           {/* TEAM-003: Anhänge ohne Vorschau; im Ausgang noch nicht zu öffnen. */}
-          <AnhangKnoepfe anhaenge={nachricht.attachments} aktiv={!ausgang} />
+          <AnhangZeilen anhaenge={nachricht.attachments} aktiv={!ausgang} />
         </div>
         {!ausgang && !bearbeiten ? (
           <Symbolknopf beschriftung={`Handlungen zur Nachricht von ${name}`} onClick={onAktionen}>

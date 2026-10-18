@@ -447,6 +447,29 @@ describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
     );
   });
 
+  it('setzt die Schreibmarke gleich hinter den Namen - auch wenn das nächste Bild spät kommt', async () => {
+    // Unter Last kam das nächste Bild erst nach dem ersten Buchstaben; der
+    // landete dann hinter dem Rest („…ommst du?k“).
+    const wartend: FrameRequestCallback[] = [];
+    const bild = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((rueckruf) => {
+      wartend.push(rueckruf);
+      return wartend.length;
+    });
+    try {
+      const nutzer = userEvent.setup();
+      zeige('/team/k-allgemein');
+      const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+      await screen.findByRole('button', { name: 'Jemanden erwähnen' });
+      await nutzer.type(feld, 'Hallo @ti{Tab}');
+      await nutzer.type(feld, 'k', { skipClick: true });
+      for (const rueckruf of wartend.splice(0)) rueckruf(0);
+      await nutzer.type(feld, 'ommst du?', { skipClick: true });
+      expect(feld).toHaveValue('Hallo @Tim Teamleitung kommst du?');
+    } finally {
+      bild.mockRestore();
+    }
+  });
+
   it('macht ein eindeutiges „@Vorname“ beim Senden zur Erwähnung (Praxis-Sichtung, Runde 2)', async () => {
     const nutzer = userEvent.setup();
     zeige('/team/k-allgemein');
@@ -930,6 +953,7 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
       name: 'Dienstplan.pdf',
       mime_type: 'application/pdf',
       byte_size: 2048,
+      verified: false,
     });
     zeige('/team/k-allgemein');
     await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
@@ -970,14 +994,23 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
         name: 'Reifen.png',
         mime_type: 'image/png',
         byte_size: 4096,
+        verified: false,
       });
     zeige('/team/k-allgemein');
     const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
     await nutzer.type(feld, 'Schaden am Rad');
     await nutzer.upload(screen.getByLabelText('Foto oder PDF anhängen'), foto());
     expect(await screen.findByText('Lädt')).toBeInTheDocument();
+    // Warum „Senden“ wartet, steht da (Praxis-Review TEAM-003).
+    expect(screen.getByText('Senden geht, sobald alles hochgeladen ist.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
-    fertig({ id: 'a2', name: 'Speiche.png', mime_type: 'image/png', byte_size: 3072 });
+    fertig({
+      id: 'a2',
+      name: 'Speiche.png',
+      mime_type: 'image/png',
+      byte_size: 3072,
+      verified: false,
+    });
     expect(await screen.findByText('Foto · 3 KB')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Speiche.png' })).toHaveAttribute(
       'src',
@@ -1002,7 +1035,7 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
   it('nimmt höchstens fünf Anhänge je Nachricht', async () => {
     const nutzer = userEvent.setup();
     api.ladeAnhangHoch.mockImplementation((_kanal: string, datei: File, name: string) =>
-      Promise.resolve({ id: name, name, mime_type: datei.type, byte_size: 1024 }),
+      Promise.resolve({ id: name, name, mime_type: datei.type, byte_size: 1024, verified: false }),
     );
     zeige('/team/k-allgemein');
     await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
@@ -1015,14 +1048,26 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
     expect(screen.getByRole('button', { name: 'Anhängen' })).toBeDisabled();
   });
 
-  it('zeigt Anhänge einer Nachricht ohne Vorschaubild und öffnet erst auf Tipp, ohne Herunterladen', async () => {
+  it('zeigt Anhänge einer Nachricht ohne Vorschaubild und öffnet erst auf Tipp im Fenster, ohne Herunterladen', async () => {
     const nutzer = userEvent.setup();
     api.fetchNachrichten.mockResolvedValue([
       nachricht({
         body: '',
         attachments: [
-          { id: 'x1', name: 'Speiche.jpg', mime_type: 'image/jpeg', byte_size: 3072 },
-          { id: 'x2', name: 'Plan.pdf', mime_type: 'application/pdf', byte_size: 1024 },
+          {
+            id: 'x1',
+            name: 'Speiche.jpg',
+            mime_type: 'image/jpeg',
+            byte_size: 3072,
+            verified: false,
+          },
+          {
+            id: 'x2',
+            name: 'Plan.pdf',
+            mime_type: 'application/pdf',
+            byte_size: 1024,
+            verified: true,
+          },
         ],
       }),
     ]);
@@ -1034,25 +1079,63 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
       ),
     );
     zeige('/team/k-planung');
-    const knopf = await screen.findByRole('button', { name: /Speiche\.jpg/ });
-    expect(knopf).toHaveTextContent('Foto, 3 KB');
-    expect(screen.getByRole('button', { name: /Plan\.pdf/ })).toHaveTextContent('PDF, 1 KB');
+    const anhaenge = await screen.findByRole('list', { name: 'Anhänge' });
+    const zeile = within(anhaenge).getByRole('button', { name: /Speiche\.jpg/ });
+    // ADR-017 Punkt 51: ob am Server geprüft, steht an der Datei.
+    expect(zeile).toHaveTextContent('Foto · 3 KB · nicht serverseitig geprüft');
+    expect(within(anhaenge).getByRole('button', { name: /Plan\.pdf/ })).toHaveTextContent(
+      /PDF · 1 KB$/,
+    );
     expect(screen.queryByRole('img', { name: 'Speiche.jpg' })).toBeNull();
     expect(api.ladeAnhang).not.toHaveBeenCalled();
 
-    await nutzer.click(knopf);
-    expect(await screen.findByRole('img', { name: 'Speiche.jpg' })).toBeInTheDocument();
+    await nutzer.click(zeile);
+    const fenster = await screen.findByRole('dialog', { name: 'Speiche.jpg' });
+    expect(await within(fenster).findByRole('img', { name: 'Speiche.jpg' })).toBeInTheDocument();
     expect(api.ladeAnhang).toHaveBeenCalledWith('x1');
+    expect(
+      within(fenster).getByText('Foto · 3 KB · nicht serverseitig geprüft'),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/herunterladen/i)).toBeNull();
-    await nutzer.click(screen.getByRole('button', { name: 'Schließen' }));
-    expect(screen.queryByRole('img', { name: 'Speiche.jpg' })).toBeNull();
+    const schliessen = within(fenster).getAllByRole('button', { name: 'Schließen' });
+    await nutzer.click(schliessen[schliessen.length - 1]!);
+    expect(screen.queryByRole('dialog', { name: 'Speiche.jpg' })).toBeNull();
 
     // Ein PDF im Rahmen ohne die Leiste des Betrachters (Herunterladen, Drucken).
-    await nutzer.click(screen.getByRole('button', { name: /Plan\.pdf/ }));
+    await nutzer.click(within(anhaenge).getByRole('button', { name: /Plan\.pdf/ }));
     expect(await screen.findByTitle('Plan.pdf')).toHaveAttribute(
       'src',
       expect.stringMatching(/#toolbar=0$/),
     );
+  });
+
+  it('sagt es, wenn das Gerät kein PDF in der Seite zeigt - statt eines leeren Rahmens', async () => {
+    const nutzer = userEvent.setup();
+    // jsdom kennt die Eigenschaft nicht; Chrome unter Android meldet false.
+    Object.defineProperty(navigator, 'pdfViewerEnabled', { configurable: true, get: () => false });
+    try {
+      api.fetchNachrichten.mockResolvedValue([
+        nachricht({
+          attachments: [
+            {
+              id: 'x2',
+              name: 'Plan.pdf',
+              mime_type: 'application/pdf',
+              byte_size: 1024,
+              verified: false,
+            },
+          ],
+        }),
+      ]);
+      zeige('/team/k-planung');
+      await nutzer.click(await screen.findByRole('button', { name: /Plan\.pdf/ }));
+      expect(
+        await screen.findByText('Dieses Gerät zeigt PDF nicht in der App an.'),
+      ).toBeInTheDocument();
+      expect(api.ladeAnhang).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(navigator, 'pdfViewerEnabled');
+    }
   });
 
   it('listet die Dateien des Gesprächs in den Details', async () => {
@@ -1067,13 +1150,40 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
         byte_size: 245760,
         created_at: '2026-10-17T07:00:00+00:00',
         author_name: 'Tim Teamleitung',
+        verified: false,
       },
     ]);
     zeige('/team/k-allgemein');
     await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
     expect(await screen.findByRole('heading', { name: /^Dateien/ })).toBeInTheDocument();
     expect(await screen.findByText('Dienstplan.pdf')).toBeInTheDocument();
-    expect(screen.getByText(/^PDF · 240 KB · Tim Teamleitung · /)).toBeInTheDocument();
+    expect(
+      screen.getByText(/^PDF · 240 KB · nicht serverseitig geprüft · Tim Teamleitung · /),
+    ).toBeInTheDocument();
     expect(api.fetchDateien).toHaveBeenCalledWith('k-allgemein');
+  });
+
+  it('zeigt in den Details zuerst zehn Dateien und den Rest auf Wunsch', async () => {
+    const nutzer = userEvent.setup();
+    api.fetchDateien.mockResolvedValue(
+      Array.from({ length: 12 }, (_, i) => ({
+        id: `d${i}`,
+        message_id: `n${i}`,
+        parent_id: null,
+        display_name: `Plan ${i + 1}.pdf`,
+        mime_type: 'application/pdf',
+        byte_size: 1024,
+        created_at: '2026-10-17T07:00:00+00:00',
+        author_name: 'Tim Teamleitung',
+        verified: true,
+      })),
+    );
+    zeige('/team/k-allgemein');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    expect(await screen.findByRole('heading', { name: 'Dateien (12)' })).toBeInTheDocument();
+    expect(screen.getByText('Plan 10.pdf')).toBeInTheDocument();
+    expect(screen.queryByText('Plan 11.pdf')).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Alle 12 zeigen' }));
+    expect(screen.getByText('Plan 12.pdf')).toBeInTheDocument();
   });
 });

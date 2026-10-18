@@ -52,6 +52,7 @@ const NACHRICHTEN = 'select * from public.list_team_messages($1::uuid, $2::uuid)
 const KANAL_ANLEGEN = 'select public.create_team_channel($1, $2, $3::boolean, $4::uuid[]) as id';
 const DIREKT = 'select public.open_team_direct($1::uuid) as id';
 const VERLASSEN = 'select public.leave_team_channel($1::uuid)';
+const GRUPPE = 'select public.open_team_group($1::uuid[]) as id';
 
 interface Vorbereitet {
   attachment_id: string;
@@ -64,6 +65,7 @@ interface Anhang {
   name: string;
   mime_type: string;
   byte_size: number;
+  verified: boolean;
 }
 
 interface Nachricht {
@@ -255,22 +257,27 @@ describe('Teamchat: Anhänge senden (ADR-017 Punkte 71 und 73)', () => {
           name: 'Dienstplan KW 43.pdf',
           mime_type: 'application/pdf',
           byte_size: GROESSE,
+          // Ohne scharfe Prüfung „nicht serverseitig geprüft“ (Punkt 51).
+          verified: false,
         },
         {
           id: foto.attachment_id,
           name: 'Bildschirmfoto.png',
           mime_type: 'image/png',
           byte_size: GROESSE,
+          verified: false,
         },
       ]);
     }
-    const { rows } = await asUser<{ id: string; author_name: string; message_id: string }>(
-      users.office,
-      DATEIEN,
-      [allgemein],
-    );
+    const { rows } = await asUser<{
+      id: string;
+      author_name: string;
+      message_id: string;
+      verified: boolean;
+    }>(users.office, DATEIEN, [allgemein]);
     expect(rows.map((r) => r.id).sort()).toEqual([pdf.attachment_id, foto.attachment_id].sort());
     expect(rows.every((r) => r.message_id === id && r.author_name === 'Anna Beispiel')).toBe(true);
+    expect(rows.every((r) => !r.verified)).toBe(true);
   });
 
   it('sendet eine Nachricht nur mit Anhängen - ohne Anhang bleibt ein leerer Text abgewiesen', async () => {
@@ -477,6 +484,12 @@ describe('Teamchat: Ablage und Lesefreigabe (ADR-017 Punkte 11, 15 und 76)', () 
     const allgemein = await kanal(users.therapist, 'Allgemein');
     const v = await vorbereiten(users.therapist, allgemein);
     expect(await code(hochladen(users.office, v))).toBe('42501');
+    // Zweitreview TEAM-003, Punkt 1: auch nicht aus einer anderen Praxis, als
+    // Patient:in oder mit einem Konto der Plattform.
+    const fremd = await fremdeOrganisation();
+    for (const konto of [fremd.owner, users.patientMax, users.plattformTina]) {
+      expect(await code(hochladen(konto, v))).toBe('42501');
+    }
     expect(
       await code(
         hochladen(users.therapist, {
@@ -521,6 +534,12 @@ describe('Teamchat: Ablage und Lesefreigabe (ADR-017 Punkte 11, 15 und 76)', () 
       { bucket_id: 'teamchat', object_key: foto.object_key, mime_type: 'image/jpeg' },
     ]);
     expect(await lesen(users.teamLead, foto.object_key)).toBe(0);
+    // Die Freigabe gehört Olivia - nicht einer anderen Praxis, einer
+    // Patientin oder einem Konto der Plattform (Zweitreview TEAM-003, Punkt 1).
+    const fremd = await fremdeOrganisation();
+    for (const konto of [fremd.owner, users.patientMax, users.plattformTina]) {
+      expect(await lesen(konto, foto.object_key)).toBe(0);
+    }
     expect(await lesen(users.office, foto.object_key)).toBe(1);
     expect(await lesen(users.office, foto.object_key)).toBe(0);
   });
@@ -542,6 +561,55 @@ describe('Teamchat: Ablage und Lesefreigabe (ADR-017 Punkte 11, 15 und 76)', () 
     const rad = await anhang(users.teamLead, radflotte);
     await senden(users.teamLead, radflotte, 'Rad', { anhaenge: [rad.attachment_id] });
     expect(await code(asUser(users.trainer, VERWEIS, [rad.attachment_id]))).toBe('P0002');
+  });
+
+  it('gibt Anhänge privater Kanäle und Gruppen nur ihren Mitgliedern frei (Zweitreview TEAM-003)', async () => {
+    const leitung = (
+      await asUserCommitted<{ id: string }>(users.teamLead, KANAL_ANLEGEN, [
+        'Leitung',
+        null,
+        true,
+        [STAFF.jannes],
+      ])
+    ).rows[0]!.id;
+    const plan = await anhang(users.teamLead, leitung, 'application/pdf', 'Plan.pdf');
+    await senden(users.teamLead, leitung, 'Vertretung', { anhaenge: [plan.attachment_id] });
+    const gruppe = (
+      await asUserCommitted<{ id: string }>(users.therapist, GRUPPE, [[STAFF.olivia, STAFF.tim]])
+    ).rows[0]!.id;
+    const foto = await anhang(users.therapist, gruppe);
+    await senden(users.therapist, gruppe, 'Für uns drei', { anhaenge: [foto.attachment_id] });
+
+    for (const [konto, anhangId, gespraech] of [
+      [users.therapist, plan.attachment_id, leitung],
+      [users.office, plan.attachment_id, leitung],
+      [users.ownerTherapist, foto.attachment_id, gruppe],
+    ] as const) {
+      expect(await code(asUser(konto, VERWEIS, [anhangId]))).toBe('P0002');
+      expect(await code(asUser(konto, DATEIEN, [gespraech]))).toBe('P0002');
+    }
+    expect((await asUser(users.ownerTherapist, DATEIEN, [leitung])).rows).toHaveLength(1);
+    expect((await asUser(users.office, DATEIEN, [gruppe])).rows).toHaveLength(1);
+  });
+
+  it('prüft das Leserecht noch beim Öffnen - wer seit der Freigabe den Kanal verließ, bekommt nichts', async () => {
+    const leitung = (
+      await asUserCommitted<{ id: string }>(users.teamLead, KANAL_ANLEGEN, [
+        'Leitung',
+        null,
+        true,
+        [STAFF.jannes],
+      ])
+    ).rows[0]!.id;
+    const plan = await anhang(users.teamLead, leitung, 'application/pdf', 'Plan.pdf');
+    await senden(users.teamLead, leitung, 'Vertretung', { anhaenge: [plan.attachment_id] });
+    await asUserCommitted(users.ownerTherapist, VERWEIS, [plan.attachment_id]);
+    await asUserCommitted(users.ownerTherapist, VERLASSEN, [leitung]);
+    expect(await lesen(users.ownerTherapist, plan.object_key)).toBe(0);
+
+    // Gegenprobe: wer Mitglied bleibt, öffnet mit seiner Freigabe.
+    await asUserCommitted(users.teamLead, VERWEIS, [plan.attachment_id]);
+    expect(await lesen(users.teamLead, plan.object_key)).toBe(1);
   });
 });
 
@@ -695,7 +763,7 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
     expect(await auftraege()).toEqual([foto.object_key, offen.object_key].sort());
   });
 
-  it('verwirft ungesendete sofort oder nach 24 Stunden - mit Löschauftrag, ohne Journal (ANN-652)', async () => {
+  it('verwirft ungesendete sofort mit Journal oder nach 24 Stunden ohne - jeweils mit Löschauftrag (ANN-652)', async () => {
     const allgemein = await kanal(users.therapist, 'Allgemein');
     const verworfen = await anhang(users.therapist, allgemein);
     await asUserCommitted(users.therapist, VERWERFEN, [verworfen.attachment_id]);
@@ -726,12 +794,78 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
     ).toBe(1);
     expect(await auftraege()).toEqual([verworfen.object_key, liegen.object_key].sort());
     expect(await anzahl('select count(*) n from public.team_attachment_access_grants')).toBe(0);
+    // Von Hand verworfen: im Journal, damit es eine Wiederherstellung nicht
+    // zurückbringt (ADR-008 Punkt 8). Im Lauf gefallen: ohne, denn was älter
+    // als 24 Stunden ist, ist weder bindbar noch lesbar.
+    const { rows: journal } = await asPostgres<{
+      target_id: string;
+      target_table: string;
+      retention_class: string;
+    }>(
+      `select target_id, target_table, retention_class from public.deletion_journal
+        where target_id = any($1::uuid[])`,
+      [[verworfen.attachment_id, liegen.attachment_id]],
+    );
+    expect(journal).toEqual([
+      {
+        target_id: verworfen.attachment_id,
+        target_table: 'team_message_attachments',
+        retention_class: 'teamchat',
+      },
+    ]);
+  });
+
+  it('lässt verworfene und abgewiesene ungesendete Anhänge nach einem Restore erneut fallen (Zweitreview TEAM-003)', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const verworfen = await anhang(users.therapist, allgemein);
+    await asUserCommitted(users.therapist, VERWERFEN, [verworfen.attachment_id]);
+    const befund = await anhang(users.therapist, allgemein);
+    await asServiceRole(
+      'select public.record_team_attachment_verification($1::uuid, false, true, true)',
+      [befund.attachment_id],
+    );
+    expect(await zeilen()).toBe(0);
+    // Die Löschaufträge sind ausgeführt und quittiert.
+    await asPostgres(`delete from storage.objects where bucket_id = 'teamchat'`);
+    await asPostgres(
+      `update public.storage_deletion_orders set receipted_at = now(), receipted_by = $1
+        where bucket_id = 'teamchat'`,
+      [users.ownerTherapist],
+    );
+
+    // Restore aus der Sicherung von vor einer Stunde: Zeilen und Objekte
+    // wieder da, jünger als 24 Stunden und damit bindbar - ohne Journal kämen
+    // sie zurück.
+    for (const v of [verworfen, befund]) {
+      await asPostgres(
+        `insert into public.team_message_attachments
+           (id, organization_id, channel_id, staff_member_id, display_name, mime_type, byte_size,
+            checksum_sha256, status, confirmed_at, created_by, created_at)
+         values ($1, $2, $3, $4, 'Foto Rad.jpg', 'image/jpeg', $5, $6, 'ready', now(), $7,
+                 now() - interval '1 hour')`,
+        [v.attachment_id, organizationId, allgemein, STAFF.anna, GROESSE, SUMME, users.therapist],
+      );
+      // Die Zeile in storage.objects gehört zur Sicherung der Datenbank.
+      await asPostgres(
+        `insert into storage.objects (bucket_id, name, metadata) values ('teamchat', $1, '{}'::jsonb)`,
+        [v.object_key],
+      );
+    }
+
+    await asPostgres('select public.reapply_deletion_journal()');
+    expect(await zeilen()).toBe(0);
+    expect(await auftraege()).toEqual([verworfen.object_key, befund.object_key].sort());
     expect(
       await anzahl(
-        `select count(*) n from public.deletion_journal where target_id = any($1::uuid[])`,
-        [[verworfen.attachment_id, liegen.attachment_id]],
+        `select count(*) n from public.deletion_journal
+          where target_table = 'team_message_attachments' and reapplied_at is not null`,
       ),
-    ).toBe(0);
+    ).toBe(2);
+    expect(
+      await code(
+        senden(users.therapist, allgemein, 'Doch noch', { anhaenge: [verworfen.attachment_id] }),
+      ),
+    ).toBe('P0002');
   });
 
   it('lässt Anhänge nach einem Restore erneut fallen (ADR-008 Punkt 8)', async () => {
@@ -859,8 +993,18 @@ describe('Teamchat: Anhänge unverändert, am Server geprüft, abgeglichen', () 
     expect(await code(ergebnis(geprueft.attachment_id, null))).toBe('22023');
     expect(await ergebnis(geprueft.attachment_id, true)).toBe('passed');
     expect(await ergebnis(geprueft.attachment_id, true)).toBe('already_verified');
-    await senden(users.therapist, allgemein, 'Geprüft', { anhaenge: [geprueft.attachment_id] });
+    const id = await senden(users.therapist, allgemein, 'Geprüft', {
+      anhaenge: [geprueft.attachment_id],
+    });
     expect(await ergebnis(geprueft.attachment_id, true)).toBe('not_found');
+    // Punkt 51: Ob am Server geprüft, steht an der Datei - in der Nachricht und
+    // unter „Dateien“.
+    expect(
+      (await nachrichten(users.office, allgemein)).find((n) => n.id === id)?.attachments,
+    ).toEqual([expect.objectContaining({ id: geprueft.attachment_id, verified: true })]);
+    expect((await asUser(users.office, DATEIEN, [allgemein])).rows).toEqual([
+      expect.objectContaining({ id: geprueft.attachment_id, verified: true }),
+    ]);
 
     const befund = await anhang(users.therapist, allgemein);
     expect(await ergebnis(befund.attachment_id, true, false)).toBe('rejected');

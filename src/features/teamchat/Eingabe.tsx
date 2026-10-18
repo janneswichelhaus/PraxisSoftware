@@ -1,4 +1,11 @@
-import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
@@ -13,7 +20,7 @@ import { Kameradialog } from '@/features/files/Kameradialog';
 import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
 import { useKamera } from '@/features/files/kamera';
 import { EntwurfsAnhaenge } from './Anhaenge';
-import { anhaengeAbgeben, anhaengen, useEntwurfsanhaenge } from './anhaenge';
+import { anhaengeAbgeben, anhaengen, fotoName, useEntwurfsanhaenge } from './entwurfsanhaenge';
 import {
   ANHAENGE_MAX,
   GEPLANT_KEY,
@@ -61,18 +68,6 @@ function platzhalter(kanal: Kanal, threadId: string | null): string {
   return titel.length <= 24 ? `Nachricht an ${titel}` : 'Nachricht schreiben';
 }
 
-/** Der Name eines Fotos aus dem Kameradialog: Tag und Uhrzeit der Aufnahme. */
-function fotoName(zeitzone: string): string {
-  const zeit = new Intl.DateTimeFormat('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: zeitzone,
-  }).format(new Date());
-  return `Foto ${zeit}`;
-}
-
 const FORMATE = [
   { zeichen: '*', name: 'Fett', symbol: 'F' },
   { zeichen: '_', name: 'Kursiv', symbol: 'K' },
@@ -99,7 +94,7 @@ const FORMATE = [
  *   Namen (am Rechner auch Enter oder Tab den ersten).
  * * **Anhängen** (TEAM-003, ADR-017 Abschnitt M): Die Büroklammer bietet
  *   „Foto aufnehmen“ und „Foto oder PDF wählen“, ohne Kamera gleich den
- *   Dateiwähler. Eine Datei lädt hoch, sobald sie gewählt ist (`anhaenge.ts`);
+ *   Dateiwähler. Eine Datei lädt hoch, sobald sie gewählt ist (`entwurfsanhaenge.ts`);
  *   gesendet wird erst, wenn alle oben bereit sind. Mit Anhängen darf der Text
  *   leer sein (ANN-653), geplant wird dann nicht.
  */
@@ -126,6 +121,18 @@ export function Eingabe({
 }) {
   const queryClient = useQueryClient();
   const feld = useRef<HTMLTextAreaElement>(null);
+  // Wohin die Schreibmarke nach einem eingesetzten Namen oder Zeichen gehört.
+  // Gesetzt, sobald React den Text ins Feld geschrieben hat - nicht erst im
+  // nächsten Bild: Sonst landet ein schnell getippter Buchstabe an der alten
+  // Stelle (Praxis-Sichtung, Test unter Last).
+  const markeNachher = useRef<{ von: number; bis: number } | null>(null);
+  useLayoutEffect(() => {
+    const marke = markeNachher.current;
+    if (!marke || !feld.current) return;
+    markeNachher.current = null;
+    feld.current.focus();
+    feld.current.setSelectionRange(marke.von, marke.bis);
+  });
   const text = useEntwurf(kontoId, kanal.id, threadId);
   const [werkzeug, setWerkzeug] = useState<'erwaehnen' | 'format' | 'anhaengen' | null>(null);
   const dateiwahl = useRef<HTMLInputElement>(null);
@@ -231,12 +238,9 @@ export function Eingabe({
       const vorher = text.slice(0, anfrage.von);
       const nachher = text.slice(anfrage.von + anfrage.wort.length + 1).replace(/^ /, '');
       const eingesetzt = `@${name} `;
-      aendern(`${vorher}${eingesetzt}${nachher}`);
       const marke = vorher.length + eingesetzt.length;
-      requestAnimationFrame(() => {
-        feld.current?.focus();
-        feld.current?.setSelectionRange(marke, marke);
-      });
+      markeNachher.current = { von: marke, bis: marke };
+      aendern(`${vorher}${eingesetzt}${nachher}`);
       return;
     }
     const davor = text === '' || /\s$/.test(text) ? '' : ' ';
@@ -255,11 +259,8 @@ export function Eingabe({
     const bis = el?.selectionEnd ?? text.length;
     const auswahl = text.slice(von, bis);
     const neu = `${text.slice(0, von)}${zeichen}${auswahl}${zeichen}${text.slice(bis)}`;
+    markeNachher.current = { von: von + zeichen.length, bis: bis + zeichen.length };
     aendern(neu);
-    requestAnimationFrame(() => {
-      el?.focus();
-      el?.setSelectionRange(von + zeichen.length, bis + zeichen.length);
-    });
   }
 
   function zeilenAnfang(vorsatz: string) {
@@ -527,7 +528,15 @@ export function Eingabe({
           hinweis="Keine Fotos von Patient:innen und keine Befunde – die gehören in die Akte."
           onAufnahme={(foto) => {
             setKameraOffen(false);
-            anhaengenAusWahl([{ datei: foto, name: fotoName(zeitzone) }]);
+            anhaengenAusWahl([
+              {
+                datei: foto,
+                name: fotoName(
+                  zeitzone,
+                  entwurfsanhaenge.map((a) => a.name),
+                ),
+              },
+            ]);
           }}
           onSchliessen={() => setKameraOffen(false)}
         />

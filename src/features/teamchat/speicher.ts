@@ -1,5 +1,5 @@
 import { ordneKanaele, type Kanal } from './api';
-import { anhaengeLeeren } from './anhaenge';
+import { anhaengeLeeren } from './entwurfsanhaenge';
 import { ausgangLeeren } from './ausgang';
 import { entwuerfeLeeren } from './entwuerfe';
 import { scrollstaendeLeeren } from './scrollstand';

@@ -10,10 +10,10 @@
 -- Ein Anhang fällt mit seiner Nachricht (Punkt 75, ANN-610): mit der Zeile
 -- (cascade, Journal der Nachricht) und mit ihrem Inhalt - dafür räumt
 -- app.team_message_content_removed jetzt auch die Anhänge ab, auf jedem Weg
--- bis zur Wiederanwendung nach einem Restore. Was 24 Stunden an keiner
--- Nachricht hängt, fällt ohne Journal (wie KOM-005, ANN-652): Es wurde nie
--- gesendet, niemand außer der hochladenden Person kennt es, und gebunden wird
--- nur, was jünger als 24 Stunden ist.
+-- bis zur Wiederanwendung nach einem Restore. Nie Gesendetes, das die Person
+-- verwirft oder die Prüfung abweist, fällt mit Journal (ADR-008 Punkt 8, wie
+-- ERS-001); was 24 Stunden an keiner Nachricht hängt, fällt im täglichen Lauf
+-- ohne Journal - gebunden wird nur, was jünger ist (ANN-652).
 --
 --   public.team_message_attachments          Anhänge, Klasse teamchat
 --   public.team_attachment_access_grants     einmalige Lesefreigaben (ANN-052)
@@ -31,6 +31,7 @@
 --                                            record_team_attachment_verification
 --   Abgleich (Punkt 27):                     count_orphaned_patient_file_objects,
 --                                            order_orphaned_object_deletion
+--   Wiederherstellung (ADR-008 Punkt 8):     reapply_deletion_journal
 --
 -- Funktionen, die angemeldete Konten ausführen (Bucket, Speicherregeln), tragen
 -- kein „team“ im Namen: app.%team% bleibt ganz entzogen (teamchat-slack.test.ts).
@@ -467,8 +468,9 @@ declare
   v_id    uuid;
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
-  -- Der Trigger schreibt den Löschauftrag, falls schon ein Objekt liegt. Kein
-  -- Journal: Ungesendetes ist nach 24 Stunden nicht mehr bindbar (ANN-652).
+  -- Der Trigger schreibt den Löschauftrag, falls schon ein Objekt liegt; das
+  -- Journal hält das Verwerfen über eine Wiederherstellung (ADR-008 Punkt 8):
+  -- Ein jüngerer Anhang wäre danach sonst wieder bindbar (ANN-652).
   delete from public.team_message_attachments a
    where a.id = p_attachment_id and a.organization_id = v_org and a.created_by = auth.uid()
      and a.staff_member_id = v_staff and a.message_id is null
@@ -476,6 +478,9 @@ begin
   if v_id is null then
     raise exception 'team attachment not found' using errcode = 'P0002';
   end if;
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  values (v_org, extensions.gen_random_uuid(), 'team_message_attachments', v_id, 'teamchat', now());
 end;
 $$;
 
@@ -483,10 +488,12 @@ revoke all on function public.discard_team_attachment(uuid) from public, anon;
 grant execute on function public.discard_team_attachment(uuid) to authenticated;
 
 comment on function public.discard_team_attachment(uuid) is
-  'TEAM-003 (ADR-017 Punkte 7 und 79): verwirft einen eigenen, noch nicht gesendeten Anhang - mit Löschauftrag für das Objekt, ohne Journal (ANN-652).';
+  'TEAM-003 (ADR-017 Punkte 7 und 79): verwirft einen eigenen, noch nicht gesendeten Anhang - mit Löschauftrag für das Objekt und Eintrag im Löschjournal (ADR-008 Punkt 8, ANN-652).';
 
 -- Nach 24 Stunden ohne Nachricht verworfen (ADR-017 Punkt 73), dazu die
--- abgelaufenen Lesefreigaben. Aufräumen, keine Frist.
+-- abgelaufenen Lesefreigaben. Aufräumen, keine Frist - und ohne Journal: Was
+-- eine Wiederherstellung zurückbringt, ist älter als 24 Stunden, weder bindbar
+-- noch lesbar und fällt im nächsten Lauf wieder (ANN-652).
 create function public.discard_stale_team_attachments()
 returns integer
 language plpgsql
@@ -585,7 +592,8 @@ returns table (
   mime_type    text,
   byte_size    bigint,
   created_at   timestamptz,
-  author_name  text
+  author_name  text,
+  verified     boolean
 )
 language plpgsql
 stable
@@ -602,7 +610,7 @@ begin
   end if;
   return query
   select a.id, m.id, m.parent_id, a.display_name, a.mime_type, a.byte_size, m.created_at,
-         app.team_staff_name(m.author_staff_member_id)
+         app.team_staff_name(m.author_staff_member_id), a.verified_at is not null
   from public.team_message_attachments a
   join public.team_messages m on m.id = a.message_id
   where a.channel_id = p_channel and a.organization_id = v_org and a.status = 'ready'
@@ -616,7 +624,7 @@ revoke all on function public.list_team_channel_attachments(uuid, integer) from 
 grant execute on function public.list_team_channel_attachments(uuid, integer) to authenticated;
 
 comment on function public.list_team_channel_attachments(uuid, integer) is
-  'TEAM-003 (ADR-017 Punkt 80): Dateien eines lesbaren Gesprächs - Name, Art, Größe, von wem, wann; ohne Vorschaubild und ohne Objektschlüssel.';
+  'TEAM-003 (ADR-017 Punkte 51 und 80): Dateien eines lesbaren Gesprächs - Name, Art, Größe, von wem, wann, ob am Server geprüft; ohne Vorschaubild und ohne Objektschlüssel.';
 
 -- -----------------------------------------------------------------------------
 -- 7. Speicherregeln auf storage.objects (ADR-017 Punkt 11)
@@ -652,6 +660,7 @@ as $$
 declare
   v_actor uuid := auth.uid();
   v_org   uuid;
+  v_staff uuid;
   v_grant uuid;
 begin
   if v_actor is null or not app.can_use_teamchat() then
@@ -661,7 +670,15 @@ begin
   if v_org is null then
     return false;
   end if;
+  select sm.id into v_staff
+  from public.staff_members sm
+  where sm.id = app.own_staff_member(v_org) and sm.employment_status = 'active';
+  if v_staff is null then
+    return false;
+  end if;
 
+  -- Das Leserecht gilt auch noch beim Verbrauch: Wer seit der Freigabe aus
+  -- dem privaten Kanal genommen wurde, bekommt nichts (wie die Akte).
   select g.id into v_grant
   from public.team_attachment_access_grants g
   join public.team_message_attachments a on a.id = g.attachment_id
@@ -672,6 +689,7 @@ begin
     and g.organization_id = v_org
     and g.user_id = v_actor
     and g.expires_at > now()
+    and (app.team_readable_message(a.message_id, v_org, v_staff)).id is not null
   order by g.created_at
   limit 1
   for update of g skip locked;
@@ -1141,7 +1159,7 @@ begin
          coalesce((
            select jsonb_agg(jsonb_build_object(
                     'id', a.id, 'name', a.display_name, 'mime_type', a.mime_type,
-                    'byte_size', a.byte_size)
+                    'byte_size', a.byte_size, 'verified', a.verified_at is not null)
                   order by a.position)
            from public.team_message_attachments a
            where a.message_id = m.id and a.status = 'ready' and m.removed_at is null
@@ -1166,7 +1184,7 @@ grant execute on function public.list_team_messages(uuid, uuid, timestamptz, uui
 -- Dieselbe Edge Function wie für Akte, Rückfragen, Räder und Belege
 -- (patient-file-verify), mit `team_attachment_id`. Geprüft wird vor dem
 -- Senden: nur ein eigener, noch nicht gesendeter Anhang. Ein Befund heißt
--- verwerfen (Punkt 52), ohne Journal wie jedes ungesendete Verwerfen.
+-- verwerfen (Punkt 52), mit Journal wie das Verwerfen von Hand.
 -- -----------------------------------------------------------------------------
 create function public.team_attachment_for_verification(p_attachment_id uuid, p_user_id uuid)
 returns table (
@@ -1236,8 +1254,13 @@ begin
     return 'passed';
   end if;
 
-  -- Punkt 52: Befund heißt verwerfen; der Trigger schreibt den Löschauftrag.
+  -- Punkt 52: Befund heißt verwerfen; der Trigger schreibt den Löschauftrag,
+  -- das Journal hält es über eine Wiederherstellung (ADR-008 Punkt 8).
   delete from public.team_message_attachments where id = p_attachment_id;
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  values (v_anhang.organization_id, extensions.gen_random_uuid(), 'team_message_attachments',
+          p_attachment_id, 'teamchat', now());
   return 'rejected';
 end;
 $$;
@@ -1250,7 +1273,7 @@ grant execute on function public.record_team_attachment_verification(uuid, boole
   to service_role;
 
 comment on function public.record_team_attachment_verification(uuid, boolean, boolean, boolean) is
-  'TEAM-003 (ADR-017 Punkte 49 bis 52 und 73): Ergebnis der Prüfung am Inhalt eines noch nicht gesendeten Anhangs - Typ an der Signatur, Prüfsumme, bei Bildern keine Metadaten. Bestanden: geprüft und ready. Befund: verworfen mit Löschauftrag. Nur für den Dienst.';
+  'TEAM-003 (ADR-017 Punkte 49 bis 52 und 73): Ergebnis der Prüfung am Inhalt eines noch nicht gesendeten Anhangs - Typ an der Signatur, Prüfsumme, bei Bildern keine Metadaten. Bestanden: geprüft und ready. Befund: verworfen mit Löschauftrag und Journal. Nur für den Dienst.';
 
 -- -----------------------------------------------------------------------------
 -- 11. Abgleich (ADR-017 Punkt 27): verwaiste Objekte auch im Bucket des
@@ -1397,3 +1420,222 @@ begin
   return v_anzahl;
 end;
 $$;
+
+-- -----------------------------------------------------------------------------
+-- 12. Wiederherstellung (ADR-008 Punkt 8): + team_message_attachments
+--
+-- Aus 20261206100000_ern_001_ernaehrungsprofil.sql (jüngste Fassung); neu ist
+-- nur 'team_message_attachments' vor 'team_message_contents' (Zweitreview
+-- TEAM-003, Runde 1). Verworfen werden nur ungesendete Anhänge; der Trigger
+-- schreibt beim erneuten Löschen den Löschauftrag.
+-- -----------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.reapply_deletion_journal()
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_reihenfolge text[] := array[
+    'invoice_payment_reminders',
+    'invoice_cancellations',
+    'payments',
+    'invoice_items',
+    'invoices',
+    'invoice_recipients',
+    'billable_services',
+    'treatment_note_versions',
+    'treatment_notes',
+    'patient_files',
+    -- Vor Grundlage und Termin: ein Eintrag zeigt auf beide (on delete set
+    -- null) - geloescht wird er vorher, damit nichts umgeschrieben wird
+    -- (PRX-001, Zweitreview 5).
+    'waitlist_entries',
+    -- PRX-012: eine Aufgabe zeigt auf Person und Mitarbeitende (cascade
+    -- beziehungsweise set null) - geloescht wird sie vorher.
+    'tasks',
+    -- TRN-009: das Trainingsprotokoll haengt am Termin (restrict) und faellt
+    -- vor ihm - dieselbe Reihenfolge wie im Lauf.
+    'training_protocols',
+    -- PRX-014: der Anrufstand haengt am Termin und faellt vor ihm.
+    'appointment_call_states',
+    -- POR-009: ein Terminwunsch zeigt auf Termin (set null) und Verhaeltnis
+    -- (cascade) - geloescht wird er vorher.
+    'platform_appointment_requests',
+    -- KOM-005: ein Anhang haengt am Vorgang (cascade) und faellt vor ihm.
+    'platform_message_attachments',
+    -- KOM-001: ein Vorgang zeigt auf Plan, Uebung (set null) und Akte
+    -- (cascade); seine Eintraege fallen mit ihm.
+    'platform_messages',
+    -- FLT-001: die Radflotte haengt an keiner Akte. Schluessel und Sperren
+    -- vor den Pannen (eine Sperre zeigt auf ihre Panne, set null); einzeln
+    -- geloeschte Fotos vor Check-Up und Panne, deren Stellen und uebrige
+    -- Fotos mit ihnen fallen (cascade); das ausgemusterte Rad zuletzt.
+    'fleet_key_handovers',
+    'fleet_blocks',
+    'fleet_photos',
+    'fleet_checkups',
+    'fleet_breakdowns',
+    'fleet_bikes',
+    -- URL-001: Storno und Abwesenheiten in den Arbeitszeiten fallen mit ihrem
+    -- Urlaub (cascade).
+    'staff_leave_requests',
+    'staff_leave_entitlements',
+    -- AZ-001: Arbeitszeitaenderungen haengen an keiner anderen Zeile.
+    'staff_working_time_requests',
+    -- ZK-001: ein Eintrag im Zeitkonto; seine Abweichung faellt mit ihm
+    -- (cascade).
+    'staff_time_account_entries',
+    -- ERS-001: einzeln verworfene Belege vor ihrem Antrag; eine Erstattung
+    -- nimmt ihre übrigen Belege mit (cascade), deren Objekte über den
+    -- Löschauftrag.
+    'staff_reimbursement_receipts',
+    'staff_reimbursements',
+    -- ORG-006: Rückmeldungen von Beschäftigten hängen an keiner anderen Zeile.
+    'staff_feedback',
+    -- TEAM-003: einzeln verworfene, nie gesendete Anhänge (ANN-652) vor den
+    -- Nachrichten; gesendete fallen mit ihrer Nachricht (cascade) oder ihrem
+    -- Inhalt (Auslöser), ihre Objekte über den Löschauftrag.
+    'team_message_attachments',
+    -- TEAM-001: erst geleerte Inhalte (die Zeile bleibt als Anker), dann
+    -- Nachrichten vor ihren Gesprächen; Antworten, Erwähnungen und Lesestand
+    -- fallen mit (cascade).
+    'team_message_contents',
+    'team_messages',
+    'team_channels',
+    -- ERN-001: das Ernährungsprofil vor seinem Verhältnis; Einwilligung und
+    -- Gewicht fallen mit ihm (cascade).
+    'nutrition_profiles',
+    'treatment_base_items',
+    'treatment_bases',
+    'appointments',
+    'legal_holds',
+    'patient_contact_details',
+    'patient_care_details',
+    'patients',
+    -- TRN-EPIC-003 (Zweitreview): Kontaktdaten des Trainings aus der
+    -- Teilloeschung. Ihr Schluessel ist das Verhaeltnis, nicht `id`.
+    'training_contact_details',
+    -- TRN-005: die Vereinbarung nach ihren Terminen (on delete set null) und
+    -- vor ihrem Verhaeltnis (restrict) - dieselbe Reihenfolge wie im Lauf
+    -- (app.delete_training_relationship). Fehlte seit CAL-026.
+    'training_bases',
+    -- Vor persons: die Person faellt erst, wenn kein Verhaeltnis mehr auf
+    -- sie zeigt - nach einem Restore genauso wie im Lauf (LEI-002).
+    'training_relationships',
+    'persons',
+    'audit_log',
+    'staff_account_invitations',
+    -- POR-002: der Zugang mit seinen Einladungen (on delete cascade) und das
+    -- Konto beim Anmeldedienst. `auth_users` ist kein Tabellenname in
+    -- public, sondern die eine Ausnahme unten.
+    'platform_accesses',
+    'auth_users'
+  ];
+  v_tabelle   text;
+  v_ids       uuid[];
+  v_geloescht uuid[];
+  v_unbekannt text[];
+  v_gesamt    integer := 0;
+begin
+  select array_agg(distinct j.target_table)
+    into v_unbekannt
+  from public.deletion_journal j
+  where not (j.target_table = any (v_reihenfolge));
+
+  if v_unbekannt is not null then
+    raise exception 'deletion journal references tables without a reapply order: %', v_unbekannt
+      using errcode = '22023';
+  end if;
+
+  foreach v_tabelle in array v_reihenfolge
+  loop
+    select array_agg(j.target_id)
+      into v_ids
+    from public.deletion_journal j
+    where j.target_table = v_tabelle;
+
+    continue when v_ids is null;
+
+    -- Das Konto einer Plattform liegt beim Anmeldedienst (ADR-023 Punkt 5).
+    -- ABN-011 (BEF-115): auch hier ueber die Admin-API. Was nach dem Restore
+    -- wieder da ist, verliert sofort jeden Zugang und bekommt einen
+    -- Loeschauftrag. Als erneut angewandt gilt der Journaleintrag erst mit
+    -- der Bestaetigung (confirm_platform_account_deletion, Zweitreview B1).
+    if v_tabelle = 'auth_users' then
+      update public.platform_accesses a
+         set status = 'revoked',
+             revoked_at = coalesce(a.revoked_at, now()),
+             revoked_by = null,
+             revoked_reason = 'account_deleted',
+             locked_at = null,
+             locked_by = null
+       where a.account_user_id = any (v_ids) and a.status <> 'revoked';
+
+      perform app.order_platform_account_deletion(
+        j.target_id, j.organization_id, null, j.due_at, 'reapply')
+      from public.deletion_journal j
+      join auth.users u on u.id = j.target_id
+      where j.target_table = 'auth_users'
+        and j.target_id = any (v_ids);
+      v_geloescht := null;
+    -- TEAM-001: Nur der Inhalt fiel (Anker mit Antworten) - leeren, nicht
+    -- löschen, sonst nähme cascade die Antworten mit. Wer entfernt hat, steht
+    -- nach einem Restore nicht mehr fest; der Anker heißt dann „gelöscht“.
+    elsif v_tabelle = 'team_message_contents' then
+      delete from public.team_message_mentions where message_id = any (v_ids);
+      with g as (
+        update public.team_messages
+           set body = null, edited_at = null, author_staff_member_id = null,
+               removed_at = coalesce(removed_at, now()),
+               removed_kind = coalesce(removed_kind, 'author')
+         where id = any (v_ids) and body is not null
+        returning id
+      )
+      select array_agg(id) into v_geloescht from g;
+    else
+    -- Tabellenname aus der festen Liste oben, nie aus Benutzereingabe;
+    -- die Kennungen gehen als Parameter, nicht als Text.
+    execute format(
+      'with g as (delete from public.%I where %I = any($1) returning %I as id) select array_agg(id) from g',
+      v_tabelle,
+      app.deletion_key_column(v_tabelle),
+      app.deletion_key_column(v_tabelle)
+    )
+    into v_geloescht
+    using v_ids;
+    end if;
+
+    if v_geloescht is not null then
+      update public.deletion_journal
+         set reapplied_at = now()
+       where target_table = v_tabelle
+         and target_id = any (v_geloescht);
+
+      v_gesamt := v_gesamt + array_length(v_geloescht, 1);
+    end if;
+  end loop;
+
+  -- ORG-006 (Nachprüfung N2): Anonyme Rückmeldungen schreibt der Lauf mit
+  -- neuer Kennung neu - ein älteres Backup trägt andere Kennungen als das
+  -- Journal. Was nach dem Restore über der Frist liegt, fällt hier nach der
+  -- Regel selbst, nicht erst im nächsten Lauf.
+  delete from public.staff_feedback f
+  using public.organizations o
+  where o.id = f.organization_id
+    and app.retention_due_at(
+          (f.month + interval '1 month' - interval '1 day')::date,
+          app.retention_interval('rueckmeldung'),
+          o.time_zone
+        ) <= now();
+
+  -- TEAM-001: Fällige Ausgangsnachrichten mit laufenden Antworten verlieren
+  -- ihren Inhalt nach der Regel, nicht über das Journal (ANN-610).
+  perform app.strip_due_team_anchors(o.id, o.time_zone) from public.organizations o;
+
+  -- Die Wiederanwendung weist deletion_journal.reapplied_at nach (LOG-EPIC-001).
+
+  return v_gesamt;
+end;
+$function$;

@@ -79,6 +79,28 @@ describe('Medienbild (Design-Fundament, Lücke 9.10)', () => {
     expect(screen.queryByText('Noch kein Bild')).toBeNull();
   });
 
+  it('zeigt im Platzhalter ein eigenes Zeichen, wo der Platz kein Bild meint (TEAM-003)', () => {
+    renderWithProviders(
+      <Medienbild
+        vorschau
+        alt=""
+        platzhalter="PDF"
+        zeichen={
+          <svg viewBox="0 0 24 24" data-testid="dokument">
+            <path d="M6 3h8l4 4v14H6z" />
+          </svg>
+        }
+      />,
+    );
+    const platzhalter = screen.getByRole('img', { name: 'PDF' });
+    expect(platzhalter).toHaveClass('bg-surface-sunken');
+    expect(platzhalter.parentElement).toHaveClass('border-line');
+    const zeichen = screen.getByTestId('dokument');
+    expect(zeichen.parentElement).toHaveClass('[&>svg]:size-full');
+    expect(zeichen.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(platzhalter.querySelectorAll('svg')).toHaveLength(1);
+  });
+
   it('setzt eine Bildunterschrift als figcaption', () => {
     renderWithProviders(
       <Medienbild src="/a.svg" alt="Ausgangsstellung" beschriftung="1 · Ausgangsstellung" />,

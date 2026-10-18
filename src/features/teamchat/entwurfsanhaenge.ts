@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { ANHAENGE_MAX, TeamchatFehler, ladeAnhangHoch, verwirfAnhang, type Anhang } from './api';
+import { WIEDERHOLEN_MS } from './ausgang';
 
 /**
  * Anhänge im Entwurf (TEAM-003, ADR-017 Punkt 74): je Konto, Gespräch und
@@ -7,8 +8,10 @@ import { ANHAENGE_MAX, TeamchatFehler, ladeAnhangHoch, verwirfAnhang, type Anhan
  *
  * Eine Datei lädt hoch, sobald sie gewählt ist - während die Person schreibt
  * (wie Slack). Die Bytes bleiben bis dahin im Speicher der Seite; ohne Netz
- * gibt es keinen Anhang, ein gescheitertes Hochladen lässt sich wiederholen,
- * solange die Seite offen ist (Punkt 33). Wer das Gespräch wechselt, findet
+ * gibt es keinen Anhang. Ein gescheitertes Hochladen wiederholt sich wie der
+ * Ausgang von selbst, sobald wieder Netz da ist und alle 15 Sekunden, oder auf
+ * „Noch einmal“ - solange die Seite offen ist; vor dem Verlassen und Abmelden
+ * warnt `AusgangAbmeldewache` (Punkt 33). Wer das Gespräch wechselt, findet
  * die Anhänge beim Zurückkommen wieder; nichts wandert in ein anderes
  * Gespräch oder Konto. Beim Abmelden fällt alles (`teamchatLeeren`); was dann
  * schon hochgeladen war, verwirft der Server nach 24 Stunden.
@@ -40,10 +43,42 @@ const speicher = new Map<string, Entwurfsanhang>();
 const dateien = new Map<string, Blob>();
 const beobachter = new Set<() => void>();
 let stand = 0;
+let takt: ReturnType<typeof setInterval> | null = null;
+let angemeldet = false;
 
 function melden() {
   stand += 1;
   for (const b of beobachter) b();
+  taktPruefen();
+}
+
+/** Ob ein neuer Versuch gelingen kann - gescheitert am Netz, nicht am Format. */
+function wiederholbar(a: Entwurfsanhang): boolean {
+  return a.zustand === 'fehler' && a.erneut;
+}
+
+function taktPruefen() {
+  const wartet = [...speicher.values()].some(wiederholbar);
+  if (wartet && takt === null) {
+    takt = setInterval(anhaengeWiederholen, WIEDERHOLEN_MS);
+  } else if (!wartet && takt !== null) {
+    clearInterval(takt);
+    takt = null;
+  }
+}
+
+function anmelden() {
+  if (angemeldet || typeof window === 'undefined') return;
+  angemeldet = true;
+  // Mit dem Netz kommt der nächste Versuch sofort, nicht erst im Takt.
+  window.addEventListener('online', anhaengeWiederholen);
+}
+
+/** Alle am Netz gescheiterten Anhänge noch einmal - wie `wiederholeWartende`. */
+export function anhaengeWiederholen(): void {
+  for (const a of [...speicher.values()]) {
+    if (wiederholbar(a)) void hochladen(a.lokalId);
+  }
 }
 
 function gehoertZu(a: Entwurfsanhang, kontoId: string, kanalId: string, threadId: string | null) {
@@ -68,6 +103,30 @@ export function anhangName(name: string): string {
   // eslint-disable-next-line no-control-regex -- Steuerzeichen sind genau, was hier fort soll.
   const sauber = name.replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
   return (sauber || 'Datei').slice(0, 120).trim();
+}
+
+/**
+ * Der Name eines Fotos aus dem Kameradialog: Tag und Uhrzeit der Aufnahme,
+ * gezählt, wenn in derselben Minute schon eines im Entwurf liegt - ohne
+ * Vorschaubild ist der Name das Merkmal (Praxis-Review TEAM-003).
+ */
+export function fotoName(
+  zeitzone: string,
+  vorhanden: readonly string[],
+  jetzt = new Date(),
+): string {
+  const zeit = new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: zeitzone,
+  }).format(jetzt);
+  const basis = `Foto ${zeit}`;
+  if (!vorhanden.includes(basis)) return basis;
+  let nummer = 2;
+  while (vorhanden.includes(`${basis} (${nummer})`)) nummer += 1;
+  return `${basis} (${nummer})`;
 }
 
 async function hochladen(lokalId: string): Promise<void> {
@@ -110,6 +169,7 @@ export function anhaengen(
   threadId: string | null,
   neue: readonly { datei: Blob; name: string }[],
 ): number {
+  anmelden();
   const frei = ANHAENGE_MAX - anhaengeVon(kontoId, kanalId, threadId).length;
   const angenommen = neue.slice(0, Math.max(0, frei));
   for (const { datei, name } of angenommen) {
@@ -183,6 +243,17 @@ export function anhaengeLeeren(): void {
 function abonnieren(rueckruf: () => void): () => void {
   beobachter.add(rueckruf);
   return () => beobachter.delete(rueckruf);
+}
+
+/**
+ * Wie viele Anhänge eines Kontos nur im Speicher der Seite liegen - noch nicht
+ * oben oder gescheitert. Sie gingen beim Abmelden und Verlassen verloren
+ * (ADR-017 Punkt 33); ein Foto aus der Kamera der App gibt es sonst nirgends.
+ */
+export function useAnhaengeNurHier(kontoId: string): number {
+  useSyncExternalStore(abonnieren, () => stand);
+  return [...speicher.values()].filter((a) => a.kontoId === kontoId && a.zustand !== 'bereit')
+    .length;
 }
 
 /** Die Anhänge im Entwurf an einer Stelle, in der Reihenfolge des Anhängens. */
