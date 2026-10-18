@@ -2,14 +2,25 @@
 
 ## Status
 
-**Angenommen, Fassung 6** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 7** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
 2026-10-09 von Jannes in der Abnahme der Annahmen entschieden (Abschnitt K);
 **Fassung 5** am 2026-10-10 bestätigt, die Fragen 23 bis 29 wie empfohlen
 (Abschnitt L); **Fassung 6** am 2026-10-15 von Jannes entschieden (Umkehr der
-Punkte 29 und 69 für Anhänge an Rückfragen).
+Punkte 29 und 69 für Anhänge an Rückfragen); **Fassung 7** am 2026-10-18 von
+Jannes entschieden (Umkehr von Punkt 29 für jeden Upload).
+**Fassung 7 (2026-10-18, Entscheidung Jannes).** „Keine Virenprüfung in der gesamten
+Anwendung!“ Das ist die **Umkehr eines einzelnen Punktes** nach der Fassungsregel in
+`README.md`: Punkt 29 verliert die MUSS-Pflicht zur Virenprüfung auch für alle übrigen Uploads
+von außen, heutige und künftige (Portal, Formular, Teamchat). Die Anwendung prüft keine Datei auf
+Schadsoftware; es gibt dafür keinen Prüfer, keinen Anbieter und keinen eigenen ADR. Wer einen Weg
+aus Punkt 30 freigibt, braucht dafür keine Virenprüfung. Der alte Wortlaut bleibt in Punkt 29
+lesbar, die Punkte 28, 30, 42, 50 und 69 sowie Konsequenzen und „Bewusst nicht Bestandteil“
+tragen einen Vermerk. Alle übrigen Punkte bleiben stehen, insbesondere die Kompensation aus Punkt 28, die
+Prüfung am Inhalt (Abschnitt I), die Minderungen aus Punkt 69 und die Kennzeichnung „nicht auf
+Schadsoftware geprüft“; der Schalter `app.message_attachment_scan_required()` bleibt aus (KOM-013).
 **Fassung 6 (2026-10-15, Entscheidung Jannes).** „Ich möchte keinen Virenscanner und trotzdem
 Bilder und Videos von Patienten zulassen.“ Das ist die **Umkehr einzelner Punkte** nach der
 Fassungsregel in `README.md`: Punkt 29 verliert für Anhänge an Rückfragen (Abschnitt L) die
@@ -94,7 +105,8 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 
 2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
 2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
-2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6)
+2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6);
+2026-10-18 (Fassung 7)
 
 ## Kontext
 
@@ -405,6 +417,8 @@ tut; Punkt 33 entscheidet es hier.
     ausgeführt. Die Kompensation sind Punkt 8 (Unveränderbarkeit), Punkt 18
     (Allowlist und Größe), Punkt 19 (Auslieferung nur als Anzeige oder
     Download) und die Endgeräte-Richtlinie aus BETRIEB-001.
+    *Vermerk 2026-10-18 (Fassung 7): nicht nur in V1 — die Anwendung prüft nie
+    auf Schadsoftware (Punkt 29).*
 29. **Vor dem ersten Upload durch Patient:innen oder andere Externe ist eine
     Virenprüfung MUSS** (Roadmap G1). Der Ablauf steht schon fest, damit später
     niemand ihn erfindet: Die Datei bleibt `pending`, bis ein Prüfergebnis
@@ -419,6 +433,10 @@ tut; Punkt 33 entscheidet es hier.
     (Abschnitt L) entfällt die Virenprüfung — Entscheidung Jannes; sie werden
     ohne Prüfergebnis `ready` und tragen „nicht auf Schadsoftware geprüft“.
     Für jeden anderen Upload von außen gilt der Punkt weiter.*
+    *Vermerk 2026-10-18 (Fassung 7, Umkehr): Der Punkt entfällt für jeden
+    Upload — Entscheidung Jannes: „Keine Virenprüfung in der gesamten
+    Anwendung!“ Ein Upload von außen wird ohne Prüfergebnis `ready`; die
+    Kompensation bleiben Punkt 28 und die Prüfung am Inhalt (Punkte 49 bis 52).*
 30. **Dieser ADR gibt nicht frei:** Fotos und Videos von Patient:innen
     (`IDEA-KOM-003` — eigene Einwilligung, kurze Frist, Entfernung der
     Aufnahmemetadaten), Anhänge im Teamchat (TEAM-001), Uploads aus einem
@@ -429,6 +447,8 @@ tut; Punkt 33 entscheidet es hier.
     (Punkt 42).
     *Vermerk 2026-10-10 (Fassung 5): Foto und Video an einer Rückfrage über
     die Plattform gibt Abschnitt L frei.*
+    *Vermerk 2026-10-18 (Fassung 7): Wer einen dieser Wege freigibt, braucht
+    dafür keine Virenprüfung (Punkt 29).*
 
 ### G. Fotos (Fassung 2)
 
@@ -703,6 +723,8 @@ tut; Punkt 33 entscheidet es hier.
     *Vermerk 2026-10-10 (Fassung 5): Ausgenommen sind Foto und Video, die
     die Person in der Anwendung an ihre Rückfrage hängt (Abschnitt L); für
     alles andere gilt der Punkt unverändert.*
+    *Vermerk 2026-10-18 (Fassung 7): „dann gilt Punkt 29“ entfällt; eine
+    Freigabe braucht keine Virenprüfung mehr.*
 
 ### H. Drei Arten von Fotos (Fassung 3)
 
@@ -819,6 +841,8 @@ bleiben erhalten.
     Objektschlüssel. Sie ist zugleich der Ort, an dem später die
     Virenprüfung aus Punkt 29 läuft; der Ablauf dort (kein `ready`, Objekt
     gelöscht, Auditeintrag, Meldung) ist derselbe wie in Punkt 52.
+    *Vermerk 2026-10-18 (Fassung 7): Eine Virenprüfung läuft hier nie
+    (Punkt 29); die Function prüft nur am Inhalt.*
 51. **Bis zur Prüfung ist eine Datei als „nicht serverseitig geprüft"
     gekennzeichnet**, sichtbar an der Datei. In Umgebungen ohne Edge Runtime
     — die Cloud-Entwicklungsumgebung, die Test-Umgebung mit synthetischen
@@ -1035,6 +1059,8 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     wählt ein eigener ADR“. Beides entfällt: Jannes lässt Anhänge von außen
     ohne Virenprüfung zu, der Schalter bleibt aus, ADR-026 ist abgelehnt. Die
     Minderungen dieses Punktes bleiben die Kompensation.*
+    *Vermerk 2026-10-18 (Fassung 7): Auch „Punkt 29 bleibt MUSS für jede echte
+    Datei von außen“ entfällt (Punkt 29).*
 70. **Scharf erst nach** B2 (Einwilligung, Frist, Einordnung des Videos als
     besonders identifizierend), der DSFA mit dieser Verarbeitung (G14),
     OPS-001 (Edge Runtime für Punkt 49), OPS-003 (Sicherung des Buckets,
@@ -1092,6 +1118,8 @@ aus Forendiskussionen:
 - **Die Virenprüfung ist gestundet, nicht erlassen.** Jede Erweiterung auf
   Uploads von außen bezahlt sie nach — mit einem eigenen ADR und
   gegebenenfalls einem neuen Dienstleister.
+  *Vermerk 2026-10-18 (Fassung 7): Sie ist erlassen (Punkt 29). Eine
+  Erweiterung auf Uploads von außen bezahlt keine Virenprüfung nach.*
 - **Für das Rechnungs-PDF ist damit eine Option gestorben.** Ein reiner
   Browser-Druck erzeugt eine Datei, die die Anwendung nie sieht: kein
   Objektschlüssel, keine Prüfsumme, keine Frist, kein Auditeintrag. B14 bleibt
@@ -1202,6 +1230,8 @@ aus Forendiskussionen:
 - Der Weg, auf dem das Rechnungs-PDF **entsteht** (B14, ABR-EPIC-002a). Dieser
   ADR sagt nur, wie es abgelegt wird, wenn es existiert.
 - Anbieter, Ausführungsort und Kosten einer späteren Virenprüfung.
+  *Vermerk 2026-10-18 (Fassung 7): Eine Virenprüfung gibt es nicht
+  (Punkt 29).*
 - Fotos, Videos und Audiodateien von Patient:innen, einschließlich der
   Sprachdokumentation aus §6.3 und ADR-005. *Vermerk 2026-09-26 (Fassung 2): Fotos regelt Abschnitt G; Videos und Audio bleiben
   ausgeschlossen (Punkt 42).*
@@ -1600,3 +1630,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 4 | 2026-10-09 | **Entschieden von Jannes in der Abnahme der Annahmen vom 2026-10-09:** Abschnitt K (Punkte 56 bis 58) — ein Foto aus der Dokumentation ist ohne Wahl ein Dokumentationsfoto, Erinnerung an Anmeldebogen und Rezept an ihrer Stelle (BEF-135); keine neue Arbeitshilfe, bestehende laufen aus, die Einwilligung zu Fotos wird nicht mehr angeboten; ein PDF öffnet im Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ, CSP `frame-src blob:` (BEF-133). Umkehr der Punkte 44 und — für PDF — 54, Vermerke an 43, 44, 54. §5 der Prinzipien mit Version 0.22 nachgezogen |
 | 5 | 2026-10-10 | **Angenommen am selben Tag, Fragen 23 bis 29 wie empfohlen:** Abschnitt L (Punkte 59 bis 70) — Foto und Video an einer Rückfrage im Nachsorge-Abo und im Training, eigene Einwilligung, Klasse `rueckfrageanhang` mit 30 Tagen, Aufnahme nur in der Anwendung ohne Ton, Antwort mit Zeitmarke ohne Bewegungsurteil, Virenprüfung als Bedingung des Scharfschaltens mit Schalter und eigenem ADR für den Prüfer. Schränkt für diese Anhänge die Punkte 14, 18, 29, 30, 37 und 42 ein, je mit Vermerk; §5 der Prinzipien mit Version 0.24 nachgezogen. Anlass: KOM-EPIC-002 |
 | 6 | 2026-10-15 | **Entschieden von Jannes:** Anhänge an Rückfragen ohne Virenprüfung. Umkehr von Punkt 29 (für Abschnitt L) und des Prüfergebnis-Satzes in Punkt 69, in Punkt 70 entfällt der ADR zum Prüfer; ADR-026 abgelehnt. Schalter `external_attachments_enabled` von selbst an (KOM-013). Alle übrigen Punkte, die Minderungen aus Punkt 69 und Punkt 29 für andere Uploads von außen bleiben |
+| 7 | 2026-10-18 | **Entschieden von Jannes:** „Keine Virenprüfung in der gesamten Anwendung!“ Umkehr von Punkt 29 für jeden Upload, auch künftige von außen (Portal, Formular, Teamchat); eine Freigabe nach Punkt 30 braucht keine Virenprüfung. Vermerke an den Punkten 28, 29, 30, 42, 50 und 69, an den Konsequenzen und an „Bewusst nicht Bestandteil“. Alle übrigen Punkte bleiben, auch die Kennzeichnung „nicht auf Schadsoftware geprüft“ und der ausgeschaltete Schalter `app.message_attachment_scan_required()`. Anlass: Antwort auf Frage 1 der PR #272 (TEAM-002) |

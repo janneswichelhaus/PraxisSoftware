@@ -129,6 +129,9 @@ nach ADR-008 (ADR-017 Punkt 30 gibt Fotos und Videos von Patient:innen
 ausdrücklich nicht frei). Zusätzlich offen: Ist ein Bewegungsvideo ein
 biometrisches Datum? Die Frage gehört in die DSFA.
 
+*Vermerk 2026-10-18: Eine Virenprüfung gibt es nicht, in der gesamten Anwendung (Jannes;
+ADR-017 Fassung 7, ADR-026 abgelehnt). Die Sätze dazu oben sind überholt.*
+
 ---
 
 ### IDEA-KOM-004 — Antwort mit Zeitmarke und Anmerkung im Video

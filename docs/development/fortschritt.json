@@ -1573,7 +1573,7 @@
           "status": "entwurf",
           "fertig_am": "2026-10-12",
           "nachweis": "docs/adr/ADR-026-malware-scanning.md",
-          "vermerk": "abgelehnt 2026-10-15 (Jannes): keine Virenprüfung; Anhänge von außen trotzdem zugelassen (ADR-017 Fassung 6)"
+          "vermerk": "abgelehnt 2026-10-15 (Jannes): keine Virenprüfung; Anhänge von außen trotzdem zugelassen (ADR-017 Fassung 6); seit 2026-10-18 in der gesamten Anwendung (ADR-017 Fassung 7)"
         },
         {
           "id": "b5-identitaet",

@@ -930,7 +930,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
 | E | ADR-023 Plattformzugang | gesichtet | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen); Fassung 2 am selben Tag |
 | E | ADR-024 Offline und Benachrichtigungen | gesichtet | 2026-10-11 | docs/adr/ADR-024-offline-and-notifications.md | — | angenommen 2026-10-11: W1 (c) mit Freigabe ohne Netz per Passkey, W2 bis W5 wie empfohlen; Prinzipien 0.26, ADR-025 Fassung 4 |
-| E | ADR-026 Virenprüfung der Anhänge | entwurf | 2026-10-12 | docs/adr/ADR-026-malware-scanning.md | — | abgelehnt 2026-10-15 (Jannes): keine Virenprüfung; Anhänge von außen trotzdem zugelassen (ADR-017 Fassung 6) |
+| E | ADR-026 Virenprüfung der Anhänge | entwurf | 2026-10-12 | docs/adr/ADR-026-malware-scanning.md | — | abgelehnt 2026-10-15 (Jannes): keine Virenprüfung; Anhänge von außen trotzdem zugelassen (ADR-017 Fassung 6); seit 2026-10-18 in der gesamten Anwendung (ADR-017 Fassung 7) |
 | E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->
