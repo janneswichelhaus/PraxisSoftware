@@ -6725,10 +6725,10 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Eine Sprachnachricht heißt „Sprachnachricht TT.MM., hh:mm“ wie ein Foto aus der Kamera der App. Ihre Dauer misst das Gerät in ganzen Sekunden (1 bis 120); sie dient nur der Anzeige, der Server prüft nur die Grenzen. Die Datenschutzprüfung vor dem Go-live nimmt Sprachnachrichten als eigene Verarbeitung auf: Stimme ist ein Datum über Beschäftigte (§20) - freiwillig neben Text, ohne Auswertung, mit der Frist der Nachricht.
+**Annahme.** Name „Sprachnachricht TT.MM., hh:mm“ wie ein Foto der App. Die Dauer misst das Gerät in ganzen Sekunden (1 bis 120), nur zur Anzeige; der Server prüft die Grenzen. Die zwei Minuten setzt die App durch, am Server begrenzen nur die 10 MB. Die Datenschutzprüfung nimmt Sprachnachrichten als eigene Verarbeitung auf: Stimme ist ein Datum über Beschäftigte (§20), freiwillig, ohne Auswertung.
 
-**Begründung.** ADR-017 Punkte 84 und 87 (Fassung 9). Die Dauer am Server aus dem Container zu lesen hieße einen Zeitparser in der Edge Function; eine falsche Dauer schadet nur der Anzeige.
+**Begründung.** ADR-017 Punkte 84 und 87. Die Dauer aus dem Container hieße einen Zeitparser am Server; eine falsche schadet nur der Anzeige (Zweitreview TEAM-004a, B2).
 
-**Anker.** `app.team_voice_max_seconds()` und `team_message_attachments.duration_seconds` (Migration TEAM-004).
+**Anker.** `app.team_voice_max_seconds()`, `duration_seconds` (Migration TEAM-004), `aufnahmeName`.
 
-**Änderungspfad.** Die Dauer am Server aus dem Container lesen (`video.ts`) · Aufwand `mittel`.
+**Änderungspfad.** Dauer am Server lesen (`video.ts`) oder Größe je Sekunde begrenzen · Aufwand `mittel`.

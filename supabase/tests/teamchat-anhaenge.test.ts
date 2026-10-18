@@ -1351,4 +1351,13 @@ describe('Teamchat: Sprachnachrichten (TEAM-004, ADR-017 Abschnitt N)', () => {
       ['teamchat', ['application/pdf', 'audio/mp4', 'audio/webm', 'image/jpeg', 'image/png']],
     ]);
   });
+
+  it('nennt die Sprachnachricht im Löschkonzept (Zweitreview TEAM-004a)', async () => {
+    const { rows } = await asPostgres<{ scope_note: string; class_key: string }>(
+      `select scope_note, class_key from public.retention_assignments
+        where table_name = 'team_message_attachments'`,
+    );
+    expect(rows.map((r) => r.class_key)).toEqual(['teamchat']);
+    expect(rows[0]!.scope_note).toContain('auch Sprachnachrichten');
+  });
 });

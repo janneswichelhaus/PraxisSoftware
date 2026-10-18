@@ -19,7 +19,7 @@ vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 
 ist die **Umkehr eines einzelnen Punktes** nach der Fassungsregel in `README.md`: In Punkt 71
 entfällt „kein Ton, keine Sprachnachricht“, und Punkt 33 gibt das Mikrofon der eigenen Herkunft
 frei; der alte Wortlaut bleibt lesbar. Dazu nimmt Punkt 74 die Antwort auf Frage 5 auf: Senden
-schon während des Hochladens. Vermerke an den Punkten 18, 19, 33, 42, 71, 74 und 77 und an
+schon während des Hochladens. Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an
 „Bewusst nicht Bestandteil“. Offen sind die Einzelheiten (Bestätigungsfragen 33 und 34); gebaut
 wird mit dem künstlichen Mikrofon von Chromium (§15.2).
 **Fassung 8 (2026-10-18, am selben Tag angenommen).** Anlass ist Frage 1 der PR #272: Fotos und PDF im
@@ -1026,6 +1026,15 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     Dateien. Bis zum Upload liegt die Aufnahme nur im Arbeitsspeicher der
     Seite (Punkt 33). Das Gesicht nur, wenn es die Bewegung zeigt; der Dialog
     sagt das (Punkt 35).
+    *Vermerk 2026-10-18 (Fassung 9): Seit Punkt 83 ist das Mikrofon in der
+    Permissions-Policy der eigenen Herkunft freigegeben, für jede Seite der
+    Anwendung. „Nie Ton“ halten hier weiter drei andere Schichten: Der
+    Aufnahmedialog fragt nur das Bild an (`audio: false`, E2E
+    `tests/e2e/anhaenge.spec.ts`), das Gerät sendet keine Aufnahme mit
+    Tonspur (Punkt 64), und der Server lehnt eine Tonspur ab (Punkt 63).
+    Hat eine Person dem Browser das Mikrofon dauerhaft erlaubt, fragt er
+    nicht noch einmal; dann bleibt gegen fremden Code nur die
+    Content-Security-Policy (`script-src 'self'`).*
 63. **Formate.** Foto: **JPEG**. Video: was der Browser in `MediaRecorder`
     liefert — **WebM (VP8/VP9) oder MP4 (H.264)** —, ohne Tonspur.
     Höchstens **10 MB** je Anhang, durchgesetzt am Bucket und bei der
@@ -1662,8 +1671,10 @@ Einzelheiten; die Nummerierung setzt die der Fassung 8 fort.
     nimmt eine Aufnahme aus dem Hintergrund mit. *Alternative:* fünf Minuten wie das Diktat.
 34. **Das Mikrofon für die eigene Herkunft freigeben** (`microphone=(self)`, Vermerk an Punkt 33)?
     *Empfehlung: ja.* Ohne diese Freigabe kann der Browser keine Sprachnachricht aufnehmen. Das
-    Diktat bleibt hinter dem Gateway, Zahlung und USB bleiben gesperrt. *Alternative:* keine -
-    dann gibt es keine Sprachnachrichten.
+    Diktat bleibt hinter dem Gateway, Zahlung und USB bleiben gesperrt. Die Freigabe gilt für
+    jede Seite, auch die der Patient:innen: Das Video an der Rückfrage bleibt ohne Ton, aber nicht
+    mehr auch durch die Policy (Vermerk an Punkt 62). *Alternative:* keine - dann gibt es keine
+    Sprachnachrichten.
 
 ## Bestätigungsfragen zu Fassung 8 — beantwortet am 2026-10-18
 
@@ -1804,4 +1815,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 6 | 2026-10-15 | **Entschieden von Jannes:** Anhänge an Rückfragen ohne Virenprüfung. Umkehr von Punkt 29 (für Abschnitt L) und des Prüfergebnis-Satzes in Punkt 69, in Punkt 70 entfällt der ADR zum Prüfer; ADR-026 abgelehnt. Schalter `external_attachments_enabled` von selbst an (KOM-013). Alle übrigen Punkte, die Minderungen aus Punkt 69 und Punkt 29 für andere Uploads von außen bleiben |
 | 7 | 2026-10-18 | **Entschieden von Jannes:** „Keine Virenprüfung in der gesamten Anwendung!“ Umkehr von Punkt 29 für jeden Upload, auch künftige von außen (Portal, Formular, Teamchat); eine Freigabe nach Punkt 30 braucht keine Virenprüfung. Vermerke an den Punkten 28, 29, 30, 42, 50 und 69, an den Konsequenzen und an „Bewusst nicht Bestandteil“. Alle übrigen Punkte bleiben, auch die Kennzeichnung „nicht auf Schadsoftware geprüft“ und der ausgeschaltete Schalter `app.message_attachment_scan_required()`. Anlass: Antwort auf Frage 1 der PR #272 (TEAM-002) |
 | 8 | 2026-10-18 | **Angenommen am selben Tag, im Kern von Jannes entschieden, Fragen 30 bis 32 wie empfohlen:** Abschnitt M (Punkte 71 bis 81) — Fotos (JPEG, PNG) und PDF an Teamchat-Nachrichten, bis zu fünf je Nachricht, ohne Virenprüfung, Klasse `teamchat`, Frist der Nachricht, derselbe Weg wie jede Datei, Anzeige ohne Vorschaubild und ohne Download, nichts Neues im Protokoll, Dateien je Gespräch. Schränkt für diese Anhänge die Punkte 30 und 42 ein, je mit Vermerk; Vermerk an „Bewusst nicht Bestandteil“. Anlass: TEAM-003 |
-| 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |
+| 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |

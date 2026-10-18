@@ -455,3 +455,9 @@ grant execute on function public.record_team_attachment_verification(uuid, boole
 
 comment on function public.record_team_attachment_verification(uuid, boolean, boolean, boolean) is
   'TEAM-003 und TEAM-004 (ADR-017 Punkte 49 bis 52, 73 und 84): Ergebnis der Prüfung am Inhalt eines noch nicht gesendeten Anhangs - Typ an der Signatur bzw. Struktur, Prüfsumme, bei Bildern und Sprachnachrichten keine Metadaten. Bestanden: geprüft und ready. Befund: verworfen mit Löschauftrag und Journal. Nur für den Dienst.';
+
+-- Das Löschkonzept nennt die Sprachnachricht mit (Zweitreview TEAM-004a): Sie
+-- fällt auf denselben Wegen wie jeder Anhang (ADR-017 Punkt 86).
+update public.retention_assignments
+   set scope_note = 'Anhänge im Teamchat, auch Sprachnachrichten (TEAM-003, TEAM-004, ADR-017 Abschnitte M und N): fallen mit der Nachricht (cascade) oder ihrem Inhalt - auf jedem Weg mit Löschauftrag für das Objekt; ungesendete nach 24 Stunden (ANN-652).'
+ where table_name = 'team_message_attachments';
