@@ -6,6 +6,19 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.28
+
+Entscheidung des Projektinhabers vom **2026-10-18**: Ernährungsberatung als Zusatzleistung zu
+Behandlung **und** Training, mit klassischem Ernährungstagebuch im eigenen System statt eines
+Anbieters. **§4.11 neu** — Profil an genau einem Verhältnis, eigene Einwilligung, kein Teil der
+Akte, nur die Fähigkeit „Ernährungsberatung“ (zunächst owner) liest; die Öffnung aus §4.2, §4.3 und
+§4.8 gilt dafür nicht. **§4.6 und §4.10** nennen die Zusatzleistung; die Fassung „Ernährung als
+Protokoll und Zielwert“ (B9 Punkt 6 vom 2026-09-22) entfällt. **§17** — Bedarf und Zielwerte aus
+offengelegten Formeln sind zulässig, ohne Diagnose als Eingabe. Rang 2 dazu: ADR-027, ADR-006
+Fassung 4 (Punkt 14), ADR-008 Fassung 6, ADR-021 Fassung 4. Empfohlen war, Zielwerte nur von der
+Beratung setzen zu lassen und auf Erinnerungen zu verzichten; Jannes hat Formeln, optionale
+Erinnerungen und eine klassische Tracker-Anzeige gewollt.
+
 ### Änderungsvermerk 0.27
 
 Entscheidung des Projektinhabers vom **2026-10-17**: offene Kommunikation und eine niedrige Hürde
