@@ -35,6 +35,8 @@ export const CONSENT_WITHDRAWALS_KEY = ['open-points', 'consent-withdrawals'] as
 export function purposeLabel(purpose: string): string {
   if (purpose in zweckTexte) return zweckTexte[purpose as keyof typeof zweckTexte].label;
   if (purpose === 'training_health_data') return 'Gesundheitsangaben im Training';
+  // ERN-002: nur die Ernährungsberatung bekommt diese Zeilen vom Server.
+  if (purpose === 'nutrition_counselling') return 'Ernährungsberatung';
   return 'Einwilligung';
 }
 

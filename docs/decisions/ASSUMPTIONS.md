@@ -67,7 +67,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 144 Einträge):
+Zusatz `Prüfpaket` (heute 169 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -6518,3 +6518,15 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 **Anker.** `public.record_platform_nutrition_weight`.
 
 **Änderungspfad.** Mehrere Gewichte je Tag: Constraint und diese Funktion · Aufwand `klein`.
+
+### ANN-622 — Ernährungsberatung als Position, noch ohne Erfassung am Termin
+
+Recht · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Steuerberatung (G13, B4)
+
+**Annahme.** Die Ernährungsberatung ist eine eigene Positionsart ohne Heilmittel, je Bereich eine Position; 19 % sind im Editor voreingestellt, nicht erzwungen. Als Leistung an einem Termin erfasst wird sie noch nicht; die Position steht bereit.
+
+**Begründung.** ADR-027 Punkt 15 (Voreinstellung bis G13), ADR-009 Punkte 15 und 16 (Kennzeichen am Posten, ein Bereich je Rechnung). Wie eine Sitzung entsteht (eigener Termin, Paket), ist nicht entschieden.
+
+**Anker.** Constraint `service_catalog_items_nutrition_counselling`.
+
+**Änderungspfad.** Kennzeichen erzwingen: eine Prüffunktion wie `app.aftercare_tax_allowed`; Erfassung: eigener Loop an `record_billable_services` · Aufwand `mittel`.

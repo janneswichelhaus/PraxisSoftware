@@ -336,6 +336,15 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   ('cccccccc-cccc-4ccc-8ccc-000000000016', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 4, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 129000, 'taxable', 190, 'training', 3),
   ('cccccccc-cccc-4ccc-8ccc-000000000017', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 5, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 239000, 'taxable', 190, 'training', 6);
 
+-- ERN-003 (ADR-027 Punkt 15, ANN-622): die Ernährungsberatung je Bereich - die
+-- Rechnung trägt genau einen. Voreingestellt steuerpflichtig zum Regelsatz,
+-- bis die Steuerberatung entscheidet (G13, B4). Preise synthetisch.
+insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area) values
+  ('cccccccc-cccc-4ccc-8ccc-000000000024', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 13, 'ERN',   'Ernährungsberatung (Sitzung)',          'nutrition_counselling', null,  6000, 'taxable', 190, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000025', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 14, 'ERN-T', 'Ernährungsberatung im Training (Sitzung)', 'nutrition_counselling', null,  6000, 'taxable', 190, 'training'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000026', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 12, 'ERN',   'Ernährungsberatung (Sitzung)',          'nutrition_counselling', null,  7500, 'taxable', 190, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000027', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 13, 'ERN-T', 'Ernährungsberatung im Training (Sitzung)', 'nutrition_counselling', null,  7500, 'taxable', 190, 'training');
+
 update public.service_catalog_versions
    set published_at = timestamptz '2025-12-20 09:00:00+01',
        published_by = '11111111-1111-4111-8111-000000000001'
