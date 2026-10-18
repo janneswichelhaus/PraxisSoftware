@@ -28,7 +28,7 @@ import {
   type Ernaehrungsprofil,
   type Verhaeltnisart,
 } from './api';
-import { ernaehrungsFormulare, ernaehrungsReiter, leseZahl } from './eingabe';
+import { ernaehrungsFormulare, ernaehrungsReiter, leseZahl, leseZielwert } from './eingabe';
 import {
   ERNAEHRUNG_EINWILLIGUNG,
   FORMEL_KURZ,
@@ -521,29 +521,6 @@ function berechnet(profil: Ernaehrungsprofil, feld: Wertfeld): number | null {
   }
 }
 
-/**
- * Der Wert für den Server oder ein Fehler. Ganze Zahlen ohne Punkt und
- * Komma - „1.500“ ist sonst 1,5 -, Liter mit einer Stelle nach dem Komma.
- */
-function leseWert(
-  text: string,
-  { min, max, liter, einheit }: (typeof WERTFELDER)[number],
-): { wert: number | null } | { fehler: string } {
-  const sauber = text.trim();
-  if (sauber === '') return { wert: null };
-  const grenzen = `${zahl(min, liter ? 1 : 0)} bis ${zahl(max, liter ? 1 : 0)} ${einheit}`;
-  if (liter) {
-    const l = /^\d+([.,]\d)?$/.test(sauber) ? leseZahl(sauber) : null;
-    if (l === null || l < min || l > max)
-      return { fehler: `Bitte in Litern angeben, etwa 2,5; ${grenzen} - oder leer lassen.` };
-    return { wert: Math.round(l * 100) * 10 };
-  }
-  const n = /^\d+$/.test(sauber) ? Number(sauber) : null;
-  if (n === null || n < min || n > max)
-    return { fehler: `Bitte als ganze Zahl angeben, ${grenzen} - oder leer lassen.` };
-  return { wert: n };
-}
-
 function ZielwerteFormular({
   art,
   verhaeltnisId,
@@ -584,7 +561,7 @@ function ZielwerteFormular({
         const gefunden: Partial<Record<Wertfeld, string>> = {};
         const gesetzt = {} as Record<Wertfeld, number | null>;
         for (const feld of WERTFELDER) {
-          const ergebnis = leseWert(werte[feld.feld], feld);
+          const ergebnis = leseZielwert(werte[feld.feld], feld);
           if ('fehler' in ergebnis) gefunden[feld.feld] = ergebnis.fehler;
           else gesetzt[feld.feld] = ergebnis.wert;
         }
