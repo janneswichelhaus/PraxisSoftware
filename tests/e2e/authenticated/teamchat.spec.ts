@@ -530,6 +530,15 @@ test('nimmt ein Foto mit der Kamera der App auf und sendet es in sechs Tipps (TE
 test('öffnet einen Anhang im Fenster und findet ihn unter Dateien (ADR-017 Punkte 77, 80)', async ({
   page,
 }) => {
+  // Ob der Browser PDF in der Seite zeigt, legt der Test selbst fest: Die CI
+  // nimmt Playwrights Headless-Shell ohne Betrachter, lokal läuft ein voller
+  // Chromium mit. Erst mit Betrachter, dann ohne (Chrome unter Android).
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'pdfViewerEnabled', {
+      configurable: true,
+      get: () => (window as Window & { ohnePdfBetrachter?: boolean }).ohnePdfBetrachter !== true,
+    });
+  });
   await zumTeamchat(page, KONTEN.office, RECHNER);
   await gespraeche(page)
     .getByRole('link', { name: `# ${KANAL}` })
@@ -537,14 +546,17 @@ test('öffnet einen Anhang im Fenster und findet ihn unter Dateien (ADR-017 Punk
   const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Neuer Plan ${LAUF}` });
   await nachricht.getByRole('button', { name: /Kette Rad 2.*Foto/ }).click();
   const foto = page.getByRole('dialog', { name: `Kette Rad 2 ${LAUF}.png` });
-  await expect(foto.getByRole('img', { name: `Kette Rad 2 ${LAUF}.png` })).toBeVisible();
+  // Freigabe, Verweis und Laden sind drei Wege übers Netz; in der CI dauert das.
+  await expect(foto.getByRole('img', { name: `Kette Rad 2 ${LAUF}.png` })).toBeVisible({
+    timeout: 15_000,
+  });
   await foto.getByRole('button', { name: 'Schließen' }).last().click();
   await expect(foto).toHaveCount(0);
 
   await nachricht.getByRole('button', { name: /Dienstplan KW 43.*PDF/ }).click();
   const plan = page.getByRole('dialog', { name: PLAN.name });
   const rahmen = plan.locator(`iframe[title="${PLAN.name}"]`);
-  await expect(rahmen).toBeVisible();
+  await expect(rahmen).toBeVisible({ timeout: 15_000 });
   // Ohne die Leiste des Betrachters mit Herunterladen und Drucken.
   await expect(rahmen).toHaveAttribute('src', /#toolbar=0$/);
   // Herunterladen gibt es nicht - nur Schließen, ganz im Bild.
@@ -552,6 +564,22 @@ test('öffnet einen Anhang im Fenster und findet ihn unter Dateien (ADR-017 Punk
   await expect(plan.getByRole('link', { name: /Herunterladen/ })).toHaveCount(0);
   await expect(plan.getByRole('button', { name: 'Schließen' }).last()).toBeInViewport();
   await plan.getByRole('button', { name: 'Schließen' }).last().click();
+  await expect(plan).toHaveCount(0);
+
+  // Ohne Betrachter sagt das Fenster es, statt leer zu bleiben - auch dann
+  // ohne Herunterladen (Frage 2 der PR).
+  await page.evaluate(() => {
+    (window as Window & { ohnePdfBetrachter?: boolean }).ohnePdfBetrachter = true;
+  });
+  await nachricht.getByRole('button', { name: /Dienstplan KW 43.*PDF/ }).click();
+  await expect(plan.getByText('Dieses Gerät zeigt PDF nicht in der App an.')).toBeVisible();
+  await expect(plan.locator('iframe')).toHaveCount(0);
+  await expect(plan.getByRole('button', { name: /Herunterladen/ })).toHaveCount(0);
+  await plan.getByRole('button', { name: 'Schließen' }).last().click();
+  await expect(plan).toHaveCount(0);
+  await page.evaluate(() => {
+    (window as Window & { ohnePdfBetrachter?: boolean }).ohnePdfBetrachter = false;
+  });
 
   await page.getByRole('button', { name: 'Details', exact: true }).click();
   const details = page.getByRole('dialog', { name: `# ${KANAL}` });
@@ -561,7 +589,9 @@ test('öffnet einen Anhang im Fenster und findet ihn unter Dateien (ADR-017 Punk
   await expect(details.getByText(/^PDF · .* · Anna Beispiel/)).toBeVisible();
   // Aus den Details öffnet dasselbe Fenster.
   await details.getByRole('button', { name: /Dienstplan KW 43/ }).click();
-  await expect(page.getByRole('dialog', { name: PLAN.name }).locator('iframe')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: PLAN.name }).locator('iframe')).toBeVisible({
+    timeout: 15_000,
+  });
   await ohneQuerrollen(page);
 });
 
