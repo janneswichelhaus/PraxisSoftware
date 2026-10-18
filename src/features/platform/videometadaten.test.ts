@@ -111,6 +111,38 @@ describe('Sprachnachricht ohne Angaben (TEAM-004, ADR-017 Punkt 84)', () => {
     );
   });
 
+  it('prüft auch nach mehreren Clustern alles: Angaben, Spuren, unbekannte Länge (Zweitreview)', async () => {
+    const mitAngaben = webmAusChromium({
+      bild: false,
+      ton: true,
+      cluster: 3,
+      datum: true,
+      tags: true,
+    });
+    const sauber = await tonBereinigt(mitAngaben, 'audio/webm');
+    expect(enthaelt(sauber, 'Chrome')).toBe(false);
+    expect(enthaelt(sauber, 'Kennwort-Titel')).toBe(false);
+    const ablehnen = async (daten: Uint8Array, typ: string) =>
+      typ.startsWith('audio/')
+        ? bereinigeTon(new Blob([daten as BlobPart], { type: typ }))
+        : bereinigeVideo(new Blob([daten as BlobPart], { type: typ }));
+    expect(await ablehnen(webmAusChromium({ ton: true, cluster: 3 }), 'audio/webm')).toEqual({
+      ok: false,
+      grund: 'bild',
+    });
+    expect(await ablehnen(webmAusChromium({ ton: true, cluster: 3 }), 'video/webm')).toEqual({
+      ok: false,
+      grund: 'ton',
+    });
+    // Unbekannte Länge nur für Segment und Cluster darin - sonst nicht lesbar.
+    for (const daten of [
+      webmAusChromium({ bild: false, ton: true, cluster: 2, tagsOhneLaenge: true }),
+      webmAusChromium({ bild: false, ton: true, versteckteBildspur: true }),
+    ]) {
+      expect(await ablehnen(daten, 'audio/webm')).toEqual({ ok: false, grund: 'format' });
+    }
+  });
+
   it('eine Bildspur heißt nicht senden - auch neben dem Ton', async () => {
     for (const [daten, typ] of [
       [webmAusChromium({ ton: true }), 'audio/webm'],

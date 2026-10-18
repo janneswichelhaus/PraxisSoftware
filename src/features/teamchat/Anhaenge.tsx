@@ -167,6 +167,8 @@ function Ton({ datei, name }: { datei: Blob; name: string }) {
       aria-label={name}
       className="block w-full"
       onError={() => setGescheitert(true)}
+      // Kein Kontextmenü mit „Audio speichern“ - wie bei Fotos (ADR-017 Punkt 40).
+      onContextMenu={(event) => event.preventDefault()}
     />
   ) : null;
 }

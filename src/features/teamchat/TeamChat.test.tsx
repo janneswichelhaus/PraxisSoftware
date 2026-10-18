@@ -1245,6 +1245,27 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
 
   const SPRACHE = { name: 'Sprachnachricht aufnehmen' } as const;
 
+  /**
+   * Die Sitzungssperre ruft ihre Sicherungen und wartet - wie in der App
+   * außerhalb von `act`, damit die Seite dabei weiterzeichnen kann. Liefert
+   * die Antworten und ob die Aufnahme bei der Freigabe schon am Entwurf hing.
+   */
+  async function sperren(sicherungen: Set<Sicherung>) {
+    const stand: { antworten: unknown; angehaengt: boolean } = {
+      antworten: 'wartet noch',
+      angehaengt: false,
+    };
+    // Nur der Aufruf in `act`; gewartet wird danach, damit die Seite zeichnet.
+    act(() => {
+      void Promise.all([...sicherungen].map((sicherung) => sicherung())).then((antworten) => {
+        stand.antworten = antworten;
+        stand.angehaengt = api.ladeAnhangHoch.mock.calls.length > 0;
+      });
+    });
+    await act(() => new Promise((fertig) => setTimeout(fertig, 200)));
+    return stand;
+  }
+
   it('nimmt in vier Tipps auf und sendet: Gespräch, Mikrofon, Fertig, Senden', async () => {
     const nutzer = userEvent.setup();
     zeige('/team/k-allgemein');
@@ -1354,14 +1375,9 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
     await nutzer.click(await screen.findByRole('button', SPRACHE));
     expect(await screen.findByRole('status')).toHaveTextContent('Aufnahme');
     jetzt += 12_000;
-    let ergebnisse: boolean[] = [];
-    let angehaengtBeiFreigabe = false;
-    await act(async () => {
-      ergebnisse = await Promise.all([...sicherungen].map((sicherung) => sicherung()));
-      angehaengtBeiFreigabe = api.ladeAnhangHoch.mock.calls.length > 0;
-    });
-    expect(ergebnisse.every(Boolean)).toBe(true);
-    expect(angehaengtBeiFreigabe).toBe(true);
+    const gesperrt = await sperren(sicherungen);
+    expect(gesperrt.antworten).toEqual([true]);
+    expect(gesperrt.angehaengt).toBe(true);
     expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true);
     expect(api.ladeAnhangHoch).toHaveBeenCalledWith(
       'k-allgemein',
@@ -1371,6 +1387,43 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
     );
   });
 
+  it('beendet die Aufnahme, sobald ein Fenster darüber aufgeht - nichts läuft verdeckt weiter', async () => {
+    // Zweitreview TEAM-004b, B1: Am Telefon deckt ein Fenster die Anzeige ab.
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    await nutzer.click(await screen.findByRole('button', SPRACHE));
+    expect(await screen.findByRole('status')).toHaveTextContent('Aufnahme');
+    jetzt += 9_000;
+    await nutzer.click(screen.getByRole('button', { name: 'Details' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true),
+    );
+    // Was aufgenommen war, hängt am Entwurf wie nach „Fertig“.
+    expect(api.ladeAnhangHoch).toHaveBeenCalledWith(
+      'k-allgemein',
+      expect.any(Blob),
+      expect.stringMatching(/^Sprachnachricht /),
+      9,
+    );
+  });
+
+  it('lässt die Sperre nicht warten, wenn „Verwerfen“ schon unterwegs ist', async () => {
+    // Zweitreview TEAM-004b, B2: Der letzte Stopp kommt erst nach der Sperre.
+    const nutzer = userEvent.setup();
+    const sicherungen = new Set<Sicherung>();
+    vi.spyOn(Testrecorder.prototype, 'stop').mockImplementationOnce(function (this: Testrecorder) {
+      setTimeout(() => this.stop(), 20);
+    });
+    zeige('/team/k-allgemein', konto(), sicherungen);
+    await nutzer.click(await screen.findByRole('button', SPRACHE));
+    await nutzer.click(await screen.findByRole('button', { name: 'Verwerfen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
+    expect((await sperren(sicherungen)).antworten).toEqual([true]);
+    expect(aufnahme.mikrofon.spuren.every((spur) => spur.beendet)).toBe(true);
+    expect(api.ladeAnhangHoch).not.toHaveBeenCalled();
+  });
+
   it('bricht ab, wenn die Sperre kommt, während das Mikrofon noch öffnet', async () => {
     const nutzer = userEvent.setup();
     const sicherungen = new Set<Sicherung>();
@@ -1378,11 +1431,7 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
     zeige('/team/k-allgemein', konto(), sicherungen);
     await nutzer.click(await screen.findByRole('button', SPRACHE));
     expect(await screen.findByText('Mikrofon wird geöffnet …')).toBeInTheDocument();
-    let ergebnisse: boolean[] = [];
-    await act(async () => {
-      ergebnisse = await Promise.all([...sicherungen].map((sicherung) => sicherung()));
-    });
-    expect(ergebnisse).toEqual([true]);
+    expect((await sperren(sicherungen)).antworten).toEqual([true]);
     await act(async () => {
       aufnahme.mikrofon.gibFrei();
       await Promise.resolve();
@@ -1434,6 +1483,8 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
     expect(ton).toHaveAttribute('controlslist', 'nodownload noremoteplayback');
     expect(ton).not.toHaveAttribute('autoplay');
     expect(ton).toHaveAttribute('src', 'blob:ton');
+    // Kein Kontextmenü mit „Audio speichern“ (false: abgewiesen).
+    expect(fireEvent.contextMenu(ton)).toBe(false);
     expect(within(fenster).getByText('0:42 · 96 KB')).toBeInTheDocument();
 
     // Spielt das Gerät das Format doch nicht, steht der Satz statt des Elements.

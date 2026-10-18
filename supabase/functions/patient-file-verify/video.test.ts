@@ -120,6 +120,30 @@ describe('Sprachnachricht am Server (TEAM-004, ADR-017 Punkt 84)', () => {
     expect(pruefeTon(mp4AusSafari({ ton: true }), 'audio/mp4').nurTon).toBe(false);
   });
 
+  it('prüft auch nach mehreren Clustern alles: Angaben, Spuren, unbekannte Länge (Zweitreview)', () => {
+    const roh = webmAusChromium({ bild: false, ton: true, cluster: 3, datum: true, tags: true });
+    expect(pruefeTon(roh, 'audio/webm')).toEqual({
+      lesbar: true,
+      nurTon: true,
+      ohneAngaben: false,
+    });
+    expect(pruefeTon(webmAusChromium({ ton: true, cluster: 3 }), 'audio/webm').nurTon).toBe(false);
+    expect(pruefeVideo(webmAusChromium({ ton: true, cluster: 3 }), 'video/webm').ohneTon).toBe(
+      false,
+    );
+    // Unbekannte Länge nur für Segment und Cluster darin - sonst nicht lesbar.
+    expect(
+      pruefeTon(
+        webmAusChromium({ bild: false, ton: true, cluster: 2, tagsOhneLaenge: true }),
+        'audio/webm',
+      ).lesbar,
+    ).toBe(false);
+    expect(
+      pruefeTon(webmAusChromium({ bild: false, ton: true, versteckteBildspur: true }), 'audio/webm')
+        .lesbar,
+    ).toBe(false);
+  });
+
   it('ohne Tonspur, mit falschem Typ oder abgeschnitten: nicht lesbar', () => {
     expect(pruefeTon(webmAusChromium(), 'audio/webm').lesbar).toBe(false);
     expect(pruefeTon(webmAusChromium({ bild: false, ton: true }), 'audio/mp4').lesbar).toBe(false);

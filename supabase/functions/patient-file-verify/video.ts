@@ -168,14 +168,15 @@ export function durchlaufeWebm(
     while (pos < bis) {
       const e = leseElement(bytes, pos);
       if (!e) return null;
-      // Unbekannte Länge gibt es in MediaRecorder-Ausgaben nur für Segment
-      // und Cluster.
+      // Unbekannte Länge gibt es in MediaRecorder-Ausgaben nur für das
+      // Segment und die Cluster direkt darin - anderswo verbärge sie, was
+      // darin steht, etwa eine Spur (Zweitreview TEAM-004b).
       if (e.ende === null) {
-        if (e.id === EBML.segment) {
+        if (e.id === EBML.segment && eltern === 0) {
           besuche(e, eltern);
           return bereich(e.daten, bis, e.id, tiefe + 1) === null ? null : bis;
         }
-        if (e.id !== EBML.cluster) return null;
+        if (e.id !== EBML.cluster || eltern !== EBML.segment) return null;
         besuche(e, eltern);
         // Kinder bis zum nächsten Element der Segmentebene überspringen.
         let innen = e.daten;

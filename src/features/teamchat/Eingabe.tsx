@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { usePortalZiel } from '@/components/ui/portalZiel';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
@@ -159,8 +161,6 @@ export function Eingabe({
   // Das Mikrofon steht nur da, wo das Gerät aufnehmen kann und der Server das
   // Format nimmt (Punkt 84).
   const [mitSprache] = useState(sprachnachrichtMoeglich);
-  // Die Sitzungssperre wartet, bis eine laufende Aufnahme am Entwurf hängt.
-  const nachAufnahme = useRef<(() => void) | null>(null);
   const aufnahme = useAufnahme({
     hoechstdauerS: SPRACHNACHRICHT_HOECHSTDAUER_S,
     onFertig: ({ audio, dauerS }) => {
@@ -175,32 +175,50 @@ export function Eingabe({
           dauer: dauerS,
         },
       ]);
-      nachAufnahme.current?.();
     },
-    onFehler: (fehler) => {
-      setAnhangHinweis(AUFNAHMEFEHLER[fehler]);
-      nachAufnahme.current?.();
-    },
+    onFehler: (fehler) => setAnhangHinweis(AUFNAHMEFEHLER[fehler]),
   });
   const nimmtAuf = aufnahme.zustand !== 'bereit';
   const aufnahmeRef = useRef(aufnahme);
   aufnahmeRef.current = aufnahme;
-  // Vor der Sitzungssperre (ADR-025 Punkt 4) endet eine laufende Aufnahme -
-  // hinter der Sperre gäbe es keine Anzeige mehr (Punkt 83). Was schon
-  // aufgenommen ist, hängt danach am Entwurf wie nach „Fertig“; wer gerade
-  // erst das Mikrofon öffnet, hat noch nichts und bricht ab.
-  useSperrsicherung(() => {
+
+  /** Die Aufnahme endet: was da ist, an den Entwurf; beim Öffnen des Mikrofons gibt es nichts. */
+  function aufnahmeBeenden() {
     const laufend = aufnahmeRef.current;
     if (laufend.zustand === 'startet') laufend.abbrechen();
-    if (laufend.zustand !== 'laeuft') return Promise.resolve(true);
+    else laufend.beenden();
+  }
+
+  // Vor der Sitzungssperre (ADR-025 Punkt 4) endet eine laufende Aufnahme -
+  // hinter der Sperre gäbe es keine Anzeige mehr (Punkt 83). Die Sperre wartet,
+  // bis sie wirklich vorbei ist und am Entwurf hängt; alle, die warten, auch
+  // wenn der letzte Stopp schon unterwegs war (Zweitreview TEAM-004b, B2).
+  const nachAufnahme = useRef<(() => void)[]>([]);
+  useEffect(() => {
+    if (!nimmtAuf) for (const fertig of nachAufnahme.current.splice(0)) fertig();
+  }, [nimmtAuf]);
+  useSperrsicherung(() => {
+    if (aufnahmeRef.current.zustand === 'bereit') return Promise.resolve(true);
     return new Promise<boolean>((fertig) => {
-      nachAufnahme.current = () => {
-        nachAufnahme.current = null;
-        fertig(true);
-      };
-      laufend.beenden();
+      nachAufnahme.current.push(() => fertig(true));
+      aufnahmeBeenden();
     });
   });
+
+  // Ein Fenster darüber verdeckt die Anzeige der Aufnahme und sperrt den Rest
+  // der Seite: Dann ist sie fertig wie beim Verbergen der Seite (Punkt 83,
+  // Zweitreview TEAM-004b, B1). Fenster zeichnen sich ans Portalziel.
+  const portalZiel = usePortalZiel();
+  useEffect(() => {
+    if (!nimmtAuf || typeof MutationObserver === 'undefined') return;
+    const verdeckt = () => {
+      if (portalZiel.querySelector('[aria-modal="true"]')) aufnahmeBeenden();
+    };
+    const beobachter = new MutationObserver(verdeckt);
+    beobachter.observe(portalZiel, { childList: true });
+    verdeckt();
+    return () => beobachter.disconnect();
+  }, [nimmtAuf, portalZiel]);
   const kannSenden = (text.trim() !== '' || hatAnhaenge) && !anhaengeOffen && !nimmtAuf;
   // Ein getipptes „@…“ vor der Schreibmarke.
   const [anfrage, setAnfrage] = useState<{ von: number; wort: string } | null>(null);

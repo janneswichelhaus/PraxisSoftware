@@ -66,6 +66,13 @@ export interface WebmOptionen {
    * (`start(1000)`). Vorgabe: einer.
    */
   cluster?: number;
+  /** Tags mit unbekannter Länge am Ende - so schreibt sie kein `MediaRecorder`. */
+  tagsOhneLaenge?: boolean;
+  /**
+   * Eine Bildspur in einem Cluster unbekannter Länge innerhalb der Spuren -
+   * ein Versteck, wenn unbekannte Länge nicht nur auf der Segmentebene gilt.
+   */
+  versteckteBildspur?: boolean;
 }
 
 /**
@@ -102,9 +109,12 @@ export function webmAusChromium(optionen: WebmOptionen = {}): Uint8Array {
     [...el(0xd7, [2]), ...el(0x73c5, [2]), ...el(0x83, [2]), ...el(0x86, text('A_OPUS'))],
     8,
   );
+  const versteck = optionen.versteckteBildspur
+    ? [...kennung(0x1f43b675), ...UNBEKANNT, ...bild]
+    : [];
   const spuren = el(
     0x1654ae6b,
-    [...(optionen.bild === false ? [] : bild), ...(optionen.ton ? ton : [])],
+    [...(optionen.bild === false ? [] : bild), ...(optionen.ton ? ton : []), ...versteck],
     8,
   );
   const cluster = [
@@ -114,15 +124,15 @@ export function webmAusChromium(optionen: WebmOptionen = {}): Uint8Array {
     ...el(0xa3, [0x81, 0, 0, 0x80, ...new Array<number>(40).fill(0x55)]),
     ...el(0xa3, [0x81, 0, 0x21, 0x00, ...new Array<number>(30).fill(0x66)]),
   ];
+  const tag = el(
+    0x7373,
+    el(0x67c8, [...el(0x45a3, text('TITLE')), ...el(0x4487, text('Kennwort-Titel'))]),
+  );
   const tags = optionen.tags
-    ? el(
-        0x1254c367,
-        el(
-          0x7373,
-          el(0x67c8, [...el(0x45a3, text('TITLE')), ...el(0x4487, text('Kennwort-Titel'))]),
-        ),
-      )
-    : [];
+    ? el(0x1254c367, tag)
+    : optionen.tagsOhneLaenge
+      ? [...kennung(0x1254c367), ...UNBEKANNT, ...tag]
+      : [];
   const cluster_ = Array.from({ length: optionen.cluster ?? 1 }, () => cluster).flat();
   return bytes(kopf, kennung(0x18538067), UNBEKANNT, info, spuren, cluster_, tags);
 }

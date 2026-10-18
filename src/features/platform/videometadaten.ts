@@ -142,15 +142,21 @@ interface Spuren {
 function bereinigeWebm(bytes: Uint8Array): Spuren {
   const spuren = { bild: 0, ton: 0, andere: 0 };
 
-  function bereich(von: number, bis: number, tiefe = 0): boolean {
+  /** `eltern`: die Kennung des umgebenden Elements, 0 auf oberster Ebene. */
+  function bereich(von: number, bis: number, tiefe = 0, eltern = 0): boolean {
     if (tiefe > MAX_TIEFE) return false;
     let pos = von;
     while (pos < bis) {
       const e = element(bytes, pos);
       if (!e) return false;
       if (e.ende === null) {
-        if (e.id === EBML.segment) return bereich(e.daten, bis, tiefe + 1);
-        if (e.id !== EBML.cluster) return false;
+        // Unbekannte Länge schreibt `MediaRecorder` nur für das Segment und
+        // die Cluster direkt darin - anderswo verbärge sie, was darin steht,
+        // etwa eine Spur (Zweitreview TEAM-004b).
+        if (e.id === EBML.segment && eltern === 0) {
+          return bereich(e.daten, bis, tiefe + 1, EBML.segment);
+        }
+        if (e.id !== EBML.cluster || eltern !== EBML.segment) return false;
         let innen = e.daten;
         while (innen < bis) {
           const kind = element(bytes, innen);
@@ -176,7 +182,7 @@ function bereinigeWebm(bytes: Uint8Array): Spuren {
       if (ZU_LEEREN.has(e.id)) bytes.fill(0, e.daten, e.ende);
       if (ZU_VOID.has(e.id)) {
         if (!zuVoid(bytes, e)) return false;
-      } else if (BEHAELTER.has(e.id) && !bereich(e.daten, e.ende, tiefe + 1)) {
+      } else if (BEHAELTER.has(e.id) && !bereich(e.daten, e.ende, tiefe + 1, e.id)) {
         return false;
       }
       pos = e.ende;
