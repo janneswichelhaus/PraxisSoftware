@@ -60,6 +60,12 @@ export interface WebmOptionen {
   datum?: boolean;
   /** Tags mit einem Titel am Ende - wie ein Schnittprogramm sie schreibt. */
   tags?: boolean;
+  /**
+   * Cluster unbekannter Länge hintereinander - wie `MediaRecorder` mit
+   * Zeitscheibe sie schreibt, etwa die Aufnahme einer Sprachnachricht
+   * (`start(1000)`). Vorgabe: einer.
+   */
+  cluster?: number;
 }
 
 /**
@@ -117,7 +123,8 @@ export function webmAusChromium(optionen: WebmOptionen = {}): Uint8Array {
         ),
       )
     : [];
-  return bytes(kopf, kennung(0x18538067), UNBEKANNT, info, spuren, cluster, tags);
+  const cluster_ = Array.from({ length: optionen.cluster ?? 1 }, () => cluster).flat();
+  return bytes(kopf, kennung(0x18538067), UNBEKANNT, info, spuren, cluster_, tags);
 }
 
 // -----------------------------------------------------------------------------

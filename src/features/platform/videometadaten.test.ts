@@ -98,6 +98,19 @@ describe('Sprachnachricht ohne Angaben (TEAM-004, ADR-017 Punkt 84)', () => {
     expect(enthaelt(sauberMp4, '\xe1\x23\x45\x67')).toBe(false);
   });
 
+  it('nimmt mehrere Cluster unbekannter Länge an - wie die Aufnahme mit Zeitscheibe', async () => {
+    // Die echte Aufnahme in Chromium (`start(1000)`) schreibt je Stück einen
+    // Cluster ohne Länge; der erste E2E-Lauf fand das (TEAM-004).
+    const ton = webmAusChromium({ bild: false, ton: true, cluster: 3 });
+    const sauber = await tonBereinigt(ton, 'audio/webm;codecs=opus');
+    expect(sauber.length).toBe(ton.length);
+    expect(enthaelt(sauber, 'Chrome')).toBe(false);
+    const video = webmAusChromium({ cluster: 2 });
+    expect((await bereinigeVideo(new Blob([video as BlobPart], { type: 'video/webm' }))).ok).toBe(
+      true,
+    );
+  });
+
   it('eine Bildspur heißt nicht senden - auch neben dem Ton', async () => {
     for (const [daten, typ] of [
       [webmAusChromium({ ton: true }), 'audio/webm'],

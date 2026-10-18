@@ -24,8 +24,9 @@ const {
   anhaengen,
   anhangEntfernen,
   anhangErneut,
+  anhangArt,
   anhangName,
-  fotoName,
+  aufnahmeName,
   VON_SELBST_HOECHSTENS,
 } = await import('./entwurfsanhaenge');
 const { WIEDERHOLEN_MS } = await import('./ausgang');
@@ -60,7 +61,8 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     expect(anhaengeVon('anna', 'k1', null).map((a) => a.name)).toEqual(['Plan.pdf']);
     expect(anhaengeVon('anna', 'k1', 't1').map((a) => a.name)).toEqual(['Antwort.pdf']);
     expect(anhaengeVon('anna', 'k2', null)).toEqual([]);
-    expect(ladeAnhangHoch).toHaveBeenCalledWith('k1', expect.any(Blob), 'Plan.pdf');
+    // Ohne Dauer: keine Sprachnachricht (TEAM-004).
+    expect(ladeAnhangHoch).toHaveBeenCalledWith('k1', expect.any(Blob), 'Plan.pdf', undefined);
   });
 
   it('nimmt höchstens fünf und meldet, wie viele darüber lagen', () => {
@@ -170,11 +172,38 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
 
   it('zählt Fotos aus derselben Minute, damit sie sich ohne Vorschaubild unterscheiden', () => {
     const jetzt = new Date('2026-10-18T17:34:20Z');
-    expect(fotoName('Europe/Berlin', [], jetzt)).toBe('Foto 18.10., 19:34');
-    expect(fotoName('Europe/Berlin', ['Foto 18.10., 19:34'], jetzt)).toBe('Foto 18.10., 19:34 (2)');
-    expect(fotoName('Europe/Berlin', ['Foto 18.10., 19:34', 'Foto 18.10., 19:34 (2)'], jetzt)).toBe(
-      'Foto 18.10., 19:34 (3)',
+    expect(aufnahmeName('Foto', 'Europe/Berlin', [], jetzt)).toBe('Foto 18.10., 19:34');
+    expect(aufnahmeName('Foto', 'Europe/Berlin', ['Foto 18.10., 19:34'], jetzt)).toBe(
+      'Foto 18.10., 19:34 (2)',
     );
+    expect(
+      aufnahmeName(
+        'Foto',
+        'Europe/Berlin',
+        ['Foto 18.10., 19:34', 'Foto 18.10., 19:34 (2)'],
+        jetzt,
+      ),
+    ).toBe('Foto 18.10., 19:34 (3)');
+    // Eine Sprachnachricht zählt für sich (TEAM-004).
+    expect(aufnahmeName('Sprachnachricht', 'Europe/Berlin', ['Foto 18.10., 19:34'], jetzt)).toBe(
+      'Sprachnachricht 18.10., 19:34',
+    );
+  });
+
+  it('lädt eine Sprachnachricht mit ihrer Dauer hoch und behält die Dauer im Entwurf (TEAM-004)', async () => {
+    const ton = new Blob(['ton'], { type: 'audio/webm' });
+    anhaengen('anna', 'k1', null, [{ datei: ton, name: 'Sprachnachricht', dauer: 41.6 }]);
+    await vi.waitFor(() => expect(anhaengeVon('anna', 'k1', null)[0]?.zustand).toBe('bereit'));
+    expect(ladeAnhangHoch).toHaveBeenCalledWith('k1', ton, 'Sprachnachricht', 41.6);
+    expect(anhaengeVon('anna', 'k1', null)[0]).toMatchObject({
+      dauer: 41.6,
+      mime: 'audio/webm',
+      vorschau: null,
+    });
+    expect(anhangArt('audio/webm')).toBe('Sprachnachricht');
+    expect(anhangArt('audio/mp4')).toBe('Sprachnachricht');
+    expect(anhangArt('application/pdf')).toBe('PDF');
+    expect(anhangArt('image/png')).toBe('Foto');
   });
 
   it('nimmt den Namen ohne Steuerzeichen, höchstens 120 Zeichen', () => {

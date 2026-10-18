@@ -181,8 +181,12 @@ export function durchlaufeWebm(
         let innen = e.daten;
         while (innen < bis) {
           const kind = leseElement(bytes, innen);
-          if (!kind || kind.ende === null) return null;
+          if (!kind) return null;
+          // Das nächste Element der Segmentebene beendet den Cluster - auch
+          // ein weiterer Cluster unbekannter Länge, wie ihn `MediaRecorder`
+          // mit Zeitscheibe schreibt (TEAM-004).
           if (SEGMENTEBENE.has(kind.id)) break;
+          if (kind.ende === null) return null;
           innen = kind.ende;
         }
         pos = innen;

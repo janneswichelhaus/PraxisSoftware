@@ -12,15 +12,18 @@ import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
 import { Textlink } from '@/components/ui/Textlink';
+import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
+import { aufnahmedauer, useAufnahme } from '@/features/documentation/aufnahme';
 import { Kameradialog } from '@/features/files/Kameradialog';
 import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
 import { useKamera } from '@/features/files/kamera';
 import { EntwurfsAnhaenge } from './Anhaenge';
-import { anhaengeAbgeben, anhaengen, fotoName, useEntwurfsanhaenge } from './entwurfsanhaenge';
+import { anhaengeAbgeben, anhaengen, aufnahmeName, useEntwurfsanhaenge } from './entwurfsanhaenge';
 import {
   ANHAENGE_MAX,
   GEPLANT_KEY,
@@ -43,7 +46,12 @@ import {
   vervollstaendigeErwaehnungen,
 } from './erwaehnung';
 import { ENTWUERFE } from './pfade';
-import { Bueroklammer, Uhr } from './Zeichen';
+import {
+  AUFNAHMEFEHLER,
+  SPRACHNACHRICHT_HOECHSTDAUER_S,
+  sprachnachrichtMoeglich,
+} from './sprachnachricht';
+import { Bueroklammer, Mikrofon, Uhr } from './Zeichen';
 import { Zeitwahl } from './Zeitwahl';
 import { geplantFuer, planvorschlaege } from './zeit';
 
@@ -97,6 +105,12 @@ const FORMATE = [
  *   Dateiwähler. Eine Datei lädt hoch, sobald sie gewählt ist (`entwurfsanhaenge.ts`);
  *   gesendet wird erst, wenn alle oben bereit sind. Mit Anhängen darf der Text
  *   leer sein (ANN-653), geplant wird dann nicht.
+ * * **Sprachnachricht** (TEAM-004, ADR-017 Abschnitt N): Das Mikrofon in der
+ *   Reihe nimmt auf - mit derselben Aufnahme wie das Diktat, sichtbar mit
+ *   ihrer Zeit, höchstens zwei Minuten. „Fertig“ hängt sie an den Entwurf wie
+ *   ein Foto; „Verwerfen“ wirft sie nach Rückfrage fort. Wer das Gespräch
+ *   verlässt, verwirft sie; wird die Seite verborgen oder kommt die
+ *   Sitzungssperre, ist sie fertig und hängt am Entwurf.
  */
 export function Eingabe({
   kontoId,
@@ -142,7 +156,52 @@ export function Eingabe({
   const entwurfsanhaenge = useEntwurfsanhaenge(kontoId, kanal.id, threadId);
   const hatAnhaenge = entwurfsanhaenge.length > 0;
   const anhaengeOffen = entwurfsanhaenge.some((a) => a.zustand !== 'bereit');
-  const kannSenden = (text.trim() !== '' || hatAnhaenge) && !anhaengeOffen;
+  // Das Mikrofon steht nur da, wo das Gerät aufnehmen kann und der Server das
+  // Format nimmt (Punkt 84).
+  const [mitSprache] = useState(sprachnachrichtMoeglich);
+  // Die Sitzungssperre wartet, bis eine laufende Aufnahme am Entwurf hängt.
+  const nachAufnahme = useRef<(() => void) | null>(null);
+  const aufnahme = useAufnahme({
+    hoechstdauerS: SPRACHNACHRICHT_HOECHSTDAUER_S,
+    onFertig: ({ audio, dauerS }) => {
+      anhaengenAusWahl([
+        {
+          datei: audio,
+          name: aufnahmeName(
+            'Sprachnachricht',
+            zeitzone,
+            entwurfsanhaenge.map((a) => a.name),
+          ),
+          dauer: dauerS,
+        },
+      ]);
+      nachAufnahme.current?.();
+    },
+    onFehler: (fehler) => {
+      setAnhangHinweis(AUFNAHMEFEHLER[fehler]);
+      nachAufnahme.current?.();
+    },
+  });
+  const nimmtAuf = aufnahme.zustand !== 'bereit';
+  const aufnahmeRef = useRef(aufnahme);
+  aufnahmeRef.current = aufnahme;
+  // Vor der Sitzungssperre (ADR-025 Punkt 4) endet eine laufende Aufnahme -
+  // hinter der Sperre gäbe es keine Anzeige mehr (Punkt 83). Was schon
+  // aufgenommen ist, hängt danach am Entwurf wie nach „Fertig“; wer gerade
+  // erst das Mikrofon öffnet, hat noch nichts und bricht ab.
+  useSperrsicherung(() => {
+    const laufend = aufnahmeRef.current;
+    if (laufend.zustand === 'startet') laufend.abbrechen();
+    if (laufend.zustand !== 'laeuft') return Promise.resolve(true);
+    return new Promise<boolean>((fertig) => {
+      nachAufnahme.current = () => {
+        nachAufnahme.current = null;
+        fertig(true);
+      };
+      laufend.beenden();
+    });
+  });
+  const kannSenden = (text.trim() !== '' || hatAnhaenge) && !anhaengeOffen && !nimmtAuf;
   // Ein getipptes „@…“ vor der Schreibmarke.
   const [anfrage, setAnfrage] = useState<{ von: number; wort: string } | null>(null);
   const [planen, setPlanen] = useState(false);
@@ -214,7 +273,7 @@ export function Eingabe({
   }
 
   /** Gewählte oder aufgenommene Dateien an den Entwurf - höchstens fünf (ADR-017 Punkt 71). */
-  function anhaengenAusWahl(neue: readonly { datei: Blob; name: string }[]) {
+  function anhaengenAusWahl(neue: readonly { datei: Blob; name: string; dauer?: number }[]) {
     setWerkzeug(null);
     if (neue.length === 0) return;
     const uebrig = anhaengen(kontoId, kanal.id, threadId, neue);
@@ -228,6 +287,13 @@ export function Eingabe({
       return;
     }
     setWerkzeug(werkzeug === 'anhaengen' ? null : 'anhaengen');
+  }
+
+  /** Nur auf diesen Tipp öffnet sich das Mikrofon (Punkt 83). */
+  function sprachnachrichtAufnehmen() {
+    setWerkzeug(null);
+    setAnhangHinweis(null);
+    void aufnahme.starten();
   }
 
   function erwaehnen(name: string) {
@@ -346,6 +412,7 @@ export function Eingabe({
                 Nicht geplant: {planEintrag.fehler ?? 'Der Server hat abgelehnt.'}
               </Statusmeldung>
               <Button
+                type="button"
                 variant="quiet"
                 groesse="kompakt"
                 onClick={() => {
@@ -407,6 +474,7 @@ export function Eingabe({
         {werkzeug === 'anhaengen' ? (
           <div role="group" aria-label="Anhängen" className="mt-2 flex flex-wrap gap-2">
             <Button
+              type="button"
               variant="secondary"
               groesse="kompakt"
               onClick={() => {
@@ -417,6 +485,7 @@ export function Eingabe({
               Foto aufnehmen
             </Button>
             <Button
+              type="button"
               variant="secondary"
               groesse="kompakt"
               onClick={() => dateiwahl.current?.click()}
@@ -474,53 +543,118 @@ export function Eingabe({
             </Symbolknopf>
           </div>
         ) : null}
-        <div className="mt-2 flex items-center gap-1">
-          <Symbolknopf
-            beschriftung="Jemanden erwähnen"
-            variant={werkzeug === 'erwaehnen' ? 'primary' : 'quiet'}
-            aria-expanded={werkzeug === 'erwaehnen'}
-            onClick={() => setWerkzeug(werkzeug === 'erwaehnen' ? null : 'erwaehnen')}
-          >
-            @
-          </Symbolknopf>
-          <Symbolknopf
-            beschriftung="Formatierung"
-            variant={werkzeug === 'format' ? 'primary' : 'quiet'}
-            aria-expanded={werkzeug === 'format'}
-            onClick={() => setWerkzeug(werkzeug === 'format' ? null : 'format')}
-          >
-            Aa
-          </Symbolknopf>
-          <Symbolknopf
-            beschriftung="Anhängen"
-            variant={werkzeug === 'anhaengen' ? 'primary' : 'quiet'}
-            aria-expanded={werkzeug === 'anhaengen'}
-            disabled={entwurfsanhaenge.length >= ANHAENGE_MAX}
-            onClick={bueroklammer}
-          >
-            <Bueroklammer />
-          </Symbolknopf>
-          {threadId ? null : (
-            <Symbolknopf
-              beschriftung="Später senden"
-              disabled={!text.trim() || hatAnhaenge}
-              onClick={() => setPlanen(true)}
+        {aufnahme.zustand === 'startet' ? (
+          <div className="mt-2 flex min-h-11 items-center gap-3">
+            <Statusmeldung>Mikrofon wird geöffnet …</Statusmeldung>
+            <Button
+              type="button"
+              variant="quiet"
+              groesse="kompakt"
+              className="ml-auto"
+              onClick={aufnahme.abbrechen}
             >
-              <Uhr />
-            </Symbolknopf>
-          )}
-          <div className="ml-auto">
-            <Button type="submit" groesse="kompakt" disabled={!kannSenden}>
-              Senden
+              Abbrechen
             </Button>
           </div>
-        </div>
+        ) : aufnahme.zustand === 'laeuft' ? (
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/* Wie beim Diktat: ein roter Punkt und „Aufnahme 0:12“, Zeichen
+                und Wort. Vorgelesen wird der Beginn, nicht jede Sekunde. */}
+            <p role="status" className="text-danger flex items-center gap-2 text-base font-bold">
+              <span
+                aria-hidden="true"
+                className="bg-danger rounded-pill size-3 shrink-0 motion-safe:animate-pulse"
+              />
+              <span>
+                Aufnahme{' '}
+                <span aria-live="off" className="tabular-nums">
+                  {aufnahmedauer(aufnahme.sekunden)}
+                </span>
+              </span>
+            </p>
+            {/* Verwerfen nur mit Rückfrage und weit weg von „Fertig“. */}
+            <div className="ml-auto">
+              <Rueckfrage
+                ausloeser="Verwerfen"
+                ausloeserVariante="quiet"
+                ausloeserGroesse="kompakt"
+                bezeichnung="Sprachnachricht verwerfen"
+                bestaetigen="Ja, verwerfen"
+                onBestaetigen={aufnahme.abbrechen}
+              >
+                Die Aufnahme ist nicht gespeichert und lässt sich danach nicht zurückholen.
+              </Rueckfrage>
+            </div>
+            <Button
+              type="button"
+              className="w-full basis-full sm:w-auto sm:basis-auto"
+              onClick={aufnahme.beenden}
+            >
+              Fertig
+            </Button>
+          </div>
+        ) : (
+          <div className="mt-2 flex items-center gap-1">
+            <Symbolknopf
+              beschriftung="Jemanden erwähnen"
+              variant={werkzeug === 'erwaehnen' ? 'primary' : 'quiet'}
+              aria-expanded={werkzeug === 'erwaehnen'}
+              onClick={() => setWerkzeug(werkzeug === 'erwaehnen' ? null : 'erwaehnen')}
+            >
+              @
+            </Symbolknopf>
+            <Symbolknopf
+              beschriftung="Formatierung"
+              variant={werkzeug === 'format' ? 'primary' : 'quiet'}
+              aria-expanded={werkzeug === 'format'}
+              onClick={() => setWerkzeug(werkzeug === 'format' ? null : 'format')}
+            >
+              Aa
+            </Symbolknopf>
+            <Symbolknopf
+              beschriftung="Anhängen"
+              variant={werkzeug === 'anhaengen' ? 'primary' : 'quiet'}
+              aria-expanded={werkzeug === 'anhaengen'}
+              disabled={entwurfsanhaenge.length >= ANHAENGE_MAX}
+              onClick={bueroklammer}
+            >
+              <Bueroklammer />
+            </Symbolknopf>
+            {mitSprache ? (
+              <Symbolknopf
+                beschriftung="Sprachnachricht aufnehmen"
+                disabled={entwurfsanhaenge.length >= ANHAENGE_MAX}
+                onClick={sprachnachrichtAufnehmen}
+              >
+                <Mikrofon />
+              </Symbolknopf>
+            ) : null}
+            {threadId ? null : (
+              <Symbolknopf
+                beschriftung="Später senden"
+                disabled={!text.trim() || hatAnhaenge}
+                onClick={() => setPlanen(true)}
+              >
+                <Uhr />
+              </Symbolknopf>
+            )}
+            <div className="ml-auto">
+              <Button type="submit" groesse="kompakt" disabled={!kannSenden}>
+                Senden
+              </Button>
+            </div>
+          </div>
+        )}
         {text.length > NACHRICHT_MAX - 400 ? (
           <p className="text-ink-muted mt-1 text-sm" aria-live="polite">
             Noch {NACHRICHT_MAX - text.length} Zeichen
           </p>
         ) : null}
-        <Kleingedrucktes>Befunde und Diagnosen gehören in die Akte.</Kleingedrucktes>
+        <Kleingedrucktes>
+          {nimmtAuf
+            ? 'Höchstens zwei Minuten. Keine Gespräche mit Patient:innen und keine Befunde – die gehören in die Akte.'
+            : 'Befunde und Diagnosen gehören in die Akte.'}
+        </Kleingedrucktes>
       </form>
       {kameraOffen ? (
         <Kameradialog
@@ -531,7 +665,8 @@ export function Eingabe({
             anhaengenAusWahl([
               {
                 datei: foto,
-                name: fotoName(
+                name: aufnahmeName(
+                  'Foto',
                   zeitzone,
                   entwurfsanhaenge.map((a) => a.name),
                 ),

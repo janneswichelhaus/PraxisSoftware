@@ -15,6 +15,9 @@ import { WIEDERHOLEN_MS } from './ausgang';
  * die Anhänge beim Zurückkommen wieder; nichts wandert in ein anderes
  * Gespräch oder Konto. Beim Abmelden fällt alles (`teamchatLeeren`); was dann
  * schon hochgeladen war, verwirft der Server nach 24 Stunden.
+ *
+ * Eine Sprachnachricht (TEAM-004, ADR-017 Abschnitt N) ist ein Anhang wie ein
+ * Foto, nur mit ihrer Dauer aus der Aufnahme.
  */
 
 export type Anhangszustand = 'laedt' | 'bereit' | 'fehler';
@@ -30,6 +33,8 @@ export interface Entwurfsanhang {
   groesse: number;
   /** Objekt-URL der eigenen Bytes - nur für Bilder, nur vor dem Senden. */
   vorschau: string | null;
+  /** Sekunden aus der Aufnahme - nur bei einer Sprachnachricht (ANN-655). */
+  dauer: number | null;
   zustand: Anhangszustand;
   fehler: string | null;
   /** Ob ein neuer Versuch gelingen kann (kein Netz) - bei falschem Format nicht. */
@@ -122,8 +127,9 @@ export function anhaengeVon(
 }
 
 /** Das Wort zur Art eines Anhangs - die Bedeutung trägt das Wort, nicht das Zeichen. */
-export function anhangArt(mime: string): string {
-  return mime === 'application/pdf' ? 'PDF' : 'Foto';
+export function anhangArt(mime: string): 'PDF' | 'Sprachnachricht' | 'Foto' {
+  if (mime === 'application/pdf') return 'PDF';
+  return mime.startsWith('audio/') ? 'Sprachnachricht' : 'Foto';
 }
 
 /** Höchstens 120 Zeichen ohne Steuerzeichen - wie am Server. */
@@ -134,11 +140,13 @@ export function anhangName(name: string): string {
 }
 
 /**
- * Der Name eines Fotos aus dem Kameradialog: Tag und Uhrzeit der Aufnahme,
- * gezählt, wenn in derselben Minute schon eines im Entwurf liegt - ohne
- * Vorschaubild ist der Name das Merkmal (Praxis-Review TEAM-003).
+ * Der Name eines Fotos aus dem Kameradialog oder einer Sprachnachricht
+ * (ANN-655): Tag und Uhrzeit der Aufnahme, gezählt, wenn in derselben Minute
+ * schon eine im Entwurf liegt - ohne Vorschaubild ist der Name das Merkmal
+ * (Praxis-Review TEAM-003).
  */
-export function fotoName(
+export function aufnahmeName(
+  art: 'Foto' | 'Sprachnachricht',
   zeitzone: string,
   vorhanden: readonly string[],
   jetzt = new Date(),
@@ -150,7 +158,7 @@ export function fotoName(
     minute: '2-digit',
     timeZone: zeitzone,
   }).format(jetzt);
-  const basis = `Foto ${zeit}`;
+  const basis = `${art} ${zeit}`;
   if (!vorhanden.includes(basis)) return basis;
   let nummer = 2;
   while (vorhanden.includes(`${basis} (${nummer})`)) nummer += 1;
@@ -171,7 +179,12 @@ async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
   });
   melden();
   try {
-    const anhang = await ladeAnhangHoch(eintrag.kanalId, datei, eintrag.name);
+    const anhang = await ladeAnhangHoch(
+      eintrag.kanalId,
+      datei,
+      eintrag.name,
+      eintrag.dauer ?? undefined,
+    );
     const jetzt = speicher.get(lokalId);
     if (!jetzt) {
       // Während des Hochladens entfernt: dann auch am Server fort.
@@ -196,19 +209,20 @@ async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
 }
 
 /**
- * Hängt Dateien an den Entwurf und lädt sie hoch. Liefert, wie viele über
- * der Grenze von fünf liegen und deshalb nicht angehängt sind.
+ * Hängt Dateien an den Entwurf und lädt sie hoch - eine Sprachnachricht mit
+ * ihrer Dauer (`dauer`). Liefert, wie viele über der Grenze von fünf liegen
+ * und deshalb nicht angehängt sind.
  */
 export function anhaengen(
   kontoId: string,
   kanalId: string,
   threadId: string | null,
-  neue: readonly { datei: Blob; name: string }[],
+  neue: readonly { datei: Blob; name: string; dauer?: number }[],
 ): number {
   anmelden();
   const frei = ANHAENGE_MAX - anhaengeVon(kontoId, kanalId, threadId).length;
   const angenommen = neue.slice(0, Math.max(0, frei));
-  for (const { datei, name } of angenommen) {
+  for (const { datei, name, dauer } of angenommen) {
     const lokalId = crypto.randomUUID();
     const bild = datei.type === 'image/jpeg' || datei.type === 'image/png';
     speicher.set(lokalId, {
@@ -221,6 +235,7 @@ export function anhaengen(
       groesse: datei.size,
       vorschau:
         bild && typeof URL.createObjectURL === 'function' ? URL.createObjectURL(datei) : null,
+      dauer: dauer ?? null,
       zustand: 'laedt',
       fehler: null,
       erneut: false,

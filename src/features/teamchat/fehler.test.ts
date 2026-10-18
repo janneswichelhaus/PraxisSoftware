@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type * as Dokumentarten from '@/features/files/dokumentarten';
 import type * as Metadaten from '@/features/files/metadaten';
+import { enthaelt, webmAusChromium } from '@/features/platform/testvideos';
 
 /**
  * Fehler des Teamchats ohne Netz (TEAM-002, Praxis-Sichtung): Nur Nachrichten
@@ -24,7 +25,8 @@ vi.mock('@/features/files/metadaten', async (importOriginal) => ({
   alleBytes: async (datei: Blob) => new Uint8Array(await datei.arrayBuffer()),
 }));
 
-const { TeamchatFehler, aendereGemerkt, ladeAnhangHoch, merke, reagiere } = await import('./api');
+const { FALSCHE_AUFNAHME, TeamchatFehler, aendereGemerkt, ladeAnhangHoch, merke, reagiere } =
+  await import('./api');
 
 const vorgaenge = [
   () => reagiere('n-1', 'daumen'),
@@ -123,5 +125,61 @@ describe('Hochladen eines Anhangs (TEAM-003)', () => {
     );
     expect(fehler.netz).toBe(true);
     expect(fehler.message).toBe('Nicht hochgeladen – kein Netz? Bitte noch einmal.');
+  });
+});
+
+describe('Hochladen einer Sprachnachricht (TEAM-004, ADR-017 Punkt 84)', () => {
+  function vorbereitetUndBestaetigt() {
+    rpc.mockReset();
+    upload.mockReset();
+    rpc
+      .mockResolvedValueOnce({
+        data: [{ attachment_id: 's1', bucket_id: 'teamchat', object_key: 'org/kanal/s1' }],
+        error: null,
+        status: 200,
+      })
+      .mockResolvedValue({ data: null, error: null, status: 204 });
+    upload.mockResolvedValue({ data: {}, error: null });
+  }
+
+  it('leert die Aufnahme, nimmt den Typ ohne Codec und meldet die Dauer in ganzen Sekunden', async () => {
+    vorbereitetUndBestaetigt();
+    const aufnahme = new Blob(
+      [webmAusChromium({ bild: false, ton: true, datum: true }) as BlobPart],
+      {
+        type: 'audio/webm;codecs=opus',
+      },
+    );
+    const anhang = await ladeAnhangHoch('kanal', aufnahme, 'Sprachnachricht 18.10., 19:34', 41.6);
+    expect(rpc).toHaveBeenCalledWith(
+      'prepare_team_attachment_upload',
+      expect.objectContaining({ p_mime_type: 'audio/webm', p_duration_seconds: 42 }),
+    );
+    const hochgeladen = upload.mock.calls[0]![1] as Blob;
+    expect(hochgeladen.type).toBe('audio/webm');
+    // Programm und Datum sind fort (wie beim Video, Punkt 64).
+    const bytes = new Uint8Array(await hochgeladen.arrayBuffer());
+    expect(enthaelt(bytes, 'Chrome')).toBe(false);
+    expect(anhang).toMatchObject({ mime_type: 'audio/webm', duration_seconds: 42 });
+  });
+
+  it('nimmt Ton ohne Dauer nicht an - etwa aus dem Dateiwähler (Punkt 82)', async () => {
+    vorbereitetUndBestaetigt();
+    const datei = new Blob([webmAusChromium({ bild: false, ton: true }) as BlobPart], {
+      type: 'audio/webm',
+    });
+    const fehler = await fehlerVon(() => ladeAnhangHoch('kanal', datei, 'Mitschnitt.webm'));
+    expect(fehler.netz).toBe(false);
+    expect(fehler.message).toMatch(/^Dieses Format wird nicht angenommen/);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it('sendet keine Aufnahme mit Bildspur und sagt, was zu tun ist', async () => {
+    vorbereitetUndBestaetigt();
+    const aufnahme = new Blob([webmAusChromium({ ton: true }) as BlobPart], { type: 'audio/webm' });
+    const fehler = await fehlerVon(() => ladeAnhangHoch('kanal', aufnahme, 'Sprachnachricht', 12));
+    expect(fehler.netz).toBe(false);
+    expect(fehler.message).toBe(FALSCHE_AUFNAHME);
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

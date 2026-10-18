@@ -2,13 +2,14 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { KONTEN, anmelden } from './helpers';
 
 /**
- * Teamchat (TEAM-001 bis TEAM-003) gegen den echten Stack - mehrere Konten,
+ * Teamchat (TEAM-001 bis TEAM-004) gegen den echten Stack - mehrere Konten,
  * bei 375 px mit gezählten Tipps, dazu der Rechner bei 1280 px.
  *
  * Gezählt werden Tipps ohne getippten Text, gegen die Budgets der Spec
  * (Referenzabgleich Slack: Senden 2, Antworten 2, Erwähnen +2, Direktnachricht
  * 3, Treffer öffnen 2, Reagieren 2, Foto oder PDF senden 4 und die Auswahl im
- * Dateiwähler, Foto mit der Kamera der App 6). Ausgangslage ist jeweils der Teamchat
+ * Dateiwähler, Foto mit der Kamera der App 6, Sprachnachricht senden 4 und
+ * anhören 2). Ausgangslage ist jeweils der Teamchat
  * (`/team`). Wer was liest, prüfen `supabase/tests/teamchat*.test.ts` am
  * Server; hier der Weg in der Oberfläche, Zustellung im Funkloch und die
  * Entwürfe beim Kontowechsel.
@@ -16,8 +17,9 @@ import { KONTEN, anmelden } from './helpers';
 // Zwei Anmeldungen je Ablauf brauchen mehr als die üblichen 30 Sekunden.
 test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
-// Die künstliche Kamera von Chromium für „Foto aufnehmen“ (TEAM-003, wie
-// `radflotte.spec.ts`); die übrigen Abläufe berührt sie nicht.
+// Die künstliche Kamera und das künstliche Mikrofon von Chromium für „Foto
+// aufnehmen“ (TEAM-003, wie `radflotte.spec.ts`) und die Sprachnachricht
+// (TEAM-004); die übrigen Abläufe berührt das nicht.
 const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
 test.use({
   launchOptions: {
@@ -121,6 +123,35 @@ function gespraeche(page: Page): Locator {
 /** Die Anhänge im Entwurf - in der Eingabe, nicht in einer Nachricht. */
 function entwurfsanhaenge(page: Page): Locator {
   return page.locator('form').getByRole('list', { name: 'Anhänge', exact: true });
+}
+
+type MitSpuren = Window & { mikrofonspuren?: MediaStreamTrack[] };
+
+/**
+ * Merkt sich jede Spur, die die Seite vom Mikrofon bekommt: Nach „Fertig“,
+ * „Verwerfen“ und dem Verlassen muss jede beendet sein - erst dann erlischt
+ * das Zeichen des Browsers (ADR-017 Punkt 83, Zweitreview TEAM-004a).
+ */
+async function spurenMerken(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const spuren: MediaStreamTrack[] = [];
+    (window as MitSpuren).mikrofonspuren = spuren;
+    const geraete = navigator.mediaDevices;
+    const original = geraete.getUserMedia.bind(geraete);
+    geraete.getUserMedia = async (vorgaben) => {
+      const strom = await original(vorgaben);
+      spuren.push(...strom.getTracks());
+      return strom;
+    };
+  });
+}
+
+/** Wie viele Spuren die Seite bekam und wie viele davon noch laufen. */
+function spuren(page: Page): Promise<{ bekommen: number; laufen: number }> {
+  return page.evaluate(() => {
+    const alle = (window as MitSpuren).mikrofonspuren ?? [];
+    return { bekommen: alle.length, laufen: alle.filter((s) => s.readyState !== 'ended').length };
+  });
 }
 
 async function ohneQuerrollen(page: Page): Promise<void> {
@@ -653,4 +684,117 @@ test('antwortet im Thread nur mit einer Datei; die Liste sagt „Anhang“ (ANN-
       .filter({ hasText: 'Anna Beispiel' })
       .first(),
   ).toBeVisible();
+});
+
+test('nimmt eine Sprachnachricht auf und sendet sie in vier Tipps (TEAM-004)', async ({ page }) => {
+  await spurenMerken(page);
+  await zumTeamchat(page, KONTEN.therapist);
+  const z = zaehler();
+  await z.tippe(gespraeche(page).getByRole('link', { name: `# ${KANAL}` }));
+  await z.tippe(page.getByRole('button', { name: 'Sprachnachricht aufnehmen' }));
+  const laeuft = page
+    .locator('form')
+    .getByRole('status')
+    .filter({ hasText: /^Aufnahme / });
+  await expect(laeuft).toBeVisible({ timeout: 20_000 });
+  // Der Hinweis aus Punkt 85 steht da, solange aufgenommen wird.
+  await expect(
+    page.getByText(
+      'Höchstens zwei Minuten. Keine Gespräche mit Patient:innen und keine Befunde – die gehören in die Akte.',
+    ),
+  ).toBeVisible();
+  await expect(laeuft).toHaveText(/Aufnahme 0:0[2-9]/, { timeout: 15_000 });
+  const fertig = page.getByRole('button', { name: 'Fertig', exact: true });
+  await expect(fertig).toBeInViewport();
+  await z.tippe(fertig);
+
+  // Die Sprachnachricht heißt nach Tag und Uhrzeit und lädt, während
+  // geschrieben wird - das Mikrofon ist danach aus.
+  const entwurf = entwurfsanhaenge(page);
+  await expect(entwurf.getByText(/^Sprachnachricht \d\d\.\d\d\., \d\d:\d\d$/)).toBeVisible();
+  await expect(entwurf.getByText('Lädt', { exact: true })).toHaveCount(0, { timeout: 20_000 });
+  await expect(entwurf.getByText(/^0:0[2-9] · /)).toBeVisible();
+  expect(await spuren(page)).toEqual({ bekommen: 1, laufen: 0 });
+
+  await page
+    .getByRole('textbox', { name: `Nachricht an # ${KANAL}` })
+    .fill(`Kurz zur Tour ${LAUF}`);
+  await z.tippe(page.getByRole('button', { name: 'Senden', exact: true }));
+  const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Kurz zur Tour ${LAUF}` });
+  await expect(
+    nachricht
+      .getByRole('list', { name: 'Anhänge', exact: true })
+      .getByRole('button', { name: /^Sprachnachricht .*, \d\d:\d\d 0:0[2-9] · / }),
+  ).toBeVisible();
+  expect(z.tipps).toBeLessThanOrEqual(4);
+  await ohneQuerrollen(page);
+});
+
+test('spielt eine Sprachnachricht in zwei Tipps ab, ohne Herunterladen (TEAM-004)', async ({
+  page,
+}) => {
+  await zumTeamchat(page, KONTEN.office);
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  const z = zaehler();
+  const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Kurz zur Tour ${LAUF}` });
+  await z.tippe(nachricht.getByRole('button', { name: /^Sprachnachricht / }));
+  const fenster = page.getByRole('dialog', { name: /^Sprachnachricht / });
+  const ton = fenster.locator('audio');
+  await expect(ton).toBeVisible({ timeout: 15_000 });
+  await expect(ton).toHaveAttribute('controlslist', 'nodownload noremoteplayback');
+  await expect(ton).not.toHaveAttribute('autoplay');
+  // Der Browser liest die Aufnahme, und sie spielt erst auf den Tipp.
+  await expect
+    .poll(() => ton.evaluate((el: HTMLAudioElement) => el.readyState), { timeout: 15_000 })
+    .toBeGreaterThanOrEqual(1);
+  expect(await ton.evaluate((el: HTMLAudioElement) => [el.paused, el.error])).toEqual([true, null]);
+  // Der Knopf zum Abspielen steht vorn im Element des Browsers.
+  const flaeche = (await ton.boundingBox())!;
+  z.zaehle();
+  await ton.click({ position: { x: 24, y: flaeche.height / 2 } });
+  await expect
+    .poll(() => ton.evaluate((el: HTMLAudioElement) => !el.paused || el.ended))
+    .toBe(true);
+  await expect(fenster.getByRole('button', { name: /Herunterladen/ })).toHaveCount(0);
+  await expect(fenster.getByText(/spielt die Sprachnachricht nicht ab/)).toHaveCount(0);
+  expect(z.tipps).toBeLessThanOrEqual(2);
+});
+
+test('verwirft nach Rückfrage und lässt beim Verlassen kein Mikrofon offen (TEAM-004)', async ({
+  page,
+}) => {
+  await spurenMerken(page);
+  await zumTeamchat(page, KONTEN.therapist, RECHNER);
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  const aufnehmen = page.getByRole('button', { name: 'Sprachnachricht aufnehmen' });
+  const laeuft = page
+    .locator('form')
+    .getByRole('status')
+    .filter({ hasText: /^Aufnahme / });
+
+  await aufnehmen.click();
+  await expect(laeuft).toBeVisible({ timeout: 20_000 });
+  await page.getByRole('button', { name: 'Verwerfen', exact: true }).click();
+  await page.getByRole('button', { name: 'Ja, verwerfen' }).click();
+  await expect(laeuft).toHaveCount(0);
+  await expect(entwurfsanhaenge(page)).toHaveCount(0);
+  expect(await spuren(page)).toEqual({ bekommen: 1, laufen: 0 });
+
+  // Wer während der Aufnahme weitergeht, nimmt nichts mit.
+  await aufnehmen.click();
+  await expect(laeuft).toBeVisible({ timeout: 20_000 });
+  await gespraeche(page)
+    .getByRole('link', { name: /^Threads/ })
+    .click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Threads' })).toBeVisible();
+  await expect.poll(() => spuren(page)).toEqual({ bekommen: 2, laufen: 0 });
+  await gespraeche(page)
+    .getByRole('link', { name: `# ${KANAL}` })
+    .click();
+  await expect(page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` })).toBeVisible();
+  await expect(entwurfsanhaenge(page)).toHaveCount(0);
 });

@@ -23,6 +23,7 @@ describe('Video am Server (KOM-006)', () => {
     for (const [daten, typ] of [
       [webmAusChromium(), 'video/webm'],
       [webmAusChromium({ datum: true, tags: true }), 'video/webm'],
+      [webmAusChromium({ cluster: 2 }), 'video/webm'],
       [mp4AusSafari(), 'video/mp4'],
       [mp4AusSafari({ udta: true }), 'video/mp4'],
     ] as const) {
@@ -95,6 +96,8 @@ describe('Sprachnachricht am Server (TEAM-004, ADR-017 Punkt 84)', () => {
     for (const [daten, typ] of [
       [webmAusChromium({ bild: false, ton: true }), 'audio/webm'],
       [webmAusChromium({ bild: false, ton: true, datum: true, tags: true }), 'audio/webm'],
+      // Mehrere Cluster unbekannter Länge, wie mit Zeitscheibe aufgenommen.
+      [webmAusChromium({ bild: false, ton: true, cluster: 3 }), 'audio/webm'],
       [mp4AusSafari({ bild: false, ton: true }), 'audio/mp4'],
       [mp4AusSafari({ bild: false, ton: true, udta: true }), 'audio/mp4'],
     ] as const) {

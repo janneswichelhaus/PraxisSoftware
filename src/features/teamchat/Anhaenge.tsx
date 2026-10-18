@@ -10,11 +10,13 @@ import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Medienbild } from '@/components/ui/Medienbild';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
+import { aufnahmedauer } from '@/features/documentation/aufnahme';
 import { PdfRahmen } from '@/features/files/Dateiansicht';
 import { NICHT_SERVERSEITIG_GEPRUEFT, formatBytes } from '@/features/files/dokumentarten';
 import { DATEIEN_HOECHSTENS, dateienKey, fetchDateien, ladeAnhang, type Anhang } from './api';
 import { anhangArt, anhangEntfernen, anhangErneut, type Entwurfsanhang } from './entwurfsanhaenge';
-import { Bildzeichen, Dokument, Kreuz } from './Zeichen';
+import { dauerSekunden } from './sprachnachricht';
+import { Bildzeichen, Dokument, Kreuz, Mikrofon } from './Zeichen';
 import { nachrichtenzeit } from './zeit';
 
 /** So viele Dateien zeigen die Details zuerst; der Rest auf Wunsch. */
@@ -40,19 +42,42 @@ function Artkachel({
       src={vorschau ?? null}
       alt={vorschau ? name : ''}
       platzhalter={anhangArt(mime)}
-      zeichen={mime === 'application/pdf' ? <Dokument /> : <Bildzeichen />}
+      zeichen={
+        mime === 'application/pdf' ? (
+          <Dokument />
+        ) : mime.startsWith('audio/') ? (
+          <Mikrofon />
+        ) : (
+          <Bildzeichen />
+        )
+      }
     />
   );
 }
 
-/** Art und Größe - und ob am Server geprüft (ADR-017 Punkt 51), sichtbar an der Datei. */
-function angaben(anhang: { mime_type: string; byte_size: number; verified: boolean }): string {
-  return `${anhangArt(anhang.mime_type)} · ${formatBytes(anhang.byte_size)}${
+/**
+ * Art und Größe - bei einer Sprachnachricht die Dauer statt der Art (TEAM-004,
+ * ADR-017 Punkt 86): Das Wort steht schon im Namen („Sprachnachricht …“), und
+ * am Telefon bräche die Zeile sonst dreimal um.
+ */
+function artUndGroesse(mime: string, groesse: number, dauerS?: number | null): string {
+  if (mime.startsWith('audio/') && typeof dauerS === 'number') {
+    return `${aufnahmedauer(dauerSekunden(dauerS))} · ${formatBytes(groesse)}`;
+  }
+  return `${anhangArt(mime)} · ${formatBytes(groesse)}`;
+}
+
+/** Dazu, ob am Server geprüft (ADR-017 Punkt 51) - sichtbar an der Datei. */
+function angaben(anhang: Offen): string {
+  return `${artUndGroesse(anhang.mime_type, anhang.byte_size, anhang.duration_seconds)}${
     anhang.verified ? '' : ` · ${NICHT_SERVERSEITIG_GEPRUEFT}`
   }`;
 }
 
-type Offen = Pick<Anhang, 'id' | 'name' | 'mime_type' | 'byte_size' | 'verified'>;
+type Offen = Pick<
+  Anhang,
+  'id' | 'name' | 'mime_type' | 'byte_size' | 'verified' | 'duration_seconds'
+>;
 
 /** Ein PDF, das dieses Gerät nicht in der Seite zeigen kann (Chrome unter Android). */
 function pdfOhneBetrachter(anhang: Offen): boolean {
@@ -62,6 +87,20 @@ function pdfOhneBetrachter(anhang: Offen): boolean {
     navigator.pdfViewerEnabled === false
   );
 }
+
+/**
+ * Eine Sprachnachricht, deren Format dieses Gerät sicher nicht abspielt -
+ * etwa WebM auf einem iPhone vor iOS 17.4 (ADR-017 Punkt 86). Nur ein klares
+ * Nein zählt; „vielleicht“ versucht es, und scheitert es, sagt `Ton` es.
+ */
+function tonOhneWiedergabe(anhang: Offen): boolean {
+  if (!anhang.mime_type.startsWith('audio/') || typeof document === 'undefined') return false;
+  return document.createElement('audio').canPlayType(anhang.mime_type) === '';
+}
+
+/** Was steht, wenn dieses Gerät eine Sprachnachricht nicht abspielt. */
+export const KEINE_WIEDERGABE =
+  'Dieses Gerät spielt die Sprachnachricht nicht ab – bitte am Rechner anhören.';
 
 /**
  * Öffnet Anhänge: Ein Tipp holt die einmalige Freigabe (ADR-017 Punkt 15) und
@@ -76,8 +115,8 @@ function useAnhangOeffnen() {
     laden,
     oeffnen: (anhang: Offen) => {
       setOffen(anhang);
-      // Ohne Betrachter keine Freigabe: Sie bliebe ungenutzt liegen.
-      if (!pdfOhneBetrachter(anhang)) laden.mutate(anhang);
+      // Ohne Betrachter oder Wiedergabe keine Freigabe: Sie bliebe ungenutzt liegen.
+      if (!pdfOhneBetrachter(anhang) && !tonOhneWiedergabe(anhang)) laden.mutate(anhang);
     },
     schliessen: () => {
       setOffen(null);
@@ -104,6 +143,71 @@ function Bild({ datei, name }: { datei: Blob; name: string }) {
 }
 
 /**
+ * Eine Sprachnachricht aus den geladenen Bytes (ADR-017 Punkt 86): das
+ * Medienelement des Browsers, ohne Herunterladen und ohne Abspielen auf
+ * einem anderen Gerät, wie die Videos der Plattform. Es spielt erst auf
+ * Tipp - kein Ton, mit dem niemand rechnet. Kann das Gerät das Format doch
+ * nicht, steht der Satz statt des Elements.
+ */
+function Ton({ datei, name }: { datei: Blob; name: string }) {
+  const [adresse, setAdresse] = useState<string | null>(null);
+  const [gescheitert, setGescheitert] = useState(false);
+  useEffect(() => {
+    const neu = URL.createObjectURL(datei);
+    setAdresse(neu);
+    return () => URL.revokeObjectURL(neu);
+  }, [datei]);
+  if (gescheitert) return <Statusmeldung>{KEINE_WIEDERGABE}</Statusmeldung>;
+  return adresse ? (
+    <audio
+      src={adresse}
+      controls
+      preload="metadata"
+      controlsList="nodownload noremoteplayback"
+      aria-label={name}
+      className="block w-full"
+      onError={() => setGescheitert(true)}
+    />
+  ) : null;
+}
+
+/**
+ * Eine Sprachnachricht im Fenster: am Telefon unten im Daumenbereich, am
+ * Rechner in der Mitte - klein, denn es gibt nichts zu sehen.
+ */
+function TonFenster({
+  anhang,
+  laden,
+  onSchliessen,
+}: {
+  anhang: Offen;
+  laden: ReturnType<typeof useAnhangOeffnen>['laden'];
+  onSchliessen: () => void;
+}) {
+  return (
+    <Dialogfenster titel={anhang.name} onSchliessen={onSchliessen}>
+      <p className="text-ink-muted text-sm">{angaben(anhang)}</p>
+      <div className="mt-4">
+        {tonOhneWiedergabe(anhang) ? (
+          <Statusmeldung>{KEINE_WIEDERGABE}</Statusmeldung>
+        ) : laden.isPending ? (
+          <Statusmeldung>Wird geöffnet …</Statusmeldung>
+        ) : laden.isError ? (
+          <Statusmeldung ton="fehler">{laden.error.message}</Statusmeldung>
+        ) : laden.data ? (
+          <Ton datei={laden.data} name={anhang.name} />
+        ) : null}
+      </div>
+      <Formularfuss>
+        <Button type="button" variant="secondary" data-autofocus onClick={onSchliessen}>
+          Schließen
+        </Button>
+      </Formularfuss>
+    </Dialogfenster>
+  );
+}
+
+/**
  * Ein Anhang im Fenster (TEAM-003, ADR-017 Punkt 77): am Telefon über den
  * ganzen Bildschirm, damit Bild oder PDF ganz zu sehen sind und „Schließen“
  * im Daumenbereich steht; am Rechner groß in der Mitte. Ein PDF im Rahmen
@@ -120,6 +224,9 @@ function AnhangFenster({
   laden: ReturnType<typeof useAnhangOeffnen>['laden'];
   onSchliessen: () => void;
 }) {
+  if (anhang.mime_type.startsWith('audio/')) {
+    return <TonFenster anhang={anhang} laden={laden} onSchliessen={onSchliessen} />;
+  }
   const pdf = anhang.mime_type === 'application/pdf';
   const ohneBetrachter = pdfOhneBetrachter(anhang);
   return (
@@ -218,7 +325,7 @@ export function EntwurfsAnhaenge({ anhaenge }: { anhaenge: readonly Entwurfsanha
               dicht
               bild={<Artkachel mime={a.mime} vorschau={a.vorschau} name={a.name} />}
               titel={a.name}
-              meta={`${anhangArt(a.mime)} · ${formatBytes(a.groesse)}`}
+              meta={artUndGroesse(a.mime, a.groesse, a.dauer)}
               status={
                 a.zustand === 'laedt' ? (
                   <Badge eigenesZeichen={STATUSZEICHEN.wartet}>Lädt</Badge>
@@ -298,6 +405,7 @@ export function DateienDesGespraechs({ kanalId, zeitzone }: { kanalId: string; z
                   mime_type: datei.mime_type,
                   byte_size: datei.byte_size,
                   verified: datei.verified,
+                  duration_seconds: datei.duration_seconds,
                 };
                 return (
                   <ListRow

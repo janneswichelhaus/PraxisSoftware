@@ -154,8 +154,12 @@ function bereinigeWebm(bytes: Uint8Array): Spuren {
         let innen = e.daten;
         while (innen < bis) {
           const kind = element(bytes, innen);
-          if (!kind || kind.ende === null) return false;
+          if (!kind) return false;
+          // Das nächste Element der Segmentebene beendet den Cluster - auch
+          // ein weiterer Cluster unbekannter Länge, wie ihn `MediaRecorder`
+          // mit Zeitscheibe schreibt (TEAM-004).
           if (SEGMENTEBENE.has(kind.id)) break;
+          if (kind.ende === null) return false;
           innen = kind.ende;
         }
         pos = innen;

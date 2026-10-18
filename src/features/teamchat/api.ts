@@ -1,9 +1,15 @@
 import { z } from 'zod';
-import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from '@/features/files/dokumentarten';
+import {
+  MAX_BYTES,
+  dateiAblehnungsgrund,
+  dateiInhaltAblehnungsgrund,
+} from '@/features/files/dokumentarten';
 import { nachSrgb } from '@/features/files/farbe';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
+import { bereinigeTon, tontyp } from '@/features/platform/videometadaten';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { dauerSekunden } from './sprachnachricht';
 
 /**
  * Teamchat (TEAM-001, TEAM-002, PROJECT_PRINCIPLES.md §10 „Intern“) über die
@@ -81,7 +87,8 @@ export type Reaktion = z.infer<typeof reaktionSchema>;
 
 /**
  * Ein Anhang an einer Nachricht (TEAM-003, ADR-017 Abschnitt M): Kennung,
- * Name, Art und Größe - ohne Objektschlüssel und ohne Vorschau (Punkt 77).
+ * Name, Art und Größe - ohne Objektschlüssel und ohne Vorschau (Punkt 77);
+ * eine Sprachnachricht mit ihrer Dauer (TEAM-004, Punkt 86).
  */
 const anhangSchema = z.object({
   id: z.string(),
@@ -90,6 +97,8 @@ const anhangSchema = z.object({
   byte_size: z.number(),
   /** Am Server geprüft (ADR-017 Punkt 51) - sonst „nicht serverseitig geprüft“. */
   verified: z.boolean(),
+  /** Ganze Sekunden, nur bei einer Sprachnachricht (ANN-655). */
+  duration_seconds: z.number().nullable().default(null),
 });
 export type Anhang = z.infer<typeof anhangSchema>;
 
@@ -601,6 +610,10 @@ function speicherfehler(fehler: unknown): TeamchatFehler {
 export const FALSCHE_DATEI =
   'Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.';
 
+/** Eine Aufnahme, die nicht reiner Ton ist (Punkt 84). */
+export const FALSCHE_AUFNAHME =
+  'Diese Aufnahme lässt sich nicht senden. Bitte entfernen und neu aufnehmen.';
+
 /**
  * Einen Anhang hochladen - bevor die Nachricht hinausgeht (ADR-017 Punkte 7
  * und 74): Format und Inhalt prüfen, Farbe nach sRGB, Metadaten eines Fotos
@@ -610,13 +623,34 @@ export const FALSCHE_DATEI =
  * Fehler heißt: ein neuer Versuch kann gelingen - ein falsches Format nicht.
  * Die Bytes liegen bis dahin nur im Arbeitsspeicher; ohne Netz gibt es keinen
  * Anhang (Punkt 33).
+ *
+ * Eine Sprachnachricht (TEAM-004) kommt nur aus der Aufnahme der App, mit
+ * ihrer Dauer (`dauerS`): Programm- und Zeitangaben werden geleert, und nur
+ * reiner Ton geht hinaus (Punkt 84). Ton ohne Dauer - etwa aus dem
+ * Dateiwähler - nimmt die Formprüfung wie jedes fremde Format nicht an.
  */
-export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string): Promise<Anhang> {
-  const grund = dateiAblehnungsgrund(datei);
-  if (grund) throw new TeamchatFehler(grund, false);
-  // Im Teamchat ohne Formatnamen: was zu tun ist (Praxis-Review TEAM-003).
-  if (await dateiInhaltAblehnungsgrund(datei)) throw new TeamchatFehler(FALSCHE_DATEI, false);
-  const sauber = await bereinigeBild(await nachSrgb(datei));
+export async function ladeAnhangHoch(
+  kanalId: string,
+  datei: Blob,
+  name: string,
+  dauerS?: number,
+): Promise<Anhang> {
+  const dauer = dauerS !== undefined && tontyp(datei.type) !== null ? dauerSekunden(dauerS) : null;
+  let sauber: Blob;
+  if (dauer !== null) {
+    const ergebnis = await bereinigeTon(datei);
+    if (!ergebnis.ok) throw new TeamchatFehler(FALSCHE_AUFNAHME, false);
+    if (ergebnis.ton.size > MAX_BYTES) {
+      throw new TeamchatFehler('Die Sprachnachricht ist zu groß. Bitte kürzer aufnehmen.', false);
+    }
+    sauber = ergebnis.ton;
+  } else {
+    const grund = dateiAblehnungsgrund(datei);
+    if (grund) throw new TeamchatFehler(grund, false);
+    // Im Teamchat ohne Formatnamen: was zu tun ist (Praxis-Review TEAM-003).
+    if (await dateiInhaltAblehnungsgrund(datei)) throw new TeamchatFehler(FALSCHE_DATEI, false);
+    sauber = await bereinigeBild(await nachSrgb(datei));
+  }
   const summe = await pruefsumme(sauber);
 
   const ersatz = 'Der Anhang konnte nicht angenommen werden.';
@@ -630,6 +664,7 @@ export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string)
         p_byte_size: sauber.size,
         p_checksum_sha256: summe,
         p_name: name,
+        p_duration_seconds: dauer,
       },
       ersatz,
     );
@@ -683,6 +718,7 @@ export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string)
     mime_type: sauber.type,
     byte_size: sauber.size,
     verified: pruefung === 'passed' || pruefung === 'already_verified',
+    duration_seconds: dauer,
   };
 }
 
@@ -758,6 +794,8 @@ const dateiSchema = z.object({
   created_at: z.string(),
   author_name: z.string().nullable(),
   verified: z.boolean(),
+  /** Ganze Sekunden, nur bei einer Sprachnachricht (TEAM-004). */
+  duration_seconds: z.number().nullable().default(null),
 });
 export type Datei = z.infer<typeof dateiSchema>;
 
