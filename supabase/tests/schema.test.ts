@@ -209,6 +209,13 @@ describe('Schema-Invarianten', () => {
       'staff_feedback',
       'staff_feedback_participations',
       'staff_feedback_blocks',
+      // TEAM-002: der eigene Stand an einem Thread, Reaktionen, Angeheftetes,
+      // „Für später“ und Einstellungen je Gespräch.
+      'team_thread_states',
+      'team_message_reactions',
+      'team_message_pins',
+      'team_saved_messages',
+      'team_channel_settings',
       'team_channels',
       'team_channel_members',
       'team_messages',

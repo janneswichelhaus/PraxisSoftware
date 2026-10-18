@@ -170,7 +170,7 @@ export async function fetchNachrichten(
 ): Promise<Nachricht[]> {
   const data = await rufe(
     'list_team_messages',
-    { p_channel: kanalId, p_parent: threadId, p_before: vor },
+    { p_channel: kanalId, p_parent: threadId, p_before_at: vor },
     LADEN_NACHRICHTEN,
   );
   return antwort(z.array(nachrichtSchema), data, LADEN_NACHRICHTEN);
