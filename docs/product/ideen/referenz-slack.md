@@ -36,7 +36,7 @@ Entscheidung, die ihn aufheben würde.
 | Später senden | planen, ändern, abbrechen (S) | nein | ja, 1 min bis 30 Tage | – |
 | Ungelesen | fett, Zahl bei DM/Erwähnung, Linie (S) | teils | + gelesen bis Gezeigtes, ab hier ungelesen, Sprung | Lesebestätigung nie (ANN-609, ADR-024 P. 12) |
 | Ungelesen-Sammelansicht | „Aufholen“ (S) | nein | nein | ADR-014; Liste mit Ungelesenem oben und „Alle gelesen“ genügt |
-| Suche | Operatoren in/from/during (S) | Wort, 30 Treffer | + Gespräch, Person, Zeitraum; Treffer im Zusammenhang | Dateien-Suche entfällt mit den Dateien |
+| Suche | Operatoren in/from/during (S) | Wort, 30 Treffer | + Gespräch, Person nur mit Wort, Zeitraum; Treffer an der Stelle | Person ohne Wort nein (§20, ANN-651); Dateien-Suche entfällt mit den Dateien |
 | Für später, Erinnerung | privat, Erinnerung (S) | nein (ANN-614) | ja, Erinnerung in der App | Push nein (ADR-024 P. 12) |
 | Anheften | 100 je Kanal (S) | nein | ja, 50 | – |
 | Lesezeichen/Reiter | je Gespräch (S) | nein | nein | ADR-014; Anheften und Beschreibung genügen |

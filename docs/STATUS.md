@@ -13,10 +13,9 @@ BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Lade
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
 Büro ohne Kilometer und Betrag; ANN-615 bis ANN-617); Wochenplan mit einem Knopf, alle oder keiner.
 
-Überholung 11 Teamchat (17.10., Branch `claude/modest-turing-i5qgn9`): Kanäle, Direktnachrichten,
-Threads, Erwähnungen, Suche, aufgebaut wie Slack (Für dich, Threads), eigener Lesestand ohne Lesebestätigung; Löschung je Nachricht nach 12
-Monaten (ADR-008 Fassung 5); keine Startkanäle, Nachrichten der Radflotte in der Radflotte; Migration
-`20261204100000`; ANN-609 bis ANN-614. Davor gemergt: Organisation (#267).
+Teamchat wie Slack (18.10., Branch `claude/epic-cerf-vq8hz1`, TEAM-002 auf TEAM-001): Gespräche links,
+Gespräch und Thread daneben, mobil nacheinander; private Kanäle, Gruppen, Reaktionen, Anheften, Für
+später, Planen, Lesestand je Thread, Zustellung ohne Doppel; Migration `20261210100000`; ANN-640 bis 651.
 
 Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
 und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
