@@ -17,8 +17,12 @@ vi.mock('./api', async (importOriginal) => ({
 
 const { TeamchatFehler } = await import('./api');
 const {
-  anhaengeAbgeben,
+  anhaengeBinden,
+  anhaengeDerNachricht,
   anhaengeLeeren,
+  anhaengeZurueck,
+  gebundeneFreigeben,
+  gebundeneVerwerfen,
   anhaengeVon,
   anhaengeWiederholen,
   anhaengen,
@@ -29,7 +33,7 @@ const {
   aufnahmeName,
   VON_SELBST_HOECHSTENS,
 } = await import('./entwurfsanhaenge');
-const { WIEDERHOLEN_MS } = await import('./ausgang');
+const { WIEDERHOLEN_MS } = await import('./takt');
 
 const datei = (name: string, typ = 'application/pdf') => ({
   datei: new Blob(['x'], { type: typ }),
@@ -77,17 +81,54 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     expect(anhaengen('anna', 'k1', null, [datei('8.pdf')])).toBe(1);
   });
 
-  it('gibt nur fertige Anhänge ab und leert den Entwurf ohne zu verwerfen', async () => {
+  it('bindet die Anhänge an die Nachricht - auch ladende - und leert den Entwurf (ANN-654)', async () => {
+    let spaet: (wert: unknown) => void = () => undefined;
+    ladeAnhangHoch
+      .mockImplementationOnce((_k: string, _d: Blob, name: string) => Promise.resolve(fertig(name)))
+      .mockReturnValueOnce(new Promise((aufloesen) => (spaet = aufloesen)));
     anhaengen('anna', 'k1', null, [datei('a.pdf'), datei('b.pdf')]);
+    expect(anhaengeBinden('anna', 'k1', null, 'nachricht-1')).toBe(2);
+    expect(anhaengeVon('anna', 'k1', null)).toEqual([]);
+    // Der Entwurf ist frei - fünf neue gehen wieder.
+    expect(
+      anhaengen(
+        'anna',
+        'k1',
+        null,
+        [1, 2, 3, 4, 5].map((n) => datei(`${n}.pdf`)),
+      ),
+    ).toBe(0);
+    // Gebundene laden an der Nachricht weiter.
+    spaet(fertig('b.pdf'));
     await vi.waitFor(() =>
-      expect(anhaengeVon('anna', 'k1', null).every((a) => a.zustand === 'bereit')).toBe(true),
+      expect(anhaengeDerNachricht('nachricht-1').map((a) => a.zustand)).toEqual([
+        'bereit',
+        'bereit',
+      ]),
     );
-    expect(anhaengeAbgeben('anna', 'k1', null).map((a) => a.id)).toEqual([
+    expect(anhaengeDerNachricht('nachricht-1').map((a) => a.anhang?.id)).toEqual([
       'server-a.pdf',
       'server-b.pdf',
     ]);
-    expect(anhaengeVon('anna', 'k1', null)).toEqual([]);
+    // Nach der Annahme durch den Server verlassen sie den Speicher, ohne verworfen zu werden.
+    gebundeneFreigeben('nachricht-1');
+    expect(anhaengeDerNachricht('nachricht-1')).toEqual([]);
     expect(verwirfAnhang).not.toHaveBeenCalled();
+  });
+
+  it('holt Anhänge mit „Bearbeiten“ zurück und verwirft sie mit der Nachricht (ANN-654)', async () => {
+    anhaengen('anna', 'k1', 't1', [datei('a.pdf')]);
+    await vi.waitFor(() => expect(anhaengeVon('anna', 'k1', 't1')[0]?.zustand).toBe('bereit'));
+    anhaengeBinden('anna', 'k1', 't1', 'nachricht-2');
+    anhaengeZurueck('nachricht-2');
+    expect(anhaengeVon('anna', 'k1', 't1').map((a) => a.name)).toEqual(['a.pdf']);
+    expect(anhaengeDerNachricht('nachricht-2')).toEqual([]);
+
+    anhaengeBinden('anna', 'k1', 't1', 'nachricht-3');
+    gebundeneVerwerfen('nachricht-3');
+    expect(anhaengeDerNachricht('nachricht-3')).toEqual([]);
+    expect(anhaengeVon('anna', 'k1', 't1')).toEqual([]);
+    expect(verwirfAnhang).toHaveBeenCalledWith('server-a.pdf');
   });
 
   it('verwirft am Server, was entfernt wird - auch wenn das Hochladen erst danach fertig ist', async () => {

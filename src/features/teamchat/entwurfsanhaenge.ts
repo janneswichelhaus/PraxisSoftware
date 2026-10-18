@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { ANHAENGE_MAX, TeamchatFehler, ladeAnhangHoch, verwirfAnhang, type Anhang } from './api';
-import { WIEDERHOLEN_MS } from './ausgang';
+import { WIEDERHOLEN_MS } from './takt';
 
 /**
  * Anhänge im Entwurf (TEAM-003, ADR-017 Punkt 74): je Konto, Gespräch und
@@ -18,6 +18,11 @@ import { WIEDERHOLEN_MS } from './ausgang';
  *
  * Eine Sprachnachricht (TEAM-004, ADR-017 Abschnitt N) ist ein Anhang wie ein
  * Foto, nur mit ihrer Dauer aus der Aufnahme.
+ *
+ * Gesendet wird auch, während Anhänge noch laden (TEAM-005, ANN-654): Dann
+ * hängen sie an der Nachricht im Ausgang statt am Entwurf (`nachrichtId`),
+ * laden und wiederholen sich dort weiter und bleiben an ihr, bis der Server
+ * sie angenommen hat - „Bearbeiten“ holt sie zurück in den Entwurf.
  */
 
 export type Anhangszustand = 'laedt' | 'bereit' | 'fehler';
@@ -43,6 +48,8 @@ export interface Entwurfsanhang {
   vonSelbst: number;
   /** Was der Server angenommen hat - erst dann kann die Nachricht hinaus. */
   anhang: Anhang | null;
+  /** Die Nachricht im Ausgang, an der der Anhang hängt - `null` im Entwurf (ANN-654). */
+  nachrichtId: string | null;
 }
 
 const speicher = new Map<string, Entwurfsanhang>();
@@ -115,7 +122,12 @@ export function anhaengeWiederholen(neu = true): void {
 }
 
 function gehoertZu(a: Entwurfsanhang, kontoId: string, kanalId: string, threadId: string | null) {
-  return a.kontoId === kontoId && a.kanalId === kanalId && a.threadId === threadId;
+  return (
+    a.nachrichtId === null &&
+    a.kontoId === kontoId &&
+    a.kanalId === kanalId &&
+    a.threadId === threadId
+  );
 }
 
 export function anhaengeVon(
@@ -241,6 +253,7 @@ export function anhaengen(
       erneut: false,
       vonSelbst: 0,
       anhang: null,
+      nachrichtId: null,
     });
     dateien.set(lokalId, datei);
     void hochladen(lokalId);
@@ -272,19 +285,55 @@ export function anhangEntfernen(lokalId: string): void {
 }
 
 /**
- * Die fertigen Anhänge gehen mit der Nachricht: Sie verlassen den Entwurf,
- * ohne verworfen zu werden.
+ * Die Anhänge des Entwurfs gehen mit der Nachricht (ANN-654): Sie hängen
+ * fortan an ihr - fertig oder noch beim Hochladen - und der Entwurf ist frei.
  */
-export function anhaengeAbgeben(
+export function anhaengeBinden(
   kontoId: string,
   kanalId: string,
   threadId: string | null,
-): Anhang[] {
-  const fertig = anhaengeVon(kontoId, kanalId, threadId);
-  const anhaenge = fertig.flatMap((a) => (a.anhang ? [a.anhang] : []));
-  for (const eintrag of fertig) freigeben(eintrag);
-  if (fertig.length > 0) melden();
-  return anhaenge;
+  nachrichtId: string,
+): number {
+  const entwurf = anhaengeVon(kontoId, kanalId, threadId);
+  for (const a of entwurf) speicher.set(a.lokalId, { ...a, nachrichtId });
+  if (entwurf.length > 0) melden();
+  return entwurf.length;
+}
+
+/** Die Anhänge einer Nachricht im Ausgang, in der Reihenfolge des Anhängens. */
+export function anhaengeDerNachricht(nachrichtId: string): Entwurfsanhang[] {
+  return [...speicher.values()].filter((a) => a.nachrichtId === nachrichtId);
+}
+
+/** Der Server hat die Nachricht angenommen: Ihre Anhänge verlassen den Speicher. */
+export function gebundeneFreigeben(nachrichtId: string): void {
+  const gebunden = anhaengeDerNachricht(nachrichtId);
+  for (const a of gebunden) freigeben(a);
+  if (gebunden.length > 0) melden();
+}
+
+/** „Bearbeiten“: Die Anhänge kehren in den Entwurf ihrer Stelle zurück. */
+export function anhaengeZurueck(nachrichtId: string): void {
+  const gebunden = anhaengeDerNachricht(nachrichtId);
+  for (const a of gebunden) speicher.set(a.lokalId, { ...a, nachrichtId: null });
+  if (gebunden.length > 0) melden();
+}
+
+/** „Verwerfen“: Die Anhänge fallen mit der Nachricht - am Server mit. */
+export function gebundeneVerwerfen(nachrichtId: string): void {
+  for (const a of anhaengeDerNachricht(nachrichtId)) anhangEntfernen(a.lokalId);
+}
+
+/** „Jetzt versuchen“ an einer Nachricht: Ihre am Netz gescheiterten Anhänge noch einmal. */
+export function gebundeneErneut(nachrichtId: string): void {
+  for (const a of anhaengeDerNachricht(nachrichtId)) {
+    if (wiederholbar(a)) anhangErneut(a.lokalId);
+  }
+}
+
+/** Für den Ausgang: Bescheid bei jeder Änderung an den Anhängen. */
+export function anhaengeBeobachten(rueckruf: () => void): () => void {
+  return abonnieren(rueckruf);
 }
 
 /** Alle Anhänge aller Konten fort - beim Abmelden und Kontowechsel. */

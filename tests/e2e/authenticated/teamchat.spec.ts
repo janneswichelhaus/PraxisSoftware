@@ -798,3 +798,47 @@ test('verwirft nach Rückfrage und lässt beim Verlassen kein Mikrofon offen (TE
   await expect(page.getByRole('textbox', { name: `Nachricht an # ${KANAL}` })).toBeVisible();
   await expect(entwurfsanhaenge(page)).toHaveCount(0);
 });
+
+test('sendet, während ein Foto noch lädt - die Nachricht geht danach mit ihm (TEAM-005)', async ({
+  page,
+}) => {
+  // Ohne Kamera öffnet die Büroklammer gleich den Dateiwähler.
+  await kameraMelden(page, false);
+  await zumTeamchat(page, KONTEN.therapist);
+  const z = zaehler();
+  await z.tippe(gespraeche(page).getByRole('link', { name: `# ${KANAL}` }));
+  // Ein zähes Netz wie im Funkloch: Das Hochladen dauert sichtbar.
+  const netz = await page.context().newCDPSession(page);
+  await netz.send('Network.enable');
+  const zaeh = (latency: number) =>
+    netz.send('Network.emulateNetworkConditions', {
+      offline: false,
+      latency,
+      downloadThroughput: -1,
+      uploadThroughput: -1,
+    });
+  await zaeh(1500);
+  const waehler = page.waitForEvent('filechooser');
+  await z.tippe(page.getByRole('button', { name: 'Anhängen', exact: true }));
+  await (await waehler).setFiles(await testfoto(page, `Bremse ${LAUF}.png`));
+  z.zaehle();
+  const entwurf = entwurfsanhaenge(page);
+  await expect(entwurf).toContainText('Lädt');
+  await page
+    .getByRole('textbox', { name: `Nachricht an # ${KANAL}` })
+    .fill(`Bremse hinten ${LAUF}`);
+  await z.tippe(page.getByRole('button', { name: 'Senden', exact: true }));
+
+  // Das Feld ist frei; die Nachricht wartet sichtbar mit ihrem Anhang (ANN-654).
+  const nachricht = page.locator('[data-nachricht]').filter({ hasText: `Bremse hinten ${LAUF}` });
+  await expect(nachricht.getByText('Lädt Anhänge hoch …')).toBeVisible();
+  await expect(entwurf).toHaveCount(0);
+  await zaeh(0);
+  await expect(nachricht.getByText('Lädt Anhänge hoch …')).toHaveCount(0, { timeout: 30_000 });
+  await expect(
+    nachricht
+      .getByRole('list', { name: 'Anhänge', exact: true })
+      .getByRole('button', { name: `Bremse ${LAUF}.png` }),
+  ).toBeVisible({ timeout: 15_000 });
+  expect(z.tipps).toBeLessThanOrEqual(4);
+});

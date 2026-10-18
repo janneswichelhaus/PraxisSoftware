@@ -6721,6 +6721,18 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Text immer Pflicht: den zweiten Fall in `app.team_message_body` streichen · Aufwand `klein`.
 
+### ANN-654 — Teamchat: Senden, während Anhänge hochladen
+
+Technik · offen · 2026-10-18 · — · — · Wiedervorlage: Sichtung (Funkloch)
+
+**Annahme.** „Senden“ geht, solange kein Anhang endgültig gescheitert ist. Die Nachricht steht mit „Lädt Anhänge hoch …“ im Ausgang, ihre Anhänge hängen an ihr statt am Entwurf, und sie geht von selbst, sobald alle oben sind. Bis der Server sie annimmt, bleiben die Anhänge an ihr: „Bearbeiten“ holt Text und Anhänge ins Feld, „Verwerfen“ verwirft beide. Scheitert ein Anhang endgültig, bleibt sie mit seinem Grund stehen. Eine Nachricht ohne Anhang geht sofort; beim Server steht die wartende dann dahinter.
+
+**Begründung.** ADR-017 Punkt 74 (Fassung 9, Frage 5 der PR #273). Alles bleibt im Arbeitsspeicher (Punkt 33).
+
+**Anker.** `anhaengeBereit` in `ausgang.ts`.
+
+**Änderungspfad.** Wieder warten: „Senden“ erst mit allen Anhängen oben (`kannSenden` in `Eingabe.tsx`) · Aufwand `klein`.
+
 ### ANN-655 — Teamchat: Sprachnachricht mit Dauer vom Gerät, eigene Datenschutzprüfung
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)

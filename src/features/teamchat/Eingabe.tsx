@@ -25,7 +25,7 @@ import { Kameradialog } from '@/features/files/Kameradialog';
 import { DATEI_ACCEPT } from '@/features/files/dokumentarten';
 import { useKamera } from '@/features/files/kamera';
 import { EntwurfsAnhaenge } from './Anhaenge';
-import { anhaengeAbgeben, anhaengen, aufnahmeName, useEntwurfsanhaenge } from './entwurfsanhaenge';
+import { anhaengeBinden, anhaengen, aufnahmeName, useEntwurfsanhaenge } from './entwurfsanhaenge';
 import {
   ANHAENGE_MAX,
   GEPLANT_KEY,
@@ -105,8 +105,9 @@ const FORMATE = [
  * * **Anhängen** (TEAM-003, ADR-017 Abschnitt M): Die Büroklammer bietet
  *   „Foto aufnehmen“ und „Foto oder PDF wählen“, ohne Kamera gleich den
  *   Dateiwähler. Eine Datei lädt hoch, sobald sie gewählt ist (`entwurfsanhaenge.ts`);
- *   gesendet wird erst, wenn alle oben bereit sind. Mit Anhängen darf der Text
- *   leer sein (ANN-653), geplant wird dann nicht.
+ *   „Senden“ geht schon währenddessen, die Nachricht wartet dann im Ausgang
+ *   (TEAM-005, ANN-654). Mit Anhängen darf der Text leer sein (ANN-653),
+ *   geplant wird dann nicht.
  * * **Sprachnachricht** (TEAM-004, ADR-017 Abschnitt N): Das Mikrofon in der
  *   Reihe nimmt auf - mit derselben Aufnahme wie das Diktat, sichtbar mit
  *   ihrer Zeit, höchstens zwei Minuten. „Fertig“ hängt sie an den Entwurf wie
@@ -157,7 +158,10 @@ export function Eingabe({
   const [anhangHinweis, setAnhangHinweis] = useState<string | null>(null);
   const entwurfsanhaenge = useEntwurfsanhaenge(kontoId, kanal.id, threadId);
   const hatAnhaenge = entwurfsanhaenge.length > 0;
-  const anhaengeOffen = entwurfsanhaenge.some((a) => a.zustand !== 'bereit');
+  // Senden geht, während Anhänge laden (ANN-654) - nicht mit einem, der
+  // endgültig gescheitert ist, und nicht mit mehr als fünf (nach „Bearbeiten“).
+  const anhangGescheitert = entwurfsanhaenge.some((a) => a.zustand === 'fehler' && !a.erneut);
+  const zuVieleAnhaenge = entwurfsanhaenge.length > ANHAENGE_MAX;
   // Das Mikrofon steht nur da, wo das Gerät aufnehmen kann und der Server das
   // Format nimmt (Punkt 84).
   const [mitSprache] = useState(sprachnachrichtMoeglich);
@@ -219,7 +223,8 @@ export function Eingabe({
     verdeckt();
     return () => beobachter.disconnect();
   }, [nimmtAuf, portalZiel]);
-  const kannSenden = (text.trim() !== '' || hatAnhaenge) && !anhaengeOffen && !nimmtAuf;
+  const kannSenden =
+    (text.trim() !== '' || hatAnhaenge) && !anhangGescheitert && !zuVieleAnhaenge && !nimmtAuf;
   // Ein getipptes „@…“ vor der Schreibmarke.
   const [anfrage, setAnfrage] = useState<{ von: number; wort: string } | null>(null);
   const [planen, setPlanen] = useState(false);
@@ -262,9 +267,8 @@ export function Eingabe({
   function absenden(e?: FormEvent, um: string | null = null) {
     e?.preventDefault();
     const inhalt = vervollstaendigeErwaehnungen(text.trim(), andere);
-    // Erst wenn alle Anhänge oben bereit sind; geplant wird ohne Anhang.
+    // Geplant wird ohne Anhang.
     if (!kannSenden || (um && hatAnhaenge)) return;
-    const anhaenge = anhaengeAbgeben(kontoId, kanal.id, threadId);
     const auftrag: Sendeauftrag = {
       id: neueKennung(),
       kanalId: kanal.id,
@@ -274,8 +278,11 @@ export function Eingabe({
       alle: alleErwaehnt(inhalt, kanal.kind),
       auchImKanal: threadId !== null && auchImKanal,
       um,
-      anhaenge,
+      anhaenge: [],
     };
+    // Die Anhänge gehen mit der Nachricht in den Ausgang, auch wenn sie noch
+    // laden; dort geht sie, sobald alle oben sind (ANN-654).
+    anhaengeBinden(kontoId, kanal.id, threadId, auftrag.id);
     einreihen(kontoId, eigeneId, auftrag, () => {
       void queryClient.invalidateQueries({ queryKey: TEAMCHAT_KEY });
       if (um) void queryClient.invalidateQueries({ queryKey: GEPLANT_KEY });
@@ -455,9 +462,11 @@ export function Eingabe({
             </Statusmeldung>
           )
         ) : null}
-        {anhangHinweis ? (
+        {zuVieleAnhaenge || anhangHinweis ? (
           <Statusmeldung ton="warnung" className="mb-2">
-            {anhangHinweis}
+            {zuVieleAnhaenge
+              ? `Höchstens ${ANHAENGE_MAX} Anhänge je Nachricht – bitte entfernen, was zu viel ist.`
+              : anhangHinweis}
           </Statusmeldung>
         ) : null}
         <EntwurfsAnhaenge anhaenge={entwurfsanhaenge} />

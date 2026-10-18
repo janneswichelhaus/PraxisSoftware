@@ -313,7 +313,7 @@ export function AnhangZeilen({
  * Bytes als Vorschau - sie liegen ohnehin im Speicher der Seite -, Art und
  * Größe, „Lädt“ als Zeichen und Wort, ein Fehler mit seinem Grund in voller
  * Länge unter der Zeile, „Noch einmal“, wo ein neuer Versuch gelingen kann,
- * und Entfernen. Solange etwas lädt, sagt eine Zeile, warum „Senden“ wartet.
+ * und Entfernen. „Senden“ wartet nicht auf das Hochladen (ANN-654).
  */
 export function EntwurfsAnhaenge({ anhaenge }: { anhaenge: readonly Entwurfsanhang[] }) {
   if (anhaenge.length === 0) return null;
@@ -343,7 +343,8 @@ export function EntwurfsAnhaenge({ anhaenge }: { anhaenge: readonly Entwurfsanha
               aktion={
                 <>
                   {a.zustand === 'fehler' && a.erneut ? (
-                    <Button variant="quiet" onClick={() => anhangErneut(a.lokalId)}>
+                    // Steht im Formular der Eingabe: ohne `type` schickte es ab.
+                    <Button type="button" variant="quiet" onClick={() => anhangErneut(a.lokalId)}>
                       Noch einmal
                     </Button>
                   ) : null}
@@ -359,9 +360,6 @@ export function EntwurfsAnhaenge({ anhaenge }: { anhaenge: readonly Entwurfsanha
           ))}
         </ListRows>
       </div>
-      {anhaenge.some((a) => a.zustand === 'laedt') ? (
-        <Statusmeldung className="mt-1">Senden geht, sobald alles hochgeladen ist.</Statusmeldung>
-      ) : null}
     </div>
   );
 }

@@ -1,6 +1,17 @@
 import { useSyncExternalStore } from 'react';
-import { TeamchatFehler, sendeNachricht, type Sendeauftrag } from './api';
+import { TeamchatFehler, sendeNachricht, type Anhang, type Sendeauftrag } from './api';
+import {
+  anhaengeBeobachten,
+  anhaengeDerNachricht,
+  anhaengeZurueck,
+  gebundeneErneut,
+  gebundeneFreigeben,
+  gebundeneVerwerfen,
+  type Entwurfsanhang,
+} from './entwurfsanhaenge';
 import { nachrichtKennung } from './kennung';
+import { dauerSekunden } from './sprachnachricht';
+import { WIEDERHOLEN_MS } from './takt';
 
 /**
  * Der Ausgang des Teamchats (TEAM-002, ANN-641): Was gesendet ist, steht sofort
@@ -17,9 +28,14 @@ import { nachrichtKennung } from './kennung';
  *   nichts.
  * * Nur im Arbeitsspeicher und an das Konto gebunden wie die Entwürfe; nach
  *   ADR-024 Punkt 4 ist eine Nachricht nichts, das auf dem Gerät liegt.
+ * * **Anhänge, die noch laden** (TEAM-005, ANN-654): Die Nachricht steht mit
+ *   „Lädt Anhänge hoch …“ da und geht von selbst, sobald alle oben sind -
+ *   zum Server erst dann (ADR-017 Punkt 74). Scheitert einer endgültig,
+ *   bleibt sie mit seinem Grund stehen. Bis der Server sie annimmt, hängen
+ *   die Anhänge an ihr: „Bearbeiten“ holt Text und Anhänge zurück ins Feld.
  */
 
-export type Ausgangszustand = 'sendet' | 'wartet' | 'abgelehnt';
+export type Ausgangszustand = 'laedt' | 'sendet' | 'wartet' | 'abgelehnt';
 
 export interface Ausgangseintrag extends Sendeauftrag {
   kontoId: string;
@@ -34,6 +50,8 @@ export interface Ausgangseintrag extends Sendeauftrag {
    * angekommen, auch wenn die Antwort noch fehlt.
    */
   serverId: string | null;
+  /** Beim Laden: Ein Anhang scheiterte am Netz und wartet auf Empfang. */
+  anhaengeOhneNetz: boolean;
 }
 
 type NachErfolg = (eintrag: Ausgangseintrag) => void;
@@ -45,9 +63,6 @@ const beobachter = new Set<() => void>();
 let stand = 0;
 let takt: ReturnType<typeof setInterval> | null = null;
 let angemeldet = false;
-
-/** So oft versucht eine wartende Nachricht es von selbst erneut. */
-export const WIEDERHOLEN_MS = 15_000;
 
 function melden() {
   stand += 1;
@@ -64,23 +79,91 @@ function taktPruefen() {
   }
 }
 
+let anhaengeBeobachtet = false;
+
 function anmelden() {
+  if (!anhaengeBeobachtet) {
+    anhaengeBeobachtet = true;
+    // Ist ein Anhang oben oder gescheitert, geht es mit seiner Nachricht weiter.
+    anhaengeBeobachten(anhaengeGeaendert);
+  }
   if (angemeldet || typeof window === 'undefined') return;
   angemeldet = true;
   // Mit dem Netz kommt der nächste Versuch sofort, nicht erst im Takt.
   window.addEventListener('online', wiederholeWartende);
 }
 
+/** Wie ein Anhang in der Nachricht steht, solange er lädt - ohne Öffnen. */
+function vorschau(a: Entwurfsanhang): Anhang {
+  return (
+    a.anhang ?? {
+      id: a.lokalId,
+      name: a.name,
+      mime_type: a.mime,
+      byte_size: a.groesse,
+      verified: false,
+      duration_seconds: a.dauer === null ? null : dauerSekunden(a.dauer),
+    }
+  );
+}
+
+/**
+ * Bevor eine Nachricht mit Anhängen hinausgeht (ANN-654): Sind alle oben,
+ * geht sie mit ihnen; lädt einer noch, wartet sie; ist einer endgültig
+ * gescheitert, bleibt sie mit seinem Grund stehen. Liefert die Anhänge zum
+ * Senden oder `null`, wenn sie noch nicht geht.
+ */
+function anhaengeBereit(id: string, eintrag: Ausgangseintrag): readonly Anhang[] | null {
+  const gebunden = anhaengeDerNachricht(id);
+  if (gebunden.length === 0) return eintrag.anhaenge;
+  const anhaenge = gebunden.map(vorschau);
+  const gescheitert = gebunden.find((a) => a.zustand === 'fehler' && !a.erneut);
+  if (gescheitert) {
+    speicher.set(id, {
+      ...eintrag,
+      anhaenge,
+      zustand: 'abgelehnt',
+      fehler: `${gescheitert.name}: ${gescheitert.fehler ?? 'Der Anhang konnte nicht hochgeladen werden.'}`,
+      anhaengeOhneNetz: false,
+    });
+    return null;
+  }
+  if (gebunden.some((a) => a.zustand !== 'bereit')) {
+    speicher.set(id, {
+      ...eintrag,
+      anhaenge,
+      zustand: 'laedt',
+      fehler: null,
+      anhaengeOhneNetz: gebunden.some((a) => a.zustand === 'fehler'),
+    });
+    return null;
+  }
+  return anhaenge;
+}
+
 async function versuchen(id: string): Promise<void> {
   const eintrag = speicher.get(id);
   if (!eintrag || laufend.has(id)) return;
+  const anhaenge = anhaengeBereit(id, eintrag);
+  if (anhaenge === null) {
+    melden();
+    return;
+  }
   laufend.add(id);
-  speicher.set(id, { ...eintrag, zustand: 'sendet', fehler: null });
+  speicher.set(id, {
+    ...eintrag,
+    anhaenge,
+    zustand: 'sendet',
+    fehler: null,
+    anhaengeOhneNetz: false,
+  });
   melden();
   try {
-    await sendeNachricht(eintrag);
+    await sendeNachricht({ ...eintrag, anhaenge });
     const fertig = speicher.get(id);
     speicher.delete(id);
+    // Erst jetzt gehören die Anhänge zur Nachricht beim Server.
+    gebundeneFreigeben(id);
     const rueckruf = rueckmeldungen.get(id);
     rueckmeldungen.delete(id);
     if (fertig && rueckruf) rueckruf(fertig);
@@ -121,6 +204,7 @@ export function einreihen(
     fehler: null,
     erstellt: new Date().toISOString(),
     serverId: null,
+    anhaengeOhneNetz: false,
   });
   if (nachErfolg) rueckmeldungen.set(auftrag.id, nachErfolg);
   melden();
@@ -144,8 +228,16 @@ export function wiederholeWartende(): void {
   }
 }
 
-/** Eine Nachricht von Hand erneut senden. */
+/** Ein Anhang ist oben oder gescheitert: Nachrichten, die auf ihre Anhänge warten, weiter. */
+function anhaengeGeaendert(): void {
+  for (const eintrag of [...speicher.values()]) {
+    if (eintrag.zustand === 'laedt') void versuchen(eintrag.id);
+  }
+}
+
+/** Eine Nachricht von Hand erneut senden - am Netz gescheiterte Anhänge mit. */
 export function erneutSenden(id: string): void {
+  gebundeneErneut(id);
   void versuchen(id);
 }
 
@@ -157,6 +249,19 @@ export function ausgangEntfernen(id: string): Ausgangseintrag | undefined {
   taktPruefen();
   melden();
   return eintrag;
+}
+
+/** „Bearbeiten“: Die Nachricht verlässt den Ausgang, ihre Anhänge kehren in den Entwurf zurück. */
+export function ausgangZurueckInsFeld(id: string): Ausgangseintrag | undefined {
+  const eintrag = ausgangEntfernen(id);
+  anhaengeZurueck(id);
+  return eintrag;
+}
+
+/** „Verwerfen“: Die Nachricht und ihre Anhänge fallen - die Anhänge auch am Server. */
+export function ausgangVerwerfen(id: string): void {
+  ausgangEntfernen(id);
+  gebundeneVerwerfen(id);
 }
 
 /** Alles fort - beim Abmelden und Kontowechsel (wie die Entwürfe). */

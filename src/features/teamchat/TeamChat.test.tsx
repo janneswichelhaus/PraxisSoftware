@@ -42,6 +42,7 @@ const api = {
   ladeAnhang: vi.fn(),
   sucheNachrichten: vi.fn(),
   sendeNachricht: vi.fn(),
+  bearbeiteNachricht: vi.fn(),
   markiereGelesen: vi.fn(),
   markiereThreadGelesen: vi.fn(),
   oeffneDirekt: vi.fn(),
@@ -248,6 +249,7 @@ beforeEach(() => {
   api.verwirfAnhang.mockResolvedValue(undefined);
   api.sucheNachrichten.mockResolvedValue([]);
   api.sendeNachricht.mockImplementation((auftrag: { id: string }) => Promise.resolve(auftrag.id));
+  api.bearbeiteNachricht.mockResolvedValue(undefined);
   api.markiereGelesen.mockResolvedValue(undefined);
   api.markiereThreadGelesen.mockResolvedValue(undefined);
   api.oeffneDirekt.mockResolvedValue('k-direkt');
@@ -1004,7 +1006,7 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
     expect(screen.queryByText('PDF · 2 KB')).toBeNull();
   });
 
-  it('sendet erst, wenn alle Anhänge oben sind - ohne Netz mit „Noch einmal“, entfernt auch am Server', async () => {
+  it('zeigt „Lädt“, ohne Netz „Noch einmal“ und entfernt auch am Server', async () => {
     const nutzer = userEvent.setup();
     let fertig: (wert: unknown) => void = () => undefined;
     api.ladeAnhangHoch
@@ -1024,9 +1026,8 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
     await nutzer.type(feld, 'Schaden am Rad');
     await nutzer.upload(screen.getByLabelText('Foto oder PDF anhängen'), foto());
     expect(await screen.findByText('Lädt')).toBeInTheDocument();
-    // Warum „Senden“ wartet, steht da (Praxis-Review TEAM-003).
-    expect(screen.getByText('Senden geht, sobald alles hochgeladen ist.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
+    // „Senden“ wartet nicht auf das Hochladen (TEAM-005, ANN-654).
+    expect(screen.getByRole('button', { name: 'Senden' })).toBeEnabled();
     fertig({
       id: 'a2',
       name: 'Speiche.png',
@@ -1046,7 +1047,8 @@ describe('Anhänge im Teamchat (TEAM-003, ADR-017 Abschnitt M)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Nicht hochgeladen – kein Netz? Bitte noch einmal.',
     );
-    expect(screen.getByRole('button', { name: 'Senden' })).toBeDisabled();
+    // Am Netz gescheitert: Die Nachricht könnte im Ausgang darauf warten.
+    expect(screen.getByRole('button', { name: 'Senden' })).toBeEnabled();
     await nutzer.click(screen.getByRole('button', { name: 'Noch einmal' }));
     expect(await screen.findByText('Foto · 4 KB')).toBeInTheDocument();
 
@@ -1534,5 +1536,156 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
     zeige('/team/k-allgemein');
     await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
     expect(await screen.findByText(/^1:15 · 96 KB · Tim Teamleitung · /)).toBeInTheDocument();
+  });
+});
+
+describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn(() => 'blob:vorschau');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  const foto = (name = 'Speiche.png') => new File(['png'], name, { type: 'image/png' });
+  const oben = (id: string, name: string) => ({
+    id,
+    name,
+    mime_type: 'image/png',
+    byte_size: 3072,
+    verified: false,
+    duration_seconds: null,
+  });
+
+  async function mitAnhangSenden(nutzer: ReturnType<typeof userEvent.setup>, text: string) {
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, text);
+    await nutzer.upload(screen.getByLabelText('Foto oder PDF anhängen'), foto());
+    expect(await screen.findByText('Lädt')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    return feld;
+  }
+
+  it('sendet, während der Anhang lädt - die Nachricht wartet sichtbar und geht danach mit ihm', async () => {
+    const nutzer = userEvent.setup();
+    let fertig: (wert: unknown) => void = () => undefined;
+    api.ladeAnhangHoch.mockReturnValueOnce(new Promise((aufloesen) => (fertig = aufloesen)));
+    zeige('/team/k-allgemein');
+    const feld = await mitAnhangSenden(nutzer, 'Speiche gebrochen');
+
+    // Das Feld ist frei, die Nachricht steht mit ihrem Anhang und wartet.
+    expect(feld).toHaveValue('');
+    expect(screen.queryByRole('list', { name: 'Anhänge' })).not.toBeNull();
+    expect(await screen.findByText('Lädt Anhänge hoch …')).toBeInTheDocument();
+    expect(screen.getByText('Speiche gebrochen')).toBeInTheDocument();
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
+
+    // Hochladen, Senden und Neuzeichnen laufen hier ganz durch.
+    await act(async () => {
+      fertig(oben('a1', 'Speiche.png'));
+      await new Promise((weiter) => setTimeout(weiter, 50));
+    });
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Speiche gebrochen',
+          anhaenge: [expect.objectContaining({ id: 'a1' })],
+        }),
+      ),
+    );
+    expect(api.sendeNachricht).toHaveBeenCalledTimes(1);
+  });
+
+  it('wartet ohne Netz auf den Anhang - „Jetzt versuchen“ lädt ihn und sendet', async () => {
+    const nutzer = userEvent.setup();
+    let scheitern: (grund: unknown) => void = () => undefined;
+    api.ladeAnhangHoch
+      .mockReturnValueOnce(new Promise((_, ablehnen) => (scheitern = ablehnen)))
+      .mockResolvedValueOnce(oben('a2', 'Speiche.png'));
+    zeige('/team/k-allgemein');
+    await mitAnhangSenden(nutzer, 'Kette ab');
+    scheitern(new TeamchatFehler('Nicht hochgeladen – kein Netz? Bitte noch einmal.', true));
+    expect(
+      await screen.findByText(
+        'Kein Netz – wird gesendet, sobald Empfang da ist und die App läuft.',
+      ),
+    ).toBeInTheDocument();
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Jetzt versuchen' }));
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({ anhaenge: [expect.objectContaining({ id: 'a2' })] }),
+      ),
+    );
+  });
+
+  it('bleibt mit dem Grund stehen, wenn ein Anhang endgültig scheitert - „Bearbeiten“ holt beides zurück', async () => {
+    const nutzer = userEvent.setup();
+    let scheitern: (grund: unknown) => void = () => undefined;
+    api.ladeAnhangHoch.mockReturnValueOnce(new Promise((_, ablehnen) => (scheitern = ablehnen)));
+    zeige('/team/k-allgemein');
+    const feld = await mitAnhangSenden(nutzer, 'Rad 3 ist frei');
+    scheitern(
+      new TeamchatFehler(
+        'Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.',
+        false,
+      ),
+    );
+    expect(
+      await screen.findByText(
+        'Nicht gesendet: Speiche.png: Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.',
+      ),
+    ).toBeInTheDocument();
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+    expect(feld).toHaveValue('Rad 3 ist frei');
+    // Der Anhang steht wieder im Entwurf, mit seinem Grund; so geht „Senden“ nicht.
+    const entwurf = within(feld.closest('form')!);
+    expect(entwurf.getByRole('alert')).toHaveTextContent('Diese Datei lässt sich nicht senden.');
+    expect(entwurf.getByRole('button', { name: 'Senden' })).toBeDisabled();
+    await nutzer.click(entwurf.getByRole('button', { name: 'Anhang entfernen: Speiche.png' }));
+    expect(entwurf.getByRole('button', { name: 'Senden' })).toBeEnabled();
+  });
+
+  it('verwirft nach einer Ablehnung des Servers Nachricht und Anhang - den auch am Server', async () => {
+    const nutzer = userEvent.setup();
+    api.ladeAnhangHoch.mockResolvedValueOnce(oben('a4', 'Speiche.png'));
+    api.sendeNachricht.mockRejectedValueOnce(
+      new TeamchatFehler('Dieses Gespräch ist archiviert.', false),
+    );
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.upload(screen.getByLabelText('Foto oder PDF anhängen'), foto());
+    expect(await screen.findByText('Foto · 3 KB')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    expect(
+      await screen.findByText('Nicht gesendet: Dieses Gespräch ist archiviert.'),
+    ).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Verwerfen' }));
+    expect(screen.getByText('Text und Anhänge sind danach fort.')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
+    await vi.waitFor(() => expect(api.verwirfAnhang).toHaveBeenCalledWith('a4'));
+    expect(screen.queryByText(/Nicht gesendet/)).toBeNull();
+    expect(feld).toHaveValue('');
+  });
+});
+
+describe('Bearbeiten einer Nachricht', () => {
+  it('speichert bei „Abbrechen“ nichts - der Knopf steht im Formular (TEAM-005)', async () => {
+    const nutzer = userEvent.setup();
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ author_staff_member_id: ANNA, author_name: 'Anna Beispiel', own: true }),
+    ]);
+    zeige('/team/k-planung');
+    await nutzer.click(
+      await screen.findByRole('button', { name: 'Handlungen zur Nachricht von Anna Beispiel' }),
+    );
+    await nutzer.click(await screen.findByRole('button', { name: 'Bearbeiten' }));
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht ändern' });
+    await nutzer.clear(feld);
+    await nutzer.type(feld, 'Doch nicht');
+    await nutzer.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.queryByRole('textbox', { name: 'Nachricht ändern' })).toBeNull();
+    expect(api.bearbeiteNachricht).not.toHaveBeenCalled();
   });
 });

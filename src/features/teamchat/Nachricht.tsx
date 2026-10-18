@@ -234,7 +234,10 @@ export function NachrichtZeile({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {ausgang.zustand === 'sendet' ? (
             <Statusmeldung>Wird gesendet …</Statusmeldung>
-          ) : ausgang.zustand === 'wartet' ? (
+          ) : ausgang.zustand === 'laedt' && !ausgang.anhaengeOhneNetz ? (
+            // Die Anhänge laden noch; danach geht sie von selbst (ANN-654).
+            <Statusmeldung>Lädt Anhänge hoch …</Statusmeldung>
+          ) : ausgang.zustand === 'wartet' || ausgang.zustand === 'laedt' ? (
             <>
               {/* Der Ausgang liegt im Arbeitsspeicher (ANN-641): Er sendet, solange
                   die App läuft; das Abmelden fragt vorher (`AusgangAbmeldewache`). */}
@@ -261,7 +264,9 @@ export function NachrichtZeile({
                 bestaetigen="Ja, verwerfen"
                 onBestaetigen={() => onVerwerfen?.()}
               >
-                Der Text ist danach fort.
+                {ausgang.anhaenge.length > 0
+                  ? 'Text und Anhänge sind danach fort.'
+                  : 'Der Text ist danach fort.'}
               </Rueckfrage>
             </>
           )}
@@ -327,7 +332,8 @@ function Bearbeiten({
         >
           {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
         </Button>
-        <Button variant="quiet" groesse="kompakt" onClick={onFertig}>
+        {/* Im Formular: ohne `type` speicherte „Abbrechen“ die Änderung. */}
+        <Button type="button" variant="quiet" groesse="kompakt" onClick={onFertig}>
           Abbrechen
         </Button>
       </div>

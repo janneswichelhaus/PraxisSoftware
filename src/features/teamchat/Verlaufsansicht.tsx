@@ -6,7 +6,13 @@ import { EmptyState } from '@/components/ui/Feedback';
 import { Verlauf } from '@/components/ui/Verlauf';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchMitglieder, mitgliederKey, type Kanal, type Nachricht } from './api';
-import { ausgangEntfernen, erneutSenden, useAusgang, type Ausgangseintrag } from './ausgang';
+import {
+  ausgangVerwerfen,
+  ausgangZurueckInsFeld,
+  erneutSenden,
+  useAusgang,
+  type Ausgangseintrag,
+} from './ausgang';
 import { entwurfLesen, entwurfSetzen } from './entwuerfe';
 import { useLesestand } from './lesestand';
 import { NachrichtZeile } from './Nachricht';
@@ -257,9 +263,10 @@ export function Verlaufsansicht({
                           onAktionen={() => setOffen(n.id)}
                           onBearbeitenEnde={() => setBearbeitet(null)}
                           onErneut={() => erneutSenden(n.id)}
-                          onVerwerfen={() => ausgangEntfernen(n.id)}
+                          onVerwerfen={() => ausgangVerwerfen(n.id)}
                           onZurueckInsFeld={() => {
-                            const eintrag = ausgangEntfernen(n.id);
+                            // Text und Anhänge zurück in den Entwurf (ANN-654).
+                            const eintrag = ausgangZurueckInsFeld(n.id);
                             if (!eintrag) return;
                             const davor = entwurfLesen(kontoId, kanal.id, threadId);
                             entwurfSetzen(
