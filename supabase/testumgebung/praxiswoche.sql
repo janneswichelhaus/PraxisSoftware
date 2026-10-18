@@ -166,11 +166,125 @@ values
    '55555555-5555-4555-8555-000000000002')
 on conflict do nothing;
 
+-- TEAM-002: ein privater Kanal der Leitung (Jannes, Tim), eine Gruppe
+-- (Anna, Olivia, Tom), eine Antwort auch im Gespräch, Reaktionen, eine
+-- angeheftete Nachricht, Gemerktes mit fälliger Erinnerung und eine geplante
+-- Nachricht - synthetisch, ohne Patientenbezug.
+insert into public.team_channels (id, organization_id, kind, name, description, created_at)
+values ('7e7e7e7e-7e7e-4e7e-8e7e-000000000005', '22222222-2222-4222-8222-000000000001', 'private',
+        'Leitung', 'Dienstpläne und Personalfragen.', now() - interval '5 days')
+on conflict do nothing;
+insert into public.team_channels (id, organization_id, kind, created_at)
+values ('7e7e7e7e-7e7e-4e7e-8e7e-000000000006', '22222222-2222-4222-8222-000000000001', 'group',
+        now() - interval '2 days')
+on conflict (id) do nothing;
+
+insert into public.team_channel_members (organization_id, channel_id, staff_member_id)
+values
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000005',
+   '55555555-5555-4555-8555-000000000001'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000005',
+   '55555555-5555-4555-8555-000000000004'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000006',
+   '55555555-5555-4555-8555-000000000002'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000006',
+   '55555555-5555-4555-8555-000000000003'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000006',
+   '55555555-5555-4555-8555-000000000006')
+on conflict do nothing;
+
+insert into public.team_messages
+  (id, organization_id, channel_id, parent_id, author_staff_member_id, body, also_in_channel, created_at)
+values
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000501', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000005', null, '55555555-5555-4555-8555-000000000001',
+   'Dienstplan Dezember: Bitte bis Mittwoch die *Urlaubswünsche* sammeln.', false,
+   now() - interval '1 day 4 hours'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000502', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000005', null, '55555555-5555-4555-8555-000000000004',
+   'Mache ich. Zwei Wünsche liegen schon vor.', false, now() - interval '1 day 3 hours'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000601', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000006', null, '55555555-5555-4555-8555-000000000003',
+   'Wer übernimmt am Samstag den Infostand beim Stadtteilfest?', false,
+   now() - interval '3 hours'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000602', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000006', '7e7e7e7e-7e7e-4e7e-8e7e-000000000601',
+   '55555555-5555-4555-8555-000000000006', 'Ich kann von 10 bis 13 Uhr.', false,
+   now() - interval '2 hours'),
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000204', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000002', '7e7e7e7e-7e7e-4e7e-8e7e-000000000201',
+   '55555555-5555-4555-8555-000000000003',
+   'Den Ersatzschlüssel für Rad 2 habe ich ans Brett gehängt.', true,
+   now() - interval '20 hours'),
+  -- Geplant für morgen früh - bis dahin sieht sie nur Jannes unter „Geplant“.
+  ('7e7e7e7e-7e7e-4e7e-8e7e-000000000104', '22222222-2222-4222-8222-000000000001',
+   '7e7e7e7e-7e7e-4e7e-8e7e-000000000001', null, '55555555-5555-4555-8555-000000000001',
+   'Teamtreffen am Montag um 8 Uhr im Büro.', false, now() + interval '1 day')
+on conflict (id) do nothing;
+
+insert into public.team_message_reactions (organization_id, message_id, staff_member_id, reaction)
+values
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000101',
+   '55555555-5555-4555-8555-000000000002', 'daumen'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000101',
+   '55555555-5555-4555-8555-000000000003', 'daumen'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000101',
+   '55555555-5555-4555-8555-000000000004', 'erledigt'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000201',
+   '55555555-5555-4555-8555-000000000004', 'augen')
+on conflict do nothing;
+
+insert into public.team_message_pins (organization_id, channel_id, message_id)
+values ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000001',
+        '7e7e7e7e-7e7e-4e7e-8e7e-000000000101')
+on conflict do nothing;
+
+-- Anna merkt sich die Belege (Erinnerung morgen) und den Schlüssel (fällig).
+insert into public.team_saved_messages (organization_id, message_id, staff_member_id, remind_at)
+values
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000101',
+   '55555555-5555-4555-8555-000000000002', now() + interval '1 day'),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000203',
+   '55555555-5555-4555-8555-000000000002', now() - interval '10 minutes')
+on conflict do nothing;
+
+-- Anna hat Allgemein als Favorit, Tom stellt Vertretungen stumm.
+insert into public.team_channel_settings (organization_id, channel_id, staff_member_id, notify, starred)
+values
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000001',
+   '55555555-5555-4555-8555-000000000002', 'all', true),
+  ('22222222-2222-4222-8222-000000000001', '7e7e7e7e-7e7e-4e7e-8e7e-000000000003',
+   '55555555-5555-4555-8555-000000000006', 'none', false)
+on conflict (channel_id, staff_member_id) do nothing;
+
 -- Den eigenen Stand für das, was man selbst geschrieben hat - wie nach dem
 -- Senden in der Anwendung.
 insert into public.team_read_states (organization_id, channel_id, staff_member_id, read_up_to)
 select m.organization_id, m.channel_id, m.author_staff_member_id, max(m.created_at)
 from public.team_messages m
-where m.organization_id = '22222222-2222-4222-8222-000000000001'
+where m.organization_id = '22222222-2222-4222-8222-000000000001' and m.created_at <= now()
 group by m.organization_id, m.channel_id, m.author_staff_member_id
 on conflict (channel_id, staff_member_id) do nothing;
+
+-- Wer einen Thread begonnen, beantwortet hat oder darin erwähnt ist, folgt
+-- ihm (ANN-640) - gelesen bis zum eigenen Beitrag.
+insert into public.team_thread_states
+  (organization_id, root_message_id, staff_member_id, following, read_up_to)
+select r.organization_id, r.id, x.staff, true, max(x.zeit)
+from public.team_messages r
+join lateral (
+  select r.author_staff_member_id as staff, r.created_at as zeit
+  union all
+  select a.author_staff_member_id, a.created_at
+  from public.team_messages a where a.parent_id = r.id
+  union all
+  select mm.staff_member_id, r.created_at
+  from public.team_message_mentions mm
+  join public.team_messages b on b.id = mm.message_id
+  where b.id = r.id or b.parent_id = r.id
+) x on x.staff is not null
+where r.organization_id = '22222222-2222-4222-8222-000000000001' and r.parent_id is null
+  and r.created_at <= now()
+  and exists (select 1 from public.team_messages a where a.parent_id = r.id)
+group by r.organization_id, r.id, x.staff
+on conflict (root_message_id, staff_member_id) do nothing;

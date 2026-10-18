@@ -110,11 +110,14 @@ import { PayoutAccountPage } from '@/features/reimbursements/PayoutAccountPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { RequestReimbursementPage } from '@/features/reimbursements/RequestReimbursementPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
+import { TeamchatRahmen } from '@/features/teamchat/TeamchatRahmen';
 import { FlottenNachrichtenPage } from '@/features/teamchat/FlottenNachrichtenPage';
 import { FuerDichPage } from '@/features/teamchat/FuerDichPage';
+import { EntwuerfePage } from '@/features/teamchat/EntwuerfePage';
+import { GemerktPage } from '@/features/teamchat/GemerktPage';
 import { GespraechPage } from '@/features/teamchat/GespraechPage';
 import { NeuPage } from '@/features/teamchat/NeuPage';
-import { ThreadPage } from '@/features/teamchat/ThreadPage';
+import { SuchePage } from '@/features/teamchat/SuchePage';
 import { ThreadsPage } from '@/features/teamchat/ThreadsPage';
 import { RueckfragePage, RueckfragenPage } from '@/features/messages/RueckfragenPage';
 import { TourenPage } from '@/features/tours/TourenPage';
@@ -523,15 +526,24 @@ export function AuthenticatedRoutes({
                 ) : null}
 
                 {/* TEAM-001: der Teamchat für jede Praxisrolle, auch die
-              Trainingsbetreuung (ANN-611); wer liest, entscheidet der Server. */}
+              Trainingsbetreuung (ANN-611); wer liest, entscheidet der Server.
+              TEAM-002: ein Rahmen mit den Gesprächen links (ab 900 px, ANN-648). */}
                 {isStaff(user.roles) ? (
                   <>
-                    <Route path="/team" element={<TeamChatPage user={user} />} />
-                    <Route path="/team/neu" element={<NeuPage user={user} />} />
-                    <Route path="/team/threads" element={<ThreadsPage user={user} />} />
+                    <Route path="/team" element={<TeamchatRahmen user={user} />}>
+                      <Route index element={<TeamChatPage />} />
+                      <Route path="neu" element={<NeuPage />} />
+                      <Route path="threads" element={<ThreadsPage />} />
+                      <Route path="gemerkt" element={<GemerktPage />} />
+                      <Route path="entwuerfe" element={<EntwuerfePage />} />
+                      <Route path="suche" element={<SuchePage />} />
+                      {/* Gespräch und Thread: dieselbe Komponente an derselben
+                        Stelle - React baut sie beim Öffnen eines Threads nicht
+                        neu auf, das Gespräch bleibt mit Scrollstand stehen. */}
+                      <Route path=":kanalId" element={<GespraechPage />} />
+                      <Route path=":kanalId/:threadId" element={<GespraechPage />} />
+                    </Route>
                     <Route path="/fuer-dich" element={<FuerDichPage user={user} />} />
-                    <Route path="/team/:kanalId" element={<GespraechPage user={user} />} />
-                    <Route path="/team/:kanalId/:threadId" element={<ThreadPage user={user} />} />
                   </>
                 ) : null}
 

@@ -10,6 +10,7 @@ import { SessionContext, type SessionState } from './sessionContext';
 import { SitzungsendeContext } from './sitzungsende';
 import { uebergabenLeeren } from '@/features/documentation/uebernahme';
 import { ablageLeeren } from '@/lib/geraeteablage';
+import { teamchatLeeren } from '@/features/teamchat/speicher';
 
 /**
  * Sitzungszustand und die Grenze zwischen zwei Konten (UX-011, ANN-021).
@@ -83,6 +84,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     // TRK-008 (ADR-024 Punkt 5): Die Ablage auf dem Gerät fällt beim
     // Abmelden und beim Kontowechsel - Plan, Warteschlange, Schlüssel.
     void ablageLeeren();
+    // TEAM-002 (ANN-641): Entwürfe, Ausgang, Scrollstände und die letzte
+    // Suche des Teamchats - bis dahin stand ein Entwurf nach einem
+    // Kontowechsel im selben Kanal der nächsten Person.
+    teamchatLeeren();
     // Abstecher-Entwürfe bleiben (ABN-019, BEF-110, ANN-019 Fassung 2): Sie
     // sind an das Konto gebunden, das sie begonnen hat, und kein anderes
     // findet sie. Eine automatische Abmeldung verwirft sie nicht still; beim

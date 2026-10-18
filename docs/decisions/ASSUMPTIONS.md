@@ -6573,6 +6573,42 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Andere Zählweise: nur `get_team_chat_summary` · Aufwand `klein`.
 
+### ANN-648 — Teamchat: Chatfläche mit Gesprächsliste, Threadspalte und Tastatur
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Unter 900 px Inhaltsbreite eine Ansicht nach der anderen (Gespräche → Gespräch → Thread) mit Weg zurück; ab 900 px die Gespräche links, ab 1000 px der Thread rechts neben dem Gespräch. Die Fläche misst ihre Höhe am sichtbaren Ausschnitt und endet über Tastatur und Tableiste; der Verlauf rollt in sich, die Eingabe bleibt am Fuß. Scrollstand je Konto, Gespräch und Thread nur im Arbeitsspeicher. Am Rechner zeigt `/team` das zuletzt offene Gespräch; Enter sendet dort, am Telefon nur der Knopf.
+
+**Begründung.** DESIGN.md Regel 10 und Schwelle des `Zweispalter`; Slack-Aufbau mit Seitenleiste und Threadspalte (Suchauszug); ADR-024 Punkt 4.
+
+**Anker.** `src/features/teamchat/flaeche.ts`, `TeamchatRahmen.tsx`.
+
+**Änderungspfad.** Andere Schwellen: `ZWEISPALTIG_PX`, `DREISPALTIG_PX` · Aufwand `klein`.
+
+### ANN-649 — Teamchat: Formatierung wie Slack, ohne HTML
+
+Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Formatiert wird mit Zeichen im Text: fett, kursiv, durchgestrichen, Code, Codeblock, Zitat, Listen; Links mit http(s) werden klickbar, Erwähnungen hervorgehoben. Dargestellt nur als React-Elemente, nie als HTML. Links in die Anwendung bleiben in ihr, alle anderen öffnen ohne Herkunftsangabe; keine Vorschau, kein Abruf der verlinkten Seite.
+
+**Begründung.** Slack-Hilfe zur Formatierung (Suchauszug); Schutz vor eingeschleustem HTML; ADR-002 (kein Abruf bei Dritten).
+
+**Anker.** `src/features/teamchat/formatierung.ts`, `format.tsx`.
+
+**Änderungspfad.** Linkvorschau: eigener Dienst mit ADR-002 · Aufwand `groß`.
+
+### ANN-650 — Teamchat: eine Nachricht als Aufgabe übernehmen
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Wer Aufgaben anlegen darf, übernimmt eine Nachricht über „⋯“ in die Offenen Punkte: Titel aus der ersten Zeile, Notiz mit Text und Herkunft (Gespräch und Tag, kein Name), Frist und Zuweisung frei. Die Aufgabe hat ihre eigene Frist; die Nachricht behält ihre zwölf Monate. Eine Patient:in ergänzt man in den Offenen Punkten.
+
+**Begründung.** §10: Dauerhaftes gehört in den Fachprozess; Slack-Listen und -Workflows bleiben außen vor (eigener ADR, Etappe E6).
+
+**Anker.** `src/features/teamchat/AlsAufgabe.tsx`, `aufgabe.ts`.
+
+**Änderungspfad.** Mit Patientenbezug: Auswahl der Patient:in im Fenster · Aufwand `mittel`.
+
 ### ANN-651 — Teamchat: Suche mit Filtern, die Person nur mit Suchwort
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)

@@ -10,9 +10,14 @@
  * verloren, steht sie sonst zweimal da. Beide Teile kennt nur die Person
  * selbst.
  */
-export async function nachrichtKennung(staffMemberId: string, geraeteKennung: string): Promise<string> {
+export async function nachrichtKennung(
+  staffMemberId: string,
+  geraeteKennung: string,
+): Promise<string> {
   const text = `${staffMemberId.toLowerCase()}:${geraeteKennung.toLowerCase()}`;
-  const summe = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)));
+  const summe = new Uint8Array(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)),
+  );
   const hex = Array.from(summe.slice(0, 16), (b) => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }

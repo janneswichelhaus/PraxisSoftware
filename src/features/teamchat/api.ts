@@ -3,36 +3,78 @@ import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Teamchat (TEAM-001, PROJECT_PRINCIPLES.md §10 „Intern“) über die
- * Serverfunktionen aus `supabase/migrations/20261204100000_team_001_teamchat.sql`.
+ * Teamchat (TEAM-001, TEAM-002, PROJECT_PRINCIPLES.md §10 „Intern“) über die
+ * Serverfunktionen aus `supabase/migrations/20261204100000_team_001_teamchat.sql`
+ * und `20261210100000_team_002_teamchat_wie_slack.sql`.
  *
  * Wer was liest, entscheidet der Server: offene Kanäle die ganze Praxis,
- * Direktnachrichten nur die zwei Beteiligten (ANN-609). Der Lesestand zählt
- * nur für die Person selbst; es gibt keine Lesebestätigung und keinen
- * Online-Status (§20).
+ * private Kanäle, Gruppen- und Direktnachrichten nur ihre Mitglieder
+ * (ANN-609, ANN-642). Der Lesestand zählt nur für die Person selbst; es gibt
+ * keine Lesebestätigung und keinen Online-Status (§20).
  *
- * **Text geht nie in eine Meldung, ein Log oder einen Schlüssel** (ADR-011):
- * Fehler werden hier in feste Sätze übersetzt, der Entwurf bleibt im Feld.
+ * **Text geht nie in eine Meldung, ein Log, einen Schlüssel oder eine Adresse**
+ * (ADR-011): Fehler werden hier in feste Sätze übersetzt, der Entwurf bleibt im
+ * Feld oder im Ausgang.
+ *
+ * **Zeiten bleiben Text.** Die Zeit einer Nachricht kommt mit Mikrosekunden
+ * vom Server und geht als Cursor und als „gelesen bis“ unverändert zurück; ein
+ * `Date` kürzte sie auf Millisekunden, und die neueste gezeigte Nachricht
+ * bliebe dann ungelesen (ANN-640).
  */
 
 // -----------------------------------------------------------------------------
 // Schemas
 // -----------------------------------------------------------------------------
 
+export const GESPRAECHSARTEN = ['channel', 'private', 'direct', 'group', 'fleet'] as const;
+const artSchema = z.enum(GESPRAECHSARTEN);
+export type Gespraechsart = z.infer<typeof artSchema>;
+
+/** Benachrichtigungsstufe je Gespräch (ANN-647). */
+export type Stufe = 'all' | 'mentions' | 'none';
+
 const kanalSchema = z.object({
   id: z.string(),
-  kind: z.enum(['channel', 'direct', 'fleet']),
+  kind: artSchema,
   name: z.string().nullable(),
   description: z.string().nullable(),
   archived: z.boolean(),
   partner_staff_member_id: z.string().nullable(),
   partner_name: z.string().nullable(),
   partner_active: z.boolean().nullable(),
+  member_names: z.array(z.string()).nullable(),
+  member_count: z.number().int().nullable(),
   unread: z.number().int(),
   mentions: z.number().int(),
   last_message_at: z.string().nullable(),
+  notify: z.enum(['all', 'mentions', 'none']),
+  starred: z.boolean(),
+  manageable: z.boolean(),
 });
 export type Kanal = z.infer<typeof kanalSchema>;
+
+/** Die feste Auswahl an Reaktionen (ANN-644) - Schlüssel, Zeichen, Name. */
+export const REAKTIONEN = [
+  { schluessel: 'daumen', zeichen: '👍', name: 'Daumen hoch' },
+  { schluessel: 'erledigt', zeichen: '✅', name: 'Erledigt' },
+  { schluessel: 'augen', zeichen: '👀', name: 'Schaue ich mir an' },
+  { schluessel: 'danke', zeichen: '🙏', name: 'Danke' },
+  { schluessel: 'herz', zeichen: '❤️', name: 'Herz' },
+  { schluessel: 'lachen', zeichen: '😄', name: 'Lachen' },
+  { schluessel: 'feier', zeichen: '🎉', name: 'Feiern' },
+  { schluessel: 'frage', zeichen: '❓', name: 'Frage' },
+] as const;
+export type Reaktionsschluessel = (typeof REAKTIONEN)[number]['schluessel'];
+
+const reaktionSchema = z.object({
+  reaction: z.enum(
+    REAKTIONEN.map((r) => r.schluessel) as [Reaktionsschluessel, ...Reaktionsschluessel[]],
+  ),
+  count: z.number().int(),
+  own: z.boolean(),
+  names: z.array(z.string()),
+});
+export type Reaktion = z.infer<typeof reaktionSchema>;
 
 const nachrichtSchema = z.object({
   id: z.string(),
@@ -43,25 +85,43 @@ const nachrichtSchema = z.object({
   created_at: z.string(),
   edited: z.boolean(),
   removed_kind: z.enum(['author', 'owner', 'retention']).nullable(),
+  also_in_channel: z.boolean(),
   reply_count: z.number().int(),
   last_reply_at: z.string().nullable(),
   mentions: z.array(z.string()),
   own: z.boolean(),
-  /** Neue Antworten anderer seit dem eigenen Lesestand (nur Ausgangsnachrichten). */
+  /** Neue Antworten anderer seit dem eigenen Stand am Thread (nur, wenn man folgt). */
   new_replies: z.number().int(),
   /** Ob die Person in diesen neuen Antworten erwähnt ist. */
   mentioned_in_new_replies: z.boolean(),
-  /** Nach dem eigenen Lesestand und nicht eigen - für die Linie „Neu“. */
+  /** Nach dem eigenen Stand und nicht eigen - für die Linie „Neu“. */
   unread: z.boolean(),
+  /** An der Ausgangsnachricht: Folgt die Person dem Thread? */
+  following: z.boolean(),
+  reactions: z.array(reaktionSchema),
+  pinned: z.boolean(),
+  /** Nur die eigene Merkliste. */
+  saved: z.boolean(),
+  /** An einer Antwort „auch im Kanal“: worauf sie antwortet. */
+  root_author_name: z.string().nullable(),
+  root_body: z.string().nullable(),
 });
 export type Nachricht = z.infer<typeof nachrichtSchema>;
 
 const personSchema = z.object({ staff_member_id: z.string(), name: z.string() });
 export type Person = z.infer<typeof personSchema>;
 
+const mitgliedSchema = z.object({
+  staff_member_id: z.string(),
+  name: z.string(),
+  active: z.boolean(),
+});
+export type Mitglied = z.infer<typeof mitgliedSchema>;
+
 const trefferSchema = z.object({
   id: z.string(),
   channel_id: z.string(),
+  channel_kind: artSchema,
   parent_id: z.string().nullable(),
   author_name: z.string().nullable(),
   body: z.string(),
@@ -72,7 +132,7 @@ export type Treffer = z.infer<typeof trefferSchema>;
 const aktivitaetSchema = z.object({
   id: z.string(),
   channel_id: z.string(),
-  channel_kind: z.enum(['channel', 'direct', 'fleet']),
+  channel_kind: artSchema,
   parent_id: z.string().nullable(),
   author_name: z.string().nullable(),
   body: z.string(),
@@ -85,7 +145,7 @@ export type Aktivitaet = z.infer<typeof aktivitaetSchema>;
 const threadSchema = z.object({
   id: z.string(),
   channel_id: z.string(),
-  channel_kind: z.enum(['channel', 'direct', 'fleet']),
+  channel_kind: artSchema,
   author_name: z.string().nullable(),
   body: z.string().nullable(),
   removed_kind: z.enum(['author', 'owner', 'retention']).nullable(),
@@ -94,6 +154,49 @@ const threadSchema = z.object({
   new_replies: z.number().int(),
 });
 export type ThreadUeberblick = z.infer<typeof threadSchema>;
+
+const gemerktSchema = z.object({
+  id: z.string(),
+  channel_id: z.string(),
+  channel_kind: artSchema,
+  parent_id: z.string().nullable(),
+  author_name: z.string().nullable(),
+  body: z.string(),
+  created_at: z.string(),
+  remind_at: z.string().nullable(),
+  done: z.boolean(),
+  due: z.boolean(),
+});
+export type Gemerkt = z.infer<typeof gemerktSchema>;
+
+const geplantSchema = z.object({
+  id: z.string(),
+  channel_id: z.string(),
+  channel_kind: artSchema,
+  body: z.string(),
+  created_at: z.string(),
+});
+export type Geplant = z.infer<typeof geplantSchema>;
+
+const angeheftetSchema = z.object({
+  id: z.string(),
+  parent_id: z.string().nullable(),
+  author_name: z.string().nullable(),
+  body: z.string(),
+  created_at: z.string(),
+});
+export type Angeheftet = z.infer<typeof angeheftetSchema>;
+
+const zaehlerSchema = z.object({
+  badge: z.number().int(),
+  unread_conversations: z.number().int(),
+  threads_new: z.number().int(),
+  activity_unread: z.number().int(),
+  saved_open: z.number().int(),
+  reminders_due: z.number().int(),
+  scheduled: z.number().int(),
+});
+export type Zaehler = z.infer<typeof zaehlerSchema>;
 
 // -----------------------------------------------------------------------------
 // Fehler in festen Sätzen - nie mit dem Text der Nachricht
@@ -104,51 +207,105 @@ type ServerError = { message?: string; code?: string } | null;
 const SAETZE: readonly (readonly [string, string])[] = [
   ['message is empty', 'Die Nachricht ist leer.'],
   ['message is too long', 'Höchstens 4000 Zeichen je Nachricht.'],
-  ['team channel is archived', 'Der Kanal ist archiviert und nimmt keine Nachrichten mehr an.'],
+  ['team channel is archived', 'Das Gespräch ist archiviert und nimmt nichts mehr an.'],
   ['team chat partner is not available', 'Diese Person ist im Teamchat nicht mehr erreichbar.'],
+  ['a group needs', 'Eine Gruppe hat drei bis neun Personen.'],
   ['channel name is taken', 'Einen Kanal mit diesem Namen gibt es schon.'],
-  ['channel name needs', 'Der Name braucht 1 bis 40 Zeichen.'],
-  ['search needs', 'Bitte mindestens zwei Zeichen eingeben.'],
+  ['channel name needs', 'Der Name braucht 1 bis 40 Zeichen, die Beschreibung höchstens 200.'],
+  ['search needs', 'Bitte mindestens zwei Zeichen eingeben oder einen Filter wählen.'],
+  ['send time must be', 'Planen geht eine Minute bis 30 Tage im Voraus.'],
+  ['reminder must be', 'Erinnern geht eine Minute bis 90 Tage im Voraus.'],
+  ['at most 50 pinned', 'Höchstens 50 angeheftete Nachrichten je Gespräch.'],
+  ['only a reply can', 'Nur eine Antwort kann zusätzlich im Gespräch stehen.'],
+  ['leave the channel instead', 'Selbst gehst du über „Kanal verlassen“.'],
   ['not found', 'Das Gespräch oder die Nachricht gibt es nicht mehr.'],
   ['not allowed', 'Dafür fehlt die Berechtigung.'],
 ];
 
-function satz(error: ServerError, ersatz: string): Error {
+/**
+ * Ein Fehler des Teamchats in einem festen Satz. `netz` heißt: Die Anfrage kam
+ * nicht an oder der Server war gerade nicht da - dann lohnt sich ein neuer
+ * Versuch mit derselben Kennung (ANN-641). Sonst hat der Server abgelehnt.
+ */
+export class TeamchatFehler extends Error {
+  readonly netz: boolean;
+  constructor(satz: string, netz: boolean) {
+    super(satz);
+    this.name = 'TeamchatFehler';
+    this.netz = netz;
+  }
+}
+
+const KEIN_NETZ = 'Kein Netz – es wird gesendet, sobald wieder Empfang da ist.';
+
+function satz(error: ServerError, status: number, ersatz: string): TeamchatFehler {
+  // Status 0: Die Anfrage hat den Server nie erreicht; 5xx und 408/429: Er war
+  // gerade nicht bereit. Beides ist kein Urteil über die Nachricht.
+  const netz = status === 0 || status === 408 || status === 429 || status >= 500;
+  if (netz) return new TeamchatFehler(KEIN_NETZ, true);
   const text = error?.message ?? '';
   const treffer = SAETZE.find(([schluessel]) => text.includes(schluessel));
-  return new Error(treffer ? treffer[1] : ersatz);
+  return new TeamchatFehler(treffer ? treffer[1] : ersatz, false);
 }
 
 async function rufe(fn: string, args: Record<string, unknown>, ersatz: string): Promise<unknown> {
-  const { data, error } = (await getSupabase().rpc(fn, args)) as {
-    data: unknown;
-    error: ServerError;
-  };
-  if (error) throw satz(error, ersatz);
+  let antwortDesServers: { data: unknown; error: ServerError; status?: number };
+  try {
+    antwortDesServers = (await getSupabase().rpc(fn, args)) as {
+      data: unknown;
+      error: ServerError;
+      status?: number;
+    };
+  } catch {
+    throw new TeamchatFehler(KEIN_NETZ, true);
+  }
+  const { data, error, status = error ? 400 : 200 } = antwortDesServers;
+  if (error) throw satz(error, status, ersatz);
   return data;
 }
 
 // -----------------------------------------------------------------------------
-// Lesen
+// Schlüssel und Takt
 // -----------------------------------------------------------------------------
 
 export const TEAMCHAT_KEY = ['teamchat'] as const;
 export const KANAELE_KEY = [...TEAMCHAT_KEY, 'kanaele'] as const;
 export const PERSONEN_KEY = [...TEAMCHAT_KEY, 'personen'] as const;
-
-export function nachrichtenKey(kanalId: string, threadId: string | null = null) {
-  return [...TEAMCHAT_KEY, 'nachrichten', kanalId, threadId] as const;
-}
-
 export const AKTIVITAET_KEY = [...TEAMCHAT_KEY, 'aktivitaet'] as const;
 export const THREADS_KEY = [...TEAMCHAT_KEY, 'threads'] as const;
+export const ZAEHLER_KEY = [...TEAMCHAT_KEY, 'zaehler'] as const;
+export const GEMERKT_KEY = [...TEAMCHAT_KEY, 'gemerkt'] as const;
+export const GEPLANT_KEY = [...TEAMCHAT_KEY, 'geplant'] as const;
 
-export function sucheKey(suche: string) {
-  return [...TEAMCHAT_KEY, 'suche', suche] as const;
+export function verlaufKey(kanalId: string, threadId: string | null = null) {
+  return [...TEAMCHAT_KEY, 'verlauf', kanalId, threadId] as const;
 }
 
-/** Wie oft eine offene Seite nachsieht - es gibt keine Push-Zustellung (ANN-612). */
+export function mitgliederKey(kanalId: string) {
+  return [...TEAMCHAT_KEY, 'mitglieder', kanalId] as const;
+}
+
+export function angeheftetKey(kanalId: string) {
+  return [...TEAMCHAT_KEY, 'angeheftet', kanalId] as const;
+}
+
+/** Der Suchschlüssel trägt nur einen Zähler, nie den Suchtext (ADR-011). */
+export function sucheKey(lauf: number) {
+  return [...TEAMCHAT_KEY, 'suche', lauf] as const;
+}
+
+/**
+ * Wie oft eine offene Liste nachsieht - es gibt keine Push-Zustellung
+ * (ANN-612). Ein offenes Gespräch sieht öfter nach ({@link GESPRAECH_MS}),
+ * der Zähler am Bereich seltener ({@link ZAEHLER_MS}).
+ */
 export const NACHSEHEN_MS = 20_000;
+export const GESPRAECH_MS = 10_000;
+export const ZAEHLER_MS = 30_000;
+
+// -----------------------------------------------------------------------------
+// Lesen
+// -----------------------------------------------------------------------------
 
 const LADEN_KANAELE = 'Die Gespräche konnten nicht geladen werden.';
 
@@ -159,18 +316,45 @@ export async function fetchKanaele(): Promise<Kanal[]> {
 
 const LADEN_NACHRICHTEN = 'Die Nachrichten konnten nicht geladen werden.';
 
+/** Eine Stelle im Verlauf: (Zeit, Kennung) - die Zeit als Text vom Server. */
+export interface Cursor {
+  at: string;
+  id: string;
+}
+
+/** Welche Seite eines Verlaufs (ANN-641). */
+export type Blatt =
+  | { art: 'neueste' }
+  | { art: 'vor'; cursor: Cursor }
+  | { art: 'nach'; cursor: Cursor }
+  | { art: 'um'; id: string };
+
+/** Im Gespräch höchstens so viele je Seite, im Thread mehr. */
+export const SEITE_GESPRAECH = 50;
+export const SEITE_THREAD = 100;
+
 /**
- * Ohne Thread die neuesten 50 Ausgangsnachrichten (mit `vor` die davor), mit
- * Thread die ganze Unterhaltung.
+ * Nachrichten eines Gesprächs (ohne Thread: was im Gespräch steht) oder eines
+ * Threads (die Ausgangsnachricht und die Antworten), aufsteigend nach (Zeit,
+ * Kennung). Blättern mit Cursor, ohne Lücke und ohne Doppel.
  */
 export async function fetchNachrichten(
   kanalId: string,
   threadId: string | null = null,
-  vor: string | null = null,
+  blatt: Blatt = { art: 'neueste' },
 ): Promise<Nachricht[]> {
   const data = await rufe(
     'list_team_messages',
-    { p_channel: kanalId, p_parent: threadId, p_before_at: vor },
+    {
+      p_channel: kanalId,
+      p_parent: threadId,
+      p_before_at: blatt.art === 'vor' ? blatt.cursor.at : null,
+      p_before_id: blatt.art === 'vor' ? blatt.cursor.id : null,
+      p_after_at: blatt.art === 'nach' ? blatt.cursor.at : null,
+      p_after_id: blatt.art === 'nach' ? blatt.cursor.id : null,
+      p_around: blatt.art === 'um' ? blatt.id : null,
+      p_limit: threadId ? SEITE_THREAD : SEITE_GESPRAECH,
+    },
     LADEN_NACHRICHTEN,
   );
   return antwort(z.array(nachrichtSchema), data, LADEN_NACHRICHTEN);
@@ -183,10 +367,35 @@ export async function fetchPersonen(): Promise<Person[]> {
   return antwort(z.array(personSchema), data, LADEN_PERSONEN);
 }
 
+const LADEN_MITGLIEDER = 'Die Mitglieder konnten nicht geladen werden.';
+
+export async function fetchMitglieder(kanalId: string): Promise<Mitglied[]> {
+  const data = await rufe('list_team_channel_members', { p_channel: kanalId }, LADEN_MITGLIEDER);
+  return antwort(z.array(mitgliedSchema), data, LADEN_MITGLIEDER);
+}
+
 const SUCHEN = 'Die Suche hat nicht geklappt.';
 
-export async function sucheNachrichten(suche: string): Promise<Treffer[]> {
-  const data = await rufe('search_team_messages', { p_query: suche }, SUCHEN);
+export interface Suchfilter {
+  text: string;
+  kanalId: string | null;
+  personId: string | null;
+  /** Erster Tag, `YYYY-MM-DD` in der Zeitzone der Praxis. */
+  ab: string | null;
+}
+
+export async function sucheNachrichten(filter: Suchfilter): Promise<Treffer[]> {
+  const data = await rufe(
+    'search_team_messages',
+    {
+      p_query: filter.text.trim() || null,
+      p_channel: filter.kanalId,
+      p_author: filter.personId,
+      p_from: filter.ab,
+      p_to: null,
+    },
+    SUCHEN,
+  );
   return antwort(z.array(trefferSchema), data, SUCHEN);
 }
 
@@ -200,30 +409,74 @@ export async function fetchAktivitaet(): Promise<Aktivitaet[]> {
 
 const LADEN_THREADS = 'Die Threads konnten nicht geladen werden.';
 
-/** Threads, denen man folgt, die mit Neuem zuerst (ANN-614). */
+/** Threads, denen man folgt, die mit Neuem zuerst (ANN-640). */
 export async function fetchThreads(): Promise<ThreadUeberblick[]> {
   const data = await rufe('list_team_threads', {}, LADEN_THREADS);
   return antwort(z.array(threadSchema), data, LADEN_THREADS);
+}
+
+const LADEN_GEMERKT = '„Für später“ konnte nicht geladen werden.';
+
+export async function fetchGemerkt(erledigt = false): Promise<Gemerkt[]> {
+  const data = await rufe('list_team_saved', { p_done: erledigt }, LADEN_GEMERKT);
+  return antwort(z.array(gemerktSchema), data, LADEN_GEMERKT);
+}
+
+const LADEN_GEPLANT = 'Geplante Nachrichten konnten nicht geladen werden.';
+
+export async function fetchGeplant(): Promise<Geplant[]> {
+  const data = await rufe('list_team_scheduled', {}, LADEN_GEPLANT);
+  return antwort(z.array(geplantSchema), data, LADEN_GEPLANT);
+}
+
+const LADEN_ANGEHEFTET = 'Angeheftetes konnte nicht geladen werden.';
+
+export async function fetchAngeheftet(kanalId: string): Promise<Angeheftet[]> {
+  const data = await rufe('list_team_pins', { p_channel: kanalId }, LADEN_ANGEHEFTET);
+  return antwort(z.array(angeheftetSchema), data, LADEN_ANGEHEFTET);
+}
+
+const LADEN_ZAEHLER = 'Neues im Teamchat konnte nicht geladen werden.';
+
+/** Der Zähler für die Navigation - Benachrichtigung in der App (ANN-647). */
+export async function fetchZaehler(): Promise<Zaehler> {
+  const data = await rufe('get_team_chat_summary', {}, LADEN_ZAEHLER);
+  const zeilen = antwort(z.array(zaehlerSchema), data, LADEN_ZAEHLER);
+  const zeile = zeilen[0];
+  if (!zeile) throw new TeamchatFehler(LADEN_ZAEHLER, false);
+  return zeile;
 }
 
 // -----------------------------------------------------------------------------
 // Schreiben
 // -----------------------------------------------------------------------------
 
-export async function sendeNachricht(input: {
+export interface Sendeauftrag {
+  /** Die Kennung des Geräts (ANN-641) - zweimal gesendet ist einmal gespeichert. */
+  id: string;
   kanalId: string;
   threadId: string | null;
   text: string;
   erwaehnt: readonly string[];
-}): Promise<string> {
+  alle: boolean;
+  auchImKanal: boolean;
+  /** Später senden (ANN-643): ISO-Zeit oder `null`. */
+  um: string | null;
+}
+
+export async function sendeNachricht(auftrag: Sendeauftrag): Promise<string> {
   const ersatz = 'Die Nachricht konnte nicht gesendet werden.';
   const data = await rufe(
     'post_team_message',
     {
-      p_channel: input.kanalId,
-      p_parent: input.threadId,
-      p_body: input.text,
-      p_mentions: input.erwaehnt,
+      p_channel: auftrag.kanalId,
+      p_parent: auftrag.threadId,
+      p_body: auftrag.text,
+      p_mentions: auftrag.erwaehnt,
+      p_id: auftrag.id,
+      p_mention_all: auftrag.alle,
+      p_also_in_channel: auftrag.auchImKanal,
+      p_send_at: auftrag.um,
     },
     ersatz,
   );
@@ -234,10 +487,16 @@ export async function bearbeiteNachricht(input: {
   id: string;
   text: string;
   erwaehnt: readonly string[];
+  alle: boolean;
 }): Promise<void> {
   await rufe(
     'edit_team_message',
-    { p_message: input.id, p_body: input.text, p_mentions: input.erwaehnt },
+    {
+      p_message: input.id,
+      p_body: input.text,
+      p_mentions: input.erwaehnt,
+      p_mention_all: input.alle,
+    },
     'Die Nachricht konnte nicht geändert werden.',
   );
 }
@@ -250,12 +509,31 @@ export async function loescheNachricht(id: string): Promise<void> {
   );
 }
 
-export async function markiereGelesen(kanalId: string): Promise<void> {
-  await rufe('mark_team_channel_read', { p_channel: kanalId }, LADEN_KANAELE);
+const LESESTAND = 'Der Lesestand konnte nicht gespeichert werden.';
+
+/** Gelesen bis höchstens `bis` - der Zeit der neuesten gezeigten Nachricht (ANN-640). */
+export async function markiereGelesen(kanalId: string, bis: string | null): Promise<void> {
+  await rufe('mark_team_channel_read', { p_channel: kanalId, p_up_to: bis }, LESESTAND);
+}
+
+export async function markiereThreadGelesen(threadId: string, bis: string | null): Promise<void> {
+  await rufe('mark_team_thread_read', { p_root: threadId, p_up_to: bis }, LESESTAND);
+}
+
+export async function markiereUngelesen(nachrichtId: string): Promise<void> {
+  await rufe('mark_team_unread', { p_message: nachrichtId }, LESESTAND);
 }
 
 export async function markiereAllesGelesen(): Promise<void> {
   await rufe('mark_all_team_channels_read', {}, 'Nicht alles ließ sich als gelesen markieren.');
+}
+
+export async function folgeThread(threadId: string, folgen: boolean): Promise<void> {
+  await rufe(
+    'set_team_thread_following',
+    { p_root: threadId, p_following: folgen },
+    'Folgen ließ sich nicht ändern.',
+  );
 }
 
 export async function oeffneDirekt(staffMemberId: string): Promise<string> {
@@ -264,14 +542,46 @@ export async function oeffneDirekt(staffMemberId: string): Promise<string> {
   return antwort(z.string(), data, ersatz);
 }
 
-export async function legeKanalAn(input: { name: string; beschreibung: string }): Promise<string> {
+export async function oeffneGruppe(staffMemberIds: readonly string[]): Promise<string> {
+  const ersatz = 'Die Gruppennachricht konnte nicht geöffnet werden.';
+  const data = await rufe('open_team_group', { p_staff_members: staffMemberIds }, ersatz);
+  return antwort(z.string(), data, ersatz);
+}
+
+export async function legeKanalAn(input: {
+  name: string;
+  beschreibung: string;
+  privat: boolean;
+  mitglieder: readonly string[];
+}): Promise<string> {
   const ersatz = 'Der Kanal konnte nicht angelegt werden.';
   const data = await rufe(
     'create_team_channel',
-    { p_name: input.name, p_description: input.beschreibung.trim() || null },
+    {
+      p_name: input.name,
+      p_description: input.beschreibung.trim() || null,
+      p_private: input.privat,
+      p_members: input.mitglieder,
+    },
     ersatz,
   );
   return antwort(z.string(), data, ersatz);
+}
+
+export async function aendereKanal(input: {
+  kanalId: string;
+  name: string;
+  beschreibung: string;
+}): Promise<void> {
+  await rufe(
+    'update_team_channel',
+    {
+      p_channel: input.kanalId,
+      p_name: input.name,
+      p_description: input.beschreibung.trim() || null,
+    },
+    'Der Kanal konnte nicht geändert werden.',
+  );
 }
 
 export async function archiviereKanal(kanalId: string, archiviert: boolean): Promise<void> {
@@ -282,15 +592,126 @@ export async function archiviereKanal(kanalId: string, archiviert: boolean): Pro
   );
 }
 
+export async function holeMitglieder(kanalId: string, personen: readonly string[]): Promise<void> {
+  await rufe(
+    'add_team_channel_members',
+    { p_channel: kanalId, p_staff_members: personen },
+    'Die Personen konnten nicht hinzugefügt werden.',
+  );
+}
+
+export async function entferneMitglied(kanalId: string, staffMemberId: string): Promise<void> {
+  await rufe(
+    'remove_team_channel_member',
+    { p_channel: kanalId, p_staff_member: staffMemberId },
+    'Die Person konnte nicht herausgenommen werden.',
+  );
+}
+
+export async function verlasseKanal(kanalId: string): Promise<void> {
+  await rufe('leave_team_channel', { p_channel: kanalId }, 'Der Kanal ließ sich nicht verlassen.');
+}
+
+export async function setzeEinstellungen(
+  kanalId: string,
+  einstellungen: { stufe?: Stufe; favorit?: boolean },
+): Promise<void> {
+  await rufe(
+    'set_team_channel_preferences',
+    {
+      p_channel: kanalId,
+      p_notify: einstellungen.stufe ?? null,
+      p_starred: einstellungen.favorit ?? null,
+    },
+    'Die Einstellung konnte nicht gespeichert werden.',
+  );
+}
+
+export async function reagiere(
+  nachrichtId: string,
+  reaktion: Reaktionsschluessel,
+): Promise<boolean> {
+  const ersatz = 'Die Reaktion konnte nicht gespeichert werden.';
+  const data = await rufe(
+    'toggle_team_reaction',
+    { p_message: nachrichtId, p_reaction: reaktion },
+    ersatz,
+  );
+  return antwort(z.boolean(), data, ersatz);
+}
+
+export async function hefteAn(nachrichtId: string, angeheftet: boolean): Promise<void> {
+  await rufe(
+    'set_team_message_pinned',
+    { p_message: nachrichtId, p_pinned: angeheftet },
+    'Anheften hat nicht geklappt.',
+  );
+}
+
+export async function merke(nachrichtId: string, erinnernUm: string | null): Promise<void> {
+  await rufe(
+    'save_team_message',
+    { p_message: nachrichtId, p_remind_at: erinnernUm },
+    'Merken hat nicht geklappt.',
+  );
+}
+
+export async function aendereGemerkt(
+  nachrichtId: string,
+  aenderung: { erledigt?: boolean; erinnernUm?: string | null },
+): Promise<void> {
+  await rufe(
+    'update_team_saved',
+    {
+      p_message: nachrichtId,
+      p_done: aenderung.erledigt ?? null,
+      p_remind_at: aenderung.erinnernUm ?? null,
+      p_clear_reminder: aenderung.erinnernUm === null,
+    },
+    'Die Merkliste ließ sich nicht ändern.',
+  );
+}
+
+export async function vergiss(nachrichtId: string): Promise<void> {
+  await rufe(
+    'unsave_team_message',
+    { p_message: nachrichtId },
+    'Die Merkliste ließ sich nicht ändern.',
+  );
+}
+
+/** Eine geplante Nachricht jetzt senden (`um` leer) oder neu planen. */
+export async function planeNeu(nachrichtId: string, um: string | null): Promise<void> {
+  await rufe(
+    'reschedule_team_message',
+    { p_message: nachrichtId, p_send_at: um },
+    'Die geplante Nachricht ließ sich nicht ändern.',
+  );
+}
+
 // -----------------------------------------------------------------------------
 // Darstellung
 // -----------------------------------------------------------------------------
 
-/** Wie ein Gespräch heißt: der Kanalname mit #, sonst die andere Person. */
-export function kanalTitel(kanal: Pick<Kanal, 'kind' | 'name' | 'partner_name'>): string {
-  if (kanal.kind === 'channel') return `# ${kanal.name ?? ''}`;
+/** Wie ein Gespräch heißt: Kanalname mit #, sonst die anderen Beteiligten. */
+export function kanalTitel(
+  kanal: Pick<Kanal, 'kind' | 'name' | 'partner_name'> & { member_names?: string[] | null },
+): string {
+  if (kanal.kind === 'channel' || kanal.kind === 'private') return `# ${kanal.name ?? ''}`;
   if (kanal.kind === 'fleet') return 'Nachrichten der Radflotte';
+  if (kanal.kind === 'group') return (kanal.member_names ?? []).join(', ') || 'Gruppennachricht';
   return kanal.partner_name ?? 'Direktnachricht';
+}
+
+/** Warum in einem Gespräch nichts mehr geschrieben werden kann - oder `null`. */
+export function gesperrtSatz(
+  kanal: Pick<Kanal, 'archived' | 'kind' | 'partner_active' | 'partner_name'>,
+): string | null {
+  if (kanal.archived) return 'Archiviert – nur noch lesbar.';
+  if (kanal.kind === 'direct' && kanal.partner_active === false) {
+    return `${kanal.partner_name ?? 'Diese Person'} ist nicht mehr im Team.`;
+  }
+  return null;
 }
 
 /** Was an einer Nachricht ohne Inhalt steht. */
@@ -305,27 +726,48 @@ export function ohneInhalt(nachricht: Pick<Nachricht, 'removed_kind'>): string {
   }
 }
 
+/** Steht das Gespräch fett? Nach der eigenen Stufe (ANN-647), wie Slack. */
+export function istFett(kanal: Pick<Kanal, 'kind' | 'notify' | 'unread' | 'mentions'>): boolean {
+  if (kanal.mentions > 0) return true;
+  if (kanal.notify === 'none') return false;
+  if (kanal.notify === 'mentions')
+    return kanal.kind === 'direct' || kanal.kind === 'group' ? kanal.unread > 0 : false;
+  return kanal.unread > 0;
+}
+
 /**
- * Gesprächsliste in der Reihenfolge des Arbeitstags: Ungelesenes zuerst, dann
- * offene Kanäle nach Namen, dann Direktnachrichten nach der letzten
- * Nachricht; Archiviertes getrennt. Kanäle richtet die Praxis selbst ein
- * (ANN-611).
+ * Gesprächsliste in der Reihenfolge des Arbeitstags: Favoriten, Kanäle,
+ * Direkt- und Gruppennachrichten; in jedem Abschnitt Fettes zuerst, Kanäle
+ * dann nach Namen, Nachrichten nach der letzten Nachricht. Archiviertes
+ * getrennt. Das Gespräch der Radflotte steht in der Radflotte (ANN-613).
  */
-export function ordneKanaele(kanaele: readonly Kanal[]): { aktiv: Kanal[]; archiviert: Kanal[] } {
-  const rang = (k: Kanal) => (k.kind === 'channel' ? 0 : 1);
-  const aktiv = kanaele
-    .filter((k) => !k.archived)
-    .sort((a, b) => {
-      const ungelesen = Number(b.unread > 0) - Number(a.unread > 0);
-      if (ungelesen !== 0) return ungelesen;
-      if (rang(a) !== rang(b)) return rang(a) - rang(b);
-      if (a.kind === 'direct') {
-        return (b.last_message_at ?? '').localeCompare(a.last_message_at ?? '');
-      }
-      return kanalTitel(a).localeCompare(kanalTitel(b), 'de');
-    });
-  const archiviert = kanaele
-    .filter((k) => k.archived)
-    .sort((a, b) => kanalTitel(a).localeCompare(kanalTitel(b), 'de'));
-  return { aktiv, archiviert };
+export function ordneKanaele(kanaele: readonly Kanal[]): {
+  favoriten: Kanal[];
+  kanaele: Kanal[];
+  direkt: Kanal[];
+  archiviert: Kanal[];
+} {
+  const reihe = (a: Kanal, b: Kanal) => {
+    const fett = Number(istFett(b)) - Number(istFett(a));
+    if (fett !== 0) return fett;
+    const kanalA = a.kind === 'channel' || a.kind === 'private';
+    const kanalB = b.kind === 'channel' || b.kind === 'private';
+    if (kanalA !== kanalB) return kanalA ? -1 : 1;
+    if (!kanalA) return (b.last_message_at ?? '').localeCompare(a.last_message_at ?? '');
+    return kanalTitel(a).localeCompare(kanalTitel(b), 'de');
+  };
+  const sichtbar = kanaele.filter((k) => k.kind !== 'fleet');
+  const aktiv = sichtbar.filter((k) => !k.archived);
+  return {
+    favoriten: aktiv.filter((k) => k.starred).sort(reihe),
+    kanaele: aktiv
+      .filter((k) => !k.starred && (k.kind === 'channel' || k.kind === 'private'))
+      .sort(reihe),
+    direkt: aktiv
+      .filter((k) => !k.starred && (k.kind === 'direct' || k.kind === 'group'))
+      .sort(reihe),
+    archiviert: sichtbar
+      .filter((k) => k.archived)
+      .sort((a, b) => kanalTitel(a).localeCompare(kanalTitel(b), 'de')),
+  };
 }

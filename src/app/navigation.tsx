@@ -587,6 +587,27 @@ export function istRandlos(pathname: string): boolean {
 }
 
 /**
+ * Seiten mit der Chatfläche (TEAM-002, ANN-648): Teamchat und das Gespräch
+ * der Radflotte. Sie reichen von Rand zu Rand und rollen nicht als Seite,
+ * sondern in sich - die Eingabe bleibt am Fuß, auch mit offener Tastatur.
+ */
+const CHATFLAECHEN = ['/team', '/betrieb/flotte/nachrichten'] as const;
+
+export function istChatflaeche(pathname: string): boolean {
+  return CHATFLAECHEN.some((pfad) => pathname === pfad || pathname.startsWith(`${pfad}/`));
+}
+
+/**
+ * In der Chatfläche gehört am Telefon und Tablet die ganze Höhe dem Gespräch:
+ * Die Unterleiste des Bereichs steht nur über der Liste der Gespräche
+ * (`/team`); ein Gespräch, ein Thread und die Ansichten daneben haben ihren
+ * eigenen Weg zurück.
+ */
+export function chatOhneUnterleiste(pathname: string): boolean {
+  return istChatflaeche(pathname) && pathname !== '/team';
+}
+
+/**
  * Seiten ohne Unterleiste des Bereichs (Akte entschlacken, 2026-10-03).
  *
  * In einer Akte steht „Patient:innen | Verordner:innen" über der Tableiste der

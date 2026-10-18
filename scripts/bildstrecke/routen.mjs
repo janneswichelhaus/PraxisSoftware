@@ -71,6 +71,10 @@ export const IDS = Object.freeze({
   threadPanne: '7e7e7e7e-7e7e-4e7e-8e7e-000000000201',
   /** Direktnachricht Jannes – Anna. */
   direktAnna: '7e7e7e7e-7e7e-4e7e-8e7e-000000000004',
+  /** TEAM-002: privater Kanal der Leitung (Jannes, Tim). */
+  kanalLeitung: '7e7e7e7e-7e7e-4e7e-8e7e-000000000005',
+  /** TEAM-002: Gruppe Anna, Olivia, Tom mit einem Thread. */
+  gruppeInfostand: '7e7e7e7e-7e7e-4e7e-8e7e-000000000006',
 });
 
 /** Reihenfolge der Bereiche im Kontaktbogen - grob nach den Design-Batches. */
@@ -680,6 +684,27 @@ export const ROUTEN = Object.freeze([
     bereich: 'Eingang',
     etikett: 'Teamchat: neue Nachricht',
     konten: ['owner', 'therapist'],
+  },
+  {
+    muster: '/team/gemerkt',
+    pfad: '/team/gemerkt',
+    bereich: 'Eingang',
+    etikett: 'Teamchat: Für später',
+    konten: ['therapist'],
+  },
+  {
+    muster: '/team/entwuerfe',
+    pfad: '/team/entwuerfe',
+    bereich: 'Eingang',
+    etikett: 'Teamchat: Entwürfe und Geplantes',
+    konten: ['owner'],
+  },
+  {
+    muster: '/team/suche',
+    pfad: '/team/suche',
+    bereich: 'Eingang',
+    etikett: 'Teamchat: Suche',
+    konten: ['therapist'],
   },
   {
     muster: '/team/:kanalId',
