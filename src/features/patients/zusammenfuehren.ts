@@ -136,6 +136,9 @@ const SPERREN: Record<string, string> = {
     'Beide Akten haben ein Nachsorge-Abo für dieselbe Zeit. Bitte das irrtümlich angelegte entfernen – zwei Verträge über dieselbe Nachsorge gibt es nicht.',
   training_offer_overlap:
     'Beide Akten haben ein offenes Trainingsangebot. Bitte eines davon zurückziehen.',
+  // ERN-001: Zusammenführen darf nur owner, der die Ernährungsberatung führt.
+  nutrition_profile_overlap:
+    'Beide Akten haben eine laufende Ernährungsberatung. Bitte eine davon beenden.',
   open_waitlist_overlap:
     'Beide Akten stehen ohne Grundlage auf der Warteliste. Bitte einen der beiden Einträge schließen.',
   note_too_long:

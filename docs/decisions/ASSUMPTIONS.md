@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-17.
+Zuletzt aktualisiert: 2026-10-18.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -6470,3 +6470,27 @@ Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
 **Anker.** `app.electricity_tour_days`.
 
 **Änderungspfad.** Andere Tour (etwa ohne Rückweg): nur diese Funktion · Aufwand `klein`.
+
+### ANN-618 — Lesart der Zielwertregeln
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** „Im Training“ (Eiweiß 1,6 g/kg) heißt: Das Profil hängt an einem Trainingsverhältnis; es gilt die höchste zutreffende Stufe. Fett wird mit genau 30 % gerechnet. Ohne Geschlecht zählt das Mittel der gerundeten Varianten. Die Zeit bis zum Ziel rechnet mit 7000 kcal je kg, nur wenn das Energieziel in Richtung Ziel weist. Gerundet wird auf kcal, g, 10 ml und 0,1 kg.
+
+**Begründung.** ADR-027 Punkte 16 bis 21 nennen die Zahlen, nicht ihre Lesart; 7000 kcal/kg ist die übliche Näherung.
+
+**Anker.** `app.nutrition_calculation` (Konstanten und Rundung).
+
+**Änderungspfad.** Eine Zahl oder Regel in dieser Funktion und ihr Test · Aufwand `klein`.
+
+### ANN-619 — Einwilligung am Profil, Frist und Zusammenführen
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+
+**Annahme.** Die Einwilligung „Ernährungsberatung“ hängt am Profil und entsteht mit ihm in einem Vorgang (Tag vom Papier); nach einem Widerruf schreibt niemand mehr außer Einwilligung und Ende. Die drei Jahre laufen ab `ended_on`; Einwilligung und Gewicht fallen mit dem Profil; ein Legal Hold an der Akte hält. Beim Zusammenführen zieht das Profil ohne Zähler im Vermerk mit, zwei laufende sperren.
+
+**Begründung.** ADR-027 Punkte 3, 4 und 6, ADR-008 Fassung 6; Art. 7 Abs. 1 und 3 DSGVO (Nachweis, Widerruf). Der Vermerk des Zusammenführens ist für Rollen ohne die Fähigkeit lesbar.
+
+**Anker.** `app.delete_due_nutrition_profiles`, `public.retention_classes` (`ernaehrungsberatung`).
+
+**Änderungspfad.** Andere Frist: `retention_classes`; Einwilligung je Verhältnis: eigene Migration mit Datenumzug · Aufwand `mittel`.
