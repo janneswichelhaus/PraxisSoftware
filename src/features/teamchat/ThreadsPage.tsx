@@ -5,7 +5,7 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import type { CurrentUser } from '@/features/session/types';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   KANAELE_KEY,
   NACHSEHEN_MS,
@@ -15,15 +15,20 @@ import {
   kanalTitel,
   ohneInhalt,
 } from './api';
-import { threadPfad } from './pfade';
+import { ohneFormatierung } from './formatierung';
+import { TEAMCHAT, THREADS, threadPfad } from './pfade';
+import { useTeamchat } from './rahmen';
+import { Rand } from './Rand';
 import { nachrichtenzeit } from './zeit';
 
 /**
- * Teamchat → Threads (ANN-614, wie bei Slack): alle Threads, denen die Person
- * folgt - selbst begonnen, geantwortet oder darin erwähnt -, die mit neuen
- * Antworten zuerst. Ein Tipp öffnet den Thread.
+ * Teamchat → Threads (ANN-640, wie bei Slack): alle Threads, denen die Person
+ * folgt - begonnen, beantwortet, darin erwähnt oder ausdrücklich gefolgt -,
+ * die mit neuen Antworten zuerst. Ein Tipp öffnet den Thread neben seinem
+ * Gespräch.
  */
-export function ThreadsPage({ user }: { user: CurrentUser }) {
+export function ThreadsPage() {
+  const { user, spalten } = useTeamchat();
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
   const threads = useQuery({
     queryKey: THREADS_KEY,
@@ -37,8 +42,10 @@ export function ThreadsPage({ user }: { user: CurrentUser }) {
   };
 
   return (
-    <>
-      <Rueckweg standard="/team" beschriftung="Zurück zum Teamchat" />
+    <Rand>
+      {spalten === 1 ? (
+        <Rueckweg standard={TEAMCHAT} beschriftung="Zurück zu den Gesprächen" />
+      ) : null}
       <PageHeader title="Threads" />
       <Abfragezustand
         abfrage={threads}
@@ -47,7 +54,8 @@ export function ThreadsPage({ user }: { user: CurrentUser }) {
         leer={{
           wenn: (daten) => daten.length === 0,
           titel: 'Noch kein Thread',
-          beschreibung: 'Hier stehen Threads, die du begonnen oder beantwortet hast.',
+          beschreibung:
+            'Hier stehen Threads, die du begonnen, beantwortet oder in denen du erwähnt bist.',
         }}
       >
         {(daten) => (
@@ -55,15 +63,15 @@ export function ThreadsPage({ user }: { user: CurrentUser }) {
             {daten.map((t) => (
               <ListRow
                 key={t.id}
-                to={threadPfad({ id: t.channel_id, kind: t.channel_kind }, t.id)}
+                to={mitRueckweg(
+                  threadPfad({ id: t.channel_id, kind: t.channel_kind }, t.id),
+                  THREADS,
+                )}
+                gedaempft={t.new_replies === 0}
                 titel={
-                  t.body === null ? (
-                    ohneInhalt(t)
-                  ) : t.new_replies > 0 ? (
-                    <strong>{t.body}</strong>
-                  ) : (
-                    t.body
-                  )
+                  <span className="line-clamp-2">
+                    {t.body === null ? ohneInhalt(t) : ohneFormatierung(t.body)}
+                  </span>
                 }
                 meta={`${titel(t.channel_id)} · ${t.reply_count === 1 ? '1 Antwort' : `${t.reply_count} Antworten`}${
                   t.last_reply_at ? ` · zuletzt ${nachrichtenzeit(t.last_reply_at, zeitzone)}` : ''
@@ -80,6 +88,6 @@ export function ThreadsPage({ user }: { user: CurrentUser }) {
           </Listenabschnitt>
         )}
       </Abfragezustand>
-    </>
+    </Rand>
   );
 }

@@ -162,6 +162,23 @@ describe('Listenabschnitt (Design-Fundament)', () => {
       expect.arrayContaining(['rounded-card', 'border', 'bg-surface']),
     );
   });
+
+  it('steht ohne Karte, wo schon ein Rahmen ist - im Fenster (TEAM-002, Regel 2)', () => {
+    renderWithProviders(
+      <>
+        <Listenabschnitt titel="Angeheftet" rahmen={false} leer={{ titel: 'Nichts angeheftet' }}>
+          {[].map(() => null)}
+        </Listenabschnitt>
+        <Listenabschnitt titel="Wer liest" rahmen={false}>
+          <ListRow titel="Anna Beispiel" />
+        </Listenabschnitt>
+      </>,
+    );
+    expect(klassenVon(screen.getByText('Nichts angeheftet').parentElement)).not.toContain(
+      'rounded-card',
+    );
+    expect(klassenVon(screen.getByRole('list'))).not.toContain('rounded-card');
+  });
 });
 
 type Rechnung = { id: string; nummer: string; person: string; zustand: string; betrag: string };

@@ -21,6 +21,9 @@ import { KnopfGroesse } from './knopfGroesse';
  * reicht (die Schreibseite); `seite` (Vorgabe) für eine gewöhnliche Seite im
  * Inhaltsbereich - die Leiste greift dann über dessen Innenabstand hinaus,
  * damit sie die volle Breite deckt, und ihre Knöpfe fluchten mit dem Inhalt.
+ * `rahmen` für eine Fläche mit fester Höhe, deren Inhalt selbst rollt - die
+ * Chatfläche des Teamchats (TEAM-002): Die Leiste steht am Fuß der Fläche
+ * und klebt nicht, weil nichts um sie herum rollt.
  */
 export function Aktionsleiste({
   children,
@@ -29,20 +32,24 @@ export function Aktionsleiste({
 }: {
   children: ReactNode;
   oben?: ReactNode;
-  einbettung?: 'seite' | 'flaeche';
+  einbettung?: 'seite' | 'flaeche' | 'rahmen';
 }) {
   const seite = einbettung === 'seite';
   return (
     <div
-      className={`bg-surface sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-10 shrink-0 sm:bottom-0 ${
-        seite ? '-mx-4 sm:-mx-6 lg:-mx-8' : ''
-      }`.trim()}
+      className={
+        einbettung === 'rahmen'
+          ? 'bg-surface shrink-0'
+          : `bg-surface sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-10 shrink-0 sm:bottom-0 ${
+              seite ? '-mx-4 sm:-mx-6 lg:-mx-8' : ''
+            }`.trim()
+      }
     >
       {oben}
       <div
         className={`border-line flex items-center gap-2 border-t py-2 ${
-          seite ? 'px-4 sm:px-6 lg:px-8' : 'px-3'
-        }`}
+          seite || einbettung === 'rahmen' ? 'px-4 sm:px-6' : 'px-3'
+        } ${seite ? 'lg:px-8' : ''}`.trim()}
       >
         <KnopfGroesse value="kompakt">{children}</KnopfGroesse>
       </div>

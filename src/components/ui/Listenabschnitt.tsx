@@ -19,6 +19,9 @@ import { Section } from './Section';
  *   * ohne Zeilen der `leer`-Zustand **in einer Karte**, mit dem nächsten
  *     Schritt - nie ein Satz frei zwischen Karten;
  *   * `mehr` unter der Liste: „Alle anzeigen →“, „Weitere laden“.
+ *
+ * `rahmen={false}` dort, wo schon ein Rahmen steht - in einem Fenster am
+ * Rechner (Regel 2: kein Kasten im Kasten, TEAM-002).
  */
 export function Listenabschnitt({
   titel,
@@ -27,6 +30,7 @@ export function Listenabschnitt({
   leer,
   mehr,
   ebene = 2,
+  rahmen = true,
   children,
 }: {
   titel: string;
@@ -35,6 +39,8 @@ export function Listenabschnitt({
   leer?: { titel: string; beschreibung?: string; aktion?: ReactNode };
   mehr?: ReactNode;
   ebene?: 2 | 3;
+  /** Ohne Karte um Zeilen und Leerzustand. */
+  rahmen?: boolean;
   /** Die Zeilen (`ListRow`); eine leere Liste zeigt `leer`. */
   children?: ReactNode;
 }) {
@@ -46,10 +52,10 @@ export function Listenabschnitt({
       {...(aktion === undefined ? {} : { aktion })}
     >
       {zeilen.length > 0 ? (
-        <ListRows>{zeilen}</ListRows>
+        <ListRows rahmen={rahmen}>{zeilen}</ListRows>
       ) : leer ? (
         <EmptyState
-          inKarte
+          inKarte={rahmen}
           title={leer.titel}
           description={leer.beschreibung}
           {...(leer.aktion === undefined ? {} : { aktion: leer.aktion })}

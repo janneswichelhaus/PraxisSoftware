@@ -14,12 +14,16 @@ import { SubNav } from '@/components/ui/SubNav';
 import { istAktiv } from '@/components/ui/subnavAktiv';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
+import { Zaehlmarke } from '@/components/ui/Zaehlmarke';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
+import { useTeamchatZaehler } from '@/features/teamchat/zaehler';
 import { Funktionssuche } from './Funktionssuche';
 import { useAbmeldeanfrage, useAbmeldung } from './abmeldeschutz';
 import {
   aktiverBereich,
   arbeitsbereiche,
+  chatOhneUnterleiste,
+  istChatflaeche,
   istRandlos,
   leistenvorrang,
   mehrSymbol,
@@ -211,6 +215,25 @@ export function AppShell({
   const ansichten =
     aktuell?.unterpunkte.find((punkt) => istAktiv(punkt, pathname))?.ansichten ?? [];
   const aufKonto = pathname === '/mein-konto';
+  // Die Zahl an „Nachrichten“ (TEAM-002, ANN-647) - Benachrichtigung in der App.
+  const teamchatNeu = useTeamchatZaehler(user);
+  const chat = istChatflaeche(pathname);
+  const unterleiste = (
+    <>
+      {aktuell && aktuell.unterpunkte.length > 0 && zeigtUnterleiste(pathname) ? (
+        // Eigener Schlüssel je Bereich: Eine aufgeklappte Vorschau bleibt
+        // nicht offen, wenn man den Bereich wechselt (UX-002h).
+        <SubNav
+          key={aktuell.id}
+          eintraege={aktuell.unterpunkte}
+          label={`Bereich ${aktuell.label}`}
+        />
+      ) : null}
+      {ansichten.length > 1 && zeigtUnterleiste(pathname) ? (
+        <Ansichtsleiste eintraege={ansichten} />
+      ) : null}
+    </>
+  );
   /**
    * Am Telefon ist die Suche eine Lupe neben „Konto" (BEF-039, ANN-109): Das
    * Feld kostete dort eine eigene Zeile über jeder Seite. Ab sm steht es wie
@@ -305,6 +328,13 @@ export function AppShell({
                   {bereich.kurz}
                 </span>
                 <span className="sr-only truncate lg:not-sr-only">{bereich.label}</span>
+                {bereich.id === 'team' ? (
+                  <Zaehlmarke
+                    anzahl={teamchatNeu}
+                    auf="leiste"
+                    className="absolute top-1 right-2 lg:static lg:ml-auto"
+                  />
+                ) : null}
               </Link>
             </li>
           ))}
@@ -319,7 +349,7 @@ export function AppShell({
             steht der Hinweis über der Kopfzeile und schiebt sie hinunter; die
             Messung der Suche in `Funktionssuche.tsx` gilt unverändert. */}
         <div ref={kopf} className="sticky top-0 z-30">
-          <Verbindungsanzeige />
+          <Verbindungsanzeige imChat={chat} />
           {/* Gescheitertes Nachladen des Profils (BEF-046): dieselbe Stelle,
               damit der Hinweis mit der Kopfzeile klebt. */}
           <Profilhinweis />
@@ -531,29 +561,37 @@ export function AppShell({
           id="inhalt"
           tabIndex={-1}
           className={
-            istRandlos(pathname)
-              ? 'w-full min-w-0 px-2 pt-2 pb-28 focus:outline-none sm:px-3 sm:pt-3 sm:pb-4'
-              : 'max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 focus:outline-none sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12'
+            chat
+              ? 'flex w-full min-w-0 flex-col focus:outline-none'
+              : istRandlos(pathname)
+                ? 'w-full min-w-0 px-2 pt-2 pb-28 focus:outline-none sm:px-3 sm:pt-3 sm:pb-4'
+                : 'max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 focus:outline-none sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12'
           }
         >
-          {aktuell && aktuell.unterpunkte.length > 0 && zeigtUnterleiste(pathname) ? (
-            // Eigener Schlüssel je Bereich: Eine aufgeklappte Vorschau bleibt
-            // nicht offen, wenn man den Bereich wechselt (UX-002h).
-            <SubNav
-              key={aktuell.id}
-              eintraege={aktuell.unterpunkte}
-              label={`Bereich ${aktuell.label}`}
-            />
-          ) : null}
-          {ansichten.length > 1 && zeigtUnterleiste(pathname) ? (
-            <Ansichtsleiste eintraege={ansichten} />
-          ) : null}
+          {/* Die Chatfläche (TEAM-002, ANN-648) reicht von Rand zu Rand und
+              misst ihre Höhe selbst; nur die Unterleiste trägt hier ihren
+              Rand - und fehlt am Telefon und Tablet, sobald ein Gespräch
+              offen ist. */}
+          {chat ? (
+            <div
+              className={`px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8 [&>nav]:mb-0 ${
+                chatOhneUnterleiste(pathname) ? 'max-lg:hidden' : ''
+              }`}
+            >
+              {unterleiste}
+            </div>
+          ) : (
+            unterleiste
+          )}
           {children}
         </main>
       </div>
 
+      {/* `data-tableiste`: Die Chatfläche misst bis zu ihrer Oberkante
+          (TEAM-002, `features/teamchat/flaeche.ts`). */}
       <nav
         aria-label="Arbeitsbereiche"
+        data-tableiste=""
         className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
       >
         <ul ref={tabliste} className={`relative flex ${tabKasten ? 'gleitet-strich' : ''}`}>
@@ -562,10 +600,13 @@ export function AppShell({
               <Link
                 to={bereich.to}
                 aria-current={aktuell?.id === bereich.id ? 'page' : undefined}
-                className={tabLink}
+                className={`${tabLink} relative`}
               >
                 {bereich.icon}
                 {bereich.kurz}
+                {bereich.id === 'team' ? (
+                  <Zaehlmarke anzahl={teamchatNeu} className="absolute top-1 left-1/2 ml-1.5" />
+                ) : null}
               </Link>
             </li>
           ))}
@@ -574,10 +615,13 @@ export function AppShell({
               <Link
                 to="/bereiche"
                 aria-current={mehrAktiv ? 'page' : undefined}
-                className={tabLink}
+                className={`${tabLink} relative`}
               >
                 {mehrSymbol}
                 Mehr
+                {weitere.some((bereich) => bereich.id === 'team') ? (
+                  <Zaehlmarke anzahl={teamchatNeu} className="absolute top-1 left-1/2 ml-1.5" />
+                ) : null}
               </Link>
             </li>
           ) : null}

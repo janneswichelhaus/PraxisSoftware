@@ -6399,6 +6399,8 @@ Praxisprozess · offen · 2026-10-17 · Claude, Kanäle Jannes · — · Wiederv
 
 **Änderungspfad.** Weitere Rolle oder alle legen an: eine Funktion · Aufwand `klein`.
 
+**Ablösung.** abgelöst durch ANN-642 (private Kanäle) und ANN-647 (@alle); im Übrigen gilt der Eintrag weiter.
+
 ### ANN-612 — Teamchat: Nachsehen statt Zustellen, Entwurf nur im Speicher
 
 Technik · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung Teamchat
@@ -6410,6 +6412,8 @@ Technik · offen · 2026-10-17 · Claude · — · Wiedervorlage: Sichtung Teamc
 **Anker.** `NACHSEHEN_MS` in `src/features/teamchat/api.ts`.
 
 **Änderungspfad.** Echtzeit: Supabase Realtime mit Prüfung gegen ADR-002 · Aufwand `mittel`; Push: ADR-024 ändern · Aufwand `groß`.
+
+**Ablösung.** abgelöst durch ANN-641 (Ausgang und Blättern), ANN-644 (Reaktionen) und ANN-647 (Stummschalten); Nachsehen statt Zustellen, Entwurf nur im Speicher (jetzt je Konto) und keine Anhänge gelten weiter.
 
 ### ANN-613 — Nachrichten zu Rädern stehen in der Radflotte
 
@@ -6434,6 +6438,8 @@ Praxisprozess · offen · 2026-10-17 · Claude nach Vorgabe Jannes · — · Wie
 **Anker.** `public.list_team_activity`, `public.list_team_threads`, Bereich `team` in `src/app/navigation.tsx`.
 
 **Änderungspfad.** Weitere Slack-Teile (Später, Gruppen-DM): je eine Funktion und Seite · Aufwand `mittel`.
+
+**Ablösung.** abgelöst durch ANN-642 (Gruppennachrichten), ANN-644 (Reaktionen) und ANN-646 („Für später“); Präsenz, „gesehen von“, Push und Anhänge bleiben ausgenommen.
 
 ### ANN-615 — Ladestrom aus Touren: rechnen und eintragen in einer eigenen Function
 
@@ -6540,3 +6546,147 @@ Recht · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · Pr
 **Änderungspfad.** Kennzeichen erzwingen: eine Prüffunktion wie `app.aftercare_tax_allowed`; Erfassung: eigener Loop an `record_billable_services` · Aufwand `mittel`.
 
 **Abnahme (Jannes, 2026-10-18).** Bestätigt: 19 % voreingestellt bis G13, danach eine Prüffunktion; abgerechnet wird über einen eigenen Terminanlass „Ernährungsberatung“ mit der Position am Termin (Auftrag nach ERN-EPIC-003). Bleibt im Prüfpaket.
+
+### ANN-640 — Teamchat: Lesestand je Thread, gelesen bis zur gezeigten Nachricht
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Das Gespräch zählt nur, was in ihm steht; jeder Thread hat einen eigenen Stand. Ein Thread zieht beim Öffnen nur seinen Stand vor, und gelesen gilt nur bis zur neuesten gezeigten Nachricht. Man folgt, wenn man beginnt, antwortet oder erwähnt ist, in Direkt- und Gruppennachrichten jedem Thread; Folgen, Entfolgen und „ab hier ungelesen“ gehen von Hand. Alles wie ANN-609 nur für die Person selbst.
+
+**Begründung.** §20; ANN-609; Slack-Hilfe zu Threads (Suchauszug, nachgeprüft): Benachrichtigung bei Begonnenem, Beantwortetem, Erwähnung.
+
+**Anker.** `public.team_thread_states`, `app.team_unread` (`20261210100000_team_002_teamchat_wie_slack.sql`).
+
+**Änderungspfad.** Folgen anders: `app.team_follow_thread` und seine Aufrufe · Aufwand `klein`.
+
+### ANN-641 — Teamchat: Zustellung mit Gerätekennung, Blättern mit Cursor
+
+Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Das Gerät vergibt jeder Nachricht eine Kennung (Muster von ADR-024 Punkt 7); die Kennung der Nachricht leitet der Server aus Person und Gerätekennung ab (SHA-256, 128 Bit), das Gerät rechnet gleich. Wiederholen nach einem Funkloch verdoppelt nichts, Gelöschtes kommt nicht zurück, eine fremde Kennung trifft nie eine fremde Zeile. Geblättert wird über (Zeit, Kennung). Der Ausgang wartet im Arbeitsspeicher und sendet beim nächsten Netz, solange die App läuft; Abmelden fragt vorher.
+
+**Begründung.** ADR-024 nimmt die Teamkommunikation aus, sein Punkt 7 dient als Muster; Zweitreview TEAM-002; gleiche Zeitstempel bei Seeds und Wiederherstellung.
+
+**Anker.** `app.team_message_key`, `src/features/teamchat/kennung.ts`, `public.list_team_messages`.
+
+**Änderungspfad.** Ausgang über ein Neuladen hinaus: Ablage nach ADR-024 Abschnitt B · Aufwand `mittel`, mit ADR-Änderung.
+
+### ANN-642 — Teamchat: private Kanäle und Gruppennachrichten
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Private Kanäle und Gruppennachrichten (drei bis neun Personen) lesen nur ihre Mitglieder, auch owner nicht. Private Kanäle legen owner und Teamleitung an; jedes Mitglied holt weitere dazu (sie lesen den Verlauf), verwaltende Mitglieder nehmen heraus, benennen um, archivieren. Wer geht, verliert den eigenen Stand; ist kein aktives Mitglied mehr dabei, fällt der Kanal mit Journal. Eindeutig sind nur Namen offener Kanäle, damit kein Name einen privaten Kanal verrät. Kein Umwandeln.
+
+**Begründung.** §20, ANN-609, ANN-611; Art. 5 Abs. 1 lit. c DSGVO; Slack-Hilfe (Suchauszug): privat nur per Einladung, Gruppen bis neun.
+
+**Anker.** `app.team_channel_readable`, `app.team_channel_manageable`, `public.leave_team_channel`.
+
+**Änderungspfad.** Alle legen an: `app.can_manage_team_channels` · Aufwand `klein`.
+
+### ANN-643 — Teamchat: Antworten auch im Kanal, später senden
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Eine Antwort kann zusätzlich im Gespräch stehen. Ausgangsnachrichten lassen sich eine Minute bis 30 Tage im Voraus planen; bis dahin sieht sie nur, wer sie verfasst hat, unter „Geplant“, und eine Änderung davor trägt keine Marke. Antworten werden nicht geplant. Verlassen, Herausnehmen und Archivieren lassen geplante Nachrichten dort sofort fallen, Ausscheiden, Kontosperre und Rollenwechsel mit dem nächsten täglichen Lauf – was davor fällig wird, erscheint. Immer mit Journal.
+
+**Begründung.** Schont die freie Zeit im Team (§20); Slack plant bis 120 Tage (Suchauszug).
+
+**Anker.** `team_messages.also_in_channel`, Prüfung von `p_send_at` in `public.post_team_message`.
+
+**Änderungspfad.** Andere Grenzen: die zwei Intervalle in `post_team_message` und `reschedule_team_message` · Aufwand `klein`.
+
+### ANN-644 — Teamchat: Reaktionen aus einer festen Auswahl, ohne Zeitpunkt
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Acht feste Reaktionen (Daumen, erledigt, schaue ich mir an, danke, Herz, lachen, feiern, Frage); wer reagiert hat, sehen alle, die das Gespräch lesen. Gespeichert wird kein Zeitpunkt, „Für dich“ meldet keine Reaktionen. Sie fallen mit der Nachricht und ihrem Inhalt.
+
+**Begründung.** §20: eine freiwillige Antwort, keine Lesebestätigung; Art. 5 Abs. 1 lit. c DSGVO; ein Schlüssel statt freien Texts.
+
+**Anker.** Prüfung `reaction in (…)` an `public.team_message_reactions`.
+
+**Änderungspfad.** Andere Auswahl: Prüfung und `REAKTIONEN` im Client · Aufwand `klein`.
+
+### ANN-645 — Teamchat: Anheften für alle, die lesen
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Jede Person, die ein Gespräch liest, heftet an und löst, höchstens 50 je Gespräch; ohne „von wem“ und „wann“. Angeheftetes fällt mit der Nachricht nach zwölf Monaten – Dauerhaftes gehört in den Fachprozess.
+
+**Begründung.** §10; Slack: Mitglieder heften an, 100 je Kanal (Suchauszug); kleines Team.
+
+**Anker.** `public.set_team_message_pinned`.
+
+**Änderungspfad.** Nur verwaltende Personen: Prüfung in der Funktion · Aufwand `klein`.
+
+### ANN-646 — Teamchat: „Für später“ mit Erinnerung in der App
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Gemerktes sieht nur die Person selbst; eine Erinnerung (eine Minute bis 90 Tage) erscheint in der App und im Zähler, kein Push. Erledigtes bleibt abrufbar. Wann gemerkt oder erledigt wurde, wird nicht gespeichert. Es verlängert die Frist der Nachricht nicht und fällt mit ihr, beim Verlassen und mit dem Ausscheiden.
+
+**Begründung.** §18, §20 und der Gedanke von ADR-024 W4 (den Teamchat regelt der ADR nicht); Slack „Später“/To-dos (Suchauszug). Aufgaben der Praxis bleiben in den Offenen Punkten.
+
+**Anker.** `public.team_saved_messages`, `public.list_team_saved`.
+
+**Änderungspfad.** Push für Erinnerungen: eigener ADR zur Teamkommunikation · Aufwand `groß`.
+
+### ANN-647 — Teamchat: Benachrichtigung in der App, Stufen je Gespräch, @alle
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Der Zähler an „Nachrichten“ zählt neue Direkt- und Gruppennachrichten, Erwähnungen und fällige Erinnerungen. Je Gespräch: alle, nur Erwähnungen oder stumm (Erwähnungen zählen weiter) und Favorit. @alle erwähnt, wer das Gespräch liest; ein @hier gibt es ohne Präsenz nicht. Kein Push, keine Mail: ADR-024 nimmt die Teamkommunikation aus, sein Grund (W4, §20) gilt sinngemäß.
+
+**Begründung.** §10 „Benachrichtigungen“, §20, ADR-024 W4 sinngemäß; Slack: stumm zeigt Erwähnungen weiter (Suchauszug, nachgeprüft).
+
+**Anker.** `public.get_team_chat_summary`, `public.team_channel_settings`.
+
+**Änderungspfad.** Andere Zählweise: nur `get_team_chat_summary` · Aufwand `klein`.
+
+### ANN-648 — Teamchat: Chatfläche mit Gesprächsliste, Threadspalte und Tastatur
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: Sichtung Teamchat
+
+**Annahme.** Unter 900 px Inhaltsbreite eine Ansicht nach der anderen (Gespräche → Gespräch → Thread) mit Weg zurück; ab 900 px die Gespräche links, ab 1000 px der Thread rechts neben dem Gespräch. Die Fläche misst ihre Höhe am sichtbaren Ausschnitt und endet über Tastatur und Tableiste; der Verlauf rollt in sich, die Eingabe bleibt am Fuß. Scrollstand je Konto, Gespräch und Thread nur im Arbeitsspeicher. Am Rechner zeigt `/team` das zuletzt offene Gespräch; Enter sendet dort, am Telefon nur der Knopf.
+
+**Begründung.** DESIGN.md Regel 10 und Schwelle des `Zweispalter`; Slack-Aufbau mit Seitenleiste und Threadspalte (Suchauszug); ADR-024 Punkt 4.
+
+**Anker.** `src/features/teamchat/flaeche.ts`, `TeamchatRahmen.tsx`.
+
+**Änderungspfad.** Andere Schwellen: `ZWEISPALTIG_PX`, `DREISPALTIG_PX` · Aufwand `klein`.
+
+### ANN-649 — Teamchat: Formatierung wie Slack, ohne HTML
+
+Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Formatiert wird mit Zeichen im Text: fett, kursiv, durchgestrichen, Code, Codeblock, Zitat, Listen; Links mit http(s) werden klickbar, Erwähnungen hervorgehoben. Dargestellt nur als React-Elemente, nie als HTML. Links in die Anwendung bleiben in ihr, alle anderen öffnen ohne Herkunftsangabe; keine Vorschau, kein Abruf der verlinkten Seite.
+
+**Begründung.** Slack-Hilfe zur Formatierung (Suchauszug); Schutz vor eingeschleustem HTML; ADR-002 (kein Abruf bei Dritten).
+
+**Anker.** `src/features/teamchat/formatierung.ts`, `format.tsx`.
+
+**Änderungspfad.** Linkvorschau: eigener Dienst mit ADR-002 · Aufwand `groß`.
+
+### ANN-650 — Teamchat: eine Nachricht als Aufgabe übernehmen
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Wer Aufgaben anlegen darf, übernimmt eine Nachricht über „⋯“ in die Offenen Punkte: Titel aus der ersten Zeile, Notiz mit Text und Herkunft (Gespräch und Tag, kein Name), Frist und Zuweisung frei. Die Aufgabe hat ihre eigene Frist; die Nachricht behält ihre zwölf Monate. Eine Patient:in ergänzt man in den Offenen Punkten.
+
+**Begründung.** §10: Dauerhaftes gehört in den Fachprozess; Slack-Listen und -Workflows bleiben außen vor (eigener ADR, Etappe E6).
+
+**Anker.** `src/features/teamchat/AlsAufgabe.tsx`, `aufgabe.ts`.
+
+**Änderungspfad.** Mit Patientenbezug: Auswahl der Patient:in im Fenster · Aufwand `mittel`.
+
+### ANN-651 — Teamchat: Suche mit Filtern, die Person nur mit Suchwort
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Die Suche findet in allen lesbaren Gesprächen ein Wort ab zwei Zeichen und filtert nach Gespräch, Person und Zeitraum. Ohne Suchwort geht nur der Blick in ein Gespräch, wie Hochblättern; nach einer Person nur mit Suchwort. Das ist eine Hürde, keine Sperre: Mit einem häufigen Wort und Zeiträumen lässt sich trotzdem vieles einer Person finden. Ob der Personenfilter bleibt, entscheidet die Datenschutzprüfung. Suchwörter stehen in keiner Adresse und keinem Log.
+
+**Begründung.** §20: „alles von Anna im Oktober“ wäre eine Liste ihres Verhaltens, keine Suche nach einer Sache; Zweitreview TEAM-002 (Runden 1 und 2); ADR-011.
+
+**Anker.** Prüfung am Anfang von `public.search_team_messages`.
+
+**Änderungspfad.** Ohne Personenfilter: `p_author` und das Feld „Von“ entfernen · Aufwand `klein`.

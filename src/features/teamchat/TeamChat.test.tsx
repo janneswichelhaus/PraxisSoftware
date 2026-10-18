@@ -1,59 +1,78 @@
+import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router-dom';
+import { Outlet, RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
-import type { RoleKey } from '@/features/session/types';
+import type { CurrentUser, RoleKey } from '@/features/session/types';
 import type * as TeamchatApi from './api';
-import type { Kanal, Nachricht } from './api';
+import type { Kanal, Nachricht, Zaehler } from './api';
 
 /**
- * Teamchat (TEAM-001): Liste, Gespräch, Thread, Direktnachricht. Was der
- * Server zulässt, prüft `supabase/tests/teamchat.test.ts`; hier geht es um
+ * Teamchat (TEAM-001, TEAM-002): Liste der Gespräche, Gespräch und Thread,
+ * Senden über den Ausgang, Entwürfe je Konto, die Ansichten daneben. Was der
+ * Server zulässt, prüfen `supabase/tests/teamchat*.test.ts`; hier geht es um
  * Wege und Tipps (Budgets der Spec) und darum, dass nichts über andere
  * erscheint - kein „gelesen von“, kein Status (ANN-609).
+ *
+ * jsdom misst nichts: Die Fläche hat hier eine Spalte wie am Telefon.
  */
 
-const fetchKanaele = vi.fn();
-const fetchAktivitaet = vi.fn();
-const fetchThreads = vi.fn();
-const fetchNachrichten = vi.fn();
-const fetchPersonen = vi.fn();
-const sucheNachrichten = vi.fn();
-const sendeNachricht = vi.fn();
-const markiereGelesen = vi.fn();
-const oeffneDirekt = vi.fn();
-const loescheNachricht = vi.fn();
+const api = {
+  fetchKanaele: vi.fn(),
+  fetchAktivitaet: vi.fn(),
+  fetchThreads: vi.fn(),
+  fetchNachrichten: vi.fn(),
+  fetchPersonen: vi.fn(),
+  fetchMitglieder: vi.fn(),
+  fetchZaehler: vi.fn(),
+  fetchGemerkt: vi.fn(),
+  fetchGeplant: vi.fn(),
+  fetchAngeheftet: vi.fn(),
+  sucheNachrichten: vi.fn(),
+  sendeNachricht: vi.fn(),
+  markiereGelesen: vi.fn(),
+  markiereThreadGelesen: vi.fn(),
+  oeffneDirekt: vi.fn(),
+  oeffneGruppe: vi.fn(),
+  legeKanalAn: vi.fn(),
+  loescheNachricht: vi.fn(),
+  aendereGemerkt: vi.fn(),
+  planeNeu: vi.fn(),
+  setzeEinstellungen: vi.fn(),
+  reagiere: vi.fn(),
+};
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof TeamchatApi>();
+  const weiter =
+    (name: keyof typeof api) =>
+    (...a: unknown[]): unknown =>
+      api[name](...a);
   return {
     ...actual,
-    fetchKanaele: () => fetchKanaele() as unknown,
-    fetchAktivitaet: () => fetchAktivitaet() as unknown,
-    fetchThreads: () => fetchThreads() as unknown,
-    fetchNachrichten: (...a: unknown[]) => fetchNachrichten(...a) as unknown,
-    fetchPersonen: () => fetchPersonen() as unknown,
-    sucheNachrichten: (...a: unknown[]) => sucheNachrichten(...a) as unknown,
-    sendeNachricht: (...a: unknown[]) => sendeNachricht(...a) as unknown,
-    markiereGelesen: (...a: unknown[]) => markiereGelesen(...a) as unknown,
-    oeffneDirekt: (...a: unknown[]) => oeffneDirekt(...a) as unknown,
-    loescheNachricht: (...a: unknown[]) => loescheNachricht(...a) as unknown,
+    ...Object.fromEntries(Object.keys(api).map((name) => [name, weiter(name as keyof typeof api)])),
   };
 });
 
+const { TeamchatRahmen } = await import('./TeamchatRahmen');
 const { TeamChatPage } = await import('./TeamChatPage');
 const { GespraechPage } = await import('./GespraechPage');
-const { ThreadPage } = await import('./ThreadPage');
 const { NeuPage } = await import('./NeuPage');
-const { FlottenNachrichtenPage } = await import('./FlottenNachrichtenPage');
-const { FuerDichPage } = await import('./FuerDichPage');
 const { ThreadsPage } = await import('./ThreadsPage');
+const { GemerktPage } = await import('./GemerktPage');
+const { EntwuerfePage } = await import('./EntwuerfePage');
+const { SuchePage } = await import('./SuchePage');
+const { FuerDichPage } = await import('./FuerDichPage');
+const { FlottenNachrichtenPage } = await import('./FlottenNachrichtenPage');
+const { TeamchatFehler } = await import('./api');
+const { teamchatLeeren } = await import('./speicher');
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
+const OLIVIA = '55555555-5555-4555-8555-000000000003';
 
 function kanal(overrides: Partial<Kanal>): Kanal {
   return {
@@ -65,21 +84,27 @@ function kanal(overrides: Partial<Kanal>): Kanal {
     partner_staff_member_id: null,
     partner_name: null,
     partner_active: null,
+    member_names: null,
+    member_count: null,
     unread: 0,
     mentions: 0,
     last_message_at: '2026-10-17T07:00:00Z',
+    notify: 'all',
+    starred: false,
+    manageable: false,
     ...overrides,
   };
 }
 
 const KANAELE: Kanal[] = [
   kanal({}),
+  kanal({ id: 'k-planung', name: 'Planung', description: null, unread: 2, mentions: 1 }),
   kanal({
-    id: 'k-flotte',
-    name: 'Flotte',
-    description: 'Räder, Schlüssel, Pannen und Wartung.',
-    unread: 2,
-    mentions: 1,
+    id: 'k-leitung',
+    kind: 'private',
+    name: 'Leitung',
+    description: null,
+    member_count: 2,
   }),
   kanal({
     id: 'k-direkt',
@@ -89,6 +114,7 @@ const KANAELE: Kanal[] = [
     partner_staff_member_id: TIM,
     partner_name: 'Tim Teamleitung',
     partner_active: true,
+    unread: 3,
   }),
   kanal({ id: 'k-alt', name: 'Sommerfest', archived: true }),
   kanal({ id: 'k-rad', kind: 'fleet', name: null, description: null, unread: 4 }),
@@ -101,33 +127,60 @@ function nachricht(overrides: Partial<Nachricht>): Nachricht {
     author_staff_member_id: TIM,
     author_name: 'Tim Teamleitung',
     body: 'Rad 3 steht im Depot Süd.',
-    created_at: '2026-10-17T07:00:00Z',
+    created_at: '2026-10-17T07:00:00.123456+00:00',
     edited: false,
     removed_kind: null,
+    also_in_channel: false,
     reply_count: 0,
     last_reply_at: null,
     mentions: [],
     own: false,
     new_replies: 0,
-    unread: false,
     mentioned_in_new_replies: false,
+    unread: false,
+    following: false,
+    reactions: [],
+    pinned: false,
+    saved: false,
+    root_author_name: null,
+    root_body: null,
     ...overrides,
   };
 }
 
-function zeige(
-  pfad: string,
-  roles: RoleKey[] = ['therapist'],
-): { router: ReturnType<typeof createMemoryRouter> } {
-  const user = { ...testUser(roles), staffMemberId: ANNA };
+const ZAEHLER: Zaehler = {
+  badge: 0,
+  unread_conversations: 0,
+  threads_new: 1,
+  activity_unread: 0,
+  saved_open: 0,
+  reminders_due: 0,
+  scheduled: 0,
+};
+
+function konto(roles: RoleKey[] = ['therapist'], id = 'profil-anna'): CurrentUser {
+  const basis = testUser(roles);
+  return { ...basis, staffMemberId: ANNA, profile: { ...basis.profile, id } };
+}
+
+function zeige(pfad: string, user: CurrentUser = konto()) {
   const router = createMemoryRouter(
     [
-      { path: '/team', element: <TeamChatPage user={user} /> },
-      { path: '/team/neu', element: <NeuPage user={user} /> },
-      { path: '/team/threads', element: <ThreadsPage user={user} /> },
+      {
+        path: '/team',
+        element: <TeamchatRahmen user={user} />,
+        children: [
+          { index: true, element: <TeamChatPage /> },
+          { path: 'neu', element: <NeuPage /> },
+          { path: 'threads', element: <ThreadsPage /> },
+          { path: 'gemerkt', element: <GemerktPage /> },
+          { path: 'entwuerfe', element: <EntwuerfePage /> },
+          { path: 'suche', element: <SuchePage /> },
+          { path: ':kanalId', element: <GespraechPage /> },
+          { path: ':kanalId/:threadId', element: <GespraechPage /> },
+        ],
+      },
       { path: '/fuer-dich', element: <FuerDichPage user={user} /> },
-      { path: '/team/:kanalId', element: <GespraechPage user={user} /> },
-      { path: '/team/:kanalId/:threadId', element: <ThreadPage user={user} /> },
       { path: '/betrieb/flotte/nachrichten', element: <FlottenNachrichtenPage user={user} /> },
       {
         path: '/betrieb/flotte/nachrichten/:threadId',
@@ -137,53 +190,95 @@ function zeige(
     { initialEntries: [pfad] },
   );
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  render(
+  const ansicht = render(
     <QueryClientProvider client={client}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return { router };
+  return { router, ansicht };
 }
 
 beforeEach(() => {
-  fetchKanaele.mockReset().mockResolvedValue(KANAELE);
-  fetchAktivitaet.mockReset().mockResolvedValue([]);
-  fetchThreads.mockReset().mockResolvedValue([]);
-  fetchNachrichten.mockReset().mockResolvedValue([]);
-  fetchPersonen.mockReset().mockResolvedValue([
+  teamchatLeeren();
+  for (const fn of Object.values(api)) fn.mockReset();
+  api.fetchKanaele.mockResolvedValue(KANAELE);
+  api.fetchAktivitaet.mockResolvedValue([]);
+  api.fetchThreads.mockResolvedValue([]);
+  api.fetchNachrichten.mockResolvedValue([]);
+  api.fetchPersonen.mockResolvedValue([
     { staff_member_id: TIM, name: 'Tim Teamleitung' },
-    { staff_member_id: '55555555-5555-4555-8555-000000000003', name: 'Olivia Office' },
+    { staff_member_id: OLIVIA, name: 'Olivia Office' },
   ]);
-  sucheNachrichten.mockReset().mockResolvedValue([]);
-  sendeNachricht.mockReset().mockResolvedValue('neu');
-  markiereGelesen.mockReset().mockResolvedValue(undefined);
-  oeffneDirekt.mockReset().mockResolvedValue('k-direkt');
-  loescheNachricht.mockReset().mockResolvedValue(undefined);
+  api.fetchMitglieder.mockResolvedValue([
+    { staff_member_id: ANNA, name: 'Anna Beispiel', active: true },
+    { staff_member_id: TIM, name: 'Tim Teamleitung', active: true },
+  ]);
+  api.fetchZaehler.mockResolvedValue(ZAEHLER);
+  api.fetchGemerkt.mockResolvedValue([]);
+  api.fetchGeplant.mockResolvedValue([]);
+  api.fetchAngeheftet.mockResolvedValue([]);
+  api.sucheNachrichten.mockResolvedValue([]);
+  api.sendeNachricht.mockImplementation((auftrag: { id: string }) => Promise.resolve(auftrag.id));
+  api.markiereGelesen.mockResolvedValue(undefined);
+  api.markiereThreadGelesen.mockResolvedValue(undefined);
+  api.oeffneDirekt.mockResolvedValue('k-direkt');
+  api.oeffneGruppe.mockResolvedValue('k-gruppe');
+  api.legeKanalAn.mockResolvedValue('k-neu');
+  api.loescheNachricht.mockResolvedValue(undefined);
+  api.aendereGemerkt.mockResolvedValue(undefined);
+  api.planeNeu.mockResolvedValue(undefined);
+  api.setzeEinstellungen.mockResolvedValue(undefined);
+  api.reagiere.mockResolvedValue(true);
 });
 
-describe('Teamchat: Gesprächsliste', () => {
-  it('stellt Ungelesenes nach oben, zählt Erwähnungen und klappt das Archiv ein', async () => {
+describe('Teamchat: Gespräche (ANN-647)', () => {
+  it('ordnet Kanäle und Direktnachrichten, Fettes zuerst, privat mit Schloss, Archiv eingeklappt', async () => {
     zeige('/team');
-    const titel = await screen.findByRole('heading', { name: 'Kanäle' });
-    const zeilen = within(titel.closest('section')!).getAllByRole('link');
+    const kanaele = (await screen.findByRole('heading', { name: 'Kanäle' })).closest('section')!;
+    const zeilen = within(kanaele).getAllByRole('link');
     expect(zeilen.map((z) => z.textContent)).toEqual([
-      expect.stringContaining('# Flotte'),
+      expect.stringContaining('# Planung'),
       expect.stringContaining('# Allgemein'),
+      expect.stringContaining('# Leitung'),
     ]);
-    const direkt = screen.getByRole('heading', { name: 'Direktnachrichten' }).closest('section')!;
-    expect(within(direkt).getByRole('link', { name: /Tim Teamleitung/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Threads' })).toHaveAttribute('href', '/team/threads');
     expect(within(zeilen[0]!).getByText('1 für dich')).toBeInTheDocument();
-    expect(zeilen[0]).toHaveAttribute('href', '/team/k-flotte');
+    expect(within(zeilen[2]!).getByText(/Leitung/)).toBeInTheDocument();
+    const direkt = screen.getByRole('heading', { name: 'Direktnachrichten' }).closest('section')!;
+    expect(within(direkt).getByRole('link', { name: /Tim Teamleitung/ })).toHaveAttribute(
+      'href',
+      '/team/k-direkt',
+    );
+    expect(within(direkt).getByText('3 neu')).toBeInTheDocument();
     expect(screen.getByText('Archiv')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Alle gelesen' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Threads/ })).toHaveAttribute('href', '/team/threads');
+    expect(await screen.findByText('1 neu')).toBeInTheDocument();
+    // Das Gespräch der Radflotte steht in der Radflotte (ANN-613).
+    expect(screen.queryByText('Nachrichten der Radflotte')).toBeNull();
   });
 
-  it('sucht ab zwei Zeichen und führt einen Treffer in seinen Thread', async () => {
-    sucheNachrichten.mockResolvedValue([
+  it('zeigt Neues mit Zeichen und Wort, nicht nur fett - Stummes ohne Zahl (DESIGN.md Regel 5)', async () => {
+    api.fetchKanaele.mockResolvedValue([
+      kanal({ id: 'k-vertretung', name: 'Vertretungen', unread: 3 }),
+      kanal({ id: 'k-sport', name: 'Sportgruppe', unread: 5, notify: 'none' }),
+      kanal({ id: 'k-ruhig', name: 'Ruhig', unread: 2, notify: 'mentions' }),
+    ]);
+    zeige('/team');
+    const vertretung = await screen.findByRole('link', { name: /# Vertretungen/ });
+    expect(within(vertretung).getByText('3 neu')).toBeInTheDocument();
+    const sport = screen.getByRole('link', { name: /# Sportgruppe/ });
+    expect(within(sport).queryByText(/neu/)).toBeNull();
+    expect(within(sport).getByText('Stumm')).toBeInTheDocument();
+    // „Nur Erwähnungen“ zählt im Kanal nur Erwähnungen.
+    expect(within(screen.getByRole('link', { name: /# Ruhig/ })).queryByText(/neu/)).toBeNull();
+  });
+
+  it('sucht aus der Liste: Wort, Enter, Treffer an seiner Stelle - ohne Wort in der Adresse', async () => {
+    api.sucheNachrichten.mockResolvedValue([
       {
         id: 'antwort',
-        channel_id: 'k-flotte',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
         parent_id: 'wurzel',
         author_name: 'Tim Teamleitung',
         body: 'Schlüssel liegt im Büro.',
@@ -191,84 +286,300 @@ describe('Teamchat: Gesprächsliste', () => {
       },
     ]);
     const nutzer = userEvent.setup();
-    zeige('/team');
+    const { router } = zeige('/team');
     await screen.findByRole('heading', { name: 'Kanäle' });
-    await nutzer.type(screen.getByRole('searchbox', { name: 'In Nachrichten suchen' }), 'Schlü');
+    await nutzer.type(
+      screen.getByRole('searchbox', { name: 'In Nachrichten suchen' }),
+      'Schlü{Enter}',
+    );
     const treffer = await screen.findByRole('link', { name: /Schlüssel liegt im Büro/ });
-    expect(treffer).toHaveAttribute('href', '/team/k-flotte/wurzel?nachricht=antwort');
-    expect(sucheNachrichten).toHaveBeenCalledWith('Schlü');
+    expect(treffer).toHaveAttribute(
+      'href',
+      '/team/k-planung/wurzel?nachricht=antwort&zurueck=%2Fteam%2Fsuche',
+    );
+    expect(router.state.location.pathname).toBe('/team/suche');
+    expect(router.state.location.search).toBe('');
+    expect(api.sucheNachrichten).toHaveBeenCalledWith({
+      text: 'Schlü',
+      kanalId: null,
+      personId: null,
+      ab: null,
+    });
+
+    // Vom Treffer führt der Pfeil zurück in die Treffer, nicht zur Liste der
+    // Gespräche - der nächste Treffer ist einen Tipp entfernt (Praxis-Sichtung).
+    await nutzer.click(treffer);
+    const zurueck = await screen.findByRole('link', { name: 'Zurück zur Suche' });
+    expect(zurueck).toHaveAttribute('href', '/team/suche');
+    await nutzer.click(zurueck);
+    expect(
+      await screen.findByRole('link', { name: /Schlüssel liegt im Büro/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'In Nachrichten suchen' })).toHaveValue('Schlü');
+  });
+
+  it('lässt nach einer Person nur mit Suchwort suchen (ANN-651)', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/suche');
+    const von = await screen.findByRole('combobox', { name: 'Von' });
+    await within(von).findByRole('option', { name: 'Tim Teamleitung' });
+    await nutzer.selectOptions(von, TIM);
+    expect(screen.getByText('Nach einer Person nur mit Suchwort.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Suchen' })).toBeDisabled();
   });
 });
 
-describe('Teamchat: Gespräch und Thread', () => {
-  it('markiert beim Öffnen gelesen und zeigt kein „gelesen von“', async () => {
-    fetchNachrichten.mockResolvedValue([
+describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
+  it('markiert nur bis zur gezeigten Nachricht gelesen und zeigt kein „gelesen von“', async () => {
+    api.fetchNachrichten.mockResolvedValue([
       nachricht({ mentions: [ANNA], reply_count: 1, last_reply_at: '2026-10-17T07:10:00Z' }),
     ]);
-    zeige('/team/k-flotte');
+    zeige('/team/k-planung');
     expect(await screen.findByText('Rad 3 steht im Depot Süd.')).toBeInTheDocument();
     expect(screen.getByText('Für dich')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /^1 Antwort/ })).toHaveAttribute(
       'href',
-      '/team/k-flotte/n1',
+      '/team/k-planung/n1',
     );
-    await vi.waitFor(() => expect(markiereGelesen).toHaveBeenCalledWith('k-flotte'));
+    // Die Zeit bleibt Text mit Mikrosekunden - gelesen genau bis dahin.
+    await vi.waitFor(() =>
+      expect(api.markiereGelesen).toHaveBeenCalledWith(
+        'k-planung',
+        '2026-10-17T07:00:00.123456+00:00',
+      ),
+    );
+    expect(api.markiereThreadGelesen).not.toHaveBeenCalled();
     expect(screen.queryByText(/gelesen von|gesehen|online/i)).toBeNull();
   });
 
-  it('markiert einen Thread mit neuer Erwähnung, auch nachdem der Kanal gelesen ist', async () => {
-    fetchNachrichten
-      .mockResolvedValueOnce([
-        nachricht({ reply_count: 2, new_replies: 1, mentioned_in_new_replies: true }),
-      ])
-      .mockResolvedValue([nachricht({ reply_count: 2 })]);
-    zeige('/team/k-flotte');
-    expect(await screen.findByText('Für dich')).toBeInTheDocument();
+  it('öffnet einen Thread und markiert nur den Thread, nie das Gespräch', async () => {
+    api.fetchNachrichten.mockImplementation((_kanal: string, thread: string | null) =>
+      Promise.resolve(
+        thread
+          ? [
+              nachricht({ id: 'wurzel', reply_count: 1 }),
+              nachricht({
+                id: 'antwort',
+                parent_id: 'wurzel',
+                body: 'Erledigt.',
+                created_at: '2026-10-17T07:05:00.5+00:00',
+                unread: true,
+              }),
+            ]
+          : [nachricht({ id: 'wurzel', reply_count: 1, new_replies: 1 })],
+      ),
+    );
+    zeige('/team/k-planung/wurzel');
+    expect(await screen.findByRole('heading', { name: 'Thread' })).toBeInTheDocument();
+    expect(await screen.findByText('Erledigt.')).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(api.markiereThreadGelesen).toHaveBeenCalledWith(
+        'wurzel',
+        '2026-10-17T07:05:00.5+00:00',
+      ),
+    );
+    expect(api.markiereGelesen).not.toHaveBeenCalled();
+    expect(screen.getByRole('link', { name: 'Zurück zu # Planung' })).toHaveAttribute(
+      'href',
+      '/team/k-planung',
+    );
   });
 
-  it('sendet mit einer Erwähnung: @, Person, Senden', async () => {
+  it('sendet mit Erwähnung in drei Tipps: @, Person, Senden - mit einer Kennung des Geräts', async () => {
     const nutzer = userEvent.setup();
     zeige('/team/k-allgemein');
-    await screen.findByRole('heading', { name: '# Allgemein' });
-    const feld = screen.getByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
     await nutzer.type(feld, 'Kannst du übernehmen?');
     await nutzer.click(screen.getByRole('button', { name: 'Jemanden erwähnen' }));
-    await nutzer.click(screen.getByRole('button', { name: 'Tim Teamleitung' }));
+    // Sich selbst erwähnt man nicht.
+    expect(screen.queryByRole('button', { name: 'Anna Beispiel' })).toBeNull();
+    await nutzer.click(await screen.findByRole('button', { name: 'Tim Teamleitung' }));
     expect(feld).toHaveValue('Kannst du übernehmen? @Tim Teamleitung ');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await vi.waitFor(() =>
-      expect(sendeNachricht).toHaveBeenCalledWith({
-        kanalId: 'k-allgemein',
-        threadId: null,
-        text: 'Kannst du übernehmen? @Tim Teamleitung ',
-        erwaehnt: [TIM],
-      }),
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.stringMatching(/^[0-9a-f-]{36}$/) as unknown,
+          kanalId: 'k-allgemein',
+          threadId: null,
+          text: 'Kannst du übernehmen? @Tim Teamleitung',
+          erwaehnt: [TIM],
+          alle: false,
+          um: null,
+        }),
+      ),
     );
-    await vi.waitFor(() => expect(feld).toHaveValue(''));
+    expect(feld).toHaveValue('');
   });
 
-  it('antwortet im Thread in zwei Tipps und zeigt Gelöschtes ohne Namen', async () => {
-    fetchNachrichten.mockResolvedValue([
-      nachricht({
-        id: 'wurzel',
-        body: null,
-        author_name: null,
-        author_staff_member_id: null,
-        removed_kind: 'owner',
-        reply_count: 1,
-      }),
-      nachricht({ id: 'antwort', parent_id: 'wurzel', body: 'Erledigt.' }),
-    ]);
+  it('öffnet die Namen auch bei getipptem „@“ und setzt den ganzen Namen ein (Praxis-Sichtung)', async () => {
     const nutzer = userEvent.setup();
-    zeige('/team/k-flotte/wurzel');
-    expect(await screen.findByText('Von der Praxisleitung entfernt.')).toBeInTheDocument();
-    expect(screen.getByText('Ehemaliges Teammitglied')).toBeInTheDocument();
-    await nutzer.type(screen.getByRole('textbox', { name: 'Antwort' }), 'Danke');
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await screen.findByRole('button', { name: 'Jemanden erwähnen' });
+    await nutzer.type(feld, 'Hallo @te');
+    // „te“ passt zum zweiten Wort von „Tim Teamleitung“; @alle nicht.
+    const namen = await screen.findByRole('list', { name: 'Erwähnen' });
+    expect(within(namen).queryByRole('button', { name: /@alle/ })).toBeNull();
+    await nutzer.click(within(namen).getByRole('button', { name: 'Tim Teamleitung' }));
+    expect(feld).toHaveValue('Hallo @Tim Teamleitung ');
+    expect(screen.queryByRole('list', { name: 'Erwähnen' })).toBeNull();
+    await nutzer.type(feld, 'kommst du?');
+    // Ein „@“ ohne passenden Namen öffnet nichts.
+    await nutzer.type(feld, ' @xy');
+    expect(screen.queryByRole('list', { name: 'Erwähnen' })).toBeNull();
+    await nutzer.clear(feld);
+    await nutzer.type(feld, '@ti{Tab}');
+    expect(feld).toHaveValue('@Tim Teamleitung ');
+    await nutzer.type(feld, 'kommst du?');
     await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
     await vi.waitFor(() =>
-      expect(sendeNachricht).toHaveBeenCalledWith(
-        expect.objectContaining({ kanalId: 'k-flotte', threadId: 'wurzel', text: 'Danke' }),
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({ text: '@Tim Teamleitung kommst du?', erwaehnt: [TIM] }),
       ),
+    );
+  });
+
+  it('macht ein eindeutiges „@Vorname“ beim Senden zur Erwähnung (Praxis-Sichtung, Runde 2)', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await screen.findByRole('button', { name: 'Jemanden erwähnen' });
+    // Die Namensliste schließt beim Weiterschreiben; gesendet wird trotzdem mit Erwähnung.
+    await nutzer.type(feld, '@Tim bitte Schlüssel holen');
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: '@Tim Teamleitung bitte Schlüssel holen',
+          erwaehnt: [TIM],
+        }),
+      ),
+    );
+  });
+
+  it('hält eine Nachricht ohne Netz im Ausgang und sendet sie mit derselben Kennung erneut', async () => {
+    api.sendeNachricht
+      .mockRejectedValueOnce(new TeamchatFehler('Kein Netz', true))
+      .mockImplementation((auftrag: { id: string }) => Promise.resolve(auftrag.id));
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, 'Bin gleich da');
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    expect(await screen.findByText(/Kein Netz – wird gesendet/)).toBeInTheDocument();
+    expect(screen.getByText('Bin gleich da')).toBeInTheDocument();
+    expect(feld).toHaveValue('');
+    await act(async () => {
+      window.dispatchEvent(new Event('online'));
+      await Promise.resolve();
+    });
+    await vi.waitFor(() => expect(api.sendeNachricht).toHaveBeenCalledTimes(2));
+    const [erst] = api.sendeNachricht.mock.calls[0] as [{ id: string }];
+    const [zweit] = api.sendeNachricht.mock.calls[1] as [{ id: string }];
+    expect(zweit.id).toBe(erst.id);
+  });
+
+  it('lässt eine abgelehnte Nachricht mit Grund stehen, bis sie zurück ins Feld geht', async () => {
+    api.sendeNachricht.mockRejectedValue(
+      new TeamchatFehler('Das Gespräch ist archiviert und nimmt nichts mehr an.', false),
+    );
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, 'Wichtig');
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    expect(
+      await screen.findByText(/Nicht gesendet: Das Gespräch ist archiviert/),
+    ).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+    expect(feld).toHaveValue('Wichtig');
+    expect(screen.queryByText(/Nicht gesendet/)).toBeNull();
+
+    // Verwerfen fragt nach (DESIGN.md 9.16) - der Text ist danach fort.
+    await nutzer.click(screen.getByRole('button', { name: 'Senden' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Verwerfen' }));
+    expect(screen.getByText(/Nicht gesendet/)).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
+    expect(screen.queryByText(/Nicht gesendet/)).toBeNull();
+    expect(screen.queryByText('Wichtig')).toBeNull();
+  });
+
+  it('plant eine Nachricht; eine Ablehnung steht mit dem Weg zurück ins Feld da (ANN-643)', async () => {
+    api.sendeNachricht.mockRejectedValue(
+      new TeamchatFehler('Planen geht eine Minute bis 30 Tage im Voraus.', false),
+    );
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, 'Morgen früh');
+    await nutzer.click(screen.getByRole('button', { name: 'Später senden' }));
+    const vorschlag = within(await screen.findByRole('list', { name: 'Vorschläge' })).getAllByRole(
+      'button',
+    )[0]!;
+    await nutzer.click(vorschlag);
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'Morgen früh', um: expect.any(String) as unknown }),
+      ),
+    );
+    // Geplantes steht nicht im Gespräch - die Ablehnung steht an der Eingabe.
+    expect(
+      await screen.findByText(/Nicht geplant: Planen geht eine Minute bis 30 Tage/),
+    ).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Zurück ins Feld' }));
+    expect(feld).toHaveValue('Morgen früh');
+  });
+
+  it('lässt nicht in die Vergangenheit planen', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, 'Zu spät');
+    await nutzer.click(screen.getByRole('button', { name: 'Später senden' }));
+    fireEvent.change(await screen.findByLabelText('Tag'), { target: { value: '2020-01-01' } });
+    await nutzer.click(screen.getByRole('button', { name: 'Planen' }));
+    expect(
+      await screen.findByText('Planen geht eine Minute bis 30 Tage im Voraus.'),
+    ).toBeInTheDocument();
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
+    expect(feld).toHaveValue('Zu spät');
+  });
+
+  it('hält Entwürfe je Gespräch und Konto - beim Wechsel wandert nichts mit', async () => {
+    const nutzer = userEvent.setup();
+    const { router, ansicht } = zeige('/team/k-allgemein');
+    await nutzer.type(
+      await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' }),
+      'Halb fertig',
+    );
+    await act(() => router.navigate('/team/k-planung'));
+    expect(await screen.findByRole('textbox', { name: 'Nachricht an # Planung' })).toHaveValue('');
+    await act(() => router.navigate('/team/k-allgemein'));
+    expect(await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' })).toHaveValue(
+      'Halb fertig',
+    );
+    ansicht.unmount();
+
+    // Ein anderes Konto im selben Tab sieht den Entwurf nicht.
+    zeige('/team/k-allgemein', konto(['office'], 'profil-olivia'));
+    expect(await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' })).toHaveValue(
+      '',
+    );
+  });
+
+  it('räumt Entwürfe beim Abmelden ab', async () => {
+    const nutzer = userEvent.setup();
+    const { ansicht } = zeige('/team/k-allgemein');
+    await nutzer.type(
+      await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' }),
+      'Vertraulich',
+    );
+    ansicht.unmount();
+    teamchatLeeren();
+    zeige('/team/k-allgemein');
+    expect(await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' })).toHaveValue(
+      '',
     );
   });
 
@@ -278,57 +589,84 @@ describe('Teamchat: Gespräch und Thread', () => {
     expect(screen.queryByRole('button', { name: 'Senden' })).toBeNull();
   });
 
-  it('bietet eigene Nachrichten zum Löschen an, fremde nur owner', async () => {
-    fetchNachrichten.mockResolvedValue([
-      nachricht({ id: 'eigen', own: true, author_staff_member_id: ANNA, body: 'Meins' }),
-      nachricht({ id: 'fremd', body: 'Fremd' }),
+  it('bietet an der eigenen Nachricht Löschen an, fremde entfernt nur owner', async () => {
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({
+        id: 'eigen',
+        own: true,
+        author_staff_member_id: ANNA,
+        author_name: 'Anna Beispiel',
+        body: 'Meins',
+      }),
+      nachricht({ id: 'fremd', body: 'Fremd', created_at: '2026-10-17T08:00:00Z' }),
     ]);
     const nutzer = userEvent.setup();
     zeige('/team/k-allgemein');
     await screen.findByText('Meins');
-    const knoepfe = screen.getAllByRole('button', { name: 'Weitere Aktionen zur Nachricht' });
-    expect(knoepfe).toHaveLength(1);
-    await nutzer.click(knoepfe[0]!);
+    await nutzer.click(
+      screen.getByRole('button', { name: 'Handlungen zur Nachricht von Tim Teamleitung' }),
+    );
+    expect(screen.queryByRole('button', { name: 'Löschen' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Entfernen' })).toBeNull();
+    await nutzer.keyboard('{Escape}');
+    await nutzer.click(
+      screen.getByRole('button', { name: 'Handlungen zur Nachricht von Anna Beispiel' }),
+    );
     await nutzer.click(screen.getByRole('button', { name: 'Löschen' }));
     await nutzer.click(screen.getByRole('button', { name: 'Ja, löschen' }));
-    await vi.waitFor(() => expect(loescheNachricht).toHaveBeenCalledWith('eigen'));
+    await vi.waitFor(() => expect(api.loescheNachricht).toHaveBeenCalledWith('eigen'));
   });
 
-  it('lässt owner fremde Nachrichten im Kanal entfernen', async () => {
-    fetchNachrichten.mockResolvedValue([nachricht({ id: 'fremd', body: 'Fremd' })]);
+  it('reagiert in einem Tipp an der Reaktion - mit Namen, ohne Zeitpunkt', async () => {
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({
+        reactions: [
+          { reaction: 'daumen', count: 2, own: false, names: ['Olivia Office', 'Tim Teamleitung'] },
+        ],
+      }),
+    ]);
     const nutzer = userEvent.setup();
-    zeige('/team/k-allgemein', ['owner']);
-    await screen.findByText('Fremd');
-    await nutzer.click(screen.getByRole('button', { name: 'Weitere Aktionen zur Nachricht' }));
-    expect(screen.queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Entfernen' })).toBeInTheDocument();
+    zeige('/team/k-allgemein');
+    const gruppe = await screen.findByRole('group', { name: 'Reaktionen' });
+    const daumen = within(gruppe).getByRole('button', {
+      name: /Daumen hoch: Olivia Office, Tim Teamleitung/,
+    });
+    await nutzer.click(daumen);
+    await vi.waitFor(() => expect(api.reagiere).toHaveBeenCalledWith('n1', 'daumen'));
+
+    // Ohne Netz scheitert der Tipp nicht still (Praxis-Sichtung, Runde 2).
+    api.reagiere.mockRejectedValueOnce(
+      new TeamchatFehler('Kein Netz – nicht angekommen. Bitte gleich noch einmal.', true),
+    );
+    await nutzer.click(daumen);
+    expect(
+      await screen.findByText('Kein Netz – nicht angekommen. Bitte gleich noch einmal.'),
+    ).toBeInTheDocument();
+  });
+
+  it('stellt die Stufe der Benachrichtigung in den Details ein', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Stumm' }));
+    await vi.waitFor(() =>
+      expect(api.setzeEinstellungen).toHaveBeenCalledWith('k-allgemein', { stufe: 'none' }),
+    );
+  });
+
+  it('ist barrierefrei', async () => {
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ reply_count: 2, new_replies: 1, mentioned_in_new_replies: true, pinned: true }),
+    ]);
+    zeige('/team/k-planung');
+    await screen.findByText('Rad 3 steht im Depot Süd.');
+    await act(() => pruefeBarrierefreiheit(document.body));
   });
 });
 
-describe('Für dich und Threads wie bei Slack (ANN-614)', () => {
-  it('zeigt Erwähnungen und Antworten mit Neuem und führt in den Thread', async () => {
-    fetchAktivitaet.mockResolvedValue([
-      {
-        id: 'antwort',
-        channel_id: 'k-flotte',
-        channel_kind: 'channel',
-        parent_id: 'wurzel',
-        author_name: 'Tim Teamleitung',
-        body: 'Rad 2 ist frei.',
-        created_at: '2026-10-17T07:00:00Z',
-        reason: 'mention',
-        unread: true,
-      },
-    ]);
-    zeige('/fuer-dich');
-    const zeile = await screen.findByRole('link', { name: /Rad 2 ist frei/ });
-    expect(zeile).toHaveAttribute('href', '/team/k-flotte/wurzel?nachricht=antwort');
-    expect(within(zeile).getByText(/^Erwähnung · # Flotte · Tim Teamleitung/)).toBeInTheDocument();
-    expect(within(zeile).getByText('Neu')).toBeInTheDocument();
-  });
-
-  it('sammelt Threads, denen man folgt, mit neuen Antworten', async () => {
-    fetchThreads.mockResolvedValue([
+describe('Teamchat: Ansichten neben den Gesprächen', () => {
+  it('sammelt Threads, denen man folgt - die der Radflotte führen in die Radflotte', async () => {
+    api.fetchThreads.mockResolvedValue([
       {
         id: 'wurzel',
         channel_id: 'k-rad',
@@ -343,25 +681,218 @@ describe('Für dich und Threads wie bei Slack (ANN-614)', () => {
     ]);
     zeige('/team/threads');
     const zeile = await screen.findByRole('link', { name: /Kette Rad 3/ });
-    expect(zeile).toHaveAttribute('href', '/betrieb/flotte/nachrichten/wurzel');
+    expect(zeile).toHaveAttribute(
+      'href',
+      '/betrieb/flotte/nachrichten/wurzel?zurueck=%2Fteam%2Fthreads',
+    );
     expect(within(zeile).getByText('2 neu')).toBeInTheDocument();
   });
 
-  it('zieht im Gespräch Tagestrenner und die Linie „Neu“', async () => {
-    fetchNachrichten.mockResolvedValue([
-      nachricht({ id: 'alt', created_at: '2026-10-13T07:00:00Z', body: 'Alt' }),
-      nachricht({ id: 'neu', created_at: new Date().toISOString(), body: 'Frisch', unread: true }),
+  it('zeigt Für später mit fälliger Erinnerung und hakt in einem Tipp ab', async () => {
+    api.fetchGemerkt.mockResolvedValue([
+      {
+        id: 'g1',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_name: 'Tim Teamleitung',
+        body: 'Belege bis Freitag',
+        created_at: '2026-10-17T07:00:00Z',
+        remind_at: '2026-10-18T06:00:00Z',
+        done: false,
+        due: true,
+      },
+      {
+        id: 'g2',
+        channel_id: 'k-allgemein',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_name: 'Olivia Office',
+        body: 'Die Belegliste',
+        created_at: '2026-10-16T10:07:00Z',
+        remind_at: '2099-10-19T13:07:00Z',
+        done: false,
+        due: false,
+      },
     ]);
-    zeige('/team/k-allgemein');
-    await screen.findByText('Frisch');
-    expect(screen.getByText('Heute')).toBeInTheDocument();
-    expect(screen.getByText('Neu')).toBeInTheDocument();
+    const nutzer = userEvent.setup();
+    zeige('/team/gemerkt');
+    const zeile = await screen.findByRole('link', { name: /Belege bis Freitag/ });
+    expect(zeile).toHaveAttribute('href', '/team/k-planung?nachricht=g1&zurueck=%2Fteam%2Fgemerkt');
+    // Fälliges steht als eigener Abschnitt oben, ohne Abzeichen in der Zeile.
+    const faellig = screen.getByRole('heading', { name: 'Fällig (1)' }).closest('section')!;
+    expect(within(faellig).getByRole('link', { name: /Belege bis Freitag/ })).toBe(zeile);
+    // Eine kommende Erinnerung steht in der Nebenzeile, nicht rechts neben
+    // dem Text - sonst bleibt bei 375 px vom Text nur „Die Bel…“.
+    const spaeter = screen.getByRole('link', { name: /Die Belegliste/ });
+    expect(
+      within(spaeter).getByText(/^Erinnerung .* · # Allgemein · Olivia Office · /),
+    ).toBeInTheDocument();
+    expect(within(spaeter).queryByText('Fällig')).toBeNull();
+    await nutzer.click(within(zeile.closest('li')!).getByRole('button', { name: 'Erledigt' }));
+    await vi.waitFor(() =>
+      expect(api.aendereGemerkt).toHaveBeenCalledWith('g1', { erledigt: true }),
+    );
+  });
+
+  it('zeigt Entwürfe dieser Sitzung und Geplantes zum Sofortsenden', async () => {
+    api.fetchGeplant.mockResolvedValue([
+      {
+        id: 'p1',
+        channel_id: 'k-allgemein',
+        channel_kind: 'channel',
+        body: 'Teamtreffen 8 Uhr',
+        created_at: '2026-10-19T05:30:00Z',
+      },
+    ]);
+    const nutzer = userEvent.setup();
+    const { router } = zeige('/team/k-planung');
+    await nutzer.type(
+      await screen.findByRole('textbox', { name: 'Nachricht an # Planung' }),
+      'Noch offen',
+    );
+    await act(() => router.navigate('/team/entwuerfe'));
+    expect(await screen.findByRole('link', { name: /Noch offen/ })).toHaveAttribute(
+      'href',
+      '/team/k-planung',
+    );
+    await nutzer.click(await screen.findByRole('button', { name: /Teamtreffen 8 Uhr/ }));
+    await nutzer.click(screen.getByRole('button', { name: 'Jetzt senden' }));
+    await vi.waitFor(() => expect(api.planeNeu).toHaveBeenCalledWith('p1', null));
+
+    // Verwerfen fragt nach - ungesendeter Text ist danach fort (DESIGN.md 9.16).
+    await nutzer.click(screen.getByRole('button', { name: 'Verwerfen Entwurf in # Planung' }));
+    expect(screen.getByRole('link', { name: /Noch offen/ })).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, verwerfen' }));
+    await vi.waitFor(() => expect(screen.queryByRole('link', { name: /Noch offen/ })).toBeNull());
+  });
+
+  it('öffnet eine Direktnachricht in einem Tipp; Kanäle legt nur die Leitung an', async () => {
+    const nutzer = userEvent.setup();
+    const { router } = zeige('/team/neu');
+    await nutzer.click(await screen.findByRole('button', { name: 'Tim Teamleitung' }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/team/k-direkt'));
+    expect(api.oeffneDirekt).toHaveBeenCalledWith(TIM);
+    expect(screen.queryByRole('button', { name: 'Kanal' })).toBeNull();
+  });
+
+  it('öffnet eine Gruppe mit zwei weiteren Personen', async () => {
+    const nutzer = userEvent.setup();
+    const { router } = zeige('/team/neu');
+    await nutzer.click(await screen.findByRole('button', { name: 'Gruppe' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: 'Tim Teamleitung' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: 'Olivia Office' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Gruppe öffnen (3)' }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/team/k-gruppe'));
+    expect(api.oeffneGruppe).toHaveBeenCalledWith([TIM, OLIVIA]);
+  });
+
+  it('legt als Teamleitung einen privaten Kanal mit Mitgliedern an und ist barrierefrei', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/neu', konto(['team_lead']));
+    await nutzer.click(await screen.findByRole('button', { name: 'Kanal' }));
+    await nutzer.type(screen.getByRole('textbox', { name: 'Name' }), 'Leitung');
+    await nutzer.click(screen.getByRole('checkbox', { name: 'Privat – nur Mitglieder lesen' }));
+    await nutzer.click(screen.getByRole('checkbox', { name: 'Olivia Office' }));
+    await act(() => pruefeBarrierefreiheit(document.body));
+    await nutzer.click(screen.getByRole('button', { name: 'Kanal anlegen' }));
+    await vi.waitFor(() =>
+      expect(api.legeKanalAn).toHaveBeenCalledWith({
+        name: 'Leitung',
+        beschreibung: '',
+        privat: true,
+        mitglieder: [OLIVIA],
+      }),
+    );
+  });
+});
+
+describe('Für dich (ANN-614, ANN-646)', () => {
+  it('zeigt fällige Erinnerungen, Erwähnungen und Antworten und führt an die Stelle', async () => {
+    api.fetchGemerkt.mockResolvedValue([
+      {
+        id: 'g1',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_name: 'Tim Teamleitung',
+        body: 'Belege bis Freitag',
+        created_at: '2026-10-17T07:00:00Z',
+        remind_at: '2026-10-18T06:00:00Z',
+        done: false,
+        due: true,
+      },
+    ]);
+    api.fetchAktivitaet.mockResolvedValue([
+      {
+        id: 'antwort',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: 'wurzel',
+        author_name: 'Tim Teamleitung',
+        body: 'Rad 2 ist frei.',
+        created_at: '2026-10-17T07:00:00Z',
+        reason: 'mention',
+        unread: true,
+      },
+    ]);
+    zeige('/fuer-dich');
+    expect(await screen.findByRole('heading', { name: /Erinnerungen/ })).toBeInTheDocument();
+    const zeile = await screen.findByRole('link', { name: /Rad 2 ist frei/ });
+    expect(zeile).toHaveAttribute(
+      'href',
+      '/team/k-planung/wurzel?nachricht=antwort&zurueck=%2Ffuer-dich',
+    );
+    expect(within(zeile).getByText(/^Erwähnung · # Planung · Tim Teamleitung/)).toBeInTheDocument();
+    expect(within(zeile).getByText('Neu')).toBeInTheDocument();
+  });
+});
+
+describe('Für dich ohne Netz (DESIGN.md Regel 8)', () => {
+  it('sagt, wenn die Erinnerungen nicht laden - nie „Nichts für dich“', async () => {
+    api.fetchGemerkt.mockRejectedValue(new Error('aus'));
+    zeige('/fuer-dich');
+    expect(
+      await screen.findByText('Die Erinnerungen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Nichts für dich')).toBeNull();
+  });
+});
+
+describe('Gespräch und Thread unter zwei Routen (ANN-648)', () => {
+  it('baut die Seite beim Öffnen und Schließen eines Threads nicht neu auf', async () => {
+    // Am Rechner steht das Gespräch neben dem Thread; zwei Routen mit
+    // derselben Komponente an derselben Stelle behalten sie (React Router).
+    let aufgebaut = 0;
+    function Probe() {
+      useEffect(() => {
+        aufgebaut += 1;
+      }, []);
+      return null;
+    }
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/team',
+          element: <Outlet />,
+          children: [
+            { path: ':kanalId', element: <Probe /> },
+            { path: ':kanalId/:threadId', element: <Probe /> },
+          ],
+        },
+      ],
+      { initialEntries: ['/team/k-planung'] },
+    );
+    render(<RouterProvider router={router} />);
+    await act(() => router.navigate('/team/k-planung/wurzel'));
+    await act(() => router.navigate('/team/k-planung'));
+    expect(aufgebaut).toBe(1);
   });
 });
 
 describe('Nachrichten der Radflotte (ANN-613)', () => {
-  it('stehen nicht im Teamchat, sondern in der Radflotte, mit Threads dort', async () => {
-    fetchNachrichten.mockResolvedValue([nachricht({ id: 'panne', reply_count: 1 })]);
+  it('stehen in der Radflotte, mit Threads dort und eigener Eingabe', async () => {
+    api.fetchNachrichten.mockResolvedValue([nachricht({ id: 'panne', reply_count: 1 })]);
     zeige('/betrieb/flotte/nachrichten');
     expect(
       await screen.findByRole('heading', { name: 'Nachrichten der Radflotte' }),
@@ -373,30 +904,5 @@ describe('Nachrichten der Radflotte (ANN-613)', () => {
     expect(
       screen.getByRole('textbox', { name: 'Nachricht an Nachrichten der Radflotte' }),
     ).toBeInTheDocument();
-  });
-
-  it('fehlen in der Gesprächsliste des Teamchats', async () => {
-    zeige('/team');
-    await screen.findByRole('heading', { name: 'Kanäle' });
-    expect(screen.queryByText('Nachrichten der Radflotte')).toBeNull();
-  });
-});
-
-describe('Teamchat: Direktnachricht', () => {
-  it('öffnet in einem Tipp das Gespräch mit der Person', async () => {
-    const nutzer = userEvent.setup();
-    const { router } = zeige('/team/neu');
-    await nutzer.click(await screen.findByRole('button', { name: 'Tim Teamleitung' }));
-    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/team/k-direkt'));
-    expect(oeffneDirekt).toHaveBeenCalledWith(TIM);
-    // Kanäle legen nur owner und Teamleitung an (ANN-611).
-    expect(screen.queryByText('Kanal anlegen')).toBeNull();
-  });
-
-  it('ist barrierefrei', async () => {
-    zeige('/team/neu', ['team_lead']);
-    await screen.findByRole('button', { name: 'Tim Teamleitung' });
-    expect(screen.getAllByText('Kanal anlegen').length).toBeGreaterThan(0);
-    await act(() => pruefeBarrierefreiheit(document.body));
   });
 });

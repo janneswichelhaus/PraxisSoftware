@@ -1,4 +1,4 @@
-import { todayInTimeZone } from '@/features/appointments/api';
+import { todayInTimeZone, zeitpunktIn } from '@/features/appointments/api';
 
 /**
  * Wann eine Nachricht kam, so kurz wie möglich: heute nur die Uhrzeit,
@@ -44,4 +44,99 @@ export function tagestrenner(iso: string, zeitzone: string, jetzt = new Date()):
 /** Der Tag einer Nachricht in der Zeitzone der Praxis, `YYYY-MM-DD`. */
 export function nachrichtentag(iso: string, zeitzone: string): string {
   return todayInTimeZone(zeitzone, new Date(iso));
+}
+
+/** Ein Zeitpunkt zum Planen oder Erinnern (ANN-643, ANN-646). */
+export interface Zeitvorschlag {
+  text: string;
+  /** ISO-Zeit in UTC. */
+  um: string;
+}
+
+function tagPlus(tag: string, tage: number): string {
+  const [jahr, monat, tagImMonat] = tag.split('-').map(Number) as [number, number, number];
+  return new Date(Date.UTC(jahr, monat - 1, tagImMonat + tage)).toISOString().slice(0, 10);
+}
+
+/** Wochentag eines Tages `YYYY-MM-DD`: 0 Sonntag bis 6 Samstag. */
+function wochentag(tag: string): number {
+  return new Date(`${tag}T12:00:00Z`).getUTCDay();
+}
+
+/** Der nächste Werktag nach `tag` (Montag bis Freitag). */
+function naechsterWerktag(tag: string): string {
+  let naechster = tagPlus(tag, 1);
+  while (wochentag(naechster) === 0 || wochentag(naechster) === 6)
+    naechster = tagPlus(naechster, 1);
+  return naechster;
+}
+
+/**
+ * Wann eine geplante Nachricht gehen soll (ANN-643): zum Dienstbeginn des
+ * nächsten Werktags, am nächsten Mittag - Zeiten, die niemanden in der
+ * Freizeit erreichen. In der Zeitzone der Praxis.
+ */
+export function planvorschlaege(zeitzone: string, jetzt = new Date()): Zeitvorschlag[] {
+  const heute = todayInTimeZone(zeitzone, jetzt);
+  const morgen = tagPlus(heute, 1);
+  const werktag = naechsterWerktag(heute);
+  const vorschlaege: Zeitvorschlag[] = [];
+  if (werktag === morgen) {
+    vorschlaege.push({ text: 'Morgen, 7:30', um: zeitpunktIn(morgen, 7 * 60 + 30, zeitzone) });
+    vorschlaege.push({ text: 'Morgen, 12:00', um: zeitpunktIn(morgen, 12 * 60, zeitzone) });
+  } else {
+    const name = new Intl.DateTimeFormat('de-DE', { weekday: 'long', timeZone: 'UTC' }).format(
+      new Date(`${werktag}T12:00:00Z`),
+    );
+    vorschlaege.push({ text: `${name}, 7:30`, um: zeitpunktIn(werktag, 7 * 60 + 30, zeitzone) });
+    vorschlaege.push({ text: `${name}, 12:00`, um: zeitpunktIn(werktag, 12 * 60, zeitzone) });
+  }
+  return vorschlaege;
+}
+
+/** Wann „Für später“ erinnern soll (ANN-646). */
+export function erinnerungsvorschlaege(zeitzone: string, jetzt = new Date()): Zeitvorschlag[] {
+  const heute = todayInTimeZone(zeitzone, jetzt);
+  const vorschlaege: Zeitvorschlag[] = [
+    { text: 'In einer Stunde', um: new Date(jetzt.getTime() + 3_600_000).toISOString() },
+  ];
+  const nachmittag = zeitpunktIn(heute, 17 * 60, zeitzone);
+  if (Date.parse(nachmittag) - jetzt.getTime() > 30 * 60_000) {
+    vorschlaege.push({ text: 'Heute, 17:00', um: nachmittag });
+  }
+  vorschlaege.push({ text: 'Morgen, 8:00', um: zeitpunktIn(tagPlus(heute, 1), 8 * 60, zeitzone) });
+  let montag = tagPlus(heute, 1);
+  while (wochentag(montag) !== 1) montag = tagPlus(montag, 1);
+  vorschlaege.push({
+    text: 'Nächste Woche, Montag 8:00',
+    um: zeitpunktIn(montag, 8 * 60, zeitzone),
+  });
+  return vorschlaege;
+}
+
+/** Ein frei gewählter Zeitpunkt aus Datum und Uhrzeit des Formulars. */
+export function freieZeit(datum: string, uhrzeit: string, zeitzone: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datum) || !/^\d{2}:\d{2}$/.test(uhrzeit)) return null;
+  const [stunde, minute] = uhrzeit.split(':').map(Number) as [number, number];
+  return zeitpunktIn(datum, stunde * 60 + minute, zeitzone);
+}
+
+/** Wann etwas geplant ist, lesbar: „morgen, 07:30“, „Mo., 20.10., 08:00“. */
+export function geplantFuer(iso: string, zeitzone: string, jetzt = new Date()): string {
+  const tag = todayInTimeZone(zeitzone, new Date(iso));
+  const heute = todayInTimeZone(zeitzone, jetzt);
+  const uhr = new Intl.DateTimeFormat('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: zeitzone,
+  }).format(new Date(iso));
+  if (tag === heute) return `heute, ${uhr}`;
+  if (tag === tagPlus(heute, 1)) return `morgen, ${uhr}`;
+  const datum = new Intl.DateTimeFormat('de-DE', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'numeric',
+    timeZone: zeitzone,
+  }).format(new Date(iso));
+  return `${datum}, ${uhr}`;
 }

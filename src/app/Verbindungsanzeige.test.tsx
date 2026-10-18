@@ -70,4 +70,13 @@ describe('Verbindungsanzeige', () => {
     setzeVerbindung(false);
     expect(screen.getByRole('status').className).toContain('nicht-drucken');
   });
+
+  it('sagt im Teamchat, dass Nachrichten warten - nicht „Text im Feld stehen lassen“ (TEAM-002)', () => {
+    renderWithProviders(<Verbindungsanzeige imChat />);
+    setzeVerbindung(false);
+    const meldung = screen.getByRole('status');
+    expect(meldung).toHaveTextContent('Keine Verbindung.');
+    expect(meldung).toHaveTextContent('Nachrichten warten und gehen beim nächsten Empfang hinaus');
+    expect(meldung).not.toHaveTextContent('Text im Feld');
+  });
 });

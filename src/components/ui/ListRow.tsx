@@ -49,6 +49,11 @@ export function ListRows({
  * `dicht` für schmale Spalten wie den Tagesplan des Teams: 48 px, kleinere
  * Schrift, lange Namen werden gekürzt.
  *
+ * In einer Navigationsliste - den Gesprächen des Teamchats - trägt die Zeile
+ * des offenen Ziels `aktiv`: `aria-current="page"` und die Fläche der
+ * Auswahl. `uebergang={false}` lässt dort den Übergang „Zeile öffnet sich zur
+ * Seite“ weg, wo die Liste neben dem Ziel stehen bleibt (TEAM-002).
+ *
  * Seit dem Design-Fundament (DESIGN.md „Listen“) drei Plätze mehr:
  *
  *   * `bild` vorn, 56 × 56 px - ein `Medienbild` mit `vorschau`, etwa die
@@ -73,6 +78,8 @@ export function ListRow({
   onClick,
   gedaempft = false,
   dicht = false,
+  aktiv,
+  uebergang = true,
 }: {
   /**
    * Uhrzeit oder zwei Zeilen (Datum über Uhrzeit). Ohne Angabe entfällt die
@@ -100,6 +107,10 @@ export function ListRow({
   onClick?: () => void;
   gedaempft?: boolean;
   dicht?: boolean;
+  /** Das offene Ziel einer Navigationsliste (`aria-current="page"`). */
+  aktiv?: boolean;
+  /** Mit `to`: der Übergang zur neuen Seite (Vorgabe) oder ein schlichter Link. */
+  uebergang?: boolean;
 }) {
   // `listenzeile`: Haken für die Plattform, die die Zeile bei sehr wenig
   // Breite untereinander stellt (POR-020, `src/index.css`).
@@ -116,9 +127,10 @@ export function ListRow({
   // Ein Ziel reicht über den Innenabstand der Karte hinaus; `w-[calc(…)]`
   // braucht der Knopf, der sonst nur so breit würde wie sein Inhalt. Mit
   // Aktion reicht es nur links hinaus und endet vor ihr.
+  const auswahl = 'aria-[current=page]:bg-accent-soft';
   const ziel = aktion
-    ? `${raster} hover:bg-surface-sunken -ml-4 min-w-0 flex-1 pr-2 pl-4 transition-colors duration-120 focus-visible:-outline-offset-2`
-    : `${raster} hover:bg-surface-sunken -mx-4 w-[calc(100%+2rem)] px-4 transition-colors duration-120 focus-visible:-outline-offset-2`;
+    ? `${raster} hover:bg-surface-sunken ${auswahl} -ml-4 min-w-0 flex-1 pr-2 pl-4 transition-colors duration-120 focus-visible:-outline-offset-2`
+    : `${raster} hover:bg-surface-sunken ${auswahl} -mx-4 w-[calc(100%+2rem)] px-4 transition-colors duration-120 focus-visible:-outline-offset-2`;
 
   const hinten =
     betrag !== undefined ? (
@@ -165,9 +177,15 @@ export function ListRow({
   );
 
   const zeile = to ? (
-    <Zeilenlink to={to} className={ziel}>
-      {inhalt}
-    </Zeilenlink>
+    uebergang ? (
+      <Zeilenlink to={to} className={ziel} aktiv={aktiv}>
+        {inhalt}
+      </Zeilenlink>
+    ) : (
+      <Link to={to} className={ziel} aria-current={aktiv ? 'page' : undefined}>
+        {inhalt}
+      </Link>
+    )
   ) : onClick ? (
     <button type="button" onClick={onClick} className={ziel}>
       {inhalt}
@@ -216,10 +234,12 @@ export function ListRow({
 function Zeilenlink({
   to,
   className,
+  aktiv,
   children,
 }: {
   to: string;
   className: string;
+  aktiv?: boolean | undefined;
   children: ReactNode;
 }) {
   const navigate = useNavigate();
@@ -230,6 +250,7 @@ function Zeilenlink({
       to={to}
       onClick={(event) => zeileOeffnen(event, () => void navigate(to), ziel.pathname === pathname)}
       className={className}
+      aria-current={aktiv ? 'page' : undefined}
     >
       {children}
     </Link>

@@ -33,6 +33,8 @@ const LESENDE_RPC_EINZELN = new Set([
   // TEAM-001: Das Öffnen eines Gesprächs zieht nur den eigenen Lesestand vor
   // (ANN-609) - wie das Öffnen einer Akte ein Lesen, kein Schreiben.
   'mark_team_channel_read',
+  // TEAM-002: dasselbe für einen Thread (ANN-640).
+  'mark_team_thread_read',
 ]);
 // Namen, die wie Lesen aussehen, aber schreiben.
 const SCHREIBEND_TROTZ_NAME = /^platform_(accesses_take_back_deletion|invitation_)/;
