@@ -103,7 +103,7 @@ export function Gespraechsflaeche({
               <PageHeader
                 kompakt
                 title={titel}
-                description={unterzeile(kanal)}
+                description={<span className="line-clamp-1">{unterzeile(kanal)}</span>}
                 actions={
                   <Button variant="quiet" onClick={() => setDetails(true)}>
                     Details

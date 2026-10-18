@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Outlet, RouterProvider, createMemoryRouter } from 'react-router-dom';
@@ -419,6 +419,47 @@ describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
     await nutzer.click(screen.getByRole('button', { name: 'Bearbeiten' }));
     expect(feld).toHaveValue('Wichtig');
     expect(screen.queryByText(/Nicht gesendet/)).toBeNull();
+  });
+
+  it('plant eine Nachricht; eine Ablehnung steht mit dem Weg zurück ins Feld da (ANN-643)', async () => {
+    api.sendeNachricht.mockRejectedValue(
+      new TeamchatFehler('Planen geht eine Minute bis 30 Tage im Voraus.', false),
+    );
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, 'Morgen früh');
+    await nutzer.click(screen.getByRole('button', { name: 'Später senden' }));
+    const vorschlag = within(await screen.findByRole('list', { name: 'Vorschläge' })).getAllByRole(
+      'button',
+    )[0]!;
+    await nutzer.click(vorschlag);
+    await vi.waitFor(() =>
+      expect(api.sendeNachricht).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'Morgen früh', um: expect.any(String) as unknown }),
+      ),
+    );
+    // Geplantes steht nicht im Gespräch - die Ablehnung steht an der Eingabe.
+    expect(
+      await screen.findByText(/Nicht geplant: Planen geht eine Minute bis 30 Tage/),
+    ).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Zurück ins Feld' }));
+    expect(feld).toHaveValue('Morgen früh');
+  });
+
+  it('lässt nicht in die Vergangenheit planen', async () => {
+    const nutzer = userEvent.setup();
+    zeige('/team/k-allgemein');
+    const feld = await screen.findByRole('textbox', { name: 'Nachricht an # Allgemein' });
+    await nutzer.type(feld, 'Zu spät');
+    await nutzer.click(screen.getByRole('button', { name: 'Später senden' }));
+    fireEvent.change(await screen.findByLabelText('Tag'), { target: { value: '2020-01-01' } });
+    await nutzer.click(screen.getByRole('button', { name: 'Planen' }));
+    expect(
+      await screen.findByText('Planen geht eine Minute bis 30 Tage im Voraus.'),
+    ).toBeInTheDocument();
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
+    expect(feld).toHaveValue('Zu spät');
   });
 
   it('hält Entwürfe je Gespräch und Konto - beim Wechsel wandert nichts mit', async () => {

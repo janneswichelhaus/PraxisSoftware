@@ -165,12 +165,11 @@ function GeplantFenster({
   }
 
   return (
-    <Dialogfenster
-      titel="Geplante Nachricht"
-      beschreibung={`${ort ? kanalTitel(ort) : 'Gespräch'} · ${geplantFuer(geplant.created_at, zeitzone)}`}
-      onSchliessen={onSchliessen}
-    >
+    <Dialogfenster titel="Geplante Nachricht" onSchliessen={onSchliessen}>
       <div className="flex flex-col gap-4">
+        <p className="text-ink-muted text-sm">
+          {ort ? kanalTitel(ort) : 'Gespräch'} · {geplantFuer(geplant.created_at, zeitzone)}
+        </p>
         <p className="text-ink text-liste line-clamp-6 whitespace-pre-line">
           {ohneFormatierung(geplant.body)}
         </p>

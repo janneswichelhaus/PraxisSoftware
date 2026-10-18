@@ -18,7 +18,7 @@ import {
   type Kanal,
   type Sendeauftrag,
 } from './api';
-import { einreihen } from './ausgang';
+import { ausgangEntfernen, einreihen, useAusgang } from './ausgang';
 import { entwurfSetzen, useEntwurf } from './entwuerfe';
 import { NACHRICHT_MAX, alleErwaehnt, alleMoeglich, erwaehnte } from './erwaehnung';
 import { ENTWUERFE } from './pfade';
@@ -34,6 +34,17 @@ function neueKennung(): string {
 /** Am Rechner sendet Enter (wie Slack), am Telefon macht es eine neue Zeile. */
 function enterSendet(): boolean {
   return typeof window !== 'undefined' && !!window.matchMedia?.('(pointer: fine)').matches;
+}
+
+/** Planen geht eine Minute bis 30 Tage im Voraus (ANN-643) - wie am Server. */
+const PLANEN_AB_MS = 60_000;
+const PLANEN_BIS_MS = 30 * 24 * 3_600_000;
+
+/** Der Platzhalter: kurz genug für eine Zeile am Telefon. */
+function platzhalter(kanal: Kanal, threadId: string | null): string {
+  if (threadId) return 'Antworten';
+  const titel = kanalTitel(kanal);
+  return titel.length <= 24 ? `Nachricht an ${titel}` : 'Nachricht schreiben';
 }
 
 const FORMATE = [
@@ -85,7 +96,11 @@ export function Eingabe({
   const [werkzeug, setWerkzeug] = useState<'erwaehnen' | 'format' | null>(null);
   const [planen, setPlanen] = useState(false);
   const [auchImKanal, setAuchImKanal] = useState(false);
-  const [geplant, setGeplant] = useState<string | null>(null);
+  // Die zuletzt geplante Nachricht: ihr Zustand im Ausgang, danach „Geplant für …“.
+  const [geplant, setGeplant] = useState<{ id: string; um: string } | null>(null);
+  const [planfehler, setPlanfehler] = useState<string | null>(null);
+  const ausgang = useAusgang(kontoId, kanal.id, threadId);
+  const planEintrag = geplant ? ausgang.find((e) => e.id === geplant.id) : undefined;
   const mitglieder = useQuery({
     queryKey: mitgliederKey(kanal.id),
     queryFn: () => fetchMitglieder(kanal.id),
@@ -125,7 +140,7 @@ export function Eingabe({
     aendern('');
     setWerkzeug(null);
     setAuchImKanal(false);
-    setGeplant(um);
+    setGeplant(um ? { id: auftrag.id, um } : null);
     if (!um) onGesendet?.();
     feld.current?.focus();
   }
@@ -182,131 +197,162 @@ export function Eingabe({
   const zeilen = Math.min(6, Math.max(1, text.split('\n').length));
   const mitAlle = alleMoeglich(kanal.kind);
   return (
-    <form
-      onSubmit={absenden}
-      aria-label={beschriftung}
-      className="bg-surface border-line shrink-0 border-t px-4 pt-2 pb-2 sm:px-6"
-    >
-      {werkzeug === 'erwaehnen' ? (
-        <div className="mb-2 max-h-56 overflow-y-auto">
-          <ListRows beschriftung="Erwähnen">
-            {mitAlle ? (
-              <ListRow
-                dicht
-                titel="@alle"
-                meta="Alle, die hier lesen"
-                onClick={() => erwaehnen('alle')}
-              />
-            ) : null}
-            {personen
-              .filter((p) => p.staff_member_id !== eigeneId)
-              .map((person) => (
+    <>
+      <form
+        onSubmit={absenden}
+        aria-label={beschriftung}
+        className="bg-surface border-line shrink-0 border-t px-4 pt-2 pb-2 sm:px-6"
+      >
+        {werkzeug === 'erwaehnen' ? (
+          <div className="mb-2 max-h-56 overflow-y-auto">
+            <ListRows beschriftung="Erwähnen">
+              {mitAlle ? (
                 <ListRow
-                  key={person.staff_member_id}
                   dicht
-                  titel={person.name}
-                  onClick={() => erwaehnen(person.name)}
+                  titel="@alle"
+                  meta="Alle, die hier lesen"
+                  onClick={() => erwaehnen('alle')}
                 />
-              ))}
-          </ListRows>
-        </div>
-      ) : null}
-      {geplant ? (
-        <Statusmeldung ton="erfolg">
-          Geplant für {geplantFuer(geplant, zeitzone)} ·{' '}
-          <Link to={ENTWUERFE} className="underline">
-            Ansehen
-          </Link>
-        </Statusmeldung>
-      ) : null}
-      <TextArea
-        ref={feld}
-        label={beschriftung}
-        labelVersteckt
-        placeholder={threadId ? 'Antworten' : `Nachricht an ${kanalTitel(kanal)}`}
-        value={text}
-        maxLength={NACHRICHT_MAX}
-        rows={zeilen}
-        className="resize-none"
-        onChange={(e) => {
-          aendern(e.target.value);
-          if (geplant) setGeplant(null);
-        }}
-        onKeyDown={taste}
-      />
-      {werkzeug === 'format' ? (
-        <div role="group" aria-label="Formatierung" className="mt-2 flex flex-wrap gap-1">
-          {FORMATE.map((f) => (
-            <Symbolknopf key={f.name} beschriftung={f.name} onClick={() => auszeichnen(f.zeichen)}>
-              <span
-                className={
-                  f.zeichen === '*'
-                    ? 'font-bold'
-                    : f.zeichen === '_'
-                      ? 'italic'
-                      : f.zeichen === '~'
-                        ? 'line-through'
-                        : 'font-mono text-sm'
-                }
-              >
-                {f.symbol}
-              </span>
-            </Symbolknopf>
-          ))}
-          <Symbolknopf beschriftung="Zitat" onClick={() => zeilenAnfang('> ')}>
-            ❝
-          </Symbolknopf>
-          <Symbolknopf beschriftung="Liste" onClick={() => zeilenAnfang('- ')}>
-            •
-          </Symbolknopf>
-        </div>
-      ) : null}
-      <div className="mt-2 flex items-center gap-1">
-        <Symbolknopf
-          beschriftung="Jemanden erwähnen"
-          variant={werkzeug === 'erwaehnen' ? 'primary' : 'quiet'}
-          aria-expanded={werkzeug === 'erwaehnen'}
-          onClick={() => setWerkzeug(werkzeug === 'erwaehnen' ? null : 'erwaehnen')}
-        >
-          @
-        </Symbolknopf>
-        <Symbolknopf
-          beschriftung="Formatierung"
-          variant={werkzeug === 'format' ? 'primary' : 'quiet'}
-          aria-expanded={werkzeug === 'format'}
-          onClick={() => setWerkzeug(werkzeug === 'format' ? null : 'format')}
-        >
-          Aa
-        </Symbolknopf>
-        {threadId ? (
-          <div className="ml-1 min-w-0">
-            <Checkbox
-              label="Auch im Gespräch"
-              checked={auchImKanal}
-              onChange={(e) => setAuchImKanal(e.target.checked)}
-            />
+              ) : null}
+              {personen
+                .filter((p) => p.staff_member_id !== eigeneId)
+                .map((person) => (
+                  <ListRow
+                    key={person.staff_member_id}
+                    dicht
+                    titel={person.name}
+                    onClick={() => erwaehnen(person.name)}
+                  />
+                ))}
+            </ListRows>
           </div>
-        ) : (
+        ) : null}
+        {geplant ? (
+          planEintrag?.zustand === 'abgelehnt' ? (
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Statusmeldung ton="fehler">
+                Nicht geplant: {planEintrag.fehler ?? 'Der Server hat abgelehnt.'}
+              </Statusmeldung>
+              <Button
+                variant="quiet"
+                groesse="kompakt"
+                onClick={() => {
+                  const eintrag = ausgangEntfernen(geplant.id);
+                  setGeplant(null);
+                  if (eintrag) aendern(text ? `${text}\n${eintrag.text}` : eintrag.text);
+                }}
+              >
+                Zurück ins Feld
+              </Button>
+            </div>
+          ) : planEintrag?.zustand === 'wartet' ? (
+            <Statusmeldung ton="warnung">
+              Kein Netz – wird geplant, sobald Empfang da ist.
+            </Statusmeldung>
+          ) : planEintrag ? (
+            <Statusmeldung>Wird geplant …</Statusmeldung>
+          ) : (
+            <Statusmeldung ton="erfolg">
+              Geplant für {geplantFuer(geplant.um, zeitzone)} ·{' '}
+              <Link to={ENTWUERFE} className="underline">
+                Ansehen
+              </Link>
+            </Statusmeldung>
+          )
+        ) : null}
+        <TextArea
+          ref={feld}
+          label={beschriftung}
+          labelVersteckt
+          placeholder={platzhalter(kanal, threadId)}
+          value={text}
+          maxLength={NACHRICHT_MAX}
+          rows={zeilen}
+          className="resize-none"
+          onChange={(e) => {
+            aendern(e.target.value);
+            if (geplant && !planEintrag) setGeplant(null);
+          }}
+          onKeyDown={taste}
+        />
+        {werkzeug === 'format' ? (
+          <div role="group" aria-label="Formatierung" className="mt-2 flex flex-wrap gap-1">
+            {FORMATE.map((f) => (
+              <Symbolknopf
+                key={f.name}
+                beschriftung={f.name}
+                onClick={() => auszeichnen(f.zeichen)}
+              >
+                <span
+                  className={
+                    f.zeichen === '*'
+                      ? 'font-bold'
+                      : f.zeichen === '_'
+                        ? 'italic'
+                        : f.zeichen === '~'
+                          ? 'line-through'
+                          : 'font-mono text-sm'
+                  }
+                >
+                  {f.symbol}
+                </span>
+              </Symbolknopf>
+            ))}
+            <Symbolknopf beschriftung="Zitat" onClick={() => zeilenAnfang('> ')}>
+              ❝
+            </Symbolknopf>
+            <Symbolknopf beschriftung="Liste" onClick={() => zeilenAnfang('- ')}>
+              •
+            </Symbolknopf>
+          </div>
+        ) : null}
+        <div className="mt-2 flex items-center gap-1">
           <Symbolknopf
-            beschriftung="Später senden"
-            disabled={!text.trim()}
-            onClick={() => setPlanen(true)}
+            beschriftung="Jemanden erwähnen"
+            variant={werkzeug === 'erwaehnen' ? 'primary' : 'quiet'}
+            aria-expanded={werkzeug === 'erwaehnen'}
+            onClick={() => setWerkzeug(werkzeug === 'erwaehnen' ? null : 'erwaehnen')}
           >
-            <Uhr />
+            @
           </Symbolknopf>
-        )}
-        <div className="ml-auto">
-          <Button type="submit" groesse="kompakt" disabled={!text.trim()}>
-            Senden
-          </Button>
+          <Symbolknopf
+            beschriftung="Formatierung"
+            variant={werkzeug === 'format' ? 'primary' : 'quiet'}
+            aria-expanded={werkzeug === 'format'}
+            onClick={() => setWerkzeug(werkzeug === 'format' ? null : 'format')}
+          >
+            Aa
+          </Symbolknopf>
+          {threadId ? (
+            <div className="ml-1 min-w-0">
+              <Checkbox
+                label="Auch im Gespräch"
+                checked={auchImKanal}
+                onChange={(e) => setAuchImKanal(e.target.checked)}
+              />
+            </div>
+          ) : (
+            <Symbolknopf
+              beschriftung="Später senden"
+              disabled={!text.trim()}
+              onClick={() => setPlanen(true)}
+            >
+              <Uhr />
+            </Symbolknopf>
+          )}
+          <div className="ml-auto">
+            <Button type="submit" groesse="kompakt" disabled={!text.trim()}>
+              Senden
+            </Button>
+          </div>
         </div>
-      </div>
-      {text.length > NACHRICHT_MAX - 400 ? (
-        <p className="text-ink-muted mt-1 text-sm" aria-live="polite">
-          Noch {NACHRICHT_MAX - text.length} Zeichen
-        </p>
-      ) : null}
-      <Kleingedrucktes>Befunde und Diagnosen gehören in die Akte, nicht hierher.</Kleingedrucktes>
+        {text.length > NACHRICHT_MAX - 400 ? (
+          <p className="text-ink-muted mt-1 text-sm" aria-live="polite">
+            Noch {NACHRICHT_MAX - text.length} Zeichen
+          </p>
+        ) : null}
+        <Kleingedrucktes>Befunde und Diagnosen gehören in die Akte.</Kleingedrucktes>
+      </form>
       {planen ? (
         <Zeitwahl
           titel="Später senden"
@@ -314,13 +360,25 @@ export function Eingabe({
           zeitzone={zeitzone}
           bestaetigen="Planen"
           laeuft={false}
-          onSchliessen={() => setPlanen(false)}
-          onWaehlen={(um) => {
+          fehler={planfehler ?? undefined}
+          onSchliessen={() => {
             setPlanen(false);
+            setPlanfehler(null);
+          }}
+          onWaehlen={(um) => {
+            // Dieselbe Grenze wie am Server (ANN-643) - sonst stünde die
+            // Ablehnung erst nach dem Senden da.
+            const abstand = Date.parse(um) - Date.now();
+            if (!(abstand >= PLANEN_AB_MS && abstand <= PLANEN_BIS_MS)) {
+              setPlanfehler('Planen geht eine Minute bis 30 Tage im Voraus.');
+              return;
+            }
+            setPlanen(false);
+            setPlanfehler(null);
             absenden(undefined, um);
           }}
         />
       ) : null}
-    </form>
+    </>
   );
 }

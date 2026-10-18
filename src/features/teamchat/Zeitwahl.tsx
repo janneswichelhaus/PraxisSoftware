@@ -38,6 +38,9 @@ export function Zeitwahl({
 
   function absenden(e: FormEvent) {
     e.preventDefault();
+    // Das Fenster steht im Baum oft in einem anderen Formular (der Eingabe);
+    // React reicht das Absenden auch durch ein Portal hinauf.
+    e.stopPropagation();
     if (frei && !laeuft) onWaehlen(frei);
   }
 
