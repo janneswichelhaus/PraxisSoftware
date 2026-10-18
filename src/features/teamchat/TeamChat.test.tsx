@@ -684,7 +684,9 @@ describe('Teamchat: Ansichten neben den Gesprächen', () => {
     zeige('/team/gemerkt');
     const zeile = await screen.findByRole('link', { name: /Belege bis Freitag/ });
     expect(zeile).toHaveAttribute('href', '/team/k-planung?nachricht=g1&zurueck=%2Fteam%2Fgemerkt');
-    expect(within(zeile).getByText('Fällig')).toBeInTheDocument();
+    // Fälliges steht als eigener Abschnitt oben, ohne Abzeichen in der Zeile.
+    const faellig = screen.getByRole('heading', { name: 'Fällig (1)' }).closest('section')!;
+    expect(within(faellig).getByRole('link', { name: /Belege bis Freitag/ })).toBe(zeile);
     // Eine kommende Erinnerung steht in der Nebenzeile, nicht rechts neben
     // dem Text - sonst bleibt bei 375 px vom Text nur „Die Bel…“.
     const spaeter = screen.getByRole('link', { name: /Die Belegliste/ });

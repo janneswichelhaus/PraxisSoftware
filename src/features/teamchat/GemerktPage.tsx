@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ListRow } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
@@ -88,43 +87,58 @@ export function GemerktPage() {
             : {}),
         }}
       >
-        {(daten) => (
-          <Listenabschnitt
-            titel={ansicht === 'offen' ? 'Gemerkt' : 'Erledigt'}
-            anzahl={daten.length}
-          >
-            {daten.map((g) => (
-              <ListRow
-                key={g.id}
-                to={mitRueckweg(stellePfad({ id: g.channel_id, kind: g.channel_kind }, g), GEMERKT)}
-                gedaempft={g.done}
-                titel={<span className="line-clamp-2">{ohneFormatierung(g.body)}</span>}
-                meta={[
-                  // Die Erinnerung steht in der Nebenzeile: rechts bleibt nur
-                  // „Fällig“, damit der Text bei 375 px lesbar bleibt.
-                  g.remind_at && !g.done && !g.due
-                    ? `Erinnerung ${geplantFuer(g.remind_at, zeitzone)}`
-                    : null,
-                  titel(g.channel_id),
-                  g.author_name ?? 'Ehemaliges Teammitglied',
-                  nachrichtenzeit(g.created_at, zeitzone),
-                ]
-                  .filter((teil) => teil !== null)
-                  .join(' · ')}
-                status={g.due ? <Badge ton="warnung">Fällig</Badge> : undefined}
-                aktion={
-                  <Button
-                    variant="quiet"
-                    disabled={abhaken.isPending}
-                    onClick={() => abhaken.mutate({ id: g.id, erledigt: !g.done })}
-                  >
-                    {g.done ? 'Wieder offen' : 'Erledigt'}
-                  </Button>
-                }
-              />
-            ))}
-          </Listenabschnitt>
-        )}
+        {(daten) => {
+          const zeile = (g: (typeof daten)[number]) => (
+            <ListRow
+              key={g.id}
+              to={mitRueckweg(stellePfad({ id: g.channel_id, kind: g.channel_kind }, g), GEMERKT)}
+              gedaempft={g.done}
+              titel={<span className="line-clamp-2">{ohneFormatierung(g.body)}</span>}
+              meta={[
+                // Die Erinnerung steht in der Nebenzeile, nicht rechts neben
+                // dem Text - so bleibt er bei 375 px lesbar.
+                g.remind_at && !g.done && !g.due
+                  ? `Erinnerung ${geplantFuer(g.remind_at, zeitzone)}`
+                  : null,
+                titel(g.channel_id),
+                g.author_name ?? 'Ehemaliges Teammitglied',
+                nachrichtenzeit(g.created_at, zeitzone),
+              ]
+                .filter((teil) => teil !== null)
+                .join(' · ')}
+              aktion={
+                <Button
+                  variant="quiet"
+                  disabled={abhaken.isPending}
+                  onClick={() => abhaken.mutate({ id: g.id, erledigt: !g.done })}
+                >
+                  {g.done ? 'Wieder offen' : 'Erledigt'}
+                </Button>
+              }
+            />
+          );
+          // Fälliges steht als eigener Abschnitt oben: Die Überschrift sagt
+          // es, die Zeile braucht kein Abzeichen und behält ihre Breite.
+          const faellig = daten.filter((g) => g.due && !g.done);
+          const uebrige = daten.filter((g) => !(g.due && !g.done));
+          return (
+            <>
+              {faellig.length > 0 ? (
+                <Listenabschnitt titel="Fällig" anzahl={faellig.length}>
+                  {faellig.map(zeile)}
+                </Listenabschnitt>
+              ) : null}
+              {uebrige.length > 0 ? (
+                <Listenabschnitt
+                  titel={ansicht === 'offen' ? 'Gemerkt' : 'Erledigt'}
+                  anzahl={uebrige.length}
+                >
+                  {uebrige.map(zeile)}
+                </Listenabschnitt>
+              ) : null}
+            </>
+          );
+        }}
       </Abfragezustand>
     </Rand>
   );

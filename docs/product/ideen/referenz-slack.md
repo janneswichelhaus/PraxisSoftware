@@ -27,16 +27,16 @@ Entscheidung, die ihn aufheben würde.
 | Gruppennachricht | bis 9 Personen (S) | nein | ja, 3–9 | Umwandeln in privaten Kanal: nein (neuer Kanal) |
 | Threads | folgen bei Beginn, Antwort, Erwähnung (N) | ja, folgen implizit | eigener Lesestand je Thread, folgen/entfolgen, Threadspalte | – |
 | Auch im Kanal | Häkchen beim Antworten (S) | nein | ja | – |
-| Erwähnung @Person | ja (S) | ja | + @alle in Kanälen | @hier braucht Präsenz → nein (§20) |
+| Erwähnung @Person | ja, getipptes @ öffnet Namen (S) | ja, über @ | + getipptes @ grenzt ein, @alle in Kanälen | @hier braucht Präsenz → nein (§20) |
 | Benutzergruppen | bezahlt (S) | nein | nein | ADR-014: bei 3–8 Personen ohne Bedarf; ein Auftrag reicht |
 | Reaktionen | Emoji, wer sichtbar (S) | nein (ANN-614) | 8 feste, wer sichtbar, ohne Zeitpunkt | freie Emoji nein (ANN-644) |
 | Formatierung | Leiste oder Markup (S) | Klartext | fett, kursiv, durchgestrichen, Code, Zitat, Listen, Links | – |
 | Bearbeiten, Löschen | endgültig, Marke (S) | ja | + ↑ bearbeitet die letzte | Verlauf früherer Fassungen nie (ANN-609, ADR-010) |
 | Entwürfe | automatisch, Ansicht (S) | je Gespräch im Speicher, nicht kontogebunden | je Konto und Gespräch, Ansicht „Entwürfe“, beim Abmelden fort | geräteübergreifend nein (ANN-612, §15.1 datensparsam) |
 | Später senden | planen, ändern, abbrechen (S) | nein | ja, 1 min bis 30 Tage | – |
-| Ungelesen | fett, Zahl bei DM/Erwähnung, Linie (S) | teils | + gelesen bis Gezeigtes, ab hier ungelesen, Sprung | Lesebestätigung nie (ANN-609, ADR-024 P. 12) |
+| Ungelesen | fett, Zahl bei DM/Erwähnung, Linie (S) | teils | „n neu“ auch an Kanälen (DESIGN.md Regel 5 statt nur fett), gelesen bis Gezeigtes, ab hier ungelesen, Sprung | Lesebestätigung nie (ANN-609, ADR-024 P. 12) |
 | Ungelesen-Sammelansicht | „Aufholen“ (S) | nein | nein | ADR-014; Liste mit Ungelesenem oben und „Alle gelesen“ genügt |
-| Suche | Operatoren in/from/during (S) | Wort, 30 Treffer | + Gespräch, Person nur mit Wort, Zeitraum; Treffer an der Stelle | Person ohne Wort nein (§20, ANN-651); Dateien-Suche entfällt mit den Dateien |
+| Suche | Operatoren in/from/during (S) | Wort, 30 Treffer | + Gespräch, Person nur mit Wort, Zeitraum; Treffer an der Stelle, zurück in die Treffer | Person ohne Wort nein (§20, ANN-651); Dateien-Suche entfällt mit den Dateien |
 | Für später, Erinnerung | privat, Erinnerung (S) | nein (ANN-614) | ja, Erinnerung in der App | Push nein (ADR-024 P. 12) |
 | Anheften | 100 je Kanal (S) | nein | ja, 50 | – |
 | Lesezeichen/Reiter | je Gespräch (S) | nein | nein | ADR-014; Anheften und Beschreibung genügen |
