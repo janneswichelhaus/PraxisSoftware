@@ -114,4 +114,14 @@ describe('Hochladen eines Anhangs (TEAM-003)', () => {
       expect(rpc).toHaveBeenCalledWith('discard_team_attachment', { p_attachment_id: 'a1' });
     }
   });
+
+  it('sagt ohne Netz schon beim Vorbereiten „nicht hochgeladen“ - und versucht es wieder', async () => {
+    rpc.mockReset();
+    rpc.mockRejectedValue(new TypeError('Failed to fetch'));
+    const fehler = await fehlerVon(() =>
+      ladeAnhangHoch('kanal', new Blob(['%PDF-1.4\n'], { type: 'application/pdf' }), 'Plan.pdf'),
+    );
+    expect(fehler.netz).toBe(true);
+    expect(fehler.message).toBe('Nicht hochgeladen – kein Netz? Bitte noch einmal.');
+  });
 });

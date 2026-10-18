@@ -620,17 +620,27 @@ export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string)
   const summe = await pruefsumme(sauber);
 
   const ersatz = 'Der Anhang konnte nicht angenommen werden.';
-  const data = await rufe(
-    'prepare_team_attachment_upload',
-    {
-      p_channel: kanalId,
-      p_mime_type: sauber.type,
-      p_byte_size: sauber.size,
-      p_checksum_sha256: summe,
-      p_name: name,
-    },
-    ersatz,
-  );
+  let data: unknown;
+  try {
+    data = await rufe(
+      'prepare_team_attachment_upload',
+      {
+        p_channel: kanalId,
+        p_mime_type: sauber.type,
+        p_byte_size: sauber.size,
+        p_checksum_sha256: summe,
+        p_name: name,
+      },
+      ersatz,
+    );
+  } catch (ursache) {
+    // Ohne Netz scheitert schon das Vorbereiten - für die Person dasselbe:
+    // nicht hochgeladen, ein neuer Versuch kann gelingen.
+    if (ursache instanceof TeamchatFehler && ursache.netz) {
+      throw new TeamchatFehler(NICHT_UEBERTRAGEN, true);
+    }
+    throw ursache;
+  }
   const vorbereitet = antwort(z.array(vorbereitetSchema), data ?? [], ersatz)[0];
   if (!vorbereitet) throw new TeamchatFehler(ersatz, false);
 

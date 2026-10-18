@@ -867,13 +867,21 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
           where target_table = 'team_message_attachments' and reapplied_at is not null`,
       ),
     ).toBe(2);
-    // Beide Wege stehen im selben Tageslauf, nicht je Ereignis einzeln.
+    // Beide Wege stehen im selben Tageslauf, nicht je Ereignis einzeln, und
+    // ohne Uhrzeit - auch der Befund der Prüfung (Zweitreview, Runde 3).
     expect(
       await anzahl(
         `select count(distinct run_id) n from public.deletion_journal
           where target_table = 'team_message_attachments'`,
       ),
     ).toBe(1);
+    expect(
+      await anzahl(
+        `select count(*) n from public.deletion_journal
+          where target_table = 'team_message_attachments'
+            and (deleted_at <> date_trunc('day', deleted_at) or due_at <> deleted_at)`,
+      ),
+    ).toBe(0);
     expect(
       await code(
         senden(users.therapist, allgemein, 'Doch noch', { anhaenge: [verworfen.attachment_id] }),

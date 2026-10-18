@@ -4,6 +4,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Medienbild } from '@/components/ui/Medienbild';
@@ -142,11 +143,15 @@ function AnhangFenster({
             <Bild datei={laden.data} name={anhang.name} />
           )
         ) : null}
-        <div>
+      </div>
+      {/* Ein fester Fuß wie im geführten Check-Up: „Schließen“ bleibt unten im
+          Daumenbereich, wie lang die Datei auch ist. */}
+      <div className="border-line shrink-0 border-t px-4 pb-4 sm:px-6">
+        <Formularfuss dicht>
           <Button type="button" variant="secondary" data-autofocus onClick={onSchliessen}>
             Schließen
           </Button>
-        </div>
+        </Formularfuss>
       </div>
     </Dialogfenster>
   );
