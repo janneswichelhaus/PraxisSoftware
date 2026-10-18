@@ -20,6 +20,7 @@ export function testReimbursement(change: Partial<Reimbursement> = {}): Reimburs
     working_minutes: 9_600,
     km_per_hour: 6,
     wh_per_km: 18,
+    tour_km: null,
     rate_cents_per_kwh: 37,
     // 160 h × 6 km/h × 18 Wh/km × 0,37 €/kWh = 17,28 kWh × 37 ct = 639,36 ct.
     amount_cents: 639,
@@ -47,6 +48,7 @@ export function testPurchase(change: Partial<Reimbursement> = {}): Reimbursement
     working_minutes: null,
     km_per_hour: null,
     wh_per_km: null,
+    tour_km: null,
     rate_cents_per_kwh: null,
     amount_cents: 1290,
     receipts: [
@@ -117,6 +119,7 @@ export function testOldElectricity(change: Partial<Reimbursement> = {}): Reimbur
     working_minutes: null,
     km_per_hour: null,
     wh_per_km: null,
+    tour_km: null,
     amount_cents: 333,
     ...change,
   });

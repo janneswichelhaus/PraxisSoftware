@@ -4,6 +4,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -21,7 +22,7 @@ import {
   reimbursementsKey,
   withdrawReimbursement,
   type Overview,
-  type Reimbursement,
+  type PersonReimbursement,
 } from './api';
 import {
   ACCOUNT_PATH,
@@ -196,6 +197,15 @@ function Content({ state, own, timeZone }: { state: Overview; own: boolean; time
           ))}
         </Listenabschnitt>
       ) : null}
+      {/* ANN-616: Beim Büro fehlt der Betrag eines Antrags aus Touren - er
+          verriete die Kilometer. Einmal am Ende statt in jeder Zeile
+          (Design-Review, Regel 6). */}
+      {reimbursements.some((r) => r.amount_cents === null) ? (
+        <Kleingedrucktes>
+          Beim Ladestrom aus den geplanten Touren sehen den Betrag nur die Person selbst und wer
+          entscheidet.
+        </Kleingedrucktes>
+      ) : null}
     </div>
   );
 }
@@ -205,7 +215,7 @@ function ReimbursementRow({
   own,
   timeZone,
 }: {
-  reimbursement: Reimbursement;
+  reimbursement: PersonReimbursement;
   own: boolean;
   timeZone: string;
 }) {
@@ -222,7 +232,7 @@ function ReimbursementRow({
     <ListRow
       titel={reimbursementTitle(r)}
       meta={meta}
-      betrag={formatEuro(r.amount_cents)}
+      betrag={r.amount_cents === null ? undefined : formatEuro(r.amount_cents)}
       gedaempft={done}
       status={
         <Badge ton={STATUS_TONE[r.status]} eigenesZeichen={STATUS_SIGN[r.status]}>
@@ -261,7 +271,7 @@ function ReimbursementRow({
  * ausgezahlt. Das Datum des Antrags bleibt neben dem der Entscheidung stehen
  * (Design-Review Überholung 10).
  */
-function statusLine(r: Reimbursement, timeZone: string): string {
+function statusLine(r: PersonReimbursement, timeZone: string): string {
   const requested = dateOf(r.requested_at, timeZone);
   const on = (timestamp: string | null) => dateOf(timestamp ?? r.requested_at, timeZone);
   switch (r.status) {

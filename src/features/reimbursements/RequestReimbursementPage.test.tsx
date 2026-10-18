@@ -19,6 +19,8 @@ import { testOverview, testPreview, testReimbursement } from './testdata';
 const fetchReimbursements = vi.fn();
 const previewElectricity = vi.fn();
 const submitElectricity = vi.fn();
+const previewTourDistance = vi.fn();
+const recordTourDistance = vi.fn();
 const submitPurchase = vi.fn();
 const uploadReceipt = vi.fn();
 const discardReceipt = vi.fn();
@@ -30,6 +32,8 @@ vi.mock('./api', async (importOriginal) => {
     fetchReimbursements: (...a: unknown[]) => fetchReimbursements(...a) as unknown,
     previewElectricity: (...a: unknown[]) => previewElectricity(...a) as unknown,
     submitElectricity: (...a: unknown[]) => submitElectricity(...a) as unknown,
+    previewTourDistance: (...a: unknown[]) => previewTourDistance(...a) as unknown,
+    recordTourDistance: (...a: unknown[]) => recordTourDistance(...a) as unknown,
     submitPurchase: (...a: unknown[]) => submitPurchase(...a) as unknown,
     uploadReceipt: (...a: unknown[]) => uploadReceipt(...a) as unknown,
     discardReceipt: (...a: unknown[]) => discardReceipt(...a) as unknown,
@@ -84,6 +88,10 @@ beforeEach(() => {
   submitElectricity
     .mockReset()
     .mockResolvedValue({ id: 'neu', status: 'requested', amount_cents: 639 });
+  // Ohne Kartendienst (bis zum Gate, ADR-019 Punkt 9) gibt es keine
+  // Kilometer: Es gilt der Wert je Stunde (BEF-181).
+  previewTourDistance.mockReset().mockResolvedValue(null);
+  recordTourDistance.mockReset().mockResolvedValue(null);
   submitPurchase
     .mockReset()
     .mockResolvedValue({ id: 'neu', status: 'requested', amount_cents: 1739 });
@@ -153,6 +161,57 @@ describe('RequestReimbursementPage', () => {
       ),
     ).toBeInTheDocument();
     expect(tipps).toBe(5);
+  });
+
+  it('rechnet mit den Kilometern der geplanten Touren und lässt den Server sie eintragen (BEF-181)', async () => {
+    const user = userEvent.setup();
+    previewTourDistance.mockResolvedValue({ km: 412, source: 'anbieter' });
+    recordTourDistance.mockResolvedValue({ km: 410, amountCents: 273 });
+    rendern(['therapist'], '/betrieb/erstattungen/beantragen?monat=2026-09-01');
+
+    const abschluss = await screen.findByRole('dialog', { name: 'Ladestrom beantragen?' });
+    expect(previewTourDistance).toHaveBeenCalledWith('2026-09-01');
+    expect(await within(abschluss).findByText('412 km geplante Touren')).toBeInTheDocument();
+    expect(within(abschluss).getByText('Summe der Touren je Tag')).toBeInTheDocument();
+    expect(within(abschluss).queryByText(/Nachbildung/)).toBeNull();
+    expect(within(abschluss).getByText('412 km × 18 Wh/km × 0,37 €/kWh')).toBeInTheDocument();
+    // 412 × 18 × 37 / 1000 = 274,392 ct.
+    expect(within(abschluss).getByText('2,74 €')).toBeInTheDocument();
+    expect(within(abschluss).queryByText('160 h Arbeitszeit')).not.toBeInTheDocument();
+
+    await user.click(within(abschluss).getByRole('checkbox'));
+    await user.click(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' }));
+
+    expect(recordTourDistance).toHaveBeenCalledWith('2026-09-01', 'neu');
+    // Die Meldung nennt, was der Server eingetragen hat.
+    expect(
+      await screen.findByText(/Ladestrom September 2026 beantragt: 2,73 €\./),
+    ).toBeInTheDocument();
+  });
+
+  it('nennt die Nachbildung, wenn kein Kartendienst gerechnet hat', async () => {
+    previewTourDistance.mockResolvedValue({ km: 12, source: 'nachbildung' });
+    rendern(['therapist'], '/betrieb/erstattungen/beantragen?monat=2026-09-01');
+    const abschluss = await screen.findByRole('dialog', { name: 'Ladestrom beantragen?' });
+    expect(
+      await within(abschluss).findByText(
+        /^Nachbildung ohne Kartendienst: Die Strecke ist die Luftlinie/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('bleibt beim Betrag nach Stunden, wenn der Server nichts einträgt - und sagt es', async () => {
+    const user = userEvent.setup();
+    previewTourDistance.mockResolvedValue({ km: 412, source: 'anbieter' });
+    rendern(['therapist'], '/betrieb/erstattungen/beantragen?monat=2026-09-01');
+    const abschluss = await screen.findByRole('dialog', { name: 'Ladestrom beantragen?' });
+    await user.click(await within(abschluss).findByRole('checkbox'));
+    await user.click(within(abschluss).getByRole('button', { name: 'Ladestrom beantragen' }));
+    expect(
+      await screen.findByText(
+        /Ladestrom September 2026 beantragt: 6,39 €\. .*Die Strecke der Touren war nicht erreichbar – gerechnet nach Arbeitszeit\./,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('beginnt aus dem Vorschlag im Eingang an der Zusammenfassung - drei Tipps (ORG-008)', async () => {

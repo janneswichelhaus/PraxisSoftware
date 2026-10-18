@@ -41,3 +41,39 @@ describe('saveWorkingHourException', () => {
     ).rejects.toThrow('Die Abweichung konnte nicht gespeichert werden.');
   });
 });
+
+const { saveWorkingWeek } = await import('./api');
+
+describe('saveWorkingWeek (Wochenplan in einem Zug)', () => {
+  it('schickt die Tage in einem Aufruf', async () => {
+    rpc.mockResolvedValueOnce({ data: 2, error: null });
+    await saveWorkingWeek('55555555-5555-4555-8555-000000000002', [
+      { tag: 1, bloecke: [{ von: '08:00', bis: '12:00' }] },
+      { tag: 3, bloecke: [] },
+    ]);
+    expect(rpc).toHaveBeenLastCalledWith('set_staff_working_week', {
+      p_staff_member_id: '55555555-5555-4555-8555-000000000002',
+      p_days: [
+        { weekday: 1, blocks: [{ von: '08:00', bis: '12:00' }] },
+        { weekday: 3, blocks: [] },
+      ],
+    });
+  });
+
+  it('nennt den Tag, an dem es scheitert', async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'day has time off in lieu', code: '55000', hint: 'weekday 3' },
+    });
+    await expect(
+      saveWorkingWeek('55555555-5555-4555-8555-000000000002', [{ tag: 3, bloecke: [] }]),
+    ).rejects.toThrow('Mittwoch: An diesem Tag steht ein Freizeitausgleich im Zeitkonto.');
+  });
+
+  it('bleibt ohne Tag beim allgemeinen Satz', async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'kaputt' } });
+    await expect(
+      saveWorkingWeek('55555555-5555-4555-8555-000000000002', [{ tag: 1, bloecke: [] }]),
+    ).rejects.toThrow(/^Der Wochenplan konnte nicht gespeichert werden\.$/);
+  });
+});

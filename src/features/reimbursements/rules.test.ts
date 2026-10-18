@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   electricityCents,
+  electricityCentsFromKm,
   electricityCentsFromMinutes,
   electricityFormula,
   electricityFormulaOf,
   electricityHoursFormula,
+  electricityKmFormula,
   hoursText,
   ibanValid,
   normalizeIban,
@@ -20,6 +22,19 @@ describe('Regeln der Erstattungen (ERS-001)', () => {
     expect(electricityCents(17, 500, 37)).toBe(315);
     expect(electricityCents(1, 500, 37)).toBe(19);
     expect(electricityFormula(18, 500, 37)).toBe('18 × 0,5 kWh × 0,37\u00a0€');
+  });
+
+  it('rechnet seit BEF-181 km × Wh/km × ct auf Cent wie record_electricity_tour_distance', () => {
+    // 412 km × 18 Wh = 7,416 kWh × 37 ct = 274,392 ct.
+    expect(electricityCentsFromKm(412, 18, 37)).toBe(274);
+    // 25 km × 10 Wh × 30 ct = 7,5 ct: kaufmännisch aufgerundet.
+    expect(electricityCentsFromKm(25, 10, 30)).toBe(8);
+    expect(electricityKmFormula(412, 18, 37)).toBe('412 km × 18 Wh/km × 0,37\u00a0€/kWh');
+    expect(
+      electricityFormulaOf(
+        testReimbursement({ km_per_hour: null, tour_km: 412, amount_cents: 274 }),
+      ),
+    ).toBe('412 km × 18 Wh/km × 0,37\u00a0€/kWh');
   });
 
   it('rechnet seit ORG-008 Stunden × km/h × Wh/km × ct auf Cent wie app.electricity_amount_cents', () => {

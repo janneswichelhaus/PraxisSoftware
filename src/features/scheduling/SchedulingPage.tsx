@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
@@ -9,6 +10,7 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
+import { Formularfuss } from '@/components/ui/Formularfuss';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
@@ -30,7 +32,7 @@ import {
   fetchWorkingHourExceptions,
   fetchWorkingHours,
   saveWorkingHourException,
-  saveWorkingHours,
+  saveWorkingWeek,
   wochenBloecke,
   wochentagLabels,
   type Wochentag,
@@ -61,13 +63,14 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
  *
  * **Nichts verschwindet still (ORG-02, ORG-03).** Ein halb ausgefüllter Block
  * ist ein Feldfehler und wird nicht gespeichert; ein Tag, der Blöcke hatte,
- * wird erst nach einer Rückfrage leer gespeichert; ein Wechsel von Tag oder
- * Person mit ungespeicherten Blöcken fragt, und ein Seitenwechsel läuft durch
+ * wird erst nach einer Rückfrage leer gespeichert; ein geöffneter Tag bleibt
+ * offen, bis er gespeichert ist; ein Wechsel der Person mit ungespeicherten
+ * Blöcken fragt, und ein Seitenwechsel läuft durch
  * den Schutz der Formulare (ANN-046, ohne Entwurf nur Verwerfen und Bleiben).
  *
  * Die Rollenprüfung hier steuert nur die Darstellung. Verbindlich prüfen
- * `set_appointment_grid`, `set_staff_working_hours` und
- * `set_staff_working_hour_exception` (ADR-004).
+ * `set_appointment_grid`, `set_staff_working_week` (je Tag
+ * `set_staff_working_hours`) und `set_staff_working_hour_exception` (ADR-004).
  */
 
 /** Die Rückfrage vor dem Weggehen, mit den Sätzen für Formulare (ANN-046). */
@@ -258,62 +261,62 @@ function BlockFelder({
 // -----------------------------------------------------------------------------
 
 /**
- * Was am gewählten Tag gerade im Formular steht.
+ * Was im Wochenplan gerade eingegeben ist (Wochenplan in einem Zug).
  *
- * Der Stand trägt seinen Tag mit: Wechselt der Tag, gilt ein frischer Stand,
- * ohne dass ein Effekt ihn zurücksetzen müsste. Genau das war der Fehler
- * hinter ORG-04 - ein Effekt auf die geladenen Zeiten setzte nach jedem
- * Nachladen auch „gespeichert" zurück, und die Meldung erschien nur, wenn sich
- * nichts geändert hatte.
+ * Je Wochentag die eingegebenen Blöcke, nur für Tage, an denen jemand etwas
+ * eingegeben hat. Bis zum Praxis-Review der Überholung Organisation
+ * speicherte jeder Tag für sich; jetzt öffnet man die Tage, die sich ändern,
+ * und speichert sie mit einem Knopf - alle oder keiner
+ * (`set_staff_working_week`). Ein geöffneter Tag bleibt offen, bis er
+ * gespeichert ist; so steht eine Eingabe nie unsichtbar im Formular.
  */
-interface Editorstand {
-  tag: Wochentag;
-  /** Eingegebene Blöcke; `null`, solange nichts eingegeben wurde. */
-  bearbeitung: Zeitblock[] | null;
-  fehler: Blockfehler[] | null;
+interface Wochenstand {
+  bearbeitung: Partial<Record<Wochentag, Zeitblock[]>>;
+  offen: Wochentag[];
+  fehler: Partial<Record<Wochentag, Blockfehler[]>>;
   /**
-   * Zuletzt gespeichert, bis die Liste den neuen Stand geladen hat. Scheitert
-   * das Nachladen, gilt weiter das, was der Server bestätigt hat.
+   * Zuletzt gespeichert, bis die Liste den neuen Stand geladen hat (ORG-04).
+   * Scheitert das Nachladen, gilt weiter das, was der Server bestätigt hat.
    */
-  gesichert: { bloecke: Zeitblock[]; stand: number } | null;
+  gesichert: { bloecke: Partial<Record<Wochentag, Zeitblock[]>>; stand: number } | null;
   meldung: { text: string; nr: number } | null;
 }
 
-function frischerStand(tag: Wochentag): Editorstand {
-  return { tag, bearbeitung: null, fehler: null, gesichert: null, meldung: null };
-}
+const FRISCHER_STAND: Wochenstand = {
+  bearbeitung: {},
+  offen: [],
+  fehler: {},
+  gesichert: null,
+  meldung: null,
+};
 
-interface Wochenauftrag {
-  tag: Wochentag;
-  bloecke: Zeitblock[];
+/** „Montag“, „Montag und Mittwoch“, „Montag, Mittwoch und Freitag“. */
+function tageText(tage: readonly Wochentag[]): string {
+  const namen = tage.map((t) => wochentagLabels[t]);
+  if (namen.length <= 1) return namen[0] ?? '';
+  return `${namen.slice(0, -1).join(', ')} und ${namen.at(-1)}`;
 }
 
 /**
  * Wochenplan einer Person.
  *
  * Die Seite setzt je Person eine neue Instanz (`key`) - verworfene Eingaben
- * einer Person tauchen so beim Zurückwechseln nicht wieder auf. Den Tag hält
- * die Seite, damit er einen Personenwechsel überlebt.
+ * einer Person tauchen so beim Zurückwechseln nicht wieder auf.
  */
 function Wochenplan({
   staffMemberId,
   darfPflegen,
   heute,
-  tag,
-  onTag,
   onUngespeichert,
 }: {
   staffMemberId: string;
   darfPflegen: boolean;
   /** Gepflegt wird die Fassung, die heute gilt (AZ-001, ANN-589). */
   heute: string;
-  tag: Wochentag;
-  onTag: (tag: Wochentag) => void;
   onUngespeichert: (ungespeichert: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const [roh, setRoh] = useState<Editorstand>(() => frischerStand(tag));
-  const [wechselZu, setWechselZu] = useState<Wochentag | null>(null);
+  const [stand, setStand] = useState<Wochenstand>(FRISCHER_STAND);
 
   const zeiten = useQuery({
     queryKey: ['working-hours'],
@@ -321,16 +324,11 @@ function Wochenplan({
     retry: false,
   });
 
-  const stand = roh.tag === tag ? roh : frischerStand(tag);
-  // Für die Rückmeldung nach dem Speichern: welcher Tag gerade offen ist und
-  // welcher Stand der Liste geladen war.
-  const tagRef = useRef(tag);
-  tagRef.current = tag;
+  // Für die Rückmeldung nach dem Speichern: welcher Stand der Liste geladen war.
   const datenstandRef = useRef(zeiten.dataUpdatedAt);
   datenstandRef.current = zeiten.dataUpdatedAt;
 
   const daten = zeiten.data ?? [];
-  const geladen = wochenBloecke(daten, staffMemberId, tag, heute);
   // Eine schon genehmigte künftige Fassung (AZ-001): Sie steht als Hinweis da,
   // gepflegt wird hier der Plan bis dahin.
   const kuenftigAb =
@@ -338,52 +336,58 @@ function Wochenplan({
       .filter((w) => w.staff_member_id === staffMemberId && w.valid_from && w.valid_from > heute)
       .map((w) => w.valid_from!)
       .sort()[0] ?? null;
-  const referenz =
-    stand.gesichert && stand.gesichert.stand === zeiten.dataUpdatedAt
-      ? stand.gesichert.bloecke
-      : geladen;
-  const angezeigt = stand.bearbeitung ?? (referenz.length > 0 ? referenz : [{ ...LEERER_BLOCK }]);
-  const ungespeichert =
-    stand.bearbeitung !== null && !gleicheBloecke(ohneLeere(stand.bearbeitung), referenz);
+
+  const referenz = (w: Wochentag): Zeitblock[] => {
+    const gesichert =
+      stand.gesichert && stand.gesichert.stand === zeiten.dataUpdatedAt
+        ? stand.gesichert.bloecke[w]
+        : undefined;
+    return gesichert ?? wochenBloecke(daten, staffMemberId, w, heute);
+  };
+  const angezeigt = (w: Wochentag): Zeitblock[] => {
+    const vorher = referenz(w);
+    return stand.bearbeitung[w] ?? (vorher.length > 0 ? vorher : [{ ...LEERER_BLOCK }]);
+  };
+  const geaendert = WOCHENTAGE.filter((w) => {
+    const eingabe = stand.bearbeitung[w];
+    return eingabe !== undefined && !gleicheBloecke(ohneLeere(eingabe), referenz(w));
+  });
+  const ungespeichert = geaendert.length > 0;
   // Ein Tag, der Blöcke hatte, wird nur nach Rückfrage leer gespeichert (ORG-02).
-  const leertTag = ohneLeere(angezeigt).length === 0 && referenz.length > 0;
-  const label = wochentagLabels[tag];
+  const geleert = geaendert.filter(
+    (w) => ohneLeere(angezeigt(w)).length === 0 && referenz(w).length > 0,
+  );
+  const halbeVorhanden = geaendert.some((w) => halbeBloecke(angezeigt(w)) !== null);
 
   useEffect(() => {
     onUngespeichert(ungespeichert);
   }, [ungespeichert, onUngespeichert]);
   useEffect(() => () => onUngespeichert(false), [onUngespeichert]);
 
-  function aendern(teil: (vorher: Editorstand) => Partial<Editorstand>) {
-    setRoh((vorher) => {
-      const basis = vorher.tag === tag ? vorher : frischerStand(tag);
-      return { ...basis, ...teil(basis) };
-    });
-  }
-
   const mutation = useMutation({
-    mutationFn: (auftrag: Wochenauftrag) =>
-      saveWorkingHours(staffMemberId, auftrag.tag, auftrag.bloecke),
-    onSuccess: (_, auftrag) => {
-      const text =
-        auftrag.bloecke.length === 0
-          ? `Der ${wochentagLabels[auftrag.tag]} ist ohne Arbeitszeit gespeichert.`
-          : `Der ${wochentagLabels[auftrag.tag]} ist gespeichert.`;
-      setRoh((vorher) => {
-        // Inzwischen ein anderer Tag offen: Die Liste zeigt den neuen Stand
-        // nach dem Nachladen ohnehin.
-        if (auftrag.tag !== tagRef.current) return vorher;
-        const basis = vorher.tag === auftrag.tag ? vorher : frischerStand(auftrag.tag);
-        // Wer während des Speicherns weitergetippt hat, behält seine Eingabe.
-        const unveraendert =
-          basis.bearbeitung === null ||
-          gleicheBloecke(ohneLeere(basis.bearbeitung), auftrag.bloecke);
+    mutationFn: (tage: { tag: Wochentag; bloecke: Zeitblock[] }[]) =>
+      saveWorkingWeek(staffMemberId, tage),
+    onSuccess: (_, tage) => {
+      setStand((vorher) => {
+        const bearbeitung = { ...vorher.bearbeitung };
+        const gesichert: Partial<Record<Wochentag, Zeitblock[]>> = {};
+        for (const { tag, bloecke } of tage) {
+          gesichert[tag] = bloecke;
+          // Wer während des Speicherns weitergetippt hat, behält seine Eingabe.
+          const eingabe = bearbeitung[tag];
+          if (eingabe === undefined || gleicheBloecke(ohneLeere(eingabe), bloecke)) {
+            delete bearbeitung[tag];
+          }
+        }
         return {
-          ...basis,
-          bearbeitung: unveraendert ? null : basis.bearbeitung,
-          fehler: null,
-          gesichert: { bloecke: auftrag.bloecke, stand: datenstandRef.current },
-          meldung: { text, nr: (basis.meldung?.nr ?? 0) + 1 },
+          bearbeitung,
+          offen: vorher.offen.filter((w) => bearbeitung[w] !== undefined),
+          fehler: {},
+          gesichert: { bloecke: gesichert, stand: datenstandRef.current },
+          meldung: {
+            text: `Wochenplan gespeichert: ${tageText(tage.map((t) => t.tag))}.`,
+            nr: (vorher.meldung?.nr ?? 0) + 1,
+          },
         };
       });
       // Nicht abwarten (ZST-B01): Gespeichert ist es mit der Antwort des
@@ -393,33 +397,32 @@ function Wochenplan({
     },
   });
 
+  const auftrag = () => geaendert.map((w) => ({ tag: w, bloecke: ohneLeere(angezeigt(w)) }));
+
   function speichern() {
-    if (mutation.isPending) return;
-    const halbe = halbeBloecke(angezeigt);
-    if (halbe) {
-      aendern(() => ({ fehler: halbe }));
-      const ziel = ersterFehler('wochenplan', halbe);
+    if (mutation.isPending || !ungespeichert) return;
+    const fehler: Partial<Record<Wochentag, Blockfehler[]>> = {};
+    for (const w of geaendert) {
+      const halbe = halbeBloecke(angezeigt(w));
+      if (halbe) fehler[w] = halbe;
+    }
+    const erster = WOCHENTAGE.find((w) => fehler[w]);
+    if (erster) {
+      setStand((vorher) => ({ ...vorher, fehler }));
+      const ziel = ersterFehler(`wochenplan-${erster}`, fehler[erster]!);
       if (ziel) fokussieren(ziel);
       return;
     }
-    aendern(() => ({ fehler: null }));
-    mutation.mutate({ tag, bloecke: ohneLeere(angezeigt) });
+    setStand((vorher) => ({ ...vorher, fehler: {} }));
+    mutation.mutate(auftrag());
   }
 
-  function wechseln(neu: Wochentag) {
-    setWechselZu(null);
+  function oeffnen(w: Wochentag) {
     mutation.reset();
-    setRoh(frischerStand(neu));
-    onTag(neu);
-  }
-
-  function tagWaehlen(neu: Wochentag) {
-    if (neu === tag) return;
-    if (ungespeichert) {
-      setWechselZu(neu);
-      return;
-    }
-    wechseln(neu);
+    setStand((vorher) => ({
+      ...vorher,
+      offen: vorher.offen.includes(w) ? vorher.offen : [...vorher.offen, w],
+    }));
   }
 
   if (zeiten.isPending) return <LoadingState label="Arbeitszeiten werden geladen …" />;
@@ -453,41 +456,64 @@ function Wochenplan({
         </Statusmeldung>
       ) : null}
 
-      {/* Übersicht links, Bearbeitung rechts, sobald Platz ist (ORG-29): Bis
-          UXR-011 lagen Tag und Uhrzeit bei 1440 px rund 900 px auseinander. */}
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="max-w-spalte flex flex-col gap-4">
         {/* Die Wochentage als Zeilen des Systems (DESIGN.md Regel 3): Tag und
-            Zeiten, daneben der Weg in den Tag (ORG-05). */}
+            Zeiten, daneben „Bearbeiten“; der geöffnete Tag trägt seine
+            Felder unter der Zeile. */}
         <ListRows>
           {WOCHENTAGE.map((w) => {
-            const offen = darfPflegen && w === tag;
+            const label = wochentagLabels[w];
+            const offen = darfPflegen && stand.offen.includes(w);
+            const istGeaendert = geaendert.includes(w);
             return (
               <ListRow
                 key={w}
-                titel={<span aria-current={offen ? 'true' : undefined}>{wochentagLabels[w]}</span>}
-                meta={bloeckeText(
-                  w === tag ? referenz : wochenBloecke(daten, staffMemberId, w, heute),
-                )}
-                status={
-                  offen ? (
-                    <span className="text-accent text-sm font-semibold">Wird bearbeitet</span>
-                  ) : undefined
-                }
-                gedaempft={!offen && darfPflegen}
+                titel={label}
+                meta={bloeckeText(istGeaendert ? ohneLeere(angezeigt(w)) : referenz(w))}
+                status={istGeaendert ? <Badge ton="warnung">Nicht gespeichert</Badge> : undefined}
                 aktion={
                   darfPflegen && !offen ? (
                     <Button
                       type="button"
                       variant="quiet"
-                      aria-label={`${wochentagLabels[w]} bearbeiten`}
+                      aria-label={`${label} bearbeiten`}
                       disabled={mutation.isPending}
-                      onClick={() => {
-                        tagWaehlen(w);
-                        if (!ungespeichert) fokussieren('wochenplan-tag');
-                      }}
+                      onClick={() => oeffnen(w)}
                     >
                       Bearbeiten
                     </Button>
+                  ) : undefined
+                }
+                darunter={
+                  offen ? (
+                    <div className="pb-4">
+                      <BlockFelder
+                        bloecke={angezeigt(w)}
+                        fehler={stand.fehler[w] ?? null}
+                        onChange={(neu) =>
+                          // Einmal gezeigte Fehler laufen mit der Eingabe mit: Ist
+                          // der Block vollständig oder ganz leer, verschwindet der
+                          // Hinweis.
+                          setStand((vorher) => {
+                            const fehler = { ...vorher.fehler };
+                            if (fehler[w]) {
+                              const halbe = halbeBloecke(neu);
+                              if (halbe) fehler[w] = halbe;
+                              else delete fehler[w];
+                            }
+                            return {
+                              ...vorher,
+                              bearbeitung: { ...vorher.bearbeitung, [w]: neu },
+                              fehler,
+                            };
+                          })
+                        }
+                        legende={`Zeitblöcke am ${label}`}
+                        blockLabel={`${label}, Block`}
+                        idPraefix={`wochenplan-${w}`}
+                        gesperrt={mutation.isPending}
+                      />
+                    </div>
                   ) : undefined
                 }
               />
@@ -496,91 +522,61 @@ function Wochenplan({
         </ListRows>
 
         {darfPflegen ? (
-          <div className="flex flex-col gap-4">
-            <Select
-              label="Wochentag"
-              feldId="wochenplan-tag"
-              value={String(tag)}
-              disabled={mutation.isPending}
-              onChange={(e) => tagWaehlen(Number(e.target.value) as Wochentag)}
-            >
-              {WOCHENTAGE.map((w) => (
-                <option key={w} value={w}>
-                  {wochentagLabels[w]}
-                </option>
-              ))}
-            </Select>
-
-            {wechselZu !== null ? (
-              <Wechselrueckfrage
-                onVerwerfen={() => {
-                  wechseln(wechselZu);
-                  fokussieren('wochenplan-tag');
-                }}
-                onBleiben={() => {
-                  setWechselZu(null);
-                  fokussieren('wochenplan-tag');
-                }}
-              >
-                Die Änderungen am {label} sind noch nicht gespeichert und gehen beim Wechsel zum{' '}
-                {wochentagLabels[wechselZu]} verloren.
-              </Wechselrueckfrage>
-            ) : null}
-
-            <BlockFelder
-              bloecke={angezeigt}
-              fehler={stand.fehler}
-              onChange={(neu) =>
-                // Einmal gezeigte Fehler laufen mit der Eingabe mit: Ist der
-                // Block vollständig oder ganz leer, verschwindet der Hinweis.
-                aendern((vorher) => ({
-                  bearbeitung: neu,
-                  fehler: vorher.fehler ? halbeBloecke(neu) : null,
-                }))
-              }
-              legende={`Zeitblöcke am ${label}`}
-              blockLabel="Block"
-              idPraefix="wochenplan"
-              gesperrt={mutation.isPending}
-            />
-
-            {mutation.isError && !leertTag ? (
+          <>
+            {mutation.isError && geleert.length === 0 ? (
               <Statusmeldung ton="fehler">
                 {mutation.error.message} Die Eingaben stehen noch im Formular.
               </Statusmeldung>
             ) : null}
-            {stand.meldung && stand.bearbeitung === null ? (
+            {stand.meldung && !ungespeichert ? (
               <Rueckmeldung key={stand.meldung.nr}>{stand.meldung.text}</Rueckmeldung>
             ) : null}
-
-            {/* Ein Speichern für das Formular des Tages (ANN-435, Design-Rollout B2): Den
-                Tag leert man, indem man seine Blöcke entfernt - ein zweiter
-                Knopf „Blöcke leeren“ daneben entfällt. Was ein leerer Tag
-                bedeutet, sagt die Rückfrage beim Speichern. */}
-            <div className="flex flex-col gap-3 *:w-full sm:flex-row sm:*:w-auto">
-              {leertTag ? (
-                <Rueckfrage
-                  ausloeser={`${label} speichern`}
-                  ausloeserVariante="primary"
-                  bezeichnung={`${label} ohne Arbeitszeit speichern`}
-                  bestaetigen="Ohne Arbeitszeit speichern"
-                  bestaetigenLaeuft="Wird gespeichert …"
-                  fehler={mutation.isError ? mutation.error.message : undefined}
-                  onBestaetigen={() => mutation.mutateAsync({ tag, bloecke: [] })}
-                  onAbbrechen={() => mutation.reset()}
+            {stand.offen.length > 0 ? (
+              // Ein Speichern für die ganze Woche: Einen Tag leert man, indem
+              // man seine Blöcke entfernt; was das bedeutet, sagt die
+              // Rückfrage beim Speichern (ANN-435). „Verwerfen“ schließt alle
+              // geöffneten Tage ohne zu speichern (Design-Review).
+              <Formularfuss dicht>
+                {geleert.length > 0 && !halbeVorhanden ? (
+                  <Rueckfrage
+                    ausloeser="Wochenplan speichern"
+                    ausloeserVariante="primary"
+                    bezeichnung={`${tageText(geleert)} ohne Arbeitszeit speichern`}
+                    bestaetigen="Ohne Arbeitszeit speichern"
+                    bestaetigenLaeuft="Wird gespeichert …"
+                    fehler={mutation.isError ? mutation.error.message : undefined}
+                    onBestaetigen={() => mutation.mutateAsync(auftrag())}
+                    onAbbrechen={() => mutation.reset()}
+                  >
+                    <p>
+                      {tageText(geleert)} ohne Arbeitszeit speichern? Danach sind an{' '}
+                      {geleert.length === 1 ? 'diesem Wochentag' : 'diesen Wochentagen'} keine
+                      Termine vorgesehen.
+                    </p>
+                  </Rueckfrage>
+                ) : (
+                  <Button
+                    type="button"
+                    disabled={mutation.isPending || !ungespeichert}
+                    onClick={speichern}
+                  >
+                    {mutation.isPending ? 'Wird gespeichert …' : 'Wochenplan speichern'}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="quiet"
+                  disabled={mutation.isPending}
+                  onClick={() => {
+                    mutation.reset();
+                    setStand((vorher) => ({ ...FRISCHER_STAND, meldung: vorher.meldung }));
+                  }}
                 >
-                  <p>
-                    {label} ohne Arbeitszeit speichern? Bisher: {bloeckeText(referenz)}. Danach sind
-                    an diesem Wochentag keine Termine vorgesehen.
-                  </p>
-                </Rueckfrage>
-              ) : (
-                <Button type="button" disabled={mutation.isPending} onClick={speichern}>
-                  {mutation.isPending ? 'Wird gespeichert …' : `${label} speichern`}
+                  {ungespeichert ? 'Änderungen verwerfen' : 'Schließen'}
                 </Button>
-              )}
-            </div>
-          </div>
+              </Formularfuss>
+            ) : null}
+          </>
         ) : (
           <p className="text-ink-muted text-sm">
             Für das Ändern des Wochenplans fehlt Ihrem Zugang die Berechtigung.
@@ -1090,7 +1086,6 @@ export function ArbeitszeitJePerson({
   const gewuenscht = suche.get('person');
 
   const [person, setPerson] = useState('');
-  const [tag, setTag] = useState<Wochentag>(1);
   const [planOffen, setPlanOffen] = useState(false);
   const [abweichungOffen, setAbweichungOffen] = useState(false);
   const [personWechsel, setPersonWechsel] = useState<string | null>(null);
@@ -1212,8 +1207,6 @@ export function ArbeitszeitJePerson({
                   staffMemberId={person}
                   darfPflegen={darfPflegen}
                   heute={heute ?? ''}
-                  tag={tag}
-                  onTag={setTag}
                   onUngespeichert={setPlanOffen}
                 />
               )}

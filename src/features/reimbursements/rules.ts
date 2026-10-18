@@ -56,6 +56,20 @@ export function electricityHoursFormula(
   return `${hoursText(minutes)} × ${kmPerHour} km/h × ${whPerKm} Wh/km × ${formatEuro(centsPerKwh)}/kWh`;
 }
 
+/**
+ * Seit BEF-181: km der geplanten Touren × Verbrauch × Satz in Cent,
+ * kaufmännisch auf ganze Cent - dieselbe Rechnung wie
+ * `record_electricity_tour_distance` und die Bedingung an der Tabelle.
+ */
+export function electricityCentsFromKm(km: number, whPerKm: number, centsPerKwh: number): number {
+  return Math.floor((km * whPerKm * centsPerKwh + 500) / 1000);
+}
+
+/** „412 km × 18 Wh/km × 0,37 €/kWh“ - die Rechnung eines Antrags aus Touren. */
+export function electricityKmFormula(km: number, whPerKm: number, centsPerKwh: number): string {
+  return `${km} km × ${whPerKm} Wh/km × ${formatEuro(centsPerKwh)}/kWh`;
+}
+
 /** Die Rechnung eines Antrags - in der Form, in der er gestellt wurde; sonst `undefined`. */
 export function electricityFormulaOf(
   r: Pick<
@@ -66,10 +80,14 @@ export function electricityFormulaOf(
     | 'working_minutes'
     | 'km_per_hour'
     | 'wh_per_km'
+    | 'tour_km'
     | 'rate_cents_per_kwh'
   >,
 ): string | undefined {
   if (r.kind !== 'electricity' || r.rate_cents_per_kwh === null) return undefined;
+  if (r.tour_km !== null && r.wh_per_km !== null) {
+    return electricityKmFormula(r.tour_km, r.wh_per_km, r.rate_cents_per_kwh);
+  }
   if (r.working_minutes !== null && r.km_per_hour !== null && r.wh_per_km !== null) {
     return electricityHoursFormula(
       r.working_minutes,

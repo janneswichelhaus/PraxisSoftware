@@ -160,6 +160,28 @@ export async function saveWorkingHours(
 }
 
 /**
+ * Wochenplan in einem Zug: ersetzt die genannten Wochentage einer Person in
+ * einer Transaktion - alle oder keiner (`set_staff_working_week`). Scheitert
+ * ein Tag, nennt die Meldung ihn.
+ */
+export async function saveWorkingWeek(
+  staffMemberId: string,
+  tage: readonly { tag: Wochentag; bloecke: Zeitblock[] }[],
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_staff_working_week', {
+    p_staff_member_id: staffMemberId,
+    p_days: tage.map(({ tag, bloecke }) => ({ weekday: tag, blocks: bloecke })),
+  })) as { error: { message?: string; hint?: string } | null };
+
+  if (error) {
+    const grund = schreibfehler(error, 'Der Wochenplan konnte nicht gespeichert werden.');
+    const nr = Number(/^weekday ([1-7])$/.exec(error.hint ?? '')?.[1]);
+    const tag = WOCHENTAGE.find((w) => w === nr);
+    throw tag ? new Error(`${wochentagLabels[tag]}: ${grund.message}`) : grund;
+  }
+}
+
+/**
  * Ersetzt einen Kalendertag vollständig.
  *
  * Ohne Abwesenheit und ohne Blöcke wird die Abweichung entfernt - danach gilt

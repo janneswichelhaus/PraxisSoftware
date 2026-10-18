@@ -104,6 +104,9 @@ async function zurueckziehen(page: Page, meldung: Locator): Promise<void> {
   ).toHaveCount(0);
 }
 
+/** Die Rechnung des Ladestroms: aus Tourkilometern (BEF-181) oder nach Stunden (ORG-008). */
+const RECHNUNG = /^(\d+ km|[\d,]+ h × 6 km\/h) × 18 Wh\/km × 0,37\s€\/kWh/;
+
 test('G10: Anna beantragt Ladestrom in fünf Tipps und zieht ihn zurück (ORG-008)', async ({
   page,
 }) => {
@@ -124,9 +127,11 @@ test('G10: Anna beantragt Ladestrom in fünf Tipps und zieht ihn zurück (ORG-00
   const frei = monat.getByRole('button', { name: /^\S+ \d{4}$/, disabled: false }).first();
   await t.tippe(frei);
 
-  // Stunden und Betrag rechnet der Server aus Annas Wochenplan (ORG-008).
+  // Den Betrag rechnet der Server aus den Kilometern von Annas geplanten
+  // Touren (BEF-181); ohne Kartendienst - in der CI läuft keine Edge
+  // Function - aus dem Wochenplan und dem Wert je Stunde (ORG-008).
   const abschluss = page.getByRole('dialog', { name: 'Ladestrom beantragen?' });
-  await expect(abschluss.getByText(/ h × 6 km\/h × 18 Wh\/km × 0,37\s€\/kWh/)).toBeVisible();
+  await expect(abschluss.getByText(RECHNUNG)).toBeVisible();
   await expect(abschluss.getByText(`Auszahlung auf ${MASKIERT}`)).toBeVisible();
   const absenden = abschluss.getByRole('button', { name: 'Ladestrom beantragen' });
   await expect(absenden).toBeDisabled();
@@ -140,6 +145,8 @@ test('G10: Anna beantragt Ladestrom in fünf Tipps und zieht ihn zurück (ORG-00
   );
   await expect(meldung).toBeVisible();
   await bild(page, 'b10-g10-06-beantragt-375');
+  // Am Antrag steht die Rechnung, die der Server festgehalten hat.
+  await expect(page.getByText(RECHNUNG).first()).toBeVisible();
   test.info().annotations.push({ type: 'G10 Strom', description: `${t.tipps} Tipps` });
   expect(t.tipps).toBeLessThanOrEqual(5);
 

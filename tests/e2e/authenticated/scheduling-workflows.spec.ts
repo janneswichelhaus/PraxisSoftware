@@ -138,10 +138,39 @@ test.describe('CAL-005: Arbeitszeiten', () => {
 
     // Der eigene Plan mit Stunden; den einer Kollegin liest sie nur.
     await expect(page.getByText('08:00–12:00, 13:00–18:00').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Montag speichern' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Montag bearbeiten' })).toHaveCount(0);
     await page.getByLabel('Person').selectOption({ label: 'Tim Teamleitung' });
     await expect(page.getByText(/fehlt Ihrem Zugang die Berechtigung/)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Montag speichern' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Montag bearbeiten' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Wochenplan speichern' })).toHaveCount(0);
+  });
+
+  test('speichert zwei Wochentage in einem Zug und leert sie wieder', async ({ page }) => {
+    await anmelden(page, KONTEN.office);
+    await page.goto('/betrieb/arbeitszeit');
+    await page.getByLabel('Person').selectOption({ label: 'Tim Teamleitung' });
+    await expect(page.getByRole('heading', { name: 'Wochenplan' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Samstag bearbeiten' }).click();
+    await page.getByLabel('Samstag, Block 1 von').fill('09:00');
+    await page.getByLabel('Samstag, Block 1 bis').fill('12:00');
+    await page.getByRole('button', { name: 'Sonntag bearbeiten' }).click();
+    await page.getByLabel('Sonntag, Block 1 von').fill('10:00');
+    await page.getByLabel('Sonntag, Block 1 bis').fill('11:30');
+    await page.getByRole('button', { name: 'Wochenplan speichern' }).click();
+    await expect(page.getByText('Wochenplan gespeichert: Samstag und Sonntag.')).toBeVisible();
+    await expect(page.getByText('09:00–12:00')).toBeVisible();
+    await expect(page.getByText('10:00–11:30')).toBeVisible();
+
+    // Zurück auf den Stand des Seeds - geleert erst nach der Rückfrage.
+    for (const tag of ['Samstag', 'Sonntag']) {
+      await page.getByRole('button', { name: `${tag} bearbeiten` }).click();
+      await page.getByRole('button', { name: `${tag}, Block 1 entfernen` }).click();
+    }
+    await page.getByRole('button', { name: 'Wochenplan speichern' }).click();
+    await page.getByRole('button', { name: 'Ohne Arbeitszeit speichern' }).click();
+    await expect(page.getByText('Wochenplan gespeichert: Samstag und Sonntag.')).toBeVisible();
+    await expect(page.getByText('09:00–12:00')).toHaveCount(0);
   });
 
   test('weist therapist auch an der Schnittstelle ab', async ({ request }) => {

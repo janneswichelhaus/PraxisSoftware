@@ -49,6 +49,8 @@ const reimbursementSchema = z.object({
   working_minutes: z.number().int().nullable(),
   km_per_hour: z.number().int().nullable(),
   wh_per_km: z.number().int().nullable(),
+  // BEF-181: Monatssumme der geplanten Touren; null bei km je Stunde.
+  tour_km: z.number().int().nullable(),
   rate_cents_per_kwh: z.number().int().nullable(),
   amount_cents: z.number().int(),
   status: z.enum(REIMBURSEMENT_STATUS),
@@ -64,6 +66,16 @@ const reimbursementSchema = z.object({
 });
 export type Reimbursement = z.infer<typeof reimbursementSchema>;
 
+/**
+ * Ein Antrag in der Liste einer Person: Beim Büro fehlen bei einem Antrag
+ * aus Touren Betrag, Kilometer, Verbrauch und Satz - aus ihnen ließen sich
+ * die Kilometer zurückrechnen (ANN-616, ADR-019 Fassung 6).
+ */
+const personReimbursementSchema = reimbursementSchema.extend({
+  amount_cents: z.number().int().nullable(),
+});
+export type PersonReimbursement = z.infer<typeof personReimbursementSchema>;
+
 const accountSchema = z.object({ iban_masked: z.string(), since: z.string() });
 export type PayoutAccount = z.infer<typeof accountSchema>;
 
@@ -76,7 +88,7 @@ const overviewSchema = z.object({
       staff_member_id: z.string(),
       name: z.string().nullable(),
       account: accountSchema.nullable(),
-      reimbursements: z.array(reimbursementSchema),
+      reimbursements: z.array(personReimbursementSchema),
     })
     .nullable(),
   to_decide: z.array(reimbursementSchema),
@@ -221,6 +233,64 @@ export async function fetchElectricitySuggestions(): Promise<ElectricitySuggesti
   const fallback = 'Der Ladestrom konnte nicht berechnet werden.';
   const data = await call('electricity_suggestions', {}, fallback);
   return antwort(z.array(electricitySuggestionSchema), data ?? [], fallback);
+}
+
+/** Die Edge Function für den Ladestrom aus Touren (BEF-181). */
+const DISTANCE_FUNCTION = 'electricity-distance';
+
+const distanceReplySchema = z.object({
+  ok: z.literal(true),
+  value: z.object({ km: z.number().int().nullable(), amountCents: z.number().int().optional() }),
+  quelle: z.enum(['anbieter', 'nachbildung']),
+});
+
+/** Kilometer der geplanten Touren - und ob ein Anbieter sie gerechnet hat. */
+export interface TourDistance {
+  km: number;
+  source: 'anbieter' | 'nachbildung';
+}
+
+async function invokeDistance(
+  path: 'preview' | 'record',
+  body: Record<string, string>,
+): Promise<z.infer<typeof distanceReplySchema> | null> {
+  try {
+    const { data, error } = (await getSupabase().functions.invoke<unknown>(
+      `${DISTANCE_FUNCTION}/${path}`,
+      { body },
+    )) as { data: unknown; error: unknown };
+    if (error !== null) return null;
+    const parsed = distanceReplySchema.safeParse(data);
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Die Kilometer der eigenen geplanten Touren eines Monats (BEF-181): Der
+ * Server rechnet sie aus den Routen je Tag, zur Anzeige - gespeichert wird
+ * nichts. `null` ohne Ergebnis (kein Kartendienst, keine Tour, Funkloch);
+ * dann gilt der Wert je Stunde.
+ */
+export async function previewTourDistance(month: string): Promise<TourDistance | null> {
+  const reply = await invokeDistance('preview', { month });
+  if (!reply || reply.value.km === null) return null;
+  return { km: reply.value.km, source: reply.quelle };
+}
+
+/**
+ * Nach dem Beantragen: Der Server rechnet die Touren neu und trägt die
+ * Monatssumme am Antrag ein. `null`, wenn nichts eingetragen wurde - der
+ * Antrag behält dann den Wert je Stunde.
+ */
+export async function recordTourDistance(
+  month: string,
+  reimbursementId: string,
+): Promise<{ km: number; amountCents: number } | null> {
+  const reply = await invokeDistance('record', { month, reimbursementId });
+  if (!reply || reply.value.km === null || reply.value.amountCents === undefined) return null;
+  return { km: reply.value.km, amountCents: reply.value.amountCents };
 }
 
 export const ELECTRICITY_SETTINGS_KEY = ['electricity-settings'] as const;

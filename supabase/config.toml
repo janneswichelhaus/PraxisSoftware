@@ -197,5 +197,16 @@ verify_jwt = true
 [functions.ai-gateway]
 verify_jwt = true
 
+# Ladestrom aus Touren (BEF-181, ADR-019 Fassung 6). `verify_jwt` ist an;
+# die Function prueft die Sitzung zusaetzlich selbst, holt die Wegpunkte mit
+# dem Token der Person (electricity_tour_points) und traegt die Monatssumme
+# mit dem eigens zu setzenden Secret ELECTRICITY_DISTANCE_SERVICE_KEY ein
+# (record_electricity_tour_distance, nur service_role). Den Anbieter waehlt
+# dieselbe Stelle wie beim Kartendienst; ohne bestandenes Gate (ADR-019
+# Punkt 9) gibt es keinen, und der Antrag behaelt den Wert je Stunde. Scharf
+# erst nach OPS-001 (ADR-015 Punkt 20).
+[functions.electricity-distance]
+verify_jwt = true
+
 [analytics]
 enabled = false

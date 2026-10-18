@@ -85,7 +85,7 @@ export function MeineAntraege({ heute }: { heute: string }) {
         titel: 'Erstattung',
         meta: reimbursementTitle(antrag),
         status: antrag.status === 'approved' ? ('Genehmigt' as const) : ('Beantragt' as const),
-        betrag: formatEuro(antrag.amount_cents),
+        ...(antrag.amount_cents === null ? {} : { betrag: formatEuro(antrag.amount_cents) }),
         to: REIMBURSEMENTS_HOME,
       })),
     // BEF-179: Ein zurückgewiesener Zeitkonto-Eintrag, dessen Tag noch kommt,

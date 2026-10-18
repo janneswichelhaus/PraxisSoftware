@@ -12,7 +12,7 @@ const TIM = '55555555-5555-4555-8555-000000000004';
 
 const fetchWorkingHours = vi.fn();
 const fetchWorkingHourExceptions = vi.fn();
-const saveWorkingHours = vi.fn();
+const saveWorkingWeek = vi.fn();
 const saveWorkingHourException = vi.fn();
 const saveAppointmentGrid = vi.fn();
 const fetchAssignableTherapists = vi.fn();
@@ -26,8 +26,8 @@ vi.mock('./api', async (importOriginal) => {
     fetchWorkingHours: () => fetchWorkingHours() as Promise<SchedulingApi.WorkingHour[]>,
     fetchWorkingHourExceptions: (von: string, bis: string) =>
       fetchWorkingHourExceptions(von, bis) as Promise<SchedulingApi.WorkingHourException[]>,
-    saveWorkingHours: (staff: string, tag: number, bloecke: unknown) =>
-      saveWorkingHours(staff, tag, bloecke) as Promise<void>,
+    saveWorkingWeek: (staff: string, tage: unknown) =>
+      saveWorkingWeek(staff, tage) as Promise<void>,
     saveWorkingHourException: (staff: string, datum: string, abwesend: boolean, bloecke: unknown) =>
       saveWorkingHourException(staff, datum, abwesend, bloecke) as Promise<void>,
     saveAppointmentGrid: (minuten: number) => saveAppointmentGrid(minuten) as Promise<void>,
@@ -78,6 +78,11 @@ function tageszeile(tag: string): HTMLElement {
   return zeile;
 }
 
+/** Öffnet einen Wochentag über „Bearbeiten“ in seiner Zeile (Wochenplan in einem Zug). */
+async function bearbeiten(user: ReturnType<typeof userEvent.setup>, tag: string) {
+  await user.click(within(tageszeile(tag)).getByRole('button', { name: `${tag} bearbeiten` }));
+}
+
 /** Eine Prüfseite mit einem Weg nach draußen, um den Schutz zu sehen. */
 function MitWegHinaus() {
   const { pathname } = useLocation();
@@ -94,7 +99,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
   beforeEach(() => {
     fetchWorkingHours.mockReset();
     fetchWorkingHourExceptions.mockReset();
-    saveWorkingHours.mockReset();
+    saveWorkingWeek.mockReset();
     saveWorkingHourException.mockReset();
     saveAppointmentGrid.mockReset();
     fetchAssignableTherapists.mockReset();
@@ -113,7 +118,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       { id: 't1', staff_member_id: TIM, weekday: 2, starts_at: '10:00', ends_at: '16:00' },
     ]);
     fetchWorkingHourExceptions.mockResolvedValue([]);
-    saveWorkingHours.mockResolvedValue(undefined);
+    saveWorkingWeek.mockResolvedValue(undefined);
     saveWorkingHourException.mockResolvedValue(undefined);
     saveAppointmentGrid.mockResolvedValue(undefined);
   });
@@ -160,20 +165,90 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       expect(screen.queryByText('08:00–12:00, 13:00–18:00')).not.toBeInTheDocument();
     });
 
-    it('speichert die Bloecke eines Wochentags vollstaendig und bestaetigt es', async () => {
+    it('speichert die geänderten Wochentage in einem Zug und bestätigt es', async () => {
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
 
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      // Ohne geöffneten Tag gibt es nichts zu speichern.
+      expect(screen.queryByRole('button', { name: 'Wochenplan speichern' })).toBeNull();
+
+      await bearbeiten(user, 'Montag');
+      const beginn = screen.getByLabelText('Montag, Block 1 von');
+      await user.clear(beginn);
+      await user.type(beginn, '07:00');
+      await bearbeiten(user, 'Mittwoch');
+      await user.type(screen.getByLabelText('Mittwoch, Block 1 von'), '09:00');
+      await user.type(screen.getByLabelText('Mittwoch, Block 1 bis'), '13:00');
+      // Ein geöffneter, aber unveränderter Tag geht nicht mit hinaus.
+      await bearbeiten(user, 'Freitag');
+
+      expect(within(tageszeile('Montag')).getByText('Nicht gespeichert')).toBeInTheDocument();
+      expect(within(tageszeile('Mittwoch')).getByText('09:00–13:00')).toBeInTheDocument();
+      expect(within(tageszeile('Freitag')).queryByText('Nicht gespeichert')).toBeNull();
+
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
       await waitFor(() =>
-        expect(saveWorkingHours).toHaveBeenCalledWith(ANNA, 1, [
-          { von: '08:00', bis: '12:00' },
-          { von: '13:00', bis: '18:00' },
+        expect(saveWorkingWeek).toHaveBeenCalledWith(ANNA, [
+          {
+            tag: 1,
+            bloecke: [
+              { von: '07:00', bis: '12:00' },
+              { von: '13:00', bis: '18:00' },
+            ],
+          },
+          { tag: 3, bloecke: [{ von: '09:00', bis: '13:00' }] },
         ]),
       );
-      expect(await screen.findByText('Der Montag ist gespeichert.')).toBeInTheDocument();
+      expect(saveWorkingWeek).toHaveBeenCalledTimes(1);
+      expect(
+        await screen.findByText('Wochenplan gespeichert: Montag und Mittwoch.'),
+      ).toBeInTheDocument();
+      // Gespeicherte Tage schließen sich wieder.
+      expect(screen.queryByLabelText('Montag, Block 1 von')).toBeNull();
+      expect(screen.queryByLabelText('Mittwoch, Block 1 von')).toBeNull();
+    });
+
+    it('verwirft die Änderungen aller geöffneten Tage und schließt sie (Design-Review)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await wochenplanAbwarten();
+
+      await bearbeiten(user, 'Montag');
+      await user.clear(screen.getByLabelText('Montag, Block 1 von'));
+      await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:00');
+      await bearbeiten(user, 'Dienstag');
+      await user.click(screen.getByRole('button', { name: 'Änderungen verwerfen' }));
+
+      expect(screen.queryByLabelText('Montag, Block 1 von')).toBeNull();
+      expect(screen.queryByLabelText('Dienstag, Block 1 von')).toBeNull();
+      expect(
+        within(tageszeile('Montag')).getByText('08:00–12:00, 13:00–18:00'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Wochenplan speichern' })).toBeNull();
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
+    });
+
+    it('schließt einen unveränderten Tag wieder', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await wochenplanAbwarten();
+      await bearbeiten(user, 'Freitag');
+      await user.click(screen.getByRole('button', { name: 'Schließen' }));
+      expect(screen.queryByLabelText('Freitag, Block 1 von')).toBeNull();
+    });
+
+    it('lässt das Speichern gesperrt, solange nichts geändert ist', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await wochenplanAbwarten();
+
+      await bearbeiten(user, 'Dienstag');
+      expect(screen.getByRole('button', { name: 'Wochenplan speichern' })).toBeDisabled();
+      expect(
+        within(tageszeile('Dienstag')).queryByRole('button', { name: /bearbeiten/ }),
+      ).toBeNull();
     });
 
     it('bestaetigt das Speichern auch, wenn das Nachladen einen geaenderten Stand bringt (ORG-04)', async () => {
@@ -190,31 +265,38 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       rendern();
       await wochenplanAbwarten();
 
-      const beginn = screen.getByLabelText('Block 1 von');
+      await bearbeiten(user, 'Montag');
+      const beginn = screen.getByLabelText('Montag, Block 1 von');
       await user.clear(beginn);
       await user.type(beginn, '09:00');
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
       await waitFor(() =>
-        expect(saveWorkingHours).toHaveBeenCalledWith(ANNA, 1, [{ von: '09:00', bis: '12:00' }]),
+        expect(saveWorkingWeek).toHaveBeenCalledWith(ANNA, [
+          { tag: 1, bloecke: [{ von: '09:00', bis: '12:00' }] },
+        ]),
       );
       // Das Nachladen liefert den neuen Stand ...
       await waitFor(() => expect(fetchWorkingHours).toHaveBeenCalledTimes(2));
       expect(await screen.findByText('09:00–12:00')).toBeInTheDocument();
       // ... und die Bestaetigung steht trotzdem da.
-      expect(screen.getByText('Der Montag ist gespeichert.')).toBeInTheDocument();
+      expect(screen.getByText('Wochenplan gespeichert: Montag.')).toBeInTheDocument();
     });
 
-    it('beschriftet von und bis kurz und liest Block und Nummer vor (ANN-489, Design-Review T6)', async () => {
+    it('beschriftet von und bis kurz und liest Tag, Block und Nummer vor (ANN-489, Design-Review T6)', async () => {
+      const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
+      await bearbeiten(user, 'Montag');
 
-      const beginn = screen.getByLabelText('Block 1 von');
+      const beginn = screen.getByLabelText('Montag, Block 1 von');
       // Sichtbar steht nur „von“ - die lange Beschriftung brach am Telefon um.
       const sichtbar = document.querySelector(`label[for="${beginn.id}"]`);
       expect(sichtbar).toHaveTextContent(/^von$/);
-      expect(beginn).toHaveAccessibleName('Block 1 von');
-      expect(screen.getByLabelText('Block 1 bis')).toHaveAccessibleName('Block 1 bis');
+      expect(beginn).toHaveAccessibleName('Montag, Block 1 von');
+      expect(screen.getByLabelText('Montag, Block 1 bis')).toHaveAccessibleName(
+        'Montag, Block 1 bis',
+      );
       // Nebeneinander erst ab 640 px (DESIGN.md, Formular): am Telefon „bis“
       // unter „von“, das Entfernen neben „von“; ab `sm:` eine Zeile.
       const block = beginn.closest('[data-testid="zeitblock"]');
@@ -222,13 +304,13 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
         'grid-cols-[minmax(0,1fr)_auto]',
         'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]',
       );
-      expect(screen.getByLabelText('Block 1 bis').closest('.row-start-2')).toHaveClass(
+      expect(screen.getByLabelText('Montag, Block 1 bis').closest('.row-start-2')).toHaveClass(
         'col-start-1',
         'sm:col-start-2',
         'sm:row-start-1',
       );
       expect(
-        within(block as HTMLElement).getByRole('button', { name: 'Block 1 entfernen' })
+        within(block as HTMLElement).getByRole('button', { name: 'Montag, Block 1 entfernen' })
           .parentElement,
       ).toHaveClass('col-start-2', 'row-start-1', 'sm:col-start-3');
     });
@@ -237,37 +319,45 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
+      await bearbeiten(user, 'Montag');
 
       // Geleert wird ein Tag, indem man seine Bloecke entfernt (seit dem
       // Design-Rollout B2 ohne eigenen Knopf „Blöcke leeren“).
-      await user.click(screen.getByRole('button', { name: 'Block 2 entfernen' }));
-      await user.click(screen.getByRole('button', { name: 'Block 1 entfernen' }));
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      await user.click(screen.getByRole('button', { name: 'Montag, Block 2 entfernen' }));
+      await user.click(screen.getByRole('button', { name: 'Montag, Block 1 entfernen' }));
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
       // Der Montag hatte Bloecke - geleert wird er nicht mit einem Tipp.
       const frage = screen.getByRole('group', { name: 'Montag ohne Arbeitszeit speichern' });
-      expect(frage).toHaveTextContent('Bisher: 08:00–12:00, 13:00–18:00');
-      expect(saveWorkingHours).not.toHaveBeenCalled();
+      expect(frage).toHaveTextContent('Montag ohne Arbeitszeit speichern?');
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
 
       await user.click(screen.getByRole('button', { name: 'Ohne Arbeitszeit speichern' }));
 
-      await waitFor(() => expect(saveWorkingHours).toHaveBeenCalledWith(ANNA, 1, []));
-      expect(
-        await screen.findByText('Der Montag ist ohne Arbeitszeit gespeichert.'),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(saveWorkingWeek).toHaveBeenCalledWith(ANNA, [{ tag: 1, bloecke: [] }]),
+      );
+      expect(await screen.findByText('Wochenplan gespeichert: Montag.')).toBeInTheDocument();
     });
 
-    it('meldet ueberschneidende Bloecke verstaendlich', async () => {
-      saveWorkingHours.mockRejectedValue(
-        new Error('Die Zeitblöcke überschneiden sich. Bitte die Zeiten anpassen.'),
+    it('meldet ueberschneidende Bloecke verstaendlich und mit dem Tag', async () => {
+      saveWorkingWeek.mockRejectedValue(
+        new Error('Montag: Die Zeitblöcke überschneiden sich. Bitte die Zeiten anpassen.'),
       );
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
+      await bearbeiten(user, 'Montag');
 
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
-      expect(await screen.findByText(/überschneiden sich/)).toBeInTheDocument();
-      expect(screen.queryByText('Der Montag ist gespeichert.')).not.toBeInTheDocument();
+      await user.clear(screen.getByLabelText('Montag, Block 2 von'));
+      await user.type(screen.getByLabelText('Montag, Block 2 von'), '11:00');
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
+      expect(
+        await screen.findByText(/Montag: Die Zeitblöcke überschneiden sich/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Wochenplan gespeichert/)).not.toBeInTheDocument();
+      // Die Eingabe bleibt stehen.
+      expect(screen.getByLabelText('Montag, Block 2 von')).toHaveValue('11:00');
     });
 
     it('laesst therapist lesen, aber nicht pflegen', async () => {
@@ -321,13 +411,19 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       await wochenplanAbwarten();
       fetchWorkingHours.mockRejectedValue(new Error('Funkloch'));
 
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      await bearbeiten(user, 'Montag');
+      await user.clear(screen.getByLabelText('Montag, Block 1 von'));
+      await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:30');
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
       expect(
         await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
       ).toBeInTheDocument();
-      expect(screen.getByText('Der Montag ist gespeichert.')).toBeInTheDocument();
-      expect(screen.getByLabelText('Block 1 von')).toHaveValue('08:00');
+      expect(screen.getByText('Wochenplan gespeichert: Montag.')).toBeInTheDocument();
+      // Es gilt, was der Server bestätigt hat.
+      expect(
+        within(tageszeile('Montag')).getByText('07:30–12:00, 13:00–18:00'),
+      ).toBeInTheDocument();
       expect(
         screen.queryByText('Die Arbeitszeiten konnten nicht geladen werden.'),
       ).not.toBeInTheDocument();
@@ -344,15 +440,31 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       await wochenplanAbwarten();
 
       // Samstag ist leer; nur „von" wird eingetragen.
-      await user.selectOptions(screen.getByLabelText('Wochentag'), '6');
-      await user.type(screen.getByLabelText('Block 1 von'), '08:00');
-      await user.click(screen.getByRole('button', { name: 'Samstag speichern' }));
+      await bearbeiten(user, 'Samstag');
+      await user.type(screen.getByLabelText('Samstag, Block 1 von'), '08:00');
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
-      expect(saveWorkingHours).not.toHaveBeenCalled();
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
       expect(screen.getByText('Bitte das Ende eintragen.')).toBeInTheDocument();
-      expect(screen.getByLabelText('Block 1 bis')).toHaveFocus();
-      expect(screen.getByLabelText('Block 1 bis')).toHaveAttribute('aria-invalid', 'true');
-      expect(screen.queryByText('Der Samstag ist gespeichert.')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Samstag, Block 1 bis')).toHaveFocus();
+      expect(screen.getByLabelText('Samstag, Block 1 bis')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.queryByText(/Wochenplan gespeichert/)).not.toBeInTheDocument();
+    });
+
+    it('speichert keinen Tag, solange ein anderer einen halben Block hat', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await wochenplanAbwarten();
+
+      await bearbeiten(user, 'Dienstag');
+      await user.type(screen.getByLabelText('Dienstag, Block 1 von'), '08:00');
+      await user.type(screen.getByLabelText('Dienstag, Block 1 bis'), '12:00');
+      await bearbeiten(user, 'Samstag');
+      await user.type(screen.getByLabelText('Samstag, Block 1 von'), '08:00');
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
+
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Samstag, Block 1 bis')).toHaveFocus();
     });
 
     it('wirft einen halben zweiten Block nicht still weg', async () => {
@@ -361,21 +473,27 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
+      await bearbeiten(user, 'Montag');
 
-      await user.clear(screen.getByLabelText('Block 2 bis'));
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      await user.clear(screen.getByLabelText('Montag, Block 2 bis'));
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
-      expect(saveWorkingHours).not.toHaveBeenCalled();
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
       expect(screen.getByText('Bitte das Ende eintragen.')).toBeInTheDocument();
 
       // Ist der Block wieder vollstaendig, verschwindet der Hinweis.
-      await user.type(screen.getByLabelText('Block 2 bis'), '17:00');
+      await user.type(screen.getByLabelText('Montag, Block 2 bis'), '17:00');
       expect(screen.queryByText('Bitte das Ende eintragen.')).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
       await waitFor(() =>
-        expect(saveWorkingHours).toHaveBeenCalledWith(ANNA, 1, [
-          { von: '08:00', bis: '12:00' },
-          { von: '13:00', bis: '17:00' },
+        expect(saveWorkingWeek).toHaveBeenCalledWith(ANNA, [
+          {
+            tag: 1,
+            bloecke: [
+              { von: '08:00', bis: '12:00' },
+              { von: '13:00', bis: '17:00' },
+            ],
+          },
         ]),
       );
     });
@@ -384,26 +502,30 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
+      await bearbeiten(user, 'Montag');
 
-      await user.clear(screen.getByLabelText('Block 1 von'));
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      await user.clear(screen.getByLabelText('Montag, Block 1 von'));
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
-      expect(saveWorkingHours).not.toHaveBeenCalled();
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
       expect(screen.getByText('Bitte den Beginn eintragen.')).toBeInTheDocument();
-      expect(screen.getByLabelText('Block 1 von')).toHaveFocus();
+      expect(screen.getByLabelText('Montag, Block 1 von')).toHaveFocus();
     });
 
     it('entfernt einen einzelnen Block (ORG-05)', async () => {
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
+      await bearbeiten(user, 'Montag');
 
-      await user.click(screen.getByRole('button', { name: 'Block 2 entfernen' }));
-      expect(screen.queryByLabelText('Block 2 von')).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Montag speichern' }));
+      await user.click(screen.getByRole('button', { name: 'Montag, Block 2 entfernen' }));
+      expect(screen.queryByLabelText('Montag, Block 2 von')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Wochenplan speichern' }));
 
       await waitFor(() =>
-        expect(saveWorkingHours).toHaveBeenCalledWith(ANNA, 1, [{ von: '08:00', bis: '12:00' }]),
+        expect(saveWorkingWeek).toHaveBeenCalledWith(ANNA, [
+          { tag: 1, bloecke: [{ von: '08:00', bis: '12:00' }] },
+        ]),
       );
     });
   });
@@ -412,63 +534,38 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
   // ORG-03: ein Wechsel verwirft nichts ohne Rückfrage
   // ---------------------------------------------------------------------------
   describe('Ungespeicherte Bloecke (ORG-03)', () => {
-    it('fragt vor dem Tageswechsel und behaelt die Eingabe beim Bleiben', async () => {
+    it('hält mehrere Tage zugleich offen und behält jede Eingabe (ORG-03)', async () => {
+      // Bis zum Wochenplan in einem Zug galt ein Tag zur Zeit; ein Wechsel
+      // fragte, ob die Eingabe verworfen werden soll. Jetzt bleibt jeder
+      // geöffnete Tag mit seiner Eingabe stehen, bis er gespeichert ist.
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
 
-      const beginn = screen.getByLabelText('Block 1 von');
-      await user.clear(beginn);
-      await user.type(beginn, '07:00');
-      await user.selectOptions(screen.getByLabelText('Wochentag'), '2');
+      await bearbeiten(user, 'Montag');
+      await user.clear(screen.getByLabelText('Montag, Block 1 von'));
+      await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:00');
+      await bearbeiten(user, 'Dienstag');
 
-      const frage = screen.getByRole('group', { name: 'Ungespeicherte Arbeitszeiten' });
-      expect(frage).toHaveTextContent('Die Änderungen am Montag sind noch nicht gespeichert');
-      expect(screen.getByLabelText('Wochentag')).toHaveValue('1');
-
-      await user.click(within(frage).getByRole('button', { name: 'Hier bleiben' }));
-      expect(screen.getByLabelText('Block 1 von')).toHaveValue('07:00');
-      expect(screen.getByLabelText('Wochentag')).toHaveFocus();
+      expect(screen.getByLabelText('Montag, Block 1 von')).toHaveValue('07:00');
+      expect(screen.getByLabelText('Dienstag, Block 1 von')).toHaveValue('');
+      expect(screen.queryByRole('group', { name: 'Ungespeicherte Arbeitszeiten' })).toBeNull();
+      expect(saveWorkingWeek).not.toHaveBeenCalled();
     });
 
-    it('wechselt nach „Verwerfen und wechseln" und verwirft die Eingabe', async () => {
+    it('öffnet den Tag der Zeile unter ihr (ORG-05)', async () => {
       const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
 
-      const beginn = screen.getByLabelText('Block 1 von');
-      await user.clear(beginn);
-      await user.type(beginn, '07:00');
-      // Der Weg ueber die Zeile der Uebersicht fragt genauso (ORG-05).
-      await user.click(
-        within(tageszeile('Dienstag')).getByRole('button', { name: 'Dienstag bearbeiten' }),
-      );
+      await bearbeiten(user, 'Freitag');
 
-      await user.click(screen.getByRole('button', { name: 'Verwerfen und wechseln' }));
-      expect(screen.getByLabelText('Wochentag')).toHaveValue('2');
-
-      // Zurueck am Montag steht wieder der gespeicherte Stand.
-      await user.selectOptions(screen.getByLabelText('Wochentag'), '1');
-      expect(screen.getByLabelText('Block 1 von')).toHaveValue('08:00');
-      expect(saveWorkingHours).not.toHaveBeenCalled();
-    });
-
-    it('wechselt ohne Eingabe ohne Rueckfrage in den Tag der Zeile (ORG-05)', async () => {
-      const user = userEvent.setup();
-      rendern();
-      await wochenplanAbwarten();
-
-      await user.click(
-        within(tageszeile('Freitag')).getByRole('button', { name: 'Freitag bearbeiten' }),
-      );
-
-      expect(screen.getByLabelText('Wochentag')).toHaveValue('5');
-      expect(within(tageszeile('Freitag')).getByText('Wird bearbeitet')).toBeInTheDocument();
-      expect(within(tageszeile('Freitag')).getByText('Freitag')).toHaveAttribute(
-        'aria-current',
-        'true',
-      );
-      expect(screen.getByRole('button', { name: 'Freitag speichern' })).toBeInTheDocument();
+      const zeile = tageszeile('Freitag');
+      expect(
+        within(zeile).getByRole('group', { name: 'Zeitblöcke am Freitag' }),
+      ).toBeInTheDocument();
+      expect(within(zeile).queryByRole('button', { name: 'Freitag bearbeiten' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Wochenplan speichern' })).toBeInTheDocument();
     });
 
     it('fragt vor dem Personenwechsel', async () => {
@@ -476,8 +573,9 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       rendern();
       await wochenplanAbwarten();
 
-      await user.clear(screen.getByLabelText('Block 1 von'));
-      await user.type(screen.getByLabelText('Block 1 von'), '07:00');
+      await bearbeiten(user, 'Montag');
+      await user.clear(screen.getByLabelText('Montag, Block 1 von'));
+      await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:00');
       await user.selectOptions(screen.getByLabelText('Person'), TIM);
 
       expect(
@@ -495,8 +593,9 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       renderWithProviders(<MitWegHinaus />, '/praxis/planung');
       await wochenplanAbwarten();
 
-      await user.clear(screen.getByLabelText('Block 1 von'));
-      await user.type(screen.getByLabelText('Block 1 von'), '07:00');
+      await bearbeiten(user, 'Montag');
+      await user.clear(screen.getByLabelText('Montag, Block 1 von'));
+      await user.type(screen.getByLabelText('Montag, Block 1 von'), '07:00');
       await user.click(screen.getByRole('link', { name: 'Weggehen' }));
 
       expect(screen.getByText('Adresse: /praxis/planung')).toBeInTheDocument();
@@ -514,7 +613,7 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
       expect(
         screen.queryByRole('group', { name: 'Ungespeicherte Arbeitszeiten' }),
       ).not.toBeInTheDocument();
-      expect(screen.getByLabelText('Block 1 von')).toHaveValue('07:00');
+      expect(screen.getByLabelText('Montag, Block 1 von')).toHaveValue('07:00');
     });
 
     it('warnt vor dem Neuladen nur mit ungespeicherten Bloecken', async () => {
@@ -647,9 +746,11 @@ describe('ArbeitszeitJePerson (ORG-003)', () => {
     it('unterscheidet die Felder von Wochenplan und Abweichung', async () => {
       // Gleiche Beschriftung auf einer Seite waere fuer Screenreader nicht
       // aufloesbar.
+      const user = userEvent.setup();
       rendern();
       await wochenplanAbwarten();
-      expect(screen.getByLabelText('Block 1 von')).toBeInTheDocument();
+      await bearbeiten(user, 'Montag');
+      expect(screen.getByLabelText('Montag, Block 1 von')).toBeInTheDocument();
       expect(screen.getByLabelText('Abweichender Block 1 von')).toBeInTheDocument();
     });
 

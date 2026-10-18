@@ -36,6 +36,8 @@ import {
   discardReceipt,
   fetchReimbursements,
   previewElectricity,
+  previewTourDistance,
+  recordTourDistance,
   reimbursementsKey,
   submitElectricity,
   submitPurchase,
@@ -45,7 +47,9 @@ import {
 import { BelowRow } from './BelowRow';
 import { REIMBURSEMENTS_HOME } from './paths';
 import {
+  electricityCentsFromKm,
   electricityHoursFormula,
+  electricityKmFormula,
   hoursText,
   ibanValid,
   monthLong,
@@ -59,9 +63,12 @@ import {
  *
  *   * **Ladestrom** (5, ORG-008): „Erstattung beantragen“ → Ladestrom → Monat
  *     (der jüngste freie im Fuß) → „zu Hause geladen“ als Haken → Absenden.
- *     Stunden und Betrag rechnet der Server aus dem Wochenplan und den Werten
- *     der Praxis; die Zusammenfassung nennt die Rechnung. Aus dem Vorschlag im
- *     Eingang (`?monat=`) beginnt der Ablauf an der Zusammenfassung (3).
+ *     Den Betrag rechnet der Server aus den Kilometern der geplanten Touren
+ *     (BEF-181, ADR-019 Fassung 6); ohne Ergebnis aus dem Wochenplan und dem
+ *     Wert je Stunde (ORG-008). Die Zusammenfassung nennt die Rechnung; nach
+ *     dem Absenden trägt der Server die Monatssumme am Antrag ein. Aus dem
+ *     Vorschlag im Eingang (`?monat=`) beginnt der Ablauf an der
+ *     Zusammenfassung (3).
  *   * **Einkauf** (7 und Betrag): „Erstattung beantragen“ → Einkauf → Beleg
  *     fotografieren → Auslösen → Foto verwenden → Betrag und wofür, Weiter →
  *     Absenden; „Weiterer Beleg“ für den nächsten.
@@ -188,6 +195,16 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     retry: false,
     staleTime: 60_000,
   });
+  // BEF-181: die Kilometer der geplanten Touren, zur Anzeige - gespeichert
+  // wird erst beim Beantragen, vom Server. Ohne Ergebnis `null`, dann gilt
+  // der Wert je Stunde.
+  const tour = useQuery({
+    queryKey: [...REIMBURSEMENTS_KEY, 'tour', month],
+    queryFn: () => previewTourDistance(month!),
+    enabled: kind === 'electricity' && month !== null,
+    retry: false,
+    staleTime: 60_000,
+  });
   const back = () => {
     const previous = zurueck(flow);
     if (previous) setFlow(previous);
@@ -220,11 +237,17 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
     mutationFn: async () => {
       const ibanToSend = ibanEntered ? normalizeIban(iban) : null;
       if (kind === 'electricity') {
-        return submitElectricity({
+        const submitted = await submitElectricity({
           month: month!,
           declared,
           iban: ibanToSend,
         });
+        // Der Server rechnet die Touren neu und trägt die Summe ein; ohne
+        // Ergebnis bleibt der Betrag nach Stunden - und die Meldung sagt es,
+        // wenn die Zusammenfassung Kilometer gezeigt hatte (Praxis-Review).
+        const recorded = await recordTourDistance(month!, submitted.id);
+        if (recorded) return { ...submitted, amount_cents: recorded.amountCents };
+        return { ...submitted, nachStunden: (tour.data ?? null) !== null };
       }
       return submitPurchase({
         items: readyItems.map((item) => ({
@@ -239,12 +262,16 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
       freigeben();
       await queryClient.invalidateQueries({ queryKey: REIMBURSEMENTS_KEY });
       const what = kind === 'electricity' && month ? `Ladestrom ${monthLong(month)}` : 'Einkauf';
+      const basis =
+        'nachStunden' in result && result.nachStunden
+          ? ' Die Strecke der Touren war nicht erreichbar – gerechnet nach Arbeitszeit.'
+          : '';
       void navigate(returnTo, {
         state: {
           meldung:
             result.status === 'approved'
-              ? `${what} eingetragen: ${formatEuro(result.amount_cents)}. Er gilt als genehmigt.`
-              : `${what} beantragt: ${formatEuro(result.amount_cents)}. Es entscheidet: ${roleLabels.owner}.`,
+              ? `${what} eingetragen: ${formatEuro(result.amount_cents)}. Er gilt als genehmigt.${basis}`
+              : `${what} beantragt: ${formatEuro(result.amount_cents)}. Es entscheidet: ${roleLabels.owner}.${basis}`,
         },
       });
     },
@@ -611,10 +638,12 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
         ? 'Einkauf eintragen'
         : 'Einkauf beantragen';
   const offer = preview.data;
+  const tourKm = tour.data ?? null;
   const electricityReady =
     kind === 'electricity' &&
     month !== null &&
     !!offer &&
+    !tour.isFetching &&
     !offer.already_requested &&
     offer.amount_cents >= 1 &&
     declared;
@@ -667,7 +696,23 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
                   </Button>
                 }
               />
-              {offer ? (
+              {offer && tour.isFetching ? (
+                <ListRow titel="Betrag" meta="Strecke der geplanten Touren wird berechnet …" />
+              ) : offer && tourKm ? (
+                <>
+                  <ListRow
+                    titel={`${tourKm.km} km geplante Touren`}
+                    meta="Summe der Touren je Tag"
+                  />
+                  <ListRow
+                    titel="Betrag"
+                    meta={electricityKmFormula(tourKm.km, offer.wh_per_km, offer.cents_per_kwh)}
+                    betrag={formatEuro(
+                      electricityCentsFromKm(tourKm.km, offer.wh_per_km, offer.cents_per_kwh),
+                    )}
+                  />
+                </>
+              ) : offer ? (
                 <>
                   <ListRow
                     titel={`${hoursText(offer.working_minutes)} Arbeitszeit`}
@@ -768,6 +813,14 @@ function Flow({ state, user }: { state: Overview; user: CurrentUser }) {
               Weiterer Beleg
             </Button>
           </div>
+        ) : null}
+        {kind === 'electricity' && tourKm?.source === 'nachbildung' ? (
+          // Wie Tour und Übersicht: Ohne Kartendienst sagt es eine Meldung
+          // mit Zeichen (Design-Review), nicht die graue Metazeile.
+          <Statusmeldung ton="warnung">
+            Nachbildung ohne Kartendienst: Die Strecke ist die Luftlinie zwischen den Stopps, keine
+            gefahrene Strecke.
+          </Statusmeldung>
         ) : null}
         {kind === 'electricity' ? (
           <Abfragezustand
