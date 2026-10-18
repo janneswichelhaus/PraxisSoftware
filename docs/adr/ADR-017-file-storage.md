@@ -2,7 +2,7 @@
 
 ## Status
 
-**Angenommen, Fassung 7** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 7; Fassung 8 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
@@ -10,7 +10,14 @@ Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
 **Fassung 5** am 2026-10-10 bestätigt, die Fragen 23 bis 29 wie empfohlen
 (Abschnitt L); **Fassung 6** am 2026-10-15 von Jannes entschieden (Umkehr der
 Punkte 29 und 69 für Anhänge an Rückfragen); **Fassung 7** am 2026-10-18 von
-Jannes entschieden (Umkehr von Punkt 29 für jeden Upload).
+Jannes entschieden (Umkehr von Punkt 29 für jeden Upload); **Fassung 8** am 2026-10-18
+vorgeschlagen, im Kern von Jannes entschieden (Abschnitt M, Bestätigungsfragen 30 bis 32).
+**Fassung 8 (2026-10-18, vorgeschlagen).** Anlass ist Frage 1 der PR #272: Fotos und PDF im
+Teamchat, ohne Virenprüfung, gelöscht mit der Nachricht — so hat Jannes entschieden.
+**Abschnitt M (Punkte 71 bis 81)** gibt Anhänge im Teamchat frei. Das ist eine **Ergänzung**:
+Für diese Anhänge schränkt sie die Punkte 30 und 42 ein, die je einen Vermerk tragen; für alle
+übrigen Dateien gelten sie unverändert. Offen sind nur die Einzelheiten (Bestätigungsfragen 30
+bis 32); gebaut wird mit synthetischen Dateien (§15.2).
 **Fassung 7 (2026-10-18, Entscheidung Jannes).** „Keine Virenprüfung in der gesamten
 Anwendung!“ Das ist die **Umkehr eines einzelnen Punktes** nach der Fassungsregel in
 `README.md`: Punkt 29 verliert die MUSS-Pflicht zur Virenprüfung auch für alle übrigen Uploads
@@ -106,7 +113,7 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
 2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
 2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6);
-2026-10-18 (Fassung 7)
+2026-10-18 (Fassung 7); 2026-10-18 (Fassung 8, vorgeschlagen)
 
 ## Kontext
 
@@ -449,6 +456,7 @@ tut; Punkt 33 entscheidet es hier.
     die Plattform gibt Abschnitt L frei.*
     *Vermerk 2026-10-18 (Fassung 7): Wer einen dieser Wege freigibt, braucht
     dafür keine Virenprüfung (Punkt 29).*
+    *Vermerk 2026-10-18 (Fassung 8): Anhänge im Teamchat gibt Abschnitt M frei.*
 
 ### G. Fotos (Fassung 2)
 
@@ -725,6 +733,8 @@ tut; Punkt 33 entscheidet es hier.
     alles andere gilt der Punkt unverändert.*
     *Vermerk 2026-10-18 (Fassung 7): „dann gilt Punkt 29“ entfällt; eine
     Freigabe braucht keine Virenprüfung mehr.*
+    *Vermerk 2026-10-18 (Fassung 8): Fotos und PDF im Teamchat gibt Abschnitt M
+    frei; Video und Ton bleiben auch dort ausgeschlossen.*
 
 ### H. Drei Arten von Fotos (Fassung 3)
 
@@ -1070,6 +1080,64 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     *Vermerk 2026-10-15 (Fassung 6): „dem ADR zum Prüfer (Punkt 69)“ entfällt;
     die übrigen Bedingungen bleiben.*
 
+### M. Anhänge im Teamchat (Fassung 8)
+
+**Anlass.** Frage 1 der PR #272 (TEAM-002), beantwortet von Jannes am 2026-10-18: Fotos und PDF im
+Teamchat, ohne Virenprüfung (Fassung 7), gelöscht mit der Nachricht. §10 nennt „Anhängen“ für die
+interne Kommunikation; die Punkte 30 und 42 gaben es bisher nicht frei. Diese Fassung folgt den
+Mustern der Abschnitte A bis F und L; neu ist nur, was eine Nachricht im Team verlangt.
+
+71. **Was freigegeben wird.** Wer im Teamchat schreiben darf (ANN-611), hängt an eine Nachricht —
+    im Kanal, im privaten Kanal, in der Direkt- oder Gruppennachricht, in der Radflotte, auch an
+    eine Antwort im Thread — **bis zu fünf Dateien**: **Fotos (JPEG, PNG) und PDF, höchstens 10 MB
+    je Datei** (Punkt 18). Kein Video, kein Ton, keine Sprachnachricht (Punkt 42 bleibt). Eine
+    geplante Nachricht trägt keine Anhänge. Hoch lädt nur ein Praxiskonto (Punkt 28); Konten von
+    Patient:innen, Kund:innen und der Plattform nie.
+72. **Kein Weg für Patientendaten.** Ein Anhang im Teamchat ist kein Teil der Akte und wird es
+    nicht (Punkt 66 sinngemäß). Fotos von Patient:innen, Befunde und Arztbriefe gehören in die Akte
+    (Abschnitte G bis K), Patientenkommunikation nicht in den Teamchat (§10). Der Satz unter der
+    Eingabe („Befunde und Diagnosen gehören in die Akte.“) gilt auch für Anhänge; prüfen kann die
+    Anwendung es nicht.
+73. **Eigene Tabelle, eigener Bucket, Klasse `teamchat` — derselbe Weg.** Bezugsdatensatz ist die
+    Nachricht (Punkt 10); der Bucket folgt der Klasse (Punkt 3). Sonst läuft ein Anhang den Weg
+    jeder Datei: zwei Phasen mit Bestätigung (Punkt 7) — hochgeladen vor dem Senden, beim Senden an
+    die Nachricht gebunden —, unveränderlich (Punkt 8), Prüfsumme (Punkt 9), Objektschlüssel nur
+    aus Kennungen (Punkt 5), kurzlebige Verweise ohne Downloadnamen auf ausdrückliche Aktion
+    (Punkte 15 bis 17, 54), `cacheControl: '0'` (Punkt 16), zweistufige Löschung mit Quittung
+    (Punkt 25), Abgleich (Punkt 27), Prüfung am Inhalt (Punkte 49 bis 52, scharf mit OPS-001).
+    Ein Anhang, der 24 Stunden nach dem Hochladen an keiner Nachricht hängt, wird verworfen
+    (Punkt 7).
+74. **Aufnahme.** Ein Foto entsteht im Kameradialog der Anwendung (Punkt 33) oder kommt über den
+    Dateiwähler, ein PDF nur über den Dateiwähler. Bilder verlieren vor dem Hochladen auf dem
+    Gerät ihre Metadaten (Punkte 34 und 53). Bis zum Hochladen liegt eine Datei nur im
+    Arbeitsspeicher der Seite: Ohne Netz gibt es keinen Anhang, ein gescheitertes Hochladen bietet
+    die Anwendung erneut an, solange die Seite offen ist (Punkt 33). Die Nachricht geht erst
+    hinaus, wenn ihre Anhänge hochgeladen sind; nur das Senden selbst darf dann im Ausgang auf
+    Empfang warten (ANN-641).
+75. **Frist: die der Nachricht.** Ein Anhang fällt mit seiner Nachricht — zwölf Monate ab ihrem
+    Tag (ADR-008 Punkt 12, ANN-610), sofort, wenn sie gelöscht wird oder nur als Anker ohne Inhalt
+    stehen bleibt, und mit ihrem Gespräch. Immer mit Löschjournal und Löschauftrag, nach einer
+    Wiederherstellung erneut angewandt (Punkt 26). Keine Verlängerung.
+76. **Wer sieht.** Wer die Nachricht lesen darf: private Kanäle, Direkt- und Gruppennachrichten
+    nur ihre Mitglieder, auch `owner` nicht (ANN-642). Der Server prüft das bei jeder
+    Lesefreigabe, nicht die Oberfläche (§4.7).
+77. **Anzeigen, nicht herunterladen.** In der Nachricht steht je Anhang eine Zeile mit Art, Name
+    und Größe, **ohne Vorschaubild**: Eine Vorschau je Anhang wäre ein Verweis auf Vorrat
+    (Punkte 15 und 40). Öffnen zeigt im eigenen Rahmen (Punkte 54 und 58) — ein Bild als Bild,
+    ein PDF im Rahmen. **Kein Herunterladen, kein Teilen** (wie Punkt 67): Was dauerhaft gebraucht
+    wird, gehört in den Fachprozess (§10).
+78. **Nichts Neues im Protokoll** ([ADR-010](ADR-010-audit-and-privileged-access.md) Punkte 15
+    bis 17). Wer was wann angehängt hat, steht an der Zeile; Anzeigen ist kein Ereignis
+    (ADR-010 Punkt 14).
+79. **Löschen.** Vor dem Senden entfernt die Verfasser:in einen Anhang einzeln; danach fällt er mit
+    der Nachricht — wer sie löschen darf, löscht ihre Anhänge mit (ANN-611). Einen einzelnen
+    gesendeten Anhang löscht in V1 niemand.
+80. **Dateien je Gespräch.** Die Details eines Gesprächs listen seine Anhänge — Art, Name, Größe,
+    von wem, wann —, ohne Vorschaubild; Öffnen wie Punkt 77. In Anhängen wird nicht gesucht (keine
+    Texterkennung, „Bewusst nicht Bestandteil“).
+81. **Scharf erst nach** OPS-001 und OPS-003 (Punkte 2 und 26) wie jede Datei. Gebaut wird mit
+    synthetischen Dateien (Punkt 41).
+
 ## Was OPS-001 zusätzlich prüfen muss
 
 Fünf Punkte, die der Katalog aus ADR-002 Punkt 3 für die Datenbank ohnehin
@@ -1236,6 +1304,8 @@ aus Forendiskussionen:
   Sprachdokumentation aus §6.3 und ADR-005. *Vermerk 2026-09-26 (Fassung 2): Fotos regelt Abschnitt G; Videos und Audio bleiben
   ausgeschlossen (Punkt 42).*
 - Anhänge im internen Teamchat (TEAM-001) und in der Patientenkommunikation.
+  *Vermerk 2026-10-18 (Fassung 8): Anhänge im Teamchat regelt Abschnitt M; an Rückfragen
+  Abschnitt L.*
 - Volltextsuche in Dateien, Texterkennung, Bildtransformationen und jede Form
   von KI auf Dateiinhalten (ADR-005 bleibt maßgeblich). *Vermerk 2026-09-26
   (Fassung 2): Das Entfernen von Metadaten auf dem Gerät
@@ -1513,6 +1583,26 @@ Frist und Einordnung des Videos gehen in B2; den Prüfer wählt ein eigener ADR
     Messung (Punkt 39). *Alternative:* `IDEA-KOM-004` vollständig — dann als
     eigene Fassung, nicht nebenbei.
 
+## Bestätigungsfragen zu Fassung 8 — offen
+
+Den Kern hat Jannes am 2026-10-18 entschieden (Anlass von Abschnitt M). Offen sind nur die
+Einzelheiten; die Nummerierung setzt die der Fassung 5 fort.
+
+30. **Bis zu fünf Fotos (JPEG, PNG) oder PDF je Nachricht, je 10 MB, auch in Antworten und in der
+    Radflotte; keine Anhänge an geplanten Nachrichten** (Punkt 71)?
+    *Empfehlung: ja.* Fünf decken einen Schaden am Rad aus mehreren Blickwinkeln; ein Plan oder
+    eine Liste kommt als PDF. *Alternative:* drei wie an der Rückfrage (Punkt 59).
+31. **Eine Zeile je Anhang ohne Vorschaubild; Öffnen zeigt, Herunterladen gibt es nicht**
+    (Punkt 77)?
+    *Empfehlung: ja.* Ein Vorschaubild je Anhang bräuchte beim Blättern einen Verweis je Bild,
+    was Punkt 15 ausschließt; ohne Download bleibt die Datei in der Anwendung. *Alternative:*
+    Vorschaubilder wie bei Slack — dann als eigene Fassung, die Punkt 15 für den Teamchat umkehrt.
+32. **Fotos auch aus der Mediathek über den Dateiwähler, nicht nur aus dem Kameradialog**
+    (Punkt 74)?
+    *Empfehlung: ja.* Im Team sind es Bildschirmfotos und Fotos vom Rad; für Fotos von
+    Patient:innen gibt es die Akte (Punkt 72). *Alternative:* nur der Kameradialog wie bei
+    Patientenfotos (Punkt 33).
+
 ## Quellen der Recherche vom 2026-09-12
 
 `supabase.com` ist aus dieser Umgebung gesperrt (Egress-Proxy). Abgerufen
@@ -1631,3 +1721,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 5 | 2026-10-10 | **Angenommen am selben Tag, Fragen 23 bis 29 wie empfohlen:** Abschnitt L (Punkte 59 bis 70) — Foto und Video an einer Rückfrage im Nachsorge-Abo und im Training, eigene Einwilligung, Klasse `rueckfrageanhang` mit 30 Tagen, Aufnahme nur in der Anwendung ohne Ton, Antwort mit Zeitmarke ohne Bewegungsurteil, Virenprüfung als Bedingung des Scharfschaltens mit Schalter und eigenem ADR für den Prüfer. Schränkt für diese Anhänge die Punkte 14, 18, 29, 30, 37 und 42 ein, je mit Vermerk; §5 der Prinzipien mit Version 0.24 nachgezogen. Anlass: KOM-EPIC-002 |
 | 6 | 2026-10-15 | **Entschieden von Jannes:** Anhänge an Rückfragen ohne Virenprüfung. Umkehr von Punkt 29 (für Abschnitt L) und des Prüfergebnis-Satzes in Punkt 69, in Punkt 70 entfällt der ADR zum Prüfer; ADR-026 abgelehnt. Schalter `external_attachments_enabled` von selbst an (KOM-013). Alle übrigen Punkte, die Minderungen aus Punkt 69 und Punkt 29 für andere Uploads von außen bleiben |
 | 7 | 2026-10-18 | **Entschieden von Jannes:** „Keine Virenprüfung in der gesamten Anwendung!“ Umkehr von Punkt 29 für jeden Upload, auch künftige von außen (Portal, Formular, Teamchat); eine Freigabe nach Punkt 30 braucht keine Virenprüfung. Vermerke an den Punkten 28, 29, 30, 42, 50 und 69, an den Konsequenzen und an „Bewusst nicht Bestandteil“. Alle übrigen Punkte bleiben, auch die Kennzeichnung „nicht auf Schadsoftware geprüft“ und der ausgeschaltete Schalter `app.message_attachment_scan_required()`. Anlass: Antwort auf Frage 1 der PR #272 (TEAM-002) |
+| 8 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt M (Punkte 71 bis 81) — Fotos (JPEG, PNG) und PDF an Teamchat-Nachrichten, bis zu fünf je Nachricht, ohne Virenprüfung, Klasse `teamchat`, Frist der Nachricht, derselbe Weg wie jede Datei, Anzeige ohne Vorschaubild und ohne Download, nichts Neues im Protokoll, Dateien je Gespräch. Schränkt für diese Anhänge die Punkte 30 und 42 ein, je mit Vermerk; Vermerk an „Bewusst nicht Bestandteil“. Bestätigungsfragen 30 bis 32 offen. Anlass: TEAM-003 |
