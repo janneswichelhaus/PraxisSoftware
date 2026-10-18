@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Field } from '@/components/ui/Field';
@@ -10,7 +12,6 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Feldgruppe, Section } from '@/components/ui/Section';
-import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
@@ -27,8 +28,16 @@ import {
   type Ernaehrungsprofil,
   type Verhaeltnisart,
 } from './api';
-import { ernaehrungsReiter, leseZahl } from './eingabe';
-import { FORMEL_TEXTE, GESCHLECHT_TEXTE, PAL_TEXTE, ZIEL_TEXTE, zahl } from './texte';
+import { ernaehrungsFormulare, ernaehrungsReiter, leseZahl } from './eingabe';
+import {
+  ERNAEHRUNG_EINWILLIGUNG,
+  FORMEL_KURZ,
+  FORMEL_ZUSATZ,
+  GESCHLECHT_TEXTE,
+  PAL_TEXTE,
+  ZIEL_TEXTE,
+  zahl,
+} from './texte';
 import {
   FORMELN,
   GESCHLECHTER,
@@ -108,8 +117,7 @@ interface Werte {
 
 function pruefen(werte: Werte, neu: boolean): Partial<Record<Feld, string>> {
   const fehler: Partial<Record<Feld, string>> = {};
-  if (neu && !werte.einwilligung)
-    fehler.einwilligung = 'Ohne Einwilligung entsteht kein Profil (ADR-027 Punkt 3).';
+  if (neu && !werte.einwilligung) fehler.einwilligung = 'Ohne Einwilligung entsteht kein Profil.';
   if (neu && werte.einwilligungAm === '') fehler.einwilligung = 'Bitte das Datum angeben.';
   const groesse = leseZahl(werte.groesse);
   if (groesse === null || groesse < 100 || groesse > 250)
@@ -164,6 +172,9 @@ function Profilfelder({
               error={fehler.einwilligung}
               onChange={(event) => setWerte({ ...werte, einwilligung: event.target.checked })}
             />
+            <Disclosure summary="Wortlaut">
+              <p className="text-ink max-w-prose leading-relaxed">{ERNAEHRUNG_EINWILLIGUNG}</p>
+            </Disclosure>
             <div className="max-w-60">
               <Field
                 label="Unterschrieben am"
@@ -227,23 +238,24 @@ function Profilfelder({
       </Section>
       <Section titel="Alltag und Ziel">
         <Feldgruppe>
-          <Select
-            feldId={feldId('pal')}
-            label={BESCHRIFTUNG.pal}
-            value={werte.pal}
-            error={fehler.pal}
-            onChange={(event) => setWerte({ ...werte, pal: event.target.value })}
-          >
-            <option value="">Bitte wählen</option>
-            {PAL_STUFEN.map((pal) => {
-              const text = PAL_TEXTE[pal.toFixed(1)]!;
-              return (
-                <option key={pal} value={pal.toFixed(1)}>
-                  {`${zahl(pal, 1)} · ${text.kurz} – ${text.beispiel}`}
-                </option>
-              );
-            })}
-          </Select>
+          <div id={feldId('pal')} tabIndex={-1}>
+            <Wahlreihe
+              legende={BESCHRIFTUNG.pal}
+              wahlen={PAL_STUFEN.map((pal) => ({
+                wert: pal.toFixed(1),
+                text: `${zahl(pal, 1)} · ${PAL_TEXTE[pal.toFixed(1)]!.kurz}`,
+              }))}
+              gewaehlt={werte.pal === '' ? null : werte.pal}
+              onWaehlen={(pal) => setWerte({ ...werte, pal })}
+              zusatz={
+                fehler.pal ? (
+                  <Statusmeldung ton="fehler">{fehler.pal}</Statusmeldung>
+                ) : werte.pal !== '' ? (
+                  <p className="text-ink-muted text-sm">Etwa: {PAL_TEXTE[werte.pal]?.beispiel}.</p>
+                ) : null
+              }
+            />
+          </div>
           <div id={feldId('ziel')} tabIndex={-1}>
             <Wahlreihe
               legende={BESCHRIFTUNG.ziel}
@@ -258,7 +270,7 @@ function Profilfelder({
           <Field
             feldId={feldId('zielgewicht')}
             label="Zielgewicht (kg)"
-            hint="Freiwillig. Die Person kann es auf der Plattform selbst wählen."
+            hint="Freiwillig."
             inputMode="decimal"
             autoComplete="off"
             value={werte.zielgewicht}
@@ -266,17 +278,13 @@ function Profilfelder({
             onChange={(event) => setWerte({ ...werte, zielgewicht: event.target.value })}
           />
           {!neu ? (
-            <Select
-              label="Formel des Grundumsatzes"
-              value={werte.formel}
-              onChange={(event) => setWerte({ ...werte, formel: event.target.value as Formel })}
-            >
-              {FORMELN.map((formel) => (
-                <option key={formel} value={formel}>
-                  {FORMEL_TEXTE[formel]}
-                </option>
-              ))}
-            </Select>
+            <Wahlreihe
+              legende="Formel des Grundumsatzes"
+              wahlen={FORMELN.map((formel) => ({ wert: formel, text: FORMEL_KURZ[formel] }))}
+              gewaehlt={werte.formel}
+              onWaehlen={(formel: Formel) => setWerte({ ...werte, formel })}
+              zusatz={<p className="text-ink-muted text-sm">{FORMEL_ZUSATZ[werte.formel]}</p>}
+            />
           ) : null}
         </Feldgruppe>
       </Section>
@@ -448,33 +456,53 @@ export function ProfilAendernSeite({ art, user }: { art: Verhaeltnisart; user: C
     <>
       <Rueckweg standard={ernaehrungsReiter(art, verhaeltnisId)} className="mb-3" />
       <PageHeader title="Ernährungsprofil ändern" />
-      <Abfragezustand
-        abfrage={abfrage}
-        laden="Das Profil wird geladen …"
-        fehler="Das Profil konnte nicht geladen werden."
-        inKarte
-        leer={{
-          wenn: (sicht) => !sicht?.profile || sicht.profile.ended_on !== null,
-          titel: 'Keine laufende Ernährungsberatung',
-        }}
-      >
-        {(sicht) => (
-          <Formular art={art} verhaeltnisId={verhaeltnisId} profil={sicht!.profile} heute={heute} />
-        )}
-      </Abfragezustand>
+      <div className="max-w-formular">
+        <Abfragezustand
+          abfrage={abfrage}
+          laden="Das Profil wird geladen …"
+          fehler="Das Profil konnte nicht geladen werden."
+          inKarte
+          leer={keineBeratung(art, verhaeltnisId)}
+        >
+          {(sicht) => (
+            <Formular
+              art={art}
+              verhaeltnisId={verhaeltnisId}
+              profil={sicht!.profile}
+              heute={heute}
+            />
+          )}
+        </Abfragezustand>
+      </div>
     </>
   );
 }
 
 type Wertfeld = 'energy_kcal' | 'protein_g' | 'carbohydrate_g' | 'fat_g' | 'water_ml';
 
-const WERTFELDER: readonly [Wertfeld, string][] = [
-  ['energy_kcal', 'Energie (kcal)'],
-  ['protein_g', 'Eiweiß (g)'],
-  ['carbohydrate_g', 'Kohlenhydrate (g)'],
-  ['fat_g', 'Fett (g)'],
-  ['water_ml', 'Wasser (ml)'],
+/**
+ * Die Felder der Überschreibung mit den Grenzen der Tabelle. Wasser steht in
+ * Litern wie in der Anzeige und geht in Millilitern zum Server (auf 10 ml).
+ */
+const WERTFELDER: readonly {
+  feld: Wertfeld;
+  label: string;
+  einheit: string;
+  min: number;
+  max: number;
+  liter?: true;
+}[] = [
+  { feld: 'energy_kcal', label: 'Energie (kcal)', einheit: 'kcal', min: 500, max: 6000 },
+  { feld: 'protein_g', label: 'Eiweiß (g)', einheit: 'g', min: 10, max: 400 },
+  { feld: 'carbohydrate_g', label: 'Kohlenhydrate (g)', einheit: 'g', min: 0, max: 900 },
+  { feld: 'fat_g', label: 'Fett (g)', einheit: 'g', min: 10, max: 400 },
+  { feld: 'water_ml', label: 'Wasser (l)', einheit: 'l', min: 0.5, max: 8, liter: true },
 ];
+
+const WERT_BESCHRIFTUNG = Object.fromEntries(
+  WERTFELDER.map(({ feld, label }) => [feld, label]),
+) as Record<Wertfeld, string>;
+const wertfeldId = (feld: Wertfeld) => `zielwert-${feld}`;
 
 function berechnet(profil: Ernaehrungsprofil, feld: Wertfeld): number | null {
   const z = profil.targets;
@@ -493,6 +521,29 @@ function berechnet(profil: Ernaehrungsprofil, feld: Wertfeld): number | null {
   }
 }
 
+/**
+ * Der Wert für den Server oder ein Fehler. Ganze Zahlen ohne Punkt und
+ * Komma - „1.500“ ist sonst 1,5 -, Liter mit einer Stelle nach dem Komma.
+ */
+function leseWert(
+  text: string,
+  { min, max, liter, einheit }: (typeof WERTFELDER)[number],
+): { wert: number | null } | { fehler: string } {
+  const sauber = text.trim();
+  if (sauber === '') return { wert: null };
+  const grenzen = `${zahl(min, liter ? 1 : 0)} bis ${zahl(max, liter ? 1 : 0)} ${einheit}`;
+  if (liter) {
+    const l = /^\d+([.,]\d)?$/.test(sauber) ? leseZahl(sauber) : null;
+    if (l === null || l < min || l > max)
+      return { fehler: `Bitte in Litern angeben, etwa 2,5; ${grenzen} - oder leer lassen.` };
+    return { wert: Math.round(l * 100) * 10 };
+  }
+  const n = /^\d+$/.test(sauber) ? Number(sauber) : null;
+  if (n === null || n < min || n > max)
+    return { fehler: `Bitte als ganze Zahl angeben, ${grenzen} - oder leer lassen.` };
+  return { wert: n };
+}
+
 function ZielwerteFormular({
   art,
   verhaeltnisId,
@@ -508,20 +559,15 @@ function ZielwerteFormular({
   const [werte, setWerte] = useState<Record<Wertfeld, string>>(
     () =>
       Object.fromEntries(
-        WERTFELDER.map(([feld]) => [feld, zahlText(profil.overrides[feld])]),
+        WERTFELDER.map(({ feld, liter }) => {
+          const wert = profil.overrides[feld];
+          return [feld, wert === null ? '' : liter ? zahl(wert / 1000, 1) : zahl(wert)];
+        }),
       ) as Record<Wertfeld, string>,
   );
+  const [fehler, setFehler] = useState<Partial<Record<Wertfeld, string>>>({});
   const speichern = useMutation({
-    mutationFn: () =>
-      zielwerteSetzen(
-        profil.id,
-        Object.fromEntries(
-          WERTFELDER.map(([feld]) => {
-            const wert = leseZahl(werte[feld]);
-            return [feld, wert === null ? null : Math.round(wert)];
-          }),
-        ) as Record<Wertfeld, number | null>,
-      ),
+    mutationFn: (gesetzt: Record<Wertfeld, number | null>) => zielwerteSetzen(profil.id, gesetzt),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ernaehrungSchluessel(art, verhaeltnisId) });
       void navigate(ziel, { replace: true });
@@ -532,27 +578,46 @@ function ZielwerteFormular({
     <form
       className="max-w-formular"
       aria-label="Zielwerte anpassen"
+      noValidate
       onSubmit={(event) => {
         event.preventDefault();
-        speichern.mutate();
+        const gefunden: Partial<Record<Wertfeld, string>> = {};
+        const gesetzt = {} as Record<Wertfeld, number | null>;
+        for (const feld of WERTFELDER) {
+          const ergebnis = leseWert(werte[feld.feld], feld);
+          if ('fehler' in ergebnis) gefunden[feld.feld] = ergebnis.fehler;
+          else gesetzt[feld.feld] = ergebnis.wert;
+        }
+        setFehler(gefunden);
+        if (Object.keys(gefunden).length === 0) speichern.mutate(gesetzt);
       }}
     >
+      <Fehlerzusammenfassung
+        fehler={alsFormularfehler(
+          WERTFELDER.map(({ feld }) => feld),
+          WERT_BESCHRIFTUNG,
+          fehler,
+          wertfeldId,
+        )}
+      />
       <Section titel="Von der Beratung gesetzt">
         <Feldgruppe>
-          {WERTFELDER.map(([feld, label]) => {
+          {WERTFELDER.map(({ feld, label, liter }) => {
             const gerechnet = berechnet(profil, feld);
             return (
               <Field
                 key={feld}
+                feldId={wertfeldId(feld)}
                 label={label}
                 hint={
                   gerechnet === null
                     ? undefined
-                    : `Berechnet: ${zahl(gerechnet)}. Leer heißt berechnet.`
+                    : `Berechnet: ${liter ? zahl(gerechnet / 1000, 1) : zahl(gerechnet)}. Leer heißt berechnet.`
                 }
-                inputMode="numeric"
+                inputMode={liter ? 'decimal' : 'numeric'}
                 autoComplete="off"
                 value={werte[feld]}
+                error={fehler[feld]}
                 onChange={(event) => setWerte({ ...werte, [feld]: event.target.value })}
               />
             );
@@ -576,6 +641,20 @@ function ZielwerteFormular({
   );
 }
 
+/** Ohne laufende Beratung: der Weg zum Anlegen (DESIGN.md 9.17). */
+function keineBeratung(art: Verhaeltnisart, verhaeltnisId: string) {
+  return {
+    wenn: (sicht: Awaited<ReturnType<typeof fetchErnaehrung>>) =>
+      !sicht?.profile || sicht.profile.ended_on !== null,
+    titel: 'Keine laufende Ernährungsberatung',
+    aktion: (
+      <ButtonLink to={`${ernaehrungsFormulare(art, verhaeltnisId)}/neu`} variant="secondary">
+        Profil anlegen
+      </ButtonLink>
+    ),
+  };
+}
+
 /** `…/ernaehrung/zielwerte` - Überschreibungen der Beratung (ADR-027 Punkt 22). */
 export function ZielwerteSeite({ art }: { art: Verhaeltnisart }) {
   const verhaeltnisId = useVerhaeltnis(art);
@@ -584,20 +663,19 @@ export function ZielwerteSeite({ art }: { art: Verhaeltnisart }) {
     <>
       <Rueckweg standard={ernaehrungsReiter(art, verhaeltnisId)} className="mb-3" />
       <PageHeader title="Zielwerte anpassen" />
-      <Abfragezustand
-        abfrage={abfrage}
-        laden="Das Profil wird geladen …"
-        fehler="Das Profil konnte nicht geladen werden."
-        inKarte
-        leer={{
-          wenn: (sicht) => !sicht?.profile || sicht.profile.ended_on !== null,
-          titel: 'Keine laufende Ernährungsberatung',
-        }}
-      >
-        {(sicht) => (
-          <ZielwerteFormular art={art} verhaeltnisId={verhaeltnisId} profil={sicht!.profile!} />
-        )}
-      </Abfragezustand>
+      <div className="max-w-formular">
+        <Abfragezustand
+          abfrage={abfrage}
+          laden="Das Profil wird geladen …"
+          fehler="Das Profil konnte nicht geladen werden."
+          inKarte
+          leer={keineBeratung(art, verhaeltnisId)}
+        >
+          {(sicht) => (
+            <ZielwerteFormular art={art} verhaeltnisId={verhaeltnisId} profil={sicht!.profile!} />
+          )}
+        </Abfragezustand>
+      </div>
     </>
   );
 }

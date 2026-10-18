@@ -18,6 +18,7 @@ import {
   dokumenteSchluessel,
   einstiegSchluessel,
   einwilligungenSchluessel,
+  ernaehrungSchluessel,
   paketeSchluessel,
   rechnungSchluessel,
   rechnungenSchluessel,
@@ -27,6 +28,7 @@ import {
   wuenscheSchluessel,
   type Dokument,
   type EigeneCheckins,
+  type EigeneErnaehrung,
   type EigeneGewohnheiten,
   type Einwilligung,
   type MeinPaket,
@@ -795,6 +797,144 @@ client.setQueryData(gewohnheitenSchluessel(zugaenge[0]!.access_id), {
   ],
 } satisfies EigeneGewohnheiten);
 client.setQueryData(gewohnheitenSchluessel(zugaenge[1]!.access_id), null);
+// ERN-002: die laufende Ernährungsberatung an der Akte - die Projektion von
+// `platform_nutrition` aus dem Seed (Erika), im Training keine.
+client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
+  today: inTagen(0, 0).slice(0, 10),
+  profile: {
+    goal: 'lose',
+    consent: {
+      state: 'granted',
+      source: 'practice',
+      occurred_on: '2026-09-27',
+    },
+    targets: {
+      bmr: {
+        kcal: 1309,
+        formula: 'mifflin_st_jeor',
+        averaged: false,
+        variants: [
+          {
+            sex: 'female',
+            kcal: 1309,
+            terms: [
+              {
+                input: 'weight_kg',
+                factor: 10,
+              },
+              {
+                input: 'height_cm',
+                factor: 6.25,
+              },
+              {
+                input: 'age_years',
+                factor: -5,
+              },
+            ],
+            constant: -161,
+          },
+        ],
+        lean_mass_kg: null,
+      },
+      fat: {
+        g: 49,
+        share: 0.3,
+        computed_g: 49,
+        kcal_per_g: 9,
+        overridden: false,
+      },
+      tee: {
+        pal: 1.4,
+        kcal: 1833,
+      },
+      water: {
+        ml: 2570,
+        ml_per_kg: 35,
+        minimum_ml: 1500,
+        overridden: false,
+        computed_ml: 2570,
+        floor_applied: false,
+      },
+      energy: {
+        kcal: 1466,
+        rule: 'deficit_capped',
+        below_bmr: false,
+        overridden: false,
+        change_kcal: -367,
+        computed_kcal: 1466,
+        floor_applied: false,
+        deficit_max_kcal: 500,
+        deficit_max_share: 0.2,
+      },
+      inputs: {
+        pal: 1.4,
+        sex: 'female',
+        goal: 'lose',
+        formula: 'standard',
+        age_years: 63,
+        height_cm: 168,
+        weight_kg: 73.5,
+        in_training: false,
+        body_fat_percent: null,
+      },
+      status: 'ok',
+      protein: {
+        g: 59,
+        basis: 'standard',
+        g_per_kg: 0.8,
+        computed_g: 59,
+        kcal_per_g: 4,
+        overridden: false,
+      },
+      carbohydrate: {
+        g: 197,
+        computed_g: 197,
+        kcal_per_g: 4,
+        overridden: false,
+      },
+      target_weight: {
+        kg: 68.0,
+        weeks: 15,
+        floor_kg: 52.3,
+        bmi_floor: 18.5,
+        below_floor: false,
+        kcal_per_kg: 7000,
+      },
+    },
+    weights: [
+      {
+        source: 'practice',
+        weight_kg: 73.5,
+        measured_on: '2026-10-11',
+      },
+      {
+        source: 'practice',
+        weight_kg: 74.1,
+        measured_on: '2026-10-04',
+      },
+      {
+        source: 'practice',
+        weight_kg: 74.6,
+        measured_on: '2026-09-27',
+      },
+    ],
+    ended_on: null,
+    height_cm: 168,
+    started_on: '2026-09-27',
+    formula_sex: 'female',
+    activity_pal: 1.4,
+    diary_enabled: false,
+    body_fat_percent: null,
+    diary_changed_at: null,
+    target_weight_kg: 68.0,
+    target_weight_source: 'counsellor',
+  },
+  can_grant: false,
+  can_write: true,
+  wording_version: '2026-10',
+  target_weight_floor_kg: 52.3,
+} satisfies EigeneErnaehrung);
+client.setQueryData(ernaehrungSchluessel(zugaenge[1]!.access_id), null);
 client.setQueryData(checkinsKey('treatment', MAX), {
   today: inTagen(0, 0).slice(0, 10),
   can_write: true,
@@ -1030,6 +1170,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'checkin-danke':
     case 'checkin-alltag':
     case 'gewohnheiten':
+    case 'ernaehrung':
     case 'angaben':
     case 'vertrag': {
       const pfade: Record<string, string> = {
@@ -1060,6 +1201,7 @@ function inhalt(): { pfad: string; element: ReactNode } {
         angaben: '/p/angaben?bereich=treatment',
         'checkin-alltag': '/p/checkin?bereich=treatment',
         gewohnheiten: '/p/gewohnheiten?bereich=treatment',
+        ernaehrung: '/p/ernaehrung?bereich=treatment',
       };
       return {
         pfad: pfade[seite]!,

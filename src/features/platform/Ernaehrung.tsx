@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
@@ -14,8 +14,6 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Tile, TileGrid } from '@/components/ui/Tile';
-import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { leseZahl } from '@/features/nutrition/eingabe';
 import { Zielwertliste } from '@/features/nutrition/Rechenweg';
 import { ERNAEHRUNG_EINWILLIGUNG, kg, zahl } from '@/features/nutrition/texte';
@@ -36,7 +34,7 @@ import { datum } from './zeit';
  */
 export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
   const api = usePlattformApi();
-  const { data, isPending, isError, refetch } = useQuery({
+  const abfrage = useQuery({
     queryKey: ernaehrungSchluessel(zugang.access_id),
     queryFn: () => api.ladeErnaehrung(zugang.access_id),
   });
@@ -45,27 +43,21 @@ export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
     <>
       <Rueckweg standard={`${PLATTFORM_PFAD}/ich`} beschriftung="Zu „Ich“" />
       <PageHeader title="Ernährung" />
-      {isPending ? (
-        <LoadingState label="Ihre Ernährung wird geladen …" inKarte />
-      ) : isError ? (
-        <ErrorState
-          title="Ihre Ernährung konnte nicht geladen werden."
-          description={VERBINDUNG_PRUEFEN}
-          onErneut={() => void refetch()}
-        />
-      ) : !data ? (
-        <EmptyState inKarte title="Zurzeit keine Ernährungsberatung." />
-      ) : (
-        <Inhalt zugang={zugang} daten={data} />
-      )}
+      <Abfragezustand
+        abfrage={abfrage}
+        laden="Ihre Ernährung wird geladen …"
+        fehler="Ihre Ernährung konnte nicht geladen werden."
+        inKarte
+        leer={{ wenn: (daten) => !daten, titel: 'Zurzeit keine Ernährungsberatung.' }}
+      >
+        {(daten) => <Inhalt zugang={zugang} daten={daten!} />}
+      </Abfragezustand>
     </>
   );
 }
 
 function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const p = daten.profile;
-  const z = p.targets;
-  const jetzt = p.weights[0];
   const widerrufen = p.consent?.state === 'withdrawn';
   return (
     <div className="flex flex-col gap-8">
@@ -75,19 +67,16 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnae
           eingetragen.
         </Statusmeldung>
       ) : null}
-      <TileGrid spalte="kachel">
-        {z.status === 'ok' ? <Tile label="Energie am Tag">{zahl(z.energy.kcal)} kcal</Tile> : null}
-        <Tile label="Gewicht" zusatz={jetzt ? `am ${datum(jetzt.measured_on)}` : undefined}>
-          {jetzt ? kg(jetzt.weight_kg) : '–'}
-        </Tile>
-      </TileGrid>
-      <Section titel="Ihre Zielwerte">
-        <Zielwertliste zielwerte={z} />
-      </Section>
+      {/* Die eine Aufgabe zuerst; Seltenes eingeklappt (DESIGN.md Grundsatz 4). */}
       <Gewicht zugang={zugang} daten={daten} />
-      <Zielgewicht zugang={zugang} daten={daten} />
-      <Tagebuch zugang={zugang} daten={daten} />
-      <Einwilligung zugang={zugang} daten={daten} />
+      <Section titel="Ihre Zielwerte">
+        <Zielwertliste zielwerte={p.targets} />
+      </Section>
+      <div className="flex flex-col gap-2">
+        <Zielgewicht zugang={zugang} daten={daten} />
+        <Tagebuch zugang={zugang} daten={daten} />
+        <Einwilligung zugang={zugang} daten={daten} />
+      </div>
       <Kleingedrucktes>
         Ihre Zielwerte rechnet die Anwendung aus veröffentlichten Formeln für Ernährung und
         Körpergewicht im Alltag. Sie sagen nichts über Ihre Gesundheit; Ihre Praxis kann sie
@@ -119,6 +108,8 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
     },
   });
   const schreibbar = daten.can_write && !nurLesen;
+  // Je Tag gilt ein Gewicht (ANN-621); steht heute schon eines, steht es da.
+  const heute = daten.profile.weights.find((eintrag) => eintrag.measured_on === daten.today);
   return (
     <Section titel="Gewicht">
       {schreibbar ? (
@@ -138,6 +129,11 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
         >
           <Field
             label="Gewicht heute (kg)"
+            hint={
+              heute
+                ? `Heute steht schon ${kg(heute.weight_kg)}${heute.source === 'practice' ? ' aus der Praxis' : ''}. Eintragen ersetzt es.`
+                : undefined
+            }
             inputMode="decimal"
             autoComplete="off"
             value={wert}
@@ -150,7 +146,7 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
           {eingetragen > 0 ? <Rueckmeldung key={eingetragen}>Eingetragen.</Rueckmeldung> : null}
           <Formularfuss dicht>
             <Button type="submit" disabled={eintragen.isPending}>
-              {eintragen.isPending ? 'Wird eingetragen …' : 'Eintragen'}
+              {eintragen.isPending ? 'Wird eingetragen …' : heute ? 'Ersetzen' : 'Eintragen'}
             </Button>
           </Formularfuss>
         </form>
@@ -164,7 +160,6 @@ function Gewicht({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErna
           {daten.profile.weights.map((eintrag) => (
             <ListRow
               key={eintrag.measured_on}
-              dicht
               titel={kg(eintrag.weight_kg)}
               meta={`${datum(eintrag.measured_on)}${eintrag.source === 'practice' ? ' · in der Praxis' : ''}`}
             />
@@ -191,17 +186,18 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
     },
   });
   const unten = daten.target_weight_floor_kg;
+  const titel = `Zielgewicht · ${p.target_weight_kg === null ? 'keines' : kg(p.target_weight_kg)}`;
   if (!daten.can_write || nurLesen) {
     return (
-      <Section titel="Zielgewicht">
+      <Disclosure summary={titel}>
         <p className="text-ink text-base">
           {p.target_weight_kg === null ? 'Kein Zielgewicht gewählt.' : kg(p.target_weight_kg)}
         </p>
-      </Section>
+      </Disclosure>
     );
   }
   return (
-    <Section titel="Zielgewicht">
+    <Disclosure summary={titel}>
       <form
         aria-label="Zielgewicht wählen"
         className="flex flex-col gap-3"
@@ -218,7 +214,7 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
       >
         <Field
           label="Ihr Zielgewicht (kg)"
-          hint={`Mindestens ${kg(unten)}. Leer lassen, wenn Sie keines wählen möchten.`}
+          hint={`Mindestens ${kg(unten)}; leer heißt keines.`}
           inputMode="decimal"
           autoComplete="off"
           value={wert}
@@ -236,7 +232,7 @@ function Zielgewicht({ zugang, daten }: { zugang: Plattformzugang; daten: Eigene
           </Button>
         </Formularfuss>
       </form>
-    </Section>
+    </Disclosure>
   );
 }
 
@@ -251,17 +247,12 @@ function Tagebuch({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErn
   const an = daten.profile.diary_enabled;
   // Einschalten braucht die Einwilligung; ausschalten geht immer.
   const bedienbar = !nurLesen && (an || daten.can_write);
+  const angehalten = an && daten.profile.consent?.state === 'withdrawn';
   return (
-    <Section titel="Ernährungstagebuch">
+    <Disclosure summary={`Ernährungstagebuch · ${angehalten ? 'angehalten' : an ? 'an' : 'aus'}`}>
       <Checkbox
         label="Ernährungstagebuch führen"
-        hint={
-          an
-            ? daten.profile.consent?.state === 'withdrawn'
-              ? 'Angehalten, weil die Einwilligung widerrufen ist.'
-              : 'Eingeschaltet. Ausschalten nimmt nichts weg.'
-            : 'Aus. Sie entscheiden selbst, ob Sie es führen.'
-        }
+        hint={angehalten ? 'Angehalten, weil die Einwilligung widerrufen ist.' : undefined}
         checked={an}
         disabled={!bedienbar || schalten.isPending}
         onChange={(event) => schalten.mutate(event.target.checked)}
@@ -271,7 +262,7 @@ function Tagebuch({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErn
           {schalten.error.message}
         </Statusmeldung>
       ) : null}
-    </Section>
+    </Disclosure>
   );
 }
 
@@ -286,22 +277,17 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
       api.ernaehrungEinwilligen(zugang.access_id, erteilen, daten.wording_version),
     onSuccess: () => neuLaden(),
   });
+  const zustand = erteilt
+    ? `erteilt am ${datum(stand.occurred_on)}`
+    : stand
+      ? `widerrufen am ${datum(stand.occurred_on)}`
+      : 'nicht erteilt';
   return (
-    <Section titel="Einwilligung">
-      <p className="text-ink text-base">
-        {erteilt
-          ? `Erteilt am ${datum(stand.occurred_on)}${stand.source === 'practice' ? ' in der Praxis' : ''}.`
-          : stand
-            ? `Widerrufen am ${datum(stand.occurred_on)}.`
-            : 'Nicht erteilt.'}
-      </p>
-      <div className="mt-3">
-        <Disclosure summary="Wortlaut">
-          <p className="text-ink max-w-prose text-base leading-relaxed">
-            {ERNAEHRUNG_EINWILLIGUNG}
-          </p>
-        </Disclosure>
-      </div>
+    <Disclosure summary={`Einwilligung · ${zustand}`}>
+      {erteilt && stand.source === 'practice' ? (
+        <p className="text-ink mb-2 text-base">In der Praxis auf Papier erteilt.</p>
+      ) : null}
+      <p className="text-ink max-w-prose text-base leading-relaxed">{ERNAEHRUNG_EINWILLIGUNG}</p>
       {nurLesen ? null : erteilt ? (
         <div className="mt-4">
           <Rueckfrage
@@ -332,6 +318,6 @@ function Einwilligung({ zugang, daten }: { zugang: Plattformzugang; daten: Eigen
           ) : null}
         </div>
       ) : null}
-    </Section>
+    </Disclosure>
   );
 }

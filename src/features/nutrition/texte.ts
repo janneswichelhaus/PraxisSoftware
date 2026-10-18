@@ -40,6 +40,19 @@ export const FORMEL_TEXTE: Record<Formel, string> = {
   harris_benedict_revised: 'Harris-Benedict (revidiert)',
 };
 
+/** Kurz für die Wahl im Formular; was „Standard“ heißt, steht darunter. */
+export const FORMEL_KURZ: Record<Formel, string> = {
+  standard: 'Standard',
+  katch_mcardle: 'Katch-McArdle',
+  harris_benedict_revised: 'Harris-Benedict',
+};
+
+export const FORMEL_ZUSATZ: Record<Formel, string> = {
+  standard: 'Mifflin-St Jeor, mit Körperfett Cunningham.',
+  katch_mcardle: 'Rechnet mit dem Körperfettanteil.',
+  harris_benedict_revised: 'Revidiert nach Roza und Shizgal (1984).',
+};
+
 export const GRUNDUMSATZ_FORMELN: Record<BerechneteZielwerte['bmr']['formula'], string> = {
   mifflin_st_jeor: 'Mifflin-St Jeor',
   cunningham: 'Cunningham',

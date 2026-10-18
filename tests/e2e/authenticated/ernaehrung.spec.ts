@@ -42,7 +42,7 @@ test('Profil an der Akte in höchstens vier Tipps plus Felder, Zielwerte mit Rec
   await page.getByLabel('Größe (cm)').fill('178');
   await page.getByLabel('Gewicht heute (kg)').fill('86,4');
   await page.getByText('Männlich', { exact: true }).click();
-  await page.getByLabel('Aktivität im Alltag').selectOption('1.6');
+  await page.getByText('1,6 · Sitzend mit Bewegung', { exact: true }).click();
   await page.getByText('Abnehmen', { exact: true }).click();
   await z.tippe(page.getByRole('button', { name: 'Profil anlegen' }));
 

@@ -5,6 +5,7 @@ import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { EmptyState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
@@ -14,7 +15,7 @@ import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import { Tile, TileGrid } from '@/components/ui/Tile';
+import { Zwischentitel } from '@/components/ui/Zwischentitel';
 import { usePatientRecord } from '@/features/patients/akte';
 import { formatDate } from '@/lib/datum';
 import {
@@ -39,6 +40,7 @@ import {
   zahl,
   ZIEL_TEXTE,
 } from './texte';
+import { gewichtVon } from './gewicht';
 
 /**
  * Der Reiter „Ernährung“ an Akte und Trainingsverhältnis (ERN-001, ADR-027).
@@ -101,26 +103,24 @@ function Inhalt({
   const darfAnlegen =
     sicht.relationship_open && sicht.running_elsewhere === null && (!profil || profil.ended_on);
   const anlegen = darfAnlegen ? (
-    <ButtonLink
-      to={`${ernaehrungsFormulare(art, verhaeltnisId)}/neu`}
-      variant={profil ? 'secondary' : 'primary'}
-    >
+    <ButtonLink to={`${ernaehrungsFormulare(art, verhaeltnisId)}/neu`} variant="secondary">
       {profil ? 'Neue Beratung anlegen' : 'Profil anlegen'}
     </ButtonLink>
   ) : null;
 
   if (!profil) {
     return (
-      <Section titel="Ernährungsberatung" rahmen>
-        <p className="text-ink-muted text-liste">
-          {sicht.running_elsewhere
-            ? `Für diese Person läuft die Ernährungsberatung ${ANDERER_BEREICH[sicht.running_elsewhere]}.`
+      <EmptyState
+        inKarte
+        title={
+          sicht.running_elsewhere
+            ? `Die Ernährungsberatung läuft ${ANDERER_BEREICH[sicht.running_elsewhere]}.`
             : sicht.relationship_open
-              ? 'Noch keine Ernährungsberatung. Sie beginnt mit der Einwilligung der Person.'
-              : 'Der Vertrag ist beendet; eine Beratung beginnt hier nicht mehr.'}
-        </p>
-        {anlegen ? <div className="mt-4">{anlegen}</div> : null}
-      </Section>
+              ? 'Noch keine Ernährungsberatung.'
+              : 'Der Vertrag ist beendet.'
+        }
+        aktion={anlegen}
+      />
     );
   }
   return (
@@ -151,7 +151,6 @@ function Profilansicht({
   const erteilt = profil.consent?.state === 'granted';
   const schreibbar = laeuft && erteilt;
   const z = profil.targets;
-  const jetzt = profil.weights[0];
 
   return (
     <div className="flex flex-col gap-8">
@@ -170,12 +169,13 @@ function Profilansicht({
         </Statusmeldung>
       ) : null}
 
-      <TileGrid spalte="akte">
-        {z.status === 'ok' ? <Tile label="Energie">{zahl(z.energy.kcal)} kcal</Tile> : null}
-        <Tile label="Gewicht" zusatz={jetzt ? `am ${formatDate(jetzt.measured_on)}` : undefined}>
-          {jetzt ? kg(jetzt.weight_kg) : '–'}
-        </Tile>
-      </TileGrid>
+      <Gewicht
+        profil={profil}
+        sicht={sicht}
+        art={art}
+        verhaeltnisId={verhaeltnisId}
+        schreibbar={schreibbar}
+      />
 
       <Section
         titel="Zielwerte"
@@ -194,14 +194,6 @@ function Profilansicht({
       >
         <Zielwertliste zielwerte={z} />
       </Section>
-
-      <Gewicht
-        profil={profil}
-        sicht={sicht}
-        art={art}
-        verhaeltnisId={verhaeltnisId}
-        schreibbar={schreibbar}
-      />
 
       <Section
         titel="Profil"
@@ -238,7 +230,7 @@ function Profilansicht({
           <DetailRow label="Tagebuch">
             {profil.diary_enabled
               ? `Eingeschaltet${profil.diary_changed_at ? ` am ${formatDate(profil.diary_changed_at)}` : ''}`
-              : 'Aus - die Person schaltet es auf der Plattform ein'}
+              : 'Aus'}
           </DetailRow>
         </DetailList>
       </Section>
@@ -248,9 +240,8 @@ function Profilansicht({
       <Notizen profil={profil} art={art} verhaeltnisId={verhaeltnisId} schreibbar={schreibbar} />
 
       <Kleingedrucktes>
-        Zielwerte aus veröffentlichten Formeln für Ernährung und Körpergewicht im Alltag (ADR-006
-        Punkt 14), keine Aussage über die Gesundheit. Lesen und schreiben darf nur die
-        Ernährungsberatung.
+        Zielwerte aus veröffentlichten Formeln für Ernährung und Körpergewicht im Alltag, keine
+        Aussage über die Gesundheit.
       </Kleingedrucktes>
 
       {laeuft ? (
@@ -286,6 +277,9 @@ function Gewicht({
   const [wert, setWert] = useState('');
   const [fehler, setFehler] = useState<string | undefined>();
   const [eingetragen, setEingetragen] = useState(0);
+  // Je Tag gilt ein Gewicht (ANN-621): Steht am Tag schon eines, sagt das
+  // Formular es vorher und heißt „ersetzen“.
+  const vorhanden = profil.weights.find((eintrag) => eintrag.measured_on === tag);
   const eintragen = useMutation({
     mutationFn: () => gewichtEintragen(profil.id, tag, leseZahl(wert)!),
     onSuccess: async () => {
@@ -327,6 +321,11 @@ function Gewicht({
               min={profil.started_on}
               max={sicht.today}
               value={tag}
+              hint={
+                vorhanden
+                  ? `Steht schon: ${kg(vorhanden.weight_kg)}${gewichtVon(vorhanden)}. Eintragen ersetzt es.`
+                  : undefined
+              }
               onChange={(event) => setTag(event.target.value)}
             />
           </div>
@@ -336,7 +335,11 @@ function Gewicht({
           {eingetragen > 0 ? <Rueckmeldung key={eingetragen}>Eingetragen.</Rueckmeldung> : null}
           <Formularfuss dicht>
             <Button type="submit" variant="secondary" disabled={eintragen.isPending}>
-              {eintragen.isPending ? 'Wird eingetragen …' : 'Gewicht eintragen'}
+              {eintragen.isPending
+                ? 'Wird eingetragen …'
+                : vorhanden
+                  ? 'Gewicht ersetzen'
+                  : 'Gewicht eintragen'}
             </Button>
           </Formularfuss>
         </form>
@@ -352,13 +355,7 @@ function Gewicht({
               key={eintrag.measured_on}
               dicht
               titel={kg(eintrag.weight_kg)}
-              meta={`${formatDate(eintrag.measured_on)}${
-                eintrag.source === 'platform'
-                  ? eintrag.recorded_by_kind === 'legal_representative'
-                    ? ' · von der rechtlichen Vertretung'
-                    : ' · von der Person'
-                  : ''
-              }`}
+              meta={`${formatDate(eintrag.measured_on)}${gewichtVon(eintrag)}`}
             />
           ))}
         </ListRows>
@@ -391,18 +388,21 @@ function Einwilligung({
 
   return (
     <Section titel="Einwilligung" rahmen>
-      <div className="flex min-h-11 flex-wrap items-center justify-between gap-2">
-        <span className="text-ink text-base font-semibold">Ernährungsberatung</span>
-        {!stand ? (
-          <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.fehlt}>
-            Nicht erteilt
-          </Badge>
-        ) : erteilt ? (
-          <Badge ton="positiv">Erteilt am {formatDate(stand.occurred_on)}</Badge>
-        ) : (
-          <Badge ton="warnung">Widerrufen am {formatDate(stand.occurred_on)}</Badge>
-        )}
-      </div>
+      <Zwischentitel
+        aktion={
+          !stand ? (
+            <Badge ton="neutral" eigenesZeichen={STATUSZEICHEN.fehlt}>
+              Nicht erteilt
+            </Badge>
+          ) : erteilt ? (
+            <Badge ton="positiv">Erteilt am {formatDate(stand.occurred_on)}</Badge>
+          ) : (
+            <Badge ton="warnung">Widerrufen am {formatDate(stand.occurred_on)}</Badge>
+          )
+        }
+      >
+        Ernährungsberatung
+      </Zwischentitel>
       {von ? <p className="text-ink-muted mt-1 text-sm">{von}.</p> : null}
       {profil.ended_on === null ? (
         <div className="mt-3">
@@ -499,7 +499,7 @@ function Notizen({
             <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
           ) : null}
           <Formularfuss dicht>
-            <Button type="submit" disabled={speichern.isPending}>
+            <Button type="submit" variant="secondary" disabled={speichern.isPending}>
               {speichern.isPending ? 'Wird gespeichert …' : 'Speichern'}
             </Button>
             <Button type="button" variant="quiet" onClick={() => setBearbeiten(false)}>
