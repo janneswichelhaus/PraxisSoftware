@@ -124,10 +124,12 @@ Rahmen: die Zweckbestimmung (ADR-006, dort Punkt 14 in Fassung 4), die Trennung 
 19. **Makronährstoffe:** Eiweiß 0,8 g je kg, ab 65 Jahren 1,0 g, bei Muskelaufbau oder im Training
     1,6 g (Beratung bis 2,0 g); Fett mindestens 30 % der Energie; Kohlenhydrate der Rest.
 20. **Wasser:** 35 ml je kg, mindestens 1,5 l.
-21. **Zielgewicht:** frei wählbar, aber nicht unter BMI 18,5; die Anwendung nennt die Zeit bis
+21. **Zielgewicht:** von der Person frei wählbar, aber nicht unter BMI 18,5; die Anwendung nennt die Zeit bis
     zum Ziel nur aus dem gewählten Energieziel, ohne Versprechen.
-22. **Überschreiben:** Jeder Wert ist durch die Beratung überschreibbar und dann gekennzeichnet;
-    die Untergrenzen aus Punkt 18 und 21 gelten auch für die Überschreibung. Die Werte der Punkte
+22. **Überschreiben:** Jeder Wert ist durch die Beratung überschreibbar und dann gekennzeichnet.
+    Die Untergrenzen aus Punkt 18 und 21 gelten für die Berechnung und für die Wahl der Person,
+    **nicht für die Überschreibung durch die Beratung** (Jannes 2026-10-18: „ich entscheide
+    selbst“); ein Wert darunter ist als solcher gekennzeichnet. Die Werte der Punkte
     16 bis 21 stehen an **einer** Stelle im Code (eine Datei, getestet gegen veröffentlichte
     Rechenbeispiele).
 

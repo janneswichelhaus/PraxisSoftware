@@ -171,7 +171,7 @@ Spezifikation, nicht in den Nachgang.
 **Stand 2026-10-18.** Jannes hat entschieden, eine klassische Tracking-App zu bauen (ADR-027):
 Tagebuch und Kalorien sind nicht mehr standardmäßig aus, sondern schaltet die Person selbst ein;
 Erinnerungen sind optional. Was bleibt: keine Bewertung einzelner Lebensmittel mit
-Krankheitsbezug, kein Nachfassen von der Praxis, Untergrenzen für Energieziel und Zielgewicht,
+Krankheitsbezug, kein Nachfassen von der Praxis, Untergrenzen für Energieziel und Zielgewicht (die Beratung darf sie überschreiten),
 „Zahlen ausblenden“ als Einstellung der Person (ADR-006 Punkt 14, ADR-027 Punkt 11).
 
 ---
