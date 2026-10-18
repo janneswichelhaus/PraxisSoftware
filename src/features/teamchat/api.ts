@@ -576,6 +576,27 @@ export const ANHANG_VERWORFEN =
 
 const NICHT_UEBERTRAGEN = 'Nicht hochgeladen – kein Netz? Bitte noch einmal.';
 
+/** Ein Nein der Ablage, das sich durch Warten nicht ändert. */
+const NICHT_ANGENOMMEN =
+  'Die Ablage hat die Datei nicht angenommen. Bitte entfernen und noch einmal wählen.';
+
+/**
+ * Wie `satz`: Nur was vorübergehend ist - keine Antwort, 408, 429, 5xx - heißt
+ * „kein Netz“ und wird von selbst wiederholt. Ein Nein der Ablage (403, 413,
+ * 415 …) bliebe es bei jedem Versuch, und jeder Versuch legte eine Zeile an
+ * und verwürfe sie wieder (Zweitreview TEAM-003, Runde 2).
+ */
+function speicherfehler(fehler: unknown): TeamchatFehler {
+  const status =
+    typeof fehler === 'object' && fehler !== null && 'status' in fehler
+      ? Number(fehler.status) || 0
+      : 0;
+  const voruebergehend = status === 0 || status === 408 || status === 429 || status >= 500;
+  return voruebergehend
+    ? new TeamchatFehler(NICHT_UEBERTRAGEN, true)
+    : new TeamchatFehler(NICHT_ANGENOMMEN, false);
+}
+
 /** Eine Datei, deren Inhalt nicht zu ihrer Art passt - etwa umbenannt. */
 export const FALSCHE_DATEI =
   'Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.';
@@ -627,7 +648,7 @@ export async function ladeAnhangHoch(kanalId: string, datei: Blob, name: string)
     } catch {
       throw new TeamchatFehler(NICHT_UEBERTRAGEN, true);
     }
-    if (hochgeladen.error) throw new TeamchatFehler(NICHT_UEBERTRAGEN, true);
+    if (hochgeladen.error) throw speicherfehler(hochgeladen.error);
     await rufe(
       'confirm_team_attachment_upload',
       { p_attachment_id: vorbereitet.attachment_id },

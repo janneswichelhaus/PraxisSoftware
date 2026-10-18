@@ -478,9 +478,14 @@ begin
   if v_id is null then
     raise exception 'team attachment not found' using errcode = 'P0002';
   end if;
+  -- Tageweise gebündelt wie jedes Löschen im Teamchat (Zweitreview TEAM-001
+  -- N4, TEAM-003 Runde 2): sonst stünde jedes Verwerfen sekundengenau im
+  -- Nachweis der Praxisleitung.
   insert into public.deletion_journal
-    (organization_id, run_id, target_table, target_id, retention_class, due_at)
-  values (v_org, extensions.gen_random_uuid(), 'team_message_attachments', v_id, 'teamchat', now());
+    (organization_id, run_id, target_table, target_id, retention_class, due_at, deleted_at)
+  values (v_org, md5('team_manual:' || v_org::text || ':' || current_date::text)::uuid,
+          'team_message_attachments', v_id, 'teamchat', date_trunc('day', now()),
+          date_trunc('day', now()));
 end;
 $$;
 
@@ -1257,10 +1262,13 @@ begin
   -- Punkt 52: Befund heißt verwerfen; der Trigger schreibt den Löschauftrag,
   -- das Journal hält es über eine Wiederherstellung (ADR-008 Punkt 8).
   delete from public.team_message_attachments where id = p_attachment_id;
+  -- Tageweise gebündelt wie das Verwerfen von Hand.
   insert into public.deletion_journal
-    (organization_id, run_id, target_table, target_id, retention_class, due_at)
-  values (v_anhang.organization_id, extensions.gen_random_uuid(), 'team_message_attachments',
-          p_attachment_id, 'teamchat', now());
+    (organization_id, run_id, target_table, target_id, retention_class, due_at, deleted_at)
+  values (v_anhang.organization_id,
+          md5('team_manual:' || v_anhang.organization_id::text || ':' || current_date::text)::uuid,
+          'team_message_attachments', p_attachment_id, 'teamchat', date_trunc('day', now()),
+          date_trunc('day', now()));
   return 'rejected';
 end;
 $$;

@@ -34,6 +34,8 @@ export interface Entwurfsanhang {
   fehler: string | null;
   /** Ob ein neuer Versuch gelingen kann (kein Netz) - bei falschem Format nicht. */
   erneut: boolean;
+  /** Versuche von selbst seit dem letzten von Hand - höchstens `VON_SELBST_HOECHSTENS`. */
+  vonSelbst: number;
   /** Was der Server angenommen hat - erst dann kann die Nachricht hinaus. */
   anhang: Anhang | null;
 }
@@ -41,6 +43,8 @@ export interface Entwurfsanhang {
 const speicher = new Map<string, Entwurfsanhang>();
 /** Die Datei selbst, für einen neuen Versuch - nie außerhalb dieses Moduls. */
 const dateien = new Map<string, Blob>();
+/** Was gerade hochlädt - ein zweiter Versuch derselben Datei wartet nicht daneben. */
+const laufend = new Set<string>();
 const beobachter = new Set<() => void>();
 let stand = 0;
 let takt: ReturnType<typeof setInterval> | null = null;
@@ -52,15 +56,27 @@ function melden() {
   taktPruefen();
 }
 
+/**
+ * So oft versucht es ein Anhang im Takt von selbst (zwei Minuten), dann nur
+ * noch mit dem Netz oder von Hand: Jeder Versuch, der die Datenbank erreicht,
+ * legt eine Zeile an und verwirft sie wieder.
+ */
+export const VON_SELBST_HOECHSTENS = 8;
+
 /** Ob ein neuer Versuch gelingen kann - gescheitert am Netz, nicht am Format. */
 function wiederholbar(a: Entwurfsanhang): boolean {
   return a.zustand === 'fehler' && a.erneut;
 }
 
+/** Ob der Takt es noch einmal versucht. */
+function imTakt(a: Entwurfsanhang): boolean {
+  return wiederholbar(a) && a.vonSelbst < VON_SELBST_HOECHSTENS;
+}
+
 function taktPruefen() {
-  const wartet = [...speicher.values()].some(wiederholbar);
+  const wartet = [...speicher.values()].some(imTakt);
   if (wartet && takt === null) {
-    takt = setInterval(anhaengeWiederholen, WIEDERHOLEN_MS);
+    takt = setInterval(imTaktWiederholen, WIEDERHOLEN_MS);
   } else if (!wartet && takt !== null) {
     clearInterval(takt);
     takt = null;
@@ -70,14 +86,26 @@ function taktPruefen() {
 function anmelden() {
   if (angemeldet || typeof window === 'undefined') return;
   angemeldet = true;
-  // Mit dem Netz kommt der nächste Versuch sofort, nicht erst im Takt.
-  window.addEventListener('online', anhaengeWiederholen);
+  // Mit dem Netz kommt der nächste Versuch sofort, nicht erst im Takt - und
+  // der Takt beginnt von vorn.
+  window.addEventListener('online', () => anhaengeWiederholen(true));
 }
 
-/** Alle am Netz gescheiterten Anhänge noch einmal - wie `wiederholeWartende`. */
-export function anhaengeWiederholen(): void {
+function imTaktWiederholen(): void {
+  anhaengeWiederholen(false);
+}
+
+/**
+ * Am Netz gescheiterte Anhänge noch einmal - wie `wiederholeWartende`. Im
+ * Takt nur bis `VON_SELBST_HOECHSTENS`; mit dem Netz oder beim Abmelden
+ * (`neu`) alle, und der Takt zählt wieder von vorn.
+ */
+export function anhaengeWiederholen(neu = true): void {
   for (const a of [...speicher.values()]) {
-    if (wiederholbar(a)) void hochladen(a.lokalId);
+    if (!wiederholbar(a)) continue;
+    if (neu) speicher.set(a.lokalId, { ...a, vonSelbst: 0 });
+    else if (!imTakt(a)) continue;
+    void hochladen(a.lokalId, !neu);
   }
 }
 
@@ -129,11 +157,18 @@ export function fotoName(
   return `${basis} (${nummer})`;
 }
 
-async function hochladen(lokalId: string): Promise<void> {
+async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
   const eintrag = speicher.get(lokalId);
   const datei = dateien.get(lokalId);
-  if (!eintrag || !datei) return;
-  speicher.set(lokalId, { ...eintrag, zustand: 'laedt', fehler: null, erneut: false });
+  if (!eintrag || !datei || laufend.has(lokalId)) return;
+  laufend.add(lokalId);
+  speicher.set(lokalId, {
+    ...eintrag,
+    zustand: 'laedt',
+    fehler: null,
+    erneut: false,
+    vonSelbst: vonSelbst ? eintrag.vonSelbst + 1 : eintrag.vonSelbst,
+  });
   melden();
   try {
     const anhang = await ladeAnhangHoch(eintrag.kanalId, datei, eintrag.name);
@@ -155,6 +190,7 @@ async function hochladen(lokalId: string): Promise<void> {
       erneut: ursache instanceof TeamchatFehler ? ursache.netz : true,
     });
   } finally {
+    laufend.delete(lokalId);
     melden();
   }
 }
@@ -188,6 +224,7 @@ export function anhaengen(
       zustand: 'laedt',
       fehler: null,
       erneut: false,
+      vonSelbst: 0,
       anhang: null,
     });
     dateien.set(lokalId, datei);
@@ -197,8 +234,10 @@ export function anhaengen(
   return neue.length - angenommen.length;
 }
 
-/** Ein gescheitertes Hochladen noch einmal. */
+/** Ein gescheitertes Hochladen noch einmal, von Hand - der Takt zählt von vorn. */
 export function anhangErneut(lokalId: string): void {
+  const eintrag = speicher.get(lokalId);
+  if (eintrag) speicher.set(lokalId, { ...eintrag, vonSelbst: 0 });
   void hochladen(lokalId);
 }
 

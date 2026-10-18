@@ -26,7 +26,9 @@ const {
   anhangErneut,
   anhangName,
   fotoName,
+  VON_SELBST_HOECHSTENS,
 } = await import('./entwurfsanhaenge');
+const { WIEDERHOLEN_MS } = await import('./ausgang');
 
 const datei = (name: string, typ = 'application/pdf') => ({
   datei: new Blob(['x'], { type: typ }),
@@ -135,6 +137,27 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     anhaengeWiederholen();
     await vi.waitFor(() => expect(anhaengeVon('anna', 'k1', null)[0]?.zustand).toBe('bereit'));
     expect(ladeAnhangHoch).toHaveBeenCalledTimes(2);
+  });
+
+  it('versucht es im Takt höchstens achtmal von selbst - mit dem Netz wieder von vorn', async () => {
+    vi.useFakeTimers();
+    try {
+      ladeAnhangHoch.mockRejectedValue(
+        new TeamchatFehler('Nicht hochgeladen – kein Netz? Bitte noch einmal.', true),
+      );
+      anhaengen('anna', 'k1', null, [datei('keller.pdf')]);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(ladeAnhangHoch).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(WIEDERHOLEN_MS * (VON_SELBST_HOECHSTENS + 4));
+      expect(ladeAnhangHoch).toHaveBeenCalledTimes(1 + VON_SELBST_HOECHSTENS);
+      // Mit dem Netz (oder beim Abmelden) sofort, und der Takt zählt von vorn.
+      anhaengeWiederholen();
+      await vi.advanceTimersByTimeAsync(WIEDERHOLEN_MS);
+      expect(ladeAnhangHoch).toHaveBeenCalledTimes(1 + VON_SELBST_HOECHSTENS + 2);
+    } finally {
+      anhaengeLeeren();
+      vi.useRealTimers();
+    }
   });
 
   it('räumt beim Abmelden alles ab', () => {

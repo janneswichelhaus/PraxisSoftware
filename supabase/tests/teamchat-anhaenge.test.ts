@@ -801,16 +801,22 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
       target_id: string;
       target_table: string;
       retention_class: string;
+      mitternacht: boolean;
     }>(
-      `select target_id, target_table, retention_class from public.deletion_journal
+      `select target_id, target_table, retention_class,
+              deleted_at = date_trunc('day', deleted_at) and due_at = deleted_at as mitternacht
+         from public.deletion_journal
         where target_id = any($1::uuid[])`,
       [[verworfen.attachment_id, liegen.attachment_id]],
     );
+    // Tageweise, ohne Uhrzeit, in einem Lauf je Praxis und Tag (Zweitreview
+    // TEAM-001 N4, TEAM-003 Runde 2).
     expect(journal).toEqual([
       {
         target_id: verworfen.attachment_id,
         target_table: 'team_message_attachments',
         retention_class: 'teamchat',
+        mitternacht: true,
       },
     ]);
   });
@@ -861,6 +867,13 @@ describe('Teamchat: Löschpfad der Anhänge (ADR-017 Punkte 25 und 75)', () => {
           where target_table = 'team_message_attachments' and reapplied_at is not null`,
       ),
     ).toBe(2);
+    // Beide Wege stehen im selben Tageslauf, nicht je Ereignis einzeln.
+    expect(
+      await anzahl(
+        `select count(distinct run_id) n from public.deletion_journal
+          where target_table = 'team_message_attachments'`,
+      ),
+    ).toBe(1);
     expect(
       await code(
         senden(users.therapist, allgemein, 'Doch noch', { anhaenge: [verworfen.attachment_id] }),

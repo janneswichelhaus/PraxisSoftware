@@ -6701,7 +6701,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026)
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort - mit Löschauftrag und Eintrag im Löschjournal -, sonst im täglichen Lauf nach 24 Stunden ohne Journal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
+**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort - mit Löschauftrag und Eintrag im Löschjournal, tageweise gebündelt wie jedes Löschen im Teamchat (ohne Uhrzeit) -, sonst im täglichen Lauf nach 24 Stunden ohne Journal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
 
 **Begründung.** ADR-017 Punkte 7, 52 und 73; ADR-008 Punkt 8: Ohne Journal käme ein verworfener, jüngerer Anhang mit einem Restore bindbar zurück (Zweitreview TEAM-003, wie ERS-001). Was der Lauf verwirft, ist nach einem Restore älter als 24 Stunden, weder bindbar noch lesbar und fällt im nächsten Lauf. Gesendete fallen über das Journal ihrer Nachricht.
 
