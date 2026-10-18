@@ -51,7 +51,7 @@ Feature, **P3** später.
 | B6 | Beschäftigtendaten: Touren, Leistungskontrolle | **entschieden 2026-09-29 (Jannes): Umsatz je Person ja, Orts- und Tourendaten nein** | ANN-156, ANN-157; ANN-004 überbrückt das Audit |
 | B7 | Adressdaten an den Kartendienst | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv |
 | B8 | Lizenzen für Fragebögen und PROMs | Nutzung **bestätigt durch Jannes 2026-09-19**; schriftlicher Beleg des Lizenzgebers bleibt offen (M3) | vor FRB-003 |
-| B9 | Betreuung ohne und nach Heilbehandlung (Personal Training) | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08); **Punkt 6 neu 2026-09-22**: Ernährung als Protokoll und Zielwert gehört zu V1 | Roadmap ALT-EPIC-002, KND-EPIC-001; Steuerteil mit B4; Volltext: `ANFRAGEN.md` § B9 |
+| B9 | Betreuung ohne und nach Heilbehandlung (Personal Training) | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08); **Punkt 6 neu 2026-09-22**, *abgelöst 2026-10-18 durch ADR-027* (Ernährungsberatung als Zusatz zu Behandlung und Training) | Roadmap ALT-EPIC-002, KND-EPIC-001; Steuerteil mit B4; Volltext: `ANFRAGEN.md` § B9 |
 | B10 | Automatisierte Progression: MDR-Grenze | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1 | vor Etappe 9; Volltext: `ANFRAGEN.md` § B10 |
 | B11 | Paketpreise, Vorauszahlung, Anreize | **neu entschieden 2026-09-22**: Training als Paket, Plattform darin enthalten; Portal-Abo der Patient:innen als Monatsrechnung | Roadmap ANG-EPIC-001/002; Steuer mit B4; Volltext: `ANFRAGEN.md` § B11 |
 | B12 | Stichtag der Umstellung und Rechnungsnummernkreis | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4 | — |
@@ -190,9 +190,9 @@ Frei: FRB-001/002. Annahmen: ANN-086.
 
 ### B9 — Betreuung ohne und nach Heilbehandlung: Rechtsrahmen und Datentrennung
 
-vorläufig entschieden · 2026-09-07/08 · Jannes; Punkt 6 neu 2026-09-22 (Ernährung in V1)
+vorläufig entschieden · 2026-09-07/08 · Jannes; Punkt 6 neu 2026-09-22 (Ernährung in V1), abgelöst 2026-10-18 durch ADR-027
 
-Volltext: `ANFRAGEN.md` § B9. Wo: §1; Roadmap ALT-EPIC-002. Annahmen: ANN-032
+Volltext: `ANFRAGEN.md` § B9. Wo: §1, §4.11; Roadmap ERN-EPIC-001 bis -006 (ADR-027). Annahmen: ANN-032
 (automatische Klassifizierung hängt
 an B9), ANN-014 (`MDR_REVIEW_REQUIRED` bei Bewertung).
 

@@ -39,7 +39,7 @@ Zahlungen · 010 Audit, privilegierter Zugriff · 011 Logging, Redaction · 012 
 Doku: Entwurf, Finalisierung · 017 Dateien, Fotos · 018 Terminzustände, Ausfallhonorar · 019
 Karte, Navigation, §203-Gate · 020 Verordnung, Selbstzahler · 021 Behandlung/Training getrennt ·
 022 Terminkontext, Trainingsprotokoll · 023 Plattformzugang, Vertretung · 024 Service Worker,
-Push, Mail · 025 Sitzungssperre, Passkey · 026 Virenprüfung (zurückgestellt).
+Push, Mail · 025 Sitzungssperre, Passkey · 026 Virenprüfung (zurückgestellt) · 027 Ernährungsberatung.
 
 ## Repository und Befehle
 

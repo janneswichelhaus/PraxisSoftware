@@ -980,8 +980,38 @@
           "vermerk": "Sichtung: Verlauf Schritte 13 bis 15"
         },
         {
-          "id": "alt-epic-002",
-          "name": "ALT-EPIC-002 Ernährung",
+          "id": "ern-epic-001",
+          "name": "ERN-EPIC-001 Ernährung: Profil und Bedarf",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ern-epic-002",
+          "name": "ERN-EPIC-002 Ernährung: Lebensmitteldaten",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ern-epic-003",
+          "name": "ERN-EPIC-003 Ernährung: Tagebuch",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "ern-epic-004",
+          "name": "ERN-EPIC-004 Ernährung: Barcode",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "ern-epic-005",
+          "name": "ERN-EPIC-005 Ernährung: Pläne und Rezepte",
+          "gewicht": 1,
+          "status": "offen"
+        },
+        {
+          "id": "ern-epic-006",
+          "name": "ERN-EPIC-006 Ernährung: Verlauf für die Beratung",
           "gewicht": 1,
           "status": "offen"
         },

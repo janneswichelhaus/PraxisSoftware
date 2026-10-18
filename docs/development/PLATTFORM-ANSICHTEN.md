@@ -246,7 +246,7 @@ sich so:
 | **Übersicht** | was zu tun ist; Check-in fällig; Gewohnheiten des Tages; nächste Einheit |
 | **Termine** | Kalender: Einheiten und Termine im Training; Wunsch wie in 4.1 |
 | **Training** | Plan des Tages; Einheiten, dazu das Trainingsprotokoll, soweit es freigegeben ist (§4.10). Heute lesen es nur owner und Trainingsbetreuung (ANN-184); die Freigabe an die Kund:in entsteht mit POR-EPIC-002 |
-| **Verlauf** | Check-ins, Fortschritt, Assessments (nur Werte, ADR-006 Punkt 13), Aktivitäten, Ernährung als Protokoll und Zielwert |
+| **Verlauf** | Check-ins, Fortschritt, Assessments (nur Werte, ADR-006 Punkt 13), Aktivitäten, Ernährungstagebuch als gebuchte Zusatzleistung (ADR-027) |
 | **Nachrichten** | Rückfragen wie in 4.2, mit Notfallhinweis |
 | **Ich** | Profil, Einstellungen mit sichtbarer Coach-Kontrolle (`IDEA-QSN-005`), eigene Rechnungen, Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, Paketstand, Datenexport |
 

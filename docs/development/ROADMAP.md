@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.14 · Stand 2026-10-16 · **in Kraft**
+Version 7.15 · Stand 2026-10-18 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -42,9 +42,24 @@ Budgets G1–G10 in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). 
 zuerst, weil 7 bis 10 den Baustein nutzen; 7 vor 8 bis 10, weil er die Antragsmechanik legt; 11
 ist unabhängig und kann jederzeit dazwischen.
 
-Die Kette unten bleibt gültig; ihre offenen Epics (ab ALT-EPIC-002) folgen nach den
+Die Kette unten bleibt gültig; ihre offenen Epics folgen nach den
 Überholungen oder werden in die passende Überholung gezogen, wenn sie denselben Bereich
 berühren. Befunde eines Bereichs werden in dessen Überholung erledigt.
+
+### Ernährungsberatung (Jannes 2026-10-18, ADR-027)
+
+Ersetzt ALT-EPIC-002. Je Epic ein `/feature-loop` (Pfad A: neue Tabellen, RLS, Einwilligung);
+ein Epic ist fertig, wenn sein Budget am Seed gemessen ist (375 px, Playwright).
+
+| Reihe | Epic | Zuschnitt | Fertig, wenn … |
+| --- | --- | --- | --- |
+| 1 | **ERN-EPIC-001** Profil und Bedarf | Profil an Akte oder Trainingsverhältnis (owner), Einwilligung „Ernährungsberatung“, Körperdaten, Ziel, PAL, Zielwerte nach ADR-027 Abschnitt E mit Rechenweg und Überschreibung, Notizen; Gewicht durch Person und Beratung mit Verlauf und Zielgewicht; Tagebuch auf der Plattform ein- und ausschaltbar; Katalogposition mit Steuerkennzeichen; Datenklasse, Auskunft, Export, Löschlauf | Profil in ≤ 4 Tipps + Felder angelegt; Formeln gegen veröffentlichte Rechenbeispiele getestet; Negativfälle Büro, Therapie, Trainingsbetreuung, Begleitung, fremde Organisation |
+| 2 | **ERN-EPIC-002** Lebensmitteldaten | Import BLS 4.0 (Bedingungen vorher geprüft) und Open-Food-Facts-Auszug Deutschland auf eigenem Server, Quellenangabe, Suche mit Tippfehlertoleranz, Portionen, eigene Lebensmittel der Person und der Praxis | „Apfel“, „Haferflocken“, „Vollkornbrot“ und zehn weitere Stichwörter treffen unter den ersten drei; Suche < 300 ms am Seed |
+| 3 | **ERN-EPIC-003** Tagebuch | Mahlzeiten, zuletzt, Favoriten, kopieren, Wasser, Tagesansicht mit „noch übrig“ und Makros, „Zahlen ausblenden“, Erinnerungen nach ADR-024 (Katalog, aus bis eingeschaltet), die Beratung liest mit | aus „zuletzt“ ≤ 3 Tipps, per Suche ≤ 5 Tipps + Text, Wasser 1 Tipp; einhändig bei 375 px |
+| — | **Politurrunde** | bestehende Bereiche nach Bildstrecke und Befunden, keine neuen Funktionen | Jannes wählt die Bereiche |
+| 4 | **ERN-EPIC-004** Barcode | Scan mit der Kamera ohne Bildspeicherung, Nachschlagen nur im eigenen Auszug, unbekannt → Suche oder eigenes Lebensmittel | Produkt per Scan in ≤ 3 Tipps |
+| 5 | **ERN-EPIC-005** Pläne und Rezepte | Rezepte aus Zutaten, Tagesvorschläge und Pläne von der Beratung, Startinhalte (≈ 30 Rezepte) | Plan in ≤ 10 Minuten zugewiesen; Rezept mit einem Tipp ins Tagebuch |
+| 6 | **ERN-EPIC-006** Verlauf für die Beratung | Wochenmittel neben Zielwerten, Gewicht, neben Check-ins und Training im Verlauf | Sitzung aus einer Ansicht vorbereitet |
 
 ## Was dieses Dokument ist und was nicht
 
@@ -188,7 +203,7 @@ in den Etappen darunter.
 | 4 | **Plattformzugang** | ~~POR-EPIC-001~~ (gebaut 2026-09-30) → ~~-001b~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001b**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001c**~~ (gebaut 2026-10-02) → ~~**ABR-EPIC-007**~~ (gebaut 2026-10-05) → ~~POR-EPIC-002~~ (gebaut 2026-10-06) → ~~-003~~ (gebaut 2026-10-07) | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ~~ADR-023 bestätigen~~ (2026-09-30: wie empfohlen) |
 | 5 | **Angebote** | ~~ANG-EPIC-001~~ (gebaut 2026-10-07) → ~~ANG-EPIC-002~~ (gebaut 2026-10-07) → ~~KND-EPIC-001~~ (gebaut 2026-10-07) | — | Abo- und Paketpreise (bis dahin synthetisch) |
 | 6 | **Pläne und Rückfragen** | ~~UEB-EPIC-001~~ (gebaut 2026-10-07) → ~~-002~~ (gebaut 2026-10-07) → ~~-003~~ (gebaut 2026-10-08) → ~~KOM-EPIC-001~~ (gebaut 2026-10-09) → -002 → -003 | ~~**ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003)~~ (angenommen 2026-10-11) | ~~ADR-024 bestätigen~~ (2026-10-11: W1 c, sonst wie empfohlen) |
-| 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OFF-EPIC-001 → OUT-EPIC-001 → ALT-EPIC-001 → ALT-EPIC-002 → ORG-EPIC-001 | — | Sichtung |
+| 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OFF-EPIC-001 → OUT-EPIC-001 → ALT-EPIC-001 → ~~ALT-EPIC-002~~ (ersetzt durch ERN-EPIC-001 bis -006, oben) → ORG-EPIC-001 | — | Sichtung |
 | 8 | **Praxisbetrieb** | FLT-EPIC-001 → TEAM-001 → URL-001 → ZK-001 → ERS-001 | — | Tübinger Standortvorlage (Depot, Werkstatt) |
 | 9 | **Assistenz und Komfort** | KI-EPIC-001 → KI-EPIC-002 → MAP-007 → PRX-EPIC-004 → UI-003 | — | Sichtung |
 | 10 | **Feature-Freeze** | nur Befunde | Betriebsdokumentation | Probewoche 1 · Kollegin-Test · **M2** |
@@ -403,7 +418,7 @@ Leiste ist die **Ansicht der Trainingskund:innen** (§4.10, Jannes
 | 9 | Assessments | Tests zu definierten Zeitpunkten (`IDEA-OUT-007`) | FRB-EPIC-001/002 (Behandlung), OUT-EPIC-001 (Training); **Verbot 3** |
 | 10 | Athletenprofil | Stammdaten und Ziele; heißt bei uns nicht so | TRN-EPIC-001; Voraussetzungsprofil KND-EPIC-001 |
 | 11 | Gewohnheiten | sehr kleine Ziele, keine Serie als Druckmittel (`IDEA-ALT-002`) | ALT-EPIC-001 |
-| 12 | Ernährung | Protokoll und Zielwert, kein Urteil (`IDEA-ALT-005`, `-006`) | ALT-EPIC-002 (B9 Punkt 6 neu entschieden 2026-09-22) |
+| 12 | Ernährung | klassisches Tagebuch mit Lebensmitteldaten, Zielwerte aus Formeln, Gewicht (ADR-027) | ERN-EPIC-001 bis -006, als Zusatz auch in der Behandlung |
 | 13 | Chat | strukturierte Rückfrage mit Notfallabgrenzung (`IDEA-KOM-001`, `-002`) | KOM-EPIC-001 |
 | 14 | Einstellungen | Konfiguration je Kund:in, Coach-Kontrolle sichtbar (`IDEA-QSN-005`, `IDEA-LZK-005`) | POR-EPIC-003 |
 | 15 | KI-Analyse | abgesetzter Knopf (`IDEA-KI-006`) | als Einschätzung „Nicht in V1" (`src/app/mdr.ts`); Zusammenfassung ohne Bewertung in KI-EPIC-002 |
@@ -479,7 +494,7 @@ aus POR-EPIC-003, als Rechtsfrage bei B2.
 | **OFF-EPIC-001** | Dokumentieren geht auch ohne Empfang | Tagesplan und Dokumentationsentwürfe auf dem eingerichteten Diensttelefon nach ADR-024 Punkt 6, Übertragung additiv, Finalisieren erst danach; echte Daten erst nach der DSFA | ADR-024 W1 (c), Jannes 2026-10-11 |
 | **OUT-EPIC-001** | Fortschritt ist sichtbar, ohne bewertet zu werden | Verlaufsgrafiken mit Ereignissen, Assessments mit Protokoll und Wiedervorlage auf der Trainingsseite, anzeigende Übungsanalyse, Fortschritt in zwei Sprachen | `IDEA-OUT-005` bis `-008` |
 | **ALT-EPIC-001** | Alltag steht als Kontext daneben | Aktivitäten ohne Wettbewerb, Gewohnheiten mit sehr kleinen Zielen, Schlaf und Stress, Bedarfsmedikation als Verlaufsgröße, kein Vergleich zwischen Personen | `IDEA-ALT-001` bis `-004`, `-007` |
-| **ALT-EPIC-002** | Ernährung als Protokoll und Zielwert | Tagesprotokoll, Zielwert von der Betreuung gesetzt, **kein** Urteil; je Person ab- und zuschaltbar, weil Kalorienzählen nicht für alle harmlos ist | `IDEA-ALT-005`, `-006` |
+| ~~**ALT-EPIC-002**~~ | ~~Ernährung als Protokoll und Zielwert~~ | **Ersetzt (2026-10-18) durch ERN-EPIC-001 bis -006** (ADR-027, Abschnitt „Ernährungsberatung“ oben) | `IDEA-ALT-005`, `-006` |
 | **ORG-EPIC-001** | Eine Person auf einen Blick, und die Sitzung ist vorbereitet | Zeitstrahl über alle Bereiche, Sitzungsvorbereitung für die Praxis, Übersicht je Person | `IDEA-QSN-001`, `IDEA-ORG-001`, `-005` |
 
 ### Block 8 — Spur A2: Praxisbetrieb
@@ -560,7 +575,7 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
 | B3 | Validierung der Fristen (ANN-001) | im DSFA-Prozess | ANN-001 |
 | B5 | Identität und Vertretung im Portal | Jannes, ggf. Beratung | ADR-023 |
 | B8 | schriftlicher Lizenzbeleg | Lizenzgeber | Jannes' Bestätigung vom 2026-09-21 |
-| B9 | Ernährung berufsrechtlich, Betreuung ohne Heilbehandlung | Beratung | B9 in `OPEN_DECISIONS.md` |
+| B9 | Ernährungsberatung berufsrechtlich (auch bei Patient:innen, ADR-027), Betreuung ohne Heilbehandlung | Beratung | B9 in `OPEN_DECISIONS.md` |
 | Anbieter | PTV (Gate ADR-019), SMTP (B13, BEF-026), SMS (B15), KI (C6, ADR-005), Zahlungsdienst (falls Kartenzahlung), Frontend-Hosting (G5) | Jannes mit Claude-Dokument | `mock`-Adapter (Grundsatz 5) |
 
 ### Bei Jannes — hält kein Bauen auf
@@ -923,6 +938,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.15 | 2026-10-18 | **Ernährungsberatung** (Jannes, ADR-027): ALT-EPIC-002 ersetzt durch ERN-EPIC-001 bis -006 mit Budgets und einer Politurrunde nach ERN-EPIC-003; Zusatz zu Behandlung und Training, Eigenbau statt Anbieter. Prinzipien 0.28, ADR-006 Fassung 4, ADR-008 Fassung 6, ADR-021 Fassung 4. |
 | 7.13 | 2026-10-12 | **Bereichsüberholungen** (Auftrag Jannes: Design der ganzen App, Übungsbibliothek, größere Schritte, weniger Doku): neuer Block oben mit Reihenfolge als Vorschlag; „Credit-Budget" wird „Arbeitsweise und Budget" (Auftrag vollständig abarbeiten, Subagenten und Worktrees erlaubt, Fundament seriell); Sichtung über Bildstrecke (Regel 1, Definition of Done, Fortschritt); Sandbox-Pfad und Ablaufrunden entfallen, Kernabläufe mit Tipp-Budgets in [`../product/kernablaeufe.md`](../product/kernablaeufe.md). Kette der Blöcke unverändert. |
 | 7.12 | 2026-10-10 | **G22 SEC-EPIC-002 Anmeldung ohne Kennwort** eingeschoben (Jannes: „jetzt bauen und scharf schalten“, im Alltag Passkey, Rückweg eigene App-PIN, kein Kennwort): ADR-025 Fassung 2, ADR-023 Fassung 4, Prinzipien 0.25 (§3.4, Ausnahme für die App-PIN). Nächster Bau-Loop vor KOM-EPIC-002; Reihenfolge der Blöcke sonst unverändert. |
 | 7.11 | 2026-10-08 | **FLT-EPIC-001** um das Markieren am 3D-Rad ergänzt (Jannes: an der Stelle der Roadmap umsetzen, nicht vorziehen): Check-Up und Pannenmeldung mit Stellen am 3D-Modell, Seite „Stellen am Rad", PDF für die Werkstatt. Entwurf, Entscheidungen, Leinwand-Dateien und Akzeptanzkriterien im [Handoff Lastenrad 3D](../design/handoff-2026-10-08-lastenrad-3d.md), `IDEA-PRX-057`. Reihenfolge der Blöcke unverändert. |
