@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { alleBytes } from '@/features/files/metadaten';
 import { enthaelt, mp4AusSafari, webmAusChromium } from './testvideos';
-import { bereinigeVideo, videotyp } from './videometadaten';
+import { bereinigeTon, bereinigeVideo, tontyp, videotyp } from './videometadaten';
 
 /**
  * Programm- und Zeitangaben verlassen das Gerät nicht (ADR-017 Punkt 64,
@@ -73,5 +73,69 @@ describe('Video ohne Angaben (KOM-006)', () => {
     expect(videotyp('video/webm;codecs=vp9')).toBe('video/webm');
     expect(videotyp('video/mp4; codecs="avc1.42E01E"')).toBe('video/mp4');
     expect(videotyp('video/x-matroska')).toBeNull();
+  });
+});
+
+describe('Sprachnachricht ohne Angaben (TEAM-004, ADR-017 Punkt 84)', () => {
+  async function tonBereinigt(daten: Uint8Array, typ: string): Promise<Uint8Array> {
+    const ergebnis = await bereinigeTon(new Blob([daten as BlobPart], { type: typ }));
+    if (!ergebnis.ok) throw new Error(ergebnis.grund);
+    expect(ergebnis.ton.type).toBe(typ.split(';')[0]);
+    return alleBytes(ergebnis.ton);
+  }
+
+  it('WebM und MP4 nur mit Ton: Programm, Datum, Tags und Zeiten leer, die Länge bleibt', async () => {
+    const webm = webmAusChromium({ bild: false, ton: true, datum: true, tags: true });
+    const sauberWebm = await tonBereinigt(webm, 'audio/webm;codecs=opus');
+    expect(sauberWebm.length).toBe(webm.length);
+    expect(enthaelt(sauberWebm, 'Chrome')).toBe(false);
+    expect(enthaelt(sauberWebm, 'Kennwort-Titel')).toBe(false);
+
+    const mp4 = mp4AusSafari({ bild: false, ton: true, udta: true });
+    const sauberMp4 = await tonBereinigt(mp4, 'audio/mp4');
+    expect(sauberMp4.length).toBe(mp4.length);
+    expect(enthaelt(sauberMp4, 'Kennwort-Datum')).toBe(false);
+    expect(enthaelt(sauberMp4, '\xe1\x23\x45\x67')).toBe(false);
+  });
+
+  it('eine Bildspur heißt nicht senden - auch neben dem Ton', async () => {
+    for (const [daten, typ] of [
+      [webmAusChromium({ ton: true }), 'audio/webm'],
+      [mp4AusSafari({ ton: true }), 'audio/mp4'],
+    ] as const) {
+      expect(await bereinigeTon(new Blob([daten as BlobPart], { type: typ }))).toEqual({
+        ok: false,
+        grund: 'bild',
+      });
+    }
+  });
+
+  it('ohne Tonspur, in fremdem Format oder abgeschnitten: nicht angenommen', async () => {
+    for (const [daten, typ] of [
+      [webmAusChromium({ bild: false }), 'audio/webm'],
+      [webmAusChromium({ bild: false, ton: true }), 'audio/ogg'],
+      [webmAusChromium({ bild: false, ton: true }).slice(0, 60), 'audio/webm'],
+      [webmAusChromium({ bild: false, ton: true }), 'audio/mp4'],
+    ] as const) {
+      expect(await bereinigeTon(new Blob([daten as BlobPart], { type: typ }))).toEqual({
+        ok: false,
+        grund: 'format',
+      });
+    }
+  });
+
+  it('ein Video bleibt bei seiner Regel: reiner Ton ist kein Video', async () => {
+    const ton = webmAusChromium({ bild: false, ton: true });
+    expect(await bereinigeVideo(new Blob([ton as BlobPart], { type: 'video/webm' }))).toEqual({
+      ok: false,
+      grund: 'format',
+    });
+  });
+
+  it('der Typ verliert die Codec-Angabe; nur WebM und MP4', () => {
+    expect(tontyp('audio/webm;codecs=opus')).toBe('audio/webm');
+    expect(tontyp('audio/mp4')).toBe('audio/mp4');
+    expect(tontyp('audio/ogg;codecs=opus')).toBeNull();
+    expect(tontyp('video/webm')).toBeNull();
   });
 });

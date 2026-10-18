@@ -14,7 +14,7 @@
  */
 
 import type { Instanz } from './instanz.ts';
-import { pruefeAnhang, pruefeInhalt } from './pruefung.ts';
+import { pruefeAnhang, pruefeInhalt, pruefeTeamanhang } from './pruefung.ts';
 import type { Art, Protokolleintrag } from './typen.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -126,15 +126,18 @@ export function erstelleHandler({
     // Zweitreview S2: Was sich nicht prüfen lässt, besteht nicht - ein
     // Fehler beim Zerlegen heißt verwerfen, nicht 500 ohne Ergebnis.
     // Ein Foto am Rad prüft sich wie ein Patientenfoto: JPEG an der Signatur,
-    // Prüfsumme, Erlaubnisliste des Geräts (FLT-002, ANN-552); ein Beleg und
-    // ein Anhang im Teamchat wie eine Datei der Akte - JPEG, PNG oder PDF
-    // (ERS-001, ANN-600; TEAM-003).
+    // Prüfsumme, Erlaubnisliste des Geräts (FLT-002, ANN-552); ein Beleg wie
+    // eine Datei der Akte - JPEG, PNG oder PDF (ERS-001, ANN-600); ein Anhang
+    // im Teamchat ebenso, eine Sprachnachricht an ihrer Struktur (TEAM-003,
+    // TEAM-004).
     let ergebnis: Awaited<ReturnType<typeof pruefeInhalt>>;
     try {
       ergebnis =
         art === 'anhang'
           ? await pruefeAnhang(objekt.wert, ankuendigung.wert)
-          : await pruefeInhalt(objekt.wert, ankuendigung.wert);
+          : art === 'teamanhang'
+            ? await pruefeTeamanhang(objekt.wert, ankuendigung.wert)
+            : await pruefeInhalt(objekt.wert, ankuendigung.wert);
     } catch {
       ergebnis = {
         content_type_ok: false,

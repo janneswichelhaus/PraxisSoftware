@@ -161,8 +161,15 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(typen('radflotte')).toEqual(['image/jpeg']);
       // Punkt 63: Foto als JPEG, Video als WebM oder MP4.
       expect(typen('rueckfrageanhang')).toEqual(['image/jpeg', 'video/mp4', 'video/webm']);
-      // TEAM-003 (Punkt 71): Fotos und PDF, wie die Akte.
-      expect(typen('teamchat')).toEqual(['application/pdf', 'image/jpeg', 'image/png']);
+      // TEAM-003 (Punkt 71): Fotos und PDF, wie die Akte; TEAM-004 (Punkt 84):
+      // Sprachnachrichten als WebM oder MP4.
+      expect(typen('teamchat')).toEqual([
+        'application/pdf',
+        'audio/mp4',
+        'audio/webm',
+        'image/jpeg',
+        'image/png',
+      ]);
     });
 
     it('fuehrt den Verordnungsscan als klinisch (ANN-011, ADR-017 Punkt 12)', async () => {

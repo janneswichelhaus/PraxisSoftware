@@ -13,7 +13,8 @@ import {
 import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
- * Anhänge im Teamchat (TEAM-003, ADR-017 Fassung 8, Abschnitt M).
+ * Anhänge im Teamchat (TEAM-003, ADR-017 Fassung 8, Abschnitt M) und
+ * Sprachnachrichten (TEAM-004, Fassung 9, Abschnitt N).
  *
  * Fotos (JPEG, PNG) und PDF an einer Nachricht, bis zu fünf, ohne
  * Virenprüfung. Geprüft werden der Weg jeder Datei (Phase a und c, einmalige
@@ -40,6 +41,9 @@ const GROESSE = 2048;
 
 const VORBEREITEN =
   'select * from public.prepare_team_attachment_upload($1::uuid, $2, $3::bigint, $4, $5)';
+// TEAM-004: mit der Dauer einer Sprachnachricht (ANN-655).
+const VORBEREITEN_MIT_DAUER =
+  'select * from public.prepare_team_attachment_upload($1::uuid, $2, $3::bigint, $4, $5, $6::integer)';
 const BESTAETIGEN = 'select public.confirm_team_attachment_upload($1::uuid)';
 const VERWERFEN = 'select public.discard_team_attachment($1::uuid)';
 const VERWEIS = 'select * from public.issue_team_attachment_link($1::uuid)';
@@ -66,6 +70,7 @@ interface Anhang {
   mime_type: string;
   byte_size: number;
   verified: boolean;
+  duration_seconds: number | null;
 }
 
 interface Nachricht {
@@ -136,6 +141,27 @@ async function hochladen(
      values ($1, $2, jsonb_build_object('size', $3::bigint, 'mimetype', $4::text))`,
     [v.bucket_id, v.object_key, groesse, mime],
   );
+}
+
+/** Der ganze Weg einer Sprachnachricht vor dem Senden (TEAM-004). */
+async function sprachnachricht(
+  konto: string,
+  kanalId: string,
+  dauer = 42,
+  mime = 'audio/webm',
+): Promise<Vorbereitet> {
+  const { rows } = await asUserCommitted<Vorbereitet>(konto, VORBEREITEN_MIT_DAUER, [
+    kanalId,
+    mime,
+    GROESSE,
+    SUMME,
+    'Sprachnachricht 18.10., 14:05',
+    dauer,
+  ]);
+  const v = rows[0]!;
+  await hochladen(konto, v, GROESSE, mime);
+  await asUserCommitted(konto, BESTAETIGEN, [v.attachment_id]);
+  return v;
 }
 
 /** Der ganze Weg vor dem Senden: vorbereiten, hochladen, bestätigen. */
@@ -259,6 +285,8 @@ describe('Teamchat: Anhänge senden (ADR-017 Punkte 71 und 73)', () => {
           byte_size: GROESSE,
           // Ohne scharfe Prüfung „nicht serverseitig geprüft“ (Punkt 51).
           verified: false,
+          // Eine Dauer hat nur eine Sprachnachricht (TEAM-004).
+          duration_seconds: null,
         },
         {
           id: foto.attachment_id,
@@ -266,6 +294,7 @@ describe('Teamchat: Anhänge senden (ADR-017 Punkte 71 und 73)', () => {
           mime_type: 'image/png',
           byte_size: GROESSE,
           verified: false,
+          duration_seconds: null,
         },
       ]);
     }
@@ -1126,5 +1155,200 @@ describe('Teamchat: Anhänge gegen Rennen (zwei Verbindungen)', () => {
     );
     expect(fehler?.code).toBe('P0002');
     expect(await anzahl('select count(*) n from public.team_attachment_access_grants')).toBe(0);
+  });
+});
+
+describe('Teamchat: Sprachnachrichten (TEAM-004, ADR-017 Abschnitt N)', () => {
+  it('nimmt WebM und MP4 nur mit einer Dauer von 1 bis 120 Sekunden an - Foto und PDF ohne', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const vorbereiten = (mime: string, dauer: number | null) =>
+      asUser(users.therapist, VORBEREITEN_MIT_DAUER, [
+        allgemein,
+        mime,
+        GROESSE,
+        SUMME,
+        'Sprachnachricht',
+        dauer,
+      ]);
+    for (const [mime, dauer] of [
+      ['audio/webm', 1],
+      ['audio/mp4', 120],
+      ['image/jpeg', null],
+      ['application/pdf', null],
+    ] as const) {
+      expect(await code(vorbereiten(mime, dauer))).toBeUndefined();
+    }
+    for (const [mime, dauer] of [
+      // Ohne Dauer, ohne Länge, über zwei Minuten (Punkt 83).
+      ['audio/webm', null],
+      ['audio/mp4', 0],
+      ['audio/webm', 121],
+      // Ein Foto und ein PDF haben keine Dauer.
+      ['image/jpeg', 5],
+      ['application/pdf', 5],
+      // Nur WebM und MP4, kein Video (Punkt 84) - mit Dauer und ohne.
+      ['audio/ogg', 5],
+      ['audio/ogg', null],
+      ['audio/mpeg', 5],
+      ['video/webm', 5],
+      ['video/webm', null],
+    ] as const) {
+      expect(await code(vorbereiten(mime, dauer))).toBe('22023');
+    }
+    // Ohne den neuen Parameter wie bisher: Foto und PDF ja, Ton nicht.
+    expect(
+      await code(
+        asUser(users.therapist, VORBEREITEN, [
+          allgemein,
+          'application/pdf',
+          GROESSE,
+          SUMME,
+          'P.pdf',
+        ]),
+      ),
+    ).toBeUndefined();
+    expect(
+      await code(
+        asUser(users.therapist, VORBEREITEN, [allgemein, 'audio/webm', GROESSE, SUMME, 'Ton']),
+      ),
+    ).toBe('22023');
+  });
+
+  it('sendet Sprachnachrichten auch ohne Text und zeigt Art, Dauer und Größe allen, die lesen', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const webm = await sprachnachricht(users.therapist, allgemein, 42);
+    const mp4 = await sprachnachricht(users.therapist, allgemein, 7, 'audio/mp4');
+    const id = await senden(users.therapist, allgemein, '', {
+      anhaenge: [webm.attachment_id, mp4.attachment_id],
+    });
+
+    for (const konto of [users.therapist, users.office, users.ownerTherapist]) {
+      const nachricht = (await nachrichten(konto, allgemein)).find((n) => n.id === id)!;
+      expect(nachricht.body).toBe('');
+      expect(nachricht.attachments).toEqual([
+        {
+          id: webm.attachment_id,
+          name: 'Sprachnachricht 18.10., 14:05',
+          mime_type: 'audio/webm',
+          byte_size: GROESSE,
+          verified: false,
+          duration_seconds: 42,
+        },
+        {
+          id: mp4.attachment_id,
+          name: 'Sprachnachricht 18.10., 14:05',
+          mime_type: 'audio/mp4',
+          byte_size: GROESSE,
+          verified: false,
+          duration_seconds: 7,
+        },
+      ]);
+    }
+    const { rows: dateien } = await asUser<{ id: string; duration_seconds: number | null }>(
+      users.office,
+      DATEIEN,
+      [allgemein],
+    );
+    expect(dateien.find((d) => d.id === webm.attachment_id)?.duration_seconds).toBe(42);
+
+    // Abspielen heißt öffnen: dieselbe einmalige Freigabe wie jeder Anhang (Punkt 86).
+    const { rows } = await asUserCommitted<{ object_key: string; mime_type: string }>(
+      users.office,
+      VERWEIS,
+      [webm.attachment_id],
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({ object_key: webm.object_key, mime_type: 'audio/webm' }),
+    ]);
+    expect(await lesen(users.teamLead, webm.object_key)).toBe(0);
+    expect(await lesen(users.office, webm.object_key)).toBe(1);
+    expect(await lesen(users.office, webm.object_key)).toBe(0);
+  });
+
+  it('hält die Dauer fest wie alles, was eine Datei ist (ADR-017 Punkt 8)', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const ton = await sprachnachricht(users.therapist, allgemein, 42);
+    const foto = await anhang(users.therapist, allgemein);
+    for (const [sql, params] of [
+      [
+        `update public.team_message_attachments set duration_seconds = 5 where id = $1`,
+        [ton.attachment_id],
+      ],
+      [
+        `update public.team_message_attachments set mime_type = 'audio/mp4' where id = $1`,
+        [ton.attachment_id],
+      ],
+      [
+        `update public.team_message_attachments set duration_seconds = 5 where id = $1`,
+        [foto.attachment_id],
+      ],
+    ] as const) {
+      expect(await code(asPostgres(sql, [...params]))).toBe('42501');
+    }
+    // Auch am Wächter vorbei hält die Tabelle: Ton nur mit Dauer, Foto ohne.
+    await asPostgres(
+      'alter table public.team_message_attachments disable trigger team_message_attachments_guard',
+    );
+    try {
+      for (const [sql, params] of [
+        [
+          `update public.team_message_attachments set duration_seconds = null where id = $1`,
+          [ton.attachment_id],
+        ],
+        [
+          `update public.team_message_attachments set duration_seconds = 121 where id = $1`,
+          [ton.attachment_id],
+        ],
+        [
+          `update public.team_message_attachments set duration_seconds = 5 where id = $1`,
+          [foto.attachment_id],
+        ],
+      ] as const) {
+        expect(await code(asPostgres(sql, [...params]))).toBe('23514');
+      }
+    } finally {
+      await asPostgres(
+        'alter table public.team_message_attachments enable trigger team_message_attachments_guard',
+      );
+    }
+  });
+
+  it('prüft eine Sprachnachricht mit Metadatenergebnis wie ein Bild; ein Befund verwirft (Punkte 49 und 84)', async () => {
+    await schalter(true);
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const ergebnis = async (id: string, metadaten: boolean | null) =>
+      (
+        await asServiceRole<{ r: string }>(
+          'select public.record_team_attachment_verification($1::uuid, true, true, $2) as r',
+          [id, metadaten],
+        )
+      ).rows[0]!.r;
+    const ton = await sprachnachricht(users.therapist, allgemein, 30, 'audio/mp4');
+    expect(await code(ergebnis(ton.attachment_id, null))).toBe('22023');
+    expect(await ergebnis(ton.attachment_id, true)).toBe('passed');
+    const id = await senden(users.therapist, allgemein, '', { anhaenge: [ton.attachment_id] });
+    expect(
+      (await nachrichten(users.office, allgemein)).find((n) => n.id === id)?.attachments,
+    ).toEqual([expect.objectContaining({ id: ton.attachment_id, verified: true })]);
+
+    const befund = await sprachnachricht(users.therapist, allgemein, 30);
+    expect(await ergebnis(befund.attachment_id, false)).toBe('rejected');
+    expect(
+      await anzahl('select count(*) n from public.team_message_attachments where id = $1', [
+        befund.attachment_id,
+      ]),
+    ).toBe(0);
+    expect(await auftraege()).toEqual([befund.object_key]);
+  });
+
+  it('nimmt WebM und MP4 auch am Bucket an - und nur dort, nicht in der Akte', async () => {
+    const { rows } = await asPostgres<{ id: string; allowed_mime_types: string[] }>(
+      `select id, allowed_mime_types from storage.buckets
+        where id in ('teamchat', 'patientenakte') order by id`,
+    );
+    expect(rows.map((r) => [r.id, [...r.allowed_mime_types].sort()])).toEqual([
+      ['patientenakte', ['application/pdf', 'image/jpeg', 'image/png']],
+      ['teamchat', ['application/pdf', 'audio/mp4', 'audio/webm', 'image/jpeg', 'image/png']],
+    ]);
   });
 });

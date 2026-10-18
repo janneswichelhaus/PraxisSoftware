@@ -6720,3 +6720,15 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 **Anker.** `app.team_message_body`.
 
 **Änderungspfad.** Text immer Pflicht: den zweiten Fall in `app.team_message_body` streichen · Aufwand `klein`.
+
+### ANN-655 — Teamchat: Sprachnachricht mit Dauer vom Gerät, eigene Datenschutzprüfung
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Eine Sprachnachricht heißt „Sprachnachricht TT.MM., hh:mm“ wie ein Foto aus der Kamera der App. Ihre Dauer misst das Gerät in ganzen Sekunden (1 bis 120); sie dient nur der Anzeige, der Server prüft nur die Grenzen. Die Datenschutzprüfung vor dem Go-live nimmt Sprachnachrichten als eigene Verarbeitung auf: Stimme ist ein Datum über Beschäftigte (§20) - freiwillig neben Text, ohne Auswertung, mit der Frist der Nachricht.
+
+**Begründung.** ADR-017 Punkte 84 und 87 (Fassung 9). Die Dauer am Server aus dem Container zu lesen hieße einen Zeitparser in der Edge Function; eine falsche Dauer schadet nur der Anzeige.
+
+**Anker.** `app.team_voice_max_seconds()` und `team_message_attachments.duration_seconds` (Migration TEAM-004).
+
+**Änderungspfad.** Die Dauer am Server aus dem Container lesen (`video.ts`) · Aufwand `mittel`.

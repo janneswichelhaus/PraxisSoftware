@@ -5,7 +5,7 @@ import { CHROMIUM_PNG, basis, jpegVomHandy } from '../../../src/features/files/t
 import { erstelleHandler } from './handler';
 import type { Instanz } from './instanz';
 import { sha256 } from './pruefung';
-import { bereinigeVideo } from '../../../src/features/platform/videometadaten';
+import { bereinigeTon, bereinigeVideo } from '../../../src/features/platform/videometadaten';
 import { alleBytes } from '../../../src/features/files/metadaten';
 import { webmAusChromium } from '../../../src/features/platform/testvideos';
 import type { Ankuendigung, Protokolleintrag } from './typen';
@@ -284,11 +284,17 @@ describe('patient-file-verify', () => {
     }
   });
 
-  it('prueft einen Anhang im Teamchat wie eine Datei der Akte, mit eigenen Datenbankfunktionen (TEAM-003)', async () => {
+  it('prueft einen Anhang im Teamchat wie eine Datei der Akte, eine Sprachnachricht an ihrer Struktur (TEAM-003, TEAM-004)', async () => {
     const pdf = new TextEncoder().encode('%PDF-1.7\n1 0 obj<<>>endobj\n%%EOF');
+    const aufnahme = await bereinigeTon(
+      new Blob([webmAusChromium({ bild: false, ton: true }) as BlobPart], { type: 'audio/webm' }),
+    );
+    if (!aufnahme.ok) throw new Error(aufnahme.grund);
+    const ton = await alleBytes(aufnahme.ton);
     for (const [mime, bytes, erwartet] of [
       ['image/jpeg', BILD, { content_type_ok: true, checksum_ok: true, metadata_ok: true }],
       ['application/pdf', pdf, { content_type_ok: true, checksum_ok: true, metadata_ok: null }],
+      ['audio/webm', ton, { content_type_ok: true, checksum_ok: true, metadata_ok: true }],
     ] as const) {
       const i = instanz({
         ankuendigung: vi.fn(async () => ({

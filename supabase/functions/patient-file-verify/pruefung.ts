@@ -25,7 +25,7 @@
  */
 
 import type { Ankuendigung, Pruefergebnis } from './typen.ts';
-import { pruefeVideo } from './video.ts';
+import { pruefeTon, pruefeVideo } from './video.ts';
 
 const SIGNATUREN: Record<string, readonly number[]> = {
   'application/pdf': [0x25, 0x50, 0x44, 0x46, 0x2d],
@@ -247,5 +247,29 @@ export async function pruefeAnhang(
     checksum_ok,
     metadata_ok: video.lesbar && video.ohneAngaben,
     no_audio_ok: video.lesbar && video.ohneTon,
+  };
+}
+
+/**
+ * Die Prüfung eines Anhangs im Teamchat (TEAM-003, TEAM-004; ADR-017 Punkte
+ * 49, 73 und 84): ein Foto oder PDF wie eine Datei der Akte (`pruefeInhalt`),
+ * eine Sprachnachricht an ihrer ganzen Struktur - nur Tonspuren, ohne Angaben
+ * im Kopf (`video.ts`). Ton geht nur diesen Weg: Akte, Belege und Räder
+ * kennen ihn nicht.
+ */
+export async function pruefeTeamanhang(
+  bytes: Uint8Array,
+  ankuendigung: Pick<Ankuendigung, 'mime_type' | 'byte_size' | 'checksum_sha256'>,
+): Promise<Pruefergebnis> {
+  if (ankuendigung.mime_type !== 'audio/webm' && ankuendigung.mime_type !== 'audio/mp4') {
+    return pruefeInhalt(bytes, ankuendigung);
+  }
+  const ton = pruefeTon(bytes, ankuendigung.mime_type);
+  return {
+    content_type_ok: ton.lesbar && ton.nurTon,
+    checksum_ok:
+      bytes.length === ankuendigung.byte_size &&
+      (await sha256(bytes)) === ankuendigung.checksum_sha256,
+    metadata_ok: ton.lesbar && ton.ohneAngaben,
   };
 }

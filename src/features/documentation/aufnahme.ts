@@ -67,8 +67,9 @@ interface Seitenrichtlinie {
 
 /**
  * Lässt die Seite das Mikrofon überhaupt zu? Eine Permissions-Policy kann es
- * sperren - so die Test-Umgebung (`microphone=()`, ADR-017 Punkt 33). Dann
- * führte „Sprechen“ ins Leere, und die Seite bietet es nicht an. Gefragt wird
+ * sperren (`microphone=()`; die Test-Umgebung gibt es seit ADR-017 Fassung 9
+ * der eigenen Herkunft frei, Punkt 33). Dann führte „Sprechen“ ins Leere,
+ * und die Seite bietet es nicht an. Gefragt wird
  * `document.permissionsPolicy` oder das ältere `document.featurePolicy`; wo
  * der Browser keines von beiden kennt, bleibt es bei der Rückfrage des
  * Browsers und ihrer Meldung.

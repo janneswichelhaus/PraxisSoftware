@@ -1,11 +1,13 @@
 /**
- * Synthetische Videocontainer für die Tests von Gerät und Server (KOM-006).
+ * Synthetische Videocontainer für die Tests von Gerät und Server (KOM-006),
+ * ohne Bildspur auch als Sprachnachricht (TEAM-004).
  *
  * Steht in einer eigenen Datei, weil zwei Testdateien sie brauchen — die der
  * Bereinigung auf dem Gerät und die der Prüfung am Server. **Kein Bild,
- * keine Person:** nur die Struktur, die `MediaRecorder` in Chromium (WebM) und
- * Safari (MP4) schreibt, mit erkennbaren Kennwörtern, damit ein Test sie in
- * den Bytes suchen kann. Die Bilddaten sind Füllbytes.
+ * keine Person, keine Stimme:** nur die Struktur, die `MediaRecorder` in
+ * Chromium (WebM) und Safari (MP4) schreibt, mit erkennbaren Kennwörtern,
+ * damit ein Test sie in den Bytes suchen kann. Bild- und Tondaten sind
+ * Füllbytes.
  */
 
 function bytes(...teile: (number[] | Uint8Array)[]): Uint8Array {
@@ -50,8 +52,10 @@ function el(id: number, inhalt: number[] | Uint8Array, breite?: number): number[
 const UNBEKANNT = [0x01, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
 
 export interface WebmOptionen {
-  /** Eine zweite Spur mit Ton (TrackType 2). */
+  /** Eine Spur mit Ton (TrackType 2). */
   ton?: boolean;
+  /** Die Bildspur (TrackType 1) - ohne sie eine Sprachnachricht. Vorgabe: ja. */
+  bild?: boolean;
   /** Ein Datum im Kopf (DateUTC). */
   datum?: boolean;
   /** Tags mit einem Titel am Ende - wie ein Schnittprogramm sie schreibt. */
@@ -92,7 +96,11 @@ export function webmAusChromium(optionen: WebmOptionen = {}): Uint8Array {
     [...el(0xd7, [2]), ...el(0x73c5, [2]), ...el(0x83, [2]), ...el(0x86, text('A_OPUS'))],
     8,
   );
-  const spuren = el(0x1654ae6b, [...bild, ...(optionen.ton ? ton : [])], 8);
+  const spuren = el(
+    0x1654ae6b,
+    [...(optionen.bild === false ? [] : bild), ...(optionen.ton ? ton : [])],
+    8,
+  );
   const cluster = [
     ...kennung(0x1f43b675),
     ...UNBEKANNT,
@@ -152,6 +160,8 @@ function hdlr(art: string): number[] {
 
 export interface Mp4Optionen {
   ton?: boolean;
+  /** Die Bildspur (`vide`) - ohne sie eine Sprachnachricht. Vorgabe: ja. */
+  bild?: boolean;
   /** `udta` mit Kennwort im `moov`, wie Kamera-Apps es schreiben. */
   udta?: boolean;
 }
@@ -165,7 +175,7 @@ export function mp4AusSafari(optionen: Mp4Optionen = {}): Uint8Array {
     ]);
   const moov = kasten('moov', [
     ...zeitkasten('mvhd', [0, 0, 0x03, 0xe8, ...new Array<number>(84).fill(0)]),
-    ...spur('vide'),
+    ...(optionen.bild === false ? [] : spur('vide')),
     ...(optionen.ton ? spur('soun') : []),
     ...(optionen.udta ? kasten('udta', kasten('\xa9day', text('Kennwort-Datum'))) : []),
   ]);

@@ -140,9 +140,10 @@ synthetischen Diktat, gleich was gesprochen wird. Der Cloud-Stack setzt dafür o
 (ungetrackt), trägt beide Zeilen dort ein. Vor „Sprechen" fragt die Seite den Gateway (`GET`), ob er
 das Diktat anbietet: Fehlt `AI_PROVIDER` oder `APP_ENVIRONMENT` (dann gilt die Produktion, und dort
 antwortet die Nachbildung nicht), steht „Sprechen" nicht da. Das Mikrofon braucht `localhost` oder
-HTTPS. Die Test-Umgebung sperrt es per Permissions-Policy (ADR-017 Punkt 33): Wo der Browser das meldet
-(Chromium, `document.featurePolicy`), bietet die Seite „Sprechen" dort nicht an; sonst meldet der erste
-Tipp „Kein Zugriff auf das Mikrofon", und „Festschreiben" bleibt Hauptknopf.
+HTTPS. Die Test-Umgebung gibt es seit TEAM-004 der eigenen Herkunft frei (`microphone=(self)`,
+ADR-017 Punkt 33, Fassung 9) - für Sprachnachrichten im Teamchat; „Sprechen" steht dort weiter nur,
+wenn der Gateway das Diktat anbietet. Sperrt eine Policy das Mikrofon und meldet der Browser das
+(Chromium, `document.featurePolicy`), bietet die Seite weder „Sprechen" noch die Sprachnachricht an.
 
 - Vor E2E-Läufen `reset` ohne `--reich`: Die Tests zählen auf den schlanken Seed. Port 54329 bleibt
   `pnpm test:db`; `TEST_DATABASE_URL` nie auf 54339 richten. Die Werte stehen in

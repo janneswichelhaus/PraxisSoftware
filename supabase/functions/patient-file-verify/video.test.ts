@@ -2,8 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import { alleBytes } from '../../../src/features/files/metadaten';
 import { enthaelt, mp4AusSafari, webmAusChromium } from '../../../src/features/platform/testvideos';
-import { bereinigeVideo } from '../../../src/features/platform/videometadaten';
-import { pruefeVideo } from './video';
+import { bereinigeTon, bereinigeVideo } from '../../../src/features/platform/videometadaten';
+import { pruefeInhalt, pruefeTeamanhang, sha256 } from './pruefung';
+import { pruefeTon, pruefeVideo } from './video';
 
 /**
  * Die Prüfung eines Videos am Server (KOM-006, ADR-017 Punkte 49, 63, 64),
@@ -80,5 +81,73 @@ describe('Video am Server (KOM-006)', () => {
       ok: false,
       grund: 'format',
     });
+  });
+});
+
+describe('Sprachnachricht am Server (TEAM-004, ADR-017 Punkt 84)', () => {
+  async function tonVomGeraet(daten: Uint8Array, typ: string): Promise<Uint8Array> {
+    const ergebnis = await bereinigeTon(new Blob([daten as BlobPart], { type: typ }));
+    if (!ergebnis.ok) throw new Error(ergebnis.grund);
+    return alleBytes(ergebnis.ton);
+  }
+
+  it('was das Gerät bereinigt hat, besteht - WebM und MP4', async () => {
+    for (const [daten, typ] of [
+      [webmAusChromium({ bild: false, ton: true }), 'audio/webm'],
+      [webmAusChromium({ bild: false, ton: true, datum: true, tags: true }), 'audio/webm'],
+      [mp4AusSafari({ bild: false, ton: true }), 'audio/mp4'],
+      [mp4AusSafari({ bild: false, ton: true, udta: true }), 'audio/mp4'],
+    ] as const) {
+      expect(pruefeTon(await tonVomGeraet(daten, typ), typ)).toEqual({
+        lesbar: true,
+        nurTon: true,
+        ohneAngaben: true,
+      });
+    }
+  });
+
+  it('unbereinigt fällt es auf; eine Bildspur ist ein Befund', () => {
+    expect(pruefeTon(webmAusChromium({ bild: false, ton: true }), 'audio/webm').ohneAngaben).toBe(
+      false,
+    );
+    expect(
+      pruefeTon(mp4AusSafari({ bild: false, ton: true, udta: true }), 'audio/mp4').ohneAngaben,
+    ).toBe(false);
+    expect(pruefeTon(webmAusChromium({ ton: true }), 'audio/webm').nurTon).toBe(false);
+    expect(pruefeTon(mp4AusSafari({ ton: true }), 'audio/mp4').nurTon).toBe(false);
+  });
+
+  it('ohne Tonspur, mit falschem Typ oder abgeschnitten: nicht lesbar', () => {
+    expect(pruefeTon(webmAusChromium(), 'audio/webm').lesbar).toBe(false);
+    expect(pruefeTon(webmAusChromium({ bild: false, ton: true }), 'audio/mp4').lesbar).toBe(false);
+    expect(pruefeTon(webmAusChromium({ bild: false, ton: true }), 'audio/ogg').lesbar).toBe(false);
+    expect(
+      pruefeTon(webmAusChromium({ bild: false, ton: true }).slice(0, 70), 'audio/webm').lesbar,
+    ).toBe(false);
+    // Ein Video bleibt bei seiner Regel: reiner Ton ist kein Video.
+    expect(pruefeVideo(webmAusChromium({ bild: false, ton: true }), 'video/webm').lesbar).toBe(
+      false,
+    );
+  });
+
+  it('der Teamchat prüft Ton an der Struktur - die Akte kennt keinen Ton', async () => {
+    const ton = await tonVomGeraet(webmAusChromium({ bild: false, ton: true }), 'audio/webm');
+    const ankuendigung = {
+      mime_type: 'audio/webm',
+      byte_size: ton.length,
+      checksum_sha256: await sha256(ton),
+    };
+    expect(await pruefeTeamanhang(ton, ankuendigung)).toEqual({
+      content_type_ok: true,
+      checksum_ok: true,
+      metadata_ok: true,
+    });
+    const roh = webmAusChromium({ bild: false, ton: true });
+    expect(
+      await pruefeTeamanhang(roh, { ...ankuendigung, checksum_sha256: await sha256(roh) }),
+    ).toEqual({ content_type_ok: true, checksum_ok: true, metadata_ok: false });
+    const mitBild = webmAusChromium({ ton: true });
+    expect((await pruefeTeamanhang(mitBild, ankuendigung)).content_type_ok).toBe(false);
+    expect((await pruefeInhalt(ton, ankuendigung)).content_type_ok).toBe(false);
   });
 });
