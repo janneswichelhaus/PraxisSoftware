@@ -44,7 +44,8 @@ export const EINWILLIGUNGEN_ANKER = 'einwilligungen';
 
 /**
  * Die Bereiche der Akte in der Reihenfolge des Arbeitstags - genau vier
- * (AKTE-007, Jannes 2026-10-03).
+ * (AKTE-007, Jannes 2026-10-03); mit der Fähigkeit „Ernährungsberatung“
+ * fünf (ANN-620, Jannes 2026-10-18).
  *
  * Termine zuerst, weil dort gearbeitet wird. Stammdaten zuletzt, weil sie sich
  * am seltensten ändern - sie sind die Auskunft, die man einmal bei der

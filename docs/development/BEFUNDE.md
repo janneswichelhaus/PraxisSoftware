@@ -672,10 +672,12 @@ Marke vorsieht.
 | Datum   | 2026-10-18 |
 | Bereich | Trainingsverhältnis, Betroffenenrechte (`/datenschutz/betroffenenrechte`) |
 | Quelle  | Zweitreview ERN-EPIC-001 |
-| Status  | offen: Frage an Jannes im Bericht zu ERN-EPIC-001 |
+| Status  | eingeplant: kleiner Auftrag (Pfad A) vor M3, Entscheidung Jannes 2026-10-18 |
 | Berührt | `public.export_patient_record` (nur Akte), `public.platform_export` |
 
 **Beobachtung.** Die Auskunft der Praxis geht nur von der Akte aus. Für eine Person, die nur trainiert, gibt es keine vollständige Kopie; der Export der Plattform trägt die Schlüsselliste der Plattform (ohne Notizen der Beratung, ohne Verlauf der Einwilligung) und fehlt ohne Zugang ganz. Seit ERN-EPIC-001 betrifft das auch Gesundheitsdaten nach Art. 9 (ADR-027 Punkt 6: „Auskunft und Export enthalten alles“). **Erwartet.** Eine Auskunft je Trainingsverhältnis für owner, wie `export_patient_record`, mit Protokolleintrag nach dem Katalog. Pfad A.
+
+**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: ein kleiner Pfad-A-Auftrag vor M3.
 
 ### BEF-183 — Reiterleiste: der letzte Reiter liegt bei 375 px hinter einem Wisch
 
@@ -684,10 +686,12 @@ Marke vorsieht.
 | Datum   | 2026-10-18 |
 | Bereich | Akte, Trainingsverhältnis (`src/components/ui/Reiterleiste.tsx`) |
 | Quelle  | Praxis-Review ERN-EPIC-001 |
-| Status  | offen: Vorschlag, gemeinsamer Baustein |
+| Status  | eingeplant: Entscheidung Jannes 2026-10-18 (mit ANN-620) |
 | Berührt | `Reiterleiste.tsx` (Zeichen „›“ mit `aria-hidden`), Ablauftests der Akte |
 
 **Beobachtung.** Mit fünf Reitern (owner, ERN-EPIC-001) liegen „Ernährung“ und „Stammdaten“ bei 375 px rechts außerhalb; das „›“ ist nur Zeichen. Mit Handschuh trifft der Wisch oft den Reiter daneben; Playwright scrollt von selbst und zählt den Wisch nicht. **Erwartet.** „›“ als Knopf, der zum nächsten verdeckten Reiter schiebt; Ablauftests prüfen vor dem Tippen, ob der Reiter sichtbar ist.
+
+**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: fünf Reiter bestätigt, die Leiste wird verbessert.
 
 ### BEF-184 — Einwilligung „Ernährungsberatung“: das unterschriebene Blatt bleibt außerhalb der Anwendung
 

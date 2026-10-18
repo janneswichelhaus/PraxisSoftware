@@ -6473,7 +6473,7 @@ Praxisprozess · offen · 2026-10-17 · — · — · Wiedervorlage: —
 
 ### ANN-618 — Lesart der Zielwertregeln
 
-Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · erledigt · Wiedervorlage: —
 
 **Annahme.** „Im Training“ (Eiweiß 1,6 g/kg) heißt: Das Profil hängt an einem Trainingsverhältnis; es gilt die höchste zutreffende Stufe. Fett wird mit genau 30 % gerechnet. Ohne Geschlecht zählt das Mittel der gerundeten Varianten. Die Zeit bis zum Ziel rechnet mit 7000 kcal je kg, nur wenn das Energieziel in Richtung Ziel weist. Gerundet wird auf kcal, g, 10 ml und 0,1 kg.
 
@@ -6483,9 +6483,11 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Eine Zahl oder Regel in dieser Funktion und ihr Test · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #271).
+
 ### ANN-619 — Einwilligung am Profil, Frist und Zusammenführen
 
-Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** Die Einwilligung „Ernährungsberatung“ hängt am Profil und entsteht mit ihm in einem Vorgang (Tag vom Papier); nach einem Widerruf schreibt niemand mehr außer Einwilligung und Ende. Die drei Jahre laufen ab `ended_on`; Einwilligung und Gewicht fallen mit dem Profil, die Teillöschung eines Trainingsverhältnisses unter Belegfrist nimmt es mit; ein Legal Hold an der Akte hält. Beim Zusammenführen zieht das Profil ohne Zähler im Vermerk mit; ein zweites laufendes der bleibenden Person sperrt.
 
@@ -6495,9 +6497,11 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Andere Frist: `retention_classes`; Einwilligung je Verhältnis: eigene Migration mit Datenumzug · Aufwand `mittel`.
 
+**Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #271). Bleibt im Prüfpaket.
+
 ### ANN-620 — Ernährung als eigener Reiter an Akte und Trainingsverhältnis
 
-Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · erledigt · Wiedervorlage: —
 
 **Annahme.** Wer die Fähigkeit „Ernährungsberatung“ trägt, sieht an Akte und Trainingsverhältnis einen Reiter „Ernährung“ vor den Stammdaten; für alle anderen Rollen bleibt es bei vier Reitern. Formulare (Anlegen, Ändern, Zielwerte) stehen neben dem Rahmen.
 
@@ -6507,9 +6511,11 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Abschnitt statt Reiter: zwei Stellen und die Routen · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-18).** Bestätigt: fünf Reiter mit der Fähigkeit als Ausnahme zu AKTE-007; die Reiterleiste wird mit BEF-183 verbessert.
+
 ### ANN-621 — Gewicht und Beratung auf der Plattform
 
-Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Person trägt ihr Gewicht für heute ein; je Tag gilt ein Gewicht, der jüngste Eintrag ersetzt den des Tages, auch einen der Beratung, und nennt, wer eingetragen hat. Die Plattform zeigt nur die laufende Beratung; nach ihrem Ende verschwindet sie dort, bleibt im Export. Die Einsicht der Praxis zeigt die Ernährung nicht.
 
@@ -6519,9 +6525,11 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 **Änderungspfad.** Mehrere Gewichte je Tag: Constraint und diese Funktion · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #271).
+
 ### ANN-622 — Ernährungsberatung als Position, noch ohne Erfassung am Termin
 
-Recht · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Steuerberatung (G13, B4)
+Recht · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · Prüfpaket · Wiedervorlage: Steuerberatung (G13, B4)
 
 **Annahme.** Die Ernährungsberatung ist eine eigene Positionsart ohne Heilmittel, je Bereich eine Position; 19 % sind im Editor voreingestellt, nicht erzwungen. Als Leistung an einem Termin erfasst wird sie noch nicht; die Position steht bereit.
 
@@ -6530,3 +6538,5 @@ Recht · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Steuerberatu
 **Anker.** Constraint `service_catalog_items_nutrition_counselling`.
 
 **Änderungspfad.** Kennzeichen erzwingen: eine Prüffunktion wie `app.aftercare_tax_allowed`; Erfassung: eigener Loop an `record_billable_services` · Aufwand `mittel`.
+
+**Abnahme (Jannes, 2026-10-18).** Bestätigt: 19 % voreingestellt bis G13, danach eine Prüffunktion; abgerechnet wird über einen eigenen Terminanlass „Ernährungsberatung“ mit der Position am Termin (Auftrag nach ERN-EPIC-003). Bleibt im Prüfpaket.

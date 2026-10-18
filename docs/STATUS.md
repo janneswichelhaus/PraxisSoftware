@@ -33,7 +33,8 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-ERN-EPIC-002 und -003 (je `/feature-loop`), dann eine Politurrunde; BEF-146, -147, -148, -150.
+ERN-EPIC-002 und -003 (je `/feature-loop`), dann Beratung abrechnen (ANN-622), dann eine Politurrunde;
+BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Bei Jannes
 
