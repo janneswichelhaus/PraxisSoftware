@@ -6487,7 +6487,7 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
-**Annahme.** Die Einwilligung „Ernährungsberatung“ hängt am Profil und entsteht mit ihm in einem Vorgang (Tag vom Papier); nach einem Widerruf schreibt niemand mehr außer Einwilligung und Ende. Die drei Jahre laufen ab `ended_on`; Einwilligung und Gewicht fallen mit dem Profil; ein Legal Hold an der Akte hält. Beim Zusammenführen zieht das Profil ohne Zähler im Vermerk mit, zwei laufende sperren.
+**Annahme.** Die Einwilligung „Ernährungsberatung“ hängt am Profil und entsteht mit ihm in einem Vorgang (Tag vom Papier); nach einem Widerruf schreibt niemand mehr außer Einwilligung und Ende. Die drei Jahre laufen ab `ended_on`; Einwilligung und Gewicht fallen mit dem Profil, die Teillöschung eines Trainingsverhältnisses unter Belegfrist nimmt es mit; ein Legal Hold an der Akte hält. Beim Zusammenführen zieht das Profil ohne Zähler im Vermerk mit; ein zweites laufendes der bleibenden Person sperrt.
 
 **Begründung.** ADR-027 Punkte 3, 4 und 6, ADR-008 Fassung 6; Art. 7 Abs. 1 und 3 DSGVO (Nachweis, Widerruf). Der Vermerk des Zusammenführens ist für Rollen ohne die Fähigkeit lesbar.
 

@@ -314,12 +314,12 @@ as $$
 declare
   v_profil public.nutrition_profiles%rowtype;
 begin
+  -- Erst der Zugang, dann die Eingabe. Einschalten braucht die Einwilligung;
+  -- Abschalten nimmt nichts weg und geht immer (ADR-027 Punkt 2).
+  v_profil := app.platform_nutrition_for_writing(p_access_id, coalesce(p_enabled, false));
   if p_enabled is null then
     raise exception 'enabled is required' using errcode = '22023';
   end if;
-  -- Einschalten braucht die Einwilligung; Abschalten nimmt nichts weg und
-  -- geht immer (ADR-027 Punkt 2).
-  v_profil := app.platform_nutrition_for_writing(p_access_id, p_enabled);
   if v_profil.diary_enabled is distinct from p_enabled then
     update public.nutrition_profiles
        set diary_enabled = p_enabled,
@@ -360,15 +360,17 @@ declare
   v_zeit   timestamptz;
   v_id     uuid;
 begin
+  -- Erst der Zugang, dann die Eingabe. Erteilen mit dem Recht nutrition in
+  -- der Lesezeit; widerrufen zusätzlich die Person selbst nach der Lesefrist
+  -- (ANN-261). Ohne Angabe gilt die schwächste Bedingung, die des Widerrufs.
+  if not ((app.platform_access_allows(p_access_id, 'nutrition')
+           and (not coalesce(p_grant, false) or app.platform_access_writable(p_access_id)))
+          or (not coalesce(p_grant, false)
+              and app.platform_own_access_after_reading(p_access_id))) then
+    raise exception 'platform access not allowed' using errcode = '42501';
+  end if;
   if p_grant is null then
     raise exception 'grant or withdraw' using errcode = '22023';
-  end if;
-  -- Erteilen mit dem Recht nutrition in der Lesezeit; widerrufen zusätzlich
-  -- die Person selbst nach der Lesefrist (ANN-261).
-  if not ((app.platform_access_allows(p_access_id, 'nutrition')
-           and (not p_grant or app.platform_access_writable(p_access_id)))
-          or (not p_grant and app.platform_own_access_after_reading(p_access_id))) then
-    raise exception 'platform access not allowed' using errcode = '42501';
   end if;
   if p_wording_version is distinct from app.platform_consent_wording_version() then
     raise exception 'wording outdated' using errcode = '22023';

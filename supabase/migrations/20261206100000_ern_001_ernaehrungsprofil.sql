@@ -1216,6 +1216,11 @@ begin
       raise exception 'withdrawal before consent' using errcode = '22023';
     end if;
   end if;
+  -- Der Nachweis bleibt zeitlich geordnet (Art. 7 Abs. 1 DSGVO): Eine erneut
+  -- erteilte Einwilligung liegt nicht vor dem Widerruf, den sie aufhebt.
+  if p_record_kind = 'consent_granted' and p_occurred_on < v_letzte.occurred_on then
+    raise exception 'consent before withdrawal' using errcode = '22023';
+  end if;
 
   -- Der jüngste Vermerk, auch neben einem gleichzeitigen (wie POR-016).
   select greatest(now(), max(r.recorded_at) + interval '1 microsecond') into v_zeit
@@ -1274,8 +1279,9 @@ comment on function public.end_nutrition_profile(uuid, date) is
 --
 -- Drei Jahre nach dem Ende des Profils, endgültig, mit Eintrag im
 -- Löschjournal; Einwilligung und Gewicht fallen mit (cascade). Fällt das
--- Verhältnis früher, fällt das Profil mit ihm (cascade). Ein Legal Hold an
--- der Akte hält; am Trainingsverhältnis gibt es keinen (wie dort).
+-- Verhältnis früher, fällt das Profil mit ihm: ganz (cascade) oder mit der
+-- Teillöschung des Trainingsverhältnisses unter Belegfrist (unten). Ein Legal
+-- Hold an der Akte hält; am Trainingsverhältnis gibt es keinen (wie dort).
 -- -----------------------------------------------------------------------------
 create function app.delete_due_nutrition_profiles(p_org uuid, p_time_zone text, p_run uuid)
 returns integer
@@ -1316,6 +1322,113 @@ revoke all on function app.delete_due_nutrition_profiles(uuid, text, uuid) from 
 
 comment on function app.delete_due_nutrition_profiles(uuid, text, uuid) is
   'ERN-001 (ADR-008 Fassung 6, ANN-619): löscht Ernährungsprofile drei Jahre nach ihrem Ende endgültig, mit Einwilligung und Gewicht und mit Eintrag im Löschjournal. Ein Legal Hold an der Akte hält. Aufgerufen aus public.apply_retention().';
+
+-- Die Teillöschung eines Trainingsverhältnisses unter Belegfrist nimmt die
+-- Ernährungsberatung mit: Sonst bliebe ein nie beendetes Profil bis zum Ende
+-- der Belegfrist stehen (Zweitreview ERN-EPIC-001). Rumpf sonst unverändert
+-- aus 20261020120000_kom_004_messages_in_record.sql.
+
+CREATE OR REPLACE FUNCTION app.reduce_training_relationship(p_relationship_id uuid, p_run_id uuid, p_due_at timestamp with time zone)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_count integer := 0;
+  v_n     integer;
+begin
+  -- TRN-009: die Protokolle zuerst - auch die am abgerechneten Termin. Der
+  -- Termin bleibt `documented` als Tatsache stehen; was in der Einheit
+  -- geschah, traegt die Belegfrist nicht (ANN-183).
+  with geloescht as (
+    delete from public.training_protocols p
+     where p.training_relationship_id = p_relationship_id
+    returning p.id, p.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run_id, 'training_protocols', g.id, 'trainingsverhaeltnis', p_due_at
+  from geloescht g;
+  get diagnostics v_n = row_count;
+  v_count := v_count + v_n;
+
+  -- KOM-004: Rueckfragen ueber die Plattform. Sie tragen keine Belegfrist
+  -- und fallen nach den drei Jahren aus ADR-021 Punkt 4; die Eintraege mit
+  -- ihnen (cascade).
+  with geloescht as (
+    delete from public.platform_messages m
+     where m.training_relationship_id = p_relationship_id
+    returning m.id, m.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run_id, 'platform_messages', g.id, 'trainingsverhaeltnis', p_due_at
+  from geloescht g;
+  get diagnostics v_n = row_count;
+  v_count := v_count + v_n;
+
+  -- Kontakt, Anschrift, Geburtsdatum. Der Schluessel ist das Verhaeltnis;
+  -- er steht als Kennung im Journal.
+  with geloescht as (
+    delete from public.training_contact_details c
+     where c.training_relationship_id = p_relationship_id
+    returning c.training_relationship_id as id, c.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run_id, 'training_contact_details', g.id, 'trainingsverhaeltnis', p_due_at
+  from geloescht g;
+  get diagnostics v_n = row_count;
+  v_count := v_count + v_n;
+
+  -- Termine ohne Leistung: kein Beleg, nichts, was die Frist traegt.
+  with geloescht as (
+    delete from public.appointments a
+     where a.training_relationship_id = p_relationship_id
+       and not exists (select 1 from public.billable_services b where b.appointment_id = a.id)
+    returning a.id, a.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run_id, 'appointments', g.id, 'trainingsverhaeltnis', p_due_at
+  from geloescht g;
+  get diagnostics v_n = row_count;
+  v_count := v_count + v_n;
+
+  -- Vereinbarungen, an denen kein verbliebener Termin mehr haengt.
+  with geloescht as (
+    delete from public.training_bases tb
+     where tb.training_relationship_id = p_relationship_id
+       and not exists (select 1 from public.appointments a where a.training_basis_id = tb.id)
+    returning tb.id, tb.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run_id, 'training_bases', g.id, 'trainingsverhaeltnis', p_due_at
+  from geloescht g;
+  get diagnostics v_n = row_count;
+  v_count := v_count + v_n;
+
+  -- ERN-001: die Ernaehrungsberatung am Verhaeltnis. Sie traegt keine
+  -- Belegfrist; faellt das Verhaeltnis frueher als ihre eigene Frist, faellt
+  -- sie mit ihm (ADR-027 Punkt 6) - auch ein nie beendetes Profil.
+  -- Einwilligung und Gewicht mit ihm (cascade).
+  with geloescht as (
+    delete from public.nutrition_profiles n
+     where n.training_relationship_id = p_relationship_id
+    returning n.id, n.organization_id
+  )
+  insert into public.deletion_journal
+    (organization_id, run_id, target_table, target_id, retention_class, due_at)
+  select g.organization_id, p_run_id, 'nutrition_profiles', g.id, 'trainingsverhaeltnis', p_due_at
+  from geloescht g;
+  get diagnostics v_n = row_count;
+  v_count := v_count + v_n;
+
+  return v_count;
+end;
+$function$;
 
 -- Der Lauf ruft die Ernährungsberatung mit auf - sonst unverändert (Stand TEAM-001).
 
@@ -2954,6 +3067,15 @@ begin
     and p.organization_id = v_org
   order by p.id
   for update;
+  -- ERN-001: dieselbe Sperre je Person wie beim Anlegen eines
+  -- Ernaehrungsprofils - zwischen Plan und Umzug entsteht so keine zweite
+  -- laufende Beratung der bleibenden Person (ADR-027 Punkt 1).
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('nutrition:' || p.person_id::text, 0))
+  from public.patients p
+  where p.id in (p_source_patient_id, p_target_patient_id)
+    and p.organization_id = v_org
+  order by p.person_id;
 
   select * into v_quelle from public.patients p
   where p.id = p_source_patient_id and p.organization_id = v_org;
@@ -3382,13 +3504,21 @@ begin
   end if;
 
   -- ERN-001: Zwei laufende Ernaehrungsprofile waeren zwei Beratungen derselben
-  -- Person (ADR-027 Punkt 1); eines muss vorher beendet sein. Zusammenfuehren
+  -- Person (ADR-027 Punkt 1); eines muss vorher beendet sein. Das Profil der
+  -- Dublette zieht zur bleibenden Person - gezaehlt wird deshalb jedes ihrer
+  -- laufenden Profile, an der Akte wie am Trainingsverhaeltnis. Zusammenfuehren
   -- darf allein owner, der die Faehigkeit traegt.
   if exists (
-    select 1
-    from public.nutrition_profiles q
-    join public.nutrition_profiles z on z.patient_id = p_target and z.ended_on is null
+    select 1 from public.nutrition_profiles q
     where q.patient_id = p_source and q.ended_on is null
+  ) and exists (
+    select 1
+    from public.nutrition_profiles z
+    left join public.patients pa on pa.id = z.patient_id
+    left join public.training_relationships t on t.id = z.training_relationship_id
+    where z.organization_id = p_organization_id and z.ended_on is null
+      and z.patient_id is distinct from p_source
+      and coalesce(pa.person_id, t.person_id) = v_ziel.person_id
   ) then
     v_sperren := v_sperren || 'nutrition_profile_overlap'::text;
   end if;

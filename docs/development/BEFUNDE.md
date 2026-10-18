@@ -664,3 +664,15 @@ Marke vorsieht.
 | Berührt | `public.withdraw_time_account_entry` und `can_withdraw` in `list_time_account` (`20261126100000_zk_001_zeitkonto.sql`), `TimeAccountPage.tsx` |
 
 **Beobachtung.** Zurücknehmen geht beim Freizeitausgleich nur vor seinem Tag (`on_date > heute`); wer heute doch bleibt, kann den Eintrag für heute nicht zurücknehmen. **Erwartet.** Zurücknehmen auch am Tag selbst, solange die freie Zeit noch nicht begonnen hat; die Abweichung im Kalender fällt mit dem Eintrag. Pfad A: Prüfung am Server, Negativtests.
+
+### BEF-182 — Training: keine Auskunft nach Art. 15 auf Seiten der Praxis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-18 |
+| Bereich | Trainingsverhältnis, Betroffenenrechte (`/datenschutz/betroffenenrechte`) |
+| Quelle  | Zweitreview ERN-EPIC-001 |
+| Status  | offen: Frage an Jannes im Bericht zu ERN-EPIC-001 |
+| Berührt | `public.export_patient_record` (nur Akte), `public.platform_export` |
+
+**Beobachtung.** Die Auskunft der Praxis geht nur von der Akte aus. Für eine Person, die nur trainiert, gibt es keine vollständige Kopie; der Export der Plattform trägt die Schlüsselliste der Plattform (ohne Notizen der Beratung, ohne Verlauf der Einwilligung) und fehlt ohne Zugang ganz. Seit ERN-EPIC-001 betrifft das auch Gesundheitsdaten nach Art. 9 (ADR-027 Punkt 6: „Auskunft und Export enthalten alles“). **Erwartet.** Eine Auskunft je Trainingsverhältnis für owner, wie `export_patient_record`, mit Protokolleintrag nach dem Katalog. Pfad A.

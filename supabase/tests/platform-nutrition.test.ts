@@ -150,6 +150,9 @@ describe('Ernährung auf der Plattform: Lesen und Grenzen (ERN-002)', () => {
       [ZIELGEWICHT, [paula, 75]],
       [TAGEBUCH, [paula, true]],
       [EINWILLIGUNG, [paula, false, FASSUNG]],
+      // Erst das Recht, dann die Eingabe: auch leer kein Hinweis aufs Profil.
+      [TAGEBUCH, [paula, null]],
+      [EINWILLIGUNG, [paula, null, FASSUNG]],
     ] as const) {
       expect(await fehler(asUser(users.plattformPaula, sql, [...werte]))).toBe('42501');
     }

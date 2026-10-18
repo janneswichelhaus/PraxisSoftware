@@ -97,6 +97,8 @@ export function ernaehrungsfehler(meldung: string | undefined): string {
   if (m.includes('relationship has ended')) return 'Der Vertrag ist beendet.';
   if (m.includes('has ended')) return 'Die Beratung ist beendet; das Profil bleibt, wie es ist.';
   if (m.includes('future')) return 'Das Datum liegt in der Zukunft.';
+  if (m.includes('withdrawal before consent') || m.includes('consent before withdrawal'))
+    return 'Das Datum liegt vor dem letzten Vermerk zur Einwilligung.';
   if (m.includes('before')) return 'Das Datum liegt vor dem Beginn der Beratung.';
   if (m.includes('already granted')) return 'Die Einwilligung ist schon vermerkt.';
   if (m.includes('no consent to withdraw')) return 'Es gibt keine Einwilligung zu widerrufen.';

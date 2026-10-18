@@ -464,6 +464,13 @@ describe('Ernährungsprofil: Anlegen, Einwilligung, Gewicht (ERN-001)', () => {
         asUser(users.ownerTherapist, EINWILLIGUNG, [id, 'consent_withdrawn', await heute()]),
       ),
     ).toBe('23514');
+    // Die erneute Einwilligung liegt nicht vor dem Widerruf, den sie aufhebt
+    // (Art. 7 Abs. 1 DSGVO, Zweitreview ERN-EPIC-001).
+    expect(
+      await fehler(
+        asUser(users.ownerTherapist, EINWILLIGUNG, [id, 'consent_granted', await heute(1)]),
+      ),
+    ).toBe('22023');
     await asUserCommitted(users.ownerTherapist, EINWILLIGUNG, [
       id,
       'consent_granted',
@@ -614,6 +621,49 @@ describe('Ernährungsprofil: Frist, Auskunft, Zusammenführen (ERN-001)', () => 
     ).toBe(0);
   });
 
+  it('die Teillöschung des Trainingsverhältnisses unter Belegfrist nimmt auch ein laufendes Profil', async () => {
+    // Ein nie beendetes Profil hat keinen eigenen Fristanker; es fällt mit
+    // dem Verhältnis, auch wenn dessen Belege bleiben (ADR-027 Punkt 6).
+    const id = await anlegen('training', trainingRelationships.tina);
+    await asPostgres(
+      'select app.reduce_training_relationship($1::uuid, extensions.gen_random_uuid(), now())',
+      [trainingRelationships.tina],
+    );
+    for (const sql of [
+      'select count(*) as n from public.nutrition_profiles where id = $1',
+      'select count(*) as n from public.nutrition_consent_records where profile_id = $1',
+      'select count(*) as n from public.nutrition_weight_entries where profile_id = $1',
+    ]) {
+      expect(await anzahl(sql, [id])).toBe(0);
+    }
+    expect(
+      await anzahl(
+        `select count(*) as n from public.deletion_journal
+          where target_table = 'nutrition_profiles' and target_id = $1
+            and retention_class = 'trainingsverhaeltnis'`,
+        [id],
+      ),
+    ).toBe(1);
+    expect(
+      await anzahl('select count(*) as n from public.training_relationships where id = $1', [
+        trainingRelationships.tina,
+      ]),
+    ).toBe(1);
+
+    // Restore: die Zeile ist wieder da - die Wiederanwendung nimmt sie erneut.
+    await asPostgres(
+      `insert into public.nutrition_profiles (id, organization_id, relationship_kind,
+         relationship_id, training_relationship_id, started_on, height_cm, formula_sex,
+         activity_pal, goal, created_by)
+       values ($1, $2, 'training', $3, $3, current_date - 10, 175, 'female', 1.6, 'gain', $4)`,
+      [id, organizationId, trainingRelationships.tina, users.ownerTherapist],
+    );
+    await asPostgres('select public.reapply_deletion_journal()');
+    expect(
+      await anzahl('select count(*) as n from public.nutrition_profiles where id = $1', [id]),
+    ).toBe(0);
+  });
+
   it('steht vollständig in der Auskunft nach Art. 15 - nur das der Akte', async () => {
     const id = await anlegen('treatment', patients.erika, { notizen: 'Synthetische Notiz' });
     await anlegen('training', trainingRelationships.tina);
@@ -655,6 +705,16 @@ describe('Ernährungsprofil: Frist, Auskunft, Zusammenführen (ERN-001)', () => 
     expect(plan[0]!.plan.blockers).not.toContain('nutrition_profile_overlap');
     // Kein Zähler: Den Vermerk lesen auch Rollen ohne die Fähigkeit.
     expect(Object.keys(plan[0]!.plan.counts)).not.toContain('nutrition_profiles');
+
+    // Auch ein laufendes Profil am Trainingsverhältnis der bleibenden Person
+    // sperrt: Maxens Profil zöge zu ihr, und sie hätte zwei (Zweitreview).
+    await anlegen('training', trainingRelationships.erika);
+    const { rows: training } = await asUser<{ plan: { blockers: string[] } }>(
+      users.ownerTherapist,
+      'select public.preview_patient_merge($1::uuid, $2::uuid) as plan',
+      [patients.max, patients.erika],
+    );
+    expect(training[0]!.plan.blockers).toContain('nutrition_profile_overlap');
   });
 });
 
