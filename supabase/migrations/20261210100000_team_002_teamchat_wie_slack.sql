@@ -1654,11 +1654,9 @@ begin
   if v_m.id is null then
     raise exception 'team message not found' using errcode = 'P0002';
   end if;
-  -- Wer folgt, folgt ab der neuen Zeit.
+  -- Wer folgt, folgt ab der neuen Zeit. Den Lesestand zieht auch „Jetzt
+  -- senden“ nicht vor (ANN-640; Zweitreview TEAM-002, Runde 4).
   update public.team_thread_states set read_up_to = v_zeit where root_message_id = v_m.id;
-  if p_send_at is null then
-    perform app.team_mark_channel_read(v_m.channel_id, v_org, v_staff, v_zeit);
-  end if;
 end;
 $$;
 
@@ -1870,6 +1868,11 @@ declare
   v_staff uuid;
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
+  -- Wie Verlassen und Archivieren: Ein gleichzeitiges Senden wartet (Runde 3,
+  -- Befund 2). Die Sperre steht vor den Prüfungen, damit zwei Verwaltende, die
+  -- sich gleichzeitig gegenseitig herausnehmen, nacheinander geprüft werden
+  -- (Runde 4, N3).
+  perform 1 from public.team_channels where id = p_channel and organization_id = v_org for update;
   if not exists (select 1 from public.team_channels c
                  where c.id = p_channel and c.organization_id = v_org and c.kind = 'private')
      or not app.team_channel_readable(p_channel, v_org, v_staff) then
@@ -1881,8 +1884,6 @@ begin
   if p_staff_member is null or p_staff_member = v_staff then
     raise exception 'leave the channel instead' using errcode = '22023';
   end if;
-  -- Wie Verlassen und Archivieren: Ein gleichzeitiges Senden wartet (Befund 2).
-  perform 1 from public.team_channels where id = p_channel for update;
   delete from public.team_channel_members
   where channel_id = p_channel and staff_member_id = p_staff_member;
   if not found then
@@ -1976,6 +1977,9 @@ begin
      or p_reaction not in ('daumen', 'erledigt', 'augen', 'danke', 'herz', 'lachen', 'feier', 'frage') then
     raise exception 'unknown reaction' using errcode = '22023';
   end if;
+  -- Auf ein gleichzeitiges Entfernen warten und danach frisch lesen: Was es
+  -- übersteht, hinge sonst am leeren Anker (Zweitreview TEAM-002, Runde 4).
+  perform 1 from public.team_messages where id = p_message and organization_id = v_org for share;
   v_m := app.team_readable_message(p_message, v_org, v_staff);
   if v_m.id is null then
     raise exception 'team message not found' using errcode = 'P0002';
@@ -2009,6 +2013,9 @@ declare
   v_m     public.team_messages%rowtype;
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
+  -- Auf ein gleichzeitiges Entfernen warten und danach frisch lesen: Was es
+  -- übersteht, hinge sonst am leeren Anker (Zweitreview TEAM-002, Runde 4).
+  perform 1 from public.team_messages where id = p_message and organization_id = v_org for share;
   v_m := app.team_readable_message(p_message, v_org, v_staff);
   if v_m.id is null then
     raise exception 'team message not found' using errcode = 'P0002';
@@ -2048,6 +2055,9 @@ declare
   v_m     public.team_messages%rowtype;
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
+  -- Auf ein gleichzeitiges Entfernen warten und danach frisch lesen: Was es
+  -- übersteht, hinge sonst am leeren Anker (Zweitreview TEAM-002, Runde 4).
+  perform 1 from public.team_messages where id = p_message and organization_id = v_org for share;
   v_m := app.team_readable_message(p_message, v_org, v_staff);
   if v_m.id is null then
     raise exception 'team message not found' using errcode = 'P0002';

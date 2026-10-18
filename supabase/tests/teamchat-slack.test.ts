@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
  * Teamchat, Teil 2 von TEAM-002: Slack-Kern ohne Regelkonflikt (ANN-642 bis
@@ -1375,5 +1376,112 @@ describe('Teamchat: Rennen und Lesestand beim Senden (Zweitreview TEAM-002, Rund
       (m) => m.id === wurzel,
     )!;
     expect(imGespraech.new_replies).toBe(1);
+  });
+});
+
+describe('Teamchat: Sperren gegen Rennen (Zweitreview TEAM-002, Runde 4)', () => {
+  async function inZweiStunden(): Promise<string> {
+    const { rows } = await asPostgres<{ t: string }>(
+      `select (now() + interval '2 hours')::text as t`,
+    );
+    return rows[0]!.t;
+  }
+  const ARCHIVIEREN = 'select public.set_team_channel_archived($1::uuid, true)';
+  const HERAUSNEHMEN = 'select public.remove_team_channel_member($1::uuid, $2::uuid)';
+  const geplant = (kanalId: string, um: string) => ({
+    konto: users.therapist,
+    sql: SENDEN,
+    params: [kanalId, null, 'Anna plant', [], false, false, um],
+  });
+  const vonAnnaGeplant = (kanalId: string) =>
+    anzahl(
+      `select count(*) n from public.team_messages
+       where channel_id = $1 and author_staff_member_id = $2 and created_at > now()`,
+      [kanalId, STAFF.anna],
+    );
+
+  it('lässt geplantes Senden auf ein Archivieren warten - danach nimmt das Gespräch nichts an', async () => {
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    const fehler = await gleichzeitig(
+      { konto: users.teamLead, sql: ARCHIVIEREN, params: [vertretungen.id] },
+      geplant(vertretungen.id, await inZweiStunden()),
+    );
+    expect(fehler?.code).toBe('22023');
+    expect(await vonAnnaGeplant(vertretungen.id)).toBe(0);
+  });
+
+  it('lässt ein Archivieren auf geplantes Senden warten - und die Nachricht mit Journal fallen', async () => {
+    const vertretungen = await kanal(users.therapist, 'Vertretungen');
+    const fehler = await gleichzeitig(geplant(vertretungen.id, await inZweiStunden()), {
+      konto: users.teamLead,
+      sql: ARCHIVIEREN,
+      params: [vertretungen.id],
+    });
+    expect(fehler).toBeNull();
+    expect(await vonAnnaGeplant(vertretungen.id)).toBe(0);
+    expect(
+      await anzahl(
+        `select count(*) n from public.deletion_journal
+         where target_table = 'team_messages' and organization_id = $1`,
+        [organizationId],
+      ),
+    ).toBe(1);
+  });
+
+  it('lässt geplantes Senden auf ein Herausnehmen warten - danach liest Anna nicht mehr', async () => {
+    const leitung = await privaterKanal(users.teamLead, 'Leitung', [STAFF.anna]);
+    const fehler = await gleichzeitig(
+      { konto: users.teamLead, sql: HERAUSNEHMEN, params: [leitung, STAFF.anna] },
+      geplant(leitung, await inZweiStunden()),
+    );
+    expect(fehler?.code).toBe('P0002');
+    expect(await vonAnnaGeplant(leitung)).toBe(0);
+  });
+
+  it('prüft zwei Verwaltende, die sich gegenseitig herausnehmen, nacheinander (N3)', async () => {
+    const leitung = await privaterKanal(users.teamLead, 'Leitung', [STAFF.jannes]);
+    const fehler = await gleichzeitig(
+      { konto: users.teamLead, sql: HERAUSNEHMEN, params: [leitung, STAFF.jannes] },
+      { konto: users.ownerTherapist, sql: HERAUSNEHMEN, params: [leitung, STAFF.tim] },
+    );
+    expect(fehler?.code).toBe('P0002');
+    const { rows } = await asPostgres<{ id: string }>(
+      'select staff_member_id as id from public.team_channel_members where channel_id = $1',
+      [leitung],
+    );
+    expect(rows.map((r) => r.id)).toEqual([STAFF.tim]);
+  });
+
+  it('lässt eine Reaktion auf ein Entfernen warten - am leeren Anker hängt danach nichts', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const wurzel = await senden(users.therapist, allgemein.id, 'Wer hat Rad 2?');
+    await senden(users.office, allgemein.id, 'Ich', { parent: wurzel });
+    const fehler = await gleichzeitig(
+      {
+        konto: users.therapist,
+        sql: 'select public.delete_team_message($1::uuid)',
+        params: [wurzel],
+      },
+      { konto: users.office, sql: REAKTION, params: [wurzel, 'daumen'] },
+    );
+    expect(fehler?.code).toBe('P0002');
+    expect(
+      await anzahl('select count(*) n from public.team_message_reactions where message_id = $1', [
+        wurzel,
+      ]),
+    ).toBe(0);
+  });
+
+  it('zieht auch mit „Jetzt senden“ keinen Lesestand vor (ANN-640)', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    const spaeter = await senden(users.therapist, allgemein.id, 'Teamtreffen 8 Uhr', {
+      um: await inZweiStunden(),
+    });
+    await asUserCommitted(users.therapist, 'select public.mark_team_channel_read($1, null)', [
+      allgemein.id,
+    ]);
+    await senden(users.office, allgemein.id, 'Ich komme später.');
+    await asUserCommitted(users.therapist, 'select public.reschedule_team_message($1)', [spaeter]);
+    expect((await kanal(users.therapist, 'Allgemein')).unread).toBe(1);
   });
 });
