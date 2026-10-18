@@ -500,6 +500,8 @@ describe('Ernährungsprofil: Anlegen, Einwilligung, Gewicht (ERN-001)', () => {
 describe('Ernährungsprofil: Frist, Auskunft, Zusammenführen (ERN-001)', () => {
   beforeEach(async () => {
     await resetDatabase();
+    // Der Seed trägt ein laufendes Profil an Erikas Akte.
+    await asPostgres('delete from public.nutrition_profiles');
   }, 120_000);
 
   async function zurueckdatieren(id: string, endeVorTagen: number) {
@@ -660,6 +662,7 @@ describe('Ernährungsprofil: Frist, Auskunft, Zusammenführen (ERN-001)', () => 
 describe('Ernährungsprofil: Zusammenführen (ERN-001)', () => {
   beforeAll(async () => {
     await resetDatabase();
+    await asPostgres('delete from public.nutrition_profiles');
   }, 120_000);
 
   it('zieht mit Einwilligung und Gewicht an die bleibende Akte', async () => {

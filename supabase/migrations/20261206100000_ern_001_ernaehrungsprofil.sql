@@ -317,12 +317,13 @@ begin
       'overridden', v_ueber ? 'energy_kcal', 'below_bmr', v_energie_eff < v_grund),
     'protein', jsonb_build_object(
       'g_per_kg', v_faktor, 'basis', v_grundlage, 'computed_g', v_eiweiss, 'g', v_eiweiss_eff,
-      'overridden', v_ueber ? 'protein_g'),
+      'kcal_per_g', c_kcal_eiweiss, 'overridden', v_ueber ? 'protein_g'),
     'fat', jsonb_build_object(
       'share', c_fett_anteil, 'computed_g', v_fett, 'g', v_fett_eff,
-      'overridden', v_ueber ? 'fat_g'),
+      'kcal_per_g', c_kcal_fett, 'overridden', v_ueber ? 'fat_g'),
     'carbohydrate', jsonb_build_object(
-      'computed_g', v_kh, 'g', v_kh_eff, 'overridden', v_ueber ? 'carbohydrate_g'),
+      'computed_g', v_kh, 'g', v_kh_eff, 'kcal_per_g', c_kcal_kh,
+      'overridden', v_ueber ? 'carbohydrate_g'),
     'water', jsonb_build_object(
       'ml_per_kg', c_wasser_je_kg, 'minimum_ml', c_wasser_mindest,
       'floor_applied', v_wasser = c_wasser_mindest, 'computed_ml', v_wasser, 'ml', v_wasser_eff,

@@ -6494,3 +6494,15 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.delete_due_nutrition_profiles`, `public.retention_classes` (`ernaehrungsberatung`).
 
 **Änderungspfad.** Andere Frist: `retention_classes`; Einwilligung je Verhältnis: eigene Migration mit Datenumzug · Aufwand `mittel`.
+
+### ANN-620 — Ernährung als eigener Reiter an Akte und Trainingsverhältnis
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Wer die Fähigkeit „Ernährungsberatung“ trägt, sieht an Akte und Trainingsverhältnis einen Reiter „Ernährung“ vor den Stammdaten; für alle anderen Rollen bleibt es bei vier Reitern. Formulare (Anlegen, Ändern, Zielwerte) stehen neben dem Rahmen.
+
+**Begründung.** AKTE-007 legt vier Bereiche fest; ADR-027 Punkt 4 trennt die Beratung von den übrigen Bereichen. Ein Abschnitt in den Stammdaten läge zu tief für die tägliche Beratung.
+
+**Anker.** `aktenBereiche` in `src/features/patients/akte.ts`; Reiter in `TrainingClientPage.tsx`.
+
+**Änderungspfad.** Abschnitt statt Reiter: zwei Stellen und die Routen · Aufwand `klein`.

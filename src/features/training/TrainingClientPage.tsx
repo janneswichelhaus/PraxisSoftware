@@ -31,6 +31,7 @@ import {
   canReadTrainingContent,
   canWriteTrainingProtocols,
   canReadExercisePlans,
+  canCounselNutrition,
   isOwner,
   type CurrentUser,
 } from '@/features/session/types';
@@ -63,6 +64,7 @@ import { TrainingVertraege } from './TrainingVertraege';
 import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
 import { ZwischenDenTerminen } from '@/features/checkins/ZwischenDenTerminen';
 import { TrainingAssessments } from './TrainingAssessments';
+import { ErnaehrungReiter } from '@/features/nutrition/ErnaehrungReiter';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -138,7 +140,7 @@ export function TrainingClientPage({ user }: { user: CurrentUser }) {
 /** Der Suchparameter des offenen Reiters (`?bereich=vertraege`, ANN-460). */
 const BEREICH_PARAM = 'bereich';
 
-type Bereich = 'termine' | 'verlauf' | 'vertraege' | 'stammdaten';
+type Bereich = 'termine' | 'verlauf' | 'vertraege' | 'ernaehrung' | 'stammdaten';
 
 /** „Vertrag seit 01.09.2026" - „läuft" ist der Regelfall und steht nicht dran (UX-005i). */
 function vertragszeile(kundin: TrainingClient): string {
@@ -174,6 +176,11 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
     { wert: 'termine', label: 'Termine' },
     ...(zeigtVerlauf ? [{ wert: 'verlauf' as const, label: 'Verlauf' }] : []),
     { wert: 'vertraege', label: 'Verträge' },
+    // ERN-001 (ANN-620): nur für die Fähigkeit „Ernährungsberatung“ (owner);
+    // Büro und Trainingsbetreuung sehen den Reiter nicht (ADR-021 Punkt 11).
+    ...(canCounselNutrition(user.roles)
+      ? [{ wert: 'ernaehrung' as const, label: 'Ernährung' }]
+      : []),
     { wert: 'stammdaten', label: 'Stammdaten' },
   ];
   const offen = useOffenerReiter(
@@ -255,6 +262,8 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
                 (IDEA-OUT-007); dieselben Rollen wie die Pläne. */}
             <TrainingAssessments verhaeltnisId={kundin.id} />
           </>
+        ) : offen === 'ernaehrung' ? (
+          <ErnaehrungReiter art="training" verhaeltnisId={kundin.id} />
         ) : offen === 'vertraege' ? (
           <>
             {/* TRN-EPIC-002: die Vereinbarungen, an denen Termine hängen können. */}
