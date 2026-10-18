@@ -2,7 +2,8 @@
 
 ## Status
 
-Angenommen — **Fassung 5** (2026-10-17): Die rollierende Löschung des
+Angenommen — **Fassung 6** (2026-10-18): Datenklasse „Ernährungsberatung“
+(ADR-027), 3 Jahre nach dem Ende des Profils. Fassung 5 (2026-10-17): Die rollierende Löschung des
 Teamchats (Punkt 12 neu). Fassung 4 (2026-10-17): Rückmeldungen von Beschäftigten
 (§20.2) als eigene Datenklasse im Retention Schedule. Fassung 3 (2026-10-14): Der Fristanker der klinischen
 Akte (Punkt 11 neu, Befund B1). Fassung 2 (2026-10-03): Die Fristen des
@@ -103,6 +104,7 @@ gehört zu den Vorbedingungen des Produktivstarts.
 | Quittierte Löschaufträge der Ablage (Fassung 2) | 3 Jahre ab der Quittung; offene nie | interne Entscheidung |
 | Interner Teamchat (Fassung 5: Punkt 12) | initial rollierend 12 Monate je Nachricht ab ihrem Tag; dauerhaft relevante Inhalte MÜSSEN in den dafür vorgesehenen Fachprozess übernommen werden | interne Initialentscheidung |
 | Rückmeldungen von Beschäftigten (Fassung 4, §20.2) | 12 Monate ab Ende des Monats der Abgabe; endgültig gelöscht, kein Soft-Delete | interne Entscheidung |
+| Ernährungsberatung (Fassung 6, ADR-027): Profil, Tagebuch, Gewicht, eigene Lebensmittel und Rezepte der Person | 3 Jahre nach dem Ende des Profils; fällt das Verhältnis früher, mit ihm | interne Initialentscheidung |
 
 **Fristen ohne unmittelbare gesetzliche Vorgabe sind interne
 Initialentscheidungen und müssen vor Produktivstart im
@@ -196,3 +198,4 @@ Verankerung im Code und Änderungspfad.
 | 3 | 2026-10-14 | Punkt 11 neu (B1): Fristanker der klinischen Akte aus letzter Behandlung, letzter Leistung und ausdrücklichem Abschluss; keine Frist, solange ein Behandlungstermin bevorsteht. Beantwortet die Folgefrage zum „Abschluss der Behandlung". Übrige Punkte unverändert. |
 | 4 | 2026-10-17 | Datenklasse „Rückmeldungen von Beschäftigten“ (ORG-006, §20.2, ANN-607): 12 Monate ab Ende des Monats der Abgabe. Übrige Punkte unverändert. |
 | 5 | 2026-10-17 | Punkt 12 neu (TEAM-001, ANN-610): rollierende Löschung des Teamchats je Nachricht; Anker ohne Inhalt im Thread; beantwortet die Folgefrage dazu. Übrige Punkte unverändert. |
+| 6 | 2026-10-18 | Datenklasse „Ernährungsberatung“ (ADR-027): 3 Jahre nach dem Ende des Profils, Anker am Profil, unabhängig von der Frist des Verhältnisses. Übrige Punkte unverändert. |

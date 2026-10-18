@@ -111,7 +111,12 @@ Feature mit eigener regulatorischer Bewertung.
 | Quelle | Jannes, 2026-09-01 (Navigationspunkt „Ernährung") · Einordnung Claude |
 | Berührt | B9 Punkt 6 (2026-09-08), [ADR-006](../../adr/ADR-006-medical-device-boundary.md), `IDEA-ALT-006` |
 
-**Stand.** B9 Punkt 6 ist am 2026-09-22 neu entschieden: Ernährung gehört als
+**Stand 2026-10-18.** Abgelöst durch [ADR-027](../../adr/ADR-027-nutrition-counselling.md):
+Ernährungsberatung als Zusatzleistung zu Behandlung und Training, klassisches Tagebuch mit
+Lebensmitteldaten, Zielwerte aus Formeln (ADR-006 Punkt 14), Gewicht, optionale Erinnerungen;
+gebaut in ERN-EPIC-001 bis -006. Was unten steht, ist der Stand davor.
+
+**Stand davor.** B9 Punkt 6 ist am 2026-09-22 neu entschieden: Ernährung gehört als
 Protokoll und Zielwert zur Ansicht der Trainingskund:innen (`PROJECT_PRINCIPLES.md`
 §4.10), eingeplant als ALT-EPIC-002; die berufsrechtliche Frage geht mit B9
 an die Beratung. Die frühere Begründung: **Ernährung vorerst nicht
@@ -162,6 +167,12 @@ auch hier, wo der Schaden nicht körperlich ist.
 
 **Konsequenz.** Wenn dieser Bereich gebaut wird, gehört diese Frage in die
 Spezifikation, nicht in den Nachgang.
+
+**Stand 2026-10-18.** Jannes hat entschieden, eine klassische Tracking-App zu bauen (ADR-027):
+Tagebuch und Kalorien sind nicht mehr standardmäßig aus, sondern schaltet die Person selbst ein;
+Erinnerungen sind optional. Was bleibt: keine Bewertung einzelner Lebensmittel mit
+Krankheitsbezug, kein Nachfassen von der Praxis, Untergrenzen für Energieziel und Zielgewicht (die Beratung darf sie überschreiten),
+„Zahlen ausblenden“ als Einstellung der Person (ADR-006 Punkt 14, ADR-027 Punkt 11).
 
 ---
 

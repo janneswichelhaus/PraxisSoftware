@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.27** |
-| **Änderungsdatum** | **2026-10-17** |
-| Vorversion | 0.26 (2026-10-11); 0.25 (2026-10-10); 0.24 (2026-10-10); 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.28** |
+| **Änderungsdatum** | **2026-10-18** |
+| Vorversion | 0.27 (2026-10-17); 0.26 (2026-10-11); 0.25 (2026-10-10); 0.24 (2026-10-10); 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -548,6 +548,10 @@ Video mit einer zugesagten Antwortfrist. Nach einer Kündigung bleibt der
 Zugriff 30 Tage lesend, und der Plan ist als PDF mitzunehmen; die Akte folgt
 unverändert §18.
 
+**Ernährungsberatung als Zusatzleistung (§4.11):** Wer sie bucht, bekommt auf
+der Plattform ein Ernährungstagebuch mit Zielwerten und Gewichtsverlauf — mit
+eigener Einwilligung, nicht als Teil der Heilbehandlung.
+
 Der Heimübungsplan gehört zur **Behandlung**. Das Trainingsverhältnis nach
 §1.2 ist etwas anderes; sein Gegenstück zu dieser Ziffer steht in §4.10. Wie
 die Ansicht der Patient:innen im Einzelnen aussieht, legt DSN-001 fest
@@ -667,8 +671,9 @@ Die Ansicht der Trainingskund:innen umfasst, soweit §17 nichts davon
 ausschließt (Vorbild war
 [`docs/product/ideen/referenz-navigation.md`](docs/product/ideen/referenz-navigation.md)):
 Übersicht, Kalender, Einheiten, Check-ins,
-Fortschritt, Pläne, Aktivitäten, Assessments, Profil, Gewohnheiten, Ernährung
-als Protokoll und Zielwert, Rückfragen, Einstellungen. Dazu gehören eigene
+Fortschritt, Pläne, Aktivitäten, Assessments, Profil, Gewohnheiten,
+Rückfragen, Einstellungen; dazu als gebuchte Zusatzleistung die
+Ernährungsberatung (§4.11). Dazu gehören eigene
 Rechnungen und das Erteilen und Widerrufen der Einwilligung nach Art. 9 Abs. 2
 lit. a DSGVO. Das Trainingsprotokoll sehen Kund:innen, soweit es freigegeben
 ist; interne Notizen der Betreuung sind nicht automatisch sichtbar. Die Plattform ist im Paketpreis enthalten; ein Paket gilt für
@@ -685,6 +690,27 @@ Hat eine Person beide Verhältnisse, bleiben die Bereiche auch in ihrer eigenen
 Sicht getrennt; ein gemeinsamer Bestand entsteht nicht (§4.8). Identitätsprüfung
 und Vertretung regelt ADR-023 wie in §4.6.
 
+
+### 4.11 Ernährungsberatung
+
+Entscheidung des Projektinhabers vom 2026-10-18; technisch in
+[ADR-027](docs/adr/ADR-027-nutrition-counselling.md).
+
+Ernährungsberatung ist eine **Zusatzleistung** zu Behandlung und Training. Das
+Ernährungsprofil hängt an **genau einem** Verhältnis (Akte oder
+Trainingsverhältnis), beruht auf einer **eigenen ausdrücklichen Einwilligung**
+nach Art. 9 Abs. 2 lit. a DSGVO und ist **kein Teil der klinischen Akte** und
+keine Trainingsinformation im Sinne von §4.3 und §4.8: Die offene Einsicht
+nach §4.2 und das Lesen des Büros nach §4.3 und §4.8 gelten dafür **nicht**.
+Lesen und schreiben DARF nur, wer die Fähigkeit „Ernährungsberatung“ trägt
+(zunächst der Praxisinhaber); durchgesetzt in der RLS (§4.7).
+
+Die Person führt ein **klassisches Ernährungstagebuch** mit Lebensmitteldaten,
+Zielwerten, Gewicht und optionalen Erinnerungen; sie schaltet das Tagebuch
+selbst ein und aus. Zielwerte entstehen aus offengelegten Formeln nach §17
+und ADR-006 Punkt 14 und sind durch die Beratung überschreibbar. Die
+Begleitung sieht nichts davon. Daten der Ernährungsberatung haben eine
+eigene Frist (§18, ADR-008).
 
 ## 5. Klinische Dokumentation
 
@@ -1460,6 +1486,14 @@ verschlechtert". Wo genau die Kante jedes Verbots verläuft, steht in ADR-006
 Punkte 10 bis 12 — dieses Dokument nennt das Verbot, nicht seine
 Auslegung.
 
+**Ernährung (Version 0.28):** Bedarf und Zielwerte für Energie,
+Makronährstoffe und Wasser aus veröffentlichten, validierten Formeln sind eine
+transparente Berechnung im Sinne dieses Abschnitts, ebenso die übliche Anzeige
+eines Ernährungstrackers. Die Zweckbestimmung ist allgemeine Ernährung im
+Alltag: Eine Diagnose oder Erkrankung DARF NICHT Eingabe der Rechnung sein,
+und die Anwendung DARF keine Ernährungsempfehlung für eine Erkrankung
+erzeugen. Bedingungen und Untergrenzen: ADR-006 Punkt 14.
+
 Einzelheiten: [ADR-006](docs/adr/ADR-006-medical-device-boundary.md).
 
 
@@ -1693,6 +1727,7 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-021 | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | §1.1, §1.2, §4, §14, §18 |
 | ADR-022 | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | §1.2, §4, §5, §8, §9, §18 |
 | ADR-023 | Plattformzugang: Konto je Person, Zugang je Verhältnis, Vertretung als eigene Beziehung | §3.4, §4.6, §4.7, §4.8, §4.10 |
+| ADR-027 | Ernährungsberatung als Zusatz zu Behandlung und Training | §4.6, §4.10, §4.11, §17, §18 |
 
 Die Tabelle nennt, **welcher ADR welchen Paragraphen trägt** — sonst nichts.
 Welche Fassung gilt, welchen Status ein ADR hat und woran eine produktive

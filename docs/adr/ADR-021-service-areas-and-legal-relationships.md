@@ -2,7 +2,8 @@
 
 ## Status
 
-**Angenommen — Fassung 3** (2026-10-09). Fassung 1 am 2026-09-20, alle neun
+**Angenommen — Fassung 4** (2026-10-18): Punkt 11 nimmt das Ernährungsprofil
+(ADR-027) von Punkt 10 aus. Fassung 3 (2026-10-09). Fassung 1 am 2026-09-20, alle neun
 Punkte wie vorgeschlagen; fachlich entschieden vom Projektinhaber am 2026-09-17
 (E18). Fassung 2 ergänzt Punkt 10 (Büro im Training) aus der Abnahme der
 Annahmen, Block 8. Fassung 3 weitet Punkt 10 aus: Das Büro liest im Training
@@ -127,6 +128,14 @@ Rolle in beiden Bereichen, und gelesen wird innerhalb des Trainingsverhältnisse
 Entschieden vom Projektinhaber am 2026-10-02 (ANN-184), ausgeweitet am
 2026-10-09 (BEF-137; ANN-287, ANN-293, ANN-298).
 
+**11. Das Ernährungsprofil ist von Punkt 10 ausgenommen (Fassung 4).** Ein
+Ernährungsprofil nach ADR-027 hängt an einem Verhältnis, gehört aber nicht zu
+dessen offenem Lesen: Es liest und schreibt nur, wer die Fähigkeit
+„Ernährungsberatung“ trägt (zunächst `owner`), weder das Büro noch die
+Trainingsbetreuung noch Therapeut:innen der Akte. Eigene Einwilligung, eigene
+Datenklasse (ADR-008 Fassung 6). Punkt 3 gilt: kein Fremdschlüssel zwischen den
+Verhältnissen, auch nicht über das Profil.
+
 ## Konsequenzen
 
 - **Die zweite Verhältnistabelle trägt das volle Fundament** aus ADR-014 und
@@ -225,3 +234,4 @@ Entschieden vom Projektinhaber am 2026-10-02 (ANN-184), ausgeweitet am
 | 2 | 2026-10-02 | **Punkt 10 ergänzt:** Das Büro liest Trainingsprotokolle und ihren Zustand; Schreiben und Abschließen bleiben bei Inhaber:in und Trainingsbetreuung; mit echten Daten erst nach der DSFA (B2). Nachgezogen in `PROJECT_PRINCIPLES.md` 0.19 §4.8. Anlass: Abnahme der Annahmen, Block 8 (ANN-184). Punkte 1 bis 9 unverändert. |
 </content>
 | 3 | 2026-10-09 | **Punkt 10 ausgeweitet:** Das Büro liest im Training alle Informationen und die Übungsbibliothek, schreibt keine Trainingsinhalte; die Sperre der übrigen Screening- und Gesundheitsangaben entfällt. Nachgezogen in `PROJECT_PRINCIPLES.md` 0.22 §4.3 und §4.8. Anlass: Abnahme der Annahmen vom 2026-10-09 (BEF-137). Punkte 1 bis 9 unverändert. |
+| 4 | 2026-10-18 | **Punkt 11 ergänzt:** Das Ernährungsprofil (ADR-027) ist vom Lesen nach Punkt 10 ausgenommen; nur die Fähigkeit „Ernährungsberatung“ liest. Nachgezogen in `PROJECT_PRINCIPLES.md` 0.28 §4.11. Punkte 1 bis 10 unverändert. |

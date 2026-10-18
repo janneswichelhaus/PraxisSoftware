@@ -2,15 +2,18 @@
 
 ## Status
 
-**Angenommen — Fassung 3** (2026-09-20). Fassung 1 am 2026-08-28, Fassung 2
+**Angenommen — Fassung 4** (2026-10-18, Jannes). Fassung 1 am 2026-08-28, Fassung 2
 (Punkt 8, Sprachdokumentation) am 2026-09-08, Fassung 3 (Punkte 9 bis 13,
-beide Leistungsbereiche und die drei Feature-Verbote, E18) am 2026-09-20. Jede
-Fassung fasst die früheren Punkte enger, nie lockerer; Einzelheiten in der
-Änderungshistorie.
+beide Leistungsbereiche und die drei Feature-Verbote, E18) am 2026-09-20,
+Fassung 4 (Punkt 14, Ernährung mit Bedarf aus offengelegten Formeln; **Umkehr**
+des letzten Satzes von Punkt 13 für die Ernährung, ADR-027) am 2026-10-18. Die
+Fassungen 2 und 3 fassten die früheren Punkte enger; Fassung 4 lockert
+ausdrücklich nur Punkt 13 für die Ernährung, die drei Verbote bleiben
+unverändert. Einzelheiten in der Änderungshistorie.
 
 ## Datum
 
-2026-08-28 (Fassung 1); 2026-09-08 (Fassung 2); 2026-09-20 (Fassung 3)
+2026-08-28 (Fassung 1); 2026-09-08 (Fassung 2); 2026-09-20 (Fassung 3); 2026-10-18 (Fassung 4)
 
 ## Kontext
 
@@ -145,10 +148,35 @@ Funktionen, an denen sie in diesem Produkt konkret entstehen würde.
     nicht; sie ist zugleich nach Punkt 6 `MDR_REVIEW_REQUIRED` und darf ohne
     dokumentierte regulatorische Prüfung auch nicht hinter einem Schalter
     produktiv erreichbar sein. **Ein Feature-Flag ersetzt die Prüfung nicht.**
-    Für die drei Bereiche des Trainingsbereichs an dieser Grenze — KI-Analyse,
-    Assessments, Ernährung — gilt das vorab: Sie werden nicht zuerst
+    Für die Bereiche des Trainingsbereichs an dieser Grenze — KI-Analyse
+    und Assessments — gilt das vorab: Sie werden nicht zuerst
     geschnitten, und was von ihnen bleibt, ist die anzeigende und
-    aufzeichnende Hälfte.
+    aufzeichnende Hälfte. Für die Ernährung gilt seit Fassung 4 Punkt 14.
+    *Fassung 3 lautete: „Für die drei Bereiche des Trainingsbereichs an
+    dieser Grenze — KI-Analyse, Assessments, Ernährung — gilt das vorab: Sie
+    werden nicht zuerst geschnitten, und was von ihnen bleibt, ist die
+    anzeigende und aufzeichnende Hälfte.“*
+14. **Ernährung: Bedarf und Zielwerte aus offengelegten Formeln**
+    (Fassung 4, Jannes 2026-10-18, ADR-027). Die Anwendung darf nach Punkt 2
+    Grundumsatz, Gesamtumsatz und Zielwerte für Energie, Makronährstoffe und
+    Wasser aus **veröffentlichten, validierten Formeln** berechnen und als
+    Zielwerte vorbelegen, ebenso die übliche Anzeige eines Ernährungstrackers
+    (verbleibende Kalorien, Fortschritt je Makronährstoff, Überschreitung).
+    Die Zweckbestimmung dafür ist **allgemeine Ernährung und Körpergewicht im
+    Alltag**, nicht die Behandlung einer Krankheit. Bedingungen:
+    (a) **keine Diagnose, kein Befund und keine Erkrankung als Eingabe** und
+    keine krankheitsbezogene Anpassung — die übernimmt die beratende Person
+    von Hand; (b) Formel, Eingaben und Rechenweg sind neben dem Ergebnis
+    sichtbar; (c) feste Untergrenzen für alles, was die Anwendung berechnet
+    oder die Person selbst wählt: kein Energieziel unter dem berechneten
+    Grundumsatz, kein Zielgewicht unter einem BMI von 18,5; (d) die beratende
+    Person kann jeden Wert überschreiben, **auch unter diese Untergrenzen** —
+    das entscheidet sie fachlich selbst; die Überschreibung ist gekennzeichnet; (e) **unzulässig bleibt** jede Aussage über den
+    Gesundheitszustand, eine Bewertung von Lebensmitteln mit Krankheitsbezug
+    und eine Ernährungsempfehlung für eine Erkrankung. Welche Formeln und
+    Regeln gelten, legt ADR-027 Abschnitt E fest. Punkt 14 geht als eigener
+    Prüfpunkt in die externe Prüfung nach Punkt 7; bis dahin gilt §15.2 —
+    gebaut wird mit synthetischen Daten.
 
 ## Konsequenzen
 
@@ -289,3 +317,4 @@ Funktionen, an denen sie in diesem Produkt konkret entstehen würde.
 | 1       | 2026-08-28 | Erstfassung, angenommen.                                                                                                                                                                                                                          |
 | 2       | 2026-09-08 | **Punkt 8 ergänzt:** Sprachdokumentation fällt unter Punkt 5, dort aber enger — kein Verdichten, keine inhaltliche Auslassung, Kennzeichnung unverständlicher Stellen; eine diktierte Einschätzung ist keine hinzugefügte Interpretation. Dazu eine offene Folgefrage zur Prüfbarkeit und eine Klarstellung zu `PROJECT_PRINCIPLES.md` §6.3. Anlass: Entscheidung von Jannes zur Sprachdokumentation (Version 0.5). Die Punkte 1 bis 7 sind unverändert. |
 | 3       | 2026-09-20 | **Punkte 9 bis 13 ergänzt, angenommen:** Die Zweckbestimmung gilt in beiden Leistungsbereichen (Punkt 9, nach ADR-021 und ADR-022), dazu die drei Feature-Verbote aus E18 Abschnitt 4 — keine automatische Übungsauswahl aus Diagnose oder Befund (Punkt 10), keine automatisierte Auswertung von Schmerzskala oder Verlauf mit Handlungsempfehlung (Punkt 11), kein Screening-Fragebogen, der selbst eine Trainingsfreigabe oder einen Abbruch ausspricht (Punkt 12). Punkt 13 macht sie zu Ausschlusskriterien: Ein Feature-Flag ersetzt die Prüfung nicht, und KI-Analyse, Assessments und Ernährung werden nicht zuerst geschnitten. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18), Schritt 3 von sieben. Die Punkte 1 bis 8 sind unverändert und werden nur enger gefasst. |
+| 4       | 2026-10-18 | **Punkt 14 ergänzt, Punkt 13 für die Ernährung umgekehrt (Jannes):** Bedarf und Zielwerte für Energie, Makronährstoffe und Wasser aus veröffentlichten, validierten Formeln mit klassischer Tracker-Anzeige; ohne Diagnose als Eingabe, mit sichtbarem Rechenweg, festen Untergrenzen für Berechnung und Wahl der Person und Überschreibung durch die beratende Person auch darunter; Zweckbestimmung allgemeine Ernährung im Alltag, eigener Prüfpunkt der externen Prüfung. Der alte Satz aus Punkt 13 bleibt als „Fassung 3 lautete“ lesbar. Anlass: ADR-027. Die Punkte 1 bis 12 und die drei Verbote sind unverändert. |

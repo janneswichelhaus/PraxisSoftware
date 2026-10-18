@@ -1,9 +1,13 @@
-# Status · Stand 2026-10-17
+# Status · Stand 2026-10-18
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
+
+Ernährungsberatung geplant (18.10., Branch `claude/modest-brown-7b15rr`, nur Doku): ADR-027, Prinzipien
+0.28 (§4.11), ADR-006 Fassung 4 (Formeln), ADR-008 Fassung 6, ADR-021 Fassung 4; ALT-EPIC-002 ersetzt
+durch ERN-EPIC-001 bis -006.
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -29,7 +33,7 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes ALT-EPIC-002; BEF-146, -147, -148, -150.
+Bereichsüberholungen 6 bis 11 sind gebaut. Als Nächstes ERN-EPIC-001 bis -003 (je `/feature-loop`), dann eine Politurrunde; BEF-146, -147, -148, -150.
 
 ## Bei Jannes
 

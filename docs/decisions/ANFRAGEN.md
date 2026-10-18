@@ -307,7 +307,11 @@ Fragen:**
    Betrieben kann sie sich nicht mehr festmachen. Rücknahme **`groß`** — der
    Aufwand war bei der Entscheidung benannt (§15.1 Punkt 4). Dieser Punkt geht
    ausdrücklich mit an die Datenschutzberatung (B2).
-6. **Berufsrecht Ernährung:** *Neu entschieden am 2026-09-22: Ernährung kommt
+6. **Berufsrecht Ernährung:** *Erneut entschieden am 2026-10-18 (ADR-027,
+   Prinzipien 0.28 §4.11): Ernährungsberatung durch Jannes als Zusatzleistung zu
+   Behandlung und Training, mit klassischem Tagebuch und Zielwerten aus Formeln.
+   Zu prüfen ist die Grenze zur Diättherapie bei Patient:innen mit Erkrankung
+   (Diätassistentengesetz). Davor:* *Neu entschieden am 2026-09-22: Ernährung kommt
    als **Protokoll und Zielwert** ohne Urteil in die Ansicht der
    Trainingskund:innen (ALT-EPIC-002). Zu prüfen ist, ob das die Grenze zur
    Ernährungsberatung wahrt.* Die frühere Festlegung lautete: **vorerst nicht
