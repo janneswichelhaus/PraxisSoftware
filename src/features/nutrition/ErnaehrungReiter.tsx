@@ -31,6 +31,7 @@ import {
 } from './api';
 import { ernaehrungsFormulare, leseZahl } from './eingabe';
 import { Zielwertliste } from './Rechenweg';
+import { TagebuchDerBeratung } from './TagebuchDerBeratung';
 import {
   einwilligungVon,
   FORMEL_TEXTE,
@@ -229,11 +230,16 @@ function Profilansicht({
           <DetailRow label="Formel">{FORMEL_TEXTE[profil.bmr_formula]}</DetailRow>
           <DetailRow label="Tagebuch">
             {profil.diary_enabled
-              ? `Eingeschaltet${profil.diary_changed_at ? ` am ${formatDate(profil.diary_changed_at)}` : ''}`
+              ? `Eingeschaltet${profil.diary_changed_at ? ` am ${formatDate(profil.diary_changed_at.slice(0, 10))}` : ''}`
               : 'Aus'}
           </DetailRow>
         </DetailList>
       </Section>
+
+      {/* ERN-010: die Beratung liest das Tagebuch mit - nur, wenn es eines gibt. */}
+      {profil.diary_enabled || profil.diary_changed_at ? (
+        <TagebuchDerBeratung profilId={profil.id} />
+      ) : null}
 
       <Einwilligung profil={profil} sicht={sicht} art={art} verhaeltnisId={verhaeltnisId} />
 

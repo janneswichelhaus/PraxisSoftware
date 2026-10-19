@@ -245,6 +245,8 @@ describe('Audit-Lesepfad', () => {
       'get_exercise_plan',
       'get_intake_checklist',
       'get_invoice',
+      // ERN-010: das Tagebuch für die Beratung - wie get_nutrition_profile.
+      'get_nutrition_diary',
       // ERN-001: das Ernährungsprofil (nur die Fähigkeit „Ernährungsberatung“,
       // ADR-027 Punkt 4) - den Reiter sieht keine andere Rolle.
       'get_nutrition_profile',

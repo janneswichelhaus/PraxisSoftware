@@ -263,7 +263,10 @@ describe('Ernährung auf der Plattform: Schreiben (ERN-002)', () => {
     expect(sicht!.profile).toMatchObject({ target_weight_kg: null, target_weight_source: null });
   });
 
-  it('Tagebuch: an nur mit Einwilligung, aus immer; von Anfang an aus', async () => {
+  it('Tagebuch: an nur mit Einwilligung, aus immer', async () => {
+    // Im Seed hat Erika es eingeschaltet (ERN-007); von Anfang an aus prüft
+    // nutrition.test.ts am neu angelegten Profil.
+    await asUserCommitted(erika.konto, TAGEBUCH, [erika.zugang, false]);
     expect((await lesen(erika.konto, erika.zugang))!.profile.diary_enabled).toBe(false);
     await asUserCommitted(erika.konto, TAGEBUCH, [erika.zugang, true]);
     expect((await lesen(erika.konto, erika.zugang))!.profile.diary_enabled).toBe(true);

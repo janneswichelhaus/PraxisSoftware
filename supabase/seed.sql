@@ -1452,3 +1452,53 @@ insert into public.custom_foods
    'f0f0f0f0-f0f0-4f0f-8f0f-000000000001', 'Omas Dinkelbrot', 'g', 240, 9.0, 2.0, 44.0, null,
    null, '[{"label": "1 Scheibe", "amount": 45}]', 'cafecafe-cafe-4afe-8afe-000000000002', 'self',
    '11111111-1111-4111-8111-000000000009', '11111111-1111-4111-8111-000000000009');
+
+-- -----------------------------------------------------------------------------
+-- Ernährungstagebuch (ERN-007, ADR-027 Punkt 10) - rein synthetisch
+--
+-- Erika hat ihr Tagebuch auf der Plattform eingeschaltet: gestern drei
+-- Mahlzeiten, heute Frühstück und zwei Gläser Wasser. Die Werte je 100 g
+-- stammen aus den synthetischen Zeilen oben (Stand beim Eintragen, ANN-660).
+-- -----------------------------------------------------------------------------
+update public.nutrition_profiles
+   set diary_enabled = true, diary_changed_at = now() - interval '7 days',
+       diary_changed_by_kind = 'self'
+ where id = 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001';
+
+insert into public.nutrition_diary_entries
+  (id, organization_id, profile_id, eaten_on, meal, food_kind, catalog_food_id, custom_food_id,
+   food_name, food_brand, base_unit, energy_kcal, protein_g, fat_g, carbohydrate_g, sugar_g,
+   fibre_g, saturated_fat_g, salt_g, amount, portion_label, portion_amount, portion_count,
+   platform_access_id, platform_access_kind, created_at, created_by, updated_by)
+select coalesce(e.id, extensions.gen_random_uuid()), '22222222-2222-4222-8222-000000000001',
+       'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+       app.training_today('22222222-2222-4222-8222-000000000001') - e.vor, e.mahlzeit,
+       case when c.id is not null then 'catalog' else 'person' end, c.id,
+       case when c.id is null then 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002'::uuid end,
+       coalesce(c.name, 'Omas Dinkelbrot'), null, coalesce(c.base_unit, 'g'),
+       coalesce(c.energy_kcal, 240), coalesce(c.protein_g, 9), coalesce(c.fat_g, 2),
+       coalesce(c.carbohydrate_g, 44), c.sugar_g, c.fibre_g, c.saturated_fat_g, c.salt_g,
+       e.portion_menge * e.anzahl, e.portion, e.portion_menge, e.anzahl,
+       'cafecafe-cafe-4afe-8afe-000000000002', 'self',
+       now() - make_interval(days => e.vor, mins => 10 - e.nr), '11111111-1111-4111-8111-000000000009',
+       '11111111-1111-4111-8111-000000000009'
+from (values
+  ('f2f2f2f2-f2f2-4f2f-8f2f-000000000001'::uuid, 1, 0, 'breakfast', 'Haferflocken', '1 Portion', 50.0, 1.0),
+  (null, 2, 0, 'breakfast', 'Banane roh', '1 Stück (mittel)', 120.0, 1.0),
+  (null, 3, 1, 'breakfast', 'Haferflocken', '1 Portion', 50.0, 1.0),
+  (null, 4, 1, 'lunch', 'Vollkornnudeln gekocht', '1 Portion', 200.0, 1.0),
+  (null, 5, 1, 'lunch', 'Apfel roh', '1 Stück (mittel)', 150.0, 1.0),
+  (null, 6, 1, 'dinner', null, '1 Scheibe', 45.0, 2.0),
+  (null, 7, 1, 'snack', 'Banane roh', '1 Stück (mittel)', 120.0, 1.0)
+) as e(id, nr, vor, mahlzeit, name, portion, portion_menge, anzahl)
+left join public.food_catalog c on c.name = e.name and c.source = 'bls';
+
+insert into public.nutrition_water_days
+  (organization_id, profile_id, drunk_on, water_ml, platform_access_id, platform_access_kind,
+   updated_by) values
+  ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+   app.training_today('22222222-2222-4222-8222-000000000001') - 1, 1500,
+   'cafecafe-cafe-4afe-8afe-000000000002', 'self', '11111111-1111-4111-8111-000000000009'),
+  ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
+   app.training_today('22222222-2222-4222-8222-000000000001'), 500,
+   'cafecafe-cafe-4afe-8afe-000000000002', 'self', '11111111-1111-4111-8111-000000000009');

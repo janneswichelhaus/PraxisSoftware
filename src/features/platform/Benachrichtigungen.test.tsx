@@ -56,7 +56,7 @@ describe('Benachrichtigungen (KOM-011)', () => {
   it('ist von Anfang an aus und sagt, dass die Übersicht reicht', async () => {
     const { container } = renderWithProviders(<Benachrichtigungen zugaenge={[ZUGANG]} />);
     const mails = await screen.findAllByRole('checkbox', { name: 'Per E-Mail' });
-    expect(mails).toHaveLength(6);
+    expect(mails).toHaveLength(7);
     for (const kasten of mails) expect(kasten).not.toBeChecked();
     expect(screen.getByText(/auch ohne Benachrichtigung in Ihrer Übersicht/)).toBeInTheDocument();
     // Ohne eingetragenes Gerät kein Push zur Wahl; jsdom kann kein Push.

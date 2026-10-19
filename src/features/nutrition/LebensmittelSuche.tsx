@@ -44,16 +44,25 @@ export function LebensmittelSuche({
   eigene = [],
   ohneBegriff,
   detailAktion,
+  fensterInhalt,
+  ohneZahlen = false,
 }: {
   suchen: (begriff: string) => Promise<Lebensmittel[]>;
   /** Anfang des Abfrageschlüssels; der Begriff kommt dazu. */
   schluessel: readonly unknown[];
   /** Eigene Lebensmittel der Person, aus ihrem Profil. */
   eigene?: readonly Lebensmittel[];
-  /** Was ohne Suchbegriff unter dem Feld steht. */
-  ohneBegriff?: ReactNode;
+  /**
+   * Was ohne Suchbegriff unter dem Feld steht; als Funktion mit dem Weg, ein
+   * Lebensmittel im Fenster zu öffnen (etwa „zuletzt“ im Tagebuch).
+   */
+  ohneBegriff?: ReactNode | ((oeffnen: (f: Lebensmittel) => void) => ReactNode);
   /** Ein Knopf im Fenster eines Treffers, etwa „Bearbeiten“. */
   detailAktion?: (f: Lebensmittel) => ReactNode;
+  /** Statt der Nährwerte ein eigener Inhalt im Fenster, etwa die Menge (ERN-007). */
+  fensterInhalt?: (f: Lebensmittel, schliessen: () => void) => ReactNode;
+  /** „Zahlen ausblenden“ der Person (ADR-027 Punkt 11): Treffer ohne Energie. */
+  ohneZahlen?: boolean;
 }) {
   // Der Begriff bleibt im Arbeitsspeicher, nie in der Adresse (ADR-011,
   // ADR-027 Punkt 8: er verriete, was eine Person isst). Zurück aus einem
@@ -90,13 +99,17 @@ export function LebensmittelSuche({
         }
       />
       {!aktiv ? (
-        ohneBegriff
+        typeof ohneBegriff === 'function' ? (
+          ohneBegriff(setOffen)
+        ) : (
+          ohneBegriff
+        )
       ) : (
         <div className="flex flex-col gap-8">
           {passende.length > 0 ? (
             <Listenabschnitt titel="Eigene" anzahl={passende.length}>
               {passende.map((f) => (
-                <Trefferzeile key={f.id} f={f} onOeffnen={setOffen} />
+                <Trefferzeile key={f.id} f={f} onOeffnen={setOffen} ohneZahlen={ohneZahlen} />
               ))}
             </Listenabschnitt>
           ) : null}
@@ -113,7 +126,12 @@ export function LebensmittelSuche({
             {(treffer) => (
               <Listenabschnitt titel="Treffer" anzahl={treffer.length}>
                 {treffer.map((f) => (
-                  <Trefferzeile key={`${f.kind}-${f.id}`} f={f} onOeffnen={setOffen} />
+                  <Trefferzeile
+                    key={`${f.kind}-${f.id}`}
+                    f={f}
+                    onOeffnen={setOffen}
+                    ohneZahlen={ohneZahlen}
+                  />
                 ))}
               </Listenabschnitt>
             )}
@@ -126,8 +144,14 @@ export function LebensmittelSuche({
           beschreibung={[offen.brand, QUELLENNAME[offen.source]].filter(Boolean).join(' · ')}
           onSchliessen={() => setOffen(null)}
         >
-          <LebensmittelDetail f={offen} />
-          {detailAktion ? <div className="mt-6">{detailAktion(offen)}</div> : null}
+          {fensterInhalt ? (
+            fensterInhalt(offen, () => setOffen(null))
+          ) : (
+            <>
+              <LebensmittelDetail f={offen} />
+              {detailAktion ? <div className="mt-6">{detailAktion(offen)}</div> : null}
+            </>
+          )}
         </Dialogfenster>
       ) : null}
     </>
@@ -138,15 +162,17 @@ export function Trefferzeile({
   f,
   onOeffnen,
   to,
+  ohneZahlen = false,
 }: {
   f: Lebensmittel;
   onOeffnen?: (f: Lebensmittel) => void;
   to?: string;
+  ohneZahlen?: boolean;
 }) {
   return (
     <ListRow
       titel={f.name}
-      meta={trefferMeta(f)}
+      meta={trefferMeta(f, ohneZahlen)}
       {...(to ? { to } : { onClick: () => onOeffnen?.(f) })}
     />
   );

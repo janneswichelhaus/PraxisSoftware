@@ -61,6 +61,8 @@ const ERLAUBT: readonly RegExp[] = [
   // Datenzugriff; gesucht und gespeichert wird über die Plattformwege in
   // `api.ts` (die der Praxis stehen in `nutrition/lebensmittelApi.ts`).
   /^@\/features\/nutrition\/(LebensmittelSuche|LebensmittelFormular|lebensmittel)$/,
+  // ERN-EPIC-003: Form und Texte des Tagebuchs - ohne Datenzugriff.
+  /^@\/features\/nutrition\/tagebuch$/,
   /^\.\//,
 ];
 
@@ -109,8 +111,10 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'function:platform-access',
       // KND-003: den Trainingsvertrag im eigenen Konto schließen.
       'rpc:accept_platform_training_offer',
+      'rpc:add_platform_diary_entry',
       // KOM-001: Nachrichten an die Praxis.
       'rpc:add_platform_message_entry',
+      'rpc:add_platform_water',
       // ANG-003: das eigene Nachsorge-Abo kündigen.
       'rpc:cancel_platform_aftercare',
       'rpc:close_platform_message',
@@ -119,6 +123,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // KOM-007: Foto und Video an der eigenen Rückfrage (ADR-017 Abschnitt L);
       // die Prüfung am Server mit attachment_id (ANN-337).
       'rpc:confirm_message_attachment_upload',
+      'rpc:copy_platform_diary',
+      'rpc:delete_platform_diary_entry',
       // ERN-EPIC-002: eigene Lebensmittel löschen und speichern, suchen im
       // eigenen Katalog, die Quellenangabe (Inhalt ohne Personenbezug).
       'rpc:delete_platform_food',
@@ -147,6 +153,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-016: Einwilligungen lesen und schreiben.
       'rpc:platform_consents',
       'rpc:platform_context',
+      'rpc:platform_diary_reminders',
       // UEB-009: die eigenen Pläne.
       'rpc:platform_exercise_plans',
       // POR-018: die eigenen Daten herunterladen.
@@ -161,6 +168,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_notification_settings',
       // ERN-002: die eigene Ernährungsberatung (Recht nutrition).
       'rpc:platform_nutrition',
+      'rpc:platform_nutrition_diary',
       'rpc:platform_onboarding',
       'rpc:platform_questionnaire',
       'rpc:platform_representatives',
@@ -182,6 +190,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:save_platform_food',
       'rpc:save_platform_questionnaire_response',
       'rpc:search_platform_foods',
+      'rpc:set_platform_diary_favorite',
+      'rpc:set_platform_diary_hide_numbers',
+      'rpc:set_platform_diary_reminders',
       // UEB-011: die eigenen Übungstage.
       'rpc:set_platform_exercise_days',
       'rpc:set_platform_notification_settings',
@@ -191,6 +202,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:submit_platform_checkin',
       // TRK-007: die Einheit, auch ohne Netz erfasst (ADR-024 Punkt 7).
       'rpc:sync_platform_exercise_session',
+      'rpc:update_platform_diary_entry',
       'rpc:withdraw_platform_appointment_request',
       // KND-004: den Trainingsvertrag widerrufen (§ 356a BGB).
       'rpc:withdraw_platform_training_contract',

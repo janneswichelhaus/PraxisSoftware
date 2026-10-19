@@ -29,7 +29,7 @@ describe('BenachrichtigungsSchalter (KOM-011)', () => {
     const { container } = renderWithProviders(<BenachrichtigungsSchalter />);
     expect(await screen.findByRole('checkbox', { name: 'Neuer Übungsplan' })).not.toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Erinnerung an einen Termin' })).toBeChecked();
-    expect(screen.getAllByRole('checkbox')).toHaveLength(6);
+    expect(screen.getAllByRole('checkbox')).toHaveLength(7);
     expect(
       screen.getByText(/Einschalten für eine Person kann die Praxis nicht/),
     ).toBeInTheDocument();

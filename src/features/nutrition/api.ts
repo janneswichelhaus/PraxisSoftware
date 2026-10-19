@@ -12,6 +12,7 @@ import {
   type Geschlecht,
   type Ziel,
 } from './zielwerte';
+import { tagSchema, zieleSchema } from './tagebuch';
 
 /**
  * Die Ernährungsberatung in der Praxis (ERN-001, ADR-027).
@@ -218,4 +219,38 @@ export async function einwilligungVermerken(
 
 export async function beratungBeenden(profilId: string, tag: string): Promise<void> {
   await aufrufen('end_nutrition_profile', { p_profile_id: profilId, p_ended_on: tag });
+}
+
+// -----------------------------------------------------------------------------
+// ERN-010: das Tagebuch für die Beratung - sieben Tage bis zu einem Tag. Die
+// Beratung liest mit und schreibt nicht (ADR-027 Punkt 10).
+// -----------------------------------------------------------------------------
+
+const tagebuchDerBeratungSchema = z.object({
+  today: z.string(),
+  started_on: z.string(),
+  from: z.string(),
+  to: z.string(),
+  targets: zieleSchema,
+  days: z.array(tagSchema),
+});
+
+export type TagebuchDerBeratung = z.infer<typeof tagebuchDerBeratungSchema>;
+
+export function tagebuchSchluessel(profilId: string, bis: string | null) {
+  return ['ernaehrung', 'tagebuch', profilId, bis ?? 'heute'] as const;
+}
+
+/** Sieben Tage des Tagebuchs bis `bis` (ohne Angabe heute). */
+export async function fetchTagebuch(
+  profilId: string,
+  bis: string | null,
+): Promise<TagebuchDerBeratung | null> {
+  const satz = 'Das Tagebuch konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('get_nutrition_diary', {
+    p_profile_id: profilId,
+    p_to: bis,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(tagebuchDerBeratungSchema.nullable(), data ?? null, satz);
 }

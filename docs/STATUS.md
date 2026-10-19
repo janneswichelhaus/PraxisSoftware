@@ -5,13 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-ERN-EPIC-002 Lebensmitteldaten (19.10., Branch `ccr-515873ee-nxqvqc`): Katalog aus BLS 4.0 und Open Food
-Facts im eigenen Server (Import nur Betrieb, `docs/betrieb/lebensmitteldaten.md`), Suche mit Tippfehlern
-< 300 ms, eigene Lebensmittel von Praxis und Person; Bibliothek „Lebensmittel“; ANN-656 bis ANN-659.
-
-ERN-EPIC-001 Ernährung, Profil und Bedarf (18.10., Branch `claude/admiring-ride-acixsl`): Profil an Akte
-oder Training nur für owner, eigene Einwilligung, Zielwerte mit Rechenweg und Überschreibung, Gewicht,
-Plattform mit Tagebuch-Schalter, Position „Ernährungsberatung“; Datenklasse 3 Jahre; ANN-618 bis ANN-622.
+ERN-EPIC-003 Tagebuch (19.10., Branch `ccr-c4be3f12-d8jik0`): Mahlzeiten, Wasser mit einem Tipp, „zuletzt“
+(2 Tipps) und Suche (4 Tipps), Favoriten, kopieren, „Zahlen ausblenden“, Erinnerungen je Mahlzeit als neue
+Art im Katalog; die Beratung liest mit. ANN-660 bis ANN-662; ANN-656 bis ANN-659 bestätigt.
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -27,12 +23,12 @@ Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholung
 
 Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
 (`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
-(`claude/eloquent-newton-p38ihe`). Gemergt: BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
+(`claude/eloquent-newton-p38ihe`). Gemergt: ERN-EPIC-001 und -002 (#274), BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
 Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-ERN-EPIC-003 (`/feature-loop`), dann Beratung abrechnen (ANN-622), dann eine Politurrunde;
+Beratung abrechnen (ANN-622, `/feature-loop`), dann eine Politurrunde;
 BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Bei Jannes
@@ -60,5 +56,5 @@ BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Letzte Session
 
-19.10.2026, Branch `ccr-515873ee-nxqvqc`: Migrationen `20261214100000_ern_004_lebensmittelkatalog`,
-`20261214110000_ern_005_eigene_lebensmittel`. **Lokal:** `git pull`, `supabase db reset`.
+19.10.2026, Branch `ccr-c4be3f12-d8jik0`: Migrationen `20261221100000_ern_007_tagebuch` bis
+`20261221130000_ern_010_tagebuch_beratung`. **Lokal:** `git pull`, `supabase db reset`.
