@@ -305,10 +305,15 @@ const ABGANG_MS = 240;
  * Das Fenster geht nach unten weg (ANN-663). Wer es öffnet, nimmt es beim
  * Schließen einfach aus der Seite - es gibt keinen Zustand „geht gerade“, und
  * fünfzig Stellen müssten ihn sonst kennen. Deshalb bleibt ein Abbild stehen:
- * eine Kopie des Fensters ohne Bedeutung (`aria-hidden`, `inert`, kein
- * Tipp), die nach unten gleitet und sich dann entfernt. Das Fenster selbst
- * ist da schon weg - Fokus, Sperre der Seite und Vorlesesoftware sind beim
- * Schließen sofort zurück wie bisher.
+ * eine Kopie des Fensters, die nach unten gleitet und sich dann entfernt. Das
+ * Fenster selbst ist da schon weg - Fokus, Sperre der Seite und
+ * Vorlesesoftware sind beim Schließen sofort zurück wie bisher.
+ *
+ * **Das Abbild liegt in einer geschlossenen Shadow-Root** (`abbildHuelle`):
+ * Dort findet es keine Suche nach Text oder Rolle, weder Vorlesesoftware
+ * noch ein Test - sonst stünde der Inhalt des Fensters kurz doppelt im
+ * Dokument (CAL-017 fand einen Namen zweimal). Die Hülle trägt zusätzlich
+ * `aria-hidden` und `inert`, die Kopie nimmt keinen Tipp an.
  *
  * Nur wo der Browser `Element.animate` kennt und Bewegung erlaubt ist; in
  * jsdom nie. Bleibt das Fenster im Dokument, war es kein Schließen, sondern
@@ -329,18 +334,15 @@ function useAbgang(fensterRef: RefObject<HTMLDivElement | null>): void {
       queueMicrotask(() => {
         if (schleier.isConnected) return;
         abbild.classList.replace('fenster-schleier', 'fenster-abbild');
-        abbild.setAttribute('aria-hidden', 'true');
-        abbild.setAttribute('inert', '');
         abbild.style.pointerEvents = 'none';
         const kopie = abbild.firstElementChild as HTMLElement | null;
         if (!kopie) return;
         kopie.classList.remove('fenster-kommt');
-        kopie.removeAttribute('role');
-        kopie.removeAttribute('aria-modal');
         const offen = Array.from(ort.children).find((kind) =>
           kind.querySelector(':scope > [aria-modal="true"]'),
         );
-        ort.insertBefore(abbild, offen ?? null);
+        const huelle = abbildHuelle(abbild);
+        ort.insertBefore(huelle, offen ?? null);
         kopie.scrollTop = gerollt;
         const breit = window.matchMedia?.('(min-width: 640px)').matches ?? false;
         const optionen = {
@@ -355,12 +357,60 @@ function useAbgang(fensterRef: RefObject<HTMLDivElement | null>): void {
             : [{ translate: '0 0' }, { translate: '0 calc(100% + 2rem)' }],
           optionen,
         );
-        const entfernen = () => abbild.remove();
+        const entfernen = () => huelle.remove();
         void weg.finished.then(entfernen, entfernen);
         window.setTimeout(entfernen, ABGANG_MS * 3);
       });
     };
   }, [fensterRef]);
+}
+
+/**
+ * Die Hülle des Abbilds: ein Element ohne eigene Box (`display: contents`)
+ * mit geschlossener Shadow-Root. Die Regeln der Seite gelten dort nicht von
+ * selbst; die Hülle übernimmt sie als ein Blatt (`seitenregeln`). Farben und
+ * Schrift erbt sie vom Dokument.
+ */
+function abbildHuelle(abbild: HTMLElement): HTMLElement {
+  const huelle = document.createElement('div');
+  huelle.setAttribute('data-fenster-abbild', '');
+  huelle.setAttribute('aria-hidden', 'true');
+  huelle.setAttribute('inert', '');
+  huelle.style.display = 'contents';
+  const schatten = huelle.attachShadow({ mode: 'closed' });
+  schatten.adoptedStyleSheets = seitenregeln();
+  schatten.append(abbild);
+  return huelle;
+}
+
+let regelblatt: { blatt: CSSStyleSheet; anzahl: number } | null = null;
+
+/**
+ * Alle Regeln der Seite als ein Blatt für die Shadow-Root, einmal gebaut und
+ * wiederverwendet, solange sich die Zahl der Blätter nicht ändert. Ohne
+ * `replaceSync` (jsdom) bleibt es leer.
+ */
+function seitenregeln(): CSSStyleSheet[] {
+  if (typeof CSSStyleSheet === 'undefined' || !('replaceSync' in CSSStyleSheet.prototype)) {
+    return [];
+  }
+  const blaetter = Array.from(document.styleSheets);
+  if (regelblatt?.anzahl !== blaetter.length) {
+    const text = blaetter
+      .map((blatt) => {
+        try {
+          return Array.from(blatt.cssRules, (regel) => regel.cssText).join('\n');
+        } catch {
+          // Ein fremdes Blatt ohne CORS gibt seine Regeln nicht heraus.
+          return '';
+        }
+      })
+      .join('\n');
+    const blatt = new CSSStyleSheet();
+    blatt.replaceSync(text);
+    regelblatt = { blatt, anzahl: blaetter.length };
+  }
+  return [regelblatt.blatt];
 }
 
 /** Alles im Fenster, was per Tab erreichbar ist, in Dokumentreihenfolge. */

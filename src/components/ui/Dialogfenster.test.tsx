@@ -347,7 +347,7 @@ describe('Dialogfenster kommt von unten und geht nach unten (ANN-663)', () => {
     expect(screen.queryByText('Frage')).not.toBeInTheDocument();
   });
 
-  it('lässt ein Abbild ohne Bedeutung nach unten gleiten und entfernt es danach', async () => {
+  it('lässt ein Abbild ohne Bedeutung nach unten gleiten, unauffindbar, und entfernt es danach', async () => {
     let fertig: () => void = () => undefined;
     const animate = vi.fn(() => ({
       finished: new Promise<void>((weiter) => (fertig = weiter)),
@@ -364,11 +364,13 @@ describe('Dialogfenster kommt von unten und geht nach unten (ANN-663)', () => {
       // Das Fenster ist weg: keine Rolle mehr, die Seite wieder frei.
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Öffnen' }).closest('[inert]')).toBeNull();
-      const abbild = document.querySelector<HTMLElement>('.fenster-abbild');
+      const abbild = document.querySelector<HTMLElement>('[data-fenster-abbild]');
       expect(abbild).not.toBeNull();
       expect(abbild).toHaveAttribute('aria-hidden', 'true');
       expect(abbild).toHaveAttribute('inert');
-      expect(abbild?.querySelector('.fenster-kommt')).toBeNull();
+      // In der geschlossenen Shadow-Root: Keine Suche findet den Inhalt doppelt.
+      expect(screen.queryByText('Frage')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Nein', hidden: true })).toBeNull();
       expect(animate).toHaveBeenCalledWith(
         [{ translate: '0 0' }, { translate: '0 calc(100% + 2rem)' }],
         expect.objectContaining({ duration: 240 }),
@@ -378,7 +380,7 @@ describe('Dialogfenster kommt von unten und geht nach unten (ANN-663)', () => {
         fertig();
         await Promise.resolve();
       });
-      expect(document.querySelector('.fenster-abbild')).toBeNull();
+      expect(document.querySelector('[data-fenster-abbild]')).toBeNull();
     } finally {
       Reflect.deleteProperty(HTMLElement.prototype, 'animate');
     }
@@ -406,12 +408,12 @@ describe('Dialogfenster kommt von unten und geht nach unten (ANN-663)', () => {
       await act(async () => {
         await Promise.resolve();
       });
-      const abbild = document.querySelector('.fenster-abbild');
+      const abbild = document.querySelector('[data-fenster-abbild]');
       const zweites = screen.getByRole('dialog', { name: 'Zweites' }).parentElement!;
       expect(abbild?.nextElementSibling).toBe(zweites);
     } finally {
       Reflect.deleteProperty(HTMLElement.prototype, 'animate');
-      document.querySelectorAll('.fenster-abbild').forEach((abbild) => abbild.remove());
+      document.querySelectorAll('[data-fenster-abbild]').forEach((abbild) => abbild.remove());
     }
   });
 });
