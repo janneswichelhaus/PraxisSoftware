@@ -12,8 +12,9 @@ export interface Reiter {
   end?: boolean;
 }
 
+// 44 px breit: so breit wie der Knopf darin (BEF-183), `VERLAUF_FREI_PX`.
 const verlaufKlassen =
-  'from-surface text-line-strong pointer-events-none absolute inset-y-0 flex w-10 items-center to-transparent text-xl';
+  'from-surface text-line-strong pointer-events-none absolute inset-y-0 flex w-11 items-center to-transparent text-xl';
 
 /**
  * Der Hinweis, dass in einer waagerecht rollenden Reiterreihe links oder
@@ -23,45 +24,91 @@ const verlaufKlassen =
  * Hinweis auf weitere Reiter).
  *
  * Steht im `nav` der Reihe, das dafür `relative` ist; `links` und `rechts`
- * misst `useRandVerlauf`. Rein dekorativ und nicht klickbar: Was dahinter
- * liegt, erreicht man durch Wischen, Vorlesesoftware liest die ganze Liste.
- * Von Weiß (`surface`), weil die Reihe in der Karte des `Objektkopf`s steht;
- * nur unter 640 px, darüber bricht die Reihe um. `immer` zeigt ihn auf jeder
- * Breite - für eine Leiste, die auch am Rechner rollt, etwa die Kacheln der
- * Behandlungsgrundlagen (Nachprüfung A9).
+ * misst `useRandVerlauf`. Von Weiß (`surface`), weil die Reihe in der Karte
+ * des `Objektkopf`s steht; nur unter 640 px, darüber bricht die Reihe um.
+ * `immer` zeigt ihn auf jeder Breite - für eine Leiste, die auch am Rechner
+ * rollt, etwa die Kacheln der Behandlungsgrundlagen (Nachprüfung A9).
+ *
+ * **Mit `liste` ist das Zeichen ein Knopf** (BEF-183): Ein Tipp auf „›"
+ * rollt den nächsten verdeckten Reiter ganz ins Bild, „‹" den vorigen. Mit
+ * Handschuh traf der Wisch oft den Reiter daneben. 44 px breit und so hoch wie
+ * die Reihe; für Vorlesesoftware und Tastatur bleibt er unsichtbar, denn sie
+ * erreichen jeden Reiter ohnehin - ein zweiter Weg wäre dort nur Lärm. Ohne
+ * `liste` bleibt der Verlauf rein dekorativ.
  */
 export function Randverlauf({
   links,
   rechts,
   immer = false,
+  liste,
 }: {
   links: boolean;
   rechts: boolean;
   immer?: boolean;
+  /** Die rollende Liste: macht aus „‹" und „›" Knöpfe. */
+  liste?: RefObject<HTMLElement | null>;
 }) {
   const klassen = immer ? verlaufKlassen : `${verlaufKlassen} sm:hidden`;
+  const zeichen = (seite: 'links' | 'rechts') =>
+    liste ? (
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-hidden="true"
+        data-verlauf-knopf={seite}
+        onClick={() => schiebeZumVerdeckten(liste.current, seite)}
+        className={`text-ink-muted pointer-events-auto flex h-full w-11 items-center ${
+          seite === 'links' ? 'justify-start pl-1' : 'justify-end pr-1'
+        }`}
+      >
+        {seite === 'links' ? '‹' : '›'}
+      </button>
+    ) : seite === 'links' ? (
+      '‹'
+    ) : (
+      '›'
+    );
   return (
     <>
       {links ? (
         <span
           aria-hidden="true"
           data-verlauf="links"
-          className={`${klassen} left-0 justify-start bg-linear-to-r pl-1`}
+          className={`${klassen} left-0 justify-start bg-linear-to-r ${liste ? '' : 'pl-1'}`}
         >
-          ‹
+          {zeichen('links')}
         </span>
       ) : null}
       {rechts ? (
         <span
           aria-hidden="true"
           data-verlauf="rechts"
-          className={`${klassen} right-0 justify-end bg-linear-to-l pr-1`}
+          className={`${klassen} right-0 justify-end bg-linear-to-l ${liste ? '' : 'pr-1'}`}
         >
-          ›
+          {zeichen('rechts')}
         </span>
       ) : null}
     </>
   );
+}
+
+/**
+ * Rollt den nächsten Eintrag, der rechts (oder links) unter dem Verlauf liegt
+ * oder ganz außer Sicht ist, vollständig ins Bild (BEF-183). Die gleitende
+ * Pille (`data-gleitanzeiger`) ist kein Eintrag.
+ */
+function schiebeZumVerdeckten(element: HTMLElement | null, seite: 'links' | 'rechts') {
+  if (!element) return;
+  const rahmen = element.getBoundingClientRect();
+  const eintraege = [...element.children].filter(
+    (kind): kind is HTMLElement =>
+      kind instanceof HTMLElement && !kind.hasAttribute('data-gleitanzeiger'),
+  );
+  const ziel =
+    seite === 'rechts'
+      ? eintraege.find((e) => e.getBoundingClientRect().right > rahmen.right - VERLAUF_FREI_PX)
+      : eintraege.findLast((e) => e.getBoundingClientRect().left < rahmen.left + VERLAUF_FREI_PX);
+  if (ziel) rolleInsBild(element, ziel, VERLAUF_FREI_PX);
 }
 
 /**
@@ -204,7 +251,7 @@ function Reiterreihe({
         ) : null}
         {children}
       </ul>
-      <Randverlauf {...rand} />
+      <Randverlauf {...rand} liste={liste} />
     </nav>
   );
 }

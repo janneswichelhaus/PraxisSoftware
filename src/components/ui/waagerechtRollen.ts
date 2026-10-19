@@ -18,11 +18,11 @@ export const NACHBAR_PX = 24;
 
 /**
  * Der Rand neben dem offenen Reiter in einer Leiste mit `Randverlauf`: Der
- * Verlauf ist 40 px breit (`w-10`), 8 px mehr halten den Reiter ganz davor -
- * er liegt nie unter dem Verlauf, der Nachbar ragt darunter angeschnitten ins
- * Bild.
+ * Verlauf ist 44 px breit (`w-11`, so breit wie sein Knopf, BEF-183), 8 px
+ * mehr halten den Reiter ganz davor - er liegt nie unter dem Verlauf, der
+ * Nachbar ragt darunter angeschnitten ins Bild.
  */
-export const VERLAUF_FREI_PX = 40 + 8;
+export const VERLAUF_FREI_PX = 44 + 8;
 
 /**
  * Rollt die Leiste waagerecht, bis `eintrag` ganz zu sehen ist - über

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Badge } from './Badge';
@@ -205,10 +206,11 @@ describe('Reiterleiste (Design-Fundament)', () => {
       const rechts = document.querySelector('[data-verlauf="rechts"]')!;
       expect(rechts).not.toBeNull();
       expect(rechts).toHaveTextContent('›');
-      // Dekorativ, auf der weißen Karte, nur wo die Leiste rollt, nicht klickbar.
+      // Auf der weißen Karte, nur wo die Leiste rollt; der Verlauf selbst fängt
+      // keinen Tipp, nur sein Knopf (BEF-183).
       expect(rechts).toHaveAttribute('aria-hidden', 'true');
       expect(klassenVon(rechts)).toEqual(
-        expect.arrayContaining(['from-surface', 'sm:hidden', 'pointer-events-none']),
+        expect.arrayContaining(['from-surface', 'sm:hidden', 'pointer-events-none', 'w-11']),
       );
 
       // Ans Ende gerollt: rechts nichts mehr, links liegt jetzt etwas.
@@ -221,9 +223,36 @@ describe('Reiterleiste (Design-Fundament)', () => {
     it('rollt den offenen Reiter so weit, dass er nicht unter dem Verlauf liegt', () => {
       geometrie();
       renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/stammdaten');
-      // „Stammdaten" liegt bei 240-360 px; rechts bleiben 48 px frei (Verlauf 40).
-      expect(screen.getByRole('list').scrollLeft).toBe(360 + 48 - 300);
+      // „Stammdaten" liegt bei 240-360 px; rechts bleiben 52 px frei (Verlauf 44).
+      expect(screen.getByRole('list').scrollLeft).toBe(360 + 52 - 300);
       expect(document.querySelector('[data-verlauf="links"]')).not.toBeNull();
+    });
+
+    it('rollt mit einem Tipp auf „›" den nächsten verdeckten Reiter ins Bild (BEF-183)', async () => {
+      geometrie();
+      const user = userEvent.setup();
+      renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/termine');
+      const liste = screen.getByRole('list');
+      const knopf = document.querySelector<HTMLButtonElement>('[data-verlauf-knopf="rechts"]')!;
+      // 44 px Tippziel über die Höhe der Reihe; die Tastatur und die
+      // Vorlesesoftware erreichen jeden Reiter ohnehin und überspringen ihn.
+      expect(klassenVon(knopf)).toEqual(
+        expect.arrayContaining(['pointer-events-auto', 'w-11', 'h-full']),
+      );
+      expect(knopf).toHaveAttribute('tabindex', '-1');
+      expect(knopf).toHaveTextContent('›');
+      expect(screen.queryAllByRole('button')).toEqual([]);
+
+      // „Stammdaten" (240-360) liegt halb unter dem Verlauf: ganz ins Bild, 52 px frei.
+      await user.click(knopf);
+      expect(liste.scrollLeft).toBe(360 + 52 - 300);
+      // Jetzt liegt links etwas - „‹" rollt zurück zum vorigen verdeckten Reiter.
+      fireEvent.scroll(liste);
+      const zurueck = document.querySelector<HTMLButtonElement>('[data-verlauf-knopf="links"]')!;
+      expect(zurueck).toHaveTextContent('‹');
+      // „Doku" (120-240) ragte nur noch 8 px herein: ganz ins Bild, 52 px davor frei.
+      await user.click(zurueck);
+      expect(liste.scrollLeft).toBe(120 - 52);
     });
 
     it('zeigt keinen Verlauf, wo die Leiste umbricht und alles zu sehen ist', () => {

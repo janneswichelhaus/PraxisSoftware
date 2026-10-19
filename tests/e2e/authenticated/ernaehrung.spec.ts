@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { KONTEN, PATIENTEN, TESTKENNWORT, anmelden } from './helpers';
+import { KONTEN, PATIENTEN, TESTKENNWORT, anmelden, reiterAntippen } from './helpers';
 
 /**
  * ERN-EPIC-001 (ADR-027): Ernährungsprofil gegen den echten Stack, bei 375 px.
@@ -20,6 +20,10 @@ function zaehler() {
       tipps += 1;
       await ziel.click();
     },
+    /** Ein Reiter: liegt er bei 375 px außer Sicht, zählt „›“ mit (BEF-183). */
+    async reiter(leiste: Locator, name: string) {
+      tipps += await reiterAntippen(leiste, name);
+    },
     get tipps() {
       return tipps;
     },
@@ -34,7 +38,7 @@ test('Profil an der Akte in höchstens vier Tipps plus Felder, Zielwerte mit Rec
   await page.goto(`/patienten/${PATIENTEN.max}/termine`);
 
   const z = zaehler();
-  await z.tippe(page.getByRole('link', { name: 'Ernährung', exact: true }));
+  await z.reiter(page.getByRole('navigation', { name: 'Bereiche der Akte' }), 'Ernährung');
   // Nach einem früheren Lauf steht dort „Neue Beratung anlegen“ - gleicher Weg.
   await z.tippe(page.getByRole('link', { name: /^(Profil|Neue Beratung) anlegen$/ }));
   // Felder: Einwilligung vom Papier, Größe, Gewicht, Geschlecht, Aktivität, Ziel.
