@@ -6879,7 +6879,7 @@ Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: —
 
 ### ANN-667 — Profilbild: Einwilligung durch das eigene Hochladen, fällt mit dem Ausscheiden
 
-Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-19, wie empfohlen) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Ein Profilbild setzt nur die Person selbst; das Hochladen ist ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), freiwillig im Sinne von § 26 Abs. 2 BDSG: ohne Bild keinerlei Nachteil, Entfernen jederzeit. Sehen darf es nur das Team im Teamchat. Es fällt beim Entfernen, Ersetzen und Ausscheiden sofort, mit Löschjournal.
 

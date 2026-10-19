@@ -2,7 +2,7 @@
 
 ## Status
 
-**Angenommen, Fassung 8; Fassungen 9 und 10 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassungen 8 und 10; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
@@ -13,9 +13,9 @@ Punkte 29 und 69 für Anhänge an Rückfragen); **Fassung 7** am 2026-10-18 von
 Jannes entschieden (Umkehr von Punkt 29 für jeden Upload); **Fassung 8** am 2026-10-18
 bestätigt, die Fragen 30 bis 32 wie empfohlen (Abschnitt M); **Fassung 9** am 2026-10-18
 vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 33 und 34);
-**Fassung 10** am 2026-10-19 vorgeschlagen, im Kern von Jannes beauftragt (Abschnitt O,
-Bestätigungsfragen 35 bis 37).
-**Fassung 10 (2026-10-19, vorgeschlagen).** Anlass ist Jannes' Auftrag: „Bitte füge Profilbilder
+**Fassung 10** am 2026-10-19 von Jannes beauftragt und am selben Tag bestätigt, die Fragen 35
+bis 37 wie empfohlen (Abschnitt O).
+**Fassung 10 (2026-10-19, am selben Tag angenommen).** Anlass ist Jannes' Auftrag: „Bitte füge Profilbilder
 pro Mitarbeiter ein beziehungsweise die Möglichkeit, Profilbilder festzulegen.“ **Abschnitt O
 (Punkte 88 bis 95)** gibt Profilbilder im Teamchat frei: ein Bild, das sich jede Person selbst
 gibt, auf dem Gerät zum Quadrat gerechnet, am Inhalt geprüft. Das ist die **Umkehr eines
@@ -134,7 +134,7 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
 2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6);
 2026-10-18 (Fassung 7); 2026-10-18 (Fassung 8, am selben Tag angenommen); 2026-10-18
-(Fassung 9, vorgeschlagen); 2026-10-19 (Fassung 10, vorgeschlagen)
+(Fassung 9, vorgeschlagen); 2026-10-19 (Fassung 10, am selben Tag angenommen)
 
 ## Kontext
 
@@ -1734,10 +1734,11 @@ Frist und Einordnung des Videos gehen in B2; den Prüfer wählt ein eigener ADR
     Messung (Punkt 39). *Alternative:* `IDEA-KOM-004` vollständig — dann als
     eigene Fassung, nicht nebenbei.
 
-## Bestätigungsfragen zu Fassung 10 — offen
+## Bestätigungsfragen zu Fassung 10 — beantwortet am 2026-10-19
 
-Den Kern hat Jannes am 2026-10-19 beauftragt (Anlass von Abschnitt O). Die Nummerierung setzt
-die der Fassung 9 fort.
+Den Kern hat Jannes am 2026-10-19 beauftragt (Anlass von Abschnitt O); die Einzelheiten hat er am
+selben Abend wie empfohlen beantwortet („handle nach den empfohlenen Antworten“). Die Nummerierung
+setzt die der Fassung 9 fort.
 
 35. **Profilbilder als Zeile in der Datenbank statt im Bucket** (Punkt 91)?
     *Empfehlung: ja.* Ein Bild in jeder Liste braucht so keinen Verweis, die Prüfung ist sofort
@@ -1905,4 +1906,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 7 | 2026-10-18 | **Entschieden von Jannes:** „Keine Virenprüfung in der gesamten Anwendung!“ Umkehr von Punkt 29 für jeden Upload, auch künftige von außen (Portal, Formular, Teamchat); eine Freigabe nach Punkt 30 braucht keine Virenprüfung. Vermerke an den Punkten 28, 29, 30, 42, 50 und 69, an den Konsequenzen und an „Bewusst nicht Bestandteil“. Alle übrigen Punkte bleiben, auch die Kennzeichnung „nicht auf Schadsoftware geprüft“ und der ausgeschaltete Schalter `app.message_attachment_scan_required()`. Anlass: Antwort auf Frage 1 der PR #272 (TEAM-002) |
 | 8 | 2026-10-18 | **Angenommen am selben Tag, im Kern von Jannes entschieden, Fragen 30 bis 32 wie empfohlen:** Abschnitt M (Punkte 71 bis 81) — Fotos (JPEG, PNG) und PDF an Teamchat-Nachrichten, bis zu fünf je Nachricht, ohne Virenprüfung, Klasse `teamchat`, Frist der Nachricht, derselbe Weg wie jede Datei, Anzeige ohne Vorschaubild und ohne Download, nichts Neues im Protokoll, Dateien je Gespräch. Schränkt für diese Anhänge die Punkte 30 und 42 ein, je mit Vermerk; Vermerk an „Bewusst nicht Bestandteil“. Anlass: TEAM-003 |
 | 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |
-| 10 | 2026-10-19 | **Vorgeschlagen, im Kern von Jannes beauftragt:** Abschnitt O (Punkte 88 bis 95) - Profilbilder im Teamchat, nur für sich selbst gesetzt, auf dem Gerät zu 256 × 256 JPEG ohne Metadaten gerechnet, am Inhalt in derselben Transaktion geprüft, Klasse `profilbild` (fällt mit Entfernen, Ersetzen, Ausscheiden). **Umkehr von Punkt 1** für Profilbilder: Zeile in der Datenbank statt Bucket. Vermerke an den Punkten 1, 15, 50 und 51. Bestätigungsfragen 35 bis 37 offen. Anlass: Auftrag Jannes, TEAM-007 |
+| 10 | 2026-10-19 | **Angenommen am selben Tag, im Kern von Jannes beauftragt, Fragen 35 bis 37 wie empfohlen:** Abschnitt O (Punkte 88 bis 95) - Profilbilder im Teamchat, nur für sich selbst gesetzt, auf dem Gerät zu 256 × 256 JPEG ohne Metadaten gerechnet, am Inhalt in derselben Transaktion geprüft, Klasse `profilbild` (fällt mit Entfernen, Ersetzen, Ausscheiden). **Umkehr von Punkt 1** für Profilbilder: Zeile in der Datenbank statt Bucket. Vermerke an den Punkten 1, 15, 50 und 51. Anlass: Auftrag Jannes, TEAM-007 |

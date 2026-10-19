@@ -1106,7 +1106,7 @@
           "status": "fertig",
           "fertig_am": "2026-10-19",
           "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223110000_team_007_profilbild.sql, supabase/tests/teamchat-profil.test.ts (Prüfung am Inhalt, Rechte, Löschjournal, Wiederherstellung) und testumgebung.test.ts, src/features/teamchat/profilbild.test.ts, MeinKontoPage.test.tsx, TeamChat.test.tsx, tests/e2e/authenticated/profilbild.spec.ts (Foto mit Ortsangabe aus dem echten Browser), Zweitreview",
-          "vermerk": "Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O vorgeschlagen (Umkehr von Punkt 1, Bestätigungsfragen 35 bis 37); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht in product/ideen/referenz-slack.md"
+          "vermerk": "Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O angenommen (Umkehr von Punkt 1, Fragen 35 bis 37 wie empfohlen); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht in product/ideen/referenz-slack.md"
         },
         {
           "id": "url-001",

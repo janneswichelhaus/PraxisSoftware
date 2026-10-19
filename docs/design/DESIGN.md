@@ -1,8 +1,8 @@
 # DESIGN – so sieht eine Seite dieser App aus
 
-Stand 16.10.2026. **Die einzige Seitenrezeptur.** Jede neue oder umgebaute Seite folgt ihr (Leitfaden
-[L6](leitfaden-schlank.md)). Maßstab sind die abgenommenen Referenzseiten (unten);
-die Handoffs bleiben Historie. Werte stehen in
+Stand 19.10.2026. **Die einzige Seitenrezeptur.** Jede neue oder umgebaute Seite folgt ihr (Leitfaden
+[L6](leitfaden-schlank.md)). Maßstab sind die abgenommenen Referenzseiten (unten).
+Werte stehen in
 [`src/index.css`](../../src/index.css), Bausteine in [`src/components/ui`](../../src/components/ui),
 vorgeführt in [`ui-bausteine.html`](../../tests/e2e/fixtures/ui-bausteine.html).
 
@@ -134,7 +134,7 @@ Nummern der Analyse „Designmaßstab“, Abschnitt 9:
   `Filterchips` = Filterwerte (ANN-407).
 - **9.10 Bilder:** `Medienbild` 4:3, ganz statt beschnitten, Platzhalter, Pflicht-`alt` (ANN-404).
   Übungen haben keine Zeichnung (ANN-539): Dosierung als `Tile`-Reihe, dann die Anleitung als
-  `Schrittliste`; Zeilen ohne Vorschaubild.
+  `Schrittliste`; Zeilen ohne Vorschaubild. Personen: `Personenbild`, rund, auf ihrer Farbe (ANN-666).
 - **9.11 Tabellen am Telefon:** `Datenliste`; `Verlaufstabelle` nur für Zeitreihen.
 - **9.12 Plattform:** Profil oben, keine eigene Farbwelt. **9.13 Druck:** Profil „Druckblatt“.
 - **9.14 Rückmeldung:** `ui/Rueckmeldung.tsx`. **9.15 Symbole:** Raster 20, Strich 1,75–2, runde
@@ -182,5 +182,5 @@ Rahmen (`app/AppShell.tsx`), Rechnungsliste als Vorbild der `Datenliste`.
 - [05.10.](handoff-2026-10-05-rahmen.md): Fläche `#eceee8` für Startbild und Manifest (Weiß).
 - [06.10. Kalender und Tour](handoff-2026-10-06-kalender-und-tour.md): Kopfknöpfe der Tour 48 px
   bleiben bis zur Sichtung (ANN-403).
-- [08.10. Lastenrad 3D](handoff-2026-10-08-lastenrad-3d.md): gebaut in FLT-EPIC-001; Nadelfarben als Token `--color-nadel-*`.
+- [08.10. Lastenrad 3D](handoff-2026-10-08-lastenrad-3d.md): Nadelfarben als Token `--color-nadel-*`.
 - Kanvas „Own Motion · Praxis“ (`docs/product/kanvas/`): überholt.

@@ -7,7 +7,7 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 Profilbild und Farbe im Teamchat (19.10., Branch `ccr-37917f35-emdjjp`, TEAM-006, -007): Farbe je
 Person, Profilbild nur für sich selbst (256 px auf dem Gerät, am Inhalt geprüft, in der Datenbank);
-ADR-017 Fassung 10 vorgeschlagen (Fragen 35 bis 37), ANN-666, ANN-667.
+ADR-017 Fassung 10 angenommen (Fragen wie empfohlen), ANN-666, ANN-667.
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
