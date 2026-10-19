@@ -348,9 +348,11 @@ export function einordnung(termin: DayPlanEntry): string {
       ? termin.title
         ? 'Fehlzeit'
         : null
-      : termin.kind === 'training'
-        ? 'Training'
-        : null,
+      : termin.occasion === 'nutrition_counselling'
+        ? 'Ernährungsberatung'
+        : termin.kind === 'training'
+          ? 'Training'
+          : null,
     appointmentTypeHint(termin.appointment_type),
     termin.location_name,
   ]

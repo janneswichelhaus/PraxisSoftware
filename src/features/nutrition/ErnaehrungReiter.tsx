@@ -29,7 +29,7 @@ import {
   type Ernaehrungssicht,
   type Verhaeltnisart,
 } from './api';
-import { ernaehrungsFormulare, leseZahl } from './eingabe';
+import { beratungsterminPfad, ernaehrungsFormulare, leseZahl } from './eingabe';
 import { Zielwertliste } from './Rechenweg';
 import { TagebuchDerBeratung } from './TagebuchDerBeratung';
 import {
@@ -168,6 +168,29 @@ function Profilansicht({
           Einwilligung widerrufen am {formatDate(profil.consent!.occurred_on)}. Nichts Neues
           eintragen; was mit den Angaben geschieht, mit der Person klären.
         </Statusmeldung>
+      ) : null}
+
+      {/* ERN-012 (ANN-622): die Sitzung als Termin mit dem Anlass; mit dem
+          Haken entsteht die Position, die Rechnung ist die des Bereichs. */}
+      {schreibbar ? (
+        <Section
+          titel="Beratungstermin"
+          rahmen
+          aktion={
+            <ButtonLink
+              to={beratungsterminPfad(art, verhaeltnisId)}
+              variant="secondary"
+              groesse="kompakt"
+            >
+              Anlegen
+            </ButtonLink>
+          }
+        >
+          <p className="text-ink-muted text-sm">
+            Mit dem Haken am Termin ist die Sitzung erfasst; abgerechnet wird mit der Rechnung{' '}
+            {art === 'treatment' ? 'der Behandlung' : 'des Trainings'}.
+          </p>
+        </Section>
       ) : null}
 
       <Gewicht

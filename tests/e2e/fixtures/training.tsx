@@ -220,6 +220,7 @@ const termin: TrainingAppointment = {
   cancellation_reason: null,
   cancellation_received_at: null,
   organization_time_zone: 'Europe/Berlin',
+  occasion: 'regular',
 };
 client.setQueryData(['training-bases', TINA], vereinbarungen);
 client.setQueryData(['training-client-appointments', TINA], kundentermine);

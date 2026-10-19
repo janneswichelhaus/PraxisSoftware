@@ -4,6 +4,7 @@ import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import {
   schreibfehler,
+  terminAnlassSchema,
   type AppointmentFormValues,
   type CancellationReason,
 } from '@/features/appointments/api';
@@ -420,6 +421,8 @@ const trainingsterminSchema = z.object({
   cancellation_reason: z.string().nullable(),
   cancellation_received_at: z.string().nullable(),
   organization_time_zone: z.string(),
+  /** ERN-011: die Ernährungsberatung am Trainingsverhältnis - ohne Protokoll. */
+  occasion: terminAnlassSchema.default('regular'),
 });
 export type TrainingAppointment = z.infer<typeof trainingsterminSchema>;
 

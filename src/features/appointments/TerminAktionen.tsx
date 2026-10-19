@@ -51,6 +51,7 @@ import {
   formatLocalDate,
   formatLocalTime,
   feeBasisLabels,
+  istBeratung,
   locationSummary,
   patientName,
   reopenAppointment,
@@ -907,7 +908,10 @@ function TerminAktionen({
     appointment.kind === 'therapy' &&
     appointment.status === 'documented' &&
     hakenFehlt(appointment.status, appointment.completed_at);
-  const darfDokumentieren = canWriteTreatmentNote(user.roles);
+  // ERN-012: Die Ernährungsberatung kennt keine Behandlungsdoku und kein
+  // Hausbesuchsprotokoll (ANN-664); abgehakt wird sie wie jeder Termin.
+  const beratung = istBeratung(appointment);
+  const darfDokumentieren = canWriteTreatmentNote(user.roles) && !beratung;
   // ABN-006: Verzichten dürfen, wer ein Ausfallhonorar erfasst (owner, office).
   const darfVerzichten =
     canRecordBillableServices(user.roles) &&
@@ -921,7 +925,7 @@ function TerminAktionen({
    */
   const istEreignis = appointment.kind === 'internal';
   /** Der Hausbesuch führt seinen eigenen Ablauf (CAL-018, ANN-055). */
-  const istHausbesuch = !istEreignis && appointment.appointment_type === 'home_visit';
+  const istHausbesuch = !istEreignis && !beratung && appointment.appointment_type === 'home_visit';
 
   /**
    * Die Bestätigung des letzten Vorgangs (ZST-16). Mit laufender Nummer: Eine

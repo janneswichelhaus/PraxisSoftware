@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { abgewiesen } from '@/lib/abgewiesen';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { schreibfehler, type AppointmentFormValues } from '@/features/appointments/api';
 import {
   einwilligungSchema,
   FORMELN,
@@ -253,4 +255,50 @@ export async function fetchTagebuch(
   })) as { data: unknown; error: unknown };
   if (error) throw new Error(satz);
   return antwort(tagebuchDerBeratungSchema.nullable(), data ?? null, satz);
+}
+
+// -----------------------------------------------------------------------------
+// ERN-012: der Beratungstermin (ANN-622, ANN-664). Am Verhältnis des laufenden
+// Profils - an der Akte ein Termin der Behandlung, am Trainingsverhältnis
+// einer des Trainings, jeweils mit dem Anlass „Ernährungsberatung“. Mit dem
+// Haken entsteht die Position; abgerechnet wird mit der Rechnung des Bereichs.
+// -----------------------------------------------------------------------------
+
+export async function beratungsterminAnlegen(
+  profilId: string,
+  werte: AppointmentFormValues,
+  ausserhalbBestaetigt: boolean,
+  vergangenheitBestaetigt: boolean,
+): Promise<string> {
+  const satz = 'Der Beratungstermin konnte nicht angelegt werden.';
+  const ergebnis = (await getSupabase().rpc('create_nutrition_appointment', {
+    p_profile_id: profilId,
+    p_staff_member_id: werte.staff_member_id,
+    p_appointment_type: werte.appointment_type,
+    p_date: werte.date,
+    p_start_time: werte.start_time,
+    p_end_time: werte.end_time,
+    p_location_id: werte.appointment_type === 'practice' ? werte.location_id : null,
+    p_allow_outside_working_hours: ausserhalbBestaetigt,
+    p_confirmed_past: vergangenheitBestaetigt,
+  })) as { data: unknown; error: { message?: string } | null; status?: number };
+  if (ergebnis.error) {
+    const m = ergebnis.error.message ?? '';
+    if (m.includes('consent missing'))
+      throw new Error('Ohne erteilte Einwilligung entsteht kein Beratungstermin.');
+    if (m.includes('has ended')) throw new Error('Die Beratung ist beendet.');
+    if (m.includes('not allowed to counsel'))
+      throw new Error(
+        'Die Ernährungsberatung führt die Praxisinhaber:in; dieses Konto darf das nicht.',
+      );
+    if (m.includes('staff member not assignable'))
+      throw new Error('Die gewählte Person ist für diesen Bereich nicht im Kalender geführt.');
+    if (m.includes('complete patient address'))
+      throw new Error('Für den Hausbesuch fehlt eine vollständige Anschrift.');
+    throw schreibfehler(ergebnis.error, satz);
+  }
+  if (abgewiesen(ergebnis)) throw new Error(satz);
+  const id = z.string().uuid().safeParse(ergebnis.data);
+  if (!id.success) throw new Error(satz);
+  return id.data;
 }

@@ -6,6 +6,7 @@ import {
   appointmentStatusLabels,
   appointmentStatusSchema,
   appointmentTypeSchema,
+  terminAnlassSchema,
   type AppointmentStatus,
 } from '@/features/appointments/api';
 import { documentationStatusSchema } from '@/features/documentation/api';
@@ -88,6 +89,11 @@ const dayPlanEntrySchema = z.object({
   training_relationship_id: z.string().nullable().optional(),
   training_given_name: z.string().nullable().optional(),
   training_family_name: z.string().nullable().optional(),
+  /**
+   * ERN-011 (ANN-665): der Anlass - 'nutrition_counselling' an der
+   * Ernährungsberatung, ohne Behandlungsdoku. Optional wie oben.
+   */
+  occasion: terminAnlassSchema.optional(),
 });
 
 export type DayPlanEntry = z.infer<typeof dayPlanEntrySchema>;

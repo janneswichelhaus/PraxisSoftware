@@ -223,6 +223,15 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
 export const appointmentKindSchema = z.enum(['therapy', 'internal', 'training']);
 export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
 
+/** ERN-011: der Anlass eines Termins neben dem Kontext (ADR-022 Punkt 2). */
+export const terminAnlassSchema = z.enum(['regular', 'nutrition_counselling']);
+export type TerminAnlass = z.infer<typeof terminAnlassSchema>;
+
+/** Ist der Termin eine Ernährungsberatung? Ohne Angabe nicht. */
+export function istBeratung(termin: { occasion?: TerminAnlass | null | undefined }): boolean {
+  return termin.occasion === 'nutrition_counselling';
+}
+
 export const appointmentSchema = z.object({
   id: z.string(),
   // Beide `null` bei einem Ereignis - dort gibt es niemanden zu behandeln.
@@ -284,6 +293,8 @@ export const appointmentSchema = z.object({
   // ABN-006: Zeitpunkt eines bewussten Verzichts auf die Gebühr. Der Anlass
   // bleibt stehen; wer verzichtet hat, steht im Protokoll (ADR-010).
   fee_waived_at: z.string().nullable(),
+  // ERN-011 (ANN-665): der Anlass - an der Ernährungsberatung ohne Doku.
+  occasion: terminAnlassSchema.optional(),
   // Die seit der letzten Terminänderung vermerkten Mitteilungswege (CAL-012).
   // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
   // beides ist derselbe Handlungsbedarf.
@@ -319,7 +330,7 @@ export const TERMIN_SPALTEN =
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
   'cancellation_reason, cancellation_received_at, no_show_recorded_at, ' +
   'no_show_protocol_confirmed, fee_basis, ' +
-  'fee_waived_at, notification_channels, treatment_basis_covered, ' +
+  'fee_waived_at, notification_channels, treatment_basis_covered, occasion, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -1419,6 +1430,11 @@ const calendarEntrySchema = z.object({
    */
   visit_street: z.string().nullable().default(null),
   visit_house_number: z.string().nullable().default(null),
+  /**
+   * Der Anlass (ERN-011, ANN-665): 'nutrition_counselling' an der
+   * Ernährungsberatung - am Behandlungs- oder Trainingstermin. Kein Inhalt.
+   */
+  occasion: terminAnlassSchema.default('regular'),
 });
 
 /**

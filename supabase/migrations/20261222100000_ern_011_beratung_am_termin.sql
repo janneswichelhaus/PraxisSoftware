@@ -1483,3 +1483,52 @@ comment on function public.get_training_appointment(uuid) is
   'TRN-006: ein Trainingstermin mit Kund:in, betreuender Person und Ort; seit ERN-011 mit dem Anlass (occasion). owner, trainer, office; ein anderer Kontext ist nicht gefunden; abgewiesen mit denied unter appointments.read. Nicht protokolliert wie das Termindetail der Behandlung (ANN-180).';
 revoke all on function public.get_training_appointment(uuid) from public, anon;
 grant execute on function public.get_training_appointment(uuid) to authenticated;
+
+-- Die Terminsicht der Anwendung nennt den Anlass (Fenster „Aktionen“).
+create or replace view public.appointment_directory
+with (security_invoker = true) as
+ SELECT a.id,
+    a.organization_id,
+    a.patient_id,
+    a.staff_member_id,
+    a.location_id,
+    a.treatment_basis_id,
+    a.appointment_type,
+    a.kind,
+    a.title,
+    a.event_group_id,
+    a.event_series_id,
+    a.status,
+    a.starts_at,
+    a.ends_at,
+    a.updated_at,
+    a.visit_street,
+    a.visit_house_number,
+    a.visit_postal_code,
+    a.visit_city,
+    a.completed_at,
+    a.cancellation_reason,
+    a.cancellation_received_at,
+    a.fee_basis,
+    a.no_show_recorded_at,
+    a.no_show_protocol_confirmed,
+    pp.given_name AS patient_given_name,
+    pp.family_name AS patient_family_name,
+    sp.given_name AS staff_given_name,
+    sp.family_name AS staff_family_name,
+    l.name AS location_name,
+    o.time_zone AS organization_time_zone,
+    COALESCE(( SELECT array_agg(DISTINCT n.channel ORDER BY n.channel) AS array_agg
+           FROM public.appointment_notifications n
+          WHERE n.appointment_id = a.id AND n.notified_at >= a.patient_relevant_changed_at), ARRAY[]::text[]) AS notification_channels,
+    app.appointment_is_covered(a.id) AS treatment_basis_covered,
+    a.fee_waived_at,
+    -- ERN-011 (ANN-665): der Anlass.
+    a.occasion
+   FROM public.appointments a
+     LEFT JOIN public.patients p ON p.id = a.patient_id
+     LEFT JOIN public.persons pp ON pp.id = p.person_id
+     JOIN public.staff_members sm ON sm.id = a.staff_member_id
+     JOIN public.persons sp ON sp.id = sm.person_id
+     JOIN public.organizations o ON o.id = a.organization_id
+     LEFT JOIN public.locations l ON l.id = a.location_id;

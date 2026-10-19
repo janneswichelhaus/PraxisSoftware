@@ -14,6 +14,7 @@ import {
 import {
   appointmentFormSchema,
   fensterEnde,
+  fetchAssignableTherapists,
   fetchAssignableTrainers,
   fetchLocations,
   istAusserhalbArbeitszeit,
@@ -38,7 +39,25 @@ const FELDER: readonly AppointmentFormField[] = [
   'location_id',
 ];
 
-const TERMINTEXTE = { ...EINGABETEXTE, bezeichnung: 'Ungespeicherter Trainingstermin' };
+/**
+ * Wer zugeordnet werden kann - im Training die Betreuung (ANN-176), am
+ * Beratungstermin an der Akte die Behandelnden (ERN-012): Die Zuordnung folgt
+ * dem Kontext des Termins, verbindlich prüft der Server.
+ */
+export type Personenkreis = 'training' | 'therapy';
+
+const PERSONENKREISE = {
+  training: {
+    schluessel: 'assignable-trainers',
+    laden: fetchAssignableTrainers,
+    beschriftung: 'Betreuende Person *',
+  },
+  therapy: {
+    schluessel: 'assignable-therapists',
+    laden: fetchAssignableTherapists,
+    beschriftung: 'Behandelnde Person *',
+  },
+} as const;
 
 export interface Bestaetigung {
   /** Außerhalb der Arbeitszeit, ausdrücklich bestätigt (CAL-005). */
@@ -73,6 +92,9 @@ export function TrainingTerminFormular({
   abbrechenZiel,
   onSpeichern,
   onGespeichert,
+  personenkreis = 'training',
+  bezeichnung = 'Ungespeicherter Trainingstermin',
+  hausbesuchHinweis = 'Die Anschrift kommt aus dem Kontakt der Trainingskund:in – Straße mit Hausnummer, PLZ und Ort.',
 }: {
   startwerte: Record<AppointmentFormField, string>;
   startMinuten: number;
@@ -92,6 +114,10 @@ export function TrainingTerminFormular({
   abbrechenZiel: string;
   onSpeichern: (werte: AppointmentFormValues, bestaetigung: Bestaetigung) => Promise<string>;
   onGespeichert: (ergebnis: string) => void;
+  personenkreis?: Personenkreis;
+  /** Wie der Schutz vor Textverlust den ungespeicherten Termin nennt. */
+  bezeichnung?: string;
+  hausbesuchHinweis?: string;
 }) {
   const [werte, setWerte] = useState(startwerte);
   const [vorbelegt, setVorbelegt] = useState(startwerte);
@@ -104,9 +130,10 @@ export function TrainingTerminFormular({
   const [dauerGueltig, setDauerGueltig] = useState(true);
   const [vorfrage, setVorfrage] = useState<AppointmentFormValues | null>(null);
 
+  const kreis = PERSONENKREISE[personenkreis];
   const betreuung = useQuery({
-    queryKey: ['assignable-trainers'],
-    queryFn: fetchAssignableTrainers,
+    queryKey: [kreis.schluessel],
+    queryFn: kreis.laden,
     retry: false,
   });
   const standorte = useQuery({ queryKey: ['locations'], queryFn: fetchLocations, retry: false });
@@ -147,7 +174,7 @@ export function TrainingTerminFormular({
     FELDER.some((feld) => werte[feld] !== vorbelegt[feld]);
   const { freigeben, schutz } = useTextverlustschutz({
     ungespeichert: geaendert,
-    texte: TERMINTEXTE,
+    texte: { ...EINGABETEXTE, bezeichnung },
   });
 
   const mutation = useMutation({
@@ -266,7 +293,7 @@ export function TrainingTerminFormular({
         fehler={fehler}
         onChange={setzen}
         therapeuten={betreuung.data ?? []}
-        personBeschriftung="Betreuende Person *"
+        personBeschriftung={kreis.beschriftung}
         personenListe={{
           laedt: betreuung.isPending,
           fehlgeschlagen: betreuung.isError,
@@ -288,12 +315,7 @@ export function TrainingTerminFormular({
           if (mutation.isError) mutation.reset();
         }}
         laengeHinweis="Die Dauer ist frei im Raster der Praxis."
-        hausbesuch={
-          <p className="text-ink-muted text-sm">
-            Die Anschrift kommt aus dem Kontakt der Trainingskund:in – Straße mit Hausnummer, PLZ
-            und Ort.
-          </p>
-        }
+        hausbesuch={<p className="text-ink-muted text-sm">{hausbesuchHinweis}</p>}
       />
 
       {schutz}

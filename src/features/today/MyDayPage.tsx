@@ -413,7 +413,8 @@ function MeinTag({
     // B4: auch eine festgeschriebene Doku wartet noch auf ihren Haken.
     if (
       !darfTermine ||
-      termin.kind !== 'therapy' ||
+      // ERN-012: Die Ernährungsberatung wird abgehakt, auch im Training.
+      (termin.kind !== 'therapy' && termin.occasion !== 'nutrition_counselling') ||
       !hakenFehlt(termin.status, termin.checked_at)
     ) {
       return null;
@@ -432,7 +433,9 @@ function MeinTag({
           setMeldung({
             ton: 'ok',
             text:
-              darfDokumentieren && termin.status !== 'documented'
+              darfDokumentieren &&
+              termin.status !== 'documented' &&
+              termin.occasion !== 'nutrition_counselling'
                 ? `${name} abgeschlossen. Doku offen.`
                 : `${name} abgeschlossen.`,
             abgehakt: { id: termin.id, name },
@@ -453,6 +456,7 @@ function MeinTag({
   function dokuFuer(termin: DayPlanEntry): string | null {
     const mitDoku =
       termin.kind === 'therapy' &&
+      termin.occasion !== 'nutrition_counselling' &&
       termin.patient_id !== null &&
       (darfDokuLesen || darfDokumentieren) &&
       termin.status !== 'cancelled' &&

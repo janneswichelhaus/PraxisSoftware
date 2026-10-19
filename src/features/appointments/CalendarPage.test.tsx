@@ -2785,6 +2785,39 @@ describe('CalendarPage: Doku offen und Terminpanel', () => {
     );
     expect(within(panel).queryByText(/Behandelnde Person/)).toBeNull();
   });
+
+  it('nennt die Ernährungsberatung an Kachel und Panel - mit Haken, ohne Doku (ERN-012)', async () => {
+    fetchAppointments.mockResolvedValue([eintrag({ occasion: 'nutrition_counselling' })]);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <CalendarPage user={testUser(['therapist'], 'Anna Beispiel')} />,
+      '/kalender?ansicht=tag&datum=2027-05-12',
+    );
+
+    const kachel = await screen.findByRole('button', { name: /Max Mustermann/ });
+    expect(kachel).toHaveTextContent('Ernährungsberatung: Max Mustermann');
+    await user.click(kachel);
+    const panel = screen.getByRole('region', { name: /Max Mustermann/ });
+    expect(within(panel).getByText(/^Ernährungsberatung ·/)).toBeInTheDocument();
+    expect(within(panel).getByRole('button', { name: 'Termin abschließen' })).toBeVisible();
+    expect(within(panel).queryByRole('link', { name: /^Doku/ })).toBeNull();
+    expect(within(panel).queryByRole('link', { name: /Bisherige Doku/ })).toBeNull();
+  });
+
+  it('kennzeichnet an der abgehakten Beratung keine offene Doku (ERN-012)', async () => {
+    fetchAppointments.mockResolvedValue([
+      eintrag({
+        occasion: 'nutrition_counselling',
+        status: 'completed',
+        documentation_status: null,
+      }),
+    ]);
+    rendern('/kalender?ansicht=tag&datum=2027-05-12&status=all');
+
+    const kachel = await screen.findByRole('button', { name: /Max Mustermann/ });
+    expect(kachel).not.toHaveTextContent('Doku offen');
+    expect(kachel.getAttribute('title')).toContain('Ernährungsberatung');
+  });
 });
 
 describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {

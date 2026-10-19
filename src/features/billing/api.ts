@@ -1164,6 +1164,8 @@ const offenerTerminSchema = z.object({
   fee_basis: z.string().nullable(),
   appointment_type: z.string(),
   suggestion_count: z.number(),
+  /** ERN-011: die Ernährungsberatung, abgehakt und noch ohne Position. */
+  occasion: z.enum(['regular', 'nutrition_counselling']).optional(),
 });
 
 export type OffenerTermin = z.infer<typeof offenerTerminSchema>;
