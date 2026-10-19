@@ -1091,6 +1091,24 @@
           "vermerk": "Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33)"
         },
         {
+          "id": "team-006",
+          "name": "TEAM-006 Farbe je Person im Teamchat: acht Farben, vergeben mit dem Mitarbeiterdatensatz, selbst gewählt in Mein Konto, Initialen auf der Farbe vor jeder Nachricht und in jeder Liste",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223100000_team_006_farbe_je_person.sql, supabase/tests/teamchat-profil.test.ts, src/lib/kontrast.test.ts und designsystem.test.ts (Farben nur als Fläche und Umriss), src/features/teamchat/TeamChat.test.tsx, src/features/account/MeinKontoPage.test.tsx, tests/e2e/authenticated/profilbild.spec.ts, Zweitreview",
+          "vermerk": "Auftrag Jannes 19.10.2026 (Chat noch nicht zufrieden: Farbe je Mitarbeiter:in); ANN-666; Baustein Personenbild; keine Farbe im Rot, Orange oder Gelb der Statusfarben"
+        },
+        {
+          "id": "team-007",
+          "name": "TEAM-007 Profilbild im Teamchat: nur für sich selbst, auf dem Gerät zu 256 × 256 gerechnet, am Inhalt geprüft, in der Datenbank, fällt mit Entfernen, Ersetzen und Ausscheiden",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223110000_team_007_profilbild.sql, supabase/tests/teamchat-profil.test.ts (Prüfung am Inhalt, Rechte, Löschjournal, Wiederherstellung) und testumgebung.test.ts, src/features/teamchat/profilbild.test.ts, MeinKontoPage.test.tsx, TeamChat.test.tsx, tests/e2e/authenticated/profilbild.spec.ts (Foto mit Ortsangabe aus dem echten Browser), Zweitreview",
+          "vermerk": "Auftrag Jannes 19.10.2026; ADR-017 Fassung 10 Abschnitt O vorgeschlagen (Umkehr von Punkt 1, Bestätigungsfragen 35 bis 37); ANN-667 im Prüfpaket; Vorschläge für mehr Übersicht in product/ideen/referenz-slack.md"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,
