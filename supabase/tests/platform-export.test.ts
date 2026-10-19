@@ -154,10 +154,16 @@ describe('Datenexport der Plattform (POR-018)', () => {
     ]);
   });
 
-  it('nimmt die eigene Wahl zu Benachrichtigungen, Geräte ohne Schlüssel und Zustellaufträge mit (BEF-147)', async () => {
+  it('nimmt die eigene Wahl zu Benachrichtigungen, Erinnerungen, Geräte ohne Schlüssel und Zustellaufträge mit (BEF-147)', async () => {
     const endpunkt = 'https://fcm.googleapis.com/fcm/send/geraet-export';
     const p256dh = 'B'.padEnd(87, 'Q');
     const schluessel = 'Z'.repeat(22);
+    // ERN-009: eine Erinnerung ans Ernährungstagebuch (Erika hat im Seed ein Profil).
+    await asUserCommitted(
+      users.plattformErika,
+      'select public.set_platform_diary_reminders($1::uuid, $2::jsonb, $3, $4)',
+      [ERIKA, JSON.stringify([{ meal: 'breakfast', time: '07:30' }]), true, false],
+    );
     await asUserCommitted(
       users.plattformErika,
       'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)',
@@ -188,6 +194,7 @@ describe('Datenexport der Plattform (POR-018)', () => {
       // Je Gerät nur „seit wann" - Endpunkt und Schlüssel sind Zugangsdaten
       // zum Push-Dienst, keine Angabe über die Person.
       devices: [{ registered_at: zeit }],
+      diary_reminders: [{ meal: 'breakfast', remind_at: '07:30:00', chosen_at: zeit }],
       deliveries: [
         {
           kind: 'plan_assigned',
@@ -209,6 +216,7 @@ describe('Datenexport der Plattform (POR-018)', () => {
     expect((await exportieren(users.plattformTina, TINA)).notifications).toEqual({
       settings: null,
       devices: [],
+      diary_reminders: [],
       deliveries: [],
     });
   });

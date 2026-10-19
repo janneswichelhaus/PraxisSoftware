@@ -8,6 +8,8 @@
 -- trägt der eigene Export der Person sie unter `notifications`:
 --
 --   settings    die Wahl (Arten je Weg, Ruhezeit, Zeitpunkt der Wahl) oder null
+--   diary_reminders  die Erinnerungen an das Ernährungstagebuch (ERN-009) -
+--               auch sie je Zugang gewählt und für die Praxis unsichtbar
 --   devices     je Gerät nur „seit wann" - ohne Endpunkt und Schlüssel: die
 --               sind Zugangsdaten zum Push-Dienst, keine Angabe über die Person
 --   deliveries  Art, Weg, Zeitpunkte, Zustand, Grund - kein Text, keine
@@ -151,6 +153,17 @@ begin
                                   order by p.created_at), '[]'::jsonb)
         from public.platform_push_subscriptions p
         where p.access_id = p_access_id
+      ),
+      -- ERN-009: die Erinnerungen an das Ernährungstagebuch, je Mahlzeit die
+      -- gewählte Uhrzeit (Ortszeit der Praxis).
+      'diary_reminders', (
+        select coalesce(jsonb_agg(jsonb_build_object(
+                          'meal', r.meal,
+                          'remind_at', r.remind_at,
+                          'chosen_at', r.chosen_at)
+                        order by r.remind_at, r.meal), '[]'::jsonb)
+        from public.nutrition_diary_reminders r
+        where r.access_id = p_access_id
       ),
       'deliveries', (
         select coalesce(jsonb_agg(jsonb_build_object(
