@@ -311,6 +311,17 @@ export const BENACHRICHTIGUNGEN = {
     ruhezeit: true,
     wege: ['email', 'push'],
   },
+  // ERN-009 (ADR-027 Punkt 12): fester Text ohne Ernährungsbezug; die
+  // Uhrzeiten wählt die Person im Tagebuch.
+  nutrition_diary_reminder: {
+    name: 'Erinnerung an Ihr Tagebuch',
+    hinweis: 'Zu den Uhrzeiten, die Sie im Ernährungstagebuch wählen.',
+    titel: 'Erinnerung',
+    text: 'Erinnerung: Ihr Eintrag für heute.',
+    zeitangabe: false,
+    ruhezeit: true,
+    wege: ['email', 'push'],
+  },
 } as const satisfies Record<
   string,
   {

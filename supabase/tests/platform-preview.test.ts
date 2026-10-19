@@ -564,6 +564,13 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     params: () => [E],
     gelingtDerPerson: true,
   },
+  // ERN-009: Erinnerungen an das Tagebuch (Seed: eingeschaltet, mit Einwilligung).
+  set_platform_diary_reminders: {
+    sql: `select public.set_platform_diary_reminders($1::uuid,
+            '[{"meal": "lunch", "time": "12:00"}]'::jsonb, true, false)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
   add_platform_water: {
     sql: `select public.add_platform_water($1::uuid,
             (now() at time zone 'Europe/Berlin')::date, 250)`,
@@ -590,6 +597,8 @@ const KEIN_SCHREIBWEG_DER_PERSON: Readonly<Record<string, string>> = {
     'lesend, aber nicht in der Einsicht: die Ernährung liest in der Praxis nur die Beratung (ERN-002, ADR-027 Punkt 4)',
   search_platform_foods:
     'lesend, Bezugsdaten ohne Personenbezug; nicht in der Einsicht wie platform_nutrition (ERN-004)',
+  platform_diary_reminders:
+    'lesend, aber nicht in der Einsicht: die Wahl zu Benachrichtigungen sieht die Praxis nicht (ERN-009, ANN-344)',
   platform_nutrition_diary:
     'lesend, aber nicht in der Einsicht: das Tagebuch liest in der Praxis nur die Beratung (ERN-007, ADR-027 Punkt 4)',
 };

@@ -149,6 +149,8 @@ export type PlattformApi = Pick<
   | 'favoritSetzen'
   | 'tagebuchKopieren'
   | 'zahlenAusblenden'
+  | 'ladeErinnerungen'
+  | 'erinnerungenSpeichern'
 >;
 
 /** Endet jeden schreibenden Weg der Einsicht - ohne Netz, ohne Vorarbeit. */
@@ -234,6 +236,8 @@ export function einsichtsApi(zugangId: string, quelle: Einsichtsquelle): Plattfo
     favoritSetzen: gesperrt,
     tagebuchKopieren: gesperrt,
     zahlenAusblenden: gesperrt,
+    ladeErinnerungen: gesperrt,
+    erinnerungenSpeichern: gesperrt,
   };
 }
 

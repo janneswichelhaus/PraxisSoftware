@@ -6816,3 +6816,15 @@ Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: —
 **Anker.** `app.nutrition_diary_rule`.
 
 **Änderungspfad.** Wert in `app.nutrition_diary_rule` ändern · Aufwand `klein`.
+
+### ANN-662 — Tagebucherinnerung: eine je Mahlzeit und Tag, außerhalb der Wochengrenze
+
+Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-344)
+
+**Annahme.** Die Art `nutrition_diary_reminder` geht höchstens einmal je Mahlzeit und Tag und Weg (statt einmal je Art und Tag) und zählt nicht in die Grenze von zehn je Woche der übrigen Arten. Was in die Ruhezeit fiele, entfällt; was beim Abholen älter als zwei Stunden ist, Uhrzeit, Tagebuch oder Einwilligung geändert hat, entfällt. Die Wahl steht wie die übrigen Benachrichtigungen nur am Zugang; die Praxis sieht sie nicht, sie steht nicht in der Auskunft der Praxis (ANN-344).
+
+**Begründung.** ADR-027 Punkt 12 verlangt Uhrzeiten je Mahlzeit; mit ADR-024 Punkt 15 wörtlich ginge nur die erste am Tag, und vier am Tag würden Terminerinnerungen aus der Woche drängen. Die Person stellt sie selbst wie einen Wecker; mehr als vier am Tag entstehen nicht.
+
+**Anker.** `app.notification_drop_reason` (Zweig `v_tagebuch`), `app.nutrition_diary_reminder_live`, `public.enqueue_nutrition_diary_reminders`.
+
+**Änderungspfad.** Bedingung `v_tagebuch` in `app.notification_drop_reason` streichen · Aufwand `klein`.

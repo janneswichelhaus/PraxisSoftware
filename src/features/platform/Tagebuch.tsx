@@ -39,6 +39,7 @@ import { zahl } from '@/features/nutrition/texte';
 import { tagebuchSchluessel, type EigenesTagebuch, type Plattformzugang } from './api';
 import { useNurLesen, usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
+import { TagebuchErinnerungen } from './TagebuchErinnerungen';
 import { eintragenAdresse, tagebuchAdresse, tagName, tagPlus } from './tagebuchAdresse';
 
 /**
@@ -151,6 +152,7 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
         <div className="flex flex-col gap-2">
           {daten.can_write ? <Kopieren zugang={zugang} daten={daten} /> : null}
           {daten.can_delete ? <Einstellungen zugang={zugang} daten={daten} /> : null}
+          {daten.enabled ? <TagebuchErinnerungen zugang={zugang} /> : null}
         </div>
       ) : null}
       {offen ? (

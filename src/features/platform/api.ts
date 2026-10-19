@@ -14,6 +14,7 @@ import {
   type Quelle,
 } from '@/features/nutrition/lebensmittel';
 import {
+  MAHLZEITEN,
   schnellwahlSchema,
   tagSchema,
   zieleSchema,
@@ -2211,6 +2212,51 @@ export async function zahlenAusblenden(zugangId: string, ausblenden: boolean): P
     (await getSupabase().rpc('set_platform_diary_hide_numbers', {
       p_access_id: zugangId,
       p_hide: ausblenden,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+// ERN-009: Erinnerungen an das Tagebuch (ADR-027 Punkt 12) - je Zugang und
+// Mahlzeit eine Uhrzeit, dazu die Wege dieser Art; von Anfang an aus.
+
+const erinnerungenSchema = z.object({
+  reminders: z.array(z.object({ meal: z.enum(MAHLZEITEN), time: z.string() })),
+  email: z.boolean(),
+  push: z.boolean(),
+  switched_off: z.boolean(),
+  quiet_from: z.number(),
+  quiet_until: z.number(),
+});
+
+export type Tagebucherinnerungen = z.infer<typeof erinnerungenSchema>;
+
+export function erinnerungenSchluessel(zugangId: string) {
+  return ['platform-diary-reminders', zugangId] as const;
+}
+
+/** Die eigenen Erinnerungen; `null` heißt: keine Beratung oder ohne Recht. */
+export async function ladeErinnerungen(zugangId: string): Promise<Tagebucherinnerungen | null> {
+  const satz = 'Ihre Erinnerungen konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('platform_diary_reminders', {
+    p_access_id: zugangId,
+  })) as { data: { reminders?: unknown } | null; error: unknown };
+  if (error) throw new Error(satz);
+  if (data === null || data.reminders === null) return null;
+  return antwort(erinnerungenSchema, data, satz);
+}
+
+/** Die Wahl ersetzen: Uhrzeiten je Mahlzeit, per Mail, per Push. */
+export async function erinnerungenSpeichern(
+  zugangId: string,
+  erinnerungen: { meal: Mahlzeit; time: string }[],
+  wege: { email: boolean; push: boolean },
+): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('set_platform_diary_reminders', {
+      p_access_id: zugangId,
+      p_reminders: erinnerungen,
+      p_email: wege.email,
+      p_push: wege.push,
     })) as { error: { message?: string } | null },
   );
 }

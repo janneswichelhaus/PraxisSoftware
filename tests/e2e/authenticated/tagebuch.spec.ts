@@ -28,6 +28,8 @@ function zaehler() {
 }
 
 async function plattformAnmelden(page: Page, email: string) {
+  // Das Startbild läuft einmal je Tab (ANN-243); hier gilt es als gezeigt.
+  await page.addInitScript(() => window.sessionStorage.setItem('startbild-gezeigt', '1'));
   await page.goto('/');
   await page.getByText('Testkonten', { exact: true }).click();
   await page.getByLabel('E-Mail-Adresse').fill(email);
@@ -146,4 +148,21 @@ test('Favorit markieren, Tag kopieren, Zahlen ausblenden', async ({ page }) => {
   await expect(page.getByRole('button', { name: /kcal/ })).toHaveCount(0);
   await page.getByLabel('Zahlen ausblenden').uncheck();
   await expect(page.getByText(/kcal von/)).toBeVisible();
+});
+
+test('Erinnerungen: von Anfang an aus, je Mahlzeit eine Uhrzeit, wieder aus', async ({ page }) => {
+  await zumTagebuch(page);
+  await page.getByText(/^Erinnerungen/).click();
+  await expect(page.getByText('Erinnerungen · aus')).toBeVisible();
+  const wahl = page.getByRole('form', { name: 'Erinnerungen wählen' });
+  await wahl.getByLabel('Mittagessen', { exact: true }).check();
+  await wahl.getByLabel('Uhrzeit Mittagessen').selectOption('12:15');
+  await expect(wahl.getByLabel('Per Mail')).toBeChecked();
+  await wahl.getByRole('button', { name: 'Speichern' }).click();
+  await expect(page.getByText('Gespeichert.')).toBeVisible();
+  await expect(page.getByText('Erinnerungen · an')).toBeVisible();
+
+  await wahl.getByLabel('Mittagessen', { exact: true }).uncheck();
+  await wahl.getByRole('button', { name: 'Speichern' }).click();
+  await expect(page.getByText('Erinnerungen · aus')).toBeVisible();
 });
