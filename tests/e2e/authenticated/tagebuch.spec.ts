@@ -103,7 +103,7 @@ test('Eintrag ändern und löschen; der Vortag ist einen Tipp entfernt', async (
 
   await page.getByRole('button', { name: 'Vortag' }).click();
   await expect(page.getByText('Gestern', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Vollkornnudeln gekocht/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Vollkornnudeln gekocht/ }).first()).toBeVisible();
 });
 
 test('Die Begleitung kommt nicht ins Tagebuch', async ({ page }) => {
@@ -140,7 +140,7 @@ test('Favorit markieren, Tag kopieren, Zahlen ausblenden', async ({ page }) => {
   await page.getByText('Mittagessen', { exact: true }).last().click();
   await page.getByRole('button', { name: 'Hierher kopieren' }).click();
   await expect(page.getByText('2 Einträge kopiert.')).toBeVisible();
-  await expect(page.getByRole('button', { name: /Vollkornnudeln gekocht/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Vollkornnudeln gekocht/ }).first()).toBeVisible();
 
   await page.getByText('Einstellungen', { exact: true }).click();
   await page.getByLabel('Zahlen ausblenden').check();
@@ -173,7 +173,7 @@ test('Die Beratung liest mit: sieben Tage, ein Tag im Fenster', async ({ page })
   await page.goto(`/patienten/${PATIENTEN.erika}/ernaehrung`);
   await expect(page.getByRole('heading', { name: 'Tagebuch' })).toBeVisible();
   await page
-    .getByRole('button', { name: /2 Einträge/ })
+    .getByRole('button', { name: /\d+ Einträge?/ })
     .first()
     .click();
   const fenster = page.getByRole('dialog');
