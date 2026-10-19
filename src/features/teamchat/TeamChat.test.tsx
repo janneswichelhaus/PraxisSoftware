@@ -624,9 +624,11 @@ describe('Teamchat: Personenkarte (TEAM-009, ANN-668)', () => {
   });
 
   it('sagt bei Ausgeschiedenen nur, dass sie nicht mehr teilnehmen', async () => {
+    // Wer nicht teilnimmt, kommt vom Server ohne Namen: Die Karte trägt den
+    // Namen, der an der Nachricht stand.
     api.fetchPersonenkarte.mockResolvedValue({
       staff_member_id: TIM,
-      name: 'Tim Teamleitung',
+      name: null,
       roles: [],
       active: false,
       own: false,

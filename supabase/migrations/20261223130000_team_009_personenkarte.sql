@@ -13,10 +13,15 @@
 --
 --   public.get_team_person   Name, Praxisrollen, im Team, eigene Karte
 --
--- Lesen dürfen alle, die am Teamchat teilnehmen, für ihre eigene Praxis. Wer
--- nicht mehr im Team ist, kommt mit Namen, ohne Rollen - der Name steht ohnehin
--- an den alten Nachrichten. Kein Tabellenrecht (ADR-004), kein Auditeintrag
--- (ADR-010 Punkte 15 bis 17).
+-- Lesen dürfen alle, die am Teamchat teilnehmen, für ihre eigene Praxis. Damit
+-- sieht das Team die Praxisrollen der anderen Teilnehmenden - bisher sah nur
+-- owner fremde Rollen (Policy user_roles_select_scoped, unverändert); ANN-668
+-- liegt dafür im Prüfpaket. Wer nicht teilnimmt (ausgeschieden, ohne Zugang,
+-- Konto ruht), kommt ohne Namen und ohne Rollen: Den Namen hat die Stelle, an
+-- der man die Karte öffnet, ohnehin, und sonst ließen sich über die Kennungen
+-- aus list_team_avatars die Namen aller Mitarbeiterdatensätze abfragen
+-- (Zweitreview). Kein Tabellenrecht (ADR-004), kein Auditeintrag (ADR-010
+-- Punkte 15 bis 17).
 -- =============================================================================
 
 create function public.get_team_person(p_staff uuid)
@@ -48,7 +53,7 @@ begin
 
   return query
   select p_staff,
-         app.team_staff_name(p_staff),
+         case when v_aktiv then app.team_staff_name(p_staff) end,
          case when v_aktiv then array(
            select ur.role_key
            from public.staff_members sm

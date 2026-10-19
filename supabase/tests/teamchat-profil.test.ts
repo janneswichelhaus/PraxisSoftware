@@ -638,12 +638,14 @@ describe('Bilder in den Listen (TEAM-008)', () => {
     author_name: string | null;
   }
 
+  /** Ein offener Kanal der Praxis - der Seed legt keinen an. */
   async function allgemein(): Promise<string> {
-    const { rows } = await asUser<{ id: string; name: string | null }>(
-      users.therapist,
-      'select * from public.list_team_channels()',
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.team_channels (organization_id, kind, name)
+       values ($1, 'channel', 'Allgemein') returning id`,
+      [organizationId],
     );
-    return rows.find((k) => k.name === 'Allgemein')!.id;
+    return rows[0]!.id;
   }
 
   async function senden(
@@ -703,15 +705,25 @@ describe('Bilder in den Listen (TEAM-008)', () => {
     const kanalId = await allgemein();
     await senden(users.office, kanalId, 'Nur für die Praxis');
     await fremdeOrganisation();
+    const aufrufe: [string, unknown[]][] = [
+      [LISTEN.aktivitaet, []],
+      [LISTEN.threads, []],
+      [LISTEN.suche, ['Praxis']],
+      [LISTEN.angeheftet, [kanalId]],
+      [LISTEN.gemerkt, []],
+    ];
     for (const konto of [users.patientMax, users.plattformTina, null]) {
-      expect((await fehler(konto, LISTEN.aktivitaet))?.code).toBe('42501');
-      expect((await fehler(konto, LISTEN.suche, ['Praxis']))?.code).toBe('42501');
+      for (const [sql, params] of aufrufe) {
+        expect((await fehler(konto, sql, params))?.code, `${konto} ${sql}`).toBe('42501');
+      }
+    }
+    for (const [sql, params] of aufrufe) {
+      await expect(asAnon(sql, params)).rejects.toThrow(/permission denied/i);
     }
     expect((await asUser(FREMDE_ORGANISATION.owner, LISTEN.suche, ['Praxis'])).rows).toEqual([]);
     expect((await fehler(FREMDE_ORGANISATION.owner, LISTEN.angeheftet, [kanalId]))?.code).toBe(
       'P0002',
     );
-    await expect(asAnon(LISTEN.aktivitaet)).rejects.toThrow(/permission denied/i);
     const { rows } = await asPostgres<{ name: string; anon: boolean; angemeldet: boolean }>(
       `select p.proname as name, has_function_privilege('anon', p.oid, 'EXECUTE') as anon,
               has_function_privilege('authenticated', p.oid, 'EXECUTE') as angemeldet
@@ -769,19 +781,29 @@ describe('Personenkarte (TEAM-009, ANN-668)', () => {
     });
   });
 
-  it('nennt Ausgeschiedene und Personen ohne Zugang beim Namen, ohne Rollen', async () => {
+  it('nennt Ausgeschiedene, Personen ohne Zugang und ruhende Konten weder beim Namen noch mit Rollen', async () => {
+    const leer = { name: null, roles: [], active: false, own: false };
     await asPostgres(
       `update public.staff_members set employment_status = 'inactive' where id = $1`,
       [STAFF.tim],
     );
     expect(await karte(users.therapist, STAFF.tim)).toEqual({
       staff_member_id: STAFF.tim,
-      name: 'Tim Teamleitung',
-      roles: [],
-      active: false,
-      own: false,
+      ...leer,
     });
-    expect(await karte(users.therapist, STAFF.nina)).toMatchObject({ roles: [], active: false });
+    // Nina hat einen Mitarbeiterdatensatz, aber kein Konto (Zweitreview).
+    expect(await karte(users.trainer, STAFF.nina)).toEqual({
+      staff_member_id: STAFF.nina,
+      ...leer,
+    });
+    // Beschäftigt, aber das Konto ruht: nimmt nicht teil (Zweitreview).
+    await asPostgres('update public.user_profiles set is_active = false where id = $1', [
+      users.office,
+    ]);
+    expect(await karte(users.therapist, STAFF.olivia)).toEqual({
+      staff_member_id: STAFF.olivia,
+      ...leer,
+    });
   });
 
   it('kennt nur die eigene Praxis', async () => {
