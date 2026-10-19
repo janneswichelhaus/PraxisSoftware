@@ -545,6 +545,25 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     params: () => [E],
     gelingtDerPerson: true,
   },
+  // ERN-008: Favorit, kopieren (Seed: gestern drei Mahlzeiten), Zahlen ausblenden.
+  set_platform_diary_favorite: {
+    sql: `select public.set_platform_diary_favorite($1::uuid, 'person',
+            'f1f1f1f1-f1f1-4f1f-8f1f-000000000002', true)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  copy_platform_diary: {
+    sql: `select public.copy_platform_diary($1::uuid,
+            (now() at time zone 'Europe/Berlin')::date - 1, null,
+            (now() at time zone 'Europe/Berlin')::date, null)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  set_platform_diary_hide_numbers: {
+    sql: 'select public.set_platform_diary_hide_numbers($1::uuid, true)',
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
   add_platform_water: {
     sql: `select public.add_platform_water($1::uuid,
             (now() at time zone 'Europe/Berlin')::date, 250)`,

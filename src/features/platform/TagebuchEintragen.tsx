@@ -3,34 +3,42 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { Formularfuss } from '@/components/ui/Formularfuss';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
+import { ListRow } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import {
   LebensmittelSuche,
   Quellenangabe,
   Trefferzeile,
 } from '@/features/nutrition/LebensmittelSuche';
-import { QUELLENNAME, type Lebensmittel } from '@/features/nutrition/lebensmittel';
+import type { Lebensmittel } from '@/features/nutrition/lebensmittel';
 import {
   energieDerMenge,
   FREIE_MENGE,
   istMahlzeit,
   kcal,
+  letzteMenge,
   MAHLZEIT_NAMEN,
   mengePruefen,
+  mengeText,
   vorbelegung,
   type Mahlzeit,
+  type Mengenangabe,
+  type Schnellwahl,
 } from '@/features/nutrition/tagebuch';
 import { zahl } from '@/features/nutrition/texte';
 import {
   ernaehrungSchluessel,
   tagebuchSchluessel,
   type EigeneErnaehrung,
+  type EigenesTagebuch,
   type Plattformzugang,
 } from './api';
 import { useNurLesen, usePlattformApi } from './einsicht';
@@ -57,67 +65,249 @@ export function TagebuchEintragen({ zugang }: { zugang: Plattformzugang }) {
     queryKey: ernaehrungSchluessel(zugang.access_id),
     queryFn: () => api.ladeErnaehrung(zugang.access_id),
   });
+  // Zuletzt, Favoriten und „Zahlen ausblenden“ kommen mit dem Tag (ERN-008).
+  const tagebuch = useQuery({
+    queryKey: tagebuchSchluessel(zugang.access_id, tagAusAdresse ?? 'heute'),
+    queryFn: () => api.ladeTagebuch(zugang.access_id, tagAusAdresse),
+  });
   // Ohne Tag in der Adresse: heute.
-  const tag = tagAusAdresse ?? ernaehrung.data?.today ?? null;
+  const tag = tagAusAdresse ?? tagebuch.data?.today ?? null;
 
   return (
     <>
       <Rueckweg standard={tagebuchAdresse(tagAusAdresse, search)} beschriftung="Zum Tagebuch" />
       <PageHeader
         title={`${MAHLZEIT_NAMEN[mahlzeit]} eintragen`}
-        description={tag && ernaehrung.data ? tagName(tag, ernaehrung.data.today) : undefined}
+        description={tag && tagebuch.data ? tagName(tag, tagebuch.data.today) : undefined}
       />
       <Abfragezustand
-        abfrage={ernaehrung}
+        abfrage={tagebuch}
         laden="Wird geladen …"
         fehler="Ihr Tagebuch konnte nicht geladen werden."
         inKarte
         leer={{
-          wenn: (daten) => !daten || !daten.can_write || !daten.profile.diary_enabled,
+          wenn: (daten) => !daten || !daten.can_write || !ernaehrung.data,
           titel: 'Hier lässt sich gerade nichts eintragen.',
         }}
       >
-        {(daten) => <Suche zugang={zugang} daten={daten!} tag={tag!} mahlzeit={mahlzeit} />}
+        {(daten) => (
+          <Suche
+            zugang={zugang}
+            ernaehrung={ernaehrung.data!}
+            tagebuch={daten!}
+            tag={tag!}
+            mahlzeit={mahlzeit}
+          />
+        )}
       </Abfragezustand>
       <Quellenangabe laden={api.lebensmittelQuellen} />
     </>
   );
 }
 
+/** Wo ein Lebensmittel unter zuletzt oder den Favoriten steht. */
+function gleich(a: Pick<Lebensmittel, 'kind' | 'id'>, b: Pick<Lebensmittel, 'kind' | 'id'>) {
+  return a.kind === b.kind && a.id === b.id;
+}
+
 function Suche({
   zugang,
-  daten,
+  ernaehrung,
+  tagebuch,
   tag,
   mahlzeit,
-  ohneBegriff,
 }: {
   zugang: Plattformzugang;
-  daten: EigeneErnaehrung;
+  ernaehrung: EigeneErnaehrung;
+  tagebuch: EigenesTagebuch;
   tag: string;
   mahlzeit: Mahlzeit;
-  ohneBegriff?: (oeffnen: (f: Lebensmittel) => void) => ReactNode;
 }) {
   const api = usePlattformApi();
+  const ohneZahlen = tagebuch.hide_numbers;
+  const letzte = (f: Lebensmittel) =>
+    [...tagebuch.recent, ...tagebuch.favorites].find((s) => gleich(s.food, f));
   return (
     <LebensmittelSuche
       suchen={(begriff) => api.lebensmittelSuchen(zugang.access_id, begriff)}
       schluessel={['platform-foods', zugang.access_id]}
-      eigene={daten.profile.own_foods}
-      ohneBegriff={
-        ohneBegriff ??
-        ((oeffnen) => (
+      eigene={ernaehrung.profile.own_foods}
+      ohneZahlen={ohneZahlen}
+      ohneBegriff={(oeffnen) => (
+        <div className="flex flex-col gap-8">
+          {tagebuch.favorites.length > 0 ? (
+            <Listenabschnitt titel="Favoriten">
+              {tagebuch.favorites.map((s) => (
+                <Schnellzeile
+                  key={`${s.food.kind}-${s.food.id}`}
+                  zugang={zugang}
+                  s={s}
+                  tag={tag}
+                  mahlzeit={mahlzeit}
+                  ohneZahlen={ohneZahlen}
+                  onOeffnen={oeffnen}
+                />
+              ))}
+            </Listenabschnitt>
+          ) : null}
           <Listenabschnitt
-            titel="Eigene Lebensmittel"
+            titel="Zuletzt"
             leer={{ titel: 'Lebensmittel suchen, etwa „Haferflocken“.' }}
           >
-            {daten.profile.own_foods.map((f) => (
-              <Trefferzeile key={f.id} f={f} onOeffnen={oeffnen} />
+            {tagebuch.recent.map((s) => (
+              <Schnellzeile
+                key={`${s.food.kind}-${s.food.id}`}
+                zugang={zugang}
+                s={s}
+                tag={tag}
+                mahlzeit={mahlzeit}
+                ohneZahlen={ohneZahlen}
+                onOeffnen={oeffnen}
+              />
             ))}
           </Listenabschnitt>
-        ))
-      }
-      fensterInhalt={(f) => <MengeWaehlen zugang={zugang} f={f} tag={tag} mahlzeit={mahlzeit} />}
+          {ernaehrung.profile.own_foods.length > 0 ? (
+            <Listenabschnitt titel="Eigene Lebensmittel">
+              {ernaehrung.profile.own_foods.map((f) => (
+                <Trefferzeile key={f.id} f={f} onOeffnen={oeffnen} ohneZahlen={ohneZahlen} />
+              ))}
+            </Listenabschnitt>
+          ) : null}
+        </div>
+      )}
+      fensterInhalt={(f) => {
+        const vorher = letzte(f);
+        const anfang = vorher ? letzteMenge(vorher) : undefined;
+        return (
+          <MengeWaehlen
+            zugang={zugang}
+            f={f}
+            tag={tag}
+            mahlzeit={mahlzeit}
+            ohneZahlen={ohneZahlen}
+            {...(anfang ? { anfang } : {})}
+            unten={
+              <Favorit
+                zugang={zugang}
+                f={f}
+                an={tagebuch.favorites.some((s) => gleich(s.food, f))}
+              />
+            }
+          />
+        );
+      }}
     />
+  );
+}
+
+/**
+ * Eine Zeile aus zuletzt oder den Favoriten: der Tipp auf die Zeile öffnet
+ * die Menge, „+“ trägt die Menge vom letzten Mal sofort ein.
+ */
+function Schnellzeile({
+  zugang,
+  s,
+  tag,
+  mahlzeit,
+  ohneZahlen,
+  onOeffnen,
+}: {
+  zugang: Plattformzugang;
+  s: Schnellwahl;
+  tag: string;
+  mahlzeit: Mahlzeit;
+  ohneZahlen: boolean;
+  onOeffnen: (f: Lebensmittel) => void;
+}) {
+  const eintragen = useEintragen(zugang, s.food, tag, mahlzeit);
+  const anfang = letzteMenge(s);
+  const geprueft = anfang ? mengePruefen(s.food, anfang.einheit, anfang.wert) : null;
+  const menge = geprueft && 'menge' in geprueft ? geprueft : null;
+  const text = menge
+    ? mengeText({
+        amount: menge.menge,
+        base_unit: s.food.base_unit,
+        portion_label: menge.angabe.art === 'portion' ? menge.angabe.label : null,
+        portion_count: menge.angabe.art === 'portion' ? menge.angabe.anzahl : null,
+      })
+    : null;
+  return (
+    <ListRow
+      titel={s.food.name}
+      meta={[text, menge && !ohneZahlen ? kcal(energieDerMenge(s.food, menge.menge)) : null]
+        .filter(Boolean)
+        .join(' · ')}
+      onClick={() => onOeffnen(s.food)}
+      {...(menge
+        ? {
+            aktion: (
+              <Symbolknopf
+                beschriftung={`${s.food.name} eintragen (${text})`}
+                variant="secondary"
+                disabled={eintragen.isPending}
+                onClick={() => eintragen.mutate(menge.angabe)}
+              >
+                <span aria-hidden="true" className="text-xl">
+                  +
+                </span>
+              </Symbolknopf>
+            ),
+          }
+        : {})}
+      {...(eintragen.isError
+        ? {
+            darunter: <Statusmeldung ton="fehler">{eintragen.error.message}</Statusmeldung>,
+          }
+        : {})}
+    />
+  );
+}
+
+/** Eintragen und zurück zum Tag - aus dem Fenster wie aus einer Zeile. */
+function useEintragen(zugang: Plattformzugang, f: Lebensmittel, tag: string, mahlzeit: Mahlzeit) {
+  const api = usePlattformApi();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { search } = useLocation();
+  return useMutation({
+    mutationFn: (angabe: Mengenangabe) =>
+      api.tagebuchEintragen(zugang.access_id, tag, mahlzeit, f, angabe),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) });
+      void navigate(tagebuchAdresse(tag, search), {
+        replace: true,
+        state: { eingetragen: f.name },
+      });
+    },
+  });
+}
+
+/** Favorit an oder ab - sofort gespeichert. */
+function Favorit({ zugang, f, an }: { zugang: Plattformzugang; f: Lebensmittel; an: boolean }) {
+  const api = usePlattformApi();
+  const queryClient = useQueryClient();
+  const [wert, setWert] = useState(an);
+  const setzen = useMutation({
+    mutationFn: (neu: boolean) => api.favoritSetzen(zugang.access_id, f, neu),
+    // Der Haken folgt dem Tipp sofort; geht es schief, springt er zurück.
+    onMutate: (neu) => setWert(neu),
+    onError: (_fehler, neu) => setWert(!neu),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) }),
+  });
+  return (
+    <div>
+      <Checkbox
+        label="Favorit"
+        checked={wert}
+        onChange={(event) => setzen.mutate(event.target.checked)}
+      />
+      {setzen.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {setzen.error.message}
+        </Statusmeldung>
+      ) : null}
+    </div>
   );
 }
 
@@ -141,26 +331,12 @@ export function MengeWaehlen({
   /** Unter dem Knopf, etwa „Favorit“ (ERN-008). */
   unten?: ReactNode;
 }) {
-  const api = usePlattformApi();
   const nurLesen = useNurLesen();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { search } = useLocation();
   const start = anfang ?? vorbelegung(f);
   const [einheit, setEinheit] = useState(start.einheit);
   const [wert, setWert] = useState(start.wert);
   const [fehler, setFehler] = useState<string | undefined>();
-  const eintragen = useMutation({
-    mutationFn: (angabe: Parameters<typeof api.tagebuchEintragen>[4]) =>
-      api.tagebuchEintragen(zugang.access_id, tag, mahlzeit, f, angabe),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: tagebuchSchluessel(zugang.access_id) });
-      void navigate(tagebuchAdresse(tag, search), {
-        replace: true,
-        state: { eingetragen: f.name },
-      });
-    },
-  });
+  const eintragen = useEintragen(zugang, f, tag, mahlzeit);
   const geprueft = mengePruefen(f, einheit, wert);
   const wahlen = [
     ...f.portions.map((p) => ({ wert: p.label, text: p.label })),
@@ -181,9 +357,6 @@ export function MengeWaehlen({
         eintragen.mutate(geprueft.angabe);
       }}
     >
-      <p className="text-ink-muted text-base">
-        {[f.brand, QUELLENNAME[f.source]].filter(Boolean).join(' · ')}
-      </p>
       {wahlen.length > 1 ? (
         <Wahlreihe
           legende="Einheit"

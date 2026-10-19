@@ -110,3 +110,40 @@ test('Die Begleitung kommt nicht ins Tagebuch', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Tagebuch', level: 1 })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /\+ 1 Glas/ })).toHaveCount(0);
 });
+
+test('aus „zuletzt“ in höchstens drei Tipps, mit der Menge vom letzten Mal', async ({ page }) => {
+  await zumTagebuch(page);
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Snacks eintragen' }));
+  // „+“ an der Zeile trägt die Menge vom letzten Mal ein (Seed: 1 Banane).
+  await z.tippe(page.getByRole('button', { name: /^Banane roh eintragen \(1 Stück/ }));
+  await expect(page.getByText('„Banane roh“ eingetragen.')).toBeVisible();
+  test.info().annotations.push({ type: 'Zuletzt', description: `${z.tipps} Tipps` });
+  expect(z.tipps).toBeLessThanOrEqual(3);
+});
+
+test('Favorit markieren, Tag kopieren, Zahlen ausblenden', async ({ page }) => {
+  await zumTagebuch(page);
+  await page.getByRole('link', { name: 'Abendessen eintragen' }).click();
+  await page
+    .getByRole('button', { name: /^Haferflocken/ })
+    .first()
+    .click();
+  await page.getByRole('dialog').getByLabel('Favorit').check();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Favoriten' })).toBeVisible();
+
+  await page.goto(TAGEBUCH);
+  await page.getByText('Von einem anderen Tag kopieren').click();
+  await page.getByText('Mittagessen', { exact: true }).last().click();
+  await page.getByRole('button', { name: 'Hierher kopieren' }).click();
+  await expect(page.getByText('2 Einträge kopiert.')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Vollkornnudeln gekocht/ })).toBeVisible();
+
+  await page.getByText('Einstellungen', { exact: true }).click();
+  await page.getByLabel('Zahlen ausblenden').check();
+  await expect(page.getByText('Noch übrig')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /kcal/ })).toHaveCount(0);
+  await page.getByLabel('Zahlen ausblenden').uncheck();
+  await expect(page.getByText(/kcal von/)).toBeVisible();
+});

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { leseZahl } from './eingabe';
-import type { Lebensmittel } from './lebensmittel';
+import { feldtext, lebensmittelSchema, type Lebensmittel } from './lebensmittel';
 import { zahl } from './texte';
 
 /**
@@ -81,6 +81,26 @@ export const zieleSchema = z
   .nullable();
 
 export type Tagesziele = z.infer<typeof zieleSchema>;
+
+/** Ein Lebensmittel aus „zuletzt“ oder den Favoriten, mit der Menge vom letzten Mal (ERN-008). */
+export const schnellwahlSchema = z.object({
+  food: lebensmittelSchema,
+  amount: z.number().nullable(),
+  portion_label: z.string().nullable(),
+  portion_count: z.number().nullable(),
+});
+
+export type Schnellwahl = z.infer<typeof schnellwahlSchema>;
+
+/** Die Menge vom letzten Mal als Vorbelegung - gibt es die Portion nicht mehr, die Menge. */
+export function letzteMenge(s: Schnellwahl): { einheit: string; wert: string } | undefined {
+  if (s.amount === null) return undefined;
+  if (s.portion_label !== null && s.portion_count !== null) {
+    if (s.food.portions.some((p) => p.label === s.portion_label))
+      return { einheit: s.portion_label, wert: feldtext(s.portion_count) };
+  }
+  return { einheit: FREIE_MENGE, wert: feldtext(s.amount) };
+}
 
 /** „1 234 kcal“. */
 export function kcal(wert: number): string {

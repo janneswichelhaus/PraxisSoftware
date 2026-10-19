@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Field } from '@/components/ui/Field';
@@ -109,7 +111,8 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
         </Statusmeldung>
       ) : null}
       {state?.eingetragen ? <Rueckmeldung>„{state.eingetragen}“ eingetragen.</Rueckmeldung> : null}
-      <Uebersicht daten={daten} />
+      {/* ADR-027 Punkt 11: „Zahlen ausblenden“ ist die Einstellung der Person. */}
+      {daten.hide_numbers ? null : <Uebersicht daten={daten} />}
       <Wasser zugang={zugang} daten={daten} schreibbar={schreibbar} />
       {MAHLZEITEN.map((mahlzeit) => {
         const teil = daten.day.meals.find((m) => m.meal === mahlzeit)!;
@@ -137,13 +140,19 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
                 key={e.id}
                 titel={e.name}
                 meta={mengeText(e)}
-                betrag={kcal(e.energy_kcal)}
+                {...(daten.hide_numbers ? {} : { betrag: kcal(e.energy_kcal) })}
                 {...(daten.can_delete && !nurLesen ? { onClick: () => setOffen(e) } : {})}
               />
             ))}
           </Listenabschnitt>
         );
       })}
+      {!nurLesen ? (
+        <div className="flex flex-col gap-2">
+          {daten.can_write ? <Kopieren zugang={zugang} daten={daten} /> : null}
+          {daten.can_delete ? <Einstellungen zugang={zugang} daten={daten} /> : null}
+        </div>
+      ) : null}
       {offen ? (
         <EintragFenster
           zugang={zugang}
@@ -392,5 +401,100 @@ function EintragFenster({
         loeschenKnopf
       )}
     </Dialogfenster>
+  );
+}
+
+/** Eine Mahlzeit oder den ganzen Tag von einem anderen Tag hierher kopieren (ERN-008). */
+function Kopieren({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
+  const api = usePlattformApi();
+  const neuLaden = useNeuLaden(zugang);
+  const tag = daten.day.day;
+  const [von, setVon] = useState(tag > daten.started_on ? tagPlus(tag, -1) : tag);
+  const [teil, setTeil] = useState<Mahlzeit | 'tag'>('tag');
+  const [kopiert, setKopiert] = useState<number | null>(null);
+  const kopieren = useMutation({
+    mutationFn: () =>
+      api.tagebuchKopieren(zugang.access_id, von, teil === 'tag' ? null : teil, tag),
+    onSuccess: async (anzahl) => {
+      setKopiert(anzahl);
+      await neuLaden();
+    },
+  });
+  return (
+    <Disclosure summary="Von einem anderen Tag kopieren">
+      <form
+        aria-label="Kopieren"
+        className="flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setKopiert(null);
+          kopieren.mutate();
+        }}
+      >
+        <Field
+          label="Von"
+          type="date"
+          min={daten.started_on}
+          max={daten.today}
+          value={von}
+          onChange={(event) => setVon(event.target.value)}
+        />
+        <Wahlreihe
+          legende="Was"
+          wahlen={[
+            { wert: 'tag' as const, text: 'Ganzer Tag' },
+            ...MAHLZEITEN.map((m) => ({ wert: m, text: MAHLZEIT_NAMEN[m] })),
+          ]}
+          gewaehlt={teil}
+          onWaehlen={setTeil}
+        />
+        {kopieren.isError ? (
+          <Statusmeldung ton="fehler">{kopieren.error.message}</Statusmeldung>
+        ) : null}
+        {kopiert !== null ? (
+          <Rueckmeldung key={kopiert}>
+            {kopiert === 0
+              ? 'Dort steht nichts.'
+              : kopiert === 1
+                ? '1 Eintrag kopiert.'
+                : `${kopiert} Einträge kopiert.`}
+          </Rueckmeldung>
+        ) : null}
+        <Formularfuss dicht>
+          <Button type="submit" variant="secondary" disabled={kopieren.isPending || !von}>
+            {kopieren.isPending ? 'Wird kopiert …' : 'Hierher kopieren'}
+          </Button>
+        </Formularfuss>
+      </form>
+    </Disclosure>
+  );
+}
+
+/** „Zahlen ausblenden“ (ADR-027 Punkt 11) - die Einstellung der Person. */
+function Einstellungen({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTagebuch }) {
+  const api = usePlattformApi();
+  const neuLaden = useNeuLaden(zugang);
+  const [aus, setAus] = useState(daten.hide_numbers);
+  const schalten = useMutation({
+    mutationFn: (neu: boolean) => api.zahlenAusblenden(zugang.access_id, neu),
+    // Der Haken folgt dem Tipp sofort; geht es schief, springt er zurück.
+    onMutate: (neu) => setAus(neu),
+    onError: (_fehler, neu) => setAus(!neu),
+    onSuccess: () => neuLaden(),
+  });
+  return (
+    <Disclosure summary="Einstellungen">
+      <Checkbox
+        label="Zahlen ausblenden"
+        hint="Mahlzeiten ohne Kalorien und Nährwerte."
+        checked={aus}
+        onChange={(event) => schalten.mutate(event.target.checked)}
+      />
+      {schalten.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {schalten.error.message}
+        </Statusmeldung>
+      ) : null}
+    </Disclosure>
   );
 }

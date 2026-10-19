@@ -14,6 +14,7 @@ import {
   type Quelle,
 } from '@/features/nutrition/lebensmittel';
 import {
+  schnellwahlSchema,
   tagSchema,
   zieleSchema,
   type Mahlzeit,
@@ -2050,6 +2051,10 @@ const tagebuchSchema = z.object({
   can_write: z.boolean(),
   can_delete: z.boolean(),
   glass_ml: z.number(),
+  // ERN-008: die Einstellung der Person, zuletzt und Favoriten.
+  hide_numbers: z.boolean(),
+  recent: z.array(schnellwahlSchema),
+  favorites: z.array(schnellwahlSchema),
   targets: zieleSchema,
   day: tagSchema,
 });
@@ -2160,4 +2165,52 @@ export async function wasserZaehlen(zugangId: string, tag: string, ml: number): 
   })) as { data: unknown; error: { message?: string } | null };
   if (error) throw tagebuchfehler(error.message);
   return antwort(z.number(), data, 'Nicht gespeichert.');
+}
+
+/** Ein Lebensmittel als Favorit markieren oder abnehmen (ERN-008). */
+export async function favoritSetzen(
+  zugangId: string,
+  lebensmittel: { kind: 'catalog' | 'practice' | 'person'; id: string },
+  favorit: boolean,
+): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('set_platform_diary_favorite', {
+      p_access_id: zugangId,
+      p_food_kind: lebensmittel.kind,
+      p_food_id: lebensmittel.id,
+      p_favorite: favorit,
+    })) as { error: { message?: string } | null },
+  );
+}
+
+/** Eine Mahlzeit (oder ohne Mahlzeit den Tag) an einen anderen Tag kopieren. */
+export async function tagebuchKopieren(
+  zugangId: string,
+  vonTag: string,
+  mahlzeit: Mahlzeit | null,
+  nachTag: string,
+): Promise<number> {
+  const { data, error } = (await getSupabase().rpc('copy_platform_diary', {
+    p_access_id: zugangId,
+    p_from_day: vonTag,
+    p_from_meal: mahlzeit,
+    p_to_day: nachTag,
+    p_to_meal: null,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (error) {
+    if ((error.message ?? '').includes('onto itself'))
+      throw new Error('Bitte einen anderen Tag wählen.');
+    throw tagebuchfehler(error.message);
+  }
+  return antwort(z.number(), data, 'Nicht kopiert.');
+}
+
+/** „Zahlen ausblenden“ ein- und ausschalten (ADR-027 Punkt 11). */
+export async function zahlenAusblenden(zugangId: string, ausblenden: boolean): Promise<void> {
+  tagebuchergebnis(
+    (await getSupabase().rpc('set_platform_diary_hide_numbers', {
+      p_access_id: zugangId,
+      p_hide: ausblenden,
+    })) as { error: { message?: string } | null },
+  );
 }

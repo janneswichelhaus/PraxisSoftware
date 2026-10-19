@@ -590,3 +590,190 @@ describe('Ernährungstagebuch: Negativfälle (ADR-023 Punkt 23, ADR-027 Punkt 4)
     expect(eigen[0]!.n).toBe(0);
   });
 });
+
+describe('Tagebuch schnell: zuletzt, Favoriten, kopieren, Zahlen ausblenden (ERN-008)', () => {
+  const FAVORIT = 'select public.set_platform_diary_favorite($1::uuid, $2, $3::uuid, $4)';
+  const KOPIEREN = 'select public.copy_platform_diary($1::uuid, $2::date, $3, $4::date, $5) as n';
+  const AUSBLENDEN = 'select public.set_platform_diary_hide_numbers($1::uuid, $2)';
+  let apfel: string;
+  let datum: string;
+  let gestern: string;
+
+  interface Schnell {
+    hide_numbers: boolean;
+    recent: { food: { id: string; name: string }; portion_label: string | null; amount: number }[];
+    favorites: { food: { id: string; name: string }; amount: number | null }[];
+  }
+
+  async function schnell(): Promise<Schnell> {
+    return (await tag()) as unknown as Schnell;
+  }
+
+  beforeAll(async () => {
+    await resetDatabase();
+    apfel = await katalog('Apfel roh');
+    datum = await heute();
+    const { rows } = await asPostgres<{ g: string }>(`select ($1::date - 1)::text as g`, [datum]);
+    gestern = rows[0]!.g;
+  }, 120_000);
+
+  it('zuletzt: je Lebensmittel einmal, mit der Menge vom letzten Mal, jüngstes zuerst', async () => {
+    await eintragen(datum, 'snack', 'catalog', apfel, null, '1 Stück (mittel)', 2);
+    const sicht = await schnell();
+    expect(sicht.recent[0]).toMatchObject({
+      food: { id: apfel, name: 'Apfel roh' },
+      portion_label: '1 Stück (mittel)',
+      amount: 300,
+    });
+    const namen = sicht.recent.map((r) => r.food.name);
+    expect(new Set(namen).size).toBe(namen.length);
+    // Seed: Haferflocken, Banane, Vollkornnudeln, Omas Dinkelbrot.
+    expect(namen).toEqual(
+      expect.arrayContaining(['Haferflocken', 'Banane roh', 'Omas Dinkelbrot']),
+    );
+  });
+
+  it('ein gelöschtes eigenes Lebensmittel fällt aus zuletzt und Favoriten', async () => {
+    await asUserCommitted(users.plattformErika, FAVORIT, [ZUGANG, 'person', EIGENES_BROT, true]);
+    expect((await schnell()).favorites.map((f) => f.food.name)).toEqual(['Omas Dinkelbrot']);
+    await asUserCommitted(
+      users.plattformErika,
+      'select public.delete_platform_food($1::uuid, $2::uuid)',
+      [ZUGANG, EIGENES_BROT],
+    );
+    const sicht = await schnell();
+    expect(sicht.favorites).toEqual([]);
+    expect(sicht.recent.map((r) => r.food.name)).not.toContain('Omas Dinkelbrot');
+  });
+
+  it('Favoriten: markieren, doppelt ohne Wirkung, abnehmen; nur nutzbare Lebensmittel', async () => {
+    await asUserCommitted(users.plattformErika, FAVORIT, [ZUGANG, 'catalog', apfel, true]);
+    await asUserCommitted(users.plattformErika, FAVORIT, [ZUGANG, 'catalog', apfel, true]);
+    const sicht = await schnell();
+    expect(sicht.favorites).toHaveLength(1);
+    expect(sicht.favorites[0]).toMatchObject({ food: { id: apfel }, amount: 300 });
+    expect(
+      await fehler(asUser(users.plattformErika, FAVORIT, [ZUGANG, 'person', apfel, true])),
+    ).toBe('P0002');
+    await asUserCommitted(users.plattformErika, FAVORIT, [ZUGANG, 'catalog', apfel, false]);
+    expect((await schnell()).favorites).toEqual([]);
+  });
+
+  it('kopiert eine Mahlzeit und einen Tag, mit Stand und Menge', async () => {
+    // Gestern im Seed: Frühstück 1, Mittag 2, Abend 1, Snack 1.
+    let r = await asUserCommitted<{ n: number }>(users.plattformErika, KOPIEREN, [
+      ZUGANG,
+      gestern,
+      'lunch',
+      datum,
+      'dinner',
+    ]);
+    expect(r.rows[0]!.n).toBe(2);
+    let sicht = (await tag(datum))!;
+    expect(sicht.day.meals[2]!.entries.map((e) => e.name)).toEqual([
+      'Vollkornnudeln gekocht',
+      'Apfel roh',
+    ]);
+    r = await asUserCommitted<{ n: number }>(users.plattformErika, KOPIEREN, [
+      ZUGANG,
+      gestern,
+      null,
+      datum,
+      null,
+    ]);
+    expect(r.rows[0]!.n).toBe(5);
+    sicht = (await tag(datum))!;
+    expect(sicht.day.meals[1]!.entries).toHaveLength(2);
+    // Auf sich selbst, in die Zukunft, Mahlzeit ohne Quelle: nein.
+    expect(
+      await fehler(asUser(users.plattformErika, KOPIEREN, [ZUGANG, datum, 'lunch', datum, null])),
+    ).toBe('22023');
+    const { rows } = await asPostgres<{ m: string }>(`select ($1::date + 1)::text as m`, [datum]);
+    expect(
+      await fehler(
+        asUser(users.plattformErika, KOPIEREN, [ZUGANG, gestern, null, rows[0]!.m, null]),
+      ),
+    ).toBe('22023');
+    expect(
+      await fehler(asUser(users.plattformErika, KOPIEREN, [ZUGANG, gestern, null, datum, 'lunch'])),
+    ).toBe('22023');
+  });
+
+  it('Zahlen ausblenden: die Einstellung der Person, in Auskunft und Export', async () => {
+    await asUserCommitted(users.plattformErika, AUSBLENDEN, [ZUGANG, true]);
+    expect((await schnell()).hide_numbers).toBe(true);
+    const { rows } = await asUser<{ d: { nutrition: { diary: { hide_numbers: boolean } }[] } }>(
+      users.plattformErika,
+      'select public.platform_export($1::uuid) as d',
+      [ZUGANG],
+    );
+    expect(rows[0]!.d.nutrition[0]!.diary.hide_numbers).toBe(true);
+    await asUserCommitted(users.plattformErika, AUSBLENDEN, [ZUGANG, false]);
+  });
+
+  it('Begleitung, Praxiskonto, Widerruf, Lesefrist', async () => {
+    for (const [konto, zugang] of [
+      [users.plattformPaula, platformAccesses.paulaBegleitungMax],
+      [users.ownerTherapist, ZUGANG],
+    ] as const) {
+      expect(await fehler(asUser(konto, FAVORIT, [zugang, 'catalog', apfel, true])), konto).toBe(
+        '42501',
+      );
+      expect(
+        await fehler(asUser(konto, KOPIEREN, [zugang, gestern, null, datum, null])),
+        konto,
+      ).toBe('42501');
+      expect(await fehler(asUser(konto, AUSBLENDEN, [zugang, true])), konto).toBe('42501');
+    }
+    await asUserCommitted(users.plattformErika, FAVORIT, [ZUGANG, 'catalog', apfel, true]);
+    await asUserCommitted(
+      users.plattformErika,
+      'select public.record_platform_nutrition_consent($1::uuid, false, $2)',
+      [ZUGANG, FASSUNG],
+    );
+    expect(
+      await fehler(asUser(users.plattformErika, KOPIEREN, [ZUGANG, gestern, null, datum, null])),
+    ).toBe('42501');
+    // Abnehmen geht nach dem Widerruf.
+    await asUserCommitted(users.plattformErika, FAVORIT, [ZUGANG, 'catalog', apfel, false]);
+    try {
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = current_date - 2, care_concluded_at = now(),
+                care_concluded_by = $2::uuid
+          where id = $1`,
+        [patients.erika, users.therapist],
+      );
+      expect(await fehler(asUser(users.plattformErika, AUSBLENDEN, [ZUGANG, true]))).toBe('42501');
+      expect(
+        await fehler(asUser(users.plattformErika, FAVORIT, [ZUGANG, 'catalog', apfel, false])),
+      ).toBe('42501');
+    } finally {
+      await resetDatabase();
+    }
+  }, 120_000);
+
+  it('Büro, Therapie, Teamleitung, Trainingsbetreuung, fremde Organisation: keine Favoriten', async () => {
+    await fremdeOrganisation();
+    await einschalten();
+    await asUserCommitted(users.plattformErika, FAVORIT, [ZUGANG, 'catalog', apfel, true]);
+    for (const konto of [
+      users.office,
+      users.therapist,
+      users.teamLead,
+      users.trainer,
+      FREMDE_ORGANISATION.owner,
+    ]) {
+      const { rows } = await asUser<{ n: number }>(
+        konto,
+        'select count(*)::int as n from public.nutrition_diary_favorites',
+      );
+      expect(rows[0]!.n, konto).toBe(0);
+    }
+    const { rows } = await asUser<{ n: number }>(
+      users.ownerTherapist,
+      'select count(*)::int as n from public.nutrition_diary_favorites',
+    );
+    expect(rows[0]!.n).toBe(1);
+  });
+});

@@ -146,6 +146,9 @@ export type PlattformApi = Pick<
   | 'tagebuchAendern'
   | 'tagebuchLoeschen'
   | 'wasserZaehlen'
+  | 'favoritSetzen'
+  | 'tagebuchKopieren'
+  | 'zahlenAusblenden'
 >;
 
 /** Endet jeden schreibenden Weg der Einsicht - ohne Netz, ohne Vorarbeit. */
@@ -228,6 +231,9 @@ export function einsichtsApi(zugangId: string, quelle: Einsichtsquelle): Plattfo
     tagebuchAendern: gesperrt,
     tagebuchLoeschen: gesperrt,
     wasserZaehlen: gesperrt,
+    favoritSetzen: gesperrt,
+    tagebuchKopieren: gesperrt,
+    zahlenAusblenden: gesperrt,
   };
 }
 
