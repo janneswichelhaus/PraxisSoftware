@@ -30,7 +30,8 @@ const verlaufKlassen =
  * rollt, etwa die Kacheln der Behandlungsgrundlagen (Nachprüfung A9).
  *
  * **Mit `liste` ist das Zeichen ein Knopf** (BEF-183): Ein Tipp auf „›"
- * rollt den nächsten verdeckten Reiter ganz ins Bild, „‹" den vorigen. Mit
+ * blättert weiter, bis der nächste verdeckte Reiter ganz im Bild steht, „‹"
+ * zurück. Mit
  * Handschuh traf der Wisch oft den Reiter daneben. 44 px breit und so hoch wie
  * die Reihe; für Vorlesesoftware und Tastatur bleibt er unsichtbar, denn sie
  * erreichen jeden Reiter ohnehin - ein zweiter Weg wäre dort nur Lärm. Ohne
@@ -93,9 +94,12 @@ export function Randverlauf({
 }
 
 /**
- * Rollt den nächsten Eintrag, der rechts (oder links) unter dem Verlauf liegt
- * oder ganz außer Sicht ist, vollständig ins Bild (BEF-183). Die gleitende
- * Pille (`data-gleitanzeiger`) ist kein Eintrag.
+ * Blättert die Leiste um eine Breite weiter, abzüglich der Verläufe an beiden
+ * Rändern (BEF-183) - wie ein Karussell: Was eben angeschnitten am Rand lag,
+ * steht danach vorn, und dahinter kommen die verdeckten Reiter ins Bild. Der
+ * nächste verdeckte Reiter liegt dabei immer ganz im Bild, auch wenn er
+ * breiter wäre als ein Blatt. Die gleitende Pille (`data-gleitanzeiger`) ist
+ * kein Eintrag.
  */
 function schiebeZumVerdeckten(element: HTMLElement | null, seite: 'links' | 'rechts') {
   if (!element) return;
@@ -104,11 +108,28 @@ function schiebeZumVerdeckten(element: HTMLElement | null, seite: 'links' | 'rec
     (kind): kind is HTMLElement =>
       kind instanceof HTMLElement && !kind.hasAttribute('data-gleitanzeiger'),
   );
-  const ziel =
-    seite === 'rechts'
-      ? eintraege.find((e) => e.getBoundingClientRect().right > rahmen.right - VERLAUF_FREI_PX)
-      : eintraege.findLast((e) => e.getBoundingClientRect().left < rahmen.left + VERLAUF_FREI_PX);
-  if (ziel) rolleInsBild(element, ziel, VERLAUF_FREI_PX);
+  const blatt = Math.max(0, element.clientWidth - 2 * VERLAUF_FREI_PX);
+  const lage = (e: HTMLElement) => {
+    const r = e.getBoundingClientRect();
+    const links = r.left - rahmen.left + element.scrollLeft;
+    return { links, rechts: links + r.width };
+  };
+  let ziel: number;
+  if (seite === 'rechts') {
+    ziel = element.scrollLeft + blatt;
+    const naechster = eintraege.find(
+      (e) => e.getBoundingClientRect().right > rahmen.right - VERLAUF_FREI_PX,
+    );
+    if (naechster)
+      ziel = Math.max(ziel, lage(naechster).rechts + VERLAUF_FREI_PX - element.clientWidth);
+  } else {
+    ziel = element.scrollLeft - blatt;
+    const voriger = eintraege.findLast(
+      (e) => e.getBoundingClientRect().left < rahmen.left + VERLAUF_FREI_PX,
+    );
+    if (voriger) ziel = Math.min(ziel, lage(voriger).links - VERLAUF_FREI_PX);
+  }
+  element.scrollLeft = Math.max(0, Math.min(ziel, element.scrollWidth - element.clientWidth));
 }
 
 /**

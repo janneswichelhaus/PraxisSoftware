@@ -228,7 +228,7 @@ describe('Reiterleiste (Design-Fundament)', () => {
       expect(document.querySelector('[data-verlauf="links"]')).not.toBeNull();
     });
 
-    it('rollt mit einem Tipp auf „›" den nächsten verdeckten Reiter ins Bild (BEF-183)', async () => {
+    it('blättert mit einem Tipp auf „›" weiter, bis der nächste verdeckte Reiter im Bild steht (BEF-183)', async () => {
       geometrie();
       const user = userEvent.setup();
       renderWithProviders(<Reiterleiste label="Teile" reiter={VIER} />, '/patienten/1/termine');
@@ -243,16 +243,17 @@ describe('Reiterleiste (Design-Fundament)', () => {
       expect(knopf).toHaveTextContent('›');
       expect(screen.queryAllByRole('button')).toEqual([]);
 
-      // „Stammdaten" (240-360) liegt halb unter dem Verlauf: ganz ins Bild, 52 px frei.
+      // Ein Blatt weiter: 300 px abzüglich zweimal 52 px Verlauf = 196 px, höchstens
+      // bis ans Ende (480 - 300) - „Stammdaten" und „Grundlagen" stehen ganz im Bild.
       await user.click(knopf);
-      expect(liste.scrollLeft).toBe(360 + 52 - 300);
+      expect(liste.scrollLeft).toBe(480 - 300);
       // Jetzt liegt links etwas - „‹" rollt zurück zum vorigen verdeckten Reiter.
       fireEvent.scroll(liste);
       const zurueck = document.querySelector<HTMLButtonElement>('[data-verlauf-knopf="links"]')!;
       expect(zurueck).toHaveTextContent('‹');
-      // „Doku" (120-240) ragte nur noch 8 px herein: ganz ins Bild, 52 px davor frei.
+      // Ein Blatt zurück, höchstens bis an den Anfang.
       await user.click(zurueck);
-      expect(liste.scrollLeft).toBe(120 - 52);
+      expect(liste.scrollLeft).toBe(0);
     });
 
     it('zeigt keinen Verlauf, wo die Leiste umbricht und alles zu sehen ist', () => {
