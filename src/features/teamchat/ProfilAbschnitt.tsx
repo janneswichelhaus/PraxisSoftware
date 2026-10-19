@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
-import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Farbpunkt, Personenbild } from '@/components/ui/Personenbild';
 import {
   PERSONENFARBE_NAMEN,
@@ -18,11 +17,13 @@ import {
   PERSONEN_KEY,
   entferneProfilbild,
   fetchPersonen,
+  profilbildKey,
   setzeProfilbild,
   waehleFarbe,
+  type Avatar,
 } from './api';
 import { FOTO_NICHT_LESBAR, rechneProfilbild } from './profilbild';
-import { avatarVon, useAvatare, useProfilbild } from './teambilder';
+import { avatarVon, eigenerAvatar, useAvatare, useProfilbild } from './teambilder';
 
 const WAHLEN = PERSONENFARBEN.map((farbe) => ({
   wert: farbe,
@@ -44,10 +45,12 @@ interface Vorschau {
  * Abschnitt O). Ein Tipp auf eine Farbe speichert sie; darunter steht, wer
  * sie noch trägt - doppelt ist erlaubt, aber selten gewollt.
  */
-export function ProfilAbschnitt({ staffMemberId, name }: { staffMemberId: string; name: string }) {
+export function ProfilAbschnitt({ name }: { name: string }) {
   const queryClient = useQueryClient();
   const avatare = useAvatare();
-  const eigen = avatarVon(avatare.data, staffMemberId);
+  // Die eigene Zeile markiert der Server - auch für Rollen, deren
+  // Mitarbeiterdatensatz die Anwendung sonst nicht liest.
+  const eigen = eigenerAvatar(avatare.data);
   const aktuell = useProfilbild(eigen?.picture_id);
   const personen = useQuery({ queryKey: PERSONEN_KEY, queryFn: fetchPersonen, staleTime: 300_000 });
   const dateiwahl = useRef<HTMLInputElement>(null);
@@ -62,14 +65,22 @@ export function ProfilAbschnitt({ staffMemberId, name }: { staffMemberId: string
     return () => URL.revokeObjectURL(vorschau.adresse);
   }, [vorschau]);
 
-  const neuLaden = () => queryClient.invalidateQueries({ queryKey: AVATARE_KEY });
+  // Nur die Liste, nicht die Bilder: Ein Bild ändert sich unter seiner
+  // Kennung nie (ADR-017 Punkt 91).
+  const neuLaden = () => queryClient.invalidateQueries({ queryKey: AVATARE_KEY, exact: true });
   const farbe = useMutation({ mutationFn: waehleFarbe, onSuccess: neuLaden });
   const speichern = useMutation({
     mutationFn: (bild: Blob) => setzeProfilbild(bild),
-    onSuccess: async () => {
-      await neuLaden();
+    onSuccess: (neueId, bild) => {
+      // Das gespeicherte Bild ist das gerechnete: sofort zeigen, ohne es
+      // gleich wieder vom Server zu holen.
+      queryClient.setQueryData(profilbildKey(neueId), URL.createObjectURL(bild));
+      queryClient.setQueryData<Avatar[]>(AVATARE_KEY, (alt) =>
+        alt?.map((a) => (a.own ? { ...a, picture_id: neueId } : a)),
+      );
       setVorschau(null);
       setGespeichert('gesetzt');
+      void neuLaden();
     },
   });
   const entfernen = useMutation({
@@ -96,6 +107,9 @@ export function ProfilAbschnitt({ staffMemberId, name }: { staffMemberId: string
     }
   }
 
+  // Ohne eigenen Mitarbeiterdatensatz gibt es kein Bild im Teamchat.
+  if (avatare.isSuccess && !eigen) return null;
+
   return (
     <Section titel="Bild und Farbe im Teamchat">
       <Abfragezustand
@@ -104,7 +118,7 @@ export function ProfilAbschnitt({ staffMemberId, name }: { staffMemberId: string
         fehler="Bild und Farbe konnten nicht geladen werden."
       >
         {(daten) => {
-          const meins = avatarVon(daten, staffMemberId);
+          const meins = eigenerAvatar(daten);
           const gewaehlt: Personenfarbe | null = farbe.isPending
             ? farbe.variables
             : (meins?.color ?? null);
@@ -124,8 +138,11 @@ export function ProfilAbschnitt({ staffMemberId, name }: { staffMemberId: string
                 <div className="flex flex-col items-start gap-2">
                   {vorschau ? (
                     <>
+                      {/* Sekundär: Auf der Seite bleibt „PIN festlegen“ der eine
+                          Hauptknopf (Regel 4, Design-Review TEAM-007). */}
                       <Button
                         type="button"
+                        variant="secondary"
                         disabled={speichern.isPending}
                         onClick={() => speichern.mutate(vorschau.bild)}
                       >
@@ -144,34 +161,18 @@ export function ProfilAbschnitt({ staffMemberId, name }: { staffMemberId: string
                       </Button>
                     </>
                   ) : (
-                    <>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        disabled={rechnet}
-                        onClick={() => dateiwahl.current?.click()}
-                      >
-                        {rechnet
-                          ? 'Foto wird vorbereitet …'
-                          : mitBild
-                            ? 'Anderes Foto'
-                            : 'Foto wählen'}
-                      </Button>
-                      {mitBild ? (
-                        <Rueckfrage
-                          ausloeser="Foto entfernen"
-                          ausloeserVariante="quiet"
-                          bestaetigen="Entfernen"
-                          bestaetigenLaeuft="Wird entfernt …"
-                          laeuft={entfernen.isPending}
-                          fehler={entfernen.isError ? entfernen.error.message : undefined}
-                          onBestaetigen={() => entfernen.mutateAsync()}
-                          onAbbrechen={() => entfernen.reset()}
-                        >
-                          Im Teamchat stehen danach wieder die Initialen.
-                        </Rueckfrage>
-                      ) : null}
-                    </>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={rechnet}
+                      onClick={() => dateiwahl.current?.click()}
+                    >
+                      {rechnet
+                        ? 'Foto wird vorbereitet …'
+                        : mitBild
+                          ? 'Anderes Foto'
+                          : 'Foto wählen'}
+                    </Button>
                   )}
                 </div>
                 {/* Nur im Arbeitsspeicher, kein Hochladen des Originals. */}
@@ -214,10 +215,21 @@ export function ProfilAbschnitt({ staffMemberId, name }: { staffMemberId: string
               {farbe.isError ? (
                 <Statusmeldung ton="fehler">{farbe.error.message}</Statusmeldung>
               ) : null}
-              <Kleingedrucktes>
-                Freiwillig. Bild und Farbe sieht nur das Team im Teamchat. Das Foto wird auf diesem
-                Gerät verkleinert; mit dem Ausscheiden aus der Praxis wird es gelöscht.
-              </Kleingedrucktes>
+              {/* Zerstörendes leise am Ende, mit Rückfrage (DESIGN.md 9.16). */}
+              {mitBild && !vorschau ? (
+                <Rueckfrage
+                  ausloeser="Foto entfernen"
+                  ausloeserVariante="quiet"
+                  bestaetigen="Entfernen"
+                  bestaetigenLaeuft="Wird entfernt …"
+                  laeuft={entfernen.isPending}
+                  fehler={entfernen.isError ? entfernen.error.message : undefined}
+                  onBestaetigen={() => entfernen.mutateAsync()}
+                  onAbbrechen={() => entfernen.reset()}
+                >
+                  Im Teamchat stehen danach wieder die Initialen.
+                </Rueckfrage>
+              ) : null}
             </div>
           );
         }}

@@ -301,6 +301,9 @@ function Sitzungen() {
  */
 export function MeinKontoPage({ user }: { user: CurrentUser }) {
   const besitzer = user.profile.id;
+  // Wie `app.can_use_teamchat()`: jede Praxisrolle; ob ein eigener
+  // Mitarbeiterdatensatz da ist, sagt der Server (ProfilAbschnitt).
+  const imTeamchat = user.roles.some((rolle) => rolle !== 'patient');
   // OFF-001: nur, wer am Termin dokumentiert und einen eigenen Tagesplan hat.
   const ohneEmpfang =
     ABLAGE_FUER_PRAXISKONTEN &&
@@ -325,10 +328,8 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
       />
 
       <div className="max-w-formular">
-        {/* TEAM-006: Wer am Teamchat teilnimmt, wählt dort Bild und Farbe. */}
-        {user.staffMemberId && user.roles.some((rolle) => rolle !== 'patient') ? (
-          <ProfilAbschnitt staffMemberId={user.staffMemberId} name={user.profile.display_name} />
-        ) : null}
+        {/* TEAM-006, TEAM-007: Wer am Teamchat teilnimmt, wählt dort Bild und Farbe. */}
+        {imTeamchat ? <ProfilAbschnitt name={user.profile.display_name} /> : null}
         <PasskeyAbschnitt bestaetigeZweitenFaktor={bestaetigeZweitenFaktor} />
         <PinAbschnitt />
         <ZweiterFaktor user={user} />
@@ -342,6 +343,9 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
           Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement. Zweiter Faktor und
           Sitzungsende werden protokolliert, ohne Einmalkennwort und Gerätekennung; Passkeys nur im
           Protokoll des Anmeldedienstes, die PIN gar nicht.
+          {imTeamchat
+            ? ' Bild und Farbe im Teamchat sind freiwillig und nur für das Team sichtbar; das Foto wird mit dem Ausscheiden aus der Praxis gelöscht.'
+            : null}
         </Kleingedrucktes>
       </div>
     </>

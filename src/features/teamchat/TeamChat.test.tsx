@@ -244,7 +244,7 @@ beforeEach(() => {
     { staff_member_id: TIM, name: 'Tim Teamleitung', active: true },
   ]);
   api.fetchAvatare.mockResolvedValue([
-    { staff_member_id: ANNA, color: 'ozean', picture_id: null },
+    { staff_member_id: ANNA, color: 'ozean', picture_id: null, own: true },
     { staff_member_id: TIM, color: 'moos', picture_id: null },
     { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
   ]);

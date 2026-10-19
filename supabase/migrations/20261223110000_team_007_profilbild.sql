@@ -129,16 +129,18 @@ begin
     end if;
 
     if m = 238 then
-      -- APP14 „Adobe“ sagt dem Dekoder nur, wie die Farben umzurechnen sind.
-      if laenge < 7 or substring(p_image from i + 5 for 5) <> '\x41646f6265'::bytea then
+      -- APP14 „Adobe“ sagt dem Dekoder nur, wie die Farben umzurechnen sind:
+      -- genau 12 Bytes, sonst trüge es mehr (Zweitreview TEAM-007, Befund 2).
+      if laenge <> 14 or substring(p_image from i + 5 for 5) <> '\x41646f6265'::bytea then
         return 'metadata';
       end if;
     elsif m between 224 and 239 or m = 254 then
       -- Alle übrigen APPn (JFIF, EXIF, XMP, ICC, IPTC, Hersteller) und COM.
       return 'metadata';
     elsif m between 192 and 207 and m not in (196, 200, 204) then
-      -- SOFn: Höhe und Breite.
-      if laenge < 8 then
+      -- SOFn: Höhe und Breite - genau ein Rahmen, sonst zeigte ein Dekoder
+      -- womöglich einen anderen als den geprüften (Zweitreview, Befund 3).
+      if laenge < 8 or rahmen then
         return 'format';
       end if;
       hoehe := get_byte(p_image, i + 5) * 256 + get_byte(p_image, i + 6);
@@ -164,7 +166,12 @@ begin
         end if;
         exit;
       end loop;
-    elsif m not in (196, 204, 219, 220, 221) then
+    elsif m in (220, 221) then
+      -- DNL und DRI tragen genau zwei Bytes.
+      if laenge <> 4 then
+        return 'format';
+      end if;
+    elsif m not in (196, 204, 219) then
       -- Außer DHT, DAC, DQT, DNL und DRI kennt die Erlaubnisliste nichts.
       return 'format';
     end if;
@@ -323,8 +330,14 @@ begin
     raise exception 'profile picture rejected: %', v_grund using errcode = '22023';
   end if;
 
-  -- Je Person nacheinander: zwei gleichzeitige Bilder ersetzen einander.
-  perform 1 from public.staff_members sm where sm.id = v_staff for no key update;
+  -- Je Person nacheinander: zwei gleichzeitige Bilder ersetzen einander. Wer
+  -- währenddessen ausscheidet, setzt danach kein Bild mehr (Zweitreview,
+  -- Befund 1) - geprüft erst nach der Sperre.
+  perform 1 from public.staff_members sm
+  where sm.id = v_staff and sm.employment_status = 'active' for no key update;
+  if not found then
+    raise exception 'not allowed to use the team chat' using errcode = '42501';
+  end if;
   select p.id into v_alt from public.staff_profile_pictures p where p.staff_member_id = v_staff;
   if v_alt is not null then
     perform app.forget_profile_picture(v_org, v_alt);
@@ -349,7 +362,11 @@ declare
   v_alt   uuid;
 begin
   select o_org, o_staff into v_org, v_staff from app.teamchat_member();
-  perform 1 from public.staff_members sm where sm.id = v_staff for no key update;
+  perform 1 from public.staff_members sm
+  where sm.id = v_staff and sm.employment_status = 'active' for no key update;
+  if not found then
+    raise exception 'not allowed to use the team chat' using errcode = '42501';
+  end if;
   select p.id into v_alt from public.staff_profile_pictures p where p.staff_member_id = v_staff;
   if v_alt is null then
     return false;
@@ -387,11 +404,13 @@ begin
 end;
 $$;
 
--- list_team_avatars: dazu die Kennung des Bildes, nur für Aktive.
+-- list_team_avatars: dazu die Kennung des Bildes, nur für Aktive, und welche
+-- Zeile die eigene ist - die Anwendung kennt den eigenen Datensatz nicht für
+-- jede Rolle (Trainingsbetreuung, Design-Review TEAM-007).
 drop function public.list_team_avatars();
 
 create function public.list_team_avatars()
-returns table (staff_member_id uuid, color text, picture_id uuid)
+returns table (staff_member_id uuid, color text, picture_id uuid, own boolean)
 language plpgsql
 stable
 security definer
@@ -405,7 +424,8 @@ begin
 
   return query
   select sm.id, coalesce(c.color, 'schiefer'),
-         case when sm.employment_status = 'active' then p.id end
+         case when sm.employment_status = 'active' then p.id end,
+         sm.id = v_staff
   from public.staff_members sm
   left join public.staff_colors c on c.staff_member_id = sm.id
   left join public.staff_profile_pictures p on p.staff_member_id = sm.id
@@ -430,7 +450,7 @@ comment on function public.remove_own_profile_picture() is
 comment on function public.get_team_profile_picture(uuid) is
   'TEAM-007 (ADR-017 Abschnitt O): ein Profilbild der eigenen Praxis als Base64, nur von aktiven Personen.';
 comment on function public.list_team_avatars() is
-  'TEAM-006, TEAM-007: Farbe und Kennung des Profilbilds je Mitarbeiterdatensatz der eigenen Praxis, für alle, die am Teamchat teilnehmen. Ausgeschiedene ohne Bild.';
+  'TEAM-006, TEAM-007: Farbe und Kennung des Profilbilds je Mitarbeiterdatensatz der eigenen Praxis, für alle, die am Teamchat teilnehmen; own markiert die eigene Zeile. Ausgeschiedene ohne Bild.';
 
 -- -----------------------------------------------------------------------------
 -- 6. Wiederherstellung (ADR-008 Punkt 8): + staff_profile_pictures
@@ -647,10 +667,13 @@ begin
   perform app.strip_due_team_anchors(o.id, o.time_zone) from public.organizations o;
 
   -- TEAM-007: Ein Bild, das ein Restore zurückbringt, obwohl die Person
-  -- inzwischen ausgeschieden ist, fällt nach der Regel (ANN-667).
-  delete from public.staff_profile_pictures p
-  using public.staff_members sm
-  where sm.id = p.staff_member_id and sm.employment_status <> 'active';
+  -- inzwischen ausgeschieden ist, fällt nach der Regel (ANN-667) - mit
+  -- Eintrag im Löschjournal wie jede Löschung eines Bildes (Zweitreview,
+  -- Befund 4).
+  perform app.forget_profile_picture(p.organization_id, p.id)
+  from public.staff_profile_pictures p
+  join public.staff_members sm on sm.id = p.staff_member_id
+  where sm.employment_status <> 'active';
 
   -- Die Wiederanwendung weist deletion_journal.reapplied_at nach (LOG-EPIC-001).
 

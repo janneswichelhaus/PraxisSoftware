@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { gleichzeitig } from './helpers/gleichzeitig';
 import {
   FREMDE_ORGANISATION,
   SEED,
@@ -416,6 +417,15 @@ describe('Profilbild (TEAM-007)', () => {
       'size',
     ],
     ['kein Base64', '###', 'format'],
+    [
+      'Adobe-Segment mit Nutzlast',
+      jpeg({
+        vorne: segment(0xee, [0x41, 0x64, 0x6f, 0x62, 0x65, 0, 100, 0, 0, 0, 0, 1, 0x3c, 0x78]),
+      }),
+      'metadata',
+    ],
+    ['zwei Bildrahmen', jpeg({ vorne: sof(2048, 2048) }), 'format'],
+    ['DRI mit Nutzlast', jpeg({ vorne: segment(0xdd, [0, 4, 1, 2, 3]) }), 'format'],
   ])('lehnt %s ab und nennt nur den Grund', async (_fall, bild, grund) => {
     const f = await fehler(users.therapist, SETZEN, [bild]);
     expect(f?.code).toBe('22023');
@@ -428,6 +438,14 @@ describe('Profilbild (TEAM-007)', () => {
       vorne: segment(0xee, [0x41, 0x64, 0x6f, 0x62, 0x65, 0, 100, 0, 0, 0, 0, 1]),
     });
     expect(await setzen(users.therapist, mitAdobe)).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('markiert nur die eigene Zeile', async () => {
+    const { rows } = await asUser<AvatarMitBild & { own: boolean }>(
+      users.trainer,
+      'select * from public.list_team_avatars()',
+    );
+    expect(rows.filter((z) => z.own).map((z) => z.staff_member_id)).toEqual([STAFF.tom]);
   });
 
   it('liest und setzt nur in der eigenen Praxis', async () => {
@@ -477,6 +495,24 @@ describe('Profilbild (TEAM-007)', () => {
     expect((await fehler(users.therapist, SETZEN, [jpeg()]))?.code).toBe('42501');
   });
 
+  it('setzt kein Bild mehr, wenn die Person währenddessen ausscheidet (Zweitreview)', async () => {
+    const fehlerBeimSetzen = await gleichzeitig(
+      {
+        konto: users.ownerTherapist,
+        sql: 'select public.set_staff_employment_status($1::uuid, $2, true)',
+        params: [STAFF.anna, 'inactive'],
+      },
+      { konto: users.therapist, sql: SETZEN, params: [jpeg()] },
+    );
+    expect(fehlerBeimSetzen?.code).toBe('42501');
+    expect(
+      await anzahl(
+        'select count(*) n from public.staff_profile_pictures where staff_member_id = $1',
+        [STAFF.anna],
+      ),
+    ).toBe(0);
+  });
+
   it('bringt nach einer Wiederherstellung kein entferntes Bild zurück (ADR-008 Punkt 8)', async () => {
     const bild = jpeg();
     const alt = await setzen(users.therapist, bild);
@@ -503,6 +539,14 @@ describe('Profilbild (TEAM-007)', () => {
 
     await asPostgres('select public.reapply_deletion_journal()');
     expect(await anzahl('select count(*) n from public.staff_profile_pictures')).toBe(0);
+    // Auch das Bild der Ausgeschiedenen fällt mit Eintrag im Löschjournal.
+    expect(
+      await anzahl(
+        `select count(*) n from public.deletion_journal
+         where target_table = 'staff_profile_pictures' and target_id = $1`,
+        [olivia],
+      ),
+    ).toBe(1);
     expect(
       await anzahl(
         `select count(*) n from public.deletion_journal
@@ -510,7 +554,6 @@ describe('Profilbild (TEAM-007)', () => {
         [alt],
       ),
     ).toBe(1);
-    expect(olivia).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it('hält ein Bild unveränderlich und gibt der Tabelle kein Recht', async () => {

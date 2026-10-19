@@ -73,7 +73,8 @@ test('setzt ein Profilbild aus dem Teamchat heraus in drei Tipps; der Ort fällt
 
   // 2: Foto wählen - die Auswahl im Dateiwähler zählt wie ein Tipp nicht mit.
   const wahl = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Foto wählen' }).click();
+  // „Anderes Foto“, wenn ein früherer Lauf schon eines gesetzt hat.
+  await page.getByRole('button', { name: /^(Foto wählen|Anderes Foto)$/ }).click();
   tipps += 1;
   await (await wahl).setFiles(await fotoMitOrt(page));
   await expect(page.getByText('Vorschau – noch nicht gespeichert.')).toBeVisible();
@@ -122,8 +123,12 @@ test('zeigt das Bild den anderen im Team vor der Nachricht', async ({ page, brow
     .getByRole('link', { name: /^Anna Beispiel/ });
   await expect(direkt.locator('img[data-personenbild="foto"]')).toBeVisible();
   await direkt.click();
+  await expect(andere.getByRole('listitem').filter({ hasText: text })).toBeVisible();
+  // Im Gespräch schreiben nur Anna (mit Bild) und Jannes (ohne): Das Bild steht
+  // vor Annas Nachrichten. Eine Nachricht binnen fünf Minuten hängt ohne
+  // Kopf an ihrer vorigen - deshalb nicht an genau dieser Zeile gesucht.
   await expect(
-    andere.getByRole('listitem').filter({ hasText: text }).locator('img[data-personenbild="foto"]'),
+    andere.locator('[data-nachricht] img[data-personenbild="foto"]').first(),
   ).toBeVisible();
   await andere.close();
 });

@@ -342,7 +342,17 @@ describe('Farben der Personen im Teamchat (TEAM-006, ANN-666)', () => {
     },
   );
 
-  it('hält die acht Farben auseinander (Oklab-Abstand mindestens 0,08)', () => {
+  it('hält die acht Farben auseinander und von den Statusfarben weg (Oklab-Abstand mindestens 0,08)', () => {
+    const status = ['danger', 'warnung', 'warnung-mittel'] as const;
+    for (const name of PERSONENFARBEN) {
+      for (const s of status) {
+        const [l1, a1, b1] = oklab(farbe(name));
+        const [l2, a2, b2] = oklab(tokens[s]!);
+        expect(Math.hypot(l1 - l2, a1 - a2, b1 - b2), `${name} gegen ${s}`).toBeGreaterThanOrEqual(
+          0.08,
+        );
+      }
+    }
     for (const [i, a] of PERSONENFARBEN.entries()) {
       for (const b of PERSONENFARBEN.slice(i + 1)) {
         const [l1, a1, b1] = oklab(farbe(a));
@@ -355,9 +365,11 @@ describe('Farben der Personen im Teamchat (TEAM-006, ANN-666)', () => {
   });
 
   it('meidet die Töne der Statusfarben: kein Rot, Orange oder Gelb mit Buntheit', () => {
+    // Rot bis Gelb liegen in Oklch etwa zwischen 345 und 110 Grad; die
+    // Statusfarben `danger` (31) und `warnung` (86) mittendrin.
     for (const name of PERSONENFARBEN) {
       const { C, H } = farbe(name);
-      const warm = H >= 15 && H <= 100;
+      const warm = H >= 345 || H <= 110;
       expect(warm && C > 0.03, name).toBe(false);
     }
   });

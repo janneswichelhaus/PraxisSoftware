@@ -82,8 +82,8 @@ const OLIVIA = '55555555-5555-4555-8555-000000000003';
 
 function teamchatBereit() {
   fetchAvatare.mockReset().mockResolvedValue([
-    { staff_member_id: ANNA, color: 'ozean', picture_id: null },
-    { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
+    { staff_member_id: ANNA, color: 'ozean', picture_id: null, own: true },
+    { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null, own: false },
   ]);
   fetchPersonen.mockReset().mockResolvedValue([{ staff_member_id: OLIVIA, name: 'Olivia Office' }]);
   waehleFarbe.mockReset().mockResolvedValue(undefined);
@@ -500,8 +500,13 @@ describe('MeinKontoPage — Bild und Farbe im Teamchat', () => {
     const user = userEvent.setup();
     waehleFarbe.mockImplementation((farbe) => {
       fetchAvatare.mockResolvedValue([
-        { staff_member_id: ANNA, color: farbe as TeamchatApi.Avatar['color'], picture_id: null },
-        { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
+        {
+          staff_member_id: ANNA,
+          color: farbe as TeamchatApi.Avatar['color'],
+          picture_id: null,
+          own: true,
+        },
+        { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null, own: false },
       ]);
       return Promise.resolve();
     });
@@ -521,8 +526,34 @@ describe('MeinKontoPage — Bild und Farbe im Teamchat', () => {
     expect(await screen.findByText('Diese Farbe gibt es nicht.')).toBeInTheDocument();
   });
 
-  it('zeigt den Abschnitt nicht ohne Mitarbeiterdatensatz', async () => {
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'], 'Ohne Datensatz')} />);
+  it('zeigt den Abschnitt auch der Trainingsbetreuung - die eigene Zeile kennt der Server', async () => {
+    fetchAvatare.mockResolvedValue([
+      {
+        staff_member_id: '55555555-5555-4555-8555-000000000006',
+        color: 'petrol',
+        picture_id: null,
+        own: true,
+      },
+    ]);
+    renderWithProviders(<MeinKontoPage user={testUser(['trainer'], 'Tom Trainingsbetreuung')} />);
+    expect(await screen.findByRole('radio', { name: 'Petrol' })).toBeChecked();
+    expect(document.querySelector('[data-personenbild="initialen"]')).toHaveTextContent('TT');
+  });
+
+  it('zeigt den Abschnitt nicht ohne eigenen Mitarbeiterdatensatz', async () => {
+    fetchAvatare.mockResolvedValue([
+      { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null, own: false },
+    ]);
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    expect(await screen.findByRole('heading', { name: 'Sitzungen' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Bild und Farbe im Teamchat' })).toBeNull(),
+    );
+    expect(fetchAvatare).toHaveBeenCalled();
+  });
+
+  it('fragt für ein Konto ohne Praxisrolle gar nicht erst', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['patient'])} />);
     expect(await screen.findByRole('heading', { name: 'Sitzungen' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Bild und Farbe im Teamchat' })).toBeNull();
     expect(fetchAvatare).not.toHaveBeenCalled();
@@ -545,8 +576,8 @@ describe('MeinKontoPage — Profilbild', () => {
     const user = userEvent.setup();
     setzeProfilbild.mockImplementation(() => {
       fetchAvatare.mockResolvedValue([
-        { staff_member_id: ANNA, color: 'ozean', picture_id: 'bild-2' },
-        { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
+        { staff_member_id: ANNA, color: 'ozean', picture_id: 'bild-2', own: true },
+        { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null, own: false },
       ]);
       return Promise.resolve('bild-2');
     });
@@ -568,13 +599,13 @@ describe('MeinKontoPage — Profilbild', () => {
     expect(setzeProfilbild).toHaveBeenCalledWith(QUADRAT);
     expect(await screen.findByText('Foto gespeichert.')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Anderes Foto' })).toBeInTheDocument();
-    await vi.waitFor(() =>
-      expect(document.querySelector('[data-personenbild="foto"]')).toHaveAttribute(
-        'src',
-        'blob:profilbild-anna',
-      ),
+    // Das gespeicherte Bild steht sofort da, ohne es vom Server zurückzuholen.
+    expect(document.querySelector('[data-personenbild="foto"]')).toHaveAttribute(
+      'src',
+      'blob:vorschau',
     );
-    expect(ladeProfilbild).toHaveBeenCalledWith('bild-2');
+    expect(ladeProfilbild).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(fetchAvatare).toHaveBeenCalledTimes(2));
   });
 
   it('verwirft die Vorschau mit „Abbrechen“, ohne zu speichern', async () => {
@@ -614,10 +645,12 @@ describe('MeinKontoPage — Profilbild', () => {
   it('entfernt das eigene Foto nach einer Rückfrage', async () => {
     const user = userEvent.setup();
     fetchAvatare.mockResolvedValue([
-      { staff_member_id: ANNA, color: 'ozean', picture_id: 'bild-1' },
+      { staff_member_id: ANNA, color: 'ozean', picture_id: 'bild-1', own: true },
     ]);
     entferneProfilbild.mockImplementation(() => {
-      fetchAvatare.mockResolvedValue([{ staff_member_id: ANNA, color: 'ozean', picture_id: null }]);
+      fetchAvatare.mockResolvedValue([
+        { staff_member_id: ANNA, color: 'ozean', picture_id: null, own: true },
+      ]);
       return Promise.resolve();
     });
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
@@ -633,7 +666,9 @@ describe('MeinKontoPage — Profilbild', () => {
   it('sagt im Kleingedruckten, wer das Bild sieht und wann es fällt', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
     expect(
-      await screen.findByText(/Freiwillig\. Bild und Farbe sieht nur das Team im Teamchat\./),
+      await screen.findByText(
+        /Bild und Farbe im Teamchat sind freiwillig und nur für das Team sichtbar/,
+      ),
     ).toBeInTheDocument();
   });
 });

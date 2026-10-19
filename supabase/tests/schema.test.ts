@@ -224,6 +224,9 @@ describe('Schema-Invarianten', () => {
       // TEAM-003: Anhänge im Teamchat und ihre einmaligen Lesefreigaben.
       'team_message_attachments',
       'team_attachment_access_grants',
+      // TEAM-006, TEAM-007: Farbe und Profilbild je Person.
+      'staff_colors',
+      'staff_profile_pictures',
       // ERN-001: Ernährungsprofil, Einwilligung und Gewicht.
       'nutrition_profiles',
       'nutrition_consent_records',

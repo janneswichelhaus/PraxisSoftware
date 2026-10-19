@@ -34,6 +34,7 @@ import { ENTWUERFE, GEMERKT, NEU, SUCHE, TEAMCHAT, THREADS, gespraechPfad } from
 import { standardGespraech } from './speicher';
 import { LEERE_SUCHE, sucheSetzen } from './suche';
 import { Teambild } from './Teambild';
+import { eigenerAvatar, useAvatare } from './teambilder';
 import { Schloss } from './Zeichen';
 
 /**
@@ -91,9 +92,16 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
   );
   // TEAM-007: Das eigene Bild ist der Weg zu Bild und Farbe - wie bei Slack am
   // Telefon oben neben „Neu“, am Rechner am Fuß der Spalte, wo das Suchfeld
-  // seine Breite behält.
-  const eigenesBild = user.staffMemberId ? (
-    <Teambild staffMemberId={user.staffMemberId} name={user.profile.display_name} groesse="klein" />
+  // seine Breite behält. Die eigene Zeile markiert der Server, auch für die
+  // Trainingsbetreuung.
+  const avatare = useAvatare();
+  const ich = eigenerAvatar(avatare.data);
+  const eigenesBild = ich ? (
+    <Teambild
+      staffMemberId={ich.staff_member_id}
+      name={user.profile.display_name}
+      groesse="klein"
+    />
   ) : null;
   const ICH = 'Eigenes Bild und eigene Farbe ändern';
 
@@ -241,7 +249,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
                 </div>
               ) : null}
               {eigenesBild && !telefon ? (
-                <ListRows beschriftung="Du" className="mt-8">
+                <Listenabschnitt titel="Du">
                   <ListRow
                     dicht
                     to="/mein-konto"
@@ -250,7 +258,7 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
                     titel={user.profile.display_name}
                     meta="Bild und Farbe"
                   />
-                </ListRows>
+                </Listenabschnitt>
               ) : null}
             </>
           );

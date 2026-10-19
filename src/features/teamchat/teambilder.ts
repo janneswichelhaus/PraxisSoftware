@@ -9,6 +9,11 @@ export function useAvatare() {
   return useQuery({ queryKey: AVATARE_KEY, queryFn: fetchAvatare, staleTime: AVATARE_FRISCH_MS });
 }
 
+/** Die eigene Zeile, wie der Server sie markiert. */
+export function eigenerAvatar(avatare: readonly Avatar[] | undefined): Avatar | undefined {
+  return avatare?.find((a) => a.own);
+}
+
 export function avatarVon(
   avatare: readonly Avatar[] | undefined,
   staffMemberId: string | null | undefined,

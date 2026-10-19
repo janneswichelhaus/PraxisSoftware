@@ -467,6 +467,8 @@ const avatarSchema = z.object({
   color: z.string().transform((farbe) => (istPersonenfarbe(farbe) ? farbe : 'schiefer')),
   /** Kennung des Profilbilds - zugleich seine Fassung; ohne Bild `null`. */
   picture_id: z.string().nullable().default(null),
+  /** Die eigene Zeile - der Server kennt den eigenen Datensatz für jede Rolle. */
+  own: z.boolean().default(false),
 });
 export type Avatar = z.infer<typeof avatarSchema>;
 

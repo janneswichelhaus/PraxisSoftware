@@ -1254,8 +1254,10 @@ Zuschnitt dieses Abschnitts.
     das AI Gateway (Punkt 39 sinngemäß, ADR-005).
 90. **Prüfung am Inhalt in derselben Transaktion.** Der Server läuft das ganze JPEG ab -
     Signatur, Aufbau bis zum Bildende, nichts dahinter - und lässt nur Segmente der Bilddaten und
-    das Adobe-Segment zu: kein EXIF, XMP, IPTC, ICC, kein Kommentar, kein Vorschaubild, auch
-    nicht hinter dem ersten Scan; dazu genau 256 × 256 und die Größe. Ein Befund lehnt ab, ohne
+    das Adobe-Segment in seiner festen Länge zu: kein EXIF, XMP, IPTC, ICC, kein Kommentar, kein
+    Vorschaubild, auch nicht hinter dem ersten Scan; dazu genau ein Bildrahmen von 256 × 256 und
+    die Größe. Belegt ist damit „kein Segment mit Metadaten“, nicht „kein Byte außer Pixeln“: In
+    Tabellen und Bilddaten lassen sich Bytes nicht als Inhalt prüfen. Ein Befund lehnt ab, ohne
     Bytes umzuschreiben (Punkt 52). Anders als Punkt 50 keine Edge Function: Die Bytes liegen
     in der Datenbank, also prüft sie selbst, und die Prüfung ist ab dem ersten Bild scharf.
 91. **In der Datenbank, nicht im Bucket - Umkehr von Punkt 1 für diese eine Art.** Gründe:
