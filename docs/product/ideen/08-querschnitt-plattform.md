@@ -309,3 +309,31 @@ Frage aus ADR-021 Punkt 3 wäre vor jedem Zuschnitt zu beantworten. Für
 Verwechslungen beim Anlegen ist `IDEA-PRX-018` (Dublettenprüfung) der
 nähere Weg; eine Nummer machte das Zusammenführen zusätzlich schwerer, weil
 zu entscheiden wäre, welche überlebt.
+
+### IDEA-QSN-012 — Zwischen den Bereichen wischen
+
+| | |
+|---|---|
+| Status | zurückgestellt (ANN-663) |
+| Quelle | Jannes, 2026-10-19 |
+| Berührt | ANN-663, ANN-567, `docs/design/DESIGN.md` |
+
+**Stand.** Gebaut ist nur die Richtung beim Tippen: Die neue Seite schiebt
+sich waagerecht über die alte (ANN-663). Die Geste selbst ist zurückgestellt.
+
+**Idee.** Waagerecht wischen wechselt zum benachbarten Arbeitsbereich der
+Tableiste; die Seite folgt dem Finger.
+
+**Warum.** Am Telefon fühlt sich Wischen schneller an als ein Tipp in die
+Leiste.
+
+**Vorsicht.** Kalender (Woche blättern, Termin ziehen, Spanne aufziehen,
+Zoom), Unterschrift, 3D-Rad und seitlich rollende Chipreihen und Tabellen
+nutzen die waagerechte Geste schon; iOS und Android legen „Zurück“ auf den
+Wisch vom Rand. Am Lenker löst ein schräger Bildlauf einen Wechsel aus. Eine
+Seite, die dem Finger folgt, braucht die Nachbarseiten fertig gezeichnet -
+das hieße, die verschachtelten Routen umzubauen.
+
+**Offen.** Ob Jannes es im Alltag vermisst; wenn ja, eng begrenzt testen:
+nur zwischen den Reitern einer Unterleiste, nur auf Seiten ohne eigene
+waagerechte Bedienung.

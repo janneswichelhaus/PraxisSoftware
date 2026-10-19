@@ -317,3 +317,103 @@ describe('Hinweisfenster', () => {
     expect(onSchliessen).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Dialogfenster kommt von unten und geht nach unten (ANN-663)', () => {
+  function Umschalter({ anfangs = true }: { anfangs?: boolean }) {
+    const [offen, setOffen] = useState(anfangs);
+    return (
+      <>
+        <Button onClick={() => setOffen(true)}>Öffnen</Button>
+        {offen ? (
+          <Dialogfenster titel="Frage" onSchliessen={() => setOffen(false)}>
+            <Button onClick={() => setOffen(false)}>Nein</Button>
+          </Dialogfenster>
+        ) : null}
+      </>
+    );
+  }
+
+  it('trägt die Klassen des Kommens an Schleier und Fenster', () => {
+    render(<Umschalter />);
+    const fenster = screen.getByRole('dialog', { name: 'Frage' });
+    expect(fenster).toHaveClass('fenster-kommt');
+    expect(fenster.parentElement).toHaveClass('fenster-schleier');
+  });
+
+  it('lässt ohne Element.animate (jsdom) kein Abbild stehen', async () => {
+    const user = userEvent.setup();
+    render(<Umschalter />);
+    await user.click(screen.getByRole('button', { name: 'Nein' }));
+    expect(screen.queryByText('Frage')).not.toBeInTheDocument();
+  });
+
+  it('lässt ein Abbild ohne Bedeutung nach unten gleiten, unauffindbar, und entfernt es danach', async () => {
+    let fertig: () => void = () => undefined;
+    const animate = vi.fn(() => ({
+      finished: new Promise<void>((weiter) => (fertig = weiter)),
+    }));
+    Object.defineProperty(HTMLElement.prototype, 'animate', { value: animate, configurable: true });
+    try {
+      const user = userEvent.setup();
+      render(<Umschalter />);
+      await user.click(screen.getByRole('button', { name: 'Nein' }));
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      // Das Fenster ist weg: keine Rolle mehr, die Seite wieder frei.
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Öffnen' }).closest('[inert]')).toBeNull();
+      const abbild = document.querySelector<HTMLElement>('[data-fenster-abbild]');
+      expect(abbild).not.toBeNull();
+      expect(abbild).toHaveAttribute('aria-hidden', 'true');
+      expect(abbild).toHaveAttribute('inert');
+      // In der geschlossenen Shadow-Root: Keine Suche findet den Inhalt doppelt.
+      expect(screen.queryByText('Frage')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Nein', hidden: true })).toBeNull();
+      expect(animate).toHaveBeenCalledWith(
+        [{ translate: '0 0' }, { translate: '0 calc(100% + 2rem)' }],
+        expect.objectContaining({ duration: 240 }),
+      );
+
+      await act(async () => {
+        fertig();
+        await Promise.resolve();
+      });
+      expect(document.querySelector('[data-fenster-abbild]')).toBeNull();
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+    }
+  });
+
+  it('legt das Abbild unter ein Fenster, das zugleich aufgeht', async () => {
+    const animate = vi.fn(() => ({ finished: new Promise<void>(() => undefined) }));
+    Object.defineProperty(HTMLElement.prototype, 'animate', { value: animate, configurable: true });
+    function Wechsel() {
+      const [zweites, setZweites] = useState(false);
+      return zweites ? (
+        <Dialogfenster key="zweites" titel="Zweites" onSchliessen={() => undefined}>
+          <p>B</p>
+        </Dialogfenster>
+      ) : (
+        <Dialogfenster key="erstes" titel="Erstes" onSchliessen={() => undefined}>
+          <Button onClick={() => setZweites(true)}>Weiter</Button>
+        </Dialogfenster>
+      );
+    }
+    try {
+      const user = userEvent.setup();
+      render(<Wechsel />);
+      await user.click(screen.getByRole('button', { name: 'Weiter' }));
+      await act(async () => {
+        await Promise.resolve();
+      });
+      const abbild = document.querySelector('[data-fenster-abbild]');
+      const zweites = screen.getByRole('dialog', { name: 'Zweites' }).parentElement!;
+      expect(abbild?.nextElementSibling).toBe(zweites);
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+      document.querySelectorAll('[data-fenster-abbild]').forEach((abbild) => abbild.remove());
+    }
+  });
+});

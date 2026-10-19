@@ -1,4 +1,5 @@
 import { useLayoutEffect, type MouseEvent, type RefObject } from 'react';
+import { bewegungErlaubt, type Richtung } from './bewegung';
 
 /**
  * „Zeile öffnet sich zur Seite“ (Auftrag Jannes vom 16.10.2026, ANN-567): Die
@@ -22,6 +23,13 @@ import { useLayoutEffect, type MouseEvent, type RefObject } from 'react';
  * reduzierter Bewegung und bei einem Tipp mit Zusatztaste (neuer Tab)
  * übernimmt der Link wie bisher.
  *
+ * **Bereich wechseln** (`bereichWechseln`, ANN-663): Ein Tipp in die Leiste
+ * der Arbeitsbereiche schiebt die neue Seite waagerecht über die alte - von
+ * rechts, wenn der Bereich weiter rechts (in der Seitenleiste weiter unten)
+ * steht, sonst von links. Kopfzeile, Tableiste und Seitenleiste bleiben dabei
+ * stehen (`index.css`, „Bereich wechseln“). Gemeinsam mit „Zeile zur Seite“:
+ * dieselbe Freigabe über `useSeitenziel`, dieselben Ausnahmen.
+ *
  * Ebenso, wo niemand die neue Seite meldet - kein Rahmen mit
  * `useSeitenziel`, etwa in der Plattform der Patient:innen - und wo die Zeile
  * auf derselben Seite bleibt (nur andere Suchparameter oder ein Anker, etwa
@@ -41,6 +49,12 @@ const MAX_WARTEN_MS = 400;
 /** Gibt das neue Bild frei, sobald die neue Seite gezeichnet ist. */
 let seiteGezeichnet: (() => void) | null = null;
 
+/** Während ein Bereichswechsel läuft: Der Inhalt bekommt keinen Namen. */
+let bereichswechsel = false;
+
+/** Der Inhalt, der gerade den Namen trägt (`useSeitenziel`). */
+let benannterInhalt: HTMLElement | null = null;
+
 /** Wie viele Rahmen gerade die neue Seite melden (`useSeitenziel`). */
 let ziele = 0;
 
@@ -49,22 +63,31 @@ function benennen(element: HTMLElement): void {
   window.setTimeout(() => element.style.removeProperty('view-transition-name'), DAUER_MS);
 }
 
-function aufNeueSeite(): Promise<void> {
+/** `true`, wenn die neue Seite steht; `false`, wenn die Wartezeit ablief. */
+function aufNeueSeite(): Promise<boolean> {
   return new Promise((fertig) => {
-    const freigeben = () => {
+    const freigeben = (gezeichnet: boolean) => {
       seiteGezeichnet = null;
       window.clearTimeout(uhr);
-      fertig();
+      fertig(gezeichnet);
     };
-    const uhr = window.setTimeout(freigeben, MAX_WARTEN_MS);
-    seiteGezeichnet = freigeben;
+    const uhr = window.setTimeout(() => freigeben(false), MAX_WARTEN_MS);
+    seiteGezeichnet = () => freigeben(true);
   });
 }
 
-function bewegungReduziert(): boolean {
+/** Ob der Tipp beim Link bleibt: Zusatztaste, kein Übergang, kein Rahmen. */
+function linkUebernimmt(event: MouseEvent<HTMLAnchorElement>): boolean {
   return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    typeof document.startViewTransition !== 'function' ||
+    !bewegungErlaubt() ||
+    ziele === 0
   );
 }
 
@@ -79,26 +102,59 @@ export function zeileOeffnen(
   weiter: () => void,
   gleicheSeite = false,
 ): void {
-  if (
-    event.defaultPrevented ||
-    event.button !== 0 ||
-    event.metaKey ||
-    event.altKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    typeof document.startViewTransition !== 'function' ||
-    bewegungReduziert() ||
-    ziele === 0 ||
-    gleicheSeite
-  ) {
-    return;
-  }
+  if (linkUebernimmt(event) || gleicheSeite) return;
   event.preventDefault();
   benennen(event.currentTarget);
-  document.startViewTransition(() => {
+  document.startViewTransition(async () => {
     const gezeichnet = aufNeueSeite();
     weiter();
-    return gezeichnet;
+    await gezeichnet;
+  });
+}
+
+/**
+ * Die Richtung von einem Bereich zum anderen in der Reihenfolge der Leiste;
+ * `null`, wo es keine gibt - derselbe Bereich, oder einer steht nicht darin
+ * (etwa „Mein Konto“).
+ */
+export function richtungIn(
+  reihe: readonly string[],
+  von: string | undefined,
+  nach: string,
+): Richtung | null {
+  const alt = von === undefined ? -1 : reihe.indexOf(von);
+  const neu = reihe.indexOf(nach);
+  if (alt < 0 || neu < 0 || alt === neu) return null;
+  return neu > alt ? 'vor' : 'zurueck';
+}
+
+/**
+ * Für das `onClick` eines Bereichs in der Leiste: schiebt die neue Seite in
+ * `richtung` über die alte. Ohne Richtung, und wo der Übergang nicht läuft,
+ * tut es nichts - dann navigiert der Link selbst. Bleibt die Seite stehen
+ * (eine Rückfrage hält den Wechsel an), entfällt das Schieben.
+ */
+export function bereichWechseln(
+  event: MouseEvent<HTMLAnchorElement>,
+  weiter: () => void,
+  richtung: Richtung | null,
+): void {
+  if (richtung === null || linkUebernimmt(event)) return;
+  event.preventDefault();
+  // Trägt der Inhalt vom letzten Wechsel noch den Namen, schöbe er sich
+  // als eigenes Bild über das Schieben.
+  benannterInhalt?.style.removeProperty('view-transition-name');
+  const wurzel = document.documentElement;
+  wurzel.dataset['wechsel'] = richtung;
+  bereichswechsel = true;
+  const uebergang = document.startViewTransition(async () => {
+    const gezeichnet = aufNeueSeite();
+    weiter();
+    if (!(await gezeichnet)) uebergang.skipTransition();
+  });
+  void uebergang.finished.finally(() => {
+    bereichswechsel = false;
+    delete wurzel.dataset['wechsel'];
   });
 }
 
@@ -119,7 +175,12 @@ export function useSeitenziel(inhalt: RefObject<HTMLElement | null>, pfad: strin
   useLayoutEffect(() => {
     const element = inhalt.current;
     if (!element) return undefined;
+    if (bereichswechsel) {
+      seiteGezeichnet?.();
+      return undefined;
+    }
     element.style.setProperty('view-transition-name', NAME);
+    benannterInhalt = element;
     seiteGezeichnet?.();
     const uhr = window.setTimeout(
       () => element.style.removeProperty('view-transition-name'),
@@ -128,6 +189,7 @@ export function useSeitenziel(inhalt: RefObject<HTMLElement | null>, pfad: strin
     return () => {
       window.clearTimeout(uhr);
       element.style.removeProperty('view-transition-name');
+      if (benannterInhalt === element) benannterInhalt = null;
     };
   }, [inhalt, pfad]);
 }

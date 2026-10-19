@@ -6828,3 +6828,15 @@ Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: Datenschutz
 **Anker.** `app.notification_drop_reason` (Zweig `v_tagebuch`), `app.nutrition_diary_reminder_live`, `public.enqueue_nutrition_diary_reminders`.
 
 **Änderungspfad.** Bedingung `v_tagebuch` in `app.notification_drop_reason` streichen · Aufwand `klein`.
+
+### ANN-663 — Richtung der Bewegung: waagerecht gleichrangig, senkrecht eine Ebene
+
+Technik · entschieden (Jannes) · 2026-10-19 · Jannes · — · Wiedervorlage: —
+
+**Annahme.** Ein Tipp in die Leiste der Arbeitsbereiche schiebt die neue Seite waagerecht über die alte (weiter rechts oder unten: von rechts); Kopfzeile und Leisten stehen. Schritte eines geführten Ablaufs rücken waagerecht nach, zurück von links. Fenster kommen von unten und gehen nach unten. Kein Wischen als Navigation, nichts von oben; reduziert springt alles.
+
+**Begründung.** Auftrag von Jannes (19.10.). Wischen kollidiert mit Kalender, Unterschrift, 3D-Rad und den Gesten des Telefons und löst am Lenker versehentlich aus; die Richtung allein zeigt schon, wo man ist.
+
+**Anker.** `src/components/ui/bewegung.ts`; `bereichWechseln` in `seitenUebergang.ts`, `useAbgang` in `Dialogfenster.tsx`, `useSchrittrichtung` in `GefuehrterAblauf.tsx`; `index.css` „Bereich wechseln“.
+
+**Änderungspfad.** Die drei Hooks und die Abschnitte in `index.css` entfernen · Aufwand `klein`.

@@ -3,7 +3,7 @@ import { useRef, type MouseEvent } from 'react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ListRow, ListRows } from './ListRow';
-import { useSeitenziel, zeileOeffnen } from './seitenUebergang';
+import { bereichWechseln, richtungIn, useSeitenziel, zeileOeffnen } from './seitenUebergang';
 
 /**
  * „Zeile öffnet sich zur Seite“ (ANN-567). Ob der Übergang im Browser läuft,
@@ -152,5 +152,82 @@ describe('Zeile (ListRow) mit Ziel', () => {
     expect(start).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('link', { name: 'Zu /patienten/1' }));
     expect(start).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Bereich wechseln (ANN-663)', () => {
+  it('schiebt nach der Reihenfolge der Leiste und nur zwischen zwei verschiedenen Bereichen', () => {
+    const reihe = ['heute', 'kalender', 'patienten', 'mehr'];
+    expect(richtungIn(reihe, 'heute', 'patienten')).toBe('vor');
+    expect(richtungIn(reihe, 'mehr', 'kalender')).toBe('zurueck');
+    expect(richtungIn(reihe, 'kalender', 'kalender')).toBeNull();
+    // „Mein Konto“ gehört zu keinem Bereich: Von dort springt die Seite.
+    expect(richtungIn(reihe, undefined, 'heute')).toBeNull();
+    expect(richtungIn(reihe, 'heute', 'unbekannt')).toBeNull();
+  });
+
+  it('überlässt den Wechsel dem Link, wo es keine Richtung gibt', () => {
+    const start = vi.fn();
+    Object.defineProperty(document, 'startViewTransition', { value: start, configurable: true });
+    render(<Ziel pfad="/heute" />);
+    const { event, preventDefault } = tipp(document.createElement('a'));
+    bereichWechseln(event, vi.fn(), null);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
+  });
+
+  it('setzt die Richtung am Dokument, benennt den Inhalt nicht und räumt danach auf', async () => {
+    let rueckruf: (() => Promise<void>) | undefined;
+    let fertig: () => void = () => undefined;
+    const skipTransition = vi.fn();
+    Object.defineProperty(document, 'startViewTransition', {
+      value: vi.fn((aufruf: () => Promise<void>) => {
+        rueckruf = aufruf;
+        return { skipTransition, finished: new Promise<void>((weiter) => (fertig = weiter)) };
+      }),
+      configurable: true,
+    });
+    const { rerender } = render(<Ziel pfad="/heute" />);
+    const weiter = vi.fn();
+    const { event, preventDefault } = tipp(document.createElement('a'));
+
+    bereichWechseln(event, weiter, 'vor');
+    expect(preventDefault).toHaveBeenCalled();
+    expect(document.documentElement.dataset['wechsel']).toBe('vor');
+    // Der Name vom letzten Wechsel ist weg, sonst schöbe sich der Inhalt als
+    // eigenes Bild über das Schieben.
+    expect(screen.getByRole('main').style.getPropertyValue('view-transition-name')).toBe('');
+
+    const gezeichnet = rueckruf?.();
+    expect(weiter).toHaveBeenCalledTimes(1);
+    rerender(<Ziel pfad="/kalender" />);
+    await gezeichnet;
+    expect(skipTransition).not.toHaveBeenCalled();
+    expect(screen.getByRole('main').style.getPropertyValue('view-transition-name')).toBe('');
+
+    fertig();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(document.documentElement.dataset['wechsel']).toBeUndefined();
+  });
+
+  it('schiebt nicht, wenn die Seite stehen bleibt - etwa vor einer Rückfrage', async () => {
+    vi.useFakeTimers();
+    let rueckruf: (() => Promise<void>) | undefined;
+    const skipTransition = vi.fn();
+    Object.defineProperty(document, 'startViewTransition', {
+      value: vi.fn((aufruf: () => Promise<void>) => {
+        rueckruf = aufruf;
+        return { skipTransition, finished: Promise.resolve() };
+      }),
+      configurable: true,
+    });
+    render(<Ziel pfad="/heute" />);
+    bereichWechseln(tipp(document.createElement('a')).event, vi.fn(), 'zurueck');
+    const gezeichnet = rueckruf?.();
+    await vi.advanceTimersByTimeAsync(400);
+    await gezeichnet;
+    expect(skipTransition).toHaveBeenCalledTimes(1);
   });
 });

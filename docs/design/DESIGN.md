@@ -50,7 +50,7 @@ Fläche ohne Karten (`einbettung="flaeche"`); andere Arbeitsseiten bleiben gewö
 
 **Geführter Ablauf** (`GefuehrterAblauf`, Folge in `abfolge.ts`): Kopf mit Objekt und ✕,
 „← Zurück“, Schritt (Balken nur bei fester Zahl); je Seite eine Frage ohne Rollen, Antworten im
-festen Fuß; Abschluss mit „Ändern“ je Angabe und einem Hauptknopf. Geführt, wenn selten, verzweigt,
+festen Fuß; Abschluss mit „Ändern“ je Angabe und einem Hauptknopf (Richtungen: ANN-663). Geführt, wenn selten, verzweigt,
 nichts vergessen werden darf oder einhändig am Rad; nicht für Tägliches im Budget.
 
 **Druckblatt** (Rechnung, Bericht, Planblatt, Tagesplan): eigenes Profil – Briefkopf, Absenderzeile,
@@ -178,7 +178,7 @@ Rahmen (`app/AppShell.tsx`), Rechnungsliste als Vorbild der `Datenliste`.
   Abschnitt 6 (seit 03.10. ein Fenster, `TerminAktionen`); Kontextspalte und Kachelreihe im Kopf der
   Akte, Abschnitt 7 (entfallen; Abzeichen und `Warnzeile`); Knöpfe, Haken und Segment mit 40 px (44,
   ANN-199); Hinweissätze unter Abschnitten (Hilfe auf Abruf); Bewegung „kein Fade, kein Bounce“
-  (Federn und Übergänge nach ANN-567, `index.css` „Bewegung“; Hover bleibt 120 ms).
+  (Federn und Übergänge nach ANN-567, Richtungen nach ANN-663; Hover bleibt 120 ms).
 - [05.10.](handoff-2026-10-05-rahmen.md): Fläche `#eceee8` für Startbild und Manifest (Weiß).
 - [06.10. Kalender und Tour](handoff-2026-10-06-kalender-und-tour.md): Kopfknöpfe der Tour 48 px
   bleiben bis zur Sichtung (ANN-403).
