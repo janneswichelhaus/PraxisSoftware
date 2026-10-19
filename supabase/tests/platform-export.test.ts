@@ -96,6 +96,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
         'habits',
         // ERN-002: die eigene Ernährungsberatung, ohne Notizen der Beratung.
         'nutrition',
+        // BEF-147: die eigene Wahl zu Benachrichtigungen, Geräte, Zustellaufträge.
+        'notifications',
       ].sort(),
     );
     expect(Object.keys(daten.person as object).sort()).toEqual(
@@ -150,6 +152,65 @@ describe('Datenexport der Plattform (POR-018)', () => {
         },
       },
     ]);
+  });
+
+  it('nimmt die eigene Wahl zu Benachrichtigungen, Geräte ohne Schlüssel und Zustellaufträge mit (BEF-147)', async () => {
+    const endpunkt = 'https://fcm.googleapis.com/fcm/send/geraet-export';
+    const p256dh = 'B'.padEnd(87, 'Q');
+    const schluessel = 'Z'.repeat(22);
+    await asUserCommitted(
+      users.plattformErika,
+      'select public.set_platform_notification_settings($1::uuid, $2::text[], $3::text[], $4::smallint, $5::smallint)',
+      [ERIKA, ['appointment_cancelled'], ['plan_assigned'], 21, 7],
+    );
+    await asUserCommitted(
+      users.plattformErika,
+      'select public.register_platform_push_subscription($1::uuid, $2, $3, $4)',
+      [ERIKA, endpunkt, p256dh, schluessel],
+    );
+    await asPostgres(
+      `insert into public.notification_deliveries
+         (organization_id, access_id, kind, channel, due_at, state, finished_at)
+       values ($1, $2, 'plan_assigned', 'push', now(), 'sent', now())`,
+      [organizationId, ERIKA],
+    );
+
+    const daten = await exportieren(users.plattformErika, ERIKA);
+    const zeit = expect.any(String) as unknown;
+    expect(daten.notifications).toEqual({
+      settings: {
+        email_kinds: ['appointment_cancelled'],
+        push_kinds: ['plan_assigned'],
+        quiet_from: 21,
+        quiet_until: 7,
+        chosen_at: zeit,
+      },
+      // Je Gerät nur „seit wann" - Endpunkt und Schlüssel sind Zugangsdaten
+      // zum Push-Dienst, keine Angabe über die Person.
+      devices: [{ registered_at: zeit }],
+      deliveries: [
+        {
+          kind: 'plan_assigned',
+          channel: 'push',
+          created_at: zeit,
+          due_at: zeit,
+          subject_at: null,
+          state: 'sent',
+          finished_at: zeit,
+          drop_reason: null,
+        },
+      ],
+    });
+    const text = JSON.stringify(daten);
+    for (const verboten of [endpunkt, p256dh, schluessel, 'subject_id', 'attempts']) {
+      expect(text).not.toContain(verboten);
+    }
+    // Je Zugang: Tina exportiert nur ihre eigene (leere) Wahl.
+    expect((await exportieren(users.plattformTina, TINA)).notifications).toEqual({
+      settings: null,
+      devices: [],
+      deliveries: [],
+    });
   });
 
   it('Training: eigene Stammdaten, keine Dokumente, Gegenstand das Trainingsverhältnis', async () => {
