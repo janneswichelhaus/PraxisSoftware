@@ -1,5 +1,13 @@
 import { useSyncExternalStore } from 'react';
-import { ANHAENGE_MAX, TeamchatFehler, ladeAnhangHoch, verwirfAnhang, type Anhang } from './api';
+import {
+  ANHAENGE_MAX,
+  SITZUNGSENDE,
+  TeamchatFehler,
+  ladeAnhangHoch,
+  mitSitzungGefallen,
+  verwirfAnhang,
+  type Anhang,
+} from './api';
 import { WIEDERHOLEN_MS } from './takt';
 
 /**
@@ -8,10 +16,12 @@ import { WIEDERHOLEN_MS } from './takt';
  *
  * Eine Datei lädt hoch, sobald sie gewählt ist - während die Person schreibt
  * (wie Slack). Die Bytes bleiben bis dahin im Speicher der Seite; ohne Netz
- * gibt es keinen Anhang. Ein gescheitertes Hochladen wiederholt sich wie der
- * Ausgang von selbst, sobald wieder Netz da ist und alle 15 Sekunden, oder auf
- * „Noch einmal“ - solange die Seite offen ist; vor dem Verlassen und Abmelden
- * warnt `AusgangAbmeldewache` (Punkt 33). Wer das Gespräch wechselt, findet
+ * gibt es keinen Anhang. Ein gescheitertes Hochladen wiederholt sich von
+ * selbst, sobald wieder Netz da ist, und alle 15 Sekunden bis zu achtmal
+ * (`VON_SELBST_HOECHSTENS`) - an einer gesendeten Nachricht danach alle zwei
+ * Minuten weiter -, oder auf „Noch einmal“; alles nur, solange die Seite
+ * offen ist. Vor dem Verlassen und Abmelden warnt `AusgangAbmeldewache`
+ * (Punkt 33). Wer das Gespräch wechselt, findet
  * die Anhänge beim Zurückkommen wieder; nichts wandert in ein anderes
  * Gespräch oder Konto. Beim Abmelden fällt alles (`teamchatLeeren`); was dann
  * schon hochgeladen war, verwirft der Server nach 24 Stunden.
@@ -73,25 +83,40 @@ function melden() {
 }
 
 /**
- * So oft versucht es ein Anhang im Takt von selbst (zwei Minuten), dann nur
- * noch mit dem Netz oder von Hand: Jeder Versuch, der die Datenbank erreicht,
- * legt eine Zeile an und verwirft sie wieder.
+ * So oft versucht es ein Anhang im Takt von selbst (zwei Minuten), dann im
+ * Entwurf nur noch mit dem Netz oder von Hand: Jeder Versuch, der die
+ * Datenbank erreicht, legt eine Zeile an und verwirft sie wieder.
  */
 export const VON_SELBST_HOECHSTENS = 8;
+
+/** Schläge des Takts, seit er läuft - für den langsamen Takt im Ausgang. */
+let schlaege = 0;
 
 /** Ob ein neuer Versuch gelingen kann - gescheitert am Netz, nicht am Format. */
 function wiederholbar(a: Entwurfsanhang): boolean {
   return a.zustand === 'fehler' && a.erneut;
 }
 
-/** Ob der Takt es noch einmal versucht. */
+/**
+ * Ob der Takt es noch einmal versucht. An einer gesendeten Nachricht hört er
+ * nicht auf, sondern versucht es nach den acht Malen jeden achten Schlag,
+ * alle zwei Minuten: Bei schwachem Empfang meldet der Browser kein neues
+ * Netz, und die Nachricht soll trotzdem von selbst gehen (Praxis-Review
+ * TEAM-005, ANN-654).
+ */
 function imTakt(a: Entwurfsanhang): boolean {
-  return wiederholbar(a) && a.vonSelbst < VON_SELBST_HOECHSTENS;
+  return wiederholbar(a) && (a.vonSelbst < VON_SELBST_HOECHSTENS || a.nachrichtId !== null);
+}
+
+/** Ob dieser Schlag des Takts für den Anhang einer ist. */
+function jetztDran(a: Entwurfsanhang): boolean {
+  return a.vonSelbst < VON_SELBST_HOECHSTENS || schlaege % VON_SELBST_HOECHSTENS === 0;
 }
 
 function taktPruefen() {
   const wartet = [...speicher.values()].some(imTakt);
   if (wartet && takt === null) {
+    schlaege = 0;
     takt = setInterval(imTaktWiederholen, WIEDERHOLEN_MS);
   } else if (!wartet && takt !== null) {
     clearInterval(takt);
@@ -108,6 +133,7 @@ function anmelden() {
 }
 
 function imTaktWiederholen(): void {
+  schlaege += 1;
   anhaengeWiederholen(false);
 }
 
@@ -120,7 +146,7 @@ export function anhaengeWiederholen(neu = true): void {
   for (const a of [...speicher.values()]) {
     if (!wiederholbar(a)) continue;
     if (neu) speicher.set(a.lokalId, { ...a, vonSelbst: 0 });
-    else if (!imTakt(a)) continue;
+    else if (!imTakt(a) || !jetztDran(a)) continue;
     void hochladen(a.lokalId, !neu);
   }
 }
@@ -205,8 +231,11 @@ async function hochladen(lokalId: string, vonSelbst = false): Promise<void> {
     );
     const jetzt = speicher.get(lokalId);
     if (!jetzt) {
-      // Während des Hochladens entfernt: dann auch am Server fort.
-      void verwirfAnhang(anhang.id).catch(() => undefined);
+      // Während des Hochladens entfernt: dann auch am Server fort - nach dem
+      // Abmelden nicht, das ginge unter der nächsten Sitzung hinaus.
+      if (!mitSitzungGefallen(abbruch.signal)) {
+        void verwirfAnhang(anhang.id).catch(() => undefined);
+      }
       return;
     }
     speicher.set(lokalId, { ...jetzt, zustand: 'bereit', anhang, groesse: anhang.byte_size });
@@ -277,8 +306,8 @@ export function anhangErneut(lokalId: string): void {
   void hochladen(lokalId);
 }
 
-function freigeben(eintrag: Entwurfsanhang) {
-  laufend.get(eintrag.lokalId)?.abort();
+function freigeben(eintrag: Entwurfsanhang, grund?: string) {
+  laufend.get(eintrag.lokalId)?.abort(grund);
   if (eintrag.vorschau) URL.revokeObjectURL(eintrag.vorschau);
   dateien.delete(eintrag.lokalId);
   speicher.delete(eintrag.lokalId);
@@ -348,7 +377,7 @@ export function anhaengeBeobachten(rueckruf: () => void): () => void {
 /** Alle Anhänge aller Konten fort - beim Abmelden und Kontowechsel. */
 export function anhaengeLeeren(): void {
   if (speicher.size === 0) return;
-  for (const eintrag of [...speicher.values()]) freigeben(eintrag);
+  for (const eintrag of [...speicher.values()]) freigeben(eintrag, SITZUNGSENDE);
   melden();
 }
 

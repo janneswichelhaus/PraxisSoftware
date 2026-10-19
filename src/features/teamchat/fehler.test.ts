@@ -11,8 +11,9 @@ import { enthaelt, webmAusChromium } from '@/features/platform/testvideos';
 
 const rpc = vi.fn();
 const upload = vi.fn();
+const invoke = vi.fn();
 vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ rpc, storage: { from: () => ({ upload }) } }),
+  getSupabase: () => ({ rpc, storage: { from: () => ({ upload }) }, functions: { invoke } }),
 }));
 // Inhaltsprüfung und Bereinigung lesen die Bytes über den Browser; hier geht
 // es nur um den Weg danach (Hochladen, Einordnen des Fehlers, Verwerfen).
@@ -28,6 +29,7 @@ vi.mock('@/features/files/metadaten', async (importOriginal) => ({
 const {
   ABGEBROCHEN,
   FALSCHE_AUFNAHME,
+  SITZUNGSENDE,
   TeamchatFehler,
   aendereGemerkt,
   ladeAnhangHoch,
@@ -229,5 +231,78 @@ describe('Abbruch des Hochladens (Zweitreview TEAM-005)', () => {
     expect(fehler.message).toBe(ABGEBROCHEN);
     expect(upload).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith('discard_team_attachment', { p_attachment_id: 'a1' });
+  });
+
+  /** Vorbereiten gelingt; während des Hochladens fällt der Anhang - mit `grund`. */
+  async function abbruchBeimHochladen(grund?: string) {
+    rpc.mockReset();
+    upload.mockReset();
+    const abbruch = new AbortController();
+    rpc
+      .mockResolvedValueOnce({
+        data: [{ attachment_id: 'a1', bucket_id: 'teamchat', object_key: 'org/kanal/a1' }],
+        error: null,
+        status: 200,
+      })
+      .mockResolvedValue({ data: null, error: null, status: 204 });
+    upload.mockImplementationOnce(() => {
+      abbruch.abort(grund);
+      return Promise.resolve({ data: { path: 'org/kanal/a1' }, error: null });
+    });
+    return fehlerVon(() => ladeAnhangHoch('kanal', pdf(), 'Plan.pdf', undefined, abbruch.signal));
+  }
+
+  it('bestätigt nach einem Abbruch während des Hochladens nicht und verwirft (Runde 3, B3)', async () => {
+    const fehler = await abbruchBeimHochladen();
+    expect(fehler.message).toBe(ABGEBROCHEN);
+    expect(rpc).not.toHaveBeenCalledWith('confirm_team_attachment_upload', expect.anything());
+    expect(rpc).toHaveBeenCalledWith('discard_team_attachment', { p_attachment_id: 'a1' });
+  });
+
+  /** Hochladen gelingt; während des Bestätigens fällt der Anhang - mit `grund`. */
+  async function abbruchBeimBestaetigen(grund?: string) {
+    rpc.mockReset();
+    upload.mockReset();
+    invoke.mockReset();
+    invoke.mockResolvedValue({ data: { ergebnis: 'passed' }, error: null });
+    upload.mockResolvedValue({ data: { path: 'org/kanal/a1' }, error: null });
+    const abbruch = new AbortController();
+    rpc
+      .mockResolvedValueOnce({
+        data: [{ attachment_id: 'a1', bucket_id: 'teamchat', object_key: 'org/kanal/a1' }],
+        error: null,
+        status: 200,
+      })
+      .mockImplementationOnce(() => {
+        abbruch.abort(grund);
+        return Promise.resolve({ data: null, error: null, status: 204 });
+      });
+    return ladeAnhangHoch('kanal', pdf(), 'Plan.pdf', undefined, abbruch.signal).then(
+      (anhang) => anhang,
+      (e: unknown) => e,
+    );
+  }
+
+  it('prüft nach dem Abmelden während des Bestätigens nicht mehr am Server (Runde 3, B1)', async () => {
+    const ergebnis = await abbruchBeimBestaetigen(SITZUNGSENDE);
+    expect(ergebnis).toBeInstanceOf(TeamchatFehler);
+    expect((ergebnis as Error).message).toBe(ABGEBROCHEN);
+    expect(invoke).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalledWith('discard_team_attachment', expect.anything());
+  });
+
+  it('lädt einen dabei entfernten Anhang fertig - verworfen wird er danach', async () => {
+    // `hochladen` verwirft ihn dann am Server (entwurfsanhaenge.test.ts).
+    const ergebnis = await abbruchBeimBestaetigen();
+    expect(ergebnis).toMatchObject({ id: 'a1', verified: true });
+    expect(invoke).toHaveBeenCalledTimes(1);
+  });
+
+  it('geht nach dem Abmelden auch zum Verwerfen nicht mehr zum Server (Runde 3, B1)', async () => {
+    // Es ginge unter der nächsten Sitzung hinaus; der Server räumt nach 24 Stunden auf.
+    const fehler = await abbruchBeimHochladen(SITZUNGSENDE);
+    expect(fehler.message).toBe(ABGEBROCHEN);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('prepare_team_attachment_upload', expect.anything());
   });
 });

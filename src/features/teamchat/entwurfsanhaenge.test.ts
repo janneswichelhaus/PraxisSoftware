@@ -15,7 +15,7 @@ vi.mock('./api', async (importOriginal) => ({
   verwirfAnhang: (...a: unknown[]) => verwirfAnhang(...a) as unknown,
 }));
 
-const { TeamchatFehler } = await import('./api');
+const { SITZUNGSENDE, TeamchatFehler } = await import('./api');
 const {
   anhaengeBinden,
   anhaengeDerNachricht,
@@ -209,6 +209,32 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     }
   });
 
+  it('versucht es an einer Nachricht im Ausgang danach alle zwei Minuten weiter (Praxis-Review TEAM-005)', async () => {
+    // Bei schwachem Empfang meldet der Browser kein neues Netz: Die gesendete
+    // Nachricht soll trotzdem von selbst gehen, sobald es wieder reicht.
+    vi.useFakeTimers();
+    try {
+      ladeAnhangHoch.mockRejectedValue(
+        new TeamchatFehler('Nicht hochgeladen – kein Netz? Bitte noch einmal.', true),
+      );
+      anhaengen('anna', 'k1', null, [datei('keller.pdf')]);
+      anhaengeBinden('anna', 'k1', null, 'nachricht-4');
+      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(WIEDERHOLEN_MS * VON_SELBST_HOECHSTENS);
+      expect(ladeAnhangHoch).toHaveBeenCalledTimes(1 + VON_SELBST_HOECHSTENS);
+      // Danach nur jeder achte Schlag des Takts.
+      await vi.advanceTimersByTimeAsync(WIEDERHOLEN_MS * (VON_SELBST_HOECHSTENS - 1));
+      expect(ladeAnhangHoch).toHaveBeenCalledTimes(1 + VON_SELBST_HOECHSTENS);
+      await vi.advanceTimersByTimeAsync(WIEDERHOLEN_MS);
+      expect(ladeAnhangHoch).toHaveBeenCalledTimes(2 + VON_SELBST_HOECHSTENS);
+      await vi.advanceTimersByTimeAsync(WIEDERHOLEN_MS * VON_SELBST_HOECHSTENS);
+      expect(ladeAnhangHoch).toHaveBeenCalledTimes(3 + VON_SELBST_HOECHSTENS);
+    } finally {
+      anhaengeLeeren();
+      vi.useRealTimers();
+    }
+  });
+
   it('bricht das Hochladen ab, wenn der Anhang fällt - entfernt oder beim Abmelden (Zweitreview TEAM-005)', () => {
     ladeAnhangHoch.mockReturnValue(new Promise(() => undefined));
     anhaengen('anna', 'k1', null, [datei('a.pdf'), datei('b.pdf')]);
@@ -218,6 +244,20 @@ describe('Anhänge im Entwurf (TEAM-003)', () => {
     expect(signale.map((s) => s.aborted)).toEqual([true, false]);
     anhaengeLeeren();
     expect(signale.map((s) => s.aborted)).toEqual([true, true]);
+    // Beim Abmelden mit Grund: Dann geht auch kein Aufräumen mehr hinaus (Runde 3, B1).
+    expect(signale.map((s) => s.reason === SITZUNGSENDE)).toEqual([false, true]);
+  });
+
+  it('verwirft nach dem Abmelden nichts mehr am Server - auch was danach oben ankommt', async () => {
+    let fertigMit: (wert: unknown) => void = () => undefined;
+    ladeAnhangHoch.mockReturnValueOnce(new Promise((aufloesen) => (fertigMit = aufloesen)));
+    anhaengen('anna', 'k1', null, [datei('a.pdf')]);
+    anhaengeLeeren();
+    fertigMit(fertig('a.pdf'));
+    await vi.waitFor(() => expect(ladeAnhangHoch).toHaveBeenCalledTimes(1));
+    await new Promise((weiter) => setTimeout(weiter, 0));
+    // Es ginge unter der nächsten Sitzung hinaus; der Server räumt nach 24 Stunden auf.
+    expect(verwirfAnhang).not.toHaveBeenCalled();
   });
 
   it('räumt beim Abmelden alles ab', () => {

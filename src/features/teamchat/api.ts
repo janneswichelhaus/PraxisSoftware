@@ -614,9 +614,19 @@ export const FALSCHE_DATEI =
 export const ABGEBROCHEN = 'Das Hochladen ist abgebrochen.';
 
 /**
- * Nach dem Abmelden oder einem Kontowechsel ginge der nächste Schritt unter
- * einer anderen Sitzung hinaus - er unterbleibt (Zweitreview TEAM-005).
+ * Der Grund, mit dem `anhaengeLeeren` ein Hochladen abbricht: Abmelden oder
+ * Kontowechsel. Dann geht kein Schritt mehr zum Server, auch kein Aufräumen -
+ * er liefe unter der nächsten Sitzung. Was schon oben liegt, verwirft der
+ * Server nach 24 Stunden (Zweitreview TEAM-005, Runde 3).
  */
+export const SITZUNGSENDE = 'sitzungsende';
+
+/** Fiel der Anhang mit der Sitzung? */
+export function mitSitzungGefallen(signal?: AbortSignal): boolean {
+  return signal?.aborted === true && signal.reason === SITZUNGSENDE;
+}
+
+/** Fiel der Anhang während des Hochladens, unterbleibt der nächste Schritt. */
 function weiterOderAbbrechen(signal?: AbortSignal): void {
   if (signal?.aborted) throw new TeamchatFehler(ABGEBROCHEN, false);
 }
@@ -715,16 +725,22 @@ export async function ladeAnhangHoch(
       'Die Datei kam nicht vollständig an. Bitte noch einmal.',
     );
   } catch (ursache) {
-    try {
-      await getSupabase().rpc('discard_team_attachment', {
-        p_attachment_id: vorbereitet.attachment_id,
-      });
-    } catch {
-      // Der ursprüngliche Grund ist die Meldung; der tägliche Lauf räumt auf.
+    // Was vorbereitet war, fällt gleich wieder - nach dem Abmelden nicht mehr.
+    if (!mitSitzungGefallen(signal)) {
+      try {
+        await getSupabase().rpc('discard_team_attachment', {
+          p_attachment_id: vorbereitet.attachment_id,
+        });
+      } catch {
+        // Der ursprüngliche Grund ist die Meldung; der tägliche Lauf räumt auf.
+      }
     }
     throw ursache instanceof TeamchatFehler ? ursache : new TeamchatFehler(NICHT_UEBERTRAGEN, true);
   }
 
+  // Nach dem Abmelden auch keine Prüfung; ein entfernter Anhang wird dagegen
+  // fertig und dann verworfen (`hochladen` in `entwurfsanhaenge.ts`).
+  if (mitSitzungGefallen(signal)) throw new TeamchatFehler(ABGEBROCHEN, false);
   const pruefung = await pruefeAmServer(vorbereitet.attachment_id);
   if (pruefung === 'rejected') throw new TeamchatFehler(ANHANG_VERWORFEN, false);
   return {

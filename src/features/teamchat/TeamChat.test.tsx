@@ -76,9 +76,9 @@ const { EntwuerfePage } = await import('./EntwuerfePage');
 const { SuchePage } = await import('./SuchePage');
 const { FuerDichPage } = await import('./FuerDichPage');
 const { FlottenNachrichtenPage } = await import('./FlottenNachrichtenPage');
-const { TeamchatFehler } = await import('./api');
+const { SITZUNGSENDE, TeamchatFehler } = await import('./api');
 const { teamchatLeeren } = await import('./speicher');
-const { anhaengen: entwurfAnhaengen } = await import('./entwurfsanhaenge');
+const { anhaengen: entwurfAnhaengen, anhaengeLeeren } = await import('./entwurfsanhaenge');
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
@@ -1709,8 +1709,11 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
         false,
       ),
     );
+    // Der Grund steht schon in der Zeile, nicht erst nach „Bearbeiten“ (ANN-654).
     expect(
-      await screen.findByText('Nicht gesendet: „Speiche.png“ ließ sich nicht hochladen.'),
+      await screen.findByText(
+        'Nicht gesendet: „Speiche.png“ ließ sich nicht hochladen. Diese Datei lässt sich nicht senden. Bitte entfernen und eine andere wählen.',
+      ),
     ).toBeInTheDocument();
     expect(api.sendeNachricht).not.toHaveBeenCalled();
 
@@ -1759,13 +1762,30 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
       AbortSignal,
     ];
     expect(signal.aborted).toBe(true);
+    expect(signal.reason).toBe(SITZUNGSENDE);
     await act(async () => {
       fertig(oben('a7', 'Speiche.png'));
       await new Promise((weiter) => setTimeout(weiter, 50));
     });
     expect(api.sendeNachricht).not.toHaveBeenCalled();
-    // Was doch noch oben ankam, fällt am Server.
-    expect(api.verwirfAnhang).toHaveBeenCalledWith('a7');
+    // Was doch noch oben ankam, verwirft der Server nach 24 Stunden: Ein
+    // Verwerfen jetzt ginge unter der nächsten Sitzung hinaus (Runde 3, B1).
+    expect(api.verwirfAnhang).not.toHaveBeenCalled();
+  });
+
+  it('lässt eine Nachricht nicht ohne ihre Anhänge hinaus, wenn nur die Anhänge fallen', async () => {
+    // Der Wächter in `anhaengeBereit` allein, ohne die Reihenfolge in
+    // `teamchatLeeren` (Zweitreview TEAM-005, Runde 3, B3).
+    const nutzer = userEvent.setup();
+    api.ladeAnhangHoch.mockReturnValueOnce(new Promise(() => undefined));
+    zeige('/team/k-allgemein');
+    await mitAnhangSenden(nutzer, 'Gleich da');
+    expect(await screen.findByText('Lädt Anhänge hoch …')).toBeInTheDocument();
+    act(() => anhaengeLeeren());
+    expect(
+      await screen.findByText('Nicht gesendet: Die Anhänge sind nicht mehr da.'),
+    ).toBeInTheDocument();
+    expect(api.sendeNachricht).not.toHaveBeenCalled();
   });
 
   it('verwirft nach einer Ablehnung des Servers Nachricht und Anhang - den auch am Server', async () => {

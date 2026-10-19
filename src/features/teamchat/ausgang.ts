@@ -133,8 +133,10 @@ function anhaengeBereit(id: string, eintrag: Ausgangseintrag): readonly Anhang[]
       ...eintrag,
       anhaenge,
       zustand: 'abgelehnt',
-      // Der genaue Grund steht nach „Bearbeiten“ am Anhang im Entwurf.
-      fehler: `„${gescheitert.name}“ ließ sich nicht hochladen.`,
+      // Mit dem Grund (ANN-654); nach „Bearbeiten“ steht er auch am Anhang.
+      fehler: `„${gescheitert.name}“ ließ sich nicht hochladen.${
+        gescheitert.fehler ? ` ${gescheitert.fehler}` : ''
+      }`,
       anhaengeOhneNetz: false,
     });
     return null;
@@ -262,9 +264,16 @@ export function ausgangEntfernen(id: string): Ausgangseintrag | undefined {
   return eintrag;
 }
 
-/** „Bearbeiten“: Die Nachricht verlässt den Ausgang, ihre Anhänge kehren in den Entwurf zurück. */
+/**
+ * „Bearbeiten“: Die Nachricht verlässt den Ausgang, ihre Anhänge kehren in den
+ * Entwurf zurück - nur, solange sie wartet oder abgelehnt ist und nicht gerade
+ * zum Server geht; sonst gäbe es sie zweimal (Zweitreview TEAM-005, Runde 3).
+ */
 export function ausgangZurueckInsFeld(id: string): Ausgangseintrag | undefined {
-  const eintrag = ausgangEntfernen(id);
+  const eintrag = speicher.get(id);
+  if (!eintrag || laufend.has(id)) return undefined;
+  if (eintrag.zustand !== 'laedt' && eintrag.zustand !== 'abgelehnt') return undefined;
+  ausgangEntfernen(id);
   anhaengeZurueck(id);
   return eintrag;
 }

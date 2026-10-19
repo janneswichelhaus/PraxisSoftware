@@ -238,8 +238,9 @@ export function NachrichtZeile({
             <>
               {ausgang.anhaengeOhneNetz ? (
                 <>
-                  {/* Kein Versprechen: Von selbst versucht es ein Anhang nur eine
-                      Weile und mit dem Netz (Zweitreview TEAM-005). */}
+                  {/* Kein Versprechen: Von selbst versucht es ein Anhang im Ausgang
+                      alle zwei Minuten und mit dem Netz - ob dann Empfang da
+                      ist, weiß niemand (Zweitreview TEAM-005). */}
                   <Statusmeldung ton="warnung">Anhang nicht hochgeladen – kein Netz?</Statusmeldung>
                   <Button type="button" variant="quiet" groesse="kompakt" onClick={onErneut}>
                     Jetzt versuchen
