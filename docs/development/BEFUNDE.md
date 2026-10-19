@@ -704,16 +704,3 @@ Marke vorsieht.
 | Berührt | `ProfilFormular.tsx`, Dateiablage der Akte |
 
 **Beobachtung.** Das Anlegen verlangt die Einwilligung „auf Papier unterschrieben“; den Wortlaut zeigt das Formular seit dem Review, ein Foto des Blatts lässt sich aber nicht ablegen wie beim Anmeldebogen. Der Nachweis nach Art. 7 Abs. 1 liegt im Ordner. **Erwartet.** „Unterschriebenes Blatt fotografieren“ am Kästchen, abgelegt als Dokument der Akte bzw. des Verhältnisses mit der Frist der Ernährungsberatung.
-
-
-### BEF-187 — Teamchat: Mit dem Hinweis „Keine Verbindung“ verdeckt die Tableiste das Kleingedruckte
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-19 |
-| Bereich | Teamchat, Gespräch bei 375 px (TEAM-002, `useChatflaeche`) |
-| Quelle  | Design-Review TEAM-004 (H1), Sichtungsbild `t16-banner-667` der PR #273 |
-| Status  | offen |
-| Berührt | `flaeche.ts` (Höhe der Fläche), `Verbindungsanzeige.tsx` |
-
-**Beobachtung.** Ohne Netz schiebt der Hinweis oben die Seite um gut 70 px nach unten. „Senden“ bleibt über der Tableiste (gemessen: 16 px bei 375 × 812 und 375 × 667), die Zeile „Befunde und Diagnosen gehören in die Akte.“ darunter liegt aber halb hinter ihr. Ohne Hinweis bleiben unter der Eingabe rund 60 px frei. **Erwartet.** Die Fläche endet mit und ohne Hinweis an der Oberkante der Tableiste; Ablauftest mit `context.setOffline(true)` bei 375 × 667.

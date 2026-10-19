@@ -461,6 +461,34 @@ test('hält die Eingabe über der Tastatur erreichbar', async ({ page }) => {
   await ohneQuerrollen(page);
 });
 
+test('endet mit und ohne Netz an der Tableiste, auch auf einem kleinen Telefon (BEF-187)', async ({
+  page,
+  context,
+}) => {
+  // Von der Liste aus: Über ihr steht die Unterleiste, im Gespräch nicht mehr.
+  await zumTeamchat(page, KONTEN.therapist, { width: 375, height: 667 });
+  await kanalOeffnen(page, KANAL);
+  const kleingedrucktes = page.getByText('Befunde und Diagnosen gehören in die Akte.');
+  const tableiste = page.getByRole('navigation', { name: 'Arbeitsbereiche' });
+  // Ganz über der Tableiste und ohne Lücke darüber: Die Fläche endet an ihrer
+  // Oberkante, wie hoch der Kopf darüber auch gerade ist.
+  async function amFuss(): Promise<void> {
+    await expect(async () => {
+      const leiste = (await tableiste.boundingBox())!;
+      const zeile = (await kleingedrucktes.boundingBox())!;
+      expect(zeile.y + zeile.height).toBeLessThanOrEqual(leiste.y);
+      expect(leiste.y - (zeile.y + zeile.height)).toBeLessThan(16);
+    }).toPass();
+  }
+  await amFuss();
+  await context.setOffline(true);
+  await expect(page.getByText('Keine Verbindung.')).toBeVisible();
+  await amFuss();
+  await context.setOffline(false);
+  await expect(page.getByText('Keine Verbindung.')).toHaveCount(0);
+  await amFuss();
+});
+
 test('zeigt am Rechner Gespräch und Thread nebeneinander', async ({ page }) => {
   await zumTeamchat(page, KONTEN.therapist, RECHNER);
   await kanalOeffnen(page, KANAL);

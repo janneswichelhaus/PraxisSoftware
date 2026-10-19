@@ -43,6 +43,22 @@ function tableiste(): HTMLElement | null {
   return leiste;
 }
 
+/**
+ * Was im Dokument vor der Fläche steht: auf jeder Ebene bis `body` die
+ * Geschwister davor - Kopf mit Verbindungshinweis und Suche, die Unterleiste
+ * über der Liste. Wird eines davon höher oder niedriger, wandert die
+ * Oberkante der Fläche.
+ */
+export function vorDerFlaeche(el: Element): Element[] {
+  const davor: Element[] = [];
+  let ebene: Element | null = el;
+  while (ebene && ebene !== document.body) {
+    for (let g = ebene.previousElementSibling; g; g = g.previousElementSibling) davor.push(g);
+    ebene = ebene.parentElement;
+  }
+  return davor;
+}
+
 export function useChatflaeche(ref: RefObject<HTMLElement | null>): void {
   useLayoutEffect(() => {
     const el = ref.current;
@@ -67,10 +83,14 @@ export function useChatflaeche(ref: RefObject<HTMLElement | null>): void {
     ausschnitt?.addEventListener('resize', setzen);
     ausschnitt?.addEventListener('scroll', setzen);
     window.addEventListener('resize', setzen);
-    // Ändert sich über der Fläche etwas (Verbindungshinweis, Suche in der
-    // Kopfzeile), wandert ihre Oberkante.
+    // Ändert sich über der Fläche etwas, wandert ihre Oberkante - oft ohne
+    // dass die Seite größer wird, denn sie ist mindestens so hoch wie der
+    // Bildschirm: Der Hinweis ohne Netz geht wieder weg, die Unterleiste der
+    // Liste fehlt im Gespräch. Deshalb wird alles davor beobachtet, nicht nur
+    // die Seite (BEF-187).
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(setzen);
     ro?.observe(document.body);
+    for (const davor of vorDerFlaeche(el)) ro?.observe(davor);
     return () => {
       ausschnitt?.removeEventListener('resize', setzen);
       ausschnitt?.removeEventListener('scroll', setzen);

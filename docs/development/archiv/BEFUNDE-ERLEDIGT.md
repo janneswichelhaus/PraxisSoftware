@@ -1634,3 +1634,17 @@ eingeklappt.
 | Berührt | `supabase/seed.sql` (Ernährungsberatung), Hilfe `heute()` im Test |
 
 **Beobachtung.** „zeigt der Person ihre Beratung mit fester Schlüsselliste, ohne Notizen“ erwartet `occurred_on` = `app.training_today(…) - 21` (Tag der Praxis), der Seed schreibt `current_date - 21` (Tag der Datenbank, UTC). Zwischen 0 und 2 Uhr Sommerzeit (0 und 1 Uhr Winterzeit) liegen sie einen Tag auseinander; sonst grün. **Erwartet.** Seed und Test rechnen mit demselben Tag, etwa beide mit `app.training_today`.
+
+### BEF-187 — Teamchat: Mit dem Hinweis „Keine Verbindung“ verdeckt die Tableiste das Kleingedruckte
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-19 |
+| Bereich | Teamchat, Gespräch bei 375 px (TEAM-002, `useChatflaeche`) |
+| Quelle  | Design-Review TEAM-004 (H1), Sichtungsbild `t16-banner-667` der PR #273 |
+| Status  | erledigt 2026-10-19 (PR #273): Die Fläche beobachtet alles, was vor ihr steht, nicht nur die Seite; Ablauftest bei 375 × 667 vorher rot (69 px Lücke), nachher grün |
+| Berührt | `flaeche.ts` (`vorDerFlaeche`, Beobachtung), `teamchat.spec.ts`, `flaeche.test.ts` |
+
+**Beobachtung.** Ohne Netz schiebt der Hinweis oben die Seite um gut 70 px nach unten. „Senden“ bleibt über der Tableiste (gemessen: 16 px bei 375 × 812 und 375 × 667), die Zeile „Befunde und Diagnosen gehören in die Akte.“ darunter liegt aber halb hinter ihr. Ohne Hinweis bleiben unter der Eingabe rund 60 px frei. **Erwartet.** Die Fläche endet mit und ohne Hinweis an der Oberkante der Tableiste; Ablauftest mit `context.setOffline(true)` bei 375 × 667.
+
+**Ursache.** Die Fläche maß nur neu, wenn die ganze Seite ihre Größe änderte. Die ist aber mindestens bildschirmhoch: Fiel die Unterleiste der Liste beim Öffnen eines Gesprächs weg (61 px) oder ging der Hinweis wieder weg, blieb die alte Höhe stehen - am Telefon fehlten in jedem Gespräch 61 px, und der Hinweis schob das Kleingedruckte dann hinter die Tableiste. Am Rechner blieb nach dem Wiederverbinden unten eine Lücke.
