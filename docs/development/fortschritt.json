@@ -1145,6 +1145,33 @@
           "vermerk": "/weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13)"
         },
         {
+          "id": "bef-147",
+          "name": "BEF-147 Benachrichtigungen im eigenen Datenexport: Wahl, Geräte ohne Schlüssel, Tagebuch-Erinnerungen, Zustellaufträge",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223140000_bef_147_export_benachrichtigungen.sql, supabase/tests/platform-export.test.ts, Zweitreview",
+          "vermerk": "Die Praxis sieht die Wahl weiter nicht (ANN-344)"
+        },
+        {
+          "id": "bef-148",
+          "name": "BEF-148 Zustellaufträge meldet nur, wer den Anspruch hält; Löschlauf räumt Push-Registrierungen beendeter Zugänge",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223150000_bef_148_zustellung_mit_anspruch.sql, supabase/tests/benachrichtigungen.test.ts, supabase/functions/notifications/*.test.ts, Zweitreview",
+          "vermerk": "Vor dem Scharfschalten des Versands (OPS-001)"
+        },
+        {
+          "id": "bef-146",
+          "name": "BEF-146 Vollständigkeitstest der Auskunft sieht auch den Plattformzugang; Anhänge an Rückfragen in der Auskunft",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223160000_bef_146_rueckfrageanhaenge_in_der_auskunft.sql, supabase/tests/betroffenenrechte.test.ts, Zweitreview",
+          "vermerk": "Vier Tabellen bewusst außerhalb der Auskunft der Praxis (ANN-344), im eigenen Export"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

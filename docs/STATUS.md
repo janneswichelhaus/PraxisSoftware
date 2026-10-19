@@ -8,7 +8,7 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 Profilbild und Farbe im Teamchat (19.10., Branch `ccr-37917f35-emdjjp`, TEAM-006 bis -009): Farbe je
 Person, Profilbild nur für sich selbst (256 px auf dem Gerät, am Inhalt geprüft, in der Datenbank),
 Bilder in allen Listen, Personenkarte ohne Anwesenheit; ADR-017 Fassung 10, ANN-666 bis ANN-668.
-Dazu BEF-183 (Blätterknopf der Reiterleiste) und BEF-150 (Ränder der Entwürfe).
+Dazu BEF-183 (Blätterknopf), BEF-150 (Entwürfe), BEF-146 bis -148 (Auskunft, Export, Versand).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -29,7 +29,7 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Eine Politurrunde; BEF-146, -147, -148 (auf dem Branch in Arbeit); BEF-182 vor M3.
+Eine Politurrunde; BEF-182 vor M3.
 
 ## Bei Jannes
 
@@ -56,5 +56,5 @@ Eine Politurrunde; BEF-146, -147, -148 (auf dem Branch in Arbeit); BEF-182 vor M
 
 ## Letzte Session
 
-19.10.2026, Branch `ccr-37917f35-emdjjp`: Migrationen `20261223100000` bis `20261223130000`
-(TEAM-006 bis -009). **Lokal:** `git pull`, `supabase db reset`.
+19.10.2026, PR #278: Migrationen `20261223100000` bis `20261223160000` (TEAM-006 bis -009,
+BEF-146 bis -148). **Lokal:** `git pull`, `supabase db reset`.

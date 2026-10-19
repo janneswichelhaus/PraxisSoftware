@@ -456,49 +456,6 @@ Marke vorsieht.
 
 **Frage an Jannes.** Der Text ist ein Einwilligungstext an die Person – soll er lauten „… alle Fotos, die als Arbeitshilfe entstanden sind; Fotos, die zur Behandlungsdokumentation gehören, bleiben in der Akte“? Eine Änderung braucht eine neue Fassung des Textes.
 
-### BEF-146 — Der Vollständigkeitstest der Auskunft sieht nur Tabellen mit `patient_id`
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-11 |
-| Bereich | Datenschutz: Auskunft (Art. 15) |
-| Quelle  | Zweitreview BEF-145 (Hinweis H6) |
-| Status  | offen |
-| Berührt | `supabase/tests/betroffenenrechte.test.ts` („enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“) |
-
-**Beobachtung.** Seit BEF-145 nimmt der Test jede Tabelle des Aufbewahrungsplans mit `patient_id`. Tabellen, die die Person über eine andere Spalte tragen (`person_id`, `subject_id` mit `subject_type = 'patient'`, über einen Elterndatensatz), erfasst er nur, wenn sie zur Klasse `patientenakte` oder `personenstammdaten` gehören; heute fehlt dadurch nichts Bekanntes.
-
-**Erwartet.** Prüfen, ob der Test auch solche Spalten erfassen kann, ohne eine lange Ausnahmeliste zu brauchen; sonst als bewusst offen schließen. Nur Test, Einzel-Story-Loop, niedrige Priorität.
-
-
-### BEF-147 — Wahl, Geräte und Zustellaufträge der Benachrichtigungen fehlen im eigenen Datenexport
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Plattform: „Ich → Meine Daten“ (Art. 15, Art. 20) |
-| Quelle  | Zweitreview KOM-EPIC-003 (Hinweis H4) |
-| Status  | offen |
-| Berührt | `platform_notification_settings`, `platform_push_subscriptions`, `notification_deliveries`; `public.platform_export` (POR-018) |
-
-**Beobachtung.** Die drei Tabellen hängen am Zugang (`access_id`), nicht an `patient_id`; der Vollständigkeitstest der Auskunft (BEF-145, BEF-146) sieht sie nicht. Weder der eigene Export der Person noch die Auskunft der Praxis enthalten heute die Wahl, die eingetragenen Geräte oder die Zustellaufträge der letzten 30 Tage.
-
-**Erwartet.** In den eigenen Export der Person aufnehmen (die Praxis sieht die Wahl bewusst nicht, ANN-344); ohne Endpunkt und Schlüssel des Geräts, nur „ein Gerät seit …“. Einzel-Story-Loop.
-
-### BEF-148 — Ein Zustellauftrag kann nach einem gescheiterten Melden doppelt zugestellt werden
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Benachrichtigungen: Versand (Edge Function `notifications`) |
-| Quelle  | Zweitreview KOM-EPIC-003 (Hinweise H1, H2) |
-| Status  | offen |
-| Berührt | `public.finish_notification_delivery`, `supabase/functions/notifications/zustellen.ts`; `app.drop_push_subscriptions_on_access_end` |
-
-**Beobachtung.** Scheitert das Melden nach erfolgreichem Versand oder dauert ein Lauf länger als 15 Minuten, holt der nächste Lauf den Auftrag erneut ab, und die Person bekommt die Mitteilung zweimal; `finish_notification_delivery` prüft nicht, ob der Aufrufer den aktuellen Anspruch hält. Daneben fällt die Push-Registrierung nur beim Widerruf des Zugangs, nicht beim zeitlichen Ende (Lesefrist, Volljährigkeit) – geschickt wird dann nichts mehr, die Zeile bleibt aber bis zur Löschung des Zugangs.
-
-**Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
-
 ### BEF-153 — Spracheingabe auf der Schreibseite
 
 |         |   |

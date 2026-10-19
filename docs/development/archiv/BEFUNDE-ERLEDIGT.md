@@ -1676,3 +1676,45 @@ eingeklappt.
 **Beobachtung.** Mit fünf Reitern (owner, ERN-EPIC-001) liegen „Ernährung“ und „Stammdaten“ bei 375 px rechts außerhalb; das „›“ ist nur Zeichen. Mit Handschuh trifft der Wisch oft den Reiter daneben; Playwright scrollt von selbst und zählt den Wisch nicht. **Erwartet.** „›“ als Knopf, der zum nächsten verdeckten Reiter schiebt; Ablauftests prüfen vor dem Tippen, ob der Reiter sichtbar ist.
 
 **Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: fünf Reiter bestätigt, die Leiste wird verbessert.
+
+### BEF-146 — Der Vollständigkeitstest der Auskunft sieht nur Tabellen mit `patient_id`
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-11 |
+| Bereich | Datenschutz: Auskunft (Art. 15) |
+| Quelle  | Zweitreview BEF-145 (Hinweis H6) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): Test nimmt auch `access_id`; fand die Anhänge an Rückfragen (jetzt in `export_patient_record`) und die Tagebuch-Erinnerungen (jetzt im eigenen Export); vier Tabellen bewusst außen mit Grund (ANN-344) |
+| Berührt | `supabase/tests/betroffenenrechte.test.ts` („enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“) |
+
+**Beobachtung.** Seit BEF-145 nimmt der Test jede Tabelle des Aufbewahrungsplans mit `patient_id`. Tabellen, die die Person über eine andere Spalte tragen (`person_id`, `subject_id` mit `subject_type = 'patient'`, über einen Elterndatensatz), erfasst er nur, wenn sie zur Klasse `patientenakte` oder `personenstammdaten` gehören; heute fehlt dadurch nichts Bekanntes.
+
+**Erwartet.** Prüfen, ob der Test auch solche Spalten erfassen kann, ohne eine lange Ausnahmeliste zu brauchen; sonst als bewusst offen schließen. Nur Test, Einzel-Story-Loop, niedrige Priorität.
+
+### BEF-147 — Wahl, Geräte und Zustellaufträge der Benachrichtigungen fehlen im eigenen Datenexport
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Plattform: „Ich → Meine Daten“ (Art. 15, Art. 20) |
+| Quelle  | Zweitreview KOM-EPIC-003 (Hinweis H4) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): `platform_export` trägt `notifications` - Wahl, Geräte nur „seit wann“, Tagebuch-Erinnerungen, Zustellaufträge; Test in `platform-export.test.ts` |
+| Berührt | `platform_notification_settings`, `platform_push_subscriptions`, `notification_deliveries`; `public.platform_export` (POR-018) |
+
+**Beobachtung.** Die drei Tabellen hängen am Zugang (`access_id`), nicht an `patient_id`; der Vollständigkeitstest der Auskunft (BEF-145, BEF-146) sieht sie nicht. Weder der eigene Export der Person noch die Auskunft der Praxis enthalten heute die Wahl, die eingetragenen Geräte oder die Zustellaufträge der letzten 30 Tage.
+
+**Erwartet.** In den eigenen Export der Person aufnehmen (die Praxis sieht die Wahl bewusst nicht, ANN-344); ohne Endpunkt und Schlüssel des Geräts, nur „ein Gerät seit …“. Einzel-Story-Loop.
+
+### BEF-148 — Ein Zustellauftrag kann nach einem gescheiterten Melden doppelt zugestellt werden
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Benachrichtigungen: Versand (Edge Function `notifications`) |
+| Quelle  | Zweitreview KOM-EPIC-003 (Hinweise H1, H2) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): Anspruch `claimed_at` (Millisekunden) beim Abholen, Melden verlangt ihn; Versand meldet bis zu dreimal; Löschlauf räumt Push-Registrierungen beendeter Zugänge; Tests in `benachrichtigungen.test.ts` und `supabase/functions/notifications` |
+| Berührt | `public.finish_notification_delivery`, `supabase/functions/notifications/zustellen.ts`; `app.drop_push_subscriptions_on_access_end` |
+
+**Beobachtung.** Scheitert das Melden nach erfolgreichem Versand oder dauert ein Lauf länger als 15 Minuten, holt der nächste Lauf den Auftrag erneut ab, und die Person bekommt die Mitteilung zweimal; `finish_notification_delivery` prüft nicht, ob der Aufrufer den aktuellen Anspruch hält. Daneben fällt die Push-Registrierung nur beim Widerruf des Zugangs, nicht beim zeitlichen Ende (Lesefrist, Volljährigkeit) – geschickt wird dann nichts mehr, die Zeile bleibt aber bis zur Löschung des Zugangs.
+
+**Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
