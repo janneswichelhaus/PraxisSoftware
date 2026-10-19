@@ -1685,7 +1685,7 @@ describe('CompleteTreatmentPage', () => {
     });
 
     it('bietet „Sprechen“ nicht an, wo die Seite das Mikrofon nicht öffnen darf', async () => {
-      // So die Test-Umgebung: Permissions-Policy `microphone=()` (ADR-017 Punkt 33).
+      // Eine Permissions-Policy `microphone=()` (ADR-017 Punkt 33; bis Fassung 9 die Test-Umgebung).
       Object.defineProperty(document, 'featurePolicy', {
         configurable: true,
         value: { allowsFeature: (funktion: string) => funktion !== 'microphone' },

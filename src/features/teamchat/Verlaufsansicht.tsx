@@ -6,7 +6,13 @@ import { EmptyState } from '@/components/ui/Feedback';
 import { Verlauf } from '@/components/ui/Verlauf';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchMitglieder, mitgliederKey, type Kanal, type Nachricht } from './api';
-import { ausgangEntfernen, erneutSenden, useAusgang, type Ausgangseintrag } from './ausgang';
+import {
+  ausgangVerwerfen,
+  ausgangZurueckInsFeld,
+  erneutSenden,
+  useAusgang,
+  type Ausgangseintrag,
+} from './ausgang';
 import { entwurfLesen, entwurfSetzen } from './entwuerfe';
 import { useLesestand } from './lesestand';
 import { NachrichtZeile } from './Nachricht';
@@ -50,6 +56,7 @@ function alsNachricht(e: Ausgangseintrag, eigeneId: string | null, name: string 
     saved: false,
     root_author_name: null,
     root_body: null,
+    attachments: [...e.anhaenge],
   };
 }
 
@@ -182,7 +189,11 @@ export function Verlaufsansicht({
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div ref={behaelter} className="h-full overflow-y-auto overscroll-contain px-4 sm:px-6">
+      <div
+        ref={behaelter}
+        data-verlauf=""
+        className="h-full overflow-y-auto overscroll-contain px-4 sm:px-6"
+      >
         <div ref={inhalt} className="pb-2">
           <Abfragezustand
             abfrage={verlauf}
@@ -256,9 +267,10 @@ export function Verlaufsansicht({
                           onAktionen={() => setOffen(n.id)}
                           onBearbeitenEnde={() => setBearbeitet(null)}
                           onErneut={() => erneutSenden(n.id)}
-                          onVerwerfen={() => ausgangEntfernen(n.id)}
+                          onVerwerfen={() => ausgangVerwerfen(n.id)}
                           onZurueckInsFeld={() => {
-                            const eintrag = ausgangEntfernen(n.id);
+                            // Text und Anhänge zurück in den Entwurf (ANN-654).
+                            const eintrag = ausgangZurueckInsFeld(n.id);
                             if (!eintrag) return;
                             const davor = entwurfLesen(kontoId, kanal.id, threadId);
                             entwurfSetzen(

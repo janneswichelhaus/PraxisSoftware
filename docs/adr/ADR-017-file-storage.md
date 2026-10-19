@@ -2,14 +2,42 @@
 
 ## Status
 
-**Angenommen, Fassung 6** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 8; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
 2026-10-09 von Jannes in der Abnahme der Annahmen entschieden (Abschnitt K);
 **Fassung 5** am 2026-10-10 bestätigt, die Fragen 23 bis 29 wie empfohlen
 (Abschnitt L); **Fassung 6** am 2026-10-15 von Jannes entschieden (Umkehr der
-Punkte 29 und 69 für Anhänge an Rückfragen).
+Punkte 29 und 69 für Anhänge an Rückfragen); **Fassung 7** am 2026-10-18 von
+Jannes entschieden (Umkehr von Punkt 29 für jeden Upload); **Fassung 8** am 2026-10-18
+bestätigt, die Fragen 30 bis 32 wie empfohlen (Abschnitt M); **Fassung 9** am 2026-10-18
+vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 33 und 34).
+**Fassung 9 (2026-10-18, vorgeschlagen).** Anlass sind Jannes' Antworten auf die Fragen der PR
+#273: „Fragen wie empfohlen, außer Sprachnachrichten – die möchte ich ermöglichen.“ **Abschnitt N
+(Punkte 82 bis 87)** gibt Sprachnachrichten im Teamchat frei; Video bleibt ausgeschlossen. Das
+ist die **Umkehr eines einzelnen Punktes** nach der Fassungsregel in `README.md`: In Punkt 71
+entfällt „kein Ton, keine Sprachnachricht“, und Punkt 33 gibt das Mikrofon der eigenen Herkunft
+frei; der alte Wortlaut bleibt lesbar. Dazu nimmt Punkt 74 die Antwort auf Frage 5 auf: Senden
+schon während des Hochladens. Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an
+„Bewusst nicht Bestandteil“. Offen sind die Einzelheiten (Bestätigungsfragen 33 und 34); gebaut
+wird mit dem künstlichen Mikrofon von Chromium (§15.2).
+**Fassung 8 (2026-10-18, am selben Tag angenommen).** Anlass ist Frage 1 der PR #272: Fotos und PDF im
+Teamchat, ohne Virenprüfung, gelöscht mit der Nachricht — so hat Jannes entschieden.
+**Abschnitt M (Punkte 71 bis 81)** gibt Anhänge im Teamchat frei. Das ist eine **Ergänzung**:
+Für diese Anhänge schränkt sie die Punkte 30 und 42 ein, die je einen Vermerk tragen; für alle
+übrigen Dateien gelten sie unverändert. Die Einzelheiten (Bestätigungsfragen 30 bis 32) hat
+Jannes am selben Tag wie empfohlen beantwortet; gebaut wird mit synthetischen Dateien (§15.2).
+**Fassung 7 (2026-10-18, Entscheidung Jannes).** „Keine Virenprüfung in der gesamten
+Anwendung!“ Das ist die **Umkehr eines einzelnen Punktes** nach der Fassungsregel in
+`README.md`: Punkt 29 verliert die MUSS-Pflicht zur Virenprüfung auch für alle übrigen Uploads
+von außen, heutige und künftige (Portal, Formular, Teamchat). Die Anwendung prüft keine Datei auf
+Schadsoftware; es gibt dafür keinen Prüfer, keinen Anbieter und keinen eigenen ADR. Wer einen Weg
+aus Punkt 30 freigibt, braucht dafür keine Virenprüfung. Der alte Wortlaut bleibt in Punkt 29
+lesbar, die Punkte 28, 30, 42, 50 und 69 sowie Konsequenzen und „Bewusst nicht Bestandteil“
+tragen einen Vermerk. Alle übrigen Punkte bleiben stehen, insbesondere die Kompensation aus Punkt 28, die
+Prüfung am Inhalt (Abschnitt I), die Minderungen aus Punkt 69 und die Kennzeichnung „nicht auf
+Schadsoftware geprüft“; der Schalter `app.message_attachment_scan_required()` bleibt aus (KOM-013).
 **Fassung 6 (2026-10-15, Entscheidung Jannes).** „Ich möchte keinen Virenscanner und trotzdem
 Bilder und Videos von Patienten zulassen.“ Das ist die **Umkehr einzelner Punkte** nach der
 Fassungsregel in `README.md`: Punkt 29 verliert für Anhänge an Rückfragen (Abschnitt L) die
@@ -94,7 +122,9 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 
 2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
 2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
-2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6)
+2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6);
+2026-10-18 (Fassung 7); 2026-10-18 (Fassung 8, am selben Tag angenommen); 2026-10-18
+(Fassung 9, vorgeschlagen)
 
 ## Kontext
 
@@ -316,10 +346,15 @@ tut; Punkt 33 entscheidet es hier.
     (`IDEA-KOM-003`) und nicht Gegenstand dieses ADR.
     *Vermerk 2026-10-10 (Fassung 5): Für Anhänge an Rückfragen sind
     WebM und MP4 ohne Tonspur erlaubt (Punkt 63).*
+    *Vermerk 2026-10-18 (Fassung 9): Für Sprachnachrichten im Teamchat sind
+    WebM (Opus) und MP4 (AAC) nur mit Ton erlaubt (Punkt 84).*
 19. **Angezeigt wird nur, was sich sicher anzeigen lässt:** PDF und Bild im
     eigenen Rahmen der Anwendung, sonst nichts. Kein eingebettetes HTML, keine
     Bibliothek, die Fremdinhalte ausführt, keine Vorschaubilder, die der
     Anbieter aus dem Original rechnet.
+    *Vermerk 2026-10-18 (Fassung 9): Eine Sprachnachricht spielt im
+    Medienelement des Browsers aus einer Objekt-URL, ohne Herunterladen
+    (Punkt 86) - wie ein Video an der Rückfrage (Punkt 69).*
 
 ### D. Audit
 
@@ -405,6 +440,8 @@ tut; Punkt 33 entscheidet es hier.
     ausgeführt. Die Kompensation sind Punkt 8 (Unveränderbarkeit), Punkt 18
     (Allowlist und Größe), Punkt 19 (Auslieferung nur als Anzeige oder
     Download) und die Endgeräte-Richtlinie aus BETRIEB-001.
+    *Vermerk 2026-10-18 (Fassung 7): nicht nur in V1 — die Anwendung prüft nie
+    auf Schadsoftware (Punkt 29).*
 29. **Vor dem ersten Upload durch Patient:innen oder andere Externe ist eine
     Virenprüfung MUSS** (Roadmap G1). Der Ablauf steht schon fest, damit später
     niemand ihn erfindet: Die Datei bleibt `pending`, bis ein Prüfergebnis
@@ -419,6 +456,10 @@ tut; Punkt 33 entscheidet es hier.
     (Abschnitt L) entfällt die Virenprüfung — Entscheidung Jannes; sie werden
     ohne Prüfergebnis `ready` und tragen „nicht auf Schadsoftware geprüft“.
     Für jeden anderen Upload von außen gilt der Punkt weiter.*
+    *Vermerk 2026-10-18 (Fassung 7, Umkehr): Der Punkt entfällt für jeden
+    Upload — Entscheidung Jannes: „Keine Virenprüfung in der gesamten
+    Anwendung!“ Ein Upload von außen wird ohne Prüfergebnis `ready`; die
+    Kompensation bleiben Punkt 28 und die Prüfung am Inhalt (Punkte 49 bis 52).*
 30. **Dieser ADR gibt nicht frei:** Fotos und Videos von Patient:innen
     (`IDEA-KOM-003` — eigene Einwilligung, kurze Frist, Entfernung der
     Aufnahmemetadaten), Anhänge im Teamchat (TEAM-001), Uploads aus einem
@@ -429,6 +470,9 @@ tut; Punkt 33 entscheidet es hier.
     (Punkt 42).
     *Vermerk 2026-10-10 (Fassung 5): Foto und Video an einer Rückfrage über
     die Plattform gibt Abschnitt L frei.*
+    *Vermerk 2026-10-18 (Fassung 7): Wer einen dieser Wege freigibt, braucht
+    dafür keine Virenprüfung (Punkt 29).*
+    *Vermerk 2026-10-18 (Fassung 8): Anhänge im Teamchat gibt Abschnitt M frei.*
 
 ### G. Fotos (Fassung 2)
 
@@ -495,6 +539,11 @@ tut; Punkt 33 entscheidet es hier.
       frei** (`camera=(self)`); Mikrofon, Zahlung und USB bleiben gesperrt.
       Die Öffnung in `scripts/testumgebung.mjs` und in jeder künftigen
       Auslieferung ist damit entschieden und gehört in DOK-006.
+      *Vermerk 2026-10-18 (Fassung 9, Umkehr für das Mikrofon): Für
+      Sprachnachrichten im Teamchat gibt die Policy auch das Mikrofon nur der
+      eigenen Herkunft frei (`microphone=(self)`, Punkt 83); Zahlung und USB
+      bleiben gesperrt. Das Diktat (§6.3) bietet die Seite weiter nur an, wenn
+      das Gateway es als eingerichtet meldet.*
     - **Die Herkunft aus der Kamera ist eine Eigenschaft des Aufnahmewegs,
       keine Prüfung des Servers** — die Datenbank sieht die Bytes nie
       (ANN-053). Wer den Browser selbst steuert, kann anderes hochladen; die
@@ -703,6 +752,13 @@ tut; Punkt 33 entscheidet es hier.
     *Vermerk 2026-10-10 (Fassung 5): Ausgenommen sind Foto und Video, die
     die Person in der Anwendung an ihre Rückfrage hängt (Abschnitt L); für
     alles andere gilt der Punkt unverändert.*
+    *Vermerk 2026-10-18 (Fassung 7): „dann gilt Punkt 29“ entfällt; eine
+    Freigabe braucht keine Virenprüfung mehr.*
+    *Vermerk 2026-10-18 (Fassung 8): Fotos und PDF im Teamchat gibt Abschnitt M
+    frei; Video und Ton bleiben auch dort ausgeschlossen.*
+    *Vermerk 2026-10-18 (Fassung 9): Sprachnachrichten im Teamchat gibt
+    Abschnitt N frei; Video bleibt dort ausgeschlossen, Video und Audio von
+    Patient:innen überall.*
 
 ### H. Drei Arten von Fotos (Fassung 3)
 
@@ -819,6 +875,8 @@ bleiben erhalten.
     Objektschlüssel. Sie ist zugleich der Ort, an dem später die
     Virenprüfung aus Punkt 29 läuft; der Ablauf dort (kein `ready`, Objekt
     gelöscht, Auditeintrag, Meldung) ist derselbe wie in Punkt 52.
+    *Vermerk 2026-10-18 (Fassung 7): Eine Virenprüfung läuft hier nie
+    (Punkt 29); die Function prüft nur am Inhalt.*
 51. **Bis zur Prüfung ist eine Datei als „nicht serverseitig geprüft"
     gekennzeichnet**, sichtbar an der Datei. In Umgebungen ohne Edge Runtime
     — die Cloud-Entwicklungsumgebung, die Test-Umgebung mit synthetischen
@@ -968,6 +1026,15 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     Dateien. Bis zum Upload liegt die Aufnahme nur im Arbeitsspeicher der
     Seite (Punkt 33). Das Gesicht nur, wenn es die Bewegung zeigt; der Dialog
     sagt das (Punkt 35).
+    *Vermerk 2026-10-18 (Fassung 9): Seit Punkt 83 ist das Mikrofon in der
+    Permissions-Policy der eigenen Herkunft freigegeben, für jede Seite der
+    Anwendung. „Nie Ton“ halten hier weiter drei andere Schichten: Der
+    Aufnahmedialog fragt nur das Bild an (`audio: false`, E2E
+    `tests/e2e/anhaenge.spec.ts`), das Gerät sendet keine Aufnahme mit
+    Tonspur (Punkt 64), und der Server lehnt eine Tonspur ab (Punkt 63).
+    Hat eine Person dem Browser das Mikrofon dauerhaft erlaubt, fragt er
+    nicht noch einmal; dann bleibt gegen fremden Code nur die
+    Content-Security-Policy (`script-src 'self'`).*
 63. **Formate.** Foto: **JPEG**. Video: was der Browser in `MediaRecorder`
     liefert — **WebM (VP8/VP9) oder MP4 (H.264)** —, ohne Tonspur.
     Höchstens **10 MB** je Anhang, durchgesetzt am Bucket und bei der
@@ -1035,6 +1102,8 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     wählt ein eigener ADR“. Beides entfällt: Jannes lässt Anhänge von außen
     ohne Virenprüfung zu, der Schalter bleibt aus, ADR-026 ist abgelehnt. Die
     Minderungen dieses Punktes bleiben die Kompensation.*
+    *Vermerk 2026-10-18 (Fassung 7): Auch „Punkt 29 bleibt MUSS für jede echte
+    Datei von außen“ entfällt (Punkt 29).*
 70. **Scharf erst nach** B2 (Einwilligung, Frist, Einordnung des Videos als
     besonders identifizierend), der DSFA mit dieser Verarbeitung (G14),
     OPS-001 (Edge Runtime für Punkt 49), OPS-003 (Sicherung des Buckets,
@@ -1043,6 +1112,107 @@ K; neu ist nur, was ein Upload von außen und ein Video verlangen.
     (Punkt 41).
     *Vermerk 2026-10-15 (Fassung 6): „dem ADR zum Prüfer (Punkt 69)“ entfällt;
     die übrigen Bedingungen bleiben.*
+
+### M. Anhänge im Teamchat (Fassung 8)
+
+**Anlass.** Frage 1 der PR #272 (TEAM-002), beantwortet von Jannes am 2026-10-18: Fotos und PDF im
+Teamchat, ohne Virenprüfung (Fassung 7), gelöscht mit der Nachricht. §10 nennt „Anhängen“ für die
+interne Kommunikation; die Punkte 30 und 42 gaben es bisher nicht frei. Diese Fassung folgt den
+Mustern der Abschnitte A bis F und L; neu ist nur, was eine Nachricht im Team verlangt.
+
+71. **Was freigegeben wird.** Wer im Teamchat schreiben darf (ANN-611), hängt an eine Nachricht —
+    im Kanal, im privaten Kanal, in der Direkt- oder Gruppennachricht, in der Radflotte, auch an
+    eine Antwort im Thread — **bis zu fünf Dateien**: **Fotos (JPEG, PNG) und PDF, höchstens 10 MB
+    je Datei** (Punkt 18). Kein Video, kein Ton, keine Sprachnachricht (Punkt 42 bleibt). Eine
+    geplante Nachricht trägt keine Anhänge. Hoch lädt nur ein Praxiskonto (Punkt 28); Konten von
+    Patient:innen, Kund:innen und der Plattform nie.
+    *Vermerk 2026-10-18 (Fassung 9, Entscheidung Jannes): „kein Ton, keine Sprachnachricht“
+    entfällt - Sprachnachrichten regelt Abschnitt N. Kein Video bleibt.*
+72. **Kein Weg für Patientendaten.** Ein Anhang im Teamchat ist kein Teil der Akte und wird es
+    nicht (Punkt 66 sinngemäß). Fotos von Patient:innen, Befunde und Arztbriefe gehören in die Akte
+    (Abschnitte G bis K), Patientenkommunikation nicht in den Teamchat (§10). Der Satz unter der
+    Eingabe („Befunde und Diagnosen gehören in die Akte.“) gilt auch für Anhänge; prüfen kann die
+    Anwendung es nicht.
+73. **Eigene Tabelle, eigener Bucket, Klasse `teamchat` — derselbe Weg.** Bezugsdatensatz ist die
+    Nachricht (Punkt 10); der Bucket folgt der Klasse (Punkt 3). Sonst läuft ein Anhang den Weg
+    jeder Datei: zwei Phasen mit Bestätigung (Punkt 7) — hochgeladen vor dem Senden, beim Senden an
+    die Nachricht gebunden —, unveränderlich (Punkt 8), Prüfsumme (Punkt 9), Objektschlüssel nur
+    aus Kennungen (Punkt 5), kurzlebige Verweise ohne Downloadnamen auf ausdrückliche Aktion
+    (Punkte 15 bis 17, 54), `cacheControl: '0'` (Punkt 16), zweistufige Löschung mit Quittung
+    (Punkt 25), Abgleich (Punkt 27), Prüfung am Inhalt (Punkte 49 bis 52, scharf mit OPS-001).
+    Ein Anhang, der 24 Stunden nach dem Hochladen an keiner Nachricht hängt, wird verworfen
+    (Punkt 7).
+74. **Aufnahme.** Ein Foto entsteht im Kameradialog der Anwendung (Punkt 33) oder kommt über den
+    Dateiwähler, ein PDF nur über den Dateiwähler. Bilder verlieren vor dem Hochladen auf dem
+    Gerät ihre Metadaten (Punkte 34 und 53). Bis zum Hochladen liegt eine Datei nur im
+    Arbeitsspeicher der Seite: Ohne Netz gibt es keinen Anhang, ein gescheitertes Hochladen bietet
+    die Anwendung erneut an, solange die Seite offen ist (Punkt 33). Die Nachricht geht erst
+    hinaus, wenn ihre Anhänge hochgeladen sind; nur das Senden selbst darf dann im Ausgang auf
+    Empfang warten (ANN-641).
+    *Vermerk 2026-10-18 (Fassung 9, Frage 5 der PR #273 wie empfohlen): „Senden“ geht schon,
+    während Anhänge hochladen. Die Nachricht wartet dann sichtbar im Ausgang, im Arbeitsspeicher
+    wie ihre Anhänge, und geht von selbst, sobald alle oben sind; zum Server geht sie weiterhin
+    erst danach. Scheitert ein Anhang endgültig, bleibt sie mit dem Grund stehen (ANN-654).*
+75. **Frist: die der Nachricht.** Ein Anhang fällt mit seiner Nachricht — zwölf Monate ab ihrem
+    Tag (ADR-008 Punkt 12, ANN-610), sofort, wenn sie gelöscht wird oder nur als Anker ohne Inhalt
+    stehen bleibt, und mit ihrem Gespräch. Immer mit Löschjournal und Löschauftrag, nach einer
+    Wiederherstellung erneut angewandt (Punkt 26). Keine Verlängerung.
+76. **Wer sieht.** Wer die Nachricht lesen darf: private Kanäle, Direkt- und Gruppennachrichten
+    nur ihre Mitglieder, auch `owner` nicht (ANN-642). Der Server prüft das bei jeder
+    Lesefreigabe, nicht die Oberfläche (§4.7).
+77. **Anzeigen, nicht herunterladen.** In der Nachricht steht je Anhang eine Zeile mit Art, Name
+    und Größe, **ohne Vorschaubild**: Eine Vorschau je Anhang wäre ein Verweis auf Vorrat
+    (Punkte 15 und 40). Öffnen zeigt im eigenen Rahmen (Punkte 54 und 58) — ein Bild als Bild,
+    ein PDF im Rahmen. **Kein Herunterladen, kein Teilen** (wie Punkt 67): Was dauerhaft gebraucht
+    wird, gehört in den Fachprozess (§10).
+    *Vermerk 2026-10-18 (Fassung 9): Eine Sprachnachricht steht mit Dauer und Größe da und spielt
+    im Medienelement des Browsers (Punkt 86).*
+78. **Nichts Neues im Protokoll** ([ADR-010](ADR-010-audit-and-privileged-access.md) Punkte 15
+    bis 17). Wer was wann angehängt hat, steht an der Zeile; Anzeigen ist kein Ereignis
+    (ADR-010 Punkt 14).
+79. **Löschen.** Vor dem Senden entfernt die Verfasser:in einen Anhang einzeln; danach fällt er mit
+    der Nachricht — wer sie löschen darf, löscht ihre Anhänge mit (ANN-611). Einen einzelnen
+    gesendeten Anhang löscht in V1 niemand.
+80. **Dateien je Gespräch.** Die Details eines Gesprächs listen seine Anhänge — Art, Name, Größe,
+    von wem, wann —, ohne Vorschaubild; Öffnen wie Punkt 77. In Anhängen wird nicht gesucht (keine
+    Texterkennung, „Bewusst nicht Bestandteil“).
+81. **Scharf erst nach** OPS-001 und OPS-003 (Punkte 2 und 26) wie jede Datei. Gebaut wird mit
+    synthetischen Dateien (Punkt 41).
+
+### N. Sprachnachrichten im Teamchat (Fassung 9)
+
+**Anlass.** Frage 4 der PR #273 (TEAM-003), beantwortet von Jannes am 2026-10-18:
+„Sprachnachrichten möchte ich ermöglichen“ - entgegen der Empfehlung, Ton und Video auszulassen.
+Video bleibt aus. Dieser Abschnitt folgt Abschnitt M und für die Aufnahme dem Diktat (§6.3); neu
+ist nur, was Ton verlangt. Stimme ist ein eigenes Datum über Beschäftigte (§20): Sie dient der
+Absprache, nie einer Auswertung.
+
+82. **Was freigegeben wird.** Wer im Teamchat schreiben darf, hängt an eine Nachricht eine
+    **Sprachnachricht**, aufgenommen in der Anwendung - wo Punkt 71 Anhänge zulässt, als einer der
+    höchstens fünf Anhänge, nicht an einer geplanten Nachricht. Kein Video, kein Ton aus einer
+    Datei (der Dateiwähler bleibt bei Fotos und PDF), keine Transkription: Eine Sprachnachricht
+    geht nie an das AI Gateway (ADR-005) und wird nicht durchsucht (Punkt 80).
+83. **Aufnahme nur in der Anwendung, ausdrücklich und sichtbar.** Die Aufnahme beginnt nur auf den
+    Tipp „Sprachnachricht aufnehmen“ und läuft sichtbar mit ihrer Zeit (wie §6.3): Sie endet mit
+    „Fertig“, nach höchstens **zwei Minuten**, sobald die Seite verborgen wird oder das Mikrofon
+    wegfällt; „Abbrechen“ verwirft. Danach sind die Spuren des Mikrofons beendet. Bis zum
+    Hochladen liegt die Aufnahme nur im Arbeitsspeicher (Punkt 33). Die Permissions-Policy gibt
+    dafür das Mikrofon der eigenen Herkunft frei (Vermerk an Punkt 33).
+84. **Format und Prüfung.** Was `MediaRecorder` liefert - **WebM (Opus) oder MP4 (AAC)** -, **nur
+    Ton**, mit begrenzter Bitrate; höchstens 10 MB wie jede Datei (Punkt 18). Das Gerät leert
+    Programm- und Zeitangaben wie beim Video (Punkt 64); der Server prüft die ganze Struktur,
+    nur Tonspuren und keine Angaben im Kopf (Punkt 49), ohne Bytes umzuschreiben (Punkt 52). Die
+    Dauer misst das Gerät; sie dient nur der Anzeige (ANN-655).
+85. **Hinweis statt Prüfung.** Der Aufnahmedialog sagt, dass Gespräche mit Patient:innen und
+    Befunde nicht in den Teamchat gehören (Punkt 72). Prüfen kann die Anwendung es nicht.
+86. **Abspielen, nicht herunterladen.** In der Nachricht steht eine Zeile mit Dauer und Größe
+    (Punkt 77). Erst ein Tipp lädt die Datei (Punkt 15); sie spielt im Medienelement des Browsers
+    aus einer Objekt-URL, ohne Herunterladen (`controlsList="nodownload"`). Spielt ein Gerät das
+    Format nicht ab (WebM vor iOS 17.4), sagt das Fenster es. Frist, Sichtbarkeit, Protokoll und
+    Löschen wie jeder Anhang (Punkte 75, 76, 78 und 79).
+87. **Scharf erst nach** OPS-001 und OPS-003 wie jeder Anhang (Punkt 81). Die Datenschutzprüfung
+    vor dem Go-live (ADR-007) nimmt Sprachnachrichten als eigene Verarbeitung auf (ANN-655).
+    Gebaut wird mit dem künstlichen Mikrofon von Chromium (Punkt 41).
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -1092,6 +1262,8 @@ aus Forendiskussionen:
 - **Die Virenprüfung ist gestundet, nicht erlassen.** Jede Erweiterung auf
   Uploads von außen bezahlt sie nach — mit einem eigenen ADR und
   gegebenenfalls einem neuen Dienstleister.
+  *Vermerk 2026-10-18 (Fassung 7): Sie ist erlassen (Punkt 29). Eine
+  Erweiterung auf Uploads von außen bezahlt keine Virenprüfung nach.*
 - **Für das Rechnungs-PDF ist damit eine Option gestorben.** Ein reiner
   Browser-Druck erzeugt eine Datei, die die Anwendung nie sieht: kein
   Objektschlüssel, keine Prüfsumme, keine Frist, kein Auditeintrag. B14 bleibt
@@ -1202,12 +1374,18 @@ aus Forendiskussionen:
 - Der Weg, auf dem das Rechnungs-PDF **entsteht** (B14, ABR-EPIC-002a). Dieser
   ADR sagt nur, wie es abgelegt wird, wenn es existiert.
 - Anbieter, Ausführungsort und Kosten einer späteren Virenprüfung.
+  *Vermerk 2026-10-18 (Fassung 7): Eine Virenprüfung gibt es nicht
+  (Punkt 29).*
 - Fotos, Videos und Audiodateien von Patient:innen, einschließlich der
   Sprachdokumentation aus §6.3 und ADR-005. *Vermerk 2026-09-26 (Fassung 2): Fotos regelt Abschnitt G; Videos und Audio bleiben
-  ausgeschlossen (Punkt 42).*
+  ausgeschlossen (Punkt 42).* *Vermerk 2026-10-18 (Fassung 9): Sprachnachrichten im Teamchat
+  (Abschnitt N) sind Ton aus dem Team, nicht von Patient:innen; für diese bleibt es dabei.*
 - Anhänge im internen Teamchat (TEAM-001) und in der Patientenkommunikation.
+  *Vermerk 2026-10-18 (Fassung 8): Anhänge im Teamchat regelt Abschnitt M; an Rückfragen
+  Abschnitt L.*
 - Volltextsuche in Dateien, Texterkennung, Bildtransformationen und jede Form
-  von KI auf Dateiinhalten (ADR-005 bleibt maßgeblich). *Vermerk 2026-09-26
+  von KI auf Dateiinhalten (ADR-005 bleibt maßgeblich), auch keine Transkription
+  von Sprachnachrichten (Fassung 9, Punkt 82). *Vermerk 2026-09-26
   (Fassung 2): Das Entfernen von Metadaten auf dem Gerät
   (Punkt 34) ist keine Bildtransformation in diesem Sinn; Ausrichtung,
   Vermessung und Markierung schließt Punkt 39 aus.*
@@ -1483,6 +1661,41 @@ Frist und Einordnung des Videos gehen in B2; den Prüfer wählt ein eigener ADR
     Messung (Punkt 39). *Alternative:* `IDEA-KOM-004` vollständig — dann als
     eigene Fassung, nicht nebenbei.
 
+## Bestätigungsfragen zu Fassung 9 — offen
+
+Den Kern hat Jannes am 2026-10-18 entschieden (Anlass von Abschnitt N). Offen sind die
+Einzelheiten; die Nummerierung setzt die der Fassung 8 fort.
+
+33. **Höchstens zwei Minuten je Sprachnachricht** (Punkt 83)?
+    *Empfehlung: ja.* Für eine Absprache unterwegs genügen zwei Minuten; je kürzer, desto weniger
+    nimmt eine Aufnahme aus dem Hintergrund mit. *Alternative:* fünf Minuten wie das Diktat.
+34. **Das Mikrofon für die eigene Herkunft freigeben** (`microphone=(self)`, Vermerk an Punkt 33)?
+    *Empfehlung: ja.* Ohne diese Freigabe kann der Browser keine Sprachnachricht aufnehmen. Das
+    Diktat bleibt hinter dem Gateway, Zahlung und USB bleiben gesperrt. Die Freigabe gilt für
+    jede Seite, auch die der Patient:innen: Das Video an der Rückfrage bleibt ohne Ton, aber nicht
+    mehr auch durch die Policy (Vermerk an Punkt 62). *Alternative:* keine - dann gibt es keine
+    Sprachnachrichten.
+
+## Bestätigungsfragen zu Fassung 8 — beantwortet am 2026-10-18
+
+Den Kern hat Jannes am 2026-10-18 entschieden (Anlass von Abschnitt M); die Einzelheiten hat er
+am selben Tag wie empfohlen beantwortet. Die Nummerierung setzt die der Fassung 5 fort.
+
+30. **Bis zu fünf Fotos (JPEG, PNG) oder PDF je Nachricht, je 10 MB, auch in Antworten und in der
+    Radflotte; keine Anhänge an geplanten Nachrichten** (Punkt 71)?
+    *Empfehlung: ja.* Fünf decken einen Schaden am Rad aus mehreren Blickwinkeln; ein Plan oder
+    eine Liste kommt als PDF. *Alternative:* drei wie an der Rückfrage (Punkt 59).
+31. **Eine Zeile je Anhang ohne Vorschaubild; Öffnen zeigt, Herunterladen gibt es nicht**
+    (Punkt 77)?
+    *Empfehlung: ja.* Ein Vorschaubild je Anhang bräuchte beim Blättern einen Verweis je Bild,
+    was Punkt 15 ausschließt; ohne Download bleibt die Datei in der Anwendung. *Alternative:*
+    Vorschaubilder wie bei Slack — dann als eigene Fassung, die Punkt 15 für den Teamchat umkehrt.
+32. **Fotos auch aus der Mediathek über den Dateiwähler, nicht nur aus dem Kameradialog**
+    (Punkt 74)?
+    *Empfehlung: ja.* Im Team sind es Bildschirmfotos und Fotos vom Rad; für Fotos von
+    Patient:innen gibt es die Akte (Punkt 72). *Alternative:* nur der Kameradialog wie bei
+    Patientenfotos (Punkt 33).
+
 ## Quellen der Recherche vom 2026-09-12
 
 `supabase.com` ist aus dieser Umgebung gesperrt (Egress-Proxy). Abgerufen
@@ -1600,3 +1813,6 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 4 | 2026-10-09 | **Entschieden von Jannes in der Abnahme der Annahmen vom 2026-10-09:** Abschnitt K (Punkte 56 bis 58) — ein Foto aus der Dokumentation ist ohne Wahl ein Dokumentationsfoto, Erinnerung an Anmeldebogen und Rezept an ihrer Stelle (BEF-135); keine neue Arbeitshilfe, bestehende laufen aus, die Einwilligung zu Fotos wird nicht mehr angeboten; ein PDF öffnet im Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ, CSP `frame-src blob:` (BEF-133). Umkehr der Punkte 44 und — für PDF — 54, Vermerke an 43, 44, 54. §5 der Prinzipien mit Version 0.22 nachgezogen |
 | 5 | 2026-10-10 | **Angenommen am selben Tag, Fragen 23 bis 29 wie empfohlen:** Abschnitt L (Punkte 59 bis 70) — Foto und Video an einer Rückfrage im Nachsorge-Abo und im Training, eigene Einwilligung, Klasse `rueckfrageanhang` mit 30 Tagen, Aufnahme nur in der Anwendung ohne Ton, Antwort mit Zeitmarke ohne Bewegungsurteil, Virenprüfung als Bedingung des Scharfschaltens mit Schalter und eigenem ADR für den Prüfer. Schränkt für diese Anhänge die Punkte 14, 18, 29, 30, 37 und 42 ein, je mit Vermerk; §5 der Prinzipien mit Version 0.24 nachgezogen. Anlass: KOM-EPIC-002 |
 | 6 | 2026-10-15 | **Entschieden von Jannes:** Anhänge an Rückfragen ohne Virenprüfung. Umkehr von Punkt 29 (für Abschnitt L) und des Prüfergebnis-Satzes in Punkt 69, in Punkt 70 entfällt der ADR zum Prüfer; ADR-026 abgelehnt. Schalter `external_attachments_enabled` von selbst an (KOM-013). Alle übrigen Punkte, die Minderungen aus Punkt 69 und Punkt 29 für andere Uploads von außen bleiben |
+| 7 | 2026-10-18 | **Entschieden von Jannes:** „Keine Virenprüfung in der gesamten Anwendung!“ Umkehr von Punkt 29 für jeden Upload, auch künftige von außen (Portal, Formular, Teamchat); eine Freigabe nach Punkt 30 braucht keine Virenprüfung. Vermerke an den Punkten 28, 29, 30, 42, 50 und 69, an den Konsequenzen und an „Bewusst nicht Bestandteil“. Alle übrigen Punkte bleiben, auch die Kennzeichnung „nicht auf Schadsoftware geprüft“ und der ausgeschaltete Schalter `app.message_attachment_scan_required()`. Anlass: Antwort auf Frage 1 der PR #272 (TEAM-002) |
+| 8 | 2026-10-18 | **Angenommen am selben Tag, im Kern von Jannes entschieden, Fragen 30 bis 32 wie empfohlen:** Abschnitt M (Punkte 71 bis 81) — Fotos (JPEG, PNG) und PDF an Teamchat-Nachrichten, bis zu fünf je Nachricht, ohne Virenprüfung, Klasse `teamchat`, Frist der Nachricht, derselbe Weg wie jede Datei, Anzeige ohne Vorschaubild und ohne Download, nichts Neues im Protokoll, Dateien je Gespräch. Schränkt für diese Anhänge die Punkte 30 und 42 ein, je mit Vermerk; Vermerk an „Bewusst nicht Bestandteil“. Anlass: TEAM-003 |
+| 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |

@@ -3,6 +3,7 @@ import { useAbmeldewache } from '@/app/abmeldeschutz';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { useAusgangsZahl, wiederholeWartende } from './ausgang';
+import { anhaengeWiederholen, useAnhaengeNurHier } from './entwurfsanhaenge';
 
 /**
  * Fragt beim freiwilligen Abmelden, bevor ungesendete Nachrichten des
@@ -14,22 +15,28 @@ import { useAusgangsZahl, wiederholeWartende } from './ausgang';
  * alles an, meldet sie ab; sonst bleibt man angemeldet oder verwirft
  * ausdrücklich. Die erzwungene Beendigung kommt hier nicht vorbei
  * (`abmeldeschutz.ts`).
+ *
+ * Dasselbe gilt für Anhänge, die noch nicht hochgeladen sind (TEAM-003): Ihre
+ * Bytes liegen nur im Speicher der Seite, ein Foto aus der Kamera der App
+ * nirgends sonst (ADR-017 Punkt 33).
  */
 export function AusgangAbmeldewache({ kontoId }: { kontoId: string }) {
   const zahl = useAusgangsZahl(kontoId);
-  const aktuell = useRef(zahl);
-  aktuell.current = zahl;
+  const anhaenge = useAnhaengeNurHier(kontoId);
+  const aktuell = useRef(zahl + anhaenge);
+  aktuell.current = zahl + anhaenge;
   const [offen, setOffen] = useState(false);
   const abmelden = useAbmeldewache(() => {
     if (aktuell.current === 0) return false;
     wiederholeWartende();
+    anhaengeWiederholen();
     setOffen(true);
     return true;
   });
 
   // Schließen oder Neuladen des Tabs: Der Browser fragt (wie beim
   // Fotoverlustschutz); ein Beenden der App durch das Telefon sieht niemand.
-  const wartet = zahl > 0;
+  const wartet = zahl + anhaenge > 0;
   useEffect(() => {
     if (!wartet) return;
     const warnen = (e: BeforeUnloadEvent) => {
@@ -43,17 +50,25 @@ export function AusgangAbmeldewache({ kontoId }: { kontoId: string }) {
   if (!offen) return null;
   return (
     <Dialogfenster titel="Noch nicht gesendet" onSchliessen={() => setOffen(false)}>
-      {zahl === 0 ? (
+      {zahl + anhaenge === 0 ? (
         <p className="text-ink text-sm">Inzwischen ist alles gesendet.</p>
-      ) : (
+      ) : null}
+      {zahl > 0 ? (
         <p className="text-ink text-sm">
           {zahl === 1
             ? '1 Nachricht im Teamchat ist noch nicht beim Server. Beim Abmelden geht sie verloren.'
             : `${zahl} Nachrichten im Teamchat sind noch nicht beim Server. Beim Abmelden gehen sie verloren.`}
         </p>
-      )}
+      ) : null}
+      {anhaenge > 0 ? (
+        <p className="text-ink mt-2 text-sm first:mt-0">
+          {anhaenge === 1
+            ? '1 Anhang im Teamchat ist noch nicht hochgeladen. Beim Abmelden geht er verloren.'
+            : `${anhaenge} Anhänge im Teamchat sind noch nicht hochgeladen. Beim Abmelden gehen sie verloren.`}
+        </p>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-3">
-        {zahl === 0 ? (
+        {zahl + anhaenge === 0 ? (
           <Button
             type="button"
             data-autofocus

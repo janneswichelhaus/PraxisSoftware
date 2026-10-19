@@ -6573,7 +6573,7 @@ Technik · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 ### ANN-642 — Teamchat: private Kanäle und Gruppennachrichten
 
-Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Private Kanäle und Gruppennachrichten (drei bis neun Personen) lesen nur ihre Mitglieder, auch owner nicht. Private Kanäle legen owner und Teamleitung an; jedes Mitglied holt weitere dazu (sie lesen den Verlauf), verwaltende Mitglieder nehmen heraus, benennen um, archivieren. Wer geht, verliert den eigenen Stand; ist kein aktives Mitglied mehr dabei, fällt der Kanal mit Journal. Eindeutig sind nur Namen offener Kanäle, damit kein Name einen privaten Kanal verrät. Kein Umwandeln.
 
@@ -6582,6 +6582,8 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.team_channel_readable`, `app.team_channel_manageable`, `public.leave_team_channel`.
 
 **Änderungspfad.** Alle legen an: `app.can_manage_team_channels` · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 4): Private Kanäle legen owner und Teamleitung an. Bleibt im Prüfpaket.
 
 ### ANN-643 — Teamchat: Antworten auch im Kanal, später senden
 
@@ -6633,7 +6635,7 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-647 — Teamchat: Benachrichtigung in der App, Stufen je Gespräch, @alle
 
-Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · erledigt · Wiedervorlage: —
 
 **Annahme.** Der Zähler an „Nachrichten“ zählt neue Direkt- und Gruppennachrichten, Erwähnungen und fällige Erinnerungen. Je Gespräch: alle, nur Erwähnungen oder stumm (Erwähnungen zählen weiter) und Favorit. @alle erwähnt, wer das Gespräch liest; ein @hier gibt es ohne Präsenz nicht. Kein Push, keine Mail: ADR-024 nimmt die Teamkommunikation aus, sein Grund (W4, §20) gilt sinngemäß.
 
@@ -6642,6 +6644,8 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 **Anker.** `public.get_team_chat_summary`, `public.team_channel_settings`.
 
 **Änderungspfad.** Andere Zählweise: nur `get_team_chat_summary` · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-18).** Bestätigt (PR #272, Frage 2): Keine Mitteilung außerhalb der App. Zeigt der Alltag Bedarf, folgt ein eigener ADR – nur Direkt- und Gruppennachrichten und Erwähnungen, mit Ruhezeit außerhalb der Arbeitszeit.
 
 ### ANN-648 — Teamchat: Chatfläche mit Gesprächsliste, Threadspalte und Tastatur
 
@@ -6681,7 +6685,7 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 ### ANN-651 — Teamchat: Suche mit Filtern, die Person nur mit Suchwort
 
-Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-18 · Jannes (Abnahme 18.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Die Suche findet in allen lesbaren Gesprächen ein Wort ab zwei Zeichen und filtert nach Gespräch, Person und Zeitraum. Ohne Suchwort geht nur der Blick in ein Gespräch, wie Hochblättern; nach einer Person nur mit Suchwort. Das ist eine Hürde, keine Sperre: Mit einem häufigen Wort und Zeiträumen lässt sich trotzdem vieles einer Person finden. Ob der Personenfilter bleibt, entscheidet die Datenschutzprüfung. Suchwörter stehen in keiner Adresse und keinem Log.
 
@@ -6690,3 +6694,53 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Prüfung am Anfang von `public.search_team_messages`.
 
 **Änderungspfad.** Ohne Personenfilter: `p_author` und das Feld „Von“ entfernen · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-18).** Bestätigt wie gebaut (PR #272, Frage 5); ob „Von“ bleibt, entscheidet die Datenschutzprüfung. Bleibt im Prüfpaket.
+
+### ANN-652 — Teamchat: ungesendete Anhänge fallen beim Verwerfen mit Journal, nach 24 Stunden ohne
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein Anhang, der an keiner Nachricht hängt, fällt beim Entfernen oder nach einem Befund der Prüfung sofort - mit Löschauftrag und Eintrag im Löschjournal, tageweise gebündelt wie jedes Löschen im Teamchat (ohne Uhrzeit) -, sonst im täglichen Lauf nach 24 Stunden ohne Journal. Gebunden wird nur, was jünger als 24 Stunden ist; ungesendet sieht ihn niemand; je Person liegen höchstens 20.
+
+**Begründung.** ADR-017 Punkte 7, 52 und 73; ADR-008 Punkt 8: Ohne Journal käme ein verworfener, jüngerer Anhang mit einem Restore bindbar zurück (Zweitreview TEAM-003, wie ERS-001). Was der Lauf verwirft, ist nach einem Restore älter als 24 Stunden, weder bindbar noch lesbar und fällt im nächsten Lauf. Gesendete fallen über das Journal ihrer Nachricht.
+
+**Anker.** `public.discard_team_attachment`, `public.discard_stale_team_attachments`.
+
+**Änderungspfad.** Auch der Lauf schreibt das Journal (eine Einfügung wie in ERS-001) · Aufwand `klein`.
+
+### ANN-653 — Teamchat: Nachricht nur mit Anhängen
+
+Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
+
+**Annahme.** Mit Anhängen darf der Text leer sein - ein Foto vom Rad geht ohne Worte. Ohne Anhang bleibt eine leere Nachricht abgewiesen. In Listen steht dann „Anhang“ statt eines Textes.
+
+**Begründung.** Slack sendet Dateien ohne Text; am Lenker spart das einen Schritt. Leer heißt `''`, `null` bleibt der fehlende Inhalt (TEAM-001).
+
+**Anker.** `app.team_message_body`.
+
+**Änderungspfad.** Text immer Pflicht: den zweiten Fall in `app.team_message_body` streichen · Aufwand `klein`.
+
+### ANN-654 — Teamchat: Senden, während Anhänge hochladen
+
+Technik · offen · 2026-10-18 · — · — · Wiedervorlage: Sichtung (Funkloch)
+
+**Annahme.** „Senden“ geht, solange kein Anhang endgültig gescheitert ist. Die Nachricht wartet mit „Lädt Anhänge hoch …“ im Ausgang, ihre Anhänge hängen an ihr, und sie geht von selbst, sobald alle oben sind; ohne Netz versucht es ein Anhang zwei Minuten lang alle 15 s, dann eine Stunde lang alle zwei Minuten. „Bearbeiten“ holt Text und Anhänge ins Feld, „Verwerfen“ verwirft beide. Scheitert ein Anhang endgültig, bleibt sie mit dem Grund stehen. Eine Nachricht ohne Anhang geht sofort, beim Server vor der wartenden.
+
+**Begründung.** ADR-017 Punkt 74 (Fassung 9, Frage 5 der PR #273). Alles bleibt im Arbeitsspeicher (Punkt 33).
+
+**Anker.** `anhaengeBereit` in `ausgang.ts`.
+
+**Änderungspfad.** Wieder warten: „Senden“ erst mit allen Anhängen oben (`kannSenden` in `Eingabe.tsx`) · Aufwand `klein`.
+
+### ANN-655 — Teamchat: Sprachnachricht mit Dauer vom Gerät, eigene Datenschutzprüfung
+
+Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Name „Sprachnachricht TT.MM., hh:mm“ wie ein Foto der App. Die Dauer misst das Gerät in ganzen Sekunden (1 bis 120), nur zur Anzeige; der Server prüft die Grenzen. Die zwei Minuten setzt die App durch, am Server begrenzen nur die 10 MB. Die Datenschutzprüfung nimmt Sprachnachrichten als eigene Verarbeitung auf: Stimme ist ein Datum über Beschäftigte (§20), freiwillig, ohne Auswertung.
+
+**Begründung.** ADR-017 Punkte 84 und 87. Die Dauer aus dem Container hieße einen Zeitparser am Server; eine falsche schadet nur der Anzeige (Zweitreview TEAM-004a, B2).
+
+**Anker.** `app.team_voice_max_seconds()`, `duration_seconds` (Migration TEAM-004), `aufnahmeName`.
+
+**Änderungspfad.** Dauer am Server lesen (`video.ts`) oder Größe je Sekunde begrenzen · Aufwand `mittel`.

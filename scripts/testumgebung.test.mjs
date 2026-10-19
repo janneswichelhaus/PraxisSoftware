@@ -127,12 +127,13 @@ describe('htaccess', () => {
     expect(datei).toContain('Options -Indexes');
   });
 
-  it('gibt die Kamera nur der eigenen Herkunft frei und sonst nichts (ADR-017 Punkt 33)', () => {
+  it('gibt Kamera und Mikrofon nur der eigenen Herkunft frei und sonst nichts (ADR-017 Punkt 33)', () => {
     const datei = htaccess({ supabaseUrl: SUPABASE_URL, tuerDatei: null });
-    // Der ganze Wert, nicht nur ein Teil: Eine weitere Freigabe - Mikrofon,
-    // ein fremder Ursprung, ein Stern - soll hier auffallen.
+    // Der ganze Wert, nicht nur ein Teil: Eine weitere Freigabe - Zahlung,
+    // USB, ein fremder Ursprung, ein Stern - soll hier auffallen. Das Mikrofon
+    // seit TEAM-004 für Sprachnachrichten (Fassung 9, Punkt 83).
     expect(datei).toContain(
-      'Header always set Permissions-Policy "camera=(self), microphone=(), payment=(), usb=()"',
+      'Header always set Permissions-Policy "camera=(self), microphone=(self), payment=(), usb=()"',
     );
     expect(datei.match(/Permissions-Policy/g)).toHaveLength(1);
   });

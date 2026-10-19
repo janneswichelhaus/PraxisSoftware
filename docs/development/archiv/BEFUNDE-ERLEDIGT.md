@@ -1610,3 +1610,41 @@ eingeklappt.
 | Berührt | `app.electricity_amount_cents` (ANN-605), Tagesroute (`map_006b`), Adapter des Kartendienstes |
 
 **Beobachtung.** Der Ladestrom rechnet mit einem festen Wert „km je Arbeitsstunde“ (ANN-605). **Erwartet.** Beim Beantragen eines abgeschlossenen Monats berechnet der Server die geplanten Tourstrecken der eigenen Person neu und hält nur die Monatssumme am Antrag fest – keine Tageswerte, keine Routen (ADR-019 Fassung 6, Punkte 16 und 17). Bis zum Gate aus ADR-019 Punkt 9 nur mit synthetischen Adressen; ohne Ergebnis bleibt der Wert je Stunde.
+
+### BEF-186 — Ablauftest G9 im Zeitkonto ist an Werktagen rot
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-19 |
+| Bereich | Tests: `tests/e2e/authenticated/zeitkonto.spec.ts` (ZK-001, G9) |
+| Quelle  | CI der PR #273, Teil 3/3 (Läufe 788 und 789), lokal nachgestellt |
+| Status  | erledigt 2026-10-19 (PR #273): Knopf „Heute“ mit `exact: true`; lokal am Montag erst rot, dann 3/3 grün |
+| Berührt | G9 (`name: 'Heute', exact: true`), `Monatsblatt.tsx` („…, heute“ im Namen der Zelle) |
+
+**Beobachtung.** Werktags (Berliner Zeit) tippt G9 auf `getByRole('button', { name: 'Heute' })`. Seit das Monatsblatt die heutige Zelle „Montag, 19. Oktober 2026, heute“ nennt, trifft das zwei Knöpfe, und Playwright bricht ab. Der Test wurde an einem Samstag zuletzt geändert und lief seither nur im Zweig für Samstag und Sonntag. **Erwartet.** `{ name: 'Heute', exact: true }`; lokal damit 3/3 grün.
+
+### BEF-185 — Test der Ernährung auf der Plattform ist zwischen 0 und 2 Uhr rot
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-19 |
+| Bereich | Tests: `supabase/tests/platform-nutrition.test.ts` (ERN-002) |
+| Quelle  | Voller `pnpm test:db` der PR #273 (TEAM-004/005), gestartet 00:43 Uhr Berliner Zeit |
+| Status  | erledigt 2026-10-19 (PR #273): Profil, Einwilligung und Gewichte im Seed nach `app.training_today`; mit einer Zeitzone, deren Datum hinter Berlin liegt, vorher rot (erwartet 28.09., bekommen 27.09.), nachher 12/12 grün |
+| Berührt | `supabase/seed.sql` (Ernährungsberatung), Hilfe `heute()` im Test |
+
+**Beobachtung.** „zeigt der Person ihre Beratung mit fester Schlüsselliste, ohne Notizen“ erwartet `occurred_on` = `app.training_today(…) - 21` (Tag der Praxis), der Seed schreibt `current_date - 21` (Tag der Datenbank, UTC). Zwischen 0 und 2 Uhr Sommerzeit (0 und 1 Uhr Winterzeit) liegen sie einen Tag auseinander; sonst grün. **Erwartet.** Seed und Test rechnen mit demselben Tag, etwa beide mit `app.training_today`.
+
+### BEF-187 — Teamchat: Mit dem Hinweis „Keine Verbindung“ verdeckt die Tableiste das Kleingedruckte
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-19 |
+| Bereich | Teamchat, Gespräch bei 375 px (TEAM-002, `useChatflaeche`) |
+| Quelle  | Design-Review TEAM-004 (H1), Sichtungsbild `t16-banner-667` der PR #273 |
+| Status  | erledigt 2026-10-19 (PR #273): Die Fläche beobachtet alles, was vor ihr steht, nicht nur die Seite; Ablauftest bei 375 × 667 vorher rot (69 px Lücke), nachher grün |
+| Berührt | `flaeche.ts` (`vorDerFlaeche`, Beobachtung), `teamchat.spec.ts`, `flaeche.test.ts` |
+
+**Beobachtung.** Ohne Netz schiebt der Hinweis oben die Seite um gut 70 px nach unten. „Senden“ bleibt über der Tableiste (gemessen: 16 px bei 375 × 812 und 375 × 667), die Zeile „Befunde und Diagnosen gehören in die Akte.“ darunter liegt aber halb hinter ihr. Ohne Hinweis bleiben unter der Eingabe rund 60 px frei. **Erwartet.** Die Fläche endet mit und ohne Hinweis an der Oberkante der Tableiste; Ablauftest mit `context.setOffline(true)` bei 375 × 667.
+
+**Ursache.** Die Fläche maß nur neu, wenn die ganze Seite ihre Größe änderte. Die ist aber mindestens bildschirmhoch: Fiel die Unterleiste der Liste beim Öffnen eines Gesprächs weg (61 px) oder ging der Hinweis wieder weg, blieb die alte Höhe stehen - am Telefon fehlten in jedem Gespräch 61 px, und der Hinweis schob das Kleingedruckte dann hinter die Tableiste. Am Rechner blieb nach dem Wiederverbinden unten eine Lücke.

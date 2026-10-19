@@ -1,5 +1,7 @@
 /**
- * Die Prüfung eines Videos am Inhalt (KOM-006, ADR-017 Punkte 49, 63, 64).
+ * Die Prüfung eines Videos am Inhalt (KOM-006, ADR-017 Punkte 49, 63, 64) -
+ * und einer Sprachnachricht im Teamchat (TEAM-004, Punkt 84): derselbe
+ * Container, nur Tonspuren statt nur Bildspuren (`pruefeTon`).
  *
  * Ein Anhang an einer Rückfrage ist ein Video aus `MediaRecorder` — WebM aus
  * Chromium und Firefox, MP4 aus Safari. Drei Fragen an die abgelegten Bytes,
@@ -28,6 +30,28 @@ export interface Videobefund {
 }
 
 const NICHT_LESBAR: Videobefund = { lesbar: false, ohneTon: false, ohneAngaben: false };
+
+/** Ergebnis für eine Sprachnachricht; `lesbar = false` heißt: die anderen beiden gelten nicht. */
+export interface Tonbefund {
+  readonly lesbar: boolean;
+  /** Nur Tonspuren - eine Bildspur oder eine andere Spur ist ein Befund. */
+  readonly nurTon: boolean;
+  readonly ohneAngaben: boolean;
+}
+
+const TON_NICHT_LESBAR: Tonbefund = { lesbar: false, nurTon: false, ohneAngaben: false };
+
+/** Was die Zerlegung findet: lesbar, die Spuren und ob der Kopf leer ist. */
+interface Zerlegung {
+  readonly lesbar: boolean;
+  readonly bild: number;
+  readonly ton: number;
+  /** Untertitel, Steuerung, Metadaten - weder Bild noch Ton. */
+  readonly andere: number;
+  readonly ohneAngaben: boolean;
+}
+
+const UNLESBAR: Zerlegung = { lesbar: false, bild: 0, ton: 0, andere: 0, ohneAngaben: false };
 
 /**
  * Zweitreview S2: so tief verschachtelt ist kein Video aus `MediaRecorder`
@@ -144,27 +168,35 @@ export function durchlaufeWebm(
     while (pos < bis) {
       const e = leseElement(bytes, pos);
       if (!e) return null;
-      // Unbekannte Länge gibt es in MediaRecorder-Ausgaben nur für Segment
-      // und Cluster.
+      // Unbekannte Länge gibt es in MediaRecorder-Ausgaben nur für das
+      // Segment und die Cluster direkt darin - anderswo verbärge sie, was
+      // darin steht, etwa eine Spur (Zweitreview TEAM-004b).
       if (e.ende === null) {
-        if (e.id === EBML.segment) {
+        if (e.id === EBML.segment && eltern === 0) {
           besuche(e, eltern);
           return bereich(e.daten, bis, e.id, tiefe + 1) === null ? null : bis;
         }
-        if (e.id !== EBML.cluster) return null;
+        if (e.id !== EBML.cluster || eltern !== EBML.segment) return null;
         besuche(e, eltern);
         // Kinder bis zum nächsten Element der Segmentebene überspringen.
         let innen = e.daten;
         while (innen < bis) {
           const kind = leseElement(bytes, innen);
-          if (!kind || kind.ende === null) return null;
+          if (!kind) return null;
+          // Das nächste Element der Segmentebene beendet den Cluster - auch
+          // ein weiterer Cluster unbekannter Länge, wie ihn `MediaRecorder`
+          // mit Zeitscheibe schreibt (TEAM-004).
           if (SEGMENTEBENE.has(kind.id)) break;
+          if (kind.ende === null) return null;
           innen = kind.ende;
         }
         pos = innen;
         continue;
       }
       if (e.ende > bis) return null;
+      // Ein Segment gibt es nur auf oberster Ebene - verschachtelt öffnete es
+      // wieder Cluster ohne Länge (Zweitreview TEAM-005).
+      if (e.id === EBML.segment && eltern !== 0) return null;
       besuche(e, eltern);
       if (BEHAELTER.has(e.id) && bereich(e.daten, e.ende, e.id, tiefe + 1) === null) return null;
       pos = e.ende;
@@ -177,10 +209,11 @@ export function durchlaufeWebm(
   return bereich(0, bytes.length, 0) !== null;
 }
 
-function webmBefund(bytes: Uint8Array): Videobefund {
-  let ohneTon = true;
+function webmZerlegung(bytes: Uint8Array): Zerlegung {
   let ohneAngaben = true;
-  let bildspuren = 0;
+  let bild = 0;
+  let ton = 0;
+  let andere = 0;
   let segment = false;
   const lesbar = durchlaufeWebm(bytes, (e) => {
     if (e.id === EBML.segment) segment = true;
@@ -191,12 +224,13 @@ function webmBefund(bytes: Uint8Array): Videobefund {
     if (e.id === EBML.trackType && e.ende !== null) {
       let typ = 0;
       for (let i = e.daten; i < e.ende; i += 1) typ = typ * 256 + bytes[i]!;
-      if (typ === 1) bildspuren += 1;
-      else ohneTon = false;
+      if (typ === 1) bild += 1;
+      else if (typ === 2) ton += 1;
+      else andere += 1;
     }
   });
-  if (!lesbar || !segment || bildspuren === 0) return NICHT_LESBAR;
-  return { lesbar, ohneTon, ohneAngaben };
+  if (!lesbar || !segment) return UNLESBAR;
+  return { lesbar, bild, ton, andere, ohneAngaben };
 }
 
 // -----------------------------------------------------------------------------
@@ -270,13 +304,14 @@ export function mp4Zeiten(bytes: Uint8Array, kasten: Mp4kasten): [number, number
   return [beginn, laenge];
 }
 
-function mp4Befund(bytes: Uint8Array): Videobefund {
+function mp4Zerlegung(bytes: Uint8Array): Zerlegung {
   if (bytes.length < 12 || String.fromCharCode(...bytes.slice(4, 8)) !== 'ftyp') {
-    return NICHT_LESBAR;
+    return UNLESBAR;
   }
-  let ohneTon = true;
   let ohneAngaben = true;
-  let bildspuren = 0;
+  let bild = 0;
+  let ton = 0;
+  let andere = 0;
   let moov = false;
   const lesbar = durchlaufeMp4(bytes, (k, eltern) => {
     if (k.typ === 'moov') moov = true;
@@ -291,12 +326,13 @@ function mp4Befund(bytes: Uint8Array): Videobefund {
     if (k.typ === 'hdlr' && eltern === 'mdia') {
       // Version/Flags (4), pre_defined (4), handler_type (4).
       const art = String.fromCharCode(...bytes.slice(k.inhalt + 8, k.inhalt + 12));
-      if (art === 'vide') bildspuren += 1;
-      else ohneTon = false;
+      if (art === 'vide') bild += 1;
+      else if (art === 'soun') ton += 1;
+      else andere += 1;
     }
   });
-  if (!lesbar || !moov || bildspuren === 0) return NICHT_LESBAR;
-  return { lesbar, ohneTon, ohneAngaben };
+  if (!lesbar || !moov) return UNLESBAR;
+  return { lesbar, bild, ton, andere, ohneAngaben };
 }
 
 // -----------------------------------------------------------------------------
@@ -304,7 +340,28 @@ function mp4Befund(bytes: Uint8Array): Videobefund {
 // -----------------------------------------------------------------------------
 
 export function pruefeVideo(bytes: Uint8Array, mimeTyp: string): Videobefund {
-  if (mimeTyp === 'video/webm') return webmBefund(bytes);
-  if (mimeTyp === 'video/mp4') return mp4Befund(bytes);
-  return NICHT_LESBAR;
+  const z =
+    mimeTyp === 'video/webm'
+      ? webmZerlegung(bytes)
+      : mimeTyp === 'video/mp4'
+        ? mp4Zerlegung(bytes)
+        : UNLESBAR;
+  if (!z.lesbar || z.bild === 0) return NICHT_LESBAR;
+  return { lesbar: true, ohneTon: z.ton + z.andere === 0, ohneAngaben: z.ohneAngaben };
+}
+
+/**
+ * Eine Sprachnachricht im Teamchat (TEAM-004, ADR-017 Punkt 84): lesbar, nur
+ * Tonspuren, ohne Angaben im Kopf - nach denselben Regeln, nach denen das
+ * Gerät bereinigt (`bereinigeTon`).
+ */
+export function pruefeTon(bytes: Uint8Array, mimeTyp: string): Tonbefund {
+  const z =
+    mimeTyp === 'audio/webm'
+      ? webmZerlegung(bytes)
+      : mimeTyp === 'audio/mp4'
+        ? mp4Zerlegung(bytes)
+        : UNLESBAR;
+  if (!z.lesbar || z.ton === 0) return TON_NICHT_LESBAR;
+  return { lesbar: true, nurTon: z.bild + z.andere === 0, ohneAngaben: z.ohneAngaben };
 }

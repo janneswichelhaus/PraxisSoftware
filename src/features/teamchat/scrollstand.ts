@@ -169,8 +169,9 @@ export function useScrollstand({
     // `kette` steht für `ids`: neu nur, wenn sich die Folge ändert.
   }, [kette, behaelter, schluessel, neuAb, sprungZu, merken]);
 
-  // Wächst der Inhalt ohne neue Nachricht (Reaktion, Bearbeitung), bleibt
-  // unten, wer unten war.
+  // Wächst der Inhalt ohne neue Nachricht (Reaktion, Bearbeitung) oder
+  // schrumpft der Verlauf, weil die Eingabe wächst (Aufnahme, Anhänge,
+  // Tastatur), bleibt unten, wer unten war (Design-Review TEAM-004).
   useEffect(() => {
     const el = behaelter.current;
     const innen = inhalt.current;
@@ -180,6 +181,7 @@ export function useScrollstand({
       vorher.current = { ...vorher.current, hoehe: el.scrollHeight };
     });
     ro.observe(innen);
+    ro.observe(el);
     return () => ro.disconnect();
   }, [behaelter, inhalt]);
 

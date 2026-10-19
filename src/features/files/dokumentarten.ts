@@ -194,8 +194,9 @@ function ersteBytes(datei: Blob, anzahl: number): Promise<Uint8Array> {
  * `null` heißt: passt.
  *
  * Bewusst getrennt von `dateiAblehnungsgrund`: Diese Prüfung muss die Bytes
- * lesen und ist deshalb asynchron. Sie ersetzt keine Virenprüfung (ADR-017)
- * und hält niemanden auf, der den Browser selbst steuert — sie fängt den Fall
+ * lesen und ist deshalb asynchron. Sie ist keine Virenprüfung (die gibt es
+ * nicht, ADR-017 Fassung 7) und hält niemanden auf, der den Browser selbst
+ * steuert — sie fängt den Fall
  * ab, der ohne sie unbemerkt in die Akte gelangt: eine umbenannte Fremddatei.
  */
 export async function dateiInhaltAblehnungsgrund(datei: Blob): Promise<string | null> {

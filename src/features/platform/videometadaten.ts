@@ -2,7 +2,8 @@ import { alleBytes } from '@/features/files/metadaten';
 
 /**
  * Ein Video verlässt das Gerät ohne Programm- und Zeitangaben (KOM-006,
- * ADR-017 Punkt 64, ANN-336).
+ * ADR-017 Punkt 64, ANN-336) - und ebenso eine Sprachnachricht im Teamchat
+ * (TEAM-004, Punkt 84): derselbe Container aus `MediaRecorder`, nur Ton.
  *
  * `MediaRecorder` schreibt weder Ort noch Gerät, aber den Container füllt der
  * Browser selbst: Chromium trägt sich als Programm in den WebM-Kopf ein
@@ -18,8 +19,9 @@ import { alleBytes } from '@/features/files/metadaten';
  *     heißen danach `free` — ein Kasten, den jeder Leser überspringt.
  *
  * Und es prüft, was der Server ebenso prüft (`supabase/functions/
- * patient-file-verify/video.ts`): nur Bildspuren, keine Tonspur (Punkt 63).
- * Ein Test hält beide Seiten deckungsgleich.
+ * patient-file-verify/video.ts`): ein Video nur mit Bildspuren, keine Tonspur
+ * (Punkt 63); eine Sprachnachricht nur mit Tonspuren (Punkt 84). Ein Test hält
+ * beide Seiten deckungsgleich.
  */
 
 // -----------------------------------------------------------------------------
@@ -128,40 +130,62 @@ function zuVoid(bytes: Uint8Array, e: Element): boolean {
   return true;
 }
 
-function bereinigeWebm(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
-  let ohneTon = true;
-  let bildspuren = 0;
+/** Lesbar, und welche Spuren der Container trägt. */
+interface Spuren {
+  ok: boolean;
+  bild: number;
+  ton: number;
+  /** Untertitel, Steuerung, Metadaten - weder Bild noch Ton. */
+  andere: number;
+}
 
-  function bereich(von: number, bis: number, tiefe = 0): boolean {
+function bereinigeWebm(bytes: Uint8Array): Spuren {
+  const spuren = { bild: 0, ton: 0, andere: 0 };
+
+  /** `eltern`: die Kennung des umgebenden Elements, 0 auf oberster Ebene. */
+  function bereich(von: number, bis: number, tiefe = 0, eltern = 0): boolean {
     if (tiefe > MAX_TIEFE) return false;
     let pos = von;
     while (pos < bis) {
       const e = element(bytes, pos);
       if (!e) return false;
       if (e.ende === null) {
-        if (e.id === EBML.segment) return bereich(e.daten, bis, tiefe + 1);
-        if (e.id !== EBML.cluster) return false;
+        // Unbekannte Länge schreibt `MediaRecorder` nur für das Segment und
+        // die Cluster direkt darin - anderswo verbärge sie, was darin steht,
+        // etwa eine Spur (Zweitreview TEAM-004b).
+        if (e.id === EBML.segment && eltern === 0) {
+          return bereich(e.daten, bis, tiefe + 1, EBML.segment);
+        }
+        if (e.id !== EBML.cluster || eltern !== EBML.segment) return false;
         let innen = e.daten;
         while (innen < bis) {
           const kind = element(bytes, innen);
-          if (!kind || kind.ende === null) return false;
+          if (!kind) return false;
+          // Das nächste Element der Segmentebene beendet den Cluster - auch
+          // ein weiterer Cluster unbekannter Länge, wie ihn `MediaRecorder`
+          // mit Zeitscheibe schreibt (TEAM-004).
           if (SEGMENTEBENE.has(kind.id)) break;
+          if (kind.ende === null) return false;
           innen = kind.ende;
         }
         pos = innen;
         continue;
       }
       if (e.ende > bis) return false;
+      // Ein Segment gibt es nur auf oberster Ebene - verschachtelt öffnete es
+      // wieder Cluster ohne Länge (Zweitreview TEAM-005).
+      if (e.id === EBML.segment && eltern !== 0) return false;
       if (e.id === EBML.trackType) {
         let typ = 0;
         for (let i = e.daten; i < e.ende; i += 1) typ = typ * 256 + bytes[i]!;
-        if (typ === 1) bildspuren += 1;
-        else ohneTon = false;
+        if (typ === 1) spuren.bild += 1;
+        else if (typ === 2) spuren.ton += 1;
+        else spuren.andere += 1;
       }
       if (ZU_LEEREN.has(e.id)) bytes.fill(0, e.daten, e.ende);
       if (ZU_VOID.has(e.id)) {
         if (!zuVoid(bytes, e)) return false;
-      } else if (BEHAELTER.has(e.id) && !bereich(e.daten, e.ende, tiefe + 1)) {
+      } else if (BEHAELTER.has(e.id) && !bereich(e.daten, e.ende, tiefe + 1, e.id)) {
         return false;
       }
       pos = e.ende;
@@ -170,9 +194,8 @@ function bereinigeWebm(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
   }
 
   const kopf = element(bytes, 0);
-  if (!kopf || kopf.id !== EBML.header) return { ok: false, ohneTon: false };
-  const ok = bereich(0, bytes.length) && bildspuren > 0;
-  return { ok, ohneTon };
+  if (!kopf || kopf.id !== EBML.header) return { ok: false, ...spuren };
+  return { ok: bereich(0, bytes.length), ...spuren };
 }
 
 // -----------------------------------------------------------------------------
@@ -183,12 +206,11 @@ const MP4_BEHAELTER = new Set(['moov', 'trak', 'mdia', 'minf', 'moof', 'traf', '
 const MP4_ZEITEN = new Set(['mvhd', 'tkhd', 'mdhd']);
 const MP4_ZU_FREE = new Set(['udta', 'meta', 'uuid', 'ilst', 'XMP_', 'prft']);
 
-function bereinigeMp4(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
+function bereinigeMp4(bytes: Uint8Array): Spuren {
   const ansicht = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  let ohneTon = true;
-  let bildspuren = 0;
+  const spuren = { bild: 0, ton: 0, andere: 0 };
   if (bytes.length < 12 || String.fromCharCode(...bytes.slice(4, 8)) !== 'ftyp') {
-    return { ok: false, ohneTon: false };
+    return { ok: false, ...spuren };
   }
 
   function bereich(von: number, bis: number, eltern: string, tiefe = 0): boolean {
@@ -220,8 +242,9 @@ function bereinigeMp4(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
         }
         if (typ === 'hdlr' && eltern === 'mdia') {
           const art = String.fromCharCode(...bytes.slice(inhalt + 8, inhalt + 12));
-          if (art === 'vide') bildspuren += 1;
-          else ohneTon = false;
+          if (art === 'vide') spuren.bild += 1;
+          else if (art === 'soun') spuren.ton += 1;
+          else spuren.andere += 1;
         }
         if (MP4_BEHAELTER.has(typ) && !bereich(inhalt, ende, typ, tiefe + 1)) return false;
       }
@@ -230,8 +253,7 @@ function bereinigeMp4(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
     return pos === bis;
   }
 
-  const ok = bereich(0, bytes.length, '') && bildspuren > 0;
-  return { ok, ohneTon };
+  return { ok: bereich(0, bytes.length, ''), ...spuren };
 }
 
 // -----------------------------------------------------------------------------
@@ -255,8 +277,32 @@ export async function bereinigeVideo(aufnahme: Blob): Promise<Videoergebnis> {
   const typ = videotyp(aufnahme.type);
   if (!typ) return { ok: false, grund: 'format' };
   const bytes = await alleBytes(aufnahme);
-  const ergebnis = typ === 'video/webm' ? bereinigeWebm(bytes) : bereinigeMp4(bytes);
-  if (!ergebnis.ok) return { ok: false, grund: 'format' };
-  if (!ergebnis.ohneTon) return { ok: false, grund: 'ton' };
+  const spuren = typ === 'video/webm' ? bereinigeWebm(bytes) : bereinigeMp4(bytes);
+  if (!spuren.ok || spuren.bild === 0) return { ok: false, grund: 'format' };
+  if (spuren.ton + spuren.andere > 0) return { ok: false, grund: 'ton' };
   return { ok: true, video: new Blob([bytes as BlobPart], { type: typ }) };
+}
+
+/** Der Typ ohne Codec-Angabe: `audio/webm;codecs=opus` → `audio/webm`. */
+export function tontyp(mime: string): 'audio/webm' | 'audio/mp4' | null {
+  const basis = mime.split(';')[0]!.trim().toLowerCase();
+  return basis === 'audio/webm' || basis === 'audio/mp4' ? basis : null;
+}
+
+export type Tonergebnis = { ok: true; ton: Blob } | { ok: false; grund: 'format' | 'bild' };
+
+/**
+ * Eine Sprachnachricht (TEAM-004, ADR-017 Punkt 84): Programm- und Zeitangaben
+ * leeren wie beim Video und prüfen, dass nur Ton aufgenommen ist - eine
+ * Bildspur oder eine andere Spur heißt nicht senden. Liefert ein neues Blob
+ * mit dem Typ ohne Codec-Angabe.
+ */
+export async function bereinigeTon(aufnahme: Blob): Promise<Tonergebnis> {
+  const typ = tontyp(aufnahme.type);
+  if (!typ) return { ok: false, grund: 'format' };
+  const bytes = await alleBytes(aufnahme);
+  const spuren = typ === 'audio/webm' ? bereinigeWebm(bytes) : bereinigeMp4(bytes);
+  if (!spuren.ok || spuren.ton === 0) return { ok: false, grund: 'format' };
+  if (spuren.bild + spuren.andere > 0) return { ok: false, grund: 'bild' };
+  return { ok: true, ton: new Blob([bytes as BlobPart], { type: typ }) };
 }

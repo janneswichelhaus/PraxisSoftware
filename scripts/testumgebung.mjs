@@ -257,10 +257,13 @@ export function inhaltsrichtlinie(supabaseUrl, { kartendienst = false } = {}) {
  * Permissions-Policy der Test-Umgebung (ADR-017 Punkt 33).
  *
  * `camera=(self)` statt `camera=()`: Der Kameradialog nimmt Fotos für die Akte
- * auf, damit sie nicht in der Mediathek des Handys landen (DOK-006). Nur die
- * eigene Herkunft - kein eingebetteter Rahmen, kein fremder Ursprung.
+ * auf, damit sie nicht in der Mediathek des Handys landen (DOK-006).
+ * `microphone=(self)` seit TEAM-004 (ADR-017 Fassung 9, Punkt 83):
+ * Sprachnachrichten im Teamchat. Das Diktat bietet die Seite weiter nur an,
+ * wenn der Gateway es meldet. Beides nur für die eigene Herkunft - kein
+ * eingebetteter Rahmen, kein fremder Ursprung.
  */
-export const BERECHTIGUNGSRICHTLINIE = 'camera=(self), microphone=(), payment=(), usb=()';
+export const BERECHTIGUNGSRICHTLINIE = 'camera=(self), microphone=(self), payment=(), usb=()';
 
 /**
  * Die `.htaccess` der Test-Umgebung.
@@ -286,9 +289,10 @@ export function htaccess({ supabaseUrl, tuerDatei, kartendienst = false }) {
     'Header always set X-Content-Type-Options "nosniff"',
     'Header always set Referrer-Policy "no-referrer"',
     'Header always set X-Frame-Options "DENY"',
-    // ADR-017 Punkt 33 (Fassung 2): Die Kamera nur für die eigene Herkunft -
-    // der Kameradialog aus DOK-006. Mikrofon, Zahlung und USB bleiben zu; ein
-    // Test prüft den ganzen Wert, damit die Kopfzeile nicht weiter aufgeht.
+    // ADR-017 Punkt 33 (Fassungen 2 und 9): Kamera und Mikrofon nur für die
+    // eigene Herkunft - der Kameradialog aus DOK-006, die Sprachnachricht aus
+    // TEAM-004. Zahlung und USB bleiben zu; ein Test prüft den ganzen Wert,
+    // damit die Kopfzeile nicht weiter aufgeht.
     `Header always set Permissions-Policy "${BERECHTIGUNGSRICHTLINIE}"`,
     'Header always set Strict-Transport-Security "max-age=31536000"',
     `Header always set Content-Security-Policy "${inhaltsrichtlinie(supabaseUrl, { kartendienst })}"`,

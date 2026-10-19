@@ -15,7 +15,7 @@ import {
   kanalTitel,
   ohneInhalt,
 } from './api';
-import { ohneFormatierung } from './formatierung';
+import { vorschau } from './formatierung';
 import { TEAMCHAT, THREADS, threadPfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
@@ -70,7 +70,7 @@ export function ThreadsPage() {
                 gedaempft={t.new_replies === 0}
                 titel={
                   <span className="line-clamp-2">
-                    {t.body === null ? ohneInhalt(t) : ohneFormatierung(t.body)}
+                    {t.body === null ? ohneInhalt(t) : vorschau(t.body)}
                   </span>
                 }
                 meta={`${titel(t.channel_id)} · ${t.reply_count === 1 ? '1 Antwort' : `${t.reply_count} Antworten`}${

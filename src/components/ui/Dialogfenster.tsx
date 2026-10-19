@@ -65,7 +65,10 @@ export function Dialogfenster({
    * füllt den Rest und ordnet sich selbst; das Fenster scrollt nicht.
    */
   vollbild?: boolean;
-  /** Im Vollbild eine Zeile unter dem Titel: worum es geht, etwa das Rad (DESIGN.md Regel 6). */
+  /**
+   * Eine Zeile unter dem Titel: worum es geht, etwa das Rad (DESIGN.md
+   * Regel 6) - im Vollbild in der Kopfzeile, sonst unter der Überschrift.
+   */
   beschreibung?: string | undefined;
   /** Name des Schließen-Knopfs im Vollbild, etwa „Check-Up abbrechen". */
   schliessenBeschriftung?: string;
@@ -272,6 +275,7 @@ export function Dialogfenster({
         <h2 id={titelId} className="text-ink text-h4 sm:text-h3 font-bold">
           {titel}
         </h2>
+        {beschreibung ? <p className="text-ink-muted mt-1 text-sm">{beschreibung}</p> : null}
         <div className="mt-3">{children}</div>
       </div>
     </div>,

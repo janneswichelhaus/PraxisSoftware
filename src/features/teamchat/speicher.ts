@@ -1,11 +1,12 @@
 import { ordneKanaele, type Kanal } from './api';
+import { anhaengeLeeren } from './entwurfsanhaenge';
 import { ausgangLeeren } from './ausgang';
 import { entwuerfeLeeren } from './entwuerfe';
 import { scrollstaendeLeeren } from './scrollstand';
 import { sucheLeeren } from './suche';
 
 /**
- * Alles, was der Teamchat im Arbeitsspeicher hält - Entwürfe, Ausgang,
+ * Alles, was der Teamchat im Arbeitsspeicher hält - Entwürfe mit Anhängen, Ausgang,
  * Scrollstände, die letzte Suche, das zuletzt offene Gespräch -, fällt beim
  * Abmelden und beim Kontowechsel (`SessionProvider`, wie der
  * Abfragespeicher). Bis TEAM-001 blieb ein Entwurf stehen und erschien im
@@ -13,7 +14,10 @@ import { sucheLeeren } from './suche';
  */
 export function teamchatLeeren(): void {
   entwuerfeLeeren();
+  // Erst der Ausgang: Fielen zuerst die Anhänge, versuchte eine wartende
+  // Nachricht noch zu senden - unter der nächsten Sitzung (Zweitreview TEAM-005).
   ausgangLeeren();
+  anhaengeLeeren();
   scrollstaendeLeeren();
   sucheLeeren();
   zuletzt = null;

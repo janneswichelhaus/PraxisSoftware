@@ -13,7 +13,9 @@ import { useState, type ReactNode } from 'react';
  *     dürfen den Rahmen füllen (`fuellen`).
  *   * **Platzhalter:** ohne Bild, oder wenn es nicht lädt, eine vertiefte
  *     Fläche mit einem Bildzeichen und `platzhalter` als Text („Noch kein
- *     Bild“) - nie ein zerbrochenes Bildsymbol des Browsers.
+ *     Bild“) - nie ein zerbrochenes Bildsymbol des Browsers. `zeichen`
+ *     ersetzt das Bildzeichen, wo der Platz kein Bild meint, etwa ein PDF
+ *     im Teamchat (TEAM-003).
  *   * **Beschreibung ist Pflicht** (`alt`): Was zeigt das Bild? Ein leerer
  *     Text nur, wenn das Bild daneben schon in Worten steht.
  *   * Statt `src` darf ein gezeichnetes SVG als `children` kommen (die
@@ -31,6 +33,7 @@ export function Medienbild({
   einpassen = 'ganz',
   vorschau = false,
   platzhalter = 'Noch kein Bild',
+  zeichen,
   beschriftung,
   className = '',
   children,
@@ -41,6 +44,8 @@ export function Medienbild({
   einpassen?: 'ganz' | 'fuellen';
   vorschau?: boolean;
   platzhalter?: string;
+  /** Ein eigenes Zeichen im Platzhalter statt des Bildzeichens (SVG, füllt seinen Platz). */
+  zeichen?: ReactNode;
   beschriftung?: ReactNode;
   className?: string;
   /** Gezeichnetes Bild (SVG) statt `src`. */
@@ -86,20 +91,29 @@ export function Medienbild({
         aria-label={alt ? `${alt} - ${platzhalter}` : platzhalter}
         className="bg-surface-sunken text-ink-muted flex size-full flex-col items-center justify-center gap-1 text-sm"
       >
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className={vorschau ? 'size-6' : 'size-8'}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <circle cx="9" cy="10" r="1.75" />
-          <path d="m21 16-5-5-8 8" />
-        </svg>
+        {zeichen ? (
+          <span
+            aria-hidden="true"
+            className={`${vorschau ? 'size-6' : 'size-8'} [&>svg]:size-full`}
+          >
+            {zeichen}
+          </span>
+        ) : (
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            className={vorschau ? 'size-6' : 'size-8'}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <circle cx="9" cy="10" r="1.75" />
+            <path d="m21 16-5-5-8 8" />
+          </svg>
+        )}
         {vorschau ? null : <span aria-hidden="true">{platzhalter}</span>}
       </span>
     );

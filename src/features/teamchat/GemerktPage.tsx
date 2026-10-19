@@ -19,7 +19,7 @@ import {
   fetchKanaele,
   kanalTitel,
 } from './api';
-import { ohneFormatierung } from './formatierung';
+import { vorschau } from './formatierung';
 import { GEMERKT, TEAMCHAT, stellePfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
@@ -93,7 +93,7 @@ export function GemerktPage() {
               key={g.id}
               to={mitRueckweg(stellePfad({ id: g.channel_id, kind: g.channel_kind }, g), GEMERKT)}
               gedaempft={g.done}
-              titel={<span className="line-clamp-2">{ohneFormatierung(g.body)}</span>}
+              titel={<span className="line-clamp-2">{vorschau(g.body)}</span>}
               meta={[
                 // Die Erinnerung steht in der Nebenzeile, nicht rechts neben
                 // dem Text - so bleibt er bei 375 px lesbar.

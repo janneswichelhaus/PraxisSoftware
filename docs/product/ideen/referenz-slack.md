@@ -42,12 +42,12 @@ Entscheidung, die ihn aufheben würde.
 | Lesezeichen/Reiter | je Gespräch (S) | nein | nein | ADR-014; Anheften und Beschreibung genügen |
 | Abschnitte, Favoriten | eigene Abschnitte bezahlt, Stern (S) | nein | Favoriten oben | eigene Abschnitte nein (ADR-014) |
 | Stummschalten, Stufen | alle/Erwähnungen/stumm (N) | nein | ja, je Gespräch | – |
-| Benachrichtigung | Push, Mail, Nicht stören (S) | Liste in der App | Zähler am Bereich, „Für dich“, Erinnerungen | **Push/Mail: ADR-024 nimmt die Teamkommunikation aus; sein Grund (W4, §20) spricht dagegen** – Entscheidung Jannes, eigener ADR |
+| Benachrichtigung | Push, Mail, Nicht stören (S) | Liste in der App | Zähler am Bereich, „Für dich“, Erinnerungen | **Push/Mail: ADR-024 nimmt die Teamkommunikation aus; sein Grund (W4, §20) spricht dagegen** – Jannes 2026-10-18: so lassen, bei Bedarf eigener ADR (ANN-647) |
 | Aktivität | Erwähnungen, Threads, Reaktionen (S) | Erwähnungen, Antworten | + Erinnerungen | Reaktionen nicht (ANN-644, §20) |
 | Präsenz, Tippen, „gesehen“ | automatisch (S) | nein | nein | §20, ANN-609 – bewusst nie |
-| Dateien, Anhänge | hochladen, Vorschau (S) | nein | **nein** | **Konflikt: §10 nennt „Anhängen“ (Rang 1); ADR-017 Punkte 30/42 geben Teamchat-Anhänge nicht frei** – Entscheidung Jannes: ADR-017 um einen Abschnitt ergänzen |
+| Dateien, Anhänge | hochladen, Vorschau (S) | nein | Fotos (JPEG, PNG) und PDF, bis fünf je Nachricht, auch ohne Text; „Dateien“ in den Details | ADR-017 Abschnitt M (Fassung 8, Jannes 2026-10-18), ohne Virenprüfung (Fassung 7); kein Vorschaubild in der Zeile, kein Herunterladen (Punkt 77) – TEAM-003 |
 | Huddles | Audio/Video live (S) | nein | nein | neuer Anbieter für Medien (ADR-002), Beschäftigtendaten (§20) – eigener ADR nötig |
-| Clips | Sprach-/Videonachricht (S) | nein | nein | Audio/Video nicht freigegeben (ADR-017 P. 42), Stimme im Hintergrund – Entscheidung mit Dateien |
+| Clips | Sprach-/Videonachricht (S) | nein | Sprachnachricht bis zwei Minuten, in der App aufgenommen, abspielen ohne Herunterladen | Video nein; keine Transkription – Jannes 2026-10-18: Sprachnachrichten ja (ADR-017 Abschnitt N, Fassung 9), TEAM-004 |
 | Canvas | Dokument im Kanal (S) | nein | nein | Kanalbeschreibung und Angeheftetes genügen; ein Dokument neben der Akte (ADR-016) – nur auf Auftrag |
 | Listen | Aufgaben mit Feldern (S) | nein | „Als Aufgabe“ in die Offenen Punkte | §10: Dauerhaftes in den Fachprozess; Listen doppeln die Aufgaben |
 | Workflows | Auslöser, Formulare (S) | nein | nein | ADR-014; Formulare und Webhooks wären externe Datenflüsse (ADR-002) |
@@ -62,6 +62,6 @@ Entscheidung, die ihn aufheben würde.
 | E1 Lesen und Zustellen | Lesestand je Thread, gelesen bis Gezeigtes, Gerätekennung, Cursor, Entwürfe je Konto, Scrollstand | – | TEAM-002 |
 | E2 Chatfläche | Desktop: Gespräche, Gespräch, Threadspalte; mobil: Wechsel, Eingabe über der Tastatur; Zähler am Bereich | E1 | TEAM-002 |
 | E3 Slack-Kern | private Kanäle, Gruppen, auch im Kanal, Planen, Reaktionen, Formatierung, Anheften, Für später, Stufen, Favoriten, @alle, Suche mit Filtern, Als Aufgabe | E1, E2 | TEAM-002 |
-| E4 Dateien | Anhänge, Dateien je Gespräch, Clips | Entscheidung ADR-017 | offen |
-| E5 Benachrichtigung außerhalb der App | Push, Mail, Ruhezeiten | eigener ADR (ADR-024 nimmt den Teamchat aus) | offen |
-| E6 Weiteres | Huddles, KI, Canvas, Workflows, Apps | eigener ADR je Thema | offen |
+| E4 Dateien | Anhänge, Dateien je Gespräch, Clips | Entscheidung ADR-017; ohne Virenprüfung (Fassung 7) | TEAM-003 (ADR-017 Abschnitt M); Sprachnachrichten TEAM-004 (Abschnitt N), Senden während des Hochladens TEAM-005; Video bleibt aus |
+| E5 Benachrichtigung außerhalb der App | Push, Mail, Ruhezeiten | eigener ADR (ADR-024 nimmt den Teamchat aus) | zurückgestellt (Jannes, 2026-10-18): erst bei Bedarf aus dem Alltag (ANN-647) |
+| E6 Weiteres | Huddles, KI, Canvas, Workflows, Apps | eigener ADR je Thema | zurückgestellt (Jannes, 2026-10-18): je Thema erst bei konkretem Bedarf |

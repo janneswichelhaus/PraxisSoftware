@@ -212,6 +212,54 @@ describe('Instanz', () => {
     });
   });
 
+  it('ruft für einen Anhang im Teamchat die Funktionen des Teamchats, ein PDF ohne Metadatenfrage (TEAM-003)', async () => {
+    const f = abruf(
+      Response.json([
+        {
+          bucket_id: 'teamchat',
+          object_key: 'a/b/c',
+          mime_type: 'application/pdf',
+          byte_size: '99',
+          checksum_sha256: 'e'.repeat(64),
+          already_verified: false,
+        },
+      ]),
+    );
+    const ankuendigung = await erstelleInstanz(EINRICHTUNG, f).ankuendigung(
+      DATEI,
+      PERSON,
+      'teamanhang',
+    );
+    expect(ankuendigung.ok && ankuendigung.wert).toMatchObject({
+      bucket_id: 'teamchat',
+      byte_size: 99,
+    });
+    expect(f.mock.calls[0]![0]).toBe(
+      'http://127.0.0.1:54321/rest/v1/rpc/team_attachment_for_verification',
+    );
+    expect(JSON.parse(f.mock.calls[0]![1]?.body as string)).toEqual({
+      p_attachment_id: DATEI,
+      p_user_id: PERSON,
+    });
+
+    const g = abruf(Response.json('rejected'));
+    const ergebnis = await erstelleInstanz(EINRICHTUNG, g).eintragen(
+      DATEI,
+      { content_type_ok: false, checksum_ok: true, metadata_ok: null },
+      'teamanhang',
+    );
+    expect(ergebnis).toEqual({ ok: true, wert: 'rejected' });
+    expect(g.mock.calls[0]![0]).toBe(
+      'http://127.0.0.1:54321/rest/v1/rpc/record_team_attachment_verification',
+    );
+    expect(JSON.parse(g.mock.calls[0]![1]?.body as string)).toEqual({
+      p_attachment_id: DATEI,
+      p_content_type_ok: false,
+      p_checksum_ok: true,
+      p_metadata_ok: null,
+    });
+  });
+
   it('macht beim Foto am Rad aus einer fehlenden Metadatenantwort einen Befund', async () => {
     const f = abruf(Response.json('rejected'));
     await erstelleInstanz(EINRICHTUNG, f).eintragen(

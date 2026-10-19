@@ -289,7 +289,7 @@ describe('Aufnahme: Hilfen', () => {
       // Ohne Schnittstelle (Firefox, Safari, jsdom): Es bleibt beim Browser.
       expect(mikrofonErlaubt()).toBe(true);
 
-      // Die Test-Umgebung: `microphone=()`.
+      // Eine Policy mit `microphone=()` (bis ADR-017 Fassung 9 die Test-Umgebung).
       setze('featurePolicy', { allowsFeature: (f: string) => f !== 'microphone' });
       expect(mikrofonErlaubt()).toBe(false);
 

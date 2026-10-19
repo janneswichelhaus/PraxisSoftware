@@ -221,6 +221,9 @@ describe('Schema-Invarianten', () => {
       'team_messages',
       'team_message_mentions',
       'team_read_states',
+      // TEAM-003: Anhänge im Teamchat und ihre einmaligen Lesefreigaben.
+      'team_message_attachments',
+      'team_attachment_access_grants',
       // ERN-001: Ernährungsprofil, Einwilligung und Gewicht.
       'nutrition_profiles',
       'nutrition_consent_records',

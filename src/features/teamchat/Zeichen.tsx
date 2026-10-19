@@ -71,3 +71,34 @@ export function Kreuz({ className = 'size-5 shrink-0' }: { className?: string })
     </svg>
   );
 }
+
+/** Anhängen (TEAM-003). */
+export function Bueroklammer({ className = 'size-5 shrink-0' }: { className?: string }) {
+  return (
+    <svg {...strich} className={className}>
+      <path d="M14.5 9.5 9.6 14.4a3 3 0 0 1-4.2-4.2l5.7-5.7a2 2 0 0 1 2.8 2.8l-5.6 5.6a1 1 0 0 1-1.4-1.4l4.9-4.9" />
+    </svg>
+  );
+}
+
+/** Ein Foto als Anhang (TEAM-003). */
+export function Bildzeichen({ className = 'size-5 shrink-0' }: { className?: string }) {
+  return (
+    <svg {...strich} className={className}>
+      <rect x="3" y="4.5" width="14" height="11" rx="1.5" />
+      <circle cx="7.5" cy="8.5" r="1.25" />
+      <path d="m16.5 13-4-4-6.5 6.5" />
+    </svg>
+  );
+}
+
+/** Ein PDF als Anhang (TEAM-003). */
+export function Dokument({ className = 'size-5 shrink-0' }: { className?: string }) {
+  return (
+    <svg {...strich} className={className}>
+      <path d="M11.5 3H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6.5z" />
+      <path d="M11.5 3v3.5H15" />
+      <path d="M7.5 10.5h5M7.5 13h3.5" />
+    </svg>
+  );
+}

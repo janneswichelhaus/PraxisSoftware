@@ -67,8 +67,21 @@ export function Dateiansicht({
  * nie ein Dokument, das Skripte der Anwendung ausführen könnte. Die
  * Content-Security-Policy erlaubt dafür nur `frame-src blob:`. Zeigt ein Gerät
  * das PDF nicht vollständig, bleibt „Herunterladen" (Punkt 55).
+ *
+ * `ohneLeiste` blendet die Leiste des Betrachters mit Herunterladen und
+ * Drucken aus (`#toolbar=0`) - wie `controlsList="nodownload"` an einem
+ * Video: Die Anwendung bietet es dort nicht an, wo es kein Herunterladen gibt
+ * (ADR-017 Punkt 77). Eine Sperre ist das nicht; die Bytes liegen im Browser.
  */
-export function PdfRahmen({ daten, titel }: { daten: Blob; titel: string }) {
+export function PdfRahmen({
+  daten,
+  titel,
+  ohneLeiste = false,
+}: {
+  daten: Blob;
+  titel: string;
+  ohneLeiste?: boolean;
+}) {
   const [adresse, setAdresse] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,7 +92,7 @@ export function PdfRahmen({ daten, titel }: { daten: Blob; titel: string }) {
 
   return adresse ? (
     <iframe
-      src={adresse}
+      src={ohneLeiste ? `${adresse}#toolbar=0` : adresse}
       title={titel}
       className="border-line rounded-image max-w-spalte block h-[70vh] w-full border bg-white"
     />
