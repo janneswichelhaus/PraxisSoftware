@@ -620,3 +620,115 @@ describe('Profilbild (TEAM-007)', () => {
     expect(await anzahl('select count(*) n from public.audit_log')).toBe(vorher);
   });
 });
+
+describe('Bilder in den Listen (TEAM-008)', () => {
+  const SENDEN =
+    'select public.post_team_message($1::uuid, $2::uuid, $3, $4::uuid[], null, false, false, null) as id';
+  const LISTEN = {
+    aktivitaet: 'select * from public.list_team_activity()',
+    threads: 'select * from public.list_team_threads()',
+    suche: 'select * from public.search_team_messages($1)',
+    angeheftet: 'select * from public.list_team_pins($1)',
+    gemerkt: 'select * from public.list_team_saved()',
+  };
+
+  interface Eintrag {
+    id: string;
+    author_staff_member_id: string | null;
+    author_name: string | null;
+  }
+
+  async function allgemein(): Promise<string> {
+    const { rows } = await asUser<{ id: string; name: string | null }>(
+      users.therapist,
+      'select * from public.list_team_channels()',
+    );
+    return rows.find((k) => k.name === 'Allgemein')!.id;
+  }
+
+  async function senden(
+    konto: string,
+    kanalId: string,
+    text: string,
+    parent: string | null = null,
+    erwaehnt: string[] = [],
+  ): Promise<string> {
+    const { rows } = await asUserCommitted<{ id: string }>(konto, SENDEN, [
+      kanalId,
+      parent,
+      text,
+      erwaehnt,
+    ]);
+    return rows[0]!.id;
+  }
+
+  async function eintrag(konto: string, sql: string, id: string, params: unknown[] = []) {
+    const { rows } = await asUser<Eintrag>(konto, sql, params);
+    const treffer = rows.find((z) => z.id === id);
+    if (!treffer) throw new Error(`${sql}: ${id} fehlt`);
+    return { kennung: treffer.author_staff_member_id, name: treffer.author_name };
+  }
+
+  it('nennt in allen fünf Listen die Verfasser:in neben dem Namen', async () => {
+    const kanalId = await allgemein();
+    const frage = await senden(users.office, kanalId, 'Wer hat den Schlüssel?', null, [STAFF.anna]);
+    const antwort = await senden(users.therapist, kanalId, 'Liegt im Fach', frage);
+    await asUserCommitted(users.therapist, 'select public.set_team_message_pinned($1, true)', [
+      frage,
+    ]);
+    await asUserCommitted(users.therapist, 'select public.save_team_message($1, null)', [frage]);
+
+    const olivia = { kennung: STAFF.olivia, name: 'Olivia Office' };
+    const anna = { kennung: STAFF.anna, name: 'Anna Beispiel' };
+    expect(await eintrag(users.therapist, LISTEN.aktivitaet, frage)).toEqual(olivia);
+    expect(await eintrag(users.office, LISTEN.aktivitaet, antwort)).toEqual(anna);
+    expect(await eintrag(users.office, LISTEN.threads, frage)).toEqual(olivia);
+    expect(await eintrag(users.therapist, LISTEN.suche, frage, ['Schlüssel'])).toEqual(olivia);
+    expect(await eintrag(users.therapist, LISTEN.angeheftet, frage, [kanalId])).toEqual(olivia);
+    expect(await eintrag(users.therapist, LISTEN.gemerkt, frage)).toEqual(olivia);
+  });
+
+  it('nennt an einer entfernten Ausgangsnachricht niemanden', async () => {
+    const kanalId = await allgemein();
+    const frage = await senden(users.office, kanalId, 'Versehentlich ein Name');
+    await senden(users.therapist, kanalId, 'Antwort', frage);
+    await asUserCommitted(users.ownerTherapist, 'select public.delete_team_message($1)', [frage]);
+    expect(await eintrag(users.office, LISTEN.threads, frage)).toEqual({
+      kennung: null,
+      name: null,
+    });
+  });
+
+  it('lässt die Rechte der fünf Listen, wie sie waren', async () => {
+    const kanalId = await allgemein();
+    await senden(users.office, kanalId, 'Nur für die Praxis');
+    await fremdeOrganisation();
+    for (const konto of [users.patientMax, users.plattformTina, null]) {
+      expect((await fehler(konto, LISTEN.aktivitaet))?.code).toBe('42501');
+      expect((await fehler(konto, LISTEN.suche, ['Praxis']))?.code).toBe('42501');
+    }
+    expect((await asUser(FREMDE_ORGANISATION.owner, LISTEN.suche, ['Praxis'])).rows).toEqual([]);
+    expect((await fehler(FREMDE_ORGANISATION.owner, LISTEN.angeheftet, [kanalId]))?.code).toBe(
+      'P0002',
+    );
+    await expect(asAnon(LISTEN.aktivitaet)).rejects.toThrow(/permission denied/i);
+    const { rows } = await asPostgres<{ name: string; anon: boolean; angemeldet: boolean }>(
+      `select p.proname as name, has_function_privilege('anon', p.oid, 'EXECUTE') as anon,
+              has_function_privilege('authenticated', p.oid, 'EXECUTE') as angemeldet
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.prosecdef and 'search_path=""' = any (p.proconfig)
+         and p.proname in ('search_team_messages', 'list_team_activity', 'list_team_threads',
+                           'list_team_pins', 'list_team_saved')
+       order by 1`,
+    );
+    expect(rows).toEqual(
+      [
+        'list_team_activity',
+        'list_team_pins',
+        'list_team_saved',
+        'list_team_threads',
+        'search_team_messages',
+      ].map((name) => ({ name, anon: false, angemeldet: true })),
+    );
+  });
+});

@@ -153,6 +153,8 @@ const trefferSchema = z.object({
   channel_id: z.string(),
   channel_kind: artSchema,
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),
@@ -164,6 +166,8 @@ const aktivitaetSchema = z.object({
   channel_id: z.string(),
   channel_kind: artSchema,
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),
@@ -176,6 +180,8 @@ const threadSchema = z.object({
   id: z.string(),
   channel_id: z.string(),
   channel_kind: artSchema,
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string().nullable(),
   removed_kind: z.enum(['author', 'owner', 'retention']).nullable(),
@@ -190,6 +196,8 @@ const gemerktSchema = z.object({
   channel_id: z.string(),
   channel_kind: artSchema,
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),
@@ -211,6 +219,8 @@ export type Geplant = z.infer<typeof geplantSchema>;
 const angeheftetSchema = z.object({
   id: z.string(),
   parent_id: z.string().nullable(),
+  /** TEAM-008: für Bild und Farbe vor dem Eintrag; leer, wenn entfernt. */
+  author_staff_member_id: z.string().nullable().default(null),
   author_name: z.string().nullable(),
   body: z.string(),
   created_at: z.string(),

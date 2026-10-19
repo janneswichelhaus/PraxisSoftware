@@ -36,7 +36,7 @@ import {
 import { DateienDesGespraechs } from './Anhaenge';
 import { vorschau } from './formatierung';
 import { TEAMCHAT, stellePfad } from './pfade';
-import { NameMitBild, Teambild } from './Teambild';
+import { NameMitBild, Teambild, Verfasserbild } from './Teambild';
 import { nachrichtenzeit } from './zeit';
 
 const ARTEN: Record<Kanal['kind'], string> = {
@@ -143,6 +143,13 @@ export function Details({
                 <ListRow
                   key={a.id}
                   dicht
+                  bild={
+                    <Verfasserbild
+                      staffMemberId={a.author_staff_member_id}
+                      name={a.author_name}
+                      groesse="klein"
+                    />
+                  }
                   titel={vorschau(a.body)}
                   meta={`${a.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(a.created_at, zeitzone)}`}
                   onClick={() => {

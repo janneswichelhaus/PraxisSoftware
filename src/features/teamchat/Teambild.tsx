@@ -37,3 +37,28 @@ export function NameMitBild({ staffMemberId, name }: { staffMemberId: string; na
     </span>
   );
 }
+
+/**
+ * Bild vor einem Eintrag einer Liste (TEAM-008): wer die Nachricht
+ * geschrieben hat. Ist sie entfernt, steht niemand da - der Platz bleibt,
+ * damit die Zeilen untereinander stehen.
+ */
+export function Verfasserbild({
+  staffMemberId,
+  name,
+  groesse = 'zeile',
+}: {
+  staffMemberId: string | null;
+  name: string | null;
+  groesse?: 'klein' | 'zeile';
+}) {
+  if (!staffMemberId) {
+    return (
+      <span
+        aria-hidden="true"
+        className={`${groesse === 'klein' ? 'size-6' : 'size-9'} shrink-0`}
+      />
+    );
+  }
+  return <Teambild staffMemberId={staffMemberId} name={name} groesse={groesse} />;
+}

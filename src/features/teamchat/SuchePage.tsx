@@ -28,6 +28,7 @@ import { SUCHE, TEAMCHAT, stellePfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
 import { LEERE_SUCHE, sucheMoeglich, sucheSetzen, useSuche } from './suche';
+import { Verfasserbild } from './Teambild';
 import { nachrichtenzeit } from './zeit';
 
 /**
@@ -154,6 +155,12 @@ export function SuchePage() {
                       stellePfad({ id: t.channel_id, kind: t.channel_kind }, t),
                       SUCHE,
                     )}
+                    bild={
+                      <Verfasserbild
+                        staffMemberId={t.author_staff_member_id}
+                        name={t.author_name}
+                      />
+                    }
                     titel={<span className="line-clamp-2">{vorschau(t.body)}</span>}
                     meta={`${titel(t.channel_id)} · ${t.author_name ?? 'Ehemaliges Teammitglied'} · ${nachrichtenzeit(
                       t.created_at,

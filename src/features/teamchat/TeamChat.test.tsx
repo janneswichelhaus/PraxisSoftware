@@ -456,6 +456,132 @@ describe('Teamchat: Bild und Farbe je Person (TEAM-006)', () => {
   });
 });
 
+describe('Teamchat: Bilder in den Listen (TEAM-008)', () => {
+  /** Das Bild in der Zeile, die den Text trägt. */
+  function bildIn(zeile: HTMLElement) {
+    return zeile.querySelector('[data-personenbild]');
+  }
+
+  it('setzt in „Für dich“ vor Erinnerung und Erwähnung das Bild der Person, die schrieb', async () => {
+    api.fetchGemerkt.mockResolvedValue([
+      {
+        id: 'g1',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_staff_member_id: TIM,
+        author_name: 'Tim Teamleitung',
+        body: 'Belege bis Freitag',
+        created_at: '2026-10-17T07:00:00Z',
+        remind_at: '2026-10-18T06:00:00Z',
+        done: false,
+        due: true,
+      },
+    ]);
+    api.fetchAktivitaet.mockResolvedValue([
+      {
+        id: 'antwort',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: 'wurzel',
+        author_staff_member_id: OLIVIA,
+        author_name: 'Olivia Office',
+        body: 'Rad 2 ist frei.',
+        created_at: '2026-10-17T07:00:00Z',
+        reason: 'mention',
+        unread: true,
+      },
+    ]);
+    zeige('/fuer-dich');
+    const erwaehnung = await screen.findByRole('link', { name: /Rad 2 ist frei/ });
+    await vi.waitFor(() => expect(bildIn(erwaehnung)).toHaveClass('bg-person-pflaume'));
+    expect(bildIn(erwaehnung)).toHaveTextContent('OO');
+    expect(bildIn(erwaehnung)).toHaveAttribute('aria-hidden', 'true');
+    const erinnerung = screen.getByRole('link', { name: /Belege bis Freitag/ });
+    expect(bildIn(erinnerung)).toHaveClass('bg-person-moos');
+  });
+
+  it('zeigt an Threads Bild und Namen der Person, die fragte - an entfernten niemanden', async () => {
+    api.fetchThreads.mockResolvedValue([
+      {
+        id: 'wurzel',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        author_staff_member_id: TIM,
+        author_name: 'Tim Teamleitung',
+        body: 'Kette Rad 3',
+        removed_kind: null,
+        reply_count: 3,
+        last_reply_at: '2026-10-17T07:00:00Z',
+        new_replies: 2,
+      },
+      {
+        id: 'weg',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        author_staff_member_id: null,
+        author_name: null,
+        body: null,
+        removed_kind: 'owner',
+        reply_count: 1,
+        last_reply_at: '2026-10-16T07:00:00Z',
+        new_replies: 0,
+      },
+    ]);
+    zeige('/team/threads');
+    const zeile = await screen.findByRole('link', { name: /Kette Rad 3/ });
+    expect(
+      within(zeile).getByText(/^# Planung · Tim Teamleitung · 3 Antworten/),
+    ).toBeInTheDocument();
+    await vi.waitFor(() => expect(bildIn(zeile)).toHaveTextContent('TT'));
+    const entfernt = screen.getByRole('link', { name: /entfernt/i });
+    expect(bildIn(entfernt)).toBeNull();
+    expect(within(entfernt).queryByText(/Ehemaliges Teammitglied/)).toBeNull();
+  });
+
+  it('zeigt Treffer der Suche und Gemerktes mit dem Bild der Person', async () => {
+    api.sucheNachrichten.mockResolvedValue([
+      {
+        id: 'treffer',
+        channel_id: 'k-planung',
+        channel_kind: 'channel',
+        parent_id: null,
+        author_staff_member_id: OLIVIA,
+        author_name: 'Olivia Office',
+        body: 'Schlüssel liegt im Büro.',
+        created_at: '2026-10-17T07:00:00Z',
+      },
+    ]);
+    const nutzer = userEvent.setup();
+    zeige('/team');
+    await screen.findByRole('heading', { name: 'Kanäle' });
+    await nutzer.type(
+      screen.getByRole('searchbox', { name: 'In Nachrichten suchen' }),
+      'Schlü{Enter}',
+    );
+    const treffer = await screen.findByRole('link', { name: /Schlüssel liegt im Büro/ });
+    await vi.waitFor(() => expect(bildIn(treffer)).toHaveClass('bg-person-pflaume'));
+  });
+
+  it('setzt vor Angeheftetes in den Details das kleine Bild', async () => {
+    api.fetchAngeheftet.mockResolvedValue([
+      {
+        id: 'n1',
+        parent_id: null,
+        author_staff_member_id: TIM,
+        author_name: 'Tim Teamleitung',
+        body: 'Schlüssel für Rad 3 im Büro',
+        created_at: '2026-10-17T07:00:00Z',
+      },
+    ]);
+    const nutzer = userEvent.setup();
+    zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    const zeile = await screen.findByRole('button', { name: /Schlüssel für Rad 3 im Büro/ });
+    await vi.waitFor(() => expect(bildIn(zeile)).toHaveClass('bg-person-moos', 'size-6'));
+  });
+});
+
 describe('Teamchat: Gespräch (ANN-640, ANN-641)', () => {
   it('markiert nur bis zur gezeigten Nachricht gelesen und zeigt kein „gelesen von“', async () => {
     api.fetchNachrichten.mockResolvedValue([
