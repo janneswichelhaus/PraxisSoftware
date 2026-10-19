@@ -41,6 +41,7 @@ import { Befundbogen } from './Befundbogen';
 import { Checkin, MeineAngaben } from './Checkin';
 import { Gewohnheiten } from './Gewohnheiten';
 import { Ernaehrung } from './Ernaehrung';
+import { EigenesLebensmittelAendern, EigenesLebensmittelNeu, Lebensmittel } from './Lebensmittel';
 import { zahl as zahlDeutsch } from '@/features/nutrition/texte';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
@@ -331,6 +332,41 @@ function Geruest({
               />
             }
           />
+          {/* ERN-EPIC-002: Lebensmittel nachschlagen und eigene anlegen. */}
+          <Route
+            path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Lebensmittel zugang={z} />}
+              />
+            }
+          />
+          {nurLesen ? null : (
+            <>
+              <Route
+                path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/neu`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <EigenesLebensmittelNeu zugang={z} />}
+                  />
+                }
+              />
+              <Route
+                path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel/:foodId`}
+                element={
+                  <MitZugang
+                    bereiche={lesbar}
+                    zugaenge={zugaenge}
+                    seite={(z) => <EigenesLebensmittelAendern zugang={z} />}
+                  />
+                }
+              />
+            </>
+          )}
           <Route
             path={`${PLATTFORM_PFAD}/angaben`}
             element={

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { SubNavEintrag } from '@/components/ui/SubNav';
 import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
+  canCounselNutrition,
   canManageAppointments,
   canReadExerciseLibrary,
   canReadPatientDirectory,
@@ -303,8 +304,8 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
   }
 
   // Bibliothek: Fachwissen der Praxis ohne Personenbezug - Übungen
-  // (UEB-EPIC-001), Instrumente (FRB-010, UX-008d) und Textbausteine (UX-008,
-  // nur wer dokumentiert).
+  // (UEB-EPIC-001), Instrumente (FRB-010, UX-008d), Textbausteine (UX-008,
+  // nur wer dokumentiert) und Lebensmittel (ERN-EPIC-002, nur die Beratung).
   const bibliothek: Ansicht[] = [
     ...(canReadExerciseLibrary(roles)
       ? [
@@ -319,6 +320,17 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     ...(behandlungsseite ? [{ to: '/praxis/instrumente', label: 'Instrumente' }] : []),
     ...(canWriteTreatmentNote(roles)
       ? [{ to: '/praxis/textbausteine', label: 'Textbausteine' }]
+      : []),
+    // ERN-EPIC-002: Lebensmittel nachschlagen und die der Praxis pflegen -
+    // allein die Fähigkeit „Ernährungsberatung“ (ADR-027 Punkt 4).
+    ...(canCounselNutrition(roles)
+      ? [
+          {
+            to: '/praxis/lebensmittel',
+            label: 'Lebensmittel',
+            stichworte: ['Nährwerte', 'Kalorien', 'Ernährung', 'BLS'],
+          },
+        ]
       : []),
   ];
   if (bibliothek.length > 0) {

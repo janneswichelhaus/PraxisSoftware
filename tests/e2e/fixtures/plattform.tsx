@@ -803,6 +803,7 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
   today: inTagen(0, 0).slice(0, 10),
   profile: {
     goal: 'lose',
+    own_foods: [],
     consent: {
       state: 'granted',
       source: 'practice',

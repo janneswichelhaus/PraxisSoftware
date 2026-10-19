@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-18.
+Zuletzt aktualisiert: 2026-10-19.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -6744,3 +6744,51 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.team_voice_max_seconds()`, `duration_seconds` (Migration TEAM-004), `aufnahmeName`.
 
 **Änderungspfad.** Dauer am Server lesen (`video.ts`) oder Größe je Sekunde begrenzen · Aufwand `mittel`.
+
+### ANN-656 — Lebensmittelkatalog als Bezugsdaten ohne Organisation
+
+Technik · offen · 2026-10-19 · — · — · Wiedervorlage: —
+
+**Annahme.** BLS und der Open-Food-Facts-Auszug liegen in `public.food_catalog` ohne `organization_id`: ein Nachschlagewerk ohne Personenbezug, gleich für jede Praxis. Eigene Lebensmittel von Praxis und Person tragen die Organisation (ERN-005). Kein Tabellenrecht; gelesen wird nur über die Suchfunktionen.
+
+**Begründung.** ADR-003 verlangt `organization_id` für fachliche Tabellen; ein öffentlicher Datensatz je Praxis zu kopieren hieße Hunderttausende Zeilen je Organisation.
+
+**Anker.** `public.food_catalog` (Migration ERN-004).
+
+**Änderungspfad.** Spalte `organization_id` ergänzen und je Praxis importieren · Aufwand `mittel`.
+
+### ANN-657 — Lizenzen der Lebensmitteldaten geprüft, Quellenangabe in der Anwendung
+
+Recht · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Rechtsberatung vor dem Start
+
+**Annahme.** BLS 4.0 steht seit 2025-12-16 unter CC BY 4.0 (Nennung des Max Rubner-Instituts mit DOI, Hinweis auf Änderungen); Open Food Facts unter ODbL 1.0 (Nennung, Lizenz). Beide Angaben zeigt die Anwendung aus `public.food_sources`; unser Auszug wird nicht weitergegeben, darum keine Share-alike-Pflicht.
+
+**Begründung.** ADR-027 Punkte 7 und 8; blsdb.de (Download, FAQ), mri.bund.de, opendatacommons.org (geprüft 2026-10-19, aus der Cloud-Umgebung nur über Suchtreffer erreichbar).
+
+**Anker.** `public.food_sources.attribution`, `docs/betrieb/lebensmitteldaten.md`.
+
+**Änderungspfad.** Text in `food_sources` per Migration ändern · Aufwand `klein`.
+
+### ANN-658 — Suche: Trigramme, Rangfolge, Marken über nächste Nachbarn
+
+Technik · offen · 2026-10-19 · — · — · Wiedervorlage: —
+
+**Annahme.** Gesucht wird in der Datenbank mit `pg_trgm`: jedes Wort enthalten oder ähnlich (Tippfehler); Rang = Name gleich (4) / beginnt als Wort (3) / beginnt (2) / Wort im Namen (1,5) + allgemein vor Marke (2,5) + Wortähnlichkeit; Marken nur aus den 300 nächsten Nachbarn per GiST. Gemessen: am Seed < 300 ms, mit 300 000 Marken ≤ 150 ms.
+
+**Begründung.** Budget ERN-EPIC-002; `pg_trgm` ist eine Erweiterung von PostgreSQL, kein neuer Anbieter (ADR-002).
+
+**Anker.** `app.food_search`, `app.food_search_key`.
+
+**Änderungspfad.** Gewichte oder Nachbarzahl in `app.food_search` · Aufwand `klein`.
+
+### ANN-659 — Import nur durch den Betrieb, Zurückziehen statt Löschen, Startportionen
+
+Technik · offen · 2026-10-19 · — · — · Wiedervorlage: OPS-001 (Aktualisierung)
+
+**Annahme.** Den Katalog lädt allein der Betrieb mit `scripts/lebensmittel/` als postgres; die Anwendung hat kein Recht darauf. Was ein neuer Stand nicht mehr führt, wird zurückgezogen, nicht gelöscht. Allgemeine Lebensmittel bekommen Portionen aus `portionen.json` (Haushaltsmaße, Startinhalt); Marken die Portion der Verpackung.
+
+**Begründung.** ADR-027 Konsequenzen: Pflege des Auszugs ist Betriebsaufgabe; spätere Tagebucheinträge verweisen auf Zeilen.
+
+**Anker.** `app.import_food_catalog_batch`, `app.finish_food_catalog_import`, `scripts/lebensmittel/portionen.json`.
+
+**Änderungspfad.** Löschen statt Zurückziehen in `finish_food_catalog_import` · Aufwand `klein`.

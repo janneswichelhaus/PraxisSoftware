@@ -98,6 +98,8 @@ describe('Ernährung auf der Plattform: Lesen und Grenzen (ERN-002)', () => {
         'formula_sex',
         'goal',
         'height_cm',
+        // ERN-005: die eigenen Lebensmittel der Person.
+        'own_foods',
         'started_on',
         'target_weight_kg',
         'target_weight_source',

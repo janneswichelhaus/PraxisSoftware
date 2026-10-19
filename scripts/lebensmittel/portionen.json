@@ -1,0 +1,148 @@
+{
+  "hinweis": "Startinhalt (ERN-004, ANN-659): übliche Portionen für allgemeine Lebensmittel des BLS, der keine Portionen mitbringt. Muster gegen den Suchschlüssel des Namens (Kleinbuchstaben, Umlaute ohne Punkte, ae/oe/ue wie der Umlaut, ß als ss); die erste passende Zeile gilt. Mengen in Gramm bzw. Milliliter, gerundete Haushaltsmaße, keine Empfehlung.",
+  "regeln": [
+    {
+      "muster": "^apfel( roh| frisch|$)",
+      "portionen": [{ "label": "1 Stück (mittel)", "amount": 150 }]
+    },
+    {
+      "muster": "^birne( roh| frisch|$)",
+      "portionen": [{ "label": "1 Stück (mittel)", "amount": 170 }]
+    },
+    {
+      "muster": "^banane( roh| frisch|$)",
+      "portionen": [{ "label": "1 Stück (mittel)", "amount": 120 }]
+    },
+    {
+      "muster": "^(orange|apfelsine)( roh| frisch|$)",
+      "portionen": [{ "label": "1 Stück (mittel)", "amount": 180 }]
+    },
+    { "muster": "^(mandarine|clementine)", "portionen": [{ "label": "1 Stück", "amount": 70 }] },
+    { "muster": "^kiwi", "portionen": [{ "label": "1 Stück", "amount": 75 }] },
+    {
+      "muster": "^(erdbeere|himbeere|heidelbeere|blaubeere|johannisbeere)",
+      "portionen": [
+        { "label": "1 Handvoll", "amount": 60 },
+        { "label": "1 Schale", "amount": 250 }
+      ]
+    },
+    { "muster": "^(weintraube|traube)", "portionen": [{ "label": "1 Handvoll", "amount": 80 }] },
+    {
+      "muster": "^tomate( roh| frisch|$)",
+      "portionen": [{ "label": "1 Stück (mittel)", "amount": 80 }]
+    },
+    {
+      "muster": "^(karotte|mohre|mohrrube)",
+      "portionen": [{ "label": "1 Stück (mittel)", "amount": 80 }]
+    },
+    { "muster": "^paprika", "portionen": [{ "label": "1 Stück", "amount": 150 }] },
+    {
+      "muster": "^gurke",
+      "portionen": [
+        { "label": "1 Stück", "amount": 400 },
+        { "label": "1 Scheibe", "amount": 10 }
+      ]
+    },
+    { "muster": "^zwiebel", "portionen": [{ "label": "1 Stück (mittel)", "amount": 70 }] },
+    { "muster": "^knoblauch", "portionen": [{ "label": "1 Zehe", "amount": 4 }] },
+    { "muster": "^kartoffel", "portionen": [{ "label": "1 Stück (mittel)", "amount": 80 }] },
+    { "muster": "^avocado", "portionen": [{ "label": "1 Stück", "amount": 150 }] },
+    { "muster": "^(huhnerei|ei )|^ei$", "portionen": [{ "label": "1 Stück (M)", "amount": 55 }] },
+    {
+      "muster": "^haferflocken",
+      "portionen": [
+        { "label": "1 Esslöffel", "amount": 10 },
+        { "label": "1 Portion", "amount": 50 }
+      ]
+    },
+    { "muster": "^(musli|muesli)", "portionen": [{ "label": "1 Portion", "amount": 50 }] },
+    { "muster": "^cornflakes", "portionen": [{ "label": "1 Portion", "amount": 30 }] },
+    { "muster": "brot\\b", "portionen": [{ "label": "1 Scheibe", "amount": 50 }] },
+    { "muster": "brotchen|semmel|schrippe", "portionen": [{ "label": "1 Stück", "amount": 60 }] },
+    { "muster": "^toast", "portionen": [{ "label": "1 Scheibe", "amount": 25 }] },
+    { "muster": "^knackebrot", "portionen": [{ "label": "1 Scheibe", "amount": 10 }] },
+    {
+      "muster": "^(reis|nudeln|spaghetti|teigwaren|couscous|quinoa|bulgur).*gekocht",
+      "portionen": [{ "label": "1 Portion", "amount": 180 }]
+    },
+    {
+      "muster": "^(linsen|kichererbsen|bohnen).*gekocht",
+      "portionen": [{ "label": "1 Portion", "amount": 150 }]
+    },
+    {
+      "muster": "^(milch|vollmilch|trinkmilch)",
+      "portionen": [
+        { "label": "1 Glas", "amount": 200 },
+        { "label": "1 Schuss", "amount": 20 }
+      ]
+    },
+    {
+      "muster": "^(joghurt|jogurt)",
+      "portionen": [
+        { "label": "1 Becher", "amount": 150 },
+        { "label": "1 Esslöffel", "amount": 15 }
+      ]
+    },
+    {
+      "muster": "^(quark|magerquark|speisequark)",
+      "portionen": [
+        { "label": "1 Esslöffel", "amount": 30 },
+        { "label": "1 Becher", "amount": 250 }
+      ]
+    },
+    {
+      "muster": "^(gouda|edamer|emmentaler|tilsiter|butterkase|bergkase)",
+      "portionen": [{ "label": "1 Scheibe", "amount": 25 }]
+    },
+    { "muster": "^mozzarella", "portionen": [{ "label": "1 Kugel", "amount": 125 }] },
+    {
+      "muster": "^butter( |$)",
+      "portionen": [
+        { "label": "1 Teelöffel", "amount": 5 },
+        { "label": "1 Portion", "amount": 10 }
+      ]
+    },
+    { "muster": "^margarine", "portionen": [{ "label": "1 Teelöffel", "amount": 5 }] },
+    {
+      "muster": "ol$|^ol ",
+      "portionen": [
+        { "label": "1 Esslöffel", "amount": 10 },
+        { "label": "1 Teelöffel", "amount": 5 }
+      ]
+    },
+    { "muster": "^sahne|schlagsahne", "portionen": [{ "label": "1 Esslöffel", "amount": 15 }] },
+    {
+      "muster": "^(honig|konfiture|marmelade)",
+      "portionen": [{ "label": "1 Teelöffel", "amount": 8 }]
+    },
+    { "muster": "^zucker", "portionen": [{ "label": "1 Teelöffel", "amount": 5 }] },
+    {
+      "muster": "^(walnuss|haselnuss|mandel|erdnuss|cashew)",
+      "portionen": [{ "label": "1 Handvoll", "amount": 25 }]
+    },
+    {
+      "muster": "^(leinsamen|chiasamen|sonnenblumenkerne|kurbiskerne)",
+      "portionen": [{ "label": "1 Esslöffel", "amount": 10 }]
+    },
+    {
+      "muster": "^(kaffee|tee)( |$)",
+      "portionen": [
+        { "label": "1 Tasse", "amount": 150 },
+        { "label": "1 Becher", "amount": 250 }
+      ]
+    },
+    {
+      "muster": "saft$|saft |^schorle|schorle$",
+      "portionen": [{ "label": "1 Glas", "amount": 200 }]
+    },
+    { "muster": "^bier", "portionen": [{ "label": "1 Flasche", "amount": 500 }] },
+    { "muster": "wein( |$)", "portionen": [{ "label": "1 Glas", "amount": 125 }] },
+    {
+      "muster": "^schokolade",
+      "portionen": [
+        { "label": "1 Riegel", "amount": 25 },
+        { "label": "1 Tafel", "amount": 100 }
+      ]
+    }
+  ]
+}

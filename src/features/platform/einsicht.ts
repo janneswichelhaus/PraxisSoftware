@@ -137,6 +137,10 @@ export type PlattformApi = Pick<
   | 'ernaehrungZielgewichtSetzen'
   | 'ernaehrungTagebuchSchalten'
   | 'ernaehrungEinwilligen'
+  | 'lebensmittelSuchen'
+  | 'lebensmittelQuellen'
+  | 'eigenesLebensmittelSpeichern'
+  | 'eigenesLebensmittelLoeschen'
 >;
 
 /** Endet jeden schreibenden Weg der Einsicht - ohne Netz, ohne Vorarbeit. */
@@ -208,6 +212,11 @@ export function einsichtsApi(zugangId: string, quelle: Einsichtsquelle): Plattfo
     ernaehrungZielgewichtSetzen: gesperrt,
     ernaehrungTagebuchSchalten: gesperrt,
     ernaehrungEinwilligen: gesperrt,
+    // ERN-EPIC-002: ebenso die Lebensmittel - die Seite liegt unter der Ernährung.
+    lebensmittelSuchen: gesperrt,
+    lebensmittelQuellen: gesperrt,
+    eigenesLebensmittelSpeichern: gesperrt,
+    eigenesLebensmittelLoeschen: gesperrt,
   };
 }
 

@@ -86,6 +86,11 @@ import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
 import { AkteErnaehrung } from '@/features/nutrition/ErnaehrungReiter';
 import {
+  LebensmittelPage,
+  PraxisLebensmittelBearbeiten,
+  PraxisLebensmittelNeu,
+} from '@/features/nutrition/LebensmittelPage';
+import {
   ProfilAendernSeite,
   ProfilAnlegenSeite,
   ZielwerteSeite,
@@ -327,6 +332,21 @@ export function AuthenticatedRoutes({
                         <Route
                           path="/patienten/:patientId/ernaehrung/zielwerte"
                           element={<ZielwerteSeite art="treatment" />}
+                        />
+                      </>
+                    ) : null}
+                    {/* ERN-EPIC-002: Lebensmittel in der Bibliothek - nachschlagen und
+                  die der Praxis pflegen; allein die Fähigkeit (ADR-027 Punkt 4). */}
+                    {showNutrition ? (
+                      <>
+                        <Route path="/praxis/lebensmittel" element={<LebensmittelPage />} />
+                        <Route
+                          path="/praxis/lebensmittel/neu"
+                          element={<PraxisLebensmittelNeu />}
+                        />
+                        <Route
+                          path="/praxis/lebensmittel/:foodId"
+                          element={<PraxisLebensmittelBearbeiten />}
                         />
                       </>
                     ) : null}

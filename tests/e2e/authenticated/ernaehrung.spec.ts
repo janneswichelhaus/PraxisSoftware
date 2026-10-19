@@ -108,3 +108,82 @@ test('Die Begleitung sieht keine Ernährung', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByRole('link', { name: /Ernährung/ })).toHaveCount(0);
 });
+
+/**
+ * ERN-EPIC-002: Lebensmittel in der Bibliothek, bei 375 px gegen den Seed.
+ * Budget aus der Roadmap: Stichwörter treffen unter den ersten drei, die Suche
+ * antwortet in weniger als 300 ms (am Server gemessen in
+ * supabase/tests/food-catalog.test.ts; hier die Antwort im Browser).
+ */
+const STICHWOERTER: [string, string][] = [
+  ['Apfel', 'Apfel roh'],
+  ['Haferflocken', 'Haferflocken'],
+  ['Vollkornbrot', 'Vollkornbrot'],
+  ['Hafeflocken', 'Haferflocken'],
+];
+
+test('Lebensmittel: Stichwörter unter den ersten drei, Nährwerte und Portionen im Fenster', async ({
+  page,
+}) => {
+  await page.setViewportSize(TELEFON);
+  await anmelden(page, KONTEN.owner);
+  await page.goto('/praxis/lebensmittel');
+  const treffer = page
+    .getByRole('list')
+    .filter({ has: page.getByRole('button') })
+    .last();
+  for (const [begriff, erwartet] of STICHWOERTER) {
+    const antwort = page.waitForResponse((r) => r.url().includes('/rpc/search_foods'));
+    const start = Date.now();
+    await page.getByLabel('Lebensmittel suchen').fill(begriff);
+    await antwort;
+    test
+      .info()
+      .annotations.push({ type: 'Suche', description: `${begriff}: ${Date.now() - start} ms` });
+    // Die Liste zeigt bis zur neuen Antwort die alte; darum gepollt. Der
+    // Name endet, wo die Nebenzeile beginnt (kein Kleinbuchstabe danach).
+    const trifft = (text: string) =>
+      text.startsWith(erwartet) && !/^[a-zäöüß]/.test(text.slice(erwartet.length));
+    await expect
+      .poll(
+        async () => (await treffer.getByRole('button').allInnerTexts()).slice(0, 3).some(trifft),
+        { message: begriff },
+      )
+      .toBe(true);
+  }
+  await page
+    .getByRole('button', { name: /^Haferflocken\b/ })
+    .first()
+    .click();
+  const fenster = page.getByRole('dialog', { name: 'Haferflocken' });
+  await expect(fenster.getByText('Je 100 g')).toBeVisible();
+  await expect(fenster.getByText(/^1 Esslöffel · 10 g$/)).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+});
+
+test('Lebensmittel der Praxis: anlegen, in der Suche finden, ablegen', async ({ page }) => {
+  await page.setViewportSize(TELEFON);
+  await anmelden(page, KONTEN.owner);
+  await page.goto('/praxis/lebensmittel/neu');
+  const name = `Testriegel ${Date.now()}`;
+  await page.getByLabel('Name', { exact: true }).fill(name);
+  await page.getByLabel('Energie (kcal)').fill('410');
+  await page.getByLabel('Eiweiß (g)').fill('20');
+  await page.getByLabel('Fett (g)').fill('15');
+  await page.getByLabel('Kohlenhydrate (g)').fill('45');
+  await page.getByRole('button', { name: 'Anlegen' }).click();
+  await expect(page).toHaveURL((url) => url.pathname === '/praxis/lebensmittel');
+  await page.getByLabel('Lebensmittel suchen').fill(name);
+  await page.getByRole('button', { name }).click();
+  await page.getByRole('link', { name: 'Bearbeiten' }).click();
+  await page.getByRole('button', { name: 'Ablegen' }).click();
+  await page.getByRole('button', { name: 'Ablegen' }).last().click();
+  await expect(page).toHaveURL((url) => url.pathname === '/praxis/lebensmittel');
+  await expect(page.getByRole('link', { name })).toHaveCount(0);
+});
+
+test('Büro sieht die Lebensmittel nicht, die Adresse zeigt nichts', async ({ page }) => {
+  await anmelden(page, KONTEN.office);
+  await page.goto('/praxis/lebensmittel');
+  await expect(page.getByRole('heading', { name: 'Lebensmittel', level: 1 })).toHaveCount(0);
+});
