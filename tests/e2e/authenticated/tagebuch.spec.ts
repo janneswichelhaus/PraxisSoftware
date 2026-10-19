@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { TESTKENNWORT } from './helpers';
+import { KONTEN, PATIENTEN, TESTKENNWORT, anmelden } from './helpers';
 
 /**
  * ERN-EPIC-003 (ADR-027 Punkte 10 und 11): das Ernährungstagebuch auf der
@@ -165,4 +165,20 @@ test('Erinnerungen: von Anfang an aus, je Mahlzeit eine Uhrzeit, wieder aus', as
   await wahl.getByLabel('Mittagessen', { exact: true }).uncheck();
   await wahl.getByRole('button', { name: 'Speichern' }).click();
   await expect(page.getByText('Erinnerungen · aus')).toBeVisible();
+});
+
+test('Die Beratung liest mit: sieben Tage, ein Tag im Fenster', async ({ page }) => {
+  await page.setViewportSize(TELEFON);
+  await anmelden(page, KONTEN.owner);
+  await page.goto(`/patienten/${PATIENTEN.erika}/ernaehrung`);
+  await expect(page.getByRole('heading', { name: 'Tagebuch' })).toBeVisible();
+  await page
+    .getByRole('button', { name: /2 Einträge/ })
+    .first()
+    .click();
+  const fenster = page.getByRole('dialog');
+  await expect(fenster.getByText('Haferflocken')).toBeVisible();
+  await expect(fenster.getByText('Frühstück', { exact: true })).toBeVisible();
+  // Die Beratung schreibt nicht ins Tagebuch.
+  await expect(fenster.getByRole('button', { name: 'Löschen' })).toHaveCount(0);
 });

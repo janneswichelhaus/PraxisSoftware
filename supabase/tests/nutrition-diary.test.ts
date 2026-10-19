@@ -777,3 +777,91 @@ describe('Tagebuch schnell: zuletzt, Favoriten, kopieren, Zahlen ausblenden (ERN
     expect(rows[0]!.n).toBe(1);
   });
 });
+
+describe('Die Beratung liest mit (ERN-010)', () => {
+  const LESEN = 'select public.get_nutrition_diary($1::uuid, $2::date) as d';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    await fremdeOrganisation();
+  }, 120_000);
+
+  it('sieben Tage bis heute, jüngster zuerst, mit Einträgen, wer, Summen und Wasser', async () => {
+    const datum = await heute();
+    const { rows } = await asUserCommitted<{
+      d: {
+        from: string;
+        to: string;
+        targets: { energy_kcal: number } | null;
+        days: {
+          day: string;
+          water_ml: number;
+          totals: { energy_kcal: number };
+          meals: { meal: string; entries: { name: string; recorded_by_kind: string }[] }[];
+        }[];
+      };
+    }>(users.ownerTherapist, LESEN, [PROFIL, null]);
+    const d = rows[0]!.d;
+    expect(d.to).toBe(datum);
+    expect(d.days).toHaveLength(7);
+    expect(d.days[0]!.day).toBe(datum);
+    // Seed: heute Haferflocken (185) und Banane (112), 500 ml.
+    expect(d.days[0]).toMatchObject({ water_ml: 500, totals: { energy_kcal: 297 } });
+    expect(d.days[0]!.meals[0]!.entries[0]).toMatchObject({
+      name: 'Haferflocken',
+      recorded_by_kind: 'self',
+    });
+    expect(d.targets?.energy_kcal).toBeGreaterThan(0);
+
+    // Protokolliert wie das Öffnen der Akte (view nutrition_diary).
+    const { rows: protokoll } = await asPostgres<{ n: number }>(
+      `select count(*)::int as n from public.audit_log
+        where action = 'patient_record.viewed' and subject_id = $1
+          and context ->> 'view' = 'nutrition_diary'`,
+      [patients.erika],
+    );
+    expect(protokoll[0]!.n).toBe(1);
+  });
+
+  it('nicht vor dem Beginn der Beratung, nicht in die Zukunft', async () => {
+    const { rows } = await asUser<{ d: { from: string; to: string; started_on: string } }>(
+      users.ownerTherapist,
+      LESEN,
+      [PROFIL, '2000-01-01'],
+    );
+    expect(rows[0]!.d.to).toBe(rows[0]!.d.started_on);
+    expect(rows[0]!.d.from).toBe(rows[0]!.d.started_on);
+    const { rows: zukunft } = await asUser<{ d: { to: string } }>(users.ownerTherapist, LESEN, [
+      PROFIL,
+      '2999-01-01',
+    ]);
+    expect(zukunft[0]!.d.to).toBe(await heute());
+  });
+
+  it('Büro, Therapie, Teamleitung, Trainingsbetreuung, fremde Organisation, Person: nichts', async () => {
+    for (const konto of [users.office, users.therapist, users.teamLead, users.trainer]) {
+      const { rows } = await asUser<{ d: unknown }>(konto, LESEN, [PROFIL, null]);
+      expect(rows[0]!.d, konto).toBeNull();
+    }
+    const { rows: fremd } = await asUser<{ d: unknown }>(FREMDE_ORGANISATION.owner, LESEN, [
+      PROFIL,
+      null,
+    ]);
+    expect(fremd[0]!.d).toBeNull();
+    // Ein Konto ohne Praxis wird abgewiesen, bevor etwas gelesen wird.
+    expect(await fehler(asUser(users.plattformErika, LESEN, [PROFIL, null]))).toBe('42501');
+    // Die Abweisung steht im Protokoll.
+    const { rows: abgewiesen } = await asUserCommitted<{ d: unknown }>(users.office, LESEN, [
+      PROFIL,
+      null,
+    ]);
+    expect(abgewiesen[0]!.d).toBeNull();
+    const { rows: protokoll } = await asPostgres<{ n: number }>(
+      `select count(*)::int as n from public.audit_log
+        where action = 'access.denied' and actor_user_id = $1
+          and context ->> 'operation' = 'nutrition.read'`,
+      [users.office],
+    );
+    expect(protokoll[0]!.n).toBeGreaterThanOrEqual(1);
+  });
+});

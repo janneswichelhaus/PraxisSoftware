@@ -31,6 +31,7 @@ import {
 } from './api';
 import { ernaehrungsFormulare, leseZahl } from './eingabe';
 import { Zielwertliste } from './Rechenweg';
+import { TagebuchDerBeratung } from './TagebuchDerBeratung';
 import {
   einwilligungVon,
   FORMEL_TEXTE,
@@ -234,6 +235,11 @@ function Profilansicht({
           </DetailRow>
         </DetailList>
       </Section>
+
+      {/* ERN-010: die Beratung liest das Tagebuch mit - nur, wenn es eines gibt. */}
+      {profil.diary_enabled || profil.diary_changed_at ? (
+        <TagebuchDerBeratung profilId={profil.id} />
+      ) : null}
 
       <Einwilligung profil={profil} sicht={sicht} art={art} verhaeltnisId={verhaeltnisId} />
 
