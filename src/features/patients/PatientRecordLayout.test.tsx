@@ -399,14 +399,13 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
 
         // „Stammdaten" liegt bei 360-480 px, sichtbar sind 300: Die Leiste
-        // rollt, bis der Bereich ganz und 52 px Rand dahinter zu sehen sind -
-        // so liegt er nicht unter dem Verlauf am Rand (44 px wie sein Knopf,
-        // Sichtung A1, BEF-183).
+        // rollt, bis der Bereich ganz und 48 px Rand dahinter zu sehen sind -
+        // so liegt er nicht unter dem Verlauf am Rand (40 px, Sichtung A1).
         expect(within(navigation).getByRole('link', { name: 'Stammdaten' })).toHaveAttribute(
           'aria-current',
           'page',
         );
-        expect(within(navigation).getByRole('list').scrollLeft).toBe(480 + 52 - 300);
+        expect(within(navigation).getByRole('list').scrollLeft).toBe(480 + 48 - 300);
         expect(seiteRollen).not.toHaveBeenCalled();
       } finally {
         vi.restoreAllMocks();

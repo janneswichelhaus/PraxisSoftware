@@ -630,9 +630,10 @@ export async function kalenderOptionenOeffnen(page: Page): Promise<void> {
 
 /**
  * Tippt einen Reiter einer rollenden Reiterleiste an, wie es eine Hand am
- * Telefon tut (BEF-183): Liegt er außer Sicht oder unter dem Verlauf am Rand,
- * erst „›" (oder „‹") - Playwright rollte sonst von selbst und zählte den
- * Wisch nicht. Gibt die Tipps zurück, den Reiter mitgezählt.
+ * Telefon tut (BEF-183): Liegt er rechts außer Sicht oder angeschnitten, erst
+ * „›" neben der Liste; liegt er links, ein Wisch zurück (es gibt dort keinen
+ * Knopf) - beides zählt als Tipp. Playwright rollte sonst von selbst und
+ * zählte nichts. Gibt die Tipps zurück, den Reiter mitgezählt.
  */
 export async function reiterAntippen(leiste: Locator, name: string): Promise<number> {
   const reiter = leiste.getByRole('link', { name, exact: true });
@@ -643,14 +644,13 @@ export async function reiterAntippen(leiste: Locator, name: string): Promise<num
       const nav = el.closest('nav')!;
       const r = el.getBoundingClientRect();
       const liste = el.closest('ul')!.getBoundingClientRect();
-      const knopf = (seite: string) =>
-        nav.querySelector(`[data-verlauf-knopf="${seite}"]`)?.getBoundingClientRect();
-      const links = knopf('links')?.right ?? liste.left;
-      const rechts = knopf('rechts')?.left ?? liste.right;
-      return r.right > rechts + 0.5 ? 'rechts' : r.left < links - 0.5 ? 'links' : 'frei';
+      const knopf = nav.querySelector('[data-verlauf-knopf="rechts"]')?.getBoundingClientRect();
+      const rechts = Math.min(knopf?.left ?? liste.right, liste.right);
+      return r.right > rechts + 0.5 ? 'rechts' : r.left < liste.left - 0.5 ? 'links' : 'frei';
     });
     if (lage === 'frei') break;
-    await leiste.locator(`[data-verlauf-knopf="${lage}"]`).click();
+    if (lage === 'rechts') await leiste.locator('[data-verlauf-knopf="rechts"]').click();
+    else await reiter.evaluate((el) => el.scrollIntoView({ block: 'nearest', inline: 'end' }));
     tipps += 1;
   }
   await reiter.click();

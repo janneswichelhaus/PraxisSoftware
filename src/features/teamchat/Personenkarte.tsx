@@ -76,9 +76,8 @@ export function Personenkarte({
       ) : null}
       <Formularfuss>
         {karte.data?.own ? (
-          <ButtonLink to="/mein-konto" variant="secondary">
-            Bild und Farbe ändern
-          </ButtonLink>
+          // Die einzige Handlung der eigenen Karte ist ihr Hauptknopf (Design-Review).
+          <ButtonLink to="/mein-konto">Bild und Farbe ändern</ButtonLink>
         ) : karte.data?.active ? (
           <Button disabled={schreiben.isPending} onClick={() => schreiben.mutate()}>
             Direktnachricht
