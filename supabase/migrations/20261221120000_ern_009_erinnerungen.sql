@@ -238,13 +238,22 @@ begin
     end if;
   end if;
 
+  -- Je Mahlzeit bleibt die Zeile (und ihre Kennung) erhalten: Die Grenze
+  -- "eine je Mahlzeit und Tag" zählt über sie (ANN-662, Zweitreview).
   delete from public.nutrition_diary_reminders r
-  where r.access_id = p_access_id and r.profile_id = v_profil.id;
+  where r.access_id = p_access_id and r.profile_id = v_profil.id
+    and not exists (select 1 from jsonb_array_elements(p_reminders) e where e ->> 'meal' = r.meal);
   insert into public.nutrition_diary_reminders
     (organization_id, profile_id, access_id, meal, remind_at, chosen_by)
   select v_profil.organization_id, v_profil.id, p_access_id, e ->> 'meal', (e ->> 'time')::time,
          auth.uid()
-  from jsonb_array_elements(p_reminders) e;
+  from jsonb_array_elements(p_reminders) e
+  on conflict (access_id, profile_id, meal) do update
+    set remind_at = excluded.remind_at,
+        chosen_at = case when nutrition_diary_reminders.remind_at = excluded.remind_at
+                         then nutrition_diary_reminders.chosen_at else now() end,
+        chosen_by = case when nutrition_diary_reminders.remind_at = excluded.remind_at
+                         then nutrition_diary_reminders.chosen_by else excluded.chosen_by end;
 
   -- Die Wege dieser einen Art in der Wahl des Zugangs (ADR-024 Punkt 15);
   -- die anderen Arten bleiben, wie sie sind.

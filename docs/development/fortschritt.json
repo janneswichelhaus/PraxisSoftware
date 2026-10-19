@@ -999,7 +999,9 @@
           "id": "ern-epic-003",
           "name": "ERN-EPIC-003 Ernährung: Tagebuch",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "ERN-007 bis ERN-010, Budgets in tagebuch.spec.ts, Zweitreview"
         },
         {
           "id": "ern-epic-004",

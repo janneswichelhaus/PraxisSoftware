@@ -230,7 +230,7 @@ function Profilansicht({
           <DetailRow label="Formel">{FORMEL_TEXTE[profil.bmr_formula]}</DetailRow>
           <DetailRow label="Tagebuch">
             {profil.diary_enabled
-              ? `Eingeschaltet${profil.diary_changed_at ? ` am ${formatDate(profil.diary_changed_at)}` : ''}`
+              ? `Eingeschaltet${profil.diary_changed_at ? ` am ${formatDate(profil.diary_changed_at.slice(0, 10))}` : ''}`
               : 'Aus'}
           </DetailRow>
         </DetailList>

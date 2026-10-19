@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  FREMDE_ORGANISATION,
   SEED,
   asPostgres,
   asServiceRole,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
 
@@ -299,5 +301,75 @@ describe('Erinnerungen an das Tagebuch (ERN-009)', () => {
     );
     const { rows: plan } = await asServiceRole<{ kind: string }>(ABHOLEN);
     expect(plan.map((r) => r.kind)).toEqual(['plan_assigned']);
+  });
+
+  it('neu speichern nach einer Erinnerung bringt keine zweite für dieselbe Mahlzeit (Zweitreview)', async () => {
+    await ohneRuhezeit();
+    const jetzt = await geradeFaellig();
+    await waehlen([{ meal: 'snack', time: jetzt }]);
+    await asPostgres(ANLEGEN);
+    expect(await asServiceRole(ABHOLEN).then((r) => r.rows)).toHaveLength(1);
+    await asPostgres(
+      `update public.notification_deliveries set state = 'sent', finished_at = now()`,
+    );
+    // Gleiche Wahl noch einmal gespeichert: dieselbe Zeile, kein zweiter Auftrag.
+    await waehlen([{ meal: 'snack', time: jetzt }]);
+    expect((await asPostgres<{ n: number }>(ANLEGEN)).rows[0]!.n).toBe(0);
+    // Auf eine andere Uhrzeit und zurück: am selben Tag greift die Grenze je Mahlzeit.
+    await asPostgres(
+      `update public.nutrition_diary_reminders set remind_at = remind_at - interval '15 minutes'`,
+    );
+    await asPostgres(ANLEGEN);
+    expect((await asServiceRole(ABHOLEN)).rows).toEqual([]);
+    expect((await auftraege()).at(-1)).toMatchObject({ drop_reason: 'daily_cap' });
+  });
+
+  it('fremdes Konto, fremde Organisation, Lesefrist: kein Einschalten, kein Lesen', async () => {
+    await fremdeOrganisation();
+    const ein = JSON.stringify([{ meal: 'lunch', time: '12:00' }]);
+    for (const konto of [users.plattformTina, FREMDE_ORGANISATION.owner]) {
+      expect(await fehler(asUser(konto, WAEHLEN, [ZUGANG, ein, true, false])), konto).toBe('42501');
+      const { rows } = await asUser<{ d: unknown }>(konto, LESEN, [ZUGANG]);
+      expect(rows[0]!.d, konto).toBeNull();
+    }
+    await waehlen([{ meal: 'lunch', time: '12:00' }]);
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = current_date - 2, care_concluded_at = now(),
+              care_concluded_by = $2::uuid
+        where id = $1`,
+      [SEED.patients.erika, users.therapist],
+    );
+    expect(await fehler(asUser(users.plattformErika, WAEHLEN, [ZUGANG, ein, true, false]))).toBe(
+      '42501',
+    );
+    // Abschalten geht auch in der Lesefrist.
+    await waehlen([], false, false);
+  });
+
+  it('fallen mit dem Zugang und mit dem Profil; Favoriten mit dem Profil', async () => {
+    await waehlen([{ meal: 'lunch', time: '12:00' }]);
+    await asPostgres('delete from public.platform_accesses where id = $1', [ZUGANG]);
+    expect(
+      (
+        await asPostgres<{ n: number }>(
+          'select count(*)::int as n from public.nutrition_diary_reminders',
+        )
+      ).rows[0]!.n,
+    ).toBe(0);
+    await resetDatabase();
+    await waehlen([{ meal: 'lunch', time: '12:00' }]);
+    await asUserCommitted(
+      users.plattformErika,
+      `select public.set_platform_diary_favorite($1::uuid, 'person',
+         'f1f1f1f1-f1f1-4f1f-8f1f-000000000002', true)`,
+      [ZUGANG],
+    );
+    await asPostgres('delete from public.nutrition_profiles where id = $1', [PROFIL]);
+    const { rows } = await asPostgres<{ r: number; f: number }>(
+      `select (select count(*)::int from public.nutrition_diary_reminders) as r,
+              (select count(*)::int from public.nutrition_diary_favorites) as f`,
+    );
+    expect(rows[0]).toEqual({ r: 0, f: 0 });
   });
 });
