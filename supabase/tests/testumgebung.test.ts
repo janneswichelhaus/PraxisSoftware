@@ -202,6 +202,20 @@ describe('Test-Umgebung neu aufsetzen (OPS-002a)', () => {
     expect(diagnosen.every((d) => d.diagnosis.startsWith('Synthetisch:'))).toBe(true);
   });
 
+  // TEAM-007: Die Testbilder sind Muster, keine Personen, und bestehen
+  // dieselbe Prüfung am Inhalt wie jedes hochgeladene Bild.
+  it('legt zwei synthetische Profilbilder an, die die Prüfung am Inhalt bestehen', async () => {
+    expect(neuAufsetzen(KENNWORT).status).toBe(0);
+    const { rows } = await asPostgres<{ staff_member_id: string; problem: string | null }>(
+      `select staff_member_id, app.profile_picture_problem(image) as problem
+         from public.staff_profile_pictures order by staff_member_id`,
+    );
+    expect(rows).toEqual([
+      { staff_member_id: '55555555-5555-4555-8555-000000000003', problem: null },
+      { staff_member_id: '55555555-5555-4555-8555-000000000004', problem: null },
+    ]);
+  });
+
   it('ein zweiter Lauf erzeugt dieselbe Woche, keine doppelten Termine', async () => {
     expect(neuAufsetzen(KENNWORT).status).toBe(0);
     const erster = await praxiswoche();

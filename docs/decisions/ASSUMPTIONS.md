@@ -6876,3 +6876,15 @@ Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: —
 **Anker.** `app.staff_color_palette()`, `app.next_staff_color()` (Migration TEAM-006), `--color-person-*` in `src/index.css`.
 
 **Änderungspfad.** Vergabe durch die Praxisleitung: `set_own_team_color` um eine Funktion für `owner` ergänzen · Aufwand `klein`.
+
+### ANN-667 — Profilbild: Einwilligung durch das eigene Hochladen, fällt mit dem Ausscheiden
+
+Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Ein Profilbild setzt nur die Person selbst; das Hochladen ist ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), freiwillig im Sinne von § 26 Abs. 2 BDSG: ohne Bild keinerlei Nachteil, Entfernen jederzeit. Sehen darf es nur das Team im Teamchat. Es fällt beim Entfernen, Ersetzen und Ausscheiden sofort, mit Löschjournal.
+
+**Begründung.** ADR-017 Abschnitt O; Fotos von Beschäftigten im Intranet gelten verbreitet als einwilligungsbedürftig, eine selbst gesetzte, folgenlos entfernbare Angabe ist der freiwilligste Weg. Unsicher: § 26 BDSG nach EuGH C-34/21.
+
+**Anker.** Klasse `profilbild`, `public.set_own_profile_picture` (Migration TEAM-007).
+
+**Änderungspfad.** Schriftliche Einwilligung als Vermerk vor dem ersten Bild · Aufwand `mittel`.

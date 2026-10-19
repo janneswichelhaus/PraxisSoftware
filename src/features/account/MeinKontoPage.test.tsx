@@ -5,6 +5,7 @@ import type * as AccountApi from './api';
 import type * as PasskeyModul from '@/features/auth/passkey';
 import type * as PinModul from '@/features/auth/appPin';
 import type * as TeamchatApi from '@/features/teamchat/api';
+import type * as ProfilbildModul from '@/features/teamchat/profilbild';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const ladePasskeys = vi.fn<() => Promise<PasskeyModul.Passkey[]>>();
@@ -55,11 +56,25 @@ vi.mock('./api', async (importOriginal) => {
 const fetchAvatare = vi.fn<() => Promise<TeamchatApi.Avatar[]>>();
 const fetchPersonen = vi.fn<() => Promise<TeamchatApi.Person[]>>();
 const waehleFarbe = vi.fn<(farbe: string) => Promise<void>>();
+const ladeProfilbild = vi.fn<(id: string) => Promise<string>>();
+const setzeProfilbild = vi.fn<(bild: Blob) => Promise<string>>();
+const entferneProfilbild = vi.fn<() => Promise<void>>();
 vi.mock('@/features/teamchat/api', async (importOriginal) => ({
   ...(await importOriginal<typeof TeamchatApi>()),
   fetchAvatare: () => fetchAvatare(),
   fetchPersonen: () => fetchPersonen(),
   waehleFarbe: (farbe: string) => waehleFarbe(farbe),
+  ladeProfilbild: (id: string) => ladeProfilbild(id),
+  setzeProfilbild: (bild: Blob) => setzeProfilbild(bild),
+  entferneProfilbild: () => entferneProfilbild(),
+}));
+
+// jsdom rechnet kein Bild: Das Quadrat kommt fertig (TEAM-007).
+const QUADRAT = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: 'image/jpeg' });
+const rechneProfilbild = vi.fn<(datei: Blob) => Promise<Blob>>();
+vi.mock('@/features/teamchat/profilbild', async (importOriginal) => ({
+  ...(await importOriginal<typeof ProfilbildModul>()),
+  rechneProfilbild: (datei: Blob) => rechneProfilbild(datei),
 }));
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
@@ -67,11 +82,15 @@ const OLIVIA = '55555555-5555-4555-8555-000000000003';
 
 function teamchatBereit() {
   fetchAvatare.mockReset().mockResolvedValue([
-    { staff_member_id: ANNA, color: 'ozean' },
-    { staff_member_id: OLIVIA, color: 'pflaume' },
+    { staff_member_id: ANNA, color: 'ozean', picture_id: null },
+    { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
   ]);
   fetchPersonen.mockReset().mockResolvedValue([{ staff_member_id: OLIVIA, name: 'Olivia Office' }]);
   waehleFarbe.mockReset().mockResolvedValue(undefined);
+  ladeProfilbild.mockReset().mockResolvedValue('blob:profilbild-anna');
+  setzeProfilbild.mockReset().mockResolvedValue('bild-2');
+  entferneProfilbild.mockReset().mockResolvedValue(undefined);
+  rechneProfilbild.mockReset().mockResolvedValue(QUADRAT);
 }
 
 const { MeinKontoPage } = await import('./MeinKontoPage');
@@ -481,8 +500,8 @@ describe('MeinKontoPage — Bild und Farbe im Teamchat', () => {
     const user = userEvent.setup();
     waehleFarbe.mockImplementation((farbe) => {
       fetchAvatare.mockResolvedValue([
-        { staff_member_id: ANNA, color: farbe as TeamchatApi.Avatar['color'] },
-        { staff_member_id: OLIVIA, color: 'pflaume' },
+        { staff_member_id: ANNA, color: farbe as TeamchatApi.Avatar['color'], picture_id: null },
+        { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
       ]);
       return Promise.resolve();
     });
@@ -507,5 +526,114 @@ describe('MeinKontoPage — Bild und Farbe im Teamchat', () => {
     expect(await screen.findByRole('heading', { name: 'Sitzungen' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Bild und Farbe im Teamchat' })).toBeNull();
     expect(fetchAvatare).not.toHaveBeenCalled();
+  });
+});
+
+/** TEAM-007 (ADR-017 Abschnitt O, ANN-667): das eigene Profilbild. */
+describe('MeinKontoPage — Profilbild', () => {
+  beforeEach(() => {
+    ladeMfaFaktoren.mockReset().mockResolvedValue([]);
+    ladePasskeys.mockReset().mockResolvedValue([EIN_PASSKEY]);
+    hatPin.mockReset().mockResolvedValue(true);
+    teamchatBereit();
+    // jsdom kennt keine Objekt-URL.
+    URL.createObjectURL = vi.fn(() => 'blob:vorschau');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  it('rechnet ein gewähltes Foto zur Vorschau und speichert erst auf Tipp', async () => {
+    const user = userEvent.setup();
+    setzeProfilbild.mockImplementation(() => {
+      fetchAvatare.mockResolvedValue([
+        { staff_member_id: ANNA, color: 'ozean', picture_id: 'bild-2' },
+        { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
+      ]);
+      return Promise.resolve('bild-2');
+    });
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    await screen.findByRole('button', { name: 'Foto wählen' });
+    const foto = new File([new Uint8Array(10)], 'urlaub.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText('Foto für das Profilbild'), foto);
+
+    expect(rechneProfilbild).toHaveBeenCalledWith(foto);
+    expect(await screen.findByText('Vorschau – noch nicht gespeichert.')).toBeInTheDocument();
+    expect(document.querySelector('[data-personenbild="foto"]')).toHaveAttribute(
+      'src',
+      'blob:vorschau',
+    );
+    expect(setzeProfilbild).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Foto speichern' }));
+    expect(setzeProfilbild).toHaveBeenCalledWith(QUADRAT);
+    expect(await screen.findByText('Foto gespeichert.')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Anderes Foto' })).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-personenbild="foto"]')).toHaveAttribute(
+        'src',
+        'blob:profilbild-anna',
+      ),
+    );
+    expect(ladeProfilbild).toHaveBeenCalledWith('bild-2');
+  });
+
+  it('verwirft die Vorschau mit „Abbrechen“, ohne zu speichern', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByRole('button', { name: 'Foto wählen' });
+    await user.upload(
+      screen.getByLabelText('Foto für das Profilbild'),
+      new File([new Uint8Array(10)], 'a.png', { type: 'image/png' }),
+    );
+    await user.click(await screen.findByRole('button', { name: 'Abbrechen' }));
+    expect(screen.queryByText('Vorschau – noch nicht gespeichert.')).toBeNull();
+    expect(document.querySelector('[data-personenbild="initialen"]')).toHaveTextContent('AB');
+    expect(setzeProfilbild).not.toHaveBeenCalled();
+  });
+
+  it('sagt, wenn sich ein Foto nicht öffnen lässt oder der Server es abweist', async () => {
+    const user = userEvent.setup();
+    rechneProfilbild.mockRejectedValueOnce(
+      new Error('Dieses Foto lässt sich nicht öffnen. Bitte ein Foto als JPEG oder PNG wählen.'),
+    );
+    setzeProfilbild.mockRejectedValueOnce(
+      new Error('Dieses Bild nimmt der Server nicht an. Bitte ein anderes Foto wählen.'),
+    );
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    const feld = await screen.findByLabelText('Foto für das Profilbild');
+    const foto = new File([new Uint8Array(10)], 'kaputt.jpg', { type: 'image/jpeg' });
+
+    await user.upload(feld, foto);
+    expect(await screen.findByText(/Dieses Foto lässt sich nicht öffnen/)).toBeInTheDocument();
+
+    await user.upload(feld, foto);
+    await user.click(await screen.findByRole('button', { name: 'Foto speichern' }));
+    expect(await screen.findByText(/Dieses Bild nimmt der Server nicht an/)).toBeInTheDocument();
+  });
+
+  it('entfernt das eigene Foto nach einer Rückfrage', async () => {
+    const user = userEvent.setup();
+    fetchAvatare.mockResolvedValue([
+      { staff_member_id: ANNA, color: 'ozean', picture_id: 'bild-1' },
+    ]);
+    entferneProfilbild.mockImplementation(() => {
+      fetchAvatare.mockResolvedValue([{ staff_member_id: ANNA, color: 'ozean', picture_id: null }]);
+      return Promise.resolve();
+    });
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Foto entfernen' }));
+    await user.click(await screen.findByRole('button', { name: 'Entfernen' }));
+    expect(entferneProfilbild).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Foto entfernt.')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Foto wählen' })).toBeInTheDocument();
+    expect(document.querySelector('[data-personenbild="initialen"]')).toHaveTextContent('AB');
+  });
+
+  it('sagt im Kleingedruckten, wer das Bild sieht und wann es fällt', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    expect(
+      await screen.findByText(/Freiwillig\. Bild und Farbe sieht nur das Team im Teamchat\./),
+    ).toBeInTheDocument();
   });
 });

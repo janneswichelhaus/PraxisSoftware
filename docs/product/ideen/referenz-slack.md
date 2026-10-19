@@ -54,6 +54,7 @@ Entscheidung, die ihn aufheben würde.
 | Apps | Drittdienste (S) | nein | nein | jeder Drittdienst ist ein neuer Anbieter (ADR-002) |
 | KI | Zusammenfassen, Recaps, Suche (S) | nein | nein | ADR-005 (Gateway, kein Produktionsanbieter), §20 (verdichtet Verhalten), Patientendaten im Chat – Entscheidung mit DSFA |
 | Status | Text, abwesend automatisch (S) | nein | nein | automatische Abwesenheit nie (§20); ein Status von Hand nur auf Auftrag |
+| Profilbild, Farbe | Bild im Profil, vor jeder Nachricht (S) | Name | Bild nur für sich selbst, 256 × 256 auf dem Gerät gerechnet, in der Datenbank; Farbe je Person (acht, selbst gewählt) hinter den Initialen oder um das Bild | ADR-017 Abschnitt O (Fassung 10), ANN-666, ANN-667 – TEAM-006, TEAM-007 (Auftrag Jannes 2026-10-19) |
 
 ## Etappen
 

@@ -32,6 +32,7 @@ const api = {
   fetchNachrichten: vi.fn(),
   fetchPersonen: vi.fn(),
   fetchAvatare: vi.fn(),
+  ladeProfilbild: vi.fn(),
   fetchMitglieder: vi.fn(),
   fetchZaehler: vi.fn(),
   fetchGemerkt: vi.fn(),
@@ -243,9 +244,9 @@ beforeEach(() => {
     { staff_member_id: TIM, name: 'Tim Teamleitung', active: true },
   ]);
   api.fetchAvatare.mockResolvedValue([
-    { staff_member_id: ANNA, color: 'ozean' },
-    { staff_member_id: TIM, color: 'moos' },
-    { staff_member_id: OLIVIA, color: 'pflaume' },
+    { staff_member_id: ANNA, color: 'ozean', picture_id: null },
+    { staff_member_id: TIM, color: 'moos', picture_id: null },
+    { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
   ]);
   api.fetchZaehler.mockResolvedValue(ZAEHLER);
   api.fetchGemerkt.mockResolvedValue([]);
@@ -414,6 +415,34 @@ describe('Teamchat: Bild und Farbe je Person (TEAM-006)', () => {
     expect(tim.querySelector('[data-personenbild]')).toHaveTextContent('TT');
     const gruppe = within(direkt).getByRole('link', { name: /^Olivia Office, Tim Teamleitung/ });
     expect(gruppe.querySelector('[data-personenbild="gruppe"]')).toHaveTextContent('3');
+  });
+
+  it('führt über das eigene Bild zu Bild und Farbe in „Mein Konto“', async () => {
+    zeige('/team');
+    const ich = await screen.findByRole('link', { name: 'Eigenes Bild und eigene Farbe ändern' });
+    expect(ich).toHaveAttribute('href', '/mein-konto');
+    await vi.waitFor(() =>
+      expect(ich.querySelector('[data-personenbild]')).toHaveClass('bg-person-ozean'),
+    );
+  });
+
+  it('zeigt ein Profilbild statt der Initialen, umrahmt von der Farbe der Person', async () => {
+    api.fetchAvatare.mockResolvedValue([
+      { staff_member_id: TIM, color: 'moos', picture_id: 'bild-tim' },
+    ]);
+    api.ladeProfilbild.mockResolvedValue('blob:tim');
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    zeige('/team/k-planung');
+    await vi.waitFor(() =>
+      expect(document.querySelector('[data-nachricht] [data-personenbild]')).toHaveAttribute(
+        'src',
+        'blob:tim',
+      ),
+    );
+    const bild = document.querySelector('[data-nachricht] [data-personenbild]')!;
+    expect(bild).toHaveClass('outline-person-moos');
+    expect(bild).toHaveAttribute('alt', '');
+    expect(api.ladeProfilbild).toHaveBeenCalledWith('bild-tim');
   });
 
   it('bleibt ohne Farben lesbar: Initialen auf Schiefer', async () => {

@@ -89,10 +89,31 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
       Neu
     </ButtonLink>
   );
+  // TEAM-007: Das eigene Bild ist der Weg zu Bild und Farbe - wie bei Slack am
+  // Telefon oben neben „Neu“, am Rechner am Fuß der Spalte, wo das Suchfeld
+  // seine Breite behält.
+  const eigenesBild = user.staffMemberId ? (
+    <Teambild staffMemberId={user.staffMemberId} name={user.profile.display_name} groesse="klein" />
+  ) : null;
+  const ICH = 'Eigenes Bild und eigene Farbe ändern';
 
   return (
     <div className={telefon ? 'px-4 pt-4 pb-6 sm:px-6' : 'px-4 pt-4 pb-6'}>
-      {telefon ? <PageHeader title="Teamchat" actions={neu} /> : null}
+      {telefon ? (
+        <PageHeader
+          title="Teamchat"
+          actions={
+            <>
+              {eigenesBild ? (
+                <ButtonLink to="/mein-konto" variant="quiet" groesse="kompakt" aria-label={ICH}>
+                  {eigenesBild}
+                </ButtonLink>
+              ) : null}
+              {neu}
+            </>
+          }
+        />
+      ) : null}
       <div className="flex items-end gap-2">
         {sucheOffen && !telefon ? (
           <div className="min-w-0 flex-1" />
@@ -218,6 +239,18 @@ export function Gespraechsliste({ user, spalten }: { user: CurrentUser; spalten:
                     </ListRows>
                   </Disclosure>
                 </div>
+              ) : null}
+              {eigenesBild && !telefon ? (
+                <ListRows beschriftung="Du" className="mt-8">
+                  <ListRow
+                    dicht
+                    to="/mein-konto"
+                    uebergang={false}
+                    bild={eigenesBild}
+                    titel={user.profile.display_name}
+                    meta="Bild und Farbe"
+                  />
+                </ListRows>
               ) : null}
             </>
           );

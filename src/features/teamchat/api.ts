@@ -10,6 +10,7 @@ import { bereinigeTon, tontyp } from '@/features/platform/videometadaten';
 import { istPersonenfarbe, type Personenfarbe } from '@/components/ui/personenfarben';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { alsBase64, ausBase64 } from './profilbild';
 import { dauerSekunden } from './sprachnachricht';
 
 /**
@@ -247,8 +248,13 @@ const SAETZE: readonly (readonly [string, string])[] = [
   ['at most 50 pinned', 'Höchstens 50 angeheftete Nachrichten je Gespräch.'],
   ['only a reply can', 'Nur eine Antwort kann zusätzlich im Gespräch stehen.'],
   ['leave the channel instead', 'Selbst gehst du über „Kanal verlassen“.'],
-  // TEAM-006
+  // TEAM-006, TEAM-007 - vor dem allgemeinen „not found“.
   ['unknown color', 'Diese Farbe gibt es nicht.'],
+  [
+    'profile picture rejected',
+    'Dieses Bild nimmt der Server nicht an. Bitte ein anderes Foto wählen.',
+  ],
+  ['profile picture not found', 'Dieses Profilbild gibt es nicht mehr.'],
   // TEAM-003: Anhänge - vor dem allgemeinen „not found“.
   ['too many attachments', 'Höchstens fünf Anhänge je Nachricht.'],
   ['too many unsent attachments', 'Zu viele Anhänge warten. Erst senden oder entfernen.'],
@@ -440,24 +446,31 @@ export async function fetchPersonen(): Promise<Person[]> {
 }
 
 // -----------------------------------------------------------------------------
-// Farbe je Person (TEAM-006, ANN-666)
+// Farbe und Profilbild je Person (TEAM-006, TEAM-007, ANN-666, ANN-667)
 // -----------------------------------------------------------------------------
 
 /**
- * Außerhalb von `TEAMCHAT_KEY`: Jede Nachricht frischt den Teamchat auf, die
- * Farben ändern sich nur, wenn jemand die eigene wählt.
+ * Außerhalb von `TEAMCHAT_KEY`: Jede Nachricht frischt den Teamchat auf, Farbe
+ * und Bild ändern sich nur, wenn jemand die eigenen ändert.
  */
 export const AVATARE_KEY = ['teambilder'] as const;
+
+/** Ein Bild je Kennung: Ein neues Bild hat eine neue Kennung (ADR-017 Punkt 8). */
+export function profilbildKey(pictureId: string) {
+  return [...AVATARE_KEY, 'bild', pictureId] as const;
+}
 
 const avatarSchema = z.object({
   staff_member_id: z.string(),
   // Eine Farbe, die diese Fassung nicht kennt, wird zu `schiefer`, statt die
   // ganze Liste zu verwerfen.
   color: z.string().transform((farbe) => (istPersonenfarbe(farbe) ? farbe : 'schiefer')),
+  /** Kennung des Profilbilds - zugleich seine Fassung; ohne Bild `null`. */
+  picture_id: z.string().nullable().default(null),
 });
 export type Avatar = z.infer<typeof avatarSchema>;
 
-const LADEN_AVATARE = 'Die Farben des Teams konnten nicht geladen werden.';
+const LADEN_AVATARE = 'Bilder und Farben des Teams konnten nicht geladen werden.';
 
 export async function fetchAvatare(): Promise<Avatar[]> {
   const data = await rufe('list_team_avatars', {}, LADEN_AVATARE);
@@ -470,6 +483,40 @@ export async function waehleFarbe(farbe: Personenfarbe): Promise<void> {
     { p_color: farbe },
     'Die Farbe konnte nicht gespeichert werden.',
   );
+}
+
+/**
+ * Geladene Bilder als Objekt-URL, je Kennung genau eine: Ein Bild ändert sich
+ * nie, eine Liste mit 50 Nachrichten zeigt dieselbe Adresse 50-mal. Wenige
+ * Kilobyte je Person; freigegeben wird mit dem Neuladen der Seite.
+ */
+const geladeneBilder = new Map<string, string>();
+
+const LADEN_BILD = 'Das Profilbild konnte nicht geladen werden.';
+
+export async function ladeProfilbild(pictureId: string): Promise<string> {
+  const bekannt = geladeneBilder.get(pictureId);
+  if (bekannt) return bekannt;
+  const data = await rufe('get_team_profile_picture', { p_picture: pictureId }, LADEN_BILD);
+  const bild = ausBase64(antwort(z.string().min(1), data, LADEN_BILD));
+  const adresse = URL.createObjectURL(bild);
+  geladeneBilder.set(pictureId, adresse);
+  return adresse;
+}
+
+/** Das eigene Profilbild setzen - das gerechnete Quadrat aus `rechneProfilbild`. */
+export async function setzeProfilbild(bild: Blob): Promise<string> {
+  const SPEICHERN = 'Das Profilbild konnte nicht gespeichert werden.';
+  const data = await rufe(
+    'set_own_profile_picture',
+    { p_image: alsBase64(await alleBytes(bild)) },
+    SPEICHERN,
+  );
+  return antwort(z.string(), data, SPEICHERN);
+}
+
+export async function entferneProfilbild(): Promise<void> {
+  await rufe('remove_own_profile_picture', {}, 'Das Profilbild konnte nicht entfernt werden.');
 }
 
 const LADEN_MITGLIEDER = 'Die Mitglieder konnten nicht geladen werden.';

@@ -65,7 +65,7 @@ export function Personenbild({
         alt=""
         aria-hidden="true"
         data-personenbild="foto"
-        className={`${MASSE[groesse]} rounded-pill shrink-0 object-cover outline-2 outline-offset-2 ${UMRISS[f]}`}
+        className={`${MASSE[groesse]} rounded-pill shrink-0 object-cover outline-2 outline-offset-1 ${UMRISS[f]}`}
       />
     );
   }
