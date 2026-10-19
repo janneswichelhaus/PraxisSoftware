@@ -5,6 +5,14 @@ import type { PushRegistrierung } from '@/lib/push';
 import { getSupabase } from '@/lib/supabase';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
+import {
+  lebensmittelfehler,
+  lebensmittelSchema,
+  quelleSchema,
+  type Lebensmittel,
+  type LebensmittelAngaben,
+  type Quelle,
+} from '@/features/nutrition/lebensmittel';
 import { GESCHLECHTER, ZIELE, zielwerteSchema } from '@/features/nutrition/zielwerte';
 import { bereinigeVideo } from './videometadaten';
 
@@ -1870,6 +1878,8 @@ const eigeneErnaehrungSchema = z.object({
       }),
     ),
     targets: zielwerteSchema,
+    // ERN-005: die eigenen Lebensmittel der Person.
+    own_foods: z.array(lebensmittelSchema),
   }),
 });
 
@@ -1964,4 +1974,59 @@ export async function ernaehrungEinwilligen(
       p_wording_version: fassung,
     })) as { error: { message?: string } | null },
   );
+}
+
+// -----------------------------------------------------------------------------
+// ERN-EPIC-002: Lebensmittel nachschlagen und eigene anlegen (ADR-027 Punkte
+// 8 und 9). Gesucht wird im eigenen Katalog am Server, nie bei einem fremden
+// Dienst; eigene Lebensmittel nur mit Einwilligung, nie die Begleitung.
+// -----------------------------------------------------------------------------
+
+/** Die Suche der Person (`search_platform_foods`). */
+export async function lebensmittelSuchen(
+  zugangId: string,
+  begriff: string,
+): Promise<Lebensmittel[]> {
+  const satz = 'Die Suche hat nicht geklappt.';
+  const { data, error } = (await getSupabase().rpc('search_platform_foods', {
+    p_access_id: zugangId,
+    p_query: begriff,
+    p_limit: 20,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(lebensmittelSchema), data, satz);
+}
+
+/** Die Quellenangabe der Lebensmitteldaten. */
+export async function lebensmittelQuellen(): Promise<Quelle[]> {
+  const satz = 'Die Quellen konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_food_sources')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error(satz);
+  return antwort(z.array(quelleSchema), data, satz);
+}
+
+/** Ein eigenes Lebensmittel anlegen (`id` null) oder ändern. */
+export async function eigenesLebensmittelSpeichern(
+  zugangId: string,
+  id: string | null,
+  angaben: LebensmittelAngaben,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('save_platform_food', {
+    p_access_id: zugangId,
+    p_id: id,
+    p_food: angaben,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(lebensmittelfehler(error.message));
+}
+
+/** Ein eigenes Lebensmittel löschen. */
+export async function eigenesLebensmittelLoeschen(zugangId: string, id: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_platform_food', {
+    p_access_id: zugangId,
+    p_id: id,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(lebensmittelfehler(error.message));
 }

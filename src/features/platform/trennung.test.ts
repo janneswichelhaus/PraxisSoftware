@@ -57,6 +57,10 @@ const ERLAUBT: readonly RegExp[] = [
   // ERN-002: Form, Wörter und Anzeige der Zielwerte - ohne Datenzugriff; die
   // Zahlen kommen über die Plattformprojektion (`platform_nutrition`).
   /^@\/features\/nutrition\/(Rechenweg|texte|zielwerte|eingabe)$/,
+  // ERN-EPIC-002: Suche, Formular und Form der Lebensmittel - ohne
+  // Datenzugriff; gesucht und gespeichert wird über die Plattformwege in
+  // `api.ts` (die der Praxis stehen in `nutrition/lebensmittelApi.ts`).
+  /^@\/features\/nutrition\/(LebensmittelSuche|LebensmittelFormular|lebensmittel)$/,
   /^\.\//,
 ];
 
@@ -115,6 +119,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // KOM-007: Foto und Video an der eigenen Rückfrage (ADR-017 Abschnitt L);
       // die Prüfung am Server mit attachment_id (ANN-337).
       'rpc:confirm_message_attachment_upload',
+      // ERN-EPIC-002: eigene Lebensmittel löschen und speichern, suchen im
+      // eigenen Katalog, die Quellenangabe (Inhalt ohne Personenbezug).
+      'rpc:delete_platform_food',
       'rpc:delete_platform_message_attachment',
       'rpc:discard_message_attachment_upload',
       'rpc:discard_platform_questionnaire_response',
@@ -125,6 +132,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-014: freigegebene Dokumente und ihr Verweis.
       'rpc:issue_platform_file_link',
       'rpc:issue_platform_message_attachment_link',
+      'rpc:list_food_sources',
       // ALT-003: die eigenen Gewohnheiten, Tage vermerken, pausieren.
       'rpc:mark_platform_habit',
       'rpc:pause_platform_habit',
@@ -171,7 +179,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:request_platform_appointment',
       // POR-010: Termin ändern oder absagen als Wunsch.
       'rpc:request_platform_appointment_change',
+      'rpc:save_platform_food',
       'rpc:save_platform_questionnaire_response',
+      'rpc:search_platform_foods',
       // UEB-011: die eigenen Übungstage.
       'rpc:set_platform_exercise_days',
       'rpc:set_platform_notification_settings',

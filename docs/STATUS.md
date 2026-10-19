@@ -1,9 +1,13 @@
-# Status · Stand 2026-10-18
+# Status · Stand 2026-10-19
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
 
 ## Jetzt
+
+ERN-EPIC-002 Lebensmitteldaten (19.10., Branch `ccr-515873ee-nxqvqc`): Katalog aus BLS 4.0 und Open Food
+Facts im eigenen Server (Import nur Betrieb, `docs/betrieb/lebensmitteldaten.md`), Suche mit Tippfehlern
+< 300 ms, eigene Lebensmittel von Praxis und Person; Bibliothek „Lebensmittel“; ANN-656 bis ANN-659.
 
 ERN-EPIC-001 Ernährung, Profil und Bedarf (18.10., Branch `claude/admiring-ride-acixsl`): Profil an Akte
 oder Training nur für owner, eigene Einwilligung, Zielwerte mit Rechenweg und Überschreibung, Gewicht,
@@ -17,22 +21,18 @@ Teamchat-Anhänge (18.10., PR #273, TEAM-003 bis -005): Fotos und PDF bis fünf 
 Herunterladen und Virenprüfung; Sprachnachrichten bis zwei Minuten (ADR-017 Fassung 9, Fragen 33,
 34: Mikrofon der eigenen Herkunft frei); Senden während des Hochladens; ANN-652 bis ANN-655.
 
-Bewegung (16.10., Branch `claude/lucid-edison-9wdpux`): nach der Leinwand „Lebendig“ gleiten Reiter
-und Tableiste, Aufklapper und Chips federn, Fehlerfelder wackeln, eine Zeile wächst zur Seite; nur
-Gestaltung, Inhalt unverändert (ANN-567).
-
 Branch `claude/nifty-carson-wnmatp`: Vermerk „ohne Behandlung“ ohne eigenen Eintrag (ANN-565),
 Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholungen 6 bis 11
 (`product/gefuehrte-ablaeufe-und-antraege.md`, G1–G10).
 
-Offen auf Branches: Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
+Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
 (`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
 (`claude/eloquent-newton-p38ihe`). Gemergt: BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
 Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-ERN-EPIC-002 und -003 (je `/feature-loop`), dann Beratung abrechnen (ANN-622), dann eine Politurrunde;
+ERN-EPIC-003 (`/feature-loop`), dann Beratung abrechnen (ANN-622), dann eine Politurrunde;
 BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Bei Jannes
@@ -60,6 +60,5 @@ BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Letzte Session
 
-18.10.2026, Branch `claude/admiring-ride-acixsl`: Migrationen `20261206100000_ern_001_ernaehrungsprofil`,
-`20261206110000_ern_002_plattform_ernaehrung`, `20261206120000_ern_003_katalogposition`. **Lokal:**
-`git pull`, `supabase db reset`.
+19.10.2026, Branch `ccr-515873ee-nxqvqc`: Migrationen `20261214100000_ern_004_lebensmittelkatalog`,
+`20261214110000_ern_005_eigene_lebensmittel`. **Lokal:** `git pull`, `supabase db reset`.

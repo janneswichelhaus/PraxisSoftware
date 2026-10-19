@@ -991,7 +991,9 @@
           "id": "ern-epic-002",
           "name": "ERN-EPIC-002 Ernährung: Lebensmitteldaten",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "ERN-004 bis ERN-006, Zweitreview"
         },
         {
           "id": "ern-epic-003",

@@ -1434,3 +1434,18 @@ cross join lateral (
 update public.food_sources set version = 'Seed synthetisch', imported_at = now(),
   item_count = (select count(*) from public.food_catalog c
                 where c.source = food_sources.source and c.retired_at is null);
+
+-- Eigene Lebensmittel (ERN-005) - rein synthetisch: eines der Praxis, eines
+-- von Erika an ihrer Beratung (von ihr auf der Plattform angelegt).
+insert into public.custom_foods
+  (id, organization_id, owner_kind, profile_id, name, base_unit, energy_kcal, protein_g, fat_g,
+   carbohydrate_g, sugar_g, fibre_g, portions, platform_access_id, platform_access_kind,
+   created_by, updated_by) values
+  ('f1f1f1f1-f1f1-4f1f-8f1f-000000000001', '22222222-2222-4222-8222-000000000001', 'practice',
+   null, 'Proteinporridge nach Praxisrezept', 'g', 145, 9.5, 3.5, 18.0, 4.0, 2.5,
+   '[{"label": "1 Schale", "amount": 300}]', null, null,
+   '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('f1f1f1f1-f1f1-4f1f-8f1f-000000000002', '22222222-2222-4222-8222-000000000001', 'person',
+   'f0f0f0f0-f0f0-4f0f-8f0f-000000000001', 'Omas Dinkelbrot', 'g', 240, 9.0, 2.0, 44.0, null,
+   null, '[{"label": "1 Scheibe", "amount": 45}]', 'cafecafe-cafe-4afe-8afe-000000000002', 'self',
+   '11111111-1111-4111-8111-000000000009', '11111111-1111-4111-8111-000000000009');

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
@@ -58,6 +59,7 @@ export function Ernaehrung({ zugang }: { zugang: Plattformzugang }) {
 
 function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnaehrung }) {
   const p = daten.profile;
+  const { search } = useLocation();
   const widerrufen = p.consent?.state === 'withdrawn';
   return (
     <div className="flex flex-col gap-8">
@@ -72,6 +74,18 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnae
       <Section titel="Ihre Zielwerte">
         <Zielwertliste zielwerte={p.targets} />
       </Section>
+      {/* ERN-EPIC-002: nachschlagen und eigene Lebensmittel anlegen. */}
+      <ListRows beschriftung="Lebensmittel">
+        <ListRow
+          to={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel${search}`}
+          titel="Lebensmittel"
+          meta={
+            p.own_foods.length > 0
+              ? `Nachschlagen · ${p.own_foods.length} eigene`
+              : 'Nachschlagen und eigene anlegen'
+          }
+        />
+      </ListRows>
       <div className="flex flex-col gap-2">
         <Zielgewicht zugang={zugang} daten={daten} />
         <Tagebuch zugang={zugang} daten={daten} />

@@ -514,6 +514,18 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     params: (_v, f) => [E, f],
     gelingtDerPerson: true,
   },
+  // ERN-005: eigene Lebensmittel (Seed: Erikas „Omas Dinkelbrot“).
+  save_platform_food: {
+    sql: `select public.save_platform_food($1::uuid, null, '{"name": "Probe", "energy_kcal": 1,
+            "protein_g": 1, "fat_g": 1, "carbohydrate_g": 1}'::jsonb)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  delete_platform_food: {
+    sql: `select public.delete_platform_food($1::uuid, 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002')`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
 };
 
 /**
@@ -532,6 +544,8 @@ const KEIN_SCHREIBWEG_DER_PERSON: Readonly<Record<string, string>> = {
   record_companion_consent_withdrawn: 'Praxisseite, eigene Rollenprüfung',
   platform_nutrition:
     'lesend, aber nicht in der Einsicht: die Ernährung liest in der Praxis nur die Beratung (ERN-002, ADR-027 Punkt 4)',
+  search_platform_foods:
+    'lesend, Bezugsdaten ohne Personenbezug; nicht in der Einsicht wie platform_nutrition (ERN-004)',
 };
 
 describe('Einsicht der Praxisinhaber:in (E-001)', () => {

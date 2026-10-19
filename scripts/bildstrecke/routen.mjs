@@ -58,6 +58,9 @@ export const IDS = Object.freeze({
   radAnna: 'b2b2b2b2-b2b2-4b2b-8b2b-000000000011',
   /** Panne an Lastenrad 3 (gestern, Tim) - eine Meldung für den Arbeitgeber. */
   panne: 'b2b2b2b2-b2b2-4b2b-8b2b-000000000031',
+  /** Ein Lebensmittel der Praxis und eines von Erika (ERN-005). */
+  lebensmittelPraxis: 'f1f1f1f1-f1f1-4f1f-8f1f-000000000001',
+  lebensmittelErika: 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002',
   /**
    * Eine wohlgeformte Kennung ohne Zeile - für Seiten, zu denen der Seed
    * nichts hat. Bewusst kein Null-UUID: Die Seiten prüfen das Format.
@@ -540,6 +543,28 @@ export const ROUTEN = Object.freeze([
     pfad: '/praxis/instrumente',
     bereich: 'Doku und Befund',
     etikett: 'Instrumente (Tests und Skalen)',
+    konten: ['owner'],
+  },
+  // ERN-EPIC-002: Lebensmittel in der Bibliothek, nur die Beratung (owner).
+  {
+    muster: '/praxis/lebensmittel',
+    pfad: '/praxis/lebensmittel',
+    bereich: 'Organisation',
+    etikett: 'Lebensmittel',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/lebensmittel/neu',
+    pfad: '/praxis/lebensmittel/neu',
+    bereich: 'Organisation',
+    etikett: 'Lebensmittel anlegen',
+    konten: ['owner'],
+  },
+  {
+    muster: '/praxis/lebensmittel/:foodId',
+    pfad: `/praxis/lebensmittel/${IDS.lebensmittelPraxis}`,
+    bereich: 'Organisation',
+    etikett: 'Lebensmittel ändern',
     konten: ['owner'],
   },
   {
@@ -1261,6 +1286,27 @@ export const ROUTEN = Object.freeze([
     pfad: '/p/ernaehrung?bereich=treatment',
     bereich: 'Plattform',
     etikett: 'Plattform – Ernährung',
+    konten: ['plattform'],
+  },
+  {
+    muster: '/p/ernaehrung/lebensmittel',
+    pfad: '/p/ernaehrung/lebensmittel?bereich=treatment&q=Apfel',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Lebensmittel, Suche „Apfel“',
+    konten: ['plattform'],
+  },
+  {
+    muster: '/p/ernaehrung/lebensmittel/neu',
+    pfad: '/p/ernaehrung/lebensmittel/neu?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Eigenes Lebensmittel anlegen',
+    konten: ['plattform'],
+  },
+  {
+    muster: '/p/ernaehrung/lebensmittel/:foodId',
+    pfad: `/p/ernaehrung/lebensmittel/${IDS.lebensmittelErika}?bereich=treatment`,
+    bereich: 'Plattform',
+    etikett: 'Plattform – Eigenes Lebensmittel ändern',
     konten: ['plattform'],
   },
   {
