@@ -228,6 +228,8 @@ describe('Schema-Invarianten', () => {
       'nutrition_profiles',
       'nutrition_consent_records',
       'nutrition_weight_entries',
+      // ERN-005: eigene Lebensmittel der Praxis und der Person.
+      'custom_foods',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
