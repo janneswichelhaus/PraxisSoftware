@@ -478,7 +478,7 @@ revoke all on function public.delete_platform_food(uuid, uuid) from public, anon
 grant execute on function public.delete_platform_food(uuid, uuid) to authenticated;
 
 comment on function public.delete_platform_food(uuid, uuid) is
-  'ERN-005: ein eigenes Lebensmittel löschen - die Person oder ihre rechtliche Vertretung, an der laufenden Beratung dieses Zugangs, auch nach einem Widerruf; nie die Begleitung.';
+  'ERN-005: ein eigenes Lebensmittel löschen - die Person oder ihre rechtliche Vertretung, an der laufenden Beratung dieses Zugangs, auch nach einem Widerruf; nie die Begleitung. In der Lesefrist nicht (wie Gewicht und Zielgewicht, platform_access_writable): Dann löscht die Frist der Datenklasse mit dem Profil.';
 
 -- -----------------------------------------------------------------------------
 -- 6. Im Profil: Beratung und Auskunft (Art. 15), Plattform und Export (Art. 20)

@@ -1290,9 +1290,9 @@ export const ROUTEN = Object.freeze([
   },
   {
     muster: '/p/ernaehrung/lebensmittel',
-    pfad: '/p/ernaehrung/lebensmittel?bereich=treatment&q=Apfel',
+    pfad: '/p/ernaehrung/lebensmittel?bereich=treatment',
     bereich: 'Plattform',
-    etikett: 'Plattform – Lebensmittel, Suche „Apfel“',
+    etikett: 'Plattform – Lebensmittel',
     konten: ['plattform'],
   },
   {

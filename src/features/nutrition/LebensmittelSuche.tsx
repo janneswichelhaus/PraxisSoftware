@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Disclosure } from '@/components/ui/Card';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
@@ -36,6 +35,9 @@ import { zahl } from './texte';
  * Treffer zeigt die Nährwerte je 100 g bzw. ml und die Portionen. Keine
  * Bewertung eines Lebensmittels (ADR-006 Punkt 14).
  */
+/** Der letzte Begriff je Suche, nur im Arbeitsspeicher dieses Tabs. */
+const LETZTER_BEGRIFF = new Map<string, string>();
+
 export function LebensmittelSuche({
   suchen,
   schluessel,
@@ -53,18 +55,15 @@ export function LebensmittelSuche({
   /** Ein Knopf im Fenster eines Treffers, etwa „Bearbeiten“. */
   detailAktion?: (f: Lebensmittel) => ReactNode;
 }) {
-  // Der Begriff steht in der Adresse (`?q=`): Zurück aus einem Lebensmittel
-  // findet die Treffer wieder.
-  const [suche, setSuche] = useSearchParams();
-  const [eingabe, setEingabe] = useState(() => suche.get('q') ?? '');
+  // Der Begriff bleibt im Arbeitsspeicher, nie in der Adresse (ADR-011,
+  // ADR-027 Punkt 8: er verriete, was eine Person isst). Zurück aus einem
+  // Lebensmittel findet die Treffer wieder; Neuladen beginnt leer.
+  const ablage = JSON.stringify(schluessel);
+  const [eingabe, setEingabe] = useState(() => LETZTER_BEGRIFF.get(ablage) ?? '');
   const begriff = useVerzoegert(eingabe.trim(), 250);
   useEffect(() => {
-    if ((suche.get('q') ?? '') === begriff) return;
-    const neu = new URLSearchParams(suche);
-    if (begriff === '') neu.delete('q');
-    else neu.set('q', begriff);
-    setSuche(neu, { replace: true });
-  }, [begriff, suche, setSuche]);
+    LETZTER_BEGRIFF.set(ablage, begriff);
+  }, [ablage, begriff]);
   const [offen, setOffen] = useState<Lebensmittel | null>(null);
   const aktiv = suchschluessel(begriff).length >= MINDESTLAENGE;
   const abfrage = useQuery({

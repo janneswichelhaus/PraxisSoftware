@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useLocation } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/test-utils';
 import type { Lebensmittel } from './lebensmittel';
@@ -83,4 +84,24 @@ describe('LebensmittelSuche (ERN-EPIC-002)', () => {
     await userEvent.type(screen.getByLabelText('Lebensmittel suchen'), 'Xyzzy');
     expect(await screen.findByText('Nichts gefunden für „Xyzzy“.')).toBeInTheDocument();
   });
+
+  it('hält den Suchbegriff aus der Adresse heraus (ADR-011, ADR-027 Punkt 8)', async () => {
+    renderWithProviders(
+      <>
+        <LebensmittelSuche suchen={vi.fn().mockResolvedValue([HAFER])} schluessel={['test4']} />
+        <Adresse />
+      </>,
+      '/praxis/lebensmittel?bereich=treatment',
+    );
+    await userEvent.type(screen.getByLabelText('Lebensmittel suchen'), 'Schokolade');
+    await screen.findByRole('heading', { name: 'Treffer (1)' });
+    expect(screen.getByTestId('adresse').textContent).toBe(
+      '/praxis/lebensmittel?bereich=treatment',
+    );
+  });
 });
+
+function Adresse() {
+  const ort = useLocation();
+  return <output data-testid="adresse">{`${ort.pathname}${ort.search}`}</output>;
+}

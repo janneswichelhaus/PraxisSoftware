@@ -151,6 +151,12 @@ describe('Lebensmittel der Praxis (ERN-005)', () => {
       'select public.list_practice_foods() as l',
     );
     const id = rows[0]!.l[0]!.id;
+    // Auch direkt an der Tabelle: die Policy bindet an die eigene Organisation.
+    const { rows: direkt } = await asUser<{ n: number }>(
+      FREMDE_ORGANISATION.owner,
+      'select count(*)::int as n from public.custom_foods',
+    );
+    expect(direkt[0]!.n).toBe(0);
     expect(await suchen('Dinkelbrot', FREMDE_ORGANISATION.owner)).not.toContainEqual(
       expect.objectContaining({ name: 'Omas Dinkelbrot' }),
     );
@@ -364,4 +370,105 @@ describe('Eigene Lebensmittel der Person (ERN-005)', () => {
       ),
     ).toBe('54000');
   }, 120_000);
+});
+
+describe('Eigene Lebensmittel: Negativfälle der Plattform (ADR-023 Punkt 23)', () => {
+  const ZUGANG = platformAccesses.erikaBehandlung;
+  const ESSEN = 'f1f1f1f1-f1f1-4f1f-8f1f-000000000002';
+  const SUCHE = 'select public.search_platform_foods($1::uuid, $2, 5) as t';
+
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('gesperrter und entzogener Zugang: weder suchen noch schreiben noch löschen', async () => {
+    for (const zustand of ['locked', 'revoked'] as const) {
+      try {
+        await asPostgres(
+          `update public.platform_accesses
+              set status = $2,
+                  locked_at = case when $2 = 'locked' then now() end,
+                  locked_by = case when $2 = 'locked' then $3::uuid end,
+                  revoked_at = case when $2 = 'revoked' then now() end,
+                  revoked_by = case when $2 = 'revoked' then $3::uuid end,
+                  revoked_reason = case when $2 = 'revoked' then 'practice' end
+            where id = $1`,
+          [ZUGANG, zustand, users.office],
+        );
+        expect(await fehler(asUser(users.plattformErika, SUCHE, [ZUGANG, 'Apfel'])), zustand).toBe(
+          '42501',
+        );
+        expect(
+          await fehler(
+            asUser(users.plattformErika, PLATTFORM_SPEICHERN, [ZUGANG, null, JSON.stringify(BROT)]),
+          ),
+          zustand,
+        ).toBe('42501');
+        expect(
+          await fehler(asUser(users.plattformErika, PLATTFORM_LOESCHEN, [ZUGANG, ESSEN])),
+          zustand,
+        ).toBe('42501');
+      } finally {
+        await resetDatabase();
+      }
+    }
+  }, 120_000);
+
+  it('in der Lesefrist: nachschlagen ja, anlegen und löschen nein (wie Gewicht)', async () => {
+    try {
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = current_date - 2, care_concluded_at = now(),
+                care_concluded_by = $2::uuid
+          where id = $1`,
+        [patients.erika, users.therapist],
+      );
+      const { rows } = await asUser<{ t: unknown[] }>(users.plattformErika, SUCHE, [
+        ZUGANG,
+        'Apfel',
+      ]);
+      expect(rows[0]!.t.length).toBeGreaterThan(0);
+      expect(
+        await fehler(
+          asUser(users.plattformErika, PLATTFORM_SPEICHERN, [ZUGANG, null, JSON.stringify(BROT)]),
+        ),
+      ).toBe('42501');
+      expect(await fehler(asUser(users.plattformErika, PLATTFORM_LOESCHEN, [ZUGANG, ESSEN]))).toBe(
+        '42501',
+      );
+    } finally {
+      await resetDatabase();
+    }
+  }, 120_000);
+
+  it('die rechtliche Vertretung legt an wie die Person; wer, steht am Datensatz', async () => {
+    const BERND = 'cafecafe-cafe-4afe-8afe-0000000000e3';
+    const KONTO = '99999999-9999-4999-8999-0000000000e3';
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email)
+       values ($1, 'authenticated', 'authenticated', 'bernd.lebensmittel@patient.invalid')`,
+      [KONTO],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+          health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+       values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+               'guardianship', 'Bernd Betreuer',
+               array['identity_document', 'guardianship_certificate'],
+               true, false, $5, now(), $5)`,
+      [BERND, SEED.organizationId, patients.erika, KONTO, users.office],
+    );
+    const { rows } = await asUserCommitted<{ id: string }>(KONTO, PLATTFORM_SPEICHERN, [
+      BERND,
+      null,
+      JSON.stringify(MUESLI),
+    ]);
+    const { rows: art } = await asPostgres<{ k: string }>(
+      'select platform_access_kind as k from public.custom_foods where id = $1',
+      [rows[0]!.id],
+    );
+    expect(art[0]!.k).toBe('legal_representative');
+  });
 });
