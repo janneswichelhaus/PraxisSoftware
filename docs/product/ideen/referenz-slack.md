@@ -70,12 +70,13 @@ Entscheidung, die ihn aufheben würde.
 ## Vorschläge für mehr Übersicht (2026-10-19, nicht beauftragt)
 
 Antwort auf Jannes' Frage nach weiteren Ideen (PR zu TEAM-006 und TEAM-007). Keine davon braucht
-Präsenz, Lesebestätigung oder eine Auswertung über Personen (§20, ANN-609); keine ist gebaut.
+Präsenz, Lesebestätigung oder eine Auswertung über Personen (§20, ANN-609). Die ersten beiden sind
+auf Jannes' Antwort gebaut (TEAM-008, TEAM-009); die Karte ohne Nummer (ANN-668).
 
 | Vorschlag | Was es bringt | Aufwand |
 | --- | --- | --- |
-| Bilder auch in „Für dich“, Threads, Suche und „Für später“ | dieselbe Person überall gleich erkennbar; vier Abfragen liefern dafür die Kennung der Verfasser:in | klein, Migration |
-| Personenkarte beim Tipp auf Bild oder Namen | großes Bild, Name, Rolle, dienstliche Nummer (`tel:`), „Direktnachricht“ in einem Tipp | klein |
+| Bilder auch in „Für dich“, Threads, Suche und „Für später“ | dieselbe Person überall gleich erkennbar; vier Abfragen liefern dafür die Kennung der Verfasser:in | gebaut (TEAM-008) |
+| Personenkarte beim Tipp auf Bild oder Namen | großes Bild, Name, Rolle, dienstliche Nummer (`tel:`), „Direktnachricht“ in einem Tipp | gebaut ohne Nummer (TEAM-009, ANN-668) |
 | Letzte Nachricht als zweite Zeile in der Liste | „Anna: Kannst du heute …“ - am Telefon wissen, worum es geht, ohne zu öffnen | mittel, Migration |
 | Bilder der Antwortenden am Thread („3 Antworten“ mit zwei, drei kleinen Bildern) | sehen, wer schon geantwortet hat | klein, Migration |
 | Sprung zum ersten Ungelesenen und klebende Tagestrenner | nach der Tour dort weiterlesen, wo man aufgehört hat; beim Rollen wissen, welcher Tag | klein |
