@@ -2,17 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test-utils';
-import { ablageLeeren, speicherImSpeicher, speicherSetzen } from '@/lib/geraeteablage';
+import {
+  ablageLeeren,
+  dauerfachAendern,
+  speicherImSpeicher,
+  speicherSetzen,
+} from '@/lib/geraeteablage';
 import { useAbmeldeanfrage } from '@/app/abmeldeschutz';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { ohneNetzFuer } from '@/app/ohneNetz';
 import { AufGeraetSichern } from './AufGeraetSichern';
 import { EntwurfAbmeldewache } from './EntwurfAbmeldewache';
 import { Geraetehinweis } from './Geraetehinweis';
+import { TagesplanRaeumen } from './TagesplanRaeumen';
 import { entwuerfeLesen, entwuerfeZuruecksetzen, entwurfSchreiben } from './entwuerfe';
 import { praxisOhneNetz } from './ohneNetz';
 import { einrichten } from './servicePhone';
-import { tagesplanAblegen } from './tagesplan';
+import { tagesplanAblegen, tagesplanLesen } from './tagesplan';
 import type { DayPlanEntry } from '@/features/today/api';
 
 /**
@@ -87,13 +93,47 @@ describe('EntwurfAbmeldewache', () => {
     expect(abmelden).toHaveBeenCalledTimes(1);
     expect(await entwuerfeLesen(ANNA)).toHaveLength(2);
     await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
+    // Verwerfen nur nach Rückfrage: ein Tipp allein nimmt nichts (BEF-150).
     await userEvent.click(await screen.findByRole('button', { name: 'Verwerfen und abmelden' }));
+    expect(abmelden).toHaveBeenCalledTimes(1);
+    expect(await entwuerfeLesen(ANNA)).toHaveLength(2);
+    expect(screen.getByText(/Verworfen sind sie weg – auch für die Praxis/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Endgültig verwerfen und abmelden' }));
     await waitFor(() => expect(abmelden).toHaveBeenCalledTimes(2));
     expect(await entwuerfeLesen(ANNA)).toHaveLength(0);
+  });
+
+  it('zählt Einträge mit, die diese Fassung nicht lesen kann, und nennt sie (BEF-150)', async () => {
+    await dauerfachAendern(ANNA, 'entwuerfe', () => ({
+      entwuerfe: [{ aus: 'einer späteren Fassung' }],
+      unlesbar: [],
+    }));
+    const abmelden = vi.fn();
+    renderWithProviders(
+      <AbmeldeschutzProvider onAbmelden={abmelden}>
+        <EntwurfAbmeldewache besitzer={ANNA} />
+        <Kopfzeile />
+      </AbmeldeschutzProvider>,
+    );
+    await waitFor(async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
+      expect(screen.getByRole('dialog', { name: 'Noch nicht übertragen' })).toBeInTheDocument();
+    });
+    expect(abmelden).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/Darunter ein Eintrag, den diese Fassung der Anwendung nicht lesen kann/),
+    ).toBeInTheDocument();
   });
 });
 
 describe('Geraetehinweis', () => {
+  it('zählt auch Einträge, die diese Fassung nicht lesen kann (BEF-150)', async () => {
+    await dauerfachAendern(ANNA, 'entwuerfe', () => ({ entwuerfe: [], unlesbar: [{ x: 1 }] }));
+    renderWithProviders(<Geraetehinweis besitzer={ANNA} />);
+    expect(await screen.findByText('Noch nicht übertragen:')).toBeInTheDocument();
+    expect(screen.getByText(/ein Entwurf auf/)).toBeInTheDocument();
+  });
+
   it('sagt „Noch nicht übertragen" mit der Zahl, auch mit Verbindung', async () => {
     await entwurfSchreiben(ANNA, 't1', KOPF, 'Synthetisch.');
     renderWithProviders(<Geraetehinweis besitzer={ANNA} />);
@@ -190,5 +230,16 @@ describe('AufGeraetSichern an der Schreibseite', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Auf dem Gerät sichern' }));
     await waitFor(() => expect(gesichert).toHaveBeenCalled());
     expect((await entwuerfeLesen(ANNA))[0]).toMatchObject({ terminId: 't1', text: 'Synthetisch.' });
+  });
+});
+
+describe('TagesplanRaeumen (BEF-150)', () => {
+  it('nimmt den Tagesplan vom Gerät, sobald das Konto nicht mehr dokumentieren darf', async () => {
+    await einrichten(ANNA);
+    const heute = new Intl.DateTimeFormat('en-CA', { timeZone: ZONE }).format(new Date());
+    await tagesplanAblegen(ANNA, ZONE, heute, []);
+    expect(await tagesplanLesen(ANNA)).not.toBeNull();
+    renderWithProviders(<TagesplanRaeumen besitzer={ANNA} />);
+    await waitFor(async () => expect(await tagesplanLesen(ANNA)).toBeNull());
   });
 });

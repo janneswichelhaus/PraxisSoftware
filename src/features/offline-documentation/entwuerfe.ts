@@ -170,6 +170,42 @@ export async function entwurfVerwerfen(besitzer: string, id: string): Promise<vo
   melden();
 }
 
+/**
+ * Einen abgewiesenen Entwurf noch einmal senden (BEF-150): Hat die Person das
+ * Recht inzwischen wieder - etwa nach einer Vertretung -, muss sie den Text
+ * nicht kopieren. Er wartet wieder und geht mit der nächsten Übertragung
+ * hinaus; weist der Server erneut ab, steht er wieder hier. Liegt am Termin
+ * schon ein neuer wartender Entwurf, bleibt er abgewiesen (`false`): Zwei
+ * wartende Texte am selben Termin kämen als Konflikt an.
+ */
+export async function entwurfErneutSenden(besitzer: string, id: string): Promise<boolean> {
+  let erneut = false;
+  await dauerfachAendern(besitzer, FACH, (alt) => {
+    const f = fach(alt);
+    const e = f.entwuerfe.find((x) => x.id === id && x.zustand === 'abgewiesen');
+    if (!e) return oderNichts(f);
+    if (f.entwuerfe.some((x) => x.terminId === e.terminId && x.zustand === 'wartet')) {
+      return oderNichts(f);
+    }
+    e.zustand = 'wartet';
+    e.grund = null;
+    erneut = true;
+    return f;
+  });
+  melden();
+  if (erneut) uebertragungAnstossen();
+  return erneut;
+}
+
+/**
+ * Wie viele Einträge diese Fassung der Anwendung nicht lesen kann (BEF-150).
+ * Sie zählen beim Hinweis und beim Abmelden mit, damit „Verwerfen und
+ * abmelden" sie nicht ungenannt mitnimmt.
+ */
+export async function unlesbareZaehlen(besitzer: string): Promise<number> {
+  return fach(await dauerfachLesen(besitzer, FACH)).unlesbar.length;
+}
+
 /** Beim ausdrücklichen Verwerfen vor dem Abmelden: alles dieses Kontos. */
 export async function alleEntwuerfeVerwerfen(besitzer: string): Promise<void> {
   await dauerfachAendern(besitzer, FACH, () => undefined);
@@ -359,7 +395,36 @@ export function useEntwuerfe(besitzer: string): Entwurf[] | undefined {
   return stand;
 }
 
+/** Die Zahl der unlesbaren Einträge - live; 0, solange gelesen wird (BEF-150). */
+export function useUnlesbare(besitzer: string): number {
+  const [zahl, setZahl] = useState(0);
+  useEffect(() => {
+    let aktiv = true;
+    const neu = () =>
+      void unlesbareZaehlen(besitzer).then(
+        (n) => {
+          if (aktiv) setZahl(n);
+        },
+        () => undefined,
+      );
+    neu();
+    hoerer.add(neu);
+    return () => {
+      aktiv = false;
+      hoerer.delete(neu);
+    };
+  }, [besitzer]);
+  return zahl;
+}
+
 /** „ein Entwurf“, „2 Entwürfe“ – für Hinweise und Rückfragen. */
 export function zahlSatz(n: number): string {
   return n === 1 ? 'ein Entwurf' : `${n} Entwürfe`;
+}
+
+/** „ein Eintrag, den …“, „2 Einträge, die …“ – unlesbare Einträge (BEF-150). */
+export function unlesbarSatz(n: number): string {
+  return n === 1
+    ? 'ein Eintrag, den diese Fassung der Anwendung nicht lesen kann'
+    : `${n} Einträge, die diese Fassung der Anwendung nicht lesen kann`;
 }

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useIstVerbunden } from '@/app/verbindung';
-import { useEntwuerfe, zahlSatz } from './entwuerfe';
+import { useEntwuerfe, useUnlesbare, zahlSatz } from './entwuerfe';
 import { useEinrichtung } from './servicePhone';
 
 /**
@@ -13,8 +13,10 @@ import { useEinrichtung } from './servicePhone';
 export function Geraetehinweis({ besitzer }: { besitzer: string }) {
   const einrichtung = useEinrichtung(besitzer);
   const entwuerfe = useEntwuerfe(besitzer);
+  // Unlesbare Einträge zählen mit (BEF-150): Auch sie hat die Praxis nicht.
+  const unlesbar = useUnlesbare(besitzer);
   const verbunden = useIstVerbunden();
-  const zahl = entwuerfe?.length ?? 0;
+  const zahl = (entwuerfe?.length ?? 0) + unlesbar;
 
   if (zahl === 0 && (verbunden || !einrichtung)) return null;
   return (

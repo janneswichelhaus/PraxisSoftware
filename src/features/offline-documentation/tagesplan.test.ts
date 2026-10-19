@@ -7,7 +7,9 @@ import {
   tagesplanAblegen,
   tagesplanLesen,
   tagesplanTerminSchema,
+  tagesplanVerwerfen,
 } from './tagesplan';
+import { entwuerfeLesen, entwurfSchreiben } from './entwuerfe';
 
 /** OFF-001: Einrichtung des Diensttelefons und die Feldliste des Tagesplans (ADR-024 Punkt 6). */
 
@@ -141,5 +143,30 @@ describe('Tagesplan auf dem Gerät (OFF-001)', () => {
     await tagesplanAblegen(ANNA, ZONE, '2026-10-12', [eintrag()]);
     await ablageLeeren();
     expect(await tagesplanLesen(ANNA)).toBeNull();
+  });
+});
+
+describe('Ohne Dokumentationsrecht (BEF-150)', () => {
+  it('räumt den Tagesplan sofort, die Entwürfe bleiben', async () => {
+    await einrichten(ANNA);
+    await tagesplanAblegen(ANNA, ZONE, '2026-10-12', [eintrag()]);
+    await entwurfSchreiben(
+      ANNA,
+      't1',
+      {
+        beginn: '2026-10-12T08:00:00Z',
+        ende: '2026-10-12T08:45:00Z',
+        zeitzone: ZONE,
+        name: 'Erika Beispiel',
+        terminart: 'home_visit',
+      },
+      'Synthetisch: geschrieben, bevor das Recht wegfiel.',
+    );
+    expect(await tagesplanLesen(ANNA)).not.toBeNull();
+    await tagesplanVerwerfen(ANNA);
+    expect(await fachLesen(ANNA, 'tagesplan')).toBeUndefined();
+    // Die Einrichtung bleibt, und ein Entwurf fällt nie still (§13).
+    expect(await einrichtungLesen(ANNA)).not.toBeNull();
+    expect(await entwuerfeLesen(ANNA)).toHaveLength(1);
   });
 });

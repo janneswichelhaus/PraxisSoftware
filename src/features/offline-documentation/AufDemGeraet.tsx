@@ -20,9 +20,12 @@ import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung
 import {
   bearbeitungBeginnen,
   entwurfAmTermin,
+  entwurfErneutSenden,
   entwurfSchreiben,
   entwurfVerwerfen,
+  unlesbarSatz,
   useEntwuerfe,
+  useUnlesbare,
   zahlSatz,
   type Entwurf,
   type Entwurfskopf,
@@ -39,8 +42,9 @@ import { tagesplanLesen, type TagesplanTermin } from './tagesplan';
  * (`PraxisAblage`), nie aus der lokalen Ansicht.
  *
  * `serverwege` gibt es nur in offener Sitzung: Dann führen Konflikte zur
- * Dokumentation des Termins und in die Wege aus ANN-320. Ohne sie bleibt nur
- * Kopieren und ausdrückliches Verwerfen - verloren geht nichts (§13).
+ * Dokumentation des Termins und in die Wege aus ANN-320, und ein abgewiesener
+ * Entwurf lässt sich erneut senden (BEF-150). Ohne sie bleibt nur Kopieren
+ * und ausdrückliches Verwerfen - verloren geht nichts (§13).
  */
 
 export interface Serverwege {
@@ -121,6 +125,7 @@ export function AufDemGeraet({
     gcTime: 0,
   });
   const entwuerfe = useEntwuerfe(besitzer);
+  const unlesbar = useUnlesbare(besitzer);
 
   if (plan.isPending || entwuerfe === undefined) {
     return <LoadingState label="Wird vom Gerät gelesen …" />;
@@ -143,13 +148,21 @@ export function AufDemGeraet({
 
   return (
     <div className="flex flex-col gap-2">
-      <Statusmeldung ton={entwuerfe.length > 0 ? 'warnung' : 'erfolg'}>
+      <Statusmeldung ton={entwuerfe.length + unlesbar > 0 ? 'warnung' : 'erfolg'}>
         {wartend > 0
           ? `Noch nicht übertragen: ${zahlSatz(wartend)} auf diesem Gerät.${ohneVerbindung ? ' Übertragen wird, sobald Verbindung besteht und Sie entsperrt haben.' : ''}`
-          : entwuerfe.length > 0
+          : entwuerfe.length + unlesbar > 0
             ? 'Nicht alles ist übertragen. Bitte unten ansehen.'
             : 'Alles übertragen. Auf dem Gerät liegt kein Entwurf.'}
       </Statusmeldung>
+      {/* BEF-150: Was eine spätere Fassung abgelegt hat, fällt nicht still. */}
+      {unlesbar > 0 ? (
+        <Statusmeldung ton="warnung">
+          Außerdem {unlesbar === 1 ? 'liegt' : 'liegen'} hier {unlesbarSatz(unlesbar)}.{' '}
+          {unlesbar === 1 ? 'Er bleibt' : 'Sie bleiben'} auf dem Gerät, bis eine passende Fassung{' '}
+          {unlesbar === 1 ? 'ihn' : 'sie'} liest oder Sie beim Abmelden alles verwerfen.
+        </Statusmeldung>
+      ) : null}
 
       {entwuerfe.length > 0 ? (
         <Section titel="Entwürfe auf diesem Gerät">
@@ -308,6 +321,15 @@ function Entwurfskarte({
     }
   }
 
+  async function erneutSenden() {
+    setFehler(null);
+    if (!(await entwurfErneutSenden(besitzer, e.id))) {
+      setFehler(
+        'Am Termin liegt schon ein neuer Entwurf. Bitte diesen Text kopieren und dort einfügen.',
+      );
+    }
+  }
+
   async function fassungZeigen() {
     if (!serverwege) return;
     setFehler(null);
@@ -374,6 +396,9 @@ function Entwurfskarte({
 
       <div className="mt-3 flex flex-wrap gap-2">
         {e.zustand === 'wartet' ? <Button onClick={onWeiter}>Weiterschreiben</Button> : null}
+        {e.zustand === 'abgewiesen' && serverwege ? (
+          <Button onClick={() => void erneutSenden()}>Erneut senden</Button>
+        ) : null}
         {e.zustand === 'konflikt' && serverwege && e.vorhanden ? (
           <>
             {e.vorhanden.status === 'final' ? (
