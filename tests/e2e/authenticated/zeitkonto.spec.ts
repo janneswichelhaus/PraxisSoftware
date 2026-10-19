@@ -181,9 +181,10 @@ test('G9: Anna trägt Überstunden ab Dienstende in fünf Tipps ein (ZK-001, ANN
   await rolltNicht(datum);
   await bild(page, 'b9-g9-02-tag-375');
   // Werktags „Heute“, am Samstag „Gestern“, sonst der Freitag im Kalender -
-  // je ein Tipp (am Monatsanfang dazu einer zurück).
+  // je ein Tipp (am Monatsanfang dazu einer zurück). „Heute“ exakt: Der
+  // heutige Tag im Monatsblatt heißt „…, heute“ (BEF-186).
   if (ARBEITSTAG === HEUTE) {
-    await t.tippe(datum.getByRole('button', { name: 'Heute' }));
+    await t.tippe(datum.getByRole('button', { name: 'Heute', exact: true }));
   } else if (ARBEITSTAG === plusTage(HEUTE, -1)) {
     await t.tippe(datum.getByRole('button', { name: 'Gestern' }));
   } else {

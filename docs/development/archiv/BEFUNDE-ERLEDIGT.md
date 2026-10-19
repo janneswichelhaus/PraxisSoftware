@@ -1610,3 +1610,15 @@ eingeklappt.
 | Berührt | `app.electricity_amount_cents` (ANN-605), Tagesroute (`map_006b`), Adapter des Kartendienstes |
 
 **Beobachtung.** Der Ladestrom rechnet mit einem festen Wert „km je Arbeitsstunde“ (ANN-605). **Erwartet.** Beim Beantragen eines abgeschlossenen Monats berechnet der Server die geplanten Tourstrecken der eigenen Person neu und hält nur die Monatssumme am Antrag fest – keine Tageswerte, keine Routen (ADR-019 Fassung 6, Punkte 16 und 17). Bis zum Gate aus ADR-019 Punkt 9 nur mit synthetischen Adressen; ohne Ergebnis bleibt der Wert je Stunde.
+
+### BEF-186 — Ablauftest G9 im Zeitkonto ist an Werktagen rot
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-19 |
+| Bereich | Tests: `tests/e2e/authenticated/zeitkonto.spec.ts` (ZK-001, G9) |
+| Quelle  | CI der PR #273, Teil 3/3 (Läufe 788 und 789), lokal nachgestellt |
+| Status  | erledigt 2026-10-19 (PR #273): Knopf „Heute“ mit `exact: true`; lokal am Montag erst rot, dann 3/3 grün |
+| Berührt | G9 (`name: 'Heute', exact: true`), `Monatsblatt.tsx` („…, heute“ im Namen der Zelle) |
+
+**Beobachtung.** Werktags (Berliner Zeit) tippt G9 auf `getByRole('button', { name: 'Heute' })`. Seit das Monatsblatt die heutige Zelle „Montag, 19. Oktober 2026, heute“ nennt, trifft das zwei Knöpfe, und Playwright bricht ab. Der Test wurde an einem Samstag zuletzt geändert und lief seither nur im Zweig für Samstag und Sonntag. **Erwartet.** `{ name: 'Heute', exact: true }`; lokal damit 3/3 grün.

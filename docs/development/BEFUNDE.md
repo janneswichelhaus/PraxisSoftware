@@ -718,18 +718,6 @@ Marke vorsieht.
 
 **Beobachtung.** „zeigt der Person ihre Beratung mit fester Schlüsselliste, ohne Notizen“ erwartet `occurred_on` = `app.training_today(…) - 21` (Tag der Praxis), der Seed schreibt `current_date - 21` (Tag der Datenbank, UTC). Zwischen 0 und 2 Uhr Sommerzeit (0 und 1 Uhr Winterzeit) liegen sie einen Tag auseinander; sonst grün. **Erwartet.** Seed und Test rechnen mit demselben Tag, etwa beide mit `app.training_today`.
 
-### BEF-186 — Ablauftest G9 im Zeitkonto ist an Werktagen rot
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-19 |
-| Bereich | Tests: `tests/e2e/authenticated/zeitkonto.spec.ts` (ZK-001, G9) |
-| Quelle  | CI der PR #273, Teil 3/3 (Läufe 788 und 789), lokal nachgestellt |
-| Status  | offen |
-| Berührt | Zeile 186 (`name: 'Heute'`), `Monatsblatt.tsx` („…, heute“ im Namen der Zelle) |
-
-**Beobachtung.** Werktags (Berliner Zeit) tippt G9 auf `getByRole('button', { name: 'Heute' })`. Seit das Monatsblatt die heutige Zelle „Montag, 19. Oktober 2026, heute“ nennt, trifft das zwei Knöpfe, und Playwright bricht ab. Der Test wurde an einem Samstag zuletzt geändert und lief seither nur im Zweig für Samstag und Sonntag. **Erwartet.** `{ name: 'Heute', exact: true }`; lokal damit 3/3 grün.
-
 ### BEF-187 — Teamchat: Mit dem Hinweis „Keine Verbindung“ verdeckt die Tableiste das Kleingedruckte
 
 |         |   |
