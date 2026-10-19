@@ -1127,6 +1127,24 @@
           "vermerk": "Antwort auf Frage 5 der PR zu TEAM-006 und TEAM-007 (wie empfohlen); ANN-668"
         },
         {
+          "id": "bef-183",
+          "name": "BEF-183 Reiterleiste: „›“ als 44-px-Knopf neben der Liste holt den ersten ganz verdeckten Reiter nach vorn",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/components/ui/Objektkopf.test.tsx, PatientRecordLayout.test.tsx, tests/e2e/authenticated/ernaehrung.spec.ts (Reiter über reiterAntippen, „›“ zählt mit), Design-Review",
+          "vermerk": "Entscheidung Jannes 2026-10-18; nur rechts ein Knopf, damit „Behandlungsgrundlagen“ bei 375 px ganz hineinpasst"
+        },
+        {
+          "id": "bef-150",
+          "name": "BEF-150 Ränder der Entwürfe auf dem Diensttelefon: erneut senden, unlesbare mitzählen, Rückfrage vor dem Verwerfen, Tagesplan bei Rollenwegfall räumen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/offline-documentation/entwuerfe.test.ts, AufDemGeraet.test.tsx, ohneEmpfang.test.tsx, tagesplan.test.ts",
+          "vermerk": "/weiter aus STATUS „Danach“; Entwürfe fallen nie still (§13)"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

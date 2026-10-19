@@ -499,20 +499,6 @@ Marke vorsieht.
 
 **Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
 
-### BEF-150 — Ränder der Entwürfe auf dem Diensttelefon
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-12 |
-| Bereich | Dokumentation ohne Empfang: „Auf dem Gerät“ (OFF-EPIC-001) |
-| Quelle  | Zweitreview OFF-EPIC-001 (Hinweise H1, H4, H6, H7) |
-| Status  | offen |
-| Berührt | `src/features/offline-documentation/entwuerfe.ts`, `AufDemGeraet.tsx`, `EntwurfAbmeldewache.tsx`, `PraxisAblage.tsx` |
-
-**Beobachtung.** (1) Ein abgewiesener Entwurf lässt sich nur kopieren oder verwerfen, nicht erneut senden – auch wenn das Recht inzwischen wieder besteht. (2) Einträge, die eine spätere Fassung der Anwendung nicht lesen kann (`unlesbar`), bleiben liegen, zählen aber weder im Hinweis noch beim Abmelden mit; „Verwerfen und abmelden“ nimmt sie ungenannt mit. (3) „Verwerfen und abmelden“ ist ein Tipp ohne zweite Bestätigung. (4) Fällt nur das Dokumentationsrecht weg (Zugang bleibt aktiv), bleibt der Tagesplan bis Tagesende oder Abmelden auf dem Gerät. Daneben: Bei zwei Tabs kann eine Änderung der Dauerablage die andere überholen (Lesen und Schreiben in getrennten Transaktionen); im Zustand „halten“ der Sperre kann ein Wieder-online übertragen, bevor die Oberfläche entsperrt ist (der Server weist mit 28000 ab).
-
-**Erwartet.** Einzel-Story-Loop vor dem Scharfschalten mit echten Daten: „Erneut senden“ an der Abweisung, `unlesbar` mitzählen, Rückfrage vor dem Verwerfen beim Abmelden, Tagesplan auch bei Rollenwegfall räumen.
-
 ### BEF-153 — Spracheingabe auf der Schreibseite
 
 |         |   |
@@ -678,20 +664,6 @@ Marke vorsieht.
 **Beobachtung.** Die Auskunft der Praxis geht nur von der Akte aus. Für eine Person, die nur trainiert, gibt es keine vollständige Kopie; der Export der Plattform trägt die Schlüsselliste der Plattform (ohne Notizen der Beratung, ohne Verlauf der Einwilligung) und fehlt ohne Zugang ganz. Seit ERN-EPIC-001 betrifft das auch Gesundheitsdaten nach Art. 9 (ADR-027 Punkt 6: „Auskunft und Export enthalten alles“). **Erwartet.** Eine Auskunft je Trainingsverhältnis für owner, wie `export_patient_record`, mit Protokolleintrag nach dem Katalog. Pfad A.
 
 **Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: ein kleiner Pfad-A-Auftrag vor M3.
-
-### BEF-183 — Reiterleiste: der letzte Reiter liegt bei 375 px hinter einem Wisch
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-18 |
-| Bereich | Akte, Trainingsverhältnis (`src/components/ui/Reiterleiste.tsx`) |
-| Quelle  | Praxis-Review ERN-EPIC-001 |
-| Status  | eingeplant: Entscheidung Jannes 2026-10-18 (mit ANN-620) |
-| Berührt | `Reiterleiste.tsx` (Zeichen „›“ mit `aria-hidden`), Ablauftests der Akte |
-
-**Beobachtung.** Mit fünf Reitern (owner, ERN-EPIC-001) liegen „Ernährung“ und „Stammdaten“ bei 375 px rechts außerhalb; das „›“ ist nur Zeichen. Mit Handschuh trifft der Wisch oft den Reiter daneben; Playwright scrollt von selbst und zählt den Wisch nicht. **Erwartet.** „›“ als Knopf, der zum nächsten verdeckten Reiter schiebt; Ablauftests prüfen vor dem Tippen, ob der Reiter sichtbar ist.
-
-**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: fünf Reiter bestätigt, die Leiste wird verbessert.
 
 ### BEF-184 — Einwilligung „Ernährungsberatung“: das unterschriebene Blatt bleibt außerhalb der Anwendung
 

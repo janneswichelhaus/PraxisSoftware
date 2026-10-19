@@ -1648,3 +1648,31 @@ eingeklappt.
 **Beobachtung.** Ohne Netz schiebt der Hinweis oben die Seite um gut 70 px nach unten. „Senden“ bleibt über der Tableiste (gemessen: 16 px bei 375 × 812 und 375 × 667), die Zeile „Befunde und Diagnosen gehören in die Akte.“ darunter liegt aber halb hinter ihr. Ohne Hinweis bleiben unter der Eingabe rund 60 px frei. **Erwartet.** Die Fläche endet mit und ohne Hinweis an der Oberkante der Tableiste; Ablauftest mit `context.setOffline(true)` bei 375 × 667.
 
 **Ursache.** Die Fläche maß nur neu, wenn die ganze Seite ihre Größe änderte. Die ist aber mindestens bildschirmhoch: Fiel die Unterleiste der Liste beim Öffnen eines Gesprächs weg (61 px) oder ging der Hinweis wieder weg, blieb die alte Höhe stehen - am Telefon fehlten in jedem Gespräch 61 px, und der Hinweis schob das Kleingedruckte dann hinter die Tableiste. Am Rechner blieb nach dem Wiederverbinden unten eine Lücke.
+
+### BEF-150 — Ränder der Entwürfe auf dem Diensttelefon
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-12 |
+| Bereich | Dokumentation ohne Empfang: „Auf dem Gerät“ (OFF-EPIC-001) |
+| Quelle  | Zweitreview OFF-EPIC-001 (Hinweise H1, H4, H6, H7) |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): „Erneut senden“ an der Abweisung, `unlesbar` zählt mit und wird genannt, Rückfrage vor „Verwerfen und abmelden“, `TagesplanRaeumen` bei Wegfall des Dokumentationsrechts; Tests in `entwuerfe.test.ts`, `AufDemGeraet.test.tsx`, `ohneEmpfang.test.tsx`, `tagesplan.test.ts` |
+| Berührt | `src/features/offline-documentation/entwuerfe.ts`, `AufDemGeraet.tsx`, `EntwurfAbmeldewache.tsx`, `PraxisAblage.tsx` |
+
+**Beobachtung.** (1) Ein abgewiesener Entwurf lässt sich nur kopieren oder verwerfen, nicht erneut senden – auch wenn das Recht inzwischen wieder besteht. (2) Einträge, die eine spätere Fassung der Anwendung nicht lesen kann (`unlesbar`), bleiben liegen, zählen aber weder im Hinweis noch beim Abmelden mit; „Verwerfen und abmelden“ nimmt sie ungenannt mit. (3) „Verwerfen und abmelden“ ist ein Tipp ohne zweite Bestätigung. (4) Fällt nur das Dokumentationsrecht weg (Zugang bleibt aktiv), bleibt der Tagesplan bis Tagesende oder Abmelden auf dem Gerät. Daneben: Bei zwei Tabs kann eine Änderung der Dauerablage die andere überholen (Lesen und Schreiben in getrennten Transaktionen); im Zustand „halten“ der Sperre kann ein Wieder-online übertragen, bevor die Oberfläche entsperrt ist (der Server weist mit 28000 ab).
+
+**Erwartet.** Einzel-Story-Loop vor dem Scharfschalten mit echten Daten: „Erneut senden“ an der Abweisung, `unlesbar` mitzählen, Rückfrage vor dem Verwerfen beim Abmelden, Tagesplan auch bei Rollenwegfall räumen.
+
+### BEF-183 — Reiterleiste: der letzte Reiter liegt bei 375 px hinter einem Wisch
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-18 |
+| Bereich | Akte, Trainingsverhältnis (`src/components/ui/Reiterleiste.tsx`) |
+| Quelle  | Praxis-Review ERN-EPIC-001 |
+| Status  | erledigt 2026-10-19 (Branch `ccr-37917f35-emdjjp`): „›“ als 44-px-Knopf neben der Liste holt den ersten ganz verdeckten Reiter nach vorn (nicht über dem Verlauf, Design-Review); Ablauftests über `reiterAntippen`, Ernährung an der Akte in 4 Tipps mit gezähltem „›“ |
+| Berührt | `Reiterleiste.tsx` (Zeichen „›“ mit `aria-hidden`), Ablauftests der Akte |
+
+**Beobachtung.** Mit fünf Reitern (owner, ERN-EPIC-001) liegen „Ernährung“ und „Stammdaten“ bei 375 px rechts außerhalb; das „›“ ist nur Zeichen. Mit Handschuh trifft der Wisch oft den Reiter daneben; Playwright scrollt von selbst und zählt den Wisch nicht. **Erwartet.** „›“ als Knopf, der zum nächsten verdeckten Reiter schiebt; Ablauftests prüfen vor dem Tippen, ob der Reiter sichtbar ist.
+
+**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: fünf Reiter bestätigt, die Leiste wird verbessert.
