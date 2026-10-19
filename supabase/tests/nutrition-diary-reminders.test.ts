@@ -315,11 +315,17 @@ describe('Erinnerungen an das Tagebuch (ERN-009)', () => {
     // Gleiche Wahl noch einmal gespeichert: dieselbe Zeile, kein zweiter Auftrag.
     await waehlen([{ meal: 'snack', time: jetzt }]);
     expect((await asPostgres<{ n: number }>(ANLEGEN)).rows[0]!.n).toBe(0);
-    // Auf eine andere Uhrzeit und zurück: am selben Tag greift die Grenze je Mahlzeit.
+    // Andere Uhrzeit am selben Tag: dieselbe Zeile, darum greift die Grenze je Mahlzeit.
     await asPostgres(
       `update public.nutrition_diary_reminders set remind_at = remind_at - interval '15 minutes'`,
     );
-    await asPostgres(ANLEGEN);
+    await asPostgres(
+      `insert into public.notification_deliveries
+         (organization_id, access_id, kind, channel, subject_id, subject_at, due_at)
+       select r.organization_id, r.access_id, 'nutrition_diary_reminder', 'email', r.id,
+              ((now() at time zone o.time_zone)::date + r.remind_at) at time zone o.time_zone, now()
+       from public.nutrition_diary_reminders r join public.organizations o on o.id = r.organization_id`,
+    );
     expect((await asServiceRole(ABHOLEN)).rows).toEqual([]);
     expect((await auftraege()).at(-1)).toMatchObject({ drop_reason: 'daily_cap' });
   });
