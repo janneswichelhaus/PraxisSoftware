@@ -189,7 +189,11 @@ export function Verlaufsansicht({
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div ref={behaelter} className="h-full overflow-y-auto overscroll-contain px-4 sm:px-6">
+      <div
+        ref={behaelter}
+        data-verlauf=""
+        className="h-full overflow-y-auto overscroll-contain px-4 sm:px-6"
+      >
         <div ref={inhalt} className="pb-2">
           <Abfragezustand
             abfrage={verlauf}

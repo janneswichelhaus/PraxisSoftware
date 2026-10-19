@@ -167,6 +167,20 @@ function spuren(page: Page): Promise<{ bekommen: number; laufen: number }> {
   });
 }
 
+/**
+ * Ob der Verlauf des Gesprächs ganz unten steht - die jüngste Nachricht im
+ * Blick. Mit `rollen` vorher ganz ans Ende (ein Wisch, kein Tipp).
+ */
+function verlaufAmEnde(page: Page, rollen = false): Promise<boolean> {
+  return page
+    .locator('[data-verlauf]')
+    .first()
+    .evaluate((behaelter, hin) => {
+      if (hin) behaelter.scrollTop = behaelter.scrollHeight;
+      return behaelter.scrollHeight - behaelter.scrollTop - behaelter.clientHeight < 2;
+    }, rollen);
+}
+
 async function ohneQuerrollen(page: Page): Promise<void> {
   const ueberlauf = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -700,6 +714,7 @@ test('nimmt eine Sprachnachricht auf und sendet sie in vier Tipps (TEAM-004)', a
   await zumTeamchat(page, KONTEN.therapist);
   const z = zaehler();
   await z.tippe(gespraeche(page).getByRole('link', { name: `# ${KANAL}` }));
+  await expect.poll(() => verlaufAmEnde(page, true)).toBe(true);
   await z.tippe(page.getByRole('button', { name: 'Sprachnachricht aufnehmen' }));
   const laeuft = page
     .locator('form')
@@ -712,6 +727,9 @@ test('nimmt eine Sprachnachricht auf und sendet sie in vier Tipps (TEAM-004)', a
       'Höchstens zwei Minuten. Keine Gespräche mit Patient:innen und keine Befunde – die gehören in die Akte.',
     ),
   ).toBeVisible();
+  // Die Eingabe wächst um die Aufnahme; der Verlauf bleibt am Ende, die
+  // jüngste Nachricht ganz im Blick (Design-Review TEAM-004, H5).
+  await expect.poll(() => verlaufAmEnde(page)).toBe(true);
   await expect(laeuft).toHaveText(/Aufnahme 0:0[2-9]/, { timeout: 15_000 });
   const fertig = page.getByRole('button', { name: 'Fertig', exact: true });
   await expect(fertig).toBeInViewport();
@@ -759,10 +777,13 @@ test('spielt eine Sprachnachricht in zwei Tipps ab, ohne Herunterladen (TEAM-004
     .poll(() => ton.evaluate((el: HTMLAudioElement) => el.readyState), { timeout: 15_000 })
     .toBeGreaterThanOrEqual(1);
   expect(await ton.evaluate((el: HTMLAudioElement) => [el.paused, el.error])).toEqual([true, null]);
-  // Der Knopf zum Abspielen steht vorn im Element des Browsers.
-  const flaeche = (await ton.boundingBox())!;
-  z.zaehle();
-  await ton.click({ position: { x: 24, y: flaeche.height / 2 } });
+  // Abspielen über den eigenen Knopf, mit Handschuh zu treffen: so breit wie
+  // das Fenster und mindestens 44 px hoch (Praxis-Review TEAM-004).
+  const abspielen = fenster.getByRole('button', { name: 'Abspielen' });
+  const flaeche = (await abspielen.boundingBox())!;
+  expect(flaeche.height).toBeGreaterThanOrEqual(44);
+  expect(flaeche.width).toBeGreaterThanOrEqual(200);
+  await z.tippe(abspielen);
   await expect
     .poll(() => ton.evaluate((el: HTMLAudioElement) => !el.paused || el.ended))
     .toBe(true);

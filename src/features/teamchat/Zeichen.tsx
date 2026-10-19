@@ -102,13 +102,3 @@ export function Dokument({ className = 'size-5 shrink-0' }: { className?: string
     </svg>
   );
 }
-
-/** Eine Sprachnachricht (TEAM-004) - dasselbe Mikrofon wie beim Diktat. */
-export function Mikrofon({ className = 'size-5 shrink-0' }: { className?: string }) {
-  return (
-    <svg {...strich} className={className}>
-      <rect x="7.25" y="2.5" width="5.5" height="9.5" rx="2.75" />
-      <path d="M4.5 9.75a5.5 5.5 0 0 0 11 0M10 15.25v2.25" />
-    </svg>
-  );
-}

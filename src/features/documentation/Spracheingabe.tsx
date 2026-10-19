@@ -1,7 +1,9 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { Aufnahmeanzeige } from '@/components/ui/Aufnahmeanzeige';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { MikrofonSymbol } from '@/components/ui/MikrofonSymbol';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -22,33 +24,11 @@ import { AUFNAHME_OFFEN, DIKTAT_OFFEN, type Diktat } from './diktat';
  * die Zeile gar nicht da.
  */
 
-/** Ein Mikrofon im Raster 20, Strich 1,75, runde Enden (DESIGN.md 9.15). */
-function Mikrofon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className="shrink-0"
-    >
-      <rect x="7.25" y="2.5" width="5.5" height="9.5" rx="2.75" />
-      <path d="M4.5 9.75a5.5 5.5 0 0 0 11 0M10 15.25v2.25" />
-    </svg>
-  );
-}
+/** Rand und Abstand der Zeile - auch um die laufende Aufnahme. */
+const ZEILE = 'border-line nicht-drucken border-t px-3 py-2';
 
 function Zeile({ children }: { children: ReactNode }) {
-  return (
-    <div className="border-line nicht-drucken flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-3 py-2">
-      {children}
-    </div>
-  );
+  return <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${ZEILE}`}>{children}</div>;
 }
 
 /**
@@ -70,56 +50,16 @@ export function Sprechleiste({
 }) {
   const { aufnahme, stand } = diktat;
 
-  if (aufnahme.zustand === 'startet') {
+  if (aufnahme.zustand !== 'bereit') {
     return (
-      <Zeile>
-        <Statusmeldung>Mikrofon wird geöffnet …</Statusmeldung>
-        <Button type="button" variant="quiet" className="ml-auto" onClick={diktat.abbrechen}>
-          Abbrechen
-        </Button>
-      </Zeile>
-    );
-  }
-
-  if (aufnahme.zustand === 'laeuft') {
-    return (
-      <Zeile>
-        {/* Status als Zeichen und Wort: ein roter Punkt und „Aufnahme 0:12".
-            Vorgelesen wird der Beginn, nicht jede Sekunde. */}
-        <p role="status" className="text-danger flex items-center gap-2 text-base font-bold">
-          <span
-            aria-hidden="true"
-            className="bg-danger rounded-pill size-3 shrink-0 motion-safe:animate-pulse"
-          />
-          <span>
-            Aufnahme{' '}
-            <span aria-live="off" className="tabular-nums">
-              {aufnahmedauer(aufnahme.sekunden)}
-            </span>
-          </span>
-        </p>
-        {/* Verwerfen nur mit Rückfrage und weit weg von „Fertig“: Ein Fehltipp
-            mit Handschuh kostete sonst das ganze Diktat (Praxis-Review). */}
-        <div className="ml-auto">
-          <Rueckfrage
-            ausloeser="Verwerfen"
-            ausloeserVariante="quiet"
-            bezeichnung="Aufnahme verwerfen"
-            bestaetigen="Ja, verwerfen"
-            onBestaetigen={diktat.abbrechen}
-          >
-            Die Aufnahme ist nicht gespeichert und lässt sich danach nicht zurückholen.
-          </Rueckfrage>
-        </div>
-        <Button
-          type="button"
-          groesse="normal"
-          className="w-full basis-full sm:w-auto sm:basis-auto"
-          onClick={diktat.fertig}
-        >
-          Fertig
-        </Button>
-      </Zeile>
+      <Aufnahmeanzeige
+        zustand={aufnahme.zustand}
+        zeit={aufnahmedauer(aufnahme.sekunden)}
+        verwerfenBezeichnung="Aufnahme verwerfen"
+        onAbbrechen={diktat.abbrechen}
+        onFertig={diktat.fertig}
+        className={ZEILE}
+      />
     );
   }
 
@@ -189,7 +129,7 @@ export function Sprechleiste({
         aria-describedby={grund || diktat.meldung ? 'spracheingabe-hinweis' : undefined}
         onClick={diktat.sprechen}
       >
-        <Mikrofon />
+        <MikrofonSymbol />
         Sprechen
       </Button>
       {grund || diktat.meldung ? (

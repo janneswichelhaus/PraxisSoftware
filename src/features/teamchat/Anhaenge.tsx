@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Abfragezustand, type Abfrage } from '@/components/ui/Abfragezustand';
 import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
@@ -8,15 +8,23 @@ import { Formularfuss } from '@/components/ui/Formularfuss';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { Medienbild } from '@/components/ui/Medienbild';
+import { MikrofonSymbol } from '@/components/ui/MikrofonSymbol';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { aufnahmedauer } from '@/features/documentation/aufnahme';
 import { PdfRahmen } from '@/features/files/Dateiansicht';
 import { NICHT_SERVERSEITIG_GEPRUEFT, formatBytes } from '@/features/files/dokumentarten';
-import { DATEIEN_HOECHSTENS, dateienKey, fetchDateien, ladeAnhang, type Anhang } from './api';
+import {
+  DATEIEN_HOECHSTENS,
+  TeamchatFehler,
+  dateienKey,
+  fetchDateien,
+  ladeAnhang,
+  type Anhang,
+} from './api';
 import { anhangArt, anhangEntfernen, anhangErneut, type Entwurfsanhang } from './entwurfsanhaenge';
 import { dauerSekunden } from './sprachnachricht';
-import { Bildzeichen, Dokument, Kreuz, Mikrofon } from './Zeichen';
+import { Bildzeichen, Dokument, Kreuz } from './Zeichen';
 import { nachrichtenzeit } from './zeit';
 
 /** So viele Dateien zeigen die Details zuerst; der Rest auf Wunsch. */
@@ -46,7 +54,7 @@ function Artkachel({
         mime === 'application/pdf' ? (
           <Dokument />
         ) : mime.startsWith('audio/') ? (
-          <Mikrofon />
+          <MikrofonSymbol />
         ) : (
           <Bildzeichen />
         )
@@ -105,14 +113,27 @@ export const KEINE_WIEDERGABE =
 /**
  * Öffnet Anhänge: Ein Tipp holt die einmalige Freigabe (ADR-017 Punkt 15) und
  * zeigt die Datei in einem Fenster. Geladen wird beim Tipp, nicht beim
- * Aufbau - so gibt es je Öffnen genau einen Verweis.
+ * Aufbau - so gibt es je Öffnen genau einen Verweis, und kein Neuladen der
+ * Seite holt einen zweiten. Scheitert es am Netz, holt „Erneut versuchen“ eine
+ * neue Freigabe; für `Abfragezustand` steht das Laden wie eine Abfrage da
+ * (DESIGN.md Regel 8).
  */
 function useAnhangOeffnen() {
   const [offen, setOffen] = useState<Offen | null>(null);
   const laden = useMutation({ mutationFn: (anhang: Offen) => ladeAnhang(anhang.id) });
+  const abfrage: Abfrage<Blob> = {
+    data: laden.data,
+    error: laden.error,
+    isPending: laden.isPending || laden.isIdle,
+    isError: laden.isError,
+    isFetching: laden.isPending,
+    refetch: () => {
+      if (offen) laden.mutate(offen);
+    },
+  };
   return {
     offen,
-    laden,
+    abfrage,
     oeffnen: (anhang: Offen) => {
       setOffen(anhang);
       // Ohne Betrachter oder Wiedergabe keine Freigabe: Sie bliebe ungenutzt liegen.
@@ -123,6 +144,32 @@ function useAnhangOeffnen() {
       laden.reset();
     },
   };
+}
+
+/** Laden und Fehler im Fenster - ein Nein des Servers ohne „Erneut versuchen“. */
+function Geladen({
+  abfrage,
+  children,
+}: {
+  abfrage: Abfrage<Blob>;
+  children: (datei: Blob) => ReactNode;
+}) {
+  return (
+    <Abfragezustand
+      abfrage={abfrage}
+      laden="Wird geöffnet …"
+      fehler="Der Anhang konnte nicht geöffnet werden."
+      endgueltig={{
+        wenn: (fehler) => fehler instanceof TeamchatFehler && !fehler.netz,
+        titel:
+          abfrage.error instanceof Error
+            ? abfrage.error.message
+            : 'Der Anhang konnte nicht geöffnet werden.',
+      }}
+    >
+      {children}
+    </Abfragezustand>
+  );
 }
 
 /** Ein Bild aus den geladenen Bytes; die Objekt-URL fällt mit dem Fenster. */
@@ -148,29 +195,57 @@ function Bild({ datei, name }: { datei: Blob; name: string }) {
  * einem anderen Gerät, wie die Videos der Plattform. Es spielt erst auf
  * Tipp - kein Ton, mit dem niemand rechnet. Kann das Gerät das Format doch
  * nicht, steht der Satz statt des Elements.
+ *
+ * Darüber „Abspielen“ als eigener Knopf, 48 px hoch und so breit wie das
+ * Fenster: Das Dreieck des Browsers ist kleiner als 44 px und liegt neben
+ * der Zeitleiste - mit Handschuh spult man eher, als dass es spielt
+ * (Praxis-Review TEAM-004, DESIGN.md Prüfliste 2). Er steuert dasselbe
+ * Element.
  */
 function Ton({ datei, name }: { datei: Blob; name: string }) {
+  const element = useRef<HTMLAudioElement>(null);
   const [adresse, setAdresse] = useState<string | null>(null);
   const [gescheitert, setGescheitert] = useState(false);
+  const [spielt, setSpielt] = useState(false);
   useEffect(() => {
     const neu = URL.createObjectURL(datei);
     setAdresse(neu);
     return () => URL.revokeObjectURL(neu);
   }, [datei]);
-  if (gescheitert) return <Statusmeldung>{KEINE_WIEDERGABE}</Statusmeldung>;
-  return adresse ? (
-    <audio
-      src={adresse}
-      controls
-      preload="metadata"
-      controlsList="nodownload noremoteplayback"
-      aria-label={name}
-      className="block w-full"
-      onError={() => setGescheitert(true)}
-      // Kein Kontextmenü mit „Audio speichern“ - wie bei Fotos (ADR-017 Punkt 40).
-      onContextMenu={(event) => event.preventDefault()}
-    />
-  ) : null;
+  if (gescheitert) return <Statusmeldung ton="warnung">{KEINE_WIEDERGABE}</Statusmeldung>;
+  if (!adresse) return null;
+  function umschalten() {
+    const ton = element.current;
+    if (!ton) return;
+    if (ton.paused) {
+      // Scheitert es, sagt es `onError`; das Versprechen trägt nichts dazu.
+      Promise.resolve(ton.play()).catch(() => undefined);
+    } else {
+      ton.pause();
+    }
+  }
+  return (
+    <>
+      <Button type="button" className="w-full" onClick={umschalten}>
+        {spielt ? 'Anhalten' : 'Abspielen'}
+      </Button>
+      <audio
+        ref={element}
+        src={adresse}
+        controls
+        preload="metadata"
+        controlsList="nodownload noremoteplayback"
+        aria-label={name}
+        className="mt-3 block w-full"
+        onPlay={() => setSpielt(true)}
+        onPause={() => setSpielt(false)}
+        onEnded={() => setSpielt(false)}
+        onError={() => setGescheitert(true)}
+        // Kein Kontextmenü mit „Audio speichern“ - wie bei Fotos (ADR-017 Punkt 40).
+        onContextMenu={(event) => event.preventDefault()}
+      />
+    </>
+  );
 }
 
 /**
@@ -179,26 +254,21 @@ function Ton({ datei, name }: { datei: Blob; name: string }) {
  */
 function TonFenster({
   anhang,
-  laden,
+  abfrage,
   onSchliessen,
 }: {
   anhang: Offen;
-  laden: ReturnType<typeof useAnhangOeffnen>['laden'];
+  abfrage: Abfrage<Blob>;
   onSchliessen: () => void;
 }) {
   return (
-    <Dialogfenster titel={anhang.name} onSchliessen={onSchliessen}>
-      <p className="text-ink-muted text-sm">{angaben(anhang)}</p>
+    <Dialogfenster titel={anhang.name} beschreibung={angaben(anhang)} onSchliessen={onSchliessen}>
       <div className="mt-4">
         {tonOhneWiedergabe(anhang) ? (
-          <Statusmeldung>{KEINE_WIEDERGABE}</Statusmeldung>
-        ) : laden.isPending ? (
-          <Statusmeldung>Wird geöffnet …</Statusmeldung>
-        ) : laden.isError ? (
-          <Statusmeldung ton="fehler">{laden.error.message}</Statusmeldung>
-        ) : laden.data ? (
-          <Ton datei={laden.data} name={anhang.name} />
-        ) : null}
+          <Statusmeldung ton="warnung">{KEINE_WIEDERGABE}</Statusmeldung>
+        ) : (
+          <Geladen abfrage={abfrage}>{(datei) => <Ton datei={datei} name={anhang.name} />}</Geladen>
+        )}
       </div>
       <Formularfuss>
         <Button type="button" variant="secondary" data-autofocus onClick={onSchliessen}>
@@ -219,18 +289,17 @@ function TonFenster({
  */
 function AnhangFenster({
   anhang,
-  laden,
+  abfrage,
   onSchliessen,
 }: {
   anhang: Offen;
-  laden: ReturnType<typeof useAnhangOeffnen>['laden'];
+  abfrage: Abfrage<Blob>;
   onSchliessen: () => void;
 }) {
   if (anhang.mime_type.startsWith('audio/')) {
-    return <TonFenster anhang={anhang} laden={laden} onSchliessen={onSchliessen} />;
+    return <TonFenster anhang={anhang} abfrage={abfrage} onSchliessen={onSchliessen} />;
   }
   const pdf = anhang.mime_type === 'application/pdf';
-  const ohneBetrachter = pdfOhneBetrachter(anhang);
   return (
     <Dialogfenster
       titel={anhang.name}
@@ -239,19 +308,19 @@ function AnhangFenster({
       onSchliessen={onSchliessen}
     >
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 py-4 sm:px-6">
-        {ohneBetrachter ? (
-          <Statusmeldung>Dieses Gerät zeigt PDF nicht in der App an.</Statusmeldung>
-        ) : laden.isPending ? (
-          <Statusmeldung>Wird geöffnet …</Statusmeldung>
-        ) : laden.isError ? (
-          <Statusmeldung ton="fehler">{laden.error.message}</Statusmeldung>
-        ) : laden.data ? (
-          pdf ? (
-            <PdfRahmen daten={laden.data} titel={anhang.name} ohneLeiste />
-          ) : (
-            <Bild datei={laden.data} name={anhang.name} />
-          )
-        ) : null}
+        {pdfOhneBetrachter(anhang) ? (
+          <Statusmeldung ton="warnung">Dieses Gerät zeigt PDF nicht in der App an.</Statusmeldung>
+        ) : (
+          <Geladen abfrage={abfrage}>
+            {(datei) =>
+              pdf ? (
+                <PdfRahmen daten={datei} titel={anhang.name} ohneLeiste />
+              ) : (
+                <Bild datei={datei} name={anhang.name} />
+              )
+            }
+          </Geladen>
+        )}
       </div>
       {/* Ein fester Fuß wie im geführten Check-Up: „Schließen“ bleibt unten im
           Daumenbereich, wie lang die Datei auch ist. */}
@@ -292,7 +361,12 @@ export function AnhangZeilen({
             key={anhang.id}
             bild={<Artkachel mime={anhang.mime_type} name={anhang.name} />}
             titel={<span className="break-words">{anhang.name}</span>}
-            meta={angaben(anhang)}
+            // Im Ausgang ist noch nichts am Server geprüft - kein Vermerk dazu.
+            meta={
+              aktiv
+                ? angaben(anhang)
+                : artUndGroesse(anhang.mime_type, anhang.byte_size, anhang.duration_seconds)
+            }
             {...(aktiv ? { onClick: () => ansicht.oeffnen(anhang) } : {})}
           />
         ))}
@@ -300,7 +374,7 @@ export function AnhangZeilen({
       {ansicht.offen ? (
         <AnhangFenster
           anhang={ansicht.offen}
-          laden={ansicht.laden}
+          abfrage={ansicht.abfrage}
           onSchliessen={ansicht.schliessen}
         />
       ) : null}
@@ -423,7 +497,7 @@ export function DateienDesGespraechs({ kanalId, zeitzone }: { kanalId: string; z
             {ansicht.offen ? (
               <AnhangFenster
                 anhang={ansicht.offen}
-                laden={ansicht.laden}
+                abfrage={ansicht.abfrage}
                 onSchliessen={ansicht.schliessen}
               />
             ) : null}

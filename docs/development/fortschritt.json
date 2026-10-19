@@ -1065,7 +1065,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-18",
-          "nachweis": "PR #273, Migration 20261213100000_team_004_sprachnachrichten.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/video.test.ts, src/features/platform/videometadaten.test.ts, src/features/teamchat/sprachnachricht.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (künstliches Mikrofon), Zweitreview in drei Runden",
+          "nachweis": "PR #273, Migration 20261213100000_team_004_sprachnachrichten.sql, supabase/tests/teamchat-anhaenge.test.ts, supabase/functions/patient-file-verify/video.test.ts, src/features/platform/videometadaten.test.ts, src/features/teamchat/sprachnachricht.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (künstliches Mikrofon), Zweitreview in drei Runden, Design- und Praxis-Review (Aufnahmeanzeige und Mikrofon als Bausteine, Abspielen mit eigenem Knopf, Fenster über Abfragezustand)",
           "vermerk": "Antwort auf Frage 4 der PR #273 (Jannes 18.10.2026: Sprachnachrichten ermöglichen); ADR-017 Fassung 9 Abschnitt N vorgeschlagen (Bestätigungsfragen 33, 34), Mikrofon der eigenen Herkunft freigegeben; ANN-655; keine Transkription, kein Video; scharf erst nach OPS-001 und OPS-003 (Punkt 87)"
         },
         {
@@ -1074,7 +1074,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-18",
-          "nachweis": "PR #273, src/features/teamchat/ausgang.ts, entwurfsanhaenge.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (zähes Netz), Zweitreview",
+          "nachweis": "PR #273, src/features/teamchat/ausgang.ts, entwurfsanhaenge.test.ts und TeamChat.test.tsx, tests/e2e/authenticated/teamchat.spec.ts (zähes Netz), ausgang.test.ts, Zweitreview in drei Runden, Praxis-Review (Anhänge im Ausgang alle zwei Minuten weiter)",
           "vermerk": "Antwort auf Frage 5 der PR #273 (wie empfohlen); ADR-017 Punkt 74 Vermerk (Fassung 9); ANN-654; alles nur im Arbeitsspeicher (Punkt 33)"
         },
         {

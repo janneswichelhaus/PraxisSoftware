@@ -1571,14 +1571,70 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
     expect(fireEvent.contextMenu(ton)).toBe(false);
     expect(within(fenster).getByText('0:42 · 96 KB')).toBeInTheDocument();
 
+    // Abspielen und Anhalten über einen eigenen Knopf in voller Breite - das
+    // Dreieck des Browsers ist mit Handschuh zu klein (Praxis-Review TEAM-004).
+    const spielen = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const anhalten = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockReturnValue(undefined);
+    const knopf = within(fenster).getByRole('button', { name: 'Abspielen' });
+    expect(knopf).toHaveClass('w-full', 'h-12');
+    await nutzer.click(knopf);
+    expect(spielen).toHaveBeenCalledTimes(1);
+    fireEvent.play(ton);
+    vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false);
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Anhalten' }));
+    expect(anhalten).toHaveBeenCalledTimes(1);
+    fireEvent.pause(ton);
+    expect(within(fenster).getByRole('button', { name: 'Abspielen' })).toBeInTheDocument();
+
     // Spielt das Gerät das Format doch nicht, steht der Satz statt des Elements.
     fireEvent.error(ton);
-    expect(
-      await within(fenster).findByText(
-        'Dieses Gerät spielt die Sprachnachricht nicht ab – bitte am Rechner anhören.',
-      ),
-    ).toBeInTheDocument();
+    const satz = await within(fenster).findByText(
+      'Dieses Gerät spielt die Sprachnachricht nicht ab – bitte am Rechner anhören.',
+    );
+    // Als Warnung mit Zeichen, nicht als graue Angabe (DESIGN.md Regel 5).
+    expect(satz).toHaveTextContent(/^!/);
     expect(fenster.querySelector('audio')).toBeNull();
+  });
+
+  it('bietet im Fenster „Erneut versuchen“, wenn das Laden am Netz scheitert', async () => {
+    const nutzer = userEvent.setup();
+    vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('maybe');
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ body: '', attachments: [sprachnachricht] }),
+    ]);
+    api.ladeAnhang
+      .mockRejectedValueOnce(new TeamchatFehler('Kein Netz.', true))
+      .mockResolvedValueOnce(new Blob(['ton'], { type: 'audio/webm' }));
+    zeige('/team/k-planung');
+    await nutzer.click(
+      await screen.findByRole('button', { name: /Sprachnachricht 17\.10\., 09:00/ }),
+    );
+    const fenster = await screen.findByRole('dialog', { name: 'Sprachnachricht 17.10., 09:00' });
+    expect(
+      await within(fenster).findByText('Der Anhang konnte nicht geöffnet werden.'),
+    ).toBeInTheDocument();
+    // Ein neuer Versuch holt eine neue Freigabe (ADR-017 Punkt 15).
+    await nutzer.click(within(fenster).getByRole('button', { name: 'Erneut versuchen' }));
+    await vi.waitFor(() => expect(fenster.querySelector('audio')).not.toBeNull());
+    expect(api.ladeAnhang).toHaveBeenCalledTimes(2);
+  });
+
+  it('sagt ein Nein des Servers im Fenster ohne „Erneut versuchen“', async () => {
+    const nutzer = userEvent.setup();
+    vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('maybe');
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ body: '', attachments: [sprachnachricht] }),
+    ]);
+    api.ladeAnhang.mockRejectedValueOnce(
+      new TeamchatFehler('Der Anhang fehlt in der Ablage.', false),
+    );
+    zeige('/team/k-planung');
+    await nutzer.click(
+      await screen.findByRole('button', { name: /Sprachnachricht 17\.10\., 09:00/ }),
+    );
+    const fenster = await screen.findByRole('dialog', { name: 'Sprachnachricht 17.10., 09:00' });
+    expect(await within(fenster).findByText('Der Anhang fehlt in der Ablage.')).toBeInTheDocument();
+    expect(within(fenster).queryByRole('button', { name: 'Erneut versuchen' })).toBeNull();
   });
 
   it('holt keine Freigabe, wenn das Gerät das Format sicher nicht abspielt', async () => {
@@ -1658,6 +1714,8 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
     expect(screen.queryByRole('list', { name: 'Anhänge' })).not.toBeNull();
     expect(await screen.findByText('Lädt Anhänge hoch …')).toBeInTheDocument();
     expect(screen.getByText('Speiche gebrochen')).toBeInTheDocument();
+    // Noch nicht am Server - also auch kein „nicht serverseitig geprüft“ (Design-Review H8).
+    expect(screen.queryByText(/nicht serverseitig geprüft/)).toBeNull();
     expect(api.sendeNachricht).not.toHaveBeenCalled();
 
     // Hochladen, Senden und Neuzeichnen laufen hier ganz durch.

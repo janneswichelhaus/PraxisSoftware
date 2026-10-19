@@ -28,6 +28,20 @@ function Seite({ onSchliessen }: { onSchliessen: () => void }) {
 }
 
 describe('Dialogfenster', () => {
+  it('zeigt eine Beschreibung auch im kleinen Fenster unter dem Titel (DESIGN.md Regel 6)', () => {
+    render(
+      <Dialogfenster
+        titel="Sprachnachricht 17.10., 09:00"
+        beschreibung="0:42 · 96 KB"
+        onSchliessen={() => undefined}
+      >
+        <p>Inhalt</p>
+      </Dialogfenster>,
+    );
+    const fenster = screen.getByRole('dialog', { name: 'Sprachnachricht 17.10., 09:00' });
+    expect(within(fenster).getByText('0:42 · 96 KB')).toBeInTheDocument();
+  });
+
   it('füllt als Vollbild den Bildschirm und schließt über den Knopf in der Kopfzeile (FLT-005)', async () => {
     const onSchliessen = vi.fn();
     const user = userEvent.setup();

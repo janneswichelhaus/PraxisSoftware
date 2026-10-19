@@ -9,12 +9,13 @@ import {
 } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
+import { Aufnahmeanzeige } from '@/components/ui/Aufnahmeanzeige';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
+import { MikrofonSymbol } from '@/components/ui/MikrofonSymbol';
 import { usePortalZiel } from '@/components/ui/portalZiel';
-import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { TextArea } from '@/components/ui/TextArea';
@@ -53,7 +54,7 @@ import {
   SPRACHNACHRICHT_HOECHSTDAUER_S,
   sprachnachrichtMoeglich,
 } from './sprachnachricht';
-import { Bueroklammer, Mikrofon, Uhr } from './Zeichen';
+import { Bueroklammer, Uhr } from './Zeichen';
 import { Zeitwahl } from './Zeitwahl';
 import { geplantFuer, planvorschlaege } from './zeit';
 
@@ -578,56 +579,16 @@ export function Eingabe({
             </Symbolknopf>
           </div>
         ) : null}
-        {aufnahme.zustand === 'startet' ? (
-          <div className="mt-2 flex min-h-11 items-center gap-3">
-            <Statusmeldung>Mikrofon wird geöffnet …</Statusmeldung>
-            <Button
-              type="button"
-              variant="quiet"
-              groesse="kompakt"
-              className="ml-auto"
-              onClick={aufnahme.abbrechen}
-            >
-              Abbrechen
-            </Button>
-          </div>
-        ) : aufnahme.zustand === 'laeuft' ? (
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-            {/* Wie beim Diktat: ein roter Punkt und „Aufnahme 0:12“, Zeichen
-                und Wort. Vorgelesen wird der Beginn, nicht jede Sekunde. */}
-            <p role="status" className="text-danger flex items-center gap-2 text-base font-bold">
-              <span
-                aria-hidden="true"
-                className="bg-danger rounded-pill size-3 shrink-0 motion-safe:animate-pulse"
-              />
-              <span>
-                Aufnahme{' '}
-                <span aria-live="off" className="tabular-nums">
-                  {aufnahmedauer(aufnahme.sekunden)}
-                </span>
-              </span>
-            </p>
-            {/* Verwerfen nur mit Rückfrage und weit weg von „Fertig“. */}
-            <div className="ml-auto">
-              <Rueckfrage
-                ausloeser="Verwerfen"
-                ausloeserVariante="quiet"
-                ausloeserGroesse="kompakt"
-                bezeichnung="Sprachnachricht verwerfen"
-                bestaetigen="Ja, verwerfen"
-                onBestaetigen={aufnahme.abbrechen}
-              >
-                Die Aufnahme ist nicht gespeichert und lässt sich danach nicht zurückholen.
-              </Rueckfrage>
-            </div>
-            <Button
-              type="button"
-              className="w-full basis-full sm:w-auto sm:basis-auto"
-              onClick={aufnahme.beenden}
-            >
-              Fertig
-            </Button>
-          </div>
+        {nimmtAuf ? (
+          // Wie beim Diktat (ein Baustein): Verwerfen nur mit Rückfrage.
+          <Aufnahmeanzeige
+            zustand={aufnahme.zustand === 'startet' ? 'startet' : 'laeuft'}
+            zeit={aufnahmedauer(aufnahme.sekunden)}
+            verwerfenBezeichnung="Sprachnachricht verwerfen"
+            onAbbrechen={aufnahme.abbrechen}
+            onFertig={aufnahme.beenden}
+            className="mt-2"
+          />
         ) : (
           <div className="mt-2 flex items-center gap-1">
             <Symbolknopf
@@ -661,7 +622,7 @@ export function Eingabe({
                 disabled={entwurfsanhaenge.length >= ANHAENGE_MAX}
                 onClick={sprachnachrichtAufnehmen}
               >
-                <Mikrofon />
+                <MikrofonSymbol />
               </Symbolknopf>
             ) : null}
             {threadId ? null : (
