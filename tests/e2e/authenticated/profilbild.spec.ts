@@ -9,7 +9,8 @@ import { KONTEN, anmelden } from './helpers';
  * gespeichert wird, beweist deshalb, dass das Gerät die Angabe entfernt hat.
  *
  * Budgets: Foto setzen in drei Tipps und der Auswahl (Bild antippen, Foto
- * wählen, Foto speichern), Farbe wählen in zwei (Bild, Farbe).
+ * wählen, Foto speichern), Farbe wählen in zwei (Bild, Farbe), aus einer
+ * Nachricht in die Direktnachricht in zwei (Bild, „Direktnachricht“).
  */
 test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
@@ -131,6 +132,26 @@ test('zeigt das Bild den anderen im Team vor der Nachricht', async ({ page, brow
     andere.locator('[data-nachricht] img[data-personenbild="foto"]').first(),
   ).toBeVisible();
   await andere.close();
+});
+
+test('öffnet mit einem Tipp auf das Bild die Personenkarte (TEAM-009)', async ({ page }) => {
+  await anmelden(page, KONTEN.owner);
+  await page.setViewportSize(TELEFON);
+  await page.goto('/team');
+  await page
+    .getByRole('navigation', { name: 'Gespräche' })
+    .getByRole('link', { name: /^Anna Beispiel/ })
+    .click();
+  await page.getByRole('button', { name: 'Karte von Anna Beispiel' }).first().click();
+  const karte = page.getByRole('dialog', { name: 'Anna Beispiel' });
+  await expect(karte.getByText('Therapeut:in')).toBeVisible();
+  await expect(karte.locator('[data-personenbild]')).toBeVisible();
+  // Nichts über das Verhalten der Person (§20, ANN-668).
+  await expect(karte.getByText(/online|zuletzt|abwesend/i)).toHaveCount(0);
+  const vorher = page.url();
+  await karte.getByRole('button', { name: 'Direktnachricht' }).click();
+  await expect(karte).toBeHidden();
+  expect(page.url()).toBe(vorher);
 });
 
 test('wählt die eigene Farbe in zwei Tipps und entfernt das Bild nach Rückfrage', async ({

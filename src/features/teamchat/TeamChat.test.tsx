@@ -33,6 +33,7 @@ const api = {
   fetchPersonen: vi.fn(),
   fetchAvatare: vi.fn(),
   ladeProfilbild: vi.fn(),
+  fetchPersonenkarte: vi.fn(),
   fetchMitglieder: vi.fn(),
   fetchZaehler: vi.fn(),
   fetchGemerkt: vi.fn(),
@@ -249,6 +250,15 @@ beforeEach(() => {
     { staff_member_id: OLIVIA, color: 'pflaume', picture_id: null },
   ]);
   api.fetchZaehler.mockResolvedValue(ZAEHLER);
+  api.fetchPersonenkarte.mockImplementation((id: string) =>
+    Promise.resolve({
+      staff_member_id: id,
+      name: id === TIM ? 'Tim Teamleitung' : 'Anna Beispiel',
+      roles: id === TIM ? ['team_lead', 'therapist'] : ['therapist'],
+      active: true,
+      own: id === ANNA,
+    }),
+  );
   api.fetchGemerkt.mockResolvedValue([]);
   api.fetchGeplant.mockResolvedValue([]);
   api.fetchAngeheftet.mockResolvedValue([]);
@@ -579,6 +589,69 @@ describe('Teamchat: Bilder in den Listen (TEAM-008)', () => {
     await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
     const zeile = await screen.findByRole('button', { name: /Schlüssel für Rad 3 im Büro/ });
     await vi.waitFor(() => expect(bildIn(zeile)).toHaveClass('bg-person-moos', 'size-6'));
+  });
+});
+
+describe('Teamchat: Personenkarte (TEAM-009, ANN-668)', () => {
+  it('öffnet mit einem Tipp auf das Bild die Karte und von dort die Direktnachricht', async () => {
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    const nutzer = userEvent.setup();
+    const { router } = zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Karte von Tim Teamleitung' }));
+    const karte = await screen.findByRole('dialog', { name: 'Tim Teamleitung' });
+    expect(await within(karte).findByText('Teamleitung · Therapeut:in')).toBeInTheDocument();
+    expect(karte.querySelector('[data-personenbild]')).toHaveClass('size-24', 'bg-person-moos');
+    // Nichts über das Verhalten der Person (§20).
+    expect(within(karte).queryByText(/aktiv|online|zuletzt|abwesend/i)).toBeNull();
+    await nutzer.click(within(karte).getByRole('button', { name: 'Direktnachricht' }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/team/k-direkt'));
+    expect(api.oeffneDirekt).toHaveBeenCalledWith(TIM);
+    expect(screen.queryByRole('dialog', { name: 'Tim Teamleitung' })).toBeNull();
+  });
+
+  it('führt von der eigenen Karte zu Bild und Farbe, nicht in eine Direktnachricht', async () => {
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ author_staff_member_id: ANNA, author_name: 'Anna Beispiel', own: true }),
+    ]);
+    const nutzer = userEvent.setup();
+    zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Karte von Anna Beispiel' }));
+    const karte = await screen.findByRole('dialog', { name: 'Anna Beispiel' });
+    expect(
+      await within(karte).findByRole('link', { name: 'Bild und Farbe ändern' }),
+    ).toHaveAttribute('href', '/mein-konto');
+    expect(within(karte).queryByRole('button', { name: 'Direktnachricht' })).toBeNull();
+  });
+
+  it('sagt bei Ausgeschiedenen nur, dass sie nicht mehr teilnehmen', async () => {
+    api.fetchPersonenkarte.mockResolvedValue({
+      staff_member_id: TIM,
+      name: 'Tim Teamleitung',
+      roles: [],
+      active: false,
+      own: false,
+    });
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    const nutzer = userEvent.setup();
+    zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Karte von Tim Teamleitung' }));
+    const karte = await screen.findByRole('dialog', { name: 'Tim Teamleitung' });
+    expect(await within(karte).findByText('Nimmt nicht am Teamchat teil.')).toBeInTheDocument();
+    expect(within(karte).queryByRole('button', { name: 'Direktnachricht' })).toBeNull();
+    await nutzer.click(within(karte).getByRole('button', { name: 'Schließen' }));
+    expect(screen.queryByRole('dialog', { name: 'Tim Teamleitung' })).toBeNull();
+  });
+
+  it('öffnet die Karte auch aus den Mitgliedern in den Details', async () => {
+    const nutzer = userEvent.setup();
+    const { router } = zeige('/team/k-planung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Details' }));
+    await nutzer.click(await screen.findByRole('button', { name: /^Tim Teamleitung/ }));
+    const karte = await screen.findByRole('dialog', { name: 'Tim Teamleitung' });
+    await nutzer.click(await within(karte).findByRole('button', { name: 'Direktnachricht' }));
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/team/k-direkt'));
+    // Mit der Direktnachricht schließen auch die Details.
+    await vi.waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 });
 

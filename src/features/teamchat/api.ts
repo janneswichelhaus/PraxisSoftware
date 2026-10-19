@@ -8,6 +8,7 @@ import { nachSrgb } from '@/features/files/farbe';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { bereinigeTon, tontyp } from '@/features/platform/videometadaten';
 import { istPersonenfarbe, type Personenfarbe } from '@/components/ui/personenfarben';
+import { roleKeySchema } from '@/features/session/types';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { alsBase64, ausBase64 } from './profilbild';
@@ -265,6 +266,7 @@ const SAETZE: readonly (readonly [string, string])[] = [
     'Dieses Bild nimmt der Server nicht an. Bitte ein anderes Foto wählen.',
   ],
   ['profile picture not found', 'Dieses Profilbild gibt es nicht mehr.'],
+  ['team person not found', 'Diese Person gibt es im Team nicht.'],
   // TEAM-003: Anhänge - vor dem allgemeinen „not found“.
   ['too many attachments', 'Höchstens fünf Anhänge je Nachricht.'],
   ['too many unsent attachments', 'Zu viele Anhänge warten. Erst senden oder entfernen.'],
@@ -529,6 +531,39 @@ export async function setzeProfilbild(bild: Blob): Promise<string> {
 
 export async function entferneProfilbild(): Promise<void> {
   await rufe('remove_own_profile_picture', {}, 'Das Profilbild konnte nicht entfernt werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Personenkarte (TEAM-009, ANN-668)
+// -----------------------------------------------------------------------------
+
+/** Unter `AVATARE_KEY`: Rollen ändern sich so selten wie Bild und Farbe. */
+export function personenkarteKey(staffMemberId: string) {
+  return [...AVATARE_KEY, 'karte', staffMemberId] as const;
+}
+
+const personenkarteSchema = z.object({
+  staff_member_id: z.string(),
+  name: z.string().nullable(),
+  // Eine Rolle, die diese Fassung nicht kennt, fällt weg.
+  roles: z.array(z.string()).transform((rollen) =>
+    rollen.flatMap((rolle) => {
+      const bekannt = roleKeySchema.safeParse(rolle);
+      return bekannt.success ? [bekannt.data] : [];
+    }),
+  ),
+  /** Nimmt am Teamchat teil; sonst ausgeschieden oder noch ohne Zugang. */
+  active: z.boolean(),
+  own: z.boolean(),
+});
+export type Personenkarte = z.infer<typeof personenkarteSchema>;
+
+const LADEN_KARTE = 'Die Personenkarte konnte nicht geladen werden.';
+
+export async function fetchPersonenkarte(staffMemberId: string): Promise<Personenkarte> {
+  const data = await rufe('get_team_person', { p_staff: staffMemberId }, LADEN_KARTE);
+  const [karte] = antwort(z.array(personenkarteSchema).length(1), data, LADEN_KARTE);
+  return karte!;
 }
 
 const LADEN_MITGLIEDER = 'Die Mitglieder konnten nicht geladen werden.';

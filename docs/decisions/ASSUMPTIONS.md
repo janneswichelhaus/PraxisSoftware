@@ -6888,3 +6888,15 @@ Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-
 **Anker.** Klasse `profilbild`, `public.set_own_profile_picture` (Migration TEAM-007).
 
 **Änderungspfad.** Schriftliche Einwilligung als Vermerk vor dem ersten Bild · Aufwand `mittel`.
+
+### ANN-668 — Personenkarte im Teamchat: wer jemand in der Praxis ist, nicht was sie tut
+
+Datenschutz · offen · 2026-10-19 · — · — · Wiedervorlage: —
+
+**Annahme.** Ein Tipp auf das Bild einer Person öffnet ihre Karte: Bild, Name, ihre Praxisrollen und „Direktnachricht“; die eigene Karte führt zu Bild und Farbe. Sichtbar für alle, die am Teamchat teilnehmen, nur in der eigenen Praxis. Ausgeschiedene und Personen ohne Zugang erscheinen mit Namen, ohne Rollen. Nicht auf der Karte: Anwesenheit, „zuletzt aktiv“, Status, Telefonnummer, Mail.
+
+**Begründung.** Auftrag Jannes (Frage 5, wie empfohlen). Die Rolle sagt, wen man fragt (Büro, Therapie); alles über Verhalten wäre Leistungs- oder Verhaltenskontrolle (§20), Kontaktdaten sind eine eigene Freigabe.
+
+**Anker.** `public.get_team_person` (Migration TEAM-009).
+
+**Änderungspfad.** Dienstliche Nummer mit Einwilligung der Person als eigene Spalte ergänzen · Aufwand `klein`.

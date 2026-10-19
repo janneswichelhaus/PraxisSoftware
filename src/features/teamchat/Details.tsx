@@ -36,6 +36,7 @@ import {
 import { DateienDesGespraechs } from './Anhaenge';
 import { vorschau } from './formatierung';
 import { TEAMCHAT, stellePfad } from './pfade';
+import { Personenkarte } from './Personenkarte';
 import { NameMitBild, Teambild, Verfasserbild } from './Teambild';
 import { nachrichtenzeit } from './zeit';
 
@@ -90,6 +91,7 @@ export function Details({
   });
   const privat = kanal.kind === 'private';
   const mitMitgliedern = privat || kanal.kind === 'group';
+  const [karte, setKarte] = useState<{ id: string; name: string } | null>(null);
 
   return (
     <Dialogfenster
@@ -184,6 +186,8 @@ export function Details({
                   }
                   titel={m.staff_member_id === eigeneId ? `${m.name} (du)` : m.name}
                   meta={m.active ? undefined : 'Nicht mehr im Team'}
+                  // TEAM-009: Ein Tipp öffnet die Karte der Person.
+                  onClick={() => setKarte({ id: m.staff_member_id, name: m.name })}
                   darunter={
                     // Unter der Zeile: in ihr bräche die Rückfrage bei 375 px.
                     privat &&
@@ -232,6 +236,14 @@ export function Details({
           </Button>
         </Formularfuss>
       </div>
+      {karte ? (
+        <Personenkarte
+          staffMemberId={karte.id}
+          name={karte.name}
+          onSchliessen={() => setKarte(null)}
+          onGeoeffnet={onSchliessen}
+        />
+      ) : null}
     </Dialogfenster>
   );
 }

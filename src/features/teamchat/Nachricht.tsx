@@ -25,6 +25,7 @@ import type { Ausgangseintrag } from './ausgang';
 import { NACHRICHT_MAX, alleErwaehnt, erwaehnte } from './erwaehnung';
 import { FormatierterText } from './format';
 import { anriss, ohneFormatierung } from './formatierung';
+import { Personenkarte } from './Personenkarte';
 import { Teambild } from './Teambild';
 import { Lesezeichen, Nadel } from './Zeichen';
 import { nachrichtenzeit } from './zeit';
@@ -94,6 +95,7 @@ export function NachrichtZeile({
   onZurueckInsFeld?: () => void;
 }) {
   const queryClient = useQueryClient();
+  const [karte, setKarte] = useState(false);
   const reagieren = useMutation({
     mutationFn: (schluessel: (typeof REAKTIONEN)[number]['schluessel']) =>
       reagiere(nachricht.id, schluessel),
@@ -130,12 +132,27 @@ export function NachrichtZeile({
       ) : null}
       <div className="flex items-start gap-2">
         {/* TEAM-006: Bild der Person vor dem Kopf; eine angehängte Nachricht
-            rückt um dieselbe Breite ein. Am Anker ohne Inhalt steht niemand. */}
+            rückt um dieselbe Breite ein. Am Anker ohne Inhalt steht niemand.
+            TEAM-009: Ein Tipp darauf öffnet ihre Karte - 44 px Tippziel um
+            das 36-px-Bild, ohne die Spalte breiter zu machen. */}
         {kopf && nachricht.author_staff_member_id ? (
-          <Teambild staffMemberId={nachricht.author_staff_member_id} name={name} />
+          <Symbolknopf
+            beschriftung={`Karte von ${name}`}
+            className="-m-1 shrink-0"
+            onClick={() => setKarte(true)}
+          >
+            <Teambild staffMemberId={nachricht.author_staff_member_id} name={name} />
+          </Symbolknopf>
         ) : (
           <span aria-hidden="true" className="w-9 shrink-0" />
         )}
+        {karte && nachricht.author_staff_member_id ? (
+          <Personenkarte
+            staffMemberId={nachricht.author_staff_member_id}
+            name={nachricht.author_name}
+            onSchliessen={() => setKarte(false)}
+          />
+        ) : null}
         <div className="min-w-0 flex-1">
           {kopf}
           {nachricht.also_in_channel && zumThread ? (

@@ -732,3 +732,91 @@ describe('Bilder in den Listen (TEAM-008)', () => {
     );
   });
 });
+
+describe('Personenkarte (TEAM-009, ANN-668)', () => {
+  const KARTE = 'select * from public.get_team_person($1)';
+
+  interface Karte {
+    staff_member_id: string;
+    name: string | null;
+    roles: string[];
+    active: boolean;
+    own: boolean;
+  }
+
+  async function karte(konto: string, staff: string): Promise<Karte> {
+    const { rows } = await asUser<Karte>(konto, KARTE, [staff]);
+    expect(rows).toHaveLength(1);
+    return rows[0]!;
+  }
+
+  it('zeigt Name und Praxisrollen in fester Reihenfolge, die eigene Karte als eigene', async () => {
+    expect(await karte(users.therapist, STAFF.jannes)).toEqual({
+      staff_member_id: STAFF.jannes,
+      name: 'Jannes Test',
+      roles: ['owner', 'therapist'],
+      active: true,
+      own: false,
+    });
+    expect(await karte(users.therapist, STAFF.anna)).toMatchObject({
+      roles: ['therapist'],
+      own: true,
+    });
+    expect(await karte(users.trainer, STAFF.olivia)).toMatchObject({
+      name: 'Olivia Office',
+      roles: ['office'],
+      active: true,
+    });
+  });
+
+  it('nennt Ausgeschiedene und Personen ohne Zugang beim Namen, ohne Rollen', async () => {
+    await asPostgres(
+      `update public.staff_members set employment_status = 'inactive' where id = $1`,
+      [STAFF.tim],
+    );
+    expect(await karte(users.therapist, STAFF.tim)).toEqual({
+      staff_member_id: STAFF.tim,
+      name: 'Tim Teamleitung',
+      roles: [],
+      active: false,
+      own: false,
+    });
+    expect(await karte(users.therapist, STAFF.nina)).toMatchObject({ roles: [], active: false });
+  });
+
+  it('kennt nur die eigene Praxis', async () => {
+    const fremd = await fremdeOrganisation();
+    expect((await fehler(users.therapist, KARTE, [FREMDE_ORGANISATION.staffMember]))?.code).toBe(
+      'P0002',
+    );
+    expect((await fehler(fremd.owner, KARTE, [STAFF.anna]))?.code).toBe('P0002');
+    expect(
+      (await fehler(users.therapist, KARTE, ['55555555-5555-4555-8555-0000000009ff']))?.code,
+    ).toBe('P0002');
+    expect(await karte(fremd.owner, FREMDE_ORGANISATION.staffMember)).toMatchObject({ own: true });
+  });
+
+  it('weist Konten ohne Praxisrolle, Plattformkonten und Aufrufe ohne Sitzung ab', async () => {
+    for (const konto of [users.patientMax, users.plattformTina, users.plattformPaula, null]) {
+      expect((await fehler(konto, KARTE, [STAFF.anna]))?.code, String(konto)).toBe('42501');
+    }
+    await expect(asAnon(KARTE, [STAFF.anna])).rejects.toThrow(/permission denied/i);
+    await asPostgres(
+      `update public.staff_members set employment_status = 'inactive' where id = $1`,
+      [STAFF.anna],
+    );
+    expect((await fehler(users.therapist, KARTE, [STAFF.jannes]))?.code).toBe('42501');
+  });
+
+  it('läuft mit leerem search_path und schreibt keinen Auditeintrag', async () => {
+    const { rows } = await asPostgres<{ proconfig: string[] | null; anon: boolean }>(
+      `select p.proconfig, has_function_privilege('anon', p.oid, 'EXECUTE') as anon
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname = 'get_team_person' and p.prosecdef`,
+    );
+    expect(rows).toEqual([{ proconfig: ['search_path=""'], anon: false }]);
+    const vorher = await anzahl('select count(*) n from public.audit_log');
+    await karte(users.office, STAFF.anna);
+    expect(await anzahl('select count(*) n from public.audit_log')).toBe(vorher);
+  });
+});
