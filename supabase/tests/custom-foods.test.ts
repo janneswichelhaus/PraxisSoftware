@@ -96,8 +96,8 @@ describe('Lebensmittel der Praxis (ERN-005)', () => {
       users.ownerTherapist,
       'select public.list_practice_foods() as l',
     );
-    expect(liste[0]!.l.map((f) => f.id)).toEqual([id]);
-    const stand = liste[0]!.l[0]!.updated_at;
+    expect(liste[0]!.l.map((f) => f.id)).toContain(id);
+    const stand = liste[0]!.l.find((f) => f.id === id)!.updated_at;
     await asUserCommitted(users.ownerTherapist, SPEICHERN, [
       id,
       JSON.stringify({ ...MUESLI, energy_kcal: 390 }),
@@ -189,6 +189,8 @@ describe('Lebensmittel der Praxis (ERN-005)', () => {
 describe('Eigene Lebensmittel der Person (ERN-005)', () => {
   beforeAll(async () => {
     await resetDatabase();
+    // Ohne Erikas Lebensmittel aus dem Seed: die Fälle zählen ihre eigenen.
+    await asPostgres(`delete from public.custom_foods where owner_kind = 'person'`);
   }, 120_000);
 
   it('die Person legt an, ändert, sieht sie im Profil; die Beratung liest mit', async () => {

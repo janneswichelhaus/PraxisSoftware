@@ -28,6 +28,9 @@ delete from public.invoice_number_series;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
+-- ERN-004/005: eigene Lebensmittel und der synthetische Katalog des Seeds.
+delete from public.custom_foods;
+delete from public.food_catalog where source_version = 'Seed synthetisch';
 -- KOM-001: Rueckfragen von der Plattform; ihre Eintraege fallen mit ihnen.
 delete from public.platform_messages;
 -- Zugewiesene Plaene sind unveraenderlich und werden nie einzeln geloescht
