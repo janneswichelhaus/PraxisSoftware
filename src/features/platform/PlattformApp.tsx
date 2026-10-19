@@ -42,6 +42,8 @@ import { Checkin, MeineAngaben } from './Checkin';
 import { Gewohnheiten } from './Gewohnheiten';
 import { Ernaehrung } from './Ernaehrung';
 import { EigenesLebensmittelAendern, EigenesLebensmittelNeu, Lebensmittel } from './Lebensmittel';
+import { Tagebuch } from './Tagebuch';
+import { TagebuchEintragen } from './TagebuchEintragen';
 import { zahl as zahlDeutsch } from '@/features/nutrition/texte';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
@@ -332,6 +334,29 @@ function Geruest({
               />
             }
           />
+          {/* ERN-EPIC-003: das Tagebuch - ein Tag, Wasser, Mahlzeiten. */}
+          <Route
+            path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Tagebuch zugang={z} />}
+              />
+            }
+          />
+          {nurLesen ? null : (
+            <Route
+              path={`${PLATTFORM_PFAD}/ernaehrung/tagebuch/eintragen`}
+              element={
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => <TagebuchEintragen zugang={z} />}
+                />
+              }
+            />
+          )}
           {/* ERN-EPIC-002: Lebensmittel nachschlagen und eigene anlegen. */}
           <Route
             path={`${PLATTFORM_PFAD}/ernaehrung/lebensmittel`}

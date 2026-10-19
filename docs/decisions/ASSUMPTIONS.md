@@ -6747,7 +6747,7 @@ Datenschutz · offen · 2026-10-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-656 — Lebensmittelkatalog als Bezugsdaten ohne Organisation
 
-Technik · offen · 2026-10-19 · — · — · Wiedervorlage: —
+Technik · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-19, PR #274) · erledigt · Wiedervorlage: —
 
 **Annahme.** BLS und der Open-Food-Facts-Auszug liegen in `public.food_catalog` ohne `organization_id`: ein Nachschlagewerk ohne Personenbezug, gleich für jede Praxis. Eigene Lebensmittel von Praxis und Person tragen die Organisation (ERN-005). Kein Tabellenrecht; gelesen wird nur über die Suchfunktionen.
 
@@ -6759,7 +6759,7 @@ Technik · offen · 2026-10-19 · — · — · Wiedervorlage: —
 
 ### ANN-657 — Lizenzen der Lebensmitteldaten geprüft, Quellenangabe in der Anwendung
 
-Recht · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Rechtsberatung vor dem Start
+Recht · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-19, PR #274) · Prüfpaket · Wiedervorlage: Rechtsberatung vor dem Start
 
 **Annahme.** BLS 4.0 steht seit 2025-12-16 unter CC BY 4.0 (Nennung des Max Rubner-Instituts mit DOI, Hinweis auf Änderungen); Open Food Facts unter ODbL 1.0 (Nennung, Lizenz). Beide Angaben zeigt die Anwendung aus `public.food_sources`; unser Auszug wird nicht weitergegeben, darum keine Share-alike-Pflicht.
 
@@ -6771,7 +6771,7 @@ Recht · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Rechtsberatu
 
 ### ANN-658 — Suche: Trigramme, Rangfolge, Marken über nächste Nachbarn
 
-Technik · offen · 2026-10-19 · — · — · Wiedervorlage: —
+Technik · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-19, PR #274) · erledigt · Wiedervorlage: —
 
 **Annahme.** Gesucht wird in der Datenbank mit `pg_trgm`: jedes Wort enthalten oder ähnlich (Tippfehler); Rang = Name gleich (4) / beginnt als Wort (3) / beginnt (2) / Wort im Namen (1,5) + allgemein vor Marke (2,5) + Wortähnlichkeit; Marken nur aus den 300 nächsten Nachbarn per GiST. Gemessen: am Seed < 300 ms, mit 300 000 Marken ≤ 150 ms.
 
@@ -6783,7 +6783,7 @@ Technik · offen · 2026-10-19 · — · — · Wiedervorlage: —
 
 ### ANN-659 — Import nur durch den Betrieb, Zurückziehen statt Löschen, Startportionen
 
-Technik · offen · 2026-10-19 · — · — · Wiedervorlage: OPS-001 (Aktualisierung)
+Technik · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-19, PR #274) · erledigt · Wiedervorlage: OPS-001 (Aktualisierung)
 
 **Annahme.** Den Katalog lädt allein der Betrieb mit `scripts/lebensmittel/` als postgres; die Anwendung hat kein Recht darauf. Was ein neuer Stand nicht mehr führt, wird zurückgezogen, nicht gelöscht. Allgemeine Lebensmittel bekommen Portionen aus `portionen.json` (Haushaltsmaße, Startinhalt); Marken die Portion der Verpackung.
 
@@ -6792,3 +6792,27 @@ Technik · offen · 2026-10-19 · — · — · Wiedervorlage: OPS-001 (Aktualis
 **Anker.** `app.import_food_catalog_batch`, `app.finish_food_catalog_import`, `scripts/lebensmittel/portionen.json`.
 
 **Änderungspfad.** Löschen statt Zurückziehen in `finish_food_catalog_import` · Aufwand `klein`.
+
+### ANN-660 — Tagebucheintrag trägt den Stand des Lebensmittels
+
+Technik · offen · 2026-10-19 · — · — · Wiedervorlage: —
+
+**Annahme.** Ein Eintrag verweist auf sein Lebensmittel und trägt dessen Namen und Werte je 100 g bzw. ml vom Zeitpunkt des Eintragens; die Werte des Eintrags rechnet der Server aus diesem Stand und der Menge. Ändert die Praxis ein Lebensmittel, zieht der Import eines zurück oder löscht die Person ein eigenes, bleiben vergangene Tage unverändert.
+
+**Begründung.** ADR-027 Punkt 9 (die Anwendung rechnet); ein Tagebuch ist Nachweis dessen, was eingetragen wurde (wie MyFitnessPal, Cronometer); ANN-659 zieht Katalogzeilen zurück statt zu löschen.
+
+**Anker.** `public.nutrition_diary_entries` (Spalten `food_name` bis `salt_g`), `public.add_platform_diary_entry`.
+
+**Änderungspfad.** Werte bei jedem Lesen aus dem Lebensmittel holen (Verweis statt Stand) · Aufwand `mittel`.
+
+### ANN-661 — Wasser je Tag, ein Glas sind 250 ml
+
+Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: —
+
+**Annahme.** Wasser zählt je Tag eine Summe; ein Tipp sind 250 ml, „Ein Glas weniger“ nimmt eines zurück, nie unter 0 und höchstens 10 l. Weitere Grenzen des Tagebuchs: 80 Einträge je Tag, „zuletzt“ schaut 60 Tage zurück.
+
+**Begründung.** ADR-027 Punkt 10 („Wasser mit einem Tipp“); 250 ml ist das übliche Glas der DGE-Empfehlungen und der Vorbilder.
+
+**Anker.** `app.nutrition_diary_rule`.
+
+**Änderungspfad.** Wert in `app.nutrition_diary_rule` ändern · Aufwand `klein`.

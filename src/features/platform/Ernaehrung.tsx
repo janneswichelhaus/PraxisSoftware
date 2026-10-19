@@ -70,6 +70,15 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnae
         </Statusmeldung>
       ) : null}
       {/* Die eine Aufgabe zuerst; Seltenes eingeklappt (DESIGN.md Grundsatz 4). */}
+      {p.diary_enabled ? (
+        <ListRows beschriftung="Tagebuch">
+          <ListRow
+            to={`${PLATTFORM_PFAD}/ernaehrung/tagebuch${search}`}
+            titel="Tagebuch"
+            meta="Heute eintragen, Wasser zählen"
+          />
+        </ListRows>
+      ) : null}
       <Gewicht zugang={zugang} daten={daten} />
       <Section titel="Ihre Zielwerte">
         <Zielwertliste zielwerte={p.targets} />

@@ -1288,6 +1288,21 @@ export const ROUTEN = Object.freeze([
     etikett: 'Plattform – Ernährung',
     konten: ['plattform'],
   },
+  // ERN-007: das Tagebuch (Seed: eingeschaltet, Frühstück heute, Wasser).
+  {
+    muster: '/p/ernaehrung/tagebuch',
+    pfad: '/p/ernaehrung/tagebuch?bereich=treatment',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Tagebuch',
+    konten: ['plattform'],
+  },
+  {
+    muster: '/p/ernaehrung/tagebuch/eintragen',
+    pfad: '/p/ernaehrung/tagebuch/eintragen?bereich=treatment&mahlzeit=lunch',
+    bereich: 'Plattform',
+    etikett: 'Plattform – Tagebuch eintragen',
+    konten: ['plattform'],
+  },
   {
     muster: '/p/ernaehrung/lebensmittel',
     pfad: '/p/ernaehrung/lebensmittel?bereich=treatment',

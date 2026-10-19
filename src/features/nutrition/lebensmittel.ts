@@ -103,9 +103,11 @@ export function energieJe100(f: Lebensmittel): string {
   return `${zahl(f.per_100.energy_kcal)} kcal je ${bezug(f.base_unit)}`;
 }
 
-/** Nebenzeile einer Trefferzeile: Marke, Energie, Herkunft. */
-export function trefferMeta(f: Lebensmittel): string {
-  return [f.brand, energieJe100(f), QUELLENNAME[f.source]].filter(Boolean).join(' · ');
+/** Nebenzeile einer Trefferzeile: Marke, Energie, Herkunft; ohne Zahlen ohne Energie. */
+export function trefferMeta(f: Lebensmittel, ohneZahlen = false): string {
+  return [f.brand, ohneZahlen ? null : energieJe100(f), QUELLENNAME[f.source]]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /** Gramm mit einer Stelle, Salz mit zwei; leer heißt unbekannt. */

@@ -141,6 +141,11 @@ export type PlattformApi = Pick<
   | 'lebensmittelQuellen'
   | 'eigenesLebensmittelSpeichern'
   | 'eigenesLebensmittelLoeschen'
+  | 'ladeTagebuch'
+  | 'tagebuchEintragen'
+  | 'tagebuchAendern'
+  | 'tagebuchLoeschen'
+  | 'wasserZaehlen'
 >;
 
 /** Endet jeden schreibenden Weg der Einsicht - ohne Netz, ohne Vorarbeit. */
@@ -217,6 +222,12 @@ export function einsichtsApi(zugangId: string, quelle: Einsichtsquelle): Plattfo
     lebensmittelQuellen: gesperrt,
     eigenesLebensmittelSpeichern: gesperrt,
     eigenesLebensmittelLoeschen: gesperrt,
+    // ERN-EPIC-003: ebenso das Tagebuch.
+    ladeTagebuch: gesperrt,
+    tagebuchEintragen: gesperrt,
+    tagebuchAendern: gesperrt,
+    tagebuchLoeschen: gesperrt,
+    wasserZaehlen: gesperrt,
   };
 }
 

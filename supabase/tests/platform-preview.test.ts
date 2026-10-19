@@ -526,6 +526,31 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
     params: () => [E],
     gelingtDerPerson: true,
   },
+  // ERN-007: das Tagebuch (Seed: eingeschaltet, Erikas Frühstück heute).
+  add_platform_diary_entry: {
+    sql: `select public.add_platform_diary_entry($1::uuid,
+            (now() at time zone 'Europe/Berlin')::date, 'snack', 'person',
+            'f1f1f1f1-f1f1-4f1f-8f1f-000000000002', 45)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  update_platform_diary_entry: {
+    sql: `select public.update_platform_diary_entry($1::uuid,
+            'f2f2f2f2-f2f2-4f2f-8f2f-000000000001', 'snack', null, 2)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  delete_platform_diary_entry: {
+    sql: `select public.delete_platform_diary_entry($1::uuid, 'f2f2f2f2-f2f2-4f2f-8f2f-000000000001')`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
+  add_platform_water: {
+    sql: `select public.add_platform_water($1::uuid,
+            (now() at time zone 'Europe/Berlin')::date, 250)`,
+    params: () => [E],
+    gelingtDerPerson: true,
+  },
 };
 
 /**
@@ -546,6 +571,8 @@ const KEIN_SCHREIBWEG_DER_PERSON: Readonly<Record<string, string>> = {
     'lesend, aber nicht in der Einsicht: die Ernährung liest in der Praxis nur die Beratung (ERN-002, ADR-027 Punkt 4)',
   search_platform_foods:
     'lesend, Bezugsdaten ohne Personenbezug; nicht in der Einsicht wie platform_nutrition (ERN-004)',
+  platform_nutrition_diary:
+    'lesend, aber nicht in der Einsicht: das Tagebuch liest in der Praxis nur die Beratung (ERN-007, ADR-027 Punkt 4)',
 };
 
 describe('Einsicht der Praxisinhaber:in (E-001)', () => {
