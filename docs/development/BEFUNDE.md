@@ -706,18 +706,6 @@ Marke vorsieht.
 **Beobachtung.** Das Anlegen verlangt die Einwilligung „auf Papier unterschrieben“; den Wortlaut zeigt das Formular seit dem Review, ein Foto des Blatts lässt sich aber nicht ablegen wie beim Anmeldebogen. Der Nachweis nach Art. 7 Abs. 1 liegt im Ordner. **Erwartet.** „Unterschriebenes Blatt fotografieren“ am Kästchen, abgelegt als Dokument der Akte bzw. des Verhältnisses mit der Frist der Ernährungsberatung.
 
 
-### BEF-185 — Test der Ernährung auf der Plattform ist zwischen 0 und 2 Uhr rot
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-19 |
-| Bereich | Tests: `supabase/tests/platform-nutrition.test.ts` (ERN-002) |
-| Quelle  | Voller `pnpm test:db` der PR #273 (TEAM-004/005), gestartet 00:43 Uhr Berliner Zeit |
-| Status  | offen |
-| Berührt | `supabase/seed.sql` (Einwilligung `current_date - 21`), Hilfe `heute()` im Test |
-
-**Beobachtung.** „zeigt der Person ihre Beratung mit fester Schlüsselliste, ohne Notizen“ erwartet `occurred_on` = `app.training_today(…) - 21` (Tag der Praxis), der Seed schreibt `current_date - 21` (Tag der Datenbank, UTC). Zwischen 0 und 2 Uhr Sommerzeit (0 und 1 Uhr Winterzeit) liegen sie einen Tag auseinander; sonst grün. **Erwartet.** Seed und Test rechnen mit demselben Tag, etwa beide mit `app.training_today`.
-
 ### BEF-187 — Teamchat: Mit dem Hinweis „Keine Verbindung“ verdeckt die Tableiste das Kleingedruckte
 
 |         |   |

@@ -1622,3 +1622,15 @@ eingeklappt.
 | Berührt | G9 (`name: 'Heute', exact: true`), `Monatsblatt.tsx` („…, heute“ im Namen der Zelle) |
 
 **Beobachtung.** Werktags (Berliner Zeit) tippt G9 auf `getByRole('button', { name: 'Heute' })`. Seit das Monatsblatt die heutige Zelle „Montag, 19. Oktober 2026, heute“ nennt, trifft das zwei Knöpfe, und Playwright bricht ab. Der Test wurde an einem Samstag zuletzt geändert und lief seither nur im Zweig für Samstag und Sonntag. **Erwartet.** `{ name: 'Heute', exact: true }`; lokal damit 3/3 grün.
+
+### BEF-185 — Test der Ernährung auf der Plattform ist zwischen 0 und 2 Uhr rot
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-19 |
+| Bereich | Tests: `supabase/tests/platform-nutrition.test.ts` (ERN-002) |
+| Quelle  | Voller `pnpm test:db` der PR #273 (TEAM-004/005), gestartet 00:43 Uhr Berliner Zeit |
+| Status  | erledigt 2026-10-19 (PR #273): Profil, Einwilligung und Gewichte im Seed nach `app.training_today`; mit einer Zeitzone, deren Datum hinter Berlin liegt, vorher rot (erwartet 28.09., bekommen 27.09.), nachher 12/12 grün |
+| Berührt | `supabase/seed.sql` (Ernährungsberatung), Hilfe `heute()` im Test |
+
+**Beobachtung.** „zeigt der Person ihre Beratung mit fester Schlüsselliste, ohne Notizen“ erwartet `occurred_on` = `app.training_today(…) - 21` (Tag der Praxis), der Seed schreibt `current_date - 21` (Tag der Datenbank, UTC). Zwischen 0 und 2 Uhr Sommerzeit (0 und 1 Uhr Winterzeit) liegen sie einen Tag auseinander; sonst grün. **Erwartet.** Seed und Test rechnen mit demselben Tag, etwa beide mit `app.training_today`.
