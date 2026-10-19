@@ -73,6 +73,28 @@ const BEWUSST_AUSSEN = new Map<string, string>([
     'patient_file_access_grants',
     'Technische Freigabe eines signierten Verweises, hoechstens 60 Sekunden gueltig; sie sagt etwas ueber das lesende Konto, nicht ueber die Patientin (ADR-017).',
   ],
+  [
+    'platform_message_attachments',
+    'Die Fotos und Videos einer Rueckfrage stehen als `attachments` an ihrem Vorgang in `platform_messages` (BEF-146).',
+  ],
+  // BEF-146: je Zugang selbst gewaehlt und fuer die Praxis unsichtbar
+  // (ANN-344) - im eigenen Export der Plattform unter `notifications` (BEF-147).
+  [
+    'platform_notification_settings',
+    'Die eigene Wahl zu Benachrichtigungen; die Praxis sieht sie nicht (ANN-344), der eigene Export traegt sie (BEF-147).',
+  ],
+  [
+    'platform_push_subscriptions',
+    'Push-Registrierungen eines Geraets; die Praxis sieht sie nicht (ANN-344), der eigene Export nennt je Geraet „seit wann" (BEF-147).',
+  ],
+  [
+    'notification_deliveries',
+    'Zustellauftraege der gewaehlten Benachrichtigungen; die Praxis sieht sie nicht (ANN-344), der eigene Export traegt sie (BEF-147).',
+  ],
+  [
+    'nutrition_diary_reminders',
+    'Erinnerungen an das Ernaehrungstagebuch, je Zugang gewaehlt; die Praxis sieht sie nicht (ANN-344), der eigene Export traegt sie (BEF-147).',
+  ],
 ]);
 
 /**
@@ -125,9 +147,12 @@ describe('export_patient_record', () => {
     expect(tabellen['appointments']![0]!['staff_member']).toBe('Anna Beispiel');
   });
 
-  it('enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id, gleich welcher Klasse (BEF-145)', async () => {
+  it('enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id oder access_id, gleich welcher Klasse (BEF-145, BEF-146)', async () => {
     // Nicht nur `patientenakte` und `personenstammdaten`: Eine Tabelle mit
     // eigener Klasse (`terminwunsch`, BEF-144) fiel sonst unbemerkt heraus.
+    // Seit BEF-146 auch Tabellen am Plattformzugang (`access_id`) - so fielen
+    // die Anhaenge an Rueckfragen auf. Was ueber einen Elterndatensatz haengt,
+    // steht als Teil seines Abschnitts in BEWUSST_AUSSEN.
     const { rows: zugeordnet } = await asPostgres<{ table_name: string }>(
       `select distinct ra.table_name from public.retention_assignments ra
        where ra.class_key in ('patientenakte', 'personenstammdaten')
@@ -135,7 +160,7 @@ describe('export_patient_record', () => {
             select 1 from information_schema.columns c
             where c.table_schema = 'public'
               and c.table_name = ra.table_name
-              and c.column_name = 'patient_id'
+              and c.column_name in ('patient_id', 'access_id')
           )
        order by ra.table_name`,
     );
@@ -154,6 +179,38 @@ describe('export_patient_record', () => {
       );
 
     expect(fehlend).toEqual([]);
+  });
+
+  it('nennt die Fotos und Videos an Rueckfragen, ohne Inhalt und Schluessel (BEF-146)', async () => {
+    // Paula begleitet Max und fragt fuer ihn; der Anhang entsteht direkt in der
+    // Datenbank, als haette sie ihn hochgeladen.
+    const { rows: vorgang } = await asUserCommitted<{ id: string }>(
+      users.plattformPaula,
+      'select public.start_platform_message($1::uuid, $2, $3, null, null) as id',
+      [platformAccesses.paulaBegleitungMax, 'organisational', 'Ist das so richtig?'],
+    );
+    await asPostgres(
+      `insert into public.platform_message_attachments
+         (organization_id, message_id, media_kind, mime_type, byte_size, checksum_sha256, status,
+          confirmed_at, author_kind, created_by)
+       values ($1, $2, 'photo', 'image/jpeg', 1000, $3, 'ready', now(), 'self', $4)`,
+      [SEED.organizationId, vorgang[0]!.id, 'a'.repeat(64), users.plattformPaula],
+    );
+    const { rows } = await asUser<{ daten: Record<string, unknown> }>(
+      users.ownerTherapist,
+      AUSKUNFT,
+      [patients.max],
+    );
+    const vorgaenge = (rows[0]!.daten['tabellen'] as Record<string, unknown[]>)[
+      'platform_messages'
+    ] as { attachments: Record<string, unknown>[] }[];
+    const anhaenge = vorgaenge.flatMap((v) => v.attachments);
+    expect(anhaenge).toEqual([
+      expect.objectContaining({ media_kind: 'photo', mime_type: 'image/jpeg', byte_size: 1000 }),
+    ]);
+    for (const schluessel of ['object_key', 'access_id', 'checksum_sha256', 'id', 'created_by']) {
+      expect(anhaenge[0]).not.toHaveProperty(schluessel);
+    }
   });
 
   it('enthaelt die patientenbezogenen Abrechnungsdaten', async () => {
