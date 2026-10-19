@@ -457,6 +457,9 @@ describe('list_appointments: Datensparsamkeit', () => {
         // Kachel - Strasse und Hausnummer nur am Hausbesuch.
         'visit_street',
         'visit_house_number',
+        // ERN-011, ANN-665: der Anlass (Ernährungsberatung), kein Inhalt der
+        // Beratung - kein Profil, keine Zielwerte, kein Gewicht.
+        'occasion',
       ].sort(),
     );
   });

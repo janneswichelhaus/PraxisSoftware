@@ -85,6 +85,7 @@ import { ABLAGE_FUER_PRAXISKONTEN } from '@/features/offline-documentation/servi
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
 import { AkteErnaehrung } from '@/features/nutrition/ErnaehrungReiter';
+import { BeratungsterminSeite } from '@/features/nutrition/BeratungsterminSeite';
 import {
   LebensmittelPage,
   PraxisLebensmittelBearbeiten,
@@ -332,6 +333,10 @@ export function AuthenticatedRoutes({
                         <Route
                           path="/patienten/:patientId/ernaehrung/zielwerte"
                           element={<ZielwerteSeite art="treatment" />}
+                        />
+                        <Route
+                          path="/patienten/:patientId/ernaehrung/termin"
+                          element={<BeratungsterminSeite art="treatment" user={user} />}
                         />
                       </>
                     ) : null}
@@ -875,6 +880,10 @@ export function AuthenticatedRoutes({
                         <Route
                           path="/training/:relationshipId/ernaehrung/zielwerte"
                           element={<ZielwerteSeite art="training" />}
+                        />
+                        <Route
+                          path="/training/:relationshipId/ernaehrung/termin"
+                          element={<BeratungsterminSeite art="training" user={user} />}
                         />
                       </>
                     ) : null}

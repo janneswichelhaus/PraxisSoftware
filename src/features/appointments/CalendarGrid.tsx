@@ -32,6 +32,7 @@ import {
   appointmentStatusTon,
   appointmentTypeHint,
   dokuOffen,
+  istBeratung,
   terminBezeichnung,
   type CalendarEntry,
   terminPfad,
@@ -1448,6 +1449,7 @@ function Kachel({
     !gitter.ziehbar && eintrag.status !== 'confirmed'
       ? `Nicht verschiebbar: ${appointmentStatusLabels[eintrag.status]}`
       : null,
+    istBeratung(eintrag) ? 'Ernährungsberatung' : null,
     abweichung === null ? null : abweichendeLaengeText(abweichung),
     vermerk,
     dokuOffen(eintrag) ? 'Doku offen' : null,
@@ -1516,7 +1518,14 @@ function Kachel({
       ) : null}
       {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
             als Wort (TRN-006, ADR-021 Punkt 9). */}
-      {eintrag.kind === 'training' ? (
+      {/* ERN-012: Die Ernährungsberatung ist weder Behandlung noch Training -
+            ein eigenes Zeichen, vorgelesen als Wort. */}
+      {istBeratung(eintrag) ? (
+        <>
+          <span aria-hidden="true">◇ </span>
+          <span className="sr-only">Ernährungsberatung: </span>
+        </>
+      ) : eintrag.kind === 'training' ? (
         <>
           <span aria-hidden="true">◆ </span>
           <span className="sr-only">Training: </span>

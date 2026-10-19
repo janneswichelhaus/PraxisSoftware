@@ -218,6 +218,14 @@ export const ROUTEN = Object.freeze([
     etikett: 'Zielwerte anpassen',
     konten: ['owner'],
   },
+  // ERN-012: ein Beratungstermin an Erikas Akte (ANN-622).
+  {
+    muster: '/patienten/:patientId/ernaehrung/termin',
+    pfad: `${akte(erika)}/ernaehrung/termin`,
+    bereich: 'Akte',
+    etikett: 'Beratungstermin anlegen',
+    konten: ['owner'],
+  },
   {
     muster: '/patienten/:patientId/verlauf',
     pfad: `${akte(erika)}/verlauf`,
@@ -645,6 +653,13 @@ export const ROUTEN = Object.freeze([
     pfad: `/training/${IDS.trainingTina}/ernaehrung/neu`,
     bereich: 'Übungen und Training',
     etikett: 'Ernährungsberatung anlegen (Training)',
+    konten: ['owner'],
+  },
+  {
+    muster: '/training/:relationshipId/ernaehrung/termin',
+    pfad: `/training/${IDS.trainingTina}/ernaehrung/termin`,
+    bereich: 'Übungen und Training',
+    etikett: 'Beratungstermin anlegen (Training, ohne Beratung)',
     konten: ['owner'],
   },
   {

@@ -57,3 +57,8 @@ export function ernaehrungsFormulare(art: Verhaeltnisart, verhaeltnisId: string)
     ? `/patienten/${verhaeltnisId}/ernaehrung`
     : `/training/${verhaeltnisId}/ernaehrung`;
 }
+
+/** ERN-012: der Weg zum Beratungstermin - `…/ernaehrung/termin`. */
+export function beratungsterminPfad(art: Verhaeltnisart, verhaeltnisId: string): string {
+  return `${ernaehrungsFormulare(art, verhaeltnisId)}/termin`;
+}

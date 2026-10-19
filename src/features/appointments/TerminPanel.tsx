@@ -26,6 +26,7 @@ import {
   dokuOffen,
   fetchAppointment,
   formatLocalTimeRange,
+  istBeratung,
   terminBezeichnung,
   terminPfad,
   type CalendarEntry,
@@ -98,12 +99,19 @@ export function TerminPanel({
   }, [eintrag.id]);
 
   const behandlung = eintrag.kind === 'therapy' && eintrag.patient_id !== null;
+  // ERN-012: Die Ernährungsberatung kennt keine Behandlungsdoku; mit dem
+  // Haken ist die Sitzung erfasst - auch am Trainingsverhältnis.
+  const beratung = istBeratung(eintrag);
   const eigener = user.staffMemberId !== null && eintrag.staff_member_id === user.staffMemberId;
   const offen = dokuOffen(eintrag);
   const darfHaken =
-    behandlung && eigener && eintrag.status === 'confirmed' && canManageAppointments(user.roles);
+    (behandlung || beratung) &&
+    eigener &&
+    eintrag.status === 'confirmed' &&
+    canManageAppointments(user.roles);
   const darfDoku =
     behandlung &&
+    !beratung &&
     eigener &&
     canWriteTreatmentNote(user.roles) &&
     (eintrag.status === 'confirmed' || offen);
@@ -112,8 +120,9 @@ export function TerminPanel({
   // verbindlich prüft `cancel_appointment`.
   const darfAbsagen =
     behandlung && eintrag.status === 'confirmed' && canManageAppointments(user.roles);
-  const art =
-    eintrag.kind === 'internal'
+  const art = beratung
+    ? 'Ernährungsberatung'
+    : eintrag.kind === 'internal'
       ? BEGRIFFE.fehlzeit
       : eintrag.kind === 'training'
         ? 'Training'
@@ -199,7 +208,7 @@ export function TerminPanel({
 
       {/* K10: Fehlt zur Person noch etwas aus der Erstaufnahme, führt eine
           Zeile in die geführte Erstaufnahme zu diesem Termin. */}
-      {behandlung && eintrag.patient_id && eintrag.status !== 'cancelled' ? (
+      {behandlung && !beratung && eintrag.patient_id && eintrag.status !== 'cancelled' ? (
         <div className="mt-3 empty:hidden">
           <ErstaufnahmeEinstieg
             patientId={eintrag.patient_id}
@@ -220,9 +229,10 @@ export function TerminPanel({
               onAbgeschlossen={() =>
                 setMeldung({
                   ton: 'erfolg',
-                  text: canWriteTreatmentNote(user.roles)
-                    ? 'Termin abgeschlossen. Doku offen.'
-                    : 'Termin abgeschlossen.',
+                  text:
+                    canWriteTreatmentNote(user.roles) && !beratung
+                      ? 'Termin abgeschlossen. Doku offen.'
+                      : 'Termin abgeschlossen.',
                 })
               }
               onFehler={(text) => setMeldung({ ton: 'fehler', text })}
@@ -241,7 +251,7 @@ export function TerminPanel({
       ) : null}
 
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-        {behandlung && canReadTreatmentNote(user.roles) ? (
+        {behandlung && !beratung && canReadTreatmentNote(user.roles) ? (
           <Textlink
             alleinstehend
             // Mit einem Tipp zur letzten Behandlung, nicht zum Kopf der Akte
@@ -256,7 +266,7 @@ export function TerminPanel({
             Fenster (Akte entschlacken, 2026-10-03). */}
         {eintrag.kind === 'training' ? (
           <Textlink alleinstehend to={mitRueckweg(terminPfad(eintrag), rueckweg)}>
-            Training →
+            {beratung ? 'Termin →' : 'Training →'}
           </Textlink>
         ) : (
           <Button type="button" variant="secondary" groesse="kompakt" onClick={onAktionen}>

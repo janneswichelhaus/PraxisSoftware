@@ -93,9 +93,13 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
   const darfAendern = darfSchreiben && termin.status === 'confirmed';
   const darfAbschliessen =
     darfSchreiben && (termin.status === 'confirmed' || termin.status === 'completed');
-  const darfProtokoll = canWriteTrainingProtocols(user.roles) && istProtokollierbar(termin.status);
+  // ERN-012: Die Ernährungsberatung ist keine Trainingseinheit - ohne
+  // Protokoll; mit dem Haken ist die Sitzung erfasst (ANN-664).
+  const beratung = termin.occasion === 'nutrition_counselling';
+  const darfProtokoll =
+    !beratung && canWriteTrainingProtocols(user.roles) && istProtokollierbar(termin.status);
   // ABN-022 (BEF-113): Das Büro liest das Protokoll, schreibt es aber nicht.
-  const liestProtokoll = canReadTrainingProtocols(user.roles);
+  const liestProtokoll = !beratung && canReadTrainingProtocols(user.roles);
   const zeigtProtokoll = liestProtokoll && istProtokollierbar(termin.status);
   const angelegt = leseAngelegtenTermin(suche) === termin.id;
   const hier = `/training/termine/${termin.id}`;
@@ -131,7 +135,7 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
           Zeile darüber, der Name als Weg zur Trainingskund:in (UX-012), Tag
           und Zeit darunter. */}
       <PageHeader
-        kicker="Trainingstermin"
+        kicker={beratung ? 'Ernährungsberatung' : 'Trainingstermin'}
         title={
           <Textlink to={mitRueckweg(`/training/${termin.training_relationship_id}`, hier)}>
             {name}

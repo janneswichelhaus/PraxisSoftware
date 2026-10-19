@@ -344,7 +344,19 @@ function OffenerTerminZeile({ termin }: { termin: OffenerTermin }) {
       meta={
         <>
           <span className="tabular-nums">{formatDate(termin.performed_on)}</span>
-          {termin.service_area === 'training' ? (
+          {termin.occasion === 'nutrition_counselling' ? (
+            // ERN-012: die Beratung, abgehakt - im Bereich des Profils.
+            <>
+              {' · '}
+              <span>Ernährungsberatung</span>
+              {termin.service_area === 'training' ? (
+                <>
+                  {' · '}
+                  <span>{bereichLabels.training}</span>
+                </>
+              ) : null}
+            </>
+          ) : termin.service_area === 'training' ? (
             <>
               {' · '}
               <span>{bereichLabels.training}</span>
