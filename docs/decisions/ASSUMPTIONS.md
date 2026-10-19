@@ -6840,3 +6840,27 @@ Technik · entschieden (Jannes) · 2026-10-19 · Jannes · — · Wiedervorlage:
 **Anker.** `src/components/ui/bewegung.ts`; `bereichWechseln` in `seitenUebergang.ts`, `useAbgang` in `Dialogfenster.tsx`, `useSchrittrichtung` in `GefuehrterAblauf.tsx`; `index.css` „Bereich wechseln“.
 
 **Änderungspfad.** Die drei Hooks und die Abschnitte in `index.css` entfernen · Aufwand `klein`.
+
+### ANN-664 — Ernährungsberatung als Anlass neben dem Kontext, abgerechnet mit dem Haken
+
+Praxisprozess · offen · 2026-10-19 · Claude (ERN-011) · Prüfpaket · Wiedervorlage: G13
+
+**Annahme.** Der Beratungstermin ist ein Termin der Akte oder des Trainingsverhältnisses mit `occasion = 'nutrition_counselling'`, kein vierter Kontext. Er trägt keine Grundlage, keine Doku, kein Protokoll, keinen Gebührenanlass und kein Terminhonorar; ein Trainingspaket deckt ihn nicht. Mit dem Haken entsteht die erste Position „Ernährungsberatung“ des Bereichs, zurück mit dem Haken fällt sie. Zugeordnet wird nach dem Kalender des Bereichs.
+
+**Begründung.** ADR-022 Punkt 2 (drei Kontexte, kein zweites Feld für den Kontext), ADR-027 Punkte 1 und 15, ANN-622 (Abnahme), B7/ANN-513 (Haken = erbracht), ANN-178 (kein Anlass im Training).
+
+**Anker.** Constraint `appointments_nutrition_occasion`.
+
+**Änderungspfad.** Ausfallhonorar zulassen: Constraint und `cancel_appointment`/`record_no_show` · Aufwand `mittel`.
+
+### ANN-665 — Den Anlass sieht, wer den Termin sieht
+
+Datenschutz · offen · 2026-10-19 · Claude (ERN-011) · Prüfpaket · Wiedervorlage: DSFA (ADR-007)
+
+**Annahme.** Kalender, Tagesliste und Abrechnung zeigen „Ernährungsberatung“ allen, die den Termin sehen (Büro, Therapie am Behandlungstermin); Profil, Zielwerte, Gewicht und Tagebuch bleiben bei der Fähigkeit. Die Plattform zeigt den Anlass nicht.
+
+**Begründung.** ADR-027 Punkt 4 schützt den Inhalt des Profils; Termin und Rechnungsposten (Punkt 15) sieht das Büro ohnehin. Ein verdeckter Termin wäre eine Belegung ohne Namen und machte Planen und Abrechnen unmöglich.
+
+**Anker.** Spalte `occasion` in `public.list_appointments`.
+
+**Änderungspfad.** Anlass für Rollen ohne Fähigkeit maskieren (`case when app.can_counsel_nutrition()`) · Aufwand `klein`.
