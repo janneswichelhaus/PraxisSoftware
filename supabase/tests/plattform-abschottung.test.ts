@@ -39,6 +39,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Freigegebene Passkeys des eigenen Kontos (SEC-009); nur Kennungen, Negativfälle in app-pin.test.ts',
   'public.unlock_with_pin':
     'Eigene gesperrte Sitzung freigeben (SEC-004); Negativfälle in app-pin.test.ts',
+  'public.list_food_sources':
+    'Quellenangabe der Lebensmitteldaten (ERN-004, ADR-027 Punkt 8): Lizenz und Stand, Inhalt ohne Personenbezug; Negativfälle in food-catalog.test.ts',
   'public.platform_context':
     'Praxisname und eigene Zugänge; Negativfälle in platform-context.test.ts',
   'public.platform_representatives':

@@ -1241,3 +1241,196 @@ insert into public.nutrition_weight_entries
   ('22222222-2222-4222-8222-000000000001', 'f0f0f0f0-f0f0-4f0f-8f0f-000000000001',
    app.training_today('22222222-2222-4222-8222-000000000001') - 7, 73.5, 'practice',
    '11111111-1111-4111-8111-000000000001');
+
+-- -----------------------------------------------------------------------------
+-- Lebensmittelkatalog (ERN-004, ADR-027 Punkte 7 und 8) - rein synthetisch
+--
+-- KEINE Daten des Bundeslebensmittelschlüssels und keine von Open Food Facts:
+-- Namen wie in einem Nachschlagewerk, Nährwerte gerundet nach Augenmaß,
+-- Schlüssel mit dem Buchstaben Z (im BLS keine Hauptgruppe), Barcodes mit dem
+-- Präfix 200 (GS1: nur für interne Nummern, nie ein echtes Produkt). Der
+-- echte Import (scripts/lebensmittel/) zieht diese Zeilen über den Stand
+-- zurück. Dazu Verwechsler (Apfelsaft, Haferkekse, Roggenvollkornbrot), damit
+-- die Rangfolge etwas zu entscheiden hat, und 20 000 synthetische
+-- Markenprodukte für die Laufzeit der Suche (Budget < 300 ms).
+-- -----------------------------------------------------------------------------
+insert into public.food_catalog
+  (source, source_code, name, base_unit, energy_kcal, protein_g, fat_g, carbohydrate_g, sugar_g,
+   fibre_g, saturated_fat_g, salt_g, portions, source_version)
+select 'bls', 'Z' || lpad(row_number() over ()::text, 6, '0'), f.name, f.einheit, f.kcal, f.eiweiss,
+       f.fett, f.kh, f.zucker, f.ballast, f.gesaettigt, f.salz, f.portionen::jsonb, 'Seed synthetisch'
+from (values
+  ('Apfel roh', 'g', 54, 0.3, 0.1, 12.0, 10.3, 2.0, 0.0, 0.0, '[{"label": "1 Stück (mittel)", "amount": 150}]'),
+  ('Apfelsaft', 'ml', 46, 0.1, 0.1, 10.5, 10.0, 0.1, 0.0, 0.0, '[{"label": "1 Glas", "amount": 200}]'),
+  ('Apfelmus', 'g', 76, 0.2, 0.1, 17.5, 16.0, 1.5, 0.0, 0.0, '[{"label": "1 Esslöffel", "amount": 20}]'),
+  ('Apfelkuchen (Rührteig)', 'g', 260, 3.5, 11.0, 36.0, 20.0, 1.5, 6.0, 0.3, '[{"label": "1 Stück", "amount": 120}]'),
+  ('Apfelstrudel', 'g', 230, 3.0, 9.0, 33.0, 15.0, 1.8, 4.0, 0.2, '[{"label": "1 Stück", "amount": 150}]'),
+  ('Bratapfel', 'g', 90, 0.4, 1.0, 19.0, 17.0, 2.2, 0.5, 0.0, '[{"label": "1 Stück", "amount": 180}]'),
+  ('Apfelschorle', 'ml', 24, 0.0, 0.0, 5.5, 5.2, 0.0, 0.0, 0.0, '[{"label": "1 Glas", "amount": 300}]'),
+  ('Haferflocken', 'g', 370, 13.5, 7.0, 58.7, 1.2, 10.0, 1.3, 0.0, '[{"label": "1 Esslöffel", "amount": 10}, {"label": "1 Portion", "amount": 50}]'),
+  ('Haferflockenkekse', 'g', 450, 6.5, 19.0, 62.0, 25.0, 4.5, 9.0, 0.5, '[{"label": "1 Stück", "amount": 12}]'),
+  ('Hafermilch (Haferdrink)', 'ml', 46, 0.4, 1.5, 7.0, 4.0, 0.8, 0.2, 0.1, '[{"label": "1 Glas", "amount": 200}]'),
+  ('Haferkleie', 'g', 330, 17.0, 7.0, 46.0, 1.5, 15.0, 1.3, 0.0, '[{"label": "1 Esslöffel", "amount": 8}]'),
+  ('Vollkornbrot', 'g', 210, 7.0, 1.5, 39.0, 3.0, 7.5, 0.3, 1.1, '[{"label": "1 Scheibe", "amount": 50}]'),
+  ('Roggenvollkornbrot', 'g', 195, 6.5, 1.2, 38.0, 2.5, 8.5, 0.2, 1.2, '[{"label": "1 Scheibe", "amount": 50}]'),
+  ('Vollkornbrötchen', 'g', 230, 8.5, 2.5, 41.0, 2.5, 6.5, 0.4, 1.2, '[{"label": "1 Stück", "amount": 60}]'),
+  ('Vollkornnudeln gekocht', 'g', 145, 5.5, 1.0, 27.0, 1.0, 4.5, 0.2, 0.0, '[{"label": "1 Portion", "amount": 200}]'),
+  ('Vollkornreis gekocht', 'g', 120, 2.6, 0.9, 25.0, 0.3, 1.6, 0.2, 0.0, '[{"label": "1 Portion", "amount": 180}]'),
+  ('Weizenmischbrot', 'g', 240, 7.5, 1.5, 47.0, 2.5, 4.5, 0.3, 1.2, '[{"label": "1 Scheibe", "amount": 45}]'),
+  ('Weizenbrötchen (Semmel)', 'g', 270, 8.5, 1.5, 54.0, 2.5, 3.0, 0.3, 1.3, '[{"label": "1 Stück", "amount": 50}]'),
+  ('Toastbrot', 'g', 260, 8.0, 3.5, 48.0, 4.0, 3.0, 0.8, 1.2, '[{"label": "1 Scheibe", "amount": 25}]'),
+  ('Knäckebrot Roggen', 'g', 330, 9.5, 1.5, 66.0, 2.0, 15.0, 0.3, 1.2, '[{"label": "1 Scheibe", "amount": 10}]'),
+  ('Banane roh', 'g', 93, 1.1, 0.2, 21.0, 17.0, 2.0, 0.1, 0.0, '[{"label": "1 Stück (mittel)", "amount": 120}]'),
+  ('Bananenchips', 'g', 520, 2.3, 34.0, 50.0, 35.0, 7.7, 29.0, 0.0, '[{"label": "1 Handvoll", "amount": 25}]'),
+  ('Orange roh', 'g', 47, 1.0, 0.2, 9.0, 8.5, 2.2, 0.0, 0.0, '[{"label": "1 Stück (mittel)", "amount": 180}]'),
+  ('Orangensaft', 'ml', 44, 0.7, 0.2, 9.0, 8.5, 0.2, 0.0, 0.0, '[{"label": "1 Glas", "amount": 200}]'),
+  ('Birne roh', 'g', 55, 0.5, 0.3, 12.5, 10.0, 3.1, 0.0, 0.0, '[{"label": "1 Stück (mittel)", "amount": 170}]'),
+  ('Erdbeeren roh', 'g', 33, 0.8, 0.4, 5.5, 5.0, 2.0, 0.0, 0.0, '[{"label": "1 Schale", "amount": 250}]'),
+  ('Heidelbeeren roh', 'g', 42, 0.6, 0.6, 7.5, 7.0, 4.9, 0.0, 0.0, '[{"label": "1 Handvoll", "amount": 60}]'),
+  ('Weintrauben roh', 'g', 70, 0.7, 0.3, 16.0, 15.5, 1.5, 0.1, 0.0, '[{"label": "1 Handvoll", "amount": 80}]'),
+  ('Kiwi roh', 'g', 55, 1.0, 0.6, 9.5, 9.0, 3.0, 0.0, 0.0, '[{"label": "1 Stück", "amount": 75}]'),
+  ('Mandarine roh', 'g', 50, 0.7, 0.3, 10.0, 9.5, 1.8, 0.0, 0.0, '[{"label": "1 Stück", "amount": 70}]'),
+  ('Tomate roh', 'g', 18, 0.9, 0.2, 2.8, 2.6, 1.2, 0.0, 0.0, '[{"label": "1 Stück (mittel)", "amount": 80}]'),
+  ('Tomatensoße', 'g', 45, 1.5, 1.5, 6.0, 5.0, 1.5, 0.2, 0.9, '[{"label": "1 Portion", "amount": 100}]'),
+  ('Gurke roh', 'g', 12, 0.6, 0.2, 1.8, 1.7, 0.5, 0.0, 0.0, '[{"label": "1 Stück", "amount": 400}]'),
+  ('Karotte roh (Möhre)', 'g', 37, 0.9, 0.2, 7.0, 4.8, 3.6, 0.0, 0.1, '[{"label": "1 Stück (mittel)", "amount": 80}]'),
+  ('Karotte gekocht (Möhre)', 'g', 33, 0.8, 0.2, 6.0, 4.0, 3.3, 0.0, 0.1, '[]'),
+  ('Paprika rot roh', 'g', 37, 1.3, 0.5, 6.5, 6.0, 3.6, 0.1, 0.0, '[{"label": "1 Stück", "amount": 150}]'),
+  ('Brokkoli gekocht', 'g', 30, 3.0, 0.2, 2.5, 1.5, 3.0, 0.0, 0.0, '[{"label": "1 Portion", "amount": 150}]'),
+  ('Blumenkohl gekocht', 'g', 22, 2.0, 0.3, 2.3, 2.0, 2.4, 0.0, 0.0, '[{"label": "1 Portion", "amount": 150}]'),
+  ('Spinat gekocht', 'g', 20, 2.6, 0.3, 0.5, 0.4, 2.4, 0.0, 0.1, '[{"label": "1 Portion", "amount": 150}]'),
+  ('Kopfsalat roh', 'g', 13, 1.2, 0.2, 1.1, 1.0, 1.4, 0.0, 0.0, '[{"label": "1 Schale", "amount": 50}]'),
+  ('Zucchini gekocht', 'g', 19, 1.6, 0.4, 2.0, 1.8, 1.1, 0.1, 0.0, '[]'),
+  ('Zwiebel roh', 'g', 28, 1.2, 0.2, 4.9, 4.7, 1.8, 0.0, 0.0, '[{"label": "1 Stück (mittel)", "amount": 70}]'),
+  ('Knoblauch roh', 'g', 145, 6.0, 0.1, 28.0, 1.0, 1.8, 0.0, 0.0, '[{"label": "1 Zehe", "amount": 4}]'),
+  ('Kartoffeln gekocht', 'g', 72, 2.0, 0.1, 15.0, 0.8, 1.7, 0.0, 0.0, '[{"label": "1 Stück (mittel)", "amount": 80}]'),
+  ('Kartoffelpüree', 'g', 85, 2.0, 3.5, 11.0, 1.5, 1.2, 2.0, 0.6, '[{"label": "1 Portion", "amount": 200}]'),
+  ('Pommes frites', 'g', 290, 3.5, 15.0, 35.0, 0.5, 3.0, 1.5, 0.6, '[{"label": "1 Portion", "amount": 150}]'),
+  ('Süßkartoffel gekocht', 'g', 80, 1.4, 0.1, 18.0, 6.0, 3.0, 0.0, 0.1, '[]'),
+  ('Reis gekocht', 'g', 130, 2.5, 0.3, 28.5, 0.1, 0.4, 0.1, 0.0, '[{"label": "1 Portion", "amount": 180}]'),
+  ('Nudeln gekocht (Hartweizen)', 'g', 150, 5.0, 0.9, 30.0, 0.6, 1.8, 0.2, 0.0, '[{"label": "1 Portion", "amount": 200}]'),
+  ('Spaghetti gekocht', 'g', 150, 5.0, 0.9, 30.0, 0.6, 1.8, 0.2, 0.0, '[{"label": "1 Portion", "amount": 200}]'),
+  ('Couscous gekocht', 'g', 112, 3.8, 0.2, 23.0, 0.1, 1.4, 0.0, 0.0, '[]'),
+  ('Quinoa gekocht', 'g', 120, 4.4, 1.9, 21.0, 0.9, 2.8, 0.2, 0.0, '[]'),
+  ('Linsen gekocht', 'g', 115, 9.0, 0.4, 17.0, 1.0, 7.9, 0.1, 0.0, '[{"label": "1 Portion", "amount": 150}]'),
+  ('Kichererbsen gekocht', 'g', 140, 8.0, 2.5, 19.0, 3.0, 7.5, 0.3, 0.0, '[]'),
+  ('Kidneybohnen gekocht', 'g', 110, 8.0, 0.5, 15.0, 0.5, 7.0, 0.1, 0.0, '[]'),
+  ('Tofu natur', 'g', 125, 13.0, 7.5, 1.5, 0.5, 1.0, 1.2, 0.0, '[{"label": "1 Portion", "amount": 100}]'),
+  ('Milch 1,5 % Fett', 'ml', 47, 3.4, 1.5, 4.8, 4.8, 0.0, 1.0, 0.1, '[{"label": "1 Glas", "amount": 200}, {"label": "1 Schuss", "amount": 20}]'),
+  ('Milch 3,5 % Fett', 'ml', 64, 3.3, 3.5, 4.7, 4.7, 0.0, 2.2, 0.1, '[{"label": "1 Glas", "amount": 200}, {"label": "1 Schuss", "amount": 20}]'),
+  ('Joghurt natur 1,5 % Fett', 'g', 48, 4.0, 1.5, 4.5, 4.5, 0.0, 1.0, 0.1, '[{"label": "1 Becher", "amount": 150}, {"label": "1 Esslöffel", "amount": 15}]'),
+  ('Joghurt natur 3,5 % Fett', 'g', 64, 3.8, 3.5, 4.5, 4.5, 0.0, 2.3, 0.1, '[{"label": "1 Becher", "amount": 150}, {"label": "1 Esslöffel", "amount": 15}]'),
+  ('Fruchtjoghurt', 'g', 95, 3.5, 2.5, 14.0, 13.5, 0.2, 1.6, 0.1, '[{"label": "1 Becher", "amount": 150}]'),
+  ('Magerquark', 'g', 68, 12.0, 0.3, 4.0, 4.0, 0.0, 0.2, 0.1, '[{"label": "1 Esslöffel", "amount": 30}, {"label": "1 Becher", "amount": 250}]'),
+  ('Quark 20 % Fett i. Tr.', 'g', 110, 12.5, 5.0, 3.5, 3.5, 0.0, 3.2, 0.1, '[{"label": "1 Esslöffel", "amount": 30}]'),
+  ('Skyr natur', 'g', 63, 11.0, 0.2, 4.0, 4.0, 0.0, 0.1, 0.1, '[{"label": "1 Becher", "amount": 150}]'),
+  ('Hüttenkäse (körniger Frischkäse)', 'g', 98, 12.5, 4.3, 2.5, 2.5, 0.0, 2.7, 0.8, '[{"label": "1 Becher", "amount": 200}]'),
+  ('Gouda 45 % Fett i. Tr.', 'g', 360, 25.0, 29.0, 0.0, 0.0, 0.0, 18.5, 2.0, '[{"label": "1 Scheibe", "amount": 25}]'),
+  ('Emmentaler 45 % Fett i. Tr.', 'g', 380, 28.5, 29.5, 0.0, 0.0, 0.0, 19.0, 0.4, '[{"label": "1 Scheibe", "amount": 25}]'),
+  ('Mozzarella', 'g', 250, 18.5, 19.5, 1.0, 1.0, 0.0, 13.0, 0.5, '[{"label": "1 Kugel", "amount": 125}]'),
+  ('Frischkäse Doppelrahmstufe', 'g', 310, 5.5, 31.0, 3.0, 3.0, 0.0, 20.0, 0.8, '[{"label": "1 Esslöffel", "amount": 20}]'),
+  ('Butter', 'g', 740, 0.7, 83.0, 0.6, 0.6, 0.0, 53.0, 0.0, '[{"label": "1 Teelöffel", "amount": 5}, {"label": "1 Portion", "amount": 10}]'),
+  ('Margarine', 'g', 720, 0.2, 80.0, 0.4, 0.4, 0.0, 25.0, 0.2, '[{"label": "1 Teelöffel", "amount": 5}]'),
+  ('Olivenöl', 'ml', 820, 0.0, 91.0, 0.0, 0.0, 0.0, 13.0, 0.0, '[{"label": "1 Esslöffel", "amount": 10}, {"label": "1 Teelöffel", "amount": 5}]'),
+  ('Rapsöl', 'ml', 820, 0.0, 91.0, 0.0, 0.0, 0.0, 7.0, 0.0, '[{"label": "1 Esslöffel", "amount": 10}, {"label": "1 Teelöffel", "amount": 5}]'),
+  ('Sahne 30 % Fett', 'ml', 290, 2.3, 30.0, 3.2, 3.2, 0.0, 19.0, 0.1, '[{"label": "1 Esslöffel", "amount": 15}]'),
+  ('Hühnerei gekocht', 'g', 150, 12.5, 11.0, 0.7, 0.7, 0.0, 3.1, 0.3, '[{"label": "1 Stück (M)", "amount": 55}]'),
+  ('Rührei', 'g', 175, 11.0, 14.0, 1.5, 1.5, 0.0, 5.5, 0.6, '[{"label": "1 Portion (2 Eier)", "amount": 120}]'),
+  ('Spiegelei', 'g', 190, 13.0, 15.0, 0.6, 0.6, 0.0, 4.5, 0.4, '[{"label": "1 Stück", "amount": 55}]'),
+  ('Hähnchenbrust gebraten', 'g', 150, 30.0, 3.0, 0.0, 0.0, 0.0, 0.9, 0.2, '[{"label": "1 Stück", "amount": 150}]'),
+  ('Putenbrust gebraten', 'g', 140, 29.0, 2.0, 0.0, 0.0, 0.0, 0.6, 0.2, '[{"label": "1 Stück", "amount": 150}]'),
+  ('Rinderhackfleisch gebraten', 'g', 250, 26.0, 16.0, 0.0, 0.0, 0.0, 6.8, 0.2, '[{"label": "1 Portion", "amount": 125}]'),
+  ('Schweineschnitzel paniert', 'g', 230, 18.0, 12.0, 12.0, 0.5, 0.6, 3.5, 0.6, '[{"label": "1 Stück", "amount": 160}]'),
+  ('Lachs gebraten', 'g', 210, 23.0, 13.0, 0.0, 0.0, 0.0, 2.5, 0.2, '[{"label": "1 Stück", "amount": 125}]'),
+  ('Thunfisch in eigenem Saft', 'g', 110, 25.0, 1.0, 0.0, 0.0, 0.0, 0.3, 0.9, '[{"label": "1 Dose (abgetropft)", "amount": 140}]'),
+  ('Kochschinken', 'g', 110, 19.0, 3.5, 0.5, 0.5, 0.0, 1.2, 2.2, '[{"label": "1 Scheibe", "amount": 20}]'),
+  ('Salami', 'g', 380, 20.0, 33.0, 0.5, 0.5, 0.0, 12.5, 4.0, '[{"label": "1 Scheibe", "amount": 10}]'),
+  ('Bratwurst gebraten', 'g', 300, 14.0, 26.0, 1.0, 0.5, 0.0, 10.0, 1.8, '[{"label": "1 Stück", "amount": 100}]'),
+  ('Walnüsse', 'g', 680, 15.0, 63.0, 11.0, 2.5, 6.0, 6.0, 0.0, '[{"label": "1 Handvoll", "amount": 25}]'),
+  ('Mandeln', 'g', 600, 21.0, 52.0, 5.5, 4.5, 12.5, 4.0, 0.0, '[{"label": "1 Handvoll", "amount": 25}]'),
+  ('Erdnüsse geröstet', 'g', 590, 25.0, 49.0, 10.0, 4.0, 8.0, 7.0, 0.0, '[{"label": "1 Handvoll", "amount": 25}]'),
+  ('Erdnussbutter', 'g', 620, 25.0, 50.0, 14.0, 6.0, 6.0, 9.0, 0.9, '[{"label": "1 Esslöffel", "amount": 15}]'),
+  ('Leinsamen', 'g', 500, 24.0, 31.0, 1.6, 1.5, 38.0, 3.0, 0.0, '[{"label": "1 Esslöffel", "amount": 10}]'),
+  ('Chiasamen', 'g', 490, 17.0, 31.0, 7.5, 0.5, 34.0, 3.3, 0.0, '[{"label": "1 Esslöffel", "amount": 12}]'),
+  ('Müsli ohne Zucker', 'g', 360, 10.0, 6.5, 60.0, 9.0, 9.0, 1.0, 0.0, '[{"label": "1 Portion", "amount": 50}]'),
+  ('Früchtemüsli', 'g', 350, 8.5, 5.0, 64.0, 22.0, 8.0, 1.0, 0.0, '[{"label": "1 Portion", "amount": 50}]'),
+  ('Cornflakes', 'g', 380, 7.5, 0.9, 84.0, 8.0, 3.0, 0.2, 1.3, '[{"label": "1 Portion", "amount": 30}]'),
+  ('Honig', 'g', 310, 0.4, 0.0, 76.0, 75.0, 0.0, 0.0, 0.0, '[{"label": "1 Teelöffel", "amount": 8}]'),
+  ('Konfitüre Erdbeere', 'g', 250, 0.4, 0.1, 60.0, 58.0, 0.9, 0.0, 0.0, '[{"label": "1 Teelöffel", "amount": 10}]'),
+  ('Nuss-Nougat-Creme', 'g', 540, 6.0, 31.0, 57.0, 56.0, 3.0, 10.0, 0.1, '[{"label": "1 Teelöffel", "amount": 10}]'),
+  ('Zucker weiß', 'g', 400, 0.0, 0.0, 100.0, 100.0, 0.0, 0.0, 0.0, '[{"label": "1 Teelöffel", "amount": 5}, {"label": "1 Stück (Würfel)", "amount": 3}]'),
+  ('Schokolade Vollmilch', 'g', 540, 7.5, 31.0, 56.0, 55.0, 2.0, 19.0, 0.2, '[{"label": "1 Riegel", "amount": 25}, {"label": "1 Tafel", "amount": 100}]'),
+  ('Schokolade Zartbitter 70 %', 'g', 560, 8.0, 41.0, 33.0, 28.0, 11.0, 25.0, 0.0, '[{"label": "1 Stück", "amount": 10}]'),
+  ('Gummibärchen', 'g', 340, 6.5, 0.2, 77.0, 46.0, 0.0, 0.1, 0.1, '[{"label": "1 Handvoll", "amount": 25}]'),
+  ('Kartoffelchips', 'g', 535, 6.0, 34.0, 50.0, 0.5, 4.5, 3.0, 1.4, '[{"label": "1 Handvoll", "amount": 25}]'),
+  ('Butterkeks', 'g', 440, 7.5, 12.0, 74.0, 22.0, 2.5, 5.5, 0.7, '[{"label": "1 Stück", "amount": 5}]'),
+  ('Croissant', 'g', 400, 8.0, 21.0, 44.0, 8.0, 2.5, 13.0, 1.0, '[{"label": "1 Stück", "amount": 60}]'),
+  ('Brezel (Laugenbrezel)', 'g', 270, 8.0, 2.0, 54.0, 1.5, 2.5, 0.5, 2.5, '[{"label": "1 Stück", "amount": 80}]'),
+  ('Pizza Margherita', 'g', 230, 9.5, 8.0, 30.0, 3.0, 2.0, 3.5, 1.2, '[{"label": "1 Stück (ganze Pizza)", "amount": 350}]'),
+  ('Lasagne', 'g', 150, 8.0, 7.0, 13.0, 3.0, 1.0, 3.5, 0.8, '[{"label": "1 Portion", "amount": 350}]'),
+  ('Spaghetti Bolognese', 'g', 140, 7.0, 4.5, 18.0, 2.5, 1.5, 1.8, 0.6, '[{"label": "1 Portion", "amount": 400}]'),
+  ('Gemüsesuppe', 'ml', 35, 1.2, 1.2, 4.5, 2.0, 1.3, 0.2, 0.8, '[{"label": "1 Teller", "amount": 300}]'),
+  ('Linseneintopf', 'g', 95, 5.5, 2.5, 12.0, 1.5, 3.5, 0.8, 0.7, '[{"label": "1 Teller", "amount": 350}]'),
+  ('Kartoffelsalat mit Mayonnaise', 'g', 160, 1.8, 11.0, 13.0, 1.5, 1.2, 1.0, 0.8, '[{"label": "1 Portion", "amount": 200}]'),
+  ('Kaffee (Getränk)', 'ml', 2, 0.2, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, '[{"label": "1 Tasse", "amount": 150}, {"label": "1 Becher", "amount": 250}]'),
+  ('Cappuccino', 'ml', 40, 2.2, 2.0, 3.2, 3.2, 0.0, 1.3, 0.1, '[{"label": "1 Tasse", "amount": 200}]'),
+  ('Tee (Getränk)', 'ml', 1, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0, 0.0, '[{"label": "1 Tasse", "amount": 200}]'),
+  ('Mineralwasser', 'ml', 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, '[{"label": "1 Glas", "amount": 250}, {"label": "1 Flasche", "amount": 500}]'),
+  ('Cola', 'ml', 42, 0.0, 0.0, 10.6, 10.6, 0.0, 0.0, 0.0, '[{"label": "1 Glas", "amount": 250}, {"label": "1 Dose", "amount": 330}]'),
+  ('Bier hell', 'ml', 43, 0.5, 0.0, 3.0, 0.2, 0.0, 0.0, 0.0, '[{"label": "1 Flasche", "amount": 500}]'),
+  ('Rotwein', 'ml', 70, 0.1, 0.0, 2.5, 0.6, 0.0, 0.0, 0.0, '[{"label": "1 Glas", "amount": 125}]'),
+  ('Avocado roh', 'g', 160, 2.0, 15.0, 1.9, 0.7, 6.7, 2.1, 0.0, '[{"label": "1 Stück", "amount": 150}]'),
+  ('Hummus', 'g', 240, 7.5, 18.0, 11.0, 0.5, 6.0, 2.0, 1.0, '[{"label": "1 Esslöffel", "amount": 20}]'),
+  ('Mayonnaise', 'g', 700, 1.0, 77.0, 1.5, 1.0, 0.0, 6.0, 1.3, '[{"label": "1 Esslöffel", "amount": 15}]'),
+  ('Ketchup', 'g', 110, 1.3, 0.2, 25.0, 22.0, 0.5, 0.0, 1.8, '[{"label": "1 Esslöffel", "amount": 15}]'),
+  ('Senf mittelscharf', 'g', 90, 6.0, 4.5, 5.5, 3.0, 2.5, 0.3, 4.0, '[{"label": "1 Teelöffel", "amount": 5}]'),
+  ('Eiweißpulver (Molke)', 'g', 380, 78.0, 6.0, 6.0, 4.0, 0.5, 3.0, 0.5, '[{"label": "1 Messlöffel", "amount": 30}]')
+) as f(name, einheit, kcal, eiweiss, fett, kh, zucker, ballast, gesaettigt, salz, portionen);
+
+-- Synthetische Markenprodukte: Phantasiemarken je Grundprodukt.
+insert into public.food_catalog
+  (source, source_code, name, brand, base_unit, energy_kcal, protein_g, fat_g, carbohydrate_g,
+   sugar_g, salt_g, portions, source_version)
+select 'off',
+       '200' || lpad(n::text, 10, '0'),
+       p.name || ' ' || v.zusatz,
+       m.marke,
+       p.einheit,
+       round((p.kcal * (0.9 + (n % 7) * 0.03))::numeric, 1),
+       p.eiweiss, p.fett, p.kh, p.zucker, p.salz,
+       jsonb_build_array(jsonb_build_object('label', '1 Portion', 'amount', p.portion)),
+       'Seed synthetisch'
+from generate_series(1, 20000) as n
+cross join lateral (
+  select * from (values
+    (0, 'Apfelchips', 'g', 340, 1.5, 0.5, 80.0, 65.0, 0.0, 25),
+    (1, 'Haferriegel', 'g', 420, 7.0, 15.0, 60.0, 25.0, 0.3, 40),
+    (2, 'Vollkorntoast', 'g', 240, 9.0, 3.5, 40.0, 3.5, 1.1, 25),
+    (3, 'Proteinriegel', 'g', 360, 30.0, 12.0, 30.0, 4.0, 0.5, 45),
+    (4, 'Joghurt Erdbeere', 'g', 95, 3.5, 2.5, 14.0, 13.0, 0.1, 150),
+    (5, 'Müsli Schoko', 'g', 420, 9.0, 12.0, 65.0, 22.0, 0.2, 50),
+    (6, 'Orangennektar', 'ml', 50, 0.3, 0.1, 12.0, 11.0, 0.0, 200),
+    (7, 'Käsecracker', 'g', 480, 10.0, 22.0, 58.0, 3.0, 2.0, 30),
+    (8, 'Schokokeks', 'g', 490, 6.0, 22.0, 66.0, 32.0, 0.6, 25),
+    (9, 'Tomatensuppe', 'ml', 45, 1.0, 1.5, 6.5, 4.5, 0.9, 300)
+  ) as x(nr, name, einheit, kcal, eiweiss, fett, kh, zucker, salz, portion)
+  where x.nr = n % 10
+) p
+cross join lateral (
+  select * from (values
+    (0, 'klassisch'), (1, 'leicht'), (2, 'bio'), (3, 'mini'), (4, 'extra'),
+    (5, 'kernig'), (6, 'zart'), (7, 'familienpackung'), (8, 'vegan'), (9, 'ohne Zuckerzusatz')
+  ) as y(nr, zusatz)
+  where y.nr = (n / 10) % 10
+) v
+cross join lateral (
+  select * from (values
+    (0, 'Nordkorn'), (1, 'Feldlust'), (2, 'Morgengut'), (3, 'Sonnwiese'), (4, 'Talhof'),
+    (5, 'Brotzeit & Co'), (6, 'Grünfink'), (7, 'Haferhaus'), (8, 'Kornblume'), (9, 'Mittagsglück')
+  ) as z(nr, marke)
+  where z.nr = (n / 100) % 10
+) m;
+
+update public.food_sources set version = 'Seed synthetisch', imported_at = now(),
+  item_count = (select count(*) from public.food_catalog c
+                where c.source = food_sources.source and c.retired_at is null);
