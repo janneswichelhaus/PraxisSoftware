@@ -200,6 +200,7 @@ describe('ERN-011: Ernährungsberatung als Terminanlass', () => {
       ['Therapie', users.therapist],
       ['Teamleitung', users.teamLead],
       ['Trainingsbetreuung', users.trainer],
+      ['Plattformkonto der Person', users.plattformErika],
     ])('%s legt keinen Beratungstermin an', async (_rolle, wer) => {
       expect(
         await fehler(
@@ -245,6 +246,21 @@ describe('ERN-011: Ernährungsberatung als Terminanlass', () => {
 
       const { rows } = await asPostgres('select count(*)::int as n from public.appointments');
       expect(rows[0]).toEqual({ n: 0 });
+    });
+
+    it('die Beratung führt, wer die Fähigkeit trägt - nicht die Therapie', async () => {
+      expect(
+        await fehler(
+          asUser(users.ownerTherapist, ANLEGEN, [
+            PROFIL_ERIKA,
+            STAFF_ANNA,
+            tagInTagen(7),
+            '10:00',
+            '11:00',
+            LOCATION,
+          ]),
+        ),
+      ).toBe('22023');
     });
 
     it('die Belegung gilt über alle Kontexte und sagt nur „belegt“', async () => {
@@ -371,6 +387,12 @@ describe('ERN-011: Ernährungsberatung als Terminanlass', () => {
         [id],
       );
       expect(status).toEqual([{ status: 'invoiced' }]);
+
+      // Abgerechnet: Der Haken lässt sich nicht mehr zurücknehmen (ADR-009 Punkt 9).
+      expect(await fehler(asUser(users.ownerTherapist, OEFFNEN, [id, await stand(id)]))).toBe(
+        '23514',
+      );
+      expect(await leistungen(id)).toHaveLength(1);
     });
 
     it('am Trainingsverhältnis: Position des Trainings und Trainingsrechnung', async () => {
@@ -477,8 +499,14 @@ describe('ERN-011: Ernährungsberatung als Terminanlass', () => {
     });
 
     it('Behandelnde erfassen an der Beratung nichts, auch nicht am eigenen Termin', async () => {
-      const id = await beratungstermin(PROFIL_ERIKA, { staff: STAFF_ANNA });
+      // Am Schreibweg vorbei Anna zugeordnet - create_nutrition_appointment
+      // ließe das nicht zu (nächster Test).
+      const id = await beratungstermin();
       await abhaken(id);
+      await asPostgres('update public.appointments set staff_member_id = $2 where id = $1', [
+        id,
+        STAFF_ANNA,
+      ]);
       await asPostgres('delete from public.billable_services where appointment_id = $1', [id]);
       const { rows } = await asUser(users.therapist, VORSCHLAG, [id]);
       expect(rows).toEqual([]);

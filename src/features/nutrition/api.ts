@@ -291,6 +291,10 @@ export async function beratungsterminAnlegen(
       throw new Error(
         'Die Ernährungsberatung führt die Praxisinhaber:in; dieses Konto darf das nicht.',
       );
+    if (m.includes('does not counsel nutrition'))
+      throw new Error(
+        'Die Beratung führt, wer die Ernährungsberatung trägt – bitte diese Person wählen.',
+      );
     if (m.includes('staff member not assignable'))
       throw new Error('Die gewählte Person ist für diesen Bereich nicht im Kalender geführt.');
     if (m.includes('complete patient address'))

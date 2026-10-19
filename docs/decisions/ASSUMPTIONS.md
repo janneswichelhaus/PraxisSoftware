@@ -6845,9 +6845,9 @@ Technik · entschieden (Jannes) · 2026-10-19 · Jannes · — · Wiedervorlage:
 
 Praxisprozess · offen · 2026-10-19 · Claude (ERN-011) · Prüfpaket · Wiedervorlage: G13
 
-**Annahme.** Der Beratungstermin ist ein Termin der Akte oder des Trainingsverhältnisses mit `occasion = 'nutrition_counselling'`, kein vierter Kontext. Er trägt keine Grundlage, keine Doku, kein Protokoll, keinen Gebührenanlass und kein Terminhonorar; ein Trainingspaket deckt ihn nicht. Mit dem Haken entsteht die erste Position „Ernährungsberatung“ des Bereichs, zurück mit dem Haken fällt sie. Zugeordnet wird nach dem Kalender des Bereichs.
+**Annahme.** Der Beratungstermin ist ein Termin der Akte oder des Trainingsverhältnisses mit `occasion = 'nutrition_counselling'`, kein vierter Kontext. Er trägt keine Grundlage, keine Doku, kein Protokoll, keinen Gebührenanlass und kein Terminhonorar; ein Trainingspaket deckt ihn nicht. Mit dem Haken entsteht die erste Position „Ernährungsberatung“ des Bereichs, zurück mit dem Haken fällt sie. Zugeordnet wird, wer die Fähigkeit trägt und im Kalender des Bereichs steht.
 
-**Begründung.** ADR-022 Punkt 2 (drei Kontexte, kein zweites Feld für den Kontext), ADR-027 Punkte 1 und 15, ANN-622 (Abnahme), B7/ANN-513 (Haken = erbracht), ANN-178 (kein Anlass im Training).
+**Begründung.** ADR-022 Punkt 2 (drei Kontexte), ADR-027 Punkte 1, 4 und 15, ANN-622, ANN-513 (Haken = erbracht), ANN-178.
 
 **Anker.** Constraint `appointments_nutrition_occasion`.
 
@@ -6863,4 +6863,4 @@ Datenschutz · offen · 2026-10-19 · Claude (ERN-011) · Prüfpaket · Wiedervo
 
 **Anker.** Spalte `occasion` in `public.list_appointments`.
 
-**Änderungspfad.** Anlass für Rollen ohne Fähigkeit maskieren (`case when app.can_counsel_nutrition()`) · Aufwand `klein`.
+**Änderungspfad.** Anlass für Rollen ohne Fähigkeit maskieren (`app.can_counsel_nutrition()`) in `list_appointments`, `list_day_plan`, `get_training_appointment`, `list_open_billable_appointments` und `appointment_directory` · Aufwand `mittel`.

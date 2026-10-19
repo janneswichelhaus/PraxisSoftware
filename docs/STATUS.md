@@ -5,9 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-Richtungen der Bewegung (19.10., Branch `ccr-a1aed6dc-jfcfy8`, ANN-663): Bereiche der Leiste schieben
-sich waagerecht übereinander, Fenster kommen von unten und gehen nach unten, Schritte geführter Abläufe
-rücken waagerecht; Wischen zurückgestellt (`IDEA-QSN-012`).
+Beratung abrechnen (19.10., Branch `ccr-9e05f8f5-xs89bc`, ERN-011/-012): Beratungstermin als Anlass am
+Verhältnis des Profils, ohne Doku und Ausfallhonorar; mit dem Haken entsteht die Position, Rechnung im
+Bereich des Profils. ANN-664, ANN-665 (Anlass für Büro und Therapie sichtbar).
 
 ERN-EPIC-003 Tagebuch (19.10., Branch `ccr-c4be3f12-d8jik0`): Mahlzeiten, Wasser mit einem Tipp, „zuletzt“
 (2 Tipps) und Suche (4 Tipps), Favoriten, kopieren, „Zahlen ausblenden“, Erinnerungen je Mahlzeit als neue
@@ -27,12 +27,12 @@ Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholung
 
 Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
 (`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
-(`claude/eloquent-newton-p38ihe`). Gemergt: ERN-EPIC-001 und -002 (#274), BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
+(`claude/eloquent-newton-p38ihe`). Gemergt: Richtung der Bewegung (#276, ANN-663), ERN-EPIC-003 (#275), ERN-EPIC-001 und -002 (#274), BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
 Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Beratung abrechnen (ANN-622, `/feature-loop`), dann eine Politurrunde;
+Eine Politurrunde;
 BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Bei Jannes
@@ -60,5 +60,5 @@ BEF-146, -147, -148, -150, -183; BEF-182 vor M3.
 
 ## Letzte Session
 
-19.10.2026, Branch `ccr-c4be3f12-d8jik0`: Migrationen `20261221100000_ern_007_tagebuch` bis
-`20261221130000_ern_010_tagebuch_beratung`. **Lokal:** `git pull`, `supabase db reset`.
+19.10.2026, Branch `ccr-9e05f8f5-xs89bc`: Migration `20261222100000_ern_011_beratung_am_termin`.
+**Lokal:** `git pull`, `supabase db reset`.

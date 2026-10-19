@@ -1004,6 +1004,15 @@
           "nachweis": "ERN-007 bis ERN-010, Budgets in tagebuch.spec.ts, Zweitreview"
         },
         {
+          "id": "ern-beratung-abrechnen",
+          "name": "Ernährung: Beratung abrechnen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-19",
+          "nachweis": "ERN-011 und ERN-012, Migration 20261222100000_ern_011_beratung_am_termin.sql, supabase/tests/nutrition-appointments.test.ts, Zweitreview",
+          "vermerk": "ANN-622 (Abnahme Jannes), ANN-664, ANN-665; Sichtung per Bildstrecke im PR"
+        },
+        {
           "id": "ern-epic-004",
           "name": "ERN-EPIC-004 Ernährung: Barcode",
           "gewicht": 1,

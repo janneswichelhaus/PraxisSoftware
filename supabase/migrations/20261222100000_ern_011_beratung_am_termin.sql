@@ -205,8 +205,8 @@ begin
     return 0;
   end if;
 
-  -- Der Haken hält nie an: Kommt ein paralleler Vorgang dazwischen, bleibt
-  -- es beim Büro („Zu erfassen“).
+  -- Kommt ein paralleler Vorgang dazwischen (unique, check), hält der Haken
+  -- nicht an; es bleibt beim Büro („Zu erfassen“).
   begin
     insert into public.billable_services (
       organization_id, patient_id, training_relationship_id, appointment_id, catalog_item_id,
@@ -257,6 +257,35 @@ create trigger appointments_record_nutrition_service
 -- Kontexte, Anschrift am Hausbesuch); hier kommt hinzu, dass ein laufendes
 -- Profil mit erteilter Einwilligung am Verhältnis besteht, und der Anlass.
 -- -----------------------------------------------------------------------------
+-- Wer die Beratung führt, trägt die Fähigkeit (ADR-027 Punkt 4) - nicht nur,
+-- wer anlegt: Am Termin hakt die zugeordnete Person ab, und mit dem Haken
+-- entsteht die Position (Zweitreview). Dieselbe Regel wie
+-- app.can_counsel_nutrition, für eine Person statt für das Konto.
+create function app.staff_can_counsel_nutrition(p_staff_member_id uuid, p_organization_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.staff_members sm
+    join public.user_profiles up
+      on up.person_id = sm.person_id and up.organization_id = sm.organization_id and up.is_active
+    join public.user_roles ur
+      on ur.user_id = up.id and ur.organization_id = up.organization_id
+    where sm.id = p_staff_member_id
+      and sm.organization_id = p_organization_id
+      and ur.role_key = 'owner'
+  )
+$$;
+
+revoke all on function app.staff_can_counsel_nutrition(uuid, uuid) from public, anon, authenticated;
+
+comment on function app.staff_can_counsel_nutrition(uuid, uuid) is
+  'ERN-011: Trägt die Person die Fähigkeit "Ernährungsberatung" (zunächst owner, wie app.can_counsel_nutrition)? Ändert sich die Fähigkeit, ändern sich beide Stellen.';
+
 create function public.create_nutrition_appointment(
   p_profile_id                   uuid,
   p_staff_member_id              uuid,
@@ -280,6 +309,10 @@ begin
   -- Rolle, Profil (laufend, eigener Mandant) und Einwilligung (ADR-027
   -- Punkte 3 und 4) - eine Stelle mit den übrigen Schreibwegen der Beratung.
   v_profil := app.nutrition_profile_for_writing(p_profile_id, true);
+
+  if not app.staff_can_counsel_nutrition(p_staff_member_id, v_profil.organization_id) then
+    raise exception 'staff member does not counsel nutrition' using errcode = '22023';
+  end if;
 
   if v_profil.patient_id is not null then
     v_id := public.create_appointment(
