@@ -230,6 +230,11 @@ describe('Schema-Invarianten', () => {
       'nutrition_weight_entries',
       // ERN-005: eigene Lebensmittel der Praxis und der Person.
       'custom_foods',
+      // ERN-007 bis ERN-009: Tagebuch, Wasser, Favoriten, Erinnerungen.
+      'nutrition_diary_entries',
+      'nutrition_water_days',
+      'nutrition_diary_favorites',
+      'nutrition_diary_reminders',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
