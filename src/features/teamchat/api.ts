@@ -614,16 +614,24 @@ export const FALSCHE_DATEI =
 export const ABGEBROCHEN = 'Das Hochladen ist abgebrochen.';
 
 /**
- * Der Grund, mit dem `anhaengeLeeren` ein Hochladen abbricht: Abmelden oder
- * Kontowechsel. Dann geht kein Schritt mehr zum Server, auch kein Aufräumen -
- * er liefe unter der nächsten Sitzung. Was schon oben liegt, verwirft der
- * Server nach 24 Stunden (Zweitreview TEAM-005, Runde 3).
+ * Die Sitzungen dieser Seite: Abmelden und Kontowechsel (`anhaengeLeeren`)
+ * beginnen eine neue. Ein Hochladen merkt sich beim Start die seine; ist sie
+ * vorbei, geht kein Schritt mehr zum Server, auch kein Aufräumen - er liefe
+ * unter der nächsten Sitzung. Das gilt auch für einen Anhang, der vorher
+ * schon entfernt war. Was oben liegt, verwirft der Server nach 24 Stunden
+ * (Zweitreview TEAM-005, Runden 3 und 4).
  */
-export const SITZUNGSENDE = 'sitzungsende';
+let sitzung = 0;
 
-/** Fiel der Anhang mit der Sitzung? */
-export function mitSitzungGefallen(signal?: AbortSignal): boolean {
-  return signal?.aborted === true && signal.reason === SITZUNGSENDE;
+/** Die Sitzung endet - beim Abmelden und Kontowechsel. */
+export function sitzungBeenden(): void {
+  sitzung += 1;
+}
+
+/** Ob die Sitzung, in der etwas begann, inzwischen vorbei ist. */
+export function sitzungsmarke(): () => boolean {
+  const beginn = sitzung;
+  return () => sitzung !== beginn;
 }
 
 /** Fiel der Anhang während des Hochladens, unterbleibt der nächste Schritt. */
@@ -657,6 +665,7 @@ export async function ladeAnhangHoch(
   dauerS?: number,
   signal?: AbortSignal,
 ): Promise<Anhang> {
+  const sitzungVorbei = sitzungsmarke();
   const dauer = dauerS !== undefined && tontyp(datei.type) !== null ? dauerSekunden(dauerS) : null;
   let sauber: Blob;
   if (dauer !== null) {
@@ -726,7 +735,7 @@ export async function ladeAnhangHoch(
     );
   } catch (ursache) {
     // Was vorbereitet war, fällt gleich wieder - nach dem Abmelden nicht mehr.
-    if (!mitSitzungGefallen(signal)) {
+    if (!sitzungVorbei()) {
       try {
         await getSupabase().rpc('discard_team_attachment', {
           p_attachment_id: vorbereitet.attachment_id,
@@ -740,7 +749,7 @@ export async function ladeAnhangHoch(
 
   // Nach dem Abmelden auch keine Prüfung; ein entfernter Anhang wird dagegen
   // fertig und dann verworfen (`hochladen` in `entwurfsanhaenge.ts`).
-  if (mitSitzungGefallen(signal)) throw new TeamchatFehler(ABGEBROCHEN, false);
+  if (sitzungVorbei()) throw new TeamchatFehler(ABGEBROCHEN, false);
   const pruefung = await pruefeAmServer(vorbereitet.attachment_id);
   if (pruefung === 'rejected') throw new TeamchatFehler(ANHANG_VERWORFEN, false);
   return {

@@ -6725,7 +6725,7 @@ Praxisprozess · offen · 2026-10-18 · — · — · Wiedervorlage: —
 
 Technik · offen · 2026-10-18 · — · — · Wiedervorlage: Sichtung (Funkloch)
 
-**Annahme.** „Senden“ geht, solange kein Anhang endgültig gescheitert ist. Die Nachricht steht mit „Lädt Anhänge hoch …“ im Ausgang, ihre Anhänge hängen an ihr statt am Entwurf, und sie geht von selbst, sobald alle oben sind. Bis der Server sie annimmt, bleiben die Anhänge an ihr: „Bearbeiten“ holt Text und Anhänge ins Feld, „Verwerfen“ verwirft beide. Scheitert ein Anhang endgültig, bleibt sie mit seinem Grund stehen. Eine Nachricht ohne Anhang geht sofort; beim Server steht die wartende dann dahinter.
+**Annahme.** „Senden“ geht, solange kein Anhang endgültig gescheitert ist. Die Nachricht wartet mit „Lädt Anhänge hoch …“ im Ausgang, ihre Anhänge hängen an ihr, und sie geht von selbst, sobald alle oben sind; ohne Netz versucht es ein Anhang zwei Minuten lang alle 15 s, dann eine Stunde lang alle zwei Minuten. „Bearbeiten“ holt Text und Anhänge ins Feld, „Verwerfen“ verwirft beide. Scheitert ein Anhang endgültig, bleibt sie mit dem Grund stehen. Eine Nachricht ohne Anhang geht sofort, beim Server vor der wartenden.
 
 **Begründung.** ADR-017 Punkt 74 (Fassung 9, Frage 5 der PR #273). Alles bleibt im Arbeitsspeicher (Punkt 33).
 

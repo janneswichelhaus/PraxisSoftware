@@ -120,7 +120,12 @@ export const KEINE_WIEDERGABE =
  */
 function useAnhangOeffnen() {
   const [offen, setOffen] = useState<Offen | null>(null);
-  const laden = useMutation({ mutationFn: (anhang: Offen) => ladeAnhang(anhang.id) });
+  // Auch ohne Netz gleich versuchen: Angehalten holte TanStack die Freigabe
+  // beim nächsten Netz nach, auch wenn das Fenster längst zu ist.
+  const laden = useMutation({
+    mutationFn: (anhang: Offen) => ladeAnhang(anhang.id),
+    networkMode: 'always',
+  });
   const abfrage: Abfrage<Blob> = {
     data: laden.data,
     error: laden.error,

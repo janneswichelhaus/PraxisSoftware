@@ -4,6 +4,7 @@ import {
   anhaengeBeobachten,
   anhaengeDerNachricht,
   anhaengeZurueck,
+  gebundeneAnhalten,
   gebundeneErneut,
   gebundeneFreigeben,
   gebundeneVerwerfen,
@@ -129,6 +130,8 @@ function anhaengeBereit(id: string, eintrag: Ausgangseintrag): readonly Anhang[]
   const anhaenge = gebunden.map(vorschau);
   const gescheitert = gebunden.find((a) => a.zustand === 'fehler' && !a.erneut);
   if (gescheitert) {
+    // Von selbst geht sie nicht mehr: Die übrigen Anhänge versuchen es nicht weiter.
+    gebundeneAnhalten(id);
     speicher.set(id, {
       ...eintrag,
       anhaenge,

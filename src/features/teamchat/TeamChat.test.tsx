@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { Outlet, RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { testUser } from '@/test-utils';
@@ -76,7 +76,7 @@ const { EntwuerfePage } = await import('./EntwuerfePage');
 const { SuchePage } = await import('./SuchePage');
 const { FuerDichPage } = await import('./FuerDichPage');
 const { FlottenNachrichtenPage } = await import('./FlottenNachrichtenPage');
-const { SITZUNGSENDE, TeamchatFehler } = await import('./api');
+const { TeamchatFehler } = await import('./api');
 const { teamchatLeeren } = await import('./speicher');
 const { anhaengen: entwurfAnhaengen, anhaengeLeeren } = await import('./entwurfsanhaenge');
 
@@ -223,7 +223,7 @@ function zeige(pfad: string, user: CurrentUser = konto(), sicherungen?: Set<Sich
       seiten
     ),
   );
-  return { router, ansicht };
+  return { router, ansicht, client };
 }
 
 beforeEach(() => {
@@ -1619,6 +1619,53 @@ describe('Sprachnachrichten im Teamchat (TEAM-004, ADR-017 Abschnitt N)', () => 
     expect(api.ladeAnhang).toHaveBeenCalledTimes(2);
   });
 
+  it('versucht es ohne Netz gleich und holt die Freigabe später nicht nach', async () => {
+    // Angehalten holte TanStack die Freigabe beim nächsten Netz nach, auch
+    // wenn das Fenster längst zu ist (Zweitreview TEAM-005, Runde 4).
+    const nutzer = userEvent.setup();
+    vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('maybe');
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ body: '', attachments: [sprachnachricht] }),
+    ]);
+    api.ladeAnhang.mockRejectedValue(new TeamchatFehler('Kein Netz.', true));
+    zeige('/team/k-planung');
+    const zeile = await screen.findByRole('button', { name: /Sprachnachricht 17\.10\., 09:00/ });
+    act(() => onlineManager.setOnline(false));
+    try {
+      await nutzer.click(zeile);
+      const fenster = await screen.findByRole('dialog', {
+        name: 'Sprachnachricht 17.10., 09:00',
+      });
+      expect(
+        await within(fenster).findByText('Der Anhang konnte nicht geöffnet werden.'),
+      ).toBeInTheDocument();
+      await nutzer.click(within(fenster).getAllByRole('button', { name: 'Schließen' })[0]!);
+    } finally {
+      act(() => onlineManager.setOnline(true));
+    }
+    await act(() => new Promise((weiter) => setTimeout(weiter, 50)));
+    expect(api.ladeAnhang).toHaveBeenCalledTimes(1);
+  });
+
+  it('lädt im offenen Fenster nicht neu, wenn alle Abfragen neu laden', async () => {
+    // Die Sitzungssperre ruft nach dem Entsperren `invalidateQueries()`: Ein
+    // zweites Laden holte eine zweite Freigabe (ADR-017 Punkt 15).
+    const nutzer = userEvent.setup();
+    vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('maybe');
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({ body: '', attachments: [sprachnachricht] }),
+    ]);
+    api.ladeAnhang.mockResolvedValue(new Blob(['ton'], { type: 'audio/webm' }));
+    const { client } = zeige('/team/k-planung');
+    await nutzer.click(
+      await screen.findByRole('button', { name: /Sprachnachricht 17\.10\., 09:00/ }),
+    );
+    const fenster = await screen.findByRole('dialog', { name: 'Sprachnachricht 17.10., 09:00' });
+    await vi.waitFor(() => expect(fenster.querySelector('audio')).not.toBeNull());
+    await act(() => client.invalidateQueries());
+    expect(api.ladeAnhang).toHaveBeenCalledTimes(1);
+  });
+
   it('sagt ein Nein des Servers im Fenster ohne „Erneut versuchen“', async () => {
     const nutzer = userEvent.setup();
     vi.spyOn(HTMLMediaElement.prototype, 'canPlayType').mockReturnValue('maybe');
@@ -1820,7 +1867,6 @@ describe('Senden während des Hochladens (TEAM-005, ANN-654)', () => {
       AbortSignal,
     ];
     expect(signal.aborted).toBe(true);
-    expect(signal.reason).toBe(SITZUNGSENDE);
     await act(async () => {
       fertig(oben('a7', 'Speiche.png'));
       await new Promise((weiter) => setTimeout(weiter, 50));
