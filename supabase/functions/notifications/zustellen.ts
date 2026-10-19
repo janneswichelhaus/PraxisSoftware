@@ -29,13 +29,19 @@ export interface Faellig {
   readonly time_zone: string | null;
   readonly email: string | null;
   readonly push_targets: readonly PushZiel[] | null;
+  /** Der Anspruch aus dem Abholen - Melden verlangt ihn zurück (BEF-148). */
+  readonly claimed_at: string;
 }
 
 export type Ausgang = 'sent' | 'failed' | 'gone';
 
 export interface Auftragsbuch {
   readonly abholen: (anzahl: number) => Promise<Faellig[] | null>;
-  readonly melden: (id: string, ausgang: Ausgang, weg: readonly string[]) => Promise<boolean>;
+  readonly melden: (
+    auftrag: Pick<Faellig, 'id' | 'claimed_at'>,
+    ausgang: Ausgang,
+    weg: readonly string[],
+  ) => Promise<boolean>;
 }
 
 /** Was der Aufrufer erfährt - Kennung, Weg, Ergebnis; nie Adresse, Endpunkt oder Text. */
@@ -76,6 +82,7 @@ export function pushinhalt(art: Benachrichtigungsart, zeitpunkt: string | null, 
 }
 
 const RUNDEN = 5;
+const MELDEVERSUCHE = 3;
 const JE_RUNDE = 50;
 
 export async function zustellen(
@@ -89,7 +96,13 @@ export async function zustellen(
     if (faellig === null) return protokoll.length === 0 ? null : protokoll;
     for (const auftrag of faellig) {
       const { ausgang, weg } = await stelleZu(auftrag, wege, appUrl);
-      await buch.melden(auftrag.id, ausgang, weg);
+      // Mit dem Anspruch: Hat ein zweiter Lauf den Auftrag inzwischen
+      // abgeholt, überschreibt dieses Melden nichts (BEF-148). Scheitert nur
+      // das Melden, noch zweimal - sonst holte der nächste Lauf den schon
+      // gesendeten Auftrag nach 15 Minuten erneut ab.
+      for (let versuch = 0; versuch < MELDEVERSUCHE; versuch += 1) {
+        if (await buch.melden(auftrag, ausgang, weg)) break;
+      }
       protokoll.push({ auftrag: auftrag.id, weg: auftrag.channel, ergebnis: ausgang });
     }
     if (faellig.length < JE_RUNDE) break;

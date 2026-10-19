@@ -45,9 +45,14 @@ export function erstelleAuftragsbuch({
       const daten = await rufe('claim_notification_deliveries', { p_limit: anzahl });
       return Array.isArray(daten) ? (daten as Faellig[]) : null;
     },
-    async melden(id: string, ausgang: Ausgang, weg: readonly string[]) {
+    async melden(
+      auftrag: Pick<Faellig, 'id' | 'claimed_at'>,
+      ausgang: Ausgang,
+      weg: readonly string[],
+    ) {
       const daten = await rufe('finish_notification_delivery', {
-        p_id: id,
+        p_id: auftrag.id,
+        p_claimed_at: auftrag.claimed_at,
         p_outcome: ausgang,
         p_gone_endpoints: weg,
       });

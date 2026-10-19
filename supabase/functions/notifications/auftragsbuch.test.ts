@@ -12,7 +12,10 @@ describe('Auftragsbuch über REST (KOM-010)', () => {
       abrufen: abrufen as unknown as typeof fetch,
     });
     expect(await buch.abholen(10)).toEqual([]);
-    expect(await buch.melden('id', 'gone', ['https://p.invalid/x'])).toBe(true);
+    const anspruch = '2026-10-19T23:00:00.123456+00:00';
+    expect(
+      await buch.melden({ id: 'id', claimed_at: anspruch }, 'gone', ['https://p.invalid/x']),
+    ).toBe(true);
     const [url1, init1] = abrufen.mock.calls[0]!;
     const [url2, init2] = abrufen.mock.calls[1]!;
     expect(url1).toBe('https://db.invalid/rest/v1/rpc/claim_notification_deliveries');
@@ -21,6 +24,8 @@ describe('Auftragsbuch über REST (KOM-010)', () => {
     expect(url2).toBe('https://db.invalid/rest/v1/rpc/finish_notification_delivery');
     expect(JSON.parse(init2!.body as string)).toEqual({
       p_id: 'id',
+      // BEF-148: der Anspruch aus dem Abholen, unverändert zurück.
+      p_claimed_at: anspruch,
       p_outcome: 'gone',
       p_gone_endpoints: ['https://p.invalid/x'],
     });
@@ -33,6 +38,6 @@ describe('Auftragsbuch über REST (KOM-010)', () => {
       abrufen: () => Promise.resolve(new Response('{}', { status: 403 })),
     });
     expect(await buch.abholen(10)).toBeNull();
-    expect(await buch.melden('id', 'sent', [])).toBe(false);
+    expect(await buch.melden({ id: 'id', claimed_at: 'x' }, 'sent', [])).toBe(false);
   });
 });
