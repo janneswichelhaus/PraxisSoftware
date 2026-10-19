@@ -26,6 +26,7 @@ import {
 import { TEAMCHAT, gespraechPfad } from './pfade';
 import { useTeamchat } from './rahmen';
 import { Rand } from './Rand';
+import { NameMitBild, Teambild } from './Teambild';
 
 type Art = 'direkt' | 'gruppe' | 'kanal';
 
@@ -103,6 +104,7 @@ function Direkt({ personen }: { personen: Person[] }) {
         {personen.map((person) => (
           <ListRow
             key={person.staff_member_id}
+            bild={<Teambild staffMemberId={person.staff_member_id} name={person.name} />}
             titel={person.name}
             onClick={() => {
               if (!oeffnen.isPending) oeffnen.mutate(person.staff_member_id);
@@ -134,7 +136,7 @@ function Auswahl({
         return (
           <Checkbox
             key={p.staff_member_id}
-            label={p.name}
+            label={<NameMitBild staffMemberId={p.staff_member_id} name={p.name} />}
             checked={an}
             disabled={!an && grenze !== undefined && gewaehlt.length >= grenze}
             onChange={(e) =>

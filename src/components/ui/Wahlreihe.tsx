@@ -3,12 +3,15 @@ import { useId, type ReactNode } from 'react';
 export interface Wahl<W extends string> {
   wert: W;
   text: string;
+  /** Ein Zeichen vor dem Text, etwa der Farbpunkt einer Person (TEAM-006). */
+  zeichen?: ReactNode;
 }
 
 /**
  * Eine Wahl aus zwei bis vier Werten in einem Formular: „In Ordnung,
  * Beobachten, Problem“ je Prüfpunkt, „Beobachten, Problem“ an einer Stelle am
- * Rad (FLT-EPIC-001).
+ * Rad (FLT-EPIC-001). Mit `zeichen` je Wahl auch mehr Werte, die man am
+ * Zeichen erkennt - die acht Farben einer Person im Teamchat (TEAM-006).
  *
  * Radioknöpfe in einer Gruppe (`fieldset` mit `legend`), jeder als Tippfläche
  * von 44 px mit Rand; die gewählte trägt ein Häkchen und liegt auf der
@@ -67,6 +70,7 @@ export function Wahlreihe<W extends string>({
                 onChange={() => onWaehlen(wahl.wert)}
               />
               {an ? <span aria-hidden="true">✓</span> : null}
+              {wahl.zeichen}
               {wahl.text}
             </label>
           );
@@ -128,6 +132,7 @@ export function Mehrfachwahl<W extends string>({
                 }
               />
               {an ? <span aria-hidden="true">✓</span> : null}
+              {wahl.zeichen}
               {wahl.text}
             </label>
           );

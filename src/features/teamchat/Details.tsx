@@ -36,6 +36,7 @@ import {
 import { DateienDesGespraechs } from './Anhaenge';
 import { vorschau } from './formatierung';
 import { TEAMCHAT, stellePfad } from './pfade';
+import { NameMitBild, Teambild } from './Teambild';
 import { nachrichtenzeit } from './zeit';
 
 const ARTEN: Record<Kanal['kind'], string> = {
@@ -171,6 +172,9 @@ export function Details({
                 <ListRow
                   key={m.staff_member_id}
                   dicht
+                  bild={
+                    <Teambild staffMemberId={m.staff_member_id} name={m.name} groesse="klein" />
+                  }
                   titel={m.staff_member_id === eigeneId ? `${m.name} (du)` : m.name}
                   meta={m.active ? undefined : 'Nicht mehr im Team'}
                   darunter={
@@ -282,7 +286,7 @@ function Hinzufuegen({ kanalId, vorhanden }: { kanalId: string; vorhanden: reado
             {frei.map((p) => (
               <Checkbox
                 key={p.staff_member_id}
-                label={p.name}
+                label={<NameMitBild staffMemberId={p.staff_member_id} name={p.name} />}
                 checked={gewaehlt.includes(p.staff_member_id)}
                 onChange={(e) =>
                   setGewaehlt(

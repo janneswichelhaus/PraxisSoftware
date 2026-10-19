@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AccountApi from './api';
 import type * as PasskeyModul from '@/features/auth/passkey';
 import type * as PinModul from '@/features/auth/appPin';
+import type * as TeamchatApi from '@/features/teamchat/api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const ladePasskeys = vi.fn<() => Promise<PasskeyModul.Passkey[]>>();
@@ -50,6 +51,29 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
+// TEAM-006: Bild und Farbe im Teamchat stehen oben auf der Seite.
+const fetchAvatare = vi.fn<() => Promise<TeamchatApi.Avatar[]>>();
+const fetchPersonen = vi.fn<() => Promise<TeamchatApi.Person[]>>();
+const waehleFarbe = vi.fn<(farbe: string) => Promise<void>>();
+vi.mock('@/features/teamchat/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof TeamchatApi>()),
+  fetchAvatare: () => fetchAvatare(),
+  fetchPersonen: () => fetchPersonen(),
+  waehleFarbe: (farbe: string) => waehleFarbe(farbe),
+}));
+
+const ANNA = '55555555-5555-4555-8555-000000000002';
+const OLIVIA = '55555555-5555-4555-8555-000000000003';
+
+function teamchatBereit() {
+  fetchAvatare.mockReset().mockResolvedValue([
+    { staff_member_id: ANNA, color: 'ozean' },
+    { staff_member_id: OLIVIA, color: 'pflaume' },
+  ]);
+  fetchPersonen.mockReset().mockResolvedValue([{ staff_member_id: OLIVIA, name: 'Olivia Office' }]);
+  waehleFarbe.mockReset().mockResolvedValue(undefined);
+}
+
 const { MeinKontoPage } = await import('./MeinKontoPage');
 
 const einrichtung: AccountApi.MfaEinrichtung = {
@@ -78,6 +102,7 @@ describe('MeinKontoPage', () => {
     ladeMfaFaktoren.mockResolvedValue([]);
     starteMfaEinrichtung.mockResolvedValue(einrichtung);
     bestaetigeMfa.mockResolvedValue(undefined);
+    teamchatBereit();
     entferneMfa.mockResolvedValue(undefined);
   });
 
@@ -357,6 +382,7 @@ describe('MeinKontoPage — UXR-002', () => {
     ladePasskeys.mockReset().mockResolvedValue([EIN_PASSKEY]);
     hatPin.mockReset().mockResolvedValue(true);
     starteMfaEinrichtung.mockResolvedValue(einrichtung);
+    teamchatBereit();
   });
 
   it('bietet nach einem Ladefehler des zweiten Faktors einen neuen Versuch an (ZST-04)', async () => {
@@ -427,5 +453,59 @@ describe('MeinKontoPage — UXR-002', () => {
     expect(bild).toHaveClass('rounded-image', 'bg-surface');
     expect(bild).not.toHaveClass('bg-white');
     expect(screen.getByText(/Diesen QR-Code in einer Authenticator-App scannen/)).toBeVisible();
+  });
+});
+
+/** TEAM-006 (ANN-666): Bild und Farbe im Teamchat wählt die Person selbst. */
+describe('MeinKontoPage — Bild und Farbe im Teamchat', () => {
+  beforeEach(() => {
+    ladeMfaFaktoren.mockReset().mockResolvedValue([]);
+    ladePasskeys.mockReset().mockResolvedValue([EIN_PASSKEY]);
+    hatPin.mockReset().mockResolvedValue(true);
+    teamchatBereit();
+  });
+
+  it('zeigt die eigenen Initialen auf der eigenen Farbe und die acht Farben zur Wahl', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    const farbe = await screen.findByRole('group', { name: 'Farbe' });
+    expect(within(farbe).getAllByRole('radio')).toHaveLength(8);
+    expect(within(farbe).getByRole('radio', { name: 'Ozean' })).toBeChecked();
+    const bild = document.querySelector('[data-personenbild="initialen"]');
+    expect(bild).toHaveTextContent('AB');
+    expect(bild).toHaveClass('bg-person-ozean');
+    expect(bild).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('speichert eine gewählte Farbe und sagt, wer sie noch trägt', async () => {
+    const user = userEvent.setup();
+    waehleFarbe.mockImplementation((farbe) => {
+      fetchAvatare.mockResolvedValue([
+        { staff_member_id: ANNA, color: farbe as TeamchatApi.Avatar['color'] },
+        { staff_member_id: OLIVIA, color: 'pflaume' },
+      ]);
+      return Promise.resolve();
+    });
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    await user.click(await screen.findByRole('radio', { name: 'Pflaume' }));
+    expect(waehleFarbe).toHaveBeenCalledWith('pflaume');
+    expect(await screen.findByText('Auch bei Olivia Office')).toBeInTheDocument();
+  });
+
+  it('meldet, wenn die Farbe nicht gespeichert wurde', async () => {
+    const user = userEvent.setup();
+    waehleFarbe.mockRejectedValueOnce(new Error('Diese Farbe gibt es nicht.'));
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    await user.click(await screen.findByRole('radio', { name: 'Moos' }));
+    expect(await screen.findByText('Diese Farbe gibt es nicht.')).toBeInTheDocument();
+  });
+
+  it('zeigt den Abschnitt nicht ohne Mitarbeiterdatensatz', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'], 'Ohne Datensatz')} />);
+    expect(await screen.findByRole('heading', { name: 'Sitzungen' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Bild und Farbe im Teamchat' })).toBeNull();
+    expect(fetchAvatare).not.toHaveBeenCalled();
   });
 });

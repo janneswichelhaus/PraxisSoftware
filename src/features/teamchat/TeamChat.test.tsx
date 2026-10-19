@@ -31,6 +31,7 @@ const api = {
   fetchThreads: vi.fn(),
   fetchNachrichten: vi.fn(),
   fetchPersonen: vi.fn(),
+  fetchAvatare: vi.fn(),
   fetchMitglieder: vi.fn(),
   fetchZaehler: vi.fn(),
   fetchGemerkt: vi.fn(),
@@ -241,6 +242,11 @@ beforeEach(() => {
     { staff_member_id: ANNA, name: 'Anna Beispiel', active: true },
     { staff_member_id: TIM, name: 'Tim Teamleitung', active: true },
   ]);
+  api.fetchAvatare.mockResolvedValue([
+    { staff_member_id: ANNA, color: 'ozean' },
+    { staff_member_id: TIM, color: 'moos' },
+    { staff_member_id: OLIVIA, color: 'pflaume' },
+  ]);
   api.fetchZaehler.mockResolvedValue(ZAEHLER);
   api.fetchGemerkt.mockResolvedValue([]);
   api.fetchGeplant.mockResolvedValue([]);
@@ -357,6 +363,67 @@ describe('Teamchat: Gespräche (ANN-647)', () => {
     await nutzer.selectOptions(von, TIM);
     expect(screen.getByText('Nach einer Person nur mit Suchwort.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Suchen' })).toBeDisabled();
+  });
+});
+
+describe('Teamchat: Bild und Farbe je Person (TEAM-006)', () => {
+  it('setzt vor eine Nachricht die Initialen auf der Farbe der Person, angehängte ohne Bild', async () => {
+    api.fetchNachrichten.mockResolvedValue([
+      nachricht({}),
+      nachricht({ id: 'n2', body: 'Und Rad 4 auch.', created_at: '2026-10-17T07:01:00Z' }),
+      nachricht({
+        id: 'n3',
+        author_staff_member_id: OLIVIA,
+        author_name: 'Olivia Office',
+        body: 'Danke!',
+        created_at: '2026-10-17T07:02:00Z',
+      }),
+    ]);
+    zeige('/team/k-planung');
+    await screen.findByText('Und Rad 4 auch.');
+    await vi.waitFor(() =>
+      expect(document.querySelector('.bg-person-pflaume')).toHaveTextContent('OO'),
+    );
+    const bilder = [...document.querySelectorAll('[data-nachricht] [data-personenbild]')];
+    expect(bilder.map((b) => b.textContent)).toEqual(['TT', 'OO']);
+    expect(bilder[0]).toHaveClass('bg-person-moos');
+    // Vorlesesoftware hört den Namen einmal, nicht zweimal.
+    for (const bild of bilder) expect(bild).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('zeigt in der Liste das Bild der anderen Person und bei Gruppen die Zahl', async () => {
+    api.fetchKanaele.mockResolvedValue([
+      ...KANAELE,
+      kanal({
+        id: 'k-gruppe',
+        kind: 'group',
+        name: null,
+        description: null,
+        member_names: ['Olivia Office', 'Tim Teamleitung'],
+        member_count: 3,
+      }),
+    ]);
+    zeige('/team');
+    const direkt = (await screen.findByRole('heading', { name: 'Direktnachrichten' })).closest(
+      'section',
+    )!;
+    const tim = within(direkt).getByRole('link', { name: /^Tim Teamleitung/ });
+    await vi.waitFor(() =>
+      expect(tim.querySelector('[data-personenbild]')).toHaveClass('bg-person-moos'),
+    );
+    expect(tim.querySelector('[data-personenbild]')).toHaveTextContent('TT');
+    const gruppe = within(direkt).getByRole('link', { name: /^Olivia Office, Tim Teamleitung/ });
+    expect(gruppe.querySelector('[data-personenbild="gruppe"]')).toHaveTextContent('3');
+  });
+
+  it('bleibt ohne Farben lesbar: Initialen auf Schiefer', async () => {
+    api.fetchAvatare.mockRejectedValue(new TeamchatFehler('Kein Netz', true));
+    api.fetchNachrichten.mockResolvedValue([nachricht({})]);
+    zeige('/team/k-planung');
+    expect(await screen.findByText('Rad 3 steht im Depot Süd.')).toBeInTheDocument();
+    expect(document.querySelector('[data-nachricht] [data-personenbild]')).toHaveClass(
+      'bg-person-schiefer',
+    );
   });
 });
 

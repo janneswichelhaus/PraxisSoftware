@@ -7,6 +7,7 @@ import {
 import { nachSrgb } from '@/features/files/farbe';
 import { alleBytes, bereinigeBild } from '@/features/files/metadaten';
 import { bereinigeTon, tontyp } from '@/features/platform/videometadaten';
+import { istPersonenfarbe, type Personenfarbe } from '@/components/ui/personenfarben';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { dauerSekunden } from './sprachnachricht';
@@ -246,6 +247,8 @@ const SAETZE: readonly (readonly [string, string])[] = [
   ['at most 50 pinned', 'Höchstens 50 angeheftete Nachrichten je Gespräch.'],
   ['only a reply can', 'Nur eine Antwort kann zusätzlich im Gespräch stehen.'],
   ['leave the channel instead', 'Selbst gehst du über „Kanal verlassen“.'],
+  // TEAM-006
+  ['unknown color', 'Diese Farbe gibt es nicht.'],
   // TEAM-003: Anhänge - vor dem allgemeinen „not found“.
   ['too many attachments', 'Höchstens fünf Anhänge je Nachricht.'],
   ['too many unsent attachments', 'Zu viele Anhänge warten. Erst senden oder entfernen.'],
@@ -434,6 +437,39 @@ const LADEN_PERSONEN = 'Das Team konnte nicht geladen werden.';
 export async function fetchPersonen(): Promise<Person[]> {
   const data = await rufe('list_team_people', {}, LADEN_PERSONEN);
   return antwort(z.array(personSchema), data, LADEN_PERSONEN);
+}
+
+// -----------------------------------------------------------------------------
+// Farbe je Person (TEAM-006, ANN-666)
+// -----------------------------------------------------------------------------
+
+/**
+ * Außerhalb von `TEAMCHAT_KEY`: Jede Nachricht frischt den Teamchat auf, die
+ * Farben ändern sich nur, wenn jemand die eigene wählt.
+ */
+export const AVATARE_KEY = ['teambilder'] as const;
+
+const avatarSchema = z.object({
+  staff_member_id: z.string(),
+  // Eine Farbe, die diese Fassung nicht kennt, wird zu `schiefer`, statt die
+  // ganze Liste zu verwerfen.
+  color: z.string().transform((farbe) => (istPersonenfarbe(farbe) ? farbe : 'schiefer')),
+});
+export type Avatar = z.infer<typeof avatarSchema>;
+
+const LADEN_AVATARE = 'Die Farben des Teams konnten nicht geladen werden.';
+
+export async function fetchAvatare(): Promise<Avatar[]> {
+  const data = await rufe('list_team_avatars', {}, LADEN_AVATARE);
+  return antwort(z.array(avatarSchema), data, LADEN_AVATARE);
+}
+
+export async function waehleFarbe(farbe: Personenfarbe): Promise<void> {
+  await rufe(
+    'set_own_team_color',
+    { p_color: farbe },
+    'Die Farbe konnte nicht gespeichert werden.',
+  );
 }
 
 const LADEN_MITGLIEDER = 'Die Mitglieder konnten nicht geladen werden.';

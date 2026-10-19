@@ -9,6 +9,7 @@ import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Listenabschnitt } from '@/components/ui/Listenabschnitt';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Gruppenbild } from '@/components/ui/Personenbild';
 import { SearchField } from '@/components/ui/SearchField';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { CurrentUser } from '@/features/session/types';
@@ -32,6 +33,7 @@ import type { Spalten } from './flaeche';
 import { ENTWUERFE, GEMERKT, NEU, SUCHE, TEAMCHAT, THREADS, gespraechPfad } from './pfade';
 import { standardGespraech } from './speicher';
 import { LEERE_SUCHE, sucheSetzen } from './suche';
+import { Teambild } from './Teambild';
 import { Schloss } from './Zeichen';
 
 /**
@@ -242,12 +244,29 @@ function Gespraechszeile({
       : kanal.notify === 'none'
         ? 'Stumm'
         : undefined;
+  // TEAM-006: Direktnachrichten tragen das Bild der anderen Person, Gruppen
+  // die Zahl ihrer Mitglieder; Kanäle bleiben beim „#“.
+  const groesse = telefon ? 'zeile' : 'klein';
+  const bild =
+    kanal.kind === 'direct' ? (
+      <Teambild
+        staffMemberId={kanal.partner_staff_member_id}
+        name={kanal.partner_name}
+        groesse={groesse}
+      />
+    ) : kanal.kind === 'group' ? (
+      <Gruppenbild
+        anzahl={kanal.member_count ?? kanal.member_names?.length ?? 0}
+        groesse={groesse}
+      />
+    ) : undefined;
   return (
     <ListRow
       dicht={!telefon}
       to={gespraechPfad(kanal)}
       aktiv={aktiv}
       uebergang={telefon}
+      bild={bild}
       titel={
         <span className="inline-flex max-w-full min-w-0 items-center gap-1.5">
           {kanal.kind === 'private' ? <Schloss /> : null}

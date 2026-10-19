@@ -54,6 +54,7 @@ import {
   SPRACHNACHRICHT_HOECHSTDAUER_S,
   sprachnachrichtMoeglich,
 } from './sprachnachricht';
+import { Teambild } from './Teambild';
 import { Bueroklammer, Uhr } from './Zeichen';
 import { Zeitwahl } from './Zeitwahl';
 import { geplantFuer, planvorschlaege } from './zeit';
@@ -424,6 +425,13 @@ export function Eingabe({
                 <ListRow
                   key={person.staff_member_id}
                   dicht
+                  bild={
+                    <Teambild
+                      staffMemberId={person.staff_member_id}
+                      name={person.name}
+                      groesse="klein"
+                    />
+                  }
                   titel={person.name}
                   onClick={() => erwaehnen(person.name)}
                 />

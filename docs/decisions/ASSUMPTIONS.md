@@ -6864,3 +6864,15 @@ Datenschutz · offen · 2026-10-19 · Claude (ERN-011) · Prüfpaket · Wiedervo
 **Anker.** Spalte `occasion` in `public.list_appointments`.
 
 **Änderungspfad.** Anlass für Rollen ohne Fähigkeit maskieren (`app.can_counsel_nutrition()`) in `list_appointments`, `list_day_plan`, `get_training_appointment`, `list_open_billable_appointments` und `appointment_directory` · Aufwand `mittel`.
+
+### ANN-666 — Farbe je Person im Teamchat: vergeben, selbst gewählt, doppelt erlaubt
+
+Praxisprozess · offen · 2026-10-19 · — · — · Wiedervorlage: —
+
+**Annahme.** Jede Person bekommt mit dem Mitarbeiterdatensatz eine von acht Farben (die erste, die keine andere aktive Person trägt). Ändern kann sie nur die Person selbst in „Mein Konto“; dieselbe Farbe darf zweimal vorkommen, die Wahl zeigt, wer sie noch trägt. Die Farbe steht nur am Personenbild im Teamchat, nie als Text und nie ohne Namen.
+
+**Begründung.** Auftrag Jannes (19.10.): „eine Farbe pro Mitarbeiter könnte helfen“. Selbst gewählt wie ein Profil; Rot, Orange und Gelb bleiben den Statusfarben (im Kalender las sich eine Personenfarbe wie eine Warnung).
+
+**Anker.** `app.staff_color_palette()`, `app.next_staff_color()` (Migration TEAM-006), `--color-person-*` in `src/index.css`.
+
+**Änderungspfad.** Vergabe durch die Praxisleitung: `set_own_team_color` um eine Funktion für `owner` ergänzen · Aufwand `klein`.

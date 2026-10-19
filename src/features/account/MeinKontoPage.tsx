@@ -21,6 +21,7 @@ import {
   type MfaEinrichtung,
 } from './api';
 import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
+import { ProfilAbschnitt } from '@/features/teamchat/ProfilAbschnitt';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 
@@ -324,6 +325,10 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
       />
 
       <div className="max-w-formular">
+        {/* TEAM-006: Wer am Teamchat teilnimmt, wählt dort Bild und Farbe. */}
+        {user.staffMemberId && user.roles.some((rolle) => rolle !== 'patient') ? (
+          <ProfilAbschnitt staffMemberId={user.staffMemberId} name={user.profile.display_name} />
+        ) : null}
         <PasskeyAbschnitt bestaetigeZweitenFaktor={bestaetigeZweitenFaktor} />
         <PinAbschnitt />
         <ZweiterFaktor user={user} />
