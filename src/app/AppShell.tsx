@@ -3,12 +3,13 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type MouseEvent,
   type ReactNode,
   type RefObject,
 } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { anzeigerStil, useGleitanzeiger } from '@/components/ui/gleitanzeiger';
-import { useSeitenziel } from '@/components/ui/seitenUebergang';
+import { bereichWechseln, richtungIn, useSeitenziel } from '@/components/ui/seitenUebergang';
 import { Ansichtsleiste } from '@/components/ui/Ansichtsleiste';
 import { SubNav } from '@/components/ui/SubNav';
 import { istAktiv } from '@/components/ui/subnavAktiv';
@@ -190,6 +191,7 @@ export function AppShell({
   children: ReactNode;
 }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const anfordern = useAbmeldeanfrage();
   /**
    * „Wird abgemeldet …" (RAH-003): Mit Abmeldeschutz sagt der Schutz, wann
@@ -264,6 +266,17 @@ export function AppShell({
     mehrAktiv ? 'mehr' : (aktuell?.id ?? ''),
   );
 
+  // Ein anderer Bereich schiebt sich waagerecht über den alten (ANN-663):
+  // von rechts, wenn er in der Leiste weiter rechts - in der Seitenleiste
+  // weiter unten - steht.
+  const tabReihe = [...sichtbar.map((bereich) => bereich.id), ...(weitere.length ? ['mehr'] : [])];
+  const tabJetzt = mehrAktiv ? 'mehr' : aktuell?.id;
+  const wechseln =
+    (ziel: string, reihe: readonly string[], von: string | undefined, nach: string) =>
+    (event: MouseEvent<HTMLAnchorElement>) =>
+      bereichWechseln(event, () => void navigate(ziel), richtungIn(reihe, von, nach));
+  const leistenReihe = bereiche.map((bereich) => bereich.id);
+
   return (
     <div ref={rahmen} className="min-h-dvh sm:flex">
       <a
@@ -280,7 +293,7 @@ export function AppShell({
           Tableiste am unteren Rand an ihre Stelle. */}
       <nav
         aria-label="Arbeitsbereiche"
-        className="bg-surface-inverse w-symbolspalte sticky top-0 hidden h-dvh shrink-0 flex-col gap-8 py-7 sm:flex lg:w-62 lg:px-5"
+        className="wechsel-fest-seitenleiste bg-surface-inverse w-symbolspalte sticky top-0 hidden h-dvh shrink-0 flex-col gap-8 py-7 sm:flex lg:w-62 lg:px-5"
       >
         <Link
           to="/"
@@ -311,6 +324,7 @@ export function AppShell({
                   nicht nur seine Einstiegsroute. */}
               <Link
                 to={bereich.to}
+                onClick={wechseln(bereich.to, leistenReihe, aktuell?.id, bereich.id)}
                 aria-current={aktuell?.id === bereich.id ? 'page' : undefined}
                 title={bereich.kurz === bereich.label ? undefined : bereich.kurz}
                 className={seitenLink}
@@ -348,7 +362,7 @@ export function AppShell({
             Funkloch verschwanden Suche, Konto und Abmelden darunter. Jetzt
             steht der Hinweis über der Kopfzeile und schiebt sie hinunter; die
             Messung der Suche in `Funktionssuche.tsx` gilt unverändert. */}
-        <div ref={kopf} className="sticky top-0 z-30">
+        <div ref={kopf} className="wechsel-fest-kopf sticky top-0 z-30">
           <Verbindungsanzeige imChat={chat} />
           {/* Gescheitertes Nachladen des Profils (BEF-046): dieselbe Stelle,
               damit der Hinweis mit der Kopfzeile klebt. */}
@@ -592,13 +606,14 @@ export function AppShell({
       <nav
         aria-label="Arbeitsbereiche"
         data-tableiste=""
-        className="border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
+        className="wechsel-fest-tableiste border-line bg-surface/95 fixed inset-x-0 bottom-0 z-30 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
       >
         <ul ref={tabliste} className={`relative flex ${tabKasten ? 'gleitet-strich' : ''}`}>
           {sichtbar.map((bereich) => (
             <li key={bereich.id} className="flex-1">
               <Link
                 to={bereich.to}
+                onClick={wechseln(bereich.to, tabReihe, tabJetzt, bereich.id)}
                 aria-current={aktuell?.id === bereich.id ? 'page' : undefined}
                 className={`${tabLink} relative`}
               >
@@ -614,6 +629,7 @@ export function AppShell({
             <li className="flex-1">
               <Link
                 to="/bereiche"
+                onClick={wechseln('/bereiche', tabReihe, tabJetzt, 'mehr')}
                 aria-current={mehrAktiv ? 'page' : undefined}
                 className={`${tabLink} relative`}
               >

@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+Richtungen der Bewegung (19.10., Branch `ccr-a1aed6dc-jfcfy8`, ANN-663): Bereiche der Leiste schieben
+sich waagerecht übereinander, Fenster kommen von unten und gehen nach unten, Schritte geführter Abläufe
+rücken waagerecht; Wischen zurückgestellt (`IDEA-QSN-012`).
+
 ERN-EPIC-003 Tagebuch (19.10., Branch `ccr-c4be3f12-d8jik0`): Mahlzeiten, Wasser mit einem Tipp, „zuletzt“
 (2 Tipps) und Suche (4 Tipps), Favoriten, kopieren, „Zahlen ausblenden“, Erinnerungen je Mahlzeit als neue
 Art im Katalog; die Beratung liest mit. ANN-660 bis ANN-662; ANN-656 bis ANN-659 bestätigt.

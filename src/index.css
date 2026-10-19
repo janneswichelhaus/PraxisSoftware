@@ -252,6 +252,9 @@
      Als `ease-feder` und `ease-feder-weich` auch in Klassen. */
   --ease-feder: cubic-bezier(0.3, 1.35, 0.5, 1);
   --ease-feder-weich: cubic-bezier(0.3, 1.12, 0.5, 1);
+  /* Schieben ohne Überschwung (ANN-663): Seiten der Leiste und Fenster -
+     eine ganze Fläche, die über die Kante hinausschwänge, zeigte eine Lücke. */
+  --ease-schieben: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* Bedienhöhen. Das Mindestziel bleibt 44 px (WCAG 2.5.8). */
   --spacing-bedienhoehe: 48px;
@@ -923,6 +926,122 @@ details {
 @keyframes seite-rein {
   from {
     opacity: 0;
+  }
+}
+
+/* Bereich wechseln (`bereichWechseln`, ANN-663): Ein Tipp in die Leiste
+   schiebt die neue Seite über die alte - von rechts, wenn der Bereich weiter
+   rechts steht (`data-wechsel="vor"`), sonst von links. Die alte weicht ein
+   Viertel zur Seite. Kopfzeile, Tableiste und Seitenleiste bekommen nur für
+   diesen Wechsel einen eigenen Namen und bleiben stehen; der Strich der
+   Tableiste gleitet darin wie sonst. */
+:root[data-wechsel] .wechsel-fest-kopf {
+  view-transition-name: wechsel-kopf;
+}
+
+:root[data-wechsel] .wechsel-fest-tableiste {
+  view-transition-name: wechsel-tableiste;
+}
+
+:root[data-wechsel] .wechsel-fest-seitenleiste {
+  view-transition-name: wechsel-seitenleiste;
+}
+
+::view-transition-group(wechsel-kopf),
+::view-transition-group(wechsel-tableiste),
+::view-transition-group(wechsel-seitenleiste),
+::view-transition-new(wechsel-kopf),
+::view-transition-new(wechsel-tableiste),
+::view-transition-new(wechsel-seitenleiste) {
+  animation: none;
+}
+
+::view-transition-old(wechsel-kopf),
+::view-transition-old(wechsel-tableiste),
+::view-transition-old(wechsel-seitenleiste) {
+  display: none;
+}
+
+:root[data-wechsel='vor']::view-transition-old(root) {
+  animation: weicht-nach-links 0.34s var(--ease-schieben) both;
+}
+
+:root[data-wechsel='vor']::view-transition-new(root) {
+  animation: kommt-von-rechts 0.34s var(--ease-schieben) both;
+}
+
+:root[data-wechsel='zurueck']::view-transition-old(root) {
+  animation: weicht-nach-rechts 0.34s var(--ease-schieben) both;
+}
+
+:root[data-wechsel='zurueck']::view-transition-new(root) {
+  animation: kommt-von-links 0.34s var(--ease-schieben) both;
+}
+
+@keyframes weicht-nach-links {
+  to {
+    translate: -25% 0;
+  }
+}
+
+@keyframes weicht-nach-rechts {
+  to {
+    translate: 25% 0;
+  }
+}
+
+@keyframes kommt-von-rechts {
+  from {
+    translate: 100% 0;
+  }
+}
+
+@keyframes kommt-von-links {
+  from {
+    translate: -100% 0;
+  }
+}
+
+/* Ein Fenster kommt von unten (`Dialogfenster`, ANN-663): am Telefon ganz
+   vom unteren Rand herauf, ab 640 px hebt es sich nur ein Stück. Der
+   Schleier dunkelt dabei ab. Das Weggehen nach unten spielt das Fenster
+   selbst ab, weil es beim Schließen schon aus der Seite ist. */
+.fenster-schleier {
+  animation: schleier-kommt 0.24s ease-out both;
+}
+
+.fenster-kommt {
+  animation: fenster-kommt 0.34s var(--ease-schieben) both;
+}
+
+@media (min-width: 640px) {
+  .fenster-kommt {
+    animation-name: fenster-hebt-sich;
+  }
+}
+
+/* Das Abbild eines Fensters, das geht: Was darin eingleitet oder wackelt,
+   spielte sonst noch einmal ab. */
+.fenster-abbild * {
+  animation: none !important;
+  transition: none !important;
+}
+
+@keyframes schleier-kommt {
+  from {
+    background-color: transparent;
+  }
+}
+
+@keyframes fenster-kommt {
+  from {
+    translate: 0 calc(100% + 2rem);
+  }
+}
+
+@keyframes fenster-hebt-sich {
+  from {
+    translate: 0 1.5rem;
   }
 }
 

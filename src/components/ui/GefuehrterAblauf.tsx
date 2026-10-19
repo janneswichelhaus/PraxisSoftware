@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
+import { bewegungErlaubt } from './bewegung';
 import { Button } from './Button';
 import { Dialogfenster, Fenstertitel } from './Dialogfenster';
 import { ProgressBar } from './ProgressBar';
@@ -30,6 +38,10 @@ export const TIPPSPERRE_MS = 700;
  *     steht sie unter der Bühne, direkt über den Antworten (Jannes 2026-10-16).
  *   * **Der Abschluss** (`abschluss`): Die Zusammenfassung rollt, der Fuß mit
  *     dem einen Hauptknopf steht fest darunter, mit einer Linie.
+ *   * **Die Seiten wechseln waagerecht** (ANN-663): Die nächste rückt von
+ *     rechts nach, „← Zurück“ und die Zurückgeste holen die vorige von links.
+ *     Das Fenster selbst kam von unten - es ist die Ebene, die Seiten darin
+ *     sind gleichrangig.
  *   * **Tippsperre** nach jedem Wechsel der `seite` und eine **Ansage** für
  *     Vorlesesoftware; der Fokus folgt der neuen Seite (`data-autofocus`).
  *   * Die **Rückfrage vor dem Verlust** (`schutz` aus `useTextverlustschutz`)
@@ -92,6 +104,14 @@ export function GefuehrterAblauf({
   children?: ReactNode;
 }) {
   const gesperrt = useTippsperre(seite, tippsperre);
+  const schritt = useRef<HTMLDivElement>(null);
+  const zurueck = useSchrittrichtung(schritt, seite);
+  const zurueckGehen = onZurueck
+    ? () => {
+        zurueck.current = true;
+        onZurueck();
+      }
+    : undefined;
   const sperre = gesperrt ? 'pointer-events-none' : '';
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
 
@@ -102,8 +122,8 @@ export function GefuehrterAblauf({
       </p>
       <div className="shrink-0 px-4 pt-2">
         <div className="flex min-h-11 items-center gap-3">
-          {onZurueck ? (
-            <Button variant="quiet" groesse="kompakt" onClick={onZurueck}>
+          {zurueckGehen ? (
+            <Button variant="quiet" groesse="kompakt" onClick={zurueckGehen}>
               ← Zurück
             </Button>
           ) : null}
@@ -152,6 +172,7 @@ export function GefuehrterAblauf({
             {buehne}
           </div>
           <div
+            ref={schritt}
             className={`lg:border-line lg:w-96 lg:shrink-0 lg:border-l ${flaeche} ${sperre}`.trim()}
           >
             {abschluss ? (
@@ -193,7 +214,7 @@ export function GefuehrterAblauf({
       {kopf}
       {/* Jede Seite beginnt neu (`key`): Eingaben einer anderen Seite stehen
           nicht im Weg, und der Fokus geht auf ihr `data-autofocus`. */}
-      <div key={seite} className={`flex min-h-0 flex-1 flex-col ${sperre}`.trim()}>
+      <div key={seite} ref={schritt} className={`flex min-h-0 flex-1 flex-col ${sperre}`.trim()}>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4">
           <div className="max-w-formular mx-auto flex w-full flex-col gap-4">
             <Fenstertitel />
@@ -206,6 +227,48 @@ export function GefuehrterAblauf({
       </div>
     </Dialogfenster>
   );
+}
+
+/** So weit rückt die neue Seite nach, und so lange. */
+const SCHRITT_WEG = '3rem';
+const SCHRITT_MS = 320;
+
+/**
+ * Die neue Seite rückt waagerecht nach (ANN-663): von rechts, nach einem
+ * Schritt zurück von links. Zurück ist, was über „← Zurück“ kam oder über die
+ * Zurückgeste (`popstate`); die Kurve ist `--ease-feder-weich`. Nie beim
+ * ersten Zeichnen, nicht bei reduzierter Bewegung, nicht ohne
+ * `Element.animate`. Text blendet dabei nicht ein; er rückt nur.
+ */
+function useSchrittrichtung(
+  schritt: RefObject<HTMLDivElement | null>,
+  seite: string,
+): RefObject<boolean> {
+  const zurueck = useRef(false);
+  const vorige = useRef(seite);
+
+  useEffect(() => {
+    const geste = () => {
+      zurueck.current = true;
+    };
+    window.addEventListener('popstate', geste);
+    return () => window.removeEventListener('popstate', geste);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (vorige.current === seite) return;
+    vorige.current = seite;
+    const richtung = zurueck.current ? '-' : '';
+    zurueck.current = false;
+    const element = schritt.current;
+    if (!element || typeof element.animate !== 'function' || !bewegungErlaubt()) return;
+    element.animate([{ translate: `${richtung}${SCHRITT_WEG} 0` }, { translate: '0 0' }], {
+      duration: SCHRITT_MS,
+      easing: 'cubic-bezier(0.3, 1.12, 0.5, 1)',
+    });
+  }, [seite, schritt]);
+
+  return zurueck;
 }
 
 /**

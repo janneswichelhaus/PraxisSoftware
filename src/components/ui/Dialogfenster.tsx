@@ -1,5 +1,15 @@
-import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { createPortal } from 'react-dom';
+import { bewegungErlaubt } from './bewegung';
 import { Button } from './Button';
 import { usePortalZiel } from './portalZiel';
 import { Symbolknopf } from './Symbolknopf';
@@ -36,6 +46,10 @@ import { Symbolknopf } from './Symbolknopf';
  * dem Schleier am `body` hängt - die Anwendung selbst, ein schon offenes
  * Fenster - trägt `inert`. Tab, ein Tipp und die Vorlesesoftware erreichen
  * darunter nichts mehr; `aria-modal` allein sagt das nur an.
+ *
+ * **Es kommt von unten und geht nach unten** (ANN-663): eine Ebene über der
+ * Seite, kein Wechsel der Seite. Wie es kommt, steht in `index.css`
+ * („Ein Fenster kommt von unten“); wie es geht, in `useAbgang`.
  *
  * Gezeichnet wird über ein Portal am `body`, damit das Fenster über der
  * Kopfleiste und der Navigation liegt. Kein Paket: `<dialog>` hätte in
@@ -87,6 +101,7 @@ export function Dialogfenster({
   const fensterRef = useRef<HTMLDivElement>(null);
   const schliessenRef = useRef(onSchliessen);
   schliessenRef.current = onSchliessen;
+  useAbgang(fensterRef);
 
   useEffect(() => {
     const vorher = document.activeElement as HTMLElement | null;
@@ -189,7 +204,7 @@ export function Dialogfenster({
   if (vollbild) {
     return createPortal(
       <div
-        className="bg-ink/40 fixed inset-0 z-50 flex justify-center sm:items-center sm:p-8"
+        className="fenster-schleier bg-ink/40 fixed inset-0 z-50 flex justify-center sm:items-center sm:p-8"
         onMouseDown={(event) => {
           if (event.target === event.currentTarget) schliessenRef.current();
         }}
@@ -203,7 +218,7 @@ export function Dialogfenster({
           onKeyDown={tastatur}
           // Am Telefon randlos über Kopfzeile und Tableiste, mit Platz für
           // Kerbe und Wischleiste; ab 640 px ein Fenster mit Rand wie oben.
-          className="bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0"
+          className="fenster-kommt bg-surface sm:border-line-strong sm:rounded-card flex h-dvh w-full flex-col overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:h-[min(52rem,calc(100dvh-4rem))] sm:max-w-5xl sm:border-2 sm:pt-0 sm:pb-0"
         >
           <div className="border-line flex min-h-14 shrink-0 items-center gap-2 border-b py-1 pr-2 pl-4">
             <div className="min-w-0 flex-1">
@@ -249,7 +264,7 @@ export function Dialogfenster({
   return createPortal(
     // Der Schleier faengt den Klick daneben; das Fenster selbst stoppt ihn.
     <div
-      className="bg-ink/40 fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+      className="fenster-schleier bg-ink/40 fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) schliessenRef.current();
       }}
@@ -266,7 +281,7 @@ export function Dialogfenster({
         onKeyDown={tastatur}
         // Radius 14, 24 innen wie die Rueckfrage-Karte (DS-001); unten auf dem
         // Telefon, mittig auf dem Bildschirm - mit dem Daumen erreichbar.
-        className={`bg-surface border-line-strong rounded-card max-h-[calc(100dvh-2rem)] w-full ${breit ? 'max-w-4xl' : 'max-w-lg'} overflow-y-auto border-2 p-6`}
+        className={`fenster-kommt bg-surface border-line-strong rounded-card max-h-[calc(100dvh-2rem)] w-full ${breit ? 'max-w-4xl' : 'max-w-lg'} overflow-y-auto border-2 p-6`}
       >
         {/* Titel nach Handoff c_Dialog als H3 (24/700), am Telefon als H4
             (20/700, UIK-22): Bei 390 px brachen dort vier der sechs Titel
@@ -281,6 +296,71 @@ export function Dialogfenster({
     </div>,
     ziel,
   );
+}
+
+/** So lange geht ein Fenster nach unten weg. */
+const ABGANG_MS = 240;
+
+/**
+ * Das Fenster geht nach unten weg (ANN-663). Wer es öffnet, nimmt es beim
+ * Schließen einfach aus der Seite - es gibt keinen Zustand „geht gerade“, und
+ * fünfzig Stellen müssten ihn sonst kennen. Deshalb bleibt ein Abbild stehen:
+ * eine Kopie des Fensters ohne Bedeutung (`aria-hidden`, `inert`, kein
+ * Tipp), die nach unten gleitet und sich dann entfernt. Das Fenster selbst
+ * ist da schon weg - Fokus, Sperre der Seite und Vorlesesoftware sind beim
+ * Schließen sofort zurück wie bisher.
+ *
+ * Nur wo der Browser `Element.animate` kennt und Bewegung erlaubt ist; in
+ * jsdom nie. Bleibt das Fenster im Dokument, war es kein Schließen, sondern
+ * das doppelte Zeichnen des StrictMode. Ein Fenster, das zugleich aufgeht,
+ * liegt über dem Abbild.
+ */
+function useAbgang(fensterRef: RefObject<HTMLDivElement | null>): void {
+  useLayoutEffect(() => {
+    const fenster = fensterRef.current;
+    const schleier = fenster?.parentElement;
+    if (!fenster || !schleier) return undefined;
+    return () => {
+      const ort = schleier.parentElement;
+      if (!ort || typeof fenster.animate !== 'function' || !bewegungErlaubt()) return;
+      const abbild = schleier.cloneNode(true) as HTMLElement;
+      const dunkel = getComputedStyle(schleier).backgroundColor;
+      const gerollt = fenster.scrollTop;
+      queueMicrotask(() => {
+        if (schleier.isConnected) return;
+        abbild.classList.replace('fenster-schleier', 'fenster-abbild');
+        abbild.setAttribute('aria-hidden', 'true');
+        abbild.setAttribute('inert', '');
+        abbild.style.pointerEvents = 'none';
+        const kopie = abbild.firstElementChild as HTMLElement | null;
+        if (!kopie) return;
+        kopie.classList.remove('fenster-kommt');
+        kopie.removeAttribute('role');
+        kopie.removeAttribute('aria-modal');
+        const offen = Array.from(ort.children).find((kind) =>
+          kind.querySelector(':scope > [aria-modal="true"]'),
+        );
+        ort.insertBefore(abbild, offen ?? null);
+        kopie.scrollTop = gerollt;
+        const breit = window.matchMedia?.('(min-width: 640px)').matches ?? false;
+        const optionen = {
+          duration: ABGANG_MS,
+          easing: 'cubic-bezier(0.4, 0, 1, 1)',
+          fill: 'forwards' as const,
+        };
+        abbild.animate([{ backgroundColor: dunkel }, { backgroundColor: 'transparent' }], optionen);
+        const weg = kopie.animate(
+          breit
+            ? [{ translate: '0 0' }, { translate: '0 1.5rem', opacity: 0 }]
+            : [{ translate: '0 0' }, { translate: '0 calc(100% + 2rem)' }],
+          optionen,
+        );
+        const entfernen = () => abbild.remove();
+        void weg.finished.then(entfernen, entfernen);
+        window.setTimeout(entfernen, ABGANG_MS * 3);
+      });
+    };
+  }, [fensterRef]);
 }
 
 /** Alles im Fenster, was per Tab erreichbar ist, in Dokumentreihenfolge. */

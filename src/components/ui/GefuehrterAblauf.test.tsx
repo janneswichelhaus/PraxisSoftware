@@ -145,3 +145,55 @@ describe('GefuehrterAblauf', () => {
     expect(onSchliessen).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('GefuehrterAblauf wechselt die Seiten waagerecht (ANN-663)', () => {
+  it('rückt die nächste Seite von rechts nach, nach „← Zurück“ von links', async () => {
+    const animate = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'animate', { value: animate, configurable: true });
+    try {
+      const nutzer = userEvent.setup();
+      render(<Ablauf onSchliessen={vi.fn()} onFertig={vi.fn()} />);
+      // Die erste Seite rückt nicht; sie kommt mit dem Fenster.
+      expect(animate).not.toHaveBeenCalled();
+      await nutzer.click(screen.getByRole('button', { name: 'Ja' }));
+      expect(animate).toHaveBeenLastCalledWith(
+        [{ translate: '3rem 0' }, { translate: '0 0' }],
+        expect.objectContaining({ duration: 320 }),
+      );
+      await nutzer.click(screen.getByRole('button', { name: '← Zurück' }));
+      expect(animate).toHaveBeenLastCalledWith(
+        [{ translate: '-3rem 0' }, { translate: '0 0' }],
+        expect.anything(),
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'Ja' }).closest('.pointer-events-none'),
+        ).toBeNull(),
+      );
+      await nutzer.click(screen.getByRole('button', { name: 'Ja' }));
+      expect(animate).toHaveBeenLastCalledWith(
+        [{ translate: '3rem 0' }, { translate: '0 0' }],
+        expect.anything(),
+      );
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+    }
+  });
+
+  it('springt bei reduzierter Bewegung', async () => {
+    const animate = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, 'animate', { value: animate, configurable: true });
+    const matchMedia = vi.fn(() => ({ matches: true }));
+    Object.defineProperty(window, 'matchMedia', { value: matchMedia, configurable: true });
+    try {
+      const nutzer = userEvent.setup();
+      render(<Ablauf onSchliessen={vi.fn()} onFertig={vi.fn()} />);
+      await nutzer.click(screen.getByRole('button', { name: 'Ja' }));
+      expect(screen.getByRole('dialog', { name: 'Angerufen?' })).toBeInTheDocument();
+      expect(animate).not.toHaveBeenCalled();
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+      Reflect.deleteProperty(window, 'matchMedia');
+    }
+  });
+});
