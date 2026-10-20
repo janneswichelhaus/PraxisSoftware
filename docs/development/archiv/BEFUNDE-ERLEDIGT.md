@@ -1752,3 +1752,31 @@ eingeklappt.
 **Entscheidung (Jannes, 2026-10-20).** Wie empfohlen: (a), und die Begleitung bekommt im eigenen Export nur ihre eigene Wahl.
 
 **Umsetzung (2026-10-20).** Der tägliche Lauf `purge_notification_deliveries` räumt Wahl und Tagebuch-Erinnerungen eines Zugangs, der zeitlich geendet hat oder entzogen ist; der Widerruf räumt sie sofort (Trigger), eine Sperre lässt sie stehen. Eine Begleitung lädt unter „Ich“ ihre eigene Wahl herunter (`platform_export_notifications`), nichts von der Person, protokolliert wie jeder Export. Die Liste steht an einer Stelle (`app.platform_notifications_json`). Migration `20261223180000`, Tests in `benachrichtigungen.test.ts` und `platform-export.test.ts` (Gegenprobe ohne Migration: 6 rot), `Datenexport.test.tsx`, `PlattformApp.test.tsx`. Zweitreview: Negativfälle ergänzt (rechtliche Vertretung, eingeladen, fremde Wahl derselben Person), das Zugriffsprotokoll der Auskunft nennt den Umfang des Exports einer Begleitung, ihr Export trägt keine Tagebuch-Erinnerungen (ADR-027 Punkt 3), die Sperre steht im Text der Auskunft.
+
+### BEF-190 — Profilbild: der Ausschnitt lässt sich beim Auswählen nicht wählen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Mein Konto: „Bild und Farbe im Teamchat“ |
+| Quelle  | Jannes, Befund an der laufenden Anwendung |
+| Status  | erledigt 2026-10-20 (Branch `ccr-37917f35-emdjjp`): Zuschnitt mit Verschieben und Vergrößern bis dreifach; ADR-017 Fassung 11, ANN-670 |
+| Berührt | `src/features/teamchat/ProfilAbschnitt.tsx`, `profilbild.ts`; ADR-017 Punkt 89 |
+
+**Beobachtung.** „Profilbilder können beim Auswählen nicht zugeschnitten werden. Das soll möglich sein.“ Das Gerät nahm fest die Mitte, beim Hochformat den oberen Teil (ADR-017 Punkt 89, Bestätigungsfrage 37 wie empfohlen).
+
+**Umsetzung (2026-10-20).** Nach der Fotowahl steht das Foto in einem Quadrat, der Kreis zeigt das Bild im Chat. Ziehen oder Pfeiltasten verschieben, „−“, Regler und „+“ vergrößern bis zum Dreifachen, das Quadrat bleibt im Foto (`ProfilbildZuschnitt.tsx`). Ohne Eingriff gilt der bisherige Ausschnitt; gerechnet wird erst beim Speichern, auf dem Gerät (`rechneProfilbild`). Keine neue Abhängigkeit. Tests in `profilbild.test.ts`, `ProfilbildZuschnitt.test.tsx`, `MeinKontoPage.test.tsx` und `tests/e2e/authenticated/profilbild.spec.ts` (Rot/Blau-Foto, Pixel in der Mitte des gespeicherten Bilds).
+
+### BEF-191 — Teamchat: ein neues Profilbild erscheint nicht an Nachrichten, die schon dastehen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Teamchat: Gespräch, Übersicht |
+| Quelle  | Jannes, Befund an der laufenden Anwendung |
+| Status  | erledigt 2026-10-20 (Branch `ccr-37917f35-emdjjp`): Liste der Bilder lädt im Takt der Zähler (30 s) nach |
+| Berührt | `src/features/teamchat/teambilder.ts` (`useAvatare`) |
+
+**Beobachtung.** „Das Profilbild wird im Chat bei bereits bestehenden Nachrichten nicht aktualisiert.“ Nachgestellt mit zwei Konten: Jannes sah Annas Initialen auch 45 s nach ihrem neuen Foto und nach einer neuen Nachricht. Ursache: Die Liste der Bilder galt fünf Minuten als frisch, Fokus lädt in der Anwendung nicht nach, und an Folgenachrichten wird nichts neu eingehängt.
+
+**Umsetzung (2026-10-20).** `useAvatare` lädt im Takt der Zähler (`ZAEHLER_MS`, 30 s) nach; alle Bilder lesen dieselbe Liste und folgen ohne Neuladen. Das Bild selbst lädt nur bei neuer Kennung. Tests in `teambilder.test.tsx` und im E2E-Test mit zwei Konten (Gegenprobe ohne Änderung: nach 75 s weiter Initialen).

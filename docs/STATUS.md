@@ -5,10 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-BEF-189 (20.10., Branch `ccr-37917f35-emdjjp`, Antworten wie empfohlen): Wahl zu Benachrichtigungen
-und Tagebuch-Erinnerungen fallen mit dem Ende der Lesezeit, beim Widerruf sofort; eine Begleitung
-lädt ihre eigene Wahl herunter (ADR-023 Fassung 6, ANN-669). ANN-668 entschieden, kein Blätterknopf
-links. Gemergt davor: Teamchat mit Bild und Farbe, BEF-146 bis -150, -182, -183 (#278).
+BEF-190 und BEF-191 (20.10., Branch `ccr-37917f35-emdjjp`, Befunde Jannes): Den Ausschnitt eines
+Profilbilds wählt die Person beim Auswählen selbst (ADR-017 Fassung 11, ANN-670); ein neues Bild
+erscheint ohne Neuladen auch an Nachrichten, die schon dastehen. Gemergt davor: BEF-189 (#279).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
