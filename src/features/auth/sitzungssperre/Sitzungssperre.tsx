@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Vollseite } from '@/app/Vollseite';
-import { PortalZielKontext } from '@/components/ui/portalZiel';
+import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 import { useSession } from '../sessionContext';
 import {
   BEDIENUNG_MELDEN_ALLE_MS,
@@ -455,7 +455,7 @@ export function Sitzungssperre({
           <PortalZielKontext.Provider value={portalZiel}>{children}</PortalZielKontext.Provider>
           {/* Fenster (`Dialogfenster`) werden hier gezeichnet, nicht am
               `body`: So verbirgt die Sperre sie mit (Zweitreview). */}
-          <div ref={setPortalZiel} data-testid="sitzung-fenster" />
+          <div ref={setPortalZiel} data-testid="sitzung-fenster" {...{ [FENSTERZIEL]: '' }} />
         </div>
       ) : null}
     </SperrsicherungKontext.Provider>

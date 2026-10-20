@@ -4,6 +4,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from './Button';
 import { Dialogfenster, Fenstertitel, Hinweisfenster } from './Dialogfenster';
+import { FENSTERZIEL, PortalZielKontext } from './portalZiel';
 
 /**
  * Das Fenster über dem Inhalt (FIX-016, ANN-058): Es darf niemandem etwas
@@ -272,6 +273,98 @@ describe('Dialogfenster', () => {
     await user.click(screen.getByRole('button', { name: 'Nein' }));
     expect(container).not.toHaveAttribute('inert');
     expect(screen.getByRole('button', { name: 'Öffnen' })).toHaveFocus();
+  });
+
+  it('sperrt auch, wenn das Fenster in ein eigenes Ziel zeichnet, und laesst das Ziel offen (BEF-175)', () => {
+    // Wie die Sitzungssperre: Das Ziel liegt neben der Anwendung, beide in
+    // einer Huelle - nicht am body.
+    const huelle = document.createElement('div');
+    const anwendung = document.createElement('div');
+    const ziel = document.createElement('div');
+    ziel.setAttribute(FENSTERZIEL, '');
+    huelle.append(anwendung, ziel);
+    document.body.append(huelle);
+
+    const { unmount } = render(
+      <PortalZielKontext.Provider value={ziel}>
+        <Dialogfenster titel="Unten" onSchliessen={() => undefined}>
+          <Button type="button">Unten bleiben</Button>
+        </Dialogfenster>
+      </PortalZielKontext.Provider>,
+      { container: anwendung },
+    );
+    expect(anwendung).toHaveAttribute('inert');
+    expect(ziel).not.toHaveAttribute('inert');
+    const unten = screen.getByRole('dialog', { name: 'Unten' }).parentElement!;
+    expect(unten.parentElement).toBe(ziel);
+    expect(unten).not.toHaveAttribute('inert');
+
+    unmount();
+    expect(anwendung).not.toHaveAttribute('inert');
+    huelle.remove();
+  });
+
+  it('sperrt ein Ziel in der Anwendung nicht mit, damit ein spaeteres Fenster dort bedienbar bleibt', () => {
+    // Wie die Plattform: Ihr Ziel steckt in der Anwendung; ein Fenster am body
+    // sperrt die Anwendung, das Ziel darin aber nicht selbst.
+    const anwendung = document.createElement('div');
+    const inhalt = document.createElement('div');
+    const ziel = document.createElement('div');
+    ziel.setAttribute(FENSTERZIEL, '');
+    anwendung.append(inhalt, ziel);
+    document.body.append(anwendung);
+
+    const { unmount } = render(
+      <Dialogfenster titel="Am body" onSchliessen={() => undefined}>
+        <Button type="button">Bleiben</Button>
+      </Dialogfenster>,
+    );
+    expect(inhalt).toHaveAttribute('inert');
+    expect(ziel).not.toHaveAttribute('inert');
+    expect(anwendung).not.toHaveAttribute('inert');
+
+    unmount();
+    expect(inhalt).not.toHaveAttribute('inert');
+    anwendung.remove();
+  });
+
+  it('sperrt nichts, wenn es in einer verborgenen Seite aufgeht - die Sperrseite bleibt bedienbar', () => {
+    // Wie die Sitzungssperre: Die Seite samt Fensterziel ist verborgen, die
+    // Sperrseite steht daneben. Eine Meldung, die jetzt noch aufgeht, darf
+    // die Sperrseite nicht unter `inert` legen.
+    const huelle = document.createElement('div');
+    const sperrseite = document.createElement('div');
+    const inhalt = document.createElement('div');
+    inhalt.setAttribute('inert', '');
+    inhalt.hidden = true;
+    const anwendung = document.createElement('div');
+    const ziel = document.createElement('div');
+    ziel.setAttribute(FENSTERZIEL, '');
+    inhalt.append(anwendung, ziel);
+    huelle.append(sperrseite, inhalt);
+    document.body.append(huelle);
+
+    const { unmount } = render(
+      <PortalZielKontext.Provider value={ziel}>
+        <Dialogfenster titel="Nicht gespeichert" onSchliessen={() => undefined}>
+          <Button type="button">Zurück</Button>
+        </Dialogfenster>
+      </PortalZielKontext.Provider>,
+      { container: anwendung },
+    );
+    expect(sperrseite).not.toHaveAttribute('inert');
+    expect(anwendung).not.toHaveAttribute('inert');
+
+    unmount();
+    huelle.remove();
+  });
+
+  it('fokussiert ohne zu rollen, damit die Frage im Bild bleibt (BEF-175)', () => {
+    const fokus = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<Seite onSchliessen={() => undefined} />);
+    expect(screen.getByRole('button', { name: 'Ja' })).toHaveFocus();
+    expect(fokus).toHaveBeenCalledWith({ preventScroll: true });
+    fokus.mockRestore();
   });
 
   it('laesst einem zweiten Fenster, das darueber aufgeht, den Fokus', () => {

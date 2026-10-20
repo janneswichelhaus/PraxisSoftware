@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -10,7 +12,6 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { beginne, kannZurueck, weiter, zurueck, type Abfolge } from '@/components/ui/abfolge';
-import { knopfKlassen } from '@/components/ui/buttonStile';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
 import { dayKey, fetchAppointment, formatLocalTime, recordNoShow, type Appointment } from './api';
@@ -57,43 +58,35 @@ export type NiemandOeffnetTermin = Pick<
  */
 function Rufnummern({ appointment }: { appointment: NiemandOeffnetTermin }) {
   const tag = dayKey(appointment.starts_at, appointment.organization_time_zone);
-  const { data, isPending, isError } = useQuery({
+  const abfrage = useQuery({
     queryKey: ['day-plan', tag, appointment.staff_member_id],
     queryFn: () => fetchDayPlan(tag, appointment.staff_member_id),
     retry: false,
   });
+  const stammdaten = appointment.patient_id ? (
+    <Textlink alleinstehend to={`/patienten/${appointment.patient_id}/stammdaten`}>
+      Zu den Stammdaten
+    </Textlink>
+  ) : undefined;
+  const nummernAus = (plan: Awaited<ReturnType<typeof fetchDayPlan>>) => {
+    const eintrag = plan.find((termin) => termin.id === appointment.id);
+    return eintrag ? rufnummern(eintrag) : [];
+  };
 
-  if (isPending) {
-    return <p className="text-ink-muted text-sm">Rufnummer wird geladen …</p>;
-  }
-  const eintrag = data?.find((termin) => termin.id === appointment.id);
-  const nummern = eintrag ? rufnummern(eintrag) : [];
-  if (isError || nummern.length === 0) {
-    return (
-      <p className="text-ink-muted text-sm">
-        {isError ? 'Die Rufnummer konnte nicht geladen werden. ' : 'Keine Rufnummer hinterlegt. '}
-        {appointment.patient_id ? (
-          <Textlink to={`/patienten/${appointment.patient_id}/stammdaten`}>
-            Zu den Stammdaten
-          </Textlink>
-        ) : null}
-      </p>
-    );
-  }
   return (
-    <div className="flex flex-col gap-2">
-      {nummern.map((nummer, index) => (
-        <a
-          key={nummer.label}
-          href={nummer.href}
-          className={knopfKlassen('secondary', 'normal', 'w-full')}
-          {...(index === 0 ? { 'data-autofocus': true } : {})}
-        >
-          {nummer.label} anrufen
-          <span className="tabular-nums">{nummer.anzeige}</span>
-        </a>
-      ))}
-    </div>
+    <Abfragezustand
+      abfrage={abfrage}
+      laden="Rufnummer wird geladen …"
+      fehler="Die Rufnummer konnte nicht geladen werden."
+      ausweg={stammdaten}
+      leer={{
+        wenn: (plan) => nummernAus(plan).length === 0,
+        titel: 'Keine Rufnummer hinterlegt.',
+        aktion: stammdaten,
+      }}
+    >
+      {(plan) => <Anrufknoepfe nummern={nummernAus(plan)} fokusbeginn />}
+    </Abfragezustand>
   );
 }
 

@@ -375,6 +375,8 @@ export function useTextverlustschutz({
   auchSuchparameterRef.current = auchSuchparameter;
   // Kam die angehaltene Navigation aus dem Zurück des Browsers?
   const zurueckGeste = useRef(false);
+  const schrittZurueckRef = useRef(schrittZurueck);
+  schrittZurueckRef.current = schrittZurueck;
 
   const anhalten = useCallback<BlockerFunction>(
     ({ currentLocation, nextLocation, historyAction }) => {
@@ -392,6 +394,10 @@ export function useTextverlustschutz({
         return false;
       }
       zurueckGeste.current = historyAction === NavigationType.Pop;
+      // Im Ablauf mit Schritten geht die Zurückgeste immer einen Schritt
+      // zurück, nicht nur, wenn etwas ungespeichert ist (BEF-175): Sonst
+      // verließe sie auf einer Seite ohne Eingabe den ganzen Ablauf.
+      if (zurueckGeste.current && schrittZurueckRef.current !== undefined) return true;
       return haltenRef.current;
     },
     [],
@@ -409,8 +415,6 @@ export function useTextverlustschutz({
 
   // Ein Schritt zurück statt einer Rückfrage (FLT-005): Die Adresse hat der
   // Router schon wiederhergestellt; die Seite geht zurück, die Sperre löst sich.
-  const schrittZurueckRef = useRef(schrittZurueck);
-  schrittZurueckRef.current = schrittZurueck;
   const einSchrittZurueck = blockiert && zurueckGeste.current && schrittZurueck !== undefined;
   useEffect(() => {
     if (!einSchrittZurueck) return;

@@ -110,6 +110,25 @@ describe('GefuehrterAblauf', () => {
     expect(onFertig).toHaveBeenCalledTimes(1);
   });
 
+  it('macht die rollende Fläche per Tastatur erreichbar, auch ohne Bedienelement darin (BEF-175)', async () => {
+    render(
+      <GefuehrterAblauf
+        titel="Gemeldet"
+        schliessen="Ablauf schließen"
+        onSchliessen={vi.fn()}
+        seite="ende"
+        abschluss
+        fuss={<Button className="w-full">Fertig</Button>}
+      >
+        <p>Nur Text, kein Feld.</p>
+      </GefuehrterAblauf>,
+    );
+    const flaeche = screen.getByRole('region', { name: 'Gemeldet' });
+    expect(flaeche).toHaveAttribute('tabindex', '0');
+    expect(within(flaeche).getByText('Nur Text, kein Feld.')).toBeInTheDocument();
+    await pruefeBarrierefreiheit(document.body);
+  });
+
   it('zeigt den Balken nur mit fester Schrittzahl', () => {
     const { rerender } = render(
       <GefuehrterAblauf

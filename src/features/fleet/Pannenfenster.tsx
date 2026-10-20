@@ -18,7 +18,7 @@ import {
 } from '@/features/documentation/Textverlustschutz';
 import { FLOTTE_SCHLUESSEL, recordBreakdown, type BikeDetail, type Fleet } from './api';
 import { antriebsriss, zoneLabel } from './bike3d/zones';
-import { fotoText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
+import { fotoText, fotosVerlorenText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
 import {
   ablaufStarten,
   abschluss,
@@ -173,7 +173,7 @@ export function Pannenfenster({
     kompakt: true,
     nichtSicherbar:
       ausstehend && ausstehend.auftraege.length > 0
-        ? `${fotoText(ausstehend.auftraege.length)} sind noch nicht übertragen und gehen beim Weitergehen verloren.`
+        ? fotosVerlorenText(ausstehend.auftraege.length)
         : undefined,
     texte: PANNENTEXTE,
     // Das Fenster hängt an `?rad=`: Fällt der Parameter weg - mit der
@@ -337,10 +337,7 @@ export function Pannenfenster({
         </div>
       }
     >
-      {/* Auf einer Seite, die meldet, ist der Inhalt ein Halt für die Tastatur:
-          Rollt er, erreicht sie ihn so auch ohne Feld darin (axe,
-          „scrollable-region-focusable“). */}
-      <div className="flex flex-col gap-3" {...(endet ? { tabIndex: 0 } : {})}>
+      <div className="flex flex-col gap-3">
         <Schrittinhalt
           ablauf={ablauf}
           setAblauf={setAblauf}
@@ -403,9 +400,8 @@ const wochentagNamen = [
 type Fokus = 'feld' | 'anfang' | 'antwort';
 
 /**
- * Der Anfang einer Seite, die meldet: Dort beginnt der Fokus. Ein kleines
- * Stück oben im Inhalt, damit der Fokus die Fläche nicht rollt und die Frage
- * nicht aus dem Bild schiebt.
+ * Der Anfang einer Seite, die meldet: Dort beginnt der Fokus, damit
+ * Vorlesesoftware mit dem Hinweis beginnt und nicht mit dem Knopf darunter.
  */
 const ANFANG = { tabIndex: -1, 'data-autofocus': true } as const;
 

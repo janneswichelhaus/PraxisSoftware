@@ -66,7 +66,7 @@ import {
   type Teil,
   type Werbeflaechen,
 } from './checkupablauf';
-import { fotoText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
+import { fotoText, fotosVerlorenText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
 import { Fotovormerkung } from './Fotovormerkung';
 import { useObjektadressen } from './objektadressen';
 import { Einstufung, Nadel, Nadelform } from './Nadel';
@@ -156,7 +156,7 @@ export function CheckupFenster({
     kompakt: true,
     nichtSicherbar:
       ausstehend && ausstehend.auftraege.length > 0
-        ? `${fotoText(ausstehend.auftraege.length)} sind noch nicht übertragen und gehen beim Weitergehen verloren.`
+        ? fotosVerlorenText(ausstehend.auftraege.length)
         : undefined,
     texte: CHECKUPTEXTE,
     // Das Fenster hängt an `?rad=`: Fällt der Parameter weg - mit der

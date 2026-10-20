@@ -113,6 +113,10 @@ export function GefuehrterAblauf({
       }
     : undefined;
   const sperre = gesperrt ? 'pointer-events-none' : '';
+  // Die Fläche, die rollt, erreicht auch die Tastatur - auf einer Seite ohne
+  // Bedienelement darin sonst nicht (axe `scrollable-region-focusable`,
+  // BEF-175). Sie heißt nach der Frage.
+  const rollflaeche = { tabIndex: 0, role: 'region', 'aria-label': titel } as const;
   const mitFuss = fuss !== undefined && fuss !== null && fuss !== false;
 
   const kopf = (
@@ -149,7 +153,7 @@ export function GefuehrterAblauf({
     const flaeche = abschluss
       ? 'flex min-h-0 flex-1 flex-col lg:flex-none'
       : `overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${
-          flaecheKnapp ? 'max-h-[60%] shrink-0 lg:max-h-none' : 'shrink-0'
+          flaecheKnapp ? 'max-h-ablauf-knapp shrink-0 lg:max-h-none' : 'shrink-0'
         }`;
     return (
       <Dialogfenster
@@ -173,14 +177,17 @@ export function GefuehrterAblauf({
           </div>
           <div
             ref={schritt}
-            className={`lg:border-line lg:w-96 lg:shrink-0 lg:border-l ${flaeche} ${sperre}`.trim()}
+            className={`lg:border-line lg:w-ablaufspalte lg:shrink-0 lg:border-l ${flaeche} ${sperre}`.trim()}
           >
             {abschluss ? (
               <>
                 <div className="shrink-0 px-4 pt-3 lg:pt-4">
                   <Fenstertitel />
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-4 lg:pt-4">
+                <div
+                  className={`min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE}`}
+                  {...rollflaeche}
+                >
                   {children}
                 </div>
                 {fussLeiste}
@@ -215,7 +222,10 @@ export function GefuehrterAblauf({
       {/* Jede Seite beginnt neu (`key`): Eingaben einer anderen Seite stehen
           nicht im Weg, und der Fokus geht auf ihr `data-autofocus`. */}
       <div key={seite} ref={schritt} className={`flex min-h-0 flex-1 flex-col ${sperre}`.trim()}>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4">
+        <div
+          className={`min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-4 ${ROLLFLAECHE}`}
+          {...rollflaeche}
+        >
           <div className="max-w-formular mx-auto flex w-full flex-col gap-4">
             <Fenstertitel />
             {children}
@@ -228,6 +238,10 @@ export function GefuehrterAblauf({
     </Dialogfenster>
   );
 }
+
+/** Wie die Rollfläche den Tastaturfokus zeigt: innen, wie eine Listenzeile. */
+const ROLLFLAECHE =
+  'focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2';
 
 /** So weit rückt die neue Seite nach, und so lange. */
 const SCHRITT_WEG = '3rem';

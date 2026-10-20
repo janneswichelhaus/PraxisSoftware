@@ -6924,3 +6924,15 @@ Technik · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Abn
 **Anker.** `VERGROESSERUNG_MAX` in `src/features/teamchat/profilbild.ts`.
 
 **Änderungspfad.** Andere Obergrenze: die Konstante · Aufwand `klein`. Zwei-Finger-Zoom: Zeigerereignisse in `ProfilbildZuschnitt.tsx` · Aufwand `mittel`.
+
+### ANN-671 — Ein Fenster sperrt die Seite auch in einem eigenen Ziel, aus einer verborgenen Seite nie
+
+Technik · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Abnahme der Annahmen
+
+**Annahme.** Ein Fenster legt beim Öffnen `inert` auf alles, was schon da ist, auch wenn es im Ziel der Sitzungssperre oder der Plattform zeichnet: im eigenen Ziel, was vor ihm hängt, darüber alles neben dem Weg zum `body`. Ein Fensterziel (`data-fensterziel`) bleibt selbst offen, gesperrt wird nur, was schon darin steht. Geht ein Fenster in einer gesperrten oder verborgenen Fläche auf, sperrt es nichts.
+
+**Begründung.** BEF-175 (3): Bis dahin griff `inert` nur am `body`, in Produktion also für kein Fenster. Die Sperrseite muss bedienbar bleiben, auch wenn hinter ihr noch eine Meldung aufgeht (ADR-025 Punkte 3 und 5).
+
+**Anker.** `sperreDarunter` in `src/components/ui/Dialogfenster.tsx`.
+
+**Änderungspfad.** Wieder nur am `body`: die Schleife über die Ebenen streichen · Aufwand `klein`.

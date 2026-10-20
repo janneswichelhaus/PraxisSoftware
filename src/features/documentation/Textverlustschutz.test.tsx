@@ -1200,6 +1200,28 @@ describe('Textverlustschutz: Abläufe mit Schritten (FLT-005)', () => {
     expect(adresse()).toBe('Adresse: /woanders');
   });
 
+  it('geht auch ohne Ungespeichertes einen Schritt zurück, statt den Ablauf zu verlassen (BEF-175)', async () => {
+    const nutzer = userEvent.setup();
+    const schritt = vi.fn();
+    const { rerender } = renderWithProviders(
+      <Pruefseite ungespeichert={false} />,
+      '/dokumentation',
+    );
+    await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
+
+    rerender(<Pruefseite ungespeichert={false} schrittZurueck={schritt} texte={CHECKUPTEXTE} />);
+    await nutzer.click(screen.getByRole('button', { name: 'Browser-Zurück' }));
+
+    expect(schritt).toHaveBeenCalledTimes(1);
+    expect(adresse()).toBe('Adresse: /woanders');
+
+    // Ohne Schritt davor und ohne Ungespeichertes geht das Zurück wie sonst.
+    rerender(<Pruefseite ungespeichert={false} texte={CHECKUPTEXTE} />);
+    await nutzer.click(screen.getByRole('button', { name: 'Browser-Zurück' }));
+    expect(schritt).toHaveBeenCalledTimes(1);
+    expect(adresse()).toBe('Adresse: /dokumentation');
+  });
+
   it('fragt bei jedem anderen Weggehen und auf dem ersten Schritt wie sonst', async () => {
     const nutzer = userEvent.setup();
     const schritt = vi.fn();
