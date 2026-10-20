@@ -13,15 +13,21 @@ export interface Anrufnummer {
  * den Daumen, denn Kontakt ist eine Aktion (BEF-175). Ein `tel:`-Link in
  * Gestalt eines Knopfs: „Mobil anrufen“ mit der Nummer daneben. Ohne Nummer
  * steht `ohneNummer` da, sonst „Keine Rufnummer hinterlegt.“
+ *
+ * Mit `hauptknopf` ist die erste Nummer der Hauptknopf einer Seite, deren
+ * Haupthandlung der Anruf ist, die übrigen bleiben sekundär (BEF-192).
  */
 export function Anrufknoepfe({
   nummern,
   fokusbeginn = false,
+  hauptknopf = false,
   ohneNummer,
 }: {
   nummern: readonly Anrufnummer[];
   /** Der Fokus eines Fensters beginnt bei der ersten Nummer (`data-autofocus`). */
   fokusbeginn?: boolean;
+  /** Die erste Nummer als Hauptknopf (`primary`). */
+  hauptknopf?: boolean;
   ohneNummer?: ReactNode;
 }) {
   if (nummern.length === 0) {
@@ -33,7 +39,11 @@ export function Anrufknoepfe({
         <a
           key={nummer.href}
           href={nummer.href}
-          className={knopfKlassen('secondary', 'normal', 'w-full')}
+          className={knopfKlassen(
+            hauptknopf && index === 0 ? 'primary' : 'secondary',
+            'normal',
+            'w-full',
+          )}
           {...(fokusbeginn && index === 0 ? { 'data-autofocus': true } : {})}
         >
           {nummer.label} anrufen

@@ -290,10 +290,11 @@ describe('TagUmplanenPage', () => {
       '✓',
     );
     expect(within(erste).getByText('Anruf 1 von 2')).toBeInTheDocument();
-    expect(within(erste).getByRole('link', { name: /Mobil anrufen/ })).toHaveAttribute(
-      'href',
-      'tel:01701234567',
-    );
+    // Der Anruf ist der Hauptknopf, die Antwort danach sekundär (BEF-192).
+    const waehlen = within(erste).getByRole('link', { name: /Mobil anrufen/ });
+    expect(waehlen).toHaveAttribute('href', 'tel:01701234567');
+    expect(waehlen).toHaveClass('bg-accent');
+    expect(within(erste).getByRole('button', { name: 'Erreicht' })).not.toHaveClass('bg-accent');
     // Der Weg in die Akte nimmt die Anrufliste als Rückweg mit - nur Kennungen,
     // keine Namen (KAL-06, ADR-011).
     const akte = within(erste).getByRole('link', { name: 'Akte' });
@@ -314,10 +315,13 @@ describe('TagUmplanenPage', () => {
       'href',
       '/kalender',
     );
-    // Noch einmal anrufen führt zur Person und danach zurück zum Abschluss.
-    await user.click(
-      within(ende).getByRole('button', { name: 'Erika Beispiel noch einmal anrufen' }),
-    );
+    // Noch einmal anrufen wählt gleich, führt zur Person und danach zurück
+    // zum Abschluss (BEF-192).
+    const nochmal = within(ende).getByRole('link', { name: 'Erika Beispiel noch einmal anrufen' });
+    expect(nochmal).toHaveAttribute('href', 'tel:01701234567');
+    // jsdom kennt kein `tel:`; das Wählen selbst übernimmt das Telefon.
+    nochmal.addEventListener('click', (event) => event.preventDefault(), { once: true });
+    await user.click(nochmal);
     await user.click(
       within(await fenster('Erika Beispiel erreicht?')).getByRole('button', { name: 'Erreicht' }),
     );
