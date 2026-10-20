@@ -189,7 +189,9 @@ function Profilfelder({
       ) : null}
       <Section titel="Körperdaten">
         <Feldgruppe>
-          <div className="grid gap-4 sm:grid-cols-2">
+          {/* Zwei Spalten nur, wenn das Gewicht danebensteht (beim Anlegen);
+              allein stünde die Größe halb breit. */}
+          <div className={neu ? 'grid gap-4 sm:grid-cols-2' : 'grid gap-4'}>
             <Field
               feldId={feldId('groesse')}
               label="Größe (cm)"
@@ -227,7 +229,7 @@ function Profilfelder({
           <Field
             feldId={feldId('koerperfett')}
             label="Körperfettanteil (%)"
-            hint="Freiwillig. Mit Angabe rechnet der Grundumsatz nach Cunningham."
+            hint="Freiwillig."
             inputMode="decimal"
             autoComplete="off"
             value={werte.koerperfett}
@@ -579,17 +581,19 @@ function ZielwerteFormular({
       />
       <Section titel="Von der Beratung gesetzt">
         <Feldgruppe>
-          {WERTFELDER.map(({ feld, label, liter }) => {
+          {WERTFELDER.map(({ feld, label, einheit, liter }) => {
             const gerechnet = berechnet(profil, feld);
             return (
               <Field
                 key={feld}
                 feldId={wertfeldId(feld)}
                 label={label}
+                // Was ein leeres Feld bedeutet, in einer kurzen Zeile statt
+                // fünfmal desselben Satzes (DESIGN.md Regel 6).
                 hint={
                   gerechnet === null
                     ? undefined
-                    : `Berechnet: ${liter ? zahl(gerechnet / 1000, 1) : zahl(gerechnet)}. Leer heißt berechnet.`
+                    : `Leer: ${liter ? zahl(gerechnet / 1000, 1) : zahl(gerechnet)} ${einheit} (berechnet)`
                 }
                 inputMode={liter ? 'decimal' : 'numeric'}
                 autoComplete="off"

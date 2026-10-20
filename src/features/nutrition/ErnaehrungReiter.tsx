@@ -4,6 +4,7 @@ import { Abfragezustand } from '@/components/ui/Abfragezustand';
 import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -175,7 +176,6 @@ function Profilansicht({
       {schreibbar ? (
         <Section
           titel="Beratungstermin"
-          rahmen
           aktion={
             <ButtonLink
               to={beratungsterminPfad(art, verhaeltnisId)}
@@ -186,10 +186,14 @@ function Profilansicht({
             </ButtonLink>
           }
         >
-          <p className="text-ink-muted text-sm">
-            Mit dem Haken am Termin ist die Sitzung erfasst; abgerechnet wird mit der Rechnung{' '}
-            {art === 'treatment' ? 'der Behandlung' : 'des Trainings'}.
-          </p>
+          {/* Kein Erklärsatz im Kasten (DESIGN.md Regel 6): Wie die Sitzung
+              erfasst und abgerechnet wird, steht auf Abruf. */}
+          <Disclosure summary="So geht’s">
+            <p className="text-ink-muted text-sm">
+              Mit dem Haken am Termin ist die Sitzung erfasst; abgerechnet wird mit der Rechnung{' '}
+              {art === 'treatment' ? 'der Behandlung' : 'des Trainings'}.
+            </p>
+          </Disclosure>
         </Section>
       ) : null}
 
@@ -264,9 +268,10 @@ function Profilansicht({
         <TagebuchDerBeratung profilId={profil.id} />
       ) : null}
 
-      <Einwilligung profil={profil} sicht={sicht} art={art} verhaeltnisId={verhaeltnisId} />
-
       <Notizen profil={profil} art={art} verhaeltnisId={verhaeltnisId} schreibbar={schreibbar} />
+
+      {/* Seltenes am Ende (DESIGN.md 9.16): der Widerruf neben „Beratung beenden“. */}
+      <Einwilligung profil={profil} sicht={sicht} art={art} verhaeltnisId={verhaeltnisId} />
 
       <Kleingedrucktes>
         Zielwerte aus veröffentlichten Formeln für Ernährung und Körpergewicht im Alltag, keine
@@ -319,11 +324,13 @@ function Gewicht({
   });
 
   return (
-    <Section titel="Gewicht" rahmen>
+    // Felder stehen nicht im Kasten (DESIGN.md Regel 2, Seitentyp „Formular“);
+    // der Verlauf darunter ist die Auskunft und steht in der Karte.
+    <Section titel="Gewicht">
       {schreibbar ? (
         <form
           aria-label="Gewicht eintragen"
-          className="flex flex-col gap-3"
+          className="max-w-formular flex flex-col gap-3"
           onSubmit={(event) => {
             event.preventDefault();
             const kilo = leseZahl(wert);
@@ -374,11 +381,7 @@ function Gewicht({
         </form>
       ) : null}
       {profil.weights.length > 0 ? (
-        <ListRows
-          beschriftung="Gewichtsverlauf"
-          rahmen={false}
-          className={schreibbar ? 'mt-4' : ''}
-        >
+        <ListRows beschriftung="Gewichtsverlauf" className={schreibbar ? 'mt-4' : ''}>
           {profil.weights.map((eintrag) => (
             <ListRow
               key={eintrag.measured_on}
@@ -438,7 +441,9 @@ function Einwilligung({
           <Rueckfrage
             ausloeser={erteilt ? 'Widerruf vermerken' : 'Einwilligung vermerken'}
             ausloeserGroesse="kompakt"
-            ausloeserVariante="secondary"
+            // Der Widerruf ist selten und hält die Beratung an: leise, wie auf
+            // der Plattform (DESIGN.md 9.16); das erneute Vermerken nicht.
+            ausloeserVariante={erteilt ? 'quiet' : 'secondary'}
             bestaetigen={erteilt ? 'Widerruf vermerken' : 'Einwilligung vermerken'}
             bestaetigenLaeuft="Wird vermerkt …"
             fehler={vermerken.error?.message}
