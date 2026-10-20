@@ -35,6 +35,16 @@ async function exportieren(konto: string, zugang: string): Promise<Record<string
   return rows[0]!.daten;
 }
 
+/** Erikas Ernährungsberatung aus dem Seed (ERN-001). */
+async function beratungVonErika(): Promise<{ id: string; started_on: string }> {
+  const { rows } = await asPostgres<{ id: string; started_on: string }>(
+    `select id, to_char(started_on, 'YYYY-MM-DD') as started_on from public.nutrition_profiles
+      where relationship_kind = 'treatment' and relationship_id = $1`,
+    [patients.erika],
+  );
+  return rows[0]!;
+}
+
 async function protokoll() {
   return (
     await asPostgres<{
@@ -183,6 +193,7 @@ describe('Datenexport der Plattform (POR-018)', () => {
 
     const daten = await exportieren(users.plattformErika, ERIKA);
     const zeit = expect.any(String) as unknown;
+    const beratung = await beratungVonErika();
     expect(daten.notifications).toEqual({
       settings: {
         email_kinds: ['appointment_cancelled'],
@@ -194,7 +205,16 @@ describe('Datenexport der Plattform (POR-018)', () => {
       // Je Gerät nur „seit wann" - Endpunkt und Schlüssel sind Zugangsdaten
       // zum Push-Dienst, keine Angabe über die Person.
       devices: [{ registered_at: zeit }],
-      diary_reminders: [{ meal: 'breakfast', remind_at: '07:30:00', chosen_at: zeit }],
+      // Mit der Beratung, zu der die Erinnerung gehört (Zweitreview).
+      diary_reminders: [
+        {
+          meal: 'breakfast',
+          remind_at: '07:30:00',
+          chosen_at: zeit,
+          profile_started_on: beratung.started_on,
+          profile_ended_on: null,
+        },
+      ],
       deliveries: [
         {
           kind: 'plan_assigned',
@@ -219,6 +239,59 @@ describe('Datenexport der Plattform (POR-018)', () => {
     expect(
       (await exportieren(users.plattformErika, platformAccesses.erikaTraining)).notifications,
     ).toEqual(leer);
+  });
+
+  it('Vertretung am selben Verhältnis: jeder Zugang exportiert nur die eigene Wahl (ANN-669)', async () => {
+    // Eine rechtliche Vertretung für Erikas Behandlung wählt eigene
+    // Erinnerungen und Benachrichtigungen; Erikas Export trägt sie nicht und
+    // umgekehrt.
+    const konto = '99999999-9999-4999-8999-0000000000e2';
+    const vertretung = 'cafecafe-cafe-4afe-8afe-0000000000e2';
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', 'vera.v@patient.invalid')`,
+      [konto],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+          health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+       values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+               'guardianship', 'Vera Vertretung', array['identity_document', 'guardianship_certificate'],
+               true, false, $5, now(), $5)`,
+      [vertretung, organizationId, patients.erika, konto, users.office],
+    );
+    const beratung = await beratungVonErika();
+    await asPostgres(
+      `insert into public.nutrition_diary_reminders
+         (organization_id, profile_id, access_id, meal, remind_at, chosen_by)
+       values ($1, $2, $3, 'dinner', '18:00', $4)`,
+      [organizationId, beratung.id, vertretung, konto],
+    );
+    await asPostgres(
+      `insert into public.platform_notification_settings
+         (access_id, organization_id, email_kinds, push_kinds, chosen_by)
+       values ($1, $2, array['plan_assigned'], '{}', $3)`,
+      [vertretung, organizationId, konto],
+    );
+    await asUserCommitted(
+      users.plattformErika,
+      'select public.set_platform_diary_reminders($1::uuid, $2::jsonb, $3, $4)',
+      [ERIKA, JSON.stringify([{ meal: 'breakfast', time: '07:30' }]), true, false],
+    );
+
+    type Benachrichtigungen = {
+      settings: { email_kinds: string[] } | null;
+      diary_reminders: { meal: string }[];
+    };
+    const eigene = (await exportieren(users.plattformErika, ERIKA))
+      .notifications as Benachrichtigungen;
+    expect(eigene.diary_reminders.map((r) => r.meal)).toEqual(['breakfast']);
+    // Ihre Wahl entstand mit der Erinnerung per Mail, nicht die der Vertretung.
+    expect(eigene.settings?.email_kinds).toEqual(['nutrition_diary_reminder']);
+    const ihre = (await exportieren(konto, vertretung)).notifications as Benachrichtigungen;
+    expect(ihre.diary_reminders.map((r) => r.meal)).toEqual(['dinner']);
+    expect(ihre.settings?.email_kinds).toEqual(['plan_assigned']);
   });
 
   it('Training: eigene Stammdaten, keine Dokumente, Gegenstand das Trainingsverhältnis', async () => {

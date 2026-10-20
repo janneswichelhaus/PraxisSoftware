@@ -633,3 +633,27 @@ Marke vorsieht.
 | Berührt | `ProfilFormular.tsx`, Dateiablage der Akte |
 
 **Beobachtung.** Das Anlegen verlangt die Einwilligung „auf Papier unterschrieben“; den Wortlaut zeigt das Formular seit dem Review, ein Foto des Blatts lässt sich aber nicht ablegen wie beim Anmeldebogen. Der Nachweis nach Art. 7 Abs. 1 liegt im Ordner. **Erwartet.** „Unterschriebenes Blatt fotografieren“ am Kästchen, abgelegt als Dokument der Akte bzw. des Verhältnisses mit der Frist der Ernährungsberatung.
+
+### BEF-188 — Gesperrte Anhänge an Rückfragen lassen sich nicht herausgeben
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Akte, Rückfragen der Plattform; Betroffenenrechte |
+| Quelle  | Zweitreview BEF-146 |
+| Status  | offen: Vorschlag (ADR-017 Abschnitt L, Pfad A) |
+| Berührt | `public.issue_message_attachment_link`, `app.message_attachment_visible` |
+
+**Beobachtung.** Die Auskunft nennt jeden Anhang an einer Rückfrage, auch gesperrte (Legal Hold). Öffnen kann die Praxis aber nur bestätigte, nicht gesperrte und höchstens 30 Tage alte Anhänge; ein Gegenstück zu `hand_out_patient_photo` gibt es nur für Fotos der Akte. `nicht_enthalten` sagt das seit dem Zweitreview. **Erwartet.** Eine protokollierte Herausgabe gesperrter Anhänge für owner, wie bei den Fotos der Akte.
+
+### BEF-189 — Benachrichtigungsdaten ohne Auskunftsweg nach der Lesefrist und für Begleitungen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Plattform, Benachrichtigungen; Betroffenenrechte |
+| Quelle  | Zweitreview BEF-146 |
+| Status  | offen: Frage an Jannes (ANN-669, ANN-261, ANN-344) |
+| Berührt | `public.platform_export`, `public.purge_notification_deliveries`, `export_patient_record`, `export_training_record` |
+
+**Beobachtung.** Wahl zu Benachrichtigungen, Tagebuch-Erinnerungen, Push-Registrierungen und Zustellaufträge stehen nur im eigenen Export der Plattform, und den gibt es nur für die Person und ihre rechtliche Vertretung in der Lesezeit. Nach der Lesefrist bleiben Wahl und Erinnerungen bis zum Ende des Zugangs stehen, Zustellaufträge 30 Tage; Begleitungen wählen eigene Benachrichtigungen, exportieren aber nie. Die Auskunft der Praxis nennt die Lücke seit dem Zweitreview in `nicht_enthalten`. **Erwartet.** Eine der drei Lösungen: (a) Wahl und Erinnerungen räumt der tägliche Lauf mit dem Ende der Lesezeit (Änderungspfad ANN-669; Folge: bei einem neuen Verhältnis gilt wieder die Vorgabe); (b) der Teil `notifications` des Exports bleibt dem eigenen Zugang auch nach der Lesefrist offen, wie der Widerruf (ANN-261); (c) die Daten kommen in die Auskunft der Praxis (berührt ANN-344). Für Begleitungen eine eigene Antwort.

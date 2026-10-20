@@ -7,16 +7,24 @@
 -- die Plattform an eine Rueckfrage haengt (KOM-005, ADR-017 Punkt 61), sieht
 -- die Praxis in der Akte - in ihrer Auskunft standen sie nicht. Jetzt stehen
 -- sie als Liste an ihrer Rueckfrage unter `platform_messages`, wie die
--- uebrigen Dateien ohne Inhalt; die Datei selbst gibt die Praxis heraus.
+-- uebrigen Dateien ohne Inhalt. Die Datei oeffnet die Praxis an der
+-- Rueckfrage, solange sie sichtbar ist; einen gesperrten Anhang kann sie
+-- nicht herausgeben (BEF-188) - `nicht_enthalten` sagt das.
+--
+-- Zweitreview: Auch die Einladungen zum Plattformzugang hingen nur ueber
+-- `platform_access_id` an der Person und fehlten; sie stehen jetzt als
+-- `invitations` an ihrem Zugang, ohne Code.
 --
 -- Bewusst ausserhalb der Auskunft der Praxis bleiben, was die Person je
 -- Zugang selbst waehlt und die Praxis nicht sieht (ANN-344): die Wahl zu
 -- Benachrichtigungen, Push-Registrierungen, Zustellauftraege und die
 -- Erinnerungen an das Ernaehrungstagebuch. Sie stehen im eigenen Export der
--- Plattform (BEF-147).
+-- Plattform (BEF-147), solange der Zugang lesen kann; was danach und fuer
+-- Begleitungen fehlt, nennt `nicht_enthalten` (BEF-189).
 --
--- Aus 20261206100000_ern_001_ernaehrungsprofil.sql (juengste Fassung); neu ist
--- nur 'attachments' an den Rueckfragen. Rechte und Protokoll wie bisher.
+-- Aus 20261206100000_ern_001_ernaehrungsprofil.sql (juengste Fassung); neu
+-- sind 'attachments' an den Rueckfragen, 'invitations' an den Zugaengen und
+-- zwei Eintraege in `nicht_enthalten`. Rechte und Protokoll wie bisher.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.export_patient_record(p_patient_id uuid)
@@ -538,7 +546,27 @@ begin
         'revoked_at', z.revoked_at,
         'revoked_reason', z.revoked_reason,
         'onboarding_finished_at', z.onboarding_finished_at,
-        'onboarding_skipped_at', z.onboarding_skipped_at
+        'onboarding_skipped_at', z.onboarding_skipped_at,
+        -- Zweitreview BEF-146: die Einladungen zum Zugang - ohne Code
+        -- (Zugangsdaten) und ohne Kennung des ausstellenden Kontos. Die
+        -- Adresse nur am eigenen Zugang: die einer Vertretung oder Begleitung
+        -- ist deren Datum, ihr Name steht schon am Zugang (Art. 15 Abs. 4).
+        'invitations', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'purpose', i.purpose,
+            'channel', i.channel,
+            'email', case when z.access_kind = 'self' then i.email end,
+            'address_confirmed_at', i.address_confirmed_at,
+            'status', i.status,
+            'created_at', i.created_at,
+            'sent_at', i.sent_at,
+            'expires_at', i.expires_at,
+            'failed_attempts', i.failed_attempts,
+            'redeemed_at', i.redeemed_at,
+            'revoked_at', i.revoked_at
+          ) order by i.created_at, i.id)
+          from public.platform_access_invitations i where i.platform_access_id = z.id
+        ), '[]'::jsonb)
       ) order by z.created_at, z.id)
       from public.platform_accesses z
       where z.patient_id = p_patient_id
@@ -826,6 +854,14 @@ begin
       jsonb_build_object(
         'was', 'Inhalt hochgeladener Dateien und Fotos',
         'grund', 'Die Kopie nennt jede Datei mit Name, Art und Pruefsumme und jedes Foto, auch gesperrte; die Datei selbst wird je Datei herausgegeben (ADR-017, ANN-128).'
+      ),
+      jsonb_build_object(
+        'was', 'Inhalt der Fotos und Videos an Rueckfragen',
+        'grund', 'Die Kopie nennt jeden Anhang mit Art, Groesse und Zeitpunkt, auch unbestaetigte und gesperrte. Die Datei oeffnet die Praxis an der Rueckfrage, solange sie bestaetigt, nicht gesperrt und juenger als 30 Tage ist (ADR-017 Punkt 61); einen gesperrten Anhang kann sie noch nicht herausgeben (BEF-188).'
+      ),
+      jsonb_build_object(
+        'was', 'Benachrichtigungen je Zugang',
+        'grund', 'Wahl, Geraete, Zustellungen und Tagebuch-Erinnerungen waehlt jede Person fuer ihren Zugang; die Praxis sieht sie nicht (ANN-344). Die Person selbst und ihre rechtliche Vertretung finden sie im eigenen Export der Plattform, solange der Zugang lesen kann (ANN-669); fuer Begleitungen und nach der Lesefrist gibt es dafuer noch keinen Weg (BEF-189).'
       ),
       jsonb_build_object(
         'was', 'Namen der Beschaeftigten im Zugriffsprotokoll',

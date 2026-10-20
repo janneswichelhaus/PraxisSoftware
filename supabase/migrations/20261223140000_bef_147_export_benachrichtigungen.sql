@@ -136,7 +136,7 @@ begin
     -- Schlüssel) und die Zustellaufträge, die der Löschlauf noch nicht
     -- genommen hat (30 Tage nach dem Abschluss). Je Zugang: eine Vertretung
     -- exportiert ihre eigene Wahl. Die Praxis sieht die Wahl bewusst nicht
-    -- (ANN-344); hier geht sie an die Person selbst.
+    -- (ANN-344); hier geht sie an die Person selbst (ANN-669).
     'notifications', jsonb_build_object(
       'settings', (
         select jsonb_build_object(
@@ -155,14 +155,20 @@ begin
         where p.access_id = p_access_id
       ),
       -- ERN-009: die Erinnerungen an das Ernährungstagebuch, je Mahlzeit die
-      -- gewählte Uhrzeit (Ortszeit der Praxis).
+      -- gewählte Uhrzeit (Ortszeit der Praxis). Mit Beginn und Ende der
+      -- Beratung, zu der sie gehören: Erinnerungen einer beendeten Beratung
+      -- bleiben stehen, bis das Profil fällt, und sähen sonst aus wie die
+      -- der laufenden (Zweitreview).
       'diary_reminders', (
         select coalesce(jsonb_agg(jsonb_build_object(
                           'meal', r.meal,
                           'remind_at', r.remind_at,
-                          'chosen_at', r.chosen_at)
-                        order by r.remind_at, r.meal), '[]'::jsonb)
+                          'chosen_at', r.chosen_at,
+                          'profile_started_on', n.started_on,
+                          'profile_ended_on', n.ended_on)
+                        order by n.started_on, r.remind_at, r.meal), '[]'::jsonb)
         from public.nutrition_diary_reminders r
+        join public.nutrition_profiles n on n.id = r.profile_id
         where r.access_id = p_access_id
       ),
       'deliveries', (
