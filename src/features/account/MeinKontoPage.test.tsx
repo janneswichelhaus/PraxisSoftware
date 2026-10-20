@@ -69,12 +69,23 @@ vi.mock('@/features/teamchat/api', async (importOriginal) => ({
   entferneProfilbild: () => entferneProfilbild(),
 }));
 
-// jsdom rechnet kein Bild: Das Quadrat kommt fertig (TEAM-007).
+// jsdom öffnet und rechnet kein Bild: Foto und Quadrat kommen fertig (TEAM-007).
 const QUADRAT = new Blob([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], { type: 'image/jpeg' });
-const rechneProfilbild = vi.fn<(datei: Blob) => Promise<Blob>>();
+const FOTO: ProfilbildModul.Foto = {
+  bild: {} as HTMLImageElement,
+  adresse: 'blob:foto',
+  breite: 400,
+  hoehe: 300,
+};
+const oeffneFoto = vi.fn<(datei: Blob) => Promise<ProfilbildModul.Foto>>();
+const rechneProfilbild =
+  vi.fn<(foto: ProfilbildModul.Foto, stand: ProfilbildModul.Ausschnittstand) => Promise<Blob>>();
 vi.mock('@/features/teamchat/profilbild', async (importOriginal) => ({
   ...(await importOriginal<typeof ProfilbildModul>()),
-  rechneProfilbild: (datei: Blob) => rechneProfilbild(datei),
+  oeffneFoto: (datei: Blob) => oeffneFoto(datei),
+  schliesseFoto: () => undefined,
+  rechneProfilbild: (foto: ProfilbildModul.Foto, stand: ProfilbildModul.Ausschnittstand) =>
+    rechneProfilbild(foto, stand),
 }));
 
 const ANNA = '55555555-5555-4555-8555-000000000002';
@@ -90,6 +101,7 @@ function teamchatBereit() {
   ladeProfilbild.mockReset().mockResolvedValue('blob:profilbild-anna');
   setzeProfilbild.mockReset().mockResolvedValue('bild-2');
   entferneProfilbild.mockReset().mockResolvedValue(undefined);
+  oeffneFoto.mockReset().mockResolvedValue(FOTO);
   rechneProfilbild.mockReset().mockResolvedValue(QUADRAT);
 }
 
@@ -572,7 +584,7 @@ describe('MeinKontoPage — Profilbild', () => {
     URL.revokeObjectURL = vi.fn();
   });
 
-  it('rechnet ein gewähltes Foto zur Vorschau und speichert erst auf Tipp', async () => {
+  it('zeigt ein gewähltes Foto im Zuschnitt und rechnet und speichert erst auf Tipp', async () => {
     const user = userEvent.setup();
     setzeProfilbild.mockImplementation(() => {
       fetchAvatare.mockResolvedValue([
@@ -587,16 +599,22 @@ describe('MeinKontoPage — Profilbild', () => {
     const foto = new File([new Uint8Array(10)], 'urlaub.jpg', { type: 'image/jpeg' });
     await user.upload(screen.getByLabelText('Foto für das Profilbild'), foto);
 
-    expect(rechneProfilbild).toHaveBeenCalledWith(foto);
+    expect(oeffneFoto).toHaveBeenCalledWith(foto);
     expect(await screen.findByText('Vorschau – noch nicht gespeichert.')).toBeInTheDocument();
-    expect(document.querySelector('[data-personenbild="foto"]')).toHaveAttribute(
-      'src',
-      'blob:vorschau',
-    );
+    // BEF-190: Das Foto liegt im Zuschnitt, der Ausschnitt ist wählbar.
+    expect(document.querySelector('[data-zuschnitt] img')).toHaveAttribute('src', 'blob:foto');
+    expect(screen.getByRole('slider', { name: 'Vergrößern' })).toBeInTheDocument();
+    expect(rechneProfilbild).not.toHaveBeenCalled();
     expect(setzeProfilbild).not.toHaveBeenCalled();
 
+    await user.click(screen.getByRole('button', { name: 'Mehr vergrößern' }));
     await user.click(screen.getByRole('button', { name: 'Foto speichern' }));
-    expect(setzeProfilbild).toHaveBeenCalledWith(QUADRAT);
+    // Gerechnet wird der gewählte Ausschnitt - mit der Vergrößerung von eben.
+    expect(rechneProfilbild).toHaveBeenCalledWith(
+      FOTO,
+      expect.objectContaining({ vergroesserung: 1.25 }),
+    );
+    await vi.waitFor(() => expect(setzeProfilbild).toHaveBeenCalledWith(QUADRAT));
     expect(await screen.findByText('Foto gespeichert.')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Anderes Foto' })).toBeInTheDocument();
     // Das gespeicherte Bild steht sofort da, ohne es vom Server zurückzuholen.
@@ -624,7 +642,7 @@ describe('MeinKontoPage — Profilbild', () => {
 
   it('sagt, wenn sich ein Foto nicht öffnen lässt oder der Server es abweist', async () => {
     const user = userEvent.setup();
-    rechneProfilbild.mockRejectedValueOnce(
+    oeffneFoto.mockRejectedValueOnce(
       new Error('Dieses Foto lässt sich nicht öffnen. Bitte ein Foto als JPEG oder PNG wählen.'),
     );
     setzeProfilbild.mockRejectedValueOnce(

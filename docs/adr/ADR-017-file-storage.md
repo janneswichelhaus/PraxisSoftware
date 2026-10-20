@@ -2,7 +2,7 @@
 
 ## Status
 
-**Angenommen, Fassungen 8 und 10; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassungen 8, 10 und 11; Fassung 9 vorgeschlagen** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
@@ -14,7 +14,16 @@ Jannes entschieden (Umkehr von Punkt 29 für jeden Upload); **Fassung 8** am 202
 bestätigt, die Fragen 30 bis 32 wie empfohlen (Abschnitt M); **Fassung 9** am 2026-10-18
 vorgeschlagen, im Kern von Jannes entschieden (Abschnitt N, Bestätigungsfragen 33 und 34);
 **Fassung 10** am 2026-10-19 von Jannes beauftragt und am selben Tag bestätigt, die Fragen 35
-bis 37 wie empfohlen (Abschnitt O).
+bis 37 wie empfohlen (Abschnitt O); **Fassung 11** am 2026-10-20 von Jannes entschieden
+(Befund, Punkt 89).
+**Fassung 11 (2026-10-20, Jannes).** Anlass ist Jannes' Befund: „Profilbilder können beim
+Auswählen nicht zugeschnitten werden. Das soll möglich sein.“ Das ist die **Umkehr eines
+einzelnen Punktes** nach der Fassungsregel in `README.md`: In Punkt 89 entfällt „Der Ausschnitt
+ist fest … ohne Bearbeitung“; die Person wählt den Ausschnitt selbst, durch Verschieben und
+Vergrößern bis zum Dreifachen. Es ist die Alternative aus Bestätigungsfrage 37. Alles Übrige in
+Punkt 89 und Abschnitt O bleibt: 256 × 256, höchstens 64 KiB, nur auf dem Gerät gerechnet,
+ohne Metadaten, ohne Gesichtserkennung, nie an das AI Gateway. Vermerke an Punkt 89 und an
+Frage 37.
 **Fassung 10 (2026-10-19, am selben Tag angenommen).** Anlass ist Jannes' Auftrag: „Bitte füge Profilbilder
 pro Mitarbeiter ein beziehungsweise die Möglichkeit, Profilbilder festzulegen.“ **Abschnitt O
 (Punkte 88 bis 95)** gibt Profilbilder im Teamchat frei: ein Bild, das sich jede Person selbst
@@ -134,7 +143,8 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
 2026-10-10 (Fassung 5, am selben Tag angenommen); 2026-10-15 (Fassung 6);
 2026-10-18 (Fassung 7); 2026-10-18 (Fassung 8, am selben Tag angenommen); 2026-10-18
-(Fassung 9, vorgeschlagen); 2026-10-19 (Fassung 10, am selben Tag angenommen)
+(Fassung 9, vorgeschlagen); 2026-10-19 (Fassung 10, am selben Tag angenommen); 2026-10-20
+(Fassung 11)
 
 ## Kontext
 
@@ -1252,6 +1262,10 @@ Zuschnitt dieses Abschnitts.
     Kodierer an Segmenten mitgibt, entfernt das Gerät (Punkt 34). Der Ausschnitt ist fest - die
     Mitte, beim Hochformat der obere Teil -, ohne Gesichtserkennung, ohne Bearbeitung, nie an
     das AI Gateway (Punkt 39 sinngemäß, ADR-005).
+    *Vermerk 2026-10-20 (Fassung 11, Befund Jannes): Der Ausschnitt ist nicht mehr fest. Nach der
+    Wahl des Fotos verschiebt die Person das Quadrat und vergrößert bis zum Dreifachen; das
+    Quadrat bleibt im Foto. Ohne Eingriff gilt der Ausschnitt von oben. Gerechnet wird erst beim
+    Speichern, auf dem Gerät; der Rest dieses Punktes bleibt.*
 90. **Prüfung am Inhalt in derselben Transaktion.** Der Server läuft das ganze JPEG ab -
     Signatur, Aufbau bis zum Bildende, nichts dahinter - und lässt nur Segmente der Bilddaten und
     das Adobe-Segment in seiner festen Länge zu: kein EXIF, XMP, IPTC, ICC, kein Kommentar, kein
@@ -1750,6 +1764,8 @@ setzt die der Fassung 9 fort.
 37. **256 × 256, höchstens 64 KiB, fester Ausschnitt** (Punkte 89 und 90)?
     *Empfehlung: ja.* Scharf bis 96 px auf jedem Telefon, wenige Kilobyte je Person.
     *Alternative:* Ausschnitt zum Verschieben und Vergrößern - eine eigene Bedienung.
+    *Vermerk 2026-10-20 (Fassung 11): Auf Jannes' Befund gilt für den Ausschnitt die
+    Alternative; 256 × 256 und 64 KiB bleiben.*
 
 ## Bestätigungsfragen zu Fassung 9 — offen
 
@@ -1907,3 +1923,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 8 | 2026-10-18 | **Angenommen am selben Tag, im Kern von Jannes entschieden, Fragen 30 bis 32 wie empfohlen:** Abschnitt M (Punkte 71 bis 81) — Fotos (JPEG, PNG) und PDF an Teamchat-Nachrichten, bis zu fünf je Nachricht, ohne Virenprüfung, Klasse `teamchat`, Frist der Nachricht, derselbe Weg wie jede Datei, Anzeige ohne Vorschaubild und ohne Download, nichts Neues im Protokoll, Dateien je Gespräch. Schränkt für diese Anhänge die Punkte 30 und 42 ein, je mit Vermerk; Vermerk an „Bewusst nicht Bestandteil“. Anlass: TEAM-003 |
 | 9 | 2026-10-18 | **Vorgeschlagen, im Kern von Jannes entschieden:** Abschnitt N (Punkte 82 bis 87) — Sprachnachrichten im Teamchat, aufgenommen nur in der Anwendung (ausdrücklich, sichtbar, höchstens zwei Minuten), WebM (Opus) oder MP4 (AAC) nur mit Ton, Prüfung der Struktur am Server, Abspielen ohne Herunterladen, keine Transkription; Umkehr für das Mikrofon in Punkt 33 (`microphone=(self)`) und für „kein Ton“ in Punkt 71; Punkt 74 nimmt Senden während des Hochladens auf (Frage 5 der PR #273). Vermerke an den Punkten 18, 19, 33, 42, 62, 71, 74 und 77 und an „Bewusst nicht Bestandteil“. Bestätigungsfragen 33 und 34 offen. Anlass: Antworten auf die Fragen der PR #273, TEAM-004 und TEAM-005 |
 | 10 | 2026-10-19 | **Angenommen am selben Tag, im Kern von Jannes beauftragt, Fragen 35 bis 37 wie empfohlen:** Abschnitt O (Punkte 88 bis 95) - Profilbilder im Teamchat, nur für sich selbst gesetzt, auf dem Gerät zu 256 × 256 JPEG ohne Metadaten gerechnet, am Inhalt in derselben Transaktion geprüft, Klasse `profilbild` (fällt mit Entfernen, Ersetzen, Ausscheiden). **Umkehr von Punkt 1** für Profilbilder: Zeile in der Datenbank statt Bucket. Vermerke an den Punkten 1, 15, 50 und 51. Anlass: Auftrag Jannes, TEAM-007 |
+| 11 | 2026-10-20 | **Entschieden von Jannes (Befund):** Der Ausschnitt des Profilbilds ist wählbar - verschieben und bis dreifach vergrößern, auf dem Gerät, Standard wie bisher. Umkehr von „Der Ausschnitt ist fest … ohne Bearbeitung“ in Punkt 89 (Alternative der Bestätigungsfrage 37). Vermerke an Punkt 89 und Frage 37 |

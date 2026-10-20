@@ -1190,6 +1190,23 @@
           "vermerk": "ADR-023 Fassung 6, ANN-669 entschieden"
         },
         {
+          "id": "bef-190",
+          "name": "BEF-190 Profilbild: Ausschnitt beim Auswählen verschieben und vergrößern",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/teamchat/ProfilbildZuschnitt.test.tsx, src/features/teamchat/profilbild.test.ts, tests/e2e/authenticated/profilbild.spec.ts",
+          "vermerk": "ADR-017 Fassung 11, ANN-670"
+        },
+        {
+          "id": "bef-191",
+          "name": "BEF-191 Teamchat: neues Profilbild an Nachrichten, die schon dastehen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-37917f35-emdjjp, src/features/teamchat/teambilder.test.tsx, tests/e2e/authenticated/profilbild.spec.ts"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

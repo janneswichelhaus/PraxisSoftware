@@ -22,7 +22,16 @@ import {
   waehleFarbe,
   type Avatar,
 } from './api';
-import { FOTO_NICHT_LESBAR, rechneProfilbild } from './profilbild';
+import {
+  FOTO_NICHT_LESBAR,
+  oeffneFoto,
+  rechneProfilbild,
+  schliesseFoto,
+  startStand,
+  type Ausschnittstand,
+  type Foto,
+} from './profilbild';
+import { ProfilbildZuschnitt } from './ProfilbildZuschnitt';
 import { avatarVon, eigenerAvatar, useAvatare, useProfilbild } from './teambilder';
 
 const WAHLEN = PERSONENFARBEN.map((farbe) => ({
@@ -31,18 +40,20 @@ const WAHLEN = PERSONENFARBEN.map((farbe) => ({
   zeichen: <Farbpunkt farbe={farbe} />,
 }));
 
-interface Vorschau {
-  bild: Blob;
-  adresse: string;
+/** Ein gewähltes Foto und der Ausschnitt, den die Person gerade sieht. */
+interface Wahl {
+  foto: Foto;
+  stand: Ausschnittstand;
 }
 
 /**
  * Wie man im Teamchat aussieht (TEAM-006, TEAM-007): das eigene Profilbild und
  * die eigene Farbe, gewählt nur von der Person selbst (ANN-666, ANN-667).
  *
- * Ein Foto wird auf dem Gerät zum Quadrat gerechnet und erst nach einem Blick
- * auf die Vorschau gespeichert; das Original verlässt das Gerät nie (ADR-017
- * Abschnitt O). Ein Tipp auf eine Farbe speichert sie; darunter steht, wer
+ * Ein gewähltes Foto erscheint im Zuschnitt: Die Person verschiebt und
+ * vergrößert den Ausschnitt (ADR-017 Fassung 11), erst „Foto speichern“
+ * rechnet ihn auf dem Gerät zum Quadrat und speichert ihn. Das Original
+ * verlässt das Gerät nie (ADR-017 Abschnitt O). Ein Tipp auf eine Farbe speichert sie; darunter steht, wer
  * sie noch trägt - doppelt ist erlaubt, aber selten gewollt.
  */
 export function ProfilAbschnitt({ name }: { name: string }) {
@@ -54,16 +65,17 @@ export function ProfilAbschnitt({ name }: { name: string }) {
   const aktuell = useProfilbild(eigen?.picture_id);
   const personen = useQuery({ queryKey: PERSONEN_KEY, queryFn: fetchPersonen, staleTime: 300_000 });
   const dateiwahl = useRef<HTMLInputElement>(null);
-  const [vorschau, setVorschau] = useState<Vorschau | null>(null);
+  const [wahl, setWahl] = useState<Wahl | null>(null);
   const [rechnet, setRechnet] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [gespeichert, setGespeichert] = useState<'gesetzt' | 'entfernt' | null>(null);
 
-  // Die Vorschau lebt nur im Arbeitsspeicher der Seite und geht mit ihr.
+  // Das Foto lebt nur im Arbeitsspeicher der Seite und geht mit ihr.
+  const foto = wahl?.foto;
   useEffect(() => {
-    if (!vorschau) return;
-    return () => URL.revokeObjectURL(vorschau.adresse);
-  }, [vorschau]);
+    if (!foto) return;
+    return () => schliesseFoto(foto);
+  }, [foto]);
 
   // Nur die Liste, nicht die Bilder: Ein Bild ändert sich unter seiner
   // Kennung nie (ADR-017 Punkt 91).
@@ -78,7 +90,7 @@ export function ProfilAbschnitt({ name }: { name: string }) {
       queryClient.setQueryData<Avatar[]>(AVATARE_KEY, (alt) =>
         alt?.map((a) => (a.own ? { ...a, picture_id: neueId } : a)),
       );
-      setVorschau(null);
+      setWahl(null);
       setGespeichert('gesetzt');
       void neuLaden();
     },
@@ -98,8 +110,21 @@ export function ProfilAbschnitt({ name }: { name: string }) {
     speichern.reset();
     setRechnet(true);
     try {
-      const bild = await rechneProfilbild(datei);
-      setVorschau({ bild, adresse: URL.createObjectURL(bild) });
+      const geoeffnet = await oeffneFoto(datei);
+      setWahl({ foto: geoeffnet, stand: startStand(geoeffnet.breite, geoeffnet.hoehe) });
+    } catch (fehler) {
+      setProblem(fehler instanceof Error ? fehler.message : FOTO_NICHT_LESBAR);
+    } finally {
+      setRechnet(false);
+    }
+  }
+
+  // Erst hier wird der Ausschnitt gerechnet - auf dem Gerät, dann gespeichert.
+  async function ausschnittSpeichern(gewaehlt: Wahl) {
+    setProblem(null);
+    setRechnet(true);
+    try {
+      speichern.mutate(await rechneProfilbild(gewaehlt.foto, gewaehlt.stand));
     } catch (fehler) {
       setProblem(fehler instanceof Error ? fehler.message : FOTO_NICHT_LESBAR);
     } finally {
@@ -129,31 +154,39 @@ export function ProfilAbschnitt({ name }: { name: string }) {
           return (
             <div className="flex flex-col gap-4">
               <div className="flex flex-wrap items-center gap-4">
-                <Personenbild
-                  name={name}
-                  farbe={gewaehlt}
-                  bild={vorschau ? vorschau.adresse : mitBild ? aktuell.data : null}
-                  groesse="gross"
-                />
+                {wahl ? (
+                  <ProfilbildZuschnitt
+                    foto={wahl.foto}
+                    stand={wahl.stand}
+                    onStand={(stand) => setWahl({ ...wahl, stand })}
+                  />
+                ) : (
+                  <Personenbild
+                    name={name}
+                    farbe={gewaehlt}
+                    bild={mitBild ? aktuell.data : null}
+                    groesse="gross"
+                  />
+                )}
                 <div className="flex flex-col items-start gap-2">
-                  {vorschau ? (
+                  {wahl ? (
                     <>
                       {/* Sekundär: Auf der Seite bleibt „PIN festlegen“ der eine
                           Hauptknopf (Regel 4, Design-Review TEAM-007). */}
                       <Button
                         type="button"
                         variant="secondary"
-                        disabled={speichern.isPending}
-                        onClick={() => speichern.mutate(vorschau.bild)}
+                        disabled={speichern.isPending || rechnet}
+                        onClick={() => void ausschnittSpeichern(wahl)}
                       >
-                        {speichern.isPending ? 'Wird gespeichert …' : 'Foto speichern'}
+                        {speichern.isPending || rechnet ? 'Wird gespeichert …' : 'Foto speichern'}
                       </Button>
                       <Button
                         type="button"
                         variant="quiet"
-                        disabled={speichern.isPending}
+                        disabled={speichern.isPending || rechnet}
                         onClick={() => {
-                          setVorschau(null);
+                          setWahl(null);
                           speichern.reset();
                         }}
                       >
@@ -189,12 +222,12 @@ export function ProfilAbschnitt({ name }: { name: string }) {
                   }}
                 />
               </div>
-              {vorschau ? <Statusmeldung>Vorschau – noch nicht gespeichert.</Statusmeldung> : null}
+              {wahl ? <Statusmeldung>Vorschau – noch nicht gespeichert.</Statusmeldung> : null}
               {problem ? <Statusmeldung ton="fehler">{problem}</Statusmeldung> : null}
               {speichern.isError ? (
                 <Statusmeldung ton="fehler">{speichern.error.message}</Statusmeldung>
               ) : null}
-              {gespeichert && !vorschau ? (
+              {gespeichert && !wahl ? (
                 <Statusmeldung ton="erfolg">
                   {gespeichert === 'gesetzt' ? 'Foto gespeichert.' : 'Foto entfernt.'}
                 </Statusmeldung>
@@ -216,7 +249,7 @@ export function ProfilAbschnitt({ name }: { name: string }) {
                 <Statusmeldung ton="fehler">{farbe.error.message}</Statusmeldung>
               ) : null}
               {/* Zerstörendes leise am Ende, mit Rückfrage (DESIGN.md 9.16). */}
-              {mitBild && !vorschau ? (
+              {mitBild && !wahl ? (
                 <Rueckfrage
                   ausloeser="Foto entfernen"
                   ausloeserVariante="quiet"

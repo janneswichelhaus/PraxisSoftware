@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { PROFILBILD_MAX_BYTES, alsBase64, ausBase64, kleinGenug, zuschnitt } from './profilbild';
+import {
+  PROFILBILD_MAX_BYTES,
+  VERGROESSERUNG_MAX,
+  alsBase64,
+  ausBase64,
+  ausschnitt,
+  begrenzt,
+  kleinGenug,
+  startStand,
+  zuschnitt,
+} from './profilbild';
 
 /**
  * Das Profilbild auf dem Gerät (TEAM-007, ADR-017 Abschnitt O): Zuschnitt,
@@ -19,6 +29,42 @@ describe('zuschnitt', () => {
 
   it('lässt ein Quadrat, wie es ist', () => {
     expect(zuschnitt(256, 256)).toEqual({ x: 0, y: 0, seite: 256 });
+  });
+});
+
+/** BEF-190 (ADR-017 Fassung 11): den Ausschnitt verschieben und vergrößern. */
+describe('Ausschnitt wählen', () => {
+  it('beginnt beim festen Ausschnitt von bisher', () => {
+    const stand = startStand(3000, 4000);
+    expect(stand).toEqual({ mitteX: 1500, mitteY: 1750, vergroesserung: 1 });
+    expect(ausschnitt(3000, 4000, stand)).toEqual(zuschnitt(3000, 4000));
+  });
+
+  it('vergrößert um die Mitte und bleibt dabei im Foto', () => {
+    expect(ausschnitt(4000, 3000, { mitteX: 2000, mitteY: 1500, vergroesserung: 2 })).toEqual({
+      x: 1250,
+      y: 750,
+      seite: 1500,
+    });
+    // An den Rand geschoben: Das Quadrat endet am Rand, nicht dahinter.
+    expect(ausschnitt(4000, 3000, { mitteX: 3990, mitteY: 10, vergroesserung: 2 })).toEqual({
+      x: 2500,
+      y: 0,
+      seite: 1500,
+    });
+  });
+
+  it('hält Vergrößerung und Mitte in den Grenzen', () => {
+    expect(begrenzt(4000, 3000, { mitteX: -500, mitteY: 9000, vergroesserung: 9 })).toEqual({
+      mitteX: 500,
+      mitteY: 2500,
+      vergroesserung: VERGROESSERUNG_MAX,
+    });
+    expect(begrenzt(4000, 3000, { mitteX: 2000, mitteY: 1500, vergroesserung: 0.2 })).toEqual({
+      mitteX: 2000,
+      mitteY: 1500,
+      vergroesserung: 1,
+    });
   });
 });
 
