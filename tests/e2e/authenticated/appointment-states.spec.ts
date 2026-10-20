@@ -216,6 +216,9 @@ test.describe('CAL-009: Tag umplanen', () => {
   test('G2: plant den Tag geführt um - eine Person abgewählt, je Person ein Anruf', async ({
     page,
   }) => {
+    // Zwei Termine anlegen, der Ablauf samt Zurückgeste und der Blick in den
+    // Kalender brauchen am Stück knapp 30 s - mehr als die Vorgabe erlaubt.
+    test.setTimeout(90_000);
     const tag = laufTag(4);
 
     await anmelden(page, KONTEN.office);
