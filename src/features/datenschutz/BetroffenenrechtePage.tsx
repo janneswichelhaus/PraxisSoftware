@@ -18,6 +18,7 @@ import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
 import { FotoHerausgabe } from '@/features/files/FotoHerausgabe';
 import { DATENKLASSEN } from '@/features/retention/klassen';
 import {
+  auskunftKennung,
   fetchAufbewahrungsstand,
   fetchAuskunft,
   type Aufbewahrungsklasse,
@@ -52,11 +53,18 @@ function eintraege(anzahl: number): string {
   return anzahl === 1 ? '1 Eintrag' : `${anzahl} Einträge`;
 }
 
-function AuskunftErgebnis({ auskunft }: { auskunft: Auskunft }) {
-  const abschnitte = Object.keys(AUSKUNFT_KATEGORIEN).filter(
+/** Abschnitte mit Anzahl, der Knopf zur Datei, was nicht enthalten ist - auch für das Training (BEF-182). */
+export function AuskunftErgebnis({
+  auskunft,
+  kategorien = AUSKUNFT_KATEGORIEN,
+}: {
+  auskunft: Auskunft;
+  kategorien?: typeof AUSKUNFT_KATEGORIEN;
+}) {
+  const abschnitte = Object.keys(kategorien).filter(
     (key) => (auskunft.tabellen[key]?.length ?? 0) > 0,
   );
-  const leer = Object.keys(AUSKUNFT_KATEGORIEN).length - abschnitte.length;
+  const leer = Object.keys(kategorien).length - abschnitte.length;
 
   return (
     <div className="mt-6">
@@ -65,7 +73,7 @@ function AuskunftErgebnis({ auskunft }: { auskunft: Auskunft }) {
       <Card className="max-w-formular">
         <DataList>
           {abschnitte.map((key) => (
-            <DataRow key={key} label={kategorieLabel(key)}>
+            <DataRow key={key} label={kategorieLabel(key, kategorien)}>
               {eintraege(auskunft.tabellen[key]!.length)}
             </DataRow>
           ))}
@@ -86,7 +94,7 @@ function AuskunftErgebnis({ auskunft }: { auskunft: Auskunft }) {
           type="button"
           onClick={() =>
             sichereAlsDatei(
-              dateiname(auskunft.patient_id, auskunft.erstellt_am),
+              dateiname(auskunftKennung(auskunft), auskunft.erstellt_am),
               JSON.stringify(auskunft, null, 2),
             )
           }

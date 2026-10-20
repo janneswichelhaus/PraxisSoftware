@@ -262,6 +262,28 @@ describe('TrainingClientPage', () => {
     expect(getTrainingClient).toHaveBeenCalledTimes(1);
   });
 
+  it('führt owner aus den Stammdaten zur Auskunft zum Training, andere nicht (BEF-182)', async () => {
+    getTrainingClient.mockResolvedValue(tina);
+    const { unmount } = renderWithProviders(
+      <TrainingClientPage user={testUser(['owner', 'therapist'])} />,
+      '/?bereich=stammdaten',
+    );
+    const link = await screen.findByRole('link', { name: 'Auskunft zum Training' });
+    expect(link.getAttribute('href')).toMatch(new RegExp(`^/training/${TINA}/auskunft\\?zurueck=`));
+    unmount();
+    for (const rolle of ['office', 'trainer'] as const) {
+      const { unmount: weg } = renderWithProviders(
+        <TrainingClientPage user={testUser([rolle])} />,
+        '/?bereich=stammdaten',
+      );
+      expect(
+        await screen.findByRole('link', { name: 'tina@beispiel.invalid' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Auskunft zum Training' })).toBeNull();
+      weg();
+    }
+  });
+
   it('beendet den Vertrag erst nach der Rückfrage mit dem gewählten Tag', async () => {
     const user = userEvent.setup();
     getTrainingClient.mockResolvedValue(tina);

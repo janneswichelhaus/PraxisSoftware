@@ -348,6 +348,18 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
                 }
               />
             ) : null}
+            {/* BEF-182: die Auskunft zum Training, wie „Betroffenenrechte“ an der
+                Akte - nur owner; verbindlich prüft der Server (ADR-004). */}
+            {isOwner(user.roles) ? (
+              <Section titel="Betroffenenrechte">
+                <ButtonLink
+                  to={mitRueckweg(`/training/${kundin.id}/auskunft`, hier)}
+                  variant="secondary"
+                >
+                  Auskunft zum Training
+                </ButtonLink>
+              </Section>
+            ) : null}
           </Zweispalter>
         )}
       </div>

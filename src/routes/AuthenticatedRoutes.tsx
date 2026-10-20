@@ -24,6 +24,7 @@ import {
 import { ALTE_AKTENBEREICHE } from '@/features/patients/akte';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { BetroffenenrechtePage } from '@/features/datenschutz/BetroffenenrechtePage';
+import { TrainingAuskunftPage } from '@/features/datenschutz/TrainingAuskunftPage';
 import { ZusammenfuehrenPage } from '@/features/patients/ZusammenfuehrenPage';
 import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
@@ -870,6 +871,14 @@ export function AuthenticatedRoutes({
                       path="/training/:relationshipId"
                       element={<TrainingClientPage user={user} />}
                     />
+                    {/* BEF-182: die Auskunft zum Training neben dem Verhältnis, wie an
+                  der Akte - nur `owner`, verbindlich prüft der Server (ADR-004). */}
+                    {showSecurity ? (
+                      <Route
+                        path="/training/:relationshipId/auskunft"
+                        element={<TrainingAuskunftPage />}
+                      />
+                    ) : null}
                     {/* ERN-001: die Formulare der Ernährungsberatung im Training. */}
                     {showNutrition ? (
                       <>

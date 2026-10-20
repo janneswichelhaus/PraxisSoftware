@@ -14,7 +14,9 @@ import { auditActionLabels } from '@/features/audit/actions';
 const auskunftSchema = z.object({
   erstellt_am: z.string(),
   organisation: z.string().nullable(),
-  patient_id: z.string(),
+  /** Die Akte - oder, bei der Auskunft zum Training, das Verhältnis (BEF-182). */
+  patient_id: z.string().optional(),
+  training_relationship_id: z.string().optional(),
   rechtsgrundlage: z.string(),
   /**
    * Ein Schlüssel je Tabelle, die Zeilen darunter. Bewusst ohne Schema je
@@ -37,6 +39,25 @@ export async function fetchAuskunft(patientId: string): Promise<Auskunft> {
 
   if (error) throw new Error('Die Auskunft konnte nicht erstellt werden.');
   return mitZweck(auskunftSchema.parse(data));
+}
+
+/**
+ * Die Auskunft zu einem Trainingsverhältnis (BEF-182): eigenes
+ * Rechtsverhältnis, eigene Kopie (ADR-021) - geprüft und protokolliert wie die
+ * zur Akte.
+ */
+export async function fetchTrainingAuskunft(relationshipId: string): Promise<Auskunft> {
+  const { data, error } = (await getSupabase().rpc('export_training_record', {
+    p_training_relationship_id: relationshipId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Auskunft konnte nicht erstellt werden.');
+  return mitZweck(auskunftSchema.parse(data));
+}
+
+/** Kennung, unter der die Kopie gespeichert wird: Akte oder Verhältnis. */
+export function auskunftKennung(auskunft: Auskunft): string {
+  return auskunft.patient_id ?? auskunft.training_relationship_id ?? '';
 }
 
 /**
