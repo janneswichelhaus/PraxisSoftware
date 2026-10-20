@@ -13,7 +13,7 @@
 --   finish_notification_delivery    + p_claimed_at; ein fremder oder alter
 --                                     Anspruch: 'no claimed delivery'
 --   purge_notification_deliveries   + Push-Registrierungen von Zugängen, die
---                                     zeitlich geendet haben
+--                                     geendet haben (nicht: gesperrt)
 --
 -- Rümpfe aus 20261104100000_kom_009_benachrichtigungen.sql, sonst unverändert.
 -- Rechte wie dort: nur service_role für Abholen und Melden; der Löschlauf
@@ -182,12 +182,19 @@ begin
    where d.state <> 'pending'
      and d.finished_at < now() - app.retention_interval('benachrichtigung');
   get diagnostics v_anzahl = row_count;
-  -- BEF-148: Push-Registrierungen eines Zugangs, der zeitlich geendet hat
-  -- (Lesefrist, Volljährigkeit) oder nicht mehr aktiv ist. Beim Widerruf
-  -- fallen sie sofort (Trigger), hier beim nächsten Lauf; geschickt wird
-  -- ohnehin nichts mehr (notification_access_live).
+  -- BEF-148: Push-Registrierungen eines Zugangs, der geendet hat - zeitlich
+  -- (Lesefrist, Volljährigkeit) oder durch Widerruf. Beim Widerruf fallen sie
+  -- schon sofort (Trigger). Eine Sperre ist kein Ende: Sie lässt sich
+  -- aufheben, und die Registrierung des Geräts bleibt dafür stehen
+  -- (Zweitreview); geschickt wird während der Sperre ohnehin nichts.
   delete from public.platform_push_subscriptions p
-   where not app.notification_access_live(p.access_id);
+   using public.platform_accesses a
+   where a.id = p.access_id
+     and (a.status = 'revoked' or coalesce(app.platform_access_ended_at(a.id) <= now(), false));
   return v_anzahl;
 end;
 $$;
+
+update public.retention_assignments
+   set scope_note = 'Push-Registrierung je Geraet: faellt beim Abmelden, bei abgewiesenem Endpunkt, beim Widerruf des Zugangs (Trigger), mit seinem zeitlichen Ende im taeglichen Lauf purge_notification_deliveries (BEF-148, ANN-669) und spaetestens mit dem Zugang (cascade). Eine Sperre laesst sie stehen.'
+ where table_name = 'platform_push_subscriptions';

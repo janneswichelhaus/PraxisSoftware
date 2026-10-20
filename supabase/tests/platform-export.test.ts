@@ -212,13 +212,13 @@ describe('Datenexport der Plattform (POR-018)', () => {
     for (const verboten of [endpunkt, p256dh, schluessel, 'subject_id', 'attempts']) {
       expect(text).not.toContain(verboten);
     }
-    // Je Zugang: Tina exportiert nur ihre eigene (leere) Wahl.
-    expect((await exportieren(users.plattformTina, TINA)).notifications).toEqual({
-      settings: null,
-      devices: [],
-      diary_reminders: [],
-      deliveries: [],
-    });
+    // Je Zugang: Tina exportiert nur ihre eigene (leere) Wahl - und Erikas
+    // Zugang zum Training nicht die ihres Zugangs zur Behandlung (Zweitreview).
+    const leer = { settings: null, devices: [], diary_reminders: [], deliveries: [] };
+    expect((await exportieren(users.plattformTina, TINA)).notifications).toEqual(leer);
+    expect(
+      (await exportieren(users.plattformErika, platformAccesses.erikaTraining)).notifications,
+    ).toEqual(leer);
   });
 
   it('Training: eigene Stammdaten, keine Dokumente, Gegenstand das Trainingsverhältnis', async () => {

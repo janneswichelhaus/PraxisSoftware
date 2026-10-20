@@ -741,6 +741,20 @@ describe('Versand: abholen und melden (Punkt 16)', () => {
     expect(rows).toEqual([{ access_id: tina }]);
   });
 
+  it('lässt im Löschlauf die Registrierung eines nur gesperrten Zugangs stehen (Zweitreview)', async () => {
+    await asUserCommitted(erika.konto, REGISTRIEREN, [erika.zugang, ENDPUNKT, P256DH, AUTH]);
+    // Eine Sperre lässt sich aufheben - das Gerät soll danach nicht still sein.
+    await asPostgres(
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      [erika.zugang],
+    );
+    await asPostgres('select public.purge_notification_deliveries()');
+    const { rows } = await asPostgres<{ access_id: string }>(
+      'select access_id from public.platform_push_subscriptions',
+    );
+    expect(rows).toEqual([{ access_id: erika.zugang }]);
+  });
+
   it('löscht abgeschlossene Aufträge nach 30 Tagen', async () => {
     await asPostgres(
       `insert into public.notification_deliveries

@@ -6900,3 +6900,15 @@ Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.get_team_person` (Migration TEAM-009).
 
 **Änderungspfad.** Rollen aus `get_team_person` nehmen · Aufwand `klein`.
+
+### ANN-669 — Benachrichtigungen im eigenen Export, Push-Registrierung fällt mit dem Ende des Zugangs
+
+Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+
+**Annahme.** Der eigene Export der Plattform trägt je Zugang die Wahl zu Benachrichtigungen, die Tagebuch-Erinnerungen und die Zustellaufträge; Geräte nur mit „seit wann“, ohne Endpunkt und Schlüssel (Zugangsdaten zum Push-Dienst). Eine Vertretung exportiert ihre eigene Wahl. Push-Registrierungen fallen beim Widerruf sofort, mit dem zeitlichen Ende des Zugangs im täglichen Lauf; eine Sperre lässt sie stehen.
+
+**Begründung.** BEF-147, BEF-148; ergänzt ANN-265 (sonst nur, was die Plattform zeigt). Die Praxis sieht die Wahl weiter nicht (ANN-344).
+
+**Anker.** `platform_export` (Migration BEF-147), `purge_notification_deliveries` (Migration BEF-148).
+
+**Änderungspfad.** Auch Wahl und Erinnerungen beendeter Zugänge im Lauf räumen · Aufwand `klein`.
