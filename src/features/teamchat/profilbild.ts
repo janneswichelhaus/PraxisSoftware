@@ -32,8 +32,8 @@ export interface Zuschnitt {
 /**
  * Das größte Quadrat im Bild: waagerecht in der Mitte, bei einem Hochformat
  * aus dem oberen Teil - dort steht in einem Porträt das Gesicht. Keine
- * Gesichtserkennung (ADR-017 Punkt 39 sinngemäß); wem der Ausschnitt nicht
- * gefällt, wählt ein anderes Foto.
+ * Gesichtserkennung (ADR-017 Punkt 39 sinngemäß). So beginnt der Ausschnitt;
+ * verschieben und vergrößern kann ihn die Person selbst (ADR-017 Fassung 11).
  */
 export function zuschnitt(breite: number, hoehe: number): Zuschnitt {
   const seite = Math.min(breite, hoehe);
@@ -42,6 +42,49 @@ export function zuschnitt(breite: number, hoehe: number): Zuschnitt {
     y: hoehe > breite ? Math.floor((hoehe - seite) / 4) : Math.floor((hoehe - seite) / 2),
     seite,
   };
+}
+
+/** Stärker wird nicht vergrößert: Darüber wird ein Telefonfoto unscharf (ANN-670). */
+export const VERGROESSERUNG_MAX = 3;
+
+/**
+ * Der gewählte Ausschnitt, wie die Person ihn verschiebt: Mitte in
+ * Bildpunkten des Fotos und Vergrößerung (1 = das größte Quadrat).
+ */
+export interface Ausschnittstand {
+  mitteX: number;
+  mitteY: number;
+  vergroesserung: number;
+}
+
+const zwischen = (wert: number, unten: number, oben: number) =>
+  Math.min(oben, Math.max(unten, wert));
+
+/** Der Anfang: der feste Ausschnitt von bisher, ohne Vergrößerung. */
+export function startStand(breite: number, hoehe: number): Ausschnittstand {
+  const { x, y, seite } = zuschnitt(breite, hoehe);
+  return { mitteX: x + seite / 2, mitteY: y + seite / 2, vergroesserung: 1 };
+}
+
+/** Das Quadrat zu einem Stand - immer ganz im Foto. */
+export function ausschnitt(breite: number, hoehe: number, stand: Ausschnittstand): Zuschnitt {
+  const vergroesserung = zwischen(stand.vergroesserung, 1, VERGROESSERUNG_MAX);
+  const seite = Math.max(1, Math.round(Math.min(breite, hoehe) / vergroesserung));
+  return {
+    x: zwischen(Math.round(stand.mitteX - seite / 2), 0, breite - seite),
+    y: zwischen(Math.round(stand.mitteY - seite / 2), 0, hoehe - seite),
+    seite,
+  };
+}
+
+/**
+ * Ein neuer Stand, der im Foto bleibt: Wer über den Rand hinaus zieht oder
+ * vergrößert, landet am Rand - die Mitte folgt dem Quadrat.
+ */
+export function begrenzt(breite: number, hoehe: number, stand: Ausschnittstand): Ausschnittstand {
+  const vergroesserung = zwischen(stand.vergroesserung, 1, VERGROESSERUNG_MAX);
+  const { x, y, seite } = ausschnitt(breite, hoehe, { ...stand, vergroesserung });
+  return { mitteX: x + seite / 2, mitteY: y + seite / 2, vergroesserung };
 }
 
 /**
@@ -73,51 +116,63 @@ export function ausBase64(text: string): Blob {
   return new Blob([bytes], { type: 'image/jpeg' });
 }
 
-async function ladeFoto(datei: Blob): Promise<HTMLImageElement> {
+/**
+ * Ein gewähltes Foto, geöffnet im Arbeitsspeicher der Seite - zum Zuschneiden.
+ * Die Adresse ist eine Objekt-URL; `schliesseFoto` gibt sie frei.
+ */
+export interface Foto {
+  bild: HTMLImageElement;
+  adresse: string;
+  breite: number;
+  hoehe: number;
+}
+
+/** Öffnet ein gewähltes Foto. Wirft mit einem Satz für die Person. */
+export async function oeffneFoto(datei: Blob): Promise<Foto> {
+  if (datei.size > FOTO_MAX_BYTES) throw new Error(FOTO_ZU_GROSS);
   const adresse = URL.createObjectURL(datei);
   try {
     const bild = new Image();
     bild.src = adresse;
     // `decode` wendet die Ausrichtung aus dem EXIF an, wie jedes <img>.
     await bild.decode();
-    return bild;
+    if (bild.naturalWidth < 1 || bild.naturalHeight < 1) throw new Error(FOTO_NICHT_LESBAR);
+    return { bild, adresse, breite: bild.naturalWidth, hoehe: bild.naturalHeight };
   } catch {
     URL.revokeObjectURL(adresse);
     throw new Error(FOTO_NICHT_LESBAR);
   }
 }
 
+export function schliesseFoto(foto: Foto): void {
+  URL.revokeObjectURL(foto.adresse);
+}
+
 /**
- * Aus einem gewählten Foto das Profilbild: Quadrat, 256 × 256, JPEG ohne
- * Metadaten, höchstens 64 KiB. Wirft mit einem Satz für die Person.
+ * Aus dem gewählten Ausschnitt eines Fotos das Profilbild: Quadrat,
+ * 256 × 256, JPEG ohne Metadaten, höchstens 64 KiB. Wirft mit einem Satz für
+ * die Person.
  */
-export async function rechneProfilbild(datei: Blob): Promise<Blob> {
-  if (datei.size > FOTO_MAX_BYTES) throw new Error(FOTO_ZU_GROSS);
-  const foto = await ladeFoto(datei);
-  try {
-    const { x, y, seite } = zuschnitt(foto.naturalWidth, foto.naturalHeight);
-    if (seite < 1) throw new Error(FOTO_NICHT_LESBAR);
-    const flaeche = document.createElement('canvas');
-    flaeche.width = PROFILBILD_SEITE;
-    flaeche.height = PROFILBILD_SEITE;
-    const stift = flaeche.getContext('2d');
-    if (!stift) throw new Error(FOTO_NICHT_LESBAR);
-    stift.imageSmoothingEnabled = true;
-    stift.imageSmoothingQuality = 'high';
-    stift.drawImage(foto, x, y, seite, seite, 0, 0, PROFILBILD_SEITE, PROFILBILD_SEITE);
-    const kodiert = await kleinGenug(
-      (qualitaet) =>
-        new Promise<Blob>((fertig, fehlgeschlagen) =>
-          flaeche.toBlob(
-            (blob) => (blob ? fertig(blob) : fehlgeschlagen(new Error(FOTO_NICHT_LESBAR))),
-            'image/jpeg',
-            qualitaet,
-          ),
+export async function rechneProfilbild(foto: Foto, stand: Ausschnittstand): Promise<Blob> {
+  const { x, y, seite } = ausschnitt(foto.breite, foto.hoehe, stand);
+  const flaeche = document.createElement('canvas');
+  flaeche.width = PROFILBILD_SEITE;
+  flaeche.height = PROFILBILD_SEITE;
+  const stift = flaeche.getContext('2d');
+  if (!stift) throw new Error(FOTO_NICHT_LESBAR);
+  stift.imageSmoothingEnabled = true;
+  stift.imageSmoothingQuality = 'high';
+  stift.drawImage(foto.bild, x, y, seite, seite, 0, 0, PROFILBILD_SEITE, PROFILBILD_SEITE);
+  const kodiert = await kleinGenug(
+    (qualitaet) =>
+      new Promise<Blob>((fertig, fehlgeschlagen) =>
+        flaeche.toBlob(
+          (blob) => (blob ? fertig(blob) : fehlgeschlagen(new Error(FOTO_NICHT_LESBAR))),
+          'image/jpeg',
+          qualitaet,
         ),
-    );
-    const sauber = entferneMetadaten(await alleBytes(kodiert), 'image/jpeg');
-    return new Blob([sauber as BlobPart], { type: 'image/jpeg' });
-  } finally {
-    URL.revokeObjectURL(foto.src);
-  }
+      ),
+  );
+  const sauber = entferneMetadaten(await alleBytes(kodiert), 'image/jpeg');
+  return new Blob([sauber as BlobPart], { type: 'image/jpeg' });
 }

@@ -797,7 +797,8 @@ details {
   animation: einblenden 0.26s var(--ease-feder-weich) both;
 }
 
-/* Der Dauerregler (`ui/Dauerregler.tsx`, ORG-007): eine 48 px hohe Spur zum
+/* Der Dauerregler (`ui/Dauerregler.tsx`, ORG-007), ebenso der
+   `ui/Schieberegler.tsx` (BEF-190): eine 48 px hohe Spur zum
    Greifen, darin eine Linie von 8 px - gefüllt in der Hauptfarbe bis zum
    Daumen (`--fuellung`), dahinter `line-strong`. Der Daumen 32 px, Papier mit
    Rand in der Hauptfarbe, ohne Schatten. `pan-y`: Wer waagrecht zieht,

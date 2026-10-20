@@ -54,6 +54,25 @@ async function fotoMitOrt(page: Page) {
   };
 }
 
+/**
+ * Ein Querformat ohne Kamera: links Rot, rechts Blau - so zeigt ein Pixel des
+ * gespeicherten Bilds, welcher Ausschnitt gewählt war.
+ */
+async function rotBlau(page: Page) {
+  const daten = await page.evaluate(() => {
+    const leinwand = document.createElement('canvas');
+    leinwand.width = 1200;
+    leinwand.height = 900;
+    const stift = leinwand.getContext('2d')!;
+    stift.fillStyle = '#c0392b';
+    stift.fillRect(0, 0, 600, 900);
+    stift.fillStyle = '#1f5f99';
+    stift.fillRect(600, 0, 600, 900);
+    return leinwand.toDataURL('image/jpeg', 0.92).split(',')[1]!;
+  });
+  return { name: 'rotblau.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(daten, 'base64') };
+}
+
 /** Farbe in der Mitte eines gezeigten Bilds (gleiche Herkunft: Objekt-URL). */
 async function mittelfarbe(page: Page, auswahl: string): Promise<[number, number, number]> {
   return page
@@ -121,6 +140,38 @@ test('setzt ein Profilbild aus dem Teamchat heraus in drei Tipps; der Ort fällt
   ).toBe(false);
 });
 
+test('schneidet das Foto vor dem Speichern zu: verschieben und vergrößern (BEF-190)', async ({
+  page,
+}) => {
+  await zumTeamchat(page);
+  await page.getByRole('link', { name: 'Eigenes Bild und eigene Farbe ändern' }).click();
+  const wahl = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: /^(Foto wählen|Anderes Foto)$/ }).click();
+  await (await wahl).setFiles(await rotBlau(page));
+  await expect(page.getByText('Vorschau – noch nicht gespeichert.')).toBeVisible();
+  const ansicht = page.getByRole('img', { name: /Ausschnitt des Profilbilds/ });
+  await expect(ansicht).toBeVisible();
+
+  // Ohne Eingriff säße die Grenze Rot/Blau in der Mitte. Dreifach vergrößert
+  // und das Bild nach links gezogen, steht rechts das Blau allein im Kreis.
+  await page.getByRole('slider', { name: 'Vergrößern' }).fill('3');
+  const kasten = (await ansicht.boundingBox())!;
+  await page.mouse.move(kasten.x + kasten.width / 2, kasten.y + kasten.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(kasten.x + 10, kasten.y + kasten.height / 2, { steps: 8 });
+  await page.mouse.up();
+
+  await page.getByRole('button', { name: 'Foto speichern' }).click();
+  await expect(page.getByText('Foto gespeichert.')).toBeVisible();
+  const bild = page.locator('[data-personenbild="foto"]').first();
+  expect(
+    await bild.evaluate((el: HTMLImageElement) => [el.naturalWidth, el.naturalHeight]),
+  ).toEqual([256, 256]);
+  const [rot, , blau] = await mittelfarbe(page, '[data-personenbild="foto"]');
+  expect(blau).toBeGreaterThan(120);
+  expect(rot).toBeLessThan(80);
+});
+
 test('zeigt ein neues Bild an Nachrichten, die schon dastehen, ohne Neuladen (BEF-191)', async ({
   page,
   browser,
@@ -154,7 +205,7 @@ test('zeigt ein neues Bild an Nachrichten, die schon dastehen, ohne Neuladen (BE
   await expect(andere.locator(ANNAS_BILD).first()).toBeVisible();
   const vorher = await bildstand();
 
-  // Anna setzt ein anderes Foto.
+  // Anna setzt ein anderes Foto, ohne den Ausschnitt zu ändern.
   await page.goto('/team');
   await page.getByRole('link', { name: 'Eigenes Bild und eigene Farbe ändern' }).click();
   const wahl = page.waitForEvent('filechooser');

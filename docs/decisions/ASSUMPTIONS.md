@@ -6912,3 +6912,15 @@ Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (2026-10-20, BEF-189
 **Anker.** Migration `20261223180000_bef_189_benachrichtigungen_mit_dem_ende.sql` (`platform_export_notifications`, `purge_notification_deliveries`).
 
 **Änderungspfad.** Begleitung ohne Export: `platform_export_notifications` entfernen · Aufwand `klein`. Wahl über die Lesezeit hinaus halten: die zwei Löschzeilen im Lauf streichen · Aufwand `klein`.
+
+### ANN-670 — Zuschnitt des Profilbilds: verschieben, bis dreifach vergrößern, Standard wie bisher
+
+Technik · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Abnahme der Annahmen
+
+**Annahme.** Nach der Fotowahl zeigt „Mein Konto“ das Foto in einem Quadrat; der Kreis darin ist das Bild im Chat. Ziehen (oder Pfeiltasten) verschiebt, „−“, Regler und „+“ vergrößern bis zum Dreifachen; das Quadrat bleibt im Foto. Ohne Eingriff gilt der bisherige Ausschnitt, also bleibt es bei drei Tipps. Gerechnet wird erst beim Speichern, auf dem Gerät.
+
+**Begründung.** Befund Jannes vom 2026-10-20, ADR-017 Fassung 11. Dreifach reicht bei einem Telefonfoto für ein Gesicht und bleibt bei 256 Bildpunkten scharf; mehr würde kleine Fotos nur unscharf vergrößern. Keine neue Abhängigkeit: Zeigerereignisse und ein natives `input type="range"`.
+
+**Anker.** `VERGROESSERUNG_MAX` in `src/features/teamchat/profilbild.ts`.
+
+**Änderungspfad.** Andere Obergrenze: die Konstante · Aufwand `klein`. Zwei-Finger-Zoom: Zeigerereignisse in `ProfilbildZuschnitt.tsx` · Aufwand `mittel`.
