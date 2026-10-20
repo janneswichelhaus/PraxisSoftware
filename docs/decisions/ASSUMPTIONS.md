@@ -6891,7 +6891,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-
 
 ### ANN-668 — Personenkarte im Teamchat: wer jemand in der Praxis ist, nicht was sie tut
 
-Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-20, wie empfohlen: Rollen sichtbar) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
 **Annahme.** Ein Tipp auf das Bild einer Person öffnet ihre Karte: Bild, Name, Praxisrollen, „Direktnachricht“. Damit sieht das Team die Rollen der anderen Teilnehmenden; bisher sah nur `owner` fremde Rollen (`user_roles_select_scoped` bleibt). Wer nicht teilnimmt, kommt ohne Namen und Rollen. Nicht auf der Karte: Anwesenheit, „zuletzt aktiv“, Status, Telefonnummer, Mail.
 

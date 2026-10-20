@@ -1677,6 +1677,8 @@ eingeklappt.
 
 **Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: fünf Reiter bestätigt, die Leiste wird verbessert.
 
+**Entscheidung (Jannes, 2026-10-20).** Wie empfohlen: kein Blätterknopf links. Ein zweiter Platz nähme der Leiste bei 375 px zu viel Breite; zurück geht es mit dem Wisch, der offene Reiter rollt ins Bild.
+
 ### BEF-146 — Der Vollständigkeitstest der Auskunft sieht nur Tabellen mit `patient_id`
 
 |         |   |
