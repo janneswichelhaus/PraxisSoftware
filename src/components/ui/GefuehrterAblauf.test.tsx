@@ -110,6 +110,28 @@ describe('GefuehrterAblauf', () => {
     expect(onFertig).toHaveBeenCalledTimes(1);
   });
 
+  it('macht die rollende Fläche per Tastatur erreichbar, auch ohne Bedienelement darin (BEF-175)', async () => {
+    render(
+      <GefuehrterAblauf
+        titel="Gemeldet"
+        schliessen="Ablauf schließen"
+        onSchliessen={vi.fn()}
+        seite="ende"
+        abschluss
+        fuss={<Button className="w-full">Fertig</Button>}
+      >
+        <p>Nur Text, kein Feld.</p>
+      </GefuehrterAblauf>,
+    );
+    const flaeche = screen.getByText('Nur Text, kein Feld.').closest('[tabindex="0"]');
+    expect(flaeche).toHaveClass('overflow-y-auto');
+    // Kein zweiter Name neben dem des Fensters: Er träfe die Suche nach einem
+    // Feld, dessen Beschriftung in der Frage steht.
+    expect(flaeche).not.toHaveAttribute('aria-label');
+    expect(screen.queryByRole('region')).toBeNull();
+    await pruefeBarrierefreiheit(document.body);
+  });
+
   it('zeigt den Balken nur mit fester Schrittzahl', () => {
     const { rerender } = render(
       <GefuehrterAblauf

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Abfragezustand } from '@/components/ui/Abfragezustand';
+import { Anrufknoepfe } from '@/components/ui/Anrufknoepfe';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -21,7 +22,6 @@ import {
   zurueck,
   type Abfolge,
 } from '@/components/ui/abfolge';
-import { knopfKlassen } from '@/components/ui/buttonStile';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { fetchDayPlan, rufnummern, type DayPlanEntry } from '@/features/today/api';
@@ -115,28 +115,6 @@ function name(termin: DayPlanEntry): string {
   return `${termin.patient_given_name} ${termin.patient_family_name}`;
 }
 
-/** Die Rufnummern als Knöpfe - groß genug für den Daumen (Kontakt ist Aktion). */
-function Anrufknoepfe({ termin }: { termin: DayPlanEntry }) {
-  const nummern = rufnummern(termin);
-  if (nummern.length === 0) {
-    return <p className="text-ink-muted text-sm">Keine Rufnummer hinterlegt.</p>;
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      {nummern.map((nummer) => (
-        <a
-          key={nummer.href}
-          href={nummer.href}
-          className={knopfKlassen('secondary', 'normal', 'w-full')}
-        >
-          {nummer.label} anrufen
-          <span className="tabular-nums">{nummer.anzeige}</span>
-        </a>
-      ))}
-    </div>
-  );
-}
-
 /** Eine Person der Anrufliste: wann abgesagt, der Weg in die Akte, die Rufnummern. */
 function Anrufseite({
   termin,
@@ -161,7 +139,7 @@ function Anrufseite({
           Akte
         </Textlink>
       </div>
-      <Anrufknoepfe termin={termin} />
+      <Anrufknoepfe nummern={rufnummern(termin)} />
     </div>
   );
 }
@@ -373,7 +351,7 @@ function Ablauf({
     if (vorher) setAbfolge(vorher);
   }
 
-  const { freigeben, schutz } = useTextverlustschutz({
+  const { schutz } = useTextverlustschutz({
     // Vor der Absage geht die Wahl beim Weggehen verloren; danach steht alles
     // in der Adresse.
     ungespeichert: imAbsagen && grund !== null,
@@ -386,7 +364,10 @@ function Ablauf({
     mutationFn: ({ gewaehlt, ids }: { gewaehlt: CancellationReason; ids: string[] }) =>
       onAbsagen(gewaehlt, ids),
     onSuccess: async (_leer, { ids }) => {
-      freigeben();
+      // Kein `freigeben()`: Danach wechselt nur die Adresse (die Anrufliste),
+      // das hält der Schutz ohnehin nicht an. Eine übrige Freigabe ließe
+      // sonst die nächste Zurückgeste aus dem Ablauf, statt zur vorigen
+      // Person zu gehen (Praxis-Review der Politurrunde, BEF-175).
       await onAbgesagt(ids);
       // Die Anrufe beginnen von vorn, ohne Weg zurück in die Absage.
       setAbfolge(beginne<UmplanSeite>(ids[0] ? { art: 'anruf', id: ids[0] } : { art: 'fertig' }));

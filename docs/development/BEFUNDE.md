@@ -526,20 +526,6 @@ Marke vorsieht.
 
 **Erwartet.** Die Auslieferung übersteht eine kurze Drosselung (bis zu fünf Versuche, ANN-559). Hält der Abbruch an: den Zugang von einem anderen Rechner prüfen (`ssh -4`) und bei Uberspace erfragen, ob Adressen von GitHub Actions gesperrt sind.
 
-### BEF-175 — Geführter Ablauf: Fokus rollt die Frage weg, Rollfläche ohne Tastaturweg, `inert` nur am body
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-16 |
-| Bereich | Baustein `GefuehrterAblauf` / `Dialogfenster` (alle geführten Abläufe der Überholung 6) |
-| Quelle  | Oberflächen-Agenten der Überholung 6 (G3 bis G6), Playwright bei 375 × 667 und axe |
-| Status  | offen |
-| Berührt | `src/components/ui/Dialogfenster.tsx`, `src/components/ui/GefuehrterAblauf.tsx`, `src/components/ui/ListRow.tsx`, `src/features/documentation/Textverlustschutz.tsx` |
-
-**Beobachtung.** (1) Das Fenster fokussiert `[data-autofocus]` ohne `preventScroll`: Ein hohes Fokusziel (Liste, Zusammenfassung) rollt die Frage aus dem Bild; Panne, Einrichten und Plattform helfen sich mit einem kleinen Fokusanker. (2) Die rollende Fläche einer Abschlussseite ohne Bedienelement ist per Tastatur nicht erreichbar (axe `scrollable-region-focusable`); die Abläufe setzen selbst `tabIndex={0}`. (3) `inert` greift nur, wenn der Schleier direkt am body hängt - nicht im Ziel der Sitzungssperre (in Produktion also für alle Fenster) und nicht im Plattformziel (ANN-584); aria-modal, Fokuskreis und Schleier bleiben. (4) `ListRow` nimmt kein `data-autofocus` an. (5) Die Zurückgeste geht im Textverlustschutz nur dann einen Schritt zurück, wenn etwas als ungespeichert gilt. Dazu: „ein Foto sind noch nicht übertragen“ in der Rückfrage von Panne und Check-Up.
-
-**Erwartet.** Ein eigener Auftrag am Baustein: Fokus mit `preventScroll` oder auf die Frage, `tabIndex` an der Rollfläche des Bausteins, `inert` auch für Portalziele, danach die Umgehungen in den Abläufen entfernen; Grammatik der Rückfrage. Aus dem Design-Review dazu: freie Maße im Baustein (`max-h-[60%]`, `lg:w-96`) als Tokens, der `tel:`-Knopf (zweimal von Hand in G1 und G2) als Baustein in `src/components/ui`, Laden und Fehler der Rufnummer über `Abfragezustand`.
-
 ### BEF-176 — Panne und Einstiege am Lastenrad: Platzhalter statt Anruf, Frage nach dem Wochentag, Weg zur Radflotte
 
 |         |   |
@@ -631,3 +617,27 @@ Marke vorsieht.
 | Berührt | `public.issue_message_attachment_link`, `app.message_attachment_visible` |
 
 **Beobachtung.** Die Auskunft nennt jeden Anhang an einer Rückfrage, auch gesperrte (Legal Hold). Öffnen kann die Praxis aber nur bestätigte, nicht gesperrte und höchstens 30 Tage alte Anhänge; ein Gegenstück zu `hand_out_patient_photo` gibt es nur für Fotos der Akte. `nicht_enthalten` sagt das seit dem Zweitreview. **Erwartet.** Eine protokollierte Herausgabe gesperrter Anhänge für owner, wie bei den Fotos der Akte.
+
+### BEF-192 — Tag umplanen: Anrufknöpfe über, „Erreicht“ unter dem Daumen; „Anrufen“ ruft nicht an
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Kalender, „Tag umplanen“ (G2), Anrufseite und Abschluss |
+| Quelle  | Praxis-Review der Politurrunde 2026-10-20 |
+| Status  | offen (Vorschlag) |
+| Berührt | `src/features/appointments/TagUmplanenPage.tsx` (`Anrufseite`, Abschluss „noch nicht erreicht“) |
+
+**Beobachtung.** Auf der Anrufseite stehen „Mobil/Telefon anrufen“ oben im Inhalt, der gefüllte Hauptknopf „Erreicht“ im Fuß unter dem Daumen: Ein Tipp ohne Anruf führt zur nächsten Person. Im Abschluss öffnet „Anrufen“ an der Zeile nur wieder die Anrufseite, die Nummer steht als Text. Ein zweiter Anruf kostet so drei Tipps statt zwei. **Erwartet.** Wie BEF-176 (5) für G1: der Anruf als Hauptknopf im Fuß, „Erreicht“ und „Nicht erreicht“ sekundär; an der Zeile im Abschluss direkt wählen (`Anrufknoepfe`).
+
+### BEF-193 — Plattform „Ich“: die Beschreibung im Kopf läuft über drei Zeilen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Plattform, „Ich“ (`/p/ich`) |
+| Quelle  | Design-Review der Politurrunde 2026-10-20 |
+| Status  | offen (Vorschlag) |
+| Berührt | `src/features/platform/PlattformApp.tsx` (Kopf der Seite „Ich“) |
+
+**Beobachtung.** „Angemeldet als … · Zugang von …“ bricht bei 375 px in drei, bei 1280 px in zwei Zeilen um; DESIGN.md Regel 6 erlaubt eine. **Erwartet.** Der Kopf ohne Beschreibung oder nur mit „Zugang von …“, die Adresse als Zeile unter „Konto“.

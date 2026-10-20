@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Vollseite } from '@/app/Vollseite';
-import { PortalZielKontext } from '@/components/ui/portalZiel';
+import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 import { useSession } from '../sessionContext';
 import {
   BEDIENUNG_MELDEN_ALLE_MS,
@@ -452,10 +452,16 @@ export function Sitzungssperre({
           inert={!sichtbar}
           aria-hidden={sichtbar ? undefined : true}
         >
-          <PortalZielKontext.Provider value={portalZiel}>{children}</PortalZielKontext.Provider>
+          {/* Die Seite zeichnet erst, wenn das Ziel der Fenster steht: Ein
+              Fenster, das beim ersten Zeichnen schon offen ist, zöge sonst
+              vom `body` hierher um und behielte Fokuskreis und Sperre vom
+              ersten Ort (Zweitreview BEF-175; wie `MitFensterZiel`). */}
+          {portalZiel ? (
+            <PortalZielKontext.Provider value={portalZiel}>{children}</PortalZielKontext.Provider>
+          ) : null}
           {/* Fenster (`Dialogfenster`) werden hier gezeichnet, nicht am
               `body`: So verbirgt die Sperre sie mit (Zweitreview). */}
-          <div ref={setPortalZiel} data-testid="sitzung-fenster" />
+          <div ref={setPortalZiel} data-testid="sitzung-fenster" {...{ [FENSTERZIEL]: '' }} />
         </div>
       ) : null}
     </SperrsicherungKontext.Provider>

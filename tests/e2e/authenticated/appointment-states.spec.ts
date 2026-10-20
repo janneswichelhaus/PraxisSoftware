@@ -216,6 +216,9 @@ test.describe('CAL-009: Tag umplanen', () => {
   test('G2: plant den Tag geführt um - eine Person abgewählt, je Person ein Anruf', async ({
     page,
   }) => {
+    // Zwei Termine anlegen, der Ablauf samt Zurückgeste und der Blick in den
+    // Kalender brauchen am Stück knapp 30 s - mehr als die Vorgabe erlaubt.
+    test.setTimeout(90_000);
     const tag = laufTag(4);
 
     await anmelden(page, KONTEN.office);
@@ -267,6 +270,14 @@ test.describe('CAL-009: Tag umplanen', () => {
     const ende = page.getByRole('dialog', { name: '1 noch nicht erreicht' });
     await expect(ende.getByText('Max Mustermann')).toBeVisible();
     await page.screenshot({ path: '.tmp/screenshots/b6-g2-05-fertig-375.png' });
+    // Die Zurückgeste geht einen Schritt zurück zur Person, nicht aus dem
+    // Ablauf (BEF-175) - auch nach der Absage, ohne Ungespeichertes. Kein
+    // Tipp für das Budget: Danach geht es wie vorher weiter.
+    await page.goBack();
+    const nochmal = page.getByRole('dialog', { name: 'Max Mustermann erreicht?' });
+    await expect(nochmal).toBeVisible();
+    await nochmal.getByRole('button', { name: 'Nicht erreicht' }).click();
+    await expect(page.getByRole('dialog', { name: '1 noch nicht erreicht' })).toBeVisible();
     // Der Anrufstand steht in der Adresse - ein Neuladen nimmt ihn mit (ANN-574).
     await page.reload();
     await expect(page.getByRole('dialog', { name: '1 noch nicht erreicht' })).toBeVisible();

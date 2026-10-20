@@ -104,8 +104,10 @@ const symbol =
 
 /**
  * `gross` (48 px) nur für den Hauptknopf einer Karte - den Haken neben
- * „Doku" (Design-Handoff 2026-10-01, Abschnitt 6a). Die 40 px des Handoffs
- * für den kleinen Haken gibt es nicht: Er bleibt bei 44 (ANN-199).
+ * „Doku" (Design-Handoff 2026-10-01, Abschnitt 6a) - und neben einem Knopf
+ * in voller Größe, mit dem er eine Reihe bildet (das „−“ neben „+ 1 Glas“ im
+ * Tagebuch der Plattform). Die 40 px des Handoffs für den kleinen Haken gibt
+ * es nicht: Er bleibt bei 44 (ANN-199).
  */
 export type SymbolGroesse = 'normal' | 'gross';
 

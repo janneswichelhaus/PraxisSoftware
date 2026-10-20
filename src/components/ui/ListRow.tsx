@@ -81,6 +81,7 @@ export function ListRow({
   dicht = false,
   aktiv,
   uebergang = true,
+  fokusbeginn = false,
 }: {
   /**
    * Uhrzeit oder zwei Zeilen (Datum über Uhrzeit). Ohne Angabe entfällt die
@@ -112,6 +113,11 @@ export function ListRow({
   aktiv?: boolean;
   /** Mit `to`: der Übergang zur neuen Seite (Vorgabe) oder ein schlichter Link. */
   uebergang?: boolean;
+  /**
+   * Hier beginnt der Fokus eines Fensters (`data-autofocus`, BEF-175): am
+   * Ziel der Zeile, ohne Ziel an der Zeile selbst.
+   */
+  fokusbeginn?: boolean;
 }) {
   // `listenzeile`: Haken für die Plattform, die die Zeile bei sehr wenig
   // Breite untereinander stellt (POR-020, `src/index.css`).
@@ -177,22 +183,28 @@ export function ListRow({
     </>
   );
 
+  const fokus = fokusbeginn ? { 'data-autofocus': true } : {};
   const zeile = to ? (
     uebergang ? (
-      <Zeilenlink to={to} className={ziel} aktiv={aktiv}>
+      <Zeilenlink to={to} className={ziel} aktiv={aktiv} fokusbeginn={fokusbeginn}>
         {inhalt}
       </Zeilenlink>
     ) : (
-      <Link to={to} className={ziel} aria-current={aktiv ? 'page' : undefined}>
+      <Link to={to} className={ziel} aria-current={aktiv ? 'page' : undefined} {...fokus}>
         {inhalt}
       </Link>
     )
   ) : onClick ? (
-    <button type="button" onClick={onClick} className={ziel}>
+    <button type="button" onClick={onClick} className={ziel} {...fokus}>
       {inhalt}
     </button>
   ) : (
-    <div className={aktion ? `${raster} min-w-0 flex-1` : raster}>{inhalt}</div>
+    <div
+      className={`${aktion ? `${raster} min-w-0 flex-1` : raster} ${fokusbeginn ? 'focus:outline-none' : ''}`.trim()}
+      {...(fokusbeginn ? { ...fokus, tabIndex: -1 } : {})}
+    >
+      {inhalt}
+    </div>
   );
 
   if (!aktion) {
@@ -236,11 +248,13 @@ function Zeilenlink({
   to,
   className,
   aktiv,
+  fokusbeginn,
   children,
 }: {
   to: string;
   className: string;
   aktiv?: boolean | undefined;
+  fokusbeginn: boolean;
   children: ReactNode;
 }) {
   const navigate = useNavigate();
@@ -252,6 +266,7 @@ function Zeilenlink({
       onClick={(event) => zeileOeffnen(event, () => void navigate(to), ziel.pathname === pathname)}
       className={className}
       aria-current={aktiv ? 'page' : undefined}
+      {...(fokusbeginn ? { 'data-autofocus': true } : {})}
     >
       {children}
     </Link>

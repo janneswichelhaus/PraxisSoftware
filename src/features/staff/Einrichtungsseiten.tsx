@@ -140,8 +140,7 @@ export function Rollenseite({
  * Wo der Fokus einer Seite mit einer Liste beginnt: oben, direkt unter der
  * Frage, mit dem Namen der Liste für Vorlesesoftware. Nicht auf einer Antwort
  * und nicht auf dem Hauptknopf - ein gehaltenes Enter liefe sonst durch die
- * Seiten. Klein, weil der Baustein ohne `preventScroll` fokussiert: Ein hohes
- * Element rollte die Frage aus dem Bild.
+ * Seiten.
  */
 function Fokusanfang({ children }: { children: string }) {
   return (

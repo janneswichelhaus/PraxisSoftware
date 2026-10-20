@@ -22,6 +22,7 @@ import {
   paketeSchluessel,
   rechnungSchluessel,
   rechnungenSchluessel,
+  tagebuchSchluessel,
   termineSchluessel,
   trainingsangebotSchluessel,
   vertragSchluessel,
@@ -30,6 +31,7 @@ import {
   type EigeneCheckins,
   type EigeneErnaehrung,
   type EigeneGewohnheiten,
+  type EigenesTagebuch,
   type Einwilligung,
   type MeinPaket,
   type Nachsorgeabo,
@@ -936,6 +938,55 @@ client.setQueryData(ernaehrungSchluessel(zugaenge[0]!.access_id), {
   target_weight_floor_kg: 52.3,
 } satisfies EigeneErnaehrung);
 client.setQueryData(ernaehrungSchluessel(zugaenge[1]!.access_id), null);
+// Politurrunde 2026-10-20: das Tagebuch von heute - ein Frühstück, die übrigen
+// Mahlzeiten leer, zwei Gläser Wasser (wie im Seed bei Erika).
+const ohneSummen = { energy_kcal: 0, protein_g: 0, fat_g: 0, carbohydrate_g: 0 };
+client.setQueryData(tagebuchSchluessel(zugaenge[0]!.access_id, 'heute'), {
+  today: inTagen(0, 0).slice(0, 10),
+  started_on: '2026-09-27',
+  enabled: true,
+  can_write: true,
+  can_delete: true,
+  glass_ml: 250,
+  hide_numbers: false,
+  recent: [],
+  favorites: [],
+  targets: { energy_kcal: 1466, protein_g: 59, fat_g: 49, carbohydrate_g: 197, water_ml: 2570 },
+  day: {
+    day: inTagen(0, 0).slice(0, 10),
+    meals: [
+      {
+        meal: 'breakfast',
+        entries: [
+          {
+            id: 'e1e1e1e1-e1e1-4e1e-8e1e-000000000001',
+            eaten_on: inTagen(0, 0).slice(0, 10),
+            meal: 'breakfast',
+            food_kind: 'catalog',
+            food_id: null,
+            name: 'Haferflocken',
+            brand: null,
+            base_unit: 'g',
+            amount: 50,
+            portion_label: 'Portion',
+            portion_amount: 50,
+            portion_count: 1,
+            energy_kcal: 185,
+            protein_g: 6.7,
+            fat_g: 3.5,
+            carbohydrate_g: 29.3,
+          },
+        ],
+        totals: { energy_kcal: 185, protein_g: 6.7, fat_g: 3.5, carbohydrate_g: 29.3 },
+      },
+      { meal: 'lunch', entries: [], totals: ohneSummen },
+      { meal: 'dinner', entries: [], totals: ohneSummen },
+      { meal: 'snack', entries: [], totals: ohneSummen },
+    ],
+    totals: { energy_kcal: 185, protein_g: 6.7, fat_g: 3.5, carbohydrate_g: 29.3 },
+    water_ml: 500,
+  },
+} satisfies EigenesTagebuch);
 client.setQueryData(checkinsKey('treatment', MAX), {
   today: inTagen(0, 0).slice(0, 10),
   can_write: true,
@@ -1172,6 +1223,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'checkin-alltag':
     case 'gewohnheiten':
     case 'ernaehrung':
+    case 'tagebuch':
+    case 'lebensmittel':
+    case 'lebensmittel-neu':
     case 'angaben':
     case 'vertrag': {
       const pfade: Record<string, string> = {
@@ -1203,6 +1257,9 @@ function inhalt(): { pfad: string; element: ReactNode } {
         'checkin-alltag': '/p/checkin?bereich=treatment',
         gewohnheiten: '/p/gewohnheiten?bereich=treatment',
         ernaehrung: '/p/ernaehrung?bereich=treatment',
+        tagebuch: '/p/ernaehrung/tagebuch?bereich=treatment',
+        lebensmittel: '/p/ernaehrung/lebensmittel?bereich=treatment',
+        'lebensmittel-neu': '/p/ernaehrung/lebensmittel/neu?bereich=treatment',
       };
       return {
         pfad: pfade[seite]!,

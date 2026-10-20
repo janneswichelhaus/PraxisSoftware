@@ -134,7 +134,7 @@ function Suche({
       eigene={ernaehrung.profile.own_foods}
       ohneZahlen={ohneZahlen}
       ohneBegriff={(oeffnen) => (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 [&>*]:mt-0">
           {tagebuch.favorites.length > 0 ? (
             <Listenabschnitt titel="Favoriten">
               {tagebuch.favorites.map((s) => (

@@ -35,3 +35,13 @@ export async function uebertrageFotos(
 export function fotoText(anzahl: number): string {
   return anzahl === 1 ? 'ein Foto' : `${anzahl} Fotos`;
 }
+
+/**
+ * Der Satz der Rückfrage vor dem Weggehen, wenn Fotos noch nicht übertragen
+ * sind - mit Verb in der Zahl der Fotos (BEF-175).
+ */
+export function fotosVerlorenText(anzahl: number): string {
+  return anzahl === 1
+    ? 'Ein Foto ist noch nicht übertragen und geht beim Weitergehen verloren.'
+    : `${anzahl} Fotos sind noch nicht übertragen und gehen beim Weitergehen verloren.`;
+}

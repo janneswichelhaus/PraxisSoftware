@@ -11,7 +11,7 @@ import {
 import { createPortal } from 'react-dom';
 import { bewegungErlaubt } from './bewegung';
 import { Button } from './Button';
-import { usePortalZiel } from './portalZiel';
+import { FENSTERZIEL, usePortalZiel } from './portalZiel';
 import { Symbolknopf } from './Symbolknopf';
 
 /**
@@ -42,10 +42,16 @@ import { Symbolknopf } from './Symbolknopf';
  * Element. Das Verschwinden meldet ein `MutationObserver`, das Verlassen
  * `focusin` außerhalb und `focusout` ins Nichts.
  *
- * **Der Rest der Seite ist gesperrt**, solange das Fenster offen ist: Was vor
- * dem Schleier am `body` hängt - die Anwendung selbst, ein schon offenes
- * Fenster - trägt `inert`. Tab, ein Tipp und die Vorlesesoftware erreichen
- * darunter nichts mehr; `aria-modal` allein sagt das nur an.
+ * **Der Fokus rollt nichts weg (BEF-175).** Er geht mit `preventScroll`
+ * hinein: Ein hohes Fokusziel - eine Liste, eine Zusammenfassung - schöbe die
+ * Frage darüber sonst aus dem Bild.
+ *
+ * **Der Rest der Seite ist gesperrt**, solange das Fenster offen ist: Was
+ * schon da ist - die Anwendung selbst, ein schon offenes Fenster - trägt
+ * `inert`, auch wenn das Fenster nicht am `body` zeichnet, sondern im Ziel der
+ * Sitzungssperre oder der Plattform (`sperreDarunter`). Tab, ein Tipp und die
+ * Vorlesesoftware erreichen darunter nichts mehr; `aria-modal` allein sagt das
+ * nur an.
  *
  * **Es kommt von unten und geht nach unten** (ANN-663): eine Ebene über der
  * Seite, kein Wechsel der Seite. Wie es kommt, steht in `index.css`
@@ -123,27 +129,48 @@ export function Dialogfenster({
      * liefen im Kreis.
      */
     function zurueckholen() {
-      if (!fenster.isConnected) return;
+      // Verborgen oder unter einem Fenster, das darüber aufging: Der Fokus
+      // gehört dann der Sperrseite oder dem oberen Fenster.
+      if (!fenster.isConnected || istVerborgen(fenster)) return;
       const aktiv = document.activeElement;
       if (aktiv && aktiv !== document.body && aktiv.closest('[aria-modal="true"]')) return;
-      startpunkt().focus();
+      startpunkt().focus({ preventScroll: true });
     }
 
-    startpunkt().focus();
-
-    // Die Seite darunter sperren: alles, was vor dem Schleier am body hängt -
-    // die Anwendung und ein Fenster, das schon offen war. Ein Fenster, das
-    // danach aufgeht, liegt darüber und bleibt bedienbar. Erst nach dem
-    // Fokus: Ein `inert` um den noch fokussierten Auslöser nähme ihm den
-    // Fokus, bevor er im Fenster ist.
     const schleier = fenster.parentElement;
-    const gesperrt: Element[] = [];
-    if (schleier?.parentElement === document.body) {
-      for (let kind = schleier.previousElementSibling; kind; kind = kind.previousElementSibling) {
-        if (kind.hasAttribute('inert')) continue;
-        kind.setAttribute('inert', '');
-        gesperrt.push(kind);
-      }
+    let gesperrt: Element[] = [];
+    let wartet: MutationObserver | null = null;
+
+    /**
+     * Fokus hinein, dann die Seite darunter sperren - in dieser Reihenfolge:
+     * Ein `inert` um den noch fokussierten Auslöser nähme ihm den Fokus,
+     * bevor er im Fenster ist.
+     */
+    function aufgehen() {
+      startpunkt().focus({ preventScroll: true });
+      if (schleier) gesperrt = sperreDarunter(schleier);
+    }
+
+    if (schleier && istVerborgen(schleier)) {
+      // Geht das Fenster in einer verborgenen Seite auf - die Sitzungssperre
+      // verbirgt sie samt ihren Fenstern, eine Meldung nach einem Speichern
+      // kann dann noch aufgehen -, nimmt es weder den Fokus noch sperrt es
+      // etwas: Sonst läge die Sperrseite unter seinem `inert`, und niemand
+      // käme mehr hinein. Wird die Seite wieder sichtbar, holt es beides nach
+      // (ANN-671).
+      wartet = new MutationObserver(() => {
+        if (!fenster.isConnected || istVerborgen(schleier)) return;
+        wartet?.disconnect();
+        wartet = null;
+        aufgehen();
+      });
+      wartet.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['inert', 'hidden'],
+        subtree: true,
+      });
+    } else {
+      aufgehen();
     }
 
     function fokusDraussen(event: FocusEvent) {
@@ -163,12 +190,13 @@ export function Dialogfenster({
     beobachter.observe(fenster, { childList: true, subtree: true });
 
     return () => {
+      wartet?.disconnect();
       beobachter.disconnect();
       fenster.removeEventListener('focusout', fokusVerloren);
       document.removeEventListener('focusin', fokusDraussen);
       // Erst entsperren, dann den Fokus zurückgeben - auf ein Element unter
       // `inert` ginge er nicht.
-      for (const kind of gesperrt) kind.removeAttribute('inert');
+      entsperre(gesperrt);
       // Zurück, wo der Fokus herkam - sofern die Stelle noch da ist.
       if (vorher && vorher.isConnected) vorher.focus();
     };
@@ -411,6 +439,69 @@ function seitenregeln(): CSSStyleSheet[] {
     regelblatt = { blatt, anzahl: blaetter.length };
   }
   return [regelblatt.blatt];
+}
+
+/** Liegt das Element in einer gesperrten oder verborgenen Fläche? */
+function istVerborgen(element: Element): boolean {
+  return element.closest('[inert], [hidden]') !== null;
+}
+
+/**
+ * Wie viele offene Fenster ein Element gesperrt haben. Erst wenn das letzte
+ * davon schließt, fällt `inert` - auch wenn ein unteres Fenster vor einem
+ * oberen schließt. Ein `inert`, das nicht von hier kommt (etwa das der
+ * Sitzungssperre), zählt nicht und bleibt unberührt.
+ */
+const sperrzahl = new WeakMap<Element, number>();
+
+/**
+ * Sperrt mit `inert`, was beim Öffnen schon da ist, und gibt zurück, was es
+ * gesperrt hat. Im eigenen Ziel ist das, was vor dem Schleier hängt - ein
+ * Fenster, das danach aufgeht, liegt darüber und bleibt bedienbar. Auf dem Weg
+ * vom Ziel zum `body` ist es alles daneben: die Anwendung, die Plattform. Ein
+ * anderes Fensterziel darin (`FENSTERZIEL`) bleibt selbst offen, damit ein
+ * Fenster, das später dort aufgeht, nicht unter dieser Sperre liegt; gesperrt
+ * wird nur, was schon darin steht (ANN-671).
+ */
+function sperreDarunter(schleier: Element): Element[] {
+  const gesperrt: Element[] = [];
+  function sperre(element: Element) {
+    if (element.hasAttribute(FENSTERZIEL) || element.querySelector(`[${FENSTERZIEL}]`)) {
+      for (const kind of Array.from(element.children)) sperre(kind);
+      return;
+    }
+    const zahl = sperrzahl.get(element) ?? 0;
+    if (zahl === 0 && element.hasAttribute('inert')) return;
+    if (zahl === 0) element.setAttribute('inert', '');
+    sperrzahl.set(element, zahl + 1);
+    gesperrt.push(element);
+  }
+  for (let kind = schleier.previousElementSibling; kind; kind = kind.previousElementSibling) {
+    sperre(kind);
+  }
+  for (
+    let ebene = schleier.parentElement;
+    ebene && ebene !== document.body;
+    ebene = ebene.parentElement
+  ) {
+    for (const kind of Array.from(ebene.parentElement?.children ?? [])) {
+      if (kind !== ebene) sperre(kind);
+    }
+  }
+  return gesperrt;
+}
+
+/** Gibt frei, was `sperreDarunter` gesperrt hat - was noch ein Fenster sperrt, bleibt. */
+function entsperre(gesperrt: readonly Element[]) {
+  for (const element of gesperrt) {
+    const zahl = (sperrzahl.get(element) ?? 1) - 1;
+    if (zahl > 0) {
+      sperrzahl.set(element, zahl);
+    } else {
+      sperrzahl.delete(element);
+      element.removeAttribute('inert');
+    }
+  }
 }
 
 /** Alles im Fenster, was per Tab erreichbar ist, in Dokumentreihenfolge. */

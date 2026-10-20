@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { Profilhinweis } from '@/app/Profilhinweis';
 import { Button } from '@/components/ui/Button';
-import { PortalZielKontext } from '@/components/ui/portalZiel';
+import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
@@ -557,7 +557,12 @@ function MitFensterZiel({ children }: { children: ReactNode }) {
       {ziel ? (
         <PortalZielKontext.Provider value={ziel}>{children}</PortalZielKontext.Provider>
       ) : null}
-      <div ref={setZiel} className="plattform-schrift" data-testid="plattform-fenster" />
+      <div
+        ref={setZiel}
+        className="plattform-schrift"
+        data-testid="plattform-fenster"
+        {...{ [FENSTERZIEL]: '' }}
+      />
     </>
   );
 }

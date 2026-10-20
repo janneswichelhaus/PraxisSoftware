@@ -135,8 +135,7 @@ export function Wannzeile({
 
 /**
  * Wo der Fokus in der Zusammenfassung beginnt: an ihrem Anfang, nicht beim
- * Knopf - ein Enter sendet so nichts ungesehen. Ein kleines Ziel ganz oben,
- * damit der Fokus nichts rollt: Ein großes schöbe die Frage aus dem Bild.
+ * Knopf - ein Enter sendet so nichts ungesehen.
  */
 export function Zusammenfassungsanfang() {
   return (

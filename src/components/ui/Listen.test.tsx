@@ -266,3 +266,21 @@ describe('Datenliste (Design-Fundament, nach der Rechnungsliste)', () => {
     expect(container.firstElementChild).not.toHaveClass('rounded-card');
   });
 });
+
+describe('ListRow als Fokusbeginn eines Fensters (BEF-175)', () => {
+  it('setzt `data-autofocus` an das Ziel, ohne Ziel an die Zeile selbst', () => {
+    renderWithProviders(
+      <ListRows beschriftung="Übergabe">
+        <ListRow fokusbeginn titel="Mit Ziel" to="/rad" />
+        <ListRow fokusbeginn titel="Mit Klick" onClick={() => undefined} />
+        <ListRow fokusbeginn titel="Ohne Ziel" meta="Lastenrad 1" />
+        <ListRow titel="Ohne Fokus" to="/anderswo" />
+      </ListRows>,
+    );
+    expect(screen.getByRole('link', { name: 'Mit Ziel' })).toHaveAttribute('data-autofocus');
+    expect(screen.getByRole('button', { name: 'Mit Klick' })).toHaveAttribute('data-autofocus');
+    const ohneZiel = screen.getByText('Ohne Ziel').closest('[data-autofocus]');
+    expect(ohneZiel).toHaveAttribute('tabindex', '-1');
+    expect(screen.getByRole('link', { name: 'Ohne Fokus' })).not.toHaveAttribute('data-autofocus');
+  });
+});

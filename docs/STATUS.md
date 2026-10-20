@@ -5,6 +5,10 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+Politurrunde (20.10., Branch `ccr-c66528c5-m3o7aq`, Bereiche Jannes): Baustein geführter Ablauf
+(BEF-175, ANN-671: Fokus ohne Rollen, Sperre auch im Ziel der Sitzungssperre, Zurückgeste je Schritt)
+und Ernährungsberatung nach DESIGN.md; Plattformzeilen wieder in voller Breite.
+
 BEF-190 und BEF-191 (20.10., Branch `ccr-37917f35-emdjjp`, Befunde Jannes): Den Ausschnitt eines
 Profilbilds wählt die Person beim Auswählen selbst (ADR-017 Fassung 11, ANN-670); ein neues Bild
 erscheint ohne Neuladen auch an Nachrichten, die schon dastehen. Gemergt davor: BEF-189 (#279).
@@ -28,7 +32,7 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Eine Politurrunde; BEF-188 (Herausgabe gesperrter Anhänge, braucht eine Freigabe zur Protokollierung).
+BEF-188 (Herausgabe gesperrter Anhänge, braucht eine Freigabe zur Protokollierung).
 
 ## Bei Jannes
 

@@ -9,7 +9,8 @@ import type * as PinModul from '../appPin';
 import type { PinErgebnis } from '../appPin';
 import { useSperrsicherung } from './sperrsicherung';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
-import { PortalZielKontext } from '@/components/ui/portalZiel';
+import { Button } from '@/components/ui/Button';
+import { FENSTERZIEL, PortalZielKontext } from '@/components/ui/portalZiel';
 
 /**
  * Die Sitzungssperre der Oberfläche (SEC-002, SEC-003; ADR-025).
@@ -95,6 +96,42 @@ function zeichne(sicherung?: () => Promise<boolean>) {
     <QueryClientProvider client={queryClient}>
       <Sitzungssperre>
         <Inhalt {...(sicherung ? { sicherung } : {})} />
+      </Sitzungssperre>
+    </QueryClientProvider>,
+  );
+}
+
+/** Öffnet das Fenster von `MitFensterknopf` ohne Tipp - etwa nach einem Speichern. */
+let fensterVonAussen: (() => void) | undefined;
+
+/** Eine Seite mit einem Fenster, das sich nicht sichern lässt (Punkt 4). */
+function MitFensterknopf() {
+  useSperrsicherung(() => Promise.resolve(false));
+  const [offen, setOffen] = useState(false);
+  fensterVonAussen = () => setOffen(true);
+  return (
+    <div>
+      <Button type="button" onClick={() => setOffen(true)}>
+        Fenster öffnen
+      </Button>
+      {offen ? (
+        <Dialogfenster titel="Rückfrage" onSchliessen={() => setOffen(false)}>
+          <Button type="button" data-autofocus onClick={() => setOffen(false)}>
+            Fertig
+          </Button>
+        </Dialogfenster>
+      ) : null}
+    </div>
+  );
+}
+
+function zeichneMitFensterknopf() {
+  queryClient = new QueryClient();
+  ladeSperrstand.mockResolvedValueOnce(offen(30, 3000));
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <Sitzungssperre>
+        <MitFensterknopf />
       </Sitzungssperre>
     </QueryClientProvider>,
   );
@@ -524,6 +561,68 @@ describe('Sitzungssperre: Befunde aus dem Zweitreview', () => {
     expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
     expect(screen.getByText('Wochentage')).not.toBeVisible();
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('sperrt mit einem offenen Fenster die Seite, nie die Sperrseite (BEF-175, ANN-671)', async () => {
+    zeichneMitFensterknopf();
+    await warte();
+    const ziel = screen.getByTestId('sitzung-fenster');
+    expect(ziel).toHaveAttribute(FENSTERZIEL);
+
+    // Geöffnet nach dem ersten Zeichnen, wie in der Anwendung: Das Fenster
+    // zeichnet ins Ziel der Sperre und sperrt die Seite daneben.
+    fireEvent.click(screen.getByRole('button', { name: 'Fenster öffnen' }));
+    const fenster = screen.getByRole('dialog', { name: 'Rückfrage' });
+    expect(ziel).toContainElement(fenster);
+    expect(screen.getByText('Fenster öffnen').closest('[inert]')).not.toBeNull();
+    expect(fenster.closest('[inert]')).toBeNull();
+
+    // Die Sperre kommt, der Stand ließ sich nicht sichern: Seite und Fenster
+    // bleiben verborgen stehen, die Sperrseite ist bedienbar.
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    await warte(11_000);
+    expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
+    for (const name of ['Mit Passkey entsperren', 'Mit anderem Konto anmelden']) {
+      expect(screen.getByRole('button', { name }).closest('[inert]')).toBeNull();
+    }
+    expect(screen.getByLabelText('PIN', { exact: true }).closest('[inert]')).toBeNull();
+
+    // Entsperrt steht das Fenster wieder über der gesperrten Seite; beim
+    // Schließen bleibt nichts gesperrt.
+    anmeldenMitPasskey.mockResolvedValue(undefined);
+    ladeSperrstand.mockResolvedValue(offen());
+    fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey entsperren' }));
+    await warte();
+    expect(screen.getByRole('dialog', { name: 'Rückfrage' })).toBeVisible();
+    expect(screen.getByText('Fenster öffnen').closest('[inert]')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Fertig' }));
+    expect(document.querySelector('[inert]')).toBeNull();
+  });
+
+  it('nimmt der Sperrseite nichts, wenn hinter ihr ein Fenster aufgeht, und holt es danach nach', async () => {
+    zeichneMitFensterknopf();
+    await warte();
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    await warte(11_000);
+    const pin = screen.getByLabelText('PIN', { exact: true });
+    expect(pin).toHaveFocus();
+
+    // Etwa eine Meldung nach einem Speichern, das noch lief.
+    act(() => fensterVonAussen?.());
+    expect(screen.getByText('Fertig')).not.toBeVisible();
+    expect(pin).toHaveFocus();
+    expect(pin.closest('[inert]')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Mit Passkey entsperren' }).closest('[inert]'),
+    ).toBeNull();
+
+    // Sichtbar geworden, holt das Fenster Fokus und Sperre nach.
+    anmeldenMitPasskey.mockResolvedValue(undefined);
+    ladeSperrstand.mockResolvedValue(offen());
+    fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey entsperren' }));
+    await warte();
+    expect(screen.getByRole('button', { name: 'Fertig' })).toHaveFocus();
+    expect(screen.getByText('Fenster öffnen').closest('[inert]')).not.toBeNull();
   });
 
   it('wirft beim Festhalten die Abfragen anderer Seiten weg', async () => {

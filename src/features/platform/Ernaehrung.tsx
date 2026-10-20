@@ -62,7 +62,7 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigeneErnae
   const { search } = useLocation();
   const widerrufen = p.consent?.state === 'withdrawn';
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
       {widerrufen ? (
         <Statusmeldung ton="warnung">
           Einwilligung widerrufen am {datum(p.consent!.occurred_on)}. Es wird nichts mehr

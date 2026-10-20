@@ -21,11 +21,7 @@ import {
   type Abfolge,
 } from '@/components/ui/abfolge';
 import { todayInTimeZone } from '@/features/appointments/api';
-import {
-  EINGABETEXTE,
-  useTextverlustschutz,
-  type Verlustschutztexte,
-} from '@/features/documentation/Textverlustschutz';
+import { useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import { leseRueckweg } from '@/lib/rueckweg';
 import type { CurrentUser } from '@/features/session/types';
 import {
@@ -156,13 +152,12 @@ function Schluesselfenster({
     },
   });
 
-  // Nichts Eingetipptes, aber die Zurückgeste soll einen Schritt zurückgehen,
-  // statt den Ablauf zu verlassen - dafür hält der Schutz die Navigation an.
+  // Nichts Eingetipptes: Gewählt ist nur, was zwei Tipps wieder herstellen.
+  // Der Schutz sorgt allein dafür, dass die Zurückgeste einen Schritt
+  // zurückgeht, statt den Ablauf zu verlassen (BEF-175).
   const gewaehlt = kannZurueck(abfolge);
   const { freigeben, schutz } = useTextverlustschutz({
-    ungespeichert: gewaehlt,
-    kompakt: true,
-    texte: SCHLUESSELTEXTE,
+    ungespeichert: false,
     schrittZurueck: gewaehlt && !eintragen.isPending ? () => zurueckGehen() : undefined,
   });
 
@@ -207,9 +202,9 @@ function Schluesselfenster({
     schutz,
   };
 
-  // Auf den Seiten mit Zeilen setzt der Ablauf kein Fokusziel: Ein Ziel um
-  // die ganze Liste rollte eine lange Liste so weit, dass die Frage aus dem
-  // Bild ginge; das Fenster nimmt dann sein erstes Bedienelement.
+  // Auf den Seiten mit Zeilen setzt der Ablauf kein Fokusziel auf eine
+  // Antwort: Ein gehaltenes Enter liefe sonst durch die Seiten. Das Fenster
+  // nimmt dann sein erstes Bedienelement.
   if (seite === 'rad') {
     return (
       <GefuehrterAblauf {...kopf} titel="Welches Rad?">
@@ -280,51 +275,39 @@ function Schluesselfenster({
         </div>
       }
     >
-      <div tabIndex={-1} data-autofocus className="focus:outline-none">
-        <ListRows rahmen={false} beschriftung="Übergabe">
-          <ListRow
-            titel="Rad"
-            meta={rad.name}
-            aktion={
-              <Button
-                variant="secondary"
-                groesse="kompakt"
-                aria-label="Rad ändern"
-                onClick={() => setAbfolge((aktuell) => aendern(aktuell, 'rad'))}
-              >
-                Ändern
-              </Button>
-            }
-          />
-          {/* Woher er kommt, folgt aus dem Rad - ein anderes Rad ändert es. */}
-          <ListRow titel="Von" meta={vonText(rad, ich)} />
-          <ListRow
-            titel="An"
-            meta={personName(person, ich)}
-            aktion={
-              <Button
-                variant="secondary"
-                groesse="kompakt"
-                aria-label="Person ändern"
-                onClick={() => setAbfolge((aktuell) => aendern(aktuell, 'person'))}
-              >
-                Ändern
-              </Button>
-            }
-          />
-        </ListRows>
-      </div>
+      <ListRows rahmen={false} beschriftung="Übergabe">
+        <ListRow
+          fokusbeginn
+          titel="Rad"
+          meta={rad.name}
+          aktion={
+            <Button
+              variant="secondary"
+              groesse="kompakt"
+              aria-label="Rad ändern"
+              onClick={() => setAbfolge((aktuell) => aendern(aktuell, 'rad'))}
+            >
+              Ändern
+            </Button>
+          }
+        />
+        {/* Woher er kommt, folgt aus dem Rad - ein anderes Rad ändert es. */}
+        <ListRow titel="Von" meta={vonText(rad, ich)} />
+        <ListRow
+          titel="An"
+          meta={personName(person, ich)}
+          aktion={
+            <Button
+              variant="secondary"
+              groesse="kompakt"
+              aria-label="Person ändern"
+              onClick={() => setAbfolge((aktuell) => aendern(aktuell, 'person'))}
+            >
+              Ändern
+            </Button>
+          }
+        />
+      </ListRows>
     </GefuehrterAblauf>
   );
 }
-
-/** Die Rückfrage spricht vom Schlüssel, nicht von „Eingaben“. */
-const SCHLUESSELTEXTE: Verlustschutztexte = {
-  ...EINGABETEXTE,
-  bezeichnung: 'Schlüssel noch nicht übergeben',
-  zeile: {
-    weitergehen: 'Schlüssel noch nicht übergeben.',
-    abmelden: 'Schlüssel noch nicht übergeben – abmelden?',
-    bleiben: 'Weiter übergeben',
-  },
-};

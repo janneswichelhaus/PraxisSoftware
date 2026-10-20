@@ -35,7 +35,7 @@ import {
   type Eintrag,
   type Mahlzeit,
 } from '@/features/nutrition/tagebuch';
-import { zahl } from '@/features/nutrition/texte';
+import { liter, zahl } from '@/features/nutrition/texte';
 import { tagebuchSchluessel, type EigenesTagebuch, type Plattformzugang } from './api';
 import { useNurLesen, usePlattformApi } from './einsicht';
 import { PLATTFORM_PFAD } from './pfade';
@@ -101,7 +101,7 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
   const schreibbar = daten.can_write && !nurLesen;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
       <Tagesleiste tag={tag} heute={daten.today} anfang={daten.started_on} />
       {!daten.enabled ? (
         <Statusmeldung ton="neutral">
@@ -118,16 +118,18 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
       {MAHLZEITEN.map((mahlzeit) => {
         const teil = daten.day.meals.find((m) => m.meal === mahlzeit)!;
         return (
+          // Leer steht in der Karte wie das Gefüllte daneben (DESIGN.md Regel 8);
+          // „Eintragen“ in voller Größe wie jeder Knopf der Plattform.
           <Listenabschnitt
             key={mahlzeit}
             titel={MAHLZEIT_NAMEN[mahlzeit]}
+            leer={{ titel: 'Nichts eingetragen.' }}
             {...(schreibbar
               ? {
                   aktion: (
                     <ButtonLink
                       to={eintragenAdresse(tag, mahlzeit, search)}
                       variant="secondary"
-                      groesse="kompakt"
                       aria-label={`${MAHLZEIT_NAMEN[mahlzeit]} eintragen`}
                     >
                       Eintragen
@@ -171,7 +173,7 @@ function Tagesleiste({ tag, heute, anfang }: { tag: string; heute: string; anfan
   const navigate = useNavigate();
   const { search } = useLocation();
   return (
-    <nav aria-label="Tag wählen" className="-mt-4 flex items-center justify-between gap-2">
+    <nav aria-label="Tag wählen" className="flex items-center justify-between gap-2">
       <Symbolknopf
         beschriftung="Vortag"
         disabled={tag <= anfang}
@@ -272,7 +274,9 @@ function Wasser({
     <Section titel="Wasser">
       <p className="text-ink text-base">
         {wasserText(menge)}
-        {ziel ? ` von ${wasserText(ziel)}` : ''}
+        {/* Das Ziel wie unter „Ernährung“ und in der Akte (`liter`), nicht
+            auf zwei Stellen: dort „2,6 l“, hier sonst „2,57 l“. */}
+        {ziel ? ` von ${liter(ziel)}` : ''}
       </p>
       {ziel ? <ProgressBar wert={menge} von={ziel} /> : null}
       {schreibbar ? (
@@ -286,12 +290,18 @@ function Wasser({
           >
             + 1 Glas ({zahl(glas)} ml)
           </Button>
+          {/* Mit Rand und in der Höhe von „+ 1 Glas“ (48 px): Ein leises Minus
+              war in der Sonne kaum mehr als ein Strich. */}
           <Symbolknopf
+            variant="secondary"
+            groesse="gross"
             beschriftung="Ein Glas weniger"
             disabled={zaehlen.isPending || menge === 0}
             onClick={() => zaehlen.mutate(-glas)}
           >
-            <span aria-hidden="true">−</span>
+            <span aria-hidden="true" className="text-xl">
+              −
+            </span>
           </Symbolknopf>
         </div>
       ) : null}
