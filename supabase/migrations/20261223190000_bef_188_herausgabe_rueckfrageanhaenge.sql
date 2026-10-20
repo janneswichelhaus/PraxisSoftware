@@ -19,8 +19,12 @@
 --     die Person, wie patient_file.handed_out; ein Anhang ist aber keine
 --     Datei der Akte (Punkt 66), und das Protokoll soll das nicht anders
 --     sagen. context traegt patient_id oder training_relationship_id: Damit
---     steht die Herausgabe in der naechsten Auskunft und haelt ein Legal Hold
---     die Zeile (app.audit_entry_held).
+--     steht die Herausgabe in der naechsten Auskunft der Akte oder des
+--     Verhaeltnisses; ein Legal Hold der Akte haelt die Zeile
+--     (app.audit_entry_held, nur ueber patient_id - wie jede Auditzeile).
+--   * NUR, WAS DA IST. Fehlt das Objekt in der Ablage, gibt es weder Eintrag
+--     noch Freigabe: Das Protokoll sagt nur "herausgegeben", wenn etwas
+--     herausgegeben werden kann (Zweitreview).
 --   * BEHANDLUNG UND TRAINING. Dieselbe Pruefung wie die jeweilige Auskunft
 --     (app.auskunft_organisation, app.auskunft_organisation_training).
 --
@@ -257,6 +261,13 @@ begin
     perform app.auskunft_organisation(v_vorgang.patient_id);
   else
     perform app.auskunft_organisation_training(v_vorgang.training_relationship_id);
+  end if;
+
+  if not exists (
+    select 1 from storage.objects o
+    where o.bucket_id = app.message_attachment_bucket() and o.name = v_anhang.object_key
+  ) then
+    raise exception 'attachment object missing' using errcode = 'P0002';
   end if;
 
   insert into public.audit_log (

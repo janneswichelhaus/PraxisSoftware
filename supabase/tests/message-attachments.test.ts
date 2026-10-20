@@ -1094,6 +1094,7 @@ describe('Herausgabe der Anhänge an die Person (BEF-188)', () => {
     }
     // Plattformkonten ebenso wenig, auch die Person selbst nicht über diesen Weg.
     expect(await code(asUserCommitted(erika.konto, HERAUSGEBEN, [v.attachment_id]))).toBe('42501');
+    expect(await code(asUser(erika.konto, LISTE, ['treatment', patients.erika]))).toBe('42501');
     const { rows } = await asPostgres(
       "select 1 from public.audit_log where action = 'message_attachment.handed_out'",
     );
@@ -1166,6 +1167,26 @@ describe('Herausgabe der Anhänge an die Person (BEF-188)', () => {
     expect(
       await code(asUser(users.ownerTherapist, LISTE, ['other', SEED.trainingRelationships.tina])),
     ).toBe('42501');
+  });
+
+  it('fehlt das Objekt, gibt es weder Kopie noch Protokolleintrag (Zweitreview)', async () => {
+    const { v } = await gesperrterAnhang();
+    await asPostgres(
+      "delete from storage.objects where bucket_id = 'rueckfrageanhang' and name = $1",
+      [v.object_key],
+    );
+    const { rows: liste } = await asUser<{ object_missing: boolean }>(users.ownerTherapist, LISTE, [
+      'treatment',
+      patients.erika,
+    ]);
+    expect(liste[0]!.object_missing).toBe(true);
+    expect(await code(asUserCommitted(users.ownerTherapist, HERAUSGEBEN, [v.attachment_id]))).toBe(
+      'P0002',
+    );
+    const { rows } = await asPostgres(
+      "select 1 from public.audit_log where action = 'message_attachment.handed_out'",
+    );
+    expect(rows).toHaveLength(0);
   });
 
   it('eine Freigabe zum Ansehen öffnet keinen gesperrten Anhang (Punkt 54)', async () => {
