@@ -6936,3 +6936,15 @@ Technik · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Abn
 **Anker.** `sperreDarunter` in `src/components/ui/Dialogfenster.tsx`.
 
 **Änderungspfad.** Wieder nur am `body`: die Schleife über die Ebenen streichen · Aufwand `klein`.
+
+### ANN-672 — Anhänge an Rückfragen: Kopie je Anhang, auch gesperrt, mit eigener Auditaktion
+
+Datenschutz · entschieden (Jannes) · 2026-10-20 · Jannes (2026-10-20, BEF-188 wie empfohlen) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006)
+
+**Annahme.** owner gibt jeden bestätigten Anhang an einer Rückfrage einzeln als Kopie heraus, an der Akte und am Trainingsverhältnis, auch gesperrte. Jede Kopie steht als eigene Aktion `message_attachment.handed_out` am Gegenstand `platform_message_attachment` im Protokoll, mit Akte oder Verhältnis, Art und „gesperrt“; Dateiname ohne Namen der Person.
+
+**Begründung.** BEF-188; wie die Fotos der Akte (ANN-128, ABN-017). Eine eigene Aktion statt `patient_file.handed_out`, weil ein Anhang keine Datei der Akte ist (ADR-017 Punkt 66) und das Protokoll das nicht anders sagen soll. Ein Eintrag mehr im Katalog, nur bei einer Auskunft.
+
+**Anker.** `public.hand_out_message_attachment` in `supabase/migrations/20261223190000_bef_188_herausgabe_rueckfrageanhaenge.sql`.
+
+**Änderungspfad.** Ohne eigene Aktion: `patient_file.handed_out` mit dem neuen Gegenstand schreiben und die Aktion aus Katalog und Constraint nehmen · Aufwand `klein`. Gesperrte ausnehmen: `app.message_attachment_visible` in Liste, Herausgabe und Freigabe verlangen · Aufwand `klein`.

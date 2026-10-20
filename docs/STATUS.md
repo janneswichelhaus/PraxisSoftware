@@ -5,6 +5,9 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
+BEF-188 (20.10., Branch `claude/cool-allen-m2aaci`, Pfad A): Fotos und Videos an Rückfragen gibt owner je
+Anhang heraus, auch gesperrte; Aktion `message_attachment.handed_out` (ANN-672), Merge mit `freigabe-audit`.
+
 Politurrunde (20.10., Branch `ccr-c66528c5-m3o7aq`, Bereiche Jannes): Baustein geführter Ablauf
 (BEF-175, ANN-671: Fokus ohne Rollen, Sperre auch im Ziel der Sitzungssperre, Zurückgeste je Schritt)
 und Ernährungsberatung nach DESIGN.md; Plattformzeilen wieder in voller Breite.
@@ -27,12 +30,11 @@ Rückfrage vor dem Verlassen als Fenster (ANN-566); Vorbereitung der Überholung
 
 Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Runde (`claude/sweet-gauss-z8te7o`), Monatsabrechnung
 (`ccr-92feaef7-zkxssj`), Übersicht (`claude/practical-curie-1jy88f`), Intro
-(`claude/eloquent-newton-p38ihe`). Gemergt: Beratung abrechnen (#277, ANN-664, ANN-665), Richtung der Bewegung (#276, ANN-663), ERN-EPIC-003 (#275), ERN-EPIC-001 und -002 (#274), BEF-124 (#255), Check-Up geführt (#256), Radflotte-Meldungen und
-Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
+(`claude/eloquent-newton-p38ihe`). Gemergt: Beratung abrechnen (#277, ANN-664, ANN-665), Richtung der Bewegung (#276, ANN-663), ERN-EPIC-003 (#275), ERN-EPIC-001 und -002 (#274).
 
 ## Danach
 
-BEF-188 (Herausgabe gesperrter Anhänge, braucht eine Freigabe zur Protokollierung).
+BEF-192 und BEF-193 (Tag umplanen: Anruf als Hauptknopf; Kopf der Seite „Ich“ in einer Zeile).
 
 ## Bei Jannes
 
@@ -60,4 +62,4 @@ BEF-188 (Herausgabe gesperrter Anhänge, braucht eine Freigabe zur Protokollieru
 ## Letzte Session
 
 19.10.2026, PR #278: Migrationen `20261223100000` bis `20261223160000` (TEAM-006 bis -009,
-BEF-146 bis -148). **Lokal:** `git pull`, `supabase db reset`.
+BEF-146 bis -148). Lokal: `git pull`, `supabase db reset`.

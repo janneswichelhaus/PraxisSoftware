@@ -10,6 +10,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { VERBINDUNG_PRUEFEN } from '@/components/ui/abfrageTexte';
 import { roleLabel } from '@/components/ui/roleLabels';
+import { AnhangHerausgabe } from '@/features/messages/AnhangHerausgabe';
 import { getTrainingClient } from '@/features/training/api';
 import { fetchTrainingAuskunft } from './api';
 import { AuskunftErgebnis } from './BetroffenenrechtePage';
@@ -92,11 +93,16 @@ export function TrainingAuskunftPage() {
                   <AuskunftErgebnis auskunft={auskunft.data} kategorien={TRAINING_KATEGORIEN} />
                 ) : null}
               </Section>
+              {/* BEF-188: Der Inhalt der Fotos und Videos an Rückfragen kommt
+                  nicht mit der Auskunft, sondern je Anhang getrennt. */}
+              <AnhangHerausgabe art="training" verhaeltnisId={relationshipId} />
               <div className="mt-8">
                 <Kleingedrucktes>
                   Vorgang nach dem Verfahren für Betroffenenrechte, vorbehalten der Rolle „
                   {roleLabel('owner')}“. Jede Auskunft erstellt eine Kopie aller Daten dieses
-                  Trainingsverhältnisses und wird protokolliert. Die Anwendung verschickt nichts.
+                  Trainingsverhältnisses und wird protokolliert. Fotos und Videos an Rückfragen
+                  entstehen je Anhang als Kopie für die Person (Art. 15 Abs. 3 und Art. 20 DSGVO),
+                  jede protokolliert. Die Anwendung verschickt nichts.
                 </Kleingedrucktes>
               </div>
             </>

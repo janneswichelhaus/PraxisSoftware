@@ -588,7 +588,7 @@ deckungsgleich.
    Löschaufträge, ohne Eintrag für den Rest (ANN-115). Die echte HTTP-Antwort
    über PostgREST ist nur lokal mit `supabase start` zu sehen.
 7. **Kein Audit-Report und keine Alarmierung** — gewollt: ADR-010 Fassung 3
-   wertet bei Anlass aus. Der Katalog hat 26 Aktionen
+   wertet bei Anlass aus. Der Katalog hat 27 Aktionen
    (`supabase/audit-aktionen.txt`); eine Änderung braucht das Label
    `freigabe-audit` (LOG-EPIC-001).
 8. **Die Dateiablage ist gebaut, aber nicht produktiv** — vor der ersten

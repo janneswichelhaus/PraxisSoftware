@@ -989,3 +989,218 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     await anhaengen(erika, vorgang, 'image/jpeg', null);
   });
 });
+
+/**
+ * Herausgabe an die Person (BEF-188, ADR-017 Punkt 96, ANN-672): owner gibt
+ * jeden bestätigten Anhang als Kopie heraus, auch einen gesperrten; jede
+ * Kopie steht als `message_attachment.handed_out` im Protokoll und in der
+ * nächsten Auskunft.
+ */
+describe('Herausgabe der Anhänge an die Person (BEF-188)', () => {
+  const LISTE =
+    'select * from public.list_message_attachments_for_access_request($1, $2::uuid) order by taken_at';
+  const HERAUSGEBEN = 'select * from public.hand_out_message_attachment($1::uuid)';
+
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  async function gesperrterAnhang(): Promise<{ vorgang: string; v: Vorbereitet }> {
+    await abo();
+    const vorgang = await fragen(erika);
+    await einwilligen(erika);
+    const v = await anhaengen(erika, vorgang, 'image/jpeg', null);
+    await asUserCommitted(users.ownerTherapist, 'select public.place_legal_hold($1::uuid, $2)', [
+      patients.erika,
+      'Probe',
+    ]);
+    await einwilligen(erika, false);
+    return { vorgang, v };
+  }
+
+  it('owner gibt einen gesperrten Anhang heraus, einmal je Freigabe, protokolliert', async () => {
+    const { v } = await gesperrterAnhang();
+
+    const { rows: liste } = await asUser<{ id: string; locked: boolean; object_missing: boolean }>(
+      users.ownerTherapist,
+      LISTE,
+      ['treatment', patients.erika],
+    );
+    expect(liste).toEqual([
+      expect.objectContaining({ id: v.attachment_id, locked: true, object_missing: false }),
+    ]);
+
+    // Ansehen bleibt gesperrt (Punkt 54); die Herausgabe nicht.
+    expect(
+      await code(asUserCommitted(users.ownerTherapist, VERWEIS_PRAXIS, [v.attachment_id])),
+    ).toBe('42501');
+    expect(await signieren(users.ownerTherapist, v.object_key)).toBe(0);
+
+    const { rows } = await asUserCommitted<{ bucket_id: string; object_key: string }>(
+      users.ownerTherapist,
+      HERAUSGEBEN,
+      [v.attachment_id],
+    );
+    expect(rows[0]).toMatchObject({ bucket_id: 'rueckfrageanhang', object_key: v.object_key });
+    // Eine Freigabe, eine Operation - und nur für das eigene Konto.
+    expect(await signieren(users.therapist, v.object_key)).toBe(0);
+    expect(await signieren(users.ownerTherapist, v.object_key)).toBe(1);
+    expect(await signieren(users.ownerTherapist, v.object_key)).toBe(0);
+
+    const { rows: protokoll } = await asPostgres<{
+      action: string;
+      subject_type: string;
+      subject_id: string;
+      context: Record<string, unknown>;
+    }>(
+      `select action, subject_type, subject_id, context from public.audit_log
+        where action = 'message_attachment.handed_out'`,
+    );
+    expect(protokoll).toEqual([
+      {
+        action: 'message_attachment.handed_out',
+        subject_type: 'platform_message_attachment',
+        subject_id: v.attachment_id,
+        context: {
+          surface: 'web',
+          patient_id: patients.erika,
+          media_kind: 'photo',
+          gesperrt: true,
+        },
+      },
+    ]);
+
+    // Die nächste Auskunft nennt die Herausgabe.
+    const { rows: auskunft } = await asUser<{
+      daten: { tabellen: { access_log: { aktion: string; gegenstand: string }[] } };
+    }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
+      patients.erika,
+    ]);
+    expect(auskunft[0]!.daten.tabellen.access_log).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          aktion: 'message_attachment.handed_out',
+          gegenstand: 'platform_message_attachment',
+        }),
+      ]),
+    );
+  });
+
+  it('nur owner: Therapeut:in, Büro und Trainingsbetreuung weder Liste noch Kopie', async () => {
+    const { v } = await gesperrterAnhang();
+    for (const wer of [users.therapist, users.office, users.trainer, users.teamLead]) {
+      expect(await code(asUser(wer, LISTE, ['treatment', patients.erika]))).toBe('42501');
+      expect(await code(asUserCommitted(wer, HERAUSGEBEN, [v.attachment_id]))).toBe('42501');
+    }
+    // Plattformkonten ebenso wenig, auch die Person selbst nicht über diesen Weg.
+    expect(await code(asUserCommitted(erika.konto, HERAUSGEBEN, [v.attachment_id]))).toBe('42501');
+    expect(await code(asUser(erika.konto, LISTE, ['treatment', patients.erika]))).toBe('42501');
+    const { rows } = await asPostgres(
+      "select 1 from public.audit_log where action = 'message_attachment.handed_out'",
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  it('eine andere Organisation gibt nichts heraus und erfährt nichts (ADR-003)', async () => {
+    const fremd = await fremdeOrganisation();
+    const { v } = await gesperrterAnhang();
+    expect(await code(asUserCommitted(fremd.owner, HERAUSGEBEN, [v.attachment_id]))).toBe('42501');
+    expect(await code(asUser(fremd.owner, LISTE, ['treatment', patients.erika]))).toBe('42501');
+    expect(await signieren(fremd.owner, v.object_key)).toBe(0);
+  });
+
+  it('Training: ein sichtbarer Anhang, die Auskunft zum Verhältnis nennt die Kopie', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    const v = await anhaengen(tina, vorgang);
+
+    const { rows: liste } = await asUser<{ id: string; locked: boolean; media_kind: string }>(
+      users.ownerTherapist,
+      LISTE,
+      ['training', SEED.trainingRelationships.tina],
+    );
+    expect(liste).toEqual([
+      expect.objectContaining({ id: v.attachment_id, locked: false, media_kind: 'video' }),
+    ]);
+    // Die Akte einer anderen Person führt diesen Anhang nicht.
+    expect((await asUser(users.ownerTherapist, LISTE, ['treatment', patients.erika])).rows).toEqual(
+      [],
+    );
+
+    await asUserCommitted(users.ownerTherapist, HERAUSGEBEN, [v.attachment_id]);
+    expect(await signieren(users.ownerTherapist, v.object_key)).toBe(1);
+
+    const { rows: protokoll } = await asPostgres<{ context: Record<string, unknown> }>(
+      "select context from public.audit_log where action = 'message_attachment.handed_out'",
+    );
+    expect(protokoll[0]!.context).toEqual({
+      surface: 'web',
+      training_relationship_id: SEED.trainingRelationships.tina,
+      media_kind: 'video',
+      gesperrt: false,
+    });
+
+    const { rows: auskunft } = await asUser<{
+      daten: { tabellen: { access_log: { aktion: string }[] } };
+    }>(users.ownerTherapist, 'select public.export_training_record($1::uuid) as daten', [
+      SEED.trainingRelationships.tina,
+    ]);
+    expect(auskunft[0]!.daten.tabellen.access_log).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ aktion: 'message_attachment.handed_out' }),
+      ]),
+    );
+  });
+
+  it('nichts Unbestätigtes; eine falsche Art des Verhältnisses wird abgewiesen', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    const v = await vorbereiten(tina, vorgang);
+    await hochladen(tina.konto, v);
+    expect(
+      (await asUser(users.ownerTherapist, LISTE, ['training', SEED.trainingRelationships.tina]))
+        .rows,
+    ).toEqual([]);
+    expect(await code(asUserCommitted(users.ownerTherapist, HERAUSGEBEN, [v.attachment_id]))).toBe(
+      '42501',
+    );
+    expect(
+      await code(asUser(users.ownerTherapist, LISTE, ['other', SEED.trainingRelationships.tina])),
+    ).toBe('42501');
+  });
+
+  it('fehlt das Objekt, gibt es weder Kopie noch Protokolleintrag (Zweitreview)', async () => {
+    const { v } = await gesperrterAnhang();
+    await asPostgres(
+      "delete from storage.objects where bucket_id = 'rueckfrageanhang' and name = $1",
+      [v.object_key],
+    );
+    const { rows: liste } = await asUser<{ object_missing: boolean }>(users.ownerTherapist, LISTE, [
+      'treatment',
+      patients.erika,
+    ]);
+    expect(liste[0]!.object_missing).toBe(true);
+    expect(await code(asUserCommitted(users.ownerTherapist, HERAUSGEBEN, [v.attachment_id]))).toBe(
+      'P0002',
+    );
+    const { rows } = await asPostgres(
+      "select 1 from public.audit_log where action = 'message_attachment.handed_out'",
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  it('eine Freigabe zum Ansehen öffnet keinen gesperrten Anhang (Punkt 54)', async () => {
+    await abo();
+    const vorgang = await fragen(erika);
+    await einwilligen(erika);
+    const v = await anhaengen(erika, vorgang, 'image/jpeg', null);
+    // Freigabe zum Ansehen, solange sichtbar - dann gesperrt.
+    await asUserCommitted(users.ownerTherapist, VERWEIS_PRAXIS, [v.attachment_id]);
+    await asUserCommitted(users.ownerTherapist, 'select public.place_legal_hold($1::uuid, $2)', [
+      patients.erika,
+      'Probe',
+    ]);
+    await einwilligen(erika, false);
+    expect(await signieren(users.ownerTherapist, v.object_key)).toBe(0);
+  });
+});

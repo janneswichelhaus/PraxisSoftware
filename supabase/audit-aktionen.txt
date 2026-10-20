@@ -13,6 +13,7 @@ patient_file.downloaded
 patient_record.exported
 therapy_report.exported
 patient_file.handed_out
+message_attachment.handed_out
 platform_representation.read
 platform_access.invited
 platform_access.activated

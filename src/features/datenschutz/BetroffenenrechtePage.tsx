@@ -17,6 +17,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { fetchPatient, fullName, type Patient } from '@/features/patients/api';
 import { FotoHerausgabe } from '@/features/files/FotoHerausgabe';
+import { AnhangHerausgabe } from '@/features/messages/AnhangHerausgabe';
 import { DATENKLASSEN } from '@/features/retention/klassen';
 import {
   auskunftKennung,
@@ -321,6 +322,8 @@ export function BetroffenenrechtePage() {
               {/* DOK-006d: Der Inhalt der Fotos kommt nicht mit der Auskunft,
                   sondern je Foto getrennt (ADR-017 Punkt 40). */}
               <FotoHerausgabe patientId={data.id} />
+              {/* BEF-188: ebenso die Fotos und Videos an Rückfragen. */}
+              <AnhangHerausgabe art="treatment" verhaeltnisId={data.id} />
               <LoeschverlangenAbschnitt patient={data} />
 
               {/* Rechts- und Datenflusssätze in einem Block am Seitenende
@@ -340,8 +343,8 @@ export function BetroffenenrechtePage() {
                 <Kleingedrucktes>
                   Zur vollständigen Kopie gehören die Fotos selbst, auch gesperrte. Unter „Fotos
                   herausgeben“ entsteht je Foto eine Kopie für die Person (Art. 15 Abs. 3 und Art.
-                  20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie
-                  wird protokolliert.
+                  20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Ebenso für
+                  Fotos und Videos an Rückfragen. Jede Kopie wird protokolliert.
                 </Kleingedrucktes>
               </div>
             </>

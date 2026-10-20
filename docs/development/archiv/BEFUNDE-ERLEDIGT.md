@@ -1753,6 +1753,20 @@ eingeklappt.
 
 **Umsetzung (2026-10-20).** Der tägliche Lauf `purge_notification_deliveries` räumt Wahl und Tagebuch-Erinnerungen eines Zugangs, der zeitlich geendet hat oder entzogen ist; der Widerruf räumt sie sofort (Trigger), eine Sperre lässt sie stehen. Eine Begleitung lädt unter „Ich“ ihre eigene Wahl herunter (`platform_export_notifications`), nichts von der Person, protokolliert wie jeder Export. Die Liste steht an einer Stelle (`app.platform_notifications_json`). Migration `20261223180000`, Tests in `benachrichtigungen.test.ts` und `platform-export.test.ts` (Gegenprobe ohne Migration: 6 rot), `Datenexport.test.tsx`, `PlattformApp.test.tsx`. Zweitreview: Negativfälle ergänzt (rechtliche Vertretung, eingeladen, fremde Wahl derselben Person), das Zugriffsprotokoll der Auskunft nennt den Umfang des Exports einer Begleitung, ihr Export trägt keine Tagebuch-Erinnerungen (ADR-027 Punkt 3), die Sperre steht im Text der Auskunft.
 
+### BEF-188 — Gesperrte Anhänge an Rückfragen lassen sich nicht herausgeben
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-20 |
+| Bereich | Akte, Rückfragen der Plattform; Betroffenenrechte |
+| Quelle  | Zweitreview BEF-146 |
+| Status  | erledigt 2026-10-20 (Branch `claude/cool-allen-m2aaci`): Herausgabe je Anhang durch owner, auch gesperrt; ADR-017 Fassung 12, ADR-010 Fassung 5, ANN-672; Merge erst mit Label `freigabe-audit` |
+| Berührt | `public.issue_message_attachment_link`, `app.message_attachment_visible` |
+
+**Beobachtung.** Die Auskunft nennt jeden Anhang an einer Rückfrage, auch gesperrte (Legal Hold). Öffnen kann die Praxis aber nur bestätigte, nicht gesperrte und höchstens 30 Tage alte Anhänge; ein Gegenstück zu `hand_out_patient_photo` gibt es nur für Fotos der Akte. `nicht_enthalten` sagt das seit dem Zweitreview. **Erwartet.** Eine protokollierte Herausgabe gesperrter Anhänge für owner, wie bei den Fotos der Akte.
+
+**Umsetzung (2026-10-20).** `hand_out_message_attachment` gibt owner jeden bestätigten Anhang an Rückfragen einer Akte oder eines Trainingsverhältnisses heraus, auch gesperrte, gegen eine einmalige Freigabe mit `handout` (`app.may_read_message_attachment_object`); Ansehen bleibt bei sichtbaren. Protokoll: `message_attachment.handed_out` am Gegenstand `platform_message_attachment`, mit Akte oder Verhältnis; die nächste Auskunft nennt es. Auf beiden Auskunftsseiten die Liste „Fotos und Videos an Rückfragen“ (`AnhangHerausgabe.tsx`). Migration `20261223190000`, Tests in `supabase/tests/message-attachments.test.ts` und `AnhangHerausgabe.test.tsx`.
+
 ### BEF-190 — Profilbild: der Ausschnitt lässt sich beim Auswählen nicht wählen
 
 |         |   |

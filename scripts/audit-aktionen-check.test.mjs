@@ -19,7 +19,7 @@ describe('Katalog der Aktionen', () => {
   it('ist deckungsgleich mit dem Katalog der Oberfläche', () => {
     const datei = [...aktionen(readFileSync('supabase/audit-aktionen.txt', 'utf8'))].sort();
     expect(datei).toEqual([...AUDIT_ACTIONS].sort());
-    expect(datei).toHaveLength(26);
+    expect(datei).toHaveLength(27); // ADR-010 Fassung 5 (BEF-188)
   });
 
   it('nennt hinzugekommene und entfallene Aktionen', () => {
