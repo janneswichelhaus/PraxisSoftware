@@ -54,6 +54,22 @@ async function fotoMitOrt(page: Page) {
   };
 }
 
+/** Farbe in der Mitte eines gezeigten Bilds (gleiche Herkunft: Objekt-URL). */
+async function mittelfarbe(page: Page, auswahl: string): Promise<[number, number, number]> {
+  return page
+    .locator(auswahl)
+    .first()
+    .evaluate((el: HTMLImageElement) => {
+      const leinwand = document.createElement('canvas');
+      leinwand.width = el.naturalWidth;
+      leinwand.height = el.naturalHeight;
+      const stift = leinwand.getContext('2d')!;
+      stift.drawImage(el, 0, 0);
+      const [r, g, b] = stift.getImageData(el.naturalWidth / 2, el.naturalHeight / 2, 1, 1).data;
+      return [r!, g!, b!] as [number, number, number];
+    });
+}
+
 async function zumTeamchat(page: Page): Promise<void> {
   await anmelden(page, KONTEN.therapist);
   await page.setViewportSize(TELEFON);
@@ -103,6 +119,62 @@ test('setzt ein Profilbild aus dem Teamchat heraus in drei Tipps; der Ort fällt
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     ),
   ).toBe(false);
+});
+
+test('zeigt ein neues Bild an Nachrichten, die schon dastehen, ohne Neuladen (BEF-191)', async ({
+  page,
+  browser,
+}) => {
+  // Bis zu 30 s Takt, dazu zwei Anmeldungen.
+  test.setTimeout(150_000);
+  // Anna schreibt Jannes; Jannes hat das Gespräch offen.
+  await zumTeamchat(page);
+  await page.goto('/team/neu');
+  await page.getByRole('button', { name: /^Jannes Test/ }).click();
+  const text = `Vor dem neuen Bild ${Date.now()}`;
+  await page.getByRole('textbox', { name: /^Nachricht an/ }).fill(text);
+  await page.getByRole('button', { name: 'Senden', exact: true }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: text })).toBeVisible();
+
+  const andere = await browser.newPage();
+  await anmelden(andere, KONTEN.owner);
+  await andere.setViewportSize(TELEFON);
+  await andere.goto('/team');
+  await andere
+    .getByRole('navigation', { name: 'Gespräche' })
+    .getByRole('link', { name: /^Anna Beispiel/ })
+    .click();
+  await expect(andere.getByRole('listitem').filter({ hasText: text })).toBeVisible();
+  // Annas Bild an ihren Nachrichten - Initialen oder ein früheres Foto.
+  const ANNAS_BILD = '[aria-label="Karte von Anna Beispiel"] [data-personenbild]';
+  const bildstand = async () => {
+    const art = await andere.locator(ANNAS_BILD).first().getAttribute('data-personenbild');
+    return art === 'foto' ? `foto ${(await mittelfarbe(andere, ANNAS_BILD)).join(',')}` : art;
+  };
+  await expect(andere.locator(ANNAS_BILD).first()).toBeVisible();
+  const vorher = await bildstand();
+
+  // Anna setzt ein anderes Foto.
+  await page.goto('/team');
+  await page.getByRole('link', { name: 'Eigenes Bild und eigene Farbe ändern' }).click();
+  const wahl = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: /^(Foto wählen|Anderes Foto)$/ }).click();
+  await (await wahl).setFiles(await fotoMitOrt(page));
+  await page.getByRole('button', { name: 'Foto speichern' }).click();
+  await expect(page.getByText('Foto gespeichert.')).toBeVisible();
+
+  // Jannes lädt nicht neu: Das Bild an der schon gezeigten Nachricht folgt
+  // im Takt der Zähler (30 s).
+  await expect
+    .poll(
+      async () => {
+        const jetzt = await bildstand();
+        return jetzt !== vorher && Boolean(jetzt?.startsWith('foto '));
+      },
+      { timeout: 75_000, intervals: [2_000] },
+    )
+    .toBe(true);
+  await andere.close();
 });
 
 test('zeigt das Bild den anderen im Team vor der Nachricht', async ({ page, browser }) => {
