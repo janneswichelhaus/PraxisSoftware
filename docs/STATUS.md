@@ -5,16 +5,12 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 
 ## Jetzt
 
-BEF-188 (20.10., Branch `claude/cool-allen-m2aaci`, Pfad A): Fotos und Videos an Rückfragen gibt owner je
-Anhang heraus, auch gesperrte; Aktion `message_attachment.handed_out` (ANN-672), Merge mit `freigabe-audit`.
+BEF-192 und BEF-193 (20.10., Branch `ccr-9f54aa20-cgnb8q`): In „Tag umplanen“ ist der Anruf der Hauptknopf im Fuß,
+„Erreicht“ und „Nicht erreicht“ sekundär; „Anrufen“ im Abschluss wählt direkt. Kopf von „Ich“ in
+einer Zeile, die Adresse unter „Konto“.
 
-Politurrunde (20.10., Branch `ccr-c66528c5-m3o7aq`, Bereiche Jannes): Baustein geführter Ablauf
-(BEF-175, ANN-671: Fokus ohne Rollen, Sperre auch im Ziel der Sitzungssperre, Zurückgeste je Schritt)
-und Ernährungsberatung nach DESIGN.md; Plattformzeilen wieder in voller Breite.
-
-BEF-190 und BEF-191 (20.10., Branch `ccr-37917f35-emdjjp`, Befunde Jannes): Den Ausschnitt eines
-Profilbilds wählt die Person beim Auswählen selbst (ADR-017 Fassung 11, ANN-670); ein neues Bild
-erscheint ohne Neuladen auch an Nachrichten, die schon dastehen. Gemergt davor: BEF-189 (#279).
+Gemergt am 20.10.: BEF-188 (#282, ANN-672), Politurrunde mit BEF-175 (#281, ANN-671), BEF-190 und
+BEF-191 (#280, ANN-670), BEF-189 (#279).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -34,7 +30,7 @@ Offen auf Branches: Bewegung (`claude/lucid-edison-9wdpux`), Übungen, zweite Ru
 
 ## Danach
 
-BEF-192 und BEF-193 (Tag umplanen: Anruf als Hauptknopf; Kopf der Seite „Ich“ in einer Zeile).
+BEF-176 (Panne und Einstiege am Lastenrad; bei G1 der Anruf als Hauptknopf wie BEF-192).
 
 ## Bei Jannes
 

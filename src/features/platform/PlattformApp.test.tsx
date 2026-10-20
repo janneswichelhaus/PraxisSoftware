@@ -165,7 +165,9 @@ describe('PlattformApp', () => {
   it('meldet unter "Ich" ab, auf Wunsch ueberall', async () => {
     const nutzer = userEvent.setup();
     zeige([TRAINING], '/p/ich');
-    expect(screen.getByText('tina.plattform@patient.invalid')).toBeInTheDocument();
+    // Die Adresse steht unter „Konto“, nicht im Kopf (BEF-193).
+    const konto = screen.getByRole('heading', { name: 'Konto' }).closest('section')!;
+    expect(within(konto).getByText('tina.plattform@patient.invalid')).toBeInTheDocument();
     await nutzer.click(screen.getByRole('button', { name: 'Abmelden' }));
     expect(abmelden).toHaveBeenCalled();
 
