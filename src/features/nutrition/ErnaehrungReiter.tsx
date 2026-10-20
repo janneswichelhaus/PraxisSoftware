@@ -155,7 +155,7 @@ function Profilansicht({
   const z = profil.targets;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
       {!laeuft ? (
         <div className="flex flex-col gap-3">
           <Statusmeldung>

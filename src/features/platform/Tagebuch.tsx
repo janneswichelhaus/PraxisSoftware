@@ -101,7 +101,7 @@ function Inhalt({ zugang, daten }: { zugang: Plattformzugang; daten: EigenesTage
   const schreibbar = daten.can_write && !nurLesen;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 [&>*]:mt-0">
       <Tagesleiste tag={tag} heute={daten.today} anfang={daten.started_on} />
       {!daten.enabled ? (
         <Statusmeldung ton="neutral">
@@ -290,10 +290,11 @@ function Wasser({
           >
             + 1 Glas ({zahl(glas)} ml)
           </Button>
-          {/* Mit Rand wie „+ 1 Glas“: Ein leises Minus war in der Sonne kaum mehr
-              als ein Strich. */}
+          {/* Mit Rand und in der Höhe von „+ 1 Glas“ (48 px): Ein leises Minus
+              war in der Sonne kaum mehr als ein Strich. */}
           <Symbolknopf
             variant="secondary"
+            groesse="gross"
             beschriftung="Ein Glas weniger"
             disabled={zaehlen.isPending || menge === 0}
             onClick={() => zaehlen.mutate(-glas)}

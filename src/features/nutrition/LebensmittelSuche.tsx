@@ -105,7 +105,7 @@ export function LebensmittelSuche({
           ohneBegriff
         )
       ) : (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-8 [&>*]:mt-0">
           {passende.length > 0 ? (
             <Listenabschnitt titel="Eigene" anzahl={passende.length}>
               {passende.map((f) => (
