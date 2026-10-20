@@ -6939,7 +6939,7 @@ Technik · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Abn
 
 ### ANN-672 — Anhänge an Rückfragen: Kopie je Anhang, auch gesperrt, mit eigener Auditaktion
 
-Datenschutz · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006)
+Datenschutz · entschieden (Jannes) · 2026-10-20 · Jannes (2026-10-20, BEF-188 wie empfohlen) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006)
 
 **Annahme.** owner gibt jeden bestätigten Anhang an einer Rückfrage einzeln als Kopie heraus, an der Akte und am Trainingsverhältnis, auch gesperrte. Jede Kopie steht als eigene Aktion `message_attachment.handed_out` am Gegenstand `platform_message_attachment` im Protokoll, mit Akte oder Verhältnis, Art und „gesperrt“; Dateiname ohne Namen der Person.
 

@@ -20,7 +20,7 @@ die Person über die Plattform wird nicht protokolliert (neu Punkt 22, Punkt 16
 eingeschränkt). Die Menge der Aktionen bleibt gleich; alles Übrige gilt
 unverändert.
 
-**Fassung 5 (2026-10-20, BEF-188, vorgeschlagen)** — begrenzte Ergänzung:
+**Fassung 5 (2026-10-20, BEF-188, angenommen von Jannes am selben Tag)** — begrenzte Ergänzung:
 Punkt 16 nennt unter „Exporte“ auch die Kopie eines Fotos oder Videos an
 einer Rückfrage an die Person (`message_attachment.handed_out`, Gegenstand
 `platform_message_attachment`; ADR-017 Punkt 96). Der Katalog wächst von 26
@@ -291,4 +291,4 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
 | 2 | 2026-09-13 | Punkte 13 (Lesepfad: `owner`, `list_audit_events`, jedes Lesen protokolliert) und 14 (Verweisausstellung gilt als Download) ergänzen eigene Folgefragen; Konsequenz aus E15 (Office) nachgetragen; Erledigungsvermerke. Punkte 1–12 unverändert. |
 | 3 | 2026-10-03 | LOG-EPIC-001, Entscheidung des Projektinhabers: Umkehr der Punkte 2 (Katalog), 6 (Monatsreport), 13 (Lesen des Protokolls protokolliert) und 14 (Verweis gilt als Download); neu Punkte 15–21 (Leitprinzip, Katalog, Freigabe, Fristen, Auswertung bei Anlass, Zweckbindung, Art.-32-Abwägung). Punkte 1, 3–5, 7–12 unverändert. |
 | 4 | 2026-10-09 | BEF-138, Entscheidung des Projektinhabers in der Abnahme vom 2026-10-09 (ANN-249): neu Punkt 22, der Abruf eines freigegebenen Dokuments über die Plattform wird nicht protokolliert; eine Vertretung bleibt beim täglichen Eintrag „Vertretung liest"; Punkt 16 entsprechend eingeschränkt. Aktionsmenge unverändert. |
-| 5 | 2026-10-20 | BEF-188, vorgeschlagen: Punkt 16 nennt die Kopie eines Fotos oder Videos an einer Rückfrage an die Person (`message_attachment.handed_out`, Gegenstand `platform_message_attachment`, ADR-017 Punkt 96, ANN-672); 27 Aktionen. Freigabe nach Punkt 17 mit dem Label `freigabe-audit`. |
+| 5 | 2026-10-20 | BEF-188, angenommen (Jannes, Fragen wie empfohlen): Punkt 16 nennt die Kopie eines Fotos oder Videos an einer Rückfrage an die Person (`message_attachment.handed_out`, Gegenstand `platform_message_attachment`, ADR-017 Punkt 96, ANN-672); 27 Aktionen. Freigabe nach Punkt 17 mit dem Label `freigabe-audit`. |
