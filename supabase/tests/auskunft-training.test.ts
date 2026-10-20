@@ -21,7 +21,7 @@ import {
  * Punkt 9 Nr. 1).
  */
 
-const { users, trainingRelationships, patients } = SEED;
+const { users, trainingRelationships, patients, organizationId } = SEED;
 const AUSKUNFT = 'select public.export_training_record($1::uuid) as daten';
 
 interface Kopie {
@@ -38,7 +38,10 @@ async function kopie(konto: string, id: string): Promise<Kopie> {
 
 async function fehlercode(konto: string | null, id: string): Promise<string | undefined> {
   try {
-    await asUser(konto, AUSKUNFT, [id]);
+    // Mit Commit, wo es ein Konto gibt: Ein Protokolleintrag vor der
+    // Abweisung bliebe so stehen (Zweitreview).
+    if (konto === null) await asUser(konto, AUSKUNFT, [id]);
+    else await asUserCommitted(konto, AUSKUNFT, [id]);
     return undefined;
   } catch (cause) {
     return (cause as { code?: string }).code;
@@ -51,6 +54,60 @@ async function fehlercode(konto: string | null, id: string): Promise<string | un
  */
 const BEWUSST_AUSSEN = new Map<string, string>([
   ['exercise_plan_items', 'Die Positionen stehen als `items` an ihrem Plan in `exercise_plans`.'],
+  ['exercise_plan_days', 'Die Übungstage stehen als `weekdays` an ihrem Plan in `exercise_plans`.'],
+  [
+    'exercise_plan_sessions',
+    'Die Einheiten stehen als `sessions` an ihrem Plan in `exercise_plans`.',
+  ],
+  [
+    'exercise_plan_session_sets',
+    'Die abgehakten Sätze stehen als `sets_done` an ihrer Einheit in `exercise_plans`.',
+  ],
+  [
+    'exercise_plan_session_values',
+    'Die Angaben zur Einheit stehen als `values` an ihrer Einheit in `exercise_plans`.',
+  ],
+  ['checkin_values', 'Die Angaben eines Check-ins stehen als `values` an ihm in `checkins`.'],
+  ['habit_marks', 'Die vermerkten Tage stehen als `marks` an ihrer Gewohnheit in `habits`.'],
+  [
+    'training_assessment_results',
+    'Die Messwerte stehen als `results` an ihrem Assessment in `training_assessments`.',
+  ],
+  [
+    'training_protocol_addenda',
+    'Die Nachträge stehen als `addenda` an ihrem Protokoll in `training_protocols`.',
+  ],
+  [
+    'platform_message_entries',
+    'Die Einträge stehen als `entries` an ihrer Rückfrage in `platform_messages`.',
+  ],
+  [
+    'platform_message_attachments',
+    'Die Fotos und Videos stehen als `attachments` an ihrer Rückfrage in `platform_messages`.',
+  ],
+  [
+    'platform_access_invitations',
+    'Die Einladungen stehen als `invitations` an ihrem Zugang in `platform_accesses`.',
+  ],
+  ['nutrition_consent_records', 'Stehen als `consent_history` am Profil in `nutrition_profiles`.'],
+  ['nutrition_weight_entries', 'Stehen als `weights` am Profil in `nutrition_profiles`.'],
+  ['nutrition_diary_entries', 'Stehen unter `diary` am Profil in `nutrition_profiles`.'],
+  ['nutrition_water_days', 'Stehen unter `diary` am Profil in `nutrition_profiles`.'],
+  ['nutrition_diary_favorites', 'Stehen unter `diary` am Profil in `nutrition_profiles`.'],
+  [
+    'custom_foods',
+    'Die eigenen stehen als `own_foods` am Profil in `nutrition_profiles`; die der Praxis sind keine Daten der Person.',
+  ],
+  [
+    'patient_privacy_records',
+    'Datenschutzvermerke der Akte (`patient_id`); sie stehen in der Auskunft zur Akte (ADR-021).',
+  ],
+  // Je Zugang gewählt, für die Praxis unsichtbar (ANN-344); `nicht_enthalten`
+  // nennt sie (BEF-189).
+  ['platform_notification_settings', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
+  ['platform_push_subscriptions', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
+  ['notification_deliveries', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
+  ['nutrition_diary_reminders', 'Benachrichtigungen je Zugang (ANN-344, BEF-189).'],
 ]);
 
 describe('export_training_record (BEF-182)', () => {
@@ -78,13 +135,18 @@ describe('export_training_record (BEF-182)', () => {
     expect(daten.nicht_enthalten.map((h) => h.was)).toContain('Daten einer Behandlung');
   });
 
-  it('enthält jede Tabelle des Aufbewahrungsplans am Trainingsverhältnis', async () => {
+  it('enthält jede Tabelle des Aufbewahrungsplans am Trainingsverhältnis oder am Plattformzugang', async () => {
+    // Zweitreview: nicht nur Spalten am Verhältnis - auch die Klasse
+    // `trainingsverhaeltnis` (so fielen Messwerte und Nachträge auf) und
+    // Tabellen am Plattformzugang (so fielen die Einladungen auf).
     const { rows } = await asPostgres<{ table_name: string }>(
       `select distinct ra.table_name from public.retention_assignments ra
-       where exists (
-         select 1 from information_schema.columns c
-         where c.table_schema = 'public' and c.table_name = ra.table_name
-           and c.column_name in ('training_relationship_id', 'relationship_kind'))
+       where ra.class_key = 'trainingsverhaeltnis'
+          or exists (
+            select 1 from information_schema.columns c
+            where c.table_schema = 'public' and c.table_name = ra.table_name
+              and c.column_name in ('training_relationship_id', 'relationship_kind',
+                                    'platform_access_id', 'access_id'))
        order by 1`,
     );
     const daten = await kopie(users.ownerTherapist, trainingRelationships.tina);
@@ -92,6 +154,122 @@ describe('export_training_record (BEF-182)', () => {
       .map((z) => z.table_name)
       .filter((name) => !(name in daten.tabellen) && !BEWUSST_AUSSEN.has(name));
     expect(fehlend).toEqual([]);
+  });
+
+  it('nimmt Messwerte, Nachträge und Verfasser mit - ohne Kennungen von Konten und Zugängen', async () => {
+    // Zweitreview: Zeilen in den Tabellen, die der Seed leer lässt.
+    const tina = trainingRelationships.tina;
+    const { rows: protokoll } = await asPostgres<{ id: string }>(
+      `insert into public.training_protocols
+         (organization_id, training_relationship_id, appointment_id, status, content,
+          created_by, updated_by, finalized_at, finalized_by)
+       values ($1, $2, 'aaaaaaaa-aaaa-4aaa-8aaa-000000000009', 'final', 'Synthetische Einheit',
+               $3, $3, now(), $3) returning id`,
+      [organizationId, tina, users.trainer],
+    );
+    await asPostgres(
+      `insert into public.training_protocol_addenda
+         (organization_id, protocol_id, content, reason, created_by)
+       values ($1, $2, 'Gewicht war 20 kg.', 'Zahl vertippt', $3)`,
+      [organizationId, protokoll[0]!.id, users.trainer],
+    );
+    const { rows: assessment } = await asPostgres<{ id: string }>(
+      `insert into public.training_assessments
+         (organization_id, training_relationship_id, title, performed_on, created_by)
+       values ($1, $2, 'Sprungtest', current_date, $3) returning id`,
+      [organizationId, tina, users.trainer],
+    );
+    await asPostgres(
+      `insert into public.training_assessment_results
+         (organization_id, assessment_id, position, label, unit, value, value_left, value_right)
+       values ($1, $2, 1, 'Einbeinsprung weit', 'cm', null, 112, 140),
+              ($1, $2, 2, 'Kniebeugen in 30 s', null, 18, null, null)`,
+      [organizationId, assessment[0]!.id],
+    );
+    await asPostgres(
+      `insert into public.training_course_events
+         (organization_id, training_relationship_id, occurred_on, kind, created_by)
+       values ($1, $2, current_date, 'urlaub', $3)`,
+      [organizationId, tina, users.trainer],
+    );
+
+    const daten = await kopie(users.ownerTherapist, tina);
+    const [protokollZeile] = daten.tabellen['training_protocols'] as {
+      author: string | null;
+      addenda: { content: string; reason: string; author: string | null }[];
+    }[];
+    expect(protokollZeile!.author).toBeTruthy();
+    expect(protokollZeile!.addenda).toEqual([
+      expect.objectContaining({ content: 'Gewicht war 20 kg.', reason: 'Zahl vertippt' }),
+    ]);
+    expect(protokollZeile!.addenda[0]!.author).toBe(protokollZeile!.author);
+    const [assessmentZeile] = daten.tabellen['training_assessments'] as {
+      results: Record<string, unknown>[];
+    }[];
+    expect(assessmentZeile!.results).toEqual([
+      {
+        position: 1,
+        label: 'Einbeinsprung weit',
+        unit: 'cm',
+        value: null,
+        value_left: 112,
+        value_right: 140,
+      },
+      {
+        position: 2,
+        label: 'Kniebeugen in 30 s',
+        unit: null,
+        value: 18,
+        value_left: null,
+        value_right: null,
+      },
+    ]);
+    expect(daten.tabellen['training_course_events']).toEqual([
+      expect.objectContaining({ kind: 'urlaub', author: expect.any(String) as unknown }),
+    ]);
+
+    // Keine Kennung eines Kontos, eines Zugangs oder des Mandanten - und kein
+    // Schlüssel `*_by`.
+    const text = JSON.stringify(daten.tabellen);
+    for (const kennung of [
+      ...Object.values(users),
+      ...Object.values(SEED.platformAccesses),
+      organizationId,
+    ]) {
+      expect(text, kennung).not.toContain(kennung);
+    }
+    expect(text).not.toMatch(/_by"/);
+  });
+
+  it('entfernt Kennungen nach Muster; jede übrige Kennungsspalte ist entschieden', async () => {
+    const { rows } = await asPostgres<{ zeile: unknown }>(
+      `select app.auskunft_ohne_kennungen(
+         '{"organization_id": 1, "person_id": 2, "training_relationship_id": 3, "later_by": 4,
+           "withdrawn_platform_access_id": 5, "platform_access_id": 6, "behalten": 7}'::jsonb) as zeile`,
+    );
+    expect(rows[0]!.zeile).toEqual({ behalten: 7 });
+    // Eine neue Spalte `*_id` an einer Tabelle, die Zeile für Zeile mitgeht,
+    // fällt hier auf und verlangt eine Entscheidung.
+    const { rows: spalten } = await asPostgres<{ spalte: string }>(
+      `select c.table_name || '.' || c.column_name as spalte
+         from information_schema.columns c
+        where c.table_schema = 'public'
+          and c.table_name in ('training_relationships', 'training_contact_details',
+                               'training_profiles', 'training_assessments', 'training_bases',
+                               'training_consent_records', 'training_contracts',
+                               'training_course_events', 'training_protocols',
+                               'training_takeovers')
+          and c.column_name like '%\\_id'
+          and c.column_name not in ('organization_id', 'training_relationship_id', 'person_id')
+          and c.column_name not like '%platform\\_access\\_id'
+        order by 1`,
+    );
+    expect(spalten.map((z) => z.spalte)).toEqual([
+      // Wird ausdrücklich entfernt: das Paket steht mit Namen in `training_packages`.
+      'training_contracts.training_package_id',
+      // Verweis auf den Termin in `appointments` derselben Kopie.
+      'training_protocols.appointment_id',
+    ]);
   });
 
   it('beschriftet jeden Abschnitt der Kopie und keinen, den es nicht gibt', async () => {
@@ -153,15 +331,21 @@ describe('export_training_record (BEF-182)', () => {
   it('läuft mit leerem search_path; die Prüfung ist für niemanden direkt aufrufbar', async () => {
     const { rows } = await asPostgres<{ proname: string; proconfig: string[] | null }>(
       `select p.proname, p.proconfig from pg_proc p
-       where p.proname in ('export_training_record', 'auskunft_organisation_training')
+       where p.proname in ('export_training_record', 'auskunft_organisation_training',
+                           'auskunft_ohne_kennungen')
        order by 1`,
     );
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     for (const fn of rows) expect(fn.proconfig, fn.proname).toContain('search_path=""');
     const { rows: rechte } = await asPostgres<{ anon: boolean; angemeldet: boolean }>(
-      `select has_function_privilege('anon', 'app.auskunft_organisation_training(uuid)', 'EXECUTE') as anon,
-              has_function_privilege('authenticated', 'app.auskunft_organisation_training(uuid)', 'EXECUTE') as angemeldet`,
+      `select has_function_privilege('anon', f, 'EXECUTE') as anon,
+              has_function_privilege('authenticated', f, 'EXECUTE') as angemeldet
+         from unnest(array['app.auskunft_organisation_training(uuid)',
+                           'app.auskunft_ohne_kennungen(jsonb)']) f`,
     );
-    expect(rechte).toEqual([{ anon: false, angemeldet: false }]);
+    expect(rechte).toEqual([
+      { anon: false, angemeldet: false },
+      { anon: false, angemeldet: false },
+    ]);
   });
 });

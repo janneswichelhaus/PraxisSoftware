@@ -21,8 +21,37 @@
 -- Der Inhalt hochgeladener Dateien kommt nicht mit, nur ihre Liste; Namen der
 -- Beschäftigten im Zugriffsprotokoll nur auf begründetes Verlangen
 -- (ANN-092). Die je Zugang gewählten Benachrichtigungen bleiben wie an der
--- Akte draußen (ANN-344, ANN-669).
+-- Akte draußen (ANN-344, ANN-669); was dadurch fehlt, nennt `nicht_enthalten`
+-- (BEF-189).
+--
+-- Zweitreview: Die Tabellen des Verhältnisses gehen Zeile für Zeile mit;
+-- Kennungen fallen nach Muster heraus (`app.auskunft_ohne_kennungen`), damit
+-- eine spätere Spalte `*_by` nicht still mitkommt. Messwerte der Assessments
+-- und Nachträge zu Protokollen stehen an ihrem Elterndatensatz, Einladungen
+-- an ihrem Zugang; wer Protokoll, Assessment, Ereignis oder Nachtrag
+-- verfasst hat, steht beim Namen.
 -- =============================================================================
+
+-- Was an einer Zeile nichts über die Person sagt: Mandant, Verweis auf das
+-- Verhältnis und die Person selbst, Kennungen bearbeitender Konten (`*_by`)
+-- und Zugänge (`*platform_access_id`) - nach Muster, nicht nach Liste.
+create function app.auskunft_ohne_kennungen(p_zeile jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
+  from jsonb_each(p_zeile) e
+  where e.key not in ('organization_id', 'training_relationship_id', 'person_id')
+    and e.key not like '%\_by'
+    and e.key not like '%platform\_access\_id'
+$$;
+
+comment on function app.auskunft_ohne_kennungen(jsonb) is
+  'BEF-182 (Zweitreview): entfernt aus einer Zeile der Auskunft Mandant, Verweise auf Verhaeltnis und Person und jede Kennung bearbeitender Konten oder Zugaenge nach Muster.';
+
+revoke all on function app.auskunft_ohne_kennungen(jsonb) from public, anon, authenticated;
 
 create function app.auskunft_organisation_training(p_training_relationship_id uuid)
 returns uuid
@@ -76,12 +105,6 @@ declare
   v_actor  uuid;
   v_id     uuid := p_training_relationship_id;
   v_daten  jsonb;
-  -- Was an einer Zeile nichts über die Person sagt: Mandant, Verweis auf das
-  -- Verhältnis selbst und die Kennungen bearbeitender Konten und Zugänge.
-  v_intern text[] := array[
-    'organization_id', 'training_relationship_id', 'created_by', 'updated_by',
-    'removed_by', 'recorded_by', 'finalized_by', 'platform_access_id',
-    'released_platform_access_id', 'withdrawn_platform_access_id'];
 begin
   v_actor := auth.uid();
   v_org   := app.auskunft_organisation_training(v_id);
@@ -100,7 +123,7 @@ begin
     ), '[]'::jsonb),
 
     'training_relationships', coalesce((
-      select jsonb_agg(to_jsonb(t) - v_intern - 'person_id')
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(t)))
       from public.training_relationships t
       where t.id = v_id
     ), '[]'::jsonb),
@@ -109,39 +132,68 @@ begin
     -- gespeichert ist, ohne interne Kennungen - auch entfernte Einträge,
     -- solange sie da sind.
     'training_contact_details', coalesce((
-      select jsonb_agg(to_jsonb(x) - v_intern)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)))
       from public.training_contact_details x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
     'training_profiles', coalesce((
-      select jsonb_agg(to_jsonb(x) - v_intern)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)))
       from public.training_profiles x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
+    -- Mit den Messwerten (OUT-002) - Gesundheitsangaben nach Art. 9.
     'training_assessments', coalesce((
-      select jsonb_agg((to_jsonb(x) - v_intern) order by x.performed_on, x.created_at)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)) || jsonb_build_object(
+        'author', (select up.display_name from public.user_profiles up where up.id = x.created_by),
+        'results', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'position', w.position,
+            'label', w.label,
+            'unit', w.unit,
+            'value', w.value,
+            'value_left', w.value_left,
+            'value_right', w.value_right
+          ) order by w.position)
+          from public.training_assessment_results w where w.assessment_id = x.id
+        ), '[]'::jsonb)
+      ) order by x.performed_on, x.created_at)
       from public.training_assessments x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
     'training_bases', coalesce((
-      select jsonb_agg((to_jsonb(x) - v_intern) order by x.started_on, x.created_at)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)) order by x.started_on, x.created_at)
       from public.training_bases x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
     'training_consent_records', coalesce((
-      select jsonb_agg((to_jsonb(x) - v_intern) order by x.occurred_on, x.recorded_at)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)) order by x.occurred_on, x.recorded_at)
       from public.training_consent_records x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
     'training_contracts', coalesce((
-      select jsonb_agg((to_jsonb(x) - v_intern - 'training_package_id') order by x.offered_on)
+      select jsonb_agg((app.auskunft_ohne_kennungen(to_jsonb(x)) - 'training_package_id')
+                       order by x.offered_on)
       from public.training_contracts x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
     'training_course_events', coalesce((
-      select jsonb_agg((to_jsonb(x) - v_intern) order by x.occurred_on, x.created_at)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)) || jsonb_build_object(
+        'author', (select up.display_name from public.user_profiles up where up.id = x.created_by)
+      ) order by x.occurred_on, x.created_at)
       from public.training_course_events x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
+    -- Mit den Nachträgen (ABN-022) am Protokoll.
     'training_protocols', coalesce((
-      select jsonb_agg((to_jsonb(x) - v_intern) order by x.created_at)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)) || jsonb_build_object(
+        'author', (select up.display_name from public.user_profiles up where up.id = x.created_by),
+        'addenda', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'content', n.content,
+            'reason', n.reason,
+            'author', (select up.display_name from public.user_profiles up where up.id = n.created_by),
+            'created_at', n.created_at
+          ) order by n.created_at, n.id)
+          from public.training_protocol_addenda n where n.protocol_id = x.id
+        ), '[]'::jsonb)
+      ) order by x.created_at)
       from public.training_protocols x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
     'training_takeovers', coalesce((
-      select jsonb_agg((to_jsonb(x) - v_intern) order by x.position)
+      select jsonb_agg(app.auskunft_ohne_kennungen(to_jsonb(x)) order by x.position)
       from public.training_takeovers x where x.training_relationship_id = v_id
     ), '[]'::jsonb),
     'training_packages', coalesce((
@@ -462,7 +514,25 @@ begin
         'revoked_at', z.revoked_at,
         'revoked_reason', z.revoked_reason,
         'onboarding_finished_at', z.onboarding_finished_at,
-        'onboarding_skipped_at', z.onboarding_skipped_at
+        'onboarding_skipped_at', z.onboarding_skipped_at,
+        -- Wie an der Akte (Zweitreview BEF-146): ohne Code, die Adresse nur am
+        -- eigenen Zugang (Art. 15 Abs. 4).
+        'invitations', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'purpose', i.purpose,
+            'channel', i.channel,
+            'email', case when z.access_kind = 'self' then i.email end,
+            'address_confirmed_at', i.address_confirmed_at,
+            'status', i.status,
+            'created_at', i.created_at,
+            'sent_at', i.sent_at,
+            'expires_at', i.expires_at,
+            'failed_attempts', i.failed_attempts,
+            'redeemed_at', i.redeemed_at,
+            'revoked_at', i.revoked_at
+          ) order by i.created_at, i.id)
+          from public.platform_access_invitations i where i.platform_access_id = z.id
+        ), '[]'::jsonb)
       ) order by z.created_at, z.id)
       from public.platform_accesses z
       where z.training_relationship_id = v_id
@@ -488,8 +558,8 @@ begin
     'tabellen', v_daten,
     'nicht_enthalten', jsonb_build_array(
       jsonb_build_object(
-        'was', 'Inhalt hochgeladener Dateien',
-        'grund', 'Die Kopie nennt jeden Anhang mit Art, Groesse und Zeitpunkt; die Datei selbst wird je Datei herausgegeben (ADR-017).'
+        'was', 'Inhalt der Fotos und Videos an Rueckfragen',
+        'grund', 'Die Kopie nennt jeden Anhang mit Art, Groesse und Zeitpunkt, auch unbestaetigte und gesperrte. Die Datei oeffnet die Praxis an der Rueckfrage, solange sie bestaetigt, nicht gesperrt und juenger als 30 Tage ist (ADR-017 Punkt 61); einen gesperrten Anhang kann sie noch nicht herausgeben (BEF-188).'
       ),
       jsonb_build_object(
         'was', 'Namen der Beschaeftigten im Zugriffsprotokoll',
@@ -501,11 +571,11 @@ begin
       ),
       jsonb_build_object(
         'was', 'Benachrichtigungen je Zugang',
-        'grund', 'Wahl, Geraete, Zustellungen und Tagebuch-Erinnerungen waehlt die Person je Zugang; die Praxis sieht sie nicht (ANN-344). Sie stehen im eigenen Export der Plattform (ANN-669).'
+        'grund', 'Wahl, Geraete, Zustellungen und Tagebuch-Erinnerungen waehlt jede Person fuer ihren Zugang; die Praxis sieht sie nicht (ANN-344). Die Person selbst und ihre rechtliche Vertretung finden sie im eigenen Export der Plattform, solange der Zugang lesen kann (ANN-669); fuer Begleitungen und nach der Lesefrist gibt es dafuer noch keinen Weg (BEF-189).'
       ),
       jsonb_build_object(
         'was', 'Interne Kennungen bearbeitender Konten',
-        'grund', 'Wo eine Person die Angabe traegt, steht ihr Name; die technische Kennung des Kontos sagt nichts aus.'
+        'grund', 'An Protokollen, Nachtraegen, Assessments und Ereignissen steht der Name der verfassenden Person; die technische Kennung eines Kontos sagt nichts aus.'
       )
     )
   );
