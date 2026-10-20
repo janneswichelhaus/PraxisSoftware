@@ -102,9 +102,12 @@ export function letzteMenge(s: Schnellwahl): { einheit: string; wert: string } |
   return { einheit: FREIE_MENGE, wert: feldtext(s.amount) };
 }
 
-/** „1 234 kcal“. */
+/**
+ * „1 234 kcal“ - mit geschütztem Leerzeichen: In der schmalen Spalte des
+ * Betrags brach sonst „112 / kcal“ um.
+ */
 export function kcal(wert: number): string {
-  return `${zahl(wert)} kcal`;
+  return `${zahl(wert)}\u00a0kcal`;
 }
 
 /**

@@ -48,12 +48,7 @@ export function Lebensmittel({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <Rueckweg standard={`${PLATTFORM_PFAD}/ernaehrung${search}`} beschriftung="Zur Ernährung" />
-      <PageHeader
-        title="Lebensmittel"
-        actions={
-          darfAnlegen ? <ButtonLink to={`${PFAD}/neu${search}`}>Eigenes anlegen</ButtonLink> : null
-        }
-      />
+      <PageHeader title="Lebensmittel" />
       <Abfragezustand
         abfrage={abfrage}
         laden="Wird geladen …"
@@ -77,6 +72,15 @@ export function Lebensmittel({ zugang }: { zugang: Plattformzugang }) {
           />
         )}
       </Abfragezustand>
+      {/* Unter der Liste in voller Größe, nicht klein oben im Kopf (DESIGN.md,
+          Seitentyp „Plattform“, wie „Termin wünschen“). */}
+      {darfAnlegen ? (
+        <div className="mt-6">
+          <ButtonLink to={`${PFAD}/neu${search}`} groesse="normal" className="w-full sm:w-auto">
+            Eigenes anlegen
+          </ButtonLink>
+        </div>
+      ) : null}
       <Quellenangabe laden={api.lebensmittelQuellen} />
     </>
   );
