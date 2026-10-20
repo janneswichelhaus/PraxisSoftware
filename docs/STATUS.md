@@ -1,4 +1,4 @@
-# Status · Stand 2026-10-19
+# Status · Stand 2026-10-20
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-bis-2026-10-12.md`.
@@ -8,7 +8,8 @@ steht in den PRs und in Git, der Stand bis heute in `development/archiv/STATUS-b
 Profilbild und Farbe im Teamchat (19.10., Branch `ccr-37917f35-emdjjp`, TEAM-006 bis -009): Farbe je
 Person, Profilbild nur für sich selbst (256 px auf dem Gerät, am Inhalt geprüft, in der Datenbank),
 Bilder in allen Listen, Personenkarte ohne Anwesenheit; ADR-017 Fassung 10, ANN-666 bis ANN-668.
-Dazu BEF-183 (Blätterknopf), BEF-150 (Entwürfe), BEF-146 bis -148 (Auskunft, Export, Versand).
+Dazu BEF-183 (Blätterknopf), BEF-150 (Entwürfe), BEF-146 bis -148 (Auskunft, Export, Versand) und
+BEF-182 (Auskunft je Trainingsverhältnis); neu offen BEF-188, BEF-189 (Lücken der Auskunft).
 
 BEF-181 und Wochenplan in einem Zug (17.10., Branch `ccr-0d8db4ad-3ufjj1`): Ladestrom aus den
 Kilometern der geplanten Touren (Edge Function `electricity-distance`, nur die Monatssumme am Antrag,
@@ -29,7 +30,7 @@ Check-Up-Rhythmus (#260, ANN-568 bis ANN-570), CI schneller (#261, ANN-571).
 
 ## Danach
 
-Eine Politurrunde; BEF-182 vor M3.
+Eine Politurrunde; BEF-189 nach Jannes' Wahl (Frage im Bericht), BEF-188.
 
 ## Bei Jannes
 

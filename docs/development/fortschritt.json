@@ -1172,6 +1172,15 @@
           "vermerk": "Vier Tabellen bewusst außerhalb der Auskunft der Praxis (ANN-344), im eigenen Export"
         },
         {
+          "id": "bef-182",
+          "name": "BEF-182 Auskunft nach Art. 15 je Trainingsverhältnis: export_training_record und Seite in den Stammdaten",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-20",
+          "nachweis": "Branch ccr-37917f35-emdjjp, Migration 20261223170000_bef_182_auskunft_trainingsverhaeltnis.sql, supabase/tests/auskunft-training.test.ts, src/features/datenschutz/TrainingAuskunftPage.test.tsx, Zweitreview",
+          "vermerk": "Nur owner; dieselbe Auditaktion wie an der Akte, Gegenstand das Verhältnis"
+        },
+        {
           "id": "url-001",
           "name": "URL-001 Urlaub: Antrag geführt (G7), Entscheiden (G7b), Storno, Anspruch, Wirkung auf Kalender, Slotsuche und Trainingstermine",
           "gewicht": 1,

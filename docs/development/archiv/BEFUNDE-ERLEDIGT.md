@@ -1718,3 +1718,19 @@ eingeklappt.
 **Beobachtung.** Scheitert das Melden nach erfolgreichem Versand oder dauert ein Lauf länger als 15 Minuten, holt der nächste Lauf den Auftrag erneut ab, und die Person bekommt die Mitteilung zweimal; `finish_notification_delivery` prüft nicht, ob der Aufrufer den aktuellen Anspruch hält. Daneben fällt die Push-Registrierung nur beim Widerruf des Zugangs, nicht beim zeitlichen Ende (Lesefrist, Volljährigkeit) – geschickt wird dann nichts mehr, die Zeile bleibt aber bis zur Löschung des Zugangs.
 
 **Erwartet.** Abholen gibt einen Anspruchszeitpunkt zurück, Melden verlangt ihn; das zeitliche Ende räumt die Registrierung im Löschlauf mit ab. Vor dem Scharfschalten des Versands (OPS-001), Einzel-Story-Loop.
+
+### BEF-182 — Training: keine Auskunft nach Art. 15 auf Seiten der Praxis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-18 |
+| Bereich | Trainingsverhältnis, Betroffenenrechte (`/datenschutz/betroffenenrechte`) |
+| Quelle  | Zweitreview ERN-EPIC-001 |
+| Status  | erledigt 2026-10-20 (Branch `ccr-37917f35-emdjjp`): `export_training_record`, Seite „Auskunft zum Training“ in den Stammdaten, nur owner |
+| Berührt | `public.export_patient_record` (nur Akte), `public.platform_export` |
+
+**Beobachtung.** Die Auskunft der Praxis geht nur von der Akte aus. Für eine Person, die nur trainiert, gibt es keine vollständige Kopie; der Export der Plattform trägt die Schlüsselliste der Plattform (ohne Notizen der Beratung, ohne Verlauf der Einwilligung) und fehlt ohne Zugang ganz. Seit ERN-EPIC-001 betrifft das auch Gesundheitsdaten nach Art. 9 (ADR-027 Punkt 6: „Auskunft und Export enthalten alles“). **Erwartet.** Eine Auskunft je Trainingsverhältnis für owner, wie `export_patient_record`, mit Protokolleintrag nach dem Katalog. Pfad A.
+
+**Entscheidung (Jannes, 2026-10-18).** Wie empfohlen: ein kleiner Pfad-A-Auftrag vor M3.
+
+**Umsetzung (2026-10-20).** `public.export_training_record` gibt owner eine Kopie aller Daten eines Trainingsverhältnisses (Prüfung `app.auskunft_organisation_training`, Protokoll `patient_record.exported` mit Gegenstand `training_relationship`, keine neue Aktion). Tabellen des Verhältnisses gehen Zeile für Zeile mit, Kennungen fallen nach Muster heraus (`app.auskunft_ohne_kennungen`); Messwerte, Nachträge und Einladungen stehen an ihrem Elterndatensatz, Verfasser beim Namen. Seite `/training/:id/auskunft` wie an der Akte: Kopie erst auf Knopfdruck. Migration `20261223170000`, Tests in `auskunft-training.test.ts` (Gegenprobe gegen die erste Fassung rot) und `TrainingAuskunftPage.test.tsx`. Zweitreview: Messwerte, Nachträge, Einladungen und ein zu enger Vollständigkeitstest eingearbeitet.
