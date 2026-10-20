@@ -351,7 +351,7 @@ function Ablauf({
     if (vorher) setAbfolge(vorher);
   }
 
-  const { freigeben, schutz } = useTextverlustschutz({
+  const { schutz } = useTextverlustschutz({
     // Vor der Absage geht die Wahl beim Weggehen verloren; danach steht alles
     // in der Adresse.
     ungespeichert: imAbsagen && grund !== null,
@@ -364,7 +364,10 @@ function Ablauf({
     mutationFn: ({ gewaehlt, ids }: { gewaehlt: CancellationReason; ids: string[] }) =>
       onAbsagen(gewaehlt, ids),
     onSuccess: async (_leer, { ids }) => {
-      freigeben();
+      // Kein `freigeben()`: Danach wechselt nur die Adresse (die Anrufliste),
+      // das hält der Schutz ohnehin nicht an. Eine übrige Freigabe ließe
+      // sonst die nächste Zurückgeste aus dem Ablauf, statt zur vorigen
+      // Person zu gehen (Praxis-Review der Politurrunde, BEF-175).
       await onAbgesagt(ids);
       // Die Anrufe beginnen von vorn, ohne Weg zurück in die Absage.
       setAbfolge(beginne<UmplanSeite>(ids[0] ? { art: 'anruf', id: ids[0] } : { art: 'fertig' }));
