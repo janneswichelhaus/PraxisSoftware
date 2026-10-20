@@ -586,6 +586,8 @@ const SCHREIBWEGE: Record<string, Schreibweg> = {
  */
 const KEIN_SCHREIBWEG_DER_PERSON: Readonly<Record<string, string>> = {
   platform_preview: 'der Verteiler selbst',
+  platform_export_notifications:
+    'Export einer Begleitung (BEF-189): nur ihr eigenes Konto, kein Weg der Person; die Einsicht der Praxis kommt nicht hinein (42501, platform-export.test.ts)',
   platform_notification_settings: 'lesend, aber nicht in der Einsicht (Gerät der Person)',
   get_platform_onboarding: 'Praxisseite, eigene Rollenprüfung',
   skip_platform_onboarding: 'Praxisseite, eigene Rollenprüfung',

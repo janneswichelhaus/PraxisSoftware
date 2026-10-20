@@ -6901,14 +6901,14 @@ Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (bestätigt 2026-10-
 
 **Änderungspfad.** Rollen aus `get_team_person` nehmen · Aufwand `klein`.
 
-### ANN-669 — Benachrichtigungen im eigenen Export, Push-Registrierung fällt mit dem Ende des Zugangs
+### ANN-669 — Benachrichtigungen im eigenen Export, auch der Begleitung; sie fallen mit dem Ende der Lesezeit
 
-Datenschutz · offen · 2026-10-19 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
+Datenschutz · entschieden (Jannes) · 2026-10-19 · Jannes (2026-10-20, BEF-189 wie empfohlen) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-007)
 
-**Annahme.** Der eigene Export der Plattform trägt je Zugang die Wahl zu Benachrichtigungen, die Tagebuch-Erinnerungen und die Zustellaufträge; Geräte nur mit „seit wann“, ohne Endpunkt und Schlüssel (Zugangsdaten zum Push-Dienst). Eine Vertretung exportiert ihre eigene Wahl. Push-Registrierungen fallen beim Widerruf sofort, mit dem zeitlichen Ende des Zugangs im täglichen Lauf; eine Sperre lässt sie stehen.
+**Annahme.** Der eigene Export trägt je Zugang die Wahl zu Benachrichtigungen, die Tagebuch-Erinnerungen und die Zustellaufträge; Geräte nur mit „seit wann“, ohne Endpunkt und Schlüssel. Jede Vertretung exportiert ihre eigene Wahl, eine Begleitung nur diese (ADR-023 Fassung 6). Wahl, Erinnerungen und Push-Registrierungen fallen beim Widerruf sofort und mit dem Ende der Lesezeit im täglichen Lauf; eine Sperre lässt sie stehen. Zustellaufträge fallen 30 Tage nach dem Versand.
 
-**Begründung.** BEF-147, BEF-148; ergänzt ANN-265 (sonst nur, was die Plattform zeigt). Die Praxis sieht die Wahl weiter nicht (ANN-344).
+**Begründung.** BEF-147, BEF-148, BEF-189; ergänzt ANN-265. Die Praxis sieht die Wahl weiter nicht (ANN-344); nach der Lesezeit bleibt nichts, worüber Auskunft zu geben wäre.
 
-**Anker.** `platform_export` (Migration BEF-147), `purge_notification_deliveries` (Migration BEF-148).
+**Anker.** Migration `20261223180000_bef_189_benachrichtigungen_mit_dem_ende.sql` (`platform_export_notifications`, `purge_notification_deliveries`).
 
-**Änderungspfad.** Auch Wahl und Erinnerungen beendeter Zugänge im Lauf räumen · Aufwand `klein`.
+**Änderungspfad.** Begleitung ohne Export: `platform_export_notifications` entfernen · Aufwand `klein`. Wahl über die Lesezeit hinaus halten: die zwei Löschzeilen im Lauf streichen · Aufwand `klein`.

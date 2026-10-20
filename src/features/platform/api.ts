@@ -826,6 +826,50 @@ export async function ladeDatenexport(
   return { daten: antwort(exportSchema, ergebnis.data, satz), roh: ergebnis.data };
 }
 
+/**
+ * BEF-189 (ADR-023 Punkt 13, Fassung 6): der Export einer Begleitung - nur
+ * ihre eigene Wahl zu Benachrichtigungen, nichts von der Person. Die Liste
+ * ist dieselbe wie im ganzen Export (`notifications`).
+ */
+const benachrichtigungsexportSchema = z.object({
+  format: z.literal('plattform-export'),
+  format_version: z.number(),
+  exported_at: z.string(),
+  organization: z.string(),
+  relationship: z.enum(['treatment', 'training']),
+  exported_by: z.literal('companion'),
+  notifications: z.object({
+    settings: z
+      .object({
+        email_kinds: z.array(z.string()),
+        push_kinds: z.array(z.string()),
+        quiet_from: z.number().nullable(),
+        quiet_until: z.number().nullable(),
+        chosen_at: z.string(),
+      })
+      .nullable(),
+    devices: z.array(z.object({ registered_at: z.string() })),
+    deliveries: z.array(z.object({ kind: z.string(), state: z.string() })),
+  }),
+});
+export type Benachrichtigungsexport = z.infer<typeof benachrichtigungsexportSchema>;
+
+/** Wie `ladeDatenexport`: nur auf Knopfdruck, jeder Aufruf steht im Protokoll. */
+export async function ladeBenachrichtigungsexport(
+  zugangId: string,
+): Promise<{ daten: Benachrichtigungsexport; roh: unknown }> {
+  const satz =
+    'Ihre Daten konnten nicht zusammengestellt werden. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('platform_export_notifications', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return {
+    daten: antwort(benachrichtigungsexportSchema, ergebnis.data, satz),
+    roh: ergebnis.data,
+  };
+}
+
 // -----------------------------------------------------------------------------
 // Einstieg (POR-019, IDEA-LZK-005, ANN-266)
 // -----------------------------------------------------------------------------

@@ -31,6 +31,12 @@ Projektionen in einer nur lesenden Transaktion; die Übungstage bleiben bei der 
 Nichts geschieht im Namen der Person; protokolliert wird nach Punkt 24 mit den vorhandenen
 Aktionen (ADR-010). Die übrigen Punkte bleiben unverändert.
 
+**Fassung 6 (2026-10-20, BEF-189)**: Jannes hat entschieden (wie empfohlen), dass eine
+**Begleitung ihre eigene Wahl zu Benachrichtigungen exportiert**: Arten und Wege, Ruhezeit, Geräte
+und Zustellungen ihres Zugangs. Das ist ihr eigenes Datum, nicht das der Person; alles andere bleibt
+ihr verschlossen. Geändert ist nur **Punkt 13** (Tabelle, mit Vermerk); protokolliert wird nach
+Punkt 24 wie jeder Export, ohne neue Aktion (ADR-010 Punkt 16). Die übrigen Punkte bleiben.
+
 **Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Den Zweifel an der Einwilligungsfähigkeit (Punkt 13) vermerkt die Praxis am Zugang der rechtlichen Vertretung (`companion_declined_*`), nicht im Auditlog (ANN-207 Fassung 2).*
@@ -38,7 +44,7 @@ Aktionen (ADR-010). Die übrigen Punkte bleiben unverändert.
 ## Datum
 
 2026-09-30 · Fassung 2: 2026-09-30 · Fassung 3: 2026-10-09 · Fassung 4: 2026-10-10 · Fassung 5:
-2026-10-14
+2026-10-14 · Fassung 6: 2026-10-20
 
 ## Kontext
 
@@ -228,7 +234,7 @@ Zwei Arten (**W3**):
 | Art                     | Wer                                                                      | Darf                                                                                            |
 | ----------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | **Rechtliche Vertretung** | Sorgeberechtigte, Betreuung mit passendem Aufgabenkreis, Vorsorgevollmacht | alles, was die Person darf, auch Einwilligungen erteilen und widerrufen                          |
-| **Begleitung**          | Angehörige oder Vertraute, mit dokumentierter Zustimmung der Person      | lesen, Terminwünsche und Nachrichten schreiben; **keine** Einwilligung, kein Widerruf, kein Datenexport |
+| **Begleitung**          | Angehörige oder Vertraute, mit dokumentierter Zustimmung der Person      | lesen, Terminwünsche und Nachrichten schreiben; **keine** Einwilligung, kein Widerruf, kein Datenexport der Person; *(Fassung 6)* die eigene Wahl zu Benachrichtigungen exportiert sie selbst |
 
 Die Zustimmung zur Begleitung ist zugleich die Entbindung von der Schweigepflicht gegenüber
 dieser Person (§ 203 StGB). *(Fassung 2)* Weil die Begleitung Gesundheitsdaten sieht und die
@@ -502,3 +508,4 @@ muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihen
 | 3 | 2026-10-09 | BEF-138, Entscheidung von Jannes in der Abnahme vom 2026-10-09 (ANN-249): **Punkt 24** ohne „jeder Dokumentabruf"; der Abruf eines freigegebenen Dokuments wird nicht protokolliert, bei einer Vertretung zählt er als Lesen (ADR-010 Fassung 4, Punkt 22). W5 mit Vermerk. Übrige Punkte unverändert. |
 | 4 | 2026-10-10 | Anmeldung ohne Kennwort nach ADR-025 Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort. Geändert sind die Punkte 1, 7, 8, 10, 13, 17 und 18 und die Liste „Nicht entschieden“, jeweils mit Vermerk. *Zeile nachgetragen 2026-10-14 aus der Statuszeile.* |
 | 5 | 2026-10-14 | E-001 (Befund B11): **Punkt 25** mit Vermerk — die Vorschau (DSN-001 D7) ist als Einsicht gebaut: owner, eigener aktiver Zugang, Verteiler `platform_preview` mit fester Liste, nur lesende Transaktion, Protokoll nach Punkt 24 mit den vorhandenen Aktionen (ANN-525 bis ANN-529), ohne die Übungstage (ANN-307). **Punkt 19** mit Vermerk: der zweite, nur lesende Weg des Wächters. Übrige Punkte unverändert. |
+| 6 | 2026-10-20 | BEF-189, Entscheidung von Jannes (wie empfohlen): **Punkt 13** — eine Begleitung exportiert ihre eigene Wahl zu Benachrichtigungen (`platform_export_notifications`), nichts von der Person; protokolliert nach Punkt 24 ohne neue Aktion. Übrige Punkte unverändert. |

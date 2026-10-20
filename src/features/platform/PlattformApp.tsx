@@ -151,7 +151,12 @@ function Geruest({
       z.access_kind !== 'companion' &&
       (z.readable || z.access_kind === 'self'),
   );
-  const exportierbar = entscheidend.filter((z) => z.readable);
+  // BEF-189 (ADR-023 Punkt 13): eine Begleitung exportiert nur ihre eigene
+  // Wahl zu Benachrichtigungen - dieselbe Seite, anderer Inhalt.
+  const exportierbar = [
+    ...entscheidend.filter((z) => z.readable),
+    ...lesbar.filter((z) => z.access_kind === 'companion'),
+  ];
   const praxis = zugaenge[0]?.organization_name ?? '';
 
   // In der Einsicht füllt das Gerüst den Rahmen der Praxisseite, nicht das Fenster.
@@ -901,6 +906,13 @@ function IchBereich({
       ) : null}
       {entscheidet && !z.readable ? (
         <ListRow titel="Meine Daten" meta="Ihre Daten bekommen Sie jetzt bei der Praxis." />
+      ) : null}
+      {/* BEF-189: die Begleitung lädt ihre eigene Wahl herunter, in der Lesezeit. */}
+      {lesbar && z.access_kind === 'companion' ? (
+        <ListRow
+          {...(nurLesen ? {} : { to: ziel('daten') })}
+          titel="Meine Benachrichtigungen herunterladen"
+        />
       ) : null}
     </Listenabschnitt>
   );
