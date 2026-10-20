@@ -6925,13 +6925,13 @@ Technik · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Abn
 
 **Änderungspfad.** Andere Obergrenze: die Konstante · Aufwand `klein`. Zwei-Finger-Zoom: Zeigerereignisse in `ProfilbildZuschnitt.tsx` · Aufwand `mittel`.
 
-### ANN-671 — Ein Fenster sperrt die Seite auch in einem eigenen Ziel, aus einer verborgenen Seite nie
+### ANN-671 — Ein Fenster sperrt die Seite auch in einem eigenen Ziel, die Sperrseite nie
 
 Technik · vorläufig · 2026-10-20 · offen · Prüfpaket · Wiedervorlage: Abnahme der Annahmen
 
-**Annahme.** Ein Fenster legt beim Öffnen `inert` auf alles, was schon da ist, auch wenn es im Ziel der Sitzungssperre oder der Plattform zeichnet: im eigenen Ziel, was vor ihm hängt, darüber alles neben dem Weg zum `body`. Ein Fensterziel (`data-fensterziel`) bleibt selbst offen, gesperrt wird nur, was schon darin steht. Geht ein Fenster in einer gesperrten oder verborgenen Fläche auf, sperrt es nichts.
+**Annahme.** Ein Fenster legt beim Öffnen `inert` auf alles, was schon da ist, auch im Ziel der Sitzungssperre oder der Plattform: im eigenen Ziel, was vor ihm hängt, darüber alles neben dem Weg zum `body`. Ein Fensterziel (`data-fensterziel`) bleibt offen, gesperrt wird nur sein Inhalt. Geht ein Fenster in einer verborgenen Seite auf, nimmt es weder Fokus noch sperrt es, bis die Seite wieder sichtbar ist. Ein Zähler je Element gibt erst frei, wenn das letzte Fenster schließt.
 
-**Begründung.** BEF-175 (3): Bis dahin griff `inert` nur am `body`, in Produktion also für kein Fenster. Die Sperrseite muss bedienbar bleiben, auch wenn hinter ihr noch eine Meldung aufgeht (ADR-025 Punkte 3 und 5).
+**Begründung.** BEF-175 (3): Vorher griff `inert` nur am `body`, in Produktion also nie. Die Sperrseite bleibt bedienbar (ADR-025 Punkte 3 und 5, Zweitreview).
 
 **Anker.** `sperreDarunter` in `src/components/ui/Dialogfenster.tsx`.
 

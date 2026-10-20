@@ -359,6 +359,44 @@ describe('Dialogfenster', () => {
     huelle.remove();
   });
 
+  it('hält die Seite gesperrt, wenn das untere Fenster vor dem oberen schließt', async () => {
+    const user = userEvent.setup();
+    function Zwei() {
+      const [unten, setUnten] = useState(true);
+      const [oben, setOben] = useState(true);
+      return (
+        <>
+          <Button type="button">Seite</Button>
+          {unten ? (
+            <Dialogfenster titel="Unten" onSchliessen={() => setUnten(false)}>
+              <p>Unten</p>
+            </Dialogfenster>
+          ) : null}
+          {oben ? (
+            <Dialogfenster titel="Oben" onSchliessen={() => setOben(false)}>
+              <Button type="button" onClick={() => setUnten(false)}>
+                Unten schließen
+              </Button>
+              <Button type="button" onClick={() => setOben(false)}>
+                Oben schließen
+              </Button>
+            </Dialogfenster>
+          ) : null}
+        </>
+      );
+    }
+    const { container } = render(<Zwei />);
+    expect(container).toHaveAttribute('inert');
+
+    await user.click(screen.getByRole('button', { name: 'Unten schließen' }));
+    expect(screen.queryByRole('dialog', { name: 'Unten' })).toBeNull();
+    // Das obere Fenster ist noch offen - die Seite darunter bleibt gesperrt.
+    expect(container).toHaveAttribute('inert');
+
+    await user.click(screen.getByRole('button', { name: 'Oben schließen' }));
+    expect(container).not.toHaveAttribute('inert');
+  });
+
   it('fokussiert ohne zu rollen, damit die Frage im Bild bleibt (BEF-175)', () => {
     const fokus = vi.spyOn(HTMLElement.prototype, 'focus');
     render(<Seite onSchliessen={() => undefined} />);
